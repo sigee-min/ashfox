@@ -56,14 +56,6 @@ export type ResponsePlan =
       body: Uint8Array;
     };
 
-export type FileProviderResult =
-  | { ok: true; bytes: Uint8Array; mime: string }
-  | { ok: false; message: string; status?: number };
-
-export type FileProvider = {
-  readFile: (id: string) => FileProviderResult;
-};
-
 export type JsonRpcMessage = {
   jsonrpc: '2.0';
   method: string;
@@ -84,5 +76,4 @@ export type McpServerConfig = {
   serverInfo?: { name: string; version: string };
   instructions?: string;
   supportedProtocols?: string[];
-  fileProvider?: FileProvider;
 };

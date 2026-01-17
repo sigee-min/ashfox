@@ -3,6 +3,7 @@ import {
   ProjectDiff,
   ProjectState,
   ProjectStateDetail,
+  RenderPreviewResult,
   ToolError,
   ToolName,
   ToolPayloadMap,
@@ -19,6 +20,7 @@ import { BlockbenchSnapshot } from './adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { ToolService } from './usecases/ToolService';
 import { UsecaseResult } from './usecases/result';
+import { buildRenderPreviewContent, buildRenderPreviewStructured } from './mcp/content';
 
 const respondOk = <T>(data: T): ToolResponse<T> => ({ ok: true, data });
 const respondError = (error: ToolError): ToolResponse<any> => ({ ok: false, error });
@@ -159,9 +161,8 @@ export class ToolDispatcherImpl implements Dispatcher {
             toToolResponse(this.service.exportModel(payload))
           ) as ToolResponse<ToolResultMap[TName]>;
         case 'render_preview':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.renderPreview(payload))
+          return attachRenderPreviewContent(
+            this.attachState(payload, toToolResponse(this.service.renderPreview(payload)))
           ) as ToolResponse<ToolResultMap[TName]>;
         case 'validate':
           return this.attachState(
@@ -247,6 +248,8 @@ export class ToolDispatcherImpl implements Dispatcher {
     if (response.ok) {
       return {
         ok: true,
+        ...(response.content ? { content: response.content } : {}),
+        ...(response.structuredContent ? { structuredContent: response.structuredContent } : {}),
         data: {
           ...(response.data as any),
           ...(shouldIncludeRevision && revision ? { revision } : {}),
@@ -267,6 +270,8 @@ export class ToolDispatcherImpl implements Dispatcher {
     }
     return {
       ok: false,
+      ...(response.content ? { content: response.content } : {}),
+      ...(response.structuredContent ? { structuredContent: response.structuredContent } : {}),
       error: { ...response.error, details }
     };
   }
@@ -275,4 +280,16 @@ export class ToolDispatcherImpl implements Dispatcher {
 function toToolResponse<T>(result: UsecaseResult<T>): ToolResponse<T> {
   if (result.ok) return respondOk(result.value);
   return respondError(result.error);
+}
+
+function attachRenderPreviewContent(
+  response: ToolResponse<RenderPreviewResult>
+): ToolResponse<RenderPreviewResult> {
+  if (!response.ok) return response;
+  const content = buildRenderPreviewContent(response.data);
+  const structuredContent = buildRenderPreviewStructured(response.data);
+  if (!content.length) {
+    return { ...response, structuredContent };
+  }
+  return { ...response, content, structuredContent };
 }

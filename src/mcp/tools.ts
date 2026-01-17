@@ -339,7 +339,6 @@ const toolSchemas: Record<string, JsonSchema> = {
         durationSeconds: { type: 'number' },
         fps: { type: 'number' },
         output: { enum: ['single', 'sequence'] },
-        nameHint: { type: 'string' },
         ...stateProps
       }
     },
@@ -604,7 +603,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'render_preview',
     title: 'Render Preview',
     description:
-      'Renders a preview image. fixed -> single (optional angle). turntable -> sequence. nameHint is optional. Single returns download.fileName. Sequence returns download.sequenceBase + indexStart/indexPad (file id = `${sequenceBase}_${index}.png`). Fetch files from the current MCP base at /mcp/files/<id>. Example(single): {"mode":"fixed","output":"single","angle":[30,45,0],"nameHint":"preview"} Example(sequence): {"mode":"turntable","output":"sequence","durationSeconds":2,"fps":12,"nameHint":"preview"}',
+      'Renders a preview image. fixed -> single (optional angle). turntable -> sequence. Returns MCP image content blocks (base64 PNG) plus structured metadata without dataUri. Single returns result.image; sequence returns result.frames[]. Example(single): {"mode":"fixed","output":"single","angle":[30,45,0]} Example(sequence): {"mode":"turntable","output":"sequence","durationSeconds":2,"fps":12}',
     inputSchema: toolSchemas.render_preview
   },
   {

@@ -27,8 +27,7 @@ export interface PreviewCapability {
   pngOnly: boolean;
   fixedOutput: 'single';
   turntableOutput: 'sequence';
-  cleanupOnStart: boolean;
-  retentionSeconds: number;
+  response: 'dataUri' | 'content' | 'content+dataUri';
 }
 
 export type ProjectStateDetail = 'summary' | 'full';
@@ -149,7 +148,15 @@ export interface ToolError {
   details?: Record<string, unknown>;
 }
 
-export type ToolResponse<T> = { ok: true; data: T } | { ok: false; error: ToolError };
+export type McpTextContent = { type: 'text'; text: string };
+
+export type McpImageContent = { type: 'image'; data: string; mimeType: string };
+
+export type McpContentBlock = McpTextContent | McpImageContent;
+
+export type ToolResponse<T> =
+  | { ok: true; data: T; content?: McpContentBlock[]; structuredContent?: unknown }
+  | { ok: false; error: ToolError; content?: McpContentBlock[]; structuredContent?: unknown };
 
 export interface IncludeStateOption {
   includeState?: boolean;
@@ -386,7 +393,6 @@ export interface RenderPreviewPayload {
   durationSeconds?: number;
   fps?: number;
   output?: RenderPreviewOutputKind;
-  nameHint?: string;
   includeState?: boolean;
 }
 
@@ -450,21 +456,28 @@ export interface ExportResult {
   path: string;
 }
 
-export interface DownloadInfo {
+export interface PreviewImage {
   mime: string;
-  fileName?: string;
-  sequenceBase?: string;
-  indexStart?: number;
-  indexPad?: number;
-  retentionSeconds?: number;
-  expiresAt?: string;
-  byteLength?: number;
+  dataUri: string;
+  byteLength: number;
+  width: number;
+  height: number;
+}
+
+export interface PreviewFrame {
+  index: number;
+  mime: string;
+  dataUri: string;
+  byteLength: number;
+  width: number;
+  height: number;
 }
 
 export interface RenderPreviewResult {
   kind: RenderPreviewOutputKind;
   frameCount: number;
-  download: DownloadInfo;
+  image?: PreviewImage;
+  frames?: PreviewFrame[];
 }
 
 export type ValidateFinding = {

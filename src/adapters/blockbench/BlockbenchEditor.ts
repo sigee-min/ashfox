@@ -19,7 +19,6 @@ import {
 } from '../../ports/editor';
 import { RenderPreviewPayload, RenderPreviewResult, RenderPreviewOutputKind, ToolError, FormatKind } from '../../types';
 import { Logger } from '../../logging';
-import { PreviewStore } from '../../storage/previewStore';
 
 /* Blockbench globals (provided at runtime). */
 declare const Blockbench: any;
@@ -63,57 +62,41 @@ const readGlobals = (): BlockbenchGlobals => ({
   Preview: (globalThis as any).Preview
 });
 
-type PathInfo = {
-  dir: string;
-  base: string;
-  name: string;
-  ext: string;
-  hasExt: boolean;
-  sep: string;
-  hasTrailingSep: boolean;
+type DataUrlInfo = {
+  mime: string;
+  dataUri: string;
+  byteLength: number;
 };
 
-const splitPath = (value: string): PathInfo => {
-  const input = String(value ?? '');
-  const hasTrailingSep = input.endsWith('/') || input.endsWith('\\');
-  const sepIndex = Math.max(input.lastIndexOf('/'), input.lastIndexOf('\\'));
-  const dir = sepIndex >= 0 ? input.slice(0, sepIndex) : '';
-  const base = sepIndex >= 0 ? input.slice(sepIndex + 1) : input;
-  const dotIndex = base.lastIndexOf('.');
-  const hasExt = dotIndex > 0 && dotIndex < base.length - 1;
-  const name = hasExt ? base.slice(0, dotIndex) : base;
-  const ext = hasExt ? base.slice(dotIndex) : '';
-  const sep = sepIndex >= 0 ? input[sepIndex] : input.includes('/') ? '/' : '\\';
-  return { dir, base, name, ext, hasExt, sep, hasTrailingSep };
-};
-
-const sanitizeFileBase = (value: string, fallback: string): string => {
-  const trimmed = String(value ?? '').trim();
-  const cleaned = trimmed.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').replace(/[. ]+$/g, '');
-  return cleaned.length > 0 ? cleaned : fallback;
-};
-
-const normalizeExtension = (_value: string): string => '.png';
-
-const resolveOutputStem = (info: PathInfo, fallback: string): string => {
-  if (info.hasExt) return info.name || fallback;
-  if (info.hasTrailingSep) return fallback;
-  return info.base || fallback;
-};
-
-const resolveOutputName = (info: PathInfo, fallback: string): { base: string; ext: string } => {
-  const base = sanitizeFileBase(resolveOutputStem(info, fallback), fallback);
-  const ext = normalizeExtension(info.hasExt ? info.ext : '.png');
-  return { base, ext };
+const parseDataUrl = (dataUrl: string): { ok: true; value: DataUrlInfo } | { ok: false; message: string } => {
+  const raw = String(dataUrl ?? '');
+  const comma = raw.indexOf(',');
+  if (comma === -1) {
+    return { ok: false, message: 'invalid data url' };
+  }
+  const meta = raw.slice(0, comma);
+  const payload = raw.slice(comma + 1).trim();
+  if (!meta.toLowerCase().includes('base64')) {
+    return { ok: false, message: 'data url is not base64' };
+  }
+  const mimeMatch = /^data:([^;]+);/i.exec(meta);
+  const mime = mimeMatch?.[1] ?? 'application/octet-stream';
+  const normalized = payload.replace(/\s/g, '');
+  if (!normalized) {
+    return { ok: false, message: 'empty base64 payload' };
+  }
+  let padding = 0;
+  if (normalized.endsWith('==')) padding = 2;
+  else if (normalized.endsWith('=')) padding = 1;
+  const byteLength = Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+  return { ok: true, value: { mime, dataUri: `data:${mime};base64,${normalized}`, byteLength } };
 };
 
 export class BlockbenchEditor implements EditorPort {
   private readonly log: Logger;
-  private readonly previewStore: PreviewStore | null;
 
-  constructor(log: Logger, previewStore?: PreviewStore | null) {
+  constructor(log: Logger) {
     this.log = log;
-    this.previewStore = previewStore ?? null;
   }
 
   createProject(
@@ -182,9 +165,29 @@ export class BlockbenchEditor implements EditorPort {
         return { code: 'not_implemented', message: 'Texture API not available' };
       }
       this.withUndo({ textures: true }, 'Import texture', () => {
-        const tex = new TextureCtor({ name: params.name, source: params.dataUri ?? params.path });
+        const tex = new TextureCtor({ name: params.name });
         if (params.id) tex.bbmcpId = params.id;
-        tex.load?.();
+        let loadedViaData = false;
+        if (params.dataUri) {
+          if (typeof tex.fromDataURL === 'function') {
+            tex.fromDataURL(params.dataUri);
+            loadedViaData = true;
+          } else if (typeof tex.loadFromDataURL === 'function') {
+            tex.loadFromDataURL(params.dataUri);
+            loadedViaData = true;
+          } else {
+            tex.source = params.dataUri;
+          }
+        } else if (params.path) {
+          tex.source = params.path;
+          tex.path = params.path;
+        }
+        if (typeof tex.add === 'function') {
+          tex.add();
+        }
+        if (!loadedViaData) {
+          tex.load?.();
+        }
         tex.select?.();
       });
       this.log.info('texture imported', { name: params.name });
@@ -669,7 +672,6 @@ export class BlockbenchEditor implements EditorPort {
 
   renderPreview(params: RenderPreviewPayload): { result?: RenderPreviewResult; error?: ToolError } {
     const globals = readGlobals();
-    const blockbench = globals.Blockbench;
     const previewRegistry = globals.Preview;
     const outputKind: RenderPreviewOutputKind =
       params.output ?? (params.mode === 'turntable' ? 'sequence' : 'single');
@@ -690,9 +692,6 @@ export class BlockbenchEditor implements EditorPort {
           fix: 'Set output="sequence" or use mode="fixed" for a single frame.'
         }
       };
-    }
-    if (!blockbench?.writeFile) {
-      return { error: { code: 'not_implemented', message: 'Blockbench.writeFile not available' } };
     }
     const preview = previewRegistry?.selected ?? previewRegistry?.all?.find?.((p: any) => p?.canvas) ?? null;
     const canvas = (preview?.canvas ??
@@ -759,49 +758,20 @@ export class BlockbenchEditor implements EditorPort {
           preview?.render?.();
         };
 
-        const store = this.previewStore;
-        const root = store?.getRootDir() ?? null;
-        if (!store || !root) {
-          return {
-            error: {
-              code: 'not_implemented',
-              message: 'preview storage unavailable',
-              fix: 'Use desktop Blockbench with filesystem access enabled.'
-            }
-          };
-        }
-        const hint = String(params.nameHint ?? 'preview');
-        const hintInfo = splitPath(hint);
-
         if (outputKind === 'single') {
           renderFrame();
-          const name = resolveOutputName(hintInfo, 'preview');
-          const fileName = store.getUniqueFileName(name.base, name.ext);
-          const outputPath = store.buildPath(fileName);
-          if (!outputPath) {
-            return {
-              error: {
-                code: 'not_implemented',
-                message: 'preview storage unavailable',
-                fix: 'Use desktop Blockbench with filesystem access enabled.'
-              }
-            };
+          const dataUrl = canvas.toDataURL('image/png');
+          const parsed = parseDataUrl(dataUrl);
+          if (!parsed.ok) {
+            return { error: { code: 'io_error', message: parsed.message } };
           }
-          blockbench.writeFile(outputPath, { content: canvas.toDataURL('image/png'), savetype: 'image' });
-          store.trackFile(outputPath);
-          const retentionSeconds = store.getRetentionSeconds() ?? undefined;
-          const expiresAt = store.getExpiresAt() ?? undefined;
-          this.log.info('preview captured', { dest: outputPath, kind: outputKind });
+          const size = { width: canvas.width, height: canvas.height };
+          this.log.info('preview captured', { kind: outputKind });
           return {
             result: {
               kind: outputKind,
               frameCount: 1,
-              download: {
-                fileName,
-                mime: 'image/png',
-                retentionSeconds,
-                expiresAt
-              }
+              image: { ...parsed.value, ...size }
             }
           };
         }
@@ -818,42 +788,24 @@ export class BlockbenchEditor implements EditorPort {
       const frameCount = Math.max(1, Math.round(durationSeconds * fps));
       const step = (Math.PI * 2) / frameCount;
 
-        const padWidth = Math.max(2, String(frameCount).length);
-        const name = resolveOutputName(hintInfo, 'frame');
-        const ext = name.ext;
-        const base = store.getUniqueSequenceBase(name.base, ext);
+        const frames: RenderPreviewResult['frames'] = [];
+        const size = { width: canvas.width, height: canvas.height };
         for (let i = 0; i < frameCount; i += 1) {
           if (i > 0) controls.rotateLeft?.(step);
           renderFrame();
-          const fileName = `${base}_${String(i + 1).padStart(padWidth, '0')}${ext}`;
-          const framePath = store.buildPath(fileName);
-          if (!framePath) {
-            return {
-              error: {
-                code: 'not_implemented',
-                message: 'preview storage unavailable',
-                fix: 'Use desktop Blockbench with filesystem access enabled.'
-              }
-            };
+          const dataUrl = canvas.toDataURL('image/png');
+          const parsed = parseDataUrl(dataUrl);
+          if (!parsed.ok) {
+            return { error: { code: 'io_error', message: parsed.message } };
           }
-          blockbench.writeFile(framePath, { content: canvas.toDataURL('image/png'), savetype: 'image' });
-          store.trackFile(framePath);
+          frames.push({ index: i + 1, ...parsed.value, ...size });
         }
-        const retentionSeconds = store.getRetentionSeconds() ?? undefined;
-        const expiresAt = store.getExpiresAt() ?? undefined;
-        this.log.info('preview sequence captured', { dest: root, frames: frameCount });
+        this.log.info('preview sequence captured', { frames: frameCount });
         return {
           result: {
             kind: outputKind,
             frameCount,
-            download: {
-              sequenceBase: base,
-              indexStart: 1,
-              indexPad: padWidth,
-              mime: 'image/png',
-              retentionSeconds,
-              expiresAt
-            }
+            frames
           }
         };
     } catch (err) {
@@ -1008,7 +960,7 @@ export class BlockbenchEditor implements EditorPort {
     const normalized = normalizeEditAspects(aspects);
     if (typeof blockbench?.edit === 'function') {
       blockbench.edit(normalized, fn);
-      blockbench.registerEdit?.(editName);
+      return;
     } else if (undo?.initEdit && undo?.finishEdit) {
       undo.initEdit(normalized);
       fn();

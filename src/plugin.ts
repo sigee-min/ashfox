@@ -20,7 +20,6 @@ import { BlockbenchEditor } from './adapters/blockbench/BlockbenchEditor';
 import { BlockbenchFormats } from './adapters/blockbench/BlockbenchFormats';
 import { BlockbenchSnapshot } from './adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
-import { PreviewStore } from './storage/previewStore';
 import { FormatOverrides, resolveFormatId } from './domain/format';
 import { buildInternalExport } from './domain/exporters';
 import { startServer } from './server';
@@ -40,7 +39,6 @@ type ServerSettings = SidecarLaunchConfig & {
   autoIncludeState: boolean;
   autoIncludeDiff: boolean;
   requireRevision: boolean;
-  autoCleanupPreviews: boolean;
 };
 
 type BbmcpBridge = {
@@ -76,7 +74,6 @@ const serverConfig: ServerSettings = {
   autoIncludeState: false,
   autoIncludeDiff: false,
   requireRevision: true,
-  autoCleanupPreviews: true,
   execPath: undefined
 };
 
@@ -84,22 +81,6 @@ let sidecar: SidecarProcess | null = null;
 let inlineServerStop: (() => void) | null = null;
 let globalDispatcher: Dispatcher;
 let globalProxy: ProxyRouter;
-let previewStore: PreviewStore | null = null;
-
-function getPreviewStore(logger: ConsoleLogger): PreviewStore | null {
-  const retentionSeconds = 60 * 60 * 24;
-  if (!previewStore) {
-    previewStore = new PreviewStore(logger, {
-      autoCleanup: serverConfig.autoCleanupPreviews,
-      retentionSeconds
-    });
-    previewStore.initialize();
-  } else {
-    previewStore.setAutoCleanup(serverConfig.autoCleanupPreviews);
-    previewStore.setRetentionSeconds(retentionSeconds);
-  }
-  return previewStore;
-}
 
 function registerDebugMenu(dispatcher: Dispatcher, capabilities: Capabilities) {
   const action = {
@@ -244,20 +225,8 @@ function restartServer() {
     return;
   }
     if (globalDispatcher && globalProxy) {
-      const store = getPreviewStore(logger);
-      const fileProvider = store
-        ? {
-            readFile: (id: string) => {
-              const result = store.readPng(id);
-              if (!result.ok) {
-                return { ok: false, message: result.message } as const;
-              }
-              return { ok: true, bytes: result.bytes, mime: 'image/png' } as const;
-            }
-          }
-        : undefined;
       const inlineStop = startServer(
-        { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path, fileProvider },
+        { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path },
         globalDispatcher,
         globalProxy,
         logger
@@ -383,13 +352,6 @@ function registerSettings() {
       value: serverConfig.requireRevision,
       description: 'Require ifRevision on mutation tools to guard against stale state'
     },
-    {
-      id: 'autoCleanupPreviews',
-      name: 'Auto Cleanup Preview Files',
-      type: 'toggle',
-      value: serverConfig.autoCleanupPreviews,
-      description: 'Delete bbmcp-managed preview files when the server starts'
-    },
     { id: 'host', name: 'MCP Host', type: 'text', value: serverConfig.host, description: 'MCP server host' },
     { id: 'port', name: 'MCP Port', type: 'number', value: serverConfig.port, description: 'MCP server port' },
     { id: 'path', name: 'MCP Path', type: 'text', value: serverConfig.path, description: 'MCP server path' }
@@ -421,13 +383,6 @@ function registerSettings() {
       const enabled = Boolean(value);
       serverConfig.requireRevision = enabled;
       policies.requireRevision = enabled;
-    } else if (id === 'autoCleanupPreviews') {
-      const enabled = Boolean(value);
-      serverConfig.autoCleanupPreviews = enabled;
-      if (previewStore) {
-        previewStore.setAutoCleanup(enabled);
-        if (enabled) previewStore.cleanup();
-      }
     } else if (id === 'host') {
       serverConfig.host = String(value);
     } else if (id === 'port') {
@@ -537,6 +492,7 @@ Plugin.register(PLUGIN_ID, {
   description: 'Blockbench MCP bridge scaffold (vanilla default, GeckoLib optional). Latest Blockbench desktop only.',
   creation_date: '2024-01-04',
   version: PLUGIN_VERSION,
+  native_modules: ['child_process'],
   tags: ['mcp', 'automation', 'ai'],
   about: `### bbmcp (MCP Bridge for Blockbench)
 
@@ -572,8 +528,7 @@ Notes:
     registerLogSettings();
     registerFormatSettings();
     registerExportPolicySetting();
-    const store = getPreviewStore(logger);
-    const editor = new BlockbenchEditor(logger, store);
+    const editor = new BlockbenchEditor(logger);
     const formats = new BlockbenchFormats();
     const snapshot = new BlockbenchSnapshot(logger);
     const exporter = new BlockbenchExport(logger);
@@ -581,8 +536,7 @@ Notes:
       pngOnly: true,
       fixedOutput: 'single' as const,
       turntableOutput: 'sequence' as const,
-      cleanupOnStart: serverConfig.autoCleanupPreviews,
-      retentionSeconds: 60 * 60 * 24
+      response: 'content' as const
     };
     const capabilities = computeCapabilities(
       Blockbench?.version,

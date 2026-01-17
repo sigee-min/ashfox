@@ -61,10 +61,24 @@ const makeTextContent = (text: string) => [{ type: 'text', text }];
 
 const toCallToolResult = (response: ToolResponse<unknown>) => {
   if (response.ok) {
-    const json = JSON.stringify(response.data);
-    return { content: makeTextContent(json), structuredContent: response.data };
+    if (response.content) {
+      const result: Record<string, unknown> = { content: response.content };
+      if (response.structuredContent !== undefined) {
+        result.structuredContent = response.structuredContent;
+      }
+      return result;
+    }
+    const json = JSON.stringify(response.structuredContent ?? response.data);
+    return { content: makeTextContent(json), structuredContent: response.structuredContent ?? response.data };
   }
   const error = response.error ?? { code: 'unknown', message: 'tool error' };
+  if (response.content) {
+    const result: Record<string, unknown> = { isError: true, content: response.content };
+    if (response.structuredContent !== undefined) {
+      result.structuredContent = response.structuredContent;
+    }
+    return result;
+  }
   return { isError: true, content: makeTextContent(error.message), structuredContent: error };
 };
 
@@ -106,9 +120,6 @@ export class McpRouter {
       }
     }
 
-    const fileResponse = this.handleFileRequest(method, url);
-    if (fileResponse) return fileResponse;
-
     if (method === 'GET') {
       return this.handleGet(req);
     }
@@ -119,39 +130,6 @@ export class McpRouter {
       return this.jsonResponse(405, { error: { code: 'method_not_allowed', message: 'method not allowed' } });
     }
     return this.handlePost(req);
-  }
-
-  private handleFileRequest(method: string, url: string): ResponsePlan | null {
-    const basePath = this.config.path;
-    const filesBase = `${basePath}/files`;
-    let pathname = '';
-    try {
-      pathname = new URL(url, 'http://localhost').pathname;
-    } catch {
-      return null;
-    }
-    if (!pathname.startsWith(filesBase)) return null;
-    if (method !== 'GET') {
-      return this.jsonResponse(405, { error: { code: 'method_not_allowed', message: 'method not allowed' } });
-    }
-    const id = pathname.slice(filesBase.length + 1);
-    if (!id) {
-      return this.jsonResponse(400, { error: { code: 'invalid_payload', message: 'file id required' } });
-    }
-    if (!this.config.fileProvider) {
-      return this.jsonResponse(404, { error: { code: 'not_found', message: 'file not found' } });
-    }
-    const result = this.config.fileProvider.readFile(decodeURIComponent(id));
-    if (!result.ok) {
-      const status = result.status ?? 404;
-      return this.jsonResponse(status, { error: { code: 'not_found', message: result.message } });
-    }
-    return {
-      kind: 'binary',
-      status: 200,
-      headers: { 'Content-Type': result.mime, 'Cache-Control': 'no-store' },
-      body: result.bytes
-    };
   }
 
   private handleGet(req: HttpRequest): ResponsePlan {

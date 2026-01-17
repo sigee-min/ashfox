@@ -90,10 +90,9 @@ export class ToolService {
 
   getProjectState(payload: { detail?: ProjectStateDetail }): UsecaseResult<{ project: ProjectState }> {
     const detail: ProjectStateDetail = payload.detail ?? 'summary';
-    const live = this.snapshotPort.readSnapshot();
-    const snapshot = live ?? this.session.snapshot();
-    const info = this.toProjectInfo(snapshot);
+    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
     const normalized = this.normalizeSnapshot(snapshot);
+    const info = this.toProjectInfo(normalized);
     const active = Boolean(info);
     const project = this.buildProjectState(normalized, detail, active);
     this.rememberSnapshot(normalized, project.revision);
@@ -102,13 +101,12 @@ export class ToolService {
 
   getProjectDiff(payload: { sinceRevision: string; detail?: ProjectStateDetail }): UsecaseResult<{ diff: ProjectDiff }> {
     const detail: ProjectStateDetail = payload.detail ?? 'summary';
-    const live = this.snapshotPort.readSnapshot();
-    const snapshot = live ?? this.session.snapshot();
-    const info = this.toProjectInfo(snapshot);
+    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
+    const normalized = this.normalizeSnapshot(snapshot);
+    const info = this.toProjectInfo(normalized);
     if (!info) {
       return fail({ code: 'invalid_state', message: 'No active project.' });
     }
-    const normalized = this.normalizeSnapshot(snapshot);
     const currentRevision = hashSnapshot(normalized);
     const previous = this.snapshotCache.get(payload.sinceRevision);
     const baseMissing = !previous;

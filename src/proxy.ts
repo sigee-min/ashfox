@@ -1,5 +1,5 @@
 import { Logger } from './logging';
-import { ProjectStateDetail, ToolError, ToolResponse } from './types';
+import { ProjectStateDetail, RenderPreviewResult, ToolError, ToolResponse } from './types';
 import {
   ApplyAnimSpecPayload,
   ApplyModelSpecPayload,
@@ -13,6 +13,7 @@ import {
 import { ToolService } from './usecases/ToolService';
 import { TextureSource } from './ports/editor';
 import { UsecaseResult } from './usecases/result';
+import { buildRenderPreviewContent, buildRenderPreviewStructured } from './mcp/content';
 import { Limits } from './types';
 import { buildRigTemplate } from './templates';
 
@@ -172,7 +173,7 @@ export class ProxyRouter {
         case 'apply_project_spec':
           return this.applyProjectSpec(payload);
         case 'render_preview':
-          return toToolResponse(this.service.renderPreview(payload));
+          return attachRenderPreviewContent(toToolResponse(this.service.renderPreview(payload)));
         case 'validate':
           return toToolResponse(this.service.validate());
         default:
@@ -685,6 +686,18 @@ function err(code: 'invalid_payload' | 'not_implemented' | 'unknown', message: s
 function toToolResponse<T>(result: UsecaseResult<T>): ToolResponse<T> {
   if (result.ok) return { ok: true, data: result.value };
   return { ok: false, error: result.error };
+}
+
+function attachRenderPreviewContent(
+  response: ToolResponse<RenderPreviewResult>
+): ToolResponse<RenderPreviewResult> {
+  if (!response.ok) return response;
+  const content = buildRenderPreviewContent(response.data);
+  const structuredContent = buildRenderPreviewStructured(response.data);
+  if (!content.length) {
+    return { ...response, structuredContent };
+  }
+  return { ...response, content, structuredContent };
 }
 
 type MetaOptions = {

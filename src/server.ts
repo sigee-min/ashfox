@@ -6,7 +6,6 @@ import { McpRouter } from './mcp/router';
 import { LocalToolExecutor } from './mcp/executor';
 import { createMcpHttpServer } from './mcp/httpServer';
 import { startMcpNetServer } from './mcp/netServer';
-import { FileProvider } from './mcp/types';
 
 declare const requireNativeModule: any;
 
@@ -15,7 +14,6 @@ export interface ServerConfig {
   port: number;
   path: string;
   token?: string;
-  fileProvider?: FileProvider;
 }
 
 type StopFn = () => void;
@@ -75,7 +73,6 @@ export function startServer(
     {
       path: config.path,
       token: config.token,
-      fileProvider: config.fileProvider,
       serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
       instructions:
         'Use get_project_state/get_project_diff (or includeState/includeDiff) before and after edits. Prefer apply_project_spec/apply_* specs and id fields when updating or deleting items. Pass ifRevision on mutations to guard against stale state.'
