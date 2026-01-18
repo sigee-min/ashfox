@@ -4,7 +4,7 @@ import { FormatOverrides, resolveFormatId } from './domain/format';
 
 export const PLUGIN_ID = 'bbmcp';
 export const PLUGIN_VERSION = '0.0.2';
-export const TOOL_SCHEMA_VERSION = '2025-03-21';
+export const TOOL_SCHEMA_VERSION = '2025-03-22';
 export const DEFAULT_SERVER_HOST = '127.0.0.1';
 export const DEFAULT_SERVER_PORT = 8787;
 export const DEFAULT_SERVER_PATH = '/mcp';

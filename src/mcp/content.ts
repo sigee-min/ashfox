@@ -17,23 +17,17 @@ export const buildRenderPreviewContent = (result: RenderPreviewResult): McpConte
 };
 
 export const buildRenderPreviewStructured = (result: RenderPreviewResult): Record<string, unknown> => {
-  const structured: Record<string, unknown> = { ...(result as any) };
-  if (structured.image && typeof structured.image === 'object') {
-    structured.image = omitDataUri(structured.image as Record<string, unknown>);
-  }
-  if (Array.isArray(structured.frames)) {
-    structured.frames = structured.frames.map((frame) => {
-      if (frame && typeof frame === 'object') {
-        return omitDataUri(frame as Record<string, unknown>);
-      }
-      return frame;
-    });
-  }
-  return structured;
+  const image = result.image ? omitDataUri(result.image) : undefined;
+  const frames = result.frames ? result.frames.map((frame) => omitDataUri(frame)) : undefined;
+  return {
+    kind: result.kind,
+    frameCount: result.frameCount,
+    ...(image ? { image } : {}),
+    ...(frames ? { frames } : {})
+  };
 };
 
-const omitDataUri = (item: Record<string, unknown>) => {
-  if (!('dataUri' in item)) return { ...item };
+const omitDataUri = <T extends { dataUri: string }>(item: T) => {
   const { dataUri, ...rest } = item;
   return { ...rest };
 };

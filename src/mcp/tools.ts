@@ -70,6 +70,7 @@ const metaProps: Record<string, JsonSchema> = {
 
 const toolSchemas: Record<string, JsonSchema> = {
   list_capabilities: emptyObject,
+  reload_plugin: emptyObject,
   get_project_state: {
     type: 'object',
     additionalProperties: false,
@@ -471,6 +472,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     title: 'List Capabilities',
     description: 'Returns plugin capabilities and limits.',
     inputSchema: toolSchemas.list_capabilities
+  },
+  {
+    name: 'reload_plugin',
+    title: 'Reload Plugin',
+    description:
+      'Reloads the bbmcp plugin (dev mode only). This resets tool links and restarts the MCP server.',
+    inputSchema: toolSchemas.reload_plugin
   },
   {
     name: 'get_project_state',

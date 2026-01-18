@@ -3,34 +3,20 @@ import { SessionState, TrackedAnimationChannel } from '../../session';
 import { FormatKind } from '../../types';
 import { matchesFormatKind } from '../../domain/format';
 import { Logger } from '../../logging';
-
-/* Blockbench globals (provided at runtime). */
-declare const Outliner: any;
-declare const Group: any;
-declare const Cube: any;
-declare const Texture: any;
-declare const Animation: any;
-declare const ModelFormat: any;
+import {
+  AnimationClip,
+  BlockbenchGlobals,
+  CubeInstance,
+  GroupInstance,
+  OutlinerNode,
+  TextureInstance,
+  UnknownRecord,
+  readBlockbenchGlobals
+} from '../../types/blockbench';
 
 type Vec3Like = { x: number; y: number; z: number } | [number, number, number];
 
-type SnapshotGlobals = {
-  Outliner?: any;
-  Group?: any;
-  Cube?: any;
-  Texture?: any;
-  Animation?: any;
-  ModelFormat?: any;
-};
-
-const readGlobals = (): SnapshotGlobals => ({
-  Outliner: (globalThis as any).Outliner,
-  Group: (globalThis as any).Group,
-  Cube: (globalThis as any).Cube,
-  Texture: (globalThis as any).Texture,
-  Animation: (globalThis as any).Animation,
-  ModelFormat: (globalThis as any).ModelFormat
-});
+const readGlobals = (): BlockbenchGlobals => readBlockbenchGlobals();
 
 export class BlockbenchSnapshot implements SnapshotPort {
   private readonly log?: Logger;
@@ -52,13 +38,14 @@ export class BlockbenchSnapshot implements SnapshotPort {
       const id = getProjectId();
       const dirty = getProjectDirty();
 
-      const root = globals.Outliner?.root ?? [];
-      walkNodes(root, undefined, bones, cubes);
+      const root = globals.Outliner?.root;
+      const nodes = Array.isArray(root) ? root : root?.children ?? [];
+      walkNodes(nodes, undefined, bones, cubes, globals);
       ensureRootBone(bones, cubes);
 
       const texList = globals.Texture?.all ?? [];
       if (Array.isArray(texList)) {
-        texList.forEach((tex: any) => {
+        texList.forEach((tex) => {
           textures.push({
             id: readTextureId(tex),
             name: tex?.name ?? tex?.id ?? 'texture',
@@ -102,9 +89,15 @@ export class BlockbenchSnapshot implements SnapshotPort {
   }
 }
 
-function walkNodes(nodes: any[], parent: string | undefined, bones: SessionState['bones'], cubes: SessionState['cubes']) {
+function walkNodes(
+  nodes: OutlinerNode[],
+  parent: string | undefined,
+  bones: SessionState['bones'],
+  cubes: SessionState['cubes'],
+  globals: BlockbenchGlobals
+) {
   (nodes ?? []).forEach((node) => {
-    if (isGroup(node)) {
+    if (isGroup(node, globals)) {
       const boneName = String(node.name ?? 'bone');
       bones.push({
         id: readNodeId(node),
@@ -114,10 +107,10 @@ function walkNodes(nodes: any[], parent: string | undefined, bones: SessionState
         rotation: toOptionalVec3(node.rotation),
         scale: toOptionalVec3(node.scale)
       });
-      walkNodes(node.children ?? [], boneName, bones, cubes);
+      walkNodes(node.children ?? [], boneName, bones, cubes, globals);
       return;
     }
-    if (isCube(node)) {
+    if (isCube(node, globals)) {
       cubes.push({
         id: readNodeId(node),
         name: String(node.name ?? 'cube'),
@@ -132,16 +125,16 @@ function walkNodes(nodes: any[], parent: string | undefined, bones: SessionState
   });
 }
 
-function isGroup(node: any): boolean {
+function isGroup(node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is GroupInstance {
   if (!node) return false;
-  const groupCtor = (globalThis as any).Group;
+  const groupCtor = globals.Group;
   if (groupCtor && node instanceof groupCtor) return true;
   return Array.isArray(node.children);
 }
 
-function isCube(node: any): boolean {
+function isCube(node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is CubeInstance {
   if (!node) return false;
-  const cubeCtor = (globalThis as any).Cube;
+  const cubeCtor = globals.Cube;
   if (cubeCtor && node instanceof cubeCtor) return true;
   return node.from !== undefined && node.to !== undefined;
 }
@@ -153,55 +146,58 @@ function toVec3(value: Vec3Like): [number, number, number] {
   return [value?.x ?? 0, value?.y ?? 0, value?.z ?? 0];
 }
 
-function toOptionalVec3(value: any): [number, number, number] | undefined {
+function toOptionalVec3(value: Vec3Like | null | undefined): [number, number, number] | undefined {
   if (!value) return undefined;
   return toVec3(value);
 }
 
-function toOptionalVec2(value: any): [number, number] | undefined {
+function toOptionalVec2(value: unknown): [number, number] | undefined {
   if (!value) return undefined;
   if (Array.isArray(value)) return [value[0] ?? 0, value[1] ?? 0];
-  if (typeof value?.x === 'number' && typeof value?.y === 'number') return [value.x, value.y];
+  if (isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number') return [value.x, value.y];
   return undefined;
 }
 
-function readNodeId(node: any): string | undefined {
+function readNodeId(node: OutlinerNode | null | undefined): string | undefined {
   if (!node) return undefined;
   const raw = node.bbmcpId ?? node.uuid ?? node.id ?? node.uid ?? node._uuid ?? null;
   return raw ? String(raw) : undefined;
 }
 
-function readTextureId(tex: any): string | undefined {
+function readTextureId(tex: TextureInstance | null | undefined): string | undefined {
   if (!tex) return undefined;
   const raw = tex.bbmcpId ?? tex.uuid ?? tex.id ?? tex.uid ?? tex._uuid ?? null;
   return raw ? String(raw) : undefined;
 }
 
-function readAnimationId(anim: any): string | undefined {
+function readAnimationId(anim: AnimationClip | null | undefined): string | undefined {
   if (!anim) return undefined;
   const raw = anim.bbmcpId ?? anim.uuid ?? anim.id ?? anim.uid ?? anim._uuid ?? null;
   return raw ? String(raw) : undefined;
 }
 
 function getProjectName(): string | null {
-  const project = (globalThis as any).Project ?? (globalThis as any).Blockbench?.project ?? null;
+  const globals = readGlobals();
+  const project = globals.Project ?? globals.Blockbench?.project ?? null;
   return project?.name ?? null;
 }
 
 function getProjectId(): string | null {
-  const project = (globalThis as any).Project ?? (globalThis as any).Blockbench?.project ?? null;
+  const globals = readGlobals();
+  const project = globals.Project ?? globals.Blockbench?.project ?? null;
   const id = project?.uuid ?? project?.id ?? project?.uid ?? null;
   return id ? String(id) : null;
 }
 
 function getProjectDirty(): boolean | undefined {
   try {
-    const blockbench = (globalThis as any).Blockbench;
+    const globals = readGlobals();
+    const blockbench = globals.Blockbench;
     if (typeof blockbench?.hasUnsavedChanges === 'function') {
       const result = blockbench.hasUnsavedChanges();
       if (typeof result === 'boolean') return result;
     }
-    const project = (globalThis as any).Project ?? blockbench?.project ?? null;
+    const project = globals.Project ?? blockbench?.project ?? null;
     if (!project) return undefined;
     if (typeof project.saved === 'boolean') return !project.saved;
     if (typeof project.isSaved === 'boolean') return !project.isSaved;
@@ -217,8 +213,8 @@ function getProjectDirty(): boolean | undefined {
   return undefined;
 }
 
-function getActiveFormatId(globals: SnapshotGlobals): string | null {
-  const active = (globalThis as any).Format ?? globals.ModelFormat?.selected ?? null;
+function getActiveFormatId(globals: BlockbenchGlobals): string | null {
+  const active = globals.Format ?? globals.ModelFormat?.selected ?? null;
   return active?.id ?? null;
 }
 
@@ -228,24 +224,26 @@ function guessFormatKind(formatId: string | null): FormatKind | null {
   return kinds.find((kind) => matchesFormatKind(kind, formatId)) ?? null;
 }
 
-function normalizeLoop(loopValue: any): boolean {
+function normalizeLoop(loopValue: unknown): boolean {
   if (typeof loopValue === 'string') return loopValue === 'loop';
   return Boolean(loopValue);
 }
 
-function getAnimationState(globals: SnapshotGlobals): { animations: any[]; status: 'available' | 'unavailable' } {
-  const global = globalThis as any;
-  if (Array.isArray(global.Animations)) return { animations: global.Animations, status: 'available' };
+function getAnimationState(
+  globals: BlockbenchGlobals
+): { animations: AnimationClip[]; status: 'available' | 'unavailable' } {
+  if (Array.isArray(globals.Animations)) return { animations: globals.Animations, status: 'available' };
   if (Array.isArray(globals.Animation?.all)) return { animations: globals.Animation.all, status: 'available' };
   return { animations: [], status: 'unavailable' };
 }
 
-function extractChannels(anim: any): TrackedAnimationChannel[] | undefined {
-  const animators = anim?.animators ?? {};
+function extractChannels(anim: AnimationClip): TrackedAnimationChannel[] | undefined {
+  const animators = anim?.animators;
   if (!animators || typeof animators !== 'object') return undefined;
   const channels: TrackedAnimationChannel[] = [];
   Object.entries(animators).forEach(([bone, animator]) => {
-    const grouped = collectAnimatorChannels(animator as any);
+    if (!isRecord(animator)) return;
+    const grouped = collectAnimatorChannels(animator);
     grouped.forEach((entry) => {
       channels.push({ bone, channel: entry.channel, keys: entry.keys });
     });
@@ -253,21 +251,24 @@ function extractChannels(anim: any): TrackedAnimationChannel[] | undefined {
   return channels.length > 0 ? channels : undefined;
 }
 
-function collectAnimatorChannels(animator: any): Array<{ channel: 'rot' | 'pos' | 'scale'; keys: TrackedAnimationChannel['keys'] }> {
+function collectAnimatorChannels(
+  animator: UnknownRecord
+): Array<{ channel: 'rot' | 'pos' | 'scale'; keys: TrackedAnimationChannel['keys'] }> {
   const buckets: Record<'rot' | 'pos' | 'scale', TrackedAnimationChannel['keys']> = {
     rot: [],
     pos: [],
     scale: []
   };
-  const keyframes = Array.isArray(animator?.keyframes) ? animator.keyframes : [];
-  keyframes.forEach((kf: any) => {
-    const channel = normalizeChannel(kf?.channel ?? kf?.data_channel ?? kf?.transform);
-    const value = kf?.data_points ?? kf?.value ?? kf?.data_point;
+  const keyframes = Array.isArray(animator.keyframes) ? animator.keyframes : [];
+  keyframes.forEach((kf) => {
+    if (!isRecord(kf)) return;
+    const channel = normalizeChannel(kf.channel ?? kf.data_channel ?? kf.transform);
+    const value = kf.data_points ?? kf.value ?? kf.data_point;
     if (!channel || !Array.isArray(value) || value.length < 3) return;
     buckets[channel].push({
-      time: Number(kf?.time ?? kf?.frame ?? 0),
+      time: Number(kf.time ?? kf.frame ?? 0),
       value: [value[0], value[1], value[2]],
-      interp: normalizeInterp(kf?.interpolation)
+      interp: normalizeInterp(kf.interpolation)
     });
   });
   return Object.entries(buckets)
@@ -275,7 +276,7 @@ function collectAnimatorChannels(animator: any): Array<{ channel: 'rot' | 'pos' 
     .map(([channel, keys]) => ({ channel: channel as 'rot' | 'pos' | 'scale', keys }));
 }
 
-function normalizeChannel(value: any): 'rot' | 'pos' | 'scale' | null {
+function normalizeChannel(value: unknown): 'rot' | 'pos' | 'scale' | null {
   const channel = String(value ?? '').toLowerCase();
   if (channel.includes('rot')) return 'rot';
   if (channel.includes('pos')) return 'pos';
@@ -283,7 +284,7 @@ function normalizeChannel(value: any): 'rot' | 'pos' | 'scale' | null {
   return null;
 }
 
-function normalizeInterp(value: any): 'linear' | 'step' | 'catmullrom' | undefined {
+function normalizeInterp(value: unknown): 'linear' | 'step' | 'catmullrom' | undefined {
   const interp = String(value ?? '').toLowerCase();
   if (interp.includes('step')) return 'step';
   if (interp.includes('catmull')) return 'catmullrom';
@@ -297,4 +298,8 @@ function ensureRootBone(bones: SessionState['bones'], cubes: SessionState['cubes
   const hasRoot = bones.some((bone) => bone.name === 'root');
   if (hasRoot) return;
   bones.unshift({ id: 'root', name: 'root', pivot: [0, 0, 0] });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

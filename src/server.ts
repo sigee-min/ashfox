@@ -6,8 +6,15 @@ import { McpRouter } from './mcp/router';
 import { LocalToolExecutor } from './mcp/executor';
 import { createMcpHttpServer } from './mcp/httpServer';
 import { startMcpNetServer } from './mcp/netServer';
+import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
+import type { Server as NetServer, Socket } from 'net';
 
-declare const requireNativeModule: any;
+type NativeModuleLoader = (
+  name: string,
+  options: { message: string; detail?: string; optional?: boolean }
+) => unknown;
+
+declare const requireNativeModule: NativeModuleLoader | undefined;
 
 export interface ServerConfig {
   host: string;
@@ -38,7 +45,21 @@ const validateConfig = (config: ServerConfig): { ok: true } | { ok: false; messa
   return { ok: true };
 };
 
-const startHttpServer = (http: any, config: ServerConfig, router: McpRouter, log: Logger): StopFn | null => {
+type HttpModule = {
+  createServer: (handler: (req: IncomingMessage, res: ServerResponse) => void) => HttpServer;
+};
+
+type NetModule = {
+  createServer: (handler: (socket: Socket) => void) => NetServer;
+};
+
+const isHttpModule = (value: unknown): value is HttpModule =>
+  typeof (value as HttpModule)?.createServer === 'function';
+
+const isNetModule = (value: unknown): value is NetModule =>
+  typeof (value as NetModule)?.createServer === 'function';
+
+const startHttpServer = (http: HttpModule, config: ServerConfig, router: McpRouter, log: Logger): StopFn | null => {
   const server = createMcpHttpServer(http, router, log);
   try {
     server.listen(config.port, config.host, () => {
@@ -81,12 +102,13 @@ export function startServer(
     log
   );
 
-  let http: any;
+  let http: HttpModule | null = null;
   try {
-    http = requireNativeModule?.('http', {
+    const loaded = requireNativeModule?.('http', {
       message: 'bbmcp needs HTTP access for the local MCP server.',
       optional: true
     });
+    http = isHttpModule(loaded) ? loaded : null;
   } catch {
     http = null;
   }
@@ -95,13 +117,14 @@ export function startServer(
     if (stop) return stop;
   }
 
-  let net: any;
+  let net: NetModule | null = null;
   try {
-    net = requireNativeModule?.('net', {
+    const loaded = requireNativeModule?.('net', {
       message: 'bbmcp needs network permission to accept MCP connections.',
       detail: 'bbmcp opens a local server so AI assistants can connect.',
       optional: false
     });
+    net = isNetModule(loaded) ? loaded : null;
   } catch {
     net = null;
   }

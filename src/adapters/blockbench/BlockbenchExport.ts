@@ -1,10 +1,7 @@
 import { ExportPort, ExportNativeParams } from '../../ports/exporter';
 import { ToolError } from '../../types';
 import { Logger } from '../../logging';
-
-/* Blockbench globals (provided at runtime). */
-declare const Blockbench: any;
-declare const ModelFormat: any;
+import { FormatEntry, readBlockbenchGlobals } from '../../types/blockbench';
 
 export class BlockbenchExport implements ExportPort {
   private readonly log: Logger;
@@ -15,7 +12,7 @@ export class BlockbenchExport implements ExportPort {
 
   exportNative(params: ExportNativeParams): ToolError | null {
     try {
-      const blockbench = (globalThis as any).Blockbench;
+      const blockbench = readBlockbenchGlobals().Blockbench;
       if (!blockbench?.writeFile) {
         return { code: 'not_implemented', message: 'Blockbench.writeFile not available' };
       }
@@ -28,7 +25,7 @@ export class BlockbenchExport implements ExportPort {
       if (compiled === null || compiled === undefined) {
         return { code: 'not_implemented', message: 'Native compiler returned empty result' };
       }
-      if (compiled && typeof (compiled as any).then === 'function') {
+      if (isThenable(compiled)) {
         return { code: 'not_implemented', message: 'Async compiler not supported' };
       }
       const serialized = typeof compiled === 'string' ? compiled : JSON.stringify(compiled ?? {}, null, 2);
@@ -42,14 +39,14 @@ export class BlockbenchExport implements ExportPort {
   }
 }
 
-function getFormatById(formatId: string): any | null {
-  const modelFormat = (globalThis as any).ModelFormat;
-  const formats = (globalThis as any).Formats ?? modelFormat?.formats ?? null;
+function getFormatById(formatId: string): FormatEntry | null {
+  const globals = readBlockbenchGlobals();
+  const formats = globals.Formats ?? globals.ModelFormat?.formats ?? null;
   if (!formats || typeof formats !== 'object') return null;
   return formats[formatId] ?? null;
 }
 
-function resolveCompiler(format: any): (() => unknown) | null {
+function resolveCompiler(format: FormatEntry | null): (() => unknown) | null {
   if (!format) return null;
   if (typeof format.compile === 'function') {
     return () => format.compile();
@@ -58,4 +55,10 @@ function resolveCompiler(format: any): (() => unknown) | null {
     return () => format.codec.compile();
   }
   return null;
+}
+
+function isThenable(value: unknown): value is { then: (onFulfilled: (arg: unknown) => unknown) => unknown } {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as { then?: unknown };
+  return typeof candidate.then === 'function';
 }

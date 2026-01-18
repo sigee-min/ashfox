@@ -2,6 +2,7 @@ import { Logger } from '../logging';
 import { McpRouter } from './router';
 import { HttpRequest, ResponsePlan, SseConnection } from './types';
 import { encodeSseComment } from './sse';
+import type { IncomingMessage, Server, ServerResponse } from 'http';
 
 const MAX_BODY_BYTES = 5_000_000;
 
@@ -15,7 +16,7 @@ const normalizeHeaders = (headers: Record<string, string | string[] | undefined>
   return normalized;
 };
 
-const readBody = (req: any): Promise<string> =>
+const readBody = (req: IncomingMessage): Promise<string> =>
   new Promise((resolve, reject) => {
     let total = 0;
     let body = '';
@@ -31,13 +32,13 @@ const readBody = (req: any): Promise<string> =>
     req.on('end', () => resolve(body));
   });
 
-const applyHeaders = (res: any, headers: Record<string, string>) => {
+const applyHeaders = (res: ServerResponse, headers: Record<string, string>) => {
   for (const [key, value] of Object.entries(headers)) {
     res.setHeader(key, value);
   }
 };
 
-const writePlan = (plan: ResponsePlan, res: any, log: Logger) => {
+const writePlan = (plan: ResponsePlan, res: ServerResponse, log: Logger) => {
   if (plan.kind === 'sse') {
     res.statusCode = plan.status;
     applyHeaders(res, plan.headers);
@@ -68,7 +69,10 @@ const writePlan = (plan: ResponsePlan, res: any, log: Logger) => {
   res.end();
 };
 
-const createHttpSseConnection = (res: any, onOpen?: (conn: SseConnection) => void | (() => void)) => {
+const createHttpSseConnection = (
+  res: ServerResponse,
+  onOpen?: (conn: SseConnection) => void | (() => void)
+) => {
   let closed = false;
   const keepAliveMs = 15_000;
   let cleanup: void | (() => void);
@@ -104,8 +108,12 @@ const createHttpSseConnection = (res: any, onOpen?: (conn: SseConnection) => voi
   res.on('close', () => connection.close());
 };
 
-export const createMcpHttpServer = (http: any, router: McpRouter, log: Logger) =>
-  http.createServer(async (req: any, res: any) => {
+type HttpModule = {
+  createServer: (handler: (req: IncomingMessage, res: ServerResponse) => void) => Server;
+};
+
+export const createMcpHttpServer = (http: HttpModule, router: McpRouter, log: Logger) =>
+  http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const method = req.method ?? 'GET';
     const url = req.url ?? '/';
     const headers = normalizeHeaders(req.headers ?? {});

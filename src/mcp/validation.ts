@@ -30,7 +30,7 @@ export const validateSchema = (schema: JsonSchema, value: unknown, path = '$'): 
     return { ok: false, message: `${path} must be ${schema.type}` };
   }
 
-  if (schema.enum && !schema.enum.includes(value as any)) {
+  if (schema.enum && !schema.enum.some((item) => item === value)) {
     return { ok: false, message: `${path} must be one of ${schema.enum.join(', ')}` };
   }
 

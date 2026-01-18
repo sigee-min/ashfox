@@ -1,22 +1,20 @@
 import { FormatDescriptor, FormatPort } from '../../ports/formats';
-
-/* Blockbench globals (provided at runtime). */
-declare const ModelFormat: any;
+import { readBlockbenchGlobals } from '../../types/blockbench';
 
 export class BlockbenchFormats implements FormatPort {
   listFormats(): FormatDescriptor[] {
-    const modelFormat = (globalThis as any).ModelFormat;
-    const formats = (globalThis as any).Formats ?? modelFormat?.formats ?? {};
+    const globals = readBlockbenchGlobals();
+    const formats = globals.Formats ?? globals.ModelFormat?.formats ?? {};
     if (!formats || typeof formats !== 'object') return [];
     return Object.entries(formats).map(([id, format]) => ({
       id,
-      name: (format as any)?.name ?? id
+      name: format?.name ?? id
     }));
   }
 
   getActiveFormatId(): string | null {
-    const modelFormat = (globalThis as any).ModelFormat;
-    const active = (globalThis as any).Format ?? modelFormat?.selected ?? null;
+    const globals = readBlockbenchGlobals();
+    const active = globals.Format ?? globals.ModelFormat?.selected ?? null;
     return active?.id ?? null;
   }
 }

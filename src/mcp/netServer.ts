@@ -2,6 +2,7 @@ import { Logger } from '../logging';
 import { McpRouter } from './router';
 import { ResponsePlan, SseConnection } from './types';
 import { encodeSseComment } from './sse';
+import type { Server, Socket } from 'net';
 
 const MAX_BODY_BYTES = 5_000_000;
 const MAX_HEADER_BYTES = 16 * 1024;
@@ -57,7 +58,7 @@ const parseRequestHead = (head: string): { ok: true; value: ParsedHead } | { ok:
   return { ok: true, value: { method, url, version, headers, contentLength, shouldClose } };
 };
 
-const writeHeaders = (socket: any, status: number, headers: Record<string, string>, hasBody: boolean) => {
+const writeHeaders = (socket: Socket, status: number, headers: Record<string, string>, hasBody: boolean) => {
   const statusText = STATUS_TEXT[status] ?? 'OK';
   const base = [`HTTP/1.1 ${status} ${statusText}`];
   for (const [key, value] of Object.entries(headers)) {
@@ -71,7 +72,7 @@ const writeHeaders = (socket: any, status: number, headers: Record<string, strin
 };
 
 const writePlan = (
-  socket: any,
+  socket: Socket,
   plan: ResponsePlan,
   closeAfter: boolean,
   log: Logger,
@@ -115,7 +116,7 @@ const writePlan = (
   if (closeAfter) socket.end();
 };
 
-const createNetSseConnection = (socket: any, onOpen?: (conn: SseConnection) => void | (() => void)) => {
+const createNetSseConnection = (socket: Socket, onOpen?: (conn: SseConnection) => void | (() => void)) => {
   let closed = false;
   const keepAliveMs = 15_000;
   let cleanup: void | (() => void);
@@ -159,8 +160,12 @@ export type NetServerConfig = {
   port: number;
 };
 
-export const startMcpNetServer = (net: any, config: NetServerConfig, router: McpRouter, log: Logger) => {
-  const server = net.createServer((socket: any) => {
+type NetModule = {
+  createServer: (handler: (socket: Socket) => void) => Server;
+};
+
+export const startMcpNetServer = (net: NetModule, config: NetServerConfig, router: McpRouter, log: Logger) => {
+  const server = net.createServer((socket: Socket) => {
     let buffer = Buffer.alloc(0);
     let closed = false;
     let processing = false;
@@ -234,7 +239,7 @@ export const startMcpNetServer = (net: any, config: NetServerConfig, router: Mcp
       processBuffer();
     });
 
-    socket.on('error', (err: any) => {
+    socket.on('error', (err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       log.warn('MCP net socket error', { message });
       closeSocket();
@@ -246,7 +251,7 @@ export const startMcpNetServer = (net: any, config: NetServerConfig, router: Mcp
     });
   });
 
-  server.on('error', (err: any) => {
+  server.on('error', (err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
     log.error('MCP net server error', { message });
   });

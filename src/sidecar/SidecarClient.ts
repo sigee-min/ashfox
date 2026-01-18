@@ -9,7 +9,8 @@ import {
 import { ToolError, ToolResponse } from '../types';
 
 type Readable = {
-  on: (event: string, handler: (chunk: any) => void) => void;
+  on(event: 'data', handler: (chunk: string | Uint8Array) => void): void;
+  on(event: 'error', handler: (err: Error) => void): void;
 };
 
 type Writable = {
@@ -19,7 +20,7 @@ type Writable = {
 type Pending = {
   resolve: (value: ToolResponse<unknown>) => void;
   reject: (err: Error) => void;
-  timeoutId: any;
+  timeoutId: ReturnType<typeof setTimeout>;
 };
 
 type ClientOptions = {
@@ -59,8 +60,8 @@ export class SidecarClient {
       (message) => this.handleMessage(message),
       (err) => this.log.error('sidecar ipc decode error', { message: err.message })
     );
-    this.readable.on('data', (chunk: any) => decoder.push(chunk));
-    this.readable.on('error', (err: any) => {
+    this.readable.on('data', (chunk: string | Uint8Array) => decoder.push(chunk));
+    this.readable.on('error', (err: Error) => {
       const messageText = err instanceof Error ? err.message : String(err);
       this.log.error('sidecar ipc stream error', { message: messageText });
     });

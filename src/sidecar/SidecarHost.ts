@@ -1,4 +1,4 @@
-import { Dispatcher, ToolResponse } from '../types';
+import { Dispatcher, ToolName, ToolPayloadMap, ToolResponse } from '../types';
 import { ProxyRouter } from '../proxy';
 import { Logger } from '../logging';
 import { createLineDecoder, encodeMessage } from '../transport/codec';
@@ -8,15 +8,21 @@ import {
   SidecarRequestMessage,
   SidecarResponseMessage
 } from '../transport/protocol';
+import { ProxyTool } from '../spec';
 
 type Readable = {
-  on: (event: string, handler: (chunk: any) => void) => void;
-  removeListener?: (event: string, handler: (chunk: any) => void) => void;
+  on(event: 'data', handler: (chunk: string | Uint8Array) => void): void;
+  on(event: 'error', handler: (err: Error) => void): void;
+  on(event: 'end', handler: () => void): void;
+  removeListener?(event: 'data', handler: (chunk: string | Uint8Array) => void): void;
 };
 
 type Writable = {
   write: (data: string) => void;
 };
+
+type DispatcherToolName = ToolName;
+type DispatcherPayload = ToolPayloadMap[ToolName];
 
 export class SidecarHost {
   private readonly readable: Readable;
@@ -25,7 +31,7 @@ export class SidecarHost {
   private readonly proxy: ProxyRouter;
   private readonly log: Logger;
   private readonly decoder;
-  private readonly onData: (chunk: any) => void;
+  private readonly onData: (chunk: string | Uint8Array) => void;
 
   constructor(readable: Readable, writable: Writable, dispatcher: Dispatcher, proxy: ProxyRouter, log: Logger) {
     this.readable = readable;
@@ -37,10 +43,10 @@ export class SidecarHost {
       (message) => this.handleMessage(message),
       (err) => this.log.error('sidecar ipc decode error', { message: err.message })
     );
-    this.onData = (chunk: any) => this.decoder.push(chunk);
+    this.onData = (chunk: string | Uint8Array) => this.decoder.push(chunk);
 
     this.readable.on('data', this.onData);
-    this.readable.on('error', (err: any) => {
+    this.readable.on('error', (err: Error) => {
       const messageText = err instanceof Error ? err.message : String(err);
       this.log.error('sidecar ipc stream error', { message: messageText });
     });
@@ -77,12 +83,12 @@ export class SidecarHost {
       return;
     }
     const mode = message.mode === 'proxy' ? 'proxy' : 'direct';
-    let result: ToolResponse<any>;
+    let result: ToolResponse<unknown>;
     try {
       result =
         mode === 'proxy'
-          ? (this.proxy.handle as any)(message.tool, message.payload)
-          : (this.dispatcher.handle as any)(message.tool, message.payload);
+          ? this.proxy.handle(message.tool as ProxyTool, message.payload)
+          : this.dispatcher.handle(message.tool as DispatcherToolName, message.payload as DispatcherPayload);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'handler error';
       const response: SidecarResponseMessage = {

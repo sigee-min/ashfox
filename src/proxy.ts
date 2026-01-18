@@ -1,5 +1,5 @@
 import { Logger } from './logging';
-import { ProjectStateDetail, RenderPreviewResult, ToolError, ToolResponse } from './types';
+import { ProjectStateDetail, RenderPreviewPayload, RenderPreviewResult, ToolError, ToolResponse } from './types';
 import {
   ApplyAnimSpecPayload,
   ApplyModelSpecPayload,
@@ -8,7 +8,8 @@ import {
   ProxyTool,
   AnimInterp,
   TextureImportSpec,
-  TextureSpec
+  TextureSpec,
+  TextureOp
 } from './spec';
 import { ToolService } from './usecases/ToolService';
 import { TextureSource } from './ports/editor';
@@ -16,6 +17,7 @@ import { UsecaseResult } from './usecases/result';
 import { buildRenderPreviewContent, buildRenderPreviewStructured } from './mcp/content';
 import { Limits } from './types';
 import { buildRigTemplate } from './templates';
+import { readBlockbenchGlobals } from './types/blockbench';
 
 const MAX_KEYS = 4096;
 const SUPPORTED_INTERP: AnimInterp[] = ['linear', 'step', 'catmullrom'];
@@ -161,19 +163,21 @@ export class ProxyRouter {
     });
   }
 
-  handle(tool: ProxyTool, payload: any): ToolResponse<unknown> {
+  handle(tool: ProxyTool, payload: unknown): ToolResponse<unknown> {
     try {
       switch (tool) {
         case 'apply_model_spec':
-          return this.applyModelSpec(payload);
+          return this.applyModelSpec(payload as ApplyModelSpecPayload);
         case 'apply_texture_spec':
-          return this.applyTextureSpec(payload);
+          return this.applyTextureSpec(payload as ApplyTextureSpecPayload);
         case 'apply_anim_spec':
-          return this.applyAnimSpec(payload);
+          return this.applyAnimSpec(payload as ApplyAnimSpecPayload);
         case 'apply_project_spec':
-          return this.applyProjectSpec(payload);
+          return this.applyProjectSpec(payload as ApplyProjectSpecPayload);
         case 'render_preview':
-          return attachRenderPreviewContent(toToolResponse(this.service.renderPreview(payload)));
+          return attachRenderPreviewContent(
+            toToolResponse(this.service.renderPreview(payload as RenderPreviewPayload))
+          );
         case 'validate':
           return toToolResponse(this.service.validate());
         default:
@@ -187,7 +191,7 @@ export class ProxyRouter {
   }
 
   private runWithoutRevisionGuard<T>(fn: () => T): T {
-    const runner = (this.service as any).runWithoutRevisionGuard as ((inner: () => T) => T) | undefined;
+    const runner = (this.service as { runWithoutRevisionGuard?: (inner: () => T) => T }).runWithoutRevisionGuard;
     if (typeof runner === 'function') return runner.call(this.service, fn);
     return fn();
   }
@@ -201,7 +205,7 @@ function validateModelSpec(payload: ApplyModelSpecPayload, limits: Limits): Tool
   if (!['empty', 'biped', 'quadruped', 'block_entity'].includes(rigTemplate)) {
     return err('invalid_payload', `unknown rigTemplate: ${rigTemplate}`);
   }
-  const templatedParts = buildRigTemplate(rigTemplate as any, inputParts);
+  const templatedParts = buildRigTemplate(rigTemplate, inputParts);
   const cubeCount = templatedParts.filter((part) => !isZeroSize(part.size)).length;
   if (inputParts.length === 0 && templatedParts.length === 0) {
     return err(
@@ -559,12 +563,10 @@ function validateTextureSpec(payload: ApplyTextureSpecPayload, limits: Limits): 
     if (tex.ops && !Array.isArray(tex.ops)) {
       return err('invalid_payload', `texture ops must be an array (${label})`);
     }
-    for (const op of tex.ops ?? []) {
-      if (!op || typeof (op as any).op !== 'string') {
-        return err('invalid_payload', `texture op missing op field (${label})`);
-      }
-      if (!isValidTextureOp(op)) {
-        return err('invalid_payload', `invalid texture op (${label}): ${(op as any).op}`);
+    const ops = Array.isArray(tex.ops) ? tex.ops : [];
+    for (const op of ops) {
+      if (!isTextureOp(op)) {
+        return err('invalid_payload', `invalid texture op (${label})`);
       }
     }
   }
@@ -588,7 +590,7 @@ function renderTextureSpec(
   if (width > limits.maxTextureSize || height > limits.maxTextureSize) {
     return err('invalid_payload', `texture size exceeds max ${limits.maxTextureSize} (${label})`);
   }
-  const doc = (globalThis as any).document;
+  const doc = readBlockbenchGlobals().document;
   if (!doc?.createElement) {
     return err('not_implemented', 'document unavailable for texture rendering');
   }
@@ -607,14 +609,15 @@ function renderTextureSpec(
     ctx.drawImage(base.image, 0, 0, width, height);
   }
   for (const op of spec.ops ?? []) {
-    const res = applyTextureOp(ctx, op as any);
+    const res = applyTextureOp(ctx, op);
     if (!res.ok) return res;
   }
   const dataUri = canvas.toDataURL('image/png');
   return { ok: true, data: { dataUri } };
 }
 
-function isValidTextureOp(op: any): boolean {
+function isTextureOp(op: unknown): op is TextureOp {
+  if (!isRecord(op) || typeof op.op !== 'string') return false;
   switch (op.op) {
     case 'set_pixel':
       return isFiniteNumber(op.x) && isFiniteNumber(op.y) && typeof op.color === 'string';
@@ -640,10 +643,7 @@ function isValidTextureOp(op: any): boolean {
   }
 }
 
-function applyTextureOp(
-  ctx: CanvasRenderingContext2D,
-  op: { op: string; [key: string]: any }
-): ToolResponse<unknown> {
+function applyTextureOp(ctx: CanvasRenderingContext2D, op: TextureOp): ToolResponse<unknown> {
   switch (op.op) {
     case 'set_pixel': {
       ctx.fillStyle = op.color;
@@ -675,8 +675,12 @@ function applyTextureOp(
   }
 }
 
-function isFiniteNumber(value: any): value is number {
+function isFiniteNumber(value: unknown): value is number {
   return Number.isFinite(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function err(code: 'invalid_payload' | 'not_implemented' | 'unknown', message: string): ToolResponse<unknown> {
@@ -763,9 +767,14 @@ function withErrorMeta(error: ToolError, meta: MetaOptions, service: ToolService
 }
 
 function guardRevision(service: ToolService, expected: string | undefined, meta: MetaOptions): ToolResponse<unknown> | null {
-  const requiresRevision = typeof (service as any).isRevisionRequired === 'function' ? service.isRevisionRequired() : false;
+  const serviceWithRevision = service as {
+    isRevisionRequired?: () => boolean;
+    getProjectState?: ToolService['getProjectState'];
+  };
+  const requiresRevision =
+    typeof serviceWithRevision.isRevisionRequired === 'function' ? service.isRevisionRequired() : false;
   if (!requiresRevision) return null;
-  if (typeof (service as any).getProjectState !== 'function') return null;
+  if (typeof serviceWithRevision.getProjectState !== 'function') return null;
   const state = service.getProjectState({ detail: 'summary' });
   if (!expected) {
     if (!state.ok) return null;
@@ -808,7 +817,7 @@ function resolveTextureBase(
 
 function loadImageFromDataUri(dataUri?: string): CanvasImageSource | null {
   if (!dataUri) return null;
-  const doc = (globalThis as any).document;
+  const doc = readBlockbenchGlobals().document;
   if (!doc?.createElement) return null;
   const img = doc.createElement('img') as HTMLImageElement | null;
   if (!img) return null;
@@ -820,9 +829,9 @@ function loadImageFromDataUri(dataUri?: string): CanvasImageSource | null {
 }
 
 function resolveImageDim(image: CanvasImageSource, key: 'width' | 'height'): number {
-  const anyImage = image as any;
-  const natural = key === 'width' ? anyImage.naturalWidth : anyImage.naturalHeight;
-  const value = natural ?? anyImage[key] ?? 0;
+  const candidate = image as { width?: unknown; height?: unknown; naturalWidth?: unknown; naturalHeight?: unknown };
+  const natural = key === 'width' ? candidate.naturalWidth : candidate.naturalHeight;
+  const value = natural ?? candidate[key] ?? 0;
   return Number.isFinite(value) ? value : 0;
 }
 

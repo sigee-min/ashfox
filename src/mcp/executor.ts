@@ -1,5 +1,6 @@
-import { Dispatcher, ToolResponse } from '../types';
+import { Dispatcher, ToolName, ToolPayloadMap, ToolResponse } from '../types';
 import { ProxyRouter } from '../proxy';
+import { ProxyTool } from '../spec';
 
 export interface ToolExecutor {
   callTool: (name: string, args: unknown) => Promise<ToolResponse<unknown>>;
@@ -15,15 +16,11 @@ export class LocalToolExecutor implements ToolExecutor {
   }
 
   async callTool(name: string, args: unknown): Promise<ToolResponse<unknown>> {
-    if (
-      name === 'apply_model_spec' ||
-      name === 'apply_texture_spec' ||
-      name === 'apply_anim_spec' ||
-      name === 'apply_project_spec'
-    ) {
-      return normalizeToolResponse(this.proxy.handle(name as any, args));
+    const toolName = name as ToolName;
+    if (isProxyTool(toolName)) {
+      return normalizeToolResponse(this.proxy.handle(toolName, args));
     }
-    return normalizeToolResponse(this.dispatcher.handle(name as any, args as any));
+    return normalizeToolResponse(this.dispatcher.handle(toolName, args as ToolPayloadMap[ToolName]));
   }
 }
 
@@ -35,3 +32,9 @@ const normalizeToolResponse = (response: ToolResponse<unknown>): ToolResponse<un
   }
   return { ok: false, error: { ...response.error, details } };
 };
+
+const isProxyTool = (name: ToolName): name is ProxyTool =>
+  name === 'apply_model_spec' ||
+  name === 'apply_texture_spec' ||
+  name === 'apply_anim_spec' ||
+  name === 'apply_project_spec';

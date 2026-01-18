@@ -21,14 +21,15 @@ import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { ToolService } from './usecases/ToolService';
 import { UsecaseResult } from './usecases/result';
 import { buildRenderPreviewContent, buildRenderPreviewStructured } from './mcp/content';
+import { readBlockbenchGlobals } from './types/blockbench';
 
 const respondOk = <T>(data: T): ToolResponse<T> => ({ ok: true, data });
-const respondError = (error: ToolError): ToolResponse<any> => ({ ok: false, error });
+const respondError = <T>(error: ToolError): ToolResponse<T> => ({ ok: false, error });
 const respondErrorSimple = (
   code: ToolErrorCode,
   message: string,
   details?: Record<string, unknown>
-): ToolResponse<any> => respondError({ code, message, details });
+): ToolResponse<unknown> => respondError({ code, message, details });
 
 export class ToolDispatcherImpl implements Dispatcher {
   private readonly service: ToolService;
@@ -73,6 +74,8 @@ export class ToolDispatcherImpl implements Dispatcher {
       switch (name) {
         case 'list_capabilities':
           return respondOk(this.service.listCapabilities()) as ToolResponse<ToolResultMap[TName]>;
+        case 'reload_plugin':
+          return this.handleReloadPlugin() as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_state':
           return toToolResponse(this.service.getProjectState(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_diff':
@@ -197,7 +200,7 @@ export class ToolDispatcherImpl implements Dispatcher {
         : undefined
     );
     if (result.ok) {
-      const bb = (globalThis as any).Blockbench;
+      const bb = readBlockbenchGlobals().Blockbench;
       bb?.dispatchEvent?.('new_project', { name: payload.name, format: payload.format });
       bb?.showQuickMessage?.(`bbmcp project created: ${payload.name} (${payload.format})`, 1200);
     }
@@ -207,7 +210,7 @@ export class ToolDispatcherImpl implements Dispatcher {
   private handleSelectProject(payload: ToolPayloadMap['select_project']) {
     const result = this.service.selectProject(payload);
     if (result.ok) {
-      const bb = (globalThis as any).Blockbench;
+      const bb = readBlockbenchGlobals().Blockbench;
       const label = result.value.name ?? 'current';
       bb?.showQuickMessage?.(`bbmcp attached to project: ${label}`, 1200);
     }
@@ -217,6 +220,25 @@ export class ToolDispatcherImpl implements Dispatcher {
   private handleResetProject(payload: ToolPayloadMap['reset_project']) {
     const result = this.service.resetProject(payload);
     return toToolResponse(result);
+  }
+
+  private handleReloadPlugin(): ToolResponse<{ ok: true }> {
+    const globals = readBlockbenchGlobals();
+    const plugins = globals.Plugins;
+    const blockbench = globals.Blockbench;
+    if (typeof plugins?.devReload !== 'function') {
+      return respondErrorSimple('not_implemented', 'Plugin reload is not available in this build.');
+    }
+    setTimeout(() => {
+      try {
+        plugins.devReload();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[bbmcp] plugin reload failed', message);
+      }
+    }, 50);
+    blockbench?.showQuickMessage?.('bbmcp reload requested', 1200);
+    return respondOk({ ok: true });
   }
 
   private attachState<
@@ -229,7 +251,9 @@ export class ToolDispatcherImpl implements Dispatcher {
     const shouldIncludeState = payload?.includeState ?? this.includeStateByDefault();
     const shouldIncludeDiff = payload?.includeDiff ?? this.includeDiffByDefault();
     const shouldIncludeRevision = true;
-    if (!shouldIncludeState && !shouldIncludeDiff && !shouldIncludeRevision) return response as ToolResponse<any>;
+    if (!shouldIncludeState && !shouldIncludeDiff && !shouldIncludeRevision) {
+      return response as ToolResponse<TResult & { state?: ProjectState | null; diff?: ProjectDiff | null }>;
+    }
     const state = this.service.getProjectState({ detail: 'summary' });
     const project = state.ok ? state.value.project : null;
     const revision = project?.revision;
@@ -251,7 +275,7 @@ export class ToolDispatcherImpl implements Dispatcher {
         ...(response.content ? { content: response.content } : {}),
         ...(response.structuredContent ? { structuredContent: response.structuredContent } : {}),
         data: {
-          ...(response.data as any),
+          ...(response.data as Record<string, unknown>),
           ...(shouldIncludeRevision && revision ? { revision } : {}),
           ...(shouldIncludeState ? { state: project } : {}),
           ...(shouldIncludeDiff ? { diff: diffValue ?? null } : {})

@@ -59,6 +59,9 @@ const supportsSse = (acceptHeader: string | undefined) =>
 
 const makeTextContent = (text: string) => [{ type: 'text', text }];
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 const toCallToolResult = (response: ToolResponse<unknown>) => {
   if (response.ok) {
     if (response.content) {
@@ -83,7 +86,7 @@ const toCallToolResult = (response: ToolResponse<unknown>) => {
 };
 
 const randomId = () => {
-  const cryptoObj = (globalThis as any).crypto;
+  const cryptoObj = globalThis.crypto;
   if (cryptoObj?.getRandomValues) {
     const bytes = new Uint8Array(16);
     cryptoObj.getRandomValues(bytes);
@@ -246,7 +249,7 @@ export class McpRouter {
       if (isNotification || id === null) {
         return { type: 'response', response: jsonRpcError(id, -32600, 'initialize requires id'), status: 400 };
       }
-      const params = (message as any).params ?? {};
+      const params = isRecord(message.params) ? message.params : {};
       const requested = typeof params.protocolVersion === 'string' ? params.protocolVersion : DEFAULT_PROTOCOL_VERSION;
       const protocolVersion = this.pickProtocolVersion(requested);
       session.protocolVersion = protocolVersion;
@@ -283,7 +286,7 @@ export class McpRouter {
     }
 
     if (message.method === 'resources/list') {
-      const result = { resources: [] as any[], nextCursor: null };
+      const result = { resources: [] as unknown[], nextCursor: null };
       return { type: 'response', response: jsonRpcResult(id, result), status: 200 };
     }
 
@@ -311,7 +314,7 @@ export class McpRouter {
     session: McpSession,
     id: JsonRpcResponse['id']
   ): Promise<RpcOutcome> {
-    const params = (message as any).params ?? {};
+    const params = isRecord(message.params) ? message.params : {};
     const name = typeof params.name === 'string' ? params.name : null;
     if (!name) {
       return { type: 'response', response: jsonRpcError(id, -32602, 'Tool name is required'), status: 400 };
@@ -319,7 +322,7 @@ export class McpRouter {
     if (!isKnownTool(name)) {
       return { type: 'response', response: jsonRpcError(id, -32602, `Unknown tool: ${name}`), status: 400 };
     }
-    const args = params.arguments ?? {};
+    const args = isRecord(params.arguments) ? params.arguments : {};
     const schema = getToolSchema(name);
     if (schema) {
       const validation = validateSchema(schema, args);

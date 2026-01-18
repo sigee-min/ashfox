@@ -23,14 +23,9 @@ import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { FormatOverrides, resolveFormatId } from './domain/format';
 import { buildInternalExport } from './domain/exporters';
 import { startServer } from './server';
+import { UnknownRecord, readBlockbenchGlobals } from './types/blockbench';
 
-/* Blockbench globals (provided at runtime). */
-declare const Blockbench: any;
-declare const Plugin: any;
-declare const MenuBar: any;
-declare const Codec: any;
-declare const Plugins: any;
-declare const Setting: any;
+const readGlobals = () => readBlockbenchGlobals();
 
 type ServerSettings = SidecarLaunchConfig & {
   enabled: boolean;
@@ -83,42 +78,55 @@ let globalDispatcher: Dispatcher;
 let globalProxy: ProxyRouter;
 
 function registerDebugMenu(dispatcher: Dispatcher, capabilities: Capabilities) {
+  const globals = readGlobals();
+  const blockbench = globals.Blockbench;
+  const menuBar = globals.MenuBar;
+  if (!blockbench || !menuBar) return;
   const action = {
     id: `${PLUGIN_ID}_debug_capabilities`,
     name: 'bbmcp: show capabilities',
     icon: 'info',
     click: () => {
-      Blockbench.textPrompt(
+      blockbench.textPrompt?.(
         'bbmcp capabilities',
         JSON.stringify(capabilities, null, 2),
         () => {}
       );
     }
   };
-  MenuBar.addAction(action, 'help');
+  menuBar.addAction(action, 'help');
 }
 
 function registerDevReloadAction() {
+  const globals = readGlobals();
+  const blockbench = globals.Blockbench;
+  const menuBar = globals.MenuBar;
+  const plugins = globals.Plugins;
+  if (!blockbench || !menuBar) return;
   const action = {
     id: `${PLUGIN_ID}_dev_reload`,
     name: 'bbmcp: dev reload plugins',
     icon: 'refresh',
     click: () => {
-      if (typeof Plugins?.devReload === 'function') {
-        Plugins.devReload();
-        Blockbench.showQuickMessage('bbmcp unloaded', 1200);
+      if (typeof plugins?.devReload === 'function') {
+        plugins.devReload();
+        blockbench.showQuickMessage?.('bbmcp unloaded', 1200);
       } else {
-        Blockbench.showQuickMessage('Plugins.devReload not available', 1200);
+        blockbench.showQuickMessage?.('Plugins.devReload not available', 1200);
       }
     }
   };
-  MenuBar.addAction(action, 'help');
+  menuBar.addAction(action, 'help');
 }
 
 function registerCodecs(capabilities: Capabilities, session: ProjectSession, formats: BlockbenchFormats) {
+  const globals = readGlobals();
+  const blockbench = globals.Blockbench;
+  const codecCtor = globals.Codec;
+  if (!blockbench || !codecCtor) return;
   const resolveCompiler = (formatId: string | null) => {
     if (!formatId) return null;
-    const registry = (globalThis as any).Formats ?? (globalThis as any).ModelFormat?.formats ?? null;
+    const registry = globals.Formats ?? globals.ModelFormat?.formats ?? null;
     if (!registry || typeof registry !== 'object') return null;
     const format = registry[formatId] ?? null;
     if (!format) return null;
@@ -143,7 +151,7 @@ function registerCodecs(capabilities: Capabilities, session: ProjectSession, for
         }
         return { ok: false, message: 'Native compiler returned empty result' };
       }
-      if (compiled && typeof (compiled as any).then === 'function') {
+      if (isThenable(compiled)) {
         if (policies.exportPolicy === 'best_effort') {
           const snapshot = session.snapshot();
           return { ok: true, data: buildInternalExport(exportKind, snapshot).data };
@@ -161,7 +169,7 @@ function registerCodecs(capabilities: Capabilities, session: ProjectSession, for
   };
 
   const register = (kind: FormatKind, exportKind: ExportPayload['format'], codecName: string) => {
-    new Codec({
+    new codecCtor({
       name: codecName,
       extension: 'json',
       remember: true,
@@ -176,16 +184,16 @@ function registerCodecs(capabilities: Capabilities, session: ProjectSession, for
         try {
           const result = compileFor(kind, exportKind);
           if (!result.ok) {
-            Blockbench.showQuickMessage('bbmcp export failed: ' + result.message, 2000);
+            blockbench.showQuickMessage?.('bbmcp export failed: ' + result.message, 2000);
             return;
           }
-          Blockbench.exportFile(
+          blockbench.exportFile?.(
             { content: result.data, name: 'model.json' },
-            () => Blockbench.showQuickMessage('bbmcp export complete', 1500)
+            () => blockbench.showQuickMessage?.('bbmcp export complete', 1500)
           );
         } catch (err) {
           const message = err instanceof Error ? err.message : 'export failed';
-          Blockbench.showQuickMessage('bbmcp export failed: ' + message, 2000);
+          blockbench.showQuickMessage?.('bbmcp export failed: ' + message, 2000);
         }
       }
     });
@@ -203,7 +211,7 @@ function registerCodecs(capabilities: Capabilities, session: ProjectSession, for
 }
 
 function exposeBridge(bridge: BbmcpBridge) {
-  const globalObj = globalThis as any;
+  const globalObj = globalThis as UnknownRecord & { bbmcp?: BbmcpBridge };
   globalObj.bbmcp = bridge;
 }
 
@@ -220,10 +228,12 @@ function restartServer() {
     return;
   }
   const logger = new ConsoleLogger(PLUGIN_ID, () => logLevel);
-  if (Blockbench?.isWeb) {
-    logger.warn('MCP server not started (web mode)');
-    return;
-  }
+  const globals = readGlobals();
+  const blockbench = globals.Blockbench;
+    if (blockbench?.isWeb) {
+      logger.warn('MCP server not started (web mode)');
+      return;
+    }
     if (globalDispatcher && globalProxy) {
       const inlineStop = startServer(
         { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path },
@@ -231,69 +241,83 @@ function restartServer() {
         globalProxy,
         logger
       );
-    if (inlineStop) {
-      inlineServerStop = inlineStop;
-      return;
+      if (inlineStop) {
+        inlineServerStop = inlineStop;
+        return;
+      }
+      logger.warn('Inline MCP server unavailable; starting sidecar');
+      const endpoint: SidecarLaunchConfig = {
+        host: serverConfig.host,
+        port: serverConfig.port,
+        path: serverConfig.path,
+        execPath: serverConfig.execPath
+      };
+      sidecar = new SidecarProcess(endpoint, globalDispatcher, globalProxy, logger);
+      if (!sidecar.start()) {
+        sidecar = null;
+        logger.warn('MCP sidecar failed to start');
+      }
     }
-    logger.warn('Inline MCP server unavailable; starting sidecar');
-    const endpoint: SidecarLaunchConfig = {
-      host: serverConfig.host,
-      port: serverConfig.port,
-      path: serverConfig.path,
-      execPath: serverConfig.execPath
-    };
-    sidecar = new SidecarProcess(endpoint, globalDispatcher, globalProxy, logger);
-    if (!sidecar.start()) {
-      sidecar = null;
-      logger.warn('MCP sidecar failed to start');
-    }
-  }
 }
 
 function registerInspectorAction() {
+  const globals = readGlobals();
+  const menuBar = globals.MenuBar;
+  const blockbench = globals.Blockbench;
+  if (!menuBar || !blockbench) return;
   const action = {
     id: `${PLUGIN_ID}_inspect_plugins`,
     name: 'bbmcp: log plugin state',
     icon: 'search',
     click: () => {
-      const path = (globalThis as any).Plugins?.path;
-      const registered = (globalThis as any).Plugins?.registered;
+      const plugins = readGlobals().Plugins;
+      const path = plugins?.path;
+      const registered = plugins?.registered;
       console.log('[bbmcp] Plugins.path', path);
       console.log('[bbmcp] Plugins.registered keys', registered ? Object.keys(registered) : 'n/a');
-      Blockbench.showQuickMessage('Logged plugin state to console.', 1200);
+      blockbench.showQuickMessage?.('Logged plugin state to console.', 1200);
     }
   };
-  MenuBar.addAction(action, 'help');
+  menuBar.addAction(action, 'help');
 }
 
 function registerServerConfigAction() {
+  const globals = readGlobals();
+  const menuBar = globals.MenuBar;
+  const blockbench = globals.Blockbench;
+  if (!menuBar || !blockbench) return;
   const action = {
     id: `${PLUGIN_ID}_server_config`,
     name: 'bbmcp: set MCP endpoint',
     icon: 'settings',
     click: async () => {
-      const host = await Blockbench.textPrompt('MCP host', serverConfig.host, () => {});
+      const host = await blockbench.textPrompt?.('MCP host', serverConfig.host, () => {});
       if (typeof host === 'string' && host.length > 0) {
         serverConfig.host = host;
       }
-      const portStr = await Blockbench.textPrompt('MCP port', String(serverConfig.port), () => {});
+      const portStr = await blockbench.textPrompt?.('MCP port', String(serverConfig.port), () => {});
       const portNum = parseInt(portStr ?? `${serverConfig.port}`, 10);
       if (!Number.isNaN(portNum)) {
         serverConfig.port = portNum;
       }
-      const path = await Blockbench.textPrompt('MCP path', serverConfig.path, () => {});
+      const path = await blockbench.textPrompt?.('MCP path', serverConfig.path, () => {});
       if (typeof path === 'string' && path.length > 0) {
         serverConfig.path = path.startsWith('/') ? path : `/${path}`;
       }
       restartServer();
-      Blockbench.showQuickMessage(`MCP endpoint: ${serverConfig.host}:${serverConfig.port}${serverConfig.path}`, 1500);
+      blockbench.showQuickMessage?.(
+        `MCP endpoint: ${serverConfig.host}:${serverConfig.port}${serverConfig.path}`,
+        1500
+      );
     }
   };
-  MenuBar.addAction(action, 'help');
+  menuBar.addAction(action, 'help');
 }
 
 function registerSettings() {
-  if (typeof Setting === 'undefined') return;
+  const globals = readGlobals();
+  const SettingCtor = globals.Setting;
+  if (typeof SettingCtor === 'undefined') return;
   type SettingType = 'text' | 'number' | 'toggle';
   type SettingId = keyof ServerSettings;
   const settings: Array<{
@@ -396,14 +420,14 @@ function registerSettings() {
   };
 
   settings.forEach((s) => {
-    const setting = new Setting(`${PLUGIN_ID}_${s.id}`, {
+    const setting = new SettingCtor(`${PLUGIN_ID}_${s.id}`, {
       name: s.name,
       category: PLUGIN_ID,
       plugin: PLUGIN_ID,
       type: s.type,
       value: s.value,
       description: s.description,
-      onChange: (v: any) => {
+      onChange: (v: unknown) => {
         applySetting(s.id, v);
       }
     });
@@ -412,7 +436,9 @@ function registerSettings() {
 }
 
 function registerFormatSettings() {
-  if (typeof Setting === 'undefined') return;
+  const globals = readGlobals();
+  const SettingCtor = globals.Setting;
+  if (typeof SettingCtor === 'undefined') return;
   type FormatKey = keyof FormatOverrides;
   const apply = (key: FormatKey, value: unknown) => {
     const next = String(value ?? '').trim();
@@ -430,14 +456,14 @@ function registerFormatSettings() {
   ];
 
   entries.forEach((entry) => {
-    const setting = new Setting(`${PLUGIN_ID}_${entry.id}`, {
+    const setting = new SettingCtor(`${PLUGIN_ID}_${entry.id}`, {
       name: entry.name,
       category: PLUGIN_ID,
       plugin: PLUGIN_ID,
       type: 'text',
       value: formatOverrides[entry.key] ?? '',
       description: 'Override format ID when auto-detect fails',
-      onChange: (v: any) => {
+      onChange: (v: unknown) => {
         apply(entry.key, v);
       }
     });
@@ -445,20 +471,22 @@ function registerFormatSettings() {
   });
 }
 function registerExportPolicySetting() {
-  if (typeof Setting === 'undefined') return;
+  const globals = readGlobals();
+  const SettingCtor = globals.Setting;
+  if (typeof SettingCtor === 'undefined') return;
   const apply = (value: unknown) => {
     const enabled = Boolean(value);
     policies.exportPolicy = enabled ? 'strict' : 'best_effort';
   };
 
-  const setting = new Setting(`${PLUGIN_ID}_export_strict`, {
+  const setting = new SettingCtor(`${PLUGIN_ID}_export_strict`, {
     name: 'Strict Export (no fallback)',
     category: PLUGIN_ID,
     plugin: PLUGIN_ID,
     type: 'toggle',
     value: policies.exportPolicy === 'strict',
     description: 'Require native compile; disable internal fallback',
-    onChange: (v: any) => {
+    onChange: (v: unknown) => {
       apply(v);
     }
   });
@@ -466,26 +494,31 @@ function registerExportPolicySetting() {
 }
 
 function registerLogSettings() {
-  if (typeof Setting === 'undefined') return;
+  const globals = readGlobals();
+  const SettingCtor = globals.Setting;
+  if (typeof SettingCtor === 'undefined') return;
   const apply = (value: unknown) => {
     logLevel = Boolean(value) ? 'debug' : 'info';
   };
 
-  const setting = new Setting(PLUGIN_ID + '_diagnostic_logs', {
+  const setting = new SettingCtor(PLUGIN_ID + '_diagnostic_logs', {
     name: 'Diagnostic Logging',
     category: PLUGIN_ID,
     plugin: PLUGIN_ID,
     type: 'toggle',
     value: logLevel === 'debug',
     description: 'Enable verbose logs for troubleshooting',
-    onChange: (v: any) => {
+    onChange: (v: unknown) => {
       apply(v);
     }
   });
   apply(setting?.value ?? (logLevel === 'debug'));
 }
 
-Plugin.register(PLUGIN_ID, {
+const globals = readGlobals();
+const pluginApi = globals.Plugin;
+
+pluginApi?.register(PLUGIN_ID, {
   title: 'bbmcp',
   author: 'sigee-min',
   icon: 'extension',
@@ -522,6 +555,7 @@ Notes:
   variant: 'desktop',
   onload() {
     console.log(`[bbmcp] loading... v${PLUGIN_VERSION} schema ${TOOL_SCHEMA_VERSION}`);
+    const blockbench = readGlobals().Blockbench;
     const session = new ProjectSession();
     const logger = new ConsoleLogger(PLUGIN_ID, () => logLevel);
     registerSettings();
@@ -539,7 +573,7 @@ Notes:
       response: 'content' as const
     };
     const capabilities = computeCapabilities(
-      Blockbench?.version,
+      blockbench?.version,
       formats.listFormats(),
       formatOverrides,
       previewCapability
@@ -572,9 +606,10 @@ Notes:
       settings: () => ({ ...serverConfig })
     });
 
-    Blockbench.showQuickMessage('bbmcp v' + PLUGIN_VERSION + ' loaded', 1200);
+    blockbench?.showQuickMessage?.('bbmcp v' + PLUGIN_VERSION + ' loaded', 1200);
   },
   onunload() {
+    const blockbench = readGlobals().Blockbench;
     if (inlineServerStop) {
       inlineServerStop();
       inlineServerStop = null;
@@ -583,9 +618,15 @@ Notes:
       sidecar.stop();
       sidecar = null;
     }
-    Blockbench.showQuickMessage('bbmcp unloaded', 1200);
+    blockbench?.showQuickMessage?.('bbmcp unloaded', 1200);
   }
 });
+
+function isThenable(value: unknown): value is { then: (onFulfilled: (arg: unknown) => unknown) => unknown } {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as { then?: unknown };
+  return typeof candidate.then === 'function';
+}
 
 
 

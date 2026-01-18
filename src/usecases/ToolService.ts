@@ -16,6 +16,7 @@ import { FormatPort } from '../ports/formats';
 import { SnapshotPort } from '../ports/snapshot';
 import { ExportPort } from '../ports/exporter';
 import { buildRigTemplate } from '../templates';
+import { RigTemplateKind } from '../spec';
 import { buildInternalExport } from '../domain/exporters';
 import { validateSnapshot } from '../domain/validation';
 import { ok, fail, UsecaseResult } from './result';
@@ -693,7 +694,7 @@ export class ToolService {
     if (!['empty', 'biped', 'quadruped', 'block_entity'].includes(templateId)) {
       return fail({ code: 'invalid_payload', message: `Unknown template: ${templateId}` });
     }
-    const templateParts = buildRigTemplate(templateId as any, []);
+    const templateParts = buildRigTemplate(templateId as RigTemplateKind, []);
     const cubeParts = templateParts.filter((part) => !isZeroSize(part.size));
     const limitErr = this.ensureCubeLimit(cubeParts.length);
     if (limitErr) return fail(limitErr);
@@ -1295,8 +1296,8 @@ function isZeroSize(size: [number, number, number]) {
 let idCounter = 0;
 
 function createId(prefix: string): string {
-  const cryptoApi = (globalThis as any).crypto;
-  const uuid = cryptoApi?.randomUUID?.();
+  const cryptoApi = globalThis.crypto;
+  const uuid = typeof cryptoApi?.randomUUID === 'function' ? cryptoApi.randomUUID() : undefined;
   if (uuid) return `${prefix}_${uuid}`;
   idCounter += 1;
   return `${prefix}_${Date.now().toString(36)}_${idCounter}`;

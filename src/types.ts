@@ -127,6 +127,7 @@ export interface IncludeDiffOption {
 
 export type ToolName =
   | 'list_capabilities'
+  | 'reload_plugin'
   | 'get_project_state'
   | 'get_project_diff'
   | 'list_projects'
@@ -197,6 +198,7 @@ export interface CreateProjectPayload {
 }
 
 export type ListProjectsPayload = Record<string, never>;
+export type ReloadPluginPayload = Record<string, never>;
 
 export interface ResetProjectPayload {
   includeState?: boolean;
@@ -420,6 +422,7 @@ export interface ValidatePayload {
 
 export interface ToolPayloadMap {
   list_capabilities: Record<string, never>;
+  reload_plugin: ReloadPluginPayload;
   get_project_state: GetProjectStatePayload;
   get_project_diff: GetProjectDiffPayload;
   list_projects: ListProjectsPayload;
@@ -449,6 +452,10 @@ export interface CreateProjectResult {
   id: string;
   format: FormatKind;
   name: string;
+}
+
+export interface ReloadPluginResult {
+  ok: true;
 }
 
 export interface ListProjectsResult {
@@ -510,6 +517,7 @@ export interface ValidateResult {
 
 export interface ToolResultMap {
   list_capabilities: Capabilities;
+  reload_plugin: ReloadPluginResult;
   get_project_state: GetProjectStateResult;
   get_project_diff: GetProjectDiffResult;
   list_projects: ListProjectsResult;

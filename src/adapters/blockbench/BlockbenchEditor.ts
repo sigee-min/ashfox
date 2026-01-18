@@ -19,48 +19,34 @@ import {
 } from '../../ports/editor';
 import { RenderPreviewPayload, RenderPreviewResult, RenderPreviewOutputKind, ToolError, FormatKind } from '../../types';
 import { Logger } from '../../logging';
-
-/* Blockbench globals (provided at runtime). */
-declare const Blockbench: any;
-declare const Texture: any;
-declare const Group: any;
-declare const Cube: any;
-declare const Animator: any;
-declare const Animation: any;
-declare const Outliner: any;
-declare const ModelFormat: any;
-declare const Undo: any;
-declare const Preview: any;
+import {
+  AnimationApi,
+  AnimationClip,
+  AnimatorApi,
+  BlockbenchApi,
+  BlockbenchGlobals,
+  CubeConstructor,
+  CubeInstance,
+  DialogApi,
+  FormatEntry,
+  GroupConstructor,
+  GroupInstance,
+  ModelFormatApi,
+  OutlinerApi,
+  OutlinerNode,
+  PreviewRegistry,
+  UnknownRecord,
+  TextureConstructor,
+  TextureInstance,
+  UndoApi,
+  readBlockbenchGlobals
+} from '../../types/blockbench';
 
 const DEFAULT_TURNTABLE_FPS = 20;
 const DEFAULT_TURNTABLE_SECONDS = 2;
 const DEG_TO_RAD = Math.PI / 180;
 
-type BlockbenchGlobals = {
-  Blockbench?: any;
-  Texture?: any;
-  Group?: any;
-  Cube?: any;
-  Animator?: any;
-  Animation?: any;
-  Outliner?: any;
-  ModelFormat?: any;
-  Undo?: any;
-  Preview?: any;
-};
-
-const readGlobals = (): BlockbenchGlobals => ({
-  Blockbench: (globalThis as any).Blockbench,
-  Texture: (globalThis as any).Texture,
-  Group: (globalThis as any).Group,
-  Cube: (globalThis as any).Cube,
-  Animator: (globalThis as any).Animator,
-  Animation: (globalThis as any).Animation,
-  Outliner: (globalThis as any).Outliner,
-  ModelFormat: (globalThis as any).ModelFormat,
-  Undo: (globalThis as any).Undo,
-  Preview: (globalThis as any).Preview
-});
+const readGlobals = (): BlockbenchGlobals => readBlockbenchGlobals();
 
 type DataUrlInfo = {
   mime: string;
@@ -110,7 +96,7 @@ export class BlockbenchEditor implements EditorPort {
       const blockbench = globals.Blockbench;
       const modelFormat = globals.ModelFormat;
       const resolvedId = String(formatId ?? '');
-      const formats = (globalThis as any).Formats ?? modelFormat?.formats ?? null;
+      const formats = globals.Formats ?? modelFormat?.formats ?? null;
       const hasUnsaved = hasUnsavedChanges(blockbench);
       if (hasUnsaved) {
         if (options?.confirmDiscard === false) {
@@ -693,7 +679,7 @@ export class BlockbenchEditor implements EditorPort {
         }
       };
     }
-    const preview = previewRegistry?.selected ?? previewRegistry?.all?.find?.((p: any) => p?.canvas) ?? null;
+    const preview = previewRegistry?.selected ?? previewRegistry?.all?.find((p) => Boolean(p?.canvas)) ?? null;
     const canvas = (preview?.canvas ??
       preview?.renderer?.domElement ??
       document?.querySelector?.('canvas')) as HTMLCanvasElement | null;
@@ -822,7 +808,7 @@ export class BlockbenchEditor implements EditorPort {
 
   writeFile(path: string, contents: string): ToolError | null {
     try {
-      const blockbench = (globalThis as any).Blockbench;
+      const blockbench = readGlobals().Blockbench;
       if (!blockbench?.writeFile) {
         return { code: 'not_implemented', message: 'Blockbench.writeFile not available' };
       }
@@ -837,9 +823,8 @@ export class BlockbenchEditor implements EditorPort {
 
   listTextures(): TextureStat[] {
     const { Texture: TextureCtor } = readGlobals();
-    const textures = TextureCtor?.all ?? [];
-    if (!Array.isArray(textures)) return [];
-    return textures.map((tex: any) => ({
+    const textures = Array.isArray(TextureCtor?.all) ? TextureCtor.all : [];
+    return textures.map((tex) => ({
       id: readTextureId(tex),
       name: tex?.name ?? tex?.id ?? 'texture',
       width: tex?.width ?? tex?.img?.naturalWidth ?? 0,
@@ -848,15 +833,14 @@ export class BlockbenchEditor implements EditorPort {
     }));
   }
 
-  private findGroup(name?: string): any {
-    const outliner = (globalThis as any).Outliner;
+  private findGroup(name?: string): GroupInstance | null {
+    const outliner = readGlobals().Outliner;
     if (!name) return null;
-    const toArray = (value: any): any[] => {
+    const toArray = (value: OutlinerNode[] | OutlinerNode | null | undefined): OutlinerNode[] => {
       if (!value) return [];
-      if (Array.isArray(value)) return value;
-      return [value];
+      return Array.isArray(value) ? value : [value];
     };
-    const search = (nodes: any): any | null => {
+    const search = (nodes: OutlinerNode[] | OutlinerNode | null | undefined): GroupInstance | null => {
       for (const n of toArray(nodes)) {
         if (n?.name === name && isGroupNode(n)) return n;
         const children = Array.isArray(n?.children) ? n.children : [];
@@ -870,7 +854,7 @@ export class BlockbenchEditor implements EditorPort {
     return search(outliner?.root ?? []);
   }
 
-  private findGroupRef(name?: string, id?: string): any {
+  private findGroupRef(name?: string, id?: string): GroupInstance | null {
     if (id) {
       const byId = this.findOutlinerNode((node) => isGroupNode(node) && readNodeId(node) === id);
       if (byId) return byId;
@@ -879,15 +863,14 @@ export class BlockbenchEditor implements EditorPort {
     return null;
   }
 
-  private findCube(name?: string): any {
-    const outliner = (globalThis as any).Outliner;
+  private findCube(name?: string): CubeInstance | null {
+    const outliner = readGlobals().Outliner;
     if (!name) return null;
-    const toArray = (value: any): any[] => {
+    const toArray = (value: OutlinerNode[] | OutlinerNode | null | undefined): OutlinerNode[] => {
       if (!value) return [];
-      if (Array.isArray(value)) return value;
-      return [value];
+      return Array.isArray(value) ? value : [value];
     };
-    const search = (nodes: any): any | null => {
+    const search = (nodes: OutlinerNode[] | OutlinerNode | null | undefined): CubeInstance | null => {
       for (const n of toArray(nodes)) {
         if (n?.name === name && isCubeNode(n)) return n;
         const children = Array.isArray(n?.children) ? n.children : [];
@@ -901,7 +884,7 @@ export class BlockbenchEditor implements EditorPort {
     return search(outliner?.root ?? []);
   }
 
-  private findCubeRef(name?: string, id?: string): any {
+  private findCubeRef(name?: string, id?: string): CubeInstance | null {
     if (id) {
       const byId = this.findOutlinerNode((node) => isCubeNode(node) && readNodeId(node) === id);
       if (byId) return byId;
@@ -910,19 +893,18 @@ export class BlockbenchEditor implements EditorPort {
     return null;
   }
 
-  private findTextureRef(name?: string, id?: string): any {
+  private findTextureRef(name?: string, id?: string): TextureInstance | null {
     const { Texture: TextureCtor } = readGlobals();
-    const textures = TextureCtor?.all ?? [];
-    if (!Array.isArray(textures)) return null;
+    const textures = Array.isArray(TextureCtor?.all) ? TextureCtor.all : [];
     if (id) {
-      const byId = textures.find((tex: any) => readTextureId(tex) === id);
+      const byId = textures.find((tex) => readTextureId(tex) === id);
       if (byId) return byId;
     }
-    if (name) return textures.find((tex: any) => tex?.name === name || tex?.id === name) ?? null;
+    if (name) return textures.find((tex) => tex?.name === name || tex?.id === name) ?? null;
     return null;
   }
 
-  private findAnimationRef(name?: string, id?: string, list?: any[]): any {
+  private findAnimationRef(name?: string, id?: string, list?: AnimationClip[]): AnimationClip | null {
     const animations = list ?? getAnimations();
     if (id) {
       const byId = animations.find((anim) => readAnimationId(anim) === id);
@@ -932,14 +914,13 @@ export class BlockbenchEditor implements EditorPort {
     return null;
   }
 
-  private findOutlinerNode(match: (node: any) => boolean): any {
-    const outliner = (globalThis as any).Outliner;
-    const toArray = (value: any): any[] => {
+  private findOutlinerNode(match: (node: OutlinerNode) => boolean): OutlinerNode | null {
+    const outliner = readGlobals().Outliner;
+    const toArray = (value: OutlinerNode[] | OutlinerNode | null | undefined): OutlinerNode[] => {
       if (!value) return [];
-      if (Array.isArray(value)) return value;
-      return [value];
+      return Array.isArray(value) ? value : [value];
     };
-    const search = (nodes: any): any | null => {
+    const search = (nodes: OutlinerNode[] | OutlinerNode | null | undefined): OutlinerNode | null => {
       for (const n of toArray(nodes)) {
         if (match(n)) return n;
         const children = Array.isArray(n?.children) ? n.children : [];
@@ -953,7 +934,7 @@ export class BlockbenchEditor implements EditorPort {
     return search(outliner?.root ?? []);
   }
 
-  private withUndo(aspects: any, editName: string, fn: () => void) {
+  private withUndo(aspects: UnknownRecord, editName: string, fn: () => void) {
     const globals = readGlobals();
     const blockbench = globals.Blockbench;
     const undo = globals.Undo;
@@ -971,13 +952,36 @@ export class BlockbenchEditor implements EditorPort {
   }
 }
 
-function getAnimations(): any[] {
-  const global = globalThis as any;
-  const animationGlobal = (globalThis as any).Animation;
-  if (Array.isArray(global.Animations)) return global.Animations;
+function getAnimations(): AnimationClip[] {
+  const globals = readGlobals();
+  const animationGlobal = globals.Animation;
+  if (Array.isArray(globals.Animations)) return globals.Animations;
   if (Array.isArray(animationGlobal?.all)) return animationGlobal.all;
   return [];
 }
+
+type CameraLike = {
+  position?: { x: number; y: number; z: number; set?: (x: number, y: number, z: number) => void };
+  quaternion?: {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    set?: (x: number, y: number, z: number, w: number) => void;
+    setFromAxisAngle?: (axis: { x: number; y: number; z: number }, radians: number) => void;
+  };
+  rotation?: { z: number };
+  zoom?: number;
+  updateProjectionMatrix?: () => void;
+  rotateZ?: (radians: number) => void;
+};
+
+type ControlsLike = {
+  target?: { x: number; y: number; z: number; set?: (x: number, y: number, z: number) => void };
+  rotateUp?: (radians: number) => void;
+  rotateLeft?: (radians: number) => void;
+  update?: () => void;
+};
 
 type CameraSnapshot = {
   position: { x: number; y: number; z: number } | null;
@@ -986,7 +990,7 @@ type CameraSnapshot = {
   zoom: number | null;
 };
 
-function snapshotCamera(camera: any, controls: any): CameraSnapshot {
+function snapshotCamera(camera: CameraLike | null, controls: ControlsLike | null): CameraSnapshot {
   return {
     position: camera?.position
       ? { x: camera.position.x, y: camera.position.y, z: camera.position.z }
@@ -999,7 +1003,7 @@ function snapshotCamera(camera: any, controls: any): CameraSnapshot {
   };
 }
 
-function restoreCamera(camera: any, controls: any, state: CameraSnapshot) {
+function restoreCamera(camera: CameraLike | null, controls: ControlsLike | null, state: CameraSnapshot) {
   if (camera?.position && state.position) {
     if (typeof camera.position.set === 'function') {
       camera.position.set(state.position.x, state.position.y, state.position.z);
@@ -1040,20 +1044,22 @@ type AnimationSnapshot = {
 };
 
 function snapshotAnimation(): AnimationSnapshot {
-  const animationGlobal = (globalThis as any).Animation;
-  const selected = animationGlobal?.selected ?? (globalThis as any)?.Animation?.selected;
+  const globals = readGlobals();
+  const animationGlobal = globals.Animation;
+  const selected = animationGlobal?.selected ?? globals.Animation?.selected;
   const selectedName = selected?.name ?? null;
   const timeSeconds =
     typeof selected?.time === 'number'
       ? selected.time
-      : typeof (globalThis as any)?.Animator?.time === 'number'
-        ? (globalThis as any).Animator.time
+      : typeof globals.Animator?.time === 'number'
+        ? globals.Animator.time
         : null;
   return { selectedName, timeSeconds };
 }
 
 function applyAnimationState(clipName: string | undefined, timeSeconds: number): { ok: true } | { ok: false; error: ToolError } {
   if (!clipName) return { ok: true };
+  const globals = readGlobals();
   const animations = getAnimations();
   const clip = animations.find((a) => a.name === clipName);
   if (!clip) {
@@ -1063,16 +1069,16 @@ function applyAnimationState(clipName: string | undefined, timeSeconds: number):
   const clampedTime = Number.isFinite(maxTime) && maxTime > 0 ? Math.min(Math.max(timeSeconds, 0), maxTime) : timeSeconds;
   if (typeof clip.select === 'function') {
     clip.select();
-  } else if ((globalThis as any).Animation?.selected) {
-    (globalThis as any).Animation.selected = clip;
+  } else if (globals.Animation?.selected) {
+    globals.Animation.selected = clip;
   }
   if (Number.isFinite(clampedTime)) {
     if (typeof clip.setTime === 'function') {
       clip.setTime(clampedTime);
-    } else if (typeof (globalThis as any).Animator?.setTime === 'function') {
-      (globalThis as any).Animator.setTime(clampedTime);
-    } else if (typeof (globalThis as any).Animator?.preview === 'function') {
-      (globalThis as any).Animator.preview(clampedTime);
+    } else if (typeof globals.Animator?.setTime === 'function') {
+      globals.Animator.setTime(clampedTime);
+    } else if (typeof globals.Animator?.preview === 'function') {
+      globals.Animator.preview(clampedTime);
     } else if (typeof clip.time === 'number') {
       clip.time = clampedTime;
     }
@@ -1082,28 +1088,29 @@ function applyAnimationState(clipName: string | undefined, timeSeconds: number):
 
 function restoreAnimation(snapshot: AnimationSnapshot) {
   if (!snapshot.selectedName) return;
+  const globals = readGlobals();
   const animations = getAnimations();
   const clip = animations.find((a) => a.name === snapshot.selectedName);
   if (!clip) return;
   if (typeof clip.select === 'function') {
     clip.select();
-  } else if ((globalThis as any).Animation?.selected) {
-    (globalThis as any).Animation.selected = clip;
+  } else if (globals.Animation?.selected) {
+    globals.Animation.selected = clip;
   }
   if (typeof snapshot.timeSeconds === 'number') {
     if (typeof clip.setTime === 'function') {
       clip.setTime(snapshot.timeSeconds);
-    } else if (typeof (globalThis as any).Animator?.setTime === 'function') {
-      (globalThis as any).Animator.setTime(snapshot.timeSeconds);
-    } else if (typeof (globalThis as any).Animator?.preview === 'function') {
-      (globalThis as any).Animator.preview(snapshot.timeSeconds);
+    } else if (typeof globals.Animator?.setTime === 'function') {
+      globals.Animator.setTime(snapshot.timeSeconds);
+    } else if (typeof globals.Animator?.preview === 'function') {
+      globals.Animator.preview(snapshot.timeSeconds);
     } else if (typeof clip.time === 'number') {
       clip.time = snapshot.timeSeconds;
     }
   }
 }
 
-function applyRoll(camera: any, radians: number) {
+function applyRoll(camera: CameraLike | null, radians: number) {
   if (!camera) return;
   if (typeof camera.rotateZ === 'function') {
     camera.rotateZ(radians);
@@ -1126,7 +1133,7 @@ const normalizeAngle = (angle: [number, number] | [number, number, number]): Ang
   return [pitch, yaw, roll ?? 0];
 };
 
-const applyAngle = (controls: any, camera: any, angle: AngleTuple) => {
+const applyAngle = (controls: ControlsLike | null, camera: CameraLike | null, angle: AngleTuple) => {
   if (!controls) return;
   const [pitch, yaw, roll] = angle;
   if (Number.isFinite(pitch)) controls.rotateUp?.(pitch * DEG_TO_RAD);
@@ -1134,8 +1141,7 @@ const applyAngle = (controls: any, camera: any, angle: AngleTuple) => {
   if (Number.isFinite(roll)) applyRoll(camera, roll * DEG_TO_RAD);
 };
 
-function normalizeEditAspects(aspects: any) {
-  if (!aspects || typeof aspects !== 'object') return aspects;
+function normalizeEditAspects(aspects: UnknownRecord) {
   const normalized = { ...aspects };
   const arrayKeys = ['elements', 'outliner', 'textures', 'animations', 'keyframes'];
   arrayKeys.forEach((key) => {
@@ -1144,43 +1150,40 @@ function normalizeEditAspects(aspects: any) {
   return normalized;
 }
 
-function isGroupNode(node: any): boolean {
-  if (!node) return false;
-  const groupCtor = (globalThis as any).Group;
+function isGroupNode(node: OutlinerNode): node is GroupInstance {
+  const groupCtor = readGlobals().Group;
   if (groupCtor && node instanceof groupCtor) return true;
   return Array.isArray(node.children);
 }
 
-function isCubeNode(node: any): boolean {
-  if (!node) return false;
-  const cubeCtor = (globalThis as any).Cube;
+function isCubeNode(node: OutlinerNode): node is CubeInstance {
+  const cubeCtor = readGlobals().Cube;
   if (cubeCtor && node instanceof cubeCtor) return true;
   return node.from !== undefined && node.to !== undefined;
 }
 
-function readNodeId(node: any): string | null {
+function readNodeId(node: OutlinerNode): string | null {
   if (!node) return null;
   const raw = node.bbmcpId ?? node.uuid ?? node.id ?? node.uid ?? node._uuid ?? null;
   return raw ? String(raw) : null;
 }
 
-function readTextureId(tex: any): string | null {
+function readTextureId(tex: TextureInstance): string | null {
   if (!tex) return null;
   const raw = tex.bbmcpId ?? tex.uuid ?? tex.id ?? tex.uid ?? tex._uuid ?? null;
   return raw ? String(raw) : null;
 }
 
-function readAnimationId(anim: any): string | null {
+function readAnimationId(anim: AnimationClip): string | null {
   if (!anim) return null;
   const raw = anim.bbmcpId ?? anim.uuid ?? anim.id ?? anim.uid ?? anim._uuid ?? null;
   return raw ? String(raw) : null;
 }
 
-function assignVec3(target: any, key: string, value: [number, number, number]) {
-  if (!target) return;
+function assignVec3(target: UnknownRecord, key: string, value: [number, number, number]) {
   const current = target[key];
-  if (current && typeof current.set === 'function') {
-    current.set(value[0], value[1], value[2]);
+  if (current && typeof (current as { set?: (x: number, y: number, z: number) => void }).set === 'function') {
+    (current as { set: (x: number, y: number, z: number) => void }).set(value[0], value[1], value[2]);
     return;
   }
   if (Array.isArray(current)) {
@@ -1188,19 +1191,19 @@ function assignVec3(target: any, key: string, value: [number, number, number]) {
     return;
   }
   if (current && typeof current === 'object') {
-    current.x = value[0];
-    current.y = value[1];
-    current.z = value[2];
+    const vec = current as { x?: number; y?: number; z?: number };
+    vec.x = value[0];
+    vec.y = value[1];
+    vec.z = value[2];
     return;
   }
   target[key] = [...value];
 }
 
-function assignVec2(target: any, key: string, value: [number, number]) {
-  if (!target) return;
+function assignVec2(target: UnknownRecord, key: string, value: [number, number]) {
   const current = target[key];
-  if (current && typeof current.set === 'function') {
-    current.set(value[0], value[1]);
+  if (current && typeof (current as { set?: (x: number, y: number) => void }).set === 'function') {
+    (current as { set: (x: number, y: number) => void }).set(value[0], value[1]);
     return;
   }
   if (Array.isArray(current)) {
@@ -1208,15 +1211,15 @@ function assignVec2(target: any, key: string, value: [number, number]) {
     return;
   }
   if (current && typeof current === 'object') {
-    current.x = value[0];
-    current.y = value[1];
+    const vec = current as { x?: number; y?: number };
+    vec.x = value[0];
+    vec.y = value[1];
     return;
   }
   target[key] = [...value];
 }
 
-function assignAnimationLength(target: any, value: number) {
-  if (!target) return;
+function assignAnimationLength(target: AnimationClip, value: number) {
   if (typeof target.length === 'number') {
     target.length = value;
   }
@@ -1228,7 +1231,7 @@ function assignAnimationLength(target: any, value: number) {
   }
 }
 
-function getTextureDataUri(tex: any): string | null {
+function getTextureDataUri(tex: TextureInstance): string | null {
   if (!tex) return null;
   if (typeof tex.getDataUrl === 'function') {
     return tex.getDataUrl();
@@ -1244,7 +1247,7 @@ function getTextureDataUri(tex: any): string | null {
     return canvas.toDataURL('image/png');
   }
   const img = tex.img;
-  const doc = (globalThis as any).document;
+  const doc = readGlobals().document;
   if (img && doc?.createElement) {
     const temp = doc.createElement('canvas') as HTMLCanvasElement | null;
     if (!temp) return null;
@@ -1261,7 +1264,13 @@ function getTextureDataUri(tex: any): string | null {
   return null;
 }
 
-function moveOutlinerNode(node: any, parent: any, outliner: any, log: Logger, kind: 'bone' | 'cube'): boolean {
+function moveOutlinerNode(
+  node: OutlinerNode | null,
+  parent: OutlinerNode | null,
+  outliner: OutlinerApi | undefined,
+  log: Logger,
+  kind: 'bone' | 'cube'
+): boolean {
   if (!node) return false;
   if (parent === node) return false;
   const currentParent = node.parent ?? null;
@@ -1270,7 +1279,7 @@ function moveOutlinerNode(node: any, parent: any, outliner: any, log: Logger, ki
   return attachToOutliner(parent, outliner, node, log, kind);
 }
 
-function removeOutlinerNode(node: any, outliner: any): boolean {
+function removeOutlinerNode(node: OutlinerNode | null, outliner: OutlinerApi | undefined): boolean {
   if (!node) return false;
   if (typeof node.remove === 'function') {
     node.remove();
@@ -1283,7 +1292,7 @@ function removeOutlinerNode(node: any, outliner: any): boolean {
   return detachFromOutliner(node, outliner);
 }
 
-function detachFromOutliner(node: any, outliner: any): boolean {
+function detachFromOutliner(node: OutlinerNode | null, outliner: OutlinerApi | undefined): boolean {
   if (!node) return false;
   const parent = node.parent ?? null;
   const removed =
@@ -1296,7 +1305,7 @@ function detachFromOutliner(node: any, outliner: any): boolean {
   return removed;
 }
 
-function removeNodeFromCollection(collection: any, node: any): boolean {
+function removeNodeFromCollection(collection: OutlinerNode[] | undefined, node: OutlinerNode): boolean {
   if (!Array.isArray(collection)) return false;
   const idx = collection.indexOf(node);
   if (idx < 0) return false;
@@ -1304,7 +1313,7 @@ function removeNodeFromCollection(collection: any, node: any): boolean {
   return true;
 }
 
-function normalizeParent(parent: any) {
+function normalizeParent(parent: OutlinerNode | null | undefined): OutlinerNode | null {
   if (!parent) return null;
   if (Array.isArray(parent.children)) return parent;
   if (parent.children === undefined) {
@@ -1315,9 +1324,9 @@ function normalizeParent(parent: any) {
 }
 
 function attachToOutliner(
-  parent: any,
-  outliner: any,
-  node: any,
+  parent: OutlinerNode | null,
+  outliner: OutlinerApi | undefined,
+  node: OutlinerNode,
   log: Logger,
   kind: 'bone' | 'cube'
 ): boolean {
@@ -1350,25 +1359,25 @@ function attachToOutliner(
   return false;
 }
 
-function isNodeInParent(parent: any, node: any): boolean {
+function isNodeInParent(parent: OutlinerNode | null, node: OutlinerNode | null): boolean {
   if (!parent || !node) return false;
   return Array.isArray(parent.children) && parent.children.includes(node);
 }
 
-function isNodeInOutlinerRoot(outliner: any, node: any): boolean {
+function isNodeInOutlinerRoot(outliner: OutlinerApi | undefined, node: OutlinerNode | null): boolean {
   if (!outliner || !node) return false;
   const root = outliner.root;
   if (Array.isArray(root) && root.includes(node)) return true;
   return Array.isArray(root?.children) && root.children.includes(node);
 }
 
-function hasUnsavedChanges(blockbench: any): boolean {
+function hasUnsavedChanges(blockbench: BlockbenchApi | undefined): boolean {
   try {
     if (typeof blockbench?.hasUnsavedChanges === 'function') {
       const result = blockbench.hasUnsavedChanges();
       if (typeof result === 'boolean') return result;
     }
-    const project = blockbench?.project ?? (globalThis as any).Project ?? null;
+    const project = blockbench?.project ?? readGlobals().Project ?? null;
     if (project) {
       if (typeof project.saved === 'boolean') return !project.saved;
       if (typeof project.isSaved === 'boolean') return !project.isSaved;
@@ -1385,9 +1394,9 @@ function hasUnsavedChanges(blockbench: any): boolean {
   return false;
 }
 
-function markProjectSaved(blockbench: any): void {
+function markProjectSaved(blockbench: BlockbenchApi | undefined): void {
   try {
-    const project = blockbench?.project ?? (globalThis as any).Project ?? null;
+    const project = blockbench?.project ?? readGlobals().Project ?? null;
     if (!project) return;
     if (typeof project.markSaved === 'function') {
       project.markSaved();
@@ -1406,7 +1415,7 @@ function tryAutoConfirmProjectDialog(
   projectName: string,
   options?: { dialog?: Record<string, unknown>; confirmDialog?: boolean }
 ): { ok: true } | { ok: false; error: ToolError } {
-  const dialogApi = (globalThis as any).Dialog;
+  const dialogApi = readGlobals().Dialog;
   const dialog = dialogApi?.open;
   if (!dialog || typeof dialog.getFormResult !== 'function') {
     return { ok: true };
