@@ -43,16 +43,8 @@ export interface AnimationSpec {
   channels: AnimChannel[];
 }
 
-export interface TextureImportSpec {
-  id?: string;
-  name: string;
-  dataUri?: string;
-  path?: string;
-}
-
 export interface ApplyModelSpecPayload {
   model: ModelSpec;
-  textures?: TextureImportSpec[];
   includeState?: boolean;
   includeDiff?: boolean;
   diffDetail?: ProjectStateDetail;
@@ -65,11 +57,11 @@ export interface TextureSpec {
   targetId?: string;
   targetName?: string;
   name?: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   background?: string;
   useExisting?: boolean;
-  ops: TextureOp[];
+  ops?: TextureOp[];
 }
 
 export type TextureOp =
@@ -96,7 +88,6 @@ export interface ApplyAnimSpecPayload {
 
 export interface ApplyProjectSpecPayload {
   model?: ModelSpec;
-  imports?: TextureImportSpec[];
   textures?: TextureSpec[];
   animation?: AnimationSpec;
   projectMode?: 'auto' | 'reuse' | 'create';
@@ -113,3 +104,4 @@ export type ProxyTool =
   | 'apply_project_spec'
   | 'render_preview'
   | 'validate';
+

@@ -6,6 +6,7 @@ import {
   AnimInterp,
   TextureOp
 } from '../spec';
+import { resolveTextureSpecSize } from './texture';
 import { Limits, ToolResponse } from '../types';
 import { buildRigTemplate } from '../templates';
 import { isZeroSize } from '../domain/geometry';
@@ -50,23 +51,16 @@ export const validateModelSpec = (payload: ApplyModelSpecPayload, limits: Limits
 export const validateProjectSpec = (payload: ApplyProjectSpecPayload, limits: Limits): ToolResponse<unknown> => {
   if (!payload) return err('invalid_payload', 'payload is required');
   const hasModel = Boolean(payload.model);
-  const hasImports = Array.isArray(payload.imports) && payload.imports.length > 0;
   const hasTextures = Array.isArray(payload.textures) && payload.textures.length > 0;
   const hasAnimation = Boolean(payload.animation);
-  if (!hasModel && !hasImports && !hasTextures && !hasAnimation) {
-    return err('invalid_payload', 'model, imports, textures, or animation is required');
+  if (!hasModel && !hasTextures && !hasAnimation) {
+    return err('invalid_payload', 'model, textures, or animation is required');
   }
   if (payload.projectMode && !['auto', 'reuse', 'create'].includes(payload.projectMode)) {
     return err('invalid_payload', `invalid projectMode: ${payload.projectMode}`);
   }
   if (!hasModel && payload.projectMode === 'create') {
     return err('invalid_payload', 'projectMode=create requires model');
-  }
-  if (payload.imports && !Array.isArray(payload.imports)) {
-    return err('invalid_payload', 'imports must be an array');
-  }
-  for (const tex of payload.imports ?? []) {
-    if (!tex?.name) return err('invalid_payload', 'import texture name is required');
   }
   if (payload.model) {
     const res = validateModelSpec({ model: payload.model } as ApplyModelSpecPayload, limits);
@@ -122,21 +116,19 @@ export const validateTextureSpec = (payload: ApplyTextureSpecPayload, limits: Li
     if (mode === 'update' && !tex?.targetId && !tex?.targetName) {
       return err('invalid_payload', `targetId or targetName is required (${label})`);
     }
-    if (!Number.isFinite(tex.width) || tex.width <= 0) {
+    const size = resolveTextureSpecSize(tex);
+    if (!Number.isFinite(size.width) || size.width <= 0) {
       return err('invalid_payload', `texture width must be > 0 (${label})`);
     }
-    if (!Number.isFinite(tex.height) || tex.height <= 0) {
+    if (!Number.isFinite(size.height) || size.height <= 0) {
       return err('invalid_payload', `texture height must be > 0 (${label})`);
     }
-    if (Number.isFinite(tex.width) && Number.isFinite(tex.height)) {
-      if (tex.width > limits.maxTextureSize || tex.height > limits.maxTextureSize) {
+    if (Number.isFinite(size.width) && Number.isFinite(size.height)) {
+      if (size.width > limits.maxTextureSize || size.height > limits.maxTextureSize) {
         return err('invalid_payload', `texture size exceeds max ${limits.maxTextureSize} (${label})`);
       }
     }
-    if (!Array.isArray(tex.ops) || tex.ops.length === 0) {
-      return err('invalid_payload', `texture ops must be a non-empty array (${label})`);
-    }
-    const ops = tex.ops;
+    const ops = Array.isArray(tex.ops) ? tex.ops : [];
     if (ops.length > MAX_TEX_OPS) {
       return err('invalid_payload', `too many texture ops (>${MAX_TEX_OPS}) (${label})`);
     }

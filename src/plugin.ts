@@ -537,7 +537,7 @@ pluginApi?.register(PLUGIN_ID, {
 bbmcp exposes a clean MCP-facing tool surface for AI/agents:
 
 - High-level spec proxy: validate and normalize model/animation specs before applying.
-- Low-level tools: create/import textures, add bones/cubes, create animation clips, set keyframes, export, preview, validate.
+- Low-level tools: create/update textures via ops, add bones/cubes, create animation clips, set keyframes, export, preview, validate.
 - Formats: vanilla enabled by default; GeckoLib/Animated Java gated by capability flags.
 - MCP endpoint: configurable host/port/path via Settings or the Help menu action "bbmcp: set MCP endpoint".
 - Dev workflow: esbuild watch + Plugins.devReload, debug menu actions for capabilities/state logging.

@@ -89,7 +89,6 @@ const metaProps: Record<string, JsonSchema> = {
 
 const toolSchemas: Record<string, JsonSchema> = {
   list_capabilities: emptyObject,
-  reload_plugin: emptyObject,
   get_project_state: {
     type: 'object',
     additionalProperties: false,
@@ -113,6 +112,7 @@ const toolSchemas: Record<string, JsonSchema> = {
     properties: {
       width: { type: 'number' },
       height: { type: 'number' },
+      modifyUv: { type: 'boolean' },
       ifRevision: { type: 'string' },
       ...metaProps
     }
@@ -152,32 +152,6 @@ const toolSchemas: Record<string, JsonSchema> = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  import_texture: {
-    type: 'object',
-    required: ['name'],
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      dataUri: { type: 'string' },
-      path: { type: 'string' },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  update_texture: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      newName: { type: 'string' },
-      dataUri: { type: 'string' },
-      path: { type: 'string' },
       ifRevision: { type: 'string' },
       ...metaProps
     }
@@ -420,21 +394,7 @@ const toolSchemas: Record<string, JsonSchema> = {
     properties: {
       model: modelSpecSchema,
       ifRevision: { type: 'string' },
-      ...metaProps,
-      textures: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['name'],
-          additionalProperties: false,
-          properties: {
-            id: { type: 'string' },
-            name: { type: 'string' },
-            dataUri: { type: 'string' },
-            path: { type: 'string' }
-          }
-        }
-      }
+      ...metaProps
     }
   },
   apply_texture_spec: {
@@ -447,7 +407,7 @@ const toolSchemas: Record<string, JsonSchema> = {
         minItems: 1,
         items: {
           type: 'object',
-          required: ['width', 'height', 'ops'],
+          required: ['width', 'height'],
           additionalProperties: false,
           properties: {
             mode: { type: 'string', enum: ['create', 'update'] },
@@ -461,7 +421,6 @@ const toolSchemas: Record<string, JsonSchema> = {
             useExisting: { type: 'boolean' },
             ops: {
               type: 'array',
-              minItems: 1,
               items: textureOpSchema
             }
           }
@@ -486,26 +445,12 @@ const toolSchemas: Record<string, JsonSchema> = {
     additionalProperties: false,
     properties: {
       model: modelSpecSchema,
-      imports: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['name'],
-          additionalProperties: false,
-          properties: {
-            id: { type: 'string' },
-            name: { type: 'string' },
-            dataUri: { type: 'string' },
-            path: { type: 'string' }
-          }
-        }
-      },
       textures: {
         type: 'array',
         minItems: 1,
         items: {
           type: 'object',
-          required: ['width', 'height', 'ops'],
+          required: ['width', 'height'],
           additionalProperties: false,
           properties: {
             mode: { type: 'string', enum: ['create', 'update'] },
@@ -519,7 +464,6 @@ const toolSchemas: Record<string, JsonSchema> = {
             useExisting: { type: 'boolean' },
             ops: {
               type: 'array',
-              minItems: 1,
               items: textureOpSchema
             }
           }
@@ -541,13 +485,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: toolSchemas.list_capabilities
   },
   {
-    name: 'reload_plugin',
-    title: 'Reload Plugin',
-    description:
-      'Reloads the bbmcp plugin (dev mode only). This resets tool links and restarts the MCP server.',
-    inputSchema: toolSchemas.reload_plugin
-  },
-  {
     name: 'get_project_state',
     title: 'Get Project State',
     description:
@@ -560,13 +497,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description: 'Returns a diff from a prior revision to the current project state.',
     inputSchema: toolSchemas.get_project_diff
   },
-  {
-    name: 'set_project_texture_resolution',
-    title: 'Set Project Texture Resolution',
-    description:
-      'Sets the project texture resolution (width/height). Requires ifRevision; call get_project_state first. This does not resize existing textures; use it before creating textures. Choose a size that fits your manual UV layout; for box-style layouts, use width >= 2*(w+d), height >= 2*(h+d), then round up to 32/64/128.',
-    inputSchema: toolSchemas.set_project_texture_resolution
-  },
+    {
+      name: 'set_project_texture_resolution',
+      title: 'Set Project Texture Resolution',
+      description:
+        'Sets the project texture resolution (width/height). Requires ifRevision; call get_project_state first. Set modifyUv=true to scale existing UVs to the new resolution (if supported). This does not resize existing textures; use it before creating textures. If UVs exceed the current resolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material.',
+      inputSchema: toolSchemas.set_project_texture_resolution
+    },
   {
     name: 'get_texture_usage',
     title: 'Get Texture Usage',
@@ -600,20 +537,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: toolSchemas.reset_project
   },
   {
-    name: 'import_texture',
-    title: 'Import Texture',
-    description:
-      'Imports a texture from a file path or data URI. Requires ifRevision; call get_project_state first. This does not bind the texture to cubes; call assign_texture to apply it.',
-    inputSchema: toolSchemas.import_texture
-  },
-  {
-    name: 'update_texture',
-    title: 'Update Texture',
-    description:
-      'Updates a texture by id or name. Requires ifRevision; call get_project_state first. This does not bind the texture to cubes; call assign_texture to apply it.',
-    inputSchema: toolSchemas.update_texture
-  },
-  {
     name: 'delete_texture',
     title: 'Delete Texture',
     description: 'Deletes a texture by id or name. Requires ifRevision; call get_project_state first.',
@@ -623,14 +546,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'assign_texture',
     title: 'Assign Texture',
     description:
-      'Assigns a texture to cubes/faces without changing UVs. Requires ifRevision; call get_project_state first. Use this after import/update/apply_texture_spec. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability.',
+      'Assigns a texture to cubes/faces without changing UVs (forces per-face UV mode; auto UV disabled). Requires ifRevision; call get_project_state first. Use this after apply_texture_spec. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability. If UVs exceed the current textureResolution, increase it or split textures per material.',
     inputSchema: toolSchemas.assign_texture
   },
   {
     name: 'set_face_uv',
     title: 'Set Face UV',
     description:
-      'Sets per-face UVs for a cube without auto-UV. Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and should fit within the project textureResolution.',
+      'Sets per-face UVs for a cube (manual UV only; auto UV disabled). Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and must fit within the project textureResolution; if they exceed it, increase resolution or split textures.',
     inputSchema: toolSchemas.set_face_uv
   },
   {
@@ -724,14 +647,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'apply_model_spec',
     title: 'Apply Model Spec',
     description:
-      'Applies a structured model specification. Requires ifRevision; call get_project_state first. Texture imports only create textures; call assign_texture to bind them to cubes.',
+      'Applies a structured model specification. Requires ifRevision; call get_project_state first. Textures are handled separately via apply_texture_spec + assign_texture.',
     inputSchema: toolSchemas.apply_model_spec
   },
   {
     name: 'apply_texture_spec',
     title: 'Apply Texture Spec',
     description:
-      'Applies a structured texture specification (ops-only). Requires ifRevision; returns no_change when no pixels change. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. Choose width/height to fit the UV layout; for box-style layouts use width >= 2*(w+d), height >= 2*(h+d), then round up to 32/64/128. If you change texture size, consider set_project_texture_resolution first.',
+      'Applies a structured texture specification. Requires ifRevision; returns no_change when no pixels change. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. width/height are required and must match the intended project textureResolution. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. If UVs exceed the current textureResolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material. Use set_project_texture_resolution before creating textures when increasing size. ops are optional; omit ops to create a blank texture (background can still fill).',
     inputSchema: toolSchemas.apply_texture_spec
   },
   {
@@ -744,7 +667,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'apply_project_spec',
     title: 'Apply Project Spec',
     description:
-      'Applies a combined model, texture, and animation specification (textures are ops-only). Requires ifRevision; call get_project_state first. Call assign_texture after texture steps to apply them to cubes.',
+      'Applies a combined model, texture, and animation specification. Requires ifRevision; call get_project_state first. Textures use ops-only (omit ops for blank); call assign_texture after texture steps to apply them to cubes.',
     inputSchema: toolSchemas.apply_project_spec
   }
 ];

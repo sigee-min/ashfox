@@ -20,7 +20,7 @@ Define the final texture pipeline for bbmcp, grounded in Blockbench texture API/
 - Blockbench desktop with DOM/Canvas available.
 - All mutating calls require `ifRevision`.
 - `limits.maxTextureSize` is enforced.
-- Textures are created from data URIs or in-memory canvas rendering.
+- Textures are created in-memory from ops and rendered to data URIs internally.
 - Preview and texture editing must not rely on filesystem writes.
 
 ## Blockbench API/UX Baseline (Source of Truth)
@@ -35,7 +35,7 @@ These API signatures are visible in the official `blockbench-types` package and 
 
 ### UX Implications
 - Canvas-based edits are the default UX path and align with deterministic ops.
-- Data URI is the canonical import/update path that avoids filesystem access.
+- Data URIs are an internal transport for apply_texture_spec (not a public tool input).
 - Edits should be wrapped in undo/redo boundaries consistent with Blockbench UX.
 
 ## LLM Strategy Rationale (Research-Backed)
@@ -56,7 +56,7 @@ The pipeline is designed around evidence from tool-using LLM studies:
 1) Validate payload and enforce limits.  
 2) Resolve base texture (optional) for update/patch flows.  
 3) Render data URI via in-memory canvas and atomic ops.  
-4) Import or update texture through Blockbench API.  
+4) Create/update texture through Blockbench API (internal).  
 5) Bind textures to cubes explicitly via `assign_texture` (separate tool).  
 6) Apply per-face UVs with `set_face_uv` (manual UV only).  
 7) Refresh snapshot, compute revision and diff.  
@@ -74,7 +74,7 @@ The pipeline is designed around evidence from tool-using LLM studies:
 ### Stage B: Apply (Ops Only)
 - Create:
   - Render data URI via canvas.
-  - Import using `Texture.fromDataURL()` + `Texture.add()`.
+  - Create using `Texture.fromDataURL()` + `Texture.add()`.
 - Update:
   - Resolve base texture by id/name.
   - Render new data URI using base image.
@@ -100,13 +100,11 @@ The pipeline is designed around evidence from tool-using LLM studies:
 ## Data Model
 
 ### TextureSpec
-Used by `apply_texture_spec`. This payload must stay minimal and strict so LLMs do not drift into unrecognized fields.
+Used by `apply_texture_spec`. This payload is intentionally minimal so LLMs focus on pixel ops.
 
 Required:
-- `name` (string)
-- `width` (number, > 0)
-- `height` (number, > 0)
-- `ops` (array)
+- `name` (string) for create
+- `width` / `height` (number, > 0)
 
 Optional:
 - `mode`: `create | update` (default `create`)
@@ -114,6 +112,7 @@ Optional:
 - `targetId` / `targetName`: for update mode
 - `background`: hex color string
 - `useExisting`: boolean (update mode)
+- `ops`: array (omit for a blank texture; background can still fill)
 
 ### TextureOp
 All ops are applied in order and are deterministic.
@@ -130,18 +129,17 @@ Primary:
 - `apply_texture_spec` (create/update via ops)
 
 Low-level:
-- `import_texture` (dataUri or path)
-- `update_texture` (dataUri or path)
 - `delete_texture`
-- `read_texture`
-- `list_textures`
 - `assign_texture` (bind texture to cubes/faces)
 - `set_face_uv` (manual per-face UVs)
+- `get_texture_usage` (verify face bindings and UVs)
 
 ### Tool Guidance
 - `apply_texture_spec` is the default path for LLMs.
-- `import_texture` and `update_texture` are escape hatches for direct dataUri usage.
+- Image import via file path or data URI is not exposed; ops-only is required.
 - `assign_texture` is required to make textures visible on cubes.
+- If UVs exceed the current textureResolution, increase it (set_project_texture_resolution) or split textures per material group. Use modifyUv=true only when you want existing UVs scaled (if supported by the host).
+- Omitting ops creates a blank texture (background can still fill).
 - High-level plans must be compiled into ops client-side to avoid schema drift.
 
 Recommended LLM flow:
@@ -152,7 +150,7 @@ Recommended LLM flow:
 4) `get_project_state` to confirm counts/revision
 
 ## Rendering Rules
-- Canvas size is derived from spec width/height or base texture.
+- Canvas size is derived from spec width/height.
 - `imageSmoothingEnabled = false`.
 - `background` is applied before ops.
 - Base image is drawn before ops when updating.
@@ -163,7 +161,7 @@ Recommended LLM flow:
 ## Validation Rules
 - `width/height` must be finite and > 0.
 - `width/height` must be <= `limits.maxTextureSize`.
-- `ops` must be a non-empty array.
+- `ops` is optional; if provided, it must be a valid array of ops.
 - `name` is required on create.
 - `targetId` or `targetName` required on update.
 - Reject unknown ops with `invalid_payload`.
@@ -203,12 +201,12 @@ Recommended LLM flow:
 ### Phase 2: Render Engine
 - Keep rendering in `src/proxy/texture.ts`.
 - Ensure `document` and canvas access are required and checked.
-- Add base texture resolution via `read_texture` for update mode.
+- Update mode uses `useExisting=true` to pull the current texture internally (no separate tool).
 - Guarantee deterministic op order and clipping behavior.
 - Add `maxOps` guard to protect render time.
 
 ### Phase 3: Blockbench Integration
-- Use `BlockbenchTextureAdapter` for import/update/delete.
+- Use `BlockbenchTextureAdapter` for create/update/delete (dataUri from ops).
 - Ensure Undo usage wraps texture edits.
 - Store `bbmcpId` for stable references.
 - Prefer `Texture.fromDataURL` and `Texture.updateChangesAfterEdit`.
@@ -239,7 +237,7 @@ Recommended LLM flow:
 - `assign_texture` updates cube/face bindings without changing UVs.
 - `set_face_uv` updates per-face UVs deterministically.
 - `delete_texture` removes by name/id and updates revision.
-- `read_texture` returns valid dataUri for created textures.
+- Update mode with `useExisting=true` renders from the current texture and preserves size.
 - `validate` returns `texture_too_large` when over limit.
 - Every mutation returns consistent `report`, `state`, and `diff`.
 - Ops with out-of-bounds coordinates do not throw.
@@ -277,6 +275,8 @@ Recommended LLM flow:
     {
       "mode": "update",
       "targetName": "flower_pot",
+      "width": 16,
+      "height": 16,
       "useExisting": true,
       "ops": [
         { "op": "draw_line", "x1": 2, "y1": 8, "x2": 13, "y2": 8, "color": "#6a3b18", "lineWidth": 1 }

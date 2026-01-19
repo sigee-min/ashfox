@@ -137,7 +137,7 @@ export class BlockbenchEditor implements EditorPort {
     return this.project.getProjectTextureResolution();
   }
 
-  setProjectTextureResolution(width: number, height: number): ToolError | null {
-    return this.project.setProjectTextureResolution(width, height);
+  setProjectTextureResolution(width: number, height: number, modifyUv?: boolean): ToolError | null {
+    return this.project.setProjectTextureResolution(width, height, modifyUv);
   }
 }

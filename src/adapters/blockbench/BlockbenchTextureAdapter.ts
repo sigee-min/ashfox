@@ -9,7 +9,7 @@ import {
   DeleteTextureCommand
 } from '../../ports/editor';
 import { TextureInstance } from '../../types/blockbench';
-import { readGlobals, readTextureId, withUndo } from './blockbenchUtils';
+import { readGlobals, readTextureId, readTextureSize, withUndo } from './blockbenchUtils';
 
 export class BlockbenchTextureAdapter {
   private readonly log: Logger;
@@ -19,35 +19,22 @@ export class BlockbenchTextureAdapter {
   }
 
   importTexture(params: ImportTextureCommand): ToolError | null {
-    if (!params.dataUri && !params.path) return { code: 'invalid_payload', message: 'dataUri or path is required' };
     try {
       const { Texture: TextureCtor } = readGlobals();
       if (typeof TextureCtor === 'undefined') {
         return { code: 'not_implemented', message: 'Texture API not available' };
       }
       withUndo({ textures: true }, 'Import texture', () => {
-        const tex = new TextureCtor({ name: params.name });
+        const tex = new TextureCtor({ name: params.name, width: params.width, height: params.height });
         if (params.id) tex.bbmcpId = params.id;
-        let loadedViaData = false;
-        if (params.dataUri) {
-          if (typeof tex.fromDataURL === 'function') {
-            tex.fromDataURL(params.dataUri);
-            loadedViaData = true;
-          } else if (typeof tex.loadFromDataURL === 'function') {
-            tex.loadFromDataURL(params.dataUri);
-            loadedViaData = true;
-          } else {
-            tex.source = params.dataUri;
-          }
-        } else if (params.path) {
-          tex.source = params.path;
-          tex.path = params.path;
-        }
+        applyTextureDefaults(tex);
         if (typeof tex.add === 'function') {
-          tex.add();
+          tex.add(false, false);
         }
-        if (!loadedViaData) {
-          tex.load?.();
+        applyTextureDimensions(tex, params.width, params.height);
+        applyTextureMeta(tex, params);
+        if (!applyTextureImage(tex, params.image)) {
+          throw new Error('Texture canvas unavailable');
         }
         finalizeTextureChange(tex);
         tex.select?.();
@@ -81,19 +68,13 @@ export class BlockbenchTextureAdapter {
             target.name = params.newName;
           }
         }
-        const source = params.dataUri ?? params.path;
-        if (source) {
-          if (params.dataUri && typeof target.fromDataURL === 'function') {
-            target.fromDataURL(params.dataUri);
-          } else if (params.dataUri && typeof target.loadFromDataURL === 'function') {
-            target.loadFromDataURL(params.dataUri);
-          } else {
-            target.source = source;
-            if (params.path) target.path = params.path;
-            target.load?.();
-          }
-          finalizeTextureChange(target);
+        applyTextureDefaults(target);
+        applyTextureDimensions(target, params.width, params.height);
+        applyTextureMeta(target, params);
+        if (!applyTextureImage(target, params.image)) {
+          throw new Error('Texture canvas unavailable');
         }
+        finalizeTextureChange(target);
       });
       this.log.info('texture updated', { name: params.name, newName: params.newName });
       return null;
@@ -154,8 +135,9 @@ export class BlockbenchTextureAdapter {
         const label = params.id ?? params.name ?? 'unknown';
         return { error: { code: 'invalid_payload', message: `Texture not found: ${label}` } };
       }
-      const width = target?.width ?? target?.img?.naturalWidth ?? target?.img?.width ?? 0;
-      const height = target?.height ?? target?.img?.naturalHeight ?? target?.img?.height ?? 0;
+      const size = readTextureSize(target);
+      const width = size.width;
+      const height = size.height;
       const path = target?.path ?? target?.source;
       const dataUri = getTextureDataUri(target);
       const image = (target?.img ?? target?.canvas) as CanvasImageSource | null;
@@ -166,8 +148,8 @@ export class BlockbenchTextureAdapter {
         result: {
           id: readTextureId(target),
           name: target?.name ?? target?.id ?? 'texture',
-          width,
-          height,
+      width,
+      height,
           path,
           dataUri: dataUri ?? undefined,
           image: image ?? undefined
@@ -183,13 +165,16 @@ export class BlockbenchTextureAdapter {
   listTextures(): TextureStat[] {
     const { Texture: TextureCtor } = readGlobals();
     const list = Array.isArray(TextureCtor?.all) ? TextureCtor.all : [];
-    return list.map((tex) => ({
-      id: readTextureId(tex),
-      name: tex?.name ?? tex?.id ?? 'texture',
-      width: tex?.width ?? tex?.img?.naturalWidth ?? 0,
-      height: tex?.height ?? tex?.img?.naturalHeight ?? 0,
-      path: tex?.path ?? tex?.source
-    }));
+    return list.map((tex) => {
+      const size = readTextureSize(tex);
+      return {
+        id: readTextureId(tex),
+        name: tex?.name ?? tex?.id ?? 'texture',
+        width: size.width ?? 0,
+        height: size.height ?? 0,
+        path: tex?.path ?? tex?.source
+      };
+    });
   }
 
   private findTextureRef(name?: string, id?: string): TextureInstance | null {
@@ -212,6 +197,104 @@ const finalizeTextureChange = (tex: TextureInstance): void => {
   if (typeof tex.updateLayerChanges === 'function') {
     tex.updateLayerChanges(true);
   }
+};
+
+const applyTextureDefaults = (tex: TextureInstance): void => {
+  if (!tex) return;
+  if (tex.internal === undefined) tex.internal = true;
+  if (tex.keep_size === undefined) tex.keep_size = true;
+};
+
+const applyTextureDimensions = (tex: TextureInstance, width?: number, height?: number): void => {
+  const nextWidth = normalizeTextureSize(width);
+  const nextHeight = normalizeTextureSize(height);
+  if (!nextWidth || !nextHeight) return;
+  if (tex.width === nextWidth && tex.height === nextHeight) return;
+  if (typeof tex.setSize === 'function') {
+    tex.setSize(nextWidth, nextHeight);
+    return;
+  }
+  if (typeof tex.resize === 'function') {
+    tex.resize(nextWidth, nextHeight);
+    return;
+  }
+  tex.width = nextWidth;
+  tex.height = nextHeight;
+};
+
+const applyTextureImage = (tex: TextureInstance, source: CanvasImageSource): boolean => {
+  if (!tex || !source) return false;
+  const canvas = tex.canvas ?? null;
+  const ctx = tex.ctx ?? canvas?.getContext?.('2d') ?? null;
+  if (canvas && ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return true;
+  }
+  if (typeof tex.edit === 'function') {
+    tex.edit(
+      (active: HTMLCanvasElement | unknown) => {
+        const activeCanvas = active as HTMLCanvasElement | null;
+        if (!activeCanvas) return active as HTMLCanvasElement;
+        const activeCtx = activeCanvas.getContext('2d');
+        if (!activeCtx) return activeCanvas;
+        activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+        activeCtx.drawImage(source, 0, 0, activeCanvas.width, activeCanvas.height);
+        return activeCanvas;
+      },
+      { no_undo: true }
+    );
+    return true;
+  }
+  return false;
+};
+
+const applyTextureMeta = (
+  tex: TextureInstance,
+  params: {
+    namespace?: string;
+    folder?: string;
+    particle?: boolean;
+    visible?: boolean;
+    renderMode?: string;
+    renderSides?: string;
+    pbrChannel?: string;
+    group?: string;
+    frameTime?: number;
+    frameOrderType?: string;
+    frameOrder?: string;
+    frameInterpolate?: boolean;
+    internal?: boolean;
+    keepSize?: boolean;
+  }
+): void => {
+  if (!tex || !params) return;
+  const patch: Record<string, unknown> = {};
+  if (params.namespace !== undefined) patch.namespace = params.namespace;
+  if (params.folder !== undefined) patch.folder = params.folder;
+  if (params.particle !== undefined) patch.particle = params.particle;
+  if (params.visible !== undefined) patch.visible = params.visible;
+  if (params.renderMode !== undefined) patch.render_mode = params.renderMode;
+  if (params.renderSides !== undefined) patch.render_sides = params.renderSides;
+  if (params.pbrChannel !== undefined) patch.pbr_channel = params.pbrChannel;
+  if (params.group !== undefined) patch.group = params.group;
+  if (params.frameTime !== undefined) patch.frame_time = params.frameTime;
+  if (params.frameOrderType !== undefined) patch.frame_order_type = params.frameOrderType;
+  if (params.frameOrder !== undefined) patch.frame_order = params.frameOrder;
+  if (params.frameInterpolate !== undefined) patch.frame_interpolate = params.frameInterpolate;
+  if (params.internal !== undefined) patch.internal = params.internal;
+  if (params.keepSize !== undefined) patch.keep_size = params.keepSize;
+  if (Object.keys(patch).length === 0) return;
+  if (typeof tex.extend === 'function') {
+    tex.extend(patch);
+    return;
+  }
+  Object.assign(tex, patch);
+};
+
+const normalizeTextureSize = (value?: number): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined;
+  return Math.floor(value);
 };
 
 const getTextureDataUri = (tex: TextureInstance): string | null => {

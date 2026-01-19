@@ -100,7 +100,21 @@ const textureSig = (texture: TrackedTexture) =>
     texture.path ?? '',
     texture.width ?? 0,
     texture.height ?? 0,
-    texture.contentHash ?? ''
+    texture.contentHash ?? '',
+    texture.namespace ?? null,
+    texture.folder ?? null,
+    texture.particle ?? null,
+    texture.visible ?? null,
+    texture.renderMode ?? null,
+    texture.renderSides ?? null,
+    texture.pbrChannel ?? null,
+    texture.group ?? null,
+    texture.frameTime ?? null,
+    texture.frameOrderType ?? null,
+    texture.frameOrder ?? null,
+    texture.frameInterpolate ?? null,
+    texture.internal ?? null,
+    texture.keepSize ?? null
   ]);
 const animationSig = (anim: TrackedAnimation) =>
   JSON.stringify([anim.id ?? null, anim.name, anim.length, anim.loop, anim.fps ?? null, anim.channels?.length ?? 0]);

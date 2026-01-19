@@ -1,16 +1,17 @@
 import { Limits, ValidateFinding } from '../types';
 import { SessionState } from '../session';
-import { TextureStat } from '../ports/editor';
+import { TextureStat, TextureUsageResult } from '../ports/editor';
 
 export interface ValidationContext {
   limits: Limits;
   textures?: TextureStat[];
   textureResolution?: { width: number; height: number };
+  textureUsage?: TextureUsageResult;
 }
 
 export function validateSnapshot(state: SessionState, context: ValidationContext): ValidateFinding[] {
   const findings: ValidateFinding[] = [];
-  const { limits, textures, textureResolution } = context;
+  const { limits, textures, textureResolution, textureUsage } = context;
 
   const boneNames = new Set(state.bones.map((b) => b.name));
   if (state.bones.length === 0) {
@@ -78,6 +79,32 @@ export function validateSnapshot(state: SessionState, context: ValidationContext
         });
       }
     });
+    if (textureUsage) {
+      const unresolvedCount = textureUsage.unresolved?.length ?? 0;
+      if (unresolvedCount > 0) {
+        findings.push({
+          code: 'texture_unresolved_refs',
+          message: `Unresolved texture references detected (${unresolvedCount}). Assign textures before rendering.`,
+          severity: 'warning'
+        });
+      }
+      textureUsage.textures.forEach((entry) => {
+        entry.cubes.forEach((cube) => {
+          cube.faces.forEach((face) => {
+            const uv = face.uv;
+            if (!uv) return;
+            const [x1, y1, x2, y2] = uv;
+            if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
+              findings.push({
+                code: 'face_uv_out_of_bounds',
+                message: `Face UV for "${cube.name}" (${face.face}) is outside ${width}x${height}: [${x1},${y1},${x2},${y2}].`,
+                severity: 'warning'
+              });
+            }
+          });
+        });
+      });
+    }
   }
 
   return findings;

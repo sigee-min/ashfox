@@ -13,6 +13,7 @@ import {
   UnknownRecord,
   readBlockbenchGlobals
 } from '../../types/blockbench';
+import { readTextureSize } from './blockbenchUtils';
 
 type Vec3Like = { x: number; y: number; z: number } | [number, number, number];
 
@@ -46,12 +47,13 @@ export class BlockbenchSnapshot implements SnapshotPort {
       const texList = globals.Texture?.all ?? [];
       if (Array.isArray(texList)) {
         texList.forEach((tex) => {
+          const size = readTextureSize(tex);
           textures.push({
             id: readTextureId(tex),
             name: tex?.name ?? tex?.id ?? 'texture',
             path: tex?.path ?? tex?.source,
-            width: tex?.width ?? tex?.img?.naturalWidth ?? 0,
-            height: tex?.height ?? tex?.img?.naturalHeight ?? 0
+            width: size.width ?? 0,
+            height: size.height ?? 0
           });
         });
       }

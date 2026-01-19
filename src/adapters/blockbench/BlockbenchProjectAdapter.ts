@@ -97,20 +97,31 @@ export class BlockbenchProjectAdapter {
     }
   }
 
-  setProjectTextureResolution(width: number, height: number): ToolError | null {
+  setProjectTextureResolution(width: number, height: number, modifyUv?: boolean): ToolError | null {
     try {
       const globals = readGlobals();
       const project = globals.Project ?? globals.Blockbench?.project ?? null;
       if (!project) {
         return { code: 'invalid_state', message: 'No active project.' };
       }
-      if (typeof project.setTextureSize === 'function') {
-        project.setTextureSize(width, height);
+      const updateResolution = globals.updateProjectResolution;
+      const normalizeUv = Boolean(modifyUv);
+      if (typeof globals.setProjectResolution === 'function') {
+        globals.setProjectResolution(width, height, normalizeUv);
+        if (typeof updateResolution === 'function') updateResolution();
       } else {
-        project.texture_width = width;
-        project.texture_height = height;
+        if (typeof project.setTextureSize === 'function') {
+          project.setTextureSize(width, height);
+        } else {
+          project.texture_width = width;
+          project.texture_height = height;
+        }
+        if (typeof updateResolution === 'function') updateResolution();
+        if (normalizeUv) {
+          this.log.warn('modifyUv requested but setProjectResolution is unavailable', { width, height });
+        }
       }
-      this.log.info('project texture resolution set', { width, height });
+      this.log.info('project texture resolution set', { width, height, modifyUv: normalizeUv });
       return null;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'project texture resolution update failed';

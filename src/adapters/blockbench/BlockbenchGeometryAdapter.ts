@@ -164,6 +164,7 @@ export class BlockbenchGeometryAdapter {
           mirror_uv: params.mirror
         }).init?.();
         if (cube) {
+          this.enforceManualUvMode(cube);
           if (params.id) cube.bbmcpId = params.id;
           const attached = attachToOutliner(parent, outliner, cube, this.log, 'cube');
           if (!attached && outliner?.root?.push) {
@@ -208,6 +209,7 @@ export class BlockbenchGeometryAdapter {
             target.name = params.newName;
           }
         }
+        this.enforceManualUvMode(target);
         if (params.from) assignVec3(target, 'from', params.from);
         if (params.to) assignVec3(target, 'to', params.to);
         if (params.uv) assignVec2(target, 'uv_offset', params.uv);
@@ -279,14 +281,7 @@ export class BlockbenchGeometryAdapter {
       const textureRef = resolveFaceTextureRef(texture);
       withUndo({ elements: true, textures: true }, 'Assign texture', () => {
         cubes.forEach((cube) => {
-          if (typeof cube.setUVMode === 'function') {
-            cube.setUVMode(false);
-          } else if (typeof cube.box_uv === 'boolean') {
-            cube.box_uv = false;
-          }
-          if (typeof cube.autouv === 'number') {
-            cube.autouv = 0;
-          }
+          this.enforceManualUvMode(cube);
           const faceMap = ensureFaceMap(cube);
           const targets = faces ?? ALL_FACES;
           const uvBackup = new Map<CubeFaceDirection, [number, number, number, number] | undefined>();
@@ -347,14 +342,7 @@ export class BlockbenchGeometryAdapter {
       }
       const faceMap = ensureFaceMap(target);
       withUndo({ elements: true }, 'Set face UV', () => {
-        if (typeof target.setUVMode === 'function') {
-          target.setUVMode(false);
-        } else if (typeof target.box_uv === 'boolean') {
-          target.box_uv = false;
-        }
-        if (typeof target.autouv === 'number') {
-          target.autouv = 0;
-        }
+        this.enforceManualUvMode(target);
         faceEntries.forEach(([faceKey, uv]) => {
           if (!VALID_FACE_KEYS.has(faceKey as CubeFaceDirection) || !uv) return;
           const face = faceMap[faceKey] ?? {};
@@ -497,6 +485,17 @@ export class BlockbenchGeometryAdapter {
   private findGroup(name?: string): GroupInstance | null {
     if (!name) return null;
     return this.findOutlinerNode((node) => isGroupNode(node) && node.name === name);
+  }
+
+  private enforceManualUvMode(cube: CubeInstance): void {
+    if (typeof cube.setUVMode === 'function') {
+      cube.setUVMode(false);
+    } else if (typeof cube.box_uv === 'boolean') {
+      cube.box_uv = false;
+    }
+    if (typeof cube.autouv === 'number') {
+      cube.autouv = 0;
+    }
   }
 
   private findGroupRef(name?: string, id?: string): GroupInstance | null {

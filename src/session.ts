@@ -1,4 +1,5 @@
 import { FormatKind, ToolResponse, ToolError } from './types';
+import { TextureFrameOrderType, TextureMeta, TexturePbrChannel, TextureRenderMode, TextureRenderSides } from './types/texture';
 
 export interface TrackedBone {
   id?: string;
@@ -27,6 +28,20 @@ export interface TrackedTexture {
   width?: number;
   height?: number;
   contentHash?: string;
+  namespace?: TextureMeta['namespace'];
+  folder?: TextureMeta['folder'];
+  particle?: TextureMeta['particle'];
+  visible?: TextureMeta['visible'];
+  renderMode?: TextureRenderMode;
+  renderSides?: TextureRenderSides;
+  pbrChannel?: TexturePbrChannel;
+  group?: TextureMeta['group'];
+  frameTime?: TextureMeta['frameTime'];
+  frameOrderType?: TextureFrameOrderType;
+  frameOrder?: TextureMeta['frameOrder'];
+  frameInterpolate?: TextureMeta['frameInterpolate'];
+  internal?: TextureMeta['internal'];
+  keepSize?: TextureMeta['keepSize'];
 }
 
 export interface TrackedAnimationChannel {
@@ -250,6 +265,20 @@ export class ProjectSession {
       width?: number;
       height?: number;
       contentHash?: string;
+      namespace?: TextureMeta['namespace'];
+      folder?: TextureMeta['folder'];
+      particle?: TextureMeta['particle'];
+      visible?: TextureMeta['visible'];
+      renderMode?: TextureRenderMode;
+      renderSides?: TextureRenderSides;
+      pbrChannel?: TexturePbrChannel;
+      group?: TextureMeta['group'];
+      frameTime?: TextureMeta['frameTime'];
+      frameOrderType?: TextureFrameOrderType;
+      frameOrder?: TextureMeta['frameOrder'];
+      frameInterpolate?: TextureMeta['frameInterpolate'];
+      internal?: TextureMeta['internal'];
+      keepSize?: TextureMeta['keepSize'];
     }
   ): boolean {
     const tex = this.state.textures.find((t) => t.name === name);
@@ -260,6 +289,20 @@ export class ProjectSession {
     if (typeof updates.width === 'number') tex.width = updates.width;
     if (typeof updates.height === 'number') tex.height = updates.height;
     if (updates.contentHash !== undefined) tex.contentHash = updates.contentHash;
+    if (updates.namespace !== undefined) tex.namespace = updates.namespace;
+    if (updates.folder !== undefined) tex.folder = updates.folder;
+    if (updates.particle !== undefined) tex.particle = updates.particle;
+    if (updates.visible !== undefined) tex.visible = updates.visible;
+    if (updates.renderMode !== undefined) tex.renderMode = updates.renderMode;
+    if (updates.renderSides !== undefined) tex.renderSides = updates.renderSides;
+    if (updates.pbrChannel !== undefined) tex.pbrChannel = updates.pbrChannel;
+    if (updates.group !== undefined) tex.group = updates.group;
+    if (updates.frameTime !== undefined) tex.frameTime = updates.frameTime;
+    if (updates.frameOrderType !== undefined) tex.frameOrderType = updates.frameOrderType;
+    if (updates.frameOrder !== undefined) tex.frameOrder = updates.frameOrder;
+    if (updates.frameInterpolate !== undefined) tex.frameInterpolate = updates.frameInterpolate;
+    if (updates.internal !== undefined) tex.internal = updates.internal;
+    if (updates.keepSize !== undefined) tex.keepSize = updates.keepSize;
     return true;
   }
 

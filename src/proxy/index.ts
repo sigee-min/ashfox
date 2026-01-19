@@ -12,7 +12,6 @@ import { buildRenderPreviewContent, buildRenderPreviewStructured } from '../mcp/
 import {
   applyAnimSpecSteps,
   applyModelSpecSteps,
-  applyTextureImports,
   applyTextureSpecSteps,
   createApplyReport,
   ensureActiveProject,
@@ -135,7 +134,6 @@ export class ProxyRouter {
         if (!action.ok) return action;
         const modelPayload: ApplyModelSpecPayload = {
           model: payload.model,
-          textures: payload.imports,
           ifRevision: payload.ifRevision
         };
         const modelRes = applyModelSpecSteps(this.service, this.log, modelPayload, report, meta, {
@@ -148,10 +146,6 @@ export class ProxyRouter {
         }
         const activeCheck = ensureActiveProject(this.service, meta);
         if (!activeCheck.ok) return activeCheck;
-        if (payload.imports && payload.imports.length > 0) {
-          const importRes = applyTextureImports(this.service, payload.imports, report, meta);
-          if (!importRes.ok) return importRes;
-        }
       }
       if (payload.textures && payload.textures.length > 0) {
         const texRes = applyTextureSpecSteps(this.service, this.limits, payload.textures, report, meta, this.log);
@@ -163,7 +157,6 @@ export class ProxyRouter {
       }
       this.log.info('applyProjectSpec applied', {
         model: Boolean(payload.model),
-        imports: payload.imports?.length ?? 0,
         textures: payload.textures?.length ?? 0,
         animation: Boolean(payload.animation)
       });

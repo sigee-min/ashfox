@@ -4,14 +4,13 @@ import {
   ApplyModelSpecPayload,
   ApplyProjectSpecPayload,
   ApplyTextureSpecPayload,
-  TextureImportSpec,
   TextureSpec
 } from '../spec';
 import { Limits, ToolError, ToolResponse } from '../types';
 import { ToolService } from '../usecases/ToolService';
 import { buildRigTemplate } from '../templates';
 import { buildMeta, MetaOptions, withErrorMeta } from './meta';
-import { renderTextureSpec, resolveTextureBase } from './texture';
+import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize } from './texture';
 import { toToolResponse } from './response';
 import { isZeroSize } from '../domain/geometry';
 
@@ -31,20 +30,6 @@ export const createApplyReport = (): ApplyReport => ({
   errors: []
 });
 
-export const applyTextureImports = (
-  service: ToolService,
-  imports: TextureImportSpec[] | undefined,
-  report: ApplyReport,
-  meta: MetaOptions
-): ToolResponse<ApplyReport> => {
-  for (const t of imports ?? []) {
-    const res = service.importTexture({ id: t.id, name: t.name, dataUri: t.dataUri, path: t.path });
-    if (!res.ok) return withReportError(res.error, report, 'import_texture', t.name, meta, service);
-    report.applied.textures.push(t.name);
-  }
-  return { ok: true, data: report };
-};
-
 export const applyModelSpecSteps = (
   service: ToolService,
   log: Logger,
@@ -59,9 +44,6 @@ export const applyModelSpecSteps = (
     );
     if (!sessionInit.ok) return withReportError(sessionInit.error, report, 'create_project', undefined, meta, service);
   }
-
-  const importRes = applyTextureImports(service, payload.textures, report, meta);
-  if (!importRes.ok) return importRes;
 
   const templatedParts = buildRigTemplate(payload.model.rigTemplate, payload.model.parts);
   for (const part of templatedParts) {
@@ -109,6 +91,7 @@ export const applyTextureSpecSteps = (
     const label = texture.name ?? texture.targetName ?? texture.targetId ?? 'texture';
     const mode = texture.mode ?? 'create';
     log?.info('applyTextureSpec ops', { texture: label, mode, ops: summarizeOps(texture.ops) });
+    const size = resolveTextureSpecSize(texture);
     if (mode === 'create') {
       const renderRes = renderTextureSpec(texture, limits);
       if (!renderRes.ok) {
@@ -117,11 +100,13 @@ export const applyTextureSpecSteps = (
       const res = service.importTexture({
         id: texture.id,
         name: texture.name ?? label,
-        dataUri: renderRes.data.dataUri,
-        width: texture.width,
-        height: texture.height
+        image: renderRes.data.canvas,
+        width: size.width ?? renderRes.data.width,
+        height: size.height ?? renderRes.data.height
       });
-      if (!res.ok) return withReportError(res.error, report, 'import_texture', label, meta, service);
+      if (!res.ok) return withReportError(res.error, report, 'texture_create', label, meta, service);
+      const sizeCheck = ensureTextureSizeMatches(service, texture, label, meta, report);
+      if (!sizeCheck.ok) return sizeCheck;
       report.applied.textures.push(texture.name ?? label);
       continue;
     }
@@ -129,7 +114,7 @@ export const applyTextureSpecSteps = (
       return withReportError(
         { code: 'invalid_payload', message: `unsupported texture mode: ${mode}` },
         report,
-        'update_texture',
+        'texture_update',
         label,
         meta,
         service
@@ -139,7 +124,7 @@ export const applyTextureSpecSteps = (
       return withReportError(
         { code: 'invalid_payload', message: 'targetId or targetName is required for update' },
         report,
-        'update_texture',
+        'texture_update',
         label,
         meta,
         service
@@ -171,25 +156,30 @@ export const applyTextureSpecSteps = (
     if (!renderRes.ok) {
       return withReportError(renderRes.error, report, 'render_texture', label, meta, service);
     }
-    if (baseDataUri && renderRes.data.dataUri === baseDataUri) {
-      return withReportError(
-        { code: 'no_change', message: 'Texture content is unchanged.' },
-        report,
-        'update_texture',
-        label,
-        meta,
-        service
-      );
+    if (baseDataUri) {
+      const renderedDataUri = renderRes.data.canvas.toDataURL('image/png');
+      if (renderedDataUri === baseDataUri) {
+        return withReportError(
+          { code: 'no_change', message: 'Texture content is unchanged.' },
+          report,
+          'texture_update',
+          label,
+          meta,
+          service
+        );
+      }
     }
     const res = service.updateTexture({
       id: texture.targetId,
       name: texture.targetName,
       newName: texture.name,
-      dataUri: renderRes.data.dataUri,
-      width: texture.width,
-      height: texture.height
+      image: renderRes.data.canvas,
+      width: size.width ?? renderRes.data.width,
+      height: size.height ?? renderRes.data.height
     });
-    if (!res.ok) return withReportError(res.error, report, 'update_texture', label, meta, service);
+    if (!res.ok) return withReportError(res.error, report, 'texture_update', label, meta, service);
+    const sizeCheck = ensureTextureSizeMatches(service, texture, label, meta, report);
+    if (!sizeCheck.ok) return sizeCheck;
     report.applied.textures.push(texture.name ?? texture.targetName ?? texture.targetId ?? label);
   }
   return { ok: true, data: report };
@@ -293,7 +283,52 @@ const recordApplyError = (
   return report;
 };
 
-
+const ensureTextureSizeMatches = (
+  service: ToolService,
+  texture: TextureSpec,
+  label: string,
+  meta: MetaOptions,
+  report: ApplyReport
+): ToolResponse<ApplyReport> => {
+  const expected = resolveTextureSpecSize(texture);
+  const expectedWidth = Number(expected.width);
+  const expectedHeight = Number(expected.height);
+  if (!Number.isFinite(expectedWidth) || !Number.isFinite(expectedHeight) || expectedWidth <= 0 || expectedHeight <= 0) {
+    return { ok: true, data: report };
+  }
+  const id = texture.id ?? texture.targetId;
+  const name = texture.name ?? texture.targetName ?? label;
+  const readRes = toToolResponse(service.readTexture({ id, name }));
+  if (!readRes.ok) {
+    return { ok: true, data: report };
+  }
+  const actualWidth = Number(readRes.data.width ?? 0);
+  const actualHeight = Number(readRes.data.height ?? 0);
+  if (!Number.isFinite(actualWidth) || !Number.isFinite(actualHeight) || actualWidth <= 0 || actualHeight <= 0) {
+    return { ok: true, data: report };
+  }
+  if (actualWidth !== expectedWidth || actualHeight !== expectedHeight) {
+    const resolution = service.getProjectTextureResolution();
+    return withReportError(
+      {
+        code: 'invalid_state',
+        message: `Texture size mismatch for "${name}": expected ${expectedWidth}x${expectedHeight}, got ${actualWidth}x${actualHeight}.`,
+        fix: 'Call set_project_texture_resolution to match the target size, then recreate the texture.',
+        details: {
+          expected: { width: expectedWidth, height: expectedHeight },
+          actual: { width: actualWidth, height: actualHeight },
+          textureResolution: resolution ?? undefined
+        }
+      },
+      report,
+      'texture_size_mismatch',
+      label,
+      meta,
+      service
+    );
+  }
+  return { ok: true, data: report };
+};
 const summarizeOps = (ops: TextureSpec['ops'] | undefined) => {
   const list = Array.isArray(ops) ? ops : [];
   const counts = new Map<string, number>();

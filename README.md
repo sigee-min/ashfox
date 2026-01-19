@@ -44,11 +44,14 @@ http://127.0.0.1:8787/mcp
 5) `export` for JSON output.
 
 ## Texture Flow (Recommended)
-1) `apply_texture_spec` (or `import_texture` / `update_texture`) to create or update texture data.
+1) `apply_texture_spec` to create or update texture data via ops (no image import tool).
+   - Omit `ops` to create an empty texture (background can still fill).
+   - `width/height` are required and should match the project textureResolution.
 2) `assign_texture` to bind textures to cubes (required for visible results; does not change UVs).
 3) `set_face_uv` to apply per-face UVs explicitly.
 4) Prefer material-group textures (pot/soil/plant) and assign via `cubeNames` for stability.
-5) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures.
+5) If UVs exceed the current resolution, increase it or split textures per material.
+6) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures. If you need to scale existing UVs, pass `modifyUv=true` (if supported by the host).
 
 ## Preview Output (MCP Standard)
 `render_preview` responds with MCP `content` blocks:

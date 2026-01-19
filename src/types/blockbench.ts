@@ -62,8 +62,24 @@ export interface TextureInstance {
   img?: HTMLImageElement;
   canvas?: HTMLCanvasElement;
   bbmcpId?: string;
+  namespace?: string;
+  folder?: string;
+  particle?: boolean;
+  visible?: boolean;
+  render_mode?: string;
+  render_sides?: string;
+  pbr_channel?: string;
+  group?: string;
+  frame_time?: number;
+  frame_order_type?: string;
+  frame_order?: string;
+  frame_interpolate?: boolean;
+  internal?: boolean;
+  keep_size?: boolean;
   fromDataURL?: (dataUri: string) => void;
   loadFromDataURL?: (dataUri: string) => void;
+  resize?: (width: number, height: number) => void;
+  setSize?: (width: number, height: number) => void;
   add?: () => void;
   load?: () => void;
   select?: () => void;
@@ -76,6 +92,7 @@ export interface TextureInstance {
   getDataUrl?: () => string;
   getBase64?: () => string;
   toDataURL?: (mime?: string) => string;
+  extend?: (data: UnknownRecord) => void;
 }
 
 export type CubeFaceDirection = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
@@ -89,7 +106,7 @@ export interface CubeFace {
 }
 
 export interface TextureConstructor {
-  new (options: { name: string }): TextureInstance;
+  new (options: UnknownRecord): TextureInstance;
   all?: TextureInstance[];
 }
 
@@ -236,6 +253,8 @@ export interface BlockbenchGlobals {
   Setting?: SettingConstructor;
   Codec?: CodecConstructor;
   Project?: BlockbenchProject;
+  setProjectResolution?: (width: number, height: number, modifyUv?: boolean) => void;
+  updateProjectResolution?: () => void;
   crypto?: Crypto;
   document?: Document;
 }

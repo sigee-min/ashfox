@@ -12,7 +12,6 @@ import { RenderPreviewPayload, RenderPreviewResult } from './preview';
 
 export type ToolName =
   | 'list_capabilities'
-  | 'reload_plugin'
   | 'get_project_state'
   | 'get_project_diff'
   | 'set_project_texture_resolution'
@@ -21,8 +20,6 @@ export type ToolName =
   | 'select_project'
   | 'create_project'
   | 'reset_project'
-  | 'import_texture'
-  | 'update_texture'
   | 'delete_texture'
   | 'assign_texture'
   | 'set_face_uv'
@@ -50,7 +47,6 @@ export interface CreateProjectPayload extends IncludeStateOption, IncludeDiffOpt
 }
 
 export type ListProjectsPayload = Record<string, never>;
-export type ReloadPluginPayload = Record<string, never>;
 
 export interface ResetProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {}
 
@@ -70,26 +66,12 @@ export interface GetProjectDiffPayload {
 export interface SetProjectTextureResolutionPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   width: number;
   height: number;
+  modifyUv?: boolean;
 }
 
 export interface GetTextureUsagePayload {
   textureId?: string;
   textureName?: string;
-}
-
-export interface ImportTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  id?: string;
-  name: string;
-  dataUri?: string;
-  path?: string;
-}
-
-export interface UpdateTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  id?: string;
-  name?: string;
-  newName?: string;
-  dataUri?: string;
-  path?: string;
 }
 
 export interface DeleteTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
@@ -224,7 +206,6 @@ export interface ValidatePayload extends IncludeStateOption {}
 
 export interface ToolPayloadMap {
   list_capabilities: Record<string, never>;
-  reload_plugin: ReloadPluginPayload;
   get_project_state: GetProjectStatePayload;
   get_project_diff: GetProjectDiffPayload;
   set_project_texture_resolution: SetProjectTextureResolutionPayload;
@@ -233,8 +214,6 @@ export interface ToolPayloadMap {
   select_project: SelectProjectPayload;
   create_project: CreateProjectPayload;
   reset_project: ResetProjectPayload;
-  import_texture: ImportTexturePayload;
-  update_texture: UpdateTexturePayload;
   delete_texture: DeleteTexturePayload;
   assign_texture: AssignTexturePayload;
   set_face_uv: SetFaceUvPayload;
@@ -258,10 +237,6 @@ export interface CreateProjectResult {
   id: string;
   format: FormatKind;
   name: string;
-}
-
-export interface ReloadPluginResult {
-  ok: true;
 }
 
 export interface ListProjectsResult {
@@ -330,7 +305,6 @@ export interface ValidateResult {
 
 export interface ToolResultMap {
   list_capabilities: Capabilities;
-  reload_plugin: ReloadPluginResult;
   get_project_state: GetProjectStateResult;
   get_project_diff: GetProjectDiffResult;
   set_project_texture_resolution: WithState<SetProjectTextureResolutionResult>;
@@ -339,8 +313,6 @@ export interface ToolResultMap {
   select_project: WithState<SelectProjectResult>;
   create_project: WithState<CreateProjectResult>;
   reset_project: WithState<{ ok: true }>;
-  import_texture: WithState<{ id: string; name: string; path?: string }>;
-  update_texture: WithState<{ id: string; name: string }>;
   delete_texture: WithState<{ id: string; name: string }>;
   assign_texture: WithState<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }>;
   set_face_uv: WithState<{ cubeId?: string; cubeName: string; faces: CubeFaceDirection[] }>;

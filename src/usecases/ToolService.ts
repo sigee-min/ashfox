@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { ProjectSession, SessionState } from '../session';
 import { CubeFaceDirection, EditorPort, FaceUvMap, TextureSource } from '../ports/editor';
+import { TextureMeta } from '../types/texture';
 import { FormatPort } from '../ports/formats';
 import { SnapshotPort } from '../ports/snapshot';
 import { ExportPort } from '../ports/exporter';
@@ -40,7 +41,6 @@ import {
 
 const FORMAT_OVERRIDE_HINT = 'Set Format ID override in Settings (bbmcp).';
 const REVISION_CACHE_LIMIT = 5;
-const MAX_DATA_URI_BYTES = 4 * 1024 * 1024;
 
 function withFormatOverrideHint(message: string) {
   return `${message} ${FORMAT_OVERRIDE_HINT}`;
@@ -113,6 +113,7 @@ export class ToolService {
     width: number;
     height: number;
     ifRevision?: string;
+    modifyUv?: boolean;
   }): UsecaseResult<{ width: number; height: number }> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
@@ -120,6 +121,7 @@ export class ToolService {
     if (revisionErr) return fail(revisionErr);
     const width = Number(payload.width);
     const height = Number(payload.height);
+    const modifyUv = payload.modifyUv === true;
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
       return fail({ code: 'invalid_payload', message: 'width and height must be positive numbers.' });
     }
@@ -135,7 +137,7 @@ export class ToolService {
         details: { width, height, maxSize }
       });
     }
-    const err = this.editor.setProjectTextureResolution(width, height);
+    const err = this.editor.setProjectTextureResolution(width, height, modifyUv);
     if (err) return fail(err);
     return ok({ width, height });
   }
@@ -296,12 +298,11 @@ export class ToolService {
   importTexture(payload: {
     id?: string;
     name: string;
-    dataUri?: string;
-    path?: string;
+    image: CanvasImageSource;
     width?: number;
     height?: number;
     ifRevision?: string;
-  }): UsecaseResult<{ id: string; name: string; path?: string }> {
+  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
     const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
@@ -319,12 +320,28 @@ export class ToolService {
     if (idConflict) {
       return fail({ code: 'invalid_payload', message: `Texture id already exists: ${id}` });
     }
-    if (payload.dataUri) {
-      const dataErr = validateDataUriSize(payload.dataUri);
-      if (dataErr) return fail(dataErr);
-    }
-    const contentHash = payload.dataUri ? hashText(payload.dataUri) : undefined;
-    const err = this.editor.importTexture({ id, name: payload.name, dataUri: payload.dataUri, path: payload.path });
+    const contentHash = hashCanvasImage(payload.image);
+    const err = this.editor.importTexture({
+      id,
+      name: payload.name,
+      image: payload.image,
+      width: payload.width,
+      height: payload.height,
+      namespace: payload.namespace,
+      folder: payload.folder,
+      particle: payload.particle,
+      visible: payload.visible,
+      renderMode: payload.renderMode,
+      renderSides: payload.renderSides,
+      pbrChannel: payload.pbrChannel,
+      group: payload.group,
+      frameTime: payload.frameTime,
+      frameOrderType: payload.frameOrderType,
+      frameOrder: payload.frameOrder,
+      frameInterpolate: payload.frameInterpolate,
+      internal: payload.internal,
+      keepSize: payload.keepSize
+    });
     if (err) return fail(err);
     const match = this.editor
       .listTextures()
@@ -336,46 +353,54 @@ export class ToolService {
     this.session.addTexture({
       id,
       name: payload.name,
-      path: payload.path,
       width: resolvedSize.width,
       height: resolvedSize.height,
-      contentHash
+      contentHash: contentHash ?? undefined,
+      namespace: payload.namespace,
+      folder: payload.folder,
+      particle: payload.particle,
+      visible: payload.visible,
+      renderMode: payload.renderMode,
+      renderSides: payload.renderSides,
+      pbrChannel: payload.pbrChannel,
+      group: payload.group,
+      frameTime: payload.frameTime,
+      frameOrderType: payload.frameOrderType,
+      frameOrder: payload.frameOrder,
+      frameInterpolate: payload.frameInterpolate,
+      internal: payload.internal,
+      keepSize: payload.keepSize
     });
-    return ok({ id, name: payload.name, path: payload.path });
+    return ok({ id, name: payload.name });
   }
 
   updateTexture(payload: {
     id?: string;
     name?: string;
     newName?: string;
-    dataUri?: string;
-    path?: string;
+    image: CanvasImageSource;
     width?: number;
     height?: number;
     ifRevision?: string;
-  }): UsecaseResult<{ id: string; name: string }> {
+  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
     const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
     if (revisionErr) return fail(revisionErr);
     const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
-      if (!payload.id && !payload.name) {
-        return fail({
-          code: 'invalid_payload',
-          message: 'Texture id or name is required',
-          fix: 'Provide id or name for the texture.'
-        });
-      }
+    if (!payload.id && !payload.name) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'Texture id or name is required',
+        fix: 'Provide id or name for the texture.'
+      });
+    }
     const target = resolveTextureTarget(snapshot.textures, payload.id, payload.name);
     if (!target) {
       const label = payload.id ?? payload.name ?? 'unknown';
       return fail({ code: 'invalid_payload', message: `Texture not found: ${label}` });
     }
-    if (payload.dataUri) {
-      const dataErr = validateDataUriSize(payload.dataUri);
-      if (dataErr) return fail(dataErr);
-    }
-    const contentHash = payload.dataUri ? hashText(payload.dataUri) : undefined;
+    const contentHash = hashCanvasImage(payload.image);
     const targetName = target.name;
     const targetId = target.id ?? payload.id ?? createId('tex');
     if (payload.newName && payload.newName !== targetName) {
@@ -385,20 +410,34 @@ export class ToolService {
       }
     }
     const renaming = Boolean(payload.newName && payload.newName !== targetName);
-    const pathChanging = payload.path !== undefined && payload.path !== target.path;
-    if (payload.dataUri && target.contentHash && contentHash === target.contentHash && !renaming && !pathChanging) {
+    if (contentHash && target.contentHash && contentHash === target.contentHash && !renaming) {
       return fail({
         code: 'no_change',
         message: 'Texture content is unchanged.',
-        fix: 'Adjust ops or include a rename/path change before updating.'
+        fix: 'Adjust ops or include a rename before updating.'
       });
     }
     const err = this.editor.updateTexture({
       id: targetId,
       name: targetName,
       newName: payload.newName,
-      dataUri: payload.dataUri,
-      path: payload.path
+      image: payload.image,
+      width: payload.width,
+      height: payload.height,
+      namespace: payload.namespace,
+      folder: payload.folder,
+      particle: payload.particle,
+      visible: payload.visible,
+      renderMode: payload.renderMode,
+      renderSides: payload.renderSides,
+      pbrChannel: payload.pbrChannel,
+      group: payload.group,
+      frameTime: payload.frameTime,
+      frameOrderType: payload.frameOrderType,
+      frameOrder: payload.frameOrder,
+      frameInterpolate: payload.frameInterpolate,
+      internal: payload.internal,
+      keepSize: payload.keepSize
     });
     if (err) return fail(err);
     const effectiveName = payload.newName ?? targetName;
@@ -413,10 +452,23 @@ export class ToolService {
     this.session.updateTexture(targetName, {
       id: targetId,
       newName: payload.newName,
-      path: payload.path,
       width: resolvedSize.width,
       height: resolvedSize.height,
-      contentHash
+      contentHash: contentHash ?? undefined,
+      namespace: payload.namespace,
+      folder: payload.folder,
+      particle: payload.particle,
+      visible: payload.visible,
+      renderMode: payload.renderMode,
+      renderSides: payload.renderSides,
+      pbrChannel: payload.pbrChannel,
+      group: payload.group,
+      frameTime: payload.frameTime,
+      frameOrderType: payload.frameOrderType,
+      frameOrder: payload.frameOrder,
+      frameInterpolate: payload.frameInterpolate,
+      internal: payload.internal,
+      keepSize: payload.keepSize
     });
     return ok({ id: targetId, name: effectiveName });
   }
@@ -1219,10 +1271,12 @@ export class ToolService {
     const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
     const textures = this.editor.listTextures();
     const textureResolution = this.editor.getProjectTextureResolution() ?? undefined;
+    const usage = this.editor.getTextureUsage({});
     const findings = validateSnapshot(snapshot, {
       limits: this.capabilities.limits,
       textures,
-      textureResolution
+      textureResolution,
+      textureUsage: usage.error ? undefined : usage.result
     });
     return ok({ findings });
   }
@@ -1352,31 +1406,11 @@ export class ToolService {
 
 }
 
-const validateDataUriSize = (dataUri: string): ToolError | null => {
-  const bytes = estimateDataUriBytes(dataUri);
-  if (bytes === null) return null;
-  if (bytes > MAX_DATA_URI_BYTES) {
-    return {
-      code: 'invalid_payload',
-      message: `dataUri exceeds ${MAX_DATA_URI_BYTES} bytes`,
-      fix: 'Use smaller textures or apply_texture_spec ops.',
-      details: { bytes, maxBytes: MAX_DATA_URI_BYTES }
-    };
-  }
-  return null;
-};
-
-const estimateDataUriBytes = (dataUri: string): number | null => {
-  const commaIndex = dataUri.indexOf(',');
-  if (commaIndex < 0) return null;
-  const payload = dataUri.slice(commaIndex + 1);
-  if (!payload) return 0;
-  const header = dataUri.slice(0, commaIndex);
-  if (!header.includes(';base64')) {
-    return payload.length;
-  }
-  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0;
-  return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+const hashCanvasImage = (image: CanvasImageSource | undefined): string | null => {
+  if (!image) return null;
+  const candidate = image as { toDataURL?: (type?: string) => string };
+  if (typeof candidate.toDataURL !== 'function') return null;
+  return hashText(candidate.toDataURL('image/png'));
 };
 
 const resolveTextureSize = (

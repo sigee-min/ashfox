@@ -74,8 +74,6 @@ export class ToolDispatcherImpl implements Dispatcher {
       switch (name) {
         case 'list_capabilities':
           return respondOk(this.service.listCapabilities()) as ToolResponse<ToolResultMap[TName]>;
-        case 'reload_plugin':
-          return this.handleReloadPlugin() as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_state':
           return toToolResponse(this.service.getProjectState(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_diff':
@@ -95,16 +93,6 @@ export class ToolDispatcherImpl implements Dispatcher {
           return this.attachState(payload, this.handleCreateProject(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'reset_project':
           return this.attachState(payload, this.handleResetProject(payload)) as ToolResponse<ToolResultMap[TName]>;
-        case 'import_texture':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.importTexture(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
-        case 'update_texture':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.updateTexture(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
         case 'delete_texture':
           return this.attachState(
             payload,
@@ -237,25 +225,6 @@ export class ToolDispatcherImpl implements Dispatcher {
   private handleResetProject(payload: ToolPayloadMap['reset_project']) {
     const result = this.service.resetProject(payload);
     return toToolResponse(result);
-  }
-
-  private handleReloadPlugin(): ToolResponse<{ ok: true }> {
-    const globals = readBlockbenchGlobals();
-    const plugins = globals.Plugins;
-    const blockbench = globals.Blockbench;
-    if (typeof plugins?.devReload !== 'function') {
-      return respondErrorSimple('not_implemented', 'Plugin reload is not available in this build.');
-    }
-    setTimeout(() => {
-      try {
-        plugins.devReload();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error('[bbmcp] plugin reload failed', message);
-      }
-    }, 50);
-    blockbench?.showQuickMessage?.('bbmcp reload requested', 1200);
-    return respondOk({ ok: true });
   }
 
   private attachState<

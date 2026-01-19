@@ -6,14 +6,24 @@ import { err } from './response';
 
 const MAX_TEX_OPS = 4096;
 
+export const resolveTextureSpecSize = (
+  spec: TextureSpec,
+  base?: { width?: number; height?: number }
+): { width?: number; height?: number } => {
+  const width = pickFinite(spec.width, base?.width);
+  const height = pickFinite(spec.height, base?.height);
+  return { width, height };
+};
+
 export const renderTextureSpec = (
   spec: TextureSpec,
   limits: Limits,
   base?: { image: CanvasImageSource; width: number; height: number }
-): ToolResponse<{ dataUri: string }> => {
+): ToolResponse<{ canvas: HTMLCanvasElement; width: number; height: number }> => {
   const label = spec?.name ?? spec?.targetName ?? spec?.targetId ?? 'texture';
-  const width = Number.isFinite(spec.width) ? spec.width : base?.width;
-  const height = Number.isFinite(spec.height) ? spec.height : base?.height;
+  const size = resolveTextureSpecSize(spec, base);
+  const width = size.width;
+  const height = size.height;
   if (!Number.isFinite(width) || width <= 0) {
     return err('invalid_payload', `texture width must be > 0 (${label})`);
   }
@@ -42,9 +52,6 @@ export const renderTextureSpec = (
     ctx.drawImage(base.image, 0, 0, width, height);
   }
   const ops = Array.isArray(spec.ops) ? spec.ops : [];
-  if (ops.length === 0) {
-    return err('invalid_payload', `texture ops must be a non-empty array (${label})`);
-  }
   if (ops.length > MAX_TEX_OPS) {
     return err('invalid_payload', `too many texture ops (>${MAX_TEX_OPS}) (${label})`);
   }
@@ -52,8 +59,7 @@ export const renderTextureSpec = (
     const res = applyTextureOp(ctx, op);
     if (!res.ok) return res;
   }
-  const dataUri = canvas.toDataURL('image/png');
-  return { ok: true, data: { dataUri } };
+  return { ok: true, data: { canvas, width, height } };
 };
 
 export const resolveTextureBase = (
@@ -120,3 +126,10 @@ const resolveImageDim = (image: CanvasImageSource, key: 'width' | 'height'): num
 };
 
 const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
+
+const pickFinite = (...values: Array<number | undefined>) => {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return undefined;
+};

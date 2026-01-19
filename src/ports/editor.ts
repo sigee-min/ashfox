@@ -1,4 +1,10 @@
-﻿import { FormatKind, RenderPreviewPayload, RenderPreviewResult, ToolError } from '../types';
+import { FormatKind, RenderPreviewPayload, RenderPreviewResult, ToolError } from '../types';
+import {
+  TextureFrameOrderType,
+  TexturePbrChannel,
+  TextureRenderMode,
+  TextureRenderSides
+} from '../types/texture';
 
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
@@ -58,20 +64,41 @@ export type TextureUsageQuery = {
   textureName?: string;
 };
 
+export type TextureMetaInput = {
+  namespace?: string;
+  folder?: string;
+  particle?: boolean;
+  visible?: boolean;
+  renderMode?: TextureRenderMode;
+  renderSides?: TextureRenderSides;
+  pbrChannel?: TexturePbrChannel;
+  group?: string;
+  frameTime?: number;
+  frameOrderType?: TextureFrameOrderType;
+  frameOrder?: string;
+  frameInterpolate?: boolean;
+  internal?: boolean;
+  keepSize?: boolean;
+};
+
+export type TextureImageSource = CanvasImageSource;
+
 export type ImportTextureCommand = {
   id?: string;
   name: string;
-  dataUri?: string;
-  path?: string;
-};
+  image: TextureImageSource;
+  width?: number;
+  height?: number;
+} & TextureMetaInput;
 
 export type UpdateTextureCommand = {
   id?: string;
   name?: string;
   newName?: string;
-  dataUri?: string;
-  path?: string;
-};
+  image: TextureImageSource;
+  width?: number;
+  height?: number;
+} & TextureMetaInput;
 
 export type DeleteTextureCommand = {
   id?: string;
@@ -210,6 +237,6 @@ export interface EditorPort {
   writeFile: (path: string, contents: string) => ToolError | null;
   listTextures: () => TextureStat[];
   getProjectTextureResolution: () => TextureResolution | null;
-  setProjectTextureResolution: (width: number, height: number) => ToolError | null;
+    setProjectTextureResolution: (width: number, height: number, modifyUv?: boolean) => ToolError | null;
   getTextureUsage: (params: TextureUsageQuery) => { result?: TextureUsageResult; error?: ToolError };
 }

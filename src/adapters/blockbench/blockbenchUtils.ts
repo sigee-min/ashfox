@@ -69,6 +69,25 @@ export const readTextureAliases = (tex: TextureInstance | null | undefined): str
   return Array.from(unique);
 };
 
+export const readTextureSize = (
+  tex: TextureInstance | null | undefined
+): { width?: number; height?: number } => {
+  if (!tex) return {};
+  const width = pickPositive(
+    tex.img?.naturalWidth,
+    tex.canvas?.width,
+    tex.width,
+    tex.img?.width
+  );
+  const height = pickPositive(
+    tex.img?.naturalHeight,
+    tex.canvas?.height,
+    tex.height,
+    tex.img?.height
+  );
+  return { width, height };
+};
+
 export const readAnimationId = (anim: AnimationClip | null | undefined): string | null => {
   if (!anim) return null;
   const raw = anim.bbmcpId ?? anim.uuid ?? anim.id ?? anim.uid ?? anim._uuid ?? null;
@@ -231,6 +250,13 @@ const isNodeInOutlinerRoot = (outliner: OutlinerApi | undefined, node: OutlinerN
   const root = outliner.root;
   if (Array.isArray(root) && root.includes(node)) return true;
   return Array.isArray(root?.children) && root.children.includes(node);
+};
+
+const pickPositive = (...values: Array<number | undefined>) => {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  }
+  return undefined;
 };
 
 export const hasUnsavedChanges = (blockbench: BlockbenchApi | undefined): boolean => {
