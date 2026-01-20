@@ -2,6 +2,9 @@ import {
   Capabilities,
   ExportPayload,
   FormatKind,
+  PreflightTextureResult,
+  PreflightUsageSummary,
+  PreflightUvBounds,
   ProjectDiff,
   ProjectInfo,
   ProjectState,
@@ -11,7 +14,7 @@ import {
   ToolError
 } from '../types';
 import { ProjectSession, SessionState } from '../session';
-import { CubeFaceDirection, EditorPort, FaceUvMap, TextureSource } from '../ports/editor';
+import { CubeFaceDirection, EditorPort, FaceUvMap, TextureSource, TextureUsageResult } from '../ports/editor';
 import { TextureMeta } from '../types/texture';
 import { FormatPort } from '../ports/formats';
 import { SnapshotPort } from '../ports/snapshot';
@@ -88,6 +91,10 @@ export class ToolService {
     return Boolean(this.policies.requireRevision);
   }
 
+  isAutoRetryRevisionEnabled(): boolean {
+    return Boolean(this.policies.autoRetryRevision);
+  }
+
   runWithoutRevisionGuard<T>(fn: () => T): T {
     this.revisionBypassDepth += 1;
     try {
@@ -157,6 +164,41 @@ export class ToolService {
     const res = this.editor.getTextureUsage(payload);
     if (res.error) return fail(res.error);
     return ok(res.result!);
+  }
+
+  preflightTexture(payload: { textureId?: string; textureName?: string; includeUsage?: boolean }): UsecaseResult<PreflightTextureResult> {
+    const activeErr = this.ensureActive();
+    if (activeErr) return fail(activeErr);
+    const usageRes = this.editor.getTextureUsage({ textureId: payload.textureId, textureName: payload.textureName });
+    if (usageRes.error) return fail(usageRes.error);
+    const usage = usageRes.result ?? { textures: [] };
+    const textureResolution = this.editor.getProjectTextureResolution() ?? undefined;
+    const usageSummary = summarizeTextureUsage(usage);
+    const uvBounds = computeUvBounds(usage);
+    const warnings: string[] = [];
+    if (!uvBounds) {
+      warnings.push('No UV rects found; preflight cannot compute UV bounds.');
+    }
+    if (usageSummary.unresolvedCount > 0) {
+      warnings.push(`Unresolved texture references detected (${usageSummary.unresolvedCount}).`);
+    }
+    if (textureResolution && uvBounds) {
+      if (uvBounds.maxX > textureResolution.width || uvBounds.maxY > textureResolution.height) {
+        warnings.push(
+          `UV bounds exceed textureResolution (${uvBounds.maxX}x${uvBounds.maxY} > ${textureResolution.width}x${textureResolution.height}).`
+        );
+      }
+    }
+    const recommendedResolution = recommendResolution(uvBounds, textureResolution, this.capabilities.limits.maxTextureSize);
+    const result: PreflightTextureResult = {
+      textureResolution,
+      usageSummary,
+      uvBounds: uvBounds ?? undefined,
+      recommendedResolution: recommendedResolution ?? undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
+      textureUsage: payload.includeUsage ? usage : undefined
+    };
+    return ok(result);
   }
 
   getProjectState(payload: { detail?: ProjectStateDetail }): UsecaseResult<{ project: ProjectState }> {
@@ -238,6 +280,129 @@ export class ToolService {
       format: normalized.format,
       name: normalized.name ?? null,
       formatId: normalized.formatId ?? null
+    });
+  }
+
+  ensureProject(payload: {
+    format?: Capabilities['formats'][number]['format'];
+    name?: string;
+    match?: 'none' | 'format' | 'name' | 'format_and_name';
+    onMismatch?: 'reuse' | 'error' | 'create';
+    onMissing?: 'create' | 'error';
+    confirmDiscard?: boolean;
+    dialog?: Record<string, unknown>;
+    confirmDialog?: boolean;
+    ifRevision?: string;
+  }): UsecaseResult<{ action: 'created' | 'reused'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
+    const matchMode = payload.match ?? 'none';
+    const onMissing = payload.onMissing ?? 'create';
+    const onMismatch = payload.onMismatch ?? 'reuse';
+    const requiresFormat = matchMode === 'format' || matchMode === 'format_and_name';
+    const requiresName = matchMode === 'name' || matchMode === 'format_and_name';
+    if (requiresFormat && !payload.format) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'format is required when match includes format.'
+      });
+    }
+    if (requiresName && !payload.name) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'name is required when match includes name.'
+      });
+    }
+
+    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
+    const normalized = this.projectState.normalize(snapshot);
+    const info = this.projectState.toProjectInfo(normalized);
+    const hasActive = Boolean(info && normalized.format);
+
+    if (!hasActive) {
+      if (onMissing === 'error') {
+        return fail({ code: 'invalid_state', message: 'No active project.' });
+      }
+      if (!payload.format || !payload.name) {
+        return fail({
+          code: 'invalid_payload',
+          message: 'format and name are required to create a new project.',
+          fix: 'Provide format and name or set onMissing=error.'
+        });
+      }
+      const created = this.createProject(payload.format, payload.name, {
+        confirmDiscard: payload.confirmDiscard,
+        dialog: payload.dialog,
+        confirmDialog: payload.confirmDialog,
+        ifRevision: payload.ifRevision
+      });
+      if (!created.ok) return created;
+      const sessionState = this.session.snapshot();
+      return ok({
+        action: 'created',
+        project: {
+          id: created.value.id,
+          format: created.value.format,
+          name: created.value.name,
+          formatId: sessionState.formatId ?? null
+        }
+      });
+    }
+
+    if (!normalized.format || !info) {
+      return fail({ code: 'invalid_state', message: 'Active project format is unknown.' });
+    }
+
+    const formatMismatch = requiresFormat && payload.format && normalized.format !== payload.format;
+    const nameMismatch = requiresName && payload.name && info.name !== payload.name;
+    const mismatch = formatMismatch || nameMismatch;
+
+    if (mismatch && onMismatch === 'error') {
+      return fail({
+        code: 'invalid_state',
+        message: 'Active project does not match requested criteria.',
+        details: {
+          expected: { format: payload.format ?? null, name: payload.name ?? null, match: matchMode },
+          actual: { format: normalized.format, name: info.name ?? null }
+        }
+      });
+    }
+
+    if (mismatch && onMismatch === 'create') {
+      if (!payload.format || !payload.name) {
+        return fail({
+          code: 'invalid_payload',
+          message: 'format and name are required to create a new project.',
+          fix: 'Provide format and name or set onMismatch=reuse/error.'
+        });
+      }
+      const created = this.createProject(payload.format, payload.name, {
+        confirmDiscard: payload.confirmDiscard,
+        dialog: payload.dialog,
+        confirmDialog: payload.confirmDialog,
+        ifRevision: payload.ifRevision
+      });
+      if (!created.ok) return created;
+      const sessionState = this.session.snapshot();
+      return ok({
+        action: 'created',
+        project: {
+          id: created.value.id,
+          format: created.value.format,
+          name: created.value.name,
+          formatId: sessionState.formatId ?? null
+        }
+      });
+    }
+
+    const attachRes = this.session.attach(normalized);
+    if (!attachRes.ok) return fail(attachRes.error);
+    return ok({
+      action: 'reused',
+      project: {
+        id: attachRes.data.id,
+        format: normalized.format,
+        name: attachRes.data.name,
+        formatId: normalized.formatId ?? null
+      }
     });
   }
 
@@ -1339,6 +1504,9 @@ export class ToolService {
       };
     }
     if (currentRevision !== expected) {
+      if (this.policies.autoRetryRevision) {
+        return null;
+      }
       return {
         code: 'invalid_state',
         message: 'Project revision mismatch. Refresh project state before retrying.',
@@ -1469,10 +1637,89 @@ const resolveCubeTargets = (cubes: SessionState['cubes'], cubeIds?: string[], cu
   return cubes.filter((cube) => (cube.id && ids.has(cube.id)) || names.has(cube.name));
 };
 
+const summarizeTextureUsage = (usage: TextureUsageResult): PreflightUsageSummary => {
+  let cubeCount = 0;
+  let faceCount = 0;
+  usage.textures.forEach((entry) => {
+    cubeCount += entry.cubeCount;
+    faceCount += entry.faceCount;
+  });
+  return {
+    textureCount: usage.textures.length,
+    cubeCount,
+    faceCount,
+    unresolvedCount: usage.unresolved?.length ?? 0
+  };
+};
+
+const computeUvBounds = (usage: TextureUsageResult): PreflightUvBounds | null => {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let faceCount = 0;
+  usage.textures.forEach((entry) => {
+    entry.cubes.forEach((cube) => {
+      cube.faces.forEach((face) => {
+        if (!face.uv) return;
+        const [x1, y1, x2, y2] = face.uv;
+        const localMinX = Math.min(x1, x2);
+        const localMinY = Math.min(y1, y2);
+        const localMaxX = Math.max(x1, x2);
+        const localMaxY = Math.max(y1, y2);
+        if (localMinX < minX) minX = localMinX;
+        if (localMinY < minY) minY = localMinY;
+        if (localMaxX > maxX) maxX = localMaxX;
+        if (localMaxY > maxY) maxY = localMaxY;
+        faceCount += 1;
+      });
+    });
+  });
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return null;
+  }
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: Math.max(0, maxX - minX),
+    height: Math.max(0, maxY - minY),
+    faceCount
+  };
+};
+
+const recommendResolution = (
+  bounds: PreflightUvBounds | null,
+  current: { width: number; height: number } | undefined,
+  maxSize: number
+): { width: number; height: number; reason: string } | null => {
+  if (!bounds) return null;
+  const requiredWidth = Math.max(bounds.maxX, current?.width ?? 0);
+  const requiredHeight = Math.max(bounds.maxY, current?.height ?? 0);
+  const width = clampResolution(roundUpResolution(requiredWidth), maxSize);
+  const height = clampResolution(roundUpResolution(requiredHeight), maxSize);
+  if (current && width <= current.width && height <= current.height) return null;
+  const reason = current ? 'uv_bounds_exceed_resolution' : 'resolution_missing';
+  return { width, height, reason };
+};
+
+const roundUpResolution = (value: number): number => {
+  if (!Number.isFinite(value) || value <= 0) return 16;
+  if (value <= 16) return 16;
+  return Math.ceil(value / 32) * 32;
+};
+
+const clampResolution = (value: number, maxSize: number): number => {
+  if (value <= 0) return 16;
+  if (value > maxSize) return maxSize;
+  return value;
+};
+
 function exportFormatToCapability(format: ExportPayload['format']): FormatKind | null {
   switch (format) {
-    case 'vanilla_json':
-      return 'vanilla';
+    case 'java_block_item_json':
+      return 'Java Block/Item';
     case 'gecko_geo_anim':
       return 'geckolib';
     case 'animated_java':
@@ -1493,6 +1740,7 @@ export interface ToolPolicies {
   autoAttachActiveProject?: boolean;
   autoIncludeState?: boolean;
   requireRevision?: boolean;
+  autoRetryRevision?: boolean;
 }
 
 export type ExportPolicy = 'strict' | 'best_effort';

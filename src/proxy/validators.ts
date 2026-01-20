@@ -1,20 +1,11 @@
-import {
-  ApplyAnimSpecPayload,
-  ApplyModelSpecPayload,
-  ApplyProjectSpecPayload,
-  ApplyTextureSpecPayload,
-  AnimInterp,
-  TextureOp
-} from '../spec';
+import { ApplyModelSpecPayload, ApplyTextureSpecPayload, TextureOp } from '../spec';
 import { resolveTextureSpecSize } from './texture';
 import { Limits, ToolResponse } from '../types';
 import { buildRigTemplate } from '../templates';
 import { isZeroSize } from '../domain/geometry';
 import { err } from './response';
 
-const MAX_KEYS = 4096;
 const MAX_TEX_OPS = 4096;
-const SUPPORTED_INTERP: AnimInterp[] = ['linear', 'step', 'catmullrom'];
 
 export const validateModelSpec = (payload: ApplyModelSpecPayload, limits: Limits): ToolResponse<unknown> => {
   if (!payload.model) return err('invalid_payload', 'model is required');
@@ -44,58 +35,6 @@ export const validateModelSpec = (payload: ApplyModelSpecPayload, limits: Limits
   for (const p of templatedParts) {
     if (!Array.isArray(p.size) || p.size.length !== 3) return err('invalid_payload', `size invalid for ${p.id}`);
     if (!Array.isArray(p.offset) || p.offset.length !== 3) return err('invalid_payload', `offset invalid for ${p.id}`);
-  }
-  return { ok: true, data: { valid: true } };
-};
-
-export const validateProjectSpec = (payload: ApplyProjectSpecPayload, limits: Limits): ToolResponse<unknown> => {
-  if (!payload) return err('invalid_payload', 'payload is required');
-  const hasModel = Boolean(payload.model);
-  const hasTextures = Array.isArray(payload.textures) && payload.textures.length > 0;
-  const hasAnimation = Boolean(payload.animation);
-  if (!hasModel && !hasTextures && !hasAnimation) {
-    return err('invalid_payload', 'model, textures, or animation is required');
-  }
-  if (payload.projectMode && !['auto', 'reuse', 'create'].includes(payload.projectMode)) {
-    return err('invalid_payload', `invalid projectMode: ${payload.projectMode}`);
-  }
-  if (!hasModel && payload.projectMode === 'create') {
-    return err('invalid_payload', 'projectMode=create requires model');
-  }
-  if (payload.model) {
-    const res = validateModelSpec({ model: payload.model } as ApplyModelSpecPayload, limits);
-    if (!res.ok) return res;
-  }
-  if (payload.textures) {
-    const res = validateTextureSpec({ textures: payload.textures } as ApplyTextureSpecPayload, limits);
-    if (!res.ok) return res;
-  }
-  if (payload.animation) {
-    const res = validateAnimSpec({ animation: payload.animation } as ApplyAnimSpecPayload);
-    if (!res.ok) return res;
-  }
-  return { ok: true, data: { valid: true } };
-};
-
-export const validateAnimSpec = (payload: ApplyAnimSpecPayload): ToolResponse<unknown> => {
-  if (!payload.animation) return err('invalid_payload', 'animation is required');
-  const { channels, duration, clip } = payload.animation;
-  if (!clip) return err('invalid_payload', 'clip name required');
-  if (duration <= 0) return err('invalid_payload', 'duration must be > 0');
-  if (!Array.isArray(channels) || channels.length === 0) return err('invalid_payload', 'channels required');
-  let keyCount = 0;
-  for (const ch of channels) {
-    if (!ch.bone) return err('invalid_payload', 'channel bone required');
-    if (!['rot', 'pos', 'scale'].includes(ch.channel)) return err('invalid_payload', 'channel type invalid');
-    if (!Array.isArray(ch.keys) || ch.keys.length === 0) return err('invalid_payload', 'keys required');
-    for (const k of ch.keys) {
-      keyCount += 1;
-      if (keyCount > MAX_KEYS) return err('invalid_payload', `too many keys (>${MAX_KEYS})`);
-      if (!Array.isArray(k.value) || k.value.length !== 3) return err('invalid_payload', 'key value invalid');
-      if (k.interp && !SUPPORTED_INTERP.includes(k.interp)) {
-        return err('invalid_payload', `unsupported interp ${k.interp}`);
-      }
-    }
   }
   return { ok: true, data: { valid: true } };
 };

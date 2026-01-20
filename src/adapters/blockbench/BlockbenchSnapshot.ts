@@ -222,7 +222,7 @@ function getActiveFormatId(globals: BlockbenchGlobals): string | null {
 
 function guessFormatKind(formatId: string | null): FormatKind | null {
   if (!formatId) return null;
-  const kinds: FormatKind[] = ['animated_java', 'geckolib', 'vanilla'];
+  const kinds: FormatKind[] = ['animated_java', 'geckolib', 'Java Block/Item'];
   return kinds.find((kind) => matchesFormatKind(kind, formatId)) ?? null;
 }
 

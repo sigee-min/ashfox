@@ -5,12 +5,12 @@ bbmcp turns Blockbench into an MCP-native modeling backend with a clean tool sur
 
 ## Highlights
 - MCP-first HTTP server with tool discovery and schema versioning.
-- High-level spec tools (`apply_model_spec`, `apply_texture_spec`, `apply_project_spec`).
-- Low-level controls (bones, cubes, textures, animations, export, validate).
+- High-level spec tools (`apply_model_spec`, `apply_texture_spec`).
+- Low-level controls (bones, cubes, textures, export, validate).
 - Explicit texture assignment via `assign_texture` (no hidden auto-assign).
 - Revision guard (`ifRevision`) for safe concurrent edits.
 - Preview output as MCP `content` image blocks (base64 PNG).
-- Vanilla enabled by default; GeckoLib/Animated Java gated by capabilities.
+- Java Block/Item enabled by default; GeckoLib/Animated Java gated by capabilities.
 
 ## Quickstart
 1) Install dependencies
@@ -37,21 +37,27 @@ http://127.0.0.1:8787/mcp
 ```
 
 ## Core Flow (Recommended)
-1) `get_project_state` to read `revision`.
+1) `ensure_project` (or `get_project_state`) to confirm an active project and read `revision`.
 2) Mutations (`create_project`, `add_bone`, `add_cube`, `apply_*`) with `ifRevision`.
 3) `validate` to catch issues early.
 4) `render_preview` for images.
 5) `export` for JSON output.
 
 ## Texture Flow (Recommended)
-1) `apply_texture_spec` to create or update texture data via ops (no image import tool).
+1) Lock invariants first: textureResolution, UV policy (manual per-face), and texture count (single atlas vs per-material).
+2) `preflight_texture` to build the UV mapping table and recommended resolution.
+3) Paint a checker/label texture first to verify orientation and coverage.
+4) `apply_texture_spec` to create or update texture data via ops (no image import tool).
    - Omit `ops` to create an empty texture (background can still fill).
    - `width/height` are required and should match the project textureResolution.
-2) `assign_texture` to bind textures to cubes (required for visible results; does not change UVs).
-3) `set_face_uv` to apply per-face UVs explicitly.
-4) Prefer material-group textures (pot/soil/plant) and assign via `cubeNames` for stability.
-5) If UVs exceed the current resolution, increase it or split textures per material.
-6) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures. If you need to scale existing UVs, pass `modifyUv=true` (if supported by the host).
+   - Very low opaque coverage is rejected; fill a larger area or tighten UVs.
+   - Success responses include `report.textureCoverage` (opaque ratio + bounds) for each rendered texture.
+5) `assign_texture` to bind textures to cubes (required for visible results; does not change UVs).
+6) `set_face_uv` to apply per-face UVs explicitly.
+7) Prefer material-group textures (pot/soil/plant) and assign via `cubeNames` for stability.
+8) If UVs exceed the current resolution, increase it or split textures per material.
+9) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures. If you need to scale existing UVs, pass `modifyUv=true` (if supported by the host).
+10) If UVs or resolution change after painting, repaint using the new mapping.
 
 ## Preview Output (MCP Standard)
 `render_preview` responds with MCP `content` blocks:

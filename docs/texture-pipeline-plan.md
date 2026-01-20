@@ -54,13 +54,15 @@ The pipeline is designed around evidence from tool-using LLM studies:
 
 ## Pipeline Overview
 1) Validate payload and enforce limits.  
-2) Resolve base texture (optional) for update/patch flows.  
-3) Render data URI via in-memory canvas and atomic ops.  
-4) Create/update texture through Blockbench API (internal).  
-5) Bind textures to cubes explicitly via `assign_texture` (separate tool).  
-6) Apply per-face UVs with `set_face_uv` (manual UV only).  
-7) Refresh snapshot, compute revision and diff.  
-8) Return ToolResponse with report + state (+ diff).
+2) Preflight mapping: call `preflight_texture` to build the UV mapping table.  
+3) Render a checker/label texture to verify orientation before final paint.  
+4) Resolve base texture (optional) for update/patch flows.  
+5) Render data URI via in-memory canvas and atomic ops.  
+6) Create/update texture through Blockbench API (internal).  
+7) Bind textures to cubes explicitly via `assign_texture` (separate tool).  
+8) Apply per-face UVs with `set_face_uv` (manual UV only).  
+9) Refresh snapshot, compute revision and diff.  
+10) Return ToolResponse with report + state (+ diff).
 
 ## Pipeline Stages (Detailed)
 
@@ -70,6 +72,13 @@ The pipeline is designed around evidence from tool-using LLM studies:
   - textures list (id, name, size, path)
   - format and limits
 - This step is mandatory before any mutation.
+  - Also call `preflight_texture` to build the UV mapping table (face -> UV rect).
+  - If UVs change later, repaint using the new mapping.
+
+### Preflight Gate (Required for Painting)
+- Build a UV mapping table from `preflight_texture`.
+- Paint a checker/label texture first and preview it to verify orientation.
+- Only then apply the final texture paint ops.
 
 ### Stage B: Apply (Ops Only)
 - Create:
@@ -132,7 +141,7 @@ Low-level:
 - `delete_texture`
 - `assign_texture` (bind texture to cubes/faces)
 - `set_face_uv` (manual per-face UVs)
-- `get_texture_usage` (verify face bindings and UVs)
+- `preflight_texture` (verify face bindings and UVs)
 
 ### Tool Guidance
 - `apply_texture_spec` is the default path for LLMs.
@@ -141,6 +150,8 @@ Low-level:
 - If UVs exceed the current textureResolution, increase it (set_project_texture_resolution) or split textures per material group. Use modifyUv=true only when you want existing UVs scaled (if supported by the host).
 - Omitting ops creates a blank texture (background can still fill).
 - High-level plans must be compiled into ops client-side to avoid schema drift.
+- Always build the UV mapping table via `preflight_texture` before painting.
+- If UVs change after painting, repaint using the updated mapping.
 
 Recommended LLM flow:
 1) `get_project_state`
@@ -166,6 +177,7 @@ Recommended LLM flow:
 - `targetId` or `targetName` required on update.
 - Reject unknown ops with `invalid_payload`.
 - Reject `ops` count > `maxOps` (default 4096) with `invalid_payload`.
+- Reject create ops with very low opaque coverage (<5%) to avoid invisible textures when UVs reference full regions.
 
 ## State and Revision
 - On success: revision must advance and diff must reflect changes.
@@ -187,6 +199,7 @@ Recommended LLM flow:
 ## Observability
 - Log counts and operation names for `apply_texture_spec`.
 - Include `report.applied.textures` and `report.errors[]`.
+- Include `report.textureCoverage` (opaque ratio + bounds) for each rendered texture.
 - Add diagnostics only for failures (avoid bloating success payloads).
 - Log when update mode uses a base texture and whether it was found.
 

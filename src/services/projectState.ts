@@ -23,7 +23,7 @@ export class ProjectStateService {
         normalized.format = overrideKind;
         return normalized;
       }
-      const kinds: FormatKind[] = ['animated_java', 'geckolib', 'vanilla'];
+      const kinds: FormatKind[] = ['animated_java', 'geckolib', 'Java Block/Item'];
       const match = kinds.find((kind) => matchesFormatKind(kind, normalized.formatId));
       if (match) normalized.format = match;
     }

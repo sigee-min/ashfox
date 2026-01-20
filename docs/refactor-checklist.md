@@ -10,6 +10,7 @@
 - `list_capabilities` returns expected version and limits.
 - `create_project(ifRevision)` succeeds.
 - `add_bone` and `add_cube` succeed.
+- `preflight_texture` returns UV bounds and a recommended resolution when UVs exceed the current size.
 - `apply_texture_spec` updates state and revision.
 - `assign_texture` binds textures to cubes without changing UVs.
 - `set_face_uv` updates per-face UVs as provided.

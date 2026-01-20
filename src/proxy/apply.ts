@@ -1,16 +1,14 @@
 import { Logger } from '../logging';
 import {
-  ApplyAnimSpecPayload,
   ApplyModelSpecPayload,
-  ApplyProjectSpecPayload,
   ApplyTextureSpecPayload,
   TextureSpec
 } from '../spec';
 import { Limits, ToolError, ToolResponse } from '../types';
 import { ToolService } from '../usecases/ToolService';
 import { buildRigTemplate } from '../templates';
-import { buildMeta, MetaOptions, withErrorMeta } from './meta';
-import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize } from './texture';
+import { buildMeta, MetaOptions } from './meta';
+import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize, TextureCoverage } from './texture';
 import { toToolResponse } from './response';
 import { isZeroSize } from '../domain/geometry';
 
@@ -20,9 +18,19 @@ type ApplyErrorEntry = {
   message: string;
 };
 
+type TextureCoverageReport = {
+  id?: string;
+  name: string;
+  mode: 'create' | 'update';
+  width: number;
+  height: number;
+  coverage?: TextureCoverage;
+};
+
 export type ApplyReport = {
   applied: { bones: string[]; cubes: string[]; textures: string[]; animations: string[] };
   errors: ApplyErrorEntry[];
+  textureCoverage?: TextureCoverageReport[];
 };
 
 export const createApplyReport = (): ApplyReport => ({
@@ -35,16 +43,8 @@ export const applyModelSpecSteps = (
   log: Logger,
   payload: ApplyModelSpecPayload,
   report: ApplyReport,
-  meta: MetaOptions,
-  options?: { createProject?: boolean }
+  meta: MetaOptions
 ): ToolResponse<ApplyReport> => {
-  if (options?.createProject !== false) {
-    const sessionInit = toToolResponse(
-      service.createProject(payload.model.format, payload.model.name, { ifRevision: payload.ifRevision })
-    );
-    if (!sessionInit.ok) return withReportError(sessionInit.error, report, 'create_project', undefined, meta, service);
-  }
-
   const templatedParts = buildRigTemplate(payload.model.rigTemplate, payload.model.parts);
   for (const part of templatedParts) {
     const boneRes = service.addBone({
@@ -97,6 +97,9 @@ export const applyTextureSpecSteps = (
       if (!renderRes.ok) {
         return withReportError(renderRes.error, report, 'render_texture', label, meta, service);
       }
+      recordTextureCoverage(report, texture, renderRes.data, 'create', label);
+      const coverageCheck = guardTextureCoverage(renderRes.data.coverage, texture, label, report, meta, service);
+      if (!coverageCheck.ok) return coverageCheck;
       const res = service.importTexture({
         id: texture.id,
         name: texture.name ?? label,
@@ -156,6 +159,7 @@ export const applyTextureSpecSteps = (
     if (!renderRes.ok) {
       return withReportError(renderRes.error, report, 'render_texture', label, meta, service);
     }
+    recordTextureCoverage(report, texture, renderRes.data, 'update', label);
     if (baseDataUri) {
       const renderedDataUri = renderRes.data.canvas.toDataURL('image/png');
       if (renderedDataUri === baseDataUri) {
@@ -185,81 +189,6 @@ export const applyTextureSpecSteps = (
   return { ok: true, data: report };
 };
 
-export const applyAnimSpecSteps = (
-  service: ToolService,
-  animation: ApplyAnimSpecPayload['animation'],
-  report: ApplyReport,
-  meta: MetaOptions
-): ToolResponse<ApplyReport> => {
-  const createRes = toToolResponse(
-    service.createAnimationClip({
-      name: animation.clip,
-      length: animation.duration,
-      loop: animation.loop,
-      fps: animation.fps,
-      ifRevision: meta.ifRevision
-    })
-  );
-  if (!createRes.ok) return withReportError(createRes.error, report, 'create_animation_clip', animation.clip, meta, service);
-  const clipId = createRes.data.id;
-  for (const ch of animation.channels) {
-    const res = toToolResponse(
-      service.setKeyframes({
-        clipId,
-        clip: animation.clip,
-        bone: ch.bone,
-        channel: ch.channel,
-        keys: ch.keys
-      })
-    );
-    if (!res.ok) return withReportError(res.error, report, 'set_keyframes', ch.bone, meta, service);
-  }
-  report.applied.animations.push(animation.clip);
-  return { ok: true, data: report };
-};
-
-export const resolveProjectMode = (
-  mode: ApplyProjectSpecPayload['projectMode']
-): 'auto' | 'reuse' | 'create' => mode ?? 'auto';
-
-export const resolveProjectAction = (
-  service: ToolService,
-  format: ApplyModelSpecPayload['model']['format'],
-  mode: 'auto' | 'reuse' | 'create',
-  meta: MetaOptions
-): ToolResponse<{ action: 'create' | 'reuse' }> => {
-  if (mode === 'create') return { ok: true, data: { action: 'create' } };
-  const state = service.getProjectState({ detail: 'summary' });
-  if (!state.ok || !state.value.project.active) {
-    if (mode === 'reuse') {
-      return withErrorMeta(
-        { code: 'invalid_state', message: 'No active project to reuse.' },
-        meta,
-        service
-      );
-    }
-    return { ok: true, data: { action: 'create' } };
-  }
-  const currentFormat = state.value.project.format;
-  if (!currentFormat || currentFormat !== format) {
-    if (mode === 'reuse') {
-      return withErrorMeta(
-        { code: 'invalid_state', message: `Active project format mismatch (${currentFormat ?? 'unknown'} != ${format}).` },
-        meta,
-        service
-      );
-    }
-    return { ok: true, data: { action: 'create' } };
-  }
-  return { ok: true, data: { action: 'reuse' } };
-};
-
-export const ensureActiveProject = (service: ToolService, meta: MetaOptions): ToolResponse<{ ok: true }> => {
-  const state = service.getProjectState({ detail: 'summary' });
-  if (state.ok && state.value.project.active) return { ok: true, data: { ok: true } };
-  return withErrorMeta({ code: 'invalid_state', message: 'No active project to reuse.' }, meta, service);
-};
-
 const withReportError = (
   error: ToolError,
   report: ApplyReport,
@@ -281,6 +210,41 @@ const recordApplyError = (
 ): ApplyReport => {
   report.errors.push({ step, item, message });
   return report;
+};
+
+const MIN_OPAQUE_RATIO = 0.05;
+
+const guardTextureCoverage = (
+  coverage: TextureCoverage | undefined,
+  texture: TextureSpec,
+  label: string,
+  report: ApplyReport,
+  meta: MetaOptions,
+  service: ToolService
+): ToolResponse<ApplyReport> => {
+  const mode = texture.mode ?? 'create';
+  if (mode !== 'create') return { ok: true, data: report };
+  const ops = Array.isArray(texture.ops) ? texture.ops : [];
+  if (ops.length === 0) return { ok: true, data: report };
+  if (!coverage || coverage.totalPixels === 0) return { ok: true, data: report };
+  if (coverage.opaqueRatio >= MIN_OPAQUE_RATIO) return { ok: true, data: report };
+  const ratio = Math.round(coverage.opaqueRatio * 1000) / 10;
+  return withReportError(
+    {
+      code: 'invalid_payload',
+      message: `Texture coverage too low for "${label}" (${ratio}% opaque).`,
+      fix: 'Fill a larger opaque area, use an opaque background, or set per-face UVs to the painted bounds.',
+      details: {
+        coverage,
+        hint: 'Low opaque coverage + full-face UVs yields transparent results.'
+      }
+    },
+    report,
+    'texture_coverage',
+    label,
+    meta,
+    service
+  );
 };
 
 const ensureTextureSizeMatches = (
@@ -339,4 +303,27 @@ const summarizeOps = (ops: TextureSpec['ops'] | undefined) => {
     total: list.length,
     byOp: Object.fromEntries(counts)
   };
+};
+
+const recordTextureCoverage = (
+  report: ApplyReport,
+  texture: TextureSpec,
+  render: { width: number; height: number; coverage?: TextureCoverage },
+  mode: 'create' | 'update',
+  label: string
+) => {
+  const name = texture.name ?? texture.targetName ?? label;
+  const entry: TextureCoverageReport = {
+    id: texture.id ?? texture.targetId ?? undefined,
+    name,
+    mode,
+    width: render.width,
+    height: render.height,
+    coverage: render.coverage ?? undefined
+  };
+  if (!report.textureCoverage) {
+    report.textureCoverage = [entry];
+    return;
+  }
+  report.textureCoverage.push(entry);
 };

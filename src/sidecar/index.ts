@@ -28,9 +28,7 @@ const executor = {
   callTool: (name: string, args: unknown) => {
     const mode =
       name === 'apply_model_spec' ||
-      name === 'apply_texture_spec' ||
-      name === 'apply_anim_spec' ||
-      name === 'apply_project_spec'
+      name === 'apply_texture_spec'
         ? 'proxy'
         : 'direct';
     return client.request(name, args, mode);
@@ -43,7 +41,7 @@ const router = new McpRouter(
     token: config.token,
     serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
     instructions:
-      'Use get_project_state/get_project_diff (or includeState/includeDiff) before mutations and include ifRevision. Prefer apply_project_spec/apply_* specs and id-based updates. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs.'
+      'Use get_project_state (or includeState/includeDiff) before mutations and include ifRevision. Prefer ensure_project to reuse existing projects; call create_project only when you want a fresh project. Prefer apply_model_spec/apply_texture_spec and id-based updates. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
   },
   executor,
   log

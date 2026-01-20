@@ -47,8 +47,8 @@ export function matchesFormatKind(kind: FormatKind, value: string | null | undef
 
 function getPatterns(kind: FormatKind): string[] {
   switch (kind) {
-    case 'vanilla':
-      return ['java_block', 'java block', 'java_item', 'java item', 'java-block', 'vanilla'];
+    case 'Java Block/Item':
+      return ['java_block', 'java block', 'java_item', 'java item', 'java-block', 'java block/item'];
     case 'geckolib':
       return ['geckolib', 'gecko_lib', 'gecko'];
     case 'animated_java':

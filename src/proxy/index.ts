@@ -1,23 +1,13 @@
 import { Logger } from '../logging';
 import { Limits, RenderPreviewPayload, RenderPreviewResult, ToolResponse } from '../types';
 import {
-  ApplyAnimSpecPayload,
   ApplyModelSpecPayload,
-  ApplyProjectSpecPayload,
   ApplyTextureSpecPayload,
   ProxyTool
 } from '../spec';
 import { ToolService } from '../usecases/ToolService';
 import { buildRenderPreviewContent, buildRenderPreviewStructured } from '../mcp/content';
-import {
-  applyAnimSpecSteps,
-  applyModelSpecSteps,
-  applyTextureSpecSteps,
-  createApplyReport,
-  ensureActiveProject,
-  resolveProjectAction,
-  resolveProjectMode
-} from './apply';
+import { applyModelSpecSteps, applyTextureSpecSteps, createApplyReport } from './apply';
 import {
   guardRevision,
   MetaOptions,
@@ -26,8 +16,8 @@ import {
   resolveIncludeState,
   withMeta
 } from './meta';
-import { err, toToolResponse } from './response';
-import { validateAnimSpec, validateModelSpec, validateProjectSpec, validateTextureSpec } from './validators';
+import { toToolResponse } from './response';
+import { validateModelSpec, validateTextureSpec } from './validators';
 
 export class ProxyRouter {
   private readonly service: ToolService;
@@ -92,78 +82,6 @@ export class ProxyRouter {
     });
   }
 
-  applyAnimSpec(payload: ApplyAnimSpecPayload): ToolResponse<unknown> {
-    const v = validateAnimSpec(payload);
-    if (!v.ok) return v;
-    const a = payload.animation;
-    const includeState = resolveIncludeState(payload.includeState, this.includeStateByDefault);
-    const meta: MetaOptions = {
-      includeState,
-      includeDiff: resolveIncludeDiff(payload.includeDiff, this.includeDiffByDefault),
-      diffDetail: resolveDiffDetail(payload.diffDetail),
-      ifRevision: payload.ifRevision
-    };
-    const guard = guardRevision(this.service, payload.ifRevision, meta);
-    if (guard) return guard;
-    return this.runWithoutRevisionGuard(() => {
-      const report = createApplyReport();
-      const result = applyAnimSpecSteps(this.service, a, report, meta);
-      if (!result.ok) return result;
-      this.log.info('applyAnimSpec applied', { clip: a.clip, channels: a.channels.length });
-      return { ok: true, data: withMeta({ applied: true, report }, meta, this.service) };
-    });
-  }
-
-  applyProjectSpec(payload: ApplyProjectSpecPayload): ToolResponse<unknown> {
-    const v = validateProjectSpec(payload, this.limits);
-    if (!v.ok) return v;
-    const includeState = resolveIncludeState(payload.includeState, this.includeStateByDefault);
-    const meta: MetaOptions = {
-      includeState,
-      includeDiff: resolveIncludeDiff(payload.includeDiff, this.includeDiffByDefault),
-      diffDetail: resolveDiffDetail(payload.diffDetail),
-      ifRevision: payload.ifRevision
-    };
-    const guard = guardRevision(this.service, payload.ifRevision, meta);
-    if (guard) return guard;
-    return this.runWithoutRevisionGuard(() => {
-      const report = createApplyReport();
-      const projectMode = resolveProjectMode(payload.projectMode);
-      if (payload.model) {
-        const action = resolveProjectAction(this.service, payload.model.format, projectMode, meta);
-        if (!action.ok) return action;
-        const modelPayload: ApplyModelSpecPayload = {
-          model: payload.model,
-          ifRevision: payload.ifRevision
-        };
-        const modelRes = applyModelSpecSteps(this.service, this.log, modelPayload, report, meta, {
-          createProject: action.data.action === 'create'
-        });
-        if (!modelRes.ok) return modelRes;
-      } else {
-        if (projectMode === 'create') {
-          return err('invalid_payload', 'projectMode=create requires model');
-        }
-        const activeCheck = ensureActiveProject(this.service, meta);
-        if (!activeCheck.ok) return activeCheck;
-      }
-      if (payload.textures && payload.textures.length > 0) {
-        const texRes = applyTextureSpecSteps(this.service, this.limits, payload.textures, report, meta, this.log);
-        if (!texRes.ok) return texRes;
-      }
-      if (payload.animation) {
-        const animRes = applyAnimSpecSteps(this.service, payload.animation, report, meta);
-        if (!animRes.ok) return animRes;
-      }
-      this.log.info('applyProjectSpec applied', {
-        model: Boolean(payload.model),
-        textures: payload.textures?.length ?? 0,
-        animation: Boolean(payload.animation)
-      });
-      return { ok: true, data: withMeta({ applied: true, report }, meta, this.service) };
-    });
-  }
-
   handle(tool: ProxyTool, payload: unknown): ToolResponse<unknown> {
     try {
       switch (tool) {
@@ -171,10 +89,6 @@ export class ProxyRouter {
           return this.applyModelSpec(payload as ApplyModelSpecPayload);
         case 'apply_texture_spec':
           return this.applyTextureSpec(payload as ApplyTextureSpecPayload);
-        case 'apply_anim_spec':
-          return this.applyAnimSpec(payload as ApplyAnimSpecPayload);
-        case 'apply_project_spec':
-          return this.applyProjectSpec(payload as ApplyProjectSpecPayload);
         case 'render_preview':
           return attachRenderPreviewContent(
             toToolResponse(this.service.renderPreview(payload as RenderPreviewPayload))

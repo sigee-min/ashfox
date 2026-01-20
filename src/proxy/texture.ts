@@ -6,6 +6,13 @@ import { err } from './response';
 
 const MAX_TEX_OPS = 4096;
 
+export type TextureCoverage = {
+  opaquePixels: number;
+  totalPixels: number;
+  opaqueRatio: number;
+  bounds?: { x1: number; y1: number; x2: number; y2: number };
+};
+
 export const resolveTextureSpecSize = (
   spec: TextureSpec,
   base?: { width?: number; height?: number }
@@ -19,7 +26,7 @@ export const renderTextureSpec = (
   spec: TextureSpec,
   limits: Limits,
   base?: { image: CanvasImageSource; width: number; height: number }
-): ToolResponse<{ canvas: HTMLCanvasElement; width: number; height: number }> => {
+): ToolResponse<{ canvas: HTMLCanvasElement; width: number; height: number; coverage?: TextureCoverage }> => {
   const label = spec?.name ?? spec?.targetName ?? spec?.targetId ?? 'texture';
   const size = resolveTextureSpecSize(spec, base);
   const width = size.width;
@@ -59,7 +66,8 @@ export const renderTextureSpec = (
     const res = applyTextureOp(ctx, op);
     if (!res.ok) return res;
   }
-  return { ok: true, data: { canvas, width, height } };
+  const coverage = analyzeTextureCoverage(ctx, width, height);
+  return { ok: true, data: { canvas, width, height, coverage: coverage ?? undefined } };
 };
 
 export const resolveTextureBase = (
@@ -132,4 +140,42 @@ const pickFinite = (...values: Array<number | undefined>) => {
     if (typeof value === 'number' && Number.isFinite(value)) return value;
   }
   return undefined;
+};
+
+const analyzeTextureCoverage = (
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): TextureCoverage | null => {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
+  try {
+    const image = ctx.getImageData(0, 0, width, height);
+    const data = image.data;
+    const totalPixels = width * height;
+    let opaquePixels = 0;
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha === 0) continue;
+      opaquePixels += 1;
+      const idx = i / 4;
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+    const opaqueRatio = totalPixels > 0 ? opaquePixels / totalPixels : 0;
+    const bounds =
+      opaquePixels > 0
+        ? { x1: minX, y1: minY, x2: maxX, y2: maxY }
+        : undefined;
+    return { opaquePixels, totalPixels, opaqueRatio, bounds };
+  } catch {
+    return null;
+  }
 };

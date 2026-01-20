@@ -76,19 +76,22 @@ export class ToolDispatcherImpl implements Dispatcher {
           return respondOk(this.service.listCapabilities()) as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_state':
           return toToolResponse(this.service.getProjectState(payload)) as ToolResponse<ToolResultMap[TName]>;
-        case 'get_project_diff':
-          return toToolResponse(this.service.getProjectDiff(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'set_project_texture_resolution':
           return this.attachState(
             payload,
             toToolResponse(this.service.setProjectTextureResolution(payload))
           ) as ToolResponse<ToolResultMap[TName]>;
-        case 'get_texture_usage':
-          return toToolResponse(this.service.getTextureUsage(payload)) as ToolResponse<ToolResultMap[TName]>;
+        case 'preflight_texture':
+          return toToolResponse(this.service.preflightTexture(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'list_projects':
           return toToolResponse(this.service.listProjects()) as ToolResponse<ToolResultMap[TName]>;
         case 'select_project':
           return this.attachState(payload, this.handleSelectProject(payload)) as ToolResponse<ToolResultMap[TName]>;
+        case 'ensure_project':
+          return this.attachState(
+            payload,
+            toToolResponse(this.service.ensureProject(payload))
+          ) as ToolResponse<ToolResultMap[TName]>;
         case 'create_project':
           return this.attachState(payload, this.handleCreateProject(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'reset_project':
@@ -142,26 +145,6 @@ export class ToolDispatcherImpl implements Dispatcher {
           return this.attachState(
             payload,
             toToolResponse(this.service.applyRigTemplate(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
-        case 'create_animation_clip':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.createAnimationClip(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
-        case 'update_animation_clip':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.updateAnimationClip(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
-        case 'delete_animation_clip':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.deleteAnimationClip(payload))
-          ) as ToolResponse<ToolResultMap[TName]>;
-        case 'set_keyframes':
-          return this.attachState(
-            payload,
-            toToolResponse(this.service.setKeyframes(payload))
           ) as ToolResponse<ToolResultMap[TName]>;
         case 'export':
           return this.attachState(

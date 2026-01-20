@@ -1,4 +1,4 @@
-export type FormatKind = 'vanilla' | 'geckolib' | 'animated_java';
+export type FormatKind = 'Java Block/Item' | 'geckolib' | 'animated_java';
 
 export type ProjectStateDetail = 'summary' | 'full';
 

@@ -25,8 +25,8 @@ export function buildInternalExport(format: ExportKind, state: SessionState): Ex
 
 function buildInternalPayload(format: ExportKind, state: SessionState) {
   switch (format) {
-    case 'vanilla_json':
-      return buildVanillaModel(state);
+    case 'java_block_item_json':
+      return buildJavaBlockItemModel(state);
     case 'gecko_geo_anim':
       return buildGeckoModel(state);
     case 'animated_java':
@@ -46,7 +46,7 @@ function buildSnapshotFallback(state: SessionState) {
   };
 }
 
-function buildVanillaModel(state: SessionState) {
+function buildJavaBlockItemModel(state: SessionState) {
   const elements = state.cubes.map((cube) => {
     const bone = state.bones.find((b) => b.name === cube.bone);
     const rotation = bone?.rotation ? pickVanillaRotation(bone.rotation, bone.pivot) : null;
@@ -59,7 +59,7 @@ function buildVanillaModel(state: SessionState) {
   });
 
   return {
-    format: 'bbmcp_vanilla',
+    format: 'bbmcp_java_block_item',
     name: state.name ?? 'model',
     elements
   };

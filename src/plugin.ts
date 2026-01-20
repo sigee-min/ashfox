@@ -12,7 +12,7 @@ import { ToolDispatcherImpl } from './dispatcher';
 import { Capabilities, Dispatcher, ExportPayload, FormatKind } from './types';
 import { ProxyRouter } from './proxy';
 import { ConsoleLogger, LogLevel } from './logging';
-import { ApplyModelSpecPayload, ApplyAnimSpecPayload, ProxyTool } from './spec';
+import { ApplyModelSpecPayload, ApplyTextureSpecPayload, ProxyTool } from './spec';
 import { SidecarProcess } from './sidecar/SidecarProcess';
 import { SidecarLaunchConfig } from './sidecar/types';
 import { ToolService, ExportPolicy } from './usecases/ToolService';
@@ -24,6 +24,7 @@ import { FormatOverrides, resolveFormatId } from './domain/format';
 import { buildInternalExport } from './domain/exporters';
 import { startServer } from './server';
 import { UnknownRecord, readBlockbenchGlobals } from './types/blockbench';
+import { TOOL_REGISTRY_COUNT, TOOL_REGISTRY_HASH } from './mcp/tools';
 
 const readGlobals = () => readBlockbenchGlobals();
 
@@ -34,6 +35,7 @@ type ServerSettings = SidecarLaunchConfig & {
   autoIncludeState: boolean;
   autoIncludeDiff: boolean;
   requireRevision: boolean;
+  autoRetryRevision: boolean;
 };
 
 type BbmcpBridge = {
@@ -54,7 +56,8 @@ const policies = {
   autoAttachActiveProject: true,
   autoIncludeState: false,
   autoIncludeDiff: false,
-  requireRevision: true
+  requireRevision: true,
+  autoRetryRevision: true
 };
 
 let logLevel: LogLevel = 'info';
@@ -69,6 +72,7 @@ const serverConfig: ServerSettings = {
   autoIncludeState: false,
   autoIncludeDiff: false,
   requireRevision: true,
+  autoRetryRevision: true,
   execPath: undefined
 };
 
@@ -199,8 +203,8 @@ function registerCodecs(capabilities: Capabilities, session: ProjectSession, for
     });
   };
 
-  if (capabilities.formats.find((f) => f.format === 'vanilla' && f.enabled)) {
-    register('vanilla', 'vanilla_json', PLUGIN_ID + '_vanilla');
+  if (capabilities.formats.find((f) => f.format === 'Java Block/Item' && f.enabled)) {
+    register('Java Block/Item', 'java_block_item_json', PLUGIN_ID + '_java_block_item');
   }
   if (capabilities.formats.find((f) => f.format === 'geckolib' && f.enabled)) {
     register('geckolib', 'gecko_geo_anim', PLUGIN_ID + '_geckolib');
@@ -376,6 +380,13 @@ function registerSettings() {
       value: serverConfig.requireRevision,
       description: 'Require ifRevision on mutation tools to guard against stale state'
     },
+    {
+      id: 'autoRetryRevision',
+      name: 'Auto Retry on Revision Mismatch',
+      type: 'toggle',
+      value: serverConfig.autoRetryRevision,
+      description: 'Retry once on revision mismatch using the latest project state'
+    },
     { id: 'host', name: 'MCP Host', type: 'text', value: serverConfig.host, description: 'MCP server host' },
     { id: 'port', name: 'MCP Port', type: 'number', value: serverConfig.port, description: 'MCP server port' },
     { id: 'path', name: 'MCP Path', type: 'text', value: serverConfig.path, description: 'MCP server path' }
@@ -407,6 +418,10 @@ function registerSettings() {
       const enabled = Boolean(value);
       serverConfig.requireRevision = enabled;
       policies.requireRevision = enabled;
+    } else if (id === 'autoRetryRevision') {
+      const enabled = Boolean(value);
+      serverConfig.autoRetryRevision = enabled;
+      policies.autoRetryRevision = enabled;
     } else if (id === 'host') {
       serverConfig.host = String(value);
     } else if (id === 'port') {
@@ -450,7 +465,7 @@ function registerFormatSettings() {
   };
 
   const entries: Array<{ id: string; name: string; key: FormatKey }> = [
-    { id: 'format_vanilla', name: 'Format ID (vanilla)', key: 'vanilla' },
+    { id: 'format_java_block_item', name: 'Format ID (Java Block/Item)', key: 'Java Block/Item' },
     { id: 'format_geckolib', name: 'Format ID (geckolib)', key: 'geckolib' },
     { id: 'format_animated_java', name: 'Format ID (animated_java)', key: 'animated_java' }
   ];
@@ -522,7 +537,7 @@ pluginApi?.register(PLUGIN_ID, {
   title: 'bbmcp',
   author: 'sigee-min',
   icon: 'extension',
-  description: 'Blockbench MCP bridge scaffold (vanilla default, GeckoLib optional). Latest Blockbench desktop only.',
+  description: 'Blockbench MCP bridge scaffold (Java Block/Item default, GeckoLib optional). Latest Blockbench desktop only.',
   creation_date: '2024-01-04',
   version: PLUGIN_VERSION,
   native_modules: ['child_process'],
@@ -538,7 +553,7 @@ bbmcp exposes a clean MCP-facing tool surface for AI/agents:
 
 - High-level spec proxy: validate and normalize model/animation specs before applying.
 - Low-level tools: create/update textures via ops, add bones/cubes, create animation clips, set keyframes, export, preview, validate.
-- Formats: vanilla enabled by default; GeckoLib/Animated Java gated by capability flags.
+  - Formats: Java Block/Item enabled by default; GeckoLib/Animated Java gated by capability flags.
 - MCP endpoint: configurable host/port/path via Settings or the Help menu action "bbmcp: set MCP endpoint".
 - Dev workflow: esbuild watch + Plugins.devReload, debug menu actions for capabilities/state logging.
 
@@ -578,6 +593,7 @@ Notes:
       formatOverrides,
       previewCapability
     );
+    capabilities.toolRegistry = { hash: TOOL_REGISTRY_HASH, count: TOOL_REGISTRY_COUNT };
     const service = new ToolService({ session, capabilities, editor, formats, snapshot, exporter, policies });
     const dispatcher = new ToolDispatcherImpl(session, capabilities, service, {
       includeStateByDefault: () => policies.autoIncludeState,
@@ -599,7 +615,7 @@ Notes:
 
     exposeBridge({
       invoke: dispatcher.handle.bind(dispatcher),
-      invokeProxy: (tool: ProxyTool, payload: ApplyModelSpecPayload | ApplyAnimSpecPayload) =>
+      invokeProxy: (tool: ProxyTool, payload: ApplyModelSpecPayload | ApplyTextureSpecPayload) =>
         proxy.handle(tool, payload),
       capabilities,
       serverConfig: () => ({ ...serverConfig }),

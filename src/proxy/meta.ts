@@ -72,11 +72,16 @@ export const guardRevision = (
 ): ToolResponse<unknown> | null => {
   const serviceWithRevision = service as {
     isRevisionRequired?: () => boolean;
+    isAutoRetryRevisionEnabled?: () => boolean;
     getProjectState?: ToolService['getProjectState'];
   };
   const requiresRevision =
     typeof serviceWithRevision.isRevisionRequired === 'function' ? service.isRevisionRequired() : false;
   if (!requiresRevision) return null;
+  const allowAutoRetry =
+    typeof serviceWithRevision.isAutoRetryRevisionEnabled === 'function'
+      ? service.isAutoRetryRevisionEnabled()
+      : false;
   if (typeof serviceWithRevision.getProjectState !== 'function') return null;
   const state = service.getProjectState({ detail: 'summary' });
   if (!expected) {
@@ -94,6 +99,10 @@ export const guardRevision = (
   if (!state.ok) return withErrorMeta(state.error, meta, service);
   const currentRevision = state.value.project.revision;
   if (currentRevision !== expected) {
+    if (allowAutoRetry) {
+      meta.ifRevision = currentRevision;
+      return null;
+    }
     return withErrorMeta(
       {
         code: 'invalid_state',

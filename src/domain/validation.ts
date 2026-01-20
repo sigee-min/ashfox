@@ -68,6 +68,17 @@ export function validateSnapshot(state: SessionState, context: ValidationContext
 
   if (textureResolution) {
     const { width, height } = textureResolution;
+    if (textures && textures.length > 0) {
+      textures.forEach((tex) => {
+        if (tex.width !== width || tex.height !== height) {
+          findings.push({
+            code: 'texture_size_mismatch',
+            message: `Texture "${tex.name}" size ${tex.width}x${tex.height} does not match project textureResolution ${width}x${height}.`,
+            severity: 'warning'
+          });
+        }
+      });
+    }
     state.cubes.forEach((cube) => {
       if (!cube.uv) return;
       const [u, v] = cube.uv;
@@ -88,6 +99,15 @@ export function validateSnapshot(state: SessionState, context: ValidationContext
           severity: 'warning'
         });
       }
+      textureUsage.textures.forEach((entry) => {
+        if (entry.faceCount === 0) {
+          findings.push({
+            code: 'texture_unassigned',
+            message: `Texture "${entry.name}" is not assigned to any cube faces.`,
+            severity: 'warning'
+          });
+        }
+      });
       textureUsage.textures.forEach((entry) => {
         entry.cubes.forEach((cube) => {
           cube.faces.forEach((face) => {

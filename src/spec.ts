@@ -1,4 +1,4 @@
-﻿import { FormatKind, ProjectStateDetail } from './types';
+﻿﻿import { ProjectStateDetail } from './types';
 
 export type RigTemplateKind = 'empty' | 'biped' | 'quadruped' | 'block_entity';
 
@@ -14,33 +14,8 @@ export interface ModelPart {
 }
 
 export interface ModelSpec {
-  format: FormatKind;
   rigTemplate: RigTemplateKind;
-  name: string;
   parts: ModelPart[];
-}
-
-export type AnimChannelKind = 'rot' | 'pos' | 'scale';
-export type AnimInterp = 'linear' | 'step' | 'catmullrom';
-
-export interface AnimKey {
-  time: number;
-  value: [number, number, number];
-  interp?: AnimInterp;
-}
-
-export interface AnimChannel {
-  bone: string;
-  channel: AnimChannelKind;
-  keys: AnimKey[];
-}
-
-export interface AnimationSpec {
-  clip: string;
-  duration: number;
-  loop: boolean;
-  fps: number;
-  channels: AnimChannel[];
 }
 
 export interface ApplyModelSpecPayload {
@@ -78,30 +53,9 @@ export interface ApplyTextureSpecPayload {
   ifRevision?: string;
 }
 
-export interface ApplyAnimSpecPayload {
-  animation: AnimationSpec;
-  includeState?: boolean;
-  includeDiff?: boolean;
-  diffDetail?: ProjectStateDetail;
-  ifRevision?: string;
-}
-
-export interface ApplyProjectSpecPayload {
-  model?: ModelSpec;
-  textures?: TextureSpec[];
-  animation?: AnimationSpec;
-  projectMode?: 'auto' | 'reuse' | 'create';
-  includeState?: boolean;
-  includeDiff?: boolean;
-  diffDetail?: ProjectStateDetail;
-  ifRevision?: string;
-}
-
 export type ProxyTool =
   | 'apply_model_spec'
   | 'apply_texture_spec'
-  | 'apply_anim_spec'
-  | 'apply_project_spec'
   | 'render_preview'
   | 'validate';
 

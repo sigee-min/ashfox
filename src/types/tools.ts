@@ -7,17 +7,17 @@ import {
   ToolResponse
 } from './shared';
 import { Capabilities } from './capabilities';
-import { ProjectDiff, ProjectInfo, ProjectState, WithState } from './project';
+import { ProjectInfo, ProjectState, WithState } from './project';
 import { RenderPreviewPayload, RenderPreviewResult } from './preview';
 
 export type ToolName =
   | 'list_capabilities'
   | 'get_project_state'
-  | 'get_project_diff'
   | 'set_project_texture_resolution'
-  | 'get_texture_usage'
+  | 'preflight_texture'
   | 'list_projects'
   | 'select_project'
+  | 'ensure_project'
   | 'create_project'
   | 'reset_project'
   | 'delete_texture'
@@ -30,10 +30,6 @@ export type ToolName =
   | 'update_cube'
   | 'delete_cube'
   | 'apply_rig_template'
-  | 'create_animation_clip'
-  | 'update_animation_clip'
-  | 'delete_animation_clip'
-  | 'set_keyframes'
   | 'export'
   | 'render_preview'
   | 'validate';
@@ -41,6 +37,23 @@ export type ToolName =
 export interface CreateProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   format: FormatKind;
   name: string;
+  confirmDiscard?: boolean;
+  dialog?: Record<string, unknown>;
+  confirmDialog?: boolean;
+}
+
+export type EnsureProjectMatch = 'none' | 'format' | 'name' | 'format_and_name';
+
+export type EnsureProjectOnMismatch = 'reuse' | 'error' | 'create';
+
+export type EnsureProjectOnMissing = 'create' | 'error';
+
+export interface EnsureProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+  format?: FormatKind;
+  name?: string;
+  match?: EnsureProjectMatch;
+  onMismatch?: EnsureProjectOnMismatch;
+  onMissing?: EnsureProjectOnMissing;
   confirmDiscard?: boolean;
   dialog?: Record<string, unknown>;
   confirmDialog?: boolean;
@@ -58,20 +71,16 @@ export interface GetProjectStatePayload {
   detail?: ProjectStateDetail;
 }
 
-export interface GetProjectDiffPayload {
-  sinceRevision: string;
-  detail?: ProjectStateDetail;
-}
-
 export interface SetProjectTextureResolutionPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   width: number;
   height: number;
   modifyUv?: boolean;
 }
 
-export interface GetTextureUsagePayload {
+export interface PreflightTexturePayload {
   textureId?: string;
   textureName?: string;
+  includeUsage?: boolean;
 }
 
 export interface DeleteTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
@@ -159,46 +168,8 @@ export interface ApplyRigTemplatePayload extends IncludeStateOption, IncludeDiff
   templateId: string;
 }
 
-export interface CreateAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  id?: string;
-  name: string;
-  length: number;
-  loop: boolean;
-  fps: number;
-}
-
-export interface UpdateAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  id?: string;
-  name?: string;
-  newName?: string;
-  length?: number;
-  loop?: boolean;
-  fps?: number;
-}
-
-export interface DeleteAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  id?: string;
-  name?: string;
-}
-
-export type ChannelKind = 'rot' | 'pos' | 'scale';
-
-export interface KeyframePoint {
-  time: number;
-  value: [number, number, number];
-  interp?: 'linear' | 'step' | 'catmullrom';
-}
-
-export interface SetKeyframesPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  clipId?: string;
-  clip: string;
-  bone: string;
-  channel: ChannelKind;
-  keys: KeyframePoint[];
-}
-
 export interface ExportPayload extends IncludeStateOption {
-  format: 'vanilla_json' | 'gecko_geo_anim' | 'animated_java';
+  format: 'java_block_item_json' | 'gecko_geo_anim' | 'animated_java';
   destPath: string;
 }
 
@@ -207,11 +178,11 @@ export interface ValidatePayload extends IncludeStateOption {}
 export interface ToolPayloadMap {
   list_capabilities: Record<string, never>;
   get_project_state: GetProjectStatePayload;
-  get_project_diff: GetProjectDiffPayload;
   set_project_texture_resolution: SetProjectTextureResolutionPayload;
-  get_texture_usage: GetTextureUsagePayload;
+  preflight_texture: PreflightTexturePayload;
   list_projects: ListProjectsPayload;
   select_project: SelectProjectPayload;
+  ensure_project: EnsureProjectPayload;
   create_project: CreateProjectPayload;
   reset_project: ResetProjectPayload;
   delete_texture: DeleteTexturePayload;
@@ -224,10 +195,6 @@ export interface ToolPayloadMap {
   update_cube: UpdateCubePayload;
   delete_cube: DeleteCubePayload;
   apply_rig_template: ApplyRigTemplatePayload;
-  create_animation_clip: CreateAnimationClipPayload;
-  update_animation_clip: UpdateAnimationClipPayload;
-  delete_animation_clip: DeleteAnimationClipPayload;
-  set_keyframes: SetKeyframesPayload;
   export: ExportPayload;
   render_preview: RenderPreviewPayload;
   validate: ValidatePayload;
@@ -250,12 +217,18 @@ export interface SelectProjectResult {
   formatId?: string | null;
 }
 
-export interface GetProjectStateResult {
-  project: ProjectState;
+export interface EnsureProjectResult {
+  action: 'created' | 'reused';
+  project: {
+    id: string;
+    format: FormatKind;
+    name: string | null;
+    formatId?: string | null;
+  };
 }
 
-export interface GetProjectDiffResult {
-  diff: ProjectDiff;
+export interface GetProjectStateResult {
+  project: ProjectState;
 }
 
 export interface SetProjectTextureResolutionResult {
@@ -289,6 +262,32 @@ export interface GetTextureUsageResult {
   unresolved?: GetTextureUsageUnresolved[];
 }
 
+export interface PreflightUvBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  width: number;
+  height: number;
+  faceCount: number;
+}
+
+export interface PreflightUsageSummary {
+  textureCount: number;
+  cubeCount: number;
+  faceCount: number;
+  unresolvedCount: number;
+}
+
+export interface PreflightTextureResult {
+  textureResolution?: { width: number; height: number };
+  usageSummary: PreflightUsageSummary;
+  uvBounds?: PreflightUvBounds;
+  recommendedResolution?: { width: number; height: number; reason: string };
+  warnings?: string[];
+  textureUsage?: GetTextureUsageResult;
+}
+
 export interface ExportResult {
   path: string;
 }
@@ -306,11 +305,11 @@ export interface ValidateResult {
 export interface ToolResultMap {
   list_capabilities: Capabilities;
   get_project_state: GetProjectStateResult;
-  get_project_diff: GetProjectDiffResult;
   set_project_texture_resolution: WithState<SetProjectTextureResolutionResult>;
-  get_texture_usage: GetTextureUsageResult;
+  preflight_texture: PreflightTextureResult;
   list_projects: ListProjectsResult;
   select_project: WithState<SelectProjectResult>;
+  ensure_project: WithState<EnsureProjectResult>;
   create_project: WithState<CreateProjectResult>;
   reset_project: WithState<{ ok: true }>;
   delete_texture: WithState<{ id: string; name: string }>;
@@ -323,10 +322,6 @@ export interface ToolResultMap {
   update_cube: WithState<{ id: string; name: string }>;
   delete_cube: WithState<{ id: string; name: string }>;
   apply_rig_template: WithState<{ templateId: string }>;
-  create_animation_clip: WithState<{ id: string; name: string }>;
-  update_animation_clip: WithState<{ id: string; name: string }>;
-  delete_animation_clip: WithState<{ id: string; name: string }>;
-  set_keyframes: WithState<{ clip: string; clipId?: string; bone: string }>;
   export: WithState<ExportResult>;
   render_preview: WithState<RenderPreviewResult>;
   validate: WithState<ValidateResult>;

@@ -64,11 +64,9 @@ const modelPartSchema: JsonSchema = {
 
 const modelSpecSchema: JsonSchema = {
   type: 'object',
-  required: ['format', 'name', 'rigTemplate', 'parts'],
+  required: ['rigTemplate', 'parts'],
   additionalProperties: false,
   properties: {
-    format: { type: 'string', enum: ['vanilla', 'geckolib', 'animated_java'] },
-    name: { type: 'string' },
     rigTemplate: { type: 'string', enum: ['empty', 'biped', 'quadruped', 'block_entity'] },
     parts: {
       type: 'array',
@@ -96,13 +94,29 @@ const toolSchemas: Record<string, JsonSchema> = {
       detail: { type: 'string', enum: ['summary', 'full'] }
     }
   },
-  get_project_diff: {
+  list_projects: emptyObject,
+  select_project: {
     type: 'object',
-    required: ['sinceRevision'],
     additionalProperties: false,
     properties: {
-      sinceRevision: { type: 'string' },
-      detail: { type: 'string', enum: ['summary', 'full'] }
+      id: { type: 'string' },
+      ...stateProps
+    }
+  },
+  ensure_project: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      format: { type: 'string', enum: ['Java Block/Item', 'geckolib', 'animated_java'] },
+      name: { type: 'string' },
+      match: { type: 'string', enum: ['none', 'format', 'name', 'format_and_name'] },
+      onMismatch: { type: 'string', enum: ['reuse', 'error', 'create'] },
+      onMissing: { type: 'string', enum: ['create', 'error'] },
+      confirmDiscard: { type: 'boolean' },
+      confirmDialog: { type: 'boolean' },
+      dialog: { type: 'object', additionalProperties: true },
+      ifRevision: { type: 'string' },
+      ...metaProps
     }
   },
   set_project_texture_resolution: {
@@ -117,21 +131,13 @@ const toolSchemas: Record<string, JsonSchema> = {
       ...metaProps
     }
   },
-  get_texture_usage: {
+  preflight_texture: {
     type: 'object',
     additionalProperties: false,
     properties: {
       textureId: { type: 'string' },
-      textureName: { type: 'string' }
-    }
-  },
-  list_projects: emptyObject,
-  select_project: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      ...stateProps
+      textureName: { type: 'string' },
+      includeUsage: { type: 'boolean' }
     }
   },
   create_project: {
@@ -139,7 +145,7 @@ const toolSchemas: Record<string, JsonSchema> = {
     required: ['format', 'name'],
     additionalProperties: false,
     properties: {
-      format: { type: 'string', enum: ['vanilla', 'geckolib', 'animated_java'] },
+      format: { type: 'string', enum: ['Java Block/Item', 'geckolib', 'animated_java'] },
       name: { type: 'string' },
       confirmDiscard: { type: 'boolean' },
       confirmDialog: { type: 'boolean' },
@@ -291,76 +297,12 @@ const toolSchemas: Record<string, JsonSchema> = {
       ...metaProps
     }
   },
-  create_animation_clip: {
-    type: 'object',
-    required: ['name', 'length', 'loop', 'fps'],
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      length: { type: 'number' },
-      loop: { type: 'boolean' },
-      fps: { type: 'number' },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  update_animation_clip: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      newName: { type: 'string' },
-      length: { type: 'number' },
-      loop: { type: 'boolean' },
-      fps: { type: 'number' },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  delete_animation_clip: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  set_keyframes: {
-    type: 'object',
-    required: ['clip', 'bone', 'channel', 'keys'],
-    additionalProperties: false,
-    properties: {
-      clipId: { type: 'string' },
-      clip: { type: 'string' },
-      bone: { type: 'string' },
-      channel: { enum: ['rot', 'pos', 'scale'] },
-      keys: {
-        type: 'array',
-        items: {
-          type: 'object',
-          required: ['time', 'value'],
-          additionalProperties: false,
-          properties: {
-            time: { type: 'number' },
-            value: numberArray(3, 3),
-            interp: { enum: ['linear', 'step', 'catmullrom'] }
-          }
-        }
-      },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
   export: {
     type: 'object',
     required: ['format', 'destPath'],
     additionalProperties: false,
     properties: {
-      format: { enum: ['vanilla_json', 'gecko_geo_anim', 'animated_java'] },
+      format: { enum: ['java_block_item_json', 'gecko_geo_anim', 'animated_java'] },
       destPath: { type: 'string' },
       ...stateProps
     }
@@ -430,51 +372,7 @@ const toolSchemas: Record<string, JsonSchema> = {
       ...metaProps
     }
   },
-  apply_anim_spec: {
-    type: 'object',
-    required: ['animation'],
-    additionalProperties: false,
-    properties: {
-      animation: { type: 'object', additionalProperties: true },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  apply_project_spec: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      model: modelSpecSchema,
-      textures: {
-        type: 'array',
-        minItems: 1,
-        items: {
-          type: 'object',
-          required: ['width', 'height'],
-          additionalProperties: false,
-          properties: {
-            mode: { type: 'string', enum: ['create', 'update'] },
-            id: { type: 'string' },
-            targetId: { type: 'string' },
-            targetName: { type: 'string' },
-            name: { type: 'string' },
-            width: { type: 'number' },
-            height: { type: 'number' },
-            background: { type: 'string' },
-            useExisting: { type: 'boolean' },
-            ops: {
-              type: 'array',
-              items: textureOpSchema
-            }
-          }
-        }
-      },
-      animation: { type: 'object', additionalProperties: true },
-      projectMode: { type: 'string', enum: ['auto', 'reuse', 'create'] },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  }
+  
 };
 
 export const MCP_TOOLS: McpToolDefinition[] = [
@@ -492,26 +390,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: toolSchemas.get_project_state
   },
   {
-    name: 'get_project_diff',
-    title: 'Get Project Diff',
-    description: 'Returns a diff from a prior revision to the current project state.',
-    inputSchema: toolSchemas.get_project_diff
-  },
-    {
-      name: 'set_project_texture_resolution',
-      title: 'Set Project Texture Resolution',
-      description:
-        'Sets the project texture resolution (width/height). Requires ifRevision; call get_project_state first. Set modifyUv=true to scale existing UVs to the new resolution (if supported). This does not resize existing textures; use it before creating textures. If UVs exceed the current resolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material.',
-      inputSchema: toolSchemas.set_project_texture_resolution
-    },
-  {
-    name: 'get_texture_usage',
-    title: 'Get Texture Usage',
-    description:
-      'Returns which cubes/faces reference each texture, including per-face UVs when available. unresolved lists face references that do not match known textures.',
-    inputSchema: toolSchemas.get_texture_usage
-  },
-  {
     name: 'list_projects',
     title: 'List Projects',
     description: 'Lists the currently open project (Blockbench has one active project).',
@@ -524,16 +402,38 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: toolSchemas.select_project
   },
   {
+    name: 'ensure_project',
+    title: 'Ensure Project',
+    description:
+      'Ensures a usable project. Reuses the active project by default and can create a new one when missing or on mismatch (per options). Use match/onMismatch/onMissing to control behavior.',
+    inputSchema: toolSchemas.ensure_project
+  },
+    {
+    name: 'set_project_texture_resolution',
+    title: 'Set Project Texture Resolution',
+    description:
+        'Sets the project texture resolution (width/height). Requires ifRevision; call get_project_state first. Set modifyUv=true to scale existing UVs to the new resolution (if supported). This does not resize existing textures; use it before creating textures. If you change resolution after painting, repaint using the new UV mapping. If UVs exceed the current resolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material.',
+      inputSchema: toolSchemas.set_project_texture_resolution
+    },
+  {
+    name: 'preflight_texture',
+    title: 'Preflight Texture',
+    description:
+      'Returns UV bounds, usage summary, and a recommended texture resolution based on current face UVs. Use this before painting to avoid out-of-bounds UVs. Set includeUsage=true to include the full textureUsage mapping table.',
+    inputSchema: toolSchemas.preflight_texture
+  },
+  {
     name: 'create_project',
     title: 'Create Project',
     description:
-      'Creates a new Blockbench project with the given format. Requires ifRevision; call get_project_state first. Set confirmDiscard=true to discard unsaved changes. If a project dialog opens, pass dialog values and set confirmDialog=true to auto-confirm.',
+      'Creates a new Blockbench project with the given format. This always starts a fresh project; prefer ensure_project when you want to reuse existing work. Requires ifRevision; call get_project_state first. Set confirmDiscard=true to discard unsaved changes. If a project dialog opens, pass dialog values and set confirmDialog=true to auto-confirm.',
     inputSchema: toolSchemas.create_project
   },
   {
     name: 'reset_project',
     title: 'Reset Project',
-    description: 'Resets the current Blockbench project. Requires ifRevision; call get_project_state first.',
+    description:
+      'Resets the current Blockbench project (destructive). Prefer ensure_project when you want to reuse an existing project. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.reset_project
   },
   {
@@ -546,14 +446,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'assign_texture',
     title: 'Assign Texture',
     description:
-      'Assigns a texture to cubes/faces without changing UVs (forces per-face UV mode; auto UV disabled). Requires ifRevision; call get_project_state first. Use this after apply_texture_spec. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability. If UVs exceed the current textureResolution, increase it or split textures per material.',
+      'Assigns a texture to cubes/faces without changing UVs (forces per-face UV mode; auto UV disabled). Requires ifRevision; call get_project_state first. Use this after apply_texture_spec. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. If UVs change after painting, repaint using the updated mapping. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability. If UVs exceed the current textureResolution, increase it or split textures per material.',
     inputSchema: toolSchemas.assign_texture
   },
   {
     name: 'set_face_uv',
     title: 'Set Face UV',
     description:
-      'Sets per-face UVs for a cube (manual UV only; auto UV disabled). Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and must fit within the project textureResolution; if they exceed it, increase resolution or split textures.',
+      'Sets per-face UVs for a cube (manual UV only; auto UV disabled). Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and must fit within the project textureResolution; if they exceed it, increase resolution or split textures. If you change UVs after painting, repaint using the new mapping.',
     inputSchema: toolSchemas.set_face_uv
   },
   {
@@ -597,32 +497,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   {
     name: 'apply_rig_template',
     title: 'Apply Rig Template',
-    description: 'Applies a rig template to the project. Requires ifRevision; call get_project_state first.',
+    description:
+      'Applies a rig template to the project. Use this for additive rigging; avoid combining with apply_model_spec unless you intend to add more bones/cubes. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.apply_rig_template
-  },
-  {
-    name: 'create_animation_clip',
-    title: 'Create Animation Clip',
-    description: 'Creates an animation clip. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.create_animation_clip
-  },
-  {
-    name: 'update_animation_clip',
-    title: 'Update Animation Clip',
-    description: 'Updates an animation clip. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.update_animation_clip
-  },
-  {
-    name: 'delete_animation_clip',
-    title: 'Delete Animation Clip',
-    description: 'Deletes an animation clip. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.delete_animation_clip
-  },
-  {
-    name: 'set_keyframes',
-    title: 'Set Keyframes',
-    description: 'Adds keyframes to an animation clip. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.set_keyframes
   },
   {
     name: 'export',
@@ -647,30 +524,31 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'apply_model_spec',
     title: 'Apply Model Spec',
     description:
-      'Applies a structured model specification. Requires ifRevision; call get_project_state first. Textures are handled separately via apply_texture_spec + assign_texture.',
+      'Applies a structured model specification (rigTemplate + parts) to the active project (does not create a new project). Requires ifRevision; call get_project_state first. Textures are handled separately via apply_texture_spec + assign_texture.',
     inputSchema: toolSchemas.apply_model_spec
   },
   {
     name: 'apply_texture_spec',
     title: 'Apply Texture Spec',
     description:
-      'Applies a structured texture specification. Requires ifRevision; returns no_change when no pixels change. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. width/height are required and must match the intended project textureResolution. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. If UVs exceed the current textureResolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material. Use set_project_texture_resolution before creating textures when increasing size. ops are optional; omit ops to create a blank texture (background can still fill).',
+      'Applies a structured texture specification. Requires ifRevision; returns no_change when no pixels change. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker/label texture. If UVs change, repaint using the new mapping. Low opaque coverage is rejected to avoid transparent results; fill a larger area or tighten UVs. width/height are required and must match the intended project textureResolution. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. If UVs exceed the current textureResolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material. Use set_project_texture_resolution before creating textures when increasing size. ops are optional; omit ops to create a blank texture (background can still fill). Success responses include report.textureCoverage (opaque ratio + bounds) for each rendered texture.',
     inputSchema: toolSchemas.apply_texture_spec
   },
-  {
-    name: 'apply_anim_spec',
-    title: 'Apply Animation Spec',
-    description: 'Applies a structured animation specification. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.apply_anim_spec
-  },
-  {
-    name: 'apply_project_spec',
-    title: 'Apply Project Spec',
-    description:
-      'Applies a combined model, texture, and animation specification. Requires ifRevision; call get_project_state first. Textures use ops-only (omit ops for blank); call assign_texture after texture steps to apply them to cubes.',
-    inputSchema: toolSchemas.apply_project_spec
-  }
 ];
+
+const hashText = (value: string): string => {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ value.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16);
+};
+
+const toolRegistrySignature = () =>
+  JSON.stringify(MCP_TOOLS.map((tool) => ({ name: tool.name, inputSchema: tool.inputSchema })));
+
+export const TOOL_REGISTRY_HASH = hashText(toolRegistrySignature());
+export const TOOL_REGISTRY_COUNT = MCP_TOOLS.length;
 
 export const getToolSchema = (name: string): JsonSchema | null => toolSchemas[name] ?? null;
 

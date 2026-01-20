@@ -74,15 +74,15 @@ export const readTextureSize = (
 ): { width?: number; height?: number } => {
   if (!tex) return {};
   const width = pickPositive(
-    tex.img?.naturalWidth,
     tex.canvas?.width,
     tex.width,
+    tex.img?.naturalWidth,
     tex.img?.width
   );
   const height = pickPositive(
-    tex.img?.naturalHeight,
     tex.canvas?.height,
     tex.height,
+    tex.img?.naturalHeight,
     tex.img?.height
   );
   return { width, height };

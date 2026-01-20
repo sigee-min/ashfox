@@ -28,14 +28,30 @@ export interface CapabilitiesGuidance {
     requiresRevision: boolean;
     note: string;
   };
+  retryPolicy?: {
+    maxAttempts: number;
+    onErrors: string[];
+    steps: string[];
+  };
+  rediscovery?: {
+    refetchTools: boolean;
+    refreshState: boolean;
+    methods: string[];
+  };
   textureStrategy: {
     note: string;
   };
 }
 
+export interface ToolRegistryInfo {
+  hash: string;
+  count: number;
+}
+
 export interface Capabilities {
   pluginVersion: string;
   toolSchemaVersion?: string;
+  toolRegistry?: ToolRegistryInfo;
   blockbenchVersion: string;
   formats: Capability[];
   limits: Limits;

@@ -96,7 +96,7 @@ export function startServer(
       token: config.token,
       serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
       instructions:
-        'Tool paths can be session-bound (e.g., /bbmcp/link_...). Tool schemas are strict (extra fields are rejected). Use get_project_state/get_project_diff (or includeState/includeDiff) before and after edits. Prefer apply_project_spec/apply_* specs and id fields when updating or deleting items. Pass ifRevision on mutations to guard against stale state. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs.'
+        'Tool paths can be session-bound (e.g., /bbmcp/link_...). Tool schemas are strict (extra fields are rejected). Use get_project_state (or includeState/includeDiff) before and after edits. Prefer ensure_project to reuse existing projects; call create_project only when you want a fresh project. Prefer apply_model_spec/apply_texture_spec and id fields when updating or deleting items. Pass ifRevision on mutations to guard against stale state. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
     },
     executor,
     log

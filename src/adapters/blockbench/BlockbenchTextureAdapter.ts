@@ -29,12 +29,17 @@ export class BlockbenchTextureAdapter {
         if (params.id) tex.bbmcpId = params.id;
         applyTextureDefaults(tex);
         if (typeof tex.add === 'function') {
-          tex.add(false, false);
+          tex.add();
         }
         applyTextureDimensions(tex, params.width, params.height);
         applyTextureMeta(tex, params);
         if (!applyTextureImage(tex, params.image)) {
           throw new Error('Texture canvas unavailable');
+        }
+        if (applyTextureDimensions(tex, params.width, params.height)) {
+          if (!applyTextureImage(tex, params.image)) {
+            throw new Error('Texture canvas unavailable');
+          }
         }
         finalizeTextureChange(tex);
         tex.select?.();
@@ -73,6 +78,11 @@ export class BlockbenchTextureAdapter {
         applyTextureMeta(target, params);
         if (!applyTextureImage(target, params.image)) {
           throw new Error('Texture canvas unavailable');
+        }
+        if (applyTextureDimensions(target, params.width, params.height)) {
+          if (!applyTextureImage(target, params.image)) {
+            throw new Error('Texture canvas unavailable');
+          }
         }
         finalizeTextureChange(target);
       });
@@ -205,21 +215,48 @@ const applyTextureDefaults = (tex: TextureInstance): void => {
   if (tex.keep_size === undefined) tex.keep_size = true;
 };
 
-const applyTextureDimensions = (tex: TextureInstance, width?: number, height?: number): void => {
+const applyTextureDimensions = (tex: TextureInstance, width?: number, height?: number): boolean => {
   const nextWidth = normalizeTextureSize(width);
   const nextHeight = normalizeTextureSize(height);
-  if (!nextWidth || !nextHeight) return;
-  if (tex.width === nextWidth && tex.height === nextHeight) return;
+  if (!nextWidth || !nextHeight) return false;
+  let changed = false;
+  const needsResize = tex.width !== nextWidth || tex.height !== nextHeight;
   if (typeof tex.setSize === 'function') {
     tex.setSize(nextWidth, nextHeight);
-    return;
-  }
-  if (typeof tex.resize === 'function') {
+    changed = changed || needsResize;
+  } else if (typeof tex.resize === 'function') {
     tex.resize(nextWidth, nextHeight);
-    return;
+    changed = changed || needsResize;
+  } else {
+    if (tex.width !== nextWidth) {
+      tex.width = nextWidth;
+      changed = true;
+    }
+    if (tex.height !== nextHeight) {
+      tex.height = nextHeight;
+      changed = true;
+    }
   }
-  tex.width = nextWidth;
-  tex.height = nextHeight;
+  const canvas = tex.canvas ?? null;
+  if (canvas) {
+    if (canvas.width !== nextWidth) {
+      canvas.width = nextWidth;
+      changed = true;
+    }
+    if (canvas.height !== nextHeight) {
+      canvas.height = nextHeight;
+      changed = true;
+    }
+  }
+  if (tex.width !== nextWidth) {
+    tex.width = nextWidth;
+    changed = true;
+  }
+  if (tex.height !== nextHeight) {
+    tex.height = nextHeight;
+    changed = true;
+  }
+  return changed;
 };
 
 const applyTextureImage = (tex: TextureInstance, source: CanvasImageSource): boolean => {
