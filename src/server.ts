@@ -6,6 +6,7 @@ import { McpRouter } from './mcp/router';
 import { LocalToolExecutor } from './mcp/executor';
 import { createMcpHttpServer } from './mcp/httpServer';
 import { startMcpNetServer } from './mcp/netServer';
+import { ResourceStore } from './ports/resources';
 import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
 import type { Server as NetServer, Socket } from 'net';
 
@@ -80,7 +81,8 @@ export function startServer(
   rawConfig: ServerConfig,
   dispatcher: Dispatcher,
   proxy: ProxyRouter,
-  log: Logger
+  log: Logger,
+  resources?: ResourceStore
 ): StopFn | null {
   const validation = validateConfig(rawConfig);
   if (!validation.ok) {
@@ -96,10 +98,11 @@ export function startServer(
       token: config.token,
       serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
       instructions:
-        'Tool paths can be session-bound (e.g., /bbmcp/link_...). Tool schemas are strict (extra fields are rejected). Use get_project_state (or includeState/includeDiff) before and after edits. Prefer ensure_project to reuse existing projects; call create_project only when you want a fresh project. Prefer apply_model_spec/apply_texture_spec and id fields when updating or deleting items. Pass ifRevision on mutations to guard against stale state. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
+        'Tool paths can be session-bound (e.g., /bbmcp/link_...). Tool schemas are strict (extra fields are rejected). Use get_project_state (or includeState/includeDiff) before and after edits. Prefer ensure_project to create or reuse projects; use match/onMismatch/onMissing to control when a fresh project is created. Prefer apply_model_spec/apply_texture_spec and id fields when updating or deleting items. Pass ifRevision on mutations to guard against stale state. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
     },
     executor,
-    log
+    log,
+    resources
   );
 
   let http: HttpModule | null = null;

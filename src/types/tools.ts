@@ -7,19 +7,19 @@ import {
   ToolResponse
 } from './shared';
 import { Capabilities } from './capabilities';
-import { ProjectInfo, ProjectState, WithState } from './project';
+import { BlockPipelineMode, BlockPipelineOnConflict, BlockPipelineTextures, BlockVariant } from './blockPipeline';
+import { ProjectState, WithState } from './project';
 import { RenderPreviewPayload, RenderPreviewResult } from './preview';
 
 export type ToolName =
   | 'list_capabilities'
   | 'get_project_state'
+  | 'read_texture'
+  | 'reload_plugins'
   | 'set_project_texture_resolution'
   | 'preflight_texture'
-  | 'list_projects'
-  | 'select_project'
   | 'ensure_project'
-  | 'create_project'
-  | 'reset_project'
+  | 'generate_block_pipeline'
   | 'delete_texture'
   | 'assign_texture'
   | 'set_face_uv'
@@ -33,14 +33,6 @@ export type ToolName =
   | 'export'
   | 'render_preview'
   | 'validate';
-
-export interface CreateProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
-  format: FormatKind;
-  name: string;
-  confirmDiscard?: boolean;
-  dialog?: Record<string, unknown>;
-  confirmDialog?: boolean;
-}
 
 export type EnsureProjectMatch = 'none' | 'format' | 'name' | 'format_and_name';
 
@@ -59,12 +51,25 @@ export interface EnsureProjectPayload extends IncludeStateOption, IncludeDiffOpt
   confirmDialog?: boolean;
 }
 
-export type ListProjectsPayload = Record<string, never>;
+export interface GenerateBlockPipelinePayload {
+  name: string;
+  texture: string;
+  namespace?: string;
+  variants?: BlockVariant[];
+  textures?: BlockPipelineTextures;
+  onConflict?: BlockPipelineOnConflict;
+  mode?: BlockPipelineMode;
+  ifRevision?: string;
+}
 
-export interface ResetProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {}
-
-export interface SelectProjectPayload extends IncludeStateOption {
+export interface ReadTexturePayload {
   id?: string;
+  name?: string;
+}
+
+export interface ReloadPluginsPayload {
+  confirm?: boolean;
+  delayMs?: number;
 }
 
 export interface GetProjectStatePayload {
@@ -178,13 +183,12 @@ export interface ValidatePayload extends IncludeStateOption {}
 export interface ToolPayloadMap {
   list_capabilities: Record<string, never>;
   get_project_state: GetProjectStatePayload;
+  read_texture: ReadTexturePayload;
+  reload_plugins: ReloadPluginsPayload;
   set_project_texture_resolution: SetProjectTextureResolutionPayload;
   preflight_texture: PreflightTexturePayload;
-  list_projects: ListProjectsPayload;
-  select_project: SelectProjectPayload;
   ensure_project: EnsureProjectPayload;
-  create_project: CreateProjectPayload;
-  reset_project: ResetProjectPayload;
+  generate_block_pipeline: GenerateBlockPipelinePayload;
   delete_texture: DeleteTexturePayload;
   assign_texture: AssignTexturePayload;
   set_face_uv: SetFaceUvPayload;
@@ -200,23 +204,6 @@ export interface ToolPayloadMap {
   validate: ValidatePayload;
 }
 
-export interface CreateProjectResult {
-  id: string;
-  format: FormatKind;
-  name: string;
-}
-
-export interface ListProjectsResult {
-  projects: ProjectInfo[];
-}
-
-export interface SelectProjectResult {
-  id: string;
-  format: FormatKind;
-  name: string | null;
-  formatId?: string | null;
-}
-
 export interface EnsureProjectResult {
   action: 'created' | 'reused';
   project: {
@@ -225,6 +212,47 @@ export interface EnsureProjectResult {
     name: string | null;
     formatId?: string | null;
   };
+}
+
+export type GenerateBlockPipelineResource = {
+  uri: string;
+  kind: 'blockstate' | 'model' | 'item';
+  name: string;
+  mimeType: string;
+};
+
+export interface GenerateBlockPipelineResult {
+  name: string;
+  namespace: string;
+  variants: BlockVariant[];
+  mode: BlockPipelineMode;
+  onConflict: BlockPipelineOnConflict;
+  resources: GenerateBlockPipelineResource[];
+  assets: {
+    blockstates: Record<string, unknown>;
+    models: Record<string, unknown>;
+    items: Record<string, unknown>;
+  };
+  versionSuffix?: string;
+  notes?: string[];
+}
+
+export interface ReadTextureResult {
+  texture: {
+    id?: string;
+    name: string;
+    width?: number;
+    height?: number;
+    path?: string;
+    dataUri: string;
+    mimeType: string;
+  };
+}
+
+export interface ReloadPluginsResult {
+  scheduled: true;
+  delayMs: number;
+  method: 'devReload';
 }
 
 export interface GetProjectStateResult {
@@ -305,13 +333,12 @@ export interface ValidateResult {
 export interface ToolResultMap {
   list_capabilities: Capabilities;
   get_project_state: GetProjectStateResult;
+  read_texture: ReadTextureResult;
+  reload_plugins: ReloadPluginsResult;
   set_project_texture_resolution: WithState<SetProjectTextureResolutionResult>;
   preflight_texture: PreflightTextureResult;
-  list_projects: ListProjectsResult;
-  select_project: WithState<SelectProjectResult>;
   ensure_project: WithState<EnsureProjectResult>;
-  create_project: WithState<CreateProjectResult>;
-  reset_project: WithState<{ ok: true }>;
+  generate_block_pipeline: WithState<GenerateBlockPipelineResult>;
   delete_texture: WithState<{ id: string; name: string }>;
   assign_texture: WithState<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }>;
   set_face_uv: WithState<{ cubeId?: string; cubeName: string; faces: CubeFaceDirection[] }>;

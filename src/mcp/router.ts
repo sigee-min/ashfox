@@ -12,10 +12,18 @@ import { MCP_TOOLS, getToolSchema, isKnownTool } from './tools';
 import { validateSchema } from './validation';
 import { McpSession, SessionStore } from './session';
 import { encodeSseComment, encodeSseEvent } from './sse';
+import { ResourceStore } from '../ports/resources';
 
 const DEFAULT_PROTOCOL_VERSION = '2025-06-18';
 const DEFAULT_SUPPORTED_PROTOCOLS = ['2025-11-25', '2025-06-18', '2024-11-05'];
-const IMPLICIT_SESSION_METHODS = new Set(['tools/list', 'tools/call', 'resources/list', 'resources/read', 'ping']);
+const IMPLICIT_SESSION_METHODS = new Set([
+  'tools/list',
+  'tools/call',
+  'resources/list',
+  'resources/read',
+  'resources/templates/list',
+  'ping'
+]);
 
 type RpcOutcome =
   | { type: 'notification' }
@@ -99,13 +107,15 @@ export class McpRouter {
   private readonly config: McpServerConfig;
   private readonly executor: ToolExecutor;
   private readonly log: Logger;
+  private readonly resources?: ResourceStore;
   private readonly sessions = new SessionStore();
   private readonly supportedProtocols: string[];
 
-  constructor(config: McpServerConfig, executor: ToolExecutor, log: Logger) {
+  constructor(config: McpServerConfig, executor: ToolExecutor, log: Logger, resources?: ResourceStore) {
     this.config = { ...config, path: normalizePath(config.path) };
     this.executor = executor;
     this.log = log;
+    this.resources = resources;
     this.supportedProtocols = config.supportedProtocols ?? DEFAULT_SUPPORTED_PROTOCOLS;
   }
 
@@ -256,7 +266,7 @@ export class McpRouter {
       session.initialized = true;
       const result = {
         protocolVersion,
-        capabilities: { tools: { listChanged: true }, resources: { listChanged: false } },
+        capabilities: { tools: { listChanged: true }, resources: { listChanged: Boolean(this.resources) } },
         serverInfo: this.config.serverInfo,
         instructions: this.config.instructions
       };
@@ -286,16 +296,41 @@ export class McpRouter {
     }
 
     if (message.method === 'resources/list') {
-      const result = { resources: [] as unknown[], nextCursor: null };
+      const list = this.resources?.list() ?? [];
+      const result = { resources: list, nextCursor: null };
       return { type: 'response', response: jsonRpcResult(id, result), status: 200 };
     }
 
     if (message.method === 'resources/read') {
-      return {
-        type: 'response',
-        response: jsonRpcError(id, -32602, 'Resource not found'),
-        status: 404
+      const params = isRecord(message.params) ? message.params : {};
+      const uri = typeof params.uri === 'string' ? params.uri : '';
+      if (!uri) {
+        return { type: 'response', response: jsonRpcError(id, -32602, 'uri is required'), status: 400 };
+      }
+      const entry = this.resources?.read(uri) ?? null;
+      if (!entry) {
+        return {
+          type: 'response',
+          response: jsonRpcError(id, -32602, 'Resource not found'),
+          status: 404
+        };
+      }
+      const result = {
+        contents: [
+          {
+            uri: entry.uri,
+            mimeType: entry.mimeType,
+            text: entry.text
+          }
+        ]
       };
+      return { type: 'response', response: jsonRpcResult(id, result), status: 200 };
+    }
+
+    if (message.method === 'resources/templates/list') {
+      const templates = this.resources?.listTemplates() ?? [];
+      const result = { resourceTemplates: templates, nextCursor: null };
+      return { type: 'response', response: jsonRpcResult(id, result), status: 200 };
     }
 
     if (message.method === 'ping') {

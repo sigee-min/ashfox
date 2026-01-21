@@ -4,6 +4,9 @@ import { StderrLogger } from './logger';
 import { McpRouter } from '../mcp/router';
 import { createMcpHttpServer } from '../mcp/httpServer';
 import { PLUGIN_ID, PLUGIN_VERSION } from '../config';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../domain/blockPipeline';
+import { InMemoryResourceStore } from '../services/resources';
+import { ToolResponse } from '../types';
 
 const getArg = (args: string[], name: string, fallback?: string): string | undefined => {
   const index = args.indexOf(name);
@@ -22,16 +25,21 @@ const config = {
 
 const log = new StderrLogger('bbmcp-sidecar', 'info');
 const client = new SidecarClient(process.stdin, process.stdout, log);
+const resourceStore = new InMemoryResourceStore(BLOCK_PIPELINE_RESOURCE_TEMPLATES);
 client.start();
 
 const executor = {
-  callTool: (name: string, args: unknown) => {
+  callTool: async (name: string, args: unknown): Promise<ToolResponse<unknown>> => {
     const mode =
       name === 'apply_model_spec' ||
       name === 'apply_texture_spec'
         ? 'proxy'
         : 'direct';
-    return client.request(name, args, mode);
+    const response = await client.request(name, args, mode);
+    if (name === 'generate_block_pipeline') {
+      storePipelineResources(resourceStore, response);
+    }
+    return response;
   }
 };
 
@@ -41,11 +49,46 @@ const router = new McpRouter(
     token: config.token,
     serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
     instructions:
-      'Use get_project_state (or includeState/includeDiff) before mutations and include ifRevision. Prefer ensure_project to reuse existing projects; call create_project only when you want a fresh project. Prefer apply_model_spec/apply_texture_spec and id-based updates. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
+      'Use get_project_state (or includeState/includeDiff) before mutations and include ifRevision. Prefer ensure_project to create or reuse projects; use match/onMismatch/onMissing to control when a fresh project is created. Prefer apply_model_spec/apply_texture_spec and id-based updates. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for manual per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
   },
   executor,
-  log
+  log,
+  resourceStore
 );
+
+const storePipelineResources = (store: InMemoryResourceStore, response: ToolResponse<unknown>) => {
+  if (!response.ok) return;
+  const data = response.data as {
+    resources?: Array<{ uri: string; name: string; kind: string; mimeType?: string }>;
+    assets?: {
+      blockstates?: Record<string, unknown>;
+      models?: Record<string, unknown>;
+      items?: Record<string, unknown>;
+    };
+  };
+  const resources = Array.isArray(data?.resources) ? data.resources : [];
+  const assets = data?.assets;
+  if (!assets || resources.length === 0) return;
+  const blockstates = assets.blockstates ?? {};
+  const models = assets.models ?? {};
+  const items = assets.items ?? {};
+  const resolveJson = (kind: string, name: string) => {
+    if (kind === 'blockstate') return blockstates[name];
+    if (kind === 'model') return models[name];
+    if (kind === 'item') return items[name];
+    return undefined;
+  };
+  resources.forEach((resource) => {
+    const json = resolveJson(resource.kind, resource.name);
+    if (!json) return;
+    store.put({
+      uri: resource.uri,
+      name: resource.name,
+      mimeType: resource.mimeType ?? 'application/json',
+      text: JSON.stringify(json, null, 2)
+    });
+  });
+};
 
 const server = createMcpHttpServer(http, router, log);
 

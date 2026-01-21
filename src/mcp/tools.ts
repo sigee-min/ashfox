@@ -94,13 +94,21 @@ const toolSchemas: Record<string, JsonSchema> = {
       detail: { type: 'string', enum: ['summary', 'full'] }
     }
   },
-  list_projects: emptyObject,
-  select_project: {
+  read_texture: {
     type: 'object',
     additionalProperties: false,
     properties: {
       id: { type: 'string' },
-      ...stateProps
+      name: { type: 'string' }
+    }
+  },
+  reload_plugins: {
+    type: 'object',
+    required: ['confirm'],
+    additionalProperties: false,
+    properties: {
+      confirm: { type: 'boolean' },
+      delayMs: { type: 'number' }
     }
   },
   ensure_project: {
@@ -117,6 +125,33 @@ const toolSchemas: Record<string, JsonSchema> = {
       dialog: { type: 'object', additionalProperties: true },
       ifRevision: { type: 'string' },
       ...metaProps
+    }
+  },
+  generate_block_pipeline: {
+    type: 'object',
+    required: ['name', 'texture'],
+    additionalProperties: false,
+    properties: {
+      name: { type: 'string' },
+      texture: { type: 'string' },
+      namespace: { type: 'string' },
+      variants: {
+        type: 'array',
+        minItems: 1,
+        items: { type: 'string', enum: ['block', 'slab', 'stairs', 'wall'] }
+      },
+      textures: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          top: { type: 'string' },
+          side: { type: 'string' },
+          bottom: { type: 'string' }
+        }
+      },
+      onConflict: { type: 'string', enum: ['error', 'overwrite', 'versioned'] },
+      mode: { type: 'string', enum: ['json_only', 'with_blockbench'] },
+      ifRevision: { type: 'string' }
     }
   },
   set_project_texture_resolution: {
@@ -138,28 +173,6 @@ const toolSchemas: Record<string, JsonSchema> = {
       textureId: { type: 'string' },
       textureName: { type: 'string' },
       includeUsage: { type: 'boolean' }
-    }
-  },
-  create_project: {
-    type: 'object',
-    required: ['format', 'name'],
-    additionalProperties: false,
-    properties: {
-      format: { type: 'string', enum: ['Java Block/Item', 'geckolib', 'animated_java'] },
-      name: { type: 'string' },
-      confirmDiscard: { type: 'boolean' },
-      confirmDialog: { type: 'boolean' },
-      dialog: { type: 'object', additionalProperties: true },
-      ifRevision: { type: 'string' },
-      ...metaProps
-    }
-  },
-  reset_project: {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      ifRevision: { type: 'string' },
-      ...metaProps
     }
   },
   delete_texture: {
@@ -309,19 +322,19 @@ const toolSchemas: Record<string, JsonSchema> = {
   },
   render_preview: {
     type: 'object',
-      required: ['mode'],
+    required: ['mode'],
     additionalProperties: false,
     properties: {
       mode: { enum: ['fixed', 'turntable'] },
-        angle: numberArray(2, 3),
-        clip: { type: 'string' },
-        timeSeconds: { type: 'number' },
-        durationSeconds: { type: 'number' },
-        fps: { type: 'number' },
-        output: { enum: ['single', 'sequence'] },
-        ...stateProps
-      }
-    },
+      angle: numberArray(2, 3),
+      clip: { type: 'string' },
+      timeSeconds: { type: 'number' },
+      durationSeconds: { type: 'number' },
+      fps: { type: 'number' },
+      output: { enum: ['single', 'sequence'] },
+      ...stateProps
+    }
+  },
   validate: {
     type: 'object',
     additionalProperties: false,
@@ -390,16 +403,18 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: toolSchemas.get_project_state
   },
   {
-    name: 'list_projects',
-    title: 'List Projects',
-    description: 'Lists the currently open project (Blockbench has one active project).',
-    inputSchema: toolSchemas.list_projects
+    name: 'read_texture',
+    title: 'Read Texture',
+    description:
+      'Developer tool: reads a texture image (PNG) by id or name. Returns MCP image content plus structured metadata. Requires an active project.',
+    inputSchema: toolSchemas.read_texture
   },
   {
-    name: 'select_project',
-    title: 'Select Project',
-    description: 'Selects the active project for bbmcp operations. Optionally provide id from list_projects.',
-    inputSchema: toolSchemas.select_project
+    name: 'reload_plugins',
+    title: 'Reload Plugins',
+    description:
+      'Schedules a Blockbench plugin reload using Plugins.devReload (developer-only). Requires confirm=true. Optional delayMs (default 100) to allow the MCP response to flush before reload.',
+    inputSchema: toolSchemas.reload_plugins
   },
   {
     name: 'ensure_project',
@@ -407,6 +422,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Ensures a usable project. Reuses the active project by default and can create a new one when missing or on mismatch (per options). Use match/onMismatch/onMissing to control behavior.',
     inputSchema: toolSchemas.ensure_project
+  },
+  {
+    name: 'generate_block_pipeline',
+    title: 'Generate Block Pipeline',
+    description:
+      'Generates Minecraft block assets (blockstates + models + item models) using vanilla parents. Returns JSON in structuredContent and also stores them as MCP resources. mode=with_blockbench creates a new Java Block/Item project named after name and adds a base cube (requires ifRevision).',
+    inputSchema: toolSchemas.generate_block_pipeline
   },
     {
     name: 'set_project_texture_resolution',
@@ -421,20 +443,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Returns UV bounds, usage summary, and a recommended texture resolution based on current face UVs. Use this before painting to avoid out-of-bounds UVs. Set includeUsage=true to include the full textureUsage mapping table.',
     inputSchema: toolSchemas.preflight_texture
-  },
-  {
-    name: 'create_project',
-    title: 'Create Project',
-    description:
-      'Creates a new Blockbench project with the given format. This always starts a fresh project; prefer ensure_project when you want to reuse existing work. Requires ifRevision; call get_project_state first. Set confirmDiscard=true to discard unsaved changes. If a project dialog opens, pass dialog values and set confirmDialog=true to auto-confirm.',
-    inputSchema: toolSchemas.create_project
-  },
-  {
-    name: 'reset_project',
-    title: 'Reset Project',
-    description:
-      'Resets the current Blockbench project (destructive). Prefer ensure_project when you want to reuse an existing project. Requires ifRevision; call get_project_state first.',
-    inputSchema: toolSchemas.reset_project
   },
   {
     name: 'delete_texture',

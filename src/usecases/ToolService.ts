@@ -2,13 +2,14 @@ import {
   Capabilities,
   ExportPayload,
   FormatKind,
+  GenerateBlockPipelineResult,
   PreflightTextureResult,
   PreflightUsageSummary,
   PreflightUvBounds,
   ProjectDiff,
-  ProjectInfo,
   ProjectState,
   ProjectStateDetail,
+  ReadTextureResult,
   RenderPreviewPayload,
   RenderPreviewResult,
   ToolError
@@ -23,15 +24,20 @@ import { buildRigTemplate } from '../templates';
 import { RigTemplateKind } from '../spec';
 import { buildInternalExport } from '../domain/exporters';
 import { validateSnapshot } from '../domain/validation';
+import { buildBlockPipeline, BlockPipelineSpec, BlockResource } from '../domain/blockPipeline';
 import { ok, fail, UsecaseResult } from './result';
 import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../domain/format';
 import { mergeSnapshots } from '../domain/snapshot';
 import { diffSnapshots } from '../domain/diff';
 import { mergeRigParts, RigMergeStrategy } from '../domain/rig';
 import { isZeroSize } from '../domain/geometry';
+import { DEFAULT_UV_POLICY, UvPolicyConfig, computeExpectedUvSize, getFaceDimensions, shouldAutoFixUv } from '../domain/uvPolicy';
 import { ProjectStateService } from '../services/projectState';
 import { RevisionStore } from '../services/revision';
 import { createId } from '../services/id';
+import { HostPort } from '../ports/host';
+import { ResourceStore } from '../ports/resources';
+import { BlockPipelineMode, BlockPipelineOnConflict, BlockPipelineTextures, BlockVariant } from '../types/blockPipeline';
 import {
   collectDescendantBones,
   isDescendantBone,
@@ -56,6 +62,8 @@ export interface ToolServiceDeps {
   formats: FormatPort;
   snapshot: SnapshotPort;
   exporter: ExportPort;
+  host?: HostPort;
+  resources?: ResourceStore;
   policies?: ToolPolicies;
 }
 
@@ -66,10 +74,14 @@ export class ToolService {
   private readonly formats: FormatPort;
   private readonly snapshotPort: SnapshotPort;
   private readonly exporter: ExportPort;
+  private readonly host?: HostPort;
+  private readonly resources?: ResourceStore;
   private readonly policies: ToolPolicies;
   private readonly projectState: ProjectStateService;
   private readonly revisionStore: RevisionStore;
   private revisionBypassDepth = 0;
+  private readonly manualUvCubeIds = new Set<string>();
+  private readonly manualUvCubeNames = new Set<string>();
 
   constructor(deps: ToolServiceDeps) {
     this.session = deps.session;
@@ -78,6 +90,8 @@ export class ToolService {
     this.formats = deps.formats;
     this.snapshotPort = deps.snapshot;
     this.exporter = deps.exporter;
+    this.host = deps.host;
+    this.resources = deps.resources;
     this.policies = deps.policies ?? {};
     this.projectState = new ProjectStateService(this.formats, this.policies.formatOverrides);
     this.revisionStore = new RevisionStore(REVISION_CACHE_LIMIT);
@@ -104,12 +118,21 @@ export class ToolService {
     }
   }
 
-  listProjects(): UsecaseResult<{ projects: ProjectInfo[] }> {
-    const live = this.snapshotPort.readSnapshot();
-    if (!live) return ok({ projects: [] });
-    const normalized = this.projectState.normalize(live);
-    const info = this.projectState.toProjectInfo(normalized);
-    return ok({ projects: info ? [info] : [] });
+  reloadPlugins(payload: { confirm?: boolean; delayMs?: number }): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> {
+    if (payload.confirm !== true) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'confirm=true is required to reload plugins.',
+        fix: 'Set confirm=true to proceed.'
+      });
+    }
+    if (!this.host) {
+      return fail({ code: 'not_implemented', message: 'Plugin reload is not available in this host.' });
+    }
+    const delayMs = normalizeReloadDelay(payload.delayMs);
+    const err = this.host.schedulePluginReload(delayMs);
+    if (err) return fail(err);
+    return ok({ scheduled: true, delayMs, method: 'devReload' });
   }
 
   getProjectTextureResolution(): { width: number; height: number } | null {
@@ -256,33 +279,6 @@ export class ToolService {
     return ok({ diff });
   }
 
-  selectProject(payload: { id?: string }): UsecaseResult<{ id: string; format: FormatKind; name: string | null; formatId?: string | null }> {
-    const live = this.snapshotPort.readSnapshot();
-    if (!live) {
-      return fail({ code: 'invalid_state', message: 'No active project.' });
-    }
-    const normalized = this.projectState.normalize(live);
-    const info = this.projectState.toProjectInfo(normalized);
-    if (!info) {
-      return fail({ code: 'invalid_state', message: 'No active project.' });
-    }
-    if (payload.id && payload.id !== info.id) {
-      return fail({ code: 'invalid_payload', message: `Project not found: ${payload.id}` });
-    }
-    if (!normalized.format) {
-      return fail({ code: 'invalid_state', message: 'Active project format is unknown.' });
-    }
-    normalized.id = info.id;
-    const attachRes = this.session.attach(normalized);
-    if (!attachRes.ok) return fail(attachRes.error);
-    return ok({
-      id: attachRes.data.id,
-      format: normalized.format,
-      name: normalized.name ?? null,
-      formatId: normalized.formatId ?? null
-    });
-  }
-
   ensureProject(payload: {
     format?: Capabilities['formats'][number]['format'];
     name?: string;
@@ -406,6 +402,157 @@ export class ToolService {
     });
   }
 
+  generateBlockPipeline(payload: {
+    name: string;
+    texture: string;
+    namespace?: string;
+    variants?: BlockVariant[];
+    textures?: BlockPipelineTextures;
+    onConflict?: BlockPipelineOnConflict;
+    mode?: BlockPipelineMode;
+    ifRevision?: string;
+  }): UsecaseResult<GenerateBlockPipelineResult> {
+    const name = String(payload.name ?? '').trim();
+    if (!name) {
+      return fail({ code: 'invalid_payload', message: 'name is required' });
+    }
+    const texture = String(payload.texture ?? '').trim();
+    if (!texture) {
+      return fail({ code: 'invalid_payload', message: 'texture is required' });
+    }
+    const namespace = normalizeBlockNamespace(payload.namespace);
+    if (!isValidResourceToken(namespace)) {
+      return fail({
+        code: 'invalid_payload',
+        message: `Invalid namespace: ${namespace}`,
+        fix: 'Use lowercase letters, numbers, underscore, dash, or dot.'
+      });
+    }
+    if (!isValidResourceToken(name)) {
+      return fail({
+        code: 'invalid_payload',
+        message: `Invalid name: ${name}`,
+        fix: 'Use lowercase letters, numbers, underscore, dash, or dot.'
+      });
+    }
+    if (name.includes(':')) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'name must not include a namespace prefix.',
+        fix: 'Provide only the base name (e.g., adamantium_ore).'
+      });
+    }
+    const variants = normalizeBlockVariants(payload.variants);
+    if (variants.length === 0) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'variants must include at least one of block, slab, stairs, or wall.'
+      });
+    }
+
+    const onConflict: BlockPipelineOnConflict = payload.onConflict ?? 'error';
+    const mode: BlockPipelineMode = payload.mode ?? 'json_only';
+    if (!this.resources) {
+      return fail({ code: 'not_implemented', message: 'Resource store is not available.' });
+    }
+
+    const spec: BlockPipelineSpec = {
+      name,
+      namespace,
+      texture,
+      textures: payload.textures,
+      variants
+    };
+    const pipeline = buildBlockPipeline(spec);
+    const assets = collectBlockAssets(pipeline.resources);
+    const baseEntries = buildBlockResourceEntries(namespace, pipeline.resources);
+    const conflicts = baseEntries.filter((entry) => this.resources?.has(entry.uri)).map((entry) => entry.uri);
+
+    let entries = baseEntries;
+    let versionSuffix: string | undefined;
+    if (conflicts.length > 0) {
+      if (onConflict === 'error') {
+        return fail({
+          code: 'invalid_payload',
+          message: 'Resources already exist for this block pipeline.',
+          details: { conflicts }
+        });
+      }
+      if (onConflict === 'versioned') {
+        const resolved = resolveVersionedEntries(this.resources, baseEntries);
+        if (!resolved) {
+          return fail({
+            code: 'invalid_payload',
+            message: 'Could not allocate versioned resource names.',
+            details: { conflicts }
+          });
+        }
+        entries = resolved.entries;
+        versionSuffix = resolved.suffix;
+      }
+    }
+
+    const notes: string[] = [];
+    if (mode === 'with_blockbench') {
+      if (!payload.ifRevision) {
+        return fail({
+          code: 'invalid_state',
+          message: 'ifRevision is required when mode=with_blockbench.',
+          fix: 'Call get_project_state and retry with ifRevision.'
+        });
+      }
+      const created = this.createProject('Java Block/Item', name, {
+        confirmDiscard: onConflict === 'overwrite',
+        ifRevision: payload.ifRevision
+      });
+      if (!created.ok) {
+        return fail(created.error);
+      }
+      const modelRes = this.runWithoutRevisionGuard(() => {
+        const boneRes = this.addBone({ name: 'block', pivot: [0, 0, 0] });
+        if (!boneRes.ok) return boneRes;
+        const cubeRes = this.addCube({
+          name: 'block',
+          from: [0, 0, 0],
+          to: [16, 16, 16],
+          bone: 'block'
+        });
+        if (!cubeRes.ok) return cubeRes;
+        return ok({ ok: true });
+      });
+      if (!modelRes.ok) {
+        return fail(modelRes.error);
+      }
+      notes.push('Blockbench project created with a base cube. Import textures separately.');
+    }
+
+    entries.forEach((entry) => {
+      this.resources?.put({
+        uri: entry.uri,
+        name: entry.name,
+        mimeType: entry.mimeType,
+        text: entry.text
+      });
+    });
+
+    return ok({
+      name,
+      namespace,
+      variants,
+      mode,
+      onConflict,
+      resources: entries.map((entry) => ({
+        uri: entry.uri,
+        kind: entry.kind,
+        name: entry.name,
+        mimeType: entry.mimeType
+      })),
+      assets,
+      ...(versionSuffix ? { versionSuffix } : {}),
+      ...(notes.length > 0 ? { notes } : {})
+    });
+  }
+
   createProject(
     format: Capabilities['formats'][number]['format'],
     name: string,
@@ -416,28 +563,28 @@ export class ToolService {
       return fail(revisionErr);
     }
     const capability = this.capabilities.formats.find((f) => f.format === format);
-      if (!capability || !capability.enabled) {
-        return fail({
-          code: 'unsupported_format',
-          message: `Unsupported format: ${format}`,
-          fix: 'Use list_capabilities to pick an enabled format.'
-        });
-      }
-      if (!name) {
-        return fail({
-          code: 'invalid_payload',
-          message: 'Project name is required',
-          fix: 'Provide a non-empty project name.'
-        });
-      }
-      const formatId = resolveFormatId(format, this.formats.listFormats(), this.policies.formatOverrides);
-      if (!formatId) {
-        return fail({
-          code: 'unsupported_format',
-          message: withFormatOverrideHint(`No matching format ID for ${format}`),
-          fix: 'Set a format ID override in settings or choose another format.'
-        });
-      }
+    if (!capability || !capability.enabled) {
+      return fail({
+        code: 'unsupported_format',
+        message: `Unsupported format: ${format}`,
+        fix: 'Use list_capabilities to pick an enabled format.'
+      });
+    }
+    if (!name) {
+      return fail({
+        code: 'invalid_payload',
+        message: 'Project name is required',
+        fix: 'Provide a non-empty project name.'
+      });
+    }
+    const formatId = resolveFormatId(format, this.formats.listFormats(), this.policies.formatOverrides);
+    if (!formatId) {
+      return fail({
+        code: 'unsupported_format',
+        message: withFormatOverrideHint(`No matching format ID for ${format}`),
+        fix: 'Set a format ID override in settings or choose another format.'
+      });
+    }
     const { ifRevision: _ifRevision, ...editorOptions } = options ?? {};
     const effectiveConfirmDiscard = editorOptions.confirmDiscard ?? this.policies.autoDiscardUnsaved;
     const nextOptions =
@@ -450,13 +597,7 @@ export class ToolService {
     if (!result.ok) {
       return fail(result.error);
     }
-    return ok(result.data);
-  }
-
-  resetProject(payload?: { ifRevision?: string }): UsecaseResult<{ ok: true }> {
-    const revisionErr = this.ensureRevisionMatch(payload?.ifRevision);
-    if (revisionErr) return fail(revisionErr);
-    const result = this.session.reset();
+    this.clearManualUvState();
     return ok(result.data);
   }
 
@@ -669,6 +810,28 @@ export class ToolService {
     return ok(res.result!);
   }
 
+  readTextureImage(payload: { id?: string; name?: string }): UsecaseResult<ReadTextureResult> {
+    const sourceRes = this.readTexture(payload);
+    if (!sourceRes.ok) return sourceRes;
+    const source = sourceRes.value;
+    const dataUri = normalizeTextureDataUri(source.dataUri);
+    if (!dataUri) {
+      return fail({ code: 'not_implemented', message: 'Texture data unavailable.' });
+    }
+    const mimeType = parseDataUriMimeType(dataUri) ?? 'image/png';
+    return ok({
+      texture: {
+        id: source.id,
+        name: source.name,
+        width: source.width,
+        height: source.height,
+        path: source.path,
+        dataUri,
+        mimeType
+      }
+    });
+  }
+
   assignTexture(payload: {
     textureId?: string;
     textureName?: string;
@@ -715,6 +878,16 @@ export class ToolService {
       faces: faces ?? undefined
     });
     if (err) return fail(err);
+    this.applyAutoUvPolicy({
+      texture: {
+        id: texture.id ?? payload.textureId,
+        name: texture.name,
+        width: texture.width,
+        height: texture.height
+      },
+      cubes,
+      faces
+    });
     return ok({
       textureId: texture.id ?? payload.textureId,
       textureName: texture.name,
@@ -739,6 +912,12 @@ export class ToolService {
         message: 'cubeId or cubeName is required',
         fix: 'Provide cubeId or cubeName from get_project_state.'
       });
+    }
+    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
+    const target = resolveCubeTarget(snapshot.cubes, payload.cubeId, payload.cubeName);
+    if (!target) {
+      const label = payload.cubeId ?? payload.cubeName ?? 'unknown';
+      return fail({ code: 'invalid_payload', message: `Cube not found: ${label}` });
     }
     const faceEntries = Object.entries(payload.faces ?? {});
     if (faceEntries.length === 0) {
@@ -777,12 +956,13 @@ export class ToolService {
       faces.push(faceKey as CubeFaceDirection);
     }
     const err = this.editor.setFaceUv({
-      cubeId: payload.cubeId,
-      cubeName: payload.cubeName,
+      cubeId: target.id ?? payload.cubeId,
+      cubeName: target.name,
       faces: normalized
     });
     if (err) return fail(err);
-    return ok({ cubeId: payload.cubeId, cubeName: payload.cubeName ?? payload.cubeId ?? 'cube', faces });
+    this.markManualUv({ id: target.id ?? payload.cubeId, name: target.name });
+    return ok({ cubeId: target.id ?? payload.cubeId, cubeName: target.name, faces });
   }
 
   addBone(payload: {
@@ -1109,6 +1289,9 @@ export class ToolService {
       inflate: payload.inflate,
       mirror: payload.mirror
     });
+    if (payload.newName && payload.newName !== targetName) {
+      this.renameManualUv(targetName, payload.newName);
+    }
     return ok({ id: targetId, name: payload.newName ?? targetName });
   }
 
@@ -1129,6 +1312,7 @@ export class ToolService {
     const err = this.editor.deleteCube({ id: target.id ?? payload.id, name: target.name });
     if (err) return fail(err);
     this.session.removeCubes([target.name]);
+    this.clearManualUv({ id: target.id ?? payload.id, name: target.name });
     return ok({ id: target.id ?? payload.id ?? target.name, name: target.name });
   }
 
@@ -1463,21 +1647,21 @@ export class ToolService {
     if (!this.policies.autoAttachActiveProject) {
       return {
         ...stateError,
-        fix: 'Create a project (create_project) or select an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.'
       };
     }
     const live = this.snapshotPort.readSnapshot();
     if (!live) {
       return {
         ...stateError,
-        fix: 'Create a project (create_project) or select an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.'
       };
     }
     const normalized = this.projectState.normalize(live);
     if (!this.projectState.toProjectInfo(normalized) || !normalized.format) {
       return {
         ...stateError,
-        fix: 'Create a project (create_project) or select an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.'
       };
     }
     const attachRes = this.session.attach(normalized);
@@ -1572,6 +1756,89 @@ export class ToolService {
     return null;
   }
 
+  private clearManualUvState() {
+    this.manualUvCubeIds.clear();
+    this.manualUvCubeNames.clear();
+  }
+
+  private markManualUv(cube: { id?: string; name?: string }) {
+    if (cube.id) this.manualUvCubeIds.add(cube.id);
+    if (cube.name) this.manualUvCubeNames.add(cube.name);
+  }
+
+  private renameManualUv(oldName: string, newName: string) {
+    if (!this.manualUvCubeNames.has(oldName)) return;
+    this.manualUvCubeNames.delete(oldName);
+    this.manualUvCubeNames.add(newName);
+  }
+
+  private clearManualUv(cube: { id?: string; name?: string }) {
+    if (cube.id) this.manualUvCubeIds.delete(cube.id);
+    if (cube.name) this.manualUvCubeNames.delete(cube.name);
+  }
+
+  private isManualUv(cube: { id?: string; name?: string }): boolean {
+    if (cube.id && this.manualUvCubeIds.has(cube.id)) return true;
+    if (cube.name && this.manualUvCubeNames.has(cube.name)) return true;
+    return false;
+  }
+
+  private getUvPolicyConfig(): UvPolicyConfig {
+    const policy = this.policies.uvPolicy;
+    return {
+      modelUnitsPerBlock: policy?.modelUnitsPerBlock ?? DEFAULT_UV_POLICY.modelUnitsPerBlock,
+      scaleTolerance: policy?.scaleTolerance ?? DEFAULT_UV_POLICY.scaleTolerance,
+      tinyThreshold: policy?.tinyThreshold ?? DEFAULT_UV_POLICY.tinyThreshold
+    };
+  }
+
+  private applyAutoUvPolicy(params: {
+    texture: { id?: string; name: string; width?: number; height?: number };
+    cubes: SessionState['cubes'];
+    faces?: CubeFaceDirection[] | null;
+  }) {
+    if (!params.texture.name && !params.texture.id) return;
+    const size = resolveTextureSize(
+      { width: params.texture.width, height: params.texture.height },
+      this.editor.getProjectTextureResolution() ?? undefined
+    );
+    if (!size.width || !size.height) return;
+    const usage = this.editor.getTextureUsage({
+      textureId: params.texture.id,
+      textureName: params.texture.name
+    });
+    if (usage.error || !usage.result) return;
+    const usageEntry =
+      usage.result.textures.find((entry) => (params.texture.id && entry.id === params.texture.id) || entry.name === params.texture.name) ??
+      usage.result.textures[0];
+    if (!usageEntry) return;
+    const faceUvByCubeName = new Map<string, FaceUvMap>();
+    usageEntry.cubes.forEach((cube) => {
+      const faceMap: FaceUvMap = {};
+      cube.faces.forEach((face) => {
+        if (face.uv) faceMap[face.face] = face.uv;
+      });
+      faceUvByCubeName.set(cube.name, faceMap);
+    });
+    const faces = params.faces && params.faces.length > 0 ? params.faces : Array.from(VALID_CUBE_FACES);
+    const policy = this.getUvPolicyConfig();
+    params.cubes.forEach((cube) => {
+      if (this.isManualUv(cube)) return;
+      const faceMap = faceUvByCubeName.get(cube.name);
+      const updates: FaceUvMap = {};
+      faces.forEach((face) => {
+        const faceDimensions = getFaceDimensions(cube, face);
+        const expected = computeExpectedUvSize(faceDimensions, { width: size.width, height: size.height }, policy);
+        if (!expected) return;
+        const actual = faceMap?.[face];
+        if (!shouldAutoFixUv(actual, expected, policy)) return;
+        updates[face] = [0, 0, expected.width, expected.height];
+      });
+      if (Object.keys(updates).length === 0) return;
+      this.editor.setFaceUv({ cubeId: cube.id, cubeName: cube.name, faces: updates });
+    });
+  }
+
 }
 
 const hashCanvasImage = (image: CanvasImageSource | undefined): string | null => {
@@ -1579,6 +1846,16 @@ const hashCanvasImage = (image: CanvasImageSource | undefined): string | null =>
   const candidate = image as { toDataURL?: (type?: string) => string };
   if (typeof candidate.toDataURL !== 'function') return null;
   return hashText(candidate.toDataURL('image/png'));
+};
+
+const parseDataUriMimeType = (dataUri: string): string | null => {
+  const match = /^data:([^;]+);base64,/i.exec(String(dataUri ?? ''));
+  return match?.[1] ?? null;
+};
+
+const normalizeTextureDataUri = (value?: string): string | null => {
+  if (!value) return null;
+  return value.startsWith('data:') ? value : `data:image/png;base64,${value}`;
 };
 
 const resolveTextureSize = (
@@ -1716,6 +1993,15 @@ const clampResolution = (value: number, maxSize: number): number => {
   return value;
 };
 
+const DEFAULT_RELOAD_DELAY_MS = 100;
+const MAX_RELOAD_DELAY_MS = 10_000;
+
+const normalizeReloadDelay = (value?: number): number => {
+  if (!Number.isFinite(value)) return DEFAULT_RELOAD_DELAY_MS;
+  const rounded = Math.max(0, Math.trunc(value));
+  return Math.min(rounded, MAX_RELOAD_DELAY_MS);
+};
+
 function exportFormatToCapability(format: ExportPayload['format']): FormatKind | null {
   switch (format) {
     case 'java_block_item_json':
@@ -1729,6 +2015,96 @@ function exportFormatToCapability(format: ExportPayload['format']): FormatKind |
   }
 }
 
+type BlockResourceEntry = {
+  uri: string;
+  kind: BlockResource['kind'];
+  name: string;
+  mimeType: string;
+  text: string;
+};
+
+const DEFAULT_BLOCK_NAMESPACE = 'mod';
+const VALID_RESOURCE_TOKEN = /^[a-z0-9._-]+$/;
+
+const normalizeBlockNamespace = (value?: string): string => {
+  const trimmed = String(value ?? '').trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_BLOCK_NAMESPACE;
+};
+
+const normalizeBlockVariants = (variants?: BlockVariant[]): BlockVariant[] => {
+  const list = Array.isArray(variants) && variants.length > 0 ? variants : ['block'];
+  const valid: BlockVariant[] = ['block', 'slab', 'stairs', 'wall'];
+  const set = new Set<BlockVariant>();
+  list.forEach((variant) => {
+    if (valid.includes(variant)) {
+      set.add(variant);
+    }
+  });
+  return Array.from(set);
+};
+
+const isValidResourceToken = (value: string): boolean => VALID_RESOURCE_TOKEN.test(value);
+
+const stripPrefix = (value: string, prefix: string): string =>
+  value.startsWith(prefix) ? value.slice(prefix.length) : value;
+
+const buildBlockResourceUri = (namespace: string, resource: BlockResource): string => {
+  if (resource.kind === 'blockstate') {
+    return `bbmcp://blockstate/${namespace}/${resource.name}`;
+  }
+  if (resource.kind === 'model') {
+    const modelName = stripPrefix(resource.name, 'block/');
+    return `bbmcp://model/block/${namespace}/${modelName}`;
+  }
+  const itemName = stripPrefix(resource.name, 'item/');
+  return `bbmcp://model/item/${namespace}/${itemName}`;
+};
+
+const collectBlockAssets = (resources: BlockResource[]) => {
+  const blockstates: Record<string, unknown> = {};
+  const models: Record<string, unknown> = {};
+  const items: Record<string, unknown> = {};
+  resources.forEach((resource) => {
+    if (resource.kind === 'blockstate') {
+      blockstates[resource.name] = resource.json;
+    } else if (resource.kind === 'model') {
+      models[resource.name] = resource.json;
+    } else if (resource.kind === 'item') {
+      items[resource.name] = resource.json;
+    }
+  });
+  return { blockstates, models, items };
+};
+
+const buildBlockResourceEntries = (namespace: string, resources: BlockResource[]): BlockResourceEntry[] =>
+  resources.map((resource) => ({
+    uri: buildBlockResourceUri(namespace, resource),
+    kind: resource.kind,
+    name: resource.name,
+    mimeType: 'application/json',
+    text: JSON.stringify(resource.json, null, 2)
+  }));
+
+const appendUriSuffix = (uri: string, suffix: string): string => {
+  const idx = uri.lastIndexOf('/');
+  if (idx < 0) return `${uri}${suffix}`;
+  return `${uri.slice(0, idx + 1)}${uri.slice(idx + 1)}${suffix}`;
+};
+
+const resolveVersionedEntries = (
+  store: ResourceStore,
+  entries: BlockResourceEntry[]
+): { suffix: string; entries: BlockResourceEntry[] } | null => {
+  for (let version = 2; version < 100; version += 1) {
+    const suffix = `_v${version}`;
+    const next = entries.map((entry) => ({ ...entry, uri: appendUriSuffix(entry.uri, suffix) }));
+    if (next.every((entry) => !store.has(entry.uri))) {
+      return { suffix, entries: next };
+    }
+  }
+  return null;
+};
+
 export type SnapshotPolicy = 'session' | 'live' | 'hybrid';
 
 export interface ToolPolicies {
@@ -1741,6 +2117,11 @@ export interface ToolPolicies {
   autoIncludeState?: boolean;
   requireRevision?: boolean;
   autoRetryRevision?: boolean;
+  uvPolicy?: {
+    modelUnitsPerBlock?: number;
+    scaleTolerance?: number;
+    tinyThreshold?: number;
+  };
 }
 
 export type ExportPolicy = 'strict' | 'best_effort';

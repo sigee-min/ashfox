@@ -15,13 +15,18 @@ import { ProjectSession } from './session';
 import { Capabilities } from './types';
 import { ConsoleLogger } from './logging';
 import { BlockbenchEditor } from './adapters/blockbench/BlockbenchEditor';
+import { BlockbenchHost } from './adapters/blockbench/BlockbenchHost';
 import { BlockbenchFormats } from './adapters/blockbench/BlockbenchFormats';
 import { BlockbenchSnapshot } from './adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { ToolService } from './usecases/ToolService';
 import { UsecaseResult } from './usecases/result';
-import { buildRenderPreviewContent, buildRenderPreviewStructured } from './mcp/content';
-import { readBlockbenchGlobals } from './types/blockbench';
+import {
+  buildRenderPreviewContent,
+  buildRenderPreviewStructured,
+  buildTextureContent,
+  buildTextureStructured
+} from './mcp/content';
 
 const respondOk = <T>(data: T): ToolResponse<T> => ({ ok: true, data });
 const respondError = <T>(error: ToolError): ToolResponse<T> => ({ ok: false, error });
@@ -47,6 +52,7 @@ export class ToolDispatcherImpl implements Dispatcher {
     } else {
       const log = new ConsoleLogger('bbmcp-dispatcher', 'info');
       const editor = new BlockbenchEditor(log);
+      const host = new BlockbenchHost();
       const formats = new BlockbenchFormats();
       const snapshot = new BlockbenchSnapshot(log);
       const exporter = new BlockbenchExport(log);
@@ -54,6 +60,7 @@ export class ToolDispatcherImpl implements Dispatcher {
         session,
         capabilities,
         editor,
+        host,
         formats,
         snapshot,
         exporter,
@@ -76,6 +83,12 @@ export class ToolDispatcherImpl implements Dispatcher {
           return respondOk(this.service.listCapabilities()) as ToolResponse<ToolResultMap[TName]>;
         case 'get_project_state':
           return toToolResponse(this.service.getProjectState(payload)) as ToolResponse<ToolResultMap[TName]>;
+        case 'read_texture':
+          return attachTextureContent(
+            toToolResponse(this.service.readTextureImage(payload))
+          ) as ToolResponse<ToolResultMap[TName]>;
+        case 'reload_plugins':
+          return toToolResponse(this.service.reloadPlugins(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'set_project_texture_resolution':
           return this.attachState(
             payload,
@@ -83,19 +96,16 @@ export class ToolDispatcherImpl implements Dispatcher {
           ) as ToolResponse<ToolResultMap[TName]>;
         case 'preflight_texture':
           return toToolResponse(this.service.preflightTexture(payload)) as ToolResponse<ToolResultMap[TName]>;
-        case 'list_projects':
-          return toToolResponse(this.service.listProjects()) as ToolResponse<ToolResultMap[TName]>;
-        case 'select_project':
-          return this.attachState(payload, this.handleSelectProject(payload)) as ToolResponse<ToolResultMap[TName]>;
         case 'ensure_project':
           return this.attachState(
             payload,
             toToolResponse(this.service.ensureProject(payload))
           ) as ToolResponse<ToolResultMap[TName]>;
-        case 'create_project':
-          return this.attachState(payload, this.handleCreateProject(payload)) as ToolResponse<ToolResultMap[TName]>;
-        case 'reset_project':
-          return this.attachState(payload, this.handleResetProject(payload)) as ToolResponse<ToolResultMap[TName]>;
+        case 'generate_block_pipeline':
+          return this.attachState(
+            payload,
+            toToolResponse(this.service.generateBlockPipeline(payload))
+          ) as ToolResponse<ToolResultMap[TName]>;
         case 'delete_texture':
           return this.attachState(
             payload,
@@ -169,47 +179,6 @@ export class ToolDispatcherImpl implements Dispatcher {
     }
   }
 
-  private handleCreateProject(payload: ToolPayloadMap['create_project']) {
-    const hasOptions =
-      payload.confirmDiscard !== undefined ||
-      payload.dialog !== undefined ||
-      payload.confirmDialog !== undefined ||
-      payload.ifRevision !== undefined;
-    const result = this.service.createProject(
-      payload.format,
-      payload.name,
-      hasOptions
-        ? {
-            confirmDiscard: payload.confirmDiscard,
-            dialog: payload.dialog,
-            confirmDialog: payload.confirmDialog,
-            ifRevision: payload.ifRevision
-          }
-        : undefined
-    );
-    if (result.ok) {
-      const bb = readBlockbenchGlobals().Blockbench;
-      bb?.dispatchEvent?.('new_project', { name: payload.name, format: payload.format });
-      bb?.showQuickMessage?.(`bbmcp project created: ${payload.name} (${payload.format})`, 1200);
-    }
-    return toToolResponse(result);
-  }
-
-  private handleSelectProject(payload: ToolPayloadMap['select_project']) {
-    const result = this.service.selectProject(payload);
-    if (result.ok) {
-      const bb = readBlockbenchGlobals().Blockbench;
-      const label = result.value.name ?? 'current';
-      bb?.showQuickMessage?.(`bbmcp attached to project: ${label}`, 1200);
-    }
-    return toToolResponse(result);
-  }
-
-  private handleResetProject(payload: ToolPayloadMap['reset_project']) {
-    const result = this.service.resetProject(payload);
-    return toToolResponse(result);
-  }
-
   private attachState<
     TPayload extends { includeState?: boolean; includeDiff?: boolean; diffDetail?: ProjectStateDetail; ifRevision?: string },
     TResult
@@ -281,6 +250,18 @@ function attachRenderPreviewContent(
   if (!response.ok) return response;
   const content = buildRenderPreviewContent(response.data);
   const structuredContent = buildRenderPreviewStructured(response.data);
+  if (!content.length) {
+    return { ...response, structuredContent };
+  }
+  return { ...response, content, structuredContent };
+}
+
+function attachTextureContent(
+  response: ToolResponse<ToolResultMap['read_texture']>
+): ToolResponse<ToolResultMap['read_texture']> {
+  if (!response.ok) return response;
+  const content = buildTextureContent(response.data);
+  const structuredContent = buildTextureStructured(response.data);
   if (!content.length) {
     return { ...response, structuredContent };
   }

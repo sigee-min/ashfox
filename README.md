@@ -6,11 +6,13 @@ bbmcp turns Blockbench into an MCP-native modeling backend with a clean tool sur
 ## Highlights
 - MCP-first HTTP server with tool discovery and schema versioning.
 - High-level spec tools (`apply_model_spec`, `apply_texture_spec`).
+- Block pipeline generator (`generate_block_pipeline`) for blockstates/models/item models.
 - Low-level controls (bones, cubes, textures, export, validate).
 - Explicit texture assignment via `assign_texture` (no hidden auto-assign).
 - Revision guard (`ifRevision`) for safe concurrent edits.
 - Preview output as MCP `content` image blocks (base64 PNG).
 - Java Block/Item enabled by default; GeckoLib/Animated Java gated by capabilities.
+- MCP resources for generated JSON (via `resources/list` and `resources/read`).
 
 ## Quickstart
 1) Install dependencies
@@ -38,10 +40,23 @@ http://127.0.0.1:8787/mcp
 
 ## Core Flow (Recommended)
 1) `ensure_project` (or `get_project_state`) to confirm an active project and read `revision`.
-2) Mutations (`create_project`, `add_bone`, `add_cube`, `apply_*`) with `ifRevision`.
+2) Mutations (`add_bone`, `add_cube`, `apply_*`) with `ifRevision`.
 3) `validate` to catch issues early.
 4) `render_preview` for images.
 5) `export` for JSON output.
+
+## Block Pipeline (Recommended)
+`generate_block_pipeline` creates blockstates + models + item models using vanilla parents and stores them as MCP resources.
+```json
+{
+  "name": "adamantium_ore",
+  "texture": "adamantium_ore",
+  "variants": ["block", "slab", "stairs", "wall"],
+  "namespace": "mymod",
+  "mode": "json_only"
+}
+```
+Use `resources/list` to discover generated assets and `resources/read` to fetch JSON.
 
 ## Texture Flow (Recommended)
 1) Lock invariants first: textureResolution, UV policy (manual per-face), and texture count (single atlas vs per-material).

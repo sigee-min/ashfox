@@ -340,7 +340,8 @@ const getTextureDataUri = (tex: TextureInstance): string | null => {
     return tex.getDataUrl();
   }
   if (typeof tex.getBase64 === 'function') {
-    return tex.getBase64();
+    const base64 = tex.getBase64();
+    return base64 ? wrapBase64Png(base64) : null;
   }
   if (typeof tex.toDataURL === 'function') {
     return tex.toDataURL('image/png');
@@ -365,4 +366,9 @@ const getTextureDataUri = (tex: TextureInstance): string | null => {
     return temp.toDataURL('image/png');
   }
   return null;
+};
+
+const wrapBase64Png = (value: string): string => {
+  if (!value) return value;
+  return value.startsWith('data:') ? value : `data:image/png;base64,${value}`;
 };

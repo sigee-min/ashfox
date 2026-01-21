@@ -17,11 +17,15 @@ import { SidecarProcess } from './sidecar/SidecarProcess';
 import { SidecarLaunchConfig } from './sidecar/types';
 import { ToolService, ExportPolicy } from './usecases/ToolService';
 import { BlockbenchEditor } from './adapters/blockbench/BlockbenchEditor';
+import { BlockbenchHost } from './adapters/blockbench/BlockbenchHost';
 import { BlockbenchFormats } from './adapters/blockbench/BlockbenchFormats';
 import { BlockbenchSnapshot } from './adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { FormatOverrides, resolveFormatId } from './domain/format';
 import { buildInternalExport } from './domain/exporters';
+import { DEFAULT_UV_POLICY } from './domain/uvPolicy';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from './domain/blockPipeline';
+import { InMemoryResourceStore } from './services/resources';
 import { startServer } from './server';
 import { UnknownRecord, readBlockbenchGlobals } from './types/blockbench';
 import { TOOL_REGISTRY_COUNT, TOOL_REGISTRY_HASH } from './mcp/tools';
@@ -47,11 +51,13 @@ type BbmcpBridge = {
 };
 
 const formatOverrides: FormatOverrides = {};
+const resourceStore = new InMemoryResourceStore(BLOCK_PIPELINE_RESOURCE_TEMPLATES);
 const policies = {
   formatOverrides,
   snapshotPolicy: 'hybrid' as const,
   rigMergeStrategy: 'skip_existing' as const,
   exportPolicy: 'strict' as ExportPolicy,
+  uvPolicy: { ...DEFAULT_UV_POLICY },
   autoDiscardUnsaved: true,
   autoAttachActiveProject: true,
   autoIncludeState: false,
@@ -239,12 +245,13 @@ function restartServer() {
       return;
     }
     if (globalDispatcher && globalProxy) {
-      const inlineStop = startServer(
-        { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path },
-        globalDispatcher,
-        globalProxy,
-        logger
-      );
+        const inlineStop = startServer(
+          { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path },
+          globalDispatcher,
+          globalProxy,
+          logger,
+          resourceStore
+        );
       if (inlineStop) {
         inlineServerStop = inlineStop;
         return;
@@ -578,6 +585,7 @@ Notes:
     registerFormatSettings();
     registerExportPolicySetting();
     const editor = new BlockbenchEditor(logger);
+    const host = new BlockbenchHost();
     const formats = new BlockbenchFormats();
     const snapshot = new BlockbenchSnapshot(logger);
     const exporter = new BlockbenchExport(logger);
@@ -594,7 +602,17 @@ Notes:
       previewCapability
     );
     capabilities.toolRegistry = { hash: TOOL_REGISTRY_HASH, count: TOOL_REGISTRY_COUNT };
-    const service = new ToolService({ session, capabilities, editor, formats, snapshot, exporter, policies });
+    const service = new ToolService({
+      session,
+      capabilities,
+      editor,
+      host,
+      formats,
+      snapshot,
+      exporter,
+      resources: resourceStore,
+      policies
+    });
     const dispatcher = new ToolDispatcherImpl(session, capabilities, service, {
       includeStateByDefault: () => policies.autoIncludeState,
       includeDiffByDefault: () => policies.autoIncludeDiff

@@ -168,7 +168,7 @@ const tryAutoConfirmProjectDialog = (
       ok: false,
       error: {
         code: 'invalid_state',
-        message: 'Project dialog requires input. Provide create_project.dialog values and set confirmDialog=true.',
+        message: 'Project dialog requires input. Provide ensure_project.dialog values and set confirmDialog=true.',
         details: { fields: remaining, missing }
       }
     };
