@@ -68,7 +68,21 @@ const hashSnapshot = (snapshot: SessionState): string => {
       t.path ?? '',
       t.width ?? 0,
       t.height ?? 0,
-      t.contentHash ?? ''
+      t.contentHash ?? '',
+      t.namespace ?? null,
+      t.folder ?? null,
+      t.particle ?? null,
+      t.visible ?? null,
+      t.renderMode ?? null,
+      t.renderSides ?? null,
+      t.pbrChannel ?? null,
+      t.group ?? null,
+      t.frameTime ?? null,
+      t.frameOrderType ?? null,
+      t.frameOrder ?? null,
+      t.frameInterpolate ?? null,
+      t.internal ?? null,
+      t.keepSize ?? null
     ]),
     animations: snapshot.animations.map((a) => [
       a.id ?? '',
@@ -76,7 +90,8 @@ const hashSnapshot = (snapshot: SessionState): string => {
       a.length,
       a.loop,
       a.fps ?? null,
-      a.channels?.length ?? 0
+      a.channels?.length ?? 0,
+      a.triggers?.length ?? 0
     ])
   };
   return hashString(JSON.stringify(data));
@@ -97,7 +112,8 @@ const cloneSnapshot = (snapshot: SessionState): SessionState => ({
   textures: snapshot.textures.map((tex) => ({ ...tex })),
   animations: snapshot.animations.map((anim) => ({
     ...anim,
-    channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined
+    channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined,
+    triggers: anim.triggers ? anim.triggers.map((tr) => ({ ...tr, keys: [...tr.keys] })) : undefined
   })),
   animationsStatus: snapshot.animationsStatus
 });

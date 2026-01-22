@@ -70,7 +70,6 @@ export const applyModelSpecSteps = (
       from,
       to,
       bone: part.id,
-      uv: part.uv,
       inflate: part.inflate,
       mirror: part.mirror
     });
@@ -153,6 +152,7 @@ export const applyTextureSpecSteps = async (
         source: { width: Math.trunc(sourceWidth), height: Math.trunc(sourceHeight) }
       };
     }
+    const uvPaintApplied = Boolean(uvPaintConfig);
     if (mode === 'create') {
       const renderRes = renderTextureSpec(texture, limits, undefined, uvPaintConfig);
       if (!renderRes.ok) {
@@ -166,7 +166,8 @@ export const applyTextureSpecSteps = async (
         report,
         meta,
         service,
-        renderRes.data.paintCoverage
+        renderRes.data.paintCoverage,
+        uvPaintApplied
       );
       if (!coverageCheck.ok) return coverageCheck;
       const res = service.importTexture({
@@ -290,13 +291,14 @@ const guardTextureCoverage = (
   report: ApplyReport,
   meta: MetaOptions,
   service: ToolService,
-  paintCoverage?: TextureCoverage
+  paintCoverage?: TextureCoverage,
+  usePaintCoverage?: boolean
 ): ToolResponse<ApplyReport> => {
   const mode = texture.mode ?? 'create';
   if (mode !== 'create') return { ok: true, data: report };
   const ops = Array.isArray(texture.ops) ? texture.ops : [];
   if (ops.length === 0 && !texture.background) return { ok: true, data: report };
-  const effectiveCoverage = texture.uvPaint && paintCoverage ? paintCoverage : coverage;
+  const effectiveCoverage = usePaintCoverage && paintCoverage ? paintCoverage : coverage;
   if (!effectiveCoverage || effectiveCoverage.totalPixels === 0) return { ok: true, data: report };
   if (effectiveCoverage.opaqueRatio >= MIN_OPAQUE_RATIO) return { ok: true, data: report };
   const ratio = Math.round(effectiveCoverage.opaqueRatio * 1000) / 10;
