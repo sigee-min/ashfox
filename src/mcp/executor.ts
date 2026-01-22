@@ -18,7 +18,8 @@ export class LocalToolExecutor implements ToolExecutor {
   async callTool(name: string, args: unknown): Promise<ToolResponse<unknown>> {
     const toolName = name as ToolName;
     if (isProxyTool(toolName)) {
-      return normalizeToolResponse(this.proxy.handle(toolName, args));
+      const response = await this.proxy.handle(toolName, args);
+      return normalizeToolResponse(response);
     }
     return normalizeToolResponse(this.dispatcher.handle(toolName, args as ToolPayloadMap[ToolName]));
   }

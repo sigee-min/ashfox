@@ -14,10 +14,13 @@ import {
   resolveDiffDetail,
   resolveIncludeDiff,
   resolveIncludeState,
+  withErrorMeta,
   withMeta
 } from './meta';
 import { toToolResponse } from './response';
 import { validateModelSpec, validateTextureSpec } from './validators';
+import { computeTextureUsageId } from '../domain/textureUsage';
+import { findUvOverlapIssues, formatUvFaceRect, UvOverlapIssue } from '../domain/uvOverlap';
 
 export class ProxyRouter {
   private readonly service: ToolService;
@@ -41,7 +44,7 @@ export class ProxyRouter {
     this.includeDiffByDefault = typeof diffFlag === 'function' ? diffFlag : () => Boolean(diffFlag);
   }
 
-  applyModelSpec(payload: ApplyModelSpecPayload): ToolResponse<unknown> {
+  async applyModelSpec(payload: ApplyModelSpecPayload): Promise<ToolResponse<unknown>> {
     const v = validateModelSpec(payload, this.limits);
     if (!v.ok) return v;
     const includeState = resolveIncludeState(payload.includeState, this.includeStateByDefault);
@@ -53,7 +56,7 @@ export class ProxyRouter {
     };
     const revisionError = guardRevision(this.service, payload.ifRevision, meta);
     if (revisionError) return revisionError;
-    return this.runWithoutRevisionGuard(() => {
+    return this.runWithoutRevisionGuard(async () => {
       const report = createApplyReport();
       const result = applyModelSpecSteps(this.service, this.log, payload, report, meta);
       if (!result.ok) return result;
@@ -61,7 +64,7 @@ export class ProxyRouter {
     });
   }
 
-  applyTextureSpec(payload: ApplyTextureSpecPayload): ToolResponse<unknown> {
+  async applyTextureSpec(payload: ApplyTextureSpecPayload): Promise<ToolResponse<unknown>> {
     const v = validateTextureSpec(payload, this.limits);
     if (!v.ok) return v;
     const includeState = resolveIncludeState(payload.includeState, this.includeStateByDefault);
@@ -73,22 +76,76 @@ export class ProxyRouter {
     };
     const guard = guardRevision(this.service, payload.ifRevision, meta);
     if (guard) return guard;
-    return this.runWithoutRevisionGuard(() => {
+    const usageRes = this.service.getTextureUsage({});
+    if (!usageRes.ok) return withErrorMeta(usageRes.error, meta, this.service);
+    const currentUsageId = computeTextureUsageId(usageRes.value);
+    if (currentUsageId !== payload.uvUsageId) {
+      return withErrorMeta(
+        {
+          code: 'invalid_state',
+          message: 'UV usage changed since preflight_texture. Refresh preflight and retry.',
+          fix: 'Call preflight_texture without texture filters and retry with the new uvUsageId.',
+          details: { expected: payload.uvUsageId, current: currentUsageId }
+        },
+        meta,
+        this.service
+      );
+    }
+    const overlapIssues = findUvOverlapIssues(usageRes.value);
+    const overlapTargets = collectTextureTargets(payload.textures);
+    const blockingOverlaps = overlapIssues.filter((issue) => isOverlapTarget(issue, overlapTargets));
+    if (blockingOverlaps.length > 0) {
+      const sample = blockingOverlaps[0];
+      const example = sample.example
+        ? ` Example: ${formatUvFaceRect(sample.example.a)} overlaps ${formatUvFaceRect(sample.example.b)}.`
+        : '';
+      const names = blockingOverlaps.slice(0, 3).map((issue) => `"${issue.textureName}"`).join(', ');
+      const suffix = blockingOverlaps.length > 3 ? ` (+${blockingOverlaps.length - 3} more)` : '';
+      return withErrorMeta(
+        {
+          code: 'invalid_state',
+          message:
+            `UV overlap detected for texture${blockingOverlaps.length === 1 ? '' : 's'} ${names}${suffix}. ` +
+            `Only identical UV rects may overlap.` +
+            example,
+          fix: 'Adjust UVs so only identical rects overlap, then call preflight_texture and retry.',
+          details: {
+            overlaps: blockingOverlaps.map((issue) => ({
+              textureId: issue.textureId ?? undefined,
+              textureName: issue.textureName,
+              conflictCount: issue.conflictCount,
+              example: issue.example
+            }))
+          }
+        },
+        meta,
+        this.service
+      );
+    }
+    return this.runWithoutRevisionGuard(async () => {
       const report = createApplyReport();
-      const result = applyTextureSpecSteps(this.service, this.limits, payload.textures, report, meta, this.log);
+      const result = await applyTextureSpecSteps(
+        this.service,
+        this.limits,
+        payload.textures,
+        report,
+        meta,
+        this.log,
+        usageRes.value
+      );
       if (!result.ok) return result;
       this.log.info('applyTextureSpec applied', { textures: payload.textures.length });
       return { ok: true, data: withMeta({ applied: true, report }, meta, this.service) };
     });
   }
 
-  handle(tool: ProxyTool, payload: unknown): ToolResponse<unknown> {
+  async handle(tool: ProxyTool, payload: unknown): Promise<ToolResponse<unknown>> {
     try {
       switch (tool) {
         case 'apply_model_spec':
-          return this.applyModelSpec(payload as ApplyModelSpecPayload);
+          return await this.applyModelSpec(payload as ApplyModelSpecPayload);
         case 'apply_texture_spec':
-          return this.applyTextureSpec(payload as ApplyTextureSpecPayload);
+          return await this.applyTextureSpec(payload as ApplyTextureSpecPayload);
         case 'render_preview':
           return attachRenderPreviewContent(
             toToolResponse(this.service.renderPreview(payload as RenderPreviewPayload))
@@ -105,12 +162,46 @@ export class ProxyRouter {
     }
   }
 
-  private runWithoutRevisionGuard<T>(fn: () => T): T {
-    const runner = (this.service as { runWithoutRevisionGuard?: (inner: () => T) => T }).runWithoutRevisionGuard;
-    if (typeof runner === 'function') return runner.call(this.service, fn);
-    return fn();
+  private async runWithoutRevisionGuard<T>(fn: () => Promise<T> | T): Promise<T> {
+    const service = this.service as {
+      runWithoutRevisionGuardAsync?: (inner: () => Promise<T>) => Promise<T>;
+      runWithoutRevisionGuard?: (inner: () => T) => T;
+    };
+    if (typeof service.runWithoutRevisionGuardAsync === 'function') {
+      return service.runWithoutRevisionGuardAsync(async () => await fn());
+    }
+    if (typeof service.runWithoutRevisionGuard === 'function') {
+      const result = service.runWithoutRevisionGuard(() => {
+        const value = fn();
+        if (value && typeof (value as Promise<T>).then === 'function') {
+          throw new Error('Async revision guard unavailable');
+        }
+        return value as T;
+      });
+      return result;
+    }
+    return await fn();
   }
 }
+
+type TextureTargetSet = { ids: Set<string>; names: Set<string> };
+
+const collectTextureTargets = (textures: ApplyTextureSpecPayload['textures']): TextureTargetSet => {
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  textures.forEach((texture) => {
+    if (texture.targetId) ids.add(texture.targetId);
+    if (texture.id) ids.add(texture.id);
+    if (texture.targetName) names.add(texture.targetName);
+    if (texture.name) names.add(texture.name);
+  });
+  return { ids, names };
+};
+
+const isOverlapTarget = (issue: UvOverlapIssue, targets: TextureTargetSet): boolean => {
+  if (issue.textureId && targets.ids.has(issue.textureId)) return true;
+  return targets.names.has(issue.textureName);
+};
 
 const attachRenderPreviewContent = (
   response: ToolResponse<RenderPreviewResult>

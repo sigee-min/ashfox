@@ -49,6 +49,35 @@ const textureOpSchema: JsonSchema = {
   }
 };
 
+const uvPaintSchema: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    scope: { type: 'string', enum: ['faces', 'rects', 'bounds'] },
+    mapping: { type: 'string', enum: ['stretch', 'tile'] },
+    padding: { type: 'number' },
+    anchor: numberArray(2, 2),
+    source: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['width', 'height'],
+      properties: {
+        width: { type: 'number' },
+        height: { type: 'number' }
+      }
+    },
+    target: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        cubeIds: { type: 'array', minItems: 1, items: { type: 'string' } },
+        cubeNames: { type: 'array', minItems: 1, items: { type: 'string' } },
+        faces: { type: 'array', minItems: 1, items: cubeFaceSchema }
+      }
+    }
+  }
+};
+
 const faceUvSchema: JsonSchema = {
   type: 'object',
   minProperties: 1,
@@ -130,18 +159,30 @@ const toolSchemas: Record<string, JsonSchema> = {
   },
   generate_texture_preset: {
     type: 'object',
-    required: ['preset', 'width', 'height'],
+    required: ['preset', 'width', 'height', 'uvUsageId'],
     additionalProperties: false,
     properties: {
       preset: texturePresetSchema,
       width: { type: 'number' },
       height: { type: 'number' },
+      uvUsageId: { type: 'string' },
       name: { type: 'string' },
       targetId: { type: 'string' },
       targetName: { type: 'string' },
       mode: { type: 'string', enum: ['create', 'update'] },
       seed: { type: 'number' },
       palette: { type: 'array', items: { type: 'string' } },
+      uvPaint: uvPaintSchema,
+      ifRevision: { type: 'string' },
+      ...metaProps
+    }
+  },
+  auto_uv_atlas: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      padding: { type: 'number' },
+      apply: { type: 'boolean' },
       ifRevision: { type: 'string' },
       ...metaProps
     }
@@ -389,7 +430,7 @@ const toolSchemas: Record<string, JsonSchema> = {
   },
   apply_texture_spec: {
     type: 'object',
-    required: ['textures'],
+    required: ['textures', 'uvUsageId'],
     additionalProperties: false,
     properties: {
       textures: {
@@ -409,6 +450,7 @@ const toolSchemas: Record<string, JsonSchema> = {
             height: { type: 'number' },
             background: { type: 'string' },
             useExisting: { type: 'boolean' },
+            uvPaint: uvPaintSchema,
             ops: {
               type: 'array',
               items: textureOpSchema
@@ -416,6 +458,7 @@ const toolSchemas: Record<string, JsonSchema> = {
           }
         }
       },
+      uvUsageId: { type: 'string' },
       ifRevision: { type: 'string' },
       ...metaProps
     }
@@ -455,8 +498,15 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'generate_texture_preset',
     title: 'Generate Texture Preset',
     description:
-      'Generates a procedural texture preset without local files. Use for 64x64+ textures to avoid large ops payloads. Requires ifRevision; call get_project_state first. mode=create needs name; mode=update needs targetId/targetName.',
+      'High-level: generates a procedural texture preset without local files (preferred for 64x64+). Requires ifRevision and uvUsageId from preflight_texture (call without texture filters). The preset is generated as a source canvas and painted into UV rects (uvPaint enforced, defaults to scope=rects). If UV usage changes, the call fails with invalid_state and you must preflight again. mode=create needs name; mode=update needs targetId/targetName. For block-scale patterns map full textures; for small parts use dedicated/tileable presets or atlas regions.',
     inputSchema: toolSchemas.generate_texture_preset
+  },
+  {
+    name: 'auto_uv_atlas',
+    title: 'Auto UV Atlas',
+    description:
+      'Auto-packs UVs into a texture atlas using current textureResolution. Groups share rects only when the texture and face size match; all other faces are placed into non-overlapping atlas regions. If packing overflows, the resolution is doubled and packing is retried until it fits (up to limits). Rect sizes are computed from the starting resolution, so increasing resolution creates more space instead of scaling every rect. When apply=true (default), updates face UVs and adjusts textureResolution; otherwise returns a plan only. Repaint textures after resizing.',
+    inputSchema: toolSchemas.auto_uv_atlas
   },
   {
     name: 'ensure_project',
@@ -469,7 +519,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'generate_block_pipeline',
     title: 'Generate Block Pipeline',
     description:
-      'Generates Minecraft block assets (blockstates + models + item models) using vanilla parents. Returns JSON in structuredContent and also stores them as MCP resources. mode=with_blockbench creates a new Java Block/Item project named after name and adds a base cube (requires ifRevision).',
+      'High-level: generates block assets (blockstates/models/item models) using vanilla parents. Returns JSON and stores MCP resources. mode=with_blockbench creates a Java Block/Item project with a base cube (requires ifRevision).',
     inputSchema: toolSchemas.generate_block_pipeline
   },
   {
@@ -483,7 +533,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'preflight_texture',
     title: 'Preflight Texture',
     description:
-      'Returns UV bounds, usage summary, and a recommended texture resolution based on current face UVs. Use this before painting to avoid out-of-bounds UVs. Set includeUsage=true to include the full textureUsage mapping table.',
+      'Returns UV bounds, usage summary, and a recommended texture resolution based on current face UVs. Use this before painting to avoid out-of-bounds UVs and to decide whether a face should use full-texture mapping (block-scale) or a dedicated/tileable texture. Includes uvUsageId for apply_texture_spec/uvPaint; uvUsageId is computed from full texture usage (not just the filtered texture), so call without texture filters for a stable id. Set includeUsage=true to include the full textureUsage mapping table. Preflight warns on UV overlaps; only identical rects may overlap.',
     inputSchema: toolSchemas.preflight_texture
   },
   {
@@ -496,59 +546,63 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'assign_texture',
     title: 'Assign Texture',
     description:
-      'Assigns a texture to cubes/faces without changing UVs (forces per-face UV mode; auto UV disabled). Requires ifRevision; call get_project_state first. Use this after apply_texture_spec. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. If UVs change after painting, repaint using the updated mapping. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability. If UVs exceed the current textureResolution, increase it or split textures per material.',
+      'Low-level: binds a texture to cubes/faces without changing UVs (forces per-face UV mode; auto UV disabled). Required after apply_texture_spec or generate_texture_preset. Requires ifRevision; call get_project_state first. Omit cubeIds/cubeNames to apply to all cubes. Use set_face_uv to define per-face UVs explicitly. If UVs change after painting, repaint using the updated mapping. Prefer material-group textures (pot/soil/plant) and assign by cubeNames for stability. For block assets, map full textures to preserve pattern scale; for small parts or partial UVs, use dedicated/tileable textures or atlas regions. If UVs exceed the current textureResolution, increase it or split textures per material.',
     inputSchema: toolSchemas.assign_texture
   },
   {
     name: 'set_face_uv',
     title: 'Set Face UV',
     description:
-      'Sets per-face UVs for a cube (manual UV only; auto UV disabled). Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and must fit within the project textureResolution; if they exceed it, increase resolution or split textures. If you change UVs after painting, repaint using the new mapping.',
+      'Low-level: sets per-face UVs for a cube (manual UV only; auto UV disabled). Requires ifRevision; call get_project_state first. Provide cubeId or cubeName plus a faces map (e.g., {north:[x1,y1,x2,y2], up:[x1,y1,x2,y2]}). UVs are in texture pixels and must fit within the project textureResolution; if they exceed it, increase resolution or split textures. If you change UVs after painting, repaint using the new mapping.',
     inputSchema: toolSchemas.set_face_uv
   },
   {
     name: 'add_bone',
     title: 'Add Bone',
-    description: 'Adds a bone to the current project. Requires ifRevision; call get_project_state first.',
+    description:
+      'Low-level: adds a bone to the current project. Prefer apply_model_spec or apply_rig_template when possible. For animation-ready rigs, always build a root-based hierarchy (set parent for every non-root bone; avoid flat bone lists). Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.add_bone
   },
   {
     name: 'update_bone',
     title: 'Update Bone',
-    description: 'Updates a bone (rename, transform, or reparent). Requires ifRevision; call get_project_state first.',
+    description:
+      'Low-level: updates a bone (rename, transform, or reparent). Use only when high-level tools cannot express the change. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.update_bone
   },
   {
     name: 'delete_bone',
     title: 'Delete Bone',
-    description: 'Deletes a bone (and its descendants). Requires ifRevision; call get_project_state first.',
+    description:
+      'Low-level: deletes a bone (and its descendants). Use only when high-level tools cannot express the change. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.delete_bone
   },
   {
     name: 'add_cube',
     title: 'Add Cube',
     description:
-      'Adds a cube to the given bone. Requires ifRevision; call get_project_state first. If uv is provided it must fit within the project textureResolution. Texture binding is separate; use assign_texture.',
+      'Low-level: adds a cube to the given bone. Prefer apply_model_spec for new models. Requires ifRevision; call get_project_state first. If uv is provided it must fit within the project textureResolution. Texture binding is separate; use assign_texture.',
     inputSchema: toolSchemas.add_cube
   },
   {
     name: 'update_cube',
     title: 'Update Cube',
     description:
-      'Updates a cube (rename, transform, or reparent). Requires ifRevision; call get_project_state first. If uv is provided it must fit within the project textureResolution.',
+      'Low-level: updates a cube (rename, transform, or reparent). Use only when high-level tools cannot express the change. Requires ifRevision; call get_project_state first. If uv is provided it must fit within the project textureResolution.',
     inputSchema: toolSchemas.update_cube
   },
   {
     name: 'delete_cube',
     title: 'Delete Cube',
-    description: 'Deletes a cube. Requires ifRevision; call get_project_state first.',
+    description:
+      'Low-level: deletes a cube. Use only when high-level tools cannot express the change. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.delete_cube
   },
   {
     name: 'apply_rig_template',
     title: 'Apply Rig Template',
     description:
-      'Applies a rig template to the project. Use this for additive rigging; avoid combining with apply_model_spec unless you intend to add more bones/cubes. Requires ifRevision; call get_project_state first.',
+      'High-level: applies a rig template for additive rigging; avoid combining with apply_model_spec unless you intend to add more bones/cubes. Requires ifRevision; call get_project_state first.',
     inputSchema: toolSchemas.apply_rig_template
   },
   {
@@ -574,14 +628,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'apply_model_spec',
     title: 'Apply Model Spec',
     description:
-      'Applies a structured model specification (rigTemplate + parts) to the active project (does not create a new project). Requires ifRevision; call get_project_state first. Textures are handled separately via apply_texture_spec + assign_texture.',
+      'High-level: applies a structured model specification (rigTemplate + parts) to the active project (does not create a new project). Prefer over add_bone/add_cube for new models. Requires ifRevision; call get_project_state first. For animation-ready rigs, include a root bone and set parent for every non-root part (avoid flat bone lists). Example: {"model":{"rigTemplate":"empty","parts":[{"id":"root","size":[0,0,0],"offset":[0,0,0]},{"id":"body","parent":"root","size":[8,12,4],"offset":[-4,0,-2]},{"id":"head","parent":"body","size":[8,8,8],"offset":[-4,12,-4]}]}}. Textures are handled separately via apply_texture_spec + assign_texture.',
     inputSchema: toolSchemas.apply_model_spec
   },
   {
     name: 'apply_texture_spec',
     title: 'Apply Texture Spec',
     description:
-      'Applies a structured texture specification. Requires ifRevision; returns no_change when no pixels change. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker/label texture. If UVs change, repaint using the new mapping. Low opaque coverage is rejected to avoid transparent results; fill a larger area or tighten UVs. width/height are required and must match the intended project textureResolution. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. If UVs exceed the current textureResolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material. Use set_project_texture_resolution before creating textures when increasing size. ops are optional; omit ops to create a blank texture (background can still fill). Success responses include report.textureCoverage (opaque ratio + bounds) for each rendered texture.',
+      'High-level: applies a structured texture specification. Requires ifRevision and uvUsageId from preflight_texture (call without texture filters). If uvUsageId does not match current UV usage, the call fails with invalid_state and you must preflight again. uvPaint is always enforced: ops/background are drawn into a source canvas, then stretched/tiled into UV rects (optionally filtered by cubeIds/cubeNames/faces, with padding/anchor). Full-texture painting is not supported; map UVs to the full texture if you want whole-texture coverage. UV rects must not overlap unless identical; overlaps block apply_texture_spec. This creates/updates texture data only; call assign_texture to bind it to cubes, then set_face_uv for manual per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker/label texture. Block-scale patterns should map full textures; small parts should use dedicated/tileable textures or atlas regions to avoid cropped patterns. If UVs change, repaint using the new mapping. Low opaque coverage is rejected to avoid transparent results; fill a larger area or tighten UVs. width/height are required and must match the intended project textureResolution. Prefer separate textures per material group (pot/soil/plant) rather than one mega-texture. If UVs exceed the current textureResolution, increase it (width >= 2*(w+d), height >= 2*(h+d), round up to 32/64/128) or split textures per material. Use set_project_texture_resolution before creating textures when increasing size. ops are optional; background fills within UV rects when set. Success responses include report.textureCoverage (opaque ratio + bounds) for each rendered texture.',
     inputSchema: toolSchemas.apply_texture_spec
   },
 ];

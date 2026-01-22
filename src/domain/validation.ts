@@ -1,6 +1,7 @@
 import { Limits, ValidateFinding } from '../types';
 import { SessionState } from '../session';
 import { TextureStat, TextureUsageResult } from '../ports/editor';
+import { findUvOverlapIssues, formatUvFaceRect } from './uvOverlap';
 
 export interface ValidationContext {
   limits: Limits;
@@ -122,6 +123,18 @@ export function validateSnapshot(state: SessionState, context: ValidationContext
               });
             }
           });
+        });
+      });
+      const overlaps = findUvOverlapIssues(textureUsage);
+      overlaps.forEach((overlap) => {
+        const example = overlap.example
+          ? ` Example: ${formatUvFaceRect(overlap.example.a)} overlaps ${formatUvFaceRect(overlap.example.b)}.`
+          : '';
+        findings.push({
+          code: 'uv_overlap',
+          message: `Texture "${overlap.textureName}" has overlapping UV rects (${overlap.conflictCount} conflict${overlap.conflictCount === 1 ? '' : 's'}).` +
+            example,
+          severity: 'error'
         });
       });
     }

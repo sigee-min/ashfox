@@ -42,6 +42,19 @@ export class SessionStore {
     session.sseConnections.delete(connection);
   }
 
+  pruneStale(ttlMs: number, now: number = Date.now()): number {
+    if (!Number.isFinite(ttlMs) || ttlMs <= 0) return 0;
+    const cutoff = now - ttlMs;
+    let removed = 0;
+    for (const session of Array.from(this.sessions.values())) {
+      if (session.sseConnections.size > 0) continue;
+      if (session.lastSeenAt >= cutoff) continue;
+      this.close(session);
+      removed += 1;
+    }
+    return removed;
+  }
+
   close(session: McpSession) {
     for (const conn of session.sseConnections) {
       conn.close();

@@ -74,10 +74,10 @@ export class SidecarHost {
       return;
     }
     if (message.type !== 'request') return;
-    this.handleRequest(message);
+    void this.handleRequest(message);
   }
 
-  private handleRequest(message: SidecarRequestMessage) {
+  private async handleRequest(message: SidecarRequestMessage) {
     if (!message.id) {
       this.log.warn('sidecar request missing id');
       return;
@@ -87,7 +87,7 @@ export class SidecarHost {
     try {
       result =
         mode === 'proxy'
-          ? this.proxy.handle(message.tool as ProxyTool, message.payload)
+          ? await this.proxy.handle(message.tool as ProxyTool, message.payload)
           : this.dispatcher.handle(message.tool as DispatcherToolName, message.payload as DispatcherPayload);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'handler error';

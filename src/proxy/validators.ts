@@ -4,6 +4,7 @@ import { Limits, ToolResponse } from '../types';
 import { buildRigTemplate } from '../templates';
 import { isZeroSize } from '../domain/geometry';
 import { err } from './response';
+import { validateUvPaintSpec } from '../domain/uvPaint';
 
 const MAX_TEX_OPS = 4096;
 
@@ -43,6 +44,9 @@ export const validateTextureSpec = (payload: ApplyTextureSpecPayload, limits: Li
   if (!payload || !Array.isArray(payload.textures) || payload.textures.length === 0) {
     return err('invalid_payload', 'textures array is required');
   }
+  if (typeof payload.uvUsageId !== 'string' || payload.uvUsageId.trim().length === 0) {
+    return err('invalid_payload', 'uvUsageId is required. Call preflight_texture before apply_texture_spec.');
+  }
   for (const tex of payload.textures) {
     const label = tex?.name ?? tex?.targetName ?? tex?.targetId ?? 'texture';
     const mode = tex?.mode ?? 'create';
@@ -75,6 +79,10 @@ export const validateTextureSpec = (payload: ApplyTextureSpecPayload, limits: Li
       if (!isTextureOp(op)) {
         return err('invalid_payload', `invalid texture op (${label})`);
       }
+    }
+    if (tex.uvPaint !== undefined) {
+      const uvPaintRes = validateUvPaintSpec(tex.uvPaint, limits, label);
+      if (!uvPaintRes.ok) return uvPaintRes;
     }
   }
   return { ok: true, data: { valid: true } };

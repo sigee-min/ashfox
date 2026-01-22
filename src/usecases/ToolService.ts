@@ -1,8 +1,11 @@
 import {
   Capabilities,
+  AutoUvAtlasPayload,
+  AutoUvAtlasResult,
   ExportPayload,
   FormatKind,
   GenerateBlockPipelineResult,
+  GenerateTexturePresetPayload,
   GenerateTexturePresetResult,
   PreflightTextureResult,
   PreflightUsageSummary,
@@ -13,7 +16,6 @@ import {
   ReadTextureResult,
   RenderPreviewPayload,
   RenderPreviewResult,
-  TexturePresetName,
   ToolError
 } from '../types';
 import { ProjectSession, SessionState } from '../session';
@@ -34,7 +36,9 @@ import { diffSnapshots } from '../domain/diff';
 import { mergeRigParts, RigMergeStrategy } from '../domain/rig';
 import { isZeroSize } from '../domain/geometry';
 import { DEFAULT_UV_POLICY, UvPolicyConfig, computeExpectedUvSize, getFaceDimensions, shouldAutoFixUv } from '../domain/uvPolicy';
-import { TexturePresetResult, generateTexturePreset } from '../domain/texturePresets';
+import { computeTextureUsageId } from '../domain/textureUsage';
+import { findUvOverlapIssues, formatUvFaceRect } from '../domain/uvOverlap';
+import { runAutoUvAtlas, runGenerateTexturePreset, TextureToolContext } from './textureTools';
 import { ProjectStateService } from '../services/projectState';
 import { RevisionStore } from '../services/revision';
 import { createId } from '../services/id';
@@ -125,6 +129,15 @@ export class ToolService {
     }
   }
 
+  async runWithoutRevisionGuardAsync<T>(fn: () => Promise<T> | T): Promise<T> {
+    this.revisionBypassDepth += 1;
+    try {
+      return await fn();
+    } finally {
+      this.revisionBypassDepth = Math.max(0, this.revisionBypassDepth - 1);
+    }
+  }
+
   reloadPlugins(payload: { confirm?: boolean; delayMs?: number }): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> {
     if (payload.confirm !== true) {
       return fail({
@@ -202,6 +215,10 @@ export class ToolService {
     const usageRes = this.editor.getTextureUsage({ textureId: payload.textureId, textureName: payload.textureName });
     if (usageRes.error) return fail(usageRes.error);
     const usage = usageRes.result ?? { textures: [] };
+    const usageIdSource =
+      payload.textureId || payload.textureName ? this.editor.getTextureUsage({}) : usageRes;
+    if (usageIdSource.error) return fail(usageIdSource.error);
+    const uvUsageId = computeTextureUsageId(usageIdSource.result ?? { textures: [] });
     const textureResolution = this.editor.getProjectTextureResolution() ?? undefined;
     const usageSummary = summarizeTextureUsage(usage);
     const uvBounds = computeUvBounds(usage);
@@ -219,8 +236,19 @@ export class ToolService {
         );
       }
     }
+    const overlaps = findUvOverlapIssues(usage);
+    overlaps.forEach((overlap) => {
+      const example = overlap.example
+        ? ` Example: ${formatUvFaceRect(overlap.example.a)} overlaps ${formatUvFaceRect(overlap.example.b)}.`
+        : '';
+      warnings.push(
+        `UV overlap detected for texture "${overlap.textureName}" (${overlap.conflictCount} conflict${overlap.conflictCount === 1 ? '' : 's'}).` +
+          example
+      );
+    });
     const recommendedResolution = recommendResolution(uvBounds, textureResolution, this.capabilities.limits.maxTextureSize);
     const result: PreflightTextureResult = {
+      uvUsageId,
       textureResolution,
       usageSummary,
       uvBounds: uvBounds ?? undefined,
@@ -231,115 +259,12 @@ export class ToolService {
     return ok(result);
   }
 
-  generateTexturePreset(payload: {
-    preset: TexturePresetName;
-    width: number;
-    height: number;
-    name?: string;
-    targetId?: string;
-    targetName?: string;
-    mode?: 'create' | 'update';
-    seed?: number;
-    palette?: string[];
-    ifRevision?: string;
-  }): UsecaseResult<GenerateTexturePresetResult> {
-    const activeErr = this.ensureActive();
-    if (activeErr) return fail(activeErr);
-    const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
-    if (revisionErr) return fail(revisionErr);
-    if (!this.textureRenderer) {
-      return fail({ code: 'not_implemented', message: 'Texture renderer unavailable.' });
-    }
-    const width = Number(payload.width);
-    const height = Number(payload.height);
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-      return fail({ code: 'invalid_payload', message: 'width and height must be positive numbers.' });
-    }
-    if (!Number.isInteger(width) || !Number.isInteger(height)) {
-      return fail({ code: 'invalid_payload', message: 'width and height must be integers.' });
-    }
-    const maxSize = this.capabilities.limits.maxTextureSize;
-    if (width > maxSize || height > maxSize) {
-      return fail({
-        code: 'invalid_payload',
-        message: `Texture size exceeds max ${maxSize}.`,
-        fix: `Use width/height <= ${maxSize}.`,
-        details: { width, height, maxSize }
-      });
-    }
-    const mode = payload.mode ?? (payload.targetId || payload.targetName ? 'update' : 'create');
-    if (mode === 'create' && !payload.name) {
-      return fail({
-        code: 'invalid_payload',
-        message: 'name is required when mode=create.'
-      });
-    }
-    if (mode === 'update' && !payload.targetId && !payload.targetName) {
-      return fail({
-        code: 'invalid_payload',
-        message: 'targetId or targetName is required when mode=update.'
-      });
-    }
-    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
-    const target =
-      mode === 'update'
-        ? resolveTextureTarget(snapshot.textures, payload.targetId, payload.targetName)
-        : null;
-    if (mode === 'update' && !target) {
-      const label = payload.targetId ?? payload.targetName ?? 'unknown';
-      return fail({ code: 'invalid_payload', message: `Texture not found: ${label}` });
-    }
-    if (mode === 'create' && payload.name) {
-      const conflict = snapshot.textures.some((texture) => texture.name === payload.name);
-      if (conflict) {
-        return fail({ code: 'invalid_payload', message: `Texture already exists: ${payload.name}` });
-      }
-    }
-    const preset: TexturePresetResult = generateTexturePreset({
-      preset: payload.preset,
-      width,
-      height,
-      seed: payload.seed,
-      palette: payload.palette
-    });
-    const renderRes = this.textureRenderer.renderPixels({
-      width: preset.width,
-      height: preset.height,
-      data: preset.data
-    });
-    if (renderRes.error) return fail(renderRes.error);
-    if (!renderRes.result) {
-      return fail({ code: 'not_implemented', message: 'Texture renderer failed to produce an image.' });
-    }
-    const image = renderRes.result.image;
-    const result =
-      mode === 'update'
-        ? this.updateTexture({
-            id: target?.id,
-            name: target?.name,
-            image,
-            width: preset.width,
-            height: preset.height,
-            ifRevision: payload.ifRevision
-          })
-        : this.importTexture({
-            name: payload.name ?? payload.preset,
-            image,
-            width: preset.width,
-            height: preset.height,
-            ifRevision: payload.ifRevision
-          });
-    if (!result.ok) return result as UsecaseResult<GenerateTexturePresetResult>;
-    return ok({
-      textureId: result.value.id,
-      textureName: result.value.name,
-      preset: payload.preset,
-      mode,
-      width: preset.width,
-      height: preset.height,
-      seed: preset.seed,
-      coverage: preset.coverage
-    });
+  generateTexturePreset(payload: GenerateTexturePresetPayload): UsecaseResult<GenerateTexturePresetResult> {
+    return runGenerateTexturePreset(this.getTextureToolContext(), payload);
+  }
+
+  autoUvAtlas(payload: AutoUvAtlasPayload): UsecaseResult<AutoUvAtlasResult> {
+    return runAutoUvAtlas(this.getTextureToolContext(), payload);
   }
 
   getProjectState(payload: { detail?: ProjectStateDetail }): UsecaseResult<{ project: ProjectState }> {
@@ -1907,6 +1832,21 @@ export class ToolService {
       modelUnitsPerBlock: policy?.modelUnitsPerBlock ?? DEFAULT_UV_POLICY.modelUnitsPerBlock,
       scaleTolerance: policy?.scaleTolerance ?? DEFAULT_UV_POLICY.scaleTolerance,
       tinyThreshold: policy?.tinyThreshold ?? DEFAULT_UV_POLICY.tinyThreshold
+    };
+  }
+
+  private getTextureToolContext(): TextureToolContext {
+    return {
+      ensureActive: () => this.ensureActive(),
+      ensureRevisionMatch: (ifRevision?: string) => this.ensureRevisionMatch(ifRevision),
+      getSnapshot: () => this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid'),
+      editor: this.editor,
+      textureRenderer: this.textureRenderer,
+      capabilities: this.capabilities,
+      getUvPolicyConfig: () => this.getUvPolicyConfig(),
+      markManualUv: (cube) => this.markManualUv(cube),
+      importTexture: (payload) => this.importTexture(payload),
+      updateTexture: (payload) => this.updateTexture(payload)
     };
   }
 

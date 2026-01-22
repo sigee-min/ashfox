@@ -1,12 +1,15 @@
-﻿{
+{
   "name": "bbmcp",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "node ./scripts/esbuild.js"
+    "build": "node ./scripts/esbuild.js",
+    "test": "node scripts/tests/run.js"
   },
   "devDependencies": {
+    "@types/node": "^20.11.30",
     "esbuild": "^0.20.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   }
 }

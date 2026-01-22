@@ -8,9 +8,11 @@ import { Limits, ToolError, ToolResponse } from '../types';
 import { ToolService } from '../usecases/ToolService';
 import { buildRigTemplate } from '../templates';
 import { buildMeta, MetaOptions } from './meta';
-import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize, TextureCoverage } from './texture';
+import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize, TextureCoverage, UvPaintRenderConfig } from './texture';
 import { toToolResponse } from './response';
 import { isZeroSize } from '../domain/geometry';
+import { TextureUsageResult } from '../ports/editor';
+import { resolveUvPaintRects } from './uvPaint';
 
 type ApplyErrorEntry = {
   step: string;
@@ -79,26 +81,93 @@ export const applyModelSpecSteps = (
   return { ok: true, data: report };
 };
 
-export const applyTextureSpecSteps = (
+export const applyTextureSpecSteps = async (
   service: ToolService,
   limits: Limits,
   textures: TextureSpec[],
   report: ApplyReport,
   meta: MetaOptions,
-  log?: Logger
-): ToolResponse<ApplyReport> => {
+  log?: Logger,
+  usage?: TextureUsageResult
+): Promise<ToolResponse<ApplyReport>> => {
   for (const texture of textures) {
     const label = texture.name ?? texture.targetName ?? texture.targetId ?? 'texture';
     const mode = texture.mode ?? 'create';
     log?.info('applyTextureSpec ops', { texture: label, mode, ops: summarizeOps(texture.ops) });
     const size = resolveTextureSpecSize(texture);
+    const ops = Array.isArray(texture.ops) ? texture.ops : [];
+    const hasPaint = ops.length > 0 || Boolean(texture.background);
+    const uvPaintSpec = hasPaint ? (texture.uvPaint ?? { scope: 'rects', mapping: 'stretch' }) : texture.uvPaint;
+    let uvPaintConfig: UvPaintRenderConfig | undefined;
+    if (uvPaintSpec && hasPaint) {
+      if (!usage) {
+        return withReportError(
+          {
+            code: 'invalid_state',
+            message: 'UV mapping is required before painting. Assign the texture and set per-face UVs, then call preflight_texture.'
+          },
+          report,
+          'uv_paint',
+          label,
+          meta,
+          service
+        );
+      }
+      const rectRes = resolveUvPaintRects({ ...texture, uvPaint: uvPaintSpec }, usage);
+      if (!rectRes.ok) return withReportError(rectRes.error, report, 'uv_paint', label, meta, service);
+      const sourceWidth = Number(uvPaintSpec.source?.width ?? size.width);
+      const sourceHeight = Number(uvPaintSpec.source?.height ?? size.height);
+      if (!Number.isFinite(sourceWidth) || sourceWidth <= 0 || !Number.isFinite(sourceHeight) || sourceHeight <= 0) {
+        return withReportError(
+          {
+            code: 'invalid_payload',
+            message: `uvPaint source size invalid (${label}).`
+          },
+          report,
+          'uv_paint',
+          label,
+          meta,
+          service
+        );
+      }
+      if (sourceWidth > limits.maxTextureSize || sourceHeight > limits.maxTextureSize) {
+        return withReportError(
+          {
+            code: 'invalid_payload',
+            message: `uvPaint source size exceeds max ${limits.maxTextureSize} (${label}).`
+          },
+          report,
+          'uv_paint',
+          label,
+          meta,
+          service
+        );
+      }
+      const anchor = Array.isArray(uvPaintSpec.anchor) ? uvPaintSpec.anchor : [0, 0];
+      const padding = Number.isFinite(uvPaintSpec.padding) ? Math.max(0, uvPaintSpec.padding) : 0;
+      uvPaintConfig = {
+        rects: rectRes.data.rects,
+        mapping: uvPaintSpec.mapping ?? 'stretch',
+        padding,
+        anchor,
+        source: { width: Math.trunc(sourceWidth), height: Math.trunc(sourceHeight) }
+      };
+    }
     if (mode === 'create') {
-      const renderRes = renderTextureSpec(texture, limits);
+      const renderRes = renderTextureSpec(texture, limits, undefined, uvPaintConfig);
       if (!renderRes.ok) {
         return withReportError(renderRes.error, report, 'render_texture', label, meta, service);
       }
       recordTextureCoverage(report, texture, renderRes.data, 'create', label);
-      const coverageCheck = guardTextureCoverage(renderRes.data.coverage, texture, label, report, meta, service);
+      const coverageCheck = guardTextureCoverage(
+        renderRes.data.coverage,
+        texture,
+        label,
+        report,
+        meta,
+        service,
+        renderRes.data.paintCoverage
+      );
       if (!coverageCheck.ok) return coverageCheck;
       const res = service.importTexture({
         id: texture.id,
@@ -143,7 +212,7 @@ export const applyTextureSpecSteps = (
         return withReportError(baseRes.error, report, 'read_texture', label, meta, service);
       }
       baseDataUri = baseRes.data.dataUri ?? null;
-      const resolved = resolveTextureBase(baseRes.data);
+      const resolved = await resolveTextureBase(baseRes.data);
       if (!resolved.ok) {
         log?.warn('applyTextureSpec base unresolved', { texture: label, code: resolved.error.code });
         return withReportError(resolved.error, report, 'read_texture', label, meta, service);
@@ -155,7 +224,7 @@ export const applyTextureSpecSteps = (
         height: base.height
       });
     }
-    const renderRes = renderTextureSpec(texture, limits, base ?? undefined);
+    const renderRes = renderTextureSpec(texture, limits, base ?? undefined, uvPaintConfig);
     if (!renderRes.ok) {
       return withReportError(renderRes.error, report, 'render_texture', label, meta, service);
     }
@@ -220,22 +289,24 @@ const guardTextureCoverage = (
   label: string,
   report: ApplyReport,
   meta: MetaOptions,
-  service: ToolService
+  service: ToolService,
+  paintCoverage?: TextureCoverage
 ): ToolResponse<ApplyReport> => {
   const mode = texture.mode ?? 'create';
   if (mode !== 'create') return { ok: true, data: report };
   const ops = Array.isArray(texture.ops) ? texture.ops : [];
-  if (ops.length === 0) return { ok: true, data: report };
-  if (!coverage || coverage.totalPixels === 0) return { ok: true, data: report };
-  if (coverage.opaqueRatio >= MIN_OPAQUE_RATIO) return { ok: true, data: report };
-  const ratio = Math.round(coverage.opaqueRatio * 1000) / 10;
+  if (ops.length === 0 && !texture.background) return { ok: true, data: report };
+  const effectiveCoverage = texture.uvPaint && paintCoverage ? paintCoverage : coverage;
+  if (!effectiveCoverage || effectiveCoverage.totalPixels === 0) return { ok: true, data: report };
+  if (effectiveCoverage.opaqueRatio >= MIN_OPAQUE_RATIO) return { ok: true, data: report };
+  const ratio = Math.round(effectiveCoverage.opaqueRatio * 1000) / 10;
   return withReportError(
     {
       code: 'invalid_payload',
       message: `Texture coverage too low for "${label}" (${ratio}% opaque).`,
       fix: 'Fill a larger opaque area, use an opaque background, or set per-face UVs to the painted bounds.',
       details: {
-        coverage,
+        coverage: effectiveCoverage,
         hint: 'Low opaque coverage + full-face UVs yields transparent results.'
       }
     },

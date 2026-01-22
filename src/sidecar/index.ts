@@ -5,6 +5,7 @@ import { McpRouter } from '../mcp/router';
 import { createMcpHttpServer } from '../mcp/httpServer';
 import { PLUGIN_ID, PLUGIN_VERSION } from '../config';
 import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../domain/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../domain/guides';
 import { InMemoryResourceStore } from '../services/resources';
 import { ToolResponse } from '../types';
 
@@ -25,7 +26,11 @@ const config = {
 
 const log = new StderrLogger('bbmcp-sidecar', 'info');
 const client = new SidecarClient(process.stdin, process.stdout, log);
-const resourceStore = new InMemoryResourceStore(BLOCK_PIPELINE_RESOURCE_TEMPLATES);
+const resourceStore = new InMemoryResourceStore([
+  ...BLOCK_PIPELINE_RESOURCE_TEMPLATES,
+  ...GUIDE_RESOURCE_TEMPLATES
+]);
+GUIDE_RESOURCES.forEach((resource) => resourceStore.put(resource));
 client.start();
 
 const executor = {
@@ -49,7 +54,7 @@ const router = new McpRouter(
     token: config.token,
     serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
     instructions:
-      'Use get_project_state (or includeState/includeDiff) before mutations and include ifRevision. Prefer ensure_project to create or reuse projects; use match/onMismatch/onMissing to control when a fresh project is created. Prefer apply_model_spec/apply_texture_spec and id-based updates. For <=32px textures, set_pixel ops are fine; for 64px+ use generate_texture_preset to avoid large payloads. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for manual per-face UVs. Before painting, call preflight_texture to build a UV mapping table and verify with a checker texture. If UVs change, repaint using the updated mapping.'
+      'Use get_project_state (or includeState/includeDiff) before mutations and include ifRevision. Prefer ensure_project to create or reuse projects; use match/onMismatch/onMissing to control when a fresh project is created. Prefer high-level tools (generate_block_pipeline, apply_model_spec, apply_texture_spec, generate_texture_preset). Use low-level tools (add_bone/add_cube/set_face_uv) only when high-level tools cannot express the change; avoid mixing high- and low-level edits. For animation-ready rigs, always provide a root bone and parent every non-root part (avoid flat bone lists); prefer apply_model_spec/apply_rig_template. Prefer id-based updates. For <=32px textures, set_pixel ops are fine; for 64px+ use generate_texture_preset to avoid large payloads. Texture creation does not bind textures to cubes; call assign_texture explicitly, then set_face_uv for manual per-face UVs. uvPaint is enforced in apply_texture_spec/generate_texture_preset; full-texture painting is not supported (map UVs to the full texture if needed). Before painting, call preflight_texture without texture filters to build a UV mapping table and get uvUsageId; apply_texture_spec/generate_texture_preset will fail with invalid_state if UV usage changes and you must preflight again. UV rects must not overlap unless identical; overlapping rects block apply_texture_spec and are reported by preflight/validate. Start with a checker texture to verify orientation before final paint. If UVs change, repaint using the updated mapping.'
   },
   executor,
   log,

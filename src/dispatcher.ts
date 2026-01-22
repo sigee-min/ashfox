@@ -97,6 +97,11 @@ export class ToolDispatcherImpl implements Dispatcher {
             payload,
             toToolResponse(this.service.generateTexturePreset(payload))
           ) as ToolResponse<ToolResultMap[TName]>;
+        case 'auto_uv_atlas':
+          return this.attachState(
+            payload,
+            toToolResponse(this.service.autoUvAtlas(payload))
+          ) as ToolResponse<ToolResultMap[TName]>;
         case 'set_project_texture_resolution':
           return this.attachState(
             payload,

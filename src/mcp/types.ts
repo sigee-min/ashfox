@@ -76,4 +76,5 @@ export type McpServerConfig = {
   serverInfo?: { name: string; version: string };
   instructions?: string;
   supportedProtocols?: string[];
+  sessionTtlMs?: number;
 };

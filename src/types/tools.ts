@@ -17,6 +17,7 @@ export type ToolName =
   | 'read_texture'
   | 'reload_plugins'
   | 'generate_texture_preset'
+  | 'auto_uv_atlas'
   | 'set_project_texture_resolution'
   | 'preflight_texture'
   | 'ensure_project'
@@ -80,12 +81,19 @@ export interface GenerateTexturePresetPayload extends IncludeStateOption, Includ
   preset: TexturePresetName;
   width: number;
   height: number;
+  uvUsageId: string;
   name?: string;
   targetId?: string;
   targetName?: string;
   mode?: 'create' | 'update';
   seed?: number;
   palette?: string[];
+  uvPaint?: UvPaintSpec;
+}
+
+export interface AutoUvAtlasPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+  padding?: number;
+  apply?: boolean;
 }
 
 export interface ReadTexturePayload {
@@ -120,6 +128,30 @@ export interface DeleteTexturePayload extends IncludeStateOption, IncludeDiffOpt
 }
 
 export type CubeFaceDirection = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
+
+export type UvPaintScope = 'faces' | 'rects' | 'bounds';
+
+export type UvPaintMapping = 'stretch' | 'tile';
+
+export type UvPaintTarget = {
+  cubeIds?: string[];
+  cubeNames?: string[];
+  faces?: CubeFaceDirection[];
+};
+
+export type UvPaintSource = {
+  width?: number;
+  height?: number;
+};
+
+export type UvPaintSpec = {
+  scope?: UvPaintScope;
+  mapping?: UvPaintMapping;
+  target?: UvPaintTarget;
+  source?: UvPaintSource;
+  padding?: number;
+  anchor?: [number, number];
+};
 
 export interface AssignTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   textureId?: string;
@@ -212,6 +244,7 @@ export interface ToolPayloadMap {
   read_texture: ReadTexturePayload;
   reload_plugins: ReloadPluginsPayload;
   generate_texture_preset: GenerateTexturePresetPayload;
+  auto_uv_atlas: AutoUvAtlasPayload;
   set_project_texture_resolution: SetProjectTextureResolutionPayload;
   preflight_texture: PreflightTexturePayload;
   ensure_project: EnsureProjectPayload;
@@ -300,6 +333,26 @@ export interface GenerateTexturePresetResult {
   coverage?: TextureCoverage;
 }
 
+export interface AutoUvAtlasGroup {
+  width: number;
+  height: number;
+  rect: [number, number, number, number];
+  faceCount: number;
+}
+
+export interface AutoUvAtlasTexturePlan {
+  textureId?: string;
+  textureName: string;
+  groups: AutoUvAtlasGroup[];
+}
+
+export interface AutoUvAtlasResult {
+  applied: boolean;
+  steps: number;
+  resolution: { width: number; height: number };
+  textures: AutoUvAtlasTexturePlan[];
+}
+
 export interface GetProjectStateResult {
   project: ProjectState;
 }
@@ -353,6 +406,7 @@ export interface PreflightUsageSummary {
 }
 
 export interface PreflightTextureResult {
+  uvUsageId: string;
   textureResolution?: { width: number; height: number };
   usageSummary: PreflightUsageSummary;
   uvBounds?: PreflightUvBounds;
@@ -381,6 +435,7 @@ export interface ToolResultMap {
   read_texture: ReadTextureResult;
   reload_plugins: ReloadPluginsResult;
   generate_texture_preset: WithState<GenerateTexturePresetResult>;
+  auto_uv_atlas: WithState<AutoUvAtlasResult>;
   set_project_texture_resolution: WithState<SetProjectTextureResolutionResult>;
   preflight_texture: PreflightTextureResult;
   ensure_project: WithState<EnsureProjectResult>;

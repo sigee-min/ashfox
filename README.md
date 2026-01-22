@@ -60,11 +60,11 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
 
 ## Texture Flow (Recommended)
 1) Lock invariants first: textureResolution, UV policy (manual per-face), and texture count (single atlas vs per-material).
-2) `preflight_texture` to build the UV mapping table and recommended resolution.
+2) `preflight_texture` to build the UV mapping table, recommended resolution, and `uvUsageId` (call without texture filters for a stable id).
 3) Paint a checker/label texture first to verify orientation and coverage.
-4) For 64x64+ textures, prefer `generate_texture_preset` (avoids large ops payloads). For <=32px, `set_pixel` ops are fine.
+4) For 64x64+ textures, prefer `generate_texture_preset` (avoids large ops payloads, requires `uvUsageId`). For <=32px, `set_pixel` ops are fine.
    - Presets: `painted_metal`, `rubber`, `glass`, `wood`, `dirt`, `plant`, `stone`, `sand`, `leather`, `fabric`, `ceramic`.
-5) `apply_texture_spec` to create or update texture data via ops (no image import tool).
+5) `apply_texture_spec` to create or update texture data via ops (no image import tool, requires `uvUsageId`).
    - Omit `ops` to create an empty texture (background can still fill).
    - `width/height` are required and should match the project textureResolution.
    - Very low opaque coverage is rejected; fill a larger area or tighten UVs.
@@ -73,8 +73,9 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
 7) `set_face_uv` to apply per-face UVs explicitly.
 8) Prefer material-group textures (pot/soil/plant) and assign via `cubeNames` for stability.
 9) If UVs exceed the current resolution, increase it or split textures per material.
-10) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures. If you need to scale existing UVs, pass `modifyUv=true` (if supported by the host).
-11) If UVs or resolution change after painting, repaint using the new mapping.
+10) When UVs are crowded or overlaps exist, run `auto_uv_atlas` (apply=true) to repack and, if needed, raise resolution. Atlas sizing is based on the starting resolution, so increasing resolution creates more space instead of scaling rects. Re-run `preflight_texture` and repaint after atlas changes.
+11) Size textures to fit the UV layout (width >= 2*(w+d), height >= 2*(h+d)) and round up to 32/64/128; use `set_project_texture_resolution` before creating textures. If you need to scale existing UVs, pass `modifyUv=true` (if supported by the host).
+12) If UVs or resolution change after painting, repaint using the new mapping.
 
 ## Preview Output (MCP Standard)
 `render_preview` responds with MCP `content` blocks:
@@ -95,6 +96,12 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
   }
 }
 ```
+
+## Guides (MCP Resources)
+Static guides are exposed via MCP resources. Use `resources/list` and `resources/read` to fetch them.
+- `bbmcp://guide/rigging` (root-based hierarchy example for animation-ready rigs)
+- `bbmcp://guide/texture-workflow` (uvPaint-first texture workflow + preset example)
+- `bbmcp://guide/uv-atlas` (auto atlas packing + resolution growth)
 
 ## Sidecar (Optional)
 The plugin prefers an inline server. If unavailable, it can spawn a sidecar.

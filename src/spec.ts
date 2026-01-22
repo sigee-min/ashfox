@@ -1,4 +1,11 @@
-﻿﻿import { ProjectStateDetail } from './types';
+﻿import {
+  ProjectStateDetail,
+  UvPaintMapping,
+  UvPaintScope,
+  UvPaintSource,
+  UvPaintSpec,
+  UvPaintTarget
+} from './types';
 
 export type RigTemplateKind = 'empty' | 'biped' | 'quadruped' | 'block_entity';
 
@@ -36,9 +43,11 @@ export interface TextureSpec {
   height?: number;
   background?: string;
   useExisting?: boolean;
+  uvPaint?: UvPaintSpec;
   ops?: TextureOp[];
 }
 
+export type { UvPaintScope, UvPaintMapping, UvPaintTarget, UvPaintSource, UvPaintSpec };
 export type TextureOp =
   | { op: 'set_pixel'; x: number; y: number; color: string }
   | { op: 'fill_rect'; x: number; y: number; width: number; height: number; color: string }
@@ -47,6 +56,7 @@ export type TextureOp =
 
 export interface ApplyTextureSpecPayload {
   textures: TextureSpec[];
+  uvUsageId: string;
   includeState?: boolean;
   includeDiff?: boolean;
   diffDetail?: ProjectStateDetail;
@@ -58,4 +68,7 @@ export type ProxyTool =
   | 'apply_texture_spec'
   | 'render_preview'
   | 'validate';
+
+
+
 

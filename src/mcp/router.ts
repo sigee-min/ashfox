@@ -16,6 +16,8 @@ import { ResourceStore } from '../ports/resources';
 
 const DEFAULT_PROTOCOL_VERSION = '2025-06-18';
 const DEFAULT_SUPPORTED_PROTOCOLS = ['2025-11-25', '2025-06-18', '2024-11-05'];
+const DEFAULT_SESSION_TTL_MS = 30 * 60_000;
+const SESSION_PRUNE_INTERVAL_MS = 60_000;
 const IMPLICIT_SESSION_METHODS = new Set([
   'tools/list',
   'tools/call',
@@ -70,6 +72,12 @@ const makeTextContent = (text: string) => [{ type: 'text', text }];
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const normalizeSessionTtl = (value?: number): number => {
+  if (!Number.isFinite(value)) return DEFAULT_SESSION_TTL_MS;
+  if (!value || value <= 0) return 0;
+  return Math.trunc(value);
+};
+
 const toCallToolResult = (response: ToolResponse<unknown>) => {
   if (response.ok) {
     if (response.content) {
@@ -110,6 +118,8 @@ export class McpRouter {
   private readonly resources?: ResourceStore;
   private readonly sessions = new SessionStore();
   private readonly supportedProtocols: string[];
+  private readonly sessionTtlMs: number;
+  private lastPruneAt = 0;
 
   constructor(config: McpServerConfig, executor: ToolExecutor, log: Logger, resources?: ResourceStore) {
     this.config = { ...config, path: normalizePath(config.path) };
@@ -117,9 +127,11 @@ export class McpRouter {
     this.log = log;
     this.resources = resources;
     this.supportedProtocols = config.supportedProtocols ?? DEFAULT_SUPPORTED_PROTOCOLS;
+    this.sessionTtlMs = normalizeSessionTtl(config.sessionTtlMs);
   }
 
   async handle(req: HttpRequest): Promise<ResponsePlan> {
+    this.pruneSessions();
     const method = (req.method || 'GET').toUpperCase();
     const url = req.url || '/';
     if (!matchesPath(url, this.config.path)) {
@@ -153,6 +165,7 @@ export class McpRouter {
     if (!session) {
       return this.jsonResponse(400, { error: { code: 'invalid_state', message: 'Mcp-Session-Id required' } });
     }
+    this.sessions.touch(session);
 
     const headers = this.baseHeaders(session.protocolVersion);
     headers['Content-Type'] = 'text/event-stream';
@@ -213,6 +226,7 @@ export class McpRouter {
     if (!sessionResult.ok) {
       return this.jsonResponse(sessionResult.status, sessionResult.error);
     }
+    this.sessions.touch(sessionResult.session);
 
     const outcome = await this.handleMessage(message, sessionResult.session, id);
     if (outcome.type === 'notification') {
@@ -429,6 +443,14 @@ export class McpRouter {
     const headers: Record<string, string> = {};
     if (protocolVersion) headers['Mcp-Protocol-Version'] = protocolVersion;
     return headers;
+  }
+
+  private pruneSessions() {
+    if (this.sessionTtlMs <= 0) return;
+    const now = Date.now();
+    if (now - this.lastPruneAt < SESSION_PRUNE_INTERVAL_MS) return;
+    this.lastPruneAt = now;
+    this.sessions.pruneStale(this.sessionTtlMs, now);
   }
 
   private jsonResponse(status: number, body: unknown): ResponsePlan {

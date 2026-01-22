@@ -26,6 +26,7 @@ import { FormatOverrides, resolveFormatId } from './domain/format';
 import { buildInternalExport } from './domain/exporters';
 import { DEFAULT_UV_POLICY } from './domain/uvPolicy';
 import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from './domain/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from './domain/guides';
 import { InMemoryResourceStore } from './services/resources';
 import { startServer } from './server';
 import { UnknownRecord, readBlockbenchGlobals } from './types/blockbench';
@@ -52,7 +53,11 @@ type BbmcpBridge = {
 };
 
 const formatOverrides: FormatOverrides = {};
-const resourceStore = new InMemoryResourceStore(BLOCK_PIPELINE_RESOURCE_TEMPLATES);
+const resourceStore = new InMemoryResourceStore([
+  ...BLOCK_PIPELINE_RESOURCE_TEMPLATES,
+  ...GUIDE_RESOURCE_TEMPLATES
+]);
+GUIDE_RESOURCES.forEach((resource) => resourceStore.put(resource));
 const policies = {
   formatOverrides,
   snapshotPolicy: 'hybrid' as const,

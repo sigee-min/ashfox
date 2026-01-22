@@ -87,7 +87,7 @@ const resolvePalette = (defaults: Record<string, string>, palette?: string[]) =>
   accent2: palette?.[4] ?? defaults.accent2
 });
 
-const analyzeCoverage = (data: Uint8ClampedArray, width: number, height: number): TextureCoverage => {
+export const computeCoverage = (data: Uint8ClampedArray, width: number, height: number): TextureCoverage => {
   const totalPixels = width * height;
   let opaquePixels = 0;
   let minX = width;
@@ -445,6 +445,6 @@ export const generateTexturePreset = (spec: TexturePresetSpec): TexturePresetRes
       generatePaintedMetal(presetSpec, data);
       break;
   }
-  const coverage = analyzeCoverage(data, width, height);
+  const coverage = computeCoverage(data, width, height);
   return { width, height, seed, data, coverage };
 };

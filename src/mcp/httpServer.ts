@@ -6,6 +6,27 @@ import type { IncomingMessage, Server, ServerResponse } from 'http';
 
 const MAX_BODY_BYTES = 5_000_000;
 
+type BodyErrorCode = 'payload_too_large' | 'request_aborted' | 'invalid_payload';
+
+class BodyReadError extends Error {
+  readonly code: BodyErrorCode;
+  readonly status: number;
+
+  constructor(code: BodyErrorCode, status: number, message: string) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
+const normalizeBodyError = (err: unknown): { status: number; code: BodyErrorCode; message: string } => {
+  if (err instanceof BodyReadError) {
+    return { status: err.status, code: err.code, message: err.message };
+  }
+  const message = err instanceof Error ? err.message : 'payload read failed';
+  return { status: 400, code: 'invalid_payload', message };
+};
+
 const normalizeHeaders = (headers: Record<string, string | string[] | undefined>) => {
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers ?? {})) {
@@ -20,16 +41,59 @@ const readBody = (req: IncomingMessage): Promise<string> =>
   new Promise((resolve, reject) => {
     let total = 0;
     let body = '';
-    req.on('data', (chunk: Buffer) => {
-      total += chunk.length ?? 0;
+    let done = false;
+
+    const cleanup = () => {
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      req.removeListener('aborted', onAborted);
+      req.removeListener('close', onClose);
+    };
+
+    const finish = (fn: () => void) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      fn();
+    };
+
+    const fail = (error: BodyReadError) => finish(() => reject(error));
+
+    const onData = (chunk: Buffer) => {
+      const size = Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(String(chunk));
+      total += size;
       if (total > MAX_BODY_BYTES) {
-        reject(new Error('payload too large'));
+        fail(new BodyReadError('payload_too_large', 413, 'payload too large'));
         req.destroy();
         return;
       }
       body += chunk.toString();
-    });
-    req.on('end', () => resolve(body));
+    };
+
+    const onEnd = () => finish(() => resolve(body));
+
+    const onError = (err: Error) => {
+      const message = err instanceof Error ? err.message : 'request error';
+      fail(new BodyReadError('invalid_payload', 400, message));
+    };
+
+    const onAborted = () => {
+      fail(new BodyReadError('request_aborted', 499, 'request aborted'));
+    };
+
+    const onClose = () => {
+      if (done) return;
+      if (!req.complete) {
+        fail(new BodyReadError('request_aborted', 499, 'request closed'));
+      }
+    };
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+    req.on('aborted', onAborted);
+    req.on('close', onClose);
   });
 
 const applyHeaders = (res: ServerResponse, headers: Record<string, string>) => {
@@ -96,10 +160,15 @@ export const createMcpHttpServer = (http: HttpModule, router: McpRouter, log: Lo
       try {
         body = await readBody(req);
       } catch (err) {
-        log.warn('MCP HTTP payload rejected', { message: err instanceof Error ? err.message : String(err) });
-        res.statusCode = 413;
+        const info = normalizeBodyError(err);
+        log.warn('MCP HTTP payload rejected', { code: info.code, message: info.message });
+        res.statusCode = info.status;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: { code: 'payload_too_large', message: 'payload too large' } }));
+        try {
+          res.end(JSON.stringify({ error: { code: info.code, message: info.message } }));
+        } catch {
+          res.destroy?.();
+        }
         return;
       }
     }
