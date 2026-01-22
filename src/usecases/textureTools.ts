@@ -6,7 +6,7 @@ import {
   GenerateTexturePresetResult,
   ToolError
 } from '../types';
-import { EditorPort, TextureUsageResult } from '../ports/editor';
+import { EditorPort } from '../ports/editor';
 import { TextureRendererPort } from '../ports/textureRenderer';
 import { SessionState } from '../session';
 import { UsecaseResult, fail, ok } from './result';
@@ -20,6 +20,8 @@ import { findUvScaleIssues } from '../domain/uvScale';
 import { collectSingleTarget, isIssueTarget } from '../domain/uvTargets';
 import { buildUvAtlasPlan } from '../domain/uvAtlas';
 import { UvPolicyConfig } from '../domain/uvPolicy';
+import { toDomainSnapshot, toDomainTextureUsage } from './domainMappers';
+import type { TextureUsage } from '../domain/model';
 
 export type TextureToolContext = {
   ensureActive: () => ToolError | null;
@@ -87,7 +89,8 @@ export const runGenerateTexturePreset = (
   if (!uvPaintValidation.ok) return fail(uvPaintValidation.error);
   const usageRes = ctx.editor.getTextureUsage({});
   if (usageRes.error) return fail(usageRes.error);
-  const usage = usageRes.result ?? { textures: [] };
+  const usageRaw = usageRes.result ?? { textures: [] };
+  const usage = toDomainTextureUsage(usageRaw);
   const snapshot = ctx.getSnapshot();
   const currentUsageId = computeTextureUsageId(usage);
   if (currentUsageId !== payload.uvUsageId) {
@@ -114,7 +117,8 @@ export const runGenerateTexturePreset = (
     });
   }
   const resolution = ctx.editor.getProjectTextureResolution() ?? { width, height };
-  const scaleResult = findUvScaleIssues(usage, snapshot.cubes, resolution, ctx.getUvPolicyConfig());
+  const domainSnapshot = toDomainSnapshot(snapshot);
+  const scaleResult = findUvScaleIssues(usage, domainSnapshot.cubes, resolution, ctx.getUvPolicyConfig());
   const scaleIssue = findScaleIssueForTarget(scaleResult.issues, payload);
   if (scaleIssue) {
     const example = scaleIssue.example
@@ -251,7 +255,8 @@ export const runAutoUvAtlas = (
   }
   const usageRes = ctx.editor.getTextureUsage({});
   if (usageRes.error) return fail(usageRes.error);
-  const usage = usageRes.result ?? { textures: [] };
+  const usageRaw = usageRes.result ?? { textures: [] };
+  const usage = toDomainTextureUsage(usageRaw);
   if (usage.textures.length === 0) {
     return fail({ code: 'invalid_state', message: 'No textures are assigned to any cube faces.' });
   }
@@ -271,9 +276,10 @@ export const runAutoUvAtlas = (
   }
   const padding = Number.isFinite(payload.padding) ? Math.max(0, Math.trunc(payload.padding)) : 0;
   const snapshot = ctx.getSnapshot();
+  const domainSnapshot = toDomainSnapshot(snapshot);
   const planRes = buildUvAtlasPlan({
     usage,
-    cubes: snapshot.cubes,
+    cubes: domainSnapshot.cubes,
     resolution,
     maxResolution: { width: ctx.capabilities.limits.maxTextureSize, height: ctx.capabilities.limits.maxTextureSize },
     padding,
@@ -314,7 +320,7 @@ export const runAutoUvAtlas = (
 };
 
 const findOverlapIssueForTarget = (
-  usage: TextureUsageResult,
+  usage: TextureUsage,
   payload: GenerateTexturePresetPayload
 ) => {
   const issues = findUvOverlapIssues(usage);

@@ -1,4 +1,5 @@
-import { ToolError } from '../types';
+import type { ToolError } from '../types';
+import type { TmpSaveResult, TmpStorePort } from '../ports/tmpStore';
 
 type FsModule = {
   mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
@@ -8,12 +9,6 @@ type FsModule = {
 type PathModule = {
   join: (...parts: string[]) => string;
   resolve: (...parts: string[]) => string;
-};
-
-type TmpSaveResult = {
-  path: string;
-  mimeType: string;
-  byteLength: number;
 };
 
 declare const requireNativeModule:
@@ -113,3 +108,12 @@ export const saveDataUriToTmp = (
   }
   return { ok: true, data: { path: filePath, mimeType: parsed.mimeType, byteLength: buffer.byteLength } };
 };
+
+export class LocalTmpStore implements TmpStorePort {
+  saveDataUri(
+    dataUri: string,
+    options?: { nameHint?: string; prefix?: string; cwd?: string }
+  ): { ok: true; data: TmpSaveResult } | { ok: false; error: ToolError } {
+    return saveDataUriToTmp(dataUri, options);
+  }
+}

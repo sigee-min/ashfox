@@ -1,6 +1,6 @@
 import { Capabilities, Capability, Limits, FormatKind, PreviewCapability } from './types';
 import { FormatDescriptor } from './ports/formats';
-import { FormatOverrides, resolveFormatId } from './domain/format';
+import { FormatOverrides, resolveFormatId } from './services/format';
 
 export const PLUGIN_ID = 'bbmcp';
 export const PLUGIN_VERSION = '0.0.2';

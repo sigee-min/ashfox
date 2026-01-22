@@ -242,7 +242,7 @@ Recommended LLM flow:
 - Texture render ops: `src/proxy/texture.ts`
 - Apply flow: `src/proxy/apply.ts`
 - Editor integration: `src/adapters/blockbench/BlockbenchTextureAdapter.ts`
-- State/diff: `src/services/projectState.ts`, `src/domain/diff.ts`
+- State/diff: `src/services/projectState.ts`, `src/services/diff.ts`
 
 ## Acceptance Criteria
 - `apply_texture_spec` create increases `textures` count and revision.

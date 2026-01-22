@@ -25,6 +25,7 @@ import { computeTextureUsageId } from '../domain/textureUsage';
 import { findUvOverlapIssues, formatUvFaceRect } from '../domain/uvOverlap';
 import { findUvScaleIssues } from '../domain/uvScale';
 import { collectTextureTargets, isIssueTarget } from '../domain/uvTargets';
+import { toDomainCube, toDomainTextureUsage } from '../usecases/domainMappers';
 import { buildUvApplyPlan } from '../domain/uvApply';
 
 export class ProxyRouter {
@@ -83,7 +84,8 @@ export class ProxyRouter {
     if (guard) return guard;
     const usageRes = this.service.getTextureUsage({});
     if (!usageRes.ok) return withErrorMeta(usageRes.error, meta, this.service);
-    const currentUsageId = computeTextureUsageId(usageRes.value);
+    const usage = toDomainTextureUsage(usageRes.value);
+    const currentUsageId = computeTextureUsageId(usage);
     if (currentUsageId !== payload.uvUsageId) {
       return withErrorMeta(
         {
@@ -96,7 +98,7 @@ export class ProxyRouter {
         this.service
       );
     }
-    const overlapIssues = findUvOverlapIssues(usageRes.value);
+    const overlapIssues = findUvOverlapIssues(usage);
     const overlapTargets = collectTextureTargets(payload.textures);
     const blockingOverlaps = overlapIssues.filter((issue) => isIssueTarget(issue, overlapTargets));
     if (blockingOverlaps.length > 0) {
@@ -131,8 +133,8 @@ export class ProxyRouter {
     if (!stateRes.ok) return withErrorMeta(stateRes.error, meta, this.service);
     const project = stateRes.value.project;
     const scaleResult = findUvScaleIssues(
-      usageRes.value,
-      project.cubes ?? [],
+      usage,
+      (project.cubes ?? []).map((cube) => toDomainCube(cube)),
       project.textureResolution,
       this.service.getUvPolicy()
     );
@@ -174,7 +176,7 @@ export class ProxyRouter {
         report,
         meta,
         this.log,
-        usageRes.value
+        usage
       );
       if (!result.ok) return result;
       this.log.info('applyTextureSpec applied', { textures: payload.textures.length });
@@ -197,7 +199,8 @@ export class ProxyRouter {
     return this.runWithoutRevisionGuard(async () => {
       const usageRes = this.service.getTextureUsage({});
       if (!usageRes.ok) return withErrorMeta(usageRes.error, meta, this.service);
-      const currentUsageId = computeTextureUsageId(usageRes.value);
+      const usage = toDomainTextureUsage(usageRes.value);
+      const currentUsageId = computeTextureUsageId(usage);
       if (currentUsageId !== payload.uvUsageId) {
         return withErrorMeta(
           {
@@ -214,8 +217,8 @@ export class ProxyRouter {
       if (!stateRes.ok) return withErrorMeta(stateRes.error, meta, this.service);
       const project = stateRes.value.project;
       const planRes = buildUvApplyPlan(
-        usageRes.value,
-        project.cubes ?? [],
+        usage,
+        (project.cubes ?? []).map((cube) => toDomainCube(cube)),
         payload.assignments,
         project.textureResolution
       );
@@ -255,7 +258,7 @@ export class ProxyRouter {
 
       const scaleResult = findUvScaleIssues(
         planRes.data.usage,
-        project.cubes ?? [],
+        (project.cubes ?? []).map((cube) => toDomainCube(cube)),
         project.textureResolution,
         this.service.getUvPolicy()
       );
@@ -372,7 +375,8 @@ export class ProxyRouter {
       if (payload.textures && payload.textures.length > 0) {
         const usageRes = this.service.getTextureUsage({});
         if (!usageRes.ok) return withErrorMeta(usageRes.error, meta, this.service);
-        const currentUsageId = computeTextureUsageId(usageRes.value);
+        const usage = toDomainTextureUsage(usageRes.value);
+        const currentUsageId = computeTextureUsageId(usage);
         if (currentUsageId !== payload.uvUsageId) {
           return withErrorMeta(
             {
@@ -385,7 +389,7 @@ export class ProxyRouter {
             this.service
           );
         }
-        const overlapIssues = findUvOverlapIssues(usageRes.value);
+        const overlapIssues = findUvOverlapIssues(usage);
         const overlapTargets = collectTextureTargets(payload.textures);
         const blockingOverlaps = overlapIssues.filter((issue) => isIssueTarget(issue, overlapTargets));
         if (blockingOverlaps.length > 0) {
@@ -420,8 +424,8 @@ export class ProxyRouter {
         if (!stateRes.ok) return withErrorMeta(stateRes.error, meta, this.service);
         const project = stateRes.value.project;
         const scaleResult = findUvScaleIssues(
-          usageRes.value,
-          project.cubes ?? [],
+          usage,
+          (project.cubes ?? []).map((cube) => toDomainCube(cube)),
           project.textureResolution,
           this.service.getUvPolicy()
         );
@@ -462,7 +466,7 @@ export class ProxyRouter {
           report,
           meta,
           this.log,
-          usageRes.value
+          usage
         );
         if (!textureRes.ok) return textureRes;
         result.textures = { applied: true, report };

@@ -1,4 +1,4 @@
-import { ToolResponse } from '../types';
+import type { DomainResult } from './result';
 import { UvPaintRect } from './uvPaint';
 
 export type UvPaintPixelConfig = {
@@ -13,7 +13,7 @@ export const applyUvPaintPixels = (input: {
   target: { width: number; height: number };
   config: UvPaintPixelConfig;
   label: string;
-}): ToolResponse<{ data: Uint8ClampedArray; rects: UvPaintRect[] }> => {
+}): DomainResult<{ data: Uint8ClampedArray; rects: UvPaintRect[] }> => {
   const { source, target, config, label } = input;
   if (!Array.isArray(config.rects) || config.rects.length === 0) {
     return err('invalid_payload', `uvPaint requires at least one rect (${label})`);
@@ -78,7 +78,7 @@ const normalizePaintRects = (
   width: number,
   height: number,
   label: string
-): ToolResponse<UvPaintRect[]> => {
+): DomainResult<UvPaintRect[]> => {
   const safePadding = Number.isFinite(padding) ? Math.max(0, padding) : 0;
   const normalized: UvPaintRect[] = [];
   for (const rect of rects) {
@@ -129,7 +129,7 @@ const mod = (value: number, modulus: number): number => {
   return result < 0 ? result + modulus : result;
 };
 
-const err = (code: 'invalid_payload', message: string): ToolResponse<never> => ({
+const err = (code: 'invalid_payload', message: string): DomainResult<never> => ({
   ok: false,
   error: { code, message }
 });

@@ -1,0 +1,95 @@
+export type CubeFaceDirection = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
+
+export type FaceUvRect = [number, number, number, number];
+
+export type TextureUsageFace = {
+  face: CubeFaceDirection;
+  uv?: FaceUvRect;
+};
+
+export type TextureUsageCube = {
+  id?: string;
+  name: string;
+  faces: TextureUsageFace[];
+};
+
+export type TextureUsageEntry = {
+  id?: string;
+  name: string;
+  cubeCount: number;
+  faceCount: number;
+  cubes: TextureUsageCube[];
+};
+
+export type TextureUsageUnresolved = {
+  textureRef: string;
+  cubeId?: string;
+  cubeName: string;
+  face: CubeFaceDirection;
+};
+
+export type TextureUsage = {
+  textures: TextureUsageEntry[];
+  unresolved?: TextureUsageUnresolved[];
+};
+
+export type Cube = {
+  id?: string;
+  name: string;
+  from: [number, number, number];
+  to: [number, number, number];
+  bone: string;
+  uv?: [number, number];
+  inflate?: number;
+  mirror?: boolean;
+};
+
+export type Bone = {
+  id?: string;
+  name: string;
+  parent?: string;
+  pivot: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+};
+
+export type Animation = {
+  id?: string;
+  name: string;
+  length: number;
+  loop: boolean;
+  fps?: number;
+};
+
+export type Snapshot = {
+  bones: Bone[];
+  cubes: Cube[];
+  animations: Animation[];
+};
+
+export type TextureStat = {
+  id?: string | null;
+  name: string;
+  width: number;
+  height: number;
+  path?: string;
+};
+
+export type TextureResolution = {
+  width: number;
+  height: number;
+};
+
+export type ValidationSeverity = 'error' | 'warning' | 'info';
+
+export type ValidationFinding = {
+  code: string;
+  message: string;
+  severity: ValidationSeverity;
+};
+
+export type Limits = {
+  maxCubes: number;
+  maxTextureSize: number;
+  maxAnimationSeconds: number;
+};

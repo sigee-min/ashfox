@@ -28,12 +28,13 @@ import { BlockbenchFormats } from './adapters/blockbench/BlockbenchFormats';
 import { BlockbenchSnapshot } from './adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { BlockbenchTextureRenderer } from './adapters/blockbench/BlockbenchTextureRenderer';
-import { FormatOverrides, resolveFormatId } from './domain/format';
-import { buildInternalExport } from './domain/exporters';
+import { FormatOverrides, resolveFormatId } from './services/format';
+import { buildInternalExport } from './services/exporters';
 import { DEFAULT_UV_POLICY } from './domain/uvPolicy';
-import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from './domain/blockPipeline';
-import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from './domain/guides';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from './services/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from './services/guides';
 import { InMemoryResourceStore } from './services/resources';
+import { LocalTmpStore } from './services/tmpStore';
 import { startServer } from './server';
 import { UnknownRecord, readBlockbenchGlobals } from './types/blockbench';
 import { TOOL_REGISTRY_COUNT, TOOL_REGISTRY_HASH } from './mcp/tools';
@@ -602,6 +603,7 @@ Notes:
     const snapshot = new BlockbenchSnapshot(logger);
     const exporter = new BlockbenchExport(logger);
     const textureRenderer = new BlockbenchTextureRenderer();
+    const tmpStore = new LocalTmpStore();
     const previewCapability = {
       pngOnly: true,
       fixedOutput: 'single' as const,
@@ -624,6 +626,7 @@ Notes:
       snapshot,
       exporter,
       textureRenderer,
+      tmpStore,
       resources: resourceStore,
       policies
     });

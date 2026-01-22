@@ -22,6 +22,7 @@ import { BlockbenchExport } from './adapters/blockbench/BlockbenchExport';
 import { BlockbenchTextureRenderer } from './adapters/blockbench/BlockbenchTextureRenderer';
 import { ToolService } from './usecases/ToolService';
 import { UsecaseResult } from './usecases/result';
+import { LocalTmpStore } from './services/tmpStore';
 import {
   buildRenderPreviewContent,
   buildRenderPreviewStructured,
@@ -58,6 +59,7 @@ export class ToolDispatcherImpl implements Dispatcher {
       const snapshot = new BlockbenchSnapshot(log);
       const exporter = new BlockbenchExport(log);
       const textureRenderer = new BlockbenchTextureRenderer();
+      const tmpStore = new LocalTmpStore();
       this.service = new ToolService({
         session,
         capabilities,
@@ -67,6 +69,7 @@ export class ToolDispatcherImpl implements Dispatcher {
         snapshot,
         exporter,
         textureRenderer,
+        tmpStore,
         policies: { snapshotPolicy: 'hybrid', rigMergeStrategy: 'skip_existing', exportPolicy: 'strict' }
       });
     }

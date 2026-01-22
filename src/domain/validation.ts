@@ -1,6 +1,4 @@
-import { Limits, ValidateFinding } from '../types';
-import { SessionState } from '../session';
-import { TextureStat, TextureUsageResult } from '../ports/editor';
+import type { Limits, Snapshot, TextureStat, TextureUsage, ValidationFinding } from './model';
 import { findUvOverlapIssues, formatUvFaceRect } from './uvOverlap';
 import { findUvScaleIssues } from './uvScale';
 import { UvPolicyConfig } from './uvPolicy';
@@ -9,12 +7,12 @@ export interface ValidationContext {
   limits: Limits;
   textures?: TextureStat[];
   textureResolution?: { width: number; height: number };
-  textureUsage?: TextureUsageResult;
+  textureUsage?: TextureUsage;
   uvPolicy?: UvPolicyConfig;
 }
 
-export function validateSnapshot(state: SessionState, context: ValidationContext): ValidateFinding[] {
-  const findings: ValidateFinding[] = [];
+export function validateSnapshot(state: Snapshot, context: ValidationContext): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
   const { limits, textures, textureResolution, textureUsage } = context;
 
   const boneNames = new Set(state.bones.map((b) => b.name));

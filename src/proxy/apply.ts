@@ -11,7 +11,7 @@ import { buildMeta, MetaOptions } from './meta';
 import { renderTextureSpec, resolveTextureBase, resolveTextureSpecSize, TextureCoverage, UvPaintRenderConfig } from './texture';
 import { toToolResponse } from './response';
 import { isZeroSize } from '../domain/geometry';
-import { TextureUsageResult } from '../ports/editor';
+import { TextureUsage } from '../domain/model';
 import { resolveUvPaintRects } from './uvPaint';
 
 type ApplyErrorEntry = {
@@ -87,7 +87,7 @@ export const applyTextureSpecSteps = async (
   report: ApplyReport,
   meta: MetaOptions,
   log?: Logger,
-  usage?: TextureUsageResult
+  usage?: TextureUsage
 ): Promise<ToolResponse<ApplyReport>> => {
   for (const texture of textures) {
     const label = texture.name ?? texture.targetName ?? texture.targetId ?? 'texture';

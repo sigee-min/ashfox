@@ -34,17 +34,18 @@ import { SnapshotPort } from '../ports/snapshot';
 import { ExportPort } from '../ports/exporter';
 import { buildRigTemplate } from '../templates';
 import { RigTemplateKind } from '../spec';
-import { buildInternalExport } from '../domain/exporters';
+import { buildInternalExport } from '../services/exporters';
 import { validateSnapshot } from '../domain/validation';
-import { buildBlockPipeline, BlockPipelineSpec, BlockResource } from '../domain/blockPipeline';
+import { buildBlockPipeline, BlockPipelineSpec, BlockResource } from '../services/blockPipeline';
 import { ok, fail, UsecaseResult } from './result';
-import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../domain/format';
-import { mergeSnapshots } from '../domain/snapshot';
-import { diffSnapshots } from '../domain/diff';
+import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../services/format';
+import { mergeSnapshots } from '../services/snapshotMerge';
+import { diffSnapshots } from '../services/diff';
 import { mergeRigParts, RigMergeStrategy } from '../domain/rig';
 import { isZeroSize } from '../domain/geometry';
 import { DEFAULT_UV_POLICY, UvPolicyConfig } from '../domain/uvPolicy';
 import { computeTextureUsageId } from '../domain/textureUsage';
+import { toDomainSnapshot, toDomainTextureResolution, toDomainTextureStats, toDomainTextureUsage } from './domainMappers';
 import { findUvOverlapIssues, formatUvFaceRect } from '../domain/uvOverlap';
 import { runAutoUvAtlas, runGenerateTexturePreset, TextureToolContext } from './textureTools';
 import { ProjectStateService } from '../services/projectState';
@@ -63,7 +64,7 @@ import {
   resolveCubeTarget,
   resolveTextureTarget
 } from '../services/lookup';
-import { saveDataUriToTmp } from '../services/tmpStore';
+import type { TmpStorePort } from '../ports/tmpStore';
 
 const FORMAT_OVERRIDE_HINT = 'Set Format ID override in Settings (bbmcp).';
 const REVISION_CACHE_LIMIT = 5;
@@ -82,6 +83,7 @@ export interface ToolServiceDeps {
   host?: HostPort;
   resources?: ResourceStore;
   textureRenderer?: TextureRendererPort;
+  tmpStore?: TmpStorePort;
   policies?: ToolPolicies;
 }
 
@@ -95,6 +97,7 @@ export class ToolService {
   private readonly host?: HostPort;
   private readonly resources?: ResourceStore;
   private readonly textureRenderer?: TextureRendererPort;
+  private readonly tmpStore?: TmpStorePort;
   private readonly policies: ToolPolicies;
   private readonly projectState: ProjectStateService;
   private readonly revisionStore: RevisionStore;
@@ -110,6 +113,7 @@ export class ToolService {
     this.host = deps.host;
     this.resources = deps.resources;
     this.textureRenderer = deps.textureRenderer;
+    this.tmpStore = deps.tmpStore;
     this.policies = deps.policies ?? {};
     this.projectState = new ProjectStateService(this.formats, this.policies.formatOverrides);
     this.revisionStore = new RevisionStore(REVISION_CACHE_LIMIT);
@@ -225,14 +229,16 @@ export class ToolService {
     if (activeErr) return fail(activeErr);
     const usageRes = this.editor.getTextureUsage({ textureId: payload.textureId, textureName: payload.textureName });
     if (usageRes.error) return fail(usageRes.error);
-    const usage = usageRes.result ?? { textures: [] };
+    const usageRaw = usageRes.result ?? { textures: [] };
+    const usage = toDomainTextureUsage(usageRaw);
     const usageIdSource =
       payload.textureId || payload.textureName ? this.editor.getTextureUsage({}) : usageRes;
     if (usageIdSource.error) return fail(usageIdSource.error);
-    const uvUsageId = computeTextureUsageId(usageIdSource.result ?? { textures: [] });
+    const usageIdRaw = usageIdSource.result ?? { textures: [] };
+    const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageIdRaw));
     const textureResolution = this.editor.getProjectTextureResolution() ?? undefined;
-    const usageSummary = summarizeTextureUsage(usage);
-    const uvBounds = computeUvBounds(usage);
+    const usageSummary = summarizeTextureUsage(usageRaw);
+    const uvBounds = computeUvBounds(usageRaw);
     const warnings: string[] = [];
     if (!uvBounds) {
       warnings.push('No UV rects found; preflight cannot compute UV bounds.');
@@ -265,7 +271,7 @@ export class ToolService {
       uvBounds: uvBounds ?? undefined,
       recommendedResolution: recommendedResolution ?? undefined,
       warnings: warnings.length > 0 ? warnings : undefined,
-      textureUsage: payload.includeUsage ? usage : undefined
+      textureUsage: payload.includeUsage ? usageRaw : undefined
     };
     return ok(result);
   }
@@ -885,7 +891,10 @@ export class ToolService {
       }
     };
     if (saveToTmp) {
-      const saved = saveDataUriToTmp(dataUri, {
+      if (!this.tmpStore) {
+        return fail({ code: 'not_implemented', message: 'Tmp store is not available.' });
+      }
+      const saved = this.tmpStore.saveDataUri(dataUri, {
         nameHint: tmpName ?? source.name,
         prefix: tmpPrefix ?? 'texture'
       });
@@ -1687,7 +1696,10 @@ export class ToolService {
       if (!image?.dataUri) {
         return fail({ code: 'not_implemented', message: 'Preview image data unavailable.' });
       }
-      const saved = saveDataUriToTmp(image.dataUri, {
+      if (!this.tmpStore) {
+        return fail({ code: 'not_implemented', message: 'Tmp store is not available.' });
+      }
+      const saved = this.tmpStore.saveDataUri(image.dataUri, {
         nameHint: tmpName ?? 'preview',
         prefix: tmpPrefix ?? 'preview'
       });
@@ -1714,7 +1726,10 @@ export class ToolService {
       if (!frame.dataUri) {
         return fail({ code: 'not_implemented', message: 'Preview frame data unavailable.' });
       }
-      const saved = saveDataUriToTmp(frame.dataUri, {
+      if (!this.tmpStore) {
+        return fail({ code: 'not_implemented', message: 'Tmp store is not available.' });
+      }
+      const saved = this.tmpStore.saveDataUri(frame.dataUri, {
         nameHint: `${tmpName ?? 'preview'}_frame${frame.index}`,
         prefix: tmpPrefix ?? 'preview'
       });
@@ -1734,15 +1749,16 @@ export class ToolService {
   validate(): UsecaseResult<{ findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[] }> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
-    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
-    const textures = this.editor.listTextures();
-    const textureResolution = this.editor.getProjectTextureResolution() ?? undefined;
+    const snapshot = toDomainSnapshot(this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid'));
+    const textures = toDomainTextureStats(this.editor.listTextures());
+    const textureResolution = toDomainTextureResolution(this.editor.getProjectTextureResolution());
     const usage = this.editor.getTextureUsage({});
+    const usageDomain = usage.error ? undefined : toDomainTextureUsage(usage.result ?? { textures: [] });
     const findings = validateSnapshot(snapshot, {
       limits: this.capabilities.limits,
       textures,
       textureResolution,
-      textureUsage: usage.error ? undefined : usage.result,
+      textureUsage: usageDomain,
       uvPolicy: this.getUvPolicyConfig()
     });
     return ok({ findings });

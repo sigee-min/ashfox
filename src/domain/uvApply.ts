@@ -1,6 +1,5 @@
-import { CubeFaceDirection, TextureUsageResult } from '../ports/editor';
-import { TrackedCube } from '../session';
-import { ToolError, ToolResponse } from '../types';
+import type { Cube, CubeFaceDirection, TextureUsage } from './model';
+import type { DomainError, DomainResult } from './result';
 
 export type UvFaceMap = Partial<Record<CubeFaceDirection, [number, number, number, number]>>;
 
@@ -22,7 +21,7 @@ export type UvApplyPlan = {
   updates: UvAssignmentUpdate[];
   cubeCount: number;
   faceCount: number;
-  usage: TextureUsageResult;
+  usage: TextureUsage;
   touchedTextures: Array<{ id?: string; name: string }>;
 };
 
@@ -32,16 +31,16 @@ type FaceRef = {
 };
 
 export const buildUvApplyPlan = (
-  usage: TextureUsageResult,
-  cubes: TrackedCube[],
+  usage: TextureUsage,
+  cubes: Cube[],
   assignments: UvAssignmentSpec[],
   textureResolution?: { width: number; height: number }
-): ToolResponse<UvApplyPlan> => {
+): DomainResult<UvApplyPlan> => {
   if (!Array.isArray(assignments) || assignments.length === 0) {
     return fail('invalid_payload', 'assignments must be a non-empty array.');
   }
-  const cubeById = new Map<string, TrackedCube>();
-  const cubeByName = new Map<string, TrackedCube>();
+  const cubeById = new Map<string, Cube>();
+  const cubeByName = new Map<string, Cube>();
   const duplicateNames = new Set<string>();
   cubes.forEach((cube) => {
     if (cube.id) cubeById.set(cube.id, cube);
@@ -128,10 +127,10 @@ export const buildUvApplyPlan = (
 
 const resolveAssignmentTargets = (
   assignment: UvAssignmentSpec,
-  cubeById: Map<string, TrackedCube>,
-  cubeByName: Map<string, TrackedCube>,
+  cubeById: Map<string, Cube>,
+  cubeByName: Map<string, Cube>,
   duplicateNames: Set<string>
-): ToolResponse<TrackedCube[]> => {
+): DomainResult<Cube[]> => {
   const ids = new Set<string>();
   const names = new Set<string>();
   if (assignment.cubeId) ids.add(assignment.cubeId);
@@ -141,7 +140,7 @@ const resolveAssignmentTargets = (
   if (ids.size === 0 && names.size === 0) {
     return fail('invalid_payload', 'assignment must include cubeId/cubeName or cubeIds/cubeNames.');
   }
-  const targets: TrackedCube[] = [];
+  const targets: Cube[] = [];
   for (const id of ids) {
     if (!cubeById.has(id)) {
       return fail('invalid_payload', `Cube not found for id: ${id}`);
@@ -162,9 +161,9 @@ const resolveAssignmentTargets = (
   return { ok: true, data: dedupeCubes(targets) };
 };
 
-const dedupeCubes = (cubes: TrackedCube[]): TrackedCube[] => {
+const dedupeCubes = (cubes: Cube[]): Cube[] => {
   const seen = new Set<string>();
-  const out: TrackedCube[] = [];
+  const out: Cube[] = [];
   cubes.forEach((cube) => {
     const key = cube.id ? `id:${cube.id}` : `name:${cube.name}`;
     if (seen.has(key)) return;
@@ -174,7 +173,7 @@ const dedupeCubes = (cubes: TrackedCube[]): TrackedCube[] => {
   return out;
 };
 
-const buildUsageIndex = (usage: TextureUsageResult) => {
+const buildUsageIndex = (usage: TextureUsage) => {
   const byId = new Map<string, Map<CubeFaceDirection, FaceRef>>();
   const byName = new Map<string, Map<CubeFaceDirection, FaceRef>>();
   usage.textures.forEach((texture) => {
@@ -202,7 +201,7 @@ const buildUsageIndex = (usage: TextureUsageResult) => {
 
 const resolveUsageFaceRef = (
   index: ReturnType<typeof buildUsageIndex>,
-  cube: TrackedCube,
+  cube: Cube,
   face: CubeFaceDirection
 ): FaceRef | null => {
   if (cube.id) {
@@ -214,7 +213,7 @@ const resolveUsageFaceRef = (
   return null;
 };
 
-const cloneUsage = (usage: TextureUsageResult): TextureUsageResult => ({
+const cloneUsage = (usage: TextureUsage): TextureUsage => ({
   textures: usage.textures.map((entry) => ({
     id: entry.id,
     name: entry.name,
@@ -243,7 +242,7 @@ const textureKey = (texture: { id?: string; name: string }): string => (texture.
 
 const VALID_FACES = new Set<CubeFaceDirection>(['north', 'south', 'east', 'west', 'up', 'down']);
 
-const fail = (code: ToolError['code'], message: string): ToolResponse<never> => ({
+const fail = (code: DomainError['code'], message: string): DomainResult<never> => ({
   ok: false,
   error: { code, message }
 });
@@ -251,7 +250,7 @@ const fail = (code: ToolError['code'], message: string): ToolResponse<never> => 
 const validateUvBounds = (
   uv: [number, number, number, number],
   resolution: { width: number; height: number }
-): ToolResponse<never> | null => {
+): DomainResult<never> | null => {
   const [x1, y1, x2, y2] = uv;
   if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0) {
     return fail('invalid_payload', 'Face UV coordinates must be non-negative.');

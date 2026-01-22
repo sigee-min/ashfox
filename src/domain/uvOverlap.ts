@@ -1,4 +1,4 @@
-import { CubeFaceDirection, TextureUsageResult } from '../ports/editor';
+import type { CubeFaceDirection, TextureUsage } from './model';
 
 export type UvRect = {
   x1: number;
@@ -31,7 +31,7 @@ type RectGroup = {
   faces: UvFaceRect[];
 };
 
-export const findUvOverlapIssues = (usage: TextureUsageResult): UvOverlapIssue[] => {
+export const findUvOverlapIssues = (usage: TextureUsage): UvOverlapIssue[] => {
   const issues: UvOverlapIssue[] = [];
   usage.textures.forEach((entry) => {
     const rectGroups = collectRectGroups(entry);
@@ -53,7 +53,7 @@ export const formatUvRect = (rect: UvRect): string =>
 export const formatUvFaceRect = (face: UvFaceRect): string =>
   `${face.cubeName} (${face.face}) ${formatUvRect(face.rect)}`;
 
-const collectRectGroups = (entry: TextureUsageResult['textures'][number]): RectGroup[] => {
+const collectRectGroups = (entry: TextureUsage['textures'][number]): RectGroup[] => {
   const groups = new Map<string, RectGroup>();
   entry.cubes.forEach((cube) => {
     cube.faces.forEach((face) => {

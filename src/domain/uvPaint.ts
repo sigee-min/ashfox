@@ -1,6 +1,6 @@
-import { Limits, ToolResponse } from '../types';
-import { TextureUsageResult } from '../ports/editor';
-import { UvPaintScope, UvPaintSpec } from '../types';
+import type { Limits, TextureUsage } from './model';
+import type { DomainResult } from './result';
+import type { UvPaintScope, UvPaintSpec } from './uvPaintSpec';
 
 export type UvPaintRect = { x1: number; y1: number; x2: number; y2: number };
 
@@ -12,7 +12,7 @@ export type UvPaintResolveInput = {
   uvPaint?: UvPaintSpec;
 };
 
-type UsageEntry = TextureUsageResult['textures'][number];
+type UsageEntry = TextureUsage['textures'][number];
 
 const normalizeRect = (uv: [number, number, number, number]): UvPaintRect => {
   const [x1, y1, x2, y2] = uv;
@@ -24,7 +24,7 @@ const normalizeRect = (uv: [number, number, number, number]): UvPaintRect => {
   };
 };
 
-const resolveUsageEntry = (texture: UvPaintResolveInput, usage: TextureUsageResult): UsageEntry | null => {
+const resolveUsageEntry = (texture: UvPaintResolveInput, usage: TextureUsage): UsageEntry | null => {
   if (texture.targetId) {
     const byId = usage.textures.find((entry) => entry.id === texture.targetId);
     if (byId) return byId;
@@ -60,8 +60,8 @@ const resolveScope = (scope?: UvPaintScope): UvPaintScope => scope ?? 'rects';
 
 export const resolveUvPaintRects = (
   texture: UvPaintResolveInput,
-  usage: TextureUsageResult
-): ToolResponse<{ rects: UvPaintRect[] }> => {
+  usage: TextureUsage
+): DomainResult<{ rects: UvPaintRect[] }> => {
   const label = texture.name ?? texture.targetName ?? texture.targetId ?? 'texture';
   const uvPaint = texture.uvPaint;
   if (!uvPaint) {
@@ -69,13 +69,10 @@ export const resolveUvPaintRects = (
   }
   const entry = resolveUsageEntry(texture, usage);
   if (!entry) {
-    return {
-      ok: false,
-      error: {
-        code: 'invalid_state',
-        message: `No UV usage found for texture "${label}". Assign the texture and set per-face UVs before uvPaint.`
-      }
-    };
+    return err(
+      'invalid_state',
+      `No UV usage found for texture "${label}". Assign the texture and set per-face UVs before uvPaint.`
+    );
   }
   const cubeIds = new Set(uvPaint.target?.cubeIds ?? []);
   const cubeNames = new Set(uvPaint.target?.cubeNames ?? []);
@@ -87,10 +84,7 @@ export const resolveUvPaintRects = (
       cubeNames.has(cube.name)
   );
   if ((cubeIds.size > 0 || cubeNames.size > 0) && filteredCubes.length === 0) {
-    return {
-      ok: false,
-      error: { code: 'invalid_state', message: `uvPaint target cubes not found for texture "${label}".` }
-    };
+    return err('invalid_state', `uvPaint target cubes not found for texture "${label}".`);
   }
   const rects: UvPaintRect[] = [];
   let matchedFaces = 0;
@@ -103,19 +97,10 @@ export const resolveUvPaintRects = (
     });
   });
   if (faces && matchedFaces === 0) {
-    return {
-      ok: false,
-      error: { code: 'invalid_state', message: `uvPaint target faces not found for texture "${label}".` }
-    };
+    return err('invalid_state', `uvPaint target faces not found for texture "${label}".`);
   }
   if (rects.length === 0) {
-    return {
-      ok: false,
-      error: {
-        code: 'invalid_state',
-        message: `No UV rects found for texture "${label}". Set per-face UVs before uvPaint.`
-      }
-    };
+    return err('invalid_state', `No UV rects found for texture "${label}". Set per-face UVs before uvPaint.`);
   }
   const scope = resolveScope(uvPaint.scope);
   if (scope === 'bounds') {
@@ -144,7 +129,7 @@ export const resolveUvPaintRects = (
 
 const VALID_FACES = new Set(['north', 'south', 'east', 'west', 'up', 'down']);
 
-export const validateUvPaintSpec = (value: unknown, limits: Limits, label: string): ToolResponse<unknown> => {
+export const validateUvPaintSpec = (value: unknown, limits: Limits, label: string): DomainResult<unknown> => {
   if (!isRecord(value)) {
     return err('invalid_payload', `uvPaint must be an object (${label})`);
   }
@@ -217,7 +202,7 @@ const isFiniteNumber = (value: unknown): value is number => Number.isFinite(valu
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
-const err = (code: 'invalid_payload', message: string): ToolResponse<unknown> => ({
+const err = (code: 'invalid_payload' | 'invalid_state', message: string): DomainResult<unknown> => ({
   ok: false,
   error: { code, message }
 });

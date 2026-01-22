@@ -10,6 +10,11 @@ import { Capabilities } from './capabilities';
 import { BlockPipelineMode, BlockPipelineOnConflict, BlockPipelineTextures, BlockVariant } from './blockPipeline';
 import { ProjectState, WithState } from './project';
 import { RenderPreviewPayload, RenderPreviewResult } from './preview';
+import type { UvPaintMapping, UvPaintScope, UvPaintSource, UvPaintSpec, UvPaintTarget } from '../domain/uvPaintSpec';
+import type { CubeFaceDirection } from '../domain/model';
+
+export type { UvPaintMapping, UvPaintScope, UvPaintSource, UvPaintSpec, UvPaintTarget } from '../domain/uvPaintSpec';
+export type { CubeFaceDirection } from '../domain/model';
 
 export type ToolName =
   | 'list_capabilities'
@@ -129,32 +134,6 @@ export interface DeleteTexturePayload extends IncludeStateOption, IncludeDiffOpt
   id?: string;
   name?: string;
 }
-
-export type CubeFaceDirection = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
-
-export type UvPaintScope = 'faces' | 'rects' | 'bounds';
-
-export type UvPaintMapping = 'stretch' | 'tile';
-
-export type UvPaintTarget = {
-  cubeIds?: string[];
-  cubeNames?: string[];
-  faces?: CubeFaceDirection[];
-};
-
-export type UvPaintSource = {
-  width?: number;
-  height?: number;
-};
-
-export type UvPaintSpec = {
-  scope?: UvPaintScope;
-  mapping?: UvPaintMapping;
-  target?: UvPaintTarget;
-  source?: UvPaintSource;
-  padding?: number;
-  anchor?: [number, number];
-};
 
 export interface AssignTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   textureId?: string;

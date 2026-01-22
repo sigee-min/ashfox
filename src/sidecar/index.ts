@@ -4,8 +4,8 @@ import { StderrLogger } from './logger';
 import { McpRouter } from '../mcp/router';
 import { createMcpHttpServer } from '../mcp/httpServer';
 import { PLUGIN_ID, PLUGIN_VERSION } from '../config';
-import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../domain/blockPipeline';
-import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../domain/guides';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../services/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../services/guides';
 import { InMemoryResourceStore } from '../services/resources';
 import { ToolResponse } from '../types';
 

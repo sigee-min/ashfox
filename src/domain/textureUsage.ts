@@ -1,4 +1,4 @@
-import { CubeFaceDirection, TextureUsageResult } from '../ports/editor';
+import type { CubeFaceDirection, TextureUsage } from './model';
 
 type NormalizedFace = { face: CubeFaceDirection; uv: [number, number, number, number] | null };
 type NormalizedCube = { id: string | null; name: string; faces: NormalizedFace[] };
@@ -16,7 +16,7 @@ const normalizeFaces = (faces: NormalizedFace[]): NormalizedFace[] =>
     .slice()
     .sort((a, b) => (FACE_INDEX.get(a.face) ?? 0) - (FACE_INDEX.get(b.face) ?? 0));
 
-const normalizeUsage = (usage: TextureUsageResult): { textures: NormalizedTexture[] } => {
+const normalizeUsage = (usage: TextureUsage): { textures: NormalizedTexture[] } => {
   const textures = usage.textures
     .map((texture) => {
       const cubes = texture.cubes
@@ -36,7 +36,7 @@ const normalizeUsage = (usage: TextureUsageResult): { textures: NormalizedTextur
   return { textures };
 };
 
-export const computeTextureUsageId = (usage: TextureUsageResult): string =>
+export const computeTextureUsageId = (usage: TextureUsage): string =>
   hashText(JSON.stringify(normalizeUsage(usage)));
 
 const hashText = (value: string): string => {

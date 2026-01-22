@@ -1,6 +1,6 @@
 import { FormatKind, ProjectInfo, ProjectState, ProjectStateDetail } from '../types';
 import { FormatPort } from '../ports/formats';
-import { FormatOverrides, matchesFormatKind } from '../domain/format';
+import { FormatOverrides, matchesFormatKind } from './format';
 import { SessionState } from '../session';
 
 export class ProjectStateService {

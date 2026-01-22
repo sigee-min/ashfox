@@ -1,5 +1,4 @@
-import { CubeFaceDirection } from '../ports/editor';
-import { TrackedCube } from '../session';
+import type { Cube, CubeFaceDirection } from './model';
 
 export type UvPolicyConfig = {
   modelUnitsPerBlock: number;
@@ -20,7 +19,7 @@ type FaceDimensions = {
 
 const abs = (value: number) => Math.abs(value);
 
-export const getFaceDimensions = (cube: TrackedCube, face: CubeFaceDirection): FaceDimensions => {
+export const getFaceDimensions = (cube: Cube, face: CubeFaceDirection): FaceDimensions => {
   const sizeX = abs(cube.to[0] - cube.from[0]);
   const sizeY = abs(cube.to[1] - cube.from[1]);
   const sizeZ = abs(cube.to[2] - cube.from[2]);

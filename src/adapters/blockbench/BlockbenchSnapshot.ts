@@ -1,7 +1,7 @@
 import { SnapshotPort } from '../../ports/snapshot';
 import { SessionState, TrackedAnimationChannel, TrackedAnimationTrigger } from '../../session';
 import { FormatKind } from '../../types';
-import { matchesFormatKind } from '../../domain/format';
+import { matchesFormatKind } from '../../services/format';
 import { Logger } from '../../logging';
 import {
   AnimationClip,

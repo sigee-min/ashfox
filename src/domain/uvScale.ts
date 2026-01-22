@@ -1,5 +1,4 @@
-import { CubeFaceDirection, TextureUsageResult } from '../ports/editor';
-import { TrackedCube } from '../session';
+import type { Cube, CubeFaceDirection, TextureUsage } from './model';
 import { UvPolicyConfig, computeExpectedUvSize, getFaceDimensions } from './uvPolicy';
 
 export type UvScaleIssue = {
@@ -22,14 +21,14 @@ export type UvScaleResult = {
 };
 
 export const findUvScaleIssues = (
-  usage: TextureUsageResult,
-  cubes: TrackedCube[],
+  usage: TextureUsage,
+  cubes: Cube[],
   resolution: { width: number; height: number } | undefined,
   policy: UvPolicyConfig
 ): UvScaleResult => {
   if (!resolution) return { issues: [], totalFaces: 0, mismatchedFaces: 0 };
-  const cubeById = new Map<string, TrackedCube>();
-  const cubeByName = new Map<string, TrackedCube>();
+  const cubeById = new Map<string, Cube>();
+  const cubeByName = new Map<string, Cube>();
   cubes.forEach((cube) => {
     if (cube.id) cubeById.set(cube.id, cube);
     cubeByName.set(cube.name, cube);
