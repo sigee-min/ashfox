@@ -1,5 +1,5 @@
 import { SnapshotPort } from '../../ports/snapshot';
-import { SessionState, TrackedAnimationChannel } from '../../session';
+import { SessionState, TrackedAnimationChannel, TrackedAnimationTrigger } from '../../session';
 import { FormatKind } from '../../types';
 import { matchesFormatKind } from '../../domain/format';
 import { Logger } from '../../logging';
@@ -60,14 +60,15 @@ export class BlockbenchSnapshot implements SnapshotPort {
 
       const animState = getAnimationState(globals);
       animState.animations.forEach((anim) => {
-        const channels = extractChannels(anim);
+        const { channels, triggers } = extractChannels(anim);
         animations.push({
           id: readAnimationId(anim),
           name: anim?.name ?? 'animation',
           length: Number(anim?.length ?? anim?.animation_length ?? anim?.duration ?? 0),
           loop: normalizeLoop(anim?.loop),
           fps: Number(anim?.snapping ?? anim?.fps ?? 0) || undefined,
-          channels
+          channels,
+          triggers
         });
       });
 
@@ -239,18 +240,37 @@ function getAnimationState(
   return { animations: [], status: 'unavailable' };
 }
 
-function extractChannels(anim: AnimationClip): TrackedAnimationChannel[] | undefined {
+function extractChannels(
+  anim: AnimationClip
+): { channels?: TrackedAnimationChannel[]; triggers?: TrackedAnimationTrigger[] } {
   const animators = anim?.animators;
-  if (!animators || typeof animators !== 'object') return undefined;
+  if (!animators || typeof animators !== 'object') return {};
   const channels: TrackedAnimationChannel[] = [];
+  const triggerBuckets: Record<'sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']> = {
+    sound: [],
+    particle: [],
+    timeline: []
+  };
   Object.entries(animators).forEach(([bone, animator]) => {
     if (!isRecord(animator)) return;
     const grouped = collectAnimatorChannels(animator);
     grouped.forEach((entry) => {
       channels.push({ bone, channel: entry.channel, keys: entry.keys });
     });
+    const triggerGroups = collectAnimatorTriggers(animator);
+    triggerGroups.forEach((entry) => {
+      triggerBuckets[entry.type].push(...entry.keys);
+    });
   });
-  return channels.length > 0 ? channels : undefined;
+  const triggers = (Object.entries(triggerBuckets) as Array<
+    ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
+  >)
+    .filter(([, keys]) => keys.length > 0)
+    .map(([type, keys]) => ({ type, keys }));
+  return {
+    channels: channels.length > 0 ? channels : undefined,
+    triggers: triggers.length > 0 ? triggers : undefined
+  };
 }
 
 function collectAnimatorChannels(
@@ -278,11 +298,62 @@ function collectAnimatorChannels(
     .map(([channel, keys]) => ({ channel: channel as 'rot' | 'pos' | 'scale', keys }));
 }
 
+function collectAnimatorTriggers(
+  animator: UnknownRecord
+): Array<{ type: 'sound' | 'particle' | 'timeline'; keys: TrackedAnimationTrigger['keys'] }> {
+  const buckets: Record<'sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']> = {
+    sound: [],
+    particle: [],
+    timeline: []
+  };
+  const keyframes = Array.isArray(animator.keyframes) ? animator.keyframes : [];
+  keyframes.forEach((kf) => {
+    if (!isRecord(kf)) return;
+    const type = normalizeTriggerChannel(kf.channel ?? kf.data_channel ?? kf.transform);
+    if (!type) return;
+    const value = normalizeTriggerValue(kf.data_point ?? kf.data_points ?? kf.value ?? kf.data);
+    if (value === null) return;
+    buckets[type].push({
+      time: Number(kf.time ?? kf.frame ?? 0),
+      value
+    });
+  });
+  return (Object.entries(buckets) as Array<
+    ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
+  >)
+    .filter(([, keys]) => keys.length > 0)
+    .map(([type, keys]) => ({ type, keys }));
+}
+
 function normalizeChannel(value: unknown): 'rot' | 'pos' | 'scale' | null {
   const channel = String(value ?? '').toLowerCase();
   if (channel.includes('rot')) return 'rot';
   if (channel.includes('pos')) return 'pos';
   if (channel.includes('scale')) return 'scale';
+  return null;
+}
+
+function normalizeTriggerChannel(value: unknown): 'sound' | 'particle' | 'timeline' | null {
+  const channel = String(value ?? '').toLowerCase();
+  if (channel.includes('sound')) return 'sound';
+  if (channel.includes('particle')) return 'particle';
+  if (channel.includes('timeline') || channel.includes('event')) return 'timeline';
+  return null;
+}
+
+function normalizeTriggerValue(
+  value: unknown
+): string | string[] | Record<string, unknown> | null {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return value as string[];
+    const allNumbers = value.every((item) => typeof item === 'number');
+    if (allNumbers) return null;
+    const allStrings = value.every((item) => typeof item === 'string');
+    if (allStrings) return value as string[];
+    return null;
+  }
+  if (isRecord(value)) return value;
   return null;
 }
 

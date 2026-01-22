@@ -117,7 +117,15 @@ const textureSig = (texture: TrackedTexture) =>
     texture.keepSize ?? null
   ]);
 const animationSig = (anim: TrackedAnimation) =>
-  JSON.stringify([anim.id ?? null, anim.name, anim.length, anim.loop, anim.fps ?? null, anim.channels?.length ?? 0]);
+  JSON.stringify([
+    anim.id ?? null,
+    anim.name,
+    anim.length,
+    anim.loop,
+    anim.fps ?? null,
+    anim.channels?.length ?? 0,
+    anim.triggers?.length ?? 0
+  ]);
 
 export const diffSnapshots = (
   previous: SessionState,

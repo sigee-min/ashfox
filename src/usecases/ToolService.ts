@@ -13,13 +13,21 @@ import {
   ProjectDiff,
   ProjectState,
   ProjectStateDetail,
+  ReadTexturePayload,
   ReadTextureResult,
   RenderPreviewPayload,
   RenderPreviewResult,
   ToolError
 } from '../types';
 import { ProjectSession, SessionState } from '../session';
-import { CubeFaceDirection, EditorPort, FaceUvMap, TextureSource, TextureUsageResult } from '../ports/editor';
+import {
+  CubeFaceDirection,
+  EditorPort,
+  FaceUvMap,
+  TextureSource,
+  TextureUsageResult,
+  TriggerChannel
+} from '../ports/editor';
 import { TextureMeta } from '../types/texture';
 import { FormatPort } from '../ports/formats';
 import { SnapshotPort } from '../ports/snapshot';
@@ -35,7 +43,7 @@ import { mergeSnapshots } from '../domain/snapshot';
 import { diffSnapshots } from '../domain/diff';
 import { mergeRigParts, RigMergeStrategy } from '../domain/rig';
 import { isZeroSize } from '../domain/geometry';
-import { DEFAULT_UV_POLICY, UvPolicyConfig, computeExpectedUvSize, getFaceDimensions, shouldAutoFixUv } from '../domain/uvPolicy';
+import { DEFAULT_UV_POLICY, UvPolicyConfig } from '../domain/uvPolicy';
 import { computeTextureUsageId } from '../domain/textureUsage';
 import { findUvOverlapIssues, formatUvFaceRect } from '../domain/uvOverlap';
 import { runAutoUvAtlas, runGenerateTexturePreset, TextureToolContext } from './textureTools';
@@ -55,6 +63,7 @@ import {
   resolveCubeTarget,
   resolveTextureTarget
 } from '../services/lookup';
+import { saveDataUriToTmp } from '../services/tmpStore';
 
 const FORMAT_OVERRIDE_HINT = 'Set Format ID override in Settings (bbmcp).';
 const REVISION_CACHE_LIMIT = 5;
@@ -90,8 +99,6 @@ export class ToolService {
   private readonly projectState: ProjectStateService;
   private readonly revisionStore: RevisionStore;
   private revisionBypassDepth = 0;
-  private readonly manualUvCubeIds = new Set<string>();
-  private readonly manualUvCubeNames = new Set<string>();
 
   constructor(deps: ToolServiceDeps) {
     this.session = deps.session;
@@ -110,6 +117,10 @@ export class ToolService {
 
   listCapabilities(): Capabilities {
     return this.capabilities;
+  }
+
+  getUvPolicy(): UvPolicyConfig {
+    return this.getUvPolicyConfig();
   }
 
   isRevisionRequired(): boolean {
@@ -640,7 +651,6 @@ export class ToolService {
     if (!result.ok) {
       return fail(result.error);
     }
-    this.clearManualUvState();
     return ok(result.data);
   }
 
@@ -853,8 +863,9 @@ export class ToolService {
     return ok(res.result!);
   }
 
-  readTextureImage(payload: { id?: string; name?: string }): UsecaseResult<ReadTextureResult> {
-    const sourceRes = this.readTexture(payload);
+  readTextureImage(payload: ReadTexturePayload): UsecaseResult<ReadTextureResult> {
+    const { saveToTmp, tmpName, tmpPrefix, ...query } = payload;
+    const sourceRes = this.readTexture(query);
     if (!sourceRes.ok) return sourceRes;
     const source = sourceRes.value;
     const dataUri = normalizeTextureDataUri(source.dataUri);
@@ -862,7 +873,7 @@ export class ToolService {
       return fail({ code: 'not_implemented', message: 'Texture data unavailable.' });
     }
     const mimeType = parseDataUriMimeType(dataUri) ?? 'image/png';
-    return ok({
+    const result: ReadTextureResult = {
       texture: {
         id: source.id,
         name: source.name,
@@ -872,7 +883,16 @@ export class ToolService {
         dataUri,
         mimeType
       }
-    });
+    };
+    if (saveToTmp) {
+      const saved = saveDataUriToTmp(dataUri, {
+        nameHint: tmpName ?? source.name,
+        prefix: tmpPrefix ?? 'texture'
+      });
+      if (!saved.ok) return fail(saved.error);
+      result.saved = saved.data;
+    }
+    return ok(result);
   }
 
   assignTexture(payload: {
@@ -921,16 +941,6 @@ export class ToolService {
       faces: faces ?? undefined
     });
     if (err) return fail(err);
-    this.applyAutoUvPolicy({
-      texture: {
-        id: texture.id ?? payload.textureId,
-        name: texture.name,
-        width: texture.width,
-        height: texture.height
-      },
-      cubes,
-      faces
-    });
     return ok({
       textureId: texture.id ?? payload.textureId,
       textureName: texture.name,
@@ -1004,7 +1014,6 @@ export class ToolService {
       faces: normalized
     });
     if (err) return fail(err);
-    this.markManualUv({ id: target.id ?? payload.cubeId, name: target.name });
     return ok({ cubeId: target.id ?? payload.cubeId, cubeName: target.name, faces });
   }
 
@@ -1182,7 +1191,6 @@ export class ToolService {
     to: [number, number, number];
     bone?: string;
     boneId?: string;
-    uv?: [number, number];
     inflate?: number;
     mirror?: boolean;
     ifRevision?: string;
@@ -1227,15 +1235,12 @@ export class ToolService {
     if (idConflict) {
       return fail({ code: 'invalid_payload', message: `Cube id already exists: ${id}` });
     }
-    const uvErr = this.ensureUvWithinResolution(payload.uv);
-    if (uvErr) return fail(uvErr);
     const err = this.editor.addCube({
       id,
       name: payload.name,
       from: payload.from,
       to: payload.to,
       bone: resolvedBone,
-      uv: payload.uv,
       inflate: payload.inflate,
       mirror: payload.mirror
     });
@@ -1246,7 +1251,6 @@ export class ToolService {
       from: payload.from,
       to: payload.to,
       bone: resolvedBone,
-      uv: payload.uv,
       inflate: payload.inflate,
       mirror: payload.mirror
     });
@@ -1262,7 +1266,6 @@ export class ToolService {
     boneRoot?: boolean;
     from?: [number, number, number];
     to?: [number, number, number];
-    uv?: [number, number];
     inflate?: number;
     mirror?: boolean;
     ifRevision?: string;
@@ -1304,8 +1307,6 @@ export class ToolService {
         return fail({ code: 'invalid_payload', message: `Bone not found: ${boneUpdate}` });
       }
     }
-    const uvErr = this.ensureUvWithinResolution(payload.uv);
-    if (uvErr) return fail(uvErr);
     const err = this.editor.updateCube({
       id: targetId,
       name: targetName,
@@ -1314,7 +1315,6 @@ export class ToolService {
       boneRoot: payload.boneRoot,
       from: payload.from,
       to: payload.to,
-      uv: payload.uv,
       inflate: payload.inflate,
       mirror: payload.mirror
     });
@@ -1328,13 +1328,9 @@ export class ToolService {
       bone: boneUpdate,
       from: payload.from,
       to: payload.to,
-      uv: payload.uv,
       inflate: payload.inflate,
       mirror: payload.mirror
     });
-    if (payload.newName && payload.newName !== targetName) {
-      this.renameManualUv(targetName, payload.newName);
-    }
     return ok({ id: targetId, name: payload.newName ?? targetName });
   }
 
@@ -1355,7 +1351,6 @@ export class ToolService {
     const err = this.editor.deleteCube({ id: target.id ?? payload.id, name: target.name });
     if (err) return fail(err);
     this.session.removeCubes([target.name]);
-    this.clearManualUv({ id: target.id ?? payload.id, name: target.name });
     return ok({ id: target.id ?? payload.id ?? target.name, name: target.name });
   }
 
@@ -1402,7 +1397,6 @@ export class ToolService {
           from,
           to,
           bone: part.id,
-          uv: part.uv,
           inflate: part.inflate,
           mirror: part.mirror
         });
@@ -1600,6 +1594,37 @@ export class ToolService {
     return ok({ clip: anim.name, clipId: anim.id ?? undefined, bone: payload.bone });
   }
 
+  setTriggerKeyframes(payload: {
+    clipId?: string;
+    clip: string;
+    channel: TriggerChannel;
+    keys: { time: number; value: string | string[] | Record<string, unknown> }[];
+    ifRevision?: string;
+  }): UsecaseResult<{ clip: string; clipId?: string; channel: TriggerChannel }> {
+    const activeErr = this.ensureActive();
+    if (activeErr) return fail(activeErr);
+    const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
+    if (revisionErr) return fail(revisionErr);
+    const snapshot = this.getSnapshot(this.policies.snapshotPolicy ?? 'hybrid');
+    const anim = resolveAnimationTarget(snapshot.animations, payload.clipId, payload.clip);
+    if (!anim) {
+      const label = payload.clipId ?? payload.clip;
+      return fail({ code: 'invalid_payload', message: `Animation clip not found: ${label}` });
+    }
+    const err = this.editor.setTriggerKeyframes({
+      clipId: anim.id,
+      clip: anim.name,
+      channel: payload.channel,
+      keys: payload.keys
+    });
+    if (err) return fail(err);
+    this.session.upsertAnimationTrigger(anim.name, {
+      type: payload.channel,
+      keys: payload.keys
+    });
+    return ok({ clip: anim.name, clipId: anim.id ?? undefined, channel: payload.channel });
+  }
+
   exportModel(payload: ExportPayload): UsecaseResult<{ path: string }> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
@@ -1652,9 +1677,58 @@ export class ToolService {
   renderPreview(payload: RenderPreviewPayload): UsecaseResult<RenderPreviewResult> {
     const activeErr = this.ensureActive();
     if (activeErr) return fail(activeErr);
-    const res = this.editor.renderPreview(payload);
+    const { saveToTmp, tmpName, tmpPrefix, ...previewPayload } = payload;
+    const res = this.editor.renderPreview(previewPayload);
     if (res.error) return fail(res.error);
-    return ok(res.result!);
+    const result = res.result!;
+    if (!saveToTmp) return ok(result);
+    if (result.kind === 'single') {
+      const image = result.image;
+      if (!image?.dataUri) {
+        return fail({ code: 'not_implemented', message: 'Preview image data unavailable.' });
+      }
+      const saved = saveDataUriToTmp(image.dataUri, {
+        nameHint: tmpName ?? 'preview',
+        prefix: tmpPrefix ?? 'preview'
+      });
+      if (!saved.ok) return fail(saved.error);
+      return ok({
+        ...result,
+        saved: {
+          image: {
+            path: saved.data.path,
+            mime: image.mime,
+            byteLength: saved.data.byteLength,
+            width: image.width,
+            height: image.height
+          }
+        }
+      });
+    }
+    const frames = Array.isArray(result.frames) ? result.frames : [];
+    if (frames.length === 0) {
+      return fail({ code: 'not_implemented', message: 'Preview frames unavailable.' });
+    }
+    const savedFrames: RenderPreviewResult['saved'] = { frames: [] };
+    for (const frame of frames) {
+      if (!frame.dataUri) {
+        return fail({ code: 'not_implemented', message: 'Preview frame data unavailable.' });
+      }
+      const saved = saveDataUriToTmp(frame.dataUri, {
+        nameHint: `${tmpName ?? 'preview'}_frame${frame.index}`,
+        prefix: tmpPrefix ?? 'preview'
+      });
+      if (!saved.ok) return fail(saved.error);
+      savedFrames.frames!.push({
+        index: frame.index,
+        path: saved.data.path,
+        mime: frame.mime,
+        byteLength: saved.data.byteLength,
+        width: frame.width,
+        height: frame.height
+      });
+    }
+    return ok({ ...result, saved: savedFrames });
   }
 
   validate(): UsecaseResult<{ findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[] }> {
@@ -1668,7 +1742,8 @@ export class ToolService {
       limits: this.capabilities.limits,
       textures,
       textureResolution,
-      textureUsage: usage.error ? undefined : usage.result
+      textureUsage: usage.error ? undefined : usage.result,
+      uvPolicy: this.getUvPolicyConfig()
     });
     return ok({ findings });
   }
@@ -1799,33 +1874,6 @@ export class ToolService {
     return null;
   }
 
-  private clearManualUvState() {
-    this.manualUvCubeIds.clear();
-    this.manualUvCubeNames.clear();
-  }
-
-  private markManualUv(cube: { id?: string; name?: string }) {
-    if (cube.id) this.manualUvCubeIds.add(cube.id);
-    if (cube.name) this.manualUvCubeNames.add(cube.name);
-  }
-
-  private renameManualUv(oldName: string, newName: string) {
-    if (!this.manualUvCubeNames.has(oldName)) return;
-    this.manualUvCubeNames.delete(oldName);
-    this.manualUvCubeNames.add(newName);
-  }
-
-  private clearManualUv(cube: { id?: string; name?: string }) {
-    if (cube.id) this.manualUvCubeIds.delete(cube.id);
-    if (cube.name) this.manualUvCubeNames.delete(cube.name);
-  }
-
-  private isManualUv(cube: { id?: string; name?: string }): boolean {
-    if (cube.id && this.manualUvCubeIds.has(cube.id)) return true;
-    if (cube.name && this.manualUvCubeNames.has(cube.name)) return true;
-    return false;
-  }
-
   private getUvPolicyConfig(): UvPolicyConfig {
     const policy = this.policies.uvPolicy;
     return {
@@ -1844,59 +1892,10 @@ export class ToolService {
       textureRenderer: this.textureRenderer,
       capabilities: this.capabilities,
       getUvPolicyConfig: () => this.getUvPolicyConfig(),
-      markManualUv: (cube) => this.markManualUv(cube),
       importTexture: (payload) => this.importTexture(payload),
       updateTexture: (payload) => this.updateTexture(payload)
     };
   }
-
-  private applyAutoUvPolicy(params: {
-    texture: { id?: string; name: string; width?: number; height?: number };
-    cubes: SessionState['cubes'];
-    faces?: CubeFaceDirection[] | null;
-  }) {
-    if (!params.texture.name && !params.texture.id) return;
-    const size = resolveTextureSize(
-      { width: params.texture.width, height: params.texture.height },
-      this.editor.getProjectTextureResolution() ?? undefined
-    );
-    if (!size.width || !size.height) return;
-    const usage = this.editor.getTextureUsage({
-      textureId: params.texture.id,
-      textureName: params.texture.name
-    });
-    if (usage.error || !usage.result) return;
-    const usageEntry =
-      usage.result.textures.find((entry) => (params.texture.id && entry.id === params.texture.id) || entry.name === params.texture.name) ??
-      usage.result.textures[0];
-    if (!usageEntry) return;
-    const faceUvByCubeName = new Map<string, FaceUvMap>();
-    usageEntry.cubes.forEach((cube) => {
-      const faceMap: FaceUvMap = {};
-      cube.faces.forEach((face) => {
-        if (face.uv) faceMap[face.face] = face.uv;
-      });
-      faceUvByCubeName.set(cube.name, faceMap);
-    });
-    const faces = params.faces && params.faces.length > 0 ? params.faces : Array.from(VALID_CUBE_FACES);
-    const policy = this.getUvPolicyConfig();
-    params.cubes.forEach((cube) => {
-      if (this.isManualUv(cube)) return;
-      const faceMap = faceUvByCubeName.get(cube.name);
-      const updates: FaceUvMap = {};
-      faces.forEach((face) => {
-        const faceDimensions = getFaceDimensions(cube, face);
-        const expected = computeExpectedUvSize(faceDimensions, { width: size.width, height: size.height }, policy);
-        if (!expected) return;
-        const actual = faceMap?.[face];
-        if (!shouldAutoFixUv(actual, expected, policy)) return;
-        updates[face] = [0, 0, expected.width, expected.height];
-      });
-      if (Object.keys(updates).length === 0) return;
-      this.editor.setFaceUv({ cubeId: cube.id, cubeName: cube.name, faces: updates });
-    });
-  }
-
 }
 
 const hashCanvasImage = (image: CanvasImageSource | undefined): string | null => {

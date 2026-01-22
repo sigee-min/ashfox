@@ -12,7 +12,13 @@ import { ToolDispatcherImpl } from './dispatcher';
 import { Capabilities, Dispatcher, ExportPayload, FormatKind } from './types';
 import { ProxyRouter } from './proxy';
 import { ConsoleLogger, LogLevel } from './logging';
-import { ApplyModelSpecPayload, ApplyTextureSpecPayload, ProxyTool } from './spec';
+import {
+  ApplyEntitySpecPayload,
+  ApplyModelSpecPayload,
+  ApplyTextureSpecPayload,
+  ApplyUvSpecPayload,
+  ProxyTool
+} from './spec';
 import { SidecarProcess } from './sidecar/SidecarProcess';
 import { SidecarLaunchConfig } from './sidecar/types';
 import { ToolService, ExportPolicy } from './usecases/ToolService';
@@ -641,7 +647,10 @@ Notes:
 
     exposeBridge({
       invoke: dispatcher.handle.bind(dispatcher),
-      invokeProxy: (tool: ProxyTool, payload: ApplyModelSpecPayload | ApplyTextureSpecPayload) =>
+      invokeProxy: (
+        tool: ProxyTool,
+        payload: ApplyModelSpecPayload | ApplyTextureSpecPayload | ApplyUvSpecPayload | ApplyEntitySpecPayload
+      ) =>
         proxy.handle(tool, payload),
       capabilities,
       serverConfig: () => ({ ...serverConfig }),

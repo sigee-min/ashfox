@@ -33,7 +33,8 @@ function mergeAnimations(sessionAnims: SessionState['animations'], liveAnims: Se
       ...fallback,
       ...live,
       fps: live.fps ?? fallback?.fps,
-      channels: live.channels ?? fallback?.channels
+      channels: live.channels ?? fallback?.channels,
+      triggers: live.triggers ?? fallback?.triggers
     };
   });
 }

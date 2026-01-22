@@ -50,6 +50,11 @@ export interface TrackedAnimationChannel {
   keys: { time: number; value: [number, number, number]; interp?: 'linear' | 'step' | 'catmullrom' }[];
 }
 
+export interface TrackedAnimationTrigger {
+  type: 'sound' | 'particle' | 'timeline';
+  keys: { time: number; value: string | string[] | Record<string, unknown> }[];
+}
+
 export interface TrackedAnimation {
   id?: string;
   name: string;
@@ -57,6 +62,7 @@ export interface TrackedAnimation {
   loop: boolean;
   fps?: number;
   channels?: TrackedAnimationChannel[];
+  triggers?: TrackedAnimationTrigger[];
 }
 
 export interface SessionState {
@@ -122,7 +128,8 @@ export class ProjectSession {
       textures: [...snapshot.textures],
       animations: snapshot.animations.map((anim) => ({
         ...anim,
-        channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined
+        channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined,
+        triggers: anim.triggers ? anim.triggers.map((tr) => ({ ...tr, keys: [...tr.keys] })) : undefined
       })),
       animationsStatus: snapshot.animationsStatus ?? 'available'
     };
@@ -153,7 +160,8 @@ export class ProjectSession {
       textures: [...this.state.textures],
       animations: this.state.animations.map((anim) => ({
         ...anim,
-        channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined
+        channels: anim.channels ? anim.channels.map((ch) => ({ ...ch, keys: [...ch.keys] })) : undefined,
+        triggers: anim.triggers ? anim.triggers.map((tr) => ({ ...tr, keys: [...tr.keys] })) : undefined
       })),
       animationsStatus: this.state.animationsStatus
     };
@@ -355,6 +363,18 @@ export class ProjectSession {
       anim.channels[existingIndex] = channel;
     } else {
       anim.channels.push(channel);
+    }
+  }
+
+  upsertAnimationTrigger(clip: string, trigger: TrackedAnimationTrigger) {
+    const anim = this.state.animations.find((a) => a.name === clip);
+    if (!anim) return;
+    anim.triggers ??= [];
+    const existingIndex = anim.triggers.findIndex((tr) => tr.type === trigger.type);
+    if (existingIndex >= 0) {
+      anim.triggers[existingIndex] = trigger;
+    } else {
+      anim.triggers.push(trigger);
     }
   }
 }

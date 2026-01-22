@@ -35,4 +35,7 @@ const normalizeToolResponse = (response: ToolResponse<unknown>): ToolResponse<un
 };
 
 const isProxyTool = (name: ToolName): name is ProxyTool =>
-  name === 'apply_model_spec' || name === 'apply_texture_spec';
+  name === 'apply_model_spec' ||
+  name === 'apply_texture_spec' ||
+  name === 'apply_uv_spec' ||
+  name === 'apply_entity_spec';

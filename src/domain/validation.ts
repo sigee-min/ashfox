@@ -2,12 +2,15 @@ import { Limits, ValidateFinding } from '../types';
 import { SessionState } from '../session';
 import { TextureStat, TextureUsageResult } from '../ports/editor';
 import { findUvOverlapIssues, formatUvFaceRect } from './uvOverlap';
+import { findUvScaleIssues } from './uvScale';
+import { UvPolicyConfig } from './uvPolicy';
 
 export interface ValidationContext {
   limits: Limits;
   textures?: TextureStat[];
   textureResolution?: { width: number; height: number };
   textureUsage?: TextureUsageResult;
+  uvPolicy?: UvPolicyConfig;
 }
 
 export function validateSnapshot(state: SessionState, context: ValidationContext): ValidateFinding[] {
@@ -137,6 +140,26 @@ export function validateSnapshot(state: SessionState, context: ValidationContext
           severity: 'error'
         });
       });
+      if (context.uvPolicy) {
+        const scaleResult = findUvScaleIssues(textureUsage, state.cubes, { width, height }, context.uvPolicy);
+        scaleResult.issues.forEach((issue) => {
+          const example = issue.example
+            ? ` Example: ${issue.example.cubeName} (${issue.example.face}) actual ${issue.example.actual.width}x${issue.example.actual.height} vs expected ${issue.example.expected.width}x${issue.example.expected.height}.`
+            : '';
+          findings.push({
+            code: 'uv_scale_mismatch',
+            message: `Texture "${issue.textureName}" has UV scale mismatches (${issue.mismatchCount}).${example}`,
+            severity: 'error'
+          });
+        });
+        if (scaleResult.mismatchedFaces > 0) {
+          findings.push({
+            code: 'uv_scale_mismatch_summary',
+            message: `UV scale mismatches detected (${scaleResult.mismatchedFaces}/${scaleResult.totalFaces} faces).`,
+            severity: 'info'
+          });
+        }
+      }
     }
   }
 

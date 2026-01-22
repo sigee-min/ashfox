@@ -19,7 +19,8 @@ import {
   UpdateAnimationCommand,
   UpdateBoneCommand,
   UpdateCubeCommand,
-  UpdateTextureCommand
+  UpdateTextureCommand,
+  TriggerKeyframeCommand
 } from '../../ports/editor';
 import { RenderPreviewPayload, RenderPreviewResult, ToolError, FormatKind } from '../../types';
 import { Logger } from '../../logging';
@@ -119,6 +120,10 @@ export class BlockbenchEditor implements EditorPort {
 
   setKeyframes(params: KeyframeCommand): ToolError | null {
     return this.animation.setKeyframes(params);
+  }
+
+  setTriggerKeyframes(params: TriggerKeyframeCommand): ToolError | null {
+    return this.animation.setTriggerKeyframes(params);
   }
 
   renderPreview(params: RenderPreviewPayload): { result?: RenderPreviewResult; error?: ToolError } {

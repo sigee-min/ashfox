@@ -1,5 +1,5 @@
 import { ExportPayload } from '../types';
-import { SessionState, TrackedAnimationChannel } from '../session';
+import { SessionState, TrackedAnimationChannel, TrackedAnimationTrigger } from '../session';
 
 export type ExportKind = ExportPayload['format'];
 
@@ -135,10 +135,12 @@ function buildGeckoAnimations(state: SessionState) {
       boneEntry[channel.channel] = buildGeckoChannelKeys(channel);
       bones[channel.bone] = boneEntry;
     });
+    const triggerEntries = buildGeckoTriggerEntries(anim.triggers);
     animations[anim.name] = {
       loop: anim.loop ? 'loop' : 'once',
       animation_length: anim.length,
-      bones
+      bones,
+      ...triggerEntries
     };
   });
   return animations;
@@ -153,6 +155,25 @@ function buildGeckoChannelKeys(channel: TrackedAnimationChannel) {
   return keys;
 }
 
+function buildGeckoTriggerEntries(triggers: TrackedAnimationTrigger[] | undefined) {
+  if (!triggers || triggers.length === 0) return {};
+  const sound: Record<string, unknown> = {};
+  const particle: Record<string, unknown> = {};
+  const timeline: Record<string, unknown> = {};
+  triggers.forEach((trigger) => {
+    const target =
+      trigger.type === 'sound' ? sound : trigger.type === 'particle' ? particle : timeline;
+    trigger.keys.forEach((key) => {
+      target[String(key.time)] = key.value;
+    });
+  });
+  const entries: Record<string, unknown> = {};
+  if (Object.keys(sound).length > 0) entries.sound_effects = sound;
+  if (Object.keys(particle).length > 0) entries.particle_effects = particle;
+  if (Object.keys(timeline).length > 0) entries.timeline = timeline;
+  return entries;
+}
+
 function buildAnimatedJavaModel(state: SessionState) {
   return {
     format: 'bbmcp_animated_java',
@@ -164,7 +185,8 @@ function buildAnimatedJavaModel(state: SessionState) {
       length: anim.length,
       loop: anim.loop,
       fps: anim.fps,
-      channels: anim.channels
+      channels: anim.channels,
+      triggers: anim.triggers
     }))
   };
 }

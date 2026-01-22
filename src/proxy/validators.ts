@@ -1,10 +1,17 @@
-import { ApplyModelSpecPayload, ApplyTextureSpecPayload, TextureOp } from '../spec';
+import {
+  ApplyEntitySpecPayload,
+  ApplyModelSpecPayload,
+  ApplyTextureSpecPayload,
+  ApplyUvSpecPayload,
+  TextureOp
+} from '../spec';
 import { resolveTextureSpecSize } from './texture';
 import { Limits, ToolResponse } from '../types';
 import { buildRigTemplate } from '../templates';
 import { isZeroSize } from '../domain/geometry';
 import { err } from './response';
 import { validateUvPaintSpec } from '../domain/uvPaint';
+import { CubeFaceDirection } from '../ports/editor';
 
 const MAX_TEX_OPS = 4096;
 
@@ -88,6 +95,137 @@ export const validateTextureSpec = (payload: ApplyTextureSpecPayload, limits: Li
   return { ok: true, data: { valid: true } };
 };
 
+export const validateUvSpec = (payload: ApplyUvSpecPayload): ToolResponse<unknown> => {
+  if (!payload || typeof payload !== 'object') return err('invalid_payload', 'payload is required');
+  if (!Array.isArray(payload.assignments) || payload.assignments.length === 0) {
+    return err('invalid_payload', 'assignments must be a non-empty array');
+  }
+  if (typeof payload.uvUsageId !== 'string' || payload.uvUsageId.trim().length === 0) {
+    return err('invalid_payload', 'uvUsageId is required. Call preflight_texture before apply_uv_spec.');
+  }
+  for (const assignment of payload.assignments) {
+    if (!assignment || typeof assignment !== 'object') {
+      return err('invalid_payload', 'assignment must be an object');
+    }
+    const hasTarget =
+      Boolean(assignment.cubeId) ||
+      Boolean(assignment.cubeName) ||
+      (Array.isArray(assignment.cubeIds) && assignment.cubeIds.length > 0) ||
+      (Array.isArray(assignment.cubeNames) && assignment.cubeNames.length > 0);
+    if (!hasTarget) {
+      return err('invalid_payload', 'assignment must include cubeId/cubeName or cubeIds/cubeNames');
+    }
+    if (assignment.cubeIds && !assignment.cubeIds.every((id: unknown) => typeof id === 'string')) {
+      return err('invalid_payload', 'cubeIds must be an array of strings');
+    }
+    if (assignment.cubeNames && !assignment.cubeNames.every((name: unknown) => typeof name === 'string')) {
+      return err('invalid_payload', 'cubeNames must be an array of strings');
+    }
+    if (!assignment.faces || typeof assignment.faces !== 'object') {
+      return err('invalid_payload', 'faces is required for each assignment');
+    }
+    const faceEntries = Object.entries(assignment.faces);
+    if (faceEntries.length === 0) {
+      return err('invalid_payload', 'faces must include at least one mapping');
+    }
+    for (const [faceKey, uv] of faceEntries) {
+      if (!VALID_FACES.has(faceKey as CubeFaceDirection)) {
+        return err('invalid_payload', `invalid face: ${faceKey}`);
+      }
+      if (!Array.isArray(uv) || uv.length !== 4) {
+        return err('invalid_payload', `UV for ${faceKey} must be [x1,y1,x2,y2]`);
+      }
+      if (!uv.every((value) => Number.isFinite(value))) {
+        return err('invalid_payload', `UV for ${faceKey} must contain finite numbers`);
+      }
+    }
+  }
+  return { ok: true, data: { valid: true } };
+};
+
+export const validateEntitySpec = (payload: ApplyEntitySpecPayload, limits: Limits): ToolResponse<unknown> => {
+  if (!payload || typeof payload !== 'object') return err('invalid_payload', 'payload is required');
+  if (!payload.format) return err('invalid_payload', 'format is required');
+  if (!['geckolib', 'modded_entity', 'optifine_entity'].includes(payload.format)) {
+    return err('invalid_payload', `unsupported format: ${payload.format}`);
+  }
+  if (payload.targetVersion && !['v3', 'v4'].includes(payload.targetVersion)) {
+    return err('invalid_payload', `unsupported targetVersion: ${payload.targetVersion}`);
+  }
+  if (payload.format !== 'geckolib' && payload.targetVersion) {
+    return err('invalid_payload', 'targetVersion is only valid for geckolib format');
+  }
+  if (payload.model) {
+    const modelRes = validateModelSpec({ model: payload.model }, limits);
+    if (!modelRes.ok) return modelRes;
+  }
+  if (payload.textures) {
+    if (!payload.uvUsageId || payload.uvUsageId.trim().length === 0) {
+      return err('invalid_payload', 'uvUsageId is required when textures are provided');
+    }
+    const texRes = validateTextureSpec({ textures: payload.textures, uvUsageId: payload.uvUsageId }, limits);
+    if (!texRes.ok) return texRes;
+  }
+  if (payload.animations) {
+    if (!Array.isArray(payload.animations)) return err('invalid_payload', 'animations must be an array');
+    for (const anim of payload.animations) {
+      if (!anim?.name) return err('invalid_payload', 'animation name is required');
+      if (!Number.isFinite(anim.length) || anim.length <= 0) {
+        return err('invalid_payload', `animation length must be > 0 (${anim.name})`);
+      }
+      if (typeof anim.loop !== 'boolean') {
+        return err('invalid_payload', `animation loop must be boolean (${anim.name})`);
+      }
+      if (anim.fps !== undefined && (!Number.isFinite(anim.fps) || anim.fps <= 0)) {
+        return err('invalid_payload', `animation fps must be > 0 (${anim.name})`);
+      }
+      if (anim.mode && !['create', 'update'].includes(anim.mode)) {
+        return err('invalid_payload', `animation mode invalid (${anim.name})`);
+      }
+      if (anim.channels) {
+        if (!Array.isArray(anim.channels)) return err('invalid_payload', `channels must be array (${anim.name})`);
+        for (const channel of anim.channels) {
+          if (!channel?.bone) return err('invalid_payload', `channel bone required (${anim.name})`);
+          if (!['rot', 'pos', 'scale'].includes(channel.channel)) {
+            return err('invalid_payload', `channel type invalid (${anim.name})`);
+          }
+          if (!Array.isArray(channel.keys)) {
+            return err('invalid_payload', `channel keys must be array (${anim.name})`);
+          }
+          for (const key of channel.keys) {
+            if (!Number.isFinite(key.time)) {
+              return err('invalid_payload', `keyframe time invalid (${anim.name})`);
+            }
+            if (!Array.isArray(key.value) || key.value.length !== 3) {
+              return err('invalid_payload', `keyframe value invalid (${anim.name})`);
+            }
+          }
+        }
+      }
+      if (anim.triggers) {
+        if (!Array.isArray(anim.triggers)) return err('invalid_payload', `triggers must be array (${anim.name})`);
+        for (const trigger of anim.triggers) {
+          if (!['sound', 'particle', 'timeline'].includes(trigger.type)) {
+            return err('invalid_payload', `trigger type invalid (${anim.name})`);
+          }
+          if (!Array.isArray(trigger.keys)) {
+            return err('invalid_payload', `trigger keys must be array (${anim.name})`);
+          }
+          for (const key of trigger.keys) {
+            if (!Number.isFinite(key.time)) {
+              return err('invalid_payload', `trigger time invalid (${anim.name})`);
+            }
+            if (!isTriggerValue(key.value)) {
+              return err('invalid_payload', `trigger value invalid (${anim.name})`);
+            }
+          }
+        }
+      }
+    }
+  }
+  return { ok: true, data: { valid: true } };
+};
+
 const isTextureOp = (op: unknown): op is TextureOp => {
   if (!isRecord(op) || typeof op.op !== 'string') return false;
   switch (op.op) {
@@ -118,3 +256,11 @@ const isTextureOp = (op: unknown): op is TextureOp => {
 const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+const VALID_FACES = new Set<CubeFaceDirection>(['north', 'south', 'east', 'west', 'up', 'down']);
+
+const isTriggerValue = (value: unknown): boolean => {
+  if (typeof value === 'string') return true;
+  if (Array.isArray(value)) return value.every((item) => typeof item === 'string');
+  return isRecord(value);
+};

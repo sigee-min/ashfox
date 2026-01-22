@@ -23,7 +23,8 @@ export const buildRenderPreviewStructured = (result: RenderPreviewResult): Recor
     kind: result.kind,
     frameCount: result.frameCount,
     ...(image ? { image } : {}),
-    ...(frames ? { frames } : {})
+    ...(frames ? { frames } : {}),
+    ...(result.saved ? { saved: result.saved } : {})
   };
 };
 
@@ -33,7 +34,8 @@ export const buildTextureContent = (result: ReadTextureResult): McpContentBlock[
 };
 
 export const buildTextureStructured = (result: ReadTextureResult): Record<string, unknown> => ({
-  texture: omitDataUri(result.texture)
+  texture: omitDataUri(result.texture),
+  ...(result.saved ? { saved: result.saved } : {})
 });
 
 const omitDataUri = <T extends { dataUri: string }>(item: T) => {

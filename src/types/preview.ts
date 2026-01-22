@@ -10,6 +10,9 @@ export interface RenderPreviewPayload extends IncludeStateOption {
   durationSeconds?: number;
   fps?: number;
   output?: RenderPreviewOutputKind;
+  saveToTmp?: boolean;
+  tmpName?: string;
+  tmpPrefix?: string;
 }
 
 export interface PreviewImage {
@@ -34,4 +37,21 @@ export interface RenderPreviewResult {
   frameCount: number;
   image?: PreviewImage;
   frames?: PreviewFrame[];
+  saved?: {
+    image?: {
+      path: string;
+      mime: string;
+      byteLength: number;
+      width: number;
+      height: number;
+    };
+    frames?: Array<{
+      index: number;
+      path: string;
+      mime: string;
+      byteLength: number;
+      width: number;
+      height: number;
+    }>;
+  };
 }

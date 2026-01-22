@@ -70,7 +70,8 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
    - Very low opaque coverage is rejected; fill a larger area or tighten UVs.
    - Success responses include `report.textureCoverage` (opaque ratio + bounds) for each rendered texture.
 6) `assign_texture` to bind textures to cubes (required for visible results; does not change UVs).
-7) `set_face_uv` to apply per-face UVs explicitly.
+7) `apply_uv_spec` to update per-face UVs with uvUsageId guard (or use `set_face_uv` for low-level edits).
+   - After UV changes, run `preflight_texture` again before painting.
 8) Prefer material-group textures (pot/soil/plant) and assign via `cubeNames` for stability.
 9) If UVs exceed the current resolution, increase it or split textures per material.
 10) When UVs are crowded or overlaps exist, run `auto_uv_atlas` (apply=true) to repack and, if needed, raise resolution. Atlas sizing is based on the starting resolution, so increasing resolution creates more space instead of scaling rects. Re-run `preflight_texture` and repaint after atlas changes.
@@ -102,6 +103,15 @@ Static guides are exposed via MCP resources. Use `resources/list` and `resources
 - `bbmcp://guide/rigging` (root-based hierarchy example for animation-ready rigs)
 - `bbmcp://guide/texture-workflow` (uvPaint-first texture workflow + preset example)
 - `bbmcp://guide/uv-atlas` (auto atlas packing + resolution growth)
+- `bbmcp://guide/texture-spec` (UV/texturing invariants)
+- `bbmcp://guide/vision-fallback` (preview/texture snapshots for manual upload)
+- `bbmcp://guide/entity-workflow` (geckolib-first entity workflow + version targeting)
+- `bbmcp://guide/llm-texture-strategy` (LLM workflow + recovery loop)
+
+## Spec Docs
+- `docs/texture-uv-spec.md`
+- `docs/llm-texture-strategy.md`
+- `bbmcp://guide/vision-fallback` (preview/texture snapshot workflow for manual uploads)
 
 ## Sidecar (Optional)
 The plugin prefers an inline server. If unavailable, it can spawn a sidecar.

@@ -16,6 +16,8 @@ import { TexturePresetResult, computeCoverage, generateTexturePreset } from '../
 import { resolveUvPaintRects, validateUvPaintSpec } from '../domain/uvPaint';
 import { applyUvPaintPixels } from '../domain/uvPaintPixels';
 import { findUvOverlapIssues, formatUvFaceRect } from '../domain/uvOverlap';
+import { findUvScaleIssues } from '../domain/uvScale';
+import { collectSingleTarget, isIssueTarget } from '../domain/uvTargets';
 import { buildUvAtlasPlan } from '../domain/uvAtlas';
 import { UvPolicyConfig } from '../domain/uvPolicy';
 
@@ -27,7 +29,6 @@ export type TextureToolContext = {
   textureRenderer?: TextureRendererPort;
   capabilities: Capabilities;
   getUvPolicyConfig: () => UvPolicyConfig;
-  markManualUv: (cube: { id?: string; name?: string }) => void;
   importTexture: (payload: {
     name: string;
     image: CanvasImageSource;
@@ -87,6 +88,7 @@ export const runGenerateTexturePreset = (
   const usageRes = ctx.editor.getTextureUsage({});
   if (usageRes.error) return fail(usageRes.error);
   const usage = usageRes.result ?? { textures: [] };
+  const snapshot = ctx.getSnapshot();
   const currentUsageId = computeTextureUsageId(usage);
   if (currentUsageId !== payload.uvUsageId) {
     return fail({
@@ -111,6 +113,22 @@ export const runGenerateTexturePreset = (
       details: { overlap }
     });
   }
+  const resolution = ctx.editor.getProjectTextureResolution() ?? { width, height };
+  const scaleResult = findUvScaleIssues(usage, snapshot.cubes, resolution, ctx.getUvPolicyConfig());
+  const scaleIssue = findScaleIssueForTarget(scaleResult.issues, payload);
+  if (scaleIssue) {
+    const example = scaleIssue.example
+      ? ` Example: ${scaleIssue.example.cubeName} (${scaleIssue.example.face}) actual ${scaleIssue.example.actual.width}x${scaleIssue.example.actual.height} vs expected ${scaleIssue.example.expected.width}x${scaleIssue.example.expected.height}.`
+      : '';
+    return fail({
+      code: 'invalid_state',
+      message:
+        `UV scale mismatch detected for texture "${scaleIssue.textureName}" (${scaleIssue.mismatchCount}).` +
+        example,
+      fix: 'Run auto_uv_atlas (apply=true), then preflight_texture, then repaint.',
+      details: { mismatch: scaleIssue }
+    });
+  }
   const mode = payload.mode ?? (payload.targetId || payload.targetName ? 'update' : 'create');
   if (mode === 'create' && !payload.name) {
     return fail({
@@ -124,7 +142,6 @@ export const runGenerateTexturePreset = (
       message: 'targetId or targetName is required when mode=update.'
     });
   }
-  const snapshot = ctx.getSnapshot();
   const target =
     mode === 'update'
       ? resolveTextureTarget(snapshot.textures, payload.targetId, payload.targetName)
@@ -287,7 +304,6 @@ export const runAutoUvAtlas = (
     const cubeId = cubeIdByName.get(cubeName);
     const err = ctx.editor.setFaceUv({ cubeId, cubeName, faces });
     if (err) return fail(err);
-    ctx.markManualUv({ id: cubeId, name: cubeName });
   }
   return ok({
     applied: true,
@@ -303,14 +319,23 @@ const findOverlapIssueForTarget = (
 ) => {
   const issues = findUvOverlapIssues(usage);
   if (issues.length === 0) return null;
-  const ids = new Set<string>();
-  const names = new Set<string>();
-  if (payload.targetId) ids.add(payload.targetId);
-  if (payload.name) names.add(payload.name);
-  if (payload.targetName) names.add(payload.targetName);
-  for (const issue of issues) {
-    if (issue.textureId && ids.has(issue.textureId)) return issue;
-    if (names.has(issue.textureName)) return issue;
-  }
-  return null;
+  const targets = collectSingleTarget({
+    targetId: payload.targetId,
+    targetName: payload.targetName,
+    name: payload.name
+  });
+  return issues.find((issue) => isIssueTarget(issue, targets)) ?? null;
+};
+
+const findScaleIssueForTarget = (
+  issues: ReturnType<typeof findUvScaleIssues>['issues'],
+  payload: GenerateTexturePresetPayload
+) => {
+  if (issues.length === 0) return null;
+  const targets = collectSingleTarget({
+    targetId: payload.targetId,
+    targetName: payload.targetName,
+    name: payload.name
+  });
+  return issues.find((issue) => isIssueTarget(issue, targets)) ?? null;
 };

@@ -99,6 +99,9 @@ export interface AutoUvAtlasPayload extends IncludeStateOption, IncludeDiffOptio
 export interface ReadTexturePayload {
   id?: string;
   name?: string;
+  saveToTmp?: boolean;
+  tmpName?: string;
+  tmpPrefix?: string;
 }
 
 export interface ReloadPluginsPayload {
@@ -203,7 +206,6 @@ export interface AddCubePayload extends IncludeStateOption, IncludeDiffOption, I
   to: [number, number, number];
   bone?: string;
   boneId?: string;
-  uv?: [number, number];
   inflate?: number;
   mirror?: boolean;
 }
@@ -217,7 +219,6 @@ export interface UpdateCubePayload extends IncludeStateOption, IncludeDiffOption
   boneRoot?: boolean;
   from?: [number, number, number];
   to?: [number, number, number];
-  uv?: [number, number];
   inflate?: number;
   mirror?: boolean;
 }
@@ -306,6 +307,11 @@ export interface ReadTextureResult {
     path?: string;
     dataUri: string;
     mimeType: string;
+  };
+  saved?: {
+    path: string;
+    mimeType: string;
+    byteLength: number;
   };
 }
 

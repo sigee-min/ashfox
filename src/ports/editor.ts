@@ -210,6 +210,15 @@ export type KeyframeCommand = {
   keys: { time: number; value: Vec3; interp?: 'linear' | 'step' | 'catmullrom' }[];
 };
 
+export type TriggerChannel = 'sound' | 'particle' | 'timeline';
+
+export type TriggerKeyframeCommand = {
+  clip: string;
+  clipId?: string;
+  channel: TriggerChannel;
+  keys: { time: number; value: string | string[] | Record<string, unknown> }[];
+};
+
 export interface EditorPort {
   createProject: (
     name: string,
@@ -233,6 +242,7 @@ export interface EditorPort {
   updateAnimation: (params: UpdateAnimationCommand) => ToolError | null;
   deleteAnimation: (params: DeleteAnimationCommand) => ToolError | null;
   setKeyframes: (params: KeyframeCommand) => ToolError | null;
+  setTriggerKeyframes: (params: TriggerKeyframeCommand) => ToolError | null;
   renderPreview: (params: RenderPreviewPayload) => { result?: RenderPreviewResult; error?: ToolError };
   writeFile: (path: string, contents: string) => ToolError | null;
   listTextures: () => TextureStat[];

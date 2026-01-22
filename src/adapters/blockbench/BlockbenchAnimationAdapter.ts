@@ -3,6 +3,7 @@ import {
   AnimationCommand,
   DeleteAnimationCommand,
   KeyframeCommand,
+  TriggerKeyframeCommand,
   UpdateAnimationCommand
 } from '../../ports/editor';
 import { Logger } from '../../logging';
@@ -157,6 +158,38 @@ export class BlockbenchAnimationAdapter {
     }
   }
 
+  setTriggerKeyframes(params: TriggerKeyframeCommand): ToolError | null {
+    try {
+      const { Animator: AnimatorCtor } = readGlobals();
+      if (typeof AnimatorCtor === 'undefined') {
+        return { code: 'not_implemented', message: 'Animator API not available' };
+      }
+      withUndo({ animations: true, keyframes: [] }, 'Set trigger keyframes', () => {
+        const animations = getAnimations();
+        const clip = this.findAnimationRef(params.clip, params.clipId, animations);
+        if (!clip) {
+          const label = params.clipId ?? params.clip;
+          throw new Error(`Animation clip not found: ${label}`);
+        }
+        const animator = resolveEffectAnimator(clip, AnimatorCtor);
+        params.keys.forEach((k) => {
+          const kf = animator?.createKeyframe?.(params.channel, k.time);
+          if (!kf) return;
+          applyTriggerValue(kf, k.value);
+        });
+      });
+      this.log.info('trigger keyframes set', { clip: params.clip, channel: params.channel, count: params.keys.length });
+      return null;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'trigger keyframe set failed';
+      this.log.error('trigger keyframe set error', { message });
+      if (message.includes('Animation clip not found')) {
+        return { code: 'invalid_payload', message };
+      }
+      return { code: 'unknown', message };
+    }
+  }
+
   private findAnimationRef(name?: string, id?: string, list?: AnimationClip[]): AnimationClip | null {
     const animations = list ?? getAnimations();
     if (id) {
@@ -167,6 +200,39 @@ export class BlockbenchAnimationAdapter {
     return null;
   }
 }
+
+const EFFECT_ANIMATOR_KEYS = ['effects', 'effect', 'timeline', 'events'];
+
+const resolveEffectAnimator = (clip: AnimationClip, AnimatorCtor: unknown): any => {
+  const animators = (clip.animators ?? {}) as Record<string, unknown>;
+  const existingKey = Object.keys(animators).find((key) =>
+    EFFECT_ANIMATOR_KEYS.some((candidate) => key.toLowerCase().includes(candidate))
+  );
+  if (existingKey) {
+    const existing = animators[existingKey];
+    if (existing) return existing;
+  }
+  const ctor = AnimatorCtor as new (name: string, clip: AnimationClip) => unknown;
+  const animator = new ctor('effects', clip);
+  animators.effects = animator;
+  clip.animators = animators;
+  return animator;
+};
+
+const applyTriggerValue = (keyframe: unknown, value: unknown) => {
+  const target = keyframe as Record<string, unknown> & { set?: (key: string, val: unknown) => void };
+  if (typeof target.set === 'function') {
+    target.set('data_point', value);
+    target.set('data_points', value);
+    target.set('value', value);
+    target.set('data', value);
+    return;
+  }
+  target.data_point = value;
+  target.data_points = value;
+  target.value = value;
+  target.data = value;
+};
 
 export const getAnimations = (): AnimationClip[] => {
   const globals = readGlobals();
