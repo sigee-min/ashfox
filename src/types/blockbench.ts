@@ -40,6 +40,8 @@ export interface FormatEntry {
   new?: () => void;
   compile?: () => unknown;
   codec?: { compile?: () => unknown };
+  single_texture?: boolean;
+  per_texture_uv_size?: boolean;
 }
 
 export interface FormatSelection {

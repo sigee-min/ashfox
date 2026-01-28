@@ -37,7 +37,7 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 - Paint only (uvPaint enforced when painting).
 - Require `uvUsageId`.
 - Block on overlap/scale mismatch.
-- `apply_texture_spec` supports `autoRecover` (auto_uv_atlas -> preflight -> retry once). For presets, use `texture_pipeline` autoRecover or recover manually.
+- `apply_texture_spec` supports `autoRecover` as a guidance hint; use `texture_pipeline.plan` to recover UVs when overlap/scale issues occur.
 - Optional `detectNoChange=true` compares output to existing pixels and returns `applied: false` when identical (default false to avoid extra cost).
 
 ### auto_uv_atlas
@@ -60,7 +60,7 @@ If the actual UV size deviates beyond `uvPolicy.scaleTolerance` (default 0.1), t
 4) `preflight_texture` -- obtain new `uvUsageId` after UV changes.
 5) Paint using `apply_texture_spec` or `generate_texture_preset`.
 6) `render_preview` to validate.
-7) If errors occur, run `auto_uv_atlas`, then re-preflight and repaint.
+7) If errors occur, run `texture_pipeline.plan` to re-pack UVs, then re-preflight and repaint.
 
 ## Error Codes
 - `validate` may report: `uv_overlap`, `uv_scale_mismatch`, `uv_scale_mismatch_summary`.

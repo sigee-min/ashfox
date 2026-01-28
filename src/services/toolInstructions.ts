@@ -12,7 +12,7 @@ export const RIGGING_WORKFLOW_INSTRUCTIONS = [
 
 export const TEXTURE_WORKFLOW_INSTRUCTIONS = [
   'This server may expose only high-level tools by default. If low-level tools are hidden, use texture_pipeline for the entire workflow. Enable "Expose Low-Level Tools" for direct access.',
-  'Prefer the macro tool: texture_pipeline. Use autoRecover=true when UV overlap/scale or uvUsageId mismatch occurs.',
+  'Prefer the macro tool: texture_pipeline. Use plan for auto-assign + auto-UV with texel-density planning; it avoids resolution growth loops. Use autoRecover=true when UV overlap/scale or uvUsageId mismatch occurs.',
   'Before painting, lock invariants: project textureResolution, manual per-face UV policy, and intended texture count (single atlas vs per-material).',
   'If preflight_texture is available: call it without texture filters to get a stable uvUsageId and UV mapping.',
   'Paint only inside UV rects (uvPaint enforced). Whole-texture painting is not supported; map UVs to the full texture if you need full coverage.',

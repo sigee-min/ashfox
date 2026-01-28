@@ -21,22 +21,26 @@ Supporting tools:
 Note: Supporting tools are exposed only when low-level tools are enabled.
 
 ## texture_pipeline Behavior
-- Accepts steps: `assign`, `preflight`, `uv`, `textures`, `presets`, `preview`.
+- Accepts steps: `plan`, `assign`, `preflight`, `uv`, `textures`, `presets`, `cleanup`, `preview`.
 - Requires at least one step.
+- When `plan` is provided, it auto-generates textures + assignments + UVs using an internal atlas + texel-density solver (no auto_uv_atlas call).
+- Planning respects format constraints (e.g., single_texture disables splitting) and may reduce density if the model cannot fit.
+- The solver chooses resolution + texture count, clamps to max size, and avoids resolution growth loops.
 - Runs `preflight_texture` automatically when UV or paint steps are present.
 - If the UV step runs and `preflight` is requested, it preflights again after UV changes.
 - For texture/preset steps, it ensures a valid `uvUsageId` (preflighting if needed).
 - Enforces UV guards (usage id, overlap, scale).
-- Optional `autoRecover=true` runs `auto_uv_atlas` (apply=true) -> `preflight_texture` -> retry once for overlap/scale/usage mismatch.
+- Optional `autoRecover=true` runs a single plan-based UV recovery (no auto_uv_atlas) and retries once for overlap/scale/usage mismatch.
 - Painting is uvPaint-only (no raw image import tool).
 - Honors `ifRevision` for mutation steps; preview is read-only.
 - If `planOnly=true` or the payload is underspecified, the pipeline skips mutations and returns `nextActions` with short `ask_user` prompts.
+- `cleanup` deletes explicitly listed textures; when `force=false` (default), deletion fails if textures are still assigned to cubes.
 
 ## apply_texture_spec / generate_texture_preset
 - Require `uvUsageId` and enforce UV guards.
 - `apply_texture_spec` uses deterministic ops + uvPaint mapping and records `report.textureCoverage`.
 - `generate_texture_preset` paints a procedural preset into uvPaint rects.
-- `apply_texture_spec` supports `autoRecover`; `texture_pipeline` can autoRecover for both textures and presets.
+- `apply_texture_spec` autoRecover only returns guidance; use `texture_pipeline` autoRecover for textures and presets.
 - Optional `detectNoChange=true` compares output to existing pixels and returns `applied: false` when identical (default false to avoid extra cost).
 
 ## apply_uv_spec

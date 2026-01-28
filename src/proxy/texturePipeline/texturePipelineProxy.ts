@@ -14,6 +14,10 @@ import { createTexturePipelineContext, runAssignStep, runPreflightStep, runPrese
 import { TEXTURE_PREVIEW_VALIDATE_REASON } from '../../shared/messages';
 import { runProxyPipeline } from '../pipelineRunner';
 import { getTexturePipelineClarificationQuestions } from '../clarifications';
+import { recoverTextureUsageWithPlan, runAutoPlanStep } from './autoPlan';
+import { classifyUvGuardFailure } from './recovery';
+import { isUsecaseError, usecaseError } from '../guardHelpers';
+import { applyTextureCleanup } from '../textureCleanup';
 
 export const texturePipelineProxy = async (
   deps: ProxyPipelineDeps,
@@ -38,7 +42,12 @@ export const texturePipelineProxy = async (
         includeUsage: Boolean(payload.preflight?.includeUsage)
       });
 
-      if (!shouldPlanOnly && payload.assign && payload.assign.length > 0) {
+      const skipAssignUv = Boolean(payload.plan);
+      if (payload.plan) {
+        pipeline.require(await runAutoPlanStep(ctx, payload.plan, { planOnly: shouldPlanOnly, ifRevision: payload.ifRevision }));
+      }
+
+      if (!shouldPlanOnly && !skipAssignUv && payload.assign && payload.assign.length > 0) {
         pipeline.require(runAssignStep(ctx, payload.assign, payload.ifRevision));
       }
 
@@ -57,7 +66,7 @@ export const texturePipelineProxy = async (
           pipeline.require(runPreflightStep(ctx, 'before'));
         }
 
-        if (payload.uv) {
+        if (!skipAssignUv && payload.uv) {
           pipeline.require(runUvStep(ctx, payload.uv.assignments, payload.ifRevision));
 
           if (ctx.includePreflight) {
@@ -81,14 +90,15 @@ export const texturePipelineProxy = async (
             : null;
           const targets = collectTextureTargets([...textures, ...presets]);
           const resolved = pipeline.require(
-            resolveTextureUsageForTargets({
+            await resolveTextureUsageWithPlanRecovery({
               deps,
               payload,
               meta: pipeline.meta,
               targets,
               uvUsageId: ctx.currentUvUsageId,
               usageOverride: ctx.preflightUsage,
-              uvContext: uvContext ? { cubes: uvContext.cubes, resolution: uvContext.resolution } : undefined
+              uvContext: uvContext ? { cubes: uvContext.cubes, resolution: uvContext.resolution } : undefined,
+              ctx
             })
           );
           const usage = resolved.usage;
@@ -103,6 +113,19 @@ export const texturePipelineProxy = async (
             pipeline.require(runPresetStep(ctx, presets, recovery, payload.ifRevision));
           }
         }
+      }
+
+      if (!shouldPlanOnly && payload.cleanup?.delete && payload.cleanup.delete.length > 0) {
+        const cleanupRes = pipeline.require(
+          applyTextureCleanup(
+            deps,
+            pipeline.meta,
+            payload.cleanup.delete,
+            payload.cleanup.force === true,
+            payload.ifRevision
+          )
+        );
+        steps.cleanup = cleanupRes;
       }
 
       let previewData: PreviewStepData | null = null;
@@ -155,4 +178,61 @@ export const texturePipelineProxy = async (
       return attachPreviewResponse({ ...response, ...extras }, previewData);
     }
   });
+};
+
+const resolveTextureUsageWithPlanRecovery = async (args: {
+  deps: ProxyPipelineDeps;
+  payload: TexturePipelinePayload;
+  meta: Parameters<typeof resolveTextureUsageForTargets>[0]['meta'];
+  targets: Parameters<typeof resolveTextureUsageForTargets>[0]['targets'];
+  uvUsageId?: string;
+  usageOverride?: Parameters<typeof resolveTextureUsageForTargets>[0]['usageOverride'];
+  uvContext?: Parameters<typeof resolveTextureUsageForTargets>[0]['uvContext'];
+  ctx: ReturnType<typeof createTexturePipelineContext>;
+}): Promise<ReturnType<typeof resolveTextureUsageForTargets>> => {
+  const payloadNoRecover = args.payload.autoRecover ? { ...args.payload, autoRecover: false } : args.payload;
+  const resolved = resolveTextureUsageForTargets({
+    deps: args.deps,
+    payload: payloadNoRecover,
+    meta: args.meta,
+    targets: args.targets,
+    uvUsageId: args.uvUsageId,
+    usageOverride: args.usageOverride,
+    uvContext: args.uvContext
+  });
+  if (resolved.ok || !args.payload.autoRecover) return resolved;
+
+  const failure = classifyUvGuardFailure(resolved.error);
+  if (failure === 'uv_usage_mismatch' || failure === 'uv_usage_missing') {
+    const preflight = args.deps.service.preflightTexture({});
+    if (isUsecaseError(preflight)) return usecaseError(preflight, args.meta, args.deps.service);
+    return resolveTextureUsageForTargets({
+      deps: args.deps,
+      payload: payloadNoRecover,
+      meta: args.meta,
+      targets: args.targets,
+      uvUsageId: preflight.value.uvUsageId,
+      usageOverride: args.usageOverride,
+      uvContext: args.uvContext
+    });
+  }
+
+  if (failure === 'uv_overlap' || failure === 'uv_scale_mismatch') {
+    const recovered = await recoverTextureUsageWithPlan(args.ctx, {
+      targets: args.targets,
+      ifRevision: args.payload.ifRevision,
+      detail: args.payload.plan?.detail
+    });
+    if (!recovered.ok) return recovered;
+    return {
+      ok: true,
+      data: {
+        usage: recovered.data.usage,
+        uvUsageId: recovered.data.uvUsageId,
+        recovery: recovered.data.recovery
+      }
+    };
+  }
+
+  return resolved;
 };

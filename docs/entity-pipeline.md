@@ -43,7 +43,8 @@ Apply model + textures + animations for GeckoLib entities in one MCP call.
 
 ## Notes
 - Only GeckoLib is implemented (`format: geckolib`).
-- If textures are included, supply `uvUsageId` (or use `autoRecover=true` to run the recovery loop once).
+- If textures are included, supply `uvUsageId` (or use `autoRecover=true` to run a single recovery).
+- `cleanup` deletes explicitly listed textures; when `force=false` (default), deletion fails if textures are still assigned to cubes.
 - Model changes use the same ModelSpec semantics as `model_pipeline` (merge by default).
 - If `planOnly=true` or the payload is underspecified, the pipeline skips mutations and emits short `ask_user` prompts via `nextActions`.
 

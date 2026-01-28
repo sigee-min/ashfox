@@ -1,4 +1,9 @@
-﻿export type FormatDescriptor = { id: string; name?: string };
+export type FormatDescriptor = {
+  id: string;
+  name?: string;
+  singleTexture?: boolean;
+  perTextureUvSize?: boolean;
+};
 
 export interface FormatPort {
   listFormats: () => FormatDescriptor[];

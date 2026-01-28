@@ -4,6 +4,25 @@ Use this guide to keep UVs and textures consistent across parts.
 
 Note: If low-level tools are hidden, use `texture_pipeline` for the entire workflow.
 
+## Auto Plan (No Manual UV)
+Use `texture_pipeline.plan` to auto-generate textures + UVs from high-level intent, then paint with presets or ops.
+Plan uses a texel-density solver to pick resolution + texture count (or lower density) and respects format constraints (e.g., single-texture formats disable splitting).
+
+Example (auto UV + preset paint):
+```json
+{
+  "plan": {
+    "name": "tractor",
+    "detail": "high",
+    "allowSplit": true,
+    "maxTextures": 2,
+    "paint": { "preset": "painted_metal", "palette": ["#c73b2b", "#9f2c25", "#d94b3b"] }
+  },
+  "autoRecover": true,
+  "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
+}
+```
+
 ## Primary Workflow
 1) `assign_texture`
 2) `preflight_texture`
@@ -18,11 +37,12 @@ Notes:
 
 ## Error Recovery (Always)
 If `validate` reports `uv_overlap` / `uv_scale_mismatch`, or a mutation returns `invalid_state` mentioning overlap/scale or uvUsageId mismatch:
-1) `auto_uv_atlas` with `apply=true`
+1) Prefer `texture_pipeline.plan` to re-pack UVs with the solver.
 2) `preflight_texture` again (new `uvUsageId`)
 3) Repaint with `apply_texture_spec` or `generate_texture_preset`
 
-Tip: `apply_texture_spec` and `texture_pipeline` support `autoRecover=true` to run the recovery loop once automatically.
+Tip: `texture_pipeline` supports `autoRecover=true` to run a single plan-based recovery automatically.
+For mid/high-poly assets, prefer `texture_pipeline.plan` to avoid repeated atlas growth.
 
 ## Common Pitfalls
 - All faces mapped to full texture (e.g., [0,0,32,32]) causes scale mismatch.

@@ -428,7 +428,7 @@ export const toolSchemas: Record<string, JsonSchema> = {
       autoRecover: {
         type: 'boolean',
         description:
-          'If true, may run auto_uv_atlas(apply=true) + preflight_texture once on overlap/scale/uvUsageId mismatch, then return the refreshed uvUsageId.'
+          'If true, returns guidance to recover UV issues via texture_pipeline.plan (no auto_uv_atlas).'
       },
       ifRevision: { type: 'string', description: 'Required for mutations. Get the latest revision from get_project_state.' },
       ...metaProps
@@ -474,6 +474,36 @@ export const toolSchemas: Record<string, JsonSchema> = {
       'Macro workflow: assign_texture -> preflight_texture -> apply_uv_spec -> preflight_texture -> apply_texture_spec/generate_texture_preset -> render_preview. Prefer this when you can express the task in one chain.',
     additionalProperties: false,
     properties: {
+      plan: {
+        type: 'object',
+        description: 'Auto-plan textures + UVs from high-level intent. When provided, assignment/UV steps are generated automatically.',
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string', description: 'Base texture name for generated textures.' },
+          detail: { type: 'string', enum: ['low', 'medium', 'high'] },
+          maxTextures: { type: 'number', description: 'Max number of textures to split into (>=1).' },
+          allowSplit: { type: 'boolean', description: 'Allow splitting cubes across multiple textures.' },
+          padding: { type: 'number', description: 'UV atlas padding in pixels.' },
+          resolution: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              width: { type: 'number' },
+              height: { type: 'number' }
+            }
+          },
+          paint: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              preset: texturePresetSchema,
+              palette: { type: 'array', items: { type: 'string' } },
+              seed: { type: 'number' },
+              background: { type: 'string', description: 'Optional base fill color (hex).' }
+            }
+          }
+        }
+      },
       assign: {
         type: 'array',
         minItems: 1,
@@ -572,7 +602,29 @@ export const toolSchemas: Record<string, JsonSchema> = {
       autoRecover: {
         type: 'boolean',
         description:
-          'If true, may run auto_uv_atlas(apply=true) + preflight_texture once on overlap/scale/uvUsageId mismatch, then continue.'
+          'If true, runs a single plan-based UV recovery (no auto_uv_atlas) on overlap/scale/uvUsageId mismatch, then continue.'
+      },
+      cleanup: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          delete: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' }
+              }
+            }
+          },
+          force: {
+            type: 'boolean',
+            description: 'If true, allow deletion of textures still assigned to cubes.'
+          }
+        }
       },
       preflight: {
         type: 'object',
@@ -650,6 +702,28 @@ export const toolSchemas: Record<string, JsonSchema> = {
               type: 'array',
               items: textureOpSchema
             }
+          }
+        }
+      },
+      cleanup: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          delete: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' }
+              }
+            }
+          },
+          force: {
+            type: 'boolean',
+            description: 'If true, allow deletion of textures still assigned to cubes.'
           }
         }
       },

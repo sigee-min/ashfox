@@ -5,6 +5,10 @@ export interface Capability {
   format: FormatKind;
   animations: boolean;
   enabled: boolean;
+  flags?: {
+    singleTexture?: boolean;
+    perTextureUvSize?: boolean;
+  };
 }
 
 export type { Limits };

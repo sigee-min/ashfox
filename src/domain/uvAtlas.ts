@@ -63,6 +63,7 @@ type BuildContext = {
   usage: TextureUsage;
   cubes: Cube[];
   resolution: { width: number; height: number };
+  baseResolution?: { width: number; height: number };
   maxResolution: { width: number; height: number };
   padding: number;
   policy: UvPolicyConfig;
@@ -72,6 +73,17 @@ export const buildUvAtlasPlan = (context: BuildContext): DomainResult<AtlasPlan>
   const startWidth = Math.trunc(context.resolution.width);
   const startHeight = Math.trunc(context.resolution.height);
   if (!Number.isFinite(startWidth) || !Number.isFinite(startHeight) || startWidth <= 0 || startHeight <= 0) {
+    return fail('invalid_payload', UV_ATLAS_RESOLUTION_POSITIVE);
+  }
+  const baseWidth =
+    typeof context.baseResolution?.width === 'number' && Number.isFinite(context.baseResolution.width)
+      ? Math.trunc(context.baseResolution.width)
+      : startWidth;
+  const baseHeight =
+    typeof context.baseResolution?.height === 'number' && Number.isFinite(context.baseResolution.height)
+      ? Math.trunc(context.baseResolution.height)
+      : startHeight;
+  if (!Number.isFinite(baseWidth) || !Number.isFinite(baseHeight) || baseWidth <= 0 || baseHeight <= 0) {
     return fail('invalid_payload', UV_ATLAS_RESOLUTION_POSITIVE);
   }
   const maxWidth = Math.trunc(context.maxResolution.width);
@@ -86,7 +98,7 @@ export const buildUvAtlasPlan = (context: BuildContext): DomainResult<AtlasPlan>
     if (cube.id) cubeById.set(cube.id, cube);
     cubeByName.set(cube.name, cube);
   });
-  const baseResolution = { width: startWidth, height: startHeight };
+  const baseResolution = { width: baseWidth, height: baseHeight };
   let width = startWidth;
   let height = startHeight;
   let steps = 0;
@@ -223,6 +235,7 @@ const buildGroups = (
       const height = Math.max(1, Math.round(expected.height));
       if (width > config.width || height > config.height) {
         return fail('invalid_state', UV_ATLAS_UV_SIZE_EXCEEDS(cube.name, face.face), {
+          reason: 'uv_size_exceeds',
           textureName: entry.name,
           cubeName: cube.name,
           face: face.face,

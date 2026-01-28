@@ -234,6 +234,7 @@ export interface EntityPipelinePayload {
   planOnly?: boolean;
   model?: ModelSpec;
   textures?: TextureSpec[];
+  cleanup?: TextureCleanupSpec;
   uvUsageId?: string;
   autoRecover?: boolean;
   animations?: EntityAnimationSpec[];
@@ -253,6 +254,30 @@ export type TexturePipelineAssign = {
 
 export type TexturePipelineUv = {
   assignments: UvAssignmentSpec[];
+};
+
+export type TexturePlanDetail = 'low' | 'medium' | 'high';
+
+export type TexturePlanPaint = {
+  preset?: TexturePresetName;
+  palette?: string[];
+  seed?: number;
+  background?: string;
+};
+
+export type TexturePipelinePlan = {
+  name?: string;
+  detail?: TexturePlanDetail;
+  maxTextures?: number;
+  allowSplit?: boolean;
+  padding?: number;
+  resolution?: { width?: number; height?: number };
+  paint?: TexturePlanPaint;
+};
+
+export type TextureCleanupSpec = {
+  delete: Array<{ id?: string; name?: string }>;
+  force?: boolean;
 };
 
 export type TexturePipelinePreset = {
@@ -286,10 +311,12 @@ export type TexturePipelinePreview = {
 };
 
 export interface TexturePipelinePayload {
+  plan?: TexturePipelinePlan;
   assign?: TexturePipelineAssign[];
   uv?: TexturePipelineUv;
   textures?: TextureSpec[];
   presets?: TexturePipelinePreset[];
+  cleanup?: TextureCleanupSpec;
   autoRecover?: boolean;
   preflight?: TexturePipelinePreflight;
   preview?: TexturePipelinePreview;

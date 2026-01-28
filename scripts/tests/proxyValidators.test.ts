@@ -42,6 +42,24 @@ const limits = DEFAULT_LIMITS;
   }
 }
 
+// Runtime validator sanity: plan-only texture pipeline should pass.
+{
+  const payload: TexturePipelinePayload = {
+    plan: { name: 'auto_tex', detail: 'medium', allowSplit: true, maxTextures: 2 }
+  };
+  const res = validateTexturePipeline(payload, limits);
+  assert.equal(res.ok, true);
+}
+
+// Runtime validator sanity: cleanup-only texture pipeline should pass.
+{
+  const payload: TexturePipelinePayload = {
+    cleanup: { delete: [{ name: 'old_tex' }] }
+  };
+  const res = validateTexturePipeline(payload, limits);
+  assert.equal(res.ok, true);
+}
+
 // Schema-level contract: unknown rigTemplate rejected.
 {
   const res = validateSchema(toolSchemas.model_pipeline, { model: { rigTemplate: 'nope' } });

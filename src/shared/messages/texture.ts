@@ -16,7 +16,7 @@ export const UV_ASSIGNMENT_CONFLICT = (cubeName: string, face: string) =>
   `Conflicting UV assignments for ${cubeName} (${face}).`;
 
 export const TEXTURE_PIPELINE_STEP_REQUIRED =
-  'texture_pipeline requires at least one step (assign, uv, textures, presets, preflight, preview).';
+  'texture_pipeline requires at least one step (plan, assign, uv, textures, presets, cleanup, preflight, preview).';
 export const ASSIGN_MUST_BE_ARRAY = 'assign must be an array';
 export const ASSIGN_ENTRY_REQUIRES_TEXTURE = 'assign entry requires textureId or textureName';
 export const ASSIGN_CUBE_IDS_ARRAY = 'assign cubeIds must be an array';
@@ -191,6 +191,19 @@ export const TEXTURE_RENDERER_NO_IMAGE = 'Texture renderer failed to produce an 
 export const PREVIEW_IMAGE_DATA_UNAVAILABLE = 'Preview image data unavailable.';
 export const PREVIEW_FRAMES_UNAVAILABLE = 'Preview frames unavailable.';
 export const PREVIEW_FRAME_DATA_UNAVAILABLE = 'Preview frame data unavailable.';
+export const TEXTURE_PLAN_INVALID = 'plan must be an object.';
+export const TEXTURE_PLAN_DETAIL_INVALID = 'plan detail must be low, medium, or high.';
+export const TEXTURE_PLAN_MAX_TEXTURES_INVALID = 'plan maxTextures must be a positive integer.';
+export const TEXTURE_PLAN_RESOLUTION_INVALID = 'plan resolution must include positive width/height values.';
+export const TEXTURE_PLAN_PAINT_INVALID = 'plan paint must be an object.';
+export const TEXTURE_PLAN_PALETTE_INVALID = 'plan paint palette must be an array of strings.';
+export const TEXTURE_PLAN_NO_CUBES = 'No cubes available for texture planning.';
+export const TEXTURE_CLEANUP_INVALID = 'cleanup must be an object.';
+export const TEXTURE_CLEANUP_DELETE_REQUIRED = 'cleanup.delete must be a non-empty array.';
+export const TEXTURE_CLEANUP_ENTRY_REQUIRED = 'cleanup.delete entry requires id or name.';
+export const TEXTURE_CLEANUP_FORCE_INVALID = 'cleanup.force must be a boolean.';
+export const TEXTURE_DELETE_IN_USE = (names: string, suffix: string, plural: boolean) =>
+  `Cannot delete texture${plural ? 's' : ''} ${names}${suffix}. Unassign them or set force=true.`;
 export const TEXTURE_AUTO_UV_NO_TEXTURES = 'No textures are assigned to any cube faces.';
 export const TEXTURE_AUTO_UV_UNRESOLVED_REFS = (count: number) =>
   `Unresolved texture references detected (${count}). Assign textures before atlas packing.`;

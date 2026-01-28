@@ -72,9 +72,7 @@ export const guardUvScale = (args: {
   const blocking = scaleResult.issues.filter((issue) => isIssueTarget(issue, expanded));
   if (blocking.length === 0) return null;
   const sample = blocking[0];
-  const example = sample.example
-    ? ` Example: ${sample.example.cubeName} (${sample.example.face}) actual ${sample.example.actual.width}x${sample.example.actual.height} vs expected ${sample.example.expected.width}x${sample.example.expected.height}.`
-    : '';
+  const example = sample.example ? ` Example: ${formatScaleExample(sample.example)}.` : '';
   const names = blocking
     .slice(0, 3)
     .map((issue) => `"${issue.textureName}"`)
@@ -94,4 +92,23 @@ export const guardUvScale = (args: {
       }))
     }
   };
+};
+
+const formatScaleExample = (example: {
+  cubeName: string;
+  face: string;
+  actual: { width: number; height: number };
+  expected: { width: number; height: number };
+  ratio?: { width: number; height: number };
+  reason?: 'tiny' | 'ratio';
+}) => {
+  const ratio = example.ratio ? ` (scale ${formatRatio(example.ratio)})` : '';
+  const reason = example.reason === 'tiny' ? ' (tiny face)' : '';
+  return `${example.cubeName} (${example.face}) actual ${example.actual.width}x${example.actual.height} vs expected ${example.expected.width}x${example.expected.height}${ratio}${reason}`;
+};
+
+const formatRatio = (ratio: { width: number; height: number }) => {
+  const width = Number.isFinite(ratio.width) ? ratio.width.toFixed(2) : '?';
+  const height = Number.isFinite(ratio.height) ? ratio.height.toFixed(2) : '?';
+  return `${width}x${height}`;
 };

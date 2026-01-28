@@ -52,8 +52,22 @@ const computeFormatCapabilities = (
 ): Capability[] =>
   BASE_FORMATS.map((base) => {
     const resolved = resolveFormatId(base.format, formats, overrides);
-    return { ...base, enabled: Boolean(resolved) };
+    const descriptor = resolved ? formats.find((format) => format.id === resolved) : undefined;
+    const flags = normalizeFormatFlags(descriptor);
+    return { ...base, enabled: Boolean(resolved), ...(flags ? { flags } : {}) };
   });
+
+const normalizeFormatFlags = (
+  descriptor?: FormatDescriptor
+): Capability['flags'] | undefined => {
+  if (!descriptor) return undefined;
+  const flags = {
+    singleTexture: descriptor.singleTexture,
+    perTextureUvSize: descriptor.perTextureUvSize
+  };
+  const hasFlag = Object.values(flags).some((value) => value !== undefined);
+  return hasFlag ? flags : undefined;
+};
 
 export function computeCapabilities(
   blockbenchVersion: string | undefined,

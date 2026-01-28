@@ -14,7 +14,7 @@ type UvGuardFailure =
   | 'uv_usage_missing'
   | 'unknown';
 
-const classifyUvGuardFailure = (error: ToolError): UvGuardFailure => {
+export const classifyUvGuardFailure = (error: ToolError): UvGuardFailure => {
   if (error.code !== 'invalid_state') return 'unknown';
   const details = error.details;
   if (!isRecord(details)) return 'unknown';

@@ -28,6 +28,7 @@ export type EntityPipelineSteps = {
   project?: EnsureProjectResult;
   model?: EntityModelResult;
   textures?: EntityTextureResult;
+  cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   animations?: EntityAnimationResult;
 };
 

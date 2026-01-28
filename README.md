@@ -80,10 +80,13 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
 
 ## Texture Flow (Recommended)
 If low-level tools are not exposed, use `texture_pipeline` to run the entire flow.
+- Use `texture_pipeline.plan` for auto-assign + auto-UV with texel-density planning from high-level intent.
+- Plan respects active format constraints (e.g., single-texture formats disable splitting).
 - Always `preflight_texture` without filters to get a stable `uvUsageId`.
 - If UVs change, preflight again and repaint.
 - For 64x64+ textures, prefer `generate_texture_preset`.
-- Use `autoRecover=true` (or `auto_uv_atlas`) on overlap/scale issues.
+- Use `autoRecover=true` on overlap/scale issues (texture_pipeline uses plan-based recovery). For low-level recovery, prefer `texture_pipeline.plan` over `auto_uv_atlas`.
+- Use `cleanup` to delete explicit textures (blocked if still assigned unless `force=true`).
 - See `docs/texture-uv-spec.md`, `docs/texture-pipeline-plan.md`, `docs/llm-texture-strategy.md`.
 
 ## Preview Output (MCP Standard)

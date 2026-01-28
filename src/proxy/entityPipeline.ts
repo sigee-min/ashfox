@@ -15,6 +15,7 @@ import { runProxyPipeline } from './pipelineRunner';
 import { PROXY_FORMAT_NOT_IMPLEMENTED } from '../shared/messages';
 import { buildClarificationNextActions } from './nextActionHelpers';
 import { getEntityPipelineClarificationQuestions } from './clarifications';
+import { applyTextureCleanup } from './textureCleanup';
 
 export const entityPipelineProxy = async (
   deps: ProxyPipelineDeps,
@@ -149,6 +150,19 @@ export const entityPipelineProxy = async (
           )
         );
         steps.animations = { applied: true, clips: animRes.clips, keyframes: animRes.keyframes };
+      }
+
+      if (payload.cleanup?.delete && payload.cleanup.delete.length > 0) {
+        const cleanupRes = pipeline.require(
+          applyTextureCleanup(
+            deps,
+            pipeline.meta,
+            payload.cleanup.delete,
+            payload.cleanup.force === true,
+            effectiveRevision
+          )
+        );
+        steps.cleanup = cleanupRes;
       }
       const extras: { applied: true; format: typeof format; targetVersion: typeof targetVersion } = {
         applied: true,

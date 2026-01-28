@@ -43,6 +43,16 @@ import {
   PREVIEW_MODE_INVALID,
   TARGET_VERSION_ONLY_GECKOLIB,
   TEXTURE_PIPELINE_STEP_REQUIRED,
+  TEXTURE_CLEANUP_DELETE_REQUIRED,
+  TEXTURE_CLEANUP_ENTRY_REQUIRED,
+  TEXTURE_CLEANUP_FORCE_INVALID,
+  TEXTURE_CLEANUP_INVALID,
+  TEXTURE_PLAN_DETAIL_INVALID,
+  TEXTURE_PLAN_INVALID,
+  TEXTURE_PLAN_MAX_TEXTURES_INVALID,
+  TEXTURE_PLAN_PAINT_INVALID,
+  TEXTURE_PLAN_PALETTE_INVALID,
+  TEXTURE_PLAN_RESOLUTION_INVALID,
   TOO_MANY_CUBES,
   TRIGGER_KEYS_MUST_BE_ARRAY,
   TRIGGER_TIME_INVALID,
@@ -111,6 +121,23 @@ export const validateEntityPipeline = (payload: EntityPipelinePayload, limits: L
   if (payload.textures) {
     const texRes = validateTextureSpec({ textures: payload.textures, uvUsageId: payload.uvUsageId ?? '' }, limits);
     if (!texRes.ok) return texRes;
+  }
+  if (payload.cleanup !== undefined) {
+    if (!isRecord(payload.cleanup)) {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_INVALID);
+    }
+    const deletes = payload.cleanup.delete;
+    if (!Array.isArray(deletes) || deletes.length === 0) {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_DELETE_REQUIRED);
+    }
+    for (const entry of deletes) {
+      if (!entry || (!entry.id && !entry.name)) {
+        return errWithCode('invalid_payload', TEXTURE_CLEANUP_ENTRY_REQUIRED);
+      }
+    }
+    if (payload.cleanup.force !== undefined && typeof payload.cleanup.force !== 'boolean') {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_FORCE_INVALID);
+    }
   }
   if (payload.animations) {
     if (!Array.isArray(payload.animations)) return errWithCode('invalid_payload', ANIMATIONS_MUST_BE_ARRAY);
@@ -183,10 +210,12 @@ export const validateTexturePipeline = (payload: TexturePipelinePayload, limits:
     return errWithCode('invalid_payload', PLAN_ONLY_BOOLEAN);
   }
   const hasStep = Boolean(
-    (payload.assign && payload.assign.length > 0) ||
+    payload.plan ||
+      (payload.assign && payload.assign.length > 0) ||
       payload.uv ||
       (payload.textures && payload.textures.length > 0) ||
       (payload.presets && payload.presets.length > 0) ||
+      (payload.cleanup && Array.isArray(payload.cleanup.delete) && payload.cleanup.delete.length > 0) ||
       payload.preflight ||
       payload.preview
   );
@@ -206,6 +235,67 @@ export const validateTexturePipeline = (payload: TexturePipelinePayload, limits:
       if (entry.cubeNames && !Array.isArray(entry.cubeNames)) {
         return errWithCode('invalid_payload', ASSIGN_CUBE_NAMES_ARRAY);
       }
+    }
+  }
+
+  if (payload.plan) {
+    if (!isRecord(payload.plan)) {
+      return errWithCode('invalid_payload', TEXTURE_PLAN_INVALID);
+    }
+    const detail = payload.plan.detail;
+    if (detail && !['low', 'medium', 'high'].includes(detail)) {
+      return errWithCode('invalid_payload', TEXTURE_PLAN_DETAIL_INVALID);
+    }
+    if (payload.plan.maxTextures !== undefined) {
+      const maxTextures = Number(payload.plan.maxTextures);
+      if (!Number.isFinite(maxTextures) || maxTextures <= 0 || Math.floor(maxTextures) !== maxTextures) {
+        return errWithCode('invalid_payload', TEXTURE_PLAN_MAX_TEXTURES_INVALID);
+      }
+    }
+    if (payload.plan.resolution) {
+      const width = payload.plan.resolution.width;
+      const height = payload.plan.resolution.height;
+      const widthOk = width === undefined || (Number.isFinite(width) && width > 0);
+      const heightOk = height === undefined || (Number.isFinite(height) && height > 0);
+      if (!widthOk || !heightOk || (width === undefined && height === undefined)) {
+        return errWithCode('invalid_payload', TEXTURE_PLAN_RESOLUTION_INVALID);
+      }
+    }
+    if (payload.plan.paint !== undefined) {
+      if (!isRecord(payload.plan.paint)) {
+        return errWithCode('invalid_payload', TEXTURE_PLAN_PAINT_INVALID);
+      }
+      if (payload.plan.paint.preset) {
+        if (!TEXTURE_PRESET_NAME_SET.has(payload.plan.paint.preset)) {
+          return errWithCode('invalid_payload', UNKNOWN_TEXTURE_PRESET(payload.plan.paint.preset));
+        }
+      }
+      if (payload.plan.paint.palette) {
+        if (
+          !Array.isArray(payload.plan.paint.palette) ||
+          payload.plan.paint.palette.some((entry) => typeof entry !== 'string')
+        ) {
+          return errWithCode('invalid_payload', TEXTURE_PLAN_PALETTE_INVALID);
+        }
+      }
+    }
+  }
+
+  if (payload.cleanup !== undefined) {
+    if (!isRecord(payload.cleanup)) {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_INVALID);
+    }
+    const deletes = payload.cleanup.delete;
+    if (!Array.isArray(deletes) || deletes.length === 0) {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_DELETE_REQUIRED);
+    }
+    for (const entry of deletes) {
+      if (!entry || (!entry.id && !entry.name)) {
+        return errWithCode('invalid_payload', TEXTURE_CLEANUP_ENTRY_REQUIRED);
+      }
+    }
+    if (payload.cleanup.force !== undefined && typeof payload.cleanup.force !== 'boolean') {
+      return errWithCode('invalid_payload', TEXTURE_CLEANUP_FORCE_INVALID);
     }
   }
 

@@ -18,15 +18,20 @@ export const applyTextureSpecProxy = async (
     validate: validateTextureSpec,
     run: async (pipeline) => {
     const targets = collectTextureTargets(payload.textures);
-    const resolved = pipeline.require(
-      resolveTextureUsageForTargets({
-        deps,
-        payload,
-        meta: pipeline.meta,
-        targets,
-        uvUsageId: payload.uvUsageId
-      })
-    );
+    const payloadNoRecover = payload.autoRecover ? { ...payload, autoRecover: false } : payload;
+    const resolved = resolveTextureUsageForTargets({
+      deps,
+      payload: payloadNoRecover,
+      meta: pipeline.meta,
+      targets,
+      uvUsageId: payload.uvUsageId
+    });
+    if (!resolved.ok) {
+      if (payload.autoRecover) {
+        return addPlanRecoveryHint(resolved);
+      }
+      return resolved;
+    }
     const recovery = resolved.recovery;
     const recoveredUvUsageId = resolved.uvUsageId;
     const report = pipeline.require(
@@ -73,4 +78,13 @@ export const applyTextureSpecProxy = async (
     };
     }
   });
+};
+
+const addPlanRecoveryHint = (response: ToolResponse<unknown>): ToolResponse<never> => {
+  if (response.ok) return response as ToolResponse<never>;
+  const error = response.error;
+  const hint =
+    'Use texture_pipeline.plan (auto-assign + auto-UV) to recover UV scale/overlap issues instead of auto_uv_atlas.';
+  const fix = error.fix ? `${error.fix} ${hint}` : hint;
+  return { ok: false, error: { ...error, fix } };
 };

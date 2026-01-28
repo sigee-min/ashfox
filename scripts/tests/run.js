@@ -14,6 +14,7 @@ globalThis.__bbmcp_test_promises = [];
 
 const tests = [
   'uvAtlas.test.ts',
+  'uvScale.test.ts',
   'uvPaintPixels.test.ts',
   'revisionGuard.test.ts',
   'toolSchemas.test.ts',
