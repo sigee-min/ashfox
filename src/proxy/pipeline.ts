@@ -1,7 +1,6 @@
 import type { IncludeDiffOption, IncludeStateOption, IfRevisionOption, ToolError, ToolResponse } from '../types';
 import type { ToolService } from '../usecases/ToolService';
 import type { UsecaseResult } from '../usecases/result';
-import { ProxyPipelineAbort } from './pipelineAbort';
 import {
   guardRevision,
   MetaOptions,
@@ -20,9 +19,7 @@ export type ProxyPipeline = {
   run: <T>(fn: () => Promise<ToolResponse<T>> | ToolResponse<T>) => Promise<ToolResponse<T>>;
   ok: <T extends Record<string, unknown>>(data: T) => ToolResponse<T>;
   wrap: <T>(result: UsecaseResult<T>) => ToolResponse<T>;
-  wrapRequire: <T>(result: UsecaseResult<T>) => T;
   error: (error: ToolError) => ToolResponse<never>;
-  require: <T>(response: ToolResponse<T>) => T;
 };
 
 type PipelineDeps = {
@@ -48,15 +45,6 @@ export const createProxyPipeline = (deps: PipelineDeps): ProxyPipeline => {
       deps.runWithoutRevisionGuard(async () => await fn()),
     ok: (data) => ({ ok: true, data: withMeta(data, meta, deps.service) }),
     wrap: (result) => (result.ok ? { ok: true, data: result.value } : withErrorMeta(result.error, meta, deps.service)),
-    wrapRequire: (result) => {
-      if (result.ok) return result.value;
-      const response = withErrorMeta(result.error, meta, deps.service);
-      throw new ProxyPipelineAbort(response);
-    },
-    error: (error) => withErrorMeta(error, meta, deps.service),
-    require: <T>(response: ToolResponse<T>) => {
-      if (response.ok) return response.data;
-      throw new ProxyPipelineAbort(response);
-    }
+    error: (error) => withErrorMeta(error, meta, deps.service)
   };
 };

@@ -3,6 +3,7 @@ import type { PipelineStepsResult } from '../pipelineResult';
 import type { ApplyReport } from '../apply';
 import type { AppliedReport, ModelPlan } from '../modelPipeline/types';
 import type { EntityFormat, GeckoLibTargetVersion } from '../../shared/toolConstants';
+import type { TexturePipelineSteps } from '../texturePipeline/types';
 
 export type EntityModelResult = {
   applied: true;
@@ -27,7 +28,10 @@ export type EntityAnimationResult = {
 export type EntityPipelineSteps = {
   project?: EnsureProjectResult;
   model?: EntityModelResult;
+  texturePlan?: TexturePipelineSteps['plan'];
   textures?: EntityTextureResult;
+  presets?: TexturePipelineSteps['presets'];
+  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: Record<string, unknown> };
   cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   animations?: EntityAnimationResult;
 };

@@ -31,44 +31,42 @@ export const modelPipelineProxy = async (
       let effectiveRevision = pipeline.meta.ifRevision;
 
       const ensurePayload = resolveEnsureProjectPayload(payload.ensureProject, {}, effectiveRevision);
-      const projectRes = pipeline.require(
-        ensureProjectAndLoadProject({
-          service: deps.service,
-          meta: pipeline.meta,
-          ensurePayload,
-          detail: 'full',
-          includeUsage: false,
-          refreshRevision: Boolean(ensurePayload)
-        })
-      );
-      if (projectRes.ensure) {
-        steps.ensureProject = projectRes.ensure;
+      const projectRes = ensureProjectAndLoadProject({
+        service: deps.service,
+        meta: pipeline.meta,
+        ensurePayload,
+        detail: 'full',
+        includeUsage: false,
+        refreshRevision: Boolean(ensurePayload)
+      });
+      if (!projectRes.ok) return projectRes;
+      if (projectRes.data.ensure) {
+        steps.ensureProject = projectRes.data.ensure;
       }
-      const project = projectRes.project;
-      if (projectRes.revision) effectiveRevision = projectRes.revision;
+      const project = projectRes.data.project;
+      if (projectRes.data.revision) effectiveRevision = projectRes.data.revision;
 
       const mode = payload.mode ?? 'merge';
-      const planRes = pipeline.require(
-        buildModelPlanStep({
-          service: deps.service,
-          meta: pipeline.meta,
-          model: payload.model,
-          existingBones: project.bones ?? [],
-          existingCubes: project.cubes ?? [],
-          mode,
-          deleteOrphans: payload.deleteOrphans ?? mode === 'replace',
-          limits: deps.limits
-        })
-      );
-      if (planRes.warnings.length > 0) {
-        steps.warnings = planRes.warnings;
+      const planRes = buildModelPlanStep({
+        service: deps.service,
+        meta: pipeline.meta,
+        model: payload.model,
+        existingBones: project.bones ?? [],
+        existingCubes: project.cubes ?? [],
+        mode,
+        deleteOrphans: payload.deleteOrphans ?? mode === 'replace',
+        limits: deps.limits
+      });
+      if (!planRes.ok) return planRes;
+      if (planRes.data.warnings.length > 0) {
+        steps.warnings = planRes.data.warnings;
       }
-      steps.plan = planRes.plan.summary;
+      steps.plan = planRes.data.plan.summary;
 
       if (shouldPlanOnly) {
-        steps.planOps = planRes.ops;
+        steps.planOps = planRes.data.ops;
         const response = pipeline.ok(
-          buildPipelineResult(steps, { plan: planRes.plan, planOnly: true, applied: false })
+          buildPipelineResult(steps, { plan: planRes.data.plan, planOnly: true, applied: false })
         );
         const nextActions = [
           ...buildClarificationNextActions({ questions: clarificationQuestions }),
@@ -81,40 +79,40 @@ export const modelPipelineProxy = async (
         return nextActions.length > 0 ? { ...response, nextActions } : response;
       }
 
-      const applied = pipeline.require(
-        applyPlanOps(planRes.ops, {
-          service: deps.service,
-          ifRevision: effectiveRevision,
-          meta: pipeline.meta
-        })
-      );
-      steps.apply = applied;
+      const applied = applyPlanOps(planRes.data.ops, {
+        service: deps.service,
+        ifRevision: effectiveRevision,
+        meta: pipeline.meta
+      });
+      if (!applied.ok) return applied;
+      steps.apply = applied.data;
 
       let previewData: PreviewStepData | null = null;
       if (payload.preview) {
-        const previewRes = pipeline.require(runPreviewStep(deps.service, payload.preview, pipeline.meta));
-        previewData = previewRes;
-        steps.preview = previewRes.structured;
+        const previewRes = runPreviewStep(deps.service, payload.preview, pipeline.meta);
+        if (!previewRes.ok) return previewRes;
+        previewData = previewRes.data;
+        steps.preview = previewRes.data.structured;
       }
 
       if (payload.validate) {
-        const validateRes = pipeline.wrapRequire(deps.service.validate({}));
-        steps.validate = validateRes;
+        const validateRes = pipeline.wrap(deps.service.validate({}));
+        if (!validateRes.ok) return validateRes;
+        steps.validate = validateRes.data;
       }
 
       if (payload.export) {
-        const exportRes = pipeline.require(
-          pipeline.wrap(
-            deps.service.exportModel({
-              format: payload.export.format,
-              destPath: payload.export.destPath
-            })
-          )
+        const exportRes = pipeline.wrap(
+          deps.service.exportModel({
+            format: payload.export.format,
+            destPath: payload.export.destPath
+          })
         );
-        steps.export = exportRes;
+        if (!exportRes.ok) return exportRes;
+        steps.export = exportRes.data;
       }
 
-      const response = pipeline.ok(buildPipelineResult(steps, { report: applied, applied: true }));
+      const response = pipeline.ok(buildPipelineResult(steps, { report: applied.data, applied: true }));
 
       const nextActions = buildModelPipelineNextActions({
         warnings: steps.warnings,

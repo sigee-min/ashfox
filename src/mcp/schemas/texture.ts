@@ -89,3 +89,28 @@ export const uvPaintSchema: JsonSchema = {
     }
   }
 };
+
+export const facePaintEntrySchema: JsonSchema = {
+  type: 'object',
+  description: 'Face-centric material paint instruction (maps to texture presets + UV targets).',
+  additionalProperties: false,
+  required: ['material'],
+  properties: {
+    material: { type: 'string', description: 'Material keyword (e.g., metal, wood, rubber).' },
+    palette: { type: 'array', items: { type: 'string' } },
+    seed: { type: 'number' },
+    cubeIds: { type: 'array', minItems: 1, items: { type: 'string' } },
+    cubeNames: { type: 'array', minItems: 1, items: { type: 'string' } },
+    faces: { type: 'array', minItems: 1, items: cubeFaceSchema },
+    scope: { type: 'string', enum: ['faces', 'rects', 'bounds'] },
+    mapping: { type: 'string', enum: ['stretch', 'tile'] },
+    padding: { type: 'number' },
+    anchor: numberArray(2, 2)
+  }
+};
+
+export const facePaintSchema: JsonSchema = {
+  type: 'array',
+  minItems: 1,
+  items: facePaintEntrySchema
+};

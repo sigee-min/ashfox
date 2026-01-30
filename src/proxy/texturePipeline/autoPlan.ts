@@ -4,19 +4,17 @@ import { buildUvApplyPlan } from '../../domain/uvApply';
 import type { AtlasPlan } from '../../domain/uvAtlas';
 import { buildUvAtlasPlan } from '../../domain/uvAtlas';
 import { computeTextureUsageId } from '../../domain/textureUsage';
-import { expandTextureTargets, type TextureTargetSet } from '../../domain/uvTargets';
 import type { UvPolicyConfig } from '../../domain/uvPolicy';
 import { getFaceDimensions } from '../../domain/uvPolicy';
 import type { TexturePipelinePlan, TexturePlanDetail } from '../../spec';
+import type { DomainResult } from '../../domain/result';
 import type { ToolResponse } from '../../types';
 import { toDomainCube } from '../../usecases/domainMappers';
 import { isUsecaseError, usecaseError } from '../guardHelpers';
 import { loadProjectState } from '../projectState';
-import { guardUvForUsage } from '../uvGuard';
-import { cacheUvUsage, loadUvContext } from '../uvContext';
 import type { TexturePipelineContext } from './steps';
 import { applyTextureSpecs } from './textureFlow';
-import { TEXTURE_AUTO_UV_NO_TEXTURES, TEXTURE_PLAN_NO_CUBES } from '../../shared/messages';
+import { TEXTURE_PLAN_NO_CUBES } from '../../shared/messages';
 
 type CubeStat = { cube: Cube; area: number };
 
@@ -42,11 +40,14 @@ const DETAIL_PIXELS_PER_BLOCK: Record<TexturePlanDetail, number> = {
 const MIN_RESOLUTION = 16;
 const PACK_EFFICIENCY = 0.75;
 const ATLAS_RETRY_LIMIT = 3;
+const AUTO_PLAN_MAX_RESOLUTION = 512;
+const AUTO_PLAN_DEFAULT_MAX_TEXTURES = 4;
+const AUTO_PLAN_MAX_TEXTURES = 16;
 
 export const runAutoPlanStep = async (
   ctx: TexturePipelineContext,
   plan: TexturePipelinePlan,
-  options: { planOnly: boolean; ifRevision?: string }
+  options: { planOnly: boolean; ifRevision?: string; reuseExistingTextures?: boolean }
 ): Promise<ToolResponse<void>> => {
   const projectRes = loadProjectState(ctx.deps.service, ctx.pipeline.meta, 'full', { includeUsage: false });
   if (!projectRes.ok) return projectRes;
@@ -60,28 +61,39 @@ export const runAutoPlanStep = async (
   const detail = resolveDetail(plan.detail);
   const padding = resolvePadding(plan.padding);
   const caps = ctx.deps.service.listCapabilities();
+  const maxSize = resolvePlanMaxSize(caps.limits.maxTextureSize);
   const formatFlags = resolveFormatFlags(caps.formats, project.format ?? undefined);
   const allowSplit = resolveAllowSplit(plan.allowSplit, formatFlags, notes);
-  const maxTextures = resolveMaxTextures(plan.maxTextures, allowSplit, notes);
+  const maxTextures = resolveMaxTextures(plan.maxTextures, allowSplit, notes, AUTO_PLAN_DEFAULT_MAX_TEXTURES);
   const policy = ctx.deps.service.getUvPolicy();
   const stats = collectCubeStats(cubes);
 
   const basePixelsPerBlock = DETAIL_PIXELS_PER_BLOCK[detail];
   const ppuTarget = basePixelsPerBlock / Math.max(1, policy.modelUnitsPerBlock);
-  const resolutionOverride = resolveResolutionOverride(plan.resolution, caps.limits.maxTextureSize, notes);
+  const resolutionOverride = resolveResolutionOverride(plan.resolution, maxSize, notes);
   const layout = resolveLayout({
     ppuTarget,
     stats,
     maxTextures,
     allowSplit,
-    maxSize: caps.limits.maxTextureSize,
+    maxSize,
     override: resolutionOverride,
     notes,
     cubeCount: stats.cubes.length
   });
 
   const existingNames = new Set((project.textures ?? []).map((tex) => tex.name));
-  const textureNames = resolveTextureNames(plan.name ?? 'texture', layout.textureCount, existingNames, notes);
+  const nameRegistry = new Set(existingNames);
+  const textureNames = resolveTextureNames(
+    plan.name ?? 'texture',
+    layout.textureCount,
+    nameRegistry,
+    notes,
+    {
+      preferBaseName: options.reuseExistingTextures === true,
+      reuseExisting: options.reuseExistingTextures === true
+    }
+  );
   const groups = splitTextureGroups(stats.cubes, textureNames);
 
   const usage = buildUsage(groups);
@@ -143,15 +155,18 @@ export const runAutoPlanStep = async (
     if (isUsecaseError(res)) return usecaseError(res, ctx.pipeline.meta, ctx.deps.service);
   }
 
-  const textureSpecs = buildTextureSpecs(groups, layout.resolution, plan.paint?.background);
+  const textureSpecs = buildTextureSpecs(groups, layout.resolution, plan.paint?.background, {
+    existingNames,
+    reuseExisting: options.reuseExistingTextures === true,
+    allowExistingUpdate: options.reuseExistingTextures === true || Boolean(plan.paint?.background)
+  });
   if (textureSpecs.length > 0) {
-    ctx.pipeline.require(
-      await applyTextureSpecs({
-        deps: ctx.deps,
-        meta: ctx.pipeline.meta,
-        textures: textureSpecs
-      })
-    );
+    const applyRes = await applyTextureSpecs({
+      deps: ctx.deps,
+      meta: ctx.pipeline.meta,
+      textures: textureSpecs
+    });
+    if (!applyRes.ok) return applyRes;
   }
 
   for (const group of groups) {
@@ -208,115 +223,6 @@ export const runAutoPlanStep = async (
   return { ok: true, data: undefined };
 };
 
-export const recoverTextureUsageWithPlan = async (
-  ctx: TexturePipelineContext,
-  args: {
-    targets: TextureTargetSet;
-    ifRevision?: string;
-    detail?: TexturePlanDetail;
-  }
-): Promise<ToolResponse<{ usage: TextureUsage; uvUsageId: string; recovery: Record<string, unknown> }>> => {
-  const contextRes = loadUvContext(ctx.deps.service, ctx.pipeline.meta, undefined, { cache: ctx.deps.cache?.uv });
-  if (!contextRes.ok) return contextRes;
-  const usage = contextRes.data.usage;
-  const cubes = contextRes.data.cubes;
-  const policy = contextRes.data.policy;
-  const expandedTargets = expandTextureTargets(usage, args.targets);
-  const targetUsage = buildTargetUsage(usage, expandedTargets);
-  if (targetUsage.textures.length === 0) {
-    return ctx.pipeline.error({ code: 'invalid_state', message: TEXTURE_AUTO_UV_NO_TEXTURES });
-  }
-
-  const stats = collectUsageStats(targetUsage, cubes);
-  const notes: string[] = [];
-  const caps = ctx.deps.service.listCapabilities();
-  const textureCount = targetUsage.textures.length;
-  const detail = resolveDetail(args.detail);
-  const layout = resolveRecoveryLayout({
-    stats,
-    textureCount,
-    policy,
-    maxSize: caps.limits.maxTextureSize,
-    currentResolution: contextRes.data.resolution,
-    detail,
-    notes
-  });
-
-  const atlasRes = buildAtlasWithRetries({
-    usage: targetUsage,
-    cubes,
-    resolution: layout.resolution,
-    padding: 0,
-    policy,
-    ppuTarget: layout.ppuUsed,
-    notes
-  });
-  if (!atlasRes.ok) {
-    return ctx.pipeline.error(atlasRes.error);
-  }
-  const atlas = atlasRes.data;
-
-  const assignments = buildUvAssignments(atlas.assignments);
-  const uvPlanRes = buildUvApplyPlan(usage, cubes, assignments, layout.resolution);
-  if (!uvPlanRes.ok) {
-    return ctx.pipeline.error(uvPlanRes.error);
-  }
-
-  const guardRes = guardUvForUsage(ctx.deps.service, ctx.pipeline.meta, {
-    usage: uvPlanRes.data.usage,
-    targets: expandedTargets,
-    cubes,
-    resolution: layout.resolution,
-    policy
-  });
-  if (!guardRes.ok) return guardRes;
-
-  const currentResolution = ctx.deps.service.getProjectTextureResolution();
-  if (
-    !currentResolution ||
-    currentResolution.width !== layout.resolution.width ||
-    currentResolution.height !== layout.resolution.height
-  ) {
-    const res = ctx.deps.service.setProjectTextureResolution({
-      width: layout.resolution.width,
-      height: layout.resolution.height,
-      modifyUv: false,
-      ifRevision: args.ifRevision
-    });
-    if (isUsecaseError(res)) return usecaseError(res, ctx.pipeline.meta, ctx.deps.service);
-  }
-
-  for (const update of uvPlanRes.data.updates) {
-    const res = ctx.deps.service.setFaceUv({
-      cubeId: update.cubeId,
-      cubeName: update.cubeName,
-      faces: update.faces,
-      ifRevision: args.ifRevision
-    });
-    if (isUsecaseError(res)) return usecaseError(res, ctx.pipeline.meta, ctx.deps.service);
-  }
-
-  const uvUsageId = computeTextureUsageId(uvPlanRes.data.usage);
-  cacheUvUsage(ctx.deps.cache?.uv, uvPlanRes.data.usage, uvUsageId);
-
-  return {
-    ok: true,
-    data: {
-      usage: uvPlanRes.data.usage,
-      uvUsageId,
-      recovery: {
-        reason: 'plan',
-        detail,
-        textureCount,
-        resolution: layout.resolution,
-        ppuTarget: layout.ppuTarget,
-        ppuUsed: layout.ppuUsed,
-        ...(notes.length > 0 ? { notes } : {})
-      }
-    }
-  };
-};
-
 const resolveDetail = (detail?: TexturePlanDetail): TexturePlanDetail => detail ?? 'medium';
 
 const resolvePadding = (padding?: number): number => {
@@ -340,13 +246,26 @@ const resolveAllowSplit = (
   return allowSplit !== false;
 };
 
-const resolveMaxTextures = (maxTextures: number | undefined, allowSplit: boolean, notes: string[]): number => {
-  const requested = Number.isFinite(maxTextures) ? Math.max(1, Math.trunc(maxTextures as number)) : allowSplit ? 2 : 1;
+const resolveMaxTextures = (
+  maxTextures: number | undefined,
+  allowSplit: boolean,
+  notes: string[],
+  defaultMaxTextures: number
+): number => {
+  const requested = Number.isFinite(maxTextures)
+    ? Math.max(1, Math.trunc(maxTextures as number))
+    : allowSplit
+      ? Math.max(1, Math.trunc(defaultMaxTextures))
+      : 1;
   if (!allowSplit) {
     if (requested > 1) {
       notes.push('maxTextures ignored because split is disabled.');
     }
     return 1;
+  }
+  if (requested > AUTO_PLAN_MAX_TEXTURES) {
+    notes.push(`maxTextures capped at ${AUTO_PLAN_MAX_TEXTURES}.`);
+    return AUTO_PLAN_MAX_TEXTURES;
   }
   return requested;
 };
@@ -384,83 +303,6 @@ const resolveResolutionOverride = (
   return { width: clamped, height: clamped };
 };
 
-const resolveRecoveryLayout = (args: {
-  stats: { totalArea: number; maxFaceWidth: number; maxFaceHeight: number };
-  textureCount: number;
-  policy: UvPolicyConfig;
-  maxSize: number;
-  currentResolution?: { width: number; height: number };
-  detail: TexturePlanDetail;
-  notes: string[];
-}): PlanLayout => {
-  const { stats, textureCount, policy, maxSize, currentResolution, detail, notes } = args;
-  const resolution = currentResolution
-    ? normalizeRecoveryResolution(currentResolution, maxSize, notes)
-    : deriveRecoveryResolution(stats, textureCount, policy, detail, maxSize, notes);
-  const defaultPpu =
-    policy.modelUnitsPerBlock > 0 ? resolution.width / policy.modelUnitsPerBlock : 0;
-  const ppuTarget = Number.isFinite(defaultPpu) && defaultPpu > 0
-    ? defaultPpu
-    : DETAIL_PIXELS_PER_BLOCK[detail] / Math.max(1, policy.modelUnitsPerBlock);
-  const ppuMax = computePpuMax(resolution, stats, textureCount);
-  const ppuUsed = Math.min(ppuTarget, ppuMax);
-  if (ppuUsed + 1e-6 < ppuTarget) {
-    notes.push(
-      `Texel density reduced (target ${formatPpu(ppuTarget)}px/unit, used ${formatPpu(ppuUsed)}px/unit).`
-    );
-  }
-  return {
-    resolution,
-    textureCount,
-    ppuTarget,
-    ppuUsed
-  };
-};
-
-const normalizeRecoveryResolution = (
-  resolution: { width: number; height: number },
-  maxSize: number,
-  notes: string[]
-): { width: number; height: number } => {
-  const width = Math.trunc(resolution.width);
-  const height = Math.trunc(resolution.height);
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    notes.push(`Resolution missing; using ${MIN_RESOLUTION}x${MIN_RESOLUTION}.`);
-    return { width: MIN_RESOLUTION, height: MIN_RESOLUTION };
-  }
-  let size = Math.max(width, height);
-  if (width !== height) {
-    notes.push(`Non-square resolution detected; using ${size}x${size}.`);
-  }
-  if (size > maxSize) {
-    notes.push(`Resolution clamped to max ${maxSize}.`);
-    size = maxSize;
-  }
-  if (size < MIN_RESOLUTION) {
-    notes.push(`Resolution raised to minimum ${MIN_RESOLUTION}.`);
-    size = MIN_RESOLUTION;
-  }
-  return { width: size, height: size };
-};
-
-const deriveRecoveryResolution = (
-  stats: { totalArea: number; maxFaceWidth: number; maxFaceHeight: number },
-  textureCount: number,
-  policy: UvPolicyConfig,
-  detail: TexturePlanDetail,
-  maxSize: number,
-  notes: string[]
-): { width: number; height: number } => {
-  const basePixelsPerBlock = DETAIL_PIXELS_PER_BLOCK[detail];
-  const ppuTarget = basePixelsPerBlock / Math.max(1, policy.modelUnitsPerBlock);
-  const required = computeRequiredResolution(ppuTarget, stats, textureCount);
-  const rounded = roundUpResolution(required);
-  let size = Math.min(Math.max(rounded, MIN_RESOLUTION), maxSize);
-  if (size !== rounded) {
-    notes.push(`Resolution clamped to ${size}x${size}.`);
-  }
-  return { width: size, height: size };
-};
 
 const resolveLayout = (args: {
   ppuTarget: number;
@@ -589,58 +431,27 @@ const collectCubeStats = (cubes: Cube[]): { totalArea: number; maxFaceWidth: num
   return { totalArea, maxFaceWidth, maxFaceHeight, cubes: cubeStats };
 };
 
-const collectUsageStats = (
-  usage: TextureUsage,
-  cubes: Cube[]
-): { totalArea: number; maxFaceWidth: number; maxFaceHeight: number } => {
-  const cubeById = new Map<string, Cube>();
-  const cubeByName = new Map<string, Cube>();
-  cubes.forEach((cube) => {
-    if (cube.id) cubeById.set(cube.id, cube);
-    cubeByName.set(cube.name, cube);
-  });
-  let totalArea = 0;
-  let maxFaceWidth = 0;
-  let maxFaceHeight = 0;
-  usage.textures.forEach((texture) => {
-    texture.cubes.forEach((cubeRef) => {
-      const resolved = cubeRef.id ? cubeById.get(cubeRef.id) : undefined;
-      const cube = resolved ?? cubeByName.get(cubeRef.name);
-      if (!cube) return;
-      cubeRef.faces.forEach((face) => {
-        const dims = getFaceDimensions(cube, face.face);
-        const area = Math.max(0, dims.width) * Math.max(0, dims.height);
-        totalArea += area;
-        if (dims.width > maxFaceWidth) maxFaceWidth = dims.width;
-        if (dims.height > maxFaceHeight) maxFaceHeight = dims.height;
-      });
-    });
-  });
-  return { totalArea, maxFaceWidth, maxFaceHeight };
-};
-
-const buildTargetUsage = (usage: TextureUsage, targets: TextureTargetSet): TextureUsage => {
-  if (targets.ids.size === 0 && targets.names.size === 0) return usage;
-  return {
-    textures: usage.textures.filter(
-      (entry) => (entry.id && targets.ids.has(entry.id)) || targets.names.has(entry.name)
-    ),
-    unresolved: usage.unresolved
-  };
-};
 
 const resolveTextureNames = (
   baseName: string,
   textureCount: number,
   existingNames: Set<string>,
-  notes: string[]
+  notes: string[],
+  options?: { preferBaseName?: boolean; reuseExisting?: boolean }
 ): string[] => {
   const names: string[] = [];
+  const preferBaseName = options?.preferBaseName === true;
+  const reuseExisting = options?.reuseExisting === true;
   const suffixBase = textureCount > 1 ? '_part' : '';
   for (let i = 0; i < textureCount; i += 1) {
-    const base = textureCount > 1 ? `${baseName}${suffixBase}${i + 1}` : baseName;
-    const name = ensureUniqueName(base, existingNames);
-    if (name !== base) {
+    const base = textureCount > 1
+      ? i === 0 && preferBaseName
+        ? baseName
+        : `${baseName}${suffixBase}${i + 1}`
+      : baseName;
+    const canReuse = reuseExisting && existingNames.has(base);
+    const name = canReuse ? base : ensureUniqueName(base, existingNames);
+    if (name !== base && !canReuse) {
       notes.push(`Texture name "${base}" already exists; using "${name}".`);
     }
     names.push(name);
@@ -710,7 +521,7 @@ const buildAtlasWithRetries = (args: {
   policy: UvPolicyConfig;
   ppuTarget: number;
   notes: string[];
-}): { ok: true; data: AtlasPlan } | { ok: false; error: { code: 'invalid_payload' | 'invalid_state'; message: string; details?: Record<string, unknown> } } => {
+}): DomainResult<AtlasPlan> => {
   let ppu = Math.max(0.001, args.ppuTarget);
   for (let attempt = 0; attempt < ATLAS_RETRY_LIMIT; attempt += 1) {
     const unitsPerBlock = Math.max(1, args.resolution.width / ppu);
@@ -756,15 +567,47 @@ const buildAtlasWithRetries = (args: {
 const buildTextureSpecs = (
   groups: TextureGroup[],
   resolution: { width: number; height: number },
-  background?: string
-): Array<{ mode: 'create'; name: string; width: number; height: number; background?: string }> =>
-  groups.map((group) => ({
-    mode: 'create',
-    name: group.name,
-    width: resolution.width,
-    height: resolution.height,
-    ...(background ? { background } : {})
-  }));
+  background?: string,
+  options?: { existingNames?: Set<string>; reuseExisting?: boolean; allowExistingUpdate?: boolean }
+): Array<
+  | { mode: 'create'; name: string; width: number; height: number; background?: string }
+  | { mode: 'update'; targetName: string; width: number; height: number; background?: string; useExisting: true }
+> => {
+  const reuseExisting = options?.reuseExisting === true;
+  const allowExistingUpdate = options?.allowExistingUpdate === true;
+  const existingNames = options?.existingNames;
+  const specs: Array<
+    | { mode: 'create'; name: string; width: number; height: number; background?: string }
+    | { mode: 'update'; targetName: string; width: number; height: number; background?: string; useExisting: true }
+  > = [];
+  for (const group of groups) {
+    const name = group.name;
+    const exists = reuseExisting && existingNames ? existingNames.has(name) : false;
+    if (exists) {
+      if (allowExistingUpdate) {
+        specs.push({
+          mode: 'update',
+          targetName: name,
+          width: resolution.width,
+          height: resolution.height,
+          ...(background ? { background } : {}),
+          useExisting: true
+        });
+      }
+      continue;
+    }
+    specs.push({
+      mode: 'create',
+      name,
+      width: resolution.width,
+      height: resolution.height,
+      ...(background ? { background } : {})
+    });
+  }
+  return specs;
+};
+
+const resolvePlanMaxSize = (maxSize: number): number => Math.min(maxSize, AUTO_PLAN_MAX_RESOLUTION);
 
 const formatPpu = (value: number): string => {
   if (!Number.isFinite(value)) return '?';

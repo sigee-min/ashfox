@@ -167,7 +167,7 @@ export class BlockbenchGeometryAdapter {
           mirror_uv: params.mirror
         }).init?.();
         if (cube) {
-          this.enforceManualUvMode(cube);
+        this.enforceManualUvMode(cube);
           if (typeof params.boxUv === 'boolean') {
             cube.box_uv = params.boxUv;
             if (typeof cube.setUVMode === 'function') {
@@ -212,7 +212,11 @@ export class BlockbenchGeometryAdapter {
         if (params.newName && params.newName !== target.name) {
           renameEntity(target, params.newName);
         }
-        this.enforceManualUvMode(target);
+        const wantsManualUv =
+          Boolean(params.uv || params.uvOffset) || params.boxUv === false;
+        if (wantsManualUv) {
+          this.enforceManualUvMode(target, { preserve: true });
+        }
         if (params.from) assignVec3(target, 'from', params.from);
         if (params.to) assignVec3(target, 'to', params.to);
         if (params.origin) assignVec3(target, 'origin', params.origin);
@@ -286,7 +290,7 @@ export class BlockbenchGeometryAdapter {
       const textureRef = resolveFaceTextureRef(texture);
       withUndo({ elements: true, textures: true }, 'Assign texture', () => {
         cubes.forEach((cube) => {
-          this.enforceManualUvMode(cube);
+          this.enforceManualUvMode(cube, { preserve: true });
           const faceMap = ensureFaceMap(cube);
           const targets = faces ?? ALL_FACES;
           const uvBackup = new Map<CubeFaceDirection, [number, number, number, number] | undefined>();
@@ -339,7 +343,7 @@ export class BlockbenchGeometryAdapter {
       }
       const faceMap = ensureFaceMap(target);
       withUndo({ elements: true }, 'Set face UV', () => {
-        this.enforceManualUvMode(target);
+        this.enforceManualUvMode(target, { preserve: true });
         faceEntries.forEach(([faceKey, uv]) => {
           if (!VALID_FACE_KEYS.has(faceKey as CubeFaceDirection) || !uv) return;
           const face = faceMap[faceKey] ?? {};
@@ -374,7 +378,14 @@ export class BlockbenchGeometryAdapter {
     );
   }
 
-  private enforceManualUvMode(cube: CubeInstance): void {
+  private enforceManualUvMode(cube: CubeInstance, options?: { preserve?: boolean }): void {
+    if (options?.preserve) {
+      const usesAutoUv =
+        Boolean(cube.box_uv) || (typeof cube.autouv === 'number' && cube.autouv > 0);
+      if (usesAutoUv && typeof cube.mapAutoUV === 'function') {
+        cube.mapAutoUV();
+      }
+    }
     if (typeof cube.setUVMode === 'function') {
       cube.setUVMode(false);
     } else if (typeof cube.box_uv === 'boolean') {

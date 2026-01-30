@@ -25,6 +25,8 @@ import { ensureActiveAndRevision, ensureActiveOnly } from './guards';
 import { ensureNonBlankString } from '../services/validation';
 import { validateUvPaintSourceSize } from '../domain/uvPaintSource';
 import { fromDomainResult } from './fromDomain';
+import { computeTextureUsageId } from '../domain/textureUsage';
+import { isRecord } from '../domain/guards';
 import {
   DIMENSION_INTEGER_MESSAGE,
   DIMENSION_POSITIVE_MESSAGE,
@@ -74,7 +76,14 @@ export const runGenerateTexturePreset = (
 ): UsecaseResult<GenerateTexturePresetResult> => {
   const guardErr = ensureActiveAndRevision(ctx.ensureActive, ctx.ensureRevisionMatch, payload.ifRevision);
   if (guardErr) return fail(guardErr);
-  const ctxRes = validateTexturePresetContext(ctx, payload);
+  const autoRecoverEnabled = payload.autoRecover !== false;
+  let ctxRes = validateTexturePresetContext(ctx, payload);
+  if (!ctxRes.ok && autoRecoverEnabled && isUvRecoveryCandidate(ctxRes.error)) {
+    const recovery = tryAutoRecoverPreset(ctx, payload);
+    if (!recovery.ok) return fail(recovery.error);
+    const retryPayload = { ...payload, uvUsageId: recovery.value.uvUsageId, autoRecover: false };
+    ctxRes = validateTexturePresetContext(ctx, retryPayload);
+  }
   if (!ctxRes.ok) return fail(ctxRes.error);
   const paintRes = buildPaintedTexture(ctx, ctxRes.value);
   if (!paintRes.ok) return fail(paintRes.error);
@@ -395,4 +404,31 @@ const upsertTextureFromPreset = (
         height: context.height,
         ifRevision: payload.ifRevision
       });
+};
+
+const tryAutoRecoverPreset = (
+  ctx: TextureToolContext,
+  payload: GenerateTexturePresetPayload
+): UsecaseResult<{ uvUsageId: string }> => {
+  const atlasRes = runAutoUvAtlas(ctx, { apply: true, ifRevision: payload.ifRevision });
+  if (!atlasRes.ok) return atlasRes;
+  const usageRes = ctx.editor.getTextureUsage({});
+  if (usageRes.error) return fail(usageRes.error);
+  const usage = toDomainTextureUsage(usageRes.result ?? { textures: [] });
+  const uvUsageId = computeTextureUsageId(usage);
+  return ok({ uvUsageId });
+};
+
+const isUvRecoveryCandidate = (error: ToolError): boolean => {
+  if (error.code !== 'invalid_state') return false;
+  const details = error.details;
+  if (isRecord(details)) {
+    const reason = typeof details.reason === 'string' ? details.reason : null;
+    if (reason && reason.startsWith('uv_')) return true;
+    if (Array.isArray(details.overlaps) && details.overlaps.length > 0) return true;
+    if (Array.isArray(details.mismatches) && details.mismatches.length > 0) return true;
+    if (typeof details.expected === 'string' && typeof details.current === 'string') return true;
+  }
+  const message = String(error.message ?? '').toLowerCase();
+  return message.includes('uv');
 };

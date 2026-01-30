@@ -111,14 +111,15 @@ Historically this project used placeholder strings like `"<from get_project_stat
 ```json
 {
   "type": "call_tool",
-  "tool": "auto_uv_atlas",
+  "tool": "texture_pipeline",
   "arguments": {
-    "apply": true,
+    "autoRecover": true,
+    "preflight": { "includeUsage": false },
     "ifRevision": {
       "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" }
     }
   },
-  "reason": "Recover by repacking UVs, then repaint.",
+  "reason": "Recover by plan-based re-UV (auto-split, <=512, max 16 textures), then repaint.",
   "priority": 3
 }
 ```

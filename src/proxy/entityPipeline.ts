@@ -3,7 +3,6 @@ import { collectTextureTargets } from '../domain/uvTargets';
 import { applyTextureSpecSteps, createApplyReport } from './apply';
 import { buildPipelineResult } from './pipelineResult';
 import { validateEntityPipeline } from './validators';
-import { resolveTextureUsageForTargets } from './texturePipeline/usageResolver';
 import type { ProxyPipelineDeps } from './types';
 import type { ToolResponse } from '../types';
 import { err } from '../services/toolResponse';
@@ -16,6 +15,13 @@ import { PROXY_FORMAT_NOT_IMPLEMENTED } from '../shared/messages';
 import { buildClarificationNextActions } from './nextActionHelpers';
 import { getEntityPipelineClarificationQuestions } from './clarifications';
 import { applyTextureCleanup } from './textureCleanup';
+import { createTexturePipelineContext, runPreflightStep } from './texturePipeline/steps';
+import { runAutoPlanStep } from './texturePipeline/autoPlan';
+import type { TexturePipelineSteps } from './texturePipeline/types';
+import { buildFacePaintPresets, summarizeFacePaintUsage } from './texturePipeline/facePaint';
+import { loadProjectState } from './projectState';
+import type { GenerateTexturePresetResult } from '../types';
+import { ensureUvUsageForTargets } from './uvGuardian';
 
 export const entityPipelineProxy = async (
   deps: ProxyPipelineDeps,
@@ -23,7 +29,7 @@ export const entityPipelineProxy = async (
 ): Promise<ToolResponse<EntityPipelineResult>> => {
   let clarificationQuestions: string[] = [];
   let shouldPlanOnly = false;
-  return runProxyPipeline(deps, payload, {
+  return runProxyPipeline<EntityPipelinePayload, EntityPipelineResult>(deps, payload, {
     validate: (payloadValue, limits) => {
       const v = validateEntityPipeline(payloadValue, limits);
       if (!v.ok) return v;
@@ -41,6 +47,10 @@ export const entityPipelineProxy = async (
       const steps: EntityPipelineSteps = {};
       const format = payload.format;
       const targetVersion = payload.targetVersion ?? 'v4';
+      const facePaintEntries = Array.isArray(payload.facePaint) ? payload.facePaint : [];
+      const hasFacePaint = facePaintEntries.length > 0;
+      const autoRecoverEnabled = payload.autoRecover !== false;
+      const facePaintAutoRecover = autoRecoverEnabled;
 
       if (shouldPlanOnly) {
         const response = pipeline.ok(
@@ -57,112 +67,236 @@ export const entityPipelineProxy = async (
         effectiveRevision
       );
       const needsFull = Boolean(payload.model || (payload.animations && payload.animations.length > 0));
-      const stateRes = pipeline.require(
-        ensureProjectAndLoadProject({
-          service: deps.service,
-          meta: pipeline.meta,
-          ensurePayload,
-          detail: needsFull ? 'full' : 'summary',
-          includeUsage: false,
-          refreshRevision: Boolean(ensurePayload)
-        })
-      );
-      if (stateRes.ensure) {
-        steps.project = stateRes.ensure;
+      const stateRes = ensureProjectAndLoadProject({
+        service: deps.service,
+        meta: pipeline.meta,
+        ensurePayload,
+        detail: needsFull ? 'full' : 'summary',
+        includeUsage: false,
+        refreshRevision: Boolean(ensurePayload)
+      });
+      if (!stateRes.ok) return stateRes;
+      if (stateRes.data.ensure) {
+        steps.project = stateRes.data.ensure;
       }
-      if (stateRes.revision) effectiveRevision = stateRes.revision;
+      if (stateRes.data.revision) effectiveRevision = stateRes.data.revision;
       const formatError = requireProjectFormat(
-        stateRes.project.format,
+        stateRes.data.project.format,
         'geckolib',
         pipeline.meta,
         deps.service,
         'entity_pipeline'
       );
-      if (formatError) pipeline.require(formatError);
+      if (formatError) return formatError;
       if (payload.model) {
-        const project = stateRes.project;
-        const applyRes = pipeline.require(
-          applyModelPlanStep({
-            service: deps.service,
-            meta: pipeline.meta,
-            model: payload.model,
-            existingBones: project.bones ?? [],
-            existingCubes: project.cubes ?? [],
-            mode: 'merge',
-            deleteOrphans: false,
-            limits: deps.limits,
-            ifRevision: effectiveRevision
-          })
-        );
+        const project = stateRes.data.project;
+        const applyRes = applyModelPlanStep({
+          service: deps.service,
+          meta: pipeline.meta,
+          model: payload.model,
+          existingBones: project.bones ?? [],
+          existingCubes: project.cubes ?? [],
+          mode: 'merge',
+          deleteOrphans: false,
+          limits: deps.limits,
+          ifRevision: effectiveRevision
+        });
+        if (!applyRes.ok) return applyRes;
         steps.model = {
           applied: true,
-          plan: applyRes.plan.summary,
-          report: applyRes.report,
-          ...(applyRes.warnings.length > 0 ? { warnings: applyRes.warnings } : {})
+          plan: applyRes.data.plan.summary,
+          report: applyRes.data.report,
+          ...(applyRes.data.warnings.length > 0 ? { warnings: applyRes.data.warnings } : {})
         };
       }
+      const textureSteps: TexturePipelineSteps = {};
+      const textureCtx = createTexturePipelineContext({
+        deps,
+        pipeline,
+        steps: textureSteps,
+        includePreflight: false,
+        includeUsage: true
+      });
+
+      const attachTextureSteps = () => {
+        if (textureSteps.plan) steps.texturePlan = textureSteps.plan;
+        if (textureSteps.presets) steps.presets = textureSteps.presets;
+      };
+
+      if (payload.texturePlan) {
+        const planRes = await runAutoPlanStep(textureCtx, payload.texturePlan, {
+          planOnly: false,
+          ifRevision: effectiveRevision
+        });
+        if (!planRes.ok) return planRes;
+        attachTextureSteps();
+      }
+
+      if (hasFacePaint) {
+        if (!textureCtx.currentUvUsageId || !textureCtx.preflightUsage) {
+          const preflightRes = runPreflightStep(textureCtx, 'before');
+          if (!preflightRes.ok) return preflightRes;
+        }
+        if (!textureCtx.preflightUsage || !textureCtx.currentUvUsageId) {
+          return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
+        }
+        const summary = summarizeFacePaintUsage(facePaintEntries, textureCtx.preflightUsage);
+        const targets = summary.targets;
+        const resolved = await ensureUvUsageForTargets({
+          deps,
+          meta: pipeline.meta,
+          targets,
+          uvUsageId: textureCtx.currentUvUsageId,
+          usageOverride: textureCtx.preflightUsage,
+          autoRecover: facePaintAutoRecover,
+          requireUv: true,
+          plan: facePaintAutoRecover
+            ? {
+                context: textureCtx,
+                existingPlan: payload.texturePlan ?? null,
+                ifRevision: effectiveRevision,
+                reuseExistingTextures: true
+              }
+            : undefined
+        });
+        if (!resolved.ok) return resolved;
+        textureCtx.currentUvUsageId = resolved.data.uvUsageId;
+        textureCtx.preflightUsage = resolved.data.usage;
+        attachTextureSteps();
+        const projectRes = loadProjectState(deps.service, pipeline.meta, 'summary');
+        if (!projectRes.ok) return projectRes;
+        const facePaintPresets = buildFacePaintPresets({
+          entries: facePaintEntries,
+          usage: resolved.data.usage,
+          project: projectRes.data
+        });
+        if (!facePaintPresets.ok) return facePaintPresets;
+        const presetResults: GenerateTexturePresetResult[] = [];
+        for (const preset of facePaintPresets.data.presets) {
+          const presetRes = pipeline.wrap(
+            deps.service.generateTexturePreset({
+              preset: preset.preset,
+              width: preset.width,
+              height: preset.height,
+              uvUsageId: resolved.data.uvUsageId,
+              name: preset.name,
+              targetId: preset.targetId,
+              targetName: preset.targetName,
+              mode: preset.mode,
+              seed: preset.seed,
+              palette: preset.palette,
+              uvPaint: preset.uvPaint,
+              ifRevision: effectiveRevision
+            })
+          );
+          if (!presetRes.ok) return presetRes;
+          presetResults.push(presetRes.data);
+        }
+        if (presetResults.length > 0) {
+          const existing = steps.presets;
+          const merged = existing ? [...existing.results, ...presetResults] : presetResults;
+          const applied = (existing?.applied ?? 0) + presetResults.length;
+          const nextRecovery = existing?.recovery ?? resolved.data.recovery;
+          const nextUvUsageId = existing?.uvUsageId ?? (nextRecovery ? resolved.data.uvUsageId : undefined);
+          steps.presets = {
+            applied,
+            results: merged,
+            ...(nextRecovery ? { recovery: nextRecovery, uvUsageId: nextUvUsageId } : {})
+          };
+          const metaRes = pipeline.wrap(
+            deps.service.setProjectMeta({
+              meta: { facePaint: facePaintEntries },
+              ifRevision: effectiveRevision
+            })
+          );
+          if (!metaRes.ok) return metaRes;
+          steps.facePaint = {
+            applied: presetResults.length,
+            materials: facePaintPresets.data.materials,
+            textures: facePaintPresets.data.textures,
+            uvUsageId: resolved.data.uvUsageId,
+            ...(resolved.data.recovery ? { recovery: resolved.data.recovery } : {})
+          };
+        }
+      }
+
       if (payload.textures && payload.textures.length > 0) {
         const targets = collectTextureTargets(payload.textures);
-        const resolved = pipeline.require(
-          resolveTextureUsageForTargets({
-            deps,
-            payload,
-            meta: pipeline.meta,
-            targets,
-            uvUsageId: payload.uvUsageId
-          })
-        );
-        const usage = resolved.usage;
-        const recovery = resolved.recovery;
-        const recoveredUvUsageId = resolved.uvUsageId;
+        if (!textureCtx.currentUvUsageId) {
+          const preflightRes = runPreflightStep(textureCtx, 'before');
+          if (!preflightRes.ok) return preflightRes;
+        }
+        if (!textureCtx.currentUvUsageId) {
+          return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
+        }
+        const resolved = await ensureUvUsageForTargets({
+          deps,
+          meta: pipeline.meta,
+          targets,
+          uvUsageId: textureCtx.currentUvUsageId,
+          usageOverride: textureCtx.preflightUsage,
+          autoRecover: autoRecoverEnabled,
+          requireUv: true,
+          plan: autoRecoverEnabled
+            ? {
+                context: textureCtx,
+                existingPlan: payload.texturePlan ?? null,
+                ifRevision: effectiveRevision,
+                reuseExistingTextures: true
+              }
+            : undefined
+        });
+        if (!resolved.ok) return resolved;
+        textureCtx.currentUvUsageId = resolved.data.uvUsageId;
+        textureCtx.preflightUsage = resolved.data.usage;
+        attachTextureSteps();
         const report = createApplyReport();
-        pipeline.require(
-          await applyTextureSpecSteps(
-            deps.service,
-            deps.dom,
-            deps.limits,
-            payload.textures,
-            report,
-            pipeline.meta,
-            deps.log,
-            usage
-          )
+        const applyRes = await applyTextureSpecSteps(
+          deps.service,
+          deps.dom,
+          deps.limits,
+          payload.textures,
+          report,
+          pipeline.meta,
+          deps.log,
+          resolved.data.usage
         );
+        if (!applyRes.ok) return applyRes;
         steps.textures = {
           applied: true,
-          report,
-          ...(recovery
+          report: applyRes.data,
+          ...(resolved.data.recovery
             ? {
-                recovery,
-                uvUsageId: recoveredUvUsageId
+                recovery: resolved.data.recovery,
+                uvUsageId: resolved.data.uvUsageId
               }
-            : {})
+            : resolved.data.uvUsageId
+              ? { uvUsageId: resolved.data.uvUsageId }
+              : {})
         };
       }
       if (payload.animations && payload.animations.length > 0) {
-        const animRes = pipeline.require(
-          applyEntityAnimations(
-            deps.service,
-            pipeline.meta,
-            payload.animations,
-            effectiveRevision,
-            stateRes.project
-          )
+        const animRes = applyEntityAnimations(
+          deps.service,
+          pipeline.meta,
+          payload.animations,
+          effectiveRevision,
+          stateRes.data.project
         );
-        steps.animations = { applied: true, clips: animRes.clips, keyframes: animRes.keyframes };
+        if (!animRes.ok) return animRes;
+        steps.animations = { applied: true, clips: animRes.data.clips, keyframes: animRes.data.keyframes };
       }
 
       if (payload.cleanup?.delete && payload.cleanup.delete.length > 0) {
-        const cleanupRes = pipeline.require(
-          applyTextureCleanup(
-            deps,
-            pipeline.meta,
-            payload.cleanup.delete,
-            payload.cleanup.force === true,
-            effectiveRevision
-          )
+        const cleanupRes = applyTextureCleanup(
+          deps,
+          pipeline.meta,
+          payload.cleanup.delete,
+          payload.cleanup.force === true,
+          effectiveRevision
         );
-        steps.cleanup = cleanupRes;
+        if (!cleanupRes.ok) return cleanupRes;
+        steps.cleanup = cleanupRes.data;
       }
       const extras: { applied: true; format: typeof format; targetVersion: typeof targetVersion } = {
         applied: true,

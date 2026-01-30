@@ -44,6 +44,22 @@ const hashSnapshot = (snapshot: SessionState): string => {
     formatId: snapshot.formatId ?? '',
     name: snapshot.name ?? '',
     dirty: snapshot.dirty ?? null,
+    meta: snapshot.meta
+      ? {
+          facePaint: snapshot.meta.facePaint?.map((entry) => ({
+            material: entry.material,
+            palette: entry.palette ?? null,
+            seed: entry.seed ?? null,
+            cubeIds: entry.cubeIds ?? null,
+            cubeNames: entry.cubeNames ?? null,
+            faces: entry.faces ?? null,
+            scope: entry.scope ?? null,
+            mapping: entry.mapping ?? null,
+            padding: entry.padding ?? null,
+            anchor: entry.anchor ?? null
+          }))
+        }
+      : null,
     bones: snapshot.bones.map((b) => [
       b.id ?? '',
       b.name,
@@ -107,6 +123,22 @@ const hashString = (value: string): string => {
 
 const cloneSnapshot = (snapshot: SessionState): SessionState => ({
   ...snapshot,
+  meta: snapshot.meta
+    ? {
+        facePaint: snapshot.meta.facePaint?.map((entry) => ({
+          material: entry.material,
+          palette: entry.palette ? [...entry.palette] : undefined,
+          seed: entry.seed,
+          cubeIds: entry.cubeIds ? [...entry.cubeIds] : undefined,
+          cubeNames: entry.cubeNames ? [...entry.cubeNames] : undefined,
+          faces: entry.faces ? [...entry.faces] : undefined,
+          scope: entry.scope,
+          mapping: entry.mapping,
+          padding: entry.padding,
+          anchor: entry.anchor ? ([entry.anchor[0], entry.anchor[1]] as [number, number]) : undefined
+        }))
+      }
+    : undefined,
   bones: snapshot.bones.map((bone) => ({ ...bone })),
   cubes: snapshot.cubes.map((cube) => ({ ...cube })),
   textures: snapshot.textures.map((tex) => ({ ...tex })),

@@ -19,7 +19,7 @@
 - `apply_uv_spec` updates UVs and returns a new uvUsageId.
 - `apply_texture_spec` create/update mutates textures and revision.
 - `generate_texture_preset` create/update works with uvUsageId.
-- `auto_uv_atlas` plans/applies and updates resolution when needed.
+- `auto_uv_atlas` plans/applies and updates resolution when needed (low-level only).
 - `assign_texture` binds textures without changing UVs.
 - `set_face_uv` updates per-face UVs as provided.
 - `render_preview` returns content output.

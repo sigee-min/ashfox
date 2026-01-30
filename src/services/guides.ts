@@ -122,6 +122,18 @@ Notes:
 - If UVs change, preflight again and repaint.
 - For >=64px textures, use generate_texture_preset.
 
+FacePaint (material-first):
+\`\`\`json
+{
+  "plan": { "name": "tractor", "detail": "high", "maxTextures": 1 },
+  "facePaint": [
+    { "material": "metal", "cubeNames": ["body"] },
+    { "material": "rubber", "cubeNames": ["wheel_left", "wheel_right"] }
+  ],
+  "autoRecover": true
+}
+\`\`\`
+
 Example (generate_texture_preset):
 \`\`\`json
 {
@@ -197,9 +209,7 @@ Example (texture_pipeline, minimal):
     description: 'Auto atlas packing and resolution growth strategy.',
 text: `# UV Atlas Guide
 
-Use auto_uv_atlas when UVs overlap or there is not enough space.
-
-Note: auto_uv_atlas is available only when low-level tools are exposed. Otherwise rely on texture_pipeline with autoRecover=true.
+Use auto_uv_atlas only for low-level workflows. For high-level workflows, rely on texture_pipeline with autoRecover=true (plan-based re-UV, auto-split, <=512, max 16 textures).
 
 Key points:
 - Only identical rects may overlap.
@@ -245,7 +255,7 @@ Workflow:
 - apply_uv_spec (or set_face_uv)
 - preflight_texture again
 - apply_texture_spec / generate_texture_preset
-- auto_uv_atlas when UVs are crowded
+- texture_pipeline.plan or autoRecover when UVs are crowded (auto-split, <=512, max 16 textures)
 
 Notes:
 - preflight_texture computes uvUsageId; required by apply_uv_spec/apply_texture_spec/generate_texture_preset.
@@ -263,6 +273,10 @@ text: `# LLM Texture Strategy (Summary)
 
 Note: If low-level tools are hidden, use texture_pipeline for the full workflow.
 
+FacePaint flow:
+- Use texture_pipeline with plan + facePaint to describe materials per cube/face.
+- autoRecover=true re-plans UVs when overlap/scale issues occur.
+
 Primary flow:
 1) assign_texture
 2) preflight_texture
@@ -273,11 +287,10 @@ Primary flow:
 
 Recovery loop:
 - validate reports uv_scale_mismatch / uv_overlap, or a mutation returns invalid_state about overlap/scale/uvUsageId:
-??auto_uv_atlas (apply=true)
-??preflight_texture
+??texture_pipeline with autoRecover=true (plan-based re-UV, auto-split, <=512, max 16 textures)
 ??repaint
 
-Tip: apply_texture_spec and texture_pipeline support autoRecover=true to run the recovery loop once automatically.
+Tip: apply_texture_spec only returns guidance; use texture_pipeline autoRecover to run the recovery loop once automatically.
 Tip: texture_pipeline can run the full workflow (assign ??preflight ??uv ??paint ??preview) in one call.
 
 Failure examples:
@@ -287,8 +300,7 @@ Failure examples:
 - Retry apply_uv_spec/apply_texture_spec with the new uvUsageId.
 
 2) UV overlap / UV scale mismatch (invalid_state):
-- Run auto_uv_atlas (apply=true).
-- Call preflight_texture again.
+- Run texture_pipeline with autoRecover=true (plan-based re-UV, auto-split, <=512, max 16 textures).
 - Repaint using the refreshed mapping.
 
 See full guide in docs/llm-texture-strategy.md.
@@ -344,7 +356,7 @@ This workflow prioritizes GeckoLib; Modded/OptiFine formats are not covered yet.
 Recommended steps:
 1) entity_pipeline with format=geckolib (targetVersion v3/v4)
 2) include model bones/cubes (root-based hierarchy)
-3) include textures + uvUsageId if painting
+3) include texturePlan (auto textures + UV) plus facePaint, or textures + uvUsageId if painting
 4) include animations (clips + keyframes)
 5) add triggers (sound/particle/timeline) if needed
 
@@ -363,6 +375,13 @@ Example:
     "cubes": [
       { "id": "body", "parentId": "body", "from": [-4, 0, -2], "to": [4, 12, 2] }
     ]
+  },
+  "texturePlan": {
+    "name": "my_entity",
+    "detail": "medium",
+    "maxTextures": 1,
+    "resolution": { "width": 128, "height": 128 },
+    "paint": { "preset": "painted_metal" }
   },
   "textures": [],
   "animations": [

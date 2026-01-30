@@ -5,7 +5,7 @@ import { TEXTURE_WORKFLOW_INSTRUCTIONS } from './services/toolInstructions';
 
 export const PLUGIN_ID = 'bbmcp';
 export const PLUGIN_VERSION = '0.0.2';
-export const TOOL_SCHEMA_VERSION = '2026-01-28';
+export const TOOL_SCHEMA_VERSION = '2026-01-29';
 export const DEFAULT_SERVER_HOST = '127.0.0.1';
 export const DEFAULT_SERVER_PORT = 8787;
 export const DEFAULT_SERVER_PATH = '/mcp';

@@ -56,6 +56,9 @@ export const ADAPTER_PREVIEW_ANIMATION_CLIP_NOT_FOUND = (name: string) => `anima
 export const ADAPTER_PROJECT_UNSAVED_CHANGES =
   'Project has unsaved changes. Save or close it before creating a new project.';
 export const ADAPTER_PROJECT_CREATE_UNAVAILABLE = 'Blockbench project creation unavailable';
+export const ADAPTER_PROJECT_CLOSE_UNAVAILABLE = 'Blockbench project close unavailable';
+export const ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES =
+  'Project has unsaved changes. Save it or retry with force=true to close without saving.';
 export const ADAPTER_BLOCKBENCH_WRITEFILE_UNAVAILABLE = 'Blockbench.writeFile not available';
 export const ADAPTER_PROJECT_DIALOG_INPUT_REQUIRED =
   'Project dialog requires input. Provide ensure_project.dialog values and set confirmDialog=true.';

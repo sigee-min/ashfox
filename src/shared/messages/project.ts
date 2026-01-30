@@ -22,6 +22,8 @@ export const PROJECT_CREATE_REQUIREMENTS_ON_MISSING_FIX = 'Provide format and na
 export const PROJECT_CREATE_REQUIREMENTS_ON_MISMATCH_FIX = 'Provide format and name or set onMismatch=reuse/error.';
 export const PROJECT_FORMAT_UNKNOWN = 'Active project format is unknown.';
 export const PROJECT_MISMATCH = 'Active project does not match requested criteria.';
+export const PROJECT_DELETE_NAME_REQUIRED = 'target.name is required when action=delete.';
+export const PROJECT_DELETE_NAME_REQUIRED_FIX = 'Provide target.name matching the open project.';
 export const PROJECT_FORMAT_REQUIRED_FOR_TOOL = (expected: string, toolName: string) =>
   `Active project format must be ${expected} for ${toolName}.`;
 export const PROJECT_FORMAT_REQUIRED_FOR_TOOL_FIX = (toolName: string, expected: string) =>

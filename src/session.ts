@@ -1,4 +1,6 @@
-import { FormatKind, ToolResponse, ToolError } from './types';
+import type { FormatKind, ToolResponse, ToolError } from './types';
+import type { CubeFaceDirection } from './domain/model';
+import type { UvPaintMapping, UvPaintScope } from './domain/uvPaintSpec';
 import { err } from './services/toolResponse';
 import { PROJECT_NO_ACTIVE } from './shared/messages';
 import { TextureFrameOrderType, TextureMeta, TexturePbrChannel, TextureRenderMode, TextureRenderSides } from './types/texture';
@@ -73,6 +75,23 @@ export interface TrackedAnimation {
   triggers?: TrackedAnimationTrigger[];
 }
 
+export type FacePaintIntent = {
+  material: string;
+  palette?: string[];
+  seed?: number;
+  cubeIds?: string[];
+  cubeNames?: string[];
+  faces?: CubeFaceDirection[];
+  scope?: UvPaintScope;
+  mapping?: UvPaintMapping;
+  padding?: number;
+  anchor?: [number, number];
+};
+
+export type ProjectMeta = {
+  facePaint?: FacePaintIntent[];
+};
+
 const cloneAnimationChannel = (channel: TrackedAnimationChannel): TrackedAnimationChannel => ({
   ...channel,
   keys: [...channel.keys]
@@ -97,6 +116,7 @@ export interface SessionState {
   formatId?: string | null;
   name: string | null;
   dirty?: boolean;
+  meta?: ProjectMeta;
   bones: TrackedBone[];
   cubes: TrackedCube[];
   textures: TrackedTexture[];
@@ -111,6 +131,7 @@ export class ProjectSession {
     formatId: null,
     name: null,
     dirty: undefined,
+    meta: undefined,
     bones: [],
     cubes: [],
     textures: [],
@@ -130,6 +151,7 @@ export class ProjectSession {
       formatId: formatId ?? null,
       name,
       dirty: undefined,
+      meta: undefined,
       bones: [],
       cubes: [],
       textures: [],
@@ -152,6 +174,7 @@ export class ProjectSession {
       formatId: snapshot.formatId ?? null,
       name,
       dirty: snapshot.dirty,
+      meta: cloneProjectMeta(snapshot.meta),
       bones: [...snapshot.bones],
       cubes: [...snapshot.cubes],
       textures: [...snapshot.textures],
@@ -168,6 +191,7 @@ export class ProjectSession {
       formatId: null,
       name: null,
       dirty: undefined,
+      meta: undefined,
       bones: [],
       cubes: [],
       textures: [],
@@ -180,6 +204,7 @@ export class ProjectSession {
   snapshot(): SessionState {
     return {
       ...this.state,
+      meta: cloneProjectMeta(this.state.meta),
       bones: [...this.state.bones],
       cubes: [...this.state.cubes],
       textures: [...this.state.textures],
@@ -411,4 +436,31 @@ export class ProjectSession {
       anim.triggers.push(trigger);
     }
   }
+
+  updateMeta(meta: ProjectMeta) {
+    this.state.meta = {
+      ...(this.state.meta ?? {}),
+      ...cloneProjectMeta(meta)
+    };
+  }
 }
+
+const cloneFacePaintIntent = (intent: FacePaintIntent): FacePaintIntent => ({
+  material: intent.material,
+  palette: intent.palette ? [...intent.palette] : undefined,
+  seed: intent.seed,
+  cubeIds: intent.cubeIds ? [...intent.cubeIds] : undefined,
+  cubeNames: intent.cubeNames ? [...intent.cubeNames] : undefined,
+  faces: intent.faces ? [...intent.faces] : undefined,
+  scope: intent.scope,
+  mapping: intent.mapping,
+  padding: intent.padding,
+  anchor: intent.anchor ? ([intent.anchor[0], intent.anchor[1]] as [number, number]) : undefined
+});
+
+const cloneProjectMeta = (meta?: ProjectMeta): ProjectMeta | undefined => {
+  if (!meta) return undefined;
+  return {
+    facePaint: meta.facePaint ? meta.facePaint.map(cloneFacePaintIntent) : undefined
+  };
+};

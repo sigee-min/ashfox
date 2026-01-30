@@ -4,8 +4,8 @@ import type { TextureUsageResult } from '../../src/ports/editor';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
 import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
-import { resolveTextureUsageForTargets } from '../../src/proxy/texturePipeline/usageResolver';
-import { DEFAULT_LIMITS, makeProxyDeps, ok } from './helpers';
+import { ensureUvUsageForTargets } from '../../src/proxy/uvGuardian';
+import { DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync } from './helpers';
 
 const usageResult: TextureUsageResult = {
   textures: [
@@ -67,20 +67,22 @@ const meta = { includeState: false, includeDiff: false, diffDetail: 'summary' } 
 const targets = { ids: new Set<string>(), names: new Set<string>() };
 
 // Auto-recover path: uvUsageId mismatch triggers preflight recovery.
-{
-  const res = resolveTextureUsageForTargets({
-    deps,
-    payload: { autoRecover: true },
-    meta,
-    targets,
-    uvUsageId: 'stale'
-  });
+registerAsync(
+  (async () => {
+    const res = await ensureUvUsageForTargets({
+      deps,
+      meta,
+      targets,
+      uvUsageId: 'stale',
+      autoRecover: true
+    });
 
-  assert.equal(res.ok, true);
-  if (res.ok) {
-    assert.equal(res.data.uvUsageId, currentUsageId);
-    assert.equal(res.data.recovery?.reason, 'uv_usage_mismatch');
-  }
-  assert.equal(calls.preflight, 1);
-  assert.equal(calls.autoUvAtlas, 0);
-}
+    assert.equal(res.ok, true);
+    if (res.ok) {
+      assert.equal(res.data.uvUsageId, currentUsageId);
+      assert.equal(res.data.recovery?.reason, 'uv_usage_mismatch');
+    }
+    assert.equal(calls.preflight, 1);
+    assert.equal(calls.autoUvAtlas, 0);
+  })()
+);

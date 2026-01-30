@@ -53,6 +53,8 @@ const hasTextureContent = (texture: TextureSpec): boolean => {
 export const getTexturePipelineClarificationQuestions = (payload: TexturePipelinePayload): string[] => {
   const textures = Array.isArray(payload.textures) ? payload.textures : [];
   const presets = Array.isArray(payload.presets) ? payload.presets : [];
+  const facePaint = Array.isArray(payload.facePaint) ? payload.facePaint : [];
+  if (facePaint.length > 0) return [];
   const blankTextures =
     textures.length > 0 && textures.every((texture) => !hasTextureContent(texture));
   if (blankTextures && presets.length === 0) {
@@ -74,8 +76,8 @@ export const getEntityPipelineClarificationQuestions = (payload: EntityPipelineP
   }
 
   const questions: string[] = [];
-  if (hasTextures && !payload.uvUsageId) {
-    questions.push('uvUsageId? (paste from preflight_texture, or say "run preflight")');
+  if (hasTextures && !payload.uvUsageId && !payload.texturePlan) {
+    questions.push('Provide uvUsageId or texturePlan. (Paste uvUsageId from preflight_texture or add texturePlan.)');
   }
   if (payload.model && isMinimalModelSpec(payload.model) && !hasTextures && !hasAnimations) {
     questions.push('What entity should I model? (short noun)');

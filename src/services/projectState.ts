@@ -67,7 +67,8 @@ export class ProjectStateService {
       formatId: snapshot.formatId ?? null,
       dirty: snapshot.dirty,
       revision,
-      counts
+      counts,
+      ...(snapshot.meta ? { meta: snapshot.meta } : {})
     };
     if (snapshot.textures.length > 0) {
       project.textures = snapshot.textures;

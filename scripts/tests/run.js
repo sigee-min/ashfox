@@ -38,8 +38,13 @@ const tests = [
   'proxyTexture.test.ts',
   'texturePipelineSteps.test.ts',
   'texturePipelineRecoveryPath.test.ts',
+  'texturePipelineAutoUv.test.ts',
+  'texturePresetAutoRecover.test.ts',
   'textureRecovery.test.ts',
-  'sidecarCodec.test.ts'
+  'sidecarCodec.test.ts',
+  'usecaseCoverage.test.ts',
+  'validationSnapshot.test.ts',
+  'stateServices.test.ts'
 ];
 
 (async () => {

@@ -17,6 +17,7 @@ import type {
   EnsureProjectMatch,
   EnsureProjectOnMismatch,
   EnsureProjectOnMissing,
+  EnsureProjectAction,
   TexturePresetName,
   ToolName
 } from '../shared/toolConstants';
@@ -24,15 +25,18 @@ import type {
 export type { UvPaintMapping, UvPaintScope, UvPaintSource, UvPaintSpec, UvPaintTarget } from '../domain/uvPaintSpec';
 export type { CubeFaceDirection } from '../domain/model';
 
-export type { ToolName, EnsureProjectMatch, EnsureProjectOnMismatch, EnsureProjectOnMissing, TexturePresetName };
+export type { ToolName, EnsureProjectMatch, EnsureProjectOnMismatch, EnsureProjectOnMissing, EnsureProjectAction, TexturePresetName };
 
 export interface EnsureProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+  action?: EnsureProjectAction;
+  target?: { name?: string };
   format?: FormatKind;
   name?: string;
   match?: EnsureProjectMatch;
   onMismatch?: EnsureProjectOnMismatch;
   onMissing?: EnsureProjectOnMissing;
   confirmDiscard?: boolean;
+  force?: boolean;
   dialog?: Record<string, unknown>;
   confirmDialog?: boolean;
 }
@@ -53,6 +57,7 @@ export interface GenerateTexturePresetPayload extends IncludeStateOption, Includ
   width: number;
   height: number;
   uvUsageId: string;
+  autoRecover?: boolean;
   name?: string;
   targetId?: string;
   targetName?: string;
@@ -217,7 +222,7 @@ export interface ToolPayloadMap {
 }
 
 export interface EnsureProjectResult {
-  action: 'created' | 'reused';
+  action: 'created' | 'reused' | 'deleted';
   project: {
     id: string;
     format: FormatKind;

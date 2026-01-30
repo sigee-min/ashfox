@@ -54,6 +54,10 @@ export class BlockbenchEditor implements EditorPort {
     return this.project.createProject(name, formatId, kind, options);
   }
 
+  closeProject(options?: { force?: boolean }): ToolError | null {
+    return this.project.closeProject(options);
+  }
+
   importTexture(params: ImportTextureCommand): ToolError | null {
     return this.textures.importTexture(params);
   }

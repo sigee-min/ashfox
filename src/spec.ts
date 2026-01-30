@@ -104,8 +104,7 @@ export type ModelSpec = {
   };
 };
 
-export type ModelEnsureProjectOptions = {
-  format?: FormatKind;
+type EnsureProjectOptionsBase = {
   name?: string;
   match?: EnsureProjectMatch;
   onMismatch?: EnsureProjectOnMismatch;
@@ -113,6 +112,10 @@ export type ModelEnsureProjectOptions = {
   confirmDiscard?: boolean;
   confirmDialog?: boolean;
   dialog?: Record<string, unknown>;
+};
+
+export type ModelEnsureProjectOptions = EnsureProjectOptionsBase & {
+  format?: FormatKind;
 };
 
 export interface ModelPipelinePayload {
@@ -167,6 +170,19 @@ export type UvFaceDirection = CubeFaceDirection;
 
 export type UvFaceMap = FaceUvMap;
 
+export type FacePaintSpec = {
+  material: string;
+  palette?: string[];
+  seed?: number;
+  cubeIds?: string[];
+  cubeNames?: string[];
+  faces?: CubeFaceDirection[];
+  scope?: UvPaintScope;
+  mapping?: UvPaintMapping;
+  padding?: number;
+  anchor?: [number, number];
+};
+
 export type UvAssignmentSpec = {
   cubeId?: string;
   cubeName?: string;
@@ -217,15 +233,7 @@ export type EntityAnimationSpec = {
   triggers?: EntityAnimationTrigger[];
 };
 
-export type EntityEnsureProjectOptions = {
-  name?: string;
-  match?: EnsureProjectMatch;
-  onMismatch?: EnsureProjectOnMismatch;
-  onMissing?: EnsureProjectOnMissing;
-  confirmDiscard?: boolean;
-  confirmDialog?: boolean;
-  dialog?: Record<string, unknown>;
-};
+export type EntityEnsureProjectOptions = EnsureProjectOptionsBase;
 
 export interface EntityPipelinePayload {
   format: EntityFormat;
@@ -233,7 +241,9 @@ export interface EntityPipelinePayload {
   ensureProject?: boolean | EntityEnsureProjectOptions;
   planOnly?: boolean;
   model?: ModelSpec;
+  texturePlan?: TexturePipelinePlan;
   textures?: TextureSpec[];
+  facePaint?: FacePaintSpec[];
   cleanup?: TextureCleanupSpec;
   uvUsageId?: string;
   autoRecover?: boolean;
@@ -316,6 +326,7 @@ export interface TexturePipelinePayload {
   uv?: TexturePipelineUv;
   textures?: TextureSpec[];
   presets?: TexturePipelinePreset[];
+  facePaint?: FacePaintSpec[];
   cleanup?: TextureCleanupSpec;
   autoRecover?: boolean;
   preflight?: TexturePipelinePreflight;

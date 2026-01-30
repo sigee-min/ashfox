@@ -172,13 +172,18 @@ export const runPresetStep = (
   );
   if (isResponseError(batch)) return batch;
   const results = batch.data as GenerateTexturePresetResult[];
+  const existing = ctx.steps.presets;
+  const mergedResults = existing ? [...existing.results, ...results] : results;
+  const applied = (existing?.applied ?? 0) + results.length;
+  const nextRecovery = existing?.recovery ?? recovery;
+  const nextUvUsageId = existing?.uvUsageId ?? (recovery ? uvUsageId : undefined);
   ctx.steps.presets = {
-    applied: results.length,
-    results,
-    ...(recovery
+    applied,
+    results: mergedResults,
+    ...(nextRecovery
       ? {
-          recovery,
-          uvUsageId
+          recovery: nextRecovery,
+          uvUsageId: nextUvUsageId
         }
       : {})
   };

@@ -4,7 +4,7 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 
 ## Core Invariants
 1) Manual per-face UVs only.
-   - UVs must be explicit per face; there is no auto-UV painting path.
+   - UVs are explicit per face; high-level planning (`texture_pipeline.plan`) may generate them, but UVs are always stored per face.
 2) Paint only inside UV rects.
    - `apply_texture_spec` and `generate_texture_preset` paint through uvPaint rects when painting.
 3) No UV overlaps unless identical.
@@ -33,15 +33,16 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 - Only change bindings or UV coordinates.
 - Do not paint.
 
-### apply_texture_spec / generate_texture_preset
+### apply_texture_spec / generate_texture_preset / facePaint
 - Paint only (uvPaint enforced when painting).
 - Require `uvUsageId`.
 - Block on overlap/scale mismatch.
-- `apply_texture_spec` supports `autoRecover` as a guidance hint; use `texture_pipeline.plan` to recover UVs when overlap/scale issues occur.
+- `apply_texture_spec` and `generate_texture_preset` support `autoRecover` (default true) to run a single `auto_uv_atlas` + preflight retry when UV overlap/scale/missing issues occur. Use `texture_pipeline.plan` for higher-level recovery.
 - Optional `detectNoChange=true` compares output to existing pixels and returns `applied: false` when identical (default false to avoid extra cost).
+ - `facePaint` is a high-level wrapper that maps material keywords to presets and targets cube faces via uvPaint.
 
 ### auto_uv_atlas
-- Recomputes UV layout per texture + face size.
+- Recomputes UV layout per texture + face size (low-level only).
 - Doubles texture resolution as needed (bounded by maxTextureSize).
 - Does not repaint textures.
 
@@ -60,7 +61,7 @@ If the actual UV size deviates beyond `uvPolicy.scaleTolerance` (default 0.1), t
 4) `preflight_texture` -- obtain new `uvUsageId` after UV changes.
 5) Paint using `apply_texture_spec` or `generate_texture_preset`.
 6) `render_preview` to validate.
-7) If errors occur, run `texture_pipeline.plan` to re-pack UVs, then re-preflight and repaint.
+7) If errors occur, run `texture_pipeline.plan` (auto-split, <=512) to re-pack UVs, then re-preflight and repaint.
 
 ## Error Codes
 - `validate` may report: `uv_overlap`, `uv_scale_mismatch`, `uv_scale_mismatch_summary`.

@@ -215,6 +215,7 @@ export interface EditorPort {
     kind: FormatKind,
     options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; confirmDialog?: boolean }
   ) => ToolError | null;
+  closeProject: (options?: { force?: boolean }) => ToolError | null;
   importTexture: (params: ImportTextureCommand) => ToolError | null;
   updateTexture: (params: UpdateTextureCommand) => ToolError | null;
   deleteTexture: (params: DeleteTextureCommand) => ToolError | null;

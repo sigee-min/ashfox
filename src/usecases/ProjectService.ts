@@ -1,4 +1,5 @@
-import type { Capabilities, FormatKind, ProjectDiff, ProjectState, ProjectStateDetail, ToolError } from '../types';
+import type { Capabilities, EnsureProjectAction, FormatKind, ProjectDiff, ProjectState, ProjectStateDetail, ToolError } from '../types';
+import type { ProjectMeta } from '../session';
 import type { EditorPort } from '../ports/editor';
 import type { FormatPort } from '../ports/formats';
 import { ProjectSession } from '../session';
@@ -12,6 +13,8 @@ import {
   PROJECT_CREATE_REQUIREMENTS,
   PROJECT_CREATE_REQUIREMENTS_ON_MISMATCH_FIX,
   PROJECT_CREATE_REQUIREMENTS_ON_MISSING_FIX,
+  PROJECT_DELETE_NAME_REQUIRED,
+  PROJECT_DELETE_NAME_REQUIRED_FIX,
   PROJECT_FORMAT_ID_MISSING,
   PROJECT_FORMAT_ID_MISSING_FIX,
   PROJECT_FORMAT_UNKNOWN,
@@ -126,16 +129,23 @@ export class ProjectService {
   }
 
   ensureProject(payload: {
+    action?: EnsureProjectAction;
+    target?: { name?: string };
     format?: Capabilities['formats'][number]['format'];
     name?: string;
     match?: 'none' | 'format' | 'name' | 'format_and_name';
     onMismatch?: 'reuse' | 'error' | 'create';
     onMissing?: 'create' | 'error';
     confirmDiscard?: boolean;
+    force?: boolean;
     dialog?: Record<string, unknown>;
     confirmDialog?: boolean;
     ifRevision?: string;
-  }): UsecaseResult<{ action: 'created' | 'reused'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
+  }): UsecaseResult<{ action: 'created' | 'reused' | 'deleted'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
+    const action: EnsureProjectAction = payload.action ?? 'ensure';
+    if (action === 'delete') {
+      return this.deleteProject(payload);
+    }
     const matchMode = payload.match ?? 'none';
     const onMissing = payload.onMissing ?? 'create';
     const onMismatch = payload.onMismatch ?? 'reuse';
@@ -247,6 +257,63 @@ export class ProjectService {
         id: attachRes.data.id,
         format: normalized.format,
         name: attachRes.data.name,
+        formatId: normalized.formatId ?? null
+      }
+    });
+  }
+
+  setProjectMeta(payload: { meta: ProjectMeta; ifRevision?: string }): UsecaseResult<{ meta: ProjectMeta }> {
+    const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
+    if (revisionErr) return fail(revisionErr);
+    const stateErr = this.session.ensureActive();
+    if (stateErr) return fail(stateErr);
+    this.session.updateMeta(payload.meta);
+    const next = this.session.snapshot().meta ?? payload.meta;
+    return ok({ meta: next });
+  }
+
+  private deleteProject(payload: {
+    target?: { name?: string };
+    force?: boolean;
+    ifRevision?: string;
+  }): UsecaseResult<{ action: 'deleted'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
+    const revisionErr = this.ensureRevisionMatch(payload.ifRevision);
+    if (revisionErr) return fail(revisionErr);
+    const targetName = payload.target?.name;
+    if (!targetName) {
+      return fail({
+        code: 'invalid_payload',
+        message: PROJECT_DELETE_NAME_REQUIRED,
+        fix: PROJECT_DELETE_NAME_REQUIRED_FIX
+      });
+    }
+    const targetBlankErr = ensureNonBlankString(targetName, 'target.name');
+    if (targetBlankErr) return fail(targetBlankErr);
+    const snapshot = this.getSnapshot();
+    const normalized = this.projectState.normalize(snapshot);
+    const info = this.projectState.toProjectInfo(normalized);
+    if (!info || !normalized.format) {
+      return fail({ code: 'invalid_state', message: PROJECT_NO_ACTIVE });
+    }
+    if (info.name !== targetName) {
+      return fail({
+        code: 'invalid_state',
+        message: PROJECT_MISMATCH,
+        details: {
+          expected: { name: targetName },
+          actual: { name: info.name ?? null }
+        }
+      });
+    }
+    const err = this.editor.closeProject({ force: payload.force });
+    if (err) return fail(err);
+    this.session.reset();
+    return ok({
+      action: 'deleted',
+      project: {
+        id: info.id,
+        format: normalized.format,
+        name: info.name ?? null,
         formatId: normalized.formatId ?? null
       }
     });

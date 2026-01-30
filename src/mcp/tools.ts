@@ -22,7 +22,7 @@ export const MCP_HIGH_LEVEL_TOOLS: McpToolDefinition[] = [
     name: 'ensure_project',
     title: 'Ensure Project',
     description:
-      'Ensures a usable project. Reuses the active project by default and can create a new one when missing or on mismatch (per options). Use match/onMismatch/onMissing to control behavior.',
+      'Ensures a usable project. Reuses the active project by default and can create a new one when missing or on mismatch (per options). Use match/onMismatch/onMissing to control behavior. action="delete" closes the active project (requires target.name).',
     inputSchema: toolSchemas.ensure_project
   }),
   defineTool({
@@ -49,7 +49,7 @@ export const MCP_HIGH_LEVEL_TOOLS: McpToolDefinition[] = [
   defineTool({
     name: 'entity_pipeline',
     title: 'Entity Pipeline',
-    description: 'High-level entity pipeline (model + textures + animations) with GeckoLib targeting.',
+    description: 'High-level entity pipeline (model + textures + animations) with GeckoLib targeting. Use texturePlan to auto-create textures + UVs.',
     inputSchema: toolSchemas.entity_pipeline
   }),
   defineTool({

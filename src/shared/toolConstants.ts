@@ -50,6 +50,9 @@ export type EnsureProjectOnMismatch = typeof ENSURE_PROJECT_ON_MISMATCH[number];
 export const ENSURE_PROJECT_ON_MISSING = ['create', 'error'] as const;
 export type EnsureProjectOnMissing = typeof ENSURE_PROJECT_ON_MISSING[number];
 
+export const ENSURE_PROJECT_ACTIONS = ['ensure', 'delete'] as const;
+export type EnsureProjectAction = typeof ENSURE_PROJECT_ACTIONS[number];
+
 export const TEXTURE_PRESET_NAMES = [
   'painted_metal',
   'rubber',

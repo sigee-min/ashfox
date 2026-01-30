@@ -19,6 +19,7 @@ import { ok, fail, UsecaseResult } from './result';
 import { UvPolicyConfig } from '../domain/uvPolicy';
 import type { HostPort } from '../ports/host';
 import type { PolicyContextLike, RevisionContextLike } from './contextTypes';
+import type { ProjectMeta } from '../session';
 import {
   PLUGIN_RELOAD_CONFIRM_REQUIRED,
   PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX,
@@ -134,8 +135,12 @@ export class ToolService {
 
   ensureProject(
     payload: ToolPayloadMap['ensure_project']
-  ): UsecaseResult<{ action: 'created' | 'reused'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
+  ): UsecaseResult<{ action: 'created' | 'reused' | 'deleted'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> {
     return this.facades.project.ensureProject(payload);
+  }
+
+  setProjectMeta(payload: { meta: ProjectMeta; ifRevision?: string }): UsecaseResult<{ meta: ProjectMeta }> {
+    return this.facades.project.setProjectMeta(payload);
   }
 
   blockPipeline(payload: ToolPayloadMap['block_pipeline']): UsecaseResult<BlockPipelineResult> {

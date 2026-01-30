@@ -16,7 +16,7 @@ export const UV_ASSIGNMENT_CONFLICT = (cubeName: string, face: string) =>
   `Conflicting UV assignments for ${cubeName} (${face}).`;
 
 export const TEXTURE_PIPELINE_STEP_REQUIRED =
-  'texture_pipeline requires at least one step (plan, assign, uv, textures, presets, cleanup, preflight, preview).';
+  'texture_pipeline requires at least one step (plan, assign, uv, textures, presets, facePaint, cleanup, preflight, preview).';
 export const ASSIGN_MUST_BE_ARRAY = 'assign must be an array';
 export const ASSIGN_ENTRY_REQUIRES_TEXTURE = 'assign entry requires textureId or textureName';
 export const ASSIGN_CUBE_IDS_ARRAY = 'assign cubeIds must be an array';
@@ -31,6 +31,27 @@ export const PRESET_MODE_INVALID = (preset: string) => `preset mode invalid (${p
 export const PRESET_UPDATE_REQUIRES_TARGET = (preset: string) =>
   `preset update requires targetId or targetName (${preset})`;
 export const PREVIEW_MODE_INVALID = (mode: string) => `preview mode invalid (${mode})`;
+export const FACE_PAINT_MUST_BE_ARRAY = 'facePaint must be an array.';
+export const FACE_PAINT_ENTRY_REQUIRED = 'facePaint entry must be an object.';
+export const FACE_PAINT_MATERIAL_REQUIRED = 'facePaint material is required.';
+export const FACE_PAINT_MATERIAL_STRING = 'facePaint material must be a string.';
+export const FACE_PAINT_PALETTE_INVALID = 'facePaint palette must be an array of strings.';
+export const FACE_PAINT_SEED_INVALID = 'facePaint seed must be a number.';
+export const FACE_PAINT_CUBE_IDS_ARRAY = 'facePaint cubeIds must be an array of strings.';
+export const FACE_PAINT_CUBE_NAMES_ARRAY = 'facePaint cubeNames must be an array of strings.';
+export const FACE_PAINT_FACES_INVALID = 'facePaint faces must include valid directions (north/south/east/west/up/down).';
+export const FACE_PAINT_SCOPE_INVALID = 'facePaint scope must be faces, rects, or bounds.';
+export const FACE_PAINT_MAPPING_INVALID = 'facePaint mapping must be stretch or tile.';
+export const FACE_PAINT_PADDING_INVALID = 'facePaint padding must be a non-negative number.';
+export const FACE_PAINT_ANCHOR_INVALID = 'facePaint anchor must be [x,y] numbers.';
+export const FACE_PAINT_NO_TEXTURES =
+  'No textures available for facePaint. Run texture_pipeline plan or assign textures and UVs first.';
+export const FACE_PAINT_TARGET_NOT_FOUND = (material: string) =>
+  `No matching cube faces found for facePaint material "${material}".`;
+export const FACE_PAINT_UV_MISSING = (material: string) =>
+  `UV mapping missing for facePaint material "${material}". Run texture_pipeline with autoRecover or plan to generate UVs.`;
+export const FACE_PAINT_TEXTURE_SIZE_MISSING = (name: string) =>
+  `Texture size missing for "${name}". Set texture resolution or recreate the texture.`;
 
 export const UV_ASSIGNMENTS_REQUIRED = 'assignments must be a non-empty array';
 export const UV_ASSIGNMENT_OBJECT_REQUIRED = 'assignment must be an object';
@@ -50,7 +71,8 @@ export const UV_OVERLAP_MESSAGE = (
 ) =>
   `UV overlap detected for texture${plural ? 's' : ''} ${names}${suffix}. Only identical UV rects may overlap.${example}`;
 export const UV_OVERLAP_FIX =
-  'Adjust UVs so only identical rects overlap, then call preflight_texture and retry.';
+  'Adjust UVs so only identical rects overlap, then call preflight_texture and retry. ' +
+  'For high-level recovery, run texture_pipeline with autoRecover=true to re-pack UVs.';
 
 export const UV_SCALE_MESSAGE = (
   names: string,
@@ -58,7 +80,8 @@ export const UV_SCALE_MESSAGE = (
   example: string,
   plural: boolean
 ) => `UV scale mismatch detected for texture${plural ? 's' : ''} ${names}${suffix}.${example}`;
-export const UV_SCALE_FIX = 'Run auto_uv_atlas (apply=true), then preflight_texture, then repaint.';
+export const UV_SCALE_FIX =
+  'For high-level recovery, run texture_pipeline with autoRecover=true to re-pack UVs and repaint.';
 
 export const TEXTURE_COVERAGE_LOW_MESSAGE = (label: string, ratio: number) =>
   `Texture coverage too low for "${label}" (${ratio}% opaque).`;

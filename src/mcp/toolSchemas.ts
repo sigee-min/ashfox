@@ -1,6 +1,7 @@
 import { JsonSchema } from './types';
 import {
   ENTITY_FORMATS,
+  ENSURE_PROJECT_ACTIONS,
   ENSURE_PROJECT_MATCHES,
   ENSURE_PROJECT_ON_MISMATCH,
   ENSURE_PROJECT_ON_MISSING,
@@ -18,7 +19,57 @@ import {
 import { cubeFaceSchema, emptyObject, metaProps, numberArray, stateProps } from './schemas/common';
 import { entityAnimationSchema } from './schemas/entity';
 import { faceUvSchema, modelSpecSchema } from './schemas/model';
-import { textureOpSchema, texturePresetSchema, uvPaintSchema } from './schemas/texture';
+import { facePaintSchema, textureOpSchema, texturePresetSchema, uvPaintSchema } from './schemas/texture';
+
+const ensureProjectBaseProperties: Record<string, JsonSchema> = {
+  name: { type: 'string' },
+  match: { type: 'string', enum: ENSURE_PROJECT_MATCHES },
+  onMismatch: { type: 'string', enum: ENSURE_PROJECT_ON_MISMATCH },
+  onMissing: { type: 'string', enum: ENSURE_PROJECT_ON_MISSING },
+  confirmDiscard: { type: 'boolean' },
+  confirmDialog: { type: 'boolean' },
+  dialog: { type: 'object', additionalProperties: true }
+};
+
+const ensureProjectSchema = (options?: { includeFormat?: boolean }): JsonSchema => ({
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ...(options?.includeFormat ? { format: { type: 'string', enum: FORMAT_KINDS } } : {}),
+    ...ensureProjectBaseProperties
+  }
+});
+
+const texturePlanSchema: JsonSchema = {
+  type: 'object',
+  description: 'Auto-plan textures + UVs from high-level intent. When provided, assignment/UV steps are generated automatically.',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string', description: 'Base texture name for generated textures.' },
+    detail: { type: 'string', enum: ['low', 'medium', 'high'] },
+    maxTextures: { type: 'number', description: 'Max number of textures to split into (>=1).' },
+    allowSplit: { type: 'boolean', description: 'Allow splitting cubes across multiple textures.' },
+    padding: { type: 'number', description: 'UV atlas padding in pixels.' },
+    resolution: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        width: { type: 'number' },
+        height: { type: 'number' }
+      }
+    },
+    paint: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        preset: texturePresetSchema,
+        palette: { type: 'array', items: { type: 'string' } },
+        seed: { type: 'number' },
+        background: { type: 'string', description: 'Optional base fill color (hex).' }
+      }
+    }
+  }
+};
 
 export const toolSchemas: Record<string, JsonSchema> = {
   list_capabilities: emptyObject,
@@ -62,6 +113,11 @@ export const toolSchemas: Record<string, JsonSchema> = {
       width: { type: 'number' },
       height: { type: 'number' },
       uvUsageId: { type: 'string' },
+      autoRecover: {
+        type: 'boolean',
+        description:
+          'If true (default), attempts a single auto_uv_atlas + preflight retry when UV overlap/scale/missing issues are detected.'
+      },
       name: { type: 'string' },
       targetId: { type: 'string' },
       targetName: { type: 'string' },
@@ -87,14 +143,17 @@ export const toolSchemas: Record<string, JsonSchema> = {
     type: 'object',
     additionalProperties: false,
     properties: {
+      action: { type: 'string', enum: ENSURE_PROJECT_ACTIONS },
+      target: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string' }
+        }
+      },
       format: { type: 'string', enum: FORMAT_KINDS },
-      name: { type: 'string' },
-      match: { type: 'string', enum: ENSURE_PROJECT_MATCHES },
-      onMismatch: { type: 'string', enum: ENSURE_PROJECT_ON_MISMATCH },
-      onMissing: { type: 'string', enum: ENSURE_PROJECT_ON_MISSING },
-      confirmDiscard: { type: 'boolean' },
-      confirmDialog: { type: 'boolean' },
-      dialog: { type: 'object', additionalProperties: true },
+      ...ensureProjectBaseProperties,
+      force: { type: 'boolean' },
       ifRevision: { type: 'string' },
       ...metaProps
     }
@@ -332,18 +391,7 @@ export const toolSchemas: Record<string, JsonSchema> = {
           'create: fail if exists; merge: add/update without deleting; replace: match desired state; patch: update only if target exists.'
       },
       ensureProject: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          format: { type: 'string', enum: FORMAT_KINDS },
-          name: { type: 'string' },
-          match: { type: 'string', enum: ENSURE_PROJECT_MATCHES },
-          onMismatch: { type: 'string', enum: ENSURE_PROJECT_ON_MISMATCH },
-          onMissing: { type: 'string', enum: ENSURE_PROJECT_ON_MISSING },
-          confirmDiscard: { type: 'boolean' },
-          confirmDialog: { type: 'boolean' },
-          dialog: { type: 'object', additionalProperties: true }
-        }
+        ...ensureProjectSchema({ includeFormat: true })
       },
       deleteOrphans: {
         type: 'boolean',
@@ -428,7 +476,7 @@ export const toolSchemas: Record<string, JsonSchema> = {
       autoRecover: {
         type: 'boolean',
         description:
-          'If true, returns guidance to recover UV issues via texture_pipeline.plan (no auto_uv_atlas).'
+          'If true (default), attempts a single auto_uv_atlas + preflight retry for UV overlap/scale/missing issues.'
       },
       ifRevision: { type: 'string', description: 'Required for mutations. Get the latest revision from get_project_state.' },
       ...metaProps
@@ -475,34 +523,7 @@ export const toolSchemas: Record<string, JsonSchema> = {
     additionalProperties: false,
     properties: {
       plan: {
-        type: 'object',
-        description: 'Auto-plan textures + UVs from high-level intent. When provided, assignment/UV steps are generated automatically.',
-        additionalProperties: false,
-        properties: {
-          name: { type: 'string', description: 'Base texture name for generated textures.' },
-          detail: { type: 'string', enum: ['low', 'medium', 'high'] },
-          maxTextures: { type: 'number', description: 'Max number of textures to split into (>=1).' },
-          allowSplit: { type: 'boolean', description: 'Allow splitting cubes across multiple textures.' },
-          padding: { type: 'number', description: 'UV atlas padding in pixels.' },
-          resolution: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              width: { type: 'number' },
-              height: { type: 'number' }
-            }
-          },
-          paint: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              preset: texturePresetSchema,
-              palette: { type: 'array', items: { type: 'string' } },
-              seed: { type: 'number' },
-              background: { type: 'string', description: 'Optional base fill color (hex).' }
-            }
-          }
-        }
+        ...texturePlanSchema
       },
       assign: {
         type: 'array',
@@ -599,6 +620,11 @@ export const toolSchemas: Record<string, JsonSchema> = {
           }
         }
       },
+      facePaint: {
+        ...facePaintSchema,
+        description:
+          'Optional: face-centric painting. Maps material keywords to presets and targets cube faces without manual UVs.'
+      },
       autoRecover: {
         type: 'boolean',
         description:
@@ -662,20 +688,14 @@ export const toolSchemas: Record<string, JsonSchema> = {
       format: { type: 'string', enum: ENTITY_FORMATS },
       targetVersion: { type: 'string', enum: GECKOLIB_TARGET_VERSIONS },
       ensureProject: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          name: { type: 'string' },
-          match: { type: 'string', enum: ENSURE_PROJECT_MATCHES },
-          onMismatch: { type: 'string', enum: ENSURE_PROJECT_ON_MISMATCH },
-          onMissing: { type: 'string', enum: ENSURE_PROJECT_ON_MISSING },
-          confirmDiscard: { type: 'boolean' },
-          confirmDialog: { type: 'boolean' },
-          dialog: { type: 'object', additionalProperties: true }
-        }
+        ...ensureProjectSchema()
       },
       planOnly: { type: 'boolean', description: 'Skip mutations and return clarification actions only.' },
       model: modelSpecSchema,
+      texturePlan: {
+        ...texturePlanSchema,
+        description: 'Auto-plan textures + UVs from high-level intent (bootstrap for textures/UVs).'
+      },
       textures: {
         type: 'array',
         minItems: 1,
@@ -704,6 +724,11 @@ export const toolSchemas: Record<string, JsonSchema> = {
             }
           }
         }
+      },
+      facePaint: {
+        ...facePaintSchema,
+        description:
+          'Optional: face-centric painting. Maps material keywords to presets and targets cube faces without manual UVs.'
       },
       cleanup: {
         type: 'object',

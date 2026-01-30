@@ -18,6 +18,7 @@ export interface BlockbenchProject {
   unsaved?: boolean;
   hasUnsavedChanges?: () => boolean;
   markSaved?: () => void;
+  close?: (force?: boolean) => void | Promise<unknown>;
 }
 
 export interface BlockbenchApi {

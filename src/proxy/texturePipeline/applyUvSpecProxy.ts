@@ -11,29 +11,28 @@ export const applyUvSpecProxy = async (
   deps: ProxyPipelineDeps,
   payload: ApplyUvSpecPayload
 ): Promise<ToolResponse<ApplyUvSpecResult>> => {
-  return runProxyPipeline(deps, payload, {
+  return runProxyPipeline<ApplyUvSpecPayload, ApplyUvSpecResult>(deps, payload, {
     validate: (payloadValue) => validateUvSpec(payloadValue),
     run: async (pipeline) => {
-    const uvRes = pipeline.require(
-      applyUvAssignments(deps, pipeline.meta, {
+      const uvRes = applyUvAssignments(deps, pipeline.meta, {
         assignments: payload.assignments,
         uvUsageId: payload.uvUsageId,
         ifRevision: payload.ifRevision
-      })
-    );
-    const result: ApplyUvSpecResult = {
-      applied: true,
-      cubes: uvRes.cubeCount,
-      faces: uvRes.faceCount,
-      uvUsageId: uvRes.uvUsageId
-    };
-    const response = pipeline.ok(result);
-    return {
-      ...response,
-      nextActions: [
-        callTool('preflight_texture', { includeUsage: false }, 'UVs changed. Refresh uvUsageId before painting textures.', 1)
-      ]
-    };
+      });
+      if (!uvRes.ok) return uvRes;
+      const result: ApplyUvSpecResult = {
+        applied: true,
+        cubes: uvRes.data.cubeCount,
+        faces: uvRes.data.faceCount,
+        uvUsageId: uvRes.data.uvUsageId
+      };
+      const response = pipeline.ok(result);
+      return {
+        ...response,
+        nextActions: [
+          callTool('preflight_texture', { includeUsage: false }, 'UVs changed. Refresh uvUsageId before painting textures.', 1)
+        ]
+      };
     }
   });
 };

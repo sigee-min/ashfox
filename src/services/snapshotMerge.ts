@@ -14,6 +14,7 @@ export function mergeSnapshots(session: SessionState, live: SessionState | null)
     formatId: live.formatId ?? session.formatId,
     name: live.name ?? session.name,
     dirty: live.dirty ?? session.dirty,
+    meta: live.meta ?? session.meta,
     bones: live.bones,
     cubes: live.cubes,
     textures: mergedTextures,

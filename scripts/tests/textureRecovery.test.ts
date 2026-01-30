@@ -1,25 +1,29 @@
 import assert from 'node:assert/strict';
 
 import type { TextureUsageResult } from '../../src/ports/editor';
-import type { ToolError } from '../../src/types';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
 import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
-import { tryRecoverUvForTextureSpec } from '../../src/proxy/texturePipeline/recovery';
-import { DEFAULT_LIMITS, makeProxyDeps } from './helpers';
+import { ensureUvUsageForTargets } from '../../src/proxy/uvGuardian';
+import { DEFAULT_LIMITS, makeProxyDeps, registerAsync } from './helpers';
 
 const usageResult: TextureUsageResult = {
   textures: [
     {
       id: 'tex-1',
       name: 'tex',
-      cubeCount: 1,
-      faceCount: 1,
+      cubeCount: 2,
+      faceCount: 2,
       cubes: [
         {
           id: 'cube-1',
-          name: 'cube',
+          name: 'cube-1',
           faces: [{ face: 'north', uv: [0, 0, 16, 16] }]
+        },
+        {
+          id: 'cube-2',
+          name: 'cube-2',
+          faces: [{ face: 'south', uv: [8, 8, 16, 16] }]
         }
       ]
     }
@@ -72,20 +76,17 @@ const deps = makeProxyDeps({
 });
 
 const meta = { includeState: false, includeDiff: false, diffDetail: 'summary' } as const;
-const targets = { ids: new Set<string>(), names: new Set<string>() };
-const error: ToolError = {
-  code: 'invalid_state',
-  message: 'UV overlap detected.',
-  details: { overlaps: [{ textureName: 'tex', conflictCount: 1 }] }
-};
-
-const res = tryRecoverUvForTextureSpec(deps, { autoRecover: true }, meta, targets, error);
-assert.ok(res);
-assert.equal(res?.ok, true);
-assert.equal(calls.autoUvAtlas, 1);
-assert.equal(calls.preflight, 1);
-if (res && res.ok) {
-  assert.equal(res.data.uvUsageId, uvUsageId);
-  assert.equal(res.data.recovery.reason, 'uv_overlap');
-  assert.ok(res.data.recovery.autoUvAtlas);
-}
+registerAsync(
+  (async () => {
+    const res = await ensureUvUsageForTargets({
+      deps,
+      meta,
+      targets: { ids: new Set<string>(), names: new Set(['tex']) },
+      uvUsageId,
+      autoRecover: true
+    });
+    assert.equal(res.ok, false);
+    assert.equal(calls.autoUvAtlas, 0);
+    assert.equal(calls.preflight, 0);
+  })()
+);

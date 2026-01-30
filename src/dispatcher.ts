@@ -272,10 +272,10 @@ export class ToolDispatcherImpl implements Dispatcher {
     const response = this.attachStateForTool(retryPayload, toToolResponse(result));
     const withDialogActions =
       tool === 'ensure_project'
-        ? attachEnsureProjectDialogNextActions(
+        ? (attachEnsureProjectDialogNextActions(
             retryPayload as ToolPayloadMap['ensure_project'],
             response as ToolResponse<ToolResultMap['ensure_project']>
-          )
+          ) as ToolResponse<ToolResultMap[TName]>)
         : response;
     return this.logGuardFailure(tool, retryPayload, withDialogActions);
   }

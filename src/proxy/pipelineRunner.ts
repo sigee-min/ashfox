@@ -1,7 +1,6 @@
 import type { IncludeDiffOption, IncludeStateOption, IfRevisionOption, Limits, ToolResponse } from '../types';
 import { createProxyPipeline, type ProxyPipeline } from './pipeline';
 import type { ProxyPipelineDeps } from './types';
-import { isProxyPipelineAbort } from './pipelineAbort';
 
 type ProxyPayload = IncludeStateOption & IncludeDiffOption & IfRevisionOption;
 
@@ -37,9 +36,7 @@ export const runProxyPipeline = async <P extends ProxyPayload, R>(
   try {
     return await pipeline.run(async () => await options.run(pipeline, payload));
   } catch (err) {
-    if (isProxyPipelineAbort(err)) {
-      return err.response;
-    }
-    throw err;
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return pipeline.error({ code: 'unknown', message: `Unexpected error: ${message}` });
   }
 };

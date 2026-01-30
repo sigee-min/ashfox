@@ -9,7 +9,7 @@ bbmcp turns Blockbench into an MCP-native modeling backend with a clean tool sur
 - Pipelines may return `planOnly` + `ask_user` prompts when a request is underspecified.
 - Optional low-level controls (bones, cubes, textures, export, validate).
 - Enable via Settings > bbmcp > Expose Low-Level Tools (Expert).
-- Explicit texture assignment via `assign_texture` (no hidden auto-assign).
+- Explicit texture assignment via `assign_texture` (auto-assign only when using `texture_pipeline.plan`).
 - Revision guard (`ifRevision`) for safe concurrent edits.
 - Preview output as MCP `content` image blocks (base64 PNG).
 - Java Block/Item enabled by default; GeckoLib/Animated Java gated by capabilities.
@@ -42,6 +42,7 @@ http://127.0.0.1:8787/mcp
 ## Core Flow (Recommended)
 1) `ensure_project` (or `get_project_state`) to confirm an active project and read `revision`.
    - When `confirmDialog=true`, always supply `ensure_project.dialog` with required fields. If missing, the server returns a required-field list via error details and `nextActions`.
+   - To close a project, call `ensure_project` with `action="delete"` and `target.name` matching the open project; set `force=true` to discard unsaved changes (no auto-save).
 2) Prefer high-level pipelines (`model_pipeline`, `texture_pipeline`, `entity_pipeline`, `block_pipeline`) with `ifRevision`.
 3) `validate` to catch issues early.
 4) `render_preview` for images.
@@ -62,6 +63,7 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
 
 ## Entity Pipeline
 `entity_pipeline` applies model + textures + animations for GeckoLib projects.
+Use `texturePlan` to auto-create textures + UVs (no manual preflight required), then `facePaint` or `textures` to paint.
 ```json
 {
   "format": "geckolib",
@@ -71,6 +73,7 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
     "rigTemplate": "empty",
     "bones": [{ "id": "root", "pivot": [0, 0, 0] }]
   },
+  "texturePlan": { "name": "my_entity", "detail": "medium", "maxTextures": 1 },
   "animations": [
     { "name": "idle", "length": 1, "loop": true, "channels": [{ "bone": "root", "channel": "rot", "keys": [{ "time": 0, "value": [0, 0, 0] }] }] }
   ],
@@ -82,10 +85,11 @@ Use `resources/list` to discover generated assets and `resources/read` to fetch 
 If low-level tools are not exposed, use `texture_pipeline` to run the entire flow.
 - Use `texture_pipeline.plan` for auto-assign + auto-UV with texel-density planning from high-level intent.
 - Plan respects active format constraints (e.g., single-texture formats disable splitting).
+- Use `facePaint` to describe materials per cube/face without manual UV work (maps to presets + uvPaint).
 - Always `preflight_texture` without filters to get a stable `uvUsageId`.
 - If UVs change, preflight again and repaint.
 - For 64x64+ textures, prefer `generate_texture_preset`.
-- Use `autoRecover=true` on overlap/scale issues (texture_pipeline uses plan-based recovery). For low-level recovery, prefer `texture_pipeline.plan` over `auto_uv_atlas`.
+- Use `autoRecover=true` on overlap/scale issues (plan-based re-UV, auto-split, <=512, max 16 textures). For low-level recovery, prefer `texture_pipeline.plan` over `auto_uv_atlas`.
 - Use `cleanup` to delete explicit textures (blocked if still assigned unless `force=true`).
 - See `docs/texture-uv-spec.md`, `docs/texture-pipeline-plan.md`, `docs/llm-texture-strategy.md`.
 

@@ -92,8 +92,14 @@ const getScaleMismatchReason = (
   policy: UvPolicyConfig,
   scaleTarget: { width: number; height: number }
 ): 'tiny' | 'ratio' | null => {
+  const scaledExpectedWidth = Number.isFinite(scaleTarget.width) && scaleTarget.width > 0
+    ? expected.width * scaleTarget.width
+    : expected.width;
+  const scaledExpectedHeight = Number.isFinite(scaleTarget.height) && scaleTarget.height > 0
+    ? expected.height * scaleTarget.height
+    : expected.height;
   const isTinyActual = actualWidth <= policy.tinyThreshold || actualHeight <= policy.tinyThreshold;
-  const isTinyExpected = expected.width <= policy.tinyThreshold || expected.height <= policy.tinyThreshold;
+  const isTinyExpected = scaledExpectedWidth <= policy.tinyThreshold || scaledExpectedHeight <= policy.tinyThreshold;
   if (isTinyActual || isTinyExpected) {
     return isTinyActual && isTinyExpected ? null : 'tiny';
   }

@@ -23,6 +23,8 @@ export const VALIDATION_TEXTURE_UNRESOLVED_REFS = (count: number) =>
   `Unresolved texture references detected (${count}). Assign textures before rendering.`;
 export const VALIDATION_TEXTURE_UNASSIGNED = (name: string) =>
   `Texture "${name}" is not assigned to any cube faces.`;
+export const VALIDATION_CUBE_CONTAINMENT = (inner: string, outer: string) =>
+  `Cube "${inner}" is fully contained within "${outer}".`;
 export const VALIDATION_FACE_UV_OUT_OF_BOUNDS = (
   cube: string,
   face: string,

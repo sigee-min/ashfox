@@ -1,4 +1,4 @@
-import type { TrackedAnimation, TrackedBone, TrackedCube, TrackedTexture } from '../session';
+import type { ProjectMeta, TrackedAnimation, TrackedBone, TrackedCube, TrackedTexture } from '../session';
 import type { CubeFaceDirection } from '../shared/toolConstants';
 import { FormatKind, ProjectStateDetail } from './shared';
 
@@ -51,6 +51,7 @@ export interface ProjectState {
   formatId?: string | null;
   dirty?: boolean;
   revision: string;
+  meta?: ProjectMeta;
   textureResolution?: { width: number; height: number };
   textureUsage?: ProjectTextureUsage;
   counts: {

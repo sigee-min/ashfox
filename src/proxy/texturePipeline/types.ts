@@ -20,6 +20,7 @@ export type TexturePipelineSteps = {
   uv?: { applied: true; cubes: number; faces: number; uvUsageId: string };
   textures?: { applied: true; report: ApplyReport; recovery?: Record<string, unknown>; uvUsageId?: string };
   presets?: { applied: number; results: GenerateTexturePresetResult[]; recovery?: Record<string, unknown>; uvUsageId?: string };
+  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: Record<string, unknown> };
   cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   preview?: RenderPreviewStructured;
 };

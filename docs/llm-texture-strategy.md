@@ -6,7 +6,7 @@ Note: If low-level tools are hidden, use `texture_pipeline` for the entire workf
 
 ## Auto Plan (No Manual UV)
 Use `texture_pipeline.plan` to auto-generate textures + UVs from high-level intent, then paint with presets or ops.
-Plan uses a texel-density solver to pick resolution + texture count (or lower density) and respects format constraints (e.g., single-texture formats disable splitting).
+Plan uses a texel-density solver to pick resolution + texture count, caps auto plans at 512px, and respects format constraints (e.g., single-texture formats disable splitting).
 
 Example (auto UV + preset paint):
 ```json
@@ -18,6 +18,23 @@ Example (auto UV + preset paint):
     "maxTextures": 2,
     "paint": { "preset": "painted_metal", "palette": ["#c73b2b", "#9f2c25", "#d94b3b"] }
   },
+  "autoRecover": true,
+  "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
+}
+```
+
+## Face Paint (Material-First, UV-Free)
+Use `texture_pipeline.facePaint` to describe materials per cube/face. The pipeline maps materials to presets, targets UV rects automatically, and can auto-plan UVs when `autoRecover=true`.
+
+Example (material pass):
+```json
+{
+  "plan": { "name": "tractor", "detail": "high", "maxTextures": 1 },
+  "facePaint": [
+    { "material": "metal", "cubeNames": ["body"], "faces": ["north", "south", "east", "west"] },
+    { "material": "glass", "cubeNames": ["window"] },
+    { "material": "rubber", "cubeNames": ["wheel_left", "wheel_right"] }
+  ],
   "autoRecover": true,
   "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
 }
@@ -36,13 +53,12 @@ Notes:
 - Call `preflight_texture` without texture filters to get a stable `uvUsageId`.
 
 ## Error Recovery (Always)
-If `validate` reports `uv_overlap` / `uv_scale_mismatch`, or a mutation returns `invalid_state` mentioning overlap/scale or uvUsageId mismatch:
-1) Prefer `texture_pipeline.plan` to re-pack UVs with the solver.
-2) `preflight_texture` again (new `uvUsageId`)
-3) Repaint with `apply_texture_spec` or `generate_texture_preset`
+If `validate` reports `uv_overlap` / `uv_scale_mismatch`, UVs are missing, or a mutation returns `invalid_state` mentioning overlap/scale or uvUsageId mismatch:
+1) Prefer `texture_pipeline.plan` to re-pack UVs with the solver (auto-split, <=512).
+2) Repaint with `apply_texture_spec` or `generate_texture_preset`
 
-Tip: `texture_pipeline` supports `autoRecover=true` to run a single plan-based recovery automatically.
-For mid/high-poly assets, prefer `texture_pipeline.plan` to avoid repeated atlas growth.
+Tip: `texture_pipeline` enables autoRecover by default during paint/facePaint steps. It runs a single plan-based recovery automatically for the whole project (auto-split, <=512, max 16 textures) and retries once.
+For mid/high-poly assets, prefer `texture_pipeline.plan` for repeatable results.
 
 ## Common Pitfalls
 - All faces mapped to full texture (e.g., [0,0,32,32]) causes scale mismatch.
