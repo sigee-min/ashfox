@@ -15,13 +15,16 @@ import { PROXY_FORMAT_NOT_IMPLEMENTED } from '../shared/messages';
 import { buildClarificationNextActions } from './nextActionHelpers';
 import { getEntityPipelineClarificationQuestions } from './clarifications';
 import { applyTextureCleanup } from './textureCleanup';
-import { createTexturePipelineContext, runPreflightStep } from './texturePipeline/steps';
+import {
+  createTexturePipelineContext,
+  ensurePreflightUsage,
+  ensureUvUsageForTargetsInContext
+} from './texturePipeline/steps';
 import { runAutoPlanStep } from './texturePipeline/autoPlan';
 import type { TexturePipelineSteps } from './texturePipeline/types';
 import { buildFacePaintPresets, summarizeFacePaintUsage } from './texturePipeline/facePaint';
 import { loadProjectState } from './projectState';
 import type { GenerateTexturePresetResult } from '../types';
-import { ensureUvUsageForTargets } from './uvGuardian';
 
 export const entityPipelineProxy = async (
   deps: ProxyPipelineDeps,
@@ -133,21 +136,12 @@ export const entityPipelineProxy = async (
       }
 
       if (hasFacePaint) {
-        if (!textureCtx.currentUvUsageId || !textureCtx.preflightUsage) {
-          const preflightRes = runPreflightStep(textureCtx, 'before');
-          if (!preflightRes.ok) return preflightRes;
-        }
-        if (!textureCtx.preflightUsage || !textureCtx.currentUvUsageId) {
-          return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
-        }
-        const summary = summarizeFacePaintUsage(facePaintEntries, textureCtx.preflightUsage);
+        const usageReady = ensurePreflightUsage(textureCtx, 'before', { requireUsage: true });
+        if (!usageReady.ok) return usageReady;
+        const summary = summarizeFacePaintUsage(facePaintEntries, textureCtx.preflightUsage!);
         const targets = summary.targets;
-        const resolved = await ensureUvUsageForTargets({
-          deps,
-          meta: pipeline.meta,
+        const resolved = await ensureUvUsageForTargetsInContext(textureCtx, {
           targets,
-          uvUsageId: textureCtx.currentUvUsageId,
-          usageOverride: textureCtx.preflightUsage,
           autoRecover: facePaintAutoRecover,
           requireUv: true,
           plan: facePaintAutoRecover
@@ -160,8 +154,6 @@ export const entityPipelineProxy = async (
             : undefined
         });
         if (!resolved.ok) return resolved;
-        textureCtx.currentUvUsageId = resolved.data.uvUsageId;
-        textureCtx.preflightUsage = resolved.data.usage;
         attachTextureSteps();
         const projectRes = loadProjectState(deps.service, pipeline.meta, 'summary');
         if (!projectRes.ok) return projectRes;
@@ -222,19 +214,10 @@ export const entityPipelineProxy = async (
 
       if (payload.textures && payload.textures.length > 0) {
         const targets = collectTextureTargets(payload.textures);
-        if (!textureCtx.currentUvUsageId) {
-          const preflightRes = runPreflightStep(textureCtx, 'before');
-          if (!preflightRes.ok) return preflightRes;
-        }
-        if (!textureCtx.currentUvUsageId) {
-          return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
-        }
-        const resolved = await ensureUvUsageForTargets({
-          deps,
-          meta: pipeline.meta,
+        const usageReady = ensurePreflightUsage(textureCtx, 'before', { requireUsage: true });
+        if (!usageReady.ok) return usageReady;
+        const resolved = await ensureUvUsageForTargetsInContext(textureCtx, {
           targets,
-          uvUsageId: textureCtx.currentUvUsageId,
-          usageOverride: textureCtx.preflightUsage,
           autoRecover: autoRecoverEnabled,
           requireUv: true,
           plan: autoRecoverEnabled
@@ -247,8 +230,6 @@ export const entityPipelineProxy = async (
             : undefined
         });
         if (!resolved.ok) return resolved;
-        textureCtx.currentUvUsageId = resolved.data.uvUsageId;
-        textureCtx.preflightUsage = resolved.data.usage;
         attachTextureSteps();
         const report = createApplyReport();
         const applyRes = await applyTextureSpecSteps(

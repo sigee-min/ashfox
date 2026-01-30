@@ -8,11 +8,14 @@ import type { TexturePipelineSteps } from './types';
 import { applyUvAssignments } from '../uvApplyStep';
 import { cacheUvUsage } from '../uvContext';
 import type { ApplyTextureSpecResult } from './types';
+import type { UvRecoveryInfo } from '../uvRecovery';
 import type { TextureSpec } from '../../spec';
 import { applyTextureSpecs } from './textureFlow';
 import type { GenerateTexturePresetResult } from '../../types';
 import { UV_USAGE_MISSING_MESSAGE } from '../../shared/messages';
 import { isResponseError } from '../guardHelpers';
+import type { TextureTargetSet } from '../../domain/uvTargets';
+import { ensureUvUsageForTargets, type UvGuardianResult } from '../uvGuardian';
 
 export type TexturePipelineContext = {
   deps: ProxyPipelineDeps;
@@ -88,6 +91,52 @@ export const runPreflightStep = (
   return preflightRes;
 };
 
+export const ensurePreflightUsage = (
+  ctx: TexturePipelineContext,
+  phase: 'before' | 'after' = 'before',
+  options: { requireUsage?: boolean } = {}
+): ToolResponse<void> => {
+  const requireUsage = options.requireUsage ?? ctx.includeUsage;
+  const needsPreflight = !ctx.currentUvUsageId || (requireUsage && !ctx.preflightUsage);
+  if (needsPreflight) {
+    const preflightRes = runPreflightStep(ctx, phase);
+    if (!preflightRes.ok) return preflightRes;
+  }
+  if (!ctx.currentUvUsageId || (requireUsage && !ctx.preflightUsage)) {
+    return ctx.pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
+  }
+  return { ok: true, data: undefined };
+};
+
+export const ensureUvUsageForTargetsInContext = async (
+  ctx: TexturePipelineContext,
+  options: {
+    targets: TextureTargetSet;
+    autoRecover?: boolean;
+    requireUv?: boolean;
+    plan?: Parameters<typeof ensureUvUsageForTargets>[0]['plan'];
+    atlas?: Parameters<typeof ensureUvUsageForTargets>[0]['atlas'];
+  }
+): Promise<ToolResponse<UvGuardianResult>> => {
+  const preflightRes = ensurePreflightUsage(ctx, 'before', { requireUsage: true });
+  if (!preflightRes.ok) return preflightRes as ToolResponse<UvGuardianResult>;
+  const resolved = await ensureUvUsageForTargets({
+    deps: ctx.deps,
+    meta: ctx.pipeline.meta,
+    targets: options.targets,
+    uvUsageId: ctx.currentUvUsageId,
+    usageOverride: ctx.preflightUsage,
+    autoRecover: options.autoRecover,
+    requireUv: options.requireUv,
+    plan: options.plan,
+    atlas: options.atlas
+  });
+  if (!resolved.ok) return resolved;
+  ctx.currentUvUsageId = resolved.data.uvUsageId;
+  ctx.preflightUsage = resolved.data.usage;
+  return resolved;
+};
+
 export const runUvStep = (
   ctx: TexturePipelineContext,
   assignments: NonNullable<TexturePipelinePayload['uv']>['assignments'],
@@ -115,7 +164,7 @@ export const runTextureApplyStep = async (
   ctx: TexturePipelineContext,
   textures: TextureSpec[],
   usage: TextureUsage,
-  recovery?: Record<string, unknown>
+  recovery?: UvRecoveryInfo
 ): Promise<ToolResponse<ApplyTextureSpecResult>> => {
   const applyRes = await applyTextureSpecs({
     deps: ctx.deps,
@@ -141,7 +190,7 @@ export const runTextureApplyStep = async (
 export const runPresetStep = (
   ctx: TexturePipelineContext,
   presets: NonNullable<TexturePipelinePayload['presets']>,
-  recovery?: Record<string, unknown>,
+  recovery?: UvRecoveryInfo,
   ifRevision?: string
 ): ToolResponse<void> => {
   const uvUsageId = ctx.currentUvUsageId;

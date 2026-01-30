@@ -8,12 +8,20 @@ import { runPreviewStep, type PreviewStepData } from '../previewStep';
 import type { TexturePipelineResult, TexturePipelineSteps } from './types';
 import { attachPreviewResponse } from '../previewResponse';
 import { buildPipelineResult } from '../pipelineResult';
-import { createTexturePipelineContext, runAssignStep, runPreflightStep, runPresetStep, runTextureApplyStep, runUvStep } from './steps';
+import {
+  createTexturePipelineContext,
+  ensurePreflightUsage,
+  ensureUvUsageForTargetsInContext,
+  runAssignStep,
+  runPreflightStep,
+  runPresetStep,
+  runTextureApplyStep,
+  runUvStep
+} from './steps';
 import { TEXTURE_PREVIEW_VALIDATE_REASON } from '../../shared/messages';
 import { runProxyPipeline } from '../pipelineRunner';
 import { getTexturePipelineClarificationQuestions } from '../clarifications';
 import { runAutoPlanStep } from './autoPlan';
-import { ensureUvUsageForTargets } from '../uvGuardian';
 import { applyTextureCleanup } from '../textureCleanup';
 import { buildFacePaintPresets, summarizeFacePaintUsage } from './facePaint';
 import { loadProjectState } from '../projectState';
@@ -74,8 +82,8 @@ export const texturePipelineProxy = async (
             (payload.textures && payload.textures.length > 0) ||
             (payload.presets && payload.presets.length > 0)
         );
-        if (needsPreflight && !ctx.currentUvUsageId) {
-          const preflightRes = runPreflightStep(ctx, 'before');
+        if (needsPreflight) {
+          const preflightRes = ensurePreflightUsage(ctx, 'before', { requireUsage: false });
           if (!preflightRes.ok) return preflightRes;
         }
 
@@ -90,21 +98,12 @@ export const texturePipelineProxy = async (
         }
 
         if (hasFacePaint) {
-          if (!ctx.currentUvUsageId || !ctx.preflightUsage) {
-            const preflightRes = runPreflightStep(ctx, 'before');
-            if (!preflightRes.ok) return preflightRes;
-          }
-          if (!ctx.preflightUsage || !ctx.currentUvUsageId) {
-            return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
-          }
-          const summary = summarizeFacePaintUsage(facePaintEntries, ctx.preflightUsage);
+          const usageReady = ensurePreflightUsage(ctx, 'before', { requireUsage: true });
+          if (!usageReady.ok) return usageReady;
+          const summary = summarizeFacePaintUsage(facePaintEntries, ctx.preflightUsage!);
           const targets = summary.targets;
-          const resolved = await ensureUvUsageForTargets({
-            deps,
-            meta: pipeline.meta,
+          const resolved = await ensureUvUsageForTargetsInContext(ctx, {
             targets,
-            uvUsageId: ctx.currentUvUsageId,
-            usageOverride: ctx.preflightUsage,
             autoRecover: facePaintAutoRecover,
             requireUv: true,
             plan: facePaintAutoRecover
@@ -117,8 +116,6 @@ export const texturePipelineProxy = async (
               : undefined
           });
           if (!resolved.ok) return resolved;
-          ctx.currentUvUsageId = resolved.data.uvUsageId;
-          ctx.preflightUsage = resolved.data.usage;
           const projectRes = loadProjectState(deps.service, pipeline.meta, 'summary');
           if (!projectRes.ok) return projectRes;
           const facePaintPresets = buildFacePaintPresets({
@@ -152,20 +149,9 @@ export const texturePipelineProxy = async (
         const textures = payload.textures ?? [];
         const presets = payload.presets ?? [];
         if (textures.length > 0 || presets.length > 0) {
-          if (!ctx.currentUvUsageId) {
-            const preflightRes = runPreflightStep(ctx, 'before');
-            if (!preflightRes.ok) return preflightRes;
-          }
-          if (!ctx.currentUvUsageId) {
-            return pipeline.error({ code: 'invalid_state', message: 'UV preflight did not return usage.' });
-          }
           const targets = collectTextureTargets([...textures, ...presets]);
-          const resolved = await ensureUvUsageForTargets({
-            deps,
-            meta: pipeline.meta,
+          const resolved = await ensureUvUsageForTargetsInContext(ctx, {
             targets,
-            uvUsageId: ctx.currentUvUsageId,
-            usageOverride: ctx.preflightUsage,
             autoRecover: autoRecoverEnabled,
             requireUv: true,
             plan: autoRecoverEnabled
@@ -178,8 +164,6 @@ export const texturePipelineProxy = async (
               : undefined
           });
           if (!resolved.ok) return resolved;
-          ctx.currentUvUsageId = resolved.data.uvUsageId;
-          ctx.preflightUsage = resolved.data.usage;
 
           if (textures.length > 0) {
             const applyRes = await runTextureApplyStep(ctx, textures, resolved.data.usage, resolved.data.recovery);

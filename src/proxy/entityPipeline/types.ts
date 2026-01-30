@@ -4,6 +4,7 @@ import type { ApplyReport } from '../apply';
 import type { AppliedReport, ModelPlan } from '../modelPipeline/types';
 import type { EntityFormat, GeckoLibTargetVersion } from '../../shared/toolConstants';
 import type { TexturePipelineSteps } from '../texturePipeline/types';
+import type { UvRecoveryInfo } from '../uvRecovery';
 
 export type EntityModelResult = {
   applied: true;
@@ -15,7 +16,7 @@ export type EntityModelResult = {
 export type EntityTextureResult = {
   applied: true;
   report: ApplyReport;
-  recovery?: Record<string, unknown>;
+  recovery?: UvRecoveryInfo;
   uvUsageId?: string;
 };
 
@@ -31,7 +32,7 @@ export type EntityPipelineSteps = {
   texturePlan?: TexturePipelineSteps['plan'];
   textures?: EntityTextureResult;
   presets?: TexturePipelineSteps['presets'];
-  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: Record<string, unknown> };
+  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: UvRecoveryInfo };
   cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   animations?: EntityAnimationResult;
 };

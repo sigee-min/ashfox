@@ -25,6 +25,11 @@ export const buildValidateNextActions = (
   priority: number = 5
 ): NextAction[] => [callTool('validate', {}, reason, priority)];
 
+export const buildUvRefreshNextActions = (
+  reason: string,
+  priority: number = 1
+): NextAction[] => [callTool('preflight_texture', { includeUsage: false }, reason, priority)];
+
 export const buildPreviewNextActions = (
   reason: string = PREVIEW_REASON_DEFAULT,
   priorityBase: number = 10,

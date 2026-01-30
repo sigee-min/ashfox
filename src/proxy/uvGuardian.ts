@@ -12,7 +12,13 @@ import { guardUvForTextureTargets, guardUvForUsage } from './uvGuard';
 import { loadUvContext, type UvContext } from './uvContext';
 import type { TexturePipelineContext } from './texturePipeline/steps';
 import { runAutoPlanStep } from './texturePipeline/autoPlan';
-import type { TexturePipelineSteps } from './texturePipeline/types';
+import {
+  buildAtlasRecoveryInfo,
+  buildPlanRecoveryInfo,
+  buildPreflightRecoveryInfo,
+  type UvRecoveryInfo,
+  type UvRecoveryReason
+} from './uvRecovery';
 
 type UvGuardFailure =
   | 'uv_overlap'
@@ -50,7 +56,7 @@ export type UvGuardianOptions = {
 export type UvGuardianResult = {
   usage: TextureUsage;
   uvUsageId: string;
-  recovery?: Record<string, unknown>;
+  recovery?: UvRecoveryInfo;
 };
 
 export const ensureUvUsageForTargets = async (
@@ -107,7 +113,8 @@ export const ensureUvUsageForTargets = async (
 
   const recoverWithPlan = async (
     planOptions: UvRecoveryPlanOptions,
-    usage: TextureUsage | undefined
+    usage: TextureUsage | undefined,
+    reason: UvRecoveryReason
   ): Promise<ToolResponse<UvGuardianResult>> => {
     const plan = buildAutoRecoverPlan({
       existingPlan: planOptions.existingPlan ?? null,
@@ -130,13 +137,13 @@ export const ensureUvUsageForTargets = async (
         error: failWithMeta({ code: 'invalid_state', message: 'UV recovery failed to produce usage.' }).error
       };
     }
-    const recovery = buildAutoRecoverPlanDetails(planOptions.context.steps.plan, plan, 'autoRecover');
+    const recovery = buildPlanRecoveryInfo(reason, planOptions.context.steps.plan, plan);
     return { ok: true, data: { usage: nextUsage, uvUsageId: nextUsageId, recovery } };
   };
 
   const recoverWithAtlas = async (
     atlasOptions: UvRecoveryAtlasOptions,
-    reason: string
+    reason: UvRecoveryReason
   ): Promise<ToolResponse<UvGuardianResult>> => {
     const atlasRes = deps.service.autoUvAtlas({ apply: true, ifRevision: atlasOptions.ifRevision });
     if (isUsecaseError(atlasRes)) return usecaseError(atlasRes, meta, deps.service);
@@ -144,14 +151,7 @@ export const ensureUvUsageForTargets = async (
     if (isUsecaseError(preflightRes)) return usecaseError(preflightRes, meta, deps.service);
     const guarded = guardWith(preflightRes.value.uvUsageId);
     if (!guarded.ok) return guarded;
-    const recovery = {
-      reason,
-      source: 'autoRecover',
-      method: 'auto_uv_atlas',
-      ...(atlasRes.value
-        ? { steps: atlasRes.value.steps, resolution: atlasRes.value.resolution }
-        : {})
-    };
+    const recovery = buildAtlasRecoveryInfo(reason, atlasRes.value);
     return {
       ok: true,
       data: {
@@ -164,11 +164,11 @@ export const ensureUvUsageForTargets = async (
 
   const recover = async (
     usage: TextureUsage | undefined,
-    reason: string,
+    reason: UvRecoveryReason,
     fallback: ToolResponse<UvGuardianResult>
   ): Promise<ToolResponse<UvGuardianResult>> => {
     if (options.plan) {
-      return recoverWithPlan(options.plan, usage);
+      return recoverWithPlan(options.plan, usage, reason);
     }
     if (options.atlas) {
       return recoverWithAtlas(options.atlas, reason);
@@ -176,15 +176,37 @@ export const ensureUvUsageForTargets = async (
     return fallback;
   };
 
-  let guarded = guardWith(options.uvUsageId, options.usageOverride);
-
-  if (guarded.ok) {
+  const maybeRecoverMissingUv = async (
+    guarded: ToolResponse<UvGuardianResult>
+  ): Promise<ToolResponse<UvGuardianResult>> => {
+    if (!guarded.ok) return guarded;
     if (requireUv && autoRecover && needsUvRecovery(guarded.data.usage)) {
-      const recovered = await recover(guarded.data.usage, 'uv_missing', guarded);
-      if (recovered.ok) return recovered;
-      return recovered;
+      return recover(guarded.data.usage, 'uv_missing', guarded);
     }
     return guarded;
+  };
+
+  const refreshUsageId = async (
+    reason: UvRecoveryReason
+  ): Promise<ToolResponse<UvGuardianResult>> => {
+    const preflightRes = deps.service.preflightTexture({});
+    if (isUsecaseError(preflightRes)) return usecaseError(preflightRes, meta, deps.service);
+    const refreshed = guardWith(preflightRes.value.uvUsageId);
+    if (!refreshed.ok) return refreshed;
+    return {
+      ok: true,
+      data: {
+        usage: refreshed.data.usage,
+        uvUsageId: preflightRes.value.uvUsageId,
+        recovery: buildPreflightRecoveryInfo(reason)
+      }
+    };
+  };
+
+  const guarded = guardWith(options.uvUsageId, options.usageOverride);
+
+  if (guarded.ok) {
+    return maybeRecoverMissingUv(guarded);
   }
 
   if (!autoRecover) return guarded;
@@ -192,24 +214,9 @@ export const ensureUvUsageForTargets = async (
   const failure = classifyUvGuardFailure(guarded.error);
 
   if (failure === 'uv_usage_mismatch' || failure === 'uv_usage_missing') {
-    const preflightRes = deps.service.preflightTexture({});
-    if (isUsecaseError(preflightRes)) return usecaseError(preflightRes, meta, deps.service);
-    const refreshed = guardWith(preflightRes.value.uvUsageId);
+    const refreshed = await refreshUsageId(failure);
     if (!refreshed.ok) return refreshed;
-    const recovery = { reason: failure, source: 'autoRecover' };
-    if (requireUv && needsUvRecovery(refreshed.data.usage)) {
-      const recovered = await recover(refreshed.data.usage, 'uv_missing', refreshed);
-      if (recovered.ok) return recovered;
-      return recovered;
-    }
-    return {
-      ok: true,
-      data: {
-        usage: refreshed.data.usage,
-        uvUsageId: preflightRes.value.uvUsageId,
-        recovery
-      }
-    };
+    return maybeRecoverMissingUv(refreshed);
   }
 
   if (failure === 'uv_overlap' || failure === 'uv_scale_mismatch') {
@@ -260,24 +267,4 @@ const buildAutoRecoverPlan = (args: {
     base.maxTextures = Math.max(currentMax, desiredMax);
   }
   return base;
-};
-
-const buildAutoRecoverPlanDetails = (
-  planStep: TexturePipelineSteps['plan'] | undefined,
-  plan: TexturePipelinePlan,
-  source: 'autoRecover'
-): Record<string, unknown> => {
-  return {
-    reason: 'plan',
-    source,
-    ...(planStep
-      ? {
-          detail: planStep.detail,
-          resolution: planStep.resolution,
-          textureCount: planStep.textures.length,
-          notes: planStep.notes,
-          planName: plan?.name
-        }
-      : { planName: plan?.name })
-  };
 };

@@ -3,6 +3,7 @@ import type { AutoUvAtlasResult, GenerateTexturePresetResult, PreflightTextureRe
 import type { RenderPreviewStructured } from '../../types/preview';
 import type { PipelineStepsResult } from '../pipelineResult';
 import type { TexturePlanDetail, TexturePlanPaint } from '../../spec';
+import type { UvRecoveryInfo } from '../uvRecovery';
 
 export type TexturePipelineSteps = {
   plan?: {
@@ -18,9 +19,9 @@ export type TexturePipelineSteps = {
   assign?: { applied: number; results: Array<{ textureId?: string; textureName: string; cubeCount: number; faces?: string[] }> };
   preflight?: { before?: PreflightTextureResult; after?: PreflightTextureResult };
   uv?: { applied: true; cubes: number; faces: number; uvUsageId: string };
-  textures?: { applied: true; report: ApplyReport; recovery?: Record<string, unknown>; uvUsageId?: string };
-  presets?: { applied: number; results: GenerateTexturePresetResult[]; recovery?: Record<string, unknown>; uvUsageId?: string };
-  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: Record<string, unknown> };
+  textures?: { applied: true; report: ApplyReport; recovery?: UvRecoveryInfo; uvUsageId?: string };
+  presets?: { applied: number; results: GenerateTexturePresetResult[]; recovery?: UvRecoveryInfo; uvUsageId?: string };
+  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: UvRecoveryInfo };
   cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   preview?: RenderPreviewStructured;
 };
@@ -35,7 +36,7 @@ export type ApplyUvSpecResult = {
 export type ApplyTextureSpecResult = {
   applied: true;
   report: ApplyReport;
-  recovery?: Record<string, unknown>;
+  recovery?: UvRecoveryInfo;
   uvUsageId?: string;
 };
 

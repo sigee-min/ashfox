@@ -39,6 +39,7 @@ const tests = [
   'texturePipelineSteps.test.ts',
   'texturePipelineRecoveryPath.test.ts',
   'texturePipelineAutoUv.test.ts',
+  'texturePipelineScaleRecover.test.ts',
   'texturePresetAutoRecover.test.ts',
   'textureRecovery.test.ts',
   'sidecarCodec.test.ts',

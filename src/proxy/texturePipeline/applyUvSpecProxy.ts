@@ -1,6 +1,6 @@
 import type { ApplyUvSpecPayload } from '../../spec';
 import type { ToolResponse } from '../../types';
-import { callTool } from '../../mcp/nextActions';
+import { buildUvRefreshNextActions } from '../nextActionHelpers';
 import { validateUvSpec } from '../validators';
 import type { ProxyPipelineDeps } from '../types';
 import { applyUvAssignments } from '../uvApplyStep';
@@ -29,9 +29,10 @@ export const applyUvSpecProxy = async (
       const response = pipeline.ok(result);
       return {
         ...response,
-        nextActions: [
-          callTool('preflight_texture', { includeUsage: false }, 'UVs changed. Refresh uvUsageId before painting textures.', 1)
-        ]
+        nextActions: buildUvRefreshNextActions(
+          'UVs changed. Refresh uvUsageId before painting textures.',
+          1
+        )
       };
     }
   });
