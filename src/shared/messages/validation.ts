@@ -42,3 +42,5 @@ export const VALIDATION_UV_SCALE_MISMATCH = (textureName: string, mismatchCount:
   `Texture "${textureName}" has UV scale mismatches (${mismatchCount}).${example}`;
 export const VALIDATION_UV_SCALE_MISMATCH_SUMMARY = (mismatched: number, total: number) =>
   `UV scale mismatches detected (${mismatched}/${total} faces).`;
+
+

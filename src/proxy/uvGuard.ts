@@ -1,13 +1,15 @@
 import type { ToolError, ToolResponse } from '../types';
-import { guardUvOverlaps, guardUvScale, guardUvUsageId } from '../domain/uvGuards';
-import type { TextureTargetSet } from '../domain/uvTargets';
+import { guardUvUsage } from '../domain/uv/guards';
+import type { TextureTargetSet } from '../domain/uv/targets';
 import type { Cube, TextureUsage } from '../domain/model';
-import type { UvPolicyConfig } from '../domain/uvPolicy';
-import { requireUvUsageId } from '../domain/uvUsageId';
+import type { UvPolicyConfig } from '../domain/uv/policy';
+import { requireUvUsageId } from '../domain/uv/usageId';
+import { UV_USAGE_REQUIRED, buildUvGuardMessages } from '../shared/messages';
 import type { ToolService } from '../usecases/ToolService';
 import type { MetaOptions } from './meta';
 import { loadUvContext, type UvContextCache } from './uvContext';
-import { errorWithMeta, isResponseError } from './guardHelpers';
+import { errorWithMeta } from './errorAdapter';
+import { isResponseError } from '../shared/tooling/responseGuards';
 
 export type UvGuardResult = { usage: TextureUsage };
 
@@ -17,7 +19,10 @@ export type UvGuardContext = {
   cubes: Cube[];
   resolution?: { width: number; height: number };
   policy: UvPolicyConfig;
+  expectedUsageId?: string;
 };
+
+const UV_GUARD_MESSAGES = buildUvGuardMessages();
 
 export const guardUvForUsage = (
   service: ToolService,
@@ -25,16 +30,16 @@ export const guardUvForUsage = (
   context: UvGuardContext
 ): ToolResponse<UvGuardResult> => {
   const failWithMeta = (error: ToolError) => errorWithMeta(error, meta, service);
-  const overlapError = guardUvOverlaps(context.usage, context.targets);
-  if (overlapError) return failWithMeta(overlapError);
-  const scaleError = guardUvScale({
+  const guardError = guardUvUsage({
     usage: context.usage,
     cubes: context.cubes,
+    expectedUsageId: context.expectedUsageId,
     resolution: context.resolution,
     policy: context.policy,
-    targets: context.targets
+    targets: context.targets,
+    messages: UV_GUARD_MESSAGES
   });
-  if (scaleError) return failWithMeta(scaleError);
+  if (guardError) return failWithMeta(guardError);
   return { ok: true, data: { usage: context.usage } };
 };
 
@@ -46,20 +51,23 @@ export const guardUvForTextureTargets = (
   options?: { cache?: UvContextCache }
 ): ToolResponse<UvGuardResult> => {
   const failWithMeta = (error: ToolError) => errorWithMeta(error, meta, service);
-  const usageIdRes = requireUvUsageId(uvUsageId);
+  const usageIdRes = requireUvUsageId(uvUsageId, { required: UV_USAGE_REQUIRED });
   if (!usageIdRes.ok) return failWithMeta(usageIdRes.error);
   const contextRes = loadUvContext(service, meta, undefined, {
     cache: options?.cache,
     expectedUvUsageId: usageIdRes.data
   });
   if (isResponseError(contextRes)) return contextRes;
-  const usageIdError = guardUvUsageId(contextRes.data.usage, usageIdRes.data);
-  if (usageIdError) return failWithMeta(usageIdError);
   return guardUvForUsage(service, meta, {
     usage: contextRes.data.usage,
     targets,
     cubes: contextRes.data.cubes,
     resolution: contextRes.data.resolution,
-    policy: contextRes.data.policy
+    policy: contextRes.data.policy,
+    expectedUsageId: usageIdRes.data
   });
 };
+
+
+
+

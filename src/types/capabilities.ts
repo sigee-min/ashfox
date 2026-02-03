@@ -59,3 +59,5 @@ export interface Capabilities {
   preview?: PreviewCapability;
   guidance?: CapabilitiesGuidance;
 }
+
+

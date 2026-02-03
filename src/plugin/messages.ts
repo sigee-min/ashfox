@@ -9,12 +9,7 @@ export const PLUGIN_UI_EXPORT_COMPLETE = 'bbmcp export complete';
 export const PLUGIN_UI_EXPORT_FAILED_GENERIC = 'export failed';
 export const PLUGIN_UI_LOADED = (version: string) => `bbmcp v${version} loaded`;
 export const PLUGIN_UI_UNLOADED = 'bbmcp unloaded';
-export const PLUGIN_UI_DEVRELOAD_UNAVAILABLE = 'Plugins.devReload not available';
-export const PLUGIN_UI_CAPABILITIES_TITLE = 'bbmcp capabilities';
-export const PLUGIN_UI_PLUGIN_STATE_TITLE = 'bbmcp plugin state';
-export const PLUGIN_UI_PROMPT_HOST = 'MCP host';
-export const PLUGIN_UI_PROMPT_PORT = 'MCP port';
-export const PLUGIN_UI_PROMPT_PATH = 'MCP path';
-export const PLUGIN_UI_ENDPOINT_MESSAGE = (host: string, port: number, path: string) =>
-  `MCP endpoint: ${host}:${port}${path}`;
 export const PLUGIN_UI_EXPORT_FAILED = (message: string) => `${PLUGIN_UI_EXPORT_FAILED_PREFIX}${message}`;
+
+
+

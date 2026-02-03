@@ -213,7 +213,7 @@ export interface EditorPort {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; confirmDialog?: boolean }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
   ) => ToolError | null;
   closeProject: (options?: { force?: boolean }) => ToolError | null;
   importTexture: (params: ImportTextureCommand) => ToolError | null;
@@ -240,3 +240,5 @@ export interface EditorPort {
   setProjectTextureResolution: (width: number, height: number, modifyUv?: boolean) => ToolError | null;
   getTextureUsage: (params: TextureUsageQuery) => { result?: TextureUsageResult; error?: ToolError };
 }
+
+

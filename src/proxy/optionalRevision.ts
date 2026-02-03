@@ -1,8 +1,8 @@
 import type { ToolResponse } from '../types';
 import type { ToolService } from '../usecases/ToolService';
 import type { UsecaseResult } from '../usecases/result';
-import { guardOptionalRevision } from '../services/optionalRevision';
-import { toToolResponse } from '../services/toolResponse';
+import { guardOptionalRevision } from '../shared/tooling/optionalRevision';
+import { toToolResponse } from '../shared/tooling/toolResponse';
 
 export const runWithOptionalRevision = <T>(
   service: ToolService,
@@ -23,3 +23,7 @@ export const runUsecaseWithOptionalRevision = <T>(
   if (guard) return guard;
   return toToolResponse(fn());
 };
+
+
+
+

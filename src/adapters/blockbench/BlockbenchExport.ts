@@ -70,3 +70,5 @@ function isThenable(value: unknown): value is { then: (onFulfilled: (arg: unknow
   const candidate = value as { then?: unknown };
   return typeof candidate.then === 'function';
 }
+
+

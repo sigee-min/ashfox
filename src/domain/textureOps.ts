@@ -1,6 +1,6 @@
 export const MAX_TEXTURE_OPS = 4096;
 
-import { isRecord } from './guards';
+import { isFiniteNumber, isRecord } from './guards';
 
 export type TextureOpLike =
   | { op: 'set_pixel'; x: number; y: number; color: string }
@@ -35,4 +35,5 @@ export const isTextureOp = (op: unknown): op is TextureOpLike => {
   }
 };
 
-const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
+
+

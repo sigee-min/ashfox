@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { SessionStore } from '../../src/mcp/session';
+import { SessionStore } from '../../src/transport/mcp/session';
 
 const sessions = new SessionStore();
 const session = sessions.create('s1', '2025-06-18');
@@ -17,3 +17,4 @@ session.lastSeenAt = 0;
 const removed = sessions.pruneStale(1, 10);
 assert.equal(removed, 1);
 assert.equal(sessions.get('s1'), null);
+

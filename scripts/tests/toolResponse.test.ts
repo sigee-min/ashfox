@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { toToolResponse } from '../../src/services/toolResponse';
+import { toToolResponse } from '../../src/shared/tooling/toolResponse';
 
 {
   const res = toToolResponse({ ok: true, value: { a: 1 } });
@@ -15,3 +15,5 @@ import { toToolResponse } from '../../src/services/toolResponse';
     assert.equal(res.error.message, 'bad.');
   }
 }
+
+

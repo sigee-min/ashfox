@@ -49,7 +49,7 @@ export class BlockbenchEditor implements EditorPort {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; confirmDialog?: boolean }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
   ): ToolError | null {
     return this.project.createProject(name, formatId, kind, options);
   }
@@ -150,3 +150,5 @@ export class BlockbenchEditor implements EditorPort {
     return this.project.setProjectTextureResolution(width, height, modifyUv);
   }
 }
+
+

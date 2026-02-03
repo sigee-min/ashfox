@@ -9,7 +9,7 @@ import {
   SidecarResponseMessage
 } from '../../transport/protocol';
 import { ProxyTool } from '../../spec';
-import { toolError } from '../../services/toolResponse';
+import { toolError } from '../../shared/tooling/toolResponse';
 import { attachIpcReadable, createIpcDecoder, detachIpcReadable, IpcReadable, IpcWritable, sendIpcMessage } from './ipc';
 
 type DispatcherToolName = ToolName;
@@ -97,3 +97,6 @@ export class SidecarHost {
     this.send(response);
   }
 }
+
+
+

@@ -2,7 +2,7 @@ import type { ModelSpec } from '../../spec';
 import type { Limits, ToolError, ToolResponse } from '../../types';
 import type { ToolService } from '../../usecases/ToolService';
 import type { MetaOptions } from '../meta';
-import { errorWithMeta } from '../guardHelpers';
+import { errorWithMeta } from '../errorAdapter';
 import { applyPlanOps } from './modelApplier';
 import { buildPlan, sortOps } from './modelPlanner';
 import { normalizeModelSpec } from './modelNormalizer';
@@ -86,3 +86,6 @@ export const applyModelPlanStep = (args: {
     }
   };
 };
+
+
+

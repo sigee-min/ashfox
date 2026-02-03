@@ -6,3 +6,5 @@ export const resolveRegisteredPluginPath = (pluginId: string): string | null => 
   const path = entry?.path;
   return path && typeof path === 'string' ? path : null;
 };
+
+

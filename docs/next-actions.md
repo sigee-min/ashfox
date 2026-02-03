@@ -113,7 +113,6 @@ Historically this project used placeholder strings like `"<from get_project_stat
   "type": "call_tool",
   "tool": "texture_pipeline",
   "arguments": {
-    "autoRecover": true,
     "preflight": { "includeUsage": false },
     "ifRevision": {
       "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" }

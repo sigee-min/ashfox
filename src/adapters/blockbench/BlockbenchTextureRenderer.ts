@@ -30,3 +30,5 @@ export class BlockbenchTextureRenderer implements TextureRendererPort {
     return { result: { image: canvas, width: input.width, height: input.height } };
   }
 }
+
+

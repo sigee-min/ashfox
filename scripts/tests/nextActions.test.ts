@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { buildModelPipelineNextActions, buildTexturePipelineNextActions } from '../../src/proxy/nextActionHelpers';
+import { buildModelPipelineNextActions, buildTexturePipelineNextActions, buildValidateFindingsNextActions } from '../../src/proxy/nextActionHelpers';
 
 // Model pipeline: warnings should add guide + validate + preview by default.
 {
@@ -22,3 +22,16 @@ import { buildModelPipelineNextActions, buildTexturePipelineNextActions } from '
   assert.ok(actions.some((action) => action.type === 'call_tool' && action.tool === 'assign_texture'));
   assert.ok(actions.some((action) => action.type === 'call_tool' && action.tool === 'render_preview'));
 }
+
+// Validate findings should prompt follow-up actions.
+{
+  const actions = buildValidateFindingsNextActions({
+    result: {
+      findings: [
+        { code: 'missing_root', message: 'Root bone missing.', severity: 'error' }
+      ]
+    }
+  });
+  assert.ok(actions.some((action) => action.type === 'ask_user'));
+}
+

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { normalizeToolResponseShape } from '../../src/services/toolResponseGuard';
+import { normalizeToolResponseShape } from '../../src/shared/tooling/toolResponseGuard';
 
 // ok path should pass through data.
 {
@@ -19,3 +19,5 @@ import { normalizeToolResponseShape } from '../../src/services/toolResponseGuard
     assert.equal(res.error.code, 'unknown');
   }
 }
+
+

@@ -60,3 +60,5 @@ export const formatDimensionAxis = (axis?: DimensionAxis): string => {
 
 const isFinitePositive = (value: number): boolean =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+

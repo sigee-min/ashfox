@@ -142,7 +142,7 @@ const main = () => {
       appliesTo: (filePath) => rel(filePath).startsWith('src/'),
       allow: (filePath) => {
         const p = rel(filePath);
-        return p === 'src/types/blockbench.ts' || p === 'src/services/globalState.ts';
+        return p === 'src/types/blockbench.ts' || p === 'src/shared/globalState.ts';
       }
     }
   ];

@@ -1,0 +1,99 @@
+{
+  "blockbench": {
+    "version": "5.0.7",
+    "releaseTag": "v5.0.7",
+    "releaseDate": "2025-12-23",
+    "releaseUrl": "https://github.com/JannisX11/blockbench/releases/tag/v5.0.7"
+  },
+  "bbmodel": {
+    "formatVersionField": "format_version",
+    "breakingChanges": [
+      {
+        "version": "5.0",
+        "releaseDate": "2025-10-12",
+        "notes": "Groups and outliner hierarchy are saved as separate fields; keyframe value direction fixed."
+      },
+      {
+        "version": "4.10",
+        "releaseDate": "2024-05-09",
+        "notes": "Relative texture paths saved relative to file directory; project name ignored/overwritten when loaded from file; default textures not assigned per face unless explicit."
+      },
+      {
+        "version": "4.9",
+        "releaseDate": "2023-12-02",
+        "notes": "per_texture_uv_size introduces per-texture UV width/height in bbmodel."
+      }
+    ],
+    "notes": "The bbmodel format is not fully specified; refer to Blockbench source (bbmodel.js) for canonical behavior."
+  },
+  "features": {
+    "perTextureUvSize": {
+      "since": "4.9",
+      "formatFlag": "per_texture_uv_size",
+      "bbmodelFields": ["uv_width", "uv_height"]
+    },
+    "relativeTexturePaths": {
+      "since": "4.10"
+    },
+    "groupsOutlinerSeparated": {
+      "since": "5.0"
+    }
+  },
+  "formats": {
+    "java_block": {
+      "id": "java_block",
+      "name": "Java Block/Item",
+      "notes": "Capabilities are assumed; prefer live Format API when available.",
+      "confidence": "assumed"
+    },
+    "geckolib": {
+      "id": "geckolib",
+      "name": "GeckoLib",
+      "perTextureUvSize": true,
+      "notes": "Capabilities are assumed; prefer live Format API when available.",
+      "confidence": "assumed"
+    },
+    "animated_java": {
+      "id": "animated_java",
+      "name": "Animated Java",
+      "perTextureUvSize": true,
+      "notes": "Capabilities are assumed; prefer live Format API when available.",
+      "confidence": "assumed"
+    }
+  },
+  "aliases": {
+    "Java Block/Item": "java_block",
+    "geckolib": "geckolib",
+    "animated_java": "animated_java"
+  },
+  "defaults": {
+    "textureResolution": { "width": 16, "height": 16 }
+  },
+  "sources": [
+    {
+      "name": "Blockbench .bbmodel format changes",
+      "url": "https://www.blockbench.net/wiki/docs/bbmodel/",
+      "checkedAt": "2026-01-31",
+      "note": "Breaking changes list (5.0, 4.10, 4.9)."
+    },
+    {
+      "name": "Blockbench Format API (per_texture_uv_size)",
+      "url": "https://www.blockbench.net/wiki/api/format/",
+      "checkedAt": "2026-01-31",
+      "note": "Format options include per_texture_uv_size."
+    },
+    {
+      "name": "Blockbench Texture API (getUVWidth/getUVHeight)",
+      "url": "https://www.blockbench.net/wiki/api/textures/",
+      "checkedAt": "2026-01-31",
+      "note": "UV size depends on per_texture_uv_size vs project texture resolution."
+    },
+    {
+      "name": "Blockbench releases (latest version)",
+      "url": "https://github.com/JannisX11/blockbench/releases",
+      "checkedAt": "2026-01-31",
+      "note": "Latest tagged release used for blockbench.version."
+    }
+  ],
+  "updatedAt": "2026-01-31"
+}

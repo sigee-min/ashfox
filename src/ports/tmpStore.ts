@@ -12,3 +12,5 @@ export interface TmpStorePort {
     options?: { nameHint?: string; prefix?: string; cwd?: string }
   ) => { ok: true; data: TmpSaveResult } | { ok: false; error: ToolError };
 }
+
+

@@ -18,13 +18,13 @@ Example (auto UV + preset paint):
     "maxTextures": 2,
     "paint": { "preset": "painted_metal", "palette": ["#c73b2b", "#9f2c25", "#d94b3b"] }
   },
-  "autoRecover": true,
   "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
 }
 ```
 
 ## Face Paint (Material-First, UV-Free)
-Use `texture_pipeline.facePaint` to describe materials per cube/face. The pipeline maps materials to presets, targets UV rects automatically, and can auto-plan UVs when `autoRecover=true`.
+Use `texture_pipeline.facePaint` to describe materials per cube/face. The pipeline maps materials to presets, targets UV rects automatically, and can auto-plan UVs when needed.
+Unknown materials return an error; use supported keywords or provide palettes.
 
 Example (material pass):
 ```json
@@ -35,10 +35,12 @@ Example (material pass):
     { "material": "glass", "cubeNames": ["window"] },
     { "material": "rubber", "cubeNames": ["wheel_left", "wheel_right"] }
   ],
-  "autoRecover": true,
   "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
 }
 ```
+
+Notes:
+- If you supply both cubeIds and cubeNames in targets, both must match. Use one or the other for broader selection.
 
 ## Primary Workflow
 1) `assign_texture`
@@ -57,7 +59,7 @@ If `validate` reports `uv_overlap` / `uv_scale_mismatch`, UVs are missing, or a 
 1) Prefer `texture_pipeline.plan` to re-pack UVs with the solver (auto-split, <=512).
 2) Repaint with `apply_texture_spec` or `generate_texture_preset`
 
-Tip: `texture_pipeline` enables autoRecover by default during paint/facePaint steps. It runs a single plan-based recovery automatically for the whole project (auto-split, <=512, max 16 textures) and retries once.
+Tip: `texture_pipeline` runs a single plan-based recovery automatically for the whole project (auto-split, <=512, max 16 textures) and retries once.
 For mid/high-poly assets, prefer `texture_pipeline.plan` for repeatable results.
 
 ## Common Pitfalls
@@ -75,8 +77,7 @@ Example (textures + preview):
   "assign": [{ "textureName": "pot", "cubeNames": ["pot"] }],
   "uv": { "assignments": [{ "cubeName": "pot", "faces": { "north": [0,0,16,16] } }] },
   "textures": [{ "mode": "create", "name": "pot", "width": 16, "height": 16, "ops": [] }],
-  "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] },
-  "autoRecover": true
+  "preview": { "mode": "fixed", "output": "single", "angle": [30, 45, 0] }
 }
 ```
 

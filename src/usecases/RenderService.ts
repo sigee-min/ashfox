@@ -2,7 +2,7 @@ import type { RenderPreviewPayload, RenderPreviewResult, ToolError } from '../ty
 import type { EditorPort } from '../ports/editor';
 import type { TmpStorePort } from '../ports/tmpStore';
 import { ok, fail, UsecaseResult } from './result';
-import { ensureActiveOnly } from './guards';
+import { withActiveOnly } from './guards';
 import {
   PREVIEW_FRAME_DATA_UNAVAILABLE,
   PREVIEW_FRAMES_UNAVAILABLE,
@@ -50,56 +50,58 @@ export class RenderService {
   }
 
   renderPreview(payload: RenderPreviewPayload): UsecaseResult<RenderPreviewResult> {
-    const activeErr = ensureActiveOnly(this.ensureActive);
-    if (activeErr) return fail(activeErr);
-    const { saveToTmp, tmpName, tmpPrefix, ...previewPayload } = payload;
-    const res = this.editor.renderPreview(previewPayload);
-    if (res.error) return fail(res.error);
-    const result = res.result!;
-    if (!saveToTmp) return ok(result);
-    if (result.kind === 'single') {
-      const image = result.image;
-      if (!image) {
-        return fail({ code: 'not_implemented', message: PREVIEW_IMAGE_DATA_UNAVAILABLE });
-      }
-      const saved = this.savePreviewDataUri(image?.dataUri, PREVIEW_IMAGE_DATA_UNAVAILABLE, {
-        nameHint: tmpName ?? 'preview',
-        prefix: tmpPrefix ?? 'preview'
-      });
-      if (!saved.ok) return fail(saved.error);
-      return ok({
-        ...result,
-        saved: {
-          image: {
-            path: saved.value.path,
-            mime: image.mime,
-            byteLength: saved.value.byteLength,
-            width: image.width,
-            height: image.height
-          }
+    return withActiveOnly(this.ensureActive, () => {
+      const { saveToTmp, tmpName, tmpPrefix, ...previewPayload } = payload;
+      const res = this.editor.renderPreview(previewPayload);
+      if (res.error) return fail(res.error);
+      const result = res.result!;
+      if (!saveToTmp) return ok(result);
+      if (result.kind === 'single') {
+        const image = result.image;
+        if (!image) {
+          return fail({ code: 'not_implemented', message: PREVIEW_IMAGE_DATA_UNAVAILABLE });
         }
-      });
-    }
-    const frames = Array.isArray(result.frames) ? result.frames : [];
-    if (frames.length === 0) {
-      return fail({ code: 'not_implemented', message: PREVIEW_FRAMES_UNAVAILABLE });
-    }
-    const savedFrames: RenderPreviewResult['saved'] = { frames: [] };
-    for (const frame of frames) {
-      const saved = this.savePreviewDataUri(frame.dataUri, PREVIEW_FRAME_DATA_UNAVAILABLE, {
-        nameHint: `${tmpName ?? 'preview'}_frame${frame.index}`,
-        prefix: tmpPrefix ?? 'preview'
-      });
-      if (!saved.ok) return fail(saved.error);
-      savedFrames.frames!.push({
-        index: frame.index,
-        path: saved.value.path,
-        mime: frame.mime,
-        byteLength: saved.value.byteLength,
-        width: frame.width,
-        height: frame.height
-      });
-    }
-    return ok({ ...result, saved: savedFrames });
+        const saved = this.savePreviewDataUri(image?.dataUri, PREVIEW_IMAGE_DATA_UNAVAILABLE, {
+          nameHint: tmpName ?? 'preview',
+          prefix: tmpPrefix ?? 'preview'
+        });
+        if (!saved.ok) return fail(saved.error);
+        return ok({
+          ...result,
+          saved: {
+            image: {
+              path: saved.value.path,
+              mime: image.mime,
+              byteLength: saved.value.byteLength,
+              width: image.width,
+              height: image.height
+            }
+          }
+        });
+      }
+      const frames = Array.isArray(result.frames) ? result.frames : [];
+      if (frames.length === 0) {
+        return fail({ code: 'not_implemented', message: PREVIEW_FRAMES_UNAVAILABLE });
+      }
+      const savedFrames: RenderPreviewResult['saved'] = { frames: [] };
+      for (const frame of frames) {
+        const saved = this.savePreviewDataUri(frame.dataUri, PREVIEW_FRAME_DATA_UNAVAILABLE, {
+          nameHint: `${tmpName ?? 'preview'}_frame${frame.index}`,
+          prefix: tmpPrefix ?? 'preview'
+        });
+        if (!saved.ok) return fail(saved.error);
+        savedFrames.frames!.push({
+          index: frame.index,
+          path: saved.value.path,
+          mime: frame.mime,
+          byteLength: saved.value.byteLength,
+          width: frame.width,
+          height: frame.height
+        });
+      }
+      return ok({ ...result, saved: savedFrames });
+    });
   }
 }
+
+

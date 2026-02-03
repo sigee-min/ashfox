@@ -28,8 +28,7 @@ export const runProxyPipeline = async <P extends ProxyPayload, R>(
     service: deps.service,
     payload,
     includeStateByDefault: deps.includeStateByDefault,
-    includeDiffByDefault: deps.includeDiffByDefault,
-    runWithoutRevisionGuard: (fn) => deps.runWithoutRevisionGuard(fn)
+    includeDiffByDefault: deps.includeDiffByDefault
   });
   const guard = options.guard ? options.guard(pipeline, payload) : pipeline.guardRevision();
   if (guard) return guard;
@@ -40,3 +39,5 @@ export const runProxyPipeline = async <P extends ProxyPayload, R>(
     return pipeline.error({ code: 'unknown', message: `Unexpected error: ${message}` });
   }
 };
+
+

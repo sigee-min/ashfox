@@ -49,3 +49,5 @@ export const sendIpcMessage = (writable: IpcWritable, message: SidecarMessage, l
     log.error('sidecar ipc send failed', { message: errorMessage(err) });
   }
 };
+
+

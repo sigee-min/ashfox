@@ -1,6 +1,7 @@
 import type {
   EntityPipelinePayload,
   ModelBoneSpec,
+  ModelPipelineStage,
   ModelSpec,
   TexturePipelinePayload,
   TextureSpec
@@ -24,10 +25,10 @@ const isMinimalRootBone = (bone: ModelBoneSpec | undefined): boolean => {
 
 export const isMinimalModelSpec = (model: ModelSpec | undefined | null): boolean => {
   if (!model) return true;
-  const bones = Array.isArray(model.bones) ? model.bones : [];
-  const cubes = Array.isArray(model.cubes) ? model.cubes : [];
-  const instances = Array.isArray(model.instances) ? model.instances : [];
-  if (cubes.length > 0 || instances.length > 0) return false;
+  if (model.rigTemplate) return false;
+  const bones = model.bone ? [model.bone] : [];
+  const cubes = model.cube ? [model.cube] : [];
+  if (cubes.length > 0) return false;
   if (bones.length === 0) return true;
   if (bones.length > 1) return false;
   return isMinimalRootBone(bones[0]);
@@ -39,8 +40,19 @@ const MODEL_CLARIFICATION_QUESTIONS = [
   'Detail level? (simple / medium / detailed)'
 ];
 
-export const getModelClarificationQuestions = (model: ModelSpec): string[] =>
-  isMinimalModelSpec(model) ? [...MODEL_CLARIFICATION_QUESTIONS] : [];
+export const getModelClarificationQuestions = (args: {
+  model?: ModelSpec;
+  stages?: ModelPipelineStage[];
+}): string[] => {
+  const models = Array.isArray(args.stages) && args.stages.length > 0
+    ? args.stages.map((stage) => stage.model)
+    : args.model
+      ? [args.model]
+      : [];
+  if (models.length === 0) return [];
+  const allMinimal = models.every((model) => isMinimalModelSpec(model));
+  return allMinimal ? [...MODEL_CLARIFICATION_QUESTIONS] : [];
+};
 
 const hasTextureContent = (texture: TextureSpec): boolean => {
   const hasOps = Array.isArray(texture.ops) && texture.ops.length > 0;
@@ -67,7 +79,7 @@ export const getTexturePipelineClarificationQuestions = (payload: TexturePipelin
 };
 
 export const getEntityPipelineClarificationQuestions = (payload: EntityPipelinePayload): string[] => {
-  const hasModel = Boolean(payload.model);
+  const hasModel = Boolean(payload.model) || (Array.isArray(payload.modelStages) && payload.modelStages.length > 0);
   const hasTextures = Array.isArray(payload.textures) && payload.textures.length > 0;
   const hasAnimations = Array.isArray(payload.animations) && payload.animations.length > 0;
 
@@ -79,9 +91,13 @@ export const getEntityPipelineClarificationQuestions = (payload: EntityPipelineP
   if (hasTextures && !payload.uvUsageId && !payload.texturePlan) {
     questions.push('Provide uvUsageId or texturePlan. (Paste uvUsageId from preflight_texture or add texturePlan.)');
   }
-  if (payload.model && isMinimalModelSpec(payload.model) && !hasTextures && !hasAnimations) {
+  const stageModel = payload.modelStages && payload.modelStages.length > 0 ? payload.modelStages[0]?.model : null;
+  const checkModel = payload.model ?? stageModel ?? undefined;
+  if (checkModel && isMinimalModelSpec(checkModel) && !hasTextures && !hasAnimations) {
     questions.push('What entity should I model? (short noun)');
     questions.push('Geometry scope? (skeleton-only / add cubes now)');
   }
   return questions;
 };
+
+

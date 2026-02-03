@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 
 import { modelPipelineProxy } from '../../src/proxy/modelPipeline';
 import type { ModelPipelinePayload } from '../../src/spec';
@@ -75,10 +75,7 @@ registerAsync(
 
     const payload: ModelPipelinePayload = {
       model: {
-        bones: [
-          { id: 'root' },
-          { id: 'spine', parentId: 'root', visibility: false }
-        ]
+        bone: { id: 'spine', parentId: 'root', visibility: false }
       },
       mode: 'merge'
     };
@@ -105,7 +102,7 @@ registerAsync(
 
     const payload: ModelPipelinePayload = {
       model: {
-        bones: [{ id: 'root' }]
+        bone: { id: 'root' }
       },
       mode: 'replace',
       planOnly: true
@@ -127,5 +124,6 @@ registerAsync(
     }
   })()
 );
+
 
 

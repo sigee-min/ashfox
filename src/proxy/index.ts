@@ -9,18 +9,22 @@ import {
 } from '../spec';
 import { ToolService } from '../usecases/ToolService';
 import type { DomPort } from '../ports/dom';
-import { err } from '../services/toolResponse';
+import { err } from '../shared/tooling/toolResponse';
 import { modelPipelineProxy } from './modelPipeline';
-import { applyTextureSpecProxy, applyUvSpecProxy, texturePipelineProxy } from './texturePipeline';
+import { applyTextureSpecProxy } from './texturePipeline/applyTextureSpecProxy';
+import { applyUvSpecProxy } from './texturePipeline/applyUvSpecProxy';
+import { texturePipelineProxy } from './texturePipeline/texturePipelineProxy';
 import type { ProxyPipelineDeps, ProxyToolPayloadMap, ProxyToolResultMap } from './types';
 import { entityPipelineProxy } from './entityPipeline';
-import { attachStateToResponse } from '../services/attachState';
+import { attachStateToResponse } from '../shared/tooling/attachState';
 import { runPreviewStep } from './previewStep';
 import { runUsecaseWithOptionalRevision, runWithOptionalRevision } from './optionalRevision';
 import { attachPreviewResponse } from './previewResponse';
 import { createProxyPipelineCache } from './cache';
 import { PROXY_TOOL_UNKNOWN } from '../shared/messages';
-import { isResponseError } from './guardHelpers';
+import { isResponseError } from '../shared/tooling/responseGuards';
+import { TraceRecorder } from '../trace/traceRecorder';
+import { appendMissingRevisionNextActions } from '../shared/tooling/revisionNextActions';
 
 export class ProxyRouter {
   private readonly service: ToolService;
@@ -29,6 +33,7 @@ export class ProxyRouter {
   private readonly limits: Limits;
   private readonly includeStateByDefault: () => boolean;
   private readonly includeDiffByDefault: () => boolean;
+  private readonly traceRecorder?: TraceRecorder;
   private readonly proxyHandlers: {
     [K in ProxyTool]: (payload: ProxyToolPayloadMap[K]) => Promise<ToolResponse<ProxyToolResultMap[K]>>;
   };
@@ -38,7 +43,11 @@ export class ProxyRouter {
     dom: DomPort,
     log: Logger,
     limits: Limits,
-    options?: { includeStateByDefault?: boolean | (() => boolean); includeDiffByDefault?: boolean | (() => boolean) }
+    options?: {
+      includeStateByDefault?: boolean | (() => boolean);
+      includeDiffByDefault?: boolean | (() => boolean);
+      traceRecorder?: TraceRecorder;
+    }
   ) {
     this.service = service;
     this.dom = dom;
@@ -48,6 +57,7 @@ export class ProxyRouter {
     this.includeStateByDefault = typeof flag === 'function' ? flag : () => Boolean(flag);
     const diffFlag = options?.includeDiffByDefault;
     this.includeDiffByDefault = typeof diffFlag === 'function' ? diffFlag : () => Boolean(diffFlag);
+    this.traceRecorder = options?.traceRecorder;
     this.proxyHandlers = {
       apply_texture_spec: async (payload) => this.applyTextureSpec(payload),
       apply_uv_spec: async (payload) => this.applyUvSpec(payload),
@@ -99,24 +109,23 @@ export class ProxyRouter {
           | ((payload: ProxyToolPayloadMap[K]) => Promise<ToolResponse<ProxyToolResultMap[K]>>)
           | undefined;
       if (!handler) {
-        return err('invalid_payload', PROXY_TOOL_UNKNOWN(tool), { reason: 'unknown_proxy_tool', tool });
+        const response = err('invalid_payload', PROXY_TOOL_UNKNOWN(tool), { reason: 'unknown_proxy_tool', tool });
+        const withRevision = appendMissingRevisionNextActions(tool, payload, response);
+        this.recordTrace(tool, payload, withRevision);
+        return withRevision;
       }
-      return await handler(payload);
+      const response = await handler(payload);
+      const withRevision = appendMissingRevisionNextActions(tool, payload, response);
+      this.recordTrace(tool, payload, withRevision);
+      return withRevision;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'unknown error';
       this.log.error('proxy handle error', { tool, message });
-      return err('unknown', message, { reason: 'proxy_exception', tool });
+      const response = err('unknown', message, { reason: 'proxy_exception', tool });
+      const withRevision = appendMissingRevisionNextActions(tool, payload, response);
+      this.recordTrace(tool, payload, withRevision);
+      return withRevision;
     }
-  }
-
-  private async runWithoutRevisionGuard<T>(fn: () => Promise<T> | T): Promise<T> {
-    const service = this.service as {
-      runWithoutRevisionGuardAsync?: (inner: () => Promise<T>) => Promise<T>;
-    };
-    if (typeof service.runWithoutRevisionGuardAsync === 'function') {
-      return service.runWithoutRevisionGuardAsync(async () => await fn());
-    }
-    return await fn();
   }
 
   private getPipelineDeps(): ProxyPipelineDeps {
@@ -127,7 +136,6 @@ export class ProxyRouter {
       limits: this.limits,
       includeStateByDefault: this.includeStateByDefault,
       includeDiffByDefault: this.includeDiffByDefault,
-      runWithoutRevisionGuard: (fn) => this.runWithoutRevisionGuard(fn),
       cache: createProxyPipelineCache()
     };
   }
@@ -142,4 +150,23 @@ export class ProxyRouter {
     };
   }
 
+  private recordTrace<T>(
+    tool: ProxyTool,
+    payload: ProxyToolPayloadMap[ProxyTool],
+    response: ToolResponse<T>
+  ): void {
+    if (!this.traceRecorder) return;
+    try {
+      this.traceRecorder.record('proxy', tool, payload, response as ToolResponse<unknown>);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'trace log record failed';
+      this.log.warn('trace log record failed', { tool, message });
+    }
+  }
+
 }
+
+
+
+
+

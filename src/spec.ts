@@ -25,33 +25,6 @@ export type ModelIdPolicy = 'explicit' | 'stable_path' | 'hash';
 
 export type ModelSpecUnits = 'px';
 
-export type ModelInstance =
-  | {
-      type: 'mirror';
-      sourceCubeId: string;
-      axis: 'x' | 'y' | 'z';
-      about?: number;
-      newId?: string;
-      newName?: string;
-    }
-  | {
-      type: 'repeat';
-      sourceCubeId: string;
-      count: number;
-      delta: [number, number, number];
-      prefix?: string;
-    }
-  | {
-      type: 'radial';
-      sourceCubeId: string;
-      count: number;
-      axis: 'x' | 'y' | 'z';
-      radius: number;
-      center?: [number, number, number];
-      startAngle?: number;
-      prefix?: string;
-    };
-
 export type ModelAnchor = {
   id: string;
   target: { boneId?: string; cubeId?: string };
@@ -91,9 +64,8 @@ export type ModelCubeSpec = {
 export type ModelSpec = {
   units?: ModelSpecUnits;
   rigTemplate?: RigTemplateKind;
-  bones?: ModelBoneSpec[];
-  cubes?: ModelCubeSpec[];
-  instances?: ModelInstance[];
+  bone?: ModelBoneSpec;
+  cube?: ModelCubeSpec;
   anchors?: ModelAnchor[];
   policies?: {
     idPolicy?: ModelIdPolicy;
@@ -104,13 +76,19 @@ export type ModelSpec = {
   };
 };
 
+export type ModelPipelineStage = {
+  label?: string;
+  model: ModelSpec;
+  mode?: 'create' | 'merge' | 'replace' | 'patch';
+  deleteOrphans?: boolean;
+};
+
 type EnsureProjectOptionsBase = {
   name?: string;
   match?: EnsureProjectMatch;
   onMismatch?: EnsureProjectOnMismatch;
   onMissing?: EnsureProjectOnMissing;
   confirmDiscard?: boolean;
-  confirmDialog?: boolean;
   dialog?: Record<string, unknown>;
 };
 
@@ -119,8 +97,11 @@ export type ModelEnsureProjectOptions = EnsureProjectOptionsBase & {
 };
 
 export interface ModelPipelinePayload {
-  model: ModelSpec;
+  model?: ModelSpec;
+  stages?: ModelPipelineStage[];
   mode?: 'create' | 'merge' | 'replace' | 'patch';
+  stagePreview?: boolean;
+  stageValidate?: boolean;
   ensureProject?: ModelEnsureProjectOptions;
   deleteOrphans?: boolean;
   planOnly?: boolean;
@@ -203,7 +184,6 @@ export interface ApplyUvSpecPayload {
 export interface ApplyTextureSpecPayload {
   textures: TextureSpec[];
   uvUsageId: string;
-  autoRecover?: boolean;
   includeState?: boolean;
   includeDiff?: boolean;
   diffDetail?: ProjectStateDetail;
@@ -240,13 +220,20 @@ export interface EntityPipelinePayload {
   targetVersion?: GeckoLibTargetVersion;
   ensureProject?: boolean | EntityEnsureProjectOptions;
   planOnly?: boolean;
+  autoStage?: boolean;
   model?: ModelSpec;
+  modelStages?: ModelPipelineStage[];
+  mode?: 'create' | 'merge' | 'replace' | 'patch';
+  deleteOrphans?: boolean;
+  stagePreview?: boolean;
+  stageValidate?: boolean;
+  preview?: TexturePipelinePreview;
+  validate?: boolean;
   texturePlan?: TexturePipelinePlan;
   textures?: TextureSpec[];
   facePaint?: FacePaintSpec[];
   cleanup?: TextureCleanupSpec;
   uvUsageId?: string;
-  autoRecover?: boolean;
   animations?: EntityAnimationSpec[];
   includeState?: boolean;
   includeDiff?: boolean;
@@ -328,15 +315,17 @@ export interface TexturePipelinePayload {
   presets?: TexturePipelinePreset[];
   facePaint?: FacePaintSpec[];
   cleanup?: TextureCleanupSpec;
-  autoRecover?: boolean;
   preflight?: TexturePipelinePreflight;
   preview?: TexturePipelinePreview;
   planOnly?: boolean;
+  autoStage?: boolean;
   includeState?: boolean;
   includeDiff?: boolean;
   diffDetail?: ProjectStateDetail;
   ifRevision?: string;
 }
+
+
 
 
 

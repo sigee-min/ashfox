@@ -22,6 +22,8 @@ export const buildTextureUsageResult = (
     {
       id?: string;
       name: string;
+      width?: number;
+      height?: number;
       cubes: Map<
         string,
         { id?: string; name: string; faces: Map<CubeFaceDirection, { face: CubeFaceDirection; uv?: [number, number, number, number] }> }
@@ -31,12 +33,19 @@ export const buildTextureUsageResult = (
   >();
   const byId = new Map<string, string>();
   const byName = new Map<string, string>();
-  const metaByKey = new Map<string, { id?: string; name: string }>();
+  const metaByKey = new Map<string, { id?: string; name: string; width?: number; height?: number }>();
   textures.forEach((tex) => {
     const id = readTextureId(tex) ?? undefined;
     const name = tex?.name ?? tex?.id ?? 'texture';
     const key = id ? `id:${id}` : `name:${name}`;
-    metaByKey.set(key, { id, name });
+    const width = normalizeTextureSize(tex?.width);
+    const height = normalizeTextureSize(tex?.height);
+    metaByKey.set(key, {
+      id,
+      name,
+      ...(width ? { width } : {}),
+      ...(height ? { height } : {})
+    });
     const aliases = readTextureAliases(tex);
     aliases.forEach((alias) => {
       if (!byId.has(alias)) {
@@ -63,7 +72,14 @@ export const buildTextureUsageResult = (
   targetKeys.forEach((key) => {
     const meta = metaByKey.get(key);
     if (!meta) return;
-    usageMap.set(key, { id: meta.id, name: meta.name, cubes: new Map(), faceCount: 0 });
+    usageMap.set(key, {
+      id: meta.id,
+      name: meta.name,
+      ...(meta.width ? { width: meta.width } : {}),
+      ...(meta.height ? { height: meta.height } : {}),
+      cubes: new Map(),
+      faceCount: 0
+    });
   });
 
   const unresolved: TextureUsageUnresolved[] = [];
@@ -106,6 +122,8 @@ export const buildTextureUsageResult = (
   const texturesResult = Array.from(usageMap.values()).map((entry) => ({
     id: entry.id,
     name: entry.name,
+    ...(entry.width ? { width: entry.width } : {}),
+    ...(entry.height ? { height: entry.height } : {}),
     cubeCount: entry.cubes.size,
     faceCount: entry.faceCount,
     cubes: Array.from(entry.cubes.values()).map((cube) => ({
@@ -137,3 +155,11 @@ const normalizeFaceUv = (value: unknown): [number, number, number, number] | und
   }
   return undefined;
 };
+
+const normalizeTextureSize = (value: unknown): number | null => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  if (value <= 0) return null;
+  return Math.trunc(value);
+};
+
+

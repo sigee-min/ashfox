@@ -4,7 +4,7 @@ import type { TexturePipelinePayload } from '../../src/spec';
 import type { TextureUsageResult } from '../../src/ports/editor';
 import { texturePipelineProxy } from '../../src/proxy/texturePipeline/texturePipelineProxy';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
 import { createMockDom, DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync } from './helpers';
 
@@ -26,7 +26,7 @@ const usageResult: TextureUsageResult = {
   ]
 };
 
-const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageResult));
+const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageResult), { width: 16, height: 16 });
 
 const project = {
   id: 'p1',
@@ -35,6 +35,7 @@ const project = {
   format: 'geckolib',
   revision: 'r1',
   counts: { bones: 0, cubes: 1, textures: 0, animations: 0 },
+  textureResolution: { width: 16, height: 16 },
   bones: [],
   cubes: [
     {
@@ -134,3 +135,5 @@ registerAsync(
     assert.ok(calls.updateTexture > 0);
   })()
 );
+
+

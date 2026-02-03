@@ -1,37 +1,49 @@
 import { EntityPipelinePayload } from '../spec';
-import { collectTextureTargets } from '../domain/uvTargets';
+import { collectTextureTargets } from '../domain/uv/targets';
 import { applyTextureSpecSteps, createApplyReport } from './apply';
 import { buildPipelineResult } from './pipelineResult';
 import { validateEntityPipeline } from './validators';
 import type { ProxyPipelineDeps } from './types';
 import type { ToolResponse } from '../types';
-import { err } from '../services/toolResponse';
-import { applyModelPlanStep } from './modelPipeline/modelStep';
+import { err } from '../shared/tooling/toolResponse';
 import { ensureProjectAndLoadProject, resolveEnsureProjectPayload, requireProjectFormat } from './ensureProject';
 import { applyEntityAnimations } from './animationStep';
-import type { EntityPipelineResult, EntityPipelineSteps } from './entityPipeline/types';
+import type { EntityModelStageResult, EntityPipelineResult, EntityPipelineSteps } from './entityPipeline/types';
+import type { ModelPipelineStage } from '../spec';
 import { runProxyPipeline } from './pipelineRunner';
-import { PROXY_FORMAT_NOT_IMPLEMENTED } from '../shared/messages';
-import { buildClarificationNextActions } from './nextActionHelpers';
+import { PROXY_FORMAT_NOT_IMPLEMENTED, TEXTURE_FACE_PAINT_CONFLICT } from '../shared/messages';
+import {
+  buildClarificationNextActions,
+  buildValidateFindingsNextActions,
+  dedupeNextActions
+} from './nextActionHelpers';
 import { getEntityPipelineClarificationQuestions } from './clarifications';
 import { applyTextureCleanup } from './textureCleanup';
 import {
   createTexturePipelineContext,
   ensurePreflightUsage,
-  ensureUvUsageForTargetsInContext
+  ensureUvUsageForTargetsInContext,
+  runPreflightStep
 } from './texturePipeline/steps';
-import { runAutoPlanStep } from './texturePipeline/autoPlan';
 import type { TexturePipelineSteps } from './texturePipeline/types';
-import { buildFacePaintPresets, summarizeFacePaintUsage } from './texturePipeline/facePaint';
-import { loadProjectState } from './projectState';
-import type { GenerateTexturePresetResult } from '../types';
+import { adjustTextureSpecsForRecovery } from './texturePipeline/sizeAdjust';
+import { decidePlanOnly } from './planOnly';
+import { runPlanAndFacePaint } from './texturePipeline/planAndPaint';
+import { runPreviewStep, runPreviewStepStructured, type PreviewStepData } from './previewStep';
+import { attachPreviewResponse } from './previewResponse';
+import { resolveStageCheckFlags, runFinalPreviewValidate } from './previewChecks';
+import { runModelStages } from './modelPipeline/runStages';
+import { collectExplicitTextureRefs, resolveFacePaintConflicts } from './texturePipeline/conflictHelpers';
+import { summarizeFacePaintUsage } from './texturePipeline/facePaint';
+import { runFacePaintWorkflow } from './texturePipeline/facePaintWorkflow';
 
 export const entityPipelineProxy = async (
   deps: ProxyPipelineDeps,
   payload: EntityPipelinePayload
 ): Promise<ToolResponse<EntityPipelineResult>> => {
-  let clarificationQuestions: string[] = [];
-  let shouldPlanOnly = false;
+  const planDecision = decidePlanOnly(payload.planOnly, getEntityPipelineClarificationQuestions(payload));
+  const clarificationQuestions = planDecision.questions;
+  const shouldPlanOnly = planDecision.shouldPlanOnly;
   return runProxyPipeline<EntityPipelinePayload, EntityPipelineResult>(deps, payload, {
     validate: (payloadValue, limits) => {
       const v = validateEntityPipeline(payloadValue, limits);
@@ -42,8 +54,6 @@ export const entityPipelineProxy = async (
       return v;
     },
     guard: (pipeline) => {
-      clarificationQuestions = getEntityPipelineClarificationQuestions(payload);
-      shouldPlanOnly = Boolean(payload.planOnly) || clarificationQuestions.length > 0;
       return shouldPlanOnly ? null : pipeline.guardRevision();
     },
     run: async (pipeline) => {
@@ -51,9 +61,7 @@ export const entityPipelineProxy = async (
       const format = payload.format;
       const targetVersion = payload.targetVersion ?? 'v4';
       const facePaintEntries = Array.isArray(payload.facePaint) ? payload.facePaint : [];
-      const hasFacePaint = facePaintEntries.length > 0;
-      const autoRecoverEnabled = payload.autoRecover !== false;
-      const facePaintAutoRecover = autoRecoverEnabled;
+      const autoStage = payload.autoStage !== false;
 
       if (shouldPlanOnly) {
         const response = pipeline.ok(
@@ -69,7 +77,11 @@ export const entityPipelineProxy = async (
         { format: 'geckolib' },
         effectiveRevision
       );
-      const needsFull = Boolean(payload.model || (payload.animations && payload.animations.length > 0));
+      const needsFull = Boolean(
+        payload.model ||
+          (payload.modelStages && payload.modelStages.length > 0) ||
+          (payload.animations && payload.animations.length > 0)
+      );
       const stateRes = ensureProjectAndLoadProject({
         service: deps.service,
         meta: pipeline.meta,
@@ -91,26 +103,56 @@ export const entityPipelineProxy = async (
         'entity_pipeline'
       );
       if (formatError) return formatError;
-      if (payload.model) {
-        const project = stateRes.data.project;
-        const applyRes = applyModelPlanStep({
-          service: deps.service,
-          meta: pipeline.meta,
-          model: payload.model,
-          existingBones: project.bones ?? [],
-          existingCubes: project.cubes ?? [],
-          mode: 'merge',
-          deleteOrphans: false,
-          limits: deps.limits,
-          ifRevision: effectiveRevision
+      let currentProject = stateRes.data.project;
+      const modelStages = resolveEntityModelStages(payload);
+      if (modelStages.length > 0) {
+        const isStaged = Boolean(payload.modelStages && payload.modelStages.length > 0);
+        const stageChecks = resolveStageCheckFlags({
+          preview: payload.preview,
+          validate: payload.validate,
+          stagePreview: payload.stagePreview,
+          stageValidate: payload.stageValidate,
+          staged: isStaged
         });
-        if (!applyRes.ok) return applyRes;
-        steps.model = {
-          applied: true,
-          plan: applyRes.data.plan.summary,
-          report: applyRes.data.report,
-          ...(applyRes.data.warnings.length > 0 ? { warnings: applyRes.data.warnings } : {})
-        };
+        const defaultMode = payload.mode ?? 'merge';
+        const normalizedStages = modelStages.map((stage) => {
+          const stageMode = stage.mode ?? defaultMode;
+          const stageDeleteOrphans =
+            stage.deleteOrphans ?? (isStaged ? false : payload.deleteOrphans ?? stageMode === 'replace');
+          return { ...stage, mode: stageMode, deleteOrphans: stageDeleteOrphans };
+        });
+        const stageRun = await runModelStages({
+          deps,
+          pipeline,
+          stages: normalizedStages,
+          project: stateRes.data.project,
+          revision: effectiveRevision ?? stateRes.data.project.revision,
+          planOnly: false,
+          includeOps: false,
+          stageChecks,
+          stageCheckRunners: {
+            preview: () => runPreviewStepStructured(deps.service, payload.preview!, pipeline.meta),
+            validate: () => pipeline.wrap(deps.service.validate({}))
+          }
+        });
+        if (!stageRun.ok) return stageRun;
+        effectiveRevision = stageRun.data.revision;
+        currentProject = stageRun.data.project;
+        if (stageRun.data.stageResults.some((stage) => !stage.report)) {
+          return pipeline.error({ code: 'unknown', message: 'Stage report missing after model apply.' });
+        }
+        const stageResults = stageRun.data.stageResults as EntityModelStageResult[];
+
+        if (payload.modelStages && payload.modelStages.length > 0) {
+          steps.modelStages = stageResults;
+        } else if (stageResults.length === 1) {
+          steps.model = {
+            applied: true,
+            plan: stageResults[0].plan,
+            report: stageResults[0].report,
+            ...(stageResults[0].warnings ? { warnings: stageResults[0].warnings } : {})
+          };
+        }
       }
       const textureSteps: TexturePipelineSteps = {};
       const textureCtx = createTexturePipelineContext({
@@ -126,88 +168,82 @@ export const entityPipelineProxy = async (
         if (textureSteps.presets) steps.presets = textureSteps.presets;
       };
 
-      if (payload.texturePlan) {
-        const planRes = await runAutoPlanStep(textureCtx, payload.texturePlan, {
-          planOnly: false,
-          ifRevision: effectiveRevision
-        });
-        if (!planRes.ok) return planRes;
-        attachTextureSteps();
+      const planRes = await runPlanAndFacePaint({
+        ctx: textureCtx,
+        plan: payload.texturePlan,
+        planOnly: false,
+        ifRevision: effectiveRevision,
+        facePaintEntries: autoStage ? [] : facePaintEntries,
+        conflictSources: { textures: payload.textures },
+        reuseExistingTextures: true,
+        resolutionOverride: payload.texturePlan?.resolution ?? undefined
+      });
+      if (!planRes.ok) return planRes;
+      attachTextureSteps();
+
+      if (!autoStage) {
+        const facePaintTextures = textureSteps.facePaint?.textures ?? [];
+        const facePaintTextureIds = textureSteps.facePaint?.textureIds ?? [];
+        if (facePaintTextures.length > 0 || facePaintTextureIds.length > 0) {
+          const explicit = collectExplicitTextureRefs(payload.textures, undefined);
+          const overlaps = resolveFacePaintConflicts(
+            { names: facePaintTextures, ids: facePaintTextureIds },
+            explicit
+          );
+          if (overlaps.length > 0) {
+            return pipeline.error({
+              code: 'invalid_payload',
+              message: TEXTURE_FACE_PAINT_CONFLICT(overlaps.join(', '))
+            });
+          }
+        }
       }
 
-      if (hasFacePaint) {
-        const usageReady = ensurePreflightUsage(textureCtx, 'before', { requireUsage: true });
-        if (!usageReady.ok) return usageReady;
-        const summary = summarizeFacePaintUsage(facePaintEntries, textureCtx.preflightUsage!);
-        const targets = summary.targets;
-        const resolved = await ensureUvUsageForTargetsInContext(textureCtx, {
-          targets,
-          autoRecover: facePaintAutoRecover,
-          requireUv: true,
-          plan: facePaintAutoRecover
-            ? {
-                context: textureCtx,
-                existingPlan: payload.texturePlan ?? null,
-                ifRevision: effectiveRevision,
-                reuseExistingTextures: true
-              }
-            : undefined
-        });
-        if (!resolved.ok) return resolved;
-        attachTextureSteps();
-        const projectRes = loadProjectState(deps.service, pipeline.meta, 'summary');
-        if (!projectRes.ok) return projectRes;
-        const facePaintPresets = buildFacePaintPresets({
-          entries: facePaintEntries,
-          usage: resolved.data.usage,
-          project: projectRes.data
-        });
-        if (!facePaintPresets.ok) return facePaintPresets;
-        const presetResults: GenerateTexturePresetResult[] = [];
-        for (const preset of facePaintPresets.data.presets) {
-          const presetRes = pipeline.wrap(
-            deps.service.generateTexturePreset({
-              preset: preset.preset,
-              width: preset.width,
-              height: preset.height,
-              uvUsageId: resolved.data.uvUsageId,
-              name: preset.name,
-              targetId: preset.targetId,
-              targetName: preset.targetName,
-              mode: preset.mode,
-              seed: preset.seed,
-              palette: preset.palette,
-              uvPaint: preset.uvPaint,
-              ifRevision: effectiveRevision
-            })
-          );
-          if (!presetRes.ok) return presetRes;
-          presetResults.push(presetRes.data);
+      if (autoStage && facePaintEntries.length > 0) {
+        const mutatedBeforeFacePaint = Boolean(textureSteps.plan?.applied);
+        if (mutatedBeforeFacePaint) {
+          const preflightRes = runPreflightStep(textureCtx, 'before');
+          if (!preflightRes.ok) return preflightRes;
+        } else {
+          const preflightRes = ensurePreflightUsage(textureCtx, 'before', { requireUsage: true });
+          if (!preflightRes.ok) return preflightRes;
         }
-        if (presetResults.length > 0) {
-          const existing = steps.presets;
-          const merged = existing ? [...existing.results, ...presetResults] : presetResults;
-          const applied = (existing?.applied ?? 0) + presetResults.length;
-          const nextRecovery = existing?.recovery ?? resolved.data.recovery;
-          const nextUvUsageId = existing?.uvUsageId ?? (nextRecovery ? resolved.data.uvUsageId : undefined);
-          steps.presets = {
-            applied,
-            results: merged,
-            ...(nextRecovery ? { recovery: nextRecovery, uvUsageId: nextUvUsageId } : {})
-          };
-          const metaRes = pipeline.wrap(
-            deps.service.setProjectMeta({
-              meta: { facePaint: facePaintEntries },
-              ifRevision: effectiveRevision
-            })
+
+        if (textureCtx.preflightUsage) {
+          const summary = summarizeFacePaintUsage(facePaintEntries, textureCtx.preflightUsage);
+          const explicit = collectExplicitTextureRefs(payload.textures, undefined);
+          const overlaps = resolveFacePaintConflicts(
+            { names: Array.from(summary.targets.names), ids: Array.from(summary.targets.ids) },
+            explicit
           );
-          if (!metaRes.ok) return metaRes;
+          if (overlaps.length > 0) {
+            return pipeline.error({
+              code: 'invalid_payload',
+              message: TEXTURE_FACE_PAINT_CONFLICT(overlaps.join(', '))
+            });
+          }
+        }
+
+        const facePaintRes = await runFacePaintWorkflow({
+          ctx: textureCtx,
+          entries: facePaintEntries,
+          plan: {
+            existingPlan: payload.texturePlan ?? null,
+            ifRevision: effectiveRevision,
+            reuseExistingTextures: true
+          },
+          ifRevision: effectiveRevision,
+          resolutionOverride: payload.texturePlan?.resolution ?? undefined
+        });
+        if (!facePaintRes.ok) return facePaintRes;
+        if (facePaintRes.data.applied > 0) {
           steps.facePaint = {
-            applied: presetResults.length,
-            materials: facePaintPresets.data.materials,
-            textures: facePaintPresets.data.textures,
-            uvUsageId: resolved.data.uvUsageId,
-            ...(resolved.data.recovery ? { recovery: resolved.data.recovery } : {})
+            applied: facePaintRes.data.applied,
+            materials: facePaintRes.data.materials,
+            textures: facePaintRes.data.textures,
+            ...(facePaintRes.data.textureIds.length > 0 ? { textureIds: facePaintRes.data.textureIds } : {}),
+            ...(facePaintRes.data.uvUsageId ? { uvUsageId: facePaintRes.data.uvUsageId } : {}),
+            ...(facePaintRes.data.recovery ? { recovery: facePaintRes.data.recovery } : {})
           };
         }
       }
@@ -218,29 +254,32 @@ export const entityPipelineProxy = async (
         if (!usageReady.ok) return usageReady;
         const resolved = await ensureUvUsageForTargetsInContext(textureCtx, {
           targets,
-          autoRecover: autoRecoverEnabled,
           requireUv: true,
-          plan: autoRecoverEnabled
-            ? {
-                context: textureCtx,
-                existingPlan: payload.texturePlan ?? null,
-                ifRevision: effectiveRevision,
-                reuseExistingTextures: true
-              }
-            : undefined
+          plan: {
+            context: textureCtx,
+            existingPlan: payload.texturePlan ?? null,
+            ifRevision: effectiveRevision,
+            reuseExistingTextures: true
+          }
         });
         if (!resolved.ok) return resolved;
         attachTextureSteps();
+        const recoveryAdjustedTextures = adjustTextureSpecsForRecovery(
+          payload.textures,
+          resolved.data.usage,
+          resolved.data.recovery
+        );
         const report = createApplyReport();
         const applyRes = await applyTextureSpecSteps(
           deps.service,
           deps.dom,
           deps.limits,
-          payload.textures,
+          recoveryAdjustedTextures,
           report,
           pipeline.meta,
           deps.log,
-          resolved.data.usage
+          resolved.data.usage,
+          effectiveRevision
         );
         if (!applyRes.ok) return applyRes;
         steps.textures = {
@@ -262,7 +301,7 @@ export const entityPipelineProxy = async (
           pipeline.meta,
           payload.animations,
           effectiveRevision,
-          stateRes.data.project
+          currentProject
         );
         if (!animRes.ok) return animRes;
         steps.animations = { applied: true, clips: animRes.data.clips, keyframes: animRes.data.keyframes };
@@ -279,13 +318,45 @@ export const entityPipelineProxy = async (
         if (!cleanupRes.ok) return cleanupRes;
         steps.cleanup = cleanupRes.data;
       }
+
+      const finalChecks = runFinalPreviewValidate({
+        preview: payload.preview,
+        validate: payload.validate,
+        previewRunner: () => runPreviewStep(deps.service, payload.preview!, pipeline.meta),
+        validateRunner: () => pipeline.wrap(deps.service.validate({}))
+      });
+      if (!finalChecks.ok) return finalChecks;
+      if (finalChecks.data.preview) steps.preview = finalChecks.data.preview;
+      if (finalChecks.data.validate) steps.validate = finalChecks.data.validate;
+      const previewData: PreviewStepData | null = finalChecks.data.previewData ?? null;
       const extras: { applied: true; format: typeof format; targetVersion: typeof targetVersion } = {
         applied: true,
         format,
         targetVersion
       };
-      const result = buildPipelineResult(steps, extras);
-      return pipeline.ok(result);
+      const response = pipeline.ok(buildPipelineResult(steps, extras));
+      const baseActions = buildValidateFindingsNextActions({
+        result: steps.validate,
+        guideUri: 'bbmcp://guide/entity-workflow'
+      });
+      const nextActions = dedupeNextActions(baseActions);
+      const extrasResponse = nextActions.length > 0 ? { ...response, nextActions } : response;
+      return attachPreviewResponse(extrasResponse, previewData);
     }
   });
 };
+
+const resolveEntityModelStages = (payload: EntityPipelinePayload): ModelPipelineStage[] => {
+  if (payload.modelStages && payload.modelStages.length > 0) {
+    return payload.modelStages;
+  }
+  if (payload.model) {
+    return [{ model: payload.model }];
+  }
+  return [];
+};
+
+
+
+
+

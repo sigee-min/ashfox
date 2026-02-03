@@ -60,7 +60,7 @@ const deps = makeProxyDeps({ service, limits: DEFAULT_LIMITS });
 const payload: EntityPipelinePayload = {
   format: 'geckolib',
   model: {
-    bones: [{ id: 'root', pivot: [0, 0, 0] }]
+    bone: { id: 'root', pivot: [0, 0, 0] }
   },
   animations: [
     {
@@ -92,3 +92,4 @@ registerAsync(
     assert.equal(calls.setTriggers, 1);
   })()
 );
+

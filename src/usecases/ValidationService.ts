@@ -1,11 +1,14 @@
 import type { Capabilities, ToolError } from '../types';
 import type { EditorPort } from '../ports/editor';
 import type { ProjectSession } from '../session';
-import { ok, fail, UsecaseResult } from './result';
+import { ok, UsecaseResult } from './result';
 import { validateSnapshot } from '../domain/validation';
 import { toDomainSnapshot, toDomainTextureResolution, toDomainTextureStats, toDomainTextureUsage } from './domainMappers';
-import type { UvPolicyConfig } from '../domain/uvPolicy';
-import { ensureActiveOnly } from './guards';
+import type { UvPolicyConfig } from '../domain/uv/policy';
+import { withActiveOnly } from './guards';
+import { buildValidationMessages } from '../shared/messages';
+
+const validationMessages = buildValidationMessages();
 
 export interface ValidationServiceDeps {
   editor: EditorPort;
@@ -31,20 +34,27 @@ export class ValidationService {
   }
 
   validate(): UsecaseResult<{ findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[] }> {
-    const activeErr = ensureActiveOnly(this.ensureActive);
-    if (activeErr) return fail(activeErr);
-    const snapshot = toDomainSnapshot(this.getSnapshot());
-    const textures = toDomainTextureStats(this.editor.listTextures());
-    const textureResolution = toDomainTextureResolution(this.editor.getProjectTextureResolution());
-    const usage = this.editor.getTextureUsage({});
-    const usageDomain = usage.error ? undefined : toDomainTextureUsage(usage.result ?? { textures: [] });
-    const findings = validateSnapshot(snapshot, {
-      limits: this.capabilities.limits,
-      textures,
-      textureResolution,
-      textureUsage: usageDomain,
-      uvPolicy: this.getUvPolicyConfig()
+    return withActiveOnly(this.ensureActive, () => {
+      const snapshot = toDomainSnapshot(this.getSnapshot());
+      const textures = toDomainTextureStats(this.editor.listTextures());
+      const textureResolution = toDomainTextureResolution(this.editor.getProjectTextureResolution());
+      const usage = this.editor.getTextureUsage({});
+      const usageDomain = usage.error ? undefined : toDomainTextureUsage(usage.result ?? { textures: [] });
+      const findings = validateSnapshot(
+        snapshot,
+        {
+          limits: this.capabilities.limits,
+          textures,
+          textureResolution,
+          textureUsage: usageDomain,
+          uvPolicy: this.getUvPolicyConfig()
+        },
+        validationMessages
+      );
+      return ok({ findings });
     });
-    return ok({ findings });
   }
 }
+
+
+

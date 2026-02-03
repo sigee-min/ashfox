@@ -3,7 +3,8 @@ import type { ProjectState, ToolResponse } from '../types';
 import type { ToolService } from '../usecases/ToolService';
 import type { MetaOptions } from './meta';
 import { loadProjectState } from './projectState';
-import { isResponseError, isUsecaseError, usecaseError } from './guardHelpers';
+import { usecaseError } from './errorAdapter';
+import { isResponseError, isUsecaseError } from '../shared/tooling/responseGuards';
 
 export type AnimationApplyResult = {
   clips: string[];
@@ -28,53 +29,60 @@ export const applyEntityAnimations = (
   const existing = new Set((projectState.animations ?? []).map((anim) => anim.name));
   const applied: string[] = [];
   let keyframeCount = 0;
-  for (const anim of animations) {
-    const mode = anim.mode ?? (existing.has(anim.name) ? 'update' : 'create');
-    if (mode === 'create') {
-      const createRes = service.createAnimationClip({
-        name: anim.name,
-        length: anim.length,
-        loop: anim.loop,
-        fps: anim.fps ?? 20,
-        ifRevision
-      });
-      if (isUsecaseError(createRes)) return usecaseError(createRes, meta, service);
-    } else {
-      const updateRes = service.updateAnimationClip({
-        name: anim.name,
-        length: anim.length,
-        loop: anim.loop,
-        fps: anim.fps,
-        ifRevision
-      });
-      if (isUsecaseError(updateRes)) return usecaseError(updateRes, meta, service);
-    }
-    applied.push(anim.name);
-    if (anim.channels) {
-      for (const channel of anim.channels) {
-        keyframeCount += channel.keys.length;
-        const keyRes = service.setKeyframes({
-          clip: anim.name,
-          bone: channel.bone,
-          channel: channel.channel,
-          keys: channel.keys,
+  const result = service.runWithoutRevisionGuard(() => {
+    for (const anim of animations) {
+      const mode = anim.mode ?? (existing.has(anim.name) ? 'update' : 'create');
+      if (mode === 'create') {
+        const createRes = service.createAnimationClip({
+          name: anim.name,
+          length: anim.length,
+          loop: anim.loop,
+          fps: anim.fps ?? 20,
           ifRevision
         });
-        if (isUsecaseError(keyRes)) return usecaseError(keyRes, meta, service);
-      }
-    }
-    if (anim.triggers) {
-      for (const trigger of anim.triggers) {
-        keyframeCount += trigger.keys.length;
-        const triggerRes = service.setTriggerKeyframes({
-          clip: anim.name,
-          channel: trigger.type,
-          keys: trigger.keys,
+        if (isUsecaseError(createRes)) return usecaseError(createRes, meta, service);
+      } else {
+        const updateRes = service.updateAnimationClip({
+          name: anim.name,
+          length: anim.length,
+          loop: anim.loop,
+          fps: anim.fps,
           ifRevision
         });
-        if (isUsecaseError(triggerRes)) return usecaseError(triggerRes, meta, service);
+        if (isUsecaseError(updateRes)) return usecaseError(updateRes, meta, service);
+      }
+      applied.push(anim.name);
+      if (anim.channels) {
+        for (const channel of anim.channels) {
+          keyframeCount += channel.keys.length;
+          const keyRes = service.setKeyframes({
+            clip: anim.name,
+            bone: channel.bone,
+            channel: channel.channel,
+            keys: channel.keys,
+            ifRevision
+          });
+          if (isUsecaseError(keyRes)) return usecaseError(keyRes, meta, service);
+        }
+      }
+      if (anim.triggers) {
+        for (const trigger of anim.triggers) {
+          keyframeCount += trigger.keys.length;
+          const triggerRes = service.setTriggerKeyframes({
+            clip: anim.name,
+            channel: trigger.type,
+            keys: trigger.keys,
+            ifRevision
+          });
+          if (isUsecaseError(triggerRes)) return usecaseError(triggerRes, meta, service);
+        }
       }
     }
-  }
+    return { ok: true as const, data: undefined };
+  });
+  if (!result.ok) return result;
   return { ok: true, data: { clips: applied, keyframes: keyframeCount } };
 };
+
+
+

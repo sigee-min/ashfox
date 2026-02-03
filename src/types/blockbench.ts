@@ -8,6 +8,8 @@ export interface BlockbenchProject {
   uuid?: string;
   id?: string;
   uid?: string;
+  save_path?: string;
+  export_path?: string;
   texture_width?: number;
   texture_height?: number;
   setTextureSize?: (width: number, height: number) => void;
@@ -285,6 +287,8 @@ export interface BlockbenchGlobals {
   MenuBar?: MenuBarApi;
   Plugin?: PluginApi;
   Setting?: SettingConstructor;
+  settings?: Record<string, { value?: unknown; set?: (value: unknown) => void }>;
+  Settings?: { get?: (settingId: string) => unknown };
   Codec?: CodecConstructor;
   Project?: BlockbenchProject;
   setProjectResolution?: (width: number, height: number, modifyUv?: boolean) => void;
@@ -295,3 +299,5 @@ export interface BlockbenchGlobals {
 
 export const readBlockbenchGlobals = (): BlockbenchGlobals =>
   globalThis as typeof globalThis & BlockbenchGlobals;
+
+

@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 
 import type { TextureUsageResult } from '../../src/ports/editor';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
 import { ensureUvUsageForTargets } from '../../src/proxy/uvGuardian';
-import { DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync } from './helpers';
+import { DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync, noopLog } from './helpers';
 
 const usageResult: TextureUsageResult = {
   textures: [
@@ -59,7 +59,7 @@ const service = {
 
 const deps = makeProxyDeps({
   service,
-  log: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  log: noopLog,
   limits: DEFAULT_LIMITS
 });
 
@@ -73,8 +73,7 @@ registerAsync(
       deps,
       meta,
       targets,
-      uvUsageId: 'stale',
-      autoRecover: true
+      uvUsageId: 'stale'
     });
 
     assert.equal(res.ok, true);
@@ -86,3 +85,5 @@ registerAsync(
     assert.equal(calls.autoUvAtlas, 0);
   })()
 );
+
+

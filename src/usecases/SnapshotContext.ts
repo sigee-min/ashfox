@@ -1,22 +1,22 @@
 import type { ToolError } from '../types';
 import { ProjectSession } from '../session';
 import type { SnapshotPort } from '../ports/snapshot';
-import { ProjectStateService } from '../services/projectState';
+import { ProjectStateBuilder } from '../domain/project/projectStateBuilder';
 import type { SnapshotPolicy } from './policies';
 import type { PolicyContextLike, SnapshotContextLike } from './contextTypes';
-import { mergeSnapshots } from '../services/snapshotMerge';
+import { mergeSnapshots } from '../domain/project/snapshotMerge';
 
 export interface SnapshotContextDeps {
   session: ProjectSession;
   snapshotPort: SnapshotPort;
-  projectState: ProjectStateService;
+  projectState: ProjectStateBuilder;
   policyContext: PolicyContextLike;
 }
 
 export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSession['snapshot']>> {
   private readonly session: ProjectSession;
   private readonly snapshotPort: SnapshotPort;
-  private readonly projectState: ProjectStateService;
+  private readonly projectState: ProjectStateBuilder;
   private readonly policyContext: PolicyContextLike;
 
   constructor(deps: SnapshotContextDeps) {
@@ -70,3 +70,6 @@ export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSe
         };
   }
 }
+
+
+

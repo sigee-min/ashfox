@@ -15,16 +15,12 @@ import {
 } from '../types';
 import { CubeFaceDirection, TextureSource, TriggerChannel } from '../ports/editor';
 import { TextureMeta } from '../types/texture';
-import { ok, fail, UsecaseResult } from './result';
-import { UvPolicyConfig } from '../domain/uvPolicy';
+import { UsecaseResult } from './result';
+import { UvPolicyConfig } from '../domain/uv/policy';
 import type { HostPort } from '../ports/host';
 import type { PolicyContextLike, RevisionContextLike } from './contextTypes';
 import type { ProjectMeta } from '../session';
-import {
-  PLUGIN_RELOAD_CONFIRM_REQUIRED,
-  PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX,
-  PLUGIN_RELOAD_UNAVAILABLE
-} from '../shared/messages';
+import { runReloadPlugins } from './toolService/reloadPlugins';
 import { createToolServiceContext, ToolServiceDeps } from './toolServiceContext';
 import { createToolServiceFacades, ToolServiceFacades } from './toolServiceFacades';
 
@@ -73,21 +69,10 @@ export class ToolService {
     return await this.revisionContext.runWithoutRevisionGuardAsync(fn);
   }
 
-  reloadPlugins(payload: ToolPayloadMap['reload_plugins']): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> {
-    if (payload.confirm !== true) {
-      return fail({
-        code: 'invalid_payload',
-        message: PLUGIN_RELOAD_CONFIRM_REQUIRED,
-        fix: PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX
-      });
-    }
-    if (!this.host) {
-      return fail({ code: 'not_implemented', message: PLUGIN_RELOAD_UNAVAILABLE });
-    }
-    const delayMs = normalizeReloadDelay(payload.delayMs);
-    const err = this.host.schedulePluginReload(delayMs);
-    if (err) return fail(err);
-    return ok({ scheduled: true, delayMs, method: 'devReload' });
+  reloadPlugins(
+    payload: ToolPayloadMap['reload_plugins']
+  ): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> {
+    return runReloadPlugins(this.host, payload);
   }
 
   getProjectTextureResolution(): { width: number; height: number } | null {
@@ -150,7 +135,7 @@ export class ToolService {
   createProject(
     format: Capabilities['formats'][number]['format'],
     name: string,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; confirmDialog?: boolean; ifRevision?: string }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; ifRevision?: string }
   ): UsecaseResult<{ id: string; format: FormatKind; name: string }> {
     return this.facades.project.createProject(format, name, options);
   }
@@ -292,11 +277,5 @@ export class ToolService {
 
 }
 
-const DEFAULT_RELOAD_DELAY_MS = 100;
-const MAX_RELOAD_DELAY_MS = 10_000;
 
-const normalizeReloadDelay = (value?: number): number => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_RELOAD_DELAY_MS;
-  const rounded = Math.max(0, Math.trunc(value));
-  return Math.min(rounded, MAX_RELOAD_DELAY_MS);
-};
+

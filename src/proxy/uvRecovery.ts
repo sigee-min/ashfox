@@ -52,11 +52,15 @@ export const buildPlanRecoveryInfo = (
 
 export const buildAtlasRecoveryInfo = (
   reason: UvRecoveryReason,
-  atlas?: { steps?: number; resolution?: { width: number; height: number } }
+  atlas?: { steps?: number; resolution?: { width: number; height: number } },
+  notes?: string[]
 ): UvRecoveryInfo => ({
   source: 'autoRecover',
   reason,
   method: 'auto_uv_atlas',
   ...(atlas?.steps !== undefined ? { steps: atlas.steps } : {}),
-  ...(atlas?.resolution ? { resolution: atlas.resolution } : {})
+  ...(atlas?.resolution ? { resolution: atlas.resolution } : {}),
+  ...(notes && notes.length > 0 ? { notes } : {})
 });
+
+

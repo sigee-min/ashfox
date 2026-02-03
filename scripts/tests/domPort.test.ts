@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { renderTextureSpec } from '../../src/proxy/texture';
+import { renderTextureSpec } from '../../src/proxy/texture/textureRender';
 import type { DomPort } from '../../src/ports/dom';
 import { DEFAULT_LIMITS } from './helpers';
 
@@ -18,3 +18,4 @@ const limits = DEFAULT_LIMITS;
     assert.equal(res.error.code, 'not_implemented');
   }
 }
+

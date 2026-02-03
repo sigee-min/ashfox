@@ -3,7 +3,8 @@ import type { ToolService } from '../usecases/ToolService';
 import type { MetaOptions } from './meta';
 import { loadProjectState } from './projectState';
 import { PROJECT_FORMAT_REQUIRED_FOR_TOOL, PROJECT_FORMAT_REQUIRED_FOR_TOOL_FIX } from '../shared/messages';
-import { errorWithMeta, isResponseError, isUsecaseError, usecaseError } from './guardHelpers';
+import { errorWithMeta, usecaseError } from './errorAdapter';
+import { isResponseError, isUsecaseError } from '../shared/tooling/responseGuards';
 
 type EnsureProjectInput = {
   format?: FormatKind;
@@ -12,7 +13,6 @@ type EnsureProjectInput = {
   onMismatch?: EnsureProjectPayload['onMismatch'];
   onMissing?: EnsureProjectPayload['onMissing'];
   confirmDiscard?: boolean;
-  confirmDialog?: boolean;
   dialog?: Record<string, unknown>;
 };
 
@@ -31,7 +31,6 @@ export const resolveEnsureProjectPayload = (
     onMismatch: merged.onMismatch ?? 'reuse',
     onMissing: merged.onMissing ?? 'create',
     confirmDiscard: merged.confirmDiscard,
-    confirmDialog: merged.confirmDialog,
     dialog: merged.dialog,
     ifRevision
   };
@@ -116,3 +115,6 @@ export const requireProjectFormat = (
     service
   );
 };
+
+
+

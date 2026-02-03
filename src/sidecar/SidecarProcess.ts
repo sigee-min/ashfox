@@ -18,9 +18,7 @@ import {
   SIDECAR_RUN_AS_NODE_REJECTED,
   SIDECAR_STDIO_UNAVAILABLE
 } from '../shared/messages';
-
-type NativeModuleLoader = (name: string, options?: { message?: string; optional?: boolean }) => unknown;
-declare const requireNativeModule: NativeModuleLoader | undefined;
+import { loadNativeModule } from '../shared/nativeModules';
 
 type PathModule = {
   basename?: (path: string) => string;
@@ -88,7 +86,7 @@ export class SidecarProcess {
       return false;
     }
 
-    const childProcess = requireNativeModule?.('child_process', {
+    const childProcess = loadNativeModule<ChildProcessModule>('child_process', {
       message: SIDECAR_PERMISSION_MESSAGE,
       optional: true
     });
@@ -97,7 +95,7 @@ export class SidecarProcess {
       return false;
     }
 
-    const pathModule = requireNativeModule?.('path');
+    const pathModule = loadNativeModule<PathModule>('path', { optional: true });
     if (!isPathModule(pathModule)) {
       this.log.warn(SIDECAR_PATH_MODULE_UNAVAILABLE);
       return false;
@@ -255,3 +253,5 @@ function isPathModule(value: unknown): value is PathModule {
   const mod = value as { join?: unknown; dirname?: unknown };
   return typeof mod.join === 'function' && typeof mod.dirname === 'function';
 }
+
+

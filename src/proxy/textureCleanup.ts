@@ -1,7 +1,8 @@
 import type { ToolResponse } from '../types';
 import type { MetaOptions } from './meta';
 import type { ProxyPipelineDeps } from './types';
-import { isUsecaseError, usecaseError } from './guardHelpers';
+import { usecaseError } from './errorAdapter';
+import { isUsecaseError } from '../shared/tooling/responseGuards';
 import { TEXTURE_DELETE_IN_USE } from '../shared/messages';
 
 export type TextureCleanupEntry = { id?: string; name?: string };
@@ -55,11 +56,15 @@ export const applyTextureCleanup = (
   }
 
   const deleted: Array<{ id?: string; name: string }> = [];
-  for (const entry of resolved) {
-    const res = deps.service.deleteTexture({ id: entry.id, name: entry.name, ifRevision });
-    if (isUsecaseError(res)) return usecaseError(res, meta, deps.service);
-    deleted.push({ id: res.value.id, name: res.value.name });
-  }
+  const deleteRes = deps.service.runWithoutRevisionGuard(() => {
+    for (const entry of resolved) {
+      const res = deps.service.deleteTexture({ id: entry.id, name: entry.name, ifRevision });
+      if (isUsecaseError(res)) return usecaseError(res, meta, deps.service);
+      deleted.push({ id: res.value.id, name: res.value.name });
+    }
+    return { ok: true as const, data: undefined };
+  });
+  if (!deleteRes.ok) return deleteRes;
 
   return { ok: true, data: { applied: deleted.length, deleted } };
 };
@@ -68,3 +73,6 @@ const resolveCleanupEntry = (entry: TextureCleanupEntry): TextureCleanupEntry =>
   id: entry.id,
   name: entry.name
 });
+
+
+

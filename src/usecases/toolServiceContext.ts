@@ -13,8 +13,8 @@ import { PolicyContext } from './PolicyContext';
 import { SnapshotContext } from './SnapshotContext';
 import { RevisionContext } from './RevisionContext';
 import type { PolicyContextLike, RevisionContextLike, SnapshotContextLike } from './contextTypes';
-import { ProjectStateService } from '../services/projectState';
-import { RevisionStore } from '../services/revision';
+import { ProjectStateBuilder } from '../domain/project/projectStateBuilder';
+import { RevisionStore } from '../domain/revision/revisionStore';
 import { ProjectService } from './ProjectService';
 import { TextureService } from './TextureService';
 import { AnimationService } from './AnimationService';
@@ -56,7 +56,7 @@ export type ToolServiceContext = {
 
 export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceContext => {
   const policies = deps.policies ?? {};
-  const projectState = new ProjectStateService(deps.formats, policies.formatOverrides);
+  const projectState = new ProjectStateBuilder(deps.formats, policies.formatOverrides);
   const revisionStore = new RevisionStore(REVISION_CACHE_LIMIT);
   const policyContext = new PolicyContext(policies);
   const snapshotContext = new SnapshotContext({
@@ -164,3 +164,6 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     blockPipelineService
   };
 };
+
+
+

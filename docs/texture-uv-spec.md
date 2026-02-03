@@ -15,13 +15,18 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 ## uvUsageId Contract
 - `preflight_texture` computes `uvUsageId` (call without texture filters for a stable id).
 - `apply_uv_spec`, `apply_texture_spec`, and `generate_texture_preset` require `uvUsageId`.
-- If UVs change, call `preflight_texture` again and use the refreshed `uvUsageId`.
+- `uvUsageId` includes per-face UVs and per-texture width/height when available; resizing textures changes the id.
+- When per-texture sizes are missing, `uvUsageId` also incorporates the project texture resolution, so resolution-only changes refresh the id.
+- If UVs or texture sizes change, call `preflight_texture` again and use the refreshed `uvUsageId`.
 
 ## Tool Responsibilities
 
 ### preflight_texture
 - Builds the UV mapping table and computes `uvUsageId`.
 - Reports warnings for overlaps, unresolved refs, and bounds issues.
+- Warns when UV rects are very small or highly non-square; stretch-mapped patterns may look distorted in those cases.
+- Warns when UV scale mismatches are detected (often due to tiny faces at low resolution).
+- Automatic recovery can raise texture resolution to resolve uv_scale_mismatch.
 
 ### apply_uv_spec
 - Updates per-face UVs only.
@@ -37,9 +42,13 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 - Paint only (uvPaint enforced when painting).
 - Require `uvUsageId`.
 - Block on overlap/scale mismatch.
-- `apply_texture_spec` and `generate_texture_preset` support `autoRecover` (default true) to run a single `auto_uv_atlas` + preflight retry when UV overlap/scale/missing issues occur. Use `texture_pipeline.plan` for higher-level recovery.
+- `apply_texture_spec` and `generate_texture_preset` run a single `auto_uv_atlas` + preflight retry when UV overlap/scale/missing issues occur. Use `texture_pipeline.plan` for higher-level recovery.
+- When automatic recovery changes UV layout or resolution, paint sizes are aligned to the recovered resolution automatically.
 - Optional `detectNoChange=true` compares output to existing pixels and returns `applied: false` when identical (default false to avoid extra cost).
  - `facePaint` is a high-level wrapper that maps material keywords to presets and targets cube faces via uvPaint.
+ - Unknown facePaint materials return `invalid_payload`; use supported keywords or provide palettes.
+ - When both `cubeIds` and `cubeNames` are supplied in targets, both must match. Use only one if you want broader matching.
+ - For formats that require per-texture UV sizes (`perTextureUvSize=true`), facePaint will not fall back to project texture resolution; ensure per-texture sizes exist or pass a resolution override.
 
 ### auto_uv_atlas
 - Recomputes UV layout per texture + face size (low-level only).
@@ -49,7 +58,7 @@ This document defines the canonical rules for UVs and texturing in bbmcp.
 ## Expected UV Size
 Expected UV size is computed from:
 - `uvPolicy.modelUnitsPerBlock` (default 16)
-- project texture resolution
+- texture resolution (per-texture width/height when available; otherwise project texture resolution)
 - face dimensions (from cube size)
 
 If the actual UV size deviates beyond `uvPolicy.scaleTolerance` (default 0.1), the operation fails.
@@ -73,13 +82,8 @@ If the actual UV size deviates beyond `uvPolicy.scaleTolerance` (default 0.1), t
 {
   "model": {
     "rigTemplate": "empty",
-    "bones": [
-      { "id": "root", "pivot": [0, 0, 0] },
-      { "id": "body", "parentId": "root", "pivot": [0, 6, 0] }
-    ],
-    "cubes": [
-      { "id": "body", "parentId": "body", "from": [-4, 0, -2], "to": [4, 12, 2] }
-    ]
+    "bone": { "id": "root", "pivot": [0, 0, 0] },
+    "cube": { "id": "body", "parentId": "root", "from": [-4, 0, -2], "to": [4, 12, 2] }
   }
 }
 ```

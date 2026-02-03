@@ -12,11 +12,19 @@ import { BlockbenchSnapshot } from '../adapters/blockbench/BlockbenchSnapshot';
 import { BlockbenchExport } from '../adapters/blockbench/BlockbenchExport';
 import { BlockbenchTextureRenderer } from '../adapters/blockbench/BlockbenchTextureRenderer';
 import { BlockbenchDom } from '../adapters/blockbench/BlockbenchDom';
-import type { FormatOverrides } from '../services/format';
-import { InMemoryResourceStore } from '../services/resources';
-import { LocalTmpStore } from '../services/tmpStore';
+import { BlockbenchTraceLogWriter } from '../adapters/blockbench/BlockbenchTraceLogWriter';
+import type { FormatOverrides } from '../domain/formats';
+import { InMemoryResourceStore } from '../adapters/resources/resourceStore';
+import { LocalTmpStore } from '../adapters/tmp/LocalTmpStore';
 import { ToolService } from '../usecases/ToolService';
-import { buildToolRegistry } from '../mcp/tools';
+import { buildToolRegistry } from '../transport/mcp/tools';
+import { TraceRecorder } from '../trace/traceRecorder';
+import { TraceLogStore } from '../trace/traceLogStore';
+import { ResourceTraceLogWriter } from '../trace/traceLogWriters';
+import { PLUGIN_VERSION } from '../config';
+import { TraceLogService } from '../usecases/TraceLogService';
+import type { TraceLogWriteMode, TraceLogWriterFactory } from '../ports/traceLog';
+import { TraceLogFlushScheduler } from '../trace/traceLogFlushScheduler';
 
 export type RuntimeServices = {
   session: ProjectSession;
@@ -24,6 +32,11 @@ export type RuntimeServices = {
   dispatcher: Dispatcher;
   proxy: ProxyRouter;
   formats: BlockbenchFormats;
+  traceRecorder: TraceRecorder;
+  traceLogStore: TraceLogStore;
+  traceLogFileWriter: BlockbenchTraceLogWriter;
+  traceLogFlushScheduler: TraceLogFlushScheduler;
+  traceLogService: TraceLogService;
 };
 
 type BuildRuntimeServicesOptions = {
@@ -32,7 +45,32 @@ type BuildRuntimeServicesOptions = {
   policies: ToolPolicies;
   resourceStore: InMemoryResourceStore;
   logger: Logger;
+  traceLog?: {
+    enabled?: boolean;
+    mode?: TraceLogWriteMode;
+    destPath?: string;
+    fileName?: string;
+    resourceEnabled?: boolean;
+    maxEntries?: number;
+    maxBytes?: number;
+    minEntries?: number;
+    flushEvery?: number;
+    flushIntervalMs?: number;
+    detailOps?: string[];
+  };
 };
+
+const DEFAULT_DETAIL_OPS = [
+  'texture_pipeline',
+  'apply_texture_spec',
+  'apply_uv_spec',
+  'auto_uv_atlas',
+  'preflight_texture',
+  'generate_texture_preset',
+  'set_project_texture_resolution',
+  'assign_texture',
+  'set_face_uv'
+];
 
 export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): RuntimeServices => {
   const session = new ProjectSession();
@@ -71,14 +109,90 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     resources: options.resourceStore,
     policies: options.policies
   });
+  const traceDefaults = options.traceLog ?? {};
+  const detailOps = traceDefaults.detailOps ?? DEFAULT_DETAIL_OPS;
+  const traceLogStore = new TraceLogStore({
+    writer: traceDefaults.resourceEnabled === false ? null : new ResourceTraceLogWriter(options.resourceStore),
+    autoFlush: true,
+    maxEntries: traceDefaults.maxEntries ?? 2000,
+    maxBytes: traceDefaults.maxBytes,
+    minEntries: traceDefaults.minEntries
+  });
+  const traceLogFileWriter = new BlockbenchTraceLogWriter({
+    mode: 'writeFile',
+    destPath: traceDefaults.destPath,
+    fileName: traceDefaults.fileName
+  });
+  const traceLogFlushScheduler = new TraceLogFlushScheduler({
+    store: traceLogStore,
+    writer:
+      traceDefaults.enabled === false || traceDefaults.mode === 'export'
+        ? null
+        : traceLogFileWriter,
+    policy: {
+      enabled: traceDefaults.enabled !== false && traceDefaults.mode !== 'export',
+      flushEvery: traceDefaults.flushEvery,
+      flushIntervalMs: traceDefaults.flushIntervalMs
+    },
+    logger: options.logger
+  });
+  const traceLogWriterFactory: TraceLogWriterFactory = {
+    create: (opts) =>
+      new BlockbenchTraceLogWriter({
+        mode: opts?.mode ?? traceDefaults.mode ?? 'auto',
+        destPath: opts?.destPath ?? traceDefaults.destPath,
+        fileName: opts?.fileName ?? traceDefaults.fileName
+      })
+  };
+  const traceRecorder = new TraceRecorder(
+    {
+      getProjectState: (payload) => service.getProjectState(payload),
+      getProjectDiff: (payload) => service.getProjectDiff(payload)
+    },
+    traceLogStore,
+    {
+      enabled: traceDefaults.enabled !== false,
+      includeState: true,
+      includeDiff: true,
+      stateDetail: 'summary',
+      diffDetail: 'summary',
+      detailRules: detailOps.length
+        ? [
+            {
+              ops: detailOps,
+              includeState: true,
+              includeDiff: true,
+              includeUsage: true,
+              stateDetail: 'full',
+              diffDetail: 'full'
+            }
+          ]
+        : [],
+      onRecord: () => traceLogFlushScheduler.recorded(),
+      pluginVersion: PLUGIN_VERSION,
+      blockbenchVersion: options.blockbenchVersion
+    }
+  );
+  const traceLogService = new TraceLogService({
+    store: traceLogStore,
+    writerFactory: traceLogWriterFactory,
+    defaults: {
+      mode: traceDefaults.mode,
+      destPath: traceDefaults.destPath,
+      fileName: traceDefaults.fileName
+    }
+  });
   const dispatcher = new ToolDispatcherImpl(session, capabilities, service, {
     includeStateByDefault: () => Boolean(options.policies.autoIncludeState),
     includeDiffByDefault: () => Boolean(options.policies.autoIncludeDiff),
-    logger: options.logger
+    logger: options.logger,
+    traceRecorder,
+    traceLogService
   });
   const proxy = new ProxyRouter(service, dom, options.logger, capabilities.limits, {
     includeStateByDefault: () => Boolean(options.policies.autoIncludeState),
-    includeDiffByDefault: () => Boolean(options.policies.autoIncludeDiff)
+    includeDiffByDefault: () => Boolean(options.policies.autoIncludeDiff),
+    traceRecorder
   });
 
   return {
@@ -86,6 +200,17 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     capabilities,
     dispatcher,
     proxy,
-    formats
+    formats,
+    traceRecorder,
+    traceLogStore,
+    traceLogFileWriter,
+    traceLogFlushScheduler,
+    traceLogService
   };
 };
+
+
+
+
+
+

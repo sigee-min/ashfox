@@ -1,0 +1,108 @@
+import type {
+  ToolName,
+  ToolPayloadMap,
+  ToolResultMap,
+  ToolResponse,
+  WithState
+} from '../types';
+import type { UsecaseResult } from '../usecases/result';
+import { ToolService } from '../usecases/ToolService';
+import { toToolResponse } from '../shared/tooling/toolResponse';
+
+export type BaseResult<K extends ToolName> = K extends ToolName
+  ? ToolResultMap[K] extends WithState<infer R>
+    ? R
+    : ToolResultMap[K]
+  : never;
+
+export const STATEFUL_TOOL_NAMES = [
+  'generate_texture_preset',
+  'auto_uv_atlas',
+  'set_project_texture_resolution',
+  'ensure_project',
+  'block_pipeline',
+  'delete_texture',
+  'assign_texture',
+  'set_face_uv',
+  'add_bone',
+  'update_bone',
+  'delete_bone',
+  'add_cube',
+  'update_cube',
+  'delete_cube',
+  'export',
+  'validate',
+  'render_preview'
+] as const;
+
+export type StatefulToolName = typeof STATEFUL_TOOL_NAMES[number];
+
+export const isStatefulToolName = (name: ToolName): name is StatefulToolName =>
+  (STATEFUL_TOOL_NAMES as readonly string[]).includes(name);
+
+export type StatefulHandlerMap = Partial<{
+  [K in StatefulToolName]: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>;
+}>;
+
+export type ResponseHandlerMap = Partial<{
+  [K in ToolName]: (payload: ToolPayloadMap[K]) => ToolResponse<ToolResultMap[K]>;
+}>;
+
+export const createHandlerMaps = (args: {
+  service: ToolService;
+  respondOk: <T>(data: T) => ToolResponse<T>;
+  logGuardFailure: <T>(tool: ToolName, payload: ToolPayloadMap[ToolName], response: ToolResponse<T>) => ToolResponse<T>;
+  handleTraceLogExport: (payload: ToolPayloadMap['export_trace_log']) => ToolResponse<ToolResultMap['export_trace_log']>;
+  handleRenderPreview: (payload: ToolPayloadMap['render_preview']) => ToolResponse<ToolResultMap['render_preview']>;
+}) => {
+  const statefulRetryHandlers: StatefulHandlerMap = {
+    generate_texture_preset: (payload) => args.service.generateTexturePreset(payload),
+    auto_uv_atlas: (payload) => args.service.autoUvAtlas(payload),
+    set_project_texture_resolution: (payload) => args.service.setProjectTextureResolution(payload),
+    ensure_project: (payload) => args.service.ensureProject(payload),
+    block_pipeline: (payload) => args.service.blockPipeline(payload),
+    delete_texture: (payload) => args.service.deleteTexture(payload),
+    assign_texture: (payload) => args.service.assignTexture(payload),
+    set_face_uv: (payload) => args.service.setFaceUv(payload),
+    add_bone: (payload) => args.service.addBone(payload),
+    update_bone: (payload) => args.service.updateBone(payload),
+    delete_bone: (payload) => args.service.deleteBone(payload),
+    add_cube: (payload) => args.service.addCube(payload),
+    update_cube: (payload) => args.service.updateCube(payload),
+    delete_cube: (payload) => args.service.deleteCube(payload)
+  };
+
+  const statefulHandlers: StatefulHandlerMap = {
+    export: (payload) => args.service.exportModel(payload),
+    validate: (payload) => args.service.validate(payload)
+  };
+
+  const responseHandlers: ResponseHandlerMap = {
+    list_capabilities: () => args.respondOk(args.service.listCapabilities()),
+    get_project_state: (payload) =>
+      args.logGuardFailure(
+        'get_project_state',
+        payload,
+        toToolResponse(args.service.getProjectState(payload))
+      ),
+    read_texture: (payload) =>
+      args.logGuardFailure(
+        'read_texture',
+        payload,
+        toToolResponse(args.service.readTextureImage(payload))
+      ),
+    export_trace_log: (payload) =>
+      args.logGuardFailure('export_trace_log', payload, args.handleTraceLogExport(payload)),
+    reload_plugins: (payload) =>
+      args.logGuardFailure('reload_plugins', payload, toToolResponse(args.service.reloadPlugins(payload))),
+    preflight_texture: (payload) =>
+      args.logGuardFailure(
+        'preflight_texture',
+        payload,
+        toToolResponse(args.service.preflightTexture(payload))
+      ),
+    render_preview: (payload) => args.logGuardFailure('render_preview', payload, args.handleRenderPreview(payload))
+  };
+
+  return { statefulRetryHandlers, statefulHandlers, responseHandlers };
+};

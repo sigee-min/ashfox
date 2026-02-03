@@ -27,3 +27,5 @@ export interface ResourceStore {
   has: (uri: string) => boolean;
   put: (resource: ResourceContent) => void;
 }
+
+

@@ -61,7 +61,7 @@ export const ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES =
   'Project has unsaved changes. Save it or retry with force=true to close without saving.';
 export const ADAPTER_BLOCKBENCH_WRITEFILE_UNAVAILABLE = 'Blockbench.writeFile not available';
 export const ADAPTER_PROJECT_DIALOG_INPUT_REQUIRED =
-  'Project dialog requires input. Provide ensure_project.dialog values and set confirmDialog=true.';
+  'Project dialog requires input. Provide ensure_project.dialog values for the missing fields.';
 
 export const ADAPTER_NATIVE_COMPILER_UNAVAILABLE = (formatId: string) =>
   `Native compiler not available for ${formatId}`;
@@ -73,3 +73,5 @@ export const ADAPTER_PLUGINS_DEVRELOAD_UNAVAILABLE = 'Plugins.devReload not avai
 export const PLUGIN_RELOAD_CONFIRM_REQUIRED = 'confirm=true is required to reload plugins.';
 export const PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX = 'Set confirm=true to proceed.';
 export const PLUGIN_RELOAD_UNAVAILABLE = 'Plugin reload is not available in this host.';
+
+

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { findUvScaleIssues } from '../../src/domain/uvScale';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { findUvScaleIssues } from '../../src/domain/uv/scale';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import type { Cube, TextureUsage } from '../../src/domain/model';
 
 const cubeA: Cube = {
@@ -53,6 +53,27 @@ const usageMismatch: TextureUsage = {
 const mismatchResult = findUvScaleIssues(usageMismatch, [cubeA, cubeB], { width: 32, height: 32 }, DEFAULT_UV_POLICY);
 assert.equal(mismatchResult.mismatchedFaces, 2);
 
+const usagePerTextureResolution: TextureUsage = {
+  textures: [
+    {
+      name: 'tex',
+      width: 16,
+      height: 16,
+      cubeCount: 1,
+      faceCount: 1,
+      cubes: [{ id: cubeA.id, name: cubeA.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
+    }
+  ]
+};
+
+const perTextureResult = findUvScaleIssues(
+  usagePerTextureResolution,
+  [cubeA],
+  { width: 32, height: 32 },
+  DEFAULT_UV_POLICY
+);
+assert.equal(perTextureResult.mismatchedFaces, 0);
+
 const tinyCube: Cube = {
   id: 'tiny',
   name: 'tiny',
@@ -74,3 +95,5 @@ const usageTiny: TextureUsage = {
 
 const tinyResult = findUvScaleIssues(usageTiny, [tinyCube], { width: 16, height: 16 }, DEFAULT_UV_POLICY);
 assert.equal(tinyResult.mismatchedFaces, 0);
+
+

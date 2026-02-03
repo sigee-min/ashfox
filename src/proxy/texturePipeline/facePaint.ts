@@ -2,18 +2,23 @@ import type { TextureUsage, CubeFaceDirection } from '../../domain/model';
 import type { FacePaintSpec, TexturePipelinePreset, UvPaintSpec } from '../../spec';
 import type { ProjectState, ToolResponse } from '../../types';
 import { resolveMaterialPreset } from '../../domain/materials';
+import { resolveTextureSize as resolveTextureDimensions } from '../../domain/textureUtils';
+import type { Capability } from '../../types/capabilities';
 import {
   FACE_PAINT_NO_TEXTURES,
   FACE_PAINT_TARGET_NOT_FOUND,
   FACE_PAINT_TEXTURE_SIZE_MISSING,
+  FACE_PAINT_MATERIAL_UNKNOWN,
   FACE_PAINT_UV_MISSING
 } from '../../shared/messages';
-import type { TextureTargetSet } from '../../domain/uvTargets';
+import type { TextureTargetSet } from '../../domain/uv/targets';
+import { buildTargetFilters, matchTargetFilters } from '../../domain/targetFilters';
 
 type FacePaintPresetResult = {
   presets: TexturePipelinePreset[];
   materials: string[];
   textures: string[];
+  textureIds: string[];
 };
 
 type FacePaintTarget = {
@@ -67,15 +72,21 @@ export const buildFacePaintPresets = (args: {
   entries: FacePaintSpec[];
   usage: TextureUsage;
   project: ProjectState;
+  resolutionOverride?: { width?: number; height?: number } | null;
+  formatFlags?: Capability['flags'] | null;
 }): ToolResponse<FacePaintPresetResult> => {
   if (args.usage.textures.length === 0) {
     return err('invalid_state', FACE_PAINT_NO_TEXTURES);
   }
 
+  const allowFallback = args.formatFlags?.perTextureUvSize !== true;
   const sizes = buildTextureSizeMap(args.project);
+  const fallbackSize = allowFallback ? resolveFallbackSize(args.project) : null;
+  const overrideSize = resolveResolutionOverride(args.resolutionOverride ?? undefined);
   const presets: TexturePipelinePreset[] = [];
   const materials = new Set<string>();
   const textures = new Set<string>();
+  const textureIds = new Set<string>();
 
   for (const entry of args.entries) {
     const materialLabel = entry.material.trim();
@@ -88,10 +99,14 @@ export const buildFacePaintPresets = (args: {
       return err('invalid_state', FACE_PAINT_UV_MISSING(materialLabel));
     }
     const resolved = resolveMaterialPreset(materialLabel);
+    if (resolved.match === 'default') {
+      return err('invalid_payload', FACE_PAINT_MATERIAL_UNKNOWN(materialLabel));
+    }
     const palette = entry.palette ?? resolved.palette;
     for (const target of usableTargets) {
       const textureName = target.texture.name;
-      const size = sizes.get(textureName) ?? resolveFallbackSize(args.project);
+      if (target.texture.id) textureIds.add(target.texture.id);
+      const size = overrideSize ?? sizes.get(textureName) ?? fallbackSize;
       if (!size) {
         return err('invalid_state', FACE_PAINT_TEXTURE_SIZE_MISSING(textureName));
       }
@@ -116,16 +131,15 @@ export const buildFacePaintPresets = (args: {
     data: {
       presets,
       materials: Array.from(materials),
-      textures: Array.from(textures)
+      textures: Array.from(textures),
+      textureIds: Array.from(textureIds)
     }
   };
 };
 
 const resolveFacePaintTargets = (entry: FacePaintSpec, usage: TextureUsage): FacePaintTarget[] => {
-  const cubeIdSet = new Set(entry.cubeIds ?? []);
-  const cubeNameSet = new Set(entry.cubeNames ?? []);
+  const cubeFilters = buildTargetFilters(entry.cubeIds, entry.cubeNames);
   const faceSet = entry.faces ? new Set(entry.faces) : null;
-  const hasCubeFilter = cubeIdSet.size > 0 || cubeNameSet.size > 0;
   const targets: FacePaintTarget[] = [];
 
   for (const texture of usage.textures) {
@@ -134,10 +148,7 @@ const resolveFacePaintTargets = (entry: FacePaintSpec, usage: TextureUsage): Fac
     let matchedUvFaces = 0;
     let missingUvFaces = 0;
     for (const cube of texture.cubes) {
-      const cubeMatch =
-        !hasCubeFilter ||
-        (cube.id && cubeIdSet.has(cube.id)) ||
-        cubeNameSet.has(cube.name);
+      const cubeMatch = matchTargetFilters(cubeFilters, cube.id, cube.name);
       if (!cubeMatch) continue;
       let cubeMatched = false;
       const faces: CubeFaceDirection[] = [];
@@ -192,17 +203,14 @@ const buildUvPaintSpec = (entry: FacePaintSpec, target: FacePaintTarget): UvPain
 };
 
 const buildTextureSizeMap = (project: ProjectState): Map<string, { width: number; height: number }> => {
-  const fallback = project.textureResolution;
   const map = new Map<string, { width: number; height: number }>();
   const textures = project.textures ?? [];
   for (const tex of textures) {
-    const width = resolveTextureSize(tex.width, fallback?.width);
-    const height = resolveTextureSize(tex.height, fallback?.height);
+    const resolved = resolveTextureDimensions({ width: tex.width, height: tex.height });
+    const width = resolved.width ?? null;
+    const height = resolved.height ?? null;
     if (!width || !height) continue;
     map.set(tex.name, { width, height });
-  }
-  if (fallback && textures.length === 0) {
-    map.set('texture', { width: fallback.width, height: fallback.height });
   }
   return map;
 };
@@ -215,14 +223,21 @@ const resolveFallbackSize = (project: ProjectState): { width: number; height: nu
   return { width: fallback.width, height: fallback.height };
 };
 
-const resolveTextureSize = (value?: number, fallback?: number): number | null => {
-  const resolved = Number.isFinite(value) && (value as number) > 0 ? Number(value) : null;
-  if (resolved) return resolved;
-  const fallbackResolved = Number.isFinite(fallback) && (fallback as number) > 0 ? Number(fallback) : null;
-  return fallbackResolved;
+const resolveResolutionOverride = (
+  resolution?: { width?: number; height?: number }
+): { width: number; height: number } | null => {
+  if (!resolution) return null;
+  const width = Number(resolution.width ?? resolution.height);
+  const height = Number(resolution.height ?? resolution.width);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  if (width <= 0 || height <= 0) return null;
+  return { width: Math.trunc(width), height: Math.trunc(height) };
 };
 
 const err = <T>(code: 'invalid_payload' | 'invalid_state', message: string): ToolResponse<T> => ({
   ok: false,
   error: { code, message }
 });
+
+
+

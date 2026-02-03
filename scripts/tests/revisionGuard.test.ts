@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { decideRevision } from '../../src/services/revisionGuard';
+import { decideRevision } from '../../src/usecases/revision/revisionGuard';
 
 const makeState = (revision: string) => ({
   ok: true as const,
@@ -54,3 +54,6 @@ assert.equal(stateError.ok, false);
 if (!stateError.ok) {
   assert.equal(stateError.error.code, 'invalid_state');
 }
+
+
+

@@ -9,6 +9,8 @@ export type TextureUsageCube = {
 export type TextureUsageEntry = {
   id?: string;
   name: string;
+  width?: number;
+  height?: number;
   cubeCount: number;
   faceCount: number;
   cubes: TextureUsageCube[];
@@ -30,3 +32,5 @@ export type TextureUsageQuery = {
   textureId?: string;
   textureName?: string;
 };
+
+

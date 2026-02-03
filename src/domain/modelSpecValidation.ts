@@ -1,39 +1,45 @@
 import type { ModelSpec } from '../spec';
 import type { DomainResult } from './result';
 import { fail, ok } from './result';
-import {
-  MODEL_SPEC_ANCHOR_BONE_ID_INVALID,
-  MODEL_SPEC_ANCHOR_CUBE_ID_INVALID,
-  MODEL_SPEC_ANCHOR_ID_DUPLICATE,
-  MODEL_SPEC_ANCHOR_ID_REQUIRED,
-  MODEL_SPEC_ANCHOR_NOT_FOUND,
-  MODEL_SPEC_ANCHOR_OBJECT,
-  MODEL_SPEC_ANCHOR_OFFSET_INVALID,
-  MODEL_SPEC_ANCHOR_REF_STRING,
-  MODEL_SPEC_ANCHOR_REQUIRED,
-  MODEL_SPEC_ANCHOR_TARGET_INVALID,
-  MODEL_SPEC_ANCHORS_ARRAY,
-  MODEL_SPEC_BONES_ARRAY,
-  MODEL_SPEC_CUBES_ARRAY,
-  MODEL_SPEC_INSTANCES_ARRAY,
-  MODEL_SPEC_REQUIRED
-} from '../shared/messages';
+import { isFiniteNumber } from './guards';
 
-const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+export type ModelSpecMessages = {
+  modelRequired: string;
+  modelContentRequired: string;
+  anchorsArray: string;
+  boneObject: string;
+  cubeObject: string;
+  anchorObject: string;
+  anchorIdRequired: string;
+  anchorIdDuplicate: (id: string) => string;
+  anchorTargetInvalid: (id: string) => string;
+  anchorBoneIdInvalid: (id: string) => string;
+  anchorCubeIdInvalid: (id: string) => string;
+  anchorOffsetInvalid: (id: string) => string;
+  anchorRefString: (label: string) => string;
+  anchorRequired: (label: string) => string;
+  anchorNotFound: (id: string) => string;
+};
 
-export const validateModelSpec = (model: ModelSpec): DomainResult<{ valid: true }> => {
-  if (!model || typeof model !== 'object') return fail('invalid_payload', MODEL_SPEC_REQUIRED);
+export const validateModelSpec = (
+  model: ModelSpec,
+  messages: ModelSpecMessages
+): DomainResult<{ valid: true }> => {
+  if (!model || typeof model !== 'object') return fail('invalid_payload', messages.modelRequired);
   if (model.anchors !== undefined && !Array.isArray(model.anchors)) {
-    return fail('invalid_payload', MODEL_SPEC_ANCHORS_ARRAY);
+    return fail('invalid_payload', messages.anchorsArray);
   }
-  if (model.bones !== undefined && !Array.isArray(model.bones)) {
-    return fail('invalid_payload', MODEL_SPEC_BONES_ARRAY);
+  if (model.bone !== undefined && (typeof model.bone !== 'object' || Array.isArray(model.bone))) {
+    return fail('invalid_payload', messages.boneObject);
   }
-  if (model.cubes !== undefined && !Array.isArray(model.cubes)) {
-    return fail('invalid_payload', MODEL_SPEC_CUBES_ARRAY);
+  if (model.cube !== undefined && (typeof model.cube !== 'object' || Array.isArray(model.cube))) {
+    return fail('invalid_payload', messages.cubeObject);
   }
-  if (model.instances !== undefined && !Array.isArray(model.instances)) {
-    return fail('invalid_payload', MODEL_SPEC_INSTANCES_ARRAY);
+  const hasBone = Boolean(model.bone);
+  const hasCube = Boolean(model.cube);
+  const hasTemplate = typeof model.rigTemplate === 'string';
+  if (!hasBone && !hasCube && !hasTemplate) {
+    return fail('invalid_payload', messages.modelContentRequired);
   }
 
   const anchors = Array.isArray(model.anchors) ? model.anchors : [];
@@ -41,47 +47,47 @@ export const validateModelSpec = (model: ModelSpec): DomainResult<{ valid: true 
 
   for (const anchor of anchors) {
     if (!anchor || typeof anchor !== 'object') {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_OBJECT);
+      return fail('invalid_payload', messages.anchorObject);
     }
     if (typeof anchor.id !== 'string' || anchor.id.trim().length === 0) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_ID_REQUIRED);
+      return fail('invalid_payload', messages.anchorIdRequired);
     }
     if (anchorIds.has(anchor.id)) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_ID_DUPLICATE(anchor.id));
+      return fail('invalid_payload', messages.anchorIdDuplicate(anchor.id));
     }
     anchorIds.add(anchor.id);
     const target = anchor.target as { boneId?: unknown; cubeId?: unknown } | undefined;
     const boneId = target?.boneId;
     const cubeId = target?.cubeId;
     if ((boneId && cubeId) || (!boneId && !cubeId)) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_TARGET_INVALID(anchor.id));
+      return fail('invalid_payload', messages.anchorTargetInvalid(anchor.id));
     }
     if (boneId !== undefined && (typeof boneId !== 'string' || boneId.trim().length === 0)) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_BONE_ID_INVALID(anchor.id));
+      return fail('invalid_payload', messages.anchorBoneIdInvalid(anchor.id));
     }
     if (cubeId !== undefined && (typeof cubeId !== 'string' || cubeId.trim().length === 0)) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_CUBE_ID_INVALID(anchor.id));
+      return fail('invalid_payload', messages.anchorCubeIdInvalid(anchor.id));
     }
     if (anchor.offset !== undefined) {
       if (!Array.isArray(anchor.offset) || anchor.offset.length !== 3 || !anchor.offset.every(isFiniteNumber)) {
-        return fail('invalid_payload', MODEL_SPEC_ANCHOR_OFFSET_INVALID(anchor.id));
+        return fail('invalid_payload', messages.anchorOffsetInvalid(anchor.id));
       }
     }
   }
 
-  const bones = Array.isArray(model.bones) ? model.bones : [];
-  const cubes = Array.isArray(model.cubes) ? model.cubes : [];
+  const bones = model.bone ? [model.bone] : [];
+  const cubes = model.cube ? [model.cube] : [];
 
   const assertAnchorRef = (anchorId: unknown, label: string): DomainResult<null> | null => {
     if (anchorId === undefined) return null;
     if (typeof anchorId !== 'string' || anchorId.trim().length === 0) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_REF_STRING(label));
+      return fail('invalid_payload', messages.anchorRefString(label));
     }
     if (anchors.length === 0) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_REQUIRED(label));
+      return fail('invalid_payload', messages.anchorRequired(label));
     }
     if (!anchorIds.has(anchorId)) {
-      return fail('invalid_payload', MODEL_SPEC_ANCHOR_NOT_FOUND(anchorId));
+      return fail('invalid_payload', messages.anchorNotFound(anchorId));
     }
     return null;
   };
@@ -100,3 +106,5 @@ export const validateModelSpec = (model: ModelSpec): DomainResult<{ valid: true 
 
   return ok({ valid: true });
 };
+
+

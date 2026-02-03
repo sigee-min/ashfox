@@ -70,8 +70,7 @@ import { asProxyService } from './helpers';
     }),
     payload: { includeState: true, includeDiff: false, diffDetail: 'summary' as const },
     includeStateByDefault: () => false,
-    includeDiffByDefault: () => false,
-    runWithoutRevisionGuard: async (fn) => await fn()
+    includeDiffByDefault: () => false
   });
 
   assert.deepEqual(pipeline.meta, {
@@ -88,3 +87,4 @@ import { asProxyService } from './helpers';
     assert.equal((ok.data as { revision?: unknown }).revision, 'r9');
   }
 }
+

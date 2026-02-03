@@ -1,21 +1,26 @@
 import assert from 'node:assert/strict';
 
-import { diffSnapshots } from '../../src/services/diff';
-import { resolveFormatId, matchesFormatKind } from '../../src/services/format';
-import { RevisionStore } from '../../src/services/revision';
-import { mergeSnapshots } from '../../src/services/snapshotMerge';
+import { diffSnapshots } from '../../src/domain/project/diff';
+import { resolveFormatId, matchesFormatKind } from '../../src/domain/formats';
+import { RevisionStore } from '../../src/domain/revision/revisionStore';
+import { mergeSnapshots } from '../../src/domain/project/snapshotMerge';
+import { resolveTextureSize } from '../../src/domain/textureUtils';
 import {
-  estimateDataUriByteLength,
-  normalizeTextureDataUri,
-  parseDataUriMimeType,
-  resolveTextureSize,
   normalizeCubeFaces,
   resolveCubeTargets,
   summarizeTextureUsage,
   computeUvBounds,
   recommendResolution
-} from '../../src/services/textureUtils';
-import { validateUvBounds } from '../../src/domain/uvBounds';
+} from '../../src/usecases/textureService/textureUsageUtils';
+import {
+  estimateDataUriByteLength,
+  normalizeTextureDataUri,
+  parseDataUriMimeType
+} from '../../src/shared/textureData';
+import { validateUvBounds } from '../../src/domain/uv/bounds';
+import { buildUvBoundsMessages } from '../../src/shared/messages';
+
+const uvBoundsMessages = buildUvBoundsMessages();
 import type { SessionState } from '../../src/session';
 
 const baseSnapshot: SessionState = {
@@ -114,11 +119,14 @@ assert.ok(bounds);
 const recommended = recommendResolution(bounds!, undefined, 64);
 assert.ok(recommended);
 
-const uvOk = validateUvBounds([0, 0, 8, 8], { width: 16, height: 16 });
+const uvOk = validateUvBounds([0, 0, 8, 8], { width: 16, height: 16 }, undefined, uvBoundsMessages);
 assert.equal(uvOk, null);
-const uvNeg = validateUvBounds([-1, 0, 1, 1], { width: 16, height: 16 });
+const uvNeg = validateUvBounds([-1, 0, 1, 1], { width: 16, height: 16 }, undefined, uvBoundsMessages);
 assert.ok(uvNeg && !uvNeg.ok && uvNeg.error.details?.reason === 'negative');
-const uvOob = validateUvBounds([0, 0, 32, 32], { width: 16, height: 16 });
+const uvOob = validateUvBounds([0, 0, 32, 32], { width: 16, height: 16 }, undefined, uvBoundsMessages);
 assert.ok(uvOob && !uvOob.ok && uvOob.error.details?.reason === 'out_of_bounds');
-const uvOrder = validateUvBounds([4, 4, 2, 2], { width: 16, height: 16 });
+const uvOrder = validateUvBounds([4, 4, 2, 2], { width: 16, height: 16 }, undefined, uvBoundsMessages);
 assert.ok(uvOrder && !uvOrder.ok && uvOrder.error.details?.reason === 'order');
+
+
+

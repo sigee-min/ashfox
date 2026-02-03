@@ -3,13 +3,13 @@ import type { ExportPort } from '../ports/exporter';
 import type { EditorPort } from '../ports/editor';
 import type { FormatPort } from '../ports/formats';
 import type { ProjectSession } from '../session';
-import { ProjectStateService } from '../services/projectState';
+import { ProjectStateBuilder } from '../domain/project/projectStateBuilder';
 import { ok, fail, UsecaseResult } from './result';
-import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../services/format';
-import { buildInternalExport } from '../services/exporters';
+import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../domain/formats';
+import { buildInternalExport } from '../domain/exporters';
 import { withFormatOverrideHint } from './formatHints';
 import type { ExportPolicy } from './policies';
-import { ensureActiveOnly } from './guards';
+import { withActiveOnly } from './guards';
 import {
   EXPORT_FORMAT_ID_MISSING,
   EXPORT_FORMAT_MISMATCH,
@@ -21,7 +21,7 @@ export interface ExportServiceDeps {
   editor: EditorPort;
   exporter: ExportPort;
   formats: FormatPort;
-  projectState: ProjectStateService;
+  projectState: ProjectStateBuilder;
   getSnapshot: () => ReturnType<ProjectSession['snapshot']>;
   ensureActive: () => ToolError | null;
   policies: {
@@ -35,7 +35,7 @@ export class ExportService {
   private readonly editor: EditorPort;
   private readonly exporter: ExportPort;
   private readonly formats: FormatPort;
-  private readonly projectState: ProjectStateService;
+  private readonly projectState: ProjectStateBuilder;
   private readonly getSnapshot: () => ReturnType<ProjectSession['snapshot']>;
   private readonly ensureActive: () => ToolError | null;
   private readonly policies: ExportServiceDeps['policies'];
@@ -52,52 +52,52 @@ export class ExportService {
   }
 
   exportModel(payload: ExportPayload): UsecaseResult<{ path: string }> {
-    const activeErr = ensureActiveOnly(this.ensureActive);
-    if (activeErr) return fail(activeErr);
-    const exportPolicy = this.policies.exportPolicy ?? 'strict';
-    const snapshot = this.getSnapshot();
-    const expectedFormat = exportFormatToCapability(payload.format);
-    if (expectedFormat) {
-      const formatCapability = this.capabilities.formats.find((f) => f.format === expectedFormat);
-      if (!formatCapability || !formatCapability.enabled) {
-        return fail({ code: 'unsupported_format', message: EXPORT_FORMAT_NOT_ENABLED(expectedFormat) });
+    return withActiveOnly(this.ensureActive, () => {
+      const exportPolicy = this.policies.exportPolicy ?? 'strict';
+      const snapshot = this.getSnapshot();
+      const expectedFormat = exportFormatToCapability(payload.format);
+      if (expectedFormat) {
+        const formatCapability = this.capabilities.formats.find((f) => f.format === expectedFormat);
+        if (!formatCapability || !formatCapability.enabled) {
+          return fail({ code: 'unsupported_format', message: EXPORT_FORMAT_NOT_ENABLED(expectedFormat) });
+        }
       }
-    }
-    if (expectedFormat) {
-      if (snapshot.format && snapshot.format !== expectedFormat) {
-        return fail({ code: 'invalid_payload', message: EXPORT_FORMAT_MISMATCH });
+      if (expectedFormat) {
+        if (snapshot.format && snapshot.format !== expectedFormat) {
+          return fail({ code: 'invalid_payload', message: EXPORT_FORMAT_MISMATCH });
+        }
+        if (
+          !snapshot.format &&
+          snapshot.formatId &&
+          !matchesFormatKind(expectedFormat, snapshot.formatId) &&
+          this.projectState.matchOverrideKind(snapshot.formatId) !== expectedFormat
+        ) {
+          return fail({
+            code: 'invalid_payload',
+            message: withFormatOverrideHint(EXPORT_FORMAT_MISMATCH)
+          });
+        }
       }
-      if (
-        !snapshot.format &&
-        snapshot.formatId &&
-        !matchesFormatKind(expectedFormat, snapshot.formatId) &&
-        this.projectState.matchOverrideKind(snapshot.formatId) !== expectedFormat
-      ) {
-        return fail({
-          code: 'invalid_payload',
-          message: withFormatOverrideHint(EXPORT_FORMAT_MISMATCH)
-        });
+      const formatId =
+        snapshot.formatId ??
+        (expectedFormat ? resolveFormatId(expectedFormat, this.formats.listFormats(), this.policies.formatOverrides) : null);
+      if (!formatId) {
+        return fail({ code: 'unsupported_format', message: withFormatOverrideHint(EXPORT_FORMAT_ID_MISSING) });
       }
-    }
-    const formatId =
-      snapshot.formatId ??
-      (expectedFormat ? resolveFormatId(expectedFormat, this.formats.listFormats(), this.policies.formatOverrides) : null);
-    if (!formatId) {
-      return fail({ code: 'unsupported_format', message: withFormatOverrideHint(EXPORT_FORMAT_ID_MISSING) });
-    }
-    const nativeErr = this.exporter.exportNative({ formatId, destPath: payload.destPath });
-    if (!nativeErr) return ok({ path: payload.destPath });
-    if (exportPolicy === 'strict') {
-      return fail(nativeErr);
-    }
-    if (nativeErr.code !== 'not_implemented' && nativeErr.code !== 'unsupported_format') {
-      return fail(nativeErr);
-    }
-    const bundle = buildInternalExport(payload.format, snapshot);
-    const serialized = JSON.stringify(bundle.data, null, 2);
-    const err = this.editor.writeFile(payload.destPath, serialized);
-    if (err) return fail(err);
-    return ok({ path: payload.destPath });
+      const nativeErr = this.exporter.exportNative({ formatId, destPath: payload.destPath });
+      if (!nativeErr) return ok({ path: payload.destPath });
+      if (exportPolicy === 'strict') {
+        return fail(nativeErr);
+      }
+      if (nativeErr.code !== 'not_implemented' && nativeErr.code !== 'unsupported_format') {
+        return fail(nativeErr);
+      }
+      const bundle = buildInternalExport(payload.format, snapshot);
+      const serialized = JSON.stringify(bundle.data, null, 2);
+      const err = this.editor.writeFile(payload.destPath, serialized);
+      if (err) return fail(err);
+      return ok({ path: payload.destPath });
+    });
   }
 }
 
@@ -113,3 +113,6 @@ const exportFormatToCapability = (format: ExportPayload['format']): FormatKind |
       return null;
   }
 };
+
+
+

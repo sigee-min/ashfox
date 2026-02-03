@@ -2,14 +2,14 @@ import { Dispatcher } from './types';
 import { ProxyRouter } from './proxy';
 import { errorMessage, Logger } from './logging';
 import { PLUGIN_ID, PLUGIN_VERSION } from './config';
-import { SERVER_TOOL_INSTRUCTIONS } from './services/toolInstructions';
-import { McpRouter } from './mcp/router';
-import { LocalToolExecutor } from './mcp/executor';
-import { createMcpHttpServer } from './mcp/httpServer';
-import { startMcpNetServer } from './mcp/netServer';
-import { normalizePath } from './mcp/routerUtils';
+import { SERVER_TOOL_INSTRUCTIONS } from './shared/tooling/toolInstructions';
+import { McpRouter } from './transport/mcp/router';
+import { LocalToolExecutor } from './transport/mcp/executor';
+import { createMcpHttpServer } from './transport/mcp/httpServer';
+import { startMcpNetServer } from './transport/mcp/netServer';
+import { normalizePath } from './transport/mcp/routerUtils';
 import { ResourceStore } from './ports/resources';
-import type { ToolRegistry } from './mcp/tools';
+import type { ToolRegistry } from './transport/mcp/tools';
 import {
   CONFIG_HOST_REQUIRED,
   CONFIG_PATH_REQUIRED,
@@ -19,15 +19,9 @@ import {
   SERVER_NET_PERMISSION_MESSAGE,
   SERVER_NO_TRANSPORT
 } from './shared/messages';
+import { loadNativeModule } from './shared/nativeModules';
 import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
 import type { Server as NetServer, Socket } from 'net';
-
-type NativeModuleLoader = (
-  name: string,
-  options: { message: string; detail?: string; optional?: boolean }
-) => unknown;
-
-declare const requireNativeModule: NativeModuleLoader | undefined;
 
 export interface ServerConfig {
   host: string;
@@ -59,12 +53,6 @@ type HttpModule = {
 type NetModule = {
   createServer: (handler: (socket: Socket) => void) => NetServer;
 };
-
-const isHttpModule = (value: unknown): value is HttpModule =>
-  typeof (value as HttpModule)?.createServer === 'function';
-
-const isNetModule = (value: unknown): value is NetModule =>
-  typeof (value as NetModule)?.createServer === 'function';
 
 const startHttpServer = (http: HttpModule, config: ServerConfig, router: McpRouter, log: Logger): StopFn | null => {
   const server = createMcpHttpServer(http, router, log);
@@ -111,37 +99,28 @@ export function startServer(
     toolRegistry
   );
 
-  let http: HttpModule | null = null;
-  try {
-    const loaded = requireNativeModule?.('http', {
-      message: SERVER_HTTP_PERMISSION_MESSAGE,
-      optional: true
-    });
-    http = isHttpModule(loaded) ? loaded : null;
-  } catch (err) {
-    http = null;
-  }
-  if (http) {
+  const http = loadNativeModule<HttpModule>('http', {
+    message: SERVER_HTTP_PERMISSION_MESSAGE,
+    optional: true
+  });
+  if (http && typeof http.createServer === 'function') {
     const stop = startHttpServer(http, config, router, log);
     if (stop) return stop;
   }
 
-  let net: NetModule | null = null;
-  try {
-    const loaded = requireNativeModule?.('net', {
-      message: SERVER_NET_PERMISSION_MESSAGE,
-      detail: SERVER_NET_PERMISSION_DETAIL,
-      optional: false
-    });
-    net = isNetModule(loaded) ? loaded : null;
-  } catch (err) {
-    net = null;
-  }
-  if (net) {
+  const net = loadNativeModule<NetModule>('net', {
+    message: SERVER_NET_PERMISSION_MESSAGE,
+    detail: SERVER_NET_PERMISSION_DETAIL,
+    optional: false
+  });
+  if (net && typeof net.createServer === 'function') {
     return startMcpNetServer(net, { host: config.host, port: config.port }, router, log);
   }
 
   log.warn(SERVER_NO_TRANSPORT);
   return null;
 }
+
+
+
 

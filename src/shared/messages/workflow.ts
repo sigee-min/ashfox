@@ -1,11 +1,21 @@
 export const MODELING_WORKFLOW_WARNING_REASON =
-  'Model pipeline warnings were reported. Review the modeling workflow to address anchors/instances/id policy.';
+  'Model pipeline warnings were reported. Review the modeling workflow to address anchors/id policy.';
 
 export const VALIDATE_REASON_DEFAULT = 'Run validation to catch structural issues.';
+
+export const VALIDATE_FINDINGS_REASON =
+  'Validation findings were reported. Review and fix them before proceeding.';
+
+export const VALIDATE_FINDINGS_QUESTION = (summary: string) =>
+  `Validation findings detected (${summary}). Do you want to fix them now? Provide updates or ask for auto-fix.`;
 
 export const PREVIEW_REASON_DEFAULT = 'Render a quick preview to validate the result visually.';
 
 export const PREVIEW_STATE_REASON = 'Get latest ifRevision for preview.';
+
+export const REVISION_REFRESH_REASON = 'Get latest ifRevision before retrying.';
+
+export const REVISION_RETRY_REASON = (tool: string) => `Retry ${tool} with latest ifRevision.`;
 
 export const TEXTURE_WORKFLOW_GUIDE_REASON_DEFAULT =
   'Review the recommended UV-first texture workflow (assign -> preflight -> paint -> preview).';
@@ -26,3 +36,6 @@ export const TEXTURE_PREVIEW_VALIDATE_REASON = 'Render a preview to validate tex
 
 export const CLARIFICATION_REASON_DEFAULT =
   'Provide the missing details so the pipeline can proceed. Reply with short answers or pick an option.';
+
+
+

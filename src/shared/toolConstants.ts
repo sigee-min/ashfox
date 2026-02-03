@@ -1,3 +1,5 @@
+import { TEXTURE_PRESET_NAMES } from './texturePolicy';
+
 export const FORMAT_KINDS = ['Java Block/Item', 'geckolib', 'animated_java'] as const;
 export type FormatKind = typeof FORMAT_KINDS[number];
 
@@ -8,6 +10,7 @@ export const TOOL_NAMES = [
   'list_capabilities',
   'get_project_state',
   'read_texture',
+  'export_trace_log',
   'reload_plugins',
   'generate_texture_preset',
   'auto_uv_atlas',
@@ -53,25 +56,13 @@ export type EnsureProjectOnMissing = typeof ENSURE_PROJECT_ON_MISSING[number];
 export const ENSURE_PROJECT_ACTIONS = ['ensure', 'delete'] as const;
 export type EnsureProjectAction = typeof ENSURE_PROJECT_ACTIONS[number];
 
-export const TEXTURE_PRESET_NAMES = [
-  'painted_metal',
-  'rubber',
-  'glass',
-  'wood',
-  'dirt',
-  'plant',
-  'stone',
-  'sand',
-  'leather',
-  'fabric',
-  'ceramic'
-] as const;
+export { TEXTURE_PRESET_NAMES } from './texturePolicy';
 export type TexturePresetName = typeof TEXTURE_PRESET_NAMES[number];
 
 export const CUBE_FACE_DIRECTIONS = ['north', 'south', 'east', 'west', 'up', 'down'] as const;
 export type CubeFaceDirection = typeof CUBE_FACE_DIRECTIONS[number];
 
-export const RIG_TEMPLATE_KINDS = ['empty', 'biped', 'quadruped', 'block_entity'] as const;
+export const RIG_TEMPLATE_KINDS = ['empty', 'block_entity'] as const;
 export type RigTemplateKind = typeof RIG_TEMPLATE_KINDS[number];
 
 export const ENTITY_FORMATS = ['geckolib', 'modded_entity', 'optifine_entity'] as const;
@@ -91,3 +82,6 @@ export type PreviewMode = typeof PREVIEW_MODES[number];
 
 export const PREVIEW_OUTPUTS = ['single', 'sequence'] as const;
 export type PreviewOutput = typeof PREVIEW_OUTPUTS[number];
+
+
+

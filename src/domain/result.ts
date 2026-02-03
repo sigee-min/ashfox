@@ -19,3 +19,5 @@ export const fail = <T = never>(
   ok: false,
   error: { code, message, ...(details ? { details } : {}), ...(fix ? { fix } : {}) }
 });
+
+

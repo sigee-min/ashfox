@@ -108,3 +108,5 @@ const isCubeNode = (node: OutlinerNode): node is CubeInstance => {
   if (cubeCtor && node instanceof cubeCtor) return true;
   return node.from !== undefined && node.to !== undefined;
 };
+
+

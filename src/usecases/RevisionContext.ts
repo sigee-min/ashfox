@@ -1,20 +1,20 @@
 import type { ToolError } from '../types';
-import { RevisionStore } from '../services/revision';
-import { ProjectStateService } from '../services/projectState';
-import { buildMissingRevisionError, buildRevisionMismatchError } from '../services/revisionErrors';
+import { RevisionStore } from '../domain/revision/revisionStore';
+import { ProjectStateBuilder } from '../domain/project/projectStateBuilder';
+import { decideRevisionMatch } from './revision/revisionCompare';
 import type { PolicyContextLike, RevisionContextLike, SnapshotContextLike } from './contextTypes';
 import type { ProjectSession } from '../session';
 
 export interface RevisionContextDeps {
   revisionStore: RevisionStore;
-  projectState: ProjectStateService;
+  projectState: ProjectStateBuilder;
   snapshotContext: SnapshotContextLike<ReturnType<ProjectSession['snapshot']>>;
   policyContext: PolicyContextLike;
 }
 
 export class RevisionContext implements RevisionContextLike {
   private readonly revisionStore: RevisionStore;
-  private readonly projectState: ProjectStateService;
+  private readonly projectState: ProjectStateBuilder;
   private readonly snapshotContext: SnapshotContextLike<ReturnType<ProjectSession['snapshot']>>;
   private readonly policyContext: PolicyContextLike;
   private revisionBypassDepth = 0;
@@ -32,13 +32,14 @@ export class RevisionContext implements RevisionContextLike {
     const snapshot = this.snapshotContext.getSnapshot();
     const hasProject = Boolean(this.projectState.toProjectInfo(snapshot));
     const currentRevision = this.revisionStore.track(snapshot);
-    if (!expected) {
-      return buildMissingRevisionError(currentRevision, hasProject);
-    }
-    if (currentRevision !== expected) {
-      return buildRevisionMismatchError(expected, currentRevision);
-    }
-    return null;
+    const decision = decideRevisionMatch({
+      requiresRevision: true,
+      allowAutoRetry: false,
+      expected,
+      currentRevision,
+      active: hasProject
+    });
+    return decision.ok ? null : decision.error;
   }
 
   runWithoutRevisionGuard<T>(fn: () => T): T {
@@ -59,3 +60,7 @@ export class RevisionContext implements RevisionContextLike {
     }
   }
 }
+
+
+
+

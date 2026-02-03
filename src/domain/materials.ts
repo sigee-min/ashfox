@@ -3,9 +3,15 @@ import type { TexturePresetName } from '../shared/toolConstants';
 export type MaterialPreset = {
   preset: TexturePresetName;
   palette?: string[];
+  match: 'exact' | 'fallback' | 'default';
 };
 
-const MATERIAL_PRESET_MAP: Record<string, MaterialPreset> = {
+type MaterialPresetDefinition = {
+  preset: TexturePresetName;
+  palette?: string[];
+};
+
+const MATERIAL_PRESET_MAP: Record<string, MaterialPresetDefinition> = {
   painted_metal: { preset: 'painted_metal' },
   metal: { preset: 'painted_metal' },
   steel: { preset: 'painted_metal' },
@@ -34,7 +40,11 @@ const MATERIAL_PRESET_MAP: Record<string, MaterialPreset> = {
   leather: { preset: 'leather' },
   fabric: { preset: 'fabric' },
   cloth: { preset: 'fabric' },
-  ceramic: { preset: 'ceramic' }
+  ceramic: { preset: 'ceramic' },
+  clay: { preset: 'ceramic' },
+  terracotta: { preset: 'ceramic' },
+  pottery: { preset: 'ceramic' },
+  earthenware: { preset: 'ceramic' }
 };
 
 const MATERIAL_FALLBACKS: Array<{ match: (material: string) => boolean; preset: TexturePresetName }> = [
@@ -48,7 +58,7 @@ const MATERIAL_FALLBACKS: Array<{ match: (material: string) => boolean; preset: 
   { match: (value) => value.includes('sand'), preset: 'sand' },
   { match: (value) => value.includes('leather'), preset: 'leather' },
   { match: (value) => value.includes('fabric') || value.includes('cloth'), preset: 'fabric' },
-  { match: (value) => value.includes('ceramic') || value.includes('tile'), preset: 'ceramic' }
+  { match: (value) => value.includes('ceramic') || value.includes('tile') || value.includes('clay'), preset: 'ceramic' }
 ];
 
 const normalizeMaterial = (material: string): string =>
@@ -57,11 +67,13 @@ const normalizeMaterial = (material: string): string =>
 export const resolveMaterialPreset = (material: string): MaterialPreset => {
   const normalized = normalizeMaterial(material);
   const exact = MATERIAL_PRESET_MAP[normalized];
-  if (exact) return exact;
+  if (exact) return { ...exact, match: 'exact' };
   for (const fallback of MATERIAL_FALLBACKS) {
     if (fallback.match(normalized)) {
-      return { preset: fallback.preset };
+      return { preset: fallback.preset, match: 'fallback' };
     }
   }
-  return { preset: 'painted_metal' };
+  return { preset: 'painted_metal', match: 'default' };
 };
+
+

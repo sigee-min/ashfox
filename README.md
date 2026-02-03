@@ -7,8 +7,7 @@ bbmcp turns Blockbench into an MCP-native modeling backend with a clean tool sur
 - MCP-first HTTP server with tool discovery and schema versioning.
 - High-level pipelines (`model_pipeline`, `texture_pipeline`, `entity_pipeline`, `block_pipeline`).
 - Pipelines may return `planOnly` + `ask_user` prompts when a request is underspecified.
-- Optional low-level controls (bones, cubes, textures, export, validate).
-- Enable via Settings > bbmcp > Expose Low-Level Tools (Expert).
+- Low-level tools are not exposed in automation mode.
 - Explicit texture assignment via `assign_texture` (auto-assign only when using `texture_pipeline.plan`).
 - Revision guard (`ifRevision`) for safe concurrent edits.
 - Preview output as MCP `content` image blocks (base64 PNG).
@@ -31,17 +30,23 @@ npm run build
 - Use the plugin manager or load `dist/bbmcp.js` manually.
 
 4) Start MCP
-- The plugin starts an MCP server on `127.0.0.1:8787/mcp` by default.
-- Configure host/port/path in `Settings > bbmcp` or via the Help menu action.
+- The plugin starts an MCP server on `0.0.0.0:8787/mcp` by default.
+- Configure host/port/path via Settings (bbmcp: Server), `.bbmcp/endpoint.json`, or env vars (`BBMCP_HOST`, `BBMCP_PORT`, `BBMCP_PATH`).
 
 ## Default Endpoint
 ```
-http://127.0.0.1:8787/mcp
+http://0.0.0.0:8787/mcp
 ```
+### Endpoint Config
+Create `.bbmcp/endpoint.json` in the working directory:
+```json
+{ "host": "0.0.0.0", "port": 8787, "path": "/mcp" }
+```
+Settings values override the config file if set. Env vars override the file as well: `BBMCP_HOST`, `BBMCP_PORT`, `BBMCP_PATH`. If Settings are saved, they take precedence over env/file.
 
 ## Core Flow (Recommended)
 1) `ensure_project` (or `get_project_state`) to confirm an active project and read `revision`.
-   - When `confirmDialog=true`, always supply `ensure_project.dialog` with required fields. If missing, the server returns a required-field list via error details and `nextActions`.
+   - The project dialog is auto-confirmed; supply `ensure_project.dialog` with required fields to avoid UI prompts.
    - To close a project, call `ensure_project` with `action="delete"` and `target.name` matching the open project; set `force=true` to discard unsaved changes (no auto-save).
 2) Prefer high-level pipelines (`model_pipeline`, `texture_pipeline`, `entity_pipeline`, `block_pipeline`) with `ifRevision`.
 3) `validate` to catch issues early.
@@ -71,7 +76,7 @@ Use `texturePlan` to auto-create textures + UVs (no manual preflight required), 
   "ensureProject": { "name": "my_entity", "match": "format", "onMissing": "create" },
   "model": {
     "rigTemplate": "empty",
-    "bones": [{ "id": "root", "pivot": [0, 0, 0] }]
+    "bone": { "id": "root", "pivot": [0, 0, 0] }
   },
   "texturePlan": { "name": "my_entity", "detail": "medium", "maxTextures": 1 },
   "animations": [
@@ -82,14 +87,14 @@ Use `texturePlan` to auto-create textures + UVs (no manual preflight required), 
 ```
 
 ## Texture Flow (Recommended)
-If low-level tools are not exposed, use `texture_pipeline` to run the entire flow.
+Low-level tools are not exposed; use `texture_pipeline` to run the entire flow.
 - Use `texture_pipeline.plan` for auto-assign + auto-UV with texel-density planning from high-level intent.
 - Plan respects active format constraints (e.g., single-texture formats disable splitting).
 - Use `facePaint` to describe materials per cube/face without manual UV work (maps to presets + uvPaint).
 - Always `preflight_texture` without filters to get a stable `uvUsageId`.
 - If UVs change, preflight again and repaint.
 - For 64x64+ textures, prefer `generate_texture_preset`.
-- Use `autoRecover=true` on overlap/scale issues (plan-based re-UV, auto-split, <=512, max 16 textures). For low-level recovery, prefer `texture_pipeline.plan` over `auto_uv_atlas`.
+- Automatic recovery handles overlap/scale issues (plan-based re-UV, auto-split, <=512, max 16 textures). For low-level recovery, prefer `texture_pipeline.plan` over `auto_uv_atlas`.
 - Use `cleanup` to delete explicit textures (blocked if still assigned unless `force=true`).
 - See `docs/texture-uv-spec.md`, `docs/texture-pipeline-plan.md`, `docs/llm-texture-strategy.md`.
 
@@ -155,7 +160,7 @@ Static guides are exposed via MCP resources. Use `resources/list` and `resources
 ## Sidecar (Optional)
 The plugin prefers an inline server. If unavailable, it can spawn a sidecar.
 - Output: `dist/bbmcp-sidecar.js`
-- Configure `execPath` in Settings to point to `node` if needed.
+- Uses the current Node runtime automatically.
 
 ## Notes
 - The plugin is designed for the latest Blockbench desktop build.

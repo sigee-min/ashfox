@@ -7,3 +7,5 @@ export const hashTextToInt = (value: string): number => {
 };
 
 export const hashTextToHex = (value: string): string => hashTextToInt(value).toString(16);
+
+

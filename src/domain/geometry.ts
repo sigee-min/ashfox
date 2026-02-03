@@ -47,3 +47,5 @@ export const mirrorRotation = (rotation: Vec3, axis: 'x' | 'y' | 'z'): Vec3 => {
   if (axis === 'y') return [-rotation[0], rotation[1], -rotation[2]];
   return [-rotation[0], -rotation[1], rotation[2]];
 };
+
+

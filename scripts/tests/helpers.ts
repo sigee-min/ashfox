@@ -2,7 +2,7 @@ import type { Logger } from '../../src/logging';
 import type { DomPort } from '../../src/ports/dom';
 import type { ProxyPipelineDeps } from '../../src/proxy/types';
 import type { Limits, ToolError } from '../../src/types';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 
 export type UsecaseResult<T> = { ok: true; value: T } | { ok: false; error: ToolError };
 
@@ -117,7 +117,13 @@ export const makeProxyDeps = (
           }
         }
       }),
-    getUvPolicy: () => DEFAULT_UV_POLICY
+    getUvPolicy: () => DEFAULT_UV_POLICY,
+    listCapabilities: () => ({
+      limits: DEFAULT_LIMITS,
+      formats: []
+    }),
+    runWithoutRevisionGuard: <T>(fn: () => T) => fn(),
+    runWithoutRevisionGuardAsync: async <T>(fn: () => Promise<T> | T) => await fn()
   };
   return {
     service: asProxyService({ ...defaultService, ...(overrides.service ?? {}) }),
@@ -126,9 +132,10 @@ export const makeProxyDeps = (
     limits: overrides.limits ?? DEFAULT_LIMITS,
     includeStateByDefault: overrides.includeStateByDefault ?? (() => false),
     includeDiffByDefault: overrides.includeDiffByDefault ?? (() => false),
-    runWithoutRevisionGuard: overrides.runWithoutRevisionGuard ?? (async (fn) => await fn()),
     cache: overrides.cache
   };
 };
 
 export const unsafePayload = <T>(value: unknown): T => value as T;
+
+

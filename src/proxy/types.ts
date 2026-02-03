@@ -21,7 +21,6 @@ export type ProxyPipelineDeps = {
   limits: Limits;
   includeStateByDefault: () => boolean;
   includeDiffByDefault: () => boolean;
-  runWithoutRevisionGuard: <T>(fn: () => Promise<T> | T) => Promise<T>;
   cache?: ProxyPipelineCache;
 };
 
@@ -44,3 +43,5 @@ export type ProxyToolResultMap = {
   render_preview: RenderPreviewResult;
   validate: ValidateResult;
 };
+
+

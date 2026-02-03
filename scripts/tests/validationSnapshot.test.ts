@@ -2,12 +2,19 @@ import assert from 'node:assert/strict';
 
 import { validateSnapshot } from '../../src/domain/validation';
 import type { Snapshot, TextureUsage, TextureStat } from '../../src/domain/model';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
+import { buildValidationMessages } from '../../src/shared/messages';
+
+const validationMessages = buildValidationMessages();
 
 const empty: Snapshot = { bones: [], cubes: [], animations: [] };
-const emptyFindings = validateSnapshot(empty, {
-  limits: { maxCubes: 1, maxTextureSize: 32, maxAnimationSeconds: 1 }
-});
+const emptyFindings = validateSnapshot(
+  empty,
+  {
+    limits: { maxCubes: 1, maxTextureSize: 32, maxAnimationSeconds: 1 }
+  },
+  validationMessages
+);
 assert.ok(emptyFindings.some((f) => f.code === 'no_bones'));
 
 const snapshot: Snapshot = {
@@ -59,13 +66,17 @@ const usage: TextureUsage = {
   unresolved: [{ textureRef: 'missing', cubeName: 'ghost', face: 'up' }]
 };
 
-const findings = validateSnapshot(snapshot, {
-  limits: { maxCubes: 1, maxTextureSize: 64, maxAnimationSeconds: 1 },
-  textures,
-  textureResolution: { width: 16, height: 16 },
-  textureUsage: usage,
-  uvPolicy: DEFAULT_UV_POLICY
-});
+const findings = validateSnapshot(
+  snapshot,
+  {
+    limits: { maxCubes: 1, maxTextureSize: 64, maxAnimationSeconds: 1 },
+    textures,
+    textureResolution: { width: 16, height: 16 },
+    textureUsage: usage,
+    uvPolicy: DEFAULT_UV_POLICY
+  },
+  validationMessages
+);
 
 const codes = new Set(findings.map((f) => f.code));
 assert.ok(codes.has('duplicate_bone'));
@@ -82,3 +93,5 @@ assert.ok(codes.has('texture_unassigned'));
 assert.ok(codes.has('face_uv_out_of_bounds'));
 assert.ok(codes.has('uv_overlap'));
 assert.ok(codes.has('uv_scale_mismatch'));
+
+

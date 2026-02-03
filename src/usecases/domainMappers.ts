@@ -22,6 +22,8 @@ export const toDomainTextureUsage = (usage: TextureUsageResult): TextureUsage =>
 export const toDomainTextureUsageEntry = (entry: TextureUsageResult['textures'][number]): TextureUsageEntry => ({
   id: entry.id ?? undefined,
   name: entry.name,
+  width: entry.width ?? undefined,
+  height: entry.height ?? undefined,
   cubeCount: entry.cubeCount,
   faceCount: entry.faceCount,
   cubes: entry.cubes.map((cube) => toDomainTextureUsageCube(cube))
@@ -106,3 +108,5 @@ export const toDomainTextureResolution = (
   if (!resolution) return undefined;
   return { width: resolution.width, height: resolution.height };
 };
+
+

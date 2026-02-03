@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { toCallToolResult } from '../../src/mcp/routerUtils';
+import { toCallToolResult } from '../../src/transport/mcp/routerUtils';
 import type { ToolResponse } from '../../src/types';
 
 {
@@ -81,3 +81,4 @@ import type { ToolResponse } from '../../src/types';
     }
   });
 }
+

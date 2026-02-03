@@ -1,7 +1,7 @@
 import { FormatKind, ToolError } from '../../types';
 import { errorMessage, Logger } from '../../logging';
 import { hasUnsavedChanges, markProjectSaved, readGlobals } from './blockbenchUtils';
-import { toolError } from '../../services/toolResponse';
+import { toolError } from '../../shared/tooling/toolResponse';
 import {
   ADAPTER_BLOCKBENCH_WRITEFILE_UNAVAILABLE,
   ADAPTER_PROJECT_CREATE_UNAVAILABLE,
@@ -23,7 +23,7 @@ export class BlockbenchProjectAdapter {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; confirmDialog?: boolean }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
   ): ToolError | null {
     try {
       const globals = readGlobals();
@@ -175,7 +175,7 @@ export class BlockbenchProjectAdapter {
 
 const tryAutoConfirmProjectDialog = (
   projectName: string,
-  options?: { dialog?: Record<string, unknown>; confirmDialog?: boolean }
+  options?: { dialog?: Record<string, unknown> }
 ): { ok: true } | { ok: false; error: ToolError } => {
   const dialogApi = readGlobals().Dialog;
   const dialog = dialogApi?.open;
@@ -198,9 +198,7 @@ const tryAutoConfirmProjectDialog = (
   if (typeof dialog.setFormValues === 'function') {
     dialog.setFormValues(values, true);
   }
-  if (options?.confirmDialog !== false && typeof dialog.confirm === 'function') {
-    dialog.confirm();
-  }
+  if (typeof dialog.confirm === 'function') dialog.confirm();
   if (dialogApi?.open === dialog) {
     const remaining = dialog.getFormResult?.() ?? {};
     const missing = Object.entries(remaining)
@@ -218,3 +216,6 @@ const tryAutoConfirmProjectDialog = (
   }
   return { ok: true };
 };
+
+
+

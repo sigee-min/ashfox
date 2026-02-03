@@ -1,12 +1,13 @@
 import type { Cube, TextureUsage } from '../domain/model';
 import { computeTextureUsageId } from '../domain/textureUsage';
-import type { UvPolicyConfig } from '../domain/uvPolicy';
+import type { UvPolicyConfig } from '../domain/uv/policy';
 import type { ToolResponse } from '../types';
 import type { ToolService } from '../usecases/ToolService';
 import { toDomainCube, toDomainTextureUsage } from '../usecases/domainMappers';
 import type { MetaOptions } from './meta';
 import { loadProjectState } from './projectState';
-import { isUsecaseError, usecaseError } from './guardHelpers';
+import { usecaseError } from './errorAdapter';
+import { isUsecaseError } from '../shared/tooling/responseGuards';
 
 export type UvProjectContext = {
   cubes: Cube[];
@@ -60,10 +61,11 @@ const loadUvUsage = (
   meta: MetaOptions,
   usageOverride: TextureUsage | undefined,
   cache?: UvContextCache,
-  expectedUvUsageId?: string
+  expectedUvUsageId?: string,
+  projectResolution?: { width: number; height: number }
 ): ToolResponse<TextureUsage> => {
   if (usageOverride) {
-    const usageId = computeTextureUsageId(usageOverride);
+    const usageId = computeTextureUsageId(usageOverride, projectResolution);
     if (cache) cache.usage = { usage: usageOverride, uvUsageId: usageId };
     return { ok: true, data: usageOverride };
   }
@@ -74,7 +76,7 @@ const loadUvUsage = (
   const usageRes = service.getTextureUsage({});
   if (isUsecaseError(usageRes)) return usecaseError(usageRes, meta, service);
   const usage = toDomainTextureUsage(usageRes.value);
-  const uvUsageId = computeTextureUsageId(usage);
+  const uvUsageId = computeTextureUsageId(usage, projectResolution);
   if (cache) cache.usage = { usage, uvUsageId };
   return { ok: true, data: usage };
 };
@@ -96,7 +98,14 @@ export const loadUvContext = (
 ): ToolResponse<UvContext> => {
   const projectRes = loadUvProjectContext(service, meta, options.cache);
   if (!projectRes.ok) return projectRes;
-  const usageRes = loadUvUsage(service, meta, usageOverride, options.cache, options.expectedUvUsageId);
+  const usageRes = loadUvUsage(
+    service,
+    meta,
+    usageOverride,
+    options.cache,
+    options.expectedUvUsageId,
+    projectRes.data.resolution
+  );
   if (!usageRes.ok) return usageRes;
   return {
     ok: true,
@@ -108,3 +117,7 @@ export const loadUvContext = (
     }
   };
 };
+
+
+
+

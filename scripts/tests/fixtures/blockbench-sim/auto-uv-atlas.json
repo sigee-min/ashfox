@@ -1,0 +1,36 @@
+{
+  "name": "auto-uv-atlas",
+  "project": {
+    "format": "geckolib",
+    "name": "Auto UV Atlas",
+    "textureResolution": { "width": 16, "height": 16 },
+    "cubes": [
+      { "id": "cube-1", "name": "cube", "from": [0, 0, 0], "to": [16, 16, 16], "bone": "root" }
+    ],
+    "textures": [
+      { "id": "tex-1", "name": "tex", "width": 16, "height": 16 }
+    ]
+  },
+  "steps": [
+    {
+      "op": "assign_texture",
+      "payload": { "textureName": "tex", "cubeNames": ["cube"] },
+      "expect": [{ "path": "ok", "equals": true }]
+    },
+    {
+      "op": "apply_texture_spec",
+      "payload": {
+        "uvUsageId": "stale",
+        "textures": [
+          { "mode": "update", "targetName": "tex", "width": 16, "height": 16, "background": "#222222" }
+        ]
+      },
+      "expect": [
+        { "path": "ok", "equals": true },
+        { "path": "data.recovery.method", "equals": "auto_uv_atlas" },
+        { "path": "data.recovery.reason", "equals": "uv_missing" },
+        { "path": "data.uvUsageId", "defined": true }
+      ]
+    }
+  ]
+}

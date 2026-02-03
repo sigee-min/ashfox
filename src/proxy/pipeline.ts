@@ -27,7 +27,6 @@ type PipelineDeps = {
   payload: MetaPayload;
   includeStateByDefault: () => boolean;
   includeDiffByDefault: () => boolean;
-  runWithoutRevisionGuard: <T>(fn: () => Promise<T> | T) => Promise<T>;
 };
 
 export const createProxyPipeline = (deps: PipelineDeps): ProxyPipeline => {
@@ -41,10 +40,11 @@ export const createProxyPipeline = (deps: PipelineDeps): ProxyPipeline => {
   return {
     meta,
     guardRevision: () => guardRevision(deps.service, deps.payload.ifRevision, meta),
-    run: async <T>(fn: () => Promise<ToolResponse<T>> | ToolResponse<T>) =>
-      deps.runWithoutRevisionGuard(async () => await fn()),
+    run: async <T>(fn: () => Promise<ToolResponse<T>> | ToolResponse<T>) => await fn(),
     ok: (data) => ({ ok: true, data: withMeta(data, meta, deps.service) }),
     wrap: (result) => (result.ok ? { ok: true, data: result.value } : withErrorMeta(result.error, meta, deps.service)),
     error: (error) => withErrorMeta(error, meta, deps.service)
   };
 };
+
+

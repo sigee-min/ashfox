@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 
 import { MAX_TEXTURE_OPS } from '../../src/domain/textureOps';
-import { renderTextureSpec, resolveTextureBase } from '../../src/proxy/texture';
+import { resolveTextureBase } from '../../src/proxy/texture/textureBase';
+import { renderTextureSpec } from '../../src/proxy/texture/textureRender';
 import { asDomPort, createMockDom, DEFAULT_LIMITS, registerAsync, unsafePayload } from './helpers';
 
 const limits = DEFAULT_LIMITS;
@@ -171,3 +172,4 @@ registerAsync(
     }
   })()
 );
+

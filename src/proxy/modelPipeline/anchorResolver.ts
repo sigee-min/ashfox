@@ -1,6 +1,6 @@
 import type { ToolResponse } from '../../types';
 import type { ModelSpec } from '../../spec';
-import { err } from '../../services/toolResponse';
+import { err } from '../../shared/tooling/toolResponse';
 import type { NormalizedBone, NormalizedCube, Vec3 } from './types';
 import {
   MODEL_ANCHOR_BONE_NOT_FOUND,
@@ -17,8 +17,8 @@ export const applyAnchors = (
 ): ToolResponse<void> => {
   const anchors = Array.isArray(model.anchors) ? model.anchors : [];
   const hasAnchorRefs =
-    Array.isArray(model.bones) && model.bones.some((bone) => bone?.pivotAnchorId) ||
-    Array.isArray(model.cubes) && model.cubes.some((cube) => cube?.centerAnchorId || cube?.originAnchorId);
+    Boolean(model.bone?.pivotAnchorId) ||
+    Boolean(model.cube?.centerAnchorId || model.cube?.originAnchorId);
   if (anchors.length === 0) {
     if (hasAnchorRefs) return err('invalid_payload', MODEL_ANCHORS_REQUIRED_FOR_IDS);
     return { ok: true, data: undefined };
@@ -183,3 +183,6 @@ export const applyAnchors = (
 
   return { ok: true, data: undefined };
 };
+
+
+

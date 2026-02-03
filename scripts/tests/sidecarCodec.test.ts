@@ -52,3 +52,4 @@ import { createLineDecoder } from '../../src/transport/codec';
   assert.equal(messages, 0);
   assert.equal(errors, 1);
 }
+

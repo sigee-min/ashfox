@@ -1,8 +1,12 @@
 import { ProjectStateDetail, ToolError, ToolErrorResponse, ToolResponse } from '../types';
 import { ToolService } from '../usecases/ToolService';
-import { decideRevision } from '../services/revisionGuard';
-import { errFromDomain } from '../services/toolResponse';
-import { buildStateMeta } from '../services/stateMeta';
+import { decideRevision } from '../usecases/revision/revisionGuard';
+import {
+  buildResponseMeta,
+  withResponseErrorMeta,
+  withResponseMeta,
+  type ResponseMetaOptions
+} from '../shared/tooling/responseMeta';
 
 export type MetaOptions = {
   includeState: boolean;
@@ -23,33 +27,36 @@ export const resolveIncludeDiff = (flag: boolean | undefined, fallback: () => bo
 
 export const resolveDiffDetail = (detail: ProjectStateDetail | undefined): ProjectStateDetail => detail ?? 'summary';
 
-export const buildMeta = (meta: MetaOptions, service: ToolService): Record<string, unknown> => {
-  return buildStateMeta(
+const toResponseMetaOptions = (meta: MetaOptions): ResponseMetaOptions => ({
+  includeState: meta.includeState,
+  includeDiff: meta.includeDiff,
+  diffDetail: meta.diffDetail,
+  ifRevision: meta.ifRevision,
+  includeRevision: true
+});
+
+export const buildMeta = (meta: MetaOptions, service: ToolService): Record<string, unknown> =>
+  buildResponseMeta(
     {
       getProjectState: (payload) => service.getProjectState(payload),
       getProjectDiff: (payload) => service.getProjectDiff(payload)
     },
-    {
-      includeState: meta.includeState,
-      includeDiff: meta.includeDiff,
-      diffDetail: meta.diffDetail,
-      ifRevision: meta.ifRevision,
-      includeRevision: true
-    }
+    toResponseMetaOptions(meta)
   );
-};
 
 export const withMeta = <T extends Record<string, unknown>>(
   data: T,
   meta: MetaOptions,
   service: ToolService
 ): T & { state?: unknown; diff?: unknown; revision?: string } => {
-  const extra = buildMeta(meta, service);
-  if (Object.keys(extra).length === 0) return data;
-  return {
-    ...data,
-    ...extra
-  };
+  return withResponseMeta(
+    data,
+    {
+      getProjectState: (payload) => service.getProjectState(payload),
+      getProjectDiff: (payload) => service.getProjectDiff(payload)
+    },
+    toResponseMetaOptions(meta)
+  );
 };
 
 export const withErrorMeta = (
@@ -57,10 +64,14 @@ export const withErrorMeta = (
   meta: MetaOptions,
   service: ToolService
 ): ToolErrorResponse => {
-  const extra = buildMeta(meta, service);
-  if (Object.keys(extra).length === 0) return errFromDomain(error);
-  const details = { ...(error.details ?? {}), ...extra };
-  return errFromDomain({ ...error, details });
+  return withResponseErrorMeta(
+    error,
+    {
+      getProjectState: (payload) => service.getProjectState(payload),
+      getProjectDiff: (payload) => service.getProjectDiff(payload)
+    },
+    toResponseMetaOptions(meta)
+  );
 };
 
 export const guardRevision = (
@@ -93,3 +104,7 @@ export const guardRevision = (
   }
   return null;
 };
+
+
+
+

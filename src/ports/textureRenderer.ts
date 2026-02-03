@@ -15,3 +15,5 @@ export type TextureRenderResult = {
 export interface TextureRendererPort {
   renderPixels: (input: TexturePixelData) => { result?: TextureRenderResult; error?: ToolError };
 }
+
+

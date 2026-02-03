@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
-import { buildUvAtlasPlan } from '../../src/domain/uvAtlas';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { buildUvAtlasPlan } from '../../src/domain/uv/atlas';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import { TextureUsageResult } from '../../src/ports/editor';
 import { TrackedCube } from '../../src/session';
+import { buildUvAtlasMessages } from '../../src/shared/messages';
+
+const uvAtlasMessages = buildUvAtlasMessages();
 
 const buildUsage = (textureName: string, cubes: TrackedCube[]): TextureUsageResult => ({
   textures: [
@@ -27,7 +30,8 @@ const runPlan = (usage: TextureUsageResult, cubes: TrackedCube[], resolution: nu
     resolution: { width: resolution, height: resolution },
     maxResolution: { width: 64, height: 64 },
     padding: 0,
-    policy: DEFAULT_UV_POLICY
+    policy: DEFAULT_UV_POLICY,
+    messages: uvAtlasMessages
   });
 
 const cubeSmall: TrackedCube = {
@@ -62,7 +66,8 @@ const planPacked = buildUvAtlasPlan({
   resolution: { width: 16, height: 16 },
   maxResolution: { width: 32, height: 32 },
   padding: 0,
-  policy: DEFAULT_UV_POLICY
+  policy: DEFAULT_UV_POLICY,
+  messages: uvAtlasMessages
 });
 assert.equal(planPacked.ok, true);
 if (planPacked.ok) {
@@ -70,3 +75,5 @@ if (planPacked.ok) {
   assert.deepEqual(planPacked.data.resolution, { width: 32, height: 32 });
   assert.equal(planPacked.data.assignments.length, 2);
 }
+
+

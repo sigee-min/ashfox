@@ -115,12 +115,25 @@ export type AppliedReport = {
   deleted: { bones: string[]; cubes: string[] };
 };
 
+export type StageResult = {
+  label?: string;
+  plan: ModelPlan['summary'];
+  warnings?: string[];
+  ops?: ModelPlan['ops'];
+  report?: AppliedReport;
+  preview?: RenderPreviewStructured;
+  validate?: ValidateResult;
+};
+
+export type ModelStageResult = StageResult;
+
 export type ModelPipelineSteps = {
   ensureProject?: EnsureProjectResult;
   warnings?: string[];
   plan?: ModelPlan['summary'];
   planOps?: ModelPlan['ops'];
   apply?: AppliedReport;
+  stages?: ModelStageResult[];
   preview?: RenderPreviewStructured;
   validate?: ValidateResult;
   export?: ExportResult;
@@ -130,3 +143,5 @@ export type ModelPipelineResult = PipelineStepsResult<
   ModelPipelineSteps,
   { plan?: ModelPlan; report?: AppliedReport; applied?: boolean; planOnly?: boolean }
 >;
+
+

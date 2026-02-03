@@ -1,4 +1,4 @@
-import type { FormatOverrides } from '../services/format';
+import type { FormatOverrides } from '../domain/formats';
 
 export type SnapshotPolicy = 'session' | 'live' | 'hybrid';
 
@@ -21,3 +21,6 @@ export interface ToolPolicies {
     tinyThreshold?: number;
   };
 }
+
+
+

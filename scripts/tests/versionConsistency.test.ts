@@ -9,3 +9,4 @@ const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf
 
 assert.equal(typeof pkg.version, 'string');
 assert.equal(pkg.version, PLUGIN_VERSION);
+

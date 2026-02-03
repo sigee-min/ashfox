@@ -2,14 +2,14 @@ import http from 'http';
 import { SidecarClient } from './transport/SidecarClient';
 import { StderrLogger } from './logger';
 import { errorMessage } from '../logging';
-import { McpRouter } from '../mcp/router';
-import { buildToolRegistry } from '../mcp/tools';
-import { createMcpHttpServer } from '../mcp/httpServer';
+import { McpRouter } from '../transport/mcp/router';
+import { buildToolRegistry } from '../transport/mcp/tools';
+import { createMcpHttpServer } from '../transport/mcp/httpServer';
 import { PLUGIN_ID, PLUGIN_VERSION } from '../config';
-import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../services/blockPipeline';
-import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../services/guides';
-import { InMemoryResourceStore } from '../services/resources';
-import { SIDECAR_TOOL_INSTRUCTIONS } from '../services/toolInstructions';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../domain/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../shared/resources/guides';
+import { InMemoryResourceStore } from '../adapters/resources/resourceStore';
+import { SIDECAR_TOOL_INSTRUCTIONS } from '../shared/tooling/toolInstructions';
 import { ToolResponse } from '../types';
 import { PROXY_TOOL_NAMES } from '../shared/toolConstants';
 
@@ -121,4 +121,9 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+
+
+
+
 

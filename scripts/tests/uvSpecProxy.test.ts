@@ -4,11 +4,11 @@ import type { ApplyUvSpecPayload } from '../../src/spec';
 import type { TextureUsageResult } from '../../src/ports/editor';
 import { applyUvSpecProxy } from '../../src/proxy/texturePipeline/applyUvSpecProxy';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
 import { DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync } from './helpers';
 
-const usageResult: TextureUsageResult = {
+const usageInitial: TextureUsageResult = {
   textures: [
     {
       id: 'tex-1',
@@ -21,7 +21,21 @@ const usageResult: TextureUsageResult = {
     }
   ]
 };
-const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageResult));
+const usageAfter: TextureUsageResult = {
+  textures: [
+    {
+      id: 'tex-1',
+      name: 'tex',
+      cubeCount: 1,
+      faceCount: 1,
+      cubes: [
+        { id: 'cube-1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }
+      ]
+    }
+  ]
+};
+const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageInitial));
+const expectedUvUsageId = computeTextureUsageId(toDomainTextureUsage(usageAfter));
 
 const project = {
   id: 'p',
@@ -44,10 +58,14 @@ const project = {
 };
 
 const calls: { setFaceUv: unknown[] } = { setFaceUv: [] };
+let usageCalls = 0;
 
 const deps = makeProxyDeps({
   service: {
-    getTextureUsage: (_payload: unknown) => ok(usageResult),
+    getTextureUsage: (_payload: unknown) => {
+      usageCalls += 1;
+      return ok(usageCalls > 1 ? usageAfter : usageInitial);
+    },
     getProjectState: (_payload: unknown) => ok({ project }),
     getUvPolicy: () => DEFAULT_UV_POLICY,
     setFaceUv: (payload: { cubeId?: string; cubeName?: string; faces: Record<string, [number, number, number, number]> }) => {
@@ -72,7 +90,7 @@ registerAsync(
       assert.equal(res.data.applied, true);
       assert.equal(res.data.cubes, 1);
       assert.equal(res.data.faces, 1);
-      assert.notEqual(res.data.uvUsageId, uvUsageId);
+      assert.equal(res.data.uvUsageId, expectedUvUsageId);
       assert.ok(Array.isArray(res.nextActions));
     }
     assert.equal(calls.setFaceUv.length, 1);
@@ -81,3 +99,5 @@ registerAsync(
     assert.deepEqual(call.faces.north, [0, 0, 8, 8]);
   })()
 );
+
+

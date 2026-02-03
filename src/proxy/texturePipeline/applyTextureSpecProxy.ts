@@ -1,14 +1,15 @@
-import { collectTextureTargets } from '../../domain/uvTargets';
+import { collectTextureTargets } from '../../domain/uv/targets';
 import type { ApplyTextureSpecPayload } from '../../spec';
 import type { ToolResponse } from '../../types';
 import { validateTextureSpec } from '../validators';
 import type { ProxyPipelineDeps } from '../types';
 import { buildTexturePipelineNextActions, collectTextureLabels } from '../nextActionHelpers';
-import { applyTextureSpecs } from './textureFlow';
+import { applyTextureSpecSteps, createApplyReport } from '../apply';
 import type { ApplyTextureSpecResult } from './types';
 import { TEXTURE_PREVIEW_VALIDATE_REASON } from '../../shared/messages';
 import { runProxyPipeline } from '../pipelineRunner';
 import { ensureUvUsageForTargets } from '../uvGuardian';
+import { adjustTextureSpecsForRecovery } from './sizeAdjust';
 
 export const applyTextureSpecProxy = async (
   deps: ProxyPipelineDeps,
@@ -18,30 +19,35 @@ export const applyTextureSpecProxy = async (
     validate: validateTextureSpec,
     run: async (pipeline) => {
       const targets = collectTextureTargets(payload.textures);
-      const autoRecoverEnabled = payload.autoRecover !== false;
 
       const resolved = await ensureUvUsageForTargets({
         deps,
         meta: pipeline.meta,
         targets,
         uvUsageId: payload.uvUsageId,
-        autoRecover: payload.autoRecover,
         requireUv: true,
-        atlas: autoRecoverEnabled ? { ifRevision: payload.ifRevision } : undefined
+        atlas: { ifRevision: payload.ifRevision }
       });
 
       if (!resolved.ok) {
-        return autoRecoverEnabled ? addPlanRecoveryHint(resolved) : resolved;
+        return addPlanRecoveryHint(resolved);
       }
 
       const recovery = resolved.data.recovery;
       const recoveredUvUsageId = resolved.data.uvUsageId;
-      const reportRes = await applyTextureSpecs({
-        deps,
-        meta: pipeline.meta,
-        textures: payload.textures,
-        usage: resolved.data.usage
-      });
+      const adjustedTextures = adjustTextureSpecsForRecovery(payload.textures, resolved.data.usage, recovery);
+      const report = createApplyReport();
+      const reportRes = await applyTextureSpecSteps(
+        deps.service,
+        deps.dom,
+        deps.limits,
+        adjustedTextures,
+        report,
+        pipeline.meta,
+        deps.log,
+        resolved.data.usage,
+        payload.ifRevision
+      );
       if (!reportRes.ok) return reportRes;
       deps.log.info('applyTextureSpec applied', { textures: payload.textures.length });
       const result: ApplyTextureSpecResult = {
@@ -84,8 +90,10 @@ export const applyTextureSpecProxy = async (
 const addPlanRecoveryHint = <T>(response: ToolResponse<T>): ToolResponse<T> => {
   if (response.ok) return response;
   const error = response.error;
-  const hint =
-    'Use texture_pipeline.plan (auto-assign + auto-UV) for higher-level recovery if autoRecover fails.';
+  const hint = 'Use texture_pipeline.plan (auto-assign + auto-UV) for higher-level recovery.';
   const fix = error.fix ? `${error.fix} ${hint}` : hint;
   return { ok: false, error: { ...error, fix } };
 };
+
+
+

@@ -1,5 +1,6 @@
 import type { NextAction } from '../types';
-import { askUser, callTool, readResource, refTool, refUser } from '../mcp/nextActions';
+import type { ValidateResult } from '../types';
+import { askUser, callTool, readResource, refTool, refUser } from '../transport/mcp/nextActions';
 import {
   MODELING_WORKFLOW_WARNING_REASON,
   PREVIEW_REASON_DEFAULT,
@@ -10,7 +11,9 @@ import {
   TEXTURE_ASSIGN_QUESTION,
   TEXTURE_ASSIGN_REASON_DEFAULT,
   TEXTURE_WORKFLOW_GUIDE_REASON_DEFAULT,
-  VALIDATE_REASON_DEFAULT
+  VALIDATE_REASON_DEFAULT,
+  VALIDATE_FINDINGS_REASON,
+  VALIDATE_FINDINGS_QUESTION
 } from '../shared/messages';
 
 type TextureLabelSource = { name?: string; targetName?: string; targetId?: string };
@@ -24,6 +27,61 @@ export const buildValidateNextActions = (
   reason: string = VALIDATE_REASON_DEFAULT,
   priority: number = 5
 ): NextAction[] => [callTool('validate', {}, reason, priority)];
+
+const summarizeValidateFindings = (result: ValidateResult): { summary: string; detail?: string } => {
+  let errors = 0;
+  let warnings = 0;
+  let info = 0;
+  const messages: string[] = [];
+  result.findings.forEach((finding) => {
+    if (finding.severity === 'error') errors += 1;
+    else if (finding.severity === 'warning') warnings += 1;
+    else if (finding.severity === 'info') info += 1;
+    if (messages.length < 3) messages.push(finding.message);
+  });
+  const parts = [];
+  if (errors > 0) parts.push(`${errors} error(s)`);
+  if (warnings > 0) parts.push(`${warnings} warning(s)`);
+  if (info > 0) parts.push(`${info} info`);
+  const summary = parts.length > 0 ? parts.join(', ') : '0 findings';
+  return {
+    summary,
+    detail: messages.length > 0 ? messages.join(' | ') : undefined
+  };
+};
+
+export const buildValidateFindingsNextActions = (options: {
+  result?: ValidateResult;
+  guideUri?: string;
+  guideReason?: string;
+  askReason?: string;
+  priorityBase?: number;
+}): NextAction[] => {
+  if (!options.result || options.result.findings.length === 0) return [];
+  const priorityBase = options.priorityBase ?? 1;
+  const summary = summarizeValidateFindings(options.result);
+  const actions: NextAction[] = [];
+  if (options.guideUri) {
+    actions.push(
+      readResource(
+        options.guideUri,
+        options.guideReason ?? VALIDATE_FINDINGS_REASON,
+        priorityBase
+      )
+    );
+  }
+  const question = summary.detail
+    ? `${VALIDATE_FINDINGS_QUESTION(summary.summary)} ${summary.detail}`
+    : VALIDATE_FINDINGS_QUESTION(summary.summary);
+  actions.push(
+    askUser(
+      question,
+      options.askReason ?? VALIDATE_FINDINGS_REASON,
+      priorityBase + 1
+    )
+  );
+  return actions;
+};
 
 export const buildUvRefreshNextActions = (
   reason: string,
@@ -199,6 +257,7 @@ export const buildTexturePipelineNextActions = (options: {
   return dedupeNextActions(actions);
 };
 
+
 export const dedupeNextActions = (actions: NextAction[]): NextAction[] => {
   return dedupeCallToolActions(dedupeProjectStateActions(actions));
 };
@@ -234,3 +293,5 @@ const dedupeCallToolActions = (actions: NextAction[]): NextAction[] => {
     return true;
   });
 };
+
+

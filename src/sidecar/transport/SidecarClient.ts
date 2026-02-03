@@ -7,8 +7,8 @@ import {
 } from '../../transport/protocol';
 import { ToolError, ToolResponse, ToolName } from '../../types';
 import type { ProxyTool } from '../../spec';
-import { toolError } from '../../services/toolResponse';
-import { normalizeToolResponse } from '../../services/toolResponseGuard';
+import { toolError } from '../../shared/tooling/toolResponse';
+import { normalizeToolResponse } from '../../shared/tooling/toolResponseGuard';
 import { SIDECAR_INFLIGHT_LIMIT_REACHED, SIDECAR_TOOL_ERROR } from '../../shared/messages';
 import { attachIpcReadable, createIpcDecoder, IpcReadable, IpcWritable, sendIpcMessage } from './ipc';
 
@@ -157,3 +157,6 @@ export class SidecarClient {
     pending.resolve(normalizeToolResponse(response, { source: 'sidecar_client', ensureReason: true }));
   }
 }
+
+
+

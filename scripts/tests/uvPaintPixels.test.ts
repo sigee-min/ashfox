@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { applyUvPaintPixels } from '../../src/domain/uvPaintPixels';
+import { applyUvPaintPixels } from '../../src/domain/uv/paintPixels';
+import { buildUvPaintPixelMessages } from '../../src/shared/messages';
+
+const messages = buildUvPaintPixelMessages();
 
 const source = {
   width: 1,
@@ -16,7 +19,8 @@ const result = applyUvPaintPixels({
     padding: 0,
     anchor: [0, 0]
   },
-  label: 'test'
+  label: 'test',
+  messages
 });
 
 assert.equal(result.ok, true);
@@ -31,3 +35,5 @@ if (result.ok) {
   assert.equal(data[inside + 3], 255);
   assert.equal(data[outside + 3], 0);
 }
+
+

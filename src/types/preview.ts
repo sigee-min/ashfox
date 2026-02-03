@@ -66,3 +66,5 @@ export type RenderPreviewStructured = {
   frames?: PreviewFrameMeta[];
   saved?: RenderPreviewResult['saved'];
 };
+
+

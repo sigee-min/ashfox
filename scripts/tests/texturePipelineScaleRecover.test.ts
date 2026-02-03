@@ -4,7 +4,7 @@ import type { TexturePipelinePayload } from '../../src/spec';
 import type { TextureUsageResult } from '../../src/ports/editor';
 import { texturePipelineProxy } from '../../src/proxy/texturePipeline/texturePipelineProxy';
 import { computeTextureUsageId } from '../../src/domain/textureUsage';
-import { DEFAULT_UV_POLICY } from '../../src/domain/uvPolicy';
+import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import { toDomainTextureUsage } from '../../src/usecases/domainMappers';
 import { createMockDom, DEFAULT_LIMITS, makeProxyDeps, ok, registerAsync } from './helpers';
 
@@ -29,7 +29,7 @@ const usageResult: TextureUsageResult = {
   ]
 };
 
-const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageResult));
+const uvUsageId = computeTextureUsageId(toDomainTextureUsage(usageResult), { width: 16, height: 16 });
 
 const project = {
   id: 'p1',
@@ -75,7 +75,11 @@ const service = {
   getProjectTextureResolution: () => ({ width: 16, height: 16 }),
   setProjectTextureResolution: (_payload: unknown) => {
     calls.setResolution += 1;
-    return ok({ width: 64, height: 64 });
+    const payload = _payload as { width?: number; height?: number };
+    return ok({
+      width: Number.isFinite(payload.width) ? (payload.width as number) : 64,
+      height: Number.isFinite(payload.height) ? (payload.height as number) : 64
+    });
   },
   preflightTexture: (payload: { includeUsage?: boolean }) => {
     calls.preflight += 1;
@@ -131,8 +135,8 @@ const payload: TexturePipelinePayload = {
     {
       mode: 'update',
       targetName: 'tex',
-      width: 64,
-      height: 64,
+      width: 16,
+      height: 16,
       background: '#00ff00'
     }
   ]
@@ -153,5 +157,9 @@ registerAsync(
     assert.ok(calls.setFaceUv > 0);
     assert.ok(calls.assignTexture > 0);
     assert.ok(calls.updateTexture > 0 || calls.importTexture > 0);
+    assert.equal(currentTextureSize.width, 32);
+    assert.equal(currentTextureSize.height, 32);
   })()
 );
+
+

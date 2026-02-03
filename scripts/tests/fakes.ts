@@ -161,8 +161,12 @@ export const createEditorStubWithState = (stateOverrides: Partial<EditorStubStat
   return { editor: buildEditorStub(state), state };
 };
 
-export const createFormatPortStub = (formatId = 'java_block', name = 'Java Block'): FormatPort => ({
-  listFormats: () => [{ id: formatId, name }],
+export const createFormatPortStub = (
+  formatId = 'java_block',
+  name = 'Java Block',
+  caps: { singleTexture?: boolean; perTextureUvSize?: boolean } = {}
+): FormatPort => ({
+  listFormats: () => [{ id: formatId, name, ...caps }],
   getActiveFormatId: () => formatId
 });
 
@@ -225,3 +229,4 @@ export const createResourceStoreStub = (): ResourceStore => {
     }
   };
 };
+

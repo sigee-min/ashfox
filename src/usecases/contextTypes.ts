@@ -1,7 +1,7 @@
 import type { ToolError } from '../types';
-import type { FormatOverrides } from '../services/format';
+import type { FormatOverrides } from '../domain/formats';
 import type { ExportPolicy, SnapshotPolicy } from './policies';
-import type { UvPolicyConfig } from '../domain/uvPolicy';
+import type { UvPolicyConfig } from '../domain/uv/policy';
 
 export interface PolicyContextLike {
   getSnapshotPolicy(): SnapshotPolicy;
@@ -24,3 +24,7 @@ export interface RevisionContextLike {
   runWithoutRevisionGuard<T>(fn: () => T): T;
   runWithoutRevisionGuardAsync<T>(fn: () => Promise<T> | T): Promise<T>;
 }
+
+
+
+

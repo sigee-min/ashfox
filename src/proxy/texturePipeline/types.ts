@@ -21,7 +21,14 @@ export type TexturePipelineSteps = {
   uv?: { applied: true; cubes: number; faces: number; uvUsageId: string };
   textures?: { applied: true; report: ApplyReport; recovery?: UvRecoveryInfo; uvUsageId?: string };
   presets?: { applied: number; results: GenerateTexturePresetResult[]; recovery?: UvRecoveryInfo; uvUsageId?: string };
-  facePaint?: { applied: number; materials: string[]; textures: string[]; uvUsageId?: string; recovery?: UvRecoveryInfo };
+  facePaint?: {
+    applied: number;
+    materials: string[];
+    textures: string[];
+    textureIds?: string[];
+    uvUsageId?: string;
+    recovery?: UvRecoveryInfo;
+  };
   cleanup?: { applied: number; deleted: Array<{ id?: string; name: string }> };
   preview?: RenderPreviewStructured;
 };
@@ -44,3 +51,5 @@ export type TexturePipelineResult = PipelineStepsResult<
   TexturePipelineSteps,
   { applied: boolean; planOnly?: boolean; uvUsageId?: string }
 >;
+
+

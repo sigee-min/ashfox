@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 
 import { applyAnchors } from '../../src/proxy/modelPipeline/anchorResolver';
 import type { ModelSpec } from '../../src/spec';
@@ -71,13 +71,8 @@ const createCube = (
   ]);
 
   const model: ModelSpec = {
-    bones: [
-      { id: 'root' },
-      { id: 'child', parentId: 'root', pivotAnchorId: 'root_anchor' }
-    ],
-    cubes: [
-      { id: 'box', parentId: 'child', from: [0, 0, 0], to: [2, 2, 2], centerAnchorId: 'root_anchor' }
-    ],
+    bone: { id: 'child', parentId: 'root', pivotAnchorId: 'root_anchor' },
+    cube: { id: 'box', parentId: 'child', from: [0, 0, 0], to: [2, 2, 2], centerAnchorId: 'root_anchor' },
     anchors: [{ id: 'root_anchor', target: { boneId: 'root' }, offset: [1, 2, 3] }]
   };
 
@@ -97,7 +92,7 @@ const createCube = (
   const cubeMap = new Map<string, NormalizedCube>();
 
   const model: ModelSpec = {
-    bones: [{ id: 'root', pivotAnchorId: 'missing' }]
+    bone: { id: 'root', pivotAnchorId: 'missing' }
   };
 
   const res = applyAnchors(model, boneMap, cubeMap);
@@ -115,7 +110,7 @@ const createCube = (
   const cubeMap = new Map<string, NormalizedCube>();
 
   const model: ModelSpec = {
-    bones: [{ id: 'child', pivotAnchorId: 'bad' }],
+    bone: { id: 'child', pivotAnchorId: 'bad' },
     anchors: [{ id: 'bad', target: { boneId: 'missing' } }]
   };
 
@@ -125,5 +120,6 @@ const createCube = (
     assert.equal(res.error.code, 'invalid_payload');
   }
 }
+
 
 

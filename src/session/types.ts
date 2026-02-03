@@ -1,0 +1,163 @@
+import type { FormatKind } from '../types';
+import type { CubeFaceDirection } from '../domain/model';
+import type { UvPaintMapping, UvPaintScope } from '../domain/uv/paintSpec';
+import type { TextureFrameOrderType, TextureMeta, TexturePbrChannel, TextureRenderMode, TextureRenderSides } from '../types/texture';
+
+export interface TrackedBone {
+  id?: string;
+  name: string;
+  parent?: string;
+  pivot: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+  visibility?: boolean;
+}
+
+export interface TrackedCube {
+  id?: string;
+  name: string;
+  from: [number, number, number];
+  to: [number, number, number];
+  bone: string;
+  origin?: [number, number, number];
+  rotation?: [number, number, number];
+  uv?: [number, number];
+  uvOffset?: [number, number];
+  inflate?: number;
+  mirror?: boolean;
+  visibility?: boolean;
+  boxUv?: boolean;
+}
+
+export interface TrackedTexture {
+  id?: string;
+  name: string;
+  path?: string;
+  width?: number;
+  height?: number;
+  contentHash?: string;
+  namespace?: TextureMeta['namespace'];
+  folder?: TextureMeta['folder'];
+  particle?: TextureMeta['particle'];
+  visible?: TextureMeta['visible'];
+  renderMode?: TextureRenderMode;
+  renderSides?: TextureRenderSides;
+  pbrChannel?: TexturePbrChannel;
+  group?: TextureMeta['group'];
+  frameTime?: TextureMeta['frameTime'];
+  frameOrderType?: TextureFrameOrderType;
+  frameOrder?: TextureMeta['frameOrder'];
+  frameInterpolate?: TextureMeta['frameInterpolate'];
+  internal?: TextureMeta['internal'];
+  keepSize?: TextureMeta['keepSize'];
+}
+
+export interface TrackedAnimationChannel {
+  bone: string;
+  channel: 'rot' | 'pos' | 'scale';
+  keys: { time: number; value: [number, number, number]; interp?: 'linear' | 'step' | 'catmullrom' }[];
+}
+
+export interface TrackedAnimationTrigger {
+  type: 'sound' | 'particle' | 'timeline';
+  keys: { time: number; value: string | string[] | Record<string, unknown> }[];
+}
+
+export interface TrackedAnimation {
+  id?: string;
+  name: string;
+  length: number;
+  loop: boolean;
+  fps?: number;
+  channels?: TrackedAnimationChannel[];
+  triggers?: TrackedAnimationTrigger[];
+}
+
+export type BoneUpdate = {
+  id?: string;
+  newName?: string;
+  parent?: string | null;
+  pivot?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+  visibility?: boolean;
+};
+
+export type CubeUpdate = {
+  id?: string;
+  newName?: string;
+  bone?: string;
+  from?: [number, number, number];
+  to?: [number, number, number];
+  origin?: [number, number, number];
+  rotation?: [number, number, number];
+  uv?: [number, number];
+  uvOffset?: [number, number];
+  inflate?: number;
+  mirror?: boolean;
+  visibility?: boolean;
+  boxUv?: boolean;
+};
+
+export type TextureUpdate = {
+  id?: string;
+  newName?: string;
+  path?: string;
+  width?: number;
+  height?: number;
+  contentHash?: string;
+  namespace?: TextureMeta['namespace'];
+  folder?: TextureMeta['folder'];
+  particle?: TextureMeta['particle'];
+  visible?: TextureMeta['visible'];
+  renderMode?: TextureRenderMode;
+  renderSides?: TextureRenderSides;
+  pbrChannel?: TexturePbrChannel;
+  group?: TextureMeta['group'];
+  frameTime?: TextureMeta['frameTime'];
+  frameOrderType?: TextureFrameOrderType;
+  frameOrder?: TextureMeta['frameOrder'];
+  frameInterpolate?: TextureMeta['frameInterpolate'];
+  internal?: TextureMeta['internal'];
+  keepSize?: TextureMeta['keepSize'];
+};
+
+export type AnimationUpdate = {
+  id?: string;
+  newName?: string;
+  length?: number;
+  loop?: boolean;
+  fps?: number;
+};
+
+export type FacePaintIntent = {
+  material: string;
+  palette?: string[];
+  seed?: number;
+  cubeIds?: string[];
+  cubeNames?: string[];
+  faces?: CubeFaceDirection[];
+  scope?: UvPaintScope;
+  mapping?: UvPaintMapping;
+  padding?: number;
+  anchor?: [number, number];
+};
+
+export type ProjectMeta = {
+  facePaint?: FacePaintIntent[];
+};
+
+export interface SessionState {
+  id: string | null;
+  format: FormatKind | null;
+  formatId?: string | null;
+  name: string | null;
+  dirty?: boolean;
+  meta?: ProjectMeta;
+  bones: TrackedBone[];
+  cubes: TrackedCube[];
+  textures: TrackedTexture[];
+  animations: TrackedAnimation[];
+  animationsStatus?: 'available' | 'unavailable';
+}
+

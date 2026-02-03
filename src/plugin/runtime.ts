@@ -1,65 +1,43 @@
 import {
+  DEFAULT_SERVER_HOST,
+  DEFAULT_SERVER_PATH,
+  DEFAULT_SERVER_PORT,
   PLUGIN_ID,
   PLUGIN_VERSION,
-  TOOL_SCHEMA_VERSION,
-  DEFAULT_SERVER_HOST,
-  DEFAULT_SERVER_PORT,
-  DEFAULT_SERVER_PATH
+  TOOL_SCHEMA_VERSION
 } from '../config';
-import type { ProjectSession } from '../session';
-import { Capabilities, Dispatcher, ExportPayload, FormatKind } from '../types';
+import { Capabilities, Dispatcher } from '../types';
 import { ProxyRouter } from '../proxy';
 import { ConsoleLogger, errorMessage, LogLevel } from '../logging';
 import { ProxyTool } from '../spec';
 import type { ProxyToolPayloadMap } from '../proxy/types';
-import { SidecarProcess } from '../sidecar/SidecarProcess';
-import { SidecarLaunchConfig } from '../sidecar/types';
 import type { ExportPolicy } from '../usecases/policies';
-import type { BlockbenchFormats } from '../adapters/blockbench/BlockbenchFormats';
-import { FormatOverrides, resolveFormatId } from '../services/format';
-import { buildInternalExport } from '../services/exporters';
-import { DEFAULT_UV_POLICY } from '../domain/uvPolicy';
-import { buildToolRegistry } from '../mcp/tools';
-import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../services/blockPipeline';
-import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../services/guides';
-import { InMemoryResourceStore } from '../services/resources';
-import { startServer } from '../server';
+import { FormatOverrides } from '../domain/formats';
+import { buildToolRegistry } from '../transport/mcp/tools';
+import { BLOCK_PIPELINE_RESOURCE_TEMPLATES } from '../domain/blockPipeline';
+import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../shared/resources/guides';
+import { InMemoryResourceStore } from '../adapters/resources/resourceStore';
 import { readGlobals } from '../adapters/blockbench/blockbenchUtils';
-import { deleteGlobalValue, readGlobalValue, writeGlobalValue } from '../services/globalState';
-import { registerDebugMenu, registerDevReloadAction, registerInspectorAction, registerServerConfigAction } from './menus';
-import {
-  registerExportPolicySetting,
-  registerFormatSettings,
-  registerLogSettings,
-  registerSettings
-} from './settings';
-import type { ServerSettings } from './types';
+import { cleanupBridge, claimSingleton, exposeBridge, releaseSingleton } from './runtimeBridge';
+import type { EndpointConfig } from './types';
+import { resolveEndpointConfig } from './endpointConfig';
+import { registerPluginSettings } from './pluginSettings';
+import { resolveTraceLogDestPath } from './traceLogPath';
 import { buildRuntimeServices } from './runtimeServices';
-import {
-  PLUGIN_LOG_INLINE_SERVER_UNAVAILABLE,
-  PLUGIN_LOG_LOADING,
-  PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED,
-  PLUGIN_LOG_SERVER_WEB_MODE,
-  PLUGIN_LOG_SIDECAR_FAILED,
-  PLUGIN_UI_EXPORT_COMPLETE,
-  PLUGIN_UI_EXPORT_FAILED,
-  PLUGIN_UI_EXPORT_FAILED_GENERIC,
-  PLUGIN_UI_LOADED,
-  PLUGIN_UI_UNLOADED
-} from './messages';
-import {
-  ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED,
-  ADAPTER_NATIVE_COMPILER_EMPTY,
-  ADAPTER_NATIVE_COMPILER_UNAVAILABLE,
-  EXPORT_FORMAT_ID_MISSING_FOR_KIND
-} from '../shared/messages';
+import { registerCodecs } from './runtimeCodecs';
+import { restartServer, type RuntimeServerState } from './runtimeServer';
+import { createDefaultPolicies, createTraceLogDefaults } from './runtimeDefaults';
+import type { TraceRecorder } from '../trace/traceRecorder';
+import type { TraceLogFlushScheduler } from '../trace/traceLogFlushScheduler';
+import type { TraceLogWriter } from '../ports/traceLog';
+import { PLUGIN_LOG_LOADING, PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, PLUGIN_UI_LOADED, PLUGIN_UI_UNLOADED } from './messages';
 
 type BbmcpBridge = {
   invoke: Dispatcher['handle'];
   invokeProxy: (tool: ProxyTool, payload: unknown) => unknown;
   capabilities: Capabilities;
-  serverConfig: () => ServerSettings;
-  settings: () => ServerSettings;
+  serverConfig: () => EndpointConfig;
+  settings: () => EndpointConfig;
 };
 
 const formatOverrides: FormatOverrides = {};
@@ -68,239 +46,99 @@ const resourceStore = new InMemoryResourceStore([
   ...GUIDE_RESOURCE_TEMPLATES
 ]);
 GUIDE_RESOURCES.forEach((resource) => resourceStore.put(resource));
-const policies = {
-  formatOverrides,
-  snapshotPolicy: 'hybrid' as const,
-  exportPolicy: 'strict' as ExportPolicy,
-  uvPolicy: { ...DEFAULT_UV_POLICY },
-  autoDiscardUnsaved: true,
-  autoAttachActiveProject: true,
-  autoIncludeState: false,
-  autoIncludeDiff: false,
-  requireRevision: true,
-  autoRetryRevision: true,
-  exposeLowLevelTools: false
+const policies = createDefaultPolicies(formatOverrides) as {
+  formatOverrides: FormatOverrides;
+  snapshotPolicy: 'hybrid';
+  exportPolicy: ExportPolicy;
+  uvPolicy: ReturnType<typeof createDefaultPolicies>['uvPolicy'];
+  autoDiscardUnsaved: boolean;
+  autoAttachActiveProject: boolean;
+  autoIncludeState: boolean;
+  autoIncludeDiff: boolean;
+  requireRevision: boolean;
+  autoRetryRevision: boolean;
+  exposeLowLevelTools: boolean;
 };
 
 let logLevel: LogLevel = 'info';
 
-const serverConfig: ServerSettings = {
+const traceLogDefaults = createTraceLogDefaults();
+
+let endpointConfig: EndpointConfig = {
   host: DEFAULT_SERVER_HOST,
   port: DEFAULT_SERVER_PORT,
-  path: DEFAULT_SERVER_PATH,
-  enabled: true,
-  autoDiscardUnsaved: true,
-  autoAttachActiveProject: true,
-  autoIncludeState: false,
-  autoIncludeDiff: false,
-  requireRevision: true,
-  autoRetryRevision: true,
-  exposeLowLevelTools: false,
-  execPath: undefined
+  path: DEFAULT_SERVER_PATH
 };
 
-let sidecar: SidecarProcess | null = null;
-let inlineServerStop: (() => void) | null = null;
+let serverState: RuntimeServerState = { sidecar: null, inlineServerStop: null };
 let globalDispatcher: Dispatcher | null = null;
 let globalProxy: ProxyRouter | null = null;
 let globalCapabilities: Capabilities | null = null;
-
-const INSTANCE_KEY = '__bbmcp_instance__';
-type RuntimeInstance = { cleanup: () => void; version: string };
-
-const cleanupBridge = () => {
-  deleteGlobalValue('bbmcp');
-  deleteGlobalValue('bbmcpVersion');
-};
-
-const updateToolRegistry = () => {
-  const registry = buildToolRegistry({ includeLowLevel: serverConfig.exposeLowLevelTools });
-  if (globalCapabilities) {
-    globalCapabilities.toolRegistry = { hash: registry.hash, count: registry.count };
-  }
-  return registry;
-};
+let globalTraceRecorder: TraceRecorder | null = null;
+let globalTraceLogWriter: TraceLogWriter | null = null;
+let globalTraceLogFlushScheduler: TraceLogFlushScheduler | null = null;
+const toolRegistry = buildToolRegistry({ includeLowLevel: false });
 
 const cleanupRuntime = () => {
-  if (inlineServerStop) {
-    inlineServerStop();
-    inlineServerStop = null;
+  if (globalTraceLogFlushScheduler) {
+    globalTraceLogFlushScheduler.flushNow();
   }
-  if (sidecar) {
-    sidecar.stop();
-    sidecar = null;
+  if (globalTraceRecorder && globalTraceLogWriter) {
+    try {
+      globalTraceRecorder.flushTo(globalTraceLogWriter);
+    } catch (err) {
+      const message = errorMessage(err, 'trace log flush failed');
+      try {
+        new ConsoleLogger(PLUGIN_ID, () => logLevel).warn('trace log flush failed', { message });
+      } catch (logErr) {
+        // Swallow logging errors during cleanup.
+      }
+    }
+  }
+  if (serverState.inlineServerStop) {
+    serverState.inlineServerStop();
+    serverState.inlineServerStop = null;
+  }
+  if (serverState.sidecar) {
+    serverState.sidecar.stop();
+    serverState.sidecar = null;
   }
   globalDispatcher = null;
   globalProxy = null;
+  globalTraceRecorder = null;
+  globalTraceLogWriter = null;
+  globalTraceLogFlushScheduler = null;
   cleanupBridge();
 };
 
-const claimSingleton = () => {
-  const existing = readGlobalValue(INSTANCE_KEY) as RuntimeInstance | undefined;
-  if (existing?.cleanup) {
-    try {
-      existing.cleanup();
-    } catch (err) {
-      const message = errorMessage(err, 'cleanup failed');
+const claimSingletonWithLogger = () => {
+  claimSingleton({
+    cleanup: cleanupRuntime,
+    version: PLUGIN_VERSION,
+    onCleanupError: (message) => {
       try {
         new ConsoleLogger(PLUGIN_ID, () => logLevel).warn(PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, { message });
       } catch (logErr) {
         // Last resort: avoid crashing during startup.
       }
     }
-  }
-  writeGlobalValue(INSTANCE_KEY, { cleanup: cleanupRuntime, version: PLUGIN_VERSION } satisfies RuntimeInstance);
+  });
 };
 
-function registerCodecs(capabilities: Capabilities, session: ProjectSession, formats: BlockbenchFormats) {
-  const globals = readGlobals();
-  const blockbench = globals.Blockbench;
-  const codecCtor = globals.Codec;
-  if (!blockbench || !codecCtor) return;
-  const resolveCompiler = (formatId: string | null) => {
-    if (!formatId) return null;
-    const registry = globals.Formats ?? globals.ModelFormat?.formats ?? null;
-    if (!registry || typeof registry !== 'object') return null;
-    const format = registry[formatId] ?? null;
-    if (!format) return null;
-    const compile = format.compile;
-    if (typeof compile === 'function') {
-      return () => compile();
-    }
-    const codecCompile = format.codec?.compile;
-    if (typeof codecCompile === 'function') {
-      return () => codecCompile();
-    }
-    return null;
-  };
-
-  const compileFor = (kind: FormatKind, exportKind: ExportPayload['format']) => {
-    const formatId = resolveFormatId(kind, formats.listFormats(), formatOverrides);
-    const compiler = resolveCompiler(formatId);
-    if (compiler) {
-      const compiled = compiler();
-      if (compiled === null || compiled === undefined) {
-        if (policies.exportPolicy === 'best_effort') {
-          const snapshot = session.snapshot();
-          return { ok: true, data: buildInternalExport(exportKind, snapshot).data };
-        }
-        return { ok: false, message: ADAPTER_NATIVE_COMPILER_EMPTY };
-      }
-      if (isThenable(compiled)) {
-        if (policies.exportPolicy === 'best_effort') {
-          const snapshot = session.snapshot();
-          return { ok: true, data: buildInternalExport(exportKind, snapshot).data };
-        }
-        return { ok: false, message: ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED };
-      }
-      return { ok: true, data: compiled };
-    }
-    if (policies.exportPolicy === 'best_effort') {
-      const snapshot = session.snapshot();
-      return { ok: true, data: buildInternalExport(exportKind, snapshot).data };
-    }
-    const reason = formatId
-      ? ADAPTER_NATIVE_COMPILER_UNAVAILABLE(formatId)
-      : EXPORT_FORMAT_ID_MISSING_FOR_KIND(kind);
-    return { ok: false, message: reason };
-  };
-
-  const register = (kind: FormatKind, exportKind: ExportPayload['format'], codecName: string) => {
-    new codecCtor({
-      name: codecName,
-      extension: 'json',
-      remember: true,
-      compile() {
-        const result = compileFor(kind, exportKind);
-        if (!result.ok) {
-          throw new Error(result.message ?? PLUGIN_UI_EXPORT_FAILED_GENERIC);
-        }
-        return result.data;
-      },
-      export() {
-        try {
-          const result = compileFor(kind, exportKind);
-          if (!result.ok) {
-            const message = result.message ?? PLUGIN_UI_EXPORT_FAILED_GENERIC;
-            blockbench.showQuickMessage?.(PLUGIN_UI_EXPORT_FAILED(message), 2000);
-            return;
-          }
-          blockbench.exportFile?.(
-            { content: result.data, name: 'model.json' },
-            () => blockbench.showQuickMessage?.(PLUGIN_UI_EXPORT_COMPLETE, 1500)
-          );
-        } catch (err) {
-          const message = err instanceof Error ? err.message : PLUGIN_UI_EXPORT_FAILED_GENERIC;
-          blockbench.showQuickMessage?.(PLUGIN_UI_EXPORT_FAILED(message), 2000);
-        }
-      }
-    });
-  };
-
-  if (capabilities.formats.find((f) => f.format === 'Java Block/Item' && f.enabled)) {
-    register('Java Block/Item', 'java_block_item_json', PLUGIN_ID + '_java_block_item');
-  }
-  if (capabilities.formats.find((f) => f.format === 'geckolib' && f.enabled)) {
-    register('geckolib', 'gecko_geo_anim', PLUGIN_ID + '_geckolib');
-  }
-  if (capabilities.formats.find((f) => f.format === 'animated_java' && f.enabled)) {
-    register('animated_java', 'animated_java', PLUGIN_ID + '_animated_java');
-  }
-}
-
-function exposeBridge(bridge: BbmcpBridge) {
-  writeGlobalValue('bbmcp', bridge);
-  writeGlobalValue('bbmcpVersion', PLUGIN_VERSION);
-}
-
-function restartServer() {
-  if (sidecar) {
-    sidecar.stop();
-    sidecar = null;
-  }
-  if (inlineServerStop) {
-    inlineServerStop();
-    inlineServerStop = null;
-  }
-  if (!serverConfig.enabled) {
-    return;
-  }
-  const logger = new ConsoleLogger(PLUGIN_ID, () => logLevel);
-  const globals = readGlobals();
-  const blockbench = globals.Blockbench;
-  if (blockbench?.isWeb) {
-    logger.warn(PLUGIN_LOG_SERVER_WEB_MODE);
-    return;
-  }
-  if (globalDispatcher && globalProxy) {
-    const toolRegistry = updateToolRegistry();
-    const inlineStop = startServer(
-      { host: serverConfig.host, port: serverConfig.port, path: serverConfig.path },
-      globalDispatcher,
-      globalProxy,
-      logger,
-      resourceStore,
-      toolRegistry
-    );
-    if (inlineStop) {
-      inlineServerStop = inlineStop;
-      return;
-    }
-    logger.warn(PLUGIN_LOG_INLINE_SERVER_UNAVAILABLE);
-    const endpoint: SidecarLaunchConfig = {
-      host: serverConfig.host,
-      port: serverConfig.port,
-      path: serverConfig.path,
-      execPath: serverConfig.execPath,
-      exposeLowLevelTools: serverConfig.exposeLowLevelTools
-    };
-    sidecar = new SidecarProcess(endpoint, globalDispatcher, globalProxy, logger);
-    if (!sidecar.start()) {
-      sidecar = null;
-      logger.warn(PLUGIN_LOG_SIDECAR_FAILED);
-    }
-  }
-}
+const exposeBridgeWithVersion = (bridge: BbmcpBridge) => {
+  exposeBridge(bridge, PLUGIN_VERSION);
+};
+const restartServerWithState = () => {
+  serverState = restartServer({
+    endpointConfig,
+    dispatcher: globalDispatcher,
+    proxy: globalProxy,
+    logLevel,
+    resourceStore,
+    toolRegistry,
+    state: serverState
+  });
+};
 
  
 
@@ -327,13 +165,13 @@ export const registerPlugin = () => {
 bbmcp exposes a clean MCP-facing tool surface for AI/agents:
 
 - High-level pipelines: model_pipeline, texture_pipeline, entity_pipeline, block_pipeline.
-- Low-level tools are optional (Settings: "Expose Low-Level Tools") for expert/debug workflows.
+- Low-level tools are not exposed in automation mode.
   - Formats: Java Block/Item enabled by default; GeckoLib/Animated Java gated by capability flags.
-- MCP endpoint: configurable host/port/path via Settings or the Help menu action "bbmcp: set MCP endpoint".
-- Dev workflow: esbuild watch + Plugins.devReload, debug menu actions for capabilities/state logging.
+- MCP endpoint: set in Settings (bbmcp: Server) or read from .bbmcp/endpoint.json or BBMCP_HOST/PORT/PATH env vars (default 0.0.0.0:8787/mcp).
+- Server starts automatically and restarts on endpoint changes.
 
 Recommended flow:
-1) Set MCP endpoint in Settings or via menu.
+1) Configure endpoint via Settings or .bbmcp/endpoint.json when needed.
 2) Use \`bbmcp.invokeProxy\` with sanitized specs (model/anim).
 3) Export, render preview, and run validate to catch issues early.
 
@@ -344,47 +182,71 @@ Notes:
 - support is limited to the latest Blockbench desktop release (older versions untested).`,
     variant: 'desktop',
     onload() {
-      claimSingleton();
+      claimSingletonWithLogger();
       const blockbench = readGlobals().Blockbench;
       const logger = new ConsoleLogger(PLUGIN_ID, () => logLevel);
       logger.info(PLUGIN_LOG_LOADING, { version: PLUGIN_VERSION, schema: TOOL_SCHEMA_VERSION });
-      registerSettings({ readGlobals, serverConfig, policies, restartServer });
-    registerLogSettings({
-      readGlobals,
-      getLogLevel: () => logLevel,
-      setLogLevel: (level) => {
-        logLevel = level;
-      }
-    });
-    registerFormatSettings({ readGlobals, formatOverrides });
-    registerExportPolicySetting({ readGlobals, policies });
+      endpointConfig = resolveEndpointConfig(logger);
+      registerPluginSettings({
+        readGlobals,
+        endpointConfig,
+        restartServer: restartServerWithState
+      });
+      const traceLogDestPath = resolveTraceLogDestPath(traceLogDefaults.fileName, logger);
+      const traceLogDestResolved = traceLogDestPath ?? traceLogDefaults.destPath;
       const runtime = buildRuntimeServices({
         blockbenchVersion: blockbench?.version,
         formatOverrides,
         policies,
         resourceStore,
-        logger
+        logger,
+        traceLog: {
+          enabled: traceLogDefaults.enabled,
+          mode: traceLogDefaults.mode,
+          destPath: traceLogDestResolved || undefined,
+          fileName: traceLogDefaults.fileName || undefined,
+          resourceEnabled: traceLogDefaults.resourceEnabled,
+          maxEntries: traceLogDefaults.maxEntries,
+          maxBytes: traceLogDefaults.maxBytes,
+          minEntries: traceLogDefaults.minEntries,
+          flushEvery: traceLogDefaults.flushEvery,
+          flushIntervalMs: traceLogDefaults.flushIntervalMs
+        }
       });
-      const { session, capabilities, dispatcher, proxy, formats } = runtime;
+      const {
+        session,
+        capabilities,
+        dispatcher,
+        proxy,
+        formats,
+        traceRecorder,
+        traceLogFileWriter,
+        traceLogFlushScheduler
+      } = runtime;
       globalCapabilities = capabilities;
-      updateToolRegistry();
+      globalCapabilities.toolRegistry = { hash: toolRegistry.hash, count: toolRegistry.count };
       globalDispatcher = dispatcher;
       globalProxy = proxy;
+      globalTraceRecorder = traceRecorder;
+      globalTraceLogWriter = traceLogFileWriter;
+      globalTraceLogFlushScheduler = traceLogFlushScheduler;
 
-      registerCodecs(capabilities, session, formats);
-    registerDebugMenu({ readGlobals, capabilities });
-    registerDevReloadAction({ readGlobals });
-    registerInspectorAction({ readGlobals });
-    registerServerConfigAction({ readGlobals, serverConfig, restartServer });
-      restartServer();
+      registerCodecs({
+        capabilities,
+        session,
+        formats,
+        formatOverrides,
+        exportPolicy: policies.exportPolicy
+      });
+      restartServerWithState();
 
-      exposeBridge({
+      exposeBridgeWithVersion({
         invoke: dispatcher.handle.bind(dispatcher),
         invokeProxy: (tool: ProxyTool, payload: unknown) =>
           proxy.handle(tool, payload as ProxyToolPayloadMap[ProxyTool]),
         capabilities,
-        serverConfig: () => ({ ...serverConfig }),
-        settings: () => ({ ...serverConfig })
+        serverConfig: () => ({ ...endpointConfig }),
+        settings: () => ({ ...endpointConfig })
       });
 
       blockbench?.showQuickMessage?.(PLUGIN_UI_LOADED(PLUGIN_VERSION), 1200);
@@ -392,14 +254,15 @@ Notes:
     onunload() {
       const blockbench = readGlobals().Blockbench;
       cleanupRuntime();
-      deleteGlobalValue(INSTANCE_KEY);
+      releaseSingleton();
       blockbench?.showQuickMessage?.(PLUGIN_UI_UNLOADED, 1200);
     }
   });
 };
 
-function isThenable(value: unknown): value is { then: (onFulfilled: (arg: unknown) => unknown) => unknown } {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as { then?: unknown };
-  return typeof candidate.then === 'function';
-}
+
+
+
+
+
+
