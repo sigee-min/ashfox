@@ -1,11 +1,15 @@
-import type { TextureOpLike } from './textureOps';
+import type { FillRectShadeLike, TextureOpLike } from './textureOps';
 import { clamp } from './math';
+import { applyShadedFillRect, resolveFillRectShade } from './textureFillShade';
 
 export type Rgba = { r: number; g: number; b: number; a: number };
 
+const HEX_COLOR_PATTERN = /^(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
 export const parseHexColor = (value: string): Rgba | null => {
-  const hex = String(value ?? '').trim().replace('#', '');
-  if (hex.length !== 6 && hex.length !== 8) return null;
+  const raw = String(value ?? '').trim();
+  const hex = raw.startsWith('#') ? raw.slice(1) : raw;
+  if (!HEX_COLOR_PATTERN.test(hex)) return null;
   const n = Number.parseInt(hex, 16);
   if (!Number.isFinite(n)) return null;
   if (hex.length === 6) {
@@ -36,7 +40,7 @@ export const applyTextureOps = (
   height: number,
   ops: TextureOpLike[],
   resolveColor: (value: string) => Rgba | null
-): { ok: true } | { ok: false; opIndex: number; reason: 'invalid_color' | 'invalid_line_width' } => {
+): { ok: true } | { ok: false; opIndex: number; reason: 'invalid_color' | 'invalid_line_width' | 'invalid_op' } => {
   for (let i = 0; i < ops.length; i += 1) {
     const op = ops[i];
     const color = resolveColor(op.color);
@@ -46,7 +50,7 @@ export const applyTextureOps = (
         setPixel(data, width, height, Math.round(op.x), Math.round(op.y), color);
         break;
       case 'fill_rect':
-        fillRect(data, width, height, op.x, op.y, op.width, op.height, color);
+        fillRect(data, width, height, op.x, op.y, op.width, op.height, color, op.shade);
         break;
       case 'draw_rect': {
         const lineWidth = Math.max(1, Math.trunc(op.lineWidth ?? 1));
@@ -65,7 +69,7 @@ export const applyTextureOps = (
         break;
       }
       default:
-        break;
+        return { ok: false, opIndex: i, reason: 'invalid_op' };
     }
   }
   return { ok: true };
@@ -95,13 +99,19 @@ const fillRect = (
   y: number,
   w: number,
   h: number,
-  color: Rgba
+  color: Rgba,
+  shade?: FillRectShadeLike
 ) => {
   const xStart = clamp(Math.floor(x), 0, width);
   const yStart = clamp(Math.floor(y), 0, height);
   const xEnd = clamp(Math.ceil(x + w), 0, width);
   const yEnd = clamp(Math.ceil(y + h), 0, height);
   if (xEnd <= xStart || yEnd <= yStart) return;
+  const shadeCfg = resolveFillRectShade(shade, xStart, yStart, xEnd, yEnd, color);
+  if (shadeCfg) {
+    applyShadedFillRect(data, width, xStart, yStart, xEnd, yEnd, color, shadeCfg);
+    return;
+  }
   for (let yy = yStart; yy < yEnd; yy += 1) {
     for (let xx = xStart; xx < xEnd; xx += 1) {
       setPixel(data, width, height, xx, yy, color);

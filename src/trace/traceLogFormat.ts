@@ -1,4 +1,4 @@
-import type { ProjectDiff, ProjectState, ToolError, ToolResponse } from '../types';
+import type { ProjectDiff, ProjectState, ToolError, ToolResponse } from '../types/internal';
 import type {
   TraceLogDiffSummary,
   TraceLogRecord,
@@ -9,6 +9,8 @@ import type {
 const REDACT_KEYS = new Set(['dataUri', 'image', 'canvas', 'ctx', 'img']);
 const MAX_DEPTH = 6;
 const MAX_ARRAY = 50;
+const MAX_OBJECT_KEYS = 100;
+const TRUNCATED_KEYS_MARKER = '__bbmcpTruncatedKeys__';
 
 export const summarizeProjectState = (state: ProjectState): TraceLogStateSummary => ({
   id: state.id,
@@ -60,18 +62,24 @@ export const sanitizeTraceValue = (value: unknown, depth = 0, seen?: WeakSet<obj
   }
 
   const record: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+  const entries = Object.entries(value as Record<string, unknown>);
+  const limitedEntries = entries.slice(0, MAX_OBJECT_KEYS);
+  for (const [key, entry] of limitedEntries) {
     if (REDACT_KEYS.has(key)) {
       record[key] = '<redacted>';
     } else {
       record[key] = sanitizeTraceValue(entry, depth + 1, tracker);
     }
   }
+  if (entries.length > MAX_OBJECT_KEYS) {
+    record[TRUNCATED_KEYS_MARKER] = `[truncated:${entries.length - MAX_OBJECT_KEYS}]`;
+  }
   return record;
 };
 
 export const serializeTraceLogRecord = (record: TraceLogRecord): string =>
   JSON.stringify(record);
+
 
 
 

@@ -1,4 +1,4 @@
-import type { ToolError } from '../../types';
+import type { ToolError } from '../../types/internal';
 import type { TextureUsageQuery, TextureUsageResult, TextureUsageUnresolved } from '../../ports/editor';
 import type { CubeFaceDirection, CubeInstance, TextureInstance } from '../../types/blockbench';
 import { CUBE_FACE_DIRECTIONS } from '../../shared/toolConstants';
@@ -12,28 +12,58 @@ type TextureUsageDeps = {
   textures: TextureInstance[];
 };
 
+type TextureMeta = {
+  id?: string;
+  name: string;
+  width?: number;
+  height?: number;
+};
+
+type UsageFace = {
+  face: CubeFaceDirection;
+  uv?: [number, number, number, number];
+};
+
+type UsageCube = {
+  id?: string;
+  name: string;
+  faces: Map<CubeFaceDirection, UsageFace>;
+};
+
+type UsageEntry = {
+  id?: string;
+  name: string;
+  width?: number;
+  height?: number;
+  cubes: Map<string, UsageCube>;
+  faceCount: number;
+};
+
+type TextureIndex = {
+  byId: Map<string, string>;
+  byName: Map<string, string>;
+  metaByKey: Map<string, TextureMeta>;
+};
+
 export const buildTextureUsageResult = (
   params: TextureUsageQuery,
   deps: TextureUsageDeps
 ): { result?: TextureUsageResult; error?: ToolError } => {
-  const textures = Array.isArray(deps.textures) ? deps.textures : [];
-  const usageMap = new Map<
-    string,
-    {
-      id?: string;
-      name: string;
-      width?: number;
-      height?: number;
-      cubes: Map<
-        string,
-        { id?: string; name: string; faces: Map<CubeFaceDirection, { face: CubeFaceDirection; uv?: [number, number, number, number] }> }
-      >;
-      faceCount: number;
-    }
-  >();
+  const textureIndex = buildTextureIndex(Array.isArray(deps.textures) ? deps.textures : []);
+  const targetKeysRes = resolveTargetTextureKeys(params, textureIndex);
+  if (targetKeysRes.error) return { error: targetKeysRes.error };
+
+  const usageMap = createUsageEntryMap(targetKeysRes.result, textureIndex.metaByKey);
+  const unresolved = collectTextureUsage(deps.cubes, targetKeysRes.result, textureIndex, usageMap);
+  return {
+    result: serializeTextureUsageResult(usageMap, unresolved)
+  };
+};
+
+const buildTextureIndex = (textures: TextureInstance[]): TextureIndex => {
   const byId = new Map<string, string>();
   const byName = new Map<string, string>();
-  const metaByKey = new Map<string, { id?: string; name: string; width?: number; height?: number }>();
+  const metaByKey = new Map<string, TextureMeta>();
   textures.forEach((tex) => {
     const id = readTextureId(tex) ?? undefined;
     const name = tex?.name ?? tex?.id ?? 'texture';
@@ -48,27 +78,39 @@ export const buildTextureUsageResult = (
     });
     const aliases = readTextureAliases(tex);
     aliases.forEach((alias) => {
-      if (!byId.has(alias)) {
-        byId.set(alias, key);
-      }
+      if (!byId.has(alias)) byId.set(alias, key);
     });
     if (name) byName.set(name, key);
   });
+  return { byId, byName, metaByKey };
+};
 
-  const targetKeys = new Set<string>(metaByKey.keys());
-  if (params.textureId || params.textureName) {
-    const label = params.textureId ?? params.textureName ?? 'unknown';
-    const match =
-      (params.textureId && byId.get(params.textureId)) ||
-      (params.textureName && byName.get(params.textureName)) ||
-      null;
-    if (!match) {
-      return { error: { code: 'invalid_payload', message: TEXTURE_NOT_FOUND(label) } };
-    }
-    targetKeys.clear();
-    targetKeys.add(match);
+const resolveTargetTextureKeys = (
+  params: TextureUsageQuery,
+  index: TextureIndex
+): { result: Set<string>; error?: ToolError } => {
+  const targetKeys = new Set<string>(index.metaByKey.keys());
+  if (!params.textureId && !params.textureName) {
+    return { result: targetKeys };
   }
+  const label = params.textureId ?? params.textureName ?? 'unknown';
+  const match =
+    (params.textureId && index.byId.get(params.textureId)) ||
+    (params.textureName && index.byName.get(params.textureName)) ||
+    null;
+  if (!match) {
+    return { result: targetKeys, error: { code: 'invalid_payload', message: TEXTURE_NOT_FOUND(label) } };
+  }
+  targetKeys.clear();
+  targetKeys.add(match);
+  return { result: targetKeys };
+};
 
+const createUsageEntryMap = (
+  targetKeys: Set<string>,
+  metaByKey: Map<string, TextureMeta>
+): Map<string, UsageEntry> => {
+  const usageMap = new Map<string, UsageEntry>();
   targetKeys.forEach((key) => {
     const meta = metaByKey.get(key);
     if (!meta) return;
@@ -81,9 +123,17 @@ export const buildTextureUsageResult = (
       faceCount: 0
     });
   });
+  return usageMap;
+};
 
+const collectTextureUsage = (
+  cubes: CubeInstance[],
+  targetKeys: Set<string>,
+  index: TextureIndex,
+  usageMap: Map<string, UsageEntry>
+): TextureUsageUnresolved[] => {
   const unresolved: TextureUsageUnresolved[] = [];
-  deps.cubes.forEach((cube) => {
+  cubes.forEach((cube) => {
     const cubeId = readNodeId(cube) ?? undefined;
     const cubeName = cube?.name ? String(cube.name) : 'cube';
     const faces = cube.faces ?? {};
@@ -91,35 +141,51 @@ export const buildTextureUsageResult = (
       if (!VALID_FACE_KEYS.has(faceKey as CubeFaceDirection)) return;
       const ref = face?.texture;
       if (ref === false || ref === undefined || ref === null) return;
+      const faceDir = faceKey as CubeFaceDirection;
       const refValue = typeof ref === 'string' ? ref : String(ref);
-      const key = resolveTextureKey(refValue, byId, byName);
+      const key = resolveTextureKey(refValue, index.byId, index.byName);
       if (!key) {
-        unresolved.push({ textureRef: refValue, cubeId, cubeName, face: faceKey as CubeFaceDirection });
+        unresolved.push({ textureRef: refValue, cubeId, cubeName, face: faceDir });
         return;
       }
       if (!targetKeys.has(key)) return;
       const entry = usageMap.get(key);
       if (!entry) return;
-      const cubeKey = cubeId ? `id:${cubeId}` : `name:${cubeName}`;
-      let cubeEntry = entry.cubes.get(cubeKey);
-      if (!cubeEntry) {
-        cubeEntry = { id: cubeId, name: cubeName, faces: new Map() };
-        entry.cubes.set(cubeKey, cubeEntry);
-      }
-      const faceDir = faceKey as CubeFaceDirection;
-      if (!cubeEntry.faces.has(faceDir)) {
-        cubeEntry.faces.set(faceDir, { face: faceDir, uv: normalizeFaceUv(face?.uv) });
-      } else {
-        const existing = cubeEntry.faces.get(faceDir);
-        if (existing && !existing.uv) {
-          existing.uv = normalizeFaceUv(face?.uv);
-        }
-      }
-      entry.faceCount += 1;
+      upsertUsageCubeFace(entry, {
+        cubeId,
+        cubeName,
+        face: faceDir,
+        uv: normalizeFaceUv(face?.uv)
+      });
     });
   });
+  return unresolved;
+};
 
-  const texturesResult = Array.from(usageMap.values()).map((entry) => ({
+const upsertUsageCubeFace = (
+  entry: UsageEntry,
+  face: { cubeId?: string; cubeName: string; face: CubeFaceDirection; uv?: [number, number, number, number] }
+) => {
+  const cubeKey = face.cubeId ? `id:${face.cubeId}` : `name:${face.cubeName}`;
+  let cubeEntry = entry.cubes.get(cubeKey);
+  if (!cubeEntry) {
+    cubeEntry = { id: face.cubeId, name: face.cubeName, faces: new Map() };
+    entry.cubes.set(cubeKey, cubeEntry);
+  }
+  const existing = cubeEntry.faces.get(face.face);
+  if (!existing) {
+    cubeEntry.faces.set(face.face, { face: face.face, uv: face.uv });
+  } else if (!existing.uv && face.uv) {
+    existing.uv = face.uv;
+  }
+  entry.faceCount += 1;
+};
+
+const serializeTextureUsageResult = (
+  usageMap: Map<string, UsageEntry>,
+  unresolved: TextureUsageUnresolved[]
+): TextureUsageResult => ({
+  textures: Array.from(usageMap.values()).map((entry) => ({
     id: entry.id,
     name: entry.name,
     ...(entry.width ? { width: entry.width } : {}),
@@ -131,13 +197,9 @@ export const buildTextureUsageResult = (
       name: cube.name,
       faces: Array.from(cube.faces.values())
     }))
-  }));
-  const result: TextureUsageResult = {
-    textures: texturesResult,
-    ...(unresolved.length > 0 ? { unresolved } : {})
-  };
-  return { result };
-};
+  })),
+  ...(unresolved.length > 0 ? { unresolved } : {})
+});
 
 const resolveTextureKey = (ref: string, byId: Map<string, string>, byName: Map<string, string>): string | null => {
   if (byId.has(ref)) return byId.get(ref) ?? null;
@@ -161,5 +223,6 @@ const normalizeTextureSize = (value: unknown): number | null => {
   if (value <= 0) return null;
   return Math.trunc(value);
 };
+
 
 

@@ -52,14 +52,25 @@ const isGroup = (node: OutlinerNode | null | undefined, globals: BlockbenchGloba
   if (!node) return false;
   const groupCtor = globals.Group;
   if (groupCtor && node instanceof groupCtor) return true;
-  return Array.isArray(node.children);
+  if (!isRecord(node)) return false;
+  const hasChildren = Array.isArray(node.children);
+  const hasCubeVectors = isVec3Like(node.from) && isVec3Like(node.to);
+  return hasChildren && !hasCubeVectors;
 };
 
 const isCube = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is CubeInstance => {
   if (!node) return false;
   const cubeCtor = globals.Cube;
   if (cubeCtor && node instanceof cubeCtor) return true;
-  return node.from !== undefined && node.to !== undefined;
+  if (!isRecord(node)) return false;
+  return isVec3Like(node.from) && isVec3Like(node.to);
+};
+
+const isVec3Like = (value: unknown): value is Vec3Like => {
+  if (Array.isArray(value)) {
+    return value.length >= 3 && typeof value[0] === 'number' && typeof value[1] === 'number' && typeof value[2] === 'number';
+  }
+  return isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number' && typeof value.z === 'number';
 };
 
 const toVec3 = (value: Vec3Like): [number, number, number] => {

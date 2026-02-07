@@ -5,25 +5,21 @@ import {
   ToolPayloadMap,
   ToolResultMap,
   ToolResponse
-} from './types';
+} from './types/internal';
 import { ProjectSession } from './session';
-import { Capabilities } from './types';
+import { Capabilities } from './types/internal';
 import { ConsoleLogger, errorMessage, Logger } from './logging';
 import { ToolService } from './usecases/ToolService';
 import { UsecaseResult } from './usecases/result';
 import { err, toToolResponse } from './shared/tooling/toolResponse';
 import { guardOptionalRevision } from './shared/tooling/optionalRevision';
-import { appendMissingRevisionNextActions } from './shared/tooling/revisionNextActions';
 import { TraceRecorder } from './trace/traceRecorder';
 import { TraceLogService } from './usecases/TraceLogService';
 import { toRevisionPayload } from './dispatcher/utils';
 import { buildDefaultToolService } from './dispatcher/bootstrap';
-import { callWithAutoRetry } from './dispatcher/retryPolicy';
-import { recordTrace } from './dispatcher/trace';
 import {
   BaseResult,
   createHandlerMaps,
-  isStatefulToolName,
   type StatefulHandlerMap,
   type StatefulToolName,
   type ResponseHandlerMap
@@ -31,6 +27,9 @@ import {
 import { Handler, HandlerPayload, HandlerResult, respondErrorSimple, respondOk } from './dispatcher/responseHelpers';
 import { createStateAttacher } from './dispatcher/stateAttacher';
 import { createGuardLogger } from './dispatcher/guardLogger';
+import { runStatefulPipeline } from './dispatcher/statefulPipeline';
+import { createHandlerResolver } from './dispatcher/handlerResolver';
+import { finalizeToolResponse } from './dispatcher/responseFinalizer';
 
 export class ToolDispatcherImpl implements Dispatcher {
   private readonly service: ToolService;
@@ -40,6 +39,7 @@ export class ToolDispatcherImpl implements Dispatcher {
   private readonly statefulRetryHandlers: StatefulHandlerMap;
   private readonly statefulHandlers: StatefulHandlerMap;
   private readonly responseHandlers: ResponseHandlerMap;
+  private readonly resolveHandler: (name: ToolName) => Handler | null;
   private readonly traceRecorder?: TraceRecorder;
   private readonly traceLogService?: TraceLogService;
   private readonly attachStateForTool: <TName extends StatefulToolName>(
@@ -81,6 +81,13 @@ export class ToolDispatcherImpl implements Dispatcher {
     this.statefulRetryHandlers = handlerMaps.statefulRetryHandlers;
     this.statefulHandlers = handlerMaps.statefulHandlers;
     this.responseHandlers = handlerMaps.responseHandlers;
+    this.resolveHandler = createHandlerResolver({
+      statefulRetryHandlers: this.statefulRetryHandlers,
+      statefulHandlers: this.statefulHandlers,
+      responseHandlers: this.responseHandlers,
+      wrapRetryHandler: this.wrapRetryHandler.bind(this),
+      wrapStatefulHandler: this.wrapStatefulHandler.bind(this)
+    });
     const flag = options?.includeStateByDefault;
     this.includeStateByDefault = typeof flag === 'function' ? flag : () => Boolean(flag);
     const diffFlag = options?.includeDiffByDefault;
@@ -96,30 +103,28 @@ export class ToolDispatcherImpl implements Dispatcher {
   ): ToolResponse<ToolResultMap[TName]>;
   handle(name: ToolName, payload: HandlerPayload): ToolResponse<HandlerResult> {
     try {
-      const handler = this.getHandler(name);
-      if (handler) {
-        const response = handler(payload);
-        this.refreshViewportAfterMutation(name, response);
-        const withRevision = appendMissingRevisionNextActions(name, payload, response);
-        recordTrace(this.traceRecorder, this.log, name, payload, withRevision);
-        return withRevision;
+      const handler = this.resolveHandler(name);
+      if (!handler) {
+        return this.finalizeResponse(
+          name,
+          payload,
+          respondErrorSimple('invalid_payload', `Unknown tool ${String(name)}`, {
+            reason: 'unknown_tool',
+            tool: String(name)
+          })
+        );
       }
-      const response = respondErrorSimple('invalid_payload', `Unknown tool ${String(name)}`, {
-        reason: 'unknown_tool',
-        tool: String(name)
-      });
-      const withRevision = appendMissingRevisionNextActions(name, payload, response);
-      recordTrace(this.traceRecorder, this.log, name, payload, withRevision);
-      return withRevision;
+      return this.finalizeResponse(name, payload, handler(payload), { refreshViewport: true });
     } catch (err) {
       const message = errorMessage(err, 'unknown error');
-      const response = respondErrorSimple('unknown', message, {
-        reason: 'dispatcher_exception',
-        tool: String(name)
-      });
-      const withRevision = appendMissingRevisionNextActions(name, payload, response);
-      recordTrace(this.traceRecorder, this.log, name, payload, withRevision);
-      return withRevision;
+      return this.finalizeResponse(
+        name,
+        payload,
+        respondErrorSimple('unknown', message, {
+          reason: 'dispatcher_exception',
+          tool: String(name)
+        })
+      );
     }
   }
 
@@ -137,36 +142,6 @@ export class ToolDispatcherImpl implements Dispatcher {
     return (payload) => this.handleStateful(name, payload as ToolPayloadMap[K], handler);
   }
 
-  private getStatefulRetryHandler<K extends StatefulToolName>(
-    name: K
-  ): ((payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>) | undefined {
-    return this.statefulRetryHandlers[name];
-  }
-
-  private getStatefulHandler<K extends StatefulToolName>(
-    name: K
-  ): ((payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>) | undefined {
-    return this.statefulHandlers[name];
-  }
-
-  private getHandler(name: ToolName): Handler | null {
-    if (isStatefulToolName(name)) {
-      const retryHandler = this.getStatefulRetryHandler(name);
-      if (retryHandler) {
-        return this.wrapRetryHandler(name, retryHandler);
-      }
-      const statefulHandler = this.getStatefulHandler(name);
-      if (statefulHandler) {
-        return this.wrapStatefulHandler(name, statefulHandler);
-      }
-    }
-    const responseHandler = this.responseHandlers[name];
-    if (responseHandler) {
-      return responseHandler as Handler;
-    }
-    return null;
-  }
-
   private getStateDeps() {
     return {
       includeStateByDefault: this.includeStateByDefault,
@@ -182,15 +157,20 @@ export class ToolDispatcherImpl implements Dispatcher {
     payload: ToolPayloadMap[TName],
     call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>>
   ): ToolResponse<ToolResultMap[TName]> {
-    const { result, payload: retryPayload } = callWithAutoRetry({
-      tool,
-      payload,
-      call,
-      service: this.service,
-      log: this.log
-    });
-    const response = this.attachStateForTool(retryPayload, toToolResponse(result));
-    return this.logGuardFailure(tool, retryPayload, response);
+    return runStatefulPipeline(
+      {
+        service: this.service,
+        log: this.log,
+        attachStateForTool: this.attachStateForTool,
+        logGuardFailure: this.logGuardFailure
+      },
+      {
+        tool,
+        payload,
+        call,
+        retry: true
+      }
+    );
   }
 
   private handleStateful<TName extends StatefulToolName>(
@@ -198,18 +178,19 @@ export class ToolDispatcherImpl implements Dispatcher {
     payload: ToolPayloadMap[TName],
     call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>>
   ): ToolResponse<ToolResultMap[TName]> {
-    const guard = guardOptionalRevision(this.service, toRevisionPayload(payload));
-    if (guard) {
-      return this.logGuardFailure(
+    return runStatefulPipeline(
+      {
+        service: this.service,
+        log: this.log,
+        attachStateForTool: this.attachStateForTool,
+        logGuardFailure: this.logGuardFailure
+      },
+      {
         tool,
         payload,
-        this.attachStateForTool(payload, guard)
-      );
-    }
-    return this.logGuardFailure(
-      tool,
-      payload,
-      this.attachStateForTool(payload, toToolResponse(call(payload)))
+        call,
+        retry: false
+      }
     );
   }
 
@@ -233,16 +214,23 @@ export class ToolDispatcherImpl implements Dispatcher {
     return toToolResponse(this.traceLogService.exportTraceLog(payload));
   }
 
-  private refreshViewportAfterMutation<T>(tool: ToolName, response: ToolResponse<T>): void {
-    if (!response.ok) return;
-    try {
-      this.service.notifyViewportRefresh(tool);
-    } catch (err) {
-      this.log.warn('viewport refresh dispatch failed', {
-        tool,
-        message: errorMessage(err, 'viewport refresh dispatch failed')
-      });
-    }
+  private finalizeResponse<T>(
+    tool: ToolName,
+    payload: ToolPayloadMap[ToolName],
+    response: ToolResponse<T>,
+    options?: { refreshViewport?: boolean }
+  ): ToolResponse<T> {
+    return finalizeToolResponse(
+      {
+        service: this.service,
+        traceRecorder: this.traceRecorder,
+        log: this.log
+      },
+      tool,
+      payload,
+      response,
+      options
+    );
   }
 
 }
