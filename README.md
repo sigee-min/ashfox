@@ -1,6 +1,6 @@
-# <img src="docs/page/public/favicon-32x32.png" alt="ashfox icon badge" width="32" height="32" /> ashfox
+# <img src="docs/page/public/favicon-32x32.png" alt="Ashfox icon badge" width="32" height="32" /> Ashfox
 
-Blockbench MCP bridge plugin. ashfox exposes a low-level, deterministic tool surface for modeling, texturing, and animation over MCP.
+Blockbench MCP bridge plugin. Ashfox exposes a low-level, deterministic tool surface for modeling, texturing, and animation over MCP.
 
 Docs: [ashfox.sigee.xyz](https://ashfox.sigee.xyz)
 
@@ -44,7 +44,7 @@ Then load the plugin in Blockbench:
 - Use the plugin manager, or load `dist/ashfox.js` manually.
 
 ## Quickstart (first successful request)
-1) Start Blockbench with ashfox enabled.
+1) Start Blockbench with Ashfox enabled.
 2) Connect your MCP client to:
 
 ```text
@@ -102,7 +102,7 @@ Expected response shape (trimmed):
 ```
 
 Quick checks if it fails:
-- Confirm ashfox plugin is loaded in Blockbench Desktop.
+- Confirm Ashfox plugin is loaded in Blockbench Desktop.
 - Confirm URL/path is exactly `http://127.0.0.1:8787/mcp`.
 - If custom host/port/path is used, verify settings and env vars match.
 
@@ -201,7 +201,7 @@ If toolRegistry.hash changes, re-run list_capabilities (or tools/list) to refres
 - MCP resources: ashfox://guide/* (see resources/templates/list)
 
 ## Showcase
-Sample output generated with ashfox tool calls (modeling/texturing/animation).  
+Sample output generated with Ashfox tool calls (modeling/texturing/animation).  
 Generation time and final quality vary by prompt, model, and runtime environment.
 
 ![Ashfox Animation](docs/page/public/assets/images/ashfox-animation.gif)
@@ -227,9 +227,10 @@ npm run quality:check
 ```
 
 ## Release Automation
-- `release-please` manages release PRs from conventional commits on `main`.
+- Release workflows run only by manual `workflow_dispatch` (Actions tab).
+- Run `release-please` to open/update the version bump PR from conventional commits on `main`.
 - Merging the release PR updates `package.json`/`CHANGELOG.md` via bot.
-- GitHub Release publication is automated by `.github/workflows/release-major.yml`.
+- Run `.github/workflows/release-major.yml` manually to publish GitHub Releases.
 - `release-please` auth:
   - recommended: set repository secret `RELEASE_PLEASE_TOKEN` (token must allow `contents:write` and `pull_requests:write`)
   - optional fallback: set repository variable `RELEASE_PLEASE_ALLOW_GITHUB_TOKEN=true` and enable GitHub Actions PR creation in repository settings

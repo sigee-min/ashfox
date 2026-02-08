@@ -1,4 +1,4 @@
-# ashfox page
+# Ashfox page
 
 Static docs site built with Next.js + Fumadocs.
 

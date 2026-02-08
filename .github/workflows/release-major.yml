@@ -1,15 +1,6 @@
 name: release-major-minor
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - package.json
-      - package-lock.json
-      - .github/workflows/release-major.yml
-      - .github/workflows/release-please.yml
-      - release-please-config.json
-      - .release-please-manifest.json
   workflow_dispatch:
 
 jobs:

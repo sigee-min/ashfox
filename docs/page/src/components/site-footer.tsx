@@ -44,7 +44,7 @@ export function SiteFooter({ locale }: SiteFooterProps) {
               <span className="inline-flex size-[42px] items-center justify-center rounded-lg border border-fd-border bg-fd-card">
                 <Image src="/favicon-32x32.png" alt="" width={29} height={29} className="rounded-[7px]" />
               </span>
-              <span>ashfox</span>
+              <span>Ashfox</span>
             </Link>
             <p className="max-w-sm text-sm leading-relaxed text-fd-muted-foreground">{copy.tagline}</p>
             <p className="text-xs text-fd-muted-foreground">ashfox.sigee.xyz</p>
@@ -107,7 +107,7 @@ export function SiteFooter({ locale }: SiteFooterProps) {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-fd-border/70 pt-5 text-xs text-fd-muted-foreground">
-          <p>© {new Date().getFullYear()} ashfox. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Ashfox. All rights reserved.</p>
           <a
             href="https://github.com/sigee-min/ashfox"
             target="_blank"

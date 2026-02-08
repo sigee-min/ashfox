@@ -1,8 +1,8 @@
 import type { Locale } from '@/lib/i18n';
 
-export const siteName = 'ashfox';
-export const siteTitle = 'ashfox';
-export const siteDescription = 'ashfox MCP tools for Blockbench modeling, texturing, animation, and validation workflows.';
+export const siteName = 'Ashfox';
+export const siteTitle = 'Ashfox';
+export const siteDescription = 'Ashfox MCP tools for Blockbench modeling, texturing, animation, and validation workflows.';
 
 const rawBasePath = process.env.DOCS_BASE_PATH?.trim() ?? '';
 export const basePath =
