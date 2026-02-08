@@ -1,5 +1,5 @@
 import type { JsonSchema } from '../types';
-import { PROJECT_STATE_DETAILS } from '../../toolConstants';
+import { PROJECT_STATE_DETAILS } from '../../../../../src/shared/toolConstants';
 import { emptyObject } from '../schemas/common';
 
 export const baseToolSchemas: Record<string, JsonSchema> = {

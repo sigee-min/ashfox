@@ -226,7 +226,7 @@ function loadToolData() {
   esbuild.buildSync({
     stdin: {
       contents: `
-        import { toolSchemas } from './src/shared/mcpSchemas/toolSchemas';
+        import { toolSchemas } from './packages/contracts/src/mcpSchemas/toolSchemas';
         import { MCP_HIGH_LEVEL_TOOLS, MCP_LOW_LEVEL_TOOLS } from './src/transport/mcp/tools';
         module.exports = {
           toolSchemas,

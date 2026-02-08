@@ -6,7 +6,8 @@ This document defines the target structure while preserving current behavior.
 
 - Plugin bundle entry: `apps/plugin-desktop/src/index.ts`
 - Headless/sidecar entry: `apps/mcp-headless/src/index.ts`
-- Shared implementation: `src/`
+- Contract source of truth: `packages/contracts/src/mcpSchemas/*`
+- Shared implementation: `src/` (compat wrappers remain during migration)
 - Docs app: `apps/docs/`
 
 ## Target Layout
@@ -17,7 +18,7 @@ apps/
   mcp-headless/        # UI-less MCP runtime shell
   docs/                # User-facing documentation site
 packages/
-  contracts/           # MCP tool schemas + contract types (planned)
+  contracts/           # MCP tool schemas + contract types (implemented for mcpSchemas)
   conformance/         # Protocol/tool conformance tests (planned)
 src/
   ...                  # Existing implementation (migration source)
@@ -33,6 +34,6 @@ src/
 ## Next Refactor Steps
 
 1. Extract tool contract types from `src/types/*` into `packages/contracts`.
-2. Move MCP tool schema definitions from `src/shared/mcpSchemas` into `packages/contracts`.
-3. Move protocol-level tests from `scripts/tests` into `packages/conformance`.
-4. Keep `src/` as compatibility layer until all imports are switched.
+2. Move protocol-level tests from `scripts/tests` into `packages/conformance`.
+3. Switch runtime imports to `packages/contracts` directly and remove compatibility wrappers.
+4. Keep `src/` compatibility layer only until all imports are switched.

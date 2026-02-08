@@ -9,7 +9,7 @@ import {
   MCP_VALIDATION_NOT_ALLOWED_MESSAGE,
   MCP_VALIDATION_REQUIRED_MESSAGE,
   MCP_VALIDATION_TYPE_MESSAGE
-} from '../messages';
+} from '../../../../src/shared/messages';
 
 type SchemaValidator = (schema: JsonSchema, value: unknown, path: string) => ValidationResult;
 

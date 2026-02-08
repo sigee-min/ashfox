@@ -16,5 +16,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src/**/*", "apps/plugin-desktop/src/**/*", "apps/mcp-headless/src/**/*"]
+  "include": ["src/**/*", "apps/plugin-desktop/src/**/*", "apps/mcp-headless/src/**/*", "packages/contracts/src/**/*"]
 }

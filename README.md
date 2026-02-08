@@ -205,6 +205,7 @@ If toolRegistry.hash changes, re-run list_capabilities (or tools/list) to refres
 - `apps/plugin-desktop`: plugin app entrypoint (desktop runtime boundary)
 - `apps/mcp-headless`: headless MCP app entrypoint (sidecar boundary)
 - `apps/docs`: user-facing docs site
+- `packages/contracts`: MCP contract source (`mcpSchemas`) used by runtime via compatibility wrappers
 - `src`: current shared implementation for plugin/server/usecases
 - `docs/architecture/monorepo-target.md`: incremental migration plan
 

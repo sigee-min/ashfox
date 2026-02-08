@@ -1,5 +1,5 @@
 import type { JsonSchema } from '../types';
-import { ENSURE_PROJECT_ACTIONS, FORMAT_KINDS } from '../../toolConstants';
+import { ENSURE_PROJECT_ACTIONS, FORMAT_KINDS } from '../../../../../src/shared/toolConstants';
 import { metaProps, revisionProp } from '../schemas/common';
 import { ensureProjectBaseProperties } from '../schemas/project';
 
