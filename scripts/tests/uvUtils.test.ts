@@ -12,7 +12,7 @@ import {
   assert.equal(resolveFaceTextureRef(null), null);
   assert.equal(resolveFaceTextureRef({ uuid: 'tex-uuid' } as never), 'tex-uuid');
   assert.equal(resolveFaceTextureRef({ id: 'tex-id' } as never), 'tex-id');
-  assert.equal(resolveFaceTextureRef({ bbmcpId: 'tex-bbmcp' } as never), 'tex-bbmcp');
+  assert.equal(resolveFaceTextureRef({ greyfoxId: 'tex-greyfox' } as never), 'tex-greyfox');
   assert.equal(resolveFaceTextureRef({ name: 'atlas' } as never), 'atlas');
 }
 
@@ -68,3 +68,4 @@ import {
   assert.ok(Array.isArray(ALL_FACES));
   assert.equal(ALL_FACES.length, 6);
 }
+

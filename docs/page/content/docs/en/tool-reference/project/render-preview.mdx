@@ -9,7 +9,7 @@ description: "Input schema and field behavior for render_preview."
 - Strict schema: `true`
 
 ## Tool Description
-Renders a preview image. fixed -> single (optional angle). turntable -> sequence. Returns MCP image content blocks (base64 PNG) plus structured metadata without dataUri. Set saveToTmp=true to write snapshots into .bbmcp/tmp for manual upload fallback. See bbmcp://guide/vision-fallback via resources/read. Single returns result.image; sequence returns result.frames[]. Example(single): \{"mode":"fixed","output":"single","angle":[30,45,0]\} Example(sequence): \{"mode":"turntable","output":"sequence","durationSeconds":2,"fps":12\}
+Renders a preview image. fixed -> single (optional angle). turntable -> sequence. Returns MCP image content blocks (base64 PNG) plus structured metadata without dataUri. Set saveToTmp=true to write snapshots into .greyfox/tmp for manual upload fallback. See greyfox://guide/vision-fallback via resources/read. Single returns result.image; sequence returns result.frames[]. Example(single): \{"mode":"fixed","output":"single","angle":[30,45,0]\} Example(sequence): \{"mode":"turntable","output":"sequence","durationSeconds":2,"fps":12\}
 
 ## Input Schema (JSON)
 ```json
@@ -108,3 +108,4 @@ Renders a preview image. fixed -> single (optional angle). turntable -> sequence
 - Use `ifRevision` for mutation calls when available.
 - Do not send fields outside the declared schema.
 - Run `validate` before `export` for release safety.
+

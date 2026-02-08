@@ -22,9 +22,9 @@ const withEnv = (changes: Record<string, string | undefined>, run: () => void) =
 
 withEnv(
   {
-    BBMCP_HOST: undefined,
-    BBMCP_PORT: undefined,
-    BBMCP_PATH: undefined
+    GREYFOX_HOST: undefined,
+    GREYFOX_PORT: undefined,
+    GREYFOX_PATH: undefined
   },
   () => {
     const config = resolveEndpointConfig();
@@ -36,9 +36,9 @@ withEnv(
 
 withEnv(
   {
-    BBMCP_HOST: '127.0.0.1',
-    BBMCP_PORT: '9999',
-    BBMCP_PATH: 'mcp-api'
+    GREYFOX_HOST: '127.0.0.1',
+    GREYFOX_PORT: '9999',
+    GREYFOX_PATH: 'mcp-api'
   },
   () => {
     const config = resolveEndpointConfig();
@@ -50,9 +50,9 @@ withEnv(
 
 withEnv(
   {
-    BBMCP_HOST: ' ',
-    BBMCP_PORT: '70000',
-    BBMCP_PATH: ' '
+    GREYFOX_HOST: ' ',
+    GREYFOX_PORT: '70000',
+    GREYFOX_PATH: ' '
   },
   () => {
     const config = resolveEndpointConfig();
@@ -61,3 +61,4 @@ withEnv(
     assert.equal(config.path, DEFAULT_SERVER_PATH);
   }
 );
+

@@ -1,4 +1,4 @@
-# bbmcp Quality Rubric
+# greyfox Quality Rubric
 
 Score each category from 0 to 5.
 - 0: unusable
@@ -43,3 +43,4 @@ Score each category from 0 to 5.
 - `before`: score map + short rationale
 - `after`: score map + delta
 - `decision`: accept / iterate / escalate
+

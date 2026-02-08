@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Provider } from '@/components/provider';
 import { docsI18nUI, isLocale, type Locale } from '@/lib/i18n';
 
-const LOCALE_STORAGE_KEY = 'bbmcp.docs.locale';
+const LOCALE_STORAGE_KEY = 'greyfox.docs.locale';
 
 type LocalizedProviderProps = {
   locale: Locale;
@@ -42,3 +42,4 @@ export function LocalizedProvider({ locale, children }: LocalizedProviderProps) 
 
   return <Provider i18n={i18nProps}>{children}</Provider>;
 }
+

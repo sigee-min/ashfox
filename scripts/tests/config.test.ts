@@ -10,7 +10,7 @@ import {
 import type { FormatDescriptor } from '../../src/ports/formats';
 
 {
-  assert.equal(PLUGIN_ID, 'bbmcp');
+  assert.equal(PLUGIN_ID, 'greyfox');
   assert.equal(DEFAULT_SERVER_HOST, '0.0.0.0');
   assert.equal(DEFAULT_SERVER_PORT, 8787);
   assert.equal(DEFAULT_SERVER_PATH, '/mcp');
@@ -77,3 +77,4 @@ import type { FormatDescriptor } from '../../src/ports/formats';
   assert.equal(image?.animations, false);
   assert.equal(image?.flags?.imageEditor, true);
 }
+

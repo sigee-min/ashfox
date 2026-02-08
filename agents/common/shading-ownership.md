@@ -1,4 +1,4 @@
-# bbmcp Shading Ownership
+# greyfox Shading Ownership
 
 ## Principle
 Shading algorithm ownership is in MCP server logic.
@@ -23,3 +23,4 @@ Skill logic must not duplicate server shading implementation.
 ## Failure handling
 - If output is wrong, first validate inputs and revision chain.
 - If inputs are valid and defect persists, file QA report with raw payloads and traces.
+

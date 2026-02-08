@@ -1,4 +1,4 @@
-// Internal barrel for bbmcp source modules.
+// Internal barrel for greyfox source modules.
 export * from './shared';
 export * from './capabilities';
 export * from './project';
@@ -7,3 +7,4 @@ export * from './texture';
 export * from './textureUsage';
 export * from './tools';
 export * from './traceLog';
+

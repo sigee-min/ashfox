@@ -2,7 +2,7 @@ import { deleteGlobalValue, readGlobalValue, writeGlobalValue } from '../shared/
 
 export type RuntimeInstance = { cleanup: () => void; version: string };
 
-const INSTANCE_KEY = '__bbmcp_instance__';
+const INSTANCE_KEY = '__greyfox_instance__';
 
 export const claimSingleton = (args: {
   cleanup: () => void;
@@ -26,11 +26,12 @@ export const releaseSingleton = () => {
 };
 
 export const exposeBridge = (bridge: unknown, version: string) => {
-  writeGlobalValue('bbmcp', bridge);
-  writeGlobalValue('bbmcpVersion', version);
+  writeGlobalValue('greyfox', bridge);
+  writeGlobalValue('greyfoxVersion', version);
 };
 
 export const cleanupBridge = () => {
-  deleteGlobalValue('bbmcp');
-  deleteGlobalValue('bbmcpVersion');
+  deleteGlobalValue('greyfox');
+  deleteGlobalValue('greyfoxVersion');
 };
+

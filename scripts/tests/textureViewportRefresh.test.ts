@@ -31,7 +31,7 @@ class FakeTexture {
   name?: string;
   width?: number;
   height?: number;
-  bbmcpId?: string;
+  greyfoxId?: string;
   internal?: boolean;
   keep_size?: boolean;
   canvas: { width: number; height: number; getContext: (type: string) => unknown };
@@ -130,3 +130,4 @@ class FakeTexture {
   assert.equal(FakeTexture.all.length, 1);
   assert.equal(previewRenderCalls, 1);
 }
+

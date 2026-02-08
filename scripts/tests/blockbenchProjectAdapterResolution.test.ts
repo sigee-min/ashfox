@@ -139,8 +139,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.setProjectUvPixelsPerBlock(32);
       assert.equal(err, null);
-      assert.equal(project.bbmcpUvPixelsPerBlock, 32);
-      assert.deepEqual(project.bbmcp, { uvPixelsPerBlock: 32, uv_pixels_per_block: 32 });
+      assert.equal(project.greyfoxUvPixelsPerBlock, 32);
+      assert.deepEqual(project.greyfox, { uvPixelsPerBlock: 32, uv_pixels_per_block: 32 });
     }
   );
 }
+

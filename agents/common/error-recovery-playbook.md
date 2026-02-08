@@ -1,4 +1,4 @@
-# bbmcp Error Recovery Playbook
+# greyfox Error Recovery Playbook
 
 ## `invalid_state_revision_mismatch`
 1. Call `get_project_state`.
@@ -21,4 +21,5 @@ Signals: sharp byteLength drop, suspicious hash reset, blank preview.
 1. Stop further writes.
 2. Collect trace and raw request/response.
 3. File QA report using template.
+
 

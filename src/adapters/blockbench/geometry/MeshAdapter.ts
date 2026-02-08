@@ -59,7 +59,7 @@ export class BlockbenchMeshAdapter {
           faces: params.faces
         });
         setVisibility(mesh, params.visibility);
-        if (params.id) mesh.bbmcpId = params.id;
+        if (params.id) mesh.greyfoxId = params.id;
         const attached = attachToOutliner(parent, outliner, mesh, this.log, 'mesh');
         if (!attached && Array.isArray(outliner?.root)) {
           outliner.root.push(mesh);
@@ -81,7 +81,7 @@ export class BlockbenchMeshAdapter {
         return { code: 'invalid_payload', message: MODEL_MESH_NOT_FOUND(label) };
       }
       if (params.id) {
-        target.bbmcpId = params.id;
+        target.greyfoxId = params.id;
       }
       const parent = params.boneRoot ? null : params.bone ? findGroup(params.bone) : undefined;
       if (params.bone && !parent) {
@@ -185,3 +185,4 @@ const toFaceUvRecord = (uv: MeshFaceUvCommand[] | undefined): Record<string, [nu
   }
   return record;
 };
+

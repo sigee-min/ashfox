@@ -7,7 +7,7 @@ export function baseOptions(locale: Locale): BaseLayoutProps {
   const navTitle = (
     <span className="inline-flex items-center gap-2.5">
       <Image src="/favicon-32x32.png" alt="" width={24} height={24} className="rounded-[6px]" />
-      <span>bbmcp</span>
+      <span>greyfox</span>
     </span>
   );
 
@@ -17,7 +17,7 @@ export function baseOptions(locale: Locale): BaseLayoutProps {
       enabled: true,
       component: <ThemeSelect locale={locale} />,
     },
-    githubUrl: 'https://github.com/sigee-min/bbmcp',
+    githubUrl: 'https://github.com/sigee-min/greyfox',
     links: [
       {
         text: locale === 'ko' ? 'MCP 가이드' : 'MCP Guide',
@@ -30,3 +30,4 @@ export function baseOptions(locale: Locale): BaseLayoutProps {
     },
   };
 }
+

@@ -77,7 +77,7 @@ export const runCreateAnimation = (log: Logger, params: AnimationCommand): ToolE
         loop: params.loop ? 'loop' : 'once',
         snapping: params.fps
       });
-      if (params.id) anim.bbmcpId = params.id;
+      if (params.id) anim.greyfoxId = params.id;
       anim.add?.(true);
     });
     log.info('animation created', { name: params.name });
@@ -101,7 +101,7 @@ export const runUpdateAnimation = (log: Logger, params: UpdateAnimationCommand):
       const label = params.id ?? params.name ?? 'unknown';
       return { code: 'invalid_payload', message: ANIMATION_CLIP_NOT_FOUND(label) };
     }
-    if (params.id) target.bbmcpId = params.id;
+    if (params.id) target.greyfoxId = params.id;
     withUndo({ animations: true }, 'Update animation', () => {
       if (params.newName && params.newName !== target.name) {
         renameEntity(target, params.newName);
@@ -331,4 +331,5 @@ export const getAnimations = (): AnimationClip[] => {
   if (Array.isArray(globals.Animation?.all)) return globals.Animation.all;
   return [];
 };
+
 

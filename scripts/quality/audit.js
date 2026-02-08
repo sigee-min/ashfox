@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// bbmcp release gate: dependency vulnerability gate.
+// greyfox release gate: dependency vulnerability gate.
 // We keep this separate from static checks so teams can run/triage it independently.
 
 const { spawnSync } = require('child_process');
@@ -18,5 +18,6 @@ const result = spawnSync(cmd, args, { stdio: 'inherit' });
 if (result.status !== 0) {
   process.exitCode = result.status ?? 1;
 } else {
-  console.log('bbmcp audit gate ok');
+  console.log('greyfox audit gate ok');
 }
+

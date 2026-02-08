@@ -5,9 +5,9 @@ import { normalizeHost, normalizePath, normalizePort } from '../shared/endpoint'
 const readEnvConfig = (): Partial<EndpointConfig> => {
   const env = typeof process !== 'undefined' ? process.env ?? {} : {};
   return {
-    host: normalizeHost(env.BBMCP_HOST) ?? undefined,
-    port: normalizePort(env.BBMCP_PORT) ?? undefined,
-    path: env.BBMCP_PATH ? normalizePath(env.BBMCP_PATH) : undefined
+    host: normalizeHost(env.GREYFOX_HOST) ?? undefined,
+    port: normalizePort(env.GREYFOX_PORT) ?? undefined,
+    path: env.GREYFOX_PATH ? normalizePath(env.GREYFOX_PATH) : undefined
   };
 };
 
@@ -24,3 +24,4 @@ export const resolveEndpointConfig = (): EndpointConfig => {
     path: fromEnv.path ?? defaults.path
   };
 };
+

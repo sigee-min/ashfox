@@ -1,5 +1,5 @@
 {
-  "name": "bbmcp",
+  "name": "greyfox",
   "version": "0.0.2",
   "private": true,
   "scripts": {
@@ -29,3 +29,4 @@
     "zod": "^4.3.6"
   }
 }
+

@@ -77,28 +77,28 @@ const landingDetailsByLocale: Record<
     workflowHint:
       'Use docs and examples as a baseline, adapt the commands to your stack, then share improvements back.',
     featureLead:
-      'bbmcp is designed for transparent operation, so teams can reason about tool behavior instead of treating automation as a black box.',
+      'greyfox is designed for transparent operation, so teams can reason about tool behavior instead of treating automation as a black box.',
     showcaseTitle: 'Reference Outputs',
     showcaseDescription:
-      'Examples generated with bbmcp tools. These samples help you compare output shape and quality against your own pipeline.',
+      'Examples generated with greyfox tools. These samples help you compare output shape and quality against your own pipeline.',
     showcaseActionLabel: 'Open',
     showcaseItems: [
       {
         src: '/assets/images/greyfox-animation.gif',
         type: 'gif',
-        alt: 'Animated preview output generated with bbmcp',
+        alt: 'Animated preview output generated with greyfox',
         caption: 'Animated preview (GIF)',
       },
       {
         src: '/assets/images/greyfox.png',
         type: 'image',
-        alt: 'Rendered model output generated with bbmcp',
+        alt: 'Rendered model output generated with greyfox',
         caption: 'Rendered model output',
       },
       {
         src: '/assets/images/greyfox-texture.png',
         type: 'image',
-        alt: 'Texture sheet output generated with bbmcp',
+        alt: 'Texture sheet output generated with greyfox',
         caption: 'Texture sheet output',
       },
     ],
@@ -114,28 +114,28 @@ const landingDetailsByLocale: Record<
     workflowHint:
       '문서와 예제를 기준으로 팀 환경에 맞게 명령을 조정하고, 개선 사항을 다시 커뮤니티에 공유할 수 있습니다.',
     featureLead:
-      'bbmcp는 자동화를 블랙박스로 감추기보다 도구 동작을 투명하게 공개해 팀이 판단 가능한 워크플로를 만들도록 돕습니다.',
+      'greyfox는 자동화를 블랙박스로 감추기보다 도구 동작을 투명하게 공개해 팀이 판단 가능한 워크플로를 만들도록 돕습니다.',
     showcaseTitle: '참고 결과물',
     showcaseDescription:
-      'bbmcp 도구로 생성한 결과 예시입니다. 팀 파이프라인의 결과 형태와 품질을 비교할 때 기준으로 활용할 수 있습니다.',
+      'greyfox 도구로 생성한 결과 예시입니다. 팀 파이프라인의 결과 형태와 품질을 비교할 때 기준으로 활용할 수 있습니다.',
     showcaseActionLabel: '열기',
     showcaseItems: [
       {
         src: '/assets/images/greyfox-animation.gif',
         type: 'gif',
-        alt: 'bbmcp로 생성한 애니메이션 프리뷰 결과',
+        alt: 'greyfox로 생성한 애니메이션 프리뷰 결과',
         caption: '애니메이션 프리뷰 (GIF)',
       },
       {
         src: '/assets/images/greyfox.png',
         type: 'image',
-        alt: 'bbmcp로 생성한 모델 렌더 결과',
+        alt: 'greyfox로 생성한 모델 렌더 결과',
         caption: '모델 렌더 결과',
       },
       {
         src: '/assets/images/greyfox-texture.png',
         type: 'image',
-        alt: 'bbmcp로 생성한 텍스처 시트 결과',
+        alt: 'greyfox로 생성한 텍스처 시트 결과',
         caption: '텍스처 시트 결과',
       },
     ],
@@ -188,7 +188,7 @@ export function LandingPage({ locale, copy }: LandingPageProps) {
               {copy.secondaryCta}
             </Link>
             <a
-              href="https://github.com/sigee-min/bbmcp"
+              href="https://github.com/sigee-min/greyfox"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-fd-border/90 bg-fd-background/70 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
@@ -356,3 +356,4 @@ export function LandingPage({ locale, copy }: LandingPageProps) {
     </div>
   );
 }
+

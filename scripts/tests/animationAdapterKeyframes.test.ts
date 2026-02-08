@@ -52,7 +52,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   };
   const clip = {
     name: 'idle',
-    bbmcpId: 'anim_idle',
+    greyfoxId: 'anim_idle',
     keyframes: [] as Array<Record<string, unknown>>,
     select: () => undefined,
     setTime: (time: number) => {
@@ -122,7 +122,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   };
   const clip = {
     name: 'idle',
-    bbmcpId: 'anim_idle',
+    greyfoxId: 'anim_idle',
     keyframes: [] as Array<Record<string, unknown>>,
     select: () => undefined,
     getBoneAnimator: () => animator
@@ -170,3 +170,4 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     }
   );
 }
+

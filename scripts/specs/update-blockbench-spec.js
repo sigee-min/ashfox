@@ -17,7 +17,7 @@ const writeSnapshot = (snapshot) => {
 const fetchLatestRelease = async () => {
   const res = await fetch(RELEASES_URL, {
     headers: {
-      'User-Agent': 'bbmcp-spec-sync',
+      'User-Agent': 'greyfox-spec-sync',
       Accept: 'application/vnd.github+json'
     }
   });
@@ -63,3 +63,4 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
+

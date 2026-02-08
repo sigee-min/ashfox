@@ -7,7 +7,7 @@ Use GitHub Issues for:
 - documentation clarifications
 
 When reporting issues, include:
-- bbmcp version/commit
+- greyfox version/commit
 - Blockbench version
 - model format (for example `java_block`, `geckolib`, `animated_java`)
 - exact request payload and response (if relevant)
@@ -21,3 +21,4 @@ When reporting issues, include:
 ## Security Issues
 Do not open public issues for vulnerabilities.
 Follow `SECURITY.md`.
+

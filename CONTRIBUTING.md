@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to `bbmcp`.
+Thanks for contributing to `greyfox`.
 
 ## Development Setup
 ```bash
@@ -38,6 +38,7 @@ Open an issue with:
 - expected behavior
 - actual behavior
 - reproduction steps
-- environment details (Blockbench version, bbmcp version, format)
+- environment details (Blockbench version, greyfox version, format)
 
 For security issues, use `SECURITY.md`.
+

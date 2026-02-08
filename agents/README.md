@@ -3,7 +3,7 @@
 This folder contains reusable agent assets for Codex and Claude.
 
 ## What is included
-- `codex/skills/bbmcp-operator/`: the Codex skill package.
+- `codex/skills/greyfox-operator/`: the Codex skill package.
 - `common/`: shared contracts, quality gates, constraint profiles, and QA templates.
 - `claude/`: Claude-oriented prompt/playbook assets.
 - `scripts/`: helper scripts for validation and sync.
@@ -32,21 +32,22 @@ You can override with:
 
 ### 3) Confirm installation
 Check that this exists:
-- `.../.codex/skills/bbmcp-operator/SKILL.md`
-- `.../.codex/skills/bbmcp-operator/agents/openai.yaml`
+- `.../.codex/skills/greyfox-operator/SKILL.md`
+- `.../.codex/skills/greyfox-operator/agents/openai.yaml`
 
 ### 4) Use the skill in Codex
 Reference the skill in your request:
-- `Use $bbmcp-operator to perform a safe bbmcp mutation and run quality gates.`
-- `Use $bbmcp-operator with humanoid-face and biped-foot constraints, then do one craft pass.`
+- `Use $greyfox-operator to perform a safe greyfox mutation and run quality gates.`
+- `Use $greyfox-operator with humanoid-face and biped-foot constraints, then do one craft pass.`
 
 ## Update workflow
 1. Edit files in `agents/`.
 2. Run validation script.
 3. Re-run sync script.
-4. Start a new Codex run (or restart your session) and invoke `$bbmcp-operator`.
+4. Start a new Codex run (or restart your session) and invoke `$greyfox-operator`.
 
 ## Notes
-- `bbmcp-operator` enforces safe mutation flow, constraint pass/repair pass, quality gates, and QA-grade reporting.
+- `greyfox-operator` enforces safe mutation flow, constraint pass/repair pass, quality gates, and QA-grade reporting.
 - Shading algorithm ownership stays in MCP server logic. The skill only sets policy and verifies outcomes.
 - Constraint profiles are in `agents/common/constraint-profiles/`.
+

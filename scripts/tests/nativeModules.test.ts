@@ -43,10 +43,11 @@ type NativeLoader = (name: string, options?: { message?: string; detail?: string
   const original = globals.requireNativeModule;
   globals.requireNativeModule = () => null;
   try {
-    const mod = loadNativeModule<Record<string, unknown>>('__bbmcp_missing_native_module__');
+    const mod = loadNativeModule<Record<string, unknown>>('__greyfox_missing_native_module__');
     assert.equal(mod, null);
   } finally {
     globals.requireNativeModule = original;
   }
 }
+
 

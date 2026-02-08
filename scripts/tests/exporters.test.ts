@@ -62,16 +62,16 @@ const buildState = (): SessionState => ({
     format: string;
     name: string;
     elements: Array<{ name: string; rotation?: { axis: string; angle: number } }>;
-    bbmcp_meta: { schema: string; format: string; name: string | null };
+    greyfox_meta: { schema: string; format: string; name: string | null };
   };
 
   assert.equal(bundle.format, 'java_block_item_json');
-  assert.equal(payload.format, 'bbmcp_java_block_item');
+  assert.equal(payload.format, 'greyfox_java_block_item');
   assert.equal(payload.name, 'draco');
   assert.equal(payload.elements.length, 2);
   assert.equal(payload.elements[0].rotation?.axis, 'y');
   assert.equal(payload.elements[0].rotation?.angle, 45);
-  assert.equal(payload.bbmcp_meta.schema, 'internal');
+  assert.equal(payload.greyfox_meta.schema, 'internal');
 }
 
 {
@@ -114,7 +114,7 @@ const buildState = (): SessionState => ({
     animations: Array<{ name: string; fps?: number }>;
   };
   assert.equal(bundle.format, 'animated_java');
-  assert.equal(payload.format, 'bbmcp_animated_java');
+  assert.equal(payload.format, 'greyfox_animated_java');
   assert.equal(payload.name, 'draco');
   assert.equal(payload.bones.length, 2);
   assert.equal(payload.cubes.length, 2);
@@ -132,7 +132,7 @@ const buildState = (): SessionState => ({
     animations: unknown[];
   };
   assert.equal(bundle.format, 'generic_model_json');
-  assert.equal(payload.format, 'bbmcp_generic_model');
+  assert.equal(payload.format, 'greyfox_generic_model');
   assert.equal(payload.formatId, 'geckolib');
   assert.equal(payload.meshes.length, 1);
   assert.equal(payload.animations.length, 1);
@@ -151,7 +151,7 @@ const buildState = (): SessionState => ({
     meshes: unknown[];
     textures: unknown[];
     animations: unknown[];
-    bbmcp_meta: { name: string | null; format: string };
+    greyfox_meta: { name: string | null; format: string };
   };
   assert.equal(payload.meta.format, 'geckolib');
   assert.equal(payload.bones.length, 2);
@@ -159,6 +159,7 @@ const buildState = (): SessionState => ({
   assert.equal(payload.meshes.length, 1);
   assert.equal(payload.textures.length, 1);
   assert.equal(payload.animations.length, 1);
-  assert.equal(payload.bbmcp_meta.name, null);
-  assert.equal(payload.bbmcp_meta.format, 'custom_format');
+  assert.equal(payload.greyfox_meta.name, null);
+  assert.equal(payload.greyfox_meta.format, 'custom_format');
 }
+

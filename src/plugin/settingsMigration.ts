@@ -4,13 +4,13 @@ export const cleanupLegacySettings = (deps: { readGlobals: ReadGlobals }) => {
   const globals = deps.readGlobals();
   const settings = globals.settings;
   if (!settings || typeof settings !== 'object') return;
-  const versionKey = 'bbmcp_settings_version';
+  const versionKey = 'greyfox_settings_version';
   const versionEntry = settings[versionKey];
   const currentVersion = typeof versionEntry?.value === 'number' ? Number(versionEntry.value) : 0;
   if (currentVersion >= 1) return;
-  const keep = new Set(['bbmcp_host', 'bbmcp_port', 'bbmcp_path']);
+  const keep = new Set(['greyfox_host', 'greyfox_port', 'greyfox_path']);
   for (const key of Object.keys(settings)) {
-    if (key.startsWith('bbmcp_') && !keep.has(key)) {
+    if (key.startsWith('greyfox_') && !keep.has(key)) {
       try {
         delete settings[key];
       } catch (_err) {
@@ -24,3 +24,4 @@ export const cleanupLegacySettings = (deps: { readGlobals: ReadGlobals }) => {
     settings[versionKey] = { value: 1 };
   }
 };
+

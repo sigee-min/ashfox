@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install bbmcp and verify MCP endpoint connectivity.
+description: Install greyfox and verify MCP endpoint connectivity.
 ---
 
 ## Requirements
@@ -18,7 +18,7 @@ In Blockbench Desktop:
 3. Install / Load the plugin.
 
 ```text
-https://github.com/sigee-min/bbmcp/releases/latest/download/bbmcp.js
+https://github.com/sigee-min/greyfox/releases/latest/download/greyfox.js
 ```
 
 ## Build from Source (Optional)
@@ -26,8 +26,8 @@ https://github.com/sigee-min/bbmcp/releases/latest/download/bbmcp.js
 Clone and build:
 
 ```bash
-git clone https://github.com/sigee-min/bbmcp.git
-cd bbmcp
+git clone https://github.com/sigee-min/greyfox.git
+cd greyfox
 npm install
 npm run build
 ```
@@ -39,7 +39,7 @@ npm install
 npm run build
 ```
 
-Then load `dist/bbmcp.js` in Blockbench Plugin Manager.
+Then load `dist/greyfox.js` in Blockbench Plugin Manager.
 
 ## Verify MCP Endpoint
 
@@ -55,14 +55,15 @@ Expected result:
 
 ## URL and Runtime Configuration
 
-- Official guide URL: `https://bbmcp.sigee.xyz`
+- Official guide URL: `https://greyfox.sigee.xyz`
 - Default MCP endpoint: `http://127.0.0.1:8787/mcp`
-- `BBMCP_HOST`, `BBMCP_PORT`, `BBMCP_PATH`: override MCP host/port/path.
+- `GREYFOX_HOST`, `GREYFOX_PORT`, `GREYFOX_PATH`: override MCP host/port/path.
 
 Example:
 
 ```bash
-BBMCP_HOST=127.0.0.1
-BBMCP_PORT=8787
-BBMCP_PATH=/mcp
+GREYFOX_HOST=127.0.0.1
+GREYFOX_PORT=8787
+GREYFOX_PATH=/mcp
 ```
+

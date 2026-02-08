@@ -216,7 +216,7 @@ export class SidecarProcess {
   private resolveSidecarPath(pathModule: PathModule): string | null {
     const pluginPath = resolveRegisteredPluginPath(PLUGIN_ID);
     if (!pluginPath || !pathModule?.dirname || !pathModule?.join) return null;
-    return pathModule.join(pathModule.dirname(pluginPath), 'bbmcp-sidecar.js');
+    return pathModule.join(pathModule.dirname(pluginPath), 'greyfox-sidecar.js');
   }
 
   private resolveExecPath(childProcess: ChildProcessModule): string | null {
@@ -249,6 +249,7 @@ function isPathModule(value: unknown): value is PathModule {
   const mod = value as { join?: unknown; dirname?: unknown };
   return typeof mod.join === 'function' && typeof mod.dirname === 'function';
 }
+
 
 
 

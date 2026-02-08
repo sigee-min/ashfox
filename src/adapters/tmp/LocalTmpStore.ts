@@ -69,7 +69,7 @@ export const saveDataUriToTmp = (
     return { ok: false, error: toolError('not_implemented', TMP_STORE_FILESYSTEM_UNAVAILABLE) };
   }
   const root = options?.cwd ?? (typeof process !== 'undefined' && process.cwd ? process.cwd() : '.');
-  const baseDir = path.resolve(root, '.bbmcp', 'tmp');
+  const baseDir = path.resolve(root, '.greyfox', 'tmp');
   try {
     fs.mkdirSync(baseDir, { recursive: true });
   } catch (err) {
@@ -107,6 +107,7 @@ export class LocalTmpStore implements TmpStorePort {
     return saveDataUriToTmp(dataUri, options);
   }
 }
+
 
 
 

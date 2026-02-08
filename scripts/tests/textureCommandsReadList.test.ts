@@ -23,7 +23,7 @@ class FakeTexture {
   source?: string;
   width?: number;
   height?: number;
-  bbmcpId?: string;
+  greyfoxId?: string;
   canvas?: { width: number; height: number; getContext?: (type: string) => unknown; toDataURL?: () => string };
   ctx?: { clearRect: (...args: unknown[]) => void; drawImage: (...args: unknown[]) => void };
   img?: { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
@@ -219,3 +219,4 @@ class NoCanvasTexture {
     ]);
   });
 }
+

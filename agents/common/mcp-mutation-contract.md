@@ -1,6 +1,6 @@
-# bbmcp MCP Mutation Contract
+# greyfox MCP Mutation Contract
 
-Use this contract for all mutating bbmcp tool calls.
+Use this contract for all mutating greyfox tool calls.
 
 ## Required sequence
 1. Call `get_project_state` and capture `project.revision`.
@@ -20,4 +20,5 @@ Use this contract for all mutating bbmcp tool calls.
 - `paint_faces`: verify `changedPixels`, `resolvedSource`, texture hash/byteLength.
 - `update_cube`/`add_cube`: run `validate`; confirm UV warnings did not regress.
 - `set_frame_pose`: verify viewport reflects updates (or call preview for confirmation).
+
 

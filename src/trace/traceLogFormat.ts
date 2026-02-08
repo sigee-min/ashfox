@@ -10,7 +10,7 @@ const REDACT_KEYS = new Set(['dataUri', 'image', 'canvas', 'ctx', 'img']);
 const MAX_DEPTH = 6;
 const MAX_ARRAY = 50;
 const MAX_OBJECT_KEYS = 100;
-const TRUNCATED_KEYS_MARKER = '__bbmcpTruncatedKeys__';
+const TRUNCATED_KEYS_MARKER = '__greyfoxTruncatedKeys__';
 
 export const summarizeProjectState = (state: ProjectState): TraceLogStateSummary => ({
   id: state.id,
@@ -79,6 +79,7 @@ export const sanitizeTraceValue = (value: unknown, depth = 0, seen?: WeakSet<obj
 
 export const serializeTraceLogRecord = (record: TraceLogRecord): string =>
   JSON.stringify(record);
+
 
 
 

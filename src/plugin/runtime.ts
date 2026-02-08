@@ -28,7 +28,7 @@ import type { TraceLogWriter } from '../ports/traceLog';
 import { PLUGIN_LOG_LOADING, PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, PLUGIN_UI_LOADED, PLUGIN_UI_UNLOADED } from './messages';
 import { PLUGIN_ICON_DATA_URL } from './pluginIcon';
 
-type BbmcpBridge = {
+type GreyfoxBridge = {
   invoke: Dispatcher['handle'];
   capabilities: Capabilities;
   serverConfig: () => EndpointConfig;
@@ -102,7 +102,7 @@ const claimSingletonWithLogger = () => {
   });
 };
 
-const exposeBridgeWithVersion = (bridge: BbmcpBridge) => {
+const exposeBridgeWithVersion = (bridge: GreyfoxBridge) => {
   exposeBridge(bridge, PLUGIN_VERSION);
 };
 const restartServerWithState = () => {
@@ -123,7 +123,7 @@ export const registerPlugin = () => {
   const pluginApi = globals.Plugin;
 
   pluginApi?.register(PLUGIN_ID, {
-    title: 'bbmcp',
+    title: 'greyfox',
     author: 'sigee-min',
     icon: PLUGIN_ICON_DATA_URL,
     description: 'Blockbench MCP bridge scaffold (Java Block/Item default, GeckoLib optional). Latest Blockbench desktop only.',
@@ -131,25 +131,25 @@ export const registerPlugin = () => {
     version: PLUGIN_VERSION,
     native_modules: ['child_process'],
     tags: ['mcp', 'automation', 'ai'],
-    about: `### bbmcp (MCP Bridge for Blockbench)
+    about: `### greyfox (MCP Bridge for Blockbench)
 
 **Author:** sigee-min
 **Version:** ${PLUGIN_VERSION}
 **Published:** 2024-01-04
 **Last Updated:** ${new Date().toISOString().slice(0, 10)}
 
-bbmcp exposes a clean MCP-facing tool surface for AI/agents:
+greyfox exposes a clean MCP-facing tool surface for AI/agents:
 
 - Modeling is low-level only: add_bone/add_cube (one item per call).
 - UVs are fully internal: assign_texture -> paint_faces (no manual UV tools).
 - Deterministic low-level tools only; no high-level pipelines.
   - Formats: Java Block/Item enabled by default; GeckoLib/Animated Java gated by capability flags.
-- MCP endpoint: set in Settings (bbmcp: Server) or BBMCP_HOST/PORT/PATH env vars (default 0.0.0.0:8787/mcp).
+- MCP endpoint: set in Settings (greyfox: Server) or GREYFOX_HOST/PORT/PATH env vars (default 0.0.0.0:8787/mcp).
 - Server starts automatically and restarts on endpoint changes.
 
 Recommended flow:
-1) Configure endpoint via Settings or BBMCP_HOST/PORT/PATH env vars when needed.
-  2) Use \`bbmcp.invoke\` with low-level tools (model/texture/animation).
+1) Configure endpoint via Settings or GREYFOX_HOST/PORT/PATH env vars when needed.
+  2) Use \`greyfox.invoke\` with low-level tools (model/texture/animation).
 3) Export, render preview, and run validate to catch issues early.
 
 Notes:
@@ -230,6 +230,7 @@ Notes:
     }
   });
 };
+
 
 
 

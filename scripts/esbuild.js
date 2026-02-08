@@ -1,4 +1,4 @@
-﻿const esbuild = require('esbuild');
+const esbuild = require('esbuild');
 const fs = require('fs');
 
 const ensureDir = (dir) => {
@@ -8,7 +8,7 @@ const ensureDir = (dir) => {
 const buildPlugin = () =>
   esbuild.build({
     entryPoints: ['src/plugin.ts'],
-    outfile: 'dist/bbmcp.js',
+    outfile: 'dist/greyfox.js',
     bundle: true,
     sourcemap: true,
     platform: 'browser',
@@ -20,7 +20,7 @@ const buildPlugin = () =>
 const buildSidecar = () =>
   esbuild.build({
     entryPoints: ['src/sidecar/index.ts'],
-    outfile: 'dist/bbmcp-sidecar.js',
+    outfile: 'dist/greyfox-sidecar.js',
     bundle: true,
     sourcemap: true,
     platform: 'node',
@@ -38,3 +38,4 @@ const buildSidecar = () =>
   console.error(err);
   process.exit(1);
 });
+

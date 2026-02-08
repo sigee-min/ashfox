@@ -31,7 +31,7 @@ $requiredTokens = @(
 )
 
 $requiredRefsBySkill = @{
-  "bbmcp-operator" = @(
+  "greyfox-operator" = @(
     "../../../common/mcp-mutation-contract.md",
     "../../../common/texture-quality-gates.md",
     "../../../common/error-recovery-playbook.md",
@@ -121,3 +121,4 @@ if ($failures.Count -gt 0) {
 }
 
 Write-Host "Agent validation ok."
+

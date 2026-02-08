@@ -4,78 +4,79 @@ import { loadGuideMarkdown } from './guideLoader';
 
 export const GUIDE_RESOURCE_TEMPLATES: ResourceTemplate[] = [
   {
-    uriTemplate: 'bbmcp://guide/{name}',
+    uriTemplate: 'greyfox://guide/{name}',
     name: 'Guide',
     mimeType: 'text/markdown',
-    description: 'Static guides and examples for bbmcp workflows.'
+    description: 'Static guides and examples for greyfox workflows.'
   }
 ];
 
 export const GUIDE_RESOURCES: ResourceContent[] = [
   {
-    uri: 'bbmcp://guide/modeling-workflow',
+    uri: 'greyfox://guide/modeling-workflow',
     name: 'Modeling Workflow Guide',
     mimeType: 'text/markdown',
     description: 'Low-level modeling workflow using add_bone/add_cube.',
     text: loadGuideMarkdown('modeling-workflow', GUIDE_FALLBACKS['modeling-workflow'])
   },
   {
-    uri: 'bbmcp://guide/rigging',
+    uri: 'greyfox://guide/rigging',
     name: 'Rigging Guide',
     mimeType: 'text/markdown',
     description: 'Root-based bone hierarchy guidelines for animation-ready rigs.',
     text: loadGuideMarkdown('rigging', GUIDE_FALLBACKS.rigging)
   },
   {
-    uri: 'bbmcp://guide/animation-workflow',
+    uri: 'greyfox://guide/animation-workflow',
     name: 'Animation Workflow Guide',
     mimeType: 'text/markdown',
     description: 'Low-level animation workflow using clips + per-bone keyframes.',
     text: loadGuideMarkdown('animation-workflow', GUIDE_FALLBACKS['animation-workflow'])
   },
   {
-    uri: 'bbmcp://guide/texture-workflow',
+    uri: 'greyfox://guide/texture-workflow',
     name: 'Texture Workflow Guide',
     mimeType: 'text/markdown',
     description: 'Auto-UV texture workflow with direct ops painting.',
     text: loadGuideMarkdown('texture-workflow', GUIDE_FALLBACKS['texture-workflow'])
   },
   {
-    uri: 'bbmcp://guide/uv-atlas',
+    uri: 'greyfox://guide/uv-atlas',
     name: 'UV Atlas Guide',
     mimeType: 'text/markdown',
     description: 'Internal auto UV atlas packing and resolution growth strategy.',
     text: loadGuideMarkdown('uv-atlas', GUIDE_FALLBACKS['uv-atlas'])
   },
   {
-    uri: 'bbmcp://guide/texture-spec',
+    uri: 'greyfox://guide/texture-spec',
     name: 'Texture + UV Spec',
     mimeType: 'text/markdown',
     description: 'Canonical UV and texturing invariants (internal UV tools).',
     text: loadGuideMarkdown('texture-spec', GUIDE_FALLBACKS['texture-spec'])
   },
   {
-    uri: 'bbmcp://guide/llm-texture-strategy',
+    uri: 'greyfox://guide/llm-texture-strategy',
     name: 'LLM Texture Strategy',
     mimeType: 'text/markdown',
     description: 'LLM-oriented workflow with internal UV management.',
     text: loadGuideMarkdown('llm-texture-strategy', GUIDE_FALLBACKS['llm-texture-strategy'])
   },
   {
-    uri: 'bbmcp://guide/vision-fallback',
+    uri: 'greyfox://guide/vision-fallback',
     name: 'Vision Fallback Guide',
     mimeType: 'text/markdown',
     description: 'Preview/texture image snapshot workflow for manual uploads.',
     text: loadGuideMarkdown('vision-fallback', GUIDE_FALLBACKS['vision-fallback'])
   },
   {
-    uri: 'bbmcp://guide/entity-workflow',
+    uri: 'greyfox://guide/entity-workflow',
     name: 'Entity Workflow Guide',
     mimeType: 'text/markdown',
     description: 'GeckoLib-first entity workflow with version targeting.',
     text: loadGuideMarkdown('entity-workflow', GUIDE_FALLBACKS['entity-workflow'])
   }
 ];
+
 
 
 

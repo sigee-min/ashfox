@@ -1,4 +1,4 @@
-# bbmcp page
+# greyfox page
 
 Static docs site built with Next.js + Fumadocs.
 
@@ -38,3 +38,4 @@ Copy `.env.example` and set values when needed:
 ## CI
 
 Repository CI runs `docs/page` static build as a validation step (`docs-static-check` job).
+

@@ -27,7 +27,7 @@ export const createTraceLogDefaults = () => ({
   enabled: true,
   mode: 'writeFile' as const,
   destPath: '',
-  fileName: 'bbmcp-trace.ndjson',
+  fileName: 'greyfox-trace.ndjson',
   resourceEnabled: true,
   maxEntries: 2000,
   maxBytes: TRACE_LOG_MAX_KB * 1024,
@@ -35,3 +35,4 @@ export const createTraceLogDefaults = () => ({
   flushEvery: 1,
   flushIntervalMs: 0
 });
+

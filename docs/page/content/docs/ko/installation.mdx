@@ -1,6 +1,6 @@
 ---
 title: 설치
-description: bbmcp 설치와 MCP 엔드포인트 연결 확인 방법.
+description: greyfox 설치와 MCP 엔드포인트 연결 확인 방법.
 ---
 
 ## 요구사항
@@ -18,7 +18,7 @@ Blockbench Desktop에서:
 3. 플러그인을 설치/로드합니다.
 
 ```text
-https://github.com/sigee-min/bbmcp/releases/latest/download/bbmcp.js
+https://github.com/sigee-min/greyfox/releases/latest/download/greyfox.js
 ```
 
 ## 소스 빌드 (선택)
@@ -26,8 +26,8 @@ https://github.com/sigee-min/bbmcp/releases/latest/download/bbmcp.js
 clone 후 빌드:
 
 ```bash
-git clone https://github.com/sigee-min/bbmcp.git
-cd bbmcp
+git clone https://github.com/sigee-min/greyfox.git
+cd greyfox
 npm install
 npm run build
 ```
@@ -39,7 +39,7 @@ npm install
 npm run build
 ```
 
-그 다음 Blockbench Plugin Manager에서 `dist/bbmcp.js`를 로드합니다.
+그 다음 Blockbench Plugin Manager에서 `dist/greyfox.js`를 로드합니다.
 
 ## MCP 엔드포인트 확인
 
@@ -55,14 +55,15 @@ http://127.0.0.1:8787/mcp
 
 ## URL 및 런타임 설정
 
-- 공식 가이드 URL: `https://bbmcp.sigee.xyz`
+- 공식 가이드 URL: `https://greyfox.sigee.xyz`
 - 기본 MCP 엔드포인트: `http://127.0.0.1:8787/mcp`
-- `BBMCP_HOST`, `BBMCP_PORT`, `BBMCP_PATH`: MCP 서버 호스트/포트/경로 재정의
+- `GREYFOX_HOST`, `GREYFOX_PORT`, `GREYFOX_PATH`: MCP 서버 호스트/포트/경로 재정의
 
 예시:
 
 ```bash
-BBMCP_HOST=127.0.0.1
-BBMCP_PORT=8787
-BBMCP_PATH=/mcp
+GREYFOX_HOST=127.0.0.1
+GREYFOX_PORT=8787
+GREYFOX_PATH=/mcp
 ```
+

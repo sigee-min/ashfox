@@ -57,7 +57,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       Project: {
         name: 'dragon',
         uuid: 'project-id',
-        bbmcpUvPixelsPerBlock: 24
+        greyfoxUvPixelsPerBlock: 24
       },
       Blockbench: {
         hasUnsavedChanges: () => true
@@ -161,7 +161,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         name: 'root-only',
         id: 'root-id',
         dirty: false,
-        bbmcp: { uv_pixels_per_block: 32 }
+        greyfox: { uv_pixels_per_block: 32 }
       },
       Format: { id: 'minecraft_block' },
       Outliner: {
@@ -219,3 +219,4 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     }
   );
 }
+

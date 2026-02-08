@@ -1,4 +1,4 @@
-# bbmcp QA Bug Report Template
+# greyfox QA Bug Report Template
 
 ## 1) Summary
 - Issue:
@@ -7,7 +7,7 @@
 
 ## 2) Environment
 - Blockbench version:
-- bbmcp version:
+- greyfox version:
 - Tool schema version:
 - Format:
 - OS:
@@ -39,4 +39,5 @@
 ## 8) Safe rollback or mitigation
 - Immediate workaround:
 - Risk if ignored:
+
 

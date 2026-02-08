@@ -1,4 +1,4 @@
-# bbmcp Texture Quality Gates
+# greyfox Texture Quality Gates
 
 Apply these checks after `paint_faces`.
 
@@ -23,4 +23,5 @@ Apply these checks after `paint_faces`.
   1. Re-check revision chain.
   2. Re-run single paint with explicit color and coordinates.
   3. Capture request/response and trace entries.
+
 

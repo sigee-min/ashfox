@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { LocalTmpStore, saveDataUriToTmp } from '../../src/adapters/tmp/LocalTmpStore';
 
-const makeTmpRoot = () => fs.mkdtempSync(path.join(os.tmpdir(), 'bbmcp-localtmp-'));
+const makeTmpRoot = () => fs.mkdtempSync(path.join(os.tmpdir(), 'greyfox-localtmp-'));
 
 const VALID_DATA_URI = 'data:image/png;base64,AAAA';
 
@@ -111,4 +111,5 @@ const VALID_DATA_URI = 'data:image/png;base64,AAAA';
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
 }
+
 

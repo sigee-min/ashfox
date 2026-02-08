@@ -12,8 +12,8 @@ export interface BlockbenchProject {
   export_path?: string;
   texture_width?: number;
   texture_height?: number;
-  bbmcpUvPixelsPerBlock?: number;
-  bbmcp?: { uvPixelsPerBlock?: number; uv_pixels_per_block?: number };
+  greyfoxUvPixelsPerBlock?: number;
+  greyfox?: { uvPixelsPerBlock?: number; uv_pixels_per_block?: number };
   setTextureSize?: (width: number, height: number) => void;
   saved?: boolean;
   isSaved?: boolean;
@@ -89,7 +89,7 @@ export interface TextureInstance {
   img?: HTMLImageElement;
   canvas?: HTMLCanvasElement;
   ctx?: CanvasRenderingContext2D;
-  bbmcpId?: string;
+  greyfoxId?: string;
   namespace?: string;
   folder?: string;
   particle?: boolean;
@@ -141,7 +141,7 @@ export interface OutlinerNode extends UnknownRecord {
   name?: string;
   parent?: OutlinerNode | null;
   children?: OutlinerNode[];
-  bbmcpId?: string;
+  greyfoxId?: string;
   uuid?: string;
   id?: string;
   uid?: string;
@@ -232,7 +232,7 @@ export interface AnimationClip {
   uuid?: string;
   uid?: string;
   _uuid?: string;
-  bbmcpId?: string;
+  greyfoxId?: string;
   name?: string;
   length?: number;
   animation_length?: number;
@@ -383,5 +383,6 @@ export interface BlockbenchGlobals {
 
 export const readBlockbenchGlobals = (): BlockbenchGlobals =>
   globalThis as typeof globalThis & BlockbenchGlobals;
+
 
 

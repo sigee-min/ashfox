@@ -21,7 +21,7 @@ export class BlockbenchViewportRefresher implements ViewportRefresherPort {
       const invalidated = invalidateCanvas(globals.Canvas, request.effect);
       const rendered = renderViewportPreviews(globals);
       if (!invalidated && rendered === 0) {
-        globals.Blockbench?.dispatchEvent?.('bbmcp:viewport_changed', request);
+        globals.Blockbench?.dispatchEvent?.('greyfox:viewport_changed', request);
       }
     } catch (err) {
       this.log.warn('viewport refresh failed', {
@@ -32,3 +32,4 @@ export class BlockbenchViewportRefresher implements ViewportRefresherPort {
     }
   }
 }
+

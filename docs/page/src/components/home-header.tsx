@@ -56,7 +56,7 @@ export function HomeHeader({ locale }: { locale: Locale }) {
     >
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link href={`/${locale}`} className="inline-flex items-center text-base font-semibold">
-          bbmcp
+          greyfox
         </Link>
         <div className="flex items-center gap-1.5">
           <Link href={`/${locale}/docs`} className={buttonVariants({ color: 'ghost', className: 'gap-1.5 px-2.5 text-sm' })}>
@@ -66,7 +66,7 @@ export function HomeHeader({ locale }: { locale: Locale }) {
           <ThemeSelect locale={locale} />
           <LanguageSelect locale={locale} />
           <a
-            href="https://github.com/sigee-min/bbmcp"
+            href="https://github.com/sigee-min/greyfox"
             target="_blank"
             rel="noreferrer"
             aria-label="GitHub"
@@ -79,3 +79,4 @@ export function HomeHeader({ locale }: { locale: Locale }) {
     </header>
   );
 }
+

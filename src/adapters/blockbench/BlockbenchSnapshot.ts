@@ -74,12 +74,12 @@ export class BlockbenchSnapshot implements SnapshotPort {
       });
 
       const projectRecord = project as Record<string, unknown> | null | undefined;
-      const bbmcpRaw = projectRecord?.bbmcp;
-      const bbmcp = bbmcpRaw && typeof bbmcpRaw === 'object' ? (bbmcpRaw as Record<string, unknown>) : undefined;
+      const greyfoxRaw = projectRecord?.greyfox;
+      const greyfox = greyfoxRaw && typeof greyfoxRaw === 'object' ? (greyfoxRaw as Record<string, unknown>) : undefined;
       const uvPixelsPerBlock =
-        projectRecord?.bbmcpUvPixelsPerBlock ??
-        (bbmcp?.uvPixelsPerBlock as number | undefined) ??
-        (bbmcp?.uv_pixels_per_block as number | undefined);
+        projectRecord?.greyfoxUvPixelsPerBlock ??
+        (greyfox?.uvPixelsPerBlock as number | undefined) ??
+        (greyfox?.uv_pixels_per_block as number | undefined);
 
       return {
         id,
@@ -103,6 +103,7 @@ export class BlockbenchSnapshot implements SnapshotPort {
     }
   }
 }
+
 
 
 

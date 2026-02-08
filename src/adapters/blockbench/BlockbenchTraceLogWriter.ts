@@ -11,7 +11,7 @@ export type BlockbenchTraceLogWriterOptions = {
   fileName?: string;
 };
 
-const DEFAULT_FILE_NAME = 'bbmcp-trace.ndjson';
+const DEFAULT_FILE_NAME = 'greyfox-trace.ndjson';
 
 type FsModule = {
   statSync?: (path: string) => { isDirectory?: () => boolean };
@@ -179,6 +179,7 @@ const writeTraceLogExport = (
     });
   }
 };
+
 
 
 

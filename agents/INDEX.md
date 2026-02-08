@@ -9,7 +9,7 @@ See `agents/README.md` for install, sync, and usage steps.
 - `scripts/`: helper scripts for syncing and validating agent assets.
 
 ## Codex skill
-- `bbmcp-operator`: single unified skill for safe mutation workflow, craft-quality improvement loops, texture quality gates, and QA-grade bug reporting.
+- `greyfox-operator`: single unified skill for safe mutation workflow, craft-quality improvement loops, texture quality gates, and QA-grade bug reporting.
 
 ## Shared quality assets
 - `common/quality-rubric.md`: scoring model for visual/behavioral output quality.
@@ -24,3 +24,4 @@ See `agents/README.md` for install, sync, and usage steps.
 - macOS/Linux:
   - Validate: `bash agents/scripts/unix/validate-agents.sh`
   - Sync: `bash agents/scripts/unix/sync-codex-skills.sh`
+

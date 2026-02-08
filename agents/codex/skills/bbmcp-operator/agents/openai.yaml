@@ -1,4 +1,0 @@
-interface:
-  display_name: "bbmcp Operator"
-  short_description: "Run safe bbmcp edits, then improve craft quality with rubric scoring."
-  default_prompt: "Use $bbmcp-operator to execute a safe bbmcp mutation, enforce constraint profiles, run quality gates, and perform one craft pass with rubric scoring."

@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// bbmcp release gate: dead export check with a small intentional allowlist.
+// greyfox release gate: dead export check with a small intentional allowlist.
 // We skip public barrels that are meant for external consumers.
 
 const { spawnSync } = require('child_process');
@@ -32,7 +32,7 @@ const lines = output
   });
 
 if (lines.length > 0) {
-  console.error('bbmcp deadcode gate failed (unused exports):');
+  console.error('greyfox deadcode gate failed (unused exports):');
   for (const line of lines) {
     console.error(`- ${line}`);
   }
@@ -40,4 +40,5 @@ if (lines.length > 0) {
   return;
 }
 
-console.log('bbmcp deadcode gate ok');
+console.log('greyfox deadcode gate ok');
+

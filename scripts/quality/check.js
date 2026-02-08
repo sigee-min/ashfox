@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// bbmcp release gate: lightweight static checks.
+// greyfox release gate: lightweight static checks.
 // Intentionally dependency-free: Node fs + regex scanning.
 
 const fs = require('fs');
@@ -154,7 +154,7 @@ const main = () => {
   }
 
   if (findings.length > 0) {
-    console.error('bbmcp quality gate failed. Violations:');
+    console.error('greyfox quality gate failed. Violations:');
     for (const f of findings) {
       console.error(`- ${f.rule}: ${f.file}:${f.line} :: ${f.snippet}`);
     }
@@ -162,7 +162,8 @@ const main = () => {
     return;
   }
 
-  console.log('bbmcp quality gate ok');
+  console.log('greyfox quality gate ok');
 };
 
 main();
+

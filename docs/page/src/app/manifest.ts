@@ -4,9 +4,9 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'bbmcp',
-    short_name: 'bbmcp',
-    description: 'bbmcp MCP tools for Blockbench modeling, texturing, animation, and validation workflows.',
+    name: 'greyfox',
+    short_name: 'greyfox',
+    description: 'greyfox MCP tools for Blockbench modeling, texturing, animation, and validation workflows.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0a0f18',
@@ -25,3 +25,4 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   };
 }
+

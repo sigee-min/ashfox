@@ -1,8 +1,8 @@
 import type { Locale } from '@/lib/i18n';
 
-export const siteName = 'bbmcp';
-export const siteTitle = 'bbmcp';
-export const siteDescription = 'bbmcp MCP tools for Blockbench modeling, texturing, animation, and validation workflows.';
+export const siteName = 'greyfox';
+export const siteTitle = 'greyfox';
+export const siteDescription = 'greyfox MCP tools for Blockbench modeling, texturing, animation, and validation workflows.';
 
 const rawBasePath = process.env.DOCS_BASE_PATH?.trim() ?? '';
 export const basePath =
@@ -56,3 +56,4 @@ export function localizedAlternates(suffix = ''): Record<string, string> {
 }
 
 export const defaultOpenGraphImage = withBasePath('/greyfox.png');
+

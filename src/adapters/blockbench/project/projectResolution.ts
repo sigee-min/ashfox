@@ -66,15 +66,15 @@ export const runSetProjectUvPixelsPerBlock = (log: Logger, pixelsPerBlock: numbe
       return { code: 'invalid_state', message: PROJECT_NO_ACTIVE };
     }
     const projectRecord = project as Record<string, unknown>;
-    projectRecord.bbmcpUvPixelsPerBlock = pixelsPerBlock;
-    const bbmcpRaw = projectRecord.bbmcp;
-    const bbmcp =
-      bbmcpRaw && typeof bbmcpRaw === 'object'
-        ? (bbmcpRaw as Record<string, unknown>)
+    projectRecord.greyfoxUvPixelsPerBlock = pixelsPerBlock;
+    const greyfoxRaw = projectRecord.greyfox;
+    const greyfox =
+      greyfoxRaw && typeof greyfoxRaw === 'object'
+        ? (greyfoxRaw as Record<string, unknown>)
         : ({}) as Record<string, unknown>;
-    bbmcp.uvPixelsPerBlock = pixelsPerBlock;
-    bbmcp.uv_pixels_per_block = pixelsPerBlock;
-    projectRecord.bbmcp = bbmcp;
+    greyfox.uvPixelsPerBlock = pixelsPerBlock;
+    greyfox.uv_pixels_per_block = pixelsPerBlock;
+    projectRecord.greyfox = greyfox;
     log.info('project uv pixels per block set', { pixelsPerBlock });
     return null;
   } catch (err) {
@@ -83,4 +83,5 @@ export const runSetProjectUvPixelsPerBlock = (log: Logger, pixelsPerBlock: numbe
     return toolError('unknown', message, { reason: 'adapter_exception', context: 'project_uv_pixels_per_block' });
   }
 };
+
 

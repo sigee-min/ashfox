@@ -21,7 +21,7 @@ class FakeTexture {
   static all: FakeTexture[] = [];
   id?: string;
   uuid?: string;
-  bbmcpId?: string;
+  greyfoxId?: string;
   name?: string;
   path?: string;
   source?: string;
@@ -67,7 +67,7 @@ class FakeTexture {
 
 {
   const first = new FakeTexture();
-  first.bbmcpId = 'bbmcp-1';
+  first.greyfoxId = 'greyfox-1';
   first.name = 'atlas';
   first.canvas = { width: 32, height: 48 };
   first.path = '/tmp/atlas.png';
@@ -88,7 +88,7 @@ class FakeTexture {
     const stats = listTextureStats();
     assert.equal(stats.length, 3);
     assert.deepEqual(stats[0], {
-      id: 'bbmcp-1',
+      id: 'greyfox-1',
       name: 'atlas',
       width: 32,
       height: 48,
@@ -110,4 +110,5 @@ class FakeTexture {
     });
   });
 }
+
 

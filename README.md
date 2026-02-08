@@ -1,8 +1,8 @@
-# <img src="docs/page/public/favicon-32x32.png" alt="bbmcp icon badge" width="32" height="32" /> bbmcp
+# <img src="docs/page/public/favicon-32x32.png" alt="greyfox icon badge" width="32" height="32" /> greyfox
 
-Blockbench MCP bridge plugin. bbmcp exposes a low-level, deterministic tool surface for modeling, texturing, and animation over MCP.
+Blockbench MCP bridge plugin. greyfox exposes a low-level, deterministic tool surface for modeling, texturing, and animation over MCP.
 
-Docs: [bbmcp.sigee.xyz](https://bbmcp.sigee.xyz)
+Docs: [greyfox.sigee.xyz](https://greyfox.sigee.xyz)
 
 ## Contents
 - Installation
@@ -29,22 +29,22 @@ In Blockbench Desktop:
 3) Click install/load
 
 ```text
-https://github.com/sigee-min/bbmcp/releases/latest/download/bbmcp.js
+https://github.com/sigee-min/greyfox/releases/latest/download/greyfox.js
 ```
 
 ### Option B: Clone and build from source
 ```bash
-git clone https://github.com/sigee-min/bbmcp.git
-cd bbmcp
+git clone https://github.com/sigee-min/greyfox.git
+cd greyfox
 npm install
 npm run build
 ```
 
 Then load the plugin in Blockbench:
-- Use the plugin manager, or load `dist/bbmcp.js` manually.
+- Use the plugin manager, or load `dist/greyfox.js` manually.
 
 ## Quickstart (first successful request)
-1) Start Blockbench with bbmcp enabled.
+1) Start Blockbench with greyfox enabled.
 2) Connect your MCP client to:
 
 ```text
@@ -102,21 +102,21 @@ Expected response shape (trimmed):
 ```
 
 Quick checks if it fails:
-- Confirm bbmcp plugin is loaded in Blockbench Desktop.
+- Confirm greyfox plugin is loaded in Blockbench Desktop.
 - Confirm URL/path is exactly `http://127.0.0.1:8787/mcp`.
 - If custom host/port/path is used, verify settings and env vars match.
 
 ## Endpoint Configuration
 Config precedence (highest to lowest):
-1) Blockbench Settings (`bbmcp: Server`)
-2) Environment variables: `BBMCP_HOST`, `BBMCP_PORT`, `BBMCP_PATH`
+1) Blockbench Settings (`greyfox: Server`)
+2) Environment variables: `GREYFOX_HOST`, `GREYFOX_PORT`, `GREYFOX_PATH`
 3) Defaults
 
 Environment example:
 ```bash
-BBMCP_HOST=127.0.0.1
-BBMCP_PORT=8787
-BBMCP_PATH=/mcp
+GREYFOX_HOST=127.0.0.1
+GREYFOX_PORT=8787
+GREYFOX_PATH=/mcp
 ```
 
 Address notes:
@@ -198,10 +198,10 @@ If toolRegistry.hash changes, re-run list_capabilities (or tools/list) to refres
 ## Guides and Specs
 - docs/guides/texture-spec.md
 - docs/guides/llm-texture-strategy.md
-- MCP resources: bbmcp://guide/* (see resources/templates/list)
+- MCP resources: greyfox://guide/* (see resources/templates/list)
 
 ## Showcase
-Sample output generated with bbmcp tool calls (modeling/texturing/animation).  
+Sample output generated with greyfox tool calls (modeling/texturing/animation).  
 Generation time and final quality vary by prompt, model, and runtime environment.
 
 ![Greyfox Animation](docs/page/public/assets/images/greyfox-animation.gif)
@@ -248,3 +248,5 @@ npm run quality:check
 
 ## License
 See LICENSE.
+
+

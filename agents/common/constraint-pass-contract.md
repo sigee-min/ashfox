@@ -1,4 +1,4 @@
-# bbmcp Constraint Pass Contract
+# greyfox Constraint Pass Contract
 
 Use this contract when structural correctness matters (symmetry, facial layout, foot/toe direction).
 
@@ -31,3 +31,4 @@ Use this contract when structural correctness matters (symmetry, facial layout, 
 - One mutation per failed rule per iteration.
 - Maximum 2 iterations by default.
 - If still failing, stop craft edits and return precise failure diagnostics.
+

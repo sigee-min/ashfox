@@ -1,12 +1,12 @@
 ---
-name: bbmcp-operator
-description: Operate bbmcp MCP tools with high reliability for modeling, texturing, animation, validation, and QA reporting. Use when creating or editing Blockbench projects through bbmcp, when diagnosing failed mutations, or when generating developer-ready defect reports with full request/response history.
+name: greyfox-operator
+description: Operate greyfox MCP tools with high reliability for modeling, texturing, animation, validation, and QA reporting. Use when creating or editing Blockbench projects through greyfox, when diagnosing failed mutations, or when generating developer-ready defect reports with full request/response history.
 ---
 
-# bbmcp Operator
+# greyfox Operator
 
 ## Mission
-Run bbmcp edits safely, then optimize for visual and behavioral quality with a short, deterministic improvement loop.
+Run greyfox edits safely, then optimize for visual and behavioral quality with a short, deterministic improvement loop.
 
 ## Safe Pass
 Use strict mutation discipline before any quality tuning.
@@ -103,3 +103,4 @@ Load detailed references as needed:
 - `../../../common/constraint-profiles/README.md`
 - `../../../common/constraint-profiles/humanoid-face.yaml`
 - `../../../common/constraint-profiles/biped-foot.yaml`
+

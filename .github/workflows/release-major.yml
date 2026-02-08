@@ -187,8 +187,9 @@ jobs:
           generate_release_notes: true
           make_latest: true
           files: |
-            dist/bbmcp.js
-            dist/bbmcp.js.map
-            dist/bbmcp-sidecar.js
-            dist/bbmcp-sidecar.js.map
+            dist/greyfox.js
+            dist/greyfox.js.map
+            dist/greyfox-sidecar.js
+            dist/greyfox-sidecar.js.map
           overwrite_files: true
+

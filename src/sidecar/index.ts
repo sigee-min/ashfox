@@ -27,7 +27,7 @@ const config = {
   token: getArg(args, '--token')
 };
 
-const log = new StderrLogger('bbmcp-sidecar', 'info');
+const log = new StderrLogger('greyfox-sidecar', 'info');
 const client = new SidecarClient(process.stdin, process.stdout, log);
 const resourceStore = new InMemoryResourceStore([...GUIDE_RESOURCE_TEMPLATES]);
 GUIDE_RESOURCES.forEach((resource) => resourceStore.put(resource));
@@ -75,6 +75,7 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
 
 
 

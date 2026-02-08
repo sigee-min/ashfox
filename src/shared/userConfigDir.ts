@@ -17,14 +17,15 @@ export const resolveUserConfigBaseDir = (
 ): UserConfigBase | null => {
   const env = typeof process !== 'undefined' ? process.env ?? {} : {};
   if (env.APPDATA && env.APPDATA.trim()) {
-    return { baseDir: path.join(env.APPDATA, 'bbmcp'), source: 'APPDATA' };
+    return { baseDir: path.join(env.APPDATA, 'greyfox'), source: 'APPDATA' };
   }
   if (env.XDG_CONFIG_HOME && env.XDG_CONFIG_HOME.trim()) {
-    return { baseDir: path.join(env.XDG_CONFIG_HOME, 'bbmcp'), source: 'XDG_CONFIG_HOME' };
+    return { baseDir: path.join(env.XDG_CONFIG_HOME, 'greyfox'), source: 'XDG_CONFIG_HOME' };
   }
   const home = (env.HOME && env.HOME.trim()) || (env.USERPROFILE && env.USERPROFILE.trim()) || os?.homedir?.();
   if (home) {
-    return { baseDir: path.join(home, '.bbmcp'), source: 'HOME' };
+    return { baseDir: path.join(home, '.greyfox'), source: 'HOME' };
   }
   return null;
 };
+
