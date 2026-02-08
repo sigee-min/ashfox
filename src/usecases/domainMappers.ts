@@ -1,9 +1,13 @@
 import type { TextureResolution, TextureStat, TextureUsageResult } from '../ports/editor';
-import type { SessionState, TrackedAnimation, TrackedBone, TrackedCube } from '../session';
+import type { SessionState, TrackedAnimation, TrackedBone, TrackedCube, TrackedMesh } from '../session';
 import type {
   Animation,
   Bone,
   Cube,
+  Mesh,
+  MeshFace,
+  MeshFaceUv,
+  MeshVertex,
   Snapshot,
   TextureResolution as DomainTextureResolution,
   TextureStat as DomainTextureStat,
@@ -56,6 +60,7 @@ export const toDomainTextureUsageUnresolved = (
 export const toDomainSnapshot = (state: SessionState): Snapshot => ({
   bones: state.bones.map((bone) => toDomainBone(bone)),
   cubes: state.cubes.map((cube) => toDomainCube(cube)),
+  meshes: (state.meshes ?? []).map((mesh) => toDomainMesh(mesh)),
   animations: state.animations.map((anim) => toDomainAnimation(anim))
 });
 
@@ -91,6 +96,34 @@ export const toDomainAnimation = (anim: TrackedAnimation): Animation => ({
   length: anim.length,
   loop: anim.loop,
   fps: anim.fps
+});
+
+export const toDomainMesh = (mesh: TrackedMesh): Mesh => ({
+  id: mesh.id ?? undefined,
+  name: mesh.name,
+  bone: mesh.bone ?? undefined,
+  origin: mesh.origin ? [mesh.origin[0], mesh.origin[1], mesh.origin[2]] : undefined,
+  rotation: mesh.rotation ? [mesh.rotation[0], mesh.rotation[1], mesh.rotation[2]] : undefined,
+  visibility: mesh.visibility,
+  vertices: mesh.vertices.map((vertex) => toDomainMeshVertex(vertex)),
+  faces: mesh.faces.map((face) => toDomainMeshFace(face))
+});
+
+export const toDomainMeshVertex = (vertex: TrackedMesh['vertices'][number]): MeshVertex => ({
+  id: vertex.id,
+  pos: [vertex.pos[0], vertex.pos[1], vertex.pos[2]]
+});
+
+export const toDomainMeshFace = (face: TrackedMesh['faces'][number]): MeshFace => ({
+  id: face.id ?? undefined,
+  vertices: [...face.vertices],
+  uv: face.uv?.map((point) => toDomainMeshFaceUv(point)),
+  texture: face.texture
+});
+
+export const toDomainMeshFaceUv = (point: NonNullable<TrackedMesh['faces'][number]['uv']>[number]): MeshFaceUv => ({
+  vertexId: point.vertexId,
+  uv: [point.uv[0], point.uv[1]]
 });
 
 export const toDomainTextureStats = (stats: TextureStat[]): DomainTextureStat[] =>

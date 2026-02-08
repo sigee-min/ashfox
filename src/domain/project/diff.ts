@@ -1,4 +1,4 @@
-import { SessionState, TrackedAnimation, TrackedBone, TrackedCube, TrackedTexture } from '../../session';
+import { SessionState, TrackedAnimation, TrackedBone, TrackedCube, TrackedMesh, TrackedTexture } from '../../session';
 import { ProjectDiffCounts, ProjectDiffCountsByKind, ProjectDiffSet } from '../../types/internal';
 
 type DiffOutput<T> = {
@@ -19,6 +19,7 @@ const buildCounts = (added: number, removed: number, changed: number): ProjectDi
 const defaultCountsByKind = (): ProjectDiffCountsByKind => ({
   bones: emptyCounts(),
   cubes: emptyCounts(),
+  meshes: emptyCounts(),
   textures: emptyCounts(),
   animations: emptyCounts()
 });
@@ -79,6 +80,7 @@ const boneKey = (bone: TrackedBone) => bone.id ?? bone.name;
 const cubeKey = (cube: TrackedCube) => cube.id ?? `${cube.name}::${cube.bone}`;
 const textureKey = (texture: TrackedTexture) => texture.id ?? texture.name;
 const animationKey = (anim: TrackedAnimation) => anim.id ?? anim.name;
+const meshKey = (mesh: TrackedMesh) => mesh.id ?? mesh.name;
 
 const boneSig = (bone: TrackedBone) =>
   JSON.stringify([
@@ -139,21 +141,35 @@ const animationSig = (anim: TrackedAnimation) =>
     anim.channels?.length ?? 0,
     anim.triggers?.length ?? 0
   ]);
+const meshSig = (mesh: TrackedMesh) =>
+  JSON.stringify([
+    mesh.id ?? null,
+    mesh.name,
+    mesh.bone ?? null,
+    mesh.origin ?? null,
+    mesh.rotation ?? null,
+    mesh.visibility ?? null,
+    mesh.uvPolicy ?? null,
+    mesh.vertices,
+    mesh.faces
+  ]);
 
 export const diffSnapshots = (
   previous: SessionState,
   current: SessionState,
   includeItems: boolean
-): { counts: ProjectDiffCountsByKind; sets?: { bones: ProjectDiffSet<TrackedBone>; cubes: ProjectDiffSet<TrackedCube>; textures: ProjectDiffSet<TrackedTexture>; animations: ProjectDiffSet<TrackedAnimation> } } => {
+): { counts: ProjectDiffCountsByKind; sets?: { bones: ProjectDiffSet<TrackedBone>; cubes: ProjectDiffSet<TrackedCube>; meshes: ProjectDiffSet<TrackedMesh>; textures: ProjectDiffSet<TrackedTexture>; animations: ProjectDiffSet<TrackedAnimation> } } => {
   const counts = defaultCountsByKind();
 
   const bones = diffByKey(previous.bones, current.bones, boneKey, boneSig, includeItems);
   const cubes = diffByKey(previous.cubes, current.cubes, cubeKey, cubeSig, includeItems);
+  const meshes = diffByKey(previous.meshes ?? [], current.meshes ?? [], meshKey, meshSig, includeItems);
   const textures = diffByKey(previous.textures, current.textures, textureKey, textureSig, includeItems);
   const animations = diffByKey(previous.animations, current.animations, animationKey, animationSig, includeItems);
 
   counts.bones = cloneCounts(bones.counts);
   counts.cubes = cloneCounts(cubes.counts);
+  counts.meshes = cloneCounts(meshes.counts);
   counts.textures = cloneCounts(textures.counts);
   counts.animations = cloneCounts(animations.counts);
 
@@ -164,6 +180,7 @@ export const diffSnapshots = (
     sets: {
       bones: bones.items!,
       cubes: cubes.items!,
+      meshes: meshes.items!,
       textures: textures.items!,
       animations: animations.items!
     }

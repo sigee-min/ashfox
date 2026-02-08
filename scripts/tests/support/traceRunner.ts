@@ -60,7 +60,7 @@ const runTool = (
   deps: TraceRunnerDeps,
   op: ToolName,
   payload?: unknown
-): ToolResponse<unknown> => {
+): Promise<ToolResponse<unknown>> => {
   const toolPayload = (payload ?? {}) as ToolPayloadMap[ToolName];
   return deps.dispatcher.handle(op, toolPayload);
 };
@@ -68,10 +68,11 @@ const runTool = (
 const captureState = (
   deps: TraceRunnerDeps,
   payload: ToolPayloadMap['get_project_state']
-): TraceCaptureResult => {
-  const res = deps.dispatcher.handle('get_project_state', payload);
+): Promise<TraceCaptureResult> => {
+  return deps.dispatcher.handle('get_project_state', payload).then((res) => {
   if (res.ok) return { ok: true, state: res.data.project };
   return { ok: false, error: res.error };
+  });
 };
 
 const getResponseError = (response: ToolResponse<unknown>): ToolError | undefined =>
@@ -93,11 +94,11 @@ export const runTrace = async (
         op: String(step.op)
       });
     } else {
-      response = runTool(deps, step.op as ToolName, step.payload);
+      response = await runTool(deps, step.op as ToolName, step.payload);
     }
 
     const capturePayload = resolveCapturePayload(step.captureState, options.defaultCaptureState);
-    const capture = capturePayload ? captureState(deps, capturePayload) : undefined;
+    const capture = capturePayload ? await captureState(deps, capturePayload) : undefined;
     const stepResult: TraceStepResult = { op: step.op, response, ...(capture ? { capture } : {}) };
     results.push(stepResult);
 

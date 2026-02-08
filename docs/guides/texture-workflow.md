@@ -20,6 +20,7 @@ Notes:
 - paint_faces schema is strict; `targets`, `ops`, and `background` are invalid payload fields.
 - Omit `target.face` to paint all mapped faces of the target cube.
 - paint_mesh_face is strict single-op with one mesh target (`meshId`/`meshName`) and one `op`.
+- paint_mesh_face is available only when the active format supports meshes.
 - paint_mesh_face `scope` can be `single_face` or `all_faces`. If omitted, scope is inferred:
   - `target.faceId` present -> `single_face`
   - `target.faceId` absent -> `all_faces`
@@ -31,6 +32,7 @@ Notes:
 - For >=64px textures, keep ops minimal and use tiling patterns.
 - When specifying both cubeId and cubeName in target, both must match. Use only one to avoid overly narrow matches.
 - Support limit: models that still exceed atlas capacity after auto density reduction are not supported.
+- paint_mesh_face applies a commit guard: if the committed texture becomes unsafe (for example fully transparent collapse or no committed delta after expected change), bbmcp automatically rolls back and returns an error.
 
 Example (paint_faces):
 ```json

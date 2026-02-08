@@ -5,14 +5,14 @@ import type { UsecaseResult } from '../usecases/result';
 import { decideRevision } from '../usecases/revision/revisionGuard';
 import { resolveGuardReason, resolveIfRevision } from './utils';
 
-export const callWithAutoRetry = <TPayload extends object, TResult>(args: {
+export const callWithAutoRetry = async <TPayload extends object, TResult>(args: {
   tool: ToolName;
   payload: TPayload;
-  call: (payload: TPayload) => UsecaseResult<TResult>;
+  call: (payload: TPayload) => UsecaseResult<TResult> | Promise<UsecaseResult<TResult>>;
   service: ToolService;
   log: Logger;
-}): { result: UsecaseResult<TResult>; payload: TPayload } => {
-  const first = args.call(args.payload);
+}): Promise<{ result: UsecaseResult<TResult>; payload: TPayload }> => {
+  const first = await args.call(args.payload);
   if (first.ok) {
     return { result: first, payload: args.payload };
   }
@@ -59,7 +59,7 @@ export const callWithAutoRetry = <TPayload extends object, TResult>(args: {
     attempt: 1
   });
   const retryPayload = { ...args.payload, ifRevision: decision.currentRevision } as TPayload;
-  const retry = args.call(retryPayload);
+  const retry = await args.call(retryPayload);
   if (retry.ok) {
     args.log.info('revision retry succeeded', { tool: args.tool, attempt: 1 });
   } else {

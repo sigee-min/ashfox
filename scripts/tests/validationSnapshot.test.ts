@@ -7,7 +7,7 @@ import { buildValidationMessages } from '../../src/shared/messages';
 
 const validationMessages = buildValidationMessages();
 
-const empty: Snapshot = { bones: [], cubes: [], animations: [] };
+const empty: Snapshot = { bones: [], cubes: [], meshes: [], animations: [] };
 const emptyFindings = validateSnapshot(
   empty,
   {
@@ -26,6 +26,32 @@ const snapshot: Snapshot = {
     { name: 'cubeA', bone: 'bone', from: [0, 0, 0], to: [16, 16, 16] },
     { name: 'cubeB', bone: 'bone', from: [1, 1, 1], to: [2, 2, 2] },
     { name: 'cubeA', bone: 'ghost', from: [0, 0, 0], to: [1, 1, 1], uv: [20, 20] }
+  ],
+  meshes: [
+    {
+      name: 'wing',
+      vertices: [
+        { id: 'v0', pos: [0, 0, 0] },
+        { id: 'v1', pos: [1, 0, 0] },
+        { id: 'v1', pos: [1, 1, 0] }
+      ],
+      faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }]
+    },
+    {
+      name: 'wing',
+      vertices: [
+        { id: 'a', pos: [0, 0, 0] },
+        { id: 'b', pos: [1, 0, 0] },
+        { id: 'c', pos: [2, 0, 0] }
+      ],
+      faces: [
+        {
+          id: 'flat',
+          vertices: ['a', 'b', 'c'],
+          uv: [{ vertexId: 'missing', uv: [0, 0] }]
+        }
+      ]
+    }
   ],
   animations: [{ name: 'anim', length: 2, loop: true }]
 };
@@ -85,6 +111,11 @@ assert.ok(codes.has('orphan_cube'));
 assert.ok(codes.has('cube_containment'));
 assert.ok(codes.has('max_cubes_exceeded'));
 assert.ok(codes.has('animation_too_long'));
+assert.ok(codes.has('duplicate_mesh'));
+assert.ok(codes.has('mesh_vertex_duplicate'));
+assert.ok(codes.has('mesh_face_vertex_unknown'));
+assert.ok(codes.has('mesh_face_degenerate'));
+assert.ok(codes.has('mesh_face_uv_vertex_unknown'));
 assert.ok(codes.has('texture_too_large'));
 assert.ok(codes.has('texture_size_mismatch'));
 assert.ok(codes.has('uv_out_of_bounds'));

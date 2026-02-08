@@ -74,9 +74,38 @@ export type Animation = {
   fps?: number;
 };
 
+export type MeshVertex = {
+  id: string;
+  pos: [number, number, number];
+};
+
+export type MeshFaceUv = {
+  vertexId: string;
+  uv: [number, number];
+};
+
+export type MeshFace = {
+  id?: string;
+  vertices: string[];
+  uv?: MeshFaceUv[];
+  texture?: string | false;
+};
+
+export type Mesh = {
+  id?: string;
+  name: string;
+  bone?: string;
+  origin?: [number, number, number];
+  rotation?: [number, number, number];
+  visibility?: boolean;
+  vertices: MeshVertex[];
+  faces: MeshFace[];
+};
+
 export type Snapshot = {
   bones: Bone[];
   cubes: Cube[];
+  meshes: Mesh[];
   animations: Animation[];
 };
 

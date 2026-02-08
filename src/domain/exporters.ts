@@ -31,6 +31,8 @@ function buildInternalPayload(format: ExportKind, state: SessionState) {
       return buildGeckoModel(state);
     case 'animated_java':
       return buildAnimatedJavaModel(state);
+    case 'generic_model_json':
+      return buildGenericModel(state);
     default:
       return buildSnapshotFallback(state);
   }
@@ -41,6 +43,7 @@ function buildSnapshotFallback(state: SessionState) {
     meta: { format: state.format, name: state.name },
     bones: state.bones,
     cubes: state.cubes,
+    meshes: state.meshes ?? [],
     textures: state.textures,
     animations: state.animations
   };
@@ -188,6 +191,19 @@ function buildAnimatedJavaModel(state: SessionState) {
       channels: anim.channels,
       triggers: anim.triggers
     }))
+  };
+}
+
+function buildGenericModel(state: SessionState) {
+  return {
+    format: 'bbmcp_generic_model',
+    name: state.name ?? 'model',
+    formatId: state.formatId ?? null,
+    bones: state.bones,
+    cubes: state.cubes,
+    meshes: state.meshes ?? [],
+    textures: state.textures,
+    animations: state.animations
   };
 }
 

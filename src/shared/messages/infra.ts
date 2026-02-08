@@ -72,6 +72,9 @@ export const ADAPTER_NATIVE_COMPILER_UNAVAILABLE = (formatId: string) =>
   `Native compiler not available for ${formatId}`;
 export const ADAPTER_NATIVE_COMPILER_EMPTY = 'Native compiler returned empty result';
 export const ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED = 'Async compiler not supported';
+export const ADAPTER_GLTF_CODEC_UNAVAILABLE = 'glTF codec not available';
+export const ADAPTER_GLTF_WRITE_UNAVAILABLE = 'glTF writer unavailable';
+export const ADAPTER_FILESYSTEM_WRITE_UNAVAILABLE = 'Filesystem write unavailable';
 export const ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE = 'document unavailable for texture rendering';
 export const ADAPTER_PLUGINS_DEVRELOAD_UNAVAILABLE = 'Plugins.devReload not available.';
 

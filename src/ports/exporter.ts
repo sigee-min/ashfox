@@ -5,8 +5,15 @@ export type ExportNativeParams = {
   destPath: string;
 };
 
+export type ExportGltfParams = {
+  destPath: string;
+};
+
+export type ExportOperationResult = ToolError | null | Promise<ToolError | null>;
+
 export interface ExportPort {
-  exportNative: (params: ExportNativeParams) => ToolError | null;
+  exportNative: (params: ExportNativeParams) => ExportOperationResult;
+  exportGltf: (params: ExportGltfParams) => ExportOperationResult;
 }
 
 

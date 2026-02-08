@@ -1,11 +1,7 @@
 import { docs } from 'fumadocs-mdx:collections/server';
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { defaultLocale, docsI18n } from '@/lib/i18n';
-
-const rawBasePath = process.env.DOCS_BASE_PATH?.trim() ?? '';
-const basePath =
-  rawBasePath && rawBasePath !== '/' ? `/${rawBasePath.replace(/^\/+|\/+$/g, '')}` : '';
-const withBasePath = (pathname: string) => `${basePath}${pathname}`;
+import { withBasePath } from '@/lib/site';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({

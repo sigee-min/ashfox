@@ -122,6 +122,6 @@ export interface Dispatcher {
   handle<TName extends ToolName>(
     name: TName,
     payload: ToolPayloadMap[TName]
-  ): ToolResponse<ToolResultMap[TName]>;
+  ): Promise<ToolResponse<ToolResultMap[TName]>>;
 }
 

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 
 import { BlockbenchExport } from '../../src/adapters/blockbench/BlockbenchExport';
-import { noopLog } from './helpers';
+import { noopLog, registerAsync } from './helpers';
 
 type TestGlobals = {
   Blockbench?: unknown;
   Formats?: unknown;
   ModelFormat?: unknown;
+  Codecs?: unknown;
 };
 
 const getGlobals = (): TestGlobals => globalThis as unknown as TestGlobals;
@@ -16,17 +17,42 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const before = {
     Blockbench: globals.Blockbench,
     Formats: globals.Formats,
-    ModelFormat: globals.ModelFormat
+    ModelFormat: globals.ModelFormat,
+    Codecs: (globals as TestGlobals).Codecs
   };
   globals.Blockbench = overrides.Blockbench;
   globals.Formats = overrides.Formats;
   globals.ModelFormat = overrides.ModelFormat;
+  (globals as TestGlobals).Codecs = overrides.Codecs;
   try {
     run();
   } finally {
     globals.Blockbench = before.Blockbench;
     globals.Formats = before.Formats;
     globals.ModelFormat = before.ModelFormat;
+    (globals as TestGlobals).Codecs = before.Codecs;
+  }
+};
+
+const withGlobalsAsync = async (overrides: TestGlobals, run: () => Promise<void>) => {
+  const globals = getGlobals();
+  const before = {
+    Blockbench: globals.Blockbench,
+    Formats: globals.Formats,
+    ModelFormat: globals.ModelFormat,
+    Codecs: (globals as TestGlobals).Codecs
+  };
+  globals.Blockbench = overrides.Blockbench;
+  globals.Formats = overrides.Formats;
+  globals.ModelFormat = overrides.ModelFormat;
+  (globals as TestGlobals).Codecs = overrides.Codecs;
+  try {
+    await run();
+  } finally {
+    globals.Blockbench = before.Blockbench;
+    globals.Formats = before.Formats;
+    globals.ModelFormat = before.ModelFormat;
+    (globals as TestGlobals).Codecs = before.Codecs;
   }
 };
 
@@ -224,3 +250,125 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     }
   );
 }
+
+registerAsync(
+  (async () => {
+    {
+      const adapter = new BlockbenchExport(noopLog);
+      await withGlobalsAsync(
+        {
+          Blockbench: {
+            writeFile: () => undefined
+          },
+          Codecs: {}
+        },
+        async () => {
+          const error = await adapter.exportGltf({ destPath: 'out.glb' });
+          assert.equal(error?.code, 'not_implemented');
+        }
+      );
+    }
+
+    {
+      const writes: Array<{ content: unknown; path: string }> = [];
+      const adapter = new BlockbenchExport(noopLog);
+      await withGlobalsAsync(
+        {
+          Blockbench: {
+            writeFile: () => undefined
+          },
+          Codecs: {
+            gltf: {
+              compile: () => ({ scene: true }),
+              write: (content: unknown, path: string) => {
+                writes.push({ content, path });
+              }
+            }
+          }
+        },
+        async () => {
+          const error = await adapter.exportGltf({ destPath: 'codec.glb' });
+          assert.equal(error, null);
+        }
+      );
+      assert.equal(writes.length, 1);
+      assert.equal(writes[0].path, 'codec.glb');
+    }
+
+    {
+      const writes: Array<{ path: string; content: string; savetype: string }> = [];
+      const adapter = new BlockbenchExport(noopLog);
+      await withGlobalsAsync(
+        {
+          Blockbench: {
+            writeFile: (path: string, payload: { content: string; savetype: string }) => {
+              writes.push({ path, content: payload.content, savetype: payload.savetype });
+            }
+          },
+          Codecs: {
+            gltf: {
+              compile: () => ({ asset: { version: '2.0' } })
+            }
+          }
+        },
+        async () => {
+          const error = await adapter.exportGltf({ destPath: 'fallback.gltf' });
+          assert.equal(error, null);
+        }
+      );
+      assert.equal(writes.length, 1);
+      assert.equal(writes[0].path, 'fallback.gltf');
+      assert.equal(writes[0].content.includes('"version": "2.0"'), true);
+    }
+
+    {
+      const writes: Array<{ path: string; content: string; savetype: string }> = [];
+      const adapter = new BlockbenchExport(noopLog);
+      await withGlobalsAsync(
+        {
+          Blockbench: {
+            writeFile: (path: string, payload: { content: string; savetype: string }) => {
+              writes.push({ path, content: payload.content, savetype: payload.savetype });
+            }
+          },
+          Codecs: {
+            gltf: {
+              compile: () => Promise.resolve({ scene: true })
+            }
+          }
+        },
+        async () => {
+          const error = await adapter.exportGltf({ destPath: 'async.gltf' });
+          assert.equal(error, null);
+        }
+      );
+      assert.equal(writes.length, 1);
+    }
+
+    {
+      const writes: Array<{ content: unknown; path: string }> = [];
+      const adapter = new BlockbenchExport(noopLog);
+      await withGlobalsAsync(
+        {
+          Blockbench: {
+            writeFile: () => undefined
+          },
+          Codecs: {
+            gltf: {
+              compile: () => ({ scene: true }),
+              write: async (content: unknown, path: string) => {
+                writes.push({ content, path });
+              }
+            }
+          }
+        },
+        async () => {
+          const error = await adapter.exportGltf({ destPath: 'async-write.glb' });
+          assert.equal(error, null);
+        }
+      );
+      assert.equal(writes.length, 1);
+      assert.equal(writes[0].path, 'async-write.glb');
+    }
+  })()
+);

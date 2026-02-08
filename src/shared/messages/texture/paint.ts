@@ -44,6 +44,8 @@ export const TEXTURE_FACES_OP_OUTSIDE_TARGET =
 export const TEXTURE_MESH_FACE_TARGET_REQUIRED = 'paint_mesh_face requires a target object.';
 export const TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED =
   'paint_mesh_face target must include meshId or meshName.';
+export const TEXTURE_MESH_FACE_UNSUPPORTED_FORMAT =
+  'paint_mesh_face requires a mesh-enabled format.';
 export const TEXTURE_MESH_FACE_SCOPE_INVALID =
   'paint_mesh_face scope must be "single_face" or "all_faces".';
 export const TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID =
@@ -80,6 +82,8 @@ export const TEXTURE_MESH_FACE_UV_REQUIRED = (faceId: string) =>
   `paint_mesh_face target face has missing or invalid uv: ${faceId}`;
 export const TEXTURE_MESH_FACE_NO_PAINTABLE_FACES =
   'paint_mesh_face could not find any paintable faces with valid uv.';
+export const TEXTURE_MESH_FACE_GUARD_ROLLBACK =
+  'paint_mesh_face detected an unsafe texture result and rolled back the texture update.';
 
 export const UV_PAINT_USAGE_MISSING = (label: string) =>
   `No UV usage found for texture "${label}". Assign the texture and retry after UV refresh.`;

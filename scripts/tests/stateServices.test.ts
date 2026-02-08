@@ -32,6 +32,7 @@ const baseSnapshot: SessionState = {
   dirty: false,
   bones: [{ name: 'bone', pivot: [0, 0, 0] }],
   cubes: [],
+  meshes: [],
   textures: [],
   animations: [],
   animationsStatus: 'available',
@@ -42,6 +43,17 @@ const nextSnapshot: SessionState = {
   ...baseSnapshot,
   bones: [{ name: 'bone2', pivot: [0, 0, 0] }],
   cubes: [{ name: 'cube', bone: 'bone2', from: [0, 0, 0], to: [1, 1, 1] }],
+  meshes: [
+    {
+      name: 'wing',
+      vertices: [
+        { id: 'v0', pos: [0, 0, 0] },
+        { id: 'v1', pos: [1, 0, 0] },
+        { id: 'v2', pos: [0, 1, 0] }
+      ],
+      faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }]
+    }
+  ],
   textures: [{ name: 'tex', width: 16, height: 16 }],
   animations: [{ name: 'clip', length: 1, loop: true }]
 };
@@ -49,6 +61,7 @@ const nextSnapshot: SessionState = {
 const diff = diffSnapshots(baseSnapshot, nextSnapshot, true);
 assert.equal(diff.counts.bones.added, 1);
 assert.equal(diff.counts.cubes.added, 1);
+assert.equal(diff.counts.meshes?.added, 1);
 assert.equal(diff.counts.textures.added, 1);
 assert.equal(diff.counts.animations.added, 1);
 assert.ok(diff.sets);

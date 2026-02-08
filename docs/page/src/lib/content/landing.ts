@@ -22,100 +22,100 @@ export type LandingCopy = {
 
 const contentByLocale: Record<Locale, LandingCopy> = {
   en: {
-    badge: 'Blockbench MCP Tools',
-    title: 'Standardize Blockbench asset production with bbmcp MCP tools.',
+    badge: 'Open Source Blockbench MCP Toolkit',
+    title: 'Open source MCP tools for Blockbench\nthat teams can inspect and extend.',
     description:
-      'bbmcp delivers deterministic MCP tools for modeling, texturing, animation, and validation so teams can ship assets with predictable quality.',
-    primaryCta: 'Explore MCP Tools',
-    secondaryCta: 'Get Started',
-    featureTitle: 'Why production teams choose bbmcp',
+      'bbmcp provides schema-based tools for modeling, texturing, animation, and validation, with docs and examples you can run locally or in CI.',
+    primaryCta: 'Read the Docs',
+    secondaryCta: 'Installation',
+    featureTitle: 'Why teams use bbmcp',
     features: [
       {
-        title: 'Deterministic Tool Execution',
-        description: 'Run consistent MCP commands with explicit inputs, constraints, and expected outputs.',
+        title: 'Schema-Based Tools',
+        description: 'Each tool exposes explicit inputs and outputs, so behavior is clear before execution.',
       },
       {
-        title: 'Operational Safety',
-        description: 'Guard asset mutations with controlled operations and reversible workflow checkpoints.',
+        title: 'Consistent Execution',
+        description: 'Run the same MCP commands in local and CI environments with stable, repeatable results.',
       },
       {
-        title: 'Validation by Default',
-        description: 'Check texture usage, structure, and export compatibility before assets reach runtime.',
+        title: 'Built-in Checks',
+        description: 'Validate structure and export readiness before assets move into downstream pipelines.',
       },
       {
-        title: 'Automation Native',
-        description: 'Compose scripted pipelines for CI and repeatable asset generation across environments.',
+        title: 'Open Contribution Path',
+        description: 'Review source code, open issues, and submit pull requests to improve the toolkit.',
       },
     ],
-    workflowTitle: 'MCP production workflow',
+    workflowTitle: 'From setup to export',
     workflowSteps: [
       {
         title: 'Configure',
-        description: 'Define format capabilities, runtime constraints, and project-level safety rules.',
+        description: 'Define format assumptions, project constraints, and runtime targets for your pipeline.',
       },
       {
-        title: 'Create',
-        description: 'Generate structures, textures, and edits through deterministic MCP operations.',
+        title: 'Run Tools',
+        description: 'Apply MCP tools for modeling, texturing, and animation with deterministic commands.',
       },
       {
-        title: 'Validate',
-        description: 'Run compatibility and structural checks before handoff.',
+        title: 'Check',
+        description: 'Use validation checkpoints to detect structural and compatibility issues early.',
       },
       {
-        title: 'Ship',
-        description: 'Export validated outputs and ship repeatable release artifacts.',
+        title: 'Export',
+        description: 'Generate outputs that are traceable, reviewable, and reusable across environments.',
       },
     ],
-    closingTitle: 'Built for strict pipelines and rapid delivery.',
-    closingDescription: 'Adopt bbmcp MCP tools to standardize creation flows and reduce production regressions.',
+    closingTitle: 'Use it in your pipeline, improve it in public.',
+    closingDescription: 'Start with installation and docs, then contribute issues or pull requests on GitHub.',
   },
   ko: {
-    badge: 'Blockbench MCP 도구',
-    title: 'bbmcp MCP 도구로 Blockbench 에셋 제작 파이프라인을 표준화하세요.',
+    badge: '오픈소스 Blockbench MCP 툴킷',
+    title: '검토하고 확장할 수 있는\nBlockbench 오픈소스 MCP 도구, bbmcp',
     description:
-      'bbmcp는 모델링, 텍스처링, 애니메이션, 검증을 결정적인 MCP 워크플로우로 연결해 안정적인 에셋 제작 품질을 제공합니다.',
-    primaryCta: 'MCP 도구 살펴보기',
-    secondaryCta: '시작하기',
-    featureTitle: '프로덕션 팀이 bbmcp를 선택하는 이유',
+      'bbmcp는 모델링, 텍스처링, 애니메이션, 검증 도구를 스키마 기반으로 제공하며, 로컬과 CI에서 실행 가능한 문서와 예제를 함께 제공합니다.',
+    primaryCta: '문서 보기',
+    secondaryCta: '설치하기',
+    featureTitle: 'bbmcp를 사용하는 이유',
     features: [
       {
-        title: '결정적 도구 실행',
-        description: '명시적 입력과 제약을 기반으로 예측 가능한 MCP 명령 결과를 유지합니다.',
+        title: '스키마 기반 도구',
+        description: '각 도구의 입력과 출력이 명시되어 실행 전 동작을 예측하고 검토할 수 있습니다.',
       },
       {
-        title: '운영 안정성',
-        description: '통제 가능한 변경 단계와 체크포인트로 에셋 변형 리스크를 줄입니다.',
+        title: '일관된 실행 결과',
+        description: '로컬과 CI 환경에서 동일한 MCP 명령을 동일한 결과로 반복 실행할 수 있습니다.',
       },
       {
-        title: '품질 게이트',
-        description: '출시 전 텍스처 사용, 구조 무결성, 런타임 호환성 검사를 수행합니다.',
+        title: '내장 품질 점검',
+        description: '내보내기 전에 구조와 호환성을 확인해 파이프라인 전파 전에 문제를 줄입니다.',
       },
       {
-        title: '자동화 친화',
-        description: 'CI와 결합되는 스크립트 파이프라인으로 반복 제작을 자동화합니다.',
+        title: '열린 기여 구조',
+        description: '소스 코드를 확인하고 이슈와 PR로 개선 사항을 직접 제안할 수 있습니다.',
       },
     ],
-    workflowTitle: 'MCP 제작 워크플로우',
+    workflowTitle: '설정부터 내보내기까지',
     workflowSteps: [
       {
         title: '설정',
-        description: '타깃 런타임 제약, 포맷 기능, 프로젝트 안전 규칙을 정의합니다.',
+        description: '포맷 가정, 프로젝트 제약, 런타임 대상을 먼저 정의합니다.',
       },
       {
-        title: '제작',
-        description: 'MCP 도구로 모델, 텍스처, 애니메이션 작업을 일관된 방식으로 생성하고 수정합니다.',
+        title: '실행',
+        description: '모델링, 텍스처, 애니메이션 작업을 MCP 도구로 단계적으로 수행합니다.',
       },
       {
-        title: '검증',
-        description: '핸드오프 전에 구조/호환성 게이트를 통과시킵니다.',
+        title: '점검',
+        description: '검증 체크포인트로 구조 및 호환성 이슈를 조기에 확인합니다.',
       },
       {
-        title: '출시',
-        description: '검증된 산출물을 내보내고 릴리스 가능한 형태로 정리합니다.',
+        title: '내보내기',
+        description: '검토 가능하고 재사용 가능한 형태로 결과물을 생성합니다.',
       },
     ],
-    closingTitle: '엄격한 기준과 빠른 릴리스를 위한 MCP 워크플로우.',
-    closingDescription: 'bbmcp MCP 도구로 제작, 검증, 내보내기 과정을 표준화하세요.',
+    closingTitle: '파이프라인에서 사용하고, 공개적으로 함께 개선하세요.',
+    closingDescription: '설치 문서와 가이드로 시작한 뒤 GitHub 이슈와 PR로 프로젝트 발전에 참여할 수 있습니다.',
   },
 };
 

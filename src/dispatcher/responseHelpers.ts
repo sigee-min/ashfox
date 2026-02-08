@@ -11,7 +11,8 @@ export const respondErrorSimple = (
 
 export type HandlerPayload = ToolPayloadMap[ToolName];
 export type HandlerResult = ToolResultMap[ToolName];
+export type HandlerResponse = ToolResponse<HandlerResult> | Promise<ToolResponse<HandlerResult>>;
 export type Handler = {
-  bivarianceHack(payload: HandlerPayload): ToolResponse<HandlerResult>;
+  bivarianceHack(payload: HandlerPayload): HandlerResponse;
 }['bivarianceHack'];
 

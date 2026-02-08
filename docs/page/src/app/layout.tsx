@@ -1,27 +1,39 @@
 import type { Metadata } from 'next';
+import { defaultOpenGraphImage, resolveMetadataBase, siteDescription, siteName, siteTitle, withBasePath } from '@/lib/site';
 import './global.css';
-
-function resolveMetadataBase() {
-  const fallback = new URL('http://localhost:3000');
-  const raw = process.env.DOCS_SITE_URL?.trim();
-  if (!raw) return fallback;
-
-  try {
-    return new URL(raw);
-  } catch {
-    return fallback;
-  }
-}
 
 const metadataBase = resolveMetadataBase();
 
 export const metadata: Metadata = {
   title: {
-    default: 'bbmcp',
-    template: '%s | bbmcp',
+    default: siteTitle,
+    template: `%s | ${siteTitle}`,
   },
-  description: 'bbmcp MCP tools for Blockbench modeling, texturing, animation, and validation workflows.',
+  description: siteDescription,
+  applicationName: siteName,
   metadataBase,
+  alternates: {
+    canonical: withBasePath('/en'),
+  },
+  openGraph: {
+    type: 'website',
+    siteName,
+    title: siteTitle,
+    description: siteDescription,
+    url: withBasePath('/en'),
+    images: [
+      {
+        url: defaultOpenGraphImage,
+        alt: `${siteName} preview`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteTitle,
+    description: siteDescription,
+    images: [defaultOpenGraphImage],
+  },
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [

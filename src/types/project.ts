@@ -11,6 +11,7 @@ export interface ProjectDiffCounts {
 export interface ProjectDiffCountsByKind {
   bones: ProjectDiffCounts;
   cubes: ProjectDiffCounts;
+  meshes?: ProjectDiffCounts;
   textures: ProjectDiffCounts;
   animations: ProjectDiffCounts;
 }
@@ -39,6 +40,7 @@ export interface ProjectDiff {
   counts: ProjectDiffCountsByKind;
   bones?: ProjectDiffSet<TrackedBone>;
   cubes?: ProjectDiffSet<TrackedCube>;
+  meshes?: ProjectDiffSet<TrackedMesh>;
   textures?: ProjectDiffSet<TrackedTexture>;
   animations?: ProjectDiffSet<TrackedAnimation>;
 }
@@ -57,6 +59,9 @@ export interface ProjectState {
   counts: {
     bones: number;
     cubes: number;
+    meshes?: number;
+    meshVertices?: number;
+    meshFaces?: number;
     textures: number;
     animations: number;
   };

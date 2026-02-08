@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { ToolDispatcherImpl } from '../../src/dispatcher';
 import type { ToolPayloadMap, ToolResultMap } from '../../src/types';
-import { ok, unsafePayload } from './helpers';
+import { ok, registerAsync, unsafePayload } from './helpers';
 
 const createDispatcher = () => {
   const service = {
@@ -34,11 +34,13 @@ const createDispatcher = () => {
 
 // response handler path
 {
-  const dispatcher = createDispatcher();
-  const res = dispatcher.handle('get_project_state', { detail: 'summary' } as ToolPayloadMap['get_project_state']);
-  assert.equal(res.ok, true);
-  if (res.ok) {
-    assert.ok((res.data as ToolResultMap['get_project_state']).project);
-  }
+  registerAsync((async () => {
+    const dispatcher = createDispatcher();
+    const res = await dispatcher.handle('get_project_state', { detail: 'summary' } as ToolPayloadMap['get_project_state']);
+    assert.equal(res.ok, true);
+    if (res.ok) {
+      assert.ok((res.data as ToolResultMap['get_project_state']).project);
+    }
+  })());
 }
 

@@ -238,6 +238,7 @@ Adds a mesh with explicit vertices/faces (mesh-centered modeling).
 ```
 
 ## Operational Notes
+- `add_mesh` is available only on mesh-enabled formats (for example `Generic Model` / `free`).
 - Use `ifRevision` for mutation calls when available.
 - Do not send fields outside the declared schema.
 - Run `validate` before `export` for release safety.

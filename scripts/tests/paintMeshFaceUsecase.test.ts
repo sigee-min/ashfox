@@ -6,6 +6,7 @@ import type { Capabilities, PaintMeshFacePayload } from '../../src/types';
 import { DEFAULT_ANIMATION_TIME_POLICY } from '../../src/domain/animation/timePolicy';
 import { DEFAULT_UV_POLICY } from '../../src/domain/uv/policy';
 import {
+  TEXTURE_MESH_FACE_GUARD_ROLLBACK,
   TEXTURE_MESH_FACE_SCOPE_ALL_FORBIDS_FACE_ID,
   TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID,
   TEXTURE_MESH_FACE_TARGET_REQUIRED,
@@ -52,11 +53,15 @@ const makeFace = (id: string, uv: Array<[number, number]>) => ({
 const createContext = (options?: {
   projectName?: string | null;
   faces?: Array<ReturnType<typeof makeFace> | { id: string; vertices: string[] }>;
+  commitPixels?: boolean;
 }) => {
   const width = 32;
   const height = 32;
   const image = { tag: 'atlas' } as unknown as CanvasImageSource;
   let updateCalls = 0;
+  let pixels = createOpaque(width, height);
+  let pendingPixels: Uint8ClampedArray | null = null;
+  const commitPixels = options?.commitPixels ?? true;
 
   const faces = options?.faces ?? [
     makeFace('f0', [
@@ -79,10 +84,13 @@ const createContext = (options?: {
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
-    readPixels: () => ({ result: { width, height, data: createOpaque(width, height) } }),
-    renderPixels: ({ width: renderWidth, height: renderHeight }) => ({
-      result: { image, width: renderWidth, height: renderHeight }
-    })
+    readPixels: () => ({ result: { width, height, data: new Uint8ClampedArray(pixels) } }),
+    renderPixels: ({ width: renderWidth, height: renderHeight, data }) => {
+      pendingPixels = new Uint8ClampedArray(data);
+      return {
+        result: { image, width: renderWidth, height: renderHeight }
+      };
+    }
   };
 
   const ctx: TextureToolContext = {
@@ -122,6 +130,10 @@ const createContext = (options?: {
     importTexture: () => ({ ok: true, value: { id: 'tex1', name: 'atlas' } }),
     updateTexture: () => {
       updateCalls += 1;
+      if (commitPixels && pendingPixels) {
+        pixels = new Uint8ClampedArray(pendingPixels);
+        pendingPixels = null;
+      }
       return { ok: true, value: { id: 'tex1', name: 'atlas' } };
     }
   };
@@ -209,6 +221,19 @@ const createContext = (options?: {
     assert.equal(res.value.facesApplied, 2);
   }
   assert.equal(getUpdateCalls(), 1);
+}
+
+{
+  const { ctx, getUpdateCalls } = createContext({ commitPixels: false });
+  const res = runPaintMeshFace(ctx, basePayload);
+  assert.equal(res.ok, false);
+  if (!res.ok) {
+    assert.equal(res.error.code, 'invalid_state');
+    assert.equal(res.error.message, TEXTURE_MESH_FACE_GUARD_ROLLBACK);
+    assert.equal(res.error.details?.reason, 'no_committed_delta');
+    assert.equal(res.error.details?.rollbackApplied, true);
+  }
+  assert.equal(getUpdateCalls(), 2);
 }
 
 {

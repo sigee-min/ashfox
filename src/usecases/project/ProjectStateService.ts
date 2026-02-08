@@ -55,6 +55,7 @@ export class ProjectStateService {
       ...snapshot,
       bones: [],
       cubes: [],
+      meshes: [],
       textures: [],
       animations: [],
       animationsStatus: snapshot.animationsStatus
@@ -69,6 +70,7 @@ export class ProjectStateService {
     if (detail === 'full' && diffResult.sets) {
       diff.bones = diffResult.sets.bones;
       diff.cubes = diffResult.sets.cubes;
+      diff.meshes = diffResult.sets.meshes;
       diff.textures = diffResult.sets.textures;
       diff.animations = diffResult.sets.animations;
     }

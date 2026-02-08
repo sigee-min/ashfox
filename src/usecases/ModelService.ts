@@ -5,7 +5,8 @@ import { BoneService } from './model/BoneService';
 import { CubeService } from './model/CubeService';
 import { MeshService } from './model/MeshService';
 import type { MeshUvPolicy } from '../domain/mesh/autoUv';
-import type { UsecaseResult } from './result';
+import { fail, type UsecaseResult } from './result';
+import { MODEL_MESH_UNSUPPORTED_FORMAT } from '../shared/messages';
 
 export interface ModelServiceDeps {
   session: ProjectSession;
@@ -19,11 +20,15 @@ export interface ModelServiceDeps {
 }
 
 export class ModelService {
+  private readonly session: ProjectSession;
+  private readonly capabilities: Capabilities;
   private readonly boneService: BoneService;
   private readonly cubeService: CubeService;
   private readonly meshService: MeshService;
 
   constructor(deps: ModelServiceDeps) {
+    this.session = deps.session;
+    this.capabilities = deps.capabilities;
     this.boneService = new BoneService({
       session: deps.session,
       editor: deps.editor,
@@ -164,6 +169,8 @@ export class ModelService {
     }>;
     ifRevision?: string;
   }): UsecaseResult<{ id: string; name: string }> {
+    const unsupported = this.ensureMeshesSupported();
+    if (unsupported) return fail(unsupported);
     return this.meshService.addMesh(payload);
   }
 
@@ -187,6 +194,8 @@ export class ModelService {
     }>;
     ifRevision?: string;
   }): UsecaseResult<{ id: string; name: string }> {
+    const unsupported = this.ensureMeshesSupported();
+    if (unsupported) return fail(unsupported);
     return this.meshService.updateMesh(payload);
   }
 
@@ -197,7 +206,19 @@ export class ModelService {
     names?: string[];
     ifRevision?: string;
   }): UsecaseResult<{ id: string; name: string; deleted: Array<{ id?: string; name: string }> }> {
+    const unsupported = this.ensureMeshesSupported();
+    if (unsupported) return fail(unsupported);
     return this.meshService.deleteMesh(payload);
+  }
+
+  private ensureMeshesSupported(): ToolError | null {
+    const format = this.session.snapshot().format;
+    if (!format) return null;
+    const capability = this.capabilities.formats.find((entry) => entry.format === format);
+    if (!capability || !capability.enabled || !capability.flags?.meshes) {
+      return { code: 'unsupported_format', message: MODEL_MESH_UNSUPPORTED_FORMAT };
+    }
+    return null;
   }
 }
 

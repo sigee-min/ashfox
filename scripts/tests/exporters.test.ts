@@ -17,6 +17,18 @@ const buildState = (): SessionState => ({
     { name: 'body_main', bone: 'body', from: [-4, 0, -4], to: [4, 8, 4], uv: [0, 0], mirror: false },
     { name: 'head_main', bone: 'head', from: [-3, 8, -3], to: [3, 14, 3], uv: [16, 0], mirror: true }
   ],
+  meshes: [
+    {
+      name: 'wing_mesh',
+      bone: 'body',
+      vertices: [
+        { id: 'v0', pos: [0, 0, 0] },
+        { id: 'v1', pos: [2, 0, 0] },
+        { id: 'v2', pos: [0, 2, 0] }
+      ],
+      faces: [{ vertices: ['v0', 'v1', 'v2'] }]
+    }
+  ],
   textures: [{ name: 'dragon_tex', width: 64, height: 64 }],
   animations: [
     {
@@ -112,6 +124,22 @@ const buildState = (): SessionState => ({
 
 {
   const state = buildState();
+  const bundle = buildInternalExport('generic_model_json', state);
+  const payload = bundle.data as {
+    format: string;
+    formatId: string | null;
+    meshes: unknown[];
+    animations: unknown[];
+  };
+  assert.equal(bundle.format, 'generic_model_json');
+  assert.equal(payload.format, 'bbmcp_generic_model');
+  assert.equal(payload.formatId, 'geckolib');
+  assert.equal(payload.meshes.length, 1);
+  assert.equal(payload.animations.length, 1);
+}
+
+{
+  const state = buildState();
   const bundle = buildInternalExport('custom_format' as unknown as 'java_block_item_json', {
     ...state,
     name: null
@@ -120,6 +148,7 @@ const buildState = (): SessionState => ({
     meta: { format: string | null };
     bones: unknown[];
     cubes: unknown[];
+    meshes: unknown[];
     textures: unknown[];
     animations: unknown[];
     bbmcp_meta: { name: string | null; format: string };
@@ -127,6 +156,7 @@ const buildState = (): SessionState => ({
   assert.equal(payload.meta.format, 'geckolib');
   assert.equal(payload.bones.length, 2);
   assert.equal(payload.cubes.length, 2);
+  assert.equal(payload.meshes.length, 1);
   assert.equal(payload.textures.length, 1);
   assert.equal(payload.animations.length, 1);
   assert.equal(payload.bbmcp_meta.name, null);

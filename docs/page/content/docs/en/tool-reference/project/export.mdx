@@ -9,7 +9,7 @@ description: "Input schema and field behavior for export."
 - Strict schema: `true`
 
 ## Tool Description
-Exports the current project to JSON output.
+Exports the current project to the requested output format.
 
 ## Input Schema (JSON)
 ```json
@@ -25,7 +25,10 @@ Exports the current project to JSON output.
       "enum": [
         "java_block_item_json",
         "gecko_geo_anim",
-        "animated_java"
+        "animated_java",
+        "generic_model_json",
+        "gltf",
+        "auto"
       ]
     },
     "destPath": {
@@ -44,18 +47,24 @@ Exports the current project to JSON output.
 ## Field Reference
 | Field | Type | Required | Description | Constraints |
 | --- | --- | --- | --- | --- |
-| `format` | `enum("java_block_item_json", "gecko_geo_anim", "animated_java")` | ✅ | - | enum: "java_block_item_json", "gecko_geo_anim", "animated_java" |
-| `destPath` | `string` | ✅ | - | - |
-| `includeState` | `boolean` | ❌ | - | - |
-| `ifRevision` | `string` | ❌ | - | - |
+| `format` | `enum(...)` | ✅ | Export target selector. | `java_block_item_json`, `gecko_geo_anim`, `animated_java`, `generic_model_json`, `gltf`, `auto` |
+| `destPath` | `string` | ✅ | Destination file path. | For `gltf`, use `.gltf` or `.glb` |
+| `includeState` | `boolean` | ❌ | Include state snapshot in MCP response. | - |
+| `ifRevision` | `string` | ❌ | Optimistic revision guard. | Must match current revision |
 
 ## Minimal Request Example
 ```json
 {
-  "format": "java_block_item_json",
-  "destPath": "./out/model.json"
+  "format": "gltf",
+  "destPath": "./out/model.glb"
 }
 ```
+
+## Auto Mode
+- `format: "auto"` resolves by `destPath` extension first.
+- `.gltf` or `.glb` resolves to native glTF export.
+- Otherwise it falls back to the active project format default export target.
+- If no rule matches, the tool fails with `invalid_payload`.
 
 ## Response Example
 ```json
@@ -70,3 +79,4 @@ Exports the current project to JSON output.
 - Use `ifRevision` for mutation calls when available.
 - Do not send fields outside the declared schema.
 - Run `validate` before `export` for release safety.
+- Use `generic_model_json` for Generic Model (`free`) projects when deterministic JSON output is required.

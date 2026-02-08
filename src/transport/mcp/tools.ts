@@ -55,7 +55,7 @@ export const MCP_HIGH_LEVEL_TOOLS: McpToolDefinition[] = [
   defineTool({
     name: 'export',
     title: 'Export',
-    description: 'Exports the current project to JSON output.',
+    description: 'Exports the current project to the requested output format (including native glTF).',
     inputSchema: toolSchemas.export
   })
 ];

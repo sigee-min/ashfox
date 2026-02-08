@@ -252,8 +252,11 @@ assert.equal(diffRes.ok, true);
 const validateRes = service.validate({});
 assert.equal(validateRes.ok, true);
 
-const exportRes = service.exportModel({ format: 'java_block_item_json', destPath: 'out.json' });
-assert.equal(exportRes.ok, true);
+registerAsync(
+  service.exportModel({ format: 'java_block_item_json', destPath: 'out.json' }).then((exportRes) => {
+    assert.equal(exportRes.ok, true);
+  })
+);
 
 const previewSingle = service.renderPreview({ mode: 'fixed', output: 'single', saveToTmp: true });
 assert.equal(previewSingle.ok, true);

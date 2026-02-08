@@ -5,6 +5,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { isLocale } from '@/lib/i18n';
+import { localizedAlternates, localizedPath, openGraphAlternateLocales, openGraphLocale, siteName, siteTitle } from '@/lib/site';
 
 type DocsPageProps = {
   params: Promise<{
@@ -47,12 +48,42 @@ export async function generateMetadata({ params }: DocsPageProps): Promise<Metad
 
   const page = source.getPage(slug, lang);
   if (!page) notFound();
+  const docsSuffix = slug?.length ? `/docs/${slug.join('/')}` : '/docs';
+  const pageUrl = localizedPath(lang, docsSuffix);
+  const pageImage = getPageImage(page).url;
 
   return {
-    title: page.data.title,
+    title:
+      page.data.title === siteTitle
+        ? {
+            absolute: siteTitle,
+          }
+        : page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: pageUrl,
+      languages: localizedAlternates(docsSuffix),
+    },
     openGraph: {
-      images: getPageImage(page).url,
+      type: 'article',
+      siteName,
+      title: page.data.title,
+      description: page.data.description,
+      url: pageUrl,
+      locale: openGraphLocale(lang),
+      alternateLocale: openGraphAlternateLocales(lang),
+      images: [
+        {
+          url: pageImage,
+          alt: `${page.data.title} | ${siteName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.data.title,
+      description: page.data.description,
+      images: [pageImage],
     },
   };
 }

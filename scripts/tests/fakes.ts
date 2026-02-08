@@ -188,6 +188,13 @@ export const createExportPortStub = (mode: 'ok' | 'not_implemented' = 'not_imple
       : {
           code: 'not_implemented',
           message: 'export not implemented'
+        },
+  exportGltf: () =>
+    mode === 'ok'
+      ? null
+      : {
+          code: 'not_implemented',
+          message: 'export not implemented'
         }
 });
 

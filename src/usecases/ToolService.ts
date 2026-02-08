@@ -285,8 +285,8 @@ export class ToolService {
     return this.facades.animation.setTriggerKeyframes(payload);
   }
 
-  exportModel(payload: ToolPayloadMap['export']): UsecaseResult<{ path: string }> {
-    return this.facades.exporter.exportModel(payload);
+  async exportModel(payload: ToolPayloadMap['export']): Promise<UsecaseResult<{ path: string }>> {
+    return await this.facades.exporter.exportModel(payload);
   }
 
   renderPreview(payload: ToolPayloadMap['render_preview']): UsecaseResult<RenderPreviewResult> {

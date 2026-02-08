@@ -25,14 +25,14 @@ interface StatefulPipelineDeps {
 type StatefulPipelineParams<TName extends StatefulToolName> = {
   tool: TName;
   payload: ToolPayloadMap[TName];
-  call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>>;
+  call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>;
   retry: boolean;
 };
 
-export const runStatefulPipeline = <TName extends StatefulToolName>(
+export const runStatefulPipeline = async <TName extends StatefulToolName>(
   deps: StatefulPipelineDeps,
   params: StatefulPipelineParams<TName>
-): ToolResponse<ToolResultMap[TName]> => {
+): Promise<ToolResponse<ToolResultMap[TName]>> => {
   if (!params.retry) {
     const guard = guardOptionalRevision(deps.service, toRevisionPayload(params.payload));
     if (guard) {
@@ -48,7 +48,7 @@ export const runStatefulPipeline = <TName extends StatefulToolName>(
   let nextPayload = params.payload;
   let result: UsecaseResult<BaseResult<TName>>;
   if (params.retry) {
-    const retried = callWithAutoRetry({
+    const retried = await callWithAutoRetry({
       tool: params.tool,
       payload: params.payload,
       call: params.call,
@@ -58,7 +58,7 @@ export const runStatefulPipeline = <TName extends StatefulToolName>(
     nextPayload = retried.payload;
     result = retried.result;
   } else {
-    result = params.call(params.payload);
+    result = await params.call(params.payload);
   }
 
   const attached = deps.attachStateForTool(nextPayload, toToolResponse(result));

@@ -56,7 +56,7 @@ export class SidecarHost {
     }
     let result: ToolResponse<unknown>;
     try {
-      result = this.dispatcher.handle(message.tool as DispatcherToolName, message.payload as DispatcherPayload);
+      result = await this.dispatcher.handle(message.tool as DispatcherToolName, message.payload as DispatcherPayload);
     } catch (err) {
       const msg = errorMessage(err, 'handler error');
       const response: SidecarResponseMessage = {

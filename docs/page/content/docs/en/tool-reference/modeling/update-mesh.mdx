@@ -206,6 +206,7 @@ Updates mesh geometry/transform by id/name.
 ```
 
 ## Operational Notes
+- `update_mesh` is available only on mesh-enabled formats (for example `Generic Model` / `free`).
 - Use `ifRevision` for mutation calls when available.
 - Do not send fields outside the declared schema.
 - Run `validate` before `export` for release safety.

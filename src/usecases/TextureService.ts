@@ -30,6 +30,7 @@ import { TextureAssignmentService } from './textureService/TextureAssignmentServ
 import { TextureUvService } from './textureService/TextureUvService';
 import { ensureTextureSelector } from './textureService/textureSelector';
 import { runCreateBlankTexture } from './textureService/textureBlank';
+import { TEXTURE_MESH_FACE_UNSUPPORTED_FORMAT } from '../shared/messages';
 
 const selectorError = (id?: string, name?: string) => ensureTextureSelector(id, name);
 
@@ -162,6 +163,8 @@ export class TextureService {
   }
 
   paintMeshFace(payload: PaintMeshFacePayload): UsecaseResult<PaintMeshFaceResult> {
+    const unsupported = this.ensureMeshPaintSupported();
+    if (unsupported) return fail(unsupported);
     return runPaintMeshFace(this.getTextureToolContext(), payload);
   }
 
@@ -267,6 +270,16 @@ export class TextureService {
       autoUvAtlas: (payload) => this.autoUvAtlas(payload),
       runWithoutRevisionGuard: (fn) => this.runWithoutRevisionGuard?.(fn) ?? fn()
     };
+  }
+
+  private ensureMeshPaintSupported(): ToolError | null {
+    const format = this.session.snapshot().format;
+    if (!format) return null;
+    const capability = this.capabilities.formats.find((entry) => entry.format === format);
+    if (!capability || !capability.enabled || !capability.flags?.meshes) {
+      return { code: 'unsupported_format', message: TEXTURE_MESH_FACE_UNSUPPORTED_FORMAT };
+    }
+    return null;
   }
 }
 

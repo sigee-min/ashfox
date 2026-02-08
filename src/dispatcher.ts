@@ -97,11 +97,11 @@ export class ToolDispatcherImpl implements Dispatcher {
     this.attachStateForTool = createStateAttacher(this.getStateDeps());
   }
 
-  handle<TName extends ToolName>(
+  async handle<TName extends ToolName>(
     name: TName,
     payload: ToolPayloadMap[TName]
-  ): ToolResponse<ToolResultMap[TName]>;
-  handle(name: ToolName, payload: HandlerPayload): ToolResponse<HandlerResult> {
+  ): Promise<ToolResponse<ToolResultMap[TName]>>;
+  async handle(name: ToolName, payload: HandlerPayload): Promise<ToolResponse<HandlerResult>> {
     try {
       const handler = this.resolveHandler(name);
       if (!handler) {
@@ -114,7 +114,8 @@ export class ToolDispatcherImpl implements Dispatcher {
           })
         );
       }
-      return this.finalizeResponse(name, payload, handler(payload), { refreshViewport: true });
+      const response = await handler(payload);
+      return this.finalizeResponse(name, payload, response, { refreshViewport: true });
     } catch (err) {
       const message = errorMessage(err, 'unknown error');
       return this.finalizeResponse(
@@ -130,14 +131,14 @@ export class ToolDispatcherImpl implements Dispatcher {
 
   private wrapRetryHandler<K extends StatefulToolName>(
     name: K,
-    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>
+    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>
   ): Handler {
     return (payload) => this.handleWithRetry(name, payload as ToolPayloadMap[K], handler);
   }
 
   private wrapStatefulHandler<K extends StatefulToolName>(
     name: K,
-    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>
+    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>
   ): Handler {
     return (payload) => this.handleStateful(name, payload as ToolPayloadMap[K], handler);
   }
@@ -152,12 +153,12 @@ export class ToolDispatcherImpl implements Dispatcher {
     };
   }
 
-  private handleWithRetry<TName extends StatefulToolName>(
+  private async handleWithRetry<TName extends StatefulToolName>(
     tool: TName,
     payload: ToolPayloadMap[TName],
-    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>>
-  ): ToolResponse<ToolResultMap[TName]> {
-    return runStatefulPipeline(
+    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>
+  ): Promise<ToolResponse<ToolResultMap[TName]>> {
+    return await runStatefulPipeline(
       {
         service: this.service,
         log: this.log,
@@ -173,12 +174,12 @@ export class ToolDispatcherImpl implements Dispatcher {
     );
   }
 
-  private handleStateful<TName extends StatefulToolName>(
+  private async handleStateful<TName extends StatefulToolName>(
     tool: TName,
     payload: ToolPayloadMap[TName],
-    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>>
-  ): ToolResponse<ToolResultMap[TName]> {
-    return runStatefulPipeline(
+    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>
+  ): Promise<ToolResponse<ToolResultMap[TName]>> {
+    return await runStatefulPipeline(
       {
         service: this.service,
         log: this.log,

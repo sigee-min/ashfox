@@ -2,6 +2,7 @@ import type {
   PaintMeshFacePayload,
   PaintMeshFaceResult
 } from '../../types/internal';
+import type { ToolError } from '../../types/internal';
 import { checkDimensions, mapDimensionError } from '../../domain/dimensions';
 import { isTextureOp, type TextureOpLike } from '../../domain/textureOps';
 import { applyTextureOps, parseHexColor } from '../../domain/texturePaint';
@@ -15,6 +16,7 @@ import {
   TEXTURE_MESH_FACE_OP_OUTSIDE_SOURCE,
   TEXTURE_MESH_FACE_OP_OUTSIDE_TARGET,
   TEXTURE_MESH_FACE_OP_REQUIRED,
+  TEXTURE_MESH_FACE_GUARD_ROLLBACK,
   TEXTURE_MESH_FACE_SCOPE_ALL_FORBIDS_FACE_ID,
   TEXTURE_MESH_FACE_SCOPE_INVALID,
   TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID,
@@ -81,6 +83,11 @@ type TextureReadSource = {
   textureHeight: number;
   image: CanvasImageSource;
   pixels: Uint8ClampedArray;
+};
+
+type PixelStats = {
+  opaquePixels: number;
+  checksum: number;
 };
 
 type SourceSize = {
@@ -168,6 +175,7 @@ export const runPaintMeshFace = (
     );
     if (!textureSourceRes.ok) return fail(textureSourceRes.error);
     const textureSource = textureSourceRes.value;
+    const beforeStats = summarizePixels(textureSource.pixels);
 
     const sourceSizeRes = resolveSourceSize(
       ctx,
@@ -222,6 +230,46 @@ export const runPaintMeshFace = (
       ifRevision: payload.ifRevision
     });
     if (!updateRes.ok && updateRes.error.code !== 'no_change') return fail(updateRes.error);
+
+    if (appliedPixelsRes.value.changedPixels > 0) {
+      const committedPixelsRes = readTexturePixels(
+        ctx,
+        ctx.textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+        resolvedTexture,
+        textureSource.textureWidth,
+        textureSource.textureHeight
+      );
+      if (!committedPixelsRes.ok) return fail(committedPixelsRes.error);
+
+      const committedStats = summarizePixels(committedPixelsRes.value);
+      const noCommittedDelta = countChangedPixels(textureSource.pixels, committedPixelsRes.value) === 0;
+      const lostOpacity = beforeStats.opaquePixels > 0 && committedStats.opaquePixels === 0;
+
+      if (lostOpacity || noCommittedDelta) {
+        const rollbackError = rollbackTexturePixels(
+          ctx,
+          resolvedTexture,
+          textureSource.textureWidth,
+          textureSource.textureHeight,
+          textureSource.pixels,
+          payload.ifRevision
+        );
+        return fail({
+          code: 'invalid_state',
+          message: TEXTURE_MESH_FACE_GUARD_ROLLBACK,
+          details: {
+            reason: lostOpacity ? 'all_transparent_after_commit' : 'no_committed_delta',
+            rollbackApplied: rollbackError ? false : true,
+            rollbackError: rollbackError ? rollbackError.message : undefined,
+            expectedChangedPixels: appliedPixelsRes.value.changedPixels,
+            beforeOpaquePixels: beforeStats.opaquePixels,
+            afterOpaquePixels: committedStats.opaquePixels,
+            beforeChecksum: beforeStats.checksum,
+            afterChecksum: committedStats.checksum
+          }
+        });
+      }
+    }
 
     const result: PaintMeshFaceResult = {
       textureName: resolvedTexture.name,
@@ -486,6 +534,67 @@ const readTextureSource = (
   });
 };
 
+const readTexturePixels = (
+  ctx: TextureToolContext,
+  textureRenderer: NonNullable<TextureToolContext['textureRenderer']>,
+  texture: SnapshotTexture,
+  expectedWidth: number,
+  expectedHeight: number
+): UsecaseResult<Uint8ClampedArray> => {
+  const readRes = ctx.editor.readTexture({
+    id: texture.id,
+    name: texture.name
+  });
+  if (readRes.error || !readRes.result?.image) {
+    return fail(readRes.error ?? { code: 'invalid_state', message: TEXTURE_RENDERER_NO_IMAGE });
+  }
+
+  const width = readRes.result.width ?? expectedWidth;
+  const height = readRes.result.height ?? expectedHeight;
+  const pixelsRes = textureRenderer.readPixels?.({
+    image: readRes.result.image,
+    width,
+    height
+  });
+  if (!pixelsRes || pixelsRes.error || !pixelsRes.result) {
+    return fail(pixelsRes?.error ?? { code: 'not_implemented', message: TEXTURE_RENDERER_UNAVAILABLE });
+  }
+  return ok(pixelsRes.result.data);
+};
+
+const rollbackTexturePixels = (
+  ctx: TextureToolContext,
+  texture: SnapshotTexture,
+  width: number,
+  height: number,
+  pixels: Uint8ClampedArray,
+  ifRevision: string | undefined
+): ToolError | null => {
+  if (!ctx.textureRenderer) {
+    return { code: 'not_implemented', message: TEXTURE_RENDERER_UNAVAILABLE };
+  }
+  const renderRes = ctx.textureRenderer.renderPixels({
+    width,
+    height,
+    data: pixels
+  });
+  if (renderRes.error || !renderRes.result?.image) {
+    return renderRes.error ?? { code: 'invalid_state', message: TEXTURE_RENDERER_NO_IMAGE };
+  }
+  const updateRes = ctx.updateTexture({
+    id: texture.id,
+    name: texture.name,
+    image: renderRes.result.image,
+    width,
+    height,
+    ifRevision
+  });
+  if (!updateRes.ok && updateRes.error.code !== 'no_change') {
+    return updateRes.error;
+  }
+  return null;
+};
+
 const resolveSourceSize = (
   ctx: TextureToolContext,
   payload: PaintMeshFacePayload,
@@ -689,4 +798,21 @@ const mapTextureOpFailureReason = (
     default:
       return TEXTURE_OP_COLOR_INVALID(textureLabel);
   }
+};
+
+const summarizePixels = (pixels: Uint8ClampedArray): PixelStats => {
+  let opaquePixels = 0;
+  let checksum = 2166136261;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] > 0) opaquePixels += 1;
+    checksum ^= pixels[i];
+    checksum = Math.imul(checksum, 16777619);
+    checksum ^= pixels[i + 1];
+    checksum = Math.imul(checksum, 16777619);
+    checksum ^= pixels[i + 2];
+    checksum = Math.imul(checksum, 16777619);
+    checksum ^= pixels[i + 3];
+    checksum = Math.imul(checksum, 16777619);
+  }
+  return { opaquePixels, checksum: checksum >>> 0 };
 };

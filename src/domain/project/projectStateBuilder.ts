@@ -57,6 +57,9 @@ export class ProjectStateBuilder {
     const counts = {
       bones: snapshot.bones.length,
       cubes: snapshot.cubes.length,
+      meshes: snapshot.meshes?.length ?? 0,
+      meshVertices: (snapshot.meshes ?? []).reduce((acc, mesh) => acc + mesh.vertices.length, 0),
+      meshFaces: (snapshot.meshes ?? []).reduce((acc, mesh) => acc + mesh.faces.length, 0),
       textures: snapshot.textures.length,
       animations: snapshot.animations.length
     };

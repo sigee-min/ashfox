@@ -9,8 +9,8 @@ import { resolveFormatId, FormatOverrides, matchesFormatKind } from '../domain/f
 import { buildInternalExport } from '../domain/exporters';
 import { withFormatOverrideHint } from './formatHints';
 import type { ExportPolicy } from './policies';
-import { withActiveOnly } from './guards';
 import {
+  EXPORT_FORMAT_AUTO_UNRESOLVED,
   EXPORT_FORMAT_ID_MISSING,
   EXPORT_FORMAT_MISMATCH,
   EXPORT_FORMAT_NOT_ENABLED
@@ -51,32 +51,45 @@ export class ExportService {
     this.policies = deps.policies;
   }
 
-  exportModel(payload: ExportPayload): UsecaseResult<{ path: string }> {
-    return withActiveOnly(this.ensureActive, () => {
-      const exportPolicy = this.policies.exportPolicy ?? 'strict';
-      const snapshot = this.getSnapshot();
-      const expectedFormat = exportFormatToCapability(payload.format);
-      const capabilityErr = this.ensureFormatEnabled(expectedFormat);
-      if (capabilityErr) return fail(capabilityErr);
+  async exportModel(payload: ExportPayload): Promise<UsecaseResult<{ path: string }>> {
+    const activeErr = this.ensureActive();
+    if (activeErr) return fail(activeErr);
 
-      const snapshotErr = this.ensureSnapshotMatchesExpected(snapshot, expectedFormat);
-      if (snapshotErr) return fail(snapshotErr);
+    const exportPolicy = this.policies.exportPolicy ?? 'strict';
+    const snapshot = this.getSnapshot();
+    const resolvedFormat = this.resolveRequestedFormat(payload, snapshot);
+    if (!resolvedFormat.ok) return fail(resolvedFormat.error);
 
-      const formatId = this.resolveExportFormatId(snapshot, expectedFormat);
-      if (!formatId) {
-        return fail({ code: 'unsupported_format', message: withFormatOverrideHint(EXPORT_FORMAT_ID_MISSING) });
-      }
+    const requestedFormat = resolvedFormat.value;
+    const expectedFormat = exportFormatToCapability(requestedFormat);
+    const capabilityErr = this.ensureFormatEnabled(expectedFormat);
+    if (capabilityErr) return fail(capabilityErr);
 
-      const nativeErr = this.exporter.exportNative({ formatId, destPath: payload.destPath });
-      if (!nativeErr) return ok({ path: payload.destPath });
-      if (exportPolicy === 'strict') {
-        return fail(nativeErr);
-      }
-      if (nativeErr.code !== 'not_implemented' && nativeErr.code !== 'unsupported_format') {
-        return fail(nativeErr);
-      }
-      return this.writeInternalFallback(payload, snapshot);
-    });
+    const snapshotErr = this.ensureSnapshotMatchesExpected(snapshot, expectedFormat);
+    if (snapshotErr) return fail(snapshotErr);
+
+    if (requestedFormat === 'gltf') {
+      return await this.exportGltf(payload.destPath);
+    }
+
+    if (requestedFormat === 'generic_model_json') {
+      return this.writeInternalFallback(requestedFormat, payload.destPath, snapshot);
+    }
+
+    const formatId = this.resolveExportFormatId(snapshot, expectedFormat);
+    if (!formatId) {
+      return fail({ code: 'unsupported_format', message: withFormatOverrideHint(EXPORT_FORMAT_ID_MISSING) });
+    }
+
+    const nativeErr = await this.exporter.exportNative({ formatId, destPath: payload.destPath });
+    if (!nativeErr) return ok({ path: payload.destPath });
+    if (exportPolicy === 'strict') {
+      return fail(nativeErr);
+    }
+    if (nativeErr.code !== 'not_implemented' && nativeErr.code !== 'unsupported_format') {
+      return fail(nativeErr);
+    }
+    return this.writeInternalFallback(requestedFormat, payload.destPath, snapshot);
   }
 
   private ensureFormatEnabled(expectedFormat: FormatKind | null): ToolError | null {
@@ -116,19 +129,49 @@ export class ExportService {
     return resolveFormatId(expectedFormat, this.formats.listFormats(), this.policies.formatOverrides);
   }
 
-  private writeInternalFallback(
+  private resolveRequestedFormat(
     payload: ExportPayload,
     snapshot: ReturnType<ProjectSession['snapshot']>
-  ): UsecaseResult<{ path: string }> {
-    const bundle = buildInternalExport(payload.format, snapshot);
-    const serialized = JSON.stringify(bundle.data, null, 2);
-    const err = this.editor.writeFile(payload.destPath, serialized);
+  ): UsecaseResult<ResolvedExportFormat> {
+    if (payload.format !== 'auto') {
+      return ok(payload.format);
+    }
+    const fromPath = resolveAutoFormatFromPath(payload.destPath);
+    if (fromPath) return ok(fromPath);
+    const fromProject = this.resolveAutoFormatFromSnapshot(snapshot);
+    if (fromProject) return ok(fromProject);
+    return fail({ code: 'invalid_payload', message: EXPORT_FORMAT_AUTO_UNRESOLVED });
+  }
+
+  private resolveAutoFormatFromSnapshot(snapshot: ReturnType<ProjectSession['snapshot']>): NonGltfExportFormat | null {
+    const formatKind = resolveSnapshotFormatKind(snapshot, this.projectState);
+    if (!formatKind) return null;
+    return mapFormatKindToDefaultExport(formatKind);
+  }
+
+  private async exportGltf(destPath: string): Promise<UsecaseResult<{ path: string }>> {
+    const err = await this.exporter.exportGltf({ destPath });
     if (err) return fail(err);
-    return ok({ path: payload.destPath });
+    return ok({ path: destPath });
+  }
+
+  private writeInternalFallback(
+    format: NonGltfExportFormat,
+    destPath: string,
+    snapshot: ReturnType<ProjectSession['snapshot']>
+  ): UsecaseResult<{ path: string }> {
+    const bundle = buildInternalExport(format, snapshot);
+    const serialized = JSON.stringify(bundle.data, null, 2);
+    const err = this.editor.writeFile(destPath, serialized);
+    if (err) return fail(err);
+    return ok({ path: destPath });
   }
 }
 
-const exportFormatToCapability = (format: ExportPayload['format']): FormatKind | null => {
+type ResolvedExportFormat = Exclude<ExportPayload['format'], 'auto'>;
+type NonGltfExportFormat = Exclude<ResolvedExportFormat, 'gltf'>;
+
+const exportFormatToCapability = (format: ResolvedExportFormat): FormatKind | null => {
   switch (format) {
     case 'java_block_item_json':
       return 'Java Block/Item';
@@ -136,6 +179,47 @@ const exportFormatToCapability = (format: ExportPayload['format']): FormatKind |
       return 'geckolib';
     case 'animated_java':
       return 'animated_java';
+    case 'generic_model_json':
+      return 'Generic Model';
+    case 'gltf':
+    default:
+      return null;
+  }
+};
+
+const resolveAutoFormatFromPath = (destPath: string): ResolvedExportFormat | null => {
+  const normalized = String(destPath ?? '').trim().toLowerCase();
+  if (normalized.endsWith('.gltf') || normalized.endsWith('.glb')) {
+    return 'gltf';
+  }
+  return null;
+};
+
+const resolveSnapshotFormatKind = (
+  snapshot: ReturnType<ProjectSession['snapshot']>,
+  projectState: ProjectStateBuilder
+): FormatKind | null => {
+  if (snapshot.format) return snapshot.format;
+  if (!snapshot.formatId) return null;
+  const overridden = projectState.matchOverrideKind(snapshot.formatId);
+  if (overridden) return overridden;
+  if (matchesFormatKind('Java Block/Item', snapshot.formatId)) return 'Java Block/Item';
+  if (matchesFormatKind('geckolib', snapshot.formatId)) return 'geckolib';
+  if (matchesFormatKind('animated_java', snapshot.formatId)) return 'animated_java';
+  if (matchesFormatKind('Generic Model', snapshot.formatId)) return 'Generic Model';
+  return null;
+};
+
+const mapFormatKindToDefaultExport = (formatKind: FormatKind): NonGltfExportFormat | null => {
+  switch (formatKind) {
+    case 'Java Block/Item':
+      return 'java_block_item_json';
+    case 'geckolib':
+      return 'gecko_geo_anim';
+    case 'animated_java':
+      return 'animated_java';
+    case 'Generic Model':
+      return 'generic_model_json';
     default:
       return null;
   }

@@ -19,5 +19,7 @@ export const EXPORT_FORMAT_NOT_ENABLED = (format: string) => `Export format not 
 export const EXPORT_FORMAT_MISMATCH = 'Export format does not match active format';
 export const EXPORT_FORMAT_ID_MISSING = 'No matching format ID for export';
 export const EXPORT_FORMAT_ID_MISSING_FOR_KIND = (kind: string) => `No format ID for ${kind}`;
+export const EXPORT_FORMAT_AUTO_UNRESOLVED =
+  'format=auto could not resolve an export target. Use a known extension (.gltf/.glb) or set format explicitly.';
 
 

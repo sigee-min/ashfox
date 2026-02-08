@@ -3,10 +3,25 @@ export const VALIDATION_ORPHAN_CUBE = (cube: string, bone: string) =>
   `Cube "${cube}" references missing bone "${bone}".`;
 export const VALIDATION_DUPLICATE_BONE = (name: string) => `Duplicate bone name: ${name}`;
 export const VALIDATION_DUPLICATE_CUBE = (name: string) => `Duplicate cube name: ${name}`;
+export const VALIDATION_DUPLICATE_MESH = (name: string) => `Duplicate mesh name: ${name}`;
 export const VALIDATION_MAX_CUBES_EXCEEDED = (count: number, max: number) =>
   `Cube count (${count}) exceeds limit (${max}).`;
 export const VALIDATION_ANIMATION_TOO_LONG = (name: string, maxSeconds: number) =>
   `Animation "${name}" exceeds max seconds (${maxSeconds}).`;
+export const VALIDATION_MESH_VERTEX_INVALID = (meshName: string, vertexId: string) =>
+  `Mesh "${meshName}" has invalid vertex coordinates for "${vertexId}".`;
+export const VALIDATION_MESH_VERTEX_DUPLICATE = (meshName: string, vertexId: string) =>
+  `Mesh "${meshName}" contains duplicate vertex id "${vertexId}".`;
+export const VALIDATION_MESH_FACE_VERTICES_INVALID = (meshName: string, faceId: string) =>
+  `Mesh "${meshName}" face "${faceId}" must reference at least 3 unique vertices.`;
+export const VALIDATION_MESH_FACE_VERTEX_UNKNOWN = (meshName: string, faceId: string, vertexId: string) =>
+  `Mesh "${meshName}" face "${faceId}" references unknown vertex "${vertexId}".`;
+export const VALIDATION_MESH_FACE_DEGENERATE = (meshName: string, faceId: string) =>
+  `Mesh "${meshName}" face "${faceId}" is degenerate (near-zero area).`;
+export const VALIDATION_MESH_FACE_UV_VERTEX_UNKNOWN = (meshName: string, faceId: string, vertexId: string) =>
+  `Mesh "${meshName}" face "${faceId}" UV references unknown vertex "${vertexId}".`;
+export const VALIDATION_MESH_FACE_UV_INVALID = (meshName: string, faceId: string, vertexId: string) =>
+  `Mesh "${meshName}" face "${faceId}" has invalid UV coordinates for vertex "${vertexId}".`;
 export const VALIDATION_TEXTURE_TOO_LARGE = (name: string, maxSize: number) =>
   `Texture "${name}" exceeds max size (${maxSize}px).`;
 export const VALIDATION_TEXTURE_SIZE_MISMATCH = (

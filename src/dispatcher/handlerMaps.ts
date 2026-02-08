@@ -46,7 +46,7 @@ export const isStatefulToolName = (name: ToolName): name is StatefulToolName =>
   (STATEFUL_TOOL_NAMES as readonly string[]).includes(name);
 
 export type StatefulHandlerMap = Partial<{
-  [K in StatefulToolName]: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>>;
+  [K in StatefulToolName]: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>;
 }>;
 
 export type ResponseHandlerMap = Partial<{

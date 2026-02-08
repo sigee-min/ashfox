@@ -15,7 +15,7 @@ export class LocalToolExecutor implements ToolExecutor {
 
   async callTool(name: string, args: unknown): Promise<ToolResponse<unknown>> {
     const toolName = name as ToolName;
-    const response = this.dispatcher.handle(toolName, args as ToolPayloadMap[ToolName]);
+    const response = await this.dispatcher.handle(toolName, args as ToolPayloadMap[ToolName]);
     const decorated = decorateToolResponse(name, args, response);
     return normalizeToolResponse(decorated, {
       source: 'mcp_executor',

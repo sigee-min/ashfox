@@ -10,6 +10,7 @@ import {
   MODEL_BONE_NOT_FOUND,
   MODEL_MESH_EXISTS,
   MODEL_MESH_FACE_UV_AUTO_ONLY,
+  MODEL_MESH_FACE_DEGENERATE,
   MODEL_MESH_FACE_UV_VERTEX_UNKNOWN,
   MODEL_MESH_FACE_VERTEX_UNKNOWN,
   MODEL_MESH_FACE_VERTICES_REQUIRED,
@@ -21,6 +22,7 @@ import {
   MODEL_MESH_NOT_FOUND,
   MODEL_MESH_VERTEX_ID_DUPLICATE,
   MODEL_MESH_VERTEX_ID_REQUIRED,
+  MODEL_MESH_VERTEX_POS_INVALID,
   MODEL_MESH_VERTICES_REQUIRED
 } from '../../shared/messages';
 import { ensureNonBlankFields } from './validators';
@@ -344,20 +346,39 @@ const validateMeshGeometry = (
     if (!id) {
       return { code: 'invalid_payload', message: MODEL_MESH_VERTEX_ID_REQUIRED };
     }
+    if (
+      !Number.isFinite(vertex.pos[0]) ||
+      !Number.isFinite(vertex.pos[1]) ||
+      !Number.isFinite(vertex.pos[2])
+    ) {
+      return { code: 'invalid_payload', message: MODEL_MESH_VERTEX_POS_INVALID(id) };
+    }
     if (vertexIds.has(id)) {
       return { code: 'invalid_payload', message: MODEL_MESH_VERTEX_ID_DUPLICATE(id) };
     }
     vertexIds.add(id);
   }
 
-  for (const face of faces) {
+  const vertexMap = new Map(vertices.map((vertex) => [String(vertex.id).trim(), vertex.pos] as const));
+
+  for (let faceIndex = 0; faceIndex < faces.length; faceIndex += 1) {
+    const face = faces[faceIndex];
+    const faceId = resolveFaceId(face.id, faceIndex);
     if (!Array.isArray(face.vertices) || face.vertices.length < 3) {
       return { code: 'invalid_payload', message: MODEL_MESH_FACE_VERTICES_REQUIRED };
     }
+    if (new Set(face.vertices).size < 3) {
+      return { code: 'invalid_payload', message: MODEL_MESH_FACE_VERTICES_REQUIRED };
+    }
+    const polygon: [number, number, number][] = [];
     for (const vertexId of face.vertices) {
       if (!vertexIds.has(vertexId)) {
         return { code: 'invalid_payload', message: MODEL_MESH_FACE_VERTEX_UNKNOWN(vertexId) };
       }
+      polygon.push(vertexMap.get(vertexId)!);
+    }
+    if (polygonArea(polygon) <= 1e-6) {
+      return { code: 'invalid_payload', message: MODEL_MESH_FACE_DEGENERATE(faceId) };
     }
     for (const point of face.uv ?? []) {
       if (!vertexIds.has(point.vertexId)) {
@@ -413,4 +434,27 @@ const normalizeDimension = (value: unknown): number | null => {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
   return Math.max(1, Math.trunc(numeric));
+};
+
+const resolveFaceId = (faceId: string | undefined, index: number): string => {
+  const normalized = String(faceId ?? '').trim();
+  return normalized.length > 0 ? normalized : `face_${index}`;
+};
+
+const polygonArea = (vertices: [number, number, number][]): number => {
+  const origin = vertices[0];
+  let area = 0;
+  for (let i = 1; i < vertices.length - 1; i += 1) {
+    const ax = vertices[i][0] - origin[0];
+    const ay = vertices[i][1] - origin[1];
+    const az = vertices[i][2] - origin[2];
+    const bx = vertices[i + 1][0] - origin[0];
+    const by = vertices[i + 1][1] - origin[1];
+    const bz = vertices[i + 1][2] - origin[2];
+    const cx = ay * bz - az * by;
+    const cy = az * bx - ax * bz;
+    const cz = ax * by - ay * bx;
+    area += Math.sqrt(cx * cx + cy * cy + cz * cz) * 0.5;
+  }
+  return area;
 };

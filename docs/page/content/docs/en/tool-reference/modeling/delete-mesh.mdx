@@ -92,6 +92,7 @@ Deletes a mesh by id/name (or ids/names for bulk removal).
 ```
 
 ## Operational Notes
+- `delete_mesh` is available only on mesh-enabled formats (for example `Generic Model` / `free`).
 - Use `ifRevision` for mutation calls when available.
 - Do not send fields outside the declared schema.
 - Run `validate` before `export` for release safety.
