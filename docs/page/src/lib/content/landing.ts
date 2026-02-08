@@ -23,12 +23,12 @@ export type LandingCopy = {
 const contentByLocale: Record<Locale, LandingCopy> = {
   en: {
     badge: 'Blockbench MCP Tools',
-    title: 'Standardize Blockbench production with bbmcp MCP tools.',
+    title: 'Standardize Blockbench asset production with bbmcp MCP tools.',
     description:
-      'bbmcp provides deterministic MCP tools for modeling, texturing, animation, and validation so teams can ship assets with predictable quality.',
+      'bbmcp delivers deterministic MCP tools for modeling, texturing, animation, and validation so teams can ship assets with predictable quality.',
     primaryCta: 'Explore MCP Tools',
     secondaryCta: 'Get Started',
-    featureTitle: 'Why teams run bbmcp in production',
+    featureTitle: 'Why production teams choose bbmcp',
     features: [
       {
         title: 'Deterministic Tool Execution',
@@ -47,7 +47,7 @@ const contentByLocale: Record<Locale, LandingCopy> = {
         description: 'Compose scripted pipelines for CI and repeatable asset generation across environments.',
       },
     ],
-    workflowTitle: 'MCP delivery workflow',
+    workflowTitle: 'MCP production workflow',
     workflowSteps: [
       {
         title: 'Configure',
@@ -66,17 +66,17 @@ const contentByLocale: Record<Locale, LandingCopy> = {
         description: 'Export validated outputs and ship repeatable release artifacts.',
       },
     ],
-    closingTitle: 'Built for strict pipelines and fast delivery.',
+    closingTitle: 'Built for strict pipelines and rapid delivery.',
     closingDescription: 'Adopt bbmcp MCP tools to standardize creation flows and reduce production regressions.',
   },
   ko: {
     badge: 'Blockbench MCP 도구',
-    title: 'bbmcp MCP 도구로 모델 제작 파이프라인을 표준화하세요.',
+    title: 'bbmcp MCP 도구로 Blockbench 에셋 제작 파이프라인을 표준화하세요.',
     description:
-      'bbmcp는 모델링, 텍스처링, 애니메이션, 검증을 결정적인 MCP 작업 흐름으로 연결해 안정적인 제작 품질을 제공합니다.',
-    primaryCta: 'MCP 도구 보기',
-    secondaryCta: '빠른 시작',
-    featureTitle: '팀이 bbmcp를 선택하는 이유',
+      'bbmcp는 모델링, 텍스처링, 애니메이션, 검증을 결정적인 MCP 워크플로우로 연결해 안정적인 에셋 제작 품질을 제공합니다.',
+    primaryCta: 'MCP 도구 살펴보기',
+    secondaryCta: '시작하기',
+    featureTitle: '프로덕션 팀이 bbmcp를 선택하는 이유',
     features: [
       {
         title: '결정적 도구 실행',
@@ -95,7 +95,7 @@ const contentByLocale: Record<Locale, LandingCopy> = {
         description: 'CI와 결합되는 스크립트 파이프라인으로 반복 제작을 자동화합니다.',
       },
     ],
-    workflowTitle: 'MCP 운영 흐름',
+    workflowTitle: 'MCP 제작 워크플로우',
     workflowSteps: [
       {
         title: '설정',
@@ -103,7 +103,7 @@ const contentByLocale: Record<Locale, LandingCopy> = {
       },
       {
         title: '제작',
-        description: 'MCP 도구로 모델/텍스처 작업을 일관된 방식으로 생성하고 수정합니다.',
+        description: 'MCP 도구로 모델, 텍스처, 애니메이션 작업을 일관된 방식으로 생성하고 수정합니다.',
       },
       {
         title: '검증',
@@ -114,7 +114,7 @@ const contentByLocale: Record<Locale, LandingCopy> = {
         description: '검증된 산출물을 내보내고 릴리스 가능한 형태로 정리합니다.',
       },
     ],
-    closingTitle: '빠른 팀과 엄격한 기준을 위한 MCP 워크플로우.',
+    closingTitle: '엄격한 기준과 빠른 릴리스를 위한 MCP 워크플로우.',
     closingDescription: 'bbmcp MCP 도구로 제작, 검증, 내보내기 과정을 표준화하세요.',
   },
 };

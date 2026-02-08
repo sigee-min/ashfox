@@ -26,6 +26,7 @@ import type { TraceRecorder } from '../trace/traceRecorder';
 import type { TraceLogFlushScheduler } from '../trace/traceLogFlushScheduler';
 import type { TraceLogWriter } from '../ports/traceLog';
 import { PLUGIN_LOG_LOADING, PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, PLUGIN_UI_LOADED, PLUGIN_UI_UNLOADED } from './messages';
+import { PLUGIN_ICON_DATA_URL } from './pluginIcon';
 
 type BbmcpBridge = {
   invoke: Dispatcher['handle'];
@@ -124,7 +125,7 @@ export const registerPlugin = () => {
   pluginApi?.register(PLUGIN_ID, {
     title: 'bbmcp',
     author: 'sigee-min',
-    icon: 'extension',
+    icon: PLUGIN_ICON_DATA_URL,
     description: 'Blockbench MCP bridge scaffold (Java Block/Item default, GeckoLib optional). Latest Blockbench desktop only.',
     creation_date: '2024-01-04',
     version: PLUGIN_VERSION,

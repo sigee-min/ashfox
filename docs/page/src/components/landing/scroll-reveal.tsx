@@ -21,19 +21,24 @@ export function ScrollReveal({ children, className, delayMs = 0 }: ScrollRevealP
       return () => window.cancelAnimationFrame(frame);
     }
 
+    const isNearPageBottom = () => {
+      const doc = document.documentElement;
+      return window.innerHeight + window.scrollY >= doc.scrollHeight - 6;
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (!entry) return;
 
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.35) {
+        if (entry.isIntersecting && (entry.intersectionRatio >= 0.24 || isNearPageBottom())) {
           window.requestAnimationFrame(() => setVisible(true));
           observer.disconnect();
         }
       },
       {
-        threshold: [0, 0.35, 0.55, 0.75],
-        rootMargin: '0px 0px -24% 0px',
+        threshold: [0, 0.24, 0.45, 0.65],
+        rootMargin: '0px 0px -14% 0px',
       },
     );
 
@@ -42,8 +47,8 @@ export function ScrollReveal({ children, className, delayMs = 0 }: ScrollRevealP
     const onScrollFallback = () => {
       const rect = element.getBoundingClientRect();
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const triggerLine = Math.min(viewportHeight * 0.72, 620);
-      if (rect.top <= triggerLine && rect.bottom > 0) {
+      const triggerLine = Math.min(viewportHeight * 0.82, 720);
+      if ((rect.top <= triggerLine && rect.bottom > 0) || (isNearPageBottom() && rect.top < viewportHeight)) {
         window.requestAnimationFrame(() => setVisible(true));
         observer.disconnect();
         window.removeEventListener('scroll', onScrollFallback);
@@ -53,8 +58,10 @@ export function ScrollReveal({ children, className, delayMs = 0 }: ScrollRevealP
 
     window.addEventListener('scroll', onScrollFallback, { passive: true });
     window.addEventListener('resize', onScrollFallback);
+    const frame = window.requestAnimationFrame(onScrollFallback);
 
     return () => {
+      window.cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('scroll', onScrollFallback);
       window.removeEventListener('resize', onScrollFallback);

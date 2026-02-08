@@ -130,6 +130,31 @@ html:not(.dark) .bb-docs-shell {
   background: #f8fafc;
 }
 
+.bb-site-footer {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(252, 253, 255, 0.72) 0%, rgba(247, 250, 255, 0.92) 55%, rgba(242, 247, 255, 0.98) 100%);
+}
+
+.bb-site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.46), transparent);
+}
+
+html.dark .bb-site-footer {
+  background:
+    linear-gradient(180deg, rgba(11, 16, 26, 0.78) 0%, rgba(10, 14, 22, 0.92) 56%, rgba(8, 12, 20, 0.98) 100%);
+}
+
+html.dark .bb-site-footer::before {
+  background: linear-gradient(90deg, transparent, rgba(100, 116, 139, 0.5), transparent);
+}
+
 .bb-landing-bg {
   position: absolute;
   top: -8rem;

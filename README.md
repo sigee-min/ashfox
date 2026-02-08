@@ -1,4 +1,4 @@
-# bbmcp
+# <img src="docs/page/public/favicon-32x32.png" alt="bbmcp icon badge" width="16" height="16" /> bbmcp
 
 Blockbench MCP bridge plugin. bbmcp exposes a low-level, deterministic tool surface for modeling, texturing, and animation over MCP.
 
