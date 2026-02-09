@@ -41,5 +41,20 @@ registerAsync(
         /Persistence startup validation failed/
       );
     }
+
+    {
+      assert.throws(
+        () =>
+          createGatewayPersistence(
+            {
+              ASHFOX_PERSISTENCE_PRESET: 'appwrite',
+              ASHFOX_DB_PROVIDER: 'appwrite',
+              ASHFOX_STORAGE_PROVIDER: 'appwrite'
+            },
+            { failFast: true }
+          ),
+        /Persistence startup validation failed/
+      );
+    }
   })()
 );

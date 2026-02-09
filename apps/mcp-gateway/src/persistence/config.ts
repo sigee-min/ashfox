@@ -37,6 +37,29 @@ export interface AshfoxBlobStoreConfig {
   upsert: boolean;
 }
 
+export interface AppwriteCommonConfig {
+  baseUrl: string;
+  projectId: string;
+  apiKey: string;
+  requestTimeoutMs: number;
+  responseFormat: string;
+}
+
+export interface AppwriteDatabaseConfig extends AppwriteCommonConfig {
+  databaseId: string;
+  collectionId: string;
+  provider: DatabaseProvider;
+}
+
+export interface AppwriteBlobStoreConfig extends AppwriteCommonConfig {
+  bucketId: string;
+  keyPrefix?: string;
+  upsert: boolean;
+  metadataDatabaseId?: string;
+  metadataCollectionId?: string;
+  provider: StorageProvider;
+}
+
 const DEFAULT_PRESET: PersistencePreset = 'local';
 const DEFAULT_STORAGE_ROOT = path.resolve('.ashfox', 'storage');
 const DEFAULT_POSTGRES_URL = 'postgresql://ashfox:ashfox@postgres:5432/ashfox';
@@ -44,18 +67,33 @@ const DEFAULT_SQLITE_PATH = path.resolve('.ashfox', 'local', 'ashfox.sqlite');
 const DEFAULT_MIGRATIONS_TABLE = 'ashfox_schema_migrations';
 const DEFAULT_ASHFOX_DB_HOST = 'database.sigee.xyx';
 const DEFAULT_ASHFOX_STORAGE_URL = 'https://database.sigee.xyx';
+const DEFAULT_APPWRITE_URL = 'https://cloud.appwrite.io/v1';
+const DEFAULT_APPWRITE_RESPONSE_FORMAT = '1.8.0';
+const DEFAULT_APPWRITE_DATABASE_ID = 'ashfox';
+const DEFAULT_APPWRITE_PROJECTS_COLLECTION_ID = 'ashfox_projects';
+const DEFAULT_APPWRITE_BLOB_BUCKET_ID = 'ashfox_blobs';
+const DEFAULT_APPWRITE_BLOB_METADATA_COLLECTION_ID = 'ashfox_blob_metadata';
 
 const PRESET_SELECTIONS: Record<PersistencePreset, { databaseProvider: DatabaseProvider; storageProvider: StorageProvider }> =
   {
     local: { databaseProvider: 'sqlite', storageProvider: 'fs' },
     selfhost: { databaseProvider: 'postgres', storageProvider: 's3' },
-    ashfox: { databaseProvider: 'ashfox', storageProvider: 'ashfox' }
+    ashfox: { databaseProvider: 'ashfox', storageProvider: 'ashfox' },
+    appwrite: { databaseProvider: 'appwrite', storageProvider: 'appwrite' }
   };
 
 const normalize = (value: string | undefined): string => String(value ?? '').trim().toLowerCase();
 const nonEmpty = (value: string | undefined): string | null => {
   const trimmed = String(value ?? '').trim();
   return trimmed ? trimmed : null;
+};
+
+const firstNonEmpty = (...values: Array<string | undefined>): string | null => {
+  for (const value of values) {
+    const resolved = nonEmpty(value);
+    if (resolved) return resolved;
+  }
+  return null;
 };
 
 const parseBool = (value: string | undefined, fallback: boolean): boolean => {
@@ -74,34 +112,25 @@ const parsePositiveInt = (value: string | undefined, fallback: number): number =
 
 const parsePreset = (value: string | undefined): PersistencePreset | null => {
   const normalized = normalize(value);
-  if (normalized === 'local' || normalized === 'selfhost') {
+  if (normalized === 'local' || normalized === 'selfhost' || normalized === 'ashfox' || normalized === 'appwrite') {
     return normalized;
   }
-  // Backward-compatible alias for previous provider naming.
-  if (normalized === 'ashfox' || normalized === 'supabase') return 'ashfox';
   return null;
 };
 
 const parseDatabaseProvider = (value: string | undefined): DatabaseProvider | null => {
   const normalized = normalize(value);
-  if (normalized === 'sqlite') {
+  if (normalized === 'sqlite' || normalized === 'postgres' || normalized === 'ashfox' || normalized === 'appwrite') {
     return normalized;
   }
-  if (normalized === 'postgres') {
-    return normalized;
-  }
-  // Backward-compatible alias for previous provider naming.
-  if (normalized === 'ashfox' || normalized === 'supabase') return 'ashfox';
   return null;
 };
 
 const parseStorageProvider = (value: string | undefined): StorageProvider | null => {
   const normalized = normalize(value);
-  if (normalized === 'fs' || normalized === 's3') {
+  if (normalized === 'fs' || normalized === 's3' || normalized === 'ashfox' || normalized === 'appwrite') {
     return normalized;
   }
-  // Backward-compatible alias for previous provider naming.
-  if (normalized === 'ashfox' || normalized === 'supabase') return 'ashfox';
   return null;
 };
 
@@ -202,6 +231,67 @@ export const resolveAshfoxDatabaseConfig = (env: NodeJS.ProcessEnv): PostgresRep
   };
 };
 
+const resolveAppwriteCommonConfig = (env: NodeJS.ProcessEnv, scope: 'db' | 'storage'): AppwriteCommonConfig => {
+  const isDb = scope === 'db';
+  const baseUrl = normalizeUrlBase(
+    firstNonEmpty(
+      isDb ? env.ASHFOX_DB_APPWRITE_URL : env.ASHFOX_STORAGE_APPWRITE_URL,
+      isDb ? env.ASHFOX_DB_APPWRITE_ENDPOINT : env.ASHFOX_STORAGE_APPWRITE_ENDPOINT,
+      env.ASHFOX_APPWRITE_URL,
+      env.ASHFOX_APPWRITE_ENDPOINT
+    ) ?? DEFAULT_APPWRITE_URL
+  );
+  const projectId =
+    firstNonEmpty(
+      isDb ? env.ASHFOX_DB_APPWRITE_PROJECT_ID : env.ASHFOX_STORAGE_APPWRITE_PROJECT_ID,
+      isDb ? env.ASHFOX_DB_APPWRITE_PROJECT : env.ASHFOX_STORAGE_APPWRITE_PROJECT,
+      env.ASHFOX_APPWRITE_PROJECT_ID,
+      env.ASHFOX_APPWRITE_PROJECT
+    ) ?? '';
+  const apiKey =
+    firstNonEmpty(
+      isDb ? env.ASHFOX_DB_APPWRITE_API_KEY : env.ASHFOX_STORAGE_APPWRITE_API_KEY,
+      isDb ? env.ASHFOX_DB_APPWRITE_KEY : env.ASHFOX_STORAGE_APPWRITE_KEY,
+      env.ASHFOX_APPWRITE_API_KEY,
+      env.ASHFOX_APPWRITE_KEY
+    ) ?? '';
+  const requestTimeoutMs = parsePositiveInt(
+    firstNonEmpty(
+      isDb ? env.ASHFOX_DB_APPWRITE_TIMEOUT_MS : env.ASHFOX_STORAGE_APPWRITE_TIMEOUT_MS,
+      env.ASHFOX_APPWRITE_TIMEOUT_MS
+    ) ?? undefined,
+    15000
+  );
+  const responseFormat =
+    firstNonEmpty(
+      isDb ? env.ASHFOX_DB_APPWRITE_RESPONSE_FORMAT : env.ASHFOX_STORAGE_APPWRITE_RESPONSE_FORMAT,
+      env.ASHFOX_APPWRITE_RESPONSE_FORMAT
+    ) ?? DEFAULT_APPWRITE_RESPONSE_FORMAT;
+  return {
+    baseUrl,
+    projectId,
+    apiKey,
+    requestTimeoutMs,
+    responseFormat
+  };
+};
+
+export const resolveAppwriteDatabaseConfig = (env: NodeJS.ProcessEnv): AppwriteDatabaseConfig => {
+  const common = resolveAppwriteCommonConfig(env, 'db');
+  return {
+    ...common,
+    databaseId:
+      firstNonEmpty(env.ASHFOX_DB_APPWRITE_DATABASE_ID, env.ASHFOX_APPWRITE_DATABASE_ID) ?? DEFAULT_APPWRITE_DATABASE_ID,
+    collectionId:
+      firstNonEmpty(
+        env.ASHFOX_DB_APPWRITE_COLLECTION_ID,
+        env.ASHFOX_DB_APPWRITE_PROJECT_COLLECTION_ID,
+        env.ASHFOX_APPWRITE_COLLECTION_ID
+      ) ?? DEFAULT_APPWRITE_PROJECTS_COLLECTION_ID,
+    provider: 'appwrite'
+  };
+};
+
 export const resolveS3BlobStoreConfig = (env: NodeJS.ProcessEnv): S3BlobStoreConfig => ({
   region: nonEmpty(env.ASHFOX_STORAGE_S3_REGION) ?? 'us-east-1',
   endpoint: nonEmpty(env.ASHFOX_STORAGE_S3_ENDPOINT) ?? undefined,
@@ -220,3 +310,26 @@ export const resolveAshfoxBlobStoreConfig = (env: NodeJS.ProcessEnv): AshfoxBlob
   requestTimeoutMs: parsePositiveInt(env.ASHFOX_STORAGE_ASHFOX_TIMEOUT_MS, 15000),
   upsert: parseBool(env.ASHFOX_STORAGE_ASHFOX_UPSERT, true)
 });
+
+export const resolveAppwriteBlobStoreConfig = (env: NodeJS.ProcessEnv): AppwriteBlobStoreConfig => {
+  const common = resolveAppwriteCommonConfig(env, 'storage');
+  return {
+    ...common,
+    bucketId:
+      firstNonEmpty(env.ASHFOX_STORAGE_APPWRITE_BUCKET_ID, env.ASHFOX_APPWRITE_BUCKET_ID) ?? DEFAULT_APPWRITE_BLOB_BUCKET_ID,
+    keyPrefix: firstNonEmpty(env.ASHFOX_STORAGE_APPWRITE_KEY_PREFIX) ?? undefined,
+    upsert: parseBool(env.ASHFOX_STORAGE_APPWRITE_UPSERT, true),
+    metadataDatabaseId:
+      firstNonEmpty(
+        env.ASHFOX_STORAGE_APPWRITE_METADATA_DATABASE_ID,
+        env.ASHFOX_DB_APPWRITE_DATABASE_ID,
+        env.ASHFOX_APPWRITE_DATABASE_ID
+      ) ?? DEFAULT_APPWRITE_DATABASE_ID,
+    metadataCollectionId:
+      firstNonEmpty(
+        env.ASHFOX_STORAGE_APPWRITE_METADATA_COLLECTION_ID,
+        env.ASHFOX_APPWRITE_BLOB_METADATA_COLLECTION_ID
+      ) ?? DEFAULT_APPWRITE_BLOB_METADATA_COLLECTION_ID,
+    provider: 'appwrite'
+  };
+};

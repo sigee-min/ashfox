@@ -6,6 +6,7 @@ Preset files:
 - `deploy/env/presets/local.env.example`
 - `deploy/env/presets/selfhost.env.example`
 - `deploy/env/presets/ashfox.env.example`
+- `deploy/env/presets/appwrite.env.example`
 
 Usage:
 1. Pick a preset file.

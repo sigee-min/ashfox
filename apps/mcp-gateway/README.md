@@ -13,9 +13,9 @@ Environment variables:
 - `ASHFOX_PATH` (default `/mcp`)
 - `ASHFOX_GATEWAY_BACKEND` (`engine` | `blockbench`, default `engine`)
 - `ASHFOX_PERSISTENCE_FAIL_FAST` (default `true`; if `false`, start even when persistence readiness is degraded)
-- `ASHFOX_PERSISTENCE_PRESET` (`local` | `selfhost` | `ashfox`, default `local`, legacy alias `supabase`)
-- `ASHFOX_DB_PROVIDER` (`sqlite` | `postgres` | `ashfox`, legacy alias `supabase`) overrides preset DB selection
-- `ASHFOX_STORAGE_PROVIDER` (`fs` | `s3` | `ashfox`, legacy alias `supabase`) overrides preset storage selection
+- `ASHFOX_PERSISTENCE_PRESET` (`local` | `selfhost` | `ashfox` | `appwrite`, default `local`)
+- `ASHFOX_DB_PROVIDER` (`sqlite` | `postgres` | `ashfox` | `appwrite`) overrides preset DB selection
+- `ASHFOX_STORAGE_PROVIDER` (`fs` | `s3` | `ashfox` | `appwrite`) overrides preset storage selection
 - `ASHFOX_STORAGE_FS_ROOT` (default `.ashfox/storage`) when `ASHFOX_STORAGE_PROVIDER=fs`
 - `ASHFOX_DB_SQLITE_PATH` (default `.ashfox/local/ashfox.sqlite`) when `ASHFOX_DB_PROVIDER=sqlite`
 - `ASHFOX_DB_SQLITE_TABLE` (default `ashfox_projects`)
@@ -39,16 +39,38 @@ Environment variables:
 - `ASHFOX_STORAGE_ASHFOX_SERVICE_KEY` (required for `ashfox`)
 - `ASHFOX_STORAGE_ASHFOX_KEY_PREFIX` (optional)
 - `ASHFOX_STORAGE_ASHFOX_UPSERT` (default `true`)
+- `ASHFOX_APPWRITE_URL` (default `https://cloud.appwrite.io/v1`, shared fallback)
+- `ASHFOX_APPWRITE_PROJECT_ID` / `ASHFOX_APPWRITE_API_KEY` (shared fallback)
+- `ASHFOX_APPWRITE_TIMEOUT_MS` (default `15000`)
+- `ASHFOX_APPWRITE_RESPONSE_FORMAT` (default `1.8.0`)
+- `ASHFOX_DB_APPWRITE_URL` / `ASHFOX_DB_APPWRITE_PROJECT_ID` / `ASHFOX_DB_APPWRITE_API_KEY` (required for `appwrite` DB unless shared fallback is set)
+- `ASHFOX_DB_APPWRITE_DATABASE_ID` / `ASHFOX_DB_APPWRITE_COLLECTION_ID` (default `ashfox` / `ashfox_projects`)
+- `ASHFOX_DB_APPWRITE_TIMEOUT_MS` / `ASHFOX_DB_APPWRITE_RESPONSE_FORMAT` (optional overrides)
+- `ASHFOX_STORAGE_APPWRITE_URL` / `ASHFOX_STORAGE_APPWRITE_PROJECT_ID` / `ASHFOX_STORAGE_APPWRITE_API_KEY` (required for `appwrite` storage unless shared fallback is set)
+- `ASHFOX_STORAGE_APPWRITE_BUCKET_ID` (default `ashfox_blobs`)
+- `ASHFOX_STORAGE_APPWRITE_KEY_PREFIX` (optional)
+- `ASHFOX_STORAGE_APPWRITE_UPSERT` (default `true`)
+- `ASHFOX_STORAGE_APPWRITE_METADATA_DATABASE_ID` / `ASHFOX_STORAGE_APPWRITE_METADATA_COLLECTION_ID` (default `ashfox` / `ashfox_blob_metadata`)
+- `ASHFOX_STORAGE_APPWRITE_TIMEOUT_MS` / `ASHFOX_STORAGE_APPWRITE_RESPONSE_FORMAT` (optional overrides)
+
+Appwrite schema prerequisites:
+- Database collection (`ASHFOX_DB_APPWRITE_COLLECTION_ID`) attributes: `tenantId` (string), `projectId` (string), `revision` (string), `stateJson` (string), `createdAt` (string), `updatedAt` (string)
+- Storage metadata collection (`ASHFOX_STORAGE_APPWRITE_METADATA_COLLECTION_ID`) attributes: `fileId` (string), `bucket` (string), `key` (string), `contentType` (string), `cacheControl` (string), `metadataJson` (string), `updatedAt` (string)
+- Storage bucket (`ASHFOX_STORAGE_APPWRITE_BUCKET_ID`) must exist before writes
+- Adapter uses deterministic 36-char IDs for Appwrite document/file constraints and chunk upload for files larger than 5MB
 
 Current persistence adapter status:
 - `local` preset: `sqlite` + `fs` (zero-config)
 - `postgres`: implemented (`pg`)
 - `ashfox` managed DB: implemented (`pg`, default host `database.sigee.xyx`)
+- `appwrite` database: implemented (Databases API)
 - `fs` storage: implemented
 - `s3` storage: implemented (`@aws-sdk/client-s3`)
-- `ashfox` managed storage: implemented (Supabase Storage compatible HTTP API)
+- `ashfox` managed storage: implemented (Ashfox storage HTTP API)
+- `appwrite` storage: implemented (Storage API + optional metadata collection)
 
 Preset sample env files:
 - `deploy/env/presets/local.env.example`
 - `deploy/env/presets/selfhost.env.example`
 - `deploy/env/presets/ashfox.env.example`
+- `deploy/env/presets/appwrite.env.example`

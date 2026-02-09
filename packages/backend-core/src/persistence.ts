@@ -1,8 +1,8 @@
-export type DatabaseProvider = 'sqlite' | 'postgres' | 'ashfox';
+export type DatabaseProvider = 'sqlite' | 'postgres' | 'ashfox' | 'appwrite';
 
-export type StorageProvider = 'fs' | 's3' | 'ashfox';
+export type StorageProvider = 'fs' | 's3' | 'ashfox' | 'appwrite';
 
-export type PersistencePreset = 'local' | 'selfhost' | 'ashfox';
+export type PersistencePreset = 'local' | 'selfhost' | 'ashfox' | 'appwrite';
 
 export interface PersistenceSelection {
   preset: PersistencePreset;

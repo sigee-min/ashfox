@@ -1,5 +1,7 @@
 import type { BlobStore, PersistencePorts, ProjectRepository, ProviderReadiness } from '@ashfox/backend-core';
 import {
+  resolveAppwriteBlobStoreConfig,
+  resolveAppwriteDatabaseConfig,
   resolveAshfoxBlobStoreConfig,
   resolveAshfoxDatabaseConfig,
   resolvePersistenceSelection,
@@ -8,6 +10,8 @@ import {
   resolveS3BlobStoreConfig,
   resolveStorageRoot
 } from './config';
+import { AppwriteBlobStore } from './infrastructure/AppwriteBlobStore';
+import { AppwriteProjectRepository } from './infrastructure/AppwriteProjectRepository';
 import { AshfoxStorageBlobStore } from './infrastructure/AshfoxStorageBlobStore';
 import { FileSystemBlobStore } from './infrastructure/FileSystemBlobStore';
 import { PostgresProjectRepository } from './infrastructure/PostgresProjectRepository';
@@ -115,6 +119,43 @@ const createProjectRepository = (
       }
     };
   }
+  if (selection.databaseProvider === 'appwrite') {
+    const config = resolveAppwriteDatabaseConfig(env);
+    if (!config.projectId || !config.apiKey) {
+      return {
+        port: new UnsupportedProjectRepository(
+          selection.databaseProvider,
+          'Missing Appwrite credentials. Set ASHFOX_DB_APPWRITE_PROJECT_ID and ASHFOX_DB_APPWRITE_API_KEY.'
+        ),
+        readiness: {
+          provider: selection.databaseProvider,
+          ready: false,
+          reason: 'missing_credentials',
+          details: {
+            baseUrl: config.baseUrl,
+            databaseId: config.databaseId,
+            collectionId: config.collectionId
+          }
+        }
+      };
+    }
+    return {
+      port: new AppwriteProjectRepository(config),
+      readiness: {
+        provider: selection.databaseProvider,
+        ready: true,
+        details: {
+          adapter: 'appwrite_databases',
+          baseUrl: config.baseUrl,
+          projectId: config.projectId,
+          databaseId: config.databaseId,
+          collectionId: config.collectionId,
+          responseFormat: config.responseFormat,
+          connectivity: 'api'
+        }
+      }
+    };
+  }
   return {
     port: new UnsupportedProjectRepository(
       selection.databaseProvider,
@@ -198,6 +239,41 @@ const createBlobStore = (
           adapter: 'ashfox_storage_api',
           baseUrl: config.baseUrl,
           keyPrefix: config.keyPrefix
+        }
+      }
+    };
+  }
+  if (selection.storageProvider === 'appwrite') {
+    const config = resolveAppwriteBlobStoreConfig(env);
+    if (!config.projectId || !config.apiKey) {
+      return {
+        port: new UnsupportedBlobStore(
+          selection.storageProvider,
+          'Missing Appwrite credentials. Set ASHFOX_STORAGE_APPWRITE_PROJECT_ID and ASHFOX_STORAGE_APPWRITE_API_KEY.'
+        ),
+        readiness: {
+          provider: selection.storageProvider,
+          ready: false,
+          reason: 'missing_credentials',
+          details: { baseUrl: config.baseUrl, bucketId: config.bucketId }
+        }
+      };
+    }
+    return {
+      port: new AppwriteBlobStore(config),
+      readiness: {
+        provider: selection.storageProvider,
+        ready: true,
+        details: {
+          adapter: 'appwrite_storage',
+          baseUrl: config.baseUrl,
+          projectId: config.projectId,
+          bucketId: config.bucketId,
+          keyPrefix: config.keyPrefix,
+          metadataDatabaseId: config.metadataDatabaseId,
+          metadataCollectionId: config.metadataCollectionId,
+          responseFormat: config.responseFormat,
+          upsert: config.upsert
         }
       }
     };

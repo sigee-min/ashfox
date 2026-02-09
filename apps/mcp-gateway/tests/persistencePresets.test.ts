@@ -67,13 +67,26 @@ registerAsync(
 
     {
       const persistence = createGatewayPersistence({
-        ASHFOX_PERSISTENCE_PRESET: 'supabase',
-        ASHFOX_DB_ASHFOX_URL: 'postgresql://postgres:secret@database.sigee.xyx:5432/postgres?sslmode=require',
-        ASHFOX_STORAGE_ASHFOX_SERVICE_KEY: 'service-role-test-key'
+        ASHFOX_PERSISTENCE_PRESET: 'appwrite',
+        ASHFOX_DB_APPWRITE_URL: 'https://cloud.appwrite.io/v1',
+        ASHFOX_DB_APPWRITE_PROJECT_ID: 'demo-project',
+        ASHFOX_DB_APPWRITE_API_KEY: 'demo-key',
+        ASHFOX_DB_APPWRITE_DATABASE_ID: 'ashfox',
+        ASHFOX_DB_APPWRITE_COLLECTION_ID: 'ashfox_projects',
+        ASHFOX_STORAGE_APPWRITE_URL: 'https://cloud.appwrite.io/v1',
+        ASHFOX_STORAGE_APPWRITE_PROJECT_ID: 'demo-project',
+        ASHFOX_STORAGE_APPWRITE_API_KEY: 'demo-key',
+        ASHFOX_STORAGE_APPWRITE_BUCKET_ID: 'ashfox_blobs'
       });
-      assert.equal(persistence.health.selection.preset, 'ashfox');
-      assert.equal(persistence.health.selection.databaseProvider, 'ashfox');
-      assert.equal(persistence.health.selection.storageProvider, 'ashfox');
+      assert.deepEqual(persistence.health.selection, {
+        preset: 'appwrite',
+        databaseProvider: 'appwrite',
+        storageProvider: 'appwrite'
+      });
+      assert.equal(persistence.health.database.ready, true);
+      assert.equal(persistence.health.storage.ready, true);
+      assert.equal(getDetails(persistence.health.database.details).adapter, 'appwrite_databases');
+      assert.equal(getDetails(persistence.health.storage.details).adapter, 'appwrite_storage');
     }
 
     {
