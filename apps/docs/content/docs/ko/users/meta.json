@@ -1,4 +1,15 @@
 {
   "title": "사용자 가이드",
-  "pages": ["index", "blockbench-plugin", "ashfox", "mcp-spec"]
+  "pages": [
+    "index",
+    "installation",
+    "getting-started",
+    "learning-path",
+    "guides",
+    "tool-reference",
+    "troubleshooting",
+    "blockbench-plugin",
+    "ashfox",
+    "mcp-spec"
+  ]
 }

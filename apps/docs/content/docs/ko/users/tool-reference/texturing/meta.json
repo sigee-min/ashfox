@@ -1,6 +1,7 @@
 {
   "title": "텍스처 도구",
   "pages": [
+    "index",
     "read-texture",
     "assign-texture",
     "paint-faces",

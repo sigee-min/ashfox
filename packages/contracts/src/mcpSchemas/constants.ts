@@ -2,7 +2,6 @@ export const FORMAT_KINDS = [
   'Java Block/Item',
   'geckolib',
   'animated_java',
-  'Image',
   'Generic Model'
 ] as const;
 

@@ -6,7 +6,6 @@ description: "Input schema and field behavior for reload_plugins."
 ## Overview
 - Tool name: `reload_plugins`
 - Category: System
-- Strict schema: `true`
 
 ## Tool Description
 Reloads Blockbench plugins (confirm required).
@@ -53,8 +52,3 @@ Reloads Blockbench plugins (confirm required).
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

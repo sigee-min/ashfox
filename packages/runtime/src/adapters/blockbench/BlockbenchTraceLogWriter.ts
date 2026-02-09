@@ -4,6 +4,13 @@ import { errorMessage } from '../../logging';
 import { toolError } from '../../shared/tooling/toolResponse';
 import { loadNativeModule } from '../../shared/nativeModules';
 import { readBlockbenchGlobals } from '../../types/blockbench';
+import {
+  isDirectoryPath,
+  isEisdirError,
+  joinPath,
+  type FsPathPolicyModule,
+  type PathPolicyModule
+} from './io/pathPolicy';
 
 export type BlockbenchTraceLogWriterOptions = {
   mode?: TraceLogWriteMode;
@@ -12,14 +19,6 @@ export type BlockbenchTraceLogWriterOptions = {
 };
 
 const DEFAULT_FILE_NAME = 'ashfox-trace.ndjson';
-
-type FsModule = {
-  statSync?: (path: string) => { isDirectory?: () => boolean };
-};
-
-type PathModule = {
-  join?: (...parts: string[]) => string;
-};
 
 export class BlockbenchTraceLogWriter implements TraceLogWriter {
   private readonly mode: TraceLogWriteMode;
@@ -41,8 +40,8 @@ export class BlockbenchTraceLogWriter implements TraceLogWriter {
       });
     }
 
-    const fs = loadNativeModule<FsModule>('fs', { optional: true });
-    const path = loadNativeModule<PathModule>('path', { optional: true });
+    const fs = loadNativeModule<FsPathPolicyModule>('fs', { optional: true });
+    const path = loadNativeModule<PathPolicyModule>('path', { optional: true });
     const resolvedPath = resolveTraceLogPath(
       this.destPath,
       this.fileName,
@@ -91,8 +90,8 @@ const resolveTraceLogPath = (
   destPath: string | undefined,
   fileName: string,
   project: { save_path?: string; export_path?: string } | null,
-  fs?: FsModule | null,
-  path?: PathModule | null
+  fs?: FsPathPolicyModule | null,
+  path?: PathPolicyModule | null
 ): string | null => {
   const trimmed = String(destPath ?? '').trim();
   if (trimmed.length > 0) {
@@ -107,37 +106,12 @@ const resolveTraceLogPath = (
   return joinPath(dir, fileName, path);
 };
 
-const isDirectoryPath = (value: string, fs?: FsModule | null): boolean => {
-  if (/[\\/]$/.test(value)) return true;
-  const statSync = fs?.statSync;
-  if (typeof statSync !== 'function') return false;
-  try {
-    const stat = statSync(value);
-    return typeof stat?.isDirectory === 'function' && Boolean(stat.isDirectory());
-  } catch (_err) {
-    return false;
-  }
-};
-
-const joinPath = (base: string, fileName: string, path?: PathModule | null): string => {
-  const join = path?.join;
-  if (typeof join === 'function') return join(base, fileName);
-  return `${base.replace(/[\\/]+$/, '')}/${fileName}`;
-};
-
-const isEisdirError = (err: unknown): boolean => {
-  const code = (err as { code?: unknown })?.code;
-  if (code === 'EISDIR') return true;
-  const message = errorMessage(err, '').toLowerCase();
-  return message.includes('eisdir') || message.includes('is a directory');
-};
-
 const writeTraceLogFile = (
   writeFile: (path: string, options: { content: string; savetype: 'text' | 'image' }) => void,
   resolvedPath: string,
   text: string,
   fileName: string,
-  path?: PathModule | null
+  path?: PathPolicyModule | null
 ): ToolError | null => {
   try {
     writeFile(resolvedPath, { content: text, savetype: 'text' });

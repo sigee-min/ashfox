@@ -213,6 +213,29 @@ const withGlobalsAsync = async (overrides: TestGlobals, run: () => Promise<void>
           writes.push({ path, content: payload.content, savetype: payload.savetype });
         }
       },
+      Formats: {
+        geckolib: { compile: () => ({ model: 'dragon' }) }
+      }
+    },
+    () => {
+      const error = adapter.exportNative({ formatId: 'geckolib', destPath: 'outdir/' });
+      assert.equal(error, null);
+    }
+  );
+  assert.equal(writes.length, 1);
+  assert.match(writes[0].path, /outdir[\\/]model\.json$/);
+}
+
+{
+  const writes: Array<{ path: string; content: string; savetype: string }> = [];
+  const adapter = new BlockbenchExport(noopLog);
+  withGlobals(
+    {
+      Blockbench: {
+        writeFile: (path: string, payload: { content: string; savetype: string }) => {
+          writes.push({ path, content: payload.content, savetype: payload.savetype });
+        }
+      },
       ModelFormat: {
         formats: {
           geckolib: {

@@ -1,32 +1,14 @@
----
+﻿---
 title: Getting Started
 description: First-run flow for Ashfox MCP tools, from connection to validated export.
 ---
 
-## TL;DR
+Getting started is not only about making one API call succeed. The practical goal is to establish a stable loop where your client can connect, read capabilities, mutate the project safely, validate the result, and export with confidence.
 
-1. Run Blockbench with the Ashfox plugin enabled.
-2. Connect your MCP client to `http://127.0.0.1:8787/mcp`.
-3. Run `list_capabilities` to load current schemas and limits.
-4. Execute: `ensure_project` -> `add_bone`/`add_cube` -> `validate` -> `export`.
+Begin by launching Blockbench Desktop with the Ashfox plugin loaded. Then connect your MCP client to `http://127.0.0.1:8787/mcp` and call `list_capabilities`. This call confirms that the server is reachable and also gives you the current tool schema snapshot your client should follow.
 
-## First Session Checklist
+After the connection is confirmed, run a full first-session workflow in sequence. Start with `ensure_project` so your client is attached to a concrete project context. Read the current project with `get_project_state`, then execute modeling or texturing mutations while passing `ifRevision` to avoid stale writes. When edits are finished, run `validate` to surface structural issues before export, use `render_preview` to inspect the visual result, and finish with `export`.
 
-- Blockbench desktop is running and Ashfox is loaded.
-- MCP endpoint is reachable (`/mcp`).
-- `list_capabilities` returns tool schemas and `toolRegistry.hash`.
-- `get_project_state` returns an initial project revision.
+In a healthy setup, each step returns predictable data that can be used as input for the next step, and you should not need manual recovery between calls. If any stage fails, move to the Troubleshooting section and match the failure mode to the corresponding guide.
 
-## Minimal Operational Flow
-
-1. Start with `ensure_project` to attach or create a project.
-2. Read revision via `get_project_state`.
-3. Run mutation tools with `ifRevision` to prevent stale writes.
-4. Execute `validate` to catch structure/capability issues.
-5. Review output with `render_preview`.
-6. Finalize with `export`.
-
-## Recommended Next Step
-
-- Read `Tool Reference` for tool categories and sequencing strategy.
-
+The same sequence applies to larger projects. As your model grows, the exact tools will change, but the operational pattern remains the same: establish project context, perform controlled mutations, validate, preview, and export.

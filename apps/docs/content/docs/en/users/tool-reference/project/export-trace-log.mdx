@@ -6,7 +6,6 @@ description: "Input schema and field behavior for export_trace_log."
 ## Overview
 - Tool name: `export_trace_log`
 - Category: Project
-- Strict schema: `true`
 
 ## Tool Description
 Flushes the trace log to disk (writeFile/export) and returns the resource URI for the in-memory log.
@@ -53,8 +52,3 @@ Flushes the trace log to disk (writeFile/export) and returns the resource URI fo
   "structuredContent": {}
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

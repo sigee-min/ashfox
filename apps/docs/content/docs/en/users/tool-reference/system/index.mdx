@@ -1,9 +1,11 @@
----
+﻿---
 title: System Tools
-description: "Capability discovery and runtime control tools."
+description: Capability discovery and runtime control tools.
 ---
 
-This section breaks down System Tools into one page per tool.
+System tools help you inspect the current runtime contract and refresh plugin state when required. These calls are usually part of session startup, capability sync, or maintenance flows rather than daily authoring steps.
+
+Call these tools early when your client starts and again when schemas or plugin runtime may have changed.
 
 <Cards>
   <Card title="List Capabilities" href="./list-capabilities" />

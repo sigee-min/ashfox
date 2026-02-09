@@ -2,6 +2,7 @@ import {
   Capabilities,
   AutoUvAtlasResult,
   AutoUvAtlasPayload,
+  ExportResult,
   PaintTextureResult,
   PaintTexturePayload,
   PaintFacesResult,
@@ -285,7 +286,7 @@ export class ToolService {
     return this.facades.animation.setTriggerKeyframes(payload);
   }
 
-  async exportModel(payload: ToolPayloadMap['export']): Promise<UsecaseResult<{ path: string }>> {
+  async exportModel(payload: ToolPayloadMap['export']): Promise<UsecaseResult<ExportResult>> {
     return await this.facades.exporter.exportModel(payload);
   }
 

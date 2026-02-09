@@ -1,4 +1,9 @@
 {
-  "title": "작업 가이드",
-  "pages": ["index", "local-setup", "asset-iteration", "export-and-validate"]
+  "title": "작업 플레이북",
+  "pages": [
+    "index",
+    "local-setup",
+    "asset-iteration",
+    "export-and-validate"
+  ]
 }

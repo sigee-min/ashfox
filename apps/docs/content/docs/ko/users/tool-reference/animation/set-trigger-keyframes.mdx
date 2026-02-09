@@ -6,7 +6,6 @@ description: "트리거 키프레임 설정 도구의 입력 스펙과 필드 �
 ## 개요
 - 도구 이름: `set_trigger_keyframes`
 - 카테고리: 애니메이션
-- Strict schema: `true`
 
 ## 도구 설명
 Sets trigger keyframes (sound/particle/timeline), one key per call.
@@ -112,8 +111,3 @@ Sets trigger keyframes (sound/particle/timeline), one key per call.
   }
 }
 ```
-
-## 운영 노트
-- 변경 도구는 `ifRevision` 사용을 권장합니다.
-- 스키마에 없는 필드는 보내지 마세요 (strict schema).
-- `validate`로 최종 상태를 확인한 후 `export`를 수행하세요.

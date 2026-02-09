@@ -21,7 +21,6 @@ const BASE_FORMATS: Array<{ format: FormatKind; animations: boolean }> = [
   { format: 'Java Block/Item', animations: false },
   { format: 'geckolib', animations: true },
   { format: 'animated_java', animations: true },
-  { format: 'Image', animations: false },
   { format: 'Generic Model', animations: true }
 ];
 
@@ -74,8 +73,7 @@ const normalizeFormatFlags = (
     animationMode: descriptor.animationMode,
     boneRig: descriptor.boneRig,
     armatureRig: descriptor.armatureRig,
-    meshes: descriptor.meshes,
-    imageEditor: descriptor.imageEditor
+    meshes: descriptor.meshes
   };
   const hasFlag = Object.values(flags).some((value) => value !== undefined);
   return hasFlag ? flags : undefined;

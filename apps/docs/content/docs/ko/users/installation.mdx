@@ -1,29 +1,17 @@
----
+﻿---
 title: 설치
 description: Ashfox 설치와 MCP 엔드포인트 연결 확인 방법.
 ---
 
-## 요구사항
+설치의 핵심은 한 번 실행되는 데모 환경이 아니라, 매 세션 동일하게 재현되는 실행 환경을 만드는 것입니다. 권장 순서는 릴리스 플러그인을 먼저 설치해 연결을 검증한 다음, 필요할 때만 소스 빌드로 전환하는 방식입니다.
 
-- Blockbench Desktop (최신 버전)
-- Node.js 22 이상 (소스 빌드 시)
-- npm 10 이상 (소스 빌드 시)
-
-## 빠른 설치 (플러그인 URL)
-
-Blockbench Desktop에서:
-
-1. `File > Plugins > Load Plugin from URL` 메뉴를 엽니다.
-2. 아래 URL을 붙여넣습니다.
-3. 플러그인을 설치/로드합니다.
+Blockbench Desktop에서 `File > Plugins > Load Plugin from URL` 메뉴를 열고 아래 URL을 입력해 플러그인을 설치합니다.
 
 ```text
 https://github.com/sigee-min/ashfox/releases/latest/download/ashfox-bbplugin.js
 ```
 
-## 소스 빌드 (선택)
-
-clone 후 빌드:
+로컬 수정이나 개발 테스트가 필요하면 저장소를 clone 받아 소스 빌드를 진행합니다.
 
 ```bash
 git clone https://github.com/sigee-min/ashfox.git
@@ -32,34 +20,16 @@ npm install
 npm run build
 ```
 
-이미 저장소가 있는 경우:
+이미 저장소가 있다면 설치와 빌드 명령만 실행하면 됩니다.
 
 ```bash
 npm install
 npm run build
 ```
 
-그 다음 Blockbench Plugin Manager에서 `dist/ashfox-bbplugin.js`를 로드합니다.
+빌드 후에는 Blockbench Plugin Manager에서 `dist/ashfox-bbplugin.js`를 로드합니다. 플러그인이 활성화되면 MCP 클라이언트에서 기본 엔드포인트 `http://127.0.0.1:8787/mcp`로 연결하고 `list_capabilities`를 호출해 응답에 도구 스키마와 `toolRegistry.hash`가 포함되는지 확인합니다.
 
-## MCP 엔드포인트 확인
-
-기본 엔드포인트:
-
-```text
-http://127.0.0.1:8787/mcp
-```
-
-정상 결과:
-- MCP 클라이언트에서 `list_capabilities` 호출이 성공합니다.
-- 응답에 도구 스키마와 `toolRegistry.hash`가 포함됩니다.
-
-## URL 및 런타임 설정
-
-- 공식 가이드 URL: `https://ashfox.sigee.xyz`
-- 기본 MCP 엔드포인트: `http://127.0.0.1:8787/mcp`
-- `ASHFOX_HOST`, `ASHFOX_PORT`, `ASHFOX_PATH`: MCP 서버 호스트/포트/경로 재정의
-
-예시:
+기본값과 다른 환경이 필요하면 `ASHFOX_HOST`, `ASHFOX_PORT`, `ASHFOX_PATH` 환경변수로 엔드포인트를 조정할 수 있습니다.
 
 ```bash
 ASHFOX_HOST=127.0.0.1
@@ -67,3 +37,4 @@ ASHFOX_PORT=8787
 ASHFOX_PATH=/mcp
 ```
 
+팀에 설치 가이드를 공유할 때는 공식 문서 URL인 `https://ashfox.sigee.xyz`를 기준으로 안내하면 버전 혼선을 줄일 수 있습니다.

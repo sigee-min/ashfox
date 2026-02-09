@@ -6,7 +6,6 @@ description: "Input schema and field behavior for assign_texture."
 ## Overview
 - Tool name: `assign_texture`
 - Category: Texturing
-- Strict schema: `true`
 
 ## Tool Description
 Binds a texture to cubes/faces (no UV edits).
@@ -104,8 +103,3 @@ Binds a texture to cubes/faces (no UV edits).
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

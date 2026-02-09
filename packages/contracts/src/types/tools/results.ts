@@ -175,6 +175,14 @@ export interface PreflightTextureResult {
 
 export interface ExportResult {
   path: string;
+  selectedTarget?: {
+    kind: 'internal' | 'gltf' | 'native_codec';
+    id: string;
+    formatId?: string;
+    codecId?: string;
+  };
+  stage?: 'resolve' | 'compile' | 'write' | 'fallback' | 'done';
+  warnings?: string[];
 }
 
 export type ValidateFinding = {

@@ -6,7 +6,6 @@ description: "Input schema and field behavior for update_cube."
 ## Overview
 - Tool name: `update_cube`
 - Category: Modeling
-- Strict schema: `true`
 
 ## Tool Description
 Updates a cube by id/name.
@@ -146,8 +145,3 @@ Updates a cube by id/name.
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

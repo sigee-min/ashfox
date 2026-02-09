@@ -51,7 +51,6 @@ registerAsync(
       'Java Block/Item',
       'geckolib',
       'animated_java',
-      'Image',
       'Generic Model'
     ]);
   })()

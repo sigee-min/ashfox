@@ -1,6 +1,7 @@
 {
   "title": "Texturing Tools",
   "pages": [
+    "index",
     "read-texture",
     "assign-texture",
     "paint-faces",

@@ -6,7 +6,6 @@ description: "기능 목록 조회 도구의 입력 스펙과 필드 동작 설�
 ## 개요
 - 도구 이름: `list_capabilities`
 - 카테고리: 시스템
-- Strict schema: `true`
 
 ## 도구 설명
 Returns plugin capabilities and limits. Tool schemas are strict (extra fields are rejected).
@@ -48,8 +47,3 @@ Returns plugin capabilities and limits. Tool schemas are strict (extra fields ar
   }
 }
 ```
-
-## 운영 노트
-- 변경 도구는 `ifRevision` 사용을 권장합니다.
-- 스키마에 없는 필드는 보내지 마세요 (strict schema).
-- `validate`로 최종 상태를 확인한 후 `export`를 수행하세요.

@@ -1,15 +1,16 @@
 ---
-title: "Vision Fallback (Preview + Texture)"
-description: "Vision Fallback (Preview + Texture)"
+title: "Vision Fallback"
+description: "Image-handling fallback strategy for clients that cannot consume inline image payloads."
 ---
 
-# Vision Fallback (Preview + Texture)
+# Vision Fallback
 
-Primary: use render_preview and (if exposed) read_texture so the client can attach images directly.
+The preferred integration path is to consume image payloads directly from `render_preview` and `read_texture`. Some clients, however, cannot process inline image blocks reliably. For those environments, Ashfox provides a file-based fallback.
 
-Fallback: if the client cannot accept images, save snapshots to disk and upload manually.
+When fallback mode is needed, request snapshots with `saveToTmp: true`, then upload those files through your client's supported file channel.
 
-Preview (auto + fallback):
+## Preview snapshot example
+
 ```json
 {
   "mode": "fixed",
@@ -20,7 +21,8 @@ Preview (auto + fallback):
 }
 ```
 
-Texture (auto + fallback):
+## Texture snapshot example
+
 ```json
 {
   "name": "pot_wood",
@@ -29,14 +31,7 @@ Texture (auto + fallback):
 }
 ```
 
-Notes:
-- `render_preview` supports `fixed` and `turntable` modes, with `single` or `sequence` output.
-- `read_texture` accepts either `id` or `name` (or both when they refer to the same texture).
-- `saveToTmp` writes snapshots under `.ashfox/tmp`; `tmpName`/`tmpPrefix` control file naming.
+Snapshots are written under `<project_root>/.ashfox/tmp`. Treat this directory as transient storage. Remove files after upload to avoid stale references and unnecessary disk growth.
 
-Snapshots are saved under:
-- <project_root>/.ashfox/tmp
-
-Cleanup:
-- Delete files immediately after manual upload to avoid stale/large tmp files.
+Use this fallback only when required by client constraints. Direct image transport remains the cleaner and faster path whenever available.
 

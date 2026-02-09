@@ -1,6 +1,7 @@
 {
   "title": "Project Tools",
   "pages": [
+    "index",
     "ensure-project",
     "get-project-state",
     "validate",

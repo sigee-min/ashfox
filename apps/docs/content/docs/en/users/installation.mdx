@@ -1,29 +1,17 @@
----
+﻿---
 title: Installation
 description: Install Ashfox and verify MCP endpoint connectivity.
 ---
 
-## Requirements
+Installation should leave you with a repeatable runtime where Blockbench, the Ashfox plugin, and your MCP client can communicate without manual patching between sessions. The recommended path is to install the latest plugin release first, confirm connectivity, and only then switch to source builds if you need custom development.
 
-- Blockbench Desktop (latest)
-- Node.js 22+ (for source builds)
-- npm 10+ (for source builds)
-
-## Fast Install (Plugin URL)
-
-In Blockbench Desktop:
-
-1. Open `File > Plugins > Load Plugin from URL`.
-2. Paste the URL below.
-3. Install / Load the plugin.
+For a release-based setup in Blockbench Desktop, open `File > Plugins > Load Plugin from URL`, paste the plugin URL below, and load it.
 
 ```text
 https://github.com/sigee-min/ashfox/releases/latest/download/ashfox-bbplugin.js
 ```
 
-## Build from Source (Optional)
-
-Clone and build:
+If you are developing or testing local changes, clone from source and build the plugin yourself.
 
 ```bash
 git clone https://github.com/sigee-min/ashfox.git
@@ -32,34 +20,16 @@ npm install
 npm run build
 ```
 
-Or if you already have the repository:
+If the repository is already present, run only the install and build steps.
 
 ```bash
 npm install
 npm run build
 ```
 
-Then load `dist/ashfox-bbplugin.js` in Blockbench Plugin Manager.
+After building, load `dist/ashfox-bbplugin.js` through the Blockbench Plugin Manager. When the plugin is active, verify endpoint connectivity from your MCP client using the default endpoint `http://127.0.0.1:8787/mcp` and call `list_capabilities`. A successful response should include tool schemas and `toolRegistry.hash`, which confirms that your client is reading the active server contract.
 
-## Verify MCP Endpoint
-
-Default endpoint:
-
-```text
-http://127.0.0.1:8787/mcp
-```
-
-Expected result:
-- Your MCP client can call `list_capabilities`.
-- Response includes tool schemas and `toolRegistry.hash`.
-
-## URL and Runtime Configuration
-
-- Official guide URL: `https://ashfox.sigee.xyz`
-- Default MCP endpoint: `http://127.0.0.1:8787/mcp`
-- `ASHFOX_HOST`, `ASHFOX_PORT`, `ASHFOX_PATH`: override MCP host/port/path.
-
-Example:
+Runtime endpoint parameters can be overridden with `ASHFOX_HOST`, `ASHFOX_PORT`, and `ASHFOX_PATH` when you need a non-default local setup.
 
 ```bash
 ASHFOX_HOST=127.0.0.1
@@ -67,3 +37,4 @@ ASHFOX_PORT=8787
 ASHFOX_PATH=/mcp
 ```
 
+Use `https://ashfox.sigee.xyz` as the official documentation entry point when sharing setup instructions with teammates.

@@ -366,6 +366,10 @@ export interface ExportPayload extends IncludeStateOption, IfRevisionOption {
     | 'auto';
   codecId?: string;
   destPath: string;
+  options?: {
+    fallback?: 'strict' | 'best_effort';
+    includeDiagnostics?: boolean;
+  };
 }
 
 export interface ValidatePayload extends IncludeStateOption, IfRevisionOption {}

@@ -6,7 +6,6 @@ description: "Input schema and field behavior for delete_texture."
 ## Overview
 - Tool name: `delete_texture`
 - Category: Texturing
-- Strict schema: `true`
 
 ## Tool Description
 Deletes a texture by id or name.
@@ -69,8 +68,3 @@ Deletes a texture by id or name.
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

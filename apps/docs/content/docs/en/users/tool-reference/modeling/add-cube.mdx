@@ -6,7 +6,6 @@ description: "Input schema and field behavior for add_cube."
 ## Overview
 - Tool name: `add_cube`
 - Category: Modeling
-- Strict schema: `true`
 
 ## Tool Description
 Adds a cube to the current project.
@@ -153,8 +152,3 @@ Adds a cube to the current project.
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

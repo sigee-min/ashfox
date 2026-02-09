@@ -53,8 +53,6 @@ function getPatterns(kind: FormatKind): string[] {
       return ['geckolib', 'gecko_lib', 'gecko'];
     case 'animated_java':
       return ['animated_java', 'animated java', 'animated-java', 'animatedjava'];
-    case 'Image':
-      return ['image', 'bitmap', '2d'];
     case 'Generic Model':
       return ['free', 'generic model', 'generic', 'unity', 'godot', 'unreal'];
     default:

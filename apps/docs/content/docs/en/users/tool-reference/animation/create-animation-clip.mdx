@@ -6,7 +6,6 @@ description: "Input schema and field behavior for create_animation_clip."
 ## Overview
 - Tool name: `create_animation_clip`
 - Category: Animation
-- Strict schema: `true`
 
 ## Tool Description
 Creates an animation clip (low-level).
@@ -90,8 +89,3 @@ Creates an animation clip (low-level).
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

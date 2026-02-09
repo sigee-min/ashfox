@@ -1,42 +1,33 @@
 ---
-title: "Texture + UV Spec (Summary)"
-description: "Texture + UV Spec (Summary)"
+title: "Texture and UV Behavior"
+description: "Operational expectations for texture mapping, UV integrity, and paint requests."
 ---
 
-# Texture + UV Spec (Summary)
+# Texture and UV Behavior
 
-Core rules:
-1) Per-face UVs only (managed internally; no manual UV tools).
-2) paint_faces (cubes) and paint_mesh_face (meshes) map ops into UV rects; mapping controls stretch/tile.
-3) UV overlaps are errors.
-4) UV scale mismatch is an error.
-5) Per-face UV density is controlled by project `uvPixelsPerBlock` (default 16).
+This document explains how texture operations are expected to behave during normal production use. It is written as an operational guide rather than a schema dump so teams can make consistent decisions while modeling and painting.
 
-Workflow:
-- assign_texture
-- paint_faces (cubes)
-- paint_mesh_face (meshes)
-- internal auto-UV runs automatically on cube add and geometry-changing cube updates
+Ashfox uses per-face UV mapping and keeps UV management internal. In practice, this means you focus on texture intent and paint operations, while atlas placement and remapping logic are handled by the runtime.
 
-Notes:
-- UV tools are internal and not exposed over MCP.
-- `ensure_project.uvPixelsPerBlock` sets face density; reused projects infer a median from existing UVs.
-- validate reports uv_overlap/uv_scale_mismatch; mutation guards return invalid_state on overlap/scale/usage mismatch.
-- internal auto-UV may raise texture resolution for atlas capacity; face size comes from `uvPixelsPerBlock`.
-- If you provide both cubeId and cubeName in target, both must match. Use one for broader matching.
-- `paint_faces` is strict single-write: one target (`cubeId`/`cubeName`, optional `face`) and one op.
-- `paint_faces` rejects legacy multi-write fields (`targets`, `ops`, `background`) because schema is strict.
-- Omit `target.face` to paint all mapped faces of the target cube.
-- `paint_mesh_face` is strict single-op: one target (`meshId`/`meshName`) and one op.
-- `paint_mesh_face` supports `scope: "single_face" | "all_faces"`.
-- If `scope` is omitted, `paint_mesh_face` infers scope from `target.faceId`:
-  - `faceId` present -> `single_face`
-  - `faceId` absent -> `all_faces`
-- `single_face` requires `target.faceId`; `all_faces` forbids `target.faceId`.
-- `paint_faces` defaults to `coordSpace="face"` and auto-fits source size to target face UV when `width/height` is omitted.
-- `paint_mesh_face` follows the same `coordSpace` rules (`face` default, `texture` requires explicit size match).
-- `coordSpace="texture"` requires explicit `width/height` matching texture size.
-- `fill_rect` shade defaults to enabled (`shade: true` behavior).
-- `shade` can be `false` or an object with `enabled`, `intensity`, `edge`, `noise`, `seed`, `lightDir`.
+## What to treat as invariants
 
-This document is the active texture+UV guide exposed via MCP resources.
+1. UV overlap is treated as an error condition.
+2. UV scale mismatch is treated as an error condition.
+3. Per-face density is derived from project `uvPixelsPerBlock` (default `16`).
+4. Paint requests are single-write by design, with one target and one operation.
+
+## Request-shape expectations
+
+`paint_faces` and `paint_mesh_face` are strict about payload shape. Legacy multi-write fields like `targets` or `ops` should not be used. If you want multiple visual edits, submit them as a sequence of intentional single operations.
+
+For mesh painting, `scope` can be `single_face` or `all_faces`. If omitted, it is inferred from whether `target.faceId` is present.
+
+## Coordinate strategy
+
+Default coordinate space is `face`, which is usually what you want for local paint intent. Use `coordSpace: "texture"` only when you need absolute texture-space control, and provide explicit `width` and `height` that match the texture.
+
+`fill_rect` shading is enabled by default to provide deterministic tonal variation. Disable it with `shade: false` when flat color is required.
+
+## Practical implication
+
+When geometry changes, auto-UV and texture reprojection may run internally. Plan your texture pass as an iterative process with frequent preview checks instead of assuming layout remains fixed after early modeling.

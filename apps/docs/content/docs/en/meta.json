@@ -1,5 +1,8 @@
 {
   "title": "Ashfox MCP Guide",
-  "pages": ["users", "contributors"]
+  "pages": [
+    "index",
+    "users",
+    "contributors"
+  ]
 }
-

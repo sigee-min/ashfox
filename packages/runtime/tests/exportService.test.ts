@@ -190,6 +190,9 @@ registerAsync(
       assert.equal(res.ok, true);
       if (res.ok) {
         assert.equal(res.value.path, 'out.json');
+        assert.equal(res.value.selectedTarget?.kind, 'internal');
+        assert.equal(res.value.selectedTarget?.id, 'gecko_geo_anim');
+        assert.equal(res.value.stage, 'done');
       }
     }
 
@@ -210,10 +213,35 @@ registerAsync(
         exportPolicy: 'best_effort',
         nativeError: { code: 'not_implemented', message: 'native unavailable' }
       });
-      const res = await service.exportModel({ format: 'gecko_geo_anim', destPath: 'out.json' });
+      const res = await service.exportModel({
+        format: 'gecko_geo_anim',
+        destPath: 'out.json',
+        options: { includeDiagnostics: true }
+      });
       assert.equal(res.ok, true);
       assert.equal(writes.length, 1);
       assert.equal(writes[0].path, 'out.json');
+      if (res.ok) {
+        assert.equal(res.value.stage, 'fallback');
+        assert.deepEqual(res.value.warnings, ['native unavailable']);
+      }
+    }
+
+    {
+      const { service, writes } = createHarness({
+        exportPolicy: 'best_effort',
+        nativeError: { code: 'not_implemented', message: 'native unavailable' }
+      });
+      const res = await service.exportModel({
+        format: 'gecko_geo_anim',
+        destPath: 'out.json',
+        options: { fallback: 'strict' }
+      });
+      assert.equal(res.ok, false);
+      if (!res.ok) {
+        assert.equal(res.error.code, 'not_implemented');
+      }
+      assert.equal(writes.length, 0);
     }
 
     {
@@ -314,6 +342,10 @@ registerAsync(
       assert.equal(calls.gltf, 1);
       assert.equal(calls.native, 0);
       assert.equal(calls.codec, 0);
+      if (res.ok) {
+        assert.equal(res.value.selectedTarget?.kind, 'gltf');
+        assert.equal(res.value.selectedTarget?.id, 'gltf');
+      }
     }
 
     {
@@ -329,6 +361,11 @@ registerAsync(
       assert.equal(calls.gltf, 0);
       assert.equal(calls.native, 0);
       assert.equal(calls.codec, 1);
+      if (res.ok) {
+        assert.equal(res.value.selectedTarget?.kind, 'native_codec');
+        assert.equal(res.value.selectedTarget?.id, 'obj');
+        assert.equal(res.value.selectedTarget?.codecId, 'obj');
+      }
     }
 
     {

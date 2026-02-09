@@ -1,4 +1,9 @@
 {
-  "title": "Task Guides",
-  "pages": ["index", "bootstrap-local-stack", "connect-mcp-client", "run-service-health-check"]
+  "title": "Task Playbooks",
+  "pages": [
+    "index",
+    "bootstrap-local-stack",
+    "connect-mcp-client",
+    "run-service-health-check"
+  ]
 }

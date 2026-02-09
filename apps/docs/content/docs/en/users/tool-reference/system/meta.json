@@ -1,6 +1,7 @@
 {
   "title": "System Tools",
   "pages": [
+    "index",
     "list-capabilities",
     "reload-plugins"
   ]

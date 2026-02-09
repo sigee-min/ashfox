@@ -6,7 +6,6 @@ description: "Input schema and field behavior for paint_faces."
 ## Overview
 - Tool name: `paint_faces`
 - Category: Texturing
-- Strict schema: `true`
 
 ## Tool Description
 Paints one cube face with one drawing op (UV handled internally). Default coordSpace=face; use coordSpace=texture with width/height for texture-space coordinates.
@@ -311,8 +310,3 @@ Paints one cube face with one drawing op (UV handled internally). Default coordS
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

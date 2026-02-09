@@ -1,4 +1,8 @@
 {
   "title": "Blockbench Plugin",
-  "pages": ["index", "tasks"]
+  "pages": [
+    "index",
+    "guide",
+    "tasks"
+  ]
 }

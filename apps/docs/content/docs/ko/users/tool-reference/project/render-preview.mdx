@@ -6,7 +6,6 @@ description: "프리뷰 렌더링 도구의 입력 스펙과 필드 동작 설�
 ## 개요
 - 도구 이름: `render_preview`
 - 카테고리: 프로젝트
-- Strict schema: `true`
 
 ## 도구 설명
 Renders a preview image. fixed -> single (optional angle). turntable -> sequence. Returns MCP image content blocks (base64 PNG) plus structured metadata without dataUri. Set saveToTmp=true to write snapshots into .ashfox/tmp for manual upload fallback. See ashfox://guide/vision-fallback via resources/read. Single returns result.image; sequence returns result.frames[]. Example(single): \{"mode":"fixed","output":"single","angle":[30,45,0]\} Example(sequence): \{"mode":"turntable","output":"sequence","durationSeconds":2,"fps":12\}
@@ -103,8 +102,3 @@ Renders a preview image. fixed -> single (optional angle). turntable -> sequence
   }
 }
 ```
-
-## 운영 노트
-- 변경 도구는 `ifRevision` 사용을 권장합니다.
-- 스키마에 없는 필드는 보내지 마세요 (strict schema).
-- `validate`로 최종 상태를 확인한 후 `export`를 수행하세요.

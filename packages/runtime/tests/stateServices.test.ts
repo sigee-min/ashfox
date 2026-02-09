@@ -88,8 +88,7 @@ const formatId = resolveFormatId(
   [
     { id: 'java_block', name: 'Java Block' },
     { id: 'gecko', name: 'GeckoLib' },
-    { id: 'free', name: 'Generic Model' },
-    { id: 'image', name: 'Image' }
+    { id: 'free', name: 'Generic Model' }
   ],
   { 'Java Block/Item': 'java_block' }
 );
@@ -97,8 +96,6 @@ assert.equal(formatId, 'java_block');
 assert.equal(matchesFormatKind('Java Block/Item', 'java_block'), true);
 assert.equal(resolveFormatId('Generic Model', [{ id: 'free', name: 'Generic Model' }]), 'free');
 assert.equal(matchesFormatKind('Generic Model', 'free'), true);
-assert.equal(resolveFormatId('Image', [{ id: 'image', name: 'Image' }]), 'image');
-assert.equal(matchesFormatKind('Image', 'image'), true);
 
 assert.equal(parseDataUriMimeType('data:image/png;base64,AAAA'), 'image/png');
 assert.equal(normalizeTextureDataUri('AAAA').startsWith('data:image/png;base64,'), true);

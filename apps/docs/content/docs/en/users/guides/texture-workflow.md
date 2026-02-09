@@ -1,45 +1,34 @@
 ---
-title: "Texture Workflow (Auto UV)"
-description: "Texture Workflow (Auto UV)"
+title: "Texture Workflow"
+description: "Guide-first texture workflow with auto-UV assumptions and paint discipline."
 ---
 
-# Texture Workflow (Auto UV)
+# Texture Workflow
 
-Goal: paint textures without managing UVs manually.
+Texture work is most stable when it is treated as a continuation of modeling, not a separate final step. Ashfox manages UV internals for you, so the practical focus should be on mapping intent, paint consistency, and fast visual verification.
 
-Steps:
-1) ensure_project / get_project_state (capture revision)
-2) assign_texture (bind texture to cubes)
-3) paint_faces (cubes) or paint_mesh_face (meshes)
-4) render_preview to validate
+A typical texture session starts by confirming project state and active texture, then applying small paint operations, and validating appearance with preview renders. This makes issues visible early and keeps repaint effort low.
 
-Notes:
-- UVs are managed internally; UV tools are not exposed to clients.
-- `ensure_project.uvPixelsPerBlock` sets the per-face UV density (default 16).
-- When reusing an existing project, Ashfox infers UV density from existing UVs using the median face density.
-- ensure_project auto-creates a texture named after the project when none exists.
-- Cube add and geometry-changing cube updates trigger internal UV atlas when textures exist.
-- Existing pixels are reprojected to the new UV layout automatically.
-- paint_faces may return a recovery summary when auto-UV fixes were applied.
-- paint_faces is strict single-write: exactly one `target` (`cubeId`/`cubeName`, optional `face`) and one `op`.
-- paint_faces schema is strict; `targets`, `ops`, and `background` are invalid payload fields.
-- Omit `target.face` to paint all mapped faces of the target cube.
-- paint_mesh_face is strict single-op with one mesh target (`meshId`/`meshName`) and one `op`.
-- paint_mesh_face is available only when the active format supports meshes.
-- paint_mesh_face `scope` can be `single_face` or `all_faces`. If omitted, scope is inferred:
-  - `target.faceId` present -> `single_face`
-  - `target.faceId` absent -> `all_faces`
-- In `single_face`, `target.faceId` is required. In `all_faces`, `target.faceId` must be omitted.
-- `fill_rect` shading is on by default for deterministic tonal variation; use `shade: false` to keep flat color.
-- Advanced shading uses `shade` object fields: `enabled`, `intensity`, `edge`, `noise`, `seed`, `lightDir`.
-- Default `coordSpace` is `face`; if `width/height` is omitted, source size follows the target face UV size.
-- Use `coordSpace: "texture"` only for texture-space coordinates; this requires explicit `width`/`height` matching texture size.
-- For >=64px textures, keep ops minimal and use tiling patterns.
-- When specifying both cubeId and cubeName in target, both must match. Use only one to avoid overly narrow matches.
-- Support limit: models that still exceed atlas capacity after auto density reduction are not supported.
-- paint_mesh_face applies a commit guard: if the committed texture becomes unsafe (for example fully transparent collapse or no committed delta after expected change), Ashfox automatically rolls back and returns an error.
+## Recommended flow
 
-Example (paint_faces):
+1. Confirm state with `ensure_project` or `get_project_state`.
+2. Bind texture context with `assign_texture`.
+3. Apply paint operations with `paint_faces` for cubes or `paint_mesh_face` for meshes.
+4. Run `render_preview` after each meaningful visual milestone.
+
+`uvPixelsPerBlock` defines base UV density. If a project already exists, Ashfox infers density from current UVs, which keeps updates aligned with prior work.
+
+## Paint discipline that prevents rework
+
+- Use one target and one operation per request.
+- Keep each operation semantically meaningful, such as one panel, trim line, or accent patch.
+- Omit `target.face` when the same operation should affect all mapped faces of a cube.
+- Use `coordSpace: "texture"` only when you intentionally paint in full-texture coordinates with explicit `width` and `height`.
+
+When geometry changes and textures already exist, internal auto-UV and reprojection can run automatically. This is normal and helps preserve painted work while layout changes.
+
+## Cube paint example
+
 ```json
 {
   "textureName": "pot_tex",
@@ -48,7 +37,8 @@ Example (paint_faces):
 }
 ```
 
-Example (paint_mesh_face, inferred `all_faces`):
+## Mesh paint example
+
 ```json
 {
   "textureName": "pot_tex",
@@ -57,15 +47,5 @@ Example (paint_mesh_face, inferred `all_faces`):
 }
 ```
 
-Failure example (invalid multi-write payload):
-```json
-{
-  "textureName": "pot_tex",
-  "targets": [{ "cubeName": "body", "faces": ["north", "south"] }],
-  "ops": [
-    { "op": "fill_rect", "x": 0, "y": 0, "width": 16, "height": 16, "color": "#c96f3b" },
-    { "op": "fill_rect", "x": 2, "y": 2, "width": 2, "height": 2, "color": "#8b4a22" }
-  ]
-}
-```
+If paint quality drops after heavy geometry edits, re-run preview first and repaint only areas where visual intent changed.
 

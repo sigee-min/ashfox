@@ -63,7 +63,6 @@ export interface FormatEntry {
   bone_rig?: boolean;
   armature_rig?: boolean;
   meshes?: boolean;
-  image_editor?: boolean;
 }
 
 export interface FormatSelection {

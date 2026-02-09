@@ -6,7 +6,6 @@ description: "내보내기 도구의 입력 스펙과 필드 동작 설명."
 ## 개요
 - 도구 이름: `export`
 - 카테고리: 프로젝트
-- Strict schema: `true`
 
 ## 도구 설명
 Exports the current project to the requested output format (including native codec targets like glTF/OBJ/FBX when available).
@@ -73,8 +72,3 @@ Exports the current project to the requested output format (including native cod
   }
 }
 ```
-
-## 운영 노트
-- 변경 도구는 `ifRevision` 사용을 권장합니다.
-- 스키마에 없는 필드는 보내지 마세요 (strict schema).
-- `validate`로 최종 상태를 확인한 후 `export`를 수행하세요.

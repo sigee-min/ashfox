@@ -1,26 +1,28 @@
 ---
-title: "Entity Workflow (GeckoLib-targeted)"
-description: "Entity Workflow (GeckoLib-targeted)"
+title: "Entity Workflow"
+description: "End-to-end guide for GeckoLib-targeted entity production."
 ---
 
-# Entity Workflow (GeckoLib-targeted)
+# Entity Workflow
 
-This guide targets GeckoLib entity projects (`ensure_project.format = "geckolib"`).
-Other formats exist, but the rig/animation conventions here assume GeckoLib export semantics.
+This guide describes a full entity production loop for GeckoLib-oriented projects where format behavior, rig conventions, and animation export expectations must stay aligned.
 
-Recommended steps:
-1) ensure_project with format=geckolib (optionally set uvPixelsPerBlock)
-2) build bones/cubes with add_bone/add_cube
-3) assign textures (assign_texture)
-4) paint textures (paint_faces for cubes, paint_mesh_face for meshes)
-5) create animations (create_animation_clip + set_frame_pose)
-6) add triggers (set_trigger_keyframes) if needed
-7) optionally run preview/validate
+Use this flow when the deliverable is an animated entity asset, not an isolated model fragment. The objective is to avoid late-stage format surprises by validating each stage in order.
 
-Notes:
-- Modeling is low-level only (add_bone/add_cube).
-- UVs are managed internally; no manual UV tools or preflight steps are required.
-- Cube add and geometry-changing cube updates trigger internal auto-UV when textures exist.
-- Existing texture pixels are reprojected to follow the new UV layout; repaint only if you want a new look.
-- Project UV density is controlled by ensure_project.uvPixelsPerBlock (default 16); reused projects infer a median.
-- Animation poses are one frame per call; repeat set_frame_pose/set_trigger_keyframes to build timelines.
+## Recommended sequence
+
+1. Start the project with `ensure_project` and set `format` to `geckolib`.
+2. Build hierarchy and geometry with `add_bone` and `add_cube`.
+3. Attach and paint textures with `assign_texture`, `paint_faces`, and `paint_mesh_face` where relevant.
+4. Create clips and timeline data with `create_animation_clip`, `set_frame_pose`, and optional trigger keys.
+5. Run `render_preview` and `validate` before final export.
+
+The sequence matters. If you animate before geometry and texture intent is stable, retiming and repainting costs rise quickly.
+
+## Format-aware notes
+
+- UV behavior is handled internally, including auto-UV and reprojection during geometry changes.
+- `uvPixelsPerBlock` controls the base density and should be chosen early for consistency.
+- Pose and trigger data are authored incrementally, one frame or one trigger key at a time.
+
+When used as a pipeline, this workflow keeps authoring, review, and export behavior predictable for both human and automated clients.

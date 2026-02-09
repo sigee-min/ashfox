@@ -19,7 +19,7 @@ import type { FormatDescriptor } from '../src/ports/formats';
 {
   const capabilities = computeCapabilities(undefined, []);
   assert.equal(capabilities.blockbenchVersion, 'unknown');
-  assert.equal(capabilities.formats.length, 5);
+  assert.equal(capabilities.formats.length, 4);
   assert.equal(capabilities.formats.every((format) => format.enabled === false), true);
   assert.equal(capabilities.guidance?.retryPolicy?.maxAttempts, 2);
 }
@@ -44,8 +44,7 @@ import type { FormatDescriptor } from '../src/ports/formats';
       boneRig: true
     },
     { id: 'animated_java', name: 'Animated Java', animationMode: true },
-    { id: 'free', name: 'Generic Model', animationMode: true, meshes: true, armatureRig: true },
-    { id: 'image', name: 'Image', imageEditor: true, animationMode: false }
+    { id: 'free', name: 'Generic Model', animationMode: true, meshes: true, armatureRig: true }
   ];
   const capabilities = computeCapabilities('5.0.7', formats, { 'Java Block/Item': 'java_block' }, { mode: 'fixed' });
   assert.equal(capabilities.blockbenchVersion, '5.0.7');
@@ -55,7 +54,6 @@ import type { FormatDescriptor } from '../src/ports/formats';
   const gecko = capabilities.formats.find((entry) => entry.format === 'geckolib');
   const animated = capabilities.formats.find((entry) => entry.format === 'animated_java');
   const generic = capabilities.formats.find((entry) => entry.format === 'Generic Model');
-  const image = capabilities.formats.find((entry) => entry.format === 'Image');
   assert.equal(java?.enabled, true);
   assert.equal(java?.flags?.singleTexture, true);
   assert.equal(java?.flags?.perTextureUvSize, false);
@@ -73,8 +71,5 @@ import type { FormatDescriptor } from '../src/ports/formats';
   assert.equal(generic?.animations, true);
   assert.equal(generic?.flags?.meshes, true);
   assert.equal(generic?.flags?.armatureRig, true);
-  assert.equal(image?.enabled, true);
-  assert.equal(image?.animations, false);
-  assert.equal(image?.flags?.imageEditor, true);
 }
 

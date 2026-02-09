@@ -6,7 +6,6 @@ description: "Input schema and field behavior for update_animation_clip."
 ## Overview
 - Tool name: `update_animation_clip`
 - Category: Animation
-- Strict schema: `true`
 
 ## Tool Description
 Updates an animation clip by id/name.
@@ -85,8 +84,3 @@ Updates an animation clip by id/name.
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

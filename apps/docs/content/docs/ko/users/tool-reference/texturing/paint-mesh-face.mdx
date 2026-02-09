@@ -6,7 +6,6 @@ description: "메시 페이스 페인팅 도구의 입력 스펙과 필드 동�
 ## 개요
 - 도구 이름: `paint_mesh_face`
 - 카테고리: 텍스처
-- Strict schema: `true`
 
 ## 도구 설명
 Paints mesh face UV regions with one drawing op. Use scope=single_face (target.faceId required) or scope=all_faces. Default coordSpace=face; use coordSpace=texture with width/height for texture-space coordinates.
@@ -314,8 +313,3 @@ Paints mesh face UV regions with one drawing op. Use scope=single_face (target.f
   }
 }
 ```
-
-## 운영 노트
-- 변경 도구는 `ifRevision` 사용을 권장합니다.
-- 스키마에 없는 필드는 보내지 마세요 (strict schema).
-- `validate`로 최종 상태를 확인한 후 `export`를 수행하세요.

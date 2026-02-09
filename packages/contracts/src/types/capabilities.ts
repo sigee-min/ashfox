@@ -20,7 +20,6 @@ export interface Capability {
     boneRig?: boolean;
     armatureRig?: boolean;
     meshes?: boolean;
-    imageEditor?: boolean;
   };
 }
 

@@ -1,4 +1,9 @@
 {
-  "title": "Task Guides",
-  "pages": ["index", "local-setup", "asset-iteration", "export-and-validate"]
+  "title": "Task Playbooks",
+  "pages": [
+    "index",
+    "local-setup",
+    "asset-iteration",
+    "export-and-validate"
+  ]
 }

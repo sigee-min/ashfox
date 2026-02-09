@@ -1,9 +1,11 @@
----
+﻿---
 title: Texturing Tools
-description: "Texture assignment, paint operations, and texture state inspection."
+description: Texture assignment, paint operations, and texture state inspection.
 ---
 
-This section breaks down Texturing Tools into one page per tool.
+Texturing tools control how surfaces are mapped and painted. You can inspect texture assets, bind textures to targets, apply paint operations, and remove unused textures when the asset is cleaned up.
+
+For reliable output, keep texture operations close to the modeling or UV step they belong to. This prevents drift between geometry updates and the texture state used during validation and export.
 
 <Cards>
   <Card title="Read Texture" href="./read-texture" />

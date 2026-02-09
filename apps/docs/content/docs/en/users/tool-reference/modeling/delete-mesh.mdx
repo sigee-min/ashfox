@@ -6,7 +6,6 @@ description: "Input schema and field behavior for delete_mesh."
 ## Overview
 - Tool name: `delete_mesh`
 - Category: Modeling
-- Strict schema: `true`
 
 ## Tool Description
 Deletes a mesh by id/name (or ids/names for bulk removal).
@@ -90,8 +89,3 @@ Deletes a mesh by id/name (or ids/names for bulk removal).
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

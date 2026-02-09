@@ -5,9 +5,6 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { isLocale } from '@/lib/i18n';
-import { PageVerificationStatus } from '@/components/docs/page-verification-status';
-import { TrackSwitcher } from '@/components/docs/track-switcher';
-import { resolveDocsTrack } from '@/lib/docs-track';
 import { localizedAlternates, localizedPath, openGraphAlternateLocales, openGraphLocale, siteName, siteTitle } from '@/lib/site';
 
 type DocsPageProps = {
@@ -25,19 +22,12 @@ export default async function Page({ params }: DocsPageProps) {
   if (!page) notFound();
 
   const docsSuffix = slug?.length ? `/docs/${slug.join('/')}` : '/docs';
-  const track = resolveDocsTrack(slug);
-  const counterpartLocale = lang === 'en' ? 'ko' : 'en';
-  const counterpartPage = source.getPage(slug, counterpartLocale);
-  const counterpartUrl = counterpartPage ? localizedPath(counterpartLocale, docsSuffix) : null;
-  const docsPath = localizedPath(lang, docsSuffix);
   const MDX = page.data.body;
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
-      {track ? <TrackSwitcher locale={lang} activeTrack={track} /> : null}
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <PageVerificationStatus locale={lang} track={track} docsPath={docsPath} counterpartUrl={counterpartUrl} />
       <DocsBody>
         <MDX
           components={getMDXComponents({

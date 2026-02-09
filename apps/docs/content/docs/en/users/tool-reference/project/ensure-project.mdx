@@ -6,7 +6,6 @@ description: "Input schema and field behavior for ensure_project."
 ## Overview
 - Tool name: `ensure_project`
 - Category: Project
-- Strict schema: `true`
 
 ## Tool Description
 Ensures a usable project. Reuses the active project by default and can create a new one when missing or on mismatch (per options). Use match/onMismatch/onMissing to control behavior. action="delete" closes the active project (requires target.name).
@@ -141,8 +140,3 @@ Ensures a usable project. Reuses the active project by default and can create a 
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

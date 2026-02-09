@@ -103,18 +103,13 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
           animation_mode: true,
           optional_box_uv: true,
           uv_rotation: true
-        },
-        image: {
-          name: 'Image',
-          image_editor: true,
-          animation_mode: false
         }
       },
       Format: { id: 'free' }
     },
     () => {
       const formats = adapter.listFormats();
-      assert.equal(formats.length, 2);
+      assert.equal(formats.length, 1);
       assert.deepEqual(formats[0], {
         id: 'free',
         name: 'Generic Model',
@@ -124,12 +119,6 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         boneRig: true,
         armatureRig: true,
         meshes: true
-      });
-      assert.deepEqual(formats[1], {
-        id: 'image',
-        name: 'Image',
-        animationMode: false,
-        imageEditor: true
       });
       assert.equal(adapter.getActiveFormatId(), 'free');
     }

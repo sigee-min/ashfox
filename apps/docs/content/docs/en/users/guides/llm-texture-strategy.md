@@ -1,43 +1,32 @@
 ---
-title: "LLM Texture Strategy (Summary)"
-description: "LLM Texture Strategy (Summary)"
+title: "LLM Texture Strategy"
+description: "Prompting and execution strategy for reliable texture generation loops."
 ---
 
-# LLM Texture Strategy (Summary)
+# LLM Texture Strategy
 
-Primary flow:
-1) assign_texture
-2) paint_faces (cubes) or paint_mesh_face (meshes)
-3) render_preview
+LLM-assisted texture generation works best when the model follows a tight feedback loop instead of trying to paint everything in one request. The objective is not maximum operation count per call, but maximum visual confidence per iteration.
 
-Recovery loop:
-- validate reports uv_scale_mismatch / uv_overlap, or a mutation returns invalid_state about overlap/scale:
-  - wait for internal auto-UV recovery (automatic on cube add and geometry-changing cube updates)
-  - repaint
+Use a three-step rhythm: bind texture context, apply one intentional paint operation, and check the result with preview. This cadence keeps outputs explainable and makes rollback or correction cheap.
 
-Notes:
-- Project UV density is controlled by `uvPixelsPerBlock` (default 16). Reused projects infer a median from existing UVs.
-- `paint_faces` is strict single-write and allows one target + one op; `target.face` is optional.
-- `paint_faces` schema is strict; legacy `targets`, `ops`, and `background` fields are rejected.
-- Omit `target.face` when the same op should apply to all mapped faces on that cube.
-- `paint_mesh_face` is strict single-op and allows one mesh target + one op.
-- `paint_mesh_face` scope is inferred unless specified:
-  - include `target.faceId` -> `single_face`
-  - omit `target.faceId` -> `all_faces`
-- Explicit `scope` must match target shape (`single_face` requires `faceId`, `all_faces` forbids it).
-- Default `coordSpace` is `face`; omitting `width/height` auto-fits target face UV size.
-- Use `coordSpace="texture"` only with explicit `width`/`height` that matches texture size.
-- `fill_rect` shading is enabled by default; set `shade: false` for flat fills.
-- `shade` can be an object (`enabled`, `intensity`, `edge`, `noise`, `seed`, `lightDir`) for deterministic tuning.
-- `background` is not part of the `paint_faces` payload.
+## Recommended loop
 
-Failure examples:
+1. Prepare texture context with `assign_texture`.
+2. Apply a single paint operation with `paint_faces` or `paint_mesh_face`.
+3. Inspect with `render_preview` and decide the next operation.
 
-1) UV overlap / UV scale mismatch (invalid_state):
-- Allow internal auto-UV recovery to finish (triggered by cube changes).
-- Repaint if needed.
+Repeat until the asset meets style and readability goals.
 
-2) Payload shape violation (invalid_payload):
-- Reduce payload to one target and one op (`target.face` is optional).
+## Prompting guidance
 
-This document is the active LLM texture strategy guide exposed via MCP resources.
+- Ask the model to describe the next visual intent before generating payload.
+- Keep each call scoped to one semantic patch such as base fill, edge trim, highlight, or emblem.
+- Prefer progressive layering over dense multi-detail calls.
+
+## Recovery strategy
+
+If validation reports `uv_overlap` or `uv_scale_mismatch`, or a mutation returns an `invalid_state` related to UV safety, pause paint sequencing and allow geometry/UV recovery to settle first. Resume painting only after state is stable again.
+
+If payload validation fails, reduce the request to the strict single-write structure and replay.
+
+This strategy is slower per step but significantly more reliable for long sessions and automated generation pipelines.

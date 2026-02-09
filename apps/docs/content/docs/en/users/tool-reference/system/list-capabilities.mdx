@@ -6,7 +6,6 @@ description: "Input schema and field behavior for list_capabilities."
 ## Overview
 - Tool name: `list_capabilities`
 - Category: System
-- Strict schema: `true`
 
 ## Tool Description
 Returns plugin capabilities and limits. Tool schemas are strict (extra fields are rejected).
@@ -48,8 +47,3 @@ This tool has no input fields.
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

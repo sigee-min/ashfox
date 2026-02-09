@@ -1,9 +1,11 @@
----
+﻿---
 title: Project Tools
-description: "Project lifecycle, validation, preview, and export tools."
+description: Project lifecycle, validation, preview, and export tools.
 ---
 
-This section breaks down Project Tools into one page per tool.
+Project tools define the outer lifecycle of a session. You establish or reuse a project context, inspect state, run validation, render previews for visual checks, and export results or trace logs when the session is complete.
+
+In most client implementations, these tools are called at phase boundaries rather than during every micro-step. This keeps workflow state explicit and makes failures easier to diagnose.
 
 <Cards>
   <Card title="Ensure Project" href="./ensure-project" />

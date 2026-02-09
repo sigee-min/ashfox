@@ -1,29 +1,31 @@
 ---
-title: "Rigging Guide (Animation-Ready)"
-description: "Rigging Guide (Animation-Ready)"
+title: "Rigging Guide"
+description: "Hierarchy design principles for animation-ready rigs."
 ---
 
-# Rigging Guide (Animation-Ready)
+# Rigging Guide
 
-Use a root-based hierarchy so animation transforms propagate predictably.
+Good rigging is mostly about hierarchy clarity. A clean tree makes animation predictable, while a flat or inconsistent hierarchy usually creates transform side effects that are hard to debug later.
 
-Guidelines:
-- Ensure a root bone exists (add_bone, or rely on cube auto-root if using add_cube).
-- Every non-root part must set parent to an existing bone.
-- Avoid flat bone lists (no parents). Use a tree: root -> body -> head/limbs.
-- Use add_bone one at a time to build the hierarchy.
+Start with a root bone and attach every movable part under explicit parents. Build from trunk to branches, for example `root -> body -> head/limbs`, instead of creating disconnected peers.
 
-Example (low-level calls, one bone per request):
+## Suggested construction pattern
+
 ```json
 { "name": "root", "pivot": [0, 0, 0], "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } } }
 ```
+
 ```json
 { "name": "body", "parent": "root", "pivot": [0, 6, 0], "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } } }
 ```
+
 ```json
 { "name": "head", "parent": "body", "pivot": [0, 12, 0], "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } } }
 ```
 
-Common failures and fixes:
-- "Parent bone not found": create the parent first, then retry the child.
-- "invalid_state_revision_mismatch": call get_project_state and retry with the latest ifRevision.
+## Failure patterns to watch
+
+- `Parent bone not found` means creation order is wrong. Create parents first and retry children.
+- `invalid_state_revision_mismatch` means your revision is stale. Refresh with `get_project_state` and replay the mutation.
+
+When rig naming and parenting stay stable, downstream animation authoring becomes faster and much more reusable.

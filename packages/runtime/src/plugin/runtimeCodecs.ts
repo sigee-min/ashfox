@@ -3,8 +3,10 @@ import type { ProjectSession } from '../session';
 import type { BlockbenchFormats } from '../adapters/blockbench/BlockbenchFormats';
 import type { ExportPolicy } from '../usecases/policies';
 import { readGlobals } from '../adapters/blockbench/blockbenchUtils';
+import type { Logger } from '../logging';
 import { buildInternalExport } from '../domain/exporters';
 import { resolveFormatId, type FormatOverrides } from '../domain/formats';
+import { BlockbenchCompileAdapter } from '../adapters/blockbench/export/BlockbenchCompileAdapter';
 import { PLUGIN_ID } from '../config';
 import {
   PLUGIN_UI_EXPORT_COMPLETE,
@@ -12,9 +14,7 @@ import {
   PLUGIN_UI_EXPORT_FAILED_GENERIC
 } from './messages';
 import {
-  ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED,
   ADAPTER_NATIVE_COMPILER_EMPTY,
-  ADAPTER_NATIVE_COMPILER_UNAVAILABLE,
   EXPORT_FORMAT_ID_MISSING_FOR_KIND
 } from '../shared/messages';
 
@@ -24,11 +24,13 @@ export const registerCodecs = (args: {
   formats: BlockbenchFormats;
   formatOverrides: FormatOverrides;
   exportPolicy: ExportPolicy;
+  logger: Logger;
 }): void => {
   const globals = readGlobals();
   const blockbench = globals.Blockbench;
   const codecCtor = globals.Codec;
   if (!blockbench || !codecCtor) return;
+  const compileAdapter = new BlockbenchCompileAdapter(args.logger);
 
   const notifyExportFailure = (message?: string) => {
     const content = message ?? PLUGIN_UI_EXPORT_FAILED_GENERIC;
@@ -44,65 +46,36 @@ export const registerCodecs = (args: {
     }
   };
 
-  const resolveCompiler = (formatId: string | null) => {
-    if (!formatId) return null;
-    const registry = globals.Formats ?? globals.ModelFormat?.formats ?? null;
-    if (!registry || typeof registry !== 'object') return null;
-    const format = registry[formatId] ?? null;
-    if (!format) return null;
-    const compile = format.compile;
-    if (typeof compile === 'function') {
-      return () => compile();
-    }
-    const codecCompile = format.codec?.compile;
-    if (typeof codecCompile === 'function') {
-      return () => codecCompile();
-    }
-    return null;
-  };
-
   const compileFor = (
     kind: FormatKind,
     exportKind: ExportPayload['format']
   ): { ok: true; data: string } | { ok: false; message: string } => {
     const formatId = resolveFormatId(kind, args.formats.listFormats(), args.formatOverrides);
-    const compiler = resolveCompiler(formatId);
-    if (compiler) {
-      const compiled = compiler();
-      if (compiled === null || compiled === undefined) {
-        if (args.exportPolicy === 'best_effort') {
-          const fallback = buildInternalExportString(exportKind);
-          if (fallback) return { ok: true, data: fallback };
-          return { ok: false, message: ADAPTER_NATIVE_COMPILER_EMPTY };
-        }
-        return { ok: false, message: ADAPTER_NATIVE_COMPILER_EMPTY };
+    if (!formatId) {
+      if (args.exportPolicy === 'best_effort') {
+        const fallback = buildInternalExportString(exportKind);
+        if (fallback) return { ok: true, data: fallback };
       }
-      if (isThenable(compiled)) {
-        if (args.exportPolicy === 'best_effort') {
-          const fallback = buildInternalExportString(exportKind);
-          if (fallback) return { ok: true, data: fallback };
-          return { ok: false, message: ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED };
-        }
-        return { ok: false, message: ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED };
-      }
-      if (typeof compiled === 'string') {
-        return { ok: true, data: compiled };
+      return { ok: false, message: EXPORT_FORMAT_ID_MISSING_FOR_KIND(kind) };
+    }
+
+    const compiled = compileAdapter.compileNativeFormat(formatId);
+    if (compiled.ok) {
+      if (typeof compiled.compiled === 'string') {
+        return { ok: true, data: compiled.compiled };
       }
       try {
-        return { ok: true, data: JSON.stringify(compiled) };
+        return { ok: true, data: JSON.stringify(compiled.compiled) };
       } catch (_err) {
         return { ok: false, message: ADAPTER_NATIVE_COMPILER_EMPTY };
       }
     }
-    if (args.exportPolicy === 'best_effort') {
+
+    if (args.exportPolicy === 'best_effort' && compiled.error.code === 'not_implemented') {
       const fallback = buildInternalExportString(exportKind);
       if (fallback) return { ok: true, data: fallback };
-      return { ok: false, message: ADAPTER_NATIVE_COMPILER_EMPTY };
     }
-    const reason = formatId
-      ? ADAPTER_NATIVE_COMPILER_UNAVAILABLE(formatId)
-      : EXPORT_FORMAT_ID_MISSING_FOR_KIND(kind);
-    return { ok: false, message: reason };
+    return { ok: false, message: compiled.error.message };
   };
 
   const compileWithNotice = (kind: FormatKind, exportKind: ExportPayload['format']): string | null => {
@@ -148,11 +121,5 @@ export const registerCodecs = (args: {
   if (args.capabilities.formats.find((f) => f.format === 'animated_java' && f.enabled)) {
     register('animated_java', 'animated_java', PLUGIN_ID + '_animated_java');
   }
-};
-
-const isThenable = (value: unknown): value is { then: (onFulfilled: (arg: unknown) => unknown) => unknown } => {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as { then?: unknown };
-  return typeof candidate.then === 'function';
 };
 

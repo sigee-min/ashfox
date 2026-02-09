@@ -1,37 +1,26 @@
 ---
-title: "Animation Workflow (Low-level)"
-description: "Animation Workflow (Low-level)"
+title: "Animation Workflow"
+description: "Guide-first clip and keyframe workflow for deterministic animation results."
 ---
 
-# Animation Workflow (Low-level)
+# Animation Workflow
 
-Goal: build animations with explicit clips + per-bone keyframes.
+Animation in Ashfox is intentionally explicit. You define clips and place keyframes directly, which gives strong control and reproducibility for both manual and LLM-driven pipelines.
 
-Steps:
-1) ensure_project / get_project_state (capture revision)
-2) create_animation_clip (name, length, loop, fps)
-3) set_frame_pose for each frame (multi-bone pose per call)
-4) set_trigger_keyframes for sound/particle/timeline (optional)
-5) validate / render_preview as needed
+The workflow works best when you separate three concerns: clip definition, pose timeline, and trigger timeline. Keeping these concerns separate makes debugging easier when timing or interpolation looks wrong.
 
-Notes:
-- Animation tools are low-level only (no high-level pipeline).
-- Tool schemas are strict (`additionalProperties: false`); extra fields are rejected.
-- Use ifRevision for all mutations.
-- set_frame_pose applies one frame at a time, but can include multiple bones.
-- Repeat set_frame_pose calls to build a full curve across time.
-- Frame values are converted to time using the clip fps (time = frame / fps). If fps is missing, the server defaults to 20.
-- delete_animation_clip accepts id/name or ids/names arrays for bulk removal.
-- Bones referenced in set_frame_pose must exist in the model.
-- bones[].interp overrides the top-level interp for that bone.
-- set_trigger_keyframes is one-key-per-call (`keys` max length is 1).
-- If you update UVs or geometry, re-render previews for visual checks.
+## Recommended flow
 
-LLM prompt guidance:
-- Build a frame plan (frame -> bone pose) and replay it with one set_frame_pose call per frame.
-- Keep frames ordered; apply small changes and confirm state between steps.
+1. Read project revision and confirm the target model.
+2. Create the clip with clear duration, loop mode, and fps.
+3. Apply pose frames in chronological order with `set_frame_pose`.
+4. Add sound/particle/timeline triggers with `set_trigger_keyframes` only after pose timing is stable.
+5. Validate with preview renders before export.
 
-Example (create clip):
+Frame numbers are converted to time using clip fps, so consistent fps selection at clip creation matters for every downstream edit.
+
+## Clip creation example
+
 ```json
 {
   "name": "idle",
@@ -42,7 +31,8 @@ Example (create clip):
 }
 ```
 
-Example (set pose frame, repeat per frame):
+## Pose frame example
+
 ```json
 {
   "clip": "idle",
@@ -55,60 +45,20 @@ Example (set pose frame, repeat per frame):
 }
 ```
 
-Repeat with another frame:
-```json
-{
-  "clip": "idle",
-  "frame": 15,
-  "bones": [
-    { "name": "body", "rot": [0, 20, 0] },
-    { "name": "tail", "rot": [0, 10, 0] }
-  ],
-  "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } }
-}
-```
+## Trigger example
 
-Set pose frame response shape:
-```json
-{
-  "clip": "idle",
-  "clipId": "anim_idle",
-  "frame": 15,
-  "time": 0.75,
-  "bones": 2,
-  "channels": 2
-}
-```
-
-Example (trigger keys):
 ```json
 {
   "clip": "idle",
   "channel": "sound",
-  "keys": [
-    { "time": 0.5, "value": "my_mod:entity.idle" }
-  ],
+  "keys": [{ "time": 0.5, "value": "my_mod:entity.idle" }],
   "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } }
 }
 ```
 
-Delete clip example (bulk):
-```json
-{
-  "names": ["idle", "walk", "run"],
-  "ifRevision": { "$ref": { "kind": "tool", "tool": "get_project_state", "pointer": "/project/revision" } }
-}
-```
+## Quality rules
 
-Delete response shape:
-```json
-{
-  "id": "idle",
-  "name": "idle",
-  "deleted": [
-    { "id": "idle", "name": "idle" },
-    { "id": "walk", "name": "walk" },
-    { "id": "run", "name": "run" }
-  ]
-}
-```
+- Keep `ifRevision` on every animation mutation.
+- Ensure referenced bones already exist.
+- Build curves by repeating frame-level calls in ordered time.
+- Re-render preview whenever geometry, UV layout, or key timing changes.

@@ -6,7 +6,6 @@ description: "Input schema and field behavior for export."
 ## Overview
 - Tool name: `export`
 - Category: Project
-- Strict schema: `true`
 
 ## Tool Description
 Exports the current project to the requested output format (including native codec targets like glTF/OBJ/FBX when available).
@@ -73,8 +72,3 @@ Exports the current project to the requested output format (including native cod
   }
 }
 ```
-
-## Operational Notes
-- Use `ifRevision` for mutation calls when available.
-- Do not send fields outside the declared schema.
-- Run `validate` before `export` for release safety.

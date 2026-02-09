@@ -209,7 +209,8 @@ Notes:
         session,
         formats,
         formatOverrides,
-        exportPolicy: policies.exportPolicy
+        exportPolicy: policies.exportPolicy,
+        logger
       });
       restartServerWithState();
 

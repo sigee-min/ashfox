@@ -10,7 +10,6 @@ export type FormatDescriptor = {
   boneRig?: boolean;
   armatureRig?: boolean;
   meshes?: boolean;
-  imageEditor?: boolean;
 };
 
 export interface FormatPort {

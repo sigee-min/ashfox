@@ -206,6 +206,14 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       },
       codecId: { type: 'string' },
       destPath: { type: 'string' },
+      options: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          fallback: { type: 'string', enum: ['strict', 'best_effort'] },
+          includeDiagnostics: { type: 'boolean' }
+        }
+      },
       ...stateProps
     }
   },
