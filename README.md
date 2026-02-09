@@ -30,7 +30,7 @@ In Blockbench Desktop:
 3) Click install/load
 
 ```text
-https://github.com/sigee-min/ashfox/releases/latest/download/ashfox.js
+https://github.com/sigee-min/ashfox/releases/latest/download/ashfox-bbplugin.js
 ```
 
 ### Option B: Clone and build from source
@@ -42,7 +42,7 @@ npm run build
 ```
 
 Then load the plugin in Blockbench:
-- Use the plugin manager, or load `dist/ashfox.js` manually.
+- Use the plugin manager, or load `dist/ashfox-bbplugin.js` manually.
 
 ## Quickstart (first successful request)
 1) Start Blockbench with Ashfox enabled.

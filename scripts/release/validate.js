@@ -77,10 +77,10 @@ if (rootPackageConfig) {
 
 const releaseWorkflow = readText('.github/workflows/release-please.yml');
 const expectedAssets = [
+  `dist/${packageName}-bbplugin.js`,
+  `dist/${packageName}-bbplugin.js.map`,
   `dist/${packageName}.js`,
-  `dist/${packageName}.js.map`,
-  `dist/${packageName}-sidecar.js`,
-  `dist/${packageName}-sidecar.js.map`
+  `dist/${packageName}.js.map`
 ];
 for (const assetPath of expectedAssets) {
   assertRule(
