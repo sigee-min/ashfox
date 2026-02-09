@@ -4,6 +4,7 @@ import { createMDX } from 'fumadocs-mdx/next';
 
 const withMDX = createMDX();
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = path.resolve(dirname, '..', '..');
 
 const rawBasePath = process.env.DOCS_BASE_PATH?.trim() ?? '';
 const basePath =
@@ -18,7 +19,8 @@ const config = {
     unoptimized: true,
   },
   turbopack: {
-    root: dirname,
+    // Keep Turbopack rooted at the monorepo workspace so hoisted deps resolve.
+    root: workspaceRoot,
   },
   ...(basePath
     ? {
