@@ -53,6 +53,7 @@ if (rootPackageConfig) {
   const releaseType = rootPackageConfig['release-type'];
   const configuredPackageName = rootPackageConfig['package-name'];
   const component = rootPackageConfig.component;
+  const includeComponentInTag = rootPackageConfig['include-component-in-tag'];
   const preMajorPatchMode = rootPackageConfig['bump-patch-for-minor-pre-major'];
   const extraFiles = Array.isArray(rootPackageConfig['extra-files']) ? rootPackageConfig['extra-files'] : [];
 
@@ -64,6 +65,10 @@ if (rootPackageConfig) {
   assertRule(
     typeof component === 'string' && component.trim().length > 0,
     'release-please component must be a non-empty string.'
+  );
+  assertRule(
+    includeComponentInTag === false,
+    'release-please include-component-in-tag must be false to keep tags in vX.Y.Z format.'
   );
   assertRule(
     preMajorPatchMode === true,
