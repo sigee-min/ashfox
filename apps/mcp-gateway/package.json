@@ -8,7 +8,7 @@
     "test": "node run.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.985.0",
+    "@aws-sdk/client-s3": "^3.998.0",
     "pg": "^8.18.0"
   },
   "devDependencies": {
