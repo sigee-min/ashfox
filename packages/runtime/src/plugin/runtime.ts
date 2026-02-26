@@ -14,18 +14,25 @@ import { GUIDE_RESOURCE_TEMPLATES, GUIDE_RESOURCES } from '../shared/resources/g
 import { InMemoryResourceStore } from '../adapters/resources/resourceStore';
 import { readGlobals } from '../adapters/blockbench/blockbenchUtils';
 import { cleanupBridge, claimSingleton, exposeBridge, releaseSingleton } from './runtimeBridge';
-import type { EndpointConfig } from './types';
+import type { EndpointConfig, RuntimeServerStatus } from './types';
 import { resolveEndpointConfig } from './endpointConfig';
 import { registerPluginSettings } from './pluginSettings';
 import { resolveTraceLogDestPath } from './traceLogPath';
 import { buildRuntimeServices } from './runtimeServices';
 import { registerCodecs } from './runtimeCodecs';
-import { restartServer, type RuntimeServerState } from './runtimeServer';
+import { createRuntimeServerState, restartServer, type RuntimeServerState } from './runtimeServer';
 import { createDefaultPolicies, createTraceLogDefaults } from './runtimeDefaults';
 import type { TraceRecorder } from '../trace/traceRecorder';
 import type { TraceLogFlushScheduler } from '../trace/traceLogFlushScheduler';
 import type { TraceLogWriter } from '../ports/traceLog';
-import { PLUGIN_LOG_LOADING, PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, PLUGIN_UI_LOADED, PLUGIN_UI_UNLOADED } from './messages';
+import {
+  PLUGIN_LOG_LOADING,
+  PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED,
+  PLUGIN_LOG_SERVER_STATUS,
+  PLUGIN_UI_LOADED,
+  PLUGIN_UI_SERVER_STATUS,
+  PLUGIN_UI_UNLOADED
+} from './messages';
 import { PLUGIN_ICON_DATA_URL } from './pluginIcon';
 
 type AshfoxBridge = {
@@ -33,6 +40,7 @@ type AshfoxBridge = {
   capabilities: Capabilities;
   serverConfig: () => EndpointConfig;
   settings: () => EndpointConfig;
+  serverStatus: () => RuntimeServerStatus;
 };
 
 const formatOverrides: FormatOverrides = {};
@@ -50,12 +58,23 @@ let endpointConfig: EndpointConfig = {
   path: DEFAULT_SERVER_PATH
 };
 
-let serverState: RuntimeServerState = { sidecar: null, inlineServerStop: null };
+let serverState: RuntimeServerState = createRuntimeServerState(endpointConfig);
 let globalDispatcher: Dispatcher | null = null;
 let globalTraceRecorder: TraceRecorder | null = null;
 let globalTraceLogWriter: TraceLogWriter | null = null;
 let globalTraceLogFlushScheduler: TraceLogFlushScheduler | null = null;
 const toolRegistry = DEFAULT_TOOL_REGISTRY;
+
+const formatEndpoint = (config: EndpointConfig): string => `${config.host}:${config.port}${config.path}`;
+
+const toServerModeLabel = (status: RuntimeServerStatus): string => {
+  if (status.mode === 'inline') return 'inline';
+  if (status.mode === 'sidecar') return 'sidecar';
+  if (status.reason === 'web_mode') return 'stopped(web)';
+  if (status.reason === 'dispatcher_missing') return 'stopped(init)';
+  if (status.reason === 'sidecar_start_failed') return 'stopped(error)';
+  return 'stopped';
+};
 
 const cleanupRuntime = () => {
   if (globalTraceLogFlushScheduler) {
@@ -106,6 +125,7 @@ const exposeBridgeWithVersion = (bridge: AshfoxBridge) => {
   exposeBridge(bridge, PLUGIN_VERSION);
 };
 const restartServerWithState = () => {
+  const logger = new ConsoleLogger(PLUGIN_ID, () => logLevel);
   serverState = restartServer({
     endpointConfig,
     dispatcher: globalDispatcher,
@@ -114,6 +134,14 @@ const restartServerWithState = () => {
     toolRegistry,
     state: serverState
   });
+  const modeLabel = toServerModeLabel(serverState.status);
+  const endpoint = formatEndpoint(serverState.status.endpoint);
+  logger.info(PLUGIN_LOG_SERVER_STATUS, {
+    mode: serverState.status.mode,
+    reason: serverState.status.reason,
+    endpoint
+  });
+  readGlobals().Blockbench?.showQuickMessage?.(PLUGIN_UI_SERVER_STATUS(modeLabel, endpoint), 1500);
 };
 
  
@@ -218,7 +246,8 @@ Notes:
         invoke: dispatcher.handle.bind(dispatcher),
         capabilities,
         serverConfig: () => ({ ...endpointConfig }),
-        settings: () => ({ ...endpointConfig })
+        settings: () => ({ ...endpointConfig }),
+        serverStatus: () => ({ ...serverState.status, endpoint: { ...serverState.status.endpoint } })
       });
 
       blockbench?.showQuickMessage?.(PLUGIN_UI_LOADED(PLUGIN_VERSION), 1200);
@@ -231,7 +260,6 @@ Notes:
     }
   });
 };
-
 
 
 

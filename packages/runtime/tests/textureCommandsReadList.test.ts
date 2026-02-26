@@ -103,6 +103,20 @@ class NoCanvasTexture {
 
 {
   FakeTexture.all = [];
+  const tex = new FakeTexture({ id: 'tex-2b', name: 'atlas', width: 64, height: 32 });
+  tex.img = { naturalWidth: 64, naturalHeight: 32 };
+  tex.canvas = { width: 64, height: 32 };
+  tex.getDataUrl = () => 'data:image/png;base64,BBBB';
+  tex.add();
+  withGlobals({ Texture: FakeTexture }, () => {
+    const res = runReadTexture(noopLog, { id: 'tex-2b' });
+    assert.equal(res.error, undefined);
+    assert.equal(res.result?.image, tex.canvas as unknown as CanvasImageSource);
+  });
+}
+
+{
+  FakeTexture.all = [];
   const tex = new FakeTexture({ id: 'tex-3', name: 'atlas', width: 16, height: 16 });
   tex.getDataUrl = () => {
     throw new Error('read boom');
@@ -219,4 +233,3 @@ class NoCanvasTexture {
     ]);
   });
 }
-

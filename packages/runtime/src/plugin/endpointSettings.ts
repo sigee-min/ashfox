@@ -13,6 +13,24 @@ export const registerEndpointSettings = (deps: {
   const SettingCtor = globals.Setting;
   if (typeof SettingCtor === 'undefined') return;
 
+  const readPersistedValue = (id: 'host' | 'port' | 'path'): unknown => {
+    const key = `${PLUGIN_ID}_${id}`;
+    const direct = globals.settings?.[key]?.value;
+    if (direct !== undefined) return direct;
+    try {
+      return globals.Settings?.get?.(key);
+    } catch (_err) {
+      return undefined;
+    }
+  };
+
+  const hydratedHost = normalizeHost(readPersistedValue('host')) ?? deps.config.host;
+  const hydratedPort = normalizePort(readPersistedValue('port')) ?? deps.config.port;
+  const hydratedPath = normalizePath(readPersistedValue('path'), deps.config.path);
+  deps.config.host = hydratedHost;
+  deps.config.port = hydratedPort;
+  deps.config.path = hydratedPath;
+
   const category = `${PLUGIN_ID}: Server`;
   const applyHost = (value: unknown, shouldRestart = true) => {
     const next = normalizeHost(value) ?? deps.config.host;

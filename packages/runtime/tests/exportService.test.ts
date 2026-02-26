@@ -19,6 +19,7 @@ type HarnessOptions = {
   capabilities?: Capabilities;
   exportPolicy?: 'strict' | 'best_effort';
   nativeError?: ToolError | null;
+  nativeThrow?: unknown;
   gltfError?: ToolError | null;
   codecError?: ToolError | null;
   writeFileError?: ToolError | null;
@@ -62,6 +63,9 @@ const createHarness = (options: HarnessOptions = {}) => {
     exporter: {
       exportNative: () => {
         calls.native += 1;
+        if (options.nativeThrow !== undefined) {
+          throw options.nativeThrow;
+        }
         return options.nativeError ?? null;
       },
       exportGltf: () => {
@@ -346,6 +350,42 @@ registerAsync(
 
     {
       const { service, writes } = createHarness({
+        exportPolicy: 'strict',
+        nativeThrow: new TypeError("Cannot read properties of undefined (reading 'compileAdapter')")
+      });
+      const res = await service.exportModel({
+        format: 'gecko_geo_anim',
+        destPath: 'out.json',
+        options: { includeDiagnostics: true }
+      });
+      assert.equal(res.ok, true);
+      assert.equal(writes.length, 1);
+      if (res.ok) {
+        assert.equal(res.value.stage, 'fallback');
+        assert.deepEqual(res.value.warnings, ["Cannot read properties of undefined (reading 'compileAdapter')"]);
+      }
+    }
+
+    {
+      const { service, writes } = createHarness({
+        exportPolicy: 'strict',
+        nativeThrow: new Error('native crash')
+      });
+      const res = await service.exportModel({
+        format: 'gecko_geo_anim',
+        destPath: 'out.json',
+        options: { includeDiagnostics: true }
+      });
+      assert.equal(res.ok, false);
+      assert.equal(writes.length, 0);
+      if (!res.ok) {
+        assert.equal(res.error.code, 'io_error');
+        assert.equal(res.error.message, 'native crash.');
+      }
+    }
+
+    {
+      const { service, writes } = createHarness({
         exportPolicy: 'best_effort',
         nativeError: { code: 'not_implemented', message: 'native unavailable' }
       });
@@ -453,4 +493,3 @@ registerAsync(
     }
   })()
 );
-

@@ -88,8 +88,13 @@ curl -s http://127.0.0.1:8787/mcp \
 ## Common Problems
 - Plugin fails to load from URL:
   - Make sure you are loading `ashfox.js` (not old filenames).
+- Port/host/path settings reset after reload:
+  - Change settings in `ashfox: Server` (`MCP Host`, `MCP Port`, `MCP Path`), then reload plugin.
+  - Verify the status popup/log: `ashfox MCP inline|sidecar: <host>:<port><path>`.
+  - If values still reset, capture Blockbench console logs and open an issue.
 - MCP client cannot connect:
-  - Verify Blockbench plugin is loaded and endpoint is exactly `127.0.0.1:8787/mcp`.
+  - Verify Blockbench plugin is loaded and status shows `ashfox MCP inline: ...` or `ashfox MCP sidecar: ...`.
+  - Re-run `tools/list` against the endpoint shown in the status message.
 - Revision mismatch errors:
   - Re-read state with `get_project_state` and retry with latest `ifRevision`.
 

@@ -1,0 +1,11 @@
+revision: 2
+updated_at: '2026-02-26T16:05:00Z'
+capabilities:
+  - id: capability-tech-planner-baseline
+    outcome_id: outcome-tech-planner-bootstrap
+    name: planner runtime/governance bootstrap
+    description: Initialize planner runtime queues, governance docs, and plan lint readiness.
+  - id: capability-endpoint-persistence-observability
+    outcome_id: outcome-mcp-endpoint-reliability
+    name: endpoint persistence and server liveness visibility
+    description: Prevent endpoint setting rollback on reload and expose clear MCP server running status.

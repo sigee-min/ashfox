@@ -257,6 +257,11 @@ export type TriggerKeyframeCommand = {
   timePolicy?: AnimationTimePolicy;
 };
 
+export type CloseProjectPending = {
+  pending: true;
+  mode: 'async';
+};
+
 export interface EditorPort {
   createProject: (
     name: string,
@@ -264,7 +269,7 @@ export interface EditorPort {
     kind: FormatKind,
     options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
   ) => ToolError | null;
-  closeProject: (options?: { force?: boolean }) => ToolError | null;
+  closeProject: (options?: { force?: boolean }) => ToolError | CloseProjectPending | null;
   importTexture: (params: ImportTextureCommand) => ToolError | null;
   updateTexture: (params: UpdateTextureCommand) => ToolError | null;
   deleteTexture: (params: DeleteTextureCommand) => ToolError | null;
@@ -293,6 +298,5 @@ export interface EditorPort {
   setProjectUvPixelsPerBlock: (pixelsPerBlock: number) => ToolError | null;
   getTextureUsage: (params: TextureUsageQuery) => { result?: TextureUsageResult; error?: ToolError };
 }
-
 
 

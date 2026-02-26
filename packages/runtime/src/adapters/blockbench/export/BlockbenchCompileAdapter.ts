@@ -33,6 +33,24 @@ type CodecSelection = {
   codec: BlockbenchCodec;
 };
 
+type InvokeCompileResult =
+  | { ok: true; value: unknown }
+  | { ok: false; error: unknown };
+
+type CompileOptions = {
+  format: FormatEntry | null;
+  formatId: string | null;
+  codec: BlockbenchCodec | null;
+  codecId: string | null;
+  project: unknown;
+  blockbench: unknown;
+  codecs: unknown;
+  formats: unknown;
+  compileAdapter: Record<string, unknown>;
+  options: { compileAdapter: Record<string, unknown>; project: unknown };
+  context: { compileAdapter: Record<string, unknown>; project: unknown };
+};
+
 export class BlockbenchCompileAdapter {
   private readonly log: Logger;
 
@@ -46,20 +64,26 @@ export class BlockbenchCompileAdapter {
     if (!compiler) {
       return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_UNAVAILABLE(formatId) } };
     }
-    try {
-      const compiled = compiler();
-      if (compiled === null || compiled === undefined) {
-        return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_EMPTY } };
-      }
-      if (isThenable(compiled)) {
-        return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED } };
-      }
-      return { ok: true, compiled };
-    } catch (err) {
-      const message = errorMessage(err, 'native compile failed');
+    const compileOptions = createCompileOptions({
+      format,
+      formatId,
+      codec: format?.codec ?? null,
+      codecId: normalizeToken(format?.codec?.id ?? '')
+    });
+    const invoked = invokeCompilerCompat(compiler, compileOptions);
+    if (!invoked.ok) {
+      const message = errorMessage(invoked.error, 'native compile failed');
       this.log.error('native compile error', { message, formatId });
       return { ok: false, error: { code: 'io_error', message } };
     }
+    const compiled = invoked.value;
+    if (compiled === null || compiled === undefined) {
+      return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_EMPTY } };
+    }
+    if (isThenable(compiled)) {
+      return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_ASYNC_UNSUPPORTED } };
+    }
+    return { ok: true, compiled };
   }
 
   async compileGltf(): Promise<CompileCodecResult> {
@@ -94,24 +118,38 @@ export class BlockbenchCompileAdapter {
         error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_UNAVAILABLE(selection.id) }
       };
     }
+    const compileOptions = createCompileOptions({
+      format: null,
+      formatId: null,
+      codec: selection.codec,
+      codecId: selection.id
+    });
+    const invoked = invokeCompilerCompat(compiler, compileOptions);
+    if (!invoked.ok) {
+      const message = errorMessage(invoked.error, `codec compile failed: ${selection.id}`);
+      this.log.error('codec compile error', { message, codecId: selection.id });
+      return { ok: false, error: { code: 'io_error', message } };
+    }
+
+    let compiled: unknown;
     try {
-      const compiled = await resolveCompile(compiler());
-      if (compiled === null || compiled === undefined) {
-        return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_EMPTY } };
-      }
-      return {
-        ok: true,
-        selection: {
-          codecId: selection.id,
-          codec: selection.codec,
-          compiled
-        }
-      };
+      compiled = await resolveCompile(invoked.value);
     } catch (err) {
       const message = errorMessage(err, `codec compile failed: ${selection.id}`);
       this.log.error('codec compile error', { message, codecId: selection.id });
       return { ok: false, error: { code: 'io_error', message } };
     }
+    if (compiled === null || compiled === undefined) {
+      return { ok: false, error: { code: 'not_implemented', message: ADAPTER_NATIVE_COMPILER_EMPTY } };
+    }
+    return {
+      ok: true,
+      selection: {
+        codecId: selection.id,
+        codec: selection.codec,
+        compiled
+      }
+    };
   }
 }
 
@@ -122,20 +160,18 @@ const getFormatById = (formatId: string): FormatEntry | null => {
   return formats[formatId] ?? null;
 };
 
-const resolveFormatCompiler = (format: FormatEntry | null): (() => unknown) | null => {
+const resolveFormatCompiler = (format: FormatEntry | null): ((options?: CompileOptions) => unknown) | null => {
   if (!format) return null;
-  const compile = format.compile;
-  if (typeof compile === 'function') {
-    return () => compile.call(format);
+  if (typeof format.compile === 'function') {
+    return (options?: CompileOptions) => (format.compile as (options?: CompileOptions) => unknown)(options);
   }
   return resolveCodecCompiler(format.codec ?? null);
 };
 
-const resolveCodecCompiler = (codec: BlockbenchCodec | null): (() => unknown) | null => {
+const resolveCodecCompiler = (codec: BlockbenchCodec | null): ((options?: CompileOptions) => unknown) | null => {
   if (!codec) return null;
-  const compile = codec.compile;
-  if (typeof compile !== 'function') return null;
-  return () => compile.call(codec);
+  if (typeof codec.compile !== 'function') return null;
+  return (options?: CompileOptions) => (codec.compile as (options?: CompileOptions) => unknown)(options);
 };
 
 const isThenable = (value: unknown): value is { then: (onFulfilled: (arg: unknown) => unknown) => unknown } => {
@@ -148,6 +184,97 @@ const resolveCompile = async (compiled: unknown): Promise<unknown> => {
   if (!isThenable(compiled)) return compiled;
   return await compiled;
 };
+
+const shouldRetryWithOptions = (err: unknown): boolean => {
+  if (!isTypeErrorLike(err)) return false;
+  const message = String(err.message ?? '');
+  if (!message.includes("Cannot read properties of undefined")) return false;
+  return message.includes("compileAdapter") || message.includes("compile_adapter");
+};
+
+const isTypeErrorLike = (err: unknown): err is TypeError | { name?: unknown; message?: unknown } => {
+  if (err instanceof TypeError) return true;
+  if (!err || typeof err !== 'object') return false;
+  return String((err as { name?: unknown }).name ?? '') === 'TypeError';
+};
+
+const invokeCompilerCompat = (
+  compiler: (options?: CompileOptions) => unknown,
+  options: CompileOptions
+): InvokeCompileResult => {
+  injectCompileAdapter(options.format, options.compileAdapter);
+  injectCompileAdapter(options.codec, options.compileAdapter);
+  try {
+    return { ok: true, value: compiler() };
+  } catch (err) {
+    if (!shouldRetryWithOptions(err)) return { ok: false, error: err };
+    try {
+      return { ok: true, value: compiler(options) };
+    } catch (retryErr) {
+      return { ok: false, error: retryErr };
+    }
+  }
+};
+
+const createCompileOptions = (args: {
+  format: FormatEntry | null;
+  formatId: string | null;
+  codec: BlockbenchCodec | null;
+  codecId: string | null;
+}): CompileOptions => {
+  const globals = readGlobals();
+  const project = globals.Project ?? globals.Blockbench?.project ?? null;
+  const compileAdapter = createCompileAdapterCompat({
+    project,
+    format: args.format,
+    codec: args.codec
+  });
+  return {
+    format: args.format,
+    formatId: args.formatId,
+    codec: args.codec,
+    codecId: args.codecId,
+    project,
+    blockbench: globals.Blockbench ?? null,
+    codecs: globals.Codecs ?? null,
+    formats: globals.Formats ?? globals.ModelFormat?.formats ?? null,
+    compileAdapter,
+    options: { compileAdapter, project },
+    context: { compileAdapter, project }
+  };
+};
+
+const injectCompileAdapter = (target: unknown, compileAdapter: Record<string, unknown>) => {
+  if (!target || typeof target !== 'object') return;
+  const candidate = target as Record<string, unknown>;
+  if (!('compileAdapter' in candidate)) {
+    candidate.compileAdapter = compileAdapter;
+  }
+};
+
+const createCompileAdapterCompat = (args: {
+  project: unknown;
+  format: FormatEntry | null;
+  codec: BlockbenchCodec | null;
+}): Record<string, unknown> => ({
+  project: args.project,
+  format: args.format,
+  codec: args.codec,
+  stringify: (value: unknown) => {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (_err) {
+      return String(value);
+    }
+  },
+  clone: (value: unknown) => {
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_err) {
+      return value;
+    }
+  }
+});
 
 const resolveGltfCodec = (): CodecSelection | null => {
   const entries = readCodecEntries();
@@ -213,16 +340,19 @@ const readCodecEntries = (): CodecSelection[] => {
   const globals = readGlobals();
   const codecs = globals.Codecs;
   if (!codecs || typeof codecs !== 'object') return [];
-  const entries = Object.entries(codecs)
+  const codecEntries = safeEntries(codecs);
+  const entries = codecEntries
     .filter((entry): entry is [string, BlockbenchCodec] => Boolean(entry[1]))
     .map(([key, codec]) => {
-      const idRaw = String(codec.id ?? key).trim();
+      const idRead = tryRead(() => codec.id);
+      if (!idRead.ok) return null;
+      const idRaw = String(idRead.value ?? key).trim();
       const id = idRaw.toLowerCase();
-      const label = String(codec.name ?? codec.id ?? key).trim();
-      const extensions = parseCodecExtensions(codec.extension);
+      const label = safeRead(() => String(codec.name ?? codec.id ?? key).trim(), idRaw || String(key).trim());
+      const extensions = parseCodecExtensions(safeRead(() => codec.extension, ''));
       return { id, label, extensions, codec };
     })
-    .filter((entry) => Boolean(entry.id));
+    .filter((entry): entry is CodecSelection => Boolean(entry && entry.id));
   const deduped = new Map<string, CodecSelection>();
   entries.forEach((entry) => {
     if (!deduped.has(entry.id)) {
@@ -232,3 +362,26 @@ const readCodecEntries = (): CodecSelection[] => {
   return Array.from(deduped.values());
 };
 
+const safeEntries = (value: object): Array<[string, unknown]> => {
+  try {
+    return Object.entries(value);
+  } catch (_err) {
+    return [];
+  }
+};
+
+const safeRead = <T>(read: () => T, fallback: T): T => {
+  try {
+    return read();
+  } catch (_err) {
+    return fallback;
+  }
+};
+
+const tryRead = <T>(read: () => T): { ok: true; value: T } | { ok: false } => {
+  try {
+    return { ok: true, value: read() };
+  } catch (_err) {
+    return { ok: false };
+  }
+};

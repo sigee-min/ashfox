@@ -136,7 +136,7 @@ export const runReadTexture = (
     const height = size.height;
     const path = target?.path ?? target?.source;
     const dataUri = getTextureDataUri(target);
-    const image = (target?.img ?? target?.canvas) as CanvasImageSource | null;
+    const image = selectTextureImageSource(target);
     if (!dataUri && !image) {
       return { error: { code: 'not_implemented', message: ADAPTER_TEXTURE_DATA_UNAVAILABLE } };
     }
@@ -159,6 +159,21 @@ export const runReadTexture = (
 };
 
 export const runListTextures = (): TextureStat[] => listTextureStats();
+
+const selectTextureImageSource = (texture: TextureInstance): CanvasImageSource | null => {
+  const canvas = texture?.canvas ?? null;
+  if (canvas && canvas.width > 0 && canvas.height > 0) {
+    return canvas as CanvasImageSource;
+  }
+  const image = texture?.img ?? null;
+  if (image) {
+    return image as CanvasImageSource;
+  }
+  if (canvas) {
+    return canvas as CanvasImageSource;
+  }
+  return null;
+};
 
 const applyTextureContent = (
   tex: TextureInstance,
@@ -199,5 +214,3 @@ const refreshTextureViewport = (log: Logger): void => {
     log.warn('texture viewport refresh failed', { message: errorMessage(err, 'texture viewport refresh failed') });
   }
 };
-
-

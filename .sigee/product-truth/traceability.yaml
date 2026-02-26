@@ -1,0 +1,21 @@
+revision: 2
+updated_at: '2026-02-26T16:05:00Z'
+links:
+  - scenario_id: planner-bootstrap-initialization
+    outcome_id: outcome-tech-planner-bootstrap
+    capability_id: capability-tech-planner-baseline
+    dag_node_prefix: planner-
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+  - scenario_id: planner-endpoint-liveness-hardening
+    outcome_id: outcome-mcp-endpoint-reliability
+    capability_id: capability-endpoint-persistence-observability
+    dag_node_prefix: planner-
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5

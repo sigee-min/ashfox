@@ -146,3 +146,32 @@ packages/**/dist/
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# >>> SIGEE_GITIGNORE_POLICY >>>
+# .sigee governance: deny-by-default for git hygiene; allow only governed assets.
+.sigee/*
+
+# Keep repository-governed assets tracked (allow-list).
+!.sigee/README.md
+!.sigee/policies/
+!.sigee/policies/**
+!.sigee/product-truth/
+!.sigee/product-truth/**
+!.sigee/scenarios/
+!.sigee/scenarios/**
+!.sigee/dag/
+!.sigee/dag/schema/
+!.sigee/dag/schema/**
+!.sigee/dag/pipelines/
+!.sigee/dag/pipelines/**
+!.sigee/migrations/
+!.sigee/migrations/**
+
+# Local/generated assets must remain ignored.
+.sigee/templates/
+.sigee/.runtime/
+.sigee/tmp/
+.sigee/locks/
+.sigee/evidence/
+.sigee/reports/
+# <<< SIGEE_GITIGNORE_POLICY <<<

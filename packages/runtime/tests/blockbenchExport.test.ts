@@ -112,6 +112,35 @@ const withGlobalsAsync = async (overrides: TestGlobals, run: () => Promise<void>
 
 {
   const writes: Array<{ path: string; content: string; savetype: string }> = [];
+  const adapter = new BlockbenchExport(noopLog);
+  withGlobals(
+    {
+      Blockbench: {
+        writeFile: (path: string, payload: { content: string; savetype: string }) => {
+          writes.push({ path, content: payload.content, savetype: payload.savetype });
+        }
+      },
+      Formats: {
+        geckolib: {
+          compile(options?: { compileAdapter?: unknown }) {
+            if (!options) {
+              throw new TypeError("Cannot read properties of undefined (reading 'compileAdapter')");
+            }
+            return { ok: true };
+          }
+        }
+      }
+    },
+    () => {
+      const error = adapter.exportNative({ formatId: 'geckolib', destPath: 'compile-options.json' });
+      assert.equal(error, null);
+    }
+  );
+  assert.equal(writes.length, 1);
+}
+
+{
+  const writes: Array<{ path: string; content: string; savetype: string }> = [];
   const events: string[] = [];
   const adapter = new BlockbenchExport(noopLog);
   withGlobals(
@@ -461,6 +490,36 @@ registerAsync(
           assert.equal(targets.length, 2);
           assert.equal(targets.some((target) => target.id === 'obj' && target.extensions.includes('obj')), true);
           assert.equal(targets.some((target) => target.id === 'fbx' && target.extensions.includes('fbx')), true);
+        }
+      );
+    }
+
+    {
+      const adapter = new BlockbenchExport(noopLog);
+      const brokenCodec: Record<string, unknown> = {};
+      Object.defineProperty(brokenCodec, 'id', {
+        enumerable: true,
+        get() {
+          throw new TypeError("Cannot read properties of undefined (reading 'compileAdapter')");
+        }
+      });
+      Object.defineProperty(brokenCodec, 'name', { enumerable: true, value: 'Broken Codec' });
+      Object.defineProperty(brokenCodec, 'extension', { enumerable: true, value: 'broken' });
+      await withGlobalsAsync(
+        {
+          Codecs: {
+            obj: {
+              id: 'obj',
+              name: 'Wavefront OBJ',
+              extension: 'obj'
+            },
+            broken: brokenCodec
+          }
+        },
+        async () => {
+          const targets = adapter.listNativeCodecs?.() ?? [];
+          assert.equal(targets.some((target) => target.id === 'obj' && target.extensions.includes('obj')), true);
+          assert.equal(targets.some((target) => target.id === 'broken'), false);
         }
       );
     }

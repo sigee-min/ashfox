@@ -47,12 +47,13 @@ export const runDeleteProject = (
       }
     });
   }
-  const err = ctx.editor.closeProject({ force: payload.force });
-  if (err) return fail(err);
+  const closeResult = ctx.editor.closeProject({ force: payload.force });
+  if (closeResult && !('pending' in closeResult)) return fail(closeResult);
+  const closePending = Boolean(closeResult && 'pending' in closeResult && closeResult.pending);
   const postSnapshot = ctx.getSnapshot();
   const postNormalized = ctx.projectState.normalize(postSnapshot);
   const postInfo = ctx.projectState.toProjectInfo(postNormalized);
-  if (postInfo && postNormalized.format) {
+  if (!closePending && postInfo && postNormalized.format) {
     return fail({
       code: 'invalid_state',
       message: ADAPTER_PROJECT_CLOSE_NOT_APPLIED,
@@ -76,4 +77,3 @@ export const runDeleteProject = (
     }
   });
 };
-

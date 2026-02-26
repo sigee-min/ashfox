@@ -87,6 +87,36 @@ export const overlayPatchRects = (
   });
 };
 
+export const overlayPatchRectsPreserveTransparent = (
+  targetPixels: Uint8ClampedArray,
+  patchPixels: Uint8ClampedArray,
+  rects: Rect[],
+  width: number,
+  height: number
+) => {
+  rects.forEach((rect) => {
+    const startX = Math.max(0, Math.floor(rect.x1));
+    const startY = Math.max(0, Math.floor(rect.y1));
+    const endX = Math.min(width, Math.ceil(rect.x2));
+    const endY = Math.min(height, Math.ceil(rect.y2));
+    for (let y = startY; y < endY; y += 1) {
+      for (let x = startX; x < endX; x += 1) {
+        const idx = (y * width + x) * 4;
+        const r = patchPixels[idx];
+        const g = patchPixels[idx + 1];
+        const b = patchPixels[idx + 2];
+        const a = patchPixels[idx + 3];
+        // Keep existing pixels when the patch has no visible alpha for this texel.
+        if (a === 0) continue;
+        targetPixels[idx] = r;
+        targetPixels[idx + 1] = g;
+        targetPixels[idx + 2] = b;
+        targetPixels[idx + 3] = a;
+      }
+    }
+  });
+};
+
 export const overlayTextureSpaceRects = (
   targetPixels: Uint8ClampedArray,
   textureSpacePixels: Uint8ClampedArray,

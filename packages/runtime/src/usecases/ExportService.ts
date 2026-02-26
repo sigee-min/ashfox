@@ -25,6 +25,7 @@ import { resolveRequestedExport } from '../domain/export/requestedFormat';
 import { resolveSnapshotFormatKind } from '../domain/export/snapshotResolution';
 import { writeInternalFallbackExport } from './export/writeInternalFallback';
 import type { ResolvedExportSelection } from '../domain/export/types';
+import { errorMessage } from '../logging';
 
 export interface ExportServiceDeps {
   capabilities: Capabilities;
@@ -70,7 +71,7 @@ export class ExportService {
     const exportPolicy = payload.options?.fallback ?? this.policies.exportPolicy ?? 'strict';
     const includeDiagnostics = payload.options?.includeDiagnostics === true;
     const snapshot = this.getSnapshot();
-    const nativeCodecs = this.listNativeCodecs();
+    const nativeCodecs = this.listNativeCodecsSafe();
     const requestedResult = resolveRequestedExport(payload);
     if (!requestedResult.ok) {
       switch (requestedResult.reason) {
@@ -156,12 +157,34 @@ export class ExportService {
       );
     }
 
-    const nativeErr = await this.exporter.exportNative({ formatId, destPath: payload.destPath });
+    let nativeErr: ToolError | null;
+    try {
+      nativeErr = await this.exporter.exportNative({ formatId, destPath: payload.destPath });
+    } catch (err) {
+      const message = errorMessage(err, 'native export failed');
+      if (isNativeCompileAdapterMismatchMessage(message)) {
+        return writeInternalFallbackExport(this.editor, requestedFormat, payload.destPath, snapshot, {
+          selectedTarget: this.withFormatId(resolvedTarget, formatId),
+          stage: 'fallback',
+          warnings: includeDiagnostics ? [message] : undefined
+        });
+      }
+      return this.failWithExportHints({ code: 'io_error', message }, snapshot, nativeCodecs);
+    }
     if (!nativeErr) {
       return ok({
         path: payload.destPath,
         selectedTarget: this.withFormatId(resolvedTarget, formatId),
         stage: 'done'
+      });
+    }
+    const isNativeCompileAdapterMismatch =
+      nativeErr.code === 'io_error' && isNativeCompileAdapterMismatchMessage(nativeErr.message);
+    if (isNativeCompileAdapterMismatch) {
+      return writeInternalFallbackExport(this.editor, requestedFormat, payload.destPath, snapshot, {
+        selectedTarget: this.withFormatId(resolvedTarget, formatId),
+        stage: 'fallback',
+        warnings: includeDiagnostics ? [nativeErr.message] : undefined
       });
     }
     if (exportPolicy === 'strict') {
@@ -203,6 +226,14 @@ export class ExportService {
     const list = this.exporter.listNativeCodecs;
     if (typeof list !== 'function') return [];
     return list();
+  }
+
+  private listNativeCodecsSafe() {
+    try {
+      return this.listNativeCodecs();
+    } catch (_err) {
+      return [];
+    }
   }
 
   private resolveCodecId(requestedCodecId: string, nativeCodecs: NativeCodecTarget[]): string | null {
@@ -317,6 +348,7 @@ const normalizeCodecToken = (value: string): string =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '');
 
-
+const isNativeCompileAdapterMismatchMessage = (message: string): boolean =>
+  String(message).includes("reading 'compileAdapter'") || String(message).includes('compile_adapter');
 
 

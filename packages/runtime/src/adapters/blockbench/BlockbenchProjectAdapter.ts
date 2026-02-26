@@ -1,5 +1,6 @@
 import type { FormatKind, ToolError } from '@ashfox/contracts/types/internal';
 import type { Logger } from '../../logging';
+import type { CloseProjectPending } from '../../ports/editor';
 import { runCloseProject } from './project/projectClose';
 import { runCreateProject } from './project/projectCreate';
 import {
@@ -25,7 +26,7 @@ export class BlockbenchProjectAdapter {
     return runCreateProject(this.log, name, formatId, kind, options);
   }
 
-  closeProject(options?: { force?: boolean }): ToolError | null {
+  closeProject(options?: { force?: boolean }): ToolError | CloseProjectPending | null {
     return runCloseProject(this.log, options);
   }
 
@@ -45,4 +46,3 @@ export class BlockbenchProjectAdapter {
     return runSetProjectUvPixelsPerBlock(this.log, pixelsPerBlock);
   }
 }
-

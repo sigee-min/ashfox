@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import type { Logger } from '../src/logging';
-import { ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED, PROJECT_NO_ACTIVE } from '../src/shared/messages';
+import { PROJECT_NO_ACTIVE } from '../src/shared/messages';
 import { BlockbenchProjectAdapter } from '../src/adapters/blockbench/BlockbenchProjectAdapter';
 
 type TestGlobals = {
@@ -84,9 +84,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.closeProject();
-      assert.ok(err);
-      assert.equal(err?.code, 'not_implemented');
-      assert.equal(err?.message, ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED);
+      assert.deepEqual(err, { pending: true, mode: 'async' });
     }
   );
 }

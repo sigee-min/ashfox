@@ -1,6 +1,7 @@
 import type { ToolError } from '@ashfox/contracts/types/internal';
 import type { Logger } from '../../../logging';
 import { errorMessage } from '../../../logging';
+import type { CloseProjectPending } from '../../../ports/editor';
 import { hasUnsavedChanges, readGlobals } from '../blockbenchUtils';
 import { toolError } from '../../../shared/tooling/toolResponse';
 import {
@@ -10,7 +11,10 @@ import {
   PROJECT_NO_ACTIVE
 } from '../../../shared/messages';
 
-export const runCloseProject = (log: Logger, options?: { force?: boolean }): ToolError | null => {
+export const runCloseProject = (
+  log: Logger,
+  options?: { force?: boolean }
+): ToolError | CloseProjectPending | null => {
   try {
     const globals = readGlobals();
     const blockbench = globals.Blockbench;
@@ -28,7 +32,17 @@ export const runCloseProject = (log: Logger, options?: { force?: boolean }): Too
     }
     const result = closeProject.call(project, Boolean(options?.force));
     if (result && typeof (result as Promise<unknown>).then === 'function') {
-      return { code: 'not_implemented', message: ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED };
+      const pendingResult = result as Promise<unknown>;
+      pendingResult
+        .then(() => {
+          log.info('project closed (async)', { force: Boolean(options?.force) });
+        })
+        .catch((err) => {
+          const message = errorMessage(err, ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED);
+          log.warn('project close async error', { message, force: Boolean(options?.force) });
+        });
+      log.warn(ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED, { force: Boolean(options?.force) });
+      return { pending: true, mode: 'async' };
     }
     log.info('project closed', { force: Boolean(options?.force) });
     return null;
@@ -38,4 +52,3 @@ export const runCloseProject = (log: Logger, options?: { force?: boolean }): Too
     return toolError('unknown', message, { reason: 'adapter_exception', context: 'project_close' });
   }
 };
-

@@ -57,7 +57,7 @@ export class BlockbenchEditor implements EditorPort {
     return this.project.createProject(name, formatId, kind, options);
   }
 
-  closeProject(options?: { force?: boolean }): ToolError | null {
+  closeProject(options?: { force?: boolean }): ToolError | { pending: true; mode: 'async' } | null {
     return this.project.closeProject(options);
   }
 
@@ -169,6 +169,4 @@ export class BlockbenchEditor implements EditorPort {
     return this.project.setProjectUvPixelsPerBlock(pixelsPerBlock);
   }
 }
-
-
 

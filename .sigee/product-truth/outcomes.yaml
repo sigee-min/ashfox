@@ -1,0 +1,9 @@
+revision: 2
+updated_at: '2026-02-26T16:05:00Z'
+outcomes:
+  - id: outcome-tech-planner-bootstrap
+    name: tech-planner runtime baseline established
+    description: Repository can produce strict executable plans with validated governance linkage.
+  - id: outcome-mcp-endpoint-reliability
+    name: mcp endpoint config reliability and operator confidence
+    description: Blockbench endpoint settings persist across reloads and users can confirm MCP server liveness quickly.

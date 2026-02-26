@@ -50,7 +50,7 @@ import {
   getRectSpan,
   getTextureOpBounds,
   mergeRects,
-  overlayPatchRects,
+  overlayPatchRectsPreserveTransparent,
   overlayTextureSpaceRects,
   type Rect
 } from './paintFacesPixels';
@@ -243,9 +243,8 @@ export const runPaintMeshFace = (
 
       const committedStats = summarizePixels(committedPixelsRes.value);
       const noCommittedDelta = countChangedPixels(textureSource.pixels, committedPixelsRes.value) === 0;
-      const lostOpacity = beforeStats.opaquePixels > 0 && committedStats.opaquePixels === 0;
 
-      if (lostOpacity || noCommittedDelta) {
+      if (noCommittedDelta) {
         const rollbackError = rollbackTexturePixels(
           ctx,
           resolvedTexture,
@@ -258,7 +257,7 @@ export const runPaintMeshFace = (
           code: 'invalid_state',
           message: TEXTURE_MESH_FACE_GUARD_ROLLBACK,
           details: {
-            reason: lostOpacity ? 'all_transparent_after_commit' : 'no_committed_delta',
+            reason: 'no_committed_delta',
             rollbackApplied: rollbackError ? false : true,
             rollbackError: rollbackError ? rollbackError.message : undefined,
             expectedChangedPixels: appliedPixelsRes.value.changedPixels,
@@ -735,7 +734,7 @@ const applyPaintToMeshFaces = (params: {
     });
     if (!patchRes.ok) return fail(patchRes.error);
 
-    overlayPatchRects(
+    overlayPatchRectsPreserveTransparent(
       pixels,
       patchRes.data.data,
       params.rects,

@@ -27,6 +27,7 @@ const closedSnapshot: Snapshot = {
 const buildContext = (options?: {
   applyClose?: boolean;
   closeError?: { code: 'not_implemented'; message: string };
+  closePending?: boolean;
 }): { ctx: ProjectDeleteContext; resetCalls: () => number; closeCalls: () => number } => {
   let resetCount = 0;
   let closeCount = 0;
@@ -37,6 +38,7 @@ const buildContext = (options?: {
     editor: {
       closeProject: () => {
         closeCount += 1;
+        if (options?.closePending) return { pending: true as const, mode: 'async' as const };
         if (options?.closeError) return options.closeError;
         if (options?.applyClose !== false) active = false;
         return null;
@@ -90,6 +92,14 @@ const buildContext = (options?: {
   }
   assert.equal(closeCalls(), 1);
   assert.equal(resetCalls(), 0);
+}
+
+{
+  const { ctx, resetCalls, closeCalls } = buildContext({ applyClose: false, closePending: true });
+  const res = runDeleteProject(ctx, { target: { name: 'dragon' } });
+  assert.equal(res.ok, true);
+  assert.equal(closeCalls(), 1);
+  assert.equal(resetCalls(), 1);
 }
 
 {

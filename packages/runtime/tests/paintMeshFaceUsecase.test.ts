@@ -138,7 +138,7 @@ const createContext = (options?: {
     }
   };
 
-  return { ctx, getUpdateCalls: () => updateCalls };
+  return { ctx, getUpdateCalls: () => updateCalls, getPixels: () => new Uint8ClampedArray(pixels) };
 };
 
 {
@@ -210,6 +210,18 @@ const createContext = (options?: {
 }
 
 {
+  const { ctx, getPixels } = createContext();
+  const res = runPaintMeshFace(ctx, {
+    ...basePayload,
+    op: { op: 'set_pixel', x: 0, y: 0, color: '#336699' }
+  });
+  assert.equal(res.ok, true);
+  const pixels = getPixels();
+  const alphaAtUnpaintedFacePixel = pixels[(4 * 32 + 4) * 4 + 3];
+  assert.equal(alphaAtUnpaintedFacePixel > 0, true);
+}
+
+{
   const { ctx, getUpdateCalls } = createContext();
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
@@ -259,4 +271,3 @@ const createContext = (options?: {
     assert.equal(res.value.skippedFaces?.[0]?.faceId, 'broken');
   }
 }
-
