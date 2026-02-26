@@ -7,7 +7,7 @@ Current role:
 - Delegate runtime logic to the shared runtime package (`packages/runtime/src`).
 
 Build output is still produced at:
-- `dist/ashfox-bbplugin.js`
+- `dist/ashfox.js`
 
 Migration intent:
 - Keep runtime behavior stable while keeping plugin-specific wiring at this app boundary.

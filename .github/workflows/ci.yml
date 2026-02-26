@@ -22,7 +22,6 @@ jobs:
       plugin_desktop: ${{ steps.filter.outputs.plugin_desktop }}
       ashfox: ${{ steps.filter.outputs.ashfox }}
       web: ${{ steps.filter.outputs.web }}
-      docs: ${{ steps.filter.outputs.docs }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,14 +90,6 @@ jobs:
               - 'package.json'
               - 'package-lock.json'
               - 'apps/web/**'
-            docs:
-              - '.github/workflows/ci.yml'
-              - 'README.md'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'config/docs/**'
-              - 'scripts/docs/**'
-              - 'apps/docs/**'
 
   quality-static:
     needs: detect-changes
@@ -294,36 +285,3 @@ jobs:
       - name: Build web app
         if: needs.detect-changes.outputs.web == 'true'
         run: npm --workspace apps/web run build
-
-  docs-static-check:
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip (no docs changes)
-        if: needs.detect-changes.outputs.docs != 'true'
-        run: echo "docs build skipped (no matching changes)"
-
-      - name: Checkout
-        if: needs.detect-changes.outputs.docs == 'true'
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        if: needs.detect-changes.outputs.docs == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install
-        if: needs.detect-changes.outputs.docs == 'true'
-        run: npm ci
-
-      - name: Run docs quality gates
-        if: needs.detect-changes.outputs.docs == 'true'
-        run: npm run docs:quality
-
-      - name: Build docs static site
-        if: needs.detect-changes.outputs.docs == 'true'
-        run: npm --workspace apps/docs run build
-        env:
-          DOCS_SITE_URL: https://docs.example.com/

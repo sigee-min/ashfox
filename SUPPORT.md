@@ -15,10 +15,8 @@ When reporting issues, include:
 
 ## Before Opening an Issue
 - Read `README.md`
-- Check guides under `apps/docs/content/docs/en/guides/`
 - Search existing issues for duplicates
 
 ## Security Issues
 Do not open public issues for vulnerabilities.
 Follow `SECURITY.md`.
-

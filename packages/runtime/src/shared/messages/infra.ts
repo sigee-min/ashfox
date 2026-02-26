@@ -9,7 +9,7 @@ export const SERVER_NO_TRANSPORT = 'http/net modules not available; MCP server n
 export const SIDECAR_PERMISSION_MESSAGE = 'ashfox needs permission to run a local MCP sidecar process.';
 export const SIDECAR_CHILD_PROCESS_UNAVAILABLE = 'child_process not available; sidecar not started';
 export const SIDECAR_PATH_MODULE_UNAVAILABLE = 'path module not available; sidecar not started';
-export const SIDECAR_ENTRY_NOT_FOUND = 'sidecar entry not found; expected ashfox.js near plugin';
+export const SIDECAR_ENTRY_NOT_FOUND = 'sidecar entry not found; expected ashfox-sidecar.js near plugin';
 export const SIDECAR_EXECPATH_UNAVAILABLE = 'execPath unavailable; sidecar not started';
 export const SIDECAR_STDIO_UNAVAILABLE = 'sidecar stdio unavailable';
 export const SIDECAR_INFLIGHT_LIMIT_REACHED = 'too many in-flight requests';
@@ -82,6 +82,5 @@ export const ADAPTER_PLUGINS_DEVRELOAD_UNAVAILABLE = 'Plugins.devReload not avai
 export const PLUGIN_RELOAD_CONFIRM_REQUIRED = 'confirm=true is required to reload plugins.';
 export const PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX = 'Set confirm=true to proceed.';
 export const PLUGIN_RELOAD_UNAVAILABLE = 'Plugin reload is not available in this host.';
-
 
 

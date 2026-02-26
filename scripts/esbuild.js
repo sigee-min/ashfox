@@ -11,7 +11,7 @@ const ensureDir = (dir) => {
 const buildPlugin = () =>
   esbuild.build({
     entryPoints: [path.join(repoRoot, 'apps/plugin-desktop/src/index.ts')],
-    outfile: path.join(repoRoot, 'dist/ashfox-bbplugin.js'),
+    outfile: path.join(repoRoot, 'dist/ashfox.js'),
     bundle: true,
     sourcemap: true,
     platform: 'browser',
@@ -23,7 +23,7 @@ const buildPlugin = () =>
 const buildSidecar = () =>
   esbuild.build({
     entryPoints: [path.join(repoRoot, 'apps/ashfox/src/index.ts')],
-    outfile: path.join(repoRoot, 'dist/ashfox.js'),
+    outfile: path.join(repoRoot, 'dist/ashfox-sidecar.js'),
     bundle: true,
     sourcemap: true,
     platform: 'node',
@@ -57,5 +57,4 @@ const parseTargets = () => {
   console.error(err);
   process.exit(1);
 });
-
 

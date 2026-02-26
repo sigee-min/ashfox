@@ -1,9 +1,0 @@
-{
-  "title": "Ashfox Task Playbooks",
-  "pages": [
-    "index",
-    "bootstrap-local-stack",
-    "connect-mcp-client",
-    "run-service-health-check"
-  ]
-}

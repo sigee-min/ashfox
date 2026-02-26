@@ -1,5 +1,5 @@
 const fallback = (title: string, file: string) =>
-  `# ${title}\n\nGuide content is packaged in apps/docs/content/docs/en/guides/${file}.md.`;
+  `# ${title}\n\nGuide content is not bundled in this build. (guide=${file})`;
 
 export const GUIDE_FALLBACKS: Record<string, string> = {
   'modeling-workflow': fallback('Modeling Workflow (Low-level)', 'modeling-workflow'),
