@@ -37,6 +37,22 @@ npm run build
 
 Then load `dist/ashfox.js` in Blockbench Plugin Manager.
 
+## OS Permission Checklist (First Run)
+### macOS
+1. If Blockbench shows:
+   - `"The plugin \"ashfox\" requires permission to see information about your computer."`
+   - `"Filesystem access required"`
+   approve it for the `ashfox` plugin.
+2. If macOS system permission prompts appear for folders, approve `Blockbench` for the folders you use (for example `Desktop`, `Documents`, `Downloads`).
+
+### Windows
+1. If Windows Defender Firewall prompts for Blockbench, allow it on Private networks (Ashfox uses local `127.0.0.1` MCP).
+2. If Controlled Folder Access blocks save/export, allow Blockbench in Windows Security.
+
+### Linux
+1. If using sandboxed installs (Flatpak/Snap), grant filesystem access for your project/export paths.
+2. Ensure localhost access (`127.0.0.1`) is not blocked by sandbox/firewall policy.
+
 ## Default Endpoint
 ```text
 http://127.0.0.1:8787/mcp
