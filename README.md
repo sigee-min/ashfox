@@ -14,6 +14,9 @@ Model used: GPT-5.2 (`extra high`).
 
 ## Requirements
 - Blockbench Desktop (latest stable)
+- If you export/use `geckolib` models: add GeckoLib dependency in your target mod project.
+  - Ashfox does not bundle GeckoLib runtime/library.
+  - Ensure the `geckolib` format is enabled in Blockbench/Ashfox capabilities.
 
 ## Install
 ### Option A (recommended): Load from release URL
