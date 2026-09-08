@@ -1,5 +1,7 @@
 import {
   exportProductionProjectResolved,
+  encodeCanonicalPng,
+  rasterizeTexture,
   type AssetProject,
   type BlobRef,
   type ExportAdapterInput,
@@ -10,7 +12,6 @@ import {
   type TextureAsset
 } from '@ashfox/engine-core';
 
-import { renderTextureRaster } from '../../rendering/renderTextureRaster';
 import type {
   ProjectAsset,
   ProjectAssets
@@ -32,20 +33,6 @@ const textureForSource = (
     texture.source.key === source.key
 );
 
-const canvasPng = async (
-  document: ProjectDocument,
-  texture: TextureAsset
-): Promise<Uint8Array> => {
-  const canvas = renderTextureRaster(document, texture);
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((value) => {
-      if (value) resolve(value);
-      else reject(new Error('Texture PNG encoding failed.'));
-    }, 'image/png');
-  });
-  return new Uint8Array(await blob.arrayBuffer());
-};
-
 const authoredRasterPng = async (
   document: ProjectDocument,
   texture: TextureAsset
@@ -53,7 +40,10 @@ const authoredRasterPng = async (
   if (texture.source.contentType !== 'image/png') throw new Error(
     `Authored raster "${texture.name}" requires PNG materialization; received ${texture.source.contentType}.`
   );
-  return { bytes: await canvasPng(document, texture), contentType: 'image/png' };
+  return {
+    bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
+    contentType: 'image/png'
+  };
 };
 
 const resolveTextureAsset = async (
