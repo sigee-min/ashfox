@@ -50,6 +50,7 @@ without creating a second copy of the policy.
 | --- | --- | --- |
 | Repository policy | Development manifest, schema, and consuming gates | `npm run quality:manifest` and `npm run quality:check` |
 | Asset API or authoring workflow | Runtime manifest source, API readers, and agent tests | `npm run test:web` |
+| Browser agent execution | Public API, React presentation, review, and capture | `npm run test:web:browser` |
 | Language concepts or examples | Relevant architecture/guide page and compiler regression | `npm run test:engine-core` and `npm run test:site` |
 | Connection instructions or default prompt | Skill entrypoint and `agents/openai.yaml` | `npm run test:skill` and a scoped instruction review |
 
@@ -77,10 +78,25 @@ Useful focused commands:
 npm run dev:web
 npm run test:site
 npm run test:web
+npm run test:web:browser
 npm run test:blockbench
 npm run build:public
 npm run build:blockbench
 ```
+
+## Browser workflow verification
+
+The browser agent regression starts an isolated Workbench and drives its public
+API through source discovery, candidate validation, preview, atomic apply,
+every rendered review, and Build capture. It requires Chrome or Chromium;
+set `ASHFOX_CHROME_PATH` if needed. Its automatic review acknowledgements test
+the protocol with a known fixture, not the artistic quality of arbitrary assets.
+Use `--development` to repeat the regression with React's development effect
+replay enabled; CI checks both development and production builds.
+For an observed visual pass, run `npm run test:web:browser -- --manual` and
+open the printed local URL. The harness pauses for candidate inspection and
+each review decision. Test tooling is served separately and is not shipped in
+the public Workbench bundle.
 
 ## Showcase media
 

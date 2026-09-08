@@ -66,7 +66,6 @@ interface UseWorkbenchAgentControllerInput {
   }) => void;
   setPlayhead: Dispatch<SetStateAction<number>>;
   setPlaying: Dispatch<SetStateAction<boolean>>;
-  onCandidatePreview: (token: string | null) => void;
   capture: (
     request: CaptureArtifactRequest,
     lease: OperationLeaseToken
@@ -89,11 +88,11 @@ export const useWorkbenchAgentController = ({
   prepareView,
   setPlayhead,
   setPlaying,
-  onCandidatePreview,
   capture
 }: UseWorkbenchAgentControllerInput) => {
   const document = project.document;
   const {
+    viewportDocument,
     presentationNonce,
     present,
     review,
@@ -122,12 +121,12 @@ export const useWorkbenchAgentController = ({
     onReview: review,
     onCapture: capture,
     getVisualReviews,
-    onCandidatePreview,
     operationLease
   });
 
   return {
     status,
+    viewportDocument,
     presentationNonce,
     onPresented
   };

@@ -11,6 +11,7 @@ const projection = (
   readiness: ProjectSceneProjection['readiness'],
   ready: Promise<void>
 ): ProjectSceneProjection => ({
+  documentReference: {},
   root: null as never,
   objectsByNodeId: new Map(),
   selectable: [],

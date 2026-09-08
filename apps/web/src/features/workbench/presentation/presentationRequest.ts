@@ -91,6 +91,7 @@ export const createPresentationSession = (
   nonce,
   projectId: document.id,
   revision: document.revision,
+  documentReference: document,
   lastFrameNonce: null,
   review: request.review,
   purpose: request.purpose,

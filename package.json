@@ -28,6 +28,7 @@
     "preview:public": "node scripts/serve-public.js",
     "dev:web": "npm --workspace @ashfox/web run dev",
     "test:web": "npm --workspace @ashfox/web run test && npm run test:engine-core",
+    "test:web:browser": "node scripts/agent-browser/run.js",
     "test:blockbench": "npm --workspace @ashfox/blockbench-runtime run test && npm run test:blockbench:conformance",
     "test:blockbench:conformance": "npm --workspace @ashfox/blockbench-conformance run test",
     "test:engine-core": "npm --workspace @ashfox/engine-core run test",

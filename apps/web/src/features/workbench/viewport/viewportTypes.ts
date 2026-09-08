@@ -27,6 +27,8 @@ export interface ViewportPresentationFrame {
   frameNonce: number;
   projectId: string;
   revision: string;
+  /** Internal ownership guard; never serialized into the public result. */
+  documentReference: object;
   camera: CameraMode;
   cameraMatrix: readonly number[];
   frameEvidence: PixelFrameEvidence | null;

@@ -5,17 +5,15 @@ import {
 } from '@ashfox/engine-core';
 
 const MAX_CANDIDATE_PREVIEWS = 8;
-export const CANDIDATE_PREVIEW_TTL_MS = 30_000;
 
 interface CandidatePreviewEntry {
   readonly projectId: AssetProject['id'];
   readonly revision: AssetProject['revision'];
-  readonly baseWorkspaceHash: AssetProject['build']['workspaceHash'];
   readonly baseEntry: WorkspaceEntrySelector;
+  readonly baseBuild: AssetProject['build'];
   readonly candidateEntry: WorkspaceEntrySelector;
-  readonly candidateProductHash: AssetProject['build']['productHash'];
+  readonly candidateBuild: AssetProject['build'];
   readonly project: AssetProject;
-  readonly expiresAt: number;
 }
 
 const entries = new Map<string, CandidatePreviewEntry>();
@@ -44,6 +42,18 @@ const sameEntry = (
 ): boolean => left.packageName === right.packageName &&
   left.entryName === right.entryName;
 
+const sameBuild = (
+  left: AssetProject['build'],
+  right: AssetProject['build']
+): boolean => left.packageName === right.packageName &&
+  left.entryName === right.entryName &&
+  left.path === right.path &&
+  left.workspaceHash === right.workspaceHash &&
+  left.closureHash === right.closureHash &&
+  left.buildKey === right.buildKey &&
+  left.compilerFingerprint === right.compilerFingerprint &&
+  left.productHash === right.productHash;
+
 const isProjectWorkspaceCurrent = (project: AssetProject): boolean => {
   try {
     return project.build.workspaceHash === computeWorkspaceHash(project.workspace);
@@ -52,10 +62,7 @@ const isProjectWorkspaceCurrent = (project: AssetProject): boolean => {
   }
 };
 
-const prune = (now: number): void => {
-  for (const [token, entry] of entries) {
-    if (entry.expiresAt <= now) entries.delete(token);
-  }
+const prune = (): void => {
   while (entries.size > MAX_CANDIDATE_PREVIEWS) {
     const oldest = entries.keys().next().value;
     if (typeof oldest !== 'string') return;
@@ -75,19 +82,17 @@ export const createCandidatePreview = (
     candidate.build.productHash.length === 0) return null;
   const token = randomToken();
   if (token === null) return null;
-  const now = Date.now();
-  prune(now);
+  prune();
   entries.set(token, {
     projectId: base.id,
     revision: base.revision,
-    baseWorkspaceHash: base.build.workspaceHash,
     baseEntry: { ...base.entry },
+    baseBuild: { ...base.build },
     candidateEntry: { ...candidate.entry },
-    candidateProductHash: candidate.build.productHash,
-    project: candidate,
-    expiresAt: now + CANDIDATE_PREVIEW_TTL_MS
+    candidateBuild: { ...candidate.build },
+    project: candidate
   });
-  prune(now);
+  prune();
   return token;
 };
 
@@ -96,16 +101,15 @@ export const candidatePreviewFor = (
   base: AssetProject,
   token: string
 ): AssetProject | null => {
-  const now = Date.now();
-  prune(now);
+  prune();
   const entry = entries.get(token);
   const valid = entry !== undefined &&
     entry.projectId === base.id &&
     entry.revision === base.revision &&
-    entry.baseWorkspaceHash === base.build.workspaceHash &&
     sameEntry(entry.baseEntry, base.entry) &&
+    sameBuild(entry.baseBuild, base.build) &&
     isProjectWorkspaceCurrent(base) &&
-    entry.candidateProductHash === entry.project.build.productHash &&
+    sameBuild(entry.candidateBuild, entry.project.build) &&
     sameEntry(entry.candidateEntry, entry.project.entry) &&
     isProjectWorkspaceCurrent(entry.project);
   if (!valid) {

@@ -29,9 +29,16 @@ workflow. This skill is a connection guide, not a second grammar or schema.
    Open the chosen Workbench in an in-app browser when available, otherwise a
    connected browser. Reuse the user's tab and keep it on the app; do not
    navigate it to JSON or mix a development app with the production manifest.
-4. Inspect the active project before acting. If the manifest or app is
-   unavailable, report the connection problem instead of guessing commands
-   from cached instructions.
+4. Use `window.ashfox` when the browser tool can evaluate page JavaScript. If
+   it cannot, follow the live manifest's `pageApi.transport` fallback exactly.
+   It defines the transport envelope, matching response ID, bounded wait, and
+   replacement-input lifecycle. Keep requests sequential. The manifest's
+   transport nodes are the only DOM exception; do not read any other DOM,
+   canvas, IndexedDB, or browser storage.
+5. Inspect the active project before acting. Create or refine an asset through
+   the current manifest's workspace candidate and `workspace.apply` flow. If
+   the manifest or app is unavailable, report the connection problem instead
+   of guessing commands from cached instructions.
 
 ## Carry out the request
 

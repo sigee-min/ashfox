@@ -27,7 +27,8 @@ export const resolveActiveClipId = (
 
 /**
  * Keeps the visible clip selection aligned with a newly opened project while
- * preserving an existing selection during ordinary document edits.
+ * preserving an existing selection, including an explicit rest-pose choice,
+ * during ordinary document edits.
  */
 export const synchronizeActiveClipId = (
   document: ProjectDocument,
@@ -36,8 +37,10 @@ export const synchronizeActiveClipId = (
 ): string | null => {
   const firstClipId = Object.keys(document.animations)[0] ?? null;
   if (firstClipId === null) return null;
-  if (projectChanged || preferredId === null ||
-    document.animations[preferredId] === undefined) {
+  if (
+    projectChanged ||
+    (preferredId !== null && document.animations[preferredId] === undefined)
+  ) {
     return firstClipId;
   }
   return preferredId;

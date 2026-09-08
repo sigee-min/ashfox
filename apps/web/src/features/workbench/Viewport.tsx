@@ -41,6 +41,7 @@ export function Viewport({
   const presentationStateRef = useLatestValue({
     projectId: document.id,
     revision: document.revision,
+    documentReference: document,
     camera: cameraCommand.mode,
     clipId: activeClipId,
     playing,

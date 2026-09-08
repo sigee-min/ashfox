@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-test-status="running">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ashfox public agent browser regression</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: #111417;
+        color: #e7edf2;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { height: 100%; margin: 0; }
+
+      body {
+        overflow: hidden;
+        background: #111417;
+      }
+
+      iframe {
+        position: fixed;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #111417;
+      }
+
+      #agent-test-panel {
+        position: fixed;
+        z-index: 2;
+        right: 12px;
+        bottom: 12px;
+        width: min(560px, calc(100vw - 24px));
+        max-height: min(42vh, 420px);
+        overflow: auto;
+        padding: 12px 14px;
+        border: 1px solid #56636d;
+        border-radius: 8px;
+        background: rgb(17 20 23 / 92%);
+        box-shadow: 0 8px 32px rgb(0 0 0 / 35%);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      #agent-test-status { margin: 0 0 8px; font-weight: 700; }
+      #agent-test-note { margin: 0 0 8px; color: #a8b4bd; }
+
+      #agent-test-gate {
+        display: none;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #3b454d;
+      }
+
+      #agent-test-gate[data-visible="true"] { display: flex; }
+
+      #agent-test-continue {
+        min-height: 32px;
+        padding: 6px 12px;
+        border: 1px solid #b5d9f2;
+        border-radius: 5px;
+        background: #d5ebfa;
+        color: #13202b;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+      }
+
+      #agent-test-continue:focus-visible {
+        outline: 2px solid #f0c76a;
+        outline-offset: 2px;
+      }
+
+      #agent-test-evidence {
+        margin: 8px 0 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body data-test-status="running">
+    <iframe
+      title="ashfox Workbench under public agent browser test"
+      src="/workbench/"
+    ></iframe>
+    <aside id="agent-test-panel" aria-live="polite">
+      <p id="agent-test-status">Running public agent protocol…</p>
+      <p id="agent-test-note">
+        Automated protocol acceptance of the known Workbench fixture; this run
+        is not visual certification.
+      </p>
+      <div id="agent-test-gate" data-visible="false">
+        <span id="agent-test-gate-label"></span>
+        <button id="agent-test-continue" type="button">
+          Accept observed frame
+        </button>
+      </div>
+      <details>
+        <summary>Protocol evidence</summary>
+        <pre id="agent-test-evidence">{}</pre>
+      </details>
+    </aside>
+    <script src="/agent-test/support.js"></script>
+    <script src="/agent-test/harness.js"></script>
+  </body>
+</html>

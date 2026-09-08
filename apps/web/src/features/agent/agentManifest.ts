@@ -28,36 +28,29 @@ const language = Object.freeze({
     'surface contract', 'surface', 'component', 'motion', 'asset'
   ] as const),
   rules: Object.freeze([
-    'Every source begins with ashfox-model 1 and owns exactly one module or asset block.',
-    'Design blocks own typed exact fields and named boolean checks. Reference local Design.field or imported alias.Design.field; dependency cycles, duplicate owners, failed checks, and dimensional mismatches fail closed.',
-    'Design syntax: export design Dimensions { width: unit = 4u; size: vec3<unit> = (Dimensions.width, 4u, 4u); check positive = Dimensions.width > 0u; }. Vector fields support .x/.y/.z. Use a complete vec2<texel> design field for calculated chart origins.',
-    'Share design dimensions across skeleton origins, geometry, charts, and motion. Construction datums are values, not additional rig joints or placement authorities. Current asset density is exactly 16 (one texel per model unit); texels does not change that setting.',
-    'texels(length, pixelsPerUnit) requires a nonnegative unit length and positive integer density and rejects fractional texels. mirror_x/y/z(point, planeCoordinate) reflects only a unit point. box_origin(anchor, size, alignment) uses positive unit dimensions and explicit ratio components in [0,1].',
-    'Imports are explicit path-and-alias bindings. Only explicitly exported declarations are available across files; design values do not replace nominal rig, socket, or surface contracts.',
-    'A skeleton implements one rig contract exactly. A motion targets one rig contract. Components declare typed parameters plus required rig, socket, and surface contracts.',
-    'An asset chooses one skeleton, explicit motions, component instances with named bindings, and explicit socket connections. There is no inheritance, structural duck typing, default binding, or name-based retargeting.',
-    'Surface contracts own atlas size, named box or flat charts, coverage, material, and typed slots. Surface implementations explicitly bind those charts and texture recipes.',
-    'Geometry uses lexical bones, cubes, planes, and locators. Cubes carry volume; planes are reserved for intentional zero-thickness features. Coplanar overlays and floating attachments are invalid.',
-    'Motion tracks target exact rig joints and explicit rotation or scale channels. Delivery readiness requires one authored loop named idle.',
-    'Stamp placement uses either at=(xpx,ypx), or anchor=top_left|top|top_right|left|center|right|bottom_left|bottom|bottom_right plus an explicit signed offset. Fixed pixel size is preserved; off-grid centers and overflow fail. Optional protect=Npx protects the stamp rectangle and margin from tone/grain without changing alpha coverage.',
-    'The compiler rejects incomplete bindings, incompatible frames, orphan modules, import cycles, unsafe bounds, invalid UV, hidden data loss, and expansion over budget. It never invents geometry, charts, materials, or animation.',
-    'The header alone does not establish compatibility: workspace locks must use the current compiler fingerprint returned by inspect. Prior locks have no compatibility reader or implicit migration.'
+    'Begin every source with ashfox-model 1 and exactly one module or asset block. Use the linked language reference for declaration and binding syntax.',
+    'Share exact dimensions through design fields. Imports require explicit paths, aliases, and exported declarations; rig, socket, and surface bindings are nominal.',
+    'Skeletons implement rig contracts; components own geometry; surfaces own charts and pixels; motions target rig joints with rotation or scale tracks. Assets bind these declarations explicitly.',
+    'Current asset density is 16, or one texel per model unit. Calculated texel positions must be integral. Use the precision reference for design expressions and fixed-size anchored stamps.',
+    'Delivery requires an authored loop named idle. Review every authored motion cycle.',
+    'The compiler validates bindings, frames, graph closure, bounds, UV, and budgets. Resolve diagnostics in source; it does not infer missing assembly or repair visual defects.',
+    'Saved workspace locks must match the current compiler fingerprint. The edit API regenerates local locks; it does not migrate incompatible saved files.'
   ] as const)
 });
 
 const minecraftStyle = Object.freeze({
   reference: 'https://blockbench.net/wiki/guides/minecraft-style-guide/',
   authoringSequence: Object.freeze([
-    'Preserve the established silhouette, palette ramps, pixel density, and focal marks unless the user requests a change. Choose shared designs and nominal contracts before tuning detail.',
+    'Preserve the established silhouette, palette, pixel density, and focal marks unless the user requests a change.',
     'Use economical volume geometry for silhouette, attachment, depth, and occlusion; use a plane only when zero thickness is intentional.',
     'Give each surface a named atlas chart, adjacent color ramp, deterministic seeded grain, deliberate macro marks, and nearest sampling. Texture detail must support rather than replace readable geometry.',
     'Review perspective, native gameplay, front, side, top, nearest-neighbor detail, and every authored motion cycle before delivery.'
   ] as const),
   reviewChecklist: Object.freeze([
     'Silhouette, proportions, joint hierarchy, socket contact, and function read without labels.',
-    'No floating parts, accidental intersections, coplanar overlays, z-fighting, mixels, or staircase curve approximations.',
+    'Check for unintended gaps, intersections, z-fighting, and inconsistent pixel scale.',
     'Atlas charts are explicit, integer-aligned, within bounds, and use only their owning surface resources.',
-    'Large flat color regions use connected within-ramp texel variation while focal marks and transparency remain protected.',
+    'Texture detail supports the requested style and keeps focal marks readable.',
     'Every selected export target passes preflight without silent geometry, texture, or motion loss.'
   ] as const)
 });
@@ -68,7 +61,7 @@ export const agentManifest = {
   workbench: agentCommandProtocol.workbench,
   href: agentCommandProtocol.href,
   description:
-    'Machine guide for authoring a strongly typed multi-file Ashfox asset workspace, compiling one entry, and completing independent visual review.',
+    'Runtime contract for creating, refining, and reviewing assets in Ashfox Workbench.',
   setup: {
     manifest: 'Use https://ashfox.io/workbench/ and fetch https://ashfox.io/workbench/agent-manifest.json through direct HTTP. Keep the controlled browser on the app. Use a development URL only when the user explicitly selects it, with the manifest from that same Workbench.',
     ready:
@@ -88,9 +81,43 @@ export const agentManifest = {
     runMethod: 'run',
     presentMethod: 'present',
     captureMethod: 'capture',
+    transport: {
+      inputSelector: `[${agentCommandProtocol.inputAttribute}]`,
+      resultSelector: `meta[${agentCommandProtocol.resultAttribute}]`,
+      resultAttribute: agentCommandProtocol.resultAttribute,
+      contract:
+        'When the browser tool cannot evaluate window.ashfox, use only these two transport nodes. Fill the current input element with one JSON envelope {requestId,method,payload}; the browser locator fill emits input and starts the request. Read the result meta\'s data-agent-command-port-result attribute as one JSON envelope {requestId,result}. Send one request at a time and accept only a response with the matching outer requestId.',
+      envelope:
+        'method is inspect, run, present, or capture. For inspect, present, and capture, payload is that method\'s request. For run, payload contains operations only; the outer requestId becomes the run requestId, so do not put requestId inside the run payload. The bridge removes and replaces the input after every fill; query the input selector again before the next call.',
+      restriction:
+        'The input and result selectors are a transport-only DOM exception. Do not read any other DOM, canvas, source, IndexedDB, or browser storage to recover state or author an asset.',
+      example: `async function callAgent(browser, method, payload, timeoutMs = 600000) {
+  const requestId = 'agent-' + crypto.randomUUID();
+  const inputSelector = '[data-agent-command-port-input]';
+  const input = browser.locator(inputSelector).first();
+  await input.fill(JSON.stringify({ requestId, method, payload }));
+  const resultSelector = 'meta[data-agent-command-port-result]';
+  const resultAttribute = 'data-agent-command-port-result';
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const serialized = await browser.locator(resultSelector).getAttribute(resultAttribute);
+    if (serialized) {
+      const envelope = JSON.parse(serialized);
+      if (envelope.requestId === requestId) return envelope.result;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Timed out waiting for the matching Ashfox response.');
+}
+
+const overview = await callAgent(browser, 'inspect', undefined);
+const result = await callAgent(browser, 'run', {
+  operations: [{ name: 'workspace.apply', payload: { entry, changes } }]
+});`
+    },
     inspect: {
       current:
-        'window.ashfox.inspect() returns a bounded revision, workspace hash, selected entry/build identity, counts, readiness, blocker, next actions, and target metadata. It never returns source bytes.',
+        'window.ashfox.inspect() returns a bounded revision, workspace hash, selected entry/build identity, counts, readiness, workflow guidance, and target metadata. It never returns source bytes. The overview data.workflow object reports stage, remainingVisualReviews, remainingVisualReviewCount, and visualReviewsTruncated; data.blocker and data.nextActions remain the actionable blocker and next-step guidance. Use the count and truncation flag rather than assuming the returned review-key list is complete.',
       identity:
         'From a successful overview use data.revision as expectedRevision, data.workspaceHash as expectedWorkspaceHash, and data.build.buildKey as expectedBuildKey. Never combine guards from different observations or reuse them after a workspace change.',
       command:
@@ -102,7 +129,7 @@ export const agentManifest = {
       workspace:
         'Discover source with {kind:"workspace",catalog:{expectedWorkspaceHash,offset:0,limit:32}}. Read source with {kind:"workspace",read:{expectedWorkspaceHash,path,offset,maxCodeUnits}} or metadata with {kind:"workspace",document:{expectedWorkspaceHash,document:"manifest"|"lock",offset,maxCodeUnits}}. Use exactly one selector; maxCodeUnits is 1..2048. Follow pagination/chunks, never guess paths or read DOM/storage.',
       candidate:
-        'Preview with {kind:"workspace",candidate:{entry:{packageName,entryName},changes:{expectedWorkspaceHash,writes,deletes,manifest?}}}. A successful response envelope can contain data.valid=false: check it and diagnostics. Only valid candidates have a previewToken; show it with present({review:"preview",previewToken}). Candidate inspection does not change the project.',
+        'Preview with {kind:"workspace",candidate:{entry:{packageName,entryName},changes:{expectedWorkspaceHash,writes,deletes,manifest?}}}. A successful response envelope can contain data.valid=false: check it and diagnostics. Only valid candidates have a previewToken; show it with present({review:"preview",previewToken}). Candidate inspection changes neither the project nor the viewport. Tokens are bounded session resources tied to the exact base build; restage if a token is evicted or the base changes. Delivery presentation always restores the current canonical document.',
       nodes:
         'Discover canonical node IDs with {kind:"nodes",expectedRevision,expectedWorkspaceHash,expectedBuildKey,offset:0,limit:32}. Results include id, name, kind, parentId, and visibility in stable ID order; follow nextOffset until null. Limits are 1..32. Use the same current-build guards for subsequent measurement and surface reads.',
       measurement:
@@ -145,11 +172,11 @@ export const agentManifest = {
   },
   authoring: {
     authority:
-      'One portable .ashfoxworkspace is durable authority: normalized source files, package manifests, and an exact compiler lock. The selected entry chooses a product; AssetProject binds its build identity to the derived read-only ProjectDocument. This runtime manifest governs asset operation, not repository development policy.',
+      'Edit workspace source through workspace.apply. The engine builds the selected entry and maintains the lock. Save .ashfoxworkspace for future editing; generated models are read-only.',
     language,
     minecraftStyle,
     rules: [
-      'Use the smallest coherent source organization: one file for a small study, shared exported designs and nominal modules when reuse warrants it. Do not force every edit into a new package or ask the human to edit derived data.',
+      'Use the existing request and make routine design choices from context. Ask only when missing information materially changes the result. Use the smallest source organization that fits the task.',
       'Keep shape and attachment in geometry, material ownership and texel detail in surfaces, and temporal behavior in rig-bound motion.',
       'Use exact design relations to reduce duplicated coordinates and fixed-size stamps for focal paint marks. Precision does not mean smooth CAD solids, automatic fitting, or extra geometry for painted detail.',
       'Compiler success and numeric checks do not certify style. Rendered review remains independent; do not accept evidence solely because a measurement passes.'
@@ -162,7 +189,7 @@ export const agentManifest = {
     { stage: 'apply', instruction: 'Apply one exact workspace change set with the current workspace hash.' },
     { stage: 'verify', instruction: 'Refresh the current identity. Reinspect changed dimensions and face UV; failed observations belong to a new source revision, never a derived-data patch.' },
     { stage: 'review', instruction: 'Follow present({review:"next"}) through every required static camera and motion cycle; judge the rendered result against its returned checks.' },
-    { stage: 'capture', instruction: 'After acceptance, produce the deterministic Build replay.' },
+    { stage: 'capture', instruction: 'When delivering a finished asset, produce Build replay after every required review is accepted.' },
     { stage: 'deliver', instruction: 'Preflight the user-selected export target, then let the user export.' }
   ],
   recovery: {

@@ -63,6 +63,7 @@ export const usePresentationSession = ({
   setPlaying
 }: UsePresentationSessionInput) => {
   const [presentationNonce, setPresentationNonce] = useState(0);
+  const [presentationDocument, setPresentationDocument] = useState(document);
   const pendingRef = useRef<PendingPresentation | null>(null);
   const nextNonceRef = useRef(0);
   const observationsRef =
@@ -145,6 +146,7 @@ export const usePresentationSession = ({
     const nonce = nextNonceRef.current + 1;
     nextNonceRef.current = nonce;
     observationsRef.current = new Map();
+    setPresentationDocument(presentationDocument);
     prepareView({
       clipId: resolved.clip?.id ?? null,
       camera: request.camera
@@ -191,6 +193,12 @@ export const usePresentationSession = ({
     const pending = pendingRef.current;
     if (!pending) {
       observationsRef.current = new Map();
+      if (
+        presentationDocument.id !== document.id ||
+        presentationDocument.revision !== document.revision
+      ) {
+        setPresentationDocument(document);
+      }
       return;
     }
     if (
@@ -200,6 +208,7 @@ export const usePresentationSession = ({
       return;
     }
     setPlaying(false);
+    setPresentationDocument(document);
     observationsRef.current = new Map();
     finish(
       pending,
@@ -208,7 +217,15 @@ export const usePresentationSession = ({
         pending.session.revision
       )
     );
-  }, [document.id, document.revision, finish, setPlaying]);
+  }, [
+    document,
+    document.id,
+    document.revision,
+    finish,
+    presentationDocument.id,
+    presentationDocument.revision,
+    setPlaying
+  ]);
 
   useEffect(() => () => {
     observationsRef.current = new Map();
@@ -226,6 +243,11 @@ export const usePresentationSession = ({
 
   return {
     presentationNonce,
+    presentationDocument:
+      presentationDocument.id === document.id &&
+      presentationDocument.revision === document.revision
+        ? presentationDocument
+        : document,
     present,
     onPresented,
     observations: observationsRef

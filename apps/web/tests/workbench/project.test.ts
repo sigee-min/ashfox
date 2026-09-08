@@ -4,11 +4,11 @@ import {
   createBlankWorkbenchProject
 } from '../../src/features/workbench/newProject';
 import {
-  WORKBENCH_PLACEHOLDER_PROJECT_ID
+  INITIAL_WORKBENCH_PROJECT_ID
 } from '../../src/application/projectIdentity';
 
 const blank = createBlankWorkbenchProject('2026-07-29T00:00:00.000Z');
-assert.equal(blank.id, WORKBENCH_PLACEHOLDER_PROJECT_ID);
+assert.equal(blank.id, INITIAL_WORKBENCH_PROJECT_ID);
 assert.equal(blank.revision, blank.document.revision);
 assert.equal(blank.entry.packageName, 'workbench');
 assert.equal(blank.entry.entryName, 'workbench');

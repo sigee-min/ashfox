@@ -93,6 +93,7 @@ export const projectToThreeScene = (
   }
 
   return {
+    documentReference: document,
     root,
     objectsByNodeId,
     selectable,

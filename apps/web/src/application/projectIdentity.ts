@@ -1,2 +1,2 @@
-export const WORKBENCH_PLACEHOLDER_PROJECT_ID =
+export const INITIAL_WORKBENCH_PROJECT_ID =
   'project-local-workbench';

@@ -58,9 +58,7 @@ export function BottomWorkspace({
             }
             disabled={Object.keys(document.animations).length === 0}
           >
-            {Object.keys(document.animations).length === 0 ? (
-              <option value="">No motion</option>
-            ) : null}
+            <option value="">Rest pose</option>
             {Object.values(document.animations).map((clip) => (
               <option key={clip.id} value={clip.id}>{clip.name}</option>
             ))}

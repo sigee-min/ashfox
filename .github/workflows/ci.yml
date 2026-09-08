@@ -38,6 +38,8 @@ jobs:
       - run: npm ci
       - run: npm run test:web
       - run: npm run build:web
+      - run: npm run test:web:browser -- --no-build
+      - run: npm run test:web:browser -- --development
 
   public-site-track:
     runs-on: ubuntu-latest

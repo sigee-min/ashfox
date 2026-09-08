@@ -14,7 +14,7 @@ import {
   type WorkspaceFile,
   type WorkspacePackage
 } from '@ashfox/engine-core';
-import { WORKBENCH_PLACEHOLDER_PROJECT_ID } from '../../application/projectIdentity';
+import { INITIAL_WORKBENCH_PROJECT_ID } from '../../application/projectIdentity';
 
 /* A small complete asset keeps the first render deterministic until a file is
  * opened. The workspace, rather than a synthetic ProjectDocument, is the sole
@@ -137,7 +137,7 @@ export const createBlankWorkbenchProject = (createdAt: string): AssetProject => 
     workspace: initialWorkspace(),
     entry: { packageName: 'workbench', entryName: 'workbench' },
     identity: {
-      id: WORKBENCH_PLACEHOLDER_PROJECT_ID,
+      id: INITIAL_WORKBENCH_PROJECT_ID,
       revision: 'local-0001',
       createdAt,
       updatedAt: createdAt

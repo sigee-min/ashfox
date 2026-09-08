@@ -67,6 +67,12 @@ export const inspectOverview = (
       },
       blocker: workflow.blocker,
       nextActions: workflow.nextActions,
+      workflow: {
+        stage: workflow.stage,
+        remainingVisualReviews: workflow.remainingVisualReviews,
+        remainingVisualReviewCount: workflow.remainingVisualReviewCount,
+        visualReviewsTruncated: workflow.visualReviewsTruncated
+      },
       targetPreflight
     },
     DEFAULT_INSPECT_LIMIT

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { agentManifest } from '../../src/features/agent/agentManifest';
+import { agentCommandProtocol } from '../../src/features/agent/agentCommandProtocol';
 import { parseInspectRequest } from '../../src/features/agent/parseInspectRequest';
 import { canonicalFingerprint } from '../../src/application/canonicalFingerprint';
 import { listAgentCommandDefinitions } from '@ashfox/engine-core';
@@ -9,6 +10,15 @@ assert.deepEqual(agentManifest.commands.map((entry) => entry.name),
   ['workspace.apply']);
 assert.equal(JSON.stringify(agentManifest.pageApi.inspect).includes('expectedWorkspaceHash'), true);
 assert.equal(JSON.stringify(agentManifest.pageApi.run).includes('workspace.apply'), true);
+assert.equal(agentManifest.pageApi.transport.inputSelector,
+  `[${agentCommandProtocol.inputAttribute}]`);
+assert.equal(agentManifest.pageApi.transport.resultSelector,
+  `meta[${agentCommandProtocol.resultAttribute}]`);
+assert.equal(agentManifest.pageApi.transport.resultAttribute,
+  agentCommandProtocol.resultAttribute);
+assert.match(agentManifest.pageApi.transport.envelope, /outer requestId/u);
+assert.match(agentManifest.pageApi.transport.example, /operations/u);
+assert.match(agentManifest.pageApi.inspect.current, /data\.workflow/u);
 assert.equal(agentManifest.compatibility.options.length, 5);
 assert.ok(agentManifest.compatibility.options.every((option) =>
   !Reflect.has(option, 'isDefaultVersion')),

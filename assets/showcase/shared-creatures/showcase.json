@@ -7,7 +7,7 @@
     "workspaceHash": "sha256:46fb9ba3db1b3f65a195f3ecbea6ef92735c1660a329c50c8d27b6cbb4fbcb14"
   },
   "capture": {
-    "fingerprint": "sha256:072474af9758198997d95b4484f421770d84113a75907b28d7d073115e554286",
+    "fingerprint": "sha256:340ff7d55d7ce7e3e800f18cae8d97f38cab08993a0f591b7037089cab60c5ac",
     "environment": "studio",
     "camera": "perspective",
     "width": 640,

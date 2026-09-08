@@ -1,4 +1,4 @@
-# Agent workflow: source edits without hand-written locks
+# Agent workflow
 
 This is the execution guide for runtime manifest schema version 2. Connect to
 `https://ashfox.io/workbench/` by default and fetch its
@@ -7,33 +7,87 @@ development Workbench, use that origin's manifest and linked reference files.
 Do not navigate the working browser away from the app to read documentation.
 
 The API below runs in the connected Workbench page as `window.ashfox`.
-The browser-control tool must support that page API. Do not access private
-application state, IndexedDB, or rendered DOM to recover source or bypass it.
+Use that page API when the browser-control tool can evaluate page JavaScript. If
+it cannot, use the transport-only DOM bridge described below. Do not access
+private application state, IndexedDB, or rendered DOM to recover source or
+bypass it.
 
-## Ownership and the hard cut
+## Transport fallback for restricted browser tools
 
-- The agent authors `.ashfox` source and, when needed, package configuration
-  through a full workspace `manifest` replacement.
-- The engine deterministically regenerates local package content, file,
-  manifest, and exported-interface hashes and local dependency pins.
-- Embedded content-addressed (`cas`) packages retain their exact bytes and
-  pins. Editing, replacing, or installing external packages is not supported
-  through the workspace edit command.
-- `changes.lock` is rejected even when the supplied lock looks correct.
-  There is no fallback to the former caller-authored lock workflow.
-- Persisted `.ashfoxworkspace` files still include the exact lock and are
-  strictly validated on opening. Automatic resealing applies to valid current
-  workspace edits, not to importing stale or tampered files.
+The Workbench exposes one hidden input and one result meta element for tools
+that can fill a browser locator and read an attribute but cannot evaluate page
+JavaScript:
 
-This changes the editing contract, not the `ashfox-model 1` language header or
-the precision compiler fingerprint. Existing valid saved products do not need
-a migration, and no alternate authoring path is added.
+- input: `[data-agent-command-port-input]`
+- result: `meta[data-agent-command-port-result]`, whose
+  `data-agent-command-port-result` attribute is JSON
+
+Send one outer envelope at a time:
+
+```javascript
+{
+  requestId: 'agent-unique-id',
+  method: 'inspect' | 'run' | 'present' | 'capture',
+  payload: methodPayload
+}
+```
+
+For `run`, `payload` contains `operations` only. The bridge uses the outer
+`requestId` as the run request ID, so do not put another `requestId` inside
+that payload. The result attribute contains `{requestId, result}`. Wait for a
+result with the matching outer ID; an older result must not satisfy a new
+request. Locator `fill` emits the input event that submits the request. The
+bridge removes the input after that event and appends a replacement, so
+reacquire the locator before every call and keep requests sequential.
+
+This is the complete locator-based shape, with a bounded wait:
+
+```javascript
+async function callAgent(browser, method, payload, timeoutMs = 600000) {
+  const requestId = 'agent-' + crypto.randomUUID();
+  const input = browser.locator('[data-agent-command-port-input]').first();
+  await input.fill(JSON.stringify({ requestId, method, payload }));
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const serialized = await browser
+      .locator('meta[data-agent-command-port-result]')
+      .getAttribute('data-agent-command-port-result');
+    if (serialized) {
+      const envelope = JSON.parse(serialized);
+      if (envelope.requestId === requestId) return envelope.result;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Timed out waiting for the matching Ashfox response.');
+}
+
+const overview = await callAgent(browser, 'inspect', undefined);
+const result = await callAgent(browser, 'run', {
+  operations: [{ name: 'workspace.apply', payload: { entry, changes } }]
+});
+```
+
+The two transport selectors are the only DOM exception. Do not use any other
+DOM, canvas, source, IndexedDB, or browser-storage read to recover state or
+author an asset.
+
+## Edit contract
+
+Author source and, when needed, replace the full workspace manifest. The engine
+regenerates local lock hashes and pins; `changes.lock` is rejected. Embedded
+CAS packages are immutable. Saved workspace files still require valid locks
+when opened; the edit command cannot repair an incompatible saved file.
 
 ## 1. Inspect identity and discover source
 
 Call `ashfox.inspect()` and require `ok === true`. Its `data` provides the
-selected `entry`, `workspaceHash`, `revision`, and `build.buildKey`. A read-only
-user task stops after gathering and explaining relevant evidence.
+selected `entry`, `workspaceHash`, `revision`, and `build.buildKey`. The
+overview's `data.workflow` provides `stage`, `remainingVisualReviews`,
+`remainingVisualReviewCount`, and `visualReviewsTruncated`; `data.blocker` and
+`data.nextActions` remain the actionable blocker and next-step guidance. The
+review-key list is bounded; use the count and flag when deciding whether more
+`present({review:'next'})` calls remain. A read-only user task stops after
+gathering and explaining relevant evidence.
 
 Discover files rather than guessing paths:
 
@@ -122,11 +176,16 @@ Two checks are required: `preview.ok` means the inspection request succeeded;
 `preview.data.valid` means the candidate passed workspace and semantic checks.
 A valid response supplies `preview.data.previewToken`. An invalid candidate
 returns diagnostics and no usable token, without changing the active project.
+Candidate inspection does not switch the viewport. The bounded session cache
+retains tokens against their exact base build; a changed base or cache eviction
+requires staging again.
 
 Present the token with `await ashfox.present({review:'preview',previewToken})`
 and inspect the rendered result. A preview is not an accepted delivery review.
 If it is wrong, revise source and stage again. Do not apply a candidate merely
 because it compiled.
+Every subsequent delivery presentation explicitly selects the current canonical
+document and waits for evidence rendered from that exact document.
 
 ## 4. Apply exactly the inspected edit
 
