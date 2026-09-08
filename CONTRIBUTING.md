@@ -21,6 +21,10 @@ how to find and apply that contract.
   not govern repository development.
 - Human guides explain both workflows but do not replace either manifest.
   Integrators fetch the current runtime manifest rather than embedding a copy.
+- The installable [ashfox skill](skills/ashfox/SKILL.md) and its
+  [default prompt](skills/ashfox/agents/openai.yaml) connect asset agents to
+  ashfox.io and preserve user intent. They route to the live runtime contract;
+  they are not a repository bootstrap or a copied language manual.
 
 Read [the codebase map](docs/architecture/codebase.md) for rationale and an
 ownership map after reading the development manifest.
@@ -36,18 +40,28 @@ ownership map after reading the development manifest.
 - `docs` — task-oriented user documentation published at
   [ashfox.io/docs](https://ashfox.io/docs/).
 
-Keep the web studio and Blockbench compatibility track independently buildable.
-Share format contracts and fixtures through their existing package boundaries;
-do not import Blockbench runtime code into the web product.
+Use `architecture` for package dependency boundaries and `quality.ownerLayout`
+for filenames, test owners, and limits. The codebase map explains these rules
+without creating a second copy of the policy.
 
-Keep filenames local to their owner. Put shared contracts at
-`owner/contract.ts`, group tests below a workspace owner declared in the
-development manifest, and use one lowercase word such as `reader.test.ts` or
-`raster.test.ts`; fixtures, runners, and support modules follow the same
-one-word filename rule. Tests-only workspaces use domain owners; product
-workspaces use the production responsibility they exercise. The development
-manifest and architecture gate are authoritative for the exact owner list,
-extension, limits, and discovery semantics.
+## Maintain docs, manifests, and prompts
+
+| Change | Maintained source | Verification |
+| --- | --- | --- |
+| Repository policy | Development manifest, schema, and consuming gates | `npm run quality:manifest` and `npm run quality:check` |
+| Asset API or authoring workflow | Runtime manifest source, API readers, and agent tests | `npm run test:web` |
+| Language concepts or examples | Relevant architecture/guide page and compiler regression | `npm run test:engine-core` and `npm run test:site` |
+| Connection instructions or default prompt | Skill entrypoint and `agents/openai.yaml` | `npm run test:skill` and a scoped instruction review |
+
+Keep the task-oriented copy prompt in
+[Get started](docs/guides/ai-agent-quick-start.md). The runtime manifest owns
+request details; the [precision guide](docs/guides/precision-modeling.md)
+owns the complete tested resize example. Inspect actual readers and compiler
+behavior before changing claims. A feature addition does not itself require
+changing development policy, source grammar version, or release version.
+
+Generated site pages, manifests, and skill packages come from these sources.
+Use the existing build commands instead of editing generated copies.
 
 ## Development setup
 

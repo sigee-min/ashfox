@@ -45,7 +45,6 @@ const inputSchema: CommandInputSchema = {
           items: opaqueObjectSchema
         },
         manifest: opaqueObjectSchema,
-        lock: opaqueObjectSchema
       },
       required: ['expectedWorkspaceHash', 'writes', 'deletes'],
       additionalProperties: false

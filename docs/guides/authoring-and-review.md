@@ -1,13 +1,15 @@
 # Authoring and review
 
-Start with an asset-codebase plan, not a single large file. Decide which rigs,
-motions, surfaces, and components should remain nominally reusable, then keep
-each entry as explicit assembly.
+Start with the requested outcome and the current asset. Preserve its block
+silhouette, pixel density, palette, and focal marks unless the user asks to
+change them. Share modules where reuse is useful; a small study can stay in
+one source file. Keep each entry's assembly explicit.
 
 ## Choose source owners
 
 | Declaration | Sole authority |
 | --- | --- |
+| `design` | exact shared dimensions, construction datums, and named checks |
 | `rig contract` | semantic joint tree, signed frames, channels, mirrors, sockets |
 | `skeleton` | complete concrete rest implementation of one rig |
 | `surface contract` | exact atlas/chart/material/slot ABI |
@@ -16,8 +18,20 @@ each entry as explicit assembly.
 | `motion` | rest-relative rotation/scale tracks for one nominal rig |
 | `asset` | skeleton choice, component instances, bindings, connections, motions, settings |
 
-An import is always an explicit quoted path plus alias. A reference is local or
-`alias.Name`. Matching names or similar shapes do not create compatibility.
+An import is always an explicit quoted path plus alias. Nominal declaration
+references are local or `alias.Name`; design values use `Design.field` or
+`alias.Design.field`, with an optional vector axis. Matching names or similar
+shapes do not create compatibility.
+
+## Precision without changing the style
+
+Use shared design values for linked geometry, rest origins, and chart sizes.
+Checks reject invalid authored relationships; they do not move geometry or
+solve constraints. Inspect current nodes, rest-pose dimensions, ground gap,
+and face UV when those facts matter, then re-inspect after the source change.
+Measurements cover full primitives, not visible alpha coverage or clearance
+throughout animation. The [precision modeling guide](precision-modeling.md)
+contains an executable resize example and the exact observation requests.
 
 ## Geometry before paint
 
@@ -35,6 +49,11 @@ An import is always an explicit quoted path plus alias. A reference is local or
 Define exact chart dimensions in the surface contract. A concrete surface owns
 the texture atlas, palette roles, chart origins/fills, optional stamps and
 blotch patterns, one seed-only clustered-grain pass, and optional voxel tone.
+
+Share exact chart dimensions through design fields. Anchor focal stamps in
+face-local pixels so resizing a face does not stretch the mark. Use explicit
+protection margins where tone and grain must leave surrounding detail intact;
+protection does not change alpha coverage or stop later stamps.
 
 Texture variation is source-deterministic. The seed changes the exact bounded
 microvariation; it is not runtime randomness. Texture cannot repair a missing
@@ -69,5 +88,5 @@ Compiler success proves language, closure, and canonical invariants. It cannot
 certify taste. A review issue belongs to the owning module and is resolved by
 one new atomic workspace change.
 
-For the exact declaration grammar, see
+For declaration syntax and ownership, see
 [Asset language](../architecture/asset-language.md).

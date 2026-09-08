@@ -16,6 +16,7 @@ Current scope:
   each element's complete owning texture set atomically, activates canonical
   authored idle motion when available, and holds on the complete model;
 - atomic workspace replacement through the Agent Command Port;
+- revision/workspace/build-bound node, rest-pose measurement, and face UV reads;
 - static production build with no application server routes.
 
 Run locally:
@@ -34,7 +35,7 @@ visible element in deterministic canonical element order, applies each
 element's complete owning texture set atomically, activates canonical authored
 idle motion when available, and holds on the complete model. The resulting GIF
 is the sole capture artifact for the active source revision; it is
-  non-persistent, transient evidence, not an authoring authority or a decision
+non-persistent, transient evidence, not an authoring authority or a decision
 log.
 
 ## Architecture
@@ -46,7 +47,7 @@ log.
   entry closure.
 - Each `ashfox-model 1` file contains one nominal module or asset. Package
   manifests and the exact compiler lock close imports and dependencies.
-- Rig, skeleton, surface, component, motion, and asset declarations own their
+- Design, rig, skeleton, surface, component, motion, and asset declarations own their
   explicit decisions; compiled geometry and textures are never a second source.
 - IndexedDB uses revision compare-and-write and cannot roll back newer state.
 - Three.js objects are ephemeral view state rebuilt from the selected entry.
@@ -65,14 +66,18 @@ log.
 `/workbench/agent-manifest.json` is generated from
 `src/features/agent/agentManifest.ts`; do not hand-edit built output or treat a
 README, prompt example, or cached command schema as an equivalent contract.
-Its `authoring.program.specification` publishes the current workspace,
-nominal declaration, import, binding, and selected-entry vocabulary.
+Its `authoring.language` describes current declarations and exact design
+values; `pageApi` describes operations and observation guards; `workflow`
+orders authoring and independent review. It is generated for both development
+and production builds from the same source.
 
 An integrating host should:
 
-1. fetch the current manifest at the start of a Studio session;
-2. inspect only current command schemas named by `nextActions`;
-3. lint and atomically submit one complete workspace change through
+1. connect to `https://ashfox.io/workbench/` and fetch its current manifest;
+   use a development URL only when explicitly selected, with its own manifest;
+2. inspect current state and relevant read-only evidence; fetch the current
+   command schema before constructing a write, using `nextActions` for guidance;
+3. preview and atomically submit one complete workspace change through
    `workspace.apply`;
 4. use inspect, present, and capture responses as revision-bound observations;
 5. refetch after a product update instead of assuming a cached grammar applies.

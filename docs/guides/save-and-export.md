@@ -12,14 +12,21 @@ entry closure, and creates a transient `AssetProject`. It never restores or
 trusts cached geometry, textures, animation channels, previews, reviews, or
 exports.
 
+Opening requires the exact-current compiler lock, not just an unchanged
+`ashfox-model 1` header. Older locks are rejected without automatic migration;
+keep the original file before any explicit adaptation to a newer compiler.
+
 An agent edit uses one `workspace.apply` operation containing:
 
 - the current expected workspace hash;
 - all file writes and deletes in the change;
-- full manifest or lock replacements when those records change;
+- a full manifest replacement when package configuration changes;
 - the package and entry to open after the atomic commit.
 
 Every declared entry must compile. Failure or a stale hash commits nothing.
+The engine regenerates local lock records and dependency pins. Caller-supplied
+`changes.lock` and edits to embedded CAS packages are rejected. This resealing
+does not weaken validation of a saved file on opening.
 
 ## Capture Build replay
 

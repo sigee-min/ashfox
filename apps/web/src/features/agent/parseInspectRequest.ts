@@ -1,6 +1,5 @@
 import {
   readExportAdapterInput,
-  readWorkspaceLock,
   readWorkspaceManifest,
   type WorkspaceChangeSet,
   type WorkspaceEntrySelector
@@ -145,11 +144,11 @@ const parseDelete = (
     `candidate.changes.deletes[${index}].path`,
     'non-empty normalized workspace path'
   );
-  if (!isHash(value.expectedHash)) return failure(
+  if (value.expectedHash !== undefined && !isHash(value.expectedHash)) return failure(
     `candidate.changes.deletes[${index}].expectedHash`,
     'sha256 file hash'
   );
-  return { path: value.path, expectedHash: value.expectedHash };
+  return { path: value.path, ...(value.expectedHash !== undefined ? { expectedHash: value.expectedHash } : {}) };
 };
 
 const parseWorkspaceChanges = (
@@ -160,7 +159,7 @@ const parseWorkspaceChanges = (
     'workspace change set object'
   );
   const unknown = rejectUnknownProperties(value, [
-    'expectedWorkspaceHash', 'writes', 'deletes', 'manifest', 'lock'
+    'expectedWorkspaceHash', 'writes', 'deletes', 'manifest'
   ]);
   if (unknown) return unknown;
   if (!isHash(value.expectedWorkspaceHash)) return failure(
@@ -191,15 +190,11 @@ const parseWorkspaceChanges = (
     ? undefined : readWorkspaceManifest(value.manifest);
   if (manifest !== undefined && !manifest.ok) return failure(
     'candidate.changes.manifest', 'valid closed workspace manifest');
-  const lock = value.lock === undefined ? undefined : readWorkspaceLock(value.lock);
-  if (lock !== undefined && !lock.ok) return failure(
-    'candidate.changes.lock', 'valid closed workspace lock');
   return {
     expectedWorkspaceHash: value.expectedWorkspaceHash,
     writes,
     deletes,
-    ...(manifest?.ok ? { manifest: manifest.value } : {}),
-    ...(lock?.ok ? { lock: lock.value } : {})
+    ...(manifest?.ok ? { manifest: manifest.value } : {})
   };
 };
 
@@ -285,15 +280,35 @@ export const parseInspectRequest = (
 
   if (value.kind === 'workspace') {
     const unknown = rejectUnknownProperties(value, [
-      'kind', 'read', 'candidate'
+      'kind', 'read', 'candidate', 'catalog', 'document'
     ]);
     if (unknown) return unknown;
     const hasRead = value.read !== undefined;
-    const hasCandidate = value.candidate !== undefined;
-    if (hasRead === hasCandidate) return failure(
+    if (['read', 'candidate', 'catalog', 'document'].filter((key) => value[key] !== undefined).length !== 1) return failure(
       '$',
-      'exactly one of read or candidate'
+      'exactly one of read, candidate, catalog, or document'
     );
+    if (value.catalog !== undefined || value.document !== undefined) {
+      const selector = value.catalog !== undefined ? 'catalog' : 'document';
+      const input = value[selector];
+      if (!isRecord(input)) return failure(selector, 'closed workspace inspection object');
+      const unknown = rejectUnknownProperties(input, selector === 'catalog'
+        ? ['expectedWorkspaceHash', 'offset', 'limit']
+        : ['expectedWorkspaceHash', 'document', 'offset', 'maxCodeUnits']);
+      if (unknown) return unknown;
+      if (!isHash(input.expectedWorkspaceHash)) return failure(`${selector}.expectedWorkspaceHash`, 'sha256 workspace hash');
+      if (typeof input.offset !== 'number' || !Number.isSafeInteger(input.offset) || input.offset < 0) return failure(`${selector}.offset`, 'non-negative safe integer');
+      if (selector === 'catalog') {
+        if (typeof input.limit !== 'number' || !Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 32) return failure('catalog.limit', 'integer from 1 to 32');
+        return { ok: true, request: { kind: 'workspace', catalog: {
+          expectedWorkspaceHash: input.expectedWorkspaceHash, offset: input.offset, limit: input.limit } } };
+      }
+      if (input.document !== 'manifest' && input.document !== 'lock') return failure('document.document', 'manifest or lock');
+      if (typeof input.maxCodeUnits !== 'number' || !Number.isSafeInteger(input.maxCodeUnits) || input.maxCodeUnits < 1 || input.maxCodeUnits > MAX_WORKSPACE_READ_CODE_UNITS) return failure('document.maxCodeUnits', 'integer from 1 to 2048');
+      return { ok: true, request: { kind: 'workspace', document: {
+        expectedWorkspaceHash: input.expectedWorkspaceHash, offset: input.offset,
+        document: input.document, maxCodeUnits: input.maxCodeUnits } } };
+    }
     if (hasRead) {
       const read = parseWorkspaceRead(value.read);
       return isParseFailure(read)

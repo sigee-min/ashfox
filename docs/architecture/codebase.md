@@ -52,7 +52,13 @@ registry, or network access.
 - The product hash identifies the resulting concrete asset.
 
 An edit supplies one expected workspace hash and one complete change set. The
-candidate package graph and every declared entry must compile before the
+change contains source writes/deletes and an optional full manifest, never a
+caller-authored lock. After structural validation, the engine computes local
+package hashes, parser-derived interface hashes, and dependency pins. Embedded
+CAS records remain immutable. Strict saved-file opening still validates the
+supplied lock; edit resealing is not a compatibility or repair reader.
+
+The candidate package graph and every declared entry must compile before the
 workspace head advances; every declared module must be reachable from at least
 one entry. Per-file hashes may improve diagnostics but never replace workspace
 authority. An unrelated entry may leave another entry's closure and product

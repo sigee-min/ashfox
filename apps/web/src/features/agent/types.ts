@@ -52,6 +52,9 @@ export type InspectRequest =
   | { kind: 'export-target'; adapter: ExportAdapterInput }
   | {
       kind: 'workspace';
+      catalog?: { readonly expectedWorkspaceHash: string; readonly offset: number; readonly limit: number };
+      document?: { readonly expectedWorkspaceHash: string; readonly document: 'manifest' | 'lock';
+        readonly offset: number; readonly maxCodeUnits: number };
       read?: {
         readonly expectedWorkspaceHash: string;
         readonly path: string;
@@ -68,6 +71,15 @@ export interface WorkspaceInspectData {
   readonly kind: 'workspace';
   readonly valid: boolean;
   readonly diagnostics: readonly WorkspaceDiagnostic[];
+  readonly catalog?: {
+    readonly workspaceHash: string;
+    readonly files: readonly { readonly path: string; readonly contentHash: string;
+      readonly codeUnits: number; readonly packageName: string;
+      readonly source: 'workspace' | 'cas'; readonly kind: 'entry' | 'module' }[];
+    readonly total: number; readonly offset: number; readonly nextOffset: number | null;
+  };
+  readonly documentChunk?: { readonly workspaceHash: string; readonly document: 'manifest' | 'lock';
+    readonly offset: number; readonly content: string; readonly done: boolean; readonly totalCodeUnits: number };
   readonly sourceChunk?: {
     readonly workspaceHash: string;
     readonly path: string;

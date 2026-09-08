@@ -184,7 +184,7 @@ window.ashfox.inspect({
 });
 ```
 
-Measurements report rest-pose world-aligned bounds, dimensions, and signed
+Measurements report rest-pose model-space axis-aligned bounds, dimensions, and signed
 gap to an infinite horizontal ground plane. The envelope includes entire
 primitives, including hidden geometry and alpha-cutout areas. It is not a
 visible silhouette, exact occupied volume, pairwise collision test, or proof

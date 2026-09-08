@@ -88,6 +88,10 @@ fs.writeFileSync(
 /workbench/agent-manifest.json
   Cache-Control: public, max-age=0, must-revalidate
 
+/workbench/reference/*
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: text/plain; charset=utf-8
+
 /skills/ashfox/latest.json
   Cache-Control: public, max-age=0, must-revalidate
 

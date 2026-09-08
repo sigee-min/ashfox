@@ -129,8 +129,6 @@ export interface WorkspaceChangeSet {
   readonly deletes: readonly WorkspaceFileDelete[];
   /** Full replacement; omission preserves the current value. */
   readonly manifest?: WorkspaceManifest;
-  /** Full replacement; omission preserves the current value. */
-  readonly lock?: WorkspaceLock;
 }
 
 /** Compiler-derived ABI input. It is intentionally not part of the source authority. */

@@ -27,7 +27,7 @@ Ashfox compiles a closed, reusable asset codebase into Minecraft-style entity,
 prop, and block products. Its portable authority is one `.ashfoxworkspace`:
 exact `ashfox-model 1` modules, package manifests, and a content-addressed lock.
 
-Source modules define nominal rig contracts, skeletons, surface contracts,
+Source modules define exact shared designs, nominal rig contracts, skeletons, surface contracts,
 deterministic textures, reusable components, motions, and explicit asset
 assemblies. A selected entry builds one immutable scene, texture set, and
 animation set. Generated products, reviews, replays, exports, and caches are
@@ -35,7 +35,15 @@ never editable authority.
 
 ## Create an asset
 
+Connect the agent to [ashfox.io Workbench](https://ashfox.io/workbench/) and
+give it this connection instruction:
+
+~~~text
 Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.
+~~~
+
+Append your task. See [Get started](docs/guides/ai-agent-quick-start.md) for
+creation, refinement, and read-only guidance.
 
 1. Open or create a Workbench workspace.
 2. Describe gameplay scale, facing, major masses, rig, reusable parts,
@@ -49,6 +57,7 @@ Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct 
 
 ## Reuse model
 
+- Designs share exact dimensions, construction datums, and named checks.
 - Rig contracts own semantic joints, frames, channels, mirrors, and sockets.
 - Skeletons provide complete concrete rest implementations.
 - Surface contracts own exact chart/material ABIs; surfaces own deterministic
@@ -62,7 +71,8 @@ imports, runtime packages, automatic retargeting, hidden UV generation, or
 target-specific source branches.
 
 See [the codebase map](docs/architecture/codebase.md),
-[the asset language](docs/architecture/asset-language.md), and the executable
+[the asset language](docs/architecture/asset-language.md),
+[precision modeling](docs/guides/precision-modeling.md), and the executable
 [`shared-creatures.ashfoxworkspace`](examples/shared-creatures.ashfoxworkspace).
 
 ## Development

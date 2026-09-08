@@ -15,11 +15,13 @@ model.
 
 ## Guides
 
-- [Create and refine](guides/authoring-and-review.md)
-- [Precision modeling](guides/precision-modeling.md)
-- [Save and export](guides/save-and-export.md)
-- [Choose an export format](guides/choose-a-format.md)
-- [Troubleshooting](guides/troubleshooting.md)
+- [Get started](guides/ai-agent-quick-start.md): ashfox.io connection and copy prompt.
+- [Agent workflow](guides/agent-workflow.md): complete public-API discovery, edit, and review sequence.
+- [Create and refine](guides/authoring-and-review.md): source ownership and visual decisions.
+- [Precision modeling](guides/precision-modeling.md): executable shared-dimension and pixel-anchor example.
+- [Save and export](guides/save-and-export.md): portable workspaces, review, and delivery.
+- [Choose an export format](guides/choose-a-format.md): target-specific capabilities.
+- [Troubleshooting](guides/troubleshooting.md): diagnostic, stale-read, and recovery paths.
 
 ## Architecture
 
@@ -27,7 +29,7 @@ model.
   direction.
 - [Asset codebase](architecture/asset-codebase.md) defines packages, nominal
   reuse, compiler-private typed forms, entry builds, and deliberate exclusions.
-- [Asset language](architecture/asset-language.md) defines modules, contracts,
+- [Asset language](architecture/asset-language.md) explains designs, modules, contracts,
   components, surfaces, motions, and explicit assembly.
 - [Review and delivery](architecture/review.md) separates rendered judgment and
   target delivery from source authority.
@@ -35,6 +37,11 @@ model.
 These names identify one exact-current contract, not selectable runtime
 pipelines or compatibility aliases. Only the current explicit source reader
 is executable.
+
+For live agent operation, fetch the
+[runtime manifest](https://ashfox.io/workbench/agent-manifest.json) rather than
+copying API rules from a prompt or cached guide. Repository development has a
+separate development manifest; it does not define asset-editing requests.
 
 ## Local data
 

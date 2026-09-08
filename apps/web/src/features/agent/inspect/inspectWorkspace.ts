@@ -16,6 +16,7 @@ import type {
   InspectRequest
 } from '../types';
 import { DETAIL_INSPECT_LIMIT } from './inspectResult';
+import { inspectWorkspaceCatalog } from './workspaceCatalog';
 
 type WorkspaceRead = NonNullable<Extract<
   InspectRequest,
@@ -28,7 +29,7 @@ type WorkspaceCandidate = NonNullable<Extract<
 
 const failure = (
   project: AssetProject,
-  code: 'invalid_request' | 'not_found',
+  code: 'invalid_request' | 'not_found' | 'stale_revision',
   path: string,
   expected: string
 ): InspectResult => ({
@@ -53,7 +54,7 @@ const readWorkspace = (
   if (read.expectedWorkspaceHash !== project.build.workspaceHash) {
     return failure(
       project,
-      'invalid_request',
+      'stale_revision',
       'read.expectedWorkspaceHash',
       project.build.workspaceHash
     );
@@ -128,12 +129,13 @@ export const inspectWorkspace = (
   project: AssetProject,
   request: Extract<InspectRequest, { kind: 'workspace' }>
 ): InspectResult => {
+  if (request.catalog !== undefined || request.document !== undefined) return inspectWorkspaceCatalog(project, request);
   if (request.read !== undefined) return readWorkspace(project, request.read);
   if (request.candidate === undefined) return failure(
     project,
     'invalid_request',
     '$',
-    'exactly one of read or candidate'
+    'exactly one of read, candidate, catalog, or document'
   );
   return candidate(project, request.candidate);
 };

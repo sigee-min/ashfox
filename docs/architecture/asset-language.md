@@ -34,16 +34,18 @@ asset fox {
 ```
 
 Imports are quoted explicit paths plus a required local alias. A qualified
-reference contains that alias and one exported declaration name. Imports are
+nominal reference contains that alias and one exported declaration name. Imports are
 resolved only through the owning package manifest and exact workspace lock.
 
-## Rig and skeleton
+## Shared design values
 
 For exact shared `design` fields, named boolean checks, construction datums,
 pixel-grid conversion, and face-local stamp anchors, see the executable
 [precision modeling guide](../guides/precision-modeling.md). Imported design
 values use `alias.Design.field`; nominal declaration references remain
 `alias.Name`. Design values are resolved and erased before Typed HIR.
+
+## Rig and skeleton
 
 A rig contract owns the semantic joint tree, signed frames, allowed channels,
 mirror pairs, and sockets. A skeleton implements exactly one nominal rig and

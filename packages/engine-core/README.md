@@ -20,9 +20,10 @@ Key boundaries:
 - `src/project/workspace/` owns logical paths, manifests, locks, hashes,
   selected-entry closure, and structural change staging.
 - `src/compiler/program/asset/` owns nominal Typed HIR, exact instantiation,
-  texture planning, and target-neutral canonical lowering.
+  shared design evaluation, texture planning, and target-neutral canonical lowering.
+- `src/model/measurement/` owns read-only rest-pose bounds and face UV evidence.
 - `src/projectFile/workspace/` owns the canonical portable workspace codec.
-- The semantic workspace change boundary compiles every affected entry before
+- The semantic workspace change boundary compiles every declared entry before
   committing one workspace-hash CAS candidate.
 - `src/provenance/digest.ts` owns neutral SHA-256 helpers.
 - `src/validation/` independently validates canonical and target output.

@@ -11,11 +11,12 @@ reader, implicit include, or second grammar version.
 
 ## Authority boundaries
 
-There are three distinct identities.
+There are four distinct build identities, separate from the host revision.
 
 - The workspace hash protects atomic multi-file edits.
 - The entry closure hash identifies the exact transitive source and locked
   dependencies used to build one asset.
+- The build key binds that closure to the compiler and policy fingerprints.
 - The product hash identifies the concrete scene, textures, and animations.
 
 Changing an unrelated entry may leave another entry's closure and product hash
@@ -43,6 +44,15 @@ workspace.
 
 Ashfox uses domain declarations instead of classes or inheritance.
 
+### Design
+
+A design owns typed exact values and named boolean checks. It can connect
+geometry dimensions, skeleton origins, chart sizes, and motion values without
+duplicating coordinates. Exported fields cross explicit imports; dependencies
+must be acyclic. Evaluation substitutes exact values before Typed HIR and
+does not retain solver state, create bones, or fit geometry. See the
+[executable precision guide](../guides/precision-modeling.md).
+
 ### Rig
 
 A rig is a nominal motion ABI. It declares one semantic root, the required
@@ -58,7 +68,8 @@ or runtime state.
 
 A skeleton implements exactly one rig. It binds every required semantic joint
 to one concrete bone and supplies its rest origin and orthonormal local frame.
-Extra private bones are permitted but cannot be targeted by rig-bound motion.
+Extra skeleton binds are rejected. Private lexical geometry bones belong to
+components, not to additional undeclared skeleton joints.
 
 ### Component
 
@@ -89,14 +100,18 @@ chart topology. A concrete surface owns pixel appearance. Instantiation binds
 them into one typed surface handle, so a texture owner and an unrelated chart
 can never be paired.
 
-The selected asset entry owns atlas placement and packing policy. Imported
-modules cannot silently move charts or create target-specific texture forks.
+The concrete surface owns each chart's explicit atlas `origin`; an asset
+entry selects and binds that surface. Shared design fields can calculate
+origins, but there is no automatic atlas packing or target-specific fork.
 
-At `density = 16`, one model unit occupies one chart texel. A flat chart's ABI
+The current language requires exactly `density = 16`: one model unit occupies
+one chart texel. `texels(length, factor)` is an explicit exact conversion, not
+an alternative asset-density setting. A flat chart's ABI
 dimensions equal its plane dimensions. A box with integer size `(x, y, z)`
 requires the explicit canonical net `(2x + 2z, y + z)`. Reusing one chart is
 valid only when every bound primitive has exactly the same dimensions. No
 compiler phase invents, scales, or packs UVs.
+
 ### Motion
 
 A reusable motion is nominally bound to one rig and addresses semantic joints,
@@ -104,9 +119,9 @@ not scene node strings. Rotation and scale keys are rest-relative. The compiler
 transforms them through signed joint frames using matrix or quaternion math and
 then deterministically bakes concrete entry channels.
 
-Position, entity root motion, end-effector goals, IK, and foot locking are
-separate effects. They are rejected unless an explicit, typed policy implements
-their semantics. Bone-name matching and automatic length scaling are forbidden.
+Position tracks, inferred entity root motion, end-effector goals, IK, and foot
+locking are not supported. Bone-name matching and automatic length scaling
+are forbidden.
 
 The instantiator maps every rotation or scale vector from the rig joint's
 signed semantic basis into the selected skeleton bind basis before canonical
@@ -130,6 +145,7 @@ there is no variant declaration or arbitrary emitted-node override.
 closed workspace + lock
   -> path and package graph validation
   -> parse and nominal name resolution
+  -> bounded exact design evaluation and named checks
   -> immutable Typed HIR
   -> immutable Instantiated Asset IR
   -> rig binding, surface binding, frame mapping, and deterministic bake
@@ -171,7 +187,7 @@ every declared source before an atomic change becomes authoritative.
 
 Workspace resolution produces one compiler-private, immutable entry closure.
 Every reachable source appears once with its parsed source unit and already
-resolved package-qualified import edges. Typed HIR consumes that sealed closure
+resolved package-qualified import edges. Design elaboration and Typed HIR consume that sealed closure
 and never parses import specifiers or consults the workspace again. This keeps
 the graph, type checker, cache identity, and diagnostic ownership on one
 resolution authority.
@@ -183,7 +199,11 @@ ABI promise. Import aliases and source-unit display names are not nominal
 symbol identity.
 
 Workspace edits use one expected workspace hash and one atomic change set. The
-candidate graph and every declared entry are validated and compiled before the
+engine derives local lock records from the candidate sources and manifest;
+`changes.lock` is a rejected legacy input. CAS records and source bytes remain
+immutable, and no dependency fetching is added to editing. Saved-file opening
+continues to validate its exact lock independently of this resealing step.
+The candidate graph and every declared entry are validated and compiled before the
 branch head advances. Failure commits neither source nor products. Per-file
 CAS is not an authority.
 
@@ -193,8 +213,8 @@ source, validates every entry, compiles every entry, and rejects an orphan
 module. This keeps reusable libraries source-visible without creating a pool
 of semantically unchecked code beside the build graph.
 
-The narrow host surface is workspace read/write, atomic workspace change, and
-selected-entry compile. Parser AST, resolved closures, Typed HIR, instantiated
+The host surface includes workspace read/write, atomic workspace change,
+selected-entry compile, and read-only product measurements. Parser AST, resolved closures, Typed HIR, instantiated
 plans, source maps, cache records, and package registries are not root exports.
 Selected-entry compile has one closed result: success contains only `ok`, the
 concrete model, and its workspace/closure/build identity; failure contains only
@@ -204,7 +224,8 @@ partially typed graph or recoverable intermediate representation.
 ## Diagnostics and budgets
 
 Every source-owned diagnostic has a package, logical path, and file-local span.
-The compiler reports the owning import, declaration, binding, or assembly site.
+The compiler reports the owning import, declaration, binding, or assembly site
+where available; canonical whole-product failures can use the entry-root span.
 Diagnostic ordering includes the logical source path.
 
 Workspace file/package/entry/module counts, path and source size, import depth

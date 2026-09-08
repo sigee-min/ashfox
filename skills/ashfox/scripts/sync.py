@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Safely synchronize the installed ashfox skill from ashfox.io."""
+"""Check ashfox skill updates; install only with explicit --install."""
 
 from __future__ import annotations
 
@@ -180,6 +180,7 @@ def atomic_write(target: Path, data: bytes) -> None:
 
 
 def apply_release(root: Path, downloaded: dict[str, bytes]) -> None:
+    require_install_directory(root)
     paths = frozenset(downloaded)
     if not CORE_PATHS.issubset(paths) or not paths.issubset(ALLOWED_PATHS):
         raise SyncError("Downloaded release does not contain canonical core files.")
@@ -212,17 +213,25 @@ def apply_release(root: Path, downloaded: dict[str, bytes]) -> None:
         ) from error
 
 
+def require_install_directory(root: Path) -> None:
+    canonical = root.resolve()
+    if any((ancestor / ".git").exists() for ancestor in (canonical, *canonical.parents)):
+        raise SyncError("Refusing to overwrite a skill inside a repository checkout.")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check and install the latest verified ashfox skill files."
+        description="Check for verified ashfox skill updates without writing files."
     )
     parser.add_argument(
-        "--check",
+        "--install",
         action="store_true",
-        help="report an available update without writing files",
+        help="explicitly install an update into a non-repository skill folder",
     )
     arguments = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    if arguments.install:
+        require_install_directory(root)
     descriptor = fetch(DESCRIPTOR_URL, MAX_DESCRIPTOR_BYTES)
     release, entries = parse_descriptor(descriptor)
     expected = {
@@ -238,7 +247,7 @@ def main() -> int:
     if not changed:
         print(f"ashfox skill {release} is current")
         return 0
-    if arguments.check:
+    if not arguments.install:
         print(f"ashfox skill {release} update available: {', '.join(changed)}")
         return 2
     downloaded = download_release(entries, active_paths)
