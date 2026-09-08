@@ -48,7 +48,7 @@ export interface VisualReviewObservation {
  * receipt remains independently reviewable, so a first left-side observation
  * never claims that an unobserved opposite frame was compared.
  */
-export const VISUAL_REVIEW_BILATERAL_CHECK: VisualReviewCheck = Object.freeze({
+const VISUAL_REVIEW_BILATERAL_CHECK: VisualReviewCheck = Object.freeze({
   id: 'source.bilateral-detail',
   issue: 'feature_detail',
   instruction:
