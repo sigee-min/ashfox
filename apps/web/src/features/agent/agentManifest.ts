@@ -57,7 +57,7 @@ const minecraftStyle = Object.freeze({
 });
 
 export const agentManifest = {
-  schemaVersion: 3,
+  schemaVersion: 1,
   protocol: agentCommandProtocol.protocol,
   workbench: agentCommandProtocol.workbench,
   href: agentCommandProtocol.href,

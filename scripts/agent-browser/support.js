@@ -163,7 +163,7 @@
     const response = await fetch('/workbench/agent-manifest.json', { cache: 'no-store' });
     expect(response.ok, 'The public runtime manifest was not reachable.', response.status);
     const manifest = await response.json();
-    expect(manifest.schemaVersion >= 1, 'The runtime manifest has no schema version.');
+    expect(manifest.schemaVersion === 1, 'Only runtime manifest schema version 1 is supported.');
     expect(manifest.pageApi?.global === 'ashfox', 'The manifest does not name window.ashfox.');
     const methods = {
       inspect: manifest.pageApi.inspectMethod,

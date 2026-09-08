@@ -1,6 +1,8 @@
 # Agent workflow
 
-This is the execution guide for runtime manifest schema version 3. Connect to
+This is the execution guide for runtime manifest schema version 1. Only the
+current contract is supported; earlier contracts are not migrated or aliased.
+Connect to
 `https://ashfox.io/workbench/` by default and fetch its
 `agent-manifest.json` through direct HTTP. When the user explicitly selects a
 development Workbench, use that origin's manifest and linked reference files.

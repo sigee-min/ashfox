@@ -7,7 +7,7 @@ import {
   computeToolRegistryHash
 } from '../../../blockbench-contracts/src/mcpSchemas/policy';
 
-assert.match(CONTRACT_SCHEMA_VERSION, /^\d{4}-\d{2}-\d{2}$/);
+assert.equal(CONTRACT_SCHEMA_VERSION, '1');
 assert.equal(RUNTIME_SCHEMA_VERSION, CONTRACT_SCHEMA_VERSION);
 
 assert.equal(DEFAULT_TOOL_REGISTRY.hash, computeToolRegistryHash(DEFAULT_TOOL_REGISTRY.tools));

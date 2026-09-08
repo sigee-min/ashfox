@@ -1,6 +1,6 @@
 import type { JsonSchema } from './types';
 
-export const TOOL_SCHEMA_VERSION = '2026-08-24';
+export const TOOL_SCHEMA_VERSION = '1';
 
 export type ToolRegistryHashEntry = {
   name: string;
