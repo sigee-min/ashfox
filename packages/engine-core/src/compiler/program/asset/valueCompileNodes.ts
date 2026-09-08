@@ -156,6 +156,21 @@ export const typedCall = (
   expected: AssetExpressionType | undefined,
   diagnostics: AssetValueDiagnostic[]
 ): AssetTypedExpression | null => {
+  const relation = expression.name;
+  if (relation === 'texels' || relation === 'mirror_x' || relation === 'mirror_y' ||
+      relation === 'mirror_z' || relation === 'box_origin') {
+    const inputs = relation === 'texels' ? ['unit', 'integer'] : relation === 'box_origin'
+      ? ['vec3<unit>', 'vec3<unit>', 'vec3<ratio>'] : ['vec3<unit>', 'unit'];
+    const type = relation === 'texels' ? 'texel' : 'vec3<unit>';
+    if (children.length !== inputs.length || children.some((child, index) => child.type !== inputs[index])) {
+      diagnostics.push(diagnostic('asset.value.invalid-call',
+        relation + ' requires (' + inputs.join(', ') + ').', expression.span));
+      return null;
+    }
+    if (!fitsExpected(type, expected, expression.span, diagnostics)) return null;
+    return freeze({ kind: 'call', name: relation, args: freeze([...children]), type,
+      span: immutableSpan(expression.span) });
+  }
   if (expression.name !== 'vec2' && expression.name !== 'vec3' && expression.name !== 'abs' &&
     expression.name !== 'min' && expression.name !== 'max' && expression.name !== 'clamp') {
     diagnostics.push(diagnostic('asset.value.unknown-call',

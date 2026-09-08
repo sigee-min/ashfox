@@ -18,7 +18,7 @@ export const ASHFOX_MODEL_GRAMMAR = 'ashfox-model 1' as const;
  * source header is unchanged.
  */
 export const ASHFOX_WORKSPACE_COMPILER_FINGERPRINT =
-  'ashfox-asset-compiler:workspace+typed-hir+instantiation+canonical:v1' as const;
+  'ashfox-asset-compiler:workspace+design+anchored-pixels+typed-hir+instantiation+canonical:v1' as const;
 
 export type Sha256Digest = `sha256:${string}`;
 
@@ -129,8 +129,6 @@ export interface WorkspaceChangeSet {
   readonly deletes: readonly WorkspaceFileDelete[];
   /** Full replacement; omission preserves the current value. */
   readonly manifest?: WorkspaceManifest;
-  /** Full replacement; omission preserves the current value. */
-  readonly lock?: WorkspaceLock;
 }
 
 /** Compiler-derived ABI input. It is intentionally not part of the source authority. */

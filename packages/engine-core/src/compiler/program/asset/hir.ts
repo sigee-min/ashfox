@@ -37,6 +37,7 @@ import {
 } from './definition';
 import { buildComponent } from './component';
 import { buildMotion } from './motion';
+import { elaborateAssetDesigns } from './design';
 
 const freeze = <T>(value: T): T => Object.freeze(value);
 const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
@@ -225,7 +226,9 @@ export const buildAssetHir = (
         'Selected asset closure exceeds the file budget.');
       throw new AssetBudgetAbort();
     }
-    const states = createStates(closure, mutableSession, issue);
+    const elaborated = elaborateAssetDesigns(closure, issue);
+    if (diagnostics.length > 0) throw new AssetBudgetAbort();
+    const states = createStates(elaborated, mutableSession, issue);
     mutableSession.states = states;
     const resolve = resolveFor(mutableSession, issue);
     const context: AssemblyContext = freeze({

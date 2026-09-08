@@ -16,6 +16,8 @@ import type {
 } from '../../src/features/workbench/viewport/viewportTypes';
 import { FRAME_EVIDENCE_FIXTURE } from '../fixtures/frame';
 
+const documentReference = {};
+
 const session = (
   mode: PresentationSession['mode'] = 'frame',
   review: PresentationSession['review'] = 'next'
@@ -23,6 +25,7 @@ const session = (
   nonce: 7,
   projectId: 'project-test',
   revision: 'local-0001',
+  documentReference,
   lastFrameNonce: null,
   review,
   purpose: review === 'next' ? 'delivery' : 'preview',
@@ -49,6 +52,7 @@ const frame = (
   frameNonce: 11,
   projectId: 'project-test',
   revision: 'local-0001',
+  documentReference,
   camera: 'front',
   cameraMatrix: [
     1, 0, 0, 0,
@@ -131,10 +135,27 @@ if (previewResult.result?.ok) {
 
 const wrongCamera = observePresentationFrame(
   session(),
-  frame({ camera: 'side', frameNonce: 12 })
+  frame({ camera: 'right', frameNonce: 12 })
 );
 assert.equal(wrongCamera.result, null);
 assert.equal(wrongCamera.session?.lastFrameNonce, 12);
+
+const candidateDocument = {};
+const candidateFrame = observePresentationFrame(
+  session(),
+  frame({ documentReference: candidateDocument, frameNonce: 13 })
+);
+assert.ok(candidateFrame.session);
+assert.equal(candidateFrame.result, null);
+const canonicalAfterCandidate = observePresentationFrame(
+  session(),
+  frame({ frameNonce: 14 })
+);
+assert.equal(
+  canonicalAfterCandidate.result?.ok,
+  true,
+  'a canonical delivery presentation accepts only its canonical viewport document'
+);
 
 const invalidFrameNonce = observePresentationFrame(
   session(),

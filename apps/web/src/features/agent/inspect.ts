@@ -29,6 +29,7 @@ import type {
   InspectRequest,
   InspectResult
 } from './types';
+import { inspectMeasurement } from './inspect/inspectMeasurement';
 
 export const inspectProject = (
   project: AssetProject,
@@ -52,6 +53,10 @@ export const inspectProject = (
   }
 
   switch (request.kind) {
+    case 'measurement':
+    case 'surface':
+    case 'nodes':
+      return inspectMeasurement(project, request);
     case 'command':
       return inspectCommand(document, request.name);
     case 'finding':
@@ -67,7 +72,7 @@ export const inspectProject = (
         error: {
           code: 'invalid_request',
           path: 'kind',
-          expected: 'command, finding, export-target, or workspace'
+          expected: 'command, finding, export-target, workspace, measurement, surface, or nodes'
         }
       };
   }

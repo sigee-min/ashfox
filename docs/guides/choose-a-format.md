@@ -1,6 +1,6 @@
 # Choose an Export Format
 
-Choose the adapter used to deliver an already-materialized canonical asset.
+Choose the format your game or 3D tool accepts. Use GLB for a general-purpose single file.
 
 | Format | Choose it when | Download |
 | --- | --- | --- |
@@ -10,50 +10,21 @@ Choose the adapter used to deliver an already-materialized canonical asset.
 | GLB | A game engine, 3D tool, or viewer should receive one portable file | One `.glb` with embedded geometry, animation, and textures |
 | glTF | A 3D pipeline prefers editable JSON and separate resources | ZIP with `.gltf`, binary data, and textures |
 
-Minecraft adapters show one read-only **Current target version** resolved from
-the engine export registry. There is no project field, version selector,
-fallback, or arbitrary version string. Each format has exactly one current
-registry entry; changing the external compatibility target is a code-and-test
-update, not an artifact request option. Bedrock/Gecko geometry and animation format
-versions remain explicit external file contracts inside that current entry.
-
-The current authority as of 2026-08-25 is:
-
-| Target | Runtime authority | Serialized external contract |
-| --- | --- | --- |
-| Java block | Minecraft Java 26.2 | resource-pack format 88 |
-| GeckoLib 5 | Minecraft Java 26.2; the target ID owns the GeckoLib 5 family | geometry 1.12.0, animation 1.8.0 |
-| Bedrock | Minecraft Bedrock 26.45 | geometry 1.21.0, animation 1.8.0 |
-| GLB / glTF | glTF 2.0 | asset version 2.0 |
-
-These are deliberately different kinds of version. The current Java and
-Bedrock runtime targets follow the official [Java 26.2 release](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-2)
-and [Bedrock 26.45 hotfix](https://feedback.minecraft.net/hc/en-us/articles/48149564061965-Minecraft-Bedrock-Edition-26-44-45-Hotfix-Changelog).
-The Bedrock geometry value remains a real wire contract documented by
-[Microsoft's geometry 1.21.0 schema](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/visualreference/geometry.v1.21.0?view=minecraft-bedrock-stable).
-GeckoLib's [upstream release history](https://github.com/bernie-g/geckolib/releases)
-uses patch versions, but those versions are not a geometry or animation field
-and are therefore not copied into exported assets;
-the `geckolib5` target ID owns the supported major family. Updating any target
-requires replacing this one registry authority and its target decoders
-atomically—never adding another selectable or fallback version.
-
-The selected format is an export-only choice, not a project setting or
-authoring mode. Changing it cannot rewrite canonical geometry, textures,
-hierarchy, clips, events, or the workspace. Export adapts a transient
-copy and reports anything it converted or omitted from that artifact.
+The Export menu shows the supported target version and any conversions or
+omissions. Check these against the project receiving the files before downloading.
+Exporting does not change your editable workspace.
 
 ## Java block
 
 Use Java block for a static block that should drop into a Java resource-pack
 layout. The ZIP contains `pack.mcmeta`, the blockstate, model JSON, and texture
-files for the compiler's current Java target version.
+files for the target version shown in Export.
 
 The receiving pack or mod must already reference the matching block resource
 ID. This export supplies its visual assets; it does not register a new gameplay
 block.
 
-This target does not include animation. Canonical clips remain in the project
+This target does not include animation. Animation clips remain in the workspace
 and the export receipt lists them as omitted from the Java block artifact.
 Choose GeckoLib 5 when the receiving mod needs those clips.
 
@@ -95,17 +66,8 @@ do not have a direct glTF equivalent. GLB and glTF artifacts omit those events
 and disclose each omission in the export receipt; the source events stay in the
 project.
 
-## Delivery choices
-
-- Embedded GLB is one finished 3D asset.
-- Java block, GeckoLib 5, and Bedrock require several target files, delivered
-  as one ZIP.
-- glTF normally uses several related resources, delivered as one ZIP.
-
 ## Before exporting
 
-Review canonical animation, texture assignment, and pixel scale first. Then
-choose the export adapter and resolve any adapter-specific finding in the
-Export menu. Namespace and path are request inputs; the target version comes
-only from the current engine registry. A successful export returns the
-converted and omitted receipt alongside artifact metadata.
+Check the model and animation in Workbench, then choose a format in the Export
+menu. Resolve any reported issues and review conversions or omissions before
+downloading. Keep a `.ashfoxworkspace` copy to make changes later.

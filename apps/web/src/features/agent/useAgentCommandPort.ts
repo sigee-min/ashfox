@@ -22,7 +22,6 @@ import { useAgentCommandSubmission } from './port/submission';
 import type { VisualReviewReceipt } from '../../application/review';
 import type {
   AgentCaptureRequest,
-  InspectResult,
   InspectRequest,
   PresentResult,
   VisualReviewDecisionRequest,
@@ -45,15 +44,8 @@ interface UseAgentCommandPortInput {
   onReview: (request: VisualReviewDecisionRequest) => Promise<PresentResult>;
   onCapture: (request: CaptureArtifactRequest, lease: OperationLeaseToken) => Promise<FileOperationRunResult<ArtifactFile>>;
   getVisualReviews: (projectId: string, revision: string) => readonly VisualReviewReceipt[];
-  onCandidatePreview: (token: string | null) => void;
   operationLease: OperationLease;
 }
-
-const candidatePreviewTokenFrom = (result: InspectResult): string | null => {
-  if (!result.ok || typeof result.data !== 'object' || result.data === null) return null;
-  const data = result.data as { previewToken?: unknown };
-  return typeof data.previewToken === 'string' ? data.previewToken : null;
-};
 
 export const useAgentCommandPort = ({
   project,
@@ -69,7 +61,6 @@ export const useAgentCommandPort = ({
   onReview,
   onCapture,
   getVisualReviews,
-  onCandidatePreview,
   operationLease
 }: UseAgentCommandPortInput): AgentCommandPortStatus => {
   const [status, setStatus] = useState<AgentCommandPortStatus>('connecting');
@@ -84,7 +75,6 @@ export const useAgentCommandPort = ({
   const onReviewRef = useLatestValue(onReview);
   const onCaptureRef = useLatestValue(onCapture);
   const getVisualReviewsRef = useLatestValue(getVisualReviews);
-  const onCandidatePreviewRef = useLatestValue(onCandidatePreview);
   const { submit, cancelPending } = useAgentCommandSubmission({
     project,
     commandOutcomes,
@@ -105,9 +95,6 @@ export const useAgentCommandPort = ({
         getVisualReviewsRef.current(current.id, current.revision),
         operationLease.currentOwner()
       );
-      if (request?.kind === 'workspace' && request.candidate !== undefined) {
-        onCandidatePreviewRef.current(candidatePreviewTokenFrom(result));
-      }
       return result;
     },
     currentProjectId: () => projectRef.current.id,

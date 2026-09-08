@@ -8,7 +8,10 @@ import {
 import { inspectProject } from '../../src/features/agent/inspect';
 import { parseInspectRequest } from '../../src/features/agent/parseInspectRequest';
 import type { WorkspaceInspectData } from '../../src/features/agent/types';
-import { candidatePreviewFor } from '../../src/features/agent/candidatePreview';
+import {
+  candidatePreviewFor,
+  createCandidatePreview
+} from '../../src/features/agent/candidatePreview';
 import { createWorkbenchProject } from '../fixtures/project';
 
 const project = createWorkbenchProject();
@@ -82,6 +85,17 @@ if (typeof token !== 'string') throw new Error('candidate token missing');
 const preview = candidatePreviewFor(project, token);
 assert.ok(preview);
 assert.equal(preview?.build.productHash, project.build.productHash);
+
+const lruTokens = Array.from({ length: 9 }, () =>
+  createCandidatePreview(project, project)
+);
+assert.ok(lruTokens.every((entry): entry is string => typeof entry === 'string'));
+assert.equal(
+  candidatePreviewFor(project, lruTokens[0]!),
+  null,
+  'candidate previews use a bounded LRU instead of wall-clock expiry'
+);
+assert.ok(candidatePreviewFor(project, lruTokens.at(-1)!));
 
 for (const invalid of [
   { kind: 'workspace' },

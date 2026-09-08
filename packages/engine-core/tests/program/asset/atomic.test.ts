@@ -32,8 +32,7 @@ const invalid = applyWorkspaceChangeSet(current, {
     source: invalidSource,
     expectedHash: computeSourceContentHash(VALID_ASSET_SOURCE)
   }],
-  deletes: [],
-  lock: invalidWorkspace.lock
+  deletes: []
 });
 assert.equal(invalid.ok, false, 'semantic failure must reject the entire staged workspace');
 if (!invalid.ok) {
@@ -66,25 +65,13 @@ const invalidWolf = VALID_ASSET_SOURCE.replace('size = (4u, 4u, 4u);',
   'size = (5u, 4u, 4u);');
 const invalidFox = foxSource.replace('size = (4u, 4u, 4u);',
   'size = (5u, 4u, 4u);');
-const multiInvalid = workspaceFixture([
-  { path: 'pack/wolf.ashfox', source: invalidWolf },
-  { path: 'pack/fox.ashfox', source: invalidFox }
-], {
-  root: 'pack',
-  packageName: 'pack',
-  entries: [
-    { name: 'fox', path: 'fox.ashfox' },
-    { name: 'wolf', path: 'wolf.ashfox' }
-  ]
-});
 const bounded = applyWorkspaceChangeSet(multiCurrent, {
   expectedWorkspaceHash: computeWorkspaceHash(multiCurrent),
   writes: [
     { path: 'pack/fox.ashfox', source: invalidFox },
     { path: 'pack/wolf.ashfox', source: invalidWolf }
   ],
-  deletes: [],
-  lock: multiInvalid.lock
+  deletes: []
 }, { limits: { maxDiagnostics: 1 } });
 assert.equal(bounded.ok, false);
 if (!bounded.ok) assert.equal(bounded.diagnostics.length, 1,

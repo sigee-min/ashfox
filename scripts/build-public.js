@@ -88,6 +88,10 @@ fs.writeFileSync(
 /workbench/agent-manifest.json
   Cache-Control: public, max-age=0, must-revalidate
 
+/workbench/reference/*
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: text/plain; charset=utf-8
+
 /skills/ashfox/latest.json
   Cache-Control: public, max-age=0, must-revalidate
 
@@ -126,9 +130,13 @@ fs.writeFileSync(
 /media/showcase/*
   Cache-Control: public, max-age=31536000, immutable
 
-/examples/shared-creatures.ashfoxworkspace
+/examples/*.ashfoxworkspace
   Cache-Control: public, max-age=0, must-revalidate
   Content-Type: application/vnd.ashfox.workspace+json
+
+/examples/*.glb
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: model/gltf-binary
 
 `
 );

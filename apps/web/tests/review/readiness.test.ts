@@ -9,6 +9,7 @@ import {
 } from '../../src/features/workbench/presentation/status';
 import {
   isValidVisualReviewReceipt,
+  visualReviewChecksForCamera,
   visualReviewReceiptFrom
 } from '../../src/application/review';
 import {
@@ -61,12 +62,12 @@ const reviews = requiredVisualReviews(compiled.document).map((review, index) =>
 );
 const required = requiredVisualReviews(compiled.document);
 assert.deepEqual(
-  required.slice(0, 5).map((review) => review.camera),
-  ['perspective', 'native', 'front', 'side', 'top'],
+  required.slice(0, 6).map((review) => review.camera),
+  ['perspective', 'native', 'front', 'left', 'right', 'top'],
   'delivery review covers every static camera'
 );
 assert.deepEqual(
-  required.slice(5).map((review) => [
+  required.slice(6).map((review) => [
     review.mode,
     review.camera,
     review.clipId
@@ -77,6 +78,41 @@ assert.deepEqual(
     clipId
   ]),
   'delivery review covers every canonical animation clip'
+);
+const leftReceipt = reviews.find(
+  (receipt) => receipt.observation.data.camera === 'left'
+);
+const rightReceipt = reviews.find(
+  (receipt) => receipt.observation.data.camera === 'right'
+);
+assert.ok(leftReceipt && rightReceipt);
+assert.equal(
+  leftReceipt.observation.data.reviewChecks.length,
+  visualReviewChecksForCamera('left').length,
+  'left review remains independently bound to its observed checks'
+);
+assert.equal(
+  leftReceipt.observation.data.reviewChecks.some(
+    (check) => check.id === 'source.bilateral-detail'
+  ),
+  false,
+  'left review does not claim an unobserved bilateral comparison'
+);
+assert.ok(
+  rightReceipt.observation.data.reviewChecks.some(
+    (check) => check.id === 'source.bilateral-detail'
+  ),
+  'right review explicitly compares authored bilateral detail'
+);
+const swappedChecklists = structuredClone(rightReceipt.observation);
+Object.defineProperty(swappedChecklists.data, 'reviewChecks', {
+  configurable: true,
+  value: visualReviewChecksForCamera('left')
+});
+assert.equal(
+  isPendingVisualReviewObservation(swappedChecklists, compiled.document),
+  false,
+  'a right frame cannot carry the left checklist'
 );
 const ready = presentCreationStatus(
   compiled,
@@ -150,6 +186,16 @@ assert.equal(
   isValidVisualReviewReceipt(forgedCamera, compiled),
   false,
   'changing the observed camera invalidates the receipt fingerprint'
+);
+const forgedOppositeFrame = structuredClone(rightReceipt);
+Object.defineProperty(forgedOppositeFrame.observation.data, 'camera', {
+  configurable: true,
+  value: 'left'
+});
+assert.equal(
+  isValidVisualReviewReceipt(forgedOppositeFrame, compiled),
+  false,
+  'an opposite camera label cannot reuse an exact frame receipt'
 );
 const forgedRevision = structuredClone(firstReceipt);
 Object.defineProperty(forgedRevision, 'revision', {
@@ -263,4 +309,22 @@ assert.equal(
   ).allowed,
   false,
   'delivery remains gated until every camera and animation review is accepted'
+);
+assert.equal(
+  presentExportAvailability(
+    compiled,
+    compiledReport,
+    reviews.filter((receipt) => receipt.observation.data.camera !== 'left')
+  ).allowed,
+  false,
+  'missing left evidence cannot be satisfied by the opposite view'
+);
+assert.equal(
+  presentExportAvailability(
+    compiled,
+    compiledReport,
+    reviews.filter((receipt) => receipt.observation.data.camera !== 'right')
+  ).allowed,
+  false,
+  'missing right evidence cannot be satisfied by the opposite view'
 );

@@ -1,10 +1,8 @@
 import { landingContent } from '../content.mjs';
 import {
   absoluteUrl,
-  contributeUrl,
   escapeHtml,
   githubIconButton,
-  githubMark,
   githubUrl,
   pageShell
 } from './shell.mjs';
@@ -106,105 +104,31 @@ const landingShowcase = ({ content, showcase }) => {
           </div>
         </figcaption>
       </figure>
-      <div class="replay-proof">
-        <div>
-          <span>One codebase</span>
-          <strong>1 workspace <i aria-hidden="true">→</i> 2 entries</strong>
-        </div>
-        <div class="replay-proof-copy" id="replay-provenance">
-          <p>${escapeHtml(content.body)}</p>
-          <small>${escapeHtml(content.provenance)}</small>
-        </div>
-      </div>
+      <p class="replay-provenance" id="replay-provenance">${escapeHtml(content.provenance)}</p>
       <div class="replay-actions">
         <a class="button button-primary" href="${escapeHtml(showcase.workspaceHref)}" download>
           Download workspace
+          <span aria-hidden="true">↓</span>
+        </a>
+        <a class="button button-secondary" href="${escapeHtml(showcase.griffinGlbHref)}" download>
+          Download Griffin GLB
           <span aria-hidden="true">↓</span>
         </a>
         <a class="button button-secondary" href="${escapeHtml(showcase.workbenchHref)}">
           Launch Workbench
           <span aria-hidden="true">↗</span>
         </a>
-        <a class="replay-source-link" href="${escapeHtml(showcase.sourceHref)}">
-          View source on GitHub <span aria-hidden="true">→</span>
-        </a>
+
       </div>
     </div>
   `;
 };
 
-const landingQuickStart = (quickStart) => `
-  <section class="quick-start-section" id="quick-start" data-reveal>
-    <div class="quick-start-copy">
-      <p class="eyebrow"><span></span>Three steps</p>
-      <h2>${escapeHtml(quickStart.title)}</h2>
-      <p>${escapeHtml(quickStart.body)}</p>
-    </div>
-    <div class="quick-start-control">
-      <ol class="quick-start-steps" aria-label="Start ashfox in three steps">
-        <li>
-          <b>1</b>
-          <span><strong>Copy one instruction</strong><small>It points to the complete manifest</small></span>
-        </li>
-        <li>
-          <b>2</b>
-          <span><strong>Paste into your agent</strong><small>ChatGPT, Cursor, or Claude</small></span>
-        </li>
-        <li>
-          <b>3</b>
-          <span><strong>Describe the asset</strong><small>Your agent handles the workspace</small></span>
-        </li>
-      </ol>
-      <button
-        class="quick-start-action"
-        type="button"
-        data-copy-agent-instruction
-        data-instruction="${escapeHtml(quickStart.instruction)}"
-      >
-        <span class="copy-glyph" aria-hidden="true"></span>
-        <span>
-          <strong>Copy the manifest instruction</strong>
-          <small>Paste once. Then describe what you want to create.</small>
-          <span class="agent-destinations" aria-hidden="true">
-            <span class="agent-destinations-label">Paste into</span>
-            <span class="agent-destination">
-              <img src="/icons/chatgpt.svg" alt="" width="14" height="14">
-              ChatGPT
-            </span>
-            <span class="agent-destination">
-              <img src="/icons/cursor.svg" alt="" width="14" height="14">
-              Cursor
-            </span>
-            <span class="agent-destination">
-              <img src="/icons/claude.svg" alt="" width="14" height="14">
-              Claude
-            </span>
-          </span>
-        </span>
-        <b
-          data-copy-state
-          data-default-state="Copy"
-          data-copied-state="Copied"
-        >Copy</b>
-      </button>
-      <p
-        data-copy-feedback
-        data-default-feedback="Paste into ChatGPT, Cursor, or Claude, then press Enter."
-        aria-live="polite"
-      >Paste into ChatGPT, Cursor, or Claude, then press Enter.</p>
-      <details class="setup-disclosure">
-        <summary>See the one line being copied</summary>
-        <pre><code>${escapeHtml(quickStart.instruction)}</code></pre>
-      </details>
-    </div>
-  </section>
-`;
-
 export const renderLandingPage = ({ assets, config, showcase }) => {
   const content = landingContent;
   const body = `
     <main id="main">
-      <section class="hero">
+      <section class="hero" id="quick-start">
         <div class="hero-copy">
           <p class="eyebrow"><span></span>${content.eyebrow}</p>
           <h1>${content.titleLines
@@ -231,9 +155,13 @@ export const renderLandingPage = ({ assets, config, showcase }) => {
           <p
             class="hero-agent-hint"
             data-copy-feedback
-            data-default-feedback="Paste into ChatGPT, Cursor, or Claude. Your agent will ask what you want to create."
+            data-default-feedback="Paste into a browser-capable AI agent, then describe what you want."
             aria-live="polite"
-          >Paste into ChatGPT, Cursor, or Claude. Your agent will ask what you want to create.</p>
+          >Paste into a browser-capable AI agent, then describe what you want.</p>
+          <details class="setup-disclosure">
+            <summary>View instruction</summary>
+            <pre><code>${escapeHtml(content.quickStart.instruction)}</code></pre>
+          </details>
         </div>
         ${landingShowcase({ content: content.showcase, showcase })}
       </section>
@@ -241,9 +169,9 @@ export const renderLandingPage = ({ assets, config, showcase }) => {
       <section class="section output-section" id="outputs">
         <div class="output-copy" data-reveal>
           <p class="eyebrow"><span></span>Export</p>
-          <h2>Canonical source. Runtime-ready output.</h2>
-          <p>Keep the portable .ashfoxworkspace source authority. The compiler rebuilds the selected canonical asset on open; export adapters derive target artifacts without changing the workspace.</p>
-          <a class="text-link" href="/docs/guides/save-and-export/">Read the delivery guide <span>→</span></a>
+          <h2>Take it into your game.</h2>
+          <p>Save your workspace to keep editing. Export the model in the format your project uses.</p>
+          <a class="text-link" href="/docs/guides/save-and-export/">Save and export <span>→</span></a>
         </div>
         <div class="format-grid">
           ${content.formats.map(([name, description], index) => `
@@ -256,53 +184,6 @@ export const renderLandingPage = ({ assets, config, showcase }) => {
         </div>
       </section>
 
-      ${landingQuickStart(content.quickStart)}
-
-      <section class="section guide-section" id="guides">
-        <div class="section-heading split-heading" data-reveal>
-          <div>
-            <p class="eyebrow"><span></span>Guides</p>
-            <h2>Everything you need to ship.</h2>
-          </div>
-          <p>Connect your agent, refine the result, and export when it is ready.</p>
-        </div>
-        <div class="guide-grid">
-          ${content.guides.map((guide) => `
-            <a class="guide-card" href="${escapeHtml(guide.href)}" data-reveal>
-              <span class="guide-meta">
-                <b>${escapeHtml(guide.index)}</b>
-                ${escapeHtml(guide.label)}
-              </span>
-              <span class="guide-copy">
-                <strong>${escapeHtml(guide.title)}</strong>
-                <p>${escapeHtml(guide.body)}</p>
-              </span>
-              <span class="guide-link">
-                Read guide
-                <b aria-hidden="true">→</b>
-              </span>
-            </a>
-          `).join('')}
-        </div>
-      </section>
-
-      <section class="source-banner" id="open-source" data-reveal>
-        <div>
-          <p class="eyebrow"><span></span>MIT licensed</p>
-          <h2>Free to use. Better with you.</h2>
-          <p>If ashfox fits your workflow, star the project or help shape what comes next.</p>
-        </div>
-        <div class="source-actions">
-          <a class="button button-primary" href="${githubUrl}">
-            ${githubMark}
-            Star on GitHub
-          </a>
-          <a class="button button-secondary" href="${contributeUrl}">
-            Contribute
-            <span aria-hidden="true">→</span>
-          </a>
-        </div>
-      </section>
     </main>
   `;
   return pageShell({

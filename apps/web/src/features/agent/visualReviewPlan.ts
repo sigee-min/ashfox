@@ -7,10 +7,13 @@ import {
 import {
   deliveryVisualReviewsForRevision,
   isValidVisualReviewReceipt,
+  visualReviewKey,
   visualReviewPlanItem,
   type VisualReviewCamera,
   type VisualReviewReceipt
 } from '../../application/review';
+
+export { visualReviewKey } from '../../application/review';
 
 /* Reviews always cover canonical motion before an export adapter derives it. */
 const animationReviewClipIds = (
@@ -28,16 +31,10 @@ const STATIC_CAMERAS: readonly VisualReviewCamera[] = [
   'perspective',
   'native',
   'front',
-  'side',
+  'left',
+  'right',
   'top'
 ];
-
-export const visualReviewKey = (
-  review: VisualReviewPlanItem
-): string =>
-  review.clipId === null
-    ? `${review.mode}:${review.camera}`
-    : `${review.mode}:${review.camera}:${review.clipId}`;
 
 export const requiredVisualReviews = (
   document: ProjectDocument

@@ -25,6 +25,19 @@ const canonicalWorkspacePath = path.join(
   repositoryRoot,
   canonicalWorkspaceRelativePath
 );
+const standaloneGriffinWorkspaceRelativePath = 'examples/griffin.ashfoxworkspace';
+const standaloneGriffinWorkspacePath = path.join(
+  repositoryRoot,
+  standaloneGriffinWorkspaceRelativePath
+);
+const griffinGlbRelativePath = 'examples/griffin.glb';
+const griffinGlbSourcePath = path.join(
+  repositoryRoot,
+  'assets',
+  'exports',
+  'griffin',
+  'griffin.glb'
+);
 
 const walk = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -306,7 +319,11 @@ const landingHtml = await readFile(path.join(outputRoot, 'index.html'), 'utf8');
 const showcaseManifest = JSON.parse(
   await readFile(showcaseManifestPath, 'utf8')
 );
-const expectedShowcaseIdentities = ['creatures/fox', 'creatures/goblin'];
+const expectedShowcaseIdentities = [
+  'workbench/griffin',
+  'creatures/fox',
+  'creatures/goblin'
+];
 const manifestIdentities = showcaseManifest.entries?.map(
   (entry) => `${entry.packageName}/${entry.entryName}`
 ) ?? [];
@@ -316,7 +333,9 @@ if (
   showcaseManifest.workspace?.path !== canonicalWorkspaceRelativePath ||
   manifestIdentities.join('|') !== expectedShowcaseIdentities.join('|')
 ) {
-  failures.push('showcase manifest must describe the canonical Fox/Goblin replay set');
+  failures.push(
+    'showcase manifest must describe the canonical Griffin/Fox/Goblin replay set'
+  );
 }
 
 const selectorTags = landingHtml.match(
@@ -406,38 +425,72 @@ if (!(await exists(publishedWorkspacePath))) {
     failures.push('landing workspace download must be byte-identical and current');
   }
 }
+const standaloneGriffinWorkspace = await readFile(standaloneGriffinWorkspacePath);
+const publishedStandaloneGriffinPath = path.join(
+  outputRoot,
+  standaloneGriffinWorkspaceRelativePath
+);
+if (!(await exists(publishedStandaloneGriffinPath))) {
+  failures.push('published Griffin workspace is missing');
+} else {
+  const publishedStandaloneGriffin = await readFile(publishedStandaloneGriffinPath);
+  if (!publishedStandaloneGriffin.equals(standaloneGriffinWorkspace)) {
+    failures.push('published Griffin workspace must be byte-identical and current');
+  }
+}
+const griffinGlb = await readFile(griffinGlbSourcePath);
+const publishedGriffinGlbPath = path.join(outputRoot, griffinGlbRelativePath);
+if (!(await exists(publishedGriffinGlbPath))) {
+  failures.push('published Griffin GLB is missing');
+} else {
+  const publishedGriffinGlb = await readFile(publishedGriffinGlbPath);
+  if (!publishedGriffinGlb.equals(griffinGlb)) {
+    failures.push('published Griffin GLB must be byte-identical and current');
+  }
+}
 const publishedWorkspaceFiles = outputFiles.filter((file) =>
   file.endsWith('.ashfoxworkspace')
 );
+const expectedPublishedWorkspaceFiles = [
+  publishedWorkspacePath,
+  publishedStandaloneGriffinPath
+].sort();
 if (
-  publishedWorkspaceFiles.length !== 1 ||
-  publishedWorkspaceFiles[0] !== publishedWorkspacePath
+  publishedWorkspaceFiles.length !== expectedPublishedWorkspaceFiles.length ||
+  publishedWorkspaceFiles.sort().join('|') !== expectedPublishedWorkspaceFiles.join('|')
 ) {
-  failures.push('static site must publish exactly one canonical workspace copy');
+  failures.push('static site must publish exactly the canonical and Griffin workspace copies');
 }
 const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
   .filter((file) => file.endsWith('.ashfoxworkspace'));
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
+const griffinGlbLinks = landingHtml.match(
+  /<a(?=[^>]*\shref="\/examples\/griffin\.glb")[^>]*>/gu
+) ?? [];
+if (griffinGlbLinks.length !== 1 || !landingHtml.includes('Download Griffin GLB')) {
+  failures.push('landing must provide exactly one Griffin GLB download link');
+}
 if (
   !landingHtml.includes('href="/examples/shared-creatures.ashfoxworkspace"') ||
+  !landingHtml.includes('href="/examples/griffin.glb"') ||
   !landingHtml.includes('href="/workbench/"') ||
   landingHtml.includes('href="/workbench/?') ||
   landingHtml.indexOf('Download workspace') >
     landingHtml.indexOf('Launch Workbench') ||
-  !/reconstructed build replay from the final validated entry/iu.test(
-    landingHtml
-  ) ||
-  !landingHtml.includes('places geometry in deterministic order')
+  !landingHtml.includes(landingContent.showcase.provenance)
 ) {
   failures.push('landing must present the honest download-then-launch replay flow');
 }
 
 const rootReadme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 for (const requiredReadmeReference of [
+  'assets/showcase/shared-creatures/griffin-build-replay.gif',
   'assets/showcase/shared-creatures/fox-build-replay.gif',
   'assets/showcase/shared-creatures/goblin-build-replay.gif',
+  'examples/griffin.ashfoxworkspace',
+  'assets/exports/griffin/griffin.glb',
   'examples/shared-creatures.ashfoxworkspace',
   'https://ashfox.io/#examples',
   'https://ashfox.io/workbench/'
@@ -446,12 +499,14 @@ for (const requiredReadmeReference of [
     failures.push(`README showcase reference is missing: ${requiredReadmeReference}`);
   }
 }
-if (!/reconstructed build replay from the final validated entry/iu.test(
-  rootReadme
-)) {
+if (!rootReadme.includes(landingContent.showcase.provenance)) {
   failures.push('README must identify the replay as a reconstruction');
 }
-for (const readmeReplay of ['fox-build-replay.gif', 'goblin-build-replay.gif']) {
+for (const readmeReplay of [
+  'griffin-build-replay.gif',
+  'fox-build-replay.gif',
+  'goblin-build-replay.gif'
+]) {
   if (!(await exists(path.join(
     repositoryRoot,
     'assets/showcase/shared-creatures',
@@ -460,21 +515,32 @@ for (const readmeReplay of ['fox-build-replay.gif', 'goblin-build-replay.gif']) 
     failures.push(`README replay target is missing: ${readmeReplay}`);
   }
 }
+if (!(await exists(path.join(
+  repositoryRoot,
+  'assets/exports/griffin/griffin.glb'
+)))) {
+  failures.push('README Griffin GLB target is missing');
+}
 
 const agentInstructionControlCount = (
   landingHtml.match(/\sdata-copy-agent-instruction(?:\s|>)/g) ?? []
 ).length;
-if (agentInstructionControlCount !== 3) {
+if (agentInstructionControlCount !== 2) {
   failures.push(
-    `landing has ${agentInstructionControlCount} agent instruction controls, expected 3`
+    `landing has ${agentInstructionControlCount} agent instruction controls, expected 2`
   );
 }
-if (
-  !landingHtml.includes('One instruction. Then describe what you want.') ||
-  !landingHtml.includes('Copy the manifest instruction') ||
-  !landingHtml.includes('Your agent will ask what you want to create.')
-) {
-  failures.push('landing must teach the copy, paste, and describe workflow');
+const instructionButtons = landingHtml.match(
+  /<button(?=[^>]*\sdata-copy-agent-instruction(?:\s|>))[^>]*>/gu
+) ?? [];
+if (instructionButtons.some((button) =>
+  attribute(button, 'data-instruction') !== landingContent.quickStart.instruction
+)) {
+  failures.push('every setup button must copy the current agent instruction');
+}
+if (!landingHtml.includes('id="quick-start"') ||
+    !landingHtml.includes('browser-capable AI agent')) {
+  failures.push('landing must provide a reachable setup and browser requirement');
 }
 for (const documentationPath of [
   'README.md',

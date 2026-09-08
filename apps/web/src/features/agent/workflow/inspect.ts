@@ -5,9 +5,6 @@ import type {
 } from '@ashfox/engine-core';
 
 import {
-  WORKBENCH_PLACEHOLDER_PROJECT_ID
-} from '../../../application/projectIdentity';
-import {
   isValidVisualReviewReceipt,
   rejectedVisualReviewsForRevision,
   visualReviewPlanItem,
@@ -68,27 +65,6 @@ export const deriveInspectWorkflow = (
   visualReviews: readonly VisualReviewReceipt[] = []
 ): InspectWorkflowGuidance => {
   const document = project.document;
-  if (document.id === WORKBENCH_PLACEHOLDER_PROJECT_ID) {
-    const { nextActions } = deriveWorkflowActions(
-      document,
-      'start',
-      null,
-      null
-    );
-    return {
-      stage: 'start',
-      blocker: {
-        code: 'workflow.project_not_initialized',
-        path: 'id',
-        fix: 'Create the requested project, then inspect again.'
-      },
-      nextActions,
-      remainingVisualReviews: [],
-      remainingVisualReviewCount: 0,
-      visualReviewsTruncated: false
-    };
-  }
-
   const findings: readonly ReadinessFinding[] = [
     ...report.findings.filter(isBlockingFinding),
     ...readiness.findings

@@ -35,8 +35,11 @@ export const deriveWorkflowActions = (
   _document: ProjectDocument,
   stage: InspectWorkflowStage,
   _blocker: ReadinessFinding | null,
-  _rejectedReview: VisualReviewReceipt | null
+  rejectedReview: VisualReviewReceipt | null
 ): DerivedWorkflowActions => {
+  if (rejectedReview !== null) {
+    return { exactOperation: null, nextActions: command('workspace.apply') };
+  }
   if (stage === 'start') {
     return { exactOperation: null, nextActions: startAction() };
   }

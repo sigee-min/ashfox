@@ -1,0 +1,41 @@
+{
+  "policy": "ashfox-export-lineage",
+  "target": {
+    "id": "gltf.2",
+    "version": "2.0"
+  },
+  "projectId": "griffin",
+  "revision": "example-0001",
+  "rootPath": "gltf",
+  "entrypoints": [
+    "griffin.glb"
+  ],
+  "packageName": "workbench",
+  "entryName": "griffin",
+  "entryPath": "workbench/main.ashfox",
+  "workspaceHash": "sha256:4722a31d935e8a078f35285bd5f0939dac489e1239017ddd0bb752985fd2cb7e",
+  "closureHash": "sha256:4cb01fd74ace151c22f1484c4921c870b70c808512e914fb37ae9ac0dee9b562",
+  "buildKey": "sha256:2e5adab64e47c77b776cebd36adbf15ff3f12e0b5b0e38aa7e1b0fd163187b8b",
+  "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+typed-hir+instantiation+canonical:v1",
+  "productHash": "sha256:8956f1845338b95573ebfcc4cab2d7710ad8f6ad69ea2acf4aa0344a3152f007",
+  "textures": [
+    {
+      "id": "griffin_skin_93201f4752bc",
+      "path": null,
+      "coverageIds": [],
+      "embeddedSha256": "sha256:1260655962bc028e6fa53e7a663c6aedc5ae997cb5b388c384f8d96383687284",
+      "pngSha256": "sha256:1260655962bc028e6fa53e7a663c6aedc5ae997cb5b388c384f8d96383687284",
+      "byteLength": 525420
+    }
+  ],
+  "files": [
+    {
+      "kind": "binary",
+      "role": "model",
+      "path": "griffin.glb",
+      "contentType": "model/gltf-binary",
+      "sha256": "sha256:c6f408b180e8bb1ecf51ae3d14c53f66aaad1934b6074776f66cbfd025792390",
+      "byteLength": 829732
+    }
+  ]
+}

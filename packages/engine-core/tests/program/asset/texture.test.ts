@@ -105,6 +105,31 @@ const build = (source: ProgramTextureDecl, width: number, height: number, slots:
   return { plan, diagnostics };
 };
 
+// Protection preserves local color but never overrides authoritative binary coverage.
+{
+  const base = texture(4, 4, 7n, '1111101111111111');
+  const chart = base.statements.find((entry): entry is ProgramTextureChart => entry.kind === 'chart')!;
+  const stamp: ProgramTextureStampDecl = { kind: 'stamp-decl', id: 'eye', properties: [
+    property('pixels', { kind: 'string', value: 'aa/aa', span: span() }), property('a', name('accent'))
+  ], span: span() };
+  const marked: ProgramTextureDecl = { ...base, statements: [...base.statements.filter((entry) => entry !== chart),
+    stamp, { ...chart, statements: [...chart.statements, { kind: 'stamp', id: 'eye', properties: [
+      property('anchor', name('center')),
+      property('offset', vector([number(0n, 1n, 'texel'), number(0n, 1n, 'texel')])),
+      property('protect', number(1n, 1n, 'texel'))
+    ], span: span() }] }
+  ] };
+  const result = build(marked, 4, 4);
+  assert.ok(result.plan, JSON.stringify(result.diagnostics));
+  const raster = result.plan.texture.raster!;
+  const image = rasterizeCanonicalTexture(4, 4, { background: raster.background,
+    backgroundAlpha: raster.backgroundAlpha, canvasDetails: raster.canvasDetails,
+    alphaMasks: raster.alphaMasks ?? [] });
+  assert.equal(image.rgba.at(5 * 4 + 3), 0, 'coverage removes even a protected painted stamp pixel');
+  assert.equal(image.rgba.at(6 * 4 + 3), 255, 'other stamp pixels stay opaque');
+  assert.equal(image.rgba.at(0), 143, 'protected margin retains original fill red channel');
+}
+
 {
   const source = texture(16, 16);
   const first = build(source, 16, 16).plan;

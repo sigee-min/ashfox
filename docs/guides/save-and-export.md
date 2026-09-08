@@ -1,48 +1,27 @@
 # Save and export
 
-Ashfox saves the complete `.ashfoxworkspace` authority, not a compiled scene.
-The portable file contains canonical JSON with exact source modules, package
-manifests, and the content-addressed lock, followed by exactly one LF.
+Ashfox has two delivery choices:
 
-## Save and reopen
+- **Save** the portable `.ashfoxworkspace` file when you want to keep or reopen
+  the editable project.
+- **Export** a target file when you want to use the selected, reviewed asset in
+  another tool or game.
 
-Use **Download workspace** to save the active workspace. Opening it validates
-the closed container, selects an explicit package entry, recompiles the exact
-entry closure, and creates a transient `AssetProject`. It never restores or
-trusts cached geometry, textures, animation channels, previews, reviews, or
-exports.
+## Save the workspace
 
-An agent edit uses one `workspace.apply` operation containing:
+Choose **Download source** in the Workbench. The file contains the source
+needed to reopen and edit the asset later. Browser storage is local to that
+browser; keep a downloaded copy when moving devices or clearing browser data.
 
-- the current expected workspace hash;
-- all file writes and deletes in the change;
-- full manifest or lock replacements when those records change;
-- the package and entry to open after the atomic commit.
+An older workspace that the current version cannot open is not migrated
+automatically; preserve the original before requesting a reviewed update.
 
-Every declared entry must compile. Failure or a stale hash commits nothing.
+## Export a target file
 
-## Capture Build replay
+After visual review and Build replay, open **Export delivery files**, choose a
+target, and provide a namespace or path when the target asks for one. Available
+targets include Java block, GeckoLib 5, Bedrock, GLB, and glTF. See [Choose an
+export format](choose-a-format.md) for target-specific details.
 
-After current revision-bound reviews are accepted, Build replay starts from an
-empty scene, places concrete nodes in deterministic order, applies each node's
-complete owning texture set atomically, activates the selected canonical
-motion, and holds on the finished product.
-
-Replay is transient evidence. It is not source history, an agent decision log,
-or a portable project format.
-
-## Export
-
-Open **Export delivery files**, choose Java block, GeckoLib 5, Bedrock, GLB, or
-glTF, and provide a namespace/path only when the adapter requires it.
-
-Export snapshots the active `AssetProject`, recompiles its exact workspace and
-entry, verifies workspace hash, closure hash, build key, compiler fingerprint,
-and product hash, then runs target validation. An artifact cannot be built from
-a swapped workspace, entry, build identity, or canonical document.
-
-The current target version is read-only and comes from the engine registry.
-Target adaptation may describe an explicit conversion or omission in its
-receipt; it cannot rewrite the workspace or silently lose data.
-
-See [Choose an export format](choose-a-format.md) for target-specific files.
+Review any reported conversions or omissions before downloading. Fix blocking
+issues with your agent and review the updated model again.

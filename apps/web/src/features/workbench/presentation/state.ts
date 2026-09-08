@@ -34,6 +34,7 @@ export interface PresentationSession {
   nonce: number;
   projectId: string;
   revision: string;
+  documentReference: object;
   lastFrameNonce: number | null;
   review: ViewPresentationRequest['review'];
   purpose: ViewPresentationRequest['purpose'];
@@ -145,6 +146,12 @@ export const observePresentationFrame = (
       'revision',
       session.revision
     );
+  }
+  if (frame.documentReference !== session.documentReference) {
+    // A previous presentation can report one late frame after the session
+    // switches documents. Ignore it and wait for the exact document owned by
+    // this session before acknowledging rendered evidence.
+    return pending(session);
   }
   if (
     !isPositiveSafeInteger(frame.frameNonce) ||

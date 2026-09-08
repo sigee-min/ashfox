@@ -1,51 +1,43 @@
 # Get started
 
-Ashfox persists one closed asset workspace. The workspace contains exact
-`ashfox-model 1` source modules, package manifests, and an exact lock. The Web
-Studio is an observation, review, and delivery surface; generated scene data is
-not editable authority.
+Ashfox needs a browser-capable AI agent. The agent keeps the Workbench open,
+reads the current project, makes source changes, and presents the result for
+review. A chat-only agent cannot complete this workflow.
 
 ## Connect
 
-1. Create or open a Workbench project.
+1. Open the [Ashfox Workbench](https://ashfox.io/workbench/) and create or
+   open a project.
 2. Give the connected agent this instruction:
 
 ~~~text
 Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.
 ~~~
 
-3. Describe the gameplay scale, forward direction, silhouette, rig, reusable
-   parts, material groups, and motion.
+3. Add what you want to create or change. Describe the subject, silhouette,
+   proportions, palette, pixel density, attachments, and motion when they
+   matter. Say what to preserve when refining an existing asset.
 
-The agent first inspects the active workspace summary. It reads exact bounded
-source ranges only when needed, prepares one complete workspace change set,
-and submits the sole mutation command, `workspace.apply`, with the current
-workspace-hash compare-and-swap guard and an explicit selected entry.
+For example:
 
-The change is atomic. Every declared entry and module must parse, resolve, type
-check, instantiate, and reach a canonical product. A stale hash, orphan module,
-invalid lock, or failed entry leaves the existing workspace unchanged.
+~~~text
+Make the head wider while preserving the current block silhouette, warm palette,
+and expression. Keep the eye marks the same pixel size. Review the rebuilt result
+before finishing.
+~~~
 
-## Organize reuse
+For a read-only task, say: “Inspect and explain; do not change the workspace.”
 
-- Put shared nominal rig contracts, skeletons, and motions in a rig module.
-- Put chart/material ABIs and concrete deterministic texture programs in
-  surface modules.
-- Put reusable lexical geometry behind typed component ports.
-- Keep entry files small: import modules, choose a skeleton, bind components
-  and surfaces, connect sockets, and select motions.
+Keep the Workbench available in the browser while the agent works. If you use a
+local development Workbench, fetch the manifest from that same origin.
 
-Open the checked-in
-[`shared-creatures.ashfoxworkspace`](../../examples/shared-creatures.ashfoxworkspace)
-to see two entries reusing one rig, motion, component, and surface library.
+## What happens next
 
-## Review and deliver
+The agent inspects the active workspace, reads only the source it needs,
+previews a complete change, and applies it after validation. It then refreshes
+the project, reviews the rendered views and motion, and creates Build replay
+evidence after the reviews pass. Export is an optional final step.
 
-Review perspective, gameplay/native, front, side, and top views, then each
-motion cycle. Mechanical validation proves deterministic correctness, not
-visual quality. A rejection must lead to a new workspace source change; never
-patch a rendered scene or canonical texture.
-
-After review, Build replay reconstructs the current entry from empty scene to
-finished product. Export then recompiles the exact selected entry, verifies its
-workspace/closure/build/product lineage, and runs the chosen target validator.
+The Workbench is for viewing, reviewing, saving, and exporting. Make authoring
+changes through the agent so the workspace remains the source for the asset.
+For the full browser API sequence, see [Agent workflow](agent-workflow.md).

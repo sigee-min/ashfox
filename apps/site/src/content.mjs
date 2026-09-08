@@ -2,66 +2,45 @@ export const landingContent = {
   eyebrow: 'AI-native low-poly workbench',
   titleLines: ['Describe it.', 'Ship it game-ready.'],
   summary:
-    'Your AI agent builds one closed, reusable Ashfox asset workspace, reviews a selected entry at native size, and delivers Bedrock, GeckoLib, glTF, or GLB output.',
+    'Create Minecraft-style models, textures, and animation with your AI agent. Refine them in the browser, then export for your game.',
   showcase: {
-    eyebrow: 'Reconstructed build replay',
-    body:
-      'One closed workspace becomes two selected entries. Each replay starts empty, places geometry in deterministic order, applies complete textures, activates motion, and holds on the validated result.',
+    eyebrow: 'Made with ashfox',
     provenance:
-      'A reconstructed build replay from the final validated entry — not AI history or a decision log.',
+      'Build replays reconstructed from the finished models.',
     entries: [
+      {
+        packageName: 'workbench',
+        entryName: 'griffin',
+        index: '01',
+        label: 'Griffin guardian',
+        summary: 'A fantasy guardian with six animations.'
+      },
       {
         packageName: 'creatures',
         entryName: 'fox',
-        index: '01',
+        index: '02',
         label: 'Red fox',
-        summary: 'Warm ember fur, a bright chest, centered eyes, and a restrained idle.'
+        summary: 'Ember fur, a bright chest, and a gentle idle.'
       },
       {
         packageName: 'creatures',
         entryName: 'goblin',
-        index: '02',
+        index: '03',
         label: 'Goblin raider',
-        summary: 'A scarred green raider with converging eyes, iron armor, shield, and a forward blade.'
+        summary: 'A scarred raider with iron armor, shield, and blade.'
       }
     ]
   },
   quickStart: {
-    title: 'One instruction. Then describe what you want.',
-    body:
-      'Paste one line into your agent. The manifest opens the workspace and your agent asks what you want to create.',
     instruction:
       'Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.'
   },
-  guides: [
-    {
-      index: '01',
-      label: 'Start here',
-      title: 'Connect your agent',
-      body: 'Paste the copied instructions into Codex desktop app, Cursor, or another browser-capable agent.',
-      href: '/docs/guides/ai-agent-quick-start/'
-    },
-    {
-      index: '02',
-      label: 'Author',
-      title: 'Build and review',
-      body: 'Describe the asset codebase, reuse nominal rigs, components, surfaces, and motions, then review each selected entry.',
-      href: '/docs/guides/authoring-and-review/'
-    },
-    {
-      index: '03',
-      label: 'Deliver',
-      title: 'Export',
-      body: 'Keep the portable workspace or export a validated selected entry for your target.',
-      href: '/docs/guides/save-and-export/'
-    }
-  ],
   formats: [
-    ['Java block', 'A version-matched resource pack with model and textures.'],
-    ['GeckoLib 5', 'Compact geometry, animation, and textures for Minecraft Java.'],
-    ['Bedrock', 'Optimized geometry and actor animation for Bedrock workflows.'],
-    ['GLB', 'Batched, compressed geometry in one portable binary asset.'],
-    ['glTF', 'Optimized open scene data with external resources when needed.']
+    ['Java block', 'Static blocks for Minecraft Java resource packs.'],
+    ['GeckoLib 5', 'Animated models for Minecraft Java mods.'],
+    ['Bedrock', 'Models, textures, and animation for Bedrock packs.'],
+    ['GLB', 'One 3D file for game engines and viewers.'],
+    ['glTF', 'Scene JSON with separate textures and binary data.']
   ]
 };
 

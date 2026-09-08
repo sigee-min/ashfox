@@ -2,6 +2,7 @@ export {
   VISUAL_REVIEW_CAMERAS,
   VISUAL_REVIEW_CHECKS,
   VISUAL_REVIEW_ISSUES,
+  visualReviewChecksForCamera,
   type VisualReviewCamera,
   type VisualReviewIssue,
   type VisualReviewCheck,
@@ -19,6 +20,7 @@ export {
   deliveryVisualReviewsForRevision,
   recordVisualReview,
   rejectedVisualReviewsForRevision,
+  visualReviewKey,
   visualReviewPlanItem,
   visualReviewsForRevision
 } from './ledger';

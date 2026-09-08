@@ -41,10 +41,32 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
     'agent-manifest.json'
   );
   fs.mkdirSync(path.dirname(manifestTarget), { recursive: true });
+  const manifest = loadAgentManifest();
   fs.writeFileSync(
     manifestTarget,
-    `${JSON.stringify(loadAgentManifest())}\n`
+    `${JSON.stringify(manifest)}\n`
   );
+  // Keep relative links and executable examples available on standalone dev
+  // Workbench origins too; the site and agent read the same maintained sources.
+  fs.cpSync(path.join(repoRoot, 'docs'), path.join(outdir, 'workbench', 'reference'), {
+    recursive: true
+  });
+  fs.mkdirSync(path.join(outdir, 'workbench', 'examples'), { recursive: true });
+  for (const workspaceName of [
+    'shared-creatures.ashfoxworkspace',
+    'griffin.ashfoxworkspace'
+  ]) {
+    fs.copyFileSync(
+      path.join(repoRoot, 'examples', workspaceName),
+      path.join(outdir, 'workbench', 'examples', workspaceName)
+    );
+  }
+  for (const resource of manifest.documentation.resources) {
+    const target = path.join(outdir, resource.href.slice(1));
+    if (!fs.statSync(target, { throwIfNoEntry: false })?.isFile()) {
+      throw new Error(`Missing agent documentation: ${resource.href}`);
+    }
+  }
   fs.cpSync(brandSource, path.join(outdir, 'brand'), {
     recursive: true
   });

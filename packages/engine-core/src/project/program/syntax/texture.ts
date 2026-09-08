@@ -121,7 +121,7 @@ const stampUse = (reader: ProgramTextureReader): ProgramTextureStampUse => {
   const properties = reader.block(() => {
     const propertyStart = reader.current();
     const property = reader.property('stamp');
-    return invalidProperty(reader, property, ['at'], 'stamp use', propertyStart);
+    return invalidProperty(reader, property, ['at', 'anchor', 'offset', 'protect', 'flip'], 'stamp use', propertyStart);
   });
   return freeze({ kind: 'stamp', id, properties: freeze(properties),
     span: join(start.span, reader.blockEnd()) });

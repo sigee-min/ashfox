@@ -17,6 +17,7 @@ import {
   type FileOperationKind,
   type FileOperationState
 } from './fileOperationState';
+import { mountFileOperation } from './operationMount';
 
 interface FileOperationCompletion<TResult> {
   phase: 'succeeded' | 'cancelled';
@@ -78,12 +79,7 @@ export const useFileOperation = <TResult>(
     cancelledMessage: string;
   } | null>(null);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    const active = activeRef.current;
-    activeRef.current = null;
-    active?.controller.abort();
-  }, []);
+  useEffect(() => mountFileOperation(mountedRef, activeRef), []);
 
   const run = useCallback(
     async <T, TCompletion extends TResult = TResult>(

@@ -82,6 +82,7 @@ const object = new THREE.Group();
 applyAnimationPose(
   document,
   {
+    documentReference: document,
     root: new THREE.Group(),
     objectsByNodeId: new Map([[nodeId, object]]),
     selectable: [],
@@ -128,6 +129,7 @@ assertArrayClose(
 const projection = (
   target: THREE.Group
 ) => ({
+  documentReference: document,
   root: new THREE.Group(),
   objectsByNodeId: new Map([[nodeId, target]]),
   selectable: [],

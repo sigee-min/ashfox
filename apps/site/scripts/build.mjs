@@ -32,6 +32,19 @@ const canonicalWorkspacePath = path.join(
   'examples',
   'shared-creatures.ashfoxworkspace'
 );
+const standaloneGriffinWorkspaceRelativePath = 'examples/griffin.ashfoxworkspace';
+const standaloneGriffinWorkspacePath = path.join(
+  repoRoot,
+  standaloneGriffinWorkspaceRelativePath
+);
+const griffinGlbRelativePath = 'examples/griffin.glb';
+const griffinGlbSourcePath = path.join(
+  repoRoot,
+  'assets',
+  'exports',
+  'griffin',
+  'griffin.glb'
+);
 const sourceRoot = path.join(siteRoot, 'src');
 const publicRoot = path.join(siteRoot, 'public');
 const outputRoot = path.join(siteRoot, 'dist');
@@ -134,7 +147,11 @@ const readShowcase = async () => {
   if (!Array.isArray(manifest.entries) || manifest.entries.length === 0) {
     throw new Error('Showcase manifest must declare generated entries.');
   }
-  const expectedEntries = ['creatures/fox', 'creatures/goblin'];
+  const expectedEntries = [
+    'workbench/griffin',
+    'creatures/fox',
+    'creatures/goblin'
+  ];
   const entries = manifest.entries.map((entry, index) => {
     const label = `Showcase entry ${index}`;
     assertExactKeys(entry, [
@@ -145,7 +162,7 @@ const readShowcase = async () => {
     const packageName = requiredString(entry.packageName, `${label} packageName`);
     const entryName = requiredString(entry.entryName, `${label} entryName`);
     if (`${packageName}/${entryName}` !== expectedEntries[index]) {
-      throw new Error(`${label} is not in canonical Fox/Goblin order.`);
+      throw new Error(`${label} is not in canonical Griffin/Fox/Goblin order.`);
     }
     return {
       packageName,
@@ -240,9 +257,14 @@ const assets = {
 const config = { siteOrigin, workbenchUrl };
 const documents = await loadDocumentation(docsRoot);
 const generatedShowcase = await readShowcase();
+const standaloneGriffinWorkspaceBytes = await readFile(
+  standaloneGriffinWorkspacePath
+);
+const griffinGlbBytes = await readFile(griffinGlbSourcePath);
 const showcase = {
   capture: generatedShowcase.capture,
   workspaceHref: `/${canonicalWorkspaceRelativePath}`,
+  griffinGlbHref: `/${griffinGlbRelativePath}`,
   sourceHref:
     'https://github.com/sigee-min/ashfox/blob/main/' +
     canonicalWorkspaceRelativePath,
@@ -261,6 +283,14 @@ const showcase = {
 await writeFile(
   path.join(outputRoot, canonicalWorkspaceRelativePath),
   generatedShowcase.workspaceBytes
+);
+await writeFile(
+  path.join(outputRoot, standaloneGriffinWorkspaceRelativePath),
+  standaloneGriffinWorkspaceBytes
+);
+await writeFile(
+  path.join(outputRoot, griffinGlbRelativePath),
+  griffinGlbBytes
 );
 
 await writeRoute('/', renderLandingPage({ assets, config, showcase }));
@@ -313,6 +343,10 @@ await writeFile(
 
 /examples/*.ashfoxworkspace
   Content-Type: application/vnd.ashfox.workspace+json
+  Cache-Control: public, max-age=0, must-revalidate
+
+/examples/*.glb
+  Content-Type: model/gltf-binary
   Cache-Control: public, max-age=0, must-revalidate
 
 `

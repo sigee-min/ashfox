@@ -35,7 +35,6 @@ const changedSource = VALID_ASSET_SOURCE.replace(
   'origin = (-2u, 0u, -2u);',
   'origin = (-1u, 0u, -2u);'
 );
-const changedWorkspace = validAssetWorkspace(changedSource);
 const change = {
   expectedWorkspaceHash: computeWorkspaceHash(opened.project.workspace),
   writes: [{
@@ -43,8 +42,7 @@ const change = {
     source: changedSource,
     expectedHash: computeSourceContentHash(VALID_ASSET_SOURCE)
   }],
-  deletes: [],
-  lock: changedWorkspace.lock
+  deletes: []
 };
 
 const batch = (payload: CommandBatch['operations'][number]['payload']): CommandBatch => ({
@@ -76,15 +74,18 @@ const noOp = executeAgentCommandBatch(opened.project, batch({
 assert.equal(noOp.ok, false);
 if (!noOp.ok) assert.equal(noOp.error.code, 'no_change');
 
+const retiredChanges = { ...change, lock: opened.project.workspace.lock };
+const retiredLock = executeAgentCommandBatch(opened.project, batch({ entry, changes: retiredChanges }));
+assert.equal(retiredLock.ok, false, 'write command rejects caller-authored locks');
+if (!retiredLock.ok) assert.match(retiredLock.error.path ?? '', /changes/u);
+
 const invalidSource = 'ashfox-model 1\nasset wolf {';
-const invalidWorkspace = validAssetWorkspace(invalidSource);
 const invalid = executeAgentCommandBatch(opened.project, batch({
   entry,
   changes: {
     expectedWorkspaceHash: computeWorkspaceHash(opened.project.workspace),
     writes: [{ path: 'wolf/main.ashfox', source: invalidSource }],
-    deletes: [],
-    lock: invalidWorkspace.lock
+    deletes: []
   }
 }));
 assert.equal(invalid.ok, false);

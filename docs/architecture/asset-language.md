@@ -34,8 +34,16 @@ asset fox {
 ```
 
 Imports are quoted explicit paths plus a required local alias. A qualified
-reference contains that alias and one exported declaration name. Imports are
+nominal reference contains that alias and one exported declaration name. Imports are
 resolved only through the owning package manifest and exact workspace lock.
+
+## Shared design values
+
+For exact shared `design` fields, named boolean checks, construction datums,
+pixel-grid conversion, and face-local stamp anchors, see the executable
+[precision modeling guide](../guides/precision-modeling.md). Imported design
+values use `alias.Design.field`; nominal declaration references remain
+`alias.Name`. Design values are resolved and erased before Typed HIR.
 
 ## Rig and skeleton
 
@@ -158,5 +166,6 @@ canonical validation are fail-closed: a diagnostic returns no partial model.
 
 The checked-in
 [`shared-creatures.ashfoxworkspace`](../../examples/shared-creatures.ashfoxworkspace)
-is the executable reference. It contains two entries that share the same rig,
-skeleton, motion, surface, and component modules.
+is the executable reference. It contains fox, goblin, and griffin entries with
+explicit module bindings. The griffin includes six rig-bound animation clips
+and is also available as [`griffin.ashfoxworkspace`](../../examples/griffin.ashfoxworkspace).

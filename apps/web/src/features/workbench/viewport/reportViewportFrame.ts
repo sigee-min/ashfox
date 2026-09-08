@@ -1,7 +1,8 @@
 import type { MutableRefObject } from 'react';
+import type { Camera, WebGLRenderer } from 'three';
+import type { ProjectSceneProjection } from '../../../rendering/sceneTypes';
 
 import { captureViewportFrameEvidence } from './evidence';
-import type { ViewportRuntime } from './viewportRuntime';
 import type {
   ViewportPresentationFrame
 } from './viewportTypes';
@@ -11,6 +12,7 @@ const REVIEW_FRAME_EPSILON_SECONDS = 0.000001;
 export interface ViewportPresentationState {
   projectId: string;
   revision: string;
+  documentReference: object;
   camera: ViewportPresentationFrame['camera'];
   clipId: string | null;
   playing: boolean;
@@ -21,7 +23,11 @@ interface ReportViewportFrameInput {
   frameNonce: number;
   presentationNonce: number | null;
   presentation: ViewportPresentationState;
-  runtime: ViewportRuntime | null;
+  runtime: {
+    readonly projection: ProjectSceneProjection | null;
+    readonly camera: Pick<Camera, 'matrixWorld'>;
+    readonly renderer: WebGLRenderer;
+  } | null;
   evidenceCaptureRef: MutableRefObject<number | null>;
   onPresented: (frame: ViewportPresentationFrame) => void;
 }
@@ -35,15 +41,33 @@ export const reportViewportFrame = ({
   onPresented
 }: ReportViewportFrameInput): void => {
   if (presentationNonce === null) return;
-  const readiness = runtime?.projection?.readiness;
+  const projection = runtime?.projection;
+  const projectionDocumentReference = projection?.documentReference ??
+    presentation.documentReference;
+  const projectionMatchesPresentation =
+    projectionDocumentReference === presentation.documentReference;
+  const readiness = projection?.readiness;
   const frame = {
     presentationNonce,
     frameNonce,
     ...presentation,
+    documentReference: projectionDocumentReference,
     cameraMatrix: runtime?.camera.matrixWorld.elements.slice() ?? [],
-    projectionStatus: readiness?.status ?? 'pending',
-    projectionError: readiness?.error ?? null
+    projectionStatus: projectionMatchesPresentation
+      ? readiness?.status ?? 'pending'
+      : 'pending',
+    projectionError: projectionMatchesPresentation
+      ? readiness?.error ?? null
+      : null
   } as const;
+  if (!projectionMatchesPresentation) {
+    onPresented({
+      ...frame,
+      frameEvidence: null,
+      frameEvidenceError: null
+    });
+    return;
+  }
   const requiresEvidence =
     runtime !== null &&
     readiness?.status === 'ready' &&

@@ -23,8 +23,13 @@ assert.equal(
 );
 assert.equal(
   synchronizeActiveClipId(document, null, false),
+  null,
+  'an explicit no-clip state must remain at the rest pose'
+);
+assert.equal(
+  synchronizeActiveClipId(document, null, true),
   firstClip,
-  'a loaded document must select its first clip when no clip is selected'
+  'a newly loaded document selects its first clip'
 );
 assert.equal(
   synchronizeActiveClipId(document, firstClip, true),

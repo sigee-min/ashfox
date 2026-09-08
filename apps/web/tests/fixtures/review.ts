@@ -1,7 +1,7 @@
 import type { AssetProject } from '@ashfox/engine-core';
 
 import {
-  VISUAL_REVIEW_CHECKS,
+  visualReviewChecksForCamera,
   visualReviewReceiptFrom,
   type VisualReviewReceipt
 } from '../../src/application/review';
@@ -60,7 +60,7 @@ export const createVisualReviewReceiptFixture = (
   const clipId = mode === 'cycle'
     ? input.clipId ?? Object.keys(document.animations)[0] ?? 'clip-idle'
     : null;
-  const reviewChecks = input.reviewChecks ?? VISUAL_REVIEW_CHECKS;
+  const reviewChecks = input.reviewChecks ?? visualReviewChecksForCamera(camera);
   const verdict = input.verdict ?? 'accepted';
   const failedCheckIds = verdict === 'rejected'
     ? input.failedCheckIds ?? reviewChecks.slice(0, 1).map((check) => check.id)

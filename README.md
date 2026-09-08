@@ -1,82 +1,44 @@
 # Ashfox
 
+Create Minecraft-style models, textures, and animation with your AI agent.
+Describe what you want, refine it in the browser, and export it for your game.
+
 <p align="center">
-  <img
-    src="assets/showcase/shared-creatures/fox-build-replay.gif"
-    alt="Reconstructed Fox build replay from an empty scene through geometry, textures, motion, and the complete model"
-    width="440"
-  >
-  <img
-    src="assets/showcase/shared-creatures/goblin-build-replay.gif"
-    alt="Reconstructed Goblin raider build replay from an empty scene through geometry, textures, motion, and the complete model"
-    width="440"
-  >
+  <img src="assets/showcase/shared-creatures/griffin-build-replay.gif" alt="Griffin guardian model build replay" width="360">
+  <img src="assets/showcase/shared-creatures/fox-build-replay.gif" alt="Red fox model build replay" width="360">
+  <img src="assets/showcase/shared-creatures/goblin-build-replay.gif" alt="Goblin raider model build replay" width="360">
   <br>
-  <sub>A reconstructed build replay from the final validated entry — deterministic event order, not AI history or a decision log.</sub>
+  <sub>Build replays reconstructed from the finished models.</sub>
 </p>
 
-<p align="center">
-  <a href="https://ashfox.io/#examples"><strong>Watch Fox + Goblin replays →</strong></a>
-  &nbsp;·&nbsp;
-  <a href="examples/shared-creatures.ashfoxworkspace"><strong>Download workspace</strong></a>
-  &nbsp;then&nbsp;
-  <a href="https://ashfox.io/workbench/"><strong>Launch Workbench</strong></a>
-</p>
+[View examples](https://ashfox.io/#examples) ·
+[Download Griffin workspace](examples/griffin.ashfoxworkspace) ·
+[Download Griffin GLB](assets/exports/griffin/griffin.glb) ·
+[Download shared workspace](examples/shared-creatures.ashfoxworkspace) ·
+[Launch Workbench](https://ashfox.io/workbench/)
 
-Ashfox compiles a closed, reusable asset codebase into Minecraft-style entity,
-prop, and block products. Its portable authority is one `.ashfoxworkspace`:
-exact `ashfox-model 1` modules, package manifests, and a content-addressed lock.
+## Get started
 
-Source modules define nominal rig contracts, skeletons, surface contracts,
-deterministic textures, reusable components, motions, and explicit asset
-assemblies. A selected entry builds one immutable scene, texture set, and
-animation set. Generated products, reviews, replays, exports, and caches are
-never editable authority.
+Use an AI agent that can control a browser. Paste this instruction followed by
+what you want to create or change:
 
-## Create an asset
-
+```text
 Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.
+```
 
-1. Open or create a Workbench workspace.
-2. Describe gameplay scale, facing, major masses, rig, reusable parts,
-   material groups, and motion.
-3. The agent inspects the current workspace hash, prepares one complete change
-   set, and submits `workspace.apply` with an explicit selected entry.
-4. The engine validates every declared entry before atomically advancing the
-   workspace.
-5. Review native/gameplay and orthographic views plus motion cycles, then
-   export only after mechanical and visual gates are current.
+For example: “Create a small griffin guardian with six expressive motions.”
 
-## Reuse model
+Your agent builds and checks the model in Workbench. Ask for changes in the same
+conversation. Download the `.ashfoxworkspace` to keep editing later, or export
+Java block, GeckoLib 5, Bedrock, GLB, or glTF files.
 
-- Rig contracts own semantic joints, frames, channels, mirrors, and sockets.
-- Skeletons provide complete concrete rest implementations.
-- Surface contracts own exact chart/material ABIs; surfaces own deterministic
-  pixels.
-- Components own lexical geometry behind typed rig/surface/socket ports.
-- Motions target one nominal rig and bake through signed frames.
-- Asset entries choose and connect these declarations explicitly.
+[Get started](docs/guides/ai-agent-quick-start.md) ·
+[Export formats](docs/guides/choose-a-format.md) ·
+[Documentation](docs/README.md)
 
-There are no classes, inheritance, mixins, structural matching, wildcard
-imports, runtime packages, automatic retargeting, hidden UV generation, or
-target-specific source branches.
+## Contribute
 
-See [the codebase map](docs/architecture/codebase.md),
-[the asset language](docs/architecture/asset-language.md), and the executable
-[`shared-creatures.ashfoxworkspace`](examples/shared-creatures.ashfoxworkspace).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, and
+[development-manifest.json](development-manifest.json) for repository rules.
 
-## Development
-
-Read [development-manifest.json](development-manifest.json), then
-[CONTRIBUTING.md](CONTRIBUTING.md) and
-[codebase.md](docs/architecture/codebase.md).
-
-~~~sh
-npm run typecheck
-npm run typecheck:tests
-npm run quality:manifest
-npm run quality:architecture
-npm run test:engine-core
-npm --workspace @ashfox/web run test
-npm run verify:design-corpus
-~~~
+[MIT license](LICENSE).

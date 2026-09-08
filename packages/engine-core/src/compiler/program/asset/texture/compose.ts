@@ -1,6 +1,5 @@
 import type {
-  ProgramTextureChart,
-  ProgramTextureStampUse
+  ProgramTextureChart
 } from '../../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../../project/source/contract';
 import type { TextureAlphaMask, TextureCanvasDetail } from '../../../../model/texture';
@@ -10,7 +9,6 @@ import {
   readInteger,
   readRole,
   readTexelVector,
-  type PaletteRole,
   type TextureExpressionContext
 } from './expressions';
 import {
@@ -22,55 +20,15 @@ import {
   fill,
   gridDetails,
   maskFor,
-  paintStamp,
   roleId,
   type PaintGrid,
-  type TextureRegion,
-  type TextureStamp
+  type TextureRegion
 } from './raster';
 import { propertyIssue, type PreparedChart, type PreparedTexture, type TextureReporter } from './prepare';
+import { stampUse } from './stamp';
 
 const issueFrom = (report: TextureReporter): AssetTextureIssue =>
   (_path, span, code, message): void => report.report(span, code, message);
-
-const stampUse = (
-  statement: ProgramTextureStampUse,
-  region: TextureRegion,
-  stamps: ReadonlyMap<string, TextureStamp>,
-  context: TextureExpressionContext,
-  palette: ReadonlyMap<string, PaletteRole>,
-  grid: PaintGrid,
-  report: TextureReporter
-): void => {
-  const stamp = stamps.get(statement.id);
-  if (stamp === undefined) {
-    report.report(statement.span, 'asset.texture.unknown-stamp', 'Unknown texture stamp "' + statement.id + '".');
-    return;
-  }
-  const entries = properties(statement.properties, ['at'], statement.span, report.path, propertyIssue(report));
-  if (entries === null) return;
-  const at = entries.get('at');
-  if (at === undefined) {
-    report.report(statement.span, 'asset.texture.missing-property', 'Stamp placement requires an at coordinate.');
-    return;
-  }
-  const offset = readTexelVector(at.value, context, 2, report.path, propertyIssue(report), at.span);
-  if (offset === null) return;
-  if (offset[0]! < 0 || offset[1]! < 0 || offset[0]! + stamp.width > region.width ||
-    offset[1]! + stamp.height > region.height) {
-    report.report(at.value.span, 'asset.texture.stamp-out-of-bounds', 'Stamp placement lies outside its chart region.');
-    return;
-  }
-  for (let row = 0; row < stamp.height; row += 1) for (let column = 0; column < stamp.width; column += 1) {
-    const cell = stamp.cells[row * stamp.width + column];
-    if (cell === null) continue;
-    const selected = readRole({ kind: 'name', value: cell.role, span: statement.span }, palette, false,
-      report.path, propertyIssue(report), statement.span);
-    const id = selected === null ? null : roleId(grid, selected.name);
-    if (id !== null) paintStamp(grid, region.x + offset[0]! + column,
-      region.y + offset[1]! + row, id, 2);
-  }
-};
 
 const chartStatements = (
   statements: readonly ProgramTextureChart['statements'][number][],

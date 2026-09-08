@@ -38,6 +38,7 @@ interface UseAgentPresentationInput {
 }
 
 interface AgentPresentationController {
+  viewportDocument: Readonly<ProjectDocument>;
   presentationNonce: number;
   present: (
     request: ViewPresentationRequest,
@@ -76,6 +77,7 @@ export const useAgentPresentation = ({
   });
 
   return {
+    viewportDocument: session.presentationDocument,
     presentationNonce: session.presentationNonce,
     present: session.present,
     review: reviews.review,

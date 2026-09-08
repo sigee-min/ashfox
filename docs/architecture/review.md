@@ -9,6 +9,15 @@ review evidence. Review may accept or reject a view, but it never edits the
 workspace, repairs geometry, changes texture pixels, or mutates the canonical
 product. A rejected result requires a new complete workspace change set.
 
+Candidate inspection validates source without changing the viewport or workspace.
+A preview token presents that candidate against its exact base build. Delivery
+presentation restores the current document and binds frame evidence to the
+actual rendered projection. Every workspace change invalidates prior reviews. Left and right side views
+have distinct frame evidence and review keys; one cannot satisfy the other.
+Paired detail is judged across both sides, with intentional asymmetry allowed.
+The overview reports remaining reviews; a rejected view routes back to source
+editing before another delivery review.
+
 Build replay is also derived evidence. It deterministically starts empty,
 places concrete nodes, applies each node's complete owning texture set,
 activates a selected canonical motion, and holds on the finished product. It is

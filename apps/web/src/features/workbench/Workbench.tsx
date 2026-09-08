@@ -65,7 +65,6 @@ export function Workbench() {
     prepareView: view.prepareAgentView,
     setPlayhead: view.setPlayhead,
     setPlaying: view.setPlaying,
-    onCandidatePreview: presentation.onCandidatePreview,
     capture: files.capture
   });
 
@@ -103,7 +102,7 @@ export function Workbench() {
         onSetCamera={view.setCamera}
       />
       <ViewportWorkspace
-        viewportDocument={presentation.viewportDocument}
+        viewportDocument={agent.viewportDocument}
         assets={project.assets}
         viewportOptions={view.viewportOptions}
         environment={view.environment}

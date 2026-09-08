@@ -317,7 +317,29 @@ export interface AssetAssemblyDecl {
   readonly span: SourceSpan;
 }
 
-export type AssetDeclaration = AssetSocketContractDecl | AssetRigContractDecl |
+export interface AssetDesignField {
+  readonly id: string;
+  readonly type: AssetValueType;
+  readonly value: ProgramExpr;
+  readonly span: SourceSpan;
+}
+
+export interface AssetDesignCheck {
+  readonly id: string;
+  readonly value: ProgramExpr;
+  readonly span: SourceSpan;
+}
+
+export interface AssetDesignDecl {
+  readonly kind: 'design';
+  readonly exported: boolean;
+  readonly id: string;
+  readonly fields: readonly AssetDesignField[];
+  readonly checks: readonly AssetDesignCheck[];
+  readonly span: SourceSpan;
+}
+
+export type AssetDeclaration = AssetDesignDecl | AssetSocketContractDecl | AssetRigContractDecl |
   AssetSkeletonDecl | AssetSurfaceContractDecl | AssetSurfaceDecl |
   AssetComponentDecl | AssetMotionDecl | AssetAssemblyDecl;
 

@@ -155,9 +155,10 @@ const checkDependencyPins = (
   return true;
 };
 
-export const validateWorkspaceContents = (
+const validateContents = (
   workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
-  override?: WorkspaceLimitsOverride
+  override: WorkspaceLimitsOverride | undefined,
+  integrity: boolean
 ): readonly WorkspaceDiagnostic[] => {
   let limits: WorkspaceLimits;
   try {
@@ -253,6 +254,10 @@ export const validateWorkspaceContents = (
       syntheticSourceRef(path)))) return diagnostics;
   }
 
+  // Candidate structure and budgets must be accepted before parsing bytes or
+  // deriving a new local lock. Persisted authority always checks integrity.
+  if (!integrity) return sortWorkspaceDiagnostics(diagnostics);
+
   for (const pkg of packageViews) {
     const lock = locks.get(pkg.name);
     if (lock === undefined) {
@@ -295,3 +300,14 @@ export const validateWorkspaceContents = (
   if (!checkDependencyPins(packageViews, locks, diagnostics, limits)) return diagnostics;
   return sortWorkspaceDiagnostics(diagnostics);
 };
+
+export const validateWorkspaceContents = (
+  workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
+  override?: WorkspaceLimitsOverride
+): readonly WorkspaceDiagnostic[] => validateContents(workspace, override, true);
+
+/** Internal pre-seal gate. Local lock records may be absent, never CAS records. */
+export const validateWorkspaceStructure = (
+  workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
+  override?: WorkspaceLimitsOverride
+): readonly WorkspaceDiagnostic[] => validateContents(workspace, override, false);

@@ -3,11 +3,11 @@
   "version": 1,
   "workspace": {
     "path": "examples/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:8629dca725f5d951780ce85f8b7bcf2692a221ea56c896ef8f81c6ca2c16973f",
-    "workspaceHash": "sha256:777166051a296b5b13cf441c47eda1efbe9f8b80c49f93a23536dc09434f74cb"
+    "sha256": "sha256:b5a27ae8bd25ad8fd68f0c5e65d5d8b7c9e6e9668d38ed3a3154e3d3e8e2ab03",
+    "workspaceHash": "sha256:c25b9b60779e491d63e81ebf10a4a8158a631dad194ae1fd77395dbb7c7c9101"
   },
   "capture": {
-    "fingerprint": "sha256:072474af9758198997d95b4484f421770d84113a75907b28d7d073115e554286",
+    "fingerprint": "sha256:c92bbb989cb5d94344d5a4da9a489533e9fbadcc22dc0217707c2bdce112df78",
     "environment": "studio",
     "camera": "perspective",
     "width": 640,
@@ -16,10 +16,24 @@
   },
   "entries": [
     {
+      "packageName": "workbench",
+      "entryName": "griffin",
+      "closureHash": "sha256:4cb01fd74ace151c22f1484c4921c870b70c808512e914fb37ae9ac0dee9b562",
+      "buildKey": "sha256:2e5adab64e47c77b776cebd36adbf15ff3f12e0b5b0e38aa7e1b0fd163187b8b",
+      "productHash": "sha256:8956f1845338b95573ebfcc4cab2d7710ad8f6ad69ea2acf4aa0344a3152f007",
+      "artifact": "griffin-build-replay.gif",
+      "poster": "griffin-poster.png",
+      "artifactSha256": "sha256:e28256e56c87982e532576c74dc5c236363e000b3ffeb44b80785219153d0886",
+      "posterSha256": "sha256:145370ec03805c76a120e5dc72a6e15843e2546876bc35c62d4e142e7a1b2046",
+      "byteLength": 1809118,
+      "frameCount": 142,
+      "eventCount": 113
+    },
+    {
       "packageName": "creatures",
       "entryName": "fox",
       "closureHash": "sha256:2b844c43b1781b5f60185f7492d789ae7bdce8d75788cc2afc9f3b85701b2730",
-      "buildKey": "sha256:2e3f616bb9344a5634e440c43bc2f2e292ccdb7680c7b51abd2f438aac7fe009",
+      "buildKey": "sha256:3dd371e6bff78e23b0bd5e0efa62b9ecc417ac58bb8f4a84118d56d4fcc54710",
       "productHash": "sha256:06a5581bda152e91c6a3dc79b0283ecebc6c945fc36736853f0e6426c5405c99",
       "artifact": "fox-build-replay.gif",
       "poster": "fox-poster.png",
@@ -33,7 +47,7 @@
       "packageName": "creatures",
       "entryName": "goblin",
       "closureHash": "sha256:d00d0ca91e126b29a593f2415ee20366273be02406fa39e08cdd9cdef66f4eaf",
-      "buildKey": "sha256:ccd238c79c43b1fa4b460a4112195008ef5e5afb54c5ad89fa6a5b32a0559878",
+      "buildKey": "sha256:e4b2e28e51089ebd1d0d217b7094962b218d0e49697fafc8f4bfe3aeddfa1915",
       "productHash": "sha256:30a7d1db235de53718c9f7a1c2cfb3ee8dbe0d2d69666da3ece3a27691c31a6d",
       "artifact": "goblin-build-replay.gif",
       "poster": "goblin-poster.png",

@@ -22,10 +22,10 @@ import {
   normalizeLogicalPath
 } from './path';
 import {
-  readWorkspaceLock,
   readWorkspaceManifest,
   readAuthoredAssetWorkspace
 } from './reader';
+import { sealWorkspaceCandidate } from './seal';
 
 export interface WorkspaceStageOptions {
   readonly limits?: WorkspaceLimitsOverride;
@@ -54,7 +54,7 @@ const freezeFiles = (files: readonly WorkspaceFile[]): readonly WorkspaceFile[] 
   Object.freeze([...files].sort((left, right) => left.path < right.path ? -1 : 1)
     .map((file) => Object.freeze({ path: file.path, source: file.source })));
 
-/** Stages a complete candidate after CAS and structural authority checks only. */
+/** Stages a parsed, locally sealed candidate after compare-and-swap and structure checks. */
 export const stageWorkspaceChangeSet = (
   current: AuthoredAssetWorkspace,
   changes: WorkspaceChangeSet,
@@ -71,7 +71,7 @@ export const stageWorkspaceChangeSet = (
   if (!opened.ok) return opened;
   const base = opened.value;
   const allowedChangeKeys = new Set([
-    'expectedWorkspaceHash', 'writes', 'deletes', 'manifest', 'lock'
+    'expectedWorkspaceHash', 'writes', 'deletes', 'manifest'
   ]);
   if (!isClosedContractRecord(changes) ||
       Object.keys(changes).some((key) => !allowedChangeKeys.has(key)) ||
@@ -188,18 +188,7 @@ export const stageWorkspaceChangeSet = (
     if (!manifest.ok) return manifest;
     manifestValue = manifest.value;
   }
-  let lockValue = base.lock;
-  if (changes.lock !== undefined) {
-    const lock = readWorkspaceLock(changes.lock);
-    if (!lock.ok) return lock;
-    lockValue = lock.value;
-  }
-  const candidateInput: AuthoredAssetWorkspace = {
-    files: freezeFiles([...files.values()]),
-    manifest: manifestValue,
-    lock: lockValue
-  };
-  const candidate = readAuthoredAssetWorkspace(candidateInput, { limits });
+  const candidate = sealWorkspaceCandidate(base, freezeFiles([...files.values()]), manifestValue, limits);
   if (!candidate.ok) return candidate;
   return {
     ok: true,

@@ -34,10 +34,6 @@ assert.equal(stale.ok, false);
 assert.ok(!stale.ok && stale.diagnostics.some((item) => item.code === 'workspace.cas.stale'));
 
 const changedSource = `${assetSource('main', ['./util.ashfox'])}\n// changed`;
-const changed = workspaceFixture([
-  { path: 'dragon/main.ashfox', source: changedSource },
-  { path: 'dragon/util.ashfox', source: moduleSource('util') }
-], { modules: [{ subpath: './util', path: 'util.ashfox' }] });
 const update: WorkspaceChangeSet = {
   expectedWorkspaceHash: currentHash,
   writes: [{
@@ -45,8 +41,7 @@ const update: WorkspaceChangeSet = {
     source: changedSource,
     expectedHash: computeSourceContentHash(assetSource('main', ['./util.ashfox']))
   }],
-  deletes: [],
-  lock: changed.lock
+  deletes: []
 };
 const staged = stageWorkspaceChangeSet(current, update);
 assert.equal(staged.ok, true, staged.ok ? '' : staged.diagnostics[0]?.message);
@@ -71,15 +66,10 @@ const invalid = workspaceFixture([
 const structuralStage = stageWorkspaceChangeSet(current, {
   expectedWorkspaceHash: currentHash,
   writes: [{ path: 'dragon/main.ashfox', source: invalid.files[0]!.source }],
-  deletes: [],
-  lock: invalid.lock
+  deletes: []
 });
-assert.equal(structuralStage.ok, true,
-  structuralStage.ok ? '' : structuralStage.diagnostics[0]?.message);
-if (structuralStage.ok) assert.equal(
-  structuralStage.candidate.files.find((file) => file.path === 'dragon/main.ashfox')?.source,
-  invalid.files[0]!.source,
-  'staging does not perform semantic source compilation'
-);
+assert.equal(structuralStage.ok, false, 'local lock sealing requires syntactically valid source');
+if (!structuralStage.ok) assert.ok(structuralStage.diagnostics.some((item) =>
+  item.code.startsWith('workspace.source.')));
 
 console.log('workspace structural change staging and CAS checks ok');
