@@ -14,7 +14,9 @@ import type {
   VisualReviewDecisionRequest,
   ViewPresentationRequest
 } from './types';
-import { VISUAL_REVIEW_CHECKS } from '../../application/review';
+import {
+  visualReviewChecksForCamera
+} from '../../application/review';
 import {
   nextVisualReview
 } from './visualReviewPlan';
@@ -100,7 +102,7 @@ export const presentAgentProject = ({
       camera,
       clipId: null,
       timeSeconds: 0,
-      reviewChecks: VISUAL_REVIEW_CHECKS
+      reviewChecks: visualReviewChecksForCamera(camera)
     }, previewDocument);
   }
   const readiness = evaluateProductionReadiness(document, report);
@@ -157,6 +159,6 @@ export const presentAgentProject = ({
     purpose: 'delivery',
     ...nextReview,
     timeSeconds: 0,
-    reviewChecks: VISUAL_REVIEW_CHECKS
+    reviewChecks: visualReviewChecksForCamera(nextReview.camera)
   });
 };

@@ -57,6 +57,9 @@
       name
     );
 
+    const retiredSide = await present({ review: 'preview', camera: 'side' }, 'present.retired-side');
+    failedWith(retiredSide, 'present.retired-side', 'invalid_request');
+
     const initialResult = await inspect(undefined, 'inspect.initial');
     const initial = successfulData(initialResult, 'inspect.initial');
     expect(typeof initial.revision === 'string' && typeof initial.workspaceHash === 'string',
@@ -167,6 +170,7 @@
     expect(afterInvalid.workspaceHash === initial.workspaceHash,
       'An invalid candidate changed the authoritative workspace.', brief(afterInvalidResult));
     state.guards = {
+      retiredSideRejected: true,
       invalidCandidate: { code: invalidError.code, path: invalidError.path, workspaceUnchanged: true }
     };
 
@@ -326,7 +330,14 @@
       reviews.push({ ...review, accepted: true, completedCycles: accepted.completedCycles });
       await wait(40);
     }
-    expect(reviews.some((review) => review.mode === 'frame'), 'The review sequence contained no static frames.');
+    for (const camera of ['left', 'right']) {
+      expect(reviews.some((review) => review.mode === 'frame' && review.camera === camera),
+        `The review sequence did not observe the ${camera} side.`);
+    }
+    const left = reviews.find((review) => review.camera === 'left');
+    const right = reviews.find((review) => review.camera === 'right');
+    expect(left.frameNonce !== right.frameNonce,
+      'Opposite sides reused one frame acknowledgement.');
     expect(reviews.some((review) => review.mode === 'cycle' && review.completedCycles >= 1),
       'The review sequence contained no completed animation cycle.');
     state.reviews = reviews;

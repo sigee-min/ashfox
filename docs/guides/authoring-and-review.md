@@ -9,7 +9,7 @@ same size.”
 
 ## Check the result
 
-Look at the model from several angles and at the size it will appear in your
+Look at the model from both sides and several angles and at the size it will appear in your
 game. Watch the animation for a full loop. Check that the shape reads clearly,
 colors work together, and parts stay connected as they move.
 

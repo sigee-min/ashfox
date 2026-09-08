@@ -3,13 +3,17 @@ import { canonicalJsonString } from '@ashfox/engine-core';
 import type { VisualReviewObservation } from './observation';
 import type { VisualReviewReceipt } from './schema';
 
+export const visualReviewKey = (
+  review: Pick<VisualReviewObservation['data'], 'mode' | 'camera' | 'clipId'>
+): string => review.clipId === null
+  ? `${review.mode}:${review.camera}`
+  : `${review.mode}:${review.camera}:${review.clipId}`;
+
 const receiptKey = (receipt: VisualReviewReceipt): string => {
   const data = receipt.observation.data;
   return JSON.stringify([
     data.purpose,
-    data.mode,
-    data.camera,
-    data.clipId
+    visualReviewKey(data)
   ]);
 };
 

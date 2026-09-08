@@ -91,17 +91,29 @@ assert.ok(
   'tractor-sized assets should fill more of the viewport'
 );
 
-const eastSideTarget = applyCameraPreset(
+const eastRightTarget = applyCameraPreset(
   camera,
-  'side',
+  'right',
   compactModel,
   'east'
 );
-const eastSideDirection = camera.position.clone().sub(eastSideTarget).normalize();
+const eastRightDirection = camera.position.clone().sub(eastRightTarget).normalize();
 assert.ok(
-  Math.abs(eastSideDirection.x) < 1e-6 && eastSideDirection.z > 0.999,
-  'side view must remain side-relative when the semantic forward axis is east'
+  Math.abs(eastRightDirection.x) < 1e-6 && eastRightDirection.z > 0.999,
+  'right view must remain side-relative when the semantic forward axis is east'
 );
+
+for (const forward of ['north', 'south', 'east', 'west'] as const) {
+  for (const view of ['left', 'right'] as const) {
+    const target = applyCameraPreset(camera, view, compactModel, forward);
+    const actualDepth = camera.position.clone().sub(target).normalize();
+    assert.deepEqual(
+      canonicalAxis(actualDepth.toArray()),
+      canonicalAxis(projectSignedViewFrame(forward, view).depth),
+      `${forward}/${view} UI camera must use the exact proof depth axis`
+    );
+  }
+}
 
 compactModel.geometry.dispose();
 tallModel.geometry.dispose();

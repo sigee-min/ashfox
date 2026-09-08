@@ -10,7 +10,22 @@ const anchors: Readonly<Record<string, readonly [number, number]>> = Object.free
   bottom_left: [0, 1], bottom: [0.5, 1], bottom_right: [1, 1]
 });
 
-/** Place an unchanged pixel stamp in the owning face's local integer grid. */
+type StampFlip = 'none' | 'x' | 'y' | 'xy';
+
+const stampFlips: ReadonlySet<StampFlip> = new Set(['none', 'x', 'y', 'xy']);
+
+const readFlip = (
+  value: ProgramTextureStampUse['properties'][number]['value'],
+  report: TextureReporter,
+  fallback: ProgramTextureStampUse['span']
+): StampFlip | null => {
+  if (value.kind === 'name' && stampFlips.has(value.value as StampFlip)) return value.value as StampFlip;
+  report.report(value.span ?? fallback, 'asset.texture.invalid-flip',
+    'Stamp flip must be one of none, x, y, or xy.');
+  return null;
+};
+
+/** Place a pixel stamp in the owning face's local integer grid. */
 export const stampUse = (
   statement: ProgramTextureStampUse,
   region: TextureRegion,
@@ -25,7 +40,7 @@ export const stampUse = (
     report.report(statement.span, 'asset.texture.unknown-stamp', 'Unknown texture stamp "' + statement.id + '".');
     return;
   }
-  const entries = properties(statement.properties, ['at', 'anchor', 'offset', 'protect'],
+  const entries = properties(statement.properties, ['at', 'anchor', 'offset', 'protect', 'flip'],
     statement.span, report.path, propertyIssue(report));
   if (entries === null) return;
   const at = entries.get('at'); const anchor = entries.get('anchor'); const offset = entries.get('offset');
@@ -35,6 +50,9 @@ export const stampUse = (
       'Stamp placement requires exactly at or the pair anchor and offset.');
     return;
   }
+  const flipEntry = entries.get('flip');
+  const flip = flipEntry === undefined ? 'none' : readFlip(flipEntry.value, report, statement.span);
+  if (flip === null) return;
   const position = at ?? offset!;
   const delta = readTexelVector(position.value, context, 2, report.path, propertyIssue(report), position.span);
   if (delta === null) return;
@@ -80,9 +98,11 @@ export const stampUse = (
   for (let row = 0; row < stamp.height; row += 1) for (let column = 0; column < stamp.width; column += 1) {
     const cell = stamp.cells[row * stamp.width + column];
     if (cell === null) continue;
+    const targetColumn = flip === 'x' || flip === 'xy' ? stamp.width - 1 - column : column;
+    const targetRow = flip === 'y' || flip === 'xy' ? stamp.height - 1 - row : row;
     const selected = readRole({ kind: 'name', value: cell.role, span: statement.span }, palette, false,
       report.path, propertyIssue(report), statement.span);
     const id = selected === null ? null : roleId(grid, selected.name);
-    if (id !== null) paintStamp(grid, region.x + x + column, region.y + y + row, id, 2);
+    if (id !== null) paintStamp(grid, region.x + x + targetColumn, region.y + y + targetRow, id, 2);
   }
 };

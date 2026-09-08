@@ -19,7 +19,8 @@ export function WorkbenchToolbar({
           [
             ['perspective', 'Perspective'],
             ['front', 'Front'],
-            ['side', 'Side'],
+            ['left', 'Left'],
+            ['right', 'Right'],
             ['top', 'Top']
           ] as const
         ).map(([mode, label]) => (

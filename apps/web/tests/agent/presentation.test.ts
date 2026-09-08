@@ -9,6 +9,21 @@ assert.equal(
   5,
   'the live visual checklist must cover the current review dimensions'
 );
+assert.equal(
+  parsePresentRequest({ review: 'preview', camera: 'side' }).ok,
+  false,
+  'the retired ambiguous side camera is rejected'
+);
+assert.equal(
+  parsePresentRequest({ review: 'preview', camera: 'left' }).ok,
+  true,
+  'left is an explicit signed camera'
+);
+assert.equal(
+  parsePresentRequest({ review: 'preview', camera: 'right' }).ok,
+  true,
+  'right is an explicit signed camera'
+);
 assert.ok(VISUAL_REVIEW_CHECKS.every((check) => check.instruction.length > 0),
   'each live visual check carries an agent-readable instruction');
 assert.equal(new Set(VISUAL_REVIEW_CHECKS.map((check) => check.id)).size,

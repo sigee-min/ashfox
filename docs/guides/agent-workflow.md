@@ -1,6 +1,6 @@
 # Agent workflow
 
-This is the execution guide for runtime manifest schema version 2. Connect to
+This is the execution guide for runtime manifest schema version 3. Connect to
 `https://ashfox.io/workbench/` by default and fetch its
 `agent-manifest.json` through direct HTTP. When the user explicitly selects a
 development Workbench, use that origin's manifest and linked reference files.
@@ -214,8 +214,11 @@ modify external dependencies.
 After success, obtain a fresh overview, discover current node IDs, and repeat
 affected measurements and UV reads. Old guards and review evidence are stale.
 
-Follow `present({review:'next'})` through the required frames and motion
-cycles. Observe each actual rendered result before accepting its returned
+Follow `present({review:'next'})` through perspective, native, front, left,
+right, top, and every motion cycle. Left and right are relative to the asset's
+forward direction and each needs its own rendered evidence; `side` is rejected.
+Compare paired focal marks in both side views, allowing intentional asymmetry
+when the task calls for it. Observe each actual rendered result before accepting its returned
 `frameNonce` and check IDs. A rejected review requires a new source revision.
 After accepted reviews, generate Build replay; preflight the user's selected
 export target when delivery is requested, then let the user export. Preflight

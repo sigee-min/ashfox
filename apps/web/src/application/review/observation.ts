@@ -9,7 +9,7 @@ export const VISUAL_REVIEW_ISSUES = Object.freeze([
 export type VisualReviewIssue = (typeof VISUAL_REVIEW_ISSUES)[number];
 
 export const VISUAL_REVIEW_CAMERAS = Object.freeze([
-  'perspective', 'native', 'front', 'side', 'top'
+  'perspective', 'native', 'front', 'left', 'right', 'top'
 ] as const);
 export type VisualReviewCamera =
   (typeof VISUAL_REVIEW_CAMERAS)[number];
@@ -43,12 +43,24 @@ export interface VisualReviewObservation {
   };
 }
 
+/**
+ * The bilateral comparison is bound to the authored right view. The left
+ * receipt remains independently reviewable, so a first left-side observation
+ * never claims that an unobserved opposite frame was compared.
+ */
+export const VISUAL_REVIEW_BILATERAL_CHECK: VisualReviewCheck = Object.freeze({
+  id: 'source.bilateral-detail',
+  issue: 'feature_detail',
+  instruction:
+    'Compare the authored left and right detail directly. Confirm deliberate asymmetry is preserved and every bilateral feature is intentional; do not infer a match from one side.'
+});
+
 export const VISUAL_REVIEW_CHECKS: readonly VisualReviewCheck[] = Object.freeze([
   Object.freeze({
     id: 'source.silhouette',
     issue: 'silhouette',
     instruction:
-      'Inspect label-hidden front, side, top, and perspective views: the gameplay-size silhouette and primary read remain legible.'
+      'Inspect label-hidden front, left, right, top, and perspective views: the gameplay-size silhouette and primary read remain legible.'
   }),
   Object.freeze({
     id: 'source.element-economy',
@@ -75,3 +87,9 @@ export const VISUAL_REVIEW_CHECKS: readonly VisualReviewCheck[] = Object.freeze(
       'Inspect pivots and motion at joints or attachments: keyframed parts remain connected and the movement reads without pops or implausible arcs.'
   })
 ]);
+
+export const visualReviewChecksForCamera = (
+  camera: VisualReviewCamera
+): readonly VisualReviewCheck[] => camera === 'right'
+  ? Object.freeze([...VISUAL_REVIEW_CHECKS, VISUAL_REVIEW_BILATERAL_CHECK])
+  : VISUAL_REVIEW_CHECKS;

@@ -13,7 +13,7 @@ import {
 import { isPixelFrameEvidence } from '../../rendering/pixelFrameEvidence';
 import {
   VISUAL_REVIEW_CAMERAS,
-  VISUAL_REVIEW_CHECKS,
+  visualReviewChecksForCamera,
   type VisualReviewCamera,
   type VisualReviewObservation
 } from './observation';
@@ -119,6 +119,6 @@ export const isPendingVisualReviewObservation = (
     observationModeIsValid &&
     isReviewCheckArray(data.reviewChecks) &&
     canonicalJsonString(data.reviewChecks) === canonicalJsonString(
-      VISUAL_REVIEW_CHECKS
+      visualReviewChecksForCamera(camera)
     );
 };

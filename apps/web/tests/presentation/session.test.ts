@@ -135,7 +135,7 @@ if (previewResult.result?.ok) {
 
 const wrongCamera = observePresentationFrame(
   session(),
-  frame({ camera: 'side', frameNonce: 12 })
+  frame({ camera: 'right', frameNonce: 12 })
 );
 assert.equal(wrongCamera.result, null);
 assert.equal(wrongCamera.session?.lastFrameNonce, 12);

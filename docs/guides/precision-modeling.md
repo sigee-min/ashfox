@@ -142,6 +142,28 @@ stamp. A centered stamp with an odd remaining pixel count fails off-grid,
 rather than picking a rounding direction. Pick a corner anchor or change the
 authored dimensions to resolve it.
 
+`anchor` only positions the stamp rectangle. `flip = x` reflects its pixel
+contents horizontally inside that rectangle; `y` reflects vertically, `xy`
+reflects both, and omitted or `none` keeps the original. Placement, dimensions,
+transparent cells, and the protection rectangle keep their original bounds.
+
+For example, an 8-pixel-deep head with an asymmetric 3×3 eye can use:
+
+```text
+stamp eye { pixels = "eee/egg/eee"; e = outline; g = iris; }
+chart head box {
+  origin = (0px, 0px); fill = coat;
+  face west { stamp eye { anchor = top_left; offset = (1px, 2px); } }
+  face east { stamp eye { anchor = top_right; offset = (-1px, 2px); flip = x; } }
+}
+```
+
+This is a placement fragment: declare its palette and matching chart as in the
+complete example above. Opposite faces have opposite local horizontal
+orientation. Mirrored anchors align the rectangles; reflecting the asymmetric
+contents aligns the iris. Check both rendered sides. Do not impose reflection
+on deliberately different marks such as scars or a wink.
+
 Optional `protect = 1px` freezes the stamp rectangle (including transparent
 dot cells) and its surrounding margin against later voxel tone and grain.
 The complete protected rectangle must fit the face. Protection does not paint

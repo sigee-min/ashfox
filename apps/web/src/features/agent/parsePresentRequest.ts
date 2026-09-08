@@ -124,7 +124,7 @@ export const parsePresentRequest = (
     ) {
       return failure(
         'camera',
-        'perspective | native | front | side | top'
+        'perspective | native | front | left | right | top'
       );
     }
     if (

@@ -23,9 +23,9 @@ const starter = createBlankWorkbenchProject('2026-09-08T00:00:00.000Z');
 const initial = overview(starter);
 assert.equal(initial.blocker, null, 'A compiled starter needs no unavailable project.create command.');
 assert.equal(initial.workflow.stage, 'review');
-assert.equal(initial.workflow.remainingVisualReviewCount, 6);
+assert.equal(initial.workflow.remainingVisualReviewCount, 7);
 assert.equal(initial.workflow.remainingVisualReviews.length, 6);
-assert.equal(initial.workflow.visualReviewsTruncated, false);
+assert.equal(initial.workflow.visualReviewsTruncated, true);
 
 const file = starter.workspace.files[0]!;
 const applied = executeAgentCommandBatch(starter, {
@@ -48,7 +48,7 @@ for (let count = 0; count <= reviews.length; count += 1) {
   assert.equal(state.workflow.stage, count === reviews.length ? 'deliver' : 'review');
   assert.equal(state.nextActions.length, count === reviews.length ? 0 : 1);
 }
-assert.equal(overview(starter, reviews).workflow.remainingVisualReviewCount, 6,
+assert.equal(overview(starter, reviews).workflow.remainingVisualReviewCount, 7,
   'Review progress belongs to the exact workspace/build identity.');
 const rejected = createVisualReviewReceiptFixture(applied.project, { verdict: 'rejected' });
 assert.equal(overview(applied.project, [rejected]).blocker?.code, 'review.rejected');
@@ -70,6 +70,6 @@ const renamed = executeAgentCommandBatch(starter, {
 });
 assert.ok(renamed.ok, 'A valid longer package name compiles.');
 if (!renamed.ok) throw new Error('Long package edit failed.');
-assert.equal(overview(renamed.project).workflow.remainingVisualReviewCount, 6,
+assert.equal(overview(renamed.project).workflow.remainingVisualReviewCount, 7,
   'Adding workflow progress must not prevent reading valid current project guards.');
 console.log('starter workspace and revision-bound public review progress ok');

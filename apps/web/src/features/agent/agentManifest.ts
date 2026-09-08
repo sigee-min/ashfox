@@ -32,6 +32,7 @@ const language = Object.freeze({
     'Share exact dimensions through design fields. Imports require explicit paths, aliases, and exported declarations; rig, socket, and surface bindings are nominal.',
     'Skeletons implement rig contracts; components own geometry; surfaces own charts and pixels; motions target rig joints with rotation or scale tracks. Assets bind these declarations explicitly.',
     'Current asset density is 16, or one texel per model unit. Calculated texel positions must be integral. Use the precision reference for design expressions and fixed-size anchored stamps.',
+    'Stamp anchors position the rectangle; flip = none|x|y|xy reflects its contents in face-local pixel axes without moving it. Use explicit reflection for paired asymmetric marks; anchors alone do not mirror pixels.',
     'Delivery requires an authored loop named idle. Review every authored motion cycle.',
     'The compiler validates bindings, frames, graph closure, bounds, UV, and budgets. Resolve diagnostics in source; it does not infer missing assembly or repair visual defects.',
     'Saved workspace locks must match the current compiler fingerprint. The edit API regenerates local locks; it does not migrate incompatible saved files.'
@@ -44,7 +45,7 @@ const minecraftStyle = Object.freeze({
     'Preserve the established silhouette, palette, pixel density, and focal marks unless the user requests a change.',
     'Use economical volume geometry for silhouette, attachment, depth, and occlusion; use a plane only when zero thickness is intentional.',
     'Give each surface a named atlas chart, adjacent color ramp, deterministic seeded grain, deliberate macro marks, and nearest sampling. Texture detail must support rather than replace readable geometry.',
-    'Review perspective, native gameplay, front, side, top, nearest-neighbor detail, and every authored motion cycle before delivery.'
+    'Review perspective, native gameplay, front, left, right, top, nearest-neighbor detail, and every authored motion cycle before delivery.'
   ] as const),
   reviewChecklist: Object.freeze([
     'Silhouette, proportions, joint hierarchy, socket contact, and function read without labels.',
@@ -56,7 +57,7 @@ const minecraftStyle = Object.freeze({
 });
 
 export const agentManifest = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   protocol: agentCommandProtocol.protocol,
   workbench: agentCommandProtocol.workbench,
   href: agentCommandProtocol.href,
@@ -163,7 +164,7 @@ const result = await callAgent(browser, 'run', {
       reject:
         'await window.ashfox.present({review:"reject",frameNonce:<frameNonce>,issues:[...],failedCheckIds:[...reviewCheckIds]})',
       contract:
-        'Use each returned frameNonce and review check IDs only for the frame actually observed. Never accept an unseen frame or cycle. Review the materialized selected entry; rejection requires a new atomic workspace revision.'
+        'Use each returned frameNonce and review check IDs only for the frame actually observed. Never accept an unseen frame or cycle. Review the materialized selected entry. Left and right are separate required views relative to the asset forward direction; compare paired details and accept intentional asymmetry only when it fits the request. The retired side camera is rejected. Rejection requires a new atomic workspace revision.'
     },
     capture: {
       build:

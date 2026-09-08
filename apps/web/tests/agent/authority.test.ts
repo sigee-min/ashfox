@@ -26,7 +26,7 @@ assert.ok(agentManifest.compatibility.options.every((option) =>
 
 // Verify the published JSON, not just the in-memory TypeScript examples.
 const published: typeof agentManifest = JSON.parse(JSON.stringify(agentManifest));
-assert.equal(published.schemaVersion, 2);
+assert.equal(published.schemaVersion, 3);
 for (const request of published.pageApi.inspect.examples.requests) {
   assert.deepEqual(parseInspectRequest(request), { ok: true, request });
   assert.equal(parseInspectRequest({ ...request, extra: true }).ok, false);
