@@ -426,10 +426,7 @@ if (
   landingHtml.includes('href="/workbench/?') ||
   landingHtml.indexOf('Download workspace') >
     landingHtml.indexOf('Launch Workbench') ||
-  !/reconstructed build replay from the final validated entry/iu.test(
-    landingHtml
-  ) ||
-  !landingHtml.includes('places geometry in deterministic order')
+  !landingHtml.includes(landingContent.showcase.provenance)
 ) {
   failures.push('landing must present the honest download-then-launch replay flow');
 }
@@ -446,9 +443,7 @@ for (const requiredReadmeReference of [
     failures.push(`README showcase reference is missing: ${requiredReadmeReference}`);
   }
 }
-if (!/reconstructed build replay from the final validated entry/iu.test(
-  rootReadme
-)) {
+if (!rootReadme.includes(landingContent.showcase.provenance)) {
   failures.push('README must identify the replay as a reconstruction');
 }
 for (const readmeReplay of ['fox-build-replay.gif', 'goblin-build-replay.gif']) {
@@ -464,17 +459,22 @@ for (const readmeReplay of ['fox-build-replay.gif', 'goblin-build-replay.gif']) 
 const agentInstructionControlCount = (
   landingHtml.match(/\sdata-copy-agent-instruction(?:\s|>)/g) ?? []
 ).length;
-if (agentInstructionControlCount !== 3) {
+if (agentInstructionControlCount !== 2) {
   failures.push(
-    `landing has ${agentInstructionControlCount} agent instruction controls, expected 3`
+    `landing has ${agentInstructionControlCount} agent instruction controls, expected 2`
   );
 }
-if (
-  !landingHtml.includes('One instruction. Then describe what you want.') ||
-  !landingHtml.includes('Copy the manifest instruction') ||
-  !landingHtml.includes('Your agent will ask what you want to create.')
-) {
-  failures.push('landing must teach the copy, paste, and describe workflow');
+const instructionButtons = landingHtml.match(
+  /<button(?=[^>]*\sdata-copy-agent-instruction(?:\s|>))[^>]*>/gu
+) ?? [];
+if (instructionButtons.some((button) =>
+  attribute(button, 'data-instruction') !== landingContent.quickStart.instruction
+)) {
+  failures.push('every setup button must copy the current agent instruction');
+}
+if (!landingHtml.includes('id="quick-start"') ||
+    !landingHtml.includes('browser-capable AI agent')) {
+  failures.push('landing must provide a reachable setup and browser requirement');
 }
 for (const documentationPath of [
   'README.md',

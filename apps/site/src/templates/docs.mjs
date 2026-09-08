@@ -1,4 +1,5 @@
 import {
+  documentationOrder,
   sectionLabels,
   sectionOrder
 } from '../content.mjs';
@@ -13,7 +14,8 @@ const groupDocuments = (documents) =>
     .map((section) => ({
       section,
       label: sectionLabels[section] ?? section,
-      documents: documents.filter((document) => document.section === section)
+      documents: documents.filter((document) => document.section === section &&
+        documentationOrder.includes(document.route))
     }))
     .filter((group) => group.documents.length > 0);
 

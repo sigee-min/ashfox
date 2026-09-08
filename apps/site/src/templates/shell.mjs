@@ -1,7 +1,5 @@
 import {
-  landingContent,
-  sectionLabels,
-  sectionOrder
+  landingContent
 } from '../content.mjs';
 
 export const escapeHtml = (value) =>
@@ -47,7 +45,7 @@ const headerSetupButton = () => `
     type="button"
     data-copy-agent-instruction
     data-instruction="${escapeHtml(landingContent.quickStart.instruction)}"
-    aria-label="Copy the ashfox manifest instruction"
+    aria-label="Copy setup instruction for your AI agent"
   >
     <span class="header-copy-glyph" aria-hidden="true"></span>
     <span
