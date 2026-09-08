@@ -110,7 +110,7 @@ npm run showcase:capture
 npm run showcase:check
 ```
 
-The capture command starts an isolated local Workbench, renders both entries,
+The capture command starts an isolated local Workbench, renders all three entries,
 and seals `assets/showcase/shared-creatures/showcase.json`. It requires Chrome
 or Chromium; set `ASHFOX_CHROME_PATH` when the executable is outside a standard
 location. Do not hand-edit the generated media or descriptor. Event ordering,

@@ -17,7 +17,11 @@ import { createCaptureProjection } from './projection';
 import { renderBuildGif } from './renderBuildGif';
 
 const WORKSPACE_URL = '/tooling/shared-creatures.ashfoxworkspace';
-const ENTRY_NAMES = ['fox', 'goblin'] as const;
+const ENTRY_SELECTORS = [
+  { packageName: 'workbench', entryName: 'griffin' },
+  { packageName: 'creatures', entryName: 'fox' },
+  { packageName: 'creatures', entryName: 'goblin' }
+] as const;
 
 const blobBase64 = async (blob: Blob): Promise<string> => {
   const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -125,7 +129,7 @@ export const installShowcaseCapture = (target: Window): void => {
     if (!response.ok) throw new Error('Canonical showcase workspace is unavailable.');
     const source = await response.text();
     const renders: Array<() => Promise<void>> = [];
-    for (const entryName of ENTRY_NAMES) {
+    for (const { packageName, entryName } of ENTRY_SELECTORS) {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:12px;align-items:center;margin-top:10px';
       const button = document.createElement('button');
@@ -150,7 +154,7 @@ export const installShowcaseCapture = (target: Window): void => {
               createdAt: '2026-01-01T00:00:00.000Z',
               updatedAt: '2026-01-01T00:00:00.000Z'
             },
-            { packageName: 'creatures', entryName }
+            { packageName, entryName }
           );
           const capture = await renderBuildGif({
             document: project.document,

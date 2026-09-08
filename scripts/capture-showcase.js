@@ -14,6 +14,8 @@ const SHOWCASE_ROOT = path.join(
   'shared-creatures'
 );
 const MEDIA = Object.freeze([
+  ['griffin', 'gif', 'griffin-build-replay.gif'],
+  ['griffin', 'png', 'griffin-poster.png'],
   ['fox', 'gif', 'fox-build-replay.gif'],
   ['fox', 'png', 'fox-poster.png'],
   ['goblin', 'gif', 'goblin-build-replay.gif'],
@@ -131,7 +133,7 @@ const captureDom = (browser, url, profile) => {
   const html = result.stdout ?? '';
   if (!html.includes('data-showcase-capture="ready"')) {
     const reason = result.error?.code === 'ETIMEDOUT'
-      ? 'timed out before both entries were ready'
+      ? 'timed out before all entries were ready'
       : `exited with ${result.status ?? 'no status'}`;
     throw new Error(`Browser capture ${reason}.`);
   }
@@ -175,7 +177,7 @@ const main = async () => {
       [path.join(ROOT, 'scripts', 'showcase.js'), '--write'],
       { cwd: ROOT, stdio: 'inherit' }
     );
-    console.log('ashfox showcase captured: fox + goblin');
+    console.log('ashfox showcase captured: griffin + fox + goblin');
   } finally {
     server.kill('SIGTERM');
     if (staged !== null) fs.rmSync(staged, { recursive: true, force: true });

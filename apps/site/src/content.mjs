@@ -9,18 +9,25 @@ export const landingContent = {
       'Build replays reconstructed from the finished models.',
     entries: [
       {
+        packageName: 'workbench',
+        entryName: 'griffin',
+        index: '01',
+        label: 'Griffin guardian',
+        summary: 'A fantasy guardian with six animations.'
+      },
+      {
         packageName: 'creatures',
         entryName: 'fox',
-        index: '01',
+        index: '02',
         label: 'Red fox',
-        summary: 'Warm ember fur, a bright chest, centered eyes, and a restrained idle.'
+        summary: 'Ember fur, a bright chest, and a gentle idle.'
       },
       {
         packageName: 'creatures',
         entryName: 'goblin',
-        index: '02',
+        index: '03',
         label: 'Goblin raider',
-        summary: 'A scarred green raider with converging eyes, iron armor, shield, and a forward blade.'
+        summary: 'A scarred raider with iron armor, shield, and blade.'
       }
     ]
   },

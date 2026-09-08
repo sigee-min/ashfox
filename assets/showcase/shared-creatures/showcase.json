@@ -3,11 +3,11 @@
   "version": 1,
   "workspace": {
     "path": "examples/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:712baab673e4db35c51f47643da9e29342bfe36617300163a9357976a04cfe44",
-    "workspaceHash": "sha256:46fb9ba3db1b3f65a195f3ecbea6ef92735c1660a329c50c8d27b6cbb4fbcb14"
+    "sha256": "sha256:b5a27ae8bd25ad8fd68f0c5e65d5d8b7c9e6e9668d38ed3a3154e3d3e8e2ab03",
+    "workspaceHash": "sha256:c25b9b60779e491d63e81ebf10a4a8158a631dad194ae1fd77395dbb7c7c9101"
   },
   "capture": {
-    "fingerprint": "sha256:340ff7d55d7ce7e3e800f18cae8d97f38cab08993a0f591b7037089cab60c5ac",
+    "fingerprint": "sha256:c92bbb989cb5d94344d5a4da9a489533e9fbadcc22dc0217707c2bdce112df78",
     "environment": "studio",
     "camera": "perspective",
     "width": 640,
@@ -15,6 +15,20 @@
     "fps": 10
   },
   "entries": [
+    {
+      "packageName": "workbench",
+      "entryName": "griffin",
+      "closureHash": "sha256:4cb01fd74ace151c22f1484c4921c870b70c808512e914fb37ae9ac0dee9b562",
+      "buildKey": "sha256:2e5adab64e47c77b776cebd36adbf15ff3f12e0b5b0e38aa7e1b0fd163187b8b",
+      "productHash": "sha256:8956f1845338b95573ebfcc4cab2d7710ad8f6ad69ea2acf4aa0344a3152f007",
+      "artifact": "griffin-build-replay.gif",
+      "poster": "griffin-poster.png",
+      "artifactSha256": "sha256:e28256e56c87982e532576c74dc5c236363e000b3ffeb44b80785219153d0886",
+      "posterSha256": "sha256:145370ec03805c76a120e5dc72a6e15843e2546876bc35c62d4e142e7a1b2046",
+      "byteLength": 1809118,
+      "frameCount": 142,
+      "eventCount": 113
+    },
     {
       "packageName": "creatures",
       "entryName": "fox",

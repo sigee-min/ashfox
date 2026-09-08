@@ -52,8 +52,15 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
     recursive: true
   });
   fs.mkdirSync(path.join(outdir, 'workbench', 'examples'), { recursive: true });
-  fs.copyFileSync(path.join(repoRoot, 'examples', 'shared-creatures.ashfoxworkspace'),
-    path.join(outdir, 'workbench', 'examples', 'shared-creatures.ashfoxworkspace'));
+  for (const workspaceName of [
+    'shared-creatures.ashfoxworkspace',
+    'griffin.ashfoxworkspace'
+  ]) {
+    fs.copyFileSync(
+      path.join(repoRoot, 'examples', workspaceName),
+      path.join(outdir, 'workbench', 'examples', workspaceName)
+    );
+  }
   for (const resource of manifest.documentation.resources) {
     const target = path.join(outdir, resource.href.slice(1));
     if (!fs.statSync(target, { throwIfNoEntry: false })?.isFile()) {

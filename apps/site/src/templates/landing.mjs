@@ -110,6 +110,10 @@ const landingShowcase = ({ content, showcase }) => {
           Download workspace
           <span aria-hidden="true">↓</span>
         </a>
+        <a class="button button-secondary" href="${escapeHtml(showcase.griffinGlbHref)}" download>
+          Download Griffin GLB
+          <span aria-hidden="true">↓</span>
+        </a>
         <a class="button button-secondary" href="${escapeHtml(showcase.workbenchHref)}">
           Launch Workbench
           <span aria-hidden="true">↗</span>

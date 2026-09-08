@@ -166,5 +166,6 @@ canonical validation are fail-closed: a diagnostic returns no partial model.
 
 The checked-in
 [`shared-creatures.ashfoxworkspace`](../../examples/shared-creatures.ashfoxworkspace)
-is the executable reference. It contains two entries that share the same rig,
-skeleton, motion, surface, and component modules.
+is the executable reference. It contains fox, goblin, and griffin entries with
+explicit module bindings. The griffin includes six rig-bound animation clips
+and is also available as [`griffin.ashfoxworkspace`](../../examples/griffin.ashfoxworkspace).

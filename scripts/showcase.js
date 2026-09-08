@@ -31,6 +31,7 @@ const SHOWCASE_RELATIVE_PATH = 'assets/showcase/shared-creatures';
 const SHOWCASE_PATH = path.join(ROOT, SHOWCASE_RELATIVE_PATH);
 const DESCRIPTOR_PATH = path.join(SHOWCASE_PATH, 'showcase.json');
 const EXPECTED_SELECTORS = Object.freeze([
+  Object.freeze({ packageName: 'workbench', entryName: 'griffin' }),
   Object.freeze({ packageName: 'creatures', entryName: 'fox' }),
   Object.freeze({ packageName: 'creatures', entryName: 'goblin' })
 ]);
@@ -328,7 +329,7 @@ const main = () => {
   if (!current.equals(Buffer.from(source, 'utf8'))) {
     fail('descriptor is stale; run npm run showcase:seal');
   }
-  console.log('showcase descriptor current: 2 entries');
+  console.log(`showcase descriptor current: ${EXPECTED_SELECTORS.length} entries`);
 };
 
 try {
