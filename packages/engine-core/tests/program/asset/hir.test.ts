@@ -26,8 +26,8 @@ module rig {
     socket wing: WingMount { joint = chest; capacity = many; ${frame} }
   }
   export skeleton Adult implements DragonRig {
-    bind root { origin = (0u, 0u, 0u); ${frame} }
-    bind chest { origin = (0u, 20u, 0u); ${frame} }
+    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
+    bind chest { parent-origin = (0u, 20u, 0u); ${frame} }
   }
   export motion idle for DragonRig {
     duration = 1s; fps = 24; loop = loop; rest-relative = true;
@@ -166,8 +166,8 @@ const nonzeroSocketContract = rig.replace(socketFrame,
   'frame { origin = (1u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }');
 expectCode(compileWorkspace(workspaceFor(root, { rig: nonzeroSocketContract })), 'asset.socket-contract-origin');
 
-const conflictingBind = rig.replace(`bind root { origin = (0u, 0u, 0u); ${frame} }`,
-  'bind root { origin = (0u, 0u, 0u); frame { origin = (1u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }');
+const conflictingBind = rig.replace(`bind root { parent-origin = (0u, 0u, 0u); ${frame} }`,
+  'bind root { parent-origin = (0u, 0u, 0u); frame { origin = (1u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }');
 expectCode(compileWorkspace(workspaceFor(root, { rig: conflictingBind })), 'asset.duplicate-frame-origin');
 
 const mirrored = rig

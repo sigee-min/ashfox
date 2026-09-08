@@ -21,8 +21,8 @@ const MEDIA = Object.freeze([
   ['goblin', 'gif', 'goblin-build-replay.gif'],
   ['goblin', 'png', 'goblin-poster.png']
 ]);
-const MAX_DOM_BYTES = 24 * 1024 * 1024;
-const CAPTURE_TIMEOUT_MS = 180_000;
+const MAX_DOM_BYTES = 96 * 1024 * 1024;
+const CAPTURE_TIMEOUT_MS = 120_000;
 
 const chromePath = () => {
   const explicit = process.env.ASHFOX_CHROME_PATH;
@@ -97,7 +97,7 @@ const mediaBytes = (html, entryName, kind) => {
     throw new Error(`Capture output is incomplete for ${entryName}-${kind}.`);
   }
   const bytes = Buffer.from(chunks.map((chunk) => chunk.value).join(''), 'base64');
-  const signature = kind === 'gif'
+  const signature = kind !== 'png'
     ? bytes.subarray(0, 3).toString('ascii') === 'GIF'
     : bytes.subarray(1, 4).toString('ascii') === 'PNG';
   if (!signature) throw new Error(`Capture output is invalid for ${entryName}-${kind}.`);
@@ -132,6 +132,7 @@ const captureDom = (browser, url, profile) => {
   });
   const html = result.stdout ?? '';
   if (!html.includes('data-showcase-capture="ready"')) {
+    fs.writeFileSync(path.join(os.tmpdir(), 'ashfox-showcase-failure.html'), html);
     const reason = result.error?.code === 'ETIMEDOUT'
       ? 'timed out before all entries were ready'
       : `exited with ${result.status ?? 'no status'}`;
@@ -168,7 +169,32 @@ const main = async () => {
         mediaBytes(html, entryName, kind)
       );
     }
+    const motionFiles = [];
+    const fields = new Set([...html.matchAll(/data-showcase-bytes="([a-z]+)-motion-([a-z_]+)"/gu)].map((match) => `${match[1]}:${match[2]}`));
+    for (const field of fields) {
+      const [entry, clip] = field.split(':');
+      const input = path.join(staged, `${entry}-${clip}.gif`);
+      const output = `${entry}-${clip}.mp4`;
+      fs.writeFileSync(input, mediaBytes(html, entry, `motion-${clip}`));
+      childProcess.execFileSync(process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg', [
+        '-v', 'error', '-y', '-i', input, '-an', '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', '-crf', '18', '-movflags', '+faststart',
+        path.join(staged, output)
+      ]);
+      motionFiles.push(output);
+    }
+    if (motionFiles.length !== 12) throw new Error('Expected twelve finished motion movies.');
+    for (const [entry, kind, file] of MEDIA) {
+      if (kind !== 'gif') continue;
+      const output = `${entry}-build-replay.mp4`;
+      childProcess.execFileSync(process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg', [
+        '-v', 'error', '-y', '-i', path.join(staged, file), '-an', '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', '-crf', '18', '-movflags', '+faststart', path.join(staged, output)
+      ]);
+      motionFiles.push(output);
+    }
     fs.mkdirSync(SHOWCASE_ROOT, { recursive: true });
+    for (const file of motionFiles) fs.renameSync(path.join(staged, file), path.join(SHOWCASE_ROOT, file));
     for (const [, , fileName] of MEDIA) {
       fs.renameSync(path.join(staged, fileName), path.join(SHOWCASE_ROOT, fileName));
     }

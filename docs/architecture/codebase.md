@@ -72,7 +72,7 @@ identity, not only to the selected closure.
 | --- | --- | --- |
 | `design` | exact typed shared values, construction datums, and named boolean checks | a cyclic solution, rounded pixel, extra rig joint, or implicit placement |
 | `rig contract` | nominal joints, signed frames, allowed channels, mirror pairs, typed sockets | a match from bone names or similar hierarchy |
-| `skeleton` | complete concrete rest-frame implementation of one rig | missing joints, axes, scale, IK, or root motion policy |
+| `skeleton` | complete parent-relative rest-frame implementation of one rig | missing joints, axes, scale, IK, or root motion policy |
 | `component` | reusable geometry and typed rig/socket/surface ports | caller locals, nearby attachment, or arbitrary parent links |
 | `surface contract` | chart layout, dimensions, coverage, slots, and material ABI | a texture/chart pair from unrelated owners |
 | `surface` | concrete palette, grain, stamp, chart, and raster source | hidden UV, repaint, target fork, or visual repair |
@@ -131,6 +131,22 @@ but those blobs do not become a second authoring authority.
 Blockbench remains an optional compatibility product. It may consume public
 engine contracts for transient conversion, but Web cannot depend on its
 runtime and engine-core cannot import upward into either host.
+
+## Rig coordinate boundary
+
+Skeleton binds require `parent-origin`; the origin and axes belong to the
+parent joint frame. Roots use the model frame. Instantiation composes those
+frames for socket placement. The IR retains `parentRestFrame` on bones and
+`parentPlacement` on socket connections; there is no ambiguous rest-frame
+field or duplicate connection world-frame authority.
+
+Canonical scene pivots form an unrotated bind layout. Runtime adapters subtract
+the parent pivot to recover a parent-local translation, then apply the parent's
+rotation and scale once. The compiler accumulates offsets for that layout;
+it must not copy a local offset directly into a canonical pivot or pre-rotate
+an offset that the runtime will rotate again. Socket-owned component geometry
+is shifted into this bind layout once, together with its pivots. Cubes, planes,
+and private child bones retain their local shape and attachment.
 
 ## Verification boundary
 

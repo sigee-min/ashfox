@@ -1,12 +1,11 @@
-# Precision modeling with block forms and pixel detail
+# Dimensions and pixel detail
 
-The precision compiler keeps the existing cube/plane product and pixel style.
-It adds exact shared design values, construction relations, named checks,
-face-local stamp anchors, and read-only measurements. It does not introduce
-smooth CAD solids, automatic fitting, a general constraint solver, or automatic
-atlas packing. Workspace source remains the only durable authority.
+Use shared dimensions to resize a model without losing its proportions.
+Anchor small texture marks, such as eyes, so they keep their pixel size while
+the surrounding shape changes. This guide includes a complete head study you
+can ask your agent to build and modify.
 
-## Shared dimensions and construction datums
+## Share dimensions
 
 Declare `design` inside a module or asset source unit. Fields have explicit
 types and one expression each. Use `Design.field` locally or
@@ -14,16 +13,15 @@ types and one expression each. Use `Design.field` locally or
 Vector fields also support `.x`, `.y`, and `.z` where that axis exists.
 
 Forward references are allowed. Cycles, duplicate names, namespace shadowing,
-missing fields, private imports, and unit mismatches fail closed. A named
+missing fields, private imports, and unit mismatches are rejected. A named
 `check` requires a boolean expression and rejects the candidate when false.
 Checks describe authored relationships; they do not measure the rendered model
 or move geometry to make a condition true.
 
-Construction datums are named unit vectors. They do not add bones or another
-placement authority. The existing rig, skeleton, and socket contracts still
-own motion and assembly.
+Name frequently used positions with `vec3<unit>` fields. These values help place
+parts consistently; they do not create joints or attach parts by themselves.
 
-| Expression | Contract |
+| Expression | What it does |
 | --- | --- |
 | `texels(length, density)` | Nonnegative `unit` length, positive `integer` pixels per unit; the result must be an integral `texel` value. No rounding. |
 | `mirror_x(point, plane)` | Reflect a `vec3<unit>` point about an explicit X plane coordinate in `unit`. Y and Z variants are also available. This does not mirror geometry, frames, or UVs. |
@@ -32,14 +30,12 @@ own motion and assembly.
 Keep arithmetic exact. A half-unit origin can be valid while a fractional
 chart dimension is not. Geometry, skeleton origins, chart dimensions, and
 surface recipe values can consume the same design. The resulting surface
-contract remains nominal and concrete; chart size matching is never inferred
-from an unrelated surface. Atlas placement is explicit: declare complete
+must still match the chart declared by its surface contract. Atlas placement is explicit: declare complete
 `vec2<texel>` design fields for calculated chart origins.
 
-## Executable head study
+## Resize a head without enlarging its eyes
 
-This complete source is a small modeling study, not a new visual style. Place
-it at an entry path in a current locked workspace. Change `width` from `4u` to
+Ask your agent to create a workspace entry using this complete source. Change `width` from `4u` to
 `6u`: the box and chart dimensions follow together, while both eye stamps stay
 exactly one pixel wide. The atlas stays explicit and bounded.
 
@@ -73,7 +69,7 @@ asset study {
   }
   export skeleton HeadSkeleton implements HeadRig {
     bind root {
-      origin = Dimensions.ground;
+      parent-origin = Dimensions.ground;
       frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     }
   }
@@ -181,52 +177,18 @@ chart may change procedural grain near boundaries; identical seeds alone do
 not guarantee every previous pixel survives a size change. Review resized
 faces at nearest-neighbor detail and native gameplay scale.
 
-## Agent observation and refinement
+## Check a resized model
 
-Fetch the current runtime manifest, inspect the workspace/build identity, and
-discover nodes through the guarded node inventory. Measurements and surface
-inspection require `expectedRevision`, `expectedWorkspaceHash`, and
-`expectedBuildKey` from that same current build. A stale guard rejects the read.
+Compare the original and resized model from the front and both sides. Look at
+it at gameplay size, then inspect the eye marks closely. Confirm that the eyes
+keep their intended pixel size, the spacing follows the wider head, and no
+texture stretches or unexpected gaps appear.
 
-```javascript
-window.ashfox.inspect({
-  kind: "nodes",
-  expectedRevision, expectedWorkspaceHash, expectedBuildKey,
-  offset: 0, limit: 32
-});
-window.ashfox.inspect({
-  kind: "measurement",
-  expectedRevision, expectedWorkspaceHash, expectedBuildKey,
-  nodeId, scope: "subtree", groundY: 0, tolerance: 0.001
-});
-window.ashfox.inspect({
-  kind: "surface",
-  expectedRevision, expectedWorkspaceHash, expectedBuildKey,
-  nodeId
-});
-```
+A useful refinement request is: “Make the head wider, keep both eyes the same
+pixel size, and preserve the expression.” Review motion again after changing
+parts near a joint.
 
-Measurements report rest-pose model-space axis-aligned bounds, dimensions, and signed
-gap to an infinite horizontal ground plane. The envelope includes entire
-primitives, including hidden geometry and alpha-cutout areas. It is not a
-visible silhouette, exact occupied volume, pairwise collision test, or proof
-of clearance throughout motion. Surface evidence reports per-face UV,
-rotation, pixel span, texture size, sampling, and content identity.
-
-Use the results to change the owning design field or surface recipe, preview
-one complete candidate, and submit `workspace.apply`. Inspect the new build
-again and complete its independent rendered reviews. The only asset write
-remains the atomic workspace change; inspection never mutates canonical data.
-
-## Hard cut and visual baseline
-
-The source header stays `ashfox-model 1`, but the compiler fingerprint changes
-for the design/anchored-pixel pipeline. Prior compiler locks are rejected; no
-compatibility reader or hidden migration runs when opening a workspace.
-Checked-in examples use the current lock.
-
-The fox and goblin canonical product hashes from baseline commit `6d72df1`
-are pinned by regression tests. They cover geometry, textures, and animation,
-so adding precision authoring cannot silently change the established products.
-New variants still require rendered judgment: passing dimensions and pixel
-bounds does not certify their proportions, expression, or style.
+Agents can use the measurements and surface inspection requests in the
+[API workflow](agent-workflow.md) to check dimensions. Measurements describe
+the resting geometry; watching the rendered model is still necessary to judge
+its appearance and moving attachments.

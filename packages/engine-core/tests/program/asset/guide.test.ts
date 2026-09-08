@@ -8,6 +8,24 @@ import { workspaceFixture } from '../../project/workspace/fixtures';
 const guide = readFileSync(resolve(__dirname, '../../../../../docs/guides/precision-modeling.md'), 'utf8');
 const source = /```text\n([\s\S]*?)\n```/u.exec(guide)?.[1];
 assert.ok(source, 'guide includes a complete executable source');
+const syntaxGuide = readFileSync(resolve(__dirname,
+  '../../../../../docs/architecture/asset-language.md'), 'utf8');
+const completeExample = [...syntaxGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)]
+  .map((match) => match[1])
+  .find((example) => example.startsWith('ashfox-model 1\nasset sample {'));
+assert.ok(completeExample, 'language reference provides a complete starting asset');
+const startingAsset = openAssetProject({
+  workspace: workspaceFixture([{ path: 'sample/main.ashfox', source: completeExample }], {
+    root: 'sample', packageName: 'sample', entries: [{ name: 'sample', path: 'main.ashfox' }]
+  }),
+  entry: { packageName: 'sample', entryName: 'sample' },
+  identity: { id: 'project:syntax-guide', revision: 'revision:1', createdAt: '2026-01-01T00:00:00.000Z' }
+});
+assert.ok(startingAsset.ok, startingAsset.ok ? '' : JSON.stringify(startingAsset.diagnostics));
+if (startingAsset.ok) {
+  assert.deepEqual(Object.values(startingAsset.project.document.animations)
+    .map((clip) => clip.name), ['idle']);
+}
 for (const width of [4, 6]) {
   const candidate = source.replace('width: unit = 4u;', `width: unit = ${width}u;`);
   const workspace = workspaceFixture([{ path: 'study/main.ashfox', source: candidate }], {

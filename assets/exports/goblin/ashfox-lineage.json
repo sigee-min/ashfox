@@ -1,0 +1,41 @@
+{
+  "policy": "ashfox-export-lineage",
+  "target": {
+    "id": "gltf.2",
+    "version": "2.0"
+  },
+  "projectId": "example-goblin",
+  "revision": "example-0001",
+  "rootPath": "gltf",
+  "entrypoints": [
+    "goblin.glb"
+  ],
+  "packageName": "creatures",
+  "entryName": "goblin",
+  "entryPath": "creatures/goblin.ashfox",
+  "workspaceHash": "sha256:9885b0776a19c2f7afe6f5c87e61a75636e178ca120bc5925cefb624a0cfebdf",
+  "closureHash": "sha256:38acdc6bd23a53da720b8118952fd9a74c3b1df97f319f6fa1d1576b04b8fd5a",
+  "buildKey": "sha256:2119162eb24ed4cc1e608a1bc872d7d6c7f64d2655ef5a998a16ba6ab6e1e18a",
+  "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
+  "productHash": "sha256:9989d5a1f5536c38b2e8e0ee27791c376d3231b291d67579c90aaec2b19c436a",
+  "textures": [
+    {
+      "id": "raider_a4c69c16930e",
+      "path": null,
+      "coverageIds": [],
+      "embeddedSha256": "sha256:8e864835abc9685c46936e1570598c1abfff55ef9ef68abe65b597336847312d",
+      "pngSha256": "sha256:8e864835abc9685c46936e1570598c1abfff55ef9ef68abe65b597336847312d",
+      "byteLength": 32900
+    }
+  ],
+  "files": [
+    {
+      "kind": "binary",
+      "role": "model",
+      "path": "goblin.glb",
+      "contentType": "model/gltf-binary",
+      "sha256": "sha256:37e39e0ef8ce5e4613a94ddd4f5e032895d676100107930bc68d6bf030fc3531",
+      "byteLength": 172440
+    }
+  ]
+}

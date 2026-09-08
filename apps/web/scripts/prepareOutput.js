@@ -48,13 +48,20 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
   );
   // Keep relative links and executable examples available on standalone dev
   // Workbench origins too; the site and agent read the same maintained sources.
-  fs.cpSync(path.join(repoRoot, 'docs'), path.join(outdir, 'workbench', 'reference'), {
-    recursive: true
-  });
+  const documentation = JSON.parse(fs.readFileSync(
+    path.join(repoRoot, 'docs', 'public.json'), 'utf8'
+  ));
+  for (const page of documentation.flatMap((section) => section.pages)) {
+    const target = path.join(outdir, 'workbench', 'reference', page.source);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(path.join(repoRoot, 'docs', page.source), target);
+  }
   fs.mkdirSync(path.join(outdir, 'workbench', 'examples'), { recursive: true });
   for (const workspaceName of [
     'shared-creatures.ashfoxworkspace',
-    'griffin.ashfoxworkspace'
+    'griffin.ashfoxworkspace',
+    'fox.ashfoxworkspace',
+    'goblin.ashfoxworkspace'
   ]) {
     fs.copyFileSync(
       path.join(repoRoot, 'examples', workspaceName),

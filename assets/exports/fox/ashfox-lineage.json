@@ -1,0 +1,41 @@
+{
+  "policy": "ashfox-export-lineage",
+  "target": {
+    "id": "gltf.2",
+    "version": "2.0"
+  },
+  "projectId": "example-fox",
+  "revision": "example-0001",
+  "rootPath": "gltf",
+  "entrypoints": [
+    "fox.glb"
+  ],
+  "packageName": "creatures",
+  "entryName": "fox",
+  "entryPath": "creatures/fox.ashfox",
+  "workspaceHash": "sha256:6932f0afffd62451b61463e98fa5f867a7a4e7a8a6bf4c6bbf9926ff8d765922",
+  "closureHash": "sha256:50f415f03971a86d78c2b8b33cd3dd71bb9f35afba858c4abe2f09625eaf4f49",
+  "buildKey": "sha256:255032757652c1d79aa6f63e05780b22f53213e7d0357885bbbc5c13e2cb8490",
+  "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
+  "productHash": "sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db",
+  "textures": [
+    {
+      "id": "red_fox_e2f07af12d3c",
+      "path": null,
+      "coverageIds": [],
+      "embeddedSha256": "sha256:7663e96b374dff2202a477a92cdf1306bc566ca3fe8290e3df957d864432a490",
+      "pngSha256": "sha256:7663e96b374dff2202a477a92cdf1306bc566ca3fe8290e3df957d864432a490",
+      "byteLength": 32900
+    }
+  ],
+  "files": [
+    {
+      "kind": "binary",
+      "role": "model",
+      "path": "fox.glb",
+      "contentType": "model/gltf-binary",
+      "sha256": "sha256:1394f75db78e9b0d216544f4fe80827fc4e41cf73aa9d9616f936bbf1ebab4d9",
+      "byteLength": 147064
+    }
+  ]
+}

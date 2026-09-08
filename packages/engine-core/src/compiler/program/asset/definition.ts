@@ -202,7 +202,7 @@ export const buildSkeleton = (
         `Skeleton binds a joint outside rig "${binding.joint}".`);
       continue;
     }
-    const frame = buildTypedFrame(state.path, binding.frame, binding.origin, true,
+    const frame = buildTypedFrame(state.path, binding.frame, binding.parentOrigin, true,
       binding.span, rig.handedness, context.issue);
     if (frame !== null) binds[binding.joint] = frame;
   }

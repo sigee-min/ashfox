@@ -64,7 +64,7 @@ fs.writeFileSync(
     '/home / 301',
     '/home/ / 301',
     '/workbench /workbench/ 301',
-    '/docs /docs/ 301',
+    fs.readFileSync(path.join(siteOutput, '_redirects'), 'utf8').trim(),
     ''
   ].join('\n')
 );

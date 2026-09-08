@@ -1,0 +1,36 @@
+[
+  {
+    "id": "start",
+    "label": "Start here",
+    "pages": [
+      { "source": "README.md", "route": "/docs/" },
+      { "source": "guides/ai-agent-quick-start.md", "route": "/docs/guides/ai-agent-quick-start/" }
+    ]
+  },
+  {
+    "id": "create",
+    "label": "Create and deliver",
+    "pages": [
+      { "source": "guides/authoring-and-review.md", "route": "/docs/guides/authoring-and-review/" },
+      { "source": "guides/save-and-export.md", "route": "/docs/guides/save-and-export/" },
+      { "source": "guides/choose-a-format.md", "route": "/docs/guides/choose-a-format/" },
+      { "source": "guides/troubleshooting.md", "route": "/docs/guides/troubleshooting/" }
+    ]
+  },
+  {
+    "id": "language",
+    "label": "Language",
+    "pages": [
+      { "source": "architecture/asset-language.md", "route": "/docs/language/syntax/" },
+      { "source": "guides/precision-modeling.md", "route": "/docs/guides/precision-modeling/" },
+      { "source": "guides/animation.md", "route": "/docs/guides/animation/" }
+    ]
+  },
+  {
+    "id": "agents",
+    "label": "Agent integration",
+    "pages": [
+      { "source": "guides/agent-workflow.md", "route": "/docs/guides/agent-workflow/" }
+    ]
+  }
+]

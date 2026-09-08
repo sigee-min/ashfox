@@ -37,8 +37,8 @@ module rig {
     socket wing: WingMount { joint = chest; capacity = many; ${frame} }
   }
   export skeleton Adult implements DragonRig {
-    bind root { origin = (0u, 0u, 0u); ${frame} }
-    bind chest { origin = (0u, 20u, 0u); ${frame} }
+    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
+    bind chest { parent-origin = (0u, 20u, 0u); ${frame} }
   }
   export motion idle for DragonRig {
     duration = 1s;
@@ -263,7 +263,7 @@ if (valid.ok) {
     assert.equal(instantiated.ir.connections.length, 1);
     assert.equal(instantiated.ir.connections[0]!.toInstance, 'mount');
     assert.equal(instantiated.ir.connections[0]!.parentBoneId, 'chest');
-    assert.equal(instantiated.ir.connections[0]!.localPlacement.origin[1]!.numerator, 2n);
+    assert.equal(instantiated.ir.connections[0]!.parentPlacement.origin[1]!.numerator, 2n);
     const ids = (nodes: typeof instantiated.ir.instances[number]['geometry']): string[] =>
       nodes.flatMap((node) => [node.id, ...ids(node.children)]);
     assert.deepEqual(ids(instantiated.ir.instances[0]!.geometry), [
@@ -291,8 +291,8 @@ assert.equal(badFrameResult.ok, false);
 if (!badFrameResult.ok) assert.ok(badFrameResult.diagnostics.some((entry) => entry.code === 'asset.invalid-frame'));
 
 const rotatedSkeleton = rig.replace(
-  `bind chest { origin = (0u, 20u, 0u); ${frame} }`,
-  'bind chest { origin = (0u, 20u, 0u); frame { x = (0, 1, 0); y = (-1, 0, 0); z = (0, 0, 1); } }'
+  `bind chest { parent-origin = (0u, 20u, 0u); ${frame} }`,
+  'bind chest { parent-origin = (0u, 20u, 0u); frame { x = (0, 1, 0); y = (-1, 0, 0); z = (0, 0, 1); } }'
 );
 const rotatedHir = compileWorkspace(root, { rig: rotatedSkeleton });
 assert.equal(rotatedHir.ok, true);

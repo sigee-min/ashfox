@@ -17,7 +17,7 @@ asset wolf {
     }
   }
   export skeleton Wolf implements CreatureRig {
-    bind root { origin = (0u, 0u, 0u); ${frame} }
+    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
   }
   export surface contract Fur {
     atlas { width = 16px; height = 8px; }

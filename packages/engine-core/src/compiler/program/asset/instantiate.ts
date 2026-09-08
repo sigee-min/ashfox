@@ -130,7 +130,7 @@ const buildBones = (
     session.ledger.use('bones', path, joint.span);
     world.set(id, restFrame);
     bones.push(freeze({ id, semanticJoint: id, parentId: joint.parent,
-      restFrame: local, sourcePath: path, span: joint.span }));
+      parentRestFrame: local, sourcePath: path, span: joint.span }));
     return restFrame;
   };
   for (const id of Object.keys(rig.joints).sort()) add(id);
@@ -303,9 +303,9 @@ const placeConnections = (
       }
       if (providerWorld === null || providerLocal === null ||
         parentBoneId === null || required === null) continue;
-      const localPlacement = connectAssetFrames(providerLocal, required.frame);
+      const parentPlacement = connectAssetFrames(providerLocal, required.frame);
       const placement = connectAssetFrames(providerWorld, required.frame);
-      if (localPlacement === null || placement === null) {
+      if (parentPlacement === null || placement === null) {
         session.issue(target!.sourcePath, connection.span, 'asset.connection-frame',
           'Socket connection frames cannot be composed exactly.');
         pending.splice(index, 1);
@@ -319,7 +319,7 @@ const placeConnections = (
       fromInstance: connection.fromInstance, fromPort: connection.fromPort,
       toInstance: connection.toInstance, toPort: connection.toPort,
       targetBoneId: required.geometryBoneId, parentBoneId,
-      localPlacement, placement, span: connection.span }));
+      parentPlacement, span: connection.span }));
       pending.splice(index, 1);
       progressed = true;
     }

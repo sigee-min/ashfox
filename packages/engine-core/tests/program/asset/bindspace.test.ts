@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { parseAssetSource } from '../../../src/project/program/asset/parse';
+import { VALID_ASSET_SOURCE } from './fixture';
+const valid = parseAssetSource(VALID_ASSET_SOURCE);
+assert.deepEqual(valid.diagnostics, []);
+const ambiguous = parseAssetSource(VALID_ASSET_SOURCE.replace('parent-origin', 'origin'));
+assert.equal(ambiguous.unit, null);
+assert.ok(ambiguous.diagnostics.some((entry) => entry.code === 'asset.bind-coordinate-space'));
+assert.ok(ambiguous.diagnostics.some((entry) => entry.message.includes('parent joint frame')));
+const mixed = parseAssetSource(VALID_ASSET_SOURCE.replace('parent-origin =', 'origin = (0u, 0u, 0u); parent-origin ='));
+assert.equal(mixed.unit, null, 'old origin must not become a compatibility alias alongside parent-origin');
+console.log('explicit parent-relative skeleton bind syntax rejects ambiguous and mixed coordinate contracts');

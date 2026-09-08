@@ -4,7 +4,7 @@
     "id": "gltf.2",
     "version": "2.0"
   },
-  "projectId": "griffin",
+  "projectId": "example-griffin",
   "revision": "example-0001",
   "rootPath": "gltf",
   "entrypoints": [
@@ -13,18 +13,18 @@
   "packageName": "workbench",
   "entryName": "griffin",
   "entryPath": "workbench/main.ashfox",
-  "workspaceHash": "sha256:4722a31d935e8a078f35285bd5f0939dac489e1239017ddd0bb752985fd2cb7e",
-  "closureHash": "sha256:4cb01fd74ace151c22f1484c4921c870b70c808512e914fb37ae9ac0dee9b562",
-  "buildKey": "sha256:2e5adab64e47c77b776cebd36adbf15ff3f12e0b5b0e38aa7e1b0fd163187b8b",
-  "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:8956f1845338b95573ebfcc4cab2d7710ad8f6ad69ea2acf4aa0344a3152f007",
+  "workspaceHash": "sha256:b82d9c0ef55132fbb21b8d24d47f6e90d9bab4431ed7018e1b56a27bde48ff79",
+  "closureHash": "sha256:f8dcca1f122943dab0c4444c97400dd39533d53728e8f0763de23b37d42b7aa7",
+  "buildKey": "sha256:f426d389d8e36546133b3ae4c05d27f597ae54a5f3b7188b5a150c73bde50e4c",
+  "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
+  "productHash": "sha256:ee56875a75fcaad13ce166e325d431ba7a526160078da02d047cf1d7ad726440",
   "textures": [
     {
       "id": "griffin_skin_93201f4752bc",
       "path": null,
       "coverageIds": [],
-      "embeddedSha256": "sha256:1260655962bc028e6fa53e7a663c6aedc5ae997cb5b388c384f8d96383687284",
-      "pngSha256": "sha256:1260655962bc028e6fa53e7a663c6aedc5ae997cb5b388c384f8d96383687284",
+      "embeddedSha256": "sha256:0fd96f68bc38eea55cf932b9f1e597e2d1ac37f51db5196fb0fb557185cf62d5",
+      "pngSha256": "sha256:0fd96f68bc38eea55cf932b9f1e597e2d1ac37f51db5196fb0fb557185cf62d5",
       "byteLength": 525420
     }
   ],
@@ -34,8 +34,8 @@
       "role": "model",
       "path": "griffin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:c6f408b180e8bb1ecf51ae3d14c53f66aaad1934b6074776f66cbfd025792390",
-      "byteLength": 829732
+      "sha256": "sha256:945e341e2425876659a5c25bc9e5c35833dea9feb1deb923926e720f88c00d9a",
+      "byteLength": 850176
     }
   ]
 }

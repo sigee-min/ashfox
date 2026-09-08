@@ -1,3 +1,4 @@
+import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
 import {
   cp,
@@ -31,19 +32,6 @@ const canonicalWorkspacePath = path.join(
   repoRoot,
   'examples',
   'shared-creatures.ashfoxworkspace'
-);
-const standaloneGriffinWorkspaceRelativePath = 'examples/griffin.ashfoxworkspace';
-const standaloneGriffinWorkspacePath = path.join(
-  repoRoot,
-  standaloneGriffinWorkspaceRelativePath
-);
-const griffinGlbRelativePath = 'examples/griffin.glb';
-const griffinGlbSourcePath = path.join(
-  repoRoot,
-  'assets',
-  'exports',
-  'griffin',
-  'griffin.glb'
 );
 const sourceRoot = path.join(siteRoot, 'src');
 const publicRoot = path.join(siteRoot, 'public');
@@ -92,7 +80,7 @@ const localMediaName = (value, extension, label) => {
   const fileName = requiredString(value, label);
   if (
     path.basename(fileName) !== fileName ||
-    !/^[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/u.test(fileName) ||
+    !/^[a-z0-9][a-z0-9_-]*\.[a-z0-9]+$/u.test(fileName) ||
     path.extname(fileName) !== extension
   ) {
     throw new Error(`${label} must name one local ${extension} file.`);
@@ -157,14 +145,28 @@ const readShowcase = async () => {
     assertExactKeys(entry, [
       'packageName', 'entryName', 'closureHash', 'buildKey', 'productHash',
       'artifact', 'poster', 'artifactSha256', 'posterSha256', 'byteLength',
-      'frameCount', 'eventCount'
+      'frameCount', 'eventCount', 'motions', 'video'
     ], label);
     const packageName = requiredString(entry.packageName, `${label} packageName`);
     const entryName = requiredString(entry.entryName, `${label} entryName`);
     if (`${packageName}/${entryName}` !== expectedEntries[index]) {
       throw new Error(`${label} is not in canonical Griffin/Fox/Goblin order.`);
     }
+    assertExactKeys(entry.video, ['artifact', 'sha256', 'byteLength'], `${label} video`);
     return {
+      video: {
+        artifact: localMediaName(entry.video.artifact, '.mp4', `${label} video artifact`),
+        sha256: requiredDigest(entry.video.sha256, `${label} video sha256`),
+        byteLength: requiredInteger(entry.video.byteLength, `${label} video byteLength`)
+      },
+      motions: entry.motions.map((motion) => {
+        assertExactKeys(motion, ['name', 'duration', 'artifact', 'sha256', 'byteLength'], `${label} motion`);
+        if (!/^[a-z_]+$/u.test(motion.name) || !Number.isFinite(motion.duration) || motion.duration <= 0) throw new Error('Invalid motion identity');
+        return { name: motion.name, duration: motion.duration,
+          artifact: localMediaName(motion.artifact, '.mp4', `${label} motion artifact`),
+          sha256: requiredDigest(motion.sha256, `${label} motion sha256`),
+          byteLength: requiredInteger(motion.byteLength, `${label} motion byteLength`) };
+      }),
       packageName,
       entryName,
       closureHash: requiredDigest(entry.closureHash, `${label} closureHash`),
@@ -199,6 +201,7 @@ const hashedAsset = async (sourceName, transform) => {
     ? Buffer.from(transform(source.toString('utf8')))
     : source;
   const extension = path.extname(sourceName);
+  if (extension === '.js') new Script(bytes.toString('utf8'));
   const name = path.basename(sourceName, extension);
   const hash = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
   const outputName = `${name}-${hash}${extension}`;
@@ -250,28 +253,30 @@ await mkdir(path.join(outputRoot, 'assets'), { recursive: true });
 await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
 await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
 
+const showroomCss = await readFile(path.join(sourceRoot, 'showroom.css'), 'utf8');
+const buildReplayJs = await readFile(path.join(sourceRoot, 'buildReplay.js'), 'utf8');
+const showroomJs = await readFile(path.join(sourceRoot, 'showroom.js'), 'utf8');
 const assets = {
-  css: await hashedAsset('site.css'),
-  js: await hashedAsset('site.js')
+  css: await hashedAsset('site.css', (source) => source + '\n' + showroomCss),
+  js: await hashedAsset('site.js', (source) => source + '\n' + buildReplayJs + '\n' + showroomJs)
 };
 const config = { siteOrigin, workbenchUrl };
 const documents = await loadDocumentation(docsRoot);
 const generatedShowcase = await readShowcase();
-const standaloneGriffinWorkspaceBytes = await readFile(
-  standaloneGriffinWorkspacePath
-);
-const griffinGlbBytes = await readFile(griffinGlbSourcePath);
 const showcase = {
   capture: generatedShowcase.capture,
   workspaceHref: `/${canonicalWorkspaceRelativePath}`,
-  griffinGlbHref: `/${griffinGlbRelativePath}`,
   sourceHref:
     'https://github.com/sigee-min/ashfox/blob/main/' +
     canonicalWorkspaceRelativePath,
   workbenchHref: workbenchUrl,
   entries: await Promise.all(generatedShowcase.entries.map(async (entry) => ({
+    workspaceHref: `/examples/${entry.entryName}.ashfoxworkspace`,
+    glbHref: `/examples/${entry.entryName}.glb`,
+    motions: await Promise.all(entry.motions.map(async (motion) => ({ name: motion.name, duration: motion.duration, src: await hashedShowcaseMedia(motion.artifact, motion.sha256, motion.byteLength) }))),
     packageName: entry.packageName,
     entryName: entry.entryName,
+    replayVideoSrc: await hashedShowcaseMedia(entry.video.artifact, entry.video.sha256, entry.video.byteLength),
     replaySrc: await hashedShowcaseMedia(
       entry.artifact,
       entry.artifactSha256,
@@ -284,14 +289,10 @@ await writeFile(
   path.join(outputRoot, canonicalWorkspaceRelativePath),
   generatedShowcase.workspaceBytes
 );
-await writeFile(
-  path.join(outputRoot, standaloneGriffinWorkspaceRelativePath),
-  standaloneGriffinWorkspaceBytes
-);
-await writeFile(
-  path.join(outputRoot, griffinGlbRelativePath),
-  griffinGlbBytes
-);
+for (const entry of generatedShowcase.entries) {
+  await cp(path.join(repoRoot, `examples/${entry.entryName}.ashfoxworkspace`), path.join(outputRoot, `examples/${entry.entryName}.ashfoxworkspace`));
+  await cp(path.join(repoRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), path.join(outputRoot, `examples/${entry.entryName}.glb`));
+}
 
 await writeRoute('/', renderLandingPage({ assets, config, showcase }));
 for (const document of documents) {
@@ -354,6 +355,7 @@ await writeFile(
 await writeFile(
   path.join(outputRoot, '_redirects'),
   `/docs /docs/ 301
+/docs/architecture/asset-language/ /docs/language/syntax/ 301
 `
 );
 await writeFile(

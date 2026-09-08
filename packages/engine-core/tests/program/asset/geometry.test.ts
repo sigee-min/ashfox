@@ -99,7 +99,7 @@ const baseIr = (
 ): InstantiatedAssetIr => ({
   asset: symbol('asset', 'asset'), settings: { density: assetNumberValue(assetExactNumber(1n, 1n, 'plain')), forward: 'north' },
   rig: symbol('rig', 'rig-contract'), skeleton: symbol('skeleton', 'skeleton'),
-  bones: [{ id: 'root', semanticJoint: 'root', parentId: null, restFrame: frame(), sourcePath: 'root.ashfox', span: span() }],
+  bones: [{ id: 'root', semanticJoint: 'root', parentId: null, parentRestFrame: frame(), sourcePath: 'root.ashfox', span: span() }],
   instances, surfaces: [surfaceBinding()], connections, motions: [],
   budget: { limits: { instances: 1, bones: 1, nodes: 64, faces: 128, motionKeys: 1, diagnostics: 64 },
     used: { instances: 0, bones: 0, nodes: 0, faces: 0, motionKeys: 0, diagnostics: 0 } }
@@ -154,7 +154,7 @@ const issuesFor = (ir: InstantiatedAssetIr, plans: readonly AssetTexturePlan[]) 
   }
 }
 
-{
+for (const rootOrigin of [[0, 0, 0], [10, 20, 30]] as const) {
   const anchor = geometry('bone', 'mount/anchor', null);
   const plate = geometry('cube', 'mount/anchor/plate', 'mount/anchor', [
     property('origin', vector([0, 0, 0])), property('size', vector([1, 1, 1]))
@@ -162,10 +162,13 @@ const issuesFor = (ir: InstantiatedAssetIr, plans: readonly AssetTexturePlan[]) 
   const connection: InstantiatedSocketConnection = {
     id: 'skeleton.wing->mount.wing', fromInstance: 'skeleton', fromPort: 'wing',
     toInstance: 'mount', toPort: 'wing', targetBoneId: 'mount/anchor', parentBoneId: 'root',
-    localPlacement: frame([2, 0, 0]), placement: frame([99, 99, 99]), span: span()
+    parentPlacement: frame([2, 0, 0]), span: span()
   };
-  const result = issuesFor(baseIr([instance('mount', [anchor, plate], 'socket')], [connection]),
-    [planFor('box', 4, 2)]);
+  const ir = baseIr([instance('mount', [anchor, plate], 'socket')], [connection]);
+  const result = issuesFor({ ...ir, bones: ir.bones.map((bone) => ({ ...bone,
+    parentRestFrame: { ...frame(rootOrigin), xAxis: [0, 1, 0], yAxis: [-1, 0, 0] }
+  })) }, [planFor('box', 4, 2)]);
+  const expected = [rootOrigin[0] + 2, rootOrigin[1], rootOrigin[2]];
   assert.deepEqual(result.diagnostics, []);
   assert.ok(result.product);
   if (result.product) {
@@ -173,8 +176,11 @@ const issuesFor = (ir: InstantiatedAssetIr, plans: readonly AssetTexturePlan[]) 
     assert.ok(lowered && lowered.kind === 'bone');
     if (lowered?.kind === 'bone') {
       assert.equal(lowered.parentId, 'root');
-      assert.deepEqual(lowered.transform.pivot, [2, 0, 0]);
-      assert.notDeepEqual(lowered.transform.pivot, [99, 99, 99]);
+      assert.deepEqual(lowered.transform.pivot, expected, 'parent rotation is applied by the hierarchy, not baked twice');
+      const plate = result.product.nodes.find((node) => node.id === 'mount/anchor/plate');
+      assert.ok(plate?.kind === 'cube' && plate.geometryMode === 'axis-box');
+      assert.deepEqual(plate.bounds.from, expected, 'socket translation must move geometry, not just its hinge');
+      assert.deepEqual(plate.transform.pivot, expected);
     }
   }
 }

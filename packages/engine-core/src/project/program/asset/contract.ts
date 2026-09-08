@@ -106,7 +106,7 @@ export interface AssetRigContractDecl {
 export interface AssetBindDecl {
   readonly kind: 'bind';
   readonly joint: string;
-  readonly origin: ProgramExpr | null;
+  readonly parentOrigin: ProgramExpr | null;
   readonly frame: AssetFrameDecl | null;
   readonly span: SourceSpan;
 }

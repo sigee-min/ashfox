@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 
+import { canonicalRotatePoint } from '../../../src/model/transform';
 import { boneTransformMatchesCanonicalFrame } from '../../../src/model/scene';
 import { sourceSpan } from '../../../src/project/source/lexer';
 import {
@@ -52,9 +53,9 @@ const symbol = (kind: AssetSymbolKind, name: string, key: string): AssetSymbolId
 const bone = (
   id: string,
   parentId: string | null,
-  restFrame: AssetExactFrame = frame([0n, 0n, 0n])
+  parentRestFrame: AssetExactFrame = frame([0n, 0n, 0n])
 ): InstantiatedBone => Object.freeze({
-  id, semanticJoint: id, parentId, restFrame,
+  id, semanticJoint: id, parentId, parentRestFrame,
   sourcePath: 'dragon/skeleton.ashfox', span
 });
 
@@ -186,3 +187,30 @@ if (!missingTarget.ok) assert.ok(missingTarget.diagnostics.some((item) =>
   item.code === 'asset.motion-target-missing'));
 
 console.log('canonical rig and motion lowering ok');
+
+// Non-zero ancestors, rotation and reflection must agree with parent-frame composition.
+const nested = lowerAssetRigAndMotions({ ...baseIr(), bones: [
+  bone('grandchild', 'child', frame([5n, 6n, 7n])),
+  bone('child', 'root', frame([2n, 3n, 4n], axis(-1, 0, 0), axis(0, 1, 0), axis(0, 0, 1), -1)),
+  bone('root', null, frame([10n, 20n, 30n], axis(0, 1, 0), axis(-1, 0, 0), axis(0, 0, 1)))
+] });
+assert.ok(nested.ok);
+if (nested.ok) {
+  const nodes = new Map(nested.bones.map((node) => [node.id, node]));
+  const worldOrigin = (id: string): readonly [number, number, number] => {
+    const chain = [];
+    let node = nodes.get(id)!;
+    while (true) { chain.push(node); if (!node.parentId) break; node = nodes.get(node.parentId)!; }
+    let point: readonly [number, number, number] = [0, 0, 0];
+    for (const owner of chain) {
+      const parent = owner.parentId ? nodes.get(owner.parentId)! : null;
+      const rotated = canonicalRotatePoint([point[0] * owner.transform.scale[0], point[1] * owner.transform.scale[1], point[2] * owner.transform.scale[2]], owner.transform.rotation);
+      point = [0, 1, 2].map((index) => rotated[index]! + owner.transform.pivot[index]! - (parent?.transform.pivot[index] ?? 0)) as [number, number, number];
+    }
+    return point;
+  };
+  for (const [id, expected] of [['root', [10, 20, 30]], ['child', [7, 22, 34]], ['grandchild', [1, 17, 41]]] as const) {
+    const actual = worldOrigin(id);
+    actual.forEach((value, index) => assert.ok(Math.abs(value - expected[index]!) < 1e-9, `${id} world origin is wrong`));
+  }
+}

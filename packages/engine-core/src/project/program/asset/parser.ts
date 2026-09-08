@@ -13,13 +13,11 @@ import {
   type AssetImportDecl, type AssetJointDecl, type AssetKeyframeDecl, type AssetMotionDecl,
   type AssetPortDecl, type AssetPropertyDecl, type AssetQualifiedName, type AssetRigContractDecl,
   type AssetSkeletonDecl, type AssetSettingsDecl, type AssetSlotDecl, type AssetSocketContractDecl,
-  type AssetSocketDecl, type AssetSourceParseResult, type AssetSourceUnit,
-  type AssetSurfaceContractDecl, type AssetSurfaceDecl, type AssetTrackDecl, type AssetValueType
-} from './contract';
+  type AssetSocketDecl, type AssetSourceParseResult, type AssetSourceUnit, type AssetSurfaceContractDecl,
+  type AssetSurfaceDecl, type AssetTrackDecl, type AssetValueType } from './contract';
 import { parseGeometryPayload, type AssetGeometryReader } from './geometry';
 import { ParserAbort, badName, freeze, join, valueName, type Token } from './parserSupport';
 import { parseAssetDesign, parseAssetValueType } from './design';
-
 export class Parser {
   private index = 0;
   private depth = 0;
@@ -302,9 +300,11 @@ export class Parser {
         else if (this.assignment()) values.push(this.property()); else this.scopeError('skeleton bind');
       }
       const close = this.expect('}', 'Expected } to close a bind.');
-      this.closedProperties(values, ['origin'], 'skeleton bind');
-      const origin = values.find((entry) => entry.name === 'origin')?.value ?? null;
-      return freeze({ kind: 'bind', joint: joint.value, origin,
+      const ambiguous = values.find((entry) => entry.name === 'origin');
+      if (ambiguous) this.failSpan('asset.bind-coordinate-space', 'Skeleton binds require parent-origin in the parent joint frame; ambiguous origin is not supported.', ambiguous.span);
+      this.closedProperties(values, ['parent-origin'], 'skeleton bind');
+      const parentOrigin = values.find((entry) => entry.name === 'parent-origin')?.value ?? null;
+      return freeze({ kind: 'bind', joint: joint.value, parentOrigin,
         frame: frame ?? this.frameOrNull(values, start.span), span: join(start.span, close.span) });
     } finally { this.leave(); }
   }

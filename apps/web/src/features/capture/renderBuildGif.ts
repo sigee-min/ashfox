@@ -24,7 +24,7 @@ import {
   requiredCaptureForward,
   waitForProjectionTextures
 } from './captureSurface';
-import { drawBuildFrameOverlay } from './gifFrameOverlay';
+import { drawBuildFrameOverlay, drawShowcasePhase } from './gifFrameOverlay';
 import { resolveBuildReviewClip } from './buildReviewClip';
 import { createCaptureProjection } from './projection';
 
@@ -34,6 +34,7 @@ export interface BuildGifCaptureOptions {
   readonly environment: ViewportEnvironmentId;
   readonly cameraMode: CameraMode;
   readonly signal: AbortSignal;
+  readonly marketing?: boolean;
   readonly onProgress?: (completed: number, total: number) => void;
 }
 
@@ -136,6 +137,10 @@ export const renderBuildGif = async (
       throwIfCaptureAborted(options.signal);
       applyBuildCaptureFrame(frame, options.document, neutral, textured);
       encodeGifSurfaceFrame(surface, (context) => {
+        if (options.marketing) {
+          drawShowcasePhase(context, { start: 'An idea takes shape', geometry: 'Taking shape', texture: 'Adding color', motion: 'Coming to life', complete: 'Ready for your game' }[frame.event.category] ?? 'Creating');
+          return;
+        }
         drawBuildFrameOverlay(
           context,
           frame.event.label,

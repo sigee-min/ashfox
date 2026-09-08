@@ -63,6 +63,8 @@ const compileEntry = (workspace, entryName, packageName = 'creatures') => {
 const verifyCorpus = () => {
   const exampleFiles = fs.readdirSync(EXAMPLES_ROOT, { withFileTypes: true });
   assert.deepEqual(exampleFiles.map((entry) => entry.name).sort(), [
+    `fox${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
+    `goblin${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
     `griffin${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
     `shared-creatures${ASHFOX_WORKSPACE_FILE_EXTENSION}`
   ], 'examples must expose canonical portable workspaces and no legacy source tree');
@@ -85,8 +87,35 @@ const verifyCorpus = () => {
 
   const projects = ENTRY_NAMES.map((entryName) =>
     compileEntry(read.workspace, entryName));
+  for (const project of projects) {
+    const name = ENTRY_NAMES[projects.indexOf(project)];
+    const portable = readWorkspaceFile(fs.readFileSync(path.join(EXAMPLES_ROOT, `${name}${ASHFOX_WORKSPACE_FILE_EXTENSION}`)));
+    assert.equal(portable.ok, true);
+    assert.equal(compileEntry(portable.workspace, name).build.productHash, project.build.productHash);
+    const expectedClips = name === 'fox' ? ['curious', 'idle', 'tail_wag'] : ['challenge', 'idle', 'lookout'];
+    assert.deepEqual(Object.values(project.document.animations).map((clip) => clip.name).sort(), expectedClips);
+    const directory = path.join(ROOT, 'assets/exports', name);
+    const lineage = JSON.parse(fs.readFileSync(path.join(directory, 'ashfox-lineage.json')));
+    assert.equal(lineage.productHash, project.build.productHash);
+    const bytes = fs.readFileSync(path.join(directory, `${name}.glb`));
+    assert.equal(`sha256:${createHash('sha256').update(bytes).digest('hex')}`, lineage.files.find((file) => file.path === `${name}.glb`).sha256);
+    const gltf = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)));
+    assert.deepEqual(gltf.animations.map((clip) => clip.name).sort(), expectedClips);
+  }
   const griffin = compileEntry(read.workspace, 'griffin', 'workbench');
   projects.push(griffin);
+  const griffinNodes = Object.values(griffin.document.scene.nodes);
+  assert.equal(griffinNodes.some((node) => node.name.endsWith('/hook')), false);
+  const claws = griffinNodes.filter((node) => node.name.includes('/hind_claw_'));
+  assert.equal(claws.length, 6, 'each rear foot must have three claws');
+  for (let index = 0; index < 3; index += 1) {
+    const left = claws.find((node) => node.name.endsWith(`hind_claw_left${index}`));
+    const right = claws.find((node) => node.name.endsWith(`hind_claw_right${2 - index}`));
+    assert.equal(left.bounds.from[0], -right.bounds.to[0]);
+    assert.equal(left.bounds.to[0], -right.bounds.from[0]);
+    assert.deepEqual(left.bounds.from.slice(1), right.bounds.from.slice(1));
+    assert.deepEqual(left.bounds.to.slice(1), right.bounds.to.slice(1));
+  }
   const standaloneSource = fs.readFileSync(
     path.join(EXAMPLES_ROOT, `griffin${ASHFOX_WORKSPACE_FILE_EXTENSION}`), 'utf8'
   );

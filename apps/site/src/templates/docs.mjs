@@ -1,23 +1,14 @@
 import {
-  documentationOrder,
-  sectionLabels,
-  sectionOrder
-} from '../content.mjs';
-import {
   absoluteUrl,
   escapeHtml,
   pageShell
 } from './shell.mjs';
 
 const groupDocuments = (documents) =>
-  sectionOrder
-    .map((section) => ({
-      section,
-      label: sectionLabels[section] ?? section,
-      documents: documents.filter((document) => document.section === section &&
-        documentationOrder.includes(document.route))
-    }))
-    .filter((group) => group.documents.length > 0);
+  [...new Set(documents.map((document) => document.section))].map((section) => ({
+    label: documents.find((document) => document.section === section).sectionLabel,
+    documents: documents.filter((document) => document.section === section)
+  }));
 
 const docsNavigation = (documents, currentRoute) => `
   <nav class="docs-nav" aria-label="Documentation">
@@ -42,12 +33,23 @@ export const renderDocumentationPage = ({
   documents
 }) => {
   const navigation = docsNavigation(documents, document.route);
+  const index = documents.findIndex((page) => page.route === document.route);
+  const adjacent = [
+    { page: documents[index - 1], label: 'Previous' },
+    { page: documents[index + 1], label: 'Next' }
+  ].filter(({ page }) => page);
+  const pagination = `<nav class="doc-pagination" aria-label="Continue reading">
+    ${adjacent.map(({ page, label }) => `<a href="${escapeHtml(page.route)}">
+      <span>${label}</span><strong>${escapeHtml(page.title)}</strong>
+    </a>`).join('')}
+  </nav>`;
+  const tocLinks = document.toc.map((item) => `
+    <a class="toc-level-${item.level}" href="#${item.id}">${escapeHtml(item.text)}</a>
+  `).join('');
   const toc = document.toc.length > 0
     ? `<nav class="page-toc" aria-label="On this page">
         <p>On this page</p>
-        ${document.toc.map((item) => `
-          <a class="toc-level-${item.level}" href="#${item.id}">${escapeHtml(item.text)}</a>
-        `).join('')}
+        ${tocLinks}
       </nav>`
     : '';
   const body = `
@@ -60,14 +62,19 @@ export const renderDocumentationPage = ({
         ${navigation}
       </aside>
       <details class="docs-mobile-nav">
-        <summary>Browse guides <span>⌄</span></summary>
+        <summary>Browse documentation <span>⌄</span></summary>
         <div>${navigation}</div>
       </details>
       <article class="doc-article" data-doc-article>
         <div class="doc-breadcrumb">
-          <a href="/docs/">Docs</a><span>/</span><span>${escapeHtml(sectionLabels[document.section] ?? document.section)}</span>
+          <a href="/docs/">Docs</a><span>/</span><span>${escapeHtml(document.sectionLabel)}</span>
         </div>
+        ${document.toc.length > 0 ? `<details class="doc-mobile-toc">
+          <summary>On this page</summary>
+          <nav aria-label="Page sections">${tocLinks}</nav>
+        </details>` : ''}
         ${document.html}
+        ${pagination}
         <div class="doc-end">
           <span>Ready to make something?</span>
           <a href="/#quick-start">Get agent instructions →</a>

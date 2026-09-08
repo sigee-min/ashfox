@@ -1,8 +1,8 @@
 export const landingContent = {
   eyebrow: 'AI-native low-poly workbench',
-  titleLines: ['Describe it.', 'Ship it game-ready.'],
+  titleLines: ['Imagine a creature.', 'Bring it to life.'],
   summary:
-    'Create Minecraft-style models, textures, and animation with your AI agent. Refine them in the browser, then export for your game.',
+    'Low-poly characters, made with your AI agent. Textured, animated, and ready for your game.',
   showcase: {
     eyebrow: 'Made with ashfox',
     provenance:
@@ -13,21 +13,21 @@ export const landingContent = {
         entryName: 'griffin',
         index: '01',
         label: 'Griffin guardian',
-        summary: 'A fantasy guardian with six animations.'
+        summary: 'Ivory feathers. Golden fur. A guardian with a presence of its own.'
       },
       {
         packageName: 'creatures',
         entryName: 'fox',
         index: '02',
         label: 'Red fox',
-        summary: 'Ember fur, a bright chest, and a gentle idle.'
+        summary: 'A curious companion. Ember fur, a playful tail, and a world to explore.'
       },
       {
         packageName: 'creatures',
         entryName: 'goblin',
         index: '03',
         label: 'Goblin raider',
-        summary: 'A scarred raider with iron armor, shield, and blade.'
+        summary: 'Small stature. Big attitude. Armored and ready to make trouble.'
       }
     ]
   },
@@ -43,22 +43,3 @@ export const landingContent = {
     ['glTF', 'Scene JSON with separate textures and binary data.']
   ]
 };
-
-export const sectionOrder = [
-  'overview',
-  'guides'
-];
-
-export const sectionLabels = {
-  overview: 'Start here',
-  guides: 'Guides'
-};
-
-export const documentationOrder = [
-  '/docs/',
-  '/docs/guides/ai-agent-quick-start/',
-  '/docs/guides/authoring-and-review/',
-  '/docs/guides/save-and-export/',
-  '/docs/guides/choose-a-format/',
-  '/docs/guides/troubleshooting/'
-];

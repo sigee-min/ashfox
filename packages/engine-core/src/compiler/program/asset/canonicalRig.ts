@@ -14,6 +14,8 @@ import {
   type AssetVectorValue
 } from './value/contract';
 import { toAssetCanonicalNumber } from './valueEvaluate';
+import type { AssetExactFrame } from './frame';
+import { createBoneLayouts } from './canonicalLayout';
 import { lowerAssetFrameToBoneTransform } from './frameLower';
 import type {
   InstantiatedAssetIr,
@@ -139,20 +141,21 @@ const makeCanonicalFrame = (
   origin: Vec3
 ): Readonly<NonNullable<BoneNode['canonicalFrame']>> => freeze({
   origin,
-  xAxis: vector(bone.restFrame.xAxis[0], bone.restFrame.xAxis[1], bone.restFrame.xAxis[2]),
-  yAxis: vector(bone.restFrame.yAxis[0], bone.restFrame.yAxis[1], bone.restFrame.yAxis[2]),
-  zAxis: vector(bone.restFrame.zAxis[0], bone.restFrame.zAxis[1], bone.restFrame.zAxis[2]),
-  determinant: bone.restFrame.determinant,
+  xAxis: vector(bone.parentRestFrame.xAxis[0], bone.parentRestFrame.xAxis[1], bone.parentRestFrame.xAxis[2]),
+  yAxis: vector(bone.parentRestFrame.yAxis[0], bone.parentRestFrame.yAxis[1], bone.parentRestFrame.yAxis[2]),
+  zAxis: vector(bone.parentRestFrame.zAxis[0], bone.parentRestFrame.zAxis[1], bone.parentRestFrame.zAxis[2]),
+  determinant: bone.parentRestFrame.determinant,
   rotation
 });
 
 const lowerBone = (
   bone: InstantiatedBone,
   parentId: string | null,
+  canonicalLayout: AssetExactFrame,
   diagnostics: AssetDiagnostic[]
 ): BoneNode | null => {
   const location: Location = { path: bone.sourcePath, span: bone.span };
-  const transform = lowerAssetFrameToBoneTransform(bone.restFrame);
+  const transform = lowerAssetFrameToBoneTransform(canonicalLayout);
   if (transform === null) {
     addIssue(diagnostics, location, 'asset.invalid-rest-frame',
       `Bone "${bone.semanticJoint}" has no canonical transform.`);
@@ -233,10 +236,21 @@ const lowerBones = (
     state.set(id, 2);
   };
   for (const id of [...byId.keys()].sort(codeUnitOrder)) visit(id);
+  if (diagnostics.length > 0) return null;
+  // Canonical runtimes subtract parent pivots to recover the local translation.
+  // Accumulate offsets without rotating them here; parent rotation/scale is
+  // applied exactly once by the runtime hierarchy, just as in socket frames.
+  const layout = createBoneLayouts(byId, parents);
   const lowered: BoneNode[] = [];
   for (const id of [...byId.keys()].sort(codeUnitOrder)) {
     const bone = byId.get(id)!;
-    const node = lowerBone(bone, parents.get(id) ?? null, diagnostics);
+    const canonicalLayout = layout(id);
+    if (canonicalLayout === null) {
+      addIssue(diagnostics, { path: bone.sourcePath, span: bone.span },
+        'asset.invalid-rest-frame', `Bone "${id}" has an invalid parent-relative rest frame.`);
+      continue;
+    }
+    const node = lowerBone(bone, parents.get(id) ?? null, canonicalLayout, diagnostics);
     if (node !== null) lowered.push(node);
   }
   lowered.sort((left, right) => codeUnitOrder(left.id, right.id));

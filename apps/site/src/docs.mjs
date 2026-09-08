@@ -1,28 +1,9 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { marked } from 'marked';
 
-import {
-  documentationOrder,
-  sectionOrder
-} from './content.mjs';
-
-const markdownExtension = /\.md$/i;
-
 const toPosix = (value) => value.split(path.sep).join('/');
-
-const walkMarkdown = async (directory) => {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const files = await Promise.all(
-    entries.map(async (entry) => {
-      const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) return walkMarkdown(entryPath);
-      return markdownExtension.test(entry.name) ? [entryPath] : [];
-    })
-  );
-  return files.flat();
-};
 
 export const slugify = (value) =>
   value
@@ -31,12 +12,6 @@ export const slugify = (value) =>
     .replace(/<[^>]*>/g, '')
     .replace(/[^a-z0-9가-힣]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'section';
-
-export const routeForDocument = (relativePath) => {
-  const normalized = toPosix(relativePath);
-  if (normalized.toLowerCase() === 'readme.md') return '/docs/';
-  return `/docs/${normalized.replace(markdownExtension, '')}/`;
-};
 
 const titleFromMarkdown = (markdown, fallback) => {
   const match = markdown.match(/^#\s+(.+)$/m);
@@ -61,15 +36,22 @@ const descriptionFromMarkdown = (markdown) => {
     .replace(/[*_`]/g, '');
 };
 
-const rewriteMarkdownLinks = (markdown, relativePath) =>
+const rewriteMarkdownLinks = (markdown, relativePath, routes) =>
   markdown.replace(
-    /\]\(([^)\s]+\.md)(#[^)]+)?\)/g,
+    /\]\(([^)\s#]+)(#[^)]+)?\)/g,
     (_match, targetPath, hash = '') => {
+      if (/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(targetPath)) return _match;
       const resolved = path.posix.normalize(
         path.posix.join(path.posix.dirname(toPosix(relativePath)), targetPath)
       );
+      if (resolved.startsWith('../examples/')) {
+        return `](/${resolved.slice(3)}${hash})`;
+      }
+      if (!/\.md$/i.test(targetPath)) return _match;
       const anchor = hash ? `#${slugify(decodeURIComponent(hash.slice(1)))}` : '';
-      return `](${routeForDocument(resolved)}${anchor})`;
+      const route = routes.get(resolved);
+      if (!route) throw new Error(`Public document ${relativePath} links to unpublished ${resolved}.`);
+      return `](${route}${anchor})`;
     }
   );
 
@@ -92,56 +74,36 @@ const addHeadingIds = (html) => {
   return { html: content, toc };
 };
 
-const sectionForPath = (relativePath) => {
-  const normalized = toPosix(relativePath);
-  return normalized.toLowerCase() === 'readme.md'
-    ? 'overview'
-    : normalized.split('/')[0];
-};
-
-const sectionRank = (section) => {
-  const index = sectionOrder.indexOf(section);
-  return index === -1 ? sectionOrder.length : index;
-};
-
-const documentRank = (route) => {
-  const index = documentationOrder.indexOf(route);
-  return index === -1 ? documentationOrder.length : index;
-};
-
 export const loadDocumentation = async (docsRoot) => {
-  const files = await walkMarkdown(docsRoot);
-  const documents = await Promise.all(
-    files.map(async (filePath) => {
-      const relativePath = toPosix(path.relative(docsRoot, filePath));
-      const markdown = await readFile(filePath, 'utf8');
-      const title = titleFromMarkdown(
-        markdown,
-        path.basename(relativePath, '.md')
-      );
-      const rendered = addHeadingIds(
-        marked.parse(rewriteMarkdownLinks(markdown, relativePath), {
-          gfm: true
-        })
-      );
-      return {
-        relativePath,
-        route: routeForDocument(relativePath),
-        section: sectionForPath(relativePath),
-        title,
-        description: descriptionFromMarkdown(markdown),
-        html: rendered.html,
-        toc: rendered.toc
-      };
-    })
-  );
-  return documents.sort((left, right) => {
-    const sectionDifference =
-      sectionRank(left.section) - sectionRank(right.section);
-    if (sectionDifference !== 0) return sectionDifference;
-    const rankDifference =
-      documentRank(left.route) - documentRank(right.route);
-    if (rankDifference !== 0) return rankDifference;
-    return left.title.localeCompare(right.title);
-  });
+  const catalog = JSON.parse(await readFile(path.join(docsRoot, 'public.json'), 'utf8'));
+  const pages = catalog.flatMap((section) => section.pages.map((page) => ({
+    ...page, section: section.id, sectionLabel: section.label
+  })));
+  const routes = new Map();
+  const publishedRoutes = new Set();
+  for (const page of pages) {
+    if (!/^[a-zA-Z0-9/-]+\.md$/.test(page.source) || page.source.includes('..') ||
+        !/^\/docs\/(?:[a-z0-9-]+\/)*$/.test(page.route) ||
+        routes.has(page.source) || publishedRoutes.has(page.route)) {
+      throw new Error(`Invalid or duplicate public document: ${page.source}`);
+    }
+    routes.set(page.source, page.route);
+    publishedRoutes.add(page.route);
+  }
+  return Promise.all(pages.map(async (page) => {
+    const markdown = await readFile(path.join(docsRoot, page.source), 'utf8');
+    const rendered = addHeadingIds(marked.parse(
+      rewriteMarkdownLinks(markdown, page.source, routes), { gfm: true }
+    ));
+    return {
+      relativePath: page.source,
+      route: page.route,
+      section: page.section,
+      sectionLabel: page.sectionLabel,
+      title: titleFromMarkdown(markdown, path.basename(page.source, '.md')),
+      description: descriptionFromMarkdown(markdown),
+      html: rendered.html,
+      toc: rendered.toc
+    };
+  }));
 };

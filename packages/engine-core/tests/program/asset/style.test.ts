@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import { readWorkspaceFile } from '../../../src/projectFile/workspace/codec';
 import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/compile';
 
-// Captured before the precision hard cut at 6d72df1. Hashes cover canonical
+// Approved showroom motion update: planted fox idle and three clips per creature. Hashes cover canonical
 // geometry, all texture recipe/raster data, and all authored animation channels.
 const baseline = {
-  fox: 'sha256:06a5581bda152e91c6a3dc79b0283ecebc6c945fc36736853f0e6426c5405c99',
-  goblin: 'sha256:30a7d1db235de53718c9f7a1c2cfb3ee8dbe0d2d69666da3ece3a27691c31a6d'
+  fox: 'sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db',
+  goblin: 'sha256:9989d5a1f5536c38b2e8e0ee27791c376d3231b291d67579c90aaec2b19c436a'
 };
 const source = readFileSync(resolve(__dirname, '../../../../../examples/shared-creatures.ashfoxworkspace'), 'utf8');
 const read = readWorkspaceFile(source);

@@ -338,11 +338,12 @@ if (
   );
 }
 
+const showroomEntries = JSON.parse(landingHtml.match(/<script type="application\/json" data-showroom-data>([\s\S]*?)<\/script>/u)?.[1] || '[]');
 const selectorTags = landingHtml.match(
-  /<button(?=[^>]*\sdata-replay-select(?:\s|>))[^>]*>/gu
+  /<button(?=[^>]*\sdata-character=)[^>]*>/gu
 ) ?? [];
 const playerTags = landingHtml.match(
-  /<img(?=[^>]*\sdata-replay-player(?:\s|>))[^>]*>/gu
+  /<video(?=[^>]*\sdata-character-player(?:\s|>))[^>]*>/gu
 ) ?? [];
 if (selectorTags.length !== manifestIdentities.length) {
   failures.push(
@@ -360,14 +361,22 @@ if (/<img[^>]*\ssrc="[^"]+\.gif(?:[?#][^"]*)?"/u.test(landingHtml)) {
 }
 
 for (const [index, entry] of (showcaseManifest.entries ?? []).entries()) {
-  const selector = selectorTags[index] ?? '';
-  const identity = `${attribute(selector, 'data-package-name')}/` +
-    `${attribute(selector, 'data-entry-name')}`;
-  if (identity !== manifestIdentities[index]) {
-    failures.push(`landing replay selector ${index} is out of manifest order`);
+  const selected = showroomEntries[index];
+  const identity = `${selected?.packageName}/${selected?.entryName}`;
+  if (identity !== manifestIdentities[index]) failures.push('Showroom entry order mismatch');
+  const replaySource = selected?.replaySrc;
+  const posterSource = selected?.posterSrc;
+  const buildVideo = await readFile(path.join(outputRoot, selected.replayVideoSrc));
+  if (buildVideo.subarray(4, 8).toString('ascii') !== 'ftyp' || digestBytes(buildVideo) !== entry.video.sha256 || buildVideo.length !== entry.video.byteLength) failures.push('Build video does not match sealed media');
+  if (selected?.workspaceHref !== `/examples/${entry.entryName}.ashfoxworkspace` || selected?.glbHref !== `/examples/${entry.entryName}.glb`) failures.push('Selected downloads mismatch');
+  for (const movie of entry.motions) {
+    const shown = selected.motions.find((motion) => motion.name === movie.name);
+    if (!shown || digestBytes(await readFile(path.join(outputRoot, shown.src))) !== movie.sha256) failures.push(`Stale motion: ${movie.name}`);
   }
-  const replaySource = attribute(selector, 'data-replay-src');
-  const posterSource = attribute(selector, 'data-poster-src');
+  for (const [source, target] of [
+    [path.join(repositoryRoot, `examples/${entry.entryName}.ashfoxworkspace`), selected.workspaceHref],
+    [path.join(repositoryRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), selected.glbHref]
+  ]) if (!(await readFile(source)).equals(await readFile(path.join(outputRoot, target)))) failures.push(`Stale download: ${target}`);
   if (!replaySource?.startsWith('/media/showcase/') || !posterSource?.startsWith(
     '/media/showcase/'
   )) {
@@ -453,7 +462,9 @@ const publishedWorkspaceFiles = outputFiles.filter((file) =>
 );
 const expectedPublishedWorkspaceFiles = [
   publishedWorkspacePath,
-  publishedStandaloneGriffinPath
+  publishedStandaloneGriffinPath,
+  path.join(outputRoot, 'examples/fox.ashfoxworkspace'),
+  path.join(outputRoot, 'examples/goblin.ashfoxworkspace')
 ].sort();
 if (
   publishedWorkspaceFiles.length !== expectedPublishedWorkspaceFiles.length ||
@@ -469,17 +480,14 @@ if (committedPublicWorkspaces.length !== 0) {
 const griffinGlbLinks = landingHtml.match(
   /<a(?=[^>]*\shref="\/examples\/griffin\.glb")[^>]*>/gu
 ) ?? [];
-if (griffinGlbLinks.length !== 1 || !landingHtml.includes('Download Griffin GLB')) {
+if (griffinGlbLinks.length !== 1 || !landingHtml.includes('Download GLB')) {
   failures.push('landing must provide exactly one Griffin GLB download link');
 }
 if (
-  !landingHtml.includes('href="/examples/shared-creatures.ashfoxworkspace"') ||
+  !landingHtml.includes('href="/examples/griffin.ashfoxworkspace"') ||
   !landingHtml.includes('href="/examples/griffin.glb"') ||
   !landingHtml.includes('href="/workbench/"') ||
-  landingHtml.includes('href="/workbench/?') ||
-  landingHtml.indexOf('Download workspace') >
-    landingHtml.indexOf('Launch Workbench') ||
-  !landingHtml.includes(landingContent.showcase.provenance)
+  !landingHtml.includes('Build replays reconstructed from the finished models.')
 ) {
   failures.push('landing must present the honest download-then-launch replay flow');
 }

@@ -4,7 +4,6 @@ import { openWorkspaceSource } from '../files/workspace';
 import {
   createCaptureSurface,
   disposeCaptureSurface,
-  frameCaptureObject,
   renderCaptureSurface,
   requiredCaptureForward,
   waitForProjectionTextures
@@ -14,6 +13,8 @@ import {
   GIF_CAPTURE_WIDTH
 } from './gifCaptureSurface';
 import { createCaptureProjection } from './projection';
+import { stageShowcase } from './showcaseStage';
+import { renderShowcaseMotion } from './showcaseMotion';
 import { renderBuildGif } from './renderBuildGif';
 
 const WORKSPACE_URL = '/tooling/shared-creatures.ashfoxworkspace';
@@ -48,8 +49,8 @@ const renderPoster = async (document: ProjectDocument): Promise<Blob> => {
   });
   const projection = createCaptureProjection(document, {});
   surface.scene.add(projection.root);
+  const disposeStage = stageShowcase(document, projection, surface);
   try {
-    frameCaptureObject(surface, 'perspective', projection.root);
     await waitForProjectionTextures(
       projection,
       new AbortController().signal
@@ -57,6 +58,7 @@ const renderPoster = async (document: ProjectDocument): Promise<Blob> => {
     renderCaptureSurface(surface);
     return await canvasPng(surface.renderCanvas);
   } finally {
+    disposeStage();
     surface.scene.remove(projection.root);
     projection.dispose();
     disposeCaptureSurface(surface);
@@ -79,7 +81,7 @@ const downloadLink = (
 
 const byteFields = async (
   entryName: string,
-  kind: 'gif' | 'png',
+  kind: string,
   blob: Blob
 ): Promise<HTMLSpanElement> => {
   const container = document.createElement('span');
@@ -161,7 +163,8 @@ export const installShowcaseCapture = (target: Window): void => {
             assets: {},
             environment: 'studio',
             cameraMode: 'perspective',
-            signal: new AbortController().signal
+            signal: new AbortController().signal,
+            marketing: true
           });
           const replayBytes = new Uint8Array(capture.bytes.byteLength);
           replayBytes.set(capture.bytes);
@@ -177,6 +180,10 @@ export const installShowcaseCapture = (target: Window): void => {
             await byteFields(entryName, 'gif', replay),
             await byteFields(entryName, 'png', poster)
           );
+          for (const clip of Object.values(project.document.animations)) {
+            const motion = await renderShowcaseMotion(project.document, clip.name);
+            row.append(await byteFields(entryName, `motion-${clip.name}`, motion));
+          }
           button.remove();
           status.textContent = `${entryName} ready · ${capture.frameCount} frames`;
         } catch (error) {

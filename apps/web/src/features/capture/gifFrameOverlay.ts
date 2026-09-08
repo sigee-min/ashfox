@@ -38,6 +38,14 @@ const fillPanel = (
   context.fill();
 };
 
+export const drawShowcasePhase = (context: CanvasRenderingContext2D, label: string): void => {
+  context.save();
+  context.font = '500 13px system-ui, sans-serif';
+  context.fillStyle = '#e5c396';
+  context.fillText(label, 22, 32);
+  context.restore();
+};
+
 export const drawBuildFrameOverlay = (
   context: CanvasRenderingContext2D,
   label: string,

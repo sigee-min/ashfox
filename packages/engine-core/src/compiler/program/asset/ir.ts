@@ -14,7 +14,8 @@ export interface InstantiatedBone {
   readonly id: string;
   readonly semanticJoint: string;
   readonly parentId: string | null;
-  readonly restFrame: AssetExactFrame;
+  /** Origin and axes are relative to the parent joint, or model for a root. */
+  readonly parentRestFrame: AssetExactFrame;
   readonly sourcePath: string;
   readonly span: SourceSpan;
 }
@@ -80,14 +81,12 @@ export interface InstantiatedSocketConnection {
   readonly fromPort: string;
   readonly toInstance: string;
   readonly toPort: string;
-  /** Socket-anchored component bone whose transform receives localPlacement. */
+  /** Socket-anchored component bone whose transform receives parentPlacement. */
   readonly targetBoneId: string;
   /** Canonical provider bone that owns the attached component root. */
   readonly parentBoneId: string;
   /** Target placement relative to parentBoneId, preserving animation hierarchy. */
-  readonly localPlacement: AssetExactFrame;
-  /** World placement retained only for resolving downstream connection chains. */
-  readonly placement: AssetExactFrame;
+  readonly parentPlacement: AssetExactFrame;
   readonly span: SourceSpan;
 }
 

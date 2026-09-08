@@ -1,24 +1,29 @@
 # Ashfox docs
 
-Ashfox is a browser workbench for creating and refining low-poly assets with a
-browser-capable AI agent. You describe the result, the agent updates the
-workspace, and you review the rendered asset before saving or exporting it.
+Ashfox is a browser workbench for creating and refining low-poly assets with
+an AI agent. Describe the result, review the rendered asset, then save or
+export it.
 
-## Guides
+## Start and deliver
 
-- [Get started](guides/ai-agent-quick-start.md): connect to the Workbench and
-  describe a task.
-- [Authoring and review](guides/authoring-and-review.md): give useful direction
+- [Get started](guides/ai-agent-quick-start.md): connect an agent and describe
+  a task.
+- [Create and review](guides/authoring-and-review.md): give useful direction
   and judge the result.
-- [Save and export](guides/save-and-export.md): keep a portable workspace or
-  deliver a selected asset.
+- [Save and export](guides/save-and-export.md): keep a workspace or deliver an
+  asset.
 - [Choose an export format](guides/choose-a-format.md): compare target files.
-- [Troubleshooting](guides/troubleshooting.md): recover from connection,
-  validation, review, and export problems.
+- [Troubleshooting](guides/troubleshooting.md): recover from common problems.
 
-Agents that need the complete browser API sequence should read [Agent
-workflow](guides/agent-workflow.md). For declaration syntax, use [Asset
-language](architecture/asset-language.md); for linked dimensions and fixed
-pixel marks, use [Precision modeling](guides/precision-modeling.md).
+## Language and precision
 
-The Workbench keeps the workspace in the browser. Download a workspace copy to keep it outside the browser.
+- [Asset language syntax](architecture/asset-language.md): units, declarations,
+  geometry, surfaces, rigs, motions, and assembly bindings.
+- [Precision modeling](guides/precision-modeling.md): shared dimensions,
+  construction relations, and fixed pixel marks.
+- [Animation](guides/animation.md): create, assign, select, and review motions.
+
+## Agent integration
+
+- [Agent workflow](guides/agent-workflow.md): use the complete Workbench API
+  sequence from inspection through review.

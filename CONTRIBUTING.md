@@ -64,6 +64,11 @@ changing development policy, source grammar version, or release version.
 Generated site pages, manifests, and skill packages come from these sources.
 Use the existing build commands instead of editing generated copies.
 
+`docs/public.json` selects public documentation and its reading order. It also
+controls the Workbench's downloadable references. Keep repository ownership
+and implementation notes outside this catalog; adding a Markdown file does
+not publish it automatically.
+
 ## Development setup
 
 ```bash
@@ -79,6 +84,7 @@ npm run dev:web
 npm run test:site
 npm run test:web
 npm run test:web:browser
+npm --workspace @ashfox/site run test:browser
 npm run test:blockbench
 npm run build:public
 npm run build:blockbench
@@ -106,12 +112,15 @@ authoring history or a decision log. Regenerate all checked-in replay and
 poster media through the real Web renderer with:
 
 ```bash
+node scripts/export-examples.js
 npm run showcase:capture
 npm run showcase:check
 ```
 
+The export command rebuilds each standalone workspace and GLB from the shared example.
 The capture command starts an isolated local Workbench, renders all three entries,
-and seals `assets/showcase/shared-creatures/showcase.json`. It requires Chrome
+including every finished motion, and seals `assets/showcase/shared-creatures/showcase.json`.
+Motion movies require FFmpeg (or `ASHFOX_FFMPEG_PATH`). It requires Chrome
 or Chromium; set `ASHFOX_CHROME_PATH` when the executable is outside a standard
 location. Do not hand-edit the generated media or descriptor. Event ordering,
 source/build provenance, dimensions, frame counts, and artifact hashes are

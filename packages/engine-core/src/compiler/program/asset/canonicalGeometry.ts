@@ -1,4 +1,6 @@
 import { deepFreeze } from '../../../immutable';
+import { createGeometryLayout } from './canonicalLayout';
+import { lowerAssetFrameToBoneTransform } from './frameLower';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { EntityId, UvRect, Vec3 } from '../../../model/identity';
 import type { CubeFace, CubeFaces, PlaneFaces, SceneNode } from '../../../model/scene';
@@ -8,7 +10,7 @@ import type { AssetTexturePlan } from './texture/contract';
 import {
   CUBE_FACES, INTEGER_BOUNDARY, MAX_SAFE, NUMBER_BOUNDARY, compare, exactNumber,
   exactToVector2, exactToVector3, exactVector, addExact, boolean, canonical, cubeUv,
-  directionOf, freeze, lowerFrame, positiveIntegral, propertyMap, report, signedAxis,
+  directionOf, freeze, positiveIntegral, propertyMap, report, signedAxis,
   surfacePlan, transformFor, type CanonicalGeometryIssue, type Context, type GeometryRecord,
   type PropertyEntry, visibleFor
 } from './geometrySupport';
@@ -343,9 +345,17 @@ export const lowerAssetGeometry = (
       visiting.delete(id); visited.add(id);
     };
     for (const id of [...geometryBones.keys()].sort(compare)) visit(id);
+    if (context.failed) return null;
+    const layout = createGeometryLayout(ir, records, connections, parentFor, context);
     const output: SceneNode[] = [];
-    for (const record of records.filter((candidate) => candidate.node.kind !== 'face')
+    for (const rawRecord of records.filter((candidate) => candidate.node.kind !== 'face')
       .sort((left, right) => compare(left.node.id, right.node.id))) {
+      const record = layout.shifted(rawRecord);
+      if (record === null) {
+        report(context, rawRecord.node.sourcePath, rawRecord.node.span,
+          'asset.geometry-layout', 'Geometry bind layout could not be resolved.');
+        continue;
+      }
       const parent = parentFor(record); if (parent === null) continue;
       const node = record.node;
       if (node.kind === 'bone') {
@@ -354,7 +364,8 @@ export const lowerAssetGeometry = (
           const lowered = lowerPrivateBone(record, parent, context);
           if (lowered !== null) output.push(lowered);
         } else {
-          const transform = lowerFrame(connection);
+          const frame = layout.connectionFrame(connection);
+          const transform = frame === null ? null : lowerAssetFrameToBoneTransform(frame);
           if (transform === null) report(context, node.sourcePath, connection.span,
             'asset.connection-frame', 'Socket local placement has no canonical transform.');
           else output.push({ id: node.id, kind: 'bone', name: node.id,

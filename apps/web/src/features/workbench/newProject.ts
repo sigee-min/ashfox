@@ -33,7 +33,7 @@ asset workbench {
     }
   }
   export skeleton WorkbenchSkeleton implements WorkbenchRig {
-    bind root { origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   export motion idle for WorkbenchRig {
     duration = 1s;

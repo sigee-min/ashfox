@@ -30,6 +30,7 @@ const language = Object.freeze({
   rules: Object.freeze([
     'Begin every source with ashfox-model 1 and exactly one module or asset block. Use the linked language reference for declaration and binding syntax.',
     'Share exact dimensions through design fields. Imports require explicit paths, aliases, and exported declarations; rig, socket, and surface bindings are nominal.',
+    'Skeleton binds require parent-origin in the parent joint frame; roots use the model frame. The ambiguous bind property origin is rejected. Place physical hinges using parent-frame offsets and verify grip contact, planted feet, and rotation direction across the entire motion.',
     'Skeletons implement rig contracts; components own geometry; surfaces own charts and pixels; motions target rig joints with rotation or scale tracks. Assets bind these declarations explicitly.',
     'Current asset density is 16, or one texel per model unit. Calculated texel positions must be integral. Use the precision reference for design expressions and fixed-size anchored stamps.',
     'Stamp anchors position the rectangle; flip = none|x|y|xy reflects its contents in face-local pixel axes without moving it. Use explicit reflection for paired asymmetric marks; anchors alone do not mirror pixels.',

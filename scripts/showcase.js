@@ -41,7 +41,8 @@ const CAPTURE_SOURCE_ROOTS = Object.freeze([
 ]);
 const CAPTURE_SOURCE_FILES = Object.freeze([
   'apps/web/src/application/projectAssets.ts',
-  'apps/web/package.json'
+  'apps/web/package.json',
+  'scripts/capture-showcase.js'
 ]);
 const GIF_LIMIT = 8 * 1024 * 1024;
 const GIF_AGGREGATE_LIMIT = 16 * 1024 * 1024;
@@ -210,13 +211,16 @@ const openProject = (workspace, selector) => {
   return opened.project;
 };
 
-const assertMediaInventory = () => {
+const assertMediaInventory = (workspace) => {
   const expected = new Set(EXPECTED_SELECTORS.flatMap(({ entryName }) => [
     `${entryName}-build-replay.gif`,
-    `${entryName}-poster.png`
+    `${entryName}-build-replay.mp4`,
+    `${entryName}-poster.png`,
+    ...Object.values(openProject(workspace, EXPECTED_SELECTORS.find((selector) => selector.entryName === entryName)).document.animations)
+      .map((clip) => `${entryName}-${clip.name}.mp4`)
   ]));
   const actual = fs.readdirSync(SHOWCASE_PATH, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.(?:gif|png)$/iu.test(entry.name))
+    .filter((entry) => entry.isFile() && /\.(?:gif|png|mp4)$/iu.test(entry.name))
     .map((entry) => entry.name);
   const orphan = actual.find((name) => !expected.has(name));
   if (orphan) fail(`orphan media file: ${orphan}`);
@@ -240,7 +244,7 @@ const createDescriptor = () => {
     fail('workspace bytes are not canonical');
   }
   assertExactSelectors(read.workspace);
-  assertMediaInventory();
+  assertMediaInventory(read.workspace);
 
   let aggregateGifBytes = 0;
   const entries = EXPECTED_SELECTORS.map((selector) => {
@@ -248,6 +252,9 @@ const createDescriptor = () => {
     const plan = createBuildCapturePlan(project.document);
     const artifact = `${selector.entryName}-build-replay.gif`;
     const poster = `${selector.entryName}-poster.png`;
+    const videoFile = `${selector.entryName}-build-replay.mp4`;
+    const videoBytes = requireBytes(path.join(SHOWCASE_PATH, videoFile), 'build movie');
+    if (videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' || videoBytes.length > 2 * 1024 * 1024) fail(`Invalid build movie: ${videoFile}`);
     const gifBytes = requireBytes(path.join(SHOWCASE_PATH, artifact), 'GIF');
     const pngBytes = requireBytes(path.join(SHOWCASE_PATH, poster), 'poster');
     if (gifBytes.byteLength > GIF_LIMIT) {
@@ -264,6 +271,13 @@ const createDescriptor = () => {
       fail(`${artifact} has ${gif.frameCount} frames, expected ${plan.frames.length}`);
     }
     return {
+      video: { artifact: videoFile, sha256: sha256(videoBytes), byteLength: videoBytes.length },
+      motions: Object.values(project.document.animations).map((clip) => {
+        const file = `${selector.entryName}-${clip.name}.mp4`;
+        const bytes = requireBytes(path.join(SHOWCASE_PATH, file), 'motion movie');
+        if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024) fail(`Invalid or oversized movie: ${file}`);
+        return { name: clip.name, duration: clip.durationSeconds, artifact: file, sha256: sha256(bytes), byteLength: bytes.length };
+      }),
       packageName: selector.packageName,
       entryName: selector.entryName,
       closureHash: project.build.closureHash,

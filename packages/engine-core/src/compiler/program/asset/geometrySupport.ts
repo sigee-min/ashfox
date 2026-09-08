@@ -1,12 +1,10 @@
 import type { SourceSpan } from '../../../project/source/contract';
 import type { UvRect, Vec2, Vec3 } from '../../../model/identity';
 import type { Transform } from '../../../model/scene';
-import { lowerAssetFrameToBoneTransform } from './frameLower';
 import type {
   InstantiatedAssetIr,
   InstantiatedComponentInstance,
-  InstantiatedGeometryNode,
-  InstantiatedSocketConnection
+  InstantiatedGeometryNode
 } from './ir';
 import type { AssetTextureChartPlan, AssetTexturePlan } from './texture/contract';
 import {
@@ -325,6 +323,3 @@ export const signedAxis = (entries: readonly AssetExactNumber[]): Vec3 | null =>
   return values.filter((value) => value !== 0).length === 1
     ? vector3([values[0]!, values[1]!, values[2]!]) : null;
 };
-
-export const lowerFrame = (connection: InstantiatedSocketConnection): Transform | null =>
-  lowerAssetFrameToBoneTransform(connection.localPlacement);
