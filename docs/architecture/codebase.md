@@ -29,6 +29,7 @@ authority.
 closed workspace + exact lock + selected package entry
   -> workspace/path/package validation
   -> source parsing and nominal module resolution
+  -> bounded exact design dependency evaluation and named checks
   -> immutable Typed HIR
   -> immutable instantiated asset plan
   -> rig/skeleton/socket/surface binding and deterministic motion bake
@@ -63,6 +64,7 @@ identity, not only to the selected closure.
 
 | Declaration | Owns | Must not infer |
 | --- | --- | --- |
+| `design` | exact typed shared values, construction datums, and named boolean checks | a cyclic solution, rounded pixel, extra rig joint, or implicit placement |
 | `rig contract` | nominal joints, signed frames, allowed channels, mirror pairs, typed sockets | a match from bone names or similar hierarchy |
 | `skeleton` | complete concrete rest-frame implementation of one rig | missing joints, axes, scale, IK, or root motion policy |
 | `component` | reusable geometry and typed rig/socket/surface ports | caller locals, nearby attachment, or arbitrary parent links |
@@ -95,6 +97,12 @@ Only the asset parser interprets package-aware declarations and imports. Only
 the compiler resolves nominal symbols and erases source types. Project-file,
 command, Web, renderer, and export code consume closed public records and do
 not import parser or HIR internals.
+
+Design elaboration consumes the sealed parsed closure and substitutes exact
+values before HIR; it does not parse again or create another durable source.
+Read-only measurements in `model/measurement/` consume concrete products and
+expose bounded rest-pose geometry and face UV evidence. The Web agent binds
+these observations to the complete current revision/workspace/build guards.
 
 ## Build replay boundary
 

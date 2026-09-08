@@ -16,6 +16,7 @@ model.
 ## Guides
 
 - [Create and refine](guides/authoring-and-review.md)
+- [Precision modeling](guides/precision-modeling.md)
 - [Save and export](guides/save-and-export.md)
 - [Choose an export format](guides/choose-a-format.md)
 - [Troubleshooting](guides/troubleshooting.md)

@@ -3,8 +3,8 @@
   "version": 1,
   "workspace": {
     "path": "examples/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:8629dca725f5d951780ce85f8b7bcf2692a221ea56c896ef8f81c6ca2c16973f",
-    "workspaceHash": "sha256:777166051a296b5b13cf441c47eda1efbe9f8b80c49f93a23536dc09434f74cb"
+    "sha256": "sha256:712baab673e4db35c51f47643da9e29342bfe36617300163a9357976a04cfe44",
+    "workspaceHash": "sha256:46fb9ba3db1b3f65a195f3ecbea6ef92735c1660a329c50c8d27b6cbb4fbcb14"
   },
   "capture": {
     "fingerprint": "sha256:072474af9758198997d95b4484f421770d84113a75907b28d7d073115e554286",
@@ -19,7 +19,7 @@
       "packageName": "creatures",
       "entryName": "fox",
       "closureHash": "sha256:2b844c43b1781b5f60185f7492d789ae7bdce8d75788cc2afc9f3b85701b2730",
-      "buildKey": "sha256:2e3f616bb9344a5634e440c43bc2f2e292ccdb7680c7b51abd2f438aac7fe009",
+      "buildKey": "sha256:3dd371e6bff78e23b0bd5e0efa62b9ecc417ac58bb8f4a84118d56d4fcc54710",
       "productHash": "sha256:06a5581bda152e91c6a3dc79b0283ecebc6c945fc36736853f0e6426c5405c99",
       "artifact": "fox-build-replay.gif",
       "poster": "fox-poster.png",
@@ -33,7 +33,7 @@
       "packageName": "creatures",
       "entryName": "goblin",
       "closureHash": "sha256:d00d0ca91e126b29a593f2415ee20366273be02406fa39e08cdd9cdef66f4eaf",
-      "buildKey": "sha256:ccd238c79c43b1fa4b460a4112195008ef5e5afb54c5ad89fa6a5b32a0559878",
+      "buildKey": "sha256:e4b2e28e51089ebd1d0d217b7094962b218d0e49697fafc8f4bfe3aeddfa1915",
       "productHash": "sha256:30a7d1db235de53718c9f7a1c2cfb3ee8dbe0d2d69666da3ece3a27691c31a6d",
       "artifact": "goblin-build-replay.gif",
       "poster": "goblin-poster.png",

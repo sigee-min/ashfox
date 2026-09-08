@@ -8,6 +8,8 @@ import {
   type AssetValue,
   type AssetValueDiagnosticCode
 } from './value/contract';
+import type { AssetTypedCallExpression } from './value/contract';
+import { evaluateDesignCall } from './designCall';
 import {
   assetExactOperation,
   type AssetOperationResult
@@ -66,9 +68,11 @@ const compareNumber = (
 };
 
 export const evaluateAssetCall = (
-  name: 'vec2' | 'vec3' | 'abs' | 'min' | 'max' | 'clamp',
+  name: AssetTypedCallExpression['name'],
   args: readonly AssetValue[]
 ): AssetOperationResult<AssetValue> => {
+  if (name === 'texels' || name === 'mirror_x' || name === 'mirror_y' ||
+      name === 'mirror_z' || name === 'box_origin') return evaluateDesignCall(name, args);
   if (name === 'vec2' || name === 'vec3') {
     const arity = name === 'vec2' ? 2 : 3;
     if (args.length !== arity || args.some(

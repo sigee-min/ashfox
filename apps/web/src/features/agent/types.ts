@@ -30,7 +30,23 @@ export type {
   VisualReviewIssue
 };
 
+export interface MeasurementGuard {
+  readonly expectedRevision: string;
+  readonly expectedWorkspaceHash: string;
+  readonly expectedBuildKey: string;
+  readonly nodeId: string;
+}
+
+export type ParseInspectRequestResult =
+  | { readonly ok: true; readonly request?: InspectRequest }
+  | { readonly ok: false; readonly error: InspectFailure['error'] };
+
 export type InspectRequest =
+  | (Omit<MeasurementGuard, 'nodeId'> & { readonly kind: 'nodes'; readonly offset: number;
+      readonly limit: number })
+  | (MeasurementGuard & { readonly kind: 'measurement'; readonly scope: 'node' | 'subtree';
+      readonly groundY: number; readonly tolerance: number })
+  | (MeasurementGuard & { readonly kind: 'surface' })
   | { kind: 'command'; name: string }
   | { kind: 'finding'; path: string }
   | { kind: 'export-target'; adapter: ExportAdapterInput }
@@ -74,7 +90,7 @@ export interface InspectFailure {
   ok: false;
   revision: string;
   error: {
-    code: 'invalid_request' | 'not_found' | 'response_too_large';
+    code: 'invalid_request' | 'not_found' | 'response_too_large' | 'stale_revision';
     path?: string;
     expected?: string;
   };

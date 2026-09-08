@@ -233,3 +233,6 @@ export {
 export type {
   ExportFormatProfile
 } from './export/adapter/contract';
+export { measureSceneGeometry } from './model/measurement/geometry';
+export { inspectNodeSurface } from './model/measurement/surface';
+export type { GeometryMeasurementRequest, GeometryMeasurement, MeasurementResult } from './model/measurement/contract';

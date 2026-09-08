@@ -8,22 +8,17 @@ import {
 
 import type {
   InspectFailure,
-  InspectRequest
+  InspectRequest,
+  ParseInspectRequestResult
 } from './types';
-
-interface ParseInspectRequestSuccess {
-  ok: true;
-  request?: InspectRequest;
-}
+import { parseMeasurement } from './parseMeasurement';
 
 interface ParseInspectRequestFailure {
   ok: false;
   error: InspectFailure['error'];
 }
 
-export type ParseInspectRequestResult =
-  | ParseInspectRequestSuccess
-  | ParseInspectRequestFailure;
+export type { ParseInspectRequestResult } from './types';
 
 const isRecord = (
   value: unknown
@@ -254,6 +249,8 @@ export const parseInspectRequest = (
     return failure('$', 'inspect request object');
   }
 
+  if (value.kind === 'measurement' || value.kind === 'surface' || value.kind === 'nodes') return parseMeasurement(value);
+
   if (value.kind === 'command') {
     const unknown = rejectUnknownProperties(value, ['kind', 'name']);
     if (unknown) return unknown;
@@ -309,5 +306,5 @@ export const parseInspectRequest = (
       : { ok: true, request: { kind: 'workspace', candidate } };
   }
 
-  return failure('kind', 'command, finding, export-target, or workspace');
+  return failure('kind', 'command, finding, export-target, workspace, measurement, surface, or nodes');
 };

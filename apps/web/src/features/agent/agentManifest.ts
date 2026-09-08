@@ -17,17 +17,22 @@ const language = Object.freeze({
   fileKinds: Object.freeze(['module', 'asset'] as const),
   declarations: Object.freeze([
     'socket contract', 'rig contract', 'skeleton', 'surface contract',
-    'surface', 'component', 'motion', 'asset'
+    'surface', 'component', 'motion', 'asset', 'design'
   ] as const),
   rules: Object.freeze([
     'A portable .ashfoxworkspace file is the sole durable authority. It contains normalized .ashfox sources, package manifests, and one compiler lock.',
     'Every source begins with ashfox-model 1 and owns exactly one module or asset block.',
-    'Imports are explicit path-and-alias bindings. Exported nominal declarations are the only cross-file reuse surface.',
+    'Design blocks own typed exact fields and named boolean checks. Reference local Design.field or imported alias.Design.field; dependency cycles, duplicate owners, failed checks, and dimensional mismatches fail closed.',
+    'Design syntax: export design Dimensions { width: unit = 4u; size: vec3<unit> = (Dimensions.width, 4u, 4u); check positive = Dimensions.width > 0u; }. Vector fields support .x/.y/.z. Use a complete vec2<texel> design field for calculated chart origins.',
+    'Share design dimensions explicitly across skeleton origins, component geometry, surface chart dimensions, atlas placement, and motion. Named unit vectors are construction datums, not additional rig joints or placement authorities.',
+    'texels(length, pixelsPerUnit) requires a nonnegative unit length and positive integer density and rejects fractional texels. mirror_x/y/z(point, planeCoordinate) reflects only a unit point. box_origin(anchor, size, alignment) uses positive unit dimensions and explicit ratio components in [0,1].',
+    'Imports are explicit path-and-alias bindings. Only explicitly exported declarations are available across files; design values do not replace nominal rig, socket, or surface contracts.',
     'A skeleton implements one rig contract exactly. A motion targets one rig contract. Components declare typed parameters plus required rig, socket, and surface contracts.',
     'An asset chooses one skeleton, explicit motions, component instances with named bindings, and explicit socket connections. There is no inheritance, structural duck typing, default binding, or name-based retargeting.',
     'Surface contracts own atlas size, named box or flat charts, coverage, material, and typed slots. Surface implementations explicitly bind those charts and texture recipes.',
     'Geometry uses lexical bones, cubes, planes, and locators. Cubes carry volume; planes are reserved for intentional zero-thickness features. Coplanar overlays and floating attachments are invalid.',
-    'Motion tracks target exact rig joints and explicit position, rotation, or scale channels. Delivery readiness requires one authored loop named idle.',
+    'Motion tracks target exact rig joints and explicit rotation or scale channels. Delivery readiness requires one authored loop named idle.',
+    'Stamp placement uses either at=(xpx,ypx), or anchor=top_left|top|top_right|left|center|right|bottom_left|bottom|bottom_right plus an explicit signed offset. Fixed pixel size is preserved; off-grid centers and overflow fail. Optional protect=Npx protects the stamp rectangle and margin from tone/grain without changing alpha coverage.',
     'The compiler rejects incomplete bindings, incompatible frames, orphan modules, import cycles, unsafe bounds, invalid UV, hidden data loss, and expansion over budget. It never invents geometry, charts, materials, or animation.',
     'Canonical ProjectDocument data is derived and read-only. Revise workspace source, then atomically recompile the whole workspace.'
   ] as const)
@@ -76,8 +81,14 @@ export const agentManifest = {
         'window.ashfox.inspect({kind:"export-target",adapter:{target:"glb"|"gltf",modelPath:"..."}}) validates one current target without producing artifact bytes. Minecraft targets also require namespace.',
       workspace:
         'Read source only with {kind:"workspace",read:{expectedWorkspaceHash,path,offset,maxCodeUnits}} where maxCodeUnits <= 2048. Preview one staged change with {kind:"workspace",candidate:{entry:{packageName,entryName},changes}} and present its short-lived token using {review:"preview",previewToken}.',
+      nodes:
+        'Discover canonical node IDs with {kind:"nodes",expectedRevision,expectedWorkspaceHash,expectedBuildKey,offset:0,limit:32}. Results include id, name, kind, parentId, and visibility in stable ID order; follow nextOffset until null. Limits are 1..32. Use the same current-build guards for subsequent measurement and surface reads.',
+      measurement:
+        'Read rest-pose world bounds, dimensions, and signed ground gap with {kind:"measurement",expectedRevision,expectedWorkspaceHash,expectedBuildKey,nodeId,scope:"node"|"subtree",groundY,tolerance}. Evidence includes complete primitives, including hidden and alpha-cutout areas; it is not an exact visual silhouette or pairwise collision test.',
+      surface:
+        'Read face UV, rotation, texture dimensions, and sampling with {kind:"surface",expectedRevision,expectedWorkspaceHash,expectedBuildKey,nodeId}. All guards must match the current build. Never infer full-motion clearance from rest-pose measurements.',
       rule:
-        'Never inspect or mutate canonical output as an authoring surface. Correct the owning workspace source and recompile.'
+        'Canonical inspection is read-only evidence, never an authoring surface. Correct the owning workspace source and recompile.'
     },
     run: {
       call:
@@ -109,6 +120,8 @@ export const agentManifest = {
       'Reuse exported rig, socket, component, surface, and motion declarations across entries instead of copying model bodies.',
       'Keep all dependencies explicit and all component arguments and bindings named. Reject missing or extra bindings rather than guessing.',
       'Keep shape and attachment in geometry, material ownership and texel detail in surfaces, and temporal behavior in rig-bound motion.',
+      'Preserve the established block silhouette, pixel density, palette ramps, focal stamps, and texture-led detail. Use design relations to reduce coordinate duplication; do not add geometry for paint marks or approximate smooth curves with staircase voxels.',
+      'Measure the current product before changing source. Use named design checks for authored relations, inspect the rebuilt geometry and face UV after applying, and review native gameplay plus nearest-neighbor detail. Compiler success does not certify style.',
       'Preview the staged workspace before applying it, then use the current workspace hash for the single compare-and-swap write.',
       'Apply every Minecraft style review check at gameplay scale and nearest-neighbor detail scale.',
       'Inspect one requested export target before delivery. No target adapter may become a second source authority.'

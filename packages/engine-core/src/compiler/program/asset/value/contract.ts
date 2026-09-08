@@ -185,7 +185,8 @@ export interface AssetTypedVectorExpression extends AssetTypedExpressionBase {
 
 export interface AssetTypedCallExpression extends AssetTypedExpressionBase {
   readonly kind: 'call';
-  readonly name: 'vec2' | 'vec3' | 'abs' | 'min' | 'max' | 'clamp';
+  readonly name: 'vec2' | 'vec3' | 'abs' | 'min' | 'max' | 'clamp' |
+    'texels' | 'mirror_x' | 'mirror_y' | 'mirror_z' | 'box_origin';
   readonly args: readonly AssetTypedExpression[];
 }
 

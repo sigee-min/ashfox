@@ -122,6 +122,11 @@ const expectedChildren = (
     case 'vector': return expression.values.map(() =>
       expectedComponent(expected, expression.values.length));
     case 'call': {
+      if (expression.name === 'texels') return [undefined, undefined];
+      if (['mirror_x', 'mirror_y', 'mirror_z'].includes(expression.name)) {
+        return ['vec3<unit>', 'unit'];
+      }
+      if (expression.name === 'box_origin') return ['vec3<unit>', 'vec3<unit>', 'vec3<ratio>'];
       const arity = expression.name === 'vec2' ? 2 : expression.name === 'vec3' ? 3 : null;
       const childExpected = arity === null ? expectedScalar(expected) :
         expectedComponent(expected, arity);

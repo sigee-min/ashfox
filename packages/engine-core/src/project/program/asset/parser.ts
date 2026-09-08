@@ -4,7 +4,8 @@ import { PROGRAM_PARSE_NESTING_LIMIT } from '../syntax/limits';
 import { parseProgramTextureStatement, type ProgramTextureReader } from '../syntax/texture';
 import type { SourceSpan } from '../../source/contract';
 import {
-  ASHFOX_ASSET_GRAMMAR, type AssetAssemblyDecl, type AssetAssemblyUse, type AssetBindDecl,
+  ASHFOX_ASSET_GRAMMAR,
+  type AssetAssemblyDecl, type AssetAssemblyUse, type AssetBindDecl,
   type AssetComponentDecl, type AssetComponentJointBind, type AssetComponentSocketBind,
   type AssetComponentParamDecl, type AssetAssemblyConnect, type AssetParamSetDecl,
   type AssetPortBindingDecl, type AssetAtlasDecl, type AssetChartAbiDecl, type AssetDeclaration,
@@ -17,6 +18,7 @@ import {
 } from './contract';
 import { parseGeometryPayload, type AssetGeometryReader } from './geometry';
 import { ParserAbort, badName, freeze, join, valueName, type Token } from './parserSupport';
+import { parseAssetDesign, parseAssetValueType } from './design';
 
 export class Parser {
   private index = 0;
@@ -98,6 +100,7 @@ export class Parser {
   }
   private expression(): ProgramExpr {
     return parseProgramExpression({
+      qualifiedNames: true,
       current: () => this.current(), take: () => this.take(),
       check: (value) => this.check(value), match: (value) => this.match(value),
       fail: (code, message, token) => this.fail(code.replace(/^(?:model|program)\./, 'asset.'), message, token),
@@ -319,13 +322,8 @@ export class Parser {
     } finally { this.leave(); }
   }
   private valueType(): AssetValueType {
-    const first = this.id('Expected a closed slot type.');
-    let value = first.value;
-    if (this.match('-')) value += '-' + this.id('Expected the remainder of a closed type.').value;
-    if (this.match('<')) { const inner = this.id('Expected a type argument.'); this.expect('>', 'Expected > after a type argument.'); value += '<' + inner.value + '>'; }
-    const allowed: readonly string[] = ['unit', 'texel', 'degree', 'second', 'ratio', 'bool', 'color', 'integer', 'vec2<unit>', 'vec3<unit>', 'vec3<degree>', 'vec3<ratio>', 'vec2<texel>', 'texel-rect'];
-    if (!allowed.includes(value)) this.fail('asset.invalid-slot-type', 'Unsupported closed slot type "' + value + '".', first);
-    return (allowed.includes(value) ? value : 'unit') as AssetValueType;
+    return parseAssetValueType({ id: (m) => this.id(m), match: (v) => this.match(v),
+      expect: (v, m) => this.expect(v, m), fail: (c, m, t) => this.fail(c, m, t) });
   }
   private slot(contract: boolean): AssetSlotDecl {
     const start = this.expectWord('slot', 'Expected slot.'); const id = this.id('Expected a slot name.');
@@ -469,6 +467,10 @@ export class Parser {
   }
   private declaration(exported: boolean): AssetDeclaration | null {
     this.count(); const keyword = this.current().value;
+    if (keyword === 'design') return parseAssetDesign({ take: () => this.take(), id: (m) => this.id(m),
+      count: () => this.count(), matchWord: (w) => this.matchWord(w), expect: (v, m) => this.expect(v, m),
+      valueType: () => this.valueType(), expression: () => this.expression(), finish: () => this.finish(),
+      block: (read) => { this.block(read); }, blockEnd: () => this.blockEnd() }, exported);
     if (keyword === 'socket') { this.take(); return this.socketContract(exported); }
     if (keyword === 'rig') { this.take(); return this.rigContract(exported); }
     if (keyword === 'skeleton') return this.skeleton(exported);

@@ -14,6 +14,8 @@ import type {
 import type { ProgramToken } from './lex';
 
 export interface ProgramExpressionReader {
+  /** Asset modules additionally allow nominal design references. */
+  readonly qualifiedNames?: boolean;
   readonly current: () => ProgramToken;
   readonly take: () => ProgramToken;
   readonly check: (value: string) => boolean;
@@ -88,6 +90,17 @@ const parseProgramExpressionInner = (
           break;
         }
         reader.take();
+        if (reader.qualifiedNames && result.kind === 'name' &&
+          segment.value !== 'x' && segment.value !== 'y' && segment.value !== 'z') {
+          result = freeze({ kind: 'name', value: result.value + '.' + segment.value,
+            span: { start: result.span.start, end: segment.span.end } });
+          continue;
+        }
+        if (reader.qualifiedNames && result.kind === 'member' && result.object.kind === 'name') {
+          result = freeze({ kind: 'name', value: result.object.value + '.' + result.member + '.' + segment.value,
+            span: { start: result.span.start, end: segment.span.end } });
+          continue;
+        }
         if (segment.value !== 'x' && segment.value !== 'y' && segment.value !== 'z') {
           reader.fail('program.invalid-member',
             'Vector member access only supports .x, .y, or .z.', segment);
