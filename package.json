@@ -51,7 +51,7 @@
     "quality:audit": "node scripts/quality/audit.js",
     "quality:deadcode": "node scripts/quality/deadcode.test.js && node scripts/quality/deadcode.js",
     "quality:coverage": "node scripts/quality/coverage.js",
-    "release:validate": "node scripts/release/validate.test.js && node scripts/release/validate.js",
+    "release:validate": "node scripts/release/validate.test.js && node scripts/release/publish.test.js && node scripts/release/validate.js",
     "quality": "npm run test:audio-core && npm run test:cli && npm run test:cov:blockbench && npm run test:blockbench:conformance && npm run test:site && npm run test:web && npm run build && npm run quality:check && npm run quality:deadcode && npm run quality:coverage && npm run quality:audit && npm run release:validate",
     "audio:review": "node scripts/audio/serve.js",
     "test:audio": "node scripts/audio/test.js && node scripts/audio/harness.test.js",

@@ -174,18 +174,13 @@ const releaseValidationFailures = (
     repoRoot,
     '.github/workflows/release-please.yml'
   );
-  const expectedAssets = [
-    `dist/${packageName}.js`,
-    `dist/${packageName}.js.map`,
-    `dist/${packageName}-sidecar.js`,
-    `dist/${packageName}-sidecar.js.map`
-  ];
-  for (const assetPath of expectedAssets) {
-    if (!releaseWorkflow.includes(assetPath)) {
-      failures.push(
-        `.github/workflows/release-please.yml must upload asset: ${assetPath}.`
-      );
+  for (const script of ['artifacts.js', 'smoke.js', 'publish.js']) {
+    if (!releaseWorkflow.includes(`node scripts/release/${script}`)) {
+      failures.push(`Release workflow must run ${script}.`);
     }
+  }
+  if (releaseWorkflow.includes('overwrite_files: true')) {
+    failures.push('Release workflow must not overwrite published assets.');
   }
   return failures;
 };

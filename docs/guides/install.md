@@ -1,28 +1,59 @@
 # Install Ashfox
 
 You need Node.js 20 or newer and npm. You do not need an account or API key.
-Download [the CLI package](/downloads/ashfox-cli.tgz) and
-[the starter assets](/downloads/starter.zip) from this documentation build.
 
-## Set up your asset folder
+## Install in your project
 
-Extract the starter ZIP into a writable folder, then put `ashfox-cli.tgz` in that
-folder. Open a terminal there and run:
+Open a terminal in your game or asset folder and run:
 
 ```sh
-npm install --save-dev ./ashfox-cli.tgz
+npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
 
-The second command prints `ok: true` and the supported commands. Keep the package
-file, `package.json` and `package-lock.json` with your project so another machine
-can reproduce the installation. The package is a complete executable bundle.
-The guides use `npx --no-install ashfox`: it runs your installed version and does
-not fetch a different package when the CLI is missing.
+The second command prints `ok: true` and the supported commands. No repository
+clone, source build or manual package download is needed. The package contains
+the complete executable bundle. This command works in macOS, Linux and Windows
+PowerShell with Node.js and npm installed.
 
-If you already have a game repository, put the package in that repository and run
-the same install command there. Do not replace an existing `package.json` with
-the starter's file. A registry installation is not assumed by this guide.
+Starting without a project? Download and extract [the starter assets](/downloads/starter.zip),
+then run the same commands inside that folder. In an existing repository, keep
+your existing `package.json`; do not replace it with the starter's file.
+
+```sh
+npx --no-install ashfox export sword.ashfox --output sword.png
+```
+
+This example uses the starter's sword source and writes a PNG in the current
+folder. Choose a new output filename if it already exists.
+
+Commit `package.json` and `package-lock.json` with your project. The guides use
+`npx --no-install ashfox` to run the installed CLI without fetching another
+package when it is missing. The download URL tracks the website build; it is
+not a permanent version archive. Use the offline option below when preserving
+an exact toolchain.
+
+## Install offline or keep an exact package
+
+Download [the CLI package](/downloads/ashfox-cli.tgz), store it in your project
+(for example under `tools/`), and install that file:
+
+```sh
+npm install --offline --save-dev ./tools/ashfox-cli.tgz
+npx --no-install ashfox capabilities
+```
+
+Keep the tarball and lockfile together. On another machine with Node.js and npm,
+`npm ci --offline` restores this installation from the local tarball; other
+project dependencies may also require an npm cache. No npm registry publication
+is assumed by either installation path.
+
+## If installation fails
+
+- **`npm` is not found:** install Node.js with npm, reopen your terminal, then check `node --version` and `npm --version`.
+- **The URL is blocked:** download the tarball through your browser or transfer it from another machine and use the offline command.
+- **`ashfox` is missing:** run the install command in the same project folder, then retry `npx --no-install ashfox capabilities`.
+- **Permission denied:** use a writable project folder. A global installation or administrator privileges are not needed.
 
 ## Choose optional tools
 

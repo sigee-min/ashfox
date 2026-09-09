@@ -183,7 +183,7 @@ assert.match(
 );
 assert.equal(
   rootPackage.scripts['release:validate'],
-  'node scripts/release/validate.test.js && node scripts/release/validate.js'
+  'node scripts/release/validate.test.js && node scripts/release/publish.test.js && node scripts/release/validate.js'
 );
 assert.match(
   continuousIntegration,

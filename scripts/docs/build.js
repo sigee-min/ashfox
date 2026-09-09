@@ -1,10 +1,8 @@
 'use strict';
-const fs=require('node:fs');const path=require('node:path');const {execFileSync}=require('node:child_process');const {zipSync}=require('fflate');
+const fs=require('node:fs');const path=require('node:path');const {zipSync}=require('fflate');
 const root=path.resolve(__dirname,'../..'),out=path.join(root,'dist/docs-delivery');
 fs.mkdirSync(out,{recursive:true});
-const npm=process.platform==='win32'?'npm.cmd':'npm';
-const packed=JSON.parse(execFileSync(npm,['pack','--workspace','@ashfox/cli','--pack-destination',out,'--json'],{cwd:root,encoding:'utf8',maxBuffer:8*1024*1024}));
-const tarball=path.join(out,packed[0].filename);fs.copyFileSync(tarball,path.join(out,'ashfox-cli.tgz'));fs.unlinkSync(tarball);
+require('../release/package').packageCli(root,out);
 const sources=directory=>{
  const result={};
  const visit=(dir,prefix='')=>{for(const e of fs.readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){

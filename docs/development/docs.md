@@ -27,3 +27,12 @@ fallback behavior. Public controls use user-facing actions rather than variant I
 Landing entrance and selection transitions live in `apps/site/src/motion.js`.
 Content remains visible without animation. Reduced motion cancels active transitions;
 scroll reveals run once and the sound pulse follows actual playback state.
+
+## README item and sound media
+
+The README reuses the rendered sword and sound waveform in `assets/docs/`.
+Run `npm run build:cli` and `node scripts/readme.js` to regenerate the native
+sword/amethyst PNG downloads and enlarged amethyst preview in `assets/readme/`.
+Preview images are for display; the linked native PNGs are the game textures.
+Sound playback links to the public landing player because GitHub README audio
+embedding is not assumed. The WAV link remains available as a file download.
