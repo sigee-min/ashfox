@@ -6,12 +6,12 @@ pass bytes directly to your game pipeline. Node.js 20 or newer is required.
 
 ## Install and start
 
-Download the [CLI package](https://ashfox.io/downloads/ashfox-cli.tgz) and
-[starter assets](https://ashfox.io/downloads/starter.zip). Extract the starter,
-place the package beside its `package.json`, and run:
+Download and extract the [starter assets](https://ashfox.io/downloads/starter.zip),
+then run these commands inside that folder. In an existing game repository, run
+the install command there instead; no repository clone or source build is needed:
 
 ```sh
-npm install --save-dev ./ashfox-cli.tgz
+npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
 npx --no-install ashfox inspect sword.ashfox
 npx --no-install ashfox export sword.ashfox --output sword.png
 npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 --output fox.png

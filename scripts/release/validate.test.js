@@ -96,13 +96,20 @@ try {
   writeFixture(
     '.github/workflows/release-please.yml',
     [
-      'dist/ashfox.js',
-      'dist/ashfox.js.map',
-      'dist/ashfox-sidecar.js',
-      'dist/ashfox-sidecar.js.map',
+      'node scripts/release/artifacts.js',
+      'node scripts/release/smoke.js',
+      'node scripts/release/publish.js',
       ''
     ].join('\n')
   );
+  const validWorkflow = fs.readFileSync(path.join(fixtureRoot, '.github/workflows/release-please.yml'), 'utf8');
+  writeFixture('.github/workflows/release-please.yml', validWorkflow + 'overwrite_files: true\n');
+  assert.ok(releaseValidationFailures(fixtureRoot, developmentManifest)
+    .some(failure => failure.includes('must not overwrite')));
+  writeFixture('.github/workflows/release-please.yml', '');
+  assert.equal(releaseValidationFailures(fixtureRoot, developmentManifest)
+    .filter(failure => failure.includes('Release workflow must run')).length, 3);
+  writeFixture('.github/workflows/release-please.yml', validWorkflow);
   const failures = releaseValidationFailures(
     fixtureRoot,
     developmentManifest

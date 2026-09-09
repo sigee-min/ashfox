@@ -3,6 +3,41 @@
 Write low-poly models, pixel items and procedural sound effects as code.
 Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI.
 
+## Install
+
+With **Node.js 20+ and npm**, run this in your game or asset folder:
+
+```sh
+npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
+npx --no-install ashfox capabilities
+```
+
+No repository clone, source build, account or API key is needed.
+
+## Make your first asset
+
+Download and extract the [starter assets](https://ashfox.io/downloads/starter.zip),
+then run the install command above inside that folder. Export an item, a model,
+and a sound:
+
+```sh
+npx --no-install ashfox export sword.ashfox --output sword.png
+npx --no-install ashfox export fox.ashfox --output fox.glb
+npx --no-install ashfox export claw_hit.ashfox --output claw-hit.wav
+```
+
+Those files are ready to import into your game. Edit the `.ashfox` sources yourself
+or with your coding agent, then export again with a new output filename.
+
+Prefer to look around first? [Explore the interactive examples](https://ashfox.io/)
+or [open the Model Workbench](https://ashfox.io/workbench/) in your browser.
+
+[Installation and troubleshooting](docs/guides/install.md) ·
+[Create with your coding agent](docs/guides/ai-agent-quick-start.md) ·
+[All guides](docs/README.md)
+
+## See what you can make
+
 <p align="center">
   <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/griffin-poster.png" alt="Griffin guardian" width="360"></a>
   <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/fox-poster.png" alt="Red fox" width="360"></a>
@@ -31,31 +66,26 @@ Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI
 | Red fox · 3 motions | [.ashfox source](examples/fox/creatures/fox.ashfox) | [GLB](assets/exports/fox/fox.glb) |
 | Goblin raider · 3 motions | [.ashfox source](examples/goblin/creatures/goblin.ashfox) | [GLB](assets/exports/goblin/goblin.glb) |
 
-## Get started
+### Pixel textures and items
 
-Download the [CLI package](https://ashfox.io/downloads/ashfox-cli.tgz) and
-[starter assets](https://ashfox.io/downloads/starter.zip). Extract the starter,
-put the package in that folder, and run with Node.js 20 or newer:
+<p align="center">
+  <a href="assets/readme/sword.png"><img src="assets/docs/sword.png" alt="Pixel sword texture preview" width="192"></a>
+  <a href="assets/readme/amethyst.png"><img src="assets/readme/amethyst-preview.png" alt="Amethyst pixel texture preview" width="192"></a>
+</p>
 
-```sh
-npm install --save-dev ./ashfox-cli.tgz
-npx --no-install ashfox inspect sword.ashfox
-npx --no-install ashfox export sword.ashfox --output sword.png
-```
+[Sword PNG](assets/readme/sword.png) · [Amethyst PNG](assets/readme/amethyst.png) ·
+[Edit its source](examples/items/src/iron_sword.ashfox) ·
+[Explore more items](https://ashfox.io/#collection)
 
-Start with one asset. Add `.ashfoxworkspace` when you need project-wide IDs,
-formats and delivery paths. The [web-game sample](docs/guides/web-game.md)
-shows models, item images and sound working together.
+### Sound effects
 
-[Installation](docs/guides/install.md) ·
-[First build](docs/guides/ai-agent-quick-start.md) ·
-[Documentation](docs/README.md)
+[![Claw-hit sound waveform](assets/docs/claw-wave.png)](https://ashfox.io/#sound)
 
-The optional [Model Workbench](https://ashfox.io/workbench/) provides browser
-model inspection and its own agent API. Its model snapshots are separate from
-the native directory project. See [Workbench API](docs/guides/workbench-api.md).
+[Listen to the sound](https://ashfox.io/#sound) ·
+[Download WAV](assets/docs/claw.wav) ·
+[Edit its source](examples/sounds/src/claw_hit.ashfox)
 
-## Build assets from code
+## Use assets in your game
 
 Native `.ashfox` sources compile through the CLI. An optional `.ashfoxworkspace`
 configures PNG, audio and model exports, engine-neutral `game_assets` bundles,
@@ -75,7 +105,8 @@ npx --no-install ashfox stdio
 ```
 
 Receive PNG/GIF, playable audio, exports or inspection JSON over stdout. Capture
-uses a headless Chrome/Chromium process and the shared Workbench renderer.
+requires Chrome or Chromium. OGG audio requires FFmpeg; ordinary GLB, PNG and WAV
+exports need neither.
 No workspace is required. [Single-asset and stdio guide](docs/guides/observe.md).
 
 ## Contribute
