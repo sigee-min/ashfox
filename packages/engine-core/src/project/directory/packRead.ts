@@ -12,7 +12,7 @@ const record = (value: unknown, keys: readonly string[], pointer: string): Recor
   return r;
 };
 const list = (value: unknown, p: string): readonly unknown[] => {
-  if (!Array.isArray(value) || value.length > 64) return fail(p, 'array with at most 64 entries', value);
+  if (!Array.isArray(value)) return fail(p, 'array', value);
   return value;
 };
 const text = (value: unknown, p: string): void => {

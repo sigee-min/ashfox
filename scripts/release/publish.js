@@ -17,7 +17,7 @@ const publish = async ({ api, repository, sha, version, directory, changelog }) 
   const copy = instructions({ cli: `https://github.com/${repository}/releases/download/${tag}/ashfox-cli.tgz`, onboarding: true });
   if (!release || release.draft) {
     if (typeof changelog !== 'string' || !changelog.trim()) throw new Error('Release changelog entry missing');
-  } else if (version !== '1.0.0' && release.immutable !== true) {
+  } else if (release.immutable !== true) {
     throw new Error('Published release immutability was not confirmed; inspect GitHub before retrying');
   }
   const body = `## Get started\n\nRequires Node.js 20+ and npm. Run in your game or asset project:\n\n${copy.install}\n\n${copy.start}\n\n${copy.check}\n\nGLB, PNG and WAV exports need no additional tools. Chrome is optional for capture;\nFFmpeg with libvorbis is optional for OGG audio.\n\n[CLI reference](https://ashfox.io/docs/guides/cli/) · [Installation guide](https://ashfox.io/docs/guides/install/)\n\n${changelog}\n\n## Artifacts\n\nCLI, starter sources and SHA256SUMS were built from ${sha}.\n`;

@@ -9,12 +9,13 @@ Open a terminal in your game or asset folder and run:
 <!-- ashfox:install -->
 ```sh
 npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
-npx --no-install ashfox capabilities
+npx --no-install ashfox --version
 ```
 <!-- ashfox:install-end -->
 
 <!-- ashfox:check -->
-The second command prints `ok: true` and the supported commands.
+The second command prints the installed product version. Run
+`npx --no-install ashfox doctor` to check optional Chrome and FFmpeg support.
 <!-- ashfox:check-end -->
 
 The package contains the complete CLI and works with Node.js 20+ on macOS,
@@ -24,11 +25,11 @@ Linux and Windows PowerShell. Install it in your existing project; keep your
 ## Make your first asset
 
 <!-- ashfox:start -->
-Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip), then run the install
-command above inside that folder:
+Create the bundled starter offline and export your first item:
 
 ```sh
-npx --no-install ashfox export sword.ashfox --output sword.png
+npx --no-install ashfox init assets
+npx --no-install ashfox export assets/sword.ashfox --output sword.png
 ```
 <!-- ashfox:start-end -->
 
@@ -45,8 +46,7 @@ option below when you also need a local copy of the package.
 ## Command availability
 
 <!-- ashfox:availability -->
-`--help`, `--version`, `doctor` and `init` are available in development builds.
-The published 1.0.0 package uses the starter ZIP workflow in the installation guide.
+The stable CLI includes help, version, environment checks and offline starter creation.
 <!-- ashfox:availability-end -->
 
 ## Install offline or keep an exact package
@@ -57,7 +57,7 @@ Download [the CLI package](https://github.com/sigee-min/ashfox/releases/download
 <!-- ashfox:offline -->
 ```sh
 npm install --offline --save-dev ./tools/ashfox-cli.tgz
-npx --no-install ashfox capabilities
+npx --no-install ashfox --version
 ```
 <!-- ashfox:offline-end -->
 

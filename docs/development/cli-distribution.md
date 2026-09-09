@@ -36,7 +36,7 @@ and retry tests without contacting GitHub. The website and release use the same
 packager, with the root version, license, bundled executable and no install hooks.
 
 Repository-level immutable releases were enabled on 2026-09-09 for future
-publications. Existing v1.0.0 was not republished. The publisher uploads and
+publications. The mutable v1.0.0 is replaced by the September 10 release reset. The publisher uploads and
 verifies every asset while the release is a draft, refreshes draft notes on retry,
 and checks the publication response for immutability. A mutable new release
 fails the run and cannot advance stable documentation. No administrator token
@@ -57,8 +57,8 @@ optional and explain them only for capture and OGG tasks.
 The [installation guide](../guides/install.md) carries the generated stable
 commands. `scripts/release/instructions.js` owns the install check, first export,
 offline check and availability text used by `stable.js` and release notes.
-The 1.0.0 guide retains its supported ZIP workflow; subsequent stable releases
-switch all first-run blocks to version, init and export together. Missing or
+The reset 1.0.0 and subsequent stable releases use version, init and export
+together in all first-run blocks. Missing or
 duplicate blocks fail validation before documentation is written.
 
 The website also builds preview downloads; those mutable URLs are not used as

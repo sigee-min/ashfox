@@ -55,7 +55,7 @@ export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
   if ((r.include as unknown[]).length === 0) fail('/include', 'at least one pattern', 'empty');
   const build = record(r.build, ['directory'], '/build');
   if (!directoryPath(build.directory)) fail('/build/directory', 'non-root relative directory', build.directory);
-  if (!Array.isArray(r.exports) || r.exports.length > 64) fail('/exports', 'up to 64 exports', r.exports);
+  if (!Array.isArray(r.exports)) fail('/exports', 'array of exports', r.exports);
   const names = new Set<string>(), directories = [(build.directory as string).toLowerCase()];
   (r.exports as unknown[]).forEach((v, i) => {
     const minecraft = v !== null && typeof v === 'object' && 'format' in v &&

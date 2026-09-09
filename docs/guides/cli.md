@@ -21,8 +21,7 @@ There is no `watch`, `clean` or automatic game-install command.
 ## First-run commands
 
 <!-- ashfox:availability -->
-`--help`, `--version`, `doctor` and `init` are available in development builds.
-The published 1.0.0 package uses the starter ZIP workflow in the installation guide.
+The stable CLI includes help, version, environment checks and offline starter creation.
 <!-- ashfox:availability-end -->
 
 ```sh
@@ -99,6 +98,8 @@ Use nonzero as failure; inspect diagnostics for the specific remedy. See
 [Troubleshooting](troubleshooting.md) rather than retrying blindly.
 
 ## Execution limits
+
+Exports and pack bindings have no fixed count limit.
 
 Compilation runs in a worker with a 120-second limit and a 256 MiB V8 heap limit.
 This is not a total process-memory limit. Sources are bounded to 512 files and
