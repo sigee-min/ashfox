@@ -9,13 +9,14 @@ const { unzipSync } = require('fflate');
 const { verify } = require('./artifacts');
 const root = path.resolve(__dirname, '../..');
 const directory = path.resolve(process.argv[2] || path.join(root, 'dist/release'));
-const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-release-smoke-'));
-const run = (exe, args, cwd) => new Promise((resolve, reject) => {
-  const child = spawn(exe, args, { cwd, shell: process.platform === 'win32' && exe === 'npm',
+const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-release-smoke-'));
+const run = (exe, args, cwd, input) => new Promise((resolve, reject) => {
+  const child = spawn(exe, args, { cwd, shell: process.platform === 'win32' && ['npm', 'npx'].includes(exe),
     env: { ...process.env, npm_config_cache: path.join(temp, 'cache') }, timeout: 120000 });
   const stdout = [], stderr = [];
   child.stdout.on('data', bytes => stdout.push(bytes));
   child.stderr.on('data', bytes => stderr.push(bytes));
+  child.stdin.end(input);
   child.on('error', reject);
   child.on('close', code => code === 0 ? resolve(Buffer.concat(stdout)) :
     reject(new Error(`${exe} failed (${code}): ${Buffer.concat(stderr)}`)));
@@ -47,7 +48,32 @@ const main = async () => {
       assert.equal(metadata.scripts, undefined);
       assert.equal(metadata.dependencies, undefined);
       assert.ok(fs.existsSync(path.join(folder, 'node_modules/@ashfox/cli/LICENSE')));
-      const execute = (...args) => run(process.execPath, [path.join(folder, 'node_modules/@ashfox/cli/dist/ashfox.cjs'), ...args], folder);
+      const execute = (...args) => run('npx', ['--no-install', '--offline', 'ashfox', ...args], folder);
+      assert.equal((await execute('--version')).toString().trim(), metadata.version);
+      assert.match((await execute('--help')).toString(), /init <new-folder>/);
+      assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
+      await execute('init', 'created', '--json');
+      for (const name of fs.readdirSync(path.join(folder, 'created'))) {
+        assert.deepEqual(fs.readFileSync(path.join(folder, 'created', name)), fs.readFileSync(path.join(folder, name)),
+          'offline init and downloadable starter must match');
+      }
+      assert.equal((await execute('export', 'created/sword.ashfox')).subarray(1, 4).toString(), 'PNG');
+      assert.equal((await execute('export', 'created/sword.ashfox', '--output', 'sword.png')).length, 0);
+      const png = fs.readFileSync(path.join(folder, 'sword.png'));
+      assert.equal(png.subarray(1, 4).toString(), 'PNG');
+      await assert.rejects(execute('export', 'created/sword.ashfox', '--output', 'sword.png'));
+      assert.deepEqual(fs.readFileSync(path.join(folder, 'sword.png')), png);
+      const requests = [
+        {id:'probe',method:'capabilities',params:{}},
+        {id:'load',method:'load',params:{input:{file:path.join(folder,'created/sword.ashfox')}}},
+        {id:'inspect',method:'inspect',params:{}},
+        {id:'close',method:'close',params:{}}
+      ];
+      const session = await run('npx', ['--no-install', '--offline', 'ashfox', 'stdio'], folder,
+        requests.map(request => JSON.stringify(request)).join('\n') + '\n');
+      const replies = session.toString().trim().split('\n').map(line => JSON.parse(line));
+      assert.deepEqual(replies.map(reply => reply.id), requests.map(request => request.id));
+      assert.ok(replies.every(reply => reply.ok), JSON.stringify(replies));
       assert.equal(JSON.parse(await execute('capabilities')).ok, true);
       for (const [source, magic] of [['fox.ashfox', 'glTF'], ['sword.ashfox', '\x89PNG'], ['claw_hit.ashfox', 'RIFF']]) {
         assert.equal((await execute('export', source)).subarray(0, 4).toString('latin1'), magic);

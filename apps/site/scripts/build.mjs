@@ -1,3 +1,4 @@
+import stableRelease from '../../../scripts/release/stable.js';
 import { execFileSync } from 'node:child_process';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -264,7 +265,7 @@ const assets = {
   css: await hashedAsset('site.css', source => source + '\n' + landingCss),
   js: await hashedAsset('site.js', source => source + '\n' + motionJs + '\n' + landingJs)
 };
-const config = { siteOrigin, workbenchUrl };
+const config = { siteOrigin, workbenchUrl, stable: stableRelease.readStable(repoRoot) };
 const documents = await loadDocumentation(docsRoot);
 const generatedShowcase = await readShowcase();
 const showcase = {

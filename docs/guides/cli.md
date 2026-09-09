@@ -4,16 +4,49 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 
 | Command | Input | Result |
 | --- | --- | --- |
+| `--help` / `help` | None | Human-readable command guide |
+| `--version` | None | Product version |
+| `doctor [--json]` | None | Basic exports and optional tool availability |
+| `init <new-folder> [--json]` | New folder | Offline starter sources |
 | `capabilities --json` | None | Supported commands, output formats and pack settings |
-| `help --json` | None | The same capabilities and usage summary |
 | `check <input> --json` | `.ashfox` entry or `.ashfoxworkspace` | Source hash and compiled product kinds/entries |
 | `build <input> --json` | `.ashfox` entry or `.ashfoxworkspace` | Verified bundle, catalog and export directories |
 | `verify <directory> --json` | Configured build directory | Selected bundle, receipt and catalog after integrity checks |
 
-The project commands in this table return JSON even without `--json`, and accept
-no other flags. Their settings belong in source files or `.ashfoxworkspace`.
+`capabilities`, `check`, `build` and `verify` return JSON even without `--json`,
+and accept no other flags. `help` is human-readable; use `capabilities` for agents. Their settings belong in source files or `.ashfoxworkspace`.
 Single-asset observation commands are documented below and have their own options.
-There is no `watch`, `clean`, `init` or automatic game-install command.
+There is no `watch`, `clean` or automatic game-install command.
+
+## First-run commands
+
+<!-- ashfox:availability -->
+`--help`, `--version`, `doctor` and `init` are available in development builds.
+The published 1.0.0 package uses the starter ZIP workflow in the installation guide.
+<!-- ashfox:availability-end -->
+
+```sh
+npx --no-install ashfox --version
+npx --no-install ashfox doctor
+npx --no-install ashfox init assets
+npx --no-install ashfox export assets/sword.ashfox --output sword.png
+```
+
+Run from the repository where you installed the CLI. `init` creates a new folder
+with model, item and sound sources from that compiler's bundled starter. Its
+parent must exist. Existing folders (even empty ones), files and symlinks are
+refused; no existing project is merged or rewritten. It does not install npm
+packages, create `.ashfoxworkspace`, or contact the network. A write failure
+removes the new partial folder. `init --json` reports the directory and files.
+First-run commands print readable errors to stderr; `doctor` and `init` with
+`--json` use the project response envelope on stdout, including failures.
+
+`doctor` reports the CLI/Node versions and whether Chrome can launch and FFmpeg
+advertises `libvorbis`. Missing optional tools do not cause a failure exit code.
+`doctor --json` reports availability without creating project files. This is an
+environment check; use a real capture or OGG build to verify your asset pipeline.
+An explicitly configured executable path takes precedence over discovery.
+
 
 ## Build one source
 

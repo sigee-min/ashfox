@@ -3,31 +3,40 @@
 Write low-poly models, pixel items and procedural sound effects as code.
 Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI.
 
+<p align="center">
+  <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/griffin-poster.png" alt="Low-poly Griffin model" width="260"></a>
+  <a href="https://ashfox.io/#collection"><img src="assets/docs/sword.png" alt="Pixel item texture" width="128"></a>
+  <a href="https://ashfox.io/#sound"><img src="assets/docs/claw-wave.png" alt="Listen to the claw strike sound" width="240"></a>
+</p>
+
+[Models](https://ashfox.io/#examples) · [Textures](https://ashfox.io/#collection) · [Listen to sounds](https://ashfox.io/#sound)
+
 ## Install
 
 With **Node.js 20+ and npm**, run this in your game or asset folder:
 
+<!-- ashfox:install -->
 ```sh
 npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
+<!-- ashfox:install-end -->
 
 No repository clone, source build, account or API key is needed.
 
 ## Make your first asset
 
-Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip),
-then run the install command above inside that folder. Export an item, a model,
-and a sound:
+<!-- ashfox:start -->
+Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip), then run the install
+command above inside that folder:
 
 ```sh
 npx --no-install ashfox export sword.ashfox --output sword.png
-npx --no-install ashfox export fox.ashfox --output fox.glb
-npx --no-install ashfox export claw_hit.ashfox --output claw-hit.wav
 ```
+<!-- ashfox:start-end -->
 
-Those files are ready to import into your game. Edit the `.ashfox` sources yourself
-or with your coding agent, then export again with a new output filename.
+Your first PNG is ready to import. Edit its `.ashfox` source with your coding
+agent, then export to a new filename. The starter also includes a model and sound.
 
 Prefer to look around first? [Explore the interactive examples](https://ashfox.io/)
 or [open the Model Workbench](https://ashfox.io/workbench/) in your browser.
@@ -36,13 +45,7 @@ or [open the Model Workbench](https://ashfox.io/workbench/) in your browser.
 [Create with your coding agent](docs/guides/ai-agent-quick-start.md) ·
 [All guides](docs/README.md)
 
-## See what you can make
-
-<p align="center">
-  <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/griffin-poster.png" alt="Griffin guardian" width="360"></a>
-  <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/fox-poster.png" alt="Red fox" width="360"></a>
-  <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/goblin-poster.png" alt="Goblin raider" width="360"></a>
-</p>
+## Examples
 
 <details>
 <summary>See the build replays</summary>
@@ -66,24 +69,11 @@ or [open the Model Workbench](https://ashfox.io/workbench/) in your browser.
 | Red fox · 3 motions | [.ashfox source](examples/fox/creatures/fox.ashfox) | [GLB](assets/exports/fox/fox.glb) |
 | Goblin raider · 3 motions | [.ashfox source](examples/goblin/creatures/goblin.ashfox) | [GLB](assets/exports/goblin/goblin.glb) |
 
-### Pixel textures and items
-
-<p align="center">
-  <a href="assets/readme/sword.png"><img src="assets/docs/sword.png" alt="Pixel sword texture preview" width="192"></a>
-  <a href="assets/readme/amethyst.png"><img src="assets/readme/amethyst-preview.png" alt="Amethyst pixel texture preview" width="192"></a>
-</p>
-
-[Sword PNG](assets/readme/sword.png) · [Amethyst PNG](assets/readme/amethyst.png) ·
-[Edit its source](examples/items/src/iron_sword.ashfox) ·
-[Explore more items](https://ashfox.io/#collection)
-
-### Sound effects
-
-[![Claw-hit sound waveform](assets/docs/claw-wave.png)](https://ashfox.io/#sound)
-
-[Listen to the sound](https://ashfox.io/#sound) ·
-[Download WAV](assets/docs/claw.wav) ·
-[Edit its source](examples/sounds/src/claw_hit.ashfox)
+| Asset | Source | Output |
+| --- | --- | --- |
+| Pixel sword | [Native source](examples/items/src/iron_sword.ashfox) | [PNG](assets/readme/sword.png) |
+| Amethyst | [Item examples](examples/items/) | [PNG](assets/readme/amethyst.png) |
+| Claw strike | [Native source](examples/sounds/src/claw_hit.ashfox) | [WAV](assets/docs/claw.wav) |
 
 ## Use assets in your game
 
@@ -97,17 +87,15 @@ See the [game-asset example](examples/game-assets/.ashfoxworkspace),
 [CLI usage](docs/guides/cli.md), and
 [runtime manifest contract](docs/guides/game-assets.md).
 
-## Observe one asset
+## Inspect and automate
 
-```sh
-npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 > fox.png
-npx --no-install ashfox stdio
-```
+Use `ashfox inspect` for asset details, `ashfox capture` for a chosen view, and
+`ashfox stdio` for a persistent JSON-lines session with your coding agent.
+Exports and captures stream over stdout or save to an explicit `--output` path.
 
-Receive PNG/GIF, playable audio, exports or inspection JSON over stdout. Capture
-requires Chrome or Chromium. OGG audio requires FFmpeg; ordinary GLB, PNG and WAV
-exports need neither.
-No workspace is required. [Single-asset and stdio guide](docs/guides/observe.md).
+Capture requires Chrome or Chromium. OGG audio requires FFmpeg; ordinary GLB,
+PNG and WAV exports need neither. No workspace is required.
+[Single-asset and stdio guide](docs/guides/observe.md).
 
 ## Contribute
 

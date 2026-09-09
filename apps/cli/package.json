@@ -13,7 +13,7 @@
   "scripts": {
     "build": "node build.js",
     "prepack": "node build.js",
-    "test": "node test.js && node standalone.test.js && node minecraft.test.js && node packs.test.js && node game.test.js && node docs.test.js && node observe.test.js",
+    "test": "node test.js && node onboarding.test.js && node standalone.test.js && node minecraft.test.js && node packs.test.js && node game.test.js && node docs.test.js && node observe.test.js",
     "test:packs": "node build.js && node packs.test.js && node packaudio.test.js",
     "test:capture": "node build.js && node capture.test.js"
   },

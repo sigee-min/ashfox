@@ -6,16 +6,20 @@ pass bytes directly to your game pipeline. Node.js 20 or newer is required.
 
 ## Install and start
 
-Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip),
-then run these commands inside that folder. In an existing game repository, run
-the install command there instead; no repository clone or source build is needed:
+Install the latest published CLI using the [installation guide](https://ashfox.io/docs/guides/install/).
+This package includes an offline starter matching its compiler:
 
 ```sh
-npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
-npx --no-install ashfox inspect sword.ashfox
-npx --no-install ashfox export sword.ashfox --output sword.png
-npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 --output fox.png
+npx --no-install ashfox --version
+npx --no-install ashfox doctor
+npx --no-install ashfox init assets
+npx --no-install ashfox export assets/sword.ashfox --output sword.png
 ```
+
+Run `--help` for a short command guide or `capabilities` for the machine contract.
+`init` requires a new folder under an existing parent and never modifies an
+existing folder or npm project. No network access is required for initialization.
+Missing optional tools in `doctor` do not prevent normal exports.
 
 Capture and GIF replay require Chrome or Chromium. OGG output requires FFmpeg
 with `libvorbis`. Ordinary inspection and GLB/PNG/WAV exports require neither.

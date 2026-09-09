@@ -6,42 +6,60 @@ You need Node.js 20 or newer and npm. You do not need an account or API key.
 
 Open a terminal in your game or asset folder and run:
 
+<!-- ashfox:install -->
 ```sh
 npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
+<!-- ashfox:install-end -->
 
-The second command prints `ok: true` and the supported commands. No repository
-clone, source build or manual package download is needed. The package contains
-the complete executable bundle. This command works in macOS, Linux and Windows
-PowerShell with Node.js and npm installed.
+<!-- ashfox:check -->
+The second command prints `ok: true` and the supported commands.
+<!-- ashfox:check-end -->
 
-Starting without a project? Download and extract [the starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip),
-then run the same commands inside that folder. In an existing repository, keep
-your existing `package.json`; do not replace it with the starter's file.
+The package contains the complete CLI and works with Node.js 20+ on macOS,
+Linux and Windows PowerShell. Install it in your existing project; keep your
+`package.json` and commit the updated lockfile.
+
+## Make your first asset
+
+<!-- ashfox:start -->
+Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip), then run the install
+command above inside that folder:
 
 ```sh
 npx --no-install ashfox export sword.ashfox --output sword.png
 ```
+<!-- ashfox:start-end -->
 
-This example uses the starter's sword source and writes a PNG in the current
-folder. Choose a new output filename if it already exists.
+Open `sword.png` in your image viewer or import it into your game. Edit the
+`.ashfox` source with your coding agent, then export to a new filename.
+Existing output files are refused.
 
 Commit `package.json` and `package-lock.json` with your project. The guides use
 `npx --no-install ashfox` to run the installed CLI without fetching another
-package when it is missing. The URL pins Ashfox 1.0.0 and the matching starter from GitHub Releases.
+package when it is missing. The URL pins the CLI and matching starter from one GitHub release.
 On another machine, run `npm ci` to restore the locked version. Use the offline
 option below when you also need a local copy of the package.
+
+## Command availability
+
+<!-- ashfox:availability -->
+`--help`, `--version`, `doctor` and `init` are available in development builds.
+The published 1.0.0 package uses the starter ZIP workflow in the installation guide.
+<!-- ashfox:availability-end -->
 
 ## Install offline or keep an exact package
 
 Download [the CLI package](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz), store it in your project
 (for example under `tools/`), and install that file:
 
+<!-- ashfox:offline -->
 ```sh
 npm install --offline --save-dev ./tools/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
+<!-- ashfox:offline-end -->
 
 Keep the tarball and lockfile together. On another machine with Node.js and npm,
 `npm ci --offline` restores this installation from the local tarball; other
@@ -52,7 +70,7 @@ is assumed by either installation path.
 
 - **`npm` is not found:** install Node.js with npm, reopen your terminal, then check `node --version` and `npm --version`.
 - **The URL is blocked:** download the tarball through your browser or transfer it from another machine and use the offline command.
-- **`ashfox` is missing:** run the install command in the same project folder, then retry `npx --no-install ashfox capabilities`.
+- **`ashfox` is missing:** run the install command in the same project folder, then retry the installation check above.
 - **Permission denied:** use a writable project folder. A global installation or administrator privileges are not needed.
 
 ## Choose optional tools

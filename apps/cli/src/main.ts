@@ -1,3 +1,4 @@
+import { runOnboarding, cliVersion, isOnboardingCommand } from './onboarding/cli';
 import { runObservation } from './observe/cli';
 import { prepare } from './observe/prepare';
 import { observationCapabilities } from './observe/session';
@@ -21,14 +22,15 @@ const result = (ok: boolean, value: unknown, diagnostics: readonly unknown[] = [
     command, ok, diagnostics, result: value }) + '\n');
 };
 const main = async (): Promise<void> => {
+  if (runOnboarding(args)) return;
   if (['inspect','capture','replay','export','stdio'].includes(command)) { await runObservation(args,__filename,controller.signal); return; }
   if (args.filter(a => a === '--json').length > 1 || args.some(a => a.startsWith('--') && a !== '--json')) {
     throw new BuildFailure('cli.arguments', 'Only --json is supported; shared configuration belongs to optional .ashfoxworkspace', 2);
   }
   const positional = args.slice(1).filter(a => a !== '--json');
-  if (['capabilities', 'help'].includes(command)) {
+  if (command === 'capabilities') {
     if (positional.length) throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
-    result(true, { commands: ['check', 'build', 'verify', 'capabilities', 'inspect', 'capture', 'replay', 'export', 'stdio'], observation: observationCapabilities, workspace: { file: '.ashfoxworkspace', version: 2, required: false },
+    result(true, { cliVersion, commands: ['init', 'doctor', 'check', 'build', 'verify', 'capabilities', 'inspect', 'capture', 'replay', 'export', 'stdio'], observation: observationCapabilities, workspace: { file: '.ashfoxworkspace', version: 2, required: false },
       source: '.ashfox', outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'], legacyFallback: false,
       packs: { formats: ['minecraft_java', 'game_assets'], itemDefinitions: ['legacy', 'modern'], metadata: ['legacy', 'range'], audio: 'vorbis', encoder: 'FFmpeg via PATH or ASHFOX_FFMPEG_PATH', archive: 'zip' },
       usage: 'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox inspect|capture|replay|export <source|png> [options]; ashfox stdio' });
@@ -75,7 +77,8 @@ const executeWorker = async (): Promise<void> => {
 if (!isMainThread) { parentPort!.on('message', message => { if (message === 'cancel') controller.abort(); }); void executeWorker(); }
 else void main().catch((error: unknown) => {
   const failure = error instanceof BuildFailure ? error : new BuildFailure('build.failure', error instanceof Error ? error.message : String(error), 3);
-  if (['inspect','capture','replay','export','stdio'].includes(command)) process.stderr.write(JSON.stringify({ok:false,error:{code:failure.code,message:failure.message}})+'\n');
+  if (isOnboardingCommand(command) && !args.includes('--json')) process.stderr.write(`ashfox: ${failure.message}\n`);
+  else if (['inspect','capture','replay','export','stdio'].includes(command)) process.stderr.write(JSON.stringify({ok:false,error:{code:failure.code,message:failure.message}})+'\n');
   else result(false, null, [{ severity: 'error', code: failure.code, message: failure.message }]);
   process.exitCode = failure.exitCode;
 }).finally(() => { process.off('SIGINT', cancel); process.off('SIGTERM', cancel); });

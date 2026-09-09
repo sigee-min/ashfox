@@ -1,3 +1,4 @@
+import stableRelease from '../../../scripts/release/stable.js';
 import { createHash } from 'node:crypto';
 import {
   readdir,
@@ -419,7 +420,7 @@ const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
-if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip"')) {
+if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes(`href="${stableRelease.readStable(repositoryRoot).starter}"`)) {
   failures.push('Landing must offer the actual model and complete source download');
 }
 

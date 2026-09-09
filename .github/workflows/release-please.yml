@@ -155,3 +155,21 @@ jobs:
               'autorelease: pending', '--add-label', 'autorelease: tagged'], { stdio: 'inherit' });
           }
           NODE
+
+      - name: Advance verified stable downloads
+        run: node scripts/release/promote.js
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Open stable documentation update
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          branch: release/stable-downloads
+          commit-message: 'docs(install): advance verified stable downloads'
+          title: 'docs(install): advance verified stable downloads'
+          body: 'Update installation links to the published release whose CLI, starter and checksums passed public download verification.'
+          add-paths: |
+            scripts/release/stable.json
+            README.md
+            docs/guides/install.md
+            docs/guides/cli.md
