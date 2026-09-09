@@ -1,3 +1,4 @@
+import { exportCompatibilityFor } from '../compatibility/queries';
 import type { AssetProject } from '../../project/asset';
 import type { ExportAdapterInput } from '../adapter';
 import {
@@ -25,8 +26,10 @@ export class ProductionExportError extends Error {
   }
 }
 
-const assertProductionReady = (project: AssetProject): void => {
-  const report = evaluateProductionReadiness(project.document);
+const assertProductionReady = (project: AssetProject, adapter: ExportAdapterInput): void => {
+  const report = evaluateProductionReadiness(project.document, undefined, {
+    requireIdle: exportCompatibilityFor(adapter.target)?.animationSupport === 'actor'
+  });
   if (!report.mechanicallyReady) {
     throw new ProductionExportError(report);
   }
@@ -36,7 +39,7 @@ export const exportProductionProject = (
   project: AssetProject,
   adapter: ExportAdapterInput
 ): ExportBundle => {
-  assertProductionReady(project);
+  assertProductionReady(project, adapter);
   return compileProjectBundle(project, adapter);
 };
 
@@ -45,6 +48,6 @@ export const exportProductionProjectResolved = async (
   adapter: ExportAdapterInput,
   options: GltfResolvedExportOptions
 ): Promise<ExportBundle> => {
-  assertProductionReady(project);
+  assertProductionReady(project, adapter);
   return compileProjectBundleResolved(project, adapter, options);
 };

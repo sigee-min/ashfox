@@ -241,6 +241,12 @@ const reachabilityScopes = (options) => {
     .filter((entry) => entry.startsWith('packages/blockbench-contracts/src/'))
     .map((entry) => entry.replace('packages/blockbench-contracts/src/', ''));
   return [
+    ...[
+      ['cli', 'apps/cli/src', ['main.ts', 'worker.ts', 'observe/worker.ts']],
+      ['asset-build', 'packages/asset-build/src', ['index.ts']],
+      ['audio-core', 'packages/audio-core/src', ['index.ts']],
+      ['render-core', 'packages/render-core/src', ['index.ts', 'observation/browser.ts', 'gifenc.d.ts', ...[...packageExportEntries(path.join(repoRoot, 'packages/render-core'))].map(file => file.replace('packages/render-core/src/', ''))]]
+    ].map(([label, directory, entries]) => ({ label, root: path.join(repoRoot, directory), entries, options })),
     {
       label: 'engine',
       root: path.join(repoRoot, 'packages/engine-core/src'),
@@ -264,8 +270,7 @@ const reachabilityScopes = (options) => {
       root: path.join(repoRoot, 'apps/web/src'),
       entries: [
         'main.tsx',
-        'features/agent/agentManifest.ts',
-        'types/gifenc.d.ts'
+        'features/agent/agentManifest.ts'
       ],
       options
     }
@@ -273,6 +278,10 @@ const reachabilityScopes = (options) => {
 };
 
 const checkedSourcePrefixes = Object.freeze([
+  'apps/cli/src/',
+  'packages/asset-build/src/',
+  'packages/audio-core/src/',
+  'packages/render-core/src/',
   'apps/blockbench-mcp-sidecar/src/',
   'apps/blockbench-plugin/src/',
   'apps/web/src/',

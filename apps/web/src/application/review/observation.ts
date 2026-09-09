@@ -1,5 +1,5 @@
-import type { CameraMode } from '../../rendering/cameraPresets';
-import type { PixelFrameEvidence } from '../../rendering/pixelFrameEvidence';
+import type { CameraMode } from '@ashfox/render-core/cameraPresets';
+import type { PixelFrameEvidence } from '@ashfox/render-core/pixelFrameEvidence';
 
 /** Web-owned observation vocabulary; it does not enforce compiler aesthetics. */
 export const VISUAL_REVIEW_ISSUES = Object.freeze([

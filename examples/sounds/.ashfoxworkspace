@@ -1,0 +1,108 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "sound-collection",
+  "packages": [
+    {
+      "name": "sounds",
+      "root": "src",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          {
+            "name": "bird_call",
+            "path": "bird_call.ashfox"
+          },
+          {
+            "name": "claw_hit",
+            "path": "claw_hit.ashfox"
+          },
+          {
+            "name": "frog_croak",
+            "path": "frog_croak.ashfox"
+          },
+          {
+            "name": "griffin_call",
+            "path": "griffin_call.ashfox"
+          },
+          {
+            "name": "wing_whoosh",
+            "path": "wing_whoosh.ashfox"
+          },
+          {
+            "name": "wolf_howl",
+            "path": "wolf_howl.ashfox"
+          }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    }
+  ],
+  "include": [
+    "src/**/*.ashfox"
+  ],
+  "ignore": [
+    "src/drafts/**"
+  ],
+  "build": {
+    "directory": "build"
+  },
+  "exports": [
+    {
+      "name": "bird_call",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "bird_call"
+      },
+      "format": "wav",
+      "directory": "exports/bird_call"
+    },
+    {
+      "name": "claw_hit",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "claw_hit"
+      },
+      "format": "wav",
+      "directory": "exports/claw_hit"
+    },
+    {
+      "name": "frog_croak",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "frog_croak"
+      },
+      "format": "wav",
+      "directory": "exports/frog_croak"
+    },
+    {
+      "name": "griffin_call",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "griffin_call"
+      },
+      "format": "wav",
+      "directory": "exports/griffin_call"
+    },
+    {
+      "name": "wing_whoosh",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "wing_whoosh"
+      },
+      "format": "wav",
+      "directory": "exports/wing_whoosh"
+    },
+    {
+      "name": "wolf_howl",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "wolf_howl"
+      },
+      "format": "wav",
+      "directory": "exports/wolf_howl"
+    }
+  ]
+}

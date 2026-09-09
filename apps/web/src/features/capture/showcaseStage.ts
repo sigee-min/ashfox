@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { ProjectDocument } from '@ashfox/engine-core';
-import { applyAnimationPose } from '../../rendering/animationPose';
-import type { ProjectSceneProjection } from '../../rendering/sceneTypes';
-import { frameCaptureObject, type CaptureSurface } from './captureSurface';
+import { applyAnimationPose } from '@ashfox/render-core/animationPose';
+import type { ProjectSceneProjection } from '@ashfox/render-core/sceneTypes';
+import { frameCaptureObject, type CaptureSurface } from '@ashfox/render-core/captureSurface';
 
 /** Frame every authored pose once, and place a shadow receiver at the rest feet. */
 export const stageShowcase = (

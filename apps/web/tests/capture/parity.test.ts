@@ -9,13 +9,13 @@ import {
 
 import {
   applyAnimationPose
-} from '../../src/rendering/animationPose';
+} from '@ashfox/render-core/animationPose';
 import {
   createBuildCapturePlan
-} from '../../src/features/capture/buildCaptureTimeline';
+} from '@ashfox/render-core/capture/buildCaptureTimeline';
 import {
   applyBuildCaptureFrame
-} from '../../src/features/capture/renderBuildGif';
+} from '@ashfox/render-core/capture/renderBuildGif';
 import {
   createWorkbenchProject
 } from '../fixtures/project';

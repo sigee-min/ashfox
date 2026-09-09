@@ -24,7 +24,7 @@ import type {
 } from '../../../application/operationLease';
 import type {
   ProjectAssets
-} from '../../../application/projectAssets';
+} from '@ashfox/render-core/assets';
 import {
   useAgentCommandPort
 } from '../../agent/useAgentCommandPort';

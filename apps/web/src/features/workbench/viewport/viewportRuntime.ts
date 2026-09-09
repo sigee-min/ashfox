@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import type { ProjectSceneProjection } from '../../../rendering/sceneTypes';
+import type { ProjectSceneProjection } from '@ashfox/render-core/sceneTypes';
 import type { CameraCommand } from './viewportTypes';
-import { applyCameraPreset } from '../../../rendering/cameraPresets';
+import { applyCameraPreset } from '@ashfox/render-core/cameraPresets';
 import type { ProjectForwardDirection } from '@ashfox/engine-core';
 import {
   addViewportLighting,
   createViewportEnvironment,
   type ViewportEnvironment,
   type ViewportEnvironmentId
-} from '../../../rendering/viewportEnvironment';
+} from '@ashfox/render-core/viewportEnvironment';
 
 export interface ViewportRuntime {
   renderer: THREE.WebGLRenderer;

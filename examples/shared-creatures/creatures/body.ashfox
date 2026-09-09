@@ -1,0 +1,55 @@
+ashfox-model 1
+module body {
+  import "./rig.ashfox" as rig;
+  import "./surface.ashfox" as surface;
+  export component FoxBody {
+    requires rig skeleton: rig.CreatureRig;
+    requires surface skin: surface.Fur;
+    bind bone body to skeleton.body;
+    bind bone head to skeleton.head;
+    bind bone tail to skeleton.tail;
+    bind bone front_left to skeleton.front_left;
+    bind bone front_right to skeleton.front_right;
+    bind bone back_left to skeleton.back_left;
+    bind bone back_right to skeleton.back_right;
+    geometry {
+      bone body {
+        cube torso { origin = (-4u, 7u, -4u); size = (8u, 6u, 12u); surface = skin.torso; }
+        cube chest { origin = (-3u, 6u, -8u); size = (6u, 7u, 5u); surface = skin.chest; }
+        cube throat { origin = (-2u, 7u, -10u); size = (4u, 5u, 3u); surface = skin.throat; }
+        bone head {
+          cube skull { origin = (-4u, 11u, -12u); size = (8u, 7u, 8u); surface = skin.head; }
+          cube muzzle { origin = (-3u, 10u, -16u); size = (6u, 3u, 5u); surface = skin.muzzle; }
+          cube nose { origin = (-1u, 11u, -17u); size = (2u, 1u, 1u); surface = skin.nose; }
+          cube left_ear_base { origin = (-4u, 17u, -10u); size = (3u, 3u, 3u); surface = skin.ear_base; }
+          cube right_ear_base { origin = (1u, 17u, -10u); size = (3u, 3u, 3u); surface = skin.ear_base; }
+          cube left_ear_tip { origin = (-3.5u, 20u, -9.5u); size = (2u, 2u, 2u); surface = skin.ear_tip; }
+          cube right_ear_tip { origin = (1.5u, 20u, -9.5u); size = (2u, 2u, 2u); surface = skin.ear_tip; }
+          cube left_ear_inner { origin = (-3.5u, 18u, -11u); size = (2u, 2u, 1u); surface = skin.ear_inner; }
+          cube right_ear_inner { origin = (1.5u, 18u, -11u); size = (2u, 2u, 1u); surface = skin.ear_inner; }
+        }
+        bone tail {
+          cube tail_base { origin = (-2.5u, 8u, 7u); size = (5u, 5u, 8u); surface = skin.tail_main; }
+          cube tail_mid { origin = (-2.5u, 10u, 13u); size = (5u, 5u, 8u); surface = skin.tail_main; }
+          cube tail_tip { origin = (-2u, 12u, 19u); size = (4u, 4u, 6u); surface = skin.tail_tip; }
+        }
+        bone front_left {
+          cube leg { origin = (-3.5u, 2u, -6u); size = (3u, 7u, 3u); surface = skin.front_leg; }
+          cube paw { origin = (-3.5u, 0u, -7u); size = (3u, 2u, 4u); surface = skin.front_paw; }
+        }
+        bone front_right {
+          cube leg { origin = (0.5u, 2u, -6u); size = (3u, 7u, 3u); surface = skin.front_leg; }
+          cube paw { origin = (0.5u, 0u, -7u); size = (3u, 2u, 4u); surface = skin.front_paw; }
+        }
+        bone back_left {
+          cube leg { origin = (-4u, 2u, 4u); size = (4u, 7u, 4u); surface = skin.back_leg; }
+          cube paw { origin = (-4u, 0u, 3u); size = (4u, 2u, 5u); surface = skin.back_paw; }
+        }
+        bone back_right {
+          cube leg { origin = (0u, 2u, 4u); size = (4u, 7u, 4u); surface = skin.back_leg; }
+          cube paw { origin = (0u, 0u, 3u); size = (4u, 2u, 5u); surface = skin.back_paw; }
+        }
+      }
+    }
+  }
+}

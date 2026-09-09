@@ -3,15 +3,15 @@
   "schemaVersion": 1,
   "productExperience": {
     "interactionModel": "ai-authored-ai-compiled-human-observed",
-    "canonicalAuthority": "closed-asset-workspace",
+    "canonicalAuthority": "native-ashfox-source",
     "projectFile": {
       "extension": ".ashfoxworkspace",
       "mediaType": "application/vnd.ashfox.workspace+json",
       "encoding": "utf-8",
       "bom": "forbidden",
-      "authority": "closed-workspace-source-only",
+      "authority": "optional-repository-configuration",
       "loadMode": "read-validate-build-atomic",
-      "compiledState": "ephemeral-cache-only"
+      "compiledState": "derived-files-only"
     },
     "humanCapabilities": [
       "capture-evidence",
@@ -191,18 +191,18 @@
       "verification": "npm run release:validate"
     },
     "assetWorkspace": {
-      "version": 1,
+      "version": 2,
       "sourceGrammar": "ashfox-model 1",
-      "container": "ashfox-workspace:1",
+      "container": "ashfox-workspace:2",
       "compatibility": "exact-current-contract",
-      "authority": "packages/engine-core/src/project/workspace/contract.ts",
-      "compiler": "packages/engine-core/src/compiler/program/asset/compile.ts",
+      "authority": "packages/engine-core/src/project/directory/contract.ts",
+      "compiler": "packages/engine-core/src/compiler/directory/compile.ts",
       "releaseState": "unreleased",
       "replacementPolicy": "apply-complete-change-set-atomically",
       "legacyAliases": "forbidden"
     },
     "deliveryTargets": {
-      "scope": "transient-export-input",
+      "scope": "source-defaults-with-optional-workspace-overrides",
       "canonicalMutation": false
     }
   },
@@ -233,6 +233,12 @@
             "review",
             "viewport",
             "workbench"
+          ]
+        },
+        {
+          "workspace": "packages/audio-core",
+          "roots": [
+            "program"
           ]
         },
         {
@@ -493,12 +499,6 @@
         ]
       },
       {
-        "source": "apps/web/src/rendering/",
-        "targets": [
-          "apps/web/src/features/"
-        ]
-      },
-      {
         "source": "packages/blockbench-runtime/src/adapters/",
         "targets": [
           "packages/blockbench-runtime/src/plugin/",
@@ -535,6 +535,13 @@
           "packages/engine-core/src/commands/",
           "packages/engine-core/src/compiler/",
           "packages/engine-core/src/validation/"
+        ]
+      },
+      {
+        "source": "packages/render-core/src/",
+        "targets": [
+          "apps/cli/src/",
+          "apps/web/src/"
         ]
       }
     ]

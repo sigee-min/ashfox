@@ -35,7 +35,7 @@ must still match the chart declared by its surface contract. Atlas placement is 
 
 ## Resize a head without enlarging its eyes
 
-Ask your agent to create a workspace entry using this complete source. Change `width` from `4u` to
+Save this complete source as `study.ashfox` and run `ashfox build study.ashfox`. Change `width` from `4u` to
 `6u`: the box and chart dimensions follow together, while both eye stamps stay
 exactly one pixel wide. The atlas stays explicit and bounded.
 
@@ -188,7 +188,8 @@ A useful refinement request is: “Make the head wider, keep both eyes the same
 pixel size, and preserve the expression.” Review motion again after changing
 parts near a joint.
 
-Agents can use the measurements and surface inspection requests in the
-[API workflow](agent-workflow.md) to check dimensions. Measurements describe
+Use `inspect study.ashfox --node NODE_ID` for measurements and surface details;
+find node IDs with `inspect study.ashfox`. See the
+[CLI observation guide](observe.md) to check dimensions. Measurements describe
 the resting geometry; watching the rendered model is still necessary to judge
 its appearance and moving attachments.

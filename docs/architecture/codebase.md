@@ -1,19 +1,15 @@
 # Codebase map
 
-Ashfox has one durable authoring authority: a closed asset workspace. The
-workspace contains normalized `.ashfox` source files, package manifests, and
-an exact content-addressed lock. A selected package entry compiles to one
-concrete asset. Scene data, texture rasters, animation channels, previews,
-reviews, exports, and caches are rebuildable products rather than editable
-authority.
+Ashfox assets are authored as native `.ashfox` files. They compile independently,
+including their explicit relative imports. An optional `.ashfoxworkspace` supplies
+repository-wide selection, ignore, package, build and export rules when needed;
+it is not required to author or compile an asset. Generated products and receipts
+are rebuildable outputs. See [Directory workspace v2](../guides/workspace.md).
 
-The source header remains exactly `ashfox-model 1`. The hard cut has no
-single-source compatibility reader, alias grammar, mutable dependency range,
-or host-path fallback.
-
-The portable file is canonical `.ashfoxworkspace` JSON
-(`application/vnd.ashfox.workspace+json`) with exactly one trailing LF. It is
-the workspace authority, not a wrapper around a compiled `ProjectDocument`.
+The source header remains `ashfox-model 1`. Native sprite units share the lexer
+and compile beside existing model entries. The former embedded v1 workspace is
+an explicit import format and an internal model-compiler projection; it is not
+a fallback when opening a directory project's root configuration.
 
 `AssetProject` is the transient host session. It binds host id/revision/time,
 one validated workspace head, one explicit entry selector, the exact build
@@ -157,3 +153,41 @@ bounded graphs. Asset compiler tests prove nominal typing, exact frames,
 surface/chart ownership, socket cardinality, deterministic instantiation,
 motion bake, canonical validity, and target parity. Visual review remains an
 independent rendered judgment; it never repairs source or canonical output.
+
+## Item sprite and directory compiler
+
+The sprite compiler reads native `.ashfox` in `project/sprite/`, lowers
+form-based tone and bounded grain in `compiler/sprite/`, and reuses the canonical
+texture raster and PNG encoder. Its public entry points are `readItemStudy`,
+`compileItemStudy`, `spritePreviewPng`, and `spriteSheetPng`. The native
+`parseSpriteSource` front end lowers into the same validated plan. Directory
+configuration lives in `project/directory/`; `compiler/directory/` compiles
+model and sprite entries through `compileDirectoryWorkspace` without empty model documents.
+
+`scripts/items/` owns local build storage, atomic candidate application, verified
+export, and the read-only source/result studio. Style-related mechanical
+constraints are enforced by the compiler profile; the harness has no manual
+review or approval ledger. See [the item design](item-sprites.md) and
+[the implemented study](../../scripts/items/README.md).
+
+## CLI resource-pack delivery
+
+Optional directory `packs` declarations bind named exports to item and sound
+resources. The directory owner validates the closed configuration; asset-build
+assembles bytes and archives, and its Node adapters own FFmpeg and publication.
+See [resource-pack configuration](../guides/minecraft-packs.md). Pack-format choices are
+project data; changing a version label does not change the source compiler.
+
+The sibling `game_assets` pack emits engine-neutral GLB/PNG/audio and a closed
+runtime manifest. CLI GLB exports choose portable encoding by default, with
+optimized encoding explicit in workspace exports. See [game assets](../guides/game-assets.md).
+
+## Shared observation renderer
+
+`packages/render-core` owns Three scene projection, camera presets, materials,
+animation sampling, capture surfaces and deterministic build replay. Web and CLI
+consume its public entry points; neither maintains a renderer copy. CLI bundles
+the headless browser entry and drives it through a private Chrome pipe, with no
+network endpoint. `apps/cli/src/observe` owns closed stdin contracts, isolated
+source compilation, revision-guarded in-memory sessions and binary stdout.
+See [the observation guide](../guides/observe.md).

@@ -107,7 +107,7 @@ the public Workbench bundle.
 ## Showcase media
 
 The homepage and README replays are reconstructed from the final validated
-entries in `examples/shared-creatures.ashfoxworkspace`; they are not an
+entries in `examples/shared-creatures/`; they are not an
 authoring history or a decision log. Regenerate all checked-in replay and
 poster media through the real Web renderer with:
 
@@ -117,7 +117,7 @@ npm run showcase:capture
 npm run showcase:check
 ```
 
-The export command rebuilds each standalone workspace and GLB from the shared example.
+The export command reads the native shared example and refreshes standalone `.ashfox` examples plus browser model snapshots under `assets/workspaces/` and GLB exports. These snapshots are generated outputs.
 The capture command starts an isolated local Workbench, renders all three entries,
 including every finished motion, and seals `assets/showcase/shared-creatures/showcase.json`.
 Motion movies require FFmpeg (or `ASHFOX_FFMPEG_PATH`). It requires Chrome
@@ -132,6 +132,22 @@ Run the complete quality gate before a substantial pull request:
 ```bash
 npm run quality
 ```
+
+## Code-authored audio harness
+
+`npm run build:audio` initializes the local source store on first use and builds
+an isolated candidate. `npm run audio:review` serves sound selection, baseline/candidate
+comparison and downloads in a read-only local viewer. Agents use `npm run audio:agent` or the
+local HTTP API to inspect, propose, build, present, apply and export.
+FFmpeg is required for builds (`ASHFOX_FFMPEG_PATH` selects the executable).
+
+`npm run test:audio` verifies DSP and state transitions;
+`npm run test:audio:integration` runs the real encoder and HTTP lifecycle.
+See [`scripts/audio/README.md`](scripts/audio/README.md) for setup and limits,
+and [`docs/guides/sounds.md`](docs/guides/sounds.md) for the closed
+native source contract. Examples in `examples/sounds/` use the same root
+workspace configuration as other asset projects and the public audio core.
+The local viewer remains separate from public Workbench and game runtime adapters.
 
 ## Apply the development manifest
 
@@ -194,3 +210,49 @@ Open an issue with:
 - browser and export target, or Blockbench version and model format
 
 For security issues, follow [SECURITY.md](SECURITY.md).
+
+## Item sprite study
+
+`npm run build:items` compiles the native `.ashfox` item examples into native PNGs, stage
+previews and hash receipts. `npm run items:studio` opens a local source/result
+studio; `npm run items:agent -- capabilities` describes the candidate workflow.
+`npm run test:items` verifies the compiler and harness. See
+[`scripts/items/README.md`](scripts/items/README.md) for the implemented contract
+and [`item sprite design`](docs/architecture/item-sprites.md) for integration plans.
+Models, sprites and sounds share the native CLI; the local viewer remains separate from the public Workbench.
+
+## Directory projects
+
+Native `.ashfox` source files compile without a workspace. The optional root
+`.ashfoxworkspace` v2 file supplies shared repository configuration when needed. See [directory workspace](docs/guides/workspace.md)
+for include/ignore/output semantics and native sprite syntax. The working folder
+example is `examples/items/`. `npm run test:engine-core` includes native sprite
+parity and mixed model/sprite project regression tests. Browser model snapshot fixtures exercise the separate Workbench API. They are
+not native CLI project configurations.
+
+## Native asset CLI
+
+`npm run build:cli` bundles the standalone CLI. Run
+`node apps/cli/dist/ashfox.cjs build examples/pipeline/.ashfoxworkspace --json`
+for model, item and sound output, or pass a single `.ashfox` file without a
+workspace. `npm run test:cli` verifies cold builds, interruption, integrity and
+isolated npm installation. `npm run test:audio-core` checks the shared DSP.
+See [CLI usage](apps/cli/README.md) for the output and game-build contract.
+
+`npm run test:packs` verifies configurable Java pack delivery with real FFmpeg
+Vorbis encoding. Use FFmpeg on PATH or `ASHFOX_FFMPEG_PATH`. See the
+[pack contract](docs/guides/minecraft-packs.md) and the native example in
+`examples/resource-pack/`. The regular CLI suite also checks PNG/model packs
+without requiring an external encoder.
+
+`examples/game-assets/` exercises engine-neutral model, sprite and sound bundles.
+Static-prop coverage is added only within the CLI test fixture.
+The regular CLI suite validates portable GLBs, runtime manifest linkage, and
+shared Minecraft/general-engine delivery. See [game assets](docs/guides/game-assets.md).
+
+`npm run test:cli` covers memory observation and stdio state. Run
+`npm run test:cli:capture` with Chrome/Chromium (or `ASHFOX_CHROME_PATH`) for real
+PNG/GIF/waveform, camera, cancellation and renderer recovery tests. Rendering
+code lives in `packages/render-core` and is shared with the browser Workbench.
+
+User documentation publishing and example verification: [docs maintainer guide](docs/development/docs.md).

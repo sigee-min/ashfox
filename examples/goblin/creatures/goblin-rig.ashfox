@@ -1,0 +1,91 @@
+ashfox-model 1
+module goblin_rig {
+  export rig contract GoblinRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = (rotation, scale); mirror = none; }
+    joint pelvis { parent = root; role = pelvis; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint torso { parent = pelvis; role = body; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint head { parent = torso; role = head; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint left_arm { parent = torso; role = arm; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint right_arm { parent = torso; role = arm; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint weapon { parent = right_arm; role = weapon; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint left_leg { parent = pelvis; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint right_leg { parent = pelvis; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+  }
+
+  export skeleton RaiderSkeleton implements GoblinRig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind pelvis { parent-origin = (0u, 11u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind torso { parent-origin = (0u, 2u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind head { parent-origin = (0u, 10u, -1u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind left_arm { parent-origin = (-6.5u, 6.5u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind right_arm { parent-origin = (6.5u, 6.5u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind weapon { parent-origin = (0u, -9.5u, -1u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind left_leg { parent-origin = (-2u, -1u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind right_leg { parent-origin = (2u, -1u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+
+  export motion idle for GoblinRig {
+    duration = 2s; fps = 20; loop = loop; rest-relative = true;
+    track torso.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (1deg, -2deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (0deg, 4deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (-3deg, 2deg, 2deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (3deg, -2deg, -2deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+  export motion lookout for GoblinRig {
+    duration = 4s; fps = 24; loop = loop; rest-relative = true;
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (0deg, -22deg, 2deg) catmullrom;
+      key 2s = (0deg, -22deg, 2deg) catmullrom;
+      key 3s = (-3deg, 20deg, -2deg) catmullrom;
+      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (-8deg, 0deg, -8deg) catmullrom;
+      key 3s = (-8deg, 0deg, -8deg) catmullrom;
+      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+  export motion challenge for GoblinRig {
+    duration = 3s; fps = 24; loop = loop; rest-relative = true;
+    track right_arm.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 0.8s = (35deg, -8deg, 12deg) catmullrom;
+      key 1.5s = (35deg, -8deg, 12deg) catmullrom;
+      key 2.4s = (3deg, 0deg, 2deg) catmullrom;
+      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 0.8s = (2deg, -8deg, -2deg) catmullrom;
+      key 1.5s = (2deg, -8deg, -2deg) catmullrom;
+      key 2.4s = (4deg, 0deg, 0deg) catmullrom;
+      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 0.8s = (8deg, 0deg, -8deg) catmullrom;
+      key 1.5s = (8deg, 0deg, -8deg) catmullrom;
+      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+}

@@ -27,7 +27,7 @@ import {
   type ArtifactFile
 } from './artifactFile';
 import type { FileOperationState } from './fileOperationState';
-import type { ProjectAssets } from '../../application/projectAssets';
+import type { ProjectAssets } from '@ashfox/render-core/assets';
 import {
   useFileOperation,
   type FileOperationRunResult

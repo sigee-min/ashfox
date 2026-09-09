@@ -1,0 +1,14 @@
+ashfox-model 1
+asset fox {
+  import "./rig.ashfox" as rig;
+  import "./surface.ashfox" as surface;
+  import "./body.ashfox" as body;
+  export asset fox {
+    settings { density = 16; forward = north; }
+    skeleton = rig.CreatureSkeleton;
+    motion = rig.idle;
+    motion = rig.curious;
+    motion = rig.tail_wag;
+    use body.FoxBody as fox { bind skeleton = rig.CreatureRig; bind skin = surface.red_fox; };
+  }
+}

@@ -1,0 +1,1449 @@
+{
+  "format": "ashfox-item-study",
+  "version": 1,
+  "masks": [
+    {
+      "id": "apple_body",
+      "rows": [
+        ".111...111.",
+        "11111111111",
+        "11111111111",
+        "11111111111",
+        "11111111111",
+        ".111111111.",
+        ".111111111.",
+        "..1111111..",
+        "...11.11..."
+      ]
+    },
+    {
+      "id": "blade",
+      "rows": [
+        ".........11",
+        "........111",
+        ".......111.",
+        "......111..",
+        ".....111...",
+        "....111....",
+        "...111.....",
+        "..111......",
+        ".111.......",
+        "111........",
+        ".1........."
+      ]
+    },
+    {
+      "id": "potion_glass",
+      "rows": [
+        "...111...",
+        "...111...",
+        "..11111..",
+        ".1111111.",
+        "111111111",
+        "111111111",
+        "111111111",
+        "111111111",
+        ".1111111.",
+        "..11111.."
+      ]
+    },
+    {
+      "id": "potion_liquid",
+      "rows": [
+        ".1111111.",
+        "111111111",
+        "111111111",
+        "111111111",
+        ".1111111.",
+        "..11111.."
+      ]
+    },
+    {
+      "id": "ore",
+      "rows": [
+        "..1111..",
+        ".111111.",
+        "11111111",
+        "11111111",
+        ".111111.",
+        "..1111.."
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "id": "apple_red",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#792C38",
+          "#D94E42",
+          "#FFAC70"
+        ]
+      }
+    },
+    {
+      "id": "apple_green",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#3F6135",
+          "#8FBE4F",
+          "#E3E890"
+        ]
+      }
+    },
+    {
+      "id": "apple_gold",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#A85D2C",
+          "#EDB84D",
+          "#FFF2AC"
+        ]
+      }
+    },
+    {
+      "id": "steel",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#537C94",
+          "#A8CCD1",
+          "#EEFFFF"
+        ]
+      }
+    },
+    {
+      "id": "copper",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#834632",
+          "#CB8557",
+          "#FFE0A0"
+        ]
+      }
+    },
+    {
+      "id": "crystal",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#365489",
+          "#63C8D0",
+          "#D6FFEE"
+        ]
+      }
+    },
+    {
+      "id": "glass",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#476177",
+          "#8BAFBC",
+          "#DAECE9"
+        ]
+      }
+    },
+    {
+      "id": "ruby_liquid",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#812F62",
+          "#D85486",
+          "#FFB2A5"
+        ]
+      }
+    },
+    {
+      "id": "blue_liquid",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#344A87",
+          "#4B95CB",
+          "#9FEBD9"
+        ]
+      }
+    },
+    {
+      "id": "amber_liquid",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#9F5931",
+          "#DBA943",
+          "#FFE595"
+        ]
+      }
+    },
+    {
+      "id": "amethyst",
+      "ramp": {
+        "mode": "explicit",
+        "colors": [
+          "#563D7D",
+          "#9966BA",
+          "#E6A9DD"
+        ]
+      }
+    }
+  ],
+  "stamps": [],
+  "items": [
+    {
+      "id": "apple",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#482B35",
+        "shine": "#FFDFA0",
+        "stem": "#6B4A35",
+        "stem_light": "#AB7950",
+        "leaf": "#628747",
+        "leaf_light": "#ABC86A",
+        "crease": "#89313A",
+        "edge_light": "#873C38"
+      },
+      "layers": [
+        {
+          "id": "body_outline",
+          "op": "paint",
+          "at": [
+            1,
+            4
+          ],
+          "rows": [
+            "..lll...llo..",
+            ".llllllllooo.",
+            "llllllllooooo",
+            "llllllooooooo",
+            "llllloooooooo",
+            "llllooooooooo",
+            ".llooooooooo.",
+            ".loooooooooo.",
+            "..ooooooooo..",
+            "...ooooooo...",
+            "....oo.oo...."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "fruit",
+          "op": "part",
+          "mask": "apple_body",
+          "material": "apple_red",
+          "at": [
+            2,
+            5
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": [
+            {
+              "id": "shine",
+              "at": [
+                2,
+                1
+              ],
+              "rows": [
+                "hh",
+                "h."
+              ],
+              "colors": {
+                "h": "shine"
+              },
+              "protect": 1
+            },
+            {
+              "id": "crease",
+              "at": [
+                5,
+                1
+              ],
+              "rows": [
+                "s"
+              ],
+              "colors": {
+                "s": "crease"
+              },
+              "protect": 0
+            }
+          ]
+        },
+        {
+          "id": "stem",
+          "op": "paint",
+          "at": [
+            7,
+            2
+          ],
+          "rows": [
+            ".s",
+            ".s",
+            "s."
+          ],
+          "colors": {
+            "s": "stem"
+          }
+        },
+        {
+          "id": "leaf",
+          "op": "paint",
+          "at": [
+            8,
+            2
+          ],
+          "rows": [
+            ".LLl",
+            "Lll."
+          ],
+          "colors": {
+            "l": "leaf",
+            "L": "leaf_light"
+          }
+        }
+      ]
+    },
+    {
+      "id": "green_apple",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#2E4833",
+        "shine": "#F3F4B9",
+        "stem": "#6B4A35",
+        "stem_light": "#AB7950",
+        "leaf": "#628747",
+        "leaf_light": "#ABC86A",
+        "crease": "#64883B",
+        "edge_light": "#536C37"
+      },
+      "layers": [
+        {
+          "id": "body_outline",
+          "op": "paint",
+          "at": [
+            1,
+            4
+          ],
+          "rows": [
+            "..lll...llo..",
+            ".llllllllooo.",
+            "llllllllooooo",
+            "llllllooooooo",
+            "llllloooooooo",
+            "llllooooooooo",
+            ".llooooooooo.",
+            ".loooooooooo.",
+            "..ooooooooo..",
+            "...ooooooo...",
+            "....oo.oo...."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "fruit",
+          "op": "part",
+          "mask": "apple_body",
+          "material": "apple_green",
+          "at": [
+            2,
+            5
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": [
+            {
+              "id": "shine",
+              "at": [
+                2,
+                1
+              ],
+              "rows": [
+                "hh",
+                "h."
+              ],
+              "colors": {
+                "h": "shine"
+              },
+              "protect": 1
+            },
+            {
+              "id": "crease",
+              "at": [
+                5,
+                1
+              ],
+              "rows": [
+                "s"
+              ],
+              "colors": {
+                "s": "crease"
+              },
+              "protect": 0
+            }
+          ]
+        },
+        {
+          "id": "stem",
+          "op": "paint",
+          "at": [
+            7,
+            2
+          ],
+          "rows": [
+            ".s",
+            ".s",
+            "s."
+          ],
+          "colors": {
+            "s": "stem"
+          }
+        },
+        {
+          "id": "leaf",
+          "op": "paint",
+          "at": [
+            8,
+            2
+          ],
+          "rows": [
+            ".LLl",
+            "Lll."
+          ],
+          "colors": {
+            "l": "leaf",
+            "L": "leaf_light"
+          }
+        }
+      ]
+    },
+    {
+      "id": "golden_apple",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#755031",
+        "shine": "#FFFFD2",
+        "stem": "#6B4A35",
+        "stem_light": "#AB7950",
+        "leaf": "#628747",
+        "leaf_light": "#ABC86A",
+        "crease": "#BB762C",
+        "edge_light": "#AA762D"
+      },
+      "layers": [
+        {
+          "id": "body_outline",
+          "op": "paint",
+          "at": [
+            1,
+            4
+          ],
+          "rows": [
+            "..lll...llo..",
+            ".llllllllooo.",
+            "llllllllooooo",
+            "llllllooooooo",
+            "llllloooooooo",
+            "llllooooooooo",
+            ".llooooooooo.",
+            ".loooooooooo.",
+            "..ooooooooo..",
+            "...ooooooo...",
+            "....oo.oo...."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "fruit",
+          "op": "part",
+          "mask": "apple_body",
+          "material": "apple_gold",
+          "at": [
+            2,
+            5
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": [
+            {
+              "id": "shine",
+              "at": [
+                2,
+                1
+              ],
+              "rows": [
+                "hh",
+                "h."
+              ],
+              "colors": {
+                "h": "shine"
+              },
+              "protect": 1
+            },
+            {
+              "id": "crease",
+              "at": [
+                5,
+                1
+              ],
+              "rows": [
+                "s"
+              ],
+              "colors": {
+                "s": "crease"
+              },
+              "protect": 0
+            }
+          ]
+        },
+        {
+          "id": "stem",
+          "op": "paint",
+          "at": [
+            7,
+            2
+          ],
+          "rows": [
+            ".s",
+            ".s",
+            "s."
+          ],
+          "colors": {
+            "s": "stem"
+          }
+        },
+        {
+          "id": "leaf",
+          "op": "paint",
+          "at": [
+            8,
+            2
+          ],
+          "rows": [
+            ".LLl",
+            "Lll."
+          ],
+          "colors": {
+            "l": "leaf",
+            "L": "leaf_light"
+          }
+        }
+      ]
+    },
+    {
+      "id": "iron_sword",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#253746",
+        "gold": "#D9AE58",
+        "gold_light": "#FFF0AD",
+        "grip": "#815144",
+        "grip_dark": "#432E38",
+        "glint": "#FFFFFF",
+        "edge_light": "#476478"
+      },
+      "layers": [
+        {
+          "id": "blade_outline",
+          "op": "paint",
+          "at": [
+            2,
+            0
+          ],
+          "rows": [
+            "..........oo.",
+            ".........oooo",
+            "........ooooo",
+            ".......ooooo.",
+            "......ooooo..",
+            ".....ooooo...",
+            "....ooooo....",
+            "...ooooo.....",
+            "..ooooo......",
+            ".ooooo.......",
+            "ooooo........",
+            ".ooo.........",
+            "..o.........."
+          ],
+          "colors": {
+            "o": "edge"
+          }
+        },
+        {
+          "id": "blade",
+          "op": "part",
+          "mask": "blade",
+          "material": "steel",
+          "at": [
+            3,
+            1
+          ],
+          "shade": {
+            "form": "bevel",
+            "light": "top_left",
+            "contrast": 2,
+            "axis": [
+              [
+                0,
+                10
+              ],
+              [
+                10,
+                0
+              ]
+            ]
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "hilt",
+          "op": "paint",
+          "at": [
+            2,
+            8
+          ],
+          "rows": [
+            "g.......",
+            "Lg......",
+            ".Lg.....",
+            "..Lgg...",
+            "...ggg..",
+            "....g..."
+          ],
+          "colors": {
+            "g": "gold",
+            "L": "gold_light"
+          }
+        },
+        {
+          "id": "handle",
+          "op": "paint",
+          "at": [
+            0,
+            10
+          ],
+          "rows": [
+            "...dd",
+            "..dhd",
+            ".dhd.",
+            "dhd..",
+            "dd..."
+          ],
+          "colors": {
+            "d": "grip_dark",
+            "h": "grip"
+          }
+        },
+        {
+          "id": "pommel",
+          "op": "paint",
+          "at": [
+            0,
+            14
+          ],
+          "rows": [
+            "Lg",
+            "gg"
+          ],
+          "colors": {
+            "L": "gold_light",
+            "g": "gold"
+          }
+        }
+      ]
+    },
+    {
+      "id": "copper_sword",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#253746",
+        "gold": "#D9AE58",
+        "gold_light": "#FFF0AD",
+        "grip": "#815144",
+        "grip_dark": "#432E38",
+        "glint": "#FFFFFF",
+        "edge_light": "#476478"
+      },
+      "layers": [
+        {
+          "id": "blade_outline",
+          "op": "paint",
+          "at": [
+            2,
+            0
+          ],
+          "rows": [
+            "..........oo.",
+            ".........oooo",
+            "........ooooo",
+            ".......ooooo.",
+            "......ooooo..",
+            ".....ooooo...",
+            "....ooooo....",
+            "...ooooo.....",
+            "..ooooo......",
+            ".ooooo.......",
+            "ooooo........",
+            ".ooo.........",
+            "..o.........."
+          ],
+          "colors": {
+            "o": "edge"
+          }
+        },
+        {
+          "id": "blade",
+          "op": "part",
+          "mask": "blade",
+          "material": "copper",
+          "at": [
+            3,
+            1
+          ],
+          "shade": {
+            "form": "bevel",
+            "light": "top_left",
+            "contrast": 2,
+            "axis": [
+              [
+                0,
+                10
+              ],
+              [
+                10,
+                0
+              ]
+            ]
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "hilt",
+          "op": "paint",
+          "at": [
+            2,
+            8
+          ],
+          "rows": [
+            "g.......",
+            "Lg......",
+            ".Lg.....",
+            "..Lgg...",
+            "...ggg..",
+            "....g..."
+          ],
+          "colors": {
+            "g": "gold",
+            "L": "gold_light"
+          }
+        },
+        {
+          "id": "handle",
+          "op": "paint",
+          "at": [
+            0,
+            10
+          ],
+          "rows": [
+            "...dd",
+            "..dhd",
+            ".dhd.",
+            "dhd..",
+            "dd..."
+          ],
+          "colors": {
+            "d": "grip_dark",
+            "h": "grip"
+          }
+        },
+        {
+          "id": "pommel",
+          "op": "paint",
+          "at": [
+            0,
+            14
+          ],
+          "rows": [
+            "Lg",
+            "gg"
+          ],
+          "colors": {
+            "L": "gold_light",
+            "g": "gold"
+          }
+        }
+      ]
+    },
+    {
+      "id": "crystal_sword",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#253746",
+        "gold": "#D9AE58",
+        "gold_light": "#FFF0AD",
+        "grip": "#815144",
+        "grip_dark": "#432E38",
+        "glint": "#FFFFFF",
+        "edge_light": "#476478"
+      },
+      "layers": [
+        {
+          "id": "blade_outline",
+          "op": "paint",
+          "at": [
+            2,
+            0
+          ],
+          "rows": [
+            "..........oo.",
+            ".........oooo",
+            "........ooooo",
+            ".......ooooo.",
+            "......ooooo..",
+            ".....ooooo...",
+            "....ooooo....",
+            "...ooooo.....",
+            "..ooooo......",
+            ".ooooo.......",
+            "ooooo........",
+            ".ooo.........",
+            "..o.........."
+          ],
+          "colors": {
+            "o": "edge"
+          }
+        },
+        {
+          "id": "blade",
+          "op": "part",
+          "mask": "blade",
+          "material": "crystal",
+          "at": [
+            3,
+            1
+          ],
+          "shade": {
+            "form": "bevel",
+            "light": "top_left",
+            "contrast": 2,
+            "axis": [
+              [
+                0,
+                10
+              ],
+              [
+                10,
+                0
+              ]
+            ]
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "hilt",
+          "op": "paint",
+          "at": [
+            2,
+            8
+          ],
+          "rows": [
+            "g.......",
+            "Lg......",
+            ".Lg.....",
+            "..Lgg...",
+            "...ggg..",
+            "....g..."
+          ],
+          "colors": {
+            "g": "gold",
+            "L": "gold_light"
+          }
+        },
+        {
+          "id": "handle",
+          "op": "paint",
+          "at": [
+            0,
+            10
+          ],
+          "rows": [
+            "...dd",
+            "..dhd",
+            ".dhd.",
+            "dhd..",
+            "dd..."
+          ],
+          "colors": {
+            "d": "grip_dark",
+            "h": "grip"
+          }
+        },
+        {
+          "id": "pommel",
+          "op": "paint",
+          "at": [
+            0,
+            14
+          ],
+          "rows": [
+            "Lg",
+            "gg"
+          ],
+          "colors": {
+            "L": "gold_light",
+            "g": "gold"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ruby_potion",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#293847",
+        "cork": "#A4774D",
+        "cork_light": "#D5AF77",
+        "shine": "#ECFFFF",
+        "rim": "#CCE5E1",
+        "edge_light": "#526D80"
+      },
+      "layers": [
+        {
+          "id": "bottle_outline",
+          "op": "paint",
+          "at": [
+            2,
+            3
+          ],
+          "rows": [
+            "....lll....",
+            "...lllll...",
+            "...llllo...",
+            "..llllooo..",
+            ".llllooooo.",
+            "llllooooooo",
+            "llloooooooo",
+            "llooooooooo",
+            "loooooooooo",
+            ".ooooooooo.",
+            "..ooooooo..",
+            "...ooooo..."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "bottle",
+          "op": "part",
+          "mask": "potion_glass",
+          "material": "glass",
+          "at": [
+            3,
+            4
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "liquid",
+          "op": "part",
+          "mask": "potion_liquid",
+          "material": "ruby_liquid",
+          "at": [
+            3,
+            8
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "cork",
+          "op": "paint",
+          "at": [
+            6,
+            2
+          ],
+          "rows": [
+            "cccc",
+            "Cccc"
+          ],
+          "colors": {
+            "c": "cork",
+            "C": "cork_light"
+          }
+        },
+        {
+          "id": "rim",
+          "op": "paint",
+          "at": [
+            5,
+            4
+          ],
+          "rows": [
+            "rrrrr"
+          ],
+          "colors": {
+            "r": "rim"
+          }
+        },
+        {
+          "id": "reflection",
+          "op": "paint",
+          "at": [
+            4,
+            7
+          ],
+          "rows": [
+            ".h",
+            "h.",
+            "h.",
+            "h."
+          ],
+          "colors": {
+            "h": "shine"
+          }
+        }
+      ]
+    },
+    {
+      "id": "blue_potion",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#293847",
+        "cork": "#A4774D",
+        "cork_light": "#D5AF77",
+        "shine": "#ECFFFF",
+        "rim": "#CCE5E1",
+        "edge_light": "#526D80"
+      },
+      "layers": [
+        {
+          "id": "bottle_outline",
+          "op": "paint",
+          "at": [
+            2,
+            3
+          ],
+          "rows": [
+            "....lll....",
+            "...lllll...",
+            "...llllo...",
+            "..llllooo..",
+            ".llllooooo.",
+            "llllooooooo",
+            "llloooooooo",
+            "llooooooooo",
+            "loooooooooo",
+            ".ooooooooo.",
+            "..ooooooo..",
+            "...ooooo..."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "bottle",
+          "op": "part",
+          "mask": "potion_glass",
+          "material": "glass",
+          "at": [
+            3,
+            4
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "liquid",
+          "op": "part",
+          "mask": "potion_liquid",
+          "material": "blue_liquid",
+          "at": [
+            3,
+            8
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "cork",
+          "op": "paint",
+          "at": [
+            6,
+            2
+          ],
+          "rows": [
+            "cccc",
+            "Cccc"
+          ],
+          "colors": {
+            "c": "cork",
+            "C": "cork_light"
+          }
+        },
+        {
+          "id": "rim",
+          "op": "paint",
+          "at": [
+            5,
+            4
+          ],
+          "rows": [
+            "rrrrr"
+          ],
+          "colors": {
+            "r": "rim"
+          }
+        },
+        {
+          "id": "reflection",
+          "op": "paint",
+          "at": [
+            4,
+            7
+          ],
+          "rows": [
+            ".h",
+            "h.",
+            "h.",
+            "h."
+          ],
+          "colors": {
+            "h": "shine"
+          }
+        }
+      ]
+    },
+    {
+      "id": "amber_potion",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#293847",
+        "cork": "#A4774D",
+        "cork_light": "#D5AF77",
+        "shine": "#ECFFFF",
+        "rim": "#CCE5E1",
+        "edge_light": "#526D80"
+      },
+      "layers": [
+        {
+          "id": "bottle_outline",
+          "op": "paint",
+          "at": [
+            2,
+            3
+          ],
+          "rows": [
+            "....lll....",
+            "...lllll...",
+            "...llllo...",
+            "..llllooo..",
+            ".llllooooo.",
+            "llllooooooo",
+            "llloooooooo",
+            "llooooooooo",
+            "loooooooooo",
+            ".ooooooooo.",
+            "..ooooooo..",
+            "...ooooo..."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "bottle",
+          "op": "part",
+          "mask": "potion_glass",
+          "material": "glass",
+          "at": [
+            3,
+            4
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "liquid",
+          "op": "part",
+          "mask": "potion_liquid",
+          "material": "amber_liquid",
+          "at": [
+            3,
+            8
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 0,
+            "seed": 23
+          },
+          "patches": []
+        },
+        {
+          "id": "cork",
+          "op": "paint",
+          "at": [
+            6,
+            2
+          ],
+          "rows": [
+            "cccc",
+            "Cccc"
+          ],
+          "colors": {
+            "c": "cork",
+            "C": "cork_light"
+          }
+        },
+        {
+          "id": "rim",
+          "op": "paint",
+          "at": [
+            5,
+            4
+          ],
+          "rows": [
+            "rrrrr"
+          ],
+          "colors": {
+            "r": "rim"
+          }
+        },
+        {
+          "id": "reflection",
+          "op": "paint",
+          "at": [
+            4,
+            7
+          ],
+          "rows": [
+            ".h",
+            "h.",
+            "h.",
+            "h."
+          ],
+          "colors": {
+            "h": "shine"
+          }
+        }
+      ]
+    },
+    {
+      "id": "amethyst",
+      "profile": "minecraft-item-v1",
+      "canvas": [
+        16,
+        16
+      ],
+      "palette": {
+        "edge": "#302B50",
+        "shine": "#FFE5F4",
+        "edge_light": "#72508C"
+      },
+      "layers": [
+        {
+          "id": "edge",
+          "op": "paint",
+          "at": [
+            3,
+            4
+          ],
+          "rows": [
+            "...llll...",
+            "..lllloo..",
+            ".lllloooo.",
+            "lllloooooo",
+            "lllooooooo",
+            ".oooooooo.",
+            "..oooooo..",
+            "...oooo..."
+          ],
+          "colors": {
+            "o": "edge",
+            "l": "edge_light"
+          }
+        },
+        {
+          "id": "ore",
+          "op": "part",
+          "mask": "ore",
+          "material": "amethyst",
+          "at": [
+            4,
+            5
+          ],
+          "shade": {
+            "form": "round",
+            "light": "top_left",
+            "contrast": 2
+          },
+          "grain": {
+            "mode": "clustered-v1",
+            "amount": 1,
+            "seed": 23
+          },
+          "patches": [
+            {
+              "id": "facet",
+              "at": [
+                2,
+                1
+              ],
+              "rows": [
+                "h.",
+                "hh"
+              ],
+              "colors": {
+                "h": "shine"
+              },
+              "protect": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

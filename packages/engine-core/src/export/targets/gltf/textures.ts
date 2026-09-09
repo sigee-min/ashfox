@@ -13,6 +13,7 @@ import { sha256ByteDigest } from '../../../provenance/digest';
 
 export interface GltfResolvedExportOptions {
   resolveBlob: BlobResolver;
+  readonly encoding?: 'portable' | 'optimized';
 }
 
 const BUILTIN_UINT8_ARRAY_PROTOTYPE = Uint8Array.prototype;

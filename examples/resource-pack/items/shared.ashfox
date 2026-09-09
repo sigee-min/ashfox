@@ -1,0 +1,84 @@
+ashfox-model 1
+module shared {
+  export mask apple_body {
+    rows = [".111...111.", "11111111111", "11111111111", "11111111111", "11111111111", ".111111111.", ".111111111.", "..1111111..", "...11.11..."];
+  }
+  export mask blade {
+    rows = [".........11", "........111", ".......111.", "......111..", ".....111...", "....111....", "...111.....", "..111......", ".111.......", "111........", ".1........."];
+  }
+  export mask potion_glass {
+    rows = ["...111...", "...111...", "..11111..", ".1111111.", "111111111", "111111111", "111111111", "111111111", ".1111111.", "..11111.."];
+  }
+  export mask potion_liquid {
+    rows = [".1111111.", "111111111", "111111111", "111111111", ".1111111.", "..11111.."];
+  }
+  export mask ore {
+    rows = ["..1111..", ".111111.", "11111111", "11111111", ".111111.", "..1111.."];
+  }
+  export material apple_red {
+    ramp {
+      mode = "explicit";
+      colors = [#792C38, #D94E42, #FFAC70];
+    }
+  }
+  export material apple_green {
+    ramp {
+      mode = "explicit";
+      colors = [#3F6135, #8FBE4F, #E3E890];
+    }
+  }
+  export material apple_gold {
+    ramp {
+      mode = "explicit";
+      colors = [#A85D2C, #EDB84D, #FFF2AC];
+    }
+  }
+  export material steel {
+    ramp {
+      mode = "explicit";
+      colors = [#537C94, #A8CCD1, #EEFFFF];
+    }
+  }
+  export material copper {
+    ramp {
+      mode = "explicit";
+      colors = [#834632, #CB8557, #FFE0A0];
+    }
+  }
+  export material crystal {
+    ramp {
+      mode = "explicit";
+      colors = [#365489, #63C8D0, #D6FFEE];
+    }
+  }
+  export material glass {
+    ramp {
+      mode = "explicit";
+      colors = [#476177, #8BAFBC, #DAECE9];
+    }
+  }
+  export material ruby_liquid {
+    ramp {
+      mode = "explicit";
+      colors = [#812F62, #D85486, #FFB2A5];
+    }
+  }
+  export material blue_liquid {
+    ramp {
+      mode = "explicit";
+      colors = [#344A87, #4B95CB, #9FEBD9];
+    }
+  }
+  export material amber_liquid {
+    ramp {
+      mode = "explicit";
+      colors = [#9F5931, #DBA943, #FFE595];
+    }
+  }
+  export material amethyst {
+    ramp {
+      mode = "explicit";
+      colors = [#563D7D, #9966BA, #E6A9DD];
+    }
+  }
+}

@@ -10,7 +10,7 @@ import type {
 import type { CommandOutcome } from '../../application/commandOutcome';
 import type { HistoryAction } from '../../application/historyReducer';
 import type { OperationLease, OperationLeaseToken } from '../../application/operationLease';
-import type { ProjectAssets } from '../../application/projectAssets';
+import type { ProjectAssets } from '@ashfox/render-core/assets';
 import type { ArtifactFile } from '../files/artifactFile';
 import type { CaptureArtifactRequest } from '../files/capture';
 import type { FileOperationRunResult } from '../files/useFileOperation';

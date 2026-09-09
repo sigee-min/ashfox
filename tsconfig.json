@@ -5,14 +5,42 @@
     "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "@ashfox/blockbench-runtime/*": ["packages/blockbench-runtime/src/*"],
-      "@ashfox/engine-core": ["packages/engine-core/src/index.ts"],
-      "@ashfox/engine-core/*": ["packages/engine-core/src/*"],
-      "@ashfox/internal-contracts": ["packages/internal-contracts/src/index.d.ts"],
-      "@ashfox/blockbench-contracts/types": ["packages/blockbench-contracts/src/types/index.ts"],
-      "@ashfox/blockbench-contracts/types/*": ["packages/blockbench-contracts/src/types/*"],
-      "@ashfox/blockbench-contracts/mcpSchemas/*": ["packages/blockbench-contracts/src/mcpSchemas/*"],
-      "@ashfox/blockbench-contracts/*": ["packages/blockbench-contracts/src/*"]
+      "@ashfox/blockbench-runtime/*": [
+        "packages/blockbench-runtime/src/*"
+      ],
+      "@ashfox/engine-core": [
+        "packages/engine-core/src/index.ts"
+      ],
+      "@ashfox/engine-core/*": [
+        "packages/engine-core/src/*"
+      ],
+      "@ashfox/internal-contracts": [
+        "packages/internal-contracts/src/index.d.ts"
+      ],
+      "@ashfox/blockbench-contracts/types": [
+        "packages/blockbench-contracts/src/types/index.ts"
+      ],
+      "@ashfox/blockbench-contracts/types/*": [
+        "packages/blockbench-contracts/src/types/*"
+      ],
+      "@ashfox/blockbench-contracts/mcpSchemas/*": [
+        "packages/blockbench-contracts/src/mcpSchemas/*"
+      ],
+      "@ashfox/blockbench-contracts/*": [
+        "packages/blockbench-contracts/src/*"
+      ],
+      "@ashfox/audio-core": [
+        "packages/audio-core/src/index.ts"
+      ],
+      "@ashfox/asset-build": [
+        "packages/asset-build/src/index.ts"
+      ],
+      "@ashfox/render-core": [
+        "packages/render-core/src/index.ts"
+      ],
+      "@ashfox/render-core/*": [
+        "packages/render-core/src/*"
+      ]
     },
     "strict": true,
     "noImplicitAny": true,
@@ -21,8 +49,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
-    "types": ["node"],
-    "lib": ["ES2020", "DOM"],
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true
@@ -33,6 +66,10 @@
     "packages/blockbench-contracts/src/**/*",
     "packages/internal-contracts/src/**/*",
     "apps/blockbench-plugin/src/**/*",
-    "apps/blockbench-mcp-sidecar/src/**/*"
+    "apps/blockbench-mcp-sidecar/src/**/*",
+    "packages/audio-core/src/**/*",
+    "packages/asset-build/src/**/*",
+    "apps/cli/src/**/*",
+    "packages/render-core/src/**/*"
   ]
 }

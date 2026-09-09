@@ -1,0 +1,43 @@
+ashfox-model 1
+
+sound frog_croak {
+  duration = 1.5;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "vocal";
+        pitch = (90, 65);
+        sweepSeconds = 0.8;
+        formants = (480, 1000, 1800);
+        bandwidths = (80, 160, 280);
+        breath = 0.08;
+        jitter = 0.12;
+        roughness = 0.8;
+      };
+      start = 0.1;
+      duration = 1.1;
+      gain = 0.85;
+      attack = 0.04;
+      release = 0.15;
+      highpass = 80;
+      lowpass = 6500;
+      id = "layer_1";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

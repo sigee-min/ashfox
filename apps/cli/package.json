@@ -1,0 +1,28 @@
+{
+  "name": "@ashfox/cli",
+  "version": "0.0.0",
+  "description": "Compile native ashfox asset workspaces for game pipelines",
+  "license": "MIT",
+  "bin": {
+    "ashfox": "dist/ashfox.cjs"
+  },
+  "files": [
+    "dist/ashfox.cjs",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "prepack": "node build.js",
+    "test": "node test.js && node standalone.test.js && node minecraft.test.js && node packs.test.js && node game.test.js && node docs.test.js && node observe.test.js",
+    "test:packs": "node build.js && node packs.test.js && node packaudio.test.js",
+    "test:capture": "node build.js && node capture.test.js"
+  },
+  "devDependencies": {
+    "@ashfox/asset-build": "^0.0.0",
+    "esbuild": "^0.28.1",
+    "@ashfox/render-core": "^0.0.0",
+    "@ashfox/engine-core": "^0.0.0",
+    "gifenc": "^1.0.3",
+    "fflate": "^0.8.3"
+  }
+}

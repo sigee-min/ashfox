@@ -5,7 +5,7 @@ import {
 } from '../fixtures/project';
 import {
   resolveBuildReviewClip
-} from '../../src/features/capture/buildReviewClip';
+} from '@ashfox/render-core/capture/buildReviewClip';
 
 const document = structuredClone(createWorkbenchProject().document);
 const source = {

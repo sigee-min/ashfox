@@ -5,7 +5,7 @@ import {
   configureTextureMap,
   createProjectMaterials,
   materialEmissionIntensity
-} from '../../src/rendering/sceneMaterials';
+} from '@ashfox/render-core/sceneMaterials';
 import type { TextureAsset } from '@ashfox/engine-core';
 import { createWorkbenchProject } from '../fixtures/project';
 

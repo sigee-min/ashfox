@@ -57,6 +57,20 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
     fs.copyFileSync(path.join(repoRoot, 'docs', page.source), target);
   }
   fs.mkdirSync(path.join(outdir, 'workbench', 'examples'), { recursive: true });
+  const copyNativeSources = (directory, relative = '') => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (['dist', 'build', 'exports', 'node_modules', '.ashfox'].includes(entry.name)) continue;
+      const source = path.join(directory, entry.name);
+      const name = path.join(relative, entry.name);
+      if (entry.isDirectory()) copyNativeSources(source, name);
+      else if (entry.isFile() && (entry.name.endsWith('.ashfox') || entry.name === '.ashfoxworkspace')) {
+        const target = path.join(outdir, 'workbench', 'examples', name);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.copyFileSync(source, target);
+      }
+    }
+  };
+  copyNativeSources(path.join(repoRoot, 'examples'));
   for (const workspaceName of [
     'shared-creatures.ashfoxworkspace',
     'griffin.ashfoxworkspace',
@@ -64,7 +78,7 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
     'goblin.ashfoxworkspace'
   ]) {
     fs.copyFileSync(
-      path.join(repoRoot, 'examples', workspaceName),
+      path.join(repoRoot, 'assets', 'workspaces', workspaceName),
       path.join(outdir, 'workbench', 'examples', workspaceName)
     );
   }
@@ -81,7 +95,7 @@ const prepareOutput = ({ includeShowcaseTooling = false } = {}) => {
     const toolingRoot = path.join(outdir, 'tooling');
     fs.mkdirSync(toolingRoot, { recursive: true });
     fs.copyFileSync(
-      path.join(repoRoot, 'examples', 'shared-creatures.ashfoxworkspace'),
+      path.join(repoRoot, 'assets', 'workspaces', 'shared-creatures.ashfoxworkspace'),
       path.join(toolingRoot, 'shared-creatures.ashfoxworkspace')
     );
   }

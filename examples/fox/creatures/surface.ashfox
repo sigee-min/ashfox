@@ -1,0 +1,97 @@
+ashfox-model 1
+module surface {
+  export surface contract Fur {
+    atlas { width = 128px; height = 64px; }
+
+    chart torso box { width = 40px; height = 18px; coverage = opaque; }
+    chart chest box { width = 22px; height = 12px; coverage = opaque; }
+    chart throat box { width = 14px; height = 8px; coverage = opaque; }
+    chart head box { width = 32px; height = 15px; coverage = opaque; }
+    chart muzzle box { width = 22px; height = 8px; coverage = opaque; }
+    chart ear_base box { width = 12px; height = 6px; coverage = opaque; }
+    chart ear_tip box { width = 8px; height = 4px; coverage = opaque; }
+    chart ear_inner box { width = 6px; height = 3px; coverage = opaque; }
+    chart front_leg box { width = 12px; height = 10px; coverage = opaque; }
+    chart front_paw box { width = 14px; height = 6px; coverage = opaque; }
+    chart back_leg box { width = 16px; height = 11px; coverage = opaque; }
+    chart back_paw box { width = 18px; height = 7px; coverage = opaque; }
+    chart tail_main box { width = 26px; height = 13px; coverage = opaque; }
+    chart tail_tip box { width = 20px; height = 10px; coverage = opaque; }
+    chart nose box { width = 6px; height = 2px; coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface red_fox: Fur {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 64px); background = deep; background-alpha = 255;
+      palette {
+        deep = #140b0a;
+        coat = (#5a1c10, #b94722, #ef8040);
+        coat_dark = (#32100b, #6a2417, #a74325);
+        cream = (#7d4b28, #d29a62, #ffe1a8);
+        leg = (#1c0d0c, #43201a, #754034);
+        paw = (#120908, #2c1714, #523029);
+        inner = (#67282a, #a94c4d, #dc7a72);
+        eye_white = #fff2d6;
+        eye_dark = (#090707, #171011, #302020);
+        nose = (#080606, #160d0b, #321a13);
+      }
+      stamp face_mask {
+        pixels = "......../cc....cc/ccc..ccc/cc....cc";
+        c = cream;
+      }
+      stamp chest_blaze {
+        pixels = "..cc../.cccc./cccccc/cccccc/.cccc./..cc../..cc..";
+        c = cream;
+      }
+      stamp mouth_mark {
+        pixels = "....../....../..dd..";
+        d = eye_dark;
+      }
+      stamp eye_pair {
+        pixels = ".wk..kw./.wk..kw.";
+        w = eye_white;
+        k = eye_dark;
+      }
+
+      chart torso box {
+        origin = (0px, 0px); fill = coat;
+        pattern blotch { paint = coat_dark; scale = (4px, 3px, 5px); density = 0.18ratio; phase = 11; }
+      }
+      chart head box {
+        origin = (40px, 0px); fill = coat;
+        pattern blotch { paint = coat_dark; scale = (3px, 3px, 3px); density = 0.14ratio; phase = 37; }
+        face north {
+          stamp eye_pair { at = (0px, 1px); }
+          stamp face_mask { at = (0px, 3px); }
+        }
+      }
+      chart chest box {
+        origin = (72px, 0px); fill = coat;
+        face north { stamp chest_blaze { at = (0px, 0px); } }
+      }
+      chart tail_main box {
+        origin = (94px, 0px); fill = coat;
+        pattern blotch { paint = coat_dark; scale = (4px, 4px, 5px); density = 0.16ratio; phase = 73; }
+      }
+      chart muzzle box {
+        origin = (0px, 20px); fill = cream;
+        face north { stamp mouth_mark { at = (0px, 0px); } }
+      }
+      chart throat box { origin = (22px, 20px); fill = cream; }
+      chart back_leg box { origin = (36px, 20px); fill = leg; }
+      chart front_leg box { origin = (52px, 20px); fill = leg; }
+      chart tail_tip box { origin = (64px, 20px); fill = cream; }
+      chart back_paw box { origin = (84px, 20px); fill = paw; }
+      chart front_paw box { origin = (102px, 20px); fill = paw; }
+      chart ear_base box { origin = (116px, 20px); fill = coat; }
+      chart ear_tip box { origin = (0px, 33px); fill = coat_dark; }
+      chart ear_inner box { origin = (8px, 33px); fill = inner; }
+      chart nose box { origin = (26px, 33px); fill = nose; }
+      grain clustered { seed = 8923; }
+      tone voxel;
+    }
+  }
+
+}

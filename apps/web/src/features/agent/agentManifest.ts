@@ -72,8 +72,8 @@ export const agentManifest = {
   documentation: {
     rule: 'Resolve these paths against the connected Workbench origin and fetch via direct HTTP. Read the workflow before the first write, the language guide for unfamiliar declarations, and precision for linked dimensions or pixel marks. These are shipped from the same source revision as this manifest; do not substitute production docs for a development session.',
     resources: [
-      { href: '/workbench/reference/guides/agent-workflow.md', purpose: 'Complete discovery, source read, preview, apply, and recovery workflow.' },
-      { href: '/workbench/reference/architecture/asset-language.md', purpose: 'Current declaration syntax, ownership, imports, and bindings.' },
+      { href: '/workbench/reference/guides/workbench-api.md', purpose: 'Complete discovery, source read, preview, apply, and recovery workflow.' },
+      { href: '/workbench/reference/language/model.md', purpose: 'Current declaration syntax, ownership, imports, and bindings.' },
       { href: '/workbench/reference/guides/precision-modeling.md', purpose: 'Complete executable model with shared dimensions and fixed-pixel anchors.' }
     ]
   },

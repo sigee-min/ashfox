@@ -1,0 +1,80 @@
+ashfox-model 1
+
+sound bird_call {
+  duration = 1.2;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "fm";
+        pitch = (1500, 2800);
+        sweepSeconds = 0.2;
+        ratio = 1;
+        index = 0.25;
+        vibratoHz = 18;
+        vibratoCents = 40;
+      };
+      start = 0.08;
+      duration = 0.22;
+      gain = 0.8;
+      attack = 0.012;
+      release = 0.05;
+      highpass = 800;
+      lowpass = 9000;
+      id = "chirp_0";
+    },
+    {
+      source = {
+        kind = "fm";
+        pitch = (2200, 1300);
+        sweepSeconds = 0.2;
+        ratio = 1;
+        index = 0.25;
+        vibratoHz = 18;
+        vibratoCents = 40;
+      };
+      start = 0.36;
+      duration = 0.22;
+      gain = 0.8;
+      attack = 0.012;
+      release = 0.05;
+      highpass = 800;
+      lowpass = 9000;
+      id = "chirp_1";
+    },
+    {
+      source = {
+        kind = "fm";
+        pitch = (1800, 2600);
+        sweepSeconds = 0.2;
+        ratio = 1;
+        index = 0.25;
+        vibratoHz = 18;
+        vibratoCents = 40;
+      };
+      start = 0.7;
+      duration = 0.22;
+      gain = 0.8;
+      attack = 0.012;
+      release = 0.05;
+      highpass = 800;
+      lowpass = 9000;
+      id = "chirp_2";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

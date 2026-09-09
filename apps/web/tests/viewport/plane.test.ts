@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 import type { SceneNode } from '@ashfox/engine-core';
 
-import { addNodeGeometry } from '../../src/rendering/sceneGeometry';
+import { addNodeGeometry } from '@ashfox/render-core/sceneGeometry';
 
 const node: Extract<SceneNode, { kind: 'plane' }> = {
   id: 'cutout', kind: 'plane', name: 'cutout', parentId: null,

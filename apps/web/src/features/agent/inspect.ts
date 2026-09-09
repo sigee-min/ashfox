@@ -6,7 +6,7 @@ import type {
 
 import type {
   ProjectAssets
-} from '../../application/projectAssets';
+} from '@ashfox/render-core/assets';
 import {
   inspectCommand
 } from './inspect/inspectCommand';

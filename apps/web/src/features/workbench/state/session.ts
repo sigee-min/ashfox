@@ -1,4 +1,4 @@
-import type { ProjectAssets } from '../../../application/projectAssets';
+import type { ProjectAssets } from '@ashfox/render-core/assets';
 import type { ProjectSnapshot } from '../../../application/snapshot';
 import {
   areVisualReviewLedgersEqual,

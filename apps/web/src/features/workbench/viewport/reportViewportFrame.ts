@@ -1,6 +1,6 @@
 import type { MutableRefObject } from 'react';
 import type { Camera, WebGLRenderer } from 'three';
-import type { ProjectSceneProjection } from '../../../rendering/sceneTypes';
+import type { ProjectSceneProjection } from '@ashfox/render-core/sceneTypes';
 
 import { captureViewportFrameEvidence } from './evidence';
 import type {

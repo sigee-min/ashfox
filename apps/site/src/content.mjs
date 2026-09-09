@@ -1,8 +1,8 @@
 export const landingContent = {
-  eyebrow: 'AI-native low-poly workbench',
+  eyebrow: 'Code-authored game assets',
   titleLines: ['Imagine a creature.', 'Bring it to life.'],
   summary:
-    'Low-poly characters, made with your AI agent. Textured, animated, and ready for your game.',
+    'Models, pixel items, and sound effects from source. Build assets for voxel games and Minecraft.',
   showcase: {
     eyebrow: 'Made with ashfox',
     provenance:
@@ -33,13 +33,13 @@ export const landingContent = {
   },
   quickStart: {
     instruction:
-      'Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.'
+      'Read https://ashfox.io/docs/guides/agent-workflow/ and use native .ashfox sources and the Ashfox CLI for this project.'
   },
   formats: [
     ['Java block', 'Static blocks for Minecraft Java resource packs.'],
     ['GeckoLib 5', 'Animated models for Minecraft Java mods.'],
     ['Bedrock', 'Models, textures, and animation for Bedrock packs.'],
     ['GLB', 'One 3D file for game engines and viewers.'],
-    ['glTF', 'Scene JSON with separate textures and binary data.']
+    ['PNG + audio', 'Pixel items and WAV/OGG effects in configurable game bundles.']
   ]
 };

@@ -1,0 +1,76 @@
+ashfox-model 1
+sprite ruby_potion {
+  import "./shared.ashfox" as shared;
+  profile = "minecraft-item-v1";
+  canvas = [16, 16];
+  palette {
+    edge = #293847;
+    cork = #A4774D;
+    cork_light = #D5AF77;
+    shine = #ECFFFF;
+    rim = #CCE5E1;
+    edge_light = #526D80;
+  }
+  paint bottle_outline {
+    at = [2, 3];
+    rows = ["....lll....", "...lllll...", "...llllo...", "..llllooo..", ".llllooooo.", "llllooooooo", "llloooooooo", "llooooooooo", "loooooooooo", ".ooooooooo.", "..ooooooo..", "...ooooo..."];
+    colors {
+      o = "edge";
+      l = "edge_light";
+    }
+  }
+  part bottle {
+    mask = "shared.potion_glass";
+    material = "shared.glass";
+    at = [3, 4];
+    shade {
+      form = "round";
+      light = "top_left";
+      contrast = 2;
+    }
+    grain {
+      mode = "clustered-v1";
+      amount = 0;
+      seed = 23;
+    }
+    patches = [];
+  }
+  part liquid {
+    mask = "shared.potion_liquid";
+    material = "shared.ruby_liquid";
+    at = [3, 8];
+    shade {
+      form = "round";
+      light = "top_left";
+      contrast = 2;
+    }
+    grain {
+      mode = "clustered-v1";
+      amount = 0;
+      seed = 23;
+    }
+    patches = [];
+  }
+  paint cork {
+    at = [6, 2];
+    rows = ["cccc", "Cccc"];
+    colors {
+      c = "cork";
+      C = "cork_light";
+    }
+  }
+  paint rim {
+    at = [5, 4];
+    rows = ["rrrrr"];
+    colors {
+      r = "rim";
+    }
+  }
+  paint reflection {
+    at = [4, 7];
+    rows = [".h", "h.", "h.", "h."];
+    colors {
+      h = "shine";
+    }
+  }
+}

@@ -1,0 +1,36 @@
+ashfox-model 1
+
+sound wing_whoosh {
+  duration = 2;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "noise";
+      };
+      start = 0.3;
+      duration = 0.8;
+      gain = 0.9;
+      attack = 0.25;
+      release = 0.35;
+      highpass = 170;
+      lowpass = 2200;
+      id = "layer_1";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

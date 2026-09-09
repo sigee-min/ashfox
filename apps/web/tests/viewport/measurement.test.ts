@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { measureSceneGeometry, type BoneNode, type CubeNode, type PlaneNode,
   type SceneNode } from '@ashfox/engine-core';
-import { addNodeGeometry } from '../../src/rendering/sceneGeometry';
-import { applyNodeTransform } from '../../src/rendering/sceneTransform';
+import { addNodeGeometry } from '@ashfox/render-core/sceneGeometry';
+import { applyNodeTransform } from '@ashfox/render-core/sceneTransform';
 import { createWorkbenchProject } from '../fixtures/project';
 
 const face = { enabled: true, textureId: null };

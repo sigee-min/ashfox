@@ -38,7 +38,7 @@ export const landingShowcase = ({ content, showcase }) => {
         <div class="character-description" aria-live="polite"><h2 data-character-name>${escapeHtml(first.label)}</h2><p data-character-summary>${escapeHtml(first.summary)}</p></div>
         <div class="motion-controls"><div data-motion-list role="group" aria-label="Choose a motion"></div><button type="button" class="motion-toggle" data-motion-toggle aria-pressed="false">Play motion</button></div>
       </div>
-      <div class="character-delivery"><p>Make it yours.</p><a data-workspace-download href="${first.workspaceHref}" download>Download workspace <span>↓</span></a><a data-glb-download href="${first.glbHref}" download>Download GLB <span>↓</span></a><a href="${showcase.workbenchHref}">Open Workbench <span>↗</span></a></div>
+      <div class="character-delivery"><p>Make it yours.</p><a data-workspace-download href="${first.workspaceHref}" download>Workbench snapshot <span>↓</span></a><a data-glb-download href="${first.glbHref}" download>Download GLB <span>↓</span></a><a href="${showcase.workbenchHref}">Open Workbench <span>↗</span></a></div>
       <button class="creation-card" type="button" data-build-open aria-haspopup="dialog" aria-controls="build-viewer">
         <span class="creation-thumbnail"><img data-build-thumbnail src="${escapeHtml(first.posterSrc)}" width="160" height="90" loading="lazy" alt=""><span aria-hidden="true">▶</span></span>
         <span class="creation-copy"><span class="eyebrow">Behind the character</span><strong>Watch it take shape.</strong><span>From the first shapes to the final details.</span></span>

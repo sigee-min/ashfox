@@ -1,4 +1,4 @@
-import type { GifCaptureResult } from './gifCaptureSurface';
+import type { GifCaptureResult } from '@ashfox/render-core/capture/gifCaptureSurface';
 import type { ArtifactFile } from '../files/artifactFile';
 
 export interface GifCaptureFile extends Omit<GifCaptureResult, 'bytes'>, ArtifactFile {

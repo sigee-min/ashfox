@@ -12,7 +12,7 @@ import type {
 } from '../../src/features/agent/types';
 import type {
   PixelFrameEvidence
-} from '../../src/rendering/pixelFrameEvidence';
+} from '@ashfox/render-core/pixelFrameEvidence';
 import { FRAME_EVIDENCE_FIXTURE } from './frame';
 
 const IDENTITY_MATRIX = [

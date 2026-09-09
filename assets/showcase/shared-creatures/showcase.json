@@ -2,12 +2,12 @@
   "format": "ashfox-showcase",
   "version": 1,
   "workspace": {
-    "path": "examples/shared-creatures.ashfoxworkspace",
+    "path": "assets/workspaces/shared-creatures.ashfoxworkspace",
     "sha256": "sha256:71360db1d8ff727fd28e1fc782bd5c2fca47882e86867a98736cce73aac0a149",
     "workspaceHash": "sha256:797ef8e3c0ffd04a5420a77386bc3600bef8fe0fdac03bdd5463a327afc9d03b"
   },
   "capture": {
-    "fingerprint": "sha256:88fa8c80445026d8db00cfc65840a5a4245f5140644fb9700968ac22a91cbfd8",
+    "fingerprint": "sha256:605fffa83c82e17ac3c9b755ea0fd1281bda4dc81922a13df9e5e21622131fff",
     "environment": "studio",
     "camera": "perspective",
     "width": 640,

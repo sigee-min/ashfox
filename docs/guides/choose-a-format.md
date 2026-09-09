@@ -1,73 +1,42 @@
-# Choose an Export Format
+# Choose a workflow and format
 
-Choose the format your game or 3D tool accepts. Use GLB for a general-purpose single file.
+Start with a single command for one asset. Add a workspace when a project needs
+shared source selection, IDs and delivery folders. Use a persistent stdio session
+when an agent or application needs repeated operations on an asset in memory.
 
-| Format | Choose it when | Download |
+| Task | Single-asset CLI | Stdio session | Workspace build | Browser Workbench |
+| --- | --- | --- | --- | --- |
+| Native model, sprite and sound source | Yes | Yes, files or memory graph | Yes, declared sources | Model snapshot workflow only |
+| Existing PNG input | Yes | Yes, file or base64 | No | Not a native PNG authoring workflow |
+| Desired-angle PNG, atlas, waveform | `capture` | `capture` | Separate observation command | Model views and captures |
+| Animation or turntable GIF | `replay` | `replay` | Separate observation command | Model animation; capture options differ |
+| Source replacement in memory | New stdin input | `load` with expected revision | Source files on disk | Browser source-edit API |
+| GLB | Raw binary | Base64 media | Named export | Download |
+| glTF | ZIP via `export --format gltf` | ZIP media | Not a workspace export format | Download |
+| Java block, GeckoLib 5, Bedrock models | ZIP | ZIP media | Named export directories | Download |
+| Sprite PNG / sound WAV | Raw binary | Base64 media | Named exports | Not the native multi-kind pipeline |
+| OGG / complete Java resource pack / game manifest | Use a workspace build | Not a session export | Yes | Not the native pack pipeline |
+
+See [observation](observe.md), [stdio](stdio.md), [workspace settings](workspace.md)
+or the optional [Workbench API](workbench-api.md). A Workbench download and a
+native `.ashfoxworkspace` configuration are different file contracts.
+
+## Choose the receiving format
+
+| Destination | Use | What you still supply |
 | --- | --- | --- |
-| Java block | A Java resource pack needs one static block model | Resource-pack ZIP with metadata, blockstate, model, and textures |
-| GeckoLib 5 | A Minecraft Java mod uses GeckoLib 5 animated models | ZIP with geometry, animation, and textures |
-| Bedrock | A Bedrock project needs geometry and actor animation assets | ZIP with geometry, animation, and textures |
-| GLB | A game engine, 3D tool, or viewer should receive one portable file | One `.glb` with embedded geometry, animation, and textures |
-| glTF | A 3D pipeline prefers editable JSON and separate resources | ZIP with `.gltf`, binary data, and textures |
+| General game or viewer | Portable GLB; PNG; WAV/OGG | Importer, game scene and behavior |
+| Several assets with runtime IDs | `game_assets` pack | Read `assets.json` and load the referenced files |
+| Minecraft Java visual/audio replacement | `minecraft_java` resource pack | Compatible pack settings; game-side event triggers |
+| Minecraft static block | `java_block` | Existing block ID or mod registration |
+| GeckoLib entity | `geckolib5` | Mod and entity registration |
+| Bedrock entity | `bedrock` | Addon manifest, behavior and registration |
 
-The Export menu shows the supported target version and any conversions or
-omissions. Check these against the project receiving the files before downloading.
-Exporting does not change your editable workspace.
+Portable GLB embeds textures and animations without required compression
+extensions. Workspace GLB can opt into `optimized`; check importer support for
+its `requiredExtensions` first. Static general models need no idle clip.
+Java block rejects animation. GeckoLib and Bedrock actor exports require idle.
+Target-incompatible content fails export rather than being silently dropped.
 
-## Java block
-
-Use Java block for a static block that should drop into a Java resource-pack
-layout. The ZIP contains `pack.mcmeta`, the blockstate, model JSON, and texture
-files for the target version shown in Export.
-
-The receiving pack or mod must already reference the matching block resource
-ID. This export supplies its visual assets; it does not register a new gameplay
-block.
-
-This target does not include animation. Animation clips remain in the workspace
-and the export receipt lists them as omitted from the Java block artifact.
-Choose GeckoLib 5 when the receiving mod needs those clips.
-
-## GeckoLib 5
-
-Use GeckoLib 5 for animated Minecraft Java entities, blocks, or items in a
-project that already loads GeckoLib 5 assets.
-
-The export keeps Minecraft-oriented geometry, named animation clips, textures,
-and supported effect tracks. You still need to connect the files to your mod;
-ashfox does not generate the consuming mod project.
-
-## Bedrock
-
-Use Bedrock for Bedrock geometry and actor animation. The ZIP is an asset
-fragment: connect its geometry, animation, and textures to the entity or block
-definition in the consuming pack.
-
-Bedrock and GeckoLib animation features are not identical. ashfox converts
-portable motion where it can and reports target-only events that it omits. A
-feature blocks export only when it cannot be lowered safely.
-
-## GLB
-
-Use GLB when you want the simplest single-file delivery. Geometry, materials,
-textures, hierarchy, and transform animation can be embedded in one binary.
-
-GLB is the best default for general 3D viewers and engines when Minecraft pack
-layout is not required.
-
-## glTF
-
-Use glTF when another tool needs readable scene JSON or separate textures and
-binary data. ashfox packages the related files together so none are omitted
-from the download.
-
-Minecraft-only expressions, sound events, particle events, and timeline events
-do not have a direct glTF equivalent. GLB and glTF artifacts omit those events
-and disclose each omission in the export receipt; the source events stay in the
-project.
-
-## Before exporting
-
-Check the model and animation in Workbench, then choose a format in the Export
-menu. Resolve any reported issues and review conversions or omissions before
-downloading. Keep a `.ashfoxworkspace` copy to make changes later.
+For working examples, use [the web game](web-game.md),
+[general bundles](game-assets.md), or [Minecraft packs](minecraft-packs.md).

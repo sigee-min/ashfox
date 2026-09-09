@@ -113,7 +113,8 @@ const canonicalPreviewFindings = (
 
 export const evaluateAnimationReadiness = (
   document: ProjectDocument,
-  visibleNodeIds: ReadonlySet<string>
+  visibleNodeIds: ReadonlySet<string>,
+  requireIdle = true
 ): AnimationReadiness => {
   const idleClips = Object.values(document.animations).filter(
     (clip) => clip.name === CANONICAL_IDLE_CLIP_NAME
@@ -128,7 +129,7 @@ export const evaluateAnimationReadiness = (
     blockingCanonicalAnimationPreviewIssues(clip).length === 0
   );
   const findings: ProductionReadinessFinding[] = [];
-  if (idleClips.length === 0) {
+  if (requireIdle && idleClips.length === 0) {
     findings.push(missingIdleFinding());
   }
   idleClips.forEach((clip, index) => {

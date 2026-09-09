@@ -7,15 +7,15 @@ import {
   renderCaptureSurface,
   requiredCaptureForward,
   waitForProjectionTextures
-} from './captureSurface';
+} from '@ashfox/render-core/captureSurface';
 import {
   GIF_CAPTURE_HEIGHT,
   GIF_CAPTURE_WIDTH
-} from './gifCaptureSurface';
-import { createCaptureProjection } from './projection';
+} from '@ashfox/render-core/capture/gifCaptureSurface';
+import { createCaptureProjection } from '@ashfox/render-core/capture/projection';
 import { stageShowcase } from './showcaseStage';
 import { renderShowcaseMotion } from './showcaseMotion';
-import { renderBuildGif } from './renderBuildGif';
+import { renderBuildGif } from '@ashfox/render-core/capture/renderBuildGif';
 
 const WORKSPACE_URL = '/tooling/shared-creatures.ashfoxworkspace';
 const ENTRY_SELECTORS = [

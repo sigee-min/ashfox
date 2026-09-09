@@ -11,14 +11,14 @@ import type {
 } from '../../agent/types';
 import type {
   CameraMode
-} from '../../../rendering/cameraPresets';
+} from '@ashfox/render-core/cameraPresets';
 import type {
   ViewportPresentationFrame
 } from '../viewport/viewportTypes';
 import {
   isPixelFrameEvidence,
   type PixelFrameEvidence
-} from '../../../rendering/pixelFrameEvidence';
+} from '@ashfox/render-core/pixelFrameEvidence';
 
 const FRAME_EPSILON_SECONDS = 0.000001;
 

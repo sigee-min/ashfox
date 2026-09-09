@@ -9,7 +9,7 @@ import { effectivelyVisibleSceneNodeIds } from '@ashfox/engine-core';
 import {
   createBuildCapturePlan,
   MAX_BUILD_CAPTURE_FRAMES
-} from '../../src/features/capture/buildCaptureTimeline';
+} from '@ashfox/render-core/capture/buildCaptureTimeline';
 import { createWorkbenchProject } from '../fixtures/project';
 
 const document = createWorkbenchProject().document;

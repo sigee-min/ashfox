@@ -752,6 +752,17 @@ html[data-motion="ready"] [data-reveal][data-revealed="true"] {
   color: var(--cream);
 }
 
+.doc-article img {
+  max-width: 100%;
+  height: auto;
+}
+
+.doc-article audio {
+  display: block;
+  width: min(100%, 480px);
+  margin: 16px 0;
+}
+
 .doc-article a {
   color: var(--copper-bright);
   text-decoration: underline;

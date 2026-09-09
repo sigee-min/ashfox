@@ -1,10 +1,10 @@
 import type {
   ProjectDocument
 } from '@ashfox/engine-core';
-import type { ProjectAssets } from '../../../application/projectAssets';
-import type { CameraMode } from '../../../rendering/cameraPresets';
-import type { ViewportEnvironmentId } from '../../../rendering/viewportEnvironment';
-import type { PixelFrameEvidence } from '../../../rendering/pixelFrameEvidence';
+import type { ProjectAssets } from '@ashfox/render-core/assets';
+import type { CameraMode } from '@ashfox/render-core/cameraPresets';
+import type { ViewportEnvironmentId } from '@ashfox/render-core/viewportEnvironment';
+import type { PixelFrameEvidence } from '@ashfox/render-core/pixelFrameEvidence';
 
 export interface ViewportOptions {
   showGrid: boolean;

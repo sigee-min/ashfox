@@ -17,6 +17,9 @@ const contentTypes = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8',
+  '.wav': 'audio/wav',
+  '.tgz': 'application/gzip',
+  '.zip': 'application/zip',
   '.webp': 'image/webp'
 };
 

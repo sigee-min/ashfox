@@ -1,0 +1,20 @@
+{
+  "name": "@ashfox/render-core",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@ashfox/engine-core": "^0.0.0",
+    "@ashfox/internal-contracts": "^0.0.0",
+    "three": "^0.185.1",
+    "gifenc": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.1"
+  }
+}

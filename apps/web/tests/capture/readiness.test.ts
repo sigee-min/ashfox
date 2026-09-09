@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 
 import type {
   ProjectSceneProjection
-} from '../../src/rendering/sceneTypes';
+} from '@ashfox/render-core/sceneTypes';
 import {
   waitForProjectionTextures
-} from '../../src/features/capture/captureSurface';
+} from '@ashfox/render-core/captureSurface';
 
 const projection = (
   readiness: ProjectSceneProjection['readiness'],

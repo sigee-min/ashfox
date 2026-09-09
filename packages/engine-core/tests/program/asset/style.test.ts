@@ -10,7 +10,7 @@ const baseline = {
   fox: 'sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db',
   goblin: 'sha256:9989d5a1f5536c38b2e8e0ee27791c376d3231b291d67579c90aaec2b19c436a'
 };
-const source = readFileSync(resolve(__dirname, '../../../../../examples/shared-creatures.ashfoxworkspace'), 'utf8');
+const source = readFileSync(resolve(__dirname, '../../../../../assets/workspaces/shared-creatures.ashfoxworkspace'), 'utf8');
 const read = readWorkspaceFile(source);
 assert.equal(read.ok, true);
 if (!read.ok) throw new Error('Showcase workspace failed to open.');

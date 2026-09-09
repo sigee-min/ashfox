@@ -1,0 +1,74 @@
+ashfox-model 1
+sprite golden_apple {
+  import "./shared.ashfox" as shared;
+  profile = "minecraft-item-v1";
+  canvas = [16, 16];
+  palette {
+    edge = #755031;
+    shine = #FFFFD2;
+    stem = #6B4A35;
+    stem_light = #AB7950;
+    leaf = #628747;
+    leaf_light = #ABC86A;
+    crease = #BB762C;
+    edge_light = #AA762D;
+  }
+  paint body_outline {
+    at = [1, 4];
+    rows = ["..lll...llo..", ".llllllllooo.", "llllllllooooo", "llllllooooooo", "llllloooooooo", "llllooooooooo", ".llooooooooo.", ".loooooooooo.", "..ooooooooo..", "...ooooooo...", "....oo.oo...."];
+    colors {
+      o = "edge";
+      l = "edge_light";
+    }
+  }
+  part fruit {
+    mask = "shared.apple_body";
+    material = "shared.apple_gold";
+    at = [2, 5];
+    shade {
+      form = "round";
+      light = "top_left";
+      contrast = 2;
+    }
+    grain {
+      mode = "clustered-v1";
+      amount = 0;
+      seed = 23;
+    }
+    patches = [
+      {
+        id = "shine";
+        at = [2, 1];
+        rows = ["hh", "h."];
+        colors {
+          h = "shine";
+        }
+        protect = 1;
+      },
+      {
+        id = "crease";
+        at = [5, 1];
+        rows = ["s"];
+        colors {
+          s = "crease";
+        }
+        protect = 0;
+      }
+    ];
+  }
+  paint stem {
+    at = [7, 2];
+    rows = [".s", ".s", "s."];
+    colors {
+      s = "stem";
+    }
+  }
+  paint leaf {
+    at = [8, 2];
+    rows = [".LLl", "Lll."];
+    colors {
+      l = "leaf";
+      L = "leaf_light";
+    }
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "format": "ashfox-doc-media",
+  "version": 1,
+  "compiler": "7fb2ab7d267a7a08e7a09021618daa82b88b6d38d0540486b7a08ab1a03aa46f",
+  "sources": [
+    {
+      "file": "examples/fox/creatures/fox.ashfox",
+      "sha256": "500398c0b0b2370c92d0e1ceb1ce117b728d5b53e306bc660f78fc7afacf9f45"
+    },
+    {
+      "file": "examples/fox/creatures/rig.ashfox",
+      "sha256": "1508b0c667cdb3c1601db17608f2bea2d436298eabb6bb13b8fb77aadc5bcb58"
+    },
+    {
+      "file": "examples/fox/creatures/surface.ashfox",
+      "sha256": "35ddec049a4caa6b1d619176c45dd5ba9826068cb03b71e7ccbc05f7e0b8822f"
+    },
+    {
+      "file": "examples/fox/creatures/body.ashfox",
+      "sha256": "0d8e61545cd50fc553fe781d7d9ce03d4915b6732a29f3cc3ac632dd927d78e4"
+    },
+    {
+      "file": "examples/items/src/iron_sword.ashfox",
+      "sha256": "071d25a663e40bb45fc291494ff2fc3087892589ca99984a572ae3ccc3a2b7f9"
+    },
+    {
+      "file": "examples/sounds/src/claw_hit.ashfox",
+      "sha256": "0fe361b560c59a1870c3e3bc30aa35df24a9f9b172daa5e89e1e060dfd716938"
+    },
+    {
+      "file": "examples/items/src/shared.ashfox",
+      "sha256": "1ccb9023469a73ef94b1a866b18a4a8e4c8db97a80f7cd9396982e8d3338a8b7"
+    }
+  ],
+  "files": [
+    {
+      "name": "fox-front.png",
+      "args": [
+        "capture",
+        "examples/fox/creatures/fox.ashfox",
+        "--camera",
+        "front",
+        "--width",
+        "480",
+        "--height",
+        "320"
+      ],
+      "sha256": "c5f52a4012839ea35f38845cb625b90ead51fe7830dd20e268bd334f69f1bc8b"
+    },
+    {
+      "name": "fox-angle.png",
+      "args": [
+        "capture",
+        "examples/fox/creatures/fox.ashfox",
+        "--azimuth",
+        "45",
+        "--elevation",
+        "20",
+        "--width",
+        "480",
+        "--height",
+        "320"
+      ],
+      "sha256": "81697bc82607e9f7e80698a188169700771a7e9d301599d8778d1c1fa68c0161"
+    },
+    {
+      "name": "sword.png",
+      "args": [
+        "capture",
+        "examples/items/src/iron_sword.ashfox",
+        "--scale",
+        "12",
+        "--background",
+        "checker"
+      ],
+      "sha256": "4757a007df83beb144c20fe473939768de1dde2ae4abf3843b2fd44c175f7c4e"
+    },
+    {
+      "name": "sword-shape.png",
+      "args": [
+        "capture",
+        "examples/items/src/iron_sword.ashfox",
+        "--stage",
+        "silhouette",
+        "--scale",
+        "12",
+        "--background",
+        "checker"
+      ],
+      "sha256": "9f5ec6eb8254d3de36b7c7b0e590673807b6aadfd90dccf6ceab809617283d17"
+    },
+    {
+      "name": "claw-wave.png",
+      "args": [
+        "capture",
+        "examples/sounds/src/claw_hit.ashfox",
+        "--width",
+        "480",
+        "--height",
+        "160"
+      ],
+      "sha256": "60daf96490bd88ea28da107e68056957b818d95bb716761b121e66b144291f23"
+    },
+    {
+      "name": "claw.wav",
+      "args": [
+        "export",
+        "examples/sounds/src/claw_hit.ashfox",
+        "--variant",
+        "base"
+      ],
+      "sha256": "e35b8f12ca2e183ecf2d232fbab4fc94cc08998c2842ad3e2ff949a53e92119c"
+    },
+    {
+      "name": "fox-motion.gif",
+      "args": [
+        "replay",
+        "examples/fox/creatures/fox.ashfox",
+        "--clip",
+        "tail_wag",
+        "--width",
+        "320",
+        "--height",
+        "240",
+        "--fps",
+        "6"
+      ],
+      "sha256": "a2432ef1efd90ebd616113b3fa95dfd1d304597fd51942bdbe252eadd8477954"
+    }
+  ]
+}

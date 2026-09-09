@@ -1,7 +1,7 @@
 import {
   PIXEL_FRAME_EVIDENCE_ALGORITHM,
   type PixelFrameEvidence
-} from '../../src/rendering/pixelFrameEvidence';
+} from '@ashfox/render-core/pixelFrameEvidence';
 
 /** Dimension-bound SHA-256 of a one-pixel opaque-black RGBA frame. */
 export const FRAME_EVIDENCE_FIXTURE: PixelFrameEvidence = {

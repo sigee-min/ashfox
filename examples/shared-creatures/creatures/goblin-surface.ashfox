@@ -1,0 +1,97 @@
+ashfox-model 1
+module goblin_surface {
+  export surface contract RaiderSkin {
+    atlas { width = 128px; height = 64px; }
+    chart torso box { width = 32px; height = 15px; coverage = opaque; }
+    chart pelvis box { width = 26px; height = 9px; coverage = opaque; }
+    chart head box { width = 32px; height = 16px; coverage = opaque; }
+    chart snout box { width = 18px; height = 6px; coverage = opaque; }
+    chart ear box { width = 10px; height = 6px; coverage = opaque; }
+    chart ear_tip box { width = 8px; height = 5px; coverage = opaque; }
+    chart arm box { width = 12px; height = 12px; coverage = opaque; }
+    chart hand box { width = 12px; height = 6px; coverage = opaque; }
+    chart leg box { width = 16px; height = 13px; coverage = opaque; }
+    chart boot box { width = 20px; height = 9px; coverage = opaque; }
+    chart belt box { width = 34px; height = 9px; coverage = opaque; }
+    chart pauldron box { width = 20px; height = 8px; coverage = opaque; }
+    chart blade box { width = 32px; height = 16px; coverage = opaque; }
+    chart crossguard box { width = 18px; height = 2px; coverage = opaque; }
+    chart grip box { width = 12px; height = 6px; coverage = opaque; }
+    chart pommel box { width = 10px; height = 5px; coverage = opaque; }
+    chart shield box { width = 20px; height = 12px; coverage = opaque; }
+    chart tusk box { width = 4px; height = 3px; coverage = opaque; }
+    chart mohawk box { width = 18px; height = 10px; coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface raider: RaiderSkin {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 64px); background = void; background-alpha = 255;
+      palette {
+        void = #090b09;
+        skin = (#263416, #526f2c, #8da64a);
+        skin_dark = (#18220f, #34471d, #607b32);
+        leather = (#24130d, #5c321d, #9a6031);
+        leather_dark = (#140b08, #352016, #65402a);
+        iron = (#343a3c, #778184, #c3c9c7);
+        iron_dark = (#1d2224, #4c5659, #818b8c);
+        cloth = (#210b0d, #76242c, #bd4e52);
+        eye = #eacb55;
+        pupil = #080908;
+        tooth = (#8b7b59, #d0bd8d, #f1e4bd);
+      }
+      stamp face {
+        pixels = "......../dd....dd/.yk..ky./......../..d..d../...dd...";
+        d = skin_dark;
+        y = eye;
+        k = pupil;
+      }
+      stamp armor_mark {
+        pixels = "....ii..../...iiii.../..iiddi.../.iidddii../...iiii.../....ii....";
+        i = iron;
+        d = iron_dark;
+      }
+      stamp shield_mark {
+        pixels = "..iiii../.i....i./i..ii..i/i.iiii.i/i..ii..i/.i....i./..iiii..";
+        i = iron;
+      }
+
+      chart torso box {
+        origin = (0px, 0px); fill = leather;
+        pattern blotch { paint = leather_dark; scale = (3px, 3px, 4px); density = 0.17ratio; phase = 19; }
+        face north { stamp armor_mark { at = (0px, 1px); } }
+      }
+      chart head box {
+        origin = (32px, 0px); fill = skin;
+        pattern blotch { paint = skin_dark; scale = (3px, 3px, 3px); density = 0.14ratio; phase = 41; }
+        face north { stamp face { at = (0px, 1px); } }
+      }
+      chart blade box {
+        origin = (64px, 0px); fill = iron;
+        pattern blotch { paint = iron_dark; scale = (2px, 5px, 4px); density = 0.12ratio; phase = 7; }
+      }
+      chart shield box {
+        origin = (96px, 0px); fill = leather_dark;
+        face north { stamp shield_mark { at = (0px, 1px); } }
+      }
+      chart pelvis box { origin = (0px, 20px); fill = cloth; }
+      chart belt box { origin = (26px, 20px); fill = leather_dark; }
+      chart boot box { origin = (60px, 20px); fill = leather_dark; }
+      chart leg box { origin = (80px, 20px); fill = cloth; }
+      chart pauldron box { origin = (96px, 20px); fill = iron_dark; }
+      chart snout box { origin = (0px, 35px); fill = skin_dark; }
+      chart ear box { origin = (18px, 35px); fill = skin; }
+      chart ear_tip box { origin = (28px, 35px); fill = skin_dark; }
+      chart arm box { origin = (36px, 35px); fill = skin; }
+      chart hand box { origin = (48px, 35px); fill = skin_dark; }
+      chart crossguard box { origin = (60px, 35px); fill = iron_dark; }
+      chart grip box { origin = (78px, 35px); fill = leather; }
+      chart pommel box { origin = (90px, 35px); fill = iron_dark; }
+      chart tusk box { origin = (100px, 35px); fill = tooth; }
+      chart mohawk box { origin = (104px, 35px); fill = cloth; }
+      grain clustered { seed = 44021; }
+      tone voxel;
+    }
+  }
+}

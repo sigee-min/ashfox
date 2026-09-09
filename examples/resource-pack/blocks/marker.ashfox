@@ -1,0 +1,53 @@
+ashfox-model 1
+asset marker {
+  export rig contract CreatureRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = (rotation, scale);
+      mirror = none;
+    }
+  }
+  export skeleton Wolf implements CreatureRig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+  export surface contract Fur {
+    atlas { width = 16px; height = 8px; }
+    chart body box { width = 16px; height = 8px; coverage = opaque; }
+    material = opaque;
+  }
+  export surface red_fur: Fur {
+    material = opaque;
+    texture atlas {
+      atlas = (16px, 8px);
+      background = shadow;
+      background-alpha = 255;
+      palette { shadow = #4a170f; body = (#4a170f, #a83a1f, #e06b32); }
+      chart body box { origin = (0px, 0px); fill = body; }
+      grain clustered { seed = 23; }
+      tone voxel;
+    }
+  }
+  export component Body {
+    requires rig skeleton: CreatureRig;
+    requires surface skin: Fur;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube torso {
+          origin = (0u, 0u, 0u);
+          size = (4u, 4u, 4u);
+          surface = skin.body;
+        }
+      }
+    }
+  }
+  export asset marker {
+    settings { density = 16; forward = north; }
+    skeleton = Wolf;
+    use Body as body { bind skeleton = CreatureRig; bind skin = red_fur; };
+  }
+}

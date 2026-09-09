@@ -2,7 +2,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -20,6 +24,11 @@
     "packages/blockbench-runtime/tests/**/*.ts",
     "packages/engine-core/src/**/*.ts",
     "packages/engine-core/tests/**/*.ts",
-    "packages/internal-contracts/src/**/*.ts"
+    "packages/internal-contracts/src/**/*.ts",
+    "apps/cli/src/**/*.ts",
+    "packages/asset-build/src/**/*.ts",
+    "packages/audio-core/src/**/*.ts",
+    "packages/audio-core/tests/**/*.ts",
+    "packages/render-core/src/**/*.ts"
   ]
 }

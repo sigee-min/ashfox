@@ -8,7 +8,7 @@ import {
 import {
   frameCaptureObject,
   type CaptureSurface
-} from '../../src/features/capture/captureSurface';
+} from '@ashfox/render-core/captureSurface';
 
 const axis = (values: readonly number[]): readonly number[] =>
   values.map((value) => {

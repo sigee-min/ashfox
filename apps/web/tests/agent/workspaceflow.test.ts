@@ -13,7 +13,7 @@ import { FRAME_EVIDENCE_FIXTURE } from '../fixtures/frame';
 export const test = (async () => {
   // Host setup loads a real closed multi-file product. The client below only uses the port.
   const workspace: AuthoredAssetWorkspace = JSON.parse(readFileSync(resolve(__dirname,
-    '../../../../examples/shared-creatures.ashfoxworkspace'), 'utf8'));
+    '../../../../assets/workspaces/shared-creatures.ashfoxworkspace'), 'utf8'));
   const entryPackage = workspace.manifest.packages.find((pkg) => pkg.manifest.entries.length > 0)!;
   const entryPath = `${entryPackage.root}/${entryPackage.manifest.entries[0]!.path}`;
   const entryFile = workspace.files.find((file) => file.path === entryPath)!;

@@ -1,0 +1,109 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "shared-creatures",
+  "packages": [
+    {
+      "manifest": {
+        "dependencies": [],
+        "entries": [
+          {
+            "name": "fox",
+            "path": "fox.ashfox"
+          },
+          {
+            "name": "goblin",
+            "path": "goblin.ashfox"
+          }
+        ],
+        "format": "ashfox-package",
+        "modules": [
+          {
+            "path": "body.ashfox",
+            "subpath": "./body"
+          },
+          {
+            "path": "goblin-body.ashfox",
+            "subpath": "./goblin-body"
+          },
+          {
+            "path": "goblin-rig.ashfox",
+            "subpath": "./goblin-rig"
+          },
+          {
+            "path": "goblin-surface.ashfox",
+            "subpath": "./goblin-surface"
+          },
+          {
+            "path": "rig.ashfox",
+            "subpath": "./rig"
+          },
+          {
+            "path": "surface.ashfox",
+            "subpath": "./surface"
+          }
+        ],
+        "version": 1
+      },
+      "name": "creatures",
+      "root": "creatures"
+    },
+    {
+      "manifest": {
+        "dependencies": [],
+        "entries": [
+          {
+            "name": "griffin",
+            "path": "main.ashfox"
+          }
+        ],
+        "format": "ashfox-package",
+        "modules": [
+          {
+            "path": "animation.ashfox",
+            "subpath": "./animation"
+          }
+        ],
+        "version": 1
+      },
+      "name": "workbench",
+      "root": "workbench"
+    }
+  ],
+  "include": [
+    "**/*.ashfox"
+  ],
+  "ignore": [],
+  "build": {
+    "directory": "dist/build"
+  },
+  "exports": [
+    {
+      "name": "fox",
+      "entry": {
+        "packageName": "creatures",
+        "entryName": "fox"
+      },
+      "format": "glb",
+      "directory": "dist/exports/fox"
+    },
+    {
+      "name": "goblin",
+      "entry": {
+        "packageName": "creatures",
+        "entryName": "goblin"
+      },
+      "format": "glb",
+      "directory": "dist/exports/goblin"
+    },
+    {
+      "name": "griffin",
+      "entry": {
+        "packageName": "workbench",
+        "entryName": "griffin"
+      },
+      "format": "glb",
+      "directory": "dist/exports/griffin"
+    }
+  ]
+}
