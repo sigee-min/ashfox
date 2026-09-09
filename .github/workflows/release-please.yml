@@ -11,16 +11,6 @@ on:
         options:
           - prepare
           - publish
-      bump:
-        description: Version bump type (`prepare` mode only)
-        required: true
-        default: auto
-        type: choice
-        options:
-          - auto
-          - patch
-          - minor
-          - major
 
 concurrency:
   group: release-main
@@ -65,48 +55,8 @@ jobs:
             echo "::notice::release-please skipped. Set RELEASE_PLEASE_TOKEN secret (recommended), or set RELEASE_PLEASE_ALLOW_GITHUB_TOKEN=true and enable GitHub Actions PR creation."
           fi
 
-      - name: Resolve requested release version
-        id: bump
-        shell: bash
-        env:
-          INPUT_BUMP: ${{ inputs.bump }}
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          const bump = String(process.env.INPUT_BUMP || 'auto').trim().toLowerCase();
-          const out = process.env.GITHUB_OUTPUT;
-          const currentVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
-
-          const match = String(currentVersion).match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
-          if (!match) {
-            throw new Error(`Invalid package.json version: ${currentVersion}`);
-          }
-          const major = Number(match[1]);
-          const minor = Number(match[2]);
-          const patch = Number(match[3]);
-
-          if (bump === 'auto') {
-            fs.appendFileSync(out, 'mode=auto\n');
-            fs.appendFileSync(out, 'release_as=\n');
-            console.log(`release-please bump=auto (conventional commits), current=${currentVersion}`);
-            process.exit(0);
-          }
-
-          const next = (() => {
-            if (bump === 'major') return `${major + 1}.0.0`;
-            if (bump === 'minor') return `${major}.${minor + 1}.0`;
-            if (bump === 'patch') return `${major}.${minor}.${patch + 1}`;
-            throw new Error(`Unsupported bump input: ${bump}`);
-          })();
-
-          fs.appendFileSync(out, 'mode=forced\n');
-          fs.appendFileSync(out, `release_as=${next}\n`);
-          console.log(`release-please bump=${bump}, current=${currentVersion}, release_as=${next}`);
-          NODE
-
-      - name: Run release-please (PAT, auto)
-        if: steps.auth.outputs.mode == 'custom' && steps.bump.outputs.mode == 'auto'
+      - name: Run release-please (PAT)
+        if: steps.auth.outputs.mode == 'custom'
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -114,33 +64,13 @@ jobs:
           manifest-file: .github/release-please/manifest.json
           skip-github-release: true
 
-      - name: Run release-please (PAT, forced)
-        if: steps.auth.outputs.mode == 'custom' && steps.bump.outputs.mode == 'forced'
-        uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          config-file: .github/release-please/config.json
-          manifest-file: .github/release-please/manifest.json
-          release-as: ${{ steps.bump.outputs.release_as }}
-          skip-github-release: true
-
-      - name: Run release-please (GITHUB_TOKEN fallback, auto)
-        if: steps.auth.outputs.mode == 'github' && steps.bump.outputs.mode == 'auto'
+      - name: Run release-please (GITHUB_TOKEN fallback)
+        if: steps.auth.outputs.mode == 'github'
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ github.token }}
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
-          skip-github-release: true
-
-      - name: Run release-please (GITHUB_TOKEN fallback, forced)
-        if: steps.auth.outputs.mode == 'github' && steps.bump.outputs.mode == 'forced'
-        uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ github.token }}
-          config-file: .github/release-please/config.json
-          manifest-file: .github/release-please/manifest.json
-          release-as: ${{ steps.bump.outputs.release_as }}
           skip-github-release: true
 
   build-release:
