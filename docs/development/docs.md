@@ -16,3 +16,14 @@ web-game example is tested from its downloadable ZIP, not from private packages.
 
 To build a CLI package alone: `npm run build:cli`, then
 `npm pack --workspace @ashfox/cli --pack-destination /path/to/packages`.
+
+The landing's GLB viewer is maintained in `scripts/landing/viewer.js`.
+`scripts/landing/build.js` exports its portable GLB, native PNGs and WAV variants
+through the CLI, generates waveforms from the WAV samples, and bundles the viewer.
+The site consumes generated assets and does not import engine or renderer packages.
+Run the site browser test for desktop, mobile, reduced motion and load-failure
+fallback behavior. Public controls use user-facing actions rather than variant IDs.
+
+Landing entrance and selection transitions live in `apps/site/src/motion.js`.
+Content remains visible without animation. Reduced motion cancels active transitions;
+scroll reveals run once and the sound pulse follows actual playback state.

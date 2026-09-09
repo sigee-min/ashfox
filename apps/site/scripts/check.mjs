@@ -344,85 +344,21 @@ if (
   );
 }
 
-const showroomEntries = JSON.parse(landingHtml.match(/<script type="application\/json" data-showroom-data>([\s\S]*?)<\/script>/u)?.[1] || '[]');
-const selectorTags = landingHtml.match(
-  /<button(?=[^>]*\sdata-character=)[^>]*>/gu
-) ?? [];
-const playerTags = landingHtml.match(
-  /<video(?=[^>]*\sdata-character-player(?:\s|>))[^>]*>/gu
-) ?? [];
-if (selectorTags.length !== manifestIdentities.length) {
-  failures.push(
-    `landing has ${selectorTags.length} replay selectors, ` +
-    `expected ${manifestIdentities.length}`
-  );
+for (const required of ['data-live-model', 'data-model-motion="wing_display"', 'data-item-image', 'data-landing-audio', 'data-source-code', 'id="quick-start"']) {
+  if (!landingHtml.includes(required)) failures.push(`Landing is missing ${required}`);
 }
-if (playerTags.length !== 1) {
-  failures.push(`landing must contain exactly one shared replay player`);
-} else if (/\ssrc=/u.test(playerTags[0])) {
-  failures.push('landing replay player must start without loading a GIF');
+if (/data-character-player|data-workspace-download|data-showroom-data/u.test(landingHtml)) failures.push('Retired showroom is still published');
+if (/<audio[^>]*autoplay/u.test(landingHtml)) failures.push('Landing sound must require an explicit play action');
+for (const name of ['griffin.glb', 'sword.png', 'amethyst.png', 'claw-base.wav', 'claw-alternate.wav', 'hero.js']) {
+  if (!(await exists(path.join(outputRoot, 'media/landing', name)))) failures.push(`Missing landing asset: ${name}`);
 }
-if (/<img[^>]*\ssrc="[^"]+\.gif(?:[?#][^"]*)?"/u.test(landingHtml)) {
-  failures.push('landing must render its eager poster without an eager GIF');
+const heroModel = await readFile(path.join(outputRoot, 'media/landing/griffin.glb'));
+if (heroModel.subarray(0, 4).toString('ascii') !== 'glTF') failures.push('Live model must be a real GLB');
+const heroJson = JSON.parse(heroModel.subarray(20, 20 + heroModel.readUInt32LE(12)).toString());
+for (const name of ['look_around', 'wing_display', 'greeting']) {
+  if (!heroJson.animations?.some(clip => clip.name === name)) failures.push(`Missing live motion: ${name}`);
 }
-
-for (const [index, entry] of (showcaseManifest.entries ?? []).entries()) {
-  const selected = showroomEntries[index];
-  const identity = `${selected?.packageName}/${selected?.entryName}`;
-  if (identity !== manifestIdentities[index]) failures.push('Showroom entry order mismatch');
-  const replaySource = selected?.replaySrc;
-  const posterSource = selected?.posterSrc;
-  const buildVideo = await readFile(path.join(outputRoot, selected.replayVideoSrc));
-  if (buildVideo.subarray(4, 8).toString('ascii') !== 'ftyp' || digestBytes(buildVideo) !== entry.video.sha256 || buildVideo.length !== entry.video.byteLength) failures.push('Build video does not match sealed media');
-  if (selected?.workspaceHref !== `/assets/workspaces/${entry.entryName}.ashfoxworkspace` || selected?.glbHref !== `/examples/${entry.entryName}.glb`) failures.push('Selected downloads mismatch');
-  for (const movie of entry.motions) {
-    const shown = selected.motions.find((motion) => motion.name === movie.name);
-    if (!shown || digestBytes(await readFile(path.join(outputRoot, shown.src))) !== movie.sha256) failures.push(`Stale motion: ${movie.name}`);
-  }
-  for (const [source, target] of [
-    [path.join(repositoryRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`), selected.workspaceHref],
-    [path.join(repositoryRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), selected.glbHref]
-  ]) if (!(await readFile(source)).equals(await readFile(path.join(outputRoot, target)))) failures.push(`Stale download: ${target}`);
-  if (!replaySource?.startsWith('/media/showcase/') || !posterSource?.startsWith(
-    '/media/showcase/'
-  )) {
-    failures.push(`landing replay selector ${identity} has unsafe media paths`);
-    continue;
-  }
-  const publishedGifPath = path.join(outputRoot, replaySource);
-  const publishedPosterPath = path.join(outputRoot, posterSource);
-  if (!(await exists(publishedGifPath)) || !(await exists(publishedPosterPath))) {
-    failures.push(`landing replay selector ${identity} has missing media`);
-    continue;
-  }
-  const [publishedGif, publishedPoster, sourceGif, sourcePoster] =
-    await Promise.all([
-      readFile(publishedGifPath),
-      readFile(publishedPosterPath),
-      readFile(path.join(showcaseRoot, entry.artifact)),
-      readFile(path.join(showcaseRoot, entry.poster))
-    ]);
-  const gifSignature = publishedGif.subarray(0, 6).toString('ascii');
-  if (gifSignature !== 'GIF87a' && gifSignature !== 'GIF89a') {
-    failures.push(`landing replay is not a GIF: ${replaySource}`);
-  }
-  if (publishedPoster.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
-    failures.push(`landing replay poster is not a PNG: ${posterSource}`);
-  }
-  if (
-    digestBytes(sourceGif) !== entry.artifactSha256 ||
-    digestBytes(publishedGif) !== entry.artifactSha256 ||
-    sourceGif.byteLength !== entry.byteLength
-  ) {
-    failures.push(`landing replay digest is stale: ${entry.artifact}`);
-  }
-  if (
-    digestBytes(sourcePoster) !== entry.posterSha256 ||
-    digestBytes(publishedPoster) !== entry.posterSha256
-  ) {
-    failures.push(`landing replay poster digest is stale: ${entry.poster}`);
-  }
-}
+if (heroJson.extensionsRequired?.length) failures.push('Landing GLB must use portable encoding');
 
 const canonicalWorkspace = await readFile(canonicalWorkspacePath);
 const publishedWorkspacePath = path.join(
@@ -483,19 +419,8 @@ const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
-const griffinGlbLinks = landingHtml.match(
-  /<a(?=[^>]*\shref="\/examples\/griffin\.glb")[^>]*>/gu
-) ?? [];
-if (griffinGlbLinks.length !== 1 || !landingHtml.includes('Download GLB')) {
-  failures.push('landing must provide exactly one Griffin GLB download link');
-}
-if (
-  !landingHtml.includes('href="/assets/workspaces/griffin.ashfoxworkspace"') ||
-  !landingHtml.includes('href="/examples/griffin.glb"') ||
-  !landingHtml.includes('href="/workbench/"') ||
-  !landingHtml.includes('Build replays reconstructed from the finished models.')
-) {
-  failures.push('landing must present the honest download-then-launch replay flow');
+if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="/downloads/starter.zip"')) {
+  failures.push('Landing must offer the actual model and complete source download');
 }
 
 const rootReadme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
@@ -539,9 +464,9 @@ if (!(await exists(path.join(
 const agentInstructionControlCount = (
   landingHtml.match(/\sdata-copy-agent-instruction(?:\s|>)/g) ?? []
 ).length;
-if (agentInstructionControlCount !== 2) {
+if (agentInstructionControlCount !== 1) {
   failures.push(
-    `landing has ${agentInstructionControlCount} agent instruction controls, expected 2`
+    `landing has ${agentInstructionControlCount} agent instruction controls, expected 1`
   );
 }
 const instructionButtons = landingHtml.match(
@@ -553,7 +478,7 @@ if (instructionButtons.some((button) =>
   failures.push('every setup button must copy the current agent instruction');
 }
 if (!landingHtml.includes('id="quick-start"') ||
-    !landingHtml.includes('source files')) {
+    !landingHtml.includes('Install &amp; create') && !landingHtml.includes('Install & create')) {
   failures.push('landing must provide a reachable source authoring setup');
 }
 const siteScriptSource = landingHtml.match(

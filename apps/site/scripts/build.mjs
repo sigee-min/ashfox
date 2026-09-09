@@ -257,12 +257,12 @@ await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
 await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
 await mkdir(path.join(outputRoot, 'assets/workspaces'), { recursive: true });
 
-const showroomCss = await readFile(path.join(sourceRoot, 'showroom.css'), 'utf8');
-const buildReplayJs = await readFile(path.join(sourceRoot, 'buildReplay.js'), 'utf8');
-const showroomJs = await readFile(path.join(sourceRoot, 'showroom.js'), 'utf8');
+const landingCss = await readFile(path.join(sourceRoot, 'landing.css'), 'utf8');
+const motionJs = await readFile(path.join(sourceRoot, 'motion.js'), 'utf8');
+const landingJs = await readFile(path.join(sourceRoot, 'landing.js'), 'utf8');
 const assets = {
-  css: await hashedAsset('site.css', (source) => source + '\n' + showroomCss),
-  js: await hashedAsset('site.js', (source) => source + '\n' + buildReplayJs + '\n' + showroomJs)
+  css: await hashedAsset('site.css', source => source + '\n' + landingCss),
+  js: await hashedAsset('site.js', source => source + '\n' + motionJs + '\n' + landingJs)
 };
 const config = { siteOrigin, workbenchUrl };
 const documents = await loadDocumentation(docsRoot);
@@ -312,6 +312,8 @@ const copyNativeSources = async (relative) => {
   }
 };
 await copyNativeSources('examples');
+execFileSync(process.execPath, [path.join(repoRoot, 'scripts/landing/build.js')], { cwd: repoRoot, stdio: 'inherit' });
+await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/landing'), { recursive: true });
 await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), { recursive: true });
 await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides'), { recursive: true, filter: source => !source.endsWith('receipt.json') });
 

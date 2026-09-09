@@ -23,7 +23,7 @@ const faceUvs = (
   if (corners === undefined) return undefined;
   return corners.flatMap(([u, v]) => [
     u / texture.width,
-    1 - v / texture.height
+    v / texture.height
   ]);
 };
 

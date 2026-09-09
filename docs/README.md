@@ -4,6 +4,10 @@ Write low-poly models, pixel items and sound effects as `.ashfox` source. Inspec
 one asset, capture it from your chosen view and export it to your game. Files
 and in-memory workflows are both supported; stdio is the default output path.
 
+Explore the homepage to rotate the Griffin, try its motions, compare item images
+and listen to sound effects. Choose **Start creating** when you are ready to make
+your own.
+
 ## Start here
 
 [Install Ashfox](guides/install.md), then follow
