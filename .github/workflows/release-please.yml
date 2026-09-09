@@ -38,6 +38,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
       - name: Release safety validation
         run: npm run release:validate
 
@@ -199,6 +205,7 @@ jobs:
         with:
           name: release-assets
           path: dist/release
+      - run: npm ci
       - name: Verify draft uploads and publish without overwriting releases
         run: node scripts/release/publish.js
         env:
