@@ -25,7 +25,7 @@ const extract = name => {
   }
   return folder;
 };
-const install = folder => run('npm', ['install', '--offline', '--ignore-scripts', '--no-audit', '--no-fund', '--save-dev', path.join(delivery, 'ashfox-cli.tgz')], folder);
+const install = (folder, offline = true) => run('npm', ['install', ...(offline ? ['--offline'] : []), '--ignore-scripts', '--no-audit', '--no-fund', '--save-dev', path.join(delivery, 'ashfox-cli.tgz')], folder);
 const cli = (folder, ...args) => run(process.execPath, [path.join(folder, 'node_modules/@ashfox/cli/dist/ashfox.cjs'), ...args], folder);
 try {
   const starter = extract('starter');
@@ -49,7 +49,7 @@ try {
     assert.equal(checked.ok, true);
   }
   const game = extract('web-game');
-  install(game);
+  install(game, false);
   run(process.execPath, ['build.mjs'], game);
   const runtime = path.join(game, 'public/game-assets');
   const manifest = JSON.parse(fs.readFileSync(path.join(runtime, 'assets.json')));

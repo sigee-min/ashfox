@@ -18,5 +18,3 @@ export interface DirectoryWorkspace {
   readonly packs?: readonly DirectoryPack[];
 }
 export interface DirectoryFile { readonly path: string; readonly source: string }
-export const DIRECTORY_WORKSPACE_VERSION = 2;
-export const DIRECTORY_WORKSPACE_FILE = '.ashfoxworkspace';
