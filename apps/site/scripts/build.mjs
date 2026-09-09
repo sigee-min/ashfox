@@ -259,10 +259,11 @@ await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
 await mkdir(path.join(outputRoot, 'assets/workspaces'), { recursive: true });
 
 const landingCss = await readFile(path.join(sourceRoot, 'landing.css'), 'utf8');
+const brandCss = await readFile(path.join(sourceRoot, 'brand.css'), 'utf8');
 const motionJs = await readFile(path.join(sourceRoot, 'motion.js'), 'utf8');
 const landingJs = await readFile(path.join(sourceRoot, 'landing.js'), 'utf8');
 const assets = {
-  css: await hashedAsset('site.css', source => source + '\n' + landingCss),
+  css: await hashedAsset('site.css', source => source + '\n' + landingCss + '\n' + brandCss),
   js: await hashedAsset('site.js', source => source + '\n' + motionJs + '\n' + landingJs)
 };
 const config = { siteOrigin, workbenchUrl, stable: stableRelease.readStable(repoRoot) };

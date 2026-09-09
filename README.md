@@ -1,7 +1,10 @@
 # Ashfox
 
-Write low-poly models, pixel items and procedural sound effects as code.
-Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI.
+**Assets as Code. Built for voxel games.**
+
+Ashfox is the open-source Assets as Code toolkit for voxel games.
+Define models, textures, and sounds in native `.ashfox` source. Version them
+in Git. Build them into assets for your game or Minecraft.
 
 <p align="center">
   <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/griffin-poster.png" alt="Low-poly Griffin model" width="260"></a>
@@ -45,7 +48,26 @@ or [open the Model Workbench](https://ashfox.io/workbench/) in your browser.
 [Create with your coding agent](docs/guides/ai-agent-quick-start.md) ·
 [All guides](docs/README.md)
 
-## Examples
+## Your assets. Your repo.
+
+1. **Define** assets in `.ashfox` files with your coding agent.
+2. **Inspect** the source and review model views, native pixels and sound.
+3. **Review** source changes in Git alongside captures and build evidence.
+4. **Build** with a pinned toolchain and deliver verified outputs to your game.
+
+The source is the editable asset. GLB, PNG, audio and ZIP files are compiled
+outputs. An optional `.ashfoxworkspace` configures larger projects; a single
+asset needs no workspace.
+
+[Adopt Assets as Code](docs/guides/assets-as-code.md) ·
+[Automate builds](docs/guides/automation.md) ·
+[Work with an agent](docs/guides/agent-workflow.md)
+
+## From a pixel item to a complete creature
+
+Explore the frontier through working examples: Griffin’s articulated wings and
+six motions, a red fox, and a goblin raider. Each has native source and an animated
+GLB. These demonstrate asset complexity, not a benchmark of arbitrary generation.
 
 <details>
 <summary>See the build replays</summary>

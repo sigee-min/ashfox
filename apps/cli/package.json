@@ -1,7 +1,7 @@
 {
   "name": "@ashfox/cli",
   "version": "0.0.0",
-  "description": "Compile native ashfox asset workspaces for game pipelines",
+  "description": "Assets as Code for voxel games",
   "license": "MIT",
   "bin": {
     "ashfox": "dist/ashfox.cjs"

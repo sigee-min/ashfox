@@ -1,3 +1,4 @@
+import { brand } from '../content.mjs';
 
 export const escapeHtml = (value) =>
   String(value)
@@ -44,11 +45,12 @@ const siteHeader = ({ active }) => `
       <span>ashfox</span>
     </a>
     <nav class="primary-nav" aria-label="Primary navigation">
-      <a href="/#examples">Explore</a>
+      <a href="/#examples">Examples</a>
+      <a href="/docs/guides/assets-as-code/">Workflow</a>
       <a ${active === 'docs' ? 'aria-current="page"' : ''} href="/docs/">Docs</a>
     </nav>
     <div class="header-actions">
-      <a class="header-setup" href="/docs/guides/install/">Start creating ↗</a>
+      <a class="header-setup" href="/docs/guides/install/">Get started ↗</a>
     </div>
   </header>
 `;
@@ -66,7 +68,7 @@ export const pageShell = ({
   title
 }) => {
   const pageTitle = title === 'ashfox'
-    ? 'ashfox — Game assets. Authored as code.'
+    ? `ashfox — ${brand.title}`
     : `${title} — ashfox`;
   const canonical = absoluteUrl(config.siteOrigin, path);
   const socialImage = absoluteUrl(config.siteOrigin, '/og.png');
@@ -110,7 +112,7 @@ export const pageShell = ({
         ${brandMark}
         <span>ashfox</span>
       </a>
-      <p>Models. Items. Sound. All from code.</p>
+      <p>Assets as Code. Built for voxel games.</p>
       <div class="footer-links">
         <a href="/docs/">Documentation</a>
         <a href="${githubUrl}">GitHub</a>

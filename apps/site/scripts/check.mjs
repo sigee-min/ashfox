@@ -479,8 +479,15 @@ if (instructionButtons.some((button) =>
   failures.push('every setup button must copy the current agent instruction');
 }
 if (!landingHtml.includes('id="quick-start"') ||
-    !landingHtml.includes('Install &amp; create') && !landingHtml.includes('Install & create')) {
+    !landingHtml.includes('href="/docs/guides/install/">Install Ashfox')) {
   failures.push('landing must provide a reachable source authoring setup');
+}
+for (const required of ['Assets<br>as Code.', 'Built for voxel games.', 'id="workflow"',
+  'id="frontier"', '/docs/guides/assets-as-code/', landingContent.showcase.provenance]) {
+  if (!landingHtml.includes(required)) failures.push(`Assets as Code landing is missing ${required}`);
+}
+for (const entry of ['griffin', 'fox', 'goblin']) {
+  if (!landingHtml.includes(`/examples/${entry}.glb`)) failures.push(`Advanced example ${entry} has no output`);
 }
 const siteScriptSource = landingHtml.match(
   /<script type="module" src="([^"]+)"/

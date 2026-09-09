@@ -1,12 +1,13 @@
-# Create and use game assets
+# Assets as Code for voxel games
 
-Write low-poly models, pixel items and sound effects as `.ashfox` source. Inspect
-one asset, capture it from your chosen view and export it to your game. Files
-and in-memory workflows are both supported; stdio is the default output path.
+Ashfox is the open-source Assets as Code toolkit for voxel games. Define models,
+textures and sounds in native `.ashfox` source. Version them in Git. Build them
+with Ashfox and inspect the results before delivery.
 
-Explore the homepage to rotate the Griffin, try its motions, compare item images
-and listen to sound effects. Choose **Start creating** when you are ready to make
-your own.
+Start with one item, then explore complete animated creatures on
+[the homepage](https://ashfox.io/#frontier). The
+[Assets as Code workflow](guides/assets-as-code.md) explains how to organize
+source, review changes and operate reproducible builds.
 
 ## Start here
 
