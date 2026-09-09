@@ -1,9 +1,9 @@
 # CLI distribution
 
-Status: implemented for the next product release. The existing website URL
-continues to work until a new release containing the CLI is published. Native
-executables and npm registry publication remain future work. Keep this
-maintainer guide outside `docs/public.json`.
+Status: GitHub CLI distribution starts at `v1.0.0`. README and installation
+instructions pin the released CLI and matching starter. Native executables and
+npm registry publication remain future work. Keep this maintainer guide outside
+`docs/public.json`.
 
 ## Operate the release
 
@@ -42,16 +42,16 @@ Avoid requiring a repository clone, a build, a GitHub account, a global install,
 or moving a downloaded package into the right folder. Keep Chrome and FFmpeg
 optional and explain them only for capture and OGG tasks.
 
-The current bridge is:
+The stable install command is:
 
 ```sh
-npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
+npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
 
-This removes manual package handling but still requires Node/npm and relies on
-a mutable website URL. A lockfile records integrity; it cannot make an old
-package available after that URL changes.
+This requires Node/npm but fixes the package to an archived release. The website
+also builds preview downloads; those mutable URLs are not used as stable project
+dependencies.
 
 ## First release: versioned GitHub assets
 

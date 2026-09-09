@@ -419,7 +419,7 @@ const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
-if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="/downloads/starter.zip"')) {
+if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip"')) {
   failures.push('Landing must offer the actual model and complete source download');
 }
 

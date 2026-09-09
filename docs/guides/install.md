@@ -7,7 +7,7 @@ You need Node.js 20 or newer and npm. You do not need an account or API key.
 Open a terminal in your game or asset folder and run:
 
 ```sh
-npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
+npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
 
@@ -16,7 +16,7 @@ clone, source build or manual package download is needed. The package contains
 the complete executable bundle. This command works in macOS, Linux and Windows
 PowerShell with Node.js and npm installed.
 
-Starting without a project? Download and extract [the starter assets](/downloads/starter.zip),
+Starting without a project? Download and extract [the starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip),
 then run the same commands inside that folder. In an existing repository, keep
 your existing `package.json`; do not replace it with the starter's file.
 
@@ -29,13 +29,13 @@ folder. Choose a new output filename if it already exists.
 
 Commit `package.json` and `package-lock.json` with your project. The guides use
 `npx --no-install ashfox` to run the installed CLI without fetching another
-package when it is missing. The download URL tracks the website build; it is
-not a permanent version archive. Use the offline option below when preserving
-an exact toolchain.
+package when it is missing. The URL pins Ashfox 1.0.0 and the matching starter from GitHub Releases.
+On another machine, run `npm ci` to restore the locked version. Use the offline
+option below when you also need a local copy of the package.
 
 ## Install offline or keep an exact package
 
-Download [the CLI package](/downloads/ashfox-cli.tgz), store it in your project
+Download [the CLI package](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz), store it in your project
 (for example under `tools/`), and install that file:
 
 ```sh
@@ -94,10 +94,11 @@ Node or another process API as shown in [stdio and memory](stdio.md).
 
 ## Upgrade or reproduce an installation
 
-Keep a copy of the package used by a project. To upgrade, download a new package
-into a versioned local folder and install that exact path. Review the lockfile
-change, rebuild your assets and compare their appearance before adopting it.
-Restore the previous package and lockfile to return to an earlier toolchain.
+Choose a newer version from [GitHub Releases](https://github.com/sigee-min/ashfox/releases)
+and install its exact CLI asset URL in your project. Review the lockfile change,
+rebuild your assets and compare their appearance before adopting it. Restore
+the previous dependency and lockfile and run `npm ci` to return to that version.
+For offline projects, retain each tarball in a versioned local folder.
 Pin Chrome/FFmpeg too when image or OGG byte comparisons matter.
 
 Continue with [your first asset](ai-agent-quick-start.md).

@@ -8,7 +8,7 @@ Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI
 With **Node.js 20+ and npm**, run this in your game or asset folder:
 
 ```sh
-npm install --save-dev https://ashfox.io/downloads/ashfox-cli.tgz
+npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
 npx --no-install ashfox capabilities
 ```
 
@@ -16,7 +16,7 @@ No repository clone, source build, account or API key is needed.
 
 ## Make your first asset
 
-Download and extract the [starter assets](https://ashfox.io/downloads/starter.zip),
+Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip),
 then run the install command above inside that folder. Export an item, a model,
 and a sound:
 
