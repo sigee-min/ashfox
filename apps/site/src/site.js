@@ -3,27 +3,6 @@ for (const target of document.querySelectorAll('[data-current-year]')) {
   target.textContent = currentYear;
 }
 
-const prefersReducedMotion = window.matchMedia(
-  '(prefers-reduced-motion: reduce)'
-).matches;
-
-const revealTargets = [...document.querySelectorAll('[data-reveal]')];
-if (!prefersReducedMotion && 'IntersectionObserver' in window) {
-  const revealObserver = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.dataset.revealed = 'true';
-        revealObserver.unobserve(entry.target);
-      }
-    },
-    { rootMargin: '0px 0px -12% 0px', threshold: 0.08 }
-  );
-  for (const target of revealTargets) revealObserver.observe(target);
-} else {
-  for (const target of revealTargets) target.dataset.revealed = 'true';
-}
-
 const copyText = async (text) => {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);

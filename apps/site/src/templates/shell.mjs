@@ -1,6 +1,3 @@
-import {
-  landingContent
-} from '../content.mjs';
 
 export const escapeHtml = (value) =>
   String(value)
@@ -39,22 +36,6 @@ export const githubIconButton = (className = '') => `
   >${githubMark}</a>
 `;
 
-const headerSetupButton = () => `
-  <button
-    class="header-setup"
-    type="button"
-    data-copy-agent-instruction
-    data-instruction="${escapeHtml(landingContent.quickStart.instruction)}"
-    aria-label="Copy setup instruction for your AI agent"
-  >
-    <span class="header-copy-glyph" aria-hidden="true"></span>
-    <span
-      data-copy-state
-      data-default-state="Copy for agent"
-      data-copied-state="Copied"
-    >Copy for agent</span>
-  </button>
-`;
 
 const siteHeader = ({ active }) => `
   <header class="site-header">
@@ -63,11 +44,11 @@ const siteHeader = ({ active }) => `
       <span>ashfox</span>
     </a>
     <nav class="primary-nav" aria-label="Primary navigation">
-      <a href="/#quick-start">Get started</a>
+      <a href="/#examples">Explore</a>
       <a ${active === 'docs' ? 'aria-current="page"' : ''} href="/docs/">Docs</a>
     </nav>
     <div class="header-actions">
-      ${headerSetupButton()}
+      <a class="header-setup" href="/docs/guides/install/">Start creating ↗</a>
     </div>
   </header>
 `;
@@ -85,7 +66,7 @@ export const pageShell = ({
   title
 }) => {
   const pageTitle = title === 'ashfox'
-    ? 'ashfox — AI-native low-poly workbench'
+    ? 'ashfox — Game assets. Authored as code.'
     : `${title} — ashfox`;
   const canonical = absoluteUrl(config.siteOrigin, path);
   const socialImage = absoluteUrl(config.siteOrigin, '/og.png');
@@ -106,12 +87,12 @@ export const pageShell = ({
     <meta property="og:image" content="${escapeHtml(socialImage)}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="ashfox — Build. Watch. Export.">
+    <meta property="og:image:alt" content="ashfox — Build your next world.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${escapeHtml(pageTitle)}">
     <meta name="twitter:description" content="${escapeHtml(description)}">
     <meta name="twitter:image" content="${escapeHtml(socialImage)}">
-    <meta name="twitter:image:alt" content="ashfox — Build. Watch. Export.">
+    <meta name="twitter:image:alt" content="ashfox — Build your next world.">
     ${config.siteOrigin ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ''}
     ${headLinks}
     <link rel="icon" href="/brand/ashfox-mark.svg" type="image/svg+xml">
@@ -129,7 +110,7 @@ export const pageShell = ({
         ${brandMark}
         <span>ashfox</span>
       </a>
-      <p>AI-native low-poly workbench.</p>
+      <p>Models. Items. Sound. All from code.</p>
       <div class="footer-links">
         <a href="/docs/">Documentation</a>
         <a href="${githubUrl}">GitHub</a>

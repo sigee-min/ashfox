@@ -1,111 +1,33 @@
-import { landingShowcase } from './showcase.mjs';
 import { landingContent } from '../content.mjs';
-import {
-  absoluteUrl,
-  escapeHtml,
-  githubUrl,
-  pageShell
-} from './shell.mjs';
+import { absoluteUrl, escapeHtml, githubUrl, pageShell } from './shell.mjs';
 
 export const renderLandingPage = ({ assets, config, showcase }) => {
   const content = landingContent;
+  const griffin = showcase.entries[0];
   const body = `
-    <main id="main">
-      <section class="showroom-hero" id="quick-start">
-        <div class="showroom-intro">
-          <p class="eyebrow"><span></span>${content.eyebrow}</p>
-          <h1>${content.titleLines
-            .map((line) => `<span>${escapeHtml(line)}</span>`)
-            .join('')}</h1>
-          <p class="hero-summary">${content.summary}</p>
-          <div class="hero-actions">
-            <button
-              class="button button-primary hero-copy-action"
-              type="button"
-              data-copy-agent-instruction
-              data-instruction="${escapeHtml(content.quickStart.instruction)}"
-            >
-              <span
-                data-copy-state
-                data-default-state="Create with your agent"
-                data-copied-state="Copied — paste into your agent"
-              >Create with your agent</span>
-              <span aria-hidden="true">↗</span>
-            </button>
-            <a class="button button-secondary" href="#examples">Explore examples <span>↓</span></a>
-          </div>
-          <p
-            class="hero-agent-hint"
-            data-copy-feedback
-            data-default-feedback="Ask your agent to edit source files and build assets for your game."
-            aria-live="polite"
-          >Ask your agent to edit source files and build assets for your game.</p>
-
-        </div>
-        ${landingShowcase({ content: content.showcase, showcase })}
-      </section>
-
-      <section class="section output-section showroom-output" id="outputs">
-        <div class="output-copy" data-reveal>
-          <p class="eyebrow"><span></span>Export</p>
-          <h2>Take it into your game.</h2>
-          <p>Keep sources in Git. Configure formats, resource IDs and delivery paths in .ashfoxworkspace.</p>
-          <a class="text-link" href="/docs/guides/save-and-export/">Save and export <span>→</span></a>
-        </div>
-        <div class="format-grid">
-          ${content.formats.map(([name, description], index) => `
-            <a class="format-card" href="/docs/guides/choose-a-format/" data-reveal>
-              <span>0${index + 1}</span>
-              <div><strong>${name}</strong><p>${description}</p></div>
-              <b aria-hidden="true">↗</b>
-            </a>
-          `).join('')}
-        </div>
-      </section>
-
-    </main>
-  `;
-  return pageShell({
-    active: 'product',
-    assets,
-    body,
-    config,
-    description: content.summary,
-    path: '/',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebSite',
-          name: 'ashfox',
-          url: absoluteUrl(config.siteOrigin, '/'),
-          description: content.summary
-        },
-        {
-          '@type': 'SoftwareApplication',
-          name: 'ashfox',
-          url: absoluteUrl(config.siteOrigin, config.workbenchUrl),
-          applicationCategory: 'GraphicsApplication',
-          operatingSystem: 'Any',
-          description: content.summary,
-          image: absoluteUrl(config.siteOrigin, '/og.png'),
-          isAccessibleForFree: true,
-          offers: {
-            '@type': 'Offer',
-            price: '0',
-            priceCurrency: 'USD'
-          },
-          license: `${githubUrl}/blob/main/LICENSE`,
-          featureList: [
-            'Low-poly modeling',
-            'Deterministic texturing',
-            'Rigging and animation',
-            'Reconstructed deterministic build replays',
-            'Bedrock, GeckoLib, glTF, and GLB export'
-          ]
-        }
-      ]
-    },
-    title: 'ashfox'
-  });
+  <main id="main" class="world-landing">
+    <section class="world-hero" id="examples" aria-label="Explore the Griffin">
+      <div class="world-heading"><p class="eyebrow">YOUR IMAGINATION. YOUR SOURCE.</p><h1>BUILD YOUR<br><em>NEXT WORLD.</em></h1></div>
+      <div class="world-stage" data-live-model><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="Griffin guardian with golden armor and wide wings"></div>
+      <div class="world-intro"><p>Models. Items. Sound.<br><strong>All from code.</strong></p><div class="world-actions"><a class="button button-primary" href="#quick-start">Start creating ↗</a><a class="world-link" href="#collection">Explore the assets ↓</a></div></div>
+      <div class="world-note"><span class="live-dot"></span><span data-model-status role="status">Meet your next companion</span></div>
+      <div class="world-controls" aria-label="Model controls">
+        <div>${[['look_around','Look around'],['wing_display','Spread wings'],['greeting','Greet']].map(([id,label]) => `<button data-model-motion="${id}" aria-pressed="false" disabled>${label}</button>`).join('')}<button data-model-pause disabled>Pause</button></div>
+        <div class="view-controls"><button data-model-view="3.14159" disabled>Front</button><button data-model-view="4.71239" disabled>Side</button><button data-model-view="3.79159" disabled>Reset</button></div>
+      </div>
+      <div class="world-index"><span>MADE WITH ASHFOX</span><a href="/media/landing/griffin.glb" download>Download model ↗</a></div>
+    </section>
+    <div class="world-strip"><span>LOW-POLY MODELS</span><i>✳</i><span>PIXEL ITEMS</span><i>✳</i><span>PROCEDURAL SOUND</span><i>✳</i><span>YOUR NEXT GAME</span></div>
+    <section class="world-items" id="collection">
+      <div class="world-section-copy"><p class="eyebrow">POCKET-SIZED PERSONALITY</p><h2>Small pixels.<br><em>Big character.</em></h2><p>A sword worth finding. A gem worth keeping.<br>Sharp at every pixel. Editable at the source.</p><a class="world-link" href="/downloads/items.zip" download>Get the complete item sources ↗</a></div>
+      <div class="item-showcase"><span class="item-coordinate">MADE FOR YOUR INVENTORY</span><div class="item-art"><img data-item-image src="/media/landing/sword.png" alt="Iron sword pixel item" width="192" height="192"></div><div class="item-options"><button data-item="sword" aria-pressed="true">Iron sword</button><button data-item="amethyst" aria-pressed="false">Amethyst</button><button data-native-size aria-pressed="false">See real size</button><a data-item-download href="/media/landing/sword.png" download>Download image ↓</a></div></div>
+    </section>
+    <section class="world-sound" id="sound"><div><p class="eyebrow">TURN THE SOUND ON</p><h2>Make it<br><em>hit different.</em></h2><p>A creature you can hear.<br>Press play and feel the impact.</p><a class="world-link" href="/examples/sounds/src/claw_hit.ashfox" download>Get the sound source ↗</a></div><div class="sound-player"><span class="sound-caption">CLAW STRIKE</span><img data-sound-wave src="/media/landing/claw-base.svg" width="480" height="160" alt="Waveform of the claw hit sound"><div class="sound-progress"><span data-sound-progress></span></div><div class="sound-actions"><button class="sound-play" data-sound-play aria-label="Play claw hit">▶</button><button class="sound-another" data-sound-another>Hear another</button><a data-sound-download href="/media/landing/claw-base.wav" download>Download sound ↓</a></div><p data-sound-status role="status">Press play to hear it.</p><audio data-landing-audio preload="none" src="/media/landing/claw-base.wav"></audio></div></section>
+    <section class="world-source" id="source"><div class="world-section-copy"><p class="eyebrow">MAKE IT YOURS</p><h2>The source<br><em>is yours.</em></h2><p>Ask your agent. Change the source. See the result.<br>Keep every asset alongside your game code.</p><a class="world-link" href="/downloads/game-assets.zip" download>Get the source project ↗</a></div><div class="source-window"><div class="source-tabs"><button data-source="model" aria-pressed="true">Model</button><button data-source="item" aria-pressed="false">Item</button><button data-source="sound" aria-pressed="false">Sound</button><span>.ashfox</span></div><details class="source-code"><summary>See the code</summary><pre><code data-source-code>Loading source…</code></pre></details><div class="source-result"><img data-source-preview src="${griffin.posterSrc}" width="160" height="90" alt="Generated Griffin model"><span>THE RESULT</span></div><div class="source-footer"><span>Your editable source</span><a data-source-link href="/examples/griffin/workbench/main.ashfox">Read full source ↗</a></div></div></section>
+    <section class="world-delivery" id="outputs"><p class="eyebrow">READY FOR YOUR GAME</p><h2>Out of the preview.<br><em>Into your world.</em></h2><div class="delivery-pair"><a href="/docs/guides/web-game/"><span>YOUR GAME</span><h3>One project.<br>Every asset.</h3><p>Animated models, pixel items and sound. Run the complete web-game example.</p><strong>Run the example ↗</strong></a><a href="/docs/guides/minecraft-packs/"><span>MINECRAFT</span><h3>Your pack.<br>Your rules.</h3><p>Bring your items, models and sounds into Minecraft with a resource pack.</p><strong>Build a resource pack ↗</strong></a></div><a class="world-link" href="/docs/guides/choose-a-format/">Explore formats and compatibility ↗</a></section>
+    <section class="world-start" id="quick-start"><p class="eyebrow">START WITH ONE ASSET.</p><h2>What will<br><em>you bring to life?</em></h2><div class="world-actions"><a class="button button-primary" href="/docs/guides/install/">Install & create ↗</a><a class="button button-secondary" href="/downloads/starter.zip" download>Get starter sources ↓</a></div><details><summary>Or start with your agent</summary><p>${escapeHtml(content.quickStart.instruction)}</p><button class="button button-secondary" data-copy-agent-instruction data-instruction="${escapeHtml(content.quickStart.instruction)}"><span data-copy-state data-default-state="Copy instruction" data-copied-state="Copied">Copy instruction</span></button><p data-copy-feedback data-default-feedback="Paste this instruction into your agent." role="status">Paste this instruction into your agent.</p></details><p class="start-footnote">No account required. Yours to create.</p></section>
+  </main><script defer src="/media/landing/hero.js"></script>`;
+  return pageShell({ active: 'product', assets, body, config, description: content.summary, path: '/', title: 'ashfox', structuredData: {
+    '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'ashfox', url: absoluteUrl(config.siteOrigin, '/'), applicationCategory: 'DeveloperApplication', operatingSystem: 'Windows, macOS, Linux', description: content.summary, license: `${githubUrl}/blob/main/LICENSE`, isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, featureList: ['Code-authored low-poly models', 'Pixel items and procedural sound', 'CLI capture and stdio workflows', 'Game bundles and Minecraft resource packs']
+  }});
 };
