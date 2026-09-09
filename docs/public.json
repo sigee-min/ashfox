@@ -8,6 +8,10 @@
         "route": "/docs/"
       },
       {
+        "source": "guides/assets-as-code.md",
+        "route": "/docs/guides/assets-as-code/"
+      },
+      {
         "source": "guides/install.md",
         "route": "/docs/guides/install/"
       },

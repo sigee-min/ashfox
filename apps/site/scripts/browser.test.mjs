@@ -37,6 +37,15 @@ const test = async () => {
   q('[data-sound-another]').click();
   await until(()=>audio.src.endsWith('claw-alternate.wav') && !audio.paused, 'Hear another must play a different sound');
   check(!d.body.innerText.includes('Alternate') && !d.body.innerText.includes('48 kHz'), 'Internal audio metadata leaked into the experience');
+  check(q('h1').textContent.includes('as Code.') && q('#workflow'), 'Assets as Code positioning is missing');
+  check(d.querySelectorAll('.frontier-grid article').length===3, 'Advanced source examples are missing');
+  q('#frontier').scrollIntoView({behavior:'instant',block:'start'});
+  for (const article of d.querySelectorAll('.frontier-grid article')) {
+    article.querySelector('summary').click();
+    check(article.querySelector('details').open, 'Build replay cannot be expanded');
+    const video = article.querySelector('video');
+    check(video.controls && !video.autoplay && video.poster && video.querySelector('source').src.endsWith('.mp4'), 'Replay must be explicit and source-backed');
+  }
   check(d.documentElement.scrollWidth<=w.innerWidth+1, 'Horizontal overflow');
   document.documentElement.dataset.result='passed';document.querySelector('#status').textContent='passed: live model/fallback, motion, views, native PNG, source, sound, responsive layout';
 };
@@ -62,7 +71,7 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 try {
-  for (const [width, reduced, missing] of [[1440, false, false], [390, false, false], [390, true, false], [390, true, true]]) {
+  for (const [width, reduced, missing] of [[1440, false, false], [390, false, false], [320, false, false], [390, true, false], [390, true, true]]) {
     missingModel = missing;
     const profile = await mkdtemp(path.join(tmpdir(), 'ashfox-site-test-'));
     try {

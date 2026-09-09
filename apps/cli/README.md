@@ -1,7 +1,7 @@
 # Ashfox CLI
 
-Create low-poly models, pixel items and procedural sound effects as `.ashfox`
-source. Inspect one asset, capture it from a chosen angle, and export files or
+The open-source Assets as Code toolkit for voxel games. Define models, textures
+and sounds as `.ashfox` source, version them in Git, and build them with Ashfox. Inspect one asset, capture it from a chosen angle, and export files or
 pass bytes directly to your game pipeline. Node.js 20 or newer is required.
 
 ## Install and start

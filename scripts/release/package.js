@@ -18,7 +18,7 @@ const packageCli = (root, out) => {
     ]) fs.copyFileSync(path.join(root, source), path.join(stage, target));
     fs.chmodSync(path.join(stage, 'dist/ashfox.cjs'), 0o755);
     fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify({
-      name: '@ashfox/cli', version, description: 'Code-authored game assets',
+      name: '@ashfox/cli', version, description: 'Assets as Code for voxel games',
       license: 'MIT', engines: { node: '>=20' }, bin: { ashfox: 'dist/ashfox.cjs' },
       files: ['dist/ashfox.cjs', 'README.md', 'LICENSE'],
       repository: { type: 'git', url: 'https://github.com/sigee-min/ashfox.git' }

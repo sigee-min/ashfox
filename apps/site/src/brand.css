@@ -1,0 +1,104 @@
+/* Assets as Code: source-first framing around the real asset renderer. */
+.world-landing { --paper: #eef2f6; --accent: #ffad70; background: #111518; }
+.world-landing .eyebrow { font-size: 12px; letter-spacing: .13em; }
+.world-landing .world-link { font-size: 14px; }
+.world-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "heading model" "intro model" "status status" "controls controls" "index index";
+  align-content: center;
+  gap: 24px 0;
+  height: auto;
+  min-height: 740px;
+  max-height: none;
+  padding: 60px 6% 24px;
+}
+.world-heading { grid-area: heading; position: relative; inset: auto; align-self: end; }
+.world-heading h1 { font-size: clamp(72px, 7.5vw, 116px); line-height: .96; }
+.world-heading .eyebrow { margin: 0 0 30px; }
+.hero-subtitle { display: block; font-size: clamp(24px, 2.5vw, 38px); letter-spacing: -.04em; line-height: 1.25; margin-top: 24px; color: var(--accent); }
+.world-stage { grid-area: model; position: relative; inset: auto; min-width: 0; min-height: 440px; }
+.world-intro { grid-area: intro; position: relative; inset: auto; align-self: start; }
+.world-intro > p { font-size: 17px; line-height: 1.7; margin: 0; }
+.world-intro .world-actions { margin-top: 26px; gap: 20px; }
+.world-note { grid-area: status; position: relative; inset: auto; justify-self: end; font-size: 12px; }
+.world-controls { grid-area: controls; position: relative; inset: auto; }
+.world-index { grid-area: index; position: relative; inset: auto; font-size: 12px; line-height: 1.5; }
+.world-controls button, .item-options button, .source-tabs button { font-size: 14px; }
+.world-landing h2 { font-size: clamp(34px, 3.6vw, 52px); line-height: 1.04; }
+.world-section-copy > p:not(.eyebrow), .world-sound > div > p:not(.eyebrow) { font-size: 16px; line-height: 1.75; }
+.aac-workflow, .aac-frontier { max-width: 1440px; margin: auto; padding: 80px 6%; }
+.aac-workflow { border-bottom: 1px solid #ffffff20; }
+.workflow-steps { display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; padding: 0; margin: 48px 0 30px; gap: 30px; }
+.workflow-steps li { border-top: 1px solid #ffffff30; padding-top: 18px; }
+.workflow-steps li > span { font: 13px ui-monospace, monospace; color: var(--accent); }
+.workflow-steps h3 { font-size: 24px; letter-spacing: -.035em; margin-top: 18px; }
+.workflow-steps p, .section-lead { color: #b5bdc4; font-size: 16px; line-height: 1.7; }
+.workflow-steps code { font-size: 14px; }
+.section-lead { max-width: 650px; margin: 25px 0 40px; }
+.aac-frontier { border-top: 1px solid #ffffff20; }
+.frontier-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.frontier-grid article { min-width: 0; border: 0; background: transparent; }
+.frontier-grid article > img { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: contain; }
+.frontier-grid article > div { padding: 24px 0; }
+.frontier-grid h3 { font-size: 26px; letter-spacing: -.035em; }
+.frontier-grid p { font-size: 16px; color: #b5bdc4; line-height: 1.65; min-height: 80px; }
+.frontier-grid a { display: inline-block; font-size: 14px; margin: 0 16px 18px 0; text-decoration: underline; text-underline-offset: 4px; }
+.frontier-grid details { border-top: 1px solid #ffffff25; padding-top: 16px; }
+.frontier-grid summary { font-size: 14px; cursor: pointer; }
+.frontier-grid video { display: block; width: 100%; height: auto; margin-top: 16px; }
+.evidence-note { max-width: 750px; font-size: 14px; line-height: 1.7; color: #a5afb8; margin: 24px 0; }
+.world-source .source-window pre { font-size: 13px; color: #e6c69c; }
+.source-tabs > span, .source-footer, .source-code summary, .source-result span,
+.item-coordinate, .sound-caption, .sound-player > p, .start-footnote { font-size: 12px; }
+.item-options a, .sound-actions a, .sound-another, .delivery-pair strong { font-size: 14px; }
+.delivery-pair p, .world-start details { font-size: 16px; }
+.world-landing summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+@media (max-width: 900px) {
+  .world-hero { grid-template-columns: 1fr; grid-template-areas: "heading" "intro" "model" "status" "controls" "index"; padding-top: 36px; min-height: 0; }
+  .world-heading h1 { font-size: clamp(68px, 13vw, 104px); }
+  .world-intro { display: block; }
+  .world-intro > p { font-size: 16px; }
+  .world-stage { min-height: 350px; }
+  .world-controls { flex-wrap: wrap; gap: 12px; }
+  .world-note { justify-self: start; }
+  .workflow-steps { grid-template-columns: 1fr 1fr; }
+  .frontier-grid { grid-template-columns: 1fr; }
+  .frontier-grid article { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+  .frontier-grid p { min-height: 0; }
+}
+@media (max-width: 480px) {
+  .world-hero { gap: 20px; }
+  .world-heading h1 { font-size: 68px; }
+  .hero-subtitle { font-size: 25px; }
+  .world-stage { min-height: 280px; }
+  .world-index { flex-wrap: wrap; gap: 10px; letter-spacing: .04em; }
+  .world-controls button { padding: 9px 10px; font-size: 12px; }
+  .aac-workflow, .aac-frontier { padding: 64px 6%; }
+  .workflow-steps { grid-template-columns: 1fr; gap: 16px; margin-top: 32px; }
+  .workflow-steps li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
+  .workflow-steps h3 { margin: 0; }
+  .workflow-steps p { grid-column: 2; margin: 0 0 12px; }
+  .frontier-grid article { display: block; }
+  .source-footer { flex-wrap: wrap; gap: 10px; }
+  .primary-nav { gap: 12px; }
+}
+
+/* Keep one dark canvas; structure comes from spacing, not color inversions. */
+.world-items, .world-sound, .world-source { padding-top: 80px; padding-bottom: 80px; }
+.world-delivery { max-width: 1440px; margin: auto; padding: 80px 6%; border-top: 1px solid #ffffff20; }
+.delivery-pair { margin: 32px 0 24px; }
+.delivery-pair h3 { font-size: 28px; margin-top: 0; letter-spacing: -.035em; }
+.delivery-pair > a { padding-top: 28px; padding-bottom: 28px; }
+.world-start { padding: 80px 6%; border-top: 1px solid #ffffff20; }
+.source-footer { justify-content: flex-end; }
+.world-controls button[aria-pressed=true], .item-options button[aria-pressed=true], .source-tabs button[aria-pressed=true] {
+  background: #273038; border-color: #75818a; color: var(--paper);
+}
+@media (max-width: 850px) {
+  .frontier-grid article > div { padding: 24px; }
+}
+@media (max-width: 480px) {
+  .world-items, .world-sound, .world-source, .world-delivery, .world-start { padding-top: 56px; padding-bottom: 56px; }
+  .frontier-grid article > div { padding: 24px 0; }
+}

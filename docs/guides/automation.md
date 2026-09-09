@@ -4,6 +4,9 @@ Pin the compiler package and source files in the game repository. If using OGG,
 also pin the FFmpeg build used by CI. Run the local installed executable so a
 missing dependency cannot trigger an unrelated package download.
 
+For source ownership, pull-request evidence and release practices, start with
+[Assets as Code](assets-as-code.md).
+
 ## Add a build step
 
 After [installing the CLI tarball](install.md), add scripts to your game project's
