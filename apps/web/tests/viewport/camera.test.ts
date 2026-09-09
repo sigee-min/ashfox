@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {
   applyCameraPreset,
   applySignedProjectViewPreset
-} from '../../src/rendering/cameraPresets';
+} from '@ashfox/render-core/cameraPresets';
 import {
   PROJECT_SIGNED_VIEWS,
   projectSignedViewFrame,

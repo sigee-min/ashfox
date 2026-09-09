@@ -1,29 +1,39 @@
-# Ashfox docs
+# Create and use game assets
 
-Ashfox is a browser workbench for creating and refining low-poly assets with
-an AI agent. Describe the result, review the rendered asset, then save or
-export it.
+Write low-poly models, pixel items and sound effects as `.ashfox` source. Inspect
+one asset, capture it from your chosen view and export it to your game. Files
+and in-memory workflows are both supported; stdio is the default output path.
 
-## Start and deliver
+## Start here
 
-- [Get started](guides/ai-agent-quick-start.md): connect an agent and describe
-  a task.
-- [Create and review](guides/authoring-and-review.md): give useful direction
-  and judge the result.
-- [Save and export](guides/save-and-export.md): keep a workspace or deliver an
-  asset.
-- [Choose an export format](guides/choose-a-format.md): compare target files.
-- [Troubleshooting](guides/troubleshooting.md): recover from common problems.
+[Install Ashfox](guides/install.md), then follow
+[your first asset](guides/ai-agent-quick-start.md). The downloadable starter
+contains complete model, item and sound sources; no workspace setup is needed.
 
-## Language and precision
+## Choose what to do
 
-- [Asset language syntax](architecture/asset-language.md): units, declarations,
-  geometry, surfaces, rigs, motions, and assembly bindings.
-- [Precision modeling](guides/precision-modeling.md): shared dimensions,
-  construction relations, and fixed pixel marks.
-- [Animation](guides/animation.md): create, assign, select, and review motions.
+| Your task | Guide |
+| --- | --- |
+| Choose an angle, inspect PNG pixels or watch animation | [Observe an asset](guides/observe.md) |
+| Create a prop or creature | [Models](guides/models.md) |
+| Draw and shade an item | [Sprites](guides/sprites.md) |
+| Synthesize and listen to effects | [Sounds](guides/sounds.md) |
+| Refine the result with an agent | [Review and refine](guides/authoring-and-review.md) |
+| Pass source, images and requests in memory | [Stdio and memory](guides/stdio.md) |
+| Choose a format or execution mode | [Support matrix](guides/choose-a-format.md) |
+| See models, items and sound working together | [Playable web example](guides/web-game.md) |
+| Deliver to Minecraft Java | [Minecraft resource packs](guides/minecraft-packs.md) |
+| Organize multiple sources and delivery paths | [Project settings](guides/workspace.md) |
+| Consume IDs, scale and import metadata | [Game bundles](guides/game-assets.md) |
+| Save, reproduce or automate a delivery | [Save and deliver](guides/save-and-export.md), [CI](guides/automation.md) |
+| Resolve a failure | [Troubleshooting](guides/troubleshooting.md) |
 
-## Agent integration
+## Keep the editable source
 
-- [Agent workflow](guides/agent-workflow.md): use the complete Workbench API
-  sequence from inspection through review.
+`.ashfox` files and their imported modules are your editable assets. An optional
+`.ashfoxworkspace` configures multi-asset builds and delivery. PNG, GLB, audio and
+ZIP are generated results; changing them does not update the source.
+
+The optional browser [Model Workbench](guides/workbench-api.md) has its own model
+project storage. It does not open native directory configurations. Compare the
+available workflows in the [support matrix](guides/choose-a-format.md).

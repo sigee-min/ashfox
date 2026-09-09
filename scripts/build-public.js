@@ -82,6 +82,12 @@ fs.writeFileSync(
 /workbench/index.html
   Cache-Control: public, max-age=0, must-revalidate
 
+/downloads/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/media/guides/*.wav
+  Content-Type: audio/wav
+
 /docs/*
   Cache-Control: public, max-age=0, must-revalidate
 

@@ -236,3 +236,17 @@ export type {
 export { measureSceneGeometry } from './model/measurement/geometry';
 export { inspectNodeSurface } from './model/measurement/surface';
 export type { GeometryMeasurementRequest, GeometryMeasurement, MeasurementResult } from './model/measurement/contract';
+export { readItemStudy } from './project/sprite/read';
+export { compileItemStudy, spritePreviewPng } from './compiler/sprite/compile';
+export { SPRITE_POLICY } from './project/sprite/contract';
+export type { ItemStudy, SpriteDiagnostic } from './project/sprite/contract';
+export type { SpriteBuild, SpriteProduct, SpriteReceipt } from './compiler/sprite/contract';
+export { spriteSheetPng } from './compiler/sprite/preview';
+export { parseSpriteSource } from './project/sprite/source';
+export { inspectNativeSource } from './project/directory/source';
+export { readDirectoryWorkspace, isDirectorySource, matchDirectoryPattern } from './project/directory/read';
+export { compileDirectoryWorkspace } from './compiler/directory/compile';
+export type { DirectoryWorkspace, DirectoryFile } from './project/directory/contract';
+export type { DirectoryCompilation, DirectoryProduct } from './compiler/directory/compile';
+
+export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/directory/pack';

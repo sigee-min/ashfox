@@ -15,7 +15,8 @@
     "gifenc": "^1.0.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "@ashfox/render-core": "^0.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.18.6",

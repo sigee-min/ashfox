@@ -4,10 +4,10 @@ import type {
 
 import type {
   ProjectAssets
-} from '../../../application/projectAssets';
+} from '@ashfox/render-core/assets';
 import type {
   ViewportEnvironmentId
-} from '../../../rendering/viewportEnvironment';
+} from '@ashfox/render-core/viewportEnvironment';
 import type {
   AgentCommandPortStatus
 } from '../../agent/AgentCommandPort';

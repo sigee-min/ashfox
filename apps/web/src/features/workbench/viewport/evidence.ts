@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   pixelFrameEvidenceFromRgba,
   type PixelFrameEvidence
-} from '../../../rendering/pixelFrameEvidence';
+} from '@ashfox/render-core/pixelFrameEvidence';
 
 export type ViewportFrameEvidenceCapture =
   | { ok: true; evidence: PixelFrameEvidence }

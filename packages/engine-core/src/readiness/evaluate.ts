@@ -28,12 +28,14 @@ const severityCount = (
 
 export const evaluateProductionReadiness = (
   document: ProjectDocument,
-  validationReport: ValidationReport = validateProjectDocument(document)
+  validationReport: ValidationReport = validateProjectDocument(document),
+  options: Readonly<{ requireIdle: boolean }> = { requireIdle: true }
 ): ProductionReadinessReport => {
   const geometry = evaluateGeometryReadiness(document);
   const animation = evaluateAnimationReadiness(
     document,
-    geometry.visibleNodeIds
+    geometry.visibleNodeIds,
+    options.requireIdle
   );
   const findings = [
     ...geometry.findings,

@@ -44,7 +44,7 @@ const rewriteMarkdownLinks = (markdown, relativePath, routes) =>
       const resolved = path.posix.normalize(
         path.posix.join(path.posix.dirname(toPosix(relativePath)), targetPath)
       );
-      if (resolved.startsWith('../examples/')) {
+      if (resolved.startsWith('../examples/') || resolved.startsWith('../assets/workspaces/')) {
         return `](/${resolved.slice(3)}${hash})`;
       }
       if (!/\.md$/i.test(targetPath)) return _match;

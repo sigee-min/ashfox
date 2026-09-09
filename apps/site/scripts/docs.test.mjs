@@ -17,12 +17,12 @@ try {
   await writeFile(path.join(fixture, 'README.md'),
     '# Start\n\nRead [syntax](architecture/syntax.md#units).');
   await writeFile(path.join(fixture, 'architecture/syntax.md'),
-    '# Syntax\n\n## Units\n\n[Example](../../examples/griffin.ashfoxworkspace)\n\n[External](https://example.com/readme.md)');
+    '# Syntax\n\n## Units\n\n[Example](../../examples/griffin/workbench/main.ashfox)\n\n[External](https://example.com/readme.md)');
   await writeFile(path.join(fixture, 'architecture/internal.md'), '# Private codebase');
   const pages = await loadDocumentation(fixture);
   assert.deepEqual(pages.map((page) => page.route), ['/docs/', '/docs/language/syntax/']);
   assert.match(pages[0].html, /href="\/docs\/language\/syntax\/#units"/);
-  assert.match(pages[1].html, /href="\/examples\/griffin.ashfoxworkspace"/);
+  assert.match(pages[1].html, /href="\/examples\/griffin\/workbench\/main.ashfox"/);
   assert.match(pages[1].html, /href="https:\/\/example.com\/readme.md"/);
   await writeFile(path.join(fixture, 'README.md'),
     '# Start\n\n[Internal](architecture/internal.md)');
@@ -41,6 +41,7 @@ for (const document of documents) {
   }
   assert.ok(html.includes('aria-label="Continue reading"'));
   assert.ok(sitemap.includes(document.route));
+  assert.doesNotMatch(html, /npm run build:cli|apps\/cli\/|packages\/engine-core|development-manifest\.json/);
 }
 for (const internal of ['codebase', 'asset-codebase', 'review', 'asset-language']) {
   const route = `/docs/architecture/${internal}/`;
@@ -48,3 +49,18 @@ for (const internal of ['codebase', 'asset-codebase', 'review', 'asset-language'
   await assert.rejects(readFile(path.join(siteRoot, 'dist', route, 'index.html')), { code: 'ENOENT' });
 }
 console.log('public docs catalog, navigation, links, and publication boundaries verified');
+
+for (const relative of ['examples/items/src/apple.ashfox', 'examples/game-assets/.ashfoxworkspace']) {
+  assert.deepEqual(await readFile(path.join(siteRoot, 'dist', relative)),
+    await readFile(path.resolve(siteRoot, '../..', relative)));
+}
+
+for (const name of ['ashfox-cli.tgz', 'starter.zip', 'items.zip', 'game-assets.zip', 'resource-pack.zip', 'stdio-client.zip', 'web-game.zip']) {
+  assert.deepEqual(await readFile(path.join(siteRoot, 'dist/downloads', name)),
+    await readFile(path.resolve(siteRoot, '../../dist/docs-delivery', name)));
+}
+await assert.rejects(readFile(path.join(siteRoot, 'dist/media/guides/receipt.json')), { code: 'ENOENT' });
+for (const name of ['fox-angle.png', 'fox-front.png', 'sword.png', 'claw.wav', 'fox-motion.gif']) {
+  assert.deepEqual(await readFile(path.join(siteRoot, 'dist/media/guides', name)),
+    await readFile(path.resolve(siteRoot, '../../assets/docs', name)));
+}

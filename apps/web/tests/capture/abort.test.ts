@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   throwIfCaptureAborted,
   yieldCaptureFrame
-} from '../../src/features/capture/captureAbort';
+} from '@ashfox/render-core/captureAbort';
 
 export const test = (async (): Promise<void> => {
   const immediate = new AbortController();

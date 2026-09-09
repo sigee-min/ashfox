@@ -44,11 +44,12 @@ const vertexLayout = (
   positions: readonly number[],
   normals: readonly number[],
   uvs: readonly number[] | undefined,
-  joints: readonly number[] | undefined
+  joints: readonly number[] | undefined,
+  quantize: boolean
 ): VertexLayout => {
-  const quantizedPosition = fitsNormalizedSigned(positions);
-  const quantizedNormal = fitsNormalizedSigned(normals);
-  const quantizedUv = uvs !== undefined && fitsNormalizedUnsigned(uvs);
+  const quantizedPosition = quantize && fitsNormalizedSigned(positions);
+  const quantizedNormal = quantize && fitsNormalizedSigned(normals);
+  const quantizedUv = quantize && uvs !== undefined && fitsNormalizedUnsigned(uvs);
   const positionSize = quantizedPosition ? 6 : 12;
   const normalOffset = align4(positionSize);
   const normalSize = quantizedNormal ? 6 : 12;
@@ -85,6 +86,7 @@ const vertexLayout = (
 };
 
 export class GltfBinaryWriter {
+  constructor(private readonly quantize = true) {}
   private bytes: number[] = [];
   readonly state: GltfBinaryState = {
     bufferViews: [],
@@ -206,7 +208,7 @@ export class GltfBinaryWriter {
     ) {
       throw new Error('glTF rigid joint indices must match the position count.');
     }
-    const layout = vertexLayout(positions, normals, uvs, joints);
+    const layout = vertexLayout(positions, normals, uvs, joints, this.quantize);
     const bytes = new Uint8Array(count * layout.stride);
     const view = new DataView(bytes.buffer);
     for (let vertex = 0; vertex < count; vertex += 1) {

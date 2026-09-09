@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>아이템 스튜디오 · ashfox</title><link rel="stylesheet" href="studio.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="/" aria-label="ashfox 아이템 스튜디오"><span class="brand-icon">a<span>✦</span></span><strong>ashfox</strong><span class="divider"></span><span>아이템 스튜디오</span></a><div class="build-status"><i></i>컴파일 완료 <span id="count"></span></div></header>
+<div class="workspace">
+<aside class="library"><div class="library-title"><h2>아이템</h2><span id="total"></span></div><div id="items" class="items" aria-label="아이템 선택"></div><div class="library-foot">.ashfox<br><span>같은 코드, 같은 픽셀.</span></div></aside>
+<main>
+<div class="item-header"><div><div class="eyebrow" id="category">ITEM</div><h1 id="name">아이템 불러오는 중</h1><p id="description"></p></div><a id="download" class="download" download>↓ PNG 저장</a></div>
+<section class="preview-panel" aria-label="컴파일 결과">
+<div class="preview-toolbar"><div class="tabs" role="group" aria-label="표시할 결과"><button class="active" data-stage="final">완성</button><button data-stage="shade">명암</button><button data-stage="grain">질감</button><button data-stage="silhouette">형태</button></div><div class="backgrounds" aria-label="배경"><button data-bg="dark" class="swatch dark active" aria-label="어두운 배경" title="어두운 배경"></button><button data-bg="light" class="swatch light" aria-label="밝은 배경" title="밝은 배경"></button><button data-bg="grid" class="swatch checker" aria-label="투명 배경" title="투명 배경"></button></div></div>
+<div class="canvas" id="canvas"><span class="canvas-corner">16 × 16</span><img id="preview" alt="선택한 아이템의 컴파일 결과"><div class="canvas-bottom"><span id="scale">12배 확대</span><span>픽셀을 누르면 해당 코드로 이동</span></div></div>
+<div class="preview-footer"><div class="native-box"><img id="native" alt="16픽셀 원본"><span>실제 크기</span></div><span class="stat" id="colors"></span><span class="stat">투명 PNG</span><span class="stat" id="lightInfo"></span></div>
+</section>
+<section class="variants"><div class="section-label"><h2>같은 형태, 다른 재질</h2><span>선택해서 비교하세요</span></div><div id="variants"></div></section>
+<div class="pixel-info" id="pixelInfo">소스에서 형태와 색을 정하면, 컴파일러가 명암을 채웁니다.</div>
+</main>
+<section class="source-panel" aria-label="아이템 소스 코드"><div class="source-heading"><div><span class="eyebrow">SOURCE</span><h2>이 결과를 만든 코드</h2></div><button id="copy" class="copy">복사</button></div><div class="source-tabs" role="group" aria-label="소스 범위"><button data-code="item" class="active">아이템</button><button data-code="shape">형태</button><button data-code="material">재질</button><button data-code="full">전체 파일</button></div><div class="filebar"><span id="fileName"></span><span>.ashfox · 읽기 전용</span></div><div class="code-scroll"><pre><code id="code"></code></pre></div><div class="source-footer"><span id="sourceHint">각 선언이 실제 픽셀로 컴파일됩니다.</span><a id="sourceDownload" download>선택 소스 저장 ↗</a></div></section>
+</div>
+<script src="studio.js"></script>
+</body></html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sound Viewer · ashfox</title><link rel="stylesheet" href="review.css">
+<script src="player.js" defer></script><script src="review.js" defer></script>
+</head>
+<body>
+<header class="app-header"><a class="brand" href="http://127.0.0.1:3123/">ashfox<span class="brand-dot"></span></a><span class="app-name">Sound Viewer</span><span class="local-badge">Local viewer</span><button id="refresh" class="quiet">Refresh results <span aria-hidden="true">↻</span></button></header>
+<div class="workspace">
+<aside class="library"><div class="library-heading"><h2>Sound library</h2><span id="count">0</span></div><nav id="library" aria-label="Select a sound"></nav><div class="library-footer"><span class="signal-dot"></span>Made from code</div></aside>
+<main>
+<div id="empty" class="empty" hidden><h1>Your sounds will appear here.</h1><p>Once a sound is built, you can listen, compare and download it here.</p><details><summary>Local setup</summary><code>npm run build:audio</code></details></div>
+<div id="studio" hidden>
+<div class="sound-heading"><div><p class="eyebrow" id="category"></p><h1 id="title"></h1><p id="description"></p></div><span id="adopted" class="pill"></span></div>
+<div class="studio-grid">
+<section class="listening" aria-label="Listen to a sound">
+<div class="player-panel"><div class="panel-top"><div id="variants" class="segments" role="group" aria-label="Sound variations"></div><label class="toggle"><input type="checkbox" id="loop">Loop</label></div><p id="variant-help" class="hint"></p><div id="primary-player"></div><div class="player-footer"><span id="sound-meta"></span><div class="download-links"><a id="download-wav" download>Download WAV</a><a id="download-ogg" download>OGG</a></div></div></div>
+<div class="compare-heading"><button id="compare-toggle" aria-expanded="false" aria-controls="comparison" class="quiet">Compare results <span aria-hidden="true">＋</span></button><span id="compare-hint" class="hint"></span></div>
+<div id="comparison" class="compare-panel" hidden><div class="panel-top"><label for="baseline">Compare with</label><select id="baseline"></select></div><p id="same-output" class="hint"></p><div id="baseline-player"></div></div>
+</section>
+</div>
+<details class="technical"><summary>Browse saved results</summary><div class="technical-content"><label for="build">Saved result</label><select id="build"></select></div></details>
+</div>
+<p id="status" class="status" role="status"></p>
+</main>
+</div>
+</body></html>

@@ -1,6 +1,6 @@
 'use strict';
 
-/** Verify the checked-in portable workspace through the public authority path. */
+/** Verify native example sources and their generated compatibility exports. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -19,7 +19,8 @@ const {
 } = require('../packages/engine-core/src');
 
 const ROOT = path.resolve(__dirname, '..');
-const EXAMPLES_ROOT = path.join(ROOT, 'examples');
+const EXAMPLES_ROOT = path.join(ROOT, 'assets/workspaces');
+const { readSnapshot, checkSnapshot } = require('@ashfox/asset-build');
 const WORKSPACE_PATH = path.join(
   EXAMPLES_ROOT,
   `shared-creatures${ASHFOX_WORKSPACE_FILE_EXTENSION}`
@@ -61,20 +62,17 @@ const compileEntry = (workspace, entryName, packageName = 'creatures') => {
 };
 
 const verifyCorpus = () => {
-  const exampleFiles = fs.readdirSync(EXAMPLES_ROOT, { withFileTypes: true });
-  assert.deepEqual(exampleFiles.map((entry) => entry.name).sort(), [
-    `fox${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
-    `goblin${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
-    `griffin${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
-    `shared-creatures${ASHFOX_WORKSPACE_FILE_EXTENSION}`
-  ], 'examples must expose canonical portable workspaces and no legacy source tree');
-  assert.equal(exampleFiles.every((entry) => entry.isFile()), true);
+  const native = checkSnapshot(readSnapshot(path.join(ROOT, 'examples/shared-creatures/.ashfoxworkspace')));
+  assert.equal(native.products.length, 3);
+  const nativeWorkspace = native.products.find(product => product.kind === 'model').workspace;
 
   const source = fs.readFileSync(WORKSPACE_PATH, 'utf8');
   const read = readWorkspaceFile(source);
   assert.equal(read.ok, true, read.ok ? '' : read.diagnostics
     .map((diagnostic) => diagnostic.message).join(' | '));
   if (!read.ok) throw new TypeError('Example workspace could not be read.');
+  assert.deepEqual(writeWorkspaceFile(nativeWorkspace), { ok: true, source },
+    'compatibility exports must be generated from the native source project');
   const written = writeWorkspaceFile(read.workspace);
   assert.deepEqual(written, { ok: true, source },
     'example workspace must already use the canonical byte encoding');

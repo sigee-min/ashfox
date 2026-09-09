@@ -20,12 +20,12 @@ const showcaseRoot = path.join(
 );
 const showcaseManifestPath = path.join(showcaseRoot, 'showcase.json');
 const canonicalWorkspaceRelativePath =
-  'examples/shared-creatures.ashfoxworkspace';
+  'assets/workspaces/shared-creatures.ashfoxworkspace';
 const canonicalWorkspacePath = path.join(
   repositoryRoot,
   canonicalWorkspaceRelativePath
 );
-const standaloneGriffinWorkspaceRelativePath = 'examples/griffin.ashfoxworkspace';
+const standaloneGriffinWorkspaceRelativePath = 'assets/workspaces/griffin.ashfoxworkspace';
 const standaloneGriffinWorkspacePath = path.join(
   repositoryRoot,
   standaloneGriffinWorkspaceRelativePath
@@ -171,6 +171,9 @@ const retiredSourceFiles = [
   ))).flat(),
   ...retiredContractFiles
 ];
+// Model retirement rules do not define the sprite or sound property grammar.
+const isOtherAssetGrammar = source => /^ashfox-model 1\s+(?:sprite|sound)\b/u.test(source.trim()) ||
+  (/^ashfox-model 1\s+module\b/u.test(source.trim()) && /\bexport\s+(?:mask|material|stamp)\b/u.test(source));
 for (const file of retiredSourceFiles) {
   const source = await readFile(file, 'utf8');
   for (const term of retiredAuthoredContractTerms) {
@@ -187,8 +190,11 @@ for (const file of retiredSourceFiles) {
   // authored/documentation text so ordinary TypeScript/JavaScript `class`,
   // `extends`, and similar language constructs do not become false positives.
   if (/\.(?:ashfox|md|html|json)$/u.test(file)) {
+    const modelStatements = isOtherAssetGrammar(source) ? '' : source.replace(
+      /```(?:text|ashfox)?\n(ashfox-model 1[\s\S]*?)```/gu,
+      (block, body) => isOtherAssetGrammar(body) ? '' : block);
     for (const term of retiredAuthoredStatementSyntax) {
-      if (term.test(source)) {
+      if (term.test(modelStatements)) {
         failures.push(`${file}: retired authored statement syntax remains in source`);
       }
     }
@@ -368,13 +374,13 @@ for (const [index, entry] of (showcaseManifest.entries ?? []).entries()) {
   const posterSource = selected?.posterSrc;
   const buildVideo = await readFile(path.join(outputRoot, selected.replayVideoSrc));
   if (buildVideo.subarray(4, 8).toString('ascii') !== 'ftyp' || digestBytes(buildVideo) !== entry.video.sha256 || buildVideo.length !== entry.video.byteLength) failures.push('Build video does not match sealed media');
-  if (selected?.workspaceHref !== `/examples/${entry.entryName}.ashfoxworkspace` || selected?.glbHref !== `/examples/${entry.entryName}.glb`) failures.push('Selected downloads mismatch');
+  if (selected?.workspaceHref !== `/assets/workspaces/${entry.entryName}.ashfoxworkspace` || selected?.glbHref !== `/examples/${entry.entryName}.glb`) failures.push('Selected downloads mismatch');
   for (const movie of entry.motions) {
     const shown = selected.motions.find((motion) => motion.name === movie.name);
     if (!shown || digestBytes(await readFile(path.join(outputRoot, shown.src))) !== movie.sha256) failures.push(`Stale motion: ${movie.name}`);
   }
   for (const [source, target] of [
-    [path.join(repositoryRoot, `examples/${entry.entryName}.ashfoxworkspace`), selected.workspaceHref],
+    [path.join(repositoryRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`), selected.workspaceHref],
     [path.join(repositoryRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), selected.glbHref]
   ]) if (!(await readFile(source)).equals(await readFile(path.join(outputRoot, target)))) failures.push(`Stale download: ${target}`);
   if (!replaySource?.startsWith('/media/showcase/') || !posterSource?.startsWith(
@@ -458,13 +464,13 @@ if (!(await exists(publishedGriffinGlbPath))) {
   }
 }
 const publishedWorkspaceFiles = outputFiles.filter((file) =>
-  file.endsWith('.ashfoxworkspace')
+  file.endsWith('.ashfoxworkspace') && file.startsWith(path.join(outputRoot, 'assets/workspaces'))
 );
 const expectedPublishedWorkspaceFiles = [
   publishedWorkspacePath,
   publishedStandaloneGriffinPath,
-  path.join(outputRoot, 'examples/fox.ashfoxworkspace'),
-  path.join(outputRoot, 'examples/goblin.ashfoxworkspace')
+  path.join(outputRoot, 'assets/workspaces/fox.ashfoxworkspace'),
+  path.join(outputRoot, 'assets/workspaces/goblin.ashfoxworkspace')
 ].sort();
 if (
   publishedWorkspaceFiles.length !== expectedPublishedWorkspaceFiles.length ||
@@ -484,7 +490,7 @@ if (griffinGlbLinks.length !== 1 || !landingHtml.includes('Download GLB')) {
   failures.push('landing must provide exactly one Griffin GLB download link');
 }
 if (
-  !landingHtml.includes('href="/examples/griffin.ashfoxworkspace"') ||
+  !landingHtml.includes('href="/assets/workspaces/griffin.ashfoxworkspace"') ||
   !landingHtml.includes('href="/examples/griffin.glb"') ||
   !landingHtml.includes('href="/workbench/"') ||
   !landingHtml.includes('Build replays reconstructed from the finished models.')
@@ -497,9 +503,9 @@ for (const requiredReadmeReference of [
   'assets/showcase/shared-creatures/griffin-build-replay.gif',
   'assets/showcase/shared-creatures/fox-build-replay.gif',
   'assets/showcase/shared-creatures/goblin-build-replay.gif',
-  'examples/griffin.ashfoxworkspace',
+  'examples/griffin/workbench/main.ashfox',
   'assets/exports/griffin/griffin.glb',
-  'examples/shared-creatures.ashfoxworkspace',
+  'examples/shared-creatures/',
   'https://ashfox.io/#examples',
   'https://ashfox.io/workbench/'
 ]) {
@@ -547,24 +553,8 @@ if (instructionButtons.some((button) =>
   failures.push('every setup button must copy the current agent instruction');
 }
 if (!landingHtml.includes('id="quick-start"') ||
-    !landingHtml.includes('browser-capable AI agent')) {
-  failures.push('landing must provide a reachable setup and browser requirement');
-}
-for (const documentationPath of [
-  'README.md',
-  'docs/guides/ai-agent-quick-start.md'
-]) {
-  const documentation = await readFile(
-    path.join(repositoryRoot, documentationPath),
-    'utf8'
-  );
-  const occurrenceCount = documentation
-    .split(landingContent.quickStart.instruction).length - 1;
-  if (occurrenceCount !== 1) {
-    failures.push(
-      `${documentationPath} must contain the canonical agent instruction exactly once`
-    );
-  }
+    !landingHtml.includes('source files')) {
+  failures.push('landing must provide a reachable source authoring setup');
 }
 const siteScriptSource = landingHtml.match(
   /<script type="module" src="([^"]+)"/

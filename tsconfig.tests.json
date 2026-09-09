@@ -2,7 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -13,6 +16,7 @@
     "apps/web/tests/**/*.ts",
     "packages/blockbench-conformance/tests/**/*.ts",
     "packages/blockbench-runtime/tests/**/*.ts",
-    "packages/engine-core/tests/**/*.ts"
+    "packages/engine-core/tests/**/*.ts",
+    "packages/audio-core/tests/**/*.ts"
   ]
 }

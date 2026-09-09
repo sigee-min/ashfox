@@ -1,0 +1,62 @@
+ashfox-model 1
+module goblin_body {
+  import "./goblin-rig.ashfox" as rig;
+  import "./goblin-surface.ashfox" as surface;
+  export component GoblinRaider {
+    requires rig skeleton: rig.GoblinRig;
+    requires surface skin: surface.RaiderSkin;
+    bind bone pelvis to skeleton.pelvis;
+    bind bone torso to skeleton.torso;
+    bind bone head to skeleton.head;
+    bind bone left_arm to skeleton.left_arm;
+    bind bone right_arm to skeleton.right_arm;
+    bind bone weapon to skeleton.weapon;
+    bind bone left_leg to skeleton.left_leg;
+    bind bone right_leg to skeleton.right_leg;
+    geometry {
+      bone pelvis {
+        cube hips { origin = (-4u, 9u, -2.5u); size = (8u, 4u, 5u); surface = skin.pelvis; }
+        cube belt { origin = (-5u, 12u, -3.5u); size = (10u, 2u, 7u); surface = skin.belt; }
+        bone torso {
+          cube chest { origin = (-5u, 13u, -3u); size = (10u, 9u, 6u); surface = skin.torso; }
+          bone head {
+            cube skull { origin = (-4u, 21u, -5u); size = (8u, 8u, 8u); surface = skin.head; }
+            cube snout { origin = (-3u, 21u, -8u); size = (6u, 3u, 3u); surface = skin.snout; }
+            cube left_tusk { origin = (-3u, 20u, -8u); size = (1u, 2u, 1u); surface = skin.tusk; }
+            cube right_tusk { origin = (2u, 20u, -8u); size = (1u, 2u, 1u); surface = skin.tusk; }
+            cube left_ear { origin = (-7u, 23u, -2u); size = (3u, 4u, 2u); surface = skin.ear; }
+            cube right_ear { origin = (4u, 23u, -2u); size = (3u, 4u, 2u); surface = skin.ear; }
+            cube left_ear_tip { origin = (-9u, 24u, -1.5u); size = (2u, 3u, 2u); surface = skin.ear_tip; }
+            cube right_ear_tip { origin = (7u, 24u, -1.5u); size = (2u, 3u, 2u); surface = skin.ear_tip; }
+            cube mohawk { origin = (-1u, 29u, -4u); size = (2u, 3u, 7u); surface = skin.mohawk; }
+          }
+          bone left_arm {
+            cube pauldron { origin = (-9u, 18u, -2.5u); size = (5u, 3u, 5u); surface = skin.pauldron; }
+            cube arm { origin = (-8u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
+            cube hand { origin = (-8u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
+            cube shield { origin = (-12u, 8u, -4u); size = (8u, 10u, 2u); surface = skin.shield; }
+          }
+          bone right_arm {
+            cube pauldron { origin = (4u, 18u, -2.5u); size = (5u, 3u, 5u); surface = skin.pauldron; }
+            cube arm { origin = (5u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
+            cube hand { origin = (5u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
+            bone weapon {
+              cube grip { origin = (5.5u, 9u, -5u); size = (2u, 2u, 4u); surface = skin.grip; }
+              cube crossguard { origin = (2.5u, 9.5u, -6u); size = (8u, 1u, 1u); surface = skin.crossguard; }
+              cube blade { origin = (5.5u, 9u, -20u); size = (2u, 2u, 14u); surface = skin.blade; }
+              cube pommel { origin = (5u, 8.5u, -2u); size = (3u, 3u, 2u); surface = skin.pommel; }
+            }
+          }
+        }
+        bone left_leg {
+          cube leg { origin = (-4u, 2u, -2u); size = (4u, 9u, 4u); surface = skin.leg; }
+          cube boot { origin = (-4u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
+        }
+        bone right_leg {
+          cube leg { origin = (0u, 2u, -2u); size = (4u, 9u, 4u); surface = skin.leg; }
+          cube boot { origin = (0u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
+        }
+      }
+    }
+  }
+}

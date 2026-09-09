@@ -1,43 +1,59 @@
-# Get started
+# Your first asset
 
-Ashfox needs a browser-capable AI agent. The agent keeps the Workbench open,
-reads the current project, makes source changes, and presents the result for
-review. A chat-only agent cannot complete this workflow.
+Start with one item, inspect a model, then make a small change. No workspace
+configuration is required. [Install Ashfox and extract the starter](install.md)
+before running these commands from your asset folder.
 
-## Connect
+## 1. Produce an item PNG
 
-1. Open the [Ashfox Workbench](https://ashfox.io/workbench/) and create or
-   open a project.
-2. Give the connected agent this instruction:
+```sh
+npx --no-install ashfox inspect sword.ashfox
+npx --no-install ashfox export sword.ashfox --output sword.png
+```
 
-~~~text
-Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.
-~~~
+Open `sword.png` with an image viewer. It is a transparent 16×16 item, ready to
+use as an image asset. This step needs no browser or audio encoder.
 
-3. Add what you want to create or change. Describe the subject, silhouette,
-   proportions, palette, pixel density, attachments, and motion when they
-   matter. Say what to preserve when refining an existing asset.
+![Iron sword enlarged against a checker background](/media/guides/sword.png)
 
-For example:
+The illustration above is an enlarged preview. The native export remains 16×16.
+`sword.ashfox` imports `shared.ashfox`; keep both source files together.
 
-~~~text
-Make the head wider while preserving the current block silhouette, warm palette,
-and expression. Keep the eye marks the same pixel size. Review the rebuilt result
-before finishing.
-~~~
+## 2. Look from the angle you want
 
-For a read-only task, say: “Inspect and explain; do not change the workspace.”
+With Chrome/Chromium installed:
 
-Keep the Workbench available in the browser while the agent works. If you use a
-local development Workbench, fetch the manifest from that same origin.
+```sh
+npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 --output fox-angle.png
+npx --no-install ashfox replay fox.ashfox --clip tail_wag --output tail-wag.gif
+```
 
-## What happens next
+![Fox captured at 45 degrees azimuth and 20 degrees elevation](/media/guides/fox-angle.png)
 
-The agent inspects the active workspace, reads only the source it needs,
-previews a complete change, and applies it after validation. It then refreshes
-the project, reviews the rendered views and motion, and creates Build replay
-evidence after the reviews pass. Export is an optional final step.
+You have a PNG of the chosen view and an animated GIF. These commands do not
+create build directories or read a parent workspace. Omit `--output` to receive
+bytes through a pipe or process API. See [observe an asset](observe.md).
 
-The Workbench is for viewing, reviewing, saving, and exporting. Make authoring
-changes through the agent so the workspace remains the source for the asset.
-For the full browser API sequence, see [Agent workflow](agent-workflow.md).
+## 3. Make one change
+
+Ask an agent with file and command access:
+
+```text
+Make the sword blade lighter while keeping its silhouette and dimensions.
+Read sword.ashfox and its imported shared.ashfox. Edit source only.
+Inspect and capture the result at native size and enlarged scale.
+Export a new sword-light.png and tell me what changed.
+```
+
+You can also edit the source in a text editor. Export/capture again with a new
+filename; existing files are never overwritten by `--output`. Compare the
+results and keep the source version you prefer. Passing compilation does not
+replace looking at the image or listening to a sound.
+
+## 4. Choose your next task
+
+- [Create a model](models.md), [draw an item](sprites.md), or [make a sound](sounds.md).
+- [Pass source and media in memory](stdio.md), including persistent agent sessions.
+- [Run the assets in a web game](web-game.md).
+- [Build a Minecraft resource pack](minecraft-packs.md).
+- [Manage several assets](workspace.md) when shared output rules become useful.

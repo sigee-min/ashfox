@@ -6,8 +6,8 @@ import {
   type PointerEvent as ReactPointerEvent
 } from 'react';
 import { useLatestValue } from '../../hooks/useLatestValue';
-import { applyAnimationPose } from '../../rendering/animationPose';
-import { projectToThreeScene } from '../../rendering/projection';
+import { applyAnimationPose } from '@ashfox/render-core/animationPose';
+import { projectToThreeScene } from '@ashfox/render-core/projection';
 import { useViewportRuntime } from './viewport/useViewportRuntime';
 import {
   applyCameraCommand,

@@ -1,0 +1,43 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "minecraft",
+  "packages": [
+    {
+      "name": "blocks",
+      "root": "",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          {
+            "name": "marker",
+            "path": "marker.ashfox"
+          }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    }
+  ],
+  "include": [
+    "*.ashfox"
+  ],
+  "ignore": [],
+  "build": {
+    "directory": "dist/build"
+  },
+  "exports": [
+    {
+      "name": "java_block",
+      "entry": {
+        "packageName": "blocks",
+        "entryName": "marker"
+      },
+      "format": "java_block",
+      "namespace": "demo",
+      "modelPath": "props/marker",
+      "directory": "dist/java_block"
+    }
+  ]
+}

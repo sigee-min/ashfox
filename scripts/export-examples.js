@@ -6,7 +6,11 @@ const engine = require('../packages/engine-core/src');
 const root = path.resolve(__dirname, '..');
 const checked = (result) => { if (!result.ok) throw new Error(JSON.stringify(result)); return result; };
 const main = async () => {
-  const workspace = checked(engine.readWorkspaceFile(fs.readFileSync(path.join(root, 'examples/shared-creatures.ashfoxworkspace')))).workspace;
+  const { readSnapshot, checkSnapshot } = require('@ashfox/asset-build');
+  const compiled = checkSnapshot(readSnapshot(path.join(root, 'examples/shared-creatures/.ashfoxworkspace')));
+  const workspace = compiled.products.find(product => product.kind === 'model').workspace;
+  fs.mkdirSync(path.join(root, 'assets/workspaces'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'assets/workspaces/shared-creatures.ashfoxworkspace'), checked(engine.writeWorkspaceFile(workspace)).source);
   for (const name of ['griffin', 'fox', 'goblin']) {
     const packageName = name === 'griffin' ? 'workbench' : 'creatures';
     const pkg = workspace.manifest.packages.find((value) => value.name === packageName);
@@ -18,7 +22,12 @@ const main = async () => {
       deletes: workspace.files.filter((file) => !paths.has(file.path)).map(({ path }) => ({ path })),
       manifest: { ...workspace.manifest, packages: [{ ...pkg, manifest: { ...pkg.manifest, entries, modules } }] }
     })).workspace;
-    fs.writeFileSync(path.join(root, `examples/${name}.ashfoxworkspace`), checked(engine.writeWorkspaceFile(isolated)).source);
+    for (const file of isolated.files) {
+      const sourcePath = path.join(root, 'examples', name, file.path);
+      fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+      fs.writeFileSync(sourcePath, file.source);
+    }
+    fs.writeFileSync(path.join(root, `assets/workspaces/${name}.ashfoxworkspace`), checked(engine.writeWorkspaceFile(isolated)).source);
     const project = checked(engine.openAssetProject({ workspace: isolated, entry: { packageName, entryName: name }, identity: { id: `example-${name}`, revision: 'example-0001', createdAt: '2026-09-08T00:00:00.000Z' } })).project;
     const textures = new Map(Object.values(project.document.textures).map((texture) => [texture.source.key, {
       bytes: engine.encodeCanonicalPng(engine.rasterizeTexture(project.document, texture)), contentType: 'image/png'

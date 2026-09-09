@@ -81,7 +81,7 @@
           "const": "ai-authored-ai-compiled-human-observed"
         },
         "canonicalAuthority": {
-          "const": "closed-asset-workspace"
+          "const": "native-ashfox-source"
         },
         "projectFile": {
           "$ref": "#/$defs/projectFile"
@@ -129,13 +129,13 @@
           "const": "forbidden"
         },
         "authority": {
-          "const": "closed-workspace-source-only"
+          "const": "optional-repository-configuration"
         },
         "loadMode": {
           "const": "read-validate-build-atomic"
         },
         "compiledState": {
-          "const": "ephemeral-cache-only"
+          "const": "derived-files-only"
         }
       }
     },
@@ -145,14 +145,30 @@
       "maxItems": 8,
       "uniqueItems": true,
       "prefixItems": [
-        { "const": "capture-evidence" },
-        { "const": "create-project" },
-        { "const": "download-project" },
-        { "const": "export-artifact" },
-        { "const": "observe-agent-decisions" },
-        { "const": "open-project" },
-        { "const": "prompt-agent-externally" },
-        { "const": "view-canonical-asset" }
+        {
+          "const": "capture-evidence"
+        },
+        {
+          "const": "create-project"
+        },
+        {
+          "const": "download-project"
+        },
+        {
+          "const": "export-artifact"
+        },
+        {
+          "const": "observe-agent-decisions"
+        },
+        {
+          "const": "open-project"
+        },
+        {
+          "const": "prompt-agent-externally"
+        },
+        {
+          "const": "view-canonical-asset"
+        }
       ],
       "items": false
     },
@@ -162,9 +178,15 @@
       "maxItems": 3,
       "uniqueItems": true,
       "prefixItems": [
-        { "const": "apply-workspace-change-set" },
-        { "const": "inspect-project" },
-        { "const": "present-review-evidence" }
+        {
+          "const": "apply-workspace-change-set"
+        },
+        {
+          "const": "inspect-project"
+        },
+        {
+          "const": "present-review-evidence"
+        }
       ],
       "items": false
     },
@@ -174,13 +196,27 @@
       "maxItems": 7,
       "uniqueItems": true,
       "prefixItems": [
-        { "const": "direct-animation-authoring" },
-        { "const": "direct-geometry-authoring" },
-        { "const": "direct-hierarchy-authoring" },
-        { "const": "direct-material-authoring" },
-        { "const": "direct-rig-authoring" },
-        { "const": "direct-texture-authoring" },
-        { "const": "edit-asset-workspace-in-workbench" }
+        {
+          "const": "direct-animation-authoring"
+        },
+        {
+          "const": "direct-geometry-authoring"
+        },
+        {
+          "const": "direct-hierarchy-authoring"
+        },
+        {
+          "const": "direct-material-authoring"
+        },
+        {
+          "const": "direct-rig-authoring"
+        },
+        {
+          "const": "direct-texture-authoring"
+        },
+        {
+          "const": "edit-asset-workspace-in-workbench"
+        }
       ],
       "items": false
     },
@@ -205,9 +241,15 @@
           "maxItems": 3,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "workspace-summary" },
-            { "const": "native-size-review" },
-            { "const": "technical-receipt" }
+            {
+              "const": "workspace-summary"
+            },
+            {
+              "const": "native-size-review"
+            },
+            {
+              "const": "technical-receipt"
+            }
           ],
           "items": false
         }
@@ -338,11 +380,21 @@
           "maxItems": 5,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "success" },
-            { "const": "cancellation" },
-            { "const": "stale-revision" },
-            { "const": "invalid-input" },
-            { "const": "exception" }
+            {
+              "const": "success"
+            },
+            {
+              "const": "cancellation"
+            },
+            {
+              "const": "stale-revision"
+            },
+            {
+              "const": "invalid-input"
+            },
+            {
+              "const": "exception"
+            }
           ],
           "items": false
         },
@@ -406,12 +458,24 @@
           "maxItems": 6,
           "uniqueItems": true,
           "prefixItems": [
-            { "const": "chore" },
-            { "const": "docs" },
-            { "const": "feat" },
-            { "const": "fix" },
-            { "const": "refactor" },
-            { "const": "test" }
+            {
+              "const": "chore"
+            },
+            {
+              "const": "docs"
+            },
+            {
+              "const": "feat"
+            },
+            {
+              "const": "fix"
+            },
+            {
+              "const": "refactor"
+            },
+            {
+              "const": "test"
+            }
           ],
           "items": false
         },
@@ -541,22 +605,22 @@
       ],
       "properties": {
         "version": {
-          "const": 1
+          "const": 2
         },
         "sourceGrammar": {
           "const": "ashfox-model 1"
         },
         "container": {
-          "const": "ashfox-workspace:1"
+          "const": "ashfox-workspace:2"
         },
         "compatibility": {
           "const": "exact-current-contract"
         },
         "authority": {
-          "const": "packages/engine-core/src/project/workspace/contract.ts"
+          "const": "packages/engine-core/src/project/directory/contract.ts"
         },
         "compiler": {
-          "const": "packages/engine-core/src/compiler/program/asset/compile.ts"
+          "const": "packages/engine-core/src/compiler/directory/compile.ts"
         },
         "releaseState": {
           "const": "unreleased"
@@ -578,7 +642,7 @@
       ],
       "properties": {
         "scope": {
-          "const": "transient-export-input"
+          "const": "source-defaults-with-optional-workspace-overrides"
         },
         "canonicalMutation": {
           "const": false

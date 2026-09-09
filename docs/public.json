@@ -3,34 +3,122 @@
     "id": "start",
     "label": "Start here",
     "pages": [
-      { "source": "README.md", "route": "/docs/" },
-      { "source": "guides/ai-agent-quick-start.md", "route": "/docs/guides/ai-agent-quick-start/" }
+      {
+        "source": "README.md",
+        "route": "/docs/"
+      },
+      {
+        "source": "guides/install.md",
+        "route": "/docs/guides/install/"
+      },
+      {
+        "source": "guides/ai-agent-quick-start.md",
+        "route": "/docs/guides/ai-agent-quick-start/"
+      }
     ]
   },
   {
     "id": "create",
-    "label": "Create and deliver",
+    "label": "Create and observe",
     "pages": [
-      { "source": "guides/authoring-and-review.md", "route": "/docs/guides/authoring-and-review/" },
-      { "source": "guides/save-and-export.md", "route": "/docs/guides/save-and-export/" },
-      { "source": "guides/choose-a-format.md", "route": "/docs/guides/choose-a-format/" },
-      { "source": "guides/troubleshooting.md", "route": "/docs/guides/troubleshooting/" }
+      {
+        "source": "guides/models.md",
+        "route": "/docs/guides/models/"
+      },
+      {
+        "source": "guides/sprites.md",
+        "route": "/docs/guides/sprites/"
+      },
+      {
+        "source": "guides/sounds.md",
+        "route": "/docs/guides/sounds/"
+      },
+      {
+        "source": "guides/observe.md",
+        "route": "/docs/guides/observe/"
+      },
+      {
+        "source": "guides/animation.md",
+        "route": "/docs/guides/animation/"
+      },
+      {
+        "source": "guides/authoring-and-review.md",
+        "route": "/docs/guides/authoring-and-review/"
+      }
     ]
   },
   {
-    "id": "language",
-    "label": "Language",
+    "id": "integrate",
+    "label": "Use in your game",
     "pages": [
-      { "source": "architecture/asset-language.md", "route": "/docs/language/syntax/" },
-      { "source": "guides/precision-modeling.md", "route": "/docs/guides/precision-modeling/" },
-      { "source": "guides/animation.md", "route": "/docs/guides/animation/" }
+      {
+        "source": "guides/choose-a-format.md",
+        "route": "/docs/guides/choose-a-format/"
+      },
+      {
+        "source": "guides/web-game.md",
+        "route": "/docs/guides/web-game/"
+      },
+      {
+        "source": "guides/minecraft-packs.md",
+        "route": "/docs/guides/minecraft-packs/"
+      },
+      {
+        "source": "guides/game-assets.md",
+        "route": "/docs/guides/game-assets/"
+      }
     ]
   },
   {
-    "id": "agents",
-    "label": "Agent integration",
+    "id": "scale",
+    "label": "Projects and automation",
     "pages": [
-      { "source": "guides/agent-workflow.md", "route": "/docs/guides/agent-workflow/" }
+      {
+        "source": "guides/workspace.md",
+        "route": "/docs/guides/workspace/"
+      },
+      {
+        "source": "guides/save-and-export.md",
+        "route": "/docs/guides/save-and-export/"
+      },
+      {
+        "source": "guides/stdio.md",
+        "route": "/docs/guides/stdio/"
+      },
+      {
+        "source": "guides/automation.md",
+        "route": "/docs/guides/automation/"
+      },
+      {
+        "source": "guides/agent-workflow.md",
+        "route": "/docs/guides/agent-workflow/"
+      }
+    ]
+  },
+  {
+    "id": "reference",
+    "label": "Reference",
+    "pages": [
+      {
+        "source": "guides/cli.md",
+        "route": "/docs/guides/cli/"
+      },
+      {
+        "source": "language/model.md",
+        "route": "/docs/language/syntax/"
+      },
+      {
+        "source": "guides/precision-modeling.md",
+        "route": "/docs/guides/precision-modeling/"
+      },
+      {
+        "source": "guides/workbench-api.md",
+        "route": "/docs/guides/workbench-api/"
+      },
+      {
+        "source": "guides/troubleshooting.md",
+        "route": "/docs/guides/troubleshooting/"
+      }
     ]
   }
 ]

@@ -10,7 +10,7 @@ import {
   isNonEmptyContractText
 } from '@ashfox/internal-contracts';
 
-import { VISUAL_REVIEW_RENDERER_IDENTIFIER } from '../../rendering/rendererIdentifier';
+import { VISUAL_REVIEW_RENDERER_IDENTIFIER } from '@ashfox/render-core/rendererIdentifier';
 import type { VisualReviewObservation } from './observation';
 import {
   VISUAL_REVIEW_RECEIPT_SCHEMA_VERSION,

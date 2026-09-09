@@ -43,15 +43,15 @@ assert.equal(
   'ai-authored-ai-compiled-human-observed'
 );
 assert.equal(manifest.productExperience.canonicalAuthority,
-  'closed-asset-workspace');
+  'native-ashfox-source');
 assert.deepEqual(manifest.productExperience.projectFile, {
   extension: '.ashfoxworkspace',
   mediaType: 'application/vnd.ashfox.workspace+json',
   encoding: 'utf-8',
   bom: 'forbidden',
-  authority: 'closed-workspace-source-only',
+  authority: 'optional-repository-configuration',
   loadMode: 'read-validate-build-atomic',
-  compiledState: 'ephemeral-cache-only'
+  compiledState: 'derived-files-only'
 });
 assert.equal(manifest.productExperience.agentDecision.compilationAuthority, 'agent');
 assert.equal(manifest.productExperience.agentDecision.confirmationRequired, false);
@@ -59,12 +59,12 @@ assert.equal(manifest.productExperience.agentCapabilities.includes(
   'apply-workspace-change-set'), true);
 assert.equal(manifest.productExperience.deliveryAuthority, 'human');
 assert.deepEqual(manifest.versioning.assetWorkspace, {
-  version: 1,
+  version: 2,
   sourceGrammar: 'ashfox-model 1',
-  container: 'ashfox-workspace:1',
+  container: 'ashfox-workspace:2',
   compatibility: 'exact-current-contract',
-  authority: 'packages/engine-core/src/project/workspace/contract.ts',
-  compiler: 'packages/engine-core/src/compiler/program/asset/compile.ts',
+  authority: 'packages/engine-core/src/project/directory/contract.ts',
+  compiler: 'packages/engine-core/src/compiler/directory/compile.ts',
   releaseState: 'unreleased',
   replacementPolicy: 'apply-complete-change-set-atomically',
   legacyAliases: 'forbidden'

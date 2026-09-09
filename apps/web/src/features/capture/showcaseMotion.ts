@@ -1,9 +1,9 @@
 import type { ProjectDocument } from '@ashfox/engine-core';
-import { applyAnimationPose } from '../../rendering/animationPose';
+import { applyAnimationPose } from '@ashfox/render-core/animationPose';
 import { stageShowcase } from './showcaseStage';
-import { createCaptureProjection } from './projection';
-import { requiredCaptureForward, waitForProjectionTextures } from './captureSurface';
-import { createGifCaptureSurface, disposeGifCaptureSurface, encodeGifSurfaceFrame, finishGifCaptureSurface } from './gifCaptureSurface';
+import { createCaptureProjection } from '@ashfox/render-core/capture/projection';
+import { requiredCaptureForward, waitForProjectionTextures } from '@ashfox/render-core/captureSurface';
+import { createGifCaptureSurface, disposeGifCaptureSurface, encodeGifSurfaceFrame, finishGifCaptureSurface } from '@ashfox/render-core/capture/gifCaptureSurface';
 
 /** Finished showcase poses use the same canonical sampler as the Workbench. */
 export const renderShowcaseMotion = async (

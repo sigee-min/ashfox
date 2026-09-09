@@ -1,0 +1,66 @@
+ashfox-model 1
+sprite iron_sword {
+  import "./shared.ashfox" as shared;
+  profile = "minecraft-item-v1";
+  canvas = [16, 16];
+  palette {
+    edge = #253746;
+    gold = #D9AE58;
+    gold_light = #FFF0AD;
+    grip = #815144;
+    grip_dark = #432E38;
+    glint = #FFFFFF;
+    edge_light = #476478;
+  }
+  paint blade_outline {
+    at = [2, 0];
+    rows = ["..........oo.", ".........oooo", "........ooooo", ".......ooooo.", "......ooooo..", ".....ooooo...", "....ooooo....", "...ooooo.....", "..ooooo......", ".ooooo.......", "ooooo........", ".ooo.........", "..o.........."];
+    colors {
+      o = "edge";
+    }
+  }
+  part blade {
+    mask = "shared.blade";
+    material = "shared.steel";
+    at = [3, 1];
+    shade {
+      form = "bevel";
+      light = "top_left";
+      contrast = 2;
+      axis = [
+        [0, 10],
+        [10, 0]
+      ];
+    }
+    grain {
+      mode = "clustered-v1";
+      amount = 0;
+      seed = 23;
+    }
+    patches = [];
+  }
+  paint hilt {
+    at = [2, 8];
+    rows = ["g.......", "Lg......", ".Lg.....", "..Lgg...", "...ggg..", "....g..."];
+    colors {
+      g = "gold";
+      L = "gold_light";
+    }
+  }
+  paint handle {
+    at = [0, 10];
+    rows = ["...dd", "..dhd", ".dhd.", "dhd..", "dd..."];
+    colors {
+      d = "grip_dark";
+      h = "grip";
+    }
+  }
+  paint pommel {
+    at = [0, 14];
+    rows = ["Lg", "gg"];
+    colors {
+      L = "gold_light";
+      g = "gold";
+    }
+  }
+}

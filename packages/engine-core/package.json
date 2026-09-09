@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ashfox/internal-contracts": "^0.0.0",
-    "meshoptimizer": "^1.2.0"
+    "meshoptimizer": "^1.2.0",
+    "@ashfox/audio-core": "^0.0.0"
   }
 }

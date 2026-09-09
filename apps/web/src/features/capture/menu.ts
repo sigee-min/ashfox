@@ -1,13 +1,13 @@
 import type { ProjectDocument } from '@ashfox/engine-core';
 
-import type { CameraMode } from '../../rendering/cameraPresets';
-import type { ViewportEnvironmentId } from '../../rendering/viewportEnvironment';
+import type { CameraMode } from '@ashfox/render-core/cameraPresets';
+import type { ViewportEnvironmentId } from '@ashfox/render-core/viewportEnvironment';
 import type { ArtifactFile } from '../files/artifactFile';
 import type { FileOperationState } from '../files/fileOperationState';
 import {
   BUILD_CAPTURE_FPS,
   createBuildCapturePlan
-} from './buildCaptureTimeline';
+} from '@ashfox/render-core/capture/buildCaptureTimeline';
 import type { GifCaptureFile } from './gifCaptureFile';
 import type { GifCaptureRequest } from './gifCaptureRequest';
 

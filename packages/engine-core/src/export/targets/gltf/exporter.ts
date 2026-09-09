@@ -88,7 +88,7 @@ export const buildGltf = (
     throw new Error('Project does not use the gltf.2 profile.');
   }
 
-  const writer = new GltfBinaryWriter();
+  const writer = new GltfBinaryWriter(options.quantize ?? true);
   const modelPathSegments = profile.modelPath.split('/');
   const modelFileName =
     modelPathSegments[modelPathSegments.length - 1];
@@ -246,18 +246,12 @@ export const exportGltfResolved = async (
   });
   const validatedDocument = validation.document;
   const profile = validation.profile;
-  if (profile.imageStorage === 'external') {
-    const compiled = await compressGltfWithMeshopt(buildGltf(
-      validatedDocument));
-    return createGltfBundle(validatedDocument, build, compiled,
-      validation.findings);
-  }
-  const resolvedTextures = await resolveGltfTextures(
-    validatedDocument,
-    options.resolveBlob
+  const encoding = options.encoding ?? 'optimized';
+  if (encoding !== 'portable' && encoding !== 'optimized') throw new TypeError('Unknown glTF encoding');
+  const resolvedTextures = profile.imageStorage === 'external' ? undefined : await resolveGltfTextures(
+    validatedDocument, options.resolveBlob
   );
-  const compiled = await compressGltfWithMeshopt(
-    buildGltf(validatedDocument, { resolvedTextures })
-  );
+  const plain = buildGltf(validatedDocument, { resolvedTextures, quantize: encoding !== 'portable' });
+  const compiled = encoding === 'portable' ? plain : await compressGltfWithMeshopt(plain);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };

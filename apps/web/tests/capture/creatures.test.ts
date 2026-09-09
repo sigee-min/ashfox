@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as THREE from 'three';
 import { openAssetProject, readWorkspaceFile, type AxisCubeNode } from '@ashfox/engine-core';
-import { applyAnimationPose } from '../../src/rendering/animationPose';
-import type { ProjectSceneProjection } from '../../src/rendering/sceneTypes';
+import { applyAnimationPose } from '@ashfox/render-core/animationPose';
+import type { ProjectSceneProjection } from '@ashfox/render-core/sceneTypes';
 
-const read = readWorkspaceFile(readFileSync(resolve(__dirname, '../../../../examples/goblin.ashfoxworkspace')));
+const read = readWorkspaceFile(readFileSync(resolve(__dirname, '../../../../assets/workspaces/goblin.ashfoxworkspace')));
 if (!read.ok) throw new Error('Goblin workspace did not open');
 const opened = openAssetProject({ workspace: read.workspace, entry: { packageName: 'creatures', entryName: 'goblin' }, identity: { id: 'motion-test', revision: 'test-0001', createdAt: '2026-09-08T00:00:00.000Z' } });
 if (!opened.ok) throw new Error('Goblin did not compile');

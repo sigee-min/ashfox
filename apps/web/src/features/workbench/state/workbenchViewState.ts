@@ -4,7 +4,7 @@ import type {
 } from '../viewport/viewportTypes';
 import type {
   ViewportEnvironmentId
-} from '../../../rendering/viewportEnvironment';
+} from '@ashfox/render-core/viewportEnvironment';
 
 export type WorkbenchOverlay = 'scene' | 'inspector' | null;
 export type BottomWorkspaceMode = 'animation' | 'activity';

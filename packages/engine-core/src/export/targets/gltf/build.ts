@@ -6,6 +6,7 @@ import type { MaterializedTextureFile } from '../../texture';
 import type { GltfDocument } from './contract';
 
 export interface GltfBuildOptions {
+  readonly quantize?: boolean;
   resolvedTextures?: ReadonlyMap<AssetId, ResolvedBlob>;
 }
 

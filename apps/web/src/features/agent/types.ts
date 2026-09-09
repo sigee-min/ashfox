@@ -18,7 +18,7 @@ import {
 } from '../../application/review';
 import type {
   CameraMode
-} from '../../rendering/cameraPresets';
+} from '@ashfox/render-core/cameraPresets';
 
 export {
   VISUAL_REVIEW_CAMERAS,

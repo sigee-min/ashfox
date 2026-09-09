@@ -1,0 +1,43 @@
+ashfox-model 1
+
+sound wolf_howl {
+  duration = 3;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "vocal";
+        pitch = (270, 360);
+        sweepSeconds = 1.5;
+        formants = (580, 1150, 2400);
+        bandwidths = (100, 180, 300);
+        breath = 0.06;
+        jitter = 0.06;
+        roughness = 0.06;
+      };
+      start = 0.1;
+      duration = 2.7;
+      gain = 0.85;
+      attack = 0.4;
+      release = 0.5;
+      highpass = 80;
+      lowpass = 6500;
+      id = "layer_1";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

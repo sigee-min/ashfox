@@ -1,0 +1,44 @@
+ashfox-model 1
+module animation {
+export rig contract GriffinRig { handedness = right; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+joint head { parent = root; role = head; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+joint wing_left { parent = root; role = wing; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+joint wing_right { parent = root; role = wing; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+joint tail { parent = root; role = tail; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; } }
+export skeleton GriffinSkeleton implements GriffinRig { bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+bind head { parent-origin = (0u, 22u, -8u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+bind wing_left { parent-origin = (-5u, 20u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+bind wing_right { parent-origin = (5u, 20u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+bind tail { parent-origin = (0u, 13u, 12u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
+export motion idle for GriffinRig { duration = 3s; fps = 20; loop = loop; rest-relative = true; track head.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1.5s = (1deg, 4deg, 0deg) linear; key 3s = (0deg, 0deg, 0deg) linear; }
+track wing_left.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1.5s = (0deg, 0deg, -4deg) linear; key 3s = (0deg, 0deg, 0deg) linear; }
+track wing_right.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1.5s = (0deg, 0deg, 4deg) linear; key 3s = (0deg, 0deg, 0deg) linear; }
+track tail.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1.5s = (0deg, 6deg, 0deg) linear; key 3s = (0deg, 0deg, 0deg) linear; } }
+export motion look_around for GriffinRig { duration = 4s; fps = 24; loop = loop; rest-relative = true;
+track head.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.8s = (0deg, -22deg, -3deg) catmullrom; key 1.4s = (0deg, -22deg, -3deg) catmullrom; key 2.5s = (2deg, 22deg, 3deg) catmullrom; key 3.1s = (2deg, 22deg, 3deg) catmullrom; key 4s = (0deg, 0deg, 0deg) catmullrom; }
+track tail.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 1s = (0deg, 9deg, 0deg) catmullrom; key 2s = (0deg, 0deg, 0deg) catmullrom; key 3s = (0deg, -9deg, 0deg) catmullrom; key 4s = (0deg, 0deg, 0deg) catmullrom; }
+}
+export motion wing_display for GriffinRig { duration = 3.6s; fps = 24; loop = loop; rest-relative = true;
+track wing_left.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.9s = (0deg, 0deg, -22deg) catmullrom; key 2.4s = (0deg, 0deg, -22deg) catmullrom; key 3.6s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_right.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.9s = (0deg, 0deg, 22deg) catmullrom; key 2.4s = (0deg, 0deg, 22deg) catmullrom; key 3.6s = (0deg, 0deg, 0deg) catmullrom; }
+track head.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.9s = (-7deg, 0deg, 0deg) catmullrom; key 2.4s = (-7deg, 0deg, 0deg) catmullrom; key 3.6s = (0deg, 0deg, 0deg) catmullrom; }
+track tail.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 1.2s = (-8deg, 0deg, 0deg) catmullrom; key 2.4s = (-8deg, 0deg, 0deg) catmullrom; key 3.6s = (0deg, 0deg, 0deg) catmullrom; }
+}
+export motion wing_flap for GriffinRig { duration = 1.6s; fps = 24; loop = loop; rest-relative = true;
+track wing_left.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.4s = (0deg, 0deg, -18deg) catmullrom; key 0.8s = (0deg, 0deg, 16deg) catmullrom; key 1.2s = (0deg, 0deg, -18deg) catmullrom; key 1.6s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_right.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.4s = (0deg, 0deg, 18deg) catmullrom; key 0.8s = (0deg, 0deg, -16deg) catmullrom; key 1.2s = (0deg, 0deg, 18deg) catmullrom; key 1.6s = (0deg, 0deg, 0deg) catmullrom; }
+track head.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.4s = (-3deg, 0deg, 0deg) catmullrom; key 0.8s = (3deg, 0deg, 0deg) catmullrom; key 1.2s = (-3deg, 0deg, 0deg) catmullrom; key 1.6s = (0deg, 0deg, 0deg) catmullrom; }
+}
+export motion greeting for GriffinRig { duration = 3s; fps = 24; loop = loop; rest-relative = true;
+track head.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.65s = (17deg, 0deg, 0deg) catmullrom; key 1.1s = (2deg, 0deg, 0deg) catmullrom; key 1.65s = (13deg, 0deg, 0deg) catmullrom; key 2.2s = (0deg, 0deg, -6deg) catmullrom; key 3s = (0deg, 0deg, 0deg) catmullrom; }
+track tail.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.5s = (0deg, 13deg, 0deg) catmullrom; key 1s = (0deg, -13deg, 0deg) catmullrom; key 1.5s = (0deg, 13deg, 0deg) catmullrom; key 2s = (0deg, -13deg, 0deg) catmullrom; key 2.5s = (0deg, 7deg, 0deg) catmullrom; key 3s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_left.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 1.5s = (0deg, 0deg, -5deg) catmullrom; key 3s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_right.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 1.5s = (0deg, 0deg, 5deg) catmullrom; key 3s = (0deg, 0deg, 0deg) catmullrom; }
+}
+export motion alert for GriffinRig { duration = 2.4s; fps = 24; loop = loop; rest-relative = true;
+track head.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.25s = (-8deg, -12deg, 0deg) catmullrom; key 1.1s = (-8deg, -12deg, 0deg) catmullrom; key 1.55s = (-6deg, 12deg, 0deg) catmullrom; key 2.4s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_left.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.3s = (0deg, 0deg, -10deg) catmullrom; key 1.6s = (0deg, 0deg, -10deg) catmullrom; key 2.4s = (0deg, 0deg, 0deg) catmullrom; }
+track wing_right.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.3s = (0deg, 0deg, 10deg) catmullrom; key 1.6s = (0deg, 0deg, 10deg) catmullrom; key 2.4s = (0deg, 0deg, 0deg) catmullrom; }
+track tail.rotation { key 0s = (0deg, 0deg, 0deg) catmullrom; key 0.3s = (-10deg, 0deg, 0deg) catmullrom; key 1.6s = (-10deg, 0deg, 0deg) catmullrom; key 2.4s = (0deg, 0deg, 0deg) catmullrom; }
+}
+}

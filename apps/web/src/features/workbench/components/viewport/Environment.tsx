@@ -1,7 +1,7 @@
 import {
   VIEWPORT_ENVIRONMENTS,
   type ViewportEnvironmentId
-} from '../../../../rendering/viewportEnvironment';
+} from '@ashfox/render-core/viewportEnvironment';
 import { Icon, type IconName } from '../../Icon';
 
 const ENVIRONMENT_ICONS: Readonly<

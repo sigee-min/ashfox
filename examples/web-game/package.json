@@ -1,0 +1,8 @@
+{
+  "name": "ashfox-web-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"assets": "node build.mjs", "start": "node serve.mjs"},
+  "dependencies": {"three": "0.185.1"}
+}

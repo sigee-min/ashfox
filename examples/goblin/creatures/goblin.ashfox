@@ -1,0 +1,14 @@
+ashfox-model 1
+asset goblin {
+  import "./goblin-rig.ashfox" as rig;
+  import "./goblin-surface.ashfox" as surface;
+  import "./goblin-body.ashfox" as body;
+  export asset goblin {
+    settings { density = 16; forward = north; }
+    skeleton = rig.RaiderSkeleton;
+    motion = rig.idle;
+    motion = rig.lookout;
+    motion = rig.challenge;
+    use body.GoblinRaider as goblin { bind skeleton = rig.GoblinRig; bind skin = surface.raider; };
+  }
+}

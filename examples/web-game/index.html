@@ -1,0 +1,5 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ashfox game import example</title>
+<style>body{margin:0;background:#171d22;color:#eee;font:16px system-ui}main{max-width:1000px;margin:auto;padding:24px}canvas{display:block;width:100%;height:460px;background:#222b31}button,select{padding:10px;margin:12px 10px 12px 0}img{width:96px;height:96px;image-rendering:pixelated}#status{min-height:2em} .controls{display:flex;gap:16px;align-items:center;flex-wrap:wrap}</style>
+<main><h1>One source project, three game assets</h1><canvas aria-label="Animated creature"></canvas><div class="controls"><img id="item" alt="Iron sword item"><label>Motion <select id="clips"></select></label><button id="sound" disabled>Play claw hit</button></div><p id="status">Loading assets…</p></main>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script><script type="module" src="/main.js"></script></html>

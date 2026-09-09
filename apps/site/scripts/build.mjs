@@ -1,9 +1,11 @@
+import { execFileSync } from 'node:child_process';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
 import {
   cp,
   mkdir,
   readFile,
+  readdir,
   rm,
   writeFile
 } from 'node:fs/promises';
@@ -30,7 +32,7 @@ const showcaseRoot = path.join(
 const showcaseManifestPath = path.join(showcaseRoot, 'showcase.json');
 const canonicalWorkspacePath = path.join(
   repoRoot,
-  'examples',
+  'assets', 'workspaces',
   'shared-creatures.ashfoxworkspace'
 );
 const sourceRoot = path.join(siteRoot, 'src');
@@ -40,7 +42,7 @@ const outputRoot = path.join(siteRoot, 'dist');
 const workbenchUrl = '/workbench/';
 const siteOrigin = 'https://ashfox.io';
 const canonicalWorkspaceRelativePath =
-  'examples/shared-creatures.ashfoxworkspace';
+  'assets/workspaces/shared-creatures.ashfoxworkspace';
 
 const isRecord = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -248,10 +250,12 @@ ${routes.map((route) => `  <url><loc>${escapeXml(new URL(route, siteOrigin).toSt
 </urlset>
 `;
 
+execFileSync(process.execPath, [path.join(repoRoot, 'scripts/docs/build.js')], { cwd: repoRoot, stdio: 'inherit' });
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(path.join(outputRoot, 'assets'), { recursive: true });
 await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
 await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
+await mkdir(path.join(outputRoot, 'assets/workspaces'), { recursive: true });
 
 const showroomCss = await readFile(path.join(sourceRoot, 'showroom.css'), 'utf8');
 const buildReplayJs = await readFile(path.join(sourceRoot, 'buildReplay.js'), 'utf8');
@@ -271,7 +275,7 @@ const showcase = {
     canonicalWorkspaceRelativePath,
   workbenchHref: workbenchUrl,
   entries: await Promise.all(generatedShowcase.entries.map(async (entry) => ({
-    workspaceHref: `/examples/${entry.entryName}.ashfoxworkspace`,
+    workspaceHref: `/assets/workspaces/${entry.entryName}.ashfoxworkspace`,
     glbHref: `/examples/${entry.entryName}.glb`,
     motions: await Promise.all(entry.motions.map(async (motion) => ({ name: motion.name, duration: motion.duration, src: await hashedShowcaseMedia(motion.artifact, motion.sha256, motion.byteLength) }))),
     packageName: entry.packageName,
@@ -290,9 +294,26 @@ await writeFile(
   generatedShowcase.workspaceBytes
 );
 for (const entry of generatedShowcase.entries) {
-  await cp(path.join(repoRoot, `examples/${entry.entryName}.ashfoxworkspace`), path.join(outputRoot, `examples/${entry.entryName}.ashfoxworkspace`));
+  await cp(path.join(repoRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`), path.join(outputRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`));
   await cp(path.join(repoRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), path.join(outputRoot, `examples/${entry.entryName}.glb`));
 }
+
+// Publish source examples without generated output or internal model snapshots.
+const copyNativeSources = async (relative) => {
+  for (const entry of await readdir(path.join(repoRoot, relative), { withFileTypes: true })) {
+    const child = path.join(relative, entry.name);
+    if (entry.isDirectory() && !['dist', 'build', 'exports', '.ashfox', 'node_modules'].includes(entry.name)) {
+      await copyNativeSources(child);
+    } else if (entry.isFile() && (entry.name.endsWith('.ashfox') || entry.name === '.ashfoxworkspace')) {
+      const destination = path.join(outputRoot, child);
+      await mkdir(path.dirname(destination), { recursive: true });
+      await cp(path.join(repoRoot, child), destination);
+    }
+  }
+};
+await copyNativeSources('examples');
+await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), { recursive: true });
+await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides'), { recursive: true, filter: source => !source.endsWith('receipt.json') });
 
 await writeRoute('/', renderLandingPage({ assets, config, showcase }));
 for (const document of documents) {
@@ -342,9 +363,15 @@ await writeFile(
 /media/showcase/*
   Cache-Control: public, max-age=31536000, immutable
 
-/examples/*.ashfoxworkspace
+/assets/workspaces/*.ashfoxworkspace
   Content-Type: application/vnd.ashfox.workspace+json
   Cache-Control: public, max-age=0, must-revalidate
+
+/downloads/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/media/guides/*.wav
+  Content-Type: audio/wav
 
 /examples/*.glb
   Content-Type: model/gltf-binary
@@ -355,7 +382,6 @@ await writeFile(
 await writeFile(
   path.join(outputRoot, '_redirects'),
   `/docs /docs/ 301
-/docs/architecture/asset-language/ /docs/language/syntax/ 301
 `
 );
 await writeFile(

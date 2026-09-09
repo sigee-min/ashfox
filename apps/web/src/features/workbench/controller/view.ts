@@ -6,7 +6,7 @@ import type { ProjectDocument } from '@ashfox/engine-core';
 
 import type {
   ViewportEnvironmentId
-} from '../../../rendering/viewportEnvironment';
+} from '@ashfox/render-core/viewportEnvironment';
 import {
   useAnimationPlayback
 } from '../hooks/useAnimationPlayback';

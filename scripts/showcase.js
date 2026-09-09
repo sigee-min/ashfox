@@ -18,14 +18,14 @@ const {
 const {
   BUILD_CAPTURE_FPS,
   createBuildCapturePlan
-} = require('../apps/web/src/features/capture/buildCaptureTimeline');
+} = require('@ashfox/render-core/capture/buildCaptureTimeline');
 const {
   GIF_CAPTURE_HEIGHT,
   GIF_CAPTURE_WIDTH
-} = require('../apps/web/src/features/capture/gifCaptureSurface');
+} = require('@ashfox/render-core/capture/gifCaptureSurface');
 
 const ROOT = path.resolve(__dirname, '..');
-const WORKSPACE_RELATIVE_PATH = 'examples/shared-creatures.ashfoxworkspace';
+const WORKSPACE_RELATIVE_PATH = 'assets/workspaces/shared-creatures.ashfoxworkspace';
 const WORKSPACE_PATH = path.join(ROOT, WORKSPACE_RELATIVE_PATH);
 const SHOWCASE_RELATIVE_PATH = 'assets/showcase/shared-creatures';
 const SHOWCASE_PATH = path.join(ROOT, SHOWCASE_RELATIVE_PATH);
@@ -37,10 +37,10 @@ const EXPECTED_SELECTORS = Object.freeze([
 ]);
 const CAPTURE_SOURCE_ROOTS = Object.freeze([
   'apps/web/src/features/capture',
-  'apps/web/src/rendering'
+  'packages/render-core/src'
 ]);
 const CAPTURE_SOURCE_FILES = Object.freeze([
-  'apps/web/src/application/projectAssets.ts',
+  'packages/render-core/package.json',
   'apps/web/package.json',
   'scripts/capture-showcase.js'
 ]);

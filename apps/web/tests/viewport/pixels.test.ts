@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isPixelFrameEvidence,
   pixelFrameEvidenceFromRgba
-} from '../../src/rendering/pixelFrameEvidence';
+} from '@ashfox/render-core/pixelFrameEvidence';
 import { FRAME_EVIDENCE_FIXTURE } from '../fixtures/frame';
 
 export const test = (async (): Promise<void> => {

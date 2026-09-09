@@ -1,0 +1,45 @@
+ashfox-model 1
+sprite amethyst {
+  import "./shared.ashfox" as shared;
+  profile = "minecraft-item-v1";
+  canvas = [16, 16];
+  palette {
+    edge = #302B50;
+    shine = #FFE5F4;
+    edge_light = #72508C;
+  }
+  paint edge {
+    at = [3, 4];
+    rows = ["...llll...", "..lllloo..", ".lllloooo.", "lllloooooo", "lllooooooo", ".oooooooo.", "..oooooo..", "...oooo..."];
+    colors {
+      o = "edge";
+      l = "edge_light";
+    }
+  }
+  part ore {
+    mask = "shared.ore";
+    material = "shared.amethyst";
+    at = [4, 5];
+    shade {
+      form = "round";
+      light = "top_left";
+      contrast = 2;
+    }
+    grain {
+      mode = "clustered-v1";
+      amount = 1;
+      seed = 23;
+    }
+    patches = [
+      {
+        id = "facet";
+        at = [2, 1];
+        rows = ["h.", "hh"];
+        colors {
+          h = "shine";
+        }
+        protect = 1;
+      }
+    ];
+  }
+}

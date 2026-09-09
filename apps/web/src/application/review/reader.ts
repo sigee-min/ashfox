@@ -10,7 +10,7 @@ import {
   isNonEmptyContractText
 } from '@ashfox/internal-contracts';
 
-import { isPixelFrameEvidence } from '../../rendering/pixelFrameEvidence';
+import { isPixelFrameEvidence } from '@ashfox/render-core/pixelFrameEvidence';
 import {
   VISUAL_REVIEW_CAMERAS,
   visualReviewChecksForCamera,

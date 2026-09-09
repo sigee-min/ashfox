@@ -1,7 +1,7 @@
 # Ashfox
 
-Create Minecraft-style models, textures, and animation with your AI agent.
-Describe what you want, refine it in the browser, and export it for your game.
+Write low-poly models, pixel items and procedural sound effects as code.
+Compile `.ashfox` sources into assets for voxel games and Minecraft with one CLI.
 
 <p align="center">
   <a href="https://ashfox.io/#examples"><img src="assets/showcase/shared-creatures/griffin-poster.png" alt="Griffin guardian" width="360"></a>
@@ -23,36 +23,63 @@ Describe what you want, refine it in the browser, and export it for your game.
 
 [View examples](https://ashfox.io/#examples) ·
 [Launch Workbench](https://ashfox.io/workbench/) ·
-[Shared workspace](examples/shared-creatures.ashfoxworkspace)
+[Shared source project](examples/shared-creatures/)
 
 | Character | Keep creating | Use in your game |
 | --- | --- | --- |
-| Griffin guardian · 6 motions | [Workspace](examples/griffin.ashfoxworkspace) | [GLB](assets/exports/griffin/griffin.glb) |
-| Red fox · 3 motions | [Workspace](examples/fox.ashfoxworkspace) | [GLB](assets/exports/fox/fox.glb) |
-| Goblin raider · 3 motions | [Workspace](examples/goblin.ashfoxworkspace) | [GLB](assets/exports/goblin/goblin.glb) |
+| Griffin guardian · 6 motions | [.ashfox source](examples/griffin/workbench/main.ashfox) | [GLB](assets/exports/griffin/griffin.glb) |
+| Red fox · 3 motions | [.ashfox source](examples/fox/creatures/fox.ashfox) | [GLB](assets/exports/fox/fox.glb) |
+| Goblin raider · 3 motions | [.ashfox source](examples/goblin/creatures/goblin.ashfox) | [GLB](assets/exports/goblin/goblin.glb) |
 
 ## Get started
 
-Use an AI agent that can control a browser. Paste this instruction followed by
-what you want to create or change:
+Download the [CLI package](https://ashfox.io/downloads/ashfox-cli.tgz) and
+[starter assets](https://ashfox.io/downloads/starter.zip). Extract the starter,
+put the package in that folder, and run with Node.js 20 or newer:
 
-```text
-Fetch and follow https://ashfox.io/workbench/agent-manifest.json using a direct HTTP request such as curl.
+```sh
+npm install --save-dev ./ashfox-cli.tgz
+npx --no-install ashfox inspect sword.ashfox
+npx --no-install ashfox export sword.ashfox --output sword.png
 ```
 
-For example: “Create a small griffin guardian with six expressive motions.”
+Start with one asset. Add `.ashfoxworkspace` when you need project-wide IDs,
+formats and delivery paths. The [web-game sample](docs/guides/web-game.md)
+shows models, item images and sound working together.
 
-Your agent builds and checks the model in Workbench. Ask for changes in the same
-conversation. Download the `.ashfoxworkspace` to keep editing later, or export
-Java block, GeckoLib 5, Bedrock, GLB, or glTF files.
-
-[Get started](docs/guides/ai-agent-quick-start.md) ·
-[Export formats](docs/guides/choose-a-format.md) ·
+[Installation](docs/guides/install.md) ·
+[First build](docs/guides/ai-agent-quick-start.md) ·
 [Documentation](docs/README.md)
+
+The optional [Model Workbench](https://ashfox.io/workbench/) provides browser
+model inspection and its own agent API. Its model snapshots are separate from
+the native directory project. See [Workbench API](docs/guides/workbench-api.md).
+
+## Build assets from code
+
+Native `.ashfox` sources compile through the CLI. An optional `.ashfoxworkspace`
+configures PNG, audio and model exports, engine-neutral `game_assets` bundles,
+and Minecraft resource packs. A single project can emit both delivery targets.
+Generic bundles contain portable GLB/PNG/WAV or OGG, plus a runtime manifest with
+asset IDs, paths, animation clips and import hints.
+
+See the [game-asset example](examples/game-assets/.ashfoxworkspace),
+[CLI usage](docs/guides/cli.md), and
+[runtime manifest contract](docs/guides/game-assets.md).
+
+## Observe one asset
+
+```sh
+npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 > fox.png
+npx --no-install ashfox stdio
+```
+
+Receive PNG/GIF, playable audio, exports or inspection JSON over stdout. Capture
+uses a headless Chrome/Chromium process and the shared Workbench renderer.
+No workspace is required. [Single-asset and stdio guide](docs/guides/observe.md).
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, and
-[development-manifest.json](development-manifest.json) for repository rules.
+Repository development instructions live in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT license](LICENSE).

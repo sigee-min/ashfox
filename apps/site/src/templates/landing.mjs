@@ -37,9 +37,9 @@ export const renderLandingPage = ({ assets, config, showcase }) => {
           <p
             class="hero-agent-hint"
             data-copy-feedback
-            data-default-feedback="Paste into a browser-capable AI agent and describe your idea."
+            data-default-feedback="Ask your agent to edit source files and build assets for your game."
             aria-live="polite"
-          >Paste into a browser-capable AI agent and describe your idea.</p>
+          >Ask your agent to edit source files and build assets for your game.</p>
 
         </div>
         ${landingShowcase({ content: content.showcase, showcase })}
@@ -49,7 +49,7 @@ export const renderLandingPage = ({ assets, config, showcase }) => {
         <div class="output-copy" data-reveal>
           <p class="eyebrow"><span></span>Export</p>
           <h2>Take it into your game.</h2>
-          <p>Save your workspace to keep editing. Export the model in the format your project uses.</p>
+          <p>Keep sources in Git. Configure formats, resource IDs and delivery paths in .ashfoxworkspace.</p>
           <a class="text-link" href="/docs/guides/save-and-export/">Save and export <span>→</span></a>
         </div>
         <div class="format-grid">

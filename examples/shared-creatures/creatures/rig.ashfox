@@ -1,0 +1,72 @@
+ashfox-model 1
+module rig {
+  export rig contract CreatureRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = (rotation, scale); mirror = none; }
+    joint body { parent = root; role = body; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint head { parent = body; role = head; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint tail { parent = body; role = tail; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint front_left { parent = body; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint front_right { parent = body; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint back_left { parent = body; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint back_right { parent = body; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+  }
+  export skeleton CreatureSkeleton implements CreatureRig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind body { parent-origin = (0u, 10u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind head { parent-origin = (0u, 3u, -6u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind tail { parent-origin = (0u, 0u, 7u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind front_left { parent-origin = (-2u, -2u, -4.5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind front_right { parent-origin = (2u, -2u, -4.5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind back_left { parent-origin = (-2u, -2u, 6u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind back_right { parent-origin = (2u, -2u, 6u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+  export motion idle for CreatureRig {
+    duration = 2s; fps = 20; loop = loop; rest-relative = true;
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (0deg, 3deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track tail.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (3deg, 8deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+  export motion curious for CreatureRig {
+    duration = 4s; fps = 24; loop = loop; rest-relative = true;
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (6deg, -18deg, -7deg) catmullrom;
+      key 2s = (6deg, -18deg, -7deg) catmullrom;
+      key 3s = (-3deg, 12deg, 5deg) catmullrom;
+      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track tail.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (3deg, 10deg, 0deg) catmullrom;
+      key 2s = (0deg, -8deg, 0deg) catmullrom;
+      key 3s = (3deg, 6deg, 0deg) catmullrom;
+      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+  export motion tail_wag for CreatureRig {
+    duration = 2.4s; fps = 24; loop = loop; rest-relative = true;
+    track tail.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 0.3s = (2deg, 18deg, 0deg) catmullrom;
+      key 0.9s = (2deg, -18deg, 0deg) catmullrom;
+      key 1.5s = (2deg, 18deg, 0deg) catmullrom;
+      key 2.1s = (2deg, -18deg, 0deg) catmullrom;
+      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 0.6s = (-4deg, 0deg, -3deg) catmullrom;
+      key 1.8s = (-4deg, 0deg, 3deg) catmullrom;
+      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+  }
+}

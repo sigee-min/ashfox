@@ -36,7 +36,7 @@ const validateProductExperience = (value) => {
   );
   assertExactValue(
     product.canonicalAuthority,
-    'closed-asset-workspace',
+    'native-ashfox-source',
     'productExperience.canonicalAuthority'
   );
   const projectFile = assertClosedOrderedRecord(
@@ -66,7 +66,7 @@ const validateProductExperience = (value) => {
   );
   assertExactValue(
     projectFile.authority,
-    'closed-workspace-source-only',
+    'optional-repository-configuration',
     'productExperience.projectFile.authority'
   );
   assertExactValue(
@@ -76,7 +76,7 @@ const validateProductExperience = (value) => {
   );
   assertExactValue(
     projectFile.compiledState,
-    'ephemeral-cache-only',
+    'derived-files-only',
     'productExperience.projectFile.compiledState'
   );
   assertExactTextArray(
@@ -308,7 +308,7 @@ const validateVersioning = (value, repoRoot) => {
   );
   assertExactValue(
     assetWorkspace.version,
-    1,
+    2,
     'versioning.assetWorkspace.version'
   );
   assertExactValue(
@@ -318,7 +318,7 @@ const validateVersioning = (value, repoRoot) => {
   );
   assertExactValue(
     assetWorkspace.container,
-    'ashfox-workspace:1',
+    'ashfox-workspace:2',
     'versioning.assetWorkspace.container'
   );
   assertExactValue(
@@ -328,12 +328,12 @@ const validateVersioning = (value, repoRoot) => {
   );
   assertExactValue(
     assetWorkspace.authority,
-    'packages/engine-core/src/project/workspace/contract.ts',
+    'packages/engine-core/src/project/directory/contract.ts',
     'versioning.assetWorkspace.authority'
   );
   assertExactValue(
     assetWorkspace.compiler,
-    'packages/engine-core/src/compiler/program/asset/compile.ts',
+    'packages/engine-core/src/compiler/directory/compile.ts',
     'versioning.assetWorkspace.compiler'
   );
   assertExactValue(
@@ -363,7 +363,7 @@ const validateVersioning = (value, repoRoot) => {
   );
   assertExactValue(
     deliveryTargets.scope,
-    'transient-export-input',
+    'source-defaults-with-optional-workspace-overrides',
     'versioning.deliveryTargets.scope'
   );
   assertExactValue(

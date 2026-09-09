@@ -1,0 +1,13 @@
+{
+  "name": "@ashfox/asset-build",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ashfox/engine-core": "^0.0.0",
+    "fflate": "^0.8.3"
+  }
+}

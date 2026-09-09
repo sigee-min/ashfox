@@ -1,0 +1,55 @@
+ashfox-model 1
+
+sound claw_hit {
+  duration = 2;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "noise";
+      };
+      start = 0.3;
+      duration = 0.24;
+      gain = 0.9;
+      attack = 0.002;
+      release = 0.2;
+      highpass = 1000;
+      lowpass = 11000;
+      id = "layer_1";
+    },
+    {
+      source = {
+        kind = "fm";
+        pitch = (210, 65);
+        sweepSeconds = 0.16;
+        ratio = 1.2;
+        index = 0.5;
+        vibratoHz = 0;
+        vibratoCents = 0;
+      };
+      start = 0.3;
+      duration = 0.24;
+      gain = 0.8;
+      attack = 0.002;
+      release = 0.2;
+      highpass = 40;
+      lowpass = 1300;
+      id = "layer_2";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

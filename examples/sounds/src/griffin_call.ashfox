@@ -1,0 +1,56 @@
+ashfox-model 1
+
+sound griffin_call {
+  duration = 2;
+  sampleRate = 48000;
+  seed = 42;
+  layers = [
+    {
+      source = {
+        kind = "vocal";
+        pitch = (310, 135);
+        sweepSeconds = 1.1;
+        formants = (690, 1800, 3100);
+        bandwidths = (150, 250, 430);
+        breath = 0.35;
+        jitter = 0.3;
+        roughness = 0.45;
+      };
+      start = 0.25;
+      duration = 1.3;
+      gain = 0.85;
+      attack = 0.025;
+      release = 0.18;
+      highpass = 80;
+      lowpass = 6500;
+      id = "layer_1";
+    },
+    {
+      source = {
+        kind = "noise";
+      };
+      start = 0.25;
+      duration = 1.3;
+      gain = 0.035;
+      attack = 0.025;
+      release = 0.18;
+      highpass = 1100;
+      lowpass = 4900;
+      id = "layer_2";
+    }
+  ];
+  variants = [
+    {
+      id = "base";
+      seed = 42;
+    },
+    {
+      id = "alternate";
+      seed = 43;
+    }
+  ];
+  output = {
+    rmsDb = -22;
+    peakDb = -3;
+  };
+}

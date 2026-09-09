@@ -15,7 +15,7 @@ import {
 import type {
   ProjectAsset,
   ProjectAssets
-} from '../../application/projectAssets';
+} from '@ashfox/render-core/assets';
 import type { TargetArtifactData } from './artifact/contract';
 import {
   artifactContentHash,

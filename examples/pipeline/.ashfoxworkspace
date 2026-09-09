@@ -1,0 +1,101 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "pipeline",
+  "packages": [
+    {
+      "manifest": {
+        "dependencies": [],
+        "entries": [
+          {
+            "name": "griffin",
+            "path": "main.ashfox"
+          }
+        ],
+        "format": "ashfox-package",
+        "modules": [
+          {
+            "path": "animation.ashfox",
+            "subpath": "./animation"
+          }
+        ],
+        "version": 1
+      },
+      "name": "workbench",
+      "root": "models/workbench"
+    },
+    {
+      "name": "items",
+      "root": "items",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          {
+            "name": "iron_sword",
+            "path": "iron_sword.ashfox"
+          }
+        ],
+        "modules": [
+          {
+            "subpath": "./shared",
+            "path": "shared.ashfox"
+          }
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "sounds",
+      "root": "sounds",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          {
+            "name": "claw_hit",
+            "path": "claw_hit.ashfox"
+          }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    }
+  ],
+  "include": [
+    "**/*.ashfox"
+  ],
+  "ignore": [],
+  "build": {
+    "directory": "dist/build"
+  },
+  "exports": [
+    {
+      "name": "griffin",
+      "entry": {
+        "packageName": "workbench",
+        "entryName": "griffin"
+      },
+      "format": "glb",
+      "directory": "dist/models"
+    },
+    {
+      "name": "iron_sword",
+      "entry": {
+        "packageName": "items",
+        "entryName": "iron_sword"
+      },
+      "format": "png",
+      "directory": "dist/items"
+    },
+    {
+      "name": "claw_hit",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "claw_hit"
+      },
+      "format": "wav",
+      "directory": "dist/sounds"
+    }
+  ]
+}

@@ -4,9 +4,17 @@ Tell your agent what the movement should communicate: “Add a curious look
 around, a slow wing stretch, and a quick greeting. Keep the feet planted.”
 Ask for named clips so you can choose each movement independently.
 
-In the Workbench's Motion panel, select a clip, press play, and watch a full
-cycle. Scrub the timeline to inspect a joint at a particular moment. Choose
-**Rest pose** to see the model without animation.
+Use `inspect` to find clip names, `capture --clip NAME --time SECONDS` to inspect
+a pose, and `replay --clip NAME` to watch a full cycle. Omit `--clip` for rest pose.
+For example, from the starter folder:
+
+```sh
+npx --no-install ashfox replay fox.ashfox --clip tail_wag --output tail-wag.gif
+```
+
+![Fox tail-wag clip](/media/guides/fox-motion.gif)
+
+The optional browser Workbench also provides a Motion panel and timeline.
 
 The sections below explain the source your agent writes. A **snippet** belongs
 inside an existing source file; the complete starting example is linked at the
@@ -142,8 +150,10 @@ with the module alias when assigning them:
 | `greeting` | Nod the head and wag the tail | `3s` |
 | `alert` | React and turn toward a disturbance | `2.4s` |
 
-[Download the Griffin workspace](../../examples/griffin.ashfoxworkspace) to
-try these clips or ask your agent to adapt them.
+Use the [Griffin source](../../examples/griffin/workbench/main.ashfox) and its
+[animation module](../../examples/griffin/workbench/animation.ashfox) together.
+Download [the game project](/downloads/game-assets.zip) for the complete Griffin
+source graph. Export `models/workbench/main.ashfox` from the extracted folder.
 
 All six are rest-relative. Their track targets are the Griffin rig's semantic
 joints, including `head`, `wing_left`, `wing_right`, and `tail`.
@@ -163,7 +173,7 @@ validation alone does not certify the animation's visual quality.
 
 ## Complete source
 
-The [complete source in the language reference](../architecture/asset-language.md)
+The [complete source in the language reference](../language/model.md)
 is a small animated cube with a rig, skeleton, surface, component, motion, and
 asset assembly. Use it when you need a standalone starting file. The snippets
 on this page are motion fragments and intentionally omit the surrounding
