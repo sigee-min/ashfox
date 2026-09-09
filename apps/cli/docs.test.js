@@ -25,6 +25,20 @@ try {
     const id = source.match(/(?:sprite|sound|asset) (\w+) \{/)[1];
     run('verify', path.join(folder, 'dist', id, 'build'));
   }
+  for (const file of fs.readdirSync(path.join(root, 'docs/language')).filter(name => name.endsWith('.md'))) {
+    const markdown = fs.readFileSync(path.join(root, 'docs/language', file), 'utf8');
+    const examples = [...markdown.matchAll(/```ashfox\n([\s\S]*?)```/g)];
+    for (const [index, match] of examples.entries()) {
+      const folder = path.join(temp, file + '-' + index);
+      fs.mkdirSync(folder);
+      const entry = path.join(folder, 'example.ashfox');
+      fs.writeFileSync(entry, match[1]);
+      run('check', entry);
+      run('build', entry);
+      const id = match[1].match(/(?:sprite|sound|asset) (\w+) \{/)[1];
+      run('verify', path.join(folder, 'dist', id, 'build'));
+    }
+  }
   const markdown = fs.readFileSync(path.join(root, 'docs/guides/workspace.md'), 'utf8');
   const config = JSON.parse(markdown.match(/```json\n([\s\S]*?)```/)[1]);
   const folder = path.join(temp, 'workspace');

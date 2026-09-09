@@ -100,16 +100,46 @@
     ]
   },
   {
+    "id": "language",
+    "label": "DSL reference",
+    "pages": [
+      {
+        "source": "language/README.md",
+        "route": "/docs/language/reference/"
+      },
+      {
+        "source": "language/values.md",
+        "route": "/docs/language/values/"
+      },
+      {
+        "source": "language/model.md",
+        "route": "/docs/language/syntax/"
+      },
+      {
+        "source": "language/components.md",
+        "route": "/docs/language/components/"
+      },
+      {
+        "source": "language/textures.md",
+        "route": "/docs/language/textures/"
+      },
+      {
+        "source": "language/sprites.md",
+        "route": "/docs/language/sprites/"
+      },
+      {
+        "source": "language/sounds.md",
+        "route": "/docs/language/sounds/"
+      }
+    ]
+  },
+  {
     "id": "reference",
     "label": "Reference",
     "pages": [
       {
         "source": "guides/cli.md",
         "route": "/docs/guides/cli/"
-      },
-      {
-        "source": "language/model.md",
-        "route": "/docs/language/syntax/"
       },
       {
         "source": "guides/precision-modeling.md",

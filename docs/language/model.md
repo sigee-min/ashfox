@@ -1,4 +1,4 @@
-# Asset language syntax
+# Model syntax reference
 
 Ashfox source describes an asset's geometry, surfaces, rig, and motions. A
 model source compiles directly through the [CLI](../guides/cli.md). Start every source
@@ -8,6 +8,10 @@ The examples in this page are deliberately labeled. A **snippet** is a
 fragment to place in a larger source file. A **complete source** includes its
 header, unit, declarations, and assembly and can be used as one small asset
 source file.
+
+For the full specification, see [values and expressions](values.md),
+[components and sockets](components.md), and [model textures](textures.md).
+Other asset kinds have separate [sprite](sprites.md) and [sound](sounds.md) grammars.
 
 ## 1. Source units
 
@@ -123,7 +127,7 @@ Geometry nodes may be nested as follows:
 | --- | --- | --- |
 | `bone` | none | `position`, `rotation`, `pivot`, `visible` |
 | `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror` |
-| `plane` | `origin`, `size`, `u-axis`, `v-axis`, one surface chart | `position`, `rotation`, `visible` |
+| `plane` | `origin`, `size`, `u-axis`, `v-axis`, one surface chart | `position`, `rotation`, `pivot`, `visible` |
 | `locator` | none | `position`, `rotation`, `visible` |
 | `face` inside a cube | none | `enabled`, `rotation` |
 
@@ -304,8 +308,8 @@ export asset fox {
 
 `density` is currently `16`; `forward` is `north`, `south`, `east`, or
 `west`. A `use` creates a named component instance and binds every required
-port. The `skeleton` binding names the concrete implementation, while the
-component's rig port names the matching rig contract. An asset may select
+port. The assembly's `skeleton` property names the concrete implementation.
+The `use` block's rig-port binding names the matching rig contract. An asset may select
 multiple different motions, but each selected motion must use the same rig as
 the skeleton and may appear only once.
 
@@ -329,7 +333,7 @@ dimensions, or pixel anchors.
 
 **Complete source — `sample.ashfox`:**
 
-```text
+```ashfox
 ashfox-model 1
 asset sample {
   export rig contract SampleRig {
@@ -367,6 +371,7 @@ asset sample {
     }
   }
   export component Body {
+    param dimensions: vec3<unit>;
     requires rig skeleton: SampleRig;
     requires surface skin: Skin;
     bind bone root to skeleton.root;
@@ -374,7 +379,7 @@ asset sample {
       bone root {
         cube body {
           origin = (-2u, 0u, -2u);
-          size = (4u, 4u, 4u);
+          size = dimensions;
           surface = skin.body;
         }
       }
@@ -396,6 +401,7 @@ asset sample {
     skeleton = SampleSkeleton;
     motion = idle;
     use Body as body {
+      set dimensions = (4u, 4u, 4u);
       bind skeleton = SampleRig;
       bind skin = red;
     };

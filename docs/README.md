@@ -42,3 +42,10 @@ ZIP are generated results; changing them does not update the source.
 The optional browser [Model Workbench](guides/workbench-api.md) has its own model
 project storage. It does not open native directory configurations. Compare the
 available workflows in the [support matrix](guides/choose-a-format.md).
+
+## DSL reference
+
+The [language reference](language/README.md) documents source units, value types,
+operators, model components and sockets, texture charts, sprite layers and sound
+records. Use it alongside the creation guides when implementing or debugging
+`.ashfox` sources. Complete examples are checked by the CLI documentation tests.
