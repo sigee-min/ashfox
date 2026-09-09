@@ -157,10 +157,10 @@ const retiredContractSourceScopes = [
   path.join(repositoryRoot, 'examples'),
   path.join(repositoryRoot, 'skills/ashfox')
 ];
+// Release history records removed contracts; only current guidance is checked.
 const retiredContractFiles = [
   path.join(repositoryRoot, 'README.md'),
   path.join(repositoryRoot, 'CONTRIBUTING.md'),
-  path.join(repositoryRoot, '.github/CHANGELOG.md'),
   path.join(repositoryRoot, 'development-manifest.json'),
   path.join(repositoryRoot, 'development-manifest.schema.json')
 ];
