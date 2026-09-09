@@ -10,7 +10,7 @@ const source = /```text\n([\s\S]*?)\n```/u.exec(guide)?.[1];
 assert.ok(source, 'guide includes a complete executable source');
 const syntaxGuide = readFileSync(resolve(__dirname,
   '../../../../../docs/language/model.md'), 'utf8');
-const completeExample = [...syntaxGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)]
+const completeExample = [...syntaxGuide.matchAll(/```ashfox\n([\s\S]*?)\n```/gu)]
   .map((match) => match[1])
   .find((example) => example.startsWith('ashfox-model 1\nasset sample {'));
 assert.ok(completeExample, 'language reference provides a complete starting asset');
