@@ -194,6 +194,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -210,3 +212,16 @@ jobs:
         run: node scripts/release/publish.js
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Mark the matching release PR as published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process');
+          const prs = JSON.parse(execFileSync('gh', ['pr', 'list', '--state', 'merged',
+            '--label', 'autorelease: pending', '--limit', '100', '--json', 'number,mergeCommit'], { encoding: 'utf8' }));
+          for (const pr of prs.filter(pr => pr.mergeCommit?.oid === process.env.GITHUB_SHA)) {
+            execFileSync('gh', ['pr', 'edit', String(pr.number), '--remove-label',
+              'autorelease: pending', '--add-label', 'autorelease: tagged'], { stdio: 'inherit' });
+          }
+          NODE
