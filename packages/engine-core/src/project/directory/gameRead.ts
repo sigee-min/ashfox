@@ -19,7 +19,7 @@ export const readGamePack = (value: unknown, exports: readonly DirectoryExport[]
   for (const f of ['unitsPerMeter','pixelsPerUnit']) {
     if (typeof r[f] !== 'number' || !Number.isFinite(r[f]) || r[f] <= 0 || r[f] > 65536) fail(p + '/' + f, 'positive finite number <= 65536', r[f]);
   }
-  if (!Array.isArray(r.assets) || !r.assets.length || r.assets.length > 64) return fail(p + '/assets', '1 to 64 bindings', r.assets);
+  if (!Array.isArray(r.assets) || !r.assets.length) return fail(p + '/assets', 'nonempty array of bindings', r.assets);
   const ids = new Set<string>();
   r.assets.forEach((raw, index) => {
     const q = `${p}/assets/${index}`, a = record(raw, ['id','source','path'], q);

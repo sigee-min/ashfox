@@ -116,6 +116,10 @@ updating pack references to it.
 
 ## Compose game deliveries
 
+There is no count limit on named exports or pack bindings. Keep related assets
+in one workspace; splitting it is not required to export more than 64 assets.
+The CLI's [execution budgets](cli.md#execution-limits) still apply.
+
 Add the optional root `packs` array to compose exports. Use
 [game assets](game-assets.md) for GLB/PNG/audio and a runtime manifest, or
 [Minecraft packs](minecraft-packs.md) for Java resource paths and sound events.

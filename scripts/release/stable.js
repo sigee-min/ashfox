@@ -10,9 +10,7 @@ const readStable = (directory = root) => {
     throw new Error('Stable release must contain one stable SemVer version');
   }
   const base = `https://github.com/sigee-min/ashfox/releases/download/v${record.version}/`;
-  // 1.0.0 predates the bundled first-run commands. Keep its public instructions runnable.
-  const [major, minor, patch] = record.version.split('.').map(BigInt);
-  const onboarding = major > 1n || (major === 1n && (minor > 0n || patch > 0n));
+  const onboarding = true;
   return { version: record.version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding };
 };
 const files = {

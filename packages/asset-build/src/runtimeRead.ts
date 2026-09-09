@@ -12,7 +12,7 @@ export const readGameAssetManifest = (value: unknown): GameAssetManifest => {
   };
   const finite = (v: unknown, positive: boolean): boolean => typeof v === 'number' && Number.isFinite(v) && (positive ? v > 0 : v >= 0);
   const r = record(value, ['format','version','assets']);
-  if (r.format !== 'ashfox-game-assets' || r.version !== 1 || !Array.isArray(r.assets) || !r.assets.length || r.assets.length > 64) return fail('Invalid format or assets');
+  if (r.format !== 'ashfox-game-assets' || r.version !== 1 || !Array.isArray(r.assets) || !r.assets.length) return fail('Invalid format or assets');
   const ids = new Set<string>(), allPaths = new Set<string>();
   for (const raw of r.assets) {
     if (!raw || typeof raw !== 'object' || !('kind' in raw)) return fail('Invalid kind');

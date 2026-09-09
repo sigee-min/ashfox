@@ -18,9 +18,9 @@ const main = async () => {
   write('scripts/release/stable.json', '{"version":"1.0.0"}');
   for (const name of documents) write(name, fs.readFileSync(path.join(root, name), 'utf8'));
   sync(false, directory);
-  assert.equal(readStable(directory).onboarding, false);
-  assert.match(read('README.md'), /ashfox capabilities/);
-  assert.match(read('docs/guides/install.md'), /Download and extract/);
+  assert.equal(readStable(directory).onboarding, true);
+  assert.match(read('README.md'), /ashfox --version/);
+  assert.match(read('docs/guides/install.md'), /ashfox init assets/);
   write('README.md', read('README.md').replaceAll('/v1.0.0/', '/v0.9.0/'));
   assert.throws(() => sync(true, directory), /Stale/);
   sync(false, directory);

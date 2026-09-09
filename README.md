@@ -21,7 +21,7 @@ With **Node.js 20+ and npm**, run this in your game or asset folder:
 <!-- ashfox:install -->
 ```sh
 npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
-npx --no-install ashfox capabilities
+npx --no-install ashfox --version
 ```
 <!-- ashfox:install-end -->
 
@@ -30,11 +30,11 @@ No repository clone, source build, account or API key is needed.
 ## Make your first asset
 
 <!-- ashfox:start -->
-Download and extract the [starter assets](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/starter.zip), then run the install
-command above inside that folder:
+Create the bundled starter offline and export your first item:
 
 ```sh
-npx --no-install ashfox export sword.ashfox --output sword.png
+npx --no-install ashfox init assets
+npx --no-install ashfox export assets/sword.ashfox --output sword.png
 ```
 <!-- ashfox:start-end -->
 
