@@ -46,7 +46,6 @@ const siteHeader = ({ active }) => `
     </a>
     <nav class="primary-nav" aria-label="Primary navigation">
       <a href="/#examples">Examples</a>
-      <a href="/docs/guides/assets-as-code/">Workflow</a>
       <a ${active === 'docs' ? 'aria-current="page"' : ''} href="/docs/">Docs</a>
     </nav>
     <div class="header-actions">
