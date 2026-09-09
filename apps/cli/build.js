@@ -7,7 +7,7 @@ esbuild.buildSync({
   entryPoints: [path.join(__dirname, 'src/main.ts')],
   outfile: path.join(__dirname, 'dist/ashfox.cjs'),
   bundle: true, platform: 'node', target: 'node20', format: 'cjs',
-  define: {ASHFOX_OBSERVER_BUNDLE: JSON.stringify(browser.outputFiles[0].text)},
+  define: {ASHFOX_VERSION: JSON.stringify(require('../../package.json').version), ASHFOX_STARTER: JSON.stringify(require('../../scripts/release/starter').starterFiles(path.resolve(__dirname, '../..'))), ASHFOX_OBSERVER_BUNDLE: JSON.stringify(browser.outputFiles[0].text)},
   banner: { js: '#!/usr/bin/env node' }
 });
 fs.chmodSync(path.join(__dirname, 'dist/ashfox.cjs'), 0o755);

@@ -189,6 +189,7 @@ const main = () => {
   const repoRoot = path.resolve(__dirname, '..', '..');
   const developmentManifest = readDevelopmentManifest(repoRoot);
   const failures = releaseValidationFailures(repoRoot, developmentManifest);
+  require('./stable').sync(true);
   if (failures.length > 0) {
     console.error('ashfox release validation failed:');
     for (const failure of failures) console.error(`- ${failure}`);
@@ -203,10 +204,10 @@ const main = () => {
   );
 };
 
-if (require.main === module) main();
-
 module.exports = {
   isStrictSemVer,
   releaseValidationFailures,
   versionPolicyFailures
 };
+
+if (require.main === module) main();

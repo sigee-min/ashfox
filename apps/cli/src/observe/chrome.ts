@@ -1,3 +1,4 @@
+import { findChrome } from '../onboarding/browser';
 import { spawn, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -18,8 +19,7 @@ export class ChromeRenderer {
   async start():Promise<void> {
     if(this.closing)await this.closing;
     if(this.child)return;
-    const candidates=[process.env.ASHFOX_CHROME_PATH,'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome','/Applications/Chromium.app/Contents/MacOS/Chromium','/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome',process.env.PROGRAMFILES?path.join(process.env.PROGRAMFILES,'Google/Chrome/Application/chrome.exe'):undefined];
-    const executable=process.env.ASHFOX_CHROME_PATH ? (fs.existsSync(process.env.ASHFOX_CHROME_PATH)?process.env.ASHFOX_CHROME_PATH:undefined) : candidates.find(file=>file&&fs.existsSync(file));
+    const executable=findChrome();
     if(!executable)throw new BuildFailure('capture.browser','Chrome/Chromium is required for rendering. Set ASHFOX_CHROME_PATH to its executable.',3);
     this.profile=fs.mkdtempSync(path.join(os.tmpdir(),'ashfox-render-'));
     const child=spawn(executable,['--headless=new','--remote-debugging-pipe','--disable-background-networking','--disable-component-update','--disable-extensions','--no-first-run','--no-default-browser-check','--use-angle=swiftshader','--enable-unsafe-swiftshader','--user-data-dir='+this.profile,'about:blank'],{stdio:['ignore','ignore','ignore','pipe','pipe']});

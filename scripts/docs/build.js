@@ -12,10 +12,7 @@ const sources=directory=>{
  }};visit(path.join(root,directory));return result;
 };
 const zip=(name,files)=>fs.writeFileSync(path.join(out,name),zipSync(files,{level:9,mtime:new Date(1980,0,1)}));
-const starter=sources('examples/fox/creatures');for(const [dest,source] of Object.entries({
- 'fox.ashfox':'examples/fox/creatures/fox.ashfox','sword.ashfox':'examples/items/src/iron_sword.ashfox',
- 'shared.ashfox':'examples/items/src/shared.ashfox','claw_hit.ashfox':'examples/sounds/src/claw_hit.ashfox','marker.ashfox':'examples/minecraft/marker.ashfox'
-}))starter[dest]=fs.readFileSync(path.join(root,source));
+const starter=Object.fromEntries(Object.entries(require('../release/starter').starterFiles(root)).map(([name,text])=>[name,Buffer.from(text)]));
 starter['package.json']=Buffer.from('{"name":"my-ashfox-assets","private":true}\n');
 zip('starter.zip',starter);
 for(const name of ['items','game-assets','resource-pack'])zip(name+'.zip',sources('examples/'+name));
