@@ -1,7 +1,7 @@
 # CLI distribution
 
-Status: GitHub CLI distribution starts at `v1.0.0`. README and installation
-instructions pin the released CLI and matching starter. Native executables and
+Status: GitHub CLI distribution starts at `v1.0.0`. Installation instructions pin the released CLI and matching starter.
+The repository README presents the product and links to those guides. Native executables and
 npm registry publication remain future work. Keep this maintainer guide outside
 `docs/public.json`.
 
@@ -86,7 +86,7 @@ placeholder, not an existing download):
 npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/vX.Y.Z/ashfox-cli.tgz
 ```
 
-Publish the exact released tag in the installation page and README. Keep
+Publish the exact released tag in the installation guide. Keep
 `latest/download` for discovery only, not project dependencies. Users commit the
 lockfile and run `npm ci`; upgrades explicitly select a new tag. Keep the local
 tarball option for offline use.
@@ -139,7 +139,7 @@ fixing the initial compiler/version mismatch.
 
 ## Completion criteria
 
-A new user can copy one command from the README, check the installed version and export the
+A new user can reach installation from the README, check the installed version and export the
 bundled starter sword without cloning Ashfox or manually moving packages. A clean CI
 runner can restore an older version using only its committed dependency and
 lockfile. A release cannot become latest until all documented downloads exist.

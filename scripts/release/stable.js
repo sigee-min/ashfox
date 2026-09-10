@@ -14,7 +14,6 @@ const readStable = (directory = root) => {
   return { version: record.version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding };
 };
 const files = {
-  'README.md': ['install', 'start'],
   'docs/guides/install.md': ['install', 'check', 'start', 'offline', 'availability'],
   'docs/guides/cli.md': ['availability']
 };

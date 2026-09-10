@@ -19,9 +19,9 @@ const main = async () => {
   for (const name of documents) write(name, fs.readFileSync(path.join(root, name), 'utf8'));
   sync(false, directory);
   assert.equal(readStable(directory).onboarding, true);
-  assert.match(read('README.md'), /ashfox --version/);
+  const originalReadme = read('README.md');
   assert.match(read('docs/guides/install.md'), /ashfox init assets/);
-  write('README.md', read('README.md').replaceAll('/v1.0.0/', '/v0.9.0/'));
+  write('docs/guides/install.md', read('docs/guides/install.md').replaceAll('/v1.0.0/', '/v0.9.0/'));
   assert.throws(() => sync(true, directory), /Stale/);
   sync(false, directory);
   sync(true, directory);
@@ -39,21 +39,22 @@ const main = async () => {
   await assert.rejects(promote({ ...options, download: async () => Buffer.from('bad') }), /differs/);
   assert.equal(readStable(directory).version, '1.0.0');
   const originalGuide = read('docs/guides/install.md');
-  const originalReadme = read('README.md');
-  write('docs/guides/install.md', originalGuide.replace('<!-- ashfox:install -->', ''));
+  const originalCli = read('docs/guides/cli.md');
+  write('docs/guides/cli.md', originalCli.replace('<!-- ashfox:availability -->', ''));
   await assert.rejects(promote(options), /Missing or duplicate/);
   assert.equal(readStable(directory).version, '1.0.0');
-  assert.equal(read('README.md'), originalReadme, 'invalid document does not partially update earlier documents');
-  write('docs/guides/install.md', originalGuide);
+  assert.equal(read('docs/guides/install.md'), originalGuide, 'invalid document does not partially update earlier documents');
+  write('docs/guides/cli.md', originalCli);
   await promote(options);
   assert.equal(readStable(directory).version, '1.1.0');
   assert.equal(readStable(directory).onboarding, true);
-  for (const file of ['README.md', 'docs/guides/install.md']) {
+  for (const file of ['docs/guides/install.md']) {
     assert.match(read(file), /v1.1.0/);
     assert.match(read(file), /ashfox --version/);
     assert.match(read(file), /ashfox init assets/);
     assert.doesNotMatch(read(file), /ashfox capabilities|Download and extract|published 1.0.0/);
   }
+  assert.equal(read('README.md'), originalReadme, 'release promotion leaves the product README unchanged');
   assert.match(read('docs/guides/install.md'), /ashfox doctor/);
   assert.doesNotMatch(read('docs/guides/cli.md'), /published 1.0.0/);
   sync(true, directory);
