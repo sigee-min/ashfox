@@ -1,6 +1,11 @@
-# Contributing
+# Contributing to Ashfox
 
-Thanks for contributing to ashfox.
+This guide is for people changing Ashfox itself: its implementation, documentation,
+translations and releases. To create assets or integrate Ashfox into a game, use
+the [user documentation](docs/README.md).
+
+See the [contributor guides](docs/contributing/README.md) for documentation,
+translation, release and brand maintenance workflows.
 
 The versioned [development manifest](development-manifest.json) is the
 repository development authority. Its
@@ -255,4 +260,4 @@ shared Minecraft/general-engine delivery. See [game assets](docs/guides/game-ass
 PNG/GIF/waveform, camera, cancellation and renderer recovery tests. Rendering
 code lives in `packages/render-core` and is shared with the browser Workbench.
 
-User documentation publishing and example verification: [docs maintainer guide](docs/development/docs.md).
+User documentation publishing and example verification: [documentation publishing guide for contributors](docs/contributing/docs.md).

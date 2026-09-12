@@ -1,4 +1,8 @@
-# Documentation delivery
+# Publishing Ashfox documentation
+
+For contributors maintaining the Ashfox documentation site, generated examples and
+shared-link previews. For building assets with Ashfox, see the [user guides](../README.md).
+
 
 Public user pages are selected exclusively by `docs/public.json`. Keep repository
 setup, build ownership and contributor commands in this directory or CONTRIBUTING.
@@ -36,3 +40,19 @@ sword/amethyst PNG downloads and enlarged amethyst preview in `assets/readme/`.
 Preview images are for display; the linked native PNGs are the game textures.
 Sound playback links to the public landing player because GitHub README audio
 embedding is not assumed. The WAV link remains available as a file download.
+
+## Shared-link previews
+
+Landing and Docs use separate 1200×630 PNG social cards. Run
+`npm run build:cli` and `node scripts/showcase/social.js` with Chrome available (or set
+`ASHFOX_CHROME_PATH`) to regenerate them from the versioned layout and the real
+Griffin source. Review both images before committing. The generator owns
+`apps/site/public/og.png` and `og-docs.png`; the site build publishes content-hashed
+copies and uses absolute URLs for Open Graph and Twitter cards. Changed image
+bytes get a new URL; external services may still require refreshing cached page
+metadata for links shared before the update.
+
+## Languages
+
+See [documentation localization](localization.md) for the locale registry, translation
+revision workflow, shared code examples, fallback behavior and verification.

@@ -13,7 +13,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadDocumentation } from '../src/docs.mjs';
+import { loadAllDocumentation } from '../src/docs.mjs';
 import {
   renderDocumentationPage,
   renderLandingPage,
@@ -251,6 +251,7 @@ ${routes.map((route) => `  <url><loc>${escapeXml(new URL(route, siteOrigin).toSt
 </urlset>
 `;
 
+execFileSync(process.execPath, [path.join(repoRoot, 'scripts/docs/translations.mjs'), '--check'], { cwd: repoRoot, stdio: 'inherit' });
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts/docs/build.js')], { cwd: repoRoot, stdio: 'inherit' });
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(path.join(outputRoot, 'assets'), { recursive: true });
@@ -262,12 +263,20 @@ const landingCss = await readFile(path.join(sourceRoot, 'landing.css'), 'utf8');
 const brandCss = await readFile(path.join(sourceRoot, 'brand.css'), 'utf8');
 const motionJs = await readFile(path.join(sourceRoot, 'motion.js'), 'utf8');
 const landingJs = await readFile(path.join(sourceRoot, 'landing.js'), 'utf8');
+const social = {};
+for (const kind of ['landing', 'docs']) {
+  const bytes = await readFile(path.join(publicRoot, kind === 'docs' ? 'og-docs.png' : 'og.png'));
+  const name = `site-social-${kind}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.png`;
+  await writeFile(path.join(outputRoot, 'assets', name), bytes);
+  social[kind] = `/assets/${name}`;
+}
 const assets = {
+  social,
   css: await hashedAsset('site.css', source => source + '\n' + landingCss + '\n' + brandCss),
   js: await hashedAsset('site.js', source => source + '\n' + motionJs + '\n' + landingJs)
 };
 const config = { siteOrigin, workbenchUrl, stable: stableRelease.readStable(repoRoot) };
-const documents = await loadDocumentation(docsRoot);
+const documents = await loadAllDocumentation(docsRoot);
 const generatedShowcase = await readShowcase();
 const showcase = {
   capture: generatedShowcase.capture,
@@ -323,7 +332,7 @@ await writeRoute('/', renderLandingPage({ assets, config, showcase }));
 for (const document of documents) {
   await writeRoute(
     document.route,
-    renderDocumentationPage({ assets, config, document, documents })
+    renderDocumentationPage({ assets, config, document, documents: documents.filter(page => page.locale.code === document.locale.code) })
   );
 }
 await writeFile(
@@ -401,7 +410,7 @@ await writeFile(
   sitemap([
     '/',
     '/workbench/',
-    ...documents.map((document) => document.route)
+    ...documents.filter(document => !document.fallback).map((document) => document.route)
   ])
 );
 

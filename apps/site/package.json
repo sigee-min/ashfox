@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/build.mjs && node scripts/docs.test.mjs && node scripts/check.mjs",
+    "test": "node scripts/build.mjs && node scripts/docs.test.mjs && node scripts/locales.test.mjs && node scripts/check.mjs",
     "test:browser": "node scripts/build.mjs && node scripts/browser.test.mjs"
   },
   "devDependencies": {

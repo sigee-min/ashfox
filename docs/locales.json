@@ -1,0 +1,15 @@
+{
+  "default": "en",
+  "locales": [
+    {
+      "code": "en", "label": "English", "prefix": "", "ogLocale": "en_US",
+      "sections": {"start":"Start here","create":"Create and observe","integrate":"Use in your game","scale":"Projects and automation","language":"DSL reference","reference":"Reference"},
+      "ui": {"docs":"Docs","examples":"Examples","getStarted":"Get started","navigation":"Primary navigation","documentation":"Documentation","firstAsset":"Build your first asset","browse":"Browse documentation","onThisPage":"On this page","sections":"Page sections","previous":"Previous","next":"Next","continue":"Continue reading","ready":"Ready to make something?","instructions":"Get agent instructions","skip":"Skip to content","language":"Language","copy":"Copy","copied":"Copied","copyCode":"Copy code","copyFailed":"Copy failed","fallback":"This page is available in English. A translation has not been published yet.","stale":"This translation is being updated. Check the English original for recent changes.","original":"Read English original"}
+    },
+    {
+      "code": "ko", "label": "한국어", "prefix": "/ko", "ogLocale": "ko_KR",
+      "sections": {"start":"시작하기","create":"만들고 관찰하기","integrate":"게임에 연결하기","scale":"프로젝트와 자동화","language":"DSL 레퍼런스","reference":"참고 자료"},
+      "ui": {"docs":"문서","examples":"예제","getStarted":"시작하기","navigation":"주 메뉴","documentation":"문서 탐색","firstAsset":"첫 에셋 만들기","browse":"문서 찾아보기","onThisPage":"이 페이지에서","sections":"페이지 목차","previous":"이전","next":"다음","continue":"계속 읽기","ready":"직접 만들어 보세요","instructions":"에이전트 작업 지침 보기","skip":"본문으로 이동","language":"언어","copy":"복사","copied":"복사됨","copyCode":"코드 복사","copyFailed":"복사 실패","fallback":"이 문서는 아직 한국어로 번역되지 않아 영어 원문을 표시합니다.","stale":"원문이 변경되어 번역을 갱신하고 있습니다. 최신 변경사항은 영어 원문을 확인하세요.","original":"영어 원문 보기"}
+    }
+  ]
+}

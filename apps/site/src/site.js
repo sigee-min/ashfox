@@ -97,13 +97,14 @@ for (const block of document.querySelectorAll('.doc-article pre')) {
   const button = document.createElement('button');
   button.className = 'copy-code';
   button.type = 'button';
-  button.textContent = 'Copy';
-  button.setAttribute('aria-label', 'Copy code');
+  const labels = block.closest('[data-copy-label]')?.dataset;
+  button.textContent = labels?.copyLabel ?? 'Copy';
+  button.setAttribute('aria-label', labels?.copyCodeLabel ?? 'Copy code');
   button.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(code.textContent ?? '');
-    button.textContent = 'Copied';
+    try { await copyText(code.textContent ?? ''); button.textContent = labels?.copiedLabel ?? 'Copied'; }
+    catch { button.textContent = labels?.copyFailedLabel ?? 'Copy failed'; }
     window.setTimeout(() => {
-      button.textContent = 'Copy';
+      button.textContent = labels?.copyLabel ?? 'Copy';
     }, 1_200);
   });
   block.append(button);

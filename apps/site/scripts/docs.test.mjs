@@ -64,3 +64,18 @@ for (const name of ['fox-angle.png', 'fox-front.png', 'sword.png', 'claw.wav', '
   assert.deepEqual(await readFile(path.join(siteRoot, 'dist/media/guides', name)),
     await readFile(path.resolve(siteRoot, '../../assets/docs', name)));
 }
+
+const landing = await readFile(path.join(siteRoot, 'dist/index.html'), 'utf8');
+const docs = await readFile(path.join(siteRoot, 'dist/docs/index.html'), 'utf8');
+for (const [kind, html] of [['landing', landing], ['docs', docs]]) {
+  const image = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+  assert.ok(image);
+  const imagePath = new URL(image).pathname;
+  assert.match(imagePath, new RegExp(`^/assets/site-social-${kind}-[a-f0-9]{12}\\.png$`));
+  assert.ok(html.includes(`<meta name="twitter:image" content="${image}">`));
+  assert.doesNotMatch(html, /Build your next world/);
+  const bytes = await readFile(path.join(siteRoot, 'dist', imagePath));
+  assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(bytes.readUInt32BE(16), 1200);
+  assert.equal(bytes.readUInt32BE(20), 630);
+}

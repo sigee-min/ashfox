@@ -791,3 +791,10 @@ img {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Locale controls stay available on both desktop and mobile docs. */
+.docs-languages { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.5rem; }
+.docs-languages a { padding: .35rem .8rem; border: 1px solid currentColor; border-radius: 6px; text-decoration: none; font-size: .85rem; }
+.docs-languages a[aria-current] { color: var(--accent, #e8ab82); background: #ffffff08; }
+.translation-notice { margin: 1rem 0 1.5rem; padding: 1rem; border-left: 2px solid #b78764; background: #ffffff05; font-size: .9rem; }
+html[lang="ko"] .doc-article { word-break: keep-all; overflow-wrap: anywhere; }

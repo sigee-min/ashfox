@@ -1,4 +1,7 @@
-# Assets as Code: positioning and operating model
+# Ashfox brand and positioning
+
+For contributors maintaining Ashfox product messaging and presentation.
+
 
 Research and implementation notes, 2026-09-09. This is a maintainer proposal,
 not a second repository policy. The development manifest remains authoritative.

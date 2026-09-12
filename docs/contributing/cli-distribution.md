@@ -1,4 +1,8 @@
-# CLI distribution
+# Releasing the Ashfox CLI
+
+For maintainers building and publishing Ashfox releases. To install and use the
+CLI, see the [installation guide](../guides/install.md).
+
 
 Status: GitHub CLI distribution starts at `v1.0.0`. Installation instructions pin the released CLI and matching starter.
 The repository README presents the product and links to those guides. Native executables and

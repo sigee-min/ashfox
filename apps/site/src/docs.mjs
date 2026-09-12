@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { localeRegistry, defaultLocale, localizedRoute } from './locales.mjs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -7,7 +9,7 @@ const toPosix = (value) => value.split(path.sep).join('/');
 
 export const slugify = (value) =>
   value
-    .normalize('NFKD')
+    .normalize('NFC')
     .toLowerCase()
     .replace(/<[^>]*>/g, '')
     .replace(/[^a-z0-9가-힣]+/g, '-')
@@ -55,7 +57,9 @@ const rewriteMarkdownLinks = (markdown, relativePath, routes) =>
     }
   );
 
-const addHeadingIds = (html) => {
+const addHeadingIds = (html, originalHtml) => {
+  const original = originalHtml ? [...originalHtml.matchAll(/<h([1-4])>([\s\S]*?)<\/h\1>/g)] : null;
+  let heading = 0;
   const counts = new Map();
   const toc = [];
   const content = html.replace(
@@ -63,7 +67,9 @@ const addHeadingIds = (html) => {
     (_match, levelValue, inner) => {
       const level = Number(levelValue);
       const text = inner.replace(/<[^>]*>/g, '').trim();
-      const base = slugify(text);
+      const source = original?.[heading++];
+      if (original && (!source || source[1] !== levelValue)) throw new Error('Translation heading structure differs from English');
+      const base = slugify(source ? source[2].replace(/<[^>]*>/g, '').trim() : text);
       const count = (counts.get(base) ?? 0) + 1;
       counts.set(base, count);
       const id = count === 1 ? base : `${base}-${count}`;
@@ -71,10 +77,11 @@ const addHeadingIds = (html) => {
       return `<h${level} id="${id}">${inner}</h${level}>`;
     }
   );
+  if (original && heading !== original.length) throw new Error('Translation heading count differs from English');
   return { html: content, toc };
 };
 
-export const loadDocumentation = async (docsRoot) => {
+export const loadDocumentation = async (docsRoot, locale = defaultLocale) => {
   const catalog = JSON.parse(await readFile(path.join(docsRoot, 'public.json'), 'utf8'));
   const pages = catalog.flatMap((section) => section.pages.map((page) => ({
     ...page, section: section.id, sectionLabel: section.label
@@ -87,23 +94,54 @@ export const loadDocumentation = async (docsRoot) => {
         routes.has(page.source) || publishedRoutes.has(page.route)) {
       throw new Error(`Invalid or duplicate public document: ${page.source}`);
     }
-    routes.set(page.source, page.route);
+    routes.set(page.source, localizedRoute(page.route, locale));
     publishedRoutes.add(page.route);
   }
+  const translationRoot = path.join(docsRoot, 'translations', locale.code);
+  let revisions = {};
+  if (locale.code !== defaultLocale.code) {
+    try { revisions = JSON.parse(await readFile(path.join(translationRoot, 'revisions.json'), 'utf8')); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    for (const key of Object.keys(revisions)) if (!routes.has(key) || !/^[a-f0-9]{64}$/.test(revisions[key])) {
+      throw new Error(`Invalid translation revision: ${locale.code}/${key}`);
+    }
+  }
   return Promise.all(pages.map(async (page) => {
-    const markdown = await readFile(path.join(docsRoot, page.source), 'utf8');
+    const original = await readFile(path.join(docsRoot, page.source), 'utf8');
+    let markdown = original, translated = false;
+    const stale = Boolean(revisions[page.source] && revisions[page.source] !== createHash('sha256').update(original).digest('hex'));
+    if (revisions[page.source] && !stale) {
+      markdown = await readFile(path.join(translationRoot, page.source), 'utf8');
+      const codeBlocks = original.match(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm) ?? [];
+      markdown = markdown.replace(/\{\{source-code:(\d+)\}\}/g, (_match, index) => {
+        if (!codeBlocks[Number(index)]) throw new Error(`Unknown source code block: ${page.source}:${index}`);
+        return codeBlocks[Number(index)];
+      });
+      translated = true;
+    }
+    const fallback = locale.code !== defaultLocale.code && !translated;
     const rendered = addHeadingIds(marked.parse(
       rewriteMarkdownLinks(markdown, page.source, routes), { gfm: true }
-    ));
+    ), translated ? marked.parse(original, { gfm: true }) : null);
     return {
       relativePath: page.source,
-      route: page.route,
+      route: localizedRoute(page.route, locale),
+      originalRoute: page.route,
+      locale, fallback, stale,
+      contentLanguage: fallback ? defaultLocale.code : locale.code,
       section: page.section,
-      sectionLabel: page.sectionLabel,
+      sectionLabel: locale.sections[page.section] ?? page.sectionLabel,
       title: titleFromMarkdown(markdown, path.basename(page.source, '.md')),
       description: descriptionFromMarkdown(markdown),
       html: rendered.html,
       toc: rendered.toc
     };
   }));
+};
+
+export const loadAllDocumentation = async (docsRoot) => {
+  const documents = (await Promise.all(localeRegistry.locales.map(locale => loadDocumentation(docsRoot, locale)))).flat();
+  return documents.map(document => ({ ...document, alternatives: documents
+    .filter(page => page.relativePath === document.relativePath)
+    .map(page => ({ code: page.locale.code, label: page.locale.label, route: page.route, translated: !page.fallback })) }));
 };
