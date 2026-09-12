@@ -341,9 +341,18 @@ if (
 for (const required of ['data-live-model', 'data-model-motion="wing_display"', 'data-item-image', 'data-landing-audio', 'data-source-code', 'id="quick-start"']) {
   if (!landingHtml.includes(required)) failures.push(`Landing is missing ${required}`);
 }
+for (const [pattern, extension] of [[/<script defer src="(\/assets\/hero-[a-f0-9]{12}\.js)"/, 'js'], [/data-model-src="(\/assets\/griffin-[a-f0-9]{12}\.glb)"/, 'glb']]) {
+  const match = landingHtml.match(pattern);
+  if (!match || !(await exists(path.join(outputRoot, match[1])))) failures.push(`Missing content-hashed hero ${extension}`);
+  else {
+    const digest = createHash('sha256').update(await readFile(path.join(outputRoot, match[1]))).digest('hex').slice(0, 12);
+    if (!match[1].endsWith(`-${digest}.${extension}`)) failures.push(`Stale hero ${extension} fingerprint`);
+  }
+}
+if (landingHtml.includes('src="/media/landing/hero.js"')) failures.push('Viewer must not reuse the previously cached script URL');
 if (/data-character-player|data-workspace-download|data-showroom-data/u.test(landingHtml)) failures.push('Retired showroom is still published');
 if (/<audio[^>]*autoplay/u.test(landingHtml)) failures.push('Landing sound must require an explicit play action');
-for (const name of ['griffin.glb', 'sword.png', 'amethyst.png', 'claw-base.wav', 'claw-alternate.wav', 'hero.js']) {
+for (const name of ['griffin.glb', 'sword.png', 'amethyst.png', 'bird-base.wav', 'bird-alternate.wav']) {
   if (!(await exists(path.join(outputRoot, 'media/landing', name)))) failures.push(`Missing landing asset: ${name}`);
 }
 const heroModel = await readFile(path.join(outputRoot, 'media/landing/griffin.glb'));
@@ -439,7 +448,7 @@ if (!landingHtml.includes('id="quick-start"') ||
     !landingHtml.includes('class="hero-start"')) {
   failures.push('landing must provide a reachable source authoring setup');
 }
-for (const required of ['Assets<br>as Code.', 'Built for voxel games.', 'id="workflow"',
+for (const required of ['Assets<br><span>as Code.</span>', 'Built for voxel games.', 'id="workflow"',
   'id="frontier"', '/docs/guides/assets-as-code/', landingMessages.provenance]) {
   if (!landingHtml.includes(required)) failures.push(`Assets as Code landing is missing ${required}`);
 }

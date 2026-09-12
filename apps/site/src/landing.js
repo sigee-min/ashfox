@@ -24,8 +24,8 @@ if (landing) {
   landing.querySelector('[data-sound-another]').onclick = async () => {
     soundVariant = soundVariant === 'base' ? 'alternate' : 'base';
     audio.pause();
-    landing.querySelector('[data-sound-wave]').src = `/media/landing/claw-${soundVariant}.svg`;
-    audio.src = `/media/landing/claw-${soundVariant}.wav`;
+    landing.querySelector('[data-sound-wave]').src = `/media/landing/bird-${soundVariant}.svg`;
+    audio.src = `/media/landing/bird-${soundVariant}.wav`;
     landing.querySelector('[data-sound-download]').href = audio.src;
     landing.querySelector('[data-sound-progress]').style.width = '0%';
     try { await audio.play(); status.textContent = siteCopy.soundVariation; }
@@ -33,12 +33,12 @@ if (landing) {
   };
   document.addEventListener('visibilitychange', () => { if (document.hidden) audio.pause(); });
   new IntersectionObserver(entries => { if (!entries[0].isIntersecting) audio.pause(); }).observe(landing.querySelector('.world-sound'));
-  const paths = { model: '/examples/griffin/workbench/main.ashfox', item: '/examples/items/src/iron_sword.ashfox', sound: '/examples/sounds/src/claw_hit.ashfox' };
+  const paths = { model: '/examples/griffin/workbench/main.ashfox', item: '/examples/items/src/iron_sword.ashfox', sound: '/examples/sounds/src/bird_call.ashfox' };
   const modelPreview = landing.querySelector('[data-source-preview]').getAttribute('src');
   let revision = 0;
   const source = async key => {
     const preview = landing.querySelector('[data-source-preview]');
-    const previews = { model: [modelPreview, siteCopy.modelAlt], item: ['/media/landing/sword.png', siteCopy.generatedSword], sound: ['/media/landing/claw-base.svg', siteCopy.generatedWave] };
+    const previews = { model: [modelPreview, siteCopy.modelAlt], item: ['/media/landing/sword.png', siteCopy.generatedSword], sound: ['/media/landing/bird-base.svg', siteCopy.generatedWave] };
     [preview.src, preview.alt] = previews[key]; landingMotion.change(preview);
     const current = ++revision, code = landing.querySelector('[data-source-code]'); code.textContent = siteCopy.loadingSource;
     landing.querySelector('[data-source-link]').href = paths[key];
@@ -48,4 +48,42 @@ if (landing) {
   };
   for (const button of landing.querySelectorAll('[data-source]')) button.onclick = () => void source(button.dataset.source);
   void source('model');
+  const replayDialog = landing.querySelector('[data-replay-dialog]');
+  const replayVideo = replayDialog.querySelector('[data-replay-video]');
+  const replayError = replayDialog.querySelector('[data-replay-error]');
+  let replayTrigger;
+  for (const trigger of landing.querySelectorAll('[data-replay]')) trigger.onclick = event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !replayDialog.showModal) return;
+    event.preventDefault();
+    replayTrigger = trigger;
+    replayDialog.querySelector('[data-replay-title]').textContent = trigger.dataset.replayName;
+    replayDialog.querySelector('[data-replay-file]').href = trigger.href;
+    replayError.hidden = true;
+    replayVideo.poster = trigger.dataset.replayPoster;
+    replayVideo.src = trigger.href;
+    audio.pause();
+    replayDialog.showModal();
+    document.body.classList.add('replay-open');
+  };
+  replayDialog.querySelector('[data-replay-close]').onclick = () => replayDialog.close();
+  replayDialog.addEventListener('cancel', event => { event.preventDefault(); replayDialog.close(); });
+  const outsideReplay = event => {
+    const bounds = replayDialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+  };
+  let backdropStart = false;
+  replayDialog.addEventListener('pointerdown', event => { backdropStart = event.target === replayDialog && outsideReplay(event); });
+  replayDialog.addEventListener('click', event => {
+    if (backdropStart && event.target === replayDialog && outsideReplay(event)) replayDialog.close();
+    backdropStart = false;
+  });
+  replayDialog.addEventListener('close', () => {
+    replayVideo.pause();
+    replayVideo.removeAttribute('src');
+    replayVideo.load();
+    document.body.classList.remove('replay-open');
+    replayTrigger?.focus({ preventScroll: true });
+  });
+  replayVideo.addEventListener('error', () => { if (replayDialog.open) replayError.hidden = false; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) replayVideo.pause(); });
 }

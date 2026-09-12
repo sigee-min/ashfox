@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist');
 const chrome = process.env.ASHFOX_CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const harness = `<!doctype html><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/"></iframe><pre id="status">running</pre><script>
+const harness = `<!doctype html><html data-missing="false"><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/"></iframe><pre id="status">running</pre><script>
 const test = async () => {
   const w = document.querySelector('iframe').contentWindow, d = w.document;
   const q = selector => d.querySelector(selector);
@@ -17,6 +17,10 @@ const test = async () => {
   const check = (value, message) => { if(!value)throw Error(message); };
   await until(() => q('[data-live-model]')?.dataset.ready === 'true' || q('[data-model-status]')?.textContent === copy.modelFailed, 'No model or fallback');
   const setup = q('[data-copy-agent-instruction]');
+  const outputLinks = [...d.querySelectorAll('.asset-rail a')];
+  check(outputLinks.length === 3 && outputLinks.every(link => d.querySelector(link.hash)), 'Output index must reach each showcase');
+  const finale = q('.landing-finale .button');
+  check(finale && d.querySelector(finale.hash) === setup.closest('#quick-start'), 'Final CTA must return to agent setup');
   check(!d.body.innerText.includes('https://ashfox.io/agent.md'), 'Setup prompt must not be displayed');
   check(setup.closest('.hero-copy'), 'Setup must be available in the hero');
   const centered = () => {
@@ -54,7 +58,29 @@ const test = async () => {
   }
   check(!q('[data-model-pause]') && !q('[data-native-size]'), 'Retired preview controls must not appear');
   const ready = q('[data-live-model]').dataset.ready === 'true';
+  check(ready === (document.documentElement.dataset.missing !== 'true'), 'Normal scenarios require a live renderer; only missing-model scenarios may fall back');
   if (ready) {
+    q('[data-live-model]').scrollIntoView({behavior:'instant',block:'center'});
+    const sample = () => new Promise(resolve => w.requestAnimationFrame(() => {
+      const frame = d.createElement('canvas'); frame.width=64;frame.height=64;
+      const context = frame.getContext('2d'); context.drawImage(q('[data-live-model] canvas'),0,0,64,64);
+      resolve([...context.getImageData(0,0,64,64).data].join(','));
+    }));
+    for(let i=0;i<30;i++) await sample();
+    let before = await sample();
+    if(w.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await new Promise(resolve=>setTimeout(resolve,150));
+      check(await sample() === before, 'Reduced motion must start with a still model');
+      q('.view-options summary').click();
+      q('[data-model-view="4.71239"]').click();
+      check(await sample() !== before, 'Camera alone must change a still model view');
+      q('.view-options summary').click();
+      before = await sample();
+    }
+    q('[data-model-motion="greeting"]').click();
+    let changed = false;
+    for(let i=0;i<30;i++) { if(await sample() !== before) {changed=true;break;} }
+    check(changed,'Selecting a motion must change rendered pixels');
     for(const button of d.querySelectorAll('[data-model-motion]')) { button.click(); check(button.getAttribute('aria-pressed')==='true', 'Motion selection failed'); }
     q('.view-options summary').click(); check(q('.view-options').open, 'Viewpoint controls must expand');
     for(const button of d.querySelectorAll('[data-model-view]')) { check(!button.disabled, 'Camera unavailable'); button.click(); }
@@ -65,23 +91,58 @@ const test = async () => {
   q('[data-item="amethyst"]').click();
   await until(()=>q('[data-item-image]').complete && q('[data-item-image]').naturalWidth===16, 'Native PNG failed');
   check(q('[data-item-download]').getAttribute('href').endsWith('amethyst.png'), 'Wrong item download');
+  const sourcePanel = q('.source-window');
+  const codeArea = q('.source-code pre');
+  check(!sourcePanel.querySelector('details') && codeArea.getBoundingClientRect().height > 0, 'Source must be visible without expanding');
+  check(codeArea.tabIndex === 0, 'Code scrolling must be keyboard accessible');
+  const sourceHeight = sourcePanel.getBoundingClientRect().height;
   q('[data-source="sound"]').click();
-  await until(()=>q('[data-source-code]').textContent.includes('sound claw_hit'), 'Actual source did not load');
+  await until(()=>q('[data-source-code]').textContent.includes('sound bird_call'), 'Actual source did not load');
+  check(Math.abs(sourcePanel.getBoundingClientRect().height - sourceHeight) < 1, 'Source tabs must preserve panel height');
   const audio=q('[data-landing-audio]'); check(audio.paused && audio.preload==='none', 'Audio must not autoplay');
   q('.world-sound').scrollIntoView({behavior:'instant',block:'center'});
   q('[data-sound-play]').click(); await until(()=>!audio.paused && audio.readyState>=2, 'Audio did not play');
   q('[data-sound-another]').click();
-  await until(()=>audio.src.endsWith('claw-alternate.wav') && !audio.paused, 'Hear another must play a different sound');
+  await until(()=>audio.src.endsWith('bird-alternate.wav') && !audio.paused, 'Hear another must play a different sound');
   check(!d.body.innerText.includes('Alternate') && !d.body.innerText.includes('48 kHz'), 'Internal audio metadata leaked into the experience');
   check(q('h1').textContent.includes('as Code.') && q('#workflow'), 'Assets as Code positioning is missing');
   check(d.querySelectorAll('.frontier-grid article').length===3, 'Advanced source examples are missing');
   q('#frontier').scrollIntoView({behavior:'instant',block:'start'});
-  for (const article of d.querySelectorAll('.frontier-grid article')) {
-    article.querySelector('summary').click();
-    check(article.querySelector('details').open, 'Build replay cannot be expanded');
-    const video = article.querySelector('video');
-    check(video.controls && !video.autoplay && video.poster && video.querySelector('source').src.endsWith('.mp4'), 'Replay must be explicit and source-backed');
+  const replay = q('[data-replay-dialog]'), replayVideo = q('[data-replay-video]');
+  check(!replay.open && !replayVideo.hasAttribute('src'), 'Replay must start closed without loading video');
+  for (const [index, article] of [...d.querySelectorAll('.frontier-grid article')].entries()) {
+    const trigger = article.querySelector('[data-replay]');
+    const height = article.getBoundingClientRect().height;
+    trigger.focus(); trigger.click();
+    check(replay.open && d.body.classList.contains('replay-open'), 'Replay must open a modal and lock background scrolling');
+    check(replay.contains(d.activeElement), 'Focus must enter replay');
+    check(q('[data-replay-title]').textContent === trigger.dataset.replayName, 'Wrong replay title');
+    check(replayVideo.src === trigger.href && replayVideo.poster.endsWith(trigger.dataset.replayPoster), 'Wrong replay video or poster');
+    check(replayVideo.controls && !replayVideo.autoplay && replayVideo.paused, 'Replay must use explicit playback');
+    check(article.getBoundingClientRect().height === height && !article.querySelector('details'), 'Replay must not expand the card');
+    check(q('[data-replay-file]').href === trigger.href, 'Direct replay fallback missing');
+    await replayVideo.play();
+    await until(() => !replayVideo.paused && replayVideo.readyState >= 2, 'Replay video did not play');
+    if (index === 0) q('[data-replay-close]').click();
+    else if (index === 1) replay.dispatchEvent(new w.Event('cancel', {cancelable:true}));
+    else {
+      replay.dispatchEvent(new w.PointerEvent('pointerdown', {clientX:0,clientY:0}));
+      replay.dispatchEvent(new w.MouseEvent('click', {clientX:0,clientY:0}));
+    }
+    await until(() => !replay.open && !replayVideo.hasAttribute('src'), 'Closing must unload video');
+    check(replayVideo.paused && !d.body.classList.contains('replay-open') && d.activeElement === trigger, 'Closing must stop replay, unlock scroll and restore focus');
   }
+  const replayTrigger = q('[data-replay]');
+  replayTrigger.click();
+  replayVideo.src = '/missing-replay.mp4';
+  void replayVideo.play().catch(() => {});
+  await until(() => !q('[data-replay-error]').hidden, 'Video failure must explain the direct-file fallback');
+  q('[data-replay-close]').click();
+  await until(() => !replayVideo.hasAttribute('src'), 'Failed replay must still close');
+  replayTrigger.click();
+  check(q('[data-replay-error]').hidden && replayVideo.src === replayTrigger.href, 'Reopening must clear the error and restore the chosen video');
+  q('[data-replay-close]').click();
+  await until(() => !replayVideo.hasAttribute('src'), 'Reopened replay must close');
   check(d.documentElement.scrollWidth<=w.innerWidth+1, 'Horizontal overflow');
   document.documentElement.dataset.result='passed';document.querySelector('#status').textContent='passed: live model/fallback, motion, views, native PNG, source, sound, responsive layout';
 };
@@ -94,10 +155,10 @@ let hold;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
-    if (missingModel && url.pathname === '/media/landing/griffin.glb') { response.writeHead(404).end(); return; }
+    if (missingModel && /^\/assets\/griffin-[a-f0-9]+\.glb$/.test(url.pathname)) { response.writeHead(404).end(); return; }
     if (url.pathname === '/hold') { hold = response; return; }
     if (url.pathname === '/done') { hold?.end(); hold = undefined; response.end('done'); return; }
-    if (url.pathname === '/test') { response.setHeader('Content-Type', 'text/html'); response.end(harness.replace('iframe src="/"', `iframe src="${localePath}"`)); return; }
+    if (url.pathname === '/test') { response.setHeader('Content-Type', 'text/html'); response.end(harness.replace('data-missing="false"', `data-missing="${missingModel}"`).replace('iframe src="/"', `iframe src="${localePath}"`)); return; }
     const relative = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
     const target = path.resolve(root, `.${relative}`);
     if (!target.startsWith(root + path.sep)) { response.writeHead(403).end(); return; }

@@ -422,17 +422,13 @@
   cursor: pointer;
 }
 .world-source .source-window pre {
-  min-height: 230px;
-  max-height: 310px;
+  height: 280px;
+  min-height: 0;
+  max-height: none;
 }
-.source-code summary {
-  padding: 18px 20px;
-  color: #bdb7aa;
-  cursor: pointer;
-  font-size: 12px;
-}
-.source-code[open] summary {
-  border-bottom: 1px solid #ffffff15;
+.source-code pre:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
 }
 .source-result {
   padding: 25px;

@@ -76,3 +76,17 @@ claimed by the brand.
 The advanced-example bar is inspectability: a working source graph, concrete
 outputs and reviewable motion/texture evidence. Add new examples to demonstrate
 a missing capability, not to inflate a gallery count.
+
+The landing hero pairs oversized Assets as Code typography with the live Griffin.
+Viewer scripts and model inputs use content-hashed asset URLs so returning visitors
+receive a matching HTML/runtime pair. Normal browser checks require a live renderer
+and changing frames; a fallback poster is only success in explicit failure cases.
+
+The first viewport is an asset showcase, with restrained warm lighting and an
+actual linked source excerpt as evidence. Keep the surrounding page dark; avoid
+bright section backgrounds, invented performance figures, or decorative editor UI.
+
+A brief one-time part reveal introduces the finished model. It is presentation,
+not compilation history. Skip it for reduced motion and finish it immediately
+on model interaction. Mobile prioritizes the product title, setup and model over
+the repeated introduction paragraph.

@@ -23,18 +23,33 @@ if (host) void (async () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enablePan = false; controls.enableZoom = false; controls.enableDamping = true;
     controls.minPolarAngle = .35; controls.maxPolarAngle = 2.4;
-    const model = await new GLTFLoader().loadAsync('/media/landing/griffin.glb');
+    const model = await new GLTFLoader().loadAsync(host.dataset.modelSrc);
     scene.add(model.scene);
+    const revealParts = [];
+    model.scene.traverse(node => {
+      if (node.isMesh) revealParts.push({ node, scale: node.scale.clone(), height: node.getWorldPosition(new THREE.Vector3()).y });
+    });
+    revealParts.sort((a, b) => a.height - b.height);
+    let revealTime = reduced.matches ? 2 : 0;
+    let revealed = reduced.matches;
+    const finishReveal = () => { revealTime = 2; };
+    host.addEventListener('pointerdown', finishReveal, { once: true });
     const bounds = new THREE.Box3().setFromObject(model.scene);
     const center = bounds.getCenter(new THREE.Vector3());
     const radius = bounds.getSize(new THREE.Vector3()).length() * .5;
     controls.target.copy(center);
+    let framingDistance = 0;
+    const fitDistance = () => radius * (host.clientWidth / host.clientHeight < 1 ? 2.8 : 2.5);
     const resize = () => {
       const w = host.clientWidth, h = host.clientHeight;
       renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+      const nextDistance = fitDistance();
+      if (framingDistance) camera.position.sub(controls.target).multiplyScalar(nextDistance / framingDistance).add(controls.target);
+      framingDistance = nextDistance;
+      controls.update();
     };
     const view = angle => {
-      const distance = radius * 3.15;
+      const distance = fitDistance();
       camera.position.copy(center).add(new THREE.Vector3(Math.sin(angle) * distance, distance * .28, Math.cos(angle) * distance));
       controls.update();
     };
@@ -46,7 +61,8 @@ if (host) void (async () => {
       const clip = model.animations.find(c => c.name === name);
       if (!clip) return;
       const next = mixer.clipAction(clip);
-      if (action !== next) {
+      if (action === next) action.reset().play();
+      else {
         if (reduced.matches) action?.stop(); else action?.fadeOut(.25);
         action = next; action.reset(); if (!reduced.matches) action.fadeIn(.25); action.play();
       }
@@ -54,19 +70,29 @@ if (host) void (async () => {
     };
     for (const button of document.querySelectorAll('[data-model-motion]')) {
       button.disabled = false;
-      button.onclick = () => { choose(button.dataset.modelMotion); playing = true; };
+      button.onclick = () => { finishReveal(); choose(button.dataset.modelMotion); playing = true; };
     }
     for (const button of document.querySelectorAll('[data-model-view]')) {
-      button.disabled = false; button.onclick = () => view(Number(button.dataset.modelView));
+      button.disabled = false; button.onclick = () => { finishReveal(); view(Number(button.dataset.modelView)); };
     }
-    reduced.addEventListener('change', () => { playing = !reduced.matches; });
+    reduced.addEventListener('change', () => { finishReveal(); playing = !reduced.matches; });
     choose('wing_display');
+    if (!revealed) for (const part of revealParts) part.node.scale.setScalar(0);
     const clock = new THREE.Clock();
     new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(host);
     renderer.setAnimationLoop(() => {
       const delta = Math.min(clock.getDelta(), .05);
       if (!visible || document.hidden) return;
       if (playing) mixer.update(delta);
+      if (!revealed) {
+        revealTime = Math.min(2, revealTime + delta);
+        for (let index = 0; index < revealParts.length; index++) {
+          const part = revealParts[index];
+          const progress = Math.min(1, Math.max(0, (revealTime - index / revealParts.length * .55) / .7));
+          part.node.scale.copy(part.scale).multiplyScalar(1 - (1 - progress) ** 3);
+        }
+        revealed = revealTime >= 1.25;
+      }
       controls.update(); renderer.render(scene, camera);
     });
     renderer.render(scene, camera); fallback.hidden = true;

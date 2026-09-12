@@ -315,7 +315,15 @@ const copyNativeSources = async (relative) => {
 };
 await copyNativeSources('examples');
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts/landing/build.js')], { cwd: repoRoot, stdio: 'inherit' });
-await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/landing'), { recursive: true });
+for (const [key, file] of [['heroScript', 'hero.js'], ['heroModel', 'griffin.glb']]) {
+  const bytes = await readFile(path.join(repoRoot, 'dist/landing', file));
+  const name = `${path.basename(file, path.extname(file))}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}${path.extname(file)}`;
+  await writeFile(path.join(outputRoot, 'assets', name), bytes);
+  assets[key] = `/assets/${name}`;
+}
+await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/landing'), {
+  recursive: true, filter: source => path.basename(source) !== 'hero.js'
+});
 await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), { recursive: true });
 await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides'), { recursive: true, filter: source => !source.endsWith('receipt.json') });
 
