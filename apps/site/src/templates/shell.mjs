@@ -45,10 +45,10 @@ const siteHeader = ({ active, locale, alternatives, messages }) => `
       ${brandMark}
       <span>ashfox</span>
     </a>
-    <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
-      <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
-    </nav>
     <div class="header-actions">
+      <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
+        <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
+      </nav>
       <a class="header-setup" href="${locale.prefix}/#quick-start">${escapeHtml(locale.ui.getStarted)} ↗</a>
       <details class="language-menu" data-language-menu>
         <summary aria-label="${escapeHtml(locale.ui.language)}: ${escapeHtml(locale.label)}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg> ${escapeHtml(locale.label)} <span aria-hidden="true">⌄</span></summary>
