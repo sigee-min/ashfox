@@ -1,3 +1,4 @@
+import { chromeShutdown } from './shutdown';
 import { findChrome } from '../onboarding/browser';
 import { spawn, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -10,6 +11,7 @@ interface Reply { id?: number; result?: Record<string, unknown>; error?: {messag
 export class ChromeRenderer {
   private child?: ChildProcess;
   private closing?:Promise<void>;
+  private shutdown?: () => Promise<void>;
   private profile?: string;
   private pipe?: Writable;
   private serial=0;
@@ -24,6 +26,11 @@ export class ChromeRenderer {
     this.profile=fs.mkdtempSync(path.join(os.tmpdir(),'ashfox-render-'));
     const child=spawn(executable,['--headless=new','--remote-debugging-pipe','--disable-background-networking','--disable-component-update','--disable-extensions','--no-first-run','--no-default-browser-check','--use-angle=swiftshader','--enable-unsafe-swiftshader','--user-data-dir='+this.profile,'about:blank'],{stdio:['ignore','ignore','ignore','pipe','pipe']});
     this.child=child;this.pipe=child.stdio[3] as Writable;
+    const pipe=this.pipe;
+    this.shutdown=chromeShutdown(child,()=>{
+      pipe.write(JSON.stringify({id:++this.serial,method:'Browser.close'})+'\0',error=>{if(error)child.kill('SIGTERM');});
+    });
+    pipe.on('error',error=>this.fail(error));
     (child.stdio[4] as Readable).on('data',(chunk:Buffer)=>{
       this.buffer=Buffer.concat([this.buffer,chunk]);
       if(this.buffer.length>96*1024*1024){this.fail(new Error('Renderer response exceeds 96 MiB'));void this.close();return;}
@@ -68,12 +75,10 @@ export class ChromeRenderer {
     return this.closing;
   }
   private async stop():Promise<void> {
-    const child=this.child;this.child=undefined;this.session=undefined;
+    this.child=undefined;this.session=undefined;
     this.fail(new BuildFailure('capture.cancelled','Renderer stopped',130));
-    if(child&&child.exitCode===null&&child.signalCode===null)await new Promise<void>(resolve=>{
-      const timer=setTimeout(()=>child.kill('SIGKILL'),2000);child.once('exit',()=>{clearTimeout(timer);resolve();});child.kill('SIGTERM');
-    });
-    if(this.profile){fs.rmSync(this.profile,{recursive:true,force:true,maxRetries:3,retryDelay:100});this.profile=undefined;}
+    await this.shutdown?.();this.shutdown=undefined;this.pipe=undefined;
+    if(this.profile){await fs.promises.rm(this.profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});this.profile=undefined;}
     this.buffer=Buffer.alloc(0);
   }
 }
