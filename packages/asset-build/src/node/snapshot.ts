@@ -4,6 +4,7 @@ import { isDirectorySource, readDirectoryWorkspace, matchDirectoryPattern } from
 import { BuildFailure, type Snapshot } from '../contract';
 import { digest, json } from '../digest';
 import { contained, noLinks, safeRelative } from './paths';
+import { evaluateConfiguration } from './configuration';
 import { readStandalone } from './standalone';
 
 const readText = (file: string, limit: number): string => {
@@ -27,16 +28,22 @@ export const readSnapshot = (input: string): Snapshot => {
   if (file.endsWith('.ashfox')) {
     let directory = path.dirname(file);
     while (true) {
-      const candidate = path.join(directory, '.ashfoxworkspace');
-      if (fs.existsSync(candidate)) { file = candidate; break; }
+      const candidates = ['.ashfoxworkspace', '.ashfoxworkspace.mjs'].map(name => path.join(directory, name)).filter(candidate => fs.existsSync(candidate));
+      if (candidates.length > 1) throw new BuildFailure('workspace.ambiguous', 'Keep one workspace configuration per root', 2);
+      if (candidates.length) { file = candidates[0]; break; }
       if (fs.existsSync(path.join(directory, '.git')) || path.dirname(directory) === directory) {
         return readStandalone(file, readText);
       }
       directory = path.dirname(directory);
     }
   }
-  if (path.basename(file) !== '.ashfoxworkspace') throw new BuildFailure('workspace.filename', 'Expected .ashfox source or optional .ashfoxworkspace', 2);
-  const root = fs.realpathSync(path.dirname(file)), configuration = readText(path.join(root, '.ashfoxworkspace'), 262144);
+  if (!['.ashfoxworkspace', '.ashfoxworkspace.mjs'].includes(path.basename(file))) throw new BuildFailure('workspace.filename', 'Expected .ashfox source, .ashfoxworkspace or .ashfoxworkspace.mjs', 2);
+  const root = fs.realpathSync(path.dirname(file));
+  const alternatives = ['.ashfoxworkspace', '.ashfoxworkspace.mjs'].filter(name => fs.existsSync(path.join(root, name)));
+  if (alternatives.length > 1) throw new BuildFailure('workspace.ambiguous', 'Keep one workspace configuration per root', 2);
+  noLinks(file);
+  if (!fs.statSync(file).isFile()) throw new BuildFailure('source.file', 'Expected a configuration file', 2);
+  const configuration = file.endsWith('.mjs') ? evaluateConfiguration(file) : readText(file, 262144);
   let config: Snapshot['config'];
   try { config = readDirectoryWorkspace(configuration); }
   catch (error) { throw new BuildFailure('workspace.config', error instanceof Error ? error.message : String(error), 2); }

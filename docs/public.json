@@ -78,6 +78,10 @@
     "label": "Projects and automation",
     "pages": [
       {
+        "source": "guides/repository-layout.md",
+        "route": "/docs/guides/repository-layout/"
+      },
+      {
         "source": "guides/workspace.md",
         "route": "/docs/guides/workspace/"
       },

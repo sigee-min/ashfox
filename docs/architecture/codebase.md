@@ -191,3 +191,12 @@ the headless browser entry and drives it through a private Chrome pipe, with no
 network endpoint. `apps/cli/src/observe` owns closed stdin contracts, isolated
 source compilation, revision-guarded in-memory sessions and binary stdout.
 See [the observation guide](../guides/observe.md).
+
+## Executable repository configuration
+
+The Node asset-build adapter evaluates `.ashfoxworkspace.mjs` in a separate Node
+process and passes its JSON result through the same closed directory reader.
+Engine-core remains host-independent. Snapshot verification re-evaluates the
+configuration before publication. The evaluator is trusted project code, not a
+sandbox. `scripts/release/project/` owns the grouped CLI init template and sample
+consumer adapter; the portable release ZIP remains the standalone asset sample.

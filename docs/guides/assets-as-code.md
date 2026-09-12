@@ -1,5 +1,8 @@
 # Assets as Code
 
+For the concrete source/output layout, executable configuration and game adapter,
+follow the [repository convention](repository-layout.md).
+
 Assets as Code means keeping the editable definition of an asset in source,
 reviewing its changes in version control, and compiling the outputs you deliver.
 Ashfox brings this workflow to voxel games: models, pixel textures and procedural

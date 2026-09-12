@@ -11,7 +11,7 @@ const readStable = (directory = root) => {
   }
   const base = `https://github.com/sigee-min/ashfox/releases/download/v${record.version}/`;
   const onboarding = true;
-  return { version: record.version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding };
+  return { version: record.version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding, grouped: record.version !== '1.0.0' };
 };
 const files = {
   'docs/guides/install.md': ['install', 'check', 'start', 'offline', 'availability'],

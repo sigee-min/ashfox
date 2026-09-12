@@ -12,8 +12,8 @@ This package includes an offline starter matching its compiler:
 ```sh
 npx --no-install ashfox --version
 npx --no-install ashfox doctor
-npx --no-install ashfox init assets
-npx --no-install ashfox export assets/sword.ashfox --output sword.png
+npx --no-install ashfox init my-game
+npx --no-install ashfox build my-game/.ashfoxworkspace.mjs --json
 ```
 
 Run `--help` for a short command guide or `capabilities` for the machine contract.
@@ -57,3 +57,7 @@ and export always use their explicit input.
 - [Formats and support matrix](https://ashfox.io/docs/guides/choose-a-format/)
 - [CLI reference](https://ashfox.io/docs/guides/cli/)
 - [Troubleshooting](https://ashfox.io/docs/guides/troubleshooting/)
+
+The grouped starter keeps source under `asset/` and ignored output under root
+`build/`. Customize `.ashfoxworkspace.mjs` and consume verified results with
+`assets.mjs`. See the [repository convention](https://ashfox.io/docs/guides/repository-layout/).

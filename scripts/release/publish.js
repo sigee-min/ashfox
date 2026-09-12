@@ -14,7 +14,7 @@ const publish = async ({ api, repository, sha, version, directory, changelog }) 
   const base = `/repos/${repository}/releases`;
   const files = [...names, 'SHA256SUMS'];
   let release = await api(`${base}/tags/${tag}`, { allowMissing: true });
-  const copy = instructions({ cli: `https://github.com/${repository}/releases/download/${tag}/ashfox-cli.tgz`, onboarding: true });
+  const copy = instructions({ cli: `https://github.com/${repository}/releases/download/${tag}/ashfox-cli.tgz`, onboarding: true, grouped: true });
   if (!release || release.draft) {
     if (typeof changelog !== 'string' || !changelog.trim()) throw new Error('Release changelog entry missing');
   } else if (release.immutable !== true) {

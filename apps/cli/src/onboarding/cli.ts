@@ -12,11 +12,11 @@ export const isOnboardingCommand = (command: string): boolean =>
 const help = `Ashfox ${ASHFOX_VERSION} — game assets from code
 
 Start in your project folder:
-  ashfox init assets
-  ashfox export assets/sword.ashfox --output sword.png
+  ashfox init my-game
+  ashfox build my-game/.ashfoxworkspace.mjs --json
 
 Commands:
-  init <new-folder>        Create starter model, item and sound sources offline
+  init <new-folder>        Create a grouped asset project offline
   doctor                  Check the CLI and optional Chrome/FFmpeg tools
   inspect <source|png>     Inspect an asset
   export <source>          Export GLB, PNG or WAV to stdout
@@ -47,6 +47,7 @@ const init = (folder: string, json: boolean): void => {
   catch (error) { throw new BuildFailure('init.destination', `Choose a new folder; nothing was changed. ${error instanceof Error ? error.message : String(error)}`, 2); }
   try {
     for (const [name, source] of Object.entries(ASHFOX_STARTER)) {
+      fs.mkdirSync(path.dirname(path.join(target, name)), { recursive: true });
       fs.writeFileSync(path.join(target, name), source, { flag: 'wx' });
     }
   } catch (error) {
@@ -54,7 +55,7 @@ const init = (folder: string, json: boolean): void => {
     throw error;
   }
   emit('init', { directory: target, files: Object.keys(ASHFOX_STARTER), version: cliVersion }, json,
-      `Created starter assets in ${folder}\nModel: fox.ashfox · Item: sword.ashfox · Sound: claw_hit.ashfox\nExport the sword source from this folder with ashfox export <source> --output sword.png\n`);
+      `Created asset project in ${folder}\nSources: asset/ · Generated output: build/\nBuild: ashfox build ${folder}/.ashfoxworkspace.mjs --json\nIntegration: node ${folder}/assets.mjs\n`);
 };
 const doctor = (json: boolean): void => {
   const chrome = findChrome();

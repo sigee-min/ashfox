@@ -1,5 +1,10 @@
 # Configure your project
 
+The [repository convention](repository-layout.md) defines the recommended
+`asset/` → root `build/` layout. Current source also supports executable
+`.ashfoxworkspace.mjs` configuration exporting the same version-2 object; this
+ships with the next CLI release. Keep one configuration form per root.
+
 Native `.ashfox` files are the durable asset sources. A workspace is optional:
 use a root `.ashfoxworkspace` only when a repository needs common source-selection,
 package, ignore, build or export rules. It contains settings, never source or

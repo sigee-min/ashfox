@@ -25,12 +25,12 @@ const main = async (): Promise<void> => {
   if (runOnboarding(args)) return;
   if (['inspect','capture','replay','export','stdio'].includes(command)) { await runObservation(args,__filename,controller.signal); return; }
   if (args.filter(a => a === '--json').length > 1 || args.some(a => a.startsWith('--') && a !== '--json')) {
-    throw new BuildFailure('cli.arguments', 'Only --json is supported; shared configuration belongs to optional .ashfoxworkspace', 2);
+    throw new BuildFailure('cli.arguments', 'Only --json is supported; shared configuration belongs to .ashfoxworkspace or .ashfoxworkspace.mjs', 2);
   }
   const positional = args.slice(1).filter(a => a !== '--json');
   if (command === 'capabilities') {
     if (positional.length) throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
-    result(true, { cliVersion, commands: ['init', 'doctor', 'check', 'build', 'verify', 'capabilities', 'inspect', 'capture', 'replay', 'export', 'stdio'], observation: observationCapabilities, workspace: { file: '.ashfoxworkspace', version: 2, required: false },
+    result(true, { cliVersion, commands: ['init', 'doctor', 'check', 'build', 'verify', 'capabilities', 'inspect', 'capture', 'replay', 'export', 'stdio'], observation: observationCapabilities, workspace: { file: '.ashfoxworkspace', executableFile: '.ashfoxworkspace.mjs', version: 2, required: false },
       source: '.ashfox', outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'], legacyFallback: false,
       packs: { formats: ['minecraft_java', 'game_assets'], itemDefinitions: ['legacy', 'modern'], metadata: ['legacy', 'range'], audio: 'vorbis', encoder: 'FFmpeg via PATH or ASHFOX_FFMPEG_PATH', archive: 'zip' },
       usage: 'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox inspect|capture|replay|export <source|png> [options]; ashfox stdio' });

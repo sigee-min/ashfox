@@ -1,5 +1,8 @@
 # Automate asset builds
 
+For the concrete source/output layout, executable configuration and game adapter,
+follow the [repository convention](repository-layout.md).
+
 Pin the compiler package and source files in the game repository. If using OGG,
 also pin the FFmpeg build used by CI. Run the local installed executable so a
 missing dependency cannot trigger an unrelated package download.

@@ -129,3 +129,12 @@ headless renderer setup and persistent session examples.
 
 These commands do not use the project response envelope or accept `--json`.
 See [observation options](observe.md) and [session protocol](stdio.md).
+
+## Executable project configuration (next release)
+
+`check` and `build` accept `.ashfoxworkspace.mjs`, including ancestor discovery
+for source builds. This is trusted Node ESM, evaluated to the existing version-2
+workspace contract. `init <new-folder>` now creates grouped `asset/` sources,
+this configuration, a game adapter and a `.gitignore` for root `build/`.
+See the [complete convention](repository-layout.md), including evaluation limits,
+output identities and migration from existing JSON workspaces.

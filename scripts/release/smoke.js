@@ -53,19 +53,26 @@ const main = async () => {
       assert.match((await execute('--help')).toString(), /init <new-folder>/);
       assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
       await execute('init', 'created', '--json');
-      for (const name of fs.readdirSync(path.join(folder, 'created'))) {
-        assert.deepEqual(fs.readFileSync(path.join(folder, 'created', name)), fs.readFileSync(path.join(folder, name)),
-          'offline init and downloadable starter must match');
+      for (const [name, source] of Object.entries(require('./project').projectFiles(root))) {
+        assert.equal(fs.readFileSync(path.join(folder, 'created', name), 'utf8'), source,
+          'offline init matches the grouped project template');
       }
-      assert.equal((await execute('export', 'created/sword.ashfox')).subarray(1, 4).toString(), 'PNG');
-      assert.equal((await execute('export', 'created/sword.ashfox', '--output', 'sword.png')).length, 0);
+      const built = JSON.parse(await execute('build', 'created/.ashfoxworkspace.mjs', '--json')).result;
+      const verified = JSON.parse(await execute('verify', 'created/build/assets/compiler', '--json')).result;
+      assert.equal(built.bundleHash, verified.bundleHash);
+      assert.equal(verified.catalog.assets.length, 3);
+      const adapted = JSON.parse(await run(process.execPath, ['created/assets.mjs',
+        path.join(folder, 'node_modules/@ashfox/cli/dist/ashfox.cjs')], folder));
+      assert.equal(adapted.bundleHash, built.bundleHash);
+      assert.equal((await execute('export', 'created/asset/items/sword.ashfox')).subarray(1, 4).toString(), 'PNG');
+      assert.equal((await execute('export', 'created/asset/items/sword.ashfox', '--output', 'sword.png')).length, 0);
       const png = fs.readFileSync(path.join(folder, 'sword.png'));
       assert.equal(png.subarray(1, 4).toString(), 'PNG');
-      await assert.rejects(execute('export', 'created/sword.ashfox', '--output', 'sword.png'));
+      await assert.rejects(execute('export', 'created/asset/items/sword.ashfox', '--output', 'sword.png'));
       assert.deepEqual(fs.readFileSync(path.join(folder, 'sword.png')), png);
       const requests = [
         {id:'probe',method:'capabilities',params:{}},
-        {id:'load',method:'load',params:{input:{file:path.join(folder,'created/sword.ashfox')}}},
+        {id:'load',method:'load',params:{input:{file:path.join(folder,'created/asset/items/sword.ashfox')}}},
         {id:'inspect',method:'inspect',params:{}},
         {id:'close',method:'close',params:{}}
       ];

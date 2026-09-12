@@ -31,7 +31,7 @@ const promote = async ({ directory = root, version, release, download }) => {
   }
   // Render and validate the complete next documentation before advancing its authority.
   const base = `https://github.com/sigee-min/ashfox/releases/download/v${version}/`;
-  sync(false, directory, { version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding: true });
+  sync(false, directory, { version, cli: base + 'ashfox-cli.tgz', starter: base + 'starter.zip', onboarding: true, grouped: version !== '1.0.0' });
   fs.writeFileSync(path.join(directory, 'scripts/release/stable.json'), JSON.stringify({version}, null, 2) + '\n');
 };
 const main = async () => {
