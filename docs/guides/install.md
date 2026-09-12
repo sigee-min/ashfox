@@ -1,6 +1,6 @@
 # Install Ashfox
 
-You need Node.js 20 or newer and npm. You do not need an account or API key.
+You need Node.js 24 or newer and npm. You do not need an account or API key.
 
 ## Install in your project
 
@@ -18,7 +18,7 @@ The second command prints the installed product version. Run
 `npx --no-install ashfox doctor` to check optional Chrome and FFmpeg support.
 <!-- ashfox:check-end -->
 
-The package contains the complete CLI and works with Node.js 20+ on macOS,
+The package contains the complete CLI and works with Node.js 24+ on macOS,
 Linux and Windows PowerShell. Install it in your existing project; keep your
 `package.json` and commit the updated lockfile.
 

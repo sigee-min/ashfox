@@ -9,7 +9,7 @@ sample, not a terrain engine or a complete gameplay project.
 
 Download [the web-game project](/downloads/web-game.zip) and extract it into its
 own folder. Put [the CLI package](/downloads/ashfox-cli.tgz) in that folder. With
-Node.js 20 or newer:
+Node.js 24 or newer:
 
 ```sh
 npm install

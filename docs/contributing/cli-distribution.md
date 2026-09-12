@@ -15,7 +15,7 @@ npm registry publication remain future work. Keep this maintainer guide outside
    in `prepare` mode, review and merge its release-please version PR.
 2. Run **release** in `publish` mode on that exact `main` commit. It runs the
    complete quality gate, builds the release assets once, and tests those bytes
-   on Linux, macOS and Windows with Node 20 and 24. All six jobs must pass.
+   on Linux, macOS and Windows with Node 24. All three jobs must pass.
 3. The publisher creates a draft for the root product version, uploads and
    downloads every asset to verify SHA-256, then publishes. Its release notes
    include version-pinned installation, offline init, the first PNG export and

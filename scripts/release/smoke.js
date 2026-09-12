@@ -45,6 +45,7 @@ const main = async () => {
         ...(mode === 'offline' ? ['--offline'] : []), target], folder);
       const metadata = JSON.parse(fs.readFileSync(path.join(folder, 'node_modules/@ashfox/cli/package.json')));
       assert.equal(metadata.version, JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version);
+      assert.deepEqual(metadata.engines, JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).engines);
       assert.equal(metadata.scripts, undefined);
       assert.equal(metadata.dependencies, undefined);
       assert.ok(fs.existsSync(path.join(folder, 'node_modules/@ashfox/cli/LICENSE')));

@@ -21,7 +21,7 @@ Do not replace a working pinned installation just because a newer version exists
 
 Read [installation](https://ashfox.io/docs/guides/install/) and
 [agent workflow](https://ashfox.io/docs/guides/agent-workflow/) in full.
-Node.js 20+ and npm are required. If the CLI is missing, install the published
+Node.js 24+ and npm are required. If the CLI is missing, install the published
 stable package in the project using its existing package manager:
 
 ```sh

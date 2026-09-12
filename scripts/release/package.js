@@ -6,7 +6,7 @@ const { execFileSync } = require('node:child_process');
 const { isStrictSemVer } = require('./validate');
 
 const packageCli = (root, out) => {
-  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version;
+  const { version, engines } = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   if (!isStrictSemVer(version)) throw new Error('Invalid product version');
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-package-'));
   try {
@@ -19,7 +19,7 @@ const packageCli = (root, out) => {
     fs.chmodSync(path.join(stage, 'dist/ashfox.cjs'), 0o755);
     fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify({
       name: '@ashfox/cli', version, description: 'Assets as Code for voxel games',
-      license: 'MIT', engines: { node: '>=20' }, bin: { ashfox: 'dist/ashfox.cjs' },
+      license: 'MIT', engines, bin: { ashfox: 'dist/ashfox.cjs' },
       files: ['dist/ashfox.cjs', 'README.md', 'LICENSE'],
       repository: { type: 'git', url: 'https://github.com/sigee-min/ashfox.git' }
     }, null, 2) + '\n');

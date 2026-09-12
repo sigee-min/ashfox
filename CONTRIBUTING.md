@@ -37,7 +37,7 @@ manifest. The skill is an asset workflow guide, not a repository bootstrap.
 
 ## Setup
 
-Use Node.js 20 or newer and install the repository dependencies:
+Use Node.js 24 or newer and install the repository dependencies:
 
 ```sh
 npm ci

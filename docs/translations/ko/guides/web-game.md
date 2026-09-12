@@ -4,7 +4,7 @@
 
 ## 내려받고 실행하기
 
-[웹 게임 프로젝트](/downloads/web-game.zip)를 별도 폴더에 풀고 [CLI 패키지](/downloads/ashfox-cli.tgz)를 넣으세요. Node.js 20 이상에서 실행합니다.
+[웹 게임 프로젝트](/downloads/web-game.zip)를 별도 폴더에 풀고 [CLI 패키지](/downloads/ashfox-cli.tgz)를 넣으세요. Node.js 24 이상에서 실행합니다.
 
 {{source-code:0}}
 

@@ -1,6 +1,6 @@
 # Ashfox 설치
 
-Node.js 20 이상과 npm이 필요합니다. 계정이나 API 키는 필요하지 않습니다.
+Node.js 24 이상과 npm이 필요합니다. 계정이나 API 키는 필요하지 않습니다.
 
 ## 프로젝트에 설치하기
 
@@ -10,7 +10,7 @@ Node.js 20 이상과 npm이 필요합니다. 계정이나 API 키는 필요하�
 
 두 번째 명령은 설치된 제품 버전을 출력합니다. 선택 도구인 Chrome·FFmpeg 지원 여부는 `npx --no-install ashfox doctor`로 확인합니다.
 
-패키지는 완전한 CLI를 포함하며 macOS·Linux·Windows PowerShell에서 Node.js 20 이상으로 동작합니다. 기존 프로젝트에 설치하고 `package.json`을 유지하며 갱신된 잠금 파일을 커밋하세요.
+패키지는 완전한 CLI를 포함하며 macOS·Linux·Windows PowerShell에서 Node.js 24 이상으로 동작합니다. 기존 프로젝트에 설치하고 `package.json`을 유지하며 갱신된 잠금 파일을 커밋하세요.
 
 ## 첫 에셋 만들기
 

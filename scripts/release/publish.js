@@ -20,7 +20,7 @@ const publish = async ({ api, repository, sha, version, directory, changelog }) 
   } else if (release.immutable !== true) {
     throw new Error('Published release immutability was not confirmed; inspect GitHub before retrying');
   }
-  const body = `## Get started\n\nRequires Node.js 20+ and npm. Run in your game or asset project:\n\n${copy.install}\n\n${copy.start}\n\n${copy.check}\n\nGLB, PNG and WAV exports need no additional tools. Chrome is optional for capture;\nFFmpeg with libvorbis is optional for OGG audio.\n\n[CLI reference](https://ashfox.io/docs/guides/cli/) · [Installation guide](https://ashfox.io/docs/guides/install/)\n\n${changelog}\n\n## Artifacts\n\nCLI, starter sources and SHA256SUMS were built from ${sha}.\n`;
+  const body = `## Get started\n\nRequires Node.js 24+ and npm. Run in your game or asset project:\n\n${copy.install}\n\n${copy.start}\n\n${copy.check}\n\nGLB, PNG and WAV exports need no additional tools. Chrome is optional for capture;\nFFmpeg with libvorbis is optional for OGG audio.\n\n[CLI reference](https://ashfox.io/docs/guides/cli/) · [Installation guide](https://ashfox.io/docs/guides/install/)\n\n${changelog}\n\n## Artifacts\n\nCLI, starter sources and SHA256SUMS were built from ${sha}.\n`;
   if (!release) release = await api(base, { method: 'POST', json: {
     tag_name: tag, target_commitish: sha, name: tag, draft: true,
     prerelease: version.includes('-'), body
