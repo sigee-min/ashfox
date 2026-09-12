@@ -34,12 +34,13 @@ const resolveFile = (pathname) => {
   ) {
     return null;
   }
-  const directoryIndex = path.join(requested, 'index.html');
-  if (fs.statSync(directoryIndex, { throwIfNoEntry: false })?.isFile()) {
-    return directoryIndex;
-  }
-  if (fs.statSync(requested, { throwIfNoEntry: false })?.isFile()) {
-    return requested;
+  const requestedStat = fs.statSync(requested, { throwIfNoEntry: false });
+  if (requestedStat?.isFile()) return requested;
+  if (requestedStat?.isDirectory()) {
+    const directoryIndex = path.join(requested, 'index.html');
+    if (fs.statSync(directoryIndex, { throwIfNoEntry: false })?.isFile()) {
+      return directoryIndex;
+    }
   }
   return undefined;
 };
