@@ -52,21 +52,19 @@ const test = async () => {
     check(q('.header-setup').getAttribute('href') === '/ko/#quick-start', 'Korean install link lost locale');
     check(q('.hero-subtitle').textContent === '복셀 게임의 에셋을 코드로.', 'Korean landing copy missing');
   }
+  check(!q('[data-model-pause]') && !q('[data-native-size]'), 'Retired preview controls must not appear');
   const ready = q('[data-live-model]').dataset.ready === 'true';
   if (ready) {
-    check(q('[data-model-pause]').textContent === (w.matchMedia('(prefers-reduced-motion: reduce)').matches ? copy.play : copy.pause), 'Reduced motion not respected');
     for(const button of d.querySelectorAll('[data-model-motion]')) { button.click(); check(button.getAttribute('aria-pressed')==='true', 'Motion selection failed'); }
-    q('[data-model-pause]').click(); check(q('[data-model-pause]').textContent===copy.play, 'Pause failed');
     q('.view-options summary').click(); check(q('.view-options').open, 'Viewpoint controls must expand');
     for(const button of d.querySelectorAll('[data-model-view]')) { check(!button.disabled, 'Camera unavailable'); button.click(); }
-  } else check(!q('[data-live-model] img').hidden && q('[data-model-pause]').disabled, 'Fallback does not preserve poster');
+  } else check(!q('[data-live-model] img').hidden && [...d.querySelectorAll('[data-model-motion]')].every(button => button.disabled), 'Fallback does not preserve poster');
   q('.world-items').scrollIntoView({behavior:'instant',block:'center'});
   await until(()=>q('.item-showcase').dataset.entered==='true', 'Scroll entrance did not run');
   if (w.matchMedia('(prefers-reduced-motion: reduce)').matches) check(q('.item-showcase').getAnimations().length===0, 'Reduced motion must skip entrance animation');
   q('[data-item="amethyst"]').click();
   await until(()=>q('[data-item-image]').complete && q('[data-item-image]').naturalWidth===16, 'Native PNG failed');
   check(q('[data-item-download]').getAttribute('href').endsWith('amethyst.png'), 'Wrong item download');
-  q('[data-native-size]').click(); check(q('.item-art').classList.contains('native'), 'Native-size view failed');
   q('[data-source="sound"]').click();
   await until(()=>q('[data-source-code]').textContent.includes('sound claw_hit'), 'Actual source did not load');
   const audio=q('[data-landing-audio]'); check(audio.paused && audio.preload==='none', 'Audio must not autoplay');

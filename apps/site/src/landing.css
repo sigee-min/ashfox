@@ -129,12 +129,6 @@
   filter: drop-shadow(0 18px 28px #0009);
   transform: rotate(-12deg);
 }
-.item-art.native img {
-  width: 16px;
-  height: 16px;
-  transform: none;
-  filter: none;
-}
 .item-options {
   display: flex;
   gap: 5px;

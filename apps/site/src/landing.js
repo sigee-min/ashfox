@@ -7,8 +7,6 @@ if (landing) {
     landing.querySelector('[data-item-download]').href = src;
     for (const sibling of landing.querySelectorAll('[data-item]')) sibling.setAttribute('aria-pressed', String(sibling === button));
   };
-  const native = landing.querySelector('[data-native-size]');
-  native.onclick = () => { const enabled = native.getAttribute('aria-pressed') !== 'true'; native.setAttribute('aria-pressed', String(enabled)); landing.querySelector('.item-art').classList.toggle('native', enabled); };
   const audio = landing.querySelector('[data-landing-audio]');
   const play = landing.querySelector('[data-sound-play]');
   const status = landing.querySelector('[data-sound-status]');

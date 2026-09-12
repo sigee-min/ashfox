@@ -40,7 +40,7 @@ project uses Ashfox or that its operating model transfers without adaptation.
 - README: category and domain, actual asset previews, stable installation and one
   PNG, the working loop, advanced examples, and receiving-game guides.
 - Landing: the category beside a live Griffin, a four-step source workflow,
-  native-size pixel examples, explicit sound playback, readable source excerpts,
+  pixel-art previews, explicit sound playback, readable source excerpts,
   advanced creature examples, and delivery choices.
 - Documentation: one public Assets as Code guide connecting source ownership,
   Git review, evidence, pinned builds and releases. Existing technical guides

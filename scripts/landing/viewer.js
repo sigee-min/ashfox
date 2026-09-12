@@ -42,7 +42,6 @@ if (host) void (async () => {
     new ResizeObserver(resize).observe(host);
     const mixer = new THREE.AnimationMixer(model.scene);
     let action, playing = !reduced.matches, visible = true;
-    const pause = document.querySelector('[data-model-pause]');
     const choose = name => {
       const clip = model.animations.find(c => c.name === name);
       if (!clip) return;
@@ -55,15 +54,13 @@ if (host) void (async () => {
     };
     for (const button of document.querySelectorAll('[data-model-motion]')) {
       button.disabled = false;
-      button.onclick = () => { choose(button.dataset.modelMotion); playing = true; pause.textContent = siteCopy.pause; };
+      button.onclick = () => { choose(button.dataset.modelMotion); playing = true; };
     }
     for (const button of document.querySelectorAll('[data-model-view]')) {
       button.disabled = false; button.onclick = () => view(Number(button.dataset.modelView));
     }
-    pause.disabled = false;
-    pause.onclick = () => { playing = !playing; pause.textContent = playing ? siteCopy.pause : siteCopy.play; };
-    reduced.addEventListener('change', () => { playing = !reduced.matches; pause.textContent = playing ? siteCopy.pause : siteCopy.play; });
-    choose('wing_display'); pause.textContent = playing ? siteCopy.pause : siteCopy.play;
+    reduced.addEventListener('change', () => { playing = !reduced.matches; });
+    choose('wing_display');
     const clock = new THREE.Clock();
     new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(host);
     renderer.setAnimationLoop(() => {
@@ -77,7 +74,7 @@ if (host) void (async () => {
     renderer.domElement.addEventListener('webglcontextlost', event => {
       event.preventDefault(); fallback.hidden = false; renderer.domElement.hidden = true;
       status.textContent = siteCopy.contextLost;
-      for (const button of document.querySelectorAll('[data-model-motion], [data-model-view], [data-model-pause]')) button.disabled = true;
+      for (const button of document.querySelectorAll('[data-model-motion], [data-model-view]')) button.disabled = true;
     });
   } catch {
     renderer?.dispose(); renderer?.domElement.remove(); fallback.hidden = false;
