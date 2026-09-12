@@ -12,7 +12,7 @@ own version 2 contract, shared with item and model projects.
   synthesis, deterministic variant streams, mastering and PCM16 WAV encoding.
 - `packages/engine-core`: directory workspace entry dispatch and export validation.
 - `packages/asset-build` and `apps/cli`: shared project build and publication.
-- `scripts/audio`: local candidate storage, host-side OGG encoding, HTTP jobs
+- `apps/audio-study`: local candidate storage, host-side OGG encoding, HTTP jobs
   and a read-only sound viewer. `engine.js` imports the public audio-core barrel.
 
 There is no separate JavaScript DSP or JSON sound language in the harness.
@@ -46,7 +46,7 @@ across different JavaScript engines or OGG encoders is not promised.
 Focused tests cover native parsing, deterministic output, noise variants,
 source edits, source isolation, closed inputs, stale heads, hash corruption,
 HTTP builds, encoder failure, cancellation and exact public-core WAV equality.
-These checks do not prove animal realism. Public Workbench authoring, dynamic
+These checks do not prove animal realism. Interactive authoring, dynamic
 sound graphs, animation cues and game runtime packaging are outside this change.
 
-Setup and source syntax are in `scripts/audio/README.md` and `docs/guides/sounds.md`.
+Setup and source syntax are in `apps/audio-study/README.md` and `docs/guides/sounds.md`.

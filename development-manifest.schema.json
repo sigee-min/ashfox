@@ -192,8 +192,8 @@
     },
     "forbiddenHumanAuthoring": {
       "type": "array",
-      "minItems": 7,
-      "maxItems": 7,
+      "minItems": 6,
+      "maxItems": 6,
       "uniqueItems": true,
       "prefixItems": [
         {
@@ -213,9 +213,6 @@
         },
         {
           "const": "direct-texture-authoring"
-        },
-        {
-          "const": "edit-asset-workspace-in-workbench"
         }
       ],
       "items": false
@@ -773,6 +770,7 @@
             "as-unknown-as",
             "bare-document",
             "bare-window",
+            "browser-authoring-contract",
             "catch-without-binding",
             "console-in-src",
             "double-assertion",
@@ -781,8 +779,7 @@
             "globalThis-as",
             "throw-in-src",
             "todo-fixme-comment",
-            "ts-ignore",
-            "workbench-blockbench-dependency"
+            "ts-ignore"
           ]
         },
         "scope": {

@@ -1,4 +1,4 @@
 interface:
-  display_name: "ashfox"
-  short_description: "Create and refine Minecraft-style block and pixel assets"
-  default_prompt: "Use $ashfox at https://ashfox.io/workbench/ to create or refine the asset I describe, preserving its established block and pixel style."
+  display_name: "Ashfox"
+  short_description: "Build voxel game assets as code"
+  default_prompt: "Use $ashfox to create or refine the asset I describe in native .ashfox source, inspect it with the Ashfox CLI, and preserve its established block and pixel style."

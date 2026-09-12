@@ -6,8 +6,8 @@ explains the documentation publishing system; asset authors should start with th
 
 
 English is the source language. Existing `/docs/` URLs remain stable. Locale
-routes are derived from a registered prefix, for example `/ko/docs/`. The landing
-page remains English. There is no browser-language redirect, so shared links and
+routes are derived from a registered prefix: `/ko/` for the Korean landing page
+and `/ko/docs/` for its documentation. There is no browser-language redirect, so shared links and
 crawler responses do not depend on cookies, JavaScript or request headers.
 
 ## One page identity, many languages
@@ -26,7 +26,8 @@ file is an error. Keep repository contributor documents outside the public catal
 
 ## Translate a page
 
-1. Add the locale registration if needed; translate every UI and section label.
+1. Add the locale registration if needed; translate every UI and section label,
+   and add the complete site message catalog described below.
 2. Copy the page's structure into the matching translation path. Translate prose,
    tables, image alt text and explanatory prompts. Keep language tokens, IDs,
    configuration keys and executable commands unchanged.
@@ -58,8 +59,8 @@ English publication on every language. Reviewing and acknowledging restores the 
 ## Navigation and search indexing
 
 Each locale gets a complete navigation tree. Previous/next pages and relative
-Markdown links stay in that locale. Language links target the same page, not the
-Docs home. Controls, code-copy labels, accessibility labels and section names
+Markdown links stay in that locale. The header language dropdown targets the same page and retains its section
+anchor. Home links and landing-to-Docs links retain the selected locale. Controls, code-copy labels, accessibility labels and section names
 come from the locale registry. No locale-specific client bundle is necessary.
 
 Actual translations have self-canonical URLs and reciprocal `hreflang` links,
@@ -82,7 +83,31 @@ The existing site validator checks every generated locale route and local link.
 CLI example tests remain tied to the English source blocks reused by translations.
 Do not edit `apps/site/dist`; publish through the normal site build.
 
-All 31 current public English documents have Korean translations, including the
+All 30 current public English documents have Korean translations, including the
 complete DSL reference. Future pages can be published in English first: until a
 reviewed translation is added, that locale displays the explicit English fallback.
 Adding Markdown and a revision entry is enough; no routing or template work is needed.
+
+## Landing page and shared interface
+
+`apps/site/src/messages/<locale>.json` owns landing copy, shared footer and social
+metadata, and interactive model/audio/copy messages. Use the English catalog's
+semantic keys; the loader rejects missing, extra or empty messages. Registering a
+language requires this catalog as well as the UI strings in `docs/locales.json`.
+Page routes, header choices and the sitemap are generated from the registry.
+
+The renderer escapes catalog values as text. Runtime messages travel with the
+rendered page, so model controls and error feedback use the same language as the
+article or landing. Media, code, download filenames and technical identifiers are
+shared. Keep the Assets as Code brand phrase; write the surrounding copy for the
+reader's language rather than following English word order.
+
+For Korean, use concise action labels and natural explanatory sentences. Translate
+meaning in context: “The source is yours” becomes “에셋의 원본도 내 저장소에” and
+“Complete creatures” becomes “크리처 하나를 온전히”. Describe build replay as
+“조립 과정” and explain that it is reconstructed from the finished model.
+
+Verify the dropdown with keyboard, outside clicks and Escape, including narrow
+screens. Check model, audio and copy states in both languages, as well as links
+between the landing and Docs. Run `npm --workspace @ashfox/site run test` and
+`npm --workspace @ashfox/site run test:browser` after changing the interface.

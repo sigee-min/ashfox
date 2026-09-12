@@ -1,4 +1,3 @@
-import stableRelease from '../../../scripts/release/stable.js';
 import { createHash } from 'node:crypto';
 import {
   readdir,
@@ -8,7 +7,9 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { landingContent } from '../src/content.mjs';
+import { siteMessages } from '../src/messages.mjs';
+import { defaultLocale } from '../src/locales.mjs';
+const landingMessages = siteMessages(defaultLocale);
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = path.resolve(siteRoot, '../..');
@@ -25,11 +26,6 @@ const canonicalWorkspaceRelativePath =
 const canonicalWorkspacePath = path.join(
   repositoryRoot,
   canonicalWorkspaceRelativePath
-);
-const standaloneGriffinWorkspaceRelativePath = 'assets/workspaces/griffin.ashfoxworkspace';
-const standaloneGriffinWorkspacePath = path.join(
-  repositoryRoot,
-  standaloneGriffinWorkspaceRelativePath
 );
 const griffinGlbRelativePath = 'examples/griffin.glb';
 const griffinGlbSourcePath = path.join(
@@ -149,7 +145,6 @@ const retiredCaptureModeTerms = [
 
 const retiredContractSourceScopes = [
   path.join(repositoryRoot, 'apps/site/src'),
-  path.join(repositoryRoot, 'apps/web/src'),
   path.join(repositoryRoot, 'packages/engine-core/src'),
   path.join(repositoryRoot, 'packages/blockbench-contracts/src'),
   path.join(repositoryRoot, 'packages/blockbench-runtime/src'),
@@ -223,9 +218,7 @@ for (const file of htmlFiles) {
     if (
       /^(?:https?:|mailto:)/.test(href) ||
       href === '/' ||
-      href.startsWith('/?') ||
-      href === '/workbench/' ||
-      href.startsWith('/workbench/?')
+      href.startsWith('/?')
     ) {
       continue;
     }
@@ -362,33 +355,8 @@ for (const name of ['look_around', 'wing_display', 'greeting']) {
 if (heroJson.extensionsRequired?.length) failures.push('Landing GLB must use portable encoding');
 
 const canonicalWorkspace = await readFile(canonicalWorkspacePath);
-const publishedWorkspacePath = path.join(
-  outputRoot,
-  canonicalWorkspaceRelativePath
-);
-if (!(await exists(publishedWorkspacePath))) {
-  failures.push('landing canonical workspace download is missing');
-} else {
-  const publishedWorkspace = await readFile(publishedWorkspacePath);
-  if (
-    !publishedWorkspace.equals(canonicalWorkspace) ||
-    digestBytes(canonicalWorkspace) !== showcaseManifest.workspace?.sha256
-  ) {
-    failures.push('landing workspace download must be byte-identical and current');
-  }
-}
-const standaloneGriffinWorkspace = await readFile(standaloneGriffinWorkspacePath);
-const publishedStandaloneGriffinPath = path.join(
-  outputRoot,
-  standaloneGriffinWorkspaceRelativePath
-);
-if (!(await exists(publishedStandaloneGriffinPath))) {
-  failures.push('published Griffin workspace is missing');
-} else {
-  const publishedStandaloneGriffin = await readFile(publishedStandaloneGriffinPath);
-  if (!publishedStandaloneGriffin.equals(standaloneGriffinWorkspace)) {
-    failures.push('published Griffin workspace must be byte-identical and current');
-  }
+if (digestBytes(canonicalWorkspace) !== showcaseManifest.workspace?.sha256) {
+  failures.push('Showcase source receipt is stale');
 }
 const griffinGlb = await readFile(griffinGlbSourcePath);
 const publishedGriffinGlbPath = path.join(outputRoot, griffinGlbRelativePath);
@@ -403,25 +371,14 @@ if (!(await exists(publishedGriffinGlbPath))) {
 const publishedWorkspaceFiles = outputFiles.filter((file) =>
   file.endsWith('.ashfoxworkspace') && file.startsWith(path.join(outputRoot, 'assets/workspaces'))
 );
-const expectedPublishedWorkspaceFiles = [
-  publishedWorkspacePath,
-  publishedStandaloneGriffinPath,
-  path.join(outputRoot, 'assets/workspaces/fox.ashfoxworkspace'),
-  path.join(outputRoot, 'assets/workspaces/goblin.ashfoxworkspace')
-].sort();
-if (
-  publishedWorkspaceFiles.length !== expectedPublishedWorkspaceFiles.length ||
-  publishedWorkspaceFiles.sort().join('|') !== expectedPublishedWorkspaceFiles.join('|')
-) {
-  failures.push('static site must publish exactly the canonical and Griffin workspace copies');
-}
+if (publishedWorkspaceFiles.length) failures.push('Internal model snapshots must not be published');
 const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
   .filter((file) => file.endsWith('.ashfoxworkspace'));
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
-if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes(`href="${stableRelease.readStable(repositoryRoot).starter}"`)) {
-  failures.push('Landing must offer the actual model and complete source download');
+if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="/examples/griffin/workbench/main.ashfox"')) {
+  failures.push('Landing must offer the actual model and example source');
 }
 
 const rootReadme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
@@ -433,13 +390,13 @@ for (const requiredReadmeReference of [
   'assets/exports/griffin/griffin.glb',
   'examples/shared-creatures/',
   'https://ashfox.io/#examples',
-  'https://ashfox.io/workbench/'
+  'https://ashfox.io/docs/guides/cli/'
 ]) {
   if (!rootReadme.includes(requiredReadmeReference)) {
     failures.push(`README showcase reference is missing: ${requiredReadmeReference}`);
   }
 }
-if (!rootReadme.includes(landingContent.showcase.provenance)) {
+if (!rootReadme.includes(landingMessages.provenance)) {
   failures.push('README must identify the replay as a reconstruction');
 }
 for (const readmeReplay of [
@@ -474,16 +431,16 @@ const instructionButtons = landingHtml.match(
   /<button(?=[^>]*\sdata-copy-agent-instruction(?:\s|>))[^>]*>/gu
 ) ?? [];
 if (instructionButtons.some((button) =>
-  attribute(button, 'data-instruction') !== landingContent.quickStart.instruction
+  attribute(button, 'data-instruction') !== landingMessages.instruction
 )) {
   failures.push('every setup button must copy the current agent instruction');
 }
 if (!landingHtml.includes('id="quick-start"') ||
-    !landingHtml.includes('href="/docs/guides/install/">Install Ashfox')) {
+    !landingHtml.includes('class="hero-start"')) {
   failures.push('landing must provide a reachable source authoring setup');
 }
 for (const required of ['Assets<br>as Code.', 'Built for voxel games.', 'id="workflow"',
-  'id="frontier"', '/docs/guides/assets-as-code/', landingContent.showcase.provenance]) {
+  'id="frontier"', '/docs/guides/assets-as-code/', landingMessages.provenance]) {
   if (!landingHtml.includes(required)) failures.push(`Assets as Code landing is missing ${required}`);
 }
 for (const entry of ['griffin', 'fox', 'goblin']) {

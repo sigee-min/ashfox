@@ -12,11 +12,10 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "apps/web/src/**/*.d.ts",
-    "apps/web/tests/**/*.ts",
     "packages/blockbench-conformance/tests/**/*.ts",
     "packages/blockbench-runtime/tests/**/*.ts",
     "packages/engine-core/tests/**/*.ts",
-    "packages/audio-core/tests/**/*.ts"
+    "packages/audio-core/tests/**/*.ts",
+    "apps/cli/tests/**/*.ts"
   ]
 }

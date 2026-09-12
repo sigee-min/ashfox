@@ -21,73 +21,6 @@
   letter-spacing: .19em;
   color: #aea99d;
 }
-.world-hero {
-  position: relative;
-  min-height: 640px;
-  height: calc(100svh - 64px);
-  max-height: 1100px;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      ellipse at 64% 56%,
-      #54402c55,
-      transparent 56%),
-    #111518;
-}
-.world-heading {
-  position: absolute;
-  left: 5%;
-  top: 6%;
-  z-index: 2;
-  pointer-events: none;
-}
-.world-heading h1 {
-  font-size: clamp(68px, 9.5vw, 152px);
-}
-.world-heading .eyebrow {
-  margin-bottom: 22px;
-}
-.world-heading h1 em {
-  color: transparent;
-  -webkit-text-stroke: 1px #bbb3a3;
-}
-.world-stage {
-  position: absolute;
-  left: 27%;
-  right: -4%;
-  top: 6%;
-  bottom: 13%;
-  touch-action: pan-y;
-}
-.world-stage canvas {
-  position: absolute;
-  inset: 0;
-  max-width: 100%;
-  touch-action: pan-y;
-}
-.world-stage img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: lighten;
-}
-.world-intro {
-  position: absolute;
-  left: 5%;
-  top: 52%;
-  z-index: 3;
-}
-.world-intro > p {
-  font-size: 25px;
-  line-height: 1.35;
-  color: #aaa79e;
-}
-.world-intro strong {
-  color: var(--paper);
-  font-weight: 500;
-}
 .world-actions {
   display: flex;
   align-items: center;
@@ -100,38 +33,11 @@
   border-bottom: 1px solid #756854;
   padding-bottom: 6px;
 }
-.world-note {
-  position: absolute;
-  right: 6%;
-  bottom: 22%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 10px;
-  letter-spacing: .08em;
-  color: #b2afa5;
-}
 .live-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #a6b58c;
-}
-.world-controls {
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  bottom: 8%;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  z-index: 3;
-}
-.world-controls > div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 .world-controls button,
 .item-options button,
@@ -154,25 +60,6 @@
 .world-controls button:disabled {
   opacity: .45;
   cursor: wait;
-}
-.view-controls > span {
-  font-size: 9px;
-  letter-spacing: .15em;
-  margin-right: 12px;
-  color: #aaa;
-}
-.world-index {
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  bottom: 3%;
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid #ffffff20;
-  padding-top: 13px;
-  font-size: 10px;
-  letter-spacing: .13em;
-  color: #aaa79e;
 }
 .world-strip {
   display: flex;
@@ -410,31 +297,33 @@
 .delivery-pair strong {
   font-size: 13px;
 }
-.world-start {
+.hero-start {
+  max-width: 380px;
+  scroll-margin-top: 100px;
   text-align: center;
-  padding: 130px 6%;
 }
-.world-start .world-actions {
+.hero-start .world-actions {
   justify-content: center;
 }
-.world-start details {
-  max-width: 640px;
-  margin: 30px auto;
+.hero-start [data-copy-agent-instruction] {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  min-height: 48px;
+}
+.hero-start [data-copy-feedback] {
+  margin: 12px 0 0;
+  max-width: none;
   color: #a9aaa3;
   font-size: 13px;
+  line-height: 1.7;
+  min-height: 3.4em;
+  text-align: center;
+  text-wrap: balance;
 }
-.world-start summary {
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 5px;
-}
-.world-start details > p {
-  line-height: 1.8;
-}
-.start-footnote {
-  font-size: 11px;
-  color: #b4afa2;
-  margin-top: 35px;
+.hero-examples {
+  display: inline-block;
+  margin-top: 12px;
 }
 .world-landing button:focus-visible,
 .world-landing a:focus-visible,
@@ -445,68 +334,7 @@
 .world-landing button:hover:not(:disabled) {
   border-color: var(--accent);
 }
-@media (min-width: 1500px) {
-  .world-stage {
-    left: 30%;
-    right: 0;
-  }
-  .world-intro {
-    top: 51%;
-  }
-}
 @media (max-width: 850px) {
-  .world-hero {
-    min-height: 790px;
-    height: auto;
-  }
-  .world-heading {
-    top: 30px;
-  }
-  .world-heading h1 {
-    font-size: clamp(58px, 12vw, 100px);
-  }
-  .world-stage {
-    left: 0;
-    right: 0;
-    top: 190px;
-    bottom: 200px;
-  }
-  .world-intro {
-    top: auto;
-    bottom: 115px;
-    right: 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-  }
-  .world-intro > p {
-    font-size: 18px;
-  }
-  .world-intro .world-actions {
-    margin: 0;
-    gap: 12px;
-  }
-  .world-note {
-    right: 5%;
-    bottom: 245px;
-    font-size: 9px;
-  }
-  .world-controls {
-    bottom: 55px;
-    gap: 5px;
-  }
-  .world-controls button {
-    padding: 8px 10px;
-    font-size: 10px;
-  }
-  .view-controls > span {
-    display: none;
-  }
-  .world-index {
-    bottom: 16px;
-    font-size: 9px;
-  }
   .world-strip {
     flex-wrap: wrap;
     font-size: 9px;
@@ -532,55 +360,11 @@
   .world-delivery {
     padding: 70px 6%;
   }
-  .world-start {
-    padding: 80px 6%;
-  }
   .item-art {
     height: 280px;
   }
 }
 @media (max-width: 480px) {
-  .world-hero {
-    min-height: 790px;
-  }
-  .world-heading h1 {
-    font-size: 15vw;
-  }
-  .world-stage {
-    top: 190px;
-    bottom: 240px;
-    left: -12%;
-    right: -12%;
-  }
-  .world-intro {
-    bottom: 150px;
-    display: block;
-  }
-  .world-intro > p {
-    margin-bottom: 16px;
-  }
-  .world-intro .world-actions {
-    gap: 18px;
-  }
-  .world-intro .button {
-    font-size: 12px;
-    padding: 12px 16px;
-  }
-  .world-note {
-    bottom: 285px;
-    left: 5%;
-    right: auto;
-  }
-  .world-controls {
-    bottom: 55px;
-    flex-direction: column;
-  }
-  .world-controls > div {
-    gap: 5px;
-  }
-  .world-index {
-    font-size: 8px;
-  }
   .world-items,
   .world-sound,
   .world-source {
@@ -608,9 +392,6 @@
   }
   .source-tabs button {
     padding: 12px;
-  }
-  .world-stage canvas {
-    touch-action: pan-y;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -670,10 +451,6 @@
   flex-wrap: wrap;
 }
 @media (max-width: 480px) {
-  .world-note {
-    top: 190px;
-    bottom: auto;
-  }
   .sound-actions {
     gap: 16px;
   }

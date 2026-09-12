@@ -48,7 +48,7 @@ def fetch(url: str, limit: int) -> bytes:
         headers={
             "Accept": "application/json, text/plain, */*",
             "Cache-Control": "no-cache",
-            "User-Agent": "ashfox-skill-sync/1",
+            "User-Agent": "ashfox-skill-sync/2",
         },
     )
     with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
@@ -69,8 +69,12 @@ def parse_descriptor(data: bytes) -> tuple[str, list[dict[str, object]]]:
         raise SyncError("Release descriptor is not valid UTF-8 JSON.") from error
     if not isinstance(value, dict):
         raise SyncError("Release descriptor must be an object.")
-    if value.get("schemaVersion") != 1 or value.get("name") != "ashfox":
+    if value.get("schemaVersion") != 2 or value.get("name") != "ashfox":
         raise SyncError("Release descriptor identity is invalid.")
+    if value.get("documentationUrl") != f"{ORIGIN}/docs/guides/agent-workflow/":
+        raise SyncError("Release documentation URL is invalid.")
+    if "manifestUrl" in value or "workbenchUrl" in value:
+        raise SyncError("Retired browser authoring descriptor fields are forbidden.")
     release = value.get("release")
     files = value.get("files")
     if not isinstance(release, str) or not release:

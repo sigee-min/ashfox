@@ -1,5 +1,5 @@
 export const CANONICAL_AUTHORING_BOUNDARY = [
-  'Canonical Ashfox asset authoring is workspace-first: use the Web Studio agent manifest and workspace.apply for one complete closed change set.',
+  'Canonical Ashfox assets are native .ashfox source files; edit source and inspect, capture, build and export with the Ashfox CLI.',
   'The Blockbench MCP bridge is an optional compatibility track. Its live bone, cube, mesh, texture, and animation mutations do not create or revise the canonical asset workspace.',
   'Never use a compatibility-session mutation as a second geometry, hierarchy, material, texture, motion, or workspace authority.'
 ].join(' ');

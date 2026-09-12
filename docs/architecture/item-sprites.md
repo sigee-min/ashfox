@@ -2,7 +2,7 @@
 
 The [sprite guide](../guides/sprites.md) owns user-facing syntax and examples.
 The [workspace guide](../guides/workspace.md) describes source selection and PNG
-exports. The [item studio](../../scripts/items/README.md) is an optional viewer.
+exports. The [item studio](../../apps/item-study/README.md) is an optional viewer.
 
 `engine-core/compiler/sprite` parses native declarations and lowers them into a
 validated pixel plan. Modules expose masks, materials and stamps; ordered paint,

@@ -265,15 +265,7 @@ const reachabilityScopes = (options) => {
       entries: contractsEntries,
       options
     },
-    {
-      label: 'web',
-      root: path.join(repoRoot, 'apps/web/src'),
-      entries: [
-        'main.tsx',
-        'features/agent/agentManifest.ts'
-      ],
-      options
-    }
+
   ];
 };
 
@@ -284,7 +276,6 @@ const checkedSourcePrefixes = Object.freeze([
   'packages/render-core/src/',
   'apps/blockbench-mcp-sidecar/src/',
   'apps/blockbench-plugin/src/',
-  'apps/web/src/',
   'packages/blockbench-contracts/src/',
   'packages/blockbench-runtime/src/',
   'packages/engine-core/src/',

@@ -11,8 +11,6 @@ Before changing this repository:
 3. Read [docs/architecture/codebase.md](docs/architecture/codebase.md) for
    ownership and dependency boundaries relevant to the change.
 
-Do not confuse the repository development manifest with the generated Web
-Studio `/workbench/agent-manifest.json`. The latter is sourced from
-`apps/web/src/features/agent/agentManifest.ts` and is the runtime contract for
-an agent creating an asset. Do not copy either manifest's rules into this
-bootstrap file.
+The repository manifest governs changes to Ashfox itself. Asset authors use the
+native `.ashfox` sources, CLI and public user guides; these are separate audiences.
+Do not copy the manifest's rules into this bootstrap file.

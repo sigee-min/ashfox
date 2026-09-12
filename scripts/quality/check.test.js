@@ -86,7 +86,7 @@ assert.deepEqual(
           react: '1.0.0'
         }
       }],
-      ['apps/web', {
+      ['apps/cli', {
         dependencies: {
           '@ashfox/blockbench-runtime': '0.0.0',
           three: '1.0.0'
@@ -101,7 +101,7 @@ assert.deepEqual(
         values: ['@ashfox/internal-contracts']
       },
       {
-        workspace: 'apps/web',
+        workspace: 'apps/cli',
         sections: ['dependencies'],
         mode: 'deny-prefixes',
         values: ['@ashfox/blockbench-']
@@ -110,7 +110,7 @@ assert.deepEqual(
   ),
   [
     'quality: apps/site cannot depend on react',
-    'quality: apps/web cannot depend on @ashfox/blockbench-runtime'
+    'quality: apps/cli cannot depend on @ashfox/blockbench-runtime'
   ]
 );
 
@@ -119,7 +119,7 @@ const boundary = {
   allowedExternalImports: ['@ashfox/internal-contracts'],
   forbiddenExternalPrefixes: ['@ashfox/'],
   forbiddenExternalPackageRoots: ['react', 'three'],
-  forbiddenRelativeTargets: ['apps/web/', 'packages/engine-core/']
+  forbiddenRelativeTargets: ['apps/cli/', 'packages/engine-core/']
 };
 assert.deepEqual(
   importBoundaryViolations({
@@ -129,7 +129,7 @@ assert.deepEqual(
       '@ashfox/internal-contracts',
       '@ashfox/engine-core',
       'react/jsx-runtime',
-      '../../web/src/Workbench'
+      '../../cli/src/main'
     ],
     boundary
   }),

@@ -83,6 +83,6 @@ structure, types and bindings; captures and playback let you judge the result.
 [Documentation](docs/README.md) ·
 [Assets as Code workflow](docs/guides/assets-as-code.md) ·
 [DSL reference](docs/language/README.md) ·
-[Model Workbench](https://ashfox.io/workbench/)
+[CLI guide](https://ashfox.io/docs/guides/cli/)
 
 [Contribute](CONTRIBUTING.md) · [MIT license](LICENSE)

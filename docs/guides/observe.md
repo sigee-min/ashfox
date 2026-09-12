@@ -1,6 +1,6 @@
 # Inspect and capture one asset
 
-Use the CLI as a headless asset workbench: load one model, item, sound or existing
+Use the CLI as a headless asset compiler and renderer: load one model, item, sound or existing
 PNG; inspect it; choose a camera or animation pose; receive media in memory.
 These commands ignore ancestor `.ashfoxworkspace` files. They do not run a project
 build, create output folders or change source files.
@@ -21,8 +21,8 @@ manual control. Rendering requires Chrome or Chromium; set `ASHFOX_CHROME_PATH`
 when it is not at a standard installation path. An explicit invalid path fails.
 Compilation, inspection and ordinary exports do not require Chrome.
 
-The renderer uses the same scene projection, camera presets, material rules and
-animation sampling as the browser Workbench. It starts a private headless process
+The renderer applies the shared scene projection, camera presets, material rules
+and animation sampling from Ashfox’s rendering library. It starts a private headless process
 with an ephemeral browser profile and removes that profile on normal cleanup.
 Sources and captured media are passed in memory. A killed host process can leave
 an abandoned temporary profile; no asset directory is created implicitly.

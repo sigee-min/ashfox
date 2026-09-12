@@ -17,7 +17,7 @@ The common CLI produces 48 kHz mono WAV files without FFmpeg or a browser.
 Outputs under `build/` and `exports/` are generated and ignored by Git.
 
 For playback, comparison and OGG downloads, use the
-[local sound viewer](../../scripts/audio/README.md). Its initial source set
+[local sound viewer](../../apps/audio-study/README.md). Its initial source set
 comes from this directory. See the [sound syntax guide](../../docs/guides/sounds.md).
 
 Seed variations affect noise and vocal irregularities. The pure FM bird call

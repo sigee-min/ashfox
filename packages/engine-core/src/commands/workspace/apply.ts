@@ -1,6 +1,6 @@
 import { applyWorkspaceChangeSet } from '../../compiler/program/asset/workspaceChange';
 import type { AssetProject } from '../../project/asset';
-import { openAssetProject } from '../../projectFile/workspace/open';
+import { openAssetProject } from './open';
 import type { WorkspaceDiagnostic } from '../../project/workspace/diagnostic';
 import { defineCommand } from '../definition';
 import type { CommandInputSchema } from '../schema';

@@ -56,3 +56,19 @@ assert.doesNotMatch(fallback, /hreflang="ko"/);
 assert.match(fallback, /아직 한국어로 번역되지/);
 assert.match(fallback, /<div lang="en"/);
 console.log('Docs locales: same-page switch, stable anchors, shared code, stale and missing translations, canonical/hreflang pass');
+
+for (const route of ['', 'ko/']) {
+  const html = await readFile(new URL(`${route}index.html`, output), 'utf8');
+  assert.match(html, /class="language-menu" data-language-menu/);
+  assert.doesNotMatch(html, /class="docs-languages"/);
+  assert.match(html, /hreflang="ko" href="https:\/\/ashfox.io\/ko\/"/);
+  assert.match(html, new RegExp(`rel="canonical" href="https://ashfox.io/${route}"`));
+  assert.ok(html.includes(`href="/${route}#quick-start"`));
+  assert.doesNotMatch(html, />undefined</);
+}
+assert.doesNotMatch(korean, /class="docs-languages"/);
+assert.match(korean, /class="language-menu" data-language-menu/);
+const koreanLanding = await readFile(new URL('ko/index.html', output), 'utf8');
+assert.match(koreanLanding, /에셋의 원본도 내 저장소에/);
+assert.match(koreanLanding, /크리처 하나를 온전히/);
+assert.match(await readFile(new URL('sitemap.xml', output), 'utf8'), /<loc>https:\/\/ashfox.io\/ko\/<\/loc>/);

@@ -86,7 +86,7 @@ export {
   openAssetProject,
   type OpenAssetProjectInput,
   type OpenAssetProjectResult
-} from './projectFile/workspace/open';
+} from './commands/workspace/open';
 export {
   applyWorkspaceChangeSet,
   type ApplyWorkspaceChangeSetResult
@@ -100,7 +100,7 @@ export {
   type ReadWorkspaceFileResult,
   type WorkspaceFileInput,
   type WriteWorkspaceFileResult
-} from './projectFile/workspace';
+} from './project/container';
 export {
   sha256ByteDigest, sha256Digest
 } from './provenance/digest';

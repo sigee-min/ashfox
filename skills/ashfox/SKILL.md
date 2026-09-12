@@ -1,63 +1,51 @@
 ---
 name: ashfox
-description: Create, refine, animate, and visually review Minecraft-style block and pixel assets in the ashfox Web Workbench. Use for ashfox modeling and export preparation, not repository development or direct Blockbench editing.
+description: Create, refine, animate, and review voxel game assets as native .ashfox source with the Ashfox CLI. Use for model, texture, sound and game delivery work, not for changes to the Ashfox implementation.
 ---
 
-# ashfox
+# Ashfox
 
-Use the Workbench to execute the user's asset request. The live runtime
-manifest owns the current language, API, review requirements, and delivery
-workflow. This skill is a connection guide, not a second grammar or schema.
+Create assets as code. The editable authority is the project's `.ashfox` files
+and their imported modules. Use the CLI to inspect, capture, replay, compile and
+export them. The website provides documentation and example previews.
 
-## Connect to ashfox.io
+Read https://ashfox.io/agent.md in full for the shared installation and documentation entry point. A skill is optional; users can start by pasting the landing page setup prompt into their existing coding agent.
 
-1. Choose the connection before running any sync helper: use
-   `https://ashfox.io/workbench/` by default.
-   Use a local/development Workbench only when explicitly selected by the user;
-   in that case use its own `agent-manifest.json` and skip production and skill
-   sync entirely.
-2. For production, the current live manifest is sufficient to carry out asset
-   work. Run `scripts/sync.py` with system Python only when checking skill
-   updates is relevant; its default checks availability without changing files.
-   Install only when the user explicitly requests a skill update, using
-   `scripts/sync.py --install`, then reread the updated `SKILL.md`. Installation
-   refuses repository checkouts. If verification or installation fails, continue
-   with the live manifest; do not manually patch the installed skill or weaken
-   verification.
-3. Fetch `https://ashfox.io/workbench/agent-manifest.json` (or the explicitly
-   selected development equivalent) through a direct HTTP tool such as `curl`.
-   Open the chosen Workbench in an in-app browser when available, otherwise a
-   connected browser. Reuse the user's tab and keep it on the app; do not
-   navigate it to JSON or mix a development app with the production manifest.
-4. Use `window.ashfox` when the browser tool can evaluate page JavaScript. If
-   it cannot, follow the live manifest's `pageApi.transport` fallback exactly.
-   It defines the transport envelope, matching response ID, bounded wait, and
-   replacement-input lifecycle. Keep requests sequential. The manifest's
-   transport nodes are the only DOM exception; do not read any other DOM,
-   canvas, IndexedDB, or browser storage.
-5. Inspect the active project before acting. Create or refine an asset through
-   the current manifest's workspace candidate and `workspace.apply` flow. If
-   the manifest or app is unavailable, report the connection problem instead
-   of guessing commands from cached instructions.
+## Start in the asset repository
 
-## Carry out the request
+1. Read the user's request and the existing source before changing anything.
+   Preserve unrelated assets and the established silhouette, palette and pixel
+   density unless the user asks to change them.
+2. Check the installed CLI with `npx --no-install ashfox --version` and
+   `npx --no-install ashfox doctor`. If unavailable, follow
+   https://ashfox.io/docs/guides/install/ and explain the installation needed.
+3. Read https://ashfox.io/docs/guides/agent-workflow/ and the relevant DSL reference
+   before using unfamiliar language features. Use `ashfox --help` and
+   `ashfox capabilities` for the installed command contract. Published examples
+   may describe a newer CLI; check release notes when a feature is unavailable.
+4. Follow the existing asset repository configuration. New projects use grouped
+   sources under `asset/`, generated outputs under root `build/`, and Git ignores
+   for generated files. See https://ashfox.io/docs/guides/repository-layout/.
 
-- If the user already described the work, continue from that request. Ask what
-  to create or change only when the task is missing. A request to inspect or
-  explain an asset does not authorize editing it.
-- For refinements, preserve the existing silhouette, palette, pixel density,
-  and focal details unless the user asks to change them. Follow the manifest's
-  precision authoring and observation guidance for linked dimensions and
-  fixed-size pixel marks; do not substitute smooth CAD geometry.
-- Read current schemas before constructing unfamiliar payloads. Edit only
-  workspace source through the current atomic change API. Never patch the
-  derived scene, texture raster, DOM, or storage to author an asset.
-- Review actual rendered frames and motion before accepting visual evidence.
-  Measurements and successful compilation do not certify appearance. On a
-  stale response, refresh the current identity and restage against it.
-- Complete the manifest's review and capture workflow when delivering an
-  asset. Do not claim export success from preflight alone. Ask about the export
-  target only when delivery requires it; leave final delivery to the user.
+## Create, observe, deliver
 
-Fetch the live manifest again after a product update. Do not copy its language
-rules or request schemas into this skill.
+- Edit source files directly. Use an optional `.ashfoxworkspace` or
+  `.ashfoxworkspace.mjs` to configure builds; keep a single configuration per root.
+- For one asset, inspect identifiers, edit the source, capture useful angles and
+  texture details, and replay each changed motion. Listen to sound variants.
+  Successful compilation alone does not establish visual or audio quality.
+- Use `ashfox stdio` for repeated operations on an asset in memory. Follow its
+  revision contract when replacing the complete source graph.
+- For game delivery, run check, build and verify against the configured workspace.
+  Consume deterministic outputs through the game's adapter; do not hand-edit
+  generated PNG, GLB, audio or runtime manifests.
+- Save or export the files requested by the user. Report exact output locations,
+  what was inspected, and any behavior still unverified in the receiving game.
+  Do not claim successful output from a preflight check alone.
+
+## Skill updates
+
+The current user guides and installed CLI are sufficient for asset work. When a
+skill update is relevant, `scripts/sync.py` checks availability without changing
+files. Use `--install` only when the user requests a skill update, then reread
+this file. The installer refuses repository checkouts; do not bypass its checks.

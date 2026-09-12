@@ -39,9 +39,8 @@ contains complete model, item and sound sources; no workspace setup is needed.
 `.ashfoxworkspace` configures multi-asset builds and delivery. PNG, GLB, audio and
 ZIP are generated results; changing them does not update the source.
 
-The optional browser [Model Workbench](guides/workbench-api.md) has its own model
-project storage. It does not open native directory configurations. Compare the
-available workflows in the [support matrix](guides/choose-a-format.md).
+Compare single-asset commands, stdio sessions and configured builds in the
+[support matrix](guides/choose-a-format.md).
 
 ## DSL reference
 

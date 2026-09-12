@@ -185,38 +185,38 @@ assert.deepEqual(
 
 assert.deepEqual(
   sourceSizeRatchetViolations([
-    { file: 'apps/web/src/new-large.ts', lines: 501 },
-    { file: 'apps/web/src/existing-large.ts', lines: 520 },
-    { file: 'apps/web/src/shrunk.ts', lines: 499 }
+    { file: 'apps/cli/src/new-large.ts', lines: 501 },
+    { file: 'apps/cli/src/existing-large.ts', lines: 520 },
+    { file: 'apps/cli/src/shrunk.ts', lines: 499 }
   ], {
-    'apps/web/src/existing-large.ts': 519,
-    'apps/web/src/shrunk.ts': 550,
-    'apps/web/src/missing.ts': 530
+    'apps/cli/src/existing-large.ts': 519,
+    'apps/cli/src/shrunk.ts': 550,
+    'apps/cli/src/missing.ts': 530
   }, 500),
   [
     {
-      file: 'apps/web/src/new-large.ts',
+      file: 'apps/cli/src/new-large.ts',
       lines: 501,
       baseline: null,
       allowed: 500,
       reason: 'new source file exceeds the ratchet threshold'
     },
     {
-      file: 'apps/web/src/existing-large.ts',
+      file: 'apps/cli/src/existing-large.ts',
       lines: 520,
       baseline: 519,
       allowed: 519,
       reason: 'source file grew beyond its committed baseline'
     },
     {
-      file: 'apps/web/src/shrunk.ts',
+      file: 'apps/cli/src/shrunk.ts',
       lines: 499,
       baseline: 550,
       allowed: 500,
       reason: 'baseline entry must be removed after crossing the threshold'
     },
     {
-      file: 'apps/web/src/missing.ts',
+      file: 'apps/cli/src/missing.ts',
       lines: 0,
       baseline: 530,
       allowed: 500,
@@ -228,12 +228,12 @@ assert.deepEqual(
 
 assert.deepEqual(
   sourceSizeRatchetViolations([
-    { file: 'apps/web/src/shrunk-large.ts', lines: 510 }
+    { file: 'apps/cli/src/shrunk-large.ts', lines: 510 }
   ], {
-    'apps/web/src/shrunk-large.ts': 520
+    'apps/cli/src/shrunk-large.ts': 520
   }, 500),
   [{
-    file: 'apps/web/src/shrunk-large.ts',
+    file: 'apps/cli/src/shrunk-large.ts',
     lines: 510,
     baseline: 520,
     allowed: 510,
@@ -244,9 +244,9 @@ assert.deepEqual(
 
 assert.deepEqual(
   sourceSizeRatchetViolations([
-    { file: 'apps/web/src/existing-large.ts', lines: 519 }
+    { file: 'apps/cli/src/existing-large.ts', lines: 519 }
   ], {
-    'apps/web/src/existing-large.ts': 519
+    'apps/cli/src/existing-large.ts': 519
   }, 500),
   [],
   'source size ratchet accepts an unchanged committed baseline'
@@ -254,35 +254,35 @@ assert.deepEqual(
 
 assert.deepEqual(
   sourceSizeHistoryViolations({
-    'apps/web/src/existing-large.ts': 520,
-    'apps/web/src/new-large.ts': 510,
-    'apps/web/src/reintroduced.ts': 505
+    'apps/cli/src/existing-large.ts': 520,
+    'apps/cli/src/new-large.ts': 510,
+    'apps/cli/src/reintroduced.ts': 505
   }, [
     {
-      'apps/web/src/existing-large.ts': 519,
-      'apps/web/src/reintroduced.ts': 530
+      'apps/cli/src/existing-large.ts': 519,
+      'apps/cli/src/reintroduced.ts': 530
     },
     {
-      'apps/web/src/existing-large.ts': 521
+      'apps/cli/src/existing-large.ts': 521
     }
   ], 500),
   [
     {
-      file: 'apps/web/src/existing-large.ts',
+      file: 'apps/cli/src/existing-large.ts',
       lines: 520,
       baseline: 520,
       allowed: 519,
       reason: 'baseline increased relative to repository history'
     },
     {
-      file: 'apps/web/src/new-large.ts',
+      file: 'apps/cli/src/new-large.ts',
       lines: 510,
       baseline: 510,
       allowed: 500,
       reason: 'baseline entry is new or was previously removed'
     },
     {
-      file: 'apps/web/src/reintroduced.ts',
+      file: 'apps/cli/src/reintroduced.ts',
       lines: 505,
       baseline: 505,
       allowed: 500,
@@ -294,10 +294,10 @@ assert.deepEqual(
 
 assert.deepEqual(
   sourceSizeHistoryViolations({
-    'apps/web/src/existing-large.ts': 510
+    'apps/cli/src/existing-large.ts': 510
   }, [
-    { 'apps/web/src/existing-large.ts': 519 },
-    { 'apps/web/src/existing-large.ts': 521 }
+    { 'apps/cli/src/existing-large.ts': 519 },
+    { 'apps/cli/src/existing-large.ts': 521 }
   ], 500),
   [],
   'history ratchet accepts monotonic baseline reductions'

@@ -1,0 +1,15 @@
+{
+  "name": "@ashfox/item-study",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node serve.js",
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "@ashfox/engine-core": "^0.0.0",
+    "ts-node": "^10.9.2",
+    "@ashfox/asset-build": "^0.0.0"
+  }
+}

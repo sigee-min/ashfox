@@ -19,7 +19,7 @@ Add the subject, dimensions, palette, motion/sound intent and destination.
 ## Working sequence
 
 1. Choose the [execution mode](choose-a-format.md): one asset, in-memory session,
-   configured build, or an explicitly requested browser Workbench task.
+   or configured build.
 2. Inspect source and identifiers. Single-asset observation ignores ancestor
    workspace files; a project build follows their source-selection rules.
 3. Edit source or replace the complete session graph with `expectedRevision`.
@@ -36,9 +36,7 @@ Use [Game assets](game-assets.md) for runtime IDs and import hints or
 explicit format settings; do not infer compatibility from a version label.
 
 Edit source files directly or use the stdio source-replacement operation.
-Project `build` publishes complete output after validation. The separate browser model tool has its own
-[Workbench API](workbench-api.md); use that only when the task explicitly works
-inside that tool.
+Project `build` publishes complete output after validation.
 
 ## Observe while editing
 

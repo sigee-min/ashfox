@@ -4,7 +4,7 @@ const fallback = (title: string, file: string) =>
 const modelingFallback = [
   '# Blockbench modeling compatibility',
   '',
-  'Canonical Ashfox asset authoring is workspace-first: use the Web Studio agent manifest and workspace.apply with one complete closed change set.',
+  'Canonical Ashfox assets are native .ashfox source files; edit source and inspect, capture, build and export with the Ashfox CLI.',
   '',
   'This optional Blockbench reference is only for an explicitly requested live compatibility-session edit. add_bone, add_cube, add_mesh, and related mutations never become canonical Ashfox geometry or a second workspace authority.'
 ].join('\n');

@@ -2,20 +2,20 @@
 
 에셋 하나는 단일 명령으로 시작하세요. 공통 소스 선택·ID·전달 폴더가 필요하면 워크스페이스를 추가합니다. 에이전트나 앱이 메모리의 에셋에 반복 작업해야 한다면 지속적인 stdio 세션을 사용합니다.
 
-| 작업 | 단일 에셋 CLI | Stdio 세션 | 워크스페이스 빌드 | 브라우저 Workbench |
-| --- | --- | --- | --- | --- |
-| 네이티브 모델·스프라이트·사운드 원본 | 지원 | 파일 또는 메모리 그래프 | 선언한 원본 | 모델 스냅샷 방식만 지원 |
-| 기존 PNG 입력 | 지원 | 파일 또는 base64 | 미지원 | 네이티브 PNG 제작 방식 아님 |
-| 원하는 각도 PNG·아틀라스·파형 | `capture` | `capture` | 별도 관찰 명령 | 모델 시점·캡처 |
-| 애니메이션·턴테이블 GIF | `replay` | `replay` | 별도 관찰 명령 | 모델 애니메이션, 캡처 옵션은 다름 |
-| 메모리의 원본 교체 | 새 stdin 입력 | 예상 리비전이 있는 `load` | 디스크 원본 | 브라우저 소스 편집 API |
-| GLB | 바이너리 | base64 미디어 | 이름 있는 export | 다운로드 |
-| glTF | `export --format gltf` ZIP | ZIP 미디어 | 워크스페이스 포맷 아님 | 다운로드 |
-| Java block·GeckoLib 5·Bedrock 모델 | ZIP | ZIP 미디어 | 이름 있는 export 디렉터리 | 다운로드 |
-| 스프라이트 PNG·사운드 WAV | 바이너리 | base64 미디어 | 이름 있는 export | 네이티브 다종 파이프라인 아님 |
-| OGG·완전한 Java 리소스 팩·게임 매니페스트 | 워크스페이스 빌드 사용 | 세션 export 미지원 | 지원 | 네이티브 팩 파이프라인 아님 |
+| 작업 | 단일 에셋 CLI | Stdio 세션 | 워크스페이스 빌드 |
+| --- | --- | --- | --- |
+| 네이티브 모델·스프라이트·사운드 원본 | 지원 | 파일 또는 메모리 그래프 | 선언한 원본 |
+| 기존 PNG 입력 | 지원 | 파일 또는 base64 | 미지원 |
+| 원하는 각도 PNG·아틀라스·파형 | `capture` | `capture` | 별도 관찰 명령 |
+| 애니메이션·턴테이블 GIF | `replay` | `replay` | 별도 관찰 명령 |
+| 메모리의 원본 교체 | 새 stdin 입력 | 예상 리비전이 있는 `load` | 디스크 원본 |
+| GLB | 바이너리 | base64 미디어 | 이름 있는 export |
+| glTF | `export --format gltf` ZIP | ZIP 미디어 | 워크스페이스 포맷 아님 |
+| Java block·GeckoLib 5·Bedrock 모델 | ZIP | ZIP 미디어 | 이름 있는 export 디렉터리 |
+| 스프라이트 PNG·사운드 WAV | 바이너리 | base64 미디어 | 이름 있는 export |
+| OGG·완전한 Java 리소스 팩·게임 매니페스트 | 워크스페이스 빌드 사용 | 세션 export 미지원 | 지원 |
 
-[관찰](observe.md), [stdio](stdio.md), [워크스페이스 설정](workspace.md), 선택적인 [Workbench API](workbench-api.md)를 참고하세요. Workbench 다운로드와 네이티브 `.ashfoxworkspace`는 서로 다른 파일 계약입니다.
+[에셋 확인과 캡처](observe.md), [stdio](stdio.md), [워크스페이스 설정](workspace.md)을 참고하세요.
 
 ## 받을 포맷 선택하기
 

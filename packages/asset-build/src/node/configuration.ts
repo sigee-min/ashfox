@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { BuildFailure } from '../contract';
+import { BuildFailure } from '../bundle/contract';
 
 /** Explicit executable configuration is trusted project code, like a build script. */
 export const evaluateConfiguration = (file: string): string => {
@@ -16,10 +16,22 @@ export const evaluateConfiguration = (file: string): string => {
       return value;
     }));
   `;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script, pathToFileURL(file).href], {
-    cwd: path.dirname(file), encoding: 'utf8', timeout: 10000, maxBuffer: 262144, killSignal: 'SIGKILL'
-  });
-  if (result.error || result.status !== 0) throw new BuildFailure('workspace.evaluate',
-    result.error?.message ?? result.stderr.trim() ?? 'Configuration failed', 2);
+  const result = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', script, pathToFileURL(file).href],
+    {
+      cwd: path.dirname(file),
+      encoding: 'utf8',
+      timeout: 10000,
+      maxBuffer: 262144,
+      killSignal: 'SIGKILL',
+    },
+  );
+  if (result.error || result.status !== 0)
+    throw new BuildFailure(
+      'workspace.evaluate',
+      result.error?.message ?? result.stderr.trim() ?? 'Configuration failed',
+      2,
+    );
   return result.stdout;
 };

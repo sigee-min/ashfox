@@ -150,10 +150,6 @@
         "route": "/docs/guides/precision-modeling/"
       },
       {
-        "source": "guides/workbench-api.md",
-        "route": "/docs/guides/workbench-api/"
-      },
-      {
         "source": "guides/troubleshooting.md",
         "route": "/docs/guides/troubleshooting/"
       }

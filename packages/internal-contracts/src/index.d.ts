@@ -1,11 +1,9 @@
 export declare const PROJECT_DOCUMENT_SCHEMA_VERSION: 1;
 export declare const COMMAND_RECEIPT_SCHEMA_VERSION: 1;
 export declare const EXPORT_BUNDLE_SCHEMA_VERSION: 1;
-export declare const LOCAL_PROJECT_RECORD_SCHEMA_VERSION: 1;
-export declare const VISUAL_REVIEW_RECEIPT_SCHEMA_VERSION: 1;
 export declare const SIDECAR_IPC_SCHEMA_VERSION: 1;
 export declare const TRACE_LOG_SCHEMA_VERSION: 1;
-export declare const SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION: 1;
+export declare const SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION: 2;
 
 export declare const isClosedContractRecord: (
   value: unknown

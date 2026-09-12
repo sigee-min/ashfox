@@ -16,8 +16,8 @@ const LINE_PATTERN_REGISTRY = Object.freeze({
   'throw-in-src': /\bthrow\b/,
   'todo-fixme-comment': /\/\/\s*(TODO|FIXME)\b|\/\*\s*(TODO|FIXME)\b/,
   'ts-ignore': /@ts-ignore|@ts-expect-error/,
-  'workbench-blockbench-dependency':
-    /@ashfox\/blockbench-|@ashfox\/backend-|\bBlockbench\b|\bMCP\b|\/mcp\b/
+  'browser-authoring-contract':
+    /window\.ashfox|data-ashfox-agent-manifest|agent-manifest\.json/
 });
 const AST_PATTERN_IDS = Object.freeze([
   'double-assertion',

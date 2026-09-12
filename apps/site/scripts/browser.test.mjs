@@ -12,14 +12,52 @@ const harness = `<!doctype html><meta charset="utf-8"><style>body{margin:0}ifram
 const test = async () => {
   const w = document.querySelector('iframe').contentWindow, d = w.document;
   const q = selector => d.querySelector(selector);
+  const copy = JSON.parse(d.body.dataset.siteCopy);
   const until = async (fn, message) => { for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(message); };
   const check = (value, message) => { if(!value)throw Error(message); };
-  await until(() => q('[data-live-model]')?.dataset.ready === 'true' || q('[data-model-status]')?.textContent.startsWith('Preview image'), 'No model or fallback');
+  await until(() => q('[data-live-model]')?.dataset.ready === 'true' || q('[data-model-status]')?.textContent === copy.modelFailed, 'No model or fallback');
+  const setup = q('[data-copy-agent-instruction]');
+  check(!d.body.innerText.includes('https://ashfox.io/agent.md'), 'Setup prompt must not be displayed');
+  check(setup.closest('.hero-copy'), 'Setup must be available in the hero');
+  const centered = () => {
+    const button = setup.getBoundingClientRect(), label = setup.querySelector('[data-copy-state]').getBoundingClientRect();
+    return Math.abs((button.left + button.right - label.left - label.right) / 2) < 2;
+  };
+  check(centered(), 'Setup label must be horizontally centered');
+  let copiedText = '';
+  Object.defineProperty(w.navigator, 'clipboard', {configurable:true, value:{writeText:async text => {copiedText=text;}}});
+  setup.click();
+  await until(() => setup.dataset.copied === 'true', 'Setup copy did not succeed');
+  check(centered(), 'Copied label must stay centered');
+  check(copiedText === setup.dataset.instruction && copiedText.includes('https://ashfox.io/agent.md'), 'Wrong setup prompt copied');
+  w.navigator.clipboard.writeText = async () => {throw Error('Clipboard denied');};
+  setup.click();
+  await until(() => q('[data-copy-feedback]').dataset.state === 'error', 'Clipboard failure not explained');
+  check(!setup.disabled, 'Clipboard failure must allow retry');
+  w.navigator.clipboard.writeText = async text => {copiedText=text;};
+  setup.click();
+  await until(() => setup.dataset.copied === 'true', 'Clipboard retry failed');
+  const menu = q('[data-language-menu]');
+  check(menu.closest('.header-actions') && !q('.docs-languages'), 'Language picker must only appear in header');
+  check(!menu.open, 'Language list must start closed');
+  menu.querySelector('summary').click();
+  check(menu.open && menu.querySelectorAll('a').length >= 2, 'Language list did not open');
+  menu.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true}));
+  check(!menu.open && d.activeElement === menu.querySelector('summary'), 'Escape must close and restore focus');
+  menu.querySelector('summary').click(); q('h1').click();
+  check(!menu.open, 'Outside click must close language list');
+  w.location.hash = 'frontier';
+  await until(() => [...menu.querySelectorAll('a')].every(link => link.hash === '#frontier'), 'Language switch lost current section');
+  if (d.documentElement.lang === 'ko') {
+    check(q('.header-setup').getAttribute('href') === '/ko/#quick-start', 'Korean install link lost locale');
+    check(q('.hero-subtitle').textContent === '복셀 게임의 에셋을 코드로.', 'Korean landing copy missing');
+  }
   const ready = q('[data-live-model]').dataset.ready === 'true';
   if (ready) {
-    check(q('[data-model-pause]').textContent === (w.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Play' : 'Pause'), 'Reduced motion not respected');
+    check(q('[data-model-pause]').textContent === (w.matchMedia('(prefers-reduced-motion: reduce)').matches ? copy.play : copy.pause), 'Reduced motion not respected');
     for(const button of d.querySelectorAll('[data-model-motion]')) { button.click(); check(button.getAttribute('aria-pressed')==='true', 'Motion selection failed'); }
-    q('[data-model-pause]').click(); check(q('[data-model-pause]').textContent==='Play', 'Pause failed');
+    q('[data-model-pause]').click(); check(q('[data-model-pause]').textContent===copy.play, 'Pause failed');
+    q('.view-options summary').click(); check(q('.view-options').open, 'Viewpoint controls must expand');
     for(const button of d.querySelectorAll('[data-model-view]')) { check(!button.disabled, 'Camera unavailable'); button.click(); }
   } else check(!q('[data-live-model] img').hidden && q('[data-model-pause]').disabled, 'Fallback does not preserve poster');
   q('.world-items').scrollIntoView({behavior:'instant',block:'center'});
@@ -52,6 +90,7 @@ const test = async () => {
 document.querySelector('iframe').addEventListener('load',()=>test().catch(error=>{document.documentElement.dataset.result='failed';document.querySelector('#status').textContent=error.stack;}).finally(()=>fetch('/done')));
 </script>`;
 let missingModel = false;
+let localePath = '/';
 
 let hold;
 const server = createServer(async (request, response) => {
@@ -60,7 +99,7 @@ const server = createServer(async (request, response) => {
     if (missingModel && url.pathname === '/media/landing/griffin.glb') { response.writeHead(404).end(); return; }
     if (url.pathname === '/hold') { hold = response; return; }
     if (url.pathname === '/done') { hold?.end(); hold = undefined; response.end('done'); return; }
-    if (url.pathname === '/test') { response.setHeader('Content-Type', 'text/html'); response.end(harness); return; }
+    if (url.pathname === '/test') { response.setHeader('Content-Type', 'text/html'); response.end(harness.replace('iframe src="/"', `iframe src="${localePath}"`)); return; }
     const relative = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
     const target = path.resolve(root, `.${relative}`);
     if (!target.startsWith(root + path.sep)) { response.writeHead(403).end(); return; }
@@ -71,7 +110,8 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 try {
-  for (const [width, reduced, missing] of [[1440, false, false], [390, false, false], [320, false, false], [390, true, false], [390, true, true]]) {
+  for (const [width, reduced, missing, locale = '/'] of [[1440, false, false], [390, false, false], [320, false, false], [390, true, false], [390, true, true], [1440, false, false, '/ko/'], [390, false, false, '/ko/'], [320, true, true, '/ko/']]) {
+    localePath = locale;
     missingModel = missing;
     const profile = await mkdtemp(path.join(tmpdir(), 'ashfox-site-test-'));
     try {
@@ -85,7 +125,7 @@ try {
       });
       await writeFile(path.join(tmpdir(), 'ashfox-landing-browser-last.html'), html);
       assert.ok(html.includes('data-result="passed"'), html.match(/<pre id="status">([\s\S]*?)<\/pre>/u)?.[1] || html.slice(-1000));
-      console.log(`Landing browser verified: ${width}px, reduced motion ${reduced}`);
+      console.log(`Landing browser verified: ${locale} ${width}px, reduced motion ${reduced}`);
     } finally { await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
   }
 } finally { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); }

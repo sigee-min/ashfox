@@ -5,7 +5,7 @@ import {
   ASHFOX_WORKSPACE_FILE_EXTENSION,
   readWorkspaceFile,
   writeWorkspaceFile
-} from '../../../src/projectFile/workspace';
+} from '../../../src/project/container';
 import type {
   AuthoredAssetWorkspace,
   Sha256Digest

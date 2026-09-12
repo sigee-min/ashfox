@@ -1,5 +1,5 @@
-import { defaultLocale } from '../locales.mjs';
-import { brand } from '../content.mjs';
+import { siteMessages } from '../messages.mjs';
+import { defaultLocale, localeRegistry } from '../locales.mjs';
 
 export const escapeHtml = (value) =>
   String(value)
@@ -39,18 +39,24 @@ export const githubIconButton = (className = '') => `
 `;
 
 
-const siteHeader = ({ active, locale }) => `
+const siteHeader = ({ active, locale, alternatives, messages }) => `
   <header class="site-header">
-    <a class="brand" href="/" aria-label="ashfox home">
+    <a class="brand" href="${locale.prefix}/" aria-label="${escapeHtml(messages.home)}">
       ${brandMark}
       <span>ashfox</span>
     </a>
     <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
-      <a href="/#examples">${escapeHtml(locale.ui.examples)}</a>
+      <a href="${locale.prefix}/#examples">${escapeHtml(locale.ui.examples)}</a>
       <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
     </nav>
     <div class="header-actions">
-      <a class="header-setup" href="${locale.prefix}/docs/guides/install/">${escapeHtml(locale.ui.getStarted)} ↗</a>
+      <a class="header-setup" href="${locale.prefix}/#quick-start">${escapeHtml(locale.ui.getStarted)} ↗</a>
+      <details class="language-menu" data-language-menu>
+        <summary aria-label="${escapeHtml(locale.ui.language)}: ${escapeHtml(locale.label)}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg> ${escapeHtml(locale.label)} <span aria-hidden="true">⌄</span></summary>
+        <nav aria-label="${escapeHtml(locale.ui.language)}">
+          ${alternatives.map(option => `<a href="${option.route}" lang="${option.code}" data-language-link ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}${option.code === locale.code ? '<span aria-hidden="true">✓</span>' : ''}</a>`).join('')}
+        </nav>
+      </details>
     </div>
   </header>
 `;
@@ -64,19 +70,19 @@ export const pageShell = ({
   headLinks = '',
   locale = defaultLocale,
   canonicalPath,
+  alternatives = localeRegistry.locales.map(option => ({ ...option, route: `${option.prefix}/` })),
   path,
   robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
   structuredData,
   title
 }) => {
+  const messages = siteMessages(locale);
   const pageTitle = title === 'ashfox'
-    ? `ashfox — ${brand.title}`
+    ? `ashfox — ${messages.pageTitle}`
     : `${title} — ashfox`;
   const canonical = absoluteUrl(config.siteOrigin, canonicalPath ?? path);
   const socialImage = absoluteUrl(config.siteOrigin, assets.social[active === 'docs' ? 'docs' : 'landing']);
-  const socialAlt = active === 'docs'
-    ? 'Ashfox documentation — DSL reference, guides and game integration.'
-    : 'Ashfox — Assets as Code. Built for voxel games. Griffin model compiled from native source.';
+  const socialAlt = active === 'docs' ? messages.socialDocs : messages.socialLanding;
   return `<!doctype html>
 <html lang="${locale.code}">
   <head>
@@ -109,16 +115,16 @@ export const pageShell = ({
     ${structuredDataScript(structuredData)}
     <title>${escapeHtml(pageTitle)}</title>
   </head>
-  <body>
+  <body data-site-copy="${escapeHtml(JSON.stringify(messages))}">
     <a class="skip-link" href="#main">${escapeHtml(locale.ui.skip)}</a>
-    ${siteHeader({ active, locale })}
+    ${siteHeader({ active, locale, alternatives, messages })}
     ${body}
     <footer class="site-footer">
-      <a class="brand footer-brand" href="/">
+      <a class="brand footer-brand" href="${locale.prefix}/">
         ${brandMark}
         <span>ashfox</span>
       </a>
-      <p>Assets as Code. Built for voxel games.</p>
+      <p>${escapeHtml(messages.footer)}</p>
       <div class="footer-links">
         <a href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)}</a>
         <a href="${githubUrl}">GitHub</a>

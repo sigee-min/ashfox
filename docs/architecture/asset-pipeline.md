@@ -14,8 +14,8 @@ Its Node adapter owns source snapshots, bounded workers, FFmpeg processes,
 writer locks, receipts, immutable destinations and atomic current publication.
 `apps/cli` exposes capabilities, check, build and verify over that adapter.
 
-The model Workbench retains a separate browser model snapshot API. It does not
-load native directory projects. Runtime game importers consume generated files
+The public website contains documentation and read-only examples. Asset editing
+and compilation use native sources and the CLI. Runtime game importers consume generated files
 and metadata; no engine-specific runtime loader, watch service, remote cache or
 automatic game installation is implemented.
 

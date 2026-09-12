@@ -85,7 +85,7 @@ assert.deepEqual(manifest.quality.ownerLayout, {
   testOwners: rawManifest.quality.ownerLayout.testOwners
 });
 assert.deepEqual(manifest.architecture.workspaceSourceScopes, ['apps', 'packages']);
-assert.equal(manifest.architecture.forbiddenDependencies.length, 10);
+assert.equal(manifest.architecture.forbiddenDependencies.length, 9);
 
 assert.ok(Object.isFrozen(manifest));
 assert.ok(Object.isFrozen(manifest.productExperience.projectFile));
@@ -367,10 +367,14 @@ unsortedTestOwners.quality.ownerLayout.testOwners.reverse();
 expectInvalid(unsortedTestOwners, 'quality.ownerLayout.testOwners');
 
 const unsortedTestRoots = copyManifest();
-unsortedTestRoots.quality.ownerLayout.testOwners[0].roots.reverse();
+const multiRootOwner = unsortedTestRoots.quality.ownerLayout.testOwners.findIndex(
+  (owner) => owner.roots.length > 1
+);
+assert.ok(multiRootOwner >= 0);
+unsortedTestRoots.quality.ownerLayout.testOwners[multiRootOwner].roots.reverse();
 expectInvalid(
   unsortedTestRoots,
-  'quality.ownerLayout.testOwners[0].roots'
+  `quality.ownerLayout.testOwners[${multiRootOwner}].roots`
 );
 
 const mutableTestOwnership = copyManifest();
@@ -398,7 +402,7 @@ const consolePolicy = sourcePatternAllowanceOutsideScope.quality
 consolePolicy.scope = ['apps/'];
 expectInvalid(
   sourcePatternAllowanceOutsideScope,
-  'quality.forbiddenSourcePatterns[5].allowedPaths[0]'
+  `quality.forbiddenSourcePatterns[${sourcePatternAllowanceOutsideScope.quality.forbiddenSourcePatterns.indexOf(consolePolicy)}].allowedPaths[0]`
 );
 
 const unscannedSourcePatternScope = copyManifest();
@@ -469,7 +473,7 @@ expectInvalid(
 
 const missingSourceDirectory = copyManifest();
 missingSourceDirectory.architecture.forbiddenDependencies[0].source =
-  'apps/web/src/absent/';
+  'apps/cli/src/absent/';
 expectInvalid(
   missingSourceDirectory,
   'architecture.forbiddenDependencies[0].source'

@@ -37,9 +37,6 @@ export const renderDocumentationPage = ({
   const home = `${locale.prefix}/docs/`;
   const navigation = docsNavigation(documents, document.route, t);
   const alternatives = document.alternatives ?? [];
-  const languagePicker = `<nav class="docs-languages" aria-label="${escapeHtml(t.language)}">
-    ${alternatives.map(option => `<a href="${option.route}" lang="${option.code}" ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}</a>`).join('')}
-  </nav>`;
   const notice = document.fallback || document.stale ? `<aside class="translation-notice" role="note">
     ${escapeHtml(document.stale ? t.stale : t.fallback)} <a href="${document.originalRoute}">${escapeHtml(t.original)}</a>
   </aside>` : '';
@@ -86,13 +83,12 @@ export const renderDocumentationPage = ({
           <summary>${escapeHtml(t.onThisPage)}</summary>
           <nav aria-label="${escapeHtml(t.sections)}">${tocLinks}</nav>
         </details>` : ''}
-        ${languagePicker}
         ${notice}
         <div lang="${document.contentLanguage}" data-copy-label="${escapeHtml(t.copy)}" data-copied-label="${escapeHtml(t.copied)}" data-copy-code-label="${escapeHtml(t.copyCode)}" data-copy-failed-label="${escapeHtml(t.copyFailed)}">${document.html}</div>
         ${pagination}
         <div class="doc-end">
           <span>${escapeHtml(t.ready)}</span>
-          <a href="/#quick-start">${escapeHtml(t.instructions)} →</a>
+          <a href="${locale.prefix}/#quick-start">${escapeHtml(t.instructions)} →</a>
         </div>
       </article>
       ${toc}
@@ -100,7 +96,7 @@ export const renderDocumentationPage = ({
   `;
   return pageShell({
     active: 'docs',
-    locale, headLinks,
+    locale, headLinks, alternatives,
     canonicalPath: document.fallback ? document.originalRoute : document.route,
     ...(document.fallback ? { robots: 'noindex,follow' } : {}),
     assets,

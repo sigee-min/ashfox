@@ -10,17 +10,17 @@ const publicEngineRoot = (repoRoot) => path.resolve(repoRoot,
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 
 const scriptFiles = (repoRoot = defaultRepoRoot) => {
-  const root = path.join(repoRoot, 'scripts');
+  const roots = ['scripts', 'apps'].map((name) => path.join(repoRoot, name));
   const files = [];
   const visit = (directory) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })
       .sort((left, right) => compareText(left.name, right.name))) {
       const file = path.join(directory, entry.name);
-      if (entry.isDirectory()) visit(file);
+      if (entry.isDirectory() && !['dist', 'build', 'node_modules'].includes(entry.name)) visit(file);
       else if (entry.isFile() && file.endsWith('.js')) files.push(file);
     }
   };
-  visit(root);
+  for (const root of roots) if (fs.existsSync(root)) visit(root);
   return files;
 };
 

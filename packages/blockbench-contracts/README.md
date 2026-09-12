@@ -7,4 +7,4 @@ Current scope:
 - Schema validation helpers used by `blockbench-runtime`
 - Schema policy constants (`mcpSchemas/policy`) for version and registry hash rules
 
-Web Studio and `engine-core` must not import this package.
+`engine-core` must not import this package.

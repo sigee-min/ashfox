@@ -14,8 +14,6 @@ npx --no-install ashfox replay fox.ashfox --clip tail_wag --output tail-wag.gif
 
 ![Fox tail-wag clip](/media/guides/fox-motion.gif)
 
-The optional browser Workbench also provides a Motion panel and timeline.
-
 The sections below explain the source your agent writes. A **snippet** belongs
 inside an existing source file; the complete starting example is linked at the
 end of this guide.
@@ -97,8 +95,7 @@ Choose one of the three accepted loop values:
 | `loop` | wrap back to the beginning and repeat |
 | `hold_on_last_frame` | play through the duration and hold the final pose |
 
-The duration is also the right edge of the Workbench timeline. Keep the first
-and last keys intentional: for a looping idle, matching the opening and
+Keep the first and last keys intentional: for a looping idle, matching the opening and
 closing pose makes the wrap look continuous.
 
 ## Assign and select motions
@@ -129,11 +126,9 @@ The asset can select multiple different motions, but a motion may be assigned
 only once and every assigned motion must target the selected skeleton's rig.
 The component's rig port must bind to that same rig contract too.
 
-When the build is open in the Workbench, use the Motion selector in the lower
-panel to choose a named clip. Choose `Rest pose` to clear the clip. The panel
-shows the selected clip's duration and fps, with play/pause and a timeline for
-scrubbing. Selecting a key on a track also selects its target node for closer
-inspection.
+Use `inspect` to find clip names and durations, then `replay --clip NAME` to
+watch a clip. Inspect a specific pose with `capture --clip NAME --time SECONDS`.
+Omit `--clip` to capture the rest pose.
 
 ## Griffin's six clips
 

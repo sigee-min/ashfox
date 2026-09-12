@@ -793,8 +793,15 @@ img {
 }
 
 /* Locale controls stay available on both desktop and mobile docs. */
-.docs-languages { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.5rem; }
-.docs-languages a { padding: .35rem .8rem; border: 1px solid currentColor; border-radius: 6px; text-decoration: none; font-size: .85rem; }
-.docs-languages a[aria-current] { color: var(--accent, #e8ab82); background: #ffffff08; }
 .translation-notice { margin: 1rem 0 1.5rem; padding: 1rem; border-left: 2px solid #b78764; background: #ffffff05; font-size: .9rem; }
 html[lang="ko"] .doc-article { word-break: keep-all; overflow-wrap: anywhere; }
+
+.language-menu { position: relative; font-size: 12px; }
+.language-menu summary { display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--line-soft); border-radius: 8px; cursor: pointer; list-style: none; color: var(--ink); }
+.language-menu summary::-webkit-details-marker { display: none; }
+.language-menu summary:hover, .language-menu[open] summary { background: #ffffff08; }
+.language-menu nav { position: absolute; right: 0; top: calc(100% + 8px); min-width: 160px; max-height: 60vh; overflow-y: auto; padding: 6px; border: 1px solid var(--line-soft); border-radius: 10px; background: #191d21; box-shadow: 0 12px 32px #0005; }
+.language-menu nav a { display: flex; justify-content: space-between; gap: 16px; padding: 10px 12px; border-radius: 6px; }
+.language-menu nav a:hover, .language-menu nav a[aria-current] { background: #ffffff08; color: var(--cream); }
+.language-menu summary:focus-visible, .language-menu a:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+html[lang="ko"] .world-landing { word-break: keep-all; overflow-wrap: anywhere; }

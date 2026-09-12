@@ -1,3 +1,4 @@
+import { localeRegistry } from '../src/locales.mjs';
 import stableRelease from '../../../scripts/release/stable.js';
 import { execFileSync } from 'node:child_process';
 import { Script } from 'node:vm';
@@ -40,7 +41,6 @@ const sourceRoot = path.join(siteRoot, 'src');
 const publicRoot = path.join(siteRoot, 'public');
 const outputRoot = path.join(siteRoot, 'dist');
 
-const workbenchUrl = '/workbench/';
 const siteOrigin = 'https://ashfox.io';
 const canonicalWorkspaceRelativePath =
   'assets/workspaces/shared-creatures.ashfoxworkspace';
@@ -194,7 +194,6 @@ const readShowcase = async () => {
   return {
     capture: manifest.capture,
     entries,
-    workspaceBytes
   };
 };
 
@@ -257,7 +256,6 @@ await rm(outputRoot, { recursive: true, force: true });
 await mkdir(path.join(outputRoot, 'assets'), { recursive: true });
 await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
 await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
-await mkdir(path.join(outputRoot, 'assets/workspaces'), { recursive: true });
 
 const landingCss = await readFile(path.join(sourceRoot, 'landing.css'), 'utf8');
 const brandCss = await readFile(path.join(sourceRoot, 'brand.css'), 'utf8');
@@ -275,18 +273,16 @@ const assets = {
   css: await hashedAsset('site.css', source => source + '\n' + landingCss + '\n' + brandCss),
   js: await hashedAsset('site.js', source => source + '\n' + motionJs + '\n' + landingJs)
 };
-const config = { siteOrigin, workbenchUrl, stable: stableRelease.readStable(repoRoot) };
+const config = { siteOrigin, stable: stableRelease.readStable(repoRoot) };
+const agentGuide = (await readFile(path.join(docsRoot, 'agent.md'), 'utf8'))
+  .replaceAll('{{stableCli}}', config.stable.cli)
+  .replaceAll('{{stableVersion}}', config.stable.version);
+await writeFile(path.join(outputRoot, 'agent.md'), agentGuide);
 const documents = await loadAllDocumentation(docsRoot);
 const generatedShowcase = await readShowcase();
 const showcase = {
   capture: generatedShowcase.capture,
-  workspaceHref: `/${canonicalWorkspaceRelativePath}`,
-  sourceHref:
-    'https://github.com/sigee-min/ashfox/blob/main/' +
-    canonicalWorkspaceRelativePath,
-  workbenchHref: workbenchUrl,
   entries: await Promise.all(generatedShowcase.entries.map(async (entry) => ({
-    workspaceHref: `/assets/workspaces/${entry.entryName}.ashfoxworkspace`,
     glbHref: `/examples/${entry.entryName}.glb`,
     motions: await Promise.all(entry.motions.map(async (motion) => ({ name: motion.name, duration: motion.duration, src: await hashedShowcaseMedia(motion.artifact, motion.sha256, motion.byteLength) }))),
     packageName: entry.packageName,
@@ -300,12 +296,7 @@ const showcase = {
     posterSrc: await hashedShowcaseMedia(entry.poster, entry.posterSha256)
   })))
 };
-await writeFile(
-  path.join(outputRoot, canonicalWorkspaceRelativePath),
-  generatedShowcase.workspaceBytes
-);
 for (const entry of generatedShowcase.entries) {
-  await cp(path.join(repoRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`), path.join(outputRoot, `assets/workspaces/${entry.entryName}.ashfoxworkspace`));
   await cp(path.join(repoRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`), path.join(outputRoot, `examples/${entry.entryName}.glb`));
 }
 
@@ -328,7 +319,9 @@ await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/landi
 await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), { recursive: true });
 await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides'), { recursive: true, filter: source => !source.endsWith('receipt.json') });
 
-await writeRoute('/', renderLandingPage({ assets, config, showcase }));
+for (const locale of localeRegistry.locales) {
+  await writeRoute(`${locale.prefix}/`, renderLandingPage({ assets, config, showcase, locale }));
+}
 for (const document of documents) {
   await writeRoute(
     document.route,
@@ -349,11 +342,14 @@ await writeFile(
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
+/agent.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=0, must-revalidate
+
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
-/docs/*
-  Cache-Control: public, max-age=0, must-revalidate
+${localeRegistry.locales.map(locale => `${locale.prefix}/docs/*\n  Cache-Control: public, max-age=0, must-revalidate`).join('\n')}
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -375,10 +371,6 @@ await writeFile(
 
 /media/showcase/*
   Cache-Control: public, max-age=31536000, immutable
-
-/assets/workspaces/*.ashfoxworkspace
-  Content-Type: application/vnd.ashfox.workspace+json
-  Cache-Control: public, max-age=0, must-revalidate
 
 /downloads/*
   Cache-Control: public, max-age=0, must-revalidate
@@ -408,8 +400,7 @@ Sitemap: ${siteOrigin}/sitemap.xml
 await writeFile(
   path.join(outputRoot, 'sitemap.xml'),
   sitemap([
-    '/',
-    '/workbench/',
+    ...localeRegistry.locales.map(locale => `${locale.prefix}/`),
     ...documents.filter(document => !document.fallback).map((document) => document.route)
   ])
 );

@@ -4,22 +4,20 @@ Start with a single command for one asset. Add a workspace when a project needs
 shared source selection, IDs and delivery folders. Use a persistent stdio session
 when an agent or application needs repeated operations on an asset in memory.
 
-| Task | Single-asset CLI | Stdio session | Workspace build | Browser Workbench |
-| --- | --- | --- | --- | --- |
-| Native model, sprite and sound source | Yes | Yes, files or memory graph | Yes, declared sources | Model snapshot workflow only |
-| Existing PNG input | Yes | Yes, file or base64 | No | Not a native PNG authoring workflow |
-| Desired-angle PNG, atlas, waveform | `capture` | `capture` | Separate observation command | Model views and captures |
-| Animation or turntable GIF | `replay` | `replay` | Separate observation command | Model animation; capture options differ |
-| Source replacement in memory | New stdin input | `load` with expected revision | Source files on disk | Browser source-edit API |
-| GLB | Raw binary | Base64 media | Named export | Download |
-| glTF | ZIP via `export --format gltf` | ZIP media | Not a workspace export format | Download |
-| Java block, GeckoLib 5, Bedrock models | ZIP | ZIP media | Named export directories | Download |
-| Sprite PNG / sound WAV | Raw binary | Base64 media | Named exports | Not the native multi-kind pipeline |
-| OGG / complete Java resource pack / game manifest | Use a workspace build | Not a session export | Yes | Not the native pack pipeline |
+| Task | Single-asset CLI | Stdio session | Workspace build |
+| --- | --- | --- | --- |
+| Native model, sprite and sound source | Yes | Yes, files or memory graph | Yes, declared sources |
+| Existing PNG input | Yes | Yes, file or base64 | No |
+| Desired-angle PNG, atlas, waveform | `capture` | `capture` | Separate observation command |
+| Animation or turntable GIF | `replay` | `replay` | Separate observation command |
+| Source replacement in memory | New stdin input | `load` with expected revision | Source files on disk |
+| GLB | Raw binary | Base64 media | Named export |
+| glTF | ZIP via `export --format gltf` | ZIP media | Not a workspace export format |
+| Java block, GeckoLib 5, Bedrock models | ZIP | ZIP media | Named export directories |
+| Sprite PNG / sound WAV | Raw binary | Base64 media | Named exports |
+| OGG / complete Java resource pack / game manifest | Use a workspace build | Not a session export | Yes |
 
-See [observation](observe.md), [stdio](stdio.md), [workspace settings](workspace.md)
-or the optional [Workbench API](workbench-api.md). A Workbench download and a
-native `.ashfoxworkspace` configuration are different file contracts.
+See [observation](observe.md), [stdio](stdio.md) and [workspace settings](workspace.md).
 
 ## Choose the receiving format
 

@@ -180,7 +180,7 @@ export const registerPlugin = () => {
 
 ashfox exposes a clean MCP-facing tool surface for AI/agents:
 
-- Canonical Ashfox authoring is workspace-first through the Web Studio agent manifest and workspace.apply.
+- Canonical Ashfox authoring uses native .ashfox sources and the Ashfox CLI.
 - add_bone/add_cube and other live model mutations are compatibility-session tools only; they never update the canonical asset workspace.
 - UVs are fully internal: assign_texture -> paint_faces (no manual UV tools).
 - Deterministic compatibility-session tools only; no second canonical authoring pipeline.
@@ -190,7 +190,7 @@ ashfox exposes a clean MCP-facing tool surface for AI/agents:
 
 Recommended flow:
 1) Configure endpoint via Settings or ASHFOX_HOST/PORT/PATH env vars when needed.
-  2) Use the Web Studio agent manifest and workspace.apply for canonical Ashfox assets.
+  2) Edit native .ashfox sources and use the Ashfox CLI for canonical assets.
 3) Use \`ashfox.invoke\` model/texture/animation tools only for an explicitly requested live compatibility-session edit, then validate that session separately.
 
 Notes:

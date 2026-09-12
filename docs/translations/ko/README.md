@@ -30,7 +30,7 @@ Ashfox는 복셀 게임을 위한 오픈소스 Assets as Code 도구입니다. �
 
 `.ashfox` 파일과 가져오는 모듈이 편집 가능한 에셋입니다. 선택적인 `.ashfoxworkspace`는 여러 에셋의 빌드와 전달을 설정합니다. PNG·GLB·오디오·ZIP은 생성된 결과물이므로 이를 수정해도 원본이 바뀌지 않습니다.
 
-선택적으로 사용하는 브라우저 [Model Workbench](guides/workbench-api.md)는 별도의 모델 프로젝트 저장소를 사용하며 네이티브 디렉터리 설정을 열지 않습니다. [지원 범위](guides/choose-a-format.md)에서 작업 방식을 비교하세요.
+[지원 범위](guides/choose-a-format.md)에서 단일 에셋 명령, stdio 세션, 워크스페이스 빌드를 비교하세요.
 
 ## DSL 레퍼런스
 

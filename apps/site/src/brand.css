@@ -2,28 +2,6 @@
 .world-landing { --paper: #eef2f6; --accent: #ffad70; background: #111518; }
 .world-landing .eyebrow { font-size: 12px; letter-spacing: .13em; }
 .world-landing .world-link { font-size: 14px; }
-.world-hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-areas: "heading model" "intro model" "status status" "controls controls" "index index";
-  align-content: center;
-  gap: 24px 0;
-  height: auto;
-  min-height: 740px;
-  max-height: none;
-  padding: 60px 6% 24px;
-}
-.world-heading { grid-area: heading; position: relative; inset: auto; align-self: end; }
-.world-heading h1 { font-size: clamp(72px, 7.5vw, 116px); line-height: .96; }
-.world-heading .eyebrow { margin: 0 0 30px; }
-.hero-subtitle { display: block; font-size: clamp(24px, 2.5vw, 38px); letter-spacing: -.04em; line-height: 1.25; margin-top: 24px; color: var(--accent); }
-.world-stage { grid-area: model; position: relative; inset: auto; min-width: 0; min-height: 440px; }
-.world-intro { grid-area: intro; position: relative; inset: auto; align-self: start; }
-.world-intro > p { font-size: 17px; line-height: 1.7; margin: 0; }
-.world-intro .world-actions { margin-top: 26px; gap: 20px; }
-.world-note { grid-area: status; position: relative; inset: auto; justify-self: end; font-size: 12px; }
-.world-controls { grid-area: controls; position: relative; inset: auto; }
-.world-index { grid-area: index; position: relative; inset: auto; font-size: 12px; line-height: 1.5; }
 .world-controls button, .item-options button, .source-tabs button { font-size: 14px; }
 .world-landing h2 { font-size: clamp(34px, 3.6vw, 52px); line-height: 1.04; }
 .world-section-copy > p:not(.eyebrow), .world-sound > div > p:not(.eyebrow) { font-size: 16px; line-height: 1.75; }
@@ -52,28 +30,15 @@
 .source-tabs > span, .source-footer, .source-code summary, .source-result span,
 .item-coordinate, .sound-caption, .sound-player > p, .start-footnote { font-size: 12px; }
 .item-options a, .sound-actions a, .sound-another, .delivery-pair strong { font-size: 14px; }
-.delivery-pair p, .world-start details { font-size: 16px; }
+.delivery-pair p { font-size: 16px; }
 .world-landing summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
 @media (max-width: 900px) {
-  .world-hero { grid-template-columns: 1fr; grid-template-areas: "heading" "intro" "model" "status" "controls" "index"; padding-top: 36px; min-height: 0; }
-  .world-heading h1 { font-size: clamp(68px, 13vw, 104px); }
-  .world-intro { display: block; }
-  .world-intro > p { font-size: 16px; }
-  .world-stage { min-height: 350px; }
-  .world-controls { flex-wrap: wrap; gap: 12px; }
-  .world-note { justify-self: start; }
   .workflow-steps { grid-template-columns: 1fr 1fr; }
   .frontier-grid { grid-template-columns: 1fr; }
   .frontier-grid article { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
   .frontier-grid p { min-height: 0; }
 }
 @media (max-width: 480px) {
-  .world-hero { gap: 20px; }
-  .world-heading h1 { font-size: 68px; }
-  .hero-subtitle { font-size: 25px; }
-  .world-stage { min-height: 280px; }
-  .world-index { flex-wrap: wrap; gap: 10px; letter-spacing: .04em; }
-  .world-controls button { padding: 9px 10px; font-size: 12px; }
   .aac-workflow, .aac-frontier { padding: 64px 6%; }
   .workflow-steps { grid-template-columns: 1fr; gap: 16px; margin-top: 32px; }
   .workflow-steps li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
@@ -90,7 +55,6 @@
 .delivery-pair { margin: 32px 0 24px; }
 .delivery-pair h3 { font-size: 28px; margin-top: 0; letter-spacing: -.035em; }
 .delivery-pair > a { padding-top: 28px; padding-bottom: 28px; }
-.world-start { padding: 80px 6%; border-top: 1px solid #ffffff20; }
 .source-footer { justify-content: flex-end; }
 .world-controls button[aria-pressed=true], .item-options button[aria-pressed=true], .source-tabs button[aria-pressed=true] {
   background: #273038; border-color: #75818a; color: var(--paper);
@@ -99,6 +63,61 @@
   .frontier-grid article > div { padding: 24px; }
 }
 @media (max-width: 480px) {
-  .world-items, .world-sound, .world-source, .world-delivery, .world-start { padding-top: 56px; padding-bottom: 56px; }
+  .world-items, .world-sound, .world-source, .world-delivery { padding-top: 56px; padding-bottom: 56px; }
   .frontier-grid article > div { padding: 24px 0; }
 }
+
+/* The hero has two owners: product copy and an interactive asset preview. */
+.world-hero {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 80px);
+  width: min(100% - 48px, 1200px);
+  margin: auto;
+  padding: 72px 0 80px;
+  background: transparent;
+}
+.hero-copy { min-width: 0; }
+.world-heading .eyebrow { margin: 0 0 24px; color: #aab2ba; font-size: 11px; letter-spacing: .12em; }
+.world-heading h1 { font-size: clamp(64px, 6.5vw, 90px); font-weight: 730; line-height: .99; letter-spacing: -.065em; }
+.hero-subtitle { margin: 24px 0 0; color: var(--paper); font-size: clamp(20px, 2vw, 26px); line-height: 1.4; font-weight: 500; letter-spacing: -.035em; }
+.world-intro > p { max-width: 400px; margin: 18px 0 0; color: #a8b1b9; font-size: 16px; line-height: 1.85; }
+.world-intro .world-actions { margin-top: 28px; gap: 24px; }
+.world-intro .button { width: auto; min-width: 0; padding: 12px 20px; }
+.hero-preview { min-width: 0; border: 1px solid #ffffff16; border-radius: 14px; background: #151a1e; }
+.preview-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 18px 20px; border-bottom: 1px solid #ffffff0d; font-size: 12px; }
+.preview-heading > span { color: #d3d9df; font-weight: 600; }
+.preview-heading a { color: #a8b1b9; }
+.world-stage { position: relative; height: clamp(280px, 28vw, 360px); min-width: 0; touch-action: pan-y; }
+.world-stage canvas, .world-stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; touch-action: pan-y; }
+.world-stage img { mix-blend-mode: lighten; }
+.world-note { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 16px; text-align: center; font-size: 11px; color: #9da8b0; line-height: 1.5; }
+.world-controls { display: flex; align-items: start; flex-wrap: wrap; gap: 10px; padding: 14px 16px; border-top: 1px solid #ffffff0d; }
+.world-controls > div, .view-controls { display: flex; flex-wrap: wrap; gap: 5px; }
+.world-controls button { padding: 8px 10px; font-size: 11px; border-radius: 6px; }
+.view-options { margin-left: auto; font-size: 11px; }
+.view-options summary { padding: 8px 4px; cursor: pointer; color: #a8b1b9; }
+.view-options .view-controls { margin-top: 8px; }
+.world-index { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-top: 1px solid #ffffff0d; color: #98a3ad; font-size: 11px; line-height: 1.5; }
+.world-index > span { font-family: ui-monospace, monospace; }
+@media (max-width: 900px) {
+  .world-hero { grid-template-columns: minmax(0, 1fr); max-width: 620px; padding: 44px 0 56px; gap: 36px; }
+  .world-heading h1 { font-size: clamp(60px, 10vw, 84px); }
+  .world-stage { height: 320px; }
+  .world-intro > p { max-width: 480px; }
+}
+@media (max-width: 480px) {
+  .world-hero { width: calc(100% - 32px); padding-top: 36px; gap: 28px; }
+  .world-heading .eyebrow { margin-bottom: 18px; font-size: 10px; }
+  .world-heading h1 { font-size: clamp(56px, 15vw, 68px); }
+  .hero-subtitle { margin-top: 20px; font-size: 21px; }
+  .world-intro > p { font-size: 14px; line-height: 1.8; margin-top: 12px; }
+  .world-intro .world-actions { gap: 18px; margin-top: 22px; }
+  .world-stage { height: 260px; }
+  .preview-heading { padding: 14px 16px; }
+  .world-controls { padding: 10px; }
+  .world-controls button { padding: 8px; }
+}
+
+.world-intro .hero-start .button { width: 100%; }

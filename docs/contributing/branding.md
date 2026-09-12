@@ -17,7 +17,7 @@ Keep Ashfox as the product name. Voxel games are the initial audience; Minecraft
 is a concrete delivery target alongside engine-neutral bundles.
 
 Lead with the source workflow. Show its outputs immediately. Explain the CLI,
-compiler, agent protocol and optional Workbench where they help a user act.
+compiler and source workflow where they help a user act.
 Describe AI as the authoring collaborator without promising a particular model's
 output quality. Frontier examples mean technically advanced, inspectable assets,
 not claims of frontier-model performance.

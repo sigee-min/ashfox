@@ -34,8 +34,7 @@
       "direct-hierarchy-authoring",
       "direct-material-authoring",
       "direct-rig-authoring",
-      "direct-texture-authoring",
-      "edit-asset-workspace-in-workbench"
+      "direct-texture-authoring"
     ],
     "agentDecision": {
       "compilationAuthority": "agent",
@@ -222,17 +221,9 @@
       "testDiscovery": "recursive-stable-nonempty",
       "testOwners": [
         {
-          "workspace": "apps/web",
+          "workspace": "apps/cli",
           "roots": [
-            "agent",
-            "application",
-            "capture",
-            "files",
-            "persistence",
-            "presentation",
-            "review",
-            "viewport",
-            "workbench"
+            "integration"
           ]
         },
         {
@@ -315,6 +306,13 @@
         "allowedPaths": []
       },
       {
+        "id": "browser-authoring-contract",
+        "scope": [
+          "apps/site/src/"
+        ],
+        "allowedPaths": []
+      },
+      {
         "id": "catch-without-binding",
         "scope": [
           "packages/blockbench-runtime/src/"
@@ -387,13 +385,6 @@
           "packages/"
         ],
         "allowedPaths": []
-      },
-      {
-        "id": "workbench-blockbench-dependency",
-        "scope": [
-          "apps/web/src/"
-        ],
-        "allowedPaths": []
       }
     ]
   },
@@ -408,6 +399,7 @@
       ],
       "forbidden": [
         "apps/mcp-gateway",
+        "apps/web",
         "apps/worker",
         "packages/backend-core",
         "packages/backend-engine"
@@ -415,13 +407,57 @@
     },
     "tombstones": [
       "apps/ashfox/package.json",
+      "apps/cli/build.test.js",
+      "apps/cli/capture.test.js",
+      "apps/cli/configuration.test.js",
+      "apps/cli/docs.test.js",
+      "apps/cli/exports.test.js",
+      "apps/cli/game.test.js",
+      "apps/cli/minecraft.test.js",
+      "apps/cli/observe.test.js",
+      "apps/cli/onboarding.test.js",
+      "apps/cli/packaudio.test.js",
+      "apps/cli/packs.test.js",
+      "apps/cli/standalone.test.js",
+      "apps/cli/test.js",
+      "apps/item-study/cli.js",
+      "apps/item-study/harness.js",
+      "apps/item-study/worker.js",
       "apps/mcp-gateway/package.json",
       "apps/plugin-desktop/package.json",
+      "apps/web",
       "apps/web/src/app/api/mcp/route.ts",
       "apps/worker/package.json",
+      "docs/guides/workbench-api.md",
+      "packages/asset-build/src/archive.ts",
+      "packages/asset-build/src/compile.ts",
+      "packages/asset-build/src/contract.ts",
+      "packages/asset-build/src/digest.ts",
+      "packages/asset-build/src/game.ts",
+      "packages/asset-build/src/minecraft.ts",
+      "packages/asset-build/src/packs.ts",
+      "packages/asset-build/src/path.ts",
+      "packages/asset-build/src/runtime.ts",
+      "packages/asset-build/src/runtimeRead.ts",
       "packages/backend-blockbench/package.json",
       "packages/backend-core/package.json",
-      "packages/backend-engine/package.json"
+      "packages/backend-engine/package.json",
+      "packages/engine-core/src/projectFile/workspace",
+      "scripts/agent-browser",
+      "scripts/audio",
+      "scripts/build-blockbench.js",
+      "scripts/build-public.js",
+      "scripts/build-skill-release.js",
+      "scripts/capture-showcase.js",
+      "scripts/export-examples.js",
+      "scripts/items",
+      "scripts/readme.js",
+      "scripts/serve-public.js",
+      "scripts/showcase.js",
+      "scripts/social.js",
+      "scripts/test-skill-release.js",
+      "scripts/test-skill-sync.py",
+      "scripts/verify-program-corpus.js"
     ],
     "packageDependencyPolicies": [
       {
@@ -434,19 +470,6 @@
         "values": [
           "@ashfox/internal-contracts",
           "marked"
-        ]
-      },
-      {
-        "workspace": "apps/web",
-        "sections": [
-          "dependencies",
-          "devDependencies"
-        ],
-        "mode": "deny-prefixes",
-        "values": [
-          "@ashfox/backend-",
-          "@ashfox/blockbench-",
-          "mcp"
         ]
       }
     ],
@@ -468,34 +491,29 @@
           "three"
         ],
         "forbiddenRelativeTargets": [
-          "apps/web/",
           "packages/engine-core/"
         ]
       }
     ],
     "forbiddenDependencies": [
       {
-        "source": "apps/web/src/application/",
+        "source": "packages/asset-build/src/bundle/",
         "targets": [
-          "apps/web/src/features/"
+          "packages/asset-build/src/node/"
         ]
       },
       {
-        "source": "apps/web/src/features/agent/",
+        "source": "packages/asset-build/src/packs/",
         "targets": [
-          "apps/web/src/features/workbench/"
+          "packages/asset-build/src/node/"
         ]
       },
       {
-        "source": "apps/web/src/features/capture/",
+        "source": "packages/asset-build/src/shared/",
         "targets": [
-          "apps/web/src/features/workbench/"
-        ]
-      },
-      {
-        "source": "apps/web/src/features/files/",
-        "targets": [
-          "apps/web/src/features/workbench/"
+          "packages/asset-build/src/bundle/",
+          "packages/asset-build/src/node/",
+          "packages/asset-build/src/packs/"
         ]
       },
       {
@@ -540,8 +558,7 @@
       {
         "source": "packages/render-core/src/",
         "targets": [
-          "apps/cli/src/",
-          "apps/web/src/"
+          "apps/cli/src/"
         ]
       }
     ]

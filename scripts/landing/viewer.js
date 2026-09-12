@@ -1,3 +1,4 @@
+const siteCopy = JSON.parse(document.body.dataset.siteCopy);
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -11,7 +12,7 @@ if (host) void (async () => {
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setClearColor(0, 0);
-    renderer.domElement.setAttribute('aria-label', 'Griffin 3D preview. Drag to rotate; use view buttons for keyboard control.');
+    renderer.domElement.setAttribute('aria-label', siteCopy.previewLabel);
     host.append(renderer.domElement);
     const scene = new THREE.Scene();
     scene.add(new THREE.HemisphereLight(0xffefda, 0x394656, 2.6));
@@ -54,15 +55,15 @@ if (host) void (async () => {
     };
     for (const button of document.querySelectorAll('[data-model-motion]')) {
       button.disabled = false;
-      button.onclick = () => { choose(button.dataset.modelMotion); playing = true; pause.textContent = 'Pause'; };
+      button.onclick = () => { choose(button.dataset.modelMotion); playing = true; pause.textContent = siteCopy.pause; };
     }
     for (const button of document.querySelectorAll('[data-model-view]')) {
       button.disabled = false; button.onclick = () => view(Number(button.dataset.modelView));
     }
     pause.disabled = false;
-    pause.onclick = () => { playing = !playing; pause.textContent = playing ? 'Pause' : 'Play'; };
-    reduced.addEventListener('change', () => { playing = !reduced.matches; pause.textContent = playing ? 'Pause' : 'Play'; });
-    choose('wing_display'); pause.textContent = playing ? 'Pause' : 'Play';
+    pause.onclick = () => { playing = !playing; pause.textContent = playing ? siteCopy.pause : siteCopy.play; };
+    reduced.addEventListener('change', () => { playing = !reduced.matches; pause.textContent = playing ? siteCopy.pause : siteCopy.play; });
+    choose('wing_display'); pause.textContent = playing ? siteCopy.pause : siteCopy.play;
     const clock = new THREE.Clock();
     new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(host);
     renderer.setAnimationLoop(() => {
@@ -72,14 +73,14 @@ if (host) void (async () => {
       controls.update(); renderer.render(scene, camera);
     });
     renderer.render(scene, camera); fallback.hidden = true;
-    host.dataset.ready = 'true'; status.textContent = 'Drag to look around';
+    host.dataset.ready = 'true'; status.textContent = siteCopy.dragModel;
     renderer.domElement.addEventListener('webglcontextlost', event => {
       event.preventDefault(); fallback.hidden = false; renderer.domElement.hidden = true;
-      status.textContent = 'Showing a preview image. Reload to try again.';
+      status.textContent = siteCopy.contextLost;
       for (const button of document.querySelectorAll('[data-model-motion], [data-model-view], [data-model-pause]')) button.disabled = true;
     });
   } catch {
     renderer?.dispose(); renderer?.domElement.remove(); fallback.hidden = false;
-    status.textContent = 'Preview image · Download the model to explore it';
+    status.textContent = siteCopy.modelFailed;
   }
 })();

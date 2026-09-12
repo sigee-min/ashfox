@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { readWorkspaceFile } from '../../../src/projectFile/workspace/codec';
+import { readWorkspaceFile } from '../../../src/project/container/codec';
 import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/compile';
 
 // Approved showroom motion update: planted fox idle and three clips per creature. Hashes cover canonical

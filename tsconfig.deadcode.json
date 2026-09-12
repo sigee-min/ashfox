@@ -15,9 +15,6 @@
   "include": [
     "apps/blockbench-mcp-sidecar/src/**/*.ts",
     "apps/blockbench-plugin/src/**/*.ts",
-    "apps/web/src/**/*.ts",
-    "apps/web/src/**/*.tsx",
-    "apps/web/tests/**/*.ts",
     "packages/blockbench-conformance/tests/**/*.ts",
     "packages/blockbench-contracts/src/**/*.ts",
     "packages/blockbench-runtime/src/**/*.ts",

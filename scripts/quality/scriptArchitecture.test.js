@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { importSpecifiers, privateEngineImportViolations } = require(
+const { importSpecifiers, privateEngineImportViolations, scriptFiles } = require(
   './scriptArchitecture');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -39,6 +39,13 @@ try {
     }],
     'a new script cannot import a private engine module'
   );
+  const app = path.join(fixtureRoot, 'apps', 'study');
+  fs.mkdirSync(path.join(app, 'dist'), { recursive: true });
+  const appSource = path.join(app, 'engine.js');
+  fs.writeFileSync(appSource, `require('${['..', '..', 'packages', 'engine-core', 'src', 'compiler', 'private'].join('/')}');`);
+  fs.writeFileSync(path.join(app, 'dist', 'bundle.js'), 'generated');
+  assert.ok(scriptFiles(fixtureRoot).includes(appSource));
+  assert.ok(!scriptFiles(fixtureRoot).includes(path.join(app, 'dist', 'bundle.js')));
   const publicFile = path.join(fixtureScripts, 'public.js');
   const publicModule = ['..', 'packages', 'engine-core', 'src'].join('/');
   fs.writeFileSync(publicFile,

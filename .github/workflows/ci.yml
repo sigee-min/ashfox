@@ -27,20 +27,6 @@ jobs:
       - run: npm run quality:audit
       - run: npm run release:validate
 
-  web-track:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
-      - run: npm run test:web
-      - run: npm run build:web
-      - run: npm run test:web:browser -- --no-build
-      - run: npm run test:web:browser -- --development
-
   public-site-track:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +36,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run test:engine-core
+      - run: npm run test:cli
       - run: npm run test:site
+      - run: npm run build:public
+      - run: echo "ASHFOX_CHROME_PATH=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+      - run: npm run test:cli:capture
+      - run: npm --workspace @ashfox/site run test:browser
 
   blockbench-compatibility-track:
     runs-on: ubuntu-latest

@@ -172,8 +172,7 @@ const FORBIDDEN_HUMAN_AUTHORING = frozen([
   'direct-hierarchy-authoring',
   'direct-material-authoring',
   'direct-rig-authoring',
-  'direct-texture-authoring',
-  'edit-asset-workspace-in-workbench'
+  'direct-texture-authoring'
 ]);
 const AGENT_DECISION_EVIDENCE = frozen([
   'workspace-summary',
@@ -219,6 +218,7 @@ const FORBIDDEN_SOURCE_PATTERN_IDS = frozen([
   'as-unknown-as',
   'bare-document',
   'bare-window',
+  'browser-authoring-contract',
   'catch-without-binding',
   'console-in-src',
   'double-assertion',
@@ -227,8 +227,7 @@ const FORBIDDEN_SOURCE_PATTERN_IDS = frozen([
   'globalThis-as',
   'throw-in-src',
   'todo-fixme-comment',
-  'ts-ignore',
-  'workbench-blockbench-dependency'
+  'ts-ignore'
 ]);
 const SYNCHRONIZED_PRODUCT_VERSION_FILES = frozen([
   '.github/release-please/manifest.json',

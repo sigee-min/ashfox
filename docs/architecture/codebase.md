@@ -1,5 +1,8 @@
 # Codebase map
 
+See [the source and CLI product boundary](product-boundary.md) for the division
+between asset authoring, game delivery and the public website.
+
 Ashfox assets are authored as native `.ashfox` files. They compile independently,
 including their explicit relative imports. An optional `.ashfoxworkspace` supplies
 repository-wide selection, ignore, package, build and export rules when needed;
@@ -19,6 +22,41 @@ build identity and is never saved. This avoids forcing renderers and exporters
 to interpret authoring records while keeping the workspace as the sole durable
 authority.
 
+## Repository layout
+
+| Location | Responsibility |
+| --- | --- |
+| `apps/cli` | Standalone command-line product; `src/` owns execution and `tests/` owns CLI integration scenarios. |
+| `apps/site` | Public documentation, landing and read-only example previews. |
+| `apps/audio-study`, `apps/item-study` | Independent local source/result review tools with their own npm workspaces. |
+| `apps/blockbench-*` | Optional supported Blockbench entry points. |
+| `packages/engine-core` | Host-independent source contracts, compilation, commands and asset export. |
+| `packages/asset-build` | Bundle assembly, delivery targets and explicit Node I/O adapters. |
+| `packages/audio-core`, `packages/render-core` | Shared audio synthesis and observation rendering. |
+| `packages/*contracts`, `packages/blockbench-*` | Shared contracts and the supported Blockbench runtime/conformance implementation. |
+| `scripts/{public,blockbench,skill,showcase,corpus,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
+| `examples/`, `assets/`, `docs/`, `skills/` | Native examples, published media, documentation sources and agent skill sources. |
+
+Local review applications are not release automation. Their npm commands route to
+one owning workspace; the former `scripts/audio` and `scripts/items` paths have
+no forwarding modules. The former flat build/showcase script paths are removed.
+`node_modules/` is the npm development dependency cache, not authored source or
+a CLI distribution payload. The released CLI is a bundled standalone CJS file.
+Generated `dist/`, coverage, and local `.ashfox/` state are ignored; existing
+user-authored local workspace state is not erased during source reorganization.
+
+Within `asset-build`, `bundle/` owns snapshot contracts and assembly, `packs/`
+owns target dispatch and `game/`/`minecraft/` delivery, `shared/` owns deterministic
+hash/path primitives, and `node/` owns filesystem/configuration/encoding/publication.
+Bundle and pack code cannot import Node adapters. The public package entry remains
+`src/index.ts`; moved implementation paths have no compatibility aliases.
+
+Within the engine, `project/container/` only reads and writes portable workspace
+bytes. `commands/workspace/open.ts` compiles and validates the selected entry into
+a transient session; `commands/workspace/apply.ts` applies changes. Container
+readers cannot import the compiler, validators, or commands. The former
+`projectFile/` owner is removed rather than retained as a parallel entry point.
+
 ## Canonical build path
 
 ~~~text
@@ -31,7 +69,7 @@ closed workspace + exact lock + selected package entry
   -> rig/skeleton/socket/surface binding and deterministic motion bake
   -> concrete scene, textures, and animations
   -> independent canonical and target validation
-  -> Web review, replay, and delivery artifacts
+  -> CLI capture, review evidence, and game delivery artifacts
 ~~~
 
 Every phase is fail-closed. A diagnostic or exhausted budget discards the
@@ -92,19 +130,19 @@ source branches are not part of Ashfox v1.
 | texture raster and PNG encoding | `packages/engine-core/src/textures/` |
 | canonical and target validation | `packages/engine-core/src/validation/` |
 | target compatibility and artifact bytes | `packages/engine-core/src/export/` |
-| workspace persistence, passive inspection, review, and delivery UI | `apps/web/src/` |
+| source observation, capture and stdio session revisions | `apps/cli/src/observe/` |
 | optional Blockbench compatibility route | `packages/blockbench-runtime/src/` |
 
 Only the asset parser interprets package-aware declarations and imports. Only
 the compiler resolves nominal symbols and erases source types. Project-file,
-command, Web, renderer, and export code consume closed public records and do
+command, CLI, renderer, and export code consume closed public records and do
 not import parser or HIR internals.
 
 Design elaboration consumes the sealed parsed closure and substitutes exact
 values before HIR; it does not parse again or create another durable source.
 Read-only measurements in `model/measurement/` consume concrete products and
-expose bounded rest-pose geometry and face UV evidence. The Web agent binds
-these observations to the complete current revision/workspace/build guards.
+expose bounded rest-pose geometry and face UV evidence. CLI stdio sessions bind source replacement to the current revision; build
+verification binds delivery to its source and output receipts.
 
 ## Build replay boundary
 
@@ -125,8 +163,7 @@ generic objects. A package artifact may deduplicate immutable blobs by digest,
 but those blobs do not become a second authoring authority.
 
 Blockbench remains an optional compatibility product. It may consume public
-engine contracts for transient conversion, but Web cannot depend on its
-runtime and engine-core cannot import upward into either host.
+engine contracts for transient conversion, while engine-core cannot import upward into any host.
 
 ## Rig coordinate boundary
 
@@ -164,11 +201,11 @@ texture raster and PNG encoder. Its public entry points are `readItemStudy`,
 configuration lives in `project/directory/`; `compiler/directory/` compiles
 model and sprite entries through `compileDirectoryWorkspace` without empty model documents.
 
-`scripts/items/` owns local build storage, atomic candidate application, verified
-export, and the read-only source/result studio. Style-related mechanical
-constraints are enforced by the compiler profile; the harness has no manual
-review or approval ledger. See [the item design](item-sprites.md) and
-[the implemented study](../../scripts/items/README.md).
+`apps/item-study/` owns complete preview snapshots and the read-only source/result
+studio. Source edits and delivery use the common native CLI. The obsolete JSON
+candidate harness and item-specific CLI forwarding entry are removed. Style-related
+mechanical constraints are enforced by the compiler profile. See
+[the item design](item-sprites.md) and [the studio](../../apps/item-study/README.md).
 
 ## CLI resource-pack delivery
 
@@ -185,8 +222,8 @@ optimized encoding explicit in workspace exports. See [game assets](../guides/ga
 ## Shared observation renderer
 
 `packages/render-core` owns Three scene projection, camera presets, materials,
-animation sampling, capture surfaces and deterministic build replay. Web and CLI
-consume its public entry points; neither maintains a renderer copy. CLI bundles
+animation sampling, capture surfaces and deterministic build replay. CLI observation consumes its public entry points. The landing loads exported
+GLB with a read-only viewer. CLI bundles
 the headless browser entry and drives it through a private Chrome pipe, with no
 network endpoint. `apps/cli/src/observe` owns closed stdin contracts, isolated
 source compilation, revision-guarded in-memory sessions and binary stdout.

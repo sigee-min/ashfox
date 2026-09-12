@@ -4,19 +4,15 @@ Compilation proves that an entry is closed, deterministic, nominally typed,
 and mechanically valid. It does not claim that the result is attractive,
 readable at gameplay distance, or appropriate for a particular world.
 
-The Web Studio renders the selected `AssetProject` and records revision-bound
-review evidence. Review may accept or reject a view, but it never edits the
-workspace, repairs geometry, changes texture pixels, or mutates the canonical
-product. A rejected result requires a new complete workspace change set.
+The CLI captures the selected source as PNG or GIF evidence. Agents inspect those
+results and return to source edits when the asset needs improvement. Generated
+captures and exports never become an independent source of asset state.
 
-Candidate inspection validates source without changing the viewport or workspace.
-A preview token presents that candidate against its exact base build. Delivery
-presentation restores the current document and binds frame evidence to the
-actual rendered projection. Every workspace change invalidates prior reviews. Left and right side views
-have distinct frame evidence and review keys; one cannot satisfy the other.
-Paired detail is judged across both sides, with intentional asymmetry allowed.
-The overview reports remaining reviews; a rejected view routes back to source
-editing before another delivery review.
+A persistent stdio session guards complete source replacement with its expected
+revision. Failed compilation preserves the previous asset. Configured delivery
+verifies source snapshots and output receipts before publication. Capture alone
+is not a game integration test; inspect the generated artifact in its receiving
+engine before claiming game behavior has been verified.
 
 Build replay is also derived evidence. It deterministically starts empty,
 places concrete nodes, applies each node's complete owning texture set,

@@ -1,3 +1,5 @@
+const siteCopy = JSON.parse(document.body.dataset.siteCopy);
+
 const currentYear = String(new Date().getFullYear());
 for (const target of document.querySelectorAll('[data-current-year]')) {
   target.textContent = currentYear;
@@ -51,20 +53,20 @@ const setAgentInstructionState = (status) => {
     const state = button.querySelector('[data-copy-state]');
     if (!(state instanceof HTMLElement)) continue;
     if (status === 'success') {
-      state.textContent = state.dataset.copiedState ?? 'Copied';
+      state.textContent = state.dataset.copiedState ?? siteCopy.copied;
     } else if (status === 'copying') {
-      state.textContent = 'Copying…';
+      state.textContent = siteCopy.copying;
     } else if (status === 'error') {
-      state.textContent = 'Retry';
+      state.textContent = siteCopy.retry;
     }
   }
   for (const feedback of agentInstructionFeedback) {
     feedback.dataset.state = status;
     feedback.textContent = status === 'success'
-      ? 'Copied — paste into ChatGPT, Cursor, or Claude.'
+      ? siteCopy.copySuccess
       : status === 'copying'
-        ? 'Copying…'
-        : 'Clipboard unavailable. Try copying again.';
+        ? siteCopy.copying
+        : siteCopy.copyFailed;
   }
 };
 
@@ -101,7 +103,7 @@ for (const block of document.querySelectorAll('.doc-article pre')) {
   button.textContent = labels?.copyLabel ?? 'Copy';
   button.setAttribute('aria-label', labels?.copyCodeLabel ?? 'Copy code');
   button.addEventListener('click', async () => {
-    try { await copyText(code.textContent ?? ''); button.textContent = labels?.copiedLabel ?? 'Copied'; }
+    try { await copyText(code.textContent ?? ''); button.textContent = labels?.copiedLabel ?? siteCopy.copied; }
     catch { button.textContent = labels?.copyFailedLabel ?? 'Copy failed'; }
     window.setTimeout(() => {
       button.textContent = labels?.copyLabel ?? 'Copy';
@@ -128,4 +130,16 @@ if (tocLinks.length > 0 && 'IntersectionObserver' in window) {
     const heading = document.getElementById(id);
     if (heading) observer.observe(heading);
   }
+}
+
+for (const menu of document.querySelectorAll('[data-language-menu]')) {
+  document.addEventListener('click', event => { if (!menu.contains(event.target)) menu.open = false; });
+  menu.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary').focus(); }
+  });
+  menu.addEventListener('focusout', event => { if (!menu.contains(event.relatedTarget)) menu.open = false; });
+  const links = [...menu.querySelectorAll('[data-language-link]')].map(link => [link, link.getAttribute('href')]);
+  const syncSection = () => { for (const [link, route] of links) link.href = `${route}${window.location.hash}`; };
+  syncSection();
+  window.addEventListener('hashchange', syncSection);
 }

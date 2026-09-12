@@ -1,7 +1,7 @@
 # ashfox Engine Core
 
 `@ashfox/engine-core` is the deterministic canonical-asset compiler used by
-the Ashfox Workbench.
+Ashfox source compilation and asset delivery.
 
 Its durable input is a closed `.ashfoxworkspace`: exact `ashfox-model 1`
 source modules, package manifests, and a content-addressed lock. A selected
@@ -22,7 +22,7 @@ Key boundaries:
 - `src/compiler/program/asset/` owns nominal Typed HIR, exact instantiation,
   shared design evaluation, texture planning, and target-neutral canonical lowering.
 - `src/model/measurement/` owns read-only rest-pose bounds and face UV evidence.
-- `src/projectFile/workspace/` owns the canonical portable workspace codec.
+- `src/project/container/` owns the canonical portable workspace codec.
 - The semantic workspace change boundary compiles every declared entry before
   committing one workspace-hash CAS candidate.
 - `src/provenance/digest.ts` owns neutral SHA-256 helpers.

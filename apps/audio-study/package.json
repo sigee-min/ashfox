@@ -1,0 +1,16 @@
+{
+  "name": "@ashfox/audio-study",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node serve.js",
+    "agent": "node cli.js",
+    "test": "node test.js && node harness.test.js",
+    "test:integration": "node integration.js"
+  },
+  "devDependencies": {
+    "@ashfox/audio-core": "^0.0.0",
+    "ts-node": "^10.9.2"
+  }
+}
