@@ -46,7 +46,6 @@ const siteHeader = ({ active, locale, alternatives, messages }) => `
       <span>ashfox</span>
     </a>
     <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
-      <a href="${locale.prefix}/#examples">${escapeHtml(locale.ui.examples)}</a>
       <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
     </nav>
     <div class="header-actions">

@@ -150,9 +150,8 @@
   .world-hero { padding-top: 24px; row-gap: 16px; }
   .world-heading .eyebrow { margin-bottom: 14px; }
   .hero-subtitle { margin-top: 12px; }
-  .world-intro > p, .hero-examples { display: none; }
+  .world-intro > p { display: none; }
   .world-intro .world-actions { margin-top: 18px; }
-  .hero-start [data-copy-feedback] { font-size: 11px; line-height: 1.5; min-height: 3em; margin-top: 10px; }
 }
 
 /* Showcase composition: warm source typography, a gridded asset stage,
@@ -165,11 +164,10 @@
 .world-heading h1 span { color: var(--accent); }
 .hero-subtitle { margin-top: 28px; font-weight: 600; }
 .world-intro > p { max-width: 360px; font-size: 15px; line-height: 1.8; }
-.hero-start { max-width: 320px; }
+.hero-start { max-width: none; container-type: inline-size; }
+.hero-start .world-actions { max-width: 320px; }
 .world-landing .button-primary { background: var(--accent); border: 1px solid var(--accent); color: #17130f; box-shadow: none; border-radius: 5px; font-weight: 750; }
 .world-landing .button-primary:hover { background: #ffb584; border-color: #ffb584; }
-.hero-start [data-copy-feedback] { color: #a3a6a6; font-size: 12px; min-height: 0; }
-.hero-examples { margin-top: 20px; }
 .hero-preview { overflow: clip; border: 1px solid #514034; border-radius: 12px; background: radial-gradient(ellipse at 55% 35%, #6c462530, transparent 67%), #181a1b; box-shadow: 0 30px 80px #0003; }
 .hero-preview::before { inset: 0 0 120px; border-radius: 12px; background: linear-gradient(#dfa36e09 1px, transparent 1px), linear-gradient(90deg, #dfa36e09 1px, transparent 1px); background-size: 40px 40px; }
 .hero-preview::after { inset: 21% 12% 29%; border-color: #dfa36e20; transform: rotate(-25deg); }
@@ -185,14 +183,6 @@
 .hero-code { border-left: 2px solid #a16a43; padding-left: 18px; }
 .hero-code > span { color: #a8aaa6; }
 .hero-proof-message p { max-width: 400px; font-size: 17px; }
-.asset-rail { width: min(100% - 96px, 1320px); margin: 24px auto 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-block: 1px solid #ffffff20; }
-.asset-rail a { display: flex; align-items: center; gap: 18px; padding: 22px 26px; }
-.asset-rail a:first-child { padding-left: 0; }
-.asset-rail a + a { border-left: 1px solid #ffffff20; }
-.asset-rail a > span { color: #aaa9a1; font: 11px ui-monospace, monospace; }
-.asset-rail a > span:last-child { margin-left: auto; color: var(--accent); }
-.asset-rail strong { font-size: 18px; font-weight: 550; }
-.asset-rail a:hover { background: #ffffff04; }
 .aac-workflow, .aac-frontier, .world-items, .world-sound, .world-source, .world-delivery { max-width: 1416px; padding: 100px 48px; }
 .world-landing h2 { font-size: clamp(34px, 4vw, 58px); letter-spacing: -.055em; line-height: 1.13; text-wrap: balance; }
 .world-landing h2, .world-section-copy p, .world-sound > div > p { word-break: keep-all; overflow-wrap: anywhere; }
@@ -236,8 +226,6 @@
   .world-heading h1 { font-size: clamp(76px, 14vw, 112px); }
   .world-stage { height: 400px; }
   .hero-proof { gap: 24px; }
-  .asset-rail { width: calc(100% - 64px); }
-  .asset-rail a { padding: 20px 16px; gap: 10px; }
   .aac-workflow, .aac-frontier, .world-items, .world-sound, .world-source, .world-delivery { padding: 72px 32px; }
 }
 @media (max-width: 480px) {
@@ -245,7 +233,6 @@
   .world-heading h1 { font-size: clamp(68px, 19vw, 88px); }
   .hero-subtitle { font-size: 20px; margin-top: 18px; }
   .hero-start { max-width: none; }
-  .hero-start [data-copy-feedback] { font-size: 11px; }
   .world-stage { height: 280px; }
   .preview-heading { padding: 14px 16px; }
   .world-controls { gap: 6px; padding: 10px; }
@@ -253,10 +240,6 @@
   .world-index { padding: 12px 14px; }
   .hero-proof { grid-template-columns: 1fr; gap: 20px; }
   .hero-proof-message p { font-size: 16px; }
-  .asset-rail { width: calc(100% - 36px); margin-top: 8px; }
-  .asset-rail a { display: grid; grid-template-columns: auto 1fr; padding: 16px 10px; gap: 8px; }
-  .asset-rail strong { font-size: 14px; }
-  .asset-rail a > span:last-child { grid-column: 1 / -1; margin: 0; }
   .aac-workflow, .aac-frontier, .world-items, .world-sound, .world-source, .world-delivery { padding: 56px 20px; }
   .world-landing h2 { font-size: 36px; }
   .sound-player { padding: 18px; }

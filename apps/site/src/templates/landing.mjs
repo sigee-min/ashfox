@@ -19,7 +19,6 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
         <div class="world-intro">
           <p>${t('heroIntro')} ${t('heroPromise')}</p>
           <div class="hero-start" id="quick-start"><div class="world-actions"><button class="button button-primary" data-copy-agent-instruction data-instruction="${t('instruction')}"><span data-copy-state data-default-state="${t('copyInstruction')}" data-copied-state="${t('copied')}">${t('copyInstruction')}</span></button></div><p data-copy-feedback data-default-feedback="${t('pasteInstruction')}" role="status">${t('pasteInstruction')}</p><noscript><p>${t('javascriptRequired')}</p></noscript></div>
-          <a class="world-link hero-examples" href="#collection">${t('exploreExamples')}</a>
         </div>
       </div>
       <div class="hero-preview">
@@ -34,11 +33,6 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
       </div>
       <div class="hero-proof"><a class="hero-code" href="/examples/griffin/workbench/main.ashfox"><span>${t('sourceExcerpt')} / main.ashfox</span><code><b>motion</b> = animation.wing_display;<br><b>motion</b> = animation.wing_flap;</code></a><div class="hero-proof-message"><span aria-hidden="true">↗</span><p>${t('heroProof')}</p></div></div>
     </section>
-    <nav class="asset-rail" aria-label="${t('exploreExamples')}">
-      <a href="#examples"><span>01</span><strong>${t('model')}</strong><span>GLB ↗</span></a>
-      <a href="#collection"><span>02</span><strong>${t('item')}</strong><span>PNG ↗</span></a>
-      <a href="#sound"><span>03</span><strong>${t('sound')}</strong><span>WAV ↗</span></a>
-    </nav>
     <section class="aac-workflow" id="workflow" aria-labelledby="workflow-title">
       <div><h2 id="workflow-title">${t('workflowTitle')}</h2></div>
       <ol class="workflow-steps">

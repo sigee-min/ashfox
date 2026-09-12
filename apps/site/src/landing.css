@@ -309,15 +309,11 @@
   margin: 12px 0 0;
   max-width: none;
   color: #a9aaa3;
-  font-size: 13px;
-  line-height: 1.7;
-  min-height: 3.4em;
-  text-align: center;
-  text-wrap: balance;
-}
-.hero-examples {
-  display: inline-block;
-  margin-top: 12px;
+  font-size: clamp(8px, 2.5cqi, 11px);
+  line-height: 1.5;
+  min-height: 0;
+  text-align: left;
+  white-space: nowrap;
 }
 .world-landing button:focus-visible,
 .world-landing a:focus-visible,

@@ -17,8 +17,10 @@ const test = async () => {
   const check = (value, message) => { if(!value)throw Error(message); };
   await until(() => q('[data-live-model]')?.dataset.ready === 'true' || q('[data-model-status]')?.textContent === copy.modelFailed, 'No model or fallback');
   const setup = q('[data-copy-agent-instruction]');
-  const outputLinks = [...d.querySelectorAll('.asset-rail a')];
-  check(outputLinks.length === 3 && outputLinks.every(link => d.querySelector(link.hash)), 'Output index must reach each showcase');
+  check(!q('.asset-rail') && !q('.hero-examples'), 'Retired example navigation must not appear');
+  const feedback = q('[data-copy-feedback]');
+  check(feedback.scrollWidth <= feedback.clientWidth, 'Agent instruction must fit its available width');
+  check(feedback.getBoundingClientRect().height < 20, 'Agent instruction must remain one small line');
   const finale = q('.landing-finale .button');
   check(finale && d.querySelector(finale.hash) === setup.closest('#quick-start'), 'Final CTA must return to agent setup');
   check(!d.body.innerText.includes('https://ashfox.io/agent.md'), 'Setup prompt must not be displayed');
