@@ -39,10 +39,13 @@
 | `noise` | `kind`만 필요 |
 | `fm` | `kind`, `pitch`의 40–3000 Hz 양 끝값, `sweepSeconds` 0.02–5, `ratio` 0.25–4, `index` 0–4, `vibratoHz` 0–25, `vibratoCents` 0–100 |
 | `vocal` | `kind`, `pitch`의 50–1200 Hz 양 끝값, `sweepSeconds` 0.02–5, `formants` 3개 각 150–7000 Hz, `bandwidths` 3개 각 40–1500 Hz, `breath`·`jitter`·`roughness` 각각 0–1 |
+| `chirp` | `kind`, `contour` (레이어 길이의 0–1을 잇는 증가하는 `{ at, hz }` 지점 2–12개, 500–8000 Hz), `trillHz` 0–100, `trillCents` 0–300, `trillDepth` 0–1, `breath` 0–0.2, `jitterCents` 0–80, `brightness` 0–1 |
 
 충돌에는 빠르게 사라지는 짧은 노이즈, 이동에는 형태를 잡은 긴 노이즈, 음정 상세에는 유음 레이어를 씁니다. 음절은 별도 레이어에 배치하세요. 순수 FM은 노이즈가 없어 seed만 바꿔도 소리가 같을 수 있습니다. 동물 예제 이름은 설계 의도이며 생물학적 사실성을 검증한 뜻이 아닙니다.
 
 [claw-hit 원본](../../examples/sounds/src/claw_hit.ashfox)은 완전한 다층 예제입니다. `examples/sounds/src`의 모든 원본은 같은 네이티브 언어를 사용합니다.
+
+[새소리 원본](../../examples/sounds/src/bird_call.ashfox)은 `chirp`로 부드러운 음높이 곡선, 음높이와 진폭이 함께 떨리는 트릴, 작은 숨소리를 합성합니다. `contour`의 `at`은 해당 레이어 길이에 대한 비율이고 음높이는 로그 주파수에서 부드럽게 보간합니다. seed는 노이즈뿐 아니라 음높이 편차와 부드러운 흔들림에도 영향을 줍니다. 배음은 나이퀴스트 주파수에 닿기 전에 줄어듭니다. 사운드 루트와 네이티브 헤더는 그대로입니다.
 
 ## 전달하고 듣기
 

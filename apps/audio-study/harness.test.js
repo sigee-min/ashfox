@@ -16,13 +16,14 @@ try {
   assert.throws(() => run({ op: 'init', files }), /already initialized/);
   assert.deepEqual(run({ op: 'inspect' }).files, files);
   assert.throws(() => run({ op: 'inspect', ignored: true }), /Expected exactly/);
-  const edit = source.replace('(1500, 2800)', '(1000, 1900)');
+  const edit = source.replace(/hz = [0-9]+/, 'hz = 1800');
+  assert.notEqual(edit, source, 'Pitch edit must change the source');
   const candidate = run({ op: 'propose', expectedHead: initial.id, writes: { 'sounds/bird_call.ashfox': edit }, deletes: [] });
   assert.deepEqual(run({ op: 'inspect' }).head, initial, 'Propose mutates head');
   assert.throws(() => run({ op: 'propose', expectedHead: '0'.repeat(64), writes: {}, deletes: [] }), /current source/);
   assert.throws(() => run({ op: 'propose', expectedHead: initial.id, writes: { '../escape.json': source }, deletes: [] }), /path/);
   assert.throws(() => run({ op: 'propose', expectedHead: initial.id, writes: {}, deletes: ['missing'] }), /Delete/);
-  const bad = source.replace('rmsDb = -22', 'rmsDb = 100');
+  const bad = source.replace(/rmsDb = -?[0-9]+/, 'rmsDb = 100');
   assert.throws(() => run({ op: 'propose', expectedHead: initial.id, writes: { 'sounds/bird_call.ashfox': bad }, deletes: [] }), /expected/);
   assert.deepEqual(run({ op: 'inspect' }).head, initial, 'Invalid input mutates head');
   // A real PCM fixture isolates state transitions from the optional encoder installation.

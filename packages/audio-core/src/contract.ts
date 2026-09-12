@@ -9,8 +9,14 @@ export interface VocalSource {
   readonly formants: readonly number[]; readonly bandwidths: readonly number[];
   readonly breath: number; readonly jitter: number; readonly roughness: number;
 }
+export interface ChirpSource {
+  readonly kind: 'chirp';
+  readonly contour: readonly { readonly at: number; readonly hz: number }[];
+  readonly trillHz: number; readonly trillCents: number; readonly trillDepth: number;
+  readonly breath: number; readonly jitterCents: number; readonly brightness: number;
+}
 export interface SoundLayer {
-  readonly id: string; readonly source: NoiseSource | FmSource | VocalSource;
+  readonly id: string; readonly source: NoiseSource | FmSource | VocalSource | ChirpSource;
   readonly start: number; readonly duration: number; readonly gain: number;
   readonly attack: number; readonly release: number; readonly highpass: number; readonly lowpass: number;
 }

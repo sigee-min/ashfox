@@ -1,80 +1,220 @@
 ashfox-model 1
 
+// Two short phrases: curved whistles, answering notes and fading trills.
+// Every syllable is synthesized; no recording or external sample is embedded.
 sound bird_call {
-  duration = 1.2;
+  duration = 4;
   sampleRate = 48000;
-  seed = 42;
+  seed = 7349;
   layers = [
     {
+      id = "opening_whistle";
       source = {
-        kind = "fm";
-        pitch = (1500, 2800);
-        sweepSeconds = 0.2;
-        ratio = 1;
-        index = 0.25;
-        vibratoHz = 18;
-        vibratoCents = 40;
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 2850; },
+          { at = 0.22; hz = 4200; },
+          { at = 0.57; hz = 4850; },
+          { at = 1; hz = 3250; }
+        ];
+        trillHz = 8;
+        trillCents = 22;
+        trillDepth = 0.07;
+        breath = 0.009;
+        jitterCents = 34;
+        brightness = 0.42;
       };
-      start = 0.08;
-      duration = 0.22;
-      gain = 0.8;
-      attack = 0.012;
-      release = 0.05;
-      highpass = 800;
-      lowpass = 9000;
-      id = "chirp_0";
+      start = 0.16;
+      duration = 0.27;
+      gain = 0.7;
+      attack = 0.014;
+      release = 0.07;
+      highpass = 1500;
+      lowpass = 11500;
     },
     {
+      id = "quick_answer";
       source = {
-        kind = "fm";
-        pitch = (2200, 1300);
-        sweepSeconds = 0.2;
-        ratio = 1;
-        index = 0.25;
-        vibratoHz = 18;
-        vibratoCents = 40;
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 3900; },
+          { at = 0.23; hz = 5100; },
+          { at = 0.6; hz = 3550; },
+          { at = 1; hz = 2700; }
+        ];
+        trillHz = 13;
+        trillCents = 32;
+        trillDepth = 0.12;
+        breath = 0.009;
+        jitterCents = 26;
+        brightness = 0.32;
       };
-      start = 0.36;
-      duration = 0.22;
-      gain = 0.8;
-      attack = 0.012;
-      release = 0.05;
-      highpass = 800;
-      lowpass = 9000;
-      id = "chirp_1";
+      start = 0.53;
+      duration = 0.16;
+      gain = 0.5;
+      attack = 0.009;
+      release = 0.055;
+      highpass = 1500;
+      lowpass = 11500;
     },
     {
+      id = "rising_warble";
       source = {
-        kind = "fm";
-        pitch = (1800, 2600);
-        sweepSeconds = 0.2;
-        ratio = 1;
-        index = 0.25;
-        vibratoHz = 18;
-        vibratoCents = 40;
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 2650; },
+          { at = 0.3; hz = 3500; },
+          { at = 0.58; hz = 4650; },
+          { at = 0.8; hz = 3900; },
+          { at = 1; hz = 4350; }
+        ];
+        trillHz = 18;
+        trillCents = 72;
+        trillDepth = 0.18;
+        breath = 0.009;
+        jitterCents = 34;
+        brightness = 0.46;
       };
-      start = 0.7;
-      duration = 0.22;
-      gain = 0.8;
+      start = 0.82;
+      duration = 0.32;
+      gain = 0.78;
+      attack = 0.016;
+      release = 0.085;
+      highpass = 1500;
+      lowpass = 11500;
+    },
+    {
+      id = "first_trill";
+      source = {
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 4050; },
+          { at = 0.18; hz = 4900; },
+          { at = 0.55; hz = 4700; },
+          { at = 0.78; hz = 3800; },
+          { at = 1; hz = 3050; }
+        ];
+        trillHz = 34;
+        trillCents = 180;
+        trillDepth = 0.7;
+        breath = 0.009;
+        jitterCents = 26;
+        brightness = 0.38;
+      };
+      start = 1.25;
+      duration = 0.42;
+      gain = 0.59;
+      attack = 0.019;
+      release = 0.1;
+      highpass = 1500;
+      lowpass = 11500;
+    },
+    {
+      id = "soft_pickup";
+      source = {
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 3150; },
+          { at = 0.28; hz = 4400; },
+          { at = 0.64; hz = 4000; },
+          { at = 1; hz = 2900; }
+        ];
+        trillHz = 9;
+        trillCents = 28;
+        trillDepth = 0.1;
+        breath = 0.009;
+        jitterCents = 34;
+        brightness = 0.28;
+      };
+      start = 2.03;
+      duration = 0.23;
+      gain = 0.47;
       attack = 0.012;
+      release = 0.065;
+      highpass = 1500;
+      lowpass = 11500;
+    },
+    {
+      id = "bright_reply";
+      source = {
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 3400; },
+          { at = 0.33; hz = 5200; },
+          { at = 0.7; hz = 4250; },
+          { at = 1; hz = 3300; }
+        ];
+        trillHz = 12;
+        trillCents = 45;
+        trillDepth = 0.1;
+        breath = 0.009;
+        jitterCents = 26;
+        brightness = 0.44;
+      };
+      start = 2.37;
+      duration = 0.18;
+      gain = 0.72;
+      attack = 0.011;
       release = 0.05;
-      highpass = 800;
-      lowpass = 9000;
-      id = "chirp_2";
+      highpass = 1500;
+      lowpass = 11500;
+    },
+    {
+      id = "curved_whistle";
+      source = {
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 2900; },
+          { at = 0.25; hz = 4400; },
+          { at = 0.52; hz = 5050; },
+          { at = 0.77; hz = 3700; },
+          { at = 1; hz = 4100; }
+        ];
+        trillHz = 16;
+        trillCents = 90;
+        trillDepth = 0.24;
+        breath = 0.009;
+        jitterCents = 34;
+        brightness = 0.36;
+      };
+      start = 2.68;
+      duration = 0.34;
+      gain = 0.67;
+      attack = 0.018;
+      release = 0.09;
+      highpass = 1500;
+      lowpass = 11500;
+    },
+    {
+      id = "closing_trill";
+      source = {
+        kind = "chirp";
+        contour = [
+          { at = 0; hz = 4450; },
+          { at = 0.2; hz = 4800; },
+          { at = 0.52; hz = 4250; },
+          { at = 0.76; hz = 3400; },
+          { at = 1; hz = 2600; }
+        ];
+        trillHz = 42;
+        trillCents = 210;
+        trillDepth = 0.78;
+        breath = 0.009;
+        jitterCents = 26;
+        brightness = 0.32;
+      };
+      start = 3.17;
+      duration = 0.48;
+      gain = 0.52;
+      attack = 0.022;
+      release = 0.16;
+      highpass = 1500;
+      lowpass = 11500;
     }
   ];
   variants = [
-    {
-      id = "base";
-      seed = 42;
-    },
-    {
-      id = "alternate";
-      seed = 43;
-    }
+    { id = "base"; seed = 218; },
+    { id = "alternate"; seed = 907; }
   ];
-  output = {
-    rmsDb = -22;
-    peakDb = -3;
-  };
+  output = { rmsDb = -25; peakDb = -6; };
 }

@@ -44,6 +44,7 @@
 | --- | --- |
 | `noise` | `kind`만 사용 |
 | `fm` | `kind`, `pitch`, `sweepSeconds`, `ratio`, `index`, `vibratoHz`, `vibratoCents` |
+| `chirp` | `kind`, `contour`, `trillHz`, `trillCents`, `trillDepth`, `breath`, `jitterCents`, `brightness` |
 | `vocal` | `kind`, `pitch`, `sweepSeconds`, `formants`, `bandwidths`, `breath`, `jitter`, `roughness` |
 
 | 매개변수 | 범위 |
@@ -58,6 +59,12 @@
 | vocal `formants` | 정확히 3개, 각 150–7000 Hz |
 | vocal `bandwidths` | 정확히 3개, 각 40–1500 Hz |
 | vocal `breath`, `jitter`, `roughness` | 각각 0–1 |
+| Chirp `contour` | `{ at, hz }` 레코드 2–12개, `at`은 0부터 1까지 엄격히 증가, `hz`는 500–8000 |
+| Chirp `trillHz`, `trillCents` | 0–100 Hz, 0–300센트, 0 Hz이면 트릴 비활성화 |
+| Chirp `trillDepth`, `brightness` | 각각 0–1, 진폭 변조 깊이와 배음 강도 |
+| Chirp `breath`, `jitterCents` | 노이즈 진폭 0–0.2, seed 기반 음높이 편차·흔들림 0–80센트 |
+
+contour 위치는 레이어 길이의 비율이며 로그 음높이에서 부드럽게 연결됩니다. chirp는 버전 선택 없이 현재의 닫힌 source 계약 하나만 허용합니다.
 
 ## 완전한 FM 음
 

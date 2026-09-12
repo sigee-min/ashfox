@@ -78,6 +78,26 @@ export const readRecipe = (input: unknown): SoundRecipe => {
         (source[key] as unknown[]).forEach((v) => range(v, key === 'formants' ? 150 : 40, key === 'formants' ? 7000 : 1500, `${at}.source.${key}`));
       }
       for (const key of ['breath', 'jitter', 'roughness']) range(source[key], 0, 1, `${at}.source.${key}`);
+    } else if (source.kind === 'chirp') {
+      const sourcePath = `${at}.source`;
+      closed(source, ['kind', 'contour', 'trillHz', 'trillCents', 'trillDepth', 'breath', 'jitterCents', 'brightness'], sourcePath);
+      if (!Array.isArray(source.contour) || source.contour.length < 2 || source.contour.length > 12) fail(`${sourcePath}.contour`, 'expected 2..12 pitch points');
+      let previous = -1;
+      (source.contour as unknown[]).forEach((rawPoint, pointIndex, points) => {
+        const pointPath = `${sourcePath}.contour[${pointIndex}]`;
+        const point = closed(rawPoint, ['at', 'hz'], pointPath);
+        range(point.at, 0, 1, `${pointPath}.at`);
+        range(point.hz, 500, 8000, `${pointPath}.hz`);
+        if ((point.at as number) <= previous) fail(`${pointPath}.at`, 'pitch points must strictly increase');
+        if ((pointIndex === 0 && point.at !== 0) || (pointIndex === points.length - 1 && point.at !== 1)) fail(`${pointPath}.at`, 'contour must span 0..1');
+        previous = point.at as number;
+      });
+      range(source.trillHz, 0, 100, `${sourcePath}.trillHz`);
+      range(source.trillCents, 0, 300, `${sourcePath}.trillCents`);
+      range(source.trillDepth, 0, 1, `${sourcePath}.trillDepth`);
+      range(source.breath, 0, .2, `${sourcePath}.breath`);
+      range(source.jitterCents, 0, 80, `${sourcePath}.jitterCents`);
+      range(source.brightness, 0, 1, `${sourcePath}.brightness`);
     } else if (source.kind === 'noise') closed(source, ['kind'], `${at}.source`);
     else fail(`${at}.source.kind`, 'unsupported source');
   });

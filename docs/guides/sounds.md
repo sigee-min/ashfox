@@ -68,6 +68,7 @@ shorter naming rule. Each source has one `sound` declaration.
 | `noise` | `kind` only |
 | `fm` | `kind`, `pitch` (two 40–3000 Hz endpoints), `sweepSeconds` (0.02–5), `ratio` (0.25–4), `index` (0–4), `vibratoHz` (0–25), `vibratoCents` (0–100) |
 | `vocal` | `kind`, `pitch` (two 50–1200 Hz endpoints), `sweepSeconds` (0.02–5), three `formants` (150–7000 Hz), three `bandwidths` (40–1500 Hz), `breath`, `jitter`, `roughness` (each 0–1) |
+| `chirp` | `kind`, `contour` (2–12 increasing `{ at, hz }` points spanning 0–1 of layer duration; 500–8000 Hz), `trillHz` (0–100), `trillCents` (0–300), `trillDepth` (0–1), `breath` (0–0.2), `jitterCents` (0–80), `brightness` (0–1) |
 
 Use short noise with fast fades for impacts, shaped longer noise for movement,
 and pitched layers for tonal details. Place syllables in separate layers.
@@ -76,6 +77,12 @@ Named animal examples express design intent, not verified biological realism.
 
 The [claw-hit source](../../examples/sounds/src/claw_hit.ashfox) is a complete
 layered example. All sources in `examples/sounds/src` use the same native language.
+
+The [bird-call source](../../examples/sounds/src/bird_call.ashfox) uses
+`chirp` sources for continuous curved whistles, coupled pitch/amplitude trills,
+and quiet breath. Contour `at` values are fractions of the containing layer's
+duration. Pitch interpolates smoothly in log frequency. Seeds vary detuning and
+smooth jitter as well as air noise; harmonics fade before Nyquist. The sound root and native header are unchanged.
 
 ## Deliver and listen
 

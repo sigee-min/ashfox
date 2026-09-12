@@ -16,7 +16,7 @@
   "guides/precision-modeling.md": "d4221595e7e3c12580b73a0f06b3a56b28e6b73340268fb285e476dd2e1bd0ad",
   "guides/repository-layout.md": "e10471d97a2e2ed6e35aea4aefe0a204881b4091fa7ecef29754e1cf0ae5e332",
   "guides/save-and-export.md": "b0521c61fc17114dd9ead9c6cf87bf973ffdb16ac53468014c7185f9577ebc67",
-  "guides/sounds.md": "0f730cb34e31850161b9e5c508a1876f3e955e6ebb819c63dc8e9943a841745a",
+  "guides/sounds.md": "b6486adadd62ee9250b7a7244373557cbeb33aea5bbc9b7ad4f7a25a6bd83468",
   "guides/sprites.md": "c69944f62c9849f168f8708ec5fe9339c30859b369252db200556e20cf305e85",
   "guides/stdio.md": "d30d1cc52474feb1386b21e59b33b6b47462a6fbb148e820f21d61f589841e73",
   "guides/troubleshooting.md": "3e720baf819f2e10b625da25090af21ede4de6af4e81326830855f16d013c935",
@@ -25,7 +25,7 @@
   "language/README.md": "f8fc5d48b2edea205a2b18e8ba0d175e77883abbc0b2c2ed888f218c05dfdaf9",
   "language/components.md": "87dcab791dd6c7d2cab811226ca077092b84a439a272613731d9b96cb40fdbc2",
   "language/model.md": "2c49bbd585eb116003a8138ad1eb96852f4fb9f810101d78cf50dab216449305",
-  "language/sounds.md": "63870e56fbb5ca088e8fac0c1a72663338256d349f1cf807c45a5d4f22de6904",
+  "language/sounds.md": "301647b08d7cbaa9e89058161b61273bc7b3df21608c4c30e4e50d80d415c95b",
   "language/sprites.md": "669b8b7cd3505095c83c7270e9456d935e2d13f132db755be7c2adbf8e5dd13d",
   "language/textures.md": "d4ac193a335be427dfd0a59dd5b2bf42da31b1ad96758e3185d6e54c2892c9ba",
   "language/values.md": "b106bf897f8435c0c49a2fd063a1948bea60b02f41cc916117210639cd9b7500"

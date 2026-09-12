@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 const names = {
   griffin_call: ['Griffin call', 'CREATURE · VOICE', 'A deep creature call layered with a rough, breathy texture.', '◈'],
   wolf_howl: ['Wolf howl', 'ANIMAL · VOICE', 'A sustained howl shaped by pitch and resonance.', '◇'],
-  bird_call: ['Bird call', 'ANIMAL · VOICE', 'Three bright chirps with quick rises and falls.', '⌁'],
+  bird_call: ['Bird call', 'ANIMAL · VOICE', 'Two phrases of curved whistles, answering notes and delicate trills.', '⌁'],
   frog_croak: ['Frog croak', 'ANIMAL · VOICE', 'A low, throaty call with an uneven pulse.', '≋'],
   wing_whoosh: ['Wing whoosh', 'MOVEMENT · EFFECT', 'A soft rush of air following a sweeping wingbeat.', '⌁'],
   claw_hit: ['Claw impact', 'IMPACT · EFFECT', 'A sharp strike with a short, low resonance.', '↯']
@@ -32,7 +32,7 @@ const selectVariant = (variant) => {
   selectedVariant = variant;
   for (const button of $('variants').children) button.setAttribute('aria-pressed', String(button.dataset.id === variant));
   const entries = variantsFor(selectedSound), index = entries.findIndex((e) => e.variant === variant);
-  $('variant-help').textContent = entries.length > 1 ? `${index === 0 ? 'Original sound' : 'A variation of the same sound'} · Seed changes affect noise and vocal details; purely tonal variations may sound identical.` : 'One variation is available for this sound.';
+  $('variant-help').textContent = entries.length > 1 ? `${index === 0 ? 'Original sound' : 'A variation of the same sound'} · Seed changes vary chirp pitch, breath and vocal details; pure FM may remain identical.` : 'One variation is available for this sound.';
   const entry = entryFor(current);
   $('sound-meta').textContent = `${(entry.samples / entry.sampleRate).toFixed(2)}s · Mono`;
   for (const type of ['wav', 'ogg']) $('download-' + type).href = `/builds/${current.id}/${entry[type]}`;

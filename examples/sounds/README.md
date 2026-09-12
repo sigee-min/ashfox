@@ -20,6 +20,10 @@ For playback, comparison and OGG downloads, use the
 [local sound viewer](../../apps/audio-study/README.md). Its initial source set
 comes from this directory. See the [sound syntax guide](../../docs/guides/sounds.md).
 
-Seed variations affect noise and vocal irregularities. The pure FM bird call
-has identical seed-only variants. Names describe intended character; these
-examples do not claim verified animal realism.
+The four-second bird call uses eight articulated chirp layers across two phrases:
+curved pitch contours, short answering whistles and fading trills. Each variant
+changes the whistle detuning, smooth pitch jitter and breath reproducibly. It is
+the landing page's playable sound example, with a -6 dBFS peak ceiling.
+Seed variations also affect noise and vocal irregularities; pure FM remains
+unchanged by seed alone. Names describe intended character; these examples do
+not claim verified animal realism.

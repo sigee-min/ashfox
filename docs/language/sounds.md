@@ -55,6 +55,7 @@ Every field listed for a kind is required; fields from another kind are invalid.
 | --- | --- |
 | `noise` | `kind` only |
 | `fm` | `kind`, `pitch`, `sweepSeconds`, `ratio`, `index`, `vibratoHz`, `vibratoCents` |
+| `chirp` | `kind`, `contour`, `trillHz`, `trillCents`, `trillDepth`, `breath`, `jitterCents`, `brightness` |
 | `vocal` | `kind`, `pitch`, `sweepSeconds`, `formants`, `bandwidths`, `breath`, `jitter`, `roughness` |
 
 | Parameter | Range |
@@ -69,6 +70,13 @@ Every field listed for a kind is required; fields from another kind are invalid.
 | Vocal `formants` | Exactly three frequencies, each 150–7000 Hz |
 | Vocal `bandwidths` | Exactly three values, each 40–1500 Hz |
 | Vocal `breath`, `jitter`, `roughness` | Each 0–1 |
+| Chirp `contour` | 2–12 `{ at, hz }` records; `at` strictly increases from 0 to 1; `hz` 500–8000 |
+| Chirp `trillHz`, `trillCents` | 0–100 Hz and 0–300 cents; 0 Hz disables trilling |
+| Chirp `trillDepth`, `brightness` | Each 0–1; amplitude modulation depth and harmonic strength |
+| Chirp `breath`, `jitterCents` | 0–0.2 noise amplitude and 0–80 cents of seeded detuning/jitter |
+
+Contour positions are fractions of layer duration and join with smooth log-pitch
+interpolation. Chirp accepts one closed source contract with no version selection.
 
 ## Complete FM tone
 
