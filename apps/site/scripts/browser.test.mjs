@@ -113,12 +113,14 @@ const test = async () => {
   for (const [index, article] of [...d.querySelectorAll('.frontier-grid article')].entries()) {
     const trigger = article.querySelector('[data-replay]');
     const height = article.getBoundingClientRect().height;
+    const width = article.getBoundingClientRect().width;
     trigger.focus(); trigger.click();
     check(replay.open && d.body.classList.contains('replay-open'), 'Replay must open a modal and lock background scrolling');
     check(replay.contains(d.activeElement), 'Focus must enter replay');
     check(q('[data-replay-title]').textContent === trigger.dataset.replayName, 'Wrong replay title');
     check(replayVideo.src === trigger.href && replayVideo.poster.endsWith(trigger.dataset.replayPoster), 'Wrong replay video or poster');
     check(replayVideo.controls && !replayVideo.autoplay && replayVideo.paused, 'Replay must use explicit playback');
+    check(article.getBoundingClientRect().width === width, 'Replay must preserve card width when locking scroll');
     check(article.getBoundingClientRect().height === height && !article.querySelector('details'), 'Replay must not expand the card');
     check(q('[data-replay-file]').href === trigger.href, 'Direct replay fallback missing');
     await replayVideo.play();

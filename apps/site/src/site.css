@@ -34,12 +34,13 @@
   box-sizing: border-box;
 }
 html {
+  scrollbar-gutter: stable;
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-height) + 32px);
 }
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: min(320px, 100%);
   overflow-x: clip;
   background: var(--bg);
   color: var(--ink);
