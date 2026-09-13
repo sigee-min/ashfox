@@ -6,6 +6,10 @@
 ### Bug Fixes
 
 * **compiler:** eliminate redundant work and quadratic validation ([fdcf579](https://github.com/sigee-min/ashfox/commit/fdcf579c7bdcb2e8c17fd4d3a844e0a00934bd9d))
+  * Reuse parsed source snapshots, lowered models and verified immutable export state within each build.
+  * Reduce PNG and SHA-256 allocation, and skip unused texture encoding.
+  * Index geometry, surface and chart lookups; accelerate parent-cycle and atlas overlap validation.
+  * Preserve deterministic artifact bytes, source diagnostics and exact arithmetic limits.
 
 ## [2.0.0](https://github.com/sigee-min/ashfox/compare/v1.0.0...v2.0.0) (2026-09-13)
 
