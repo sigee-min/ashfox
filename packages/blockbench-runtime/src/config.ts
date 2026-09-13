@@ -5,7 +5,7 @@ import { TEXTURE_WORKFLOW_INSTRUCTIONS } from './shared/tooling/toolInstructions
 import { TOOL_SCHEMA_VERSION as CONTRACT_TOOL_SCHEMA_VERSION } from '@ashfox/blockbench-contracts/mcpSchemas/policy';
 
 export const PLUGIN_ID = 'ashfox';
-export const PLUGIN_VERSION = '1.0.0'; // x-release-please-version
+export const PLUGIN_VERSION = '2.0.0'; // x-release-please-version
 export const TOOL_SCHEMA_VERSION = CONTRACT_TOOL_SCHEMA_VERSION;
 export const DEFAULT_SERVER_HOST = '127.0.0.1';
 export const DEFAULT_SERVER_PORT = 8787;

@@ -1,5 +1,37 @@
 # Changelog
 
+## [2.0.0](https://github.com/sigee-min/ashfox/compare/v1.0.0...v2.0.0) (2026-09-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **audio:** sound sources must use voices, sequences, playback and fixed output gain. Legacy layer, contour, sweep and RMS fields are rejected. Loop delivery requires WAV.
+* **ci:** CLI installation and repository development require Node.js 24 or newer. Remove Node.js 20 release testing and update installation guidance.
+* Remove the browser Workbench and DOM agent API. Asset authoring now uses native .ashfox sources and the CLI; reinstall the updated asset skill when migrating from the browser workflow.
+
+### Features
+
+* **audio:** add expressive sound sequencing and deterministic loops ([81590d9](https://github.com/sigee-min/ashfox/commit/81590d9142df47f918f637dafa39fc92db72d811))
+* **audio:** synthesize expressive birdsong from native source ([ac57746](https://github.com/sigee-min/ashfox/commit/ac57746755721f0ef34fd95fe0e96c655c6b1e4c))
+* **cli:** add programmable asset workspace conventions ([ade602f](https://github.com/sigee-min/ashfox/commit/ade602f69b4b38374f3ae655d98afdf1f6827c38))
+* **docs:** add Korean localization and clarify contributor guides ([746ed26](https://github.com/sigee-min/ashfox/commit/746ed26167b72f76ebc5c2e7ae48c69dbf695a71))
+* **site:** refine landing showcases and replay interactions ([f9dd745](https://github.com/sigee-min/ashfox/commit/f9dd74595e2366e4403ff7ad4e9d753138807270))
+* unify asset authoring around the CLI and agent onboarding ([22f07b0](https://github.com/sigee-min/ashfox/commit/22f07b0e477b8fac2725940e21dea68031e45866))
+
+
+### Bug Fixes
+
+* **cli:** await graceful Chrome shutdown before profile cleanup ([bad5d2b](https://github.com/sigee-min/ashfox/commit/bad5d2bba14e665268e59e34bfa808651ce30ded))
+* **site:** align docs link with header actions ([ebe18c0](https://github.com/sigee-min/ashfox/commit/ebe18c0513373e4df79fc2c7f59de013001d9f7e))
+* **site:** preserve layout when replay locks background scrolling ([0ea5a6b](https://github.com/sigee-min/ashfox/commit/0ea5a6ba3a3408877a31019f595c15f0e653b969))
+* **site:** resolve static files before directory indexes on Node 20 ([1a7800e](https://github.com/sigee-min/ashfox/commit/1a7800e6ac14a16a7a3626216568ac7d52bac8aa))
+* **site:** simplify hero navigation and compact setup guidance ([2fefbf8](https://github.com/sigee-min/ashfox/commit/2fefbf826d397d963e895e1fb438f75e9330f995))
+
+
+### Miscellaneous Chores
+
+* **ci:** require Node.js 24 and replace retired action runtimes ([e3d7414](https://github.com/sigee-min/ashfox/commit/e3d7414879838131d902292c7107b461188cca6b))
+
 ## [1.0.0](https://github.com/sigee-min/ashfox/releases/tag/v1.0.0) (2026-09-10)
 
 ### Assets as Code
