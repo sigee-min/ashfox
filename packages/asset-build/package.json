@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@ashfox/engine-core": "^0.0.0",
-    "fflate": "^0.8.3"
+    "fflate": "^0.8.3",
+    "@ashfox/audio-core": "^0.0.0"
   }
 }

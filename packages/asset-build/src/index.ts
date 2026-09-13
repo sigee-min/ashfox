@@ -11,3 +11,5 @@ export type { GameAssetManifest, RuntimeAsset } from './packs/game/contract';
 export { readGameAssetManifest } from './packs/game/read';
 export { readStandalone } from './node/standalone';
 export { readSingleSnapshot } from './node/snapshot';
+
+export { runJob } from './node/job';

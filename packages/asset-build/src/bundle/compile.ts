@@ -27,8 +27,9 @@ export const compileBundle = async (
   snapshot: Snapshot,
   toolchain: string,
   encoder?: PackEncoder,
+  checked = checkSnapshot(snapshot),
 ): Promise<CompiledBundle> => {
-  const compiled = checkSnapshot(snapshot),
+  const compiled = checked,
     artifacts: Artifact[] = [],
     assets: CatalogAsset[] = [];
   for (const target of [...compiled.config.exports].sort((a, b) => (a.name < b.name ? -1 : 1))) {
@@ -103,6 +104,9 @@ export const compileBundle = async (
                 frames: sound.frames,
                 sampleRate: sound.sampleRate,
                 channels: sound.channels,
+                playback: sound.playback,
+                peak: sound.peak, rms: sound.rms, dc: sound.dc,
+                seamDelta: sound.seamDelta, maxAdjacentDelta: sound.maxAdjacentDelta,
               })),
             };
     assets.push({

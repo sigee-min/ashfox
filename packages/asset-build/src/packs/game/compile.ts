@@ -43,6 +43,8 @@ export const compileGamePack = async (
         if (!file) throw new BuildFailure('pack.source', `${source.id}/${variant.id}`);
         let data = read(file.path);
         if (pack.audio === 'ogg') {
+          if (variant.playback.kind === 'loop')
+            throw new BuildFailure('sound.loop.codec', `${source.id}/${variant.id}: loops require WAV delivery`);
           if (!encoder)
             throw new BuildFailure('pack.encoder', 'OGG game assets require a Vorbis encoder');
           let ogg = encoded.get(file.path);
@@ -58,6 +60,8 @@ export const compileGamePack = async (
           durationSeconds: variant.frames / variant.sampleRate,
           sampleRate: variant.sampleRate,
           channels: variant.channels,
+          frames: variant.frames,
+          playback: variant.playback,
         });
       }
       detail = { id: binding.id, kind: 'sound', codec: pack.audio, variants };

@@ -1,0 +1,61 @@
+ashfox-model 1
+
+// Procedural listening study; material/animal realism requires human audition.
+sound mechanical_loop {
+  duration = 5;
+  sampleRate = 48000;
+  seed = 7349;
+  voices = [{
+    id = "voice";
+    source = {
+      kind = "fm";
+      pitch = 90;
+      ratio = 2;
+      index = 0.65;
+      vibratoHz = 5;
+      vibratoCents = 4;
+    };
+    gain = 0.45;
+    highpass = 30;
+    lowpass = 1800;
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0.1;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
+      id = "note";
+      voice = "voice";
+      at = 0;
+      duration = 4.8;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "loop";
+    start = 0.5;
+    end = 4.5;
+    crossfade = 0.08;
+  };
+  output = {
+    gainDb = -10;
+    peakDb = -3;
+  };
+}

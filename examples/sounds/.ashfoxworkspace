@@ -11,20 +11,52 @@
         "version": 1,
         "entries": [
           {
+            "name": "bell_pattern",
+            "path": "bell_pattern.ashfox"
+          },
+          {
             "name": "bird_call",
             "path": "bird_call.ashfox"
+          },
+          {
+            "name": "charging_spell",
+            "path": "charging_spell.ashfox"
           },
           {
             "name": "claw_hit",
             "path": "claw_hit.ashfox"
           },
           {
+            "name": "fire_loop",
+            "path": "fire_loop.ashfox"
+          },
+          {
+            "name": "footsteps",
+            "path": "footsteps.ashfox"
+          },
+          {
             "name": "frog_croak",
             "path": "frog_croak.ashfox"
           },
           {
+            "name": "glass_ping",
+            "path": "glass_ping.ashfox"
+          },
+          {
             "name": "griffin_call",
             "path": "griffin_call.ashfox"
+          },
+          {
+            "name": "mechanical_loop",
+            "path": "mechanical_loop.ashfox"
+          },
+          {
+            "name": "metal_strike",
+            "path": "metal_strike.ashfox"
+          },
+          {
+            "name": "wind_loop",
+            "path": "wind_loop.ashfox"
           },
           {
             "name": "wing_whoosh",
@@ -33,6 +65,10 @@
           {
             "name": "wolf_howl",
             "path": "wolf_howl.ashfox"
+          },
+          {
+            "name": "wood_knock",
+            "path": "wood_knock.ashfox"
           }
         ],
         "modules": [],
@@ -51,6 +87,15 @@
   },
   "exports": [
     {
+      "name": "bell_pattern",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "bell_pattern"
+      },
+      "format": "wav",
+      "directory": "exports/bell_pattern"
+    },
+    {
       "name": "bird_call",
       "entry": {
         "packageName": "sounds",
@@ -58,6 +103,15 @@
       },
       "format": "wav",
       "directory": "exports/bird_call"
+    },
+    {
+      "name": "charging_spell",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "charging_spell"
+      },
+      "format": "wav",
+      "directory": "exports/charging_spell"
     },
     {
       "name": "claw_hit",
@@ -69,6 +123,24 @@
       "directory": "exports/claw_hit"
     },
     {
+      "name": "fire_loop",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "fire_loop"
+      },
+      "format": "wav",
+      "directory": "exports/fire_loop"
+    },
+    {
+      "name": "footsteps",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "footsteps"
+      },
+      "format": "wav",
+      "directory": "exports/footsteps"
+    },
+    {
       "name": "frog_croak",
       "entry": {
         "packageName": "sounds",
@@ -78,6 +150,15 @@
       "directory": "exports/frog_croak"
     },
     {
+      "name": "glass_ping",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "glass_ping"
+      },
+      "format": "wav",
+      "directory": "exports/glass_ping"
+    },
+    {
       "name": "griffin_call",
       "entry": {
         "packageName": "sounds",
@@ -85,6 +166,33 @@
       },
       "format": "wav",
       "directory": "exports/griffin_call"
+    },
+    {
+      "name": "mechanical_loop",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "mechanical_loop"
+      },
+      "format": "wav",
+      "directory": "exports/mechanical_loop"
+    },
+    {
+      "name": "metal_strike",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "metal_strike"
+      },
+      "format": "wav",
+      "directory": "exports/metal_strike"
+    },
+    {
+      "name": "wind_loop",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "wind_loop"
+      },
+      "format": "wav",
+      "directory": "exports/wind_loop"
     },
     {
       "name": "wing_whoosh",
@@ -103,6 +211,15 @@
       },
       "format": "wav",
       "directory": "exports/wolf_howl"
+    },
+    {
+      "name": "wood_knock",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "wood_knock"
+      },
+      "format": "wav",
+      "directory": "exports/wood_knock"
     }
   ]
 }

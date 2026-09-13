@@ -1,0 +1,121 @@
+{
+  "contract": "sound:curves-sequences-variation-resonator-loop:fixed-gain:pcm16",
+  "results": [
+    {
+      "name": "bell_pattern",
+      "variant": "alternate",
+      "frames": 96960,
+      "playback": {
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 96960
+      },
+      "sha256": "14c56a47ffc62efa5ea66ff0375305cae4b100928a6abb25a82a33d16676c7bb"
+    },
+    {
+      "name": "bell_pattern",
+      "variant": "base",
+      "frames": 96960,
+      "playback": {
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 96960
+      },
+      "sha256": "6d57ad7f8474e0a30ba8ddfb2962afe7222f908164b33058bda3f8d4a2934b36"
+    },
+    {
+      "name": "wind_loop",
+      "variant": "alternate",
+      "frames": 188160,
+      "playback": {
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 188160
+      },
+      "sha256": "a3c00539dbe9332f21787100d9741a6c53abdbf901d227dd353c2e28b1003776"
+    },
+    {
+      "name": "wind_loop",
+      "variant": "base",
+      "frames": 188160,
+      "playback": {
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 188160
+      },
+      "sha256": "612d7643341431803aa673315c479b7edead8ba8d50f9a04b2e402bcdba82396"
+    },
+    {
+      "name": "footsteps",
+      "variant": "alternate",
+      "frames": 144000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "4776ed194bcf49cb5c64fa71a62afbf3fb352cf38b9b933b591e24e38f1d52fe"
+    },
+    {
+      "name": "footsteps",
+      "variant": "base",
+      "frames": 144000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "3d7cca917027c5f3b56b5f8f32a59cccf9d1c382bd30b7f0107caa1c1196c75b"
+    },
+    {
+      "name": "charging_spell",
+      "variant": "alternate",
+      "frames": 134400,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+    },
+    {
+      "name": "charging_spell",
+      "variant": "base",
+      "frames": 134400,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+    },
+    {
+      "name": "metal_strike",
+      "variant": "alternate",
+      "frames": 192000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "94ca9ab495f9de4ba0e03b83be3f4319ef7ef9816f99dfedc8acafd3c627f0ac"
+    },
+    {
+      "name": "metal_strike",
+      "variant": "base",
+      "frames": 192000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "a2cccc6f0fcf8512967de6711eb4d3d40e648d3acbc6ab851195692a332b2861"
+    },
+    {
+      "name": "bird_call",
+      "variant": "alternate",
+      "frames": 192000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "78a9cf4070e823dbb3cdd497bd9c04c0fd86f15dd354d5c0d938d0673d83e0c0"
+    },
+    {
+      "name": "bird_call",
+      "variant": "base",
+      "frames": 192000,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "e14e64f289ec25a34ddcfa5fb9b1ae631bda5019589e212ff6150cdda06dc8a5"
+    }
+  ]
+}

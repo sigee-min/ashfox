@@ -38,7 +38,14 @@ const main = async () => {
     const repeated = await poll(await post({ op: 'build', candidate: candidate.candidate }));
     assert.equal(repeated.state, 'succeeded', JSON.stringify(repeated));
     assert.deepEqual(first.receipt.entries.map((e) => e.wavHash), repeated.result.result.receipt.entries.map((e) => e.wavHash), 'Repeated WAV build changes');
-    const changed = files['sounds/bird_call.ashfox'].replace(/hz = [0-9]+/, 'hz = 1800');
+    const loops = await post({ op: 'propose', expectedHead: head.id, writes: { 'sounds/wind_loop.ashfox': capabilities.examples['sounds/wind_loop.ashfox'] }, deletes: ['sounds/bird_call.ashfox'] });
+    const loopBuild = await poll(await post({ op: 'build', candidate: loops.candidate }));
+    assert.equal(loopBuild.state, 'succeeded', JSON.stringify(loopBuild));
+    for (const entry of loopBuild.result.result.receipt.entries) {
+      assert.deepEqual(entry.playback, { kind: 'loop', startFrame: 0, endFrame: 188160 });
+      assert.equal(entry.ogg, undefined);
+    }
+    const changed = files['sounds/bird_call.ashfox'].replace(/value = 2850/, 'value = 1800');
     const change = await post({ op: 'propose', expectedHead: head.id, writes: { 'sounds/bird_call.ashfox': changed }, deletes: [] });
     const changeBuild = await poll(await post({ op: 'build', candidate: change.candidate }));
     assert.equal(changeBuild.state, 'succeeded', JSON.stringify(changeBuild));

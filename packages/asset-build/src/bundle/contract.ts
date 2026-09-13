@@ -1,3 +1,4 @@
+import type { SoundProduct } from '@ashfox/audio-core';
 import type { DirectoryFile, DirectoryWorkspace } from '@ashfox/engine-core';
 export interface Snapshot {
   readonly input: string;
@@ -35,6 +36,12 @@ export type AssetMetadata =
         readonly frames: number;
         readonly sampleRate: number;
         readonly channels: number;
+        readonly playback: SoundProduct['playback'];
+        readonly peak: number;
+        readonly rms: number;
+        readonly dc: number;
+        readonly seamDelta: number;
+        readonly maxAdjacentDelta: number;
       }[];
     };
 export interface CatalogAsset {

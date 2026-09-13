@@ -1,43 +1,88 @@
 ashfox-model 1
 
+// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound wolf_howl {
   duration = 3;
   sampleRate = 48000;
   seed = 42;
-  layers = [
-    {
-      source = {
-        kind = "vocal";
-        pitch = (270, 360);
-        sweepSeconds = 1.5;
-        formants = (580, 1150, 2400);
-        bandwidths = (100, 180, 300);
-        breath = 0.06;
-        jitter = 0.06;
-        roughness = 0.06;
+  voices = [{
+    id = "layer_1";
+    source = {
+      kind = "vocal";
+      pitch = {
+        domain = "linear";
+        interpolation = "smooth";
+        points = [{
+          at = 0;
+          value = 270;
+        }, {
+          at = 0.5555555555555555;
+          value = 360;
+        }, {
+          at = 1;
+          value = 360;
+        }];
       };
-      start = 0.1;
-      duration = 2.7;
-      gain = 0.85;
-      attack = 0.4;
-      release = 0.5;
-      highpass = 80;
-      lowpass = 6500;
+      formants = [580, 1150, 2400];
+      bandwidths = [100, 180, 300];
+      breath = 0.06;
+      jitter = 0.06;
+      roughness = 0.06;
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.14814814814814814;
+        value = 0.85;
+      }, {
+        at = 0.8148148148148149;
+        value = 0.85;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 80;
+    lowpass = 6500;
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
       id = "layer_1";
-    }
-  ];
-  variants = [
-    {
-      id = "base";
-      seed = 42;
-    },
-    {
-      id = "alternate";
-      seed = 43;
-    }
-  ];
+      voice = "layer_1";
+      at = 0.1;
+      duration = 2.7;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
   output = {
-    rmsDb = -22;
+    gainDb = -0.4;
     peakDb = -3;
   };
 }

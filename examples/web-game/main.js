@@ -23,9 +23,10 @@ try {
   for(const clip of model.animations){const option=document.createElement('option');option.value=clip.name;option.textContent=clip.name;select.append(option);}
   const play=()=>{action?.stop();const clip=model.animations.find(c=>c.name===select.value);if(clip){action=mixer.clipAction(clip);action.play();}};select.onchange=play;play();
   const item=asset('item.iron_sword');document.querySelector('#item').src=file(item.image);
-  const sound=asset('sfx.claw_hit');let variant=0;
+  const sound=asset('sfx.claw_hit');let variant=0, activeAudio;
+  window.addEventListener('pagehide',()=>activeAudio?.pause());
   const button=document.querySelector('#sound');button.disabled=false;
-  button.onclick=async()=>{const chosen=sound.variants[variant++%sound.variants.length];try{await new Audio(file(chosen.file)).play();status.textContent='Played '+chosen.id;}catch(error){status.textContent=error.message;}};
+  button.onclick=async()=>{const chosen=sound.variants[variant++%sound.variants.length];try{activeAudio?.pause();activeAudio=new Audio(file(chosen.file));activeAudio.loop=chosen.playback.kind==='loop';await activeAudio.play();status.textContent='Played '+chosen.id;}catch(error){status.textContent=error.message;}};
   const clock=new THREE.Clock();renderer.setAnimationLoop(()=>{mixer.update(Math.min(clock.getDelta(),.1));renderer.render(scene,camera);});
   status.textContent=`Loaded 1 model, ${model.animations.length} motions, 1 item and ${sound.variants.length} sound variants. Click Play to hear audio.`;
 } catch(error) {status.textContent=error.message;}

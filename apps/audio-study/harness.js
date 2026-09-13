@@ -3,14 +3,27 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { openStore, validate, hash, closed, id, fault } = require('./storage');
 const { compile } = require('./compile');
+const { AUDIO_POLICY } = require('./engine');
 const bootstrap = () => Object.fromEntries(fs.readdirSync(path.join(__dirname, '../../examples/sounds/src'))
   .filter((n) => n.endsWith('.ashfox')).sort().map((n) => [`sounds/${n}`, fs.readFileSync(path.join(__dirname, '../../examples/sounds/src', n), 'utf8')]));
 const verifyDirectory = (dir, key) => {
   const receipt = JSON.parse(fs.readFileSync(path.join(dir, 'receipt.json'), 'utf8'));
+  closed(receipt, ['format', 'version', 'sourceHash', 'dspHash', 'node', 'encoderVersion', 'entries']);
+  if (receipt.format !== 'ashfox-audio-build' || receipt.version !== 1 || receipt.dspHash !== hash(AUDIO_POLICY) || !Array.isArray(receipt.entries)) fault('build.corrupt', '/', 'Stale or invalid sound receipt');
   if (hash(receipt) !== key) fault('build.corrupt', '/', 'Build receipt hash mismatch');
-  for (const entry of receipt.entries) for (const type of ['wav', 'ogg']) {
+  for (const entry of receipt.entries) {
+    const playback = entry.playback;
+    closed(entry, ['sound', 'variant', 'wav', 'wavHash', 'playback', 'rawFrames', 'seamDelta', 'maxAdjacentDelta', 'sourceHash', 'samples', 'sampleRate', 'peak', 'rms', 'dc', ...(playback?.kind === 'oneshot' ? ['ogg', 'oggHash', 'decodedPeak'] : [])]);
+    if (!playback || !['oneshot', 'loop'].includes(playback.kind)) fault('build.corrupt', '/', 'Missing playback contract');
+    closed(playback, playback.kind === 'loop' ? ['kind', 'startFrame', 'endFrame'] : ['kind']);
+    if (!Number.isSafeInteger(entry.samples) || entry.samples < 1 || entry.sampleRate !== 48000) fault('build.corrupt', '/', 'Invalid frame metadata');
+    if (playback.kind === 'loop' && (playback.startFrame !== 0 || playback.endFrame !== entry.samples || entry.ogg !== undefined)) fault('build.corrupt', '/', 'Invalid loop bounds or codec');
+    for (const type of playback.kind === 'loop' ? ['wav'] : ['wav', 'ogg']) {
     if (!/^[a-z][a-z0-9_-]{0,63}\/[a-z][a-z0-9_]{0,31}\.(wav|ogg)$/u.test(entry[type])) fault('build.corrupt', '/', 'Invalid artifact path');
     if (hash(fs.readFileSync(path.join(dir, entry[type]))) !== entry[type + 'Hash']) fault('build.corrupt', entry[type], 'Artifact hash mismatch');
+  }
+    const wav = fs.readFileSync(path.join(dir, entry.wav));
+    if (wav.length !== 44 + entry.samples * 2 || wav.readUInt32LE(40) !== entry.samples * 2) fault('build.corrupt', '/', 'WAV frame metadata mismatch');
   }
   return receipt;
 };
@@ -19,7 +32,7 @@ const listBuilds = (s) => fs.readdirSync(path.join(s.root, 'builds')).filter((n)
 const viewerCatalog = (root) => {
   const s = openStore(root);
   return { head: { build: s.head()?.build || null }, builds: listBuilds(s).map((b) => ({
-    id: b.id, entries: b.entries.map(({ sound, variant, wav, ogg, wavHash, samples, sampleRate }) => ({ sound, variant, wav, ogg, wavHash, samples, sampleRate }))
+    id: b.id, entries: b.entries.map(({ sound, variant, wav, ogg, wavHash, samples, sampleRate, playback }) => ({ sound, variant, wav, ogg, wavHash, samples, sampleRate, playback }))
   })) };
 };
 const execute = (root, request) => {
@@ -32,7 +45,7 @@ const execute = (root, request) => {
         init: ['files'], inspect: [], propose: ['expectedHead', 'writes', 'deletes'], build: ['candidate'],
         present: ['candidate', 'build'], apply: ['expectedHead', 'candidate', 'build'], export: ['head', 'build', 'target']
       }, sourceGuide: fs.readFileSync(path.join(__dirname, '../../docs/guides/sounds.md'), 'utf8'), examples: Object.fromEntries(Object.entries(bootstrap()).filter(([n]) => n.startsWith('sounds/'))),
-      sourcePolicy: 'Code only; no audio inputs, sample models, network or arbitrary code execution.', limits: { sourceBytes: 8388608, sounds: 32, layers: 8, variants: 8, secondsPerSound: 5, totalVariantSeconds: 60 },
+      sourcePolicy: 'Code only; no audio inputs, sample models, network or arbitrary code execution.', limits: { sourceBytes: 8388608, sounds: 32, voices: 16, sequences: 32, variants: 8, secondsPerSound: 30, totalVariantSeconds: 240 },
       transport: 'POST /api with same-origin JSON; CLI accepts one JSON request on stdin. Server build returns a job; GET /jobs/:id polls and POST /jobs/:id/cancel cancels. CLI build is synchronous.' };
     }
     case 'init': {

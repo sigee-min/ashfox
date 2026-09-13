@@ -50,3 +50,9 @@ These checks do not prove animal realism. Interactive authoring, dynamic
 sound graphs, animation cues and game runtime packaging are outside this change.
 
 Setup and source syntax are in `apps/audio-study/README.md` and `docs/guides/sounds.md`.
+
+## Proposed language expansion
+
+The [reviewed sound DSL proposal](sound-dsl.md) specifies automation curves,
+finite sequences, seeded variation, modal resonance and baked loops. It is an
+implementation design, not part of the currently shipped source contract.

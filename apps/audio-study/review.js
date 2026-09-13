@@ -32,10 +32,14 @@ const selectVariant = (variant) => {
   selectedVariant = variant;
   for (const button of $('variants').children) button.setAttribute('aria-pressed', String(button.dataset.id === variant));
   const entries = variantsFor(selectedSound), index = entries.findIndex((e) => e.variant === variant);
-  $('variant-help').textContent = entries.length > 1 ? `${index === 0 ? 'Original sound' : 'A variation of the same sound'} · Seed changes vary chirp pitch, breath and vocal details; pure FM may remain identical.` : 'One variation is available for this sound.';
+  $('variant-help').textContent = entries.length > 1 ? `${index === 0 ? 'Original sound' : 'A variation of the same sound'} · Seeds vary authored ranges and stochastic voice details.` : 'One variation is available for this sound.';
   const entry = entryFor(current);
-  $('sound-meta').textContent = `${(entry.samples / entry.sampleRate).toFixed(2)}s · Mono`;
-  for (const type of ['wav', 'ogg']) $('download-' + type).href = `/builds/${current.id}/${entry[type]}`;
+  $('sound-meta').textContent = `${(entry.samples / entry.sampleRate).toFixed(2)}s · Mono · ${entry.playback.kind}`;
+  for (const type of ['wav', 'ogg']) {
+    const link = $('download-' + type); link.hidden = !entry[type];
+    if (entry[type]) link.href = `/builds/${current.id}/${entry[type]}`; else link.removeAttribute('href');
+    link.onclick = () => window.SoundPlayer.pauseAll();
+  }
   $('status').textContent = '';
   drawPlayers();
 };

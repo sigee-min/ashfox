@@ -1,3 +1,4 @@
+import type { SoundProduct } from '@ashfox/audio-core';
 import type { FileRecord } from '../../bundle/contract';
 interface RuntimeAssetBase {
   readonly id: string;
@@ -30,6 +31,8 @@ export type RuntimeAsset = RuntimeAssetBase &
           durationSeconds: number;
           sampleRate: number;
           channels: number;
+          frames: number;
+          playback: SoundProduct['playback'];
         }>[];
       }>
   );

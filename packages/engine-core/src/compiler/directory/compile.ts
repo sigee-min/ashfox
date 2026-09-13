@@ -1,4 +1,4 @@
-import { compileSoundSource, parseSoundSource, AUDIO_POLICY, type SoundProduct } from '@ashfox/audio-core';
+import { compileSoundSource, parseSoundSource, soundBudget, AUDIO_POLICY, type SoundProduct } from '@ashfox/audio-core';
 import { readDirectoryWorkspace, isDirectorySource, directoryPath } from '../../project/directory/read';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { lexProgramSource } from '../../project/program/syntax/lex';
@@ -35,7 +35,17 @@ export const compileDirectoryWorkspace = (configuration:string, files:readonly D
     const entries=config.packages.flatMap(p=>p.manifest.entries.map(e=>({entry:{packageName:p.name,entryName:e.name},path:[p.root,e.path].filter(Boolean).join('/')})));
     if(!entries.length)throw new Error('Workspace must declare an entry');
     const modelEntries:typeof entries=[];
-    let soundSeconds=0, soundCount=0;
+    const soundRecipes=new Map<string,ReturnType<typeof parseSoundSource>>();
+    let outputFrames=0,eventFrames=0,weightedFrames=0;
+    for(const e of entries){
+      const text=files.find(f=>f.path===e.path)!.source;
+      if(lexProgramSource(text).tokens[2]?.value!=='sound')continue;
+      const recipe=parseSoundSource(text,e.path), budget=soundBudget(recipe);
+      soundRecipes.set(e.path,recipe);
+      outputFrames+=budget.outputFrames;eventFrames+=budget.eventFrames;weightedFrames+=budget.weightedFrames;
+      if(soundRecipes.size>32||outputFrames>11520000||eventFrames>24000000||weightedFrames>192000000)
+        throw new Error(`${e.path}: sound workspace budget exceeded: sources=${soundRecipes.size}/32, rawFrames=${outputFrames}/11520000, eventFrames=${eventFrames}/24000000, weightedFrames=${weightedFrames}/192000000`);
+    }
     for(const e of entries){
       const text=files.find(f=>f.path===e.path)!.source;
       const tokens=lexProgramSource(text).tokens;
@@ -47,9 +57,7 @@ export const compileDirectoryWorkspace = (configuration:string, files:readonly D
         products.push({kind:'sprite',entry:e.entry,sourcePath:e.path,sprite});
         compiled.paths.forEach(p=>spritePaths.add(p));
       }else if(tokens[2]?.value==='sound'){
-        const recipe=parseSoundSource(text,e.path);
-        soundSeconds+=recipe.duration*recipe.variants.length;
-        if(++soundCount>32 || soundSeconds>60)throw new Error('Sound workspace budget exceeded');
+        const recipe=soundRecipes.get(e.path)!;
         if(recipe.id!==e.entry.entryName)throw new Error('Entry name must match sound id: '+e.path);
         const sounds=compileSoundSource(text,e.path);
         products.push({kind:'sound',entry:e.entry,sourcePath:e.path,sounds});

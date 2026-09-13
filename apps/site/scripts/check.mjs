@@ -168,7 +168,7 @@ const retiredSourceFiles = [
   ...retiredContractFiles
 ];
 // Model retirement rules do not define the sprite or sound property grammar.
-const isOtherAssetGrammar = source => /^ashfox-model 1\s+(?:sprite|sound)\b/u.test(source.trim()) ||
+const isOtherAssetGrammar = source => /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound)\b/u.test(source.trim()) ||
   (/^ashfox-model 1\s+module\b/u.test(source.trim()) && /\bexport\s+(?:mask|material|stamp)\b/u.test(source));
 for (const file of retiredSourceFiles) {
   const source = await readFile(file, 'utf8');

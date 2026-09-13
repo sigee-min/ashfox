@@ -2,9 +2,10 @@
 (() => {
   const players = new Set();
   const pauseAll = (except) => { for (const p of players) if (p !== except) p.audio.pause(); };
+  window.addEventListener('pagehide', () => pauseAll());
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseAll(); });
   const create = ({ host, build, entry, label, loop, onError }) => {
-    const audio = document.createElement('audio'); audio.preload = 'metadata'; audio.src = `/builds/${build.id}/${entry.wav}`;
+    const audio = document.createElement('audio'); audio.preload = 'metadata'; audio.loop = entry.playback.kind === 'loop'; audio.src = `/builds/${build.id}/${entry.wav}`;
     const root = document.createElement('div'); root.className = 'audio-player';
     root.innerHTML = '<div class="wave-wrap"><canvas aria-hidden="true"></canvas><input type="range" min="0" value="0" step="0.001"></div><div class="transport"><button class="play-button" type="button"><span aria-hidden="true">▶</span><span class="play-text">Play</span></button><span class="transport-time"><strong>0.00</strong> / <span class="duration"></span></span><span class="transport-label">Original volume</span></div>';
     host.append(root); root.append(audio); audio.hidden = true;

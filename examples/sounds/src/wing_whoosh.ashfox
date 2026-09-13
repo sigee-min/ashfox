@@ -1,36 +1,69 @@
 ashfox-model 1
 
+// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound wing_whoosh {
   duration = 2;
   sampleRate = 48000;
   seed = 42;
-  layers = [
-    {
-      source = {
-        kind = "noise";
-      };
-      start = 0.3;
-      duration = 0.8;
-      gain = 0.9;
-      attack = 0.25;
-      release = 0.35;
-      highpass = 170;
-      lowpass = 2200;
+  voices = [{
+    id = "layer_1";
+    source = {
+      kind = "noise";
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.3125;
+        value = 0.9;
+      }, {
+        at = 0.5625;
+        value = 0.9;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 170;
+    lowpass = 2200;
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
       id = "layer_1";
-    }
-  ];
-  variants = [
-    {
-      id = "base";
-      seed = 42;
-    },
-    {
-      id = "alternate";
-      seed = 43;
-    }
-  ];
+      voice = "layer_1";
+      at = 0.3;
+      duration = 0.8;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
   output = {
-    rmsDb = -22;
+    gainDb = -2.8;
     peakDb = -3;
   };
 }

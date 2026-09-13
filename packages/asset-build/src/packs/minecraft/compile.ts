@@ -79,6 +79,8 @@ export const compileJavaPack = async (
     const source = asset(sound.source);
     if (!('variants' in source.metadata))
       throw new BuildFailure('pack.source', sound.source + ': expected sound');
+    if (source.metadata.variants.some(v => v.playback.kind === 'loop'))
+      throw new BuildFailure('sound.loop.target', sound.source + ': Minecraft sound events do not support loop playback');
     const selected =
       sound.variants === 'all'
         ? source.metadata.variants.map((v) => ({ id: v.id, weight: 1 }))

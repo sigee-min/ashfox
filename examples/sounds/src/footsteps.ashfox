@@ -1,0 +1,84 @@
+ashfox-model 1
+
+// Procedural listening study; material/animal realism requires human audition.
+sound footsteps {
+  duration = 3;
+  sampleRate = 48000;
+  seed = 7349;
+  voices = [{
+    id = "voice";
+    source = {
+      kind = "resonator";
+      excitation = {
+        kind = "noise";
+        duration = 0.012;
+      };
+      modes = [{
+        id = "body";
+        hz = 180;
+        decay = 0.055;
+        gain = 1;
+      }, {
+        id = "grit";
+        hz = 950;
+        decay = 0.035;
+        gain = 0.35;
+      }];
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.02;
+        value = 0.8;
+      }, {
+        at = 0.65;
+        value = 0.35;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 40;
+    lowpass = 4500;
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0.1;
+    repeat = {
+      count = 6;
+      period = 0.43;
+    };
+    steps = [{
+      id = "note";
+      voice = "voice";
+      at = 0;
+      duration = 0.2;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [-0.004, 0.004];
+        pitchCents = [-18, 18];
+        gain = [0.9, 1.1];
+        duration = [0.96, 1.04];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
+  output = {
+    gainDb = 1;
+    peakDb = -3;
+  };
+}

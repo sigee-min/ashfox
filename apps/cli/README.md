@@ -61,3 +61,17 @@ and export always use their explicit input.
 The grouped starter keeps source under `asset/` and ignored output under root
 `build/`. Customize `.ashfoxworkspace.mjs` and consume verified results with
 `assets.mjs`. See the [repository convention](https://ashfox.io/docs/guides/repository-layout/).
+
+## Procedural sound contract
+
+Native sounds define reusable `voices`, finite `sequences`, scalar-or-curve
+controls, seeded event variation and optional baked loops. Sources include
+noise, FM, vocal, chirp and modal resonator. `output.gainDb` is fixed; excess
+peak fails instead of being normalized away. `ashfox capabilities` reports the
+sound contract fingerprint. Legacy layers, pitch pairs, sweeps and RMS targets
+are rejected; use the current sound syntax reference.
+
+`ashfox inspect sound.ashfox` reports raw and delivered frames, decoded PCM
+statistics and playback intent. A standalone loop WAV requires the consumer to
+enable full-buffer looping; `game_assets` WAV manifests preserve that intent.
+Loop OGG and Minecraft delivery fail explicitly. One-shot OGG remains supported.

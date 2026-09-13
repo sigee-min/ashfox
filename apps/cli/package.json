@@ -24,6 +24,7 @@
     "@ashfox/engine-core": "^0.0.0",
     "gifenc": "^1.0.3",
     "fflate": "^0.8.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "@ashfox/audio-core": "^0.0.0"
   }
 }

@@ -1,0 +1,110 @@
+ashfox-model 1
+
+// Procedural listening study; material/animal realism requires human audition.
+sound charging_spell {
+  duration = 2.8;
+  sampleRate = 48000;
+  seed = 7349;
+  voices = [{
+    id = "voice";
+    source = {
+      kind = "fm";
+      pitch = {
+        domain = "log";
+        interpolation = "smooth";
+        points = [{
+          at = 0;
+          value = 180;
+        }, {
+          at = 0.7;
+          value = 650;
+        }, {
+          at = 1;
+          value = 1300;
+        }];
+      };
+      ratio = 1.5;
+      index = {
+        domain = "linear";
+        interpolation = "smooth";
+        points = [{
+          at = 0;
+          value = 0.1;
+        }, {
+          at = 0.7;
+          value = 1.4;
+        }, {
+          at = 1;
+          value = 3;
+        }];
+      };
+      vibratoHz = 8;
+      vibratoCents = 15;
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.2;
+        value = 0.15;
+      }, {
+        at = 0.85;
+        value = 0.8;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 40;
+    lowpass = {
+      domain = "log";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 2200;
+      }, {
+        at = 1;
+        value = 10000;
+      }];
+    };
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0.1;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
+      id = "note";
+      voice = "voice";
+      at = 0;
+      duration = 2.5;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
+  output = {
+    gainDb = -12;
+    peakDb = -3;
+  };
+}

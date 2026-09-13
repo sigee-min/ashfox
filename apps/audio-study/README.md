@@ -61,6 +61,11 @@ npm run test:audio:integration
 The integration suite uses the real encoder and HTTP API, checks shared-core
 WAV byte equality, source isolation, stale heads, failures and cancellation.
 Technical checks do not establish naturalness or replace listening.
-Limits: 48 kHz mono, five seconds per sound, eight layers and variants,
-32 sounds and 60 total variant seconds. Stores hold at most 128 snapshots
+Limits: 48 kHz mono, 30 raw seconds per sound, 16 voices, 32 sequences and eight variants,
+32 sounds and 240 total variant seconds. Stores hold at most 128 snapshots
 and candidates, 64 builds and 64 exports; start a new store when full.
+
+Loop outputs carry full-buffer playback metadata and offer WAV only. The viewer
+honors that intent and stops playback on selection, comparison, navigation or
+download. A synthesis worker uses the shared asset-build job runner; HTTP job
+cancellation joins the child before reporting completion.

@@ -1,10 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { createHash } from 'node:crypto';
-import { BuildFailure, readSingleSnapshot, readStandalone, checkSnapshot } from '@ashfox/asset-build';
+import { BuildFailure, readSingleSnapshot, readStandalone, checkSnapshot, type Snapshot } from '@ashfox/asset-build';
 import { openAssetProject, encodeCanonicalPng } from '@ashfox/engine-core';
 import type { Prepared, SourceInput } from './contract';
-export const prepare = (input: SourceInput): Prepared => {
+export const sealObservation = (input: SourceInput): Snapshot | Prepared => {
   if (input.png || input.file?.endsWith('.png')) {
     if(input.file){const stat=fs.lstatSync(input.file);if(!stat.isFile()||stat.size>16*1024*1024)throw new BuildFailure('observe.png','PNG exceeds 16 MiB or is not a regular file',2);}
     const bytes = input.png ? Buffer.from(input.png,'base64') : fs.readFileSync(input.file!);
@@ -31,6 +31,9 @@ export const prepare = (input: SourceInput): Prepared => {
     });
     if (snapshot.files.length !== Object.keys(memory).length) throw new BuildFailure('observe.source', 'Memory sources must all be reachable', 2);
   }
+  return snapshot;
+};
+export const prepare = (snapshot: Snapshot): Prepared => {
   const compiled = checkSnapshot(snapshot), product = compiled.products[0];
   if (product.kind==='sprite') return {kind:'sprite',revision:compiled.sourceHash,files:snapshot.files,sprite:{png:product.sprite.png,receipt:product.sprite.receipt,evidence:product.sprite.evidence,stages:{silhouette:encodeCanonicalPng(product.sprite.stages.silhouette),shade:encodeCanonicalPng(product.sprite.stages.shade),grain:encodeCanonicalPng(product.sprite.stages.grain)}}};
   if (product.kind !== 'model') return { kind:product.kind, revision:compiled.sourceHash, product, files:snapshot.files };

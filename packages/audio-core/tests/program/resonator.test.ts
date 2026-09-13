@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { createResonator } from '../../src/resonator';
+import type { ResonatorSource } from '../../src/contract';
+const source: ResonatorSource = { kind: 'resonator', excitation: { kind: 'impulse' }, modes: [{ id: 'body', hz: 1000, decay: .1, gain: 1 }] };
+const resonance = createResonator(source, 1, () => .5), r = 10 ** (-3 / (.1 * 48000)), theta = Math.PI * 2 * 1000 / 48000;
+for (let i = 0; i < 9600; i++) assert.ok(Math.abs(resonance(i) - r ** i * Math.sin((i + 1) * theta)) < 1e-11);
+const multi: ResonatorSource = { ...source, modes: [...source.modes, { id: 'edge', hz: 2500, decay: .2, gain: .3 }] };
+const a = createResonator(multi, 1, () => .5), b = createResonator({ ...multi, modes: [...multi.modes].reverse() }, 1, () => .5);
+for (let i = 0; i < 1000; i++) assert.equal(a(i), b(i));
+let draws = 0;
+const noisy = createResonator({ ...multi, excitation: { kind: 'noise', duration: .002 } }, 1, () => { draws++; return .75; });
+for (let i = 0; i < 1000; i++) assert.ok(Number.isFinite(noisy(i)));
+assert.equal(draws, 96, 'modes share one finite excitation stream');
+process.stdout.write('resonator: analytic impulse/T60, canonical mode mix, shared bounded excitation passed\n');

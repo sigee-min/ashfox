@@ -1,15 +1,30 @@
+import { parentPort } from 'node:worker_threads';
 import { spawn } from 'node:child_process';
 import { BuildFailure } from '../bundle/contract';
 import { digest } from '../shared/digest';
 import type { PackEncoder } from '../packs/compile';
+/** Parent acknowledges subprocess ownership before spawn, closing the abort race. */
+const encoderTurn = (): Promise<void> => {
+  const port = parentPort;
+  if (!port) return Promise.resolve();
+  return new Promise(resolve => {
+    const ready = (message: unknown): void => {
+      if (message !== 'encoding-ready') return;
+      port.off('message', ready); resolve();
+    };
+    port.on('message', ready);
+    port.postMessage({ phase: 'encoding' });
+  });
+};
 /** No shell or temporary output files; cancellation owns and kills the encoder. */
-const execute = (
+const execute = async (
   file: string,
   args: readonly string[],
   signal?: AbortSignal,
   input?: Uint8Array,
-): Promise<Uint8Array> =>
-  new Promise((resolve, reject) => {
+): Promise<Uint8Array> => {
+  await encoderTurn();
+  return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(new BuildFailure('build.cancelled', 'Encoding cancelled', 130));
       return;
@@ -30,6 +45,7 @@ const execute = (
       15000,
     );
     const cleanup = (): void => {
+      parentPort?.postMessage({ phase: 'compile' });
       clearTimeout(timer);
       signal?.removeEventListener('abort', cancel);
     };
@@ -73,6 +89,7 @@ const execute = (
     });
     child.stdin.end(input);
   });
+};
 export const createVorbisEncoder = async (signal?: AbortSignal): Promise<PackEncoder> => {
   const file = process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg';
   const version = await execute(file, ['-version'], signal);

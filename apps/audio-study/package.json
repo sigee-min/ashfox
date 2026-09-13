@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@ashfox/audio-core": "^0.0.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "@ashfox/asset-build": "^0.0.0"
   }
 }

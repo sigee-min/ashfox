@@ -49,3 +49,19 @@ The current user guides and installed CLI are sufficient for asset work. When a
 skill update is relevant, `scripts/sync.py` checks availability without changing
 files. Use `--install` only when the user requests a skill update, then reread
 this file. The installer refuses repository checkouts; do not bypass its checks.
+
+## Procedural sound delivery
+
+Use the current sound reference from CLI docs before authoring. Native sound uses
+reusable `voices`, finite `sequences`, scalar-or-curve controls, explicit `vary`
+ranges, and `playback`. Gain is fixed `output.gainDb`; peak excess is a failure.
+Old layers, attack/release, chirp contour, pitch pairs and rmsDb are rejected.
+Keep `ashfox-model 1`; never introduce a sound version field or fallback source.
+
+For loops, inspect raw and delivered frames: crossfade is baked once and shortens
+the output. Standalone WAV consumers must loop the full buffer; game consumers
+must honor playback metadata. Do not deliver loop OGG or Minecraft packs.
+Audition variants and at least 20 loop cycles, then report actual listening
+evidence separately from waveform/peak/seam measurements. Do not claim animal
+or material realism from numerical checks. Verify the installed CLI contract
+fingerprint and official package before presenting a newly authored DSL source.

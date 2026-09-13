@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
-const { parseSoundSource } = require('./engine');
+const { parseSoundSource, soundBudget } = require('./engine');
 const canonical = (v) => JSON.stringify(v && typeof v === 'object' ? Array.isArray(v) ? v.map(normalize) : normalize(v) : v);
 const normalize = (v) => v && typeof v === 'object' ? Array.isArray(v) ? v.map(normalize) : Object.fromEntries(Object.keys(v).sort().map((k) => [k, normalize(v[k])])) : v;
 const hash = (v) => createHash('sha256').update(typeof v === 'string' || Buffer.isBuffer(v) ? v : canonical(v)).digest('hex');
@@ -15,15 +15,20 @@ const validate = (files) => {
   if (!files || typeof files !== 'object' || Array.isArray(files) || Object.keys(files).length > 32) fault('source.inventory', '/', 'Expected at most 32 .ashfox sound sources');
   if (Buffer.byteLength(canonical(files)) > 8 * 1024 * 1024) fault('source.budget', '/', 'Source exceeds 8 MiB');
   const sounds = [];
+  let outputFrames = 0, eventFrames = 0, weightedFrames = 0;
   for (const [name, value] of Object.entries(files)) {
     if (typeof value !== 'string') fault('source.text', name, 'Expected UTF-8 source text');
     if (!/^sounds\/[a-z][a-z0-9_-]{0,63}\.ashfox$/u.test(name)) fault('source.path', name, 'Invalid sound path');
     let sound;
     try { sound = parseSoundSource(value, name); } catch (e) { fault('source.invalid', name, e.message); }
     if (name !== `sounds/${sound.id}.ashfox`) fault('source.id', name, 'Filename must match sound id');
+    const budget = soundBudget(sound);
+    outputFrames += budget.outputFrames; eventFrames += budget.eventFrames; weightedFrames += budget.weightedFrames;
+    if (outputFrames > 11520000 || eventFrames > 24000000 || weightedFrames > 192000000)
+      fault('source.budget', name, `Sound workspace budget exceeded: rawFrames=${outputFrames}/11520000, eventFrames=${eventFrames}/24000000, weightedFrames=${weightedFrames}/192000000`);
     sounds.push(sound);
   }
-  if (!sounds.length || sounds.length > 32 || sounds.reduce((n, s) => n + s.duration * s.variants.length, 0) > 60) fault('source.budget', '/', 'Expected sounds with at most 60 seconds total variant output');
+  if (!sounds.length || sounds.length > 32) fault('source.budget', '/', 'Expected sounds with at most 240 seconds total variant output');
   if (Buffer.byteLength(canonical(files)) > 8 * 1024 * 1024) fault('source.budget', '/', 'Source exceeds 8 MiB');
   return sounds.sort((a, b) => a.id < b.id ? -1 : 1);
 };

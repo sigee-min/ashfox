@@ -1,55 +1,124 @@
 ashfox-model 1
 
+// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound claw_hit {
   duration = 2;
   sampleRate = 48000;
   seed = 42;
-  layers = [
-    {
-      source = {
-        kind = "noise";
+  voices = [{
+    id = "layer_1";
+    source = {
+      kind = "noise";
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.008420138888888888;
+        value = 0.9;
+      }, {
+        at = 0.16666666666666663;
+        value = 0.9;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 1000;
+    lowpass = 11000;
+  }, {
+    id = "layer_2";
+    source = {
+      kind = "fm";
+      pitch = {
+        domain = "linear";
+        interpolation = "smooth";
+        points = [{
+          at = 0;
+          value = 210;
+        }, {
+          at = 0.6666666666666667;
+          value = 65;
+        }, {
+          at = 1;
+          value = 65;
+        }];
       };
-      start = 0.3;
-      duration = 0.24;
-      gain = 0.9;
-      attack = 0.002;
-      release = 0.2;
-      highpass = 1000;
-      lowpass = 11000;
+      ratio = 1.2;
+      index = 0.5;
+      vibratoHz = 0;
+      vibratoCents = 0;
+    };
+    gain = {
+      domain = "linear";
+      interpolation = "smooth";
+      points = [{
+        at = 0;
+        value = 0;
+      }, {
+        at = 0.008420138888888888;
+        value = 0.8;
+      }, {
+        at = 0.16666666666666663;
+        value = 0.8;
+      }, {
+        at = 1;
+        value = 0;
+      }];
+    };
+    highpass = 40;
+    lowpass = 1300;
+  }];
+  sequences = [{
+    id = "phrase";
+    start = 0;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
       id = "layer_1";
-    },
-    {
-      source = {
-        kind = "fm";
-        pitch = (210, 65);
-        sweepSeconds = 0.16;
-        ratio = 1.2;
-        index = 0.5;
-        vibratoHz = 0;
-        vibratoCents = 0;
-      };
-      start = 0.3;
+      voice = "layer_1";
+      at = 0.3;
       duration = 0.24;
-      gain = 0.8;
-      attack = 0.002;
-      release = 0.2;
-      highpass = 40;
-      lowpass = 1300;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
       id = "layer_2";
-    }
-  ];
-  variants = [
-    {
-      id = "base";
-      seed = 42;
-    },
-    {
-      id = "alternate";
-      seed = 43;
-    }
-  ];
+      voice = "layer_2";
+      at = 0.3;
+      duration = 0.24;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 42;
+  }, {
+    id = "alternate";
+    seed = 43;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
   output = {
-    rmsDb = -22;
+    gainDb = -9.9;
     peakDb = -3;
   };
 }

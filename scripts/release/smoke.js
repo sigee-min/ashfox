@@ -49,6 +49,7 @@ const main = async () => {
       assert.equal(metadata.scripts, undefined);
       assert.equal(metadata.dependencies, undefined);
       assert.ok(fs.existsSync(path.join(folder, 'node_modules/@ashfox/cli/LICENSE')));
+      require('./sound').verifySoundCli(path.join(folder, 'node_modules/@ashfox/cli/dist/ashfox.cjs'));
       const execute = (...args) => run('npx', ['--no-install', '--offline', 'ashfox', ...args], folder);
       assert.equal((await execute('--version')).toString().trim(), metadata.version);
       assert.match((await execute('--help')).toString(), /init <new-folder>/);

@@ -1,3 +1,4 @@
+import { AUDIO_POLICY } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
 import { DEFAULT_VIEW, type Prepared, type ViewOptions } from './contract';
 import { readInput, readView, record, text } from './read';
@@ -9,6 +10,7 @@ export const observationCapabilities={
   methods:['capabilities','load','source','inspect','view','capture','replay','export','cancel','close'],
   inputs:['ashfox-file','png-file','memory-source-graph','base64-png'],media:['image/png','image/gif','audio/wav','model/gltf-binary','application/zip'],
   formats:['glb','gltf','java_block','geckolib5','bedrock','png','wav'],viewDefaults:DEFAULT_VIEW,
+  sound:{contract:AUDIO_POLICY,features:['curves','sequences','variation','resonator','loops'],loopCodecs:['wav']},
   guide:'https://ashfox.io/docs/guides/observe/',
   defaults:{transport:'stdio',fileWrites:false},limits:{inputBytes:16*1024*1024,queuedRequests:8,compileSeconds:120,renderSeconds:120,mediaBytes:32*1024*1024}
 };

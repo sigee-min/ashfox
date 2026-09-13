@@ -1,3 +1,4 @@
+import { AUDIO_POLICY } from '@ashfox/audio-core';
 import { runOnboarding, cliVersion, isOnboardingCommand } from './onboarding/cli';
 import { runObservation } from './observe/cli';
 import { prepare } from './observe/prepare';
@@ -31,6 +32,7 @@ const main = async (): Promise<void> => {
   if (command === 'capabilities') {
     if (positional.length) throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
     result(true, { cliVersion, commands: ['init', 'doctor', 'check', 'build', 'verify', 'capabilities', 'inspect', 'capture', 'replay', 'export', 'stdio'], observation: observationCapabilities, workspace: { file: '.ashfoxworkspace', executableFile: '.ashfoxworkspace.mjs', version: 2, required: false },
+      sound: { contract: AUDIO_POLICY, sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'], features: ['curves', 'sequences', 'variation', 'loops'], sampleRate: 48000, channels: 1, loopCodecs: ['wav'], output: 'fixed-gain', limits: { durationSeconds: 30, variants: 8, workspaceSources: 32, workspaceRawFrames: 11520000, eventFrames: 24000000, weightedFrames: 192000000 } },
       source: '.ashfox', outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'], legacyFallback: false,
       packs: { formats: ['minecraft_java', 'game_assets'], itemDefinitions: ['legacy', 'modern'], metadata: ['legacy', 'range'], audio: 'vorbis', encoder: 'FFmpeg via PATH or ASHFOX_FFMPEG_PATH', archive: 'zip' },
       usage: 'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox inspect|capture|replay|export <source|png> [options]; ashfox stdio' });

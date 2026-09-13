@@ -1,40 +1,29 @@
 import assert from 'node:assert/strict';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { encodeWav, parseSoundSource, compileSoundSource, soundVariantSeed } from '../../src';
-
-const directory = path.resolve(__dirname, '../../../../examples/sounds/src');
-const files = fs.readdirSync(directory).filter(f => f.endsWith('.ashfox'));
-assert.equal(files.length, 6);
-for (const file of files) {
-  const source = fs.readFileSync(path.join(directory, file), 'utf8');
-  const recipe = parseSoundSource(source, file);
-  const products = compileSoundSource(source, file);
-  assert.equal(products.length, recipe.variants.length);
-  assert.deepEqual(compileSoundSource(source, file), products);
-  for (const product of products) {
-    const bytes = Buffer.from(product.wav);
-    assert.equal(bytes.toString('ascii', 0, 4), 'RIFF');
-    assert.equal(bytes.readUInt32LE(4), bytes.length - 8);
-    assert.equal(bytes.toString('ascii', 8, 12), 'WAVE');
-    assert.equal(bytes.readUInt16LE(20), 1);
-    assert.equal(bytes.readUInt16LE(22), 1);
-    assert.equal(bytes.readUInt32LE(24), 48000);
-    assert.equal(bytes.readUInt16LE(34), 16);
-    assert.equal(bytes.readUInt32LE(40), product.frames * 2);
-    const decoded = Float64Array.from({ length: product.frames }, (_, i) => bytes.readInt16LE(44 + i * 2) / 32768);
-    assert.ok(decoded.some(v => v !== 0));
-    assert.ok(decoded.every(v => Math.abs(v) <= 10 ** (recipe.output.peakDb / 20) + 1 / 32768));
-  }
-  const seeds = recipe.variants.map(v => soundVariantSeed(recipe.seed, v));
-  assert.equal(new Set(seeds).size, seeds.length, 'Variant streams collide');
-  if (recipe.layers.some(l => l.source.kind !== 'fm')) assert.notDeepEqual(products[0].wav, products[1].wav);
-  else assert.deepEqual(products[0].wav, products[1].wav, 'Pure FM must not invent seed-dependent modulation');
-  assert.throws(() => parseSoundSource(JSON.stringify(recipe), file), /expected ashfox-model/);
-  assert.throws(() => parseSoundSource(source + '\n garbage', file), /trailing/);
-  assert.throws(() => parseSoundSource(source.replace('duration =', 'unknown ='), file), /unknown field/);
+import { createHash } from 'node:crypto';
+import { compileSoundSource, parseSoundSource, readRecipe, render, master, encodeWav, measure } from '../../src';
+import { fixture, native, envelope } from './fixture';
+const recipe = fixture(), text = native(recipe), products = compileSoundSource(text, 'sound.ashfox');
+assert.equal(createHash('sha256').update(products[0].wav).digest('hex'), '768a666fd222391b007c21b5e7dc49115f6322ff87cbafce84c1b75e0b88552d', 'Node 24 PCM golden');
+assert.deepEqual(products, compileSoundSource(text, 'sound.ashfox'));
+assert.deepEqual(products[0].wav, products[1].wav, 'unmodulated FM has no random behavior');
+for (const product of products) {
+  const b = Buffer.from(product.wav);
+  assert.equal(b.toString('ascii', 0, 4), 'RIFF'); assert.equal(b.readUInt32LE(40), product.frames * 2);
+  assert.equal(product.rawFrames, 48000); assert.deepEqual(product.playback, { kind: 'oneshot' });
+  const decoded = Float64Array.from({ length: product.frames }, (_, i) => b.readInt16LE(44 + 2 * i) / 32767);
+  assert.deepEqual(measure(decoded), { peak: product.peak, rms: product.rms, dc: product.dc, seamDelta: product.seamDelta, maxAdjacentDelta: product.maxAdjacentDelta });
 }
-assert.notEqual(soundVariantSeed(42, { id: 'base', seed: 42 }), soundVariantSeed(42, { id: 'alternate', seed: 43 }));
-assert.throws(() => parseSoundSource('ashfox-model 1 sound x { a = 1; a = 2; }', 'test.ashfox'), /duplicate/);
+assert.ok(Object.isFrozen(readRecipe(recipe).voices[0].source));
+for (const key of ['format', 'version', 'layers']) assert.throws(() => readRecipe({ ...recipe, [key]: 1 }), /unknown field/);
+assert.throws(() => readRecipe({ ...recipe, output: { rmsDb: -18, peakDb: -3 } }), /rmsDb/);
+for (const bad of [text.replace('duration = 1;', 'duration = NaN;'), text.replace('"oneshot"', 'oneshot'), text.replace('[', '('), text.replace('output = {', 'output {')]) assert.throws(() => parseSoundSource(bad));
+assert.throws(() => parseSoundSource(text.replace('highpass = 10;', 'highpass = 20000;'), 'owned.ashfox'), /owned.ashfox:\d+:\d+: sound.invalid: recipe.voices\[0\].highpass/);
+assert.throws(() => parseSoundSource('ashfox-model 1 sound x { a = 1; a = 2; }'), /duplicate/);
 assert.throws(() => encodeWav(new Float64Array([NaN])), /Non-finite/);
-process.stdout.write('audio-core: six native sources, deterministic WAV, independent decoding, separated streams and closed grammar passed\n');
+assert.throws(() => master(new Float64Array([0, 0]), recipe.output), /silent/);
+assert.throws(() => master(new Float64Array([1, -1]), { gainDb: 0, peakDb: -3 }), /lower gainDb/);
+const half = { ...recipe, sequences: [{ ...recipe.sequences[0], steps: [{ ...recipe.sequences[0].steps[0], gain: .5 }] }] };
+const fullPcm = master(render(recipe), recipe.output), halfPcm = master(render(half), recipe.output);
+for (let i = 0; i < fullPcm.length; i++) assert.equal(halfPcm[i], fullPcm[i] * .5);
+assert.throws(() => compileSoundSource(native({ ...recipe, voices: [{ ...recipe.voices[0], gain: envelope(.000001) }], output: { gainDb: -24, peakDb: -3 } }), 'tiny'), /quantizes to silence/);
+process.stdout.write('sound: closed grammar, deterministic products, decoded measurements, fixed gain and silence gates passed\n');

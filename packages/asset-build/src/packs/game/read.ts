@@ -1,3 +1,4 @@
+import { readPlayback } from '../../bundle/audio';
 import { BuildFailure } from '../../bundle/contract';
 import type { GameAssetManifest } from './contract';
 import { safeRelative } from '../../shared/path';
@@ -105,18 +106,26 @@ export const readGameAssetManifest = (value: unknown): GameAssetManifest => {
         return fail('Invalid audio metadata');
       const variants = new Set<string>();
       for (const rawVariant of a.variants) {
-        const v = record(rawVariant, ['id', 'file', 'durationSeconds', 'sampleRate', 'channels']);
+        const v = record(rawVariant, ['id', 'file', 'durationSeconds', 'sampleRate', 'channels', 'frames', 'playback']);
         if (
           typeof v.id !== 'string' ||
           !v.id ||
           variants.has(v.id) ||
           !finite(v.durationSeconds, true) ||
+          !Number.isSafeInteger(v.frames) || (v.frames as number) < 2400 ||
+          (v.frames as number) > 1440000 || v.durationSeconds !== (v.frames as number) / 48000 ||
           !Number.isSafeInteger(v.sampleRate) ||
-          !finite(v.sampleRate, true) ||
+          v.sampleRate !== 48000 ||
           !Number.isSafeInteger(v.channels) ||
-          !finite(v.channels, true)
+          v.channels !== 1
         )
           return fail('Invalid sound variant');
+        const playback = readPlayback(v.playback, v.frames as number);
+        if (a.codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
+        if (a.codec === 'wav') {
+          const file = (a.files as Record<string, unknown>[]).find(f => f.path === v.file);
+          if (file?.byteLength !== 44 + (v.frames as number) * 2) fail('WAV frame count mismatch');
+        }
         variants.add(v.id);
         reference(v.file, '.' + a.codec);
       }
