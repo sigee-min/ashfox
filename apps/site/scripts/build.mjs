@@ -395,7 +395,7 @@ ${localeRegistry.locales.map(locale => `${locale.prefix}/docs/*\n  Cache-Control
 await writeFile(
   path.join(outputRoot, '_redirects'),
   `/docs /docs/ 301
-/downloads/ashfox-cli.tgz ${stableRelease.readStable().cli} 302!
+/downloads/ashfox-cli.tgz ${stableRelease.readStable().cli} 302
 `
 );
 await writeFile(

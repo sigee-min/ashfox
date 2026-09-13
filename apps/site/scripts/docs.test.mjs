@@ -59,6 +59,14 @@ for (const name of ['ashfox-cli.tgz', 'starter.zip', 'items.zip', 'game-assets.z
   assert.deepEqual(await readFile(path.join(siteRoot, 'dist/downloads', name)),
     await readFile(path.resolve(siteRoot, '../../dist/docs-delivery', name)));
 }
+const redirects = (await readFile(path.join(siteRoot, 'dist/_redirects'), 'utf8')).trim().split('\n');
+const stable = JSON.parse(await readFile(path.resolve(siteRoot, '../../scripts/release/stable.json'), 'utf8'));
+for (const rule of redirects) {
+  const fields = rule.trim().split(/\s+/);
+  assert.equal(fields.length, 3);
+  assert.ok(['301', '302', '303', '307', '308'].includes(fields[2]), 'Cloudflare requires a numeric redirect status');
+}
+assert.ok(redirects.includes(`/downloads/ashfox-cli.tgz https://github.com/sigee-min/ashfox/releases/download/v${stable.version}/ashfox-cli.tgz 302`));
 await assert.rejects(readFile(path.join(siteRoot, 'dist/media/guides/receipt.json')), { code: 'ENOENT' });
 for (const name of ['fox-angle.png', 'fox-front.png', 'sword.png', 'claw.wav', 'fox-motion.gif']) {
   assert.deepEqual(await readFile(path.join(siteRoot, 'dist/media/guides', name)),

@@ -9,11 +9,11 @@
 | `doctor [--json]` | 없음 | 기본 출력·선택 도구 상태 |
 | `init <new-folder> [--json]` | 새 폴더 | 오프라인 스타터 원본 |
 | `capabilities --json` | 없음 | 명령·출력 포맷·팩 설정 |
-| `check <input> --json` | `.ashfox` 진입점 또는 `.ashfoxworkspace` | 소스 해시와 컴파일된 종류·진입점 |
-| `build <input> --json` | `.ashfox` 진입점 또는 `.ashfoxworkspace` | 검증된 번들·카탈로그·출력 디렉터리 |
+| `check <input> --json` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 소스 해시와 컴파일된 종류·진입점 |
+| `build <input> --json` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 검증된 번들·카탈로그·출력 디렉터리 |
 | `verify <directory> --json` | 설정된 빌드 디렉터리 | 무결성 검사 후 선택 번들·영수증·카탈로그 |
 
-`capabilities`, `check`, `build`, `verify`는 `--json` 없이도 JSON을 반환하며 다른 플래그는 받지 않습니다. 사람은 `help`, 에이전트는 `capabilities`를 사용합니다. 설정은 소스 또는 `.ashfoxworkspace`에 둡니다. 단일 에셋 관찰 명령에는 별도 옵션이 있습니다. `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
+`capabilities`, `check`, `build`, `verify`는 `--json` 없이도 JSON을 반환하며 다른 플래그는 받지 않습니다. 사람은 `help`, 에이전트는 `capabilities`를 사용합니다. 설정은 소스, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`에 둡니다. 단일 에셋 관찰 명령에는 별도 옵션이 있습니다. `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
 
 ## 첫 실행 명령
 
@@ -21,7 +21,7 @@
 
 {{source-code:0}}
 
-CLI를 설치한 저장소에서 실행합니다. 현재 안정 버전의 `init`은 컴파일러에 포함된 모델·아이템·사운드를 새 폴더에 만듭니다. 부모 폴더는 있어야 합니다. 빈 폴더를 포함한 기존 폴더·파일·심볼릭 링크를 거부하며 기존 프로젝트를 병합·수정하지 않습니다. npm 설치, `.ashfoxworkspace` 생성, 네트워크 접속은 하지 않습니다. 쓰기 실패 시 새 불완전 폴더를 제거합니다. `init --json`은 디렉터리와 파일 목록을 보고합니다. 기본 오류는 stderr의 읽기 쉬운 문장이고 `doctor`·`init --json`의 성공·실패는 stdout의 프로젝트 응답 형식입니다.
+CLI를 설치한 저장소에서 실행합니다. `init`은 새 폴더에 그룹형 `asset/` 원본, `.ashfoxworkspace.mjs`, 게임 어댑터 `assets.mjs`, 루트 `build/`를 제외하는 `.gitignore`를 만듭니다. 부모 폴더는 있어야 합니다. 빈 폴더를 포함한 기존 폴더·파일·심볼릭 링크를 거부하며 기존 프로젝트를 병합·수정하지 않습니다. npm 패키지를 설치하거나 네트워크에 접속하지 않습니다. 쓰기 실패 시 새 불완전 폴더를 제거합니다. `init --json`은 디렉터리와 파일 목록을 보고합니다. 기본 오류는 stderr의 읽기 쉬운 문장이고 `doctor`·`init --json`의 성공·실패는 stdout의 프로젝트 응답 형식입니다.
 
 `doctor`는 CLI·Node 버전, Chrome 실행 가능 여부, FFmpeg의 `libvorbis` 지원을 보고합니다. 선택 도구 누락은 실패 종료가 아닙니다. `doctor --json`도 프로젝트 파일을 만들지 않습니다. 환경 검사이므로 실제 파이프라인은 캡처·OGG 빌드로 검증하세요. 명시한 실행 경로가 자동 탐색보다 우선합니다.
 
@@ -29,9 +29,9 @@ CLI를 설치한 저장소에서 실행합니다. 현재 안정 버전의 `init`
 
 {{source-code:1}}
 
-상위 워크스페이스가 없으면 진입점과 상대 import 의존성을 읽고 진입점 폴더의 `dist/<entry-id>/build`, `dist/<entry-id>/exports`에 씁니다. 설정 파일은 만들지 않습니다. 기본 출력은 모델 portable GLB, 스프라이트 PNG, 사운드 WAV이며 모듈은 빌드 진입점이 아닙니다.
+이 스타터 원본에는 상위 워크스페이스가 있으므로 스타터 프로젝트 전체를 빌드합니다. 상위 워크스페이스가 없는 독립 원본은 진입점과 상대 import 의존성을 읽고 진입점 폴더의 `dist/<entry-id>/build`, `dist/<entry-id>/exports`에 씁니다. 설정 파일은 만들지 않습니다. 기본 출력은 모델 portable GLB, 스프라이트 PNG, 사운드 WAV이며 모듈은 빌드 진입점이 아닙니다.
 
-상위 `.ashfoxworkspace`가 있으면 전체 프로젝트를 빌드합니다. 진입점 하나를 선택해도 프로젝트 검사를 우회하지 않습니다. 탐색은 가장 가까운 Git 루트나 파일시스템 루트에서 멈추며 잘못된 설정은 무시하지 않고 실패합니다.
+상위 `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`가 있으면 전체 프로젝트를 빌드합니다. 진입점 하나를 선택해도 프로젝트 검사를 우회하지 않습니다. 탐색은 가장 가까운 Git 루트나 파일시스템 루트에서 멈추며 잘못된 설정은 무시하지 않고 실패합니다.
 
 ## 프로젝트 빌드하기
 
@@ -78,6 +78,6 @@ SIGINT·SIGTERM은 진행 작업을 취소하고 이전 선택 빌드를 보존�
 
 이 명령은 프로젝트 응답 형식이나 `--json`을 사용하지 않습니다. [관찰 옵션](observe.md)과 [세션 프로토콜](stdio.md)을 참고하세요.
 
-## 코드형 프로젝트 설정 — 다음 릴리스
+## 코드형 프로젝트 설정
 
 `check`·`build`는 `.ashfoxworkspace.mjs`와 소스 빌드의 상위 탐색을 지원합니다. 신뢰된 Node ESM을 기존 버전 2 계약으로 평가합니다. 새 `init <new-folder>`는 그룹형 `asset/`, 이 설정, 게임 어댑터, 루트 `build/`용 `.gitignore`를 만듭니다. 평가 제한, 출력 식별자, JSON 설정 이전을 포함한 [전체 컨벤션](repository-layout.md)을 참고하세요.

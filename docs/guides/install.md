@@ -8,7 +8,7 @@ Open a terminal in your game or asset folder and run:
 
 <!-- ashfox:install -->
 ```sh
-npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz
+npm install --save-dev https://github.com/sigee-min/ashfox/releases/download/v2.0.0/ashfox-cli.tgz
 npx --no-install ashfox --version
 ```
 <!-- ashfox:install-end -->
@@ -29,7 +29,7 @@ Create the bundled starter offline and export your first item:
 
 ```sh
 npx --no-install ashfox init assets
-npx --no-install ashfox export assets/sword.ashfox --output sword.png
+npx --no-install ashfox export assets/asset/items/sword.ashfox --output sword.png
 ```
 <!-- ashfox:start-end -->
 
@@ -51,7 +51,7 @@ The stable CLI includes help, version, environment checks and offline starter cr
 
 ## Install offline or keep an exact package
 
-Download [the CLI package](https://github.com/sigee-min/ashfox/releases/download/v1.0.0/ashfox-cli.tgz), store it in your project
+Download [the CLI package](https://github.com/sigee-min/ashfox/releases/download/v2.0.0/ashfox-cli.tgz), store it in your project
 (for example under `tools/`), and install that file:
 
 <!-- ashfox:offline -->

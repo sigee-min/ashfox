@@ -6,7 +6,7 @@ root `build/` for disposable output. The directory names are defaults, not reser
 keywords. The workspace defines the project's actual paths.
 
 Executable workspaces and the grouped `init` template described here are available
-in the current source tree and will ship in the next CLI release. An older installed
+from CLI 2.0.0. An older installed
 1.0.0 archive does not acquire them automatically. Existing JSON workspaces remain
 supported; do not replace a pinned archive without updating its checksum or lock.
 
