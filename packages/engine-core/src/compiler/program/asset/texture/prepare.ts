@@ -23,6 +23,7 @@ import {
   type PaletteRole,
   type TextureExpressionContext
 } from './expressions';
+import { hasChartOverlap } from './overlap';
 import { boxRegions, type TextureRegion, type TextureStamp } from './raster';
 
 export const MAX_PIXELS = 4096 * 4096;
@@ -174,7 +175,7 @@ const usageRegions = (
   usages: readonly AssetTextureUsage[],
   report: TextureReporter
 ): readonly TextureRegion[] | null => {
-  const matches = usages.filter((usage) => usage.chart === chart.id);
+  const matches = usages; // Already grouped by chart within this preparation.
   if (matches.length === 0) {
     report.report(chart.span, 'asset.texture.unused-chart',
       'Every texture chart must have a geometry usage with exact dimensions.');
@@ -383,15 +384,25 @@ export const prepareTexture = (
   const stamps = prepareStamps(declarations, context, palette, report);
   if (stamps === null) return null;
   const sources = payload.statements.filter((entry): entry is ProgramTextureChart => entry.kind === 'chart');
+  const sourcesById = new Map<string, ProgramTextureChart[]>();
+  for (const source of sources) {
+    const entries = sourcesById.get(source.id);
+    if (entries) entries.push(source); else sourcesById.set(source.id, [source]);
+  }
+  const usagesByChart = new Map<string, AssetTextureUsage[]>();
+  for (const usage of usages) {
+    const entries = usagesByChart.get(usage.chart);
+    if (entries) entries.push(usage); else usagesByChart.set(usage.chart, [usage]);
+  }
   const entries = ownEntries(contract.charts); const charts: PreparedChart[] = [];
   for (const [id, abi] of entries) {
-    const matches = sources.filter((entry) => entry.id === id);
+    const matches = sourcesById.get(id) ?? [];
     if (matches.length !== 1) {
       report.report(matches[1]?.span ?? payload.span, 'asset.texture.chart-count', 'Texture must declare each contract chart exactly once.');
       continue;
     }
     const chart = prepareChart(matches[0]!, abi, contractWidth, contractHeight,
-      usages, context, palette, report);
+      usagesByChart.get(id) ?? [], context, palette, report);
     if (chart !== null) charts.push(chart);
   }
   for (const chart of sources) if (contract.charts[chart.id] === undefined) {
@@ -399,11 +410,13 @@ export const prepareTexture = (
   }
   if (charts.length !== entries.length) return null;
   charts.sort((left, right) => left.chart.id.localeCompare(right.chart.id));
-  for (let left = 0; left < charts.length; left += 1) for (let right = left + 1; right < charts.length; right += 1) {
-    const a = charts[left]!; const b = charts[right]!;
-    if (a.origin[0] < b.origin[0] + b.abiWidth && b.origin[0] < a.origin[0] + a.abiWidth &&
-      a.origin[1] < b.origin[1] + b.abiHeight && b.origin[1] < a.origin[1] + a.abiHeight) {
-      report.report(b.chart.span, 'asset.texture.overlap', 'Texture chart rectangles may not overlap.');
+  if (charts.length < 32 || hasChartOverlap(charts)) {
+    for (let left = 0; left < charts.length; left += 1) for (let right = left + 1; right < charts.length; right += 1) {
+      const a = charts[left]!; const b = charts[right]!;
+      if (a.origin[0] < b.origin[0] + b.abiWidth && b.origin[0] < a.origin[0] + a.abiWidth &&
+        a.origin[1] < b.origin[1] + b.abiHeight && b.origin[1] < a.origin[1] + a.abiHeight) {
+        report.report(b.chart.span, 'asset.texture.overlap', 'Texture chart rectangles may not overlap.');
+      }
     }
   }
   if (report.bad) return null;

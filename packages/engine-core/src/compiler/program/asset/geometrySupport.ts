@@ -270,9 +270,11 @@ export const directionOf = (node: InstantiatedGeometryNode): string => {
   return index < 0 ? node.id : node.id.slice(index + 1);
 };
 
+export type SurfaceBindings = ReadonlyMap<string, InstantiatedAssetIr['surfaces']>;
+
 export const surfacePlan = (
   node: InstantiatedGeometryNode,
-  ir: InstantiatedAssetIr,
+  surfaces: SurfaceBindings,
   plans: ReadonlyMap<string, AssetTexturePlan>,
   context: Context,
   layout: 'box' | 'flat'
@@ -283,7 +285,7 @@ export const surfacePlan = (
       `${node.kind} requires one concrete surface chart binding.`);
     return null;
   }
-  const bindings = ir.surfaces.filter((candidate) => candidate.surface.key === surface.surface.key);
+  const bindings = surfaces.get(surface.surface.key) ?? [];
   const binding = bindings[0];
   const plan = plans.get(surface.surface.key);
   const chart = plan?.charts[surface.chart];

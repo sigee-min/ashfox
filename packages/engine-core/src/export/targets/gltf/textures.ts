@@ -17,23 +17,23 @@ export interface GltfResolvedExportOptions {
 }
 
 const BUILTIN_UINT8_ARRAY_PROTOTYPE = Uint8Array.prototype;
+const TYPED_ARRAY_PROTOTYPE = Object.getPrototypeOf(BUILTIN_UINT8_ARRAY_PROTOTYPE);
+const typedArrayTag = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, Symbol.toStringTag)!.get!;
+const typedArrayLength = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, 'length')!.get!;
+const setBytes = BUILTIN_UINT8_ARRAY_PROTOTYPE.set;
 
 const copyExactBytes = (value: unknown): Uint8Array | null => {
   if (!ArrayBuffer.isView(value) || Object.getPrototypeOf(value) !==
-    BUILTIN_UINT8_ARRAY_PROTOTYPE) return null;
+    BUILTIN_UINT8_ARRAY_PROTOTYPE || typedArrayTag.call(value) !== 'Uint8Array') return null;
   const keys = Reflect.ownKeys(value);
-  if (keys.some((key, index) => typeof key !== 'string' ||
+  const length: number = typedArrayLength.call(value);
+  if (keys.length !== length || keys.some((key, index) => typeof key !== 'string' ||
     key !== String(index))) return null;
-  const result = new Uint8Array(keys.length);
-  for (let index = 0; index < keys.length; index += 1) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-    if (descriptor === undefined || !descriptor.enumerable ||
-      !Object.prototype.hasOwnProperty.call(descriptor, 'value') ||
-      typeof descriptor.value !== 'number' ||
-      !Number.isSafeInteger(descriptor.value) || descriptor.value < 0 ||
-      descriptor.value > 255) return null;
-    result[index] = descriptor.value;
-  }
+  const result = new Uint8Array(length);
+  // Genuine Uint8Array indexed elements cannot be holes, accessors or non-byte
+  // values. The intrinsic copy avoids per-byte descriptors and user iterators.
+  try { setBytes.call(result, value as Uint8Array); }
+  catch { return null; }
   return result;
 };
 

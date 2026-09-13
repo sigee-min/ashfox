@@ -8,16 +8,16 @@ import { sha256Digest } from '../../provenance/digest';
 import { SPRITE_POLICY, SpriteInputError } from '../../project/sprite/contract';
 import { sealWorkspaceCandidate } from '../../project/workspace/seal';
 import { DEFAULT_WORKSPACE_LIMITS, ASHFOX_WORKSPACE_COMPILER_FINGERPRINT, type AuthoredAssetWorkspace, type WorkspaceEntrySelector } from '../../project/workspace';
-import { compileAssetWorkspaceEntry } from '../program/asset/compile';
+import { compileWorkspaceCandidate } from '../program/asset/workspaceCompile';
+import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
-import { applyWorkspaceChangeSet } from '../program/asset/workspaceChange';
-import { computeWorkspaceHash } from '../../project/workspace/hash';
 
 export type DirectoryProduct = {readonly kind:'sprite';readonly entry:WorkspaceEntrySelector;readonly sourcePath:string;readonly sprite:SpriteProduct} |
   {readonly kind:'model';readonly entry:WorkspaceEntrySelector;readonly sourcePath:string;readonly model:CompiledModel;readonly workspace:AuthoredAssetWorkspace} |
   {readonly kind:'sound';readonly entry:WorkspaceEntrySelector;readonly sourcePath:string;readonly sounds:readonly SoundProduct[]};
 export type DirectoryCompilation = {readonly ok:true;readonly config:DirectoryWorkspace;readonly sourceHash:string;readonly buildKey:string;readonly products:readonly DirectoryProduct[]} |
   {readonly ok:false;readonly diagnostics:readonly {readonly code:string;readonly file:string;readonly message:string}[]};
+const entryKey = (entry: WorkspaceEntrySelector): string => JSON.stringify([entry.packageName, entry.entryName]);
 const ordered = (v:unknown):unknown => Array.isArray(v)?v.map(ordered):v&&typeof v==='object'?
   Object.fromEntries(Object.entries(v).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,x])=>[k,ordered(x)])):v;
 export const compileDirectoryWorkspace = (configuration:string, files:readonly DirectoryFile[]):DirectoryCompilation => {
@@ -30,16 +30,19 @@ export const compileDirectoryWorkspace = (configuration:string, files:readonly D
       if(!directoryPath(f.path)||!isDirectorySource(config,f.path)||!declared.has(f.path)||seen.has(f.path.toLowerCase()))throw new Error('Undeclared, ignored or duplicate source: '+f.path);
       seen.add(f.path.toLowerCase());
     }
-    for(const p of declared)if(!files.some(f=>f.path===p))throw new Error('Missing source: '+p);
+    const filesByPath = new Map(files.map(file => [file.path, file]));
+    for(const p of declared)if(!filesByPath.has(p))throw new Error('Missing source: '+p);
     const products:DirectoryProduct[]=[],spritePaths=new Set<string>();
     const entries=config.packages.flatMap(p=>p.manifest.entries.map(e=>({entry:{packageName:p.name,entryName:e.name},path:[p.root,e.path].filter(Boolean).join('/')})));
     if(!entries.length)throw new Error('Workspace must declare an entry');
+    const kinds = new Map(entries.map(e => [e.path, lexProgramSource(filesByPath.get(e.path)!.source).tokens[2]?.value]));
+    const spriteUnits = new Map<string, SpriteSourceUnit>();
     const modelEntries:typeof entries=[];
     const soundRecipes=new Map<string,ReturnType<typeof parseSoundSource>>();
     let outputFrames=0,eventFrames=0,weightedFrames=0;
     for(const e of entries){
-      const text=files.find(f=>f.path===e.path)!.source;
-      if(lexProgramSource(text).tokens[2]?.value!=='sound')continue;
+      const text=filesByPath.get(e.path)!.source;
+      if(kinds.get(e.path)!=='sound')continue;
       const recipe=parseSoundSource(text,e.path), budget=soundBudget(recipe);
       soundRecipes.set(e.path,recipe);
       outputFrames+=budget.outputFrames;eventFrames+=budget.eventFrames;weightedFrames+=budget.weightedFrames;
@@ -47,16 +50,16 @@ export const compileDirectoryWorkspace = (configuration:string, files:readonly D
         throw new Error(`${e.path}: sound workspace budget exceeded: sources=${soundRecipes.size}/32, rawFrames=${outputFrames}/11520000, eventFrames=${eventFrames}/24000000, weightedFrames=${weightedFrames}/192000000`);
     }
     for(const e of entries){
-      const text=files.find(f=>f.path===e.path)!.source;
-      const tokens=lexProgramSource(text).tokens;
-      if(tokens[2]?.value==='sprite'){
-        const compiled=compileDirectorySprite(files,e.path);
+      const text=filesByPath.get(e.path)!.source;
+      const kind=kinds.get(e.path);
+      if(kind==='sprite'){
+        const compiled=compileDirectorySprite(filesByPath,e.path,spriteUnits);
         if(!compiled.result.ok)return {ok:false,diagnostics:compiled.result.diagnostics.map(d=>({code:d.code,file:d.file,message:d.pointer+': '+d.expected+'; '+d.actual}))};
         const sprite=compiled.result.products[0]!;
         if(sprite.id!==e.entry.entryName)throw new Error('Entry name must match sprite id: '+e.path);
         products.push({kind:'sprite',entry:e.entry,sourcePath:e.path,sprite});
         compiled.paths.forEach(p=>spritePaths.add(p));
-      }else if(tokens[2]?.value==='sound'){
+      }else if(kind==='sound'){
         const recipe=soundRecipes.get(e.path)!;
         if(recipe.id!==e.entry.entryName)throw new Error('Entry name must match sound id: '+e.path);
         const sounds=compileSoundSource(text,e.path);
@@ -65,26 +68,31 @@ export const compileDirectoryWorkspace = (configuration:string, files:readonly D
       }else modelEntries.push(e);
     }
     if(modelEntries.length){
+      const modelPaths = new Set(modelEntries.map(e => e.path));
       const packages=config.packages.map(p=>({...p,manifest:{...p.manifest,
-        entries:p.manifest.entries.filter(e=>modelEntries.some(m=>m.entry.packageName===p.name&&m.entry.entryName===e.name)),
+        entries:p.manifest.entries.filter(e=>modelPaths.has([p.root,e.path].filter(Boolean).join('/'))),
         modules:p.manifest.modules.filter(e=>!spritePaths.has([p.root,e.path].filter(Boolean).join('/')))}}));
       const manifest={format:'ashfox-workspace' as const,version:1 as const,packages};
       const base:AuthoredAssetWorkspace={files:[],manifest,lock:{format:'ashfox-lock',version:1,compilerFingerprint:ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,packages:[]}};
       const sealed=sealWorkspaceCandidate(base,files.filter(f=>!spritePaths.has(f.path)),manifest,DEFAULT_WORKSPACE_LIMITS);
       if(!sealed.ok)throw new Error(JSON.stringify(sealed.diagnostics));
-      const checked=applyWorkspaceChangeSet(sealed.value,{expectedWorkspaceHash:computeWorkspaceHash(sealed.value),writes:[],deletes:[]});
+      const checked=compileWorkspaceCandidate(sealed.value, {}, true);
       if(!checked.ok)throw new Error(JSON.stringify(checked.diagnostics));
-      for(const e of modelEntries){const result=compileAssetWorkspaceEntry(checked.workspace,e.entry);
-        if(!result.ok)throw new Error(JSON.stringify(result.diagnostics));
-        products.push({kind:'model',entry:e.entry,sourcePath:e.path,model:result.model,workspace:checked.workspace});}
+      const modelSources = new Map(modelEntries.map(e => [entryKey(e.entry), e.path]));
+      for(const result of checked.products) {
+        products.push({kind:'model',entry:result.entry,sourcePath:modelSources.get(entryKey(result.entry))!,
+          model:result.model,workspace:checked.workspace});
+      }
     } else if(files.some(f=>!spritePaths.has(f.path)))throw new Error('Every declared module must be reachable');
+    const productsByEntry = new Map(products.map(product => [entryKey(product.entry), product]));
+    const exportsByName = new Map(config.exports.map(target => [target.name, target]));
     for(const target of config.exports){
-      const p=products.find(p=>p.entry.packageName===target.entry.packageName&&p.entry.entryName===target.entry.entryName)!;
+      const p=productsByEntry.get(entryKey(target.entry))!;
       if(!({sprite:['png'],model:['glb','java_block','geckolib5','bedrock'],sound:['wav']} as const)[p.kind].some(format=>format===target.format))throw new Error('Export format does not match entry kind: '+target.name);
     }
     for (const pack of config.packs ?? []) for (const sound of pack.format === 'minecraft_java' ? pack.sounds : []) {
-      const target = config.exports.find(e => e.name === sound.source)!;
-      const product = products.find(p => p.entry.packageName === target.entry.packageName && p.entry.entryName === target.entry.entryName);
+      const target = exportsByName.get(sound.source)!;
+      const product = productsByEntry.get(entryKey(target.entry));
       if (product?.kind !== 'sound') throw new Error('Pack sound source kind mismatch: ' + sound.source);
       if (sound.variants !== 'all' && sound.variants.some(v => !product.sounds.some(s => s.variant === v.id))) {
         throw new Error('Unknown sound variant in pack: ' + pack.name + '/' + sound.id);

@@ -50,3 +50,15 @@ const mixedResult=compileDirectoryWorkspace(JSON.stringify(mixed),[...files,...l
 assert.ok(mixedResult.ok,JSON.stringify(mixedResult));
 if(mixedResult.ok){assert.equal(mixedResult.products.length,11);assert.equal(mixedResult.products.filter(p=>p.kind==='model').length,1);}
 console.log('directory workspace: native sprite parity, mixed model/sprite, root exclusions and fail-closed contracts ok');
+
+const unexported = structuredClone(mixed);
+const modelPackage = unexported.packages.find(p => p.name === 'creatures')!;
+modelPackage.manifest.entries.push({ name: 'broken', path: 'broken.ashfox' });
+assert.equal(compileDirectoryWorkspace(JSON.stringify(unexported), [...files, ...legacy.files,
+  { path: 'creatures/broken.ashfox', source: 'ashfox-model 1\nasset broken {}' }]).ok, false,
+  'Collecting compiled products must still reject an invalid entry with no export.');
+const orphaned = structuredClone(mixed);
+orphaned.packages.find(p => p.name === 'creatures')!.manifest.modules.push({ subpath: './orphan', path: 'orphan.ashfox' });
+assert.equal(compileDirectoryWorkspace(JSON.stringify(orphaned), [...files, ...legacy.files,
+  { path: 'creatures/orphan.ashfox', source: 'ashfox-model 1\nmodule orphan {}' }]).ok, false,
+  'Reusing compilation must still reject unreachable declared modules.');

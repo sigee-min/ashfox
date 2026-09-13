@@ -116,3 +116,17 @@ assert.throws(
 );
 
 console.log('raster/color fail-closed contracts ok');
+
+// Freezing a caller-owned byte facade cannot certify its mutable backing data.
+const foreignData = [1, 2, 3, 4];
+const foreignBytes = Object.freeze({
+  length: 4,
+  at: (index: number) => foreignData[index],
+  copy: () => Uint8Array.from(foreignData),
+  *[Symbol.iterator]() { yield* foreignData; }
+});
+encodeCanonicalPng({ width: 1, height: 1, rgba: foreignBytes });
+foreignData[0] = 256;
+assert.throws(() => encodeCanonicalPng({ width: 1, height: 1, rgba: foreignBytes }), /exactly four bytes/);
+assert.throws(() => encodeCanonicalPng({ width: 2, height: 1, rgba: raster.rgba }), /exactly four bytes/,
+  'Constructor provenance does not bypass dimensions or byte count validation.');

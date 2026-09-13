@@ -1,0 +1,92 @@
+{
+  "node": "v24.13.1",
+  "platform": "darwin/arm64",
+  "baseRef": "670b541613d335224bb9bc423cd30cde99d9c912",
+  "results": [
+    {
+      "name": "models-1",
+      "before": {
+        "name": "models-1",
+        "medianMs": 76.19495900000004,
+        "medianHeapDeltaMiB": 8.784622192382812,
+        "peakRssMiB": 159.78125,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      },
+      "after": {
+        "name": "models-1",
+        "medianMs": 39.20762500000001,
+        "medianHeapDeltaMiB": 6.4137420654296875,
+        "peakRssMiB": 126.375,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      }
+    },
+    {
+      "name": "models-8",
+      "before": {
+        "name": "models-8",
+        "medianMs": 396.64200000000005,
+        "medianHeapDeltaMiB": 33.770294189453125,
+        "peakRssMiB": 246.953125,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      },
+      "after": {
+        "name": "models-8",
+        "medianMs": 164.289875,
+        "medianHeapDeltaMiB": 23.88159942626953,
+        "peakRssMiB": 171.90625,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      }
+    },
+    {
+      "name": "models-24",
+      "before": {
+        "name": "models-24",
+        "medianMs": 1465.0199170000005,
+        "medianHeapDeltaMiB": 91.36244201660156,
+        "peakRssMiB": 297.328125,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      },
+      "after": {
+        "name": "models-24",
+        "medianMs": 525.3856249999999,
+        "medianHeapDeltaMiB": 33.47901153564453,
+        "peakRssMiB": 254.890625,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      }
+    },
+    {
+      "name": "exports-1",
+      "before": {
+        "name": "exports-1",
+        "medianMs": 201.30541599999998,
+        "medianHeapDeltaMiB": 39.911529541015625,
+        "peakRssMiB": 219.40625,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      },
+      "after": {
+        "name": "exports-1",
+        "medianMs": 166.94225000000006,
+        "medianHeapDeltaMiB": 10.196952819824219,
+        "peakRssMiB": 179.234375,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      }
+    },
+    {
+      "name": "exports-4",
+      "before": {
+        "name": "exports-4",
+        "medianMs": 531.1163329999999,
+        "medianHeapDeltaMiB": 32.940940856933594,
+        "peakRssMiB": 286.9375,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      },
+      "after": {
+        "name": "exports-4",
+        "medianMs": 329.06875,
+        "medianHeapDeltaMiB": 34.257781982421875,
+        "peakRssMiB": 286.078125,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      }
+    }
+  ]
+}

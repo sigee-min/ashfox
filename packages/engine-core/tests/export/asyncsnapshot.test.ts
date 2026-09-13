@@ -107,13 +107,29 @@ const run = async (): Promise<void> => {
   const fakeHole = Object.create(Uint8Array.prototype) as Record<string, number>;
   Object.defineProperty(fakeHole, '0', { value: validBytes[0],
     enumerable: true });
+  const disguised = new Uint16Array(validBytes);
+  Object.setPrototypeOf(disguised, Uint8Array.prototype);
+  const dataView = new DataView(new ArrayBuffer(validBytes.length));
+  Object.setPrototypeOf(dataView, Uint8Array.prototype);
+  const detached = validBytes.slice();
+  structuredClone(detached.buffer, { transfer: [detached.buffer] });
+  const proxied = new Proxy(validBytes, { get() { throw new Error('caller getter'); } });
   for (const bytes of [new ForeignBytes(validBytes), symbolBytes, extraBytes,
-    fakeHole]) assert.throws(() => validateResolvedTexture(freshTexture, {
+    fakeHole, disguised, dataView, detached, proxied]) assert.throws(() => validateResolvedTexture(freshTexture, {
       bytes: bytes as Uint8Array, contentType: freshTexture.source.contentType
     }), (error: unknown) => error instanceof BlobResolutionError &&
       error.code === 'blob.invalid_bytes');
   assert.equal(iteratorReads, 0,
     'Exact byte validation must not consult a caller iterator.');
+  const offsetBuffer = new Uint8Array(validBytes.length + 16);
+  offsetBuffer.set(validBytes, 8);
+  const offsetView = offsetBuffer.subarray(8, 8 + validBytes.length);
+  const independent = validateResolvedTexture(freshTexture, {
+    bytes: offsetView, contentType: freshTexture.source.contentType
+  }).bytes;
+  offsetView.fill(0);
+  assert.deepEqual(independent, validBytes,
+    'Native byte copying must respect view offsets and detach output from caller storage.');
 
   let toStringReads = 0;
   const hostileType = {};

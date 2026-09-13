@@ -256,3 +256,60 @@ const build = (source: ProgramTextureDecl, width: number, height: number, slots:
     pixels.rgba.at(northPixel + 2)], [228, 59, 68]);
   assert.deepEqual(diagnostics, []);
 }
+
+// Grouping preserves duplicate declaration and usage diagnostics, including spans.
+{
+  const source = texture(1, 1);
+  const chart = source.statements.find((entry): entry is ProgramTextureChart => entry.kind === 'chart')!;
+  const duplicate = { ...chart, span: span(73) };
+  const duplicated = build({ ...source, statements: [...source.statements, duplicate] }, 1, 1);
+  assert.equal(duplicated.plan, null);
+  assert.deepEqual(duplicated.diagnostics, [{ code: 'asset.texture.chart-count', span: duplicate.span }]);
+  const missing = build({ ...source, statements: source.statements.filter(entry => entry !== chart) }, 1, 1);
+  assert.equal(missing.plan, null);
+  assert.deepEqual(missing.diagnostics, [{ code: 'asset.texture.chart-count', span: source.span }]);
+  const { typedSurface, typedContract } = sourceAndContract(1, 1, source);
+  for (const usages of [[], [usage(1, 1), { ...usage(1, 1), span: span(45) }, usage(2, 1)]]) {
+    const diagnostics: { code: string; span: SourceSpan }[] = [];
+    const result = materializeAssetTexturePlan(typedSurface, typedContract, usages, 'root.ashfox',
+      (_path, owner, code) => diagnostics.push({ code, span: owner }));
+    assert.equal(result, null);
+    assert.deepEqual(diagnostics, [{ code: usages.length ? 'asset.texture.usage-mismatch' : 'asset.texture.unused-chart',
+      span: usages.length ? usages[1]!.span : chart.span }]);
+  }
+}
+
+{
+  const count = 100, source = texture(count, 1);
+  const declarations: ProgramTextureChart[] = Array.from({ length: count }, (_, i) => ({
+    kind: 'chart', id: `chart_${i}`, layout: 'flat', span: span(i + 1), statements: [
+      property('origin', vector([number(BigInt(i), 1n, 'texel'), number(0n, 1n, 'texel')])),
+      property('fill', name('body'))
+    ]
+  }));
+  const payload = { ...source, statements: [...source.statements.filter(entry => entry.kind !== 'chart'), ...declarations] };
+  const { typedSurface, typedContract } = sourceAndContract(count, 1, payload);
+  const contract = { ...typedContract, charts: Object.fromEntries(declarations.map(chart =>
+    [chart.id, { ...chartAbi(1, 1), id: chart.id }])) };
+  let reads = 0;
+  const usages = declarations.map(chart => ({ ...usage(1, 1), get chart() { reads++; return chart.id; } }));
+  const issues: string[] = [];
+  const result = materializeAssetTexturePlan(typedSurface, contract, usages, 'root.ashfox',
+    (_path, _span, code) => issues.push(code));
+  assert.deepEqual(issues, []);
+  assert.ok(result);
+  assert.equal(Object.keys(result.charts).length, count);
+  assert.ok(reads < count * 10, `Expected linear chart lookup reads, got ${reads}`);
+  const overlapping = { ...payload, statements: payload.statements.map(entry =>
+    entry.kind === 'chart' && ['chart_97', 'chart_98', 'chart_99'].includes(entry.id)
+      ? { ...entry, statements: [property('origin', vector([number(0n, 1n, 'texel'),
+        number(0n, 1n, 'texel')])), property('fill', name('body'))] } : entry) };
+  const overlapIssues: { code: string; offset: number }[] = [];
+  const rejected = materializeAssetTexturePlan(sourceAndContract(count, 1, overlapping).typedSurface,
+    contract, usages, 'root.ashfox', (_path, owner, code) =>
+      overlapIssues.push({ code, offset: owner.start.offset }));
+  assert.equal(rejected, null);
+  assert.deepEqual(overlapIssues, [98, 99, 100, 99, 100, 100].map(offset =>
+    ({ code: 'asset.texture.overlap', offset })));
+
+}

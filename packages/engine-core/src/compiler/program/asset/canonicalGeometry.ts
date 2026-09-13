@@ -12,7 +12,7 @@ import {
   exactToVector2, exactToVector3, exactVector, addExact, boolean, canonical, cubeUv,
   directionOf, freeze, positiveIntegral, propertyMap, report, signedAxis,
   surfacePlan, transformFor, type CanonicalGeometryIssue, type Context, type GeometryRecord,
-  type PropertyEntry, visibleFor
+  type PropertyEntry, type SurfaceBindings, visibleFor
 } from './geometrySupport';
 
 export type { CanonicalGeometryIssue } from './geometrySupport';
@@ -28,7 +28,7 @@ const firstSpan = (ir: InstantiatedAssetIr): SourceSpan | undefined =>
 const lowerCube = (
   record: GeometryRecord,
   parentId: string,
-  ir: InstantiatedAssetIr,
+  surfaces: SurfaceBindings,
   plans: ReadonlyMap<string, AssetTexturePlan>,
   context: Context
 ): SceneNode | null => {
@@ -66,7 +66,7 @@ const lowerCube = (
     ? canonical(inflateExact, NUMBER_BOUNDARY, context, node.sourcePath, properties.get('inflate')!.span)
     : properties.has('inflate') ? null : 0;
   const mirror = boolean(properties.get('mirror'), false, context, node.sourcePath);
-  const surface = surfacePlan(node, ir, plans, context, 'box');
+  const surface = surfacePlan(node, surfaces, plans, context, 'box');
   if (originNumbers === null || toNumbers === null || sizeNumbers === null || transform === null ||
       inflate === null || mirror === null || surface === null) return null;
   const expectedWidth = 2n * size[0]!.numerator + 2n * size[2]!.numerator;
@@ -134,7 +134,7 @@ const lowerFaceRotation = (
 const lowerPlane = (
   record: GeometryRecord,
   parentId: string,
-  ir: InstantiatedAssetIr,
+  surfaces: SurfaceBindings,
   plans: ReadonlyMap<string, AssetTexturePlan>,
   context: Context
 ): SceneNode | null => {
@@ -170,7 +170,7 @@ const lowerPlane = (
     properties.get('size')?.span ?? node.span);
   const transform = transformFor(properties, context, node.sourcePath, node.span, true,
     originNumbers ?? undefined);
-  const surface = surfacePlan(node, ir, plans, context, 'flat');
+  const surface = surfacePlan(node, surfaces, plans, context, 'flat');
   if (originNumbers === null || sizeNumbers === null || transform === null || surface === null) return null;
   if (surface.chart.width !== sizeNumbers[0] || surface.chart.height !== sizeNumbers[1]) {
     report(context, node.sourcePath, node.surface!.span, 'asset.geometry-surface',
@@ -229,6 +229,9 @@ const flatten = (
 };
 
 const validateStructure = (records: readonly GeometryRecord[], context: Context): void => {
+  // Preserve Array.find's first occurrence even for invalid duplicate IDs.
+  const firstById = new Map<string, GeometryRecord>();
+  for (const record of records) if (!firstById.has(record.node.id)) firstById.set(record.node.id, record);
   for (const record of records) {
     const node = record.node;
     const allowed = node.kind === 'bone' ? ['bone', 'cube', 'plane', 'locator'] :
@@ -240,7 +243,7 @@ const validateStructure = (records: readonly GeometryRecord[], context: Context)
             'Plane, locator, and face nodes cannot contain geometry children.');
     }
     if (node.kind === 'face' && (record.parentNodeId === null ||
-        records.find((candidate) => candidate.node.id === record.parentNodeId)?.node.kind !== 'cube')) {
+        firstById.get(record.parentNodeId)?.node.kind !== 'cube')) {
       report(context, node.sourcePath, node.span, 'asset.invalid-geometry-scope',
         'Face nodes must be direct children of a cube.');
     }
@@ -347,6 +350,12 @@ export const lowerAssetGeometry = (
     for (const id of [...geometryBones.keys()].sort(compare)) visit(id);
     if (context.failed) return null;
     const layout = createGeometryLayout(ir, records, connections, parentFor, context);
+    const surfaces = new Map<string, InstantiatedAssetIr['surfaces'][number][]>();
+    for (const binding of ir.surfaces) {
+      const entries = surfaces.get(binding.surface.key);
+      if (entries) entries.push(binding);
+      else surfaces.set(binding.surface.key, [binding]);
+    }
     const output: SceneNode[] = [];
     for (const rawRecord of records.filter((candidate) => candidate.node.kind !== 'face')
       .sort((left, right) => compare(left.node.id, right.node.id))) {
@@ -372,9 +381,9 @@ export const lowerAssetGeometry = (
             parentId: parent, transform, visible: true });
         }
       } else if (node.kind === 'cube') {
-        const lowered = lowerCube(record, parent, ir, planMap, context); if (lowered !== null) output.push(lowered);
+        const lowered = lowerCube(record, parent, surfaces, planMap, context); if (lowered !== null) output.push(lowered);
       } else if (node.kind === 'plane') {
-        const lowered = lowerPlane(record, parent, ir, planMap, context); if (lowered !== null) output.push(lowered);
+        const lowered = lowerPlane(record, parent, surfaces, planMap, context); if (lowered !== null) output.push(lowered);
       } else if (node.kind === 'locator') {
         const lowered = lowerLocator(record, parent, context); if (lowered !== null) output.push(lowered);
       }

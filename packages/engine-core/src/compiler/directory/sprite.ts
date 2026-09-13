@@ -15,14 +15,16 @@ const relative = (owner: string, target: string): string => {
   }
   return parts.join('/');
 };
-export const compileDirectorySprite = (files: readonly DirectoryFile[], entry: string) => {
+export const compileDirectorySprite = (files: ReadonlyMap<string, DirectoryFile>, entry: string,
+  parsed: Map<string, SpriteSourceUnit>) => {
   const units = new Map<string,SpriteSourceUnit>(), visiting = new Set<string>();
   const visit = (path: string): void => {
     if (visiting.has(path)) throw new Error('Sprite import cycle: '+path);
     if (units.has(path)) return;
     if (visiting.size >= 32) throw new Error('Sprite import depth exceeds 32');
-    const file = files.find(f=>f.path===path); if (!file) throw new Error('Missing or ignored source: '+path);
-    visiting.add(path); const unit = parseSpriteSource(file.source,path);
+    const file = files.get(path); if (!file) throw new Error('Missing or ignored source: '+path);
+    visiting.add(path); const unit = parsed.get(path) ?? parseSpriteSource(file.source,path);
+    parsed.set(path, unit);
     if (path !== entry && unit.kind !== 'module') throw new Error('Import must refer to a module: '+path);
     for (const dependency of unit.imports) visit(relative(path,dependency.path));
     units.set(path,unit); visiting.delete(path);

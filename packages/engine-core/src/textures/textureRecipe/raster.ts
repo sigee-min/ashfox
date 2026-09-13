@@ -145,6 +145,8 @@ const assertTextureComposition = (
   }
 };
 
+const canonicalByteViews = new WeakSet<CanonicalRgbaBytes>();
+
 const immutableRgba = (rgba: Uint8Array): CanonicalRgbaBytes => {
   // The caller transfers this freshly allocated buffer and never retains it.
   // Keeping it in the closure avoids a second full-size allocation at peak.
@@ -167,7 +169,9 @@ const immutableRgba = (rgba: Uint8Array): CanonicalRgbaBytes => {
       }
     }
   };
-  return Object.freeze(view);
+  Object.freeze(view);
+  canonicalByteViews.add(view);
+  return view;
 };
 
 export const assertCanonicalTextureRaster = (value: unknown): void => {
@@ -191,6 +195,10 @@ export const assertCanonicalTextureRaster = (value: unknown): void => {
       'Canonical texture RGBA bytes must contain exactly four bytes per texel.'
     );
   }
+  // These exact views own private Uint8Array storage and expose copies only.
+  // Their constructor already guarantees immutable dense bytes; foreign views
+  // must still pass the full scan even when they are frozen.
+  if (canonicalByteViews.has(bytes)) return;
   let index = 0;
   for (const byte of bytes) {
     if (index >= expectedLength || !Number.isInteger(byte) || byte < 0 ||

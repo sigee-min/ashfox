@@ -1,0 +1,263 @@
+{
+  "node": "v24.13.1",
+  "platform": "darwin/arm64",
+  "baseRef": null,
+  "baselineBundleHash": "952120515a444f9aa91fc7e681ce7241a294de7a8b4de22024560ec7f4ccf6b3",
+  "results": [
+    {
+      "name": "models-1",
+      "before": {
+        "name": "models-1",
+        "medianMs": 42.77850000000001,
+        "medianHeapDeltaMiB": 7.284423828125,
+        "peakRssMiB": 124.09375,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      },
+      "after": {
+        "name": "models-1",
+        "medianMs": 43.34966700000001,
+        "medianHeapDeltaMiB": 7.440895080566406,
+        "peakRssMiB": 124.1875,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      }
+    },
+    {
+      "name": "models-8",
+      "before": {
+        "name": "models-8",
+        "medianMs": 125.99754200000001,
+        "medianHeapDeltaMiB": 19.272552490234375,
+        "peakRssMiB": 171.234375,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      },
+      "after": {
+        "name": "models-8",
+        "medianMs": 114.20224999999994,
+        "medianHeapDeltaMiB": 19.770225524902344,
+        "peakRssMiB": 170.046875,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      }
+    },
+    {
+      "name": "models-24",
+      "before": {
+        "name": "models-24",
+        "medianMs": 256.24895800000013,
+        "medianHeapDeltaMiB": 22.985702514648438,
+        "peakRssMiB": 259.546875,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      },
+      "after": {
+        "name": "models-24",
+        "medianMs": 388.89979100000005,
+        "medianHeapDeltaMiB": 47.05438232421875,
+        "peakRssMiB": 249.390625,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      }
+    },
+    {
+      "name": "exports-1",
+      "before": {
+        "name": "exports-1",
+        "medianMs": 195.131667,
+        "medianHeapDeltaMiB": 19.96625518798828,
+        "peakRssMiB": 179.078125,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      },
+      "after": {
+        "name": "exports-1",
+        "medianMs": 146.318084,
+        "medianHeapDeltaMiB": 23.897003173828125,
+        "peakRssMiB": 176.375,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      }
+    },
+    {
+      "name": "exports-4",
+      "before": {
+        "name": "exports-4",
+        "medianMs": 289.43445799999995,
+        "medianHeapDeltaMiB": 26.209732055664062,
+        "peakRssMiB": 279.578125,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      },
+      "after": {
+        "name": "exports-4",
+        "medianMs": 420.3746249999999,
+        "medianHeapDeltaMiB": 44.98089599609375,
+        "peakRssMiB": 275.90625,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      }
+    },
+    {
+      "name": "png-256",
+      "before": {
+        "name": "png-256",
+        "medianMs": 3.3204999999999956,
+        "medianHeapDeltaMiB": 0.7813034057617188,
+        "peakRssMiB": 83.453125,
+        "outputHash": "bc4942b046dd8204b306dc27418ead37aee8482fc99882d4a70a8b50dc8a2447"
+      },
+      "after": {
+        "name": "png-256",
+        "medianMs": 3.0141670000000005,
+        "medianHeapDeltaMiB": 0.32852935791015625,
+        "peakRssMiB": 81.234375,
+        "outputHash": "bc4942b046dd8204b306dc27418ead37aee8482fc99882d4a70a8b50dc8a2447"
+      }
+    },
+    {
+      "name": "png-1024",
+      "before": {
+        "name": "png-1024",
+        "medianMs": 36.762292,
+        "medianHeapDeltaMiB": 0.35712432861328125,
+        "peakRssMiB": 92.828125,
+        "outputHash": "41820fa9b7891b3489eeb94d38c2a1c89728f028610eb8f6ef06d610f5cb208e"
+      },
+      "after": {
+        "name": "png-1024",
+        "medianMs": 37.317999999999984,
+        "medianHeapDeltaMiB": 0.5302352905273438,
+        "peakRssMiB": 96.703125,
+        "outputHash": "41820fa9b7891b3489eeb94d38c2a1c89728f028610eb8f6ef06d610f5cb208e"
+      }
+    },
+    {
+      "name": "hash-1048576",
+      "before": {
+        "name": "hash-1048576",
+        "medianMs": 8.995000000000005,
+        "medianHeapDeltaMiB": 1.102569580078125,
+        "peakRssMiB": 81.765625,
+        "outputHash": "fe528b043e1b5a75aec799e121a99df85d6c58599057d8b67211e00c72c206a2"
+      },
+      "after": {
+        "name": "hash-1048576",
+        "medianMs": 10.456999999999994,
+        "medianHeapDeltaMiB": 1.0409164428710938,
+        "peakRssMiB": 82.203125,
+        "outputHash": "fe528b043e1b5a75aec799e121a99df85d6c58599057d8b67211e00c72c206a2"
+      }
+    },
+    {
+      "name": "hash-16777216",
+      "before": {
+        "name": "hash-16777216",
+        "medianMs": 58.47583400000008,
+        "medianHeapDeltaMiB": 0.9080047607421875,
+        "peakRssMiB": 96.3125,
+        "outputHash": "9a67eacbbcfc5c0303e1eb80364479e04ab77892e2932cdd0f3ff06508cfee3d"
+      },
+      "after": {
+        "name": "hash-16777216",
+        "medianMs": 63.630750000000035,
+        "medianHeapDeltaMiB": 0.9200057983398438,
+        "peakRssMiB": 96.4375,
+        "outputHash": "9a67eacbbcfc5c0303e1eb80364479e04ab77892e2932cdd0f3ff06508cfee3d"
+      }
+    },
+    {
+      "name": "parents-1000",
+      "before": {
+        "name": "parents-1000",
+        "medianMs": 0.16375000000000028,
+        "medianHeapDeltaMiB": 0.2558746337890625,
+        "peakRssMiB": 79.765625,
+        "outputHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "after": {
+        "name": "parents-1000",
+        "medianMs": 0.17433400000000177,
+        "medianHeapDeltaMiB": 0.2562713623046875,
+        "peakRssMiB": 79.859375,
+        "outputHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "name": "parents-4000",
+      "before": {
+        "name": "parents-4000",
+        "medianMs": 0.34166700000000105,
+        "medianHeapDeltaMiB": 1.0853042602539062,
+        "peakRssMiB": 82.046875,
+        "outputHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "after": {
+        "name": "parents-4000",
+        "medianMs": 0.32237500000000097,
+        "medianHeapDeltaMiB": 1.0853042602539062,
+        "peakRssMiB": 81.640625,
+        "outputHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "name": "geometry-100",
+      "before": {
+        "name": "geometry-100",
+        "medianMs": 1.6857499999999987,
+        "medianHeapDeltaMiB": 2.8397674560546875,
+        "peakRssMiB": 85.328125,
+        "outputHash": "3eaf06d91bd4beecc794168f16b6a316f62bc180ceceb940de3cad9904658c3c"
+      },
+      "after": {
+        "name": "geometry-100",
+        "medianMs": 2.1140000000000043,
+        "medianHeapDeltaMiB": 2.74261474609375,
+        "peakRssMiB": 85.421875,
+        "outputHash": "3eaf06d91bd4beecc794168f16b6a316f62bc180ceceb940de3cad9904658c3c"
+      }
+    },
+    {
+      "name": "geometry-1000",
+      "before": {
+        "name": "geometry-1000",
+        "medianMs": 16.412000000000006,
+        "medianHeapDeltaMiB": 9.183212280273438,
+        "peakRssMiB": 120.46875,
+        "outputHash": "8f5c8eb263d5ad99a47a6a3328567545f567db3f09a9964ac279d83aacb6b1b1"
+      },
+      "after": {
+        "name": "geometry-1000",
+        "medianMs": 16.665999999999997,
+        "medianHeapDeltaMiB": 9.2801513671875,
+        "peakRssMiB": 120.859375,
+        "outputHash": "8f5c8eb263d5ad99a47a6a3328567545f567db3f09a9964ac279d83aacb6b1b1"
+      }
+    },
+    {
+      "name": "charts-100",
+      "before": {
+        "name": "charts-100",
+        "medianMs": 2.890125000000012,
+        "medianHeapDeltaMiB": 0.47119140625,
+        "peakRssMiB": 85.734375,
+        "outputHash": "d024fc9cfc80526d340651f2e3fd0700e642dd9d69539bb6a49174df051d2289"
+      },
+      "after": {
+        "name": "charts-100",
+        "medianMs": 1.6479170000000067,
+        "medianHeapDeltaMiB": 0.36185455322265625,
+        "peakRssMiB": 85.34375,
+        "outputHash": "d024fc9cfc80526d340651f2e3fd0700e642dd9d69539bb6a49174df051d2289"
+      }
+    },
+    {
+      "name": "charts-1000",
+      "before": {
+        "name": "charts-1000",
+        "medianMs": 44.891332999999975,
+        "medianHeapDeltaMiB": 5.4315643310546875,
+        "peakRssMiB": 102.8125,
+        "outputHash": "9bc8afa2c5c282ac0b04fcf99afc2dce0452fe44ce4daf93ccf395c7452a4915"
+      },
+      "after": {
+        "name": "charts-1000",
+        "medianMs": 13.908999999999992,
+        "medianHeapDeltaMiB": 5.4993133544921875,
+        "peakRssMiB": 103.28125,
+        "outputHash": "9bc8afa2c5c282ac0b04fcf99afc2dce0452fe44ce4daf93ccf395c7452a4915"
+      }
+    }
+  ]
+}

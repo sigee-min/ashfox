@@ -17,6 +17,24 @@ export interface AssetProjectSnapshot {
   readonly buildDigest: string;
 }
 
+const immutableSnapshots = new WeakMap<AssetProject, AssetProjectSnapshot>();
+
+// A shallow freeze is insufficient: mutable descendants and accessors must
+// continue through authority validation on every export.
+const isImmutableData = (value: unknown, seen = new WeakSet<object>()): boolean => {
+  if (value === null || typeof value !== 'object') return typeof value !== 'function';
+  if (seen.has(value)) return true;
+  if (!Object.isFrozen(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== Array.prototype) return false;
+  seen.add(value);
+  return Reflect.ownKeys(value).every(key => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return descriptor !== undefined && Object.prototype.hasOwnProperty.call(descriptor, 'value') &&
+      isImmutableData(descriptor.value, seen);
+  });
+};
+
 const snapshotDocument = (document: ProjectDocument): ProjectDocument => {
   const snapshot = snapshotExportData(document, 'project.document',
     'Project export document snapshot failed.');
@@ -79,14 +97,21 @@ export const snapshotAssetProject = (
   if (project === null || typeof project !== 'object') {
     throw new TypeError('Asset export requires one project authority.');
   }
+  const cached = immutableSnapshots.get(project);
+  if (cached !== undefined) return cached;
+  const ownAuthority = ['id', 'revision', 'createdAt', 'updatedAt', 'workspace', 'entry', 'build', 'document']
+    .every(key => Object.prototype.hasOwnProperty.call(project, key));
+  const immutable = ownAuthority && isImmutableData(project);
   const build = snapshotExportData(project.build, 'project.build',
     'Asset build identity snapshot failed.');
   const document = snapshotDocument(project.document);
   assertProjectAuthority(project, document, build);
-  return Object.freeze({
+  const snapshot = Object.freeze({
     document,
     build,
     documentDigest: sha256Digest(canonicalJsonString(document)),
     buildDigest: sha256Digest(canonicalJsonString(build))
   });
+  if (immutable) immutableSnapshots.set(project, snapshot);
+  return snapshot;
 };

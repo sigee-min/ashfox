@@ -1,0 +1,127 @@
+{
+  "node": "v24.13.1",
+  "platform": "darwin/arm64",
+  "baseRef": null,
+  "baselineBundleHash": "7d9a8ec1c539b401570d8864e4d8ed31bf2ce956a3abe123200ca12aae2e81a8",
+  "results": [
+    {
+      "name": "models-1",
+      "before": {
+        "name": "models-1",
+        "medianMs": 39.801874999999995,
+        "medianHeapDeltaMiB": 6.408378601074219,
+        "peakRssMiB": 125.9375,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      },
+      "after": {
+        "name": "models-1",
+        "medianMs": 36.23291600000002,
+        "medianHeapDeltaMiB": 5.448936462402344,
+        "peakRssMiB": 123.234375,
+        "outputHash": "6e53a127bfee4c69319b7f7f70becf831515a70e6181d83097add776054846dc"
+      }
+    },
+    {
+      "name": "models-8",
+      "before": {
+        "name": "models-8",
+        "medianMs": 167.50824999999998,
+        "medianHeapDeltaMiB": 23.682945251464844,
+        "peakRssMiB": 171.28125,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      },
+      "after": {
+        "name": "models-8",
+        "medianMs": 170.32079199999998,
+        "medianHeapDeltaMiB": 27.292312622070312,
+        "peakRssMiB": 170.0625,
+        "outputHash": "20e6e9e9917bed2aa8c2f6c734aa8413e91576e790bba7fd83da4f2889f7aaa8"
+      }
+    },
+    {
+      "name": "models-24",
+      "before": {
+        "name": "models-24",
+        "medianMs": 437.53933300000006,
+        "medianHeapDeltaMiB": 33.263824462890625,
+        "peakRssMiB": 269.0625,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      },
+      "after": {
+        "name": "models-24",
+        "medianMs": 385.10291699999993,
+        "medianHeapDeltaMiB": 24.29071807861328,
+        "peakRssMiB": 261.453125,
+        "outputHash": "19cddb9bc72e80244ae66874e6cd661194707862e3a3461c3af72a68b84a489f"
+      }
+    },
+    {
+      "name": "exports-1",
+      "before": {
+        "name": "exports-1",
+        "medianMs": 158.035125,
+        "medianHeapDeltaMiB": 10.633514404296875,
+        "peakRssMiB": 182.9375,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      },
+      "after": {
+        "name": "exports-1",
+        "medianMs": 145.790458,
+        "medianHeapDeltaMiB": 25.209640502929688,
+        "peakRssMiB": 177.5,
+        "outputHash": "1462f6189b4b8312aa095be573db07ea301adb88217fd69d3cdd4ea57c1915e8"
+      }
+    },
+    {
+      "name": "exports-4",
+      "before": {
+        "name": "exports-4",
+        "medianMs": 323.2015000000001,
+        "medianHeapDeltaMiB": 34.21028137207031,
+        "peakRssMiB": 282.84375,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      },
+      "after": {
+        "name": "exports-4",
+        "medianMs": 297.8611249999999,
+        "medianHeapDeltaMiB": 17.905120849609375,
+        "peakRssMiB": 284.75,
+        "outputHash": "0f416efb8f3a51f89ab5b6c033fae87338e1f7301a5c9233ea16c4889519dd5b"
+      }
+    },
+    {
+      "name": "png-256",
+      "before": {
+        "name": "png-256",
+        "medianMs": 21.833583000000004,
+        "medianHeapDeltaMiB": 17.166488647460938,
+        "peakRssMiB": 144.75,
+        "outputHash": "bc4942b046dd8204b306dc27418ead37aee8482fc99882d4a70a8b50dc8a2447"
+      },
+      "after": {
+        "name": "png-256",
+        "medianMs": 3.2032919999999905,
+        "medianHeapDeltaMiB": 0.30789947509765625,
+        "peakRssMiB": 82.625,
+        "outputHash": "bc4942b046dd8204b306dc27418ead37aee8482fc99882d4a70a8b50dc8a2447"
+      }
+    },
+    {
+      "name": "png-1024",
+      "before": {
+        "name": "png-1024",
+        "medianMs": 276.3045830000001,
+        "medianHeapDeltaMiB": 258.27713775634766,
+        "peakRssMiB": 465.609375,
+        "outputHash": "41820fa9b7891b3489eeb94d38c2a1c89728f028610eb8f6ef06d610f5cb208e"
+      },
+      "after": {
+        "name": "png-1024",
+        "medianMs": 32.56050000000002,
+        "medianHeapDeltaMiB": 0.31195831298828125,
+        "peakRssMiB": 92.703125,
+        "outputHash": "41820fa9b7891b3489eeb94d38c2a1c89728f028610eb8f6ef06d610f5cb208e"
+      }
+    }
+  ]
+}

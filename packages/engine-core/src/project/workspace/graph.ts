@@ -129,7 +129,7 @@ const failure = <T>(
   diagnostics: Object.freeze(sortWorkspaceDiagnostics([...diagnostics]))
 });
 
-const prepareCompilationSnapshot = (
+export const prepareCompilationSnapshot = (
   input: AuthoredAssetWorkspace,
   options: ResolveWorkspaceEntryOptions
 ): WorkspaceReadResult<WorkspaceCompilationSnapshot> => {
@@ -176,7 +176,7 @@ const diagnosticKey = (item: WorkspaceDiagnostic): string => item.source === und
   : [item.code, item.source.packageName ?? '', item.source.path,
     item.source.start.offset, item.source.end.offset].join('\u0000');
 
-const resolveWorkspaceEntryCompilationFromSnapshot = (
+export const resolveWorkspaceEntryCompilationFromSnapshot = (
   snapshot: WorkspaceCompilationSnapshot,
   selector: WorkspaceEntrySelector,
 ): WorkspaceReadResult<WorkspaceEntryCompilation> => {
@@ -357,13 +357,10 @@ export const resolveWorkspaceEntry = (
 
 export const computeWorkspaceEntryBuild = resolveWorkspaceEntry;
 
-export const validateWorkspaceEntries = (
-  workspace: AuthoredAssetWorkspace,
-  options: ResolveWorkspaceEntryOptions = {}
+export const validateCompilationSnapshot = (
+  snapshot: WorkspaceCompilationSnapshot
 ): readonly WorkspaceDiagnostic[] => {
-  const prepared = prepareCompilationSnapshot(workspace, options);
-  if (!prepared.ok) return prepared.diagnostics;
-  const { limits, indexes, cache } = prepared.value;
+  const { limits, indexes, cache } = snapshot;
   const limit = limits.maxDiagnostics;
   const diagnostics: WorkspaceDiagnostic[] = [];
   if (parseWorkspaceSources(indexes, diagnostics, limits, cache) === undefined) {
@@ -387,7 +384,7 @@ export const validateWorkspaceEntries = (
   const emitted = new Set(diagnostics.map(diagnosticKey));
   for (const pkg of indexes.values()) {
     for (const entry of pkg.view.manifest.entries) {
-      const result = resolveWorkspaceEntryCompilationFromSnapshot(prepared.value,
+      const result = resolveWorkspaceEntryCompilationFromSnapshot(snapshot,
         { packageName: pkg.view.name, entryName: entry.name });
       if (!result.ok) {
         for (const diagnostic of result.diagnostics) {
@@ -405,4 +402,12 @@ export const validateWorkspaceEntries = (
     }
   }
   return Object.freeze(sortWorkspaceDiagnostics(diagnostics));
+};
+
+export const validateWorkspaceEntries = (
+  workspace: AuthoredAssetWorkspace,
+  options: ResolveWorkspaceEntryOptions = {}
+): readonly WorkspaceDiagnostic[] => {
+  const prepared = prepareCompilationSnapshot(workspace, options);
+  return prepared.ok ? validateCompilationSnapshot(prepared.value) : prepared.diagnostics;
 };

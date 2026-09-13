@@ -4,80 +4,78 @@ import {
   type CanonicalTextureRaster
 } from './raster';
 
-const writeU32 = (target: number[], value: number): void => {
-  target.push((value >>> 24) & 0xff, (value >>> 16) & 0xff,
-    (value >>> 8) & 0xff, value & 0xff);
-};
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit += 1) {
+    crc = (crc & 1) === 0 ? crc >>> 1 : (crc >>> 1) ^ 0xedb88320;
+  }
+  return crc >>> 0;
+});
 
-const crc32 = (bytes: ArrayLike<number>): number => {
+const crc32 = (bytes: Uint8Array, start: number, end: number): number => {
   let crc = 0xffffffff;
-  for (let index = 0; index < bytes.length; index += 1) {
-    crc ^= bytes[index]!;
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc & 1) === 0 ? crc >>> 1 :
-        (crc >>> 1) ^ 0xedb88320;
-    }
+  for (let index = start; index < end; index += 1) {
+    crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[index]!) & 0xff]!;
   }
   return (crc ^ 0xffffffff) >>> 0;
 };
 
-const adler32 = (bytes: ArrayLike<number>): number => {
-  let first = 1;
-  let second = 0;
-  for (let index = 0; index < bytes.length; index += 1) {
-    first = (first + bytes[index]!) % 65521;
-    second = (second + first) % 65521;
-  }
-  return ((second << 16) | first) >>> 0;
-};
-
-const chunk = (type: string, data: ArrayLike<number>): number[] => {
-  const body: number[] = [];
-  for (const character of type) body.push(character.charCodeAt(0));
-  for (let index = 0; index < data.length; index += 1) body.push(data[index]!);
-  const result: number[] = [];
-  writeU32(result, data.length);
-  for (const byte of body) result.push(byte);
-  writeU32(result, crc32(body));
-  return result;
-};
-
-/** Emits a deterministic RGBA8 PNG using filter 0 and stored DEFLATE blocks.
- * No renderer or platform PNG encoder is involved, so the same canonical
- * raster produces byte-identical Minecraft/GLTF/OBJ texture payloads. */
+/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
+ * exact final buffer. No full-size scanline, compressed or chunk copies. */
 export const encodeCanonicalPng = (
   raster: CanonicalTextureRaster
 ): Uint8Array => {
   assertCanonicalTextureRaster(raster);
-  const scanlines: number[] = [];
-  for (let y = 0; y < raster.height; y += 1) {
-    scanlines.push(0);
-    const start = y * raster.width * 4;
-    for (let index = 0; index < raster.width * 4; index += 1) {
-      scanlines.push(raster.rgba.at(start + index)!);
-    }
-  }
-  const compressed: number[] = [0x78, 0x01];
-  let offset = 0;
-  while (offset < scanlines.length) {
-    const length = Math.min(65535, scanlines.length - offset);
-    const final = offset + length === scanlines.length;
-    compressed.push(final ? 1 : 0, length & 0xff, length >>> 8,
-      (~length) & 0xff, (~length >>> 8) & 0xff);
-    for (let index = offset; index < offset + length; index += 1) {
-      compressed.push(scanlines[index]!);
+  const stride = raster.width * 4 + 1;
+  const scanlineLength = stride * raster.height;
+  const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
+  const bytes = new Uint8Array(57 + compressedLength);
+  const view = new DataView(bytes.buffer);
+  const beginChunk = (offset: number, type: string, length: number): number => {
+    view.setUint32(offset, length);
+    for (let index = 0; index < 4; index += 1) bytes[offset + 4 + index] = type.charCodeAt(index);
+    return offset + 8;
+  };
+  const endChunk = (offset: number, length: number): void => {
+    view.setUint32(offset + 8 + length, crc32(bytes, offset + 4, offset + 8 + length));
+  };
+  bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
+  const header = beginChunk(8, 'IHDR', 13);
+  view.setUint32(header, raster.width);
+  view.setUint32(header + 4, raster.height);
+  bytes.set([8, 6, 0, 0, 0], header + 8);
+  endChunk(8, 13);
+
+  let output = beginChunk(33, 'IDAT', compressedLength);
+  bytes[output++] = 0x78;
+  bytes[output++] = 0x01;
+  let pixel = 0, column = 0, first = 1, second = 0, adlerCount = 0;
+  for (let offset = 0; offset < scanlineLength;) {
+    const length = Math.min(65535, scanlineLength - offset);
+    bytes[output++] = offset + length === scanlineLength ? 1 : 0;
+    view.setUint16(output, length, true);
+    view.setUint16(output + 2, (~length) & 0xffff, true);
+    output += 4;
+    for (let index = 0; index < length; index += 1) {
+      const byte = column === 0 ? 0 : raster.rgba.at(pixel++)!;
+      bytes[output++] = byte;
+      if (++column === stride) column = 0;
+      first += byte;
+      second += first;
+      // zlib's NMAX keeps both sums bounded without per-byte division.
+      if (++adlerCount === 5552) {
+        first %= 65521;
+        second %= 65521;
+        adlerCount = 0;
+      }
     }
     offset += length;
   }
-  writeU32(compressed, adler32(scanlines));
-  const header: number[] = [];
-  writeU32(header, raster.width);
-  writeU32(header, raster.height);
-  header.push(8, 6, 0, 0, 0);
-  const bytes: number[] = [137, 80, 78, 71, 13, 10, 26, 10];
-  for (const part of [chunk('IHDR', header), chunk('IDAT', compressed),
-    chunk('IEND', [])]) for (const byte of part) bytes.push(byte);
-  return Uint8Array.from(bytes);
+  view.setUint32(output, (((second % 65521) << 16) | (first % 65521)) >>> 0);
+  endChunk(33, compressedLength);
+  beginChunk(45 + compressedLength, 'IEND', 0);
+  endChunk(45 + compressedLength, 0);
+  return bytes;
 };
 
 export const canonicalRgbaDigest = (

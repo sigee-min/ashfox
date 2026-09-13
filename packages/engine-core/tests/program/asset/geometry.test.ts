@@ -240,3 +240,32 @@ for (const rootOrigin of [[0, 0, 0], [10, 20, 30]] as const) {
     if (cubeNode?.kind === 'cube') assert.equal(Object.isFrozen(cubeNode.faces), true);
   }
 }
+
+{
+  const cube = geometry('cube', 'body/cube', 'root', [
+    property('origin', vector([0, 0, 0])), property('size', vector([1, 1, 1]))
+  ], [geometry('face', 'body/cube/north', 'root')], boxSurface);
+  const ir = baseIr([instance('body', [cube])]);
+  for (const surfaces of [[], [surfaceBinding(), surfaceBinding('double')]]) {
+    const result = issuesFor({ ...ir, surfaces }, [planFor('box', 4, 2)]);
+    assert.equal(result.product, null);
+    assert.deepEqual(result.diagnostics, ['asset.geometry-surface']);
+  }
+  // Array.find used the first duplicate parent, not the last or a node-type preference.
+  const duplicate = geometry('locator', cube.id, 'root');
+  const firstLocator = issuesFor(baseIr([instance('body', [duplicate, cube])]), []);
+  assert.deepEqual(firstLocator.diagnostics, ['asset.invalid-geometry-scope', 'asset.duplicate-emitted-id']);
+  const firstCube = issuesFor(baseIr([instance('body', [cube, duplicate])]), []);
+  assert.deepEqual(firstCube.diagnostics, ['asset.duplicate-emitted-id']);
+
+  let bindingReads = 0;
+  const unrelated = Array.from({ length: 400 }, (_, i) => ({ ...surfaceBinding(),
+    get surface() { bindingReads++; return symbol(`unused_${i}`); }
+  }));
+  const cubes = Array.from({ length: 100 }, (_, i) => ({ ...cube, id: `cube_${i}`, children: [] }));
+  const result = issuesFor({ ...baseIr([instance('body', cubes)]),
+    surfaces: [...unrelated, surfaceBinding()] }, [planFor('box', 4, 2)]);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.product?.nodes.length, 100);
+  assert.ok(bindingReads <= unrelated.length * 3, `Repeated surface scan: ${bindingReads}`);
+}

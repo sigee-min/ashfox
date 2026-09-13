@@ -41,6 +41,8 @@ export interface AssetExactNumber {
 
 /** Exact arithmetic is bounded before any target-side number conversion. */
 export const ASSET_EXACT_INTEGER_BITS = 512;
+const ASSET_EXACT_INTEGER_LIMIT = 1n << BigInt(ASSET_EXACT_INTEGER_BITS);
+const ASSET_EXACT_INTEGER_MINIMUM = -ASSET_EXACT_INTEGER_LIMIT;
 
 export class AssetValueNumericLimitError extends Error {
   constructor() {
@@ -48,15 +50,6 @@ export class AssetValueNumericLimitError extends Error {
     this.name = 'AssetValueNumericLimitError';
   }
 }
-
-export const assetIntegerBits = (value: bigint): number => {
-  if (typeof value !== 'bigint') return ASSET_EXACT_INTEGER_BITS + 1;
-  const absolute = value < 0n ? -value : value;
-  if (absolute >= (1n << BigInt(ASSET_EXACT_INTEGER_BITS))) {
-    return ASSET_EXACT_INTEGER_BITS + 1;
-  }
-  return absolute === 0n ? 1 : absolute.toString(2).length;
-};
 
 export const isAssetScalarUnit = (value: AssetScalarUnit): boolean =>
   value === 'plain' || value === 'unit' || value === 'texel' ||
@@ -73,8 +66,8 @@ export const isAssetExactNumberWithinBudget = (
   numerator: bigint,
   denominator: bigint
 ): boolean => typeof numerator === 'bigint' && typeof denominator === 'bigint' &&
-  assetIntegerBits(numerator) <= ASSET_EXACT_INTEGER_BITS &&
-  assetIntegerBits(denominator) <= ASSET_EXACT_INTEGER_BITS;
+  numerator > ASSET_EXACT_INTEGER_MINIMUM && numerator < ASSET_EXACT_INTEGER_LIMIT &&
+  denominator > ASSET_EXACT_INTEGER_MINIMUM && denominator < ASSET_EXACT_INTEGER_LIMIT;
 
 export interface AssetNumberValue {
   readonly kind: 'number';
@@ -270,6 +263,10 @@ export const assetExactNumber = (
   }
   const positiveDenominator = denominator < 0n ? -denominator : denominator;
   const signedNumerator = denominator < 0n ? -numerator : numerator;
+  // Integral inputs are already reduced after sign normalization.
+  if (positiveDenominator === 1n) return Object.freeze({
+    numerator: signedNumerator, denominator: 1n, unit
+  });
   let left = signedNumerator < 0n ? -signedNumerator : signedNumerator;
   let right = positiveDenominator;
   while (right !== 0n) {

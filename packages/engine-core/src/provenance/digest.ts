@@ -28,13 +28,17 @@ export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
   const input = inputBytes instanceof Uint8Array
     ? inputBytes
     : Uint8Array.from(inputBytes);
-  const paddedLength = Math.ceil((input.length + 9) / 64) * 64;
-  const bytes = new Uint8Array(paddedLength);
-  bytes.set(input);
-  bytes[input.length] = 0x80;
+  const completeLength = input.length - input.length % 64;
+  // Read complete blocks in place; only the final one or two blocks need
+  // padding. Scratch storage stays bounded even for large texture artifacts.
+  const tail = new Uint8Array(input.length % 64 < 56 ? 64 : 128);
+  for (let index = completeLength; index < input.length; index += 1) {
+    tail[index - completeLength] = input[index];
+  }
+  tail[input.length - completeLength] = 0x80;
   const bitLength = BigInt(input.length) * 8n;
   for (let offset = 0; offset < 8; offset += 1) {
-    bytes[paddedLength - 1 - offset] = Number(
+    tail[tail.length - 1 - offset] = Number(
       (bitLength >> BigInt(offset * 8)) & 0xffn
     );
   }
@@ -44,9 +48,11 @@ export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
   ]);
   const words = new Uint32Array(64);
-  for (let chunk = 0; chunk < bytes.length; chunk += 64) {
+  for (let chunk = 0; chunk < completeLength + tail.length; chunk += 64) {
+    const bytes = chunk < completeLength ? input : tail;
+    const block = chunk < completeLength ? chunk : chunk - completeLength;
     for (let index = 0; index < 16; index += 1) {
-      const start = chunk + index * 4;
+      const start = block + index * 4;
       words[index] = (
         (bytes[start] << 24) |
         (bytes[start + 1] << 16) |
@@ -68,7 +74,8 @@ export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
       ) >>> 0;
     }
 
-    let [a, b, c, d, e, f, g, h] = state;
+    let a = state[0], b = state[1], c = state[2], d = state[3];
+    let e = state[4], f = state[5], g = state[6], h = state[7];
     for (let index = 0; index < 64; index += 1) {
       const sum1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
       const choice = (e & f) ^ (~e & g);

@@ -20,7 +20,8 @@ import {
 import type { WorkspaceEntrySelector } from '../../../project/workspace/graph/contract';
 import {
   resolveWorkspaceEntryCompilation,
-  type ResolveWorkspaceEntryOptions
+  type ResolveWorkspaceEntryOptions,
+  type WorkspaceEntryCompilation
 } from '../../../project/workspace/graph';
 import { computeWorkspaceHash } from '../../../project/workspace/hash';
 import { sha256Digest } from '../../../provenance/digest';
@@ -28,6 +29,7 @@ import { lowerAssetGeometry } from './canonicalGeometry';
 import { lowerAssetRigAndMotions } from './canonicalRig';
 import { buildAssetHir } from './hir';
 import { instantiateAsset } from './instantiate';
+import { parentCycles } from './parentCycles';
 import type { InstantiatedAssetIr } from './ir';
 import { lowerAssetTextures } from './textureBinding';
 
@@ -138,18 +140,9 @@ const validateScene = (
       location, 'asset.canonical-motion-target',
       `Animation "${clip.name}" targets a missing non-bone node.`));
   }
-  for (const node of nodes) {
-    const visited = new Set<string>();
-    let current: SceneNode | undefined = node;
-    while (current?.parentId !== null && current !== undefined) {
-      if (visited.has(current.id)) {
-        diagnostics.push(rootDiagnostic(location, 'asset.canonical-parent-cycle',
-          `Canonical parent cycle contains node "${current.id}".`));
-        break;
-      }
-      visited.add(current.id);
-      current = byId.get(current.parentId);
-    }
+  for (const id of parentCycles(nodes, byId)) {
+    diagnostics.push(rootDiagnostic(location, 'asset.canonical-parent-cycle',
+      `Canonical parent cycle contains node "${id}".`));
   }
   return diagnostics;
 };
@@ -199,16 +192,13 @@ const finalizeModel = (
     : deepFreeze({ ok: true as const, model: deepFreeze(model) });
 };
 
-/** Compile one selected workspace entry through the complete hermetic pipeline. */
-export const compileAssetWorkspaceEntry = (
-  workspace: AuthoredAssetWorkspace,
-  selector: WorkspaceEntrySelector,
-  options: ResolveWorkspaceEntryOptions = {}
+/** Internal lowering of a closure from the current validated compilation snapshot. */
+export const compileResolvedAssetWorkspaceEntry = (
+  workspaceHash: Sha256Digest,
+  resolved: WorkspaceEntryCompilation
 ): CompileAssetWorkspaceEntryResult => {
   try {
-    const resolved = resolveWorkspaceEntryCompilation(workspace, selector, options);
-    if (!resolved.ok) return fail(resolved.diagnostics);
-    const closure = resolved.value.closure;
+    const closure = resolved.closure;
     const rootLocation: RootLocation = {
       packageName: closure.root.identity.packageName,
       path: closure.root.identity.path,
@@ -242,18 +232,33 @@ export const compileAssetWorkspaceEntry = (
     if (!finalized.ok) return fail(finalized.diagnostics);
     const productHash = sha256Digest(canonicalJsonString(finalized.model)) as Sha256Digest;
     const build: AssetBuildIdentity = deepFreeze({
-      packageName: resolved.value.build.packageName,
-      entryName: resolved.value.build.entryName,
-      path: resolved.value.build.entryPath,
-      workspaceHash: computeWorkspaceHash(workspace),
-      closureHash: resolved.value.build.closureHash,
-      buildKey: resolved.value.build.buildKey,
-      compilerFingerprint: resolved.value.build.compilerFingerprint,
+      packageName: resolved.build.packageName,
+      entryName: resolved.build.entryName,
+      path: resolved.build.entryPath,
+      workspaceHash,
+      closureHash: resolved.build.closureHash,
+      buildKey: resolved.build.buildKey,
+      compilerFingerprint: resolved.build.compilerFingerprint,
       productHash
     });
     return deepFreeze({ ok: true as const, model: finalized.model, build });
   } catch {
     return fail([errorDiagnostic('asset.compiler-failure',
       'Asset compilation failed closed.')]);
+  }
+};
+
+/** Compile one selected workspace entry through the complete hermetic pipeline. */
+export const compileAssetWorkspaceEntry = (
+  workspace: AuthoredAssetWorkspace,
+  selector: WorkspaceEntrySelector,
+  options: ResolveWorkspaceEntryOptions = {}
+): CompileAssetWorkspaceEntryResult => {
+  try {
+    const resolved = resolveWorkspaceEntryCompilation(workspace, selector, options);
+    if (!resolved.ok) return fail(resolved.diagnostics);
+    return compileResolvedAssetWorkspaceEntry(computeWorkspaceHash(workspace), resolved.value);
+  } catch {
+    return fail([errorDiagnostic('asset.compiler-failure', 'Asset compilation failed closed.')]);
   }
 };
