@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/sigee-min/ashfox/compare/v2.0.0...v2.0.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **compiler:** eliminate redundant work and quadratic validation ([fdcf579](https://github.com/sigee-min/ashfox/commit/fdcf579c7bdcb2e8c17fd4d3a844e0a00934bd9d))
+
 ## [2.0.0](https://github.com/sigee-min/ashfox/compare/v1.0.0...v2.0.0) (2026-09-13)
 
 
