@@ -8,98 +8,97 @@ import {
   type TypedComponent,
   type TypedGeometryBlock,
   type TypedGeometryStatement,
-  type TypedMotion
+  type TypedRigContract,
+  type TypedSkeleton,
 } from './contract';
 import { AssetBudgetAbort } from './budgets';
-import {
-  composeAssetFrames,
-  connectAssetFrames,
-  type AssetExactFrame
-} from './frame';
+import { composeAssetFrames, type AssetExactFrame } from './frame';
 import { identityTypedFrame } from './hirFrames';
 import {
-  type AssetBudgetDimension,
-  type AssetBudgetLedger,
+  INSTANTIATION_LIMITS,
+  InstantiationLedger,
+  buildMotions,
+  collectSelectedSurfaces,
+  placeConnections,
+  type InstantiationSession,
+} from './instantiatePlan';
+import {
   type AssetInstantiationResult,
   type InstantiatedBone,
   type InstantiatedComponentInstance,
   type InstantiatedGeometryNode,
   type InstantiatedGeometryProperty,
   type InstantiatedGeometrySurface,
-  type InstantiatedMotion,
-  type InstantiatedMotionChannel,
-  type InstantiatedMotionKey,
-  type InstantiatedSocketConnection,
   type InstantiatedSocketEndpoint,
-  type InstantiatedSurfaceBinding
 } from './ir';
 import { evaluateAssetExpression } from './valueEvaluate';
-import {
-  assetExactNumber,
-  assetNumberValue,
-  assetVectorValue,
-  type AssetValue,
-  type AssetVectorValue
-} from './value/contract';
-
-const LIMITS: Readonly<Record<AssetBudgetDimension, number>> = freeze({
-  instances: 1024,
-  bones: 4096,
-  nodes: 16384,
-  faces: 65536,
-  motionKeys: 65536,
-  diagnostics: 256
-});
-
-class Ledger {
-  private readonly values = new Map<AssetBudgetDimension, number>();
-  constructor(private readonly issue: (path: string, span: SourceSpan,
-    code: string, message: string) => void) {}
-  use(dimension: AssetBudgetDimension, path: string, span: SourceSpan): void {
-    const next = (this.values.get(dimension) ?? 0) + 1;
-    this.values.set(dimension, next);
-    if (next > LIMITS[dimension]) {
-      this.issue(path, span, 'asset.instantiation-limit',
-        `Asset instantiation exceeds the ${dimension} budget.`);
-      throw new AssetBudgetAbort();
-    }
-  }
-  note(dimension: AssetBudgetDimension): void {
-    this.values.set(dimension, (this.values.get(dimension) ?? 0) + 1);
-  }
-  snapshot(): AssetBudgetLedger {
-    const used = Object.create(null) as Record<AssetBudgetDimension, number>;
-    for (const key of Object.keys(LIMITS) as AssetBudgetDimension[]) {
-      used[key] = this.values.get(key) ?? 0;
-    }
-    return freeze({ limits: LIMITS, used: freeze(used) });
-  }
-}
-
-interface Session {
-  readonly hir: TypedAssetHir;
-  readonly diagnostics: AssetDiagnostic[];
-  readonly ledger: Ledger;
-  readonly nodeIds: Set<string>;
-  readonly pathFor: (symbol: AssetSymbolId) => string;
-  readonly issue: (path: string, span: SourceSpan, code: string, message: string) => void;
-}
+import { type AssetValue } from './value/contract';
 
 const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  left.path.localeCompare(right.path) || left.span.start.offset - right.span.start.offset ||
-  left.span.end.offset - right.span.end.offset || left.code.localeCompare(right.code);
+  left.path.localeCompare(right.path) ||
+  left.span.start.offset - right.span.start.offset ||
+  left.span.end.offset - right.span.end.offset ||
+  left.code.localeCompare(right.code);
 
 const rootAsset = (hir: TypedAssetHir): TypedAssetAssembly | null => {
-  const rootKeys = new Set(Object.entries(hir.modules)
-    .filter(([, module]) => module.path === hir.rootPath).map(([key]) => key));
+  const rootKeys = new Set(
+    Object.entries(hir.modules)
+      .filter(([, module]) => module.path === hir.rootPath)
+      .map(([key]) => key),
+  );
   const matches = Object.values(hir.assets).filter((asset) =>
-    rootKeys.has(asset.symbol.modulePath));
+    rootKeys.has(asset.symbol.modulePath),
+  );
   return matches.length === 1 ? matches[0]! : null;
 };
 
+interface BoneBuildContext {
+  readonly session: InstantiationSession;
+  readonly rig: TypedRigContract;
+  readonly skeleton: TypedSkeleton;
+  readonly path: string;
+  readonly bones: InstantiatedBone[];
+  readonly world: Map<string, AssetExactFrame>;
+  readonly active: Set<string>;
+}
+
+const addBone = (id: string, ctx: BoneBuildContext): AssetExactFrame | null => {
+  const known = ctx.world.get(id);
+  if (known !== undefined) return known;
+  const joint = ctx.rig.joints[id];
+  const local = ctx.skeleton.binds[id];
+  if (joint === undefined || local === undefined || ctx.active.has(id)) return null;
+  ctx.active.add(id);
+  const parentWorld = joint.parent === null ? identityTypedFrame() : addBone(joint.parent, ctx);
+  const restFrame = parentWorld === null ? null : composeAssetFrames(parentWorld, local);
+  ctx.active.delete(id);
+  if (restFrame === null) {
+    ctx.session.issue(
+      ctx.path,
+      joint.span,
+      'asset.invalid-rest-frame',
+      `Cannot compose rest frame for semantic joint "${id}".`,
+    );
+    return null;
+  }
+  ctx.session.ledger.use('bones', ctx.path, joint.span);
+  ctx.world.set(id, restFrame);
+  ctx.bones.push(
+    freeze({
+      id,
+      semanticJoint: id,
+      parentId: joint.parent,
+      parentRestFrame: local,
+      sourcePath: ctx.path,
+      span: joint.span,
+    }),
+  );
+  return restFrame;
+};
+
 const buildBones = (
-  session: Session,
-  asset: TypedAssetAssembly
+  session: InstantiationSession,
+  asset: TypedAssetAssembly,
 ): Readonly<{
   readonly bones: readonly InstantiatedBone[];
   readonly world: ReadonlyMap<string, AssetExactFrame>;
@@ -107,121 +106,150 @@ const buildBones = (
   const skeleton = session.hir.skeletons[asset.skeleton.key];
   const rig = skeleton === undefined ? undefined : session.hir.rigs[skeleton.rig.key];
   if (skeleton === undefined || rig === undefined) return null;
-  const path = session.pathFor(skeleton.symbol);
-  const bones: InstantiatedBone[] = [];
-  const world = new Map<string, AssetExactFrame>();
-  const active = new Set<string>();
-  const add = (id: string): AssetExactFrame | null => {
-    const known = world.get(id);
-    if (known !== undefined) return known;
-    const joint = rig.joints[id];
-    const local = skeleton.binds[id];
-    if (joint === undefined || local === undefined || active.has(id)) return null;
-    active.add(id);
-    const parentWorld = joint.parent === null ? identityTypedFrame() : add(joint.parent);
-    const restFrame = parentWorld === null ? null : composeAssetFrames(parentWorld, local);
-    active.delete(id);
-    if (restFrame === null) {
-      session.issue(path, joint.span, 'asset.invalid-rest-frame',
-        `Cannot compose rest frame for semantic joint "${id}".`);
-      return null;
-    }
-    session.ledger.use('bones', path, joint.span);
-    world.set(id, restFrame);
-    bones.push(freeze({ id, semanticJoint: id, parentId: joint.parent,
-      parentRestFrame: local, sourcePath: path, span: joint.span }));
-    return restFrame;
+  const ctx: BoneBuildContext = {
+    session,
+    rig,
+    skeleton,
+    path: session.pathFor(skeleton.symbol),
+    bones: [],
+    world: new Map<string, AssetExactFrame>(),
+    active: new Set<string>(),
   };
-  for (const id of Object.keys(rig.joints).sort()) add(id);
-  bones.sort((left, right) => left.id.localeCompare(right.id));
-  return freeze({ bones: freeze(bones), world });
+  for (const id of Object.keys(rig.joints).sort()) addBone(id, ctx);
+  ctx.bones.sort((left, right) => left.id.localeCompare(right.id));
+  return freeze({ bones: freeze(ctx.bones), world: ctx.world });
 };
 
 const evaluated = (
-  session: Session,
+  session: InstantiationSession,
   path: string,
   statement: Extract<TypedGeometryStatement, { readonly kind: 'typed-geometry-property' }>,
-  environment: ReadonlyMap<string, AssetValue>
+  environment: ReadonlyMap<string, AssetValue>,
 ): InstantiatedGeometryProperty | null => {
   const result = evaluateAssetExpression(statement.expression, environment);
   if (!result.ok) {
-    for (const item of result.diagnostics) session.issue(path, item.span,
-      item.code, item.message);
+    for (const item of result.diagnostics) session.issue(path, item.span, item.code, item.message);
     return null;
   }
   return freeze({ name: statement.name, value: result.value, span: statement.span });
 };
 
 const surfaceOf = (
-  session: Session,
+  session: InstantiationSession,
   path: string,
   block: TypedGeometryBlock,
-  bindings: Readonly<Record<string, AssetSymbolId>>
+  bindings: Readonly<Record<string, AssetSymbolId>>,
 ): InstantiatedGeometrySurface | null => {
-  const surfaces = block.statements.filter((statement) =>
-    statement.kind === 'typed-geometry-surface-bind');
+  const surfaces = block.statements.filter(
+    (statement) => statement.kind === 'typed-geometry-surface-bind',
+  );
   if (surfaces.length === 0) return null;
   const source = surfaces[0]!;
   const surface = bindings[source.surfacePort];
   if (surface === undefined || session.hir.surfaces[surface.key] === undefined) {
-    session.issue(path, source.span, 'asset.missing-surface-binding',
-      `Geometry surface port "${source.surfacePort}" has no concrete binding.`);
+    session.issue(
+      path,
+      source.span,
+      'asset.missing-surface-binding',
+      `Geometry surface port "${source.surfacePort}" has no concrete binding.`,
+    );
     return null;
   }
-  return freeze({ port: source.surfacePort, chart: source.chart,
-    surface, span: source.span });
+  return freeze({ port: source.surfacePort, chart: source.chart, surface, span: source.span });
+};
+
+interface GeometryWalkContext {
+  readonly session: InstantiationSession;
+  readonly path: string;
+  readonly instanceId: string;
+  readonly environment: ReadonlyMap<string, AssetValue>;
+  readonly surfaceBindings: Readonly<Record<string, AssetSymbolId>>;
+  readonly jointBindings: ReadonlyMap<string, string>;
+}
+
+const evaluateBlockProperties = (
+  ctx: GeometryWalkContext,
+  block: TypedGeometryBlock,
+): readonly InstantiatedGeometryProperty[] => {
+  const properties: InstantiatedGeometryProperty[] = [];
+  for (const child of block.statements) {
+    if (child.kind !== 'typed-geometry-property') continue;
+    const property = evaluated(ctx.session, ctx.path, child, ctx.environment);
+    if (property !== null) properties.push(property);
+  }
+  return freeze(properties);
+};
+
+const walkGeometry = (
+  ctx: GeometryWalkContext,
+  statements: readonly TypedGeometryStatement[],
+  attachment: string | null,
+  lexicalPath: readonly string[],
+): InstantiatedGeometryNode[] => {
+  const nodes: InstantiatedGeometryNode[] = [];
+  for (const statement of statements) {
+    if (statement.kind !== 'typed-geometry-block') continue;
+    const nextPath = [...lexicalPath, statement.id];
+    const bound = statement.keyword === 'bone' ? ctx.jointBindings.get(statement.id) : undefined;
+    if (bound !== undefined) {
+      nodes.push(...walkGeometry(ctx, statement.statements, bound, nextPath));
+      continue;
+    }
+    const id = [ctx.instanceId, ...nextPath].join('/');
+    const nextAttachment = statement.keyword === 'bone' ? id : attachment;
+    if (ctx.session.nodeIds.has(id)) {
+      ctx.session.issue(
+        ctx.path,
+        statement.span,
+        'asset.duplicate-emitted-id',
+        `Instantiated node id "${id}" is not unique.`,
+      );
+    }
+    ctx.session.nodeIds.add(id);
+    ctx.session.ledger.use(
+      statement.keyword === 'face' ? 'faces' : 'nodes',
+      ctx.path,
+      statement.span,
+    );
+    nodes.push(
+      freeze({
+        kind: statement.keyword,
+        id,
+        attachmentBoneId: attachment,
+        properties: evaluateBlockProperties(ctx, statement),
+        surface: surfaceOf(ctx.session, ctx.path, statement, ctx.surfaceBindings),
+        children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
+        sourcePath: ctx.path,
+        span: statement.span,
+      }),
+    );
+  }
+  return nodes;
 };
 
 const instantiateGeometry = (
-  session: Session,
+  session: InstantiationSession,
   component: TypedComponent,
   instanceId: string,
   environment: ReadonlyMap<string, AssetValue>,
-  surfaceBindings: Readonly<Record<string, AssetSymbolId>>
+  surfaceBindings: Readonly<Record<string, AssetSymbolId>>,
 ): readonly InstantiatedGeometryNode[] => {
-  const path = session.pathFor(component.symbol);
-  const jointBindings = new Map(component.jointBindings.map((binding) =>
-    [binding.geometryBone, binding.rigJoint]));
-  const walk = (
-    statements: readonly TypedGeometryStatement[],
-    attachment: string | null,
-    lexicalPath: readonly string[]
-  ): InstantiatedGeometryNode[] => {
-    const nodes: InstantiatedGeometryNode[] = [];
-    for (const statement of statements) {
-      if (statement.kind !== 'typed-geometry-block') continue;
-      const nextPath = [...lexicalPath, statement.id];
-      const bound = statement.keyword === 'bone' ? jointBindings.get(statement.id) : undefined;
-      const nextAttachment = bound ?? (statement.keyword === 'bone'
-        ? [instanceId, ...nextPath].join('/') : attachment);
-      if (bound !== undefined) {
-        nodes.push(...walk(statement.statements, bound, nextPath));
-        continue;
-      }
-      const id = [instanceId, ...nextPath].join('/');
-      if (session.nodeIds.has(id)) session.issue(path, statement.span,
-        'asset.duplicate-emitted-id', `Instantiated node id "${id}" is not unique.`);
-      session.nodeIds.add(id);
-      session.ledger.use(statement.keyword === 'face' ? 'faces' : 'nodes', path, statement.span);
-      const properties: InstantiatedGeometryProperty[] = [];
-      for (const child of statement.statements) if (child.kind === 'typed-geometry-property') {
-        const property = evaluated(session, path, child, environment);
-        if (property !== null) properties.push(property);
-      }
-      nodes.push(freeze({ kind: statement.keyword, id, attachmentBoneId: attachment,
-        properties: freeze(properties),
-        surface: surfaceOf(session, path, statement, surfaceBindings),
-        children: freeze(walk(statement.statements, nextAttachment, nextPath)),
-        sourcePath: path, span: statement.span }));
-    }
-    return nodes;
+  const ctx: GeometryWalkContext = {
+    session,
+    path: session.pathFor(component.symbol),
+    instanceId,
+    environment,
+    surfaceBindings,
+    jointBindings: new Map(
+      component.jointBindings.map((binding) => [binding.geometryBone, binding.rigJoint]),
+    ),
   };
-  return freeze(walk(component.geometry.statements, null, freeze([])));
+  return freeze(walkGeometry(ctx, component.geometry.statements, null, freeze([])));
 };
 
 const buildInstance = (
-  session: Session,
-  use: TypedAssetAssembly['uses'][number]
+  session: InstantiationSession,
+  use: TypedAssetAssembly['uses'][number],
 ): InstantiatedComponentInstance | null => {
   const component = session.hir.components[use.component.key];
   if (component === undefined) return null;
@@ -232,198 +260,84 @@ const buildInstance = (
     if (session.hir.surfaces[symbol.key] !== undefined) surfaceBindings[port] = symbol;
   }
   const environment = new Map(Object.entries(use.parameters));
-  const placementAuthority = component.ports.some((port) =>
-    port.direction === 'requires' && port.domain === 'rig') ? 'rig' : 'socket';
+  const placementAuthority = component.ports.some(
+    (port) => port.direction === 'requires' && port.domain === 'rig',
+  )
+    ? 'rig'
+    : 'socket';
   const socketEndpoints: InstantiatedSocketEndpoint[] = component.socketBindings.map((binding) => {
     const port = component.ports.find((candidate) => candidate.id === binding.port)!;
-    const semantic = component.jointBindings.find((candidate) =>
-      candidate.geometryBone === binding.geometryBone)?.rigJoint;
-    return freeze({ port: binding.port,
+    const semantic = component.jointBindings.find(
+      (candidate) => candidate.geometryBone === binding.geometryBone,
+    )?.rigJoint;
+    return freeze({
+      port: binding.port,
       geometryBoneId: semantic ?? `${use.id}/${binding.geometryBone}`,
-      frame: binding.frame, contract: port.type, sourcePath: path, span: binding.span });
-  });
-  return freeze({ id: use.id, component: component.symbol,
-    placementAuthority,
-    placement: identityTypedFrame(), parameters: use.parameters,
-    socketEndpoints: freeze(socketEndpoints),
-    geometry: instantiateGeometry(session, component, use.id, environment,
-      freeze(surfaceBindings)), sourcePath: path, span: use.span });
-};
-
-const endpoint = (
-  instance: InstantiatedComponentInstance,
-  port: string
-): InstantiatedSocketEndpoint | null => instance.socketEndpoints.find((item) =>
-  item.port === port) ?? null;
-
-const placeConnections = (
-  session: Session,
-  asset: TypedAssetAssembly,
-  instances: readonly InstantiatedComponentInstance[],
-  skeletonWorld: ReadonlyMap<string, AssetExactFrame>
-): Readonly<{ readonly instances: readonly InstantiatedComponentInstance[];
-  readonly connections: readonly InstantiatedSocketConnection[] }> => {
-  const skeleton = session.hir.skeletons[asset.skeleton.key]!;
-  const rig = session.hir.rigs[skeleton.rig.key]!;
-  const byId = new Map(instances.map((instance) => [instance.id, instance]));
-  const placements = new Map(instances.filter((instance) =>
-    instance.placementAuthority === 'rig').map((instance) => [instance.id, instance.placement]));
-  const placed = new Set(placements.keys());
-  const pending = [...asset.connections];
-  const connections: InstantiatedSocketConnection[] = [];
-  let progressed = true;
-  while (pending.length > 0 && progressed) {
-    progressed = false;
-    for (let index = pending.length - 1; index >= 0; index -= 1) {
-      const connection = pending[index]!;
-      const target = byId.get(connection.toInstance);
-      const required = target === undefined ? null : endpoint(target, connection.toPort);
-      let providerWorld: AssetExactFrame | null = null;
-      let providerLocal: AssetExactFrame | null = null;
-      let parentBoneId: string | null = null;
-      if (connection.fromInstance === 'skeleton') {
-        const socket = rig.sockets[connection.fromPort];
-        const jointWorld = socket === undefined ? undefined : skeletonWorld.get(socket.joint);
-        parentBoneId = socket?.joint ?? null;
-        providerLocal = socket?.frame ?? null;
-        providerWorld = socket === undefined || jointWorld === undefined ? null :
-          composeAssetFrames(jointWorld, socket.frame);
-      } else {
-        const provider = byId.get(connection.fromInstance);
-        const provided = provider === undefined ? null : endpoint(provider, connection.fromPort);
-        const placement = provider === undefined ? undefined : placements.get(provider.id);
-        const semanticWorld = provided === null ? undefined :
-          skeletonWorld.get(provided.geometryBoneId);
-        const ownerWorld = semanticWorld ?? placement;
-        parentBoneId = provided?.geometryBoneId ?? null;
-        providerLocal = provided?.frame ?? null;
-        providerWorld = provided === null || ownerWorld === undefined ||
-          !placed.has(provider!.id) ? null : composeAssetFrames(ownerWorld, provided.frame);
-      }
-      if (providerWorld === null || providerLocal === null ||
-        parentBoneId === null || required === null) continue;
-      const parentPlacement = connectAssetFrames(providerLocal, required.frame);
-      const placement = connectAssetFrames(providerWorld, required.frame);
-      if (parentPlacement === null || placement === null) {
-        session.issue(target!.sourcePath, connection.span, 'asset.connection-frame',
-          'Socket connection frames cannot be composed exactly.');
-        pending.splice(index, 1);
-        progressed = true;
-        continue;
-      }
-      placements.set(target!.id, placement);
-      placed.add(target!.id);
-      connections.push(freeze({ id: `${connection.fromInstance}.${connection.fromPort}->` +
-        `${connection.toInstance}.${connection.toPort}`,
-      fromInstance: connection.fromInstance, fromPort: connection.fromPort,
-      toInstance: connection.toInstance, toPort: connection.toPort,
-      targetBoneId: required.geometryBoneId, parentBoneId,
-      parentPlacement, span: connection.span }));
-      pending.splice(index, 1);
-      progressed = true;
-    }
-  }
-  for (const connection of pending) session.issue(session.pathFor(asset.symbol),
-    connection.span, 'asset.connection-order',
-    'Socket connection cannot resolve a provider placement.');
-  const placedInstances = instances.map((instance) => freeze({ ...instance,
-    placement: placements.get(instance.id) ?? instance.placement }));
-  connections.sort((left, right) => left.id.localeCompare(right.id));
-  return freeze({ instances: freeze(placedInstances), connections: freeze(connections) });
-};
-
-const buildMotions = (
-  session: Session,
-  asset: TypedAssetAssembly
-): readonly InstantiatedMotion[] => {
-  const skeleton = session.hir.skeletons[asset.skeleton.key]!;
-  const rig = session.hir.rigs[skeleton.rig.key]!;
-  const dot = (left: readonly number[], right: readonly number[]): -1 | 0 | 1 =>
-    (left[0]! * right[0]! + left[1]! * right[1]! + left[2]! * right[2]!) as -1 | 0 | 1;
-  const mapVector = (
-    source: AssetVectorValue,
-    target: string,
-    property: InstantiatedMotionChannel['property']
-  ): AssetVectorValue | null => {
-    const semantic = rig.joints[target]?.frame;
-    const concrete = skeleton.binds[target];
-    if (semantic === undefined || concrete === undefined) return null;
-    const semanticAxes = [semantic.xAxis, semantic.yAxis, semantic.zAxis];
-    const concreteAxes = [concrete.xAxis, concrete.yAxis, concrete.zAxis];
-    try {
-      const values = concreteAxes.map((targetAxis) => {
-        const sourceIndex = semanticAxes.findIndex((sourceAxis) =>
-          dot(targetAxis, sourceAxis) !== 0);
-        const coefficient = dot(targetAxis, semanticAxes[sourceIndex]!);
-        const input = source.values[sourceIndex]!.value;
-        return assetNumberValue(assetExactNumber(
-          input.numerator * BigInt(property === 'scale' ? Math.abs(coefficient) : coefficient),
-          input.denominator,
-          input.unit
-        ));
-      });
-      return assetVectorValue(values, source.type);
-    } catch {
-      return null;
-    }
-  };
-  return asset.motions.flatMap((symbol) => {
-  const motion: TypedMotion | undefined = session.hir.motions[symbol.key];
-  if (motion === undefined) return [];
-  const path = session.pathFor(motion.symbol);
-  const channels: InstantiatedMotionChannel[] = motion.tracks.flatMap((track) => {
-    const keys: InstantiatedMotionKey[] = track.keyframes.flatMap((key) => {
-      session.ledger.use('motionKeys', path, key.span);
-      const value = mapVector(key.value, track.target, track.property);
-      if (value === null) {
-        session.issue(path, key.span, 'asset.motion-frame-map',
-          `Motion key cannot map semantic joint "${track.target}" into its skeleton frame.`);
-        return [];
-      }
-      return [freeze({ time: key.time, value,
-        interpolation: key.interpolation, span: key.span })];
+      frame: binding.frame,
+      contract: port.type,
+      sourcePath: path,
+      span: binding.span,
     });
-    return [freeze({ id: `${motion.symbol.name}:${track.target}:${track.property}`,
-      targetBoneId: track.target, property: track.property,
-      keys: freeze(keys), span: track.span })];
   });
-  return [freeze({ symbol: motion.symbol, sourcePath: path, duration: motion.duration,
-    fps: motion.fps, loop: motion.loop, restRelative: motion.restRelative,
-    channels: freeze(channels), span: motion.span })];
+  return freeze({
+    id: use.id,
+    component: component.symbol,
+    placementAuthority,
+    placement: identityTypedFrame(),
+    parameters: use.parameters,
+    socketEndpoints: freeze(socketEndpoints),
+    geometry: instantiateGeometry(session, component, use.id, environment, freeze(surfaceBindings)),
+    sourcePath: path,
+    span: use.span,
   });
+};
+
+const createSession = (
+  hir: TypedAssetHir,
+  diagnostics: AssetDiagnostic[],
+): InstantiationSession => {
+  const modulePaths = new Map(
+    Object.entries(hir.modules).map(([key, module]) => [key, module.path]),
+  );
+  const pathFor = (symbol: AssetSymbolId): string =>
+    modulePaths.get(symbol.modulePath) ?? hir.rootPath;
+  let ledger!: InstantiationLedger;
+  const issue = (path: string, span: SourceSpan, code: string, message: string): void => {
+    if (diagnostics.length >= INSTANTIATION_LIMITS.diagnostics) throw new AssetBudgetAbort();
+    diagnostics.push(freeze({ severity: 'error', code, message, path, span }));
+    if (ledger !== undefined) ledger.note('diagnostics');
+  };
+  ledger = new InstantiationLedger(issue);
+  return freeze({ hir, diagnostics, ledger, nodeIds: new Set<string>(), pathFor, issue });
 };
 
 /** Instantiate one selected root asset. HIR and plans never escape the compiler. */
 export const instantiateAsset = (hir: TypedAssetHir): AssetInstantiationResult => {
   const diagnostics: AssetDiagnostic[] = [];
-  const modulePaths = new Map(Object.entries(hir.modules).map(([key, module]) =>
-    [key, module.path]));
-  const pathFor = (symbol: AssetSymbolId): string =>
-    modulePaths.get(symbol.modulePath) ?? hir.rootPath;
-  let ledger!: Ledger;
-  const issue = (path: string, span: SourceSpan, code: string, message: string): void => {
-    if (diagnostics.length >= LIMITS.diagnostics) throw new AssetBudgetAbort();
-    diagnostics.push(freeze({ severity: 'error', code, message, path, span }));
-    if (ledger !== undefined) ledger.note('diagnostics');
-  };
-  ledger = new Ledger(issue);
-  const session: Session = freeze({ hir, diagnostics, ledger,
-    nodeIds: new Set<string>(), pathFor, issue });
+  const session = createSession(hir, diagnostics);
   try {
     const asset = rootAsset(hir);
     if (asset === null || asset.settings.forward === null) {
       const span = Object.values(hir.assets)[0]?.span;
       if (span === undefined) throw new TypeError('Typed HIR has no selected root asset span.');
-      issue(hir.rootPath, span, 'asset.root-entry',
-        'Typed HIR must contain one selected root asset.');
+      session.issue(
+        hir.rootPath,
+        span,
+        'asset.root-entry',
+        'Typed HIR must contain one selected root asset.',
+      );
       throw new AssetBudgetAbort();
     }
     const skeleton = hir.skeletons[asset.skeleton.key];
     const rig = skeleton === undefined ? undefined : hir.rigs[skeleton.rig.key];
     const bonePlan = buildBones(session, asset);
     if (skeleton === undefined || rig === undefined || bonePlan === null) {
-      issue(pathFor(asset.symbol), asset.span, 'asset.missing-skeleton',
-        'Selected asset requires a complete typed skeleton and rig.');
+      session.issue(
+        session.pathFor(asset.symbol),
+        asset.span,
+        'asset.missing-skeleton',
+        'Selected asset requires a complete typed skeleton and rig.',
+      );
       throw new AssetBudgetAbort();
     }
     const rawInstances = asset.uses.flatMap((use) => {
@@ -431,27 +345,25 @@ export const instantiateAsset = (hir: TypedAssetHir): AssetInstantiationResult =
       return instance === null ? [] : [instance];
     });
     const placed = placeConnections(session, asset, rawInstances, bonePlan.world);
-    const selectedSurfaces = new Map<string, InstantiatedSurfaceBinding>();
-    for (const use of asset.uses) for (const symbol of Object.values(use.portBindings)) {
-      const surface = hir.surfaces[symbol.key];
-      const contract = surface === undefined ? undefined : hir.surfaceContracts[surface.contract.key];
-      if (surface === undefined || contract === undefined || selectedSurfaces.has(symbol.key)) continue;
-      selectedSurfaces.set(symbol.key, freeze({ surface: symbol, contract: contract.symbol,
-        material: surface.material, charts: freeze(Object.keys(contract.charts).sort()),
-        span: surface.span }));
-    }
+    const surfaces = collectSelectedSurfaces(hir, asset);
     if (diagnostics.length > 0) throw new AssetBudgetAbort();
-    return freeze({ ok: true, ir: freeze({ asset: asset.symbol,
-      settings: freeze({ density: asset.settings.density,
-        forward: asset.settings.forward }), rig: rig.symbol, skeleton: skeleton.symbol,
-      bones: bonePlan.bones, instances: placed.instances,
-      surfaces: freeze([...selectedSurfaces.values()].sort((left, right) =>
-        left.surface.key.localeCompare(right.surface.key))),
-      connections: placed.connections, motions: freeze(buildMotions(session, asset)),
-      budget: ledger.snapshot() }) });
+    return freeze({
+      ok: true,
+      ir: freeze({
+        asset: asset.symbol,
+        settings: freeze({ density: asset.settings.density, forward: asset.settings.forward }),
+        rig: rig.symbol,
+        skeleton: skeleton.symbol,
+        bones: bonePlan.bones,
+        instances: placed.instances,
+        surfaces,
+        connections: placed.connections,
+        motions: freeze(buildMotions(session, asset)),
+        budget: session.ledger.snapshot(),
+      }),
+    });
   } catch (error) {
     if (!(error instanceof AssetBudgetAbort)) throw error;
-    return freeze({ ok: false,
-      diagnostics: freeze([...diagnostics].sort(compareDiagnostics)) });
+    return freeze({ ok: false, diagnostics: freeze([...diagnostics].sort(compareDiagnostics)) });
   }
 };

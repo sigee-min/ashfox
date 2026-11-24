@@ -99,14 +99,12 @@ const rootDiagnostic = (
 ): WorkspaceDiagnostic =>
   errorDiagnostic(code, message, sourceRef(location.packageName, location.path, location.span));
 
-const validateScene = (
+/** Indexes nodes by id, reporting every repeated id in node order. */
+const indexSceneNodes = (
   nodes: readonly SceneNode[],
-  roots: readonly string[],
-  animations: Readonly<Record<string, AnimationClip>>,
-  textures: Readonly<Record<string, TextureAsset>>,
   location: RootLocation,
-): readonly WorkspaceDiagnostic[] => {
-  const diagnostics: WorkspaceDiagnostic[] = [];
+  diagnostics: WorkspaceDiagnostic[],
+): Map<string, SceneNode> => {
   const byId = new Map<string, SceneNode>();
   for (const node of nodes) {
     if (byId.has(node.id))
@@ -119,15 +117,89 @@ const validateScene = (
       );
     else byId.set(node.id, node);
   }
+  return byId;
+};
+
+const rootsMatchParentless = (nodes: readonly SceneNode[], roots: readonly string[]): boolean => {
   const expectedRoots = [...nodes]
     .filter((node) => node.parentId === null)
     .map((node) => node.id)
     .sort(compareText);
   const actualRoots = [...roots].sort(compareText);
-  if (
-    expectedRoots.length === 0 ||
-    canonicalJsonString(expectedRoots) !== canonicalJsonString(actualRoots)
-  )
+  return (
+    expectedRoots.length > 0 &&
+    canonicalJsonString(expectedRoots) === canonicalJsonString(actualRoots)
+  );
+};
+
+const hasBoneParent = (node: SceneNode, byId: ReadonlyMap<string, SceneNode>): boolean =>
+  node.parentId === null || byId.get(node.parentId)?.kind === 'bone';
+
+/** One missing-texture diagnostic per enabled face without a bound texture. */
+const missingTextureCount = (
+  node: SceneNode,
+  textures: Readonly<Record<string, TextureAsset>>,
+): number => {
+  if (node.kind !== 'cube' && node.kind !== 'plane') return 0;
+  return Object.values(node.faces).filter(
+    (face) => face.enabled && (face.textureId === null || textures[face.textureId] === undefined),
+  ).length;
+};
+
+const nodeDiagnostics = (
+  node: SceneNode,
+  byId: ReadonlyMap<string, SceneNode>,
+  textures: Readonly<Record<string, TextureAsset>>,
+  location: RootLocation,
+): readonly WorkspaceDiagnostic[] => {
+  const diagnostics: WorkspaceDiagnostic[] = [];
+  if (!hasBoneParent(node, byId))
+    diagnostics.push(
+      rootDiagnostic(
+        location,
+        'asset.canonical-parent',
+        `Canonical node "${node.id}" requires an existing bone parent.`,
+      ),
+    );
+  const missing = missingTextureCount(node, textures);
+  for (let index = 0; index < missing; index += 1)
+    diagnostics.push(
+      rootDiagnostic(
+        location,
+        'asset.canonical-texture',
+        `Canonical node "${node.id}" references a missing texture.`,
+      ),
+    );
+  return diagnostics;
+};
+
+const motionTargetDiagnostics = (
+  animations: Readonly<Record<string, AnimationClip>>,
+  byId: ReadonlyMap<string, SceneNode>,
+  location: RootLocation,
+): readonly WorkspaceDiagnostic[] =>
+  Object.values(animations).flatMap((clip) =>
+    Object.values(clip.channels)
+      .filter((channel) => byId.get(channel.targetNodeId)?.kind !== 'bone')
+      .map(() =>
+        rootDiagnostic(
+          location,
+          'asset.canonical-motion-target',
+          `Animation "${clip.name}" targets a missing non-bone node.`,
+        ),
+      ),
+  );
+
+const validateScene = (
+  nodes: readonly SceneNode[],
+  roots: readonly string[],
+  animations: Readonly<Record<string, AnimationClip>>,
+  textures: Readonly<Record<string, TextureAsset>>,
+  location: RootLocation,
+): readonly WorkspaceDiagnostic[] => {
+  const diagnostics: WorkspaceDiagnostic[] = [];
+  const byId = indexSceneNodes(nodes, location, diagnostics);
+  if (!rootsMatchParentless(nodes, roots))
     diagnostics.push(
       rootDiagnostic(
         location,
@@ -135,42 +207,9 @@ const validateScene = (
         'Canonical scene roots do not exactly match parentless nodes.',
       ),
     );
-  for (const node of nodes) {
-    if (node.parentId !== null && byId.get(node.parentId)?.kind !== 'bone') {
-      diagnostics.push(
-        rootDiagnostic(
-          location,
-          'asset.canonical-parent',
-          `Canonical node "${node.id}" requires an existing bone parent.`,
-        ),
-      );
-    }
-    if (node.kind === 'cube' || node.kind === 'plane') {
-      for (const face of Object.values(node.faces)) {
-        if (face.enabled && (face.textureId === null || textures[face.textureId] === undefined)) {
-          diagnostics.push(
-            rootDiagnostic(
-              location,
-              'asset.canonical-texture',
-              `Canonical node "${node.id}" references a missing texture.`,
-            ),
-          );
-        }
-      }
-    }
-  }
-  for (const clip of Object.values(animations))
-    for (const channel of Object.values(clip.channels)) {
-      if (byId.get(channel.targetNodeId)?.kind !== 'bone')
-        diagnostics.push(
-          rootDiagnostic(
-            location,
-            'asset.canonical-motion-target',
-            `Animation "${clip.name}" targets a missing non-bone node.`,
-          ),
-        );
-    }
-  for (const id of parentCycles(nodes, byId)) {
+  for (const node of nodes) diagnostics.push(...nodeDiagnostics(node, byId, textures, location));
+  diagnostics.push(...motionTargetDiagnostics(animations, byId, location));
+  for (const id of parentCycles(nodes, byId))
     diagnostics.push(
       rootDiagnostic(
         location,
@@ -178,7 +217,6 @@ const validateScene = (
         `Canonical parent cycle contains node "${id}".`,
       ),
     );
-  }
   return diagnostics;
 };
 
@@ -239,90 +277,102 @@ const finalizeModel = (
     : deepFreeze({ ok: true as const, model: deepFreeze(model) });
 };
 
+type LoweringResult =
+  | Readonly<{ readonly ok: true; readonly model: CompiledModel }>
+  | Readonly<{ readonly ok: false; readonly result: CompileAssetWorkspaceEntryResult }>;
+
+type GeometryNodes = NonNullable<ReturnType<typeof lowerAssetGeometry>>['nodes'];
+
+type GeometryResult =
+  | Readonly<{ readonly ok: true; readonly nodes: GeometryNodes }>
+  | Readonly<{ readonly ok: false; readonly diagnostics: readonly AssetDiagnostic[] }>;
+
+const rootLocationOf = (closure: WorkspaceEntryCompilation['closure']): RootLocation => ({
+  packageName: closure.root.identity.packageName,
+  path: closure.root.identity.path,
+  span: closure.root.unit.span,
+});
+
+const geometryFailure = (location: RootLocation): AssetDiagnostic =>
+  Object.freeze({
+    severity: 'error',
+    path: location.path,
+    span: location.span,
+    code: 'asset.canonical-geometry',
+    message: 'Canonical geometry lowering failed closed.',
+  });
+
+const lowerGeometryStage = (
+  ir: InstantiatedAssetIr,
+  plans: Parameters<typeof lowerAssetGeometry>[1],
+  location: RootLocation,
+): GeometryResult => {
+  const geometryIssues: AssetDiagnostic[] = [];
+  const geometry = lowerAssetGeometry(ir, plans, (path, span, code, message) =>
+    geometryIssues.push(Object.freeze({ severity: 'error', path, span, code, message })),
+  );
+  if (geometryIssues.length > 0) return { ok: false, diagnostics: geometryIssues };
+  if (geometry === null) return { ok: false, diagnostics: [geometryFailure(location)] };
+  return { ok: true, nodes: geometry.nodes };
+};
+
+/** Runs every lowering stage, stopping at the first stage that reports diagnostics. */
+const lowerClosure = (closure: WorkspaceEntryCompilation['closure']): LoweringResult => {
+  const location = rootLocationOf(closure);
+  const failWith = (diagnostics: readonly AssetDiagnostic[]): LoweringResult => ({
+    ok: false,
+    result: fail(workspaceDiagnostics(diagnostics, closure.files, location.packageName)),
+  });
+  const hir = buildAssetHir(closure);
+  if (!hir.ok) return failWith(hir.diagnostics);
+  const instantiated = instantiateAsset(hir.hir);
+  if (!instantiated.ok) return failWith(instantiated.diagnostics);
+  const textures = lowerAssetTextures(hir.hir, instantiated.ir);
+  if (!textures.ok) return failWith(textures.diagnostics);
+  const rig = lowerAssetRigAndMotions(instantiated.ir);
+  if (!rig.ok) return failWith(rig.diagnostics);
+  const geometry = lowerGeometryStage(instantiated.ir, textures.plans, location);
+  if (!geometry.ok) return failWith(geometry.diagnostics);
+  const finalized = finalizeModel(
+    instantiated.ir,
+    rig.bones,
+    geometry.nodes,
+    rig.roots,
+    rig.animations,
+    textures.plans.map((plan) => plan.texture),
+    textures.resolution,
+    location,
+  );
+  if (!finalized.ok) return { ok: false, result: fail(finalized.diagnostics) };
+  return { ok: true, model: finalized.model };
+};
+
+const buildIdentity = (
+  workspaceHash: Sha256Digest,
+  resolved: WorkspaceEntryCompilation,
+  model: CompiledModel,
+): AssetBuildIdentity =>
+  deepFreeze({
+    packageName: resolved.build.packageName,
+    entryName: resolved.build.entryName,
+    path: resolved.build.entryPath,
+    workspaceHash,
+    closureHash: resolved.build.closureHash,
+    buildKey: resolved.build.buildKey,
+    compilerFingerprint: resolved.build.compilerFingerprint,
+    productHash: sha256Digest(canonicalJsonString(model)) as Sha256Digest,
+  });
+
 /** Internal lowering of a closure from the current validated compilation snapshot. */
 export const compileResolvedAssetWorkspaceEntry = (
   workspaceHash: Sha256Digest,
   resolved: WorkspaceEntryCompilation,
 ): CompileAssetWorkspaceEntryResult => {
   try {
-    const closure = resolved.closure;
-    const rootLocation: RootLocation = {
-      packageName: closure.root.identity.packageName,
-      path: closure.root.identity.path,
-      span: closure.root.unit.span,
-    };
-    const hir = buildAssetHir(closure);
-    if (!hir.ok)
-      return fail(workspaceDiagnostics(hir.diagnostics, closure.files, rootLocation.packageName));
-    const instantiated = instantiateAsset(hir.hir);
-    if (!instantiated.ok)
-      return fail(
-        workspaceDiagnostics(instantiated.diagnostics, closure.files, rootLocation.packageName),
-      );
-    const textures = lowerAssetTextures(hir.hir, instantiated.ir);
-    if (!textures.ok)
-      return fail(
-        workspaceDiagnostics(textures.diagnostics, closure.files, rootLocation.packageName),
-      );
-    const rig = lowerAssetRigAndMotions(instantiated.ir);
-    if (!rig.ok)
-      return fail(workspaceDiagnostics(rig.diagnostics, closure.files, rootLocation.packageName));
-    const geometryIssues: AssetDiagnostic[] = [];
-    const geometry = lowerAssetGeometry(
-      instantiated.ir,
-      textures.plans,
-      (path, span, code, message) =>
-        geometryIssues.push(
-          Object.freeze({
-            severity: 'error',
-            path,
-            span,
-            code,
-            message,
-          }),
-        ),
-    );
-    if (geometry === null || geometryIssues.length > 0)
-      return fail(
-        workspaceDiagnostics(
-          geometryIssues.length > 0
-            ? geometryIssues
-            : [
-                Object.freeze({
-                  severity: 'error',
-                  path: rootLocation.path,
-                  span: rootLocation.span,
-                  code: 'asset.canonical-geometry',
-                  message: 'Canonical geometry lowering failed closed.',
-                }),
-              ],
-          closure.files,
-          rootLocation.packageName,
-        ),
-      );
-    const finalized = finalizeModel(
-      instantiated.ir,
-      rig.bones,
-      geometry.nodes,
-      rig.roots,
-      rig.animations,
-      textures.plans.map((plan) => plan.texture),
-      textures.resolution,
-      rootLocation,
-    );
-    if (!finalized.ok) return fail(finalized.diagnostics);
-    const productHash = sha256Digest(canonicalJsonString(finalized.model)) as Sha256Digest;
-    const build: AssetBuildIdentity = deepFreeze({
-      packageName: resolved.build.packageName,
-      entryName: resolved.build.entryName,
-      path: resolved.build.entryPath,
-      workspaceHash,
-      closureHash: resolved.build.closureHash,
-      buildKey: resolved.build.buildKey,
-      compilerFingerprint: resolved.build.compilerFingerprint,
-      productHash,
-    });
-    return deepFreeze({ ok: true as const, model: finalized.model, build });
+    const lowered = lowerClosure(resolved.closure);
+    if (!lowered.ok) return lowered.result;
+    const build = buildIdentity(workspaceHash, resolved, lowered.model);
+    return deepFreeze({ ok: true as const, model: lowered.model, build });
   } catch {
     return fail([errorDiagnostic('asset.compiler-failure', 'Asset compilation failed closed.')]);
   }

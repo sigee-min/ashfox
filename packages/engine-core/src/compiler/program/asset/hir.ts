@@ -25,13 +25,8 @@ import {
   type AssemblyEntry,
   type AssemblyState,
 } from './assembly';
-import {
-  buildRigContract,
-  buildSkeleton,
-  buildSocketContract,
-  buildSurface,
-  buildSurfaceContract,
-} from './definition';
+import { buildRigContract, buildSkeleton, buildSocketContract } from './definition';
+import { buildSurface, buildSurfaceContract } from './definitionSurface';
 import { buildComponent } from './component';
 import { buildMotion } from './motion';
 import { elaborateAssetDesigns } from './design';
@@ -261,6 +256,130 @@ const requireRootAsset = (
     );
 };
 
+const visitTreeNodeFor =
+  (session: BuildSession, issue: AssemblyContext['issue']): AssemblyContext['visitTreeNode'] =>
+  (path, span): void => {
+    session.treeNodes += 1;
+    if (session.treeNodes <= ASSET_BUDGET.treeNodes) return;
+    if (!session.treeLimitReported) {
+      session.treeLimitReported = true;
+      issue(
+        path,
+        span,
+        'asset.tree-limit',
+        'Selected asset closure exceeds the semantic tree budget.',
+      );
+    }
+    throw new AssetBudgetAbort();
+  };
+
+const requireFileBudget = (
+  closure: WorkspaceCompilationClosure,
+  issue: AssemblyContext['issue'],
+): void => {
+  if (closure.files.length <= ASSET_BUDGET.files) return;
+  issue(
+    closure.root.identity.path,
+    closure.root.unit.span,
+    'asset.file-limit',
+    'Selected asset closure exceeds the file budget.',
+  );
+  throw new AssetBudgetAbort();
+};
+
+/** Builds every declaration of one kind in symbol-key order into a keyed record. */
+const collect = <T extends { readonly symbol: AssetSymbolId }>(
+  states: ReadonlyMap<string, BuildState>,
+  kind: AssetSymbolKind,
+  build: (state: BuildState, entry: AssemblyEntry) => T | null,
+): Record<string, T> => {
+  const target = record<T>();
+  for (const item of entriesOf(states, kind)) add(target, build(item.state, item.entry));
+  return target;
+};
+
+type TypedDeclarations = Omit<TypedAssetHir, 'rootPath' | 'modules' | 'symbols'>;
+
+/** Builds declarations in dependency order: each kind only reads kinds built before it. */
+const buildDeclarations = (
+  context: AssemblyContext,
+  states: ReadonlyMap<string, BuildState>,
+): TypedDeclarations => {
+  const socketContracts = collect<TypedSocketContract>(states, 'socket-contract', (state, entry) =>
+    buildSocketContract(context, state, entry),
+  );
+  const rigs = collect<TypedRigContract>(states, 'rig-contract', (state, entry) =>
+    buildRigContract(context, state, entry, socketContracts),
+  );
+  const skeletons = collect<TypedSkeleton>(states, 'skeleton', (state, entry) =>
+    buildSkeleton(context, state, entry, rigs),
+  );
+  const surfaceContracts = collect<TypedSurfaceContract>(
+    states,
+    'surface-contract',
+    (state, entry) => buildSurfaceContract(context, state, entry),
+  );
+  const surfaces = collect<TypedSurface>(states, 'surface', (state, entry) =>
+    buildSurface(context, state, entry, surfaceContracts),
+  );
+  const components = collect<TypedComponent>(states, 'component', (state, entry) =>
+    buildComponent(context, state, entry, rigs, socketContracts, surfaceContracts),
+  );
+  const motions = collect<TypedMotion>(states, 'motion', (state, entry) =>
+    buildMotion(context, state, entry, rigs),
+  );
+  const assets = collect<TypedAssetHir['assets'][string]>(states, 'asset', (state, entry) =>
+    buildAssetAssembly(context, state, entry, skeletons, rigs, surfaces, components, motions),
+  );
+  return {
+    socketContracts,
+    rigs,
+    skeletons,
+    surfaceContracts,
+    surfaces,
+    components,
+    motions,
+    assets,
+  };
+};
+
+const indexModules = (
+  states: ReadonlyMap<string, BuildState>,
+): Pick<TypedAssetHir, 'modules' | 'symbols'> => {
+  const modules = record<TypedAssetModule>();
+  const symbols = record<AssetSymbolId>();
+  for (const state of orderedStates(states)) {
+    modules[state.file.identity.key] = moduleFor(state);
+    for (const entry of [...state.symbols.values()].sort((left, right) =>
+      left.symbol.key.localeCompare(right.symbol.key),
+    )) {
+      symbols[entry.symbol.key] = entry.symbol;
+    }
+  }
+  return { modules, symbols };
+};
+
+const assembleHir = (
+  closure: WorkspaceCompilationClosure,
+  states: ReadonlyMap<string, BuildState>,
+  declarations: TypedDeclarations,
+): TypedAssetHir => {
+  const { modules, symbols } = indexModules(states);
+  return deepFreeze({
+    rootPath: closure.root.identity.path,
+    modules: freeze(modules),
+    symbols: freeze(symbols),
+    socketContracts: freeze(declarations.socketContracts),
+    rigs: freeze(declarations.rigs),
+    skeletons: freeze(declarations.skeletons),
+    surfaceContracts: freeze(declarations.surfaceContracts),
+    surfaces: freeze(declarations.surfaces),
+    components: freeze(declarations.components),
+    motions: freeze(declarations.motions),
+    assets: freeze(declarations.assets),
+  });
+};
+
 /** Build compiler-private exact HIR from one sealed reachable workspace closure. */
 export const buildAssetHir = (closure: WorkspaceCompilationClosure): AssetHirResult => {
   const diagnostics: AssetDiagnostic[] = [];
@@ -274,108 +393,22 @@ export const buildAssetHir = (closure: WorkspaceCompilationClosure): AssetHirRes
   };
   const issue = issueFor(mutableSession);
   try {
-    if (closure.files.length > ASSET_BUDGET.files) {
-      issue(
-        closure.root.identity.path,
-        closure.root.unit.span,
-        'asset.file-limit',
-        'Selected asset closure exceeds the file budget.',
-      );
-      throw new AssetBudgetAbort();
-    }
+    requireFileBudget(closure, issue);
     const elaborated = elaborateAssetDesigns(closure, issue);
     if (diagnostics.length > 0) throw new AssetBudgetAbort();
     const states = createStates(elaborated, mutableSession, issue);
     mutableSession.states = states;
-    const resolve = resolveFor(mutableSession, issue);
     const context: AssemblyContext = freeze({
       issue,
-      resolve,
-      visitTreeNode: (path, span): void => {
-        mutableSession.treeNodes += 1;
-        if (mutableSession.treeNodes > ASSET_BUDGET.treeNodes) {
-          if (!mutableSession.treeLimitReported) {
-            mutableSession.treeLimitReported = true;
-            issue(
-              path,
-              span,
-              'asset.tree-limit',
-              'Selected asset closure exceeds the semantic tree budget.',
-            );
-          }
-          throw new AssetBudgetAbort();
-        }
-      },
+      resolve: resolveFor(mutableSession, issue),
+      visitTreeNode: visitTreeNodeFor(mutableSession, issue),
     });
     const rootState = states.get(closure.root.identity.key);
     if (rootState === undefined) throw new TypeError('Sealed closure omitted its root state.');
     requireRootAsset(closure, rootState, issue);
-
-    const socketContracts = record<TypedSocketContract>();
-    for (const item of entriesOf(states, 'socket-contract'))
-      add(socketContracts, buildSocketContract(context, item.state, item.entry));
-    const rigs = record<TypedRigContract>();
-    for (const item of entriesOf(states, 'rig-contract'))
-      add(rigs, buildRigContract(context, item.state, item.entry, socketContracts));
-    const skeletons = record<TypedSkeleton>();
-    for (const item of entriesOf(states, 'skeleton'))
-      add(skeletons, buildSkeleton(context, item.state, item.entry, rigs));
-    const surfaceContracts = record<TypedSurfaceContract>();
-    for (const item of entriesOf(states, 'surface-contract'))
-      add(surfaceContracts, buildSurfaceContract(context, item.state, item.entry));
-    const surfaces = record<TypedSurface>();
-    for (const item of entriesOf(states, 'surface'))
-      add(surfaces, buildSurface(context, item.state, item.entry, surfaceContracts));
-    const components = record<TypedComponent>();
-    for (const item of entriesOf(states, 'component'))
-      add(
-        components,
-        buildComponent(context, item.state, item.entry, rigs, socketContracts, surfaceContracts),
-      );
-    const motions = record<TypedMotion>();
-    for (const item of entriesOf(states, 'motion'))
-      add(motions, buildMotion(context, item.state, item.entry, rigs));
-    const assets = record<TypedAssetHir['assets'][string]>();
-    for (const item of entriesOf(states, 'asset'))
-      add(
-        assets,
-        buildAssetAssembly(
-          context,
-          item.state,
-          item.entry,
-          skeletons,
-          rigs,
-          surfaces,
-          components,
-          motions,
-        ),
-      );
+    const declarations = buildDeclarations(context, states);
     if (diagnostics.length > 0) throw new AssetBudgetAbort();
-
-    const modules = record<TypedAssetModule>();
-    const symbols = record<AssetSymbolId>();
-    for (const state of orderedStates(states)) {
-      modules[state.file.identity.key] = moduleFor(state);
-      for (const entry of [...state.symbols.values()].sort((left, right) =>
-        left.symbol.key.localeCompare(right.symbol.key),
-      )) {
-        symbols[entry.symbol.key] = entry.symbol;
-      }
-    }
-    const hir: TypedAssetHir = deepFreeze({
-      rootPath: closure.root.identity.path,
-      modules: freeze(modules),
-      symbols: freeze(symbols),
-      socketContracts: freeze(socketContracts),
-      rigs: freeze(rigs),
-      skeletons: freeze(skeletons),
-      surfaceContracts: freeze(surfaceContracts),
-      surfaces: freeze(surfaces),
-      components: freeze(components),
-      motions: freeze(motions),
-      assets: freeze(assets),
-    });
-    return deepFreeze({ ok: true as const, hir });
+    return deepFreeze({ ok: true as const, hir: assembleHir(closure, states, declarations) });
   } catch (error) {
     if (!(error instanceof AssetBudgetAbort)) throw error;
     return freeze({ ok: false, diagnostics: freeze([...diagnostics].sort(compareDiagnostics)) });
