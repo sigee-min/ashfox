@@ -24,6 +24,7 @@ jobs:
         env:
           ASHFOX_COMMIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
       - run: npm run quality:deadcode
+      - run: npm run quality:products
       - run: npm run quality:audit
       - run: npm run release:validate
 

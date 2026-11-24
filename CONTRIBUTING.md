@@ -68,7 +68,13 @@ not required for this product path.
 | Java pack delivery with FFmpeg | `npm run test:packs` |
 | Blockbench compatibility | `npm run test:blockbench` |
 | Repository rules and types | `npm run quality:check` |
+| Example output bytes unchanged | `npm run quality:products` |
 | Complete release gate | `npm run quality` |
+
+`quality:products` compiles every example in memory and compares product and
+artifact digests with `scripts/quality/products-baseline.json`. Refactors must
+leave it unchanged; reseal with `npm run quality:products:seal` only in a change
+that intends to alter compiled output, and explain the difference in review.
 
 Real rendering needs Chrome or Chromium; select it with `ASHFOX_CHROME_PATH`.
 Audio encoding and showcase movies need FFmpeg; select it with `ASHFOX_FFMPEG_PATH`.
