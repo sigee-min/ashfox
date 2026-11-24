@@ -2,176 +2,414 @@ import { ItemStudy, SpriteInputError } from './contract';
 import { parseSpriteJson } from './json';
 
 type RecordValue = Record<string, unknown>;
+
+interface StudyContext {
+  readonly file: string;
+  budget: number;
+}
+
+const failStudy = (file: string, pointer: string, expected: string, actual: unknown): never => {
+  throw new SpriteInputError({
+    code: 'sprite.contract',
+    file,
+    pointer,
+    expected,
+    actual: String(actual).slice(0, 160),
+  });
+};
+
+const readRecord = (
+  file: string,
+  value: unknown,
+  pointer: string,
+  keys?: readonly string[],
+): RecordValue => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return failStudy(file, pointer, 'record', value);
+  }
+  const record = value as RecordValue;
+  if (
+    keys &&
+    (Object.keys(record).length !== keys.length ||
+      keys.some((key) => !Object.hasOwnProperty.call(record, key)))
+  ) {
+    failStudy(file, pointer, `exact keys ${keys.join(', ')}`, Object.keys(record));
+  }
+  return record;
+};
+
+const readList = (file: string, value: unknown, pointer: string, max: number): unknown[] => {
+  if (!Array.isArray(value) || value.length > max) {
+    return failStudy(file, pointer, `array <= ${max}`, value);
+  }
+  return value;
+};
+
+const readInteger = (
+  file: string,
+  value: unknown,
+  pointer: string,
+  min: number,
+  max: number,
+): number => {
+  if (!Number.isSafeInteger(value) || (value as number) < min || (value as number) > max) {
+    return failStudy(file, pointer, `integer ${min}..${max}`, value);
+  }
+  return value as number;
+};
+
+const readChoice = (
+  file: string,
+  value: unknown,
+  pointer: string,
+  choices: readonly unknown[],
+): void => {
+  if (!choices.includes(value)) failStudy(file, pointer, choices.join(' | '), value);
+};
+
+const readId = (file: string, value: unknown, pointer: string): string => {
+  if (typeof value !== 'string' || !/^[a-z][a-z0-9_]{0,47}$/u.test(value)) {
+    return failStudy(file, pointer, 'ASCII id <= 48', value);
+  }
+  return value;
+};
+
+const readPoint = (file: string, value: unknown, pointer: string): number[] => {
+  const list = readList(file, value, pointer, 2);
+  if (list.length !== 2) failStudy(file, pointer, '[x, y]', value);
+  return list.map((entry, index) => readInteger(file, entry, `${pointer}/${index}`, 0, 15));
+};
+
+const readColor = (file: string, value: unknown, pointer: string): void => {
+  if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/iu.test(value)) {
+    failStudy(file, pointer, '#RRGGBB', value);
+  }
+};
+
+const readRows = (
+  file: string,
+  value: unknown,
+  pointer: string,
+  pattern = /^[.a-zA-Z]+$/u,
+): string[] => {
+  const list = readList(file, value, pointer, 16);
+  if (!list.length) return failStudy(file, pointer, 'nonempty rows', value);
+  let width = 0;
+  list.forEach((row, index) => {
+    if (
+      typeof row !== 'string' ||
+      !pattern.test(row) ||
+      row.length > 16 ||
+      (index > 0 && row.length !== width)
+    ) {
+      failStudy(file, `${pointer}/${index}`, 'rectangular ASCII rows, width 1..16', row);
+    }
+    width = (row as string).length;
+  });
+  return list as string[];
+};
+
+const readCollection = (
+  file: string,
+  value: unknown,
+  pointer: string,
+  max: number,
+): RecordValue[] => {
+  const seen = new Set<string>();
+  return readList(file, value, pointer, max).map((entry, index) => {
+    const entryPointer = `${pointer}/${index}`;
+    const record = readRecord(file, entry, entryPointer);
+    const name = readId(file, record.id, `${entryPointer}/id`);
+    if (seen.has(name)) failStudy(file, `${entryPointer}/id`, 'unique id', name);
+    seen.add(name);
+    return record;
+  });
+};
+
+const readRef = (
+  file: string,
+  group: readonly RecordValue[],
+  value: unknown,
+  pointer: string,
+): RecordValue =>
+  group.find((entry) => entry.id === value) ??
+  failStudy(file, pointer, 'declared reference', value);
+
+const checkBounds = (
+  context: StudyContext,
+  grid: readonly string[],
+  at: readonly number[],
+  pointer: string,
+): void => {
+  context.budget += grid.length * grid[0]!.length;
+  if (at[0]! + grid[0]!.length > 16 || at[1]! + grid.length > 16) {
+    failStudy(context.file, pointer, 'rectangle inside canvas', at);
+  }
+};
+
+const readBindings = (
+  file: string,
+  value: unknown,
+  grid: readonly string[],
+  palette: RecordValue,
+  pointer: string,
+): void => {
+  const chars = [...new Set(grid.join('').replace(/\./g, ''))];
+  const map = readRecord(file, value, pointer, chars);
+  for (const [key, colorId] of Object.entries(map)) {
+    if (typeof colorId !== 'string' || !Object.hasOwnProperty.call(palette, colorId)) {
+      failStudy(file, `${pointer}/${key}`, 'palette reference', colorId);
+    }
+  }
+};
+
+const hexLuminance = (hex: string): number =>
+  [2126, 7152, 722].reduce(
+    (sum, weight, index) => sum + weight * parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16),
+    0,
+  );
+
+const readMasks = (file: string, raw: unknown): RecordValue[] => {
+  const masks = readCollection(file, raw, '/masks', 64);
+  masks.forEach((mask, index) => {
+    const pointer = `/masks/${index}`;
+    readRecord(file, mask, pointer, ['id', 'rows']);
+    if (
+      !readRows(file, mask.rows, `${pointer}/rows`, /^[.1]+$/u)
+        .join('')
+        .includes('1')
+    ) {
+      failStudy(file, pointer, 'occupied mask', 'empty');
+    }
+  });
+  return masks;
+};
+
+const readMaterials = (file: string, raw: unknown): RecordValue[] => {
+  const materials = readCollection(file, raw, '/materials', 64);
+  materials.forEach((material, index) => {
+    const pointer = `/materials/${index}`;
+    readRecord(file, material, pointer, ['id', 'ramp']);
+    const ramp = readRecord(file, material.ramp, `${pointer}/ramp`);
+    readChoice(file, ramp.mode, `${pointer}/ramp/mode`, ['explicit', 'generated']);
+    if (ramp.mode !== 'explicit') {
+      readRecord(file, ramp, `${pointer}/ramp`, ['mode', 'base', 'preset']);
+      readColor(file, ramp.base, `${pointer}/ramp/base`);
+      readChoice(file, ramp.preset, `${pointer}/ramp/preset`, ['warm-v1', 'neutral-v1']);
+      return;
+    }
+    readRecord(file, ramp, `${pointer}/ramp`, ['mode', 'colors']);
+    const colors = readList(file, ramp.colors, `${pointer}/ramp/colors`, 3);
+    if (colors.length !== 3) failStudy(file, `${pointer}/ramp/colors`, 'three colors', colors);
+    colors.forEach((entry, colorIndex) =>
+      readColor(file, entry, `${pointer}/ramp/colors/${colorIndex}`),
+    );
+    const luminance = colors.map((entry) => hexLuminance(entry as string));
+    if (
+      luminance[0]! > luminance[1]! ||
+      luminance[1]! > luminance[2]! ||
+      luminance[0] === luminance[2]
+    ) {
+      failStudy(
+        file,
+        `${pointer}/ramp/colors`,
+        'shadow <= base <= light with distinct endpoints',
+        colors,
+      );
+    }
+  });
+  return materials;
+};
+
+const readStamps = (file: string, raw: unknown): RecordValue[] => {
+  const stamps = readCollection(file, raw, '/stamps', 64);
+  stamps.forEach((stamp, index) => {
+    const pointer = `/stamps/${index}`;
+    readRecord(file, stamp, pointer, ['id', 'rows', 'slots']);
+    const used = new Set(readRows(file, stamp.rows, `${pointer}/rows`).join('').replace(/\./g, ''));
+    const slots = readList(file, stamp.slots, `${pointer}/slots`, 52);
+    if (
+      slots.length !== used.size ||
+      new Set(slots).size !== slots.length ||
+      slots.some((slot) => typeof slot !== 'string' || !used.has(slot))
+    ) {
+      failStudy(file, `${pointer}/slots`, 'exact used characters', slots);
+    }
+  });
+  return stamps;
+};
+
+const readShade = (file: string, raw: unknown, mask: readonly string[], pointer: string): void => {
+  const shade = readRecord(file, raw, pointer);
+  readChoice(file, shade.form, `${pointer}/form`, ['flat', 'round', 'bevel']);
+  const keys =
+    shade.form === 'bevel' ? ['form', 'light', 'contrast', 'axis'] : ['form', 'light', 'contrast'];
+  readRecord(file, shade, pointer, keys);
+  readChoice(file, shade.light, `${pointer}/light`, ['top_left']);
+  readInteger(file, shade.contrast, `${pointer}/contrast`, 0, 2);
+  if (shade.form !== 'bevel') return;
+  const axis = readList(file, shade.axis, `${pointer}/axis`, 2);
+  if (axis.length !== 2) failStudy(file, `${pointer}/axis`, 'two points', axis);
+  const points = axis.map((entry, index) => readPoint(file, entry, `${pointer}/axis/${index}`));
+  if (
+    points[0]!.join() === points[1]!.join() ||
+    points.some((pt) => pt[0]! >= mask[0]!.length || pt[1]! >= mask.length)
+  ) {
+    failStudy(file, `${pointer}/axis`, 'distinct points inside mask rectangle', axis);
+  }
+};
+
+const readPatch = (
+  context: StudyContext,
+  patch: RecordValue,
+  mask: readonly string[],
+  palette: RecordValue,
+  pointer: string,
+): void => {
+  const { file } = context;
+  readRecord(file, patch, pointer, ['id', 'at', 'rows', 'colors', 'protect']);
+  const grid = readRows(file, patch.rows, `${pointer}/rows`);
+  const at = readPoint(file, patch.at, `${pointer}/at`);
+  checkBounds(context, grid, at, pointer);
+  readBindings(file, patch.colors, grid, palette, `${pointer}/colors`);
+  readInteger(file, patch.protect, `${pointer}/protect`, 0, 2);
+  if (at[0]! + grid[0]!.length > mask[0]!.length || at[1]! + grid.length > mask.length) {
+    failStudy(file, pointer, 'patch inside part rectangle', at);
+  }
+  grid.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch !== '.' && mask[y + at[1]!]![x + at[0]!] !== '1') {
+        failStudy(file, `${pointer}/rows/${y}/${x}`, 'patch inside mask', ch);
+      }
+    });
+  });
+};
+
+const readPartLayer = (
+  context: StudyContext,
+  layer: RecordValue,
+  at: readonly number[],
+  masks: readonly RecordValue[],
+  materials: readonly RecordValue[],
+  palette: RecordValue,
+  pointer: string,
+): void => {
+  const { file } = context;
+  readRecord(file, layer, pointer, [
+    'id',
+    'op',
+    'mask',
+    'material',
+    'at',
+    'shade',
+    'grain',
+    'patches',
+  ]);
+  const mask = readRef(file, masks, layer.mask, `${pointer}/mask`).rows as string[];
+  readRef(file, materials, layer.material, `${pointer}/material`);
+  checkBounds(context, mask, at, pointer);
+  readShade(file, layer.shade, mask, `${pointer}/shade`);
+  const grain = readRecord(file, layer.grain, `${pointer}/grain`, ['mode', 'amount', 'seed']);
+  readChoice(file, grain.mode, `${pointer}/grain/mode`, ['clustered-v1']);
+  readInteger(file, grain.amount, `${pointer}/grain/amount`, 0, 1);
+  readInteger(file, grain.seed, `${pointer}/grain/seed`, 0, 4294967295);
+  readCollection(file, layer.patches, `${pointer}/patches`, 16).forEach((patch, index) =>
+    readPatch(context, patch, mask, palette, `${pointer}/patches/${index}`),
+  );
+};
+
+const readDirectLayer = (
+  context: StudyContext,
+  layer: RecordValue,
+  at: readonly number[],
+  stamps: readonly RecordValue[],
+  palette: RecordValue,
+  pointer: string,
+): void => {
+  const { file } = context;
+  const keys =
+    layer.op === 'stamp'
+      ? ['id', 'op', 'stamp', 'at', 'flip', 'colors']
+      : layer.op === 'paint'
+        ? ['id', 'op', 'at', 'rows', 'colors']
+        : ['id', 'op', 'at', 'rows'];
+  readRecord(file, layer, pointer, keys);
+  const grid =
+    layer.op === 'stamp'
+      ? (readRef(file, stamps, layer.stamp, `${pointer}/stamp`).rows as string[])
+      : readRows(
+          file,
+          layer.rows,
+          `${pointer}/rows`,
+          layer.op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u,
+        );
+  checkBounds(context, grid, at, pointer);
+  if (layer.op !== 'erase') readBindings(file, layer.colors, grid, palette, `${pointer}/colors`);
+  if (layer.op === 'stamp')
+    readChoice(file, layer.flip, `${pointer}/flip`, ['none', 'x', 'y', 'xy']);
+};
+
+const readItem = (
+  context: StudyContext,
+  item: RecordValue,
+  index: number,
+  masks: readonly RecordValue[],
+  materials: readonly RecordValue[],
+  stamps: readonly RecordValue[],
+): void => {
+  const { file } = context;
+  const pointer = `/items/${index}`;
+  readRecord(file, item, pointer, ['id', 'profile', 'canvas', 'palette', 'layers']);
+  readChoice(file, item.profile, `${pointer}/profile`, ['minecraft-item-v1']);
+  const canvas = readList(file, item.canvas, `${pointer}/canvas`, 2);
+  if (canvas.length !== 2 || canvas.some((entry) => entry !== 16)) {
+    failStudy(file, `${pointer}/canvas`, '[16,16]', canvas);
+  }
+  const palette = readRecord(file, item.palette, `${pointer}/palette`);
+  if (Object.keys(palette).length > 32)
+    failStudy(file, `${pointer}/palette`, '<= 32 colors', 'too many');
+  Object.entries(palette).forEach(([key, color]) => {
+    readId(file, key, `${pointer}/palette/${key}`);
+    readColor(file, color, `${pointer}/palette/${key}`);
+  });
+  readCollection(file, item.layers, `${pointer}/layers`, 64).forEach((layer, layerIndex) => {
+    const layerPointer = `${pointer}/layers/${layerIndex}`;
+    readChoice(file, layer.op, `${layerPointer}/op`, ['stamp', 'paint', 'erase', 'part']);
+    const at = readPoint(file, layer.at, `${layerPointer}/at`);
+    if (layer.op === 'part')
+      readPartLayer(context, layer, at, masks, materials, palette, layerPointer);
+    else readDirectLayer(context, layer, at, stamps, palette, layerPointer);
+  });
+};
+
+const freeze = (value: unknown): unknown => {
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach(freeze);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+/** Validates and freezes a parsed item study specification. */
 export const readItemStudy = (source: string, file = 'study.items.json'): ItemStudy => {
-  const fail = (p: string, expected: string, actual: unknown): never => {
-    throw new SpriteInputError({ code: 'sprite.contract', file, pointer: p, expected,
-      actual: String(actual).slice(0, 160) });
-  };
-  const record = (v: unknown, p: string, keys?: string[]): RecordValue => {
-    if (!v || typeof v !== 'object' || Array.isArray(v)) return fail(p, 'record', v);
-    const r = v as RecordValue;
-    if (keys && (Object.keys(r).length !== keys.length || keys.some(k => !Object.hasOwnProperty.call(r, k)))) {
-      fail(p, `exact keys ${keys.join(', ')}`, Object.keys(r));
-    }
-    return r;
-  };
-  const list = (v: unknown, p: string, max: number): unknown[] => {
-    if (!Array.isArray(v) || v.length > max) return fail(p, `array <= ${max}`, v);
-    return v;
-  };
-  const integer = (v: unknown, p: string, min: number, max: number): number => {
-    if (!Number.isSafeInteger(v) || (v as number) < min || (v as number) > max) return fail(p, `integer ${min}..${max}`, v);
-    return v as number;
-  };
-  const choice = (v: unknown, p: string, choices: readonly unknown[]): void => {
-    if (!choices.includes(v)) fail(p, choices.join(' | '), v);
-  };
-  const id = (v: unknown, p: string): string => {
-    if (typeof v !== 'string' || !/^[a-z][a-z0-9_]{0,47}$/u.test(v)) return fail(p, 'ASCII id <= 48', v);
-    return v;
-  };
-  const point = (v: unknown, p: string): number[] => {
-    const a = list(v, p, 2);
-    if (a.length !== 2) fail(p, '[x, y]', v);
-    return a.map((n, i) => integer(n, `${p}/${i}`, 0, 15));
-  };
-  const color = (v: unknown, p: string): void => {
-    if (typeof v !== 'string' || !/^#[0-9a-f]{6}$/iu.test(v)) fail(p, '#RRGGBB', v);
-  };
-  const rows = (v: unknown, p: string, pattern = /^[.a-zA-Z]+$/u): string[] => {
-    const a = list(v, p, 16);
-    if (!a.length) return fail(p, 'nonempty rows', v);
-    let width = 0;
-    a.forEach((r, i) => {
-      if (typeof r !== 'string' || !pattern.test(r) || r.length > 16 || (i > 0 && r.length !== width)) {
-        fail(`${p}/${i}`, 'rectangular ASCII rows, width 1..16', r);
-      }
-      width = (r as string).length;
-    });
-    return a as string[];
-  };
-  const collection = (v: unknown, p: string, max: number): RecordValue[] => {
-    const seen = new Set<string>();
-    return list(v, p, max).map((e, i) => {
-      const r = record(e, `${p}/${i}`), name = id(r.id, `${p}/${i}/id`);
-      if (seen.has(name)) fail(`${p}/${i}/id`, 'unique id', name);
-      seen.add(name); return r;
-    });
-  };
-  const root = record(parseSpriteJson(source, file), '', ['format', 'version', 'masks', 'materials', 'stamps', 'items']);
-  choice(root.format, '/format', ['ashfox-item-study']); choice(root.version, '/version', [1]);
-  const masks = collection(root.masks, '/masks', 64);
-  masks.forEach((m, i) => {
-    record(m, `/masks/${i}`, ['id', 'rows']);
-    if (!rows(m.rows, `/masks/${i}/rows`, /^[.1]+$/u).join('').includes('1')) fail(`/masks/${i}`, 'occupied mask', 'empty');
-  });
-  const materials = collection(root.materials, '/materials', 64);
-  materials.forEach((m, i) => {
-    const p = `/materials/${i}`;
-    record(m, p, ['id', 'ramp']);
-    const r = record(m.ramp, `${p}/ramp`);
-    choice(r.mode, `${p}/ramp/mode`, ['explicit', 'generated']);
-    if (r.mode === 'explicit') {
-      record(r, `${p}/ramp`, ['mode', 'colors']);
-      const c = list(r.colors, `${p}/ramp/colors`, 3);
-      if (c.length !== 3) fail(`${p}/ramp/colors`, 'three colors', c);
-      c.forEach((v, j) => color(v, `${p}/ramp/colors/${j}`));
-      const luminance = c.map(v => { const hex = v as string; return [2126,7152,722].reduce((sum,w,j) => sum + w * parseInt(hex.slice(1+j*2,3+j*2),16),0); });
-      if (luminance[0]! > luminance[1]! || luminance[1]! > luminance[2]! || luminance[0] === luminance[2]) {
-        fail(`${p}/ramp/colors`, 'shadow <= base <= light with distinct endpoints', c);
-      }
-    } else {
-      record(r, `${p}/ramp`, ['mode', 'base', 'preset']); color(r.base, `${p}/ramp/base`);
-      choice(r.preset, `${p}/ramp/preset`, ['warm-v1', 'neutral-v1']);
-    }
-  });
-  const stamps = collection(root.stamps, '/stamps', 64);
-  stamps.forEach((s, i) => {
-    const p = `/stamps/${i}`; record(s, p, ['id', 'rows', 'slots']);
-    const used = new Set(rows(s.rows, `${p}/rows`).join('').replace(/\./g, ''));
-    const slots = list(s.slots, `${p}/slots`, 52);
-    if (slots.length !== used.size || new Set(slots).size !== slots.length || slots.some(v => typeof v !== 'string' || !used.has(v))) {
-      fail(`${p}/slots`, 'exact used characters', slots);
-    }
-  });
-  const items = collection(root.items, '/items', 32);
-  if (!items.length) fail('/items', 'at least one item', 'empty');
-  let budget = 0;
-  const ref = (group: RecordValue[], v: unknown, p: string): RecordValue => {
-    const found = group.find(e => e.id === v);
-    return found ?? fail(p, 'declared reference', v);
-  };
-  const bounds = (r: string[], at: number[], p: string): void => {
-    budget += r.length * r[0]!.length;
-    if (at[0]! + r[0]!.length > 16 || at[1]! + r.length > 16) fail(p, 'rectangle inside canvas', at);
-  };
-  const bindings = (v: unknown, r: string[], palette: RecordValue, p: string): void => {
-    const chars = [...new Set(r.join('').replace(/\./g, ''))];
-    const map = record(v, p, chars);
-    for (const [key, value] of Object.entries(map)) {
-      if (typeof value !== 'string' || !Object.hasOwnProperty.call(palette, value)) fail(`${p}/${key}`, 'palette reference', value);
-    }
-  };
-  items.forEach((item, i) => {
-    const ip = `/items/${i}`;
-    record(item, ip, ['id', 'profile', 'canvas', 'palette', 'layers']);
-    choice(item.profile, `${ip}/profile`, ['minecraft-item-v1']);
-    const canvas = list(item.canvas, `${ip}/canvas`, 2);
-    if (canvas.length !== 2 || canvas.some(v => v !== 16)) fail(`${ip}/canvas`, '[16,16]', canvas);
-    const palette = record(item.palette, `${ip}/palette`);
-    if (Object.keys(palette).length > 32) fail(`${ip}/palette`, '<= 32 colors', 'too many');
-    Object.entries(palette).forEach(([k, v]) => { id(k, `${ip}/palette/${k}`); color(v, `${ip}/palette/${k}`); });
-    const layers = collection(item.layers, `${ip}/layers`, 64);
-    layers.forEach((l, j) => {
-      const p = `${ip}/layers/${j}`;
-      choice(l.op, `${p}/op`, ['stamp', 'paint', 'erase', 'part']);
-      const at = point(l.at, `${p}/at`);
-      if (l.op !== 'part') {
-        const keys = l.op === 'stamp' ? ['id', 'op', 'stamp', 'at', 'flip', 'colors'] :
-          l.op === 'paint' ? ['id', 'op', 'at', 'rows', 'colors'] : ['id', 'op', 'at', 'rows'];
-        record(l, p, keys);
-        const r = l.op === 'stamp' ? ref(stamps, l.stamp, `${p}/stamp`).rows as string[] :
-          rows(l.rows, `${p}/rows`, l.op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u);
-        bounds(r, at, p);
-        if (l.op !== 'erase') bindings(l.colors, r, palette, `${p}/colors`);
-        if (l.op === 'stamp') choice(l.flip, `${p}/flip`, ['none', 'x', 'y', 'xy']);
-        return;
-      }
-      record(l, p, ['id', 'op', 'mask', 'material', 'at', 'shade', 'grain', 'patches']);
-      const mask = ref(masks, l.mask, `${p}/mask`).rows as string[];
-      ref(materials, l.material, `${p}/material`); bounds(mask, at, p);
-      const shade = record(l.shade, `${p}/shade`);
-      choice(shade.form, `${p}/shade/form`, ['flat', 'round', 'bevel']);
-      record(shade, `${p}/shade`, shade.form === 'bevel' ? ['form', 'light', 'contrast', 'axis'] : ['form', 'light', 'contrast']);
-      choice(shade.light, `${p}/shade/light`, ['top_left']); integer(shade.contrast, `${p}/shade/contrast`, 0, 2);
-      if (shade.form === 'bevel') {
-        const axis = list(shade.axis, `${p}/shade/axis`, 2);
-        if (axis.length !== 2) fail(`${p}/shade/axis`, 'two points', axis);
-        const points = axis.map((a, k) => point(a, `${p}/shade/axis/${k}`));
-        if (points[0]!.join() === points[1]!.join() || points.some(a => a[0]! >= mask[0]!.length || a[1]! >= mask.length)) {
-          fail(`${p}/shade/axis`, 'distinct points inside mask rectangle', axis);
-        }
-      }
-      const grain = record(l.grain, `${p}/grain`, ['mode', 'amount', 'seed']);
-      choice(grain.mode, `${p}/grain/mode`, ['clustered-v1']);
-      integer(grain.amount, `${p}/grain/amount`, 0, 1); integer(grain.seed, `${p}/grain/seed`, 0, 4294967295);
-      collection(l.patches, `${p}/patches`, 16).forEach((patch, k) => {
-        const pp = `${p}/patches/${k}`; record(patch, pp, ['id', 'at', 'rows', 'colors', 'protect']);
-        const r = rows(patch.rows, `${pp}/rows`), a = point(patch.at, `${pp}/at`);
-        bounds(r, a, pp); bindings(patch.colors, r, palette, `${pp}/colors`);
-        integer(patch.protect, `${pp}/protect`, 0, 2);
-        if (a[0]! + r[0]!.length > mask[0]!.length || a[1]! + r.length > mask.length) fail(pp, 'patch inside part rectangle', a);
-        r.forEach((row, y) => [...row].forEach((c, x) => {
-          if (c !== '.' && mask[y + a[1]!]![x + a[0]!] !== '1') fail(`${pp}/rows/${y}/${x}`, 'patch inside mask', c);
-        }));
-      });
-    });
-  });
-  if (budget > 524288) fail('', 'total cells <= 524288', budget);
+  const root = readRecord(file, parseSpriteJson(source, file), '', [
+    'format',
+    'version',
+    'masks',
+    'materials',
+    'stamps',
+    'items',
+  ]);
+  readChoice(file, root.format, '/format', ['ashfox-item-study']);
+  readChoice(file, root.version, '/version', [1]);
+  const masks = readMasks(file, root.masks);
+  const materials = readMaterials(file, root.materials);
+  const stamps = readStamps(file, root.stamps);
+  const items = readCollection(file, root.items, '/items', 32);
+  if (!items.length) failStudy(file, '/items', 'at least one item', 'empty');
+  const context: StudyContext = { file, budget: 0 };
+  items.forEach((item, index) => readItem(context, item, index, masks, materials, stamps));
+  if (context.budget > 524288) failStudy(file, '', 'total cells <= 524288', context.budget);
   // All discriminated variants and references have been checked above.
   return freeze(root) as ItemStudy;
-};
-const freeze = (value: unknown): unknown => {
-  if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
-  return value;
 };

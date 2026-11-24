@@ -1,5 +1,7 @@
 import { isClosedContractRecord } from '@ashfox/internal-contracts';
 
+import { errorMessage } from './diagnostic';
+
 /** Resource ceilings applied before graph traversal or hashing. */
 export interface WorkspaceLimits {
   readonly maxPathCodeUnits: number;
@@ -53,4 +55,19 @@ export const withWorkspaceLimits = (
     }
   }
   return Object.freeze(candidate);
+};
+
+export type WorkspaceLimitsResolution =
+  | { readonly ok: true; readonly limits: WorkspaceLimits }
+  | { readonly ok: false; readonly message: string };
+
+/** Non-throwing limits resolution shared by every workspace boundary. */
+export const resolveWorkspaceLimits = (
+  override: WorkspaceLimitsOverride | undefined,
+): WorkspaceLimitsResolution => {
+  try {
+    return { ok: true, limits: withWorkspaceLimits(override) };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error, 'Workspace limits are invalid.') };
+  }
 };

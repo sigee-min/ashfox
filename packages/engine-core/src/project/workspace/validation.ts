@@ -1,313 +1,297 @@
-import { canonicalJsonString } from '../../canonicalJson';
-
 import {
   type AuthoredAssetWorkspace,
-  type LockedFile,
   type LockedPackage,
   type WorkspaceFile,
-  type WorkspacePackage
+  type WorkspacePackage,
 } from './contract';
 import {
   errorDiagnostic,
+  errorMessage,
   sortWorkspaceDiagnostics,
   syntheticSourceRef,
-  type WorkspaceDiagnostic
+  type WorkspaceDiagnostic,
 } from './diagnostic';
+import { resolveWorkspaceLimits, type WorkspaceLimitsOverride } from './limits';
+import { assertUniqueLogicalPaths, assertWellFormedSourceText, sourceByteLength } from './path';
 import {
-  withWorkspaceLimits,
-  type WorkspaceLimits,
-  type WorkspaceLimitsOverride
-} from './limits';
-import {
-  assertUniqueLogicalPaths,
-  assertWellFormedSourceText,
-  joinLogicalPath,
-  sourceByteLength
-} from './path';
-import {
-  computePackageContentHash,
-  computePackageManifestHash,
-  computeSourceContentHash
-} from './hash';
+  addValidationDiagnostic,
+  checkLockIntegrity,
+  enforceValidationRule,
+  pathsForManifestPackage,
+  type ValidationState,
+  type WorkspacePackageView,
+} from './lockCheck';
 
-export interface WorkspacePackageView {
-  readonly name: string;
-  readonly root: string;
-  readonly manifest: WorkspacePackage['manifest'];
-  readonly source: 'workspace' | 'cas';
-}
+export { pathsForManifestPackage, type WorkspacePackageView } from './lockCheck';
 
-export const workspacePackageFromLock = (
-  pkg: LockedPackage
-): WorkspacePackageView => ({
+const manifestRef = syntheticSourceRef('ashfox.workspace.json');
+
+export const workspacePackageFromLock = (pkg: LockedPackage): WorkspacePackageView => ({
   name: pkg.name,
   root: pkg.root,
   manifest: pkg.manifest,
-  source: pkg.source
+  source: pkg.source,
 });
 
-export const workspacePackageFromManifest = (
-  pkg: WorkspacePackage
-): WorkspacePackageView => ({
+export const workspacePackageFromManifest = (pkg: WorkspacePackage): WorkspacePackageView => ({
   name: pkg.name,
   root: pkg.root,
   manifest: pkg.manifest,
-  source: 'workspace'
+  source: 'workspace',
 });
 
-export const pathsForManifestPackage = (
-  pkg: Pick<WorkspacePackageView, 'root' | 'manifest'>
-): readonly string[] => [
-  ...pkg.manifest.entries.map((entry) => joinLogicalPath(pkg.root, entry.path)),
-  ...pkg.manifest.modules.map((module) => joinLogicalPath(pkg.root, module.path))
-];
+const asciiFold = (value: string): string =>
+  value.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
 
-const asciiFold = (value: string): string => value.replace(/[A-Z]/gu,
-  (letter) => letter.toLowerCase());
-
-const add = (
-  diagnostics: WorkspaceDiagnostic[],
-  limits: WorkspaceLimits,
-  diagnostic: WorkspaceDiagnostic
-): boolean => {
-  if (diagnostics.length >= limits.maxDiagnostics) return false;
-  diagnostics.push(diagnostic);
-  return true;
-};
-
-const lockFilesMatch = (
-  lockFiles: readonly LockedFile[],
-  filesByPath: ReadonlyMap<string, WorkspaceFile>,
-  expectedPaths: readonly string[]
-): boolean => {
-  if (lockFiles.length !== expectedPaths.length) return false;
-  const expected = new Set(expectedPaths);
-  if (new Set(lockFiles.map((file) => file.path)).size !== lockFiles.length) return false;
-  for (const locked of lockFiles) {
-    const file = filesByPath.get(locked.path);
-    if (file === undefined || !expected.has(locked.path) ||
-        computeSourceContentHash(file.source) !== locked.contentHash) return false;
-  }
-  return lockFiles.every((file) => expected.has(file.path));
+const rootsOverlap = (left: WorkspacePackageView, right: WorkspacePackageView): boolean => {
+  const same =
+    left.root === right.root ||
+    (left.root.length > 0 && asciiFold(left.root) === asciiFold(right.root));
+  const nested =
+    left.root.length === 0
+      ? right.root.length > 0
+      : right.root === left.root || right.root.startsWith(`${left.root}/`);
+  return same || nested;
 };
 
 const addPackageRootFindings = (
   packages: readonly WorkspacePackageView[],
-  diagnostics: WorkspaceDiagnostic[],
-  limits: WorkspaceLimits
+  state: ValidationState,
 ): boolean => {
-  const roots = [...packages].sort((left, right) =>
-    left.root.length - right.root.length || (left.root < right.root ? -1 : 1));
+  const roots = [...packages].sort(
+    (left, right) => left.root.length - right.root.length || (left.root < right.root ? -1 : 1),
+  );
   for (let index = 0; index < roots.length; index += 1) {
     for (let next = index + 1; next < roots.length; next += 1) {
-      const left = roots[index];
-      const right = roots[next];
-      const same = left.root === right.root ||
-        (left.root.length > 0 && asciiFold(left.root) === asciiFold(right.root));
-      const nested = left.root.length === 0
-        ? right.root.length > 0
-        : right.root === left.root || right.root.startsWith(`${left.root}/`);
-      if (same || nested) {
-        if (!add(diagnostics, limits, errorDiagnostic('workspace.package.overlap',
+      const left = roots[index]!;
+      const right = roots[next]!;
+      if (!rootsOverlap(left, right)) continue;
+      const ok = addValidationDiagnostic(
+        state,
+        errorDiagnostic(
+          'workspace.package.overlap',
           `Package roots overlap: ${left.root || '<workspace>'} and ${right.root || '<workspace>'}.`,
-          syntheticSourceRef('ashfox.workspace.json')))) return false;
-      }
+          manifestRef,
+        ),
+      );
+      if (!ok) return false;
     }
   }
   return true;
 };
 
-const checkDependencyPins = (
-  packages: readonly WorkspacePackageView[],
-  locks: ReadonlyMap<string, LockedPackage>,
-  diagnostics: WorkspaceDiagnostic[],
-  limits: WorkspaceLimits
+const checkUniquePaths = (files: readonly WorkspaceFile[], state: ValidationState): boolean => {
+  try {
+    assertUniqueLogicalPaths(files.map((file) => file.path));
+    return true;
+  } catch (error) {
+    return addValidationDiagnostic(
+      state,
+      errorDiagnostic(
+        'workspace.file.duplicate',
+        errorMessage(error, 'Duplicate logical file path.'),
+        manifestRef,
+      ),
+    );
+  }
+};
+
+const collectLockedPackageView = (
+  locked: LockedPackage,
+  manifestPackages: readonly WorkspacePackage[],
+  packageViews: WorkspacePackageView[],
+  state: ValidationState,
 ): boolean => {
-  const packageNames = new Set(packages.map((pkg) => pkg.name));
-  for (const pkg of packages) {
-    const lock = locks.get(pkg.name);
-    if (lock === undefined) continue;
-    const declared = pkg.manifest.dependencies.map((dependency) => dependency.name);
-    const pinned = lock.dependencies.map((dependency) => dependency.name);
-    if (declared.length !== pinned.length ||
-        declared.some((name) => !pinned.includes(name))) {
-      if (!add(diagnostics, limits, errorDiagnostic('workspace.lock.dependency_set',
-        `Dependency pins for ${pkg.name} do not match its manifest.`,
-        syntheticSourceRef('ashfox.workspace.json')))) return false;
-    }
-    for (const dependency of lock.dependencies) {
-      const target = locks.get(dependency.name);
-      if (target === undefined ||
-          (!packageNames.has(dependency.name) && target.source !== 'cas')) {
-        if (!add(diagnostics, limits, errorDiagnostic('workspace.lock.dependency_missing',
-          `Lock dependency ${dependency.name} of ${pkg.name} has no target package.`,
-          syntheticSourceRef('ashfox.workspace.json')))) return false;
-        continue;
-      }
-      if (target.contentHash !== dependency.contentHash ||
-          target.interfaceHash !== dependency.interfaceHash) {
-        if (!add(diagnostics, limits, errorDiagnostic('workspace.lock.dependency_stale',
-          `Dependency pin ${pkg.name} -> ${dependency.name} is stale.`,
-          syntheticSourceRef('ashfox.workspace.json')))) return false;
-      }
-    }
+  const existing = manifestPackages.find((pkg) => pkg.name === locked.name);
+  if (locked.source === 'workspace' && existing === undefined) {
+    return addValidationDiagnostic(
+      state,
+      errorDiagnostic(
+        'workspace.lock.extra',
+        `Lock contains an unlisted workspace package: ${locked.name}.`,
+        manifestRef,
+      ),
+    );
+  }
+  if (locked.source === 'cas' && existing === undefined) {
+    packageViews.push(workspacePackageFromLock(locked));
+  }
+  if (existing !== undefined && locked.source === 'cas') {
+    return addValidationDiagnostic(
+      state,
+      errorDiagnostic(
+        'workspace.lock.mixed_source',
+        `Package ${locked.name} is both workspace and CAS.`,
+        manifestRef,
+      ),
+    );
   }
   return true;
 };
 
-const validateContents = (
-  workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
-  override: WorkspaceLimitsOverride | undefined,
-  integrity: boolean
-): readonly WorkspaceDiagnostic[] => {
-  let limits: WorkspaceLimits;
-  try {
-    limits = withWorkspaceLimits(override);
-  } catch (error) {
-    return [errorDiagnostic('workspace.budget.invalid',
-      error instanceof Error ? error.message : 'Workspace limits are invalid.',
-      syntheticSourceRef('ashfox.workspace.json'))];
-  }
-  const diagnostics: WorkspaceDiagnostic[] = [];
-  const push = (diagnostic: WorkspaceDiagnostic): boolean =>
-    add(diagnostics, limits, diagnostic);
-  try {
-    assertUniqueLogicalPaths(workspace.files.map((file) => file.path));
-  } catch (error) {
-    if (!push(errorDiagnostic('workspace.file.duplicate',
-      error instanceof Error ? error.message : 'Duplicate logical file path.',
-      syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  }
+const collectPackageViews = (
+  workspace: Pick<AuthoredAssetWorkspace, 'manifest' | 'lock'>,
+  state: ValidationState,
+): readonly WorkspacePackageView[] | undefined => {
   const packageViews: WorkspacePackageView[] = workspace.manifest.packages.map(
-    workspacePackageFromManifest
+    workspacePackageFromManifest,
   );
-  const locks = new Map(workspace.lock.packages.map((pkg) => [pkg.name, pkg]));
   for (const locked of workspace.lock.packages) {
-    const existing = workspace.manifest.packages.find((pkg) => pkg.name === locked.name);
-    if (locked.source === 'workspace' && existing === undefined) {
-      if (!push(errorDiagnostic('workspace.lock.extra',
-        `Lock contains an unlisted workspace package: ${locked.name}.`,
-        syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    }
-    if (locked.source === 'cas' && existing === undefined) {
-      packageViews.push(workspacePackageFromLock(locked));
-    }
-    if (existing !== undefined && locked.source === 'cas') {
-      if (!push(errorDiagnostic('workspace.lock.mixed_source',
-        `Package ${locked.name} is both workspace and CAS.`,
-        syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
+    if (!collectLockedPackageView(locked, workspace.manifest.packages, packageViews, state)) {
+      return undefined;
     }
   }
-  if (packageViews.length > limits.maxPackages) {
-    if (!push(errorDiagnostic('workspace.budget.packages',
-      `Workspace contains more than ${limits.maxPackages} packages.`,
-      syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  }
+  return packageViews;
+};
+
+const checkPackageBudgets = (
+  filesCount: number,
+  packageViews: readonly WorkspacePackageView[],
+  state: ValidationState,
+): boolean => {
+  const { limits } = state;
   const entries = packageViews.reduce((sum, pkg) => sum + pkg.manifest.entries.length, 0);
   const modules = packageViews.reduce((sum, pkg) => sum + pkg.manifest.modules.length, 0);
-  if (entries > limits.maxEntries && !push(errorDiagnostic('workspace.budget.entries',
-    `Workspace contains more than ${limits.maxEntries} entries.`,
-    syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  if (modules > limits.maxModules && !push(errorDiagnostic('workspace.budget.modules',
-    `Workspace contains more than ${limits.maxModules} modules.`,
-    syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  if (workspace.files.length > limits.maxFiles && !push(errorDiagnostic('workspace.budget.files',
-    `Workspace contains more than ${limits.maxFiles} files.`,
-    syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
+  return (
+    enforceValidationRule(
+      state,
+      packageViews.length > limits.maxPackages,
+      'workspace.budget.packages',
+      `Workspace contains more than ${limits.maxPackages} packages.`,
+    ) &&
+    enforceValidationRule(
+      state,
+      entries > limits.maxEntries,
+      'workspace.budget.entries',
+      `Workspace contains more than ${limits.maxEntries} entries.`,
+    ) &&
+    enforceValidationRule(
+      state,
+      modules > limits.maxModules,
+      'workspace.budget.modules',
+      `Workspace contains more than ${limits.maxModules} modules.`,
+    ) &&
+    enforceValidationRule(
+      state,
+      filesCount > limits.maxFiles,
+      'workspace.budget.files',
+      `Workspace contains more than ${limits.maxFiles} files.`,
+    )
+  );
+};
+
+const checkWorkspaceSources = (
+  files: readonly WorkspaceFile[],
+  state: ValidationState,
+): boolean => {
+  const { limits } = state;
   let sourceCodeUnits = 0;
   let sourceBytes = 0;
-  for (const file of workspace.files) {
+  for (const file of files) {
     try {
       assertWellFormedSourceText(file.source);
       sourceCodeUnits += file.source.length;
       sourceBytes += sourceByteLength(file.source);
     } catch (error) {
-      if (!push(errorDiagnostic('workspace.file.utf8',
-        error instanceof Error ? error.message : `Invalid source: ${file.path}.`,
-        syntheticSourceRef(file.path)))) return diagnostics;
+      const ok = addValidationDiagnostic(
+        state,
+        errorDiagnostic(
+          'workspace.file.utf8',
+          errorMessage(error, `Invalid source: ${file.path}.`),
+          syntheticSourceRef(file.path),
+        ),
+      );
+      if (!ok) return false;
     }
     if (sourceCodeUnits > limits.maxSourceCodeUnits || sourceBytes > limits.maxSourceBytes) break;
   }
-  if (sourceCodeUnits > limits.maxSourceCodeUnits && !push(errorDiagnostic(
-    'workspace.budget.source_code_units',
-    `Workspace source exceeds ${limits.maxSourceCodeUnits} UTF-16 code units.`,
-    syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  if (sourceBytes > limits.maxSourceBytes && !push(errorDiagnostic(
-    'workspace.budget.source_bytes',
-    `Workspace source exceeds ${limits.maxSourceBytes} UTF-8 bytes.`,
-    syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-  if (!addPackageRootFindings(packageViews, diagnostics, limits)) return diagnostics;
+  return (
+    enforceValidationRule(
+      state,
+      sourceCodeUnits > limits.maxSourceCodeUnits,
+      'workspace.budget.source_code_units',
+      `Workspace source exceeds ${limits.maxSourceCodeUnits} UTF-16 code units.`,
+    ) &&
+    enforceValidationRule(
+      state,
+      sourceBytes > limits.maxSourceBytes,
+      'workspace.budget.source_bytes',
+      `Workspace source exceeds ${limits.maxSourceBytes} UTF-8 bytes.`,
+    )
+  );
+};
 
-  const filesByPath = new Map(workspace.files.map((file) => [file.path, file]));
+const checkDeclaredFiles = (
+  files: readonly WorkspaceFile[],
+  packageViews: readonly WorkspacePackageView[],
+  state: ValidationState,
+): ReadonlyMap<string, WorkspaceFile> | undefined => {
+  const filesByPath = new Map(files.map((file) => [file.path, file]));
   const expectedPaths = new Set<string>();
   for (const pkg of packageViews) {
     for (const path of pathsForManifestPackage(pkg)) expectedPaths.add(path);
   }
-  for (const file of workspace.files) {
-    if (!expectedPaths.has(file.path) && !push(errorDiagnostic('workspace.file.undeclared',
-      `Source file is not declared by a package manifest: ${file.path}.`,
-      syntheticSourceRef(file.path)))) return diagnostics;
+  for (const file of files) {
+    if (expectedPaths.has(file.path)) continue;
+    const ok = addValidationDiagnostic(
+      state,
+      errorDiagnostic(
+        'workspace.file.undeclared',
+        `Source file is not declared by a package manifest: ${file.path}.`,
+        syntheticSourceRef(file.path),
+      ),
+    );
+    if (!ok) return undefined;
   }
   for (const path of expectedPaths) {
-    if (!filesByPath.has(path) && !push(errorDiagnostic('workspace.file.missing',
-      `Declared source file is missing from workspace files: ${path}.`,
-      syntheticSourceRef(path)))) return diagnostics;
+    if (filesByPath.has(path)) continue;
+    const ok = addValidationDiagnostic(
+      state,
+      errorDiagnostic(
+        'workspace.file.missing',
+        `Declared source file is missing from workspace files: ${path}.`,
+        syntheticSourceRef(path),
+      ),
+    );
+    if (!ok) return undefined;
   }
+  return filesByPath;
+};
+
+const validateContents = (
+  workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
+  override: WorkspaceLimitsOverride | undefined,
+  integrity: boolean,
+): readonly WorkspaceDiagnostic[] => {
+  const resolved = resolveWorkspaceLimits(override);
+  if (!resolved.ok) {
+    return [errorDiagnostic('workspace.budget.invalid', resolved.message, manifestRef)];
+  }
+  const state: ValidationState = { diagnostics: [], limits: resolved.limits };
+  if (!checkUniquePaths(workspace.files, state)) return state.diagnostics;
+  const packageViews = collectPackageViews(workspace, state);
+  if (packageViews === undefined) return state.diagnostics;
+  if (!checkPackageBudgets(workspace.files.length, packageViews, state)) return state.diagnostics;
+  if (!checkWorkspaceSources(workspace.files, state)) return state.diagnostics;
+  if (!addPackageRootFindings(packageViews, state)) return state.diagnostics;
+  const filesByPath = checkDeclaredFiles(workspace.files, packageViews, state);
+  if (filesByPath === undefined) return state.diagnostics;
 
   // Candidate structure and budgets must be accepted before parsing bytes or
   // deriving a new local lock. Persisted authority always checks integrity.
-  if (!integrity) return sortWorkspaceDiagnostics(diagnostics);
-
-  for (const pkg of packageViews) {
-    const lock = locks.get(pkg.name);
-    if (lock === undefined) {
-      if (!push(errorDiagnostic('workspace.lock.missing',
-        `Package ${pkg.name} has no lock record.`, syntheticSourceRef('ashfox.workspace.json')))) {
-        return diagnostics;
-      }
-      continue;
-    }
-    const paths = pathsForManifestPackage(pkg);
-    const packageFiles = paths.map((path) => filesByPath.get(path))
-      .filter((file): file is WorkspaceFile => file !== undefined);
-    if (lock.root !== pkg.root ||
-        canonicalJsonString(lock.manifest) !== canonicalJsonString(pkg.manifest)) {
-      if (!push(errorDiagnostic('workspace.lock.stale_manifest',
-        `Lock manifest for ${pkg.name} does not match its package manifest.`,
-        syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    }
-    const expectedManifestHash = computePackageManifestHash({
-      name: pkg.name, root: pkg.root, manifest: pkg.manifest
-    });
-    const expectedContentHash = computePackageContentHash({
-      name: pkg.name, root: pkg.root, manifest: pkg.manifest
-    }, packageFiles);
-    if (lock.manifestHash !== expectedManifestHash && !push(errorDiagnostic(
-      'workspace.lock.stale_manifest', `Manifest digest for ${pkg.name} is stale.`,
-      syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    if (lock.contentHash !== expectedContentHash && !push(errorDiagnostic(
-      'workspace.lock.stale_content', `Content digest for ${pkg.name} is stale.`,
-      syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    if (!lockFilesMatch(lock.files, filesByPath, paths) && !push(errorDiagnostic(
-      'workspace.lock.stale_file', `File digests for ${pkg.name} are stale or incomplete.`,
-      syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    if (lock.source === 'cas' && (lock.digest === null || lock.digest !== lock.contentHash)) {
-      if (!push(errorDiagnostic('workspace.lock.cas_digest',
-        `CAS package ${pkg.name} digest must equal its content hash.`,
-        syntheticSourceRef('ashfox.workspace.json')))) return diagnostics;
-    }
-  }
-  if (!checkDependencyPins(packageViews, locks, diagnostics, limits)) return diagnostics;
-  return sortWorkspaceDiagnostics(diagnostics);
+  if (!integrity) return sortWorkspaceDiagnostics(state.diagnostics);
+  const locks = new Map(workspace.lock.packages.map((pkg) => [pkg.name, pkg]));
+  if (!checkLockIntegrity(packageViews, locks, filesByPath, state)) return state.diagnostics;
+  return sortWorkspaceDiagnostics(state.diagnostics);
 };
 
 export const validateWorkspaceContents = (
   workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
-  override?: WorkspaceLimitsOverride
+  override?: WorkspaceLimitsOverride,
 ): readonly WorkspaceDiagnostic[] => validateContents(workspace, override, true);
 
 /** Internal pre-seal gate. Local lock records may be absent, never CAS records. */
 export const validateWorkspaceStructure = (
   workspace: Pick<AuthoredAssetWorkspace, 'files' | 'manifest' | 'lock'>,
-  override?: WorkspaceLimitsOverride
+  override?: WorkspaceLimitsOverride,
 ): readonly WorkspaceDiagnostic[] => validateContents(workspace, override, false);

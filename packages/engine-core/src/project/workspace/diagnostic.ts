@@ -134,6 +134,10 @@ export const sortWorkspaceDiagnostics = (
       compareText(chainForSort(left), chainForSort(right)),
   );
 
+/** Message of a caught boundary error, or the owner-supplied fallback. */
+export const errorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback;
+
 export const errorDiagnostic = (
   code: string,
   message: string,

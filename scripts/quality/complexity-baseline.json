@@ -326,18 +326,6 @@
     "lines": 95,
     "cognitive": 50
   },
-  "packages/engine-core/src/project/directory/gameRead.ts::readGamePack": {
-    "lines": 78,
-    "cognitive": 27
-  },
-  "packages/engine-core/src/project/directory/packRead.ts::readResourcePacks": {
-    "lines": 130,
-    "cognitive": 85
-  },
-  "packages/engine-core/src/project/directory/read.ts::readDirectoryWorkspace": {
-    "lines": 161,
-    "cognitive": 70
-  },
   "packages/engine-core/src/project/program/asset/parser.ts::Parser/joint": {
     "cognitive": 28
   },
@@ -367,68 +355,6 @@
   },
   "packages/engine-core/src/project/program/syntax/texture.ts::validateStamp": {
     "cognitive": 16
-  },
-  "packages/engine-core/src/project/sprite/json.ts::parseSpriteJson": {
-    "lines": 71,
-    "cognitive": 59
-  },
-  "packages/engine-core/src/project/sprite/read.ts::readItemStudy": {
-    "lines": 169,
-    "cognitive": 123
-  },
-  "packages/engine-core/src/project/sprite/source.ts::parseSpriteSource": {
-    "lines": 138,
-    "cognitive": 109
-  },
-  "packages/engine-core/src/project/workspace/change.ts::stageWorkspaceChangeSet": {
-    "lines": 141,
-    "cognitive": 113
-  },
-  "packages/engine-core/src/project/workspace/graph.ts::resolveWorkspaceEntryCompilationFromSnapshot": {
-    "lines": 157,
-    "cognitive": 45
-  },
-  "packages/engine-core/src/project/workspace/graph.ts::resolveWorkspaceEntryCompilationFromSnapshot/visit": {
-    "lines": 92
-  },
-  "packages/engine-core/src/project/workspace/graph.ts::validateCompilationSnapshot": {
-    "nesting": 5,
-    "cognitive": 30
-  },
-  "packages/engine-core/src/project/workspace/graphSource.ts::validateDeclaredModuleImports": {
-    "lines": 91,
-    "cognitive": 34
-  },
-  "packages/engine-core/src/project/workspace/graphSource.ts::validateDeclaredModuleImports/walk": {
-    "lines": 70
-  },
-  "packages/engine-core/src/project/workspace/path.ts::validatePath": {
-    "cognitive": 16
-  },
-  "packages/engine-core/src/project/workspace/reader.ts::readAuthoredAssetWorkspace": {
-    "lines": 80,
-    "cognitive": 31
-  },
-  "packages/engine-core/src/project/workspace/schema.ts::readLockedPackage": {
-    "lines": 68,
-    "cognitive": 39
-  },
-  "packages/engine-core/src/project/workspace/schema.ts::readPackageManifest": {
-    "cognitive": 25
-  },
-  "packages/engine-core/src/project/workspace/seal.ts::sealWorkspaceCandidate": {
-    "lines": 135,
-    "cognitive": 32
-  },
-  "packages/engine-core/src/project/workspace/validation.ts::addPackageRootFindings": {
-    "cognitive": 22
-  },
-  "packages/engine-core/src/project/workspace/validation.ts::checkDependencyPins": {
-    "cognitive": 28
-  },
-  "packages/engine-core/src/project/workspace/validation.ts::validateContents": {
-    "lines": 145,
-    "cognitive": 91
   },
   "packages/engine-core/src/provenance/digest.ts::sha256ByteDigest": {
     "lines": 74
