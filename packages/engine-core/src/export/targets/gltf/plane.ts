@@ -22,62 +22,82 @@ const faceUvs = (
   return corners.flatMap(([u, v]) => [u / texture.width, v / texture.height]);
 };
 
+const planePoint = (plane: PlaneNode, u: number, v: number): Vec3 => {
+  const pivot = plane.transform.pivot;
+  if (plane.basis === undefined) {
+    return [u - pivot[0], v - pivot[1], -pivot[2]];
+  }
+  return [
+    plane.basis.uAxis[0]! * (u - pivot[0]) +
+      plane.basis.vAxis[0]! * (v - pivot[1]) -
+      plane.basis.normal[0]! * pivot[2],
+    plane.basis.uAxis[1]! * (u - pivot[0]) +
+      plane.basis.vAxis[1]! * (v - pivot[1]) -
+      plane.basis.normal[1]! * pivot[2],
+    plane.basis.uAxis[2]! * (u - pivot[0]) +
+      plane.basis.vAxis[2]! * (v - pivot[1]) -
+      plane.basis.normal[2]! * pivot[2],
+  ];
+};
+
+const planeNormal = (plane: PlaneNode, direction: PlaneFaceDirection): Vec3 => {
+  const frontNormal: Vec3 = plane.basis?.normal ?? [0, 0, 1];
+  if (direction === 'front') return frontNormal;
+  return [-frontNormal[0], -frontNormal[1], -frontNormal[2]];
+};
+
+const planeMaterial = (
+  textureId: string | null,
+  options: GltfSceneCompileOptions,
+): number | undefined => {
+  if (textureId === null) return undefined;
+  return (
+    options.singleSidedMaterialByTextureId.get(textureId) ??
+    options.materialByTextureId.get(textureId)
+  );
+};
+
+const compilePlaneFace = (
+  document: ProjectDocument,
+  plane: PlaneNode,
+  frontCorners: readonly Vec3[],
+  direction: PlaneFaceDirection,
+  options: GltfSceneCompileOptions,
+): GltfPrimitiveData | null => {
+  const face = plane.faces[direction];
+  if (!face.enabled) return null;
+  const corners =
+    direction === 'front'
+      ? frontCorners
+      : [frontCorners[1]!, frontCorners[0]!, frontCorners[3]!, frontCorners[2]!];
+  const normal = planeNormal(plane, direction);
+  const texture = face.textureId === null ? undefined : document.textures[face.textureId];
+  const uvs = faceUvs(plane, texture, face.uv, direction);
+  const material = planeMaterial(face.textureId, options);
+  return {
+    positions: corners.flatMap((corner) => multiplyVec3(corner, options.unitScale)),
+    normals: [normal, normal, normal, normal].flatMap((value) => value),
+    ...(uvs ? { uvs } : {}),
+    ...(material === undefined ? {} : { material }),
+    indices: [0, 1, 2, 0, 2, 3],
+  };
+};
+
 export const compileGltfPlanePrimitiveData = (
   document: ProjectDocument,
   plane: PlaneNode,
   options: GltfSceneCompileOptions,
 ): GltfPrimitiveData[] => {
-  const pivot = plane.transform.pivot;
-  const point = (u: number, v: number): Vec3 =>
-    plane.basis === undefined
-      ? [u - pivot[0], v - pivot[1], -pivot[2]]
-      : [
-          plane.basis.uAxis[0]! * (u - pivot[0]) +
-            plane.basis.vAxis[0]! * (v - pivot[1]) -
-            plane.basis.normal[0]! * pivot[2],
-          plane.basis.uAxis[1]! * (u - pivot[0]) +
-            plane.basis.vAxis[1]! * (v - pivot[1]) -
-            plane.basis.normal[1]! * pivot[2],
-          plane.basis.uAxis[2]! * (u - pivot[0]) +
-            plane.basis.vAxis[2]! * (v - pivot[1]) -
-            plane.basis.normal[2]! * pivot[2],
-        ];
   const frontCorners: readonly Vec3[] = [
-    point(0, 0),
-    point(plane.size[0], 0),
-    point(plane.size[0], plane.size[1]),
-    point(0, plane.size[1]),
+    planePoint(plane, 0, 0),
+    planePoint(plane, plane.size[0], 0),
+    planePoint(plane, plane.size[0], plane.size[1]),
+    planePoint(plane, 0, plane.size[1]),
   ];
-  const directions =
-    plane.sidedness === 'double' ? (['front', 'back'] as const) : (['front'] as const);
+  const directions: readonly PlaneFaceDirection[] =
+    plane.sidedness === 'double' ? ['front', 'back'] : ['front'];
   return directions.flatMap((direction) => {
-    const face = plane.faces[direction];
-    if (!face.enabled) return [];
-    const corners =
-      direction === 'front'
-        ? frontCorners
-        : [frontCorners[1]!, frontCorners[0]!, frontCorners[3]!, frontCorners[2]!];
-    const normal: Vec3 =
-      direction === 'front'
-        ? (plane.basis?.normal ?? [0, 0, 1])
-        : plane.basis === undefined
-          ? [0, 0, -1]
-          : ([-plane.basis.normal[0], -plane.basis.normal[1], -plane.basis.normal[2]] as Vec3);
-    const texture = face.textureId === null ? undefined : document.textures[face.textureId];
-    const uvs = faceUvs(plane, texture, face.uv, direction);
-    const material =
-      face.textureId === null
-        ? undefined
-        : (options.singleSidedMaterialByTextureId.get(face.textureId) ??
-          options.materialByTextureId.get(face.textureId));
-    return [
-      {
-        positions: corners.flatMap((corner) => multiplyVec3(corner, options.unitScale)),
-        normals: [normal, normal, normal, normal].flatMap((value) => value),
-        ...(uvs ? { uvs } : {}),
-        ...(material === undefined ? {} : { material }),
-        indices: [0, 1, 2, 0, 2, 3],
-      },
-    ];
+    const data = compilePlaneFace(document, plane, frontCorners, direction, options);
+    return data === null ? [] : [data];
   });
 };

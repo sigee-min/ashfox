@@ -69,6 +69,31 @@ const createGltfNode = (node: SceneNode, translation: [number, number, number]):
   };
 };
 
+const assertValidCanonicalBone = (node: SceneNode): void => {
+  if (
+    node.kind === 'bone' &&
+    node.canonicalFrame !== undefined &&
+    (!isCanonicalBoneFrame(node.canonicalFrame) || !boneTransformMatchesCanonicalFrame(node))
+  ) {
+    throw new RangeError(`Bone ${node.id} has an invalid canonical frame.`);
+  }
+};
+
+const linkGltfHierarchy = (
+  orderedNodes: readonly SceneNode[],
+  nodes: GltfNode[],
+  nodeIndexById: ReadonlyMap<string, number>,
+): void => {
+  for (const node of orderedNodes) {
+    if (node.parentId === null) continue;
+    const parentIndex = nodeIndexById.get(node.parentId);
+    const childIndex = nodeIndexById.get(node.id);
+    if (parentIndex === undefined || childIndex === undefined) continue;
+    const parentNode = nodes[parentIndex];
+    parentNode.children = [...(parentNode.children ?? []), childIndex];
+  }
+};
+
 export const compileGltfScene = (
   document: ProjectDocument,
   options: GltfSceneCompileOptions,
@@ -88,20 +113,13 @@ export const compileGltfScene = (
   };
 
   for (const node of orderedNodes) {
-    if (
-      node.kind === 'bone' &&
-      node.canonicalFrame !== undefined &&
-      (!isCanonicalBoneFrame(node.canonicalFrame) || !boneTransformMatchesCanonicalFrame(node))
-    ) {
-      throw new RangeError(`Bone ${node.id} has an invalid canonical frame.`);
-    }
+    assertValidCanonicalBone(node);
     const translation = restTranslation(document, node, options.unitScale);
-    const gltfNode = createGltfNode(node, translation);
     nodeIndexById.set(node.id, nodes.length);
     restTranslationById.set(node.id, translation);
     restRotationById.set(node.id, [...gltfNodeGeometryRotation(node)]);
     restScaleById.set(node.id, [...node.transform.scale]);
-    nodes.push(gltfNode);
+    nodes.push(createGltfNode(node, translation));
   }
 
   const compiledBatches = compileRigidGltfBatches(
@@ -110,31 +128,20 @@ export const compileGltfScene = (
     restTranslationById,
     compileOptions,
   );
-  const meshes = compiledBatches.meshes;
-  const skins: [] = [];
   for (const [ownerId, mesh] of compiledBatches.meshIndexByOwnerId) {
     const nodeIndex = nodeIndexById.get(ownerId);
     if (nodeIndex !== undefined) nodes[nodeIndex].mesh = mesh;
   }
+  linkGltfHierarchy(orderedNodes, nodes, nodeIndexById);
 
-  for (const node of orderedNodes) {
-    if (node.parentId === null) continue;
-    const parentIndex = nodeIndexById.get(node.parentId);
-    const childIndex = nodeIndexById.get(node.id);
-    if (parentIndex === undefined || childIndex === undefined) continue;
-    const parentNode = nodes[parentIndex];
-    parentNode.children = [...(parentNode.children ?? []), childIndex];
-  }
-
-  const authoredRootNodeIndices = document.scene.roots
+  const rootNodeIndices = document.scene.roots
     .map((id) => nodeIndexById.get(id))
     .filter((index): index is number => index !== undefined);
-  const rootNodeIndices = [...authoredRootNodeIndices];
 
   return {
     nodes,
-    meshes,
-    skins,
+    meshes: compiledBatches.meshes,
+    skins: [],
     rootNodeIndices,
     nodeIndexById,
     restTranslationById,

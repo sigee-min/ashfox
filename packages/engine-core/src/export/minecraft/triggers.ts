@@ -67,39 +67,51 @@ const compileEffectValue = (
   return effects.length > 0 ? effects : undefined;
 };
 
+type CompiledEffects = Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]>;
+type CompiledTimeline = Record<string, string | readonly string[]>;
+type TriggerValue = AnimationTriggerTrack['keys'][number]['value'];
+
+const keyframeEffect = (
+  document: ProjectDocument,
+  value: TriggerValue,
+  visibleNodeIds: ReadonlySet<string>,
+): MinecraftAnimationEffect | MinecraftAnimationEffect[] | undefined => {
+  if (!isAnimationEffect(value) && !isAnimationEffectArray(value)) return undefined;
+  return compileEffectValue(document, value, visibleNodeIds);
+};
+
+const timelineValue = (
+  value: TriggerValue,
+  options: MinecraftAnimationCompileOptions,
+): string | readonly string[] => {
+  if (isStringArray(value)) return options.dialect === 'bedrock' ? value : value.join('\n');
+  return typeof value === 'string' ? value : '';
+};
+
 export const compileMinecraftAnimationTriggers = (
   document: ProjectDocument,
   tracks: readonly AnimationTriggerTrack[],
   options: MinecraftAnimationCompileOptions,
   visibleNodeIds: ReadonlySet<string>,
 ): Pick<MinecraftActorAnimation, 'sound_effects' | 'particle_effects' | 'timeline'> => {
-  const soundEffects: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]> = {};
-  const particleEffects: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]> = {};
-  const timeline: Record<string, string | readonly string[]> = {};
+  const soundEffects: CompiledEffects = {};
+  const particleEffects: CompiledEffects = {};
+  const timeline: CompiledTimeline = {};
+  const effectRecords: Partial<Record<AnimationTriggerTrack['type'], CompiledEffects>> = {
+    sound: soundEffects,
+    particle: particleEffects,
+  };
 
   for (const track of tracks) {
+    const effects = effectRecords[track.type];
     for (const keyframe of track.keys) {
       const timestamp = formatAnimationTimestamp(keyframe.timeSeconds);
-      if (track.type === 'sound' || track.type === 'particle') {
-        if (!isAnimationEffect(keyframe.value) && !isAnimationEffectArray(keyframe.value)) {
-          continue;
-        }
-        const effect = compileEffectValue(document, keyframe.value, visibleNodeIds);
-        if (!effect) continue;
-        if (track.type === 'sound') {
-          soundEffects[timestamp] = effect;
-        } else {
-          particleEffects[timestamp] = effect;
-        }
+      if (!effects) {
+        timeline[timestamp] = timelineValue(keyframe.value, options);
         continue;
       }
-      timeline[timestamp] = isStringArray(keyframe.value)
-        ? options.dialect === 'bedrock'
-          ? keyframe.value
-          : keyframe.value.join('\n')
-        : typeof keyframe.value === 'string'
-          ? keyframe.value
-          : '';
+      const effect = keyframeEffect(document, keyframe.value, visibleNodeIds);
+      if (effect) effects[timestamp] = effect;
     }
   }
 

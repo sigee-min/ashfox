@@ -109,12 +109,35 @@ const textureBindingFor = (
   return texture.minecraft;
 };
 
+const compileJavaFace = (
+  document: ExportAdaptedDocument,
+  face: CubeNode['faces'][CubeFaceDirection],
+): MinecraftJavaFace | undefined => {
+  if (!face.enabled || face.textureId === null || !face.uv) return undefined;
+  const binding = textureBindingFor(document.textures[face.textureId]);
+  const resolution = document.settings.textureResolution;
+  const uv: [number, number, number, number] = [
+    (face.uv[0] * 16) / resolution.width,
+    (face.uv[1] * 16) / resolution.height,
+    (face.uv[2] * 16) / resolution.width,
+    (face.uv[3] * 16) / resolution.height,
+  ];
+  return {
+    uv,
+    texture: `#${binding.key}`,
+    ...(face.rotation ? { rotation: face.rotation } : {}),
+    ...(face.cullFace ? { cullface: face.cullFace } : {}),
+    ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {}),
+  };
+};
+
 const compileJavaElement = (
   document: ExportAdaptedDocument,
   cube: CubeNode,
 ): MinecraftJavaElement => {
-  if (cube.geometryMode !== 'axis-box')
+  if (cube.geometryMode !== 'axis-box') {
     throw new RangeError('Minecraft Java block export does not accept oriented entity boxes.');
+  }
   const from = addPosition(cube.bounds.from, cube.transform.position);
   const to = addPosition(cube.bounds.to, cube.transform.position);
   for (let axis = 0; axis < 3; axis += 1) {
@@ -123,25 +146,9 @@ const compileJavaElement = (
   }
 
   const faces: Partial<Record<CubeFaceDirection, MinecraftJavaFace>> = {};
-  const resolution = document.settings.textureResolution;
   for (const direction of CUBE_FACE_DIRECTIONS) {
-    const face = cube.faces[direction];
-    if (!face.enabled || face.textureId === null || !face.uv) continue;
-    const texture = document.textures[face.textureId];
-    const binding = textureBindingFor(texture);
-    const uv: [number, number, number, number] = [
-      (face.uv[0] * 16) / resolution.width,
-      (face.uv[1] * 16) / resolution.height,
-      (face.uv[2] * 16) / resolution.width,
-      (face.uv[3] * 16) / resolution.height,
-    ];
-    faces[direction] = {
-      uv,
-      texture: `#${binding.key}`,
-      ...(face.rotation ? { rotation: face.rotation } : {}),
-      ...(face.cullFace ? { cullface: face.cullFace } : {}),
-      ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {}),
-    };
+    const compiled = compileJavaFace(document, cube.faces[direction]);
+    if (compiled !== undefined) faces[direction] = compiled;
   }
   const rotation = compileJavaRotation(cube);
 

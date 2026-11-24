@@ -143,88 +143,116 @@ const sampleChannel = (
   };
 };
 
+const resolveCachedAccessor = (
+  cache: Map<string, number>,
+  writer: GltfBinaryWriter,
+  values: readonly number[],
+  componentCount: 1 | 3 | 4,
+  includeBounds: boolean,
+  encoding: 'float' | 'normalized-short' = 'float',
+): number => {
+  const key = `${encoding}:${componentCount}:${values.map(Math.fround).join(',')}`;
+  const existing = cache.get(key);
+  if (existing !== undefined) return existing;
+  if (encoding === 'normalized-short' && componentCount !== 4) {
+    throw new Error('Normalized glTF animation outputs must be VEC4.');
+  }
+  const accessor =
+    encoding === 'normalized-short'
+      ? writer.addNormalizedShortAccessor(values, 4)
+      : writer.addFloatAccessor(values, componentCount, includeBounds);
+  cache.set(key, accessor);
+  return accessor;
+};
+
+interface AccessorCaches {
+  times: Map<string, number>;
+  outputs: Map<string, number>;
+}
+
+const appendGltfAnimationChannel = (
+  animation: GltfAnimation,
+  clip: AnimationClip,
+  channel: TransformChannel,
+  options: GltfAnimationCompileOptions,
+  caches: AccessorCaches,
+): void => {
+  if (channel.keys.length === 0) return;
+  const node = options.nodeIndexById.get(channel.targetNodeId);
+  if (node === undefined) {
+    throw new Error(
+      `Validated glTF animation target "${channel.targetNodeId}" is missing from the emitted scene.`,
+    );
+  }
+  const sampled = sampleChannel(channel, clip, options);
+  const compiled = compileValues(channel, sampled.values);
+  const optimized = optimizeGltfAnimationSamples(channel, {
+    times: sampled.times,
+    values: compiled.values,
+    componentCount: compiled.componentCount,
+    interpolation: sampled.interpolation,
+  });
+  const input = resolveCachedAccessor(caches.times, options.writer, optimized.times, 1, true);
+  const output = resolveCachedAccessor(
+    caches.outputs,
+    options.writer,
+    optimized.values,
+    optimized.componentCount,
+    false,
+    channel.property === 'rotation' ? 'normalized-short' : 'float',
+  );
+  const sampler = animation.samplers.length;
+  animation.samplers.push({ input, output, interpolation: sampled.interpolation });
+  animation.channels.push({
+    sampler,
+    target: {
+      node,
+      path: channel.property === 'position' ? 'translation' : channel.property,
+    },
+  });
+};
+
+const compileGltfClip = (
+  clip: AnimationClip,
+  options: GltfAnimationCompileOptions,
+  caches: AccessorCaches,
+): GltfAnimation | null => {
+  const animation: GltfAnimation = {
+    name: clip.name,
+    samplers: [],
+    channels: [],
+    extras: {
+      ashfoxLoop: clip.loop,
+      ashfoxDurationSeconds: clip.durationSeconds,
+      ashfoxFps: clip.fps,
+    },
+  };
+  const orderedChannels = Object.values(clip.channels).sort((left, right) =>
+    left.id.localeCompare(right.id),
+  );
+  for (const channel of orderedChannels) {
+    appendGltfAnimationChannel(animation, clip, channel, options, caches);
+  }
+  return animation.channels.length > 0 ? animation : null;
+};
+
 export const compileGltfAnimations = (
   document: ProjectDocument,
   options: GltfAnimationCompileOptions,
 ): GltfAnimation[] => {
   assertValidatedExportTargetDocument(document as ExportAdaptedDocument, ['glb', 'gltf']);
   assertProjectAnimationsExportable(document, 'gltf.2');
-  const animations: GltfAnimation[] = [];
-  const timeAccessorByValues = new Map<string, number>();
-  const outputAccessorByValues = new Map<string, number>();
-  const cachedAccessor = (
-    cache: Map<string, number>,
-    values: readonly number[],
-    componentCount: 1 | 3 | 4,
-    includeBounds: boolean,
-    encoding: 'float' | 'normalized-short' = 'float',
-  ): number => {
-    const key = `${encoding}:${componentCount}:${values.map(Math.fround).join(',')}`;
-    const existing = cache.get(key);
-    if (existing !== undefined) return existing;
-    if (encoding === 'normalized-short' && componentCount !== 4) {
-      throw new Error('Normalized glTF animation outputs must be VEC4.');
-    }
-    const accessor =
-      encoding === 'normalized-short'
-        ? options.writer.addNormalizedShortAccessor(values, 4)
-        : options.writer.addFloatAccessor(values, componentCount, includeBounds);
-    cache.set(key, accessor);
-    return accessor;
+  const caches: AccessorCaches = {
+    times: new Map(),
+    outputs: new Map(),
   };
-  for (const clip of Object.values(document.animations).sort((left, right) =>
+  const animations: GltfAnimation[] = [];
+  const orderedClips = Object.values(document.animations).sort((left, right) =>
     left.id.localeCompare(right.id),
-  )) {
-    const animation: GltfAnimation = {
-      name: clip.name,
-      samplers: [],
-      channels: [],
-      extras: {
-        ashfoxLoop: clip.loop,
-        ashfoxDurationSeconds: clip.durationSeconds,
-        ashfoxFps: clip.fps,
-      },
-    };
-    for (const channel of Object.values(clip.channels).sort((left, right) =>
-      left.id.localeCompare(right.id),
-    )) {
-      if (channel.keys.length === 0) continue;
-      const node = options.nodeIndexById.get(channel.targetNodeId);
-      if (node === undefined)
-        throw new Error(
-          `Validated glTF animation target "${channel.targetNodeId}" is missing from the emitted scene.`,
-        );
-      const sampled = sampleChannel(channel, clip, options);
-      const compiled = compileValues(channel, sampled.values);
-      const optimized = optimizeGltfAnimationSamples(channel, {
-        times: sampled.times,
-        values: compiled.values,
-        componentCount: compiled.componentCount,
-        interpolation: sampled.interpolation,
-      });
-      const input = cachedAccessor(timeAccessorByValues, optimized.times, 1, true);
-      const output = cachedAccessor(
-        outputAccessorByValues,
-        optimized.values,
-        optimized.componentCount,
-        false,
-        channel.property === 'rotation' ? 'normalized-short' : 'float',
-      );
-      const sampler = animation.samplers.length;
-      animation.samplers.push({
-        input,
-        output,
-        interpolation: sampled.interpolation,
-      });
-      animation.channels.push({
-        sampler,
-        target: {
-          node,
-          path: channel.property === 'position' ? 'translation' : channel.property,
-        },
-      });
-    }
-    if (animation.channels.length > 0) animations.push(animation);
+  );
+  for (const clip of orderedClips) {
+    const compiled = compileGltfClip(clip, options, caches);
+    if (compiled !== null) animations.push(compiled);
   }
   return animations;
 };

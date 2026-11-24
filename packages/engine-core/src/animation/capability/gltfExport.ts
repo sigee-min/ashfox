@@ -1,174 +1,179 @@
-import type { AnimationClip } from '../../model';
-import { channelUsesMolang, exportAdaptation, exportIssue, triggerIssueCode } from './shared';
+import type { AnimationClip, TransformChannel } from '../../model';
+import {
+  channelUsesMolang,
+  exportAdaptation,
+  exportIssue,
+  sortedById,
+  triggerIssueCode,
+} from './shared';
 import type {
   AnimationExportAdaptation,
+  AnimationExportAdaptationCode,
   AnimationExportIssue,
   AnimationExportTarget,
 } from './types';
 
-export const analyzeGltfClip = (
+const channelIssues = (
   clip: AnimationClip,
   targetId: AnimationExportTarget,
+  channel: TransformChannel,
+  channelPath: string,
 ): readonly AnimationExportIssue[] => {
   const issues: AnimationExportIssue[] = [];
-  const clipPath = `animations.${clip.id}`;
+  const ids = { channelId: channel.id };
+  if (channel.property === 'rotation' && channel.rotationSpace === 'entity') {
+    issues.push(
+      exportIssue(
+        targetId,
+        clip,
+        'entity_rotation',
+        `${channelPath}.rotationSpace`,
+        'glTF animation rotations must be node-local.',
+        ids,
+      ),
+    );
+  }
+  if (channelUsesMolang(channel)) {
+    issues.push(
+      exportIssue(
+        targetId,
+        clip,
+        'molang',
+        `${channelPath}.keys`,
+        'glTF animation values must be finite numbers; Molang is Minecraft-specific.',
+        ids,
+      ),
+    );
+  }
+  const firstInterpolation = channel.keys[0].interpolation;
+  if (channel.keys.some((keyframe) => keyframe.interpolation !== firstInterpolation)) {
+    issues.push(
+      exportIssue(
+        targetId,
+        clip,
+        'mixed_interpolation',
+        `${channelPath}.keys`,
+        'A glTF sampler requires one interpolation mode per channel.',
+        ids,
+      ),
+    );
+  }
+  return issues;
+};
 
-  for (const channel of Object.values(clip.channels).sort((left, right) =>
-    left.id.localeCompare(right.id),
-  )) {
-    const channelPath = `${clipPath}.channels.${channel.id}`;
-    if (channel.keys.length === 0) continue;
-    if (channel.property === 'rotation' && channel.rotationSpace === 'entity') {
+const keyframeIssues = (
+  clip: AnimationClip,
+  targetId: AnimationExportTarget,
+  channel: TransformChannel,
+  channelPath: string,
+): readonly AnimationExportIssue[] => {
+  const issues: AnimationExportIssue[] = [];
+  for (const keyframe of channel.keys) {
+    const keyPath = `${channelPath}.keys.${keyframe.id}`;
+    const ids = { channelId: channel.id, keyframeId: keyframe.id };
+    if (keyframe.easing !== undefined) {
       issues.push(
         exportIssue(
           targetId,
           clip,
-          'entity_rotation',
-          `${channelPath}.rotationSpace`,
-          'glTF animation rotations must be node-local.',
-          { channelId: channel.id },
+          'easing',
+          `${keyPath}.easing`,
+          'Core glTF cannot preserve GeckoLib keyframe easing.',
+          ids,
         ),
       );
     }
-    if (channelUsesMolang(channel)) {
+    if (keyframe.preValue !== undefined || keyframe.postValue !== undefined) {
       issues.push(
         exportIssue(
           targetId,
           clip,
-          'molang',
-          `${channelPath}.keys`,
-          'glTF animation values must be finite numbers; Molang is Minecraft-specific.',
-          { channelId: channel.id },
+          'split_value',
+          keyPath,
+          'Core glTF cannot preserve split pre/post keyframe values.',
+          ids,
         ),
       );
-    }
-    const firstInterpolation = channel.keys[0].interpolation;
-    if (channel.keys.some((keyframe) => keyframe.interpolation !== firstInterpolation)) {
-      issues.push(
-        exportIssue(
-          targetId,
-          clip,
-          'mixed_interpolation',
-          `${channelPath}.keys`,
-          'A glTF sampler requires one interpolation mode per channel.',
-          { channelId: channel.id },
-        ),
-      );
-    }
-    for (const keyframe of channel.keys) {
-      const keyPath = `${channelPath}.keys.${keyframe.id}`;
-      if (keyframe.easing !== undefined) {
-        issues.push(
-          exportIssue(
-            targetId,
-            clip,
-            'easing',
-            `${keyPath}.easing`,
-            'Core glTF cannot preserve GeckoLib keyframe easing.',
-            { channelId: channel.id, keyframeId: keyframe.id },
-          ),
-        );
-      }
-      if (keyframe.preValue !== undefined || keyframe.postValue !== undefined) {
-        issues.push(
-          exportIssue(
-            targetId,
-            clip,
-            'split_value',
-            keyPath,
-            'Core glTF cannot preserve split pre/post keyframe values.',
-            { channelId: channel.id, keyframeId: keyframe.id },
-          ),
-        );
-      }
     }
   }
   return issues;
 };
 
-export const analyzeGltfClipAdaptations = (
+export const analyzeGltfClip = (
   clip: AnimationClip,
   targetId: AnimationExportTarget,
-): readonly AnimationExportAdaptation[] => {
-  const adaptations: AnimationExportAdaptation[] = [];
+): readonly AnimationExportIssue[] => {
   const clipPath = `animations.${clip.id}`;
-  if (Object.keys(clip.channels).length === 0) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'channels_missing',
-        `${clipPath}.channels`,
-        'The clip has no transform channels, so core glTF omits the empty animation while the ashfox project keeps it.',
-      ),
-    );
-  }
-  if (clip.startDelay !== undefined) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'start_delay',
-        `${clipPath}.startDelay`,
-        'Core glTF has no playback start-delay contract; the export omits it while the ashfox project keeps it.',
-      ),
-    );
-  }
-  if (clip.loopDelay !== undefined) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'loop_delay',
-        `${clipPath}.loopDelay`,
-        'Core glTF has no playback loop-delay contract; the export omits it while the ashfox project keeps it.',
-      ),
-    );
-  }
-  if (clip.animationTimeUpdate !== undefined) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'animation_time_update',
-        `${clipPath}.animationTimeUpdate`,
-        'Core glTF has no custom playback-time expression; the export omits it while the ashfox project keeps it.',
-      ),
-    );
-  }
-  if (clip.blendWeight !== undefined && clip.blendWeight !== 1) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'blend_weight',
-        `${clipPath}.blendWeight`,
-        'Core glTF has no clip blend-weight contract; the export omits it while the ashfox project keeps it.',
-      ),
-    );
-  }
-  if (clip.overridePreviousAnimation === true) {
-    adaptations.push(
-      exportAdaptation(
-        targetId,
-        clip,
-        'omitted',
-        'override_previous_animation',
-        `${clipPath}.overridePreviousAnimation`,
-        'Core glTF has no animation override contract; the export omits it while the ashfox project keeps it.',
-      ),
-    );
-  }
-  for (const trigger of Object.values(clip.triggers).sort((left, right) =>
-    left.id.localeCompare(right.id),
-  )) {
-    if (trigger.keys.length === 0) continue;
-    adaptations.push(
+  return sortedById(Object.values(clip.channels)).flatMap((channel) => {
+    if (channel.keys.length === 0) return [];
+    const channelPath = `${clipPath}.channels.${channel.id}`;
+    return [
+      ...channelIssues(clip, targetId, channel, channelPath),
+      ...keyframeIssues(clip, targetId, channel, channelPath),
+    ];
+  });
+};
+
+interface ClipOmission {
+  readonly code: AnimationExportAdaptationCode;
+  readonly field: string;
+  readonly applies: (clip: AnimationClip) => boolean;
+  readonly message: string;
+}
+
+const CLIP_OMISSIONS: readonly ClipOmission[] = [
+  {
+    code: 'channels_missing',
+    field: 'channels',
+    applies: (clip) => Object.keys(clip.channels).length === 0,
+    message:
+      'The clip has no transform channels, so core glTF omits the empty animation while the ashfox project keeps it.',
+  },
+  {
+    code: 'start_delay',
+    field: 'startDelay',
+    applies: (clip) => clip.startDelay !== undefined,
+    message:
+      'Core glTF has no playback start-delay contract; the export omits it while the ashfox project keeps it.',
+  },
+  {
+    code: 'loop_delay',
+    field: 'loopDelay',
+    applies: (clip) => clip.loopDelay !== undefined,
+    message:
+      'Core glTF has no playback loop-delay contract; the export omits it while the ashfox project keeps it.',
+  },
+  {
+    code: 'animation_time_update',
+    field: 'animationTimeUpdate',
+    applies: (clip) => clip.animationTimeUpdate !== undefined,
+    message:
+      'Core glTF has no custom playback-time expression; the export omits it while the ashfox project keeps it.',
+  },
+  {
+    code: 'blend_weight',
+    field: 'blendWeight',
+    applies: (clip) => clip.blendWeight !== undefined && clip.blendWeight !== 1,
+    message:
+      'Core glTF has no clip blend-weight contract; the export omits it while the ashfox project keeps it.',
+  },
+  {
+    code: 'override_previous_animation',
+    field: 'overridePreviousAnimation',
+    applies: (clip) => clip.overridePreviousAnimation === true,
+    message:
+      'Core glTF has no animation override contract; the export omits it while the ashfox project keeps it.',
+  },
+];
+
+const triggerOmissions = (
+  clip: AnimationClip,
+  targetId: AnimationExportTarget,
+  clipPath: string,
+): readonly AnimationExportAdaptation[] =>
+  sortedById(Object.values(clip.triggers))
+    .filter((trigger) => trigger.keys.length > 0)
+    .map((trigger) =>
       exportAdaptation(
         targetId,
         clip,
@@ -179,12 +184,15 @@ export const analyzeGltfClipAdaptations = (
         { triggerId: trigger.id },
       ),
     );
-  }
-  for (const channel of Object.values(clip.channels).sort((left, right) =>
-    left.id.localeCompare(right.id),
-  )) {
-    if (channel.keys.length > 0) continue;
-    adaptations.push(
+
+const emptyChannelOmissions = (
+  clip: AnimationClip,
+  targetId: AnimationExportTarget,
+  clipPath: string,
+): readonly AnimationExportAdaptation[] =>
+  sortedById(Object.values(clip.channels))
+    .filter((channel) => channel.keys.length === 0)
+    .map((channel) =>
       exportAdaptation(
         targetId,
         clip,
@@ -195,6 +203,26 @@ export const analyzeGltfClipAdaptations = (
         { channelId: channel.id },
       ),
     );
-  }
-  return adaptations;
+
+export const analyzeGltfClipAdaptations = (
+  clip: AnimationClip,
+  targetId: AnimationExportTarget,
+): readonly AnimationExportAdaptation[] => {
+  const clipPath = `animations.${clip.id}`;
+  const clipOmissions = CLIP_OMISSIONS.filter((omission) => omission.applies(clip)).map(
+    (omission) =>
+      exportAdaptation(
+        targetId,
+        clip,
+        'omitted',
+        omission.code,
+        `${clipPath}.${omission.field}`,
+        omission.message,
+      ),
+  );
+  return [
+    ...clipOmissions,
+    ...triggerOmissions(clip, targetId, clipPath),
+    ...emptyChannelOmissions(clip, targetId, clipPath),
+  ];
 };

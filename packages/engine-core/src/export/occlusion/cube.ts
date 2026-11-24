@@ -227,16 +227,24 @@ const faceIsCovered = (
 
 export type CubeFaceOcclusion = ReadonlyMap<string, ReadonlySet<CubeFaceDirection>>;
 
-export const compileOpaqueCubeFaceOcclusion = (
-  document: ProjectDocument,
-  options: { groupLooseCubes?: boolean } = {},
-): CubeFaceOcclusion => {
-  const visible = effectivelyVisibleSceneNodeIds(document);
-  const animated = new Set(
+const animatedNodeIds = (document: ProjectDocument): ReadonlySet<string> =>
+  new Set(
     Object.values(document.animations).flatMap((clip) =>
       Object.values(clip.channels).map((channel) => channel.targetNodeId),
     ),
   );
+
+const occlusionGroupKey = (node: CubeNode, groupLooseCubes: boolean | undefined): string => {
+  if (node.parentId !== null) return `parent:${node.parentId}`;
+  return groupLooseCubes ? 'loose:shared' : `loose:${node.id}`;
+};
+
+const collectOcclusionGroups = (
+  document: ProjectDocument,
+  groupLooseCubes: boolean | undefined,
+): Map<string, CubeBounds[]> => {
+  const visible = effectivelyVisibleSceneNodeIds(document);
+  const animated = animatedNodeIds(document);
   const groups = new Map<string, CubeBounds[]>();
   const rasterCache = new Map<string, CanonicalTextureRaster | null>();
   for (const node of Object.values(document.scene.nodes)) {
@@ -250,25 +258,35 @@ export const compileOpaqueCubeFaceOcclusion = (
     }
     const bounds = axisAlignedBounds(node);
     if (!bounds) continue;
-    const groupKey =
-      node.parentId === null
-        ? options.groupLooseCubes
-          ? 'loose:shared'
-          : `loose:${node.id}`
-        : `parent:${node.parentId}`;
-    const siblings = groups.get(groupKey) ?? [];
+    const key = occlusionGroupKey(node, groupLooseCubes);
+    const siblings = groups.get(key) ?? [];
     siblings.push(bounds);
-    groups.set(groupKey, siblings);
+    groups.set(key, siblings);
   }
+  return groups;
+};
+
+const addGroupOcclusions = (
+  siblings: readonly CubeBounds[],
+  result: Map<string, ReadonlySet<CubeFaceDirection>>,
+): void => {
+  if (siblings.length < 2) return;
+  for (const target of siblings) {
+    const occluded = new Set(
+      CUBE_FACE_DIRECTIONS.filter((direction) => faceIsCovered(target, direction, siblings)),
+    );
+    if (occluded.size > 0) result.set(target.cube.id, occluded);
+  }
+};
+
+export const compileOpaqueCubeFaceOcclusion = (
+  document: ProjectDocument,
+  options: { groupLooseCubes?: boolean } = {},
+): CubeFaceOcclusion => {
+  const groups = collectOcclusionGroups(document, options.groupLooseCubes);
   const result = new Map<string, ReadonlySet<CubeFaceDirection>>();
   for (const siblings of groups.values()) {
-    if (siblings.length < 2) continue;
-    for (const target of siblings) {
-      const occluded = new Set(
-        CUBE_FACE_DIRECTIONS.filter((direction) => faceIsCovered(target, direction, siblings)),
-      );
-      if (occluded.size > 0) result.set(target.cube.id, occluded);
-    }
+    addGroupOcclusions(siblings, result);
   }
   return result;
 };

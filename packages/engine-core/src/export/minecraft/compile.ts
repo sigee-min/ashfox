@@ -14,28 +14,35 @@ import type {
 } from './types';
 import { serializeAnimationScalar } from './values';
 
-const compileClip = (
+const animatedBone = (
+  document: ExportAdaptedDocument,
+  targetNodeId: string,
+  visibleNodeIds: ReadonlySet<string>,
+) => {
+  const target = document.scene.nodes[targetNodeId];
+  if (!target)
+    throw new Error(
+      `Validated Minecraft animation target "${targetNodeId}" is missing from the scene.`,
+    );
+  if (target.kind !== 'bone')
+    throw new Error(`Validated Minecraft animation target "${targetNodeId}" is not a bone.`);
+  if (!visibleNodeIds.has(target.id))
+    throw new Error(`Validated Minecraft animation target "${targetNodeId}" is hidden.`);
+  return target;
+};
+
+const compileClipBones = (
   document: ExportAdaptedDocument,
   clip: AnimationClip,
   options: MinecraftAnimationCompileOptions,
   visibleNodeIds: ReadonlySet<string>,
-): MinecraftActorAnimation => {
+): Record<string, MinecraftBoneAnimation> => {
   const bones: Record<string, MinecraftBoneAnimation> = {};
   const channels = Object.values(clip.channels).sort((left, right) =>
     left.id.localeCompare(right.id),
   );
   for (const channel of channels) {
-    const target = document.scene.nodes[channel.targetNodeId];
-    if (!target)
-      throw new Error(
-        `Validated Minecraft animation target "${channel.targetNodeId}" is missing from the scene.`,
-      );
-    if (target.kind !== 'bone')
-      throw new Error(
-        `Validated Minecraft animation target "${channel.targetNodeId}" is not a bone.`,
-      );
-    if (!visibleNodeIds.has(target.id))
-      throw new Error(`Validated Minecraft animation target "${channel.targetNodeId}" is hidden.`);
+    const target = animatedBone(document, channel.targetNodeId, visibleNodeIds);
     const bone = bones[target.name] ?? {};
     const compiled = compileMinecraftAnimationChannel(channel, options);
     if (channel.property === 'rotation' && channel.rotationSpace === 'entity') {
@@ -44,27 +51,42 @@ const compileClip = (
     bone[channel.property] = compiled;
     bones[target.name] = bone;
   }
+  return bones;
+};
 
+const clipLoop = (clip: AnimationClip): Pick<MinecraftActorAnimation, 'loop'> => {
+  if (clip.loop === 'loop') return { loop: true as const };
+  if (clip.loop === 'hold_on_last_frame') return { loop: 'hold_on_last_frame' as const };
+  return {};
+};
+
+const clipPlayback = (clip: AnimationClip) => ({
+  ...(clip.startDelay ? { start_delay: clip.startDelay.source } : {}),
+  ...(clip.loopDelay ? { loop_delay: clip.loopDelay.source } : {}),
+  ...(clip.animationTimeUpdate ? { anim_time_update: clip.animationTimeUpdate.source } : {}),
+  ...(clip.blendWeight !== undefined
+    ? {
+        blend_weight: serializeAnimationScalar(clip.blendWeight, false),
+      }
+    : {}),
+  ...(clip.overridePreviousAnimation !== undefined
+    ? {
+        override_previous_animation: clip.overridePreviousAnimation,
+      }
+    : {}),
+});
+
+const compileClip = (
+  document: ExportAdaptedDocument,
+  clip: AnimationClip,
+  options: MinecraftAnimationCompileOptions,
+  visibleNodeIds: ReadonlySet<string>,
+): MinecraftActorAnimation => {
+  const bones = compileClipBones(document, clip, options, visibleNodeIds);
   return {
-    ...(clip.loop === 'loop'
-      ? { loop: true as const }
-      : clip.loop === 'hold_on_last_frame'
-        ? { loop: 'hold_on_last_frame' as const }
-        : {}),
+    ...clipLoop(clip),
     animation_length: clip.durationSeconds,
-    ...(clip.startDelay ? { start_delay: clip.startDelay.source } : {}),
-    ...(clip.loopDelay ? { loop_delay: clip.loopDelay.source } : {}),
-    ...(clip.animationTimeUpdate ? { anim_time_update: clip.animationTimeUpdate.source } : {}),
-    ...(clip.blendWeight !== undefined
-      ? {
-          blend_weight: serializeAnimationScalar(clip.blendWeight, false),
-        }
-      : {}),
-    ...(clip.overridePreviousAnimation !== undefined
-      ? {
-          override_previous_animation: clip.overridePreviousAnimation,
-        }
-      : {}),
+    ...clipPlayback(clip),
     ...(Object.keys(bones).length > 0 ? { bones } : {}),
     ...compileMinecraftAnimationTriggers(
       document,

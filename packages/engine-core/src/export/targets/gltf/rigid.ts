@@ -124,6 +124,62 @@ const batchKey = (material: number | undefined, hasUvs: boolean): string =>
 const compareBatches = (left: PrimitiveBatch, right: PrimitiveBatch): number =>
   (left.material ?? -1) - (right.material ?? -1) || Number(left.hasUvs) - Number(right.hasUvs);
 
+const appendNodePrimitives = (
+  document: ProjectDocument,
+  node: SceneNode,
+  animated: ReadonlySet<string>,
+  restTranslationById: ReadonlyMap<string, Vec3>,
+  options: GltfSceneCompileOptions,
+  batchesByOwner: Map<string, Map<string, PrimitiveBatch>>,
+): void => {
+  if (node.kind !== 'cube' && node.kind !== 'plane') return;
+  const ownerId = node.parentId !== null && !animated.has(node.id) ? node.parentId : node.id;
+  const ownerBatches = batchesByOwner.get(ownerId) ?? new Map<string, PrimitiveBatch>();
+  const bake = ownerId !== node.id;
+  const translation = restTranslationById.get(node.id) ?? [0, 0, 0];
+  for (const source of primitiveDataForGltfNode(document, node, options)) {
+    const authoredSource = { ...source, sourceNodeId: node.id };
+    const primitive = bake
+      ? bakeGltfPrimitiveToParent(node, translation, authoredSource)
+      : authoredSource;
+    const key = batchKey(primitive.material, primitive.uvs !== undefined);
+    const batch = ownerBatches.get(key) ?? {
+      material: primitive.material,
+      hasUvs: primitive.uvs !== undefined,
+      primitives: [],
+    };
+    batch.primitives.push(primitive);
+    ownerBatches.set(key, batch);
+  }
+  batchesByOwner.set(ownerId, ownerBatches);
+};
+
+const compileBatchMesh = (
+  owner: SceneNode,
+  batches: ReadonlyMap<string, PrimitiveBatch>,
+  options: GltfSceneCompileOptions,
+): GltfMesh => {
+  const primitives = [...batches.values()]
+    .sort(compareBatches)
+    .flatMap((batch) =>
+      batch.primitives.map((primitive) =>
+        compileGltfPrimitive(
+          options.writer,
+          primitive.positions,
+          primitive.normals,
+          primitive.uvs,
+          primitive.joints,
+          primitive.material,
+          primitive.indices,
+          primitive.sourceNodeId === undefined
+            ? undefined
+            : { ashfoxSourceNodeId: primitive.sourceNodeId },
+        ),
+      ),
+    );
+  return { name: `${owner.name} rigid batch`, primitives };
+};
+
 export const compileRigidGltfBatches = (
   document: ProjectDocument,
   orderedNodes: readonly SceneNode[],
@@ -132,28 +188,8 @@ export const compileRigidGltfBatches = (
 ): CompiledRigidBatches => {
   const animated = animatedNodeIds(document);
   const batchesByOwner = new Map<string, Map<string, PrimitiveBatch>>();
-
   for (const node of orderedNodes) {
-    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
-    const ownerId = node.parentId !== null && !animated.has(node.id) ? node.parentId : node.id;
-    const ownerBatches = batchesByOwner.get(ownerId) ?? new Map();
-    const bake = ownerId !== node.id;
-    const translation = restTranslationById.get(node.id) ?? [0, 0, 0];
-    for (const source of primitiveDataForGltfNode(document, node, options)) {
-      const authoredSource = { ...source, sourceNodeId: node.id };
-      const primitive = bake
-        ? bakeGltfPrimitiveToParent(node, translation, authoredSource)
-        : authoredSource;
-      const key = batchKey(primitive.material, primitive.uvs !== undefined);
-      const batch = ownerBatches.get(key) ?? {
-        material: primitive.material,
-        hasUvs: primitive.uvs !== undefined,
-        primitives: [],
-      };
-      batch.primitives.push(primitive);
-      ownerBatches.set(key, batch);
-    }
-    batchesByOwner.set(ownerId, ownerBatches);
+    appendNodePrimitives(document, node, animated, restTranslationById, options, batchesByOwner);
   }
 
   const meshes: GltfMesh[] = [];
@@ -161,29 +197,8 @@ export const compileRigidGltfBatches = (
   for (const owner of orderedNodes) {
     const batches = batchesByOwner.get(owner.id);
     if (!batches || batches.size === 0) continue;
-    const primitives = [...batches.values()]
-      .sort(compareBatches)
-      .flatMap((batch) =>
-        batch.primitives.map((primitive) =>
-          compileGltfPrimitive(
-            options.writer,
-            primitive.positions,
-            primitive.normals,
-            primitive.uvs,
-            primitive.joints,
-            primitive.material,
-            primitive.indices,
-            primitive.sourceNodeId === undefined
-              ? undefined
-              : { ashfoxSourceNodeId: primitive.sourceNodeId },
-          ),
-        ),
-      );
     meshIndexByOwnerId.set(owner.id, meshes.length);
-    meshes.push({
-      name: `${owner.name} rigid batch`,
-      primitives,
-    });
+    meshes.push(compileBatchMesh(owner, batches, options));
   }
   return { meshes, meshIndexByOwnerId };
 };

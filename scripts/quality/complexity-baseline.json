@@ -1,15 +1,4 @@
 {
-  "packages/engine-core/src/animation/capability/gltfExport.ts::analyzeGltfClip": {
-    "lines": 79,
-    "cognitive": 19
-  },
-  "packages/engine-core/src/animation/capability/gltfExport.ts::analyzeGltfClipAdaptations": {
-    "lines": 112
-  },
-  "packages/engine-core/src/animation/capability/minecraftExport.ts::analyzeMinecraftClip": {
-    "lines": 90,
-    "cognitive": 27
-  },
   "packages/engine-core/src/commands/batch/validate.ts::validateCommandBatch": {
     "lines": 84,
     "cognitive": 16
@@ -20,78 +9,6 @@
   },
   "packages/engine-core/src/commands/workspace/open.ts::openAssetProject": {
     "lines": 66
-  },
-  "packages/engine-core/src/export/compatibility/validate.ts::validateExportCompatibilityProfile": {
-    "lines": 126,
-    "cognitive": 31
-  },
-  "packages/engine-core/src/export/minecraft/channel.ts::compileKeyframe": {
-    "cognitive": 16
-  },
-  "packages/engine-core/src/export/minecraft/compile.ts::compileClip": {
-    "cognitive": 23
-  },
-  "packages/engine-core/src/export/minecraft/geometry.ts::compileBone": {
-    "lines": 61
-  },
-  "packages/engine-core/src/export/minecraft/triggers.ts::compileMinecraftAnimationTriggers": {
-    "cognitive": 35
-  },
-  "packages/engine-core/src/export/occlusion/cube.ts::compileOpaqueCubeFaceOcclusion": {
-    "cognitive": 20
-  },
-  "packages/engine-core/src/export/pipeline/bundle.ts::createExportBundle": {
-    "lines": 99,
-    "cognitive": 23
-  },
-  "packages/engine-core/src/export/pipeline/bundle.ts::embeddedGlbImageDigests": {
-    "cognitive": 23
-  },
-  "packages/engine-core/src/export/pipeline/bundle.ts::verifyExportBundleLineage": {
-    "lines": 91,
-    "cognitive": 42
-  },
-  "packages/engine-core/src/export/pipeline/dataSnapshot.ts::snapshotData": {
-    "lines": 98,
-    "cognitive": 26
-  },
-  "packages/engine-core/src/export/targets/gltf/animation.ts::compileGltfAnimations": {
-    "lines": 85,
-    "cognitive": 24
-  },
-  "packages/engine-core/src/export/targets/gltf/binary.ts::GltfBinaryWriter/addInterleavedVertexAccessors": {
-    "lines": 125,
-    "cognitive": 68
-  },
-  "packages/engine-core/src/export/targets/gltf/binary.ts::vertexLayout": {
-    "cognitive": 19
-  },
-  "packages/engine-core/src/export/targets/gltf/exporter.ts::buildGltf": {
-    "lines": 144,
-    "cognitive": 36
-  },
-  "packages/engine-core/src/export/targets/gltf/meshopt.ts::layoutForBufferView": {
-    "cognitive": 18
-  },
-  "packages/engine-core/src/export/targets/gltf/meshopt.ts::reorderCandidates": {
-    "lines": 61,
-    "cognitive": 29
-  },
-  "packages/engine-core/src/export/targets/gltf/plane.ts::compileGltfPlanePrimitiveData": {
-    "cognitive": 22
-  },
-  "packages/engine-core/src/export/targets/gltf/rigid.ts::compileRigidGltfBatches": {
-    "lines": 63,
-    "cognitive": 23
-  },
-  "packages/engine-core/src/export/targets/gltf/scene.ts::compileGltfScene": {
-    "lines": 73
-  },
-  "packages/engine-core/src/export/targets/gltf/textures.ts::validateResolvedTexture": {
-    "lines": 81
-  },
-  "packages/engine-core/src/export/targets/javaBlock/exporter.ts::compileJavaElement": {
-    "cognitive": 16
   },
   "packages/engine-core/src/model/measurement/geometry.ts::localCorners": {
     "cognitive": 22

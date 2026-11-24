@@ -233,6 +233,55 @@ const factorCubeDefaults = (
   };
 };
 
+const sortedVisibleChildren = <T extends CubeNode | PlaneNode | LocatorNode>(
+  document: ProjectDocument,
+  kind: T['kind'],
+  parentId: string | null,
+  visibleNodeIds: ReadonlySet<string>,
+): T[] =>
+  Object.values(document.scene.nodes)
+    .filter(
+      (node): node is T =>
+        node.kind === kind && visibleNodeIds.has(node.id) && node.parentId === parentId,
+    )
+    .sort((left, right) => left.id.localeCompare(right.id));
+
+const compileBoneElements = (
+  document: ProjectDocument,
+  parentId: string | null,
+  visibleNodeIds: ReadonlySet<string>,
+  occlusion: CubeFaceOcclusion,
+) => {
+  const cubes = sortedVisibleChildren<CubeNode>(document, 'cube', parentId, visibleNodeIds).map(
+    (cube) => compileCube(cube, occlusion),
+  );
+  const planes = sortedVisibleChildren<PlaneNode>(document, 'plane', parentId, visibleNodeIds).map(
+    compilePlane,
+  );
+  return factorCubeDefaults([...cubes, ...planes]);
+};
+
+const compileBoneTransform = (
+  bone: BoneNode,
+): Pick<MinecraftGeometryBone, 'pivot' | 'rotation'> => {
+  const pivot = bone.transform.pivot;
+  const rotation = bone.transform.rotation;
+  const hasPivot = pivot.some((value) => Math.abs(value) > 0.000001);
+  const hasRotation = rotation.some((value) => Math.abs(value) > 0.000001);
+  return {
+    ...(hasPivot
+      ? {
+          pivot: [negate(pivot[0]), pivot[1], pivot[2]] as [number, number, number],
+        }
+      : {}),
+    ...(hasRotation
+      ? {
+          rotation: canonicalMinecraftRotation(rotation),
+        }
+      : {}),
+  };
+};
+
 const compileBone = (
   document: ProjectDocument,
   bone: BoneNode,
@@ -246,48 +295,18 @@ const compileBone = (
     throw new RangeError(`Bone ${bone.id} has an invalid canonical frame.`);
   }
   const parent = bone.parentId === null ? undefined : document.scene.nodes[bone.parentId];
-  const cubes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is CubeNode =>
-        node.kind === 'cube' && visibleNodeIds.has(node.id) && node.parentId === bone.id,
-    )
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map((cube) => compileCube(cube, occlusion));
-  const planes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is PlaneNode =>
-        node.kind === 'plane' && visibleNodeIds.has(node.id) && node.parentId === bone.id,
-    )
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map(compilePlane);
-  const factored = factorCubeDefaults([...cubes, ...planes]);
-  const locatorEntries = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is LocatorNode =>
-        node.kind === 'locator' && visibleNodeIds.has(node.id) && node.parentId === bone.id,
-    )
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map((locator) => [locator.name, compileCompactLocator(locator)] as const);
-  const rotation = bone.transform.rotation;
-  const hasRotation = rotation.some((value) => Math.abs(value) > 0.000001);
+  const factored = compileBoneElements(document, bone.id, visibleNodeIds, occlusion);
+  const locatorEntries = sortedVisibleChildren<LocatorNode>(
+    document,
+    'locator',
+    bone.id,
+    visibleNodeIds,
+  ).map((locator) => [locator.name, compileCompactLocator(locator)] as const);
 
   return {
     name: bone.name,
     ...(parent?.kind === 'bone' ? { parent: parent.name } : {}),
-    ...(bone.transform.pivot.some((value) => Math.abs(value) > 0.000001)
-      ? {
-          pivot: [
-            negate(bone.transform.pivot[0]),
-            bone.transform.pivot[1],
-            bone.transform.pivot[2],
-          ] as [number, number, number],
-        }
-      : {}),
-    ...(hasRotation
-      ? {
-          rotation: canonicalMinecraftRotation(rotation),
-        }
-      : {}),
+    ...compileBoneTransform(bone),
     ...(factored.mirror ? { mirror: factored.mirror } : {}),
     ...(factored.inflate !== undefined ? { inflate: factored.inflate } : {}),
     ...(factored.cubes.length > 0 ? { cubes: factored.cubes } : {}),
@@ -300,22 +319,8 @@ const createLooseBone = (
   visibleNodeIds: ReadonlySet<string>,
   occlusion: CubeFaceOcclusion,
 ): MinecraftGeometryBone | null => {
-  const looseCubes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is CubeNode =>
-        node.kind === 'cube' && visibleNodeIds.has(node.id) && node.parentId === null,
-    )
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map((cube) => compileCube(cube, occlusion));
-  const loosePlanes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is PlaneNode =>
-        node.kind === 'plane' && visibleNodeIds.has(node.id) && node.parentId === null,
-    )
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .map(compilePlane);
-  if (looseCubes.length === 0 && loosePlanes.length === 0) return null;
-  const factored = factorCubeDefaults([...looseCubes, ...loosePlanes]);
+  const factored = compileBoneElements(document, null, visibleNodeIds, occlusion);
+  if (factored.cubes.length === 0) return null;
   return {
     name: 'ashfox_root',
     ...(factored.mirror ? { mirror: factored.mirror } : {}),
