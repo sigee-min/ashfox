@@ -338,36 +338,6 @@
     "lines": 161,
     "cognitive": 70
   },
-  "packages/engine-core/src/project/program/asset/parser.ts::Parser/joint": {
-    "cognitive": 28
-  },
-  "packages/engine-core/src/project/program/asset/parser.ts::Parser/rigContract": {
-    "cognitive": 21
-  },
-  "packages/engine-core/src/project/program/asset/parser.ts::Parser/socket": {
-    "cognitive": 18
-  },
-  "packages/engine-core/src/project/program/asset/parser.ts::Parser/surface": {
-    "cognitive": 18
-  },
-  "packages/engine-core/src/project/program/asset/parser.ts::Parser/surfaceContract": {
-    "cognitive": 19
-  },
-  "packages/engine-core/src/project/program/syntax/expression.ts::parseProgramExpressionInner": {
-    "lines": 193,
-    "cognitive": 123
-  },
-  "packages/engine-core/src/project/program/syntax/expression.ts::parseProgramExpressionInner/primary": {
-    "lines": 143
-  },
-  "packages/engine-core/src/project/program/syntax/lex.ts::lexProgramSource": {
-    "lines": 172,
-    "nesting": 6,
-    "cognitive": 153
-  },
-  "packages/engine-core/src/project/program/syntax/texture.ts::validateStamp": {
-    "cognitive": 16
-  },
   "packages/engine-core/src/project/sprite/json.ts::parseSpriteJson": {
     "lines": 71,
     "cognitive": 59
