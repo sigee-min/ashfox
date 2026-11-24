@@ -1,5 +1,11 @@
 import type { AssignTextureCommand } from '../../ports/editor';
-import type { CubeInstance, GroupInstance, MeshInstance, OutlinerNode, TextureInstance } from '../../types/blockbench';
+import type {
+  CubeInstance,
+  GroupInstance,
+  MeshInstance,
+  OutlinerNode,
+  TextureInstance,
+} from '../../types/blockbench';
 import { readGlobals, readNodeId, readTextureId } from './blockbenchUtils';
 
 export const findGroup = (name?: string): GroupInstance | null => {
@@ -79,7 +85,7 @@ export const resolveTargetCubes = (params: AssignTextureCommand): CubeInstance[]
 export const collectCubes = (): CubeInstance[] => {
   const outliner = readGlobals().Outliner;
   const root = outliner?.root;
-  const nodes = Array.isArray(root) ? root : root?.children ?? [];
+  const nodes = Array.isArray(root) ? root : (root?.children ?? []);
   const cubes: CubeInstance[] = [];
   const walk = (items: OutlinerNode[] | undefined) => {
     if (!items) return;
@@ -129,5 +135,3 @@ const isMeshNode = (node: OutlinerNode): node is MeshInstance => {
   if (node.from !== undefined && node.to !== undefined) return false;
   return node.vertices !== undefined && node.faces !== undefined;
 };
-
-

@@ -5,7 +5,11 @@ export const addTexture = (state: SessionState, tex: TrackedTexture) => {
   state.textures.push(cloneTrackedTexture(tex));
 };
 
-export const updateTexture = (state: SessionState, name: string, updates: TextureUpdate): boolean => {
+export const updateTexture = (
+  state: SessionState,
+  name: string,
+  updates: TextureUpdate,
+): boolean => {
   const tex = state.textures.find((t) => t.name === name);
   if (!tex) return false;
   if (updates.id) tex.id = updates.id;
@@ -37,4 +41,3 @@ export const removeTextures = (state: SessionState, names: string[] | Set<string
   state.textures = state.textures.filter((t) => !nameSet.has(t.name));
   return before - state.textures.length;
 };
-

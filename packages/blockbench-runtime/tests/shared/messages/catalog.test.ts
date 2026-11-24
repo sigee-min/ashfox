@@ -38,8 +38,10 @@ import * as validation from '../../../src/shared/messages/validation';
   assert.equal(tool.DIMENSION_INTEGER_MESSAGE('size').includes('size'), true);
   assert.equal(tool.NON_EMPTY_STRING_MESSAGE('name').includes('name'), true);
   assert.equal(
-    tool.ID_NAME_MISMATCH_MESSAGE('texture', 'id', 'name', 'textures', 'a', 'b').includes('textures'),
-    true
+    tool
+      .ID_NAME_MISMATCH_MESSAGE('texture', 'id', 'name', 'textures', 'a', 'b')
+      .includes('textures'),
+    true,
   );
   assert.equal(tool.TARGET_NAME_AMBIGUOUS('cube', 'body').includes('body'), true);
 }
@@ -54,7 +56,7 @@ import * as validation from '../../../src/shared/messages/validation';
   assert.equal(paint.TEXTURE_OP_LINEWIDTH_INVALID('op').includes('op'), true);
   assert.equal(
     paint.TEXTURE_FACES_TEXTURE_COORDS_SIZE_MISMATCH(64, 64, 32, 32).includes('64x64'),
-    true
+    true,
   );
   assert.equal(paint.TEXTURE_FACES_OP_OUTSIDE_SOURCE('face', 16, 16).includes('16x16'), true);
   assert.equal(paint.UV_PAINT_USAGE_MISSING('atlas').includes('atlas'), true);
@@ -113,7 +115,10 @@ import * as validation from '../../../src/shared/messages/validation';
   assert.equal(validation.VALIDATION_MAX_CUBES_EXCEEDED(10, 5).includes('10'), true);
   assert.equal(validation.VALIDATION_ANIMATION_TOO_LONG('idle', 12).includes('idle'), true);
   assert.equal(validation.VALIDATION_TEXTURE_TOO_LARGE('atlas', 128).includes('128'), true);
-  assert.equal(validation.VALIDATION_TEXTURE_SIZE_MISMATCH('atlas', 16, 16, 64, 64).includes('64x64'), true);
+  assert.equal(
+    validation.VALIDATION_TEXTURE_SIZE_MISMATCH('atlas', 16, 16, 64, 64).includes('64x64'),
+    true,
+  );
   assert.equal(validation.VALIDATION_UV_OUT_OF_BOUNDS('cube', 1, 2, 16, 16).includes('cube'), true);
   assert.equal(validation.VALIDATION_TEXTURE_UNRESOLVED_REFS(3).includes('3'), true);
   assert.equal(validation.VALIDATION_TEXTURE_UNASSIGNED('atlas').includes('atlas'), true);
@@ -122,7 +127,7 @@ import * as validation from '../../../src/shared/messages/validation';
     validation
       .VALIDATION_FACE_UV_OUT_OF_BOUNDS('cube', 'north', 16, 16, 0, 0, 17, 17)
       .includes('north'),
-    true
+    true,
   );
   assert.equal(validation.VALIDATION_UV_OVERLAP('atlas', 2, ' ex').includes('2'), true);
   assert.equal(validation.VALIDATION_UV_SCALE_MISMATCH('atlas', 2, ' ex').includes('2'), true);

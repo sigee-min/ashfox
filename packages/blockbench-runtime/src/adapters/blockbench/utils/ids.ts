@@ -14,7 +14,13 @@ export const readTextureId = (tex: TextureInstance | null | undefined): string |
 
 export const readTextureAliases = (tex: TextureInstance | null | undefined): string[] => {
   if (!tex) return [];
-  const candidates: Array<string | null | undefined> = [tex.ashfoxId, tex.uuid, tex.id, tex.uid, tex._uuid];
+  const candidates: Array<string | null | undefined> = [
+    tex.ashfoxId,
+    tex.uuid,
+    tex.id,
+    tex.uid,
+    tex._uuid,
+  ];
   const unique = new Set<string>();
   candidates.forEach((value) => {
     if (!value) return;
@@ -30,4 +36,3 @@ export const readAnimationId = (anim: AnimationClip | null | undefined): string 
   const raw = anim.ashfoxId ?? anim.uuid ?? anim.id ?? anim.uid ?? anim._uuid ?? null;
   return raw ? String(raw) : null;
 };
-

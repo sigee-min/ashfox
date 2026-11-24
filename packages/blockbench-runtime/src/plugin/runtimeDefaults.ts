@@ -17,8 +17,8 @@ export const createDefaultPolicies = (formatOverrides: FormatOverrides) => ({
   autoCreateProjectTexture: true,
   animationTimePolicy: {
     timeEpsilon: 1e-9,
-    triggerDedupeByValue: true
-  } satisfies AnimationTimePolicy
+    triggerDedupeByValue: true,
+  } satisfies AnimationTimePolicy,
 });
 
 export const createTraceLogDefaults = () => ({
@@ -31,5 +31,5 @@ export const createTraceLogDefaults = () => ({
   maxBytes: TRACE_LOG_MAX_KB * 1024,
   minEntries: 1,
   flushEvery: 1,
-  flushIntervalMs: 0
+  flushIntervalMs: 0,
 });

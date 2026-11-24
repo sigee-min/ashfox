@@ -7,21 +7,21 @@ export {
   type CommandReceipt,
   type CommandSource,
   type ProjectCommandOperation,
-  type WorkspaceApplyInput
+  type WorkspaceApplyInput,
 } from './types';
 export {
   executeAgentCommandBatch,
   executeSystemCommandBatch,
-  executeWebCommandBatch
+  executeWebCommandBatch,
 } from './executeBatch';
 export {
   isValidCommandReceipt,
   isValidCommandReceiptLedger,
-  type CommandReceiptLedgerOptions
+  type CommandReceiptLedgerOptions,
 } from './receipt/contract';
 export {
   AGENT_ACCESSIBLE_COMMAND_NAMES,
   commandAllowedForSource,
   getAgentCommandDefinition,
-  listAgentCommandDefinitions
+  listAgentCommandDefinitions,
 } from './registry';

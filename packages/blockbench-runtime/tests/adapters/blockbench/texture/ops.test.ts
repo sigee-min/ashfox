@@ -5,7 +5,7 @@ import {
   applyTextureDimensions,
   applyTextureImage,
   applyTextureMeta,
-  finalizeTextureChange
+  finalizeTextureChange,
 } from '../../../../src/adapters/blockbench/texture/textureOps';
 
 {
@@ -17,7 +17,7 @@ import {
     },
     updateLayerChanges: () => {
       layerCalls += 1;
-    }
+    },
   } as unknown as {
     updateChangesAfterEdit: () => void;
     updateLayerChanges: () => void;
@@ -31,7 +31,7 @@ import {
   finalizeTextureChange({
     updateLayerChanges: (force?: boolean) => {
       layerForce = force;
-    }
+    },
   } as unknown as { updateLayerChanges: (force?: boolean) => void });
   assert.equal(layerForce, true);
 }
@@ -63,7 +63,7 @@ import {
     height: 8,
     setSize: (w: number, h: number) => {
       calls.push([w, h]);
-    }
+    },
   } as { width: number; height: number; setSize: (w: number, h: number) => void };
   const changed = applyTextureDimensions(tex as unknown as never, 16, 24);
   assert.equal(changed, true);
@@ -79,7 +79,7 @@ import {
     height: 8,
     resize: (w: number, h: number) => {
       calls.push([w, h]);
-    }
+    },
   } as { width: number; height: number; resize: (w: number, h: number) => void };
   const changed = applyTextureDimensions(tex as unknown as never, 16, 24);
   assert.equal(changed, true);
@@ -92,7 +92,7 @@ import {
   const tex = {
     width: 4,
     height: 4,
-    canvas: { width: 4, height: 4 }
+    canvas: { width: 4, height: 4 },
   } as { width: number; height: number; canvas: { width: number; height: number } };
   const changed = applyTextureDimensions(tex as unknown as never, 16, 16);
   assert.equal(changed, true);
@@ -110,11 +110,11 @@ import {
     },
     drawImage: () => {
       calls.push('draw');
-    }
+    },
   };
   const tex = {
     canvas: { width: 16, height: 16, getContext: () => ctx },
-    ctx
+    ctx,
   };
   const ok = applyTextureImage(tex as unknown as never, {} as CanvasImageSource);
   assert.equal(ok, true);
@@ -125,8 +125,12 @@ import {
   let sawNoUndo = false;
   const tex = {
     edit: (
-      fn: (canvas: { width: number; height: number; getContext: (type: string) => unknown }) => unknown,
-      options?: { no_undo?: boolean }
+      fn: (canvas: {
+        width: number;
+        height: number;
+        getContext: (type: string) => unknown;
+      }) => unknown,
+      options?: { no_undo?: boolean },
     ) => {
       const calls: string[] = [];
       const canvas = {
@@ -136,14 +140,14 @@ import {
           type === '2d'
             ? {
                 clearRect: () => calls.push('clear'),
-                drawImage: () => calls.push('draw')
+                drawImage: () => calls.push('draw'),
               }
-            : null
+            : null,
       };
       fn(canvas);
       sawNoUndo = options?.no_undo === true;
       assert.deepEqual(calls, ['clear', 'draw']);
-    }
+    },
   };
   const ok = applyTextureImage(tex as unknown as never, {} as CanvasImageSource);
   assert.equal(ok, true);
@@ -161,14 +165,14 @@ import {
       assert.deepEqual(patch, {
         namespace: 'minecraft',
         render_mode: 'normal',
-        frame_time: 2
+        frame_time: 2,
       });
-    }
+    },
   } as { extend: (patch: Record<string, unknown>) => void; namespace?: string };
   applyTextureMeta(tex as unknown as never, {
     namespace: 'minecraft',
     renderMode: 'normal',
-    frameTime: 2
+    frameTime: 2,
   });
   assert.equal(tex.namespace, undefined);
 }
@@ -178,7 +182,7 @@ import {
   applyTextureMeta(tex as unknown as never, {
     renderMode: 'solid',
     frameTime: 4,
-    visible: false
+    visible: false,
   });
   assert.deepEqual(tex, { render_mode: 'solid', frame_time: 4, visible: false });
 }
@@ -188,4 +192,3 @@ import {
   applyTextureMeta(tex as unknown as never, {});
   assert.deepEqual(tex, { keep_size: true });
 }
-

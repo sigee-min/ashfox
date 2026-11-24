@@ -4,10 +4,9 @@ import {
   cubeGeometryPivot,
   cubeGeometryRotation,
   cubeUnrotatedBounds,
-  type
-  ProjectDocument,
+  type ProjectDocument,
   type SceneNode,
-  type TextureAsset
+  type TextureAsset,
 } from '@ashfox/engine-core';
 
 import { subtractVectors } from './sceneTransform';
@@ -21,30 +20,23 @@ interface GeometryBuildContext {
   selectable: THREE.Object3D[];
 }
 
-const CUBE_MATERIAL_ORDER = [
-  'east',
-  'west',
-  'up',
-  'down',
-  'south',
-  'north'
-] as const;
+const CUBE_MATERIAL_ORDER = ['east', 'west', 'up', 'down', 'south', 'north'] as const;
 
 const rotateUvs = (
   corners: readonly [
     readonly [number, number],
     readonly [number, number],
     readonly [number, number],
-    readonly [number, number]
+    readonly [number, number],
   ],
-  rotation: 0 | 90 | 180 | 270
+  rotation: 0 | 90 | 180 | 270,
 ) => {
   const turns = rotation / 90;
   const mappings = [
     [0, 1, 2, 3],
     [2, 0, 3, 1],
     [3, 2, 1, 0],
-    [1, 3, 0, 2]
+    [1, 3, 0, 2],
   ] as const;
   return mappings[turns].map((index) => corners[index]);
 };
@@ -52,34 +44,29 @@ const rotateUvs = (
 const normalizedFaceUvs = (
   texture: TextureAsset,
   uv: readonly [number, number, number, number],
-  rotation: 0 | 90 | 180 | 270
+  rotation: 0 | 90 | 180 | 270,
 ) =>
   rotateUvs(
     [
       [uv[0] / texture.width, 1 - uv[1] / texture.height],
       [uv[2] / texture.width, 1 - uv[1] / texture.height],
       [uv[0] / texture.width, 1 - uv[3] / texture.height],
-      [uv[2] / texture.width, 1 - uv[3] / texture.height]
+      [uv[2] / texture.width, 1 - uv[3] / texture.height],
     ],
-    rotation
+    rotation,
   );
 
 const applyCubeFaceUvs = (
   geometry: THREE.BoxGeometry,
   node: Extract<SceneNode, { kind: 'cube' }>,
-  textures: ProjectDocument['textures']
+  textures: ProjectDocument['textures'],
 ): void => {
   const attribute = geometry.getAttribute('uv');
   for (const [faceIndex, direction] of CUBE_MATERIAL_ORDER.entries()) {
     const face = node.faces[direction];
-    const texture =
-      face.textureId === null ? undefined : textures[face.textureId];
+    const texture = face.textureId === null ? undefined : textures[face.textureId];
     if (!texture || !face.uv) continue;
-    const uvs = normalizedFaceUvs(
-      texture,
-      face.uv,
-      face.rotation ?? 0
-    );
+    const uvs = normalizedFaceUvs(texture, face.uv, face.rotation ?? 0);
     for (const [cornerIndex, [u, v]] of uvs.entries()) {
       attribute.setXY(faceIndex * 4 + cornerIndex, u, v);
     }
@@ -89,29 +76,24 @@ const applyCubeFaceUvs = (
 
 const retainEnabledCubeFaces = (
   geometry: THREE.BoxGeometry,
-  node: Extract<SceneNode, { kind: 'cube' }>
+  node: Extract<SceneNode, { kind: 'cube' }>,
 ): readonly (typeof CUBE_MATERIAL_ORDER)[number][] => {
   const sourceIndex = geometry.getIndex();
   if (!sourceIndex) return [];
   const sourceGroups = [...geometry.groups];
   const enabledDirections = CUBE_MATERIAL_ORDER.filter(
-    (direction) => node.faces[direction].enabled
+    (direction) => node.faces[direction].enabled,
   );
   const indices: number[] = [];
   geometry.clearGroups();
   for (const [materialIndex, direction] of enabledDirections.entries()) {
     const sourceMaterialIndex = CUBE_MATERIAL_ORDER.indexOf(direction);
     const sourceGroup =
-      sourceGroups.find(
-        (group) => group.materialIndex === sourceMaterialIndex
-      ) ?? sourceGroups[sourceMaterialIndex];
+      sourceGroups.find((group) => group.materialIndex === sourceMaterialIndex) ??
+      sourceGroups[sourceMaterialIndex];
     if (!sourceGroup) continue;
     const start = indices.length;
-    for (
-      let index = sourceGroup.start;
-      index < sourceGroup.start + sourceGroup.count;
-      index += 1
-    ) {
+    for (let index = sourceGroup.start; index < sourceGroup.start + sourceGroup.count; index += 1) {
       indices.push(sourceIndex.getX(index));
     }
     geometry.addGroup(start, sourceGroup.count, materialIndex);
@@ -123,7 +105,7 @@ const retainEnabledCubeFaces = (
 const addCubeGeometry = (
   node: Extract<SceneNode, { kind: 'cube' }>,
   group: THREE.Group,
-  context: GeometryBuildContext
+  context: GeometryBuildContext,
 ): void => {
   const bounds = cubeUnrotatedBounds(node);
   const pivot = cubeGeometryPivot(node);
@@ -132,28 +114,28 @@ const addCubeGeometry = (
   const geometry = new THREE.BoxGeometry(
     size[0] + node.inflate * 2,
     size[1] + node.inflate * 2,
-    size[2] + node.inflate * 2
+    size[2] + node.inflate * 2,
   );
   applyCubeFaceUvs(geometry, node, context.textures);
   const enabledDirections = retainEnabledCubeFaces(geometry, node);
   const center: [number, number, number] = [
     (bounds.from[0] + bounds.to[0]) / 2 - pivot[0],
     (bounds.from[1] + bounds.to[1]) / 2 - pivot[1],
-    (bounds.from[2] + bounds.to[2]) / 2 - pivot[2]
+    (bounds.from[2] + bounds.to[2]) / 2 - pivot[2],
   ];
   const materials = enabledDirections.map((direction) => {
-    const textureId = context.options.showTextures === false
-      ? null
-      : node.faces[direction].textureId;
+    const textureId =
+      context.options.showTextures === false ? null : node.faces[direction].textureId;
     return context.materials.resolve(textureId, node.lightEmission);
   });
   const mesh = new THREE.Mesh(geometry, materials);
   if (node.geometryMode === 'oriented-box') {
-    const euler = new THREE.Euler(...rotation.map(THREE.MathUtils.degToRad) as
-      [number, number, number], 'XYZ');
+    const euler = new THREE.Euler(
+      ...(rotation.map(THREE.MathUtils.degToRad) as [number, number, number]),
+      'XYZ',
+    );
     const offset = new THREE.Vector3(...center).applyEuler(euler);
-    mesh.position.set(pivot[0] + offset.x, pivot[1] + offset.y,
-      pivot[2] + offset.z);
+    mesh.position.set(pivot[0] + offset.x, pivot[1] + offset.y, pivot[2] + offset.z);
     mesh.rotation.copy(euler);
   } else {
     mesh.position.fromArray(center);
@@ -171,8 +153,8 @@ const addCubeGeometry = (
     new THREE.LineBasicMaterial({
       color: '#172028',
       transparent: true,
-      opacity: 0.66
-    })
+      opacity: 0.66,
+    }),
   );
   edges.position.copy(mesh.position);
   if (node.geometryMode === 'oriented-box') edges.rotation.copy(mesh.rotation);
@@ -184,11 +166,10 @@ const applyPlaneFaceUvs = (
   geometry: THREE.PlaneGeometry,
   node: Extract<SceneNode, { kind: 'plane' }>,
   direction: 'front' | 'back',
-  textures: ProjectDocument['textures']
+  textures: ProjectDocument['textures'],
 ): void => {
   const face = node.faces[direction];
-  const texture = face.textureId === null
-    ? undefined : textures[face.textureId];
+  const texture = face.textureId === null ? undefined : textures[face.textureId];
   if (!texture || !face.uv) return;
   const uvs = normalizedFaceUvs(texture, face.uv, face.rotation ?? 0);
   const attribute = geometry.getAttribute('uv');
@@ -202,7 +183,7 @@ const applyPlaneFaceUvs = (
 
 const planeMaterial = (
   material: THREE.Material,
-  sidedness: Extract<SceneNode, { kind: 'plane' }>['sidedness']
+  sidedness: Extract<SceneNode, { kind: 'plane' }>['sidedness'],
 ): THREE.Material => {
   const result = material.clone();
   result.side = sidedness === 'double' ? THREE.DoubleSide : THREE.FrontSide;
@@ -219,7 +200,7 @@ const planeMaterial = (
 const addPlaneGeometry = (
   node: Extract<SceneNode, { kind: 'plane' }>,
   group: THREE.Group,
-  context: GeometryBuildContext
+  context: GeometryBuildContext,
 ): void => {
   const center: [number, number, number] = node.basis
     ? [
@@ -231,12 +212,12 @@ const addPlaneGeometry = (
           node.basis.normal[1] * node.transform.pivot[2],
         node.basis.uAxis[2] * (node.size[0] / 2 - node.transform.pivot[0]) +
           node.basis.vAxis[2] * (node.size[1] / 2 - node.transform.pivot[1]) -
-          node.basis.normal[2] * node.transform.pivot[2]
+          node.basis.normal[2] * node.transform.pivot[2],
       ]
     : [
         node.size[0] / 2 - node.transform.pivot[0],
         node.size[1] / 2 - node.transform.pivot[1],
-        -node.transform.pivot[2]
+        -node.transform.pivot[2],
       ];
   // A canonical double-sided plane has identical front/back material and UV
   // records. One DoubleSide mesh avoids two coplanar depth writers (and the
@@ -250,18 +231,16 @@ const addPlaneGeometry = (
     const mesh = new THREE.Mesh(
       geometry,
       planeMaterial(
-        context.materials.resolve(
-          context.options.showTextures === false ? null : face.textureId
-        ),
-        node.sidedness
-      )
+        context.materials.resolve(context.options.showTextures === false ? null : face.textureId),
+        node.sidedness,
+      ),
     );
     mesh.position.fromArray(center);
     if (node.basis) {
       const basisMatrix = new THREE.Matrix4().makeBasis(
         new THREE.Vector3(...node.basis.uAxis),
         new THREE.Vector3(...node.basis.vAxis),
-        new THREE.Vector3(...node.basis.normal)
+        new THREE.Vector3(...node.basis.normal),
       );
       mesh.setRotationFromMatrix(basisMatrix);
     }
@@ -281,15 +260,15 @@ const addPlaneGeometry = (
     new THREE.LineBasicMaterial({
       color: '#172028',
       transparent: true,
-      opacity: 0.66
-    })
+      opacity: 0.66,
+    }),
   );
   outline.position.fromArray(center);
   if (node.basis) {
     const basisMatrix = new THREE.Matrix4().makeBasis(
       new THREE.Vector3(...node.basis.uAxis),
       new THREE.Vector3(...node.basis.vAxis),
-      new THREE.Vector3(...node.basis.normal)
+      new THREE.Vector3(...node.basis.normal),
     );
     outline.setRotationFromMatrix(basisMatrix);
   }
@@ -297,11 +276,7 @@ const addPlaneGeometry = (
   group.add(outline);
 };
 
-const addNodeHelper = (
-  node: SceneNode,
-  group: THREE.Group,
-  selectable: THREE.Object3D[]
-): void => {
+const addNodeHelper = (node: SceneNode, group: THREE.Group, selectable: THREE.Object3D[]): void => {
   const helper =
     node.kind === 'locator'
       ? new THREE.AxesHelper(1.5)
@@ -309,8 +284,8 @@ const addNodeHelper = (
           new THREE.OctahedronGeometry(0.32, 0),
           new THREE.MeshBasicMaterial({
             color: node.kind === 'bone' ? '#e4a851' : '#7bd6d0',
-            depthTest: false
-          })
+            depthTest: false,
+          }),
         );
   helper.renderOrder = 5;
   helper.userData.nodeId = node.id;
@@ -323,14 +298,11 @@ const addNodeHelper = (
 export const addNodeGeometry = (
   node: SceneNode,
   group: THREE.Group,
-  context: GeometryBuildContext
+  context: GeometryBuildContext,
 ): void => {
   if (node.kind === 'cube') addCubeGeometry(node, group, context);
   if (node.kind === 'plane') addPlaneGeometry(node, group, context);
-  if (
-    context.options.showSkeleton &&
-    (node.kind === 'bone' || node.kind === 'locator')
-  ) {
+  if (context.options.showSkeleton && (node.kind === 'bone' || node.kind === 'locator')) {
     addNodeHelper(node, group, context.selectable);
   }
 };

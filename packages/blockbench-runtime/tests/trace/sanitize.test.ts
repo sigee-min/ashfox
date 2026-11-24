@@ -2,13 +2,10 @@ import assert from 'node:assert/strict';
 
 import {
   isProjectDiffContract,
-  isProjectStateContract
+  isProjectStateContract,
 } from '@ashfox/blockbench-contracts/types/project/contract';
 import { FINITE_JSON_CONTRACT_MAX_CONTAINERS } from '@ashfox/internal-contracts';
-import {
-  normalizeTraceContractValue,
-  sanitizeTraceValue
-} from '../../src/trace/format';
+import { normalizeTraceContractValue, sanitizeTraceValue } from '../../src/trace/format';
 
 const nestedTriggerValue = (depth: number): Record<string, unknown> => {
   let value: Record<string, unknown> = {};
@@ -39,7 +36,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
     ownKeys: (inner) => {
       ownKeysReads += 1;
       return Reflect.ownKeys(inner);
-    }
+    },
   });
 
   const sanitized = sanitizeTraceValue(source) as unknown[];
@@ -62,34 +59,37 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
     get: () => {
       getterCalls += 1;
       throw new Error('trace sanitizer must not invoke accessors');
-    }
+    },
   });
   Object.defineProperty(source, 'image', {
     enumerable: true,
     get: () => {
       getterCalls += 1;
       throw new Error('redaction must not invoke accessors');
-    }
+    },
   });
 
   assert.deepEqual(sanitizeTraceValue(source), {
     secret: '[accessor]',
-    image: '<redacted>'
+    image: '<redacted>',
   });
   assert.deepEqual(normalizeTraceContractValue(source), {
     secret: null,
-    image: '<redacted>'
+    image: '<redacted>',
   });
   assert.equal(getterCalls, 0);
 }
 
 // Reflection failures are total and deterministic in both sanitizer modes.
 {
-  const reflected = new Proxy({}, {
-    ownKeys: () => {
-      throw new Error('hostile ownKeys');
-    }
-  });
+  const reflected = new Proxy(
+    {},
+    {
+      ownKeys: () => {
+        throw new Error('hostile ownKeys');
+      },
+    },
+  );
   assert.equal(sanitizeTraceValue(reflected), '[unavailable]');
   assert.equal(normalizeTraceContractValue(reflected), null);
 
@@ -117,7 +117,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       ownKeys: (inner) => {
         containerReads += 1;
         return Reflect.ownKeys(inner);
-      }
+      },
     });
 
   let shared: Record<string, unknown> = observe({ leaf: true });
@@ -140,14 +140,14 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
     east: { enabled: true, uv: [0, 0, 16, 16] },
     west: { enabled: true, uv: [0, 0, 16, 16] },
     up: { enabled: true, uv: [0, 0, 16, 16] },
-    down: { enabled: true, uv: [0, 0, 16, 16] }
+    down: { enabled: true, uv: [0, 0, 16, 16] },
   });
   const cubes = Array.from({ length: 2048 }, (_entry, index) => ({
     name: `cube-${index}`,
     from: [0, 0, 0],
     to: [16, 16, 16],
     bone: 'root',
-    faces: faces()
+    faces: faces(),
   }));
   const state = {
     id: 'max-cube-state',
@@ -159,9 +159,9 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       bones: 0,
       cubes: cubes.length,
       textures: 0,
-      animations: 0
+      animations: 0,
     },
-    cubes
+    cubes,
   };
 
   assert.equal(isProjectStateContract(state), true);
@@ -182,17 +182,21 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       bones: 0,
       cubes: 0,
       textures: 0,
-      animations: 1
+      animations: 1,
     },
-    animations: [{
-      name: 'timeline',
-      length: 1,
-      loop: false,
-      triggers: [{
-        type: 'timeline' as const,
-        keys: [{ time: 0, value: nestedTriggerValue(64) }]
-      }]
-    }]
+    animations: [
+      {
+        name: 'timeline',
+        length: 1,
+        loop: false,
+        triggers: [
+          {
+            type: 'timeline' as const,
+            keys: [{ time: 0, value: nestedTriggerValue(64) }],
+          },
+        ],
+      },
+    ],
   };
   assert.equal(isProjectStateContract(state), true);
   const normalizedState = normalizeTraceContractValue(state);
@@ -207,25 +211,29 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       bones: zero,
       cubes: zero,
       textures: zero,
-      animations: { added: 0, removed: 0, changed: 1 }
+      animations: { added: 0, removed: 0, changed: 1 },
     },
     animations: {
       added: [],
       removed: [],
-      changed: [{
-        key: 'timeline',
-        before: {
-          name: 'timeline',
-          length: 1,
-          loop: false,
-          triggers: [{
-            type: 'timeline' as const,
-            keys: [{ time: 0, value: nestedTriggerValue(64) }]
-          }]
+      changed: [
+        {
+          key: 'timeline',
+          before: {
+            name: 'timeline',
+            length: 1,
+            loop: false,
+            triggers: [
+              {
+                type: 'timeline' as const,
+                keys: [{ time: 0, value: nestedTriggerValue(64) }],
+              },
+            ],
+          },
+          after: { name: 'timeline', length: 1, loop: false },
         },
-        after: { name: 'timeline', length: 1, loop: false }
-      }]
-    }
+      ],
+    },
   };
   assert.equal(isProjectDiffContract(diff), true);
   const normalizedDiff = normalizeTraceContractValue(diff);

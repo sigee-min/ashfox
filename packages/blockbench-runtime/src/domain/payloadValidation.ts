@@ -2,10 +2,14 @@ import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 
 export const ensureNonBlankString = (
   value: unknown,
-  options: { message: string; fix?: string }
+  options: { message: string; fix?: string },
 ): ToolError | null => {
   if (typeof value === 'string' && value.trim().length === 0) {
-    return { code: 'invalid_payload', message: options.message, ...(options.fix ? { fix: options.fix } : {}) };
+    return {
+      code: 'invalid_payload',
+      message: options.message,
+      ...(options.fix ? { fix: options.fix } : {}),
+    };
   }
   return null;
 };
@@ -13,13 +17,13 @@ export const ensureNonBlankString = (
 export const ensureIdOrName = (
   id: unknown,
   name: unknown,
-  options: { message: string; fix?: string }
+  options: { message: string; fix?: string },
 ): ToolError | null => {
   if (!id && !name) {
     return {
       code: 'invalid_payload',
       message: options.message,
-      ...(options.fix ? { fix: options.fix } : {})
+      ...(options.fix ? { fix: options.fix } : {}),
     };
   }
   return null;
@@ -42,7 +46,13 @@ export const ensureIdNameMatch = <T extends IdNameItem>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options: { kind: string; plural: string; idLabel?: string; nameLabel?: string; message?: IdNameMismatchMessage }
+  options: {
+    kind: string;
+    plural: string;
+    idLabel?: string;
+    nameLabel?: string;
+    message?: IdNameMismatchMessage;
+  },
 ): ToolError | null => {
   if (!id || !name) return null;
   const byId = items.find((item) => item.id === id);
@@ -59,13 +69,9 @@ export const ensureIdNameMatch = <T extends IdNameItem>(
           idLabel,
           nameLabel,
           id,
-          name
-        }) ?? `${options.kind} ${idLabel}/${nameLabel} mismatch.`
+          name,
+        }) ?? `${options.kind} ${idLabel}/${nameLabel} mismatch.`,
     };
   }
   return null;
 };
-
-
-
-

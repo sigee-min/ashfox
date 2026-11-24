@@ -3,7 +3,7 @@ import { minecraftActorAnimationNames } from './names';
 import type { ExportAdaptation } from '../contract';
 
 export const minecraftNameAdaptations = (
-  document: ExportAdaptedDocument
+  document: ExportAdaptedDocument,
 ): readonly ExportAdaptation[] => {
   if (
     document.formatProfile.id !== 'minecraft.bedrock' &&
@@ -17,14 +17,16 @@ export const minecraftNameAdaptations = (
     .flatMap((clip) => {
       const exportedName = names.get(clip.id);
       return exportedName && exportedName !== clip.name
-        ? [{
-            code: 'animation.name_normalized',
-            path: `animations.${clip.id}.name`,
-            message:
-              `The export converts animation name "${clip.name}" to ` +
-              `Minecraft identifier "${exportedName}" without changing the ashfox project.`,
-            clipId: clip.id
-          }]
+        ? [
+            {
+              code: 'animation.name_normalized',
+              path: `animations.${clip.id}.name`,
+              message:
+                `The export converts animation name "${clip.name}" to ` +
+                `Minecraft identifier "${exportedName}" without changing the ashfox project.`,
+              clipId: clip.id,
+            },
+          ]
         : [];
     });
 };

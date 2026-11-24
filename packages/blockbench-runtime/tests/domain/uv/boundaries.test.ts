@@ -9,7 +9,7 @@ import { buildUvPaintMessages, buildUvPaintPixelMessages } from '../../../src/sh
 const limits: Limits = {
   maxCubes: 512,
   maxTextureSize: 128,
-  maxAnimationSeconds: 120
+  maxAnimationSeconds: 120,
 };
 
 const paintMessages = buildUvPaintMessages();
@@ -43,22 +43,17 @@ const countOpaque = (data: Uint8ClampedArray): number => {
       padding: 0,
       anchor: [0, 0],
       source: { width: 8, height: 8 },
-      target: { cubeNames: ['body'], faces: ['north'] }
+      target: { cubeNames: ['body'], faces: ['north'] },
     },
     limits,
     'uvPaint',
-    paintMessages
+    paintMessages,
   );
   assert.equal(valid.ok, true);
 }
 
 {
-  const invalidAnchor = validateUvPaintSpec(
-    { anchor: [0, 'x'] },
-    limits,
-    'uvPaint',
-    paintMessages
-  );
+  const invalidAnchor = validateUvPaintSpec({ anchor: [0, 'x'] }, limits, 'uvPaint', paintMessages);
   assert.equal(invalidAnchor.ok, false);
   if (!invalidAnchor.ok) assert.equal(invalidAnchor.error.code, 'invalid_payload');
 
@@ -66,7 +61,7 @@ const countOpaque = (data: Uint8ClampedArray): number => {
     { source: { width: 1024, height: 1 } },
     limits,
     'uvPaint',
-    paintMessages
+    paintMessages,
   );
   assert.equal(invalidSource.ok, false);
   if (!invalidSource.ok) assert.equal(invalidSource.error.code, 'invalid_payload');
@@ -86,26 +81,26 @@ const countOpaque = (data: Uint8ClampedArray): number => {
             name: 'body',
             faces: [
               { face: 'north', uv: [0, 0, 4, 4] },
-              { face: 'south', uv: [0, 0, 4, 4] }
-            ]
+              { face: 'south', uv: [0, 0, 4, 4] },
+            ],
           },
           {
             id: 'c2',
             name: 'head',
-            faces: [{ face: 'north', uv: [4, 4, 8, 8] }]
-          }
-        ]
-      }
-    ]
+            faces: [{ face: 'north', uv: [4, 4, 8, 8] }],
+          },
+        ],
+      },
+    ],
   };
 
   const rects = resolveUvPaintRects(
     {
       name: 'atlas',
-      uvPaint: { scope: 'rects', target: { cubeNames: ['body'], faces: ['north', 'south'] } }
+      uvPaint: { scope: 'rects', target: { cubeNames: ['body'], faces: ['north', 'south'] } },
     },
     usage,
-    paintMessages
+    paintMessages,
   );
   assert.equal(rects.ok, true);
   if (rects.ok) assert.equal(rects.data.rects.length, 1);
@@ -113,10 +108,13 @@ const countOpaque = (data: Uint8ClampedArray): number => {
   const bounds = resolveUvPaintRects(
     {
       name: 'atlas',
-      uvPaint: { scope: 'bounds', target: { cubeNames: ['body', 'head'], faces: ['north', 'south'] } }
+      uvPaint: {
+        scope: 'bounds',
+        target: { cubeNames: ['body', 'head'], faces: ['north', 'south'] },
+      },
     },
     usage,
-    paintMessages
+    paintMessages,
   );
   assert.equal(bounds.ok, true);
   if (bounds.ok) assert.deepEqual(bounds.data.rects[0], { x1: 0, y1: 0, x2: 8, y2: 8 });
@@ -124,10 +122,10 @@ const countOpaque = (data: Uint8ClampedArray): number => {
   const missingFace = resolveUvPaintRects(
     {
       name: 'atlas',
-      uvPaint: { scope: 'faces', target: { cubeNames: ['body'], faces: ['east'] } }
+      uvPaint: { scope: 'faces', target: { cubeNames: ['body'], faces: ['east'] } },
     },
     usage,
-    paintMessages
+    paintMessages,
   );
   assert.equal(missingFace.ok, false);
   if (!missingFace.ok) assert.equal(missingFace.error.details?.reason, 'target_faces_not_found');
@@ -135,10 +133,10 @@ const countOpaque = (data: Uint8ClampedArray): number => {
   const missingCube = resolveUvPaintRects(
     {
       name: 'atlas',
-      uvPaint: { scope: 'faces', target: { cubeNames: ['missing'] } }
+      uvPaint: { scope: 'faces', target: { cubeNames: ['missing'] } },
     },
     usage,
-    paintMessages
+    paintMessages,
   );
   assert.equal(missingCube.ok, false);
   if (!missingCube.ok) assert.equal(missingCube.error.details?.reason, 'target_cubes_not_found');
@@ -148,7 +146,7 @@ const countOpaque = (data: Uint8ClampedArray): number => {
   const noUsage = resolveUvPaintRects(
     { name: 'missing', uvPaint: { scope: 'rects' } },
     { textures: [] },
-    paintMessages
+    paintMessages,
   );
   assert.equal(noUsage.ok, false);
   if (!noUsage.ok) assert.equal(noUsage.error.details?.reason, 'usage_missing');
@@ -162,10 +160,10 @@ const countOpaque = (data: Uint8ClampedArray): number => {
       rects: [{ x1: 0, y1: 0, x2: 4, y2: 4 }],
       mapping: 'stretch',
       padding: 0,
-      anchor: [0, 0]
+      anchor: [0, 0],
     },
     label: 'paint',
-    messages: pixelMessages
+    messages: pixelMessages,
   });
   assert.equal(invalidData.ok, false);
   if (!invalidData.ok) assert.equal(invalidData.error.code, 'invalid_payload');
@@ -181,14 +179,18 @@ const countOpaque = (data: Uint8ClampedArray): number => {
     const y1 = (i * 2) % (targetHeight - 1);
     const x2 = x1 + 1 + ((i * 5) % (targetWidth - x1));
     const y2 = y1 + 1 + ((i * 11) % (targetHeight - y1));
-    const source = { width: sourceWidth, height: sourceHeight, data: rgba(sourceWidth, sourceHeight) };
+    const source = {
+      width: sourceWidth,
+      height: sourceHeight,
+      data: rgba(sourceWidth, sourceHeight),
+    };
 
     const stretch = applyUvPaintPixels({
       source,
       target: { width: targetWidth, height: targetHeight },
       config: { rects: [{ x1, y1, x2, y2 }], mapping: 'stretch', padding: 0, anchor: [0, 0] },
       label: 'stretch',
-      messages: pixelMessages
+      messages: pixelMessages,
     });
     assert.equal(stretch.ok, true);
     if (stretch.ok) {
@@ -201,7 +203,7 @@ const countOpaque = (data: Uint8ClampedArray): number => {
       target: { width: targetWidth, height: targetHeight },
       config: { rects: [{ x1, y1, x2, y2 }], mapping: 'tile', padding: 0, anchor: [-3, 2] },
       label: 'tile',
-      messages: pixelMessages
+      messages: pixelMessages,
     });
     assert.equal(tile.ok, true);
     if (tile.ok) {
@@ -210,4 +212,3 @@ const countOpaque = (data: Uint8ClampedArray): number => {
     }
   }
 }
-

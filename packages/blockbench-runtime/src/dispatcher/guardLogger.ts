@@ -1,9 +1,17 @@
-import type { ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { Logger } from '../logging';
 import { extractGuardMeta, resolveGuardReason, resolveIfRevision } from './utils';
 
 export const createGuardLogger = (log: Logger) => {
-  return <T>(tool: ToolName, payload: ToolPayloadMap[ToolName], response: ToolResponse<T>): ToolResponse<T> => {
+  return <T>(
+    tool: ToolName,
+    payload: ToolPayloadMap[ToolName],
+    response: ToolResponse<T>,
+  ): ToolResponse<T> => {
     if (response.ok) return response;
     const reason = resolveGuardReason(response.error);
     if (!reason) return response;
@@ -14,9 +22,8 @@ export const createGuardLogger = (log: Logger) => {
       reason,
       code: response.error.code,
       ifRevision,
-      ...detailMeta
+      ...detailMeta,
     });
     return response;
   };
 };
-

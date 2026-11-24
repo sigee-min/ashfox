@@ -30,4 +30,3 @@ export const decideRevisionMatch = (input: RevisionCompareInput): RevisionCompar
   }
   return { ok: true, action: 'proceed', ...(currentRevision ? { currentRevision } : {}) };
 };
-

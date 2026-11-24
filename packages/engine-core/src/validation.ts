@@ -3,5 +3,5 @@ export { validateProjectDocument } from './validation/project/validate';
 export {
   ProjectInvariantError,
   type InvariantFinding,
-  type ValidationReport
+  type ValidationReport,
 } from './validation/contract';

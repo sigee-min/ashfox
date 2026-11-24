@@ -72,13 +72,13 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     pngOnly: true,
     fixedOutput: 'single' as const,
     turntableOutput: 'sequence' as const,
-    response: 'content' as const
+    response: 'content' as const,
   };
   const capabilities = computeCapabilities(
     options.blockbenchVersion,
     formats.listFormats(),
     options.formatOverrides,
-    previewCapability
+    previewCapability,
   );
   const toolRegistry = DEFAULT_TOOL_REGISTRY;
   capabilities.toolRegistry = { hash: toolRegistry.hash, count: toolRegistry.count };
@@ -93,21 +93,24 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     viewportRefresher,
     tmpStore,
     resources: options.resourceStore,
-    policies: options.policies
+    policies: options.policies,
   });
   const traceDefaults = options.traceLog ?? {};
   const detailOps = traceDefaults.detailOps ?? DEFAULT_DETAIL_OPS;
   const traceLogStore = new TraceLogStore({
-    writer: traceDefaults.resourceEnabled === false ? null : new ResourceTraceLogWriter(options.resourceStore),
+    writer:
+      traceDefaults.resourceEnabled === false
+        ? null
+        : new ResourceTraceLogWriter(options.resourceStore),
     autoFlush: true,
     maxEntries: traceDefaults.maxEntries ?? 2000,
     maxBytes: traceDefaults.maxBytes,
-    minEntries: traceDefaults.minEntries
+    minEntries: traceDefaults.minEntries,
   });
   const traceLogFileWriter = new BlockbenchTraceLogWriter({
     mode: 'writeFile',
     destPath: traceDefaults.destPath,
-    fileName: traceDefaults.fileName
+    fileName: traceDefaults.fileName,
   });
   const traceLogFlushScheduler = new TraceLogFlushScheduler({
     store: traceLogStore,
@@ -118,22 +121,22 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     policy: {
       enabled: traceDefaults.enabled !== false && traceDefaults.mode !== 'export',
       flushEvery: traceDefaults.flushEvery,
-      flushIntervalMs: traceDefaults.flushIntervalMs
+      flushIntervalMs: traceDefaults.flushIntervalMs,
     },
-    logger: options.logger
+    logger: options.logger,
   });
   const traceLogWriterFactory: TraceLogWriterFactory = {
     create: (opts) =>
       new BlockbenchTraceLogWriter({
         mode: opts?.mode ?? traceDefaults.mode ?? 'auto',
         destPath: opts?.destPath ?? traceDefaults.destPath,
-        fileName: opts?.fileName ?? traceDefaults.fileName
-      })
+        fileName: opts?.fileName ?? traceDefaults.fileName,
+      }),
   };
   const traceRecorder = new TraceRecorder(
     {
       getProjectState: (payload) => service.getProjectState(payload),
-      getProjectDiff: (payload) => service.getProjectDiff(payload)
+      getProjectDiff: (payload) => service.getProjectDiff(payload),
     },
     traceLogStore,
     {
@@ -150,14 +153,14 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
               includeDiff: true,
               includeUsage: true,
               stateDetail: 'full',
-              diffDetail: 'full'
-            }
+              diffDetail: 'full',
+            },
           ]
         : [],
       onRecord: () => traceLogFlushScheduler.recorded(),
       pluginVersion: PLUGIN_VERSION,
-      blockbenchVersion: options.blockbenchVersion
-    }
+      blockbenchVersion: options.blockbenchVersion,
+    },
   );
   const traceLogService = new TraceLogService({
     store: traceLogStore,
@@ -165,15 +168,15 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     defaults: {
       mode: traceDefaults.mode,
       destPath: traceDefaults.destPath,
-      fileName: traceDefaults.fileName
-    }
+      fileName: traceDefaults.fileName,
+    },
   });
   const dispatcher = new ToolDispatcherImpl(session, capabilities, service, {
     includeStateByDefault: () => Boolean(options.policies.autoIncludeState),
     includeDiffByDefault: () => Boolean(options.policies.autoIncludeDiff),
     logger: options.logger,
     traceRecorder,
-    traceLogService
+    traceLogService,
   });
   return {
     session,
@@ -184,7 +187,6 @@ export const buildRuntimeServices = (options: BuildRuntimeServicesOptions): Runt
     traceLogStore,
     traceLogFileWriter,
     traceLogFlushScheduler,
-    traceLogService
+    traceLogService,
   };
 };
-

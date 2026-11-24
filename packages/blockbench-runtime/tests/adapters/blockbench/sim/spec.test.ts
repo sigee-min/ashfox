@@ -7,26 +7,26 @@ const sim = new BlockbenchSim({
   project: {
     format: 'geckolib',
     formatId: 'geckolib',
-    textureResolution: { width: 16, height: 16 }
+    textureResolution: { width: 16, height: 16 },
   },
   formatCaps: {
     id: 'sim_format',
     singleTexture: true,
-    perTextureUvSize: false
-  }
+    perTextureUvSize: false,
+  },
 });
 
 sim.editor.importTexture({
   name: 'first',
   image: createMockImage(),
   width: 32,
-  height: 32
+  height: 32,
 });
 sim.editor.importTexture({
   name: 'second',
   image: createMockImage(),
   width: 64,
-  height: 64
+  height: 64,
 });
 
 const textures = sim.editor.listTextures();
@@ -42,7 +42,7 @@ sim.editor.updateTexture({
   name: 'second',
   image: createMockImage(),
   width: 128,
-  height: 128
+  height: 128,
 });
 const updated = sim.editor.listTextures();
 assert.equal(updated[0].width, 128);

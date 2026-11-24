@@ -1,11 +1,5 @@
-import type {
-  AnimationClip,
-  ProjectDocument
-} from '../../model';
-import type {
-  FindingSink,
-  IdRegistrar
-} from '../contract';
+import type { AnimationClip, ProjectDocument } from '../../model';
+import type { FindingSink, IdRegistrar } from '../contract';
 
 export interface ClipValidationContext {
   readonly clip: AnimationClip;

@@ -47,11 +47,7 @@ export class PolicyContext implements PolicyContextLike {
       scaleTolerance: policy?.scaleTolerance ?? DEFAULT_UV_POLICY.scaleTolerance,
       tinyThreshold: policy?.tinyThreshold ?? DEFAULT_UV_POLICY.tinyThreshold,
       autoMaxResolution: policy?.autoMaxResolution ?? DEFAULT_UV_POLICY.autoMaxResolution,
-      autoMaxRetries: policy?.autoMaxRetries ?? DEFAULT_UV_POLICY.autoMaxRetries
+      autoMaxRetries: policy?.autoMaxRetries ?? DEFAULT_UV_POLICY.autoMaxRetries,
     };
   }
-
 }
-
-
-

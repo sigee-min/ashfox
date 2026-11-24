@@ -1,17 +1,23 @@
-import { TexturePixelData, TextureRenderResult, TextureRendererPort } from '../../../ports/textureRenderer';
+import {
+  TexturePixelData,
+  TextureRenderResult,
+  TextureRendererPort,
+} from '../../../ports/textureRenderer';
 import { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import { readBlockbenchGlobals } from '../../../types/blockbench';
 import {
   ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE,
   TEXTURE_CANVAS_CONTEXT_UNAVAILABLE,
-  TEXTURE_CANVAS_UNAVAILABLE
+  TEXTURE_CANVAS_UNAVAILABLE,
 } from '../../../shared/messages';
 
 export class BlockbenchTextureRenderer implements TextureRendererPort {
   renderPixels(input: TexturePixelData): { result?: TextureRenderResult; error?: ToolError } {
     const doc = readBlockbenchGlobals().document;
     if (!doc?.createElement) {
-      return { error: { code: 'not_implemented', message: ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE } };
+      return {
+        error: { code: 'not_implemented', message: ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE },
+      };
     }
     const canvas = doc.createElement('canvas') as HTMLCanvasElement | null;
     if (!canvas) {
@@ -30,14 +36,15 @@ export class BlockbenchTextureRenderer implements TextureRendererPort {
     return { result: { image: canvas, width: input.width, height: input.height } };
   }
 
-  readPixels(input: {
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-  }): { result?: { width: number; height: number; data: Uint8ClampedArray }; error?: ToolError } {
+  readPixels(input: { image: CanvasImageSource; width?: number; height?: number }): {
+    result?: { width: number; height: number; data: Uint8ClampedArray };
+    error?: ToolError;
+  } {
     const doc = readBlockbenchGlobals().document;
     if (!doc?.createElement) {
-      return { error: { code: 'not_implemented', message: ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE } };
+      return {
+        error: { code: 'not_implemented', message: ADAPTER_TEXTURE_RENDERER_DOCUMENT_UNAVAILABLE },
+      };
     }
     const width = Math.trunc(Number(input.width));
     const height = Math.trunc(Number(input.height));
@@ -61,5 +68,3 @@ export class BlockbenchTextureRenderer implements TextureRendererPort {
     return { result: { width, height, data: new Uint8ClampedArray(imageData.data) } };
   }
 }
-
-

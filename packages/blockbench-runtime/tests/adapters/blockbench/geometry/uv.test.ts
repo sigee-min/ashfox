@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 
 import { BlockbenchUvAdapter } from '../../../../src/adapters/blockbench/geometry/UvAdapter';
-import { MODEL_CUBE_NOT_FOUND, UV_ASSIGNMENT_FACES_NON_EMPTY } from '../../../../src/shared/messages';
+import {
+  MODEL_CUBE_NOT_FOUND,
+  UV_ASSIGNMENT_FACES_NON_EMPTY,
+} from '../../../../src/shared/messages';
 import { noopLog } from '../../../helpers';
 
 const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
@@ -10,7 +13,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -55,16 +58,16 @@ class FakeCube {
   withGlobals(
     {
       Cube: undefined,
-      Outliner: { root: [] }
+      Outliner: { root: [] },
     },
     () => {
       const err = adapter.setFaceUv({
         cubeName: 'cube',
-        faces: { north: [0, 0, 16, 16] }
+        faces: { north: [0, 0, 16, 16] },
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -73,17 +76,17 @@ class FakeCube {
   withGlobals(
     {
       Cube: FakeCube,
-      Outliner: { root: [] }
+      Outliner: { root: [] },
     },
     () => {
       const err = adapter.setFaceUv({
         cubeName: 'missing',
-        faces: { north: [0, 0, 16, 16] }
+        faces: { north: [0, 0, 16, 16] },
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, MODEL_CUBE_NOT_FOUND('missing'));
-    }
+    },
   );
 }
 
@@ -93,17 +96,17 @@ class FakeCube {
   withGlobals(
     {
       Cube: FakeCube,
-      Outliner: { root: [cube] }
+      Outliner: { root: [cube] },
     },
     () => {
       const err = adapter.setFaceUv({
         cubeName: 'body',
-        faces: {}
+        faces: {},
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, UV_ASSIGNMENT_FACES_NON_EMPTY);
-    }
+    },
   );
 }
 
@@ -114,7 +117,7 @@ class FakeCube {
   withGlobals(
     {
       Cube: FakeCube,
-      Outliner: { root: [cube] }
+      Outliner: { root: [cube] },
     },
     () => {
       const err = adapter.setFaceUv({
@@ -122,11 +125,11 @@ class FakeCube {
         faces: {
           north: [1, 2, 3, 4],
           south: [5, 6, 7, 8],
-          unknown: [9, 9, 9, 9] as [number, number, number, number]
-        } as never
+          unknown: [9, 9, 9, 9] as [number, number, number, number],
+        } as never,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(cube.mapAutoUVCalls, 1);
   assert.deepEqual(cube.setUVModeCalls, [false]);
@@ -135,4 +138,3 @@ class FakeCube {
   assert.equal(cube.faces.unknown, undefined);
   assert.equal(cube.autouv, 0);
 }
-

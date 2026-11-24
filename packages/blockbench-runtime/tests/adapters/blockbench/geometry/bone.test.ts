@@ -10,7 +10,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -51,16 +51,16 @@ class FakeGroup {
   withGlobals(
     {
       Group: undefined,
-      Outliner: { root: [] }
+      Outliner: { root: [] },
     },
     () => {
       const err = adapter.addBone({
         name: 'body',
-        pivot: [0, 0, 0]
+        pivot: [0, 0, 0],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -70,7 +70,7 @@ class FakeGroup {
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.addBone({
@@ -79,10 +79,10 @@ class FakeGroup {
         pivot: [0, 5, 0],
         rotation: [0, 45, 0],
         scale: [1, 1, 1],
-        visibility: false
+        visibility: false,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(outliner.root.length, 1);
   const created = outliner.root[0] as FakeGroup;
@@ -99,37 +99,42 @@ class FakeGroup {
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.updateBone({
-        name: 'missing'
+        name: 'missing',
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, MODEL_BONE_NOT_FOUND('missing'));
-    }
+    },
   );
 }
 
 {
   const adapter = new BlockbenchBoneAdapter(noopLog);
-  const body = new FakeGroup({ name: 'body', origin: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+  const body = new FakeGroup({
+    name: 'body',
+    origin: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+  });
   const outliner = { root: [body] as unknown[] };
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.updateBone({
         name: 'body',
-        parent: 'missing_parent'
+        parent: 'missing_parent',
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, MODEL_PARENT_BONE_NOT_FOUND('missing_parent'));
-    }
+    },
   );
 }
 
@@ -142,14 +147,14 @@ class FakeGroup {
     origin: [0, 1, 2],
     rotation: [1, 2, 3],
     scale: [1, 1, 1],
-    parent: root
+    parent: root,
   });
   root.children?.push(child);
   const outliner = { root: [root] as unknown[] };
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.updateBone({
@@ -160,10 +165,10 @@ class FakeGroup {
         rotation: [6, 7, 8],
         scale: [2, 2, 2],
         visibility: true,
-        parentRoot: true
+        parentRoot: true,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(child.ashfoxId, 'new-id');
   assert.equal(child.name, 'child_renamed');
@@ -181,12 +186,12 @@ class FakeGroup {
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.deleteBone({ name: 'to_delete' });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(outliner.root.length, 0);
 }
@@ -196,14 +201,13 @@ class FakeGroup {
   withGlobals(
     {
       Group: FakeGroup,
-      Outliner: { root: [] }
+      Outliner: { root: [] },
     },
     () => {
       const err = adapter.deleteBone({ name: 'missing' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, MODEL_BONE_NOT_FOUND('missing'));
-    }
+    },
   );
 }
-

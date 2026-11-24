@@ -9,7 +9,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -27,7 +27,9 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 
 class FakeCube {
   name?: string;
-  from?: [number, number, number] | { x?: number; y?: number; z?: number; set?: (...args: number[]) => void };
+  from?:
+    | [number, number, number]
+    | { x?: number; y?: number; z?: number; set?: (...args: number[]) => void };
   to?: [number, number, number];
   origin?: [number, number, number];
   rotation?: [number, number, number];
@@ -64,7 +66,7 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.addCube({
@@ -73,10 +75,10 @@ class FakeUvCube extends FakeCube {
         from: [-4, 6, -7],
         to: [4, 14, 7],
         uvOffset: [0, 0],
-        visibility: false
+        visibility: false,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(outliner.root.length, 1);
   const cube = outliner.root[0] as FakeCube;
@@ -96,17 +98,17 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.addCube({
         name: 'body_uv',
         from: [0, 0, 0],
         to: [2, 2, 2],
-        boxUv: true
+        boxUv: true,
       });
       assert.equal(err, null);
-    }
+    },
   );
   const cube = outliner.root[0] as FakeUvCube;
   assert.equal(cube.box_uv, true);
@@ -119,9 +121,9 @@ class FakeUvCube extends FakeCube {
   const problematicCube = {
     name: 'body_main',
     from: {
-      set: (_x: number, _y: number, _z: number) => undefined
+      set: (_x: number, _y: number, _z: number) => undefined,
     },
-    to: [4, 14, 7]
+    to: [4, 14, 7],
   };
   const outliner = { root: [problematicCube] };
   withGlobals(
@@ -130,18 +132,18 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({
         name: 'body_main',
-        from: [-4, 6, -7]
+        from: [-4, 6, -7],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_state');
       assert.equal(err?.details?.reason, 'cube_vector_mismatch');
       assert.equal(err?.details?.field, 'from');
-    }
+    },
   );
 }
 
@@ -154,16 +156,16 @@ class FakeUvCube extends FakeCube {
       Outliner: { root: [] },
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({
         name: 'missing_cube',
-        from: [0, 0, 0]
+        from: [0, 0, 0],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -173,7 +175,7 @@ class FakeUvCube extends FakeCube {
   const cube = {
     name: 'body_main',
     from: [-4, 6, -7],
-    to: [4, 14, 7]
+    to: [4, 14, 7],
   };
   const outliner = { root: [cube] };
   withGlobals(
@@ -182,16 +184,16 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({
         name: 'body_main',
-        bone: 'missing_bone'
+        bone: 'missing_bone',
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -206,7 +208,7 @@ class FakeUvCube extends FakeCube {
       this.x = x;
       this.y = y;
       this.z = z;
-    }
+    },
   });
   const cube = {
     name: 'body_main',
@@ -214,7 +216,7 @@ class FakeUvCube extends FakeCube {
     to: makeVec(),
     origin: makeVec(),
     rotation: makeVec(),
-    uv_offset: [0, 0] as [number, number]
+    uv_offset: [0, 0] as [number, number],
   };
   const outliner = { root: [cube] };
   withGlobals(
@@ -223,7 +225,7 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({
@@ -234,10 +236,10 @@ class FakeUvCube extends FakeCube {
         rotation: [0, 15, 0],
         uvOffset: [8, 4],
         mirror: true,
-        boxUv: false
+        boxUv: false,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.deepEqual([cube.from.x, cube.from.y, cube.from.z], [-4, 6, -7]);
   assert.deepEqual([cube.to.x, cube.to.y, cube.to.z], [4, 14, 7]);
@@ -253,8 +255,8 @@ class FakeUvCube extends FakeCube {
     name: 'body_main',
     from: [-4, 6, -7],
     to: {
-      set: (_x: number, _y: number, _z: number) => undefined
-    }
+      set: (_x: number, _y: number, _z: number) => undefined,
+    },
   };
   const outliner = { root: [cube] };
   withGlobals(
@@ -263,18 +265,18 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({
         name: 'body_main',
-        to: [4, 14, 7]
+        to: [4, 14, 7],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_state');
       assert.equal(err?.details?.reason, 'cube_vector_mismatch');
       assert.equal(err?.details?.field, 'to');
-    }
+    },
   );
 }
 
@@ -284,7 +286,7 @@ class FakeUvCube extends FakeCube {
   const cube = {
     name: 'body_main',
     from: [-4, 6, -7],
-    to: [4, 14, 7]
+    to: [4, 14, 7],
   };
   const outliner = { root: [cube] };
   withGlobals(
@@ -293,12 +295,12 @@ class FakeUvCube extends FakeCube {
       Outliner: outliner,
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.deleteCube({ name: 'body_main' });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(outliner.root.length, 0);
 }
@@ -312,13 +314,12 @@ class FakeUvCube extends FakeCube {
       Outliner: { root: [] },
       Group: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.deleteCube({ name: 'missing_cube' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
-    }
+    },
   );
 }
-

@@ -18,4 +18,3 @@ export const runWriteFile = (log: Logger, path: string, contents: string): ToolE
     return { code: 'io_error', message };
   }
 };
-

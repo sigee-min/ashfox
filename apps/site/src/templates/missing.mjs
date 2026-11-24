@@ -19,5 +19,5 @@ export const renderNotFoundPage = ({ assets, config }) =>
           <a class="button button-secondary" href="/docs/">Open docs <span>→</span></a>
         </div>
       </main>
-    `
+    `,
   });

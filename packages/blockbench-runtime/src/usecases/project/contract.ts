@@ -4,7 +4,7 @@ import type {
   FormatKind,
   ProjectDiff,
   ProjectState,
-  ProjectStateDetail
+  ProjectStateDetail,
 } from '@ashfox/blockbench-contracts/types/internal';
 
 /** Closed request/result contract shared by the project facade and dispatcher. */

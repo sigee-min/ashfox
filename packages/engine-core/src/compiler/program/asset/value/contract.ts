@@ -1,6 +1,6 @@
 import type {
   ProgramBinaryOperator,
-  ProgramUnit
+  ProgramUnit,
 } from '../../../../project/program/syntax/contract';
 import type { AssetValueType as ContractAssetValueType } from '../../../../project/program/asset/contract';
 import type { SourceSpan } from '../../../../project/source/contract';
@@ -12,20 +12,21 @@ import type { SourceSpan } from '../../../../project/source/contract';
  * number.
  */
 export type AssetScalarUnit = ProgramUnit;
-export type AssetScalarValueType = Extract<ContractAssetValueType,
-  'unit' | 'texel' | 'degree' | 'second' | 'ratio' | 'integer'>;
-export type AssetVectorComponentType = Extract<ContractAssetValueType,
-  'unit' | 'texel' | 'degree' | 'ratio'>;
+export type AssetScalarValueType = Extract<
+  ContractAssetValueType,
+  'unit' | 'texel' | 'degree' | 'second' | 'ratio' | 'integer'
+>;
+export type AssetVectorComponentType = Extract<
+  ContractAssetValueType,
+  'unit' | 'texel' | 'degree' | 'ratio'
+>;
 /** Plain is private expression metadata; it is not a HIR/AssetValue ABI type. */
 export type AssetExpressionScalarType = AssetScalarValueType | 'plain';
 
-export type AssetVectorValueType = Extract<ContractAssetValueType,
-  | 'vec2<unit>'
-  | 'vec3<unit>'
-  | 'vec3<degree>'
-  | 'vec3<ratio>'
-  | 'vec2<texel>'
-  | 'texel-rect'>;
+export type AssetVectorValueType = Extract<
+  ContractAssetValueType,
+  'vec2<unit>' | 'vec3<unit>' | 'vec3<degree>' | 'vec3<ratio>' | 'vec2<texel>' | 'texel-rect'
+>;
 
 /** Closed compiler expression types. */
 export type AssetExpressionType = ContractAssetValueType | 'plain';
@@ -52,22 +53,27 @@ export class AssetValueNumericLimitError extends Error {
 }
 
 export const isAssetScalarUnit = (value: AssetScalarUnit): boolean =>
-  value === 'plain' || value === 'unit' || value === 'texel' ||
-  value === 'degree' || value === 'second' || value === 'ratio';
+  value === 'plain' ||
+  value === 'unit' ||
+  value === 'texel' ||
+  value === 'degree' ||
+  value === 'second' ||
+  value === 'ratio';
 
 export const isAssetExactNumberInput = (
   numerator: bigint,
   denominator: bigint,
-  unit: AssetScalarUnit
-): boolean => typeof numerator === 'bigint' && typeof denominator === 'bigint' &&
-  isAssetScalarUnit(unit);
+  unit: AssetScalarUnit,
+): boolean =>
+  typeof numerator === 'bigint' && typeof denominator === 'bigint' && isAssetScalarUnit(unit);
 
-export const isAssetExactNumberWithinBudget = (
-  numerator: bigint,
-  denominator: bigint
-): boolean => typeof numerator === 'bigint' && typeof denominator === 'bigint' &&
-  numerator > ASSET_EXACT_INTEGER_MINIMUM && numerator < ASSET_EXACT_INTEGER_LIMIT &&
-  denominator > ASSET_EXACT_INTEGER_MINIMUM && denominator < ASSET_EXACT_INTEGER_LIMIT;
+export const isAssetExactNumberWithinBudget = (numerator: bigint, denominator: bigint): boolean =>
+  typeof numerator === 'bigint' &&
+  typeof denominator === 'bigint' &&
+  numerator > ASSET_EXACT_INTEGER_MINIMUM &&
+  numerator < ASSET_EXACT_INTEGER_LIMIT &&
+  denominator > ASSET_EXACT_INTEGER_MINIMUM &&
+  denominator < ASSET_EXACT_INTEGER_LIMIT;
 
 export interface AssetNumberValue {
   readonly kind: 'number';
@@ -98,9 +104,7 @@ export interface AssetVectorDescriptor {
   readonly component: AssetVectorComponentType;
 }
 
-export const assetVectorDescriptor = (
-  type: AssetVectorValueType
-): AssetVectorDescriptor | null => {
+export const assetVectorDescriptor = (type: AssetVectorValueType): AssetVectorDescriptor | null => {
   if (type === 'vec2<unit>') return Object.freeze({ arity: 2, component: 'unit' });
   if (type === 'vec2<texel>') return Object.freeze({ arity: 2, component: 'texel' });
   if (type === 'vec3<unit>') return Object.freeze({ arity: 3, component: 'unit' });
@@ -113,22 +117,27 @@ export const assetVectorDescriptor = (
 export const isAssetColorLiteral = (value: string): boolean =>
   typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value);
 
-export const isAssetNumberValueShape = (
-  value: AssetNumberValue
-): boolean => {
-  if (value === null || typeof value !== 'object' || value.kind !== 'number' ||
-    value.value === null || typeof value.value !== 'object') return false;
+export const isAssetNumberValueShape = (value: AssetNumberValue): boolean => {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    value.kind !== 'number' ||
+    value.value === null ||
+    typeof value.value !== 'object'
+  )
+    return false;
   const exact = value.value;
-  if (!isAssetExactNumberInput(exact.numerator, exact.denominator, exact.unit) ||
-    exact.denominator <= 0n || !isAssetExactNumberWithinBudget(
-      exact.numerator, exact.denominator)) return false;
+  if (
+    !isAssetExactNumberInput(exact.numerator, exact.denominator, exact.unit) ||
+    exact.denominator <= 0n ||
+    !isAssetExactNumberWithinBudget(exact.numerator, exact.denominator)
+  )
+    return false;
   const expected = exact.unit === 'plain' ? 'integer' : exact.unit;
-  return value.type === expected &&
-    (exact.unit !== 'plain' || exact.denominator === 1n);
+  return value.type === expected && (exact.unit !== 'plain' || exact.denominator === 1n);
 };
 
-export type AssetValue = AssetNumberValue | AssetBooleanValue |
-  AssetColorValue | AssetVectorValue;
+export type AssetValue = AssetNumberValue | AssetBooleanValue | AssetColorValue | AssetVectorValue;
 
 export interface AssetTypedExpressionBase {
   readonly span: SourceSpan;
@@ -178,8 +187,18 @@ export interface AssetTypedVectorExpression extends AssetTypedExpressionBase {
 
 export interface AssetTypedCallExpression extends AssetTypedExpressionBase {
   readonly kind: 'call';
-  readonly name: 'vec2' | 'vec3' | 'abs' | 'min' | 'max' | 'clamp' |
-    'texels' | 'mirror_x' | 'mirror_y' | 'mirror_z' | 'box_origin';
+  readonly name:
+    | 'vec2'
+    | 'vec3'
+    | 'abs'
+    | 'min'
+    | 'max'
+    | 'clamp'
+    | 'texels'
+    | 'mirror_x'
+    | 'mirror_y'
+    | 'mirror_z'
+    | 'box_origin';
   readonly args: readonly AssetTypedExpression[];
 }
 
@@ -189,16 +208,18 @@ export interface AssetTypedMemberExpression extends AssetTypedExpressionBase {
   readonly member: 'x' | 'y' | 'z';
 }
 
-export type AssetTypedExpression = AssetTypedNumberExpression |
-  AssetTypedBooleanExpression | AssetTypedColorExpression |
-  AssetTypedNameExpression | AssetTypedUnaryExpression |
-  AssetTypedBinaryExpression | AssetTypedVectorExpression |
-  AssetTypedCallExpression | AssetTypedMemberExpression;
+export type AssetTypedExpression =
+  | AssetTypedNumberExpression
+  | AssetTypedBooleanExpression
+  | AssetTypedColorExpression
+  | AssetTypedNameExpression
+  | AssetTypedUnaryExpression
+  | AssetTypedBinaryExpression
+  | AssetTypedVectorExpression
+  | AssetTypedCallExpression
+  | AssetTypedMemberExpression;
 
-export type AssetExpressionTypeEnvironment = ReadonlyMap<
-  string,
-  AssetExpressionType
->;
+export type AssetExpressionTypeEnvironment = ReadonlyMap<string, AssetExpressionType>;
 
 export type AssetExpressionValueEnvironment = ReadonlyMap<string, AssetValue>;
 
@@ -252,7 +273,7 @@ export interface AssetCanonicalNumberBoundary {
 export const assetExactNumber = (
   numerator: bigint,
   denominator: bigint,
-  unit: AssetScalarUnit
+  unit: AssetScalarUnit,
 ): AssetExactNumber => {
   if (!isAssetExactNumberInput(numerator, denominator, unit)) {
     throw new Error('Exact number has an invalid numeric shape or unit.');
@@ -264,9 +285,12 @@ export const assetExactNumber = (
   const positiveDenominator = denominator < 0n ? -denominator : denominator;
   const signedNumerator = denominator < 0n ? -numerator : numerator;
   // Integral inputs are already reduced after sign normalization.
-  if (positiveDenominator === 1n) return Object.freeze({
-    numerator: signedNumerator, denominator: 1n, unit
-  });
+  if (positiveDenominator === 1n)
+    return Object.freeze({
+      numerator: signedNumerator,
+      denominator: 1n,
+      unit,
+    });
   let left = signedNumerator < 0n ? -signedNumerator : signedNumerator;
   let right = positiveDenominator;
   while (right !== 0n) {
@@ -278,15 +302,18 @@ export const assetExactNumber = (
   return Object.freeze({
     numerator: signedNumerator / divisor,
     denominator: positiveDenominator / divisor,
-    unit
+    unit,
   });
 };
 
 export const assetNumberValue = (value: AssetExactNumber): AssetNumberValue => {
-  if (value === null || typeof value !== 'object' ||
+  if (
+    value === null ||
+    typeof value !== 'object' ||
     !isAssetExactNumberInput(value.numerator, value.denominator, value.unit) ||
-    value.denominator <= 0n || !isAssetExactNumberWithinBudget(
-      value.numerator, value.denominator)) {
+    value.denominator <= 0n ||
+    !isAssetExactNumberWithinBudget(value.numerator, value.denominator)
+  ) {
     throw new Error('Number value has an invalid exact numeric shape.');
   }
   if (value.unit === 'plain' && value.denominator !== 1n) {
@@ -299,22 +326,28 @@ export const assetNumberValue = (value: AssetExactNumber): AssetNumberValue => {
     value: Object.freeze({
       numerator: value.numerator,
       denominator: value.denominator,
-      unit: value.unit
-    })
+      unit: value.unit,
+    }),
   });
 };
 
 export const assetBooleanValue = (value: boolean): AssetBooleanValue =>
-  typeof value === 'boolean' ? Object.freeze({ kind: 'boolean', type: 'bool', value }) :
-    (() => { throw new Error('Boolean value has an invalid shape.'); })();
+  typeof value === 'boolean'
+    ? Object.freeze({ kind: 'boolean', type: 'bool', value })
+    : (() => {
+        throw new Error('Boolean value has an invalid shape.');
+      })();
 
 export const assetColorValue = (value: string): AssetColorValue =>
-  isAssetColorLiteral(value) ? Object.freeze({ kind: 'color', type: 'color', value }) :
-    (() => { throw new Error('Color value has an invalid shape.'); })();
+  isAssetColorLiteral(value)
+    ? Object.freeze({ kind: 'color', type: 'color', value })
+    : (() => {
+        throw new Error('Color value has an invalid shape.');
+      })();
 
 export const assetVectorValue = (
   values: readonly AssetNumberValue[],
-  type: AssetVectorValueType
+  type: AssetVectorValueType,
 ): AssetVectorValue => {
   const info = assetVectorDescriptor(type);
   if (info === null || !Array.isArray(values) || values.length !== info.arity) {
@@ -325,12 +358,15 @@ export const assetVectorValue = (
     if (!isAssetNumberValueShape(entry) || entry.type !== info.component) {
       throw new Error('Vector value has an invalid component.');
     }
-    entries.push(assetNumberValue(assetExactNumber(
-      entry.value.numerator, entry.value.denominator, entry.value.unit)));
+    entries.push(
+      assetNumberValue(
+        assetExactNumber(entry.value.numerator, entry.value.denominator, entry.value.unit),
+      ),
+    );
   }
   return Object.freeze({
     kind: 'vector',
     type,
-    values: Object.freeze(entries)
+    values: Object.freeze(entries),
   });
 };

@@ -1,4 +1,9 @@
-import { Dispatcher, ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  Dispatcher,
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { normalizeToolResponse } from '../../shared/tooling/toolResponseGuard';
 import { decorateToolResponse } from './responseDecorators';
 
@@ -19,12 +24,7 @@ export class LocalToolExecutor implements ToolExecutor {
     const decorated = decorateToolResponse(name, args, response);
     return normalizeToolResponse(decorated, {
       source: 'mcp_executor',
-      ensureReason: true
+      ensureReason: true,
     });
   }
 }
-
-
-
-
-

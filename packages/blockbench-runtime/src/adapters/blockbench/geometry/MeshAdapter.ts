@@ -6,7 +6,7 @@ import type {
   MeshFaceCommand,
   MeshFaceUvCommand,
   MeshVertexCommand,
-  UpdateMeshCommand
+  UpdateMeshCommand,
 } from '../../../ports/editor';
 import {
   assignVec3,
@@ -17,7 +17,7 @@ import {
   removeOutlinerNode,
   renameEntity,
   setVisibility,
-  withUndo
+  withUndo,
 } from '../blockbenchUtils';
 import { getMeshApi } from '../api';
 import { findGroup, findMeshRef } from '../outlinerLookup';
@@ -51,12 +51,12 @@ export class BlockbenchMeshAdapter {
         const created = new MeshCtor({
           name: params.name,
           origin: params.origin,
-          rotation: params.rotation
+          rotation: params.rotation,
         });
         const mesh = (created.init?.() as typeof created | void) ?? created;
         applyMeshPatch(mesh as Record<string, unknown>, {
           vertices: params.vertices,
-          faces: params.faces
+          faces: params.faces,
         });
         setVisibility(mesh, params.visibility);
         if (params.id) mesh.ashfoxId = params.id;
@@ -96,13 +96,17 @@ export class BlockbenchMeshAdapter {
         setVisibility(target, params.visibility);
         applyMeshPatch(target as Record<string, unknown>, {
           vertices: params.vertices,
-          faces: params.faces
+          faces: params.faces,
         });
         if (params.boneRoot || params.bone !== undefined) {
           moveOutlinerNode(target, parent ?? null, outliner, this.log, 'mesh');
         }
       });
-      this.log.info('mesh updated', { name: params.name, newName: params.newName, bone: params.bone });
+      this.log.info('mesh updated', {
+        name: params.name,
+        newName: params.newName,
+        bone: params.bone,
+      });
       return null;
     });
   }
@@ -132,7 +136,8 @@ const applyMeshPatch = (mesh: Record<string, unknown>, patch: MeshPatch): void =
   const extended = extendEntity(mesh, normalized);
   if (!extended) {
     if (normalized.vertices) {
-      (mesh as { vertices?: Record<string, [number, number, number]> }).vertices = normalized.vertices;
+      (mesh as { vertices?: Record<string, [number, number, number]> }).vertices =
+        normalized.vertices;
     }
     if (normalized.faces) {
       (mesh as { faces?: Record<string, Record<string, unknown>> }).faces = normalized.faces;
@@ -151,7 +156,9 @@ const normalizeMeshPatch = (patch: MeshPatch): NormalizedMeshPatch | null => {
   return Object.keys(normalized).length > 0 ? normalized : null;
 };
 
-const toVertexRecord = (vertices: MeshVertexCommand[]): Record<string, [number, number, number]> => {
+const toVertexRecord = (
+  vertices: MeshVertexCommand[],
+): Record<string, [number, number, number]> => {
   const record: Record<string, [number, number, number]> = {};
   for (const vertex of vertices) {
     record[vertex.id] = [vertex.pos[0], vertex.pos[1], vertex.pos[2]];
@@ -165,7 +172,7 @@ const toFaceRecord = (faces: MeshFaceCommand[]): Record<string, Record<string, u
     const face = faces[index];
     const faceId = face.id ?? `f${index}`;
     const next: Record<string, unknown> = {
-      vertices: [...face.vertices]
+      vertices: [...face.vertices],
     };
     const uv = toFaceUvRecord(face.uv);
     if (uv) next.uv = uv;
@@ -177,7 +184,9 @@ const toFaceRecord = (faces: MeshFaceCommand[]): Record<string, Record<string, u
   return record;
 };
 
-const toFaceUvRecord = (uv: MeshFaceUvCommand[] | undefined): Record<string, [number, number]> | undefined => {
+const toFaceUvRecord = (
+  uv: MeshFaceUvCommand[] | undefined,
+): Record<string, [number, number]> | undefined => {
   if (!uv || uv.length === 0) return undefined;
   const record: Record<string, [number, number]> = {};
   for (const point of uv) {

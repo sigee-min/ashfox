@@ -15,22 +15,12 @@ export class ByteAccumulator {
       let capacity = Math.max(1024, this.storage.length);
       while (capacity < required) capacity *= 2;
       const expanded = Buffer.allocUnsafe(capacity);
-      this.storage.copy(
-        expanded,
-        0,
-        this.readOffset,
-        this.writeOffset
-      );
+      this.storage.copy(expanded, 0, this.readOffset, this.writeOffset);
       this.storage = expanded;
       this.readOffset = 0;
       this.writeOffset = activeLength;
     } else if (this.storage.length - this.writeOffset < chunk.length) {
-      this.storage.copy(
-        this.storage,
-        0,
-        this.readOffset,
-        this.writeOffset
-      );
+      this.storage.copy(this.storage, 0, this.readOffset, this.writeOffset);
       this.readOffset = 0;
       this.writeOffset = activeLength;
     }
@@ -39,17 +29,12 @@ export class ByteAccumulator {
   }
 
   indexOf(value: string): number {
-    return this.storage
-      .subarray(this.readOffset, this.writeOffset)
-      .indexOf(value);
+    return this.storage.subarray(this.readOffset, this.writeOffset).indexOf(value);
   }
 
   view(start: number, end: number): Uint8Array {
     const normalizedStart = Math.min(Math.max(0, start), this.length);
-    const normalizedEnd = Math.min(
-      Math.max(normalizedStart, end),
-      this.length
-    );
+    const normalizedEnd = Math.min(Math.max(normalizedStart, end), this.length);
     const from = this.readOffset + normalizedStart;
     const to = this.readOffset + normalizedEnd;
     return this.storage.subarray(from, to);
@@ -57,9 +42,7 @@ export class ByteAccumulator {
 
   take(length: number): Buffer {
     const count = Math.min(Math.max(0, length), this.length);
-    const result = Buffer.from(
-      this.storage.subarray(this.readOffset, this.readOffset + count)
-    );
+    const result = Buffer.from(this.storage.subarray(this.readOffset, this.readOffset + count));
     this.consume(count);
     return result;
   }

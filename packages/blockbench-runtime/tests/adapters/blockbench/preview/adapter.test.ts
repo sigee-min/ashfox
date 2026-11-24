@@ -20,7 +20,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     document: globals.document,
     Animation: globals.Animation,
     Animations: globals.Animations,
-    Animator: globals.Animator
+    Animator: globals.Animator,
   };
   globals.Preview = overrides.Preview;
   globals.document = overrides.document;
@@ -41,7 +41,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
 const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height = 16) => ({
   width,
   height,
-  toDataURL: () => dataUrl
+  toDataURL: () => dataUrl,
 });
 
 {
@@ -58,12 +58,12 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
   withGlobals(
     {
       Preview: { selected: null, all: [] },
-      document: { querySelector: () => null }
+      document: { querySelector: () => null },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'fixed' });
       assert.equal(result.error?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -74,10 +74,10 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
       Preview: {
         selected: {
           canvas: createCanvas(),
-          render: () => undefined
+          render: () => undefined,
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const missingControls = adapter.renderPreview({ mode: 'fixed', angle: [10, 20] });
@@ -85,7 +85,7 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
 
       const missingClip = adapter.renderPreview({ mode: 'fixed', timeSeconds: 1 });
       assert.equal(missingClip.error?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -102,15 +102,15 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
           controls: {
             update: () => {
               updates += 1;
-            }
+            },
           },
           camera: {},
           render: () => {
             renders += 1;
-          }
+          },
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'fixed', angle: [0, 0, 0] });
@@ -119,7 +119,7 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
       assert.equal(result.result?.frameCount, 1);
       assert.equal(result.result?.image?.width, 32);
       assert.equal(result.result?.image?.height, 16);
-    }
+    },
   );
   assert.equal(updates > 0, true);
   assert.equal(renders > 0, true);
@@ -138,13 +138,13 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
             rotateLeft: () => {
               rotateCalls += 1;
             },
-            update: () => undefined
+            update: () => undefined,
           },
           camera: {},
-          render: () => undefined
+          render: () => undefined,
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'turntable', durationSeconds: 2, fps: 100 });
@@ -152,7 +152,7 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
       assert.equal(result.result?.kind, 'sequence');
       assert.equal(result.result?.frameCount, 120);
       assert.equal(result.result?.frames?.length, 120);
-    }
+    },
   );
   assert.equal(rotateCalls, 119);
 }
@@ -166,15 +166,15 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
           canvas: createCanvas('data:text/plain,abc'),
           controls: { update: () => undefined },
           camera: {},
-          render: () => undefined
+          render: () => undefined,
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'fixed' });
       assert.equal(result.error?.code, 'io_error');
-    }
+    },
   );
 }
 
@@ -189,15 +189,15 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
           canvas: createCanvas(),
           controls: { update: () => undefined },
           camera: {},
-          render: () => undefined
+          render: () => undefined,
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'fixed', clip: 'idle', timeSeconds: 0 });
       assert.equal(result.error?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -212,18 +212,18 @@ const createCanvas = (dataUrl = 'data:image/png;base64,QQ==', width = 16, height
             height: 16,
             toDataURL: () => {
               throw new Error('boom');
-            }
+            },
           },
           controls: { update: () => undefined },
           camera: {},
-          render: () => undefined
+          render: () => undefined,
         },
-        all: []
-      }
+        all: [],
+      },
     },
     () => {
       const result = adapter.renderPreview({ mode: 'fixed' });
       assert.equal(result.error?.code, 'unknown');
-    }
+    },
   );
 }

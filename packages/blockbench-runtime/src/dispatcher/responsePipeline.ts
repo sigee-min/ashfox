@@ -1,5 +1,9 @@
 import { errorMessage, type Logger } from '../logging';
-import type { ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { ToolService } from '../usecases/ToolService';
 import { appendMissingRevisionNextActions } from '../shared/tooling/revisionNextActions';
 import { recordTrace } from './trace';
@@ -24,15 +28,17 @@ const withViewportRefresh = <T>(ctx: ResponsePipelineContext<T>): ResponsePipeli
   } catch (err) {
     ctx.log.warn('viewport refresh dispatch failed', {
       tool: ctx.tool,
-      message: errorMessage(err, 'viewport refresh dispatch failed')
+      message: errorMessage(err, 'viewport refresh dispatch failed'),
     });
   }
   return ctx;
 };
 
-const withRevisionNextActions = <T>(ctx: ResponsePipelineContext<T>): ResponsePipelineContext<T> => ({
+const withRevisionNextActions = <T>(
+  ctx: ResponsePipelineContext<T>,
+): ResponsePipelineContext<T> => ({
   ...ctx,
-  response: appendMissingRevisionNextActions(ctx.tool, ctx.payload, ctx.response)
+  response: appendMissingRevisionNextActions(ctx.tool, ctx.payload, ctx.response),
 });
 
 const withTrace = <T>(ctx: ResponsePipelineContext<T>): ResponsePipelineContext<T> => {
@@ -44,8 +50,11 @@ export const runResponsePipeline = <T>(ctx: ResponsePipelineContext<T>): ToolRes
   const middlewares: Array<ResponseMiddleware<T>> = [
     withViewportRefresh,
     withRevisionNextActions,
-    withTrace
+    withTrace,
   ];
-  const finalCtx = middlewares.reduce<ResponsePipelineContext<T>>((next, middleware) => middleware(next), ctx);
+  const finalCtx = middlewares.reduce<ResponsePipelineContext<T>>(
+    (next, middleware) => middleware(next),
+    ctx,
+  );
   return finalCtx.response;
 };

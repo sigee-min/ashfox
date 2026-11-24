@@ -1,30 +1,21 @@
 import type {
   PaintMeshFacePayload,
-  PaintMeshFaceResult
+  PaintMeshFaceResult,
 } from '@ashfox/blockbench-contracts/types/internal';
 import {
   TEXTURE_MESH_FACE_NO_PAINTABLE_FACES,
   TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED,
   TEXTURE_MESH_FACE_TEXTURE_REQUIRED,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../../result';
 import { resolveMeshTarget } from '../../targetResolvers';
 import type { TextureToolContext } from '../context';
 import { mergeRects } from '../paintFacesPixels';
-import {
-  createMeshFacePaintApplicationPort,
-  summarizeMeshPaintPixels
-} from './apply';
-import {
-  resolveMeshPaintSourceSize,
-  validateMeshPaintGeometry
-} from './geometry';
+import { createMeshFacePaintApplicationPort, summarizeMeshPaintPixels } from './apply';
+import { resolveMeshPaintSourceSize, validateMeshPaintGeometry } from './geometry';
 import { rasterizeMeshFacePaint } from './raster';
-import {
-  normalizePaintMeshFaceRequest,
-  resolvePaintableMeshFaces
-} from './request';
+import { normalizePaintMeshFaceRequest, resolvePaintableMeshFaces } from './request';
 import { resolveMeshPaintTexture } from './texture';
 
 /**
@@ -33,7 +24,7 @@ import { resolveMeshPaintTexture } from './texture';
  */
 export const runPaintMeshFace = (
   ctx: TextureToolContext,
-  payload: PaintMeshFacePayload
+  payload: PaintMeshFacePayload,
 ): UsecaseResult<PaintMeshFaceResult> => {
   if (!ctx.textureRenderer) {
     return fail({ code: 'not_implemented', message: TEXTURE_RENDERER_UNAVAILABLE });
@@ -53,19 +44,21 @@ export const runPaintMeshFace = (
     {
       required: { message: TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED },
       idLabel: 'meshId',
-      nameLabel: 'meshName'
-    }
+      nameLabel: 'meshName',
+    },
   );
   if (mesh.error || !mesh.target) {
-    return fail(mesh.error ?? {
-      code: 'invalid_payload',
-      message: TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED
-    });
+    return fail(
+      mesh.error ?? {
+        code: 'invalid_payload',
+        message: TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED,
+      },
+    );
   }
   const faces = resolvePaintableMeshFaces(
     mesh.target,
     request.value.target.scope,
-    request.value.target.faceId
+    request.value.target.faceId,
   );
   if (!faces.ok) return fail(faces.error);
   const rects = faces.value.rects.map(({ rect }) => rect);
@@ -82,16 +75,10 @@ export const runPaintMeshFace = (
   if (!application) {
     return fail({ code: 'not_implemented', message: TEXTURE_RENDERER_UNAVAILABLE });
   }
-  const run = ctx.runWithoutRevisionGuard ??
-    ((work: () => UsecaseResult<PaintMeshFaceResult>) => work());
+  const run =
+    ctx.runWithoutRevisionGuard ?? ((work: () => UsecaseResult<PaintMeshFaceResult>) => work());
   return run(() => {
-    const texture = resolveMeshPaintTexture(
-      ctx,
-      payload,
-      snapshot,
-      payload.textureId,
-      textureName
-    );
+    const texture = resolveMeshPaintTexture(ctx, payload, snapshot, payload.textureId, textureName);
     if (!texture.ok) return fail(texture.error);
     const source = application.read(texture.value);
     if (!source.ok) return fail(source.error);
@@ -100,7 +87,7 @@ export const runPaintMeshFace = (
       payload,
       request.value.coordSpace,
       source.value,
-      faceBounds
+      faceBounds,
     );
     if (!sourceSize.ok) return fail(sourceSize.error);
     const geometry = validateMeshPaintGeometry(
@@ -108,7 +95,7 @@ export const runPaintMeshFace = (
       request.value.op,
       rects,
       faceBounds,
-      sourceSize.value
+      sourceSize.value,
     );
     if (!geometry.ok) return fail(geometry.error);
     const raster = rasterizeMeshFacePaint({
@@ -121,7 +108,7 @@ export const runPaintMeshFace = (
       op: request.value.op,
       coordSpace: request.value.coordSpace,
       mapping: request.value.mapping,
-      textureLabel: texture.value.name
+      textureLabel: texture.value.name,
     });
     if (!raster.ok) return fail(raster.error);
     const committed = application.commit(
@@ -129,7 +116,7 @@ export const runPaintMeshFace = (
       source.value,
       raster.value.pixels,
       raster.value.changedPixels,
-      summarizeMeshPaintPixels(source.value.pixels)
+      summarizeMeshPaintPixels(source.value.pixels),
     );
     if (!committed.ok) return fail(committed.error);
 
@@ -148,8 +135,8 @@ export const runPaintMeshFace = (
         coordSpace: request.value.coordSpace,
         width: sourceSize.value.sourceWidth,
         height: sourceSize.value.sourceHeight,
-        faceUv: [faceBounds.x1, faceBounds.y1, faceBounds.x2, faceBounds.y2]
-      }
+        faceUv: [faceBounds.x1, faceBounds.y1, faceBounds.x2, faceBounds.y2],
+      },
     };
     if (faces.value.skippedFaces.length > 0) {
       result.skippedFaces = [...faces.value.skippedFaces];
@@ -158,19 +145,8 @@ export const runPaintMeshFace = (
   });
 };
 
-export {
-  createMeshFacePaintApplicationPort,
-  summarizeMeshPaintPixels
-} from './apply';
-export {
-  resolveMeshPaintSourceSize,
-  validateMeshPaintGeometry
-} from './geometry';
-export {
-  rasterizeMeshFacePaint
-} from './raster';
-export {
-  normalizePaintMeshFaceRequest,
-  resolvePaintableMeshFaces
-} from './request';
+export { createMeshFacePaintApplicationPort, summarizeMeshPaintPixels } from './apply';
+export { resolveMeshPaintSourceSize, validateMeshPaintGeometry } from './geometry';
+export { rasterizeMeshFacePaint } from './raster';
+export { normalizePaintMeshFaceRequest, resolvePaintableMeshFaces } from './request';
 export { resolveMeshPaintTexture } from './texture';

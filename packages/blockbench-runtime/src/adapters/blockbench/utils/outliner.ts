@@ -17,7 +17,7 @@ export const moveOutlinerNode = (
   parent: OutlinerNode | null,
   outliner: OutlinerApi | undefined,
   log: Logger,
-  kind: 'bone' | 'cube' | 'mesh'
+  kind: 'bone' | 'cube' | 'mesh',
 ): boolean => {
   if (!node) return false;
   if (parent === node) return false;
@@ -27,7 +27,10 @@ export const moveOutlinerNode = (
   return attachToOutliner(parent, outliner, node, log, kind);
 };
 
-export const removeOutlinerNode = (node: OutlinerNode | null, outliner: OutlinerApi | undefined): boolean => {
+export const removeOutlinerNode = (
+  node: OutlinerNode | null,
+  outliner: OutlinerApi | undefined,
+): boolean => {
   if (!node) return false;
   if (typeof node.remove === 'function') {
     node.remove();
@@ -40,7 +43,10 @@ export const removeOutlinerNode = (node: OutlinerNode | null, outliner: Outliner
   return detachFromOutliner(node, outliner);
 };
 
-const detachFromOutliner = (node: OutlinerNode | null, outliner: OutlinerApi | undefined): boolean => {
+const detachFromOutliner = (
+  node: OutlinerNode | null,
+  outliner: OutlinerApi | undefined,
+): boolean => {
   if (!node) return false;
   const parent = node.parent ?? null;
   const root = outliner?.root;
@@ -55,7 +61,10 @@ const detachFromOutliner = (node: OutlinerNode | null, outliner: OutlinerApi | u
   return removed;
 };
 
-const removeNodeFromCollection = (collection: OutlinerNode[] | undefined, node: OutlinerNode): boolean => {
+const removeNodeFromCollection = (
+  collection: OutlinerNode[] | undefined,
+  node: OutlinerNode,
+): boolean => {
   if (!Array.isArray(collection)) return false;
   const idx = collection.indexOf(node);
   if (idx < 0) return false;
@@ -68,7 +77,7 @@ export const attachToOutliner = (
   outliner: OutlinerApi | undefined,
   node: OutlinerNode,
   log: Logger,
-  kind: 'bone' | 'cube' | 'mesh'
+  kind: 'bone' | 'cube' | 'mesh',
 ): boolean => {
   if (!parent && isNodeInOutlinerRoot(outliner, node)) return true;
 
@@ -104,7 +113,10 @@ const isNodeInParent = (parent: OutlinerNode | null, node: OutlinerNode | null):
   return Array.isArray(parent.children) && parent.children.includes(node);
 };
 
-const isNodeInOutlinerRoot = (outliner: OutlinerApi | undefined, node: OutlinerNode | null): boolean => {
+const isNodeInOutlinerRoot = (
+  outliner: OutlinerApi | undefined,
+  node: OutlinerNode | null,
+): boolean => {
   if (!outliner || !node) return false;
   const root = outliner.root;
   if (Array.isArray(root) && root.includes(node)) return true;

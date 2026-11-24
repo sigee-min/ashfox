@@ -63,7 +63,7 @@ const sanitizeForLogging = (
   key: string,
   value: unknown,
   depth: number,
-  seen: WeakSet<object>
+  seen: WeakSet<object>,
 ): unknown => {
   const normalizedKey = key || '(root)';
   if (normalizedKey.toLowerCase() === 'data' && typeof value === 'string') {
@@ -83,7 +83,7 @@ const sanitizeForLogging = (
     return {
       name: value.name,
       message: value.message,
-      stack: value.stack
+      stack: value.stack,
     };
   }
 
@@ -186,5 +186,3 @@ export class ConsoleLogger implements Logger {
     return order.indexOf(level) >= order.indexOf(minLevel);
   }
 }
-
-

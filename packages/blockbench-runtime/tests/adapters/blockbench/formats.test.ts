@@ -15,7 +15,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const before = {
     Formats: globals.Formats,
     ModelFormat: globals.ModelFormat,
-    Format: globals.Format
+    Format: globals.Format,
   };
   globals.Formats = overrides.Formats;
   globals.ModelFormat = overrides.ModelFormat;
@@ -47,11 +47,11 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
           single_texture: true,
           per_texture_uv_size: false,
           animation_mode: true,
-          bone_rig: true
+          bone_rig: true,
         },
-        java_block: {}
+        java_block: {},
       },
-      Format: { id: 'geckolib' }
+      Format: { id: 'geckolib' },
     },
     () => {
       const formats = adapter.listFormats();
@@ -62,11 +62,11 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         singleTexture: true,
         perTextureUvSize: false,
         animationMode: true,
-        boneRig: true
+        boneRig: true,
       });
       assert.deepEqual(formats[1], { id: 'java_block', name: 'java_block' });
       assert.equal(adapter.getActiveFormatId(), 'geckolib');
-    }
+    },
   );
 }
 
@@ -76,17 +76,21 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     {
       ModelFormat: {
         formats: {
-          animated_java: { name: 'Animated Java', single_texture: false }
+          animated_java: { name: 'Animated Java', single_texture: false },
         },
-        selected: { id: 'animated_java' }
-      }
+        selected: { id: 'animated_java' },
+      },
     },
     () => {
       const formats = adapter.listFormats();
       assert.equal(formats.length, 1);
-      assert.deepEqual(formats[0], { id: 'animated_java', name: 'Animated Java', singleTexture: false });
+      assert.deepEqual(formats[0], {
+        id: 'animated_java',
+        name: 'Animated Java',
+        singleTexture: false,
+      });
       assert.equal(adapter.getActiveFormatId(), 'animated_java');
-    }
+    },
   );
 }
 
@@ -102,10 +106,10 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
           bone_rig: true,
           animation_mode: true,
           optional_box_uv: true,
-          uv_rotation: true
-        }
+          uv_rotation: true,
+        },
       },
-      Format: { id: 'free' }
+      Format: { id: 'free' },
     },
     () => {
       const formats = adapter.listFormats();
@@ -118,9 +122,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         animationMode: true,
         boneRig: true,
         armatureRig: true,
-        meshes: true
+        meshes: true,
       });
       assert.equal(adapter.getActiveFormatId(), 'free');
-    }
+    },
   );
 }

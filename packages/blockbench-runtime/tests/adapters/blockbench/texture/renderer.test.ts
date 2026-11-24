@@ -7,8 +7,19 @@ type MockCtx = {
   createImageData: (width: number, height: number) => { data: Uint8ClampedArray };
   putImageData: (data: { data: Uint8ClampedArray }, x: number, y: number) => void;
   clearRect: (x: number, y: number, width: number, height: number) => void;
-  drawImage: (image: CanvasImageSource, x: number, y: number, width: number, height: number) => void;
-  getImageData: (x: number, y: number, width: number, height: number) => { data: Uint8ClampedArray };
+  drawImage: (
+    image: CanvasImageSource,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => void;
+  getImageData: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => { data: Uint8ClampedArray };
 };
 
 type TestGlobals = {
@@ -20,7 +31,7 @@ const getGlobals = (): TestGlobals => globalThis as unknown as TestGlobals;
 const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const globals = getGlobals();
   const before = {
-    document: globals.document
+    document: globals.document,
   };
   globals.document = overrides.document;
   try {
@@ -33,7 +44,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
 const createCanvas = (ctx: MockCtx | null) => ({
   width: 0,
   height: 0,
-  getContext: (kind: string) => (kind === '2d' ? ctx : null)
+  getContext: (kind: string) => (kind === '2d' ? ctx : null),
 });
 
 {
@@ -42,7 +53,7 @@ const createCanvas = (ctx: MockCtx | null) => ({
     const result = renderer.renderPixels({
       width: 1,
       height: 1,
-      data: new Uint8ClampedArray([255, 0, 0, 255])
+      data: new Uint8ClampedArray([255, 0, 0, 255]),
     });
     assert.equal(result.error?.code, 'not_implemented');
   });
@@ -53,17 +64,17 @@ const createCanvas = (ctx: MockCtx | null) => ({
   withGlobals(
     {
       document: {
-        createElement: () => null
-      }
+        createElement: () => null,
+      },
     },
     () => {
       const result = renderer.renderPixels({
         width: 1,
         height: 1,
-        data: new Uint8ClampedArray([255, 0, 0, 255])
+        data: new Uint8ClampedArray([255, 0, 0, 255]),
       });
       assert.equal(result.error?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -72,17 +83,17 @@ const createCanvas = (ctx: MockCtx | null) => ({
   withGlobals(
     {
       document: {
-        createElement: () => createCanvas(null)
-      }
+        createElement: () => createCanvas(null),
+      },
     },
     () => {
       const result = renderer.renderPixels({
         width: 1,
         height: 1,
-        data: new Uint8ClampedArray([255, 0, 0, 255])
+        data: new Uint8ClampedArray([255, 0, 0, 255]),
       });
       assert.equal(result.error?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -99,25 +110,25 @@ const createCanvas = (ctx: MockCtx | null) => ({
     },
     clearRect: () => undefined,
     drawImage: () => undefined,
-    getImageData: () => ({ data: new Uint8ClampedArray([9, 8, 7, 6]) })
+    getImageData: () => ({ data: new Uint8ClampedArray([9, 8, 7, 6]) }),
   };
   withGlobals(
     {
       document: {
-        createElement: () => createCanvas(ctx)
-      }
+        createElement: () => createCanvas(ctx),
+      },
     },
     () => {
       const result = renderer.renderPixels({
         width: 1,
         height: 1,
-        data: new Uint8ClampedArray([123, 0, 0, 255])
+        data: new Uint8ClampedArray([123, 0, 0, 255]),
       });
       assert.equal(result.error, undefined);
       assert.equal(result.result?.width, 1);
       assert.equal(result.result?.height, 1);
       assert.ok(result.result?.image);
-    }
+    },
   );
   assert.equal(putCalls, 1);
   assert.equal(lastWritten, 123);
@@ -128,20 +139,21 @@ const createCanvas = (ctx: MockCtx | null) => ({
   withGlobals(
     {
       document: {
-        createElement: () => createCanvas({
-          imageSmoothingEnabled: true,
-          createImageData: () => ({ data: new Uint8ClampedArray(0) }),
-          putImageData: () => undefined,
-          clearRect: () => undefined,
-          drawImage: () => undefined,
-          getImageData: () => ({ data: new Uint8ClampedArray(0) })
-        })
-      }
+        createElement: () =>
+          createCanvas({
+            imageSmoothingEnabled: true,
+            createImageData: () => ({ data: new Uint8ClampedArray(0) }),
+            putImageData: () => undefined,
+            clearRect: () => undefined,
+            drawImage: () => undefined,
+            getImageData: () => ({ data: new Uint8ClampedArray(0) }),
+          }),
+      },
     },
     () => {
       const result = renderer.readPixels({ image: {} as CanvasImageSource, width: 0, height: 8 });
       assert.equal(result.error?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -159,13 +171,13 @@ const createCanvas = (ctx: MockCtx | null) => ({
     drawImage: () => {
       drawCalls += 1;
     },
-    getImageData: () => ({ data: new Uint8ClampedArray([1, 2, 3, 4]) })
+    getImageData: () => ({ data: new Uint8ClampedArray([1, 2, 3, 4]) }),
   };
   withGlobals(
     {
       document: {
-        createElement: () => createCanvas(ctx)
-      }
+        createElement: () => createCanvas(ctx),
+      },
     },
     () => {
       const result = renderer.readPixels({ image: {} as CanvasImageSource, width: 1, height: 1 });
@@ -173,7 +185,7 @@ const createCanvas = (ctx: MockCtx | null) => ({
       assert.equal(result.result?.width, 1);
       assert.equal(result.result?.height, 1);
       assert.deepEqual(Array.from(result.result?.data ?? []), [1, 2, 3, 4]);
-    }
+    },
   );
   assert.equal(drawCalls, 1);
   assert.equal(clearCalls, 1);

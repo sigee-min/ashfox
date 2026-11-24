@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 
 import type { EditorPort } from '../../../../src/ports/editor';
 import type { TextureRendererPort } from '../../../../src/ports/textureRenderer';
-import type { Capabilities, PreflightTextureResult, TextureUsageResult } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  Capabilities,
+  PreflightTextureResult,
+  TextureUsageResult,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { DEFAULT_ANIMATION_TIME_POLICY } from '../../../../src/domain/animation/timePolicy';
 import { DEFAULT_UV_POLICY } from '../../../../src/domain/uv/policy';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
@@ -16,8 +20,10 @@ import {
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
-  formats: [{ format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } }],
-  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  formats: [
+    { format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } },
+  ],
+  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const createOpaque = (width: number, height: number): Uint8ClampedArray => {
@@ -38,9 +44,9 @@ const createUsage = (): TextureUsageResult => ({
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: 'cube1', name: 'body', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-    }
-  ]
+      cubes: [{ id: 'cube1', name: 'body', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+    },
+  ],
 });
 
 const createContext = (options?: {
@@ -58,14 +64,14 @@ const createContext = (options?: {
   const editor = {
     readTexture: () => ({ result: { id: 'tex1', name: 'atlas', width, height, image } }),
     getProjectTextureResolution: () => ({ width, height }),
-    getTextureUsage: () => ({ result: usage })
+    getTextureUsage: () => ({ result: usage }),
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
     readPixels: () => ({ result: { width, height, data: createOpaque(width, height) } }),
     renderPixels: ({ width: renderWidth, height: renderHeight }) => ({
-      result: { image, width: renderWidth, height: renderHeight }
-    })
+      result: { image, width: renderWidth, height: renderHeight },
+    }),
   };
 
   const ctx: TextureToolContext = {
@@ -83,7 +89,7 @@ const createContext = (options?: {
       textures: [{ id: 'tex1', name: 'atlas', width, height }],
       animations: [],
       animationsStatus: 'available',
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -97,16 +103,15 @@ const createContext = (options?: {
     assignTexture: () => ({ ok: true, value: { textureName: 'atlas', cubeCount: 1 } }),
     preflightTexture: () => ({
       ok: true,
-      value:
-        options?.preflight ?? {
-          uvUsageId: '',
-          usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 1, unresolvedCount: 0 },
-          warningCodes: [],
-          textureUsage: usage
-        }
+      value: options?.preflight ?? {
+        uvUsageId: '',
+        usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 1, unresolvedCount: 0 },
+        warningCodes: [],
+        textureUsage: usage,
+      },
     }),
     autoUvAtlas: options?.autoUvAtlas,
-    runWithoutRevisionGuard: (fn) => fn()
+    runWithoutRevisionGuard: (fn) => fn(),
   };
 
   return { ctx, getUpdateCalls: () => updateCalls };
@@ -116,7 +121,7 @@ const createContext = (options?: {
   const { ctx, getUpdateCalls } = createContext({ projectName: null });
   const res = runPaintFaces(ctx, {
     target: { cubeName: 'body', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -133,8 +138,8 @@ const createContext = (options?: {
     {
       textureName: 'atlas',
       target: { cubeName: 'body', face: 'north' },
-      op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
-    }
+      op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -148,7 +153,7 @@ const createContext = (options?: {
   const res = runPaintFaces(ctx, {
     textureName: 'atlas',
     target: { cubeName: 'body', face: 'north' },
-    op: null as unknown as never
+    op: null as unknown as never,
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -163,7 +168,7 @@ const createContext = (options?: {
     textureName: 'atlas',
     target: { cubeName: 'body', face: 'north' },
     coordSpace: 'invalid' as unknown as 'face',
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -177,13 +182,13 @@ const createContext = (options?: {
     preflight: {
       uvUsageId: '',
       usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 1, unresolvedCount: 0 },
-      warningCodes: []
-    }
+      warningCodes: [],
+    },
   });
   const res = runPaintFaces(ctx, {
     textureName: 'atlas',
     target: { cubeName: 'body', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
   });
   assert.equal(res.ok, true);
   assert.equal(getUpdateCalls(), 1);
@@ -195,13 +200,13 @@ const createContext = (options?: {
       uvUsageId: 'wrong-usage-id',
       usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 1, unresolvedCount: 0 },
       warningCodes: [],
-      textureUsage: createUsage()
-    }
+      textureUsage: createUsage(),
+    },
   });
   const res = runPaintFaces(ctx, {
     textureName: 'atlas',
     target: { cubeName: 'body', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {

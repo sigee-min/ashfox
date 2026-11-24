@@ -1,7 +1,12 @@
 import type { Snapshot, TextureUsage, ValidationFinding } from '../model';
 import type { ValidationMessages } from './types';
 import type { UvPolicyConfig } from '../uv/policy';
-import { computeUvOverlapIssues, computeUvScaleIssues, formatOverlapExample, formatScaleExample } from '../uv/issues';
+import {
+  computeUvOverlapIssues,
+  computeUvScaleIssues,
+  formatOverlapExample,
+  formatScaleExample,
+} from '../uv/issues';
 
 export const collectUvFindings = (args: {
   state: Snapshot;
@@ -22,7 +27,7 @@ export const collectUvFindings = (args: {
       findings.push({
         code: 'uv_out_of_bounds',
         message: args.messages.uvOutOfBounds(cube.name, u, v, width, height),
-        severity: 'warning'
+        severity: 'warning',
       });
     }
   });
@@ -32,7 +37,7 @@ export const collectUvFindings = (args: {
     findings.push({
       code: 'texture_unresolved_refs',
       message: args.messages.textureUnresolvedRefs(unresolvedCount),
-      severity: 'warning'
+      severity: 'warning',
     });
   }
   textureUsage.textures.forEach((entry) => {
@@ -40,7 +45,7 @@ export const collectUvFindings = (args: {
       findings.push({
         code: 'texture_unassigned',
         message: args.messages.textureUnassigned(entry.name),
-        severity: 'warning'
+        severity: 'warning',
       });
     }
   });
@@ -53,8 +58,17 @@ export const collectUvFindings = (args: {
         if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
           findings.push({
             code: 'face_uv_out_of_bounds',
-            message: args.messages.faceUvOutOfBounds(cube.name, face.face, width, height, x1, y1, x2, y2),
-            severity: 'warning'
+            message: args.messages.faceUvOutOfBounds(
+              cube.name,
+              face.face,
+              width,
+              height,
+              x1,
+              y1,
+              x2,
+              y2,
+            ),
+            severity: 'warning',
           });
         }
       });
@@ -67,25 +81,33 @@ export const collectUvFindings = (args: {
     findings.push({
       code: 'uv_overlap',
       message: args.messages.uvOverlap(overlap.textureName, overlap.conflictCount, example),
-      severity: 'error'
+      severity: 'error',
     });
   });
 
   if (args.uvPolicy) {
-    const scaleResult = computeUvScaleIssues(textureUsage, args.state.cubes, { width, height }, args.uvPolicy);
+    const scaleResult = computeUvScaleIssues(
+      textureUsage,
+      args.state.cubes,
+      { width, height },
+      args.uvPolicy,
+    );
     scaleResult.issues.forEach((issue) => {
       const example = issue.example ? ` Example: ${formatScaleExample(issue.example)}.` : '';
       findings.push({
         code: 'uv_scale_mismatch',
         message: args.messages.uvScaleMismatch(issue.textureName, issue.mismatchCount, example),
-        severity: 'error'
+        severity: 'error',
       });
     });
     if (scaleResult.mismatchedFaces > 0) {
       findings.push({
         code: 'uv_scale_mismatch_summary',
-        message: args.messages.uvScaleMismatchSummary(scaleResult.mismatchedFaces, scaleResult.totalFaces),
-        severity: 'info'
+        message: args.messages.uvScaleMismatchSummary(
+          scaleResult.mismatchedFaces,
+          scaleResult.totalFaces,
+        ),
+        severity: 'info',
       });
     }
   }

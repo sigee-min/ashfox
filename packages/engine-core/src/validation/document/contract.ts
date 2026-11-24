@@ -9,7 +9,7 @@ import {
   expectFiniteNumber,
   expectString,
   reject,
-  type ContractContext
+  type ContractContext,
 } from './shared';
 import { validateTextures } from './textures';
 import type { FindingSink } from '../contract';
@@ -17,27 +17,40 @@ import type { FindingSink } from '../contract';
 /** Structural guard for the current-only ProjectDocument wire contract. */
 export const validateProjectDocumentContract = (
   value: unknown,
-  add: FindingSink
+  add: FindingSink,
 ): value is ProjectDocument => {
   const context: ContractContext = { add, valid: true };
   const record = closedRecord(
     value,
     '',
     [
-      'schemaVersion', 'id', 'name', 'revision', 'settings', 'scene',
-      'textures', 'animations', 'createdAt', 'updatedAt'
+      'schemaVersion',
+      'id',
+      'name',
+      'revision',
+      'settings',
+      'scene',
+      'textures',
+      'animations',
+      'createdAt',
+      'updatedAt',
     ],
     [],
-    context
+    context,
   );
   if (!record) return false;
   expectFiniteNumber(record.schemaVersion, 'schemaVersion', context);
   expectString(record.id, 'id', context);
   expectString(record.name, 'name', context);
   expectString(record.revision, 'revision', context);
-  for (const key of ['createdAt', 'updatedAt'] as const) if (!isCanonicalIsoDate(
-    record[key])) reject(context, key,
-    `${key} must be a canonical UTC ISO timestamp.`, 'document.invalid_timestamp');
+  for (const key of ['createdAt', 'updatedAt'] as const)
+    if (!isCanonicalIsoDate(record[key]))
+      reject(
+        context,
+        key,
+        `${key} must be a canonical UTC ISO timestamp.`,
+        'document.invalid_timestamp',
+      );
   validateSettings(record.settings, context);
   validateScene(record.scene, context);
   validateTextures(record.textures, context);

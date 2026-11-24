@@ -34,13 +34,16 @@ export const compileBundle = async (
     assets: CatalogAsset[] = [];
   const entryKey = (entry: { readonly packageName: string; readonly entryName: string }) =>
     JSON.stringify([entry.packageName, entry.entryName]);
-  const products = new Map(compiled.products.map(product => [entryKey(product.entry), product]));
+  const products = new Map(compiled.products.map((product) => [entryKey(product.entry), product]));
   const remaining = new Map<string, number>();
   for (const target of compiled.config.exports) {
     const key = entryKey(target.entry);
     remaining.set(key, (remaining.get(key) ?? 0) + 1);
   }
-  const projects = new Map<string, Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>>();
+  const projects = new Map<
+    string,
+    Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>
+  >();
   for (const target of [...compiled.config.exports].sort((a, b) => (a.name < b.name ? -1 : 1))) {
     const key = entryKey(target.entry);
     const product = products.get(key);
@@ -49,15 +52,23 @@ export const compileBundle = async (
     if (product.kind === 'sprite')
       files.push({ path: `${target.name}.png`, bytes: product.sprite.png });
     else if (product.kind === 'model') {
-      const opened = projects.get(key) ?? openAssetProject({
-        workspace: product.workspace,
-        entry: product.entry,
-        identity: { id: 'cli', revision: compiled.buildKey, createdAt: '2000-01-01T00:00:00.000Z' },
-      });
+      const opened =
+        projects.get(key) ??
+        openAssetProject({
+          workspace: product.workspace,
+          entry: product.entry,
+          identity: {
+            id: 'cli',
+            revision: compiled.buildKey,
+            createdAt: '2000-01-01T00:00:00.000Z',
+          },
+        });
       if (!opened.ok) throw new BuildFailure('export.project', JSON.stringify(opened));
       if ((remaining.get(key) ?? 0) > 1) projects.set(key, opened);
       const document = opened.project.document;
-      const textures = new Map(Object.values(document.textures).map(texture => [texture.source.key, texture]));
+      const textures = new Map(
+        Object.values(document.textures).map((texture) => [texture.source.key, texture]),
+      );
       if (target.format === 'png' || target.format === 'wav')
         throw new BuildFailure('export.format', target.name);
       const adapter: ExportAdapterInput =
@@ -67,8 +78,12 @@ export const compileBundle = async (
       const bundle = await exportProductionProjectResolved(opened.project, adapter, {
         resolveBlob: async (ref) => {
           const texture = textures.get(ref.key);
-          return texture ? { bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
-            contentType: 'image/png' } : null;
+          return texture
+            ? {
+                bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
+                contentType: 'image/png',
+              }
+            : null;
         },
         ...(target.format === 'glb' ? { encoding: target.encoding ?? 'portable' } : {}),
       });
@@ -111,8 +126,11 @@ export const compileBundle = async (
                 sampleRate: sound.sampleRate,
                 channels: sound.channels,
                 playback: sound.playback,
-                peak: sound.peak, rms: sound.rms, dc: sound.dc,
-                seamDelta: sound.seamDelta, maxAdjacentDelta: sound.maxAdjacentDelta,
+                peak: sound.peak,
+                rms: sound.rms,
+                dc: sound.dc,
+                seamDelta: sound.seamDelta,
+                maxAdjacentDelta: sound.maxAdjacentDelta,
               })),
             };
     assets.push({

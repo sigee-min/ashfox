@@ -5,12 +5,10 @@ import { validateSceneOcclusion } from '../scene/occlusion';
 import { validateScene } from '../scene/validate';
 import { validateTextures } from '../texture/validate';
 import { validateDocument } from './authority';
-import type {
-  ValidationReport
-} from '../contract';
+import type { ValidationReport } from '../contract';
 
 const sortedByPathAndCode = (
-  findings: ValidationReport['findings']
+  findings: ValidationReport['findings'],
 ): ValidationReport['findings'] =>
   [...findings].sort((left, right) => {
     const pathOrder = left.path.localeCompare(right.path);
@@ -18,9 +16,7 @@ const sortedByPathAndCode = (
     return left.code.localeCompare(right.code);
   });
 
-const validateProjectDocumentWithCandidate = (
-  value: unknown
-): ValidationReport => {
+const validateProjectDocumentWithCandidate = (value: unknown): ValidationReport => {
   const context = createValidationContext();
   if (validateProjectDocumentContract(value, context.add)) {
     validateDocument(value, context.add);
@@ -33,11 +29,10 @@ const validateProjectDocumentWithCandidate = (
   const findings = sortedByPathAndCode(context.findings);
   return {
     valid: !findings.some((finding) => finding.severity === 'error'),
-    findings
+    findings,
   };
 };
 
 /** Validate one derived canonical document without consulting workspace source. */
-export const validateProjectDocument = (
-  value: unknown
-): ValidationReport => validateProjectDocumentWithCandidate(value);
+export const validateProjectDocument = (value: unknown): ValidationReport =>
+  validateProjectDocumentWithCandidate(value);

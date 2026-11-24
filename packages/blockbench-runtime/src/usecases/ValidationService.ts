@@ -3,7 +3,12 @@ import type { EditorPort } from '../ports/editor';
 import type { ProjectSession } from '../session';
 import { ok, UsecaseResult } from './result';
 import { validateSnapshot } from '../domain/validation';
-import { toDomainSnapshot, toDomainTextureResolution, toDomainTextureStats, toDomainTextureUsage } from './domainMappers';
+import {
+  toDomainSnapshot,
+  toDomainTextureResolution,
+  toDomainTextureStats,
+  toDomainTextureUsage,
+} from './domainMappers';
 import type { UvPolicyConfig } from '../domain/uv/policy';
 import { withActiveOnly } from './guards';
 import { buildValidationMessages } from '../shared/messages';
@@ -33,13 +38,19 @@ export class ValidationService {
     this.getUvPolicyConfig = deps.getUvPolicyConfig;
   }
 
-  validate(): UsecaseResult<{ findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[] }> {
+  validate(): UsecaseResult<{
+    findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[];
+  }> {
     return withActiveOnly(this.ensureActive, () => {
       const snapshot = toDomainSnapshot(this.getSnapshot());
       const textures = toDomainTextureStats(this.editor.listTextures());
-      const textureResolution = toDomainTextureResolution(this.editor.getProjectTextureResolution());
+      const textureResolution = toDomainTextureResolution(
+        this.editor.getProjectTextureResolution(),
+      );
       const usage = this.editor.getTextureUsage({});
-      const usageDomain = usage.error ? undefined : toDomainTextureUsage(usage.result ?? { textures: [] });
+      const usageDomain = usage.error
+        ? undefined
+        : toDomainTextureUsage(usage.result ?? { textures: [] });
       const findings = validateSnapshot(
         snapshot,
         {
@@ -47,15 +58,11 @@ export class ValidationService {
           textures,
           textureResolution,
           textureUsage: usageDomain,
-          uvPolicy: this.getUvPolicyConfig()
+          uvPolicy: this.getUvPolicyConfig(),
         },
-        validationMessages
+        validationMessages,
       );
       return ok({ findings });
     });
   }
 }
-
-
-
-

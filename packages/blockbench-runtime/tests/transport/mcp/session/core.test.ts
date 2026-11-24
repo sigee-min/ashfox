@@ -9,7 +9,7 @@ const session = sessions.create('s1', '2025-06-18');
 session.sseConnections.add({
   send: () => undefined,
   close: () => undefined,
-  isClosed: () => true
+  isClosed: () => true,
 });
 
 // Force staleness.
@@ -17,4 +17,3 @@ session.lastSeenAt = 0;
 const removed = sessions.pruneStale(1, 10);
 assert.equal(removed, 1);
 assert.equal(sessions.get('s1'), null);
-

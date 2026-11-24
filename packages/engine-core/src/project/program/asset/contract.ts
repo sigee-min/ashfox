@@ -1,7 +1,4 @@
-import type {
-  ProgramExpr,
-  ProgramTextureDecl
-} from '../syntax/contract';
+import type { ProgramExpr, ProgramTextureDecl } from '../syntax/contract';
 import type { SourceDiagnostic, SourceSpan } from '../../source/contract';
 
 /** The asset language keeps the versioned header while using a package-aware
@@ -211,7 +208,8 @@ export interface AssetGeometryBlock {
   readonly span: SourceSpan;
 }
 
-export type AssetGeometryStatement = AssetGeometryProperty | AssetGeometrySurfaceBind | AssetGeometryBlock;
+export type AssetGeometryStatement =
+  AssetGeometryProperty | AssetGeometrySurfaceBind | AssetGeometryBlock;
 
 export interface AssetGeometryPayload {
   readonly kind: 'geometry';
@@ -339,9 +337,16 @@ export interface AssetDesignDecl {
   readonly span: SourceSpan;
 }
 
-export type AssetDeclaration = AssetDesignDecl | AssetSocketContractDecl | AssetRigContractDecl |
-  AssetSkeletonDecl | AssetSurfaceContractDecl | AssetSurfaceDecl |
-  AssetComponentDecl | AssetMotionDecl | AssetAssemblyDecl;
+export type AssetDeclaration =
+  | AssetDesignDecl
+  | AssetSocketContractDecl
+  | AssetRigContractDecl
+  | AssetSkeletonDecl
+  | AssetSurfaceContractDecl
+  | AssetSurfaceDecl
+  | AssetComponentDecl
+  | AssetMotionDecl
+  | AssetAssemblyDecl;
 
 export interface AssetModuleUnit {
   readonly kind: 'module';

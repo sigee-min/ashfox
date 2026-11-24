@@ -17,17 +17,27 @@ const crc = (bytes: Uint8Array): number => {
   let value = 0xffffffff;
   for (const byte of bytes) {
     value ^= byte;
-    for (let bit = 0; bit < 8; bit++) value = (value >>> 1) ^ ((value & 1) ? 0xedb88320 : 0);
+    for (let bit = 0; bit < 8; bit++) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
   }
   return (value ^ 0xffffffff) >>> 0;
 };
 for (const [width, height, expectedHash] of cases) {
   const raster = rasterizeCanonicalTexture(width, height, {
-    background: '#81a5f9', backgroundAlpha: 255,
+    background: '#81a5f9',
+    backgroundAlpha: 255,
     canvasDetails: [
       { id: 'stripe', x: 0, y: 0, width: Math.min(3, width), height, color: '#ff0011', alpha: 255 },
-      { id: 'corner', x: width - 1, y: height - 1, width: 1, height: 1, color: '#123456', alpha: 0 }
-    ], alphaMasks: []
+      {
+        id: 'corner',
+        x: width - 1,
+        y: height - 1,
+        width: 1,
+        height: 1,
+        color: '#123456',
+        alpha: 0,
+      },
+    ],
+    alphaMasks: [],
   });
   const png = encodeCanonicalPng(raster);
   assert.equal(createHash('sha256').update(png).digest('hex'), expectedHash);
@@ -40,23 +50,31 @@ for (const [width, height, expectedHash] of cases) {
     const type = String.fromCharCode(...png.subarray(offset + 4, offset + 8));
     const data = png.subarray(offset + 8, offset + 8 + length);
     types.push(type);
-    assert.equal(view.getUint32(offset + 8 + length), crc(png.subarray(offset + 4, offset + 8 + length)));
+    assert.equal(
+      view.getUint32(offset + 8 + length),
+      crc(png.subarray(offset + 4, offset + 8 + length)),
+    );
     if (type === 'IHDR') {
       assert.equal(view.getUint32(offset + 8), width);
       assert.equal(view.getUint32(offset + 12), height);
     }
     if (type === 'IDAT') {
       const raw = inflateSync(data); // Independently checks DEFLATE framing and Adler-32.
-      const stride = width * 4 + 1, rgba = raster.rgba.copy();
+      const stride = width * 4 + 1,
+        rgba = raster.rgba.copy();
       assert.equal(raw.length, stride * height);
       for (let row = 0; row < height; row++) {
         assert.equal(raw[row * stride], 0);
-        assert.deepEqual(new Uint8Array(raw.subarray(row * stride + 1, (row + 1) * stride)),
-          rgba.subarray(row * width * 4, (row + 1) * width * 4));
+        assert.deepEqual(
+          new Uint8Array(raw.subarray(row * stride + 1, (row + 1) * stride)),
+          rgba.subarray(row * width * 4, (row + 1) * width * 4),
+        );
       }
-      let block = 2, written = 0;
+      let block = 2,
+        written = 0;
       while (block < data.length - 4) {
-        const final = data[block]!, length = data[block + 1]! | (data[block + 2]! << 8);
+        const final = data[block]!,
+          length = data[block + 1]! | (data[block + 2]! << 8);
         const complement = data[block + 3]! | (data[block + 4]! << 8);
         assert.equal(length ^ complement, 65535);
         written += length;
@@ -72,4 +90,6 @@ for (const [width, height, expectedHash] of cases) {
   assert.equal(offset, png.length);
   assert.deepEqual(types, ['IHDR', 'IDAT', 'IEND']);
 }
-console.log('canonical PNG: original bytes, independent inflate/CRC, row and stored-block boundaries pass');
+console.log(
+  'canonical PNG: original bytes, independent inflate/CRC, row and stored-block boundaries pass',
+);

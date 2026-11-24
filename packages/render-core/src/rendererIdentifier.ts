@@ -6,5 +6,4 @@ import * as THREE from 'three';
  * the persistence validator; no deployment-specific or synthetic build value
  * is substituted here.
  */
-export const VISUAL_REVIEW_RENDERER_IDENTIFIER =
-  `three:r${THREE.REVISION}`;
+export const VISUAL_REVIEW_RENDERER_IDENTIFIER = `three:r${THREE.REVISION}`;

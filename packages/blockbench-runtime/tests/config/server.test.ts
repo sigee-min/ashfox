@@ -2,31 +2,32 @@ import assert from 'node:assert/strict';
 
 import { validateServerConfig } from '../../src/serverConfig';
 
-for (const host of [
-  'localhost',
-  '127.0.0.1',
-  '127.12.34.56',
-  '::1',
-  '[::1]',
-  '0:0:0:0:0:0:0:1'
-]) {
-  assert.equal(validateServerConfig({
+for (const host of ['localhost', '127.0.0.1', '127.12.34.56', '::1', '[::1]', '0:0:0:0:0:0:0:1']) {
+  assert.equal(
+    validateServerConfig({
+      host,
+      port: 8787,
+      path: '/mcp',
+    }).ok,
+    true,
     host,
-    port: 8787,
-    path: '/mcp'
-  }).ok, true, host);
+  );
 }
 
 for (const host of ['0.0.0.0', '192.168.1.20', 'example.test', '::']) {
   const rejected = validateServerConfig({ host, port: 8787, path: '/mcp' });
   assert.equal(rejected.ok, false, host);
   if (!rejected.ok) assert.equal(rejected.reason, 'non_loopback_token_required', host);
-  assert.equal(validateServerConfig({
+  assert.equal(
+    validateServerConfig({
+      host,
+      port: 8787,
+      path: '/mcp',
+      token: 'explicit-secret',
+    }).ok,
+    true,
     host,
-    port: 8787,
-    path: '/mcp',
-    token: 'explicit-secret'
-  }).ok, true, host);
+  );
 }
 
 {
@@ -34,7 +35,7 @@ for (const host of ['0.0.0.0', '192.168.1.20', 'example.test', '::']) {
     host: ' 0.0.0.0 ',
     port: 8787,
     path: ' mcp/ ',
-    token: ' explicit-secret '
+    token: ' explicit-secret ',
   });
   assert.equal(result.ok, true);
   if (result.ok) {
@@ -42,7 +43,7 @@ for (const host of ['0.0.0.0', '192.168.1.20', 'example.test', '::']) {
       host: '0.0.0.0',
       port: 8787,
       path: '/mcp',
-      token: 'explicit-secret'
+      token: 'explicit-secret',
     });
   }
 }

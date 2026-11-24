@@ -1,5 +1,8 @@
 import { errorMessage, type Logger } from '../../../logging';
-import type { ViewportRefresherPort, ViewportRefreshRequest } from '../../../ports/viewportRefresher';
+import type {
+  ViewportRefresherPort,
+  ViewportRefreshRequest,
+} from '../../../ports/viewportRefresher';
 import { readGlobals } from '../blockbenchUtils';
 import { reevaluateAnimation } from './animationRefresh';
 import { invalidateCanvas } from './canvasRefresh';
@@ -27,7 +30,7 @@ export class BlockbenchViewportRefresher implements ViewportRefresherPort {
       this.log.warn('viewport refresh failed', {
         source: request.source,
         effect: request.effect,
-        message: errorMessage(err, 'viewport refresh failed')
+        message: errorMessage(err, 'viewport refresh failed'),
       });
     }
   }

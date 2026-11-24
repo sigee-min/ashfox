@@ -23,7 +23,7 @@ import { resolveSidecarServerConfig } from '../../src/sidecar/cliConfig';
     '--path',
     'agent/',
     '--token',
-    ' explicit-secret '
+    ' explicit-secret ',
   ]);
   assert.equal(result.ok, true);
   if (result.ok) {
@@ -31,7 +31,7 @@ import { resolveSidecarServerConfig } from '../../src/sidecar/cliConfig';
       host: '0.0.0.0',
       port: 9444,
       path: '/agent',
-      token: 'explicit-secret'
+      token: 'explicit-secret',
     });
   }
 }
@@ -43,13 +43,7 @@ for (const port of ['8787garbage', '8787.5', '0', '65536']) {
 }
 
 {
-  const result = resolveSidecarServerConfig([
-    '--host',
-    '0.0.0.0',
-    '--token',
-    '--path',
-    '/mcp'
-  ]);
+  const result = resolveSidecarServerConfig(['--host', '0.0.0.0', '--token', '--path', '/mcp']);
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.reason, 'non_loopback_token_required');
 }

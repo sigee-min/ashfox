@@ -4,7 +4,7 @@ import {
   ToolName,
   ToolPayloadMap,
   ToolResultMap,
-  ToolResponse
+  ToolResponse,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { ProjectSession } from './session';
 import { Capabilities } from '@ashfox/blockbench-contracts/types/internal';
@@ -22,9 +22,15 @@ import {
   createHandlerMaps,
   type StatefulHandlerMap,
   type StatefulToolName,
-  type ResponseHandlerMap
+  type ResponseHandlerMap,
 } from './dispatcher/handlerMaps';
-import { Handler, HandlerPayload, HandlerResult, respondErrorSimple, respondOk } from './dispatcher/responseHelpers';
+import {
+  Handler,
+  HandlerPayload,
+  HandlerResult,
+  respondErrorSimple,
+  respondOk,
+} from './dispatcher/responseHelpers';
 import { createStateAttacher } from './dispatcher/stateAttacher';
 import { createGuardLogger } from './dispatcher/guardLogger';
 import { runStatefulPipeline } from './dispatcher/statefulPipeline';
@@ -44,12 +50,12 @@ export class ToolDispatcherImpl implements Dispatcher {
   private readonly traceLogService?: TraceLogService;
   private readonly attachStateForTool: <TName extends StatefulToolName>(
     payload: ToolPayloadMap[TName],
-    response: ToolResponse<BaseResult<TName>>
+    response: ToolResponse<BaseResult<TName>>,
   ) => ToolResponse<ToolResultMap[TName]>;
   private readonly logGuardFailure: <T>(
     tool: ToolName,
     payload: ToolPayloadMap[ToolName],
-    response: ToolResponse<T>
+    response: ToolResponse<T>,
   ) => ToolResponse<T>;
 
   constructor(
@@ -62,7 +68,7 @@ export class ToolDispatcherImpl implements Dispatcher {
       logger?: Logger;
       traceRecorder?: TraceRecorder;
       traceLogService?: TraceLogService;
-    }
+    },
   ) {
     this.log = options?.logger ?? new ConsoleLogger('ashfox-dispatcher', 'info');
     this.logGuardFailure = createGuardLogger(this.log);
@@ -76,7 +82,7 @@ export class ToolDispatcherImpl implements Dispatcher {
       respondOk,
       logGuardFailure: this.logGuardFailure.bind(this),
       handleTraceLogExport: this.handleTraceLogExport.bind(this),
-      handleRenderPreview: this.handleRenderPreview.bind(this)
+      handleRenderPreview: this.handleRenderPreview.bind(this),
     });
     this.statefulRetryHandlers = handlerMaps.statefulRetryHandlers;
     this.statefulHandlers = handlerMaps.statefulHandlers;
@@ -86,7 +92,7 @@ export class ToolDispatcherImpl implements Dispatcher {
       statefulHandlers: this.statefulHandlers,
       responseHandlers: this.responseHandlers,
       wrapRetryHandler: this.wrapRetryHandler.bind(this),
-      wrapStatefulHandler: this.wrapStatefulHandler.bind(this)
+      wrapStatefulHandler: this.wrapStatefulHandler.bind(this),
     });
     const flag = options?.includeStateByDefault;
     this.includeStateByDefault = typeof flag === 'function' ? flag : () => Boolean(flag);
@@ -99,7 +105,7 @@ export class ToolDispatcherImpl implements Dispatcher {
 
   async handle<TName extends ToolName>(
     name: TName,
-    payload: ToolPayloadMap[TName]
+    payload: ToolPayloadMap[TName],
   ): Promise<ToolResponse<ToolResultMap[TName]>>;
   async handle(name: ToolName, payload: HandlerPayload): Promise<ToolResponse<HandlerResult>> {
     try {
@@ -110,8 +116,8 @@ export class ToolDispatcherImpl implements Dispatcher {
           payload,
           respondErrorSimple('invalid_payload', `Unknown tool ${String(name)}`, {
             reason: 'unknown_tool',
-            tool: String(name)
-          })
+            tool: String(name),
+          }),
         );
       }
       const response = await handler(payload);
@@ -123,22 +129,26 @@ export class ToolDispatcherImpl implements Dispatcher {
         payload,
         respondErrorSimple('unknown', message, {
           reason: 'dispatcher_exception',
-          tool: String(name)
-        })
+          tool: String(name),
+        }),
       );
     }
   }
 
   private wrapRetryHandler<K extends StatefulToolName>(
     name: K,
-    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>
+    handler: (
+      payload: ToolPayloadMap[K],
+    ) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>,
   ): Handler {
     return (payload) => this.handleWithRetry(name, payload as ToolPayloadMap[K], handler);
   }
 
   private wrapStatefulHandler<K extends StatefulToolName>(
     name: K,
-    handler: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>
+    handler: (
+      payload: ToolPayloadMap[K],
+    ) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>,
   ): Handler {
     return (payload) => this.handleStateful(name, payload as ToolPayloadMap[K], handler);
   }
@@ -147,56 +157,61 @@ export class ToolDispatcherImpl implements Dispatcher {
     return {
       includeStateByDefault: this.includeStateByDefault,
       includeDiffByDefault: this.includeDiffByDefault,
-      getProjectState: (payload: { detail: ProjectStateDetail }) => this.service.getProjectState(payload),
+      getProjectState: (payload: { detail: ProjectStateDetail }) =>
+        this.service.getProjectState(payload),
       getProjectDiff: (payload: { sinceRevision: string; detail?: ProjectStateDetail }) =>
-        this.service.getProjectDiff(payload)
+        this.service.getProjectDiff(payload),
     };
   }
 
   private async handleWithRetry<TName extends StatefulToolName>(
     tool: TName,
     payload: ToolPayloadMap[TName],
-    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>
+    call: (
+      payload: ToolPayloadMap[TName],
+    ) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>,
   ): Promise<ToolResponse<ToolResultMap[TName]>> {
     return await runStatefulPipeline(
       {
         service: this.service,
         log: this.log,
         attachStateForTool: this.attachStateForTool,
-        logGuardFailure: this.logGuardFailure
+        logGuardFailure: this.logGuardFailure,
       },
       {
         tool,
         payload,
         call,
-        retry: true
-      }
+        retry: true,
+      },
     );
   }
 
   private async handleStateful<TName extends StatefulToolName>(
     tool: TName,
     payload: ToolPayloadMap[TName],
-    call: (payload: ToolPayloadMap[TName]) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>
+    call: (
+      payload: ToolPayloadMap[TName],
+    ) => UsecaseResult<BaseResult<TName>> | Promise<UsecaseResult<BaseResult<TName>>>,
   ): Promise<ToolResponse<ToolResultMap[TName]>> {
     return await runStatefulPipeline(
       {
         service: this.service,
         log: this.log,
         attachStateForTool: this.attachStateForTool,
-        logGuardFailure: this.logGuardFailure
+        logGuardFailure: this.logGuardFailure,
       },
       {
         tool,
         payload,
         call,
-        retry: false
-      }
+        retry: false,
+      },
     );
   }
 
   private handleRenderPreview(
-    payload: ToolPayloadMap['render_preview']
+    payload: ToolPayloadMap['render_preview'],
   ): ToolResponse<ToolResultMap['render_preview']> {
     const guard = guardOptionalRevision(this.service, toRevisionPayload(payload));
     if (guard) {
@@ -207,10 +222,12 @@ export class ToolDispatcherImpl implements Dispatcher {
   }
 
   private handleTraceLogExport(
-    payload: ToolPayloadMap['export_trace_log']
+    payload: ToolPayloadMap['export_trace_log'],
   ): ToolResponse<ToolResultMap['export_trace_log']> {
     if (!this.traceLogService) {
-      return err('not_implemented', 'Trace log export is unavailable.', { reason: 'trace_log_service_missing' });
+      return err('not_implemented', 'Trace log export is unavailable.', {
+        reason: 'trace_log_service_missing',
+      });
     }
     return toToolResponse(this.traceLogService.exportTraceLog(payload));
   }
@@ -219,25 +236,18 @@ export class ToolDispatcherImpl implements Dispatcher {
     tool: ToolName,
     payload: ToolPayloadMap[ToolName],
     response: ToolResponse<T>,
-    options?: { refreshViewport?: boolean }
+    options?: { refreshViewport?: boolean },
   ): ToolResponse<T> {
     return finalizeToolResponse(
       {
         service: this.service,
         traceRecorder: this.traceRecorder,
-        log: this.log
+        log: this.log,
       },
       tool,
       payload,
       response,
-      options
+      options,
     );
   }
-
 }
-
-
-
-
-
-

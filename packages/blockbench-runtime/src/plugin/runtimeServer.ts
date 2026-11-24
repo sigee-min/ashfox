@@ -12,13 +12,9 @@ import { PLUGIN_ID } from '../config';
 import {
   PLUGIN_LOG_INLINE_SERVER_UNAVAILABLE,
   PLUGIN_LOG_SERVER_WEB_MODE,
-  PLUGIN_LOG_SIDECAR_FAILED
+  PLUGIN_LOG_SIDECAR_FAILED,
 } from './messages';
-import {
-  toPublicEndpointConfig,
-  type EndpointConfig,
-  type RuntimeServerStatus
-} from './types';
+import { toPublicEndpointConfig, type EndpointConfig, type RuntimeServerStatus } from './types';
 import type { TransportServerHandle } from '../transport/serverLifecycle';
 
 type SidecarController = {
@@ -35,17 +31,17 @@ export type RuntimeServerState = {
 const makeStatus = (
   endpointConfig: EndpointConfig,
   mode: RuntimeServerStatus['mode'],
-  reason: RuntimeServerStatus['reason']
+  reason: RuntimeServerStatus['reason'],
 ): RuntimeServerStatus => ({
   mode,
   reason,
-  endpoint: toPublicEndpointConfig(endpointConfig)
+  endpoint: toPublicEndpointConfig(endpointConfig),
 });
 
 export const createRuntimeServerState = (endpointConfig: EndpointConfig): RuntimeServerState => ({
   sidecar: null,
   inlineServer: null,
-  status: makeStatus(endpointConfig, 'stopped', 'dispatcher_missing')
+  status: makeStatus(endpointConfig, 'stopped', 'dispatcher_missing'),
 });
 
 export const restartServer = (args: {
@@ -60,7 +56,7 @@ export const restartServer = (args: {
   createSidecar?: (
     endpoint: SidecarLaunchConfig,
     dispatcher: Dispatcher,
-    logger: Logger
+    logger: Logger,
   ) => SidecarController;
   loggerFactory?: () => Logger;
   onStatusChange?: (status: RuntimeServerStatus) => void;
@@ -83,7 +79,7 @@ export const restartServer = (args: {
     return {
       sidecar: null,
       inlineServer: null,
-      status: makeStatus(args.endpointConfig, 'stopped', 'web_mode')
+      status: makeStatus(args.endpointConfig, 'stopped', 'web_mode'),
     };
   }
 
@@ -91,7 +87,7 @@ export const restartServer = (args: {
     return {
       sidecar: null,
       inlineServer: null,
-      status: makeStatus(args.endpointConfig, 'stopped', 'dispatcher_missing')
+      status: makeStatus(args.endpointConfig, 'stopped', 'dispatcher_missing'),
     };
   }
 
@@ -99,12 +95,12 @@ export const restartServer = (args: {
   if (!validation.ok) {
     logger.error('MCP server config invalid', {
       reason: validation.reason,
-      message: validation.message
+      message: validation.message,
     });
     return {
       sidecar: null,
       inlineServer: null,
-      status: makeStatus(args.endpointConfig, 'stopped', validation.reason)
+      status: makeStatus(args.endpointConfig, 'stopped', validation.reason),
     };
   }
   const endpointConfig = validation.config;
@@ -120,37 +116,36 @@ export const restartServer = (args: {
     args.dispatcher,
     logger,
     args.resourceStore,
-    args.toolRegistry
+    args.toolRegistry,
   );
   if (inlineHandle) {
     const nextState: RuntimeServerState = {
       sidecar: null,
       inlineServer: inlineHandle,
-      status: makeStatus(endpointConfig, 'starting', 'starting')
+      status: makeStatus(endpointConfig, 'starting', 'starting'),
     };
-    void inlineHandle.ready.then(() => {
-      if (nextState.inlineServer !== inlineHandle) return;
-      nextState.status = makeStatus(endpointConfig, 'inline', 'running');
-      args.onStatusChange?.(nextState.status);
-    }, (err) => {
-      if (nextState.inlineServer !== inlineHandle) return;
-      inlineHandle.stop();
-      nextState.inlineServer = null;
-      nextState.status = makeStatus(
-        endpointConfig,
-        'stopped',
-        'inline_start_failed'
-      );
-      logger.error('MCP inline server failed to listen', {
-        message: err instanceof Error ? err.message : String(err)
-      });
-      args.onStatusChange?.(nextState.status);
-    });
+    void inlineHandle.ready.then(
+      () => {
+        if (nextState.inlineServer !== inlineHandle) return;
+        nextState.status = makeStatus(endpointConfig, 'inline', 'running');
+        args.onStatusChange?.(nextState.status);
+      },
+      (err) => {
+        if (nextState.inlineServer !== inlineHandle) return;
+        inlineHandle.stop();
+        nextState.inlineServer = null;
+        nextState.status = makeStatus(endpointConfig, 'stopped', 'inline_start_failed');
+        logger.error('MCP inline server failed to listen', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+        args.onStatusChange?.(nextState.status);
+      },
+    );
     return nextState;
   }
   logger.warn(PLUGIN_LOG_INLINE_SERVER_UNAVAILABLE);
   const endpoint: SidecarLaunchConfig = {
-    ...endpointConfig
+    ...endpointConfig,
   };
   sidecar = createSidecar(endpoint, args.dispatcher, logger);
   if (!sidecar.start()) {
@@ -159,12 +154,12 @@ export const restartServer = (args: {
     return {
       sidecar,
       inlineServer: null,
-      status: makeStatus(endpointConfig, 'stopped', 'sidecar_start_failed')
+      status: makeStatus(endpointConfig, 'stopped', 'sidecar_start_failed'),
     };
   }
   return {
     sidecar,
     inlineServer: null,
-    status: makeStatus(endpointConfig, 'sidecar', 'inline_unavailable')
+    status: makeStatus(endpointConfig, 'sidecar', 'inline_unavailable'),
   };
 };

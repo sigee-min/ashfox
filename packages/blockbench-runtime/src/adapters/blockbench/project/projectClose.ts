@@ -8,12 +8,12 @@ import {
   ADAPTER_PROJECT_CLOSE_ASYNC_UNSUPPORTED,
   ADAPTER_PROJECT_CLOSE_UNAVAILABLE,
   ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES,
-  PROJECT_NO_ACTIVE
+  PROJECT_NO_ACTIVE,
 } from '../../../shared/messages';
 
 export const runCloseProject = (
   log: Logger,
-  options?: { force?: boolean }
+  options?: { force?: boolean },
 ): ToolError | CloseProjectPending | null => {
   try {
     const globals = readGlobals();

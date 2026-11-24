@@ -2,7 +2,7 @@ import {
   isTraceLogEntry,
   isTraceLogHeader,
   TRACE_LOG_SCHEMA_VERSION,
-  type TraceLogRecord
+  type TraceLogRecord,
 } from '@ashfox/blockbench-contracts/types/traceLog';
 import { toolError } from '../shared/tooling/toolResponse';
 import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
@@ -12,14 +12,12 @@ export type TraceLogParseResult =
   | { ok: true; records: TraceLogRecord[]; warnings?: string[] }
   | { ok: false; error: ToolError; warnings?: string[] };
 
-const invalidHeader = (
-  warnings: readonly string[]
-): TraceLogParseResult => ({
+const invalidHeader = (warnings: readonly string[]): TraceLogParseResult => ({
   ok: false,
   error: toolError('invalid_payload', 'Trace log requires a v1 header.', {
-    reason: 'trace_log_header_invalid'
+    reason: 'trace_log_header_invalid',
   }),
-  ...(warnings.length > 0 ? { warnings: [...warnings] } : {})
+  ...(warnings.length > 0 ? { warnings: [...warnings] } : {}),
 });
 
 export const parseTraceLogText = (text: string): TraceLogParseResult => {
@@ -32,9 +30,7 @@ export const parseTraceLogText = (text: string): TraceLogParseResult => {
   try {
     const header: unknown = JSON.parse(lines[0]);
     if (!isTraceLogHeader(header)) {
-      warnings.push(
-        `Line 1: trace schema must be v${TRACE_LOG_SCHEMA_VERSION}.`
-      );
+      warnings.push(`Line 1: trace schema must be v${TRACE_LOG_SCHEMA_VERSION}.`);
       return invalidHeader(warnings);
     }
     records.push(header);
@@ -51,33 +47,24 @@ export const parseTraceLogText = (text: string): TraceLogParseResult => {
         warnings.push(`Line ${index + 1}: not an object.`);
         return;
       }
-      if (!('kind' in parsed) ||
-        (parsed.kind !== 'header' && parsed.kind !== 'step')) {
+      if (!('kind' in parsed) || (parsed.kind !== 'header' && parsed.kind !== 'step')) {
         warnings.push(`Line ${index + 1}: unknown record kind.`);
         return;
       }
       if (parsed.kind === 'header') {
-        warnings.push(
-          `Line ${index + 1}: duplicate trace header ignored.`
-        );
+        warnings.push(`Line ${index + 1}: duplicate trace header ignored.`);
         return;
       }
       if (!isTraceLogEntry(parsed)) {
-        warnings.push(
-          `Line ${index + 1}: invalid closed trace step ignored.`
-        );
+        warnings.push(`Line ${index + 1}: invalid closed trace step ignored.`);
         return;
       }
       if (parsed.seq <= lastSeq) {
-        warnings.push(
-          `Line ${index + 1}: non-increasing trace sequence ignored.`
-        );
+        warnings.push(`Line ${index + 1}: non-increasing trace sequence ignored.`);
         return;
       }
       if (lastSeq > 0 && parsed.seq > lastSeq + 1) {
-        warnings.push(
-          `Line ${index + 1}: trace sequence gap after ${lastSeq}.`
-        );
+        warnings.push(`Line ${index + 1}: trace sequence gap after ${lastSeq}.`);
       }
       lastSeq = parsed.seq;
       records.push(parsed);

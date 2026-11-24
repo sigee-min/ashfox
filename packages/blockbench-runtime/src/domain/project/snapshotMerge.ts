@@ -4,7 +4,9 @@ export function mergeSnapshots(session: SessionState, live: SessionState | null)
   if (!live) return session;
 
   const useLiveAnimations = live.animationsStatus !== 'unavailable';
-  const mergedAnimations = useLiveAnimations ? mergeAnimations(session.animations, live.animations) : session.animations;
+  const mergedAnimations = useLiveAnimations
+    ? mergeAnimations(session.animations, live.animations)
+    : session.animations;
   const mergedTextures = mergeTextures(session.textures, live.textures);
   const mergedMeshes = live.meshes ?? session.meshes;
 
@@ -21,13 +23,16 @@ export function mergeSnapshots(session: SessionState, live: SessionState | null)
     meshes: mergedMeshes,
     textures: mergedTextures,
     animations: mergedAnimations,
-    animationsStatus: live.animationsStatus ?? session.animationsStatus
+    animationsStatus: live.animationsStatus ?? session.animationsStatus,
   };
 
   return merged;
 }
 
-function mergeAnimations(sessionAnims: SessionState['animations'], liveAnims: SessionState['animations']) {
+function mergeAnimations(
+  sessionAnims: SessionState['animations'],
+  liveAnims: SessionState['animations'],
+) {
   return liveAnims.map((live) => {
     const fallback = live.id
       ? sessionAnims.find((anim) => anim.id === live.id)
@@ -37,7 +42,7 @@ function mergeAnimations(sessionAnims: SessionState['animations'], liveAnims: Se
       ...live,
       fps: live.fps ?? fallback?.fps,
       channels: live.channels ?? fallback?.channels,
-      triggers: live.triggers ?? fallback?.triggers
+      triggers: live.triggers ?? fallback?.triggers,
     };
   });
 }
@@ -61,8 +66,7 @@ function mergeTextures(sessionTex: SessionState['textures'], liveTex: SessionSta
   });
   for (const tex of liveTex) {
     const key = textureKey(tex);
-    const nameKey =
-      !tex.id && !tex.path && tex.name ? nameIndex.get(tex.name) : undefined;
+    const nameKey = !tex.id && !tex.path && tex.name ? nameIndex.get(tex.name) : undefined;
     const existingKey = merged.has(key) ? key : nameKey;
     const existing = existingKey ? merged.get(existingKey) : undefined;
     if (!existing) {
@@ -76,7 +80,7 @@ function mergeTextures(sessionTex: SessionState['textures'], liveTex: SessionSta
 
 function mergeTexture(
   sessionTex: SessionState['textures'][number],
-  liveTex: SessionState['textures'][number]
+  liveTex: SessionState['textures'][number],
 ) {
   return {
     ...sessionTex,
@@ -86,7 +90,7 @@ function mergeTexture(
     path: pickString(liveTex.path, sessionTex.path),
     width: pickSize(liveTex.width, sessionTex.width),
     height: pickSize(liveTex.height, sessionTex.height),
-    contentHash: pickString(liveTex.contentHash, sessionTex.contentHash)
+    contentHash: pickString(liveTex.contentHash, sessionTex.contentHash),
   };
 }
 
@@ -107,6 +111,3 @@ function pickSize(primary?: number, fallback?: number): number | undefined {
   if (typeof fallback === 'number' && Number.isFinite(fallback) && fallback > 0) return fallback;
   return primary ?? fallback;
 }
-
-
-

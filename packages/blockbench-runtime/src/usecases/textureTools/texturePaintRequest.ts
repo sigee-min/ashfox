@@ -11,7 +11,7 @@ import {
   TEXTURE_PAINT_NAME_REQUIRED,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX,
-  TEXTURE_PAINT_TARGET_REQUIRED
+  TEXTURE_PAINT_TARGET_REQUIRED,
 } from '../../shared/messages';
 import { ensureNonBlankString } from '../../shared/payloadValidation';
 import { fail, ok, type UsecaseResult } from '../result';
@@ -31,7 +31,7 @@ export interface NormalizedTexturePaintRequest {
 
 export const normalizeTexturePaintRequest = (
   ctx: TextureToolContext,
-  payload: PaintTexturePayload
+  payload: PaintTexturePayload,
 ): UsecaseResult<NormalizedTexturePaintRequest> => {
   if (payload.mode && payload.mode !== 'create' && payload.mode !== 'update') {
     return fail({ code: 'invalid_payload', message: TEXTURE_PAINT_MODE_INVALID(payload.mode) });
@@ -39,11 +39,10 @@ export const normalizeTexturePaintRequest = (
   const textError = [
     ensureNonBlankString(payload.name, 'name'),
     ensureNonBlankString(payload.targetId, 'targetId'),
-    ensureNonBlankString(payload.targetName, 'targetName')
+    ensureNonBlankString(payload.targetName, 'targetName'),
   ].find((error) => error !== null);
   if (textError) return fail(textError);
-  const mode = payload.mode ??
-    (payload.targetId || payload.targetName ? 'update' : 'create');
+  const mode = payload.mode ?? (payload.targetId || payload.targetName ? 'update' : 'create');
   if (mode === 'create' && !payload.name) {
     return fail({ code: 'invalid_payload', message: TEXTURE_PAINT_NAME_REQUIRED });
   }
@@ -56,24 +55,24 @@ export const normalizeTexturePaintRequest = (
   const maxSize = ctx.capabilities.limits.maxTextureSize;
   const dimensions = checkDimensions(width, height, {
     requireInteger: true,
-    maxSize
+    maxSize,
   });
   if (!dimensions.ok) {
     const message = mapDimensionError(dimensions, {
       nonPositive: (axis) => DIMENSION_POSITIVE_MESSAGE(axis, axis),
       nonInteger: (axis) => DIMENSION_INTEGER_MESSAGE(axis, axis),
-      exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize)
+      exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize),
     });
     return dimensions.reason === 'exceeds_max'
       ? fail({
           code: 'invalid_payload',
           message: message ?? TEXTURE_PAINT_SIZE_EXCEEDS_MAX(maxSize),
           fix: TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX(maxSize),
-          details: { width, height, maxSize }
+          details: { width, height, maxSize },
         })
       : fail({
           code: 'invalid_payload',
-          message: message ?? DIMENSION_POSITIVE_MESSAGE('width/height')
+          message: message ?? DIMENSION_POSITIVE_MESSAGE('width/height'),
         });
   }
   const uvPaintSpec = payload.uvPaint;
@@ -82,7 +81,7 @@ export const normalizeTexturePaintRequest = (
       uvPaintSpec,
       ctx.capabilities.limits,
       label,
-      uvPaintMessages
+      uvPaintMessages,
     );
     if (!validation.ok) return fail(validation.error);
   }
@@ -98,7 +97,7 @@ export const normalizeTexturePaintRequest = (
       return fail({
         code: 'invalid_payload',
         message: TEXTURE_OP_INVALID(label),
-        details: { opIndex }
+        details: { opIndex },
       });
     }
   }

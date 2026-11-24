@@ -12,7 +12,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
     () => {
       errors += 1;
     },
-    200
+    200,
   );
 
   decoder.push('x'.repeat(250));
@@ -28,15 +28,12 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
   const second = encodeMessage({ type: 'ready', version: 1, ts: 12 });
   const messages: unknown[] = [];
   const errors: Error[] = [];
-  const frameLimit = Math.max(
-    Buffer.byteLength(first, 'utf8'),
-    Buffer.byteLength(second, 'utf8')
-  );
+  const frameLimit = Math.max(Buffer.byteLength(first, 'utf8'), Buffer.byteLength(second, 'utf8'));
   assert.ok(Buffer.byteLength(first + second, 'utf8') > frameLimit);
   const decoder = createLineDecoder(
     (message) => messages.push(message),
     (error) => errors.push(error),
-    frameLimit
+    frameLimit,
   );
   decoder.push(first + second);
   assert.deepEqual(errors, []);
@@ -47,7 +44,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
   const encoded = encodeMessage({
     type: 'error',
     ts: 13,
-    message: '🐾'.repeat(12)
+    message: '🐾'.repeat(12),
   });
   const codeUnitLimit = encoded.length;
   assert.ok(Buffer.byteLength(encoded, 'utf8') > codeUnitLimit);
@@ -56,7 +53,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
   const decoder = createLineDecoder(
     (message) => messages.push(message),
     (error) => errors.push(error),
-    codeUnitLimit
+    codeUnitLimit,
   );
   decoder.push(encoded);
   assert.equal(messages.length, 0);

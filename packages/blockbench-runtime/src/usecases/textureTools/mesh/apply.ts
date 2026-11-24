@@ -3,16 +3,12 @@ import {
   TEXTURE_MESH_FACE_GUARD_ROLLBACK,
   TEXTURE_MESH_FACE_SIZE_REQUIRED,
   TEXTURE_RENDERER_NO_IMAGE,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../../result';
 import type { TextureToolContext } from '../context';
 import { countChangedPixels } from '../paintFacesPixels';
-import type {
-  PixelStats,
-  SnapshotTexture,
-  TextureReadSource
-} from './contract';
+import type { PixelStats, SnapshotTexture, TextureReadSource } from './contract';
 
 export interface MeshFacePaintApplicationPort {
   readonly read: (texture: SnapshotTexture) => UsecaseResult<TextureReadSource>;
@@ -21,13 +17,11 @@ export interface MeshFacePaintApplicationPort {
     source: TextureReadSource,
     nextPixels: Uint8ClampedArray,
     expectedChangedPixels: number,
-    beforeStats: PixelStats
+    beforeStats: PixelStats,
   ) => UsecaseResult<void>;
 }
 
-export const summarizeMeshPaintPixels = (
-  pixels: Uint8ClampedArray
-): PixelStats => {
+export const summarizeMeshPaintPixels = (pixels: Uint8ClampedArray): PixelStats => {
   let opaquePixels = 0;
   let checksum = 2166136261;
   for (let index = 0; index < pixels.length; index += 4) {
@@ -42,7 +36,7 @@ export const summarizeMeshPaintPixels = (
 
 export const createMeshFacePaintApplicationPort = (
   ctx: TextureToolContext,
-  ifRevision: string | undefined
+  ifRevision: string | undefined,
 ): MeshFacePaintApplicationPort | null => {
   const renderer = ctx.textureRenderer;
   if (!renderer) return null;
@@ -51,31 +45,37 @@ export const createMeshFacePaintApplicationPort = (
     texture: SnapshotTexture,
     expectedWidth?: number,
     expectedHeight?: number,
-    useTextureMetadata = true
+    useTextureMetadata = true,
   ): UsecaseResult<TextureReadSource> => {
     const read = ctx.editor.readTexture({ id: texture.id, name: texture.name });
     if (read.error || !read.result?.image) {
       return fail(read.error ?? { code: 'invalid_state', message: TEXTURE_RENDERER_NO_IMAGE });
     }
     const resolution = ctx.editor.getProjectTextureResolution();
-    const width = read.result.width ??
-      (useTextureMetadata ? texture.width : expectedWidth) ?? resolution?.width;
-    const height = read.result.height ??
-      (useTextureMetadata ? texture.height : expectedHeight) ?? resolution?.height;
+    const width =
+      read.result.width ??
+      (useTextureMetadata ? texture.width : expectedWidth) ??
+      resolution?.width;
+    const height =
+      read.result.height ??
+      (useTextureMetadata ? texture.height : expectedHeight) ??
+      resolution?.height;
     if (!width || !height) {
       return fail({ code: 'invalid_payload', message: TEXTURE_MESH_FACE_SIZE_REQUIRED });
     }
     const pixels = renderer.readPixels?.({ image: read.result.image, width, height });
     if (!pixels || pixels.error || !pixels.result) {
-      return fail(pixels?.error ?? {
-        code: 'not_implemented',
-        message: TEXTURE_RENDERER_UNAVAILABLE
-      });
+      return fail(
+        pixels?.error ?? {
+          code: 'not_implemented',
+          message: TEXTURE_RENDERER_UNAVAILABLE,
+        },
+      );
     }
     return ok({
       textureWidth: width,
       textureHeight: height,
-      pixels: pixels.result.data
+      pixels: pixels.result.data,
     });
   };
 
@@ -84,7 +84,7 @@ export const createMeshFacePaintApplicationPort = (
     width: number,
     height: number,
     pixels: Uint8ClampedArray,
-    missingImageCode: 'not_implemented' | 'invalid_state'
+    missingImageCode: 'not_implemented' | 'invalid_state',
   ): ToolError | null => {
     const rendered = renderer.renderPixels({ width, height, data: pixels });
     if (rendered.error || !rendered.result?.image) {
@@ -96,11 +96,9 @@ export const createMeshFacePaintApplicationPort = (
       image: rendered.result.image,
       width,
       height,
-      ifRevision
+      ifRevision,
     });
-    return !updated.ok && updated.error.code !== 'no_change'
-      ? updated.error
-      : null;
+    return !updated.ok && updated.error.code !== 'no_change' ? updated.error : null;
   };
 
   return {
@@ -111,16 +109,11 @@ export const createMeshFacePaintApplicationPort = (
         source.textureWidth,
         source.textureHeight,
         nextPixels,
-        'not_implemented'
+        'not_implemented',
       );
       if (updateError) return fail(updateError);
       if (changedPixels === 0) return ok(undefined);
-      const committed = readPixels(
-        texture,
-        source.textureWidth,
-        source.textureHeight,
-        false
-      );
+      const committed = readPixels(texture, source.textureWidth, source.textureHeight, false);
       if (!committed.ok) return fail(committed.error);
       if (countChangedPixels(source.pixels, committed.value.pixels) > 0) {
         return ok(undefined);
@@ -131,7 +124,7 @@ export const createMeshFacePaintApplicationPort = (
         source.textureWidth,
         source.textureHeight,
         source.pixels,
-        'invalid_state'
+        'invalid_state',
       );
       return fail({
         code: 'invalid_state',
@@ -144,9 +137,9 @@ export const createMeshFacePaintApplicationPort = (
           beforeOpaquePixels: beforeStats.opaquePixels,
           afterOpaquePixels: afterStats.opaquePixels,
           beforeChecksum: beforeStats.checksum,
-          afterChecksum: afterStats.checksum
-        }
+          afterChecksum: afterStats.checksum,
+        },
       });
-    }
+    },
   };
 };

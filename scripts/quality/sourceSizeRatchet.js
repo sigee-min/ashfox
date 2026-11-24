@@ -7,11 +7,7 @@ const assertRatchetLines = (ratchetLines) => {
   }
 };
 
-const sourceSizeRatchetViolations = (
-  fileStats,
-  baseline,
-  ratchetLines
-) => {
+const sourceSizeRatchetViolations = (fileStats, baseline, ratchetLines) => {
   assertRatchetLines(ratchetLines);
   const findings = [];
   const statsByFile = new Map(fileStats.map((stat) => [stat.file, stat]));
@@ -24,7 +20,7 @@ const sourceSizeRatchetViolations = (
         lines,
         baseline: null,
         allowed: ratchetLines,
-        reason: 'new source file exceeds the ratchet threshold'
+        reason: 'new source file exceeds the ratchet threshold',
       });
       continue;
     }
@@ -34,7 +30,7 @@ const sourceSizeRatchetViolations = (
         lines,
         baseline: committed,
         allowed: committed,
-        reason: 'source file grew beyond its committed baseline'
+        reason: 'source file grew beyond its committed baseline',
       });
       continue;
     }
@@ -44,7 +40,7 @@ const sourceSizeRatchetViolations = (
         lines,
         baseline: committed,
         allowed: lines,
-        reason: 'committed baseline must be lowered to the current size'
+        reason: 'committed baseline must be lowered to the current size',
       });
     }
   }
@@ -58,7 +54,7 @@ const sourceSizeRatchetViolations = (
       allowed: ratchetLines,
       reason: stat
         ? 'baseline entry must be removed after crossing the threshold'
-        : 'baseline entry refers to a missing source file'
+        : 'baseline entry refers to a missing source file',
     });
   }
   return findings;
@@ -66,55 +62,50 @@ const sourceSizeRatchetViolations = (
 
 const sameBaseline = (left, right) => {
   const leftEntries = Object.entries(left).sort(([leftKey], [rightKey]) =>
-    leftKey.localeCompare(rightKey)
+    leftKey.localeCompare(rightKey),
   );
   const rightEntries = Object.entries(right).sort(([leftKey], [rightKey]) =>
-    leftKey.localeCompare(rightKey)
+    leftKey.localeCompare(rightKey),
   );
   return JSON.stringify(leftEntries) === JSON.stringify(rightEntries);
 };
 
-const readHistoricalSourceSizeBaselines = ({
-  repoRoot,
-  baselinePath,
-  currentBaseline
-}) => {
-  const relativeBaselinePath = path.relative(repoRoot, baselinePath)
-    .replace(/\\/g, '/');
+const readHistoricalSourceSizeBaselines = ({ repoRoot, baselinePath, currentBaseline }) => {
+  const relativeBaselinePath = path.relative(repoRoot, baselinePath).replace(/\\/g, '/');
   try {
-    const insideWorkTree = execFileSync(
-      'git',
-      ['rev-parse', '--is-inside-work-tree'],
-      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-    ).trim();
+    const insideWorkTree = execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
     if (insideWorkTree !== 'true') return [];
-    const shallow = execFileSync(
-      'git',
-      ['rev-parse', '--is-shallow-repository'],
-      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-    ).trim() === 'true';
+    const shallow =
+      execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim() === 'true';
     if (shallow) {
       throw new Error(
         'source-size history is unavailable in a shallow clone; fetch full ' +
-        'history before running quality:architecture'
+          'history before running quality:architecture',
       );
     }
-    const revisions = execFileSync(
-      'git',
-      ['log', '--format=%H', '--', relativeBaselinePath],
-      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-    ).trim().split(/\r?\n/).filter(Boolean);
+    const revisions = execFileSync('git', ['log', '--format=%H', '--', relativeBaselinePath], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean);
     const snapshots = revisions.flatMap((revision) => {
       try {
-        const raw = execFileSync(
-          'git',
-          ['show', `${revision}:${relativeBaselinePath}`],
-          {
-            cwd: repoRoot,
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore']
-          }
-        );
+        const raw = execFileSync('git', ['show', `${revision}:${relativeBaselinePath}`], {
+          cwd: repoRoot,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
         return [JSON.parse(raw)];
       } catch {
         // A deletion commit has no file to show. Preserve that absence so a
@@ -134,25 +125,19 @@ const readHistoricalSourceSizeBaselines = ({
   }
 };
 
-const sourceSizeHistoryViolations = (
-  currentBaseline,
-  historicalBaselines,
-  ratchetLines
-) => {
+const sourceSizeHistoryViolations = (currentBaseline, historicalBaselines, ratchetLines) => {
   assertRatchetLines(ratchetLines);
   if (historicalBaselines.length === 0) return [];
   const findings = [];
   for (const [file, lines] of Object.entries(currentBaseline)) {
-    const historicalValues = historicalBaselines.map((baseline) =>
-      baseline[file]
-    );
+    const historicalValues = historicalBaselines.map((baseline) => baseline[file]);
     if (historicalValues.some((value) => typeof value !== 'number')) {
       findings.push({
         file,
         lines,
         baseline: lines,
         allowed: ratchetLines,
-        reason: 'baseline entry is new or was previously removed'
+        reason: 'baseline entry is new or was previously removed',
       });
       continue;
     }
@@ -163,7 +148,7 @@ const sourceSizeHistoryViolations = (
         lines,
         baseline: lines,
         allowed,
-        reason: 'baseline increased relative to repository history'
+        reason: 'baseline increased relative to repository history',
       });
     }
   }
@@ -173,5 +158,5 @@ const sourceSizeHistoryViolations = (
 module.exports = {
   readHistoricalSourceSizeBaselines,
   sourceSizeHistoryViolations,
-  sourceSizeRatchetViolations
+  sourceSizeRatchetViolations,
 };

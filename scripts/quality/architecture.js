@@ -6,23 +6,21 @@ const ts = require('typescript');
 const {
   readHistoricalSourceSizeBaselines,
   sourceSizeHistoryViolations,
-  sourceSizeRatchetViolations
+  sourceSizeRatchetViolations,
 } = require('./sourceSizeRatchet');
-const {
-  readDevelopmentManifest
-} = require('./manifest');
+const { readDevelopmentManifest } = require('./manifest');
 const { textCompare } = require('./manifest/contract');
 const {
   codeFileStemViolations,
   ownerCodeFiles,
   ownerContractViolations,
   testFileLineViolations,
-  testLayoutViolations
+  testLayoutViolations,
 } = require('./layout');
 const {
   dependencyGraph: buildDependencyGraph,
   importSpecifiers,
-  sourceFiles
+  sourceFiles,
 } = require('./moduleGraph');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -30,26 +28,16 @@ const developmentManifest = readDevelopmentManifest(repoRoot);
 const architecturePolicy = developmentManifest.architecture;
 const qualityPolicy = developmentManifest.quality;
 const tsConfigPath = path.join(repoRoot, 'tsconfig.json');
-const sourceSizeBaselinePath = path.join(
-  __dirname,
-  'source-size-baseline.json'
-);
+const sourceSizeBaselinePath = path.join(__dirname, 'source-size-baseline.json');
 const tsConfig = ts.readConfigFile(tsConfigPath, ts.sys.readFile);
 if (tsConfig.error) {
-  throw new Error(ts.flattenDiagnosticMessageText(
-    tsConfig.error.messageText,
-    '\n'
-  ));
+  throw new Error(ts.flattenDiagnosticMessageText(tsConfig.error.messageText, '\n'));
 }
-const compilerOptions = ts.parseJsonConfigFileContent(
-  tsConfig.config,
-  ts.sys,
-  repoRoot
-).options;
-const dependencyGraph = (files, sources) =>
-  buildDependencyGraph(files, sources, compilerOptions);
+const compilerOptions = ts.parseJsonConfigFileContent(tsConfig.config, ts.sys, repoRoot).options;
+const dependencyGraph = (files, sources) => buildDependencyGraph(files, sources, compilerOptions);
 const workspaceOwnersIn = (scope) =>
-  fs.readdirSync(path.join(repoRoot, scope), { withFileTypes: true })
+  fs
+    .readdirSync(path.join(repoRoot, scope), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .sort((left, right) => textCompare(left.name, right.name))
     .map((entry) => path.join(repoRoot, scope, entry.name))
@@ -61,29 +49,24 @@ const workspacePackagesIn = (scope) =>
     .map(({ directory }) => directory)
     .filter((directory) => fs.existsSync(path.join(directory, 'src')))
     .map((directory) => {
-      const manifest = JSON.parse(fs.readFileSync(
-        path.join(directory, 'package.json'),
-        'utf8'
-      ));
+      const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
       return {
         name: manifest.name,
         directory,
         sourceRoot: path.join(directory, 'src'),
-        dependencies: new Set(Object.keys({
-          ...manifest.dependencies,
-          ...manifest.devDependencies,
-          ...manifest.optionalDependencies,
-          ...manifest.peerDependencies
-        }))
+        dependencies: new Set(
+          Object.keys({
+            ...manifest.dependencies,
+            ...manifest.devDependencies,
+            ...manifest.optionalDependencies,
+            ...manifest.peerDependencies,
+          }),
+        ),
       };
     });
 
-const workspacePackages = architecturePolicy.workspaceSourceScopes.flatMap(
-  workspacePackagesIn
-);
-const ownerWorkspaces = architecturePolicy.workspaceSourceScopes.flatMap(
-  workspaceOwnersIn
-);
+const workspacePackages = architecturePolicy.workspaceSourceScopes.flatMap(workspacePackagesIn);
+const ownerWorkspaces = architecturePolicy.workspaceSourceScopes.flatMap(workspaceOwnersIn);
 const sourceRoots = workspacePackages.map(({ sourceRoot }) => sourceRoot);
 const maxFileLines = qualityPolicy.maxSourceFileLines;
 const maxFileStemLength = qualityPolicy.maxCodeFileStemLength;
@@ -91,18 +74,13 @@ const maxFunctionLines = qualityPolicy.maxFunctionLines;
 const maxTestFileLines = qualityPolicy.ownerLayout.maxTestFileLines;
 const sourceSizeRatchetLines = qualityPolicy.newSourceFileRatchetLines;
 
-const relativePath = (file) =>
-  path.relative(repoRoot, file).replace(/\\/g, '/');
+const relativePath = (file) => path.relative(repoRoot, file).replace(/\\/g, '/');
 
 const lineCount = (source) => source.split(/\r?\n/).length;
 
 const functionName = (node, sourceFile) => {
   if (node.name) return node.name.getText(sourceFile);
-  if (
-    node.parent &&
-    ts.isVariableDeclaration(node.parent) &&
-    node.parent.name
-  ) {
+  if (node.parent && ts.isVariableDeclaration(node.parent) && node.parent.name) {
     return node.parent.name.getText(sourceFile);
   }
   return '<anonymous>';
@@ -114,22 +92,19 @@ const oversizedFunctions = (file, source) => {
     source,
     ts.ScriptTarget.Latest,
     true,
-    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const findings = [];
   const visit = (node) => {
     if (ts.isFunctionLike(node) && node.body) {
-      const start =
-        sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
-          .line + 1;
-      const end =
-        sourceFile.getLineAndCharacterOfPosition(node.end).line + 1;
+      const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+      const end = sourceFile.getLineAndCharacterOfPosition(node.end).line + 1;
       if (end - start + 1 > maxFunctionLines) {
         findings.push({
           file: relativePath(file),
           name: functionName(node, sourceFile),
           start,
-          lines: end - start + 1
+          lines: end - start + 1,
         });
       }
     }
@@ -145,16 +120,14 @@ const unsafeTypeEscapes = (file, source) => {
     source,
     ts.ScriptTarget.Latest,
     true,
-    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const findings = [];
   const report = (node, kind) => {
     findings.push({
       file: relativePath(file),
-      line: sourceFile.getLineAndCharacterOfPosition(
-        node.getStart(sourceFile)
-      ).line + 1,
-      kind
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      kind,
     });
   };
   const visit = (node) => {
@@ -244,24 +217,20 @@ const undeclaredWorkspaceDependencies = (files, sources) => {
   const findings = new Map();
   for (const file of files) {
     const owner = workspacePackages.find(({ sourceRoot }) =>
-      file.startsWith(`${sourceRoot}${path.sep}`)
+      file.startsWith(`${sourceRoot}${path.sep}`),
     );
     if (!owner) continue;
     for (const specifier of importSpecifiers(sources.get(file))) {
-      const target = workspaceNames.find((name) =>
-        specifier === name || specifier.startsWith(`${name}/`)
+      const target = workspaceNames.find(
+        (name) => specifier === name || specifier.startsWith(`${name}/`),
       );
-      if (
-        !target ||
-        target === owner.name ||
-        owner.dependencies.has(target)
-      ) {
+      if (!target || target === owner.name || owner.dependencies.has(target)) {
         continue;
       }
       const finding = {
         file: relativePath(file),
         owner: owner.name,
-        target
+        target,
       };
       findings.set(`${finding.file}:${target}`, finding);
     }
@@ -274,7 +243,7 @@ const retiredOwnerPathViolations = (files, sources) => {
     ['packages', 'engine-core', 'src', 'project', 'program', 'design'],
     ['packages', 'engine-core', 'src', 'compiler', 'program', 'design'],
     ['project', 'program', 'design'],
-    ['compiler', 'program', 'design']
+    ['compiler', 'program', 'design'],
   ].map((segments) => segments.join('/'));
   return files.flatMap((file) => {
     const source = sources.get(file) || '';
@@ -287,65 +256,52 @@ const retiredOwnerPathViolations = (files, sources) => {
 const main = () => {
   const files = sourceRoots.flatMap(sourceFiles);
   const namedFiles = ownerWorkspaces.flatMap(ownerCodeFiles);
-  const sources = new Map(
-    files.map((file) => [file, fs.readFileSync(file, 'utf8')])
-  );
+  const sources = new Map(files.map((file) => [file, fs.readFileSync(file, 'utf8')]));
   const fileStats = files.map((file) => ({
-      file: relativePath(file),
-      lines: lineCount(sources.get(file))
-    }));
-  const oversizedFiles = fileStats
-    .filter(({ lines }) => lines > maxFileLines);
+    file: relativePath(file),
+    lines: lineCount(sources.get(file)),
+  }));
+  const oversizedFiles = fileStats.filter(({ lines }) => lines > maxFileLines);
   const oversizedFileStems = codeFileStemViolations(
     namedFiles.map(relativePath),
-    maxFileStemLength
+    maxFileStemLength,
   );
   const contractLayoutRegressions = ownerContractViolations(
     namedFiles.map(relativePath),
-    qualityPolicy.ownerLayout.contractFile
+    qualityPolicy.ownerLayout.contractFile,
   );
   const testLayoutRegressions = testLayoutViolations(
     namedFiles.map(relativePath),
-    qualityPolicy.ownerLayout
+    qualityPolicy.ownerLayout,
   );
   const testFileLineRegressions = testFileLineViolations(
     namedFiles.map((file) => ({
       file: relativePath(file),
-      lines: lineCount(fs.readFileSync(file, 'utf8'))
+      lines: lineCount(fs.readFileSync(file, 'utf8')),
     })),
-    maxTestFileLines
+    maxTestFileLines,
   );
-  const sourceSizeBaseline = JSON.parse(fs.readFileSync(
-    sourceSizeBaselinePath,
-    'utf8'
-  ));
+  const sourceSizeBaseline = JSON.parse(fs.readFileSync(sourceSizeBaselinePath, 'utf8'));
   const sourceSizeRegressions = sourceSizeRatchetViolations(
     fileStats,
     sourceSizeBaseline,
-    sourceSizeRatchetLines
+    sourceSizeRatchetLines,
   );
   const sourceSizeHistoryRegressions = sourceSizeHistoryViolations(
     sourceSizeBaseline,
     readHistoricalSourceSizeBaselines({
       repoRoot,
       baselinePath: sourceSizeBaselinePath,
-      currentBaseline: sourceSizeBaseline
+      currentBaseline: sourceSizeBaseline,
     }),
-    sourceSizeRatchetLines
+    sourceSizeRatchetLines,
   );
-  const oversized = files.flatMap((file) =>
-    oversizedFunctions(file, sources.get(file))
-  );
-  const unsafeEscapes = files.flatMap((file) =>
-    unsafeTypeEscapes(file, sources.get(file))
-  );
+  const oversized = files.flatMap((file) => oversizedFunctions(file, sources.get(file)));
+  const unsafeEscapes = files.flatMap((file) => unsafeTypeEscapes(file, sources.get(file)));
   const graph = dependencyGraph(files, sources);
   const cycles = dependencyCycles(graph);
   const directionViolations = dependencyDirectionViolations(graph);
-  const undeclaredDependencies = undeclaredWorkspaceDependencies(
-    files,
-    sources
-  );
+  const undeclaredDependencies = undeclaredWorkspaceDependencies(files, sources);
   const retiredOwnerPaths = retiredOwnerPathViolations(files, sources);
   if (
     oversizedFiles.length === 0 &&
@@ -364,26 +320,25 @@ const main = () => {
   ) {
     console.log(
       `ashfox architecture gate ok: files <= ${maxFileLines}, ` +
-      `file stems <= ${maxFileStemLength}, ` +
-      `tests <= ${maxTestFileLines} lines, owner contracts/tests canonical, ` +
-      `>${sourceSizeRatchetLines}-line files within baseline, ` +
-      `functions <= ${maxFunctionLines}, unsafe type escapes 0, cycles 0, ` +
-      'layer direction, retired-owner paths, and workspace ' +
-      'manifests valid'
+        `file stems <= ${maxFileStemLength}, ` +
+        `tests <= ${maxTestFileLines} lines, owner contracts/tests canonical, ` +
+        `>${sourceSizeRatchetLines}-line files within baseline, ` +
+        `functions <= ${maxFunctionLines}, unsafe type escapes 0, cycles 0, ` +
+        'layer direction, retired-owner paths, and workspace ' +
+        'manifests valid',
     );
     return;
   }
   for (const finding of oversizedFiles) {
     console.error(
-      `architecture: file ${finding.file} has ${finding.lines} lines ` +
-      `(max ${maxFileLines})`
+      `architecture: file ${finding.file} has ${finding.lines} lines ` + `(max ${maxFileLines})`,
     );
   }
   for (const finding of oversizedFileStems) {
     console.error(
       `architecture: source filename ${finding.file} has a ` +
-      `${finding.length}-character stem (max ${finding.maximumLength}); ` +
-      'move repeated owner context into a directory and shorten the filename'
+        `${finding.length}-character stem (max ${finding.maximumLength}); ` +
+        'move repeated owner context into a directory and shorten the filename',
     );
   }
   for (const finding of contractLayoutRegressions) {
@@ -395,55 +350,45 @@ const main = () => {
   for (const finding of testFileLineRegressions) {
     console.error(
       `architecture: test ${finding.file} has ${finding.lines} lines ` +
-      `(max ${finding.maximumLines})`
+        `(max ${finding.maximumLines})`,
     );
   }
   for (const finding of sourceSizeRegressions) {
     console.error(
       `architecture: ${finding.reason}: ${finding.file} has ` +
-      `${finding.lines} lines (allowed ${finding.allowed})`
+        `${finding.lines} lines (allowed ${finding.allowed})`,
     );
   }
   for (const finding of sourceSizeHistoryRegressions) {
     console.error(
       `architecture: ${finding.reason}: ${finding.file} has ` +
-      `${finding.lines} baseline lines (historical max ${finding.allowed})`
+        `${finding.lines} baseline lines (historical max ${finding.allowed})`,
     );
   }
   for (const finding of oversized) {
     console.error(
       `architecture: function ${finding.file}:${finding.start} ` +
-      `${finding.name} has ${finding.lines} lines ` +
-      `(max ${maxFunctionLines})`
+        `${finding.name} has ${finding.lines} lines ` +
+        `(max ${maxFunctionLines})`,
     );
   }
   for (const finding of unsafeEscapes) {
-    console.error(
-      `architecture: ${finding.kind} ${finding.file}:${finding.line}`
-    );
+    console.error(`architecture: ${finding.kind} ${finding.file}:${finding.line}`);
   }
   for (const cycle of cycles) {
-    console.error(
-      'architecture: dependency cycle ' +
-      cycle.map(relativePath).join(' -> ')
-    );
+    console.error('architecture: dependency cycle ' + cycle.map(relativePath).join(' -> '));
   }
   for (const violation of directionViolations) {
-    console.error(
-      `architecture: forbidden dependency ${violation.source} -> ` +
-      violation.target
-    );
+    console.error(`architecture: forbidden dependency ${violation.source} -> ` + violation.target);
   }
   for (const finding of undeclaredDependencies) {
     console.error(
       `architecture: ${finding.owner} imports undeclared workspace ` +
-      `${finding.target} in ${finding.file}`
+        `${finding.target} in ${finding.file}`,
     );
   }
   for (const finding of retiredOwnerPaths) {
-    console.error(
-      `architecture: retired design owner path remains in ${finding.file}`
-    );
+    console.error(`architecture: retired design owner path remains in ${finding.file}`);
   }
   process.exitCode = 1;
 };
@@ -455,5 +400,5 @@ module.exports = {
   dependencyDirectionViolations,
   dependencyGraph,
   sourceSizeHistoryViolations,
-  sourceSizeRatchetViolations
+  sourceSizeRatchetViolations,
 };

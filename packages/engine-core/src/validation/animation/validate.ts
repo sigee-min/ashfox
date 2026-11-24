@@ -1,14 +1,11 @@
 import type { ProjectDocument } from '../../model';
-import type {
-  FindingSink,
-  IdRegistrar
-} from '../contract';
+import type { FindingSink, IdRegistrar } from '../contract';
 import { validateAnimationClip } from './clip';
 
 export const validateAnimations = (
   document: ProjectDocument,
   add: FindingSink,
-  registerId: IdRegistrar
+  registerId: IdRegistrar,
 ): void => {
   for (const [clipKey, clip] of Object.entries(document.animations)) {
     const path = `animations.${clipKey}`;
@@ -19,7 +16,7 @@ export const validateAnimations = (
         severity: 'error',
         message: `Animation map key "${clipKey}" does not match ID "${clip.id}".`,
         path,
-        clipIds: [clip.id]
+        clipIds: [clip.id],
       });
     }
     validateAnimationClip(clip, document, path, add, registerId);

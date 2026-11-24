@@ -5,7 +5,7 @@ import {
   enforceManualUvMode,
   ensureFaceMap,
   normalizeFaces,
-  resolveFaceTextureRef
+  resolveFaceTextureRef,
 } from '../../../../src/adapters/blockbench/geometry/uvUtils';
 
 {
@@ -40,7 +40,7 @@ import {
     },
     setUVMode(value: boolean) {
       this.setUVModeCalls.push(value);
-    }
+    },
   };
   enforceManualUvMode(cube as never, { preserve: true });
   assert.equal(cube.mapAutoUVCalls, 1);
@@ -56,7 +56,7 @@ import {
     mapAutoUVCalls: 0,
     mapAutoUV() {
       this.mapAutoUVCalls += 1;
-    }
+    },
   };
   enforceManualUvMode(cube as never);
   assert.equal(cube.mapAutoUVCalls, 0);
@@ -68,4 +68,3 @@ import {
   assert.ok(Array.isArray(ALL_FACES));
   assert.equal(ALL_FACES.length, 6);
 }
-

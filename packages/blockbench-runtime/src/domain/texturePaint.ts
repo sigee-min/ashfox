@@ -3,7 +3,7 @@ import {
   clipTextureLineToCanvas,
   createTextureRasterPlan,
   type TextureOpLike,
-  type TextureRasterFailureReason
+  type TextureRasterFailureReason,
 } from './textureOps';
 import { clamp } from './math';
 
@@ -24,7 +24,7 @@ export const parseHexColor = (value: string): Rgba | null => {
     r: (n >> 24) & 0xff,
     g: (n >> 16) & 0xff,
     b: (n >> 8) & 0xff,
-    a: n & 0xff
+    a: n & 0xff,
   };
 };
 
@@ -44,12 +44,14 @@ export const applyTextureOps = (
   width: number,
   height: number,
   ops: readonly unknown[],
-  resolveColor: (value: string) => Rgba | null
-): { ok: true } | {
-  ok: false;
-  opIndex: number;
-  reason: 'invalid_color' | 'invalid_line_width' | TextureRasterFailureReason;
-} => {
+  resolveColor: (value: string) => Rgba | null,
+):
+  | { ok: true }
+  | {
+      ok: false;
+      opIndex: number;
+      reason: 'invalid_color' | 'invalid_line_width' | TextureRasterFailureReason;
+    } => {
   const plan = createTextureRasterPlan(ops, width, height);
   if (!plan.ok) return plan;
   for (let i = 0; i < plan.ops.length; i += 1) {
@@ -92,7 +94,7 @@ const setPixel = (
   height: number,
   x: number,
   y: number,
-  color: Rgba
+  color: Rgba,
 ) => {
   if (x < 0 || y < 0 || x >= width || y >= height) return;
   const idx = (y * width + x) * 4;
@@ -110,7 +112,7 @@ const fillRect = (
   y: number,
   w: number,
   h: number,
-  color: Rgba
+  color: Rgba,
 ) => {
   const xStart = clamp(Math.floor(x), 0, width);
   const yStart = clamp(Math.floor(y), 0, height);
@@ -133,13 +135,22 @@ const strokeRect = (
   w: number,
   h: number,
   lineWidth: number,
-  color: Rgba
+  color: Rgba,
 ) => {
   if (w <= 0 || h <= 0) return;
   fillRect(data, width, height, x, y, w, lineWidth, color);
   fillRect(data, width, height, x, y + h - lineWidth, w, lineWidth, color);
   fillRect(data, width, height, x, y + lineWidth, lineWidth, h - 2 * lineWidth, color);
-  fillRect(data, width, height, x + w - lineWidth, y + lineWidth, lineWidth, h - 2 * lineWidth, color);
+  fillRect(
+    data,
+    width,
+    height,
+    x + w - lineWidth,
+    y + lineWidth,
+    lineWidth,
+    h - 2 * lineWidth,
+    color,
+  );
 };
 
 const drawLine = (
@@ -148,7 +159,7 @@ const drawLine = (
   height: number,
   op: Extract<TextureOpLike, { op: 'draw_line' }>,
   lineWidth: number,
-  color: Rgba
+  color: Rgba,
 ) => {
   const clipped = clipTextureLineToCanvas(op, width, height);
   if (!clipped) return;
@@ -184,7 +195,7 @@ const drawBrush = (
   x: number,
   y: number,
   radius: number,
-  color: Rgba
+  color: Rgba,
 ) => {
   if (radius <= 0) {
     setPixel(data, width, height, x, y, color);

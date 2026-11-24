@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isProjectStateContract,
   type ProjectDiff,
-  type ProjectState
+  type ProjectState,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { TraceLogStore } from '../../src/trace/store';
 import { TraceRecorder } from '../../src/trace/recorder';
@@ -40,13 +40,13 @@ const createState = (): ProjectState => ({
         name: 'tex',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'c1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 16, 16] }] }]
-      }
-    ]
+        cubes: [{ id: 'c1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 16, 16] }] }],
+      },
+    ],
   },
   cubes: [],
   bones: [],
-  animations: []
+  animations: [],
 });
 
 const createDiff = (): ProjectDiff => ({
@@ -56,13 +56,13 @@ const createDiff = (): ProjectDiff => ({
     bones: { added: 0, removed: 0, changed: 0 },
     cubes: { added: 0, removed: 0, changed: 0 },
     textures: { added: 1, removed: 0, changed: 0 },
-    animations: { added: 0, removed: 0, changed: 0 }
+    animations: { added: 0, removed: 0, changed: 0 },
   },
   textures: {
     added: [{ key: 't1', item: { id: 't1', name: 'tex', path: 'path', width: 16, height: 16 } }],
     removed: [],
-    changed: []
-  }
+    changed: [],
+  },
 });
 
 {
@@ -74,11 +74,9 @@ const createDiff = (): ProjectDiff => ({
     textureUsage: {
       ...textureUsage,
       textures: textureUsage.textures.map((entry, index) =>
-        index === 0
-          ? { ...entry, cubeCount: 999, faceCount: 888 }
-          : entry
-      )
-    }
+        index === 0 ? { ...entry, cubeCount: 999, faceCount: 888 } : entry,
+      ),
+    },
   };
   assert.equal(isProjectStateContract(invalidUsage), false);
 
@@ -88,18 +86,20 @@ const createDiff = (): ProjectDiff => ({
       ...createState().counts,
       meshes: 1,
       meshVertices: 3,
-      meshFaces: 1
+      meshFaces: 1,
     },
-    meshes: [{
-      name: 'mesh',
-      uvPolicy: { texelDensity: -1, padding: 99 },
-      vertices: [
-        { id: 'a', pos: [0, 0, 0] },
-        { id: 'b', pos: [1, 0, 0] },
-        { id: 'c', pos: [0, 1, 0] }
-      ],
-      faces: [{ vertices: ['a', 'b', 'c'] }]
-    }]
+    meshes: [
+      {
+        name: 'mesh',
+        uvPolicy: { texelDensity: -1, padding: 99 },
+        vertices: [
+          { id: 'a', pos: [0, 0, 0] },
+          { id: 'b', pos: [1, 0, 0] },
+          { id: 'c', pos: [0, 1, 0] },
+        ],
+        faces: [{ vertices: ['a', 'b', 'c'] }],
+      },
+    ],
   };
   assert.equal(isProjectStateContract(invalidUvPolicy), false);
 }
@@ -107,7 +107,7 @@ const createDiff = (): ProjectDiff => ({
 const header = () => ({
   kind: 'header' as const,
   schemaVersion: 1 as const,
-  createdAt: '2026-08-06T00:00:00.000Z'
+  createdAt: '2026-08-06T00:00:00.000Z',
 });
 
 const appendHeader = (store: TraceLogStore): void => {
@@ -121,7 +121,7 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
     ts: new Date().toISOString(),
     route: 'tool',
     op,
-    response: { ok: true, data: { seq } }
+    response: { ok: true, data: { seq } },
   });
 
 // Store trims by maxBytes.
@@ -143,7 +143,7 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
   const recorder = new TraceRecorder(
     {
       getProjectState: (_payload) => ok({ project: createState() }),
-      getProjectDiff: (_payload) => ok({ diff: createDiff() })
+      getProjectDiff: (_payload) => ok({ diff: createDiff() }),
     },
     store,
     {
@@ -156,10 +156,10 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
           ops: ['paint_faces'],
           includeUsage: true,
           stateDetail: 'full',
-          diffDetail: 'full'
-        }
-      ]
-    }
+          diffDetail: 'full',
+        },
+      ],
+    },
   );
 
   recorder.record('paint_faces', {}, { ok: true, data: { ok: true } });
@@ -168,8 +168,12 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
   const parsed = parseTraceLogText(store.getText());
   assert.equal(parsed.ok, true);
   if (parsed.ok) {
-    const detailed = parsed.records.find((record) => record.kind === 'step' && record.op === 'paint_faces');
-    const summary = parsed.records.find((record) => record.kind === 'step' && record.op === 'get_project_state');
+    const detailed = parsed.records.find(
+      (record) => record.kind === 'step' && record.op === 'paint_faces',
+    );
+    const summary = parsed.records.find(
+      (record) => record.kind === 'step' && record.op === 'get_project_state',
+    );
     assert.ok(detailed && detailed.kind === 'step');
     assert.ok(summary && summary.kind === 'step');
     if (detailed && detailed.kind === 'step') {
@@ -191,34 +195,52 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
   let recorded = 0;
   const recorder = new TraceRecorder(
     {
-      getProjectState: () => ok({
-        project: {
-          ...createState(),
-          revision: `r${++revision}`,
-          dirty: undefined,
-          uvPixelsPerBlock: undefined,
-          meshes: undefined
-        }
-      }),
-      getProjectDiff: () => ok({
-        diff: { ...createDiff(), baseMissing: undefined }
-      })
+      getProjectState: () =>
+        ok({
+          project: {
+            ...createState(),
+            revision: `r${++revision}`,
+            dirty: undefined,
+            uvPixelsPerBlock: undefined,
+            meshes: undefined,
+          },
+        }),
+      getProjectDiff: () =>
+        ok({
+          diff: { ...createDiff(), baseMissing: undefined },
+        }),
     },
     store,
     {
       stateDetail: 'full',
       diffDetail: 'full',
-      onRecord: () => { recorded += 1; }
-    }
+      onRecord: () => {
+        recorded += 1;
+      },
+    },
   );
-  assert.equal(recorder.record('one', { id: undefined }, {
-    ok: true,
-    data: { id: undefined }
-  }), null);
-  assert.equal(recorder.record('two', {}, {
-    ok: true,
-    data: {}
-  }), null);
+  assert.equal(
+    recorder.record(
+      'one',
+      { id: undefined },
+      {
+        ok: true,
+        data: { id: undefined },
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    recorder.record(
+      'two',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    ),
+    null,
+  );
   assert.equal(recorded, 2);
   assert.equal(store.size(), 3);
   const parsed = parseTraceLogText(store.getText());
@@ -241,33 +263,47 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
     writer: {
       write: () => {
         writes += 1;
-        return writes === 1
-          ? { code: 'io_error' as const, message: 'header flush failed' }
-          : null;
-      }
-    }
+        return writes === 1 ? { code: 'io_error' as const, message: 'header flush failed' } : null;
+      },
+    },
   });
   const recorder = new TraceRecorder(
     {
       getProjectState: () => ok({ project: createState() }),
-      getProjectDiff: () => ok({ diff: createDiff() })
+      getProjectDiff: () => ok({ diff: createDiff() }),
     },
     store,
     {
       includeDiff: false,
-      onRecord: () => { recorded += 1; }
-    }
+      onRecord: () => {
+        recorded += 1;
+      },
+    },
   );
-  assert.equal(recorder.record('one', {}, {
-    ok: true,
-    data: {}
-  })?.code, 'io_error');
+  assert.equal(
+    recorder.record(
+      'one',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    )?.code,
+    'io_error',
+  );
   assert.equal(store.size(), 2);
   assert.equal(recorded, 1);
-  assert.equal(recorder.record('two', {}, {
-    ok: true,
-    data: {}
-  }), null);
+  assert.equal(
+    recorder.record(
+      'two',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    ),
+    null,
+  );
   assert.equal(store.size(), 3);
   assert.equal(recorded, 2);
   assert.equal(parseTraceLogText(store.getText()).ok, true);
@@ -284,25 +320,39 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
         writes += 1;
         if (writes === 1) throw new Error('writer failed');
         return null;
-      }
-    }
+      },
+    },
   });
   const recorder = new TraceRecorder(
     {
       getProjectState: () => ok({ project: createState() }),
-      getProjectDiff: () => ok({ diff: createDiff() })
+      getProjectDiff: () => ok({ diff: createDiff() }),
     },
     store,
-    { includeDiff: false }
+    { includeDiff: false },
   );
-  assert.equal(recorder.record('one', {}, {
-    ok: true,
-    data: {}
-  })?.details?.reason, 'trace_log_writer_threw');
-  assert.equal(recorder.record('two', {}, {
-    ok: true,
-    data: {}
-  }), null);
+  assert.equal(
+    recorder.record(
+      'one',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    )?.details?.reason,
+    'trace_log_writer_threw',
+  );
+  assert.equal(
+    recorder.record(
+      'two',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    ),
+    null,
+  );
   assert.equal(store.size(), 3);
   assert.equal(writes, 3);
   assert.equal(parseTraceLogText(store.getText()).ok, true);
@@ -316,29 +366,33 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
     writer: {
       write: () => {
         throw new Error('flush writer failed');
-      }
-    }
+      },
+    },
   });
   const recorder = new TraceRecorder(
     {
       getProjectState: () => ok({ project: createState() }),
-      getProjectDiff: () => ok({ diff: createDiff() })
+      getProjectDiff: () => ok({ diff: createDiff() }),
     },
-    store
+    store,
   );
-  assert.equal(recorder.record('one', {}, {
-    ok: true,
-    data: {}
-  }), null);
   assert.equal(
-    recorder.flush()?.details?.reason,
-    'trace_log_writer_threw'
+    recorder.record(
+      'one',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    ),
+    null,
   );
+  assert.equal(recorder.flush()?.details?.reason, 'trace_log_writer_threw');
   assert.equal(
     recorder.flushTo({
-      write: () => ({ code: 'io_error', message: 'explicit failure' })
+      write: () => ({ code: 'io_error', message: 'explicit failure' }),
     })?.message,
-    'explicit failure'
+    'explicit failure',
   );
 }
 
@@ -349,25 +403,40 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
   const store = new TraceLogStore({ autoFlush: false, maxEntries: 20 });
   const recorder = new TraceRecorder(
     {
-      getProjectState: () => ok({
-        project: { ...createState(), revision: `r${++revision}` }
-      }),
+      getProjectState: () =>
+        ok({
+          project: { ...createState(), revision: `r${++revision}` },
+        }),
       getProjectDiff: ({ sinceRevision }) => {
         diffCalls.push(sinceRevision);
         return ok({ diff: createDiff() });
-      }
+      },
     },
-    store
+    store,
   );
-  assert.equal(recorder.record('', {}, {
-    ok: true,
-    data: {}
-  })?.details?.reason, 'trace_log_record_invalid');
+  assert.equal(
+    recorder.record(
+      '',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    )?.details?.reason,
+    'trace_log_record_invalid',
+  );
   assert.equal(store.size(), 1);
-  assert.equal(recorder.record('accepted', {}, {
-    ok: true,
-    data: {}
-  }), null);
+  assert.equal(
+    recorder.record(
+      'accepted',
+      {},
+      {
+        ok: true,
+        data: {},
+      },
+    ),
+    null,
+  );
   assert.deepEqual(diffCalls, []);
   const parsed = parseTraceLogText(store.getText());
   assert.equal(parsed.ok, true);
@@ -387,7 +456,7 @@ const appendStep = (store: TraceLogStore, seq: number, op: string) =>
   const scheduler = new TraceLogFlushScheduler({
     store,
     writer,
-    policy: { flushEvery: 2 }
+    policy: { flushEvery: 2 },
   });
 
   appendStep(store, 1, 'one');

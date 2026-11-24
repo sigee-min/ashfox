@@ -5,7 +5,7 @@ import type {
   AssetBooleanValue,
   AssetNumberValue,
   AssetValue,
-  AssetVectorValue
+  AssetVectorValue,
 } from './value/contract';
 import type { AssetSymbolId } from './contract';
 
@@ -118,12 +118,7 @@ export interface InstantiatedMotion {
 }
 
 export type AssetBudgetDimension =
-  | 'instances'
-  | 'bones'
-  | 'nodes'
-  | 'faces'
-  | 'motionKeys'
-  | 'diagnostics';
+  'instances' | 'bones' | 'nodes' | 'faces' | 'motionKeys' | 'diagnostics';
 
 export interface AssetBudgetLedger {
   readonly limits: Readonly<Record<AssetBudgetDimension, number>>;

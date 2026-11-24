@@ -1,4 +1,8 @@
-import { McpContentBlock, ReadTextureResult, RenderPreviewResult } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  McpContentBlock,
+  ReadTextureResult,
+  RenderPreviewResult,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { RenderPreviewStructured } from '@ashfox/blockbench-contracts/types/preview';
 
 export const buildRenderPreviewContent = (result: RenderPreviewResult): McpContentBlock[] => {
@@ -17,7 +21,9 @@ export const buildRenderPreviewContent = (result: RenderPreviewResult): McpConte
   return [];
 };
 
-export const buildRenderPreviewStructured = (result: RenderPreviewResult): RenderPreviewStructured => {
+export const buildRenderPreviewStructured = (
+  result: RenderPreviewResult,
+): RenderPreviewStructured => {
   const image = result.image ? omitDataUri(result.image) : undefined;
   const frames = result.frames ? result.frames.map((frame) => omitDataUri(frame)) : undefined;
   return {
@@ -25,7 +31,7 @@ export const buildRenderPreviewStructured = (result: RenderPreviewResult): Rende
     frameCount: result.frameCount,
     ...(image ? { image } : {}),
     ...(frames ? { frames } : {}),
-    ...(result.saved ? { saved: result.saved } : {})
+    ...(result.saved ? { saved: result.saved } : {}),
   };
 };
 
@@ -36,7 +42,7 @@ export const buildTextureContent = (result: ReadTextureResult): McpContentBlock[
 
 export const buildTextureStructured = (result: ReadTextureResult): Record<string, unknown> => ({
   texture: omitDataUri(result.texture),
-  ...(result.saved ? { saved: result.saved } : {})
+  ...(result.saved ? { saved: result.saved } : {}),
 });
 
 const omitDataUri = <T extends { dataUri: string }>(item: T): Omit<T, 'dataUri'> => {
@@ -56,7 +62,3 @@ const extractBase64FromDataUri = (dataUri: string): string | null => {
   if (comma === -1) return null;
   return raw.slice(comma + 1).trim();
 };
-
-
-
-

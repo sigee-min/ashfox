@@ -1,17 +1,10 @@
-import type {
-  AuthoredAssetWorkspace
-} from '../workspace/contract';
-import type {
-  WorkspaceDiagnostic
-} from '../workspace/diagnostic';
-import type {
-  WorkspaceLimitsOverride
-} from '../workspace/limits';
+import type { AuthoredAssetWorkspace } from '../workspace/contract';
+import type { WorkspaceDiagnostic } from '../workspace/diagnostic';
+import type { WorkspaceLimitsOverride } from '../workspace/limits';
 
 /** Portable container identity for the one workspace source authority. */
 export const ASHFOX_WORKSPACE_FILE_EXTENSION = '.ashfoxworkspace' as const;
-export const ASHFOX_WORKSPACE_FILE_CONTENT_TYPE =
-  'application/vnd.ashfox.workspace+json' as const;
+export const ASHFOX_WORKSPACE_FILE_CONTENT_TYPE = 'application/vnd.ashfox.workspace+json' as const;
 
 /** File bytes or already-decoded UTF-8 text at the host boundary. */
 export type WorkspaceFileInput = string | Uint8Array;

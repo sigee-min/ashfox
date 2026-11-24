@@ -1,3 +1,1 @@
-export {
-  createExportAdaptationReceipt
-} from './receipt';
+export { createExportAdaptationReceipt } from './receipt';

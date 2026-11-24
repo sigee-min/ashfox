@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { findTextureRef, listTextureStats } from '../../../../src/adapters/blockbench/texture/textureLookup';
+import {
+  findTextureRef,
+  listTextureStats,
+} from '../../../../src/adapters/blockbench/texture/textureLookup';
 
 type Globals = { Texture?: unknown };
 
@@ -92,23 +95,21 @@ class FakeTexture {
       name: 'atlas',
       width: 32,
       height: 48,
-      path: '/tmp/atlas.png'
+      path: '/tmp/atlas.png',
     });
     assert.deepEqual(stats[1], {
       id: 'id-2',
       name: 'fallback-size',
       width: 16,
       height: 24,
-      path: 'memory://fallback'
+      path: 'memory://fallback',
     });
     assert.deepEqual(stats[2], {
       id: 'uuid-3',
       name: 'texture',
       width: 12,
       height: 6,
-      path: undefined
+      path: undefined,
     });
   });
 }
-
-

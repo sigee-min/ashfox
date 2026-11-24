@@ -6,7 +6,7 @@ interface ParentNode {
 /** Internal scene validation; preserve one cycle report per starting node. */
 export const parentCycles = (
   nodes: readonly ParentNode[],
-  byId: ReadonlyMap<string, ParentNode>
+  byId: ReadonlyMap<string, ParentNode>,
 ): readonly string[] => {
   // Duplicate IDs are already invalid. Keep their original first-match walk
   // so even malformed scenes retain the same diagnostic multiplicity/order.
@@ -29,7 +29,7 @@ export const parentCycles = (
 
 const uniqueParentCycles = (
   nodes: readonly ParentNode[],
-  byId: ReadonlyMap<string, ParentNode>
+  byId: ReadonlyMap<string, ParentNode>,
 ): readonly string[] => {
   const resolved = new Map<string, string | null>();
   for (const node of nodes) {

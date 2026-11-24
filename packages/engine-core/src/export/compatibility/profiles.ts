@@ -2,11 +2,9 @@ import type { ExportFormatProfile } from '../adapter/contract';
 import type { ExportAdapterInput } from '../adapter/input';
 import { exportCompatibilityFor } from './queries';
 
-export function exportProfileForAdapter(
-  input: ExportAdapterInput
-): ExportFormatProfile | null {
-  if (arguments.length !== 1) throw new TypeError(
-    'exportProfileForAdapter expects exactly one closed input.');
+export function exportProfileForAdapter(input: ExportAdapterInput): ExportFormatProfile | null {
+  if (arguments.length !== 1)
+    throw new TypeError('exportProfileForAdapter expects exactly one closed input.');
   switch (input.target) {
     case 'gltf':
     case 'glb': {
@@ -14,7 +12,7 @@ export function exportProfileForAdapter(
       if (!compatibility) return null;
       return {
         ...compatibility.profile,
-        modelPath: input.modelPath
+        modelPath: input.modelPath,
       };
     }
     case 'java_block': {
@@ -23,7 +21,7 @@ export function exportProfileForAdapter(
       return {
         ...compatibility.profile,
         namespace: input.namespace,
-        modelPath: input.modelPath
+        modelPath: input.modelPath,
       };
     }
     case 'bedrock': {
@@ -34,8 +32,7 @@ export function exportProfileForAdapter(
         namespace: input.namespace,
         modelPath: input.modelPath,
         animationPath: input.modelPath,
-        geometryIdentifier:
-          `geometry.${input.modelPath.split('/').join('.')}`
+        geometryIdentifier: `geometry.${input.modelPath.split('/').join('.')}`,
       };
     }
     case 'geckolib5': {
@@ -46,8 +43,7 @@ export function exportProfileForAdapter(
         namespace: input.namespace,
         modelPath: input.modelPath,
         animationPath: input.modelPath,
-        geometryIdentifier:
-          `geometry.${input.modelPath.split('/').join('.')}`
+        geometryIdentifier: `geometry.${input.modelPath.split('/').join('.')}`,
       };
     }
   }

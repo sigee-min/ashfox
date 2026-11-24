@@ -12,7 +12,7 @@ import {
   readAuthoredAssetWorkspace,
   readWorkspaceLock,
   readWorkspaceManifest,
-  withWorkspaceLimits
+  withWorkspaceLimits,
 } from '../../../src/project/workspace';
 import { assetSource, workspaceFixture } from './fixtures';
 
@@ -27,23 +27,30 @@ assert.equal(computeWorkspaceHash(opened.value), computeWorkspaceHash(workspace)
 
 for (const unknownKey of [
   { format: ASHFOX_WORKSPACE_FORMAT, version: 1, packages: [], extra: true },
-  { format: ASHFOX_LOCK_FORMAT, version: 1, compilerFingerprint: 'x', packages: [], extra: true }
+  { format: ASHFOX_LOCK_FORMAT, version: 1, compilerFingerprint: 'x', packages: [], extra: true },
 ]) {
-  const result = 'compilerFingerprint' in unknownKey
-    ? readWorkspaceLock(unknownKey)
-    : readWorkspaceManifest(unknownKey);
+  const result =
+    'compilerFingerprint' in unknownKey
+      ? readWorkspaceLock(unknownKey)
+      : readWorkspaceManifest(unknownKey);
   assert.equal(result.ok, false, 'closed readers reject unknown keys');
 }
 
 for (const badPath of [
-  '../escape.ashfox', '/absolute.ashfox', 'a//b.ashfox',
-  'a/./b.ashfox', 'a/../b.ashfox', 'a\\b.ashfox', 'a%2Fb.ashfox'
-]) assert.throws(() => normalizeLogicalPath(badPath));
+  '../escape.ashfox',
+  '/absolute.ashfox',
+  'a//b.ashfox',
+  'a/./b.ashfox',
+  'a/../b.ashfox',
+  'a\\b.ashfox',
+  'a%2Fb.ashfox',
+])
+  assert.throws(() => normalizeLogicalPath(badPath));
 assert.throws(() => normalizeLogicalPath('e\u0301.ashfox'));
 assert.throws(() => normalizeLogicalPath('bad\uD800.ashfox'));
 const malformedSource = readAuthoredAssetWorkspace({
   ...workspace,
-  files: [{ path: 'dragon/main.ashfox', source: 'bad\uD800' }]
+  files: [{ path: 'dragon/main.ashfox', source: 'bad\uD800' }],
 });
 assert.equal(malformedSource.ok, false);
 
@@ -51,8 +58,8 @@ const duplicate = readAuthoredAssetWorkspace({
   ...workspace,
   files: [
     { path: 'dragon/main.ashfox', source },
-    { path: 'dragon/MAIN.ashfox', source }
-  ]
+    { path: 'dragon/MAIN.ashfox', source },
+  ],
 });
 assert.equal(duplicate.ok, false);
 
@@ -63,10 +70,11 @@ assert.throws(() => withWorkspaceLimits({ maxFiles: Number.POSITIVE_INFINITY }))
 assert.throws(() => withWorkspaceLimits({ maxFiles: 0 }));
 
 const staleLock = structuredClone(workspace);
-(staleLock.lock.packages[0] as { contentHash: string }).contentHash =
-  'sha256:' + '0'.repeat(64);
+(staleLock.lock.packages[0] as { contentHash: string }).contentHash = 'sha256:' + '0'.repeat(64);
 const stale = readAuthoredAssetWorkspace(staleLock);
 assert.equal(stale.ok, false);
-assert.ok(!stale.ok && stale.diagnostics.some((item) => item.code === 'workspace.lock.stale_content'));
+assert.ok(
+  !stale.ok && stale.diagnostics.some((item) => item.code === 'workspace.lock.stale_content'),
+);
 
 console.log('workspace contract readers and authority hash ok');

@@ -9,7 +9,7 @@ import {
   restoreCamera,
   selectPreview,
   snapshotAnimation,
-  snapshotCamera
+  snapshotCamera,
 } from '../../../../src/adapters/blockbench/preview/previewUtils';
 
 const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
@@ -18,7 +18,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -63,10 +63,10 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     zoom: 1,
     updateProjectionMatrix: () => {
       projectionUpdates += 1;
-    }
+    },
   };
   const controls = {
-    target: { x: 5, y: 6, z: 7 }
+    target: { x: 5, y: 6, z: 7 },
   };
   const state = snapshotCamera(camera, controls);
   camera.position.x = 99;
@@ -100,7 +100,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     time: 0,
     select: () => {
       selectCalls += 1;
-    }
+    },
   };
   withGlobals(
     {
@@ -111,8 +111,8 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         preview: (time: number) => {
           previewCalls += 1;
           previewTime = time;
-        }
-      }
+        },
+      },
     },
     () => {
       const snap = snapshotAnimation();
@@ -135,7 +135,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       assert.equal(selectCalls, 2);
       assert.equal(previewCalls, 2);
       assert.equal(previewTime, 0.5);
-    }
+    },
   );
 }
 
@@ -143,18 +143,18 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 {
   const clip = {
     name: 'idle',
-    time: 0
+    time: 0,
   };
   withGlobals(
     {
       Animations: [clip],
       Animation: { selected: clip, all: [clip] },
-      Animator: undefined
+      Animator: undefined,
     },
     () => {
       restoreAnimation({ selectedName: 'idle', timeSeconds: 0.75 });
       assert.equal(clip.time, 0.75);
-    }
+    },
   );
 }
 
@@ -173,14 +173,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       },
       rotateLeft: (radians: number) => {
         leftRadians = radians;
-      }
+      },
     },
     {
       rotateZ: (radians: number) => {
         rollRadians = radians;
-      }
+      },
     },
-    [90, 180, 45]
+    [90, 180, 45],
   );
   assert.ok(Math.abs(upRadians - Math.PI / 2) < 1e-9);
   assert.ok(Math.abs(leftRadians - Math.PI) < 1e-9);
@@ -194,4 +194,3 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   const chosenB = selectPreview(null, [{}, fallback] as Array<{ canvas?: HTMLCanvasElement }>);
   assert.equal(chosenB, fallback);
 }
-

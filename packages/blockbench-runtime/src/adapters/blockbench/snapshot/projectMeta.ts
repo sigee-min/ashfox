@@ -45,4 +45,3 @@ export const guessFormatKind = (formatId: string | null): FormatKind | null => {
   if (!formatId) return null;
   return FORMAT_KINDS.find((kind) => matchesFormatKind(kind, formatId)) ?? null;
 };
-

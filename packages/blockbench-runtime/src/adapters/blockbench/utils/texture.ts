@@ -8,10 +8,15 @@ const pickPositive = (...values: Array<number | undefined>) => {
 };
 
 export const readTextureSize = (
-  tex: TextureInstance | null | undefined
+  tex: TextureInstance | null | undefined,
 ): { width?: number; height?: number } => {
   if (!tex) return {};
   const width = pickPositive(tex.canvas?.width, tex.width, tex.img?.naturalWidth, tex.img?.width);
-  const height = pickPositive(tex.canvas?.height, tex.height, tex.img?.naturalHeight, tex.img?.height);
+  const height = pickPositive(
+    tex.canvas?.height,
+    tex.height,
+    tex.img?.naturalHeight,
+    tex.img?.height,
+  );
   return { width, height };
 };

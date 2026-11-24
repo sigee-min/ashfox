@@ -1,10 +1,6 @@
 import { Logger } from '../../logging';
 import { ToolExecutor } from './executor';
-import {
-  HttpRequest,
-  McpServerConfig,
-  ResponsePlan
-} from './types';
+import { HttpRequest, McpServerConfig, ResponsePlan } from './types';
 import { DEFAULT_TOOL_REGISTRY, ToolRegistry } from './tools';
 import { SessionStore } from './session';
 import { encodeSseEvent } from './sse';
@@ -16,7 +12,7 @@ import {
   MCP_CONTENT_TYPE_REQUIRED,
   MCP_METHOD_NOT_ALLOWED,
   MCP_ROUTE_NOT_FOUND,
-  MCP_UNAUTHORIZED
+  MCP_UNAUTHORIZED,
 } from '../../shared/messages';
 import {
   DEFAULT_SUPPORTED_PROTOCOLS,
@@ -24,7 +20,7 @@ import {
   matchesPath,
   normalizePath,
   normalizeSessionTtl,
-  supportsSse
+  supportsSse,
 } from './routerUtils';
 import { isJsonContentType, parsePostMessage, validateProtocolHeader } from './routerPost';
 import { validateIngressSecurity } from './ingressSecurity';
@@ -45,7 +41,7 @@ export class McpRouter {
     executor: ToolExecutor,
     log: Logger,
     resources?: ResourceStore,
-    toolRegistry: ToolRegistry = DEFAULT_TOOL_REGISTRY
+    toolRegistry: ToolRegistry = DEFAULT_TOOL_REGISTRY,
   ) {
     this.config = { ...config, path: normalizePath(config.path) };
     this.executor = executor;
@@ -69,8 +65,8 @@ export class McpRouter {
       return this.jsonResponse(403, {
         error: {
           code: ingressFailure.code,
-          message: ingressFailure.message
-        }
+          message: ingressFailure.message,
+        },
       });
     }
 
@@ -86,7 +82,9 @@ export class McpRouter {
     if (method === 'POST') {
       return this.handlePost(req);
     }
-    return this.jsonResponse(405, { error: { code: 'method_not_allowed', message: MCP_METHOD_NOT_ALLOWED } });
+    return this.jsonResponse(405, {
+      error: { code: 'method_not_allowed', message: MCP_METHOD_NOT_ALLOWED },
+    });
   }
 
   private authorize(req: HttpRequest): ResponsePlan | null {
@@ -100,7 +98,9 @@ export class McpRouter {
 
   private validatePostRequest(req: HttpRequest): ResponsePlan | null {
     if (!isJsonContentType(req.headers['content-type'])) {
-      return this.jsonResponse(415, { error: { code: 'invalid_payload', message: MCP_CONTENT_TYPE_REQUIRED } });
+      return this.jsonResponse(415, {
+        error: { code: 'invalid_payload', message: MCP_CONTENT_TYPE_REQUIRED },
+      });
     }
     return null;
   }
@@ -113,14 +113,14 @@ export class McpRouter {
       toolRegistry: this.toolRegistry,
       sessions: this.sessions,
       supportedProtocols: this.supportedProtocols,
-      config: this.config
+      config: this.config,
     };
   }
 
   private toPostResponse(
     req: HttpRequest,
     outcome: Awaited<ReturnType<typeof handleMessage>>,
-    sessionResult: Extract<ReturnType<typeof resolveSession>, { ok: true }>
+    sessionResult: Extract<ReturnType<typeof resolveSession>, { ok: true }>,
   ): ResponsePlan {
     if (outcome.type === 'notification') {
       return this.emptyResponse(202, this.baseHeaders(sessionResult.session?.protocolVersion));
@@ -138,17 +138,17 @@ export class McpRouter {
           ...headers,
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          Connection: 'keep-alive'
+          Connection: 'keep-alive',
         },
         events: [encodeSseEvent(JSON.stringify(outcome.response))],
-        close: true
+        close: true,
       };
     }
     return {
       kind: 'json',
       status: outcome.status,
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(outcome.response)
+      body: JSON.stringify(outcome.response),
     };
   }
 
@@ -160,25 +160,41 @@ export class McpRouter {
     if (!parsed.ok) return this.jsonResponse(400, parsed.error);
 
     const protocolHeader = req.headers['mcp-protocol-version'];
-    const protocolError = validateProtocolHeader(parsed.id, protocolHeader, this.supportedProtocols);
+    const protocolError = validateProtocolHeader(
+      parsed.id,
+      protocolHeader,
+      this.supportedProtocols,
+    );
     if (protocolError) return this.jsonResponse(400, protocolError);
 
-    const sessionResult = resolveSession(this.sessions, parsed.message, parsed.id, protocolHeader, req.headers);
+    const sessionResult = resolveSession(
+      this.sessions,
+      parsed.message,
+      parsed.id,
+      protocolHeader,
+      req.headers,
+    );
     if (!sessionResult.ok) {
       return this.jsonResponse(sessionResult.status, sessionResult.error);
     }
     this.sessions.touch(sessionResult.session);
 
-    const outcome = await handleMessage(this.createRpcContext(), parsed.message, sessionResult.session, parsed.id);
+    const outcome = await handleMessage(
+      this.createRpcContext(),
+      parsed.message,
+      sessionResult.session,
+      parsed.id,
+    );
     return this.toPostResponse(req, outcome, sessionResult);
   }
 
   private getHttpContext() {
     return {
       sessions: this.sessions,
-      getSessionFromHeaders: (headers: Record<string, string>) => getSessionFromHeaders(this.sessions, headers),
+      getSessionFromHeaders: (headers: Record<string, string>) =>
+        getSessionFromHeaders(this.sessions, headers),
       baseHeaders: (protocolVersion?: string | null) => this.baseHeaders(protocolVersion),
-      jsonResponse: (status: number, body: unknown) => this.jsonResponse(status, body)
+      jsonResponse: (status: number, body: unknown) => this.jsonResponse(status, body),
     };
   }
 
@@ -201,7 +217,7 @@ export class McpRouter {
       kind: 'json',
       status,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     };
   }
 
@@ -209,5 +225,3 @@ export class McpRouter {
     return { kind: 'empty', status, headers };
   }
 }
-
-

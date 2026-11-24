@@ -16,29 +16,21 @@ const LINE_PATTERN_REGISTRY = Object.freeze({
   'throw-in-src': /\bthrow\b/,
   'todo-fixme-comment': /\/\/\s*(TODO|FIXME)\b|\/\*\s*(TODO|FIXME)\b/,
   'ts-ignore': /@ts-ignore|@ts-expect-error/,
-  'browser-authoring-contract':
-    /window\.ashfox|data-ashfox-agent-manifest|agent-manifest\.json/
+  'browser-authoring-contract': /window\.ashfox|data-ashfox-agent-manifest|agent-manifest\.json/,
 });
-const AST_PATTERN_IDS = Object.freeze([
-  'double-assertion',
-  'explicit-any'
-]);
+const AST_PATTERN_IDS = Object.freeze(['double-assertion', 'explicit-any']);
 
-const compareText = (left, right) =>
-  left < right ? -1 : left > right ? 1 : 0;
+const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
-const registryIds = () => [
-  ...Object.keys(LINE_PATTERN_REGISTRY),
-  ...AST_PATTERN_IDS
-].sort(compareText);
+const registryIds = () =>
+  [...Object.keys(LINE_PATTERN_REGISTRY), ...AST_PATTERN_IDS].sort(compareText);
 
 const assertSourcePatternRegistryMatches = (policies) => {
   const declared = policies.map((policy) => policy.id).sort(compareText);
   const implemented = registryIds();
   if (JSON.stringify(declared) !== JSON.stringify(implemented)) {
     throw new Error(
-      'quality: forbidden source rule implementations do not match ' +
-      'development-manifest.json'
+      'quality: forbidden source rule implementations do not match ' + 'development-manifest.json',
     );
   }
 };
@@ -59,42 +51,37 @@ const linePatternFindings = (relativePath, source, policiesById) => {
         file: relativePath,
         line: index + 1,
         rule: id,
-        snippet: lines[index].trim().slice(0, 200)
+        snippet: lines[index].trim().slice(0, 200),
       });
     }
   }
   return findings;
 };
 
-const astPatternFindings = (
-  filePath,
-  relativePath,
-  source,
-  policiesById
-) => {
-  const active = new Set(AST_PATTERN_IDS.filter((id) => {
-    const policy = policiesById.get(id);
-    return policy && policyAppliesToPath(policy, relativePath);
-  }));
+const astPatternFindings = (filePath, relativePath, source, policiesById) => {
+  const active = new Set(
+    AST_PATTERN_IDS.filter((id) => {
+      const policy = policiesById.get(id);
+      return policy && policyAppliesToPath(policy, relativePath);
+    }),
+  );
   if (active.size === 0) return [];
   const sourceFile = ts.createSourceFile(
     filePath,
     source,
     ts.ScriptTarget.Latest,
     true,
-    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const lines = source.split(/\r?\n/);
   const findings = [];
   const report = (node, rule) => {
-    const line = sourceFile.getLineAndCharacterOfPosition(
-      node.getStart(sourceFile)
-    ).line + 1;
+    const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
     findings.push({
       file: relativePath,
       line,
       rule,
-      snippet: lines[line - 1].trim().slice(0, 200)
+      snippet: lines[line - 1].trim().slice(0, 200),
     });
   };
   const visit = (node) => {
@@ -116,20 +103,15 @@ const astPatternFindings = (
   return findings;
 };
 
-const sourcePatternFindings = (
-  filePath,
-  relativePath,
-  source,
-  policies
-) => {
+const sourcePatternFindings = (filePath, relativePath, source, policies) => {
   const policiesById = new Map(policies.map((policy) => [policy.id, policy]));
   return [
     ...linePatternFindings(relativePath, source, policiesById),
-    ...astPatternFindings(filePath, relativePath, source, policiesById)
+    ...astPatternFindings(filePath, relativePath, source, policiesById),
   ];
 };
 
 module.exports = {
   assertSourcePatternRegistryMatches,
-  sourcePatternFindings
+  sourcePatternFindings,
 };

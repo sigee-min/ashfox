@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { runDeleteTexture, runImportTexture, runUpdateTexture } from '../../../../src/adapters/blockbench/texture/textureCommands';
+import {
+  runDeleteTexture,
+  runImportTexture,
+  runUpdateTexture,
+} from '../../../../src/adapters/blockbench/texture/textureCommands';
 import { noopLog } from '../../../helpers';
 
 const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
@@ -9,7 +13,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -43,12 +47,12 @@ class FakeTexture {
     this.height = options.height ?? 16;
     this.ctx = {
       clearRect: () => undefined,
-      drawImage: () => undefined
+      drawImage: () => undefined,
     };
     this.canvas = {
       width: this.width,
       height: this.height,
-      getContext: (type: string) => (type === '2d' ? this.ctx : null)
+      getContext: (type: string) => (type === '2d' ? this.ctx : null),
     };
   }
 
@@ -99,19 +103,19 @@ class NoCanvasTexture {
       Blockbench: {
         dispatchEvent: (name: string, payload?: unknown) => {
           dispatched.push({ name, payload });
-        }
+        },
       },
-      Undo: undefined
+      Undo: undefined,
     },
     () => {
       const err = runUpdateTexture(noopLog, {
         name: 'tex',
         image: {} as CanvasImageSource,
         width: 16,
-        height: 16
+        height: 16,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(dispatched.length, 1);
   assert.equal(dispatched[0]?.name, 'ashfox:texture_changed');
@@ -124,24 +128,32 @@ class NoCanvasTexture {
   new FakeTexture({ name: 'tex', width: 16, height: 16 }).add();
   let firstCalls = 0;
   let secondCalls = 0;
-  const previewFirst = { render: () => { firstCalls += 1; } };
-  const previewSecond = { render: () => { secondCalls += 1; } };
+  const previewFirst = {
+    render: () => {
+      firstCalls += 1;
+    },
+  };
+  const previewSecond = {
+    render: () => {
+      secondCalls += 1;
+    },
+  };
   withGlobals(
     {
       Texture: FakeTexture,
       Preview: { selected: previewFirst, all: [previewFirst, previewSecond] },
       Blockbench: undefined,
-      Undo: undefined
+      Undo: undefined,
     },
     () => {
       const err = runUpdateTexture(noopLog, {
         name: 'tex',
         image: {} as CanvasImageSource,
         width: 16,
-        height: 16
+        height: 16,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(firstCalls, 1);
   assert.equal(secondCalls, 1);
@@ -155,18 +167,18 @@ class NoCanvasTexture {
       Texture: NoCanvasTexture,
       Preview: undefined,
       Blockbench: undefined,
-      Undo: undefined
+      Undo: undefined,
     },
     () => {
       const err = runImportTexture(noopLog, {
         name: 'no_canvas',
         image: {} as CanvasImageSource,
         width: 16,
-        height: 16
+        height: 16,
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -183,25 +195,27 @@ class NoCanvasTexture {
       Texture: FakeTexture,
       Preview: undefined,
       Blockbench: undefined,
-      Undo: undefined
+      Undo: undefined,
     },
     () => {
       const err = runUpdateTexture(noopLog, {
         name: 'tex',
         image: {} as CanvasImageSource,
         width: 16,
-        height: 16
+        height: 16,
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'io_error');
-    }
+    },
   );
 }
 
 // Delete failures should preserve adapter_exception details for QA triage.
 {
   FakeTexture.all = [];
-  const tex = new FakeTexture({ name: 'tex', width: 16, height: 16 }) as FakeTexture & { remove: () => never };
+  const tex = new FakeTexture({ name: 'tex', width: 16, height: 16 }) as FakeTexture & {
+    remove: () => never;
+  };
   tex.remove = () => {
     throw new Error('delete fail');
   };
@@ -211,7 +225,7 @@ class NoCanvasTexture {
       Texture: FakeTexture,
       Preview: undefined,
       Blockbench: undefined,
-      Undo: undefined
+      Undo: undefined,
     },
     () => {
       const err = runDeleteTexture(noopLog, { name: 'tex' });
@@ -219,8 +233,6 @@ class NoCanvasTexture {
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.reason, 'adapter_exception');
       assert.equal(err?.details?.context, 'texture_delete');
-    }
+    },
   );
 }
-
-

@@ -1,11 +1,15 @@
-import type { PaintFacesPayload, PaintFacesResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  PaintFacesPayload,
+  PaintFacesResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { TextureUsageResult } from '@ashfox/blockbench-contracts/types/textureUsage';
 import type { CubeFaceDirection } from '../../ports/editor';
 import {
   TEXTURE_FACES_OP_REQUIRED,
   TEXTURE_FACES_COORD_SPACE_INVALID,
   TEXTURE_FACES_TEXTURE_REQUIRED,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../result';
 import type { TextureToolContext } from './context';
@@ -20,7 +24,7 @@ const RECOVERY_ERROR_REASONS = new Set([
   'rect_outside_bounds',
   'no_rects',
   'no_bounds',
-  'usage_missing'
+  'usage_missing',
 ]);
 
 const RECOVERY_WARNING_CODES = new Set([
@@ -28,7 +32,7 @@ const RECOVERY_WARNING_CODES = new Set([
   'uv_overlap',
   'uv_scale_mismatch',
   'uv_unresolved_refs',
-  'uv_bounds_exceed'
+  'uv_bounds_exceed',
 ]);
 
 type PaintFacesUsageState = {
@@ -64,7 +68,7 @@ type PaintFacesPassRuntime = {
 
 export const runPaintFaces = (
   ctx: TextureToolContext,
-  payload: PaintFacesPayload
+  payload: PaintFacesPayload,
 ): UsecaseResult<PaintFacesResult> => {
   if (!ctx.textureRenderer) {
     return fail({ code: 'not_implemented', message: TEXTURE_RENDERER_UNAVAILABLE });
@@ -95,9 +99,16 @@ export const runPaintFaces = (
     return fail({ code: 'invalid_payload', message: TEXTURE_FACES_TEXTURE_REQUIRED });
   }
 
-  const runner = ctx.runWithoutRevisionGuard ?? ((fn: () => UsecaseResult<PaintFacesResult>) => fn());
+  const runner =
+    ctx.runWithoutRevisionGuard ?? ((fn: () => UsecaseResult<PaintFacesResult>) => fn());
   return runner(() => {
-    const resolvedTextureRes = resolveTextureForPaintFaces(ctx, payload, snapshot, textureId, textureName);
+    const resolvedTextureRes = resolveTextureForPaintFaces(
+      ctx,
+      payload,
+      snapshot,
+      textureId,
+      textureName,
+    );
     if (!resolvedTextureRes.ok) return fail(resolvedTextureRes.error);
     const resolvedTexture = resolvedTextureRes.value;
 
@@ -105,7 +116,7 @@ export const runPaintFaces = (
       id: resolvedTexture.id,
       name: resolvedTexture.name,
       width: resolvedTexture.width,
-      height: resolvedTexture.height
+      height: resolvedTexture.height,
     });
 
     if (ctx.assignTexture) {
@@ -115,7 +126,7 @@ export const runPaintFaces = (
         cubeIds: normalizedTarget.cubeId ? [normalizedTarget.cubeId] : undefined,
         cubeNames: normalizedTarget.cubeName ? [normalizedTarget.cubeName] : undefined,
         faces: normalizedTarget.faces,
-        ifRevision: payload.ifRevision
+        ifRevision: payload.ifRevision,
       });
       if (!assignRes.ok) return fail(assignRes.error);
     }
@@ -127,12 +138,14 @@ export const runPaintFaces = (
       coordSpace,
       normalizedTarget,
       resolvedTexture,
-      backup
+      backup,
     });
   });
 };
 
-const runPaintFacesWithRecovery = (runtime: PaintFacesPassRuntime): UsecaseResult<PaintFacesResult> => {
+const runPaintFacesWithRecovery = (
+  runtime: PaintFacesPassRuntime,
+): UsecaseResult<PaintFacesResult> => {
   const stateRes = createPaintFacesExecutionState(runtime.ctx);
   if (!stateRes.ok) return fail(stateRes.error);
   const state = stateRes.value;
@@ -146,7 +159,9 @@ const runPaintFacesWithRecovery = (runtime: PaintFacesPassRuntime): UsecaseResul
   let paintRes = runPaintFacesPassWithState(runtime, state);
   if (!paintRes.ok && shouldRecoverPaintFacesError(paintRes.error)) {
     const reasonRaw =
-      typeof paintRes.error.details?.reason === 'string' ? paintRes.error.details.reason : 'uv_recovery';
+      typeof paintRes.error.details?.reason === 'string'
+        ? paintRes.error.details.reason
+        : 'uv_recovery';
     const recoverRes = attemptPaintFacesRecovery(runtime, state, reasonRaw);
     if (!recoverRes.ok) return fail(recoverRes.error);
     if (recoverRes.value) {
@@ -159,7 +174,7 @@ const runPaintFacesWithRecovery = (runtime: PaintFacesPassRuntime): UsecaseResul
 
 const runPaintFacesPassWithState = (
   runtime: PaintFacesPassRuntime,
-  state: PaintFacesExecutionState
+  state: PaintFacesExecutionState,
 ): UsecaseResult<PaintFacesResult> =>
   runPaintFacesPass({
     ctx: runtime.ctx,
@@ -171,16 +186,18 @@ const runPaintFacesPassWithState = (
     usageRaw: state.usage.usageRaw,
     uvUsageId: state.usage.uvUsageId,
     recoveryAttempts: state.recoveryAttempts,
-    backup: runtime.backup
+    backup: runtime.backup,
   });
 
-const createPaintFacesExecutionState = (ctx: TextureToolContext): UsecaseResult<PaintFacesExecutionState> => {
+const createPaintFacesExecutionState = (
+  ctx: TextureToolContext,
+): UsecaseResult<PaintFacesExecutionState> => {
   const usageRes = loadPaintFacesUsage(ctx);
   if (!usageRes.ok) return fail(usageRes.error);
   return ok({
     usage: usageRes.value,
     recoveryAttempts: [],
-    maxRecoveries: resolveMaxRecoveries(ctx)
+    maxRecoveries: resolveMaxRecoveries(ctx),
   });
 };
 
@@ -208,7 +225,7 @@ const resolveMaxRecoveries = (ctx: TextureToolContext): number => {
 const attemptPaintFacesRecovery = (
   runtime: PaintFacesPassRuntime,
   state: PaintFacesExecutionState,
-  reason: string
+  reason: string,
 ): UsecaseResult<boolean> => {
   if (!runtime.ctx.autoUvAtlas) return ok(false);
   if (state.recoveryAttempts.length >= state.maxRecoveries) return ok(false);
@@ -219,7 +236,7 @@ const attemptPaintFacesRecovery = (
     reason,
     steps: atlasRes.value.steps,
     before: beforeResolution,
-    after: atlasRes.value.resolution
+    after: atlasRes.value.resolution,
   });
   const usageRes = loadPaintFacesUsage(runtime.ctx);
   if (!usageRes.ok) return fail(usageRes.error);
@@ -231,4 +248,3 @@ const shouldRecoverPaintFacesError = (error: ToolError): boolean => {
   const reason = typeof error.details?.reason === 'string' ? error.details.reason : '';
   return RECOVERY_ERROR_REASONS.has(reason);
 };
-

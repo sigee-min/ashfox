@@ -9,7 +9,7 @@ type SseAdapter = {
 
 export const openSseConnection = (
   adapter: SseAdapter,
-  onOpen?: (conn: SseConnection) => void | (() => void)
+  onOpen?: (conn: SseConnection) => void | (() => void),
 ): SseConnection => {
   let closed = false;
   const keepAliveMs = 15_000;
@@ -31,7 +31,7 @@ export const openSseConnection = (
       }
       adapter.close();
     },
-    isClosed: () => closed
+    isClosed: () => closed,
   };
 
   timer = setInterval(() => {
@@ -54,4 +54,3 @@ export const openSseConnection = (
   }
   return connection;
 };
-

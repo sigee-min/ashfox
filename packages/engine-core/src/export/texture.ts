@@ -1,20 +1,14 @@
 import type { ProjectDocument, TextureAsset } from '../model';
 import { rasterizeTexture } from '../textures/textureRecipe/raster';
-import {
-  canonicalPngDigest,
-  encodeCanonicalPng
-} from '../textures/textureRecipe/png';
-import type {
-  BlobCopyExportFile,
-  BinaryExportFile
-} from './contract';
+import { canonicalPngDigest, encodeCanonicalPng } from '../textures/textureRecipe/png';
+import type { BlobCopyExportFile, BinaryExportFile } from './contract';
 import type { ExportAdaptedDocument, ExportTextureAsset } from './adapter';
 
 export type MaterializedTextureFile = BlobCopyExportFile | BinaryExportFile;
 
 export const canonicalTextureBytes = (
   document: ProjectDocument,
-  texture: TextureAsset
+  texture: TextureAsset,
 ): Uint8Array => encodeCanonicalPng(rasterizeTexture(document, texture));
 
 /** Inline raster textures are emitted as canonical PNG bytes. External
@@ -22,23 +16,20 @@ export const canonicalTextureBytes = (
 export const createTextureExportFile = (
   document: ExportAdaptedDocument,
   texture: ExportTextureAsset,
-  path: string
+  path: string,
 ): MaterializedTextureFile => {
   if (texture.raster !== undefined) {
     const bytes = canonicalTextureBytes(document, texture);
     const digest = canonicalPngDigest(bytes);
-    if (texture.source.contentHash !== digest ||
-      texture.source.byteLength !== bytes.byteLength) {
-      throw new Error(
-        `Texture "${texture.id}" failed canonical PNG lineage validation.`
-      );
+    if (texture.source.contentHash !== digest || texture.source.byteLength !== bytes.byteLength) {
+      throw new Error(`Texture "${texture.id}" failed canonical PNG lineage validation.`);
     }
     return {
       kind: 'binary',
       role: 'texture',
       path,
       contentType: 'image/png',
-      data: bytes
+      data: bytes,
     };
   }
   return {
@@ -46,6 +37,6 @@ export const createTextureExportFile = (
     role: 'texture',
     path,
     contentType: texture.source.contentType,
-    source: texture.source
+    source: texture.source,
   };
 };

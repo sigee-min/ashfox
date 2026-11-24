@@ -7,10 +7,11 @@ import type { PackEncoder } from '../packs/compile';
 const encoderTurn = (): Promise<void> => {
   const port = parentPort;
   if (!port) return Promise.resolve();
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const ready = (message: unknown): void => {
       if (message !== 'encoding-ready') return;
-      port.off('message', ready); resolve();
+      port.off('message', ready);
+      resolve();
     };
     port.on('message', ready);
     port.postMessage({ phase: 'encoding' });

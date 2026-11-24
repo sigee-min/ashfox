@@ -10,7 +10,7 @@ export const ensureActiveAndRevision = (
   ensureActive: EnsureActive,
   ensureRevision: EnsureRevision,
   ifRevision?: string,
-  options?: { skipRevisionCheck?: boolean }
+  options?: { skipRevisionCheck?: boolean },
 ): ToolError | null => {
   const activeErr = ensureActive();
   if (activeErr) return activeErr;
@@ -20,7 +20,7 @@ export const ensureActiveAndRevision = (
 
 export const withActiveOnly = <T>(
   ensureActive: EnsureActive,
-  fn: () => UsecaseResult<T>
+  fn: () => UsecaseResult<T>,
 ): UsecaseResult<T> => {
   const activeErr = ensureActiveOnly(ensureActive);
   if (activeErr) return fail(activeErr);
@@ -32,12 +32,9 @@ export const withActiveAndRevision = <T>(
   ensureRevision: EnsureRevision,
   ifRevision: string | undefined,
   fn: () => UsecaseResult<T>,
-  options?: { skipRevisionCheck?: boolean }
+  options?: { skipRevisionCheck?: boolean },
 ): UsecaseResult<T> => {
   const guardErr = ensureActiveAndRevision(ensureActive, ensureRevision, ifRevision, options);
   if (guardErr) return fail(guardErr);
   return fn();
 };
-
-
-

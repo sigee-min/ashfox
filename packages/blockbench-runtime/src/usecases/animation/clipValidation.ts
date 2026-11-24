@@ -2,7 +2,7 @@ import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import {
   ANIMATION_FPS_POSITIVE,
   ANIMATION_LENGTH_EXCEEDS_MAX,
-  ANIMATION_LENGTH_POSITIVE
+  ANIMATION_LENGTH_POSITIVE,
 } from '../../shared/messages';
 
 export const validateAnimationLength = (length: number, maxSeconds: number): ToolError | null => {
@@ -12,7 +12,7 @@ export const validateAnimationLength = (length: number, maxSeconds: number): Too
   if (length > maxSeconds) {
     return {
       code: 'invalid_payload',
-      message: ANIMATION_LENGTH_EXCEEDS_MAX(maxSeconds)
+      message: ANIMATION_LENGTH_EXCEEDS_MAX(maxSeconds),
     };
   }
   return null;
@@ -24,4 +24,3 @@ export const validateAnimationFps = (fps: number): ToolError | null => {
   }
   return null;
 };
-

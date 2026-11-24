@@ -10,11 +10,15 @@ export type SimUvContext = {
 };
 
 export const createUvOps = (ctx: SimUvContext) => {
-  const scaleUvRect = (uv: [number, number, number, number], scaleX: number, scaleY: number): [number, number, number, number] => [
+  const scaleUvRect = (
+    uv: [number, number, number, number],
+    scaleX: number,
+    scaleY: number,
+  ): [number, number, number, number] => [
     uv[0] * scaleX,
     uv[1] * scaleY,
     uv[2] * scaleX,
-    uv[3] * scaleY
+    uv[3] * scaleY,
   ];
 
   const usesAutoUv = (cube: CubeInstance): boolean =>
@@ -23,8 +27,10 @@ export const createUvOps = (ctx: SimUvContext) => {
   const applyAutoUv = (cube: CubeInstance): void => {
     if (!usesAutoUv(cube)) return;
     const origin = resolveUvOrigin(cube);
-    const resolution =
-      ctx.state.project.textureResolution ?? { width: DEFAULT_TEXTURE_SIZE, height: DEFAULT_TEXTURE_SIZE };
+    const resolution = ctx.state.project.textureResolution ?? {
+      width: DEFAULT_TEXTURE_SIZE,
+      height: DEFAULT_TEXTURE_SIZE,
+    };
     const layout = buildBoxUvLayout(cube, origin, resolution);
     const faces = ensureFaces(cube);
     Object.entries(layout).forEach(([faceKey, uv]) => {
@@ -46,7 +52,11 @@ export const createUvOps = (ctx: SimUvContext) => {
     }
   };
 
-  const applyProjectTextureResolution = (width: number, height: number, modifyUv?: boolean): ToolError | null => {
+  const applyProjectTextureResolution = (
+    width: number,
+    height: number,
+    modifyUv?: boolean,
+  ): ToolError | null => {
     const next = { width: Math.trunc(width), height: Math.trunc(height) };
     if (next.width <= 0 || next.height <= 0) {
       return error('invalid_payload', 'Texture resolution must be positive.');
@@ -84,6 +94,6 @@ export const createUvOps = (ctx: SimUvContext) => {
     usesAutoUv,
     applyAutoUv,
     enforceManualUvMode,
-    applyProjectTextureResolution
+    applyProjectTextureResolution,
   };
 };

@@ -11,5 +11,5 @@ export interface ViewportRefresherPort {
 }
 
 export const NOOP_VIEWPORT_REFRESHER: ViewportRefresherPort = {
-  refresh: () => undefined
+  refresh: () => undefined,
 };

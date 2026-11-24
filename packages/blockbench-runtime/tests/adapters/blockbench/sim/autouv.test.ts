@@ -8,13 +8,13 @@ const buildSim = (options?: { singleTexture?: boolean }) =>
     project: {
       format: 'geckolib',
       formatId: 'geckolib',
-      textureResolution: { width: 16, height: 16 }
+      textureResolution: { width: 16, height: 16 },
     },
     formatCaps: {
       id: 'sim_format',
       singleTexture: options?.singleTexture ?? false,
-      perTextureUvSize: false
-    }
+      perTextureUvSize: false,
+    },
   });
 
 {
@@ -23,13 +23,13 @@ const buildSim = (options?: { singleTexture?: boolean }) =>
     name: 'tex',
     image: createMockImage(),
     width: 16,
-    height: 16
+    height: 16,
   });
   sim.editor.addCube({
     name: 'cube',
     from: [0, 0, 0],
     to: [4, 4, 4],
-    boxUv: true
+    boxUv: true,
   });
   sim.editor.assignTexture({ textureName: 'tex', cubeNames: ['cube'] });
 
@@ -56,7 +56,7 @@ const buildSim = (options?: { singleTexture?: boolean }) =>
     name: 'old',
     image: createMockImage(),
     width: 16,
-    height: 16
+    height: 16,
   });
   sim.editor.addCube({ name: 'cube', from: [0, 0, 0], to: [4, 4, 4] });
   sim.editor.assignTexture({ textureName: 'old', cubeNames: ['cube'] });
@@ -65,7 +65,7 @@ const buildSim = (options?: { singleTexture?: boolean }) =>
     name: 'new',
     image: createMockImage(),
     width: 16,
-    height: 16
+    height: 16,
   });
 
   const usage = sim.editor.getTextureUsage({}).result;
@@ -87,16 +87,16 @@ const buildSim = (options?: { singleTexture?: boolean }) =>
         name: 'cube',
         from: [0, 0, 0],
         to: [4, 4, 4],
-        faces: { north: { texture: 'old' } }
-      }
-    ]
+        faces: { north: { texture: 'old' } },
+      },
+    ],
   });
   sim.editor.updateTexture({
     name: 'old',
     newName: 'new',
     image: createMockImage(),
     width: 16,
-    height: 16
+    height: 16,
   });
 
   const usage = sim.editor.getTextureUsage({}).result;

@@ -6,14 +6,14 @@ import {
   TextureSource,
   TextureStat,
   UpdateTextureCommand,
-  DeleteTextureCommand
+  DeleteTextureCommand,
 } from '../../../ports/editor';
 import {
   runDeleteTexture,
   runImportTexture,
   runListTextures,
   runReadTexture,
-  runUpdateTexture
+  runUpdateTexture,
 } from './textureCommands';
 
 export class BlockbenchTextureAdapter {
@@ -43,6 +43,3 @@ export class BlockbenchTextureAdapter {
     return runListTextures();
   }
 }
-
-
-

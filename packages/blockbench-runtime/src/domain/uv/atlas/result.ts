@@ -4,8 +4,8 @@ import type { DomainError, DomainResult } from '../../result';
 export const atlasFailure = (
   code: DomainError['code'],
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): DomainResult<never> => ({
   ok: false,
-  error: { code, message, details }
+  error: { code, message, details },
 });

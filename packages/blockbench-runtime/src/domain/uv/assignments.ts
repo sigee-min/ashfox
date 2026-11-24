@@ -28,14 +28,18 @@ export type UvAssignmentSpecLike = {
 
 export const validateUvAssignments = (
   assignments: UvAssignmentSpecLike[],
-  messages: UvAssignmentMessages
+  messages: UvAssignmentMessages,
 ): DomainResult<{ valid: true }> => {
   if (!Array.isArray(assignments) || assignments.length === 0) {
-    return fail('invalid_payload', messages.assignmentsRequired, { reason: 'assignments_required' });
+    return fail('invalid_payload', messages.assignmentsRequired, {
+      reason: 'assignments_required',
+    });
   }
   for (const assignment of assignments) {
     if (!assignment || typeof assignment !== 'object') {
-      return fail('invalid_payload', messages.assignmentObjectRequired, { reason: 'assignment_object_required' });
+      return fail('invalid_payload', messages.assignmentObjectRequired, {
+        reason: 'assignment_object_required',
+      });
     }
     const hasTarget =
       Boolean(assignment.cubeId) ||
@@ -46,10 +50,17 @@ export const validateUvAssignments = (
       return fail('invalid_payload', messages.targetRequired, { reason: 'target_required' });
     }
     if (assignment.cubeIds && !assignment.cubeIds.every((id: unknown) => typeof id === 'string')) {
-      return fail('invalid_payload', messages.cubeIdsStringArray, { reason: 'cube_ids_string_array' });
+      return fail('invalid_payload', messages.cubeIdsStringArray, {
+        reason: 'cube_ids_string_array',
+      });
     }
-    if (assignment.cubeNames && !assignment.cubeNames.every((name: unknown) => typeof name === 'string')) {
-      return fail('invalid_payload', messages.cubeNamesStringArray, { reason: 'cube_names_string_array' });
+    if (
+      assignment.cubeNames &&
+      !assignment.cubeNames.every((name: unknown) => typeof name === 'string')
+    ) {
+      return fail('invalid_payload', messages.cubeNamesStringArray, {
+        reason: 'cube_names_string_array',
+      });
     }
     if (!assignment.faces || typeof assignment.faces !== 'object') {
       return fail('invalid_payload', messages.facesRequired, { reason: 'faces_required' });
@@ -62,19 +73,19 @@ export const validateUvAssignments = (
       if (!VALID_FACES.has(faceKey as CubeFaceDirection)) {
         return fail('invalid_payload', messages.invalidFace(faceKey), {
           reason: 'invalid_face',
-          face: faceKey
+          face: faceKey,
         });
       }
       if (!Array.isArray(uv) || uv.length !== 4) {
         return fail('invalid_payload', messages.uvFormat(faceKey), {
           reason: 'uv_format',
-          face: faceKey
+          face: faceKey,
         });
       }
       if (!uv.every((value) => Number.isFinite(value))) {
         return fail('invalid_payload', messages.uvNumbers(faceKey), {
           reason: 'uv_numbers',
-          face: faceKey
+          face: faceKey,
         });
       }
     }
@@ -83,6 +94,3 @@ export const validateUvAssignments = (
 };
 
 const VALID_FACES = new Set<CubeFaceDirection>(CUBE_FACE_DIRECTIONS);
-
-
-

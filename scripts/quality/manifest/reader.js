@@ -6,7 +6,7 @@ const {
   hasExactContractKeys,
   isClosedContractRecord,
   isDenseContractArray,
-  isNonEmptyContractText
+  isNonEmptyContractText,
 } = require('@ashfox/internal-contracts');
 const { fail, textCompare } = require('./contract');
 
@@ -47,18 +47,11 @@ const assertPositiveSafeInteger = (value, location) => {
   }
 };
 
-const assertOrderedUniqueTextArray = (
-  value,
-  location,
-  itemValidator,
-  minimumLength
-) => {
+const assertOrderedUniqueTextArray = (value, location, itemValidator, minimumLength) => {
   if (!isDenseContractArray(value) || value.length < minimumLength) {
     fail(
       location,
-      minimumLength === 0
-        ? 'must be a dense array'
-        : 'must be a non-empty dense array'
+      minimumLength === 0 ? 'must be a dense array' : 'must be a non-empty dense array',
     );
   }
   let previous = null;
@@ -74,17 +67,11 @@ const assertOrderedUniqueTextArray = (
   }
 };
 
-const assertSortedUniqueTextArray = (
-  value,
-  location,
-  itemValidator = () => true
-) => assertOrderedUniqueTextArray(value, location, itemValidator, 1);
+const assertSortedUniqueTextArray = (value, location, itemValidator = () => true) =>
+  assertOrderedUniqueTextArray(value, location, itemValidator, 1);
 
-const assertSortedUniqueTextArrayOrEmpty = (
-  value,
-  location,
-  itemValidator = () => true
-) => assertOrderedUniqueTextArray(value, location, itemValidator, 0);
+const assertSortedUniqueTextArrayOrEmpty = (value, location, itemValidator = () => true) =>
+  assertOrderedUniqueTextArray(value, location, itemValidator, 0);
 
 const resolveInsideRepo = (repoRoot, relativePath, location) => {
   const resolved = path.resolve(repoRoot, relativePath);
@@ -153,5 +140,5 @@ module.exports = {
   isDenseContractArray,
   isNonEmptyContractText,
   readRootPackageWorkspaces,
-  resolveInsideRepo
+  resolveInsideRepo,
 };

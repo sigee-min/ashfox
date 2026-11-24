@@ -4,31 +4,21 @@ import {
   isClosedContractRecord,
   isFiniteJsonValue,
   isNonEmptyContractText,
-  isUniqueContractTextArray
+  isUniqueContractTextArray,
 } from '@ashfox/internal-contracts';
 
-import type {
-  ProjectDiff,
-  ProjectDiffCountsByKind,
-  ProjectState
-} from './project';
+import type { ProjectDiff, ProjectDiffCountsByKind, ProjectState } from './project';
 import {
   isProjectDiffContract,
   isProjectStateContract,
   isProjectStateCountsContract,
-  isProjectTextureResolutionContract
+  isProjectTextureResolutionContract,
 } from './project/contract';
-import {
-  FORMAT_KINDS,
-  isToolErrorContract,
-  type FormatKind,
-  type ToolError
-} from './shared';
+import { FORMAT_KINDS, isToolErrorContract, type FormatKind, type ToolError } from './shared';
 
 export type TraceLogRoute = 'tool';
 
-export const TRACE_LOG_SCHEMA_VERSION =
-  CURRENT_TRACE_LOG_SCHEMA_VERSION;
+export const TRACE_LOG_SCHEMA_VERSION = CURRENT_TRACE_LOG_SCHEMA_VERSION;
 
 // The deepest finite-JSON leaf is a trigger value nested under a changed
 // animation in ProjectDiff (record -> diff -> ... -> key -> value).
@@ -60,9 +50,7 @@ export type TraceLogDiffSummary = {
   counts: ProjectDiffCountsByKind;
 };
 
-export type TraceLogResponse =
-  | { ok: true; data?: unknown }
-  | { ok: false; error: ToolError };
+export type TraceLogResponse = { ok: true; data?: unknown } | { ok: false; error: ToolError };
 
 export type TraceLogEntry = {
   kind: 'step';
@@ -107,11 +95,12 @@ const owns = (value: ContractRecord, key: string): boolean =>
 const hasShape = (
   value: ContractRecord,
   required: readonly string[],
-  optional: readonly string[] = []
+  optional: readonly string[] = [],
 ): boolean => {
   const allowed = new Set([...required, ...optional]);
-  return required.every((key) => owns(value, key)) &&
-    Object.keys(value).every((key) => allowed.has(key));
+  return (
+    required.every((key) => owns(value, key)) && Object.keys(value).every((key) => allowed.has(key))
+  );
 };
 
 const isNonNegativeInteger = (value: unknown): value is number =>
@@ -120,37 +109,31 @@ const isNonNegativeInteger = (value: unknown): value is number =>
 const isOptional = (
   value: ContractRecord,
   key: string,
-  guard: (entry: unknown) => boolean
+  guard: (entry: unknown) => boolean,
 ): boolean => !owns(value, key) || guard(value[key]);
 
 const isFormat = (value: unknown): value is FormatKind =>
-  typeof value === 'string' &&
-  FORMAT_KINDS.includes(value as (typeof FORMAT_KINDS)[number]);
+  typeof value === 'string' && FORMAT_KINDS.includes(value as (typeof FORMAT_KINDS)[number]);
 
-const isTraceLogResponse = (
-  value: unknown
-): value is TraceLogResponse => {
+const isTraceLogResponse = (value: unknown): value is TraceLogResponse => {
   if (!isClosedContractRecord(value)) return false;
   if (value.ok === true) {
-    return hasShape(value, ['ok'], ['data']) &&
-      isOptional(value, 'data', isFiniteJsonValue);
+    return hasShape(value, ['ok'], ['data']) && isOptional(value, 'data', isFiniteJsonValue);
   }
   if (value.ok === false) {
-    return hasShape(value, ['ok', 'error']) &&
-      isToolErrorContract(value.error);
+    return hasShape(value, ['ok', 'error']) && isToolErrorContract(value.error);
   }
   return false;
 };
 
-const isTraceLogStateSummary = (
-  value: unknown
-): value is TraceLogStateSummary => {
+const isTraceLogStateSummary = (value: unknown): value is TraceLogStateSummary => {
   if (
     !isClosedContractRecord(value) ||
-    !hasShape(value, ['id', 'revision', 'name', 'format', 'counts'], [
-      'formatId',
-      'textureResolution'
-    ]) ||
+    !hasShape(
+      value,
+      ['id', 'revision', 'name', 'format', 'counts'],
+      ['formatId', 'textureResolution'],
+    ) ||
     !isNonEmptyContractText(value.id) ||
     !isNonEmptyContractText(value.revision) ||
     !(value.name === null || typeof value.name === 'string') ||
@@ -159,26 +142,16 @@ const isTraceLogStateSummary = (
   ) {
     return false;
   }
-  return isOptional(
-    value,
-    'formatId',
-    (entry) => entry === null || typeof entry === 'string'
-  ) &&
-    isOptional(
-      value,
-      'textureResolution',
-      isProjectTextureResolutionContract
-    );
+  return (
+    isOptional(value, 'formatId', (entry) => entry === null || typeof entry === 'string') &&
+    isOptional(value, 'textureResolution', isProjectTextureResolutionContract)
+  );
 };
 
-const isTraceLogState = (
-  value: unknown
-): value is TraceLogStateSummary | ProjectState =>
+const isTraceLogState = (value: unknown): value is TraceLogStateSummary | ProjectState =>
   isTraceLogStateSummary(value) || isProjectStateContract(value);
 
-const isTraceLogDiff = (
-  value: unknown
-): value is TraceLogDiffSummary | ProjectDiff =>
+const isTraceLogDiff = (value: unknown): value is TraceLogDiffSummary | ProjectDiff =>
   isProjectDiffContract(value);
 
 const hasCoherentObservationBranches = (value: ContractRecord): boolean => {
@@ -195,20 +168,20 @@ const hasCoherentObservationBranches = (value: ContractRecord): boolean => {
   ) {
     return false;
   }
-  return !(hasState && hasStateError) &&
+  return (
+    !(hasState && hasStateError) &&
     !(hasDiff && hasDiffError) &&
-    (!(hasDiff || hasDiffError) || hasState);
+    (!(hasDiff || hasDiffError) || hasState)
+  );
 };
 
-export const isTraceLogHeader = (
-  value: unknown
-): value is TraceLogHeader =>
+export const isTraceLogHeader = (value: unknown): value is TraceLogHeader =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['kind', 'schemaVersion', 'createdAt'], [
-    'pluginVersion',
-    'blockbenchVersion',
-    'notes'
-  ]) &&
+  hasShape(
+    value,
+    ['kind', 'schemaVersion', 'createdAt'],
+    ['pluginVersion', 'blockbenchVersion', 'notes'],
+  ) &&
   value.kind === 'header' &&
   value.schemaVersion === TRACE_LOG_SCHEMA_VERSION &&
   isCanonicalIsoDate(value.createdAt) &&
@@ -216,17 +189,13 @@ export const isTraceLogHeader = (
   isOptional(value, 'blockbenchVersion', isNonEmptyContractText) &&
   isOptional(value, 'notes', isUniqueContractTextArray);
 
-export const isTraceLogEntry = (
-  value: unknown
-): value is TraceLogEntry =>
+export const isTraceLogEntry = (value: unknown): value is TraceLogEntry =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['kind', 'seq', 'ts', 'route', 'op', 'response'], [
-    'payload',
-    'state',
-    'diff',
-    'stateError',
-    'diffError'
-  ]) &&
+  hasShape(
+    value,
+    ['kind', 'seq', 'ts', 'route', 'op', 'response'],
+    ['payload', 'state', 'diff', 'stateError', 'diffError'],
+  ) &&
   value.kind === 'step' &&
   isNonNegativeInteger(value.seq) &&
   value.seq > 0 &&
@@ -241,7 +210,5 @@ export const isTraceLogEntry = (
   isOptional(value, 'diffError', isToolErrorContract) &&
   hasCoherentObservationBranches(value);
 
-export const isTraceLogRecord = (
-  value: unknown
-): value is TraceLogRecord =>
+export const isTraceLogRecord = (value: unknown): value is TraceLogRecord =>
   isTraceLogHeader(value) || isTraceLogEntry(value);

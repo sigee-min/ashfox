@@ -11,7 +11,7 @@ import {
   TEXTURE_MESH_FACE_TARGET_REQUIRED,
   TEXTURE_MESH_FACE_TARGET_SELECTOR_REQUIRED,
   TEXTURE_MESH_FACE_UV_REQUIRED,
-  TEXTURE_OP_INVALID
+  TEXTURE_OP_INVALID,
 } from '../../../shared/messages';
 import { ensureNonBlankString } from '../../../shared/payloadValidation';
 import { fail, ok, type UsecaseResult } from '../../result';
@@ -19,12 +19,12 @@ import type {
   NormalizedPaintMeshInput,
   ResolvedMeshFaces,
   SnapshotMesh,
-  SnapshotMeshFace
+  SnapshotMeshFace,
 } from './contract';
 import type { Rect } from '../paintFacesPixels';
 
 export const normalizePaintMeshFaceRequest = (
-  payload: PaintMeshFacePayload
+  payload: PaintMeshFacePayload,
 ): UsecaseResult<NormalizedPaintMeshInput> => {
   if (!payload.target || typeof payload.target !== 'object') {
     return fail({ code: 'invalid_payload', message: TEXTURE_MESH_FACE_TARGET_REQUIRED });
@@ -32,7 +32,7 @@ export const normalizePaintMeshFaceRequest = (
   const validations = [
     ensureNonBlankString(payload.target.meshId, 'meshId'),
     ensureNonBlankString(payload.target.meshName, 'meshName'),
-    ensureNonBlankString(payload.target.faceId, 'target.faceId')
+    ensureNonBlankString(payload.target.faceId, 'target.faceId'),
   ];
   const invalidText = validations.find((error) => error !== null);
   if (invalidText) return fail(invalidText);
@@ -45,7 +45,10 @@ export const normalizePaintMeshFaceRequest = (
   }
   const scope = scopeRaw ?? (payload.target.faceId ? 'single_face' : 'all_faces');
   if (scope === 'single_face' && !payload.target.faceId) {
-    return fail({ code: 'invalid_payload', message: TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID });
+    return fail({
+      code: 'invalid_payload',
+      message: TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID,
+    });
   }
   if (scope === 'all_faces' && payload.target.faceId) {
     return fail({ code: 'invalid_payload', message: TEXTURE_MESH_FACE_SCOPE_ALL_FORBIDS_FACE_ID });
@@ -57,7 +60,7 @@ export const normalizePaintMeshFaceRequest = (
     return fail({
       code: 'invalid_payload',
       message: TEXTURE_OP_INVALID('paint_mesh_face'),
-      details: { opIndex: 0, reason: 'invalid_op' }
+      details: { opIndex: 0, reason: 'invalid_op' },
     });
   }
   const coordSpace = payload.coordSpace ?? 'face';
@@ -73,11 +76,11 @@ export const normalizePaintMeshFaceRequest = (
       meshId: payload.target.meshId,
       meshName: payload.target.meshName,
       faceId: payload.target.faceId,
-      scope
+      scope,
     },
     coordSpace,
     mapping,
-    op: payload.op
+    op: payload.op,
   });
 };
 
@@ -93,7 +96,7 @@ const faceRect = (face: SnapshotMeshFace): Rect | null => {
     x1: Math.min(...xs),
     y1: Math.min(...ys),
     x2: Math.max(...xs),
-    y2: Math.max(...ys)
+    y2: Math.max(...ys),
   };
   return rect.x2 > rect.x1 && rect.y2 > rect.y1 ? rect : null;
 };
@@ -106,12 +109,15 @@ const faceIdAt = (face: SnapshotMeshFace, index: number): string => {
 export const resolvePaintableMeshFaces = (
   mesh: SnapshotMesh,
   scope: 'single_face' | 'all_faces',
-  faceId: string | undefined
+  faceId: string | undefined,
 ): UsecaseResult<ResolvedMeshFaces> => {
   if (scope === 'single_face') {
     const found = mesh.faces.find((face) => face.id === faceId);
     if (!found || !faceId) {
-      return fail({ code: 'invalid_payload', message: TEXTURE_MESH_FACE_NOT_FOUND(faceId ?? 'unknown') });
+      return fail({
+        code: 'invalid_payload',
+        message: TEXTURE_MESH_FACE_NOT_FOUND(faceId ?? 'unknown'),
+      });
     }
     const rect = faceRect(found);
     return rect
@@ -131,6 +137,6 @@ export const resolvePaintableMeshFaces = (
     : fail({
         code: 'invalid_state',
         message: TEXTURE_MESH_FACE_NO_PAINTABLE_FACES,
-        details: { skippedFaces }
+        details: { skippedFaces },
       });
 };

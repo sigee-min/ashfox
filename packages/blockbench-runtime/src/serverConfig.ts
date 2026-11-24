@@ -2,7 +2,7 @@ import {
   CONFIG_HOST_REQUIRED,
   CONFIG_NON_LOOPBACK_TOKEN_REQUIRED,
   CONFIG_PATH_REQUIRED,
-  CONFIG_PORT_RANGE
+  CONFIG_PORT_RANGE,
 } from './shared/messages';
 import { normalizePath } from './shared/endpoint';
 
@@ -21,10 +21,7 @@ type ServerConfigInput = {
 };
 
 export type ServerConfigValidationReason =
-  | 'host_required'
-  | 'port_out_of_range'
-  | 'path_required'
-  | 'non_loopback_token_required';
+  'host_required' | 'port_out_of_range' | 'path_required' | 'non_loopback_token_required';
 
 export type ServerConfigValidationResult =
   | { ok: true; config: ServerConfig }
@@ -32,12 +29,7 @@ export type ServerConfigValidationResult =
 
 const isLoopbackHost = (value: string): boolean => {
   const host = value.trim().toLowerCase();
-  if (
-    host === 'localhost' ||
-    host === '::1' ||
-    host === '[::1]' ||
-    host === '0:0:0:0:0:0:0:1'
-  ) {
+  if (host === 'localhost' || host === '::1' || host === '[::1]' || host === '0:0:0:0:0:0:0:1') {
     return true;
   }
 
@@ -48,9 +40,7 @@ const isLoopbackHost = (value: string): boolean => {
 };
 
 export const validateServerConfig = (input: unknown): ServerConfigValidationResult => {
-  const candidate = input && typeof input === 'object'
-    ? input as Partial<ServerConfigInput>
-    : {};
+  const candidate = input && typeof input === 'object' ? (input as Partial<ServerConfigInput>) : {};
 
   if (typeof candidate.host !== 'string' || candidate.host.trim().length === 0) {
     return { ok: false, reason: 'host_required', message: CONFIG_HOST_REQUIRED };
@@ -76,14 +66,14 @@ export const validateServerConfig = (input: unknown): ServerConfigValidationResu
     return {
       ok: false,
       reason: 'non_loopback_token_required',
-      message: CONFIG_NON_LOOPBACK_TOKEN_REQUIRED
+      message: CONFIG_NON_LOOPBACK_TOKEN_REQUIRED,
     };
   }
 
   const config: ServerConfig = {
     host: host === '[::1]' ? '::1' : host,
     port: candidate.port,
-    path
+    path,
   };
   if (token.length > 0) config.token = token;
   return { ok: true, config };

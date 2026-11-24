@@ -23,7 +23,7 @@ export const isDirectoryPath = (value: string, fs?: FsPathPolicyModule | null): 
 export const joinPath = (
   base: string,
   fileName: string,
-  path?: PathPolicyModule | null
+  path?: PathPolicyModule | null,
 ): string => {
   const join = path?.join;
   if (typeof join === 'function') return join(base, fileName);

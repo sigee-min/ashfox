@@ -5,7 +5,7 @@ import {
   attachToOutliner,
   moveOutlinerNode,
   normalizeParent,
-  removeOutlinerNode
+  removeOutlinerNode,
 } from '../../../../src/adapters/blockbench/utils/outliner';
 
 const createLogger = () => {
@@ -15,7 +15,7 @@ const createLogger = () => {
     debug: () => undefined,
     info: () => undefined,
     warn: (message, meta) => warns.push({ message, meta }),
-    error: () => undefined
+    error: () => undefined,
   };
   return { logger, warns };
 };
@@ -50,7 +50,7 @@ const createLogger = () => {
     addTo: (target: typeof parent) => {
       node.parent = target;
       target.children.push(node);
-    }
+    },
   };
   root.push(node);
   const moved = moveOutlinerNode(node as never, parent as never, { root } as never, logger, 'cube');
@@ -68,9 +68,15 @@ const createLogger = () => {
     name: 'cube',
     addTo: () => {
       throw new Error('boom');
-    }
+    },
   };
-  const attached = attachToOutliner(parent as never, { root } as never, node as never, logger, 'cube');
+  const attached = attachToOutliner(
+    parent as never,
+    { root } as never,
+    node as never,
+    logger,
+    'cube',
+  );
   assert.equal(attached, true);
   assert.equal(root.includes(node), true);
   assert.equal(warns.length, 1);
@@ -81,7 +87,13 @@ const createLogger = () => {
   const { logger } = createLogger();
   const node = { name: 'cube' };
   const rootNode = { children: [] as unknown[] };
-  const attached = attachToOutliner(null, { root: rootNode } as never, node as never, logger, 'cube');
+  const attached = attachToOutliner(
+    null,
+    { root: rootNode } as never,
+    node as never,
+    logger,
+    'cube',
+  );
   assert.equal(attached, true);
   assert.equal(rootNode.children.includes(node), true);
   const createdRoot = {} as { root?: unknown[] };
@@ -102,8 +114,10 @@ const createLogger = () => {
 
   const node = { name: 'cube', parent: null as unknown };
   const rootChildren = [node];
-  assert.equal(removeOutlinerNode(node as never, { root: { children: rootChildren } } as never), true);
+  assert.equal(
+    removeOutlinerNode(node as never, { root: { children: rootChildren } } as never),
+    true,
+  );
   assert.equal(rootChildren.length, 0);
   assert.equal(removeOutlinerNode(null as never, undefined), false);
 }
-

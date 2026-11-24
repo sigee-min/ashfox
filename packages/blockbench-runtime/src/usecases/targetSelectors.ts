@@ -28,7 +28,7 @@ type TargetNamed = { id?: string | null; name: string };
 export const collectTargetSelectors = (
   payload: SelectorPayload,
   labels: SelectorLabels,
-  required: RequiredMessage
+  required: RequiredMessage,
 ): UsecaseResult<TargetSelector[]> => {
   const selectors: TargetSelector[] = [];
   const idErr = ensureNonBlankString(payload.id, labels.id);
@@ -61,7 +61,7 @@ export const collectTargetSelectors = (
 export const resolveTargetsFromSelectors = <T extends TargetNamed>(
   items: T[],
   selectors: TargetSelector[],
-  options: ResolveOptions
+  options: ResolveOptions,
 ): UsecaseResult<T[]> => {
   const targets = new Map<string, T>();
   for (const selector of selectors) {
@@ -72,7 +72,11 @@ export const resolveTargetsFromSelectors = <T extends TargetNamed>(
     if (!targets.has(key)) targets.set(key, target);
   }
   if (targets.size === 0) {
-    return fail({ code: 'invalid_payload', message: options.required.message, fix: options.required.fix });
+    return fail({
+      code: 'invalid_payload',
+      message: options.required.message,
+      fix: options.required.fix,
+    });
   }
   return ok([...targets.values()]);
 };
@@ -82,7 +86,7 @@ export const resolveTargets = <T extends TargetNamed>(
   payload: SelectorPayload,
   labels: SelectorLabels,
   required: RequiredMessage,
-  options: ResolveOptions
+  options: ResolveOptions,
 ): UsecaseResult<T[]> => {
   const selectors = collectTargetSelectors(payload, labels, required);
   if (!selectors.ok) return selectors;

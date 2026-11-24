@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { runSetKeyframes, runSetTriggerKeyframes } from '../../../../src/adapters/blockbench/animation/animationCommands';
+import {
+  runSetKeyframes,
+  runSetTriggerKeyframes,
+} from '../../../../src/adapters/blockbench/animation/animationCommands';
 import { noopLog } from '../../../helpers';
 
 const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
@@ -9,7 +12,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -35,13 +38,13 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     },
     addKeyframe: () => {
       throw new TypeError("Cannot read properties of undefined (reading 'time').");
-    }
+    },
   };
   const clip = {
     name: 'idle',
     keyframes: [] as Array<Record<string, unknown>>,
     select: () => undefined,
-    getBoneAnimator: () => animator
+    getBoneAnimator: () => animator,
   };
   const outliner = { root: [{ name: 'body', children: [] }] };
   withGlobals(
@@ -54,20 +57,20 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       EffectAnimator: undefined,
       Preview: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetKeyframes(noopLog, {
         clip: 'idle',
         bone: 'body',
         channel: 'rot',
-        keys: [{ time: 0, value: [2, 0, 0] }]
+        keys: [{ time: 0, value: [2, 0, 0] }],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.reason, 'adapter_exception');
       assert.equal(err?.details?.context, 'keyframe_set');
-    }
+    },
   );
 }
 
@@ -76,7 +79,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   const clip = {
     name: 'idle',
     keyframes: [] as Array<Record<string, unknown>>,
-    animators: {}
+    animators: {},
   };
   withGlobals(
     {
@@ -86,17 +89,17 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       Animator: undefined,
       Preview: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetTriggerKeyframes(noopLog, {
         clip: 'idle',
         channel: 'sound',
-        keys: [{ time: 0, value: 'step' }]
+        keys: [{ time: 0, value: 'step' }],
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -112,23 +115,23 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       const keyframe = { channel, time };
       effectsAnimator.keyframes.push(keyframe);
       return keyframe;
-    }
+    },
   };
   const clip = {
     name: 'idle',
     keyframes: [] as Array<Record<string, unknown>>,
     animators: { effects: effectsAnimator },
-    select: () => undefined
+    select: () => undefined,
   };
   const previewA = {
     render: () => {
       previewCalls.push(1);
-    }
+    },
   };
   const previewB = {
     render: () => {
       previewCalls.push(2);
-    }
+    },
   };
   withGlobals(
     {
@@ -137,20 +140,20 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         preview: (time: number) => {
           animatorPreviewCalls += 1;
           previewTime = time;
-        }
+        },
       },
       Preview: {
         selected: previewA,
-        all: [previewA, previewB]
+        all: [previewA, previewB],
       },
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetTriggerKeyframes(noopLog, {
         clip: 'idle',
         channel: 'sound',
-        keys: [{ time: 2, value: 'fx' }]
+        keys: [{ time: 2, value: 'fx' }],
       });
       assert.equal(err, null);
       assert.equal(animatorPreviewCalls, 1);
@@ -159,7 +162,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       assert.equal(previewCalls.filter((v) => v === 1).length, 1);
       assert.equal(previewCalls.filter((v) => v === 2).length, 1);
       assert.equal(effectsAnimator.keyframes.length, 1);
-    }
+    },
   );
 }
 
@@ -170,10 +173,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     keyframes: [] as Array<Record<string, unknown>>,
     rotation: [] as Array<Record<string, unknown>>,
     addKeyframe: (payload: { channel?: string; time?: number }) => {
-      const keyframe = { channel: payload.channel, time: payload.time, data_points: [{ x: 0, y: 0, z: 0 }] };
+      const keyframe = {
+        channel: payload.channel,
+        time: payload.time,
+        data_points: [{ x: 0, y: 0, z: 0 }],
+      };
       animator.keyframes.push(keyframe);
       return keyframe;
-    }
+    },
   };
   const clip = {
     name: 'idle',
@@ -182,7 +189,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     setTime: (_time: number) => {
       setTimeCalls += 1;
     },
-    getBoneAnimator: () => animator
+    getBoneAnimator: () => animator,
   };
   const outliner = { root: [{ name: 'body', children: [] }] };
   withGlobals(
@@ -193,24 +200,24 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         selected: {
           render: () => {
             throw new Error('preview fail');
-          }
-        }
+          },
+        },
       },
       Group: undefined,
       Cube: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetKeyframes(noopLog, {
         clip: 'idle',
         bone: 'body',
         channel: 'rot',
-        keys: [{ time: 3, value: [1, 1, 1] }]
+        keys: [{ time: 3, value: [1, 1, 1] }],
       });
       assert.equal(err, null);
       assert.equal(setTimeCalls, 1);
-    }
+    },
   );
 }
 
@@ -220,10 +227,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     keyframes: [] as Array<Record<string, unknown>>,
     rotation: [] as Array<Record<string, unknown>>,
     addKeyframe: (payload: { channel?: string; time?: number }) => {
-      const keyframe = { channel: payload.channel, time: payload.time, data_points: [{ x: 0, y: 0, z: 0 }] };
+      const keyframe = {
+        channel: payload.channel,
+        time: payload.time,
+        data_points: [{ x: 0, y: 0, z: 0 }],
+      };
       animator.keyframes.push(keyframe);
       return keyframe;
-    }
+    },
   };
   const clip: {
     name: string;
@@ -236,7 +247,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     keyframes: [],
     time: 0,
     select: () => undefined,
-    getBoneAnimator: () => animator
+    getBoneAnimator: () => animator,
   };
   const outliner = { root: [{ name: 'body', children: [] }] };
   withGlobals(
@@ -248,18 +259,17 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       Group: undefined,
       Cube: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetKeyframes(noopLog, {
         clip: 'idle',
         bone: 'body',
         channel: 'rot',
-        keys: [{ time: 4, value: [2, 2, 2] }]
+        keys: [{ time: 4, value: [2, 2, 2] }],
       });
       assert.equal(err, null);
       assert.equal(clip.time, 4);
-    }
+    },
   );
 }
-

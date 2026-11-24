@@ -17,24 +17,24 @@ export const IMPLICIT_SESSION_METHODS = new Set([
   'resources/list',
   'resources/read',
   'resources/templates/list',
-  'ping'
+  'ping',
 ]);
 
 export const jsonRpcError = (
   id: JsonRpcResponse['id'],
   code: number,
   message: string,
-  data?: unknown
+  data?: unknown,
 ): JsonRpcResponse => ({
   jsonrpc: '2.0',
   id,
-  error: { code, message, data }
+  error: { code, message, data },
 });
 
 export const jsonRpcResult = (id: JsonRpcResponse['id'], result: unknown): JsonRpcResponse => ({
   jsonrpc: '2.0',
   id,
-  result
+  result,
 });
 
 export const isJsonRpcMessage = (value: unknown): value is JsonRpcMessage => {
@@ -44,11 +44,7 @@ export const isJsonRpcMessage = (value: unknown): value is JsonRpcMessage => {
   if (keys.some((key) => !['jsonrpc', 'method', 'params', 'id'].includes(key))) {
     return false;
   }
-  if (
-    obj.jsonrpc !== '2.0' ||
-    typeof obj.method !== 'string' ||
-    obj.method.trim().length === 0
-  ) {
+  if (obj.jsonrpc !== '2.0' || typeof obj.method !== 'string' || obj.method.trim().length === 0) {
     return false;
   }
   if (
@@ -81,8 +77,7 @@ export const matchesPath = (url: string, basePath: string) => {
   }
 };
 
-export const supportsSse = (acceptHeader: string | undefined) =>
-  acceptsEventStream(acceptHeader);
+export const supportsSse = (acceptHeader: string | undefined) => acceptsEventStream(acceptHeader);
 
 export const makeTextContent = (text: string) => [{ type: 'text', text }];
 
@@ -93,7 +88,10 @@ export const normalizeSessionTtl = (value?: number): number => {
 };
 
 export const toCallToolResult = (response: ToolResponse<unknown>) => {
-  const normalized = normalizeToolResponse(response, { source: 'mcp_router', preserveContent: true });
+  const normalized = normalizeToolResponse(response, {
+    source: 'mcp_router',
+    preserveContent: true,
+  });
   const nextActions = normalized.nextActions;
   const meta = Array.isArray(nextActions) && nextActions.length > 0 ? { nextActions } : null;
   if (normalized.ok) {
@@ -109,7 +107,7 @@ export const toCallToolResult = (response: ToolResponse<unknown>) => {
     const json = JSON.stringify(structured);
     const result: Record<string, unknown> = {
       content: makeTextContent(json),
-      structuredContent: structured
+      structuredContent: structured,
     };
     if (meta) result._meta = meta;
     return result;
@@ -123,7 +121,11 @@ export const toCallToolResult = (response: ToolResponse<unknown>) => {
     if (meta) result._meta = meta;
     return result;
   }
-  const result: Record<string, unknown> = { isError: true, content: makeTextContent(error.message), structuredContent: error };
+  const result: Record<string, unknown> = {
+    isError: true,
+    content: makeTextContent(error.message),
+    structuredContent: error,
+  };
   if (meta) result._meta = meta;
   return result;
 };
@@ -137,7 +139,3 @@ export const randomId = () => {
   }
   return Math.random().toString(16).slice(2) + Date.now().toString(16);
 };
-
-
-
-

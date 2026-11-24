@@ -8,24 +8,21 @@ import { uvPaintMessages, uvPaintPixelMessages } from './context';
 import {
   countChangedPixels,
   overlayPatchRects,
-  overlayTextureSpaceRects
+  overlayTextureSpaceRects,
 } from './paintFacesPixels';
 import { maybeRollbackTextureLoss } from './paintFacesRecovery';
 import {
   preparePaintFacesPreflight,
   type PaintFacesPassParams,
-  type PaintFacesPreflight
+  type PaintFacesPreflight,
 } from './paintFacesStages';
 import {
   TEXTURE_OP_COLOR_INVALID,
   TEXTURE_OP_INVALID,
   TEXTURE_OP_LINEWIDTH_INVALID,
-  TEXTURE_RENDERER_NO_IMAGE
+  TEXTURE_RENDERER_NO_IMAGE,
 } from '../../shared/messages';
-import type {
-  TextureOpLike,
-  TextureRasterFailureReason
-} from '../../domain/textureOps';
+import type { TextureOpLike, TextureRasterFailureReason } from '../../domain/textureOps';
 
 type PaintFacesExecution = {
   pixels: Uint8ClampedArray;
@@ -47,19 +44,19 @@ const coordSpaceExecutors: Record<'face' | 'texture', CoordSpaceExecutor> = {
       preflight.sourceWidth,
       preflight.sourceHeight,
       preflight.op,
-      resolvedTextureName
+      resolvedTextureName,
     );
     if (!applyRes.ok) return applyRes;
 
     const uvPaint: UvPaintSpec = {
       ...preflight.uvPaintTarget,
-      source: { width: preflight.sourceWidth, height: preflight.sourceHeight }
+      source: { width: preflight.sourceWidth, height: preflight.sourceHeight },
     };
     const uvPaintValidation = validateUvPaintSpec(
       uvPaint,
       preflight.limits,
       resolvedTextureName,
-      uvPaintMessages
+      uvPaintMessages,
     );
     if (!uvPaintValidation.ok) return fail(uvPaintValidation.error);
 
@@ -68,14 +65,20 @@ const coordSpaceExecutors: Record<'face' | 'texture', CoordSpaceExecutor> = {
       target: { width: preflight.textureWidth, height: preflight.textureHeight },
       config: { rects: preflight.rects, mapping: preflight.mapping, padding: 0, anchor: [0, 0] },
       label: resolvedTextureName,
-      messages: uvPaintPixelMessages
+      messages: uvPaintPixelMessages,
     });
     if (!patchRes.ok) return fail(patchRes.error);
 
-    overlayPatchRects(pixels, patchRes.data.data, patchRes.data.rects, preflight.textureWidth, preflight.textureHeight);
+    overlayPatchRects(
+      pixels,
+      patchRes.data.data,
+      patchRes.data.rects,
+      preflight.textureWidth,
+      preflight.textureHeight,
+    );
     return ok({
       pixels,
-      changedPixels: countChangedPixels(before, pixels)
+      changedPixels: countChangedPixels(before, pixels),
     });
   },
   texture: ({ preflight, resolvedTextureName }) => {
@@ -87,7 +90,7 @@ const coordSpaceExecutors: Record<'face' | 'texture', CoordSpaceExecutor> = {
       preflight.sourceWidth,
       preflight.sourceHeight,
       preflight.op,
-      resolvedTextureName
+      resolvedTextureName,
     );
     if (!applyRes.ok) return applyRes;
 
@@ -96,23 +99,25 @@ const coordSpaceExecutors: Record<'face' | 'texture', CoordSpaceExecutor> = {
       textureSpace,
       preflight.rects,
       preflight.textureWidth,
-      preflight.textureHeight
+      preflight.textureHeight,
     );
     return ok({
       pixels,
-      changedPixels: countChangedPixels(before, pixels)
+      changedPixels: countChangedPixels(before, pixels),
     });
-  }
+  },
 };
 
-export const runPaintFacesPass = (params: PaintFacesPassParams): UsecaseResult<PaintFacesResult> => {
+export const runPaintFacesPass = (
+  params: PaintFacesPassParams,
+): UsecaseResult<PaintFacesResult> => {
   const preflight = preparePaintFacesPreflight(params);
   if (!preflight.ok) return fail(preflight.error);
 
   const execute = coordSpaceExecutors[params.coordSpace];
   const execution = execute({
     preflight: preflight.value,
-    resolvedTextureName: params.resolvedTexture.name
+    resolvedTextureName: params.resolvedTexture.name,
   });
   if (!execution.ok) return fail(execution.error);
 
@@ -122,15 +127,16 @@ export const runPaintFacesPass = (params: PaintFacesPassParams): UsecaseResult<P
 const finalizePaintFacesPass = (
   params: PaintFacesPassParams,
   preflight: PaintFacesPreflight,
-  execution: PaintFacesExecution
+  execution: PaintFacesExecution,
 ): UsecaseResult<PaintFacesResult> => {
   const renderRes = params.textureRenderer.renderPixels({
     width: preflight.textureWidth,
     height: preflight.textureHeight,
-    data: execution.pixels
+    data: execution.pixels,
   });
   if (renderRes.error) return fail(renderRes.error);
-  if (!renderRes.result) return fail({ code: 'not_implemented', message: TEXTURE_RENDERER_NO_IMAGE });
+  if (!renderRes.result)
+    return fail({ code: 'not_implemented', message: TEXTURE_RENDERER_NO_IMAGE });
 
   const updateRes = params.ctx.updateTexture({
     id: params.resolvedTexture.id,
@@ -138,7 +144,7 @@ const finalizePaintFacesPass = (
     image: renderRes.result.image,
     width: preflight.textureWidth,
     height: preflight.textureHeight,
-    ifRevision: params.payload.ifRevision
+    ifRevision: params.payload.ifRevision,
   });
   if (!updateRes.ok && updateRes.error.code !== 'no_change') return fail(updateRes.error);
 
@@ -149,11 +155,11 @@ const finalizePaintFacesPass = (
       id: params.resolvedTexture.id,
       name: params.resolvedTexture.name,
       width: preflight.textureWidth,
-      height: preflight.textureHeight
+      height: preflight.textureHeight,
     },
     ifRevision: params.payload.ifRevision,
     recoveryAttempts: params.recoveryAttempts.length,
-    backup: params.backup
+    backup: params.backup,
   });
   if (rollbackError) return fail(rollbackError);
 
@@ -169,13 +175,18 @@ const finalizePaintFacesPass = (
       coordSpace: params.coordSpace,
       width: preflight.sourceWidth,
       height: preflight.sourceHeight,
-      faceUv: [preflight.faceBounds.x1, preflight.faceBounds.y1, preflight.faceBounds.x2, preflight.faceBounds.y2]
-    }
+      faceUv: [
+        preflight.faceBounds.x1,
+        preflight.faceBounds.y1,
+        preflight.faceBounds.x2,
+        preflight.faceBounds.y2,
+      ],
+    },
   };
   if (params.recoveryAttempts.length > 0) {
     result.recovery = {
       applied: true,
-      attempts: params.recoveryAttempts
+      attempts: params.recoveryAttempts,
     };
   }
   return ok(result);
@@ -186,7 +197,7 @@ const applySingleTextureOp = (
   width: number,
   height: number,
   op: TextureOpLike,
-  textureLabel: string
+  textureLabel: string,
 ): UsecaseResult<void> => {
   const res = applyTextureOps(pixels, width, height, [op], parseHexColor);
   if (!res.ok) {
@@ -194,7 +205,7 @@ const applySingleTextureOp = (
     return fail({
       code: 'invalid_payload',
       message: reason,
-      details: { opIndex: res.opIndex, reason: res.reason }
+      details: { opIndex: res.opIndex, reason: res.reason },
     });
   }
   return ok(undefined);
@@ -202,7 +213,7 @@ const applySingleTextureOp = (
 
 const mapTextureOpFailureReason = (
   reason: 'invalid_color' | 'invalid_line_width' | TextureRasterFailureReason,
-  textureLabel: string
+  textureLabel: string,
 ): string => {
   switch (reason) {
     case 'invalid_line_width':

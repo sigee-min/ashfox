@@ -7,18 +7,11 @@ import type {
   TrackedBone,
   TrackedCube,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './index';
 import { FORMAT_KINDS } from '../shared';
-import {
-  isTrackedAnimationContract,
-  isTrackedTextureContract
-} from './assets';
-import {
-  isTrackedBoneContract,
-  isTrackedCubeContract,
-  isTrackedMeshContract
-} from './geometry';
+import { isTrackedAnimationContract, isTrackedTextureContract } from './assets';
+import { isTrackedBoneContract, isTrackedCubeContract, isTrackedMeshContract } from './geometry';
 import {
   hasShape,
   isArrayOf,
@@ -31,14 +24,16 @@ import {
   isNullableString,
   isString,
   isVec4,
-  type ValueGuard
+  type ValueGuard,
 } from './shared';
 
 const isStateCounts = (value: unknown): value is ProjectState['counts'] =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['bones', 'cubes', 'textures', 'animations'], [
-    'meshes', 'meshVertices', 'meshFaces'
-  ]) &&
+  hasShape(
+    value,
+    ['bones', 'cubes', 'textures', 'animations'],
+    ['meshes', 'meshVertices', 'meshFaces'],
+  ) &&
   isNonNegativeInteger(value.bones) &&
   isNonNegativeInteger(value.cubes) &&
   isNonNegativeInteger(value.textures) &&
@@ -48,7 +43,7 @@ const isStateCounts = (value: unknown): value is ProjectState['counts'] =>
   (value.meshFaces === undefined || isNonNegativeInteger(value.meshFaces));
 
 const isTextureResolution = (
-  value: unknown
+  value: unknown,
 ): value is NonNullable<ProjectState['textureResolution']> =>
   isClosedContractRecord(value) &&
   hasShape(value, ['width', 'height']) &&
@@ -56,7 +51,7 @@ const isTextureResolution = (
   isNonNegativeInteger(value.height);
 
 const isTextureUsageFace = (
-  value: unknown
+  value: unknown,
 ): value is ProjectTextureUsage['textures'][number]['cubes'][number]['faces'][number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['face'], ['uv']) &&
@@ -64,7 +59,7 @@ const isTextureUsageFace = (
   (value.uv === undefined || isVec4(value.uv));
 
 const isTextureUsageCube = (
-  value: unknown
+  value: unknown,
 ): value is ProjectTextureUsage['textures'][number]['cubes'][number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['name', 'faces'], ['id']) &&
@@ -72,31 +67,28 @@ const isTextureUsageCube = (
   isArrayOf(value.faces, isTextureUsageFace) &&
   (value.id === undefined || isString(value.id));
 
-const isTextureUsageEntry = (
-  value: unknown
-): value is ProjectTextureUsage['textures'][number] => {
-  if (!isClosedContractRecord(value) ||
-    !hasShape(value, ['name', 'cubeCount', 'faceCount', 'cubes'], [
-      'id', 'width', 'height'
-    ]) ||
+const isTextureUsageEntry = (value: unknown): value is ProjectTextureUsage['textures'][number] => {
+  if (
+    !isClosedContractRecord(value) ||
+    !hasShape(value, ['name', 'cubeCount', 'faceCount', 'cubes'], ['id', 'width', 'height']) ||
     !isString(value.name) ||
     !isNonNegativeInteger(value.cubeCount) ||
     !isNonNegativeInteger(value.faceCount) ||
     !isArrayOf(value.cubes, isTextureUsageCube) ||
     !(value.id === undefined || isString(value.id)) ||
     !(value.width === undefined || isNonNegativeInteger(value.width)) ||
-    !(value.height === undefined || isNonNegativeInteger(value.height))) {
+    !(value.height === undefined || isNonNegativeInteger(value.height))
+  ) {
     return false;
   }
-  return value.cubeCount === value.cubes.length &&
-    value.faceCount === value.cubes.reduce(
-      (count, cube) => count + cube.faces.length,
-      0
-    );
+  return (
+    value.cubeCount === value.cubes.length &&
+    value.faceCount === value.cubes.reduce((count, cube) => count + cube.faces.length, 0)
+  );
 };
 
 const isTextureUsageUnresolved = (
-  value: unknown
+  value: unknown,
 ): value is NonNullable<ProjectTextureUsage['unresolved']>[number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['textureRef', 'cubeName', 'face'], ['cubeId']) &&
@@ -105,39 +97,39 @@ const isTextureUsageUnresolved = (
   isCubeFaceDirection(value.face) &&
   (value.cubeId === undefined || isString(value.cubeId));
 
-const isProjectTextureUsage = (
-  value: unknown
-): value is ProjectTextureUsage =>
+const isProjectTextureUsage = (value: unknown): value is ProjectTextureUsage =>
   isClosedContractRecord(value) &&
   hasShape(value, ['textures'], ['unresolved']) &&
   isArrayOf(value.textures, isTextureUsageEntry) &&
-  (value.unresolved === undefined ||
-    isArrayOf(value.unresolved, isTextureUsageUnresolved));
+  (value.unresolved === undefined || isArrayOf(value.unresolved, isTextureUsageUnresolved));
 
 const readOptionalArray = <T>(
   value: unknown,
-  guard: ValueGuard<T>
+  guard: ValueGuard<T>,
 ): readonly T[] | undefined | null => {
   if (value === undefined) return undefined;
   return isArrayOf(value, guard) ? value : null;
 };
 
-export const isProjectStateContract = (
-  value: unknown
-): value is ProjectState => {
-  if (!isClosedContractRecord(value) ||
-    !hasShape(value, ['id', 'active', 'name', 'format', 'revision', 'counts'], [
-      'formatId',
-      'dirty',
-      'textureResolution',
-      'uvPixelsPerBlock',
-      'textureUsage',
-      'bones',
-      'cubes',
-      'meshes',
-      'textures',
-      'animations'
-    ]) ||
+export const isProjectStateContract = (value: unknown): value is ProjectState => {
+  if (
+    !isClosedContractRecord(value) ||
+    !hasShape(
+      value,
+      ['id', 'active', 'name', 'format', 'revision', 'counts'],
+      [
+        'formatId',
+        'dirty',
+        'textureResolution',
+        'uvPixelsPerBlock',
+        'textureUsage',
+        'bones',
+        'cubes',
+        'meshes',
+        'textures',
+        'animations',
+      ],
+    ) ||
     !isNonEmptyContractText(value.id) ||
     !isBoolean(value.active) ||
     !isNullableString(value.name) ||
@@ -146,12 +138,10 @@ export const isProjectStateContract = (
     !isStateCounts(value.counts) ||
     !(value.formatId === undefined || isNullableString(value.formatId)) ||
     !(value.dirty === undefined || isBoolean(value.dirty)) ||
-    !(value.textureResolution === undefined ||
-      isTextureResolution(value.textureResolution)) ||
-    !(value.uvPixelsPerBlock === undefined ||
-      isFiniteNumber(value.uvPixelsPerBlock)) ||
-    !(value.textureUsage === undefined ||
-      isProjectTextureUsage(value.textureUsage))) {
+    !(value.textureResolution === undefined || isTextureResolution(value.textureResolution)) ||
+    !(value.uvPixelsPerBlock === undefined || isFiniteNumber(value.uvPixelsPerBlock)) ||
+    !(value.textureUsage === undefined || isProjectTextureUsage(value.textureUsage))
+  ) {
     return false;
   }
   const bones = readOptionalArray<TrackedBone>(value.bones, isTrackedBoneContract);
@@ -160,27 +150,28 @@ export const isProjectStateContract = (
   const textures = readOptionalArray<TrackedTexture>(value.textures, isTrackedTextureContract);
   const animations = readOptionalArray<TrackedAnimation>(
     value.animations,
-    isTrackedAnimationContract
+    isTrackedAnimationContract,
   );
-  if (bones === null || cubes === null || meshes === null ||
-    textures === null || animations === null) return false;
-  const meshVertexCount = meshes?.reduce(
-    (sum, mesh) => sum + mesh.vertices.length,
-    0
-  );
-  const meshFaceCount = meshes?.reduce(
-    (sum, mesh) => sum + mesh.faces.length,
-    0
-  );
-  return (!bones || bones.length === value.counts.bones) &&
+  if (
+    bones === null ||
+    cubes === null ||
+    meshes === null ||
+    textures === null ||
+    animations === null
+  )
+    return false;
+  const meshVertexCount = meshes?.reduce((sum, mesh) => sum + mesh.vertices.length, 0);
+  const meshFaceCount = meshes?.reduce((sum, mesh) => sum + mesh.faces.length, 0);
+  return (
+    (!bones || bones.length === value.counts.bones) &&
     (!cubes || cubes.length === value.counts.cubes) &&
-    (!meshes || (
-      value.counts.meshes === meshes.length &&
-      value.counts.meshVertices === meshVertexCount &&
-      value.counts.meshFaces === meshFaceCount
-    )) &&
+    (!meshes ||
+      (value.counts.meshes === meshes.length &&
+        value.counts.meshVertices === meshVertexCount &&
+        value.counts.meshFaces === meshFaceCount)) &&
     (!textures || textures.length === value.counts.textures) &&
-    (!animations || animations.length === value.counts.animations);
+    (!animations || animations.length === value.counts.animations)
+  );
 };
 
 export const isProjectStateCountsContract = isStateCounts;

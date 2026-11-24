@@ -8,7 +8,7 @@ import {
   guardUvScale,
   guardUvUsage,
   guardUvUsageId,
-  type UvGuardMessages
+  type UvGuardMessages,
 } from '../../../src/domain/uv/guards';
 import { collectSingleTarget } from '../../../src/domain/uv/targets';
 
@@ -18,7 +18,7 @@ const messages: UvGuardMessages = {
   overlapMessage: (names, suffix, example) => `overlap ${names}${suffix}${example}`,
   overlapFix: 'fix overlap',
   scaleMessage: (names, suffix, example) => `scale ${names}${suffix}${example}`,
-  scaleFix: 'fix scale'
+  scaleFix: 'fix scale',
 };
 
 const cubeA: Cube = {
@@ -26,7 +26,7 @@ const cubeA: Cube = {
   name: 'cube-a',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const cubeB: Cube = {
@@ -34,7 +34,7 @@ const cubeB: Cube = {
   name: 'cube-b',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const overlapUsage: TextureUsage = {
@@ -46,10 +46,10 @@ const overlapUsage: TextureUsage = {
       faceCount: 2,
       cubes: [
         { id: cubeA.id, name: cubeA.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] },
-        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [4, 4, 12, 12] }] }
-      ]
-    }
-  ]
+        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [4, 4, 12, 12] }] },
+      ],
+    },
+  ],
 };
 
 const scaleMismatchUsage: TextureUsage = {
@@ -61,10 +61,10 @@ const scaleMismatchUsage: TextureUsage = {
       faceCount: 2,
       cubes: [
         { id: cubeA.id, name: cubeA.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] },
-        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [0, 0, 12, 8] }] }
-      ]
-    }
-  ]
+        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [0, 0, 12, 8] }] },
+      ],
+    },
+  ],
 };
 
 {
@@ -97,9 +97,9 @@ const scaleMismatchUsage: TextureUsage = {
       policy: DEFAULT_UV_POLICY,
       resolution: undefined,
       targets: target,
-      messages
+      messages,
     }),
-    null
+    null,
   );
 }
 
@@ -111,7 +111,7 @@ const scaleMismatchUsage: TextureUsage = {
     policy: DEFAULT_UV_POLICY,
     resolution: { width: 32, height: 32 },
     targets: target,
-    messages
+    messages,
   });
   assert.equal(err?.details?.reason, 'uv_scale_mismatch');
 }
@@ -125,7 +125,7 @@ const scaleMismatchUsage: TextureUsage = {
     resolution: { width: 16, height: 16 },
     policy: DEFAULT_UV_POLICY,
     targets: target,
-    messages
+    messages,
   });
   assert.equal(err?.details?.reason, 'uv_usage_mismatch');
 }

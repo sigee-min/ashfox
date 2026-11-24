@@ -1,4 +1,8 @@
-import type { FormatKind, ToolError, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  FormatKind,
+  ToolError,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type {
   AnimationUpdate,
   BoneUpdate,
@@ -12,7 +16,7 @@ import type {
   TrackedBone,
   TrackedCube,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './types';
 import type { AnimationTimePolicy } from '../domain/animation/timePolicy';
 import { SessionStateStore } from './SessionStateStore';
@@ -25,12 +29,14 @@ export class ProjectSession {
   create(
     format: FormatKind,
     name: string,
-    formatId?: string | null
+    formatId?: string | null,
   ): ToolResponse<{ id: string; format: FormatKind; name: string }> {
     return this.store.create(format, name, formatId);
   }
 
-  attach(snapshot: SessionState): ToolResponse<{ id: string; format: FormatKind; name: string | null }> {
+  attach(
+    snapshot: SessionState,
+  ): ToolResponse<{ id: string; format: FormatKind; name: string | null }> {
     return this.store.attach(snapshot);
   }
 
@@ -122,4 +128,3 @@ export class ProjectSession {
     this.mutators.upsertAnimationTrigger(clip, trigger);
   }
 }
-

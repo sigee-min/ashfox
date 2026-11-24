@@ -2,25 +2,17 @@ import type { ProjectDocument } from '../../model';
 import {
   TEXTURE_MAX_RESOLUTION,
   preserveRasterDetailLimit,
-  preserveRasterTotalDetailLimit
+  preserveRasterTotalDetailLimit,
 } from '../../textures/limits';
-import {
-  COLOR_PATTERN,
-  isNonEmptyString,
-  isSafeBlobBucket,
-  isSafeBlobKey
-} from '../shared/value';
-import type {
-  FindingSink,
-  IdRegistrar
-} from '../contract';
+import { COLOR_PATTERN, isNonEmptyString, isSafeBlobBucket, isSafeBlobKey } from '../shared/value';
+import type { FindingSink, IdRegistrar } from '../contract';
 
 const validateTextureRaster = (
   texture: ProjectDocument['textures'][string],
   path: string,
   add: FindingSink,
   registerId: IdRegistrar,
-  density: ProjectDocument['settings']['surfacePixelDensity']
+  density: ProjectDocument['settings']['surfacePixelDensity'],
 ): void => {
   if (!texture.raster) return;
   const canvasDetails = texture.raster.canvasDetails;
@@ -66,18 +58,18 @@ const validateTextureRaster = (
         mask.bits.length !== mask.width * mask.height
       );
     });
-  if (!COLOR_PATTERN.test(texture.raster.background) ||
-    (texture.raster.backgroundAlpha !== 0 &&
-      texture.raster.backgroundAlpha !== 255) ||
-    invalidCanvas || invalidMasks) {
-      add({
+  if (
+    !COLOR_PATTERN.test(texture.raster.background) ||
+    (texture.raster.backgroundAlpha !== 0 && texture.raster.backgroundAlpha !== 255) ||
+    invalidCanvas ||
+    invalidMasks
+  ) {
+    add({
       code: 'texture.invalid_raster',
       severity: 'error',
-      message:
-        'Texture raster colors, alpha, and canvas details must match ' +
-        'their dimensions.',
+      message: 'Texture raster colors, alpha, and canvas details must match ' + 'their dimensions.',
       path: `${path}.raster`,
-      assetIds: [texture.id]
+      assetIds: [texture.id],
     });
   }
 };
@@ -85,7 +77,7 @@ const validateTextureRaster = (
 export const validateTextures = (
   document: ProjectDocument,
   add: FindingSink,
-  registerId: IdRegistrar
+  registerId: IdRegistrar,
 ): void => {
   let preserveDetails = 0;
   for (const [assetKey, texture] of Object.entries(document.textures)) {
@@ -93,14 +85,13 @@ export const validateTextures = (
     registerId(texture.id, path);
     if (texture.raster !== undefined) {
       preserveDetails += texture.raster.canvasDetails.length;
-      if (preserveDetails > preserveRasterTotalDetailLimit(
-        document.settings.surfacePixelDensity)) {
+      if (preserveDetails > preserveRasterTotalDetailLimit(document.settings.surfacePixelDensity)) {
         add({
           code: 'texture.invalid_raster',
           severity: 'error',
           message: 'Preserve-mode raster details exceed the bounded asset budget.',
           path: 'textures',
-          assetIds: [texture.id]
+          assetIds: [texture.id],
         });
       }
     }
@@ -110,7 +101,7 @@ export const validateTextures = (
         severity: 'error',
         message: `Texture map key "${assetKey}" does not match ID "${texture.id}".`,
         path,
-        assetIds: [texture.id]
+        assetIds: [texture.id],
       });
     }
     if (
@@ -128,19 +119,16 @@ export const validateTextures = (
           'Texture dimensions must be positive integers no larger than ' +
           `${TEXTURE_MAX_RESOLUTION}.`,
         path,
-        assetIds: [texture.id]
+        assetIds: [texture.id],
       });
     }
-    if (
-      texture.atlasMode !== undefined &&
-      texture.atlasMode !== 'preserve'
-    ) {
+    if (texture.atlasMode !== undefined && texture.atlasMode !== 'preserve') {
       add({
         code: 'texture.invalid_atlas_mode',
         severity: 'error',
         message: 'Texture atlas mode must be preserve when provided.',
         path: `${path}.atlasMode`,
-        assetIds: [texture.id]
+        assetIds: [texture.id],
       });
     }
     if (
@@ -148,23 +136,20 @@ export const validateTextures = (
       !isNonEmptyString(texture.source.key) ||
       !isNonEmptyString(texture.source.contentType) ||
       !isNonEmptyString(texture.source.contentHash) ||
-      (isNonEmptyString(texture.source.bucket) &&
-        !isSafeBlobBucket(texture.source.bucket)) ||
-      (isNonEmptyString(texture.source.key) &&
-        !isSafeBlobKey(texture.source.key)) ||
+      (isNonEmptyString(texture.source.bucket) && !isSafeBlobBucket(texture.source.bucket)) ||
+      (isNonEmptyString(texture.source.key) && !isSafeBlobKey(texture.source.key)) ||
       (texture.source.byteLength !== undefined &&
-        (!Number.isInteger(texture.source.byteLength) ||
-          texture.source.byteLength < 0))
+        (!Number.isInteger(texture.source.byteLength) || texture.source.byteLength < 0))
     ) {
       add({
         code: 'texture.invalid_blob',
         severity: 'error',
-        message: 'Texture blob references require safe logical bucket/key values, contentType, contentHash, and a non-negative byteLength.',
+        message:
+          'Texture blob references require safe logical bucket/key values, contentType, contentHash, and a non-negative byteLength.',
         path: `${path}.source`,
-        assetIds: [texture.id]
+        assetIds: [texture.id],
       });
     }
-    validateTextureRaster(texture, path, add, registerId,
-      document.settings.surfacePixelDensity);
+    validateTextureRaster(texture, path, add, registerId, document.settings.surfacePixelDensity);
   }
 };

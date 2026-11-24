@@ -6,20 +6,20 @@ import {
   MCP_PAYLOAD_READ_FAILED,
   MCP_PAYLOAD_TOO_LARGE,
   MCP_REQUEST_TIMEOUT,
-  MCP_TOOL_EXECUTION_FAILED
+  MCP_TOOL_EXECUTION_FAILED,
 } from '../../shared/messages';
 import { ByteAccumulator } from '../byteAccumulator';
 import {
   MCP_HTTP_MAX_HEADER_BYTES,
   TRANSPORT_MAX_PAYLOAD_BYTES,
-  TRANSPORT_REQUEST_TIMEOUT_MS
+  TRANSPORT_REQUEST_TIMEOUT_MS,
 } from '../limits';
 import { decodeStrictUtf8 } from '../utf8';
 import {
   netJsonResponse,
   parseRequestHead,
   writeNetResponse,
-  type ParsedRequestHead
+  type ParsedRequestHead,
 } from './netProtocol';
 import type { McpRouter } from './router';
 import type { ResponsePlan, SseConnection } from './types';
@@ -34,9 +34,7 @@ interface RoutedRequest {
 }
 
 interface PendingSseResponse {
-  readonly open: (
-    connection: SseConnection
-  ) => void | (() => void);
+  readonly open: (connection: SseConnection) => void | (() => void);
   readonly cancel: () => void;
   readonly isPending: () => boolean;
 }
@@ -45,7 +43,7 @@ export const acceptMcpNetConnection = (
   socket: Socket,
   options: McpNetConnectionOptions,
   router: McpRouter,
-  log: Logger
+  log: Logger,
 ): void => {
   new McpNetConnectionSession(socket, options, router, log).start();
 };
@@ -64,7 +62,7 @@ class McpNetConnectionSession {
     private readonly socket: Socket,
     options: McpNetConnectionOptions,
     private readonly router: McpRouter,
-    private readonly log: Logger
+    private readonly log: Logger,
   ) {
     this.requestTimeoutMs = normalizedRequestTimeout(options.requestTimeoutMs);
   }
@@ -99,8 +97,10 @@ class McpNetConnectionSession {
   private headerExceedsLimit(): boolean {
     if (this.pendingHead) return false;
     const headerEnd = this.buffer.indexOf('\r\n\r\n');
-    return (headerEnd < 0 && this.buffer.length > MCP_HTTP_MAX_HEADER_BYTES) ||
-      (headerEnd >= 0 && headerEnd + 4 > MCP_HTTP_MAX_HEADER_BYTES);
+    return (
+      (headerEnd < 0 && this.buffer.length > MCP_HTTP_MAX_HEADER_BYTES) ||
+      (headerEnd >= 0 && headerEnd + 4 > MCP_HTTP_MAX_HEADER_BYTES)
+    );
   }
 
   private async processBuffer(): Promise<void> {
@@ -110,7 +110,7 @@ class McpNetConnectionSession {
       while (!this.closed) {
         const request = this.readRequest();
         if (!request) return;
-        if (!await this.routeRequest(request)) return;
+        if (!(await this.routeRequest(request))) return;
       }
     } finally {
       this.processing = false;
@@ -169,7 +169,7 @@ class McpNetConnectionSession {
       const wroteResponse = writeNetResponse(this.socket, plan, {
         closeAfter: request.head.shouldClose,
         onOpen: pendingSse?.open,
-        canOpen: () => !this.closed
+        canOpen: () => !this.closed,
       });
       if (!wroteResponse) {
         pendingSse?.cancel();
@@ -179,7 +179,7 @@ class McpNetConnectionSession {
     } catch (error) {
       pendingSse?.cancel();
       this.log.error('MCP net response failed', {
-        message: errorMessage(error, MCP_TOOL_EXECUTION_FAILED)
+        message: errorMessage(error, MCP_TOOL_EXECUTION_FAILED),
       });
       this.closeSocket();
       return false;
@@ -188,20 +188,18 @@ class McpNetConnectionSession {
     return this.finishResponse(plan, request.head.shouldClose);
   }
 
-  private async requestPlan(
-    request: RoutedRequest
-  ): Promise<ResponsePlan | null> {
+  private async requestPlan(request: RoutedRequest): Promise<ResponsePlan | null> {
     try {
       return await this.router.handle({
         method: request.head.method,
         url: request.head.url,
         headers: request.head.headers,
-        body: request.body
+        body: request.body,
       });
     } catch (error) {
       if (this.closed) return null;
       this.log.error('MCP net request failed', {
-        message: errorMessage(error, MCP_TOOL_EXECUTION_FAILED)
+        message: errorMessage(error, MCP_TOOL_EXECUTION_FAILED),
       });
       this.respondAndClose(500, 'unknown', MCP_TOOL_EXECUTION_FAILED);
       return null;
@@ -252,15 +250,15 @@ class McpNetConnectionSession {
     return true;
   }
 
-  private respondAndClose(
-    status: number,
-    code: string,
-    message: string
-  ): void {
+  private respondAndClose(status: number, code: string, message: string): void {
     try {
-      writeNetResponse(this.socket, netJsonResponse(status, {
-        error: { code, message }
-      }), { closeAfter: true });
+      writeNetResponse(
+        this.socket,
+        netJsonResponse(status, {
+          error: { code, message },
+        }),
+        { closeAfter: true },
+      );
     } finally {
       this.closeSocket();
     }
@@ -270,7 +268,7 @@ class McpNetConnectionSession {
     this.clearRequestDeadline();
     this.requestTimer = setTimeout(() => {
       this.log.warn('MCP net request timed out', {
-        message: MCP_REQUEST_TIMEOUT
+        message: MCP_REQUEST_TIMEOUT,
       });
       this.closeSocket();
     }, this.requestTimeoutMs);

@@ -8,14 +8,11 @@ import type {
   IfRevisionOption,
   IncludeDiffOption,
   IncludeStateOption,
-  ProjectStateDetail
+  ProjectStateDetail,
 } from '../shared';
 import type { MeshUvPolicy } from '../project';
 
-export type {
-  MeshSymmetryAxis,
-  MeshUvPolicy
-} from '../project';
+export type { MeshSymmetryAxis, MeshUvPolicy } from '../project';
 
 export type FaceUvRect = [number, number, number, number];
 
@@ -48,10 +45,27 @@ export type UvPaintSpec = {
 export type TextureOpLike =
   | { op: 'set_pixel'; x: number; y: number; color: string }
   | { op: 'fill_rect'; x: number; y: number; width: number; height: number; color: string }
-  | { op: 'draw_rect'; x: number; y: number; width: number; height: number; color: string; lineWidth?: number }
-  | { op: 'draw_line'; x1: number; y1: number; x2: number; y2: number; color: string; lineWidth?: number };
+  | {
+      op: 'draw_rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      color: string;
+      lineWidth?: number;
+    }
+  | {
+      op: 'draw_line';
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      color: string;
+      lineWidth?: number;
+    };
 
-export interface EnsureProjectPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface EnsureProjectPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   action?: EnsureProjectAction;
   target?: { name?: string };
   format?: FormatKind;
@@ -65,7 +79,8 @@ export interface EnsureProjectPayload extends IncludeStateOption, IncludeDiffOpt
   dialog?: Record<string, unknown>;
 }
 
-export interface PaintTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface PaintTexturePayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   width: number;
   height: number;
   name?: string;
@@ -103,7 +118,8 @@ export interface PaintMeshFaceTarget {
   faceId?: string;
 }
 
-export interface PaintMeshFacePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface PaintMeshFacePayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   textureId?: string;
   textureName?: string;
   target: PaintMeshFaceTarget;
@@ -115,7 +131,8 @@ export interface PaintMeshFacePayload extends IncludeStateOption, IncludeDiffOpt
   mapping?: 'stretch' | 'tile';
 }
 
-export interface AutoUvAtlasPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface AutoUvAtlasPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   padding?: number;
   apply?: boolean;
 }
@@ -146,7 +163,8 @@ export interface GetProjectStatePayload {
   includeUsage?: boolean;
 }
 
-export interface SetProjectTextureResolutionPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface SetProjectTextureResolutionPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   width: number;
   height: number;
   modifyUv?: boolean;
@@ -158,12 +176,14 @@ export interface PreflightTexturePayload {
   includeUsage?: boolean;
 }
 
-export interface DeleteTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface DeleteTexturePayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   id?: string;
   name?: string;
 }
 
-export interface AssignTexturePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface AssignTexturePayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   textureId?: string;
   textureName?: string;
   cubeIds?: string[];
@@ -295,7 +315,8 @@ export interface DeleteMeshPayload extends IncludeStateOption, IncludeDiffOption
   names?: string[];
 }
 
-export interface CreateAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface CreateAnimationClipPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   id?: string;
   name: string;
   length: number;
@@ -303,7 +324,8 @@ export interface CreateAnimationClipPayload extends IncludeStateOption, IncludeD
   fps: number;
 }
 
-export interface UpdateAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface UpdateAnimationClipPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   id?: string;
   name?: string;
   newName?: string;
@@ -312,14 +334,16 @@ export interface UpdateAnimationClipPayload extends IncludeStateOption, IncludeD
   fps?: number;
 }
 
-export interface DeleteAnimationClipPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface DeleteAnimationClipPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   id?: string;
   name?: string;
   ids?: string[];
   names?: string[];
 }
 
-export interface SetFramePosePayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface SetFramePosePayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   clipId?: string;
   clip: string;
   frame: number;
@@ -333,7 +357,8 @@ export interface SetFramePosePayload extends IncludeStateOption, IncludeDiffOpti
   interp?: 'linear' | 'step' | 'catmullrom';
 }
 
-export interface SetTriggerKeyframesPayload extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
+export interface SetTriggerKeyframesPayload
+  extends IncludeStateOption, IncludeDiffOption, IfRevisionOption {
   clipId?: string;
   clip: string;
   channel: 'sound' | 'particle' | 'timeline';

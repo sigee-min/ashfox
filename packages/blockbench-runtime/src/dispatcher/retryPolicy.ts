@@ -26,11 +26,15 @@ export const callWithAutoRetry = async <TPayload extends object, TResult>(args: 
   const decision = decideRevision(ifRevision, {
     requiresRevision: args.service.isRevisionRequired(),
     allowAutoRetry: true,
-    getProjectState: () => args.service.getProjectState({ detail: 'summary' })
+    getProjectState: () => args.service.getProjectState({ detail: 'summary' }),
   });
   if (!decision.ok) {
     const reason = resolveGuardReason(decision.error) ?? 'state_unavailable';
-    args.log.debug('revision retry skipped', { tool: args.tool, reason, code: decision.error.code });
+    args.log.debug('revision retry skipped', {
+      tool: args.tool,
+      reason,
+      code: decision.error.code,
+    });
     return { result: first, payload: args.payload };
   }
   if (decision.action !== 'retry') {
@@ -38,7 +42,7 @@ export const callWithAutoRetry = async <TPayload extends object, TResult>(args: 
       tool: args.tool,
       reason: 'no_new_revision',
       expected: ifRevision ?? null,
-      current: decision.currentRevision ?? null
+      current: decision.currentRevision ?? null,
     });
     return { result: first, payload: args.payload };
   }
@@ -47,7 +51,7 @@ export const callWithAutoRetry = async <TPayload extends object, TResult>(args: 
       tool: args.tool,
       reason: 'no_new_revision',
       expected: ifRevision ?? null,
-      current: decision.currentRevision ?? null
+      current: decision.currentRevision ?? null,
     });
     return { result: first, payload: args.payload };
   }
@@ -56,7 +60,7 @@ export const callWithAutoRetry = async <TPayload extends object, TResult>(args: 
     reason: 'revision_mismatch',
     expected: ifRevision ?? null,
     current: decision.currentRevision,
-    attempt: 1
+    attempt: 1,
   });
   const retryPayload = { ...args.payload, ifRevision: decision.currentRevision } as TPayload;
   const retry = await args.call(retryPayload);
@@ -67,9 +71,8 @@ export const callWithAutoRetry = async <TPayload extends object, TResult>(args: 
       tool: args.tool,
       attempt: 1,
       code: retry.error.code,
-      message: retry.error.message
+      message: retry.error.message,
     });
   }
   return { result: retry, payload: retryPayload };
 };
-

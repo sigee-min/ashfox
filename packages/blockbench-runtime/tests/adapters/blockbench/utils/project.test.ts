@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { hasUnsavedChanges, markProjectSaved } from '../../../../src/adapters/blockbench/utils/projectState';
+import {
+  hasUnsavedChanges,
+  markProjectSaved,
+} from '../../../../src/adapters/blockbench/utils/projectState';
 
 const withGlobalProject = (project: unknown, fn: () => void) => {
   const globals = globalThis as { Project?: unknown };
@@ -44,7 +47,7 @@ const withGlobalProject = (project: unknown, fn: () => void) => {
   const blockbench = {
     hasUnsavedChanges: () => {
       throw new Error('boom');
-    }
+    },
   };
   assert.equal(hasUnsavedChanges(blockbench as never), false);
 }
@@ -59,7 +62,7 @@ const withGlobalProject = (project: unknown, fn: () => void) => {
     isSaved: false,
     dirty: true,
     isDirty: true,
-    unsaved: true
+    unsaved: true,
   };
   markProjectSaved({ project } as never);
   assert.equal(markCalled, 1);
@@ -85,8 +88,7 @@ const withGlobalProject = (project: unknown, fn: () => void) => {
     markProjectSaved({
       get project() {
         throw new Error('access denied');
-      }
-    } as never)
+      },
+    } as never),
   );
 }
-

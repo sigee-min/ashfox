@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { validateAnimationFps, validateAnimationLength } from '../../../src/usecases/animation/clipValidation';
+import {
+  validateAnimationFps,
+  validateAnimationLength,
+} from '../../../src/usecases/animation/clipValidation';
 import { buildPoseUpdates, resolvePoseFps } from '../../../src/usecases/animation/posePayload';
 import { isValidTriggerPayloadValue } from '../../../src/usecases/animation/triggerPayload';
 import {
@@ -10,7 +13,7 @@ import {
   ANIMATION_POSE_BONES_REQUIRED,
   ANIMATION_POSE_CHANNEL_REQUIRED,
   ANIMATION_POSE_VALUE_INVALID,
-  MODEL_BONE_NOT_FOUND
+  MODEL_BONE_NOT_FOUND,
 } from '../../../src/shared/messages';
 
 const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
@@ -22,7 +25,10 @@ const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
 
 {
   const err = validateAnimationLength(31, 30);
-  assert.equal(normalizeMessage(String(err?.message)), normalizeMessage(ANIMATION_LENGTH_EXCEEDS_MAX(30)));
+  assert.equal(
+    normalizeMessage(String(err?.message)),
+    normalizeMessage(ANIMATION_LENGTH_EXCEEDS_MAX(30)),
+  );
 }
 
 {
@@ -43,14 +49,21 @@ const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
 {
   const res = buildPoseUpdates([], new Set(['body']));
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(normalizeMessage(res.error.message), normalizeMessage(ANIMATION_POSE_BONES_REQUIRED));
+  if (!res.ok)
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(ANIMATION_POSE_BONES_REQUIRED),
+    );
 }
 
 {
   const res = buildPoseUpdates([{ name: 'head', rot: [0, 0, 0] }], new Set(['body']));
   assert.equal(res.ok, false);
   if (!res.ok) {
-    assert.equal(normalizeMessage(res.error.message), normalizeMessage(MODEL_BONE_NOT_FOUND('head')));
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(MODEL_BONE_NOT_FOUND('head')),
+    );
   }
 }
 
@@ -58,18 +71,24 @@ const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
   const res = buildPoseUpdates([{ name: 'body' }], new Set(['body']));
   assert.equal(res.ok, false);
   if (!res.ok) {
-    assert.equal(normalizeMessage(res.error.message), normalizeMessage(ANIMATION_POSE_CHANNEL_REQUIRED));
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(ANIMATION_POSE_CHANNEL_REQUIRED),
+    );
   }
 }
 
 {
   const res = buildPoseUpdates(
     [{ name: 'body', rot: [Number.NaN, 0, 0] as [number, number, number] }],
-    new Set(['body'])
+    new Set(['body']),
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
-    assert.equal(normalizeMessage(res.error.message), normalizeMessage(ANIMATION_POSE_VALUE_INVALID));
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(ANIMATION_POSE_VALUE_INVALID),
+    );
   }
 }
 
@@ -77,7 +96,7 @@ const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
   const res = buildPoseUpdates(
     [{ name: 'body', rot: [1, 2, 3], pos: [4, 5, 6], interp: 'step' }],
     new Set(['body']),
-    'linear'
+    'linear',
   );
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -99,7 +118,10 @@ const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
   assert.equal(isValidTriggerPayloadValue({ key: 'value', nested: [1, true, null] }), true);
   assert.equal(isValidTriggerPayloadValue(['ok', 1]), false);
   assert.equal(isValidTriggerPayloadValue({ n: Number.NaN }), false);
-  assert.equal(isValidTriggerPayloadValue(() => undefined), false);
+  assert.equal(
+    isValidTriggerPayloadValue(() => undefined),
+    false,
+  );
 
   const cyclic: Record<string, unknown> = {};
   cyclic.self = cyclic;

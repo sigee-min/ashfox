@@ -5,7 +5,7 @@ import { isAssetExactFrame, type AssetExactFrame } from './frame';
 type Matrix3 = readonly [
   readonly [number, number, number],
   readonly [number, number, number],
-  readonly [number, number, number]
+  readonly [number, number, number],
 ];
 
 const freeze = <T>(value: T): T => Object.freeze(value);
@@ -23,9 +23,11 @@ const exactUnitNumber = (value: AssetExactFrame['origin'][number]): number | nul
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator)) return null;
   const result = numerator / denominator;
   if (!Number.isFinite(result)) return null;
-  if (value.numerator % value.denominator === 0n &&
-    (!Number.isSafeInteger(result) ||
-      BigInt(result) !== value.numerator / value.denominator)) return null;
+  if (
+    value.numerator % value.denominator === 0n &&
+    (!Number.isSafeInteger(result) || BigInt(result) !== value.numerator / value.denominator)
+  )
+    return null;
   return result;
 };
 
@@ -37,14 +39,14 @@ const properMatrix = (frame: AssetExactFrame): Matrix3 => {
     freeze([
       columns[0]![index]! * scale[0]!,
       columns[1]![index]! * scale[1]!,
-      columns[2]![index]! * scale[2]!
+      columns[2]![index]! * scale[2]!,
     ]);
   const rows: Matrix3 = [row(0), row(1), row(2)];
   return freeze(rows);
 };
 
 const degrees = (radians: number): number => {
-  const value = radians * 180 / Math.PI;
+  const value = (radians * 180) / Math.PI;
   const nearest = Math.round(value);
   if (Math.abs(value - nearest) <= 0.000000001) return nearest === 0 ? 0 : nearest;
   return Math.abs(value) <= 0.000000001 ? 0 : value;
@@ -75,14 +77,17 @@ const matrixFromEuler = (rotation: readonly [number, number, number]): Matrix3 =
   const rows: Matrix3 = [
     [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
     [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]
+    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
   ];
   return rows;
 };
 
 const sameMatrix = (left: Matrix3, right: Matrix3): boolean =>
-  left.every((row, rowIndex) => row.every((value, columnIndex) =>
-    Math.abs(value - right[rowIndex]![columnIndex]!) <= 0.0000001));
+  left.every((row, rowIndex) =>
+    row.every(
+      (value, columnIndex) => Math.abs(value - right[rowIndex]![columnIndex]!) <= 0.0000001,
+    ),
+  );
 
 /**
  * Lower an exact signed frame to the canonical bone transform. Reflections
@@ -90,19 +95,17 @@ const sameMatrix = (left: Matrix3, right: Matrix3): boolean =>
  * +1), matching the shared scene quaternion convention.
  */
 export const lowerAssetFrameToBoneTransform = (
-  frame: AssetExactFrame
+  frame: AssetExactFrame,
 ): Readonly<Transform> | null => {
   if (!isAssetExactFrame(frame)) return null;
   try {
     const origin = [
       exactUnitNumber(frame.origin[0]),
       exactUnitNumber(frame.origin[1]),
-      exactUnitNumber(frame.origin[2])
+      exactUnitNumber(frame.origin[2]),
     ] as const;
     if (origin.some((value): value is null => value === null)) return null;
-    const pivot: readonly [number, number, number] = [
-      origin[0]!, origin[1]!, origin[2]!
-    ];
+    const pivot: readonly [number, number, number] = [origin[0]!, origin[1]!, origin[2]!];
     const proper = properMatrix(frame);
     const rotation = eulerFromProperMatrix(proper);
     if (!sameMatrix(matrixFromEuler(rotation), proper)) return null;
@@ -111,7 +114,7 @@ export const lowerAssetFrameToBoneTransform = (
       position: vector([0, 0, 0]),
       rotation,
       scale: vector(scale),
-      pivot: vector(pivot)
+      pivot: vector(pivot),
     });
   } catch {
     return null;

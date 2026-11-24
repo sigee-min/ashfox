@@ -12,7 +12,7 @@ import {
   TextureUsageResult,
   UpdateBoneCommand,
   UpdateCubeCommand,
-  UpdateMeshCommand
+  UpdateMeshCommand,
 } from '../../../ports/editor';
 import { errorMessage, Logger } from '../../../logging';
 import type { PreviewItem } from '../../../types/blockbench';
@@ -98,14 +98,16 @@ export class BlockbenchGeometryAdapter {
         const cubeApi = getCubeApi();
         const textureApi = getTextureApi();
         if ('error' in cubeApi || 'error' in textureApi) {
-          return { error: { code: 'not_implemented', message: ADAPTER_CUBE_TEXTURE_API_UNAVAILABLE } };
+          return {
+            error: { code: 'not_implemented', message: ADAPTER_CUBE_TEXTURE_API_UNAVAILABLE },
+          };
         }
         const { TextureCtor } = textureApi;
         const textures = Array.isArray(TextureCtor.all) ? TextureCtor.all : [];
         const cubes = collectCubes();
         return buildTextureUsageResult(params, { textures, cubes });
       },
-      (error) => ({ error })
+      (error) => ({ error }),
     );
   }
 
@@ -136,11 +138,8 @@ export class BlockbenchGeometryAdapter {
     } catch (err) {
       this.log.warn('geometry viewport refresh failed', {
         message: errorMessage(err, 'geometry viewport refresh failed'),
-        source
+        source,
       });
     }
   }
 }
-
-
-

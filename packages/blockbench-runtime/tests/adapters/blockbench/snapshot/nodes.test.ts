@@ -18,14 +18,14 @@ const createStateBuffers = () => {
         name: 'ambiguous',
         children: [],
         from: [0, 0, 0],
-        to: [1, 1, 1]
-      } as unknown as Parameters<typeof walkNodes>[0][number]
+        to: [1, 1, 1],
+      } as unknown as Parameters<typeof walkNodes>[0][number],
     ],
     undefined,
     bones,
     cubes,
     meshes,
-    {} as Parameters<typeof walkNodes>[5]
+    {} as Parameters<typeof walkNodes>[5],
   );
   assert.equal(bones.length, 0);
   assert.equal(cubes.length, 1);
@@ -38,14 +38,14 @@ const createStateBuffers = () => {
     [
       {
         name: 'body',
-        children: [{ name: 'body_main', from: [0, 0, 0], to: [2, 2, 2] }]
-      } as unknown as Parameters<typeof walkNodes>[0][number]
+        children: [{ name: 'body_main', from: [0, 0, 0], to: [2, 2, 2] }],
+      } as unknown as Parameters<typeof walkNodes>[0][number],
     ],
     undefined,
     bones,
     cubes,
     meshes,
-    {} as Parameters<typeof walkNodes>[5]
+    {} as Parameters<typeof walkNodes>[5],
   );
   assert.equal(bones.length, 1);
   assert.equal(cubes.length, 1);
@@ -76,22 +76,22 @@ const createStateBuffers = () => {
                 rotation: 90,
                 cullface: 'north',
                 tint: 2,
-                material_name: 'entity_alphatest'
+                material_name: 'entity_alphatest',
               },
               invalid_direction: {
                 enabled: true,
-                texture: 'ignored'
-              }
-            }
-          }
-        ]
-      } as unknown as Parameters<typeof walkNodes>[0][number]
+                texture: 'ignored',
+              },
+            },
+          },
+        ],
+      } as unknown as Parameters<typeof walkNodes>[0][number],
     ],
     undefined,
     bones,
     cubes,
     meshes,
-    {} as Parameters<typeof walkNodes>[5]
+    {} as Parameters<typeof walkNodes>[5],
   );
   assert.equal(cubes[0]?.from?.[0], -1);
   assert.equal(cubes[0]?.uvOffset?.[0], 3);
@@ -107,15 +107,15 @@ const createStateBuffers = () => {
       rotation: 90,
       cullface: 'north',
       tintIndex: 2,
-      materialInstance: 'entity_alphatest'
-    }
+      materialInstance: 'entity_alphatest',
+    },
   });
 }
 
 {
   const bones: SessionState['bones'] = [{ name: 'body', pivot: [0, 0, 0] }];
   const cubes: SessionState['cubes'] = [
-    { name: 'body_main', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] }
+    { name: 'body_main', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] },
   ];
   ensureRootBone(bones, cubes);
   assert.equal(bones[0]?.name, 'root');
@@ -124,7 +124,7 @@ const createStateBuffers = () => {
 {
   const bones: SessionState['bones'] = [{ name: 'root', pivot: [0, 0, 0] }];
   const cubes: SessionState['cubes'] = [
-    { name: 'body_main', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] }
+    { name: 'body_main', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] },
   ];
   ensureRootBone(bones, cubes);
   assert.equal(bones.length, 1);

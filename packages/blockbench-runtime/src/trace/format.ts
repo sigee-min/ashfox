@@ -1,14 +1,19 @@
-import type { ProjectDiff, ProjectState, ToolError, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ProjectDiff,
+  ProjectState,
+  ToolError,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import {
   TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH,
   type TraceLogDiffSummary,
   type TraceLogRecord,
   type TraceLogResponse,
-  type TraceLogStateSummary
+  type TraceLogStateSummary,
 } from '@ashfox/blockbench-contracts/types/traceLog';
 import {
   FINITE_JSON_CONTRACT_MAX_CONTAINERS,
-  FINITE_JSON_CONTRACT_MAX_DEPTH
+  FINITE_JSON_CONTRACT_MAX_DEPTH,
 } from '@ashfox/internal-contracts';
 
 /*
@@ -27,16 +32,13 @@ type SanitizerContext = {
   exhausted: boolean;
 };
 
-type DescriptorRead =
-  | { ok: true; descriptor: PropertyDescriptor | undefined }
-  | { ok: false };
+type DescriptorRead = { ok: true; descriptor: PropertyDescriptor | undefined } | { ok: false };
 
 const REDACT_KEYS = new Set(['dataUri', 'image', 'canvas', 'ctx', 'img']);
 const MAX_DEPTH = 6;
 const MAX_ARRAY = 50;
 const MAX_OBJECT_KEYS = 100;
-const MAX_CONTRACT_DEPTH =
-  FINITE_JSON_CONTRACT_MAX_DEPTH + TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH;
+const MAX_CONTRACT_DEPTH = FINITE_JSON_CONTRACT_MAX_DEPTH + TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH;
 const MAX_SANITIZER_CONTAINERS = FINITE_JSON_CONTRACT_MAX_CONTAINERS;
 const TRUNCATED_KEYS_MARKER = '__ashfoxTruncatedKeys__';
 const ACCESSOR_MARKER = '[accessor]';
@@ -51,28 +53,22 @@ const spendContainer = (context: SanitizerContext): boolean => {
   return true;
 };
 
-const truncatedValue = (bounded: boolean): unknown =>
-  bounded ? '[truncated]' : null;
+const truncatedValue = (bounded: boolean): unknown => (bounded ? '[truncated]' : null);
 
-const unavailableValue = (bounded: boolean): unknown =>
-  bounded ? UNAVAILABLE_MARKER : null;
+const unavailableValue = (bounded: boolean): unknown => (bounded ? UNAVAILABLE_MARKER : null);
 
-const accessorValue = (bounded: boolean): unknown =>
-  bounded ? ACCESSOR_MARKER : null;
+const accessorValue = (bounded: boolean): unknown => (bounded ? ACCESSOR_MARKER : null);
 
 const ownsDescriptorValue = (
-  descriptor: PropertyDescriptor
+  descriptor: PropertyDescriptor,
 ): descriptor is PropertyDescriptor & { value: unknown } =>
   Object.prototype.hasOwnProperty.call(descriptor, 'value');
 
-const readDescriptor = (
-  value: object,
-  key: PropertyKey
-): DescriptorRead => {
+const readDescriptor = (value: object, key: PropertyKey): DescriptorRead => {
   try {
     return {
       ok: true,
-      descriptor: Object.getOwnPropertyDescriptor(value, key)
+      descriptor: Object.getOwnPropertyDescriptor(value, key),
     };
   } catch (_error) {
     return { ok: false };
@@ -102,32 +98,22 @@ const arrayLength = (value: object): number | null => {
   return descriptor.value as number;
 };
 
-const defineRecordValue = (
-  record: Record<string, unknown>,
-  key: string,
-  value: unknown
-): void => {
+const defineRecordValue = (record: Record<string, unknown>, key: string, value: unknown): void => {
   Object.defineProperty(record, key, {
     value,
     enumerable: true,
     configurable: true,
-    writable: true
+    writable: true,
   });
 };
 
-const sanitizeArray = (
-  value: object,
-  depth: number,
-  context: SanitizerContext
-): unknown => {
+const sanitizeArray = (value: object, depth: number, context: SanitizerContext): unknown => {
   const length = arrayLength(value);
   if (length === null) {
     return unavailableValue(context.bounded);
   }
 
-  const entryLimit = context.bounded
-    ? Math.min(length, MAX_ARRAY)
-    : length;
+  const entryLimit = context.bounded ? Math.min(length, MAX_ARRAY) : length;
   const result: unknown[] = [];
   let containerTruncated = false;
 
@@ -147,11 +133,7 @@ const sanitizeArray = (
       continue;
     }
 
-    const sanitized = sanitizeValue(
-      descriptor.value,
-      depth + 1,
-      context
-    );
+    const sanitized = sanitizeValue(descriptor.value, depth + 1, context);
     if (!context.bounded && context.exhausted) return null;
     result.push(sanitized === undefined ? null : sanitized);
     if (context.exhausted) {
@@ -165,18 +147,12 @@ const sanitizeArray = (
   return result;
 };
 
-const sanitizeRecord = (
-  value: object,
-  depth: number,
-  context: SanitizerContext
-): unknown => {
+const sanitizeRecord = (value: object, depth: number, context: SanitizerContext): unknown => {
   const keys = ownKeys(value);
   if (keys === null) return unavailableValue(context.bounded);
 
   const record: Record<string, unknown> = {};
-  const keyLimit = context.bounded
-    ? Math.min(keys.length, MAX_OBJECT_KEYS)
-    : keys.length;
+  const keyLimit = context.bounded ? Math.min(keys.length, MAX_OBJECT_KEYS) : keys.length;
   let containerTruncated = false;
 
   for (let index = 0; index < keyLimit; index += 1) {
@@ -199,11 +175,7 @@ const sanitizeRecord = (
       continue;
     }
 
-    const sanitized = sanitizeValue(
-      descriptor.value,
-      depth + 1,
-      context
-    );
+    const sanitized = sanitizeValue(descriptor.value, depth + 1, context);
     if (!context.bounded && context.exhausted) return null;
     if (sanitized !== undefined) defineRecordValue(record, key, sanitized);
     if (context.exhausted) {
@@ -216,20 +188,12 @@ const sanitizeRecord = (
   if (containerTruncated) {
     defineRecordValue(record, TRUNCATED_KEYS_MARKER, '[truncated]');
   } else if (keys.length > keyLimit) {
-    defineRecordValue(
-      record,
-      TRUNCATED_KEYS_MARKER,
-      `[truncated:${keys.length - keyLimit}]`
-    );
+    defineRecordValue(record, TRUNCATED_KEYS_MARKER, `[truncated:${keys.length - keyLimit}]`);
   }
   return record;
 };
 
-const sanitizeValue = (
-  value: unknown,
-  depth: number,
-  context: SanitizerContext
-): unknown => {
+const sanitizeValue = (value: unknown, depth: number, context: SanitizerContext): unknown => {
   if (depth > (context.bounded ? MAX_DEPTH : MAX_CONTRACT_DEPTH)) {
     return truncatedValue(context.bounded);
   }
@@ -261,7 +225,7 @@ const createSanitizerContext = (bounded: boolean): SanitizerContext => ({
   ancestors: new WeakSet<object>(),
   bounded,
   remainingContainers: MAX_SANITIZER_CONTAINERS,
-  exhausted: false
+  exhausted: false,
 });
 
 const sanitizeWithMode = (value: unknown, bounded: boolean): unknown => {
@@ -272,14 +236,11 @@ const sanitizeWithMode = (value: unknown, bounded: boolean): unknown => {
   }
 };
 
-export const sanitizeTraceValue = (value: unknown): unknown =>
-  sanitizeWithMode(value, true);
+export const sanitizeTraceValue = (value: unknown): unknown => sanitizeWithMode(value, true);
 
-export const normalizeTraceContractValue = <T>(value: T): T =>
-  sanitizeWithMode(value, false) as T;
+export const normalizeTraceContractValue = <T>(value: T): T => sanitizeWithMode(value, false) as T;
 
-export const serializeTraceLogRecord = (record: TraceLogRecord): string =>
-  JSON.stringify(record);
+export const serializeTraceLogRecord = (record: TraceLogRecord): string => JSON.stringify(record);
 
 /*
  * Keep the summaries below the sanitizer implementation: their typed inputs
@@ -292,21 +253,23 @@ export const summarizeProjectState = (state: ProjectState): TraceLogStateSummary
   format: state.format ?? null,
   ...(state.formatId !== undefined ? { formatId: state.formatId } : {}),
   ...(state.textureResolution ? { textureResolution: state.textureResolution } : {}),
-  counts: state.counts
+  counts: state.counts,
 });
 
 export const summarizeProjectDiff = (diff: ProjectDiff): TraceLogDiffSummary => ({
   sinceRevision: diff.sinceRevision,
   currentRevision: diff.currentRevision,
   ...(diff.baseMissing !== undefined ? { baseMissing: diff.baseMissing } : {}),
-  counts: diff.counts
+  counts: diff.counts,
 });
 
 export const sanitizeToolError = (error: ToolError): ToolError => ({
   code: error.code,
   message: error.message,
   ...(error.fix ? { fix: error.fix } : {}),
-  ...(error.details ? { details: sanitizeTraceValue(error.details) as Record<string, unknown> } : {})
+  ...(error.details
+    ? { details: sanitizeTraceValue(error.details) as Record<string, unknown> }
+    : {}),
 });
 
 export const sanitizeToolResponse = (response: ToolResponse<unknown>): TraceLogResponse => {

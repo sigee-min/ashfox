@@ -4,7 +4,7 @@ import {
   DeleteAnimationCommand,
   KeyframeCommand,
   TriggerKeyframeCommand,
-  UpdateAnimationCommand
+  UpdateAnimationCommand,
 } from '../../../ports/editor';
 import { errorMessage, Logger } from '../../../logging';
 import type { PreviewItem } from '../../../types/blockbench';
@@ -13,7 +13,7 @@ import {
   runDeleteAnimation,
   runSetKeyframes,
   runSetTriggerKeyframes,
-  runUpdateAnimation
+  runUpdateAnimation,
 } from './animationCommands';
 import { readGlobals } from '../blockbenchUtils';
 
@@ -71,10 +71,8 @@ export class BlockbenchAnimationAdapter {
     } catch (err) {
       this.log.warn('animation viewport refresh failed', {
         message: errorMessage(err, 'animation viewport refresh failed'),
-        source
+        source,
       });
     }
   }
 }
-
-

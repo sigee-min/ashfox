@@ -21,5 +21,5 @@ export const createToolServiceFacades = (context: ToolServiceContext): ToolServi
   model: context.modelService,
   animation: context.animationService,
   render: context.renderService,
-  validation: context.validationService
+  validation: context.validationService,
 });

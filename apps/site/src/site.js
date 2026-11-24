@@ -23,11 +23,11 @@ const copyText = async (text) => {
 };
 
 const agentInstructionButtons = [
-  ...document.querySelectorAll('[data-copy-agent-instruction]')
+  ...document.querySelectorAll('[data-copy-agent-instruction]'),
 ].filter((button) => button instanceof HTMLButtonElement);
-const agentInstructionFeedback = [
-  ...document.querySelectorAll('[data-copy-feedback]')
-].filter((feedback) => feedback instanceof HTMLElement);
+const agentInstructionFeedback = [...document.querySelectorAll('[data-copy-feedback]')].filter(
+  (feedback) => feedback instanceof HTMLElement,
+);
 let agentInstructionResetTimer = 0;
 
 const resetAgentInstructionState = () => {
@@ -36,8 +36,7 @@ const resetAgentInstructionState = () => {
     button.disabled = false;
     const state = button.querySelector('[data-copy-state]');
     if (state instanceof HTMLElement) {
-      state.textContent =
-        state.dataset.defaultState ?? state.textContent ?? 'Copy';
+      state.textContent = state.dataset.defaultState ?? state.textContent ?? 'Copy';
     }
   }
   for (const feedback of agentInstructionFeedback) {
@@ -62,11 +61,12 @@ const setAgentInstructionState = (status) => {
   }
   for (const feedback of agentInstructionFeedback) {
     feedback.dataset.state = status;
-    feedback.textContent = status === 'success'
-      ? siteCopy.copySuccess
-      : status === 'copying'
-        ? siteCopy.copying
-        : siteCopy.copyFailed;
+    feedback.textContent =
+      status === 'success'
+        ? siteCopy.copySuccess
+        : status === 'copying'
+          ? siteCopy.copying
+          : siteCopy.copyFailed;
   }
 };
 
@@ -85,10 +85,7 @@ for (const button of agentInstructionButtons) {
       for (const instructionButton of agentInstructionButtons) {
         instructionButton.disabled = false;
       }
-      agentInstructionResetTimer = window.setTimeout(
-        resetAgentInstructionState,
-        7_000
-      );
+      agentInstructionResetTimer = window.setTimeout(resetAgentInstructionState, 7_000);
     }
   });
 }
@@ -103,8 +100,12 @@ for (const block of document.querySelectorAll('.doc-article pre')) {
   button.textContent = labels?.copyLabel ?? 'Copy';
   button.setAttribute('aria-label', labels?.copyCodeLabel ?? 'Copy code');
   button.addEventListener('click', async () => {
-    try { await copyText(code.textContent ?? ''); button.textContent = labels?.copiedLabel ?? siteCopy.copied; }
-    catch { button.textContent = labels?.copyFailedLabel ?? 'Copy failed'; }
+    try {
+      await copyText(code.textContent ?? '');
+      button.textContent = labels?.copiedLabel ?? siteCopy.copied;
+    } catch {
+      button.textContent = labels?.copyFailedLabel ?? 'Copy failed';
+    }
     window.setTimeout(() => {
       button.textContent = labels?.copyLabel ?? 'Copy';
     }, 1_200);
@@ -114,9 +115,7 @@ for (const block of document.querySelectorAll('.doc-article pre')) {
 
 const tocLinks = [...document.querySelectorAll('.page-toc a')];
 if (tocLinks.length > 0 && 'IntersectionObserver' in window) {
-  const linksById = new Map(
-    tocLinks.map((link) => [link.getAttribute('href')?.slice(1), link])
-  );
+  const linksById = new Map(tocLinks.map((link) => [link.getAttribute('href')?.slice(1), link]));
   const observer = new IntersectionObserver(
     (entries) => {
       const visible = entries.find((entry) => entry.isIntersecting);
@@ -124,7 +123,7 @@ if (tocLinks.length > 0 && 'IntersectionObserver' in window) {
       for (const link of tocLinks) link.removeAttribute('aria-current');
       linksById.get(visible.target.id)?.setAttribute('aria-current', 'true');
     },
-    { rootMargin: '-15% 0px -70% 0px' }
+    { rootMargin: '-15% 0px -70% 0px' },
   );
   for (const id of linksById.keys()) {
     const heading = document.getElementById(id);
@@ -133,13 +132,25 @@ if (tocLinks.length > 0 && 'IntersectionObserver' in window) {
 }
 
 for (const menu of document.querySelectorAll('[data-language-menu]')) {
-  document.addEventListener('click', event => { if (!menu.contains(event.target)) menu.open = false; });
-  menu.addEventListener('keydown', event => {
-    if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary').focus(); }
+  document.addEventListener('click', (event) => {
+    if (!menu.contains(event.target)) menu.open = false;
   });
-  menu.addEventListener('focusout', event => { if (!menu.contains(event.relatedTarget)) menu.open = false; });
-  const links = [...menu.querySelectorAll('[data-language-link]')].map(link => [link, link.getAttribute('href')]);
-  const syncSection = () => { for (const [link, route] of links) link.href = `${route}${window.location.hash}`; };
+  menu.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      menu.open = false;
+      menu.querySelector('summary').focus();
+    }
+  });
+  menu.addEventListener('focusout', (event) => {
+    if (!menu.contains(event.relatedTarget)) menu.open = false;
+  });
+  const links = [...menu.querySelectorAll('[data-language-link]')].map((link) => [
+    link,
+    link.getAttribute('href'),
+  ]);
+  const syncSection = () => {
+    for (const [link, route] of links) link.href = `${route}${window.location.hash}`;
+  };
   syncSection();
   window.addEventListener('hashchange', syncSection);
 }

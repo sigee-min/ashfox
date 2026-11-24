@@ -1,10 +1,4 @@
-import type {
-  AssetId,
-  EntityId,
-  UvRect,
-  Vec2,
-  Vec3
-} from './identity';
+import type { AssetId, EntityId, UvRect, Vec2, Vec3 } from './identity';
 import { canonicalRotatePoint } from './transform';
 
 export interface Transform {
@@ -44,57 +38,62 @@ const sealedCanonicalFrames = new WeakMap<object, CanonicalBoneFrame>();
 export const sealCanonicalBoneFrame = (bone: BoneNode): void => {
   if (bone.canonicalFrame === undefined) return;
   const frame = bone.canonicalFrame;
-  sealedCanonicalFrames.set(bone, Object.freeze({
-    origin: Object.freeze([...frame.origin]) as Vec3,
-    xAxis: Object.freeze([...frame.xAxis]) as Vec3,
-    yAxis: Object.freeze([...frame.yAxis]) as Vec3,
-    zAxis: Object.freeze([...frame.zAxis]) as Vec3,
-    determinant: frame.determinant,
-    rotation: Object.freeze([...frame.rotation]) as Vec3
-  }));
+  sealedCanonicalFrames.set(
+    bone,
+    Object.freeze({
+      origin: Object.freeze([...frame.origin]) as Vec3,
+      xAxis: Object.freeze([...frame.xAxis]) as Vec3,
+      yAxis: Object.freeze([...frame.yAxis]) as Vec3,
+      zAxis: Object.freeze([...frame.zAxis]) as Vec3,
+      determinant: frame.determinant,
+      rotation: Object.freeze([...frame.rotation]) as Vec3,
+    }),
+  );
 };
 
-const crossAxis = (
-  left: readonly number[],
-  right: readonly number[]
-): [number, number, number] => [
+const crossAxis = (left: readonly number[], right: readonly number[]): [number, number, number] => [
   left[1]! * right[2]! - left[2]! * right[1]!,
   left[2]! * right[0]! - left[0]! * right[2]!,
-  left[0]! * right[1]! - left[1]! * right[0]!
+  left[0]! * right[1]! - left[1]! * right[0]!,
 ];
 
 const signedAxis = (value: readonly number[]): boolean =>
-  value.length === 3 && value.every((entry) => entry === -1 || entry === 0 ||
-    entry === 1) && value.filter((entry) => entry !== 0).length === 1;
+  value.length === 3 &&
+  value.every((entry) => entry === -1 || entry === 0 || entry === 1) &&
+  value.filter((entry) => entry !== 0).length === 1;
 
 /** All target exporters use this as a fail-closed frame contract. */
 export const isCanonicalBoneFrame = (
-  frame: BoneNode['canonicalFrame']
-): frame is NonNullable<BoneNode['canonicalFrame']> => frame !== undefined &&
-  signedAxis(frame.xAxis) && signedAxis(frame.yAxis) &&
+  frame: BoneNode['canonicalFrame'],
+): frame is NonNullable<BoneNode['canonicalFrame']> =>
+  frame !== undefined &&
+  signedAxis(frame.xAxis) &&
+  signedAxis(frame.yAxis) &&
   signedAxis(frame.zAxis) &&
-  crossAxis(frame.xAxis, frame.yAxis).every((value, index) =>
-    value === (frame.determinant === 1 ? frame.zAxis[index] :
-      -frame.zAxis[index]!)) &&
+  crossAxis(frame.xAxis, frame.yAxis).every(
+    (value, index) =>
+      value === (frame.determinant === 1 ? frame.zAxis[index] : -frame.zAxis[index]!),
+  ) &&
   (frame.determinant === 1 || frame.determinant === -1);
 
-export const boneTransformMatchesCanonicalFrame = (
-  bone: BoneNode
-): boolean => {
+export const boneTransformMatchesCanonicalFrame = (bone: BoneNode): boolean => {
   const frame = bone.canonicalFrame;
   const sealed = sealedCanonicalFrames.get(bone);
-  if (frame === undefined || sealed === undefined ||
-    !isCanonicalBoneFrame(frame)) return false;
+  if (frame === undefined || sealed === undefined || !isCanonicalBoneFrame(frame)) return false;
   const sameFrame = (left: CanonicalBoneFrame, right: CanonicalBoneFrame) =>
     left.determinant === right.determinant &&
-    [left.origin, left.xAxis, left.yAxis, left.zAxis, left.rotation].every(
-      (axis, axisIndex) => axis.every((value, index) => value ===
-        [right.origin, right.xAxis, right.yAxis, right.zAxis,
-          right.rotation][axisIndex]![index]));
-  return sameFrame(frame, sealed) && frame.origin.every((value, index) =>
-    value === bone.transform.pivot[index]) &&
-  frame.rotation.every((value, index) =>
-    value === bone.transform.rotation[index]);
+    [left.origin, left.xAxis, left.yAxis, left.zAxis, left.rotation].every((axis, axisIndex) =>
+      axis.every(
+        (value, index) =>
+          value ===
+          [right.origin, right.xAxis, right.yAxis, right.zAxis, right.rotation][axisIndex]![index],
+      ),
+    );
+  return (
+    sameFrame(frame, sealed) &&
+    frame.origin.every((value, index) => value === bone.transform.pivot[index]) &&
+    frame.rotation.every((value, index) => value === bone.transform.rotation[index])
+  );
 };
 
 export interface LocatorNode extends NodeBase {
@@ -102,14 +101,7 @@ export interface LocatorNode extends NodeBase {
   ignoreInheritedScale?: boolean;
 }
 
-export const CUBE_FACE_DIRECTIONS = [
-  'north',
-  'south',
-  'east',
-  'west',
-  'up',
-  'down'
-] as const;
+export const CUBE_FACE_DIRECTIONS = ['north', 'south', 'east', 'west', 'up', 'down'] as const;
 
 export type CubeFaceDirection = (typeof CUBE_FACE_DIRECTIONS)[number];
 export type CubeFaceRotation = 0 | 90 | 180 | 270;
@@ -179,18 +171,18 @@ export interface OrientedCubeNode extends CubeNodeBase {
 
 export type CubeNode = AxisCubeNode | OrientedCubeNode;
 
-export const cubeUnrotatedBounds = (cube: CubeNode): Readonly<{
+export const cubeUnrotatedBounds = (
+  cube: CubeNode,
+): Readonly<{
   from: Vec3;
   to: Vec3;
-}> => cube.geometryMode === 'axis-box'
-  ? cube.bounds
-  : Object.freeze({ from: cube.orientedBox.unrotatedFrom,
-    to: cube.orientedBox.unrotatedTo });
+}> =>
+  cube.geometryMode === 'axis-box'
+    ? cube.bounds
+    : Object.freeze({ from: cube.orientedBox.unrotatedFrom, to: cube.orientedBox.unrotatedTo });
 
 export const cubeGeometryPivot = (cube: CubeNode): Vec3 =>
-  cube.geometryMode === 'axis-box'
-    ? cube.transform.pivot
-    : cube.orientedBox.pivot;
+  cube.geometryMode === 'axis-box' ? cube.transform.pivot : cube.orientedBox.pivot;
 
 export const cubeGeometryRotation = (cube: CubeNode): Vec3 => {
   if (cube.geometryMode === 'axis-box') return cube.transform.rotation;
@@ -213,13 +205,11 @@ export const cubeGeometryCorners = (cube: CubeNode): readonly Vec3[] => {
   for (const x of [bounds.from[0], bounds.to[0]]) {
     for (const y of [bounds.from[1], bounds.to[1]]) {
       for (const z of [bounds.from[2], bounds.to[2]]) {
-        const rotated = canonicalRotatePoint([
-          x - pivot[0], y - pivot[1], z - pivot[2]
-        ], rotation);
+        const rotated = canonicalRotatePoint([x - pivot[0], y - pivot[1], z - pivot[2]], rotation);
         corners.push([
           rotated[0] + pivot[0] + cube.transform.position[0],
           rotated[1] + pivot[1] + cube.transform.position[1],
-          rotated[2] + pivot[2] + cube.transform.position[2]
+          rotated[2] + pivot[2] + cube.transform.position[2],
         ]);
       }
     }
@@ -258,5 +248,5 @@ export const IDENTITY_TRANSFORM: Transform = {
   position: [0, 0, 0],
   rotation: [0, 0, 0],
   scale: [1, 1, 1],
-  pivot: [0, 0, 0]
+  pivot: [0, 0, 0],
 };

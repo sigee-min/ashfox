@@ -5,7 +5,7 @@ import { BlockbenchSim } from '.';
 import {
   getBlockbenchSpecSnapshot,
   getDefaultTextureResolution,
-  getFormatDescriptor
+  getFormatDescriptor,
 } from './spec';
 import type { BlockbenchSpecSnapshot } from './spec';
 
@@ -28,13 +28,12 @@ export class BlockbenchSimEngine {
 
     const format = options.format ?? options.project?.format ?? null;
     const formatId = options.formatId ?? options.project?.formatId ?? null;
-    const formatDescriptor =
-      options.formatCaps ?? getFormatDescriptor(this.spec, formatId, format);
+    const formatDescriptor = options.formatCaps ?? getFormatDescriptor(this.spec, formatId, format);
 
     const textureResolution =
       options.project?.textureResolution === null
         ? null
-        : options.project?.textureResolution ?? getDefaultTextureResolution(this.spec);
+        : (options.project?.textureResolution ?? getDefaultTextureResolution(this.spec));
 
     const project: BlockbenchSimProject = {
       id: options.project?.id ?? `${Date.now()}`,
@@ -44,7 +43,7 @@ export class BlockbenchSimEngine {
       textureResolution,
       ...(options.project?.uvPixelsPerBlock !== undefined
         ? { uvPixelsPerBlock: options.project.uvPixelsPerBlock }
-        : {})
+        : {}),
     };
 
     this.formatDescriptor = formatDescriptor;
@@ -53,7 +52,7 @@ export class BlockbenchSimEngine {
       project,
       formatCaps: formatDescriptor,
       resolveFormatCaps: (nextFormatId, nextFormat) =>
-        getFormatDescriptor(this.spec, nextFormatId, nextFormat)
+        getFormatDescriptor(this.spec, nextFormatId, nextFormat),
     });
   }
 

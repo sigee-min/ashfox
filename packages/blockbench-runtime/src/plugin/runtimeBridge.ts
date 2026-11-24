@@ -18,7 +18,10 @@ export const claimSingleton = (args: {
       args.onCleanupError?.(message);
     }
   }
-  writeGlobalValue(INSTANCE_KEY, { cleanup: args.cleanup, version: args.version } satisfies RuntimeInstance);
+  writeGlobalValue(INSTANCE_KEY, {
+    cleanup: args.cleanup,
+    version: args.version,
+  } satisfies RuntimeInstance);
 };
 
 export const releaseSingleton = () => {
@@ -34,4 +37,3 @@ export const cleanupBridge = () => {
   deleteGlobalValue('ashfox');
   deleteGlobalValue('ashfoxVersion');
 };
-

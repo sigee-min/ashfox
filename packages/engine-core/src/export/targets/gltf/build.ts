@@ -1,7 +1,5 @@
 import type { AssetId } from '../../../model';
-import type {
-  ResolvedBlob
-} from '../../contract';
+import type { ResolvedBlob } from '../../contract';
 import type { MaterializedTextureFile } from '../../texture';
 import type { GltfDocument } from './contract';
 

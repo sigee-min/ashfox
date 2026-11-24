@@ -76,7 +76,8 @@ export class TraceLogFlushScheduler {
 
   private shouldFlush(now: number): boolean {
     if (this.flushEvery !== null && this.pending >= this.flushEvery) return true;
-    if (this.flushIntervalMs !== null && now - this.lastFlushAt >= this.flushIntervalMs) return true;
+    if (this.flushIntervalMs !== null && now - this.lastFlushAt >= this.flushIntervalMs)
+      return true;
     return false;
   }
 
@@ -89,7 +90,7 @@ export class TraceLogFlushScheduler {
         this.logger.warn('trace log flush failed', {
           reason,
           code: error.code,
-          message: error.message ?? 'unknown error'
+          message: error.message ?? 'unknown error',
         });
       }
       this.lastErrorKey = key;
@@ -116,6 +117,3 @@ const normalizeFlushInterval = (value?: number): number | null => {
   if (normalized <= 0) return null;
   return normalized;
 };
-
-
-

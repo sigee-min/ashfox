@@ -14,31 +14,23 @@ const position = (source: string, offset: number): SourcePosition => {
   return Object.freeze({
     offset,
     line,
-    column: column + Math.max(0, offset - source.length)
+    column: column + Math.max(0, offset - source.length),
   });
 };
 
-export const sourceSpan = (
-  source: string,
-  start: number,
-  end: number
-): SourceSpan => Object.freeze({
-  start: position(source, start),
-  end: position(source, end)
-});
+export const sourceSpan = (source: string, start: number, end: number): SourceSpan =>
+  Object.freeze({
+    start: position(source, start),
+    end: position(source, end),
+  });
 
-export const sourceLengthDiagnostic = (
-  source: string
-): SourceDiagnostic | null => source.length > PROJECT_SOURCE_MAX_CODE_UNITS
-  ? Object.freeze({
-      severity: 'error',
-      code: 'source.too_long',
-      message: `Authored source must not exceed ` +
-        `${PROJECT_SOURCE_MAX_CODE_UNITS} code units.`,
-      span: sourceSpan(
-        source,
-        PROJECT_SOURCE_MAX_CODE_UNITS,
-        PROJECT_SOURCE_MAX_CODE_UNITS + 1
-      )
-    })
-  : null;
+export const sourceLengthDiagnostic = (source: string): SourceDiagnostic | null =>
+  source.length > PROJECT_SOURCE_MAX_CODE_UNITS
+    ? Object.freeze({
+        severity: 'error',
+        code: 'source.too_long',
+        message:
+          `Authored source must not exceed ` + `${PROJECT_SOURCE_MAX_CODE_UNITS} code units.`,
+        span: sourceSpan(source, PROJECT_SOURCE_MAX_CODE_UNITS, PROJECT_SOURCE_MAX_CODE_UNITS + 1),
+      })
+    : null;

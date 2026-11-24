@@ -16,7 +16,7 @@ export const collectTextureFindings = (args: {
         findings.push({
           code: 'texture_too_large',
           message: args.messages.textureTooLarge(tex.name, args.limits.maxTextureSize),
-          severity: 'error'
+          severity: 'error',
         });
       }
     });
@@ -28,8 +28,14 @@ export const collectTextureFindings = (args: {
       if (tex.width !== width || tex.height !== height) {
         findings.push({
           code: 'texture_size_mismatch',
-          message: args.messages.textureSizeMismatch(tex.name, tex.width, tex.height, width, height),
-          severity: 'warning'
+          message: args.messages.textureSizeMismatch(
+            tex.name,
+            tex.width,
+            tex.height,
+            width,
+            height,
+          ),
+          severity: 'warning',
         });
       }
     });

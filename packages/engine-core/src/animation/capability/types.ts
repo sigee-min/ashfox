@@ -55,9 +55,7 @@ export interface AnimationExportIssue {
   keyframeId?: string;
 }
 
-export type AnimationExportAdaptationDisposition =
-  | 'omitted'
-  | 'converted';
+export type AnimationExportAdaptationDisposition = 'omitted' | 'converted';
 
 export type AnimationExportAdaptationCode =
   | 'animations_unsupported'

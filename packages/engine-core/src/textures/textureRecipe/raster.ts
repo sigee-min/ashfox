@@ -1,13 +1,10 @@
-import type {
-  ProjectDocument,
-  TextureAsset
-} from '../../model';
+import type { ProjectDocument, TextureAsset } from '../../model';
 import type { TextureComposition } from './types';
 import { parseSurfaceColor, type RgbColor } from '../color';
 import {
   assertTextureDimensions,
   PRESERVE_RASTER_MAX_DETAILS,
-  PRESERVE_RASTER_MAX_TOTAL_DETAILS
+  PRESERVE_RASTER_MAX_TOTAL_DETAILS,
 } from '../limits';
 import { composeTextureRaster } from './composition';
 
@@ -36,7 +33,7 @@ const writePixel = (
   x: number,
   y: number,
   color: RgbColor,
-  alpha: 0 | 255
+  alpha: 0 | 255,
 ): void => {
   const offset = (y * width + x) * 4;
   rgba[offset] = color.r;
@@ -53,7 +50,7 @@ const fill = (
   fillWidth: number,
   fillHeight: number,
   color: RgbColor,
-  alpha: 0 | 255
+  alpha: 0 | 255,
 ): void => {
   for (let targetY = y; targetY < y + fillHeight; targetY += 1) {
     for (let targetX = x; targetX < x + fillWidth; targetX += 1) {
@@ -69,24 +66,28 @@ const assertTextureRect = (
   height: unknown,
   textureWidth: number,
   textureHeight: number,
-  label: string
+  label: string,
 ): void => {
-  if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) ||
-    !Number.isSafeInteger(width) || !Number.isSafeInteger(height) ||
-    (x as number) < 0 || (y as number) < 0 ||
-    (width as number) <= 0 || (height as number) <= 0 ||
+  if (
+    !Number.isSafeInteger(x) ||
+    !Number.isSafeInteger(y) ||
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    (x as number) < 0 ||
+    (y as number) < 0 ||
+    (width as number) <= 0 ||
+    (height as number) <= 0 ||
     (x as number) + (width as number) > textureWidth ||
-    (y as number) + (height as number) > textureHeight) {
-    throw new RangeError(
-      `${label} must be a positive integer rectangle inside the texture atlas.`
-    );
+    (y as number) + (height as number) > textureHeight
+  ) {
+    throw new RangeError(`${label} must be a positive integer rectangle inside the texture atlas.`);
   }
 };
 
 const assertTextureComposition = (
   width: number,
   height: number,
-  composition: TextureComposition
+  composition: TextureComposition,
 ): void => {
   if (composition === null || typeof composition !== 'object') {
     throw new TypeError('Texture composition must be an object.');
@@ -95,14 +96,15 @@ const assertTextureComposition = (
   if (composition.backgroundAlpha !== 0 && composition.backgroundAlpha !== 255) {
     throw new RangeError('Texture background alpha must be exactly 0 or 255.');
   }
-  if (!Array.isArray(composition.canvasDetails) ||
-    !Array.isArray(composition.alphaMasks)) {
+  if (!Array.isArray(composition.canvasDetails) || !Array.isArray(composition.alphaMasks)) {
     throw new TypeError('Texture composition details and masks must be arrays.');
   }
-  if (composition.canvasDetails.length > PRESERVE_RASTER_MAX_DETAILS ||
+  if (
+    composition.canvasDetails.length > PRESERVE_RASTER_MAX_DETAILS ||
     composition.alphaMasks.length > PRESERVE_RASTER_MAX_DETAILS ||
     composition.canvasDetails.length + composition.alphaMasks.length >
-      PRESERVE_RASTER_MAX_TOTAL_DETAILS) {
+      PRESERVE_RASTER_MAX_TOTAL_DETAILS
+  ) {
     throw new RangeError('Texture raster details exceed the bounded asset budget.');
   }
   for (const [index, detail] of composition.canvasDetails.entries()) {
@@ -120,7 +122,7 @@ const assertTextureComposition = (
       detail.height,
       width,
       height,
-      `Texture raster detail ${index}`
+      `Texture raster detail ${index}`,
     );
   }
   for (const [index, mask] of composition.alphaMasks.entries()) {
@@ -134,13 +136,14 @@ const assertTextureComposition = (
       mask.height,
       width,
       height,
-      `Texture alpha mask ${index}`
+      `Texture alpha mask ${index}`,
     );
-    if (typeof mask.bits !== 'string' || !/^[01]+$/u.test(mask.bits) ||
-      mask.bits.length !== mask.width * mask.height) {
-      throw new RangeError(
-        `Texture alpha mask ${index} must exactly fill its binary rectangle.`
-      );
+    if (
+      typeof mask.bits !== 'string' ||
+      !/^[01]+$/u.test(mask.bits) ||
+      mask.bits.length !== mask.width * mask.height
+    ) {
+      throw new RangeError(`Texture alpha mask ${index} must exactly fill its binary rectangle.`);
     }
   }
 };
@@ -167,7 +170,7 @@ const immutableRgba = (rgba: Uint8Array): CanonicalRgbaBytes => {
       for (let index = 0; index < bytes.length; index += 1) {
         yield bytes[index]!;
       }
-    }
+    },
   };
   Object.freeze(view);
   canonicalByteViews.add(view);
@@ -179,21 +182,21 @@ export const assertCanonicalTextureRaster = (value: unknown): void => {
     throw new TypeError('Canonical texture raster must be an object.');
   }
   const raster = value as Partial<CanonicalTextureRaster>;
-  const [width, height] = assertTextureDimensions(
-    raster.width,
-    raster.height,
-    'Canonical texture'
-  );
+  const [width, height] = assertTextureDimensions(raster.width, raster.height, 'Canonical texture');
   const expectedLength = width * height * 4;
   const bytes = raster.rgba;
-  if (bytes === undefined || bytes === null || typeof bytes !== 'object' ||
-    !Object.isFrozen(bytes) || !Number.isSafeInteger(bytes.length) ||
-    bytes.length !== expectedLength || typeof bytes.at !== 'function' ||
+  if (
+    bytes === undefined ||
+    bytes === null ||
+    typeof bytes !== 'object' ||
+    !Object.isFrozen(bytes) ||
+    !Number.isSafeInteger(bytes.length) ||
+    bytes.length !== expectedLength ||
+    typeof bytes.at !== 'function' ||
     typeof bytes.copy !== 'function' ||
-    typeof bytes[Symbol.iterator] !== 'function') {
-    throw new RangeError(
-      'Canonical texture RGBA bytes must contain exactly four bytes per texel.'
-    );
+    typeof bytes[Symbol.iterator] !== 'function'
+  ) {
+    throw new RangeError('Canonical texture RGBA bytes must contain exactly four bytes per texel.');
   }
   // These exact views own private Uint8Array storage and expose copies only.
   // Their constructor already guarantees immutable dense bytes; foreign views
@@ -201,25 +204,28 @@ export const assertCanonicalTextureRaster = (value: unknown): void => {
   if (canonicalByteViews.has(bytes)) return;
   let index = 0;
   for (const byte of bytes) {
-    if (index >= expectedLength || !Number.isInteger(byte) || byte < 0 ||
-      byte > 255 || bytes.at(index) !== byte) {
+    if (
+      index >= expectedLength ||
+      !Number.isInteger(byte) ||
+      byte < 0 ||
+      byte > 255 ||
+      bytes.at(index) !== byte
+    ) {
       throw new RangeError(
-        'Canonical texture RGBA bytes must contain exactly four bytes per texel.'
+        'Canonical texture RGBA bytes must contain exactly four bytes per texel.',
       );
     }
     index += 1;
   }
   if (index !== expectedLength) {
-    throw new RangeError(
-      'Canonical texture RGBA bytes must contain exactly four bytes per texel.'
-    );
+    throw new RangeError('Canonical texture RGBA bytes must contain exactly four bytes per texel.');
   }
 };
 
 const applyAlphaMasks = (
   rgba: Uint8Array,
   width: number,
-  masks: readonly TextureComposition['alphaMasks'][number][]
+  masks: readonly TextureComposition['alphaMasks'][number][],
 ): void => {
   for (const mask of masks) {
     for (let row = 0; row < mask.height; row += 1) {
@@ -237,7 +243,7 @@ const applyAlphaMasks = (
 export const rasterizeCanonicalTexture = (
   width: number,
   height: number,
-  composition: TextureComposition
+  composition: TextureComposition,
 ): CanonicalTextureRaster => {
   assertTextureDimensions(width, height, 'Canonical texture');
   assertTextureComposition(width, height, composition);
@@ -250,7 +256,7 @@ export const rasterizeCanonicalTexture = (
     width,
     height,
     parseSurfaceColor(composition.background),
-    composition.backgroundAlpha
+    composition.backgroundAlpha,
   );
   for (const detail of composition.canvasDetails) {
     fill(
@@ -261,7 +267,7 @@ export const rasterizeCanonicalTexture = (
       detail.width,
       detail.height,
       parseSurfaceColor(detail.color),
-      detail.alpha
+      detail.alpha,
     );
   }
   applyAlphaMasks(rgba, width, composition.alphaMasks);
@@ -270,7 +276,7 @@ export const rasterizeCanonicalTexture = (
 
 export const rasterizeTexture = (
   document: ProjectDocument,
-  texture: TextureAsset
+  texture: TextureAsset,
 ): CanonicalTextureRaster => {
   assertTextureDimensions(texture.width, texture.height, 'Canonical texture');
   const composition = composeTextureRaster(document, texture);

@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 
 import { runResponsePipeline } from '../../src/dispatcher/responsePipeline';
 import { callTool } from '../../src/transport/mcp/nextActions';
-import type { ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 
 const createLogger = () => {
   const warnings: Array<{ message: string; meta?: Record<string, unknown> }> = [];
@@ -15,8 +19,8 @@ const createLogger = () => {
       warn: (message: string, meta?: Record<string, unknown>) => {
         warnings.push({ message, meta });
       },
-      error: () => undefined
-    }
+      error: () => undefined,
+    },
   };
 };
 
@@ -33,18 +37,18 @@ const createLogger = () => {
     service: {
       notifyViewportRefresh: (tool: string) => {
         notifications.push(tool);
-      }
+      },
     } as never,
     traceRecorder: {
       record: (
         _tool: ToolName,
         _payload: ToolPayloadMap[ToolName],
-        toolResponse: ToolResponse<unknown>
+        toolResponse: ToolResponse<unknown>,
       ) => {
         traces.push(toolResponse as ToolResponse<{ id: string; name: string }>);
-      }
+      },
     } as never,
-    log: logger as never
+    log: logger as never,
   });
 
   assert.equal(notifications.length, 1);
@@ -65,9 +69,9 @@ const createLogger = () => {
     service: {
       notifyViewportRefresh: () => {
         throw new Error('refresh failed');
-      }
+      },
     } as never,
-    log: logger as never
+    log: logger as never,
   });
 
   assert.equal(response.ok, true);
@@ -86,25 +90,29 @@ const createLogger = () => {
     payload: { name: 'body' } as never,
     response: {
       ok: false,
-      error: { code: 'invalid_state', message: 'missing revision', details: { reason: 'missing_ifRevision' } },
-      nextActions: [callTool('get_project_state', { detail: 'summary' }, 'already added', 1)]
+      error: {
+        code: 'invalid_state',
+        message: 'missing revision',
+        details: { reason: 'missing_ifRevision' },
+      },
+      nextActions: [callTool('get_project_state', { detail: 'summary' }, 'already added', 1)],
     },
     refreshViewport: true,
     service: {
       notifyViewportRefresh: (tool: string) => {
         notifications.push(tool);
-      }
+      },
     } as never,
     traceRecorder: {
       record: (
         _tool: ToolName,
         _payload: ToolPayloadMap[ToolName],
-        toolResponse: ToolResponse<unknown>
+        toolResponse: ToolResponse<unknown>,
       ) => {
         traces.push(toolResponse as ToolResponse<{ id: string; name: string }>);
-      }
+      },
     } as never,
-    log: logger as never
+    log: logger as never,
   });
 
   assert.equal(notifications.length, 0);

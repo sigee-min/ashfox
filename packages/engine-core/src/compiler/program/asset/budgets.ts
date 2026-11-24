@@ -7,7 +7,7 @@ export const ASSET_BUDGET = Object.freeze({
   diagnostics: 256,
   treeNodes: 16384,
   importDepth: 64,
-  motionFrames: 300
+  motionFrames: 300,
 });
 
 export class AssetBudgetAbort extends Error {

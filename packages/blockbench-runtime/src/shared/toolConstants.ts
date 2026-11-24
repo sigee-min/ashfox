@@ -6,7 +6,7 @@ import {
   ENSURE_PROJECT_ON_MISSING,
   FORMAT_KINDS,
   PROJECT_STATE_DETAILS,
-  TOOL_NAMES
+  TOOL_NAMES,
 } from '@ashfox/blockbench-contracts/mcpSchemas/constants';
 
 export {
@@ -17,6 +17,5 @@ export {
   ENSURE_PROJECT_ON_MISSING,
   FORMAT_KINDS,
   PROJECT_STATE_DETAILS,
-  TOOL_NAMES
+  TOOL_NAMES,
 };
-

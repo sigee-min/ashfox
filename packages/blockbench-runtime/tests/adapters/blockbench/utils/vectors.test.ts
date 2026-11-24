@@ -12,8 +12,8 @@ import { assignVec2, assignVec3 } from '../../../../src/adapters/blockbench/util
       z: -7,
       set: () => {
         setCalled += 1;
-      }
-    }
+      },
+    },
   };
   assignVec3(target, 'from', [-4, 6, -7]);
   const next = target.from as { x: number; y: number; z: number };
@@ -30,8 +30,8 @@ import { assignVec2, assignVec3 } from '../../../../src/adapters/blockbench/util
     origin: {
       set: (x: number, y: number, z: number) => {
         captured = [x, y, z];
-      }
-    }
+      },
+    },
   };
   assignVec3(target, 'origin', [1, 2, 3]);
   assert.deepEqual(captured, [1, 2, 3]);
@@ -46,8 +46,8 @@ import { assignVec2, assignVec3 } from '../../../../src/adapters/blockbench/util
       y: 10,
       set: () => {
         setCalled += 1;
-      }
-    }
+      },
+    },
   };
   assignVec2(target, 'uv_offset', [2, 4]);
   const next = target.uv_offset as { x: number; y: number };

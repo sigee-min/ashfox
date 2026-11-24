@@ -6,7 +6,7 @@ import type {
   TrackedBone,
   TrackedCube,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from '../../session';
 
 export const trackedBoneProjection = (bone: TrackedBone): unknown => [
@@ -16,7 +16,7 @@ export const trackedBoneProjection = (bone: TrackedBone): unknown => [
   bone.pivot,
   bone.rotation ?? null,
   bone.scale ?? null,
-  bone.visibility ?? null
+  bone.visibility ?? null,
 ];
 
 export const trackedCubeProjection = (cube: TrackedCube): unknown => [
@@ -48,11 +48,11 @@ export const trackedCubeProjection = (cube: TrackedCube): unknown => [
             face.rotation ?? null,
             face.cullface ?? null,
             face.tintIndex ?? null,
-            face.materialInstance ?? null
+            face.materialInstance ?? null,
           ]
-        : null
+        : null,
     ];
-  })
+  }),
 ];
 
 export const trackedMeshProjection = (mesh: TrackedMesh): unknown => [
@@ -68,8 +68,8 @@ export const trackedMeshProjection = (mesh: TrackedMesh): unknown => [
     face.id ?? null,
     face.vertices,
     face.uv?.map((entry) => [entry.vertexId, entry.uv]) ?? null,
-    face.texture ?? null
-  ])
+    face.texture ?? null,
+  ]),
 ];
 
 export const trackedTextureProjection = (texture: TrackedTexture): unknown => [
@@ -92,7 +92,7 @@ export const trackedTextureProjection = (texture: TrackedTexture): unknown => [
   texture.frameOrder ?? null,
   texture.frameInterpolate ?? null,
   texture.internal ?? null,
-  texture.keepSize ?? null
+  texture.keepSize ?? null,
 ];
 
 const stableUnknownProjection = (value: unknown): unknown => {
@@ -100,15 +100,13 @@ const stableUnknownProjection = (value: unknown): unknown => {
   if (typeof value !== 'object' || value === null) return value;
   return Object.keys(value)
     .sort((left, right) => left.localeCompare(right))
-    .map((key) => [key, stableUnknownProjection(Object.getOwnPropertyDescriptor(
-      value,
-      key
-    )?.value)]);
+    .map((key) => [
+      key,
+      stableUnknownProjection(Object.getOwnPropertyDescriptor(value, key)?.value),
+    ]);
 };
 
-export const trackedAnimationProjection = (
-  animation: TrackedAnimation
-): unknown => [
+export const trackedAnimationProjection = (animation: TrackedAnimation): unknown => [
   animation.id ?? null,
   animation.name,
   animation.length,
@@ -117,19 +115,12 @@ export const trackedAnimationProjection = (
   animation.channels?.map((channel) => [
     channel.bone,
     channel.channel,
-    channel.keys.map((key) => [
-      key.time,
-      key.value,
-      key.interp ?? null
-    ])
+    channel.keys.map((key) => [key.time, key.value, key.interp ?? null]),
   ]) ?? null,
   animation.triggers?.map((trigger) => [
     trigger.type,
-    trigger.keys.map((key) => [
-      key.time,
-      stableUnknownProjection(key.value)
-    ])
-  ]) ?? null
+    trigger.keys.map((key) => [key.time, stableUnknownProjection(key.value)]),
+  ]) ?? null,
 ];
 
 export const sessionRevisionProjection = (snapshot: SessionState): unknown => ({
@@ -147,6 +138,6 @@ export const sessionRevisionProjection = (snapshot: SessionState): unknown => ({
   animationsStatus: snapshot.animationsStatus ?? null,
   animationTimePolicy: [
     snapshot.animationTimePolicy.timeEpsilon,
-    snapshot.animationTimePolicy.triggerDedupeByValue
-  ]
+    snapshot.animationTimePolicy.triggerDedupeByValue,
+  ],
 });

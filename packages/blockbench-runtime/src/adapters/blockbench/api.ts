@@ -4,13 +4,13 @@ import type {
   GroupConstructor,
   MeshConstructor,
   OutlinerApi,
-  TextureConstructor
+  TextureConstructor,
 } from '../../types/blockbench';
 import {
   ADAPTER_CUBE_API_UNAVAILABLE,
   ADAPTER_GROUP_API_UNAVAILABLE,
   ADAPTER_MESH_API_UNAVAILABLE,
-  ADAPTER_TEXTURE_API_UNAVAILABLE
+  ADAPTER_TEXTURE_API_UNAVAILABLE,
 } from '../../shared/messages';
 import { readGlobals } from './blockbenchUtils';
 
@@ -23,7 +23,8 @@ export const getTextureApi = (): { TextureCtor: TextureConstructor } | { error: 
   return { TextureCtor };
 };
 
-export const getGroupApi = (): { GroupCtor: GroupConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
+export const getGroupApi = ():
+  { GroupCtor: GroupConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
   const globals = readGlobals();
   const GroupCtor = globals.Group;
   const outliner = globals.Outliner;
@@ -33,7 +34,8 @@ export const getGroupApi = (): { GroupCtor: GroupConstructor; outliner: Outliner
   return { GroupCtor, outliner };
 };
 
-export const getCubeApi = (): { CubeCtor: CubeConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
+export const getCubeApi = ():
+  { CubeCtor: CubeConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
   const globals = readGlobals();
   const CubeCtor = globals.Cube;
   const outliner = globals.Outliner;
@@ -43,7 +45,8 @@ export const getCubeApi = (): { CubeCtor: CubeConstructor; outliner: OutlinerApi
   return { CubeCtor, outliner };
 };
 
-export const getMeshApi = (): { MeshCtor: MeshConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
+export const getMeshApi = ():
+  { MeshCtor: MeshConstructor; outliner: OutlinerApi | undefined } | { error: ToolError } => {
   const globals = readGlobals();
   const MeshCtor = globals.Mesh;
   const outliner = globals.Outliner;

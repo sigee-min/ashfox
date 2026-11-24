@@ -57,12 +57,9 @@ asset wolf {
   }
 }`;
 
-export const validAssetWorkspace = (
-  source = VALID_ASSET_SOURCE
-): AuthoredAssetWorkspace => workspaceFixture([
-  { path: 'wolf/main.ashfox', source }
-], {
-  root: 'wolf',
-  packageName: 'wolf',
-  entries: [{ name: 'wolf', path: 'main.ashfox' }]
-});
+export const validAssetWorkspace = (source = VALID_ASSET_SOURCE): AuthoredAssetWorkspace =>
+  workspaceFixture([{ path: 'wolf/main.ashfox', source }], {
+    root: 'wolf',
+    packageName: 'wolf',
+    entries: [{ name: 'wolf', path: 'main.ashfox' }],
+  });

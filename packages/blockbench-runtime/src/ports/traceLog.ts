@@ -15,7 +15,3 @@ export interface TraceLogWriter {
 export interface TraceLogWriterFactory {
   create: (options?: TraceLogWriteOptions) => TraceLogWriter;
 }
-
-
-
-

@@ -1,4 +1,8 @@
-import type { RenderPreviewPayload, RenderPreviewResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  RenderPreviewPayload,
+  RenderPreviewResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { EditorPort } from '../ports/editor';
 import type { TmpStorePort } from '../ports/tmpStore';
 import { ok, fail, UsecaseResult } from './result';
@@ -7,7 +11,7 @@ import {
   PREVIEW_FRAME_DATA_UNAVAILABLE,
   PREVIEW_FRAMES_UNAVAILABLE,
   PREVIEW_IMAGE_DATA_UNAVAILABLE,
-  TMP_STORE_UNAVAILABLE
+  TMP_STORE_UNAVAILABLE,
 } from '../shared/messages';
 
 export interface RenderServiceDeps {
@@ -37,7 +41,7 @@ export class RenderService {
   private savePreviewDataUri(
     dataUri: string | undefined,
     missingMessage: string,
-    options: { nameHint: string; prefix: string }
+    options: { nameHint: string; prefix: string },
   ): UsecaseResult<{ path: string; byteLength: number }> {
     if (!dataUri) {
       return fail({ code: 'not_implemented', message: missingMessage });
@@ -63,7 +67,7 @@ export class RenderService {
         }
         const saved = this.savePreviewDataUri(image?.dataUri, PREVIEW_IMAGE_DATA_UNAVAILABLE, {
           nameHint: tmpName ?? 'preview',
-          prefix: tmpPrefix ?? 'preview'
+          prefix: tmpPrefix ?? 'preview',
         });
         if (!saved.ok) return fail(saved.error);
         return ok({
@@ -74,9 +78,9 @@ export class RenderService {
               mime: image.mime,
               byteLength: saved.value.byteLength,
               width: image.width,
-              height: image.height
-            }
-          }
+              height: image.height,
+            },
+          },
         });
       }
       const frames = Array.isArray(result.frames) ? result.frames : [];
@@ -87,7 +91,7 @@ export class RenderService {
       for (const frame of frames) {
         const saved = this.savePreviewDataUri(frame.dataUri, PREVIEW_FRAME_DATA_UNAVAILABLE, {
           nameHint: `${tmpName ?? 'preview'}_frame${frame.index}`,
-          prefix: tmpPrefix ?? 'preview'
+          prefix: tmpPrefix ?? 'preview',
         });
         if (!saved.ok) return fail(saved.error);
         savedFrames.frames!.push({
@@ -96,13 +100,10 @@ export class RenderService {
           mime: frame.mime,
           byteLength: saved.value.byteLength,
           width: frame.width,
-          height: frame.height
+          height: frame.height,
         });
       }
       return ok({ ...result, saved: savedFrames });
     });
   }
 }
-
-
-

@@ -2,7 +2,12 @@ import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import type { ProjectSession, SessionState } from '../../session';
 import type { EditorPort } from '../../ports/editor';
 import { fail, ok, type UsecaseResult } from '../result';
-import { buildPoseUpdates, resolvePoseFps, type PoseInterp, type PoseBoneInput } from './posePayload';
+import {
+  buildPoseUpdates,
+  resolvePoseFps,
+  type PoseInterp,
+  type PoseBoneInput,
+} from './posePayload';
 import { ANIMATION_FRAME_INVALID } from '../../shared/messages';
 import { ensureClipSelector, resolveClipTarget } from './clipSelectors';
 
@@ -23,7 +28,7 @@ export interface PoseUsecaseDeps {
 
 export const runSetFramePose = (
   deps: PoseUsecaseDeps,
-  payload: SetFramePosePayload
+  payload: SetFramePosePayload,
 ): UsecaseResult<{
   clip: string;
   clipId?: string;
@@ -57,13 +62,13 @@ export const runSetFramePose = (
       bone: update.bone,
       channel: update.channel,
       keys: [{ time, value: update.value, interp: update.interp }],
-      timePolicy: snapshot.animationTimePolicy
+      timePolicy: snapshot.animationTimePolicy,
     });
     if (err) return fail(err);
     deps.session.upsertAnimationChannel(anim.name, {
       bone: update.bone,
       channel: update.channel,
-      keys: [{ time, value: update.value, interp: update.interp }]
+      keys: [{ time, value: update.value, interp: update.interp }],
     });
     applied += 1;
   }
@@ -73,7 +78,6 @@ export const runSetFramePose = (
     frame: payload.frame,
     time,
     bones: payload.bones.length,
-    channels: applied
+    channels: applied,
   });
 };
-

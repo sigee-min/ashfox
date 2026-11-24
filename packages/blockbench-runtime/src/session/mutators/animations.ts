@@ -1,16 +1,26 @@
-import type { AnimationUpdate, SessionState, TrackedAnimation, TrackedAnimationChannel, TrackedAnimationTrigger } from '../types';
+import type {
+  AnimationUpdate,
+  SessionState,
+  TrackedAnimation,
+  TrackedAnimationChannel,
+  TrackedAnimationTrigger,
+} from '../types';
 import { mergeChannelKeys, mergeTriggerKeys } from '../../domain/animation/keyframes';
 import {
   cloneTrackedAnimation,
   cloneTrackedAnimationChannel,
-  cloneTrackedAnimationTrigger
+  cloneTrackedAnimationTrigger,
 } from '../clone';
 
 export const addAnimation = (state: SessionState, anim: TrackedAnimation) => {
   state.animations.push(cloneTrackedAnimation(anim));
 };
 
-export const updateAnimation = (state: SessionState, name: string, updates: AnimationUpdate): boolean => {
+export const updateAnimation = (
+  state: SessionState,
+  name: string,
+  updates: AnimationUpdate,
+): boolean => {
   const anim = state.animations.find((a) => a.name === name);
   if (!anim) return false;
   if (updates.id) anim.id = updates.id;
@@ -28,27 +38,35 @@ export const removeAnimations = (state: SessionState, names: string[] | Set<stri
   return before - state.animations.length;
 };
 
-export const upsertAnimationChannel = (state: SessionState, clip: string, channel: TrackedAnimationChannel) => {
+export const upsertAnimationChannel = (
+  state: SessionState,
+  clip: string,
+  channel: TrackedAnimationChannel,
+) => {
   const anim = state.animations.find((a) => a.name === clip);
   if (!anim) return;
   const clonedChannel = cloneTrackedAnimationChannel(channel);
   anim.channels ??= [];
   const existingIndex = anim.channels.findIndex(
-    (ch) => ch.bone === clonedChannel.bone && ch.channel === clonedChannel.channel
+    (ch) => ch.bone === clonedChannel.bone && ch.channel === clonedChannel.channel,
   );
   if (existingIndex >= 0) {
     const existing = anim.channels[existingIndex];
     anim.channels[existingIndex] = {
       ...existing,
       ...clonedChannel,
-      keys: mergeChannelKeys(existing.keys, clonedChannel.keys, state.animationTimePolicy)
+      keys: mergeChannelKeys(existing.keys, clonedChannel.keys, state.animationTimePolicy),
     };
   } else {
     anim.channels.push(clonedChannel);
   }
 };
 
-export const upsertAnimationTrigger = (state: SessionState, clip: string, trigger: TrackedAnimationTrigger) => {
+export const upsertAnimationTrigger = (
+  state: SessionState,
+  clip: string,
+  trigger: TrackedAnimationTrigger,
+) => {
   const anim = state.animations.find((a) => a.name === clip);
   if (!anim) return;
   const clonedTrigger = cloneTrackedAnimationTrigger(trigger);
@@ -59,10 +77,9 @@ export const upsertAnimationTrigger = (state: SessionState, clip: string, trigge
     anim.triggers[existingIndex] = {
       ...existing,
       ...clonedTrigger,
-      keys: mergeTriggerKeys(existing.keys, clonedTrigger.keys, state.animationTimePolicy)
+      keys: mergeTriggerKeys(existing.keys, clonedTrigger.keys, state.animationTimePolicy),
     };
   } else {
     anim.triggers.push(clonedTrigger);
   }
 };
-

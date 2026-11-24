@@ -1,6 +1,6 @@
 import {
   CUBE_FACE_DIRECTIONS,
-  type CubeFaceDirection
+  type CubeFaceDirection,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { isClosedContractRecord } from '@ashfox/internal-contracts';
 
@@ -13,24 +13,24 @@ import type {
   TrackedCube,
   TrackedCubeFace,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './types';
 
 const cloneUnknownValue = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(cloneUnknownValue);
   if (!isClosedContractRecord(value)) return value;
   return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [key, cloneUnknownValue(entry)])
+    Object.entries(value).map(([key, entry]) => [key, cloneUnknownValue(entry)]),
   );
 };
 
 const cloneTriggerValue = (
-  value: TrackedAnimationTrigger['keys'][number]['value']
+  value: TrackedAnimationTrigger['keys'][number]['value'],
 ): TrackedAnimationTrigger['keys'][number]['value'] => {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return [...value];
   return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [key, cloneUnknownValue(entry)])
+    Object.entries(value).map(([key, entry]) => [key, cloneUnknownValue(entry)]),
   );
 };
 
@@ -38,17 +38,15 @@ export const cloneTrackedBone = (bone: TrackedBone): TrackedBone => ({
   ...bone,
   pivot: [...bone.pivot],
   ...(bone.rotation ? { rotation: [...bone.rotation] } : {}),
-  ...(bone.scale ? { scale: [...bone.scale] } : {})
+  ...(bone.scale ? { scale: [...bone.scale] } : {}),
 });
 
 const cloneCubeFace = (face: TrackedCubeFace): TrackedCubeFace => ({
   ...face,
-  ...(face.uv ? { uv: [...face.uv] } : {})
+  ...(face.uv ? { uv: [...face.uv] } : {}),
 });
 
-const cloneCubeFaces = (
-  faces: TrackedCube['faces']
-): TrackedCube['faces'] => {
+const cloneCubeFaces = (faces: TrackedCube['faces']): TrackedCube['faces'] => {
   if (!faces) return undefined;
   const cloned: Partial<Record<CubeFaceDirection, TrackedCubeFace>> = {};
   for (const direction of CUBE_FACE_DIRECTIONS) {
@@ -66,7 +64,7 @@ export const cloneTrackedCube = (cube: TrackedCube): TrackedCube => ({
   ...(cube.rotation ? { rotation: [...cube.rotation] } : {}),
   ...(cube.uv ? { uv: [...cube.uv] } : {}),
   ...(cube.uvOffset ? { uvOffset: [...cube.uvOffset] } : {}),
-  ...(cube.faces ? { faces: cloneCubeFaces(cube.faces) } : {})
+  ...(cube.faces ? { faces: cloneCubeFaces(cube.faces) } : {}),
 });
 
 export const cloneTrackedMesh = (mesh: TrackedMesh): TrackedMesh => ({
@@ -76,7 +74,7 @@ export const cloneTrackedMesh = (mesh: TrackedMesh): TrackedMesh => ({
   ...(mesh.uvPolicy ? { uvPolicy: { ...mesh.uvPolicy } } : {}),
   vertices: mesh.vertices.map((vertex) => ({
     ...vertex,
-    pos: [...vertex.pos]
+    pos: [...vertex.pos],
   })),
   faces: mesh.faces.map((face) => ({
     ...face,
@@ -85,63 +83,52 @@ export const cloneTrackedMesh = (mesh: TrackedMesh): TrackedMesh => ({
       ? {
           uv: face.uv.map((entry) => ({
             ...entry,
-            uv: [...entry.uv]
-          }))
+            uv: [...entry.uv],
+          })),
         }
-      : {})
-  }))
+      : {}),
+  })),
 });
 
-export const cloneTrackedTexture = (
-  texture: TrackedTexture
-): TrackedTexture => ({ ...texture });
+export const cloneTrackedTexture = (texture: TrackedTexture): TrackedTexture => ({ ...texture });
 
 export const cloneTrackedAnimationChannel = (
-  channel: TrackedAnimationChannel
+  channel: TrackedAnimationChannel,
 ): TrackedAnimationChannel => ({
   ...channel,
   keys: channel.keys.map((key) => ({
     ...key,
-    value: [...key.value]
-  }))
+    value: [...key.value],
+  })),
 });
 
 export const cloneTrackedAnimationTrigger = (
-  trigger: TrackedAnimationTrigger
+  trigger: TrackedAnimationTrigger,
 ): TrackedAnimationTrigger => ({
   ...trigger,
   keys: trigger.keys.map((key) => ({
     ...key,
-    value: cloneTriggerValue(key.value)
-  }))
+    value: cloneTriggerValue(key.value),
+  })),
 });
 
-export const cloneTrackedAnimation = (
-  animation: TrackedAnimation
-): TrackedAnimation => ({
+export const cloneTrackedAnimation = (animation: TrackedAnimation): TrackedAnimation => ({
   ...animation,
-  ...(animation.channels
-    ? { channels: animation.channels.map(cloneTrackedAnimationChannel) }
-    : {}),
-  ...(animation.triggers
-    ? { triggers: animation.triggers.map(cloneTrackedAnimationTrigger) }
-    : {})
+  ...(animation.channels ? { channels: animation.channels.map(cloneTrackedAnimationChannel) } : {}),
+  ...(animation.triggers ? { triggers: animation.triggers.map(cloneTrackedAnimationTrigger) } : {}),
 });
 
-export const cloneAnimations = (
-  animations: readonly TrackedAnimation[]
-): TrackedAnimation[] => animations.map(cloneTrackedAnimation);
+export const cloneAnimations = (animations: readonly TrackedAnimation[]): TrackedAnimation[] =>
+  animations.map(cloneTrackedAnimation);
 
 export const cloneSessionState = (snapshot: SessionState): SessionState => ({
   ...snapshot,
   bones: snapshot.bones.map(cloneTrackedBone),
   cubes: snapshot.cubes.map(cloneTrackedCube),
-  ...(snapshot.meshes
-    ? { meshes: snapshot.meshes.map(cloneTrackedMesh) }
-    : {}),
+  ...(snapshot.meshes ? { meshes: snapshot.meshes.map(cloneTrackedMesh) } : {}),
   textures: snapshot.textures.map(cloneTrackedTexture),
   animations: cloneAnimations(snapshot.animations),
-  animationTimePolicy: { ...snapshot.animationTimePolicy }
+  animationTimePolicy: { ...snapshot.animationTimePolicy },
 });
 
 export interface SessionStateCloner {
@@ -163,5 +150,5 @@ export const sessionStateCloner: SessionStateCloner = Object.freeze({
   texture: cloneTrackedTexture,
   animation: cloneTrackedAnimation,
   animationChannel: cloneTrackedAnimationChannel,
-  animationTrigger: cloneTrackedAnimationTrigger
+  animationTrigger: cloneTrackedAnimationTrigger,
 });

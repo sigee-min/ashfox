@@ -29,21 +29,20 @@ export type WorkspaceReadResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly diagnostics: readonly WorkspaceDiagnostic[] };
 
-export const emptyPosition = (): SourcePosition => Object.freeze({
-  offset: 0,
-  line: 1,
-  column: 1
-});
+export const emptyPosition = (): SourcePosition =>
+  Object.freeze({
+    offset: 0,
+    line: 1,
+    column: 1,
+  });
 
-export const syntheticSourceRef = (
-  path: string,
-  packageName: string | null = null
-): SourceRef => Object.freeze({
-  packageName,
-  path,
-  start: emptyPosition(),
-  end: emptyPosition()
-});
+export const syntheticSourceRef = (path: string, packageName: string | null = null): SourceRef =>
+  Object.freeze({
+    packageName,
+    path,
+    start: emptyPosition(),
+    end: emptyPosition(),
+  });
 
 export interface SourceLineIndex {
   readonly starts: readonly number[];
@@ -60,7 +59,7 @@ export const createSourceLineIndex = (source: string): SourceLineIndex => {
 const positionAtIndexed = (
   source: string,
   index: SourceLineIndex,
-  offset: number
+  offset: number,
 ): SourcePosition => {
   const bounded = Math.max(0, Math.min(offset, source.length));
   let low = 0;
@@ -73,7 +72,7 @@ const positionAtIndexed = (
   return Object.freeze({
     offset: bounded,
     line: low + 1,
-    column: bounded - index.starts[low] + 1
+    column: bounded - index.starts[low] + 1,
   });
 };
 
@@ -83,20 +82,21 @@ export const sourceRefAtIndexed = (
   source: string,
   lineIndex: SourceLineIndex,
   startOffset: number,
-  endOffset: number
-): SourceRef => Object.freeze({
-  packageName,
-  path,
-  start: positionAtIndexed(source, lineIndex, startOffset),
-  end: positionAtIndexed(source, lineIndex, endOffset)
-});
+  endOffset: number,
+): SourceRef =>
+  Object.freeze({
+    packageName,
+    path,
+    start: positionAtIndexed(source, lineIndex, startOffset),
+    end: positionAtIndexed(source, lineIndex, endOffset),
+  });
 
 export const sourceRefAt = (
   packageName: string | null,
   path: string,
   source: string,
   startOffset: number,
-  endOffset: number
+  endOffset: number,
 ): SourceRef => {
   return sourceRefAtIndexed(
     packageName,
@@ -104,7 +104,7 @@ export const sourceRefAt = (
     source,
     createSourceLineIndex(source),
     startOffset,
-    endOffset
+    endOffset,
   );
 };
 
@@ -122,25 +122,28 @@ const chainForSort = (diagnostic: WorkspaceDiagnostic): string =>
 
 /** Stable presentation order for diagnostics from several source modules. */
 export const sortWorkspaceDiagnostics = (
-  diagnostics: readonly WorkspaceDiagnostic[]
-): readonly WorkspaceDiagnostic[] => [...diagnostics].sort((left, right) =>
-  compareStableText(packageForSort(left), packageForSort(right)) ||
-  compareStableText(sourcePathForSort(left), sourcePathForSort(right)) ||
-  sourceOffsetForSort(left) - sourceOffsetForSort(right) ||
-  compareStableText(left.code, right.code) ||
-  compareStableText(left.message, right.message) ||
-  compareStableText(chainForSort(left), chainForSort(right))
-);
+  diagnostics: readonly WorkspaceDiagnostic[],
+): readonly WorkspaceDiagnostic[] =>
+  [...diagnostics].sort(
+    (left, right) =>
+      compareStableText(packageForSort(left), packageForSort(right)) ||
+      compareStableText(sourcePathForSort(left), sourcePathForSort(right)) ||
+      sourceOffsetForSort(left) - sourceOffsetForSort(right) ||
+      compareStableText(left.code, right.code) ||
+      compareStableText(left.message, right.message) ||
+      compareStableText(chainForSort(left), chainForSort(right)),
+  );
 
 export const errorDiagnostic = (
   code: string,
   message: string,
   source?: SourceRef,
-  importChain?: readonly string[]
-): WorkspaceDiagnostic => Object.freeze({
-  severity: 'error',
-  code,
-  message,
-  ...(source === undefined ? {} : { source }),
-  ...(importChain === undefined ? {} : { importChain: Object.freeze([...importChain]) })
-});
+  importChain?: readonly string[],
+): WorkspaceDiagnostic =>
+  Object.freeze({
+    severity: 'error',
+    code,
+    message,
+    ...(source === undefined ? {} : { source }),
+    ...(importChain === undefined ? {} : { importChain: Object.freeze([...importChain]) }),
+  });

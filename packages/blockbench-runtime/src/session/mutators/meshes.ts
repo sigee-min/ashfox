@@ -21,7 +21,7 @@ export const updateMesh = (state: SessionState, name: string, updates: MeshUpdat
     const cloned = cloneTrackedMesh({
       ...mesh,
       vertices: updates.vertices ?? mesh.vertices,
-      faces: updates.faces ?? mesh.faces
+      faces: updates.faces ?? mesh.faces,
     });
     mesh.vertices = cloned.vertices;
     mesh.faces = cloned.faces;

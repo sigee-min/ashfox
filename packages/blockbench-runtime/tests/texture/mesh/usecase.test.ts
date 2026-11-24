@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 
 import type { EditorPort } from '../../../src/ports/editor';
 import type { TextureRendererPort } from '../../../src/ports/textureRenderer';
-import type { Capabilities, PaintMeshFacePayload } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  Capabilities,
+  PaintMeshFacePayload,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { DEFAULT_ANIMATION_TIME_POLICY } from '../../../src/domain/animation/timePolicy';
 import { DEFAULT_UV_POLICY } from '../../../src/domain/uv/policy';
 import {
@@ -10,7 +13,7 @@ import {
   TEXTURE_MESH_FACE_SCOPE_ALL_FORBIDS_FACE_ID,
   TEXTURE_MESH_FACE_SCOPE_SINGLE_REQUIRES_FACE_ID,
   TEXTURE_MESH_FACE_TARGET_REQUIRED,
-  TEXTURE_MESH_FACE_TEXTURE_COORDS_SIZE_REQUIRED
+  TEXTURE_MESH_FACE_TEXTURE_COORDS_SIZE_REQUIRED,
 } from '../../../src/shared/messages';
 import type { TextureToolContext } from '../../../src/usecases/textureTools/context';
 import { runPaintMeshFace } from '../../../src/usecases/textureTools/mesh';
@@ -19,13 +22,13 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'Generic Model', animations: true, enabled: true }],
-  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const basePayload: PaintMeshFacePayload = {
   textureName: 'atlas',
   target: { meshName: 'wing', faceId: 'f0' },
-  op: { op: 'fill_rect', x: 0, y: 0, width: 2, height: 2, color: '#336699' }
+  op: { op: 'fill_rect', x: 0, y: 0, width: 2, height: 2, color: '#336699' },
 };
 
 const createOpaque = (width: number, height: number): Uint8ClampedArray => {
@@ -46,8 +49,8 @@ const makeFace = (id: string, uv: Array<[number, number]>) => ({
     { vertexId: 'a', uv: uv[0] },
     { vertexId: 'b', uv: uv[1] },
     { vertexId: 'c', uv: uv[2] },
-    { vertexId: 'd', uv: uv[3] }
-  ]
+    { vertexId: 'd', uv: uv[3] },
+  ],
 });
 
 const createContext = (options?: {
@@ -68,19 +71,19 @@ const createContext = (options?: {
       [0, 0],
       [8, 0],
       [8, 8],
-      [0, 8]
+      [0, 8],
     ]),
     makeFace('f1', [
       [8, 0],
       [16, 0],
       [16, 8],
-      [8, 8]
-    ])
+      [8, 8],
+    ]),
   ];
 
   const editor = {
     readTexture: () => ({ result: { id: 'tex1', name: 'atlas', width, height, image } }),
-    getProjectTextureResolution: () => ({ width, height })
+    getProjectTextureResolution: () => ({ width, height }),
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
@@ -88,9 +91,9 @@ const createContext = (options?: {
     renderPixels: ({ width: renderWidth, height: renderHeight, data }) => {
       pendingPixels = new Uint8ClampedArray(data);
       return {
-        result: { image, width: renderWidth, height: renderHeight }
+        result: { image, width: renderWidth, height: renderHeight },
       };
-    }
+    },
   };
 
   const ctx: TextureToolContext = {
@@ -113,15 +116,15 @@ const createContext = (options?: {
             { id: 'a', pos: [0, 0, 0] },
             { id: 'b', pos: [1, 0, 0] },
             { id: 'c', pos: [1, 1, 0] },
-            { id: 'd', pos: [0, 1, 0] }
+            { id: 'd', pos: [0, 1, 0] },
           ],
-          faces
-        }
+          faces,
+        },
       ],
       textures: [{ id: 'tex1', name: 'atlas', width, height }],
       animations: [],
       animationsStatus: 'available',
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -135,7 +138,7 @@ const createContext = (options?: {
         pendingPixels = null;
       }
       return { ok: true, value: { id: 'tex1', name: 'atlas' } };
-    }
+    },
   };
 
   return { ctx, getUpdateCalls: () => updateCalls, getPixels: () => new Uint8ClampedArray(pixels) };
@@ -145,7 +148,7 @@ const createContext = (options?: {
   const { ctx } = createContext();
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
-    target: undefined as unknown as PaintMeshFacePayload['target']
+    target: undefined as unknown as PaintMeshFacePayload['target'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -159,7 +162,7 @@ const createContext = (options?: {
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
     target: { meshName: 'wing' },
-    scope: 'single_face'
+    scope: 'single_face',
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -173,7 +176,7 @@ const createContext = (options?: {
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
     target: { meshName: 'wing', faceId: 'f0' },
-    scope: 'all_faces'
+    scope: 'all_faces',
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -186,7 +189,7 @@ const createContext = (options?: {
   const { ctx } = createContext();
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
-    coordSpace: 'texture'
+    coordSpace: 'texture',
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -213,7 +216,7 @@ const createContext = (options?: {
   const { ctx, getPixels } = createContext();
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
-    op: { op: 'set_pixel', x: 0, y: 0, color: '#336699' }
+    op: { op: 'set_pixel', x: 0, y: 0, color: '#336699' },
   });
   assert.equal(res.ok, true);
   const pixels = getPixels();
@@ -225,7 +228,7 @@ const createContext = (options?: {
   const { ctx, getUpdateCalls } = createContext();
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
-    target: { meshName: 'wing' }
+    target: { meshName: 'wing' },
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -255,14 +258,14 @@ const createContext = (options?: {
         [0, 0],
         [8, 0],
         [8, 8],
-        [0, 8]
+        [0, 8],
       ]),
-      { id: 'broken', vertices: ['a', 'b', 'c'] }
-    ]
+      { id: 'broken', vertices: ['a', 'b', 'c'] },
+    ],
   });
   const res = runPaintMeshFace(ctx, {
     ...basePayload,
-    target: { meshName: 'wing' }
+    target: { meshName: 'wing' },
   });
   assert.equal(res.ok, true);
   if (res.ok) {

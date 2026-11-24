@@ -8,7 +8,7 @@ import {
   MODEL_MESH_VERTEX_ID_DUPLICATE,
   MODEL_MESH_VERTEX_ID_REQUIRED,
   MODEL_MESH_VERTEX_POS_INVALID,
-  MODEL_MESH_VERTICES_REQUIRED
+  MODEL_MESH_VERTICES_REQUIRED,
 } from '../../../shared/messages';
 import type { MeshFaceInput, MeshVertexInput } from './contract';
 
@@ -37,7 +37,7 @@ const polygonArea = (vertices: [number, number, number][]): number => {
 
 export const validateMeshGeometry = (
   vertices: MeshVertexInput[] | undefined,
-  faces: MeshFaceInput[] | undefined
+  faces: MeshFaceInput[] | undefined,
 ): ToolError | null => {
   if (!vertices || vertices.length < 3) {
     return { code: 'invalid_payload', message: MODEL_MESH_VERTICES_REQUIRED };
@@ -89,33 +89,27 @@ export const validateMeshGeometry = (
     }
     for (const point of face.uv ?? []) {
       if (!vertexIds.has(point.vertexId)) {
-        return { code: 'invalid_payload', message: MODEL_MESH_FACE_UV_VERTEX_UNKNOWN(point.vertexId) };
+        return {
+          code: 'invalid_payload',
+          message: MODEL_MESH_FACE_UV_VERTEX_UNKNOWN(point.vertexId),
+        };
       }
     }
   }
   return null;
 };
 
-export const hasFaceUvInput = (
-  faces: MeshFaceInput[] | undefined
-): boolean =>
-  Array.isArray(faces) && faces.some(
-    (face) => Array.isArray(face.uv) && face.uv.length > 0
-  );
+export const hasFaceUvInput = (faces: MeshFaceInput[] | undefined): boolean =>
+  Array.isArray(faces) && faces.some((face) => Array.isArray(face.uv) && face.uv.length > 0);
 
-export const stripUvFromFaces = (
-  faces: MeshFaceInput[] | undefined
-): MeshFaceInput[] | undefined => faces?.map((face) => ({
-  ...(face.id ? { id: face.id } : {}),
-  vertices: [...face.vertices],
-  ...(Object.prototype.hasOwnProperty.call(face, 'texture')
-    ? { texture: face.texture }
-    : {})
-}));
+export const stripUvFromFaces = (faces: MeshFaceInput[] | undefined): MeshFaceInput[] | undefined =>
+  faces?.map((face) => ({
+    ...(face.id ? { id: face.id } : {}),
+    vertices: [...face.vertices],
+    ...(Object.prototype.hasOwnProperty.call(face, 'texture') ? { texture: face.texture } : {}),
+  }));
 
-export const hasCompleteFaceUv = (
-  faces: MeshFaceInput[] | undefined
-): boolean => {
+export const hasCompleteFaceUv = (faces: MeshFaceInput[] | undefined): boolean => {
   if (!Array.isArray(faces) || faces.length === 0) return false;
   for (const face of faces) {
     if (!Array.isArray(face.vertices) || face.vertices.length < 3) return false;

@@ -2,7 +2,7 @@ import type { ToolName } from '@ashfox/blockbench-contracts/types/internal';
 
 export const VIEWPORT_EFFECTS = ['none', 'geometry', 'texture', 'animation', 'project'] as const;
 
-export type ViewportEffect = typeof VIEWPORT_EFFECTS[number];
+export type ViewportEffect = (typeof VIEWPORT_EFFECTS)[number];
 
 export const TOOL_VIEWPORT_EFFECTS: Record<ToolName, ViewportEffect> = {
   list_capabilities: 'none',
@@ -30,7 +30,8 @@ export const TOOL_VIEWPORT_EFFECTS: Record<ToolName, ViewportEffect> = {
   set_frame_pose: 'animation',
   set_trigger_keyframes: 'animation',
   render_preview: 'none',
-  validate: 'none'
+  validate: 'none',
 };
 
-export const getViewportEffectForTool = (tool: ToolName): ViewportEffect => TOOL_VIEWPORT_EFFECTS[tool];
+export const getViewportEffectForTool = (tool: ToolName): ViewportEffect =>
+  TOOL_VIEWPORT_EFFECTS[tool];

@@ -16,7 +16,7 @@ export type RevisionDecision =
 
 export const decideRevision = (
   expected: string | undefined,
-  deps: RevisionGuardDeps
+  deps: RevisionGuardDeps,
 ): RevisionDecision => {
   if (!deps.requiresRevision) {
     return { ok: true, action: 'proceed' };
@@ -32,7 +32,7 @@ export const decideRevision = (
     allowAutoRetry: deps.allowAutoRetry,
     expected,
     currentRevision,
-    active: project.active
+    active: project.active,
   });
   if (!decision.ok) return decision;
   if (decision.action === 'retry') {
@@ -40,7 +40,3 @@ export const decideRevision = (
   }
   return { ok: true, action: 'proceed', currentRevision, project };
 };
-
-
-
-

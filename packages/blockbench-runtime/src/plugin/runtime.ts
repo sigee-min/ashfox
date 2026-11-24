@@ -4,7 +4,7 @@ import {
   DEFAULT_SERVER_PORT,
   PLUGIN_ID,
   PLUGIN_VERSION,
-  TOOL_SCHEMA_VERSION
+  TOOL_SCHEMA_VERSION,
 } from '../config';
 import { Capabilities, Dispatcher } from '@ashfox/blockbench-contracts/types/internal';
 import { ConsoleLogger, errorMessage, LogLevel } from '../logging';
@@ -18,7 +18,7 @@ import {
   toPublicEndpointConfig,
   type EndpointConfig,
   type PublicEndpointConfig,
-  type RuntimeServerStatus
+  type RuntimeServerStatus,
 } from './types';
 import { resolveEndpointConfig } from './endpointConfig';
 import { registerPluginSettings } from './pluginSettings';
@@ -35,7 +35,7 @@ import {
   PLUGIN_LOG_SERVER_STATUS,
   PLUGIN_UI_LOADED,
   PLUGIN_UI_SERVER_STATUS,
-  PLUGIN_UI_UNLOADED
+  PLUGIN_UI_UNLOADED,
 } from './messages';
 import { PLUGIN_ICON_DATA_URL } from './pluginIcon';
 
@@ -59,7 +59,7 @@ const traceLogDefaults = createTraceLogDefaults();
 let endpointConfig: EndpointConfig = {
   host: DEFAULT_SERVER_HOST,
   port: DEFAULT_SERVER_PORT,
-  path: DEFAULT_SERVER_PATH
+  path: DEFAULT_SERVER_PATH,
 };
 
 let serverState: RuntimeServerState = createRuntimeServerState(endpointConfig);
@@ -69,7 +69,8 @@ let globalTraceLogWriter: TraceLogWriter | null = null;
 let globalTraceLogFlushScheduler: TraceLogFlushScheduler | null = null;
 const toolRegistry = DEFAULT_TOOL_REGISTRY;
 
-const formatEndpoint = (config: PublicEndpointConfig): string => `${config.host}:${config.port}${config.path}`;
+const formatEndpoint = (config: PublicEndpointConfig): string =>
+  `${config.host}:${config.port}${config.path}`;
 
 const toServerModeLabel = (status: RuntimeServerStatus): string => {
   if (status.mode === 'starting') return 'starting';
@@ -83,10 +84,7 @@ const toServerModeLabel = (status: RuntimeServerStatus): string => {
 
 const warnTraceFlushFailure = (message: string): void => {
   try {
-    new ConsoleLogger(PLUGIN_ID, () => logLevel).warn(
-      'trace log flush failed',
-      { message }
-    );
+    new ConsoleLogger(PLUGIN_ID, () => logLevel).warn('trace log flush failed', { message });
   } catch (_logError) {
     // Cleanup must continue even if the host logger is unavailable.
   }
@@ -125,11 +123,13 @@ const claimSingletonWithLogger = () => {
     version: PLUGIN_VERSION,
     onCleanupError: (message) => {
       try {
-        new ConsoleLogger(PLUGIN_ID, () => logLevel).warn(PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, { message });
+        new ConsoleLogger(PLUGIN_ID, () => logLevel).warn(PLUGIN_LOG_PREVIOUS_CLEANUP_FAILED, {
+          message,
+        });
       } catch (logErr) {
         // Last resort: avoid crashing during startup.
       }
-    }
+    },
   });
 };
 
@@ -144,19 +144,17 @@ const restartServerWithState = () => {
     logLevel,
     resourceStore,
     toolRegistry,
-    state: serverState
+    state: serverState,
   });
   const modeLabel = toServerModeLabel(serverState.status);
   const endpoint = formatEndpoint(serverState.status.endpoint);
   logger.info(PLUGIN_LOG_SERVER_STATUS, {
     mode: serverState.status.mode,
     reason: serverState.status.reason,
-    endpoint
+    endpoint,
   });
   readGlobals().Blockbench?.showQuickMessage?.(PLUGIN_UI_SERVER_STATUS(modeLabel, endpoint), 1500);
 };
-
- 
 
 export const registerPlugin = () => {
   const globals = readGlobals();
@@ -166,7 +164,8 @@ export const registerPlugin = () => {
     title: 'ashfox',
     author: 'sigee-min',
     icon: PLUGIN_ICON_DATA_URL,
-    description: 'Blockbench MCP bridge scaffold (Java Block/Item default, GeckoLib optional). Latest Blockbench desktop only.',
+    description:
+      'Blockbench MCP bridge scaffold (Java Block/Item default, GeckoLib optional). Latest Blockbench desktop only.',
     creation_date: '2024-01-04',
     version: PLUGIN_VERSION,
     native_modules: ['child_process', 'fs', 'net', 'os', 'path', 'process'],
@@ -208,7 +207,7 @@ Notes:
       registerPluginSettings({
         readGlobals,
         endpointConfig,
-        restartServer: restartServerWithState
+        restartServer: restartServerWithState,
       });
       const traceLogDestPath = resolveTraceLogDestPath(traceLogDefaults.fileName, logger);
       const traceLogDestResolved = traceLogDestPath ?? traceLogDefaults.destPath;
@@ -228,15 +227,15 @@ Notes:
           maxBytes: traceLogDefaults.maxBytes,
           minEntries: traceLogDefaults.minEntries,
           flushEvery: traceLogDefaults.flushEvery,
-          flushIntervalMs: traceLogDefaults.flushIntervalMs
-        }
+          flushIntervalMs: traceLogDefaults.flushIntervalMs,
+        },
       });
       const {
         capabilities,
         dispatcher,
         traceRecorder,
         traceLogFileWriter,
-        traceLogFlushScheduler
+        traceLogFlushScheduler,
       } = runtime;
       globalDispatcher = dispatcher;
       globalTraceRecorder = traceRecorder;
@@ -250,7 +249,10 @@ Notes:
         capabilities,
         serverConfig: () => toPublicEndpointConfig(endpointConfig),
         settings: () => toPublicEndpointConfig(endpointConfig),
-        serverStatus: () => ({ ...serverState.status, endpoint: { ...serverState.status.endpoint } })
+        serverStatus: () => ({
+          ...serverState.status,
+          endpoint: { ...serverState.status.endpoint },
+        }),
       });
 
       blockbench?.showQuickMessage?.(PLUGIN_UI_LOADED(PLUGIN_VERSION), 1200);
@@ -260,6 +262,6 @@ Notes:
       cleanupRuntime();
       releaseSingleton();
       blockbench?.showQuickMessage?.(PLUGIN_UI_UNLOADED, 1200);
-    }
+    },
   });
 };

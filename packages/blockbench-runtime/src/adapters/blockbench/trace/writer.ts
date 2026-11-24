@@ -9,7 +9,7 @@ import {
   isEisdirError,
   joinPath,
   type FsPathPolicyModule,
-  type PathPolicyModule
+  type PathPolicyModule,
 } from '../io/pathPolicy';
 
 export type BlockbenchTraceLogWriterOptions = {
@@ -36,7 +36,7 @@ export class BlockbenchTraceLogWriter implements TraceLogWriter {
     const blockbench = globals.Blockbench;
     if (!blockbench) {
       return toolError('not_implemented', 'Blockbench API unavailable for trace log write.', {
-        reason: 'blockbench_missing'
+        reason: 'blockbench_missing',
       });
     }
 
@@ -47,7 +47,7 @@ export class BlockbenchTraceLogWriter implements TraceLogWriter {
       this.fileName,
       globals.Project ?? blockbench.project ?? null,
       fs,
-      path
+      path,
     );
     const writeFile = blockbench.writeFile;
     const exportFile = blockbench.exportFile;
@@ -63,10 +63,14 @@ export class BlockbenchTraceLogWriter implements TraceLogWriter {
         if (this.mode === 'writeFile') return writeErr;
       }
       if (this.mode === 'writeFile') {
-        return toolError('not_implemented', 'Blockbench writeFile unavailable or path not resolved.', {
-          reason: 'writefile_unavailable',
-          ...(resolvedPath ? {} : { missingPath: true })
-        });
+        return toolError(
+          'not_implemented',
+          'Blockbench writeFile unavailable or path not resolved.',
+          {
+            reason: 'writefile_unavailable',
+            ...(resolvedPath ? {} : { missingPath: true }),
+          },
+        );
       }
     }
 
@@ -81,7 +85,7 @@ export class BlockbenchTraceLogWriter implements TraceLogWriter {
     }
 
     return toolError('not_implemented', 'Blockbench exportFile unavailable for trace log write.', {
-      reason: 'export_unavailable'
+      reason: 'export_unavailable',
     });
   }
 }
@@ -91,7 +95,7 @@ const resolveTraceLogPath = (
   fileName: string,
   project: { save_path?: string; export_path?: string } | null,
   fs?: FsPathPolicyModule | null,
-  path?: PathPolicyModule | null
+  path?: PathPolicyModule | null,
 ): string | null => {
   const trimmed = String(destPath ?? '').trim();
   if (trimmed.length > 0) {
@@ -111,7 +115,7 @@ const writeTraceLogFile = (
   resolvedPath: string,
   text: string,
   fileName: string,
-  path?: PathPolicyModule | null
+  path?: PathPolicyModule | null,
 ): ToolError | null => {
   try {
     writeFile(resolvedPath, { content: text, savetype: 'text' });
@@ -126,14 +130,14 @@ const writeTraceLogFile = (
         } catch (retryErr) {
           return toolError('io_error', errorMessage(retryErr, 'Trace log write failed.'), {
             reason: 'trace_log_write_failed',
-            path: fallbackPath
+            path: fallbackPath,
           });
         }
       }
     }
     return toolError('io_error', errorMessage(err, 'Trace log write failed.'), {
       reason: 'trace_log_write_failed',
-      path: resolvedPath
+      path: resolvedPath,
     });
   }
 };
@@ -141,7 +145,7 @@ const writeTraceLogFile = (
 const writeTraceLogExport = (
   exportFile: (options: { content: string; name: string }) => void,
   text: string,
-  fileName: string
+  fileName: string,
 ): ToolError | null => {
   try {
     exportFile({ content: text, name: fileName });
@@ -149,12 +153,7 @@ const writeTraceLogExport = (
   } catch (err) {
     return toolError('io_error', errorMessage(err, 'Trace log export failed.'), {
       reason: 'trace_log_export_failed',
-      name: fileName
+      name: fileName,
     });
   }
 };
-
-
-
-
-

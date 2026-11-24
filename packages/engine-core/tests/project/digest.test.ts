@@ -22,4 +22,6 @@ for (const value of ['', 'abc', '새소리 🐦', '\ud800', 'a'.repeat(1000000)]
 }
 const converted = [256, -1, 1.5, NaN, Infinity];
 assert.equal(sha256ByteDigest(converted), expected(Uint8Array.from(converted)));
-console.log('SHA-256: independent reference, padding boundaries, offset views and input preservation pass');
+console.log(
+  'SHA-256: independent reference, padding boundaries, offset views and input preservation pass',
+);

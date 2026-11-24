@@ -12,7 +12,7 @@ import {
   integerContract,
   prepareTexture,
   surfacePayload,
-  type TextureReporter
+  type TextureReporter,
 } from './texture/prepare';
 
 const freeze = <T>(value: T): T => Object.freeze(value);
@@ -22,38 +22,55 @@ const textureIdFor = (key: string, name: string): string => {
   return (name.length > 0 ? name : 'surface') + '_' + digest;
 };
 
-const symbolCopy = (surface: TypedSurface): TypedSurface['symbol'] => freeze({
-  modulePath: surface.symbol.modulePath,
-  name: surface.symbol.name,
-  kind: surface.symbol.kind,
-  key: surface.symbol.key
-});
+const symbolCopy = (surface: TypedSurface): TypedSurface['symbol'] =>
+  freeze({
+    modulePath: surface.symbol.modulePath,
+    name: surface.symbol.name,
+    kind: surface.symbol.kind,
+    key: surface.symbol.key,
+  });
 
 const validUsage = (usage: AssetTextureUsage): boolean => {
-  if (usage === null || typeof usage !== 'object' || typeof usage.chart !== 'string' ||
-    usage.span === undefined || usage.shape === null || typeof usage.shape !== 'object') return false;
+  if (
+    usage === null ||
+    typeof usage !== 'object' ||
+    typeof usage.chart !== 'string' ||
+    usage.span === undefined ||
+    usage.shape === null ||
+    typeof usage.shape !== 'object'
+  )
+    return false;
   if (usage.shape.kind !== 'box' && usage.shape.kind !== 'flat') return false;
   const values = usage.shape.size;
   if (!Array.isArray(values)) return false;
-  return (usage.shape.kind === 'box' && values.length === 3 ||
-    usage.shape.kind === 'flat' && values.length === 2) &&
-    values.every((value) => Number.isSafeInteger(value) && value > 0 && value <= 4096);
+  return (
+    ((usage.shape.kind === 'box' && values.length === 3) ||
+      (usage.shape.kind === 'flat' && values.length === 2)) &&
+    values.every((value) => Number.isSafeInteger(value) && value > 0 && value <= 4096)
+  );
 };
 
 const validateUsages = (
   usages: readonly AssetTextureUsage[],
   contract: TypedSurfaceContract,
-  report: TextureReporter
+  report: TextureReporter,
 ): boolean => {
   let valid = true;
   const known = new Set(Object.keys(contract.charts));
   for (const usage of usages) {
     if (!validUsage(usage)) {
-      report.report(contract.span, 'asset.texture.invalid-usage', 'Texture geometry usage is malformed.');
+      report.report(
+        contract.span,
+        'asset.texture.invalid-usage',
+        'Texture geometry usage is malformed.',
+      );
       valid = false;
     } else if (!known.has(usage.chart)) {
-      report.report(usage.span, 'asset.texture.unknown-chart',
-        'Texture geometry usage names a chart outside the surface contract.');
+      report.report(
+        usage.span,
+        'asset.texture.unknown-chart',
+        'Texture geometry usage names a chart outside the surface contract.',
+      );
       valid = false;
     }
   }
@@ -66,20 +83,31 @@ export const materializeAssetTexturePlan = (
   contract: TypedSurfaceContract,
   usages: readonly AssetTextureUsage[],
   path: string,
-  issue: AssetTextureIssue
+  issue: AssetTextureIssue,
 ): AssetTexturePlan | null => {
   const owner = surface?.span ?? contract?.span;
   const report = createTextureReporter(path, owner, issue);
   try {
-    if (surface === null || typeof surface !== 'object' || contract === null ||
-      typeof contract !== 'object' || surface.contract.key !== contract.symbol.key) {
-      report.report(owner, 'asset.texture.contract-mismatch',
-        'Texture surface and contract identities must match.');
+    if (
+      surface === null ||
+      typeof surface !== 'object' ||
+      contract === null ||
+      typeof contract !== 'object' ||
+      surface.contract.key !== contract.symbol.key
+    ) {
+      report.report(
+        owner,
+        'asset.texture.contract-mismatch',
+        'Texture surface and contract identities must match.',
+      );
       return null;
     }
     if (surface.material !== contract.material) {
-      report.report(surface.span, 'asset.texture.material-mismatch',
-        'Texture surface material must match its surface contract.');
+      report.report(
+        surface.span,
+        'asset.texture.material-mismatch',
+        'Texture surface material must match its surface contract.',
+      );
       return null;
     }
     if (!Array.isArray(usages) || !validateUsages(usages, contract, report)) return null;
@@ -93,32 +121,57 @@ export const materializeAssetTexturePlan = (
     const composed = composeTextureCharts(prepared, context, textureId, report);
     if (composed === null) return null;
     const width = integerContract(contract.atlas.width, report, contract.atlas.span, 'Atlas width');
-    const height = integerContract(contract.atlas.height, report, contract.atlas.span, 'Atlas height');
+    const height = integerContract(
+      contract.atlas.height,
+      report,
+      contract.atlas.span,
+      'Atlas height',
+    );
     if (width === null || height === null) return null;
-    const rasterSpec: TextureRaster = freeze({ background: prepared.background,
-      backgroundAlpha: prepared.backgroundAlpha, canvasDetails: composed.details,
-      alphaMasks: composed.masks });
+    const rasterSpec: TextureRaster = freeze({
+      background: prepared.background,
+      backgroundAlpha: prepared.backgroundAlpha,
+      canvasDetails: composed.details,
+      alphaMasks: composed.masks,
+    });
     const raster = rasterizeCanonicalTexture(width, height, {
-      background: rasterSpec.background, backgroundAlpha: rasterSpec.backgroundAlpha,
-      canvasDetails: rasterSpec.canvasDetails, alphaMasks: rasterSpec.alphaMasks ?? [] });
+      background: rasterSpec.background,
+      backgroundAlpha: rasterSpec.backgroundAlpha,
+      canvasDetails: rasterSpec.canvasDetails,
+      alphaMasks: rasterSpec.alphaMasks ?? [],
+    });
     const encoded = encodeCanonicalPng(raster);
     const pngHash = canonicalPngDigest(encoded);
     const texture: TextureAsset = freeze({
       id: textureId as AssetId,
       name: surface.symbol.name,
-      width, height,
-      source: freeze({ bucket: 'inline', key: textureId + '.png', contentType: 'image/png',
-        contentHash: pngHash, byteLength: encoded.length }),
-      visible: true, sampling: 'nearest', colorSpace: 'srgb', renderMode: 'default',
-      renderSides: surface.material === 'double' ? 'double' : 'auto', atlasMode: 'preserve',
-      raster: rasterSpec
+      width,
+      height,
+      source: freeze({
+        bucket: 'inline',
+        key: textureId + '.png',
+        contentType: 'image/png',
+        contentHash: pngHash,
+        byteLength: encoded.length,
+      }),
+      visible: true,
+      sampling: 'nearest',
+      colorSpace: 'srgb',
+      renderMode: 'default',
+      renderSides: surface.material === 'double' ? 'double' : 'auto',
+      atlasMode: 'preserve',
+      raster: rasterSpec,
     });
     if (report.bad) return null;
     return freeze({ surfaceSymbol: symbolCopy(surface), texture, charts: composed.charts });
   } catch (error) {
     if (report.sinkFailed) throw error;
-    if (!report.bad) report.report(owner, 'asset.texture.invalid',
-      'Texture payload is malformed or exceeds the bounded materialization budget.');
+    if (!report.bad)
+      report.report(
+        owner,
+        'asset.texture.invalid',
+        'Texture payload is malformed or exceeds the bounded materialization budget.',
+      );
     return null;
   }
 };

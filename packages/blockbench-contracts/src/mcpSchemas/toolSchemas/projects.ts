@@ -13,16 +13,14 @@ export const projectToolSchemas: Record<string, JsonSchema> = {
         type: 'object',
         additionalProperties: false,
         properties: {
-          name: { type: 'string' }
-        }
+          name: { type: 'string' },
+        },
       },
       format: { type: 'string', enum: FORMAT_KINDS },
       ...ensureProjectBaseProperties,
       force: { type: 'boolean' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
-  }
+      ...metaProps,
+    },
+  },
 };
-
-

@@ -12,7 +12,7 @@ import {
   TEXTURE_FACE_UV_FACES_FIX,
   TEXTURE_FACE_UV_TARGET_FIX,
   TEXTURE_FACE_UV_SMALL_RECTS,
-  TEXTURE_FACE_UV_SKEWED_RECTS
+  TEXTURE_FACE_UV_SKEWED_RECTS,
 } from '../../shared/messages';
 import { buildUvAssignmentMessages, buildUvBoundsMessages } from '../../shared/messages';
 
@@ -79,23 +79,27 @@ export class TextureUvService {
         const applyErr = this.editor.setFaceUv({
           cubeId: target.id ?? payload.cubeId,
           cubeName: target.name,
-          faces: normalized.normalized
+          faces: normalized.normalized,
         });
         if (applyErr) return fail(applyErr);
         const warnings = this.buildUvRectWarnings(target.name, normalized.normalized);
         return ok(this.buildSetFaceUvResult(target, payload, normalized.faces, warnings));
-      }
+      },
     );
   }
 
   private validateSetFaceUvPayload(payload: SetFaceUvPayload): ToolError | null {
     const assignmentRes = validateUvAssignments(
       [{ cubeId: payload.cubeId, cubeName: payload.cubeName, faces: payload.faces }],
-      uvAssignmentMessages
+      uvAssignmentMessages,
     );
     if (assignmentRes.ok) return null;
     const reason = assignmentRes.error.details?.reason;
-    if (reason === 'target_required' || reason === 'cube_ids_string_array' || reason === 'cube_names_string_array') {
+    if (
+      reason === 'target_required' ||
+      reason === 'cube_ids_string_array' ||
+      reason === 'cube_names_string_array'
+    ) {
       return { ...assignmentRes.error, fix: TEXTURE_FACE_UV_TARGET_FIX };
     }
     if (reason === 'faces_required' || reason === 'faces_non_empty') {
@@ -106,11 +110,13 @@ export class TextureUvService {
 
   private resolveCubeTarget(payload: SetFaceUvPayload): UsecaseResult<ResolvedCubeTarget> {
     const snapshot = this.getSnapshot();
-    const target = snapshot.cubes.find((cube) => cube.id === payload.cubeId || cube.name === payload.cubeName);
+    const target = snapshot.cubes.find(
+      (cube) => cube.id === payload.cubeId || cube.name === payload.cubeName,
+    );
     if (!target) {
       return fail({
         code: 'invalid_payload',
-        message: MODEL_CUBE_NOT_FOUND(payload.cubeId ?? payload.cubeName ?? 'unknown')
+        message: MODEL_CUBE_NOT_FOUND(payload.cubeId ?? payload.cubeName ?? 'unknown'),
       });
     }
     return ok({ id: target.id ?? payload.cubeId, name: target.name });
@@ -134,28 +140,33 @@ export class TextureUvService {
     target: ResolvedCubeTarget,
     payload: SetFaceUvPayload,
     faces: CubeFaceDirection[],
-    warnings: { warnings: string[]; warningCodes: string[] }
+    warnings: { warnings: string[]; warningCodes: string[] },
   ): SetFaceUvSuccess {
     return {
       cubeId: target.id ?? payload.cubeId,
       cubeName: target.name,
       faces,
       ...(warnings.warnings.length > 0 ? { warnings: warnings.warnings } : {}),
-      ...(warnings.warningCodes.length > 0 ? { warningCodes: warnings.warningCodes } : {})
+      ...(warnings.warningCodes.length > 0 ? { warningCodes: warnings.warningCodes } : {}),
     };
   }
 
   private ensureFaceUvWithinResolution(uv: [number, number, number, number]): ToolError | null {
     const resolution = this.editor.getProjectTextureResolution();
     if (!resolution) return null;
-    const boundsErr = validateUvBounds(uv, resolution, { uv, textureResolution: resolution }, uvBoundsMessages);
+    const boundsErr = validateUvBounds(
+      uv,
+      resolution,
+      { uv, textureResolution: resolution },
+      uvBoundsMessages,
+    );
     if (!boundsErr) return null;
     if (boundsErr.ok) return null;
     const reason = boundsErr.error.details?.reason;
     if (reason === 'out_of_bounds') {
       return {
         ...boundsErr.error,
-        fix: TEXTURE_FACE_UV_BOUNDS_FIX
+        fix: TEXTURE_FACE_UV_BOUNDS_FIX,
       };
     }
     return boundsErr.error;
@@ -163,7 +174,7 @@ export class TextureUvService {
 
   private buildUvRectWarnings(
     cubeName: string,
-    faces: FaceUvMap
+    faces: FaceUvMap,
   ): { warnings: string[]; warningCodes: string[] } {
     const { minArea, maxAspect } = this.getUvWarningConfig();
     let smallCount = 0;
@@ -174,7 +185,8 @@ export class TextureUvService {
       const [x1, y1, x2, y2] = uv as [number, number, number, number];
       const width = Math.abs(x2 - x1);
       const height = Math.abs(y2 - y1);
-      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) continue;
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+        continue;
       const area = width * height;
       const aspectRatio = width >= height ? width / height : height / width;
       const example: UvRectIssueExample = {
@@ -183,7 +195,7 @@ export class TextureUvService {
         width,
         height,
         area,
-        aspectRatio
+        aspectRatio,
       };
       if (area <= minArea) {
         smallCount += 1;
@@ -198,12 +210,7 @@ export class TextureUvService {
     const warningCodes: string[] = [];
     if (smallCount > 0) {
       warnings.push(
-        TEXTURE_FACE_UV_SMALL_RECTS(
-          cubeName,
-          smallCount,
-          minArea,
-          formatRectExample(smallExample)
-        )
+        TEXTURE_FACE_UV_SMALL_RECTS(cubeName, smallCount, minArea, formatRectExample(smallExample)),
       );
       warningCodes.push('uv_rect_small');
     }
@@ -213,8 +220,8 @@ export class TextureUvService {
           cubeName,
           skewedCount,
           maxAspect,
-          formatRectExample(skewedExample)
-        )
+          formatRectExample(skewedExample),
+        ),
       );
       warningCodes.push('uv_rect_skewed');
     }
@@ -224,11 +231,11 @@ export class TextureUvService {
   private getUvWarningConfig(): { minArea: number; maxAspect: number } {
     const policy = this.getUvPolicyConfig?.();
     const resolution = this.editor.getProjectTextureResolution();
-    const tinyThreshold = Number.isFinite(policy?.tinyThreshold) ? (policy?.tinyThreshold as number) : 2;
+    const tinyThreshold = Number.isFinite(policy?.tinyThreshold)
+      ? (policy?.tinyThreshold as number)
+      : 2;
     const baseArea = Math.max(4, Math.round(tinyThreshold * tinyThreshold));
-    const scaledArea = resolution
-      ? Math.round((resolution.width * resolution.height) / 512)
-      : 0;
+    const scaledArea = resolution ? Math.round((resolution.width * resolution.height) / 512) : 0;
     const minArea = clamp(Math.max(baseArea, scaledArea), baseArea, 64);
     const maxSide = resolution ? Math.max(resolution.width, resolution.height) : 0;
     const maxAspect = maxSide >= 128 ? 5 : maxSide >= 64 ? 4 : 3;
@@ -237,4 +244,3 @@ export class TextureUvService {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-

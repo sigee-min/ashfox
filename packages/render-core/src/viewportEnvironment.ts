@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 
-export type ViewportEnvironmentId =
-  | 'studio'
-  | 'day'
-  | 'evening'
-  | 'night';
+export type ViewportEnvironmentId = 'studio' | 'day' | 'evening' | 'night';
 
 export interface ViewportEnvironmentOption {
   id: ViewportEnvironmentId;
@@ -16,23 +12,23 @@ export const VIEWPORT_ENVIRONMENTS: readonly ViewportEnvironmentOption[] = [
   {
     id: 'studio',
     label: 'Studio',
-    detail: 'Neutral inspection light'
+    detail: 'Neutral inspection light',
   },
   {
     id: 'day',
     label: 'Day',
-    detail: 'Clear daylight sky'
+    detail: 'Clear daylight sky',
   },
   {
     id: 'evening',
     label: 'Evening',
-    detail: 'Warm sunset sky'
+    detail: 'Warm sunset sky',
   },
   {
     id: 'night',
     label: 'Night',
-    detail: 'Deep night sky'
-  }
+    detail: 'Deep night sky',
+  },
 ];
 
 export interface ViewportEnvironment {
@@ -45,7 +41,7 @@ export interface ViewportEnvironment {
 const createGradientTexture = (
   top: string,
   middle: string,
-  bottom: string
+  bottom: string,
 ): THREE.CanvasTexture => {
   const canvas = window.document.createElement('canvas');
   canvas.width = 16;
@@ -65,9 +61,7 @@ const createGradientTexture = (
   return texture;
 };
 
-export const createViewportEnvironment = (
-  id: ViewportEnvironmentId
-): ViewportEnvironment => {
+export const createViewportEnvironment = (id: ViewportEnvironmentId): ViewportEnvironment => {
   let background: THREE.Color | THREE.Texture;
   let fog: THREE.Fog;
 
@@ -93,7 +87,7 @@ export const createViewportEnvironment = (
     fog,
     dispose: () => {
       if (background instanceof THREE.Texture) background.dispose();
-    }
+    },
   };
 };
 

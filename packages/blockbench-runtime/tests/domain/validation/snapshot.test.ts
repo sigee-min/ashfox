@@ -11,21 +11,21 @@ const empty: Snapshot = { bones: [], cubes: [], meshes: [], animations: [] };
 const emptyFindings = validateSnapshot(
   empty,
   {
-    limits: { maxCubes: 1, maxTextureSize: 32, maxAnimationSeconds: 1 }
+    limits: { maxCubes: 1, maxTextureSize: 32, maxAnimationSeconds: 1 },
   },
-  validationMessages
+  validationMessages,
 );
 assert.ok(emptyFindings.some((f) => f.code === 'no_bones'));
 
 const snapshot: Snapshot = {
   bones: [
     { name: 'bone', pivot: [0, 0, 0] },
-    { name: 'bone', pivot: [0, 0, 0] }
+    { name: 'bone', pivot: [0, 0, 0] },
   ],
   cubes: [
     { name: 'cubeA', bone: 'bone', from: [0, 0, 0], to: [16, 16, 16] },
     { name: 'cubeB', bone: 'bone', from: [1, 1, 1], to: [2, 2, 2] },
-    { name: 'cubeA', bone: 'ghost', from: [0, 0, 0], to: [1, 1, 1], uv: [20, 20] }
+    { name: 'cubeA', bone: 'ghost', from: [0, 0, 0], to: [1, 1, 1], uv: [20, 20] },
   ],
   meshes: [
     {
@@ -33,32 +33,32 @@ const snapshot: Snapshot = {
       vertices: [
         { id: 'v0', pos: [0, 0, 0] },
         { id: 'v1', pos: [1, 0, 0] },
-        { id: 'v1', pos: [1, 1, 0] }
+        { id: 'v1', pos: [1, 1, 0] },
       ],
-      faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }]
+      faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }],
     },
     {
       name: 'wing',
       vertices: [
         { id: 'a', pos: [0, 0, 0] },
         { id: 'b', pos: [1, 0, 0] },
-        { id: 'c', pos: [2, 0, 0] }
+        { id: 'c', pos: [2, 0, 0] },
       ],
       faces: [
         {
           id: 'flat',
           vertices: ['a', 'b', 'c'],
-          uv: [{ vertexId: 'missing', uv: [0, 0] }]
-        }
-      ]
-    }
+          uv: [{ vertexId: 'missing', uv: [0, 0] }],
+        },
+      ],
+    },
   ],
-  animations: [{ name: 'anim', length: 2, loop: true }]
+  animations: [{ name: 'anim', length: 2, loop: true }],
 };
 
 const textures: TextureStat[] = [
   { name: 'texLarge', width: 128, height: 128 },
-  { name: 'texMismatch', width: 8, height: 8 }
+  { name: 'texMismatch', width: 8, height: 8 },
 ];
 
 const usage: TextureUsage = {
@@ -76,20 +76,20 @@ const usage: TextureUsage = {
             { face: 'north', uv: [0, 0, 8, 16] },
             { face: 'south', uv: [0, 0, 16, 16] },
             { face: 'east', uv: [0, 0, 8, 16] },
-            { face: 'west', uv: [0, 0, 32, 32] }
-          ]
-        }
-      ]
+            { face: 'west', uv: [0, 0, 32, 32] },
+          ],
+        },
+      ],
     },
     {
       id: 't2',
       name: 'unused',
       cubeCount: 0,
       faceCount: 0,
-      cubes: []
-    }
+      cubes: [],
+    },
   ],
-  unresolved: [{ textureRef: 'missing', cubeName: 'ghost', face: 'up' }]
+  unresolved: [{ textureRef: 'missing', cubeName: 'ghost', face: 'up' }],
 };
 
 const findings = validateSnapshot(
@@ -99,9 +99,9 @@ const findings = validateSnapshot(
     textures,
     textureResolution: { width: 16, height: 16 },
     textureUsage: usage,
-    uvPolicy: DEFAULT_UV_POLICY
+    uvPolicy: DEFAULT_UV_POLICY,
   },
-  validationMessages
+  validationMessages,
 );
 
 const codes = new Set(findings.map((f) => f.code));
@@ -124,5 +124,3 @@ assert.ok(codes.has('texture_unassigned'));
 assert.ok(codes.has('face_uv_out_of_bounds'));
 assert.ok(codes.has('uv_overlap'));
 assert.ok(codes.has('uv_scale_mismatch'));
-
-

@@ -5,7 +5,7 @@ import {
   ADAPTER_PROJECT_UNSAVED_CHANGES,
   PROJECT_FORMAT_ID_MISSING_FIX,
   PROJECT_FORMAT_UNSUPPORTED_FIX,
-  PROJECT_NAME_REQUIRED_FIX
+  PROJECT_NAME_REQUIRED_FIX,
 } from '../../../src/shared/messages';
 
 type CreateCtxOptions = {
@@ -22,50 +22,52 @@ type CreateCtxOptions = {
 const createContext = (options: CreateCtxOptions = {}) => {
   const createResults = [...(options.createProjectResults ?? [null])];
   let createCalls = 0;
-  const payloads: Array<{ confirmDiscard?: boolean; dialog?: Record<string, unknown> } | undefined> = [];
+  const payloads: Array<
+    { confirmDiscard?: boolean; dialog?: Record<string, unknown> } | undefined
+  > = [];
   const ctx = {
     capabilities: {
       pluginVersion: 'test',
       blockbenchVersion: 'test',
       formats: [{ format: 'geckolib', animations: true, enabled: options.formatEnabled ?? true }],
-      limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 }
+      limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 },
     },
     editor: {
       createProject: (
         _name: string,
         _formatId: string,
         _format: 'geckolib',
-        payload?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+        payload?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
       ) => {
         createCalls += 1;
         payloads.push(payload);
         return createResults.shift() ?? null;
-      }
+      },
     },
     formats: {
       listFormats: () => options.listFormats ?? [{ id: 'geckolib_model', name: 'GeckoLib' }],
-      getActiveFormatId: () => null
+      getActiveFormatId: () => null,
     },
     session: {
       create: () =>
         options.sessionCreateResult ??
         ({
           ok: true,
-          data: { id: 'p1', format: 'geckolib', name: 'dragon' }
-        } as const)
+          data: { id: 'p1', format: 'geckolib', name: 'dragon' },
+        } as const),
     },
     ensureRevisionMatch: () => options.revisionError ?? null,
     policies: {
       formatOverrides: undefined,
-      autoDiscardUnsaved: options.autoDiscardUnsaved
-    }
+      autoDiscardUnsaved: options.autoDiscardUnsaved,
+    },
   } as unknown as ProjectCreateContext;
   return { ctx, createCalls: () => createCalls, payloads };
 };
 
 {
   const { ctx, createCalls } = createContext({
-    revisionError: { code: 'invalid_state', message: 'revision mismatch' }
+    revisionError: { code: 'invalid_state', message: 'revision mismatch' },
   });
   const res = runCreateProject(ctx, 'geckolib', 'dragon', { ifRevision: 'r0' });
   assert.equal(res.ok, false);
@@ -110,7 +112,7 @@ const createContext = (options: CreateCtxOptions = {}) => {
 
 {
   const { ctx, createCalls } = createContext({
-    createProjectResults: [{ code: 'io_error', message: 'create failed' }]
+    createProjectResults: [{ code: 'io_error', message: 'create failed' }],
   });
   const res = runCreateProject(ctx, 'geckolib', 'dragon');
   assert.equal(res.ok, false);
@@ -125,8 +127,8 @@ const createContext = (options: CreateCtxOptions = {}) => {
     autoDiscardUnsaved: true,
     createProjectResults: [
       { code: 'invalid_state', message: ADAPTER_PROJECT_UNSAVED_CHANGES },
-      null
-    ]
+      null,
+    ],
   });
   const res = runCreateProject(ctx, 'geckolib', 'dragon', { confirmDiscard: false });
   assert.equal(res.ok, true);
@@ -138,7 +140,7 @@ const createContext = (options: CreateCtxOptions = {}) => {
 {
   const { ctx, createCalls } = createContext({
     autoDiscardUnsaved: true,
-    createProjectResults: [{ code: 'invalid_state', message: ADAPTER_PROJECT_UNSAVED_CHANGES }]
+    createProjectResults: [{ code: 'invalid_state', message: ADAPTER_PROJECT_UNSAVED_CHANGES }],
   });
   const res = runCreateProject(ctx, 'geckolib', 'dragon', { confirmDiscard: true });
   assert.equal(res.ok, false);
@@ -149,8 +151,8 @@ const createContext = (options: CreateCtxOptions = {}) => {
   const { ctx, createCalls } = createContext({
     sessionCreateResult: {
       ok: false,
-      error: { code: 'invalid_state', message: 'session create failed' }
-    }
+      error: { code: 'invalid_state', message: 'session create failed' },
+    },
   });
   const res = runCreateProject(ctx, 'geckolib', 'dragon');
   assert.equal(res.ok, false);
@@ -173,41 +175,43 @@ const createContext = (options: CreateCtxOptions = {}) => {
 }
 
 {
-  const payloads: Array<{ confirmDiscard?: boolean; dialog?: Record<string, unknown> } | undefined> = [];
+  const payloads: Array<
+    { confirmDiscard?: boolean; dialog?: Record<string, unknown> } | undefined
+  > = [];
   const ctx = {
     capabilities: {
       pluginVersion: 'test',
       blockbenchVersion: 'test',
       formats: [{ format: 'Generic Model', animations: true, enabled: true }],
-      limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 }
+      limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 },
     },
     editor: {
       createProject: (
         _name: string,
         _formatId: string,
         _format: 'Generic Model',
-        payload?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+        payload?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
       ) => {
         payloads.push(payload);
         return null;
-      }
+      },
     },
     formats: {
       listFormats: () => [{ id: 'free', name: 'Generic Model' }],
-      getActiveFormatId: () => null
+      getActiveFormatId: () => null,
     },
     session: {
       create: () =>
         ({
           ok: true,
-          data: { id: 'p2', format: 'Generic Model', name: 'agent' }
-        } as const)
+          data: { id: 'p2', format: 'Generic Model', name: 'agent' },
+        }) as const,
     },
     ensureRevisionMatch: () => null,
     policies: {
       formatOverrides: undefined,
-      autoDiscardUnsaved: false
-    }
+      autoDiscardUnsaved: false,
+    },
   } as unknown as ProjectCreateContext;
 
   const res = runCreateProject(ctx, 'Generic Model', 'agent');

@@ -1,25 +1,13 @@
-import { COMMAND_RECEIPT_SCHEMA_VERSION as CURRENT_COMMAND_RECEIPT_SCHEMA_VERSION } from
-  '@ashfox/internal-contracts';
+import { COMMAND_RECEIPT_SCHEMA_VERSION as CURRENT_COMMAND_RECEIPT_SCHEMA_VERSION } from '@ashfox/internal-contracts';
 
-import type {
-  EntityId
-} from '../model';
+import type { EntityId } from '../model';
 import type { AssetProject } from '../project/asset';
-import type {
-  WorkspaceChangeSet,
-  WorkspaceEntrySelector
-} from '../project/workspace';
+import type { WorkspaceChangeSet, WorkspaceEntrySelector } from '../project/workspace';
 import type { InvariantFinding } from '../validation';
 
-export const COMMAND_RECEIPT_SCHEMA_VERSION =
-  CURRENT_COMMAND_RECEIPT_SCHEMA_VERSION;
+export const COMMAND_RECEIPT_SCHEMA_VERSION = CURRENT_COMMAND_RECEIPT_SCHEMA_VERSION;
 
-export const COMMAND_SOURCES = [
-  'web',
-  'agent',
-  'import',
-  'system'
-] as const;
+export const COMMAND_SOURCES = ['web', 'agent', 'import', 'system'] as const;
 export type CommandSource = (typeof COMMAND_SOURCES)[number];
 
 /** One explicit entry selection and one complete workspace change set. */
@@ -58,10 +46,9 @@ export const COMMAND_INVALIDATED_AREAS = [
   'uv',
   'animations',
   'validation',
-  'preview'
+  'preview',
 ] as const;
-export type InvalidatedArea =
-  (typeof COMMAND_INVALIDATED_AREAS)[number];
+export type InvalidatedArea = (typeof COMMAND_INVALIDATED_AREAS)[number];
 
 export interface CommandEffects {
   createdEntityIds: readonly EntityId[];
@@ -115,6 +102,4 @@ export interface CommandBatchFailure {
   findings?: readonly InvariantFinding[];
 }
 
-export type CommandBatchResult =
-  | CommandBatchSuccess
-  | CommandBatchFailure;
+export type CommandBatchResult = CommandBatchSuccess | CommandBatchFailure;

@@ -4,7 +4,7 @@ export const withGlobals = (overrides: Record<string, unknown>, run: () => void)
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -19,4 +19,3 @@ export const withGlobals = (overrides: Record<string, unknown>, run: () => void)
     }
   }
 };
-

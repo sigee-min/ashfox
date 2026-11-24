@@ -13,7 +13,7 @@ import {
   sanitizeAnimatorKeyframes,
   sanitizeClipKeyframes,
   type AnimatorLike,
-  type KeyframeLike
+  type KeyframeLike,
 } from '../../../../src/adapters/blockbench/animation/keyframes';
 
 assert.equal(resolveAnimationChannelKey('rot'), 'rotation');
@@ -24,7 +24,7 @@ assert.equal(resolveAnimationChannelKey('scale'), 'scale');
   const animator: AnimatorLike & Record<string, unknown> = {
     keyframes: [undefined, { time: 0 }, null],
     rotation: [1, { time: 1 }, undefined],
-    position: ['x', { time: 2 }]
+    position: ['x', { time: 2 }],
   };
   sanitizeAnimatorChannel(animator, 'rotation');
   sanitizeAnimatorChannels(animator, ['position']);
@@ -39,7 +39,7 @@ assert.equal(resolveAnimationChannelKey('scale'), 'scale');
 
 {
   const clip = {
-    keyframes: [null, { time: 1 }, undefined]
+    keyframes: [null, { time: 1 }, undefined],
   };
   sanitizeClipKeyframes(clip);
   assert.equal(Array.isArray(clip.keyframes), true);
@@ -58,7 +58,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
       const kf = { value, time, channel };
       created.push(kf);
       return kf as KeyframeLike;
-    }
+    },
   };
   const res = createTransformKeyframe(animator, 'rotation', 2, [1, 2, 3], 'step');
   assert.ok(res.keyframe);
@@ -75,7 +75,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
     addKeyframe: (data) => {
       addCalls.push(data);
       return { ...((data as Record<string, unknown>) ?? {}) } as KeyframeLike;
-    }
+    },
   };
   const res = createTransformKeyframe(animator, 'rotation', 5, [0, 1, 2], 'linear');
   assert.ok(res.keyframe);
@@ -90,7 +90,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
     },
     addKeyframe: () => {
       throw new Error('add failed');
-    }
+    },
   };
   const res = createTransformKeyframe(animator, 'rotation', 5, [0, 1, 2], 'linear');
   assert.equal(res.error, createErr);
@@ -99,7 +99,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
 {
   const transformKeyframes: KeyframeLike[] = [
     { time: 8, channel: 'rotation' } as KeyframeLike,
-    { time: 8.01, channel: 'position' } as KeyframeLike
+    { time: 8.01, channel: 'position' } as KeyframeLike,
   ];
   const animator: AnimatorLike = { keyframes: transformKeyframes };
   const matches = findExistingKeyframes(animator, 'rot', 8);
@@ -109,7 +109,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
 {
   const triggerKeyframes: KeyframeLike[] = [
     { time: 2, channel: 'sound' } as KeyframeLike,
-    { time: 2, channel: 'particle' } as KeyframeLike
+    { time: 2, channel: 'particle' } as KeyframeLike,
   ];
   const animator: AnimatorLike = { keyframes: triggerKeyframes };
   const matches = findExistingKeyframes(animator, 'sound', 2);
@@ -121,7 +121,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
   const keyframe: KeyframeLike = {
     set: (key, value) => {
       assigned[key] = value;
-    }
+    },
   };
   applyKeyframeValue(keyframe, [10, 20, 30], 'step');
   assert.deepEqual(assigned, { x: 10, y: 20, z: 30 });
@@ -142,7 +142,7 @@ assert.equal(lastTriggerKeyframeTime([{ time: 4, value: 'event' }]), 4);
   const keyframe: KeyframeLike = {
     set: (key, value) => {
       assigned[key] = value;
-    }
+    },
   };
   applyTriggerValue(keyframe, 'event.step');
   assert.equal(assigned.data_point, 'event.step');

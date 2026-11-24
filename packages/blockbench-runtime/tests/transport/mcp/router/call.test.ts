@@ -9,26 +9,23 @@ import { noopLog, registerAsync } from '../../../helpers';
 import { MCP_TOOL_NAME_REQUIRED, MCP_UNKNOWN_TOOL } from '../../../../src/shared/messages';
 import { DEFAULT_TOOL_REGISTRY } from '../../../../src/transport/mcp/tools';
 
-const createContext = (options?: {
-  executor?: ToolExecutor;
-  tools?: ToolRegistry;
-}): RpcContext => {
+const createContext = (options?: { executor?: ToolExecutor; tools?: ToolRegistry }): RpcContext => {
   const toolRegistry: ToolRegistry =
     options?.tools ??
     ({
       tools: [{ name: 'demo_tool', title: 'Demo', description: 'demo' }],
       map: new Map([['demo_tool', { name: 'demo_tool', title: 'Demo', description: 'demo' }]]),
       hash: 'demo',
-      count: 1
+      count: 1,
     } as unknown as ToolRegistry);
   return {
     executor: options?.executor ?? {
-      callTool: async () => ({ ok: true, data: { ok: true } })
+      callTool: async () => ({ ok: true, data: { ok: true } }),
     },
     log: noopLog,
     toolRegistry,
     sessions: new SessionStore(),
-    config: { path: '/mcp' }
+    config: { path: '/mcp' },
   };
 };
 
@@ -42,7 +39,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'tools/call', params: {} },
         session,
-        1
+        1,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -55,7 +52,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'tools/call', params: { name: 'missing', arguments: {} } },
         session,
-        2
+        2,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -72,16 +69,16 @@ registerAsync(
             callTool: async () => {
               executorCalls += 1;
               return { ok: true, data: {} };
-            }
-          }
+            },
+          },
         }),
         {
           jsonrpc: '2.0',
           method: 'tools/call',
-          params: { name: 'export', arguments: { format: 'gltf', destPath: 'retired.glb' } }
+          params: { name: 'export', arguments: { format: 'gltf', destPath: 'retired.glb' } },
         },
         session,
-        5
+        5,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -95,12 +92,12 @@ registerAsync(
       const outcome = await handleToolCall(
         createContext({
           executor: {
-            callTool: async () => ({ ok: true, data: { value: 42 } })
-          }
+            callTool: async () => ({ ok: true, data: { value: 42 } }),
+          },
         }),
         { jsonrpc: '2.0', method: 'tools/call', params: { name: 'demo_tool', arguments: {} } },
         session,
-        3
+        3,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -116,12 +113,12 @@ registerAsync(
           executor: {
             callTool: async () => {
               throw new Error('executor failed');
-            }
-          }
+            },
+          },
         }),
         { jsonrpc: '2.0', method: 'tools/call', params: { name: 'demo_tool', arguments: {} } },
         session,
-        4
+        4,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -130,5 +127,5 @@ registerAsync(
       assert.equal(result.isError, true);
       assert.ok(Array.isArray(result.content));
     }
-  })()
+  })(),
 );

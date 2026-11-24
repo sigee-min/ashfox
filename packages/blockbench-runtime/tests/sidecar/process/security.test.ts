@@ -9,13 +9,13 @@ const logger: Logger = {
   ...noopLog,
   error: (_message, meta) => {
     errorMeta = meta;
-  }
+  },
 };
 
 const sidecar = new SidecarProcess(
   { host: '0.0.0.0', port: 8787, path: '/mcp' },
   { handle: async () => ({ ok: true, data: {} }) } as never,
-  logger
+  logger,
 );
 
 assert.equal(sidecar.start(), false);

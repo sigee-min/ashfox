@@ -16,7 +16,13 @@ export const mergeRects = (rects: Rect[]): Rect | null => {
     maxX = Math.max(maxX, rect.x2);
     maxY = Math.max(maxY, rect.y2);
   });
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return null;
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(maxY)
+  )
+    return null;
   return { x1: minX, y1: minY, x2: maxX, y2: maxY };
 };
 
@@ -38,7 +44,7 @@ export const getTextureOpBounds = (op: TextureOpLike): OpBounds => {
         x1: Math.min(op.x, op.x + op.width),
         y1: Math.min(op.y, op.y + op.height),
         x2: Math.max(op.x, op.x + op.width),
-        y2: Math.max(op.y, op.y + op.height)
+        y2: Math.max(op.y, op.y + op.height),
       };
     case 'draw_line': {
       const lineWidth = Math.max(1, Math.trunc(op.lineWidth ?? 1));
@@ -47,7 +53,7 @@ export const getTextureOpBounds = (op: TextureOpLike): OpBounds => {
         x1: Math.min(op.x1, op.x2) - radius,
         y1: Math.min(op.y1, op.y2) - radius,
         x2: Math.max(op.x1, op.x2) + radius + 1,
-        y2: Math.max(op.y1, op.y2) + radius + 1
+        y2: Math.max(op.y1, op.y2) + radius + 1,
       };
     }
     default:
@@ -55,10 +61,14 @@ export const getTextureOpBounds = (op: TextureOpLike): OpBounds => {
   }
 };
 
-const doesBoundsIntersect = (a: Rect, b: Rect): boolean => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+const doesBoundsIntersect = (a: Rect, b: Rect): boolean =>
+  a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
 
-export const doesBoundsIntersectCanvas = (bounds: OpBounds, width: number, height: number): boolean =>
-  doesBoundsIntersect(bounds, { x1: 0, y1: 0, x2: width, y2: height });
+export const doesBoundsIntersectCanvas = (
+  bounds: OpBounds,
+  width: number,
+  height: number,
+): boolean => doesBoundsIntersect(bounds, { x1: 0, y1: 0, x2: width, y2: height });
 
 export const doesBoundsIntersectRects = (bounds: OpBounds, rects: Rect[]): boolean =>
   rects.some((rect) => doesBoundsIntersect(bounds, rect));
@@ -68,7 +78,7 @@ export const overlayPatchRects = (
   patchPixels: Uint8ClampedArray,
   rects: Rect[],
   width: number,
-  height: number
+  height: number,
 ) => {
   rects.forEach((rect) => {
     const startX = Math.max(0, Math.floor(rect.x1));
@@ -92,7 +102,7 @@ export const overlayPatchRectsPreserveTransparent = (
   patchPixels: Uint8ClampedArray,
   rects: Rect[],
   width: number,
-  height: number
+  height: number,
 ) => {
   rects.forEach((rect) => {
     const startX = Math.max(0, Math.floor(rect.x1));
@@ -122,7 +132,7 @@ export const overlayTextureSpaceRects = (
   textureSpacePixels: Uint8ClampedArray,
   rects: Rect[],
   width: number,
-  height: number
+  height: number,
 ) => {
   rects.forEach((rect) => {
     const startX = Math.max(0, Math.floor(rect.x1));
@@ -165,7 +175,10 @@ export const countOpaquePixels = (data: Uint8ClampedArray): number => {
   return count;
 };
 
-export const isSuspiciousOpaqueDrop = (beforeOpaquePixels: number, afterOpaquePixels: number): boolean => {
+export const isSuspiciousOpaqueDrop = (
+  beforeOpaquePixels: number,
+  afterOpaquePixels: number,
+): boolean => {
   if (!Number.isFinite(beforeOpaquePixels) || !Number.isFinite(afterOpaquePixels)) return false;
   if (beforeOpaquePixels < 256) return false;
   if (afterOpaquePixels >= beforeOpaquePixels) return false;

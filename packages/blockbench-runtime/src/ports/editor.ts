@@ -1,4 +1,9 @@
-import { FormatKind, RenderPreviewPayload, RenderPreviewResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  FormatKind,
+  RenderPreviewPayload,
+  RenderPreviewResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { AnimationTimePolicy } from '../domain/animation/timePolicy';
 import type { CubeFaceDirection, FaceUvMap } from '../domain/model';
 import type {
@@ -6,7 +11,7 @@ import type {
   TextureUsageQuery,
   TextureUsageEntry,
   TextureUsageCube,
-  TextureUsageUnresolved
+  TextureUsageUnresolved,
 } from '@ashfox/blockbench-contracts/types/textureUsage';
 
 export type { CubeFaceDirection, FaceUvMap } from '../domain/model';
@@ -14,7 +19,7 @@ import {
   TextureFrameOrderType,
   TexturePbrChannel,
   TextureRenderMode,
-  TextureRenderSides
+  TextureRenderSides,
 } from '@ashfox/blockbench-contracts/types/texture';
 
 export type Vec2 = [number, number];
@@ -42,7 +47,13 @@ export type TextureResolution = {
   height: number;
 };
 
-export type { TextureUsageResult, TextureUsageQuery, TextureUsageEntry, TextureUsageCube, TextureUsageUnresolved };
+export type {
+  TextureUsageResult,
+  TextureUsageQuery,
+  TextureUsageEntry,
+  TextureUsageCube,
+  TextureUsageUnresolved,
+};
 
 export type TextureMetaInput = {
   namespace?: string;
@@ -267,7 +278,7 @@ export interface EditorPort {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
   ) => ToolError | null;
   closeProject: (options?: { force?: boolean }) => ToolError | CloseProjectPending | null;
   importTexture: (params: ImportTextureCommand) => ToolError | null;
@@ -290,13 +301,21 @@ export interface EditorPort {
   deleteAnimation: (params: DeleteAnimationCommand) => ToolError | null;
   setKeyframes: (params: KeyframeCommand) => ToolError | null;
   setTriggerKeyframes: (params: TriggerKeyframeCommand) => ToolError | null;
-  renderPreview: (params: RenderPreviewPayload) => { result?: RenderPreviewResult; error?: ToolError };
+  renderPreview: (params: RenderPreviewPayload) => {
+    result?: RenderPreviewResult;
+    error?: ToolError;
+  };
   writeFile: (path: string, contents: string) => ToolError | null;
   listTextures: () => TextureStat[];
   getProjectTextureResolution: () => TextureResolution | null;
-  setProjectTextureResolution: (width: number, height: number, modifyUv?: boolean) => ToolError | null;
+  setProjectTextureResolution: (
+    width: number,
+    height: number,
+    modifyUv?: boolean,
+  ) => ToolError | null;
   setProjectUvPixelsPerBlock: (pixelsPerBlock: number) => ToolError | null;
-  getTextureUsage: (params: TextureUsageQuery) => { result?: TextureUsageResult; error?: ToolError };
+  getTextureUsage: (params: TextureUsageQuery) => {
+    result?: TextureUsageResult;
+    error?: ToolError;
+  };
 }
-
-

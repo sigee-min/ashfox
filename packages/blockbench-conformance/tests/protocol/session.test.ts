@@ -4,7 +4,7 @@ import { resolveSession } from '../../../blockbench-runtime/src/transport/mcp/ro
 import { SessionStore } from '../../../blockbench-runtime/src/transport/mcp/session';
 import {
   MCP_PROTOCOL_VERSION_MISMATCH,
-  MCP_SESSION_ID_REQUIRED
+  MCP_SESSION_ID_REQUIRED,
 } from '../../../blockbench-runtime/src/shared/messages';
 
 {
@@ -14,7 +14,7 @@ import {
     { jsonrpc: '2.0', method: 'tools/list' },
     1,
     undefined,
-    {}
+    {},
   );
   assert.equal(resolved.ok, true);
   if (resolved.ok) {
@@ -34,7 +34,7 @@ import {
     { jsonrpc: '2.0', method: 'custom/method' },
     2,
     undefined,
-    {}
+    {},
   );
   assert.equal(denied.ok, false);
   if (!denied.ok) {
@@ -51,7 +51,7 @@ import {
     { jsonrpc: '2.0', method: 'tools/list' },
     3,
     '2025-11-25',
-    { 'mcp-session-id': 'session-1' }
+    { 'mcp-session-id': 'session-1' },
   );
   assert.equal(mismatch.ok, false);
   if (!mismatch.ok) {

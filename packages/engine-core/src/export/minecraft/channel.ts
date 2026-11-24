@@ -1,24 +1,21 @@
-import type {
-  TransformChannel,
-  TransformKeyframe
-} from '../../model';
+import type { TransformChannel, TransformKeyframe } from '../../model';
 import type {
   MinecraftAnimationChannel,
   MinecraftAnimationCompileOptions,
   MinecraftAnimationKeyframe,
-  MinecraftAnimationVector
+  MinecraftAnimationVector,
 } from './types';
 import { optimizeMinecraftAnimationChannel } from './optimize';
 import {
   formatAnimationTimestamp,
   serializeAnimationScalar,
-  serializeAnimationVector
+  serializeAnimationVector,
 } from './values';
 
 const compileKeyframe = (
   keyframe: TransformKeyframe,
   property: TransformChannel['property'],
-  options: MinecraftAnimationCompileOptions
+  options: MinecraftAnimationCompileOptions,
 ): MinecraftAnimationVector | MinecraftAnimationKeyframe => {
   const vector = serializeAnimationVector(keyframe.value, property);
   const hasEnvelope =
@@ -36,40 +33,34 @@ const compileKeyframe = (
       ...(keyframe.postValue
         ? { post: serializeAnimationVector(keyframe.postValue, property) }
         : { post: vector }),
-      ...(keyframe.interpolation === 'catmullrom'
-        ? { lerp_mode: 'catmullrom' as const }
-        : {})
+      ...(keyframe.interpolation === 'catmullrom' ? { lerp_mode: 'catmullrom' as const } : {}),
     };
   }
 
   return {
     vector,
-    ...(keyframe.preValue
-      ? { pre: serializeAnimationVector(keyframe.preValue, property) }
-      : {}),
-    ...(keyframe.postValue
-      ? { post: serializeAnimationVector(keyframe.postValue, property) }
-      : {}),
+    ...(keyframe.preValue ? { pre: serializeAnimationVector(keyframe.preValue, property) } : {}),
+    ...(keyframe.postValue ? { post: serializeAnimationVector(keyframe.postValue, property) } : {}),
     ...(keyframe.easing
       ? {
           easing: keyframe.easing.type,
           ...(keyframe.easing.arguments
             ? {
                 easingArgs: keyframe.easing.arguments.map((argument) =>
-                  serializeAnimationScalar(argument, false)
-                )
+                  serializeAnimationScalar(argument, false),
+                ),
               }
-            : {})
+            : {}),
         }
       : keyframe.interpolation !== 'linear'
         ? { lerp_mode: keyframe.interpolation }
-        : {})
+        : {}),
   };
 };
 
 export const compileMinecraftAnimationChannel = (
   channel: TransformChannel,
-  options: MinecraftAnimationCompileOptions
+  options: MinecraftAnimationCompileOptions,
 ): MinecraftAnimationChannel => {
   const optimized = optimizeMinecraftAnimationChannel(channel);
   if (optimized.constant) {
@@ -80,7 +71,7 @@ export const compileMinecraftAnimationChannel = (
     result[formatAnimationTimestamp(keyframe.timeSeconds)] = compileKeyframe(
       keyframe,
       channel.property,
-      options
+      options,
     );
   }
   return result;

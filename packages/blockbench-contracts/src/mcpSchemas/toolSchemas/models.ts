@@ -8,8 +8,8 @@ const meshVertexSchema: JsonSchema = {
   additionalProperties: false,
   properties: {
     id: { type: 'string' },
-    pos: numberArray(3, 3)
-  }
+    pos: numberArray(3, 3),
+  },
 };
 
 const meshFaceSchema: JsonSchema = {
@@ -19,8 +19,8 @@ const meshFaceSchema: JsonSchema = {
   properties: {
     id: { type: 'string' },
     vertices: { type: 'array', minItems: 3, items: { type: 'string' } },
-    texture: { anyOf: [{ type: 'string' }, { type: 'boolean', enum: [false] }] }
-  }
+    texture: { anyOf: [{ type: 'string' }, { type: 'boolean', enum: [false] }] },
+  },
 };
 
 const meshUvPolicySchema: JsonSchema = {
@@ -31,14 +31,14 @@ const meshUvPolicySchema: JsonSchema = {
     texelDensity: {
       type: 'number',
       minimum: MESH_UV_POLICY_LIMITS.minTexelDensity,
-      maximum: MESH_UV_POLICY_LIMITS.maxTexelDensity
+      maximum: MESH_UV_POLICY_LIMITS.maxTexelDensity,
     },
     padding: {
       type: 'number',
       minimum: MESH_UV_POLICY_LIMITS.minPadding,
-      maximum: MESH_UV_POLICY_LIMITS.maxPadding
-    }
-  }
+      maximum: MESH_UV_POLICY_LIMITS.maxPadding,
+    },
+  },
 };
 
 export const modelToolSchemas: Record<string, JsonSchema> = {
@@ -56,8 +56,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       scale: numberArray(3, 3),
       visibility: { type: 'boolean' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   update_bone: {
     type: 'object',
@@ -74,8 +74,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       scale: numberArray(3, 3),
       visibility: { type: 'boolean' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   delete_bone: {
     type: 'object',
@@ -86,8 +86,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       ids: { type: 'array', minItems: 1, items: { type: 'string' } },
       names: { type: 'array', minItems: 1, items: { type: 'string' } },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   add_cube: {
     type: 'object',
@@ -108,8 +108,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       boxUv: { type: 'boolean' },
       uvOffset: numberArray(2, 2),
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   update_cube: {
     type: 'object',
@@ -131,8 +131,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       boxUv: { type: 'boolean' },
       uvOffset: numberArray(2, 2),
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   delete_cube: {
     type: 'object',
@@ -143,8 +143,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       ids: { type: 'array', minItems: 1, items: { type: 'string' } },
       names: { type: 'array', minItems: 1, items: { type: 'string' } },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   add_mesh: {
     type: 'object',
@@ -162,8 +162,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       vertices: { type: 'array', minItems: 3, items: meshVertexSchema },
       faces: { type: 'array', minItems: 1, items: meshFaceSchema },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   update_mesh: {
     type: 'object',
@@ -182,8 +182,8 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       vertices: { type: 'array', minItems: 3, items: meshVertexSchema },
       faces: { type: 'array', minItems: 1, items: meshFaceSchema },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   delete_mesh: {
     type: 'object',
@@ -194,14 +194,14 @@ export const modelToolSchemas: Record<string, JsonSchema> = {
       ids: { type: 'array', minItems: 1, items: { type: 'string' } },
       names: { type: 'array', minItems: 1, items: { type: 'string' } },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   validate: {
     type: 'object',
     additionalProperties: false,
     properties: {
-      ...stateProps
-    }
-  }
+      ...stateProps,
+    },
+  },
 };

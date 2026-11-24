@@ -7,7 +7,7 @@ const {
   DevelopmentManifestError,
   DEVELOPMENT_MANIFEST_SCHEMA_VERSION,
   parseDevelopmentManifest,
-  readDevelopmentManifest
+  readDevelopmentManifest,
 } = require('./index');
 const {
   assertClosedSchemaObjects,
@@ -19,31 +19,23 @@ const {
   repoRoot,
   schema,
   schemaValidator,
-  source
+  source,
 } = require('./harness');
-const rootPackage = JSON.parse(
-  fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
-);
+const rootPackage = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
 const continuousIntegration = fs.readFileSync(
   path.join(repoRoot, '.github/workflows/ci.yml'),
-  'utf8'
+  'utf8',
 );
 
 const manifest = readDevelopmentManifest(repoRoot);
 assert.equal(
   schemaValidator(rawManifest),
   true,
-  `canonical manifest must satisfy its JSON Schema: ${JSON.stringify(
-    schemaValidator.errors
-  )}`
+  `canonical manifest must satisfy its JSON Schema: ${JSON.stringify(schemaValidator.errors)}`,
 );
 assert.equal(manifest.schemaVersion, DEVELOPMENT_MANIFEST_SCHEMA_VERSION);
-assert.equal(
-  manifest.productExperience.interactionModel,
-  'ai-authored-ai-compiled-human-observed'
-);
-assert.equal(manifest.productExperience.canonicalAuthority,
-  'native-ashfox-source');
+assert.equal(manifest.productExperience.interactionModel, 'ai-authored-ai-compiled-human-observed');
+assert.equal(manifest.productExperience.canonicalAuthority, 'native-ashfox-source');
 assert.deepEqual(manifest.productExperience.projectFile, {
   extension: '.ashfoxworkspace',
   mediaType: 'application/vnd.ashfox.workspace+json',
@@ -51,12 +43,14 @@ assert.deepEqual(manifest.productExperience.projectFile, {
   bom: 'forbidden',
   authority: 'optional-repository-configuration',
   loadMode: 'read-validate-build-atomic',
-  compiledState: 'derived-files-only'
+  compiledState: 'derived-files-only',
 });
 assert.equal(manifest.productExperience.agentDecision.compilationAuthority, 'agent');
 assert.equal(manifest.productExperience.agentDecision.confirmationRequired, false);
-assert.equal(manifest.productExperience.agentCapabilities.includes(
-  'apply-workspace-change-set'), true);
+assert.equal(
+  manifest.productExperience.agentCapabilities.includes('apply-workspace-change-set'),
+  true,
+);
 assert.equal(manifest.productExperience.deliveryAuthority, 'human');
 assert.deepEqual(manifest.versioning.assetWorkspace, {
   version: 2,
@@ -67,7 +61,7 @@ assert.deepEqual(manifest.versioning.assetWorkspace, {
   compiler: 'packages/engine-core/src/compiler/directory/compile.ts',
   releaseState: 'unreleased',
   replacementPolicy: 'apply-complete-change-set-atomically',
-  legacyAliases: 'forbidden'
+  legacyAliases: 'forbidden',
 });
 assert.equal(manifest.quality.maxSourceFileLines, 600);
 assert.equal(manifest.quality.maxCodeFileStemLength, 20);
@@ -82,7 +76,7 @@ assert.deepEqual(manifest.quality.ownerLayout, {
   maxTestFileLines: 500,
   testOwnership: 'owner-directory-required',
   testDiscovery: 'recursive-stable-nonempty',
-  testOwners: rawManifest.quality.ownerLayout.testOwners
+  testOwners: rawManifest.quality.ownerLayout.testOwners,
 });
 assert.deepEqual(manifest.architecture.workspaceSourceScopes, ['apps', 'packages']);
 assert.equal(manifest.architecture.forbiddenDependencies.length, 9);
@@ -112,45 +106,40 @@ assert.throws(() => {
 assert.equal(
   source,
   `${JSON.stringify(rawManifest, null, 2)}\n`,
-  'root manifest stays canonically formatted for stable diffs'
+  'root manifest stays canonically formatted for stable diffs',
 );
 assert.deepEqual(
   parseDevelopmentManifest(source, repoRoot),
   manifest,
-  'parsing the same canonical source is deterministic'
+  'parsing the same canonical source is deterministic',
 );
 
 assert.equal(schema.$schema, 'https://json-schema.org/draft/2020-12/schema');
 assert.equal(schema.properties.schemaVersion.const, DEVELOPMENT_MANIFEST_SCHEMA_VERSION);
-assert.equal(
-  schema.properties.productExperience.$ref,
-  '#/$defs/productExperience'
-);
+assert.equal(schema.properties.productExperience.$ref, '#/$defs/productExperience');
 assert.deepEqual(
   exactPrefixValues(schema.$defs.humanCapabilities),
-  rawManifest.productExperience.humanCapabilities
+  rawManifest.productExperience.humanCapabilities,
 );
 assert.deepEqual(
   exactPrefixValues(schema.$defs.agentCapabilities),
-  rawManifest.productExperience.agentCapabilities
+  rawManifest.productExperience.agentCapabilities,
 );
 assert.deepEqual(
   exactPrefixValues(schema.$defs.forbiddenHumanAuthoring),
-  rawManifest.productExperience.forbiddenHumanAuthoring
+  rawManifest.productExperience.forbiddenHumanAuthoring,
 );
 assert.deepEqual(
-  exactPrefixValues(
-    schema.$defs.agentDecision.properties.requiredEvidence
-  ),
-  rawManifest.productExperience.agentDecision.requiredEvidence
+  exactPrefixValues(schema.$defs.agentDecision.properties.requiredEvidence),
+  rawManifest.productExperience.agentDecision.requiredEvidence,
 );
 assert.deepEqual(
   exactPrefixValues(schema.$defs.engineeringTesting.properties.statefulPaths),
-  rawManifest.engineering.testing.statefulPaths
+  rawManifest.engineering.testing.statefulPaths,
 );
 assert.deepEqual(
   schema.$defs.forbiddenSourcePattern.properties.id.enum,
-  rawManifest.quality.forbiddenSourcePatterns.map((policy) => policy.id)
+  rawManifest.quality.forbiddenSourcePatterns.map((policy) => policy.id),
 );
 assert.equal(schema.$defs.engineering.properties.exceptions.maxItems, 0);
 assert.equal(schema.$defs.engineering.properties.exceptions.items, false);
@@ -158,37 +147,36 @@ assert.equal(schema.$defs.engineeringException, undefined);
 assertClosedSchemaObjects(schema);
 assert.equal(
   rootPackage.scripts['quality:manifest'],
-  'node scripts/quality/manifest/test.js && ' +
-    'node scripts/quality/manifest/index.js'
+  'node scripts/quality/manifest/test.js && ' + 'node scripts/quality/manifest/index.js',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
   /(?:^|&&\s*)npm run quality:manifest(?:\s*&&|$)/,
-  'quality:check must execute the manifest hard gate'
+  'quality:check must execute the manifest hard gate',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
   /(?:^|&&\s*)npm run test:discovery(?:\s*&&|$)/,
-  'quality:check must execute the stable recursive discovery contract'
+  'quality:check must execute the stable recursive discovery contract',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
   /(?:^|&&\s*)npm run typecheck:tests(?:\s*&&|$)/,
-  'quality:check must typecheck every test contract in strict mode'
+  'quality:check must typecheck every test contract in strict mode',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
   /(?:^|&&\s*)npm run quality:commits(?:\s*&&|$)/,
-  'quality:check must enforce manifest commit conventions'
+  'quality:check must enforce manifest commit conventions',
 );
 assert.equal(
   rootPackage.scripts['release:validate'],
-  'node scripts/release/validate.test.js && node scripts/release/publish.test.js && node scripts/release/stable.test.js && node scripts/release/validate.js'
+  'node scripts/release/validate.test.js && node scripts/release/publish.test.js && node scripts/release/stable.test.js && node scripts/release/validate.js',
 );
 assert.match(
   continuousIntegration,
   /run:\s*npm run quality:check/,
-  'CI must inherit the manifest gate through quality:check'
+  'CI must inherit the manifest gate through quality:check',
 );
 
 const legacyVersion = copyManifest();
@@ -205,42 +193,24 @@ changedInteractionModel.productExperience.interactionModel = 'human-authored';
 expectInvalid(changedInteractionModel, 'productExperience.interactionModel');
 
 const archivedProjectFile = copyManifest();
-archivedProjectFile.productExperience.projectFile.authority =
-  'compiled-project-archive';
-expectInvalid(
-  archivedProjectFile,
-  'productExperience.projectFile.authority'
-);
+archivedProjectFile.productExperience.projectFile.authority = 'compiled-project-archive';
+expectInvalid(archivedProjectFile, 'productExperience.projectFile.authority');
 
 const binaryProjectFile = copyManifest();
-binaryProjectFile.productExperience.projectFile.mediaType =
-  'application/zip';
-expectInvalid(
-  binaryProjectFile,
-  'productExperience.projectFile.mediaType'
-);
+binaryProjectFile.productExperience.projectFile.mediaType = 'application/zip';
+expectInvalid(binaryProjectFile, 'productExperience.projectFile.mediaType');
 
 const reorderedHumanCapabilities = copyManifest();
 reorderedHumanCapabilities.productExperience.humanCapabilities.reverse();
-expectInvalid(
-  reorderedHumanCapabilities,
-  'productExperience.humanCapabilities'
-);
+expectInvalid(reorderedHumanCapabilities, 'productExperience.humanCapabilities');
 
 const missingReviewEvidence = copyManifest();
 missingReviewEvidence.productExperience.agentDecision.requiredEvidence.pop();
-expectInvalid(
-  missingReviewEvidence,
-  'productExperience.agentDecision.requiredEvidence'
-);
+expectInvalid(missingReviewEvidence, 'productExperience.agentDecision.requiredEvidence');
 
 const humanConfirmationRequired = copyManifest();
-humanConfirmationRequired.productExperience.agentDecision
-  .confirmationRequired = true;
-expectInvalid(
-  humanConfirmationRequired,
-  'productExperience.agentDecision.confirmationRequired'
-);
+humanConfirmationRequired.productExperience.agentDecision.confirmationRequired = true;
+expectInvalid(humanConfirmationRequired, 'productExperience.agentDecision.confirmationRequired');
 
 const unsortedPrinciples = copyManifest();
 unsortedPrinciples.engineering.principles.reverse();
@@ -248,10 +218,7 @@ expectInvalid(unsortedPrinciples, 'engineering.principles[0].id');
 
 const unknownEngineeringEnforcer = copyManifest();
 unknownEngineeringEnforcer.engineering.principles[0].enforcedBy = ['unknown'];
-expectInvalid(
-  unknownEngineeringEnforcer,
-  'engineering.principles[0].enforcedBy[0]'
-);
+expectInvalid(unknownEngineeringEnforcer, 'engineering.principles[0].enforcedBy[0]');
 
 const forbiddenException = copyManifest();
 forbiddenException.engineering.exceptions.push({
@@ -259,7 +226,7 @@ forbiddenException.engineering.exceptions.push({
   path: 'package.json',
   reason: 'Temporary compatibility bridge.',
   owner: 'engine',
-  expiresOn: '2026-12-31'
+  expiresOn: '2026-12-31',
 });
 expectInvalid(forbiddenException, 'engineering.exceptions');
 
@@ -273,54 +240,31 @@ expectInvalid(mutableVersionOwner, 'versioning.product.changeOwner');
 
 const unknownHandoffGate = copyManifest();
 unknownHandoffGate.workflow.verification.beforeHandoff = ['npm run lint'];
-expectInvalid(
-  unknownHandoffGate,
-  'workflow.verification.beforeHandoff'
-);
+expectInvalid(unknownHandoffGate, 'workflow.verification.beforeHandoff');
 expectSchemaInvalid(unknownHandoffGate, 'unknown handoff verification gate');
 
 const unknownPullRequestGate = copyManifest();
-unknownPullRequestGate.workflow.verification.beforePullRequest = [
-  'npm run test'
-];
-expectInvalid(
-  unknownPullRequestGate,
-  'workflow.verification.beforePullRequest'
-);
-expectSchemaInvalid(
-  unknownPullRequestGate,
-  'unknown pull-request verification gate'
-);
+unknownPullRequestGate.workflow.verification.beforePullRequest = ['npm run test'];
+expectInvalid(unknownPullRequestGate, 'workflow.verification.beforePullRequest');
+expectSchemaInvalid(unknownPullRequestGate, 'unknown pull-request verification gate');
 
 const unknownSynchronizedFile = copyManifest();
 unknownSynchronizedFile.versioning.product.synchronizedFiles = [
   '.github/release-please/manifest.json',
-  'packages/engine-core/package.json'
+  'packages/engine-core/package.json',
 ];
-expectInvalid(
-  unknownSynchronizedFile,
-  'versioning.product.synchronizedFiles'
-);
-expectSchemaInvalid(
-  unknownSynchronizedFile,
-  'unknown synchronized version file'
-);
+expectInvalid(unknownSynchronizedFile, 'versioning.product.synchronizedFiles');
+expectSchemaInvalid(unknownSynchronizedFile, 'unknown synchronized version file');
 
 const mutableAssetCompiler = copyManifest();
 mutableAssetCompiler.versioning.assetWorkspace.compiler =
   'packages/engine-core/src/textures/textureRecipe/raster.ts';
-expectInvalid(
-  mutableAssetCompiler,
-  'versioning.assetWorkspace.compiler'
-);
+expectInvalid(mutableAssetCompiler, 'versioning.assetWorkspace.compiler');
 expectSchemaInvalid(mutableAssetCompiler, 'unsupported asset compiler');
 
 const deliveryMayMutate = copyManifest();
 deliveryMayMutate.versioning.deliveryTargets.canonicalMutation = true;
-expectInvalid(
-  deliveryMayMutate,
-  'versioning.deliveryTargets.canonicalMutation'
-);
+expectInvalid(deliveryMayMutate, 'versioning.deliveryTargets.canonicalMutation');
 
 const excessiveFunctionLimit = copyManifest();
 excessiveFunctionLimit.quality.maxFunctionLines = 501;
@@ -332,25 +276,16 @@ expectInvalid(invalidFileStemLimit, 'quality.maxCodeFileStemLength');
 
 const invalidTestStemLimit = copyManifest();
 invalidTestStemLimit.quality.ownerLayout.maxTestFileStemLength = 0;
-expectInvalid(
-  invalidTestStemLimit,
-  'quality.ownerLayout.maxTestFileStemLength'
-);
+expectInvalid(invalidTestStemLimit, 'quality.ownerLayout.maxTestFileStemLength');
 
 const invalidTestFileLimit = copyManifest();
 invalidTestFileLimit.quality.ownerLayout.maxTestFileLines = 0;
-expectInvalid(
-  invalidTestFileLimit,
-  'quality.ownerLayout.maxTestFileLines'
-);
+expectInvalid(invalidTestFileLimit, 'quality.ownerLayout.maxTestFileLines');
 expectSchemaInvalid(invalidTestFileLimit, 'non-positive test file limit');
 
 const excessiveTestFileLimit = copyManifest();
 excessiveTestFileLimit.quality.ownerLayout.maxTestFileLines = 601;
-expectInvalid(
-  excessiveTestFileLimit,
-  'quality.ownerLayout.maxTestFileLines'
-);
+expectInvalid(excessiveTestFileLimit, 'quality.ownerLayout.maxTestFileLines');
 
 const invalidTestStemForm = copyManifest();
 invalidTestStemForm.quality.ownerLayout.testFileStem = 'free-form';
@@ -368,14 +303,11 @@ expectInvalid(unsortedTestOwners, 'quality.ownerLayout.testOwners');
 
 const unsortedTestRoots = copyManifest();
 const multiRootOwner = unsortedTestRoots.quality.ownerLayout.testOwners.findIndex(
-  (owner) => owner.roots.length > 1
+  (owner) => owner.roots.length > 1,
 );
 assert.ok(multiRootOwner >= 0);
 unsortedTestRoots.quality.ownerLayout.testOwners[multiRootOwner].roots.reverse();
-expectInvalid(
-  unsortedTestRoots,
-  `quality.ownerLayout.testOwners[${multiRootOwner}].roots`
-);
+expectInvalid(unsortedTestRoots, `quality.ownerLayout.testOwners[${multiRootOwner}].roots`);
 
 const mutableTestOwnership = copyManifest();
 mutableTestOwnership.quality.ownerLayout.testOwnership = 'recommended';
@@ -391,47 +323,34 @@ expectInvalid(reorderedSourcePatterns, 'quality.forbiddenSourcePatterns[0].id');
 
 const unknownSourcePatternKey = copyManifest();
 unknownSourcePatternKey.quality.forbiddenSourcePatterns[0].reason = 'unsafe';
-expectInvalid(
-  unknownSourcePatternKey,
-  'quality.forbiddenSourcePatterns[0]'
-);
+expectInvalid(unknownSourcePatternKey, 'quality.forbiddenSourcePatterns[0]');
 
 const sourcePatternAllowanceOutsideScope = copyManifest();
-const consolePolicy = sourcePatternAllowanceOutsideScope.quality
-  .forbiddenSourcePatterns.find((policy) => policy.id === 'console-in-src');
+const consolePolicy = sourcePatternAllowanceOutsideScope.quality.forbiddenSourcePatterns.find(
+  (policy) => policy.id === 'console-in-src',
+);
 consolePolicy.scope = ['apps/'];
 expectInvalid(
   sourcePatternAllowanceOutsideScope,
-  `quality.forbiddenSourcePatterns[${sourcePatternAllowanceOutsideScope.quality.forbiddenSourcePatterns.indexOf(consolePolicy)}].allowedPaths[0]`
+  `quality.forbiddenSourcePatterns[${sourcePatternAllowanceOutsideScope.quality.forbiddenSourcePatterns.indexOf(consolePolicy)}].allowedPaths[0]`,
 );
 
 const unscannedSourcePatternScope = copyManifest();
-unscannedSourcePatternScope.quality.forbiddenSourcePatterns[0].scope = [
-  'docs/'
-];
-expectInvalid(
-  unscannedSourcePatternScope,
-  'quality.forbiddenSourcePatterns[0].scope[0]'
-);
+unscannedSourcePatternScope.quality.forbiddenSourcePatterns[0].scope = ['docs/'];
+expectInvalid(unscannedSourcePatternScope, 'quality.forbiddenSourcePatterns[0].scope[0]');
 
 const uncoveredWorkspace = copyManifest();
 uncoveredWorkspace.architecture.workspaceSourceScopes = ['apps'];
-expectInvalid(
-  uncoveredWorkspace,
-  'architecture.workspaceSourceScopes'
-);
+expectInvalid(uncoveredWorkspace, 'architecture.workspaceSourceScopes');
 
 const forbiddenCurrentWorkspace = copyManifest();
 forbiddenCurrentWorkspace.architecture.workspacePolicy.forbidden = [
   'apps/site',
   'apps/worker',
   'packages/backend-core',
-  'packages/backend-engine'
+  'packages/backend-engine',
 ];
-expectInvalid(
-  forbiddenCurrentWorkspace,
-  'architecture.workspacePolicy.forbidden'
-);
+expectInvalid(forbiddenCurrentWorkspace, 'architecture.workspacePolicy.forbidden');
 
 const unknownWorkspacePolicyKey = copyManifest();
 unknownWorkspacePolicyKey.architecture.workspacePolicy.optional = [];
@@ -442,20 +361,15 @@ unsortedTombstones.architecture.tombstones.reverse();
 expectInvalid(unsortedTombstones, 'architecture.tombstones');
 
 const duplicateDependencyPolicyValue = copyManifest();
-duplicateDependencyPolicyValue.architecture.packageDependencyPolicies[0]
-  .values = ['marked', 'marked'];
-expectInvalid(
-  duplicateDependencyPolicyValue,
-  'architecture.packageDependencyPolicies[0].values'
-);
+duplicateDependencyPolicyValue.architecture.packageDependencyPolicies[0].values = [
+  'marked',
+  'marked',
+];
+expectInvalid(duplicateDependencyPolicyValue, 'architecture.packageDependencyPolicies[0].values');
 
 const missingImportBoundarySource = copyManifest();
-missingImportBoundarySource.architecture.sourceImportBoundaries[0].source =
-  'apps/absent/';
-expectInvalid(
-  missingImportBoundarySource,
-  'architecture.sourceImportBoundaries[0].source'
-);
+missingImportBoundarySource.architecture.sourceImportBoundaries[0].source = 'apps/absent/';
+expectInvalid(missingImportBoundarySource, 'architecture.sourceImportBoundaries[0].source');
 
 const unsortedRules = copyManifest();
 unsortedRules.architecture.forbiddenDependencies.reverse();
@@ -464,20 +378,13 @@ expectInvalid(unsortedRules, 'architecture.forbiddenDependencies');
 const duplicateTarget = copyManifest();
 duplicateTarget.architecture.forbiddenDependencies[2].targets = [
   'packages/blockbench-runtime/src/plugin/',
-  'packages/blockbench-runtime/src/plugin/'
+  'packages/blockbench-runtime/src/plugin/',
 ];
-expectInvalid(
-  duplicateTarget,
-  'architecture.forbiddenDependencies[2].targets'
-);
+expectInvalid(duplicateTarget, 'architecture.forbiddenDependencies[2].targets');
 
 const missingSourceDirectory = copyManifest();
-missingSourceDirectory.architecture.forbiddenDependencies[0].source =
-  'apps/cli/src/absent/';
-expectInvalid(
-  missingSourceDirectory,
-  'architecture.forbiddenDependencies[0].source'
-);
+missingSourceDirectory.architecture.forbiddenDependencies[0].source = 'apps/cli/src/absent/';
+expectInvalid(missingSourceDirectory, 'architecture.forbiddenDependencies[0].source');
 
 const reorderedRoot = {
   schemaVersion: rawManifest.schemaVersion,
@@ -487,19 +394,17 @@ const reorderedRoot = {
   workflow: rawManifest.workflow,
   versioning: rawManifest.versioning,
   quality: rawManifest.quality,
-  architecture: rawManifest.architecture
+  architecture: rawManifest.architecture,
 };
 expectInvalid(reorderedRoot, '$');
 
 assert.throws(
   () => parseDevelopmentManifest(JSON.stringify(rawManifest), repoRoot),
-  (error) =>
-    error instanceof DevelopmentManifestError && error.location === '$'
+  (error) => error instanceof DevelopmentManifestError && error.location === '$',
 );
 assert.throws(
   () => parseDevelopmentManifest('{"schemaVersion":1,}', repoRoot),
-  (error) =>
-    error instanceof DevelopmentManifestError && error.location === '$'
+  (error) => error instanceof DevelopmentManifestError && error.location === '$',
 );
 
 console.log('development manifest contract ok');

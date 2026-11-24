@@ -12,12 +12,18 @@ import {
   ReadTexturePayload,
   ReadTextureResult,
   TextureUsageResult,
-  ToolError
+  ToolError,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { ProjectSession, SessionState } from '../../session';
 import { CubeFaceDirection, EditorPort, FaceUvMap, TextureSource } from '../../ports/editor';
 import { TextureMeta } from '@ashfox/blockbench-contracts/types/texture';
-import { runAutoUvAtlas, runPaintFaces, runPaintMeshFace, runPaintTexture, TextureToolContext } from '../textureTools';
+import {
+  runAutoUvAtlas,
+  runPaintFaces,
+  runPaintMeshFace,
+  runPaintTexture,
+  TextureToolContext,
+} from '../textureTools';
 import { ok, fail, UsecaseResult } from '../result';
 import { TextureWriteService } from './write';
 import { TextureReadService } from './read';
@@ -81,31 +87,31 @@ export class TextureService {
       editor: this.editor,
       getSnapshot: this.getSnapshot,
       ensureActive: this.ensureActive,
-      ensureRevisionMatch: this.ensureRevisionMatch
+      ensureRevisionMatch: this.ensureRevisionMatch,
     });
     this.textureReader = new TextureReadService({
       editor: this.editor,
       ensureActive: this.ensureActive,
-      tmpStore: this.tmpStore
+      tmpStore: this.tmpStore,
     });
     this.resolutionService = new TextureResolutionService({
       editor: this.editor,
       capabilities: this.capabilities,
       ensureActive: this.ensureActive,
-      ensureRevisionMatch: this.ensureRevisionMatch
+      ensureRevisionMatch: this.ensureRevisionMatch,
     });
     this.assignmentService = new TextureAssignmentService({
       editor: this.editor,
       getSnapshot: this.getSnapshot,
       ensureActive: this.ensureActive,
-      ensureRevisionMatch: this.ensureRevisionMatch
+      ensureRevisionMatch: this.ensureRevisionMatch,
     });
     this.uvService = new TextureUvService({
       editor: this.editor,
       getSnapshot: this.getSnapshot,
       ensureActive: this.ensureActive,
       ensureRevisionMatch: this.ensureRevisionMatch,
-      getUvPolicyConfig: this.getUvPolicyConfig
+      getUvPolicyConfig: this.getUvPolicyConfig,
     });
   }
 
@@ -122,9 +128,10 @@ export class TextureService {
     return this.resolutionService.setProjectTextureResolution(payload);
   }
 
-  getTextureUsage(
-    payload: { textureId?: string; textureName?: string }
-  ): UsecaseResult<TextureUsageResult> {
+  getTextureUsage(payload: {
+    textureId?: string;
+    textureName?: string;
+  }): UsecaseResult<TextureUsageResult> {
     return withActiveOnly(this.ensureActive, () => {
       const selectorErr = selectorError(payload.textureId, payload.textureName);
       if (selectorErr) return fail(selectorErr);
@@ -134,7 +141,11 @@ export class TextureService {
     });
   }
 
-  preflightTexture(payload: { textureId?: string; textureName?: string; includeUsage?: boolean }): UsecaseResult<PreflightTextureResult> {
+  preflightTexture(payload: {
+    textureId?: string;
+    textureName?: string;
+    includeUsage?: boolean;
+  }): UsecaseResult<PreflightTextureResult> {
     return runTexturePreflight(
       {
         ensureActive: this.ensureActive,
@@ -142,9 +153,9 @@ export class TextureService {
         editor: this.editor,
         capabilities: this.capabilities,
         getSnapshot: this.getSnapshot,
-        getUvPolicyConfig: this.getUvPolicyConfig
+        getUvPolicyConfig: this.getUvPolicyConfig,
       },
-      payload
+      payload,
     );
   }
 
@@ -180,36 +191,44 @@ export class TextureService {
         capabilities: this.capabilities,
         editor: this.editor,
         textureRenderer: this.textureRenderer,
-        importTexture: (nextPayload) => this.textureWriter.importTexture(nextPayload)
+        importTexture: (nextPayload) => this.textureWriter.importTexture(nextPayload),
       },
-      payload
+      payload,
     );
   }
 
-  importTexture(payload: {
-    id?: string;
-    name: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  importTexture(
+    payload: {
+      id?: string;
+      name: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.textureWriter.importTexture(payload);
   }
 
-  updateTexture(payload: {
-    id?: string;
-    name?: string;
-    newName?: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  updateTexture(
+    payload: {
+      id?: string;
+      name?: string;
+      newName?: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.textureWriter.updateTexture(payload);
   }
 
-  deleteTexture(payload: { id?: string; name?: string; ifRevision?: string }): UsecaseResult<{ id: string; name: string }> {
+  deleteTexture(payload: {
+    id?: string;
+    name?: string;
+    ifRevision?: string;
+  }): UsecaseResult<{ id: string; name: string }> {
     return this.textureWriter.deleteTexture(payload);
   }
 
@@ -228,7 +247,12 @@ export class TextureService {
     cubeNames?: string[];
     faces?: CubeFaceDirection[];
     ifRevision?: string;
-  }): UsecaseResult<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }> {
+  }): UsecaseResult<{
+    textureId?: string;
+    textureName: string;
+    cubeCount: number;
+    faces?: CubeFaceDirection[];
+  }> {
     return this.assignmentService.assignTexture(payload);
   }
 
@@ -262,7 +286,7 @@ export class TextureService {
       createBlankTexture: (payload) => this.createBlankTexture(payload),
       preflightTexture: (payload) => this.preflightTexture(payload),
       autoUvAtlas: (payload) => this.autoUvAtlas(payload),
-      runWithoutRevisionGuard: (fn) => this.runWithoutRevisionGuard?.(fn) ?? fn()
+      runWithoutRevisionGuard: (fn) => this.runWithoutRevisionGuard?.(fn) ?? fn(),
     };
   }
 
@@ -276,8 +300,3 @@ export class TextureService {
     return null;
   }
 }
-
-
-
-
-

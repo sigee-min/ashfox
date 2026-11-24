@@ -7,22 +7,29 @@ const updateViewOptionsByEffect: Partial<Record<ViewportEffect, CanvasUpdateView
   geometry: {
     element_aspects: { geometry: true, transform: true, faces: true, uv: true, visibility: true },
     group_aspects: { transform: true, visibility: true },
-    selection: true
+    selection: true,
   },
   texture: {
     element_aspects: { faces: true, uv: true, painting_grid: true },
-    selection: true
+    selection: true,
   },
   animation: {
     element_aspects: { transform: true, faces: true, geometry: true, visibility: true },
     group_aspects: { transform: true, visibility: true },
-    selection: true
+    selection: true,
   },
   project: {
-    element_aspects: { faces: true, geometry: true, painting_grid: true, transform: true, uv: true, visibility: true },
+    element_aspects: {
+      faces: true,
+      geometry: true,
+      painting_grid: true,
+      transform: true,
+      uv: true,
+      visibility: true,
+    },
     group_aspects: { transform: true, visibility: true },
-    selection: true
-  }
+    selection: true,
+  },
 };
 
 const fallbackByEffect: Record<ViewportEffect, CanvasFallbackStrategy> = {
@@ -51,12 +58,12 @@ const fallbackByEffect: Record<ViewportEffect, CanvasFallbackStrategy> = {
     return changed || runCanvasCall(canvas.updateAll);
   },
   project: (canvas) => runCanvasCall(canvas.updateAll),
-  none: () => false
+  none: () => false,
 };
 
 export const invalidateCanvas = (
   canvas: BlockbenchCanvasApi | undefined,
-  effect: ViewportEffect
+  effect: ViewportEffect,
 ): boolean => {
   if (!canvas) return false;
   const updateViewOptions = updateViewOptionsByEffect[effect];
@@ -66,7 +73,10 @@ export const invalidateCanvas = (
   return fallbackByEffect[effect](canvas);
 };
 
-const runCanvasCall = <TArgs extends unknown[]>(fn: ((...args: TArgs) => void) | undefined, ...args: TArgs): boolean => {
+const runCanvasCall = <TArgs extends unknown[]>(
+  fn: ((...args: TArgs) => void) | undefined,
+  ...args: TArgs
+): boolean => {
   if (typeof fn !== 'function') return false;
   fn(...args);
   return true;

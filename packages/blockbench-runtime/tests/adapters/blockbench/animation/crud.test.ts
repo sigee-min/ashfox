@@ -5,7 +5,7 @@ import {
   runCreateAnimation,
   runDeleteAnimation,
   runSetTriggerKeyframes,
-  runUpdateAnimation
+  runUpdateAnimation,
 } from '../../../../src/adapters/blockbench/animation/animationCommands';
 import { noopLog } from '../../../helpers';
 
@@ -15,7 +15,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -34,18 +34,18 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 {
   withGlobals(
     {
-      Animation: undefined
+      Animation: undefined,
     },
     () => {
       const err = runCreateAnimation(noopLog, {
         name: 'idle',
         length: 1,
         loop: true,
-        fps: 24
+        fps: 24,
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -59,32 +59,32 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     {
       Animation: ThrowingAnimation,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runCreateAnimation(noopLog, {
         name: 'idle',
         length: 1,
         loop: true,
-        fps: 24
+        fps: 24,
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.context, 'animation_create');
-    }
+    },
   );
 }
 
 {
   withGlobals(
     {
-      Animations: []
+      Animations: [],
     },
     () => {
       const err = runUpdateAnimation(noopLog, { name: 'idle', newName: 'walk' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -99,13 +99,13 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     length: 1,
     loop: 'once',
-    snapping: 24
+    snapping: 24,
   };
   withGlobals(
     {
       Animations: [clip],
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runUpdateAnimation(noopLog, {
@@ -114,7 +114,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         newName: 'walk',
         length: 2,
         loop: true,
-        fps: 12
+        fps: 12,
       });
       assert.equal(err, null);
       assert.equal(clip.ashfoxId, 'anim_idle');
@@ -122,7 +122,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       assert.equal(clip.length, 2);
       assert.equal(clip.loop, 'loop');
       assert.equal(clip.snapping, 12);
-    }
+    },
   );
 }
 
@@ -131,24 +131,24 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     length: 1,
     loop: false,
-    fps: 24
+    fps: 24,
   };
   withGlobals(
     {
       Animations: [clip],
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runUpdateAnimation(noopLog, {
         name: 'idle',
         loop: true,
-        fps: 30
+        fps: 30,
       });
       assert.equal(err, null);
       assert.equal(clip.loop, true);
       assert.equal(clip.fps, 30);
-    }
+    },
   );
 }
 
@@ -157,36 +157,36 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     rename: () => {
       throw new Error('rename fail');
-    }
+    },
   };
   withGlobals(
     {
       Animations: [clip],
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runUpdateAnimation(noopLog, {
         name: 'idle',
-        newName: 'walk'
+        newName: 'walk',
       });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.context, 'animation_update');
-    }
+    },
   );
 }
 
 {
   withGlobals(
     {
-      Animations: []
+      Animations: [],
     },
     () => {
       const err = runDeleteAnimation(noopLog, { name: 'idle' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
-    }
+    },
   );
 }
 
@@ -196,21 +196,21 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     remove: () => {
       removed += 1;
-    }
+    },
   };
   const list = [clip];
   withGlobals(
     {
       Animations: list,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runDeleteAnimation(noopLog, { name: 'idle' });
       assert.equal(err, null);
       assert.equal(removed, 1);
       assert.equal(list.length, 1);
-    }
+    },
   );
 }
 
@@ -221,13 +221,13 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     {
       Animations: list,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runDeleteAnimation(noopLog, { name: 'idle' });
       assert.equal(err, null);
       assert.equal(list.length, 0);
-    }
+    },
   );
 }
 
@@ -236,20 +236,20 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     remove: () => {
       throw new Error('delete fail');
-    }
+    },
   };
   withGlobals(
     {
       Animations: [clip],
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runDeleteAnimation(noopLog, { name: 'idle' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.context, 'animation_delete');
-    }
+    },
   );
 }
 
@@ -274,7 +274,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     name: 'idle',
     keyframes: [] as Array<Record<string, unknown>>,
     animators: {} as Record<string, unknown>,
-    select: () => undefined
+    select: () => undefined,
   };
   withGlobals(
     {
@@ -284,18 +284,18 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       Preview: undefined,
       Animator: undefined,
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runSetTriggerKeyframes(noopLog, {
         clip: 'idle',
         channel: 'sound',
-        keys: [{ time: 1, value: 'step' }]
+        keys: [{ time: 1, value: 'step' }],
       });
       assert.equal(err, null);
       assert.equal(createCalls, 1);
       assert.equal(typeof clip.animators.effects, 'object');
-    }
+    },
   );
 }
 
@@ -303,11 +303,11 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   withGlobals(
     {
       Animations: undefined,
-      Animation: undefined
+      Animation: undefined,
     },
     () => {
       const list = getAnimations();
       assert.deepEqual(list, []);
-    }
+    },
   );
 }

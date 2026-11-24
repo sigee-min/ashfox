@@ -10,7 +10,7 @@ import {
   isSuspiciousOpaqueDrop,
   mergeRects,
   overlayPatchRects,
-  overlayTextureSpaceRects
+  overlayTextureSpaceRects,
 } from '../../../../src/usecases/textureTools/paintFacesPixels';
 
 {
@@ -18,9 +18,9 @@ import {
   assert.deepEqual(
     mergeRects([
       { x1: 2, y1: 3, x2: 6, y2: 8 },
-      { x1: 0, y1: 4, x2: 9, y2: 5 }
+      { x1: 0, y1: 4, x2: 9, y2: 5 },
     ]),
-    { x1: 0, y1: 3, x2: 9, y2: 8 }
+    { x1: 0, y1: 3, x2: 9, y2: 8 },
   );
 }
 
@@ -30,7 +30,14 @@ import {
 }
 
 {
-  const bounds = getTextureOpBounds({ op: 'fill_rect', x: 1, y: 2, width: 3, height: 4, color: '#112233' });
+  const bounds = getTextureOpBounds({
+    op: 'fill_rect',
+    x: 1,
+    y: 2,
+    width: 3,
+    height: 4,
+    color: '#112233',
+  });
   assert.deepEqual(bounds, { x1: 1, y1: 2, x2: 4, y2: 6 });
   assert.equal(doesBoundsIntersectCanvas(bounds, 8, 8), true);
   assert.equal(doesBoundsIntersectCanvas(bounds, 1, 1), false);
@@ -68,11 +75,7 @@ import {
 }
 
 {
-  const pixels = new Uint8ClampedArray([
-    0, 0, 0, 0,
-    0, 0, 0, 8,
-    0, 0, 0, 9
-  ]);
+  const pixels = new Uint8ClampedArray([0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 9]);
   assert.equal(countOpaquePixels(pixels), 1);
   assert.equal(isSuspiciousOpaqueDrop(255, 10), false);
   assert.equal(isSuspiciousOpaqueDrop(300, 280), false);

@@ -27,7 +27,7 @@ export const runSchemaValidationContractTests = (): void => {
   {
     const schema: JsonSchema = {
       type: 'string',
-      pattern: '^#[0-9a-fA-F]{6}$'
+      pattern: '^#[0-9a-fA-F]{6}$',
     };
     assert.deepEqual(validateSchema(schema, '#a0B1c2'), { ok: true });
     const result = validateSchema(schema, '#abc');
@@ -45,15 +45,15 @@ export const runSchemaValidationContractTests = (): void => {
           type: 'object',
           properties: { a: { type: 'string' } },
           required: ['a'],
-          additionalProperties: false
+          additionalProperties: false,
         },
         {
           type: 'object',
           properties: { b: { type: 'number' } },
           required: ['b'],
-          additionalProperties: false
-        }
-      ]
+          additionalProperties: false,
+        },
+      ],
     };
     const result = validateSchema(schema, { c: true });
     assert.equal(result.ok, false);
@@ -66,10 +66,7 @@ export const runSchemaValidationContractTests = (): void => {
   {
     const schema: JsonSchema = {
       type: 'object',
-      anyOf: [
-        { required: ['rotation'] },
-        { required: ['position'] }
-      ]
+      anyOf: [{ required: ['rotation'] }, { required: ['position'] }],
     };
     const result = validateSchema(schema, {});
     assert.equal(result.ok, false);
@@ -100,23 +97,32 @@ export const runSchemaValidationContractTests = (): void => {
     const inheritedKey = '__ashfoxInheritedRequiredFixture__';
     Object.defineProperty(Object.prototype, inheritedKey, {
       value: true,
-      configurable: true
+      configurable: true,
     });
     try {
-      const required = validateSchema({
-        type: 'object',
-        properties: { [inheritedKey]: { type: 'boolean' } },
-        required: [inheritedKey],
-        additionalProperties: false
-      }, {});
+      const required = validateSchema(
+        {
+          type: 'object',
+          properties: { [inheritedKey]: { type: 'boolean' } },
+          required: [inheritedKey],
+          additionalProperties: false,
+        },
+        {},
+      );
       assert.equal(required.ok, false);
       if (!required.ok) assert.equal(required.reason, 'required');
 
-      assert.deepEqual(validateSchema({
-        type: 'object',
-        properties: { [inheritedKey]: { type: 'string' } },
-        additionalProperties: false
-      }, {}), { ok: true });
+      assert.deepEqual(
+        validateSchema(
+          {
+            type: 'object',
+            properties: { [inheritedKey]: { type: 'string' } },
+            additionalProperties: false,
+          },
+          {},
+        ),
+        { ok: true },
+      );
     } finally {
       delete (Object.prototype as Record<string, unknown>)[inheritedKey];
     }
@@ -126,7 +132,7 @@ export const runSchemaValidationContractTests = (): void => {
     const schema: JsonSchema = {
       type: 'number',
       minimum: 0.25,
-      maximum: 64
+      maximum: 64,
     };
     const below = validateSchema(schema, -1);
     const above = validateSchema(schema, 65);
@@ -139,7 +145,7 @@ export const runSchemaValidationContractTests = (): void => {
   {
     const schema: JsonSchema = {
       type: 'array',
-      items: { type: 'number' }
+      items: { type: 'number' },
     };
     const result = validateSchema(schema, [1, 'x']);
     assert.equal(result.ok, false);
@@ -154,7 +160,7 @@ export const runSchemaValidationContractTests = (): void => {
       type: 'object',
       properties: { name: { type: 'string' } },
       required: ['name'],
-      additionalProperties: false
+      additionalProperties: false,
     };
     const result = validateSchema(schema, {});
     assert.equal(result.ok, false);
@@ -168,7 +174,7 @@ export const runSchemaValidationContractTests = (): void => {
     const schema: JsonSchema = {
       type: 'object',
       properties: { name: { type: 'string' } },
-      additionalProperties: false
+      additionalProperties: false,
     };
     const result = validateSchema(schema, { name: 'ok', extra: 1 });
     assert.equal(result.ok, false);
@@ -181,7 +187,7 @@ export const runSchemaValidationContractTests = (): void => {
   {
     const schema: JsonSchema = {
       type: 'object',
-      additionalProperties: false
+      additionalProperties: false,
     };
     const result = validateSchema(schema, { extra: true });
     assert.equal(result.ok, false);
@@ -194,14 +200,9 @@ export const runSchemaValidationContractTests = (): void => {
   {
     const schema: JsonSchema = {
       type: 'object',
-      additionalProperties: false
+      additionalProperties: false,
     };
-    for (const key of [
-      'constructor',
-      '__proto__',
-      'toString',
-      'hasOwnProperty'
-    ]) {
+    for (const key of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
       const value = JSON.parse(`{"${key}":true}`) as unknown;
       const result = validateSchema(schema, value);
       assert.equal(result.ok, false, key);
@@ -233,15 +234,15 @@ export const runSchemaValidationContractTests = (): void => {
             type: 'object',
             properties: { id: { type: 'number' } },
             required: ['id'],
-            additionalProperties: false
-          }
-        }
+            additionalProperties: false,
+          },
+        },
       },
       required: ['items'],
-      additionalProperties: false
+      additionalProperties: false,
     };
     const result = validateSchema(schema, {
-      items: [{ id: 1 }, { id: 2 }]
+      items: [{ id: 1 }, { id: 2 }],
     });
     assert.deepEqual(result, { ok: true });
   }

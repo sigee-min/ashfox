@@ -8,7 +8,7 @@ const logger: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 {
@@ -45,7 +45,7 @@ const logger: Logger = {
     setProjectUvPixelsPerBlock: () => {
       calls.push('project.setProjectUvPixelsPerBlock');
       return projectResult;
-    }
+    },
   };
   editor.textures = {
     importTexture: () => {
@@ -67,7 +67,7 @@ const logger: Logger = {
     listTextures: () => {
       calls.push('textures.listTextures');
       return [{ name: 'atlas', width: 16, height: 16 }];
-    }
+    },
   };
   editor.geometry = {
     assignTexture: () => {
@@ -117,7 +117,7 @@ const logger: Logger = {
     getTextureUsage: () => {
       calls.push('geometry.getTextureUsage');
       return { error: geometryResult };
-    }
+    },
   };
   editor.animation = {
     createAnimation: () => {
@@ -139,30 +139,36 @@ const logger: Logger = {
     setTriggerKeyframes: () => {
       calls.push('animation.setTriggerKeyframes');
       return animationResult;
-    }
+    },
   };
   editor.preview = {
     renderPreview: () => {
       calls.push('preview.renderPreview');
       return previewResult;
-    }
+    },
   };
 
   const typedEditor = editor as unknown as BlockbenchEditor;
 
   assert.equal(typedEditor.createProject('a', 'b', 'geckolib'), projectResult);
   assert.equal(typedEditor.closeProject(), projectResult);
-  assert.equal(typedEditor.importTexture({ name: 'x', image: {} as CanvasImageSource }), textureResult);
-  assert.equal(typedEditor.updateTexture({ name: 'x', image: {} as CanvasImageSource }), textureResult);
+  assert.equal(
+    typedEditor.importTexture({ name: 'x', image: {} as CanvasImageSource }),
+    textureResult,
+  );
+  assert.equal(
+    typedEditor.updateTexture({ name: 'x', image: {} as CanvasImageSource }),
+    textureResult,
+  );
   assert.equal(typedEditor.deleteTexture({ name: 'x' }), textureResult);
   assert.deepEqual(typedEditor.readTexture({ name: 'x' }), { error: textureResult });
   assert.deepEqual(typedEditor.listTextures(), [{ name: 'atlas', width: 16, height: 16 }]);
   assert.equal(typedEditor.assignTexture({ textureName: 'x' }), geometryResult);
-  assert.equal(typedEditor.setFaceUv({ cubeName: 'c', faces: { north: [0, 0, 1, 1] } }), geometryResult);
   assert.equal(
-    typedEditor.addBone({ name: 'b', pivot: [0, 0, 0] }),
-    geometryResult
+    typedEditor.setFaceUv({ cubeName: 'c', faces: { north: [0, 0, 1, 1] } }),
+    geometryResult,
   );
+  assert.equal(typedEditor.addBone({ name: 'b', pivot: [0, 0, 0] }), geometryResult);
   assert.equal(typedEditor.updateBone({ name: 'b' }), geometryResult);
   assert.equal(typedEditor.deleteBone({ name: 'b' }), geometryResult);
   assert.equal(typedEditor.addCube({ name: 'c', from: [0, 0, 0], to: [1, 1, 1] }), geometryResult);
@@ -174,15 +180,18 @@ const logger: Logger = {
       vertices: [
         { id: 'v0', pos: [0, 0, 0] },
         { id: 'v1', pos: [1, 0, 0] },
-        { id: 'v2', pos: [0, 1, 0] }
+        { id: 'v2', pos: [0, 1, 0] },
       ],
-      faces: [{ vertices: ['v0', 'v1', 'v2'] }]
+      faces: [{ vertices: ['v0', 'v1', 'v2'] }],
     }),
-    geometryResult
+    geometryResult,
   );
   assert.equal(typedEditor.updateMesh({ name: 'm' }), geometryResult);
   assert.equal(typedEditor.deleteMesh({ name: 'm' }), geometryResult);
-  assert.equal(typedEditor.createAnimation({ name: 'idle', length: 1, loop: true, fps: 20 }), animationResult);
+  assert.equal(
+    typedEditor.createAnimation({ name: 'idle', length: 1, loop: true, fps: 20 }),
+    animationResult,
+  );
   assert.equal(typedEditor.updateAnimation({ name: 'idle' }), animationResult);
   assert.equal(typedEditor.deleteAnimation({ name: 'idle' }), animationResult);
   assert.equal(
@@ -190,13 +199,17 @@ const logger: Logger = {
       clip: 'idle',
       bone: 'body',
       channel: 'rot',
-      keys: [{ time: 0, value: [0, 0, 0] }]
+      keys: [{ time: 0, value: [0, 0, 0] }],
     }),
-    animationResult
+    animationResult,
   );
   assert.equal(
-    typedEditor.setTriggerKeyframes({ clip: 'idle', channel: 'sound', keys: [{ time: 0, value: 'x' }] }),
-    animationResult
+    typedEditor.setTriggerKeyframes({
+      clip: 'idle',
+      channel: 'sound',
+      keys: [{ time: 0, value: 'x' }],
+    }),
+    animationResult,
   );
   assert.deepEqual(typedEditor.renderPreview({ mode: 'fixed' }), previewResult);
   assert.deepEqual(typedEditor.getTextureUsage({}), { error: geometryResult });
@@ -234,6 +247,6 @@ const logger: Logger = {
     'project.writeFile',
     'project.getProjectTextureResolution',
     'project.setProjectTextureResolution',
-    'project.setProjectUvPixelsPerBlock'
+    'project.setProjectUvPixelsPerBlock',
   ]);
 }

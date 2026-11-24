@@ -5,7 +5,7 @@ import type {
   ToolError,
   ToolName,
   ToolPayloadMap,
-  ToolResponse
+  ToolResponse,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { TOOL_NAMES } from '../../src/shared/toolConstants';
 import { err } from '../../src/shared/tooling/toolResponse';
@@ -24,8 +24,7 @@ export type TraceStep = {
 };
 
 export type TraceCaptureResult =
-  | { ok: true; state: ProjectState }
-  | { ok: false; error: ToolError };
+  { ok: true; state: ProjectState } | { ok: false; error: ToolError };
 
 export type TraceStepResult = {
   op: TraceOp;
@@ -52,21 +51,21 @@ const isToolName = (op: string): op is ToolName => (TOOL_NAMES as readonly strin
 
 const resolveCapturePayload = (
   captureState?: boolean | TraceCapture,
-  fallback?: boolean | TraceCapture
+  fallback?: boolean | TraceCapture,
 ): ToolPayloadMap['get_project_state'] | null => {
   const capture = captureState ?? fallback;
   if (!capture) return null;
   if (capture === true) return { detail: 'summary' };
   return {
     detail: capture.detail ?? 'summary',
-    ...(capture.includeUsage !== undefined ? { includeUsage: capture.includeUsage } : {})
+    ...(capture.includeUsage !== undefined ? { includeUsage: capture.includeUsage } : {}),
   };
 };
 
 const runTool = (
   deps: TraceRunnerDeps,
   op: ToolName,
-  payload?: unknown
+  payload?: unknown,
 ): Promise<ToolResponse<unknown>> => {
   const toolPayload = (payload ?? {}) as ToolPayloadMap[ToolName];
   return deps.dispatcher.handle(op, toolPayload);
@@ -74,11 +73,11 @@ const runTool = (
 
 const captureState = (
   deps: TraceRunnerDeps,
-  payload: ToolPayloadMap['get_project_state']
+  payload: ToolPayloadMap['get_project_state'],
 ): Promise<TraceCaptureResult> => {
   return deps.dispatcher.handle('get_project_state', payload).then((res) => {
-  if (res.ok) return { ok: true, state: res.data.project };
-  return { ok: false, error: res.error };
+    if (res.ok) return { ok: true, state: res.data.project };
+    return { ok: false, error: res.error };
   });
 };
 
@@ -88,7 +87,7 @@ const getResponseError = (response: ToolResponse<unknown>): ToolError | undefine
 export const runTrace = async (
   deps: TraceRunnerDeps,
   steps: TraceStep[],
-  options: TraceRunnerOptions = {}
+  options: TraceRunnerOptions = {},
 ): Promise<TraceRunResult> => {
   const results: TraceStepResult[] = [];
   const stopOnError = options.stopOnError !== false;
@@ -98,7 +97,7 @@ export const runTrace = async (
     if (!isToolName(step.op)) {
       response = err('invalid_payload', `Unknown trace op: ${String(step.op)}`, {
         reason: 'unknown_op',
-        op: String(step.op)
+        op: String(step.op),
       });
     } else {
       response = await runTool(deps, step.op, step.payload);
@@ -119,6 +118,6 @@ export const runTrace = async (
   return {
     ok: !errorStep,
     steps: results,
-    ...(error ? { error } : {})
+    ...(error ? { error } : {}),
   };
 };

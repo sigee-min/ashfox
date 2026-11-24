@@ -1,32 +1,16 @@
-import { EXPORT_BUNDLE_SCHEMA_VERSION as CURRENT_EXPORT_BUNDLE_SCHEMA_VERSION } from
-  '@ashfox/internal-contracts';
+import { EXPORT_BUNDLE_SCHEMA_VERSION as CURRENT_EXPORT_BUNDLE_SCHEMA_VERSION } from '@ashfox/internal-contracts';
 
-import type {
-  BlobRef,
-  JsonValue,
-  ProjectId,
-  Revision
-} from '../model';
+import type { BlobRef, JsonValue, ProjectId, Revision } from '../model';
 import type { AssetBuildIdentity } from '../project/asset';
 import type { InvariantFinding } from '../validation';
 
-export const EXPORT_BUNDLE_SCHEMA_VERSION =
-  CURRENT_EXPORT_BUNDLE_SCHEMA_VERSION;
+export const EXPORT_BUNDLE_SCHEMA_VERSION = CURRENT_EXPORT_BUNDLE_SCHEMA_VERSION;
 
 export type ExportTargetId =
-  | 'minecraft.java_block'
-  | 'minecraft.bedrock'
-  | 'minecraft.java.geckolib5'
-  | 'gltf.2';
+  'minecraft.java_block' | 'minecraft.bedrock' | 'minecraft.java.geckolib5' | 'gltf.2';
 
 export type ExportFileRole =
-  | 'model'
-  | 'blockstate'
-  | 'geometry'
-  | 'animation'
-  | 'texture'
-  | 'buffer'
-  | 'manifest';
+  'model' | 'blockstate' | 'geometry' | 'animation' | 'texture' | 'buffer' | 'manifest';
 
 export interface JsonExportFile {
   kind: 'json';
@@ -53,10 +37,7 @@ export interface BinaryExportFile {
   data: Uint8Array;
 }
 
-export type ExportFile =
-  | JsonExportFile
-  | BlobCopyExportFile
-  | BinaryExportFile;
+export type ExportFile = JsonExportFile | BlobCopyExportFile | BinaryExportFile;
 
 export interface ExportAdaptation {
   code: string;
@@ -130,9 +111,7 @@ export interface ResolvedBlob {
   contentType: string;
 }
 
-export type BlobResolver = (
-  source: BlobRef
-) => Promise<ResolvedBlob | null>;
+export type BlobResolver = (source: BlobRef) => Promise<ResolvedBlob | null>;
 
 export type BlobResolutionErrorCode =
   | 'blob.not_found'
@@ -156,12 +135,7 @@ export class BlobResolutionError extends Error {
   readonly assetId: string;
   readonly source: BlobRef;
 
-  constructor(
-    code: BlobResolutionErrorCode,
-    assetId: string,
-    source: BlobRef,
-    message: string
-  ) {
+  constructor(code: BlobResolutionErrorCode, assetId: string, source: BlobRef, message: string) {
     super(message);
     this.name = 'BlobResolutionError';
     this.code = code;
@@ -174,13 +148,8 @@ export class ProjectExportError extends Error {
   readonly findings: readonly InvariantFinding[];
 
   constructor(message: string, findings: readonly InvariantFinding[]) {
-    const first = findings.find((finding) => finding.severity === 'error') ??
-      findings[0];
-    super(
-      first
-        ? `${message} ${first.path}: ${first.message}`
-        : message
-    );
+    const first = findings.find((finding) => finding.severity === 'error') ?? findings[0];
+    super(first ? `${message} ${first.path}: ${first.message}` : message);
     this.name = 'ProjectExportError';
     this.findings = findings;
   }

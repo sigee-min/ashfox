@@ -3,7 +3,11 @@ import { errorMessage } from '../../../logging';
 import type { AnimationClip, PreviewItem } from '../../../types/blockbench';
 import { readGlobals } from '../blockbenchUtils';
 
-export const refreshAnimationViewport = (log: Logger, clip: AnimationClip | null, time?: number) => {
+export const refreshAnimationViewport = (
+  log: Logger,
+  clip: AnimationClip | null,
+  time?: number,
+) => {
   if (!clip) return;
   const globals = readGlobals();
   try {
@@ -26,7 +30,9 @@ export const refreshAnimationViewport = (log: Logger, clip: AnimationClip | null
     }
     renderViewportPreview(globals.Preview);
   } catch (err) {
-    log.warn('animation viewport refresh failed', { message: errorMessage(err, 'viewport refresh failed') });
+    log.warn('animation viewport refresh failed', {
+      message: errorMessage(err, 'viewport refresh failed'),
+    });
   }
 };
 

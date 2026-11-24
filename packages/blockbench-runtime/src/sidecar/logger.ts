@@ -42,5 +42,3 @@ export class StderrLogger implements Logger {
     return LOG_LEVELS.indexOf(level) >= LOG_LEVELS.indexOf(minLevel);
   }
 }
-
-

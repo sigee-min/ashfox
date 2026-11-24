@@ -32,7 +32,7 @@ export const updateBone = (state: SessionState, name: string, updates: BoneUpdat
 
 export const removeBones = (
   state: SessionState,
-  names: string[] | Set<string>
+  names: string[] | Set<string>,
 ): { removedBones: number; removedCubes: number } => {
   const nameSet = names instanceof Set ? names : new Set(names);
   const beforeBones = state.bones.length;
@@ -41,7 +41,6 @@ export const removeBones = (
   state.cubes = state.cubes.filter((c) => !nameSet.has(c.bone));
   return {
     removedBones: beforeBones - state.bones.length,
-    removedCubes: beforeCubes - state.cubes.length
+    removedCubes: beforeCubes - state.cubes.length,
   };
 };
-

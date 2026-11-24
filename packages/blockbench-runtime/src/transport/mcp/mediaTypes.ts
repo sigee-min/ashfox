@@ -37,10 +37,7 @@ const splitOutsideQuotes = (value: string, delimiter: string): string[] | null =
   return parts;
 };
 
-const parseMediaRange = (
-  raw: string,
-  allowWildcards: boolean
-): ParsedMediaRange | null => {
+const parseMediaRange = (raw: string, allowWildcards: boolean): ParsedMediaRange | null => {
   if (/[\r\n]/.test(raw)) return null;
   const segments = splitOutsideQuotes(raw, ';');
   if (!segments || segments.length === 0) return null;
@@ -49,8 +46,7 @@ const parseMediaRange = (
   if (slash <= 0 || slash !== essence.lastIndexOf('/')) return null;
   const type = essence.slice(0, slash);
   const subtype = essence.slice(slash + 1);
-  const validName = (value: string) =>
-    TOKEN.test(value) || (allowWildcards && value === '*');
+  const validName = (value: string) => TOKEN.test(value) || (allowWildcards && value === '*');
   if (!validName(type) || !validName(subtype)) return null;
   if (type === '*' && subtype !== '*') return null;
 

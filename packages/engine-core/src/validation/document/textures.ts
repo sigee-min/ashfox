@@ -12,41 +12,30 @@ import {
   hasOwn,
   reject,
   validateRecordMap,
-  type ContractContext
+  type ContractContext,
 } from './shared';
 
-const validateTextureDimension = (
-  value: unknown,
-  path: string,
-  context: ContractContext
-): void => {
+const validateTextureDimension = (value: unknown, path: string, context: ContractContext): void => {
   expectFiniteNumber(value, path, context);
   if (
     typeof value === 'number' &&
-    (!Number.isSafeInteger(value) ||
-      value < 1 ||
-      value > TEXTURE_MAX_RESOLUTION)
+    (!Number.isSafeInteger(value) || value < 1 || value > TEXTURE_MAX_RESOLUTION)
   ) {
     reject(
       context,
       path,
-      `${path} must be a safe integer from 1 to ` +
-        `${TEXTURE_MAX_RESOLUTION}.`
+      `${path} must be a safe integer from 1 to ` + `${TEXTURE_MAX_RESOLUTION}.`,
     );
   }
 };
 
-const validateBlobRef = (
-  value: unknown,
-  path: string,
-  context: ContractContext
-): void => {
+const validateBlobRef = (value: unknown, path: string, context: ContractContext): void => {
   const record = closedRecord(
     value,
     path,
     ['bucket', 'key', 'contentType', 'contentHash'],
     ['byteLength'],
-    context
+    context,
   );
   if (!record) return;
   expectString(record.bucket, `${path}.bucket`, context);
@@ -63,27 +52,22 @@ const validateTextureRaster = (
   path: string,
   context: ContractContext,
   textureWidth: unknown,
-  textureHeight: unknown
+  textureHeight: unknown,
 ): void => {
   const record = closedRecord(
     value,
     path,
     ['background', 'backgroundAlpha', 'canvasDetails'],
     ['alphaMasks'],
-    context
+    context,
   );
   if (!record) return;
   expectString(record.background, `${path}.background`, context);
   expectFiniteNumber(record.backgroundAlpha, `${path}.backgroundAlpha`, context);
   if (record.backgroundAlpha !== 0 && record.backgroundAlpha !== 255) {
-    reject(context, `${path}.backgroundAlpha`,
-      `${path}.backgroundAlpha must be 0 or 255.`);
+    reject(context, `${path}.backgroundAlpha`, `${path}.backgroundAlpha must be 0 or 255.`);
   }
-  const details = expectArray(
-    record.canvasDetails,
-    `${path}.canvasDetails`,
-    context
-  );
+  const details = expectArray(record.canvasDetails, `${path}.canvasDetails`, context);
   details?.forEach((entry, index) => {
     const detailPath = `${path}.canvasDetails[${index}]`;
     const detail = closedRecord(
@@ -91,15 +75,14 @@ const validateTextureRaster = (
       detailPath,
       ['id', 'color', 'alpha', 'x', 'y', 'width', 'height'],
       [],
-      context
+      context,
     );
     if (!detail) return;
     expectString(detail.id, `${detailPath}.id`, context);
     expectString(detail.color, `${detailPath}.color`, context);
     expectFiniteNumber(detail.alpha, `${detailPath}.alpha`, context);
     if (detail.alpha !== 0 && detail.alpha !== 255) {
-      reject(context, `${detailPath}.alpha`,
-        `${detailPath}.alpha must be 0 or 255.`);
+      reject(context, `${detailPath}.alpha`, `${detailPath}.alpha must be 0 or 255.`);
     }
     expectFiniteNumber(detail.x, `${detailPath}.x`, context);
     expectFiniteNumber(detail.y, `${detailPath}.y`, context);
@@ -110,48 +93,68 @@ const validateTextureRaster = (
     const masks = expectArray(record.alphaMasks, `${path}.alphaMasks`, context);
     masks?.forEach((entry, index) => {
       const maskPath = `${path}.alphaMasks[${index}]`;
-      const mask = closedRecord(entry, maskPath,
-        ['id', 'x', 'y', 'width', 'height', 'bits'], [], context);
+      const mask = closedRecord(
+        entry,
+        maskPath,
+        ['id', 'x', 'y', 'width', 'height', 'bits'],
+        [],
+        context,
+      );
       if (!mask) return;
       expectString(mask.id, `${maskPath}.id`, context);
       expectString(mask.bits, `${maskPath}.bits`, context);
       for (const key of ['x', 'y', 'width', 'height'] as const) {
         expectFiniteNumber(mask[key], `${maskPath}.${key}`, context);
         if (typeof mask[key] === 'number' && !Number.isSafeInteger(mask[key])) {
-          reject(context, `${maskPath}.${key}`,
-            `${maskPath}.${key} must be an exact integer.`);
+          reject(context, `${maskPath}.${key}`, `${maskPath}.${key} must be an exact integer.`);
         }
       }
-      if (typeof mask.width === 'number' && mask.width <= 0) reject(context,
-        `${maskPath}.width`, `${maskPath}.width must be positive.`);
-      if (typeof mask.height === 'number' && mask.height <= 0) reject(context,
-        `${maskPath}.height`, `${maskPath}.height must be positive.`);
-      if (typeof mask.bits === 'string' && !/^[01]+$/.test(mask.bits)) reject(
-        context, `${maskPath}.bits`, `${maskPath}.bits must contain only 0 and 1.`);
-      if (typeof mask.bits === 'string' && typeof mask.width === 'number' &&
-        typeof mask.height === 'number' && Number.isSafeInteger(mask.width) &&
-        Number.isSafeInteger(mask.height) && mask.width > 0 && mask.height > 0 &&
-        mask.bits.length !== mask.width * mask.height) reject(context,
-        `${maskPath}.bits`, `${maskPath}.bits must exactly fill the mask rectangle.`);
-      if (typeof textureWidth === 'number' && typeof textureHeight === 'number' &&
-        typeof mask.x === 'number' && typeof mask.y === 'number' &&
-        typeof mask.width === 'number' && typeof mask.height === 'number' &&
-        (mask.x < 0 || mask.y < 0 ||
+      if (typeof mask.width === 'number' && mask.width <= 0)
+        reject(context, `${maskPath}.width`, `${maskPath}.width must be positive.`);
+      if (typeof mask.height === 'number' && mask.height <= 0)
+        reject(context, `${maskPath}.height`, `${maskPath}.height must be positive.`);
+      if (typeof mask.bits === 'string' && !/^[01]+$/.test(mask.bits))
+        reject(context, `${maskPath}.bits`, `${maskPath}.bits must contain only 0 and 1.`);
+      if (
+        typeof mask.bits === 'string' &&
+        typeof mask.width === 'number' &&
+        typeof mask.height === 'number' &&
+        Number.isSafeInteger(mask.width) &&
+        Number.isSafeInteger(mask.height) &&
+        mask.width > 0 &&
+        mask.height > 0 &&
+        mask.bits.length !== mask.width * mask.height
+      )
+        reject(
+          context,
+          `${maskPath}.bits`,
+          `${maskPath}.bits must exactly fill the mask rectangle.`,
+        );
+      if (
+        typeof textureWidth === 'number' &&
+        typeof textureHeight === 'number' &&
+        typeof mask.x === 'number' &&
+        typeof mask.y === 'number' &&
+        typeof mask.width === 'number' &&
+        typeof mask.height === 'number' &&
+        (mask.x < 0 ||
+          mask.y < 0 ||
           mask.x + mask.width > textureWidth ||
-          mask.y + mask.height > textureHeight)) reject(context, maskPath,
-          `${maskPath} must stay inside its texture atlas.`);
+          mask.y + mask.height > textureHeight)
+      )
+        reject(context, maskPath, `${maskPath} must stay inside its texture atlas.`);
     });
   }
 };
 
-const validateTextureMetadata = (
-  value: unknown,
-  path: string,
-  context: ContractContext
-): void => {
-  const metadata = closedRecord(value, path, [], [
-    'previewColor', 'canonicalRgbaSha256', 'canonicalPngSha256'
-  ], context);
+const validateTextureMetadata = (value: unknown, path: string, context: ContractContext): void => {
+  const metadata = closedRecord(
+    value,
+    path,
+    [],
+    ['previewColor', 'canonicalRgbaSha256', 'canonicalPngSha256'],
+    context,
+  );
   if (!metadata) return;
   for (const [key, entry] of Object.entries(metadata)) {
     const entryPath = childPath(path, key);
@@ -166,11 +169,7 @@ const validateTextureMetadata = (
   }
 };
 
-const validateTexture = (
-  value: unknown,
-  path: string,
-  context: ContractContext
-): void => {
+const validateTexture = (value: unknown, path: string, context: ContractContext): void => {
   const record = closedRecord(
     value,
     path,
@@ -184,10 +183,10 @@ const validateTexture = (
       'sampling',
       'colorSpace',
       'renderMode',
-      'renderSides'
+      'renderSides',
     ],
     ['atlasMode', 'pbrChannel', 'raster', 'metadata'],
-    context
+    context,
   );
   if (!record) return;
   expectString(record.id, `${path}.id`, context);
@@ -196,67 +195,39 @@ const validateTexture = (
   validateTextureDimension(record.height, `${path}.height`, context);
   validateBlobRef(record.source, `${path}.source`, context);
   expectBoolean(record.visible, `${path}.visible`, context);
-  expectLiteral(
-    record.sampling,
-    ['nearest', 'linear'],
-    `${path}.sampling`,
-    context
-  );
-  expectLiteral(
-    record.colorSpace,
-    ['srgb', 'linear'],
-    `${path}.colorSpace`,
-    context
-  );
+  expectLiteral(record.sampling, ['nearest', 'linear'], `${path}.sampling`, context);
+  expectLiteral(record.colorSpace, ['srgb', 'linear'], `${path}.colorSpace`, context);
   expectLiteral(
     record.renderMode,
     ['default', 'emissive', 'additive', 'layered'],
     `${path}.renderMode`,
-    context
+    context,
   );
-  expectLiteral(
-    record.renderSides,
-    ['auto', 'front', 'double'],
-    `${path}.renderSides`,
-    context
-  );
+  expectLiteral(record.renderSides, ['auto', 'front', 'double'], `${path}.renderSides`, context);
   if (hasOwn(record, 'atlasMode')) {
-    expectLiteral(
-      record.atlasMode,
-      ['preserve'],
-      `${path}.atlasMode`,
-      context
-    );
+    expectLiteral(record.atlasMode, ['preserve'], `${path}.atlasMode`, context);
   }
   if (hasOwn(record, 'pbrChannel')) {
     expectLiteral(
       record.pbrChannel,
       ['color', 'normal', 'height', 'mer'],
       `${path}.pbrChannel`,
-      context
+      context,
     );
   }
   if (hasOwn(record, 'raster')) {
-    validateTextureRaster(record.raster, `${path}.raster`, context,
-      record.width, record.height);
+    validateTextureRaster(record.raster, `${path}.raster`, context, record.width, record.height);
   }
   if (hasOwn(record, 'metadata')) {
     validateTextureMetadata(record.metadata, `${path}.metadata`, context);
   }
 };
 
-export const validateTextures = (
-  value: unknown,
-  context: ContractContext
-): void => {
+export const validateTextures = (value: unknown, context: ContractContext): void => {
   if (isClosedContractRecord(value)) {
     const textures = Object.values(value);
     if (textures.length > 64) {
-      reject(
-        context,
-        'textures',
-        'textures must contain at most 64 assets.'
-      );
+      reject(context, 'textures', 'textures must contain at most 64 assets.');
     }
   }
   validateRecordMap(value, 'textures', context, (entry, path) => {

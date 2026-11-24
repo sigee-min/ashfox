@@ -8,4 +8,3 @@ export const ensureNonBlankFields = (entries: Array<[unknown, string]>): ToolErr
   }
   return null;
 };
-

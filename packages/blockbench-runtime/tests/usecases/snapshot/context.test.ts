@@ -16,14 +16,16 @@ const baseState: SessionState = {
   animationsStatus: 'available',
   animationTimePolicy: {
     timeEpsilon: 1e-6,
-    triggerDedupeByValue: true
-  }
+    triggerDedupeByValue: true,
+  },
 };
 
 type SessionStub = {
   snapshot: () => SessionState;
   ensureActive: () => { code: string; message: string } | null;
-  attach: (snapshot: SessionState) => { ok: true } | { ok: false; error: { code: string; message: string } };
+  attach: (
+    snapshot: SessionState,
+  ) => { ok: true } | { ok: false; error: { code: string; message: string } };
 };
 
 const createContext = (params: {
@@ -39,19 +41,23 @@ const createContext = (params: {
     projectState: {
       normalize: (snapshot: SessionState) => snapshot,
       toProjectInfo: (snapshot: SessionState) =>
-        params.hasProjectInfo === false ? null : snapshot.id ? { id: snapshot.id, name: snapshot.name } : null
+        params.hasProjectInfo === false
+          ? null
+          : snapshot.id
+            ? { id: snapshot.id, name: snapshot.name }
+            : null,
     } as never,
     policyContext: {
       getSnapshotPolicy: () => params.policy ?? 'hybrid',
-      getAutoAttachActiveProject: () => params.autoAttach ?? false
-    } as never
+      getAutoAttachActiveProject: () => params.autoAttach ?? false,
+    } as never,
   });
 
 {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => null,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({ session, policy: 'session' });
   assert.deepEqual(ctx.getSnapshot(), baseState);
@@ -61,7 +67,7 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => null,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({ session, policy: 'live', readLive: () => null });
   assert.deepEqual(ctx.getSnapshot(), baseState);
@@ -71,15 +77,15 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => null,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const live: SessionState = {
     ...baseState,
     name: 'live',
     animationTimePolicy: {
       timeEpsilon: 1,
-      triggerDedupeByValue: false
-    }
+      triggerDedupeByValue: false,
+    },
   };
   const ctx = createContext({ session, policy: 'live', readLive: () => live });
   const snapshot = ctx.getSnapshot();
@@ -91,7 +97,7 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => ({ ...baseState, id: null, format: null, name: null }),
     ensureActive: () => null,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const live = { ...baseState, name: 'hybrid-live' };
   const ctx = createContext({ session, policy: 'hybrid', readLive: () => live });
@@ -103,7 +109,7 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => null,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({ session });
   assert.equal(ctx.ensureActive(), null);
@@ -114,7 +120,7 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => stateError,
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({ session, autoAttach: false });
   const err = ctx.ensureActive();
@@ -126,7 +132,7 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => ({ code: 'invalid_state', message: 'inactive' }),
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({ session, autoAttach: true, readLive: () => null });
   const err = ctx.ensureActive();
@@ -138,13 +144,13 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => ({ code: 'invalid_state', message: 'inactive' }),
-    attach: () => ({ ok: true })
+    attach: () => ({ ok: true }),
   };
   const ctx = createContext({
     session,
     autoAttach: true,
     readLive: () => ({ ...baseState, id: null, format: null, name: null }),
-    hasProjectInfo: false
+    hasProjectInfo: false,
   });
   const err = ctx.ensureActive();
   assert.equal(err?.code, 'invalid_state');
@@ -155,9 +161,13 @@ const createContext = (params: {
   const session: SessionStub = {
     snapshot: () => baseState,
     ensureActive: () => ({ code: 'invalid_state', message: 'inactive' }),
-    attach: () => ({ ok: false, error: { code: 'io_error', message: 'attach fail' } })
+    attach: () => ({ ok: false, error: { code: 'io_error', message: 'attach fail' } }),
   };
-  const ctx = createContext({ session, autoAttach: true, readLive: () => ({ ...baseState, name: 'live' }) });
+  const ctx = createContext({
+    session,
+    autoAttach: true,
+    readLive: () => ({ ...baseState, name: 'live' }),
+  });
   const err = ctx.ensureActive();
   assert.equal(err?.code, 'io_error');
   assert.ok(String(err?.fix).includes('get_project_state'));
@@ -171,9 +181,13 @@ const createContext = (params: {
     attach: (snapshot: SessionState) => {
       attached.push(snapshot);
       return { ok: true };
-    }
+    },
   };
-  const ctx = createContext({ session, autoAttach: true, readLive: () => ({ ...baseState, name: 'live2' }) });
+  const ctx = createContext({
+    session,
+    autoAttach: true,
+    readLive: () => ({ ...baseState, name: 'live2' }),
+  });
   const err = ctx.ensureActive();
   assert.equal(err, null);
   assert.equal(attached.length, 1);

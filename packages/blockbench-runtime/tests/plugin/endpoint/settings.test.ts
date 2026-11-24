@@ -39,7 +39,7 @@ const createSettingCtor = (settings: SettingsRecord) => {
           if (typeof options.onChange === 'function') {
             options.onChange(next);
           }
-        }
+        },
       };
     }
   };
@@ -49,18 +49,18 @@ withEnv(
   {
     ASHFOX_HOST: undefined,
     ASHFOX_PORT: undefined,
-    ASHFOX_PATH: undefined
+    ASHFOX_PATH: undefined,
   },
   () => {
     const settings: SettingsRecord = {
       ashfox_host: { value: '127.0.0.1' },
       ashfox_port: { value: 9432 },
-      ashfox_path: { value: '/mcp-custom' }
+      ashfox_path: { value: '/mcp-custom' },
     };
 
     const globals: BlockbenchGlobals = {
       Setting: createSettingCtor(settings),
-      settings
+      settings,
     };
     const config: EndpointConfig = { host: '0.0.0.0', port: 8787, path: '/mcp' };
     let restartCount = 0;
@@ -70,23 +70,23 @@ withEnv(
       config,
       restartServer: () => {
         restartCount += 1;
-      }
+      },
     });
 
     assert.equal(config.host, '127.0.0.1');
     assert.equal(config.port, 9432);
     assert.equal(config.path, '/mcp-custom');
     assert.equal(restartCount, 0);
-  }
+  },
 );
 
 {
   const settings: SettingsRecord = {
-    ashfox_port: { value: 8787 }
+    ashfox_port: { value: 8787 },
   };
   const globals: BlockbenchGlobals = {
     Setting: createSettingCtor(settings),
-    settings
+    settings,
   };
   const config: EndpointConfig = { host: '127.0.0.1', port: 8787, path: '/mcp' };
   let restartCount = 0;
@@ -96,7 +96,7 @@ withEnv(
     config,
     restartServer: () => {
       restartCount += 1;
-    }
+    },
   });
 
   settings.ashfox_port.set?.(9901);

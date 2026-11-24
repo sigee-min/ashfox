@@ -56,7 +56,7 @@ export const registerEndpointSettings = (deps: {
     name: string,
     type: SettingType,
     value: string | number,
-    apply: (value: unknown, shouldRestart?: boolean) => void
+    apply: (value: unknown, shouldRestart?: boolean) => void,
   ) => {
     const setting = new SettingCtor(`${PLUGIN_ID}_${id}`, {
       name,
@@ -64,7 +64,7 @@ export const registerEndpointSettings = (deps: {
       plugin: PLUGIN_ID,
       type,
       value,
-      onChange: (next: unknown) => apply(next)
+      onChange: (next: unknown) => apply(next),
     });
     apply(setting?.value ?? value, false);
   };

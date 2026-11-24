@@ -6,21 +6,15 @@ export const withToolErrorAdapterError = (
   log: Logger,
   context: string,
   fallbackMessage: string,
-  fn: () => ToolError | null
-): ToolError | null => withAdapterError(
-  log,
-  context,
-  fallbackMessage,
-  fn,
-  (error) => error
-);
+  fn: () => ToolError | null,
+): ToolError | null => withAdapterError(log, context, fallbackMessage, fn, (error) => error);
 
 export const withAdapterError = <T>(
   log: Logger,
   context: string,
   fallbackMessage: string,
   fn: () => T,
-  onError: (error: ToolError) => T
+  onError: (error: ToolError) => T,
 ): T => {
   try {
     return fn();

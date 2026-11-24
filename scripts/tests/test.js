@@ -19,30 +19,27 @@ try {
   assert.deepEqual(
     discovered,
     [second, first],
-    'test discovery recursively includes nested owner tests in stable order'
+    'test discovery recursively includes nested owner tests in stable order',
   );
   assert.throws(
     () => selectTests([], { label: 'contract tests' }),
     /No contract tests discovered/,
-    'runner contract rejects an accidentally empty suite'
+    'runner contract rejects an accidentally empty suite',
   );
   assert.deepEqual(
-    selectTests(
-      ['C:\\repo\\tests\\schema\\policy.test.ts'],
-      {
-        filter: path.win32.join('schema', 'policy.test.ts'),
-        label: 'Windows tests'
-      }
-    ),
+    selectTests(['C:\\repo\\tests\\schema\\policy.test.ts'], {
+      filter: path.win32.join('schema', 'policy.test.ts'),
+      label: 'Windows tests',
+    }),
     ['C:\\repo\\tests\\schema\\policy.test.ts'],
-    'platform-native practical filters match Windows test paths'
+    'platform-native practical filters match Windows test paths',
   );
   globalThis.__ashfoxDiscoverySentinel = [];
   requireTests(selectTests(discovered, { label: 'contract tests' }));
   assert.deepEqual(
     globalThis.__ashfoxDiscoverySentinel,
     ['nested', 'root'],
-    'runner contract executes nested tests in discovered order'
+    'runner contract executes nested tests in discovered order',
   );
   delete globalThis.__ashfoxDiscoverySentinel;
 } finally {

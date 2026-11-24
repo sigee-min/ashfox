@@ -12,7 +12,7 @@ import {
   createHostPortStub,
   createResourceStoreStub,
   createTextureRendererStub,
-  createTmpStoreStub
+  createTmpStoreStub,
 } from '../fakes';
 
 export type SimHarnessProject = {
@@ -33,7 +33,7 @@ export type SimHarnessProject = {
 
 export const createBlockbenchSimHarness = (
   project: SimHarnessProject,
-  options?: { policies?: ToolPolicies }
+  options?: { policies?: ToolPolicies },
 ) => {
   const engine = new BlockbenchSimEngine({
     project: {
@@ -41,8 +41,10 @@ export const createBlockbenchSimHarness = (
       name: project.name ?? null,
       formatId: project.formatId ?? null,
       textureResolution: project.textureResolution ?? null,
-      ...(project.uvPixelsPerBlock !== undefined ? { uvPixelsPerBlock: project.uvPixelsPerBlock } : {})
-    }
+      ...(project.uvPixelsPerBlock !== undefined
+        ? { uvPixelsPerBlock: project.uvPixelsPerBlock }
+        : {}),
+    },
   });
 
   const session = new ProjectSession();
@@ -50,7 +52,7 @@ export const createBlockbenchSimHarness = (
     pluginVersion: 'test',
     blockbenchVersion: 'test',
     formats: [{ format: project.format, animations: true, enabled: true }],
-    limits: DEFAULT_LIMITS
+    limits: DEFAULT_LIMITS,
   };
 
   const formatId = engine.formatId ?? project.formatId ?? project.format;
@@ -59,7 +61,7 @@ export const createBlockbenchSimHarness = (
 
   const formats = createFormatPortStub(formatId ?? 'unknown', formatName ?? 'format', {
     singleTexture: formatCaps?.singleTexture,
-    perTextureUvSize: formatCaps?.perTextureUvSize
+    perTextureUvSize: formatCaps?.perTextureUvSize,
   });
 
   const service = new ToolService({
@@ -72,20 +74,20 @@ export const createBlockbenchSimHarness = (
     textureRenderer: createTextureRendererStub(),
     tmpStore: createTmpStoreStub(),
     resources: createResourceStoreStub(),
-    policies: { autoAttachActiveProject: true, ...(options?.policies ?? {}) }
+    policies: { autoAttachActiveProject: true, ...(options?.policies ?? {}) },
   });
 
   const dispatcher = new ToolDispatcherImpl(session, capabilities, service, {
     includeStateByDefault: false,
     includeDiffByDefault: false,
-    logger: noopLog
+    logger: noopLog,
   });
 
   const ensureRes = service.ensureProject({
     format: project.format,
     name: project.name ?? 'fixture',
     match: 'none',
-    onMissing: 'create'
+    onMissing: 'create',
   });
   assert.equal(ensureRes.ok, true);
 
@@ -96,7 +98,7 @@ export const createBlockbenchSimHarness = (
     textureResolution: project.textureResolution ?? null,
     uvPixelsPerBlock: project.uvPixelsPerBlock,
     cubes: project.cubes ?? [],
-    textures: project.textures ?? []
+    textures: project.textures ?? [],
   });
 
   return { engine, service, dispatcher };

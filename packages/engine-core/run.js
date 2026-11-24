@@ -2,17 +2,13 @@ process.env.DISABLE_V8_COMPILE_CACHE = process.env.DISABLE_V8_COMPILE_CACHE || '
 
 const path = require('path');
 const { register } = require('ts-node');
-const {
-  discoverTests,
-  requireTests,
-  selectTests
-} = require('../../scripts/tests/discovery');
+const { discoverTests, requireTests, selectTests } = require('../../scripts/tests/discovery');
 
 register({
   transpileOnly: true,
   compilerOptions: {
-    module: 'CommonJS'
-  }
+    module: 'CommonJS',
+  },
 });
 
 const testsDir = path.join(__dirname, 'tests');

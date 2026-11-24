@@ -11,7 +11,7 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'Java Block/Item', animations: true, enabled: true }],
-  limits: { maxCubes: 4, maxTextureSize: 64, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 4, maxTextureSize: 64, maxAnimationSeconds: 120 },
 };
 
 type CubeHarness = {
@@ -37,14 +37,14 @@ const createHarness = (options?: {
   const session = new ProjectSession();
   session.create('Java Block/Item', 'demo');
   const baseEditor = createEditorStub({
-    textures: options?.textures ?? [{ id: 'tex1', name: 'atlas', width: 16, height: 16 }]
+    textures: options?.textures ?? [{ id: 'tex1', name: 'atlas', width: 16, height: 16 }],
   });
   const calls = {
     addBone: 0,
     addCube: 0,
     updateCube: 0,
     deleteCube: 0,
-    autoUvAtlas: 0
+    autoUvAtlas: 0,
   };
   const editor: EditorPort = {
     ...baseEditor,
@@ -63,7 +63,7 @@ const createHarness = (options?: {
     deleteCube: (params) => {
       calls.deleteCube += 1;
       return options?.deleteCubeError ?? null;
-    }
+    },
   };
 
   const service = new CubeService({
@@ -82,10 +82,10 @@ const createHarness = (options?: {
               applied: true,
               steps: 0,
               resolution: { width: 16, height: 16 },
-              textures: []
+              textures: [],
             });
           },
-    runWithoutRevisionGuard: (fn) => fn()
+    runWithoutRevisionGuard: (fn) => fn(),
   });
 
   return { session, service, calls };
@@ -96,7 +96,7 @@ const createHarness = (options?: {
   const res = service.addCube({
     name: '',
     from: [0, 0, 0],
-    to: [1, 1, 1]
+    to: [1, 1, 1],
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -111,7 +111,7 @@ const createHarness = (options?: {
     id: 'cube1',
     name: 'cube',
     from: [-4, 6, -7],
-    to: [4, 14, 7]
+    to: [4, 14, 7],
   });
   assert.equal(res.ok, true);
   assert.equal(calls.addBone, 1);
@@ -128,7 +128,7 @@ const createHarness = (options?: {
     name: 'arm_cube',
     from: [0, 0, 0],
     to: [1, 1, 1],
-    bone: 'arm'
+    bone: 'arm',
   });
   assert.equal(res.ok, true);
 }
@@ -139,7 +139,7 @@ const createHarness = (options?: {
     name: 'cube',
     from: [0, 0, 0],
     to: [1, 1, 1],
-    boneId: 'missing'
+    boneId: 'missing',
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -148,21 +148,21 @@ const createHarness = (options?: {
 {
   const strictCaps: Capabilities = {
     ...capabilities,
-    limits: { ...capabilities.limits, maxCubes: 1 }
+    limits: { ...capabilities.limits, maxCubes: 1 },
   };
   const { service } = createHarness({ caps: strictCaps });
   assert.equal(
     service.addCube({
       name: 'cube1',
       from: [0, 0, 0],
-      to: [1, 1, 1]
+      to: [1, 1, 1],
     }).ok,
-    true
+    true,
   );
   const res = service.addCube({
     name: 'cube2',
     from: [0, 0, 0],
-    to: [1, 1, 1]
+    to: [1, 1, 1],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -175,15 +175,15 @@ const createHarness = (options?: {
       id: 'cube-id',
       name: 'cube1',
       from: [0, 0, 0],
-      to: [1, 1, 1]
+      to: [1, 1, 1],
     }).ok,
-    true
+    true,
   );
   const dup = service.addCube({
     id: 'cube-id',
     name: 'cube2',
     from: [0, 0, 0],
-    to: [1, 1, 1]
+    to: [1, 1, 1],
   });
   assert.equal(dup.ok, false);
   if (!dup.ok) assert.equal(dup.error.code, 'invalid_payload');
@@ -194,7 +194,7 @@ const createHarness = (options?: {
   const res = service.addCube({
     name: 'cube',
     from: [0, 0, 0],
-    to: [1, 1, 1]
+    to: [1, 1, 1],
   });
   assert.equal(res.ok, true);
   assert.equal(calls.autoUvAtlas, 0);
@@ -206,12 +206,12 @@ const createHarness = (options?: {
     service.addCube({
       name: 'cube',
       from: [0, 0, 0],
-      to: [1, 1, 1]
+      to: [1, 1, 1],
     }).ok,
-    true
+    true,
   );
   const res = service.updateCube({
-    name: 'cube'
+    name: 'cube',
   });
   assert.equal(res.ok, true);
   assert.equal(calls.autoUvAtlas, 1);
@@ -222,7 +222,7 @@ const createHarness = (options?: {
   assert.equal(service.addCube({ name: 'cube', from: [0, 0, 0], to: [1, 1, 1] }).ok, true);
   const res = service.updateCube({
     name: 'cube',
-    to: [2, 2, 2]
+    to: [2, 2, 2],
   });
   assert.equal(res.ok, true);
   assert.equal(calls.autoUvAtlas, 2);
@@ -235,7 +235,7 @@ const createHarness = (options?: {
   session.addCube({ name: 'cube', bone: 'arm', from: [0, 0, 0], to: [1, 1, 1] });
   const res = service.updateCube({
     name: 'cube',
-    boneRoot: true
+    boneRoot: true,
   });
   assert.equal(res.ok, true);
   assert.equal(calls.addBone, 1);
@@ -247,7 +247,7 @@ const createHarness = (options?: {
   session.addCube({ name: 'cube', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] });
   const res = service.updateCube({
     name: 'cube',
-    boneId: 'missing-id'
+    boneId: 'missing-id',
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -259,7 +259,7 @@ const createHarness = (options?: {
   session.addCube({ name: 'cube', bone: 'root', from: [0, 0, 0], to: [1, 1, 1] });
   const res = service.updateCube({
     name: 'cube',
-    bone: 'missing-bone-name'
+    bone: 'missing-bone-name',
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -276,7 +276,9 @@ const createHarness = (options?: {
 }
 
 {
-  const { service } = createHarness({ deleteCubeError: { code: 'invalid_state', message: 'delete failed' } });
+  const { service } = createHarness({
+    deleteCubeError: { code: 'invalid_state', message: 'delete failed' },
+  });
   assert.equal(service.addCube({ name: 'cube1', from: [0, 0, 0], to: [1, 1, 1] }).ok, true);
   const res = service.deleteCube({ name: 'cube1' });
   assert.equal(res.ok, false);

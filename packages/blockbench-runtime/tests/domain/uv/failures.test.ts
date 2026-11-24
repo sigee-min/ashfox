@@ -13,7 +13,7 @@ const cubeSmall: TrackedCube = {
   name: 'cube-small',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const cubeMedium: TrackedCube = {
@@ -21,11 +21,11 @@ const cubeMedium: TrackedCube = {
   name: 'cube-medium',
   from: [0, 0, 0],
   to: [12, 12, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
-  textures: [entry]
+  textures: [entry],
 });
 
 // invalid start resolution should fail.
@@ -36,14 +36,14 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }]
+      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }],
     }),
     cubes: [cubeSmall],
     resolution: { width: 0, height: 16 },
     maxResolution: { width: 64, height: 64 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages
+    messages,
   });
   assert.equal(plan.ok, false);
   if (!plan.ok) assert.equal(plan.error.code, 'invalid_payload');
@@ -57,7 +57,7 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }]
+      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }],
     }),
     cubes: [cubeSmall],
     resolution: { width: 16, height: 16 },
@@ -65,7 +65,7 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
     maxResolution: { width: 64, height: 64 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages
+    messages,
   });
   assert.equal(plan.ok, false);
   if (!plan.ok) assert.equal(plan.error.code, 'invalid_payload');
@@ -79,14 +79,14 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }]
+      cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }],
     }),
     cubes: [cubeSmall],
     resolution: { width: 16, height: 16 },
     maxResolution: { width: 0, height: 64 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages
+    messages,
   });
   assert.equal(plan.ok, false);
   if (!plan.ok) assert.equal(plan.error.code, 'invalid_payload');
@@ -103,10 +103,10 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
         faceCount: 2,
         cubes: [
           { id: cubeMedium.id, name: cubeMedium.name, faces: [{ face: 'north' }] },
-          { id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }
-        ]
-      }
-    ]
+          { id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] },
+        ],
+      },
+    ],
   };
   const plan = buildUvAtlasPlan({
     usage,
@@ -115,7 +115,7 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
     maxResolution: { width: 16, height: 16 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages
+    messages,
   });
   assert.equal(plan.ok, false);
   if (!plan.ok) {
@@ -134,15 +134,15 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
         name: 'empty',
         cubeCount: 1,
         faceCount: 0,
-        cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [] }]
+        cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [] }],
       },
       {
         name: 'atlas-no-id',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }]
-      }
-    ]
+        cubes: [{ id: cubeSmall.id, name: cubeSmall.name, faces: [{ face: 'north' }] }],
+      },
+    ],
   };
   const plan = buildUvAtlasPlan({
     usage,
@@ -151,7 +151,7 @@ const buildUsage = (entry: TextureUsage['textures'][number]): TextureUsage => ({
     maxResolution: { width: 64, height: 64 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages
+    messages,
   });
   assert.equal(plan.ok, true);
   if (plan.ok) {

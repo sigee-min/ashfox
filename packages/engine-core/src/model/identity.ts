@@ -1,8 +1,6 @@
-import { PROJECT_DOCUMENT_SCHEMA_VERSION as CURRENT_PROJECT_DOCUMENT_SCHEMA_VERSION } from
-  '@ashfox/internal-contracts';
+import { PROJECT_DOCUMENT_SCHEMA_VERSION as CURRENT_PROJECT_DOCUMENT_SCHEMA_VERSION } from '@ashfox/internal-contracts';
 
-export const PROJECT_DOCUMENT_SCHEMA_VERSION =
-  CURRENT_PROJECT_DOCUMENT_SCHEMA_VERSION;
+export const PROJECT_DOCUMENT_SCHEMA_VERSION = CURRENT_PROJECT_DOCUMENT_SCHEMA_VERSION;
 
 export type ProjectId = string;
 export type EntityId = string;
@@ -22,20 +20,13 @@ export type UvRect = readonly [number, number, number, number];
  * multiplier for renderer and export APIs.
  */
 export const SURFACE_PIXEL_DENSITIES = [1, 2, 4, 8] as const;
-export type SurfacePixelDensity =
-  (typeof SURFACE_PIXEL_DENSITIES)[number];
+export type SurfacePixelDensity = (typeof SURFACE_PIXEL_DENSITIES)[number];
 
-export const isSurfacePixelDensity = (
-  value: unknown
-): value is SurfacePixelDensity =>
-  typeof value === 'number' &&
-  SURFACE_PIXEL_DENSITIES.includes(value as SurfacePixelDensity);
+export const isSurfacePixelDensity = (value: unknown): value is SurfacePixelDensity =>
+  typeof value === 'number' && SURFACE_PIXEL_DENSITIES.includes(value as SurfacePixelDensity);
 
 export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue =
-  | JsonPrimitive
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 export interface ProjectSettings {
   /** Canonical viewing direction materialized from workspace semantics. */

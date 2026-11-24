@@ -7,12 +7,19 @@ import {
   validateNumberRule,
   validateObjectRule,
   validateStringRule,
-  validateTypeRule
+  validateTypeRule,
 } from './validationRules';
 
-export const validateSchema = (schema: JsonSchema, value: unknown, path = '$'): ValidationResult => {
-  const applyNested = (nestedSchema: JsonSchema, nestedValue: unknown, nestedPath: string): ValidationResult =>
-    validateSchema(nestedSchema, nestedValue, nestedPath);
+export const validateSchema = (
+  schema: JsonSchema,
+  value: unknown,
+  path = '$',
+): ValidationResult => {
+  const applyNested = (
+    nestedSchema: JsonSchema,
+    nestedValue: unknown,
+    nestedPath: string,
+  ): ValidationResult => validateSchema(nestedSchema, nestedValue, nestedPath);
   const validators = [
     () => validateTypeRule(schema, value, path),
     () => validateEnumRule(schema, value, path),
@@ -20,7 +27,7 @@ export const validateSchema = (schema: JsonSchema, value: unknown, path = '$'): 
     () => validateStringRule(schema, value, path),
     () => validateAnyOfRule(schema, value, path, applyNested),
     () => validateArrayRule(schema, value, path, applyNested),
-    () => validateObjectRule(schema, value, path, applyNested)
+    () => validateObjectRule(schema, value, path, applyNested),
   ];
   for (const validate of validators) {
     const result = validate();
@@ -29,4 +36,3 @@ export const validateSchema = (schema: JsonSchema, value: unknown, path = '$'): 
 
   return { ok: true };
 };
-

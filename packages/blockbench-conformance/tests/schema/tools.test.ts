@@ -4,7 +4,10 @@ import { toolSchemas } from '../../../blockbench-contracts/src/mcpSchemas/toolSc
 import { DEFAULT_TOOL_REGISTRY } from '../../../blockbench-runtime/src/transport/mcp/tools';
 
 const schemaKeys = Object.keys(toolSchemas);
-assert.ok(schemaKeys.length >= DEFAULT_TOOL_REGISTRY.tools.length, 'toolSchemas should cover all exposed tools');
+assert.ok(
+  schemaKeys.length >= DEFAULT_TOOL_REGISTRY.tools.length,
+  'toolSchemas should cover all exposed tools',
+);
 
 const schemaKeySet = new Set(schemaKeys);
 for (const tool of DEFAULT_TOOL_REGISTRY.tools) {

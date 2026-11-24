@@ -24,7 +24,7 @@ export {
   type WorkspaceManifest,
   type WorkspaceModuleAbi,
   type WorkspacePackage,
-  type WorkspaceParsedImport
+  type WorkspaceParsedImport,
 } from './contract';
 
 export {
@@ -40,14 +40,14 @@ export {
   type SourceRef,
   type WorkspaceDiagnostic,
   type WorkspaceDiagnosticSeverity,
-  type WorkspaceReadResult
+  type WorkspaceReadResult,
 } from './diagnostic';
 
 export {
   DEFAULT_WORKSPACE_LIMITS,
   withWorkspaceLimits,
   type WorkspaceLimits,
-  type WorkspaceLimitsOverride
+  type WorkspaceLimitsOverride,
 } from './limits';
 
 export {
@@ -63,7 +63,7 @@ export {
   sourceByteLength,
   WorkspacePathError,
   WorkspaceTextError,
-  type WorkspacePathErrorCode
+  type WorkspacePathErrorCode,
 } from './path';
 
 export {
@@ -76,7 +76,7 @@ export {
   computePackageInterfaceHash,
   computePackageManifestHash,
   computeSourceContentHash,
-  computeWorkspaceHash
+  computeWorkspaceHash,
 } from './hash';
 
 export {
@@ -84,7 +84,7 @@ export {
   readPackageManifest,
   readWorkspaceLock,
   readWorkspaceManifest,
-  validateWorkspaceContents
+  validateWorkspaceContents,
 } from './reader';
 
 export {
@@ -95,5 +95,5 @@ export {
   type WorkspaceEntryBuild,
   type WorkspaceEntrySelector,
   type WorkspaceGraphEdge,
-  type WorkspaceGraphNode
+  type WorkspaceGraphNode,
 } from './graph';

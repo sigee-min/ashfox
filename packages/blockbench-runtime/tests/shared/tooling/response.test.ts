@@ -15,5 +15,3 @@ import { toToolResponse } from '../../../src/shared/tooling/toolResponse';
     assert.equal(res.error.message, 'bad.');
   }
 }
-
-

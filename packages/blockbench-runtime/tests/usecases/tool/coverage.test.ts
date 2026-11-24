@@ -14,14 +14,16 @@ import {
   createResourceStoreStub,
   createSnapshotPortStub,
   createTextureRendererStub,
-  createTmpStoreStub
+  createTmpStoreStub,
 } from '../../fakes';
 
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
-  formats: [{ format: 'Java Block/Item', animations: true, enabled: true, flags: { singleTexture: true } }],
-  limits: { maxCubes: 32, maxTextureSize: 64, maxAnimationSeconds: 5 }
+  formats: [
+    { format: 'Java Block/Item', animations: true, enabled: true, flags: { singleTexture: true } },
+  ],
+  limits: { maxCubes: 32, maxTextureSize: 64, maxAnimationSeconds: 5 },
 };
 
 const usage: TextureUsageResult = {
@@ -37,19 +39,19 @@ const usage: TextureUsageResult = {
           name: 'cube',
           faces: [
             { face: 'north', uv: [0, 0, 8, 8] },
-            { face: 'south', uv: [0, 0, 8, 8] }
-          ]
-        }
-      ]
-    }
+            { face: 'south', uv: [0, 0, 8, 8] },
+          ],
+        },
+      ],
+    },
   ],
-  unresolved: [{ textureRef: 'missing', cubeName: 'cube', face: 'up' }]
+  unresolved: [{ textureRef: 'missing', cubeName: 'cube', face: 'up' }],
 };
 
 const session = new ProjectSession();
 const editorState = createEditorStubWithState({
   textureUsage: usage,
-  textureResolution: { width: 16, height: 16 }
+  textureResolution: { width: 16, height: 16 },
 });
 const editor = editorState.editor;
 const formats = createFormatPortStub();
@@ -69,14 +71,14 @@ const service = new ToolService({
   textureRenderer,
   tmpStore,
   resources,
-  policies: { autoAttachActiveProject: true }
+  policies: { autoAttachActiveProject: true },
 });
 
 const ensureRes = service.ensureProject({
   format: 'Java Block/Item',
   name: 'demo',
   match: 'none',
-  onMissing: 'create'
+  onMissing: 'create',
 });
 assert.equal(ensureRes.ok, true);
 
@@ -91,7 +93,9 @@ assert.equal(service.ensureRevisionMatchIfProvided('r1'), null);
 
 const guardValue = service.runWithoutRevisionGuard(() => 1);
 assert.equal(guardValue, 1);
-registerAsync(service.runWithoutRevisionGuardAsync(async () => 2).then((value) => assert.equal(value, 2)));
+registerAsync(
+  service.runWithoutRevisionGuardAsync(async () => 2).then((value) => assert.equal(value, 2)),
+);
 
 const sizeError = service.setProjectTextureResolution({ width: 256, height: 16 });
 assert.equal(sizeError.ok, false);
@@ -103,7 +107,7 @@ assert.equal(boneRes.ok, true);
 const cubeRes = service.addCube({
   name: 'cube',
   from: [0, 0, 0],
-  to: [8, 8, 8]
+  to: [8, 8, 8],
 });
 assert.equal(cubeRes.ok, true);
 
@@ -116,7 +120,7 @@ assert.equal(extraBoneRes.ok, true);
 const extraCubeRes = service.addCube({
   name: 'cube3',
   from: [1, 1, 1],
-  to: [4, 4, 4]
+  to: [4, 4, 4],
 });
 assert.equal(extraCubeRes.ok, true);
 
@@ -124,7 +128,7 @@ const importRes = service.importTexture({
   name: 'tex',
   image: createMockImage('data:image/png;base64,AAAA'),
   width: 16,
-  height: 16
+  height: 16,
 });
 assert.equal(importRes.ok, true);
 
@@ -132,7 +136,7 @@ const unchangedRes = service.updateTexture({
   name: 'tex',
   image: createMockImage('data:image/png;base64,AAAA'),
   width: 16,
-  height: 16
+  height: 16,
 });
 assert.equal(unchangedRes.ok, false);
 
@@ -141,19 +145,23 @@ const updateRes = service.updateTexture({
   newName: 'tex2',
   image: createMockImage('data:image/png;base64,BBBB'),
   width: 16,
-  height: 16
+  height: 16,
 });
 assert.equal(updateRes.ok, true);
 
 const readRes = service.readTexture({ name: 'tex2' });
 assert.equal(readRes.ok, true);
-const readImageRes = service.readTextureImage({ name: 'tex2', saveToTmp: true, tmpPrefix: 'texture' });
+const readImageRes = service.readTextureImage({
+  name: 'tex2',
+  saveToTmp: true,
+  tmpPrefix: 'texture',
+});
 assert.equal(readImageRes.ok, true);
 
 const assignRes = service.assignTexture({
   textureName: 'tex2',
   cubeNames: ['cube2'],
-  faces: ['north', 'south']
+  faces: ['north', 'south'],
 });
 assert.equal(assignRes.ok, true);
 
@@ -162,22 +170,20 @@ assert.equal(invalidFaceUv.ok, false);
 
 const faceUvRes = service.setFaceUv({
   cubeName: 'cube2',
-  faces: { north: [0, 0, 8, 8] }
+  faces: { north: [0, 0, 8, 8] },
 });
 assert.equal(faceUvRes.ok, true);
 
 const preflightRes = service.preflightTexture({ includeUsage: true });
 assert.equal(preflightRes.ok, true);
-assert.ok(
-  preflightRes.ok && (preflightRes.value.warnings?.length ?? 0) > 0
-);
+assert.ok(preflightRes.ok && (preflightRes.value.warnings?.length ?? 0) > 0);
 
 const paintRes = service.paintTexture({
   targetName: 'tex2',
   width: 16,
   height: 16,
   ops: [{ op: 'fill_rect', x: 0, y: 0, width: 16, height: 16, color: '#ff0000' }],
-  mode: 'update'
+  mode: 'update',
 });
 if (!paintRes.ok) {
   assert.equal(paintRes.error.code, 'no_change');
@@ -192,36 +198,42 @@ assert.equal(autoUvRes.ok, false);
 
 const animRes = service.createAnimationClip({ name: 'idle', length: 1, loop: true, fps: 24 });
 assert.equal(animRes.ok, true);
-const animUpdateRes = service.updateAnimationClip({ name: 'idle', newName: 'idle2', length: 2, loop: false, fps: 12 });
+const animUpdateRes = service.updateAnimationClip({
+  name: 'idle',
+  newName: 'idle2',
+  length: 2,
+  loop: false,
+  fps: 12,
+});
 assert.equal(animUpdateRes.ok, true);
 const keyRes = service.setFramePose({
   clip: 'idle2',
   frame: 0,
-  bones: [{ name: 'arm2', rot: [0, 0, 0] }]
+  bones: [{ name: 'arm2', rot: [0, 0, 0] }],
 });
 assert.equal(keyRes.ok, true);
 const keyResOverwrite = service.setFramePose({
   clip: 'idle2',
   frame: 0,
-  bones: [{ name: 'arm2', rot: [0, 10, 0] }]
+  bones: [{ name: 'arm2', rot: [0, 10, 0] }],
 });
 assert.equal(keyResOverwrite.ok, true);
 const keyRes2 = service.setFramePose({
   clip: 'idle2',
   frame: 9,
-  bones: [{ name: 'arm2', rot: [0, 20, 0], interp: 'step' }]
+  bones: [{ name: 'arm2', rot: [0, 20, 0], interp: 'step' }],
 });
 assert.equal(keyRes2.ok, true);
 const triggerRes = service.setTriggerKeyframes({
   clip: 'idle2',
   channel: 'sound',
-  keys: [{ time: 0, value: 'sound_event' }]
+  keys: [{ time: 0, value: 'sound_event' }],
 });
 assert.equal(triggerRes.ok, true);
 const triggerRes2 = service.setTriggerKeyframes({
   clip: 'idle2',
   channel: 'sound',
-  keys: [{ time: 0, value: 'sound_event2' }]
+  keys: [{ time: 0, value: 'sound_event2' }],
 });
 assert.equal(triggerRes2.ok, true);
 const animStateRes = service.getProjectState({ detail: 'full' });
@@ -265,7 +277,7 @@ editorState.state.previewResult = {
       width: 16,
       height: 16,
       byteLength: 4,
-      dataUri: 'data:image/png;base64,AAAA'
+      dataUri: 'data:image/png;base64,AAAA',
     },
     {
       index: 1,
@@ -273,11 +285,15 @@ editorState.state.previewResult = {
       width: 16,
       height: 16,
       byteLength: 4,
-      dataUri: 'data:image/png;base64,BBBB'
-    }
-  ]
+      dataUri: 'data:image/png;base64,BBBB',
+    },
+  ],
 };
-const previewSeq = service.renderPreview({ mode: 'turntable', output: 'sequence', saveToTmp: true });
+const previewSeq = service.renderPreview({
+  mode: 'turntable',
+  output: 'sequence',
+  saveToTmp: true,
+});
 assert.equal(previewSeq.ok, true);
 
 const reloadOk = service.reloadPlugins({ confirm: true, delayMs: 10 });

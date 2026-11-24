@@ -15,7 +15,7 @@ const {
   openAssetProject,
   readWorkspaceFile,
   validateProjectDocument,
-  writeWorkspaceFile
+  writeWorkspaceFile,
 } = require('../../packages/engine-core/src');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -23,7 +23,7 @@ const EXAMPLES_ROOT = path.join(ROOT, 'assets/workspaces');
 const { readSnapshot, checkSnapshot } = require('@ashfox/asset-build');
 const WORKSPACE_PATH = path.join(
   EXAMPLES_ROOT,
-  `shared-creatures${ASHFOX_WORKSPACE_FILE_EXTENSION}`
+  `shared-creatures${ASHFOX_WORKSPACE_FILE_EXTENSION}`,
 );
 const ENTRY_NAMES = Object.freeze(['fox', 'goblin']);
 const MODULE_PATHS = Object.freeze([
@@ -32,7 +32,7 @@ const MODULE_PATHS = Object.freeze([
   'goblin-rig.ashfox',
   'goblin-surface.ashfox',
   'rig.ashfox',
-  'surface.ashfox'
+  'surface.ashfox',
 ]);
 const CREATED_AT = '2026-01-01T00:00:00.000Z';
 
@@ -43,17 +43,27 @@ const compileEntry = (workspace, entryName, packageName = 'creatures') => {
     identity: {
       id: `example-${entryName}`,
       revision: 'example-0001',
-      createdAt: CREATED_AT
-    }
+      createdAt: CREATED_AT,
+    },
   });
-  assert.equal(opened.ok, true, opened.ok ? '' : opened.diagnostics
-    .map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`).join(' | '));
+  assert.equal(
+    opened.ok,
+    true,
+    opened.ok
+      ? ''
+      : opened.diagnostics
+          .map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`)
+          .join(' | '),
+  );
   if (!opened.ok) throw new TypeError(`${entryName} did not open.`);
   const report = validateProjectDocument(opened.project.document);
   assert.equal(report.valid, true, `${entryName}: canonical product is invalid.`);
   const readiness = evaluateProductionReadiness(opened.project.document, report);
-  assert.equal(readiness.mechanicallyReady, true,
-    `${entryName}: product is not mechanically ready.`);
+  assert.equal(
+    readiness.mechanicallyReady,
+    true,
+    `${entryName}: product is not mechanically ready.`,
+  );
   assert.equal(opened.project.document.name, entryName);
   assert.ok(Object.keys(opened.project.document.scene.nodes).length > 0);
   assert.ok(Object.keys(opened.project.document.textures).length > 0);
@@ -62,48 +72,81 @@ const compileEntry = (workspace, entryName, packageName = 'creatures') => {
 };
 
 const verifyCorpus = () => {
-  const native = checkSnapshot(readSnapshot(path.join(ROOT, 'examples/shared-creatures/.ashfoxworkspace')));
+  const native = checkSnapshot(
+    readSnapshot(path.join(ROOT, 'examples/shared-creatures/.ashfoxworkspace')),
+  );
   assert.equal(native.products.length, 3);
-  const nativeWorkspace = native.products.find(product => product.kind === 'model').workspace;
+  const nativeWorkspace = native.products.find((product) => product.kind === 'model').workspace;
 
   const source = fs.readFileSync(WORKSPACE_PATH, 'utf8');
   const read = readWorkspaceFile(source);
-  assert.equal(read.ok, true, read.ok ? '' : read.diagnostics
-    .map((diagnostic) => diagnostic.message).join(' | '));
+  assert.equal(
+    read.ok,
+    true,
+    read.ok ? '' : read.diagnostics.map((diagnostic) => diagnostic.message).join(' | '),
+  );
   if (!read.ok) throw new TypeError('Example workspace could not be read.');
-  assert.deepEqual(writeWorkspaceFile(nativeWorkspace), { ok: true, source },
-    'compatibility exports must be generated from the native source project');
+  assert.deepEqual(
+    writeWorkspaceFile(nativeWorkspace),
+    { ok: true, source },
+    'compatibility exports must be generated from the native source project',
+  );
   const written = writeWorkspaceFile(read.workspace);
-  assert.deepEqual(written, { ok: true, source },
-    'example workspace must already use the canonical byte encoding');
+  assert.deepEqual(
+    written,
+    { ok: true, source },
+    'example workspace must already use the canonical byte encoding',
+  );
 
   const pkg = read.workspace.manifest.packages[0];
   assert.ok(pkg);
   assert.equal(pkg.name, 'creatures');
-  assert.deepEqual(pkg.manifest.entries.map((entry) => entry.name), ENTRY_NAMES);
-  assert.deepEqual(pkg.manifest.modules.map((module) => module.path), MODULE_PATHS);
+  assert.deepEqual(
+    pkg.manifest.entries.map((entry) => entry.name),
+    ENTRY_NAMES,
+  );
+  assert.deepEqual(
+    pkg.manifest.modules.map((module) => module.path),
+    MODULE_PATHS,
+  );
 
-  const projects = ENTRY_NAMES.map((entryName) =>
-    compileEntry(read.workspace, entryName));
+  const projects = ENTRY_NAMES.map((entryName) => compileEntry(read.workspace, entryName));
   for (const project of projects) {
     const name = ENTRY_NAMES[projects.indexOf(project)];
-    const portable = readWorkspaceFile(fs.readFileSync(path.join(EXAMPLES_ROOT, `${name}${ASHFOX_WORKSPACE_FILE_EXTENSION}`)));
+    const portable = readWorkspaceFile(
+      fs.readFileSync(path.join(EXAMPLES_ROOT, `${name}${ASHFOX_WORKSPACE_FILE_EXTENSION}`)),
+    );
     assert.equal(portable.ok, true);
-    assert.equal(compileEntry(portable.workspace, name).build.productHash, project.build.productHash);
-    const expectedClips = name === 'fox' ? ['curious', 'idle', 'tail_wag'] : ['challenge', 'idle', 'lookout'];
-    assert.deepEqual(Object.values(project.document.animations).map((clip) => clip.name).sort(), expectedClips);
+    assert.equal(
+      compileEntry(portable.workspace, name).build.productHash,
+      project.build.productHash,
+    );
+    const expectedClips =
+      name === 'fox' ? ['curious', 'idle', 'tail_wag'] : ['challenge', 'idle', 'lookout'];
+    assert.deepEqual(
+      Object.values(project.document.animations)
+        .map((clip) => clip.name)
+        .sort(),
+      expectedClips,
+    );
     const directory = path.join(ROOT, 'assets/exports', name);
     const lineage = JSON.parse(fs.readFileSync(path.join(directory, 'ashfox-lineage.json')));
     assert.equal(lineage.productHash, project.build.productHash);
     const bytes = fs.readFileSync(path.join(directory, `${name}.glb`));
-    assert.equal(`sha256:${createHash('sha256').update(bytes).digest('hex')}`, lineage.files.find((file) => file.path === `${name}.glb`).sha256);
+    assert.equal(
+      `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+      lineage.files.find((file) => file.path === `${name}.glb`).sha256,
+    );
     const gltf = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)));
     assert.deepEqual(gltf.animations.map((clip) => clip.name).sort(), expectedClips);
   }
   const griffin = compileEntry(read.workspace, 'griffin', 'workbench');
   projects.push(griffin);
   const griffinNodes = Object.values(griffin.document.scene.nodes);
-  assert.equal(griffinNodes.some((node) => node.name.endsWith('/hook')), false);
+  assert.equal(
+    griffinNodes.some((node) => node.name.endsWith('/hook')),
+    false,
+  );
   const claws = griffinNodes.filter((node) => node.name.includes('/hind_claw_'));
   assert.equal(claws.length, 6, 'each rear foot must have three claws');
   for (let index = 0; index < 3; index += 1) {
@@ -115,43 +158,68 @@ const verifyCorpus = () => {
     assert.deepEqual(left.bounds.to.slice(1), right.bounds.to.slice(1));
   }
   const standaloneSource = fs.readFileSync(
-    path.join(EXAMPLES_ROOT, `griffin${ASHFOX_WORKSPACE_FILE_EXTENSION}`), 'utf8'
+    path.join(EXAMPLES_ROOT, `griffin${ASHFOX_WORKSPACE_FILE_EXTENSION}`),
+    'utf8',
   );
   const standalone = readWorkspaceFile(standaloneSource);
   assert.equal(standalone.ok, true);
   assert.deepEqual(writeWorkspaceFile(standalone.workspace), {
-    ok: true, source: standaloneSource
+    ok: true,
+    source: standaloneSource,
   });
   const standaloneGriffin = compileEntry(standalone.workspace, 'griffin', 'workbench');
-  assert.equal(standaloneGriffin.build.productHash, griffin.build.productHash,
-    'standalone griffin must reproduce the showcased product');
-  assert.deepEqual(Object.values(griffin.document.animations).map((clip) =>
-    clip.name).sort(), ['alert', 'greeting', 'idle', 'look_around', 'wing_display', 'wing_flap'],
-  'the saved griffin must retain every reviewed motion');
+  assert.equal(
+    standaloneGriffin.build.productHash,
+    griffin.build.productHash,
+    'standalone griffin must reproduce the showcased product',
+  );
+  assert.deepEqual(
+    Object.values(griffin.document.animations)
+      .map((clip) => clip.name)
+      .sort(),
+    ['alert', 'greeting', 'idle', 'look_around', 'wing_display', 'wing_flap'],
+    'the saved griffin must retain every reviewed motion',
+  );
   const exportRoot = path.join(ROOT, 'assets', 'exports', 'griffin');
-  const lineage = JSON.parse(fs.readFileSync(
-    path.join(exportRoot, 'ashfox-lineage.json'), 'utf8'
-  ));
-  assert.equal(lineage.productHash, griffin.build.productHash,
-    'the downloadable GLB must describe the current griffin product');
+  const lineage = JSON.parse(fs.readFileSync(path.join(exportRoot, 'ashfox-lineage.json'), 'utf8'));
+  assert.equal(
+    lineage.productHash,
+    griffin.build.productHash,
+    'the downloadable GLB must describe the current griffin product',
+  );
   const model = fs.readFileSync(path.join(exportRoot, 'griffin.glb'));
-  assert.equal(`sha256:${createHash('sha256').update(model).digest('hex')}`,
+  assert.equal(
+    `sha256:${createHash('sha256').update(model).digest('hex')}`,
     lineage.files.find((file) => file.path === 'griffin.glb').sha256,
-    'the downloadable GLB bytes must match their export receipt');
+    'the downloadable GLB bytes must match their export receipt',
+  );
   const modelJson = JSON.parse(model.subarray(20, 20 + model.readUInt32LE(12)));
-  assert.deepEqual(modelJson.animations.map((clip) => clip.name).sort(),
-    Object.values(griffin.document.animations).map((clip) => clip.name).sort(),
-    'the downloadable GLB must retain every griffin motion');
-  assert.notEqual(projects[0].build.closureHash, projects[1].build.closureHash,
-    'each selected root must retain its own exact transitive closure identity');
-  assert.equal(projects.every((project) =>
-    project.build.workspaceHash === projects[0].build.workspaceHash), true,
-  'entries in one workspace must share one atomic workspace authority');
+  assert.deepEqual(
+    modelJson.animations.map((clip) => clip.name).sort(),
+    Object.values(griffin.document.animations)
+      .map((clip) => clip.name)
+      .sort(),
+    'the downloadable GLB must retain every griffin motion',
+  );
+  assert.notEqual(
+    projects[0].build.closureHash,
+    projects[1].build.closureHash,
+    'each selected root must retain its own exact transitive closure identity',
+  );
+  assert.equal(
+    projects.every((project) => project.build.workspaceHash === projects[0].build.workspaceHash),
+    true,
+    'entries in one workspace must share one atomic workspace authority',
+  );
 
-  const nodes = projects.reduce((count, project) =>
-    count + Object.keys(project.document.scene.nodes).length, 0);
-  console.log(`asset workspace verified: ${projects.length} entries, ` +
-    `${read.workspace.files.length} source modules, ${nodes} scene nodes`);
+  const nodes = projects.reduce(
+    (count, project) => count + Object.keys(project.document.scene.nodes).length,
+    0,
+  );
+  console.log(
+    `asset workspace verified: ${projects.length} entries, ` +
+      `${read.workspace.files.length} source modules, ${nodes} scene nodes`,
+  );
   return projects;
 };
 

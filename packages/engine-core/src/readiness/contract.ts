@@ -39,8 +39,5 @@ export interface ProductionReadinessReport {
   mechanicallyReady: boolean;
   counts: ProductionReadinessCounts;
   findings: readonly ProductionReadinessFinding[];
-  firstBlockingFinding:
-    | InvariantFinding
-    | ProductionReadinessFinding
-    | null;
+  firstBlockingFinding: InvariantFinding | ProductionReadinessFinding | null;
 }

@@ -3,9 +3,13 @@ import type {
   SetFaceUvCommand,
   CubeCommand,
   UpdateCubeCommand,
-  DeleteCubeCommand
+  DeleteCubeCommand,
 } from '../../../src/ports/editor';
-import type { CubeFaceDirection, CubeInstance, TextureInstance } from '../../../src/types/blockbench';
+import type {
+  CubeFaceDirection,
+  CubeInstance,
+  TextureInstance,
+} from '../../../src/types/blockbench';
 import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import type { BlockbenchSimState, SimCounters } from './types';
 import { CUBE_FACE_DIRECTIONS } from '../../../src/shared/toolConstants';
@@ -37,8 +41,20 @@ export const createCubeOps = (ctx: SimCubeContext) => {
   const normalizeCube = (
     cube: Pick<
       CubeInstance,
-      'id' | 'name' | 'from' | 'to' | 'origin' | 'rotation' | 'uv' | 'uv_offset' | 'inflate' | 'mirror' | 'visibility' | 'box_uv' | 'faces'
-    >
+      | 'id'
+      | 'name'
+      | 'from'
+      | 'to'
+      | 'origin'
+      | 'rotation'
+      | 'uv'
+      | 'uv_offset'
+      | 'inflate'
+      | 'mirror'
+      | 'visibility'
+      | 'box_uv'
+      | 'faces'
+    >,
   ): CubeInstance => {
     const id = cube.id ?? `cube-${ctx.counters.nextCubeId++}`;
     const name = cube.name ?? id;
@@ -55,7 +71,7 @@ export const createCubeOps = (ctx: SimCubeContext) => {
       mirror: cube.mirror,
       visibility: cube.visibility,
       box_uv: cube.box_uv,
-      faces: cube.faces ?? {}
+      faces: cube.faces ?? {},
     };
     ensureFaces(normalized);
     return normalized;
@@ -77,7 +93,7 @@ export const createCubeOps = (ctx: SimCubeContext) => {
       mirror: params.mirror,
       visibility: params.visibility,
       box_uv: params.boxUv,
-      faces: {}
+      faces: {},
     };
     ensureFaces(cube);
     ctx.applyAutoUv(cube);
@@ -87,7 +103,8 @@ export const createCubeOps = (ctx: SimCubeContext) => {
 
   const updateCube = (params: UpdateCubeCommand): ToolError | null => {
     const cube = findCube(params.id, params.name);
-    if (!cube) return error('invalid_payload', `Cube not found: ${params.name ?? params.id ?? 'unknown'}`);
+    if (!cube)
+      return error('invalid_payload', `Cube not found: ${params.name ?? params.id ?? 'unknown'}`);
     const wantsManualUv = Boolean(params.uv || params.uvOffset) || params.boxUv === false;
     if (wantsManualUv) {
       ctx.enforceManualUvMode(cube, { preserve: true });
@@ -110,7 +127,8 @@ export const createCubeOps = (ctx: SimCubeContext) => {
   const deleteCube = (params: DeleteCubeCommand): ToolError | null => {
     const before = ctx.state.cubes.length;
     ctx.state.cubes = ctx.state.cubes.filter(
-      (cube) => !((params.id && cube.id === params.id) || (params.name && cube.name === params.name))
+      (cube) =>
+        !((params.id && cube.id === params.id) || (params.name && cube.name === params.name)),
     );
     if (before === ctx.state.cubes.length) {
       return error('invalid_payload', `Cube not found: ${params.name ?? params.id ?? 'unknown'}`);
@@ -121,13 +139,17 @@ export const createCubeOps = (ctx: SimCubeContext) => {
   const assignTexture = (params: AssignTextureCommand): ToolError | null => {
     const texture = ctx.findTexture(params.textureId, params.textureName);
     if (!texture) {
-      return error('invalid_payload', `Texture not found: ${params.textureName ?? params.textureId ?? 'unknown'}`);
+      return error(
+        'invalid_payload',
+        `Texture not found: ${params.textureName ?? params.textureId ?? 'unknown'}`,
+      );
     }
     const cubeTargets = resolveCubes(params.cubeIds, params.cubeNames);
     if (cubeTargets.length === 0) {
       return error('invalid_payload', 'No cubes matched for assignment.');
     }
-    const faceTargets = params.faces && params.faces.length > 0 ? params.faces : CUBE_FACE_DIRECTIONS;
+    const faceTargets =
+      params.faces && params.faces.length > 0 ? params.faces : CUBE_FACE_DIRECTIONS;
     const ref = texture.id ?? texture.name ?? params.textureName ?? params.textureId ?? 'texture';
     for (const cube of cubeTargets) {
       ctx.enforceManualUvMode(cube, { preserve: true });
@@ -144,7 +166,10 @@ export const createCubeOps = (ctx: SimCubeContext) => {
   const setFaceUv = (params: SetFaceUvCommand): ToolError | null => {
     const cube = findCube(params.cubeId, params.cubeName);
     if (!cube) {
-      return error('invalid_payload', `Cube not found: ${params.cubeName ?? params.cubeId ?? 'unknown'}`);
+      return error(
+        'invalid_payload',
+        `Cube not found: ${params.cubeName ?? params.cubeId ?? 'unknown'}`,
+      );
     }
     ctx.enforceManualUvMode(cube, { preserve: true });
     const faces = ensureFaces(cube);
@@ -165,6 +190,6 @@ export const createCubeOps = (ctx: SimCubeContext) => {
     updateCube,
     deleteCube,
     assignTexture,
-    setFaceUv
+    setFaceUv,
   };
 };

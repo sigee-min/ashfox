@@ -11,16 +11,16 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       {
         type: 'object',
         properties: {
-          coordSpace: { type: 'string', enum: ['face'] }
-        }
+          coordSpace: { type: 'string', enum: ['face'] },
+        },
       },
       {
         type: 'object',
         required: ['coordSpace', 'width', 'height'],
         properties: {
-          coordSpace: { type: 'string', enum: ['texture'] }
-        }
-      }
+          coordSpace: { type: 'string', enum: ['texture'] },
+        },
+      },
     ],
     properties: {
       textureId: { type: 'string' },
@@ -28,18 +28,15 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       target: {
         type: 'object',
         additionalProperties: false,
-        anyOf: [
-          { required: ['cubeId'] },
-          { required: ['cubeName'] }
-        ],
+        anyOf: [{ required: ['cubeId'] }, { required: ['cubeName'] }],
         properties: {
           cubeId: { type: 'string' },
           cubeName: { type: 'string' },
           face: {
             ...cubeFaceSchema,
-            description: 'Optional face filter. Omit to apply to all cube faces.'
-          }
-        }
+            description: 'Optional face filter. Omit to apply to all cube faces.',
+          },
+        },
       },
       coordSpace: { type: 'string', enum: ['face', 'texture'] },
       width: { type: 'number' },
@@ -47,8 +44,8 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       op: textureOpSchema,
       mapping: { type: 'string', enum: ['stretch', 'tile'] },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   paint_mesh_face: {
     type: 'object',
@@ -58,16 +55,16 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       {
         type: 'object',
         properties: {
-          coordSpace: { type: 'string', enum: ['face'] }
-        }
+          coordSpace: { type: 'string', enum: ['face'] },
+        },
       },
       {
         type: 'object',
         required: ['coordSpace', 'width', 'height'],
         properties: {
-          coordSpace: { type: 'string', enum: ['texture'] }
-        }
-      }
+          coordSpace: { type: 'string', enum: ['texture'] },
+        },
+      },
     ],
     properties: {
       textureId: { type: 'string' },
@@ -76,15 +73,12 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       target: {
         type: 'object',
         additionalProperties: false,
-        anyOf: [
-          { required: ['meshId'] },
-          { required: ['meshName'] }
-        ],
+        anyOf: [{ required: ['meshId'] }, { required: ['meshName'] }],
         properties: {
           meshId: { type: 'string' },
           meshName: { type: 'string' },
-          faceId: { type: 'string' }
-        }
+          faceId: { type: 'string' },
+        },
       },
       coordSpace: { type: 'string', enum: ['face', 'texture'] },
       width: { type: 'number' },
@@ -92,8 +86,8 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       op: textureOpSchema,
       mapping: { type: 'string', enum: ['stretch', 'tile'] },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   delete_texture: {
     type: 'object',
@@ -102,8 +96,8 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       id: { type: 'string' },
       name: { type: 'string' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   assign_texture: {
     type: 'object',
@@ -114,16 +108,16 @@ export const textureToolSchemas: Record<string, JsonSchema> = {
       cubeIds: {
         type: 'array',
         items: { type: 'string' },
-        description: 'Limit to these cube ids. If cubeNames is also provided, both must match.'
+        description: 'Limit to these cube ids. If cubeNames is also provided, both must match.',
       },
       cubeNames: {
         type: 'array',
         items: { type: 'string' },
-        description: 'Limit to these cube names. If cubeIds is also provided, both must match.'
+        description: 'Limit to these cube names. If cubeIds is also provided, both must match.',
       },
       faces: { type: 'array', minItems: 1, items: cubeFaceSchema },
       ifRevision: revisionProp,
-      ...metaProps
-    }
-  }
+      ...metaProps,
+    },
+  },
 };

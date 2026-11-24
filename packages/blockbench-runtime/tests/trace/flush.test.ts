@@ -27,13 +27,13 @@ const record = (seq: number) => ({
   ts: new Date(1_700_000_100_000 + seq).toISOString(),
   route: 'tool' as const,
   op: `flush_${seq}`,
-  response: { ok: true as const, data: { seq } }
+  response: { ok: true as const, data: { seq } },
 });
 
 const header = () => ({
   kind: 'header' as const,
   schemaVersion: 1 as const,
-  createdAt: '2026-08-06T00:00:00.000Z'
+  createdAt: '2026-08-06T00:00:00.000Z',
 });
 
 const appendHeader = (store: TraceLogStore): void => {
@@ -47,7 +47,7 @@ const createLogger = () => {
     debug: () => undefined,
     info: () => undefined,
     warn: (message, meta) => warnEntries.push({ message, meta }),
-    error: () => undefined
+    error: () => undefined,
   };
   return { logger, warnEntries };
 };
@@ -62,7 +62,7 @@ const createLogger = () => {
     store,
     writer,
     policy: { flushEvery: 0, flushIntervalMs: 10 },
-    clock: () => now
+    clock: () => now,
   });
 
   store.append(record(1));
@@ -82,7 +82,7 @@ const createLogger = () => {
   const scheduler = new TraceLogFlushScheduler({
     store,
     writer,
-    policy: { enabled: false, flushEvery: 10 }
+    policy: { enabled: false, flushEvery: 10 },
   });
 
   scheduler.flushNow();
@@ -102,7 +102,7 @@ const createLogger = () => {
   const scheduler = new TraceLogFlushScheduler({
     store: storeA,
     writer: writerA,
-    policy: { flushEvery: 2 }
+    policy: { flushEvery: 2 },
   });
 
   storeA.append(record(1));
@@ -112,7 +112,7 @@ const createLogger = () => {
   scheduler.update({
     store: storeB,
     writer: writerB,
-    policy: { enabled: true, flushEvery: 1, flushIntervalMs: 0 }
+    policy: { enabled: true, flushEvery: 1, flushIntervalMs: 0 },
   });
   storeB.append(record(2));
   scheduler.recorded();
@@ -132,7 +132,7 @@ const createLogger = () => {
     store,
     writer,
     logger,
-    policy: { flushEvery: 1 }
+    policy: { flushEvery: 1 },
   });
 
   for (let i = 1; i <= 5; i += 1) {
@@ -154,7 +154,7 @@ const createLogger = () => {
   const scheduler = new TraceLogFlushScheduler({
     store,
     writer: null,
-    policy: { flushEvery: 1 }
+    policy: { flushEvery: 1 },
   });
 
   store.append(record(1));

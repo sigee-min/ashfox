@@ -32,7 +32,10 @@ export const removeEntity = (entity: Removable | null | undefined): boolean => {
 
 type Extendable = { extend?: (patch: Record<string, unknown>) => void };
 
-export const extendEntity = (entity: Extendable | null | undefined, patch: Record<string, unknown>): boolean => {
+export const extendEntity = (
+  entity: Extendable | null | undefined,
+  patch: Record<string, unknown>,
+): boolean => {
   if (!entity || !patch) return false;
   if (typeof entity.extend === 'function') {
     entity.extend(patch);

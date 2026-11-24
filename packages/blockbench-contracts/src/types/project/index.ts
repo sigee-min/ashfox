@@ -1,35 +1,34 @@
-import type { TextureFrameOrderType, TextureMeta, TexturePbrChannel, TextureRenderMode, TextureRenderSides } from '../texture';
+import type {
+  TextureFrameOrderType,
+  TextureMeta,
+  TexturePbrChannel,
+  TextureRenderMode,
+  TextureRenderSides,
+} from '../texture';
 import type { CubeFaceDirection, FormatKind, ProjectStateDetail } from '../shared';
 import type {
   TextureUsageCube,
   TextureUsageEntry,
   TextureUsageResult,
-  TextureUsageUnresolved
+  TextureUsageUnresolved,
 } from '../textureUsage';
 
-export const MESH_SYMMETRY_AXES = Object.freeze(
-  ['none', 'x', 'y', 'z'] as const
-);
-export type MeshSymmetryAxis = typeof MESH_SYMMETRY_AXES[number];
-export const TRACKED_ANIMATION_CHANNELS = Object.freeze(
-  ['rot', 'pos', 'scale'] as const
-);
-export type TrackedAnimationChannelName =
-  typeof TRACKED_ANIMATION_CHANNELS[number];
+export const MESH_SYMMETRY_AXES = Object.freeze(['none', 'x', 'y', 'z'] as const);
+export type MeshSymmetryAxis = (typeof MESH_SYMMETRY_AXES)[number];
+export const TRACKED_ANIMATION_CHANNELS = Object.freeze(['rot', 'pos', 'scale'] as const);
+export type TrackedAnimationChannelName = (typeof TRACKED_ANIMATION_CHANNELS)[number];
 export const TRACKED_ANIMATION_INTERPOLATIONS = Object.freeze([
   'linear',
   'step',
-  'catmullrom'
+  'catmullrom',
 ] as const);
-export type TrackedAnimationInterpolation =
-  typeof TRACKED_ANIMATION_INTERPOLATIONS[number];
+export type TrackedAnimationInterpolation = (typeof TRACKED_ANIMATION_INTERPOLATIONS)[number];
 export const TRACKED_ANIMATION_TRIGGER_TYPES = Object.freeze([
   'sound',
   'particle',
-  'timeline'
+  'timeline',
 ] as const);
-export type TrackedAnimationTriggerType =
-  typeof TRACKED_ANIMATION_TRIGGER_TYPES[number];
+export type TrackedAnimationTriggerType = (typeof TRACKED_ANIMATION_TRIGGER_TYPES)[number];
 
 export type MeshUvPolicy = {
   readonly symmetryAxis?: MeshSymmetryAxis;
@@ -143,10 +142,7 @@ export interface TrackedAnimationTrigger {
   readonly type: TrackedAnimationTriggerType;
   readonly keys: readonly {
     readonly time: number;
-    readonly value:
-      | string
-      | readonly string[]
-      | Readonly<Record<string, unknown>>;
+    readonly value: string | readonly string[] | Readonly<Record<string, unknown>>;
   }[];
 }
 

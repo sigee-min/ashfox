@@ -5,7 +5,7 @@ import { getFaceDimensions } from './policy';
 export const estimateUvPixelsPerBlock = (
   usage: TextureUsage,
   cubes: Cube[],
-  policy: Pick<UvPolicyConfig, 'modelUnitsPerBlock'>
+  policy: Pick<UvPolicyConfig, 'modelUnitsPerBlock'>,
 ): number | null => {
   const samples: number[] = [];
   const cubeById = new Map<string, Cube>();

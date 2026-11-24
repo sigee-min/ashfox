@@ -16,7 +16,7 @@ const TOOLCHAIN = 'ashfox-product-oracle:1';
 const STANDALONE_SOURCES = Object.freeze([
   'examples/fox/creatures/fox.ashfox',
   'examples/goblin/creatures/goblin.ashfox',
-  'examples/griffin/workbench/main.ashfox'
+  'examples/griffin/workbench/main.ashfox',
 ]);
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -28,7 +28,7 @@ const canonical = (value) => {
     return Object.fromEntries(
       Object.keys(value)
         .sort()
-        .map((key) => [key, canonical(value[key])])
+        .map((key) => [key, canonical(value[key])]),
     );
   }
   return value;
@@ -39,7 +39,7 @@ const digestValue = (value) => sha256(JSON.stringify(canonical(value)));
 /** Deterministic stand-in for FFmpeg so pack assembly is covered without host tools. */
 const identityEncoder = Object.freeze({
   fingerprint: 'ashfox-product-oracle:identity-vorbis',
-  encode: async (wav) => Uint8Array.from(wav)
+  encode: async (wav) => Uint8Array.from(wav),
 });
 
 const exampleInputs = (root = ROOT) => {
@@ -54,12 +54,13 @@ const exampleInputs = (root = ROOT) => {
 
 const productDigest = (product) => {
   const entry = `${product.entry.packageName}/${product.entry.entryName}`;
-  if (product.kind === 'sprite') return { entry, kind: product.kind, sha256: sha256(product.sprite.png) };
+  if (product.kind === 'sprite')
+    return { entry, kind: product.kind, sha256: sha256(product.sprite.png) };
   if (product.kind === 'sound') {
     return {
       entry,
       kind: product.kind,
-      variants: product.sounds.map((sound) => ({ id: sound.variant, sha256: sha256(sound.wav) }))
+      variants: product.sounds.map((sound) => ({ id: sound.variant, sha256: sha256(sound.wav) })),
     };
   }
   return { entry, kind: product.kind, sha256: digestValue(product.model) };
@@ -78,7 +79,7 @@ const describeInput = async (relative, build) => {
         .map(productDigest)
         .sort((a, b) => (a.entry < b.entry ? -1 : a.entry > b.entry ? 1 : 0)),
       catalogHash: bundle.receipt.catalogHash,
-      files: bundle.receipt.files.map((file) => ({ path: file.path, sha256: file.sha256 }))
+      files: bundle.receipt.files.map((file) => ({ path: file.path, sha256: file.sha256 })),
     };
   } catch (error) {
     return { input: relative, ok: false, code: error && error.code ? error.code : 'unknown' };
@@ -106,10 +107,10 @@ const compareReports = (expected, actual) => {
       const leftFiles = new Map((left.files || []).map((file) => [file.path, file.sha256]));
       const rightFiles = new Map((right.files || []).map((file) => [file.path, file.sha256]));
       const changed = [...new Set([...leftFiles.keys(), ...rightFiles.keys()])].filter(
-        (file) => leftFiles.get(file) !== rightFiles.get(file)
+        (file) => leftFiles.get(file) !== rightFiles.get(file),
       );
       differences.push(
-        `${input}: output changed` + (changed.length ? ` (${changed.slice(0, 5).join(', ')})` : '')
+        `${input}: output changed` + (changed.length ? ` (${changed.slice(0, 5).join(', ')})` : ''),
       );
     }
   }
@@ -117,7 +118,10 @@ const compareReports = (expected, actual) => {
 };
 
 const main = async () => {
-  register({ transpileOnly: true, compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' } });
+  register({
+    transpileOnly: true,
+    compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' },
+  });
   const build = require('@ashfox/asset-build');
   const report = await collect(build);
   const text = JSON.stringify(report, null, 2) + '\n';

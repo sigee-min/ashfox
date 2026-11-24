@@ -13,8 +13,10 @@ type TaggedImage = { tag: string };
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
-  formats: [{ format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } }],
-  limits: { maxCubes: 128, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  formats: [
+    { format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } },
+  ],
+  limits: { maxCubes: 128, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const createOpaque = (width: number, height: number): Uint8ClampedArray => {
@@ -43,15 +45,31 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
         cubeCount: 2,
         faceCount: 2,
         cubes: [
-          { id: 'cube-1', name: 'body', faces: [{ face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] }] },
-          { id: 'cube-2', name: 'body', faces: [{ face: 'north' as const, uv: [8, 0, 12, 4] as [number, number, number, number] }] }
-        ]
-      }
-    ]
+          {
+            id: 'cube-1',
+            name: 'body',
+            faces: [
+              { face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] },
+            ],
+          },
+          {
+            id: 'cube-2',
+            name: 'body',
+            faces: [
+              { face: 'north' as const, uv: [8, 0, 12, 4] as [number, number, number, number] },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   let currentImage: TaggedImage = { tag: 'before' };
-  const faceUvCalls: Array<{ cubeId?: string; cubeName?: string; faces: Record<string, [number, number, number, number]> }> = [];
+  const faceUvCalls: Array<{
+    cubeId?: string;
+    cubeName?: string;
+    faces: Record<string, [number, number, number, number]>;
+  }> = [];
 
   const editor = {
     getTextureUsage: () => ({ result: usage }),
@@ -63,13 +81,17 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
         name: 'tex',
         width,
         height,
-        image: currentImage as unknown as CanvasImageSource
-      }
+        image: currentImage as unknown as CanvasImageSource,
+      },
     }),
-    setFaceUv: (params: { cubeId?: string; cubeName?: string; faces: Record<string, [number, number, number, number]> }) => {
+    setFaceUv: (params: {
+      cubeId?: string;
+      cubeName?: string;
+      faces: Record<string, [number, number, number, number]>;
+    }) => {
       faceUvCalls.push(params);
       return null;
-    }
+    },
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
@@ -78,9 +100,9 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
       result: {
         image: { tag: 'after' } as unknown as CanvasImageSource,
         width,
-        height
-      }
-    })
+        height,
+      },
+    }),
   };
 
   const ctx: TextureToolContext = {
@@ -94,11 +116,11 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
       bones: [{ name: 'root', pivot: [0, 0, 0] }],
       cubes: [
         { id: 'cube-1', name: 'body', from: [0, 0, 0], to: [8, 8, 1], bone: 'root' },
-        { id: 'cube-2', name: 'body', from: [0, 0, 0], to: [4, 4, 1], bone: 'root' }
+        { id: 'cube-2', name: 'body', from: [0, 0, 0], to: [4, 4, 1], bone: 'root' },
       ],
       textures: [{ id: 'tex1', name: 'tex', width, height }],
       animations: [],
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -108,7 +130,7 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
     updateTexture: (payload) => {
       currentImage = payload.image as unknown as TaggedImage;
       return { ok: true, value: { id: 'tex1', name: 'tex' } };
-    }
+    },
   };
 
   const res = runAutoUvAtlas(ctx, { apply: true, ifRevision: 'r1' });
@@ -132,9 +154,17 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
         name: 'minecraft_dragon',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'cube1', name: 'body_main', faces: [{ face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] }] }]
-      }
-    ]
+        cubes: [
+          {
+            id: 'cube1',
+            name: 'body_main',
+            faces: [
+              { face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] },
+            ],
+          },
+        ],
+      },
+    ],
   };
   let currentImage: TaggedImage = { tag: 'before' };
   let updateCalls = 0;
@@ -150,10 +180,10 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
         name: 'minecraft_dragon',
         width,
         height,
-        image: currentImage as unknown as CanvasImageSource
-      }
+        image: currentImage as unknown as CanvasImageSource,
+      },
     }),
-    setFaceUv: () => null
+    setFaceUv: () => null,
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
@@ -168,9 +198,9 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
       result: {
         image: { tag: 'after' } as unknown as CanvasImageSource,
         width,
-        height
-      }
-    })
+        height,
+      },
+    }),
   };
 
   const ctx: TextureToolContext = {
@@ -185,7 +215,7 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
       cubes: [{ id: 'cube1', name: 'body_main', from: [-4, 6, -7], to: [4, 14, 7], bone: 'root' }],
       textures: [{ id: 'tex1', name: 'minecraft_dragon', width, height }],
       animations: [],
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -197,12 +227,12 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
       currentImage = payload.image as unknown as TaggedImage;
       if (updateCalls > 1) rollbackCalls += 1;
       return { ok: true, value: { id: 'tex1', name: 'minecraft_dragon' } };
-    }
+    },
   };
 
   const res = runAutoUvAtlas(ctx, {
     apply: true,
-    ifRevision: 'r1'
+    ifRevision: 'r1',
   });
 
   assert.equal(res.ok, false);

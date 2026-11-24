@@ -5,14 +5,14 @@ import {
   isDescendantBone,
   resolveBoneNameById,
   resolveTargetByIdOrName,
-  resolveTargetLabel
+  resolveTargetLabel,
 } from '../../../src/domain/sessionLookup';
 
 {
   const bones = [
     { id: 'b1', name: 'root', pivot: [0, 0, 0] as [number, number, number] },
     { id: 'b2', name: 'arm', parent: 'root', pivot: [0, 0, 0] as [number, number, number] },
-    { id: 'b3', name: 'hand', parent: 'arm', pivot: [0, 0, 0] as [number, number, number] }
+    { id: 'b3', name: 'hand', parent: 'arm', pivot: [0, 0, 0] as [number, number, number] },
   ];
   assert.equal(resolveBoneNameById(bones, 'b2'), 'arm');
   assert.equal(resolveBoneNameById(bones, 'missing'), null);
@@ -24,7 +24,7 @@ import {
 {
   const bones = [
     { name: 'a', parent: 'b', pivot: [0, 0, 0] as [number, number, number] },
-    { name: 'b', parent: 'a', pivot: [0, 0, 0] as [number, number, number] }
+    { name: 'b', parent: 'a', pivot: [0, 0, 0] as [number, number, number] },
   ];
   const descendants = collectDescendantBones(bones, 'a');
   assert.deepEqual(descendants.sort(), ['a', 'b']);
@@ -33,7 +33,7 @@ import {
 {
   const items = [
     { id: '1', name: 'first' },
-    { id: '2', name: 'second' }
+    { id: '2', name: 'second' },
   ];
   assert.equal(resolveTargetByIdOrName(items, '2', undefined)?.name, 'second');
   assert.equal(resolveTargetByIdOrName(items, undefined, 'first')?.id, '1');

@@ -56,7 +56,7 @@ async function main() {
   );
   png(orbit, 640, 360);
   const idat = [];
-  for (let offset = 8; offset < orbit.length; ) {
+  for (let offset = 8; offset < orbit.length;) {
     const length = orbit.readUInt32BE(offset);
     if (orbit.toString('ascii', offset + 4, offset + 8) === 'IDAT')
       idat.push(orbit.subarray(offset + 8, offset + 8 + length));

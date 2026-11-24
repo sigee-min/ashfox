@@ -12,11 +12,14 @@ const normalizeRect = (uv: [number, number, number, number]): UvPaintRect => {
     x1: Math.min(x1, x2),
     y1: Math.min(y1, y2),
     x2: Math.max(x1, x2),
-    y2: Math.max(y1, y2)
+    y2: Math.max(y1, y2),
   };
 };
 
-const resolveUsageEntry = (texture: UvPaintResolveInput, usage: TextureUsage): UsageEntry | null => {
+const resolveUsageEntry = (
+  texture: UvPaintResolveInput,
+  usage: TextureUsage,
+): UsageEntry | null => {
   if (texture.targetId) {
     const byId = usage.textures.find((entry) => entry.id === texture.targetId);
     if (byId) return byId;
@@ -53,7 +56,7 @@ const resolveScope = (scope?: UvPaintScope): UvPaintScope => scope ?? 'rects';
 export const resolveUvPaintRects = (
   texture: UvPaintResolveInput,
   usage: TextureUsage,
-  messages: UvPaintMessages
+  messages: UvPaintMessages,
 ): DomainResult<{ rects: UvPaintRect[] }> => {
   const label = texture.name ?? texture.targetName ?? texture.targetId ?? 'texture';
   const uvPaint = texture.uvPaint;
@@ -68,7 +71,9 @@ export const resolveUvPaintRects = (
   const faces = uvPaint.target?.faces ? new Set(uvPaint.target.faces) : null;
   const filteredCubes = filterByTargetFilters(entry.cubes, cubeFilters);
   if (cubeFilters.hasFilters && filteredCubes.length === 0) {
-    return err('invalid_state', messages.targetCubesNotFound(label), { reason: 'target_cubes_not_found' });
+    return err('invalid_state', messages.targetCubesNotFound(label), {
+      reason: 'target_cubes_not_found',
+    });
   }
   const rects: UvPaintRect[] = [];
   let matchedFaces = 0;
@@ -81,7 +86,9 @@ export const resolveUvPaintRects = (
     });
   });
   if (faces && matchedFaces === 0) {
-    return err('invalid_state', messages.targetFacesNotFound(label), { reason: 'target_faces_not_found' });
+    return err('invalid_state', messages.targetFacesNotFound(label), {
+      reason: 'target_faces_not_found',
+    });
   }
   if (rects.length === 0) {
     return err('invalid_state', messages.noRects(label), { reason: 'no_rects' });
@@ -93,14 +100,18 @@ export const resolveUvPaintRects = (
         x1: Math.min(acc.x1, rect.x1),
         y1: Math.min(acc.y1, rect.y1),
         x2: Math.max(acc.x2, rect.x2),
-        y2: Math.max(acc.y2, rect.y2)
+        y2: Math.max(acc.y2, rect.y2),
       }),
-      { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity }
+      { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity },
     );
     if (!Number.isFinite(bounds.x1) || !Number.isFinite(bounds.y1)) {
       return {
         ok: false,
-        error: { code: 'invalid_state', message: messages.noBounds(label), details: { reason: 'no_bounds' } }
+        error: {
+          code: 'invalid_state',
+          message: messages.noBounds(label),
+          details: { reason: 'no_bounds' },
+        },
       };
     }
     return { ok: true, data: { rects: [bounds] } };
@@ -114,12 +125,8 @@ export const resolveUvPaintRects = (
 const err = <T = never>(
   code: 'invalid_payload' | 'invalid_state',
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): DomainResult<T> => ({
   ok: false,
-  error: { code, message, details }
+  error: { code, message, details },
 });
-
-
-
-

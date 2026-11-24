@@ -27,9 +27,12 @@ export interface GeometryMeasurement {
 
 export type MeasurementResult =
   | { readonly ok: true; readonly value: GeometryMeasurement }
-  | { readonly ok: false; readonly path: string;
-      readonly reason: 'not_found' | 'empty_geometry' | 'invalid_geometry' |
-        'budget_exceeded' | 'invalid_request' };
+  | {
+      readonly ok: false;
+      readonly path: string;
+      readonly reason:
+        'not_found' | 'empty_geometry' | 'invalid_geometry' | 'budget_exceeded' | 'invalid_request';
+    };
 
 export interface SurfaceInspection {
   readonly schemaVersion: 1;
@@ -42,7 +45,11 @@ export interface SurfaceInspection {
     readonly uv: readonly number[] | null;
     readonly rotation: number;
     readonly pixelSpan: readonly number[] | null;
-    readonly texture: Readonly<{ readonly width: number; readonly height: number;
-      readonly sampling: 'nearest' | 'linear'; readonly contentHash: string }> | null;
+    readonly texture: Readonly<{
+      readonly width: number;
+      readonly height: number;
+      readonly sampling: 'nearest' | 'linear';
+      readonly contentHash: string;
+    }> | null;
   }>[];
 }

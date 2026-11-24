@@ -8,7 +8,7 @@ import {
   ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES,
   ADAPTER_PROJECT_CREATE_UNAVAILABLE,
   ADAPTER_PROJECT_DIALOG_INPUT_REQUIRED,
-  ADAPTER_PROJECT_UNSAVED_CHANGES
+  ADAPTER_PROJECT_UNSAVED_CHANGES,
 } from '../../../src/shared/messages';
 import { withGlobals as withGlobalOverrides } from '../../support/globals';
 
@@ -25,7 +25,7 @@ const logger: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 const withGlobals = (overrides: TestGlobals, run: () => void) =>
@@ -35,9 +35,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       Project: overrides.Project,
       ModelFormat: overrides.ModelFormat,
       Formats: overrides.Formats,
-      Dialog: overrides.Dialog
+      Dialog: overrides.Dialog,
     },
-    run
+    run,
   );
 
 {
@@ -45,13 +45,16 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
     {
       Blockbench: { project: { saved: true } },
       ModelFormat: {},
-      Formats: {}
+      Formats: {},
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.createProject('demo', 'fmt', 'geckolib');
-      assert.deepEqual(err, { code: 'not_implemented', message: ADAPTER_PROJECT_CREATE_UNAVAILABLE });
-    }
+      assert.deepEqual(err, {
+        code: 'not_implemented',
+        message: ADAPTER_PROJECT_CREATE_UNAVAILABLE,
+      });
+    },
   );
 }
 
@@ -64,17 +67,17 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
         project,
         newProject: () => {
           newProjectCalls += 1;
-        }
+        },
       },
       ModelFormat: {},
-      Formats: {}
+      Formats: {},
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.createProject('demo', 'fmt', 'geckolib', { confirmDiscard: false });
       assert.deepEqual(err, { code: 'invalid_state', message: ADAPTER_PROJECT_UNSAVED_CHANGES });
       assert.equal(newProjectCalls, 0);
-    }
+    },
   );
 }
 
@@ -89,9 +92,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
         geckolib_model: {
           new: () => {
             formatNewCalls += 1;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -99,7 +102,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.equal(err, null);
       assert.equal(formatNewCalls, 1);
       assert.equal(project.name, 'dragon');
-    }
+    },
   );
 }
 
@@ -116,10 +119,10 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
         },
         setProjectName: (name: string) => {
           projectName = name;
-        }
+        },
       },
       ModelFormat: {},
-      Formats: {}
+      Formats: {},
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -127,7 +130,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.equal(err, null);
       assert.equal(newProjectFormat, 'animated_java');
       assert.equal(projectName, 'wyvern');
-    }
+    },
   );
 }
 
@@ -140,16 +143,16 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       ModelFormat: {
         new: () => {
           modelFormatCalls += 1;
-        }
+        },
       },
-      Formats: {}
+      Formats: {},
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.createProject('hydra', 'fmt', 'geckolib');
       assert.equal(err, null);
       assert.equal(modelFormatCalls, 1);
-    }
+    },
   );
 }
 
@@ -159,7 +162,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
     {
       Blockbench: {
         project,
-        newProject: () => undefined
+        newProject: () => undefined,
       },
       ModelFormat: {},
       Formats: {},
@@ -167,9 +170,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
         open: {
           getFormResult: () => ({ name: '', format: '' }),
           setFormValues: () => undefined,
-          confirm: () => undefined
-        }
-      }
+          confirm: () => undefined,
+        },
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -177,7 +180,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.ok(err);
       assert.equal(err?.code, 'invalid_state');
       assert.equal(err?.message, ADAPTER_PROJECT_DIALOG_INPUT_REQUIRED);
-    }
+    },
   );
 }
 
@@ -190,9 +193,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
         geckolib_model: {
           new: () => {
             throw new Error('create fail');
-          }
-        }
-      }
+          },
+        },
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -201,7 +204,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.equal(err?.code, 'unknown');
       assert.equal(err?.details?.context, 'project_create');
       assert.equal(err?.details?.reason, 'adapter_exception');
-    }
+    },
   );
 }
 
@@ -210,15 +213,18 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
   withGlobals(
     {
       Blockbench: {
-        project
+        project,
       },
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.closeProject();
-      assert.deepEqual(err, { code: 'invalid_state', message: ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES });
-    }
+      assert.deepEqual(err, {
+        code: 'invalid_state',
+        message: ADAPTER_PROJECT_CLOSE_UNSAVED_CHANGES,
+      });
+    },
   );
 }
 
@@ -227,15 +233,18 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
   withGlobals(
     {
       Blockbench: {
-        project
+        project,
       },
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.closeProject();
-      assert.deepEqual(err, { code: 'not_implemented', message: ADAPTER_PROJECT_CLOSE_UNAVAILABLE });
-    }
+      assert.deepEqual(err, {
+        code: 'not_implemented',
+        message: ADAPTER_PROJECT_CLOSE_UNAVAILABLE,
+      });
+    },
   );
 }
 
@@ -244,14 +253,14 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
     saved: true,
     close: () => {
       throw new Error('close fail');
-    }
+    },
   };
   withGlobals(
     {
       Blockbench: {
-        project
+        project,
       },
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -261,20 +270,23 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.equal(err.code, 'unknown');
       assert.equal(err.details?.context, 'project_close');
       assert.equal(err.details?.reason, 'adapter_exception');
-    }
+    },
   );
 }
 
 {
   withGlobals(
     {
-      Blockbench: {}
+      Blockbench: {},
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.writeFile('out.json', '{}');
-      assert.deepEqual(err, { code: 'not_implemented', message: ADAPTER_BLOCKBENCH_WRITEFILE_UNAVAILABLE });
-    }
+      assert.deepEqual(err, {
+        code: 'not_implemented',
+        message: ADAPTER_BLOCKBENCH_WRITEFILE_UNAVAILABLE,
+      });
+    },
   );
 }
 
@@ -285,15 +297,15 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       Blockbench: {
         writeFile: (path: string, payload: { content: string; savetype: string }) => {
           writes.push({ path, content: payload.content, savetype: payload.savetype });
-        }
-      }
+        },
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.writeFile('out.json', '{"ok":true}');
       assert.equal(err, null);
       assert.deepEqual(writes, [{ path: 'out.json', content: '{"ok":true}', savetype: 'text' }]);
-    }
+    },
   );
 }
 
@@ -303,8 +315,8 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       Blockbench: {
         writeFile: () => {
           throw new Error('write fail');
-        }
-      }
+        },
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -312,6 +324,6 @@ const withGlobals = (overrides: TestGlobals, run: () => void) =>
       assert.ok(err);
       assert.equal(err?.code, 'io_error');
       assert.equal(err?.message, 'write fail');
-    }
+    },
   );
 }

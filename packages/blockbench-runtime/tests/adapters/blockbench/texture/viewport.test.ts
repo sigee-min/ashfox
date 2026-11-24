@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { runImportTexture, runUpdateTexture } from '../../../../src/adapters/blockbench/texture/textureCommands';
+import {
+  runImportTexture,
+  runUpdateTexture,
+} from '../../../../src/adapters/blockbench/texture/textureCommands';
 import { noopLog } from '../../../helpers';
 
 const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
@@ -9,7 +12,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -43,12 +46,12 @@ class FakeTexture {
     this.height = options.height ?? 16;
     this.ctx = {
       clearRect: () => undefined,
-      drawImage: () => undefined
+      drawImage: () => undefined,
     };
     this.canvas = {
       width: this.width,
       height: this.height,
-      getContext: (type: string) => (type === '2d' ? this.ctx : null)
+      getContext: (type: string) => (type === '2d' ? this.ctx : null),
     };
   }
 
@@ -81,21 +84,21 @@ class FakeTexture {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runUpdateTexture(noopLog, {
         name: 'minecraft_dragon',
         image: {} as CanvasImageSource,
         width: 64,
-        height: 64
+        height: 64,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(previewRenderCalls, 1);
 }
@@ -111,23 +114,22 @@ class FakeTexture {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = runImportTexture(noopLog, {
         name: 'imported_tex',
         image: {} as CanvasImageSource,
         width: 32,
-        height: 32
+        height: 32,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(FakeTexture.all.length, 1);
   assert.equal(previewRenderCalls, 1);
 }
-

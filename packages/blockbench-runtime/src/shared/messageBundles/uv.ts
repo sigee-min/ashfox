@@ -24,7 +24,7 @@ import {
   UV_SCALE_FIX,
   UV_SCALE_MESSAGE,
   UV_USAGE_CHANGED_FIX,
-  UV_USAGE_CHANGED_MESSAGE
+  UV_USAGE_CHANGED_MESSAGE,
 } from '../messages/texture/uv';
 import {
   UV_PAINT_ANCHOR_FORMAT,
@@ -56,7 +56,7 @@ import {
   UV_PAINT_TARGET_FACES_NOT_FOUND,
   UV_PAINT_TARGET_CUBES_NOT_FOUND,
   UV_PAINT_TARGET_OBJECT,
-  UV_PAINT_USAGE_MISSING
+  UV_PAINT_USAGE_MISSING,
 } from '../messages/texture/paint';
 
 export const buildUvAssignmentMessages = () => ({
@@ -69,13 +69,13 @@ export const buildUvAssignmentMessages = () => ({
   facesNonEmpty: UV_ASSIGNMENT_FACES_NON_EMPTY,
   invalidFace: UV_ASSIGNMENT_INVALID_FACE,
   uvFormat: UV_ASSIGNMENT_UV_FORMAT,
-  uvNumbers: UV_ASSIGNMENT_UV_NUMBERS
+  uvNumbers: UV_ASSIGNMENT_UV_NUMBERS,
 });
 
 export const buildUvBoundsMessages = () => ({
   negative: UV_BOUNDS_NEGATIVE,
   order: UV_BOUNDS_ORDER,
-  outOfBounds: UV_BOUNDS_OUT_OF_BOUNDS
+  outOfBounds: UV_BOUNDS_OUT_OF_BOUNDS,
 });
 
 export const buildUvAtlasMessages = () => ({
@@ -85,7 +85,7 @@ export const buildUvAtlasMessages = () => ({
   cubeMissing: UV_ATLAS_CUBE_MISSING,
   deriveSizeFailed: UV_ATLAS_DERIVE_SIZE_FAILED,
   uvSizeExceeds: UV_ATLAS_UV_SIZE_EXCEEDS,
-  overflow: UV_ATLAS_OVERFLOW
+  overflow: UV_ATLAS_OVERFLOW,
 });
 
 export const buildUvGuardMessages = () => ({
@@ -94,7 +94,7 @@ export const buildUvGuardMessages = () => ({
   overlapMessage: UV_OVERLAP_MESSAGE,
   overlapFix: UV_OVERLAP_FIX,
   scaleMessage: UV_SCALE_MESSAGE,
-  scaleFix: UV_SCALE_FIX
+  scaleFix: UV_SCALE_FIX,
 });
 
 export const buildUvPaintMessages = () => ({
@@ -119,24 +119,24 @@ export const buildUvPaintMessages = () => ({
   targetCubeNamesRequired: UV_PAINT_TARGET_CUBE_NAMES_REQUIRED,
   targetCubeNamesString: UV_PAINT_TARGET_CUBE_NAMES_STRING,
   targetFacesRequired: UV_PAINT_TARGET_FACES_REQUIRED,
-  targetFacesInvalid: UV_PAINT_TARGET_FACES_INVALID
+  targetFacesInvalid: UV_PAINT_TARGET_FACES_INVALID,
 });
 
 export const buildUvPaintRectMessages = () => ({
   rectInvalid: UV_PAINT_RECT_INVALID,
   paddingExceedsRect: UV_PAINT_PADDING_EXCEEDS_RECT,
-  rectOutsideBounds: UV_PAINT_RECT_OUTSIDE_BOUNDS
+  rectOutsideBounds: UV_PAINT_RECT_OUTSIDE_BOUNDS,
 });
 
 export const buildUvPaintPixelMessages = () => ({
   rectsRequired: UV_PAINT_RECTS_REQUIRED,
   sourceTargetPositive: UV_PAINT_SOURCE_TARGET_POSITIVE,
   sourceDataMismatch: UV_PAINT_SOURCE_DATA_MISMATCH,
-  rects: buildUvPaintRectMessages()
+  rects: buildUvPaintRectMessages(),
 });
 
 export const buildUvPaintSourceMessages = () => ({
   axisPositive: UV_PAINT_SOURCE_AXIS_POSITIVE,
   axisInteger: UV_PAINT_SOURCE_AXIS_INTEGER,
-  exceedsMax: UV_PAINT_SOURCE_EXCEEDS_MAX
+  exceedsMax: UV_PAINT_SOURCE_EXCEEDS_MAX,
 });

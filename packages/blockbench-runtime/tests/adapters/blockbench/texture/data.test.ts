@@ -8,7 +8,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -30,28 +30,28 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 
 {
   const uri = getTextureDataUri({
-    getDataUrl: () => 'data:image/png;base64,AAAA'
+    getDataUrl: () => 'data:image/png;base64,AAAA',
   } as never);
   assert.equal(uri, 'data:image/png;base64,AAAA');
 }
 
 {
   const uri = getTextureDataUri({
-    getBase64: () => 'BBBB'
+    getBase64: () => 'BBBB',
   } as never);
   assert.equal(uri, 'data:image/png;base64,BBBB');
 }
 
 {
   const uri = getTextureDataUri({
-    getBase64: () => ''
+    getBase64: () => '',
   } as never);
   assert.equal(uri, null);
 }
 
 {
   const uri = getTextureDataUri({
-    toDataURL: () => 'data:image/png;base64,CCCC'
+    toDataURL: () => 'data:image/png;base64,CCCC',
   } as never);
   assert.equal(uri, 'data:image/png;base64,CCCC');
 }
@@ -59,8 +59,8 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 {
   const uri = getTextureDataUri({
     canvas: {
-      toDataURL: () => 'data:image/png;base64,DDDD'
-    }
+      toDataURL: () => 'data:image/png;base64,DDDD',
+    },
   } as never);
   assert.equal(uri, 'data:image/png;base64,DDDD');
 }
@@ -75,26 +75,26 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         ? {
             drawImage: () => {
               drawCalls += 1;
-            }
+            },
           }
         : null,
-    toDataURL: () => 'data:image/png;base64,EEEE'
+    toDataURL: () => 'data:image/png;base64,EEEE',
   };
   withGlobals(
     {
       document: {
-        createElement: (name: string) => (name === 'canvas' ? tempCanvas : null)
-      }
+        createElement: (name: string) => (name === 'canvas' ? tempCanvas : null),
+      },
     },
     () => {
       const uri = getTextureDataUri({
-        img: { naturalWidth: 16, naturalHeight: 16 }
+        img: { naturalWidth: 16, naturalHeight: 16 },
       } as never);
       assert.equal(uri, 'data:image/png;base64,EEEE');
       assert.equal(drawCalls, 1);
       assert.equal(tempCanvas.width, 16);
       assert.equal(tempCanvas.height, 16);
-    }
+    },
   );
 }
 
@@ -102,15 +102,15 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   withGlobals(
     {
       document: {
-        createElement: () => null
-      }
+        createElement: () => null,
+      },
     },
     () => {
       const uri = getTextureDataUri({
-        img: { naturalWidth: 16, naturalHeight: 16 }
+        img: { naturalWidth: 16, naturalHeight: 16 },
       } as never);
       assert.equal(uri, null);
-    }
+    },
   );
 }
 
@@ -122,16 +122,16 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
           width: 0,
           height: 0,
           getContext: () => null,
-          toDataURL: () => 'data:image/png;base64,FFFF'
-        })
-      }
+          toDataURL: () => 'data:image/png;base64,FFFF',
+        }),
+      },
     },
     () => {
       const uri = getTextureDataUri({
-        img: { width: 16, height: 16 }
+        img: { width: 16, height: 16 },
       } as never);
       assert.equal(uri, null);
-    }
+    },
   );
 }
 
@@ -143,29 +143,29 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
           width: 0,
           height: 0,
           getContext: () => ({
-            drawImage: () => undefined
+            drawImage: () => undefined,
           }),
-          toDataURL: () => 'data:image/png;base64,GGGG'
-        })
-      }
+          toDataURL: () => 'data:image/png;base64,GGGG',
+        }),
+      },
     },
     () => {
       const uri = getTextureDataUri({
-        img: { width: 0, height: 0 }
+        img: { width: 0, height: 0 },
       } as never);
       assert.equal(uri, null);
-    }
+    },
   );
 }
 
 {
   withGlobals(
     {
-      document: undefined
+      document: undefined,
     },
     () => {
       const uri = getTextureDataUri({ img: { width: 16, height: 16 } } as never);
       assert.equal(uri, null);
-    }
+    },
   );
 }

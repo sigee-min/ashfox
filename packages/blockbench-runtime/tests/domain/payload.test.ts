@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { ensureIdNameMatch, ensureIdOrName, ensureNonBlankString } from '../../src/domain/payloadValidation';
+import {
+  ensureIdNameMatch,
+  ensureIdOrName,
+  ensureNonBlankString,
+} from '../../src/domain/payloadValidation';
 
 {
   const error = ensureNonBlankString('   ', { message: 'name required', fix: 'set name' });
@@ -30,7 +34,7 @@ import { ensureIdNameMatch, ensureIdOrName, ensureNonBlankString } from '../../s
 {
   const items = [
     { id: 'a', name: 'body' },
-    { id: 'b', name: 'head' }
+    { id: 'b', name: 'head' },
   ];
   const error = ensureIdNameMatch(items, 'a', 'head', { kind: 'cube', plural: 'cubes' });
   assert.equal(error?.code, 'invalid_payload');
@@ -40,12 +44,12 @@ import { ensureIdNameMatch, ensureIdOrName, ensureNonBlankString } from '../../s
 {
   const items = [
     { id: 'a', name: 'body' },
-    { id: 'b', name: 'head' }
+    { id: 'b', name: 'head' },
   ];
   const error = ensureIdNameMatch(items, 'a', 'head', {
     kind: 'cube',
     plural: 'cubes',
-    message: ({ id, name, kind }) => `${kind}:${id}:${name}`
+    message: ({ id, name, kind }) => `${kind}:${id}:${name}`,
   });
   assert.equal(error?.message, 'cube:a:head');
 }
@@ -53,9 +57,8 @@ import { ensureIdNameMatch, ensureIdOrName, ensureNonBlankString } from '../../s
 {
   const items = [
     { id: 'a', name: 'body' },
-    { id: 'b', name: 'head' }
+    { id: 'b', name: 'head' },
   ];
   const error = ensureIdNameMatch(items, 'a', 'body', { kind: 'cube', plural: 'cubes' });
   assert.equal(error, null);
 }
-

@@ -13,7 +13,7 @@ import {
   TOOL_HINT_NO_CHANGE,
   TOOL_HINT_NOT_IMPLEMENTED,
   TOOL_HINT_UNKNOWN,
-  TOOL_HINT_UNSUPPORTED_FORMAT
+  TOOL_HINT_UNSUPPORTED_FORMAT,
 } from '../messages';
 
 const DEFAULT_FIXES: Partial<Record<ToolErrorCode, string>> = {
@@ -23,7 +23,7 @@ const DEFAULT_FIXES: Partial<Record<ToolErrorCode, string>> = {
   unsupported_format: TOOL_FIX_UNSUPPORTED_FORMAT,
   no_change: TOOL_FIX_NO_CHANGE,
   io_error: TOOL_FIX_IO_ERROR,
-  unknown: TOOL_FIX_UNKNOWN
+  unknown: TOOL_FIX_UNKNOWN,
 };
 
 const DEFAULT_MESSAGE_HINTS: Partial<Record<ToolErrorCode, string>> = {
@@ -33,7 +33,7 @@ const DEFAULT_MESSAGE_HINTS: Partial<Record<ToolErrorCode, string>> = {
   unsupported_format: TOOL_HINT_UNSUPPORTED_FORMAT,
   no_change: TOOL_HINT_NO_CHANGE,
   io_error: TOOL_HINT_IO_ERROR,
-  unknown: TOOL_HINT_UNKNOWN
+  unknown: TOOL_HINT_UNKNOWN,
 };
 
 export const applyToolErrorPolicy = (error: ToolError): ToolError => {
@@ -68,7 +68,3 @@ const normalizeTerminology = (value: string): string =>
     .replace(/textureResolution/g, 'texture resolution')
     .replace(/get_project_state/g, 'get_project_state')
     .replace(/set_project_texture_resolution/g, 'set_project_texture_resolution');
-
-
-
-

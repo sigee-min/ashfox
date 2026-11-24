@@ -10,7 +10,7 @@ type AutoDialogOptions = {
 
 export const tryAutoConfirmProjectDialog = (
   projectName: string,
-  options?: AutoDialogOptions
+  options?: AutoDialogOptions,
 ): { ok: true } | { ok: false; error: ToolError } => {
   const dialogApi = readGlobals().Dialog;
   const dialog = dialogApi?.open;
@@ -31,10 +31,18 @@ export const tryAutoConfirmProjectDialog = (
     values.project_name = projectName;
   }
   if (allowed.has('format') && isEmptyDialogValue(values.format)) {
-    const formatValue = coerceDialogSelectValue(current.format, options?.formatId, options?.formatKind);
+    const formatValue = coerceDialogSelectValue(
+      current.format,
+      options?.formatId,
+      options?.formatKind,
+    );
     if (formatValue !== undefined) values.format = formatValue;
   }
-  if (allowed.has('parent') && isEmptyDialogValue(values.parent) && options?.dialog?.parent !== undefined) {
+  if (
+    allowed.has('parent') &&
+    isEmptyDialogValue(values.parent) &&
+    options?.dialog?.parent !== undefined
+  ) {
     values.parent = options.dialog.parent;
   }
   if (typeof dialog.setFormValues === 'function') {
@@ -48,12 +56,19 @@ export const tryAutoConfirmProjectDialog = (
     let appliedFallback = false;
     if (missing.includes('format') && allowed.has('format') && options?.formatKind) {
       const fallbackFormat = coerceDialogSelectValue(current.format, undefined, options.formatKind);
-      if (fallbackFormat !== undefined && !isSameDialogValue(fallbackValues.format, fallbackFormat)) {
+      if (
+        fallbackFormat !== undefined &&
+        !isSameDialogValue(fallbackValues.format, fallbackFormat)
+      ) {
         fallbackValues.format = fallbackFormat;
         appliedFallback = true;
       }
     }
-    if (missing.includes('parent') && allowed.has('parent') && options?.dialog?.parent !== undefined) {
+    if (
+      missing.includes('parent') &&
+      allowed.has('parent') &&
+      options?.dialog?.parent !== undefined
+    ) {
       if (!isSameDialogValue(fallbackValues.parent, options.dialog.parent)) {
         fallbackValues.parent = options.dialog.parent;
         appliedFallback = true;
@@ -77,8 +92,12 @@ export const tryAutoConfirmProjectDialog = (
         code: 'invalid_state',
         message: ADAPTER_PROJECT_DIALOG_INPUT_REQUIRED,
         fix: `Provide ensure_project.dialog values for: ${finalMissing.join(', ')}. Use the exact field keys.`,
-        details: { fields: finalRemaining, missing: finalMissing, attempted: pickDialogFields(attemptedValues, finalMissing) }
-      }
+        details: {
+          fields: finalRemaining,
+          missing: finalMissing,
+          attempted: pickDialogFields(attemptedValues, finalMissing),
+        },
+      },
     };
   }
   return { ok: true };
@@ -102,7 +121,7 @@ const isSameDialogValue = (a: unknown, b: unknown): boolean => {
 const coerceDialogSelectValue = (
   currentValue: unknown,
   desiredId?: string,
-  desiredLabel?: string
+  desiredLabel?: string,
 ): unknown => {
   const desired = desiredId ?? desiredLabel;
   if (desired === undefined) return undefined;
@@ -120,11 +139,13 @@ const coerceDialogSelectValue = (
   return desired;
 };
 
-const pickDialogFields = (values: Record<string, unknown>, keys: string[]): Record<string, unknown> => {
+const pickDialogFields = (
+  values: Record<string, unknown>,
+  keys: string[],
+): Record<string, unknown> => {
   const picked: Record<string, unknown> = {};
   keys.forEach((key) => {
     if (key in values) picked[key] = values[key];
   });
   return picked;
 };
-

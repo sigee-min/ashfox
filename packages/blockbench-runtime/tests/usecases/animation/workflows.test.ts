@@ -8,26 +8,30 @@ import {
   ANIMATION_FRAME_INVALID,
   ANIMATION_TRIGGER_KEYFRAME_SINGLE_REQUIRED,
   TRIGGER_TIME_INVALID,
-  TRIGGER_VALUE_INVALID
+  TRIGGER_VALUE_INVALID,
 } from '../../../src/shared/messages';
 import {
   runCreateAnimationClip,
   runDeleteAnimationClip,
   runUpdateAnimationClip,
-  type AnimationClipCrudDeps
+  type AnimationClipCrudDeps,
 } from '../../../src/usecases/animation/clipCrudUsecases';
-import { ensureClipSelector, resolveClipTarget } from '../../../src/usecases/animation/clipSelectors';
+import {
+  ensureClipSelector,
+  resolveClipTarget,
+} from '../../../src/usecases/animation/clipSelectors';
 import { runSetFramePose } from '../../../src/usecases/animation/poseUsecase';
 import { runSetTriggerKeyframes } from '../../../src/usecases/animation/triggerUsecase';
 import { createEditorStub } from '../../fakes';
 
-const normalizedMessage = (message: string): string => (message.endsWith('.') ? message : `${message}.`);
+const normalizedMessage = (message: string): string =>
+  message.endsWith('.') ? message : `${message}.`;
 
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: '5.0.7',
   formats: [{ format: 'geckolib', animations: true, enabled: true }],
-  limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 30 }
+  limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 30 },
 };
 
 const createSession = (): ProjectSession => {
@@ -35,14 +39,28 @@ const createSession = (): ProjectSession => {
   const createRes = session.create('geckolib', 'test', 'geckolib');
   assert.equal(createRes.ok, true);
   session.addBone({ name: 'body', pivot: [0, 0, 0] });
-  session.addAnimation({ id: 'anim_idle', name: 'idle', length: 1, loop: true, fps: 20, channels: [] });
-  session.addAnimation({ id: 'anim_walk', name: 'walk', length: 1, loop: true, fps: 20, channels: [] });
+  session.addAnimation({
+    id: 'anim_idle',
+    name: 'idle',
+    length: 1,
+    loop: true,
+    fps: 20,
+    channels: [],
+  });
+  session.addAnimation({
+    id: 'anim_walk',
+    name: 'walk',
+    length: 1,
+    loop: true,
+    fps: 20,
+    channels: [],
+  });
   return session;
 };
 
 const createCrudDeps = (
   session: ProjectSession,
-  options?: { supportError?: ToolError | null; editor?: ReturnType<typeof createEditorStub> }
+  options?: { supportError?: ToolError | null; editor?: ReturnType<typeof createEditorStub> },
 ): AnimationClipCrudDeps => {
   const editor = options?.editor ?? createEditorStub();
   return {
@@ -50,7 +68,7 @@ const createCrudDeps = (
     editor,
     capabilities,
     getSnapshot: () => session.snapshot(),
-    ensureAnimationsSupported: () => options?.supportError ?? null
+    ensureAnimationsSupported: () => options?.supportError ?? null,
   };
 };
 
@@ -73,8 +91,10 @@ const createCrudDeps = (
 {
   const session = createSession();
   const res = runCreateAnimationClip(
-    createCrudDeps(session, { supportError: { code: 'unsupported_format', message: 'unsupported' } }),
-    { name: 'new', length: 1, loop: true, fps: 20 }
+    createCrudDeps(session, {
+      supportError: { code: 'unsupported_format', message: 'unsupported' },
+    }),
+    { name: 'new', length: 1, loop: true, fps: 20 },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'unsupported_format');
@@ -82,14 +102,24 @@ const createCrudDeps = (
 
 {
   const session = createSession();
-  const res = runCreateAnimationClip(createCrudDeps(session), { name: '', length: 1, loop: true, fps: 20 });
+  const res = runCreateAnimationClip(createCrudDeps(session), {
+    name: '',
+    length: 1,
+    loop: true,
+    fps: 20,
+  });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message, normalizedMessage(ANIMATION_CLIP_NAME_REQUIRED));
 }
 
 {
   const session = createSession();
-  const res = runCreateAnimationClip(createCrudDeps(session), { name: 'idle', length: 1, loop: true, fps: 20 });
+  const res = runCreateAnimationClip(createCrudDeps(session), {
+    name: 'idle',
+    length: 1,
+    loop: true,
+    fps: 20,
+  });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
 }
@@ -101,7 +131,7 @@ const createCrudDeps = (
     name: 'new',
     length: 2,
     loop: false,
-    fps: 12
+    fps: 12,
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -134,7 +164,7 @@ const createCrudDeps = (
   editor.updateAnimation = () => ({ code: 'unknown', message: 'update failed' });
   const res = runUpdateAnimationClip(createCrudDeps(session, { editor }), {
     id: 'anim_idle',
-    newName: 'idle_next'
+    newName: 'idle_next',
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message, normalizedMessage('update failed'));
@@ -147,7 +177,7 @@ const createCrudDeps = (
     newName: 'idle_next',
     length: 3,
     loop: false,
-    fps: 30
+    fps: 30,
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -159,8 +189,10 @@ const createCrudDeps = (
 {
   const session = createSession();
   const res = runDeleteAnimationClip(
-    createCrudDeps(session, { supportError: { code: 'unsupported_format', message: 'unsupported' } }),
-    { name: 'idle' }
+    createCrudDeps(session, {
+      supportError: { code: 'unsupported_format', message: 'unsupported' },
+    }),
+    { name: 'idle' },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'unsupported_format');
@@ -195,13 +227,13 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => ({ code: 'unsupported_format', message: 'unsupported' })
+      ensureAnimationsSupported: () => ({ code: 'unsupported_format', message: 'unsupported' }),
     },
     {
       clip: 'idle',
       frame: 0,
-      bones: [{ name: 'body', rot: [1, 0, 0] }]
-    }
+      bones: [{ name: 'body', rot: [1, 0, 0] }],
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'unsupported_format');
@@ -214,13 +246,13 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       frame: -1,
-      bones: [{ name: 'body', rot: [1, 0, 0] }]
-    }
+      bones: [{ name: 'body', rot: [1, 0, 0] }],
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message, normalizedMessage(ANIMATION_FRAME_INVALID));
@@ -235,13 +267,13 @@ const createCrudDeps = (
       session,
       editor,
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       frame: 1,
-      bones: [{ name: 'body', rot: [1, 0, 0] }]
-    }
+      bones: [{ name: 'body', rot: [1, 0, 0] }],
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message, normalizedMessage('keyframe failed'));
@@ -260,13 +292,13 @@ const createCrudDeps = (
       session,
       editor,
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       frame: 10,
-      bones: [{ name: 'body', rot: [1, 2, 3], pos: [4, 5, 6] }]
-    }
+      bones: [{ name: 'body', rot: [1, 2, 3], pos: [4, 5, 6] }],
+    },
   );
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -283,13 +315,16 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => ({ code: 'unsupported_format', message: ANIMATION_UNSUPPORTED_FORMAT })
+      ensureAnimationsSupported: () => ({
+        code: 'unsupported_format',
+        message: ANIMATION_UNSUPPORTED_FORMAT,
+      }),
     },
     {
       clip: 'idle',
       channel: 'sound',
-      keys: [{ time: 0, value: 'a' }]
-    }
+      keys: [{ time: 0, value: 'a' }],
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -305,19 +340,20 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       channel: 'sound',
       keys: [
         { time: 0, value: 'a' },
-        { time: 1, value: 'b' }
-      ]
-    }
+        { time: 1, value: 'b' },
+      ],
+    },
   );
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(res.error.message, normalizedMessage(ANIMATION_TRIGGER_KEYFRAME_SINGLE_REQUIRED));
+  if (!res.ok)
+    assert.equal(res.error.message, normalizedMessage(ANIMATION_TRIGGER_KEYFRAME_SINGLE_REQUIRED));
 }
 
 {
@@ -327,16 +363,20 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       channel: 'sound',
-      keys: [{ time: Number.NaN, value: 'a' }]
-    }
+      keys: [{ time: Number.NaN, value: 'a' }],
+    },
   );
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(res.error.message, normalizedMessage(TRIGGER_TIME_INVALID('set_trigger_keyframes')));
+  if (!res.ok)
+    assert.equal(
+      res.error.message,
+      normalizedMessage(TRIGGER_TIME_INVALID('set_trigger_keyframes')),
+    );
 }
 
 {
@@ -346,16 +386,20 @@ const createCrudDeps = (
       session,
       editor: createEditorStub(),
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       channel: 'sound',
-      keys: [{ time: 0, value: 123 as unknown as string }]
-    }
+      keys: [{ time: 0, value: 123 as unknown as string }],
+    },
   );
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(res.error.message, normalizedMessage(TRIGGER_VALUE_INVALID('set_trigger_keyframes')));
+  if (!res.ok)
+    assert.equal(
+      res.error.message,
+      normalizedMessage(TRIGGER_VALUE_INVALID('set_trigger_keyframes')),
+    );
 }
 
 {
@@ -367,13 +411,13 @@ const createCrudDeps = (
       session,
       editor,
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       channel: 'sound',
-      keys: [{ time: 0, value: 'play' }]
-    }
+      keys: [{ time: 0, value: 'play' }],
+    },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message, normalizedMessage('trigger failed'));
@@ -392,13 +436,13 @@ const createCrudDeps = (
       session,
       editor,
       getSnapshot: () => session.snapshot(),
-      ensureAnimationsSupported: () => null
+      ensureAnimationsSupported: () => null,
     },
     {
       clip: 'idle',
       channel: 'sound',
-      keys: [{ time: 0, value: 'play' }]
-    }
+      keys: [{ time: 0, value: 'play' }],
+    },
   );
   assert.equal(res.ok, true);
   if (res.ok) assert.equal(res.value.clip, 'idle');

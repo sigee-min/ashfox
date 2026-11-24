@@ -11,7 +11,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
     },
     () => {
       errors += 1;
-    }
+    },
   );
 
   decoder.push(new Uint8Array(Buffer.from('{"type":"ready","version":1,"ts":3}\n', 'utf8')));
@@ -27,7 +27,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
   const decoder = createLineDecoder(
     (message) => messages.push(message),
     (error) => errors.push(error),
-    80
+    80,
   );
   decoder.push(new Uint8Array(Buffer.from('x'.repeat(60), 'utf8')));
   decoder.push(new Uint8Array([0xff]));
@@ -43,7 +43,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
     id: 'unicode-request',
     tool: 'add_bone' as const,
     payload: { name: '가🐾' },
-    ts: 5
+    ts: 5,
   };
   const bytes = Buffer.from(encodeMessage(expected), 'utf8');
   for (let split = 1; split < bytes.length; split += 1) {
@@ -51,7 +51,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
     const errors: Error[] = [];
     const decoder = createLineDecoder(
       (message) => messages.push(message),
-      (error) => errors.push(error)
+      (error) => errors.push(error),
     );
     decoder.push(new Uint8Array(bytes.subarray(0, split)));
     decoder.push(new Uint8Array(bytes.subarray(split)));
@@ -64,7 +64,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
   const errors: Error[] = [];
   const decoder = createLineDecoder(
     () => undefined,
-    (error) => errors.push(error)
+    (error) => errors.push(error),
   );
   decoder.push(new Uint8Array([0xe1]));
   decoder.end();
@@ -80,7 +80,7 @@ import { createLineDecoder, encodeMessage } from '../../../../src/transport/code
     },
     () => {
       errors += 1;
-    }
+    },
   );
 
   decoder.push('{"type":"ready","version":1,');

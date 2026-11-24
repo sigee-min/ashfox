@@ -3,27 +3,19 @@ import * as THREE from 'three';
 import type {
   ProjectDocument,
   ProjectForwardDirection,
-  ProjectSignedView
+  ProjectSignedView,
 } from '@ashfox/engine-core';
 
 import type { CameraMode } from './cameraPresets';
-import {
-  applyCameraPreset,
-  applySignedProjectViewPreset
-} from './cameraPresets';
-import type {
-  ProjectSceneProjection
-} from './sceneTypes';
+import { applyCameraPreset, applySignedProjectViewPreset } from './cameraPresets';
+import type { ProjectSceneProjection } from './sceneTypes';
 import {
   addViewportLighting,
   createViewportEnvironment,
   type ViewportEnvironment,
-  type ViewportEnvironmentId
+  type ViewportEnvironmentId,
 } from './viewportEnvironment';
-import {
-  captureAbortError,
-  throwIfCaptureAborted
-} from './captureAbort';
+import { captureAbortError, throwIfCaptureAborted } from './captureAbort';
 
 export interface CaptureDimensions {
   width: number;
@@ -36,19 +28,18 @@ interface CaptureSurfaceSharedOptions extends CaptureDimensions {
 }
 
 /** Deterministic exports must use the explicit authored forward, never a camera default. */
-export const requiredCaptureForward = (
-  document: ProjectDocument
-): ProjectForwardDirection => document.settings.forward;
+export const requiredCaptureForward = (document: ProjectDocument): ProjectForwardDirection =>
+  document.settings.forward;
 
 export type CaptureSurfaceOptions = Readonly<
-  | CaptureSurfaceSharedOptions & {
+  | (CaptureSurfaceSharedOptions & {
       cameraMode: CameraMode;
       signedView?: never;
-    }
-  | CaptureSurfaceSharedOptions & {
+    })
+  | (CaptureSurfaceSharedOptions & {
       cameraMode?: never;
       signedView: ProjectSignedView;
-    }
+    })
 >;
 
 export interface CaptureSurface extends CaptureDimensions {
@@ -64,14 +55,14 @@ export interface CaptureSurface extends CaptureDimensions {
 
 const createRenderer = (
   canvas: HTMLCanvasElement,
-  dimensions: CaptureDimensions
+  dimensions: CaptureDimensions,
 ): THREE.WebGLRenderer => {
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
     alpha: true,
     preserveDrawingBuffer: true,
-    powerPreference: 'high-performance'
+    powerPreference: 'high-performance',
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -83,9 +74,7 @@ const createRenderer = (
   return renderer;
 };
 
-export const createCaptureSurface = (
-  options: CaptureSurfaceOptions
-): CaptureSurface => {
+export const createCaptureSurface = (options: CaptureSurfaceOptions): CaptureSurface => {
   const renderCanvas = window.document.createElement('canvas');
   const renderer = createRenderer(renderCanvas, options);
   const scene = new THREE.Scene();
@@ -94,12 +83,7 @@ export const createCaptureSurface = (
   scene.fog = environment.fog;
   addViewportLighting(scene);
 
-  const camera = new THREE.PerspectiveCamera(
-    42,
-    options.width / options.height,
-    0.05,
-    300
-  );
+  const camera = new THREE.PerspectiveCamera(42, options.width / options.height, 0.05, 300);
   const forward = options.forward ?? 'north';
   const signedView = options.signedView ?? null;
   if (options.signedView === undefined) {
@@ -117,7 +101,7 @@ export const createCaptureSurface = (
     forward,
     signedView,
     width: options.width,
-    height: options.height
+    height: options.height,
   };
 };
 
@@ -126,21 +110,12 @@ const CAPTURE_FRAME_DISTANCE_SCALE = 0.82;
 export const frameCaptureObject = (
   surface: CaptureSurface,
   cameraMode: CameraMode,
-  object: THREE.Object3D
+  object: THREE.Object3D,
 ): void => {
-  const target = surface.signedView === null
-    ? applyCameraPreset(
-        surface.camera,
-        cameraMode,
-        object,
-        surface.forward
-      )
-    : applySignedProjectViewPreset(
-        surface.camera,
-        surface.signedView,
-        object,
-        surface.forward
-      );
+  const target =
+    surface.signedView === null
+      ? applyCameraPreset(surface.camera, cameraMode, object, surface.forward)
+      : applySignedProjectViewPreset(surface.camera, surface.signedView, object, surface.forward);
   const offset = surface.camera.position
     .clone()
     .sub(target)
@@ -155,22 +130,18 @@ export const frameCaptureObject = (
   surface.scene.fog = null;
 };
 
-export const renderCaptureSurface = (
-  surface: CaptureSurface
-): void => {
+export const renderCaptureSurface = (surface: CaptureSurface): void => {
   surface.renderer.render(surface.scene, surface.camera);
 };
 
-export const disposeCaptureSurface = (
-  surface: CaptureSurface
-): void => {
+export const disposeCaptureSurface = (surface: CaptureSurface): void => {
   surface.environment.dispose();
   surface.renderer.dispose();
 };
 
 export const waitForProjectionTextures = async (
   projection: ProjectSceneProjection,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> => {
   throwIfCaptureAborted(signal);
   let abort: (() => void) | null = null;
@@ -185,10 +156,7 @@ export const waitForProjectionTextures = async (
   }
   throwIfCaptureAborted(signal);
   if (projection.readiness.status === 'failed') {
-    throw new Error(
-      projection.readiness.error ??
-      'A project texture could not be decoded.'
-    );
+    throw new Error(projection.readiness.error ?? 'A project texture could not be decoded.');
   }
   if (projection.readiness.status !== 'ready') {
     throw new Error('Project textures did not reach a ready state.');

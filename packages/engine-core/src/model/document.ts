@@ -4,7 +4,7 @@ import type {
   ProjectId,
   ProjectSettings,
   Revision,
-  PROJECT_DOCUMENT_SCHEMA_VERSION
+  PROJECT_DOCUMENT_SCHEMA_VERSION,
 } from './identity';
 import type { AnimationClip } from './motion';
 import type { SceneGraph } from './scene';

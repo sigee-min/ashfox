@@ -1,9 +1,5 @@
 import { isNonEmptyString } from './shared/value';
-import type {
-  FindingSink,
-  IdRegistrar,
-  InvariantFinding
-} from './contract';
+import type { FindingSink, IdRegistrar, InvariantFinding } from './contract';
 
 export interface ValidationContext {
   readonly findings: readonly Readonly<InvariantFinding>[];
@@ -11,20 +7,13 @@ export interface ValidationContext {
   readonly registerId: IdRegistrar;
 }
 
-const immutableFinding = (
-  finding: InvariantFinding
-): Readonly<InvariantFinding> => Object.freeze({
-  ...finding,
-  ...(finding.entityIds
-    ? { entityIds: Object.freeze([...finding.entityIds]) }
-    : {}),
-  ...(finding.assetIds
-    ? { assetIds: Object.freeze([...finding.assetIds]) }
-    : {}),
-  ...(finding.clipIds
-    ? { clipIds: Object.freeze([...finding.clipIds]) }
-    : {})
-});
+const immutableFinding = (finding: InvariantFinding): Readonly<InvariantFinding> =>
+  Object.freeze({
+    ...finding,
+    ...(finding.entityIds ? { entityIds: Object.freeze([...finding.entityIds]) } : {}),
+    ...(finding.assetIds ? { assetIds: Object.freeze([...finding.assetIds]) } : {}),
+    ...(finding.clipIds ? { clipIds: Object.freeze([...finding.clipIds]) } : {}),
+  });
 
 export const createValidationContext = (): ValidationContext => {
   const findings: Readonly<InvariantFinding>[] = [];
@@ -38,7 +27,7 @@ export const createValidationContext = (): ValidationContext => {
         code: 'document.required_value',
         severity: 'error',
         message: 'Addressable IDs must be non-empty strings.',
-        path
+        path,
       });
       return;
     }
@@ -48,7 +37,7 @@ export const createValidationContext = (): ValidationContext => {
         code: 'identity.duplicate',
         severity: 'error',
         message: `ID "${id}" is reused at "${existing}" and "${path}".`,
-        path
+        path,
       });
       return;
     }
@@ -60,6 +49,6 @@ export const createValidationContext = (): ValidationContext => {
       return Object.freeze([...findings]);
     },
     add,
-    registerId
+    registerId,
   };
 };

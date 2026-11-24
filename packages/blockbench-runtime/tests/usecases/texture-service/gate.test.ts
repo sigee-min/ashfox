@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 
-import type { Capabilities, PaintMeshFacePayload } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  Capabilities,
+  PaintMeshFacePayload,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { DEFAULT_UV_POLICY } from '../../../src/domain/uv/policy';
 import { ProjectSession } from '../../../src/session';
 import { TEXTURE_MESH_FACE_UNSUPPORTED_FORMAT } from '../../../src/shared/messages';
@@ -15,16 +18,16 @@ const capabilities: Capabilities = {
       format: 'Java Block/Item',
       animations: false,
       enabled: true,
-      flags: { meshes: false }
-    }
+      flags: { meshes: false },
+    },
   ],
-  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const payload: PaintMeshFacePayload = {
   textureName: 'atlas',
   target: { meshName: 'wing', faceId: 'f0' },
-  op: { op: 'fill_rect', x: 0, y: 0, width: 2, height: 2, color: '#336699' }
+  op: { op: 'fill_rect', x: 0, y: 0, width: 2, height: 2, color: '#336699' },
 };
 
 {
@@ -37,7 +40,7 @@ const payload: PaintMeshFacePayload = {
     getSnapshot: () => session.snapshot(),
     ensureActive: () => null,
     ensureRevisionMatch: () => null,
-    getUvPolicyConfig: () => DEFAULT_UV_POLICY
+    getUvPolicyConfig: () => DEFAULT_UV_POLICY,
   });
 
   const res = service.paintMeshFace(payload);

@@ -3,7 +3,7 @@ export {
   isCanonicalIsoDate,
   isClosedContractRecord,
   isNonEmptyContractText,
-  isUniqueContractTextArray
+  isUniqueContractTextArray,
 } from '@ashfox/internal-contracts';
 
 export {
@@ -40,7 +40,7 @@ export {
   type TextureAlphaMask,
   type Transform,
   type TransformChannel,
-  type Vec3
+  type Vec3,
 } from './model';
 
 export { canonicalJsonString } from './canonicalJson';
@@ -70,26 +70,22 @@ export {
   type WorkspaceFile,
   type WorkspaceLock,
   type WorkspaceManifest,
-  type WorkspacePackage
+  type WorkspacePackage,
 } from './project/workspace';
 export {
   compileAssetWorkspaceEntry,
-  type CompileAssetWorkspaceEntryResult
+  type CompileAssetWorkspaceEntryResult,
 } from './compiler/program/asset/compile';
-export type {
-  AssetBuildIdentity,
-  AssetProject,
-  AssetProjectIdentitySeed
-} from './project/asset';
+export type { AssetBuildIdentity, AssetProject, AssetProjectIdentitySeed } from './project/asset';
 export {
   isAssetProjectAuthorityValid,
   openAssetProject,
   type OpenAssetProjectInput,
-  type OpenAssetProjectResult
+  type OpenAssetProjectResult,
 } from './commands/workspace/open';
 export {
   applyWorkspaceChangeSet,
-  type ApplyWorkspaceChangeSetResult
+  type ApplyWorkspaceChangeSetResult,
 } from './compiler/program/asset/workspaceChange';
 export {
   ASHFOX_WORKSPACE_FILE_CONTENT_TYPE,
@@ -99,15 +95,10 @@ export {
   type ReadWorkspaceFileOptions,
   type ReadWorkspaceFileResult,
   type WorkspaceFileInput,
-  type WriteWorkspaceFileResult
+  type WriteWorkspaceFileResult,
 } from './project/container';
-export {
-  sha256ByteDigest, sha256Digest
-} from './provenance/digest';
-export {
-  effectivelyVisibleSceneNodeIds,
-  isSceneNodeEffectivelyVisible
-} from './sceneVisibility';
+export { sha256ByteDigest, sha256Digest } from './provenance/digest';
+export { effectivelyVisibleSceneNodeIds, isSceneNodeEffectivelyVisible } from './sceneVisibility';
 
 export {
   PROJECT_SIGNED_VIEWS,
@@ -115,11 +106,12 @@ export {
   projectWorldBasis,
   type ProjectAxisVector,
   type ProjectSignedView,
-  type ProjectViewFrame
+  type ProjectViewFrame,
 } from './project/frame';
 
 export {
-  AGENT_ACCESSIBLE_COMMAND_NAMES, COMMAND_RECEIPT_SCHEMA_VERSION,
+  AGENT_ACCESSIBLE_COMMAND_NAMES,
+  COMMAND_RECEIPT_SCHEMA_VERSION,
   commandAllowedForSource,
   executeAgentCommandBatch,
   executeSystemCommandBatch,
@@ -136,7 +128,7 @@ export {
   type CommandReceiptLedgerOptions,
   type CommandSource,
   type ProjectCommandOperation,
-  type WorkspaceApplyInput
+  type WorkspaceApplyInput,
 } from './commands';
 
 export {
@@ -144,7 +136,7 @@ export {
   assertProjectDocument,
   validateProjectDocument,
   type InvariantFinding,
-  type ValidationReport
+  type ValidationReport,
 } from './validation';
 export {
   CANONICAL_IDLE_CLIP_NAME,
@@ -152,7 +144,7 @@ export {
   type ProductionReadinessCode,
   type ProductionReadinessCounts,
   type ProductionReadinessFinding,
-  type ProductionReadinessReport
+  type ProductionReadinessReport,
 } from './readiness';
 
 export {
@@ -162,25 +154,30 @@ export {
   animationPreviewIssues,
   blockingCanonicalAnimationPreviewIssues,
   blockingAnimationPreviewIssues,
-  type AnimationPreviewIssue
+  type AnimationPreviewIssue,
 } from './animation/capability';
 export {
   sampleComposedNumericTransformChannel,
   sampleNumericTransformChannel,
-  type NumericAnimationVec3
+  type NumericAnimationVec3,
 } from './animation/numericChannel';
 
 export {
   cubeFaceDimensions,
   faceTexelSize,
   packUvAtlas,
-  reduceAtlasPixelsPerBlock
+  reduceAtlasPixelsPerBlock,
 } from './textures/uvAtlas';
 export {
-  composeTextureRaster, rasterizeCanonicalTexture, rasterizeTexture,
-  canonicalPngDigest, canonicalRgbaDigest, encodeCanonicalPng,
-  type CanonicalRgbaBytes, type CanonicalTextureRaster,
-  type TextureComposition
+  composeTextureRaster,
+  rasterizeCanonicalTexture,
+  rasterizeTexture,
+  canonicalPngDigest,
+  canonicalRgbaDigest,
+  encodeCanonicalPng,
+  type CanonicalRgbaBytes,
+  type CanonicalTextureRaster,
+  type TextureComposition,
 } from './textures/textureRecipe';
 
 export {
@@ -191,7 +188,7 @@ export {
   type ExportBundle,
   type ExportFile,
   type JsonExportFile,
-  type ResolvedBlob
+  type ResolvedBlob,
 } from './export/contract';
 export {
   EXPORT_PRESETS,
@@ -204,22 +201,20 @@ export {
   normalizeExportModelPath,
   type ExportCompatibilityOption,
   type CurrentExportTargetDescriptor,
-  type ExportPreset
+  type ExportPreset,
 } from './export/compatibility';
 export {
   ProductionExportError,
   exportProductionProject,
-  exportProductionProjectResolved
+  exportProductionProjectResolved,
 } from './export/project';
 export {
   compileProjectBundle,
   compileProjectBundleResolved,
-  verifyExportBundleForProject
+  verifyExportBundleForProject,
 } from './export/pipeline/compile';
 export { validateAssetProjectExportTarget } from './export/pipeline/validate';
-export {
-  verifyExportBundleLineage
-} from './export/pipeline/bundle';
+export { verifyExportBundleLineage } from './export/pipeline/bundle';
 export {
   adaptProjectForExport,
   readExportAdapterInput,
@@ -228,14 +223,16 @@ export {
   type ExportAdaptedDocument,
   type ExportAdapterInput,
   type ExportTextureAsset,
-  type ResolvedExportAdapter
+  type ResolvedExportAdapter,
 } from './export/adapter';
-export type {
-  ExportFormatProfile
-} from './export/adapter/contract';
+export type { ExportFormatProfile } from './export/adapter/contract';
 export { measureSceneGeometry } from './model/measurement/geometry';
 export { inspectNodeSurface } from './model/measurement/surface';
-export type { GeometryMeasurementRequest, GeometryMeasurement, MeasurementResult } from './model/measurement/contract';
+export type {
+  GeometryMeasurementRequest,
+  GeometryMeasurement,
+  MeasurementResult,
+} from './model/measurement/contract';
 export { readItemStudy } from './project/sprite/read';
 export { compileItemStudy, spritePreviewPng } from './compiler/sprite/compile';
 export { SPRITE_POLICY } from './project/sprite/contract';
@@ -244,7 +241,11 @@ export type { SpriteBuild, SpriteProduct, SpriteReceipt } from './compiler/sprit
 export { spriteSheetPng } from './compiler/sprite/preview';
 export { parseSpriteSource } from './project/sprite/source';
 export { inspectNativeSource } from './project/directory/source';
-export { readDirectoryWorkspace, isDirectorySource, matchDirectoryPattern } from './project/directory/read';
+export {
+  readDirectoryWorkspace,
+  isDirectorySource,
+  matchDirectoryPattern,
+} from './project/directory/read';
 export { compileDirectoryWorkspace } from './compiler/directory/compile';
 export type { DirectoryWorkspace, DirectoryFile } from './project/directory/contract';
 export type { DirectoryCompilation, DirectoryProduct } from './compiler/directory/compile';

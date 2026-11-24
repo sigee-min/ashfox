@@ -6,9 +6,11 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
   const res = buildTextureUsageResult(
     { textureName: 'missing' },
     {
-      textures: [{ id: 'tex1', name: 'atlas' }] as unknown as Parameters<typeof buildTextureUsageResult>[1]['textures'],
-      cubes: [] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes']
-    }
+      textures: [{ id: 'tex1', name: 'atlas' }] as unknown as Parameters<
+        typeof buildTextureUsageResult
+      >[1]['textures'],
+      cubes: [] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes'],
+    },
   );
   assert.equal(Boolean(res.error), true);
   assert.equal(res.error?.code, 'invalid_payload');
@@ -20,7 +22,7 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
     {
       textures: [
         { id: 'tex1', name: 'atlas', width: 16, height: 16 },
-        { uuid: 'tex2', name: 'extra', width: 32, height: 32 }
+        { uuid: 'tex2', name: 'extra', width: 32, height: 32 },
       ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['textures'],
       cubes: [
         {
@@ -29,11 +31,11 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
           faces: {
             north: { texture: 'tex1', uv: [0, 0, 8, 8] },
             south: { texture: 'atlas', uv: [8, 0, 16, 8] },
-            west: { texture: 'unknown-ref', uv: [0, 8, 8, 16] }
-          }
-        }
-      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes']
-    }
+            west: { texture: 'unknown-ref', uv: [0, 8, 8, 16] },
+          },
+        },
+      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes'],
+    },
   );
   assert.equal(Boolean(res.error), false);
   assert.equal(Boolean(res.result), true);
@@ -53,7 +55,7 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
     {
       textures: [
         { id: 'tex1', uuid: 'alias-tex1', name: 'atlas', width: 16, height: 16 },
-        { id: 'tex2', name: 'extra', width: 32, height: 32 }
+        { id: 'tex2', name: 'extra', width: 32, height: 32 },
       ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['textures'],
       cubes: [
         {
@@ -61,11 +63,11 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
           name: 'body',
           faces: {
             north: { texture: 'tex1', uv: [0, 0, 8, 8] },
-            east: { texture: 'tex2', uv: [0, 0, 8, 8] }
-          }
-        }
-      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes']
-    }
+            east: { texture: 'tex2', uv: [0, 0, 8, 8] },
+          },
+        },
+      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes'],
+    },
   );
   assert.equal(Boolean(res.error), false);
   assert.equal(res.result?.textures.length, 1);
@@ -77,25 +79,27 @@ import { buildTextureUsageResult } from '../../../../src/adapters/blockbench/tex
   const res = buildTextureUsageResult(
     {},
     {
-      textures: [{ id: 'tex1', name: 'atlas' }] as unknown as Parameters<typeof buildTextureUsageResult>[1]['textures'],
+      textures: [{ id: 'tex1', name: 'atlas' }] as unknown as Parameters<
+        typeof buildTextureUsageResult
+      >[1]['textures'],
       cubes: [
         {
           id: 'cube1',
           name: 'body',
           faces: {
             north: { texture: 'tex1' },
-            custom: { texture: 'tex1', uv: [0, 0, 8, 8] }
-          }
+            custom: { texture: 'tex1', uv: [0, 0, 8, 8] },
+          },
         },
         {
           id: 'cube1',
           name: 'body',
           faces: {
-            north: { texture: 'tex1', uv: [0, 0, 8, 8] }
-          }
-        }
-      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes']
-    }
+            north: { texture: 'tex1', uv: [0, 0, 8, 8] },
+          },
+        },
+      ] as unknown as Parameters<typeof buildTextureUsageResult>[1]['cubes'],
+    },
   );
   assert.equal(Boolean(res.error), false);
   const atlas = res.result?.textures[0];

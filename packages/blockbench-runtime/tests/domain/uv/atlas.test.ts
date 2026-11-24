@@ -17,10 +17,10 @@ const buildUsage = (textureName: string, cubes: TrackedCube[]): TextureUsage => 
       cubes: cubes.map((cube) => ({
         id: cube.id,
         name: cube.name,
-        faces: [{ face: 'north' }]
-      }))
-    }
-  ]
+        faces: [{ face: 'north' }],
+      })),
+    },
+  ],
 });
 
 const runPlan = (usage: TextureUsage, cubes: TrackedCube[], resolution: number) =>
@@ -31,7 +31,7 @@ const runPlan = (usage: TextureUsage, cubes: TrackedCube[], resolution: number) 
     maxResolution: { width: 64, height: 64 },
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    messages: uvAtlasMessages
+    messages: uvAtlasMessages,
   });
 
 const cubeSmall: TrackedCube = {
@@ -39,7 +39,7 @@ const cubeSmall: TrackedCube = {
   name: 'cube-small',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const usageSmall = buildUsage('tex-small', [cubeSmall]);
@@ -56,7 +56,7 @@ const cubeMedium: TrackedCube = {
   name: 'cube-medium',
   from: [0, 0, 0],
   to: [12, 12, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const usagePacked = buildUsage('tex-packed', [cubeMedium, cubeSmall]);
@@ -67,7 +67,7 @@ const planPacked = buildUvAtlasPlan({
   maxResolution: { width: 32, height: 32 },
   padding: 0,
   policy: DEFAULT_UV_POLICY,
-  messages: uvAtlasMessages
+  messages: uvAtlasMessages,
 });
 assert.equal(planPacked.ok, true);
 if (planPacked.ok) {
@@ -75,4 +75,3 @@ if (planPacked.ok) {
   assert.deepEqual(planPacked.data.resolution, { width: 32, height: 32 });
   assert.equal(planPacked.data.assignments.length, 2);
 }
-

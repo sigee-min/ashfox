@@ -10,11 +10,13 @@ export const computeUvScaleIssues = (
   usage: TextureUsage,
   cubes: Cube[],
   resolution: { width: number; height: number },
-  policy: UvPolicyConfig
+  policy: UvPolicyConfig,
 ) => findUvScaleIssues(usage, cubes, resolution, policy);
 
 export const formatOverlapExample = (example?: UvOverlapExample): string =>
-  example ? ` Example: ${formatUvFaceRect(example.a)} overlaps ${formatUvFaceRect(example.b)}.` : '';
+  example
+    ? ` Example: ${formatUvFaceRect(example.a)} overlaps ${formatUvFaceRect(example.b)}.`
+    : '';
 
 export const formatScaleExample = (example?: {
   cubeName: string;
@@ -63,7 +65,7 @@ export type UvRectIssueConfig = {
 
 export const computeUvRectIssues = (
   usage: TextureUsage,
-  config: UvRectIssueConfig
+  config: UvRectIssueConfig,
 ): { small: UvRectIssue[]; skewed: UvRectIssue[] } => {
   const smallByTexture = new Map<string, { count: number; example: UvRectIssueExample }>();
   const skewedByTexture = new Map<string, { count: number; example: UvRectIssueExample }>();
@@ -77,7 +79,8 @@ export const computeUvRectIssues = (
         const [x1, y1, x2, y2] = face.uv;
         const width = Math.abs(x2 - x1);
         const height = Math.abs(y2 - y1);
-        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+          return;
         const area = width * height;
         const aspectRatio = width >= height ? width / height : height / width;
         const example: UvRectIssueExample = {
@@ -86,7 +89,7 @@ export const computeUvRectIssues = (
           width,
           height,
           area,
-          aspectRatio
+          aspectRatio,
         };
         if (area <= minArea) {
           recordRectIssue(smallByTexture, texture.name, example);
@@ -100,20 +103,22 @@ export const computeUvRectIssues = (
 
   return {
     small: toRectIssues(smallByTexture),
-    skewed: toRectIssues(skewedByTexture)
+    skewed: toRectIssues(skewedByTexture),
   };
 };
 
 export const formatRectExample = (example?: UvRectIssueExample): string => {
   if (!example) return '';
-  const ratio = Number.isFinite(example.aspectRatio) ? ` ratio ${example.aspectRatio.toFixed(2)}:1` : '';
+  const ratio = Number.isFinite(example.aspectRatio)
+    ? ` ratio ${example.aspectRatio.toFixed(2)}:1`
+    : '';
   return ` Example: ${example.cubeName} (${example.face}) ${example.width}x${example.height}${ratio}.`;
 };
 
 const recordRectIssue = (
   store: Map<string, { count: number; example: UvRectIssueExample }>,
   textureName: string,
-  example: UvRectIssueExample
+  example: UvRectIssueExample,
 ) => {
   const existing = store.get(textureName);
   if (existing) {
@@ -123,9 +128,11 @@ const recordRectIssue = (
   }
 };
 
-const toRectIssues = (store: Map<string, { count: number; example: UvRectIssueExample }>): UvRectIssue[] =>
+const toRectIssues = (
+  store: Map<string, { count: number; example: UvRectIssueExample }>,
+): UvRectIssue[] =>
   Array.from(store.entries()).map(([textureName, entry]) => ({
     textureName,
     count: entry.count,
-    example: entry.example
+    example: entry.example,
   }));

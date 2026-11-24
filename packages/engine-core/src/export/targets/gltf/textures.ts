@@ -1,13 +1,9 @@
-import type {
-  AssetId,
-  ProjectDocument,
-  TextureAsset
-} from '../../../model';
+import type { AssetId, ProjectDocument, TextureAsset } from '../../../model';
 import {
   BlobResolutionError,
   ExportMaterializationRequiredError,
   type BlobResolver,
-  type ResolvedBlob
+  type ResolvedBlob,
 } from '../../contract';
 import { sha256ByteDigest } from '../../../provenance/digest';
 
@@ -18,91 +14,118 @@ export interface GltfResolvedExportOptions {
 
 const BUILTIN_UINT8_ARRAY_PROTOTYPE = Uint8Array.prototype;
 const TYPED_ARRAY_PROTOTYPE = Object.getPrototypeOf(BUILTIN_UINT8_ARRAY_PROTOTYPE);
-const typedArrayTag = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, Symbol.toStringTag)!.get!;
+const typedArrayTag = Object.getOwnPropertyDescriptor(
+  TYPED_ARRAY_PROTOTYPE,
+  Symbol.toStringTag,
+)!.get!;
 const typedArrayLength = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, 'length')!.get!;
 const setBytes = BUILTIN_UINT8_ARRAY_PROTOTYPE.set;
 
 const copyExactBytes = (value: unknown): Uint8Array | null => {
-  if (!ArrayBuffer.isView(value) || Object.getPrototypeOf(value) !==
-    BUILTIN_UINT8_ARRAY_PROTOTYPE || typedArrayTag.call(value) !== 'Uint8Array') return null;
+  if (
+    !ArrayBuffer.isView(value) ||
+    Object.getPrototypeOf(value) !== BUILTIN_UINT8_ARRAY_PROTOTYPE ||
+    typedArrayTag.call(value) !== 'Uint8Array'
+  )
+    return null;
   const keys = Reflect.ownKeys(value);
   const length: number = typedArrayLength.call(value);
-  if (keys.length !== length || keys.some((key, index) => typeof key !== 'string' ||
-    key !== String(index))) return null;
+  if (
+    keys.length !== length ||
+    keys.some((key, index) => typeof key !== 'string' || key !== String(index))
+  )
+    return null;
   const result = new Uint8Array(length);
   // Genuine Uint8Array indexed elements cannot be holes, accessors or non-byte
   // values. The intrinsic copy avoids per-byte descriptors and user iterators.
-  try { setBytes.call(result, value as Uint8Array); }
-  catch { return null; }
+  try {
+    setBytes.call(result, value as Uint8Array);
+  } catch {
+    return null;
+  }
   return result;
 };
 
-export const orderedTextures = (
-  document: ProjectDocument
-): TextureAsset[] =>
-  Object.values(document.textures).sort((left, right) =>
-    left.id.localeCompare(right.id)
-  );
+export const orderedTextures = (document: ProjectDocument): TextureAsset[] =>
+  Object.values(document.textures).sort((left, right) => left.id.localeCompare(right.id));
 
 export const validateResolvedTexture = (
   texture: TextureAsset,
-  resolved: ResolvedBlob
+  resolved: ResolvedBlob,
 ): ResolvedBlob => {
-  if (typeof resolved !== 'object' || resolved === null ||
+  if (
+    typeof resolved !== 'object' ||
+    resolved === null ||
     Object.getPrototypeOf(resolved) !== Object.prototype ||
     Reflect.ownKeys(resolved).length !== 2 ||
     !Object.prototype.hasOwnProperty.call(resolved, 'bytes') ||
-    !Object.prototype.hasOwnProperty.call(resolved, 'contentType')) {
-    throw new BlobResolutionError(
-      'blob.invalid_bytes', texture.id, texture.source,
-      `Resolved texture "${texture.id}" must be one exact data object.`
-    );
-  }
-  const bytesDescriptor = Object.getOwnPropertyDescriptor(resolved, 'bytes');
-  const typeDescriptor = Object.getOwnPropertyDescriptor(resolved,
-    'contentType');
-  if (bytesDescriptor === undefined || !bytesDescriptor.enumerable ||
-    !('value' in bytesDescriptor) || typeDescriptor === undefined ||
-    !typeDescriptor.enumerable || !('value' in typeDescriptor)) {
+    !Object.prototype.hasOwnProperty.call(resolved, 'contentType')
+  ) {
     throw new BlobResolutionError(
       'blob.invalid_bytes',
       texture.id,
       texture.source,
-      `Resolved texture "${texture.id}" did not provide Uint8Array bytes.`
+      `Resolved texture "${texture.id}" must be one exact data object.`,
+    );
+  }
+  const bytesDescriptor = Object.getOwnPropertyDescriptor(resolved, 'bytes');
+  const typeDescriptor = Object.getOwnPropertyDescriptor(resolved, 'contentType');
+  if (
+    bytesDescriptor === undefined ||
+    !bytesDescriptor.enumerable ||
+    !('value' in bytesDescriptor) ||
+    typeDescriptor === undefined ||
+    !typeDescriptor.enumerable ||
+    !('value' in typeDescriptor)
+  ) {
+    throw new BlobResolutionError(
+      'blob.invalid_bytes',
+      texture.id,
+      texture.source,
+      `Resolved texture "${texture.id}" did not provide Uint8Array bytes.`,
     );
   }
   const bytes = copyExactBytes(bytesDescriptor.value);
-  if (bytes === null) throw new BlobResolutionError(
-    'blob.invalid_bytes', texture.id, texture.source,
-    `Resolved texture "${texture.id}" did not provide exact dense bytes.`);
+  if (bytes === null)
+    throw new BlobResolutionError(
+      'blob.invalid_bytes',
+      texture.id,
+      texture.source,
+      `Resolved texture "${texture.id}" did not provide exact dense bytes.`,
+    );
   const contentType = typeDescriptor.value;
-  if (typeof contentType !== 'string') throw new BlobResolutionError(
-    'blob.content_type_mismatch', texture.id, texture.source,
-    `Resolved texture "${texture.id}" content type must be a primitive string.`);
+  if (typeof contentType !== 'string')
+    throw new BlobResolutionError(
+      'blob.content_type_mismatch',
+      texture.id,
+      texture.source,
+      `Resolved texture "${texture.id}" content type must be a primitive string.`,
+    );
   if (contentType !== texture.source.contentType) {
     throw new BlobResolutionError(
       'blob.content_type_mismatch',
       texture.id,
       texture.source,
-      `Resolved texture "${texture.id}" has content type "${String(contentType)}", expected "${texture.source.contentType}".`
+      `Resolved texture "${texture.id}" has content type "${String(contentType)}", expected "${texture.source.contentType}".`,
     );
   }
-  if (
-    texture.source.byteLength !== undefined &&
-    bytes.byteLength !== texture.source.byteLength
-  ) {
+  if (texture.source.byteLength !== undefined && bytes.byteLength !== texture.source.byteLength) {
     throw new BlobResolutionError(
       'blob.byte_length_mismatch',
       texture.id,
       texture.source,
-      `Resolved texture "${texture.id}" has ${bytes.byteLength} bytes, expected ${texture.source.byteLength}.`
+      `Resolved texture "${texture.id}" has ${bytes.byteLength} bytes, expected ${texture.source.byteLength}.`,
     );
   }
-  if (/^sha256:[0-9a-f]{64}$/u.test(texture.source.contentHash) &&
-    sha256ByteDigest(bytes) !== texture.source.contentHash) {
+  if (
+    /^sha256:[0-9a-f]{64}$/u.test(texture.source.contentHash) &&
+    sha256ByteDigest(bytes) !== texture.source.contentHash
+  ) {
     throw new BlobResolutionError(
-      'blob.content_hash_mismatch', texture.id, texture.source,
-      `Resolved texture "${texture.id}" does not match its SHA-256 authority.`
+      'blob.content_hash_mismatch',
+      texture.id,
+      texture.source,
+      `Resolved texture "${texture.id}" does not match its SHA-256 authority.`,
     );
   }
   return Object.freeze({ bytes, contentType: contentType as string });
@@ -110,12 +133,12 @@ export const validateResolvedTexture = (
 
 export const requireResolvedTexture = (
   texture: TextureAsset,
-  resolvedTextures: ReadonlyMap<AssetId, ResolvedBlob> | undefined
+  resolvedTextures: ReadonlyMap<AssetId, ResolvedBlob> | undefined,
 ): ResolvedBlob => {
   const resolved = resolvedTextures?.get(texture.id);
   if (!resolved) {
     throw new ExportMaterializationRequiredError(
-      `Embedded GLB export requires resolved bytes for texture "${texture.id}".`
+      `Embedded GLB export requires resolved bytes for texture "${texture.id}".`,
     );
   }
   return validateResolvedTexture(texture, resolved);
@@ -123,7 +146,7 @@ export const requireResolvedTexture = (
 
 const resolveTexture = async (
   texture: TextureAsset,
-  resolveBlob: BlobResolver
+  resolveBlob: BlobResolver,
 ): Promise<readonly [AssetId, ResolvedBlob]> => {
   let resolved: ResolvedBlob | null;
   try {
@@ -134,7 +157,7 @@ const resolveTexture = async (
       'blob.read_failed',
       texture.id,
       texture.source,
-      `Failed to resolve texture "${texture.id}": ${reason}`
+      `Failed to resolve texture "${texture.id}": ${reason}`,
     );
   }
   if (!resolved) {
@@ -142,7 +165,7 @@ const resolveTexture = async (
       'blob.not_found',
       texture.id,
       texture.source,
-      `Texture blob "${texture.source.bucket}/${texture.source.key}" was not found.`
+      `Texture blob "${texture.source.bucket}/${texture.source.key}" was not found.`,
     );
   }
   return [texture.id, validateResolvedTexture(texture, resolved)];
@@ -150,12 +173,10 @@ const resolveTexture = async (
 
 export const resolveGltfTextures = async (
   document: ProjectDocument,
-  resolveBlob: BlobResolver
+  resolveBlob: BlobResolver,
 ): Promise<ReadonlyMap<AssetId, ResolvedBlob>> => {
   const entries = await Promise.all(
-    orderedTextures(document).map((texture) =>
-      resolveTexture(texture, resolveBlob)
-    )
+    orderedTextures(document).map((texture) => resolveTexture(texture, resolveBlob)),
   );
   return new Map(entries);
 };

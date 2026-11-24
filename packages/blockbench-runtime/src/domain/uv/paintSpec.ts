@@ -23,6 +23,3 @@ export type UvPaintSpec = {
   padding?: number;
   anchor?: [number, number];
 };
-
-
-

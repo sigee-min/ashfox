@@ -4,7 +4,7 @@ import {
   estimateDataUriByteLength,
   hashCanvasImage,
   normalizeTextureDataUri,
-  parseDataUriMimeType
+  parseDataUriMimeType,
 } from '../../shared/textureData';
 import { TEXTURE_DATA_UNAVAILABLE } from '../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../result';
@@ -18,7 +18,9 @@ export type PreparedTextureReadImage = {
   height?: number;
 };
 
-export const prepareTextureReadImage = (source: TextureSource): UsecaseResult<PreparedTextureReadImage> => {
+export const prepareTextureReadImage = (
+  source: TextureSource,
+): UsecaseResult<PreparedTextureReadImage> => {
   const dataUri = normalizeTextureDataUri(source.dataUri);
   if (!dataUri) {
     return fail({ code: 'not_implemented', message: TEXTURE_DATA_UNAVAILABLE });
@@ -42,15 +44,15 @@ export const prepareTextureReadImage = (source: TextureSource): UsecaseResult<Pr
         width: source.width,
         height: source.height,
         byteLength,
-        hash
-      }
-    }
+        hash,
+      },
+    },
   });
 };
 
 export const withSavedTextureResult = (
   prepared: PreparedTextureReadImage,
-  saved: { path: string; byteLength: number }
+  saved: { path: string; byteLength: number },
 ): ReadTextureResult => ({
   ...prepared.result,
   saved: {
@@ -59,7 +61,7 @@ export const withSavedTextureResult = (
       mime: prepared.mimeType,
       byteLength: saved.byteLength,
       width: prepared.width,
-      height: prepared.height
-    }
-  }
+      height: prepared.height,
+    },
+  },
 });

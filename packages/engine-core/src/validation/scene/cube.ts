@@ -2,15 +2,10 @@ import {
   CUBE_FACE_DIRECTIONS,
   type CubeFaceDirection,
   type CubeNode,
-  type ProjectDocument
+  type ProjectDocument,
 } from '../../model';
 import { cubeUnrotatedBounds } from '../../model';
-import {
-  EPSILON,
-  isFiniteNumber,
-  isNonEmptyString,
-  validateVec
-} from '../shared/value';
+import { EPSILON, isFiniteNumber, isNonEmptyString, validateVec } from '../shared/value';
 import type { FindingSink } from '../contract';
 import { validateOrientedCubeAuthority } from './orientedCube';
 
@@ -21,41 +16,46 @@ export const validateCube = (
   cube: CubeNode,
   document: ProjectDocument,
   path: string,
-  add: FindingSink
+  add: FindingSink,
 ): void => {
   const bounds = cubeUnrotatedBounds(cube);
-  const boundsPath = cube.geometryMode === 'axis-box' ? `${path}.bounds` :
-    `${path}.orientedBox`;
-  validateVec(bounds.from, 3, cube.geometryMode === 'axis-box'
-    ? `${boundsPath}.from` : `${boundsPath}.unrotatedFrom`, add, cube.id);
-  validateVec(bounds.to, 3, cube.geometryMode === 'axis-box'
-    ? `${boundsPath}.to` : `${boundsPath}.unrotatedTo`, add, cube.id);
-  if (cube.geometryMode === 'oriented-box') validateOrientedCubeAuthority(
-    cube, path, add);
+  const boundsPath = cube.geometryMode === 'axis-box' ? `${path}.bounds` : `${path}.orientedBox`;
+  validateVec(
+    bounds.from,
+    3,
+    cube.geometryMode === 'axis-box' ? `${boundsPath}.from` : `${boundsPath}.unrotatedFrom`,
+    add,
+    cube.id,
+  );
+  validateVec(
+    bounds.to,
+    3,
+    cube.geometryMode === 'axis-box' ? `${boundsPath}.to` : `${boundsPath}.unrotatedTo`,
+    add,
+    cube.id,
+  );
+  if (cube.geometryMode === 'oriented-box') validateOrientedCubeAuthority(cube, path, add);
   if (!isFiniteNumber(cube.inflate)) {
     add({
       code: 'value.not_finite',
       severity: 'error',
       message: 'Cube inflate must be finite.',
       path: `${path}.inflate`,
-      entityIds: [cube.id]
+      entityIds: [cube.id],
     });
   }
   const positiveAxes = bounds.from.reduce(
-    (count, from, index) =>
-      count + (bounds.to[index] - from > EPSILON ? 1 : 0),
-    0
+    (count, from, index) => count + (bounds.to[index] - from > EPSILON ? 1 : 0),
+    0,
   );
-  const reversedAxis = bounds.from.findIndex(
-    (from, index) => bounds.to[index] < from
-  );
+  const reversedAxis = bounds.from.findIndex((from, index) => bounds.to[index] < from);
   if (reversedAxis >= 0 || positiveAxes < 2) {
     add({
       code: 'cube.invalid_bounds',
       severity: 'error',
       message: 'Cube bounds must not be reversed and must span at least two axes.',
       path: boundsPath,
-      entityIds: [cube.id]
+      entityIds: [cube.id],
     });
   }
 
@@ -71,7 +71,7 @@ export const validateCube = (
         severity: 'error',
         message: `Cube is missing its ${direction} face record.`,
         path: facePath,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
       continue;
     }
@@ -81,7 +81,7 @@ export const validateCube = (
         severity: 'error',
         message: 'Face enabled must be a boolean.',
         path: `${facePath}.enabled`,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
     }
     if (face.uv) validateVec(face.uv, 4, `${facePath}.uv`, add, cube.id);
@@ -94,43 +94,34 @@ export const validateCube = (
         severity: 'error',
         message: 'Face rotation must be 0, 90, 180, or 270 degrees.',
         path: `${facePath}.rotation`,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
     }
-    if (
-      face.cullFace !== undefined &&
-      !CUBE_FACE_DIRECTION_SET.has(face.cullFace)
-    ) {
+    if (face.cullFace !== undefined && !CUBE_FACE_DIRECTION_SET.has(face.cullFace)) {
       add({
         code: 'cube.invalid_face',
         severity: 'error',
         message: 'Face cullFace must be a canonical cube direction.',
         path: `${facePath}.cullFace`,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
     }
-    if (
-      face.tintIndex !== undefined &&
-      (!Number.isInteger(face.tintIndex) || face.tintIndex < 0)
-    ) {
+    if (face.tintIndex !== undefined && (!Number.isInteger(face.tintIndex) || face.tintIndex < 0)) {
       add({
         code: 'cube.invalid_face',
         severity: 'error',
         message: 'Face tintIndex must be a non-negative integer.',
         path: `${facePath}.tintIndex`,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
     }
-    if (
-      face.materialInstance !== undefined &&
-      !isNonEmptyString(face.materialInstance)
-    ) {
+    if (face.materialInstance !== undefined && !isNonEmptyString(face.materialInstance)) {
       add({
         code: 'cube.invalid_face',
         severity: 'error',
         message: 'Face materialInstance must be a non-empty string.',
         path: `${facePath}.materialInstance`,
-        entityIds: [cube.id]
+        entityIds: [cube.id],
       });
     }
     if (face.textureId !== null) {
@@ -140,7 +131,7 @@ export const validateCube = (
           severity: 'error',
           message: 'Face textureId must be a non-empty asset ID or null.',
           path: `${facePath}.textureId`,
-          entityIds: [cube.id]
+          entityIds: [cube.id],
         });
       } else if (face.enabled && !document.textures[face.textureId]) {
         add({
@@ -149,14 +140,12 @@ export const validateCube = (
           message: `Face references missing texture "${face.textureId}".`,
           path: `${facePath}.textureId`,
           entityIds: [cube.id],
-          assetIds: [face.textureId]
+          assetIds: [face.textureId],
         });
       }
     }
     const faceTexture =
-      typeof face.textureId === 'string'
-        ? document.textures[face.textureId]
-        : undefined;
+      typeof face.textureId === 'string' ? document.textures[face.textureId] : undefined;
     if (
       face.enabled &&
       faceTexture &&
@@ -178,22 +167,20 @@ export const validateCube = (
         message: 'Preserved face UV endpoints must stay inside the texture canvas.',
         path: `${facePath}.uv`,
         entityIds: [cube.id],
-        assetIds: [faceTexture.id]
+        assetIds: [faceTexture.id],
       });
     }
   }
   if (
     cube.lightEmission !== undefined &&
-    (!Number.isInteger(cube.lightEmission) ||
-      cube.lightEmission < 0 ||
-      cube.lightEmission > 15)
+    (!Number.isInteger(cube.lightEmission) || cube.lightEmission < 0 || cube.lightEmission > 15)
   ) {
     add({
       code: 'cube.invalid_face',
       severity: 'error',
       message: 'Cube lightEmission must be an integer between 0 and 15.',
       path: `${path}.lightEmission`,
-      entityIds: [cube.id]
+      entityIds: [cube.id],
     });
   }
 };

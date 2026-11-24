@@ -33,7 +33,7 @@ const FLOOR = {
   lines: 65,
   statements: 65,
   functions: 42,
-  branches: 50
+  branches: 50,
 };
 
 const main = () => {
@@ -41,7 +41,9 @@ const main = () => {
   const updateBaseline = args.has('--update-baseline');
 
   if (!fs.existsSync(summaryPath)) {
-    throw new Error('coverage: missing coverage/coverage-summary.json (run `npm run test:cov:blockbench` first)');
+    throw new Error(
+      'coverage: missing coverage/coverage-summary.json (run `npm run test:cov:blockbench` first)',
+    );
   }
 
   const current = pickTotals(readJson(summaryPath));
@@ -55,7 +57,7 @@ const main = () => {
 
   if (!fs.existsSync(baselinePath)) {
     throw new Error(
-      'coverage: missing config/quality/coverage-baseline.json (run `npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline`)'
+      'coverage: missing config/quality/coverage-baseline.json (run `npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline`)',
     );
   }
 
@@ -100,15 +102,17 @@ const main = () => {
     console.error('blockbench-runtime coverage gate failed (regression vs baseline):');
     for (const line of regressions) console.error(`- ${line}`);
     console.error('To update baseline intentionally:');
-    console.error('  npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline');
+    console.error(
+      '  npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline',
+    );
     process.exitCode = 1;
     return;
   }
 
   console.log(
     `blockbench-runtime coverage gate ok: lines ${format(current.lines)}, statements ${format(current.statements)}, functions ${format(
-      current.functions
-    )}, branches ${format(current.branches)}`
+      current.functions,
+    )}, branches ${format(current.branches)}`,
   );
 };
 

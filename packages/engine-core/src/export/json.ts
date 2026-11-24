@@ -15,15 +15,14 @@ const sortJson = (value: JsonValue): JsonValue => {
   return value;
 };
 
-export const stringifyCompactDeterministicJson = (
-  value: JsonValue | object
-): string => JSON.stringify(sortJson(value as JsonValue));
+export const stringifyCompactDeterministicJson = (value: JsonValue | object): string =>
+  JSON.stringify(sortJson(value as JsonValue));
 
 export const createCompactJsonExportFile = (
   role: ExportFileRole,
   path: string,
   data: JsonValue | object,
-  contentType: JsonExportFile['contentType'] = 'application/json'
+  contentType: JsonExportFile['contentType'] = 'application/json',
 ): JsonExportFile => {
   const jsonData = data as JsonValue;
   return {
@@ -32,6 +31,6 @@ export const createCompactJsonExportFile = (
     path,
     contentType,
     data: jsonData,
-    text: stringifyCompactDeterministicJson(jsonData)
+    text: stringifyCompactDeterministicJson(jsonData),
   };
 };

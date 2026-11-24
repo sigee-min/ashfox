@@ -4,14 +4,17 @@ import { errorMessage } from '../../../logging';
 import { hasUnsavedChanges, markProjectSaved, readGlobals } from '../blockbenchUtils';
 import { tryAutoConfirmProjectDialog } from '../projectDialogHelpers';
 import { toolError } from '../../../shared/tooling/toolResponse';
-import { ADAPTER_PROJECT_CREATE_UNAVAILABLE, ADAPTER_PROJECT_UNSAVED_CHANGES } from '../../../shared/messages';
+import {
+  ADAPTER_PROJECT_CREATE_UNAVAILABLE,
+  ADAPTER_PROJECT_UNSAVED_CHANGES,
+} from '../../../shared/messages';
 
 export const runCreateProject = (
   log: Logger,
   name: string,
   formatId: string,
   kind: FormatKind,
-  options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+  options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
 ): ToolError | null => {
   try {
     const globals = readGlobals();
@@ -24,7 +27,7 @@ export const runCreateProject = (
       if (options?.confirmDiscard === false) {
         return {
           code: 'invalid_state',
-          message: ADAPTER_PROJECT_UNSAVED_CHANGES
+          message: ADAPTER_PROJECT_UNSAVED_CHANGES,
         };
       }
       if (!options?.confirmDiscard) {
@@ -52,7 +55,7 @@ export const runCreateProject = (
     const dialogResult = tryAutoConfirmProjectDialog(name, {
       ...options,
       formatId: resolvedId,
-      formatKind: kind
+      formatKind: kind,
     });
     if (!dialogResult.ok) return dialogResult.error;
     if (typeof blockbench?.setProjectName === 'function') {
@@ -65,7 +68,9 @@ export const runCreateProject = (
   } catch (err) {
     const message = errorMessage(err, 'project create failed');
     log.error('project create error', { message });
-    return toolError('unknown', message, { reason: 'adapter_exception', context: 'project_create' });
+    return toolError('unknown', message, {
+      reason: 'adapter_exception',
+      context: 'project_create',
+    });
   }
 };
-

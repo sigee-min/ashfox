@@ -8,7 +8,7 @@ import {
   TMP_STORE_DIR_CREATE_FAILED,
   TMP_STORE_FILESYSTEM_UNAVAILABLE,
   TMP_STORE_PERMISSION_MESSAGE,
-  TMP_STORE_WRITE_FAILED
+  TMP_STORE_WRITE_FAILED,
 } from '../../shared/messages';
 import { loadNativeModule } from '../../shared/nativeModules';
 
@@ -51,7 +51,7 @@ const parseDataUri = (dataUri: string): { mimeType: string; base64: string } | n
 
 export const saveDataUriToTmp = (
   dataUri: string,
-  options?: { nameHint?: string; prefix?: string; cwd?: string }
+  options?: { nameHint?: string; prefix?: string; cwd?: string },
 ): { ok: true; data: TmpSaveResult } | { ok: false; error: ToolError } => {
   const parsed = parseDataUri(dataUri);
   if (!parsed) {
@@ -59,16 +59,17 @@ export const saveDataUriToTmp = (
   }
   const fs = loadNativeModule<FsModule>('fs', {
     message: TMP_STORE_PERMISSION_MESSAGE,
-    optional: true
+    optional: true,
   });
   const path = loadNativeModule<PathModule>('path', {
     message: TMP_STORE_PERMISSION_MESSAGE,
-    optional: true
+    optional: true,
   });
   if (!fs || !path) {
     return { ok: false, error: toolError('not_implemented', TMP_STORE_FILESYSTEM_UNAVAILABLE) };
   }
-  const root = options?.cwd ?? (typeof process !== 'undefined' && process.cwd ? process.cwd() : '.');
+  const root =
+    options?.cwd ?? (typeof process !== 'undefined' && process.cwd ? process.cwd() : '.');
   const baseDir = path.resolve(root, '.ashfox', 'tmp');
   try {
     fs.mkdirSync(baseDir, { recursive: true });
@@ -96,19 +97,17 @@ export const saveDataUriToTmp = (
     const message = errorMessage(err, TMP_STORE_WRITE_FAILED);
     return { ok: false, error: toolError('io_error', message) };
   }
-  return { ok: true, data: { path: filePath, mimeType: parsed.mimeType, byteLength: buffer.byteLength } };
+  return {
+    ok: true,
+    data: { path: filePath, mimeType: parsed.mimeType, byteLength: buffer.byteLength },
+  };
 };
 
 export class LocalTmpStore implements TmpStorePort {
   saveDataUri(
     dataUri: string,
-    options?: { nameHint?: string; prefix?: string; cwd?: string }
+    options?: { nameHint?: string; prefix?: string; cwd?: string },
   ): { ok: true; data: TmpSaveResult } | { ok: false; error: ToolError } {
     return saveDataUriToTmp(dataUri, options);
   }
 }
-
-
-
-
-

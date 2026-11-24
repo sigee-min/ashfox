@@ -4,7 +4,7 @@ import {
   MCP_INVALID_CONTENT_LENGTH,
   MCP_INVALID_HEADER,
   MCP_INVALID_REQUEST_LINE,
-  MCP_TRANSFER_ENCODING_UNSUPPORTED
+  MCP_TRANSFER_ENCODING_UNSUPPORTED,
 } from '../../shared/messages';
 import { openSseConnection } from './transport';
 import type { ResponsePlan, SseConnection } from './types';
@@ -19,7 +19,7 @@ const STATUS_TEXT: Readonly<Record<number, string>> = {
   406: 'Not Acceptable',
   413: 'Payload Too Large',
   415: 'Unsupported Media Type',
-  500: 'Internal Server Error'
+  500: 'Internal Server Error',
 };
 
 export interface ParsedRequestHead {
@@ -48,10 +48,7 @@ export const parseRequestHead = (head: string): RequestHeadResult => {
     if (!match) return { ok: false, message: MCP_INVALID_HEADER };
     const key = match[1].toLowerCase();
     const value = match[2].trim();
-    if (
-      key === 'content-length' &&
-      Object.prototype.hasOwnProperty.call(headers, key)
-    ) {
+    if (key === 'content-length' && Object.prototype.hasOwnProperty.call(headers, key)) {
       return { ok: false, message: MCP_INVALID_CONTENT_LENGTH };
     }
     headers[key] = headers[key] ? `${headers[key]}, ${value}` : value;
@@ -64,17 +61,15 @@ export const parseRequestHead = (head: string): RequestHeadResult => {
     return { ok: false, message: MCP_INVALID_CONTENT_LENGTH };
   }
   const connection = headers.connection?.toLowerCase();
-  const shouldClose = connection === 'close' ||
-    (version === 'HTTP/1.0' && connection !== 'keep-alive');
+  const shouldClose =
+    connection === 'close' || (version === 'HTTP/1.0' && connection !== 'keep-alive');
   return {
     ok: true,
-    value: { method, url, version, headers, contentLength, shouldClose }
+    value: { method, url, version, headers, contentLength, shouldClose },
   };
 };
 
-const parseContentLength = (
-  headers: Readonly<Record<string, string>>
-): number | null => {
+const parseContentLength = (headers: Readonly<Record<string, string>>): number | null => {
   if (!Object.prototype.hasOwnProperty.call(headers, 'content-length')) {
     return 0;
   }
@@ -88,7 +83,7 @@ const writeHeaders = (
   socket: Socket,
   status: number,
   headers: Readonly<Record<string, string>>,
-  hasBody: boolean
+  hasBody: boolean,
 ): void => {
   const statusText = STATUS_TEXT[status] ?? 'OK';
   const lines = [`HTTP/1.1 ${status} ${statusText}`];
@@ -109,24 +104,34 @@ export interface NetResponseOptions {
 export const writeNetResponse = (
   socket: Socket,
   plan: ResponsePlan,
-  options: NetResponseOptions
+  options: NetResponseOptions,
 ): boolean => {
   if (plan.kind === 'sse') {
     return writeSseResponse(socket, plan, options);
   }
   if (plan.kind === 'json') {
     const body = plan.body ?? '';
-    writeHeaders(socket, plan.status, {
-      ...plan.headers,
-      'Content-Length': Buffer.byteLength(body).toString()
-    }, true);
+    writeHeaders(
+      socket,
+      plan.status,
+      {
+        ...plan.headers,
+        'Content-Length': Buffer.byteLength(body).toString(),
+      },
+      true,
+    );
     socket.write(body);
   } else if (plan.kind === 'binary') {
     const body = plan.body ?? new Uint8Array();
-    writeHeaders(socket, plan.status, {
-      ...plan.headers,
-      'Content-Length': body.length.toString()
-    }, true);
+    writeHeaders(
+      socket,
+      plan.status,
+      {
+        ...plan.headers,
+        'Content-Length': body.length.toString(),
+      },
+      true,
+    );
     socket.write(body);
   } else {
     writeHeaders(socket, plan.status, plan.headers, false);
@@ -138,11 +143,11 @@ export const writeNetResponse = (
 const writeSseResponse = (
   socket: Socket,
   plan: Extract<ResponsePlan, { readonly kind: 'sse' }>,
-  options: NetResponseOptions
+  options: NetResponseOptions,
 ): boolean => {
   const headers: Record<string, string> = {
     ...plan.headers,
-    Connection: 'close'
+    Connection: 'close',
   };
   delete headers['Content-Length'];
   delete headers['Transfer-Encoding'];
@@ -150,11 +155,14 @@ const writeSseResponse = (
   for (const event of plan.events) socket.write(event);
   if (plan.onOpen || !plan.close) {
     if (options.canOpen?.() === false) return false;
-    openSseConnection({
-      send: (payload) => socket.write(payload),
-      close: () => socket.end(),
-      onClose: (handler) => socket.on('close', handler)
-    }, options.onOpen ?? plan.onOpen);
+    openSseConnection(
+      {
+        send: (payload) => socket.write(payload),
+        close: () => socket.end(),
+        onClose: (handler) => socket.on('close', handler),
+      },
+      options.onOpen ?? plan.onOpen,
+    );
     if (plan.close) socket.end();
     return true;
   }
@@ -162,12 +170,9 @@ const writeSseResponse = (
   return true;
 };
 
-export const netJsonResponse = (
-  status: number,
-  body: unknown
-): ResponsePlan => ({
+export const netJsonResponse = (status: number, body: unknown): ResponsePlan => ({
   kind: 'json',
   status,
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body)
+  body: JSON.stringify(body),
 });

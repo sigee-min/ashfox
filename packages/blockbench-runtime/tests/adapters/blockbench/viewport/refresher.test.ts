@@ -16,19 +16,19 @@ import { withGlobals } from '../../../support/globals';
         updateView: (options: CanvasUpdateViewOptions) => {
           updateViewCalls += 1;
           lastUpdateView.options = options;
-        }
+        },
       },
       Preview: {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     () => {
       refresher.refresh({ effect: 'geometry', source: 'update_cube' });
-    }
+    },
   );
   assert.equal(updateViewCalls, 1);
   assert.equal(lastUpdateView.options?.element_aspects?.geometry, true);
@@ -48,13 +48,13 @@ import { withGlobals } from '../../../support/globals';
         },
         updateAll: () => {
           updateAllCalls += 1;
-        }
+        },
       },
-      Preview: undefined
+      Preview: undefined,
     },
     () => {
       refresher.refresh({ effect: 'geometry', source: 'add_cube' });
-    }
+    },
   );
   assert.equal(updateAllPositionsCalls, 1);
   assert.equal(updateAllCalls, 0);
@@ -70,12 +70,12 @@ import { withGlobals } from '../../../support/globals';
       Blockbench: {
         dispatchEvent: (name: string, payload: unknown) => {
           dispatched.push({ name, payload });
-        }
-      }
+        },
+      },
     },
     () => {
       refresher.refresh({ effect: 'texture', source: 'paint_faces' });
-    }
+    },
   );
   assert.equal(dispatched.length, 1);
   assert.equal(dispatched[0]?.name, 'ashfox:viewport_changed');
@@ -93,7 +93,7 @@ import { withGlobals } from '../../../support/globals';
     },
     setTime: (_time: number) => {
       setTimeCalls += 1;
-    }
+    },
   };
   withGlobals(
     {
@@ -102,17 +102,17 @@ import { withGlobals } from '../../../support/globals';
       Canvas: {
         updateView: (_options: CanvasUpdateViewOptions) => {
           updateViewCalls += 1;
-        }
+        },
       },
       Preview: {
         selected: {
-          render: () => undefined
-        }
-      }
+          render: () => undefined,
+        },
+      },
     },
     () => {
       refresher.refresh({ effect: 'animation', source: 'set_frame_pose' });
-    }
+    },
   );
   assert.equal(selectCalls, 1);
   assert.equal(setTimeCalls, 1);
@@ -130,14 +130,14 @@ import { withGlobals } from '../../../support/globals';
         time: 0.5,
         setTime: (_time: number) => {
           setTimeCalls += 1;
-        }
+        },
       },
       Canvas: { updateView: (_options: CanvasUpdateViewOptions) => undefined },
-      Preview: undefined
+      Preview: undefined,
     },
     () => {
       refresher.refresh({ effect: 'animation', source: 'set_frame_pose' });
-    }
+    },
   );
   assert.equal(setTimeCalls, 1);
 }
@@ -153,14 +153,14 @@ import { withGlobals } from '../../../support/globals';
         time: 0.25,
         preview: (_time: number) => {
           previewCalls += 1;
-        }
+        },
       },
       Canvas: { updateView: (_options: CanvasUpdateViewOptions) => undefined },
-      Preview: undefined
+      Preview: undefined,
     },
     () => {
       refresher.refresh({ effect: 'animation', source: 'set_frame_pose' });
-    }
+    },
   );
   assert.equal(previewCalls, 1);
 }
@@ -173,11 +173,11 @@ import { withGlobals } from '../../../support/globals';
       Animation: { selected: clip },
       Animator: { time: 1.25 },
       Canvas: { updateView: (_options: CanvasUpdateViewOptions) => undefined },
-      Preview: undefined
+      Preview: undefined,
     },
     () => {
       refresher.refresh({ effect: 'animation', source: 'set_frame_pose' });
-    }
+    },
   );
   assert.equal(clip.time, 1.25);
 }
@@ -190,13 +190,13 @@ import { withGlobals } from '../../../support/globals';
       Canvas: {
         updateAllUVs: () => {
           textureFallbackCalls += 1;
-        }
+        },
       },
-      Preview: undefined
+      Preview: undefined,
     },
     () => {
       refresher.refresh({ effect: 'texture', source: 'paint_faces' });
-    }
+    },
   );
   assert.equal(textureFallbackCalls, 1);
 }
@@ -207,19 +207,19 @@ import { withGlobals } from '../../../support/globals';
   const preview = {
     render: () => {
       renderCalls += 1;
-    }
+    },
   };
   withGlobals(
     {
       Canvas: undefined,
       Preview: {
         selected: preview,
-        all: [preview]
-      }
+        all: [preview],
+      },
     },
     () => {
       refresher.refresh({ effect: 'none', source: 'get_project_state' });
-    }
+    },
   );
   assert.equal(renderCalls, 1);
 }

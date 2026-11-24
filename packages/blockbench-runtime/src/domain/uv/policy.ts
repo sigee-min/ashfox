@@ -1,8 +1,5 @@
 import type { Cube, CubeFaceDirection } from '../model';
-import {
-  cubeFaceDimensions,
-  faceTexelSize
-} from '@ashfox/engine-core';
+import { cubeFaceDimensions, faceTexelSize } from '@ashfox/engine-core';
 
 export type UvPolicyConfig = {
   modelUnitsPerBlock: number;
@@ -19,7 +16,7 @@ export const DEFAULT_UV_POLICY: UvPolicyConfig = {
   scaleTolerance: 0.1,
   tinyThreshold: 2,
   autoMaxResolution: 0,
-  autoMaxRetries: 2
+  autoMaxRetries: 2,
 };
 
 type FaceDimensions = {
@@ -52,24 +49,19 @@ const computeExpectedUvSizeInternal = (
   face: FaceDimensions,
   texture: { width: number; height: number },
   policy: UvPolicyConfig,
-  options?: { allowOverflow?: boolean }
+  options?: { allowOverflow?: boolean },
 ): ExpectedUvSize | null => {
   if (policy.modelUnitsPerBlock <= 0) return null;
   if (texture.width <= 0 || texture.height <= 0) return null;
   const pixelsPerBlock = normalizePixelsPerBlock(policy.pixelsPerBlock);
   if (pixelsPerBlock !== undefined) {
-    const size = faceTexelSize(
-      face,
-      policy.modelUnitsPerBlock,
-      pixelsPerBlock
-    );
+    const size = faceTexelSize(face, policy.modelUnitsPerBlock, pixelsPerBlock);
     if (!size) return null;
-    const exceedsTexture =
-      size.width > texture.width || size.height > texture.height;
+    const exceedsTexture = size.width > texture.width || size.height > texture.height;
     if (exceedsTexture && !options?.allowOverflow) return null;
     return {
       ...size,
-      exceedsTexture
+      exceedsTexture,
     };
   }
   const baseWidth = pixelsPerBlock ?? texture.width;
@@ -88,5 +80,6 @@ const computeExpectedUvSizeInternal = (
 export const computeExpectedUvSizeWithOverflow = (
   face: FaceDimensions,
   texture: { width: number; height: number },
-  policy: UvPolicyConfig
-): ExpectedUvSize | null => computeExpectedUvSizeInternal(face, texture, policy, { allowOverflow: true });
+  policy: UvPolicyConfig,
+): ExpectedUvSize | null =>
+  computeExpectedUvSizeInternal(face, texture, policy, { allowOverflow: true });

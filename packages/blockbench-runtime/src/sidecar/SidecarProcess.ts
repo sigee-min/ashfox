@@ -11,7 +11,7 @@ import {
   SIDECAR_PATH_MODULE_UNAVAILABLE,
   SIDECAR_PERMISSION_MESSAGE,
   SIDECAR_RUN_AS_NODE_REJECTED,
-  SIDECAR_STDIO_UNAVAILABLE
+  SIDECAR_STDIO_UNAVAILABLE,
 } from '../shared/messages';
 import { loadNativeModule } from '../shared/nativeModules';
 import { validateServerConfig } from '../serverConfig';
@@ -30,7 +30,7 @@ type ChildProcessModule = {
       stdio: ['pipe', 'pipe', 'pipe'];
       windowsHide: boolean;
       env: Record<string, string | undefined>;
-    }
+    },
   ) => ChildProcessHandle;
 };
 
@@ -72,7 +72,7 @@ type SidecarProcessClock = {
 const SYSTEM_CLOCK: SidecarProcessClock = {
   setTimeout: (handler, delayMs) => setTimeout(handler, delayMs),
   clearTimeout: (handle) => clearTimeout(handle),
-  random: () => Math.random()
+  random: () => Math.random(),
 };
 
 export class SidecarProcess {
@@ -92,7 +92,7 @@ export class SidecarProcess {
     config: SidecarLaunchConfig,
     dispatcher: Dispatcher,
     log: Logger,
-    clock: SidecarProcessClock = SYSTEM_CLOCK
+    clock: SidecarProcessClock = SYSTEM_CLOCK,
   ) {
     this.config = config;
     this.dispatcher = dispatcher;
@@ -108,7 +108,7 @@ export class SidecarProcess {
     if (!validation.ok) {
       this.log.error('sidecar config invalid', {
         reason: validation.reason,
-        message: validation.message
+        message: validation.message,
       });
       return false;
     }
@@ -116,7 +116,7 @@ export class SidecarProcess {
 
     const childProcess = loadNativeModule<ChildProcessModule>('child_process', {
       message: SIDECAR_PERMISSION_MESSAGE,
-      optional: true
+      optional: true,
     });
     if (!isChildProcessModule(childProcess)) {
       this.log.warn(SIDECAR_CHILD_PROCESS_UNAVAILABLE);
@@ -136,7 +136,7 @@ export class SidecarProcess {
     }
     const processModule = loadNativeModule<ProcessModule>('process', {
       message: SIDECAR_PERMISSION_MESSAGE,
-      optional: true
+      optional: true,
     });
     const execPath = this.resolveExecPath(processModule);
     if (!execPath) {
@@ -154,10 +154,10 @@ export class SidecarProcess {
       '--port',
       String(serverConfig.port),
       '--path',
-      serverConfig.path
+      serverConfig.path,
     ];
     const env: Record<string, string | undefined> = {
-      ...(processModule?.env ?? {})
+      ...(processModule?.env ?? {}),
     };
     if (serverConfig.token) env.ASHFOX_TOKEN = serverConfig.token;
 
@@ -166,7 +166,7 @@ export class SidecarProcess {
       child = childProcess.spawn(execPath, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
-        env
+        env,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -199,7 +199,7 @@ export class SidecarProcess {
     });
     child.on('error', (err: Error) => {
       this.handleTermination(current, 'error', {
-        message: errorMessage(err)
+        message: errorMessage(err),
       });
     });
 
@@ -250,7 +250,7 @@ export class SidecarProcess {
   private handleTermination(
     child: ChildProcessHandle,
     kind: 'error' | 'exit',
-    meta: Record<string, unknown>
+    meta: Record<string, unknown>,
   ): void {
     if (this.child !== child) return;
     this.cleanup();
@@ -285,9 +285,7 @@ export class SidecarProcess {
     const override = this.config.execPath?.trim();
     if (override) return override;
     const execPath = processModule?.execPath;
-    return typeof execPath === 'string' && execPath.trim().length > 0
-      ? execPath.trim()
-      : null;
+    return typeof execPath === 'string' && execPath.trim().length > 0 ? execPath.trim() : null;
   }
 }
 

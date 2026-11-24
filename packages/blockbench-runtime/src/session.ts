@@ -8,5 +8,5 @@ export type {
   TrackedCube,
   TrackedCubeFace,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './session/types';

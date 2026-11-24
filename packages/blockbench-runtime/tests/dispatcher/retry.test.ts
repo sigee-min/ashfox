@@ -30,21 +30,21 @@ const createLogger = (): TestLogger => {
       debug: (message, meta) => debugLogs.push({ message, meta }),
       info: (message, meta) => infoLogs.push({ message, meta }),
       warn: (message, meta) => warnLogs.push({ message, meta }),
-      error: () => undefined
-    }
+      error: () => undefined,
+    },
   };
 };
 
 const revisionMismatch = (expected: string, currentRevision: string): ToolError => ({
   code: 'invalid_state_revision_mismatch',
   message: 'revision mismatch',
-  details: { expected, currentRevision, reason: 'revision_mismatch' }
+  details: { expected, currentRevision, reason: 'revision_mismatch' },
 });
 
 const invalidState = (reason: string): ToolError => ({
   code: 'invalid_state',
   message: reason,
-  details: { reason }
+  details: { reason },
 });
 
 const createService = (options: {
@@ -57,7 +57,7 @@ const createService = (options: {
   ({
     isAutoRetryRevisionEnabled: () => options.autoRetry,
     isRevisionRequired: () => options.requiresRevision,
-    getProjectState: () => options.stateResult
+    getProjectState: () => options.stateResult,
   }) as unknown as {
     isAutoRetryRevisionEnabled: () => boolean;
     isRevisionRequired: () => boolean;
@@ -73,7 +73,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -83,7 +83,7 @@ registerAsync(
           return { ok: true, value: { ok: true } };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, true);
@@ -97,7 +97,7 @@ registerAsync(
       const service = createService({
         autoRetry: false,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -107,7 +107,7 @@ registerAsync(
           return { ok: false, error: revisionMismatch('r1', 'r2') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, false);
@@ -121,7 +121,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -131,7 +131,7 @@ registerAsync(
           return { ok: false, error: invalidState('invalid_payload') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, false);
@@ -145,7 +145,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -155,7 +155,7 @@ registerAsync(
           return { ok: false, error: revisionMismatch('r1', 'r2') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, false);
@@ -170,7 +170,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: false, error: invalidState('state_unavailable') }
+        stateResult: { ok: false, error: invalidState('state_unavailable') },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -180,7 +180,7 @@ registerAsync(
           return { ok: false, error: revisionMismatch('r1', 'r2') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, false);
@@ -195,7 +195,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r1', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r1', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -205,7 +205,7 @@ registerAsync(
           return { ok: false, error: revisionMismatch('r1', 'r2') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 1);
       assert.equal(result.result.ok, false);
@@ -220,7 +220,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -231,7 +231,7 @@ registerAsync(
           return { ok: true, value: { applied: payload.ifRevision } };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 2);
       assert.equal(result.payload.ifRevision, 'r2');
@@ -246,7 +246,7 @@ registerAsync(
       const service = createService({
         autoRetry: true,
         requiresRevision: true,
-        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } }
+        stateResult: { ok: true, value: { project: { revision: 'r2', active: true } } },
       });
       const result = await callWithAutoRetry({
         tool: 'update_cube',
@@ -257,12 +257,12 @@ registerAsync(
           return { ok: false, error: invalidState('retry_failed') };
         },
         service: service as never,
-        log: log.logger as never
+        log: log.logger as never,
       });
       assert.equal(calls, 2);
       assert.equal(result.result.ok, false);
       assert.equal(log.warnLogs.length, 1);
       assert.equal(log.warnLogs[0].meta?.code, 'invalid_state');
     }
-  })()
+  })(),
 );

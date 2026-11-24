@@ -11,17 +11,17 @@ import { createCubeMutationPolicy } from '../../../../src/usecases/model/cubeMut
         addBoneCalls += 1;
         return null;
       },
-      listTextures: () => []
+      listTextures: () => [],
     } as never,
     addRootBoneToSession: () => {
       addRootCalls += 1;
-    }
+    },
   });
 
   const err = policy.ensureRootBone({
     bones: [],
     cubes: [],
-    animations: []
+    animations: [],
   } as never);
   assert.equal(err, null);
   assert.equal(addBoneCalls, 1);
@@ -34,17 +34,20 @@ import { createCubeMutationPolicy } from '../../../../src/usecases/model/cubeMut
   const policy = createCubeMutationPolicy({
     editor: {
       addBone: () => null,
-      listTextures: () => [{ id: 'tex1', name: 'atlas' }]
+      listTextures: () => [{ id: 'tex1', name: 'atlas' }],
     } as never,
     addRootBoneToSession: () => undefined,
     autoUvAtlas: () => {
       autoUvCalls += 1;
-      return { ok: true, value: { applied: true, steps: 0, resolution: { width: 16, height: 16 }, textures: [] } };
+      return {
+        ok: true,
+        value: { applied: true, steps: 0, resolution: { width: 16, height: 16 }, textures: [] },
+      };
     },
     runWithoutRevisionGuard: (fn) => {
       guardCalls += 1;
       return fn();
-    }
+    },
   });
 
   policy.afterAddCube();

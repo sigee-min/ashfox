@@ -1,7 +1,4 @@
-import {
-  GIF_CAPTURE_HEIGHT,
-  GIF_CAPTURE_WIDTH
-} from './gifCaptureSurface';
+import { GIF_CAPTURE_HEIGHT, GIF_CAPTURE_WIDTH } from './gifCaptureSurface';
 
 const roundedRect = (
   context: CanvasRenderingContext2D,
@@ -9,7 +6,7 @@ const roundedRect = (
   y: number,
   width: number,
   height: number,
-  radius: number
+  radius: number,
 ): void => {
   const right = x + width;
   const bottom = y + height;
@@ -31,7 +28,7 @@ const fillPanel = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 ): void => {
   context.fillStyle = 'rgba(10, 14, 18, 0.78)';
   roundedRect(context, x, y, width, height, 7);
@@ -51,7 +48,7 @@ export const drawBuildFrameOverlay = (
   label: string,
   eventIndex: number,
   eventCount: number,
-  progress: number
+  progress: number,
 ): void => {
   context.save();
   context.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -60,7 +57,7 @@ export const drawBuildFrameOverlay = (
   const copy = label.slice(0, 58);
   const panelWidth = Math.min(
     GIF_CAPTURE_WIDTH - 28,
-    Math.max(184, context.measureText(copy).width + 24)
+    Math.max(184, context.measureText(copy).width + 24),
   );
   fillPanel(context, 14, 14, panelWidth, 52);
   context.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -76,11 +73,6 @@ export const drawBuildFrameOverlay = (
   context.fillStyle = 'rgba(10, 14, 18, 0.72)';
   context.fillRect(trackX, trackY, trackWidth, 3);
   context.fillStyle = '#f0b65d';
-  context.fillRect(
-    trackX,
-    trackY,
-    Math.max(2, trackWidth * Math.min(1, Math.max(0, progress))),
-    3
-  );
+  context.fillRect(trackX, trackY, Math.max(2, trackWidth * Math.min(1, Math.max(0, progress))), 3);
   context.restore();
 };

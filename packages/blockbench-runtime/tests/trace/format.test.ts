@@ -1,15 +1,12 @@
 import assert from 'node:assert/strict';
 
-import {
-  normalizeTraceContractValue,
-  sanitizeTraceValue
-} from '../../src/trace/format';
+import { normalizeTraceContractValue, sanitizeTraceValue } from '../../src/trace/format';
 
 {
   const input = {
     keep: 'ok',
     image: 'data:image/png;base64,abc',
-    nested: { ctx: { secret: 'x' }, value: 1 }
+    nested: { ctx: { secret: 'x' }, value: 1 },
   };
   const sanitized = sanitizeTraceValue(input) as Record<string, unknown>;
   assert.equal(sanitized.keep, 'ok');
@@ -44,23 +41,21 @@ import {
     omitted: undefined,
     nested: { omitted: undefined, kept: true },
     sparse,
-    nonFinite: Number.NaN
+    nonFinite: Number.NaN,
   });
   assert.deepEqual(sanitized, {
     nested: { kept: true },
     sparse: [null, null],
-    nonFinite: null
+    nonFinite: null,
   });
 }
 
 {
-  const input = JSON.parse(
-    '{"__proto__":{"safe":true},"nested":{"__proto__":"kept"}}'
-  ) as Record<string, unknown>;
-  for (const sanitized of [
-    sanitizeTraceValue(input),
-    normalizeTraceContractValue(input)
-  ]) {
+  const input = JSON.parse('{"__proto__":{"safe":true},"nested":{"__proto__":"kept"}}') as Record<
+    string,
+    unknown
+  >;
+  for (const sanitized of [sanitizeTraceValue(input), normalizeTraceContractValue(input)]) {
     assert.ok(sanitized && typeof sanitized === 'object');
     const record = sanitized as Record<string, unknown>;
     assert.equal(Object.getPrototypeOf(record), Object.prototype);

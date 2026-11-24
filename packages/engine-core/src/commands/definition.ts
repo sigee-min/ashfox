@@ -1,15 +1,6 @@
 import type { AssetProject } from '../project/asset';
-import {
-  validateCommandInput,
-  type CommandInputSchema,
-  type SchemaIssue
-} from './schema';
-import type {
-  CommandEffects,
-  CommandError,
-  CommandName,
-  CommandPayloadMap
-} from './types';
+import { validateCommandInput, type CommandInputSchema, type SchemaIssue } from './schema';
+import type { CommandEffects, CommandError, CommandName, CommandPayloadMap } from './types';
 import type { CommandExecutionContext } from './batch/context';
 
 export type CommandApplicationError = CommandError;
@@ -39,7 +30,7 @@ export interface CommandDefinition {
   apply: (
     project: AssetProject,
     payload: unknown,
-    context?: CommandExecutionContext
+    context?: CommandExecutionContext,
   ) => CommandApplicationResult;
 }
 
@@ -51,12 +42,12 @@ interface CommandDefinitionSpec<TName extends CommandName> {
   apply: (
     project: AssetProject,
     payload: CommandPayloadMap[TName],
-    context?: CommandExecutionContext
+    context?: CommandExecutionContext,
   ) => CommandApplicationResult;
 }
 
 export const defineCommand = <TName extends CommandName>(
-  spec: CommandDefinitionSpec<TName>
+  spec: CommandDefinitionSpec<TName>,
 ): CommandDefinition => {
   const validate = (payload: unknown): SchemaIssue | null =>
     validateCommandInput(payload, spec.inputSchema);
@@ -76,15 +67,11 @@ export const defineCommand = <TName extends CommandName>(
             code: 'invalid_payload',
             message: issue.message,
             path: issue.path,
-            expected: issue.expected
-          }
+            expected: issue.expected,
+          },
         };
       }
-      return spec.apply(
-        project,
-        payload as CommandPayloadMap[TName],
-        context
-      );
-    }
+      return spec.apply(project, payload as CommandPayloadMap[TName], context);
+    },
   };
 };

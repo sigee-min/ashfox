@@ -1,6 +1,9 @@
 import type { TraceLogStore } from '../../trace/store';
 import type { TraceLogWriterFactory, TraceLogWriteOptions } from '../../ports/traceLog';
-import type { ExportTraceLogPayload, ExportTraceLogResult } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ExportTraceLogPayload,
+  ExportTraceLogResult,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { ok, fail, UsecaseResult } from '../result';
 
 const DEFAULT_RESOURCE_URI = 'ashfox://logs/trace.ndjson';
@@ -29,21 +32,21 @@ export class TraceLogService {
       return fail({
         code: 'invalid_state',
         message: 'Trace log is empty.',
-        details: { reason: 'trace_log_empty', resourceUri: this.resourceUri }
+        details: { reason: 'trace_log_empty', resourceUri: this.resourceUri },
       });
     }
     if (!this.writerFactory) {
       return fail({
         code: 'not_implemented',
         message: 'Trace log export is unavailable.',
-        details: { reason: 'trace_log_writer_missing' }
+        details: { reason: 'trace_log_writer_missing' },
       });
     }
     const options = {
       ...this.defaults,
       ...(payload.mode ? { mode: payload.mode } : {}),
       ...(payload.destPath ? { destPath: payload.destPath } : {}),
-      ...(payload.fileName ? { fileName: payload.fileName } : {})
+      ...(payload.fileName ? { fileName: payload.fileName } : {}),
     };
     const writer = this.writerFactory.create(options);
     const error = writer.write(text);
@@ -54,7 +57,7 @@ export class TraceLogService {
       ...(options.destPath ? { destPath: options.destPath } : {}),
       ...(options.fileName ? { fileName: options.fileName } : {}),
       bytes: text.length,
-      resourceUri: this.resourceUri
+      resourceUri: this.resourceUri,
     });
   }
 
@@ -66,8 +69,3 @@ export class TraceLogService {
     return this.resourceUri;
   }
 }
-
-
-
-
-

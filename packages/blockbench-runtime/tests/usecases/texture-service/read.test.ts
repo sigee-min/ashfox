@@ -23,16 +23,16 @@ const createHarness = (options: HarnessOptions = {}) => {
           width: 16,
           height: 16,
           dataUri: options.dataUri,
-          image: undefined
-        }
+          image: undefined,
+        },
       };
-    }
+    },
   } as unknown as EditorPort;
 
   return new TextureReadService({
     editor,
     ensureActive: () => null,
-    tmpStore: options.tmpStore
+    tmpStore: options.tmpStore,
   });
 };
 
@@ -57,8 +57,8 @@ const createHarness = (options: HarnessOptions = {}) => {
   const service = createHarness({
     dataUri: 'data:image/png;base64,AAAA',
     tmpStore: {
-      saveDataUri: () => ({ ok: false, error: { code: 'io_error', message: 'tmp write failed' } })
-    }
+      saveDataUri: () => ({ ok: false, error: { code: 'io_error', message: 'tmp write failed' } }),
+    },
   });
   const res = service.readTextureImage({ name: 'atlas', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -89,12 +89,17 @@ const createHarness = (options: HarnessOptions = {}) => {
         data: {
           path: 'texture_atlas.png',
           mimeType: 'image/png',
-          byteLength: 4
-        }
-      })
-    }
+          byteLength: 4,
+        },
+      }),
+    },
   });
-  const res = service.readTextureImage({ name: 'atlas', saveToTmp: true, tmpPrefix: 'texture', tmpName: 'atlas' });
+  const res = service.readTextureImage({
+    name: 'atlas',
+    saveToTmp: true,
+    tmpPrefix: 'texture',
+    tmpName: 'atlas',
+  });
   assert.equal(res.ok, true);
   if (res.ok) {
     assert.equal(res.value.saved?.texture?.path, 'texture_atlas.png');

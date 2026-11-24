@@ -12,7 +12,7 @@ export type TextureBackup = {
 export const captureTextureBackup = (
   ctx: TextureToolContext,
   textureRenderer: NonNullable<TextureToolContext['textureRenderer']>,
-  texture: { id?: string; name?: string; width?: number; height?: number }
+  texture: { id?: string; name?: string; width?: number; height?: number },
 ): TextureBackup | null => {
   const readRes = ctx.editor.readTexture({ id: texture.id, name: texture.name });
   if (readRes.error || !readRes.result?.image) return null;
@@ -22,14 +22,14 @@ export const captureTextureBackup = (
   const pixelRes = textureRenderer.readPixels?.({
     image: readRes.result.image,
     width,
-    height
+    height,
   });
   if (!pixelRes || pixelRes.error || !pixelRes.result) return null;
   return {
     image: readRes.result.image,
     width,
     height,
-    opaquePixels: countOpaquePixels(pixelRes.result.data)
+    opaquePixels: countOpaquePixels(pixelRes.result.data),
   };
 };
 
@@ -42,7 +42,10 @@ export const maybeRollbackTextureLoss = (params: {
   backup: TextureBackup | null;
 }): ToolError | null => {
   if (params.recoveryAttempts <= 0 || !params.backup) return null;
-  const readRes = params.ctx.editor.readTexture({ id: params.texture.id, name: params.texture.name });
+  const readRes = params.ctx.editor.readTexture({
+    id: params.texture.id,
+    name: params.texture.name,
+  });
   if (readRes.error || !readRes.result?.image) return null;
   const width = Number(readRes.result.width ?? params.texture.width ?? params.backup.width);
   const height = Number(readRes.result.height ?? params.texture.height ?? params.backup.height);
@@ -50,7 +53,7 @@ export const maybeRollbackTextureLoss = (params: {
   const pixelRes = params.textureRenderer.readPixels?.({
     image: readRes.result.image,
     width,
-    height
+    height,
   });
   if (!pixelRes || pixelRes.error || !pixelRes.result) return null;
   const currentOpaque = countOpaquePixels(pixelRes.result.data);
@@ -61,7 +64,7 @@ export const maybeRollbackTextureLoss = (params: {
     image: params.backup.image,
     width: params.backup.width,
     height: params.backup.height,
-    ifRevision: params.ifRevision
+    ifRevision: params.ifRevision,
   });
   if (!rollbackRes.ok && rollbackRes.error.code !== 'no_change') return rollbackRes.error;
   return {
@@ -71,8 +74,7 @@ export const maybeRollbackTextureLoss = (params: {
       reason: 'texture_recovery_guard',
       recoveryAttempts: params.recoveryAttempts,
       beforeOpaquePixels: params.backup.opaquePixels,
-      afterOpaquePixels: currentOpaque
-    }
+      afterOpaquePixels: currentOpaque,
+    },
   };
 };
-

@@ -10,7 +10,12 @@ export type MeshUvPolicy = {
 
 export type MeshVertex = { id: string; pos: [number, number, number] };
 export type MeshFaceUv = { vertexId: string; uv: [number, number] };
-export type MeshFace = { id?: string; vertices: string[]; uv?: MeshFaceUv[]; texture?: string | false };
+export type MeshFace = {
+  id?: string;
+  vertices: string[];
+  uv?: MeshFaceUv[];
+  texture?: string | false;
+};
 
 type ProjectionAxis = 'x' | 'y' | 'z';
 type FaceProjection = {
@@ -51,27 +56,31 @@ export type AutoMeshUvResult = {
 const DEFAULT_POLICY: Required<MeshUvPolicy> = {
   symmetryAxis: 'none',
   texelDensity: 8,
-  padding: 1
+  padding: 1,
 };
 
 export const normalizeMeshUvPolicy = (policy?: MeshUvPolicy): Required<MeshUvPolicy> => {
-  const symmetryAxis = isSymmetryAxis(policy?.symmetryAxis) ? policy!.symmetryAxis : DEFAULT_POLICY.symmetryAxis;
+  const symmetryAxis = isSymmetryAxis(policy?.symmetryAxis)
+    ? policy!.symmetryAxis
+    : DEFAULT_POLICY.symmetryAxis;
   const texelDensity = clampFinite(
     policy?.texelDensity,
     MESH_UV_POLICY_LIMITS.minTexelDensity,
     MESH_UV_POLICY_LIMITS.maxTexelDensity,
-    DEFAULT_POLICY.texelDensity
+    DEFAULT_POLICY.texelDensity,
   );
-  const padding = Math.trunc(clampFinite(
-    policy?.padding,
-    MESH_UV_POLICY_LIMITS.minPadding,
-    MESH_UV_POLICY_LIMITS.maxPadding,
-    DEFAULT_POLICY.padding
-  ));
+  const padding = Math.trunc(
+    clampFinite(
+      policy?.padding,
+      MESH_UV_POLICY_LIMITS.minPadding,
+      MESH_UV_POLICY_LIMITS.maxPadding,
+      DEFAULT_POLICY.padding,
+    ),
+  );
   return {
     symmetryAxis,
     texelDensity,
-    padding
+    padding,
   };
 };
 
@@ -83,16 +92,22 @@ export const autoMapMeshUv = (input: AutoMeshUvInput): AutoMeshUvResult => {
   const faces = input.faces.map((face, index) => ({ ...face, id: face.id ?? `f${index}` }));
   const projections = buildFaceProjections(faces, vertexMap, policy.symmetryAxis);
 
-  const packed = packFaceRects(projections, textureWidth, textureHeight, policy.texelDensity, policy.padding);
+  const packed = packFaceRects(
+    projections,
+    textureWidth,
+    textureHeight,
+    policy.texelDensity,
+    policy.padding,
+  );
   if (!packed) {
     return {
       faces: faces.map((face) => ({
         id: face.id,
         vertices: [...face.vertices],
         ...(face.texture !== undefined ? { texture: face.texture } : {}),
-        uv: face.vertices.map((vertexId) => ({ vertexId, uv: [0, 0] }))
+        uv: face.vertices.map((vertexId) => ({ vertexId, uv: [0, 0] })),
       })),
-      policy
+      policy,
     };
   }
 
@@ -113,25 +128,27 @@ export const autoMapMeshUv = (input: AutoMeshUvInput): AutoMeshUvResult => {
       id: projection.id,
       vertices: [...projection.vertices],
       ...(face.texture !== undefined ? { texture: face.texture } : {}),
-      uv
+      uv,
     };
   });
   return {
     faces: mapped,
     policy: {
       ...policy,
-      texelDensity: packed.appliedDensity
-    }
+      texelDensity: packed.appliedDensity,
+    },
   };
 };
 
 const buildFaceProjections = (
   faces: Array<MeshFace & { id: string }>,
   vertexMap: Map<string, [number, number, number]>,
-  symmetryAxis: MeshSymmetryAxis
+  symmetryAxis: MeshSymmetryAxis,
 ): FaceProjection[] =>
   faces.map((face, index) => {
-    const points = face.vertices.map((vertexId) => applySymmetry(vertexMap.get(vertexId) ?? [0, 0, 0], symmetryAxis));
+    const points = face.vertices.map((vertexId) =>
+      applySymmetry(vertexMap.get(vertexId) ?? [0, 0, 0], symmetryAxis),
+    );
     const normal = computeFaceNormal(points);
     const axis = pickProjectionAxis(normal);
     const projected = face.vertices.map((vertexId) => {
@@ -144,9 +161,9 @@ const buildFaceProjections = (
         minU: Math.min(acc.minU, point.u),
         maxU: Math.max(acc.maxU, point.u),
         minV: Math.min(acc.minV, point.v),
-        maxV: Math.max(acc.maxV, point.v)
+        maxV: Math.max(acc.maxV, point.v),
       }),
-      { minU: Infinity, maxU: -Infinity, minV: Infinity, maxV: -Infinity }
+      { minU: Infinity, maxU: -Infinity, minV: Infinity, maxV: -Infinity },
     );
     const rawW = Math.max(1e-6, bounds.maxU - bounds.minU);
     const rawH = Math.max(1e-6, bounds.maxV - bounds.minV);
@@ -161,7 +178,7 @@ const buildFaceProjections = (
       minV: bounds.minV,
       maxV: bounds.maxV,
       rawW,
-      rawH
+      rawH,
     };
   });
 
@@ -170,14 +187,14 @@ const packFaceRects = (
   textureWidth: number,
   textureHeight: number,
   baseDensity: number,
-  padding: number
+  padding: number,
 ): { rects: PackedRect[]; appliedDensity: number } | null => {
   let density = baseDensity;
   for (let attempt = 0; attempt < 32; attempt += 1) {
     const dims = projections.map((projection) => ({
       id: projection.id,
       w: Math.max(1, Math.ceil(projection.rawW * density)) + padding * 2,
-      h: Math.max(1, Math.ceil(projection.rawH * density)) + padding * 2
+      h: Math.max(1, Math.ceil(projection.rawH * density)) + padding * 2,
     }));
     const packed = packRectsRowWise(dims, textureWidth, textureHeight);
     if (packed) {
@@ -192,9 +209,9 @@ const packFaceRects = (
 const packRectsRowWise = (
   rects: Array<{ id: string; w: number; h: number }>,
   maxW: number,
-  maxH: number
+  maxH: number,
 ): PackedRect[] | null => {
-  const sorted = [...rects].sort((a, b) => (b.h - a.h) || (b.w - a.w));
+  const sorted = [...rects].sort((a, b) => b.h - a.h || b.w - a.w);
   const placements: PackedRect[] = [];
   let x = 0;
   let y = 0;
@@ -216,7 +233,7 @@ const packRectsRowWise = (
 
 const applySymmetry = (
   pos: [number, number, number],
-  axis: MeshSymmetryAxis
+  axis: MeshSymmetryAxis,
 ): [number, number, number] => {
   switch (axis) {
     case 'x':

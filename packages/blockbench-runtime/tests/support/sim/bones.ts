@@ -9,7 +9,9 @@ export type SimBoneContext = {
 
 export const createBoneOps = (ctx: SimBoneContext) => {
   const addBone = (params: BoneCommand): ToolError | null => {
-    const exists = ctx.state.bones.find((bone) => bone.id === params.id || bone.name === params.name);
+    const exists = ctx.state.bones.find(
+      (bone) => bone.id === params.id || bone.name === params.name,
+    );
     if (exists) return error('invalid_payload', `Bone already exists: ${params.name}`);
     ctx.state.bones.push({
       id: params.id,
@@ -18,14 +20,17 @@ export const createBoneOps = (ctx: SimBoneContext) => {
       pivot: params.pivot,
       rotation: params.rotation,
       scale: params.scale,
-      visibility: params.visibility
+      visibility: params.visibility,
     });
     return null;
   };
 
   const updateBone = (params: UpdateBoneCommand): ToolError | null => {
-    const target = ctx.state.bones.find((bone) => bone.id === params.id || bone.name === params.name);
-    if (!target) return error('invalid_payload', `Bone not found: ${params.name ?? params.id ?? 'unknown'}`);
+    const target = ctx.state.bones.find(
+      (bone) => bone.id === params.id || bone.name === params.name,
+    );
+    if (!target)
+      return error('invalid_payload', `Bone not found: ${params.name ?? params.id ?? 'unknown'}`);
     if (params.newName) target.name = params.newName;
     if (params.parentRoot) {
       target.parent = undefined;
@@ -42,7 +47,8 @@ export const createBoneOps = (ctx: SimBoneContext) => {
   const deleteBone = (params: DeleteBoneCommand): ToolError | null => {
     const before = ctx.state.bones.length;
     ctx.state.bones = ctx.state.bones.filter(
-      (bone) => !((params.id && bone.id === params.id) || (params.name && bone.name === params.name))
+      (bone) =>
+        !((params.id && bone.id === params.id) || (params.name && bone.name === params.name)),
     );
     if (before === ctx.state.bones.length) {
       return error('invalid_payload', `Bone not found: ${params.name ?? params.id ?? 'unknown'}`);

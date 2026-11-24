@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 
-import {
-  isSidecarMessage,
-  normalizeSidecarMessage
-} from '../../../../src/transport/protocol';
+import { isSidecarMessage, normalizeSidecarMessage } from '../../../../src/transport/protocol';
 
 {
   const circular: Record<string, unknown> = {};
   circular.self = circular;
-  assert.equal(isSidecarMessage({
-    type: 'response',
-    id: 'r1',
-    ok: true,
-    data: circular,
-    ts: 1
-  }), false);
+  assert.equal(
+    isSidecarMessage({
+      type: 'response',
+      id: 'r1',
+      ok: true,
+      data: circular,
+      ts: 1,
+    }),
+    false,
+  );
 }
 
 {
@@ -22,20 +22,25 @@ import {
   for (let depth = 0; depth < 100; depth += 1) {
     deeplyNested = { child: deeplyNested };
   }
-  assert.doesNotThrow(() => isSidecarMessage({
-    type: 'response',
-    id: 'r1',
-    ok: true,
-    data: deeplyNested,
-    ts: 1
-  }));
-  assert.equal(isSidecarMessage({
-    type: 'response',
-    id: 'r1',
-    ok: true,
-    data: deeplyNested,
-    ts: 1
-  }), false);
+  assert.doesNotThrow(() =>
+    isSidecarMessage({
+      type: 'response',
+      id: 'r1',
+      ok: true,
+      data: deeplyNested,
+      ts: 1,
+    }),
+  );
+  assert.equal(
+    isSidecarMessage({
+      type: 'response',
+      id: 'r1',
+      ok: true,
+      data: deeplyNested,
+      ts: 1,
+    }),
+    false,
+  );
 }
 
 {
@@ -52,12 +57,12 @@ import {
       id: `depth-${depth}`,
       ok: true,
       data: nested(depth),
-      ts: 1
+      ts: 1,
     };
     assert.equal(
       normalizeSidecarMessage(message) !== null,
       isSidecarMessage(message),
-      `normalization and validation depth ${depth}`
+      `normalization and validation depth ${depth}`,
     );
   }
 }
@@ -69,16 +74,19 @@ import {
   for (const extension of [
     { content: sparse },
     { nextActions: sparse },
-    { content: compensated }
+    { content: compensated },
   ]) {
-    assert.equal(isSidecarMessage({
-      type: 'response',
-      id: 'r1',
-      ok: true,
-      data: {},
-      ts: 1,
-      ...extension
-    }), false);
+    assert.equal(
+      isSidecarMessage({
+        type: 'response',
+        id: 'r1',
+        ok: true,
+        data: {},
+        ts: 1,
+        ...extension,
+      }),
+      false,
+    );
   }
 
   const customPrototype = [Number.NaN];
@@ -86,20 +94,25 @@ import {
   const nullPrototype = [1];
   Object.setPrototypeOf(nullPrototype, null);
   for (const data of [customPrototype, nullPrototype]) {
-    assert.doesNotThrow(() => isSidecarMessage({
-      type: 'response',
-      id: 'r1',
-      ok: true,
-      data,
-      ts: 1
-    }));
-    assert.equal(isSidecarMessage({
-      type: 'response',
-      id: 'r1',
-      ok: true,
-      data,
-      ts: 1
-    }), false);
+    assert.doesNotThrow(() =>
+      isSidecarMessage({
+        type: 'response',
+        id: 'r1',
+        ok: true,
+        data,
+        ts: 1,
+      }),
+    );
+    assert.equal(
+      isSidecarMessage({
+        type: 'response',
+        id: 'r1',
+        ok: true,
+        data,
+        ts: 1,
+      }),
+      false,
+    );
   }
 }
 
@@ -110,7 +123,7 @@ import {
     type: 'call_tool' as const,
     tool: 'paint_faces',
     arguments: { first: argument, second: argument },
-    reason: 'Reuse one observed selection.'
+    reason: 'Reuse one observed selection.',
   };
   const message = {
     type: 'response' as const,
@@ -119,7 +132,7 @@ import {
     data: {},
     content: [content, content],
     nextActions: [nextAction, nextAction],
-    ts: 1
+    ts: 1,
   };
   assert.equal(isSidecarMessage(message), true);
   assert.notEqual(normalizeSidecarMessage(message), null);
@@ -135,7 +148,7 @@ import {
     id: 'shared-dag-budget',
     ok: true,
     data: shared,
-    ts: 1
+    ts: 1,
   };
   assert.equal(isSidecarMessage(message), false);
   assert.equal(normalizeSidecarMessage(message), null);
@@ -150,14 +163,17 @@ import {
     type: 'call_tool',
     tool: 'paint_faces',
     arguments: { dag },
-    reason: 'Reject aggregate traversal amplification.'
+    reason: 'Reject aggregate traversal amplification.',
   };
-  assert.equal(isSidecarMessage({
-    type: 'response',
-    id: 'aggregate-next-actions-budget',
-    ok: true,
-    data: {},
-    nextActions: [action, action, action, action],
-    ts: 1
-  }), false);
+  assert.equal(
+    isSidecarMessage({
+      type: 'response',
+      id: 'aggregate-next-actions-budget',
+      ok: true,
+      data: {},
+      nextActions: [action, action, action, action],
+      ts: 1,
+    }),
+    false,
+  );
 }

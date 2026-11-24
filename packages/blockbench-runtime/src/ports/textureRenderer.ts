@@ -20,12 +20,8 @@ export type TextureReadResult = {
 
 export interface TextureRendererPort {
   renderPixels: (input: TexturePixelData) => { result?: TextureRenderResult; error?: ToolError };
-  readPixels?: (input: {
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-  }) => { result?: TextureReadResult; error?: ToolError };
+  readPixels?: (input: { image: CanvasImageSource; width?: number; height?: number }) => {
+    result?: TextureReadResult;
+    error?: ToolError;
+  };
 }
-
-
-

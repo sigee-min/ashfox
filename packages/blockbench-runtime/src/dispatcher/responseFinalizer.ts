@@ -1,4 +1,8 @@
-import type { ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { ToolService } from '../usecases/ToolService';
 import type { TraceRecorder } from '../trace/recorder';
 import type { Logger } from '../logging';
@@ -15,7 +19,7 @@ export const finalizeToolResponse = <T>(
   tool: ToolName,
   payload: ToolPayloadMap[ToolName],
   response: ToolResponse<T>,
-  options?: { refreshViewport?: boolean }
+  options?: { refreshViewport?: boolean },
 ): ToolResponse<T> =>
   runResponsePipeline({
     tool,
@@ -24,5 +28,5 @@ export const finalizeToolResponse = <T>(
     refreshViewport: Boolean(options?.refreshViewport),
     service: deps.service,
     traceRecorder: deps.traceRecorder,
-    log: deps.log
+    log: deps.log,
   });

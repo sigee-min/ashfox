@@ -11,7 +11,7 @@ import type {
   TrackedBone,
   TrackedCube,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './types';
 import { applySessionMutation } from './stateReducer';
 

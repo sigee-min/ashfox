@@ -12,5 +12,5 @@ export const toolSchemas: Record<string, JsonSchema> = {
   ...textureToolSchemas,
   ...animationToolSchemas,
   ...modelToolSchemas,
-  ...previewToolSchemas
+  ...previewToolSchemas,
 };

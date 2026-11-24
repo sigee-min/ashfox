@@ -63,13 +63,13 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     session: deps.session,
     snapshotPort: deps.snapshot,
     projectState,
-    policyContext
+    policyContext,
   });
   const revisionContext = new RevisionContext({
     revisionStore,
     projectState,
     snapshotContext,
-    policyContext
+    policyContext,
   });
   const resolveUvPolicyConfig = () => {
     const base = policyContext.getUvPolicyConfig();
@@ -77,7 +77,7 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     const projectPixels = normalizePixelsPerBlock(snapshot.uvPixelsPerBlock);
     return {
       ...base,
-      pixelsPerBlock: projectPixels ?? base.pixelsPerBlock
+      pixelsPerBlock: projectPixels ?? base.pixelsPerBlock,
     };
   };
 
@@ -91,7 +91,7 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     ensureActive: () => snapshotContext.ensureActive(),
     ensureRevisionMatch: (ifRevision?: string) => revisionContext.ensureRevisionMatch(ifRevision),
     getUvPolicyConfig: () => resolveUvPolicyConfig(),
-    runWithoutRevisionGuard: (fn) => revisionContext.runWithoutRevisionGuard(fn)
+    runWithoutRevisionGuard: (fn) => revisionContext.runWithoutRevisionGuard(fn),
   });
   const projectService = new ProjectService({
     session: deps.session,
@@ -103,20 +103,20 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
       track: (snapshot) => revisionStore.track(snapshot),
       hash: (snapshot) => revisionStore.hash(snapshot),
       get: (id) => revisionStore.get(id),
-      remember: (snapshot, id) => revisionStore.remember(snapshot, id)
+      remember: (snapshot, id) => revisionStore.remember(snapshot, id),
     },
     getSnapshot: () => snapshotContext.getSnapshot(),
     ensureRevisionMatch: (ifRevision?: string) => revisionContext.ensureRevisionMatch(ifRevision),
     runWithoutRevisionGuard: (fn) => revisionContext.runWithoutRevisionGuard(fn),
     texture: {
-      createBlankTexture: (payload) => textureService.createBlankTexture(payload)
+      createBlankTexture: (payload) => textureService.createBlankTexture(payload),
     },
     policies: {
       formatOverrides: policyContext.getFormatOverrides(),
       autoDiscardUnsaved: policyContext.getAutoDiscardUnsaved(),
       autoCreateProjectTexture: policyContext.getAutoCreateProjectTexture(),
-      uvPolicy: policyContext.getUvPolicyConfig()
-    }
+      uvPolicy: policyContext.getUvPolicyConfig(),
+    },
   });
   const modelService = new ModelService({
     session: deps.session,
@@ -126,7 +126,7 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     ensureActive: () => snapshotContext.ensureActive(),
     ensureRevisionMatch: (ifRevision?: string) => revisionContext.ensureRevisionMatch(ifRevision),
     autoUvAtlas: (payload) => textureService.autoUvAtlas(payload),
-    runWithoutRevisionGuard: (fn) => revisionContext.runWithoutRevisionGuard(fn)
+    runWithoutRevisionGuard: (fn) => revisionContext.runWithoutRevisionGuard(fn),
   });
   const animationService = new AnimationService({
     session: deps.session,
@@ -134,19 +134,19 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     capabilities: deps.capabilities,
     getSnapshot: () => snapshotContext.getSnapshot(),
     ensureActive: () => snapshotContext.ensureActive(),
-    ensureRevisionMatch: (ifRevision?: string) => revisionContext.ensureRevisionMatch(ifRevision)
+    ensureRevisionMatch: (ifRevision?: string) => revisionContext.ensureRevisionMatch(ifRevision),
   });
   const renderService = new RenderService({
     editor: deps.editor,
     tmpStore: deps.tmpStore,
-    ensureActive: () => snapshotContext.ensureActive()
+    ensureActive: () => snapshotContext.ensureActive(),
   });
   const validationService = new ValidationService({
     editor: deps.editor,
     capabilities: deps.capabilities,
     ensureActive: () => snapshotContext.ensureActive(),
     getSnapshot: () => snapshotContext.getSnapshot(),
-    getUvPolicyConfig: () => resolveUvPolicyConfig()
+    getUvPolicyConfig: () => resolveUvPolicyConfig(),
   });
 
   return {
@@ -158,7 +158,6 @@ export const createToolServiceContext = (deps: ToolServiceDeps): ToolServiceCont
     modelService,
     animationService,
     renderService,
-    validationService
+    validationService,
   };
 };
-

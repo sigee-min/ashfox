@@ -9,11 +9,15 @@ import type { ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
     error: {
       code: 'invalid_state',
       message: 'ifRevision is required',
-      details: { reason: 'missing_ifRevision' }
-    }
+      details: { reason: 'missing_ifRevision' },
+    },
   };
 
-  const result = appendMissingRevisionNextActions('add_cube', { name: 'cube', from: [0, 0, 0], to: [1, 1, 1] }, response);
+  const result = appendMissingRevisionNextActions(
+    'add_cube',
+    { name: 'cube', from: [0, 0, 0], to: [1, 1, 1] },
+    response,
+  );
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.ok(Array.isArray(result.nextActions));
@@ -30,14 +34,24 @@ import type { ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
     error: {
       code: 'invalid_state',
       message: 'ifRevision is required',
-      details: { reason: 'missing_ifRevision' }
+      details: { reason: 'missing_ifRevision' },
     },
     nextActions: [
-      { type: 'call_tool', tool: 'get_project_state', arguments: { detail: 'summary' }, reason: 'Existing', priority: 1 }
-    ]
+      {
+        type: 'call_tool',
+        tool: 'get_project_state',
+        arguments: { detail: 'summary' },
+        reason: 'Existing',
+        priority: 1,
+      },
+    ],
   };
 
-  const result = appendMissingRevisionNextActions('add_cube', { name: 'cube', from: [0, 0, 0], to: [1, 1, 1] }, response);
+  const result = appendMissingRevisionNextActions(
+    'add_cube',
+    { name: 'cube', from: [0, 0, 0], to: [1, 1, 1] },
+    response,
+  );
   assert.equal(result.ok, false);
   if (!result.ok) {
     const calls = result.nextActions?.filter((action) => action.type === 'call_tool') ?? [];

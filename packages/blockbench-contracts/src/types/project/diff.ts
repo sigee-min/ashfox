@@ -4,28 +4,19 @@ import type {
   ProjectDiff,
   ProjectDiffCounts,
   ProjectDiffCountsByKind,
-  ProjectDiffSet
+  ProjectDiffSet,
 } from './index';
-import {
-  isTrackedAnimationContract,
-  isTrackedTextureContract
-} from './assets';
-import {
-  isTrackedBoneContract,
-  isTrackedCubeContract,
-  isTrackedMeshContract
-} from './geometry';
+import { isTrackedAnimationContract, isTrackedTextureContract } from './assets';
+import { isTrackedBoneContract, isTrackedCubeContract, isTrackedMeshContract } from './geometry';
 import {
   hasShape,
   isBoolean,
   isClosedContractRecord,
   isNonNegativeInteger,
-  type ValueGuard
+  type ValueGuard,
 } from './shared';
 
-const isProjectDiffCountsContract = (
-  value: unknown
-): value is ProjectDiffCounts =>
+const isProjectDiffCountsContract = (value: unknown): value is ProjectDiffCounts =>
   isClosedContractRecord(value) &&
   hasShape(value, ['added', 'removed', 'changed']) &&
   isNonNegativeInteger(value.added) &&
@@ -33,7 +24,7 @@ const isProjectDiffCountsContract = (
   isNonNegativeInteger(value.changed);
 
 export const isProjectDiffCountsByKindContract = (
-  value: unknown
+  value: unknown,
 ): value is ProjectDiffCountsByKind =>
   isClosedContractRecord(value) &&
   hasShape(value, ['bones', 'cubes', 'textures', 'animations'], ['meshes']) &&
@@ -45,10 +36,10 @@ export const isProjectDiffCountsByKindContract = (
 
 const isProjectDiffSet = <T>(
   value: unknown,
-  itemGuard: ValueGuard<T>
+  itemGuard: ValueGuard<T>,
 ): value is ProjectDiffSet<T> => {
-  if (!isClosedContractRecord(value) ||
-    !hasShape(value, ['added', 'removed', 'changed'])) return false;
+  if (!isClosedContractRecord(value) || !hasShape(value, ['added', 'removed', 'changed']))
+    return false;
   const added = value.added;
   const removed = value.removed;
   const changed = value.changed;
@@ -58,51 +49,56 @@ const isProjectDiffSet = <T>(
     isNonEmptyContractText(entry.key) &&
     itemGuard(entry.item);
   const changeGuard = (
-    entry: unknown
+    entry: unknown,
   ): entry is { readonly key: string; readonly before: T; readonly after: T } =>
     isClosedContractRecord(entry) &&
     hasShape(entry, ['key', 'before', 'after']) &&
     isNonEmptyContractText(entry.key) &&
     itemGuard(entry.before) &&
     itemGuard(entry.after);
-  if (!isDenseContractArray(added) || !added.every(entryGuard) ||
-    !isDenseContractArray(removed) || !removed.every(entryGuard) ||
-    !isDenseContractArray(changed) || !changed.every(changeGuard)) return false;
+  if (
+    !isDenseContractArray(added) ||
+    !added.every(entryGuard) ||
+    !isDenseContractArray(removed) ||
+    !removed.every(entryGuard) ||
+    !isDenseContractArray(changed) ||
+    !changed.every(changeGuard)
+  )
+    return false;
   const keys = [
     ...added.map((entry) => entry.key),
     ...removed.map((entry) => entry.key),
-    ...changed.map((entry) => entry.key)
+    ...changed.map((entry) => entry.key),
   ];
   return new Set(keys).size === keys.length;
 };
 
-const matchesDiffCounts = (
-  set: ProjectDiffSet<unknown>,
-  counts: ProjectDiffCounts
-): boolean =>
+const matchesDiffCounts = (set: ProjectDiffSet<unknown>, counts: ProjectDiffCounts): boolean =>
   set.added.length === counts.added &&
   set.removed.length === counts.removed &&
   set.changed.length === counts.changed;
 
 const readOptionalDiffSet = <T>(
   value: unknown,
-  guard: ValueGuard<T>
+  guard: ValueGuard<T>,
 ): ProjectDiffSet<T> | undefined | null => {
   if (value === undefined) return undefined;
   return isProjectDiffSet(value, guard) ? value : null;
 };
 
-export const isProjectDiffContract = (
-  value: unknown
-): value is ProjectDiff => {
-  if (!isClosedContractRecord(value) ||
-    !hasShape(value, ['sinceRevision', 'currentRevision', 'counts'], [
-      'baseMissing', 'bones', 'cubes', 'meshes', 'textures', 'animations'
-    ]) ||
+export const isProjectDiffContract = (value: unknown): value is ProjectDiff => {
+  if (
+    !isClosedContractRecord(value) ||
+    !hasShape(
+      value,
+      ['sinceRevision', 'currentRevision', 'counts'],
+      ['baseMissing', 'bones', 'cubes', 'meshes', 'textures', 'animations'],
+    ) ||
     !isNonEmptyContractText(value.sinceRevision) ||
     !isNonEmptyContractText(value.currentRevision) ||
     !isProjectDiffCountsByKindContract(value.counts) ||
-    !(value.baseMissing === undefined || isBoolean(value.baseMissing))) {
+    !(value.baseMissing === undefined || isBoolean(value.baseMissing))
+  ) {
     return false;
   }
   const bones = readOptionalDiffSet(value.bones, isTrackedBoneContract);
@@ -110,14 +106,20 @@ export const isProjectDiffContract = (
   const meshes = readOptionalDiffSet(value.meshes, isTrackedMeshContract);
   const textures = readOptionalDiffSet(value.textures, isTrackedTextureContract);
   const animations = readOptionalDiffSet(value.animations, isTrackedAnimationContract);
-  if (bones === null || cubes === null || meshes === null ||
-    textures === null || animations === null) return false;
-  return (!bones || matchesDiffCounts(bones, value.counts.bones)) &&
+  if (
+    bones === null ||
+    cubes === null ||
+    meshes === null ||
+    textures === null ||
+    animations === null
+  )
+    return false;
+  return (
+    (!bones || matchesDiffCounts(bones, value.counts.bones)) &&
     (!cubes || matchesDiffCounts(cubes, value.counts.cubes)) &&
-    (!meshes || (
-      value.counts.meshes !== undefined &&
-      matchesDiffCounts(meshes, value.counts.meshes)
-    )) &&
+    (!meshes ||
+      (value.counts.meshes !== undefined && matchesDiffCounts(meshes, value.counts.meshes))) &&
     (!textures || matchesDiffCounts(textures, value.counts.textures)) &&
-    (!animations || matchesDiffCounts(animations, value.counts.animations));
+    (!animations || matchesDiffCounts(animations, value.counts.animations))
+  );
 };

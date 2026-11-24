@@ -1,4 +1,8 @@
-import type { FormatKind, ToolError, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  FormatKind,
+  ToolError,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { err } from '../shared/tooling/toolResponse';
 import { PROJECT_NO_ACTIVE } from '../shared/messages';
 import type { SessionState } from './types';
@@ -18,7 +22,7 @@ const createEmptyState = (policy = resolveAnimationTimePolicy()): SessionState =
   textures: [],
   animations: [],
   animationsStatus: 'available',
-  animationTimePolicy: { ...policy }
+  animationTimePolicy: { ...policy },
 });
 
 export class SessionStateStore {
@@ -26,7 +30,11 @@ export class SessionStateStore {
 
   constructor(private readonly cloner: SessionStateCloner = sessionStateCloner) {}
 
-  create(format: FormatKind, name: string, formatId?: string | null): ToolResponse<{ id: string; format: FormatKind; name: string }> {
+  create(
+    format: FormatKind,
+    name: string,
+    formatId?: string | null,
+  ): ToolResponse<{ id: string; format: FormatKind; name: string }> {
     const id = `${Date.now()}`;
     const animationTimePolicy = { ...this.state.animationTimePolicy };
     this.state = {
@@ -42,20 +50,27 @@ export class SessionStateStore {
       textures: [],
       animations: [],
       animationsStatus: 'available',
-      animationTimePolicy
+      animationTimePolicy,
     };
     return { ok: true, data: { id, format, name } };
   }
 
-  attach(snapshot: SessionState): ToolResponse<{ id: string; format: FormatKind; name: string | null }> {
+  attach(
+    snapshot: SessionState,
+  ): ToolResponse<{ id: string; format: FormatKind; name: string | null }> {
     if (!snapshot.format) {
-      return err<{ id: string; format: FormatKind; name: string | null }>('invalid_state', PROJECT_NO_ACTIVE);
+      return err<{ id: string; format: FormatKind; name: string | null }>(
+        'invalid_state',
+        PROJECT_NO_ACTIVE,
+      );
     }
     const cloned = this.cloner.state(snapshot);
     const id = cloned.id ?? `${Date.now()}`;
     const format = snapshot.format;
     const name = cloned.name ?? null;
-    const animationTimePolicy = resolveAnimationTimePolicy(cloned.animationTimePolicy ?? this.state.animationTimePolicy);
+    const animationTimePolicy = resolveAnimationTimePolicy(
+      cloned.animationTimePolicy ?? this.state.animationTimePolicy,
+    );
     this.state = {
       id,
       format,
@@ -69,7 +84,7 @@ export class SessionStateStore {
       textures: cloned.textures,
       animations: cloned.animations,
       animationsStatus: cloned.animationsStatus ?? 'available',
-      animationTimePolicy
+      animationTimePolicy,
     };
     return { ok: true, data: { id, format, name } };
   }
@@ -85,7 +100,11 @@ export class SessionStateStore {
 
   ensureActive(): ToolError | null {
     if (!this.state.id || !this.state.format) {
-      return { code: 'invalid_state', message: PROJECT_NO_ACTIVE, details: { reason: 'no_active_project' } };
+      return {
+        code: 'invalid_state',
+        message: PROJECT_NO_ACTIVE,
+        details: { reason: 'no_active_project' },
+      };
     }
     return null;
   }
@@ -98,7 +117,7 @@ export class SessionStateStore {
     if (!policy) return;
     this.state.animationTimePolicy = resolveAnimationTimePolicy({
       ...this.state.animationTimePolicy,
-      ...policy
+      ...policy,
     });
   }
 

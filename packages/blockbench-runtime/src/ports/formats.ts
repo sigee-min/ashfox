@@ -16,5 +16,3 @@ export interface FormatPort {
   listFormats: () => FormatDescriptor[];
   getActiveFormatId: () => string | null;
 }
-
-

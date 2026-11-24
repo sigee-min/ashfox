@@ -1,5 +1,9 @@
 import type { AnimationClip, OutlinerNode, TextureInstance } from '../../../types/blockbench';
-import { readAnimationId as readAnimationIdNullable, readNodeId as readNodeIdNullable, readTextureId as readTextureIdNullable } from '../blockbenchUtils';
+import {
+  readAnimationId as readAnimationIdNullable,
+  readNodeId as readNodeIdNullable,
+  readTextureId as readTextureIdNullable,
+} from '../blockbenchUtils';
 
 export const readNodeId = (node: OutlinerNode | null | undefined): string | undefined => {
   const id = readNodeIdNullable(node);

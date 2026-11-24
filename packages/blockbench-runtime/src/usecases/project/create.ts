@@ -9,7 +9,7 @@ import {
   PROJECT_FORMAT_ID_MISSING_FIX,
   PROJECT_FORMAT_UNSUPPORTED_FIX,
   PROJECT_NAME_REQUIRED_FIX,
-  PROJECT_UNSUPPORTED_FORMAT
+  PROJECT_UNSUPPORTED_FORMAT,
 } from '../../shared/messages';
 import type { ProjectServiceDeps } from './types';
 import { ok, fail, type UsecaseResult } from '../result';
@@ -23,7 +23,7 @@ export const runCreateProject = (
   ctx: ProjectCreateContext,
   format: Capabilities['formats'][number]['format'],
   name: string,
-  options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; ifRevision?: string }
+  options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; ifRevision?: string },
 ): UsecaseResult<{ id: string; format: FormatKind; name: string }> => {
   const revisionErr = ctx.ensureRevisionMatch(options?.ifRevision);
   if (revisionErr) {
@@ -33,7 +33,7 @@ export const runCreateProject = (
   if (nameBlankErr) {
     return fail({
       ...nameBlankErr,
-      fix: PROJECT_NAME_REQUIRED_FIX
+      fix: PROJECT_NAME_REQUIRED_FIX,
     });
   }
   const capability = ctx.capabilities.formats.find((f) => f.format === format);
@@ -41,7 +41,7 @@ export const runCreateProject = (
     return fail({
       code: 'unsupported_format',
       message: PROJECT_UNSUPPORTED_FORMAT(format),
-      fix: PROJECT_FORMAT_UNSUPPORTED_FIX
+      fix: PROJECT_FORMAT_UNSUPPORTED_FIX,
     });
   }
   const formatId = resolveFormatId(format, ctx.formats.listFormats(), ctx.policies.formatOverrides);
@@ -49,7 +49,7 @@ export const runCreateProject = (
     return fail({
       code: 'unsupported_format',
       message: withFormatOverrideHint(PROJECT_FORMAT_ID_MISSING(format)),
-      fix: PROJECT_FORMAT_ID_MISSING_FIX
+      fix: PROJECT_FORMAT_ID_MISSING_FIX,
     });
   }
   const explicitConfirmDiscard = options?.confirmDiscard;
@@ -81,7 +81,7 @@ export const runCreateProject = (
 
 const mergeDialogValues = (
   defaults: Record<string, unknown>,
-  overrides?: Record<string, unknown>
+  overrides?: Record<string, unknown>,
 ): Record<string, unknown> | undefined => {
   const merged: Record<string, unknown> = {};
   let hasEntries = false;
@@ -101,7 +101,7 @@ const mergeDialogValues = (
 const shouldRetryDiscardUnsaved = (
   error: { code: string; message: string },
   explicitConfirmDiscard: boolean | undefined,
-  autoDiscardUnsaved: boolean | undefined
+  autoDiscardUnsaved: boolean | undefined,
 ): boolean => {
   if (!autoDiscardUnsaved) return false;
   if (explicitConfirmDiscard !== false) return false;

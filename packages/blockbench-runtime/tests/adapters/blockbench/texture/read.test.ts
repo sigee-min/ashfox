@@ -4,12 +4,12 @@ import {
   runListTextures,
   runDeleteTexture,
   runReadTexture,
-  runUpdateTexture
+  runUpdateTexture,
 } from '../../../../src/adapters/blockbench/texture/textureCommands';
 import {
   ADAPTER_TEXTURE_CANVAS_UNAVAILABLE,
   ADAPTER_TEXTURE_DATA_UNAVAILABLE,
-  TEXTURE_NOT_FOUND
+  TEXTURE_NOT_FOUND,
 } from '../../../../src/shared/messages';
 import { noopLog } from '../../../helpers';
 import { withGlobals } from '../../../support/globals';
@@ -24,7 +24,12 @@ class FakeTexture {
   width?: number;
   height?: number;
   ashfoxId?: string;
-  canvas?: { width: number; height: number; getContext?: (type: string) => unknown; toDataURL?: () => string };
+  canvas?: {
+    width: number;
+    height: number;
+    getContext?: (type: string) => unknown;
+    toDataURL?: () => string;
+  };
   ctx?: { clearRect: (...args: unknown[]) => void; drawImage: (...args: unknown[]) => void };
   img?: { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
   getDataUrl?: () => string;
@@ -77,7 +82,10 @@ class NoCanvasTexture {
   tex.add();
   withGlobals({ Texture: FakeTexture }, () => {
     const res = runReadTexture(noopLog, { name: 'atlas' });
-    assert.deepEqual(res.error, { code: 'not_implemented', message: ADAPTER_TEXTURE_DATA_UNAVAILABLE });
+    assert.deepEqual(res.error, {
+      code: 'not_implemented',
+      message: ADAPTER_TEXTURE_DATA_UNAVAILABLE,
+    });
   });
 }
 
@@ -140,9 +148,9 @@ class NoCanvasTexture {
       type === '2d'
         ? {
             clearRect: () => undefined,
-            drawImage: () => undefined
+            drawImage: () => undefined,
           }
-        : null
+        : null,
   };
   tex.ctx = tex.canvas.getContext?.('2d') as { clearRect: () => void; drawImage: () => void };
   tex.add();
@@ -154,7 +162,7 @@ class NoCanvasTexture {
     warn: (message: string, meta?: Record<string, unknown>) => {
       warnings.push({ message, meta });
     },
-    error: () => undefined
+    error: () => undefined,
   };
   withGlobals(
     {
@@ -162,19 +170,19 @@ class NoCanvasTexture {
       Preview: {
         get selected() {
           throw new Error('preview boom');
-        }
+        },
       },
-      Blockbench: {}
+      Blockbench: {},
     },
     () => {
       const err = runUpdateTexture(log, {
         id: 'tex-4',
         image: {} as CanvasImageSource,
         width: 16,
-        height: 16
+        height: 16,
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0]?.message, 'texture viewport refresh failed');
@@ -190,7 +198,7 @@ class NoCanvasTexture {
       id: 'tex-6',
       image: {} as CanvasImageSource,
       width: 16,
-      height: 16
+      height: 16,
     });
     assert.deepEqual(err, { code: 'not_implemented', message: ADAPTER_TEXTURE_CANVAS_UNAVAILABLE });
   });
@@ -228,8 +236,8 @@ class NoCanvasTexture {
         name: 'atlas',
         width: 32,
         height: 48,
-        path: 'memory://atlas'
-      }
+        path: 'memory://atlas',
+      },
     ]);
   });
 }

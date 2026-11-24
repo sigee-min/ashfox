@@ -11,18 +11,18 @@ import {
   MCP_JSONRPC_INVALID_REQUEST,
   MCP_METHOD_NOT_FOUND,
   MCP_SERVER_NOT_INITIALIZED,
-  MCP_SESSION_UNAVAILABLE
+  MCP_SESSION_UNAVAILABLE,
 } from '../../../../src/shared/messages';
 
 const createContext = (options?: { supportedProtocols?: string[] }): RpcContext => {
   const executor: ToolExecutor = {
-    callTool: async () => ({ ok: true, data: {} })
+    callTool: async () => ({ ok: true, data: {} }),
   };
   const toolRegistry: ToolRegistry = {
     tools: [{ name: 'demo_tool', title: 'Demo', inputSchema: {} }],
     map: new Map([['demo_tool', { name: 'demo_tool', title: 'Demo', inputSchema: {} }]]),
     hash: 'demo',
-    count: 1
+    count: 1,
   };
   return {
     executor,
@@ -30,14 +30,23 @@ const createContext = (options?: { supportedProtocols?: string[] }): RpcContext 
     toolRegistry,
     sessions: new SessionStore(),
     supportedProtocols: options?.supportedProtocols,
-    config: { path: '/mcp', serverInfo: { name: 'ashfox-test', version: '0.0.0' }, instructions: 'demo' }
+    config: {
+      path: '/mcp',
+      serverInfo: { name: 'ashfox-test', version: '0.0.0' },
+      instructions: 'demo',
+    },
   };
 };
 
 registerAsync(
   (async () => {
     {
-      const outcome = await handleMessage(createContext(), { method: 'ping' } as unknown as never, null, 1);
+      const outcome = await handleMessage(
+        createContext(),
+        { method: 'ping' } as unknown as never,
+        null,
+        1,
+      );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
       assert.equal(outcome.status, 400);
@@ -50,7 +59,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'initialize', params: {} },
         session,
-        null
+        null,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -63,7 +72,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 },
         null,
-        1
+        1,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -78,7 +87,7 @@ registerAsync(
         ctx,
         { jsonrpc: '2.0', method: 'initialize', params: { protocolVersion: '2025-11-25' }, id: 2 },
         session,
-        2
+        2,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -96,7 +105,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'tools/list', id: 3 },
         session,
-        3
+        3,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -111,7 +120,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'ping', id: 4 },
         session,
-        4
+        4,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -125,7 +134,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'notifications/initialized' },
         session,
-        null
+        null,
       );
       assert.equal(outcome.type, 'notification');
       assert.equal(session.initialized, true);
@@ -138,7 +147,7 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'missing/method', id: 6 },
         session,
-        6
+        6,
       );
       assert.equal(outcome.type, 'response');
       if (outcome.type !== 'response') return;
@@ -153,9 +162,9 @@ registerAsync(
         createContext(),
         { jsonrpc: '2.0', method: 'ping' },
         session,
-        null
+        null,
       );
       assert.equal(outcome.type, 'notification');
     }
-  })()
+  })(),
 );

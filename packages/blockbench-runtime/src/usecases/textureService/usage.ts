@@ -1,7 +1,10 @@
 import { CUBE_FACE_DIRECTIONS } from '../../shared/toolConstants';
 import type { CubeFaceDirection, TextureUsageResult } from '../../ports/editor';
 import type { SessionState } from '../../session';
-import type { PreflightUsageSummary, PreflightUvBounds } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  PreflightUsageSummary,
+  PreflightUvBounds,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { buildTargetFilters, filterByTargetFilters } from '../../domain/targetFilters';
 
 const VALID_CUBE_FACES: ReadonlySet<CubeFaceDirection> = new Set(CUBE_FACE_DIRECTIONS);
@@ -21,7 +24,11 @@ export const normalizeCubeFaces = (faces?: CubeFaceDirection[]): CubeFaceDirecti
   return normalized.length > 0 ? normalized : null;
 };
 
-export const resolveCubeTargets = (cubes: SessionState['cubes'], cubeIds?: string[], cubeNames?: string[]) => {
+export const resolveCubeTargets = (
+  cubes: SessionState['cubes'],
+  cubeIds?: string[],
+  cubeNames?: string[],
+) => {
   const filters = buildTargetFilters(cubeIds, cubeNames);
   return filterByTargetFilters(cubes, filters);
 };
@@ -37,7 +44,7 @@ export const summarizeTextureUsage = (usage: TextureUsageResult): PreflightUsage
     textureCount: usage.textures.length,
     cubeCount,
     faceCount,
-    unresolvedCount: usage.unresolved?.length ?? 0
+    unresolvedCount: usage.unresolved?.length ?? 0,
   };
 };
 
@@ -64,7 +71,12 @@ export const computeUvBounds = (usage: TextureUsageResult): PreflightUvBounds | 
       });
     });
   });
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(maxY)
+  ) {
     return null;
   }
   return {
@@ -74,14 +86,14 @@ export const computeUvBounds = (usage: TextureUsageResult): PreflightUvBounds | 
     maxY,
     width: Math.max(0, maxX - minX),
     height: Math.max(0, maxY - minY),
-    faceCount
+    faceCount,
   };
 };
 
 export const recommendResolution = (
   bounds: PreflightUvBounds | null,
   current: { width: number; height: number } | undefined,
-  maxSize: number
+  maxSize: number,
 ): { width: number; height: number; reason: string } | null => {
   if (!bounds) return null;
   const requiredWidth = Math.max(bounds.maxX, current?.width ?? 0);

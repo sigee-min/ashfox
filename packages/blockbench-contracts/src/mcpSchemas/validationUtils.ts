@@ -1,8 +1,5 @@
 import type { JsonSchema } from './types';
-import {
-  isClosedContractRecord,
-  isDenseContractArray
-} from '@ashfox/internal-contracts';
+import { isClosedContractRecord, isDenseContractArray } from '@ashfox/internal-contracts';
 
 export const isObject = (value: unknown): value is Record<string, unknown> =>
   isClosedContractRecord(value);

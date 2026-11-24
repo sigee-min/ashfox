@@ -2,7 +2,7 @@ import type { HttpRequest, McpServerConfig } from './types';
 import {
   MCP_HOST_NOT_ALLOWED,
   MCP_HOST_REQUIRED,
-  MCP_ORIGIN_NOT_ALLOWED
+  MCP_ORIGIN_NOT_ALLOWED,
 } from '../../shared/messages';
 
 type EndpointAuthority = NonNullable<McpServerConfig['endpoint']>;
@@ -21,9 +21,7 @@ const parsePort = (raw: string | undefined): number | null => {
   if (raw === undefined) return 80;
   if (!/^[0-9]+$/.test(raw)) return null;
   const port = Number(raw);
-  return Number.isInteger(port) && port >= 1 && port <= 65_535
-    ? port
-    : null;
+  return Number.isInteger(port) && port >= 1 && port <= 65_535 ? port : null;
 };
 
 const parseAuthority = (raw: string): ParsedAuthority | null => {
@@ -53,12 +51,12 @@ const isLoopbackAuthorityHost = (hostname: string): boolean => {
   return values.every((value) => value <= 255) && values[0] === 127;
 };
 
-const isAllowedHost = (
-  authority: ParsedAuthority,
-  endpoint: EndpointAuthority
-): boolean => {
+const isAllowedHost = (authority: ParsedAuthority, endpoint: EndpointAuthority): boolean => {
   if (authority.port !== endpoint.port) return false;
-  const configuredHost = endpoint.host.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  const configuredHost = endpoint.host
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '');
   const authorityHost = authority.hostname.replace(/^\[|\]$/g, '');
   if (isLoopbackAuthorityHost(configuredHost)) {
     return isLoopbackAuthorityHost(authorityHost);
@@ -89,7 +87,7 @@ const isAllowedOrigin = (raw: string, endpoint: EndpointAuthority): boolean => {
 
 export const validateIngressSecurity = (
   req: HttpRequest,
-  config: McpServerConfig
+  config: McpServerConfig,
 ): IngressSecurityFailure | null => {
   const endpoint = config.endpoint;
   if (!endpoint) return null;
@@ -104,7 +102,7 @@ export const validateIngressSecurity = (
   const origin = req.headers.origin;
   if (!origin) return null;
   const hasValidToken = Boolean(
-    config.token && req.headers.authorization === `Bearer ${config.token}`
+    config.token && req.headers.authorization === `Bearer ${config.token}`,
   );
   if (!hasValidToken && !isAllowedOrigin(origin, endpoint)) {
     return { code: 'origin_not_allowed', message: MCP_ORIGIN_NOT_ALLOWED };

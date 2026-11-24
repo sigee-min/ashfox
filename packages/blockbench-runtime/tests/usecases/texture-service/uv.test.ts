@@ -6,11 +6,12 @@ import {
   MODEL_CUBE_NOT_FOUND,
   TEXTURE_FACE_UV_BOUNDS_FIX,
   TEXTURE_FACE_UV_FACES_FIX,
-  TEXTURE_FACE_UV_TARGET_FIX
+  TEXTURE_FACE_UV_TARGET_FIX,
 } from '../../../src/shared/messages';
 import { TextureUvService } from '../../../src/usecases/textureService/uv';
 
-const normalizedMessage = (message: string): string => (message.endsWith('.') ? message : `${message}.`);
+const normalizedMessage = (message: string): string =>
+  message.endsWith('.') ? message : `${message}.`;
 
 type HarnessOptions = {
   includeCube?: boolean;
@@ -29,7 +30,7 @@ const createHarness = (options: HarnessOptions = {}) => {
       name: 'cube',
       bone: 'root',
       from: [0, 0, 0],
-      to: [8, 8, 8]
+      to: [8, 8, 8],
     });
   }
 
@@ -39,14 +40,14 @@ const createHarness = (options: HarnessOptions = {}) => {
     setFaceUv: (params: { cubeName?: string; cubeId?: string }) => {
       calls.push(params);
       return options.setFaceUvError ?? null;
-    }
+    },
   } as unknown as EditorPort;
 
   const service = new TextureUvService({
     editor,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => null,
-    ensureRevisionMatch: () => null
+    ensureRevisionMatch: () => null,
   });
 
   return { service, calls };
@@ -56,8 +57,8 @@ const createHarness = (options: HarnessOptions = {}) => {
   const { service } = createHarness();
   const res = service.setFaceUv({
     faces: {
-      north: [0, 0, 1, 1]
-    }
+      north: [0, 0, 1, 1],
+    },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -70,7 +71,7 @@ const createHarness = (options: HarnessOptions = {}) => {
   const { service } = createHarness();
   const res = service.setFaceUv({
     cubeName: 'cube',
-    faces: {}
+    faces: {},
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -83,7 +84,7 @@ const createHarness = (options: HarnessOptions = {}) => {
   const { service } = createHarness({ includeCube: false });
   const res = service.setFaceUv({
     cubeName: 'missing',
-    faces: { north: [0, 0, 1, 1] }
+    faces: { north: [0, 0, 1, 1] },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -97,8 +98,8 @@ const createHarness = (options: HarnessOptions = {}) => {
   const res = service.setFaceUv({
     cubeName: 'cube',
     faces: {
-      north: [0, 0, 64, 64]
-    }
+      north: [0, 0, 64, 64],
+    },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -108,12 +109,14 @@ const createHarness = (options: HarnessOptions = {}) => {
 }
 
 {
-  const { service } = createHarness({ setFaceUvError: { code: 'unknown', message: 'uv apply failed' } });
+  const { service } = createHarness({
+    setFaceUvError: { code: 'unknown', message: 'uv apply failed' },
+  });
   const res = service.setFaceUv({
     cubeName: 'cube',
     faces: {
-      north: [0, 0, 1, 1]
-    }
+      north: [0, 0, 1, 1],
+    },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -128,8 +131,8 @@ const createHarness = (options: HarnessOptions = {}) => {
     cubeName: 'cube',
     faces: {
       north: [0, 0, 1, 1],
-      east: [0, 0, 8, 1]
-    }
+      east: [0, 0, 8, 1],
+    },
   });
   assert.equal(res.ok, true);
   if (res.ok) {

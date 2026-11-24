@@ -1,6 +1,10 @@
 import type { AtlasPlan } from '../../domain/uv/atlas';
 import { buildUvAtlasPlan } from '../../domain/uv/atlas';
-import { DEFAULT_UV_POLICY, normalizePixelsPerBlock, type UvPolicyConfig } from '../../domain/uv/policy';
+import {
+  DEFAULT_UV_POLICY,
+  normalizePixelsPerBlock,
+  type UvPolicyConfig,
+} from '../../domain/uv/policy';
 import type { Cube, TextureUsage } from '../../domain/model';
 import { TEXTURE_AUTO_UV_DENSITY_UPDATE_UNAVAILABLE } from '../../shared/messages';
 import { fromDomainResult } from '../fromDomain';
@@ -25,7 +29,7 @@ export type BuildAutoUvAtlasPlanResult = {
 };
 
 export const buildAutoUvAtlasPlan = (
-  params: BuildAutoUvAtlasPlanParams
+  params: BuildAutoUvAtlasPlanParams,
 ): UsecaseResult<BuildAutoUvAtlasPlanResult> => {
   const fallbackPixels = normalizePixelsPerBlock(DEFAULT_UV_POLICY.pixelsPerBlock) ?? 16;
   const basePixelsPerBlock =
@@ -39,8 +43,8 @@ export const buildAutoUvAtlasPlan = (
         maxResolution: { width: params.maxEdgeSafe, height: params.maxEdgeSafe },
         padding: params.padding,
         policy: { ...params.policy, pixelsPerBlock },
-        messages: uvAtlasMessages
-      })
+        messages: uvAtlasMessages,
+      }),
     );
 
   let pixelsPerBlock = basePixelsPerBlock;
@@ -58,20 +62,20 @@ export const buildAutoUvAtlasPlan = (
   return ok({
     plan: planRes.value,
     pixelsPerBlock,
-    basePixelsPerBlock
+    basePixelsPerBlock,
   });
 };
 
 export const applyAutoUvAtlasPlanConfig = (
   ctx: TextureToolContext,
   result: BuildAutoUvAtlasPlanResult,
-  resolution: { width: number; height: number }
+  resolution: { width: number; height: number },
 ): UsecaseResult<void> => {
   if (result.pixelsPerBlock !== result.basePixelsPerBlock) {
     if (!ctx.setProjectUvPixelsPerBlock) {
       return fail({
         code: 'not_implemented',
-        message: TEXTURE_AUTO_UV_DENSITY_UPDATE_UNAVAILABLE
+        message: TEXTURE_AUTO_UV_DENSITY_UPDATE_UNAVAILABLE,
       });
     }
     const uvErr = ctx.setProjectUvPixelsPerBlock(result.pixelsPerBlock);
@@ -85,7 +89,7 @@ export const applyAutoUvAtlasPlanConfig = (
     const resizeErr = ctx.editor.setProjectTextureResolution(
       result.plan.resolution.width,
       result.plan.resolution.height,
-      false
+      false,
     );
     if (resizeErr) return fail(resizeErr);
   }
@@ -94,7 +98,7 @@ export const applyAutoUvAtlasPlanConfig = (
 };
 
 export const shouldReduceDensityForAtlas = (
-  error: { details?: Record<string, unknown> } | null | undefined
+  error: { details?: Record<string, unknown> } | null | undefined,
 ): boolean => {
   const reason = typeof error?.details?.reason === 'string' ? error.details.reason : '';
   if (reason === 'atlas_overflow' || reason === 'uv_size_exceeds') return true;

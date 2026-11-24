@@ -10,7 +10,7 @@ import {
   TEXTURE_ASSIGN_FACES_INVALID,
   TEXTURE_ASSIGN_NO_TARGETS,
   TEXTURE_ASSIGN_TARGET_REQUIRED,
-  TEXTURE_ASSIGN_TARGET_REQUIRED_FIX
+  TEXTURE_ASSIGN_TARGET_REQUIRED_FIX,
 } from '../../shared/messages';
 
 export interface TextureAssignmentDeps {
@@ -40,18 +40,31 @@ export class TextureAssignmentService {
     cubeNames?: string[];
     faces?: CubeFaceDirection[];
     ifRevision?: string;
-  }): UsecaseResult<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }> {
+  }): UsecaseResult<{
+    textureId?: string;
+    textureName: string;
+    cubeCount: number;
+    faces?: CubeFaceDirection[];
+  }> {
     return withActiveAndRevision(
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
       () => {
         const snapshot = this.getSnapshot();
-        const resolved = resolveTextureTarget(snapshot.textures, payload.textureId, payload.textureName, {
-          idLabel: 'textureId',
-          nameLabel: 'textureName',
-          required: { message: TEXTURE_ASSIGN_TARGET_REQUIRED, fix: TEXTURE_ASSIGN_TARGET_REQUIRED_FIX }
-        });
+        const resolved = resolveTextureTarget(
+          snapshot.textures,
+          payload.textureId,
+          payload.textureName,
+          {
+            idLabel: 'textureId',
+            nameLabel: 'textureName',
+            required: {
+              message: TEXTURE_ASSIGN_TARGET_REQUIRED,
+              fix: TEXTURE_ASSIGN_TARGET_REQUIRED_FIX,
+            },
+          },
+        );
         if (resolved.error) return fail(resolved.error);
         const texture = resolved.target!;
         const cubes = resolveCubeTargets(snapshot.cubes, payload.cubeIds, payload.cubeNames);
@@ -62,26 +75,28 @@ export class TextureAssignmentService {
         if (payload.faces && payload.faces.length > 0 && !faces) {
           return fail({
             code: 'invalid_payload',
-            message: TEXTURE_ASSIGN_FACES_INVALID
+            message: TEXTURE_ASSIGN_FACES_INVALID,
           });
         }
-        const cubeIds = Array.from(new Set(cubes.map((cube) => cube.id).filter(Boolean) as string[]));
+        const cubeIds = Array.from(
+          new Set(cubes.map((cube) => cube.id).filter(Boolean) as string[]),
+        );
         const cubeNames = Array.from(new Set(cubes.map((cube) => cube.name)));
         const err = this.editor.assignTexture({
           textureId: texture.id ?? payload.textureId,
           textureName: texture.name,
           cubeIds,
           cubeNames,
-          faces: faces ?? undefined
+          faces: faces ?? undefined,
         });
         if (err) return fail(err);
         return ok({
           textureId: texture.id ?? payload.textureId,
           textureName: texture.name,
           cubeCount: cubes.length,
-          faces: faces ?? undefined
+          faces: faces ?? undefined,
         });
-      }
+      },
     );
   }
 }

@@ -6,7 +6,7 @@ import {
   buildAutoUvAtlasPlan,
   applyAutoUvAtlasPlanConfig,
   shouldReduceDensityForAtlas,
-  reducePixelsPerBlockForAtlas
+  reducePixelsPerBlockForAtlas,
 } from '../../../../src/usecases/textureTools/autoUvAtlasPlan';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
 
@@ -17,9 +17,9 @@ const usage: TextureUsage = {
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north' }] }]
-    }
-  ]
+      cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north' }] }],
+    },
+  ],
 };
 
 const cubes: Cube[] = [
@@ -28,8 +28,8 @@ const cubes: Cube[] = [
     name: 'cube',
     from: [0, 0, 0],
     to: [8, 8, 1],
-    bone: 'root'
-  }
+    bone: 'root',
+  },
 ];
 
 {
@@ -40,7 +40,7 @@ const cubes: Cube[] = [
     maxEdgeSafe: 64,
     padding: 0,
     policy: DEFAULT_UV_POLICY,
-    apply: false
+    apply: false,
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -53,8 +53,8 @@ const cubes: Cube[] = [
 {
   const ctx = {
     editor: {
-      setProjectTextureResolution: () => null
-    }
+      setProjectTextureResolution: () => null,
+    },
   } as unknown as TextureToolContext;
   const res = applyAutoUvAtlasPlanConfig(
     ctx,
@@ -63,12 +63,12 @@ const cubes: Cube[] = [
         resolution: { width: 16, height: 16 },
         steps: 0,
         textures: [],
-        assignments: []
+        assignments: [],
       },
       basePixelsPerBlock: 16,
-      pixelsPerBlock: 8
+      pixelsPerBlock: 8,
     },
-    { width: 16, height: 16 }
+    { width: 16, height: 16 },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'not_implemented');
@@ -86,8 +86,8 @@ const cubes: Cube[] = [
       setProjectTextureResolution: () => {
         resizeUpdates += 1;
         return null;
-      }
-    }
+      },
+    },
   } as unknown as TextureToolContext;
   const res = applyAutoUvAtlasPlanConfig(
     ctx,
@@ -96,12 +96,12 @@ const cubes: Cube[] = [
         resolution: { width: 32, height: 32 },
         steps: 1,
         textures: [],
-        assignments: []
+        assignments: [],
       },
       basePixelsPerBlock: 16,
-      pixelsPerBlock: 8
+      pixelsPerBlock: 8,
     },
-    { width: 16, height: 16 }
+    { width: 16, height: 16 },
   );
   assert.equal(res.ok, true);
   assert.equal(densityUpdates, 1);
@@ -116,9 +116,9 @@ const cubes: Cube[] = [
         name: 'tight',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'tight-cube', name: 'tight-cube', faces: [{ face: 'north' }] }]
-      }
-    ]
+        cubes: [{ id: 'tight-cube', name: 'tight-cube', faces: [{ face: 'north' }] }],
+      },
+    ],
   };
   const tightCubes: Cube[] = [
     {
@@ -126,8 +126,8 @@ const cubes: Cube[] = [
       name: 'tight-cube',
       from: [0, 0, 0],
       to: [2, 2, 1],
-      bone: 'root'
-    }
+      bone: 'root',
+    },
   ];
 
   const reduced = buildAutoUvAtlasPlan({
@@ -137,14 +137,13 @@ const cubes: Cube[] = [
     maxEdgeSafe: 16,
     padding: 0,
     policy: { ...DEFAULT_UV_POLICY, pixelsPerBlock: 16 },
-    apply: true
+    apply: true,
   });
   assert.equal(reduced.ok, true);
   if (reduced.ok) {
     assert.equal(reduced.value.basePixelsPerBlock, 16);
     assert.equal(reduced.value.pixelsPerBlock <= reduced.value.basePixelsPerBlock, true);
   }
-
 }
 
 {
@@ -163,8 +162,8 @@ const cubes: Cube[] = [
   const ctx = {
     setProjectUvPixelsPerBlock: () => ({ code: 'invalid_state', message: 'uv policy locked' }),
     editor: {
-      setProjectTextureResolution: () => null
-    }
+      setProjectTextureResolution: () => null,
+    },
   } as unknown as TextureToolContext;
   const res = applyAutoUvAtlasPlanConfig(
     ctx,
@@ -173,12 +172,12 @@ const cubes: Cube[] = [
         resolution: { width: 16, height: 16 },
         steps: 0,
         textures: [],
-        assignments: []
+        assignments: [],
       },
       basePixelsPerBlock: 16,
-      pixelsPerBlock: 8
+      pixelsPerBlock: 8,
     },
-    { width: 16, height: 16 }
+    { width: 16, height: 16 },
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_state');

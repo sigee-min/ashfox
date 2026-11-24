@@ -24,7 +24,7 @@ import { markSchemaValidated } from '../../../blockbench-contracts/src/mcpSchema
   const traceRecorder = {
     record: (tool: string) => {
       events.push({ tool });
-    }
+    },
   };
   const warnings: Array<{ message: string; meta?: Record<string, unknown> }> = [];
   const logger = {
@@ -34,9 +34,15 @@ import { markSchemaValidated } from '../../../blockbench-contracts/src/mcpSchema
     warn: (message: string, meta?: Record<string, unknown>) => {
       warnings.push({ message, meta });
     },
-    error: () => undefined
+    error: () => undefined,
   };
-  recordTrace(traceRecorder as never, logger as never, 'get_project_state', {}, { ok: true, data: {} });
+  recordTrace(
+    traceRecorder as never,
+    logger as never,
+    'get_project_state',
+    {},
+    { ok: true, data: {} },
+  );
   assert.deepEqual(events, [{ tool: 'get_project_state' }]);
   assert.equal(warnings.length, 0);
 }
@@ -50,14 +56,20 @@ import { markSchemaValidated } from '../../../blockbench-contracts/src/mcpSchema
     warn: (message: string, meta?: Record<string, unknown>) => {
       warnings.push({ message, meta });
     },
-    error: () => undefined
+    error: () => undefined,
   };
   const traceRecorder = {
     record: () => {
       throw new Error('trace failed');
-    }
+    },
   };
-  recordTrace(traceRecorder as never, logger as never, 'get_project_state', {}, { ok: true, data: {} });
+  recordTrace(
+    traceRecorder as never,
+    logger as never,
+    'get_project_state',
+    {},
+    { ok: true, data: {} },
+  );
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0]?.message, 'trace log record failed');
   assert.equal(warnings[0]?.meta?.message, 'trace failed');
@@ -72,17 +84,17 @@ import { markSchemaValidated } from '../../../blockbench-contracts/src/mcpSchema
     warn: (message: string, meta?: Record<string, unknown>) => {
       warnings.push({ message, meta });
     },
-    error: () => undefined
+    error: () => undefined,
   };
   const traceRecorder = {
-    record: () => ({ code: 'io_error', message: 'flush failed' })
+    record: () => ({ code: 'io_error', message: 'flush failed' }),
   };
   recordTrace(
     traceRecorder as never,
     logger as never,
     'get_project_state',
     {},
-    { ok: true, data: {} }
+    { ok: true, data: {} },
   );
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0]?.meta?.code, 'io_error');
@@ -90,13 +102,19 @@ import { markSchemaValidated } from '../../../blockbench-contracts/src/mcpSchema
 }
 
 {
-  recordTrace(undefined, {
-    log: () => undefined,
-    debug: () => undefined,
-    info: () => undefined,
-    warn: () => undefined,
-    error: () => undefined
-  }, 'get_project_state', {}, { ok: true, data: {} });
+  recordTrace(
+    undefined,
+    {
+      log: () => undefined,
+      debug: () => undefined,
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+    },
+    'get_project_state',
+    {},
+    { ok: true, data: {} },
+  );
 }
 
 {

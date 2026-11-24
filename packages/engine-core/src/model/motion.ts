@@ -1,9 +1,4 @@
-import type {
-  ChannelId,
-  ClipId,
-  EntityId,
-  KeyframeId
-} from './identity';
+import type { ChannelId, ClipId, EntityId, KeyframeId } from './identity';
 
 export type TransformChannelProperty = 'position' | 'rotation' | 'scale';
 export type KeyframeInterpolation = 'linear' | 'step' | 'catmullrom';
@@ -15,11 +10,7 @@ export interface MolangExpression {
 }
 
 export type AnimationScalar = number | MolangExpression;
-export type AnimationVec3 = readonly [
-  AnimationScalar,
-  AnimationScalar,
-  AnimationScalar
-];
+export type AnimationVec3 = readonly [AnimationScalar, AnimationScalar, AnimationScalar];
 
 export interface KeyframeEasing {
   type: string;
@@ -57,9 +48,7 @@ export interface AnimationEffect {
   bindToActor?: boolean;
 }
 
-export type AnimationEffectValue =
-  | AnimationEffect
-  | readonly AnimationEffect[];
+export type AnimationEffectValue = AnimationEffect | readonly AnimationEffect[];
 
 export interface SoundTriggerTrack {
   id: ChannelId;
@@ -79,10 +68,7 @@ export interface TimelineTriggerTrack {
   keys: readonly AnimationTriggerKeyframe<string | readonly string[]>[];
 }
 
-export type AnimationTriggerTrack =
-  | SoundTriggerTrack
-  | ParticleTriggerTrack
-  | TimelineTriggerTrack;
+export type AnimationTriggerTrack = SoundTriggerTrack | ParticleTriggerTrack | TimelineTriggerTrack;
 
 export interface AnimationClip {
   id: ClipId;

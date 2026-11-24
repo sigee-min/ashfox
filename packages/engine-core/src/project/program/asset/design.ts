@@ -1,6 +1,11 @@
 import type { ProgramExpr } from '../syntax/contract';
 import type { SourceSpan } from '../../source/contract';
-import type { AssetDesignCheck, AssetDesignDecl, AssetDesignField, AssetValueType } from './contract';
+import type {
+  AssetDesignCheck,
+  AssetDesignDecl,
+  AssetDesignField,
+  AssetValueType,
+} from './contract';
 import { freeze, join, type Token } from './parserSupport';
 
 export interface AssetValueTypeReader {
@@ -19,10 +24,24 @@ export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueTyp
     reader.expect('>', 'Expected > after a type argument.');
     value += '<' + inner.value + '>';
   }
-  const allowed: readonly string[] = ['unit', 'texel', 'degree', 'second', 'ratio', 'bool', 'color',
-    'integer', 'vec2<unit>', 'vec3<unit>', 'vec3<degree>', 'vec3<ratio>', 'vec2<texel>', 'texel-rect'];
-  if (!allowed.includes(value)) reader.fail('asset.invalid-slot-type',
-    'Unsupported closed value type "' + value + '".', first);
+  const allowed: readonly string[] = [
+    'unit',
+    'texel',
+    'degree',
+    'second',
+    'ratio',
+    'bool',
+    'color',
+    'integer',
+    'vec2<unit>',
+    'vec3<unit>',
+    'vec3<degree>',
+    'vec3<ratio>',
+    'vec2<texel>',
+    'texel-rect',
+  ];
+  if (!allowed.includes(value))
+    reader.fail('asset.invalid-slot-type', 'Unsupported closed value type "' + value + '".', first);
   return (allowed.includes(value) ? value : 'unit') as AssetValueType;
 };
 
@@ -57,6 +76,12 @@ export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): 
     if (check) checks.push(freeze({ id: name.value, value, span }));
     else fields.push(freeze({ id: name.value, type, value, span }));
   });
-  return freeze({ kind: 'design', exported, id: id.value,
-    fields: freeze(fields), checks: freeze(checks), span: join(start.span, reader.blockEnd()) });
+  return freeze({
+    kind: 'design',
+    exported,
+    id: id.value,
+    fields: freeze(fields),
+    checks: freeze(checks),
+    span: join(start.span, reader.blockEnd()),
+  });
 };

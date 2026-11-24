@@ -4,9 +4,7 @@ const path = require('node:path');
 const repoRoot = path.resolve(__dirname, '../..');
 const siteOutput = path.join(repoRoot, 'apps', 'site', 'dist');
 const publicOutput = path.join(repoRoot, 'dist', 'public');
-const {
-  buildSkillRelease
-} = require('../skill/build');
+const { buildSkillRelease } = require('../skill/build');
 
 const requireFile = (target) => {
   if (!fs.statSync(target, { throwIfNoEntry: false })?.isFile()) {
@@ -16,11 +14,10 @@ const requireFile = (target) => {
 
 const copyDirectoryContents = (source, destination) => {
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
-    fs.cpSync(
-      path.join(source, entry.name),
-      path.join(destination, entry.name),
-      { recursive: true, force: true }
-    );
+    fs.cpSync(path.join(source, entry.name), path.join(destination, entry.name), {
+      recursive: true,
+      force: true,
+    });
   }
 };
 
@@ -51,10 +48,12 @@ fs.writeFileSync(
     '/home / 301',
     '/home/ / 301',
     fs.readFileSync(path.join(siteOutput, '_redirects'), 'utf8').trim(),
-    ''
-  ].join('\n')
+    '',
+  ].join('\n'),
 );
-fs.appendFileSync(path.join(publicOutput, '_headers'), `
+fs.appendFileSync(
+  path.join(publicOutput, '_headers'),
+  `
 /skills/ashfox/*
   Cache-Control: public, max-age=0, must-revalidate
 
@@ -63,12 +62,10 @@ fs.appendFileSync(path.join(publicOutput, '_headers'), `
 
 /skills/ashfox/ashfox.zip
   Content-Type: application/zip
-`);
-
-const landingHtml = fs.readFileSync(
-  path.join(publicOutput, 'index.html'),
-  'utf8'
+`,
 );
+
+const landingHtml = fs.readFileSync(path.join(publicOutput, 'index.html'), 'utf8');
 if (!landingHtml.includes('<link rel="canonical" href="https://ashfox.io/">')) {
   throw new Error('Landing canonical URL is missing.');
 }
@@ -80,12 +77,6 @@ for (const retired of ['workbench', 'agent-manifest.json']) {
 requireFile(path.join(publicOutput, 'skills', 'ashfox', 'latest.json'));
 requireFile(path.join(publicOutput, 'skills', 'ashfox', 'ashfox.skill'));
 requireFile(path.join(publicOutput, 'skills', 'ashfox', 'ashfox.zip'));
-requireFile(path.join(
-  publicOutput,
-  'skills',
-  'ashfox',
-  'files',
-  'SKILL.md'
-));
+requireFile(path.join(publicOutput, 'skills', 'ashfox', 'files', 'SKILL.md'));
 
 console.log(`ashfox public bundle ready: ${publicOutput}`);

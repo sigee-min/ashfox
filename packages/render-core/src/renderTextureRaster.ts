@@ -1,12 +1,8 @@
-import {
-  rasterizeTexture,
-  type ProjectDocument,
-  type TextureAsset
-} from '@ashfox/engine-core';
+import { rasterizeTexture, type ProjectDocument, type TextureAsset } from '@ashfox/engine-core';
 
 export const renderTextureRaster = (
   document: ProjectDocument,
-  texture: TextureAsset
+  texture: TextureAsset,
 ): HTMLCanvasElement => {
   const canvas = window.document.createElement('canvas');
   canvas.width = texture.width;

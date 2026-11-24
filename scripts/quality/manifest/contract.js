@@ -1,10 +1,8 @@
 'use strict';
 
 const DEVELOPMENT_MANIFEST_FILENAME = 'development-manifest.json';
-const DEVELOPMENT_MANIFEST_SCHEMA_FILENAME =
-  'development-manifest.schema.json';
-const DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE =
-  `./${DEVELOPMENT_MANIFEST_SCHEMA_FILENAME}`;
+const DEVELOPMENT_MANIFEST_SCHEMA_FILENAME = 'development-manifest.schema.json';
+const DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE = `./${DEVELOPMENT_MANIFEST_SCHEMA_FILENAME}`;
 const DEVELOPMENT_MANIFEST_SCHEMA_VERSION = 1;
 
 const frozen = (values) => Object.freeze(values);
@@ -18,7 +16,7 @@ const MANIFEST_KEYS = Object.freeze({
     'workflow',
     'versioning',
     'quality',
-    'architecture'
+    'architecture',
   ]),
   productExperience: frozen([
     'interactionModel',
@@ -28,7 +26,7 @@ const MANIFEST_KEYS = Object.freeze({
     'agentCapabilities',
     'forbiddenHumanAuthoring',
     'agentDecision',
-    'deliveryAuthority'
+    'deliveryAuthority',
   ]),
   projectFile: frozen([
     'extension',
@@ -37,13 +35,9 @@ const MANIFEST_KEYS = Object.freeze({
     'bom',
     'authority',
     'loadMode',
-    'compiledState'
+    'compiledState',
   ]),
-  agentDecision: frozen([
-    'compilationAuthority',
-    'confirmationRequired',
-    'requiredEvidence'
-  ]),
+  agentDecision: frozen(['compilationAuthority', 'confirmationRequired', 'requiredEvidence']),
   engineering: frozen(['style', 'principles', 'testing', 'exceptions']),
   engineeringStyle: frozen([
     'typescriptStrict',
@@ -53,13 +47,13 @@ const MANIFEST_KEYS = Object.freeze({
     'quotes',
     'semicolons',
     'readonlyPublicContracts',
-    'mutableDraftsPrivate'
+    'mutableDraftsPrivate',
   ]),
   engineeringPrinciple: frozen(['id', 'rule', 'enforcedBy']),
   engineeringTesting: frozen([
     'behaviorChangeRequiresRegression',
     'statefulPaths',
-    'userVisibleChangeRequiresDocs'
+    'userVisibleChangeRequiresDocs',
   ]),
   workflow: frozen([
     'dirtyWorktree',
@@ -67,32 +61,18 @@ const MANIFEST_KEYS = Object.freeze({
     'publicContractChange',
     'generatedArtifacts',
     'commits',
-    'verification'
+    'verification',
   ]),
-  commits: frozen([
-    'format',
-    'subject',
-    'types',
-    'atomic',
-    'breakingChangeRequiresReview'
-  ]),
-  verification: frozen([
-    'duringChange',
-    'beforeHandoff',
-    'beforePullRequest'
-  ]),
-  versioning: frozen([
-    'product',
-    'assetWorkspace',
-    'deliveryTargets'
-  ]),
+  commits: frozen(['format', 'subject', 'types', 'atomic', 'breakingChangeRequiresReview']),
+  verification: frozen(['duringChange', 'beforeHandoff', 'beforePullRequest']),
+  versioning: frozen(['product', 'assetWorkspace', 'deliveryTargets']),
   productVersioning: frozen([
     'scheme',
     'sourceOfTruth',
     'automation',
     'synchronizedFiles',
     'changeOwner',
-    'verification'
+    'verification',
   ]),
   assetWorkspaceVersioning: frozen([
     'version',
@@ -103,7 +83,7 @@ const MANIFEST_KEYS = Object.freeze({
     'compiler',
     'releaseState',
     'replacementPolicy',
-    'legacyAliases'
+    'legacyAliases',
   ]),
   deliveryTargetVersioning: frozen(['scope', 'canonicalMutation']),
   quality: frozen([
@@ -112,7 +92,7 @@ const MANIFEST_KEYS = Object.freeze({
     'newSourceFileRatchetLines',
     'maxFunctionLines',
     'ownerLayout',
-    'forbiddenSourcePatterns'
+    'forbiddenSourcePatterns',
   ]),
   ownerLayout: frozen([
     'contractFile',
@@ -123,7 +103,7 @@ const MANIFEST_KEYS = Object.freeze({
     'maxTestFileLines',
     'testOwnership',
     'testDiscovery',
-    'testOwners'
+    'testOwners',
   ]),
   testOwner: frozen(['workspace', 'roots']),
   forbiddenSourcePattern: frozen(['id', 'scope', 'allowedPaths']),
@@ -133,24 +113,19 @@ const MANIFEST_KEYS = Object.freeze({
     'tombstones',
     'packageDependencyPolicies',
     'sourceImportBoundaries',
-    'forbiddenDependencies'
+    'forbiddenDependencies',
   ]),
   workspacePolicy: frozen(['required', 'forbidden']),
-  packageDependencyPolicy: frozen([
-    'workspace',
-    'sections',
-    'mode',
-    'values'
-  ]),
+  packageDependencyPolicy: frozen(['workspace', 'sections', 'mode', 'values']),
   sourceImportBoundary: frozen([
     'source',
     'extensions',
     'allowedExternalImports',
     'forbiddenExternalPrefixes',
     'forbiddenExternalPackageRoots',
-    'forbiddenRelativeTargets'
+    'forbiddenRelativeTargets',
   ]),
-  forbiddenDependency: frozen(['source', 'targets'])
+  forbiddenDependency: frozen(['source', 'targets']),
 });
 
 const HUMAN_CAPABILITIES = frozen([
@@ -161,12 +136,12 @@ const HUMAN_CAPABILITIES = frozen([
   'observe-agent-decisions',
   'open-project',
   'prompt-agent-externally',
-  'view-canonical-asset'
+  'view-canonical-asset',
 ]);
 const AGENT_CAPABILITIES = frozen([
   'apply-workspace-change-set',
   'inspect-project',
-  'present-review-evidence'
+  'present-review-evidence',
 ]);
 const FORBIDDEN_HUMAN_AUTHORING = frozen([
   'direct-animation-authoring',
@@ -174,12 +149,12 @@ const FORBIDDEN_HUMAN_AUTHORING = frozen([
   'direct-hierarchy-authoring',
   'direct-material-authoring',
   'direct-rig-authoring',
-  'direct-texture-authoring'
+  'direct-texture-authoring',
 ]);
 const AGENT_DECISION_EVIDENCE = frozen([
   'workspace-summary',
   'native-size-review',
-  'technical-receipt'
+  'technical-receipt',
 ]);
 const ENGINEERING_PRINCIPLE_IDS = frozen([
   'atomic-mutation',
@@ -191,30 +166,23 @@ const ENGINEERING_PRINCIPLE_IDS = frozen([
   'preserve-unrelated-work',
   'pure-core-io-adapters',
   'single-authority',
-  'source-owned-diagnostics'
+  'source-owned-diagnostics',
 ]);
 const ENGINEERING_ENFORCERS = frozen([
   'quality:architecture',
   'quality:check',
   'review',
   'tests',
-  'typecheck'
+  'typecheck',
 ]);
 const STATEFUL_TEST_PATHS = frozen([
   'success',
   'cancellation',
   'stale-revision',
   'invalid-input',
-  'exception'
+  'exception',
 ]);
-const COMMIT_TYPES = frozen([
-  'chore',
-  'docs',
-  'feat',
-  'fix',
-  'refactor',
-  'test'
-]);
+const COMMIT_TYPES = frozen(['chore', 'docs', 'feat', 'fix', 'refactor', 'test']);
 const FORBIDDEN_SOURCE_PATTERN_IDS = frozen([
   'as-any',
   'as-unknown-as',
@@ -229,20 +197,18 @@ const FORBIDDEN_SOURCE_PATTERN_IDS = frozen([
   'globalThis-as',
   'throw-in-src',
   'todo-fixme-comment',
-  'ts-ignore'
+  'ts-ignore',
 ]);
 const SYNCHRONIZED_PRODUCT_VERSION_FILES = frozen([
   '.github/release-please/manifest.json',
-  'packages/blockbench-runtime/src/config.ts'
+  'packages/blockbench-runtime/src/config.ts',
 ]);
 
 const SOURCE_SCOPE_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
-const DIRECTORY_PREFIX_PATTERN =
-  /^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)+\/$/;
+const DIRECTORY_PREFIX_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)+\/$/;
 const REPOSITORY_DIRECTORY_PREFIX_PATTERN =
   /^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*\/$/;
-const REPOSITORY_PATH_PATTERN =
-  /^[A-Za-z0-9.][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
+const REPOSITORY_PATH_PATTERN = /^[A-Za-z0-9.][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 
 class DevelopmentManifestError extends Error {
   constructor(location, detail) {
@@ -257,8 +223,7 @@ const fail = (location, detail) => {
   throw new DevelopmentManifestError(location, detail);
 };
 
-const textCompare = (left, right) =>
-  left < right ? -1 : left > right ? 1 : 0;
+const textCompare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 const isDirectoryPrefix = (value) =>
   DIRECTORY_PREFIX_PATTERN.test(value) &&
@@ -294,5 +259,5 @@ module.exports = {
   SOURCE_SCOPE_PATTERN,
   STATEFUL_TEST_PATHS,
   SYNCHRONIZED_PRODUCT_VERSION_FILES,
-  textCompare
+  textCompare,
 };

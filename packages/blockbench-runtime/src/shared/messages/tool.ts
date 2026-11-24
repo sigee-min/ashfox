@@ -10,7 +10,7 @@ export const ID_NAME_MISMATCH_MESSAGE = (
   nameLabel: string,
   plural: string,
   id: string,
-  name: string
+  name: string,
 ) => `${kind} ${idLabel} and ${nameLabel} refer to different ${plural} (${id}, ${name}).`;
 export const TARGET_NAME_AMBIGUOUS = (kind: string, name: string) =>
   `Multiple ${kind} entries named: ${name}. Use id to disambiguate.`;
@@ -32,9 +32,10 @@ export const TOOL_HINT_NO_CHANGE = 'No changes detected.';
 export const TOOL_HINT_IO_ERROR = 'I/O error.';
 export const TOOL_HINT_UNKNOWN = 'Unknown error.';
 
-export const REVISION_REQUIRED_MESSAGE = 'ifRevision is required. Call get_project_state before mutating.';
-export const REVISION_REQUIRED_FIX = 'Call get_project_state and retry with ifRevision set to the returned revision.';
-export const REVISION_MISMATCH_MESSAGE = 'Project revision mismatch. Refresh project state before retrying.';
+export const REVISION_REQUIRED_MESSAGE =
+  'ifRevision is required. Call get_project_state before mutating.';
+export const REVISION_REQUIRED_FIX =
+  'Call get_project_state and retry with ifRevision set to the returned revision.';
+export const REVISION_MISMATCH_MESSAGE =
+  'Project revision mismatch. Refresh project state before retrying.';
 export const REVISION_MISMATCH_FIX = 'Call get_project_state and retry with the latest revision.';
-
-

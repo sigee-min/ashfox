@@ -12,28 +12,28 @@ import {
   type LockedPackage,
   type WorkspaceFile,
   type WorkspaceModuleAbi,
-  type WorkspacePackage
+  type WorkspacePackage,
 } from '../../../src/project/workspace';
 
-export const assetSource = (
-  name: string,
-  imports: readonly string[] = []
-): string => `ashfox-model 1\nasset ${name} {${imports.map((item) =>
-  ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`).join('')}}`;
+export const assetSource = (name: string, imports: readonly string[] = []): string =>
+  `ashfox-model 1\nasset ${name} {${imports
+    .map((item) => ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`)
+    .join('')}}`;
 
 export const moduleSource = (
   name: string,
   imports: readonly string[] = [],
-  exported = false
-): string => `ashfox-model 1\nmodule ${name} {${imports.map((item) =>
-  ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`).join('')}${
-  exported ? ` export component ${name}_component {}` : ''}}`;
+  exported = false,
+): string =>
+  `ashfox-model 1\nmodule ${name} {${imports
+    .map((item) => ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`)
+    .join('')}${exported ? ` export component ${name}_component {}` : ''}}`;
 
 const lockForPackage = (
   pkg: WorkspacePackage,
   files: readonly WorkspaceFile[],
   moduleAbis: readonly WorkspaceModuleAbi[] = [],
-  dependencies: LockedPackage['dependencies'] = []
+  dependencies: LockedPackage['dependencies'] = [],
 ): LockedPackage => ({
   name: pkg.name,
   source: 'workspace',
@@ -44,10 +44,10 @@ const lockForPackage = (
   manifestHash: computePackageManifestHash(pkg),
   files: files.map((file) => ({
     path: file.path,
-    contentHash: computeSourceContentHash(file.source)
+    contentHash: computeSourceContentHash(file.source),
   })),
   interfaceHash: computePackageInterfaceHash(pkg, moduleAbis),
-  dependencies
+  dependencies,
 });
 
 export const workspaceFixture = (
@@ -58,7 +58,7 @@ export const workspaceFixture = (
     readonly root?: string;
     readonly packageName?: string;
     readonly moduleAbis?: readonly WorkspaceModuleAbi[];
-  } = {}
+  } = {},
 ): AuthoredAssetWorkspace => {
   const root = options.root ?? 'dragon';
   const packageName = options.packageName ?? 'dragon';
@@ -70,24 +70,25 @@ export const workspaceFixture = (
       version: ASHFOX_WORKSPACE_VERSION,
       entries: options.entries ?? [{ name: 'main', path: 'main.ashfox' }],
       modules: options.modules ?? [],
-      dependencies: []
-    }
+      dependencies: [],
+    },
   };
-  const packageFiles = files.filter((file) => root.length === 0 ||
-    file.path.startsWith(`${root}/`));
+  const packageFiles = files.filter(
+    (file) => root.length === 0 || file.path.startsWith(`${root}/`),
+  );
   return Object.freeze({
     files: Object.freeze([...files]),
     manifest: {
       format: ASHFOX_WORKSPACE_FORMAT,
       version: ASHFOX_WORKSPACE_VERSION,
-      packages: [pkg]
+      packages: [pkg],
     },
     lock: {
       format: ASHFOX_LOCK_FORMAT,
       version: ASHFOX_WORKSPACE_VERSION,
       compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
-      packages: [lockForPackage(pkg, packageFiles, options.moduleAbis)]
-    }
+      packages: [lockForPackage(pkg, packageFiles, options.moduleAbis)],
+    },
   });
 };
 
@@ -99,7 +100,7 @@ export const packagesFixture = (
     readonly modules: readonly { readonly subpath: string; readonly path: string }[];
     readonly dependencies?: readonly string[];
     readonly files: readonly WorkspaceFile[];
-  }[]
+  }[],
 ): AuthoredAssetWorkspace => {
   const packages: WorkspacePackage[] = specs.map((spec) => ({
     name: spec.name,
@@ -109,8 +110,8 @@ export const packagesFixture = (
       version: ASHFOX_WORKSPACE_VERSION,
       entries: spec.entries,
       modules: spec.modules,
-      dependencies: (spec.dependencies ?? []).map((name) => ({ name }))
-    }
+      dependencies: (spec.dependencies ?? []).map((name) => ({ name })),
+    },
   }));
   const plainLocks = packages.map((pkg) => {
     const files = specs.find((spec) => spec.name === pkg.name)?.files ?? [];
@@ -127,9 +128,9 @@ export const packagesFixture = (
         return {
           name: dependency.name,
           contentHash: target.contentHash,
-          interfaceHash: target.interfaceHash
+          interfaceHash: target.interfaceHash,
         };
-      })
+      }),
     };
   });
   return Object.freeze({
@@ -139,7 +140,7 @@ export const packagesFixture = (
       format: ASHFOX_LOCK_FORMAT,
       version: ASHFOX_WORKSPACE_VERSION,
       compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
-      packages: locks
-    }
+      packages: locks,
+    },
   });
 };

@@ -20,22 +20,18 @@ const clock = {
   clearTimeout: (handle: ReturnType<typeof setTimeout>) => {
     (handle as unknown as TimerEntry).cancelled = true;
   },
-  random: () => 0
+  random: () => 0,
 };
 
 const runTimer = (delayMs: number) => {
-  const timer = timers.find((entry) =>
-    !entry.cancelled && entry.delayMs === delayMs
-  );
+  const timer = timers.find((entry) => !entry.cancelled && entry.delayMs === delayMs);
   assert.notEqual(timer, undefined, `missing active ${delayMs}ms timer`);
   if (!timer) return;
   timer.cancelled = true;
   timer.handler();
 };
 
-const activeDelays = () => timers
-  .filter((entry) => !entry.cancelled)
-  .map((entry) => entry.delayMs);
+const activeDelays = () => timers.filter((entry) => !entry.cancelled).map((entry) => entry.delayMs);
 
 type FakeChild = EventEmitter & {
   stdin: { write: (data: string) => void };
@@ -53,7 +49,7 @@ const childProcessModule = {
   spawn: (
     _command: string,
     args: string[],
-    options: { env: Record<string, string | undefined> }
+    options: { env: Record<string, string | undefined> },
   ) => {
     capturedArgs = [...args];
     capturedEnv = { ...options.env };
@@ -65,11 +61,11 @@ const childProcessModule = {
       killCalls: 0,
       kill() {
         this.killCalls += 1;
-      }
+      },
     });
     children.push(child);
     return child;
-  }
+  },
 };
 
 const globals = globalThis as unknown as {
@@ -79,7 +75,7 @@ const globals = globalThis as unknown as {
 const originalPlugins = globals.Plugins;
 const originalLoader = globals.requireNativeModule;
 globals.Plugins = {
-  registered: { ashfox: { path: '/plugins/ashfox.js' } }
+  registered: { ashfox: { path: '/plugins/ashfox.js' } },
 };
 globals.requireNativeModule = (name) => {
   if (name === 'child_process') return childProcessModule;
@@ -87,13 +83,13 @@ globals.requireNativeModule = (name) => {
     return {
       basename: (value: string) => value.split('/').at(-1) ?? '',
       dirname: (value: string) => value.slice(0, value.lastIndexOf('/')),
-      join: (...parts: string[]) => parts.join('/')
+      join: (...parts: string[]) => parts.join('/'),
     };
   }
   if (name === 'process') {
     return {
       execPath: '/Applications/Blockbench.app/Contents/MacOS/Blockbench',
-      env: { PATH: '/usr/bin' }
+      env: { PATH: '/usr/bin' },
     };
   }
   return null;
@@ -104,7 +100,7 @@ try {
     { host: '127.0.0.1', port: 8787, path: '/mcp', token: 'secret' },
     unsafePayload({ handle: async () => ({ ok: true, data: {} }) }),
     noopLog,
-    clock
+    clock,
   );
   assert.equal(sidecar.start(), true);
   assert.equal(children.length, 1);

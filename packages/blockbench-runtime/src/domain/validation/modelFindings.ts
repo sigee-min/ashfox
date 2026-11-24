@@ -5,7 +5,7 @@ import { findCubeContainments, findDuplicates } from './geometry';
 export const collectModelFindings = (
   state: Snapshot,
   limits: Limits,
-  messages: ValidationMessages
+  messages: ValidationMessages,
 ): ValidationFinding[] => {
   const findings: ValidationFinding[] = [];
 
@@ -19,24 +19,32 @@ export const collectModelFindings = (
       findings.push({
         code: 'orphan_cube',
         message: messages.orphanCube(c.name, c.bone),
-        severity: 'error'
+        severity: 'error',
       });
     }
   });
 
   findDuplicates(state.bones.map((b) => b.name)).forEach((name) => {
-    findings.push({ code: 'duplicate_bone', message: messages.duplicateBone(name), severity: 'error' });
+    findings.push({
+      code: 'duplicate_bone',
+      message: messages.duplicateBone(name),
+      severity: 'error',
+    });
   });
 
   findDuplicates(state.cubes.map((c) => c.name)).forEach((name) => {
-    findings.push({ code: 'duplicate_cube', message: messages.duplicateCube(name), severity: 'error' });
+    findings.push({
+      code: 'duplicate_cube',
+      message: messages.duplicateCube(name),
+      severity: 'error',
+    });
   });
 
   findCubeContainments(state.cubes).forEach((pair) => {
     findings.push({
       code: 'cube_containment',
       message: messages.cubeContainment(pair.inner, pair.outer),
-      severity: 'warning'
+      severity: 'warning',
     });
   });
 
@@ -44,7 +52,7 @@ export const collectModelFindings = (
     findings.push({
       code: 'max_cubes_exceeded',
       message: messages.maxCubesExceeded(state.cubes.length, limits.maxCubes),
-      severity: 'error'
+      severity: 'error',
     });
   }
 
@@ -53,7 +61,7 @@ export const collectModelFindings = (
       findings.push({
         code: 'animation_too_long',
         message: messages.animationTooLong(anim.name, limits.maxAnimationSeconds),
-        severity: 'error'
+        severity: 'error',
       });
     }
   });

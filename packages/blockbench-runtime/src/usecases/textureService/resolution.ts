@@ -7,7 +7,7 @@ import {
   TEXTURE_RESOLUTION_EXCEEDS_MAX,
   TEXTURE_RESOLUTION_EXCEEDS_MAX_FIX,
   TEXTURE_RESOLUTION_INTEGER,
-  TEXTURE_RESOLUTION_POSITIVE
+  TEXTURE_RESOLUTION_POSITIVE,
 } from '../../shared/messages';
 
 /** Dependencies for texture-resolution mutation and validation. */
@@ -51,22 +51,25 @@ export class TextureResolutionService {
           const sizeMessage = mapDimensionError(sizeCheck, {
             nonPositive: (_axis) => TEXTURE_RESOLUTION_POSITIVE,
             nonInteger: (_axis) => TEXTURE_RESOLUTION_INTEGER,
-            exceedsMax: (limit) => TEXTURE_RESOLUTION_EXCEEDS_MAX(limit || maxSize)
+            exceedsMax: (limit) => TEXTURE_RESOLUTION_EXCEEDS_MAX(limit || maxSize),
           });
           if (sizeCheck.reason === 'exceeds_max') {
             return fail({
               code: 'invalid_payload',
               message: sizeMessage ?? TEXTURE_RESOLUTION_EXCEEDS_MAX(maxSize),
               fix: TEXTURE_RESOLUTION_EXCEEDS_MAX_FIX(maxSize),
-              details: { width, height, maxSize }
+              details: { width, height, maxSize },
             });
           }
-          return fail({ code: 'invalid_payload', message: sizeMessage ?? TEXTURE_RESOLUTION_POSITIVE });
+          return fail({
+            code: 'invalid_payload',
+            message: sizeMessage ?? TEXTURE_RESOLUTION_POSITIVE,
+          });
         }
         const err = this.editor.setProjectTextureResolution(width, height, modifyUv);
         if (err) return fail(err);
         return ok({ width, height });
-      }
+      },
     );
   }
 }

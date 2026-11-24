@@ -2,14 +2,12 @@ import {
   analyzeAnimationPreview,
   CANONICAL_IDLE_CLIP_NAME,
   type AnimationClip,
-  type ProjectDocument
+  type ProjectDocument,
 } from '@ashfox/engine-core';
 
-export const resolveBuildReviewClip = (
-  document: ProjectDocument
-): AnimationClip | null => {
+export const resolveBuildReviewClip = (document: ProjectDocument): AnimationClip | null => {
   const preferred = Object.values(document.animations).find(
-    (clip) => clip.name === CANONICAL_IDLE_CLIP_NAME
+    (clip) => clip.name === CANONICAL_IDLE_CLIP_NAME,
   );
   if (
     !preferred ||

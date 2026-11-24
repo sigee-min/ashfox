@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   decideRevision,
-  type RevisionGuardDeps
+  type RevisionGuardDeps,
 } from '../../../src/usecases/revision/revisionGuard';
 import type { ProjectState, ToolError } from '@ashfox/blockbench-contracts/types/internal';
 
@@ -15,27 +15,27 @@ const makeProject = (revision: string): ProjectState => ({
     bones: 0,
     cubes: 0,
     textures: 0,
-    animations: 0
-  }
+    animations: 0,
+  },
 });
 
 const makeState = (revision: string) => ({
   ok: true as const,
-  value: { project: makeProject(revision) }
+  value: { project: makeProject(revision) },
 });
 
 const makeErrorState = () => ({
   ok: false as const,
   error: {
     code: 'invalid_state',
-    message: 'state missing'
-  } satisfies ToolError
+    message: 'state missing',
+  } satisfies ToolError,
 });
 
 const baseDeps: RevisionGuardDeps = {
   requiresRevision: true,
   allowAutoRetry: false,
-  getProjectState: () => makeState('r1')
+  getProjectState: () => makeState('r1'),
 };
 
 const noGuard = decideRevision(undefined, { ...baseDeps, requiresRevision: false });
@@ -75,5 +75,3 @@ assert.equal(stateError.ok, false);
 if (!stateError.ok) {
   assert.equal(stateError.error.code, 'invalid_state');
 }
-
-

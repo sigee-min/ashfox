@@ -7,21 +7,21 @@ const { register } = require('ts-node');
 
 register({
   transpileOnly: true,
-  compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' }
+  compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' },
 });
 
 const {
   openAssetProject,
   readWorkspaceFile,
-  writeWorkspaceFile
+  writeWorkspaceFile,
 } = require('../../packages/engine-core/src');
 const {
   BUILD_CAPTURE_FPS,
-  createBuildCapturePlan
+  createBuildCapturePlan,
 } = require('@ashfox/render-core/capture/buildCaptureTimeline');
 const {
   GIF_CAPTURE_HEIGHT,
-  GIF_CAPTURE_WIDTH
+  GIF_CAPTURE_WIDTH,
 } = require('@ashfox/render-core/capture/gifCaptureSurface');
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -33,16 +33,13 @@ const DESCRIPTOR_PATH = path.join(SHOWCASE_PATH, 'showcase.json');
 const EXPECTED_SELECTORS = Object.freeze([
   Object.freeze({ packageName: 'workbench', entryName: 'griffin' }),
   Object.freeze({ packageName: 'creatures', entryName: 'fox' }),
-  Object.freeze({ packageName: 'creatures', entryName: 'goblin' })
+  Object.freeze({ packageName: 'creatures', entryName: 'goblin' }),
 ]);
-const CAPTURE_SOURCE_ROOTS = Object.freeze([
-  'apps/cli/src/observe',
-  'packages/render-core/src'
-]);
+const CAPTURE_SOURCE_ROOTS = Object.freeze(['apps/cli/src/observe', 'packages/render-core/src']);
 const CAPTURE_SOURCE_FILES = Object.freeze([
   'packages/render-core/package.json',
   'apps/cli/package.json',
-  'scripts/showcase/capture.js'
+  'scripts/showcase/capture.js',
 ]);
 const GIF_LIMIT = 8 * 1024 * 1024;
 const GIF_AGGREGATE_LIMIT = 16 * 1024 * 1024;
@@ -53,11 +50,9 @@ const fail = (message) => {
   throw new Error(`showcase: ${message}`);
 };
 
-const sha256 = (bytes) =>
-  `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
-const relativePath = (file) =>
-  path.relative(ROOT, file).split(path.sep).join('/');
+const relativePath = (file) => path.relative(ROOT, file).split(path.sep).join('/');
 
 const walkCaptureSources = (directory) => {
   const files = [];
@@ -71,9 +66,8 @@ const walkCaptureSources = (directory) => {
 
 const captureFingerprint = () => {
   const files = [
-    ...CAPTURE_SOURCE_ROOTS.flatMap((root) =>
-      walkCaptureSources(path.join(ROOT, root))),
-    ...CAPTURE_SOURCE_FILES.map((file) => path.join(ROOT, file))
+    ...CAPTURE_SOURCE_ROOTS.flatMap((root) => walkCaptureSources(path.join(ROOT, root))),
+    ...CAPTURE_SOURCE_FILES.map((file) => path.join(ROOT, file)),
   ].sort((left, right) => {
     const leftPath = relativePath(left);
     const rightPath = relativePath(right);
@@ -163,32 +157,33 @@ const inspectGif = (bytes, name) => {
 };
 
 const inspectPng = (bytes, name) => {
-  if (bytes.length < 33 ||
-      !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
-      bytes.readUInt32BE(8) !== 13 ||
-      bytes.subarray(12, 16).toString('ascii') !== 'IHDR') {
+  if (
+    bytes.length < 33 ||
+    !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
+    bytes.readUInt32BE(8) !== 13 ||
+    bytes.subarray(12, 16).toString('ascii') !== 'IHDR'
+  ) {
     fail(`${name} is not a valid PNG header`);
   }
   return {
     width: bytes.readUInt32BE(16),
-    height: bytes.readUInt32BE(20)
+    height: bytes.readUInt32BE(20),
   };
 };
 
-const selectorKey = (selector) =>
-  `${selector.packageName}/${selector.entryName}`;
+const selectorKey = (selector) => `${selector.packageName}/${selector.entryName}`;
 
 const assertExactSelectors = (workspace) => {
   const selectors = workspace.manifest.packages.flatMap((pkg) =>
     pkg.manifest.entries.map((entry) => ({
       packageName: pkg.name,
-      entryName: entry.name
-    })));
+      entryName: entry.name,
+    })),
+  );
   const keys = selectors.map(selectorKey);
   if (new Set(keys).size !== keys.length) fail('workspace has duplicate entries');
   const expected = EXPECTED_SELECTORS.map(selectorKey);
-  if (keys.length !== expected.length ||
-      expected.some((key) => !keys.includes(key))) {
+  if (keys.length !== expected.length || expected.some((key) => !keys.includes(key))) {
     fail(`workspace entries must be exactly ${expected.join(', ')}`);
   }
 };
@@ -201,25 +196,34 @@ const openProject = (workspace, selector) => {
       id: `showcase-${selector.entryName}`,
       revision: 'showcase-0001',
       createdAt: CREATED_AT,
-      updatedAt: CREATED_AT
-    }
+      updatedAt: CREATED_AT,
+    },
   });
   if (!opened.ok) {
-    fail(`${selectorKey(selector)} cannot compile: ` +
-      (opened.diagnostics[0]?.message ?? 'unknown diagnostic'));
+    fail(
+      `${selectorKey(selector)} cannot compile: ` +
+        (opened.diagnostics[0]?.message ?? 'unknown diagnostic'),
+    );
   }
   return opened.project;
 };
 
 const assertMediaInventory = (workspace) => {
-  const expected = new Set(EXPECTED_SELECTORS.flatMap(({ entryName }) => [
-    `${entryName}-build-replay.gif`,
-    `${entryName}-build-replay.mp4`,
-    `${entryName}-poster.png`,
-    ...Object.values(openProject(workspace, EXPECTED_SELECTORS.find((selector) => selector.entryName === entryName)).document.animations)
-      .map((clip) => `${entryName}-${clip.name}.mp4`)
-  ]));
-  const actual = fs.readdirSync(SHOWCASE_PATH, { withFileTypes: true })
+  const expected = new Set(
+    EXPECTED_SELECTORS.flatMap(({ entryName }) => [
+      `${entryName}-build-replay.gif`,
+      `${entryName}-build-replay.mp4`,
+      `${entryName}-poster.png`,
+      ...Object.values(
+        openProject(
+          workspace,
+          EXPECTED_SELECTORS.find((selector) => selector.entryName === entryName),
+        ).document.animations,
+      ).map((clip) => `${entryName}-${clip.name}.mp4`),
+    ]),
+  );
+  const actual = fs
+    .readdirSync(SHOWCASE_PATH, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /\.(?:gif|png|mp4)$/iu.test(entry.name))
     .map((entry) => entry.name);
   const orphan = actual.find((name) => !expected.has(name));
@@ -229,8 +233,7 @@ const assertMediaInventory = (workspace) => {
 };
 
 const createDescriptor = () => {
-  if (GIF_CAPTURE_WIDTH !== 640 || GIF_CAPTURE_HEIGHT !== 360 ||
-      BUILD_CAPTURE_FPS !== 10) {
+  if (GIF_CAPTURE_WIDTH !== 640 || GIF_CAPTURE_HEIGHT !== 360 || BUILD_CAPTURE_FPS !== 10) {
     fail('capture contract must remain 640x360 at 10 fps');
   }
   const workspaceBytes = requireBytes(WORKSPACE_PATH, 'canonical workspace');
@@ -239,8 +242,7 @@ const createDescriptor = () => {
     fail(`workspace is invalid: ${read.diagnostics[0]?.message ?? 'unknown diagnostic'}`);
   }
   const written = writeWorkspaceFile(read.workspace);
-  if (!written.ok ||
-      !Buffer.from(written.source, 'utf8').equals(workspaceBytes)) {
+  if (!written.ok || !Buffer.from(written.source, 'utf8').equals(workspaceBytes)) {
     fail('workspace bytes are not canonical');
   }
   assertExactSelectors(read.workspace);
@@ -254,7 +256,11 @@ const createDescriptor = () => {
     const poster = `${selector.entryName}-poster.png`;
     const videoFile = `${selector.entryName}-build-replay.mp4`;
     const videoBytes = requireBytes(path.join(SHOWCASE_PATH, videoFile), 'build movie');
-    if (videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' || videoBytes.length > 2 * 1024 * 1024) fail(`Invalid build movie: ${videoFile}`);
+    if (
+      videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' ||
+      videoBytes.length > 2 * 1024 * 1024
+    )
+      fail(`Invalid build movie: ${videoFile}`);
     const gifBytes = requireBytes(path.join(SHOWCASE_PATH, artifact), 'GIF');
     const pngBytes = requireBytes(path.join(SHOWCASE_PATH, poster), 'poster');
     if (gifBytes.byteLength > GIF_LIMIT) {
@@ -263,8 +269,12 @@ const createDescriptor = () => {
     aggregateGifBytes += gifBytes.byteLength;
     const gif = inspectGif(gifBytes, artifact);
     const png = inspectPng(pngBytes, poster);
-    if (gif.width !== GIF_CAPTURE_WIDTH || gif.height !== GIF_CAPTURE_HEIGHT ||
-        png.width !== GIF_CAPTURE_WIDTH || png.height !== GIF_CAPTURE_HEIGHT) {
+    if (
+      gif.width !== GIF_CAPTURE_WIDTH ||
+      gif.height !== GIF_CAPTURE_HEIGHT ||
+      png.width !== GIF_CAPTURE_WIDTH ||
+      png.height !== GIF_CAPTURE_HEIGHT
+    ) {
       fail(`${selector.entryName} media must be 640x360`);
     }
     if (gif.frameCount !== plan.frames.length) {
@@ -275,8 +285,15 @@ const createDescriptor = () => {
       motions: Object.values(project.document.animations).map((clip) => {
         const file = `${selector.entryName}-${clip.name}.mp4`;
         const bytes = requireBytes(path.join(SHOWCASE_PATH, file), 'motion movie');
-        if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024) fail(`Invalid or oversized movie: ${file}`);
-        return { name: clip.name, duration: clip.durationSeconds, artifact: file, sha256: sha256(bytes), byteLength: bytes.length };
+        if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024)
+          fail(`Invalid or oversized movie: ${file}`);
+        return {
+          name: clip.name,
+          duration: clip.durationSeconds,
+          artifact: file,
+          sha256: sha256(bytes),
+          byteLength: bytes.length,
+        };
       }),
       packageName: selector.packageName,
       entryName: selector.entryName,
@@ -289,7 +306,7 @@ const createDescriptor = () => {
       posterSha256: sha256(pngBytes),
       byteLength: gifBytes.byteLength,
       frameCount: plan.frames.length,
-      eventCount: plan.events.length
+      eventCount: plan.events.length,
     };
   });
   if (aggregateGifBytes > GIF_AGGREGATE_LIMIT) {
@@ -302,8 +319,7 @@ const createDescriptor = () => {
     workspace: {
       path: WORKSPACE_RELATIVE_PATH,
       sha256: sha256(workspaceBytes),
-      workspaceHash: openProject(read.workspace, EXPECTED_SELECTORS[0])
-        .build.workspaceHash
+      workspaceHash: openProject(read.workspace, EXPECTED_SELECTORS[0]).build.workspaceHash,
     },
     capture: {
       fingerprint: captureFingerprint(),
@@ -311,9 +327,9 @@ const createDescriptor = () => {
       camera: 'perspective',
       width: GIF_CAPTURE_WIDTH,
       height: GIF_CAPTURE_HEIGHT,
-      fps: BUILD_CAPTURE_FPS
+      fps: BUILD_CAPTURE_FPS,
     },
-    entries
+    entries,
   };
 };
 
@@ -329,8 +345,10 @@ const atomicWrite = (file, source) => {
 
 const main = () => {
   const unexpected = process.argv.slice(2).filter((argument) => argument !== '--write');
-  if (unexpected.length > 0 || process.argv.filter(
-    (argument) => argument === '--write').length > 1) {
+  if (
+    unexpected.length > 0 ||
+    process.argv.filter((argument) => argument === '--write').length > 1
+  ) {
     fail('usage: node scripts/showcase/verify.js [--write]');
   }
   const source = `${JSON.stringify(createDescriptor(), null, 2)}\n`;

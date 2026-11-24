@@ -17,7 +17,7 @@ import {
   TextureUsageResult,
   ToolName,
   ToolError,
-  ToolPayloadMap
+  ToolPayloadMap,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { CubeFaceDirection, TextureSource, TriggerChannel } from '../ports/editor';
 import { NOOP_VIEWPORT_REFRESHER, type ViewportRefresherPort } from '../ports/viewportRefresher';
@@ -38,7 +38,7 @@ import type {
   GetProjectDiffPayload,
   GetProjectDiffResult,
   GetProjectStatePayload,
-  GetProjectStateResult
+  GetProjectStateResult,
 } from './project/contract';
 
 export class ToolService {
@@ -89,7 +89,7 @@ export class ToolService {
   }
 
   reloadPlugins(
-    payload: ToolPayloadMap['reload_plugins']
+    payload: ToolPayloadMap['reload_plugins'],
   ): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> {
     return runReloadPlugins(this.host, payload);
   }
@@ -105,14 +105,15 @@ export class ToolService {
   }
 
   setProjectTextureResolution(
-    payload: SetProjectTextureResolutionPayload
+    payload: SetProjectTextureResolutionPayload,
   ): UsecaseResult<{ width: number; height: number }> {
     return this.facades.texture.setProjectTextureResolution(payload);
   }
 
-  getTextureUsage(
-    payload: { textureId?: string; textureName?: string }
-  ): UsecaseResult<TextureUsageResult> {
+  getTextureUsage(payload: {
+    textureId?: string;
+    textureName?: string;
+  }): UsecaseResult<TextureUsageResult> {
     return this.facades.texture.getTextureUsage(payload);
   }
 
@@ -151,35 +152,41 @@ export class ToolService {
   createProject(
     format: Capabilities['formats'][number]['format'],
     name: string,
-    options?: CreateProjectOptions
+    options?: CreateProjectOptions,
   ): UsecaseResult<CreateProjectResult> {
     return this.facades.project.createProject(format, name, options);
   }
 
-  importTexture(payload: {
-    id?: string;
-    name: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  importTexture(
+    payload: {
+      id?: string;
+      name: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.facades.texture.importTexture(payload);
   }
 
-  updateTexture(payload: {
-    id?: string;
-    name?: string;
-    newName?: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  updateTexture(
+    payload: {
+      id?: string;
+      name?: string;
+      newName?: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.facades.texture.updateTexture(payload);
   }
 
-  deleteTexture(payload: ToolPayloadMap['delete_texture']): UsecaseResult<{ id: string; name: string }> {
+  deleteTexture(
+    payload: ToolPayloadMap['delete_texture'],
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.facades.texture.deleteTexture(payload);
   }
 
@@ -191,14 +198,17 @@ export class ToolService {
     return this.facades.texture.readTextureImage(payload);
   }
 
-  assignTexture(
-    payload: ToolPayloadMap['assign_texture']
-  ): UsecaseResult<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }> {
+  assignTexture(payload: ToolPayloadMap['assign_texture']): UsecaseResult<{
+    textureId?: string;
+    textureName: string;
+    cubeCount: number;
+    faces?: CubeFaceDirection[];
+  }> {
     return this.facades.texture.assignTexture(payload);
   }
 
   setFaceUv(
-    payload: SetFaceUvPayload
+    payload: SetFaceUvPayload,
   ): UsecaseResult<{ cubeId?: string; cubeName: string; faces: CubeFaceDirection[] }> {
     return this.facades.texture.setFaceUv(payload);
   }
@@ -211,9 +221,7 @@ export class ToolService {
     return this.facades.model.updateBone(payload);
   }
 
-  deleteBone(
-    payload: ToolPayloadMap['delete_bone']
-  ): UsecaseResult<{
+  deleteBone(payload: ToolPayloadMap['delete_bone']): UsecaseResult<{
     id: string;
     name: string;
     removedBones: number;
@@ -232,7 +240,7 @@ export class ToolService {
   }
 
   deleteCube(
-    payload: ToolPayloadMap['delete_cube']
+    payload: ToolPayloadMap['delete_cube'],
   ): UsecaseResult<{ id: string; name: string; deleted: Array<{ id?: string; name: string }> }> {
     return this.facades.model.deleteCube(payload);
   }
@@ -246,16 +254,20 @@ export class ToolService {
   }
 
   deleteMesh(
-    payload: ToolPayloadMap['delete_mesh']
+    payload: ToolPayloadMap['delete_mesh'],
   ): UsecaseResult<{ id: string; name: string; deleted: Array<{ id?: string; name: string }> }> {
     return this.facades.model.deleteMesh(payload);
   }
 
-  createAnimationClip(payload: ToolPayloadMap['create_animation_clip']): UsecaseResult<{ id: string; name: string }> {
+  createAnimationClip(
+    payload: ToolPayloadMap['create_animation_clip'],
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.facades.animation.createAnimationClip(payload);
   }
 
-  updateAnimationClip(payload: ToolPayloadMap['update_animation_clip']): UsecaseResult<{ id: string; name: string }> {
+  updateAnimationClip(
+    payload: ToolPayloadMap['update_animation_clip'],
+  ): UsecaseResult<{ id: string; name: string }> {
     return this.facades.animation.updateAnimationClip(payload);
   }
 
@@ -267,14 +279,19 @@ export class ToolService {
     return this.facades.animation.deleteAnimationClip(payload);
   }
 
-  setFramePose(
-    payload: ToolPayloadMap['set_frame_pose']
-  ): UsecaseResult<{ clip: string; clipId?: string; frame: number; time: number; bones: number; channels: number }> {
+  setFramePose(payload: ToolPayloadMap['set_frame_pose']): UsecaseResult<{
+    clip: string;
+    clipId?: string;
+    frame: number;
+    time: number;
+    bones: number;
+    channels: number;
+  }> {
     return this.facades.animation.setFramePose(payload);
   }
 
   setTriggerKeyframes(
-    payload: ToolPayloadMap['set_trigger_keyframes']
+    payload: ToolPayloadMap['set_trigger_keyframes'],
   ): UsecaseResult<{ clip: string; clipId?: string; channel: TriggerChannel }> {
     return this.facades.animation.setTriggerKeyframes(payload);
   }
@@ -283,11 +300,9 @@ export class ToolService {
     return this.facades.render.renderPreview(payload);
   }
 
-  validate(
-    _payload: ToolPayloadMap['validate']
-  ): UsecaseResult<{ findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[] }> {
+  validate(_payload: ToolPayloadMap['validate']): UsecaseResult<{
+    findings: { code: string; message: string; severity: 'error' | 'warning' | 'info' }[];
+  }> {
     return this.facades.validation.validate();
   }
-
 }
-

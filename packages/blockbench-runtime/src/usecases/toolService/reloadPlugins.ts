@@ -4,18 +4,18 @@ import { ok, fail, type UsecaseResult } from '../result';
 import {
   PLUGIN_RELOAD_CONFIRM_REQUIRED,
   PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX,
-  PLUGIN_RELOAD_UNAVAILABLE
+  PLUGIN_RELOAD_UNAVAILABLE,
 } from '../../shared/messages';
 
 export const runReloadPlugins = (
   host: HostPort | undefined,
-  payload: ToolPayloadMap['reload_plugins']
+  payload: ToolPayloadMap['reload_plugins'],
 ): UsecaseResult<{ scheduled: true; delayMs: number; method: 'devReload' }> => {
   if (payload.confirm !== true) {
     return fail({
       code: 'invalid_payload',
       message: PLUGIN_RELOAD_CONFIRM_REQUIRED,
-      fix: PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX
+      fix: PLUGIN_RELOAD_CONFIRM_REQUIRED_FIX,
     });
   }
   if (!host) {
@@ -33,4 +33,3 @@ const normalizeReloadDelay = (value?: number): number => {
   if (numeric < 0) return 0;
   return Math.min(Math.trunc(numeric), 10_000);
 };
-

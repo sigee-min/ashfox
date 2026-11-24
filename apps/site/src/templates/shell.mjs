@@ -38,7 +38,6 @@ export const githubIconButton = (className = '') => `
   >${githubMark}</a>
 `;
 
-
 const siteHeader = ({ active, locale, alternatives, messages }) => `
   <header class="site-header">
     <a class="brand" href="${locale.prefix}/" aria-label="${escapeHtml(messages.home)}">
@@ -53,7 +52,7 @@ const siteHeader = ({ active, locale, alternatives, messages }) => `
       <details class="language-menu" data-language-menu>
         <summary aria-label="${escapeHtml(locale.ui.language)}: ${escapeHtml(locale.label)}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg> ${escapeHtml(locale.label)} <span aria-hidden="true">⌄</span></summary>
         <nav aria-label="${escapeHtml(locale.ui.language)}">
-          ${alternatives.map(option => `<a href="${option.route}" lang="${option.code}" data-language-link ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}${option.code === locale.code ? '<span aria-hidden="true">✓</span>' : ''}</a>`).join('')}
+          ${alternatives.map((option) => `<a href="${option.route}" lang="${option.code}" data-language-link ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}${option.code === locale.code ? '<span aria-hidden="true">✓</span>' : ''}</a>`).join('')}
         </nav>
       </details>
     </div>
@@ -69,18 +68,22 @@ export const pageShell = ({
   headLinks = '',
   locale = defaultLocale,
   canonicalPath,
-  alternatives = localeRegistry.locales.map(option => ({ ...option, route: `${option.prefix}/` })),
+  alternatives = localeRegistry.locales.map((option) => ({
+    ...option,
+    route: `${option.prefix}/`,
+  })),
   path,
   robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
   structuredData,
-  title
+  title,
 }) => {
   const messages = siteMessages(locale);
-  const pageTitle = title === 'ashfox'
-    ? `ashfox — ${messages.pageTitle}`
-    : `${title} — ashfox`;
+  const pageTitle = title === 'ashfox' ? `ashfox — ${messages.pageTitle}` : `${title} — ashfox`;
   const canonical = absoluteUrl(config.siteOrigin, canonicalPath ?? path);
-  const socialImage = absoluteUrl(config.siteOrigin, assets.social[active === 'docs' ? 'docs' : 'landing']);
+  const socialImage = absoluteUrl(
+    config.siteOrigin,
+    assets.social[active === 'docs' ? 'docs' : 'landing'],
+  );
   const socialAlt = active === 'docs' ? messages.socialDocs : messages.socialLanding;
   return `<!doctype html>
 <html lang="${locale.code}">

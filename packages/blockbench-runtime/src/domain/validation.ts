@@ -10,7 +10,7 @@ export type { ValidationContext, ValidationMessages } from './validation/types';
 export function validateSnapshot(
   state: Snapshot,
   context: ValidationContext,
-  messages: ValidationMessages
+  messages: ValidationMessages,
 ): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   const { limits, textures, textureResolution, textureUsage, uvPolicy } = context;
@@ -24,12 +24,9 @@ export function validateSnapshot(
       textureUsage,
       textureResolution,
       uvPolicy,
-      messages
-    })
+      messages,
+    }),
   );
 
   return findings;
 }
-
-
-

@@ -1,17 +1,10 @@
-import type {
-  ProjectDocument,
-  SceneNode,
-  Vec3
-} from '../../../model';
+import type { ProjectDocument, SceneNode, Vec3 } from '../../../model';
 import { cubeGeometryRotation } from '../../../model';
 import { compileGltfCubePrimitiveData } from './cube';
 import { compileGltfPlanePrimitiveData } from './plane';
 import { compileGltfPrimitive } from './primitive';
 import type { GltfPrimitiveData } from './data';
-import {
-  quaternionFromEuler,
-  rotateVec3ByQuaternion
-} from './spatial';
+import { quaternionFromEuler, rotateVec3ByQuaternion } from './spatial';
 import type { GltfSceneCompileOptions } from './graph';
 import type { GltfMesh } from './contract';
 
@@ -24,12 +17,12 @@ interface PrimitiveBatch {
 /** A canonical plane basis already maps its chart into model space.  Its
  * transform rotation is a basis-less lowering hint for consumers that cannot
  * read the basis and must never be applied a second time by glTF. */
-export const gltfNodeGeometryRotation = (
-  node: SceneNode
-): Vec3 => node.kind === 'plane' && node.basis !== undefined
-  ? [0, 0, 0]
-  : node.kind === 'cube' ? cubeGeometryRotation(node) :
-    node.transform.rotation;
+export const gltfNodeGeometryRotation = (node: SceneNode): Vec3 =>
+  node.kind === 'plane' && node.basis !== undefined
+    ? [0, 0, 0]
+    : node.kind === 'cube'
+      ? cubeGeometryRotation(node)
+      : node.transform.rotation;
 
 export interface CompiledRigidBatches {
   meshes: GltfMesh[];
@@ -39,14 +32,14 @@ export interface CompiledRigidBatches {
 const animatedNodeIds = (document: ProjectDocument): ReadonlySet<string> =>
   new Set(
     Object.values(document.animations).flatMap((clip) =>
-      Object.values(clip.channels).map((channel) => channel.targetNodeId)
-    )
+      Object.values(clip.channels).map((channel) => channel.targetNodeId),
+    ),
   );
 
 export const primitiveDataForGltfNode = (
   document: ProjectDocument,
   node: SceneNode,
-  options: GltfSceneCompileOptions
+  options: GltfSceneCompileOptions,
 ): GltfPrimitiveData[] => {
   switch (node.kind) {
     case 'cube':
@@ -61,15 +54,11 @@ export const primitiveDataForGltfNode = (
 
 const normalize = (value: Vec3): [number, number, number] => {
   const length = Math.hypot(value[0], value[1], value[2]);
-  return length <= 0.000001
-    ? [0, 1, 0]
-    : [value[0] / length, value[1] / length, value[2] / length];
+  return length <= 0.000001 ? [0, 1, 0] : [value[0] / length, value[1] / length, value[2] / length];
 };
 
-const inverseScaledNormal = (
-  normal: number,
-  scale: number
-): number => Math.abs(scale) <= 0.000001 ? 0 : normal / scale;
+const inverseScaledNormal = (normal: number, scale: number): number =>
+  Math.abs(scale) <= 0.000001 ? 0 : normal / scale;
 
 const flipTriangleWinding = (indices: readonly number[]): number[] => {
   const result = [...indices];
@@ -84,7 +73,7 @@ const flipTriangleWinding = (indices: readonly number[]): number[] => {
 export const bakeGltfPrimitiveToParent = (
   node: SceneNode,
   translation: Vec3,
-  primitive: GltfPrimitiveData
+  primitive: GltfPrimitiveData,
 ): GltfPrimitiveData => {
   const rotation = quaternionFromEuler(gltfNodeGeometryRotation(node));
   const scale = node.transform.scale;
@@ -95,24 +84,24 @@ export const bakeGltfPrimitiveToParent = (
       [
         primitive.positions[offset] * scale[0],
         primitive.positions[offset + 1] * scale[1],
-        primitive.positions[offset + 2] * scale[2]
+        primitive.positions[offset + 2] * scale[2],
       ],
-      rotation
+      rotation,
     );
     positions.push(
       position[0] + translation[0],
       position[1] + translation[1],
-      position[2] + translation[2]
+      position[2] + translation[2],
     );
     const normal = normalize(
       rotateVec3ByQuaternion(
         [
           inverseScaledNormal(primitive.normals[offset], scale[0]),
           inverseScaledNormal(primitive.normals[offset + 1], scale[1]),
-          inverseScaledNormal(primitive.normals[offset + 2], scale[2])
+          inverseScaledNormal(primitive.normals[offset + 2], scale[2]),
         ],
-        rotation
-      )
+        rotation,
+      ),
     );
     normals.push(...normal);
   }
@@ -120,45 +109,33 @@ export const bakeGltfPrimitiveToParent = (
     positions,
     normals,
     ...(primitive.uvs ? { uvs: primitive.uvs } : {}),
-    ...(primitive.material === undefined
-      ? {}
-      : { material: primitive.material }),
+    ...(primitive.material === undefined ? {} : { material: primitive.material }),
     indices:
       scale[0] * scale[1] * scale[2] < 0
         ? flipTriangleWinding(primitive.indices)
         : primitive.indices,
-    ...(primitive.sourceNodeId === undefined
-      ? {} : { sourceNodeId: primitive.sourceNodeId })
+    ...(primitive.sourceNodeId === undefined ? {} : { sourceNodeId: primitive.sourceNodeId }),
   };
 };
 
-const batchKey = (
-  material: number | undefined,
-  hasUvs: boolean
-): string => `${material ?? 'none'}:${hasUvs ? 'uv' : 'plain'}`;
+const batchKey = (material: number | undefined, hasUvs: boolean): string =>
+  `${material ?? 'none'}:${hasUvs ? 'uv' : 'plain'}`;
 
-const compareBatches = (
-  left: PrimitiveBatch,
-  right: PrimitiveBatch
-): number =>
-  (left.material ?? -1) - (right.material ?? -1) ||
-  Number(left.hasUvs) - Number(right.hasUvs);
+const compareBatches = (left: PrimitiveBatch, right: PrimitiveBatch): number =>
+  (left.material ?? -1) - (right.material ?? -1) || Number(left.hasUvs) - Number(right.hasUvs);
 
 export const compileRigidGltfBatches = (
   document: ProjectDocument,
   orderedNodes: readonly SceneNode[],
   restTranslationById: ReadonlyMap<string, Vec3>,
-  options: GltfSceneCompileOptions
+  options: GltfSceneCompileOptions,
 ): CompiledRigidBatches => {
   const animated = animatedNodeIds(document);
   const batchesByOwner = new Map<string, Map<string, PrimitiveBatch>>();
 
   for (const node of orderedNodes) {
     if (node.kind !== 'cube' && node.kind !== 'plane') continue;
-    const ownerId =
-      node.parentId !== null && !animated.has(node.id)
-        ? node.parentId
-        : node.id;
+    const ownerId = node.parentId !== null && !animated.has(node.id) ? node.parentId : node.id;
     const ownerBatches = batchesByOwner.get(ownerId) ?? new Map();
     const bake = ownerId !== node.id;
     const translation = restTranslationById.get(node.id) ?? [0, 0, 0];
@@ -171,7 +148,7 @@ export const compileRigidGltfBatches = (
       const batch = ownerBatches.get(key) ?? {
         material: primitive.material,
         hasUvs: primitive.uvs !== undefined,
-        primitives: []
+        primitives: [],
       };
       batch.primitives.push(primitive);
       ownerBatches.set(key, batch);
@@ -186,23 +163,26 @@ export const compileRigidGltfBatches = (
     if (!batches || batches.size === 0) continue;
     const primitives = [...batches.values()]
       .sort(compareBatches)
-      .flatMap((batch) => batch.primitives.map((primitive) =>
-        compileGltfPrimitive(
-          options.writer,
-          primitive.positions,
-          primitive.normals,
-          primitive.uvs,
-          primitive.joints,
-          primitive.material,
-          primitive.indices,
-          primitive.sourceNodeId === undefined
-            ? undefined
-            : { ashfoxSourceNodeId: primitive.sourceNodeId }
-        )));
+      .flatMap((batch) =>
+        batch.primitives.map((primitive) =>
+          compileGltfPrimitive(
+            options.writer,
+            primitive.positions,
+            primitive.normals,
+            primitive.uvs,
+            primitive.joints,
+            primitive.material,
+            primitive.indices,
+            primitive.sourceNodeId === undefined
+              ? undefined
+              : { ashfoxSourceNodeId: primitive.sourceNodeId },
+          ),
+        ),
+      );
     meshIndexByOwnerId.set(owner.id, meshes.length);
     meshes.push({
       name: `${owner.name} rigid batch`,
-      primitives
+      primitives,
     });
   }
   return { meshes, meshIndexByOwnerId };

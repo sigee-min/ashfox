@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 
 import { loadNativeModule } from '../../../src/shared/nativeModules';
 
-type NativeLoader = (name: string, options?: { message?: string; detail?: string; optional?: boolean }) => unknown;
+type NativeLoader = (
+  name: string,
+  options?: { message?: string; detail?: string; optional?: boolean },
+) => unknown;
 
 {
   const globals = globalThis as unknown as { requireNativeModule?: NativeLoader };
@@ -49,4 +52,3 @@ type NativeLoader = (name: string, options?: { message?: string; detail?: string
     globals.requireNativeModule = original;
   }
 }
-

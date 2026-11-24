@@ -14,7 +14,7 @@ const logger: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 const getGlobals = (): TestGlobals => globalThis as unknown as TestGlobals;
@@ -47,22 +47,22 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     close(force: boolean) {
       closeArg = force;
       return undefined;
-    }
+    },
   };
   withGlobals(
     {
       Blockbench: {
         project,
-        hasUnsavedChanges: () => false
+        hasUnsavedChanges: () => false,
       },
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.closeProject({ force: true });
       assert.equal(err, null);
       assert.equal(closeArg, true);
-    }
+    },
   );
 }
 
@@ -71,20 +71,20 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     saved: true,
     close() {
       return Promise.resolve();
-    }
+    },
   };
   withGlobals(
     {
       Blockbench: {
         project,
-        hasUnsavedChanges: () => false
+        hasUnsavedChanges: () => false,
       },
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.closeProject();
       assert.deepEqual(err, { pending: true, mode: 'async' });
-    }
+    },
   );
 }

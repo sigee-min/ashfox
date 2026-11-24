@@ -1,6 +1,6 @@
 import { CUBE_FACE_DIRECTIONS } from '../shared/toolConstants';
 
-export type CubeFaceDirection = typeof CUBE_FACE_DIRECTIONS[number];
+export type CubeFaceDirection = (typeof CUBE_FACE_DIRECTIONS)[number];
 export { CUBE_FACE_DIRECTIONS };
 
 export type FaceUvRect = [number, number, number, number];
@@ -135,5 +135,3 @@ export type Limits = {
   maxTextureSize: number;
   maxAnimationSeconds: number;
 };
-
-

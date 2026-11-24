@@ -7,7 +7,7 @@ import {
   ADAPTER_PREVIEW_ANIMATION_CLIP_NOT_FOUND,
   ADAPTER_PREVIEW_DATA_URL_EMPTY,
   ADAPTER_PREVIEW_DATA_URL_INVALID,
-  ADAPTER_PREVIEW_DATA_URL_NOT_BASE64
+  ADAPTER_PREVIEW_DATA_URL_NOT_BASE64,
 } from '../../../shared/messages';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -18,7 +18,9 @@ export type DataUrlInfo = {
   byteLength: number;
 };
 
-export const parseDataUrl = (dataUrl: string): { ok: true; value: DataUrlInfo } | { ok: false; message: string } => {
+export const parseDataUrl = (
+  dataUrl: string,
+): { ok: true; value: DataUrlInfo } | { ok: false; message: string } => {
   const raw = String(dataUrl ?? '');
   const comma = raw.indexOf(',');
   if (comma === -1) {
@@ -72,18 +74,32 @@ export type CameraSnapshot = {
   zoom: number | null;
 };
 
-export const snapshotCamera = (camera: CameraLike | null, controls: ControlsLike | null): CameraSnapshot => ({
+export const snapshotCamera = (
+  camera: CameraLike | null,
+  controls: ControlsLike | null,
+): CameraSnapshot => ({
   position: camera?.position
     ? { x: camera.position.x, y: camera.position.y, z: camera.position.z }
     : null,
   quaternion: camera?.quaternion
-    ? { x: camera.quaternion.x, y: camera.quaternion.y, z: camera.quaternion.z, w: camera.quaternion.w }
+    ? {
+        x: camera.quaternion.x,
+        y: camera.quaternion.y,
+        z: camera.quaternion.z,
+        w: camera.quaternion.w,
+      }
     : null,
-  target: controls?.target ? { x: controls.target.x, y: controls.target.y, z: controls.target.z } : null,
-  zoom: typeof camera?.zoom === 'number' ? camera.zoom : null
+  target: controls?.target
+    ? { x: controls.target.x, y: controls.target.y, z: controls.target.z }
+    : null,
+  zoom: typeof camera?.zoom === 'number' ? camera.zoom : null,
 });
 
-export const restoreCamera = (camera: CameraLike | null, controls: ControlsLike | null, state: CameraSnapshot) => {
+export const restoreCamera = (
+  camera: CameraLike | null,
+  controls: ControlsLike | null,
+  state: CameraSnapshot,
+) => {
   if (camera?.position && state.position) {
     if (typeof camera.position.set === 'function') {
       camera.position.set(state.position.x, state.position.y, state.position.z);
@@ -95,7 +111,12 @@ export const restoreCamera = (camera: CameraLike | null, controls: ControlsLike 
   }
   if (camera?.quaternion && state.quaternion) {
     if (typeof camera.quaternion.set === 'function') {
-      camera.quaternion.set(state.quaternion.x, state.quaternion.y, state.quaternion.z, state.quaternion.w);
+      camera.quaternion.set(
+        state.quaternion.x,
+        state.quaternion.y,
+        state.quaternion.z,
+        state.quaternion.w,
+      );
     } else {
       camera.quaternion.x = state.quaternion.x;
       camera.quaternion.y = state.quaternion.y;
@@ -139,17 +160,23 @@ export const snapshotAnimation = (): AnimationSnapshot => {
 
 export const applyAnimationState = (
   clipName: string | undefined,
-  timeSeconds: number
+  timeSeconds: number,
 ): { ok: true } | { ok: false; error: ToolError } => {
   if (!clipName) return { ok: true };
   const globals = readGlobals();
   const animations = getAnimations();
   const clip = animations.find((a) => a.name === clipName);
   if (!clip) {
-    return { ok: false, error: toolError('invalid_payload', ADAPTER_PREVIEW_ANIMATION_CLIP_NOT_FOUND(clipName)) };
+    return {
+      ok: false,
+      error: toolError('invalid_payload', ADAPTER_PREVIEW_ANIMATION_CLIP_NOT_FOUND(clipName)),
+    };
   }
   const maxTime = Number(clip?.length ?? clip?.animation_length ?? clip?.duration ?? NaN);
-  const clampedTime = Number.isFinite(maxTime) && maxTime > 0 ? Math.min(Math.max(timeSeconds, 0), maxTime) : timeSeconds;
+  const clampedTime =
+    Number.isFinite(maxTime) && maxTime > 0
+      ? Math.min(Math.max(timeSeconds, 0), maxTime)
+      : timeSeconds;
   if (typeof clip.select === 'function') {
     clip.select();
   } else if (globals.Animation?.selected) {
@@ -200,7 +227,11 @@ export const normalizeAngle = (angle: [number, number] | [number, number, number
   return [pitch, yaw, roll ?? 0];
 };
 
-export const applyAngle = (controls: ControlsLike | null, camera: CameraLike | null, angle: AngleTuple) => {
+export const applyAngle = (
+  controls: ControlsLike | null,
+  camera: CameraLike | null,
+  angle: AngleTuple,
+) => {
   if (!controls) return;
   const [pitch, yaw, roll] = angle;
   if (Number.isFinite(pitch)) controls.rotateUp?.(pitch * DEG_TO_RAD);
@@ -224,8 +255,10 @@ const applyRoll = (camera: CameraLike | null, radians: number) => {
   }
 };
 
-export const selectPreview = (selected: PreviewItem | null | undefined, all: PreviewItem[]): PreviewItem | null => {
+export const selectPreview = (
+  selected: PreviewItem | null | undefined,
+  all: PreviewItem[],
+): PreviewItem | null => {
   if (selected?.canvas) return selected;
   return all.find((p) => Boolean(p?.canvas)) ?? null;
 };
-

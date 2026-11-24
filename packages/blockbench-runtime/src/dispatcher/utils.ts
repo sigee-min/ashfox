@@ -30,4 +30,3 @@ export const extractGuardMeta = (error: ToolError): Record<string, unknown> => {
   if (typeof record.reason === 'string') meta.reason = record.reason;
   return meta;
 };
-

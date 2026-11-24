@@ -3,17 +3,13 @@ import { validateSchema } from '@ashfox/blockbench-contracts/mcpSchemas/validati
 import type { TextureOpLike } from '@ashfox/blockbench-contracts/types/internal';
 import { createFiniteJsonSnapshot } from '@ashfox/internal-contracts';
 
-export type {
-  TextureOpLike
-} from '@ashfox/blockbench-contracts/types/internal';
+export type { TextureOpLike } from '@ashfox/blockbench-contracts/types/internal';
 
 export const MAX_TEXTURE_OPS = 4096;
 export const TEXTURE_RASTER_MIN_WORK_BUDGET = 262_144;
 export const TEXTURE_RASTER_CANVAS_WORK_MULTIPLIER = 4;
 
-export type TextureRasterFailureReason =
-  | 'invalid_op'
-  | 'raster_work_exceeded';
+export type TextureRasterFailureReason = 'invalid_op' | 'raster_work_exceeded';
 
 export type ClippedTextureLine = {
   x1: number;
@@ -35,7 +31,7 @@ const clippedRectArea = (
   width: number,
   height: number,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
 ): number => {
   const xStart = Math.max(0, Math.floor(x));
   const yStart = Math.max(0, Math.floor(y));
@@ -50,17 +46,12 @@ const clipLineToBounds = (
   minX: number,
   minY: number,
   maxX: number,
-  maxY: number
+  maxY: number,
 ): ClippedTextureLine | null => {
   const dx = line.x2 - line.x1;
   const dy = line.y2 - line.y1;
   const p = [-dx, dx, -dy, dy];
-  const q = [
-    line.x1 - minX,
-    maxX - line.x1,
-    line.y1 - minY,
-    maxY - line.y1
-  ];
+  const q = [line.x1 - minX, maxX - line.x1, line.y1 - minY, maxY - line.y1];
   let start = 0;
   let end = 1;
   for (let index = 0; index < p.length; index += 1) {
@@ -82,14 +73,14 @@ const clipLineToBounds = (
     x1: line.x1 + start * dx,
     y1: line.y1 + start * dy,
     x2: line.x1 + end * dx,
-    y2: line.y1 + end * dy
+    y2: line.y1 + end * dy,
   };
 };
 
 export const clipTextureLineToCanvas = (
   op: Extract<TextureOpLike, { op: 'draw_line' }>,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
 ): ClippedTextureLine | null => {
   const lineWidth = Math.max(1, Math.trunc(op.lineWidth ?? 1));
   const radius = Math.max(0, Math.floor(lineWidth / 2));
@@ -98,76 +89,59 @@ export const clipTextureLineToCanvas = (
     -radius,
     -radius,
     canvasWidth - 1 + radius,
-    canvasHeight - 1 + radius
+    canvasHeight - 1 + radius,
   );
 };
 
 const estimateTextureOpWork = (
   op: TextureOpLike,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
 ): number => {
   switch (op.op) {
     case 'set_pixel':
       return 1;
     case 'fill_rect':
-      return clippedRectArea(
-        op.x,
-        op.y,
-        op.width,
-        op.height,
-        canvasWidth,
-        canvasHeight
-      );
+      return clippedRectArea(op.x, op.y, op.width, op.height, canvasWidth, canvasHeight);
     case 'draw_rect': {
       const lineWidth = Math.max(1, Math.trunc(op.lineWidth ?? 1));
-      return clippedRectArea(
-        op.x,
-        op.y,
-        op.width,
-        lineWidth,
-        canvasWidth,
-        canvasHeight
-      ) + clippedRectArea(
-        op.x,
-        op.y + op.height - lineWidth,
-        op.width,
-        lineWidth,
-        canvasWidth,
-        canvasHeight
-      ) + clippedRectArea(
-        op.x,
-        op.y + lineWidth,
-        lineWidth,
-        op.height - 2 * lineWidth,
-        canvasWidth,
-        canvasHeight
-      ) + clippedRectArea(
-        op.x + op.width - lineWidth,
-        op.y + lineWidth,
-        lineWidth,
-        op.height - 2 * lineWidth,
-        canvasWidth,
-        canvasHeight
+      return (
+        clippedRectArea(op.x, op.y, op.width, lineWidth, canvasWidth, canvasHeight) +
+        clippedRectArea(
+          op.x,
+          op.y + op.height - lineWidth,
+          op.width,
+          lineWidth,
+          canvasWidth,
+          canvasHeight,
+        ) +
+        clippedRectArea(
+          op.x,
+          op.y + lineWidth,
+          lineWidth,
+          op.height - 2 * lineWidth,
+          canvasWidth,
+          canvasHeight,
+        ) +
+        clippedRectArea(
+          op.x + op.width - lineWidth,
+          op.y + lineWidth,
+          lineWidth,
+          op.height - 2 * lineWidth,
+          canvasWidth,
+          canvasHeight,
+        )
       );
     }
     case 'draw_line': {
-      const clipped = clipTextureLineToCanvas(
-        op,
-        canvasWidth,
-        canvasHeight
-      );
+      const clipped = clipTextureLineToCanvas(op, canvasWidth, canvasHeight);
       if (!clipped) return 0;
-      const steps = Math.ceil(Math.max(
-        Math.abs(clipped.x2 - clipped.x1),
-        Math.abs(clipped.y2 - clipped.y1)
-      )) + 1;
+      const steps =
+        Math.ceil(Math.max(Math.abs(clipped.x2 - clipped.x1), Math.abs(clipped.y2 - clipped.y1))) +
+        1;
       const lineWidth = Math.max(1, Math.trunc(op.lineWidth ?? 1));
       const diameter = 2 * Math.floor(lineWidth / 2) + 1;
-      const brushWork = Math.min(
-        canvasWidth * canvasHeight,
-        diameter * diameter
-      );
+      const brushWork = Math.min(canvasWidth * canvasHeight, diameter * diameter);
       return steps * brushWork;
     }
   }
@@ -176,7 +150,7 @@ const estimateTextureOpWork = (
 export const createTextureRasterPlan = (
   inputOps: readonly unknown[],
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
 ): TextureRasterPlan => {
   if (
     !Number.isSafeInteger(canvasWidth) ||
@@ -189,7 +163,7 @@ export const createTextureRasterPlan = (
   const canvasArea = canvasWidth * canvasHeight;
   const budget = Math.max(
     TEXTURE_RASTER_MIN_WORK_BUDGET,
-    canvasArea * TEXTURE_RASTER_CANVAS_WORK_MULTIPLIER
+    canvasArea * TEXTURE_RASTER_CANVAS_WORK_MULTIPLIER,
   );
   const ops: TextureOpLike[] = [];
   let work = 0;

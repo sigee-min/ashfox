@@ -6,7 +6,7 @@ const noopLog = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 } as const;
 
 const run = async () => {
@@ -25,10 +25,10 @@ const run = async () => {
               name: 'demo',
               format: 'Generic Model',
               revision: 'r2',
-              counts: { bones: 0, cubes: 0, textures: 0, animations: 0 }
-            }
-          }
-        } as const)
+              counts: { bones: 0, cubes: 0, textures: 0, animations: 0 },
+            },
+          },
+        }) as const,
     };
 
     const result = await callWithAutoRetry({
@@ -44,12 +44,12 @@ const run = async () => {
           error: {
             code: 'invalid_state_revision_mismatch',
             message: 'revision mismatch',
-            details: { expected: payload.ifRevision, current: 'r2' }
-          }
+            details: { expected: payload.ifRevision, current: 'r2' },
+          },
         };
       },
       service: service as never,
-      log: noopLog as never
+      log: noopLog as never,
     });
 
     assert.equal(calls, 2);
@@ -72,10 +72,10 @@ const run = async () => {
               name: 'demo',
               format: 'Generic Model',
               revision: 'r1',
-              counts: { bones: 0, cubes: 0, textures: 0, animations: 0 }
-            }
-          }
-        } as const)
+              counts: { bones: 0, cubes: 0, textures: 0, animations: 0 },
+            },
+          },
+        }) as const,
     };
 
     const result = await callWithAutoRetry({
@@ -88,12 +88,12 @@ const run = async () => {
           error: {
             code: 'invalid_state_revision_mismatch',
             message: 'revision mismatch',
-            details: { expected: 'r1', current: 'r1' }
-          }
+            details: { expected: 'r1', current: 'r1' },
+          },
         };
       },
       service: service as never,
-      log: noopLog as never
+      log: noopLog as never,
     });
 
     assert.equal(calls, 1);
@@ -103,7 +103,8 @@ const run = async () => {
 };
 
 const pending = run();
-const queue = (globalThis as { __ashfox_test_promises?: Promise<unknown>[] }).__ashfox_test_promises;
+const queue = (globalThis as { __ashfox_test_promises?: Promise<unknown>[] })
+  .__ashfox_test_promises;
 if (Array.isArray(queue)) {
   queue.push(pending);
 }

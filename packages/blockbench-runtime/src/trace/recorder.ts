@@ -1,8 +1,14 @@
-import type { ProjectDiff, ProjectState, ProjectStateDetail, ToolError, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ProjectDiff,
+  ProjectState,
+  ProjectStateDetail,
+  ToolError,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import {
   TRACE_LOG_SCHEMA_VERSION,
   type TraceLogEntry,
-  type TraceLogHeader
+  type TraceLogHeader,
 } from '@ashfox/blockbench-contracts/types/traceLog';
 import type { UsecaseResult } from '../usecases/result';
 import {
@@ -11,14 +17,20 @@ import {
   sanitizeToolResponse,
   sanitizeTraceValue,
   summarizeProjectDiff,
-  summarizeProjectState
+  summarizeProjectState,
 } from './format';
 import { TraceLogStore } from './store';
 import type { TraceLogWriter } from '../ports/traceLog';
 
 export type TraceRecorderDeps = {
-  getProjectState: (payload: { detail: ProjectStateDetail; includeUsage?: boolean }) => UsecaseResult<{ project: ProjectState }>;
-  getProjectDiff: (payload: { sinceRevision: string; detail?: ProjectStateDetail }) => UsecaseResult<{ diff: ProjectDiff }>;
+  getProjectState: (payload: {
+    detail: ProjectStateDetail;
+    includeUsage?: boolean;
+  }) => UsecaseResult<{ project: ProjectState }>;
+  getProjectDiff: (payload: {
+    sinceRevision: string;
+    detail?: ProjectStateDetail;
+  }) => UsecaseResult<{ diff: ProjectDiff }>;
 };
 
 export type TraceRecorderOptions = {
@@ -88,21 +100,19 @@ export class TraceRecorder {
     if (options.onRecord !== undefined) this.onRecord = options.onRecord;
   }
 
-  record(
-    op: string,
-    payload: unknown,
-    response: ToolResponse<unknown>
-  ): ToolError | null {
+  record(op: string, payload: unknown, response: ToolResponse<unknown>): ToolError | null {
     if (!this.enabled) return null;
     let writeError: ToolError | null = null;
     if (!this.headerWritten) {
       const header = this.buildHeader();
       const appended = this.store.append(header);
       if (!appended.text) {
-        return appended.error ?? {
-          code: 'invalid_state',
-          message: 'Trace log header was not accepted.'
-        };
+        return (
+          appended.error ?? {
+            code: 'invalid_state',
+            message: 'Trace log header was not accepted.',
+          }
+        );
       }
       this.headerWritten = true;
       writeError = appended.error ?? null;
@@ -116,10 +126,8 @@ export class TraceRecorder {
       ts: new Date().toISOString(),
       route: 'tool',
       op,
-      ...(sanitizedPayload !== undefined
-        ? { payload: sanitizedPayload }
-        : {}),
-      response: sanitizeToolResponse(response)
+      ...(sanitizedPayload !== undefined ? { payload: sanitizedPayload } : {}),
+      response: sanitizeToolResponse(response),
     };
 
     const detail = this.resolveDetail(op);
@@ -133,26 +141,33 @@ export class TraceRecorder {
     let nextRevision = previousRevision;
     const stateResult = includeState ? this.readState(stateDetail, includeUsage) : null;
     if (stateResult?.ok) {
-      entry.state = stateDetail === 'full'
-        ? normalizeTraceContractValue(stateResult.state)
-        : summarizeProjectState(stateResult.state);
+      entry.state =
+        stateDetail === 'full'
+          ? normalizeTraceContractValue(stateResult.state)
+          : summarizeProjectState(stateResult.state);
       nextRevision = stateResult.state.revision;
     } else if (stateResult && !stateResult.ok) {
       entry.stateError = sanitizeToolError(stateResult.error);
     }
 
-    if (includeDiff && previousRevision && stateResult?.ok && previousRevision !== stateResult.state.revision) {
+    if (
+      includeDiff &&
+      previousRevision &&
+      stateResult?.ok &&
+      previousRevision !== stateResult.state.revision
+    ) {
       const diffResult = this.readDiff(previousRevision, diffDetail);
       if (diffResult.ok) {
         if (diffResult.diff.currentRevision === stateResult.state.revision) {
-          entry.diff = diffDetail === 'full'
-            ? normalizeTraceContractValue(diffResult.diff)
-            : summarizeProjectDiff(diffResult.diff);
+          entry.diff =
+            diffDetail === 'full'
+              ? normalizeTraceContractValue(diffResult.diff)
+              : summarizeProjectDiff(diffResult.diff);
         } else {
           entry.diffError = {
             code: 'invalid_state',
             message: 'Project changed while collecting trace observations.',
-            details: { reason: 'trace_log_observation_revision_changed' }
+            details: { reason: 'trace_log_observation_revision_changed' },
           };
         }
       } else {
@@ -162,10 +177,12 @@ export class TraceRecorder {
 
     const appended = this.store.append(entry);
     if (!appended.text) {
-      return appended.error ?? {
-        code: 'invalid_state',
-        message: 'Trace log step was not accepted.'
-      };
+      return (
+        appended.error ?? {
+          code: 'invalid_state',
+          message: 'Trace log step was not accepted.',
+        }
+      );
     }
     this.seq = nextSeq;
     this.lastRevision = nextRevision;
@@ -187,7 +204,7 @@ export class TraceRecorder {
 
   private readState(
     detail: ProjectStateDetail,
-    includeUsage: boolean
+    includeUsage: boolean,
   ): { ok: true; state: ProjectState } | { ok: false; error: ToolError } {
     const result = this.deps.getProjectState({ detail, includeUsage });
     if (result.ok) return { ok: true, state: result.value.project };
@@ -196,7 +213,7 @@ export class TraceRecorder {
 
   private readDiff(
     sinceRevision: string,
-    detail: ProjectStateDetail
+    detail: ProjectStateDetail,
   ): { ok: true; diff: ProjectDiff } | { ok: false; error: ToolError } {
     const result = this.deps.getProjectDiff({ sinceRevision, detail });
     if (result.ok) return { ok: true, diff: result.value.diff };
@@ -211,7 +228,7 @@ export class TraceRecorder {
       createdAt: new Date().toISOString(),
       ...(this.pluginVersion ? { pluginVersion: this.pluginVersion } : {}),
       ...(this.blockbenchVersion ? { blockbenchVersion: this.blockbenchVersion } : {}),
-      ...(this.includeUsage || detailUsage ? { notes: ['state includes textureUsage'] } : {})
+      ...(this.includeUsage || detailUsage ? { notes: ['state includes textureUsage'] } : {}),
     };
   }
 

@@ -6,7 +6,7 @@ import { runCreateProject } from './projectCreate';
 import {
   readProjectTextureResolution,
   runSetProjectTextureResolution,
-  runSetProjectUvPixelsPerBlock
+  runSetProjectUvPixelsPerBlock,
 } from './projectResolution';
 import { runWriteFile } from './projectWrite';
 
@@ -21,7 +21,7 @@ export class BlockbenchProjectAdapter {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
   ): ToolError | null {
     return runCreateProject(this.log, name, formatId, kind, options);
   }

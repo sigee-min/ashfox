@@ -36,7 +36,7 @@ import type {
   UvPaintSource,
   UvPaintSpec,
   UvPaintTarget,
-  ValidatePayload
+  ValidatePayload,
 } from './tools/payloads';
 import type {
   AutoUvAtlasResult,
@@ -54,14 +54,14 @@ import type {
   SetProjectTextureResolutionResult,
   ToolResultMap,
   ValidateFinding,
-  ValidateResult
+  ValidateResult,
 } from './tools/results';
 import type {
   CubeFaceDirection,
   EnsureProjectAction,
   EnsureProjectMatch,
   EnsureProjectOnMismatch,
-  EnsureProjectOnMissing
+  EnsureProjectOnMissing,
 } from './shared';
 
 export type {
@@ -70,7 +70,7 @@ export type {
   EnsureProjectOnMismatch,
   EnsureProjectOnMissing,
   EnsureProjectAction,
-  CubeFaceDirection
+  CubeFaceDirection,
 };
 
 export type { UvPaintMapping, UvPaintScope, UvPaintSource, UvPaintSpec, UvPaintTarget };
@@ -107,7 +107,7 @@ export type {
   UpdateCubePayload,
   UpdateMeshPayload,
   UpdateAnimationClipPayload,
-  ValidatePayload
+  ValidatePayload,
 };
 
 export type {
@@ -126,7 +126,7 @@ export type {
   SetProjectTextureResolutionResult,
   ToolResultMap,
   ValidateFinding,
-  ValidateResult
+  ValidateResult,
 };
 
 export interface ToolPayloadMap {
@@ -161,6 +161,6 @@ export interface ToolPayloadMap {
 export interface Dispatcher {
   handle<TName extends ToolName>(
     name: TName,
-    payload: ToolPayloadMap[TName]
+    payload: ToolPayloadMap[TName],
   ): Promise<ToolResponse<ToolResultMap[TName]>>;
 }

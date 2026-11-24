@@ -6,7 +6,7 @@ import { buildProjectDialogDefaults } from '../../../src/domain/project/dialog';
   const defaults = buildProjectDialogDefaults({
     format: 'Java Block/Item',
     formatId: 'java_block',
-    name: 'flowerpot_block'
+    name: 'flowerpot_block',
   });
   assert.equal(defaults.format, 'java_block');
   assert.equal(defaults.parent, 'block/cube');
@@ -16,7 +16,7 @@ import { buildProjectDialogDefaults } from '../../../src/domain/project/dialog';
   const defaults = buildProjectDialogDefaults({
     format: 'Java Block/Item',
     formatId: 'java_block',
-    name: 'flowerpot_item'
+    name: 'flowerpot_item',
   });
   assert.equal(defaults.parent, 'item/generated');
 }
@@ -25,7 +25,7 @@ import { buildProjectDialogDefaults } from '../../../src/domain/project/dialog';
   const defaults = buildProjectDialogDefaults({
     format: 'geckolib',
     formatId: 'geckolib_model',
-    name: 'dragon'
+    name: 'dragon',
   });
   assert.equal(defaults.format, 'geckolib_model');
   assert.equal(defaults.parent, undefined);
@@ -35,7 +35,7 @@ import { buildProjectDialogDefaults } from '../../../src/domain/project/dialog';
   const defaults = buildProjectDialogDefaults({
     format: 'animated_java',
     formatId: null,
-    name: 'anim'
+    name: 'anim',
   });
   assert.equal(defaults.format, 'animated_java');
 }

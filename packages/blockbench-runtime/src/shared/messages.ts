@@ -5,7 +5,7 @@ export {
   buildUvGuardMessages,
   buildUvPaintMessages,
   buildUvPaintPixelMessages,
-  buildUvPaintSourceMessages
+  buildUvPaintSourceMessages,
 } from './messageBundles/uv';
 
 export { buildValidationMessages } from './messageBundles/validation';
@@ -59,7 +59,7 @@ export {
   TEXTURE_RENDERER_NO_IMAGE,
   TEXTURE_RENDERER_UNAVAILABLE,
   UV_PAINT_SOURCE_DATA_MISMATCH,
-  UV_PAINT_SOURCE_TARGET_POSITIVE
+  UV_PAINT_SOURCE_TARGET_POSITIVE,
 } from './messages/texture/paint';
 export {
   TEXTURE_AUTO_UV_DENSITY_UPDATE_UNAVAILABLE,
@@ -72,7 +72,7 @@ export {
   TEXTURE_FACE_UV_SKEWED_RECTS,
   TEXTURE_FACE_UV_SMALL_RECTS,
   UV_ASSIGNMENT_FACES_NON_EMPTY,
-  UV_SCALE_MESSAGE
+  UV_SCALE_MESSAGE,
 } from './messages/texture/uv';
 
 export {
@@ -99,5 +99,5 @@ export {
   TOOL_HINT_NO_CHANGE,
   TOOL_HINT_UNKNOWN,
   TOOL_HINT_UNSUPPORTED_FORMAT,
-  TOOL_RESPONSE_MALFORMED
+  TOOL_RESPONSE_MALFORMED,
 } from './messages/tool';

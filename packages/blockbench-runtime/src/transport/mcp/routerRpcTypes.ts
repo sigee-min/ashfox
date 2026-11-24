@@ -6,8 +6,7 @@ import type { SessionStore } from './session';
 import type { ToolRegistry } from './tools';
 
 export type RpcOutcome =
-  | { type: 'notification' }
-  | { type: 'response'; response: JsonRpcResponse; status: number };
+  { type: 'notification' } | { type: 'response'; response: JsonRpcResponse; status: number };
 
 export type RpcContext = {
   executor: ToolExecutor;

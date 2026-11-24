@@ -1,41 +1,46 @@
 import assert from 'node:assert/strict';
 
-import { handleResourceTemplatesList, handleResourcesList, handleResourcesRead } from '../../../blockbench-runtime/src/transport/mcp/routerRpcResources';
+import {
+  handleResourceTemplatesList,
+  handleResourcesList,
+  handleResourcesRead,
+} from '../../../blockbench-runtime/src/transport/mcp/routerRpcResources';
 import type { RpcContext } from '../../../blockbench-runtime/src/transport/mcp/routerRpcTypes';
 import type { ToolExecutor } from '../../../blockbench-runtime/src/transport/mcp/executor';
 import type { ToolRegistry } from '../../../blockbench-runtime/src/transport/mcp/tools';
 import type { ResourceStore } from '../../../blockbench-runtime/src/ports/resources';
 import { SessionStore } from '../../../blockbench-runtime/src/transport/mcp/session';
-import { MCP_RESOURCE_NOT_FOUND, MCP_URI_REQUIRED } from '../../../blockbench-runtime/src/shared/messages';
+import {
+  MCP_RESOURCE_NOT_FOUND,
+  MCP_URI_REQUIRED,
+} from '../../../blockbench-runtime/src/shared/messages';
 
 const noopLog = {
   log: () => undefined,
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 } as const;
 
-const resources = (
-  overrides: Partial<ResourceStore> = {}
-): ResourceStore => ({
+const resources = (overrides: Partial<ResourceStore> = {}): ResourceStore => ({
   list: () => [],
   read: () => null,
   listTemplates: () => [],
   has: () => false,
   put: () => undefined,
-  ...overrides
+  ...overrides,
 });
 
 const createContext = (resources?: RpcContext['resources']): RpcContext => {
   const executor: ToolExecutor = {
-    callTool: async () => ({ ok: true, data: {} })
+    callTool: async () => ({ ok: true, data: {} }),
   };
   const toolRegistry: ToolRegistry = {
     tools: [],
     map: new Map(),
     hash: 'conformance',
-    count: 0
+    count: 0,
   };
   return {
     executor,
@@ -43,7 +48,7 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
     resources,
     toolRegistry,
     sessions: new SessionStore(),
-    config: { path: '/mcp' }
+    config: { path: '/mcp' },
   };
 };
 
@@ -60,7 +65,7 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
   const missingUri = handleResourcesRead(
     createContext(),
     { jsonrpc: '2.0', method: 'resources/read', params: {} },
-    2
+    2,
   );
   assert.equal(missingUri.type, 'response');
   if (missingUri.type === 'response') {
@@ -73,7 +78,7 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
   const notFound = handleResourcesRead(
     createContext(resources()),
     { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'ashfox://missing' } },
-    3
+    3,
   );
   assert.equal(notFound.type, 'response');
   if (notFound.type === 'response') {
@@ -84,11 +89,17 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
 
 {
   const readOk = handleResourcesRead(
-    createContext(resources({
-      read: (uri) => ({ uri, mimeType: 'application/json', text: '{"ok":true}' }),
-    })),
-    { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'ashfox://logs/trace-report.json' } },
-    4
+    createContext(
+      resources({
+        read: (uri) => ({ uri, mimeType: 'application/json', text: '{"ok":true}' }),
+      }),
+    ),
+    {
+      jsonrpc: '2.0',
+      method: 'resources/read',
+      params: { uri: 'ashfox://logs/trace-report.json' },
+    },
+    4,
   );
   assert.equal(readOk.type, 'response');
   if (readOk.type === 'response') {
@@ -98,26 +109,28 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
         {
           uri: 'ashfox://logs/trace-report.json',
           mimeType: 'application/json',
-          text: '{"ok":true}'
-        }
-      ]
+          text: '{"ok":true}',
+        },
+      ],
     });
   }
 }
 
 {
   const templates = handleResourceTemplatesList(
-    createContext(resources({
-      listTemplates: () => [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }]
-    })),
-    5
+    createContext(
+      resources({
+        listTemplates: () => [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }],
+      }),
+    ),
+    5,
   );
   assert.equal(templates.type, 'response');
   if (templates.type === 'response') {
     assert.equal(templates.status, 200);
     assert.deepEqual(templates.response.result, {
       resourceTemplates: [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }],
-      nextCursor: null
+      nextCursor: null,
     });
   }
 }

@@ -1,4 +1,8 @@
-import type { AutoUvAtlasPayload, AutoUvAtlasResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  AutoUvAtlasPayload,
+  AutoUvAtlasResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { EditorPort } from '../../ports/editor';
 import type { SessionState } from '../../session';
 import type { UsecaseResult } from '../result';
@@ -32,6 +36,6 @@ export const createCubeMutationPolicy = (deps: {
       return null;
     },
     afterAddCube: () => runAutoUv(true),
-    afterUpdateCube: (geometryChanged: boolean) => runAutoUv(geometryChanged)
+    afterUpdateCube: (geometryChanged: boolean) => runAutoUv(geometryChanged),
   };
 };

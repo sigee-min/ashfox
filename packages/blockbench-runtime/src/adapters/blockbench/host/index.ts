@@ -32,5 +32,3 @@ const normalizeDelay = (value: number): number => {
   const rounded = Math.max(0, Math.trunc(value));
   return Math.min(rounded, MAX_DELAY_MS);
 };
-
-

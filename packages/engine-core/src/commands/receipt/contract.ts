@@ -3,7 +3,7 @@ import {
   isCanonicalIsoDate,
   isClosedContractRecord,
   isNonEmptyContractText,
-  isUniqueContractTextArray
+  isUniqueContractTextArray,
 } from '@ashfox/internal-contracts';
 
 import { INVARIANT_SEVERITIES } from '../../validation/contract';
@@ -12,7 +12,7 @@ import {
   COMMAND_RECEIPT_SCHEMA_VERSION,
   COMMAND_SOURCES,
   type CommandEffects,
-  type CommandReceipt
+  type CommandReceipt,
 } from '../types';
 
 const RECEIPT_KEYS = new Set([
@@ -27,32 +27,19 @@ const RECEIPT_KEYS = new Set([
   'completedAt',
   'durationMs',
   'effects',
-  'findings'
+  'findings',
 ]);
 const EFFECT_KEYS = new Set([
   'createdEntityIds',
   'changedEntityIds',
   'removedEntityIds',
-  'invalidated'
+  'invalidated',
 ]);
-const FINDING_REQUIRED_KEYS = [
-  'code',
-  'severity',
-  'message',
-  'path'
-] as const;
-const FINDING_OPTIONAL_KEYS = [
-  'entityIds',
-  'assetIds',
-  'clipIds',
-  'fix'
-] as const;
+const FINDING_REQUIRED_KEYS = ['code', 'severity', 'message', 'path'] as const;
+const FINDING_OPTIONAL_KEYS = ['entityIds', 'assetIds', 'clipIds', 'fix'] as const;
 
 const isCommandEffects = (value: unknown): value is CommandEffects => {
-  if (
-    !isClosedContractRecord(value) ||
-    !hasExactContractKeys(value, EFFECT_KEYS)
-  ) {
+  if (!isClosedContractRecord(value) || !hasExactContractKeys(value, EFFECT_KEYS)) {
     return false;
   }
   if (
@@ -64,9 +51,7 @@ const isCommandEffects = (value: unknown): value is CommandEffects => {
     return false;
   }
   return value.invalidated.every((area) =>
-    COMMAND_INVALIDATED_AREAS.includes(
-      area as (typeof COMMAND_INVALIDATED_AREAS)[number]
-    )
+    COMMAND_INVALIDATED_AREAS.includes(area as (typeof COMMAND_INVALIDATED_AREAS)[number]),
   );
 };
 
@@ -79,31 +64,23 @@ const isInvariantFinding = (value: unknown): boolean => {
   if (!hasExactContractKeys(value, expectedKeys)) return false;
   if (
     !isNonEmptyContractText(value.code) ||
-    !INVARIANT_SEVERITIES.includes(
-      value.severity as (typeof INVARIANT_SEVERITIES)[number]
-    ) ||
+    !INVARIANT_SEVERITIES.includes(value.severity as (typeof INVARIANT_SEVERITIES)[number]) ||
     !isNonEmptyContractText(value.message) ||
     typeof value.path !== 'string'
   ) {
     return false;
   }
   for (const key of ['entityIds', 'assetIds', 'clipIds'] as const) {
-    if (
-      key in value &&
-      value[key] !== undefined &&
-      !isUniqueContractTextArray(value[key])
-    ) {
+    if (key in value && value[key] !== undefined && !isUniqueContractTextArray(value[key])) {
       return false;
     }
   }
-  return !('fix' in value) ||
-    value.fix === undefined ||
-    isNonEmptyContractText(value.fix);
+  return !('fix' in value) || value.fix === undefined || isNonEmptyContractText(value.fix);
 };
 
 export const isValidCommandReceipt = (
   value: unknown,
-  expectedProjectId?: string
+  expectedProjectId?: string,
 ): value is CommandReceipt => {
   if (
     !isClosedContractRecord(value) ||
@@ -112,9 +89,7 @@ export const isValidCommandReceipt = (
     !isNonEmptyContractText(value.commandId) ||
     !isNonEmptyContractText(value.projectId) ||
     !isNonEmptyContractText(value.actorId) ||
-    !COMMAND_SOURCES.includes(
-      value.source as (typeof COMMAND_SOURCES)[number]
-    ) ||
+    !COMMAND_SOURCES.includes(value.source as (typeof COMMAND_SOURCES)[number]) ||
     !isNonEmptyContractText(value.summary) ||
     !isNonEmptyContractText(value.beforeRevision) ||
     !isNonEmptyContractText(value.revision) ||
@@ -128,8 +103,7 @@ export const isValidCommandReceipt = (
   ) {
     return false;
   }
-  return expectedProjectId === undefined ||
-    value.projectId === expectedProjectId;
+  return expectedProjectId === undefined || value.projectId === expectedProjectId;
 };
 
 export interface CommandReceiptLedgerOptions {
@@ -139,7 +113,7 @@ export interface CommandReceiptLedgerOptions {
 
 export const isValidCommandReceiptLedger = (
   value: unknown,
-  options: CommandReceiptLedgerOptions
+  options: CommandReceiptLedgerOptions,
 ): value is readonly CommandReceipt[] => {
   if (
     !Array.isArray(value) ||
@@ -154,10 +128,7 @@ export const isValidCommandReceiptLedger = (
   for (const entry of value) {
     if (!isValidCommandReceipt(entry, options.projectId)) return false;
     if (commandIds.has(entry.commandId)) return false;
-    if (
-      previousCompletedAt !== null &&
-      previousCompletedAt < entry.completedAt
-    ) {
+    if (previousCompletedAt !== null && previousCompletedAt < entry.completedAt) {
       return false;
     }
     commandIds.add(entry.commandId);

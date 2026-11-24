@@ -12,13 +12,16 @@ type ValidationContext = {
   messages: UvPaintMessages;
 };
 
-type ValidationRule = (value: Record<string, unknown>, ctx: ValidationContext) => DomainResult<unknown> | null;
+type ValidationRule = (
+  value: Record<string, unknown>,
+  ctx: ValidationContext,
+) => DomainResult<unknown> | null;
 
 export const validateUvPaintSpec = (
   value: unknown,
   limits: Limits,
   label: string,
-  messages: UvPaintMessages
+  messages: UvPaintMessages,
 ): DomainResult<unknown> => {
   if (!isRecord(value)) {
     return err('invalid_payload', messages.objectRequired(label));
@@ -27,7 +30,8 @@ export const validateUvPaintSpec = (
   const context: ValidationContext = { limits, label, messages };
   const topLevelRules: ValidationRule[] = [
     (candidate, innerCtx) =>
-      candidate.scope !== undefined && !['faces', 'rects', 'bounds'].includes(String(candidate.scope))
+      candidate.scope !== undefined &&
+      !['faces', 'rects', 'bounds'].includes(String(candidate.scope))
         ? err('invalid_payload', innerCtx.messages.scopeInvalid(innerCtx.label))
         : null,
     (candidate, innerCtx) =>
@@ -35,12 +39,13 @@ export const validateUvPaintSpec = (
         ? err('invalid_payload', innerCtx.messages.mappingInvalid(innerCtx.label))
         : null,
     (candidate, innerCtx) =>
-      candidate.padding !== undefined && (!isFiniteNumber(candidate.padding) || candidate.padding < 0)
+      candidate.padding !== undefined &&
+      (!isFiniteNumber(candidate.padding) || candidate.padding < 0)
         ? err('invalid_payload', innerCtx.messages.paddingInvalid(innerCtx.label))
         : null,
     validateAnchor,
     validateSource,
-    validateTarget
+    validateTarget,
   ];
   for (const rule of topLevelRules) {
     const failed = rule(record, context);
@@ -49,7 +54,10 @@ export const validateUvPaintSpec = (
   return { ok: true, data: { valid: true } };
 };
 
-function validateAnchor(value: Record<string, unknown>, ctx: ValidationContext): DomainResult<unknown> | null {
+function validateAnchor(
+  value: Record<string, unknown>,
+  ctx: ValidationContext,
+): DomainResult<unknown> | null {
   if (value.anchor === undefined) return null;
   if (!Array.isArray(value.anchor) || value.anchor.length !== 2) {
     return err('invalid_payload', ctx.messages.anchorFormat(ctx.label));
@@ -60,7 +68,10 @@ function validateAnchor(value: Record<string, unknown>, ctx: ValidationContext):
   return null;
 }
 
-function validateSource(value: Record<string, unknown>, ctx: ValidationContext): DomainResult<unknown> | null {
+function validateSource(
+  value: Record<string, unknown>,
+  ctx: ValidationContext,
+): DomainResult<unknown> | null {
   if (value.source === undefined) return null;
   if (!isRecord(value.source)) {
     return err('invalid_payload', ctx.messages.sourceObject(ctx.label));
@@ -74,12 +85,18 @@ function validateSource(value: Record<string, unknown>, ctx: ValidationContext):
     return err('invalid_payload', ctx.messages.sourcePositive(ctx.label));
   }
   if (width > ctx.limits.maxTextureSize || height > ctx.limits.maxTextureSize) {
-    return err('invalid_payload', ctx.messages.sourceExceedsMax(ctx.limits.maxTextureSize, ctx.label));
+    return err(
+      'invalid_payload',
+      ctx.messages.sourceExceedsMax(ctx.limits.maxTextureSize, ctx.label),
+    );
   }
   return null;
 }
 
-function validateTarget(value: Record<string, unknown>, ctx: ValidationContext): DomainResult<unknown> | null {
+function validateTarget(
+  value: Record<string, unknown>,
+  ctx: ValidationContext,
+): DomainResult<unknown> | null {
   if (value.target === undefined) return null;
   if (!isRecord(value.target)) {
     return err('invalid_payload', ctx.messages.targetObject(ctx.label));
@@ -89,14 +106,14 @@ function validateTarget(value: Record<string, unknown>, ctx: ValidationContext):
   const cubeIdsValidation = validateNonEmptyStringArray(
     target.cubeIds,
     () => ctx.messages.targetCubeIdsRequired(ctx.label),
-    () => ctx.messages.targetCubeIdsString(ctx.label)
+    () => ctx.messages.targetCubeIdsString(ctx.label),
   );
   if (cubeIdsValidation) return cubeIdsValidation;
 
   const cubeNamesValidation = validateNonEmptyStringArray(
     target.cubeNames,
     () => ctx.messages.targetCubeNamesRequired(ctx.label),
-    () => ctx.messages.targetCubeNamesString(ctx.label)
+    () => ctx.messages.targetCubeNamesString(ctx.label),
   );
   if (cubeNamesValidation) return cubeNamesValidation;
 
@@ -105,7 +122,7 @@ function validateTarget(value: Record<string, unknown>, ctx: ValidationContext):
       return err('invalid_payload', ctx.messages.targetFacesRequired(ctx.label));
     }
     const valid = target.faces.every(
-      (face: unknown) => typeof face === 'string' && VALID_FACES.has(face)
+      (face: unknown) => typeof face === 'string' && VALID_FACES.has(face),
     );
     if (!valid) {
       return err('invalid_payload', ctx.messages.targetFacesInvalid(ctx.label));
@@ -117,7 +134,7 @@ function validateTarget(value: Record<string, unknown>, ctx: ValidationContext):
 const validateNonEmptyStringArray = (
   value: unknown,
   required: () => string,
-  invalidType: () => string
+  invalidType: () => string,
 ): DomainResult<unknown> | null => {
   if (value === undefined) return null;
   if (!Array.isArray(value) || value.length === 0) {
@@ -131,8 +148,8 @@ const validateNonEmptyStringArray = (
 
 const err = <T = never>(
   code: 'invalid_payload' | 'invalid_state',
-  message: string
+  message: string,
 ): DomainResult<T> => ({
   ok: false,
-  error: { code, message }
+  error: { code, message },
 });

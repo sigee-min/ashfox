@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isTraceLogHeader,
   isTraceLogEntry,
-  TRACE_LOG_SCHEMA_VERSION
+  TRACE_LOG_SCHEMA_VERSION,
 } from '@ashfox/blockbench-contracts/types/traceLog';
 
 import { buildTraceLogReport } from '../../src/trace/report';
@@ -11,7 +11,7 @@ import { buildTraceLogReport } from '../../src/trace/report';
 const line = (value: unknown): string => JSON.stringify(value);
 const header = (
   schemaVersion: number = TRACE_LOG_SCHEMA_VERSION,
-  createdAt = '2026-01-01T00:00:00.000Z'
+  createdAt = '2026-01-01T00:00:00.000Z',
 ): string => line({ kind: 'header', schemaVersion, createdAt });
 const zeroCounts = () => ({ added: 0, removed: 0, changed: 0 });
 const diff = (changedKind: 'cubes' | 'textures') => ({
@@ -21,14 +21,14 @@ const diff = (changedKind: 'cubes' | 'textures') => ({
     bones: zeroCounts(),
     cubes: {
       ...zeroCounts(),
-      changed: changedKind === 'cubes' ? 1 : 0
+      changed: changedKind === 'cubes' ? 1 : 0,
     },
     textures: {
       ...zeroCounts(),
-      changed: changedKind === 'textures' ? 2 : 0
+      changed: changedKind === 'textures' ? 2 : 0,
     },
-    animations: zeroCounts()
-  }
+    animations: zeroCounts(),
+  },
 });
 const state = (revision: string) => ({
   id: 'project',
@@ -42,8 +42,8 @@ const state = (revision: string) => ({
     meshVertices: 0,
     meshFaces: 0,
     textures: 0,
-    animations: 0
-  }
+    animations: 0,
+  },
 });
 
 {
@@ -59,34 +59,40 @@ const state = (revision: string) => ({
 {
   const sparse = new Array(1);
   const sparseTuple = new Array(3);
-  assert.equal(isTraceLogHeader({
-    kind: 'header',
-    schemaVersion: TRACE_LOG_SCHEMA_VERSION,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    notes: sparse
-  }), false);
-  assert.equal(isTraceLogEntry({
-    kind: 'step',
-    seq: 1,
-    ts: '2026-01-01T00:00:01.000Z',
-    route: 'tool',
-    op: 'sparse-state',
-    response: { ok: true },
-    state: {
-      id: 'project',
-      active: true,
-      name: null,
-      format: null,
-      revision: 'r1',
-      counts: {
-        bones: 1,
-        cubes: 0,
-        textures: 0,
-        animations: 0
+  assert.equal(
+    isTraceLogHeader({
+      kind: 'header',
+      schemaVersion: TRACE_LOG_SCHEMA_VERSION,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      notes: sparse,
+    }),
+    false,
+  );
+  assert.equal(
+    isTraceLogEntry({
+      kind: 'step',
+      seq: 1,
+      ts: '2026-01-01T00:00:01.000Z',
+      route: 'tool',
+      op: 'sparse-state',
+      response: { ok: true },
+      state: {
+        id: 'project',
+        active: true,
+        name: null,
+        format: null,
+        revision: 'r1',
+        counts: {
+          bones: 1,
+          cubes: 0,
+          textures: 0,
+          animations: 0,
+        },
+        bones: [{ name: 'root', pivot: sparseTuple }],
       },
-      bones: [{ name: 'root', pivot: sparseTuple }]
-    }
-  }), false);
+    }),
+    false,
+  );
 }
 
 {
@@ -95,34 +101,32 @@ const state = (revision: string) => ({
   assert.equal(report.steps, 0);
   assert.equal(report.errors, 1);
   assert.equal(report.lastError?.code, 'invalid_payload');
-  assert.match(
-    report.warnings?.[0] ?? '',
-    new RegExp(`must be v${TRACE_LOG_SCHEMA_VERSION}`)
-  );
+  assert.match(report.warnings?.[0] ?? '', new RegExp(`must be v${TRACE_LOG_SCHEMA_VERSION}`));
 }
 
 {
-  const report = buildTraceLogReport([
-    line({
-      kind: 'step',
-      seq: 1,
-      ts: '2026-01-01T00:00:00.000Z',
-      route: 'tool',
-      op: 'noop',
-      response: { ok: true }
-    }),
-    header(TRACE_LOG_SCHEMA_VERSION, '2026-01-01T00:00:01.000Z')
-  ].join('\n'));
+  const report = buildTraceLogReport(
+    [
+      line({
+        kind: 'step',
+        seq: 1,
+        ts: '2026-01-01T00:00:00.000Z',
+        route: 'tool',
+        op: 'noop',
+        response: { ok: true },
+      }),
+      header(TRACE_LOG_SCHEMA_VERSION, '2026-01-01T00:00:01.000Z'),
+    ].join('\n'),
+  );
   assert.equal(report.steps, 0);
   assert.equal(report.errors, 1);
   assert.equal(report.lastError?.code, 'invalid_payload');
 }
 
 {
-  const report = buildTraceLogReport([
-    header(2),
-    header(TRACE_LOG_SCHEMA_VERSION, '2026-01-01T00:00:01.000Z')
-  ].join('\n'));
+  const report = buildTraceLogReport(
+    [header(2), header(TRACE_LOG_SCHEMA_VERSION, '2026-01-01T00:00:01.000Z')].join('\n'),
+  );
   assert.equal(report.steps, 0);
   assert.equal(report.errors, 1);
   assert.equal(report.lastError?.code, 'invalid_payload');
@@ -138,7 +142,7 @@ const state = (revision: string) => ({
       route: 'tool',
       op: 'unknown-field',
       response: { ok: true },
-      extra: true
+      extra: true,
     },
     {
       kind: 'step',
@@ -147,7 +151,7 @@ const state = (revision: string) => ({
       route: 'tool',
       op: 'bad-diff',
       response: { ok: true },
-      diff: {}
+      diff: {},
     },
     {
       kind: 'step',
@@ -155,7 +159,7 @@ const state = (revision: string) => ({
       ts: '2026-01-01T00:00:03.000Z',
       route: 'tool',
       op: 'missing-failure-error',
-      response: { ok: false }
+      response: { ok: false },
     },
     {
       kind: 'step',
@@ -165,8 +169,8 @@ const state = (revision: string) => ({
       op: 'mixed-success-response',
       response: {
         ok: true,
-        error: { code: 'unknown', message: 'must not coexist' }
-      }
+        error: { code: 'unknown', message: 'must not coexist' },
+      },
     },
     {
       kind: 'step',
@@ -176,8 +180,8 @@ const state = (revision: string) => ({
       op: 'unknown-error-code',
       response: {
         ok: false,
-        error: { code: 'invented', message: 'not in the contract' }
-      }
+        error: { code: 'invented', message: 'not in the contract' },
+      },
     },
     {
       kind: 'step',
@@ -196,10 +200,10 @@ const state = (revision: string) => ({
           bones: 1,
           cubes: 0,
           textures: 0,
-          animations: 0
+          animations: 0,
         },
-        bones: [{ name: 'root', pivot: [0, 0, 0], extra: true }]
-      }
+        bones: [{ name: 'root', pivot: [0, 0, 0], extra: true }],
+      },
     },
     {
       kind: 'step',
@@ -213,9 +217,9 @@ const state = (revision: string) => ({
         cubes: {
           added: [{ key: 'cube', item: { name: 'missing-shape' } }],
           removed: [],
-          changed: []
-        }
-      }
+          changed: [],
+        },
+      },
     },
     {
       kind: 'step',
@@ -234,10 +238,10 @@ const state = (revision: string) => ({
           bones: 2,
           cubes: 0,
           textures: 0,
-          animations: 0
+          animations: 0,
         },
-        bones: [{ name: 'root', pivot: [0, 0, 0] }]
-      }
+        bones: [{ name: 'root', pivot: [0, 0, 0] }],
+      },
     },
     {
       kind: 'step',
@@ -251,57 +255,60 @@ const state = (revision: string) => ({
         textures: {
           added: [],
           removed: [],
-          changed: []
-        }
-      }
-    }
+          changed: [],
+        },
+      },
+    },
   ];
   malformedSteps.forEach((entry) => {
     assert.equal(isTraceLogEntry(entry), false);
   });
-  const report = buildTraceLogReport([
-    header(),
-    ...malformedSteps.map(line)
-  ].join('\n'));
+  const report = buildTraceLogReport([header(), ...malformedSteps.map(line)].join('\n'));
   assert.equal(report.steps, 0);
   assert.equal(report.errors, 0);
   assert.equal(report.warnings?.length, malformedSteps.length);
 }
 
 {
-  assert.equal(isTraceLogEntry({
-    kind: 'step',
-    seq: 1,
-    ts: '2026-01-01T00:00:01.000Z',
-    route: 'tool',
-    op: 'non-finite-details',
-    response: {
-      ok: false,
-      error: {
-        code: 'unknown',
-        message: 'boom',
-        details: { value: Number.NaN }
-      }
-    }
-  }), false);
+  assert.equal(
+    isTraceLogEntry({
+      kind: 'step',
+      seq: 1,
+      ts: '2026-01-01T00:00:01.000Z',
+      route: 'tool',
+      op: 'non-finite-details',
+      response: {
+        ok: false,
+        error: {
+          code: 'unknown',
+          message: 'boom',
+          details: { value: Number.NaN },
+        },
+      },
+    }),
+    false,
+  );
 }
 
 {
-  const step = (seq: number, ts: string) => line({
-    kind: 'step',
-    seq,
-    ts,
-    route: 'tool',
-    op: `step-${seq}`,
-    response: { ok: true }
-  });
-  const report = buildTraceLogReport([
-    header(),
-    step(2, '2026-01-01T00:00:02.000Z'),
-    step(2, '2026-01-01T00:00:03.000Z'),
-    step(1, '2026-01-01T00:00:04.000Z'),
-    step(4, '2026-01-01T00:00:05.000Z')
-  ].join('\n'));
+  const step = (seq: number, ts: string) =>
+    line({
+      kind: 'step',
+      seq,
+      ts,
+      route: 'tool',
+      op: `step-${seq}`,
+      response: { ok: true },
+    });
+  const report = buildTraceLogReport(
+    [
+      header(),
+      step(2, '2026-01-01T00:00:02.000Z'),
+      step(2, '2026-01-01T00:00:03.000Z'),
+      step(1, '2026-01-01T00:00:04.000Z'),
+      step(4, '2026-01-01T00:00:05.000Z'),
+    ].join('\n'),
+  );
   assert.equal(report.steps, 2);
   assert.equal(report.warnings?.length, 3);
   assert.deepEqual(Object.keys(report.ops), ['step-2', 'step-4']);
@@ -317,8 +324,8 @@ const state = (revision: string) => ({
       bones: 0,
       cubes: 0,
       textures: 0,
-      animations: 0
-    }
+      animations: 0,
+    },
   };
   const error = { code: 'unknown', message: 'failed' };
   const baseStep = {
@@ -327,73 +334,80 @@ const state = (revision: string) => ({
     ts: '2026-01-01T00:00:01.000Z',
     route: 'tool',
     op: 'branch-contract',
-    response: { ok: true }
+    response: { ok: true },
   };
-  assert.equal(isTraceLogEntry({
-    ...baseStep,
-    state,
-    stateError: error
-  }), false);
-  assert.equal(isTraceLogEntry({
-    ...baseStep,
-    state,
-    diff: diff('cubes'),
-    diffError: error
-  }), false);
-  assert.equal(isTraceLogEntry({
-    ...baseStep,
-    stateError: error,
-    diff: diff('cubes')
-  }), false);
+  assert.equal(
+    isTraceLogEntry({
+      ...baseStep,
+      state,
+      stateError: error,
+    }),
+    false,
+  );
+  assert.equal(
+    isTraceLogEntry({
+      ...baseStep,
+      state,
+      diff: diff('cubes'),
+      diffError: error,
+    }),
+    false,
+  );
+  assert.equal(
+    isTraceLogEntry({
+      ...baseStep,
+      stateError: error,
+      diff: diff('cubes'),
+    }),
+    false,
+  );
 }
 
 {
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(Object.prototype, 'count'),
-    false
+  assert.equal(Object.prototype.hasOwnProperty.call(Object.prototype, 'count'), false);
+  const report = buildTraceLogReport(
+    [
+      header(),
+      line({
+        kind: 'step',
+        seq: 1,
+        ts: '2026-01-01T00:00:01.000Z',
+        route: 'tool',
+        op: '__proto__',
+        response: { ok: true },
+      }),
+    ].join('\n'),
   );
-  const report = buildTraceLogReport([
-    header(),
-    line({
-      kind: 'step',
-      seq: 1,
-      ts: '2026-01-01T00:00:01.000Z',
-      route: 'tool',
-      op: '__proto__',
-      response: { ok: true }
-    })
-  ].join('\n'));
   assert.equal(report.ops.__proto__?.count, 1);
-  assert.equal(
-    Object.prototype.hasOwnProperty.call(Object.prototype, 'count'),
-    false
-  );
+  assert.equal(Object.prototype.hasOwnProperty.call(Object.prototype, 'count'), false);
 }
 
 {
-  const report = buildTraceLogReport([
-    header(),
-    line({
-      kind: 'step',
-      seq: 1,
-      ts: '2026-01-01T00:00:01.000Z',
-      route: 'tool',
-      op: 'mesh-update',
-      response: { ok: true },
-      state: state('r1'),
-      diff: {
-        sinceRevision: 'r0',
-        currentRevision: 'r1',
-        counts: {
-          bones: zeroCounts(),
-          cubes: zeroCounts(),
-          meshes: { ...zeroCounts(), changed: 1 },
-          textures: zeroCounts(),
-          animations: zeroCounts()
-        }
-      }
-    })
-  ].join('\n'));
+  const report = buildTraceLogReport(
+    [
+      header(),
+      line({
+        kind: 'step',
+        seq: 1,
+        ts: '2026-01-01T00:00:01.000Z',
+        route: 'tool',
+        op: 'mesh-update',
+        response: { ok: true },
+        state: state('r1'),
+        diff: {
+          sinceRevision: 'r0',
+          currentRevision: 'r1',
+          counts: {
+            bones: zeroCounts(),
+            cubes: zeroCounts(),
+            meshes: { ...zeroCounts(), changed: 1 },
+            textures: zeroCounts(),
+            animations: zeroCounts(),
+          },
+        },
+      }),
+    ].join('\n'),
+  );
   assert.equal(report.diffCounts?.meshes?.changed, 1);
 }
 
@@ -401,34 +415,35 @@ const state = (revision: string) => ({
   const records = [header()];
   for (let seq = 1; seq <= 3; seq += 1) {
     const revision = `overflow-r${seq}`;
-    records.push(line({
-      kind: 'step',
-      seq,
-      ts: `2026-01-01T00:00:0${seq}.000Z`,
-      route: 'tool',
-      op: 'overflow',
-      response: { ok: true },
-      state: state(revision),
-      diff: {
-        sinceRevision: `overflow-r${seq - 1}`,
-        currentRevision: revision,
-        counts: {
-          bones: { ...zeroCounts(), changed: Number.MAX_SAFE_INTEGER },
-          cubes: zeroCounts(),
-          textures: zeroCounts(),
-          animations: zeroCounts()
-        }
-      }
-    }));
+    records.push(
+      line({
+        kind: 'step',
+        seq,
+        ts: `2026-01-01T00:00:0${seq}.000Z`,
+        route: 'tool',
+        op: 'overflow',
+        response: { ok: true },
+        state: state(revision),
+        diff: {
+          sinceRevision: `overflow-r${seq - 1}`,
+          currentRevision: revision,
+          counts: {
+            bones: { ...zeroCounts(), changed: Number.MAX_SAFE_INTEGER },
+            cubes: zeroCounts(),
+            textures: zeroCounts(),
+            animations: zeroCounts(),
+          },
+        },
+      }),
+    );
   }
   const report = buildTraceLogReport(records.join('\n'));
-  assert.equal(
-    report.diffCounts?.bones.changed,
-    Number.MAX_SAFE_INTEGER
+  assert.equal(report.diffCounts?.bones.changed, Number.MAX_SAFE_INTEGER);
+  assert.ok(
+    report.warnings?.some(
+      (warning) => warning.includes('bones.changed') && warning.includes('clamped'),
+    ),
   );
-  assert.ok(report.warnings?.some((warning) =>
-    warning.includes('bones.changed') && warning.includes('clamped')
-  ));
 }
 
 {
@@ -443,7 +458,7 @@ const state = (revision: string) => ({
       op: 'update_cube',
       response: { ok: true },
       state: state('r1'),
-      diff: diff('cubes')
+      diff: diff('cubes'),
     }),
     line({
       kind: 'step',
@@ -453,11 +468,11 @@ const state = (revision: string) => ({
       op: 'paint_faces',
       response: {
         ok: false,
-        error: { code: 'unknown', message: 'boom' }
+        error: { code: 'unknown', message: 'boom' },
       },
       state: state('r2'),
-      diff: diff('textures')
-    })
+      diff: diff('textures'),
+    }),
   ].join('\n');
   const report = buildTraceLogReport(text);
 

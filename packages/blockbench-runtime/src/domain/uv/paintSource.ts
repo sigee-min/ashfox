@@ -20,29 +20,25 @@ export const validateUvPaintSourceSize = (
   limits: Limits,
   label: string,
   options: UvPaintSourceOptions | undefined,
-  messages: UvPaintSourceMessages
+  messages: UvPaintSourceMessages,
 ): DomainResult<UvPaintSourceSize> => {
   const sizeCheck = checkDimensions(width, height, {
     requireInteger: options?.requireInteger,
-    maxSize: limits.maxTextureSize
+    maxSize: limits.maxTextureSize,
   });
   if (!sizeCheck.ok) {
     const message = mapDimensionError(sizeCheck, {
       nonPositive: (axis) => messages.axisPositive(formatDimensionAxis(axis), label),
       nonInteger: (axis) => messages.axisInteger(formatDimensionAxis(axis), label),
-      exceedsMax: (maxSize) => messages.exceedsMax(maxSize || limits.maxTextureSize, label)
+      exceedsMax: (maxSize) => messages.exceedsMax(maxSize || limits.maxTextureSize, label),
     });
     return fail('invalid_payload', message ?? messages.exceedsMax(limits.maxTextureSize, label), {
       reason: sizeCheck.reason,
       axis: sizeCheck.axis,
       width,
       height,
-      maxSize: limits.maxTextureSize
+      maxSize: limits.maxTextureSize,
     });
   }
   return ok({ width, height });
 };
-
-
-
-

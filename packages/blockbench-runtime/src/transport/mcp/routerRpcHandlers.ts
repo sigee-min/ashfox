@@ -5,7 +5,7 @@ import { handleToolCall } from './routerRpcToolCall';
 import {
   handleResourceTemplatesList,
   handleResourcesList,
-  handleResourcesRead
+  handleResourcesRead,
 } from './routerRpcResources';
 import {
   DEFAULT_PROTOCOL_VERSION,
@@ -13,21 +13,21 @@ import {
   isJsonRpcMessage,
   isRecord,
   jsonRpcError,
-  jsonRpcResult
+  jsonRpcResult,
 } from './routerUtils';
 import {
   MCP_INITIALIZE_REQUIRES_ID,
   MCP_JSONRPC_INVALID_REQUEST,
   MCP_METHOD_NOT_FOUND,
   MCP_SERVER_NOT_INITIALIZED,
-  MCP_SESSION_UNAVAILABLE
+  MCP_SESSION_UNAVAILABLE,
 } from '../../shared/messages';
 
 type InitializedMethodHandler = (
   ctx: RpcContext,
   message: JsonRpcMessage,
   session: McpSession,
-  id: JsonRpcResponse['id']
+  id: JsonRpcResponse['id'],
 ) => RpcOutcome | Promise<RpcOutcome>;
 
 const pickProtocolVersion = (supported: string[], requested: string) =>
@@ -36,16 +36,19 @@ const pickProtocolVersion = (supported: string[], requested: string) =>
 const buildInitializeResponse = (
   ctx: RpcContext,
   protocolVersion: string,
-  id: JsonRpcResponse['id']
+  id: JsonRpcResponse['id'],
 ): RpcOutcome => ({
   type: 'response',
   response: jsonRpcResult(id, {
     protocolVersion,
-    capabilities: { tools: { listChanged: true }, resources: { listChanged: Boolean(ctx.resources) } },
+    capabilities: {
+      tools: { listChanged: true },
+      resources: { listChanged: Boolean(ctx.resources) },
+    },
     serverInfo: ctx.config.serverInfo,
-    instructions: ctx.config.instructions
+    instructions: ctx.config.instructions,
   }),
-  status: 200
+  status: 200,
 });
 
 const handleInitialize = (
@@ -54,16 +57,25 @@ const handleInitialize = (
   session: McpSession | null,
   id: JsonRpcResponse['id'],
   isNotification: boolean,
-  supportedProtocols: string[]
+  supportedProtocols: string[],
 ): RpcOutcome => {
   if (isNotification || id === null) {
-    return { type: 'response', response: jsonRpcError(id, -32600, MCP_INITIALIZE_REQUIRES_ID), status: 400 };
+    return {
+      type: 'response',
+      response: jsonRpcError(id, -32600, MCP_INITIALIZE_REQUIRES_ID),
+      status: 400,
+    };
   }
   if (!session) {
-    return { type: 'response', response: jsonRpcError(id, -32000, MCP_SESSION_UNAVAILABLE), status: 400 };
+    return {
+      type: 'response',
+      response: jsonRpcError(id, -32000, MCP_SESSION_UNAVAILABLE),
+      status: 400,
+    };
   }
   const params = isRecord(message.params) ? message.params : {};
-  const requested = typeof params.protocolVersion === 'string' ? params.protocolVersion : DEFAULT_PROTOCOL_VERSION;
+  const requested =
+    typeof params.protocolVersion === 'string' ? params.protocolVersion : DEFAULT_PROTOCOL_VERSION;
   const protocolVersion = pickProtocolVersion(supportedProtocols, requested);
   session.protocolVersion = protocolVersion;
   session.initialized = true;
@@ -74,7 +86,7 @@ const initializedHandlers: Record<string, InitializedMethodHandler> = {
   'tools/list': (ctx, _message, _session, id) => ({
     type: 'response',
     response: jsonRpcResult(id, { tools: ctx.toolRegistry.tools }),
-    status: 200
+    status: 200,
   }),
   'tools/call': (ctx, message, session, id) => handleToolCall(ctx, message, session, id),
   'resources/list': (ctx, _message, _session, id) => handleResourcesList(ctx, id),
@@ -83,20 +95,24 @@ const initializedHandlers: Record<string, InitializedMethodHandler> = {
   ping: (_ctx, _message, _session, id) => ({
     type: 'response',
     response: jsonRpcResult(id, {}),
-    status: 200
-  })
+    status: 200,
+  }),
 };
 
 export const handleMessage = async (
   ctx: RpcContext,
   message: JsonRpcMessage,
   session: McpSession | null,
-  id: JsonRpcResponse['id']
+  id: JsonRpcResponse['id'],
 ): Promise<RpcOutcome> => {
   const isNotification = !('id' in message);
   const supportedProtocols = ctx.supportedProtocols ?? DEFAULT_SUPPORTED_PROTOCOLS;
   if (!isJsonRpcMessage(message)) {
-    return { type: 'response', response: jsonRpcError(id, -32600, MCP_JSONRPC_INVALID_REQUEST), status: 400 };
+    return {
+      type: 'response',
+      response: jsonRpcError(id, -32600, MCP_JSONRPC_INVALID_REQUEST),
+      status: 400,
+    };
   }
 
   if (message.method === 'initialize') {
@@ -109,7 +125,11 @@ export const handleMessage = async (
   }
 
   if (!session || !session.initialized) {
-    return { type: 'response', response: jsonRpcError(id, -32000, MCP_SERVER_NOT_INITIALIZED), status: 400 };
+    return {
+      type: 'response',
+      response: jsonRpcError(id, -32000, MCP_SERVER_NOT_INITIALIZED),
+      status: 400,
+    };
   }
   if (isNotification) {
     return { type: 'notification' };
@@ -120,7 +140,7 @@ export const handleMessage = async (
     return {
       type: 'response',
       response: jsonRpcError(id, -32601, MCP_METHOD_NOT_FOUND(message.method)),
-      status: 400
+      status: 400,
     };
   }
   return await handler(ctx, message, session, id);

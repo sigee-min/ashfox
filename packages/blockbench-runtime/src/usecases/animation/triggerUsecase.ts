@@ -7,7 +7,7 @@ import { ensureClipSelector, resolveClipTarget } from './clipSelectors';
 import {
   ANIMATION_TRIGGER_KEYFRAME_SINGLE_REQUIRED,
   TRIGGER_TIME_INVALID,
-  TRIGGER_VALUE_INVALID
+  TRIGGER_VALUE_INVALID,
 } from '../../shared/messages';
 
 export type SetTriggerKeyframesPayload = {
@@ -26,7 +26,7 @@ export interface TriggerUsecaseDeps {
 
 export const runSetTriggerKeyframes = (
   deps: TriggerUsecaseDeps,
-  payload: SetTriggerKeyframesPayload
+  payload: SetTriggerKeyframesPayload,
 ): UsecaseResult<{ clip: string; clipId?: string; channel: TriggerChannel }> => {
   const supportErr = deps.ensureAnimationsSupported();
   if (supportErr) return fail(supportErr);
@@ -41,22 +41,28 @@ export const runSetTriggerKeyframes = (
   }
   const key = payload.keys[0];
   if (!Number.isFinite(key.time)) {
-    return fail({ code: 'invalid_payload', message: TRIGGER_TIME_INVALID('set_trigger_keyframes') });
+    return fail({
+      code: 'invalid_payload',
+      message: TRIGGER_TIME_INVALID('set_trigger_keyframes'),
+    });
   }
   if (!isValidTriggerPayloadValue(key.value)) {
-    return fail({ code: 'invalid_payload', message: TRIGGER_VALUE_INVALID('set_trigger_keyframes') });
+    return fail({
+      code: 'invalid_payload',
+      message: TRIGGER_VALUE_INVALID('set_trigger_keyframes'),
+    });
   }
   const err = deps.editor.setTriggerKeyframes({
     clipId: anim.id,
     clip: anim.name,
     channel: payload.channel,
     keys: payload.keys,
-    timePolicy: snapshot.animationTimePolicy
+    timePolicy: snapshot.animationTimePolicy,
   });
   if (err) return fail(err);
   deps.session.upsertAnimationTrigger(anim.name, {
     type: payload.channel,
-    keys: payload.keys
+    keys: payload.keys,
   });
   return ok({ clip: anim.name, clipId: anim.id ?? undefined, channel: payload.channel });
 };

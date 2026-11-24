@@ -2,12 +2,12 @@ import type {
   AnimationEffect,
   AnimationEffectValue,
   AnimationTriggerTrack,
-  ProjectDocument
+  ProjectDocument,
 } from '../../model';
 import type {
   MinecraftActorAnimation,
   MinecraftAnimationCompileOptions,
-  MinecraftAnimationEffect
+  MinecraftAnimationEffect,
 } from './types';
 import { formatAnimationTimestamp } from './values';
 
@@ -18,19 +18,17 @@ const isAnimationEffect = (value: unknown): value is AnimationEffect =>
   typeof value.effect === 'string';
 
 const isStringArray = (value: unknown): value is readonly string[] =>
-  Array.isArray(value) &&
-  value.every((entry) => typeof entry === 'string');
+  Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 
 const isAnimationEffectArray = (
-  value: AnimationEffectValue | string | readonly string[]
+  value: AnimationEffectValue | string | readonly string[],
 ): value is readonly AnimationEffect[] =>
-  Array.isArray(value) &&
-  value.every((entry) => isAnimationEffect(entry));
+  Array.isArray(value) && value.every((entry) => isAnimationEffect(entry));
 
 const resolveLocatorName = (
   document: ProjectDocument,
   locatorId: string | undefined,
-  visibleNodeIds: ReadonlySet<string>
+  visibleNodeIds: ReadonlySet<string>,
 ): string | undefined => {
   if (!locatorId || !visibleNodeIds.has(locatorId)) return undefined;
   const locator = document.scene.nodes[locatorId];
@@ -40,42 +38,32 @@ const resolveLocatorName = (
 const compileEffect = (
   document: ProjectDocument,
   effect: AnimationEffect,
-  visibleNodeIds: ReadonlySet<string>
+  visibleNodeIds: ReadonlySet<string>,
 ): MinecraftAnimationEffect | undefined => {
-  const locator = resolveLocatorName(
-    document,
-    effect.locatorId,
-    visibleNodeIds
-  );
-  if (effect.locatorId && !locator) throw new Error(
-    `Validated Minecraft animation effect locator "${effect.locatorId}" is missing or hidden.`
-  );
+  const locator = resolveLocatorName(document, effect.locatorId, visibleNodeIds);
+  if (effect.locatorId && !locator)
+    throw new Error(
+      `Validated Minecraft animation effect locator "${effect.locatorId}" is missing or hidden.`,
+    );
   return {
     effect: effect.effect,
     ...(locator ? { locator } : {}),
-    ...(effect.preEffectScript
-      ? { pre_effect_script: effect.preEffectScript.source }
-      : {}),
-    ...(effect.bindToActor !== undefined
-      ? { bind_to_actor: effect.bindToActor }
-      : {})
+    ...(effect.preEffectScript ? { pre_effect_script: effect.preEffectScript.source } : {}),
+    ...(effect.bindToActor !== undefined ? { bind_to_actor: effect.bindToActor } : {}),
   };
 };
 
 const compileEffectValue = (
   document: ProjectDocument,
   value: AnimationEffectValue,
-  visibleNodeIds: ReadonlySet<string>
+  visibleNodeIds: ReadonlySet<string>,
 ): MinecraftAnimationEffect | MinecraftAnimationEffect[] | undefined => {
   if (!isAnimationEffectArray(value)) {
     return compileEffect(document, value, visibleNodeIds);
   }
   const effects = value
     .map((effect) => compileEffect(document, effect, visibleNodeIds))
-    .filter(
-      (effect): effect is MinecraftAnimationEffect =>
-        effect !== undefined
-    );
+    .filter((effect): effect is MinecraftAnimationEffect => effect !== undefined);
   return effects.length > 0 ? effects : undefined;
 };
 
@@ -83,36 +71,20 @@ export const compileMinecraftAnimationTriggers = (
   document: ProjectDocument,
   tracks: readonly AnimationTriggerTrack[],
   options: MinecraftAnimationCompileOptions,
-  visibleNodeIds: ReadonlySet<string>
-): Pick<
-  MinecraftActorAnimation,
-  'sound_effects' | 'particle_effects' | 'timeline'
-> => {
-  const soundEffects: Record<
-    string,
-    MinecraftAnimationEffect | MinecraftAnimationEffect[]
-  > = {};
-  const particleEffects: Record<
-    string,
-    MinecraftAnimationEffect | MinecraftAnimationEffect[]
-  > = {};
+  visibleNodeIds: ReadonlySet<string>,
+): Pick<MinecraftActorAnimation, 'sound_effects' | 'particle_effects' | 'timeline'> => {
+  const soundEffects: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]> = {};
+  const particleEffects: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]> = {};
   const timeline: Record<string, string | readonly string[]> = {};
 
   for (const track of tracks) {
     for (const keyframe of track.keys) {
       const timestamp = formatAnimationTimestamp(keyframe.timeSeconds);
       if (track.type === 'sound' || track.type === 'particle') {
-        if (
-          !isAnimationEffect(keyframe.value) &&
-          !isAnimationEffectArray(keyframe.value)
-        ) {
+        if (!isAnimationEffect(keyframe.value) && !isAnimationEffectArray(keyframe.value)) {
           continue;
         }
-        const effect = compileEffectValue(
-          document,
-          keyframe.value,
-          visibleNodeIds
-        );
+        const effect = compileEffectValue(document, keyframe.value, visibleNodeIds);
         if (!effect) continue;
         if (track.type === 'sound') {
           soundEffects[timestamp] = effect;
@@ -132,12 +104,8 @@ export const compileMinecraftAnimationTriggers = (
   }
 
   return {
-    ...(Object.keys(soundEffects).length > 0
-      ? { sound_effects: soundEffects }
-      : {}),
-    ...(Object.keys(particleEffects).length > 0
-      ? { particle_effects: particleEffects }
-      : {}),
-    ...(Object.keys(timeline).length > 0 ? { timeline } : {})
+    ...(Object.keys(soundEffects).length > 0 ? { sound_effects: soundEffects } : {}),
+    ...(Object.keys(particleEffects).length > 0 ? { particle_effects: particleEffects } : {}),
+    ...(Object.keys(timeline).length > 0 ? { timeline } : {}),
   };
 };

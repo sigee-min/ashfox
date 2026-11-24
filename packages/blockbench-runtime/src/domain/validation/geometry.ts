@@ -78,12 +78,12 @@ const buildCubeBounds = (cube: Snapshot['cubes'][number]): CubeBounds => {
   const min: [number, number, number] = [
     Math.min(cube.from[0], cube.to[0]) - inflate,
     Math.min(cube.from[1], cube.to[1]) - inflate,
-    Math.min(cube.from[2], cube.to[2]) - inflate
+    Math.min(cube.from[2], cube.to[2]) - inflate,
   ];
   const max: [number, number, number] = [
     Math.max(cube.from[0], cube.to[0]) + inflate,
     Math.max(cube.from[1], cube.to[1]) + inflate,
-    Math.max(cube.from[2], cube.to[2]) + inflate
+    Math.max(cube.from[2], cube.to[2]) + inflate,
   ];
   for (let i = 0; i < 3; i += 1) {
     if (min[i] > max[i]) {

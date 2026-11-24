@@ -4,8 +4,7 @@ import type { SourceSpan } from '../../source/contract';
  * The source-level scalar vocabulary shared by asset programs.  These types
  * deliberately contain no model, component, or runtime concepts.
  */
-export type ProgramUnit = 'plain' | 'unit' | 'texel' | 'degree' | 'second' |
-  'ratio';
+export type ProgramUnit = 'plain' | 'unit' | 'texel' | 'degree' | 'second' | 'ratio';
 
 export interface ProgramExprBase {
   readonly span: SourceSpan;
@@ -47,8 +46,8 @@ export interface ProgramUnaryExpr extends ProgramExprBase {
   readonly operand: ProgramExpr;
 }
 
-export type ProgramBinaryOperator = '+' | '-' | '*' | '/' | '%' | '==' |
-  '!=' | '<' | '<=' | '>' | '>=';
+export type ProgramBinaryOperator =
+  '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=';
 
 export interface ProgramBinaryExpr extends ProgramExprBase {
   readonly kind: 'binary';
@@ -75,10 +74,17 @@ export interface ProgramMemberExpr extends ProgramExprBase {
   readonly member: 'x' | 'y' | 'z';
 }
 
-export type ProgramExpr = ProgramNumberExpr | ProgramStringExpr |
-  ProgramBooleanExpr | ProgramColorExpr | ProgramNameExpr |
-  ProgramUnaryExpr | ProgramBinaryExpr | ProgramVectorExpr |
-  ProgramCallExpr | ProgramMemberExpr;
+export type ProgramExpr =
+  | ProgramNumberExpr
+  | ProgramStringExpr
+  | ProgramBooleanExpr
+  | ProgramColorExpr
+  | ProgramNameExpr
+  | ProgramUnaryExpr
+  | ProgramBinaryExpr
+  | ProgramVectorExpr
+  | ProgramCallExpr
+  | ProgramMemberExpr;
 
 export interface ProgramProperty {
   readonly kind: 'property';
@@ -129,8 +135,12 @@ export interface ProgramTextureChartFace {
   readonly span: SourceSpan;
 }
 
-export type ProgramChartStatement = ProgramProperty | ProgramTexturePattern |
-  ProgramTextureStampUse | ProgramTextureChartFace | ProgramTextureCoverage;
+export type ProgramChartStatement =
+  | ProgramProperty
+  | ProgramTexturePattern
+  | ProgramTextureStampUse
+  | ProgramTextureChartFace
+  | ProgramTextureCoverage;
 
 export interface ProgramTextureChart {
   readonly kind: 'chart';
@@ -161,6 +171,10 @@ export interface ProgramTextureDecl {
   readonly span: SourceSpan;
 }
 
-export type ProgramTextureStatement = ProgramProperty | ProgramTextureChart |
-  ProgramTexturePalette | ProgramTextureGrain | ProgramTextureTone |
-  ProgramTextureStampDecl;
+export type ProgramTextureStatement =
+  | ProgramProperty
+  | ProgramTextureChart
+  | ProgramTexturePalette
+  | ProgramTextureGrain
+  | ProgramTextureTone
+  | ProgramTextureStampDecl;

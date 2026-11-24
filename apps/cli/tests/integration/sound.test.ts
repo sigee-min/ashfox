@@ -10,10 +10,12 @@ import { prepareWorker } from '../../src/observe/worker';
 const root = path.resolve(__dirname, '../../../..');
 const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-sound-dsl-'));
 const cli = path.join(root, 'apps/cli/dist/ashfox.cjs');
-const run = (...args: string[]) => spawnSync(process.execPath, [cli, ...args], {
-  encoding: 'utf8', timeout: 120000,
-  env: { ...process.env, ASHFOX_FFMPEG_PATH: path.join(temp, 'missing-ffmpeg') },
-});
+const run = (...args: string[]) =>
+  spawnSync(process.execPath, [cli, ...args], {
+    encoding: 'utf8',
+    timeout: 120000,
+    env: { ...process.env, ASHFOX_FFMPEG_PATH: path.join(temp, 'missing-ffmpeg') },
+  });
 const success = (...args: string[]) => {
   const child = run(...args);
   assert.equal(child.status, 0, child.stdout + child.stderr);
@@ -31,15 +33,28 @@ const main = async () => {
   const output = path.join(temp, 'bell.wav');
   assert.equal(run('export', input, '--output', output).status, 0);
   verifyPcm(fs.readFileSync(output), 96960);
-  const config = { ...readSnapshot(input).config, packs: [{
-    name: 'game', format: 'game_assets', directory: 'dist/game', archive: false,
-    audio: 'wav', unitsPerMeter: 16, pixelsPerUnit: 16, spriteFilter: 'nearest',
-    assets: [{ id: 'sfx.bell', source: 'bell_pattern', path: 'sounds/bell' }],
-  }] };
+  const config = {
+    ...readSnapshot(input).config,
+    packs: [
+      {
+        name: 'game',
+        format: 'game_assets',
+        directory: 'dist/game',
+        archive: false,
+        audio: 'wav',
+        unitsPerMeter: 16,
+        pixelsPerUnit: 16,
+        spriteFilter: 'nearest',
+        assets: [{ id: 'sfx.bell', source: 'bell_pattern', path: 'sounds/bell' }],
+      },
+    ],
+  };
   const configPath = path.join(temp, '.ashfoxworkspace');
   fs.writeFileSync(configPath, JSON.stringify(config));
   const built = success('build', configPath, '--json').result;
-  const manifest = JSON.parse(fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets/assets.json'), 'utf8'));
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets/assets.json'), 'utf8'),
+  );
   const sound = readGameAssetManifest(manifest).assets[0];
   assert.equal(sound.kind, 'sound');
   if (sound.kind !== 'sound') throw new Error('Expected sound');
@@ -47,7 +62,10 @@ const main = async () => {
     assert.equal(variant.frames, 96960);
     assert.equal(variant.durationSeconds, 2.02);
     assert.deepEqual(variant.playback, { kind: 'loop', startFrame: 0, endFrame: 96960 });
-    verifyPcm(fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets', variant.file)), variant.frames);
+    verifyPcm(
+      fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets', variant.file)),
+      variant.frames,
+    );
   }
   success('verify', path.join(temp, config.build.directory), '--json');
   const bad = structuredClone(manifest);
@@ -65,43 +83,95 @@ const main = async () => {
   assert.notEqual(failed.status, 0);
   assert.match(failed.stdout, /sound.loop.codec/);
   assert.doesNotMatch(failed.stdout, /ENOENT/);
-  assert.equal(success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash, built.bundleHash);
-  fs.writeFileSync(configPath, JSON.stringify({ ...config, packs: [{
-    name: 'minecraft', format: 'minecraft_java', directory: 'dist/minecraft',
-    minecraftVersion: '26.2', metadata: { format: 'range', minFormat: [88, 0], maxFormat: [88, 0], description: 'Loop rejection' },
-    itemDefinitions: 'modern', archive: false, icon: null, models: [], items: [],
-    sounds: [{ source: 'bell_pattern', id: 'demo:bell', replace: true, subtitle: null, volume: 1, pitch: 1, stream: false, variants: 'all' }],
-  }] }));
+  assert.equal(
+    success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash,
+    built.bundleHash,
+  );
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify({
+      ...config,
+      packs: [
+        {
+          name: 'minecraft',
+          format: 'minecraft_java',
+          directory: 'dist/minecraft',
+          minecraftVersion: '26.2',
+          metadata: {
+            format: 'range',
+            minFormat: [88, 0],
+            maxFormat: [88, 0],
+            description: 'Loop rejection',
+          },
+          itemDefinitions: 'modern',
+          archive: false,
+          icon: null,
+          models: [],
+          items: [],
+          sounds: [
+            {
+              source: 'bell_pattern',
+              id: 'demo:bell',
+              replace: true,
+              subtitle: null,
+              volume: 1,
+              pitch: 1,
+              stream: false,
+              variants: 'all',
+            },
+          ],
+        },
+      ],
+    }),
+  );
   const minecraft = run('build', configPath, '--json');
   assert.notEqual(minecraft.status, 0);
   assert.match(minecraft.stdout, /sound.loop.target/);
   assert.doesNotMatch(minecraft.stdout, /ENOENT/);
-  assert.equal(success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash, built.bundleHash);
+  assert.equal(
+    success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash,
+    built.bundleHash,
+  );
 
   // A controlled worker changes the file after the parent seals its snapshot.
   const staleWorker = path.join(temp, 'stale.cjs');
-  fs.writeFileSync(staleWorker, `const { parentPort, workerData } = require('node:worker_threads');
+  fs.writeFileSync(
+    staleWorker,
+    `const { parentPort, workerData } = require('node:worker_threads');
     require('node:fs').appendFileSync(workerData.observe.input, '\\n// changed while compiling\\n');
-    parentPort.postMessage({ ok: true, value: { kind: 'sound', revision: 'candidate', files: [] } });`);
-  await assert.rejects(prepareWorker(staleWorker, { file: input }, new AbortController().signal), /Source changed during compilation/);
+    parentPort.postMessage({ ok: true, value: { kind: 'sound', revision: 'candidate', files: [] } });`,
+  );
+  await assert.rejects(
+    prepareWorker(staleWorker, { file: input }, new AbortController().signal),
+    /Source changed during compilation/,
+  );
   verifyPcm(fs.readFileSync(output), 96960);
 
   // Cancellation must interrupt CPU work and join it before acknowledging abort.
   const blockedWorker = path.join(temp, 'blocked.cjs');
-  fs.writeFileSync(blockedWorker, `const { workerData } = require('node:worker_threads');
+  fs.writeFileSync(
+    blockedWorker,
+    `const { workerData } = require('node:worker_threads');
     const state = new Int32Array(workerData);
     Atomics.store(state, 0, 1);
-    while (true) Atomics.wait(state, 1, 0, 1000);`);
-  const state = new Int32Array(new SharedArrayBuffer(8)), controller = new AbortController();
+    while (true) Atomics.wait(state, 1, 0, 1000);`,
+  );
+  const state = new Int32Array(new SharedArrayBuffer(8)),
+    controller = new AbortController();
   const pending = runJob(blockedWorker, state.buffer, controller.signal);
   const cancellation = assert.rejects(pending, /Compilation cancelled/);
   const deadline = performance.now() + 5000;
-  while (!Atomics.load(state, 0) && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 2));
-  const ready = Atomics.load(state, 0), abortTime = performance.now();
+  while (!Atomics.load(state, 0) && performance.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 2));
+  const ready = Atomics.load(state, 0),
+    abortTime = performance.now();
   controller.abort();
   await cancellation;
   assert.equal(ready, 1, 'worker must enter CPU work before cancellation');
-  assert.ok(performance.now() - abortTime <= 250, 'CPU cancellation must terminate and join within 250 ms');
+  assert.ok(
+    performance.now() - abortTime <= 250,
+    'CPU cancellation must terminate and join within 250 ms',
+  );
 
   fs.rmSync(configPath);
   const budgetInput = path.join(temp, 'budget.ashfox');
@@ -120,13 +190,24 @@ sound budget {
   assert.equal(success('check', budgetInput, '--json').result.products[0].kind, 'sound');
   const combined = structuredClone(readSnapshot(budgetInput).config);
   const secondPath = 'budget_second.ashfox';
-  const combinedConfig = { ...combined, include: ['budget.ashfox', secondPath], packages: combined.packages.map(p => ({ ...p,
-    manifest: { ...p.manifest, entries: [...p.manifest.entries, { name: 'budget_second', path: secondPath }] },
-  })) };
+  const combinedConfig = {
+    ...combined,
+    include: ['budget.ashfox', secondPath],
+    packages: combined.packages.map((p) => ({
+      ...p,
+      manifest: {
+        ...p.manifest,
+        entries: [...p.manifest.entries, { name: 'budget_second', path: secondPath }],
+      },
+    })),
+  };
   // If rendering starts before aggregate validation, the first entry fails as
   // silent instead of reporting the workspace budget for the complete inputs.
   fs.writeFileSync(budgetInput, budgetSource.replace('gain = 0.1;', 'gain = 0;'));
-  fs.writeFileSync(path.join(temp, secondPath), budgetSource.replace('sound budget {', 'sound budget_second {'));
+  fs.writeFileSync(
+    path.join(temp, secondPath),
+    budgetSource.replace('sound budget {', 'sound budget_second {'),
+  );
   const combinedPath = configPath;
   fs.writeFileSync(combinedPath, JSON.stringify(combinedConfig));
   const overBudget = run('check', combinedPath, '--json');
@@ -139,7 +220,13 @@ sound budget {
   const rejected = run('check', input, '--json');
   assert.notEqual(rejected.status, 0);
   assert.match(rejected.stdout, /layers|unknown/);
-  console.log('Sound DSL: loop WAV, closed metadata, codec/target rejection, stale snapshot, joined cancellation and aggregate budgets pass');
+  console.log(
+    'Sound DSL: loop WAV, closed metadata, codec/target rejection, stale snapshot, joined cancellation and aggregate budgets pass',
+  );
 };
-main().catch(error => { console.error(error); process.exitCode = 1; })
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => fs.rmSync(temp, { recursive: true, force: true }));

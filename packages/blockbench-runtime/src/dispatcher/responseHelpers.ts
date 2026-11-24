@@ -1,4 +1,10 @@
-import type { ToolErrorCode, ToolName, ToolPayloadMap, ToolResponse, ToolResultMap } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolErrorCode,
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+  ToolResultMap,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { err } from '../shared/tooling/toolResponse';
 
 export const respondOk = <T>(data: T): ToolResponse<T> => ({ ok: true, data });
@@ -6,7 +12,7 @@ export const respondOk = <T>(data: T): ToolResponse<T> => ({ ok: true, data });
 export const respondErrorSimple = (
   code: ToolErrorCode,
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
 ): ToolResponse<never> => err(code, message, details);
 
 export type HandlerPayload = ToolPayloadMap[ToolName];
@@ -15,4 +21,3 @@ export type HandlerResponse = ToolResponse<HandlerResult> | Promise<ToolResponse
 export type Handler = {
   bivarianceHack(payload: HandlerPayload): HandlerResponse;
 }['bivarianceHack'];
-

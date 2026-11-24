@@ -6,7 +6,7 @@ import {
   TEXTURE_MESH_FACE_TEXTURE_REQUIRED,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../../shared/messages';
 import { buildIdNameMismatchMessage } from '../../../shared/targetMessages';
 import { fail, ok, type UsecaseResult } from '../../result';
@@ -18,7 +18,7 @@ export const resolveMeshPaintTexture = (
   payload: PaintMeshFacePayload,
   snapshot: ReturnType<TextureToolContext['getSnapshot']>,
   textureId: string | undefined,
-  textureName: string | undefined
+  textureName: string | undefined,
 ): UsecaseResult<SnapshotTexture> => {
   const byId = textureId
     ? snapshot.textures.find((texture) => texture.id === textureId)
@@ -35,8 +35,8 @@ export const resolveMeshPaintTexture = (
         idLabel: 'textureId',
         nameLabel: 'textureName',
         id: textureId as string,
-        name: textureName as string
-      })
+        name: textureName as string,
+      }),
     });
   }
   let texture = byId ?? byName ?? null;
@@ -46,47 +46,46 @@ export const resolveMeshPaintTexture = (
     }
     const fallback = ctx.editor.getProjectTextureResolution() ?? {
       width: 16,
-      height: 16
+      height: 16,
     };
     const width = Number(payload.width ?? fallback.width);
     const height = Number(payload.height ?? fallback.height);
     const maxSize = ctx.capabilities.limits.maxTextureSize;
     const dimensions = checkDimensions(width, height, {
       requireInteger: true,
-      maxSize
+      maxSize,
     });
     if (!dimensions.ok) {
       const message = mapDimensionError(dimensions, {
         nonPositive: (axis) => DIMENSION_POSITIVE_MESSAGE(axis, axis),
         nonInteger: (axis) => DIMENSION_INTEGER_MESSAGE(axis, axis),
-        exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize)
+        exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize),
       });
       if (dimensions.reason === 'exceeds_max') {
         return fail({
           code: 'invalid_payload',
           message: message ?? TEXTURE_PAINT_SIZE_EXCEEDS_MAX(maxSize),
           fix: TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX(maxSize),
-          details: { width, height, maxSize }
+          details: { width, height, maxSize },
         });
       }
       return fail({
         code: 'invalid_payload',
-        message: message ?? DIMENSION_POSITIVE_MESSAGE('width/height')
+        message: message ?? DIMENSION_POSITIVE_MESSAGE('width/height'),
       });
     }
     const created = ctx.createBlankTexture({
       name: textureName ?? 'texture',
       width,
       height,
-      allowExisting: true
+      allowExisting: true,
     });
     if (!created.ok) return fail(created.error);
     const refreshed = ctx.getSnapshot().textures;
-    texture = (textureId
-      ? refreshed.find((candidate) => candidate.id === textureId)
-      : undefined) ?? (textureName
-      ? refreshed.find((candidate) => candidate.name === textureName)
-      : undefined) ?? null;
+    texture =
+      (textureId ? refreshed.find((candidate) => candidate.id === textureId) : undefined) ??
+      (textureName ? refreshed.find((candidate) => candidate.name === textureName) : undefined) ??
+      null;
   }
   return texture
     ? ok(texture)

@@ -11,7 +11,7 @@ import { createLineDecoder } from '../../src/transport/codec';
     },
     () => {
       errors += 1;
-    }
+    },
   );
 
   decoder.push('{"type":"hello","version":1,"role":"sidecar","ts":1}\n');
@@ -28,7 +28,7 @@ import { createLineDecoder } from '../../src/transport/codec';
     },
     () => {
       errors += 1;
-    }
+    },
   );
 
   decoder.push('{"type":"hello","version":1,"role":"sidecar"}\n');
@@ -45,11 +45,10 @@ import { createLineDecoder } from '../../src/transport/codec';
     },
     () => {
       errors += 1;
-    }
+    },
   );
 
   decoder.push('{not json}\n');
   assert.equal(messages, 0);
   assert.equal(errors, 1);
 }
-

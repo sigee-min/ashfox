@@ -1,7 +1,7 @@
 import { keyframeTimeBucket } from '../../../domain/animation/keyframes';
 import {
   normalizeAnimationChannel,
-  normalizeTriggerChannel
+  normalizeTriggerChannel,
 } from '../../../domain/animation/channels';
 import type { KeyframeCommand } from '../../../ports/editor';
 
@@ -20,7 +20,7 @@ export type AnimatorLike = {
     time?: number,
     channel?: string,
     undo?: boolean,
-    select?: boolean
+    select?: boolean,
   ) => KeyframeLike | undefined;
   addKeyframe?: (data: unknown, uuid?: string) => KeyframeLike | undefined;
   keyframes?: unknown[];
@@ -73,7 +73,7 @@ const buildKeyframeValueData = (value: unknown, interp?: string): Record<string,
   const data: Record<string, unknown> = {};
   if (Array.isArray(value)) {
     const normalized = value.map((entry) =>
-      typeof entry === 'number' && Number.isFinite(entry) ? entry : 0
+      typeof entry === 'number' && Number.isFinite(entry) ? entry : 0,
     );
     data.data_points = [{ x: normalized[0], y: normalized[1], z: normalized[2] }];
   }
@@ -89,7 +89,7 @@ export const lastKeyframeTime = (keys: Array<{ time: number }>): number | undefi
 };
 
 export const lastTriggerKeyframeTime = (
-  keys: Array<{ time: number; value: string | string[] | Record<string, unknown> }>
+  keys: Array<{ time: number; value: string | string[] | Record<string, unknown> }>,
 ): number | undefined => {
   if (!Array.isArray(keys) || keys.length === 0) return undefined;
   const last = keys[keys.length - 1];
@@ -102,7 +102,7 @@ export const createTransformKeyframe = (
   channel: string,
   time: number,
   value: unknown,
-  interp?: string
+  interp?: string,
 ): { keyframe?: KeyframeLike; error?: unknown } => {
   const valueData = buildKeyframeValueData(value, interp);
   const numericTime = Number(time);
@@ -133,7 +133,9 @@ export const createTransformKeyframe = (
 };
 
 const readKeyframeTime = (keyframe: KeyframeLike): number => {
-  const raw = (keyframe as { time?: unknown; frame?: unknown }).time ?? (keyframe as { frame?: unknown }).frame;
+  const raw =
+    (keyframe as { time?: unknown; frame?: unknown }).time ??
+    (keyframe as { frame?: unknown }).frame;
   const value = typeof raw === 'number' ? raw : Number(raw ?? 0);
   return Number.isFinite(value) ? value : 0;
 };
@@ -142,7 +144,7 @@ export const findExistingKeyframes = (
   animator: AnimatorLike | undefined,
   channel: string,
   time: number,
-  timePolicy?: KeyframeCommand['timePolicy']
+  timePolicy?: KeyframeCommand['timePolicy'],
 ): KeyframeLike[] => {
   if (!animator || !Array.isArray(animator.keyframes)) return [];
   const targetTime = Number(time);
@@ -163,7 +165,7 @@ export const findExistingKeyframes = (
       (keyframe as { channel?: unknown; data_channel?: unknown; transform?: unknown }).channel ??
         (keyframe as { data_channel?: unknown }).data_channel ??
         (keyframe as { transform?: unknown }).transform ??
-        ''
+        '',
     );
     const normalizedChannel = isTransformChannel
       ? normalizeAnimationChannel(rawChannel)
@@ -177,7 +179,9 @@ export const findExistingKeyframes = (
 
 export const applyKeyframeValue = (keyframe: KeyframeLike, value: unknown, interp?: string) => {
   if (!Array.isArray(value)) return;
-  const normalized = value.map((entry) => (typeof entry === 'number' && Number.isFinite(entry) ? entry : 0));
+  const normalized = value.map((entry) =>
+    typeof entry === 'number' && Number.isFinite(entry) ? entry : 0,
+  );
   if (keyframe.set) {
     keyframe.set('x', normalized[0]);
     keyframe.set('y', normalized[1]);

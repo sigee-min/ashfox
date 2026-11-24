@@ -1,4 +1,9 @@
-import type { ProjectDocument, DirectoryProduct, DirectoryFile, SpriteProduct } from '@ashfox/engine-core';
+import type {
+  ProjectDocument,
+  DirectoryProduct,
+  DirectoryFile,
+  SpriteProduct,
+} from '@ashfox/engine-core';
 export interface SourceInput {
   readonly file?: string;
   readonly png?: string;
@@ -12,7 +17,12 @@ export interface Prepared {
   readonly files: readonly DirectoryFile[];
   readonly product?: DirectoryProduct;
   readonly document?: ProjectDocument;
-  readonly sprite?: {readonly png:Uint8Array;readonly stages:Readonly<Record<'silhouette'|'shade'|'grain',Uint8Array>>;readonly receipt:SpriteProduct['receipt'];readonly evidence:SpriteProduct['evidence']};
+  readonly sprite?: {
+    readonly png: Uint8Array;
+    readonly stages: Readonly<Record<'silhouette' | 'shade' | 'grain', Uint8Array>>;
+    readonly receipt: SpriteProduct['receipt'];
+    readonly evidence: SpriteProduct['evidence'];
+  };
   readonly png?: string;
 }
 export interface Media {

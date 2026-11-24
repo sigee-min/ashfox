@@ -1,14 +1,11 @@
 import {
   isTraceLogRecord,
   TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH,
-  type TraceLogRecord
+  type TraceLogRecord,
 } from '@ashfox/blockbench-contracts/types/traceLog';
 import type { TraceLogWriter } from '../ports/traceLog';
 import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
-import {
-  createFiniteJsonSnapshot,
-  utf8ContractByteLength
-} from '@ashfox/internal-contracts';
+import { createFiniteJsonSnapshot, utf8ContractByteLength } from '@ashfox/internal-contracts';
 import { serializeTraceLogRecord } from './format';
 
 export type TraceLogStoreOptions = {
@@ -35,14 +32,16 @@ export class TraceLogStore {
   constructor(options: TraceLogStoreOptions = {}) {
     this.writer = options.writer ?? null;
     this.autoFlush = options.autoFlush !== false;
-    this.maxEntries = Number.isFinite(options.maxEntries) ? Math.max(1, Math.trunc(options.maxEntries as number)) : 2000;
+    this.maxEntries = Number.isFinite(options.maxEntries)
+      ? Math.max(1, Math.trunc(options.maxEntries as number))
+      : 2000;
     this.maxBytes = normalizeMaxBytes(options.maxBytes);
     this.minEntries = normalizeMinEntries(options.minEntries);
   }
 
   append(record: TraceLogRecord): { text: string; error?: ToolError } {
     const snapshot = createFiniteJsonSnapshot(record, {
-      depthAllowance: TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH
+      depthAllowance: TRACE_LOG_FINITE_JSON_ENVELOPE_DEPTH,
     });
     if (!snapshot.ok || !isTraceLogRecord(snapshot.value)) {
       return {
@@ -50,8 +49,8 @@ export class TraceLogStore {
         error: {
           code: 'invalid_state',
           message: 'Trace log record violates the current closed contract.',
-          details: { reason: 'trace_log_record_invalid' }
-        }
+          details: { reason: 'trace_log_record_invalid' },
+        },
       };
     }
     const acceptedRecord = snapshot.value;
@@ -60,7 +59,7 @@ export class TraceLogStore {
       if (this.headerLine !== null) {
         return ledgerError(
           'trace_log_header_duplicated',
-          'Trace log ledger already contains its v1 header.'
+          'Trace log ledger already contains its v1 header.',
         );
       }
       this.headerLine = text;
@@ -68,13 +67,13 @@ export class TraceLogStore {
       if (this.headerLine === null) {
         return ledgerError(
           'trace_log_header_required',
-          'Trace log ledger requires a v1 header before its first step.'
+          'Trace log ledger requires a v1 header before its first step.',
         );
       }
       if (acceptedRecord.seq <= this.lastSeq) {
         return ledgerError(
           'trace_log_sequence_invalid',
-          `Trace log step sequence ${acceptedRecord.seq} must be greater than ${this.lastSeq}.`
+          `Trace log step sequence ${acceptedRecord.seq} must be greater than ${this.lastSeq}.`,
         );
       }
       this.stepLines.push(text);
@@ -135,9 +134,8 @@ export class TraceLogStore {
       this.dropOldestStep();
     }
     if (this.maxBytes && this.maxBytes > 0) {
-      const retainedFloor = this.headerLine === null
-        ? this.minEntries
-        : Math.max(1, this.minEntries);
+      const retainedFloor =
+        this.headerLine === null ? this.minEntries : Math.max(1, this.minEntries);
       while (
         this.currentSize > this.maxBytes &&
         this.size() > retainedFloor &&
@@ -172,39 +170,30 @@ export class TraceLogStore {
         this.stepsText = this.stepsText.slice(dropLength);
       }
     }
-    if (
-      this.stepStartIndex > 1000 &&
-      this.stepStartIndex > this.stepLines.length / 2
-    ) {
+    if (this.stepStartIndex > 1000 && this.stepStartIndex > this.stepLines.length / 2) {
       this.stepLines.splice(0, this.stepStartIndex);
       this.stepStartIndex = 0;
     }
   }
 }
 
-const ledgerError = (
-  reason: string,
-  message: string
-): { text: string; error: ToolError } => ({
+const ledgerError = (reason: string, message: string): { text: string; error: ToolError } => ({
   text: '',
   error: {
     code: 'invalid_state',
     message,
-    details: { reason }
-  }
+    details: { reason },
+  },
 });
 
-const writeTraceLog = (
-  writer: TraceLogWriter,
-  text: string
-): ToolError | null => {
+const writeTraceLog = (writer: TraceLogWriter, text: string): ToolError | null => {
   try {
     return writer.write(text);
   } catch (_error) {
     return {
       code: 'io_error',
       message: 'Trace log writer threw while persisting the accepted ledger.',
-      details: { reason: 'trace_log_writer_threw' }
+      details: { reason: 'trace_log_writer_threw' },
     };
   }
 };

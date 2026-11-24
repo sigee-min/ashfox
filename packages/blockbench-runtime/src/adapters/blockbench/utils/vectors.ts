@@ -8,18 +8,20 @@ export const assignVec3 = (target: UnknownRecord, key: string, value: [number, n
   }
   if (current && typeof current === 'object') {
     const vec = current as { x?: number; y?: number; z?: number };
-    if (
-      typeof vec.x === 'number' &&
-      typeof vec.y === 'number' &&
-      typeof vec.z === 'number'
-    ) {
+    if (typeof vec.x === 'number' && typeof vec.y === 'number' && typeof vec.z === 'number') {
       vec.x = value[0];
       vec.y = value[1];
       vec.z = value[2];
       return;
     }
-    if (typeof (current as { set?: (x: number, y: number, z: number) => void }).set === 'function') {
-      (current as { set: (x: number, y: number, z: number) => void }).set(value[0], value[1], value[2]);
+    if (
+      typeof (current as { set?: (x: number, y: number, z: number) => void }).set === 'function'
+    ) {
+      (current as { set: (x: number, y: number, z: number) => void }).set(
+        value[0],
+        value[1],
+        value[2],
+      );
       return;
     }
     vec.x = value[0];

@@ -8,7 +8,12 @@ import { ensureNonBlankString } from '../../shared/payloadValidation';
 import { resolveTextureSize } from '../../domain/textureUtils';
 import { hashCanvasImage } from '../../shared/textureData';
 import { withActiveAndRevision } from '../guards';
-import { ensureIdAvailable, ensureNameAvailable, ensureRenameAvailable, resolveEntityId } from '../crudChecks';
+import {
+  ensureIdAvailable,
+  ensureNameAvailable,
+  ensureRenameAvailable,
+  resolveEntityId,
+} from '../crudChecks';
 import {
   TEXTURE_ALREADY_EXISTS,
   TEXTURE_CONTENT_UNCHANGED,
@@ -16,7 +21,7 @@ import {
   TEXTURE_ID_EXISTS,
   TEXTURE_ID_OR_NAME_REQUIRED,
   TEXTURE_ID_OR_NAME_REQUIRED_FIX,
-  TEXTURE_NAME_REQUIRED
+  TEXTURE_NAME_REQUIRED,
 } from '../../shared/messages';
 
 /** Dependencies for canonical texture writes. */
@@ -43,14 +48,16 @@ export class TextureWriteService {
     this.ensureRevisionMatch = deps.ensureRevisionMatch;
   }
 
-  importTexture(payload: {
-    id?: string;
-    name: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  importTexture(
+    payload: {
+      id?: string;
+      name: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return withActiveAndRevision(
       this.ensureActive,
       this.ensureRevisionMatch,
@@ -64,7 +71,11 @@ export class TextureWriteService {
         const idBlankErr = ensureNonBlankString(payload.id, 'Texture id');
         if (idBlankErr) return fail(idBlankErr);
         const snapshot = this.getSnapshot();
-        const nameErr = ensureNameAvailable(snapshot.textures, payload.name, TEXTURE_ALREADY_EXISTS);
+        const nameErr = ensureNameAvailable(
+          snapshot.textures,
+          payload.name,
+          TEXTURE_ALREADY_EXISTS,
+        );
         if (nameErr) return fail(nameErr);
         const id = resolveEntityId(undefined, payload.id, 'tex');
         const idErr = ensureIdAvailable(snapshot.textures, id, TEXTURE_ID_EXISTS);
@@ -77,13 +88,13 @@ export class TextureWriteService {
           image: payload.image,
           width: payload.width,
           height: payload.height,
-          ...meta
+          ...meta,
         });
         if (err) return fail(err);
         const match = findTextureByIdOrName(this.editor.listTextures(), id, payload.name);
         const resolvedSize = resolveTextureSize(
           { width: match?.width, height: match?.height },
-          { width: payload.width, height: payload.height }
+          { width: payload.width, height: payload.height },
         );
         this.session.addTexture({
           id,
@@ -91,22 +102,24 @@ export class TextureWriteService {
           width: resolvedSize.width,
           height: resolvedSize.height,
           contentHash: contentHash ?? undefined,
-          ...meta
+          ...meta,
         });
         return ok({ id, name: payload.name });
-      }
+      },
     );
   }
 
-  updateTexture(payload: {
-    id?: string;
-    name?: string;
-    newName?: string;
-    image: CanvasImageSource;
-    width?: number;
-    height?: number;
-    ifRevision?: string;
-  } & TextureMeta): UsecaseResult<{ id: string; name: string }> {
+  updateTexture(
+    payload: {
+      id?: string;
+      name?: string;
+      newName?: string;
+      image: CanvasImageSource;
+      width?: number;
+      height?: number;
+      ifRevision?: string;
+    } & TextureMeta,
+  ): UsecaseResult<{ id: string; name: string }> {
     return withActiveAndRevision(
       this.ensureActive,
       this.ensureRevisionMatch,
@@ -120,14 +133,19 @@ export class TextureWriteService {
         const newNameBlankErr = ensureNonBlankString(payload.newName, 'Texture newName');
         if (newNameBlankErr) return fail(newNameBlankErr);
         const resolved = resolveTextureTarget(snapshot.textures, payload.id, payload.name, {
-          required: { message: TEXTURE_ID_OR_NAME_REQUIRED, fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX }
+          required: { message: TEXTURE_ID_OR_NAME_REQUIRED, fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX },
         });
         if (resolved.error) return fail(resolved.error);
         const target = resolved.target!;
         const contentHash = hashCanvasImage(payload.image);
         const targetName = target.name;
         const targetId = resolveEntityId(target.id, payload.id, 'tex');
-        const renameErr = ensureRenameAvailable(snapshot.textures, payload.newName, targetName, TEXTURE_ALREADY_EXISTS);
+        const renameErr = ensureRenameAvailable(
+          snapshot.textures,
+          payload.newName,
+          targetName,
+          TEXTURE_ALREADY_EXISTS,
+        );
         if (renameErr) return fail(renameErr);
         const meta = pickTextureMeta(payload);
         const renaming = Boolean(payload.newName && payload.newName !== targetName);
@@ -140,8 +158,8 @@ export class TextureWriteService {
               reason: 'content_hash_match',
               contentHash,
               previousHash: target.contentHash,
-              targetName
-            }
+              targetName,
+            },
           });
         }
         const err = this.editor.updateTexture({
@@ -151,7 +169,7 @@ export class TextureWriteService {
           image: payload.image,
           width: payload.width,
           height: payload.height,
-          ...meta
+          ...meta,
         });
         if (err) return fail(err);
         const effectiveName = payload.newName ?? targetName;
@@ -159,7 +177,7 @@ export class TextureWriteService {
         const resolvedSize = resolveTextureSize(
           { width: match?.width, height: match?.height },
           { width: payload.width, height: payload.height },
-          { width: target.width, height: target.height }
+          { width: target.width, height: target.height },
         );
         this.session.updateTexture(targetName, {
           id: targetId,
@@ -167,14 +185,18 @@ export class TextureWriteService {
           width: resolvedSize.width,
           height: resolvedSize.height,
           contentHash: contentHash ?? undefined,
-          ...meta
+          ...meta,
         });
         return ok({ id: targetId, name: effectiveName });
-      }
+      },
     );
   }
 
-  deleteTexture(payload: { id?: string; name?: string; ifRevision?: string }): UsecaseResult<{ id: string; name: string }> {
+  deleteTexture(payload: {
+    id?: string;
+    name?: string;
+    ifRevision?: string;
+  }): UsecaseResult<{ id: string; name: string }> {
     return withActiveAndRevision(
       this.ensureActive,
       this.ensureRevisionMatch,
@@ -192,7 +214,7 @@ export class TextureWriteService {
         if (err) return fail(err);
         this.session.removeTextures([target.name]);
         return ok({ id: target.id ?? payload.id ?? target.name, name: target.name });
-      }
+      },
     );
   }
 }
@@ -200,11 +222,11 @@ export class TextureWriteService {
 const findTextureByIdOrName = (
   textures: ReturnType<EditorPort['listTextures']>,
   id: string,
-  name: string
+  name: string,
 ) => textures.find((texture) => (texture.id && texture.id === id) || texture.name === name);
 
 const pickTextureMeta = (
-  payload: TextureMeta
+  payload: TextureMeta,
 ): Pick<
   TextureMeta,
   | 'namespace'
@@ -235,5 +257,5 @@ const pickTextureMeta = (
   frameOrder: payload.frameOrder,
   frameInterpolate: payload.frameInterpolate,
   internal: payload.internal,
-  keepSize: payload.keepSize
+  keepSize: payload.keepSize,
 });

@@ -4,7 +4,7 @@ import { TOOL_SCHEMA_VERSION } from '../../../../src/config';
 import { DEFAULT_TOOL_REGISTRY } from '../../../../src/transport/mcp/tools';
 import {
   TOOL_SCHEMA_VERSION as CONTRACT_TOOL_SCHEMA_VERSION,
-  computeToolRegistryHash
+  computeToolRegistryHash,
 } from '../../../../../blockbench-contracts/src/mcpSchemas/policy';
 
 assert.equal(TOOL_SCHEMA_VERSION, CONTRACT_TOOL_SCHEMA_VERSION);

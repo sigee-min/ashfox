@@ -6,7 +6,7 @@ import type {
   TrackedBone,
   TrackedCube,
   TrackedMesh,
-  TrackedTexture
+  TrackedTexture,
 } from './types';
 import type { AnimationUpdate, BoneUpdate, CubeUpdate, MeshUpdate, TextureUpdate } from './types';
 import {
@@ -26,7 +26,7 @@ import {
   updateMesh,
   updateTexture,
   upsertAnimationChannel,
-  upsertAnimationTrigger
+  upsertAnimationTrigger,
 } from './mutators';
 
 export type SessionMutation =
@@ -48,37 +48,76 @@ export type SessionMutation =
   | { type: 'upsert_animation_channel'; clip: string; channel: TrackedAnimationChannel }
   | { type: 'upsert_animation_trigger'; clip: string; trigger: TrackedAnimationTrigger };
 
-type MutationOf<TType extends SessionMutation['type']> = Extract<
-  SessionMutation,
-  { type: TType }
->;
+type MutationOf<TType extends SessionMutation['type']> = Extract<SessionMutation, { type: TType }>;
 type RemovalResult = { removedBones: number; removedCubes: number };
 type SessionMutationResult = boolean | number | RemovalResult | void;
 
 export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_bone'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'update_bone'>): boolean;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'remove_bones'>): RemovalResult;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_cube'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'update_cube'>): boolean;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'remove_cubes'>): number;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_mesh'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'update_mesh'>): boolean;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'remove_meshes'>): number;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_texture'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'update_texture'>): boolean;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'remove_textures'>): number;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_animation'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'update_animation'>): boolean;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'remove_animations'>): number;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'upsert_animation_channel'>): void;
-export function applySessionMutation(state: SessionState, mutation: MutationOf<'upsert_animation_trigger'>): void;
 export function applySessionMutation(
   state: SessionState,
-  mutation: SessionMutation
+  mutation: MutationOf<'update_bone'>,
+): boolean;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'remove_bones'>,
+): RemovalResult;
+export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_cube'>): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'update_cube'>,
+): boolean;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'remove_cubes'>,
+): number;
+export function applySessionMutation(state: SessionState, mutation: MutationOf<'add_mesh'>): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'update_mesh'>,
+): boolean;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'remove_meshes'>,
+): number;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'add_texture'>,
+): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'update_texture'>,
+): boolean;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'remove_textures'>,
+): number;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'add_animation'>,
+): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'update_animation'>,
+): boolean;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'remove_animations'>,
+): number;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'upsert_animation_channel'>,
+): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: MutationOf<'upsert_animation_trigger'>,
+): void;
+export function applySessionMutation(
+  state: SessionState,
+  mutation: SessionMutation,
 ): SessionMutationResult;
 export function applySessionMutation(
   state: SessionState,
-  mutation: SessionMutation
+  mutation: SessionMutation,
 ): SessionMutationResult {
   switch (mutation.type) {
     case 'add_bone':

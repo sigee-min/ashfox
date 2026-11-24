@@ -8,10 +8,15 @@ import {
   MODEL_MESH_ID_OR_NAME_REQUIRED,
   MODEL_MESH_NAME_REQUIRED,
   MODEL_MESH_NAME_REQUIRED_FIX,
-  MODEL_MESH_NOT_FOUND
+  MODEL_MESH_NOT_FOUND,
 } from '../../../shared/messages';
 import { buildIdNameMismatchMessage } from '../../../shared/targetMessages';
-import { ensureIdAvailable, ensureNameAvailable, ensureRenameAvailable, resolveEntityId } from '../../crudChecks';
+import {
+  ensureIdAvailable,
+  ensureNameAvailable,
+  ensureRenameAvailable,
+  resolveEntityId,
+} from '../../crudChecks';
 import { withActiveAndRevision } from '../../guards';
 import { fail, ok, type UsecaseResult } from '../../result';
 import { resolveTargets } from '../../targetSelectors';
@@ -22,13 +27,13 @@ import type {
   AddMeshPayload,
   DeleteMeshPayload,
   MeshServiceDeps,
-  UpdateMeshPayload
+  UpdateMeshPayload,
 } from './contract';
 import {
   hasCompleteFaceUv,
   hasFaceUvInput,
   stripUvFromFaces,
-  validateMeshGeometry
+  validateMeshGeometry,
 } from './geometry';
 import { autoMapMesh } from './uv';
 
@@ -52,7 +57,7 @@ export class MeshService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => this.add(payload)
+      () => this.add(payload),
     );
   }
 
@@ -61,7 +66,7 @@ export class MeshService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => this.update(payload)
+      () => this.update(payload),
     );
   }
 
@@ -74,7 +79,7 @@ export class MeshService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => this.delete(payload)
+      () => this.delete(payload),
     );
   }
 
@@ -84,13 +89,13 @@ export class MeshService {
       return fail({
         code: 'invalid_payload',
         message: MODEL_MESH_NAME_REQUIRED,
-        fix: MODEL_MESH_NAME_REQUIRED_FIX
+        fix: MODEL_MESH_NAME_REQUIRED_FIX,
       });
     }
     const blankError = ensureNonBlankFields([
       [payload.name, 'Mesh name'],
       [payload.bone, 'Mesh bone'],
-      [payload.boneId, 'Mesh boneId']
+      [payload.boneId, 'Mesh boneId'],
     ]);
     if (blankError) return fail(blankError);
     if (hasFaceUvInput(payload.faces)) {
@@ -113,7 +118,7 @@ export class MeshService {
       snapshot,
       payload.vertices,
       payload.faces,
-      payload.uvPolicy
+      payload.uvPolicy,
     );
     const mesh = {
       id,
@@ -123,7 +128,7 @@ export class MeshService {
       rotation: payload.rotation,
       visibility: payload.visibility,
       vertices: payload.vertices,
-      faces: mapped.faces
+      faces: mapped.faces,
     };
     const editorError = this.editor.addMesh(mesh);
     if (editorError) return fail(editorError);
@@ -138,7 +143,7 @@ export class MeshService {
       [payload.name, 'Mesh name'],
       [payload.newName, 'Mesh newName'],
       [payload.bone, 'Mesh bone'],
-      [payload.boneId, 'Mesh boneId']
+      [payload.boneId, 'Mesh boneId'],
     ]);
     if (blankError) return fail(blankError);
     if (hasFaceUvInput(payload.faces)) {
@@ -154,7 +159,7 @@ export class MeshService {
       meshes,
       payload.newName,
       target.name,
-      MODEL_MESH_EXISTS
+      MODEL_MESH_EXISTS,
     );
     if (renameError) return fail(renameError);
 
@@ -165,8 +170,7 @@ export class MeshService {
     const geometryError = validateMeshGeometry(nextVertices, faceGeometry);
     if (geometryError) return fail(geometryError);
     const remap = Boolean(
-      payload.vertices || payload.faces || payload.uvPolicy ||
-      !hasCompleteFaceUv(target.faces)
+      payload.vertices || payload.faces || payload.uvPolicy || !hasCompleteFaceUv(target.faces),
     );
     const mapped = remap
       ? autoMapMesh(
@@ -174,28 +178,22 @@ export class MeshService {
           snapshot,
           nextVertices,
           faceGeometry,
-          payload.uvPolicy ?? target.uvPolicy
+          payload.uvPolicy ?? target.uvPolicy,
         )
       : null;
     const faces = mapped?.faces ?? target.faces;
-    const uvPolicy = mapped?.policy ?? normalizeMeshUvPolicy(
-      payload.uvPolicy ?? target.uvPolicy
-    );
+    const uvPolicy = mapped?.policy ?? normalizeMeshUvPolicy(payload.uvPolicy ?? target.uvPolicy);
     const editorError = this.editor.updateMesh({
       id: targetId,
       name: target.name,
       newName: payload.newName,
-      bone: payload.boneRoot
-        ? null
-        : typeof bone.value === 'string'
-          ? bone.value
-          : undefined,
+      bone: payload.boneRoot ? null : typeof bone.value === 'string' ? bone.value : undefined,
       boneRoot: payload.boneRoot,
       origin: payload.origin,
       rotation: payload.rotation,
       visibility: payload.visibility,
       vertices: payload.vertices,
-      faces: remap ? faces : undefined
+      faces: remap ? faces : undefined,
     });
     if (editorError) return fail(editorError);
     this.session.updateMesh(target.name, {
@@ -207,7 +205,7 @@ export class MeshService {
       visibility: payload.visibility,
       uvPolicy,
       ...(payload.vertices ? { vertices: payload.vertices } : {}),
-      ...(remap ? { faces } : {})
+      ...(remap ? { faces } : {}),
     });
     return ok({ id: targetId, name: payload.newName ?? target.name });
   }
@@ -228,34 +226,32 @@ export class MeshService {
         mismatch: {
           kind: 'Mesh',
           plural: 'meshes',
-          message: buildIdNameMismatchMessage
+          message: buildIdNameMismatchMessage,
         },
-        notFound: MODEL_MESH_NOT_FOUND
-      }
+        notFound: MODEL_MESH_NOT_FOUND,
+      },
     );
     if (!resolved.ok) return fail(resolved.error);
     for (const target of resolved.value) {
       const error = this.editor.deleteMesh({
         id: target.id ?? undefined,
-        name: target.name
+        name: target.name,
       });
       if (error) return fail(error);
     }
-    this.session.removeMeshes(new Set(
-      resolved.value.map((target) => target.name)
-    ));
+    this.session.removeMeshes(new Set(resolved.value.map((target) => target.name)));
     const deleted = resolved.value.map((target) => ({
       id: target.id ?? undefined,
-      name: target.name
+      name: target.name,
     }));
     const primary = deleted[0] ?? {
       id: resolved.value[0]?.id ?? undefined,
-      name: resolved.value[0]?.name ?? 'unknown'
+      name: resolved.value[0]?.name ?? 'unknown',
     };
     return ok({
       id: primary.id ?? primary.name,
       name: primary.name,
-      deleted
+      deleted,
     });
   }
 }

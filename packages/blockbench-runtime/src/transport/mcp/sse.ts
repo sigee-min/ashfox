@@ -9,6 +9,3 @@ export const encodeSseEvent = (data: string, event?: string, id?: string) => {
 };
 
 export const encodeSseComment = (comment: string) => `: ${comment}\n\n`;
-
-
-

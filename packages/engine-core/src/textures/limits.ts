@@ -17,12 +17,11 @@ export const isTextureDimension = (value: unknown): value is number =>
 export const assertTextureDimensions = (
   width: unknown,
   height: unknown,
-  label = 'Texture'
+  label = 'Texture',
 ): readonly [number, number] => {
   if (!isTextureDimension(width) || !isTextureDimension(height)) {
     throw new RangeError(
-      `${label} dimensions must be safe integers from 1 to ` +
-        `${TEXTURE_MAX_RESOLUTION}.`
+      `${label} dimensions must be safe integers from 1 to ` + `${TEXTURE_MAX_RESOLUTION}.`,
     );
   }
   return [width, height];
@@ -31,10 +30,8 @@ export const assertTextureDimensions = (
 /** Preserve-mode detail budgets scale with the persisted density multiplier.
  * The scene geometry is unchanged; only the number of raster runs grows with
  * the selected canonical texture scale. */
-export const preserveRasterDetailLimit = (
-  density: number
-): number => PRESERVE_RASTER_MAX_DETAILS * density;
+export const preserveRasterDetailLimit = (density: number): number =>
+  PRESERVE_RASTER_MAX_DETAILS * density;
 
-export const preserveRasterTotalDetailLimit = (
-  density: number
-): number => PRESERVE_RASTER_MAX_TOTAL_DETAILS * density;
+export const preserveRasterTotalDetailLimit = (density: number): number =>
+  PRESERVE_RASTER_MAX_TOTAL_DETAILS * density;

@@ -10,7 +10,7 @@ export type PublicEndpointConfig = Pick<ServerConfig, 'host' | 'port' | 'path'>;
 export const toPublicEndpointConfig = (config: PublicEndpointConfig): PublicEndpointConfig => ({
   host: config.host,
   port: config.port,
-  path: config.path
+  path: config.path,
 });
 
 export type RuntimeServerMode = 'starting' | 'inline' | 'sidecar' | 'stopped';

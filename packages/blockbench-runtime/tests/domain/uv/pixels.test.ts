@@ -7,7 +7,7 @@ const messages = buildUvPaintPixelMessages();
 const source = {
   width: 1,
   height: 1,
-  data: new Uint8ClampedArray([255, 0, 0, 255])
+  data: new Uint8ClampedArray([255, 0, 0, 255]),
 };
 
 const result = applyUvPaintPixels({
@@ -17,10 +17,10 @@ const result = applyUvPaintPixels({
     rects: [{ x1: 1, y1: 1, x2: 3, y2: 3 }],
     mapping: 'stretch',
     padding: 0,
-    anchor: [0, 0]
+    anchor: [0, 0],
   },
   label: 'test',
-  messages
+  messages,
 });
 
 assert.equal(result.ok, true);
@@ -35,5 +35,3 @@ if (result.ok) {
   assert.equal(data[inside + 3], 255);
   assert.equal(data[outside + 3], 0);
 }
-
-

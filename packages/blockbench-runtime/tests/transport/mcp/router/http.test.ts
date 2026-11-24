@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
 
-import { handleSessionDelete, handleSseGet } from '../../../../src/transport/mcp/routerHttpHandlers';
+import {
+  handleSessionDelete,
+  handleSseGet,
+} from '../../../../src/transport/mcp/routerHttpHandlers';
 import { SessionStore } from '../../../../src/transport/mcp/session';
 import type { SseConnection } from '../../../../src/transport/mcp/types';
-import { MCP_ACCEPT_SSE_REQUIRED, MCP_SESSION_ID_REQUIRED, MCP_TOO_MANY_SSE } from '../../../../src/shared/messages';
+import {
+  MCP_ACCEPT_SSE_REQUIRED,
+  MCP_SESSION_ID_REQUIRED,
+  MCP_TOO_MANY_SSE,
+} from '../../../../src/shared/messages';
 
 type RouterHttpContext = Parameters<typeof handleSseGet>[0];
 
@@ -17,8 +24,8 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     kind: 'json' as const,
     status,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
+    body: JSON.stringify(body),
+  }),
 });
 
 {
@@ -27,7 +34,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     method: 'GET',
     url: 'http://localhost/mcp',
     headers: {},
-    body: ''
+    body: '',
   });
   assert.equal(res.kind, 'json');
   assert.equal(res.status, 406);
@@ -43,7 +50,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     method: 'GET',
     url: 'http://localhost/mcp',
     headers: { accept: 'text/event-stream' },
-    body: ''
+    body: '',
   });
   assert.equal(res.kind, 'json');
   assert.equal(res.status, 400);
@@ -60,14 +67,14 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     session.sseConnections.add({
       send: () => undefined,
       close: () => undefined,
-      isClosed: () => false
+      isClosed: () => false,
     });
   }
   const res = handleSseGet(createContext(sessions), {
     method: 'GET',
     url: 'http://localhost/mcp',
     headers: { accept: 'text/event-stream', 'mcp-session-id': 's1' },
-    body: ''
+    body: '',
   });
   assert.equal(res.kind, 'json');
   assert.equal(res.status, 429);
@@ -84,7 +91,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     method: 'GET',
     url: 'http://localhost/mcp',
     headers: { accept: 'text/event-stream', 'mcp-session-id': 's1' },
-    body: ''
+    body: '',
   });
   assert.equal(res.kind, 'sse');
   if (res.kind === 'sse') {
@@ -94,7 +101,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     const conn: SseConnection = {
       send: () => undefined,
       close: () => undefined,
-      isClosed: () => false
+      isClosed: () => false,
     };
     const dispose = res.onOpen?.(conn);
     assert.equal(session.sseConnections.size, 1);
@@ -109,7 +116,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     method: 'DELETE',
     url: 'http://localhost/mcp',
     headers: {},
-    body: ''
+    body: '',
   });
   assert.equal(missing.kind, 'json');
   assert.equal(missing.status, 400);
@@ -123,7 +130,7 @@ const createContext = (sessions: SessionStore): RouterHttpContext => ({
     method: 'DELETE',
     url: 'http://localhost/mcp',
     headers: { 'mcp-session-id': 's1' },
-    body: ''
+    body: '',
   });
   assert.equal(ok.kind, 'json');
   assert.equal(ok.status, 200);

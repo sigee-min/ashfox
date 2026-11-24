@@ -6,7 +6,7 @@ import {
   MCP_INITIALIZE_REQUIRES_ID,
   MCP_PROTOCOL_VERSION_MISMATCH,
   MCP_SESSION_CAPACITY_REACHED,
-  MCP_SESSION_ID_REQUIRED
+  MCP_SESSION_ID_REQUIRED,
 } from '../../../../src/shared/messages';
 
 {
@@ -23,7 +23,7 @@ import {
     { jsonrpc: '2.0', method: 'initialize' },
     null,
     undefined,
-    {}
+    {},
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -36,13 +36,7 @@ import {
 {
   const sessions = new SessionStore(1);
   sessions.create('occupied', '2025-06-18');
-  const res = resolveSession(
-    sessions,
-    { jsonrpc: '2.0', method: 'initialize' },
-    6,
-    undefined,
-    {}
-  );
+  const res = resolveSession(sessions, { jsonrpc: '2.0', method: 'initialize' }, 6, undefined, {});
   assert.equal(res.ok, false);
   if (!res.ok) {
     assert.equal(res.status, 429);
@@ -58,7 +52,7 @@ import {
     { jsonrpc: '2.0', method: 'initialize' },
     1,
     '2025-11-25',
-    {}
+    {},
   );
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -69,13 +63,7 @@ import {
 
 {
   const sessions = new SessionStore();
-  const res = resolveSession(
-    sessions,
-    { jsonrpc: '2.0', method: 'tools/list' },
-    2,
-    undefined,
-    {}
-  );
+  const res = resolveSession(sessions, { jsonrpc: '2.0', method: 'tools/list' }, 2, undefined, {});
   assert.equal(res.ok, true);
   if (res.ok) {
     assert.ok(typeof res.newSessionId === 'string');
@@ -90,7 +78,7 @@ import {
     { jsonrpc: '2.0', method: 'custom/method' },
     3,
     undefined,
-    {}
+    {},
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -107,7 +95,7 @@ import {
     { jsonrpc: '2.0', method: 'tools/list' },
     4,
     '2025-06-18',
-    { 'mcp-session-id': 's1' }
+    { 'mcp-session-id': 's1' },
   );
   assert.equal(okRes.ok, true);
   if (okRes.ok) assert.equal(okRes.session, session);
@@ -117,7 +105,7 @@ import {
     { jsonrpc: '2.0', method: 'tools/list' },
     5,
     '2025-11-25',
-    { 'mcp-session-id': 's1' }
+    { 'mcp-session-id': 's1' },
   );
   assert.equal(mismatch.ok, false);
   if (!mismatch.ok) {

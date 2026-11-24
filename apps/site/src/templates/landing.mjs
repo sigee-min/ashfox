@@ -4,8 +4,11 @@ import { absoluteUrl, escapeHtml, githubUrl, pageShell } from './shell.mjs';
 
 export const renderLandingPage = ({ assets, config, showcase, locale = defaultLocale }) => {
   const messages = siteMessages(locale);
-  const t = key => escapeHtml(messages[key]);
-  const alternatives = localeRegistry.locales.map(option => ({ ...option, route: `${option.prefix}/` }));
+  const t = (key) => escapeHtml(messages[key]);
+  const alternatives = localeRegistry.locales.map((option) => ({
+    ...option,
+    route: `${option.prefix}/`,
+  }));
   const griffin = showcase.entries[0];
   const body = `
   <main id="main" class="world-landing">
@@ -26,7 +29,16 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
         <div class="world-stage" data-live-model data-model-src="${assets.heroModel}"><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="${t('heroAlt')}"></div>
         <div class="world-note"><span class="live-dot" aria-hidden="true"></span><span data-model-status role="status">${t('modelStatus')}</span></div>
         <div class="world-controls" aria-label="${t('modelControls')}">
-          <div>${[['look_around',t('lookAround')],['wing_display',t('spreadWings')],['greeting',t('greet')]].map(([id,label]) => `<button data-model-motion="${id}" aria-pressed="false" disabled>${label}</button>`).join('')}</div>
+          <div>${[
+            ['look_around', t('lookAround')],
+            ['wing_display', t('spreadWings')],
+            ['greeting', t('greet')],
+          ]
+            .map(
+              ([id, label]) =>
+                `<button data-model-motion="${id}" aria-pressed="false" disabled>${label}</button>`,
+            )
+            .join('')}</div>
           <details class="view-options"><summary>${t('cameraViews')}</summary><div class="view-controls"><button data-model-view="3.14159" disabled>${t('front')}</button><button data-model-view="4.71239" disabled>${t('side')}</button><button data-model-view="3.79159" disabled>${t('reset')}</button></div></details>
         </div>
         <div class="world-index"><a href="/examples/griffin/workbench/main.ashfox">${t('exploreSource')}</a><a href="/media/landing/griffin.glb" download>${t('downloadModel')}</a></div>
@@ -52,11 +64,17 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
     <section class="aac-frontier" id="frontier" aria-labelledby="frontier-title">
       <h2 id="frontier-title">${t('creaturesTitle')}</h2>
       <p class="section-lead">${t('creaturesBody')}</p>
-      <div class="frontier-grid">${showcase.entries.map(entry => {
-        const labels = { griffin: [t('griffin'), t('griffinBody'), 'griffin/workbench/main.ashfox'], fox: [t('fox'), t('foxBody'), 'fox/creatures/fox.ashfox'], goblin: [t('goblin'), t('goblinBody'), 'goblin/creatures/goblin.ashfox'] };
-        const [name, description, source] = labels[entry.entryName];
-        return `<article><img src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"><div><h3>${name}</h3><p>${description}</p><a href="${githubUrl}/blob/main/examples/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a class="replay-trigger" href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog"><span aria-hidden="true">▶</span>${t('watchReplay')}</a></div></article>`;
-      }).join('')}</div>
+      <div class="frontier-grid">${showcase.entries
+        .map((entry) => {
+          const labels = {
+            griffin: [t('griffin'), t('griffinBody'), 'griffin/workbench/main.ashfox'],
+            fox: [t('fox'), t('foxBody'), 'fox/creatures/fox.ashfox'],
+            goblin: [t('goblin'), t('goblinBody'), 'goblin/creatures/goblin.ashfox'],
+          };
+          const [name, description, source] = labels[entry.entryName];
+          return `<article><img src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"><div><h3>${name}</h3><p>${description}</p><a href="${githubUrl}/blob/main/examples/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a class="replay-trigger" href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog"><span aria-hidden="true">▶</span>${t('watchReplay')}</a></div></article>`;
+        })
+        .join('')}</div>
       <p class="evidence-note">${t('provenance')}</p>
       <a class="world-link" href="${githubUrl}/tree/main/examples/shared-creatures">${t('sharedSource')}</a>
     </section>
@@ -70,7 +88,43 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
 
     <section class="landing-finale" aria-labelledby="finale-title"><p class="eyebrow">${t('eyebrow')}</p><h2 id="finale-title">${t('firstAsset')}</h2><a class="button button-primary" href="#quick-start">${t('getStarted')}</a><a class="world-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)}</a></section>
   </main><script defer src="${assets.heroScript}"></script>`;
-  return pageShell({ active: 'product', assets, body, config, description: messages.summary, path: `${locale.prefix}/`, title: messages.pageTitle, locale, alternatives, headLinks: alternatives.map(option => `<link rel="alternate" hreflang="${option.code}" href="${absoluteUrl(config.siteOrigin, option.route)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${absoluteUrl(config.siteOrigin, '/')}">`, structuredData: {
-    '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'ashfox', url: absoluteUrl(config.siteOrigin, `${locale.prefix}/`), inLanguage: locale.code, applicationCategory: 'DeveloperApplication', operatingSystem: 'Windows, macOS, Linux', description: messages.summary, license: `${githubUrl}/blob/main/LICENSE`, isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, featureList: [messages.pageTitle, messages.heroIntro, messages.heroPromise, messages.inspectBody, messages.gameBody]
-  }});
+  return pageShell({
+    active: 'product',
+    assets,
+    body,
+    config,
+    description: messages.summary,
+    path: `${locale.prefix}/`,
+    title: messages.pageTitle,
+    locale,
+    alternatives,
+    headLinks:
+      alternatives
+        .map(
+          (option) =>
+            `<link rel="alternate" hreflang="${option.code}" href="${absoluteUrl(config.siteOrigin, option.route)}">`,
+        )
+        .join('') +
+      `<link rel="alternate" hreflang="x-default" href="${absoluteUrl(config.siteOrigin, '/')}">`,
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'ashfox',
+      url: absoluteUrl(config.siteOrigin, `${locale.prefix}/`),
+      inLanguage: locale.code,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Windows, macOS, Linux',
+      description: messages.summary,
+      license: `${githubUrl}/blob/main/LICENSE`,
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      featureList: [
+        messages.pageTitle,
+        messages.heroIntro,
+        messages.heroPromise,
+        messages.inspectBody,
+        messages.gameBody,
+      ],
+    },
+  });
 };

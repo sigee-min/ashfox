@@ -4,7 +4,11 @@ import type { ProjectSession, SessionState } from '../../session';
 import { ok, fail, type UsecaseResult } from '../result';
 import { withActiveAndRevision } from '../guards';
 import { resolveBoneTarget } from '../targetResolvers';
-import { collectDescendantBones, isDescendantBone, resolveBoneNameById } from '../../domain/sessionLookup';
+import {
+  collectDescendantBones,
+  isDescendantBone,
+  resolveBoneNameById,
+} from '../../domain/sessionLookup';
 import {
   MODEL_BONE_DESCENDANT_PARENT,
   MODEL_BONE_EXISTS,
@@ -14,10 +18,15 @@ import {
   MODEL_BONE_NAME_REQUIRED,
   MODEL_BONE_NAME_REQUIRED_FIX,
   MODEL_BONE_SELF_PARENT,
-  MODEL_PARENT_BONE_NOT_FOUND
+  MODEL_PARENT_BONE_NOT_FOUND,
 } from '../../shared/messages';
 import { ensureNonBlankFields } from './validators';
-import { ensureIdAvailable, ensureNameAvailable, ensureRenameAvailable, resolveEntityId } from '../crudChecks';
+import {
+  ensureIdAvailable,
+  ensureNameAvailable,
+  ensureRenameAvailable,
+  resolveEntityId,
+} from '../crudChecks';
 import { resolveTargets } from '../targetSelectors';
 import { buildIdNameMismatchMessage } from '../../shared/targetMessages';
 
@@ -65,13 +74,13 @@ export class BoneService {
           return fail({
             code: 'invalid_payload',
             message: MODEL_BONE_NAME_REQUIRED,
-            fix: MODEL_BONE_NAME_REQUIRED_FIX
+            fix: MODEL_BONE_NAME_REQUIRED_FIX,
           });
         }
         const blankErr = ensureNonBlankFields([
           [payload.name, 'Bone name'],
           [payload.parent, 'Parent bone name'],
-          [payload.parentId, 'Parent bone id']
+          [payload.parentId, 'Parent bone id'],
         ]);
         if (blankErr) return fail(blankErr);
         const parentName = payload.parentId
@@ -79,7 +88,10 @@ export class BoneService {
           : payload.parent;
         const parent = parentName ?? undefined;
         if (payload.parentId && !parentName) {
-          return fail({ code: 'invalid_payload', message: MODEL_PARENT_BONE_NOT_FOUND(payload.parentId) });
+          return fail({
+            code: 'invalid_payload',
+            message: MODEL_PARENT_BONE_NOT_FOUND(payload.parentId),
+          });
         }
         const nameErr = ensureNameAvailable(snapshot.bones, payload.name, MODEL_BONE_EXISTS);
         if (nameErr) return fail(nameErr);
@@ -94,7 +106,7 @@ export class BoneService {
           pivot,
           rotation: payload.rotation,
           scale: payload.scale,
-          visibility: payload.visibility
+          visibility: payload.visibility,
         });
         if (err) return fail(err);
         this.session.addBone({
@@ -104,10 +116,10 @@ export class BoneService {
           pivot,
           rotation: payload.rotation,
           scale: payload.scale,
-          visibility: payload.visibility
+          visibility: payload.visibility,
         });
         return ok({ id, name: payload.name });
-      }
+      },
     );
   }
 
@@ -135,7 +147,7 @@ export class BoneService {
           [payload.name, 'Bone name'],
           [payload.newName, 'Bone newName'],
           [payload.parent, 'Parent bone name'],
-          [payload.parentId, 'Parent bone id']
+          [payload.parentId, 'Parent bone id'],
         ]);
         if (blankErr) return fail(blankErr);
         const resolved = resolveBoneTarget(snapshot.bones, payload.id, payload.name);
@@ -143,12 +155,17 @@ export class BoneService {
         const target = resolved.target!;
         const targetName = target.name;
         const targetId = resolveEntityId(target.id, payload.id, 'bone');
-        const renameErr = ensureRenameAvailable(snapshot.bones, payload.newName, targetName, MODEL_BONE_EXISTS);
+        const renameErr = ensureRenameAvailable(
+          snapshot.bones,
+          payload.newName,
+          targetName,
+          MODEL_BONE_EXISTS,
+        );
         if (renameErr) return fail(renameErr);
         const parentRes = this.resolveParentUpdate(snapshot, targetName, {
           parentRoot: payload.parentRoot,
           parentId: payload.parentId,
-          parent: payload.parent
+          parent: payload.parent,
         });
         if (!parentRes.ok) return fail(parentRes.error);
         const parentUpdate = parentRes.value;
@@ -162,7 +179,7 @@ export class BoneService {
           pivot: payload.pivot,
           rotation: payload.rotation,
           scale: payload.scale,
-          visibility: payload.visibility
+          visibility: payload.visibility,
         });
         if (err) return fail(err);
         this.session.updateBone(targetName, {
@@ -172,10 +189,10 @@ export class BoneService {
           pivot: payload.pivot,
           rotation: payload.rotation,
           scale: payload.scale,
-          visibility: payload.visibility
+          visibility: payload.visibility,
         });
         return ok({ id: targetId, name: payload.newName ?? targetName });
-      }
+      },
     );
   }
 
@@ -206,12 +223,14 @@ export class BoneService {
           {
             required: { message: MODEL_BONE_ID_OR_NAME_REQUIRED },
             mismatch: { kind: 'Bone', plural: 'bones', message: buildIdNameMismatchMessage },
-            notFound: MODEL_BONE_NOT_FOUND
-          }
+            notFound: MODEL_BONE_NOT_FOUND,
+          },
         );
         if (!resolvedTargets.ok) return fail(resolvedTargets.error);
         const targets = resolvedTargets.value;
-        const parentByName = new Map(snapshot.bones.map((bone) => [bone.name, bone.parent ?? null]));
+        const parentByName = new Map(
+          snapshot.bones.map((bone) => [bone.name, bone.parent ?? null]),
+        );
         const targetNameSet = new Set(targets.map((target) => target.name));
         const topLevelTargets = targets.filter((target) => {
           let parent = parentByName.get(target.name);
@@ -244,33 +263,38 @@ export class BoneService {
         const removed = this.session.removeBones(removedNameSet);
         const removedBones = removed.removedBones;
         const removedCubes = removed.removedCubes;
-        const primary = deleted[0] ?? { id: targets[0]?.id ?? undefined, name: targets[0]?.name ?? 'unknown' };
+        const primary = deleted[0] ?? {
+          id: targets[0]?.id ?? undefined,
+          name: targets[0]?.name ?? 'unknown',
+        };
         return ok({
           id: primary.id ?? primary.name,
           name: primary.name,
           removedBones,
           removedCubes,
-          deleted
+          deleted,
         });
-      }
+      },
     );
   }
 
   private resolveParentUpdate(
     snapshot: SessionState,
     targetName: string,
-    payload: { parentRoot?: boolean; parentId?: string; parent?: string }
+    payload: { parentRoot?: boolean; parentId?: string; parent?: string },
   ): UsecaseResult<string | null | undefined> {
-    const parentUpdate =
-      payload.parentRoot
-        ? null
-        : payload.parentId
-          ? resolveBoneNameById(snapshot.bones, payload.parentId)
-          : payload.parent !== undefined
-            ? payload.parent
-            : undefined;
+    const parentUpdate = payload.parentRoot
+      ? null
+      : payload.parentId
+        ? resolveBoneNameById(snapshot.bones, payload.parentId)
+        : payload.parent !== undefined
+          ? payload.parent
+          : undefined;
     if (payload.parentId && !parentUpdate) {
-      return fail({ code: 'invalid_payload', message: MODEL_PARENT_BONE_NOT_FOUND(payload.parentId) });
+      return fail({
+        code: 'invalid_payload',
+        message: MODEL_PARENT_BONE_NOT_FOUND(payload.parentId),
+      });
     }
     if (typeof parentUpdate === 'string') {
       if (parentUpdate === targetName) {
@@ -278,7 +302,10 @@ export class BoneService {
       }
       const parentExists = snapshot.bones.some((b) => b.name === parentUpdate);
       if (!parentExists) {
-        return fail({ code: 'invalid_payload', message: MODEL_PARENT_BONE_NOT_FOUND(parentUpdate) });
+        return fail({
+          code: 'invalid_payload',
+          message: MODEL_PARENT_BONE_NOT_FOUND(parentUpdate),
+        });
       }
       if (isDescendantBone(snapshot.bones, targetName, parentUpdate)) {
         return fail({ code: 'invalid_payload', message: MODEL_BONE_DESCENDANT_PARENT });
@@ -287,4 +314,3 @@ export class BoneService {
     return ok(parentUpdate);
   }
 }
-

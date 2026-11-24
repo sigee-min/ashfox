@@ -99,7 +99,18 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
   if (!Array.isArray(r.variants)) return fail('Invalid variants');
   return {
     variants: r.variants.map((raw) => {
-      const variant = record(raw, ['id', 'frames', 'sampleRate', 'channels', 'playback', 'peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta']);
+      const variant = record(raw, [
+        'id',
+        'frames',
+        'sampleRate',
+        'channels',
+        'playback',
+        'peak',
+        'rms',
+        'dc',
+        'seamDelta',
+        'maxAdjacentDelta',
+      ]);
       if (
         typeof variant.id !== 'string' ||
         !Number.isSafeInteger(variant.frames) ||
@@ -109,15 +120,19 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
       )
         fail('Invalid audio metadata');
       for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta']) {
-        if (typeof variant[key] !== 'number' || !Number.isFinite(variant[key])) fail('Invalid audio statistics');
+        if (typeof variant[key] !== 'number' || !Number.isFinite(variant[key]))
+          fail('Invalid audio statistics');
       }
       return {
         id: variant.id as string,
         frames: variant.frames as number,
         sampleRate: 48000,
         channels: 1,
-        peak: variant.peak as number, rms: variant.rms as number, dc: variant.dc as number,
-        seamDelta: variant.seamDelta as number, maxAdjacentDelta: variant.maxAdjacentDelta as number,
+        peak: variant.peak as number,
+        rms: variant.rms as number,
+        dc: variant.dc as number,
+        seamDelta: variant.seamDelta as number,
+        maxAdjacentDelta: variant.maxAdjacentDelta as number,
         playback: readPlayback(variant.playback, variant.frames as number),
       };
     }),
@@ -223,10 +238,16 @@ export const verifyBundle = (
     }
     const details = metadata(asset.kind, asset.metadata);
     if (asset.kind === 'sound' && 'variants' in details) {
-      const variants = new Set(details.variants.map(v => v.id));
-      if (variants.size !== details.variants.length || !variants.size || variants.size > 8 || assetFiles.length !== variants.size) fail('Invalid sound file coverage');
+      const variants = new Set(details.variants.map((v) => v.id));
+      if (
+        variants.size !== details.variants.length ||
+        !variants.size ||
+        variants.size > 8 ||
+        assetFiles.length !== variants.size
+      )
+        fail('Invalid sound file coverage');
       for (const variant of details.variants) {
-        const file = assetFiles.find(f => f.path.endsWith(`/${variant.id}.wav`));
+        const file = assetFiles.find((f) => f.path.endsWith(`/${variant.id}.wav`));
         if (!file) return fail('Missing sound WAV');
         const pcm = fs.readFileSync(contained(directory, file.path));
         verifyPcm(pcm, variant.frames);
@@ -259,9 +280,11 @@ export const verifyBundle = (
           .filter((f) => f.path.startsWith(root) && f.path !== root + details.manifest)
           .sort((a, b) => (a.path < b.path ? -1 : 1));
         if (json(references) !== json(actual)) fail('Game manifest lineage mismatch');
-        for (const sound of manifest.assets) if (sound.kind === 'sound' && sound.codec === 'wav') {
-          for (const variant of sound.variants) verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames);
-        }
+        for (const sound of manifest.assets)
+          if (sound.kind === 'sound' && sound.codec === 'wav') {
+            for (const variant of sound.variants)
+              verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames);
+          }
       }
     }
     assets.push({

@@ -7,5 +7,5 @@ export {
   updateAnimation,
   removeAnimations,
   upsertAnimationChannel,
-  upsertAnimationTrigger
+  upsertAnimationTrigger,
 } from './animations';

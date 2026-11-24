@@ -15,50 +15,34 @@ export const packGroups = (
   width: number,
   height: number,
   padding: number,
-  messages: UvAtlasMessages
+  messages: UvAtlasMessages,
 ): DomainResult<Placement[]> => {
-  const oversized = groups.find(
-    (group) => group.width > width || group.height > height
-  );
+  const oversized = groups.find((group) => group.width > width || group.height > height);
   if (oversized) {
-    return overflow(
-      width,
-      height,
-      oversized.width,
-      oversized.height,
-      messages
-    );
+    return overflow(width, height, oversized.width, oversized.height, messages);
   }
   const placements = packUvAtlas(
     groups.map((group) => ({
       key: group.key,
       width: group.width,
       height: group.height,
-      value: group
+      value: group,
     })),
     width,
     height,
-    padding
+    padding,
   );
   if (!placements) {
-    const last = [...groups].sort((left, right) =>
-      left.key.localeCompare(right.key)
-    ).at(-1);
-    return overflow(
-      width,
-      height,
-      last?.width ?? 0,
-      last?.height ?? 0,
-      messages
-    );
+    const last = [...groups].sort((left, right) => left.key.localeCompare(right.key)).at(-1);
+    return overflow(width, height, last?.width ?? 0, last?.height ?? 0, messages);
   }
   return {
     ok: true,
     data: placements.map(({ value, x, y }) => ({
       group: value,
       x,
-      y
-    }))
+      y,
+    })),
   };
 };
 
@@ -67,10 +51,10 @@ const overflow = (
   height: number,
   rectWidth: number,
   rectHeight: number,
-  messages: UvAtlasMessages
+  messages: UvAtlasMessages,
 ): DomainResult<never> =>
   atlasFailure('invalid_state', messages.overflow, {
     reason: 'atlas_overflow',
     resolution: { width, height },
-    rect: { width: rectWidth, height: rectHeight }
+    rect: { width: rectWidth, height: rectHeight },
   });

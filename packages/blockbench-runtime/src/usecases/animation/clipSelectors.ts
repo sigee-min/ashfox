@@ -15,10 +15,9 @@ export const ensureClipSelector = (clipId?: string, clip?: string): ToolError | 
 export const resolveClipTarget = (
   snapshot: SessionState,
   clipId?: string,
-  clip?: string
+  clip?: string,
 ): UsecaseResult<SessionState['animations'][number]> => {
   const resolved = resolveAnimationTarget(snapshot.animations, clipId, clip);
   if (resolved.error) return fail(resolved.error);
   return ok(resolved.target!);
 };
-

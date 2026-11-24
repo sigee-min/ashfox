@@ -27,7 +27,7 @@ export const findUvScaleIssues = (
   usage: TextureUsage,
   cubes: Cube[],
   resolution: { width: number; height: number } | undefined,
-  policy: UvPolicyConfig
+  policy: UvPolicyConfig,
 ): UvScaleResult => {
   const cubeById = new Map<string, Cube>();
   const cubeByName = new Map<string, Cube>();
@@ -55,7 +55,7 @@ export const findUvScaleIssues = (
         const expectedRes = computeExpectedUvSizeWithOverflow(
           getFaceDimensions(target, face.face),
           entryResolution,
-          policy
+          policy,
         );
         if (!expectedRes) return;
         const expected = { width: expectedRes.width, height: expectedRes.height };
@@ -75,7 +75,7 @@ export const findUvScaleIssues = (
             expected,
             ratio: buildRatio(actualWidth, actualHeight, expected),
             reason: mismatch,
-            uv
+            uv,
           };
         }
       });
@@ -86,7 +86,7 @@ export const findUvScaleIssues = (
         textureName: entry.name,
         mismatchCount,
         scale: scaleTarget,
-        ...(example ? { example } : {})
+        ...(example ? { example } : {}),
       });
     }
   });
@@ -98,16 +98,19 @@ const getScaleMismatchReason = (
   actualHeight: number,
   expected: { width: number; height: number },
   policy: UvPolicyConfig,
-  scaleTarget: { width: number; height: number }
+  scaleTarget: { width: number; height: number },
 ): 'tiny' | 'ratio' | null => {
-  const scaledExpectedWidth = Number.isFinite(scaleTarget.width) && scaleTarget.width > 0
-    ? expected.width * scaleTarget.width
-    : expected.width;
-  const scaledExpectedHeight = Number.isFinite(scaleTarget.height) && scaleTarget.height > 0
-    ? expected.height * scaleTarget.height
-    : expected.height;
+  const scaledExpectedWidth =
+    Number.isFinite(scaleTarget.width) && scaleTarget.width > 0
+      ? expected.width * scaleTarget.width
+      : expected.width;
+  const scaledExpectedHeight =
+    Number.isFinite(scaleTarget.height) && scaleTarget.height > 0
+      ? expected.height * scaleTarget.height
+      : expected.height;
   const isTinyActual = actualWidth <= policy.tinyThreshold || actualHeight <= policy.tinyThreshold;
-  const isTinyExpected = scaledExpectedWidth <= policy.tinyThreshold || scaledExpectedHeight <= policy.tinyThreshold;
+  const isTinyExpected =
+    scaledExpectedWidth <= policy.tinyThreshold || scaledExpectedHeight <= policy.tinyThreshold;
   if (isTinyActual || isTinyExpected) {
     return isTinyActual && isTinyExpected ? null : 'tiny';
   }
@@ -124,7 +127,7 @@ const resolveScaleTarget = (
   cubeById: Map<string, Cube>,
   cubeByName: Map<string, Cube>,
   resolution: { width: number; height: number },
-  policy: UvPolicyConfig
+  policy: UvPolicyConfig,
 ): { width: number; height: number } => {
   const widthRatios: number[] = [];
   const heightRatios: number[] = [];
@@ -135,7 +138,11 @@ const resolveScaleTarget = (
     cube.faces.forEach((face) => {
       const uv = face.uv;
       if (!uv) return;
-      const expectedRes = computeExpectedUvSizeWithOverflow(getFaceDimensions(target, face.face), resolution, policy);
+      const expectedRes = computeExpectedUvSizeWithOverflow(
+        getFaceDimensions(target, face.face),
+        resolution,
+        policy,
+      );
       if (!expectedRes || expectedRes.exceedsTexture) return;
       const expected = { width: expectedRes.width, height: expectedRes.height };
       const actualWidth = Math.abs(uv[2] - uv[0]);
@@ -150,13 +157,13 @@ const resolveScaleTarget = (
   });
   return {
     width: median(widthRatios) ?? 1,
-    height: median(heightRatios) ?? 1
+    height: median(heightRatios) ?? 1,
   };
 };
 
 const resolveEntryResolution = (
   entry: TextureUsage['textures'][number],
-  fallback: { width: number; height: number } | undefined
+  fallback: { width: number; height: number } | undefined,
 ): { width: number; height: number } | null => {
   const width = normalizeResolution(entry.width);
   const height = normalizeResolution(entry.height);
@@ -176,7 +183,7 @@ const normalizeResolution = (value: unknown): number | null => {
 const buildRatio = (
   actualWidth: number,
   actualHeight: number,
-  expected: { width: number; height: number }
+  expected: { width: number; height: number },
 ): { width: number; height: number } | undefined => {
   if (expected.width <= 0 || expected.height <= 0) return undefined;
   const widthRatio = actualWidth / expected.width;
@@ -194,7 +201,3 @@ const median = (values: number[]): number | null => {
   }
   return sorted[mid];
 };
-
-
-
-

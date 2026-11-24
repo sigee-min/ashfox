@@ -23,11 +23,16 @@ import type {
   UpdateMeshCommand,
   UpdateTextureCommand,
   DeleteMeshCommand,
-  TriggerKeyframeCommand
+  TriggerKeyframeCommand,
 } from '../src/ports/editor';
 import type { FormatPort } from '../src/ports/formats';
 import type { HostPort } from '../src/ports/host';
-import type { ResourceStore, ResourceContent, ResourceDescriptor, ResourceTemplate } from '../src/ports/resources';
+import type {
+  ResourceStore,
+  ResourceContent,
+  ResourceDescriptor,
+  ResourceTemplate,
+} from '../src/ports/resources';
 import type { SnapshotPort } from '../src/ports/snapshot';
 import type { TextureRendererPort } from '../src/ports/textureRenderer';
 import type { TmpSaveResult, TmpStorePort } from '../src/ports/tmpStore';
@@ -45,16 +50,19 @@ type EditorStubState = {
 
 export const createMockImage = (dataUri = 'data:image/png;base64,AAAA') =>
   ({
-    toDataURL: () => dataUri
+    toDataURL: () => dataUri,
   }) as CanvasImageSource;
 
 const buildEditorStub = (state: EditorStubState): EditorPort => {
-
   const findTexture = (params: { id?: string; name?: string }) =>
-    state.textures.find((tex) => (params.id && tex.id === params.id) || (params.name && tex.name === params.name));
+    state.textures.find(
+      (tex) => (params.id && tex.id === params.id) || (params.name && tex.name === params.name),
+    );
 
   const upsertTexture = (entry: TextureStat) => {
-    const idx = state.textures.findIndex((tex) => (entry.id && tex.id === entry.id) || tex.name === entry.name);
+    const idx = state.textures.findIndex(
+      (tex) => (entry.id && tex.id === entry.id) || tex.name === entry.name,
+    );
     if (idx >= 0) {
       state.textures[idx] = { ...state.textures[idx], ...entry };
       return;
@@ -64,7 +72,7 @@ const buildEditorStub = (state: EditorStubState): EditorPort => {
 
   const removeTexture = (params: { id?: string; name?: string }) => {
     state.textures = state.textures.filter(
-      (tex) => !((params.id && tex.id === params.id) || (params.name && tex.name === params.name))
+      (tex) => !((params.id && tex.id === params.id) || (params.name && tex.name === params.name)),
     );
   };
 
@@ -76,7 +84,7 @@ const buildEditorStub = (state: EditorStubState): EditorPort => {
         id: params.id ?? null,
         name: params.name,
         width: params.width ?? 16,
-        height: params.height ?? 16
+        height: params.height ?? 16,
       });
       return null;
     },
@@ -88,7 +96,7 @@ const buildEditorStub = (state: EditorStubState): EditorPort => {
         name: nextName,
         width: params.width ?? target?.width ?? 16,
         height: params.height ?? target?.height ?? 16,
-        path: target?.path
+        path: target?.path,
       });
       return null;
     },
@@ -106,8 +114,8 @@ const buildEditorStub = (state: EditorStubState): EditorPort => {
           width: target.width,
           height: target.height,
           dataUri: state.readTextureDataUri,
-          image: createMockImage(state.readTextureDataUri)
-        }
+          image: createMockImage(state.readTextureDataUri),
+        },
       };
     },
     assignTexture: (_params: AssignTextureCommand) => null,
@@ -138,7 +146,7 @@ const buildEditorStub = (state: EditorStubState): EditorPort => {
       return null;
     },
     setProjectUvPixelsPerBlock: (_pixelsPerBlock: number) => null,
-    getTextureUsage: (_params: TextureUsageQuery) => ({ result: state.textureUsage })
+    getTextureUsage: (_params: TextureUsageQuery) => ({ result: state.textureUsage }),
   };
 };
 
@@ -154,11 +162,11 @@ const defaultEditorState = (): EditorStubState => ({
       width: 16,
       height: 16,
       byteLength: 4,
-      dataUri: 'data:image/png;base64,AAAA'
-    }
+      dataUri: 'data:image/png;base64,AAAA',
+    },
   },
   readTextureDataUri: 'data:image/png;base64,AAAA',
-  writes: []
+  writes: [],
 });
 
 export const createEditorStub = (stateOverrides: Partial<EditorStubState> = {}): EditorPort => {
@@ -174,18 +182,21 @@ export const createEditorStubWithState = (stateOverrides: Partial<EditorStubStat
 export const createFormatPortStub = (
   formatId = 'java_block',
   name = 'Java Block',
-  caps: { singleTexture?: boolean; perTextureUvSize?: boolean } = {}
+  caps: { singleTexture?: boolean; perTextureUvSize?: boolean } = {},
 ): FormatPort => ({
   listFormats: () => [{ id: formatId, name, ...caps }],
-  getActiveFormatId: () => formatId
+  getActiveFormatId: () => formatId,
 });
 
-export const createSnapshotPortStub = (session: ProjectSession, override?: () => ReturnType<ProjectSession['snapshot']> | null): SnapshotPort => ({
-  readSnapshot: () => (override ? override() : session.snapshot())
+export const createSnapshotPortStub = (
+  session: ProjectSession,
+  override?: () => ReturnType<ProjectSession['snapshot']> | null,
+): SnapshotPort => ({
+  readSnapshot: () => (override ? override() : session.snapshot()),
 });
 
 export const createHostPortStub = (): HostPort => ({
-  schedulePluginReload: (_delayMs: number) => null
+  schedulePluginReload: (_delayMs: number) => null,
 });
 
 export const createTextureRendererStub = (): TextureRendererPort => ({
@@ -193,46 +204,50 @@ export const createTextureRendererStub = (): TextureRendererPort => ({
     result: {
       image: createMockImage('data:image/png;base64,BBBB'),
       width,
-      height
-    }
+      height,
+    },
   }),
   readPixels: ({ width = 1, height = 1 }) => ({
     result: {
       width,
       height,
-      data: new Uint8ClampedArray(width * height * 4)
-    }
-  })
+      data: new Uint8ClampedArray(width * height * 4),
+    },
+  }),
 });
 
 export const createTmpStoreStub = (): TmpStorePort => ({
-  saveDataUri: (dataUri: string, options?: { nameHint?: string; prefix?: string; cwd?: string }) => {
+  saveDataUri: (
+    dataUri: string,
+    options?: { nameHint?: string; prefix?: string; cwd?: string },
+  ) => {
     const byteLength = dataUri.length;
     const name = options?.nameHint ?? 'tmp';
     const prefix = options?.prefix ?? 'tmp';
     const data: TmpSaveResult = {
       path: `${prefix}_${name}.png`,
       mimeType: 'image/png',
-      byteLength
+      byteLength,
     };
     return { ok: true, data };
-  }
+  },
 });
 
 export const createResourceStoreStub = (): ResourceStore => {
   const store = new Map<string, ResourceContent>();
   return {
-    list: (): ResourceDescriptor[] => Array.from(store.values()).map((res) => ({
-      uri: res.uri,
-      name: res.name,
-      mimeType: res.mimeType,
-      description: res.description
-    })),
+    list: (): ResourceDescriptor[] =>
+      Array.from(store.values()).map((res) => ({
+        uri: res.uri,
+        name: res.name,
+        mimeType: res.mimeType,
+        description: res.description,
+      })),
     read: (uri: string) => store.get(uri) ?? null,
     listTemplates: (): ResourceTemplate[] => [],
     has: (uri: string) => store.has(uri),
     put: (resource: ResourceContent) => {
       store.set(resource.uri, resource);
-    }
+    },
   };
 };

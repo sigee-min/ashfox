@@ -1,8 +1,5 @@
 import { sha256ByteDigest } from '../../provenance/digest';
-import {
-  assertCanonicalTextureRaster,
-  type CanonicalTextureRaster
-} from './raster';
+import { assertCanonicalTextureRaster, type CanonicalTextureRaster } from './raster';
 
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
   let crc = value;
@@ -22,9 +19,7 @@ const crc32 = (bytes: Uint8Array, start: number, end: number): number => {
 
 /** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
  * exact final buffer. No full-size scanline, compressed or chunk copies. */
-export const encodeCanonicalPng = (
-  raster: CanonicalTextureRaster
-): Uint8Array => {
+export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
   assertCanonicalTextureRaster(raster);
   const stride = raster.width * 4 + 1;
   const scanlineLength = stride * raster.height;
@@ -49,12 +44,16 @@ export const encodeCanonicalPng = (
   let output = beginChunk(33, 'IDAT', compressedLength);
   bytes[output++] = 0x78;
   bytes[output++] = 0x01;
-  let pixel = 0, column = 0, first = 1, second = 0, adlerCount = 0;
+  let pixel = 0,
+    column = 0,
+    first = 1,
+    second = 0,
+    adlerCount = 0;
   for (let offset = 0; offset < scanlineLength;) {
     const length = Math.min(65535, scanlineLength - offset);
     bytes[output++] = offset + length === scanlineLength ? 1 : 0;
     view.setUint16(output, length, true);
-    view.setUint16(output + 2, (~length) & 0xffff, true);
+    view.setUint16(output + 2, ~length & 0xffff, true);
     output += 4;
     for (let index = 0; index < length; index += 1) {
       const byte = column === 0 ? 0 : raster.rgba.at(pixel++)!;
@@ -78,13 +77,9 @@ export const encodeCanonicalPng = (
   return bytes;
 };
 
-export const canonicalRgbaDigest = (
-  raster: CanonicalTextureRaster
-): string => {
+export const canonicalRgbaDigest = (raster: CanonicalTextureRaster): string => {
   assertCanonicalTextureRaster(raster);
   return sha256ByteDigest(raster.rgba.copy());
 };
 
-export const canonicalPngDigest = (
-  png: ArrayLike<number>
-): string => sha256ByteDigest(png);
+export const canonicalPngDigest = (png: ArrayLike<number>): string => sha256ByteDigest(png);

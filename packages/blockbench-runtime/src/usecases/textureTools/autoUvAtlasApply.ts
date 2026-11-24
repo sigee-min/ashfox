@@ -4,7 +4,7 @@ import type { AtlasPlan } from '../../domain/uv/atlas';
 import type { AutoUvAtlasPayload, ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import {
   TEXTURE_AUTO_UV_SOURCE_MISSING,
-  TEXTURE_AUTO_UV_SOURCE_SIZE_MISSING
+  TEXTURE_AUTO_UV_SOURCE_SIZE_MISSING,
 } from '../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../result';
 import type { TextureToolContext } from './context';
@@ -23,7 +23,7 @@ export type ReprojectTextureRenderer = NonNullable<TextureToolContext['textureRe
 };
 
 export const toReprojectTextureRenderer = (
-  renderer: TextureToolContext['textureRenderer']
+  renderer: TextureToolContext['textureRenderer'],
 ): ReprojectTextureRenderer | null => {
   if (!renderer || typeof renderer.readPixels !== 'function') return null;
   return renderer as ReprojectTextureRenderer;
@@ -39,7 +39,7 @@ export const applyAutoUvAtlasPlan = (params: {
   const assignmentByFace = buildAssignmentByFace(params.plan);
   const applyTextures = applyAtlasTextures({
     ...params,
-    assignmentByFace
+    assignmentByFace,
   });
   if (!applyTextures.ok) return applyTextures;
 
@@ -62,14 +62,14 @@ const applyAtlasTextures = (params: {
     if (sourceRes.error || !sourceRes.result) {
       return fail({
         code: 'invalid_state',
-        message: TEXTURE_AUTO_UV_SOURCE_MISSING(texture.name)
+        message: TEXTURE_AUTO_UV_SOURCE_MISSING(texture.name),
       });
     }
     const source = sourceRes.result;
     if (!source.image) {
       return fail({
         code: 'invalid_state',
-        message: TEXTURE_AUTO_UV_SOURCE_MISSING(texture.name)
+        message: TEXTURE_AUTO_UV_SOURCE_MISSING(texture.name),
       });
     }
     const sourceWidth = source.width ?? texture.width;
@@ -77,21 +77,21 @@ const applyAtlasTextures = (params: {
     if (!sourceWidth || !sourceHeight) {
       return fail({
         code: 'invalid_state',
-        message: TEXTURE_AUTO_UV_SOURCE_SIZE_MISSING(texture.name)
+        message: TEXTURE_AUTO_UV_SOURCE_SIZE_MISSING(texture.name),
       });
     }
 
     if (mappings.length === 0) {
       mappings.push({
         from: [0, 0, sourceWidth, sourceHeight],
-        to: [0, 0, params.plan.resolution.width, params.plan.resolution.height]
+        to: [0, 0, params.plan.resolution.width, params.plan.resolution.height],
       });
     }
 
     const readRes = params.textureRenderer.readPixels({
       image: source.image,
       width: sourceWidth,
-      height: sourceHeight
+      height: sourceHeight,
     });
     if (readRes.error || !readRes.result) {
       return fail(readRes.error ?? { code: 'unknown', message: 'read failed' });
@@ -102,7 +102,7 @@ const applyAtlasTextures = (params: {
       image: source.image,
       width: readRes.result.width,
       height: readRes.result.height,
-      data: readRes.result.data
+      data: readRes.result.data,
     });
 
     const pixels = reprojectTexturePixels({
@@ -111,12 +111,12 @@ const applyAtlasTextures = (params: {
       sourceHeight: readRes.result.height,
       destWidth: params.plan.resolution.width,
       destHeight: params.plan.resolution.height,
-      mappings
+      mappings,
     });
     const renderRes = params.textureRenderer.renderPixels({
       width: params.plan.resolution.width,
       height: params.plan.resolution.height,
-      data: pixels
+      data: pixels,
     });
     if (renderRes.error || !renderRes.result) {
       return fail(renderRes.error ?? { code: 'unknown', message: 'render failed' });
@@ -128,7 +128,7 @@ const applyAtlasTextures = (params: {
       image: renderRes.result.image,
       width: params.plan.resolution.width,
       height: params.plan.resolution.height,
-      ifRevision: params.payload.ifRevision
+      ifRevision: params.payload.ifRevision,
     });
     if (!updateRes.ok && updateRes.error.code !== 'no_change') return fail(updateRes.error);
     if (!updateRes.ok) continue;
@@ -140,27 +140,24 @@ const applyAtlasTextures = (params: {
         id: source.id ?? texture.id,
         name: source.name ?? texture.name,
         width: params.plan.resolution.width,
-        height: params.plan.resolution.height
+        height: params.plan.resolution.height,
       },
       ifRevision: params.payload.ifRevision,
-      backup
+      backup,
     });
     if (rollbackErr) return fail(rollbackErr);
   }
   return ok(undefined);
 };
 
-const applyFaceUvAssignments = (
-  ctx: TextureToolContext,
-  plan: AtlasPlan
-): UsecaseResult<void> => {
+const applyFaceUvAssignments = (ctx: TextureToolContext, plan: AtlasPlan): UsecaseResult<void> => {
   const updatesByCube = new Map<string, { cubeId?: string; cubeName: string; faces: FaceUvMap }>();
   plan.assignments.forEach((assignment) => {
     const key = assignment.cubeId ? `id:${assignment.cubeId}` : `name:${assignment.cubeName}`;
     const entry = updatesByCube.get(key) ?? {
       cubeId: assignment.cubeId,
       cubeName: assignment.cubeName,
-      faces: {}
+      faces: {},
     };
     entry.faces[assignment.face] = assignment.uv;
     if (!entry.cubeId && assignment.cubeId) entry.cubeId = assignment.cubeId;
@@ -171,7 +168,7 @@ const applyFaceUvAssignments = (
     const err = ctx.editor.setFaceUv({
       cubeId: entry.cubeId,
       cubeName: entry.cubeName,
-      faces: entry.faces
+      faces: entry.faces,
     });
     if (err) return fail(err);
   }
@@ -188,16 +185,19 @@ const buildAssignmentByFace = (plan: AtlasPlan): Map<string, [number, number, nu
 
 const collectReprojectMappings = (
   texture: TextureUsage['textures'][number],
-  assignmentByFace: Map<string, [number, number, number, number]>
+  assignmentByFace: Map<string, [number, number, number, number]>,
 ): Array<{ from: [number, number, number, number]; to: [number, number, number, number] }> => {
-  const mappings: Array<{ from: [number, number, number, number]; to: [number, number, number, number] }> = [];
+  const mappings: Array<{
+    from: [number, number, number, number];
+    to: [number, number, number, number];
+  }> = [];
   for (const cube of texture.cubes) {
     for (const face of cube.faces) {
       const nextRect = assignmentByFace.get(toFaceKey(cube.id, cube.name, face.face));
       if (!nextRect || !face.uv) continue;
       mappings.push({
         from: face.uv,
-        to: nextRect
+        to: nextRect,
       });
     }
   }
@@ -218,14 +218,15 @@ const captureTextureBackup = (params: {
   const renderRes = params.textureRenderer.renderPixels({
     width: params.width,
     height: params.height,
-    data: snapshot
+    data: snapshot,
   });
-  const backupImage = renderRes.error || !renderRes.result?.image ? params.image : renderRes.result.image;
+  const backupImage =
+    renderRes.error || !renderRes.result?.image ? params.image : renderRes.result.image;
   return {
     image: backupImage,
     width: params.width,
     height: params.height,
-    opaquePixels: countOpaquePixels(snapshot)
+    opaquePixels: countOpaquePixels(snapshot),
   };
 };
 
@@ -237,7 +238,10 @@ const maybeRollbackTextureLoss = (params: {
   backup: TextureBackup | null;
 }): ToolError | null => {
   if (!params.backup) return null;
-  const readRes = params.ctx.editor.readTexture({ id: params.texture.id, name: params.texture.name });
+  const readRes = params.ctx.editor.readTexture({
+    id: params.texture.id,
+    name: params.texture.name,
+  });
   if (readRes.error || !readRes.result?.image) return null;
 
   const width = Number(readRes.result.width ?? params.texture.width ?? params.backup.width);
@@ -247,7 +251,7 @@ const maybeRollbackTextureLoss = (params: {
   const pixelRes = params.textureRenderer.readPixels({
     image: readRes.result.image,
     width,
-    height
+    height,
   });
   if (pixelRes.error || !pixelRes.result) return null;
 
@@ -260,7 +264,7 @@ const maybeRollbackTextureLoss = (params: {
     image: params.backup.image,
     width: params.backup.width,
     height: params.backup.height,
-    ifRevision: params.ifRevision
+    ifRevision: params.ifRevision,
   });
   if (!rollbackRes.ok && rollbackRes.error.code !== 'no_change') return rollbackRes.error;
 
@@ -271,8 +275,8 @@ const maybeRollbackTextureLoss = (params: {
       reason: 'texture_recovery_guard',
       context: 'auto_uv_atlas',
       beforeOpaquePixels: params.backup.opaquePixels,
-      afterOpaquePixels: currentOpaque
-    }
+      afterOpaquePixels: currentOpaque,
+    },
   };
 };
 
@@ -284,10 +288,7 @@ const countOpaquePixels = (data: Uint8ClampedArray): number => {
   return count;
 };
 
-const isSuspiciousOpaqueDrop = (
-  beforeOpaquePixels: number,
-  afterOpaquePixels: number
-): boolean => {
+const isSuspiciousOpaqueDrop = (beforeOpaquePixels: number, afterOpaquePixels: number): boolean => {
   if (!Number.isFinite(beforeOpaquePixels) || !Number.isFinite(afterOpaquePixels)) return false;
   if (beforeOpaquePixels < 256) return false;
   if (afterOpaquePixels >= beforeOpaquePixels) return false;

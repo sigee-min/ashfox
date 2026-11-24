@@ -49,7 +49,9 @@ const FIXTURE_DIR = path.join(__dirname, '..', '..', '..', 'fixtures', 'blockben
 
 const loadFixtures = (): Fixture[] => {
   const files = fs.readdirSync(FIXTURE_DIR).filter((file) => file.endsWith('.json'));
-  return files.map((file) => JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, file), 'utf8')) as Fixture);
+  return files.map(
+    (file) => JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, file), 'utf8')) as Fixture,
+  );
 };
 
 const getPath = (value: unknown, pathExpr: string): unknown => {
@@ -69,7 +71,11 @@ const resolveExpectValue = (value: unknown, captures: Map<string, unknown>): unk
   return value;
 };
 
-const assertExpectations = (result: unknown, expects: FixtureExpect[] | undefined, captures: Map<string, unknown>) => {
+const assertExpectations = (
+  result: unknown,
+  expects: FixtureExpect[] | undefined,
+  captures: Map<string, unknown>,
+) => {
   if (!expects) return;
   for (const expect of expects) {
     const actual = getPath(result, expect.path);
@@ -88,7 +94,9 @@ const assertExpectations = (result: unknown, expects: FixtureExpect[] | undefine
 };
 
 const createServiceHarness = (fixture: Fixture) => {
-  const { dispatcher } = createBlockbenchSimHarness(fixture.project, { policies: fixture.policies });
+  const { dispatcher } = createBlockbenchSimHarness(fixture.project, {
+    policies: fixture.policies,
+  });
   return { dispatcher };
 };
 
@@ -106,8 +114,16 @@ fixtures.forEach((fixture) => {
           if (!result) {
             throw new Error(`Trace runner missing result for step ${idx + 1} (${step.op}).`);
           }
-          if (result && typeof result === 'object' && 'ok' in (result as { ok?: boolean }) && !(result as { ok?: boolean }).ok) {
-            console.error(`Fixture "${fixture.name}" step ${idx + 1} (${step.op}) error:`, (result as { error?: unknown }).error);
+          if (
+            result &&
+            typeof result === 'object' &&
+            'ok' in (result as { ok?: boolean }) &&
+            !(result as { ok?: boolean }).ok
+          ) {
+            console.error(
+              `Fixture "${fixture.name}" step ${idx + 1} (${step.op}) error:`,
+              (result as { error?: unknown }).error,
+            );
           }
           assertExpectations(result, step.expect, captures);
           if (step.capture) {
@@ -120,7 +136,6 @@ fixtures.forEach((fixture) => {
           throw err;
         }
       }
-    })()
+    })(),
   );
 });
-

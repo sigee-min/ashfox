@@ -28,7 +28,7 @@ export const buildGroups = (
     policy: UvPolicyConfig;
     baseResolution: { width: number; height: number };
     messages: UvAtlasMessages;
-  }
+  },
 ): DomainResult<Group[]> => {
   const messages = config.messages;
   const groups: Group[] = [];
@@ -38,19 +38,23 @@ export const buildGroups = (
     if (!resolved) {
       return atlasFailure('invalid_state', messages.cubeMissing(cube.name), {
         textureName: entry.name,
-        cubeName: cube.name
+        cubeName: cube.name,
       });
     }
     for (const face of cube.faces) {
       const dims = getFaceDimensions(resolved, face.face);
-      const expected = computeExpectedUvSizeWithOverflow(dims, config.baseResolution, config.policy);
+      const expected = computeExpectedUvSizeWithOverflow(
+        dims,
+        config.baseResolution,
+        config.policy,
+      );
       if (!expected) {
         return atlasFailure('invalid_state', messages.deriveSizeFailed(cube.name, face.face), {
           textureName: entry.name,
           cubeName: cube.name,
           face: face.face,
           dimensions: dims,
-          resolution: config.baseResolution
+          resolution: config.baseResolution,
         });
       }
       const width = Math.max(1, Math.round(expected.width));
@@ -62,7 +66,7 @@ export const buildGroups = (
           cubeName: cube.name,
           face: face.face,
           expected: { width, height },
-          resolution: { width: config.width, height: config.height }
+          resolution: { width: config.width, height: config.height },
         });
       }
       const key = `${cube.id ? `id:${cube.id}` : `name:${cube.name}`}:${face.face}`;
@@ -70,7 +74,7 @@ export const buildGroups = (
         key,
         width,
         height,
-        faces: [{ cubeId: cube.id, cubeName: cube.name, face: face.face }]
+        faces: [{ cubeId: cube.id, cubeName: cube.name, face: face.face }],
       });
     }
   }

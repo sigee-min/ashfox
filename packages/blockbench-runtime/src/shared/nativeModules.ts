@@ -12,7 +12,7 @@ export const loadNativeModule = <T>(name: string, options?: NativeModuleOptions)
   if (typeof requireNativeModule !== 'function') return null;
   try {
     const mod = requireNativeModule(name, options);
-    return mod ? mod as T : null;
+    return mod ? (mod as T) : null;
   } catch (_err) {
     return null;
   }

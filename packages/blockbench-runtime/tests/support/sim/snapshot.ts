@@ -16,7 +16,7 @@ export const buildSnapshot = (state: BlockbenchSimState): SessionState => ({
   textures: state.textures.map((tex) => toTrackedTexture(tex)),
   animations: [...state.animations],
   animationsStatus: 'available',
-  animationTimePolicy: resolveAnimationTimePolicy()
+  animationTimePolicy: resolveAnimationTimePolicy(),
 });
 
 const toTrackedCube = (cube: CubeInstance): TrackedCube => {
@@ -35,7 +35,7 @@ const toTrackedCube = (cube: CubeInstance): TrackedCube => {
     inflate: cube.inflate,
     mirror: cube.mirror,
     visibility: cube.visibility,
-    boxUv: cube.box_uv
+    boxUv: cube.box_uv,
   };
 };
 
@@ -44,5 +44,5 @@ const toTrackedTexture = (tex: TextureInstance): TrackedTexture => ({
   name: tex.name ?? 'texture',
   width: tex.width,
   height: tex.height,
-  path: tex.path
+  path: tex.path,
 });

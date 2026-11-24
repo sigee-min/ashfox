@@ -3,7 +3,7 @@ import type {
   ToolPayloadMap,
   ToolResultMap,
   ToolResponse,
-  WithState
+  WithState,
 } from '@ashfox/blockbench-contracts/types/internal';
 import type { UsecaseResult } from '../usecases/result';
 import { ToolService } from '../usecases/ToolService';
@@ -36,16 +36,18 @@ export const STATEFUL_TOOL_NAMES = [
   'set_frame_pose',
   'set_trigger_keyframes',
   'validate',
-  'render_preview'
+  'render_preview',
 ] as const;
 
-export type StatefulToolName = typeof STATEFUL_TOOL_NAMES[number];
+export type StatefulToolName = (typeof STATEFUL_TOOL_NAMES)[number];
 
 export const isStatefulToolName = (name: ToolName): name is StatefulToolName =>
   (STATEFUL_TOOL_NAMES as readonly string[]).includes(name);
 
 export type StatefulHandlerMap = Partial<{
-  [K in StatefulToolName]: (payload: ToolPayloadMap[K]) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>;
+  [K in StatefulToolName]: (
+    payload: ToolPayloadMap[K],
+  ) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>;
 }>;
 
 export type ResponseHandlerMap = Partial<{
@@ -55,9 +57,17 @@ export type ResponseHandlerMap = Partial<{
 export const createHandlerMaps = (args: {
   service: ToolService;
   respondOk: <T>(data: T) => ToolResponse<T>;
-  logGuardFailure: <T>(tool: ToolName, payload: ToolPayloadMap[ToolName], response: ToolResponse<T>) => ToolResponse<T>;
-  handleTraceLogExport: (payload: ToolPayloadMap['export_trace_log']) => ToolResponse<ToolResultMap['export_trace_log']>;
-  handleRenderPreview: (payload: ToolPayloadMap['render_preview']) => ToolResponse<ToolResultMap['render_preview']>;
+  logGuardFailure: <T>(
+    tool: ToolName,
+    payload: ToolPayloadMap[ToolName],
+    response: ToolResponse<T>,
+  ) => ToolResponse<T>;
+  handleTraceLogExport: (
+    payload: ToolPayloadMap['export_trace_log'],
+  ) => ToolResponse<ToolResultMap['export_trace_log']>;
+  handleRenderPreview: (
+    payload: ToolPayloadMap['render_preview'],
+  ) => ToolResponse<ToolResultMap['render_preview']>;
 }) => {
   const statefulRetryHandlers: StatefulHandlerMap = {
     paint_faces: (payload) => args.service.paintFaces(payload),
@@ -78,11 +88,11 @@ export const createHandlerMaps = (args: {
     update_animation_clip: (payload) => args.service.updateAnimationClip(payload),
     delete_animation_clip: (payload) => args.service.deleteAnimationClip(payload),
     set_frame_pose: (payload) => args.service.setFramePose(payload),
-    set_trigger_keyframes: (payload) => args.service.setTriggerKeyframes(payload)
+    set_trigger_keyframes: (payload) => args.service.setTriggerKeyframes(payload),
   };
 
   const statefulHandlers: StatefulHandlerMap = {
-    validate: (payload) => args.service.validate(payload)
+    validate: (payload) => args.service.validate(payload),
   };
 
   const responseHandlers: ResponseHandlerMap = {
@@ -91,19 +101,24 @@ export const createHandlerMaps = (args: {
       args.logGuardFailure(
         'get_project_state',
         payload,
-        toToolResponse(args.service.getProjectState(payload))
+        toToolResponse(args.service.getProjectState(payload)),
       ),
     read_texture: (payload) =>
       args.logGuardFailure(
         'read_texture',
         payload,
-        toToolResponse(args.service.readTextureImage(payload))
+        toToolResponse(args.service.readTextureImage(payload)),
       ),
     export_trace_log: (payload) =>
       args.logGuardFailure('export_trace_log', payload, args.handleTraceLogExport(payload)),
     reload_plugins: (payload) =>
-      args.logGuardFailure('reload_plugins', payload, toToolResponse(args.service.reloadPlugins(payload))),
-    render_preview: (payload) => args.logGuardFailure('render_preview', payload, args.handleRenderPreview(payload))
+      args.logGuardFailure(
+        'reload_plugins',
+        payload,
+        toToolResponse(args.service.reloadPlugins(payload)),
+      ),
+    render_preview: (payload) =>
+      args.logGuardFailure('render_preview', payload, args.handleRenderPreview(payload)),
   };
 
   return { statefulRetryHandlers, statefulHandlers, responseHandlers };

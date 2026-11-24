@@ -8,7 +8,7 @@ import { registerAsync } from '../helpers';
 const revisionMismatchError = (expected: string, currentRevision: string): ToolError => ({
   code: 'invalid_state_revision_mismatch',
   message: 'revision mismatch',
-  details: { expected, currentRevision, reason: 'revision_mismatch' }
+  details: { expected, currentRevision, reason: 'revision_mismatch' },
 });
 
 const createLogger = () => ({
@@ -16,7 +16,7 @@ const createLogger = () => ({
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 });
 
 const attachedProject: ProjectState = {
@@ -29,22 +29,23 @@ const attachedProject: ProjectState = {
     bones: 0,
     cubes: 1,
     textures: 0,
-    animations: 0
-  }
+    animations: 0,
+  },
 };
 
-const createAttachedState = () => createStateAttacher({
-  includeStateByDefault: () => false,
-  includeDiffByDefault: () => false,
-  getProjectState: () => ({
-    ok: true,
-    value: { project: attachedProject }
-  }),
-  getProjectDiff: () => ({
-    ok: false,
-    error: { code: 'invalid_state', message: 'Diff is not requested.' }
-  })
-});
+const createAttachedState = () =>
+  createStateAttacher({
+    includeStateByDefault: () => false,
+    includeDiffByDefault: () => false,
+    getProjectState: () => ({
+      ok: true,
+      value: { project: attachedProject },
+    }),
+    getProjectDiff: () => ({
+      ok: false,
+      error: { code: 'invalid_state', message: 'Diff is not requested.' },
+    }),
+  });
 
 registerAsync(
   (async () => {
@@ -57,7 +58,7 @@ registerAsync(
       const result = await runStatefulPipeline(
         {
           service: {
-            ensureRevisionMatchIfProvided: () => revisionMismatchError('r1', 'r2')
+            ensureRevisionMatchIfProvided: () => revisionMismatchError('r1', 'r2'),
           } as never,
           log: createLogger() as never,
           attachStateForTool: (_payload, response) => {
@@ -67,7 +68,7 @@ registerAsync(
           logGuardFailure: (_tool, _payload, response) => {
             guardLogCount += 1;
             return response;
-          }
+          },
         },
         {
           tool: 'update_cube',
@@ -76,8 +77,8 @@ registerAsync(
             callCount += 1;
             return { ok: true, value: { id: 'cube_1', name: 'body' } };
           },
-          retry: false
-        }
+          retry: false,
+        },
       );
 
       assert.equal(callCount, 0);
@@ -97,7 +98,7 @@ registerAsync(
       const result = await runStatefulPipeline(
         {
           service: {
-            ensureRevisionMatchIfProvided: () => null
+            ensureRevisionMatchIfProvided: () => null,
           } as never,
           log: createLogger() as never,
           attachStateForTool: (_payload, response) => {
@@ -106,7 +107,7 @@ registerAsync(
           logGuardFailure: (_tool, _payload, response) => {
             guardLogCount += 1;
             return response;
-          }
+          },
         },
         {
           tool: 'update_cube',
@@ -115,8 +116,8 @@ registerAsync(
             callCount += 1;
             return { ok: true, value: { id: 'cube_1', name: 'body' } };
           },
-          retry: false
-        }
+          retry: false,
+        },
       );
 
       assert.equal(callCount, 1);
@@ -126,7 +127,7 @@ registerAsync(
         assert.deepEqual(result.data, {
           id: 'cube_1',
           name: 'body',
-          revision: 'r2'
+          revision: 'r2',
         });
       }
     }
@@ -141,14 +142,17 @@ registerAsync(
           service: {
             isAutoRetryRevisionEnabled: () => true,
             isRevisionRequired: () => true,
-            getProjectState: () => ({ ok: true, value: { project: { active: true, revision: 'r2' } } })
+            getProjectState: () => ({
+              ok: true,
+              value: { project: { active: true, revision: 'r2' } },
+            }),
           } as never,
           log: createLogger() as never,
           attachStateForTool: (payload, response) => {
             attachedIfRevision = (payload as { ifRevision?: string }).ifRevision;
             return attachState(payload, response);
           },
-          logGuardFailure: (_tool, _payload, response) => response
+          logGuardFailure: (_tool, _payload, response) => response,
         },
         {
           tool: 'update_cube',
@@ -160,11 +164,11 @@ registerAsync(
             }
             return {
               ok: true,
-              value: { id: 'cube_1', name: 'body' }
+              value: { id: 'cube_1', name: 'body' },
             };
           },
-          retry: true
-        }
+          retry: true,
+        },
       );
 
       assert.equal(callCount, 2);
@@ -174,5 +178,5 @@ registerAsync(
         assert.equal(result.data.revision, 'r2');
       }
     }
-  })()
+  })(),
 );

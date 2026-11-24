@@ -24,13 +24,11 @@ const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const sortKey = (name: string, id?: string | null) => `${name}|${id ?? ''}`;
 
 const normalizeFaces = (faces: NormalizedFace[]): NormalizedFace[] =>
-  faces
-    .slice()
-    .sort((a, b) => (FACE_INDEX.get(a.face) ?? 0) - (FACE_INDEX.get(b.face) ?? 0));
+  faces.slice().sort((a, b) => (FACE_INDEX.get(a.face) ?? 0) - (FACE_INDEX.get(b.face) ?? 0));
 
 const normalizeUsage = (
   usage: TextureUsage,
-  projectResolution?: { width: number; height: number } | null
+  projectResolution?: { width: number; height: number } | null,
 ): NormalizedUsage => {
   const textures = usage.textures
     .map((texture) => {
@@ -41,8 +39,8 @@ const normalizeUsage = (
           const faces = normalizeFaces(
             cube.faces.map((face) => ({
               face: face.face,
-              uv: face.uv ? [...face.uv] : null
-            }))
+              uv: face.uv ? [...face.uv] : null,
+            })),
           );
           return { id: cube.id ?? null, name: cube.name, faces };
         })
@@ -51,13 +49,17 @@ const normalizeUsage = (
     })
     .sort((a, b) => compareStrings(sortKey(a.name, a.id), sortKey(b.name, b.id)));
   const includeProjectResolution = textures.some((texture) => !texture.width || !texture.height);
-  const normalizedResolution = includeProjectResolution ? normalizeResolution(projectResolution) : null;
-  return normalizedResolution ? { textures, projectResolution: normalizedResolution } : { textures };
+  const normalizedResolution = includeProjectResolution
+    ? normalizeResolution(projectResolution)
+    : null;
+  return normalizedResolution
+    ? { textures, projectResolution: normalizedResolution }
+    : { textures };
 };
 
 export const computeTextureUsageId = (
   usage: TextureUsage,
-  projectResolution?: { width: number; height: number } | null
+  projectResolution?: { width: number; height: number } | null,
 ): string => hashTextToHex(JSON.stringify(normalizeUsage(usage, projectResolution)));
 
 const normalizeTextureSize = (value?: number): number | null => {
@@ -67,7 +69,7 @@ const normalizeTextureSize = (value?: number): number | null => {
 };
 
 const normalizeResolution = (
-  resolution?: { width: number; height: number } | null
+  resolution?: { width: number; height: number } | null,
 ): { width: number; height: number } | null => {
   if (!resolution) return null;
   const width = normalizeTextureSize(resolution.width);
@@ -75,5 +77,3 @@ const normalizeResolution = (
   if (!width || !height) return null;
   return { width, height };
 };
-
-

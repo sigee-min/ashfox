@@ -2,7 +2,7 @@ export const FORMAT_KINDS = [
   'Java Block/Item',
   'geckolib',
   'animated_java',
-  'Generic Model'
+  'Generic Model',
 ] as const;
 
 export const PROJECT_STATE_DETAILS = ['summary', 'full'] as const;
@@ -33,7 +33,7 @@ export const TOOL_NAMES = [
   'set_frame_pose',
   'set_trigger_keyframes',
   'render_preview',
-  'validate'
+  'validate',
 ] as const;
 
 export const TOOL_ERROR_CODES = [
@@ -44,7 +44,7 @@ export const TOOL_ERROR_CODES = [
   'invalid_payload',
   'no_change',
   'io_error',
-  'unknown'
+  'unknown',
 ] as const;
 
 export const ENSURE_PROJECT_MATCHES = ['none', 'format', 'name', 'format_and_name'] as const;
@@ -58,7 +58,7 @@ export const MESH_UV_POLICY_LIMITS = Object.freeze({
   minTexelDensity: 0.25,
   maxTexelDensity: 64,
   minPadding: 0,
-  maxPadding: 16
+  maxPadding: 16,
 });
 
 export const PREVIEW_MODES = ['fixed', 'turntable'] as const;

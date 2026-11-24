@@ -2,7 +2,7 @@ import type {
   AnimationClip,
   AnimationScalar,
   AnimationTriggerTrack,
-  TransformChannel
+  TransformChannel,
 } from '../../model';
 import type {
   AnimationExportAdaptation,
@@ -10,32 +10,26 @@ import type {
   AnimationExportAdaptationDisposition,
   AnimationExportIssue,
   AnimationExportIssueCode,
-  AnimationExportTarget
+  AnimationExportTarget,
 } from './types';
 
-export const isNumericAnimationScalar = (
-  value: AnimationScalar
-): boolean =>
+export const isNumericAnimationScalar = (value: AnimationScalar): boolean =>
   typeof value === 'number' && Number.isFinite(value);
 
-export const channelUsesMolang = (
-  channel: TransformChannel
-): boolean =>
+export const channelUsesMolang = (channel: TransformChannel): boolean =>
   channel.keys.some((keyframe) =>
     [
       ...keyframe.value,
       ...(keyframe.preValue ?? []),
       ...(keyframe.postValue ?? []),
-      ...(keyframe.easing?.arguments ?? [])
-    ].some((value) => !isNumericAnimationScalar(value))
+      ...(keyframe.easing?.arguments ?? []),
+    ].some((value) => !isNumericAnimationScalar(value)),
   );
 
 const minecraftTimestampKey = (timeSeconds: number): string =>
   String(Number(timeSeconds.toFixed(4)));
 
-export const timestampCollisionIndexes = (
-  times: readonly number[]
-): readonly number[] => {
+export const timestampCollisionIndexes = (times: readonly number[]): readonly number[] => {
   const seen = new Set<string>();
   const collisions: number[] = [];
   times.forEach((timeSeconds, index) => {
@@ -53,17 +47,14 @@ export const exportIssue = (
   code: AnimationExportIssueCode,
   path: string,
   message: string,
-  ids: Pick<
-    AnimationExportIssue,
-    'channelId' | 'triggerId' | 'keyframeId'
-  > = {}
+  ids: Pick<AnimationExportIssue, 'channelId' | 'triggerId' | 'keyframeId'> = {},
 ): AnimationExportIssue => ({
   code,
   targetId,
   clipId: clip.id,
   path,
   message,
-  ...ids
+  ...ids,
 });
 
 export const exportAdaptation = (
@@ -73,10 +64,7 @@ export const exportAdaptation = (
   code: AnimationExportAdaptationCode,
   path: string,
   message: string,
-  ids: Pick<
-    AnimationExportAdaptation,
-    'channelId' | 'triggerId' | 'keyframeId'
-  > = {}
+  ids: Pick<AnimationExportAdaptation, 'channelId' | 'triggerId' | 'keyframeId'> = {},
 ): AnimationExportAdaptation => ({
   disposition,
   code,
@@ -84,10 +72,9 @@ export const exportAdaptation = (
   clipId: clip.id,
   path,
   message,
-  ...ids
+  ...ids,
 });
 
 export const triggerIssueCode = (
-  trigger: AnimationTriggerTrack
-): 'sound_trigger' | 'particle_trigger' | 'timeline_trigger' =>
-  `${trigger.type}_trigger`;
+  trigger: AnimationTriggerTrack,
+): 'sound_trigger' | 'particle_trigger' | 'timeline_trigger' => `${trigger.type}_trigger`;

@@ -1,4 +1,8 @@
-import type { ToolError, ReadTexturePayload, ReadTextureResult } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ToolError,
+  ReadTexturePayload,
+  ReadTextureResult,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { EditorPort, TextureSource } from '../../ports/editor';
 import type { TmpStorePort } from '../../ports/tmpStore';
 import { ok, fail, type UsecaseResult } from '../result';
@@ -8,12 +12,12 @@ import { withActiveOnly } from '../guards';
 import {
   TEXTURE_ID_OR_NAME_REQUIRED,
   TEXTURE_ID_OR_NAME_REQUIRED_FIX,
-  TMP_STORE_UNAVAILABLE
+  TMP_STORE_UNAVAILABLE,
 } from '../../shared/messages';
 import {
   prepareTextureReadImage,
   withSavedTextureResult,
-  type PreparedTextureReadImage
+  type PreparedTextureReadImage,
 } from './image';
 
 export interface TextureReadServiceDeps {
@@ -40,14 +44,14 @@ export class TextureReadService {
       const nameBlankErr = ensureNonBlankString(payload.name, 'Texture name');
       if (nameBlankErr) return fail(nameBlankErr);
       const resolved = resolveTextureTarget(this.editor.listTextures(), payload.id, payload.name, {
-        required: { message: TEXTURE_ID_OR_NAME_REQUIRED, fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX }
+        required: { message: TEXTURE_ID_OR_NAME_REQUIRED, fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX },
       });
       if (resolved.error) return fail(resolved.error);
       const target = resolved.target!;
       const targetId = target.id ?? undefined;
       const res = this.editor.readTexture({
         id: payload.id ?? targetId,
-        name: payload.name ?? target.name
+        name: payload.name ?? target.name,
       });
       if (res.error) return fail(res.error);
       return ok(res.result!);
@@ -66,7 +70,7 @@ export class TextureReadService {
     }
     const savedRes = this.savePreparedTexture(preparedRes.value, {
       nameHint: tmpName ?? sourceRes.value.name ?? 'texture',
-      prefix: tmpPrefix ?? 'texture'
+      prefix: tmpPrefix ?? 'texture',
     });
     if (!savedRes.ok) return savedRes;
     return ok(savedRes.value);
@@ -74,13 +78,18 @@ export class TextureReadService {
 
   private savePreparedTexture(
     prepared: PreparedTextureReadImage,
-    options: { nameHint: string; prefix: string }
+    options: { nameHint: string; prefix: string },
   ): UsecaseResult<ReadTextureResult> {
     if (!this.tmpStore) {
       return fail({ code: 'not_implemented', message: TMP_STORE_UNAVAILABLE });
     }
     const saved = this.tmpStore.saveDataUri(prepared.dataUri, options);
     if (!saved.ok) return fail(saved.error);
-    return ok(withSavedTextureResult(prepared, { path: saved.data.path, byteLength: saved.data.byteLength }));
+    return ok(
+      withSavedTextureResult(prepared, {
+        path: saved.data.path,
+        byteLength: saved.data.byteLength,
+      }),
+    );
   }
 }

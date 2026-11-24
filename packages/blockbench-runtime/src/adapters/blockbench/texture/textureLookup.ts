@@ -29,6 +29,6 @@ export const listTextureStats = (): TextureStat[] =>
       name: tex?.name ?? tex?.id ?? 'texture',
       width: size.width ?? 0,
       height: size.height ?? 0,
-      path: tex?.path ?? tex?.source
+      path: tex?.path ?? tex?.source,
     };
   });

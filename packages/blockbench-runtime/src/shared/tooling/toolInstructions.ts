@@ -1,7 +1,7 @@
 export const CANONICAL_AUTHORING_BOUNDARY = [
   'Canonical Ashfox assets are native .ashfox source files; edit source and inspect, capture, build and export with the Ashfox CLI.',
   'The Blockbench MCP bridge is an optional compatibility track. Its live bone, cube, mesh, texture, and animation mutations do not create or revise the canonical asset workspace.',
-  'Never use a compatibility-session mutation as a second geometry, hierarchy, material, texture, motion, or workspace authority.'
+  'Never use a compatibility-session mutation as a second geometry, hierarchy, material, texture, motion, or workspace authority.',
 ].join(' ');
 
 export const RIGGING_WORKFLOW_INSTRUCTIONS = [
@@ -14,7 +14,7 @@ export const RIGGING_WORKFLOW_INSTRUCTIONS = [
   'LLM guidance: iterate step-by-step and re-check get_project_state after each add/update.',
   'If you get invalid_state_revision_mismatch, call get_project_state and retry with the latest ifRevision.',
   'If unsure about hierarchy rules, read ashfox://guide/rigging via resources/read.',
-  'For compatibility-session modeling details, read ashfox://guide/modeling-workflow via resources/read.'
+  'For compatibility-session modeling details, read ashfox://guide/modeling-workflow via resources/read.',
 ].join(' ');
 
 export const TEXTURE_WORKFLOW_INSTRUCTIONS = [
@@ -32,7 +32,7 @@ export const TEXTURE_WORKFLOW_INSTRUCTIONS = [
   'Payload sizing: for <=32px textures, small ops are fine; for 64px+ keep ops minimal and reuse tiles.',
   'Texture creation does not bind textures to cubes. Ensure textures are assigned via assign_texture.',
   'For visual verification, use render_preview. If images cannot be attached, set saveToTmp=true and read ashfox://guide/vision-fallback via resources/read.',
-  'If unsure about the workflow or recovery, read ashfox://guide/llm-texture-strategy via resources/read.'
+  'If unsure about the workflow or recovery, read ashfox://guide/llm-texture-strategy via resources/read.',
 ].join(' ');
 
 export const SERVER_TOOL_INSTRUCTIONS = [
@@ -60,7 +60,7 @@ export const SERVER_TOOL_INSTRUCTIONS = [
   'Pass ifRevision on mutations to guard against stale state.',
   'If you get invalid_state_revision_mismatch, call get_project_state and retry with the latest ifRevision.',
   RIGGING_WORKFLOW_INSTRUCTIONS,
-  TEXTURE_WORKFLOW_INSTRUCTIONS
+  TEXTURE_WORKFLOW_INSTRUCTIONS,
 ].join(' ');
 
 export const SIDECAR_TOOL_INSTRUCTIONS = [
@@ -84,6 +84,5 @@ export const SIDECAR_TOOL_INSTRUCTIONS = [
   'Prefer id-based updates.',
   'If you get invalid_state_revision_mismatch, call get_project_state and retry with the latest ifRevision.',
   RIGGING_WORKFLOW_INSTRUCTIONS,
-  TEXTURE_WORKFLOW_INSTRUCTIONS
+  TEXTURE_WORKFLOW_INSTRUCTIONS,
 ].join(' ');
-

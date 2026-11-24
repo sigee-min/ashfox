@@ -1,4 +1,9 @@
-import type { Capabilities, EnsureProjectAction, FormatKind, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  Capabilities,
+  EnsureProjectAction,
+  FormatKind,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { ok, fail, type UsecaseResult } from '../result';
 import { ensureNonBlankString } from '../../shared/payloadValidation';
 import {
@@ -113,13 +118,21 @@ export class ProjectLifecycleService {
         code: 'invalid_state',
         message: PROJECT_MISMATCH,
         details: {
-          expected: { format: payload.format ?? null, name: payload.name ?? null, match: intent.matchMode },
-          actual: { format: normalized.format, name: info.name ?? null }
-        }
+          expected: {
+            format: payload.format ?? null,
+            name: payload.name ?? null,
+            match: intent.matchMode,
+          },
+          actual: { format: normalized.format, name: info.name ?? null },
+        },
       });
     }
     if (intent.onMismatch === 'create') {
-      return this.createProjectFromEnsure(payload, normalizedUv, PROJECT_CREATE_REQUIREMENTS_ON_MISMATCH_FIX);
+      return this.createProjectFromEnsure(
+        payload,
+        normalizedUv,
+        PROJECT_CREATE_REQUIREMENTS_ON_MISMATCH_FIX,
+      );
     }
     return this.reuseProject(normalized, normalizedUv);
   }
@@ -127,7 +140,12 @@ export class ProjectLifecycleService {
   createProject(
     format: Capabilities['formats'][number]['format'],
     name: string,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown>; ifRevision?: string; uvPixelsPerBlock?: number }
+    options?: {
+      confirmDiscard?: boolean;
+      dialog?: Record<string, unknown>;
+      ifRevision?: string;
+      uvPixelsPerBlock?: number;
+    },
   ): UsecaseResult<{ id: string; format: FormatKind; name: string }> {
     const created = runCreateProject(this.buildCreateContext(), format, name, options);
     if (created.ok) {
@@ -153,11 +171,14 @@ export class ProjectLifecycleService {
       onMismatch,
       onMissing,
       requiresFormat: matchMode === 'format' || matchMode === 'format_and_name',
-      requiresName: matchMode === 'name' || matchMode === 'format_and_name'
+      requiresName: matchMode === 'name' || matchMode === 'format_and_name',
     });
   }
 
-  private validateEnsurePayload(payload: EnsureProjectPayload, intent: EnsureIntent): ToolError | null {
+  private validateEnsurePayload(
+    payload: EnsureProjectPayload,
+    intent: EnsureIntent,
+  ): ToolError | null {
     const formatBlankErr = ensureNonBlankString(payload.format, 'format');
     if (formatBlankErr) return formatBlankErr;
     const nameBlankErr = ensureNonBlankString(payload.name, 'name');
@@ -174,7 +195,7 @@ export class ProjectLifecycleService {
   private handleMissingProject(
     payload: EnsureProjectPayload,
     onMissing: EnsureOnMissing,
-    normalizedUv: number | null | undefined
+    normalizedUv: number | null | undefined,
   ): UsecaseResult<{
     action: 'created' | 'reused' | 'deleted';
     project: { id: string; format: FormatKind; name: string | null; formatId?: string | null };
@@ -182,24 +203,32 @@ export class ProjectLifecycleService {
     if (onMissing === 'error') {
       return fail({ code: 'invalid_state', message: PROJECT_NO_ACTIVE });
     }
-    return this.createProjectFromEnsure(payload, normalizedUv, PROJECT_CREATE_REQUIREMENTS_ON_MISSING_FIX);
+    return this.createProjectFromEnsure(
+      payload,
+      normalizedUv,
+      PROJECT_CREATE_REQUIREMENTS_ON_MISSING_FIX,
+    );
   }
 
   private isProjectMismatch(
     payload: EnsureProjectPayload,
     intent: EnsureIntent,
     activeFormat: FormatKind,
-    activeName: string | null
+    activeName: string | null,
   ): boolean {
-    const formatMismatch = Boolean(intent.requiresFormat && payload.format && activeFormat !== payload.format);
-    const nameMismatch = Boolean(intent.requiresName && payload.name && activeName !== payload.name);
+    const formatMismatch = Boolean(
+      intent.requiresFormat && payload.format && activeFormat !== payload.format,
+    );
+    const nameMismatch = Boolean(
+      intent.requiresName && payload.name && activeName !== payload.name,
+    );
     return formatMismatch || nameMismatch;
   }
 
   private createProjectFromEnsure(
     payload: EnsureProjectPayload,
     normalizedUv: number | null | undefined,
-    fix: string
+    fix: string,
   ): UsecaseResult<{
     action: 'created' | 'reused' | 'deleted';
     project: { id: string; format: FormatKind; name: string | null; formatId?: string | null };
@@ -208,13 +237,13 @@ export class ProjectLifecycleService {
       return fail({
         code: 'invalid_payload',
         message: PROJECT_CREATE_REQUIREMENTS,
-        fix
+        fix,
       });
     }
     const created = runCreateProject(this.buildCreateContext(), payload.format, payload.name, {
       confirmDiscard: payload.confirmDiscard,
       dialog: payload.dialog,
-      ifRevision: payload.ifRevision
+      ifRevision: payload.ifRevision,
     });
     if (!created.ok) return created;
     return this.finalizeCreatedProject(created.value, normalizedUv);
@@ -222,7 +251,7 @@ export class ProjectLifecycleService {
 
   private finalizeCreatedProject(
     created: CreatedProjectResult,
-    normalizedUv: number | null | undefined
+    normalizedUv: number | null | undefined,
   ): UsecaseResult<{
     action: 'created' | 'reused' | 'deleted';
     project: { id: string; format: FormatKind; name: string | null; formatId?: string | null };
@@ -237,14 +266,14 @@ export class ProjectLifecycleService {
         id: created.id,
         format: created.format,
         name: created.name,
-        formatId: sessionState.formatId ?? null
-      }
+        formatId: sessionState.formatId ?? null,
+      },
     });
   }
 
   private reuseProject(
     normalized: ReturnType<ProjectServiceDeps['projectState']['normalize']>,
-    normalizedUv: number | null | undefined
+    normalizedUv: number | null | undefined,
   ): UsecaseResult<{
     action: 'created' | 'reused' | 'deleted';
     project: { id: string; format: FormatKind; name: string | null; formatId?: string | null };
@@ -260,8 +289,8 @@ export class ProjectLifecycleService {
         id: attachRes.data.id,
         format: normalized.format as FormatKind,
         name: attachRes.data.name,
-        formatId: normalized.formatId ?? null
-      }
+        formatId: normalized.formatId ?? null,
+      },
     });
   }
 
@@ -273,7 +302,7 @@ export class ProjectLifecycleService {
     runner(() => {
       const result = this.texture!.createBlankTexture({
         name: textureName,
-        allowExisting: true
+        allowExisting: true,
       });
       return result;
     });
@@ -315,7 +344,7 @@ export class ProjectLifecycleService {
       formats: this.formats,
       session: this.session,
       ensureRevisionMatch: this.ensureRevisionMatch,
-      policies: this.policies
+      policies: this.policies,
     };
   }
 
@@ -325,7 +354,7 @@ export class ProjectLifecycleService {
       editor: this.editor,
       projectState: this.projectState,
       getSnapshot: this.getSnapshot,
-      ensureRevisionMatch: this.ensureRevisionMatch
+      ensureRevisionMatch: this.ensureRevisionMatch,
     };
   }
 }

@@ -29,7 +29,7 @@ const createHarness = (options?: {
   const calls = {
     addBone: 0,
     updateBone: 0,
-    deleteBone: 0
+    deleteBone: 0,
   };
   const editor: EditorPort = {
     ...baseEditor,
@@ -44,14 +44,14 @@ const createHarness = (options?: {
     deleteBone: (params) => {
       calls.deleteBone += 1;
       return options?.deleteBoneError ?? null;
-    }
+    },
   };
   const service = new BoneService({
     session,
     editor,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => options?.ensureActiveError ?? null,
-    ensureRevisionMatch: () => options?.ensureRevisionError ?? null
+    ensureRevisionMatch: () => options?.ensureRevisionError ?? null,
   });
   return { session, service, calls };
 };
@@ -68,7 +68,7 @@ const createHarness = (options?: {
 
 {
   const { service, calls } = createHarness({
-    ensureActiveError: { code: 'invalid_state', message: 'inactive' }
+    ensureActiveError: { code: 'invalid_state', message: 'inactive' },
   });
   const res = service.addBone({ name: 'arm' });
   assert.equal(res.ok, false);
@@ -145,7 +145,7 @@ const createHarness = (options?: {
     name: 'cube',
     bone: 'hand',
     from: [0, 0, 0],
-    to: [1, 1, 1]
+    to: [1, 1, 1],
   });
   const res = service.deleteBone({ names: ['arm', 'hand'] });
   assert.equal(res.ok, true);
@@ -169,7 +169,7 @@ const createHarness = (options?: {
 
 {
   const { service, calls } = createHarness({
-    deleteBoneError: { code: 'invalid_state', message: 'delete failed' }
+    deleteBoneError: { code: 'invalid_state', message: 'delete failed' },
   });
   assert.equal(service.addBone({ name: 'root' }).ok, true);
   const res = service.deleteBone({ name: 'root' });

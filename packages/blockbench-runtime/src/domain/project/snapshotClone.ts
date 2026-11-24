@@ -4,5 +4,5 @@ export {
   cloneTrackedBone,
   cloneTrackedCube,
   cloneTrackedMesh,
-  cloneTrackedTexture
+  cloneTrackedTexture,
 } from '../../session/clone';

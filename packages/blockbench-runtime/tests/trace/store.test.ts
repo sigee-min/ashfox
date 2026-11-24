@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   isProjectDiffContract,
-  isProjectStateContract
+  isProjectStateContract,
 } from '@ashfox/blockbench-contracts/types/project/contract';
 import { isTraceLogEntry } from '@ashfox/blockbench-contracts/types/traceLog';
 import { TraceLogStore } from '../../src/trace/store';
@@ -28,7 +28,7 @@ class QueueWriter implements TraceLogWriter {
 const header = () => ({
   kind: 'header' as const,
   schemaVersion: 1 as const,
-  createdAt: '2026-08-06T00:00:00.000Z'
+  createdAt: '2026-08-06T00:00:00.000Z',
 });
 
 const record = (seq: number) => ({
@@ -37,7 +37,7 @@ const record = (seq: number) => ({
   ts: new Date(1_700_000_000_000 + seq).toISOString(),
   route: 'tool' as const,
   op: `op_${seq}`,
-  response: { ok: true as const, data: { seq } }
+  response: { ok: true as const, data: { seq } },
 });
 
 const appendHeader = (store: TraceLogStore): void => {
@@ -94,7 +94,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
   if (parsed.ok) {
     assert.deepEqual(
       parsed.records.map((entry) => entry.kind),
-      ['header', 'step']
+      ['header', 'step'],
     );
   }
 }
@@ -124,7 +124,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
 {
   const unicodeRecord = {
     ...record(1),
-    response: { ok: true as const, data: { label: '🐾'.repeat(30) } }
+    response: { ok: true as const, data: { label: '🐾'.repeat(30) } },
   };
   const uncapped = new TraceLogStore({ autoFlush: false, maxEntries: 10 });
   appendHeader(uncapped);
@@ -135,7 +135,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
   const capped = new TraceLogStore({
     autoFlush: false,
     maxEntries: 10,
-    maxBytes: codeUnitBudget
+    maxBytes: codeUnitBudget,
   });
   appendHeader(capped);
   capped.append(unicodeRecord);
@@ -153,7 +153,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       revision: 'state-r9',
       name: null,
       format: null,
-      counts: { bones: 0, cubes: 0, textures: 0, animations: 0 }
+      counts: { bones: 0, cubes: 0, textures: 0, animations: 0 },
     },
     diff: {
       sinceRevision: 'r1',
@@ -162,9 +162,9 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
         bones: { added: 0, removed: 0, changed: 0 },
         cubes: { added: 0, removed: 0, changed: 0 },
         textures: { added: 0, removed: 0, changed: 0 },
-        animations: { added: 0, removed: 0, changed: 0 }
-      }
-    }
+        animations: { added: 0, removed: 0, changed: 0 },
+      },
+    },
   });
   assert.equal(result.error?.details?.reason, 'trace_log_record_invalid');
   assert.equal(store.size(), 1);
@@ -174,22 +174,25 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
 {
   let descriptorReads = 0;
   let propertyReads = 0;
-  const payload = new Proxy({ value: 'source' }, {
-    get: () => {
-      propertyReads += 1;
-      throw new Error('property read must not occur');
+  const payload = new Proxy(
+    { value: 'source' },
+    {
+      get: () => {
+        propertyReads += 1;
+        throw new Error('property read must not occur');
+      },
+      getOwnPropertyDescriptor: (_target, key) => {
+        descriptorReads += 1;
+        if (descriptorReads > 1) throw new Error('second descriptor read');
+        return {
+          value: key === 'value' ? 'snapshotted' : undefined,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        };
+      },
     },
-    getOwnPropertyDescriptor: (_target, key) => {
-      descriptorReads += 1;
-      if (descriptorReads > 1) throw new Error('second descriptor read');
-      return {
-        value: key === 'value' ? 'snapshotted' : undefined,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      };
-    }
-  });
+  );
   const store = new TraceLogStore({ autoFlush: false, maxEntries: 10 });
   appendHeader(store);
   const result = store.append({ ...record(1), payload });
@@ -205,10 +208,12 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
     name: 'timeline',
     length: 1,
     loop: false,
-    triggers: [{
-      type: 'timeline' as const,
-      keys: [{ time: 0, value: nestedTriggerValue(64) }]
-    }]
+    triggers: [
+      {
+        type: 'timeline' as const,
+        keys: [{ time: 0, value: nestedTriggerValue(64) }],
+      },
+    ],
   };
   const state = {
     id: 'p1',
@@ -220,9 +225,9 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       bones: 0,
       cubes: 0,
       textures: 0,
-      animations: 1
+      animations: 1,
     },
-    animations: [animation]
+    animations: [animation],
   };
   const entry = { ...record(1), state };
   assert.equal(isProjectStateContract(state), true);
@@ -238,10 +243,12 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
     name: 'timeline',
     length: 1,
     loop: false,
-    triggers: [{
-      type: 'timeline' as const,
-      keys: [{ time: 0, value: nestedTriggerValue(64) }]
-    }]
+    triggers: [
+      {
+        type: 'timeline' as const,
+        keys: [{ time: 0, value: nestedTriggerValue(64) }],
+      },
+    ],
   };
   const zero = { added: 0, removed: 0, changed: 0 };
   const diff = {
@@ -251,17 +258,19 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       bones: zero,
       cubes: zero,
       textures: zero,
-      animations: { added: 0, removed: 0, changed: 1 }
+      animations: { added: 0, removed: 0, changed: 1 },
     },
     animations: {
       added: [],
       removed: [],
-      changed: [{
-        key: 'timeline',
-        before: changedAnimation,
-        after: { name: 'timeline', length: 1, loop: false }
-      }]
-    }
+      changed: [
+        {
+          key: 'timeline',
+          before: changedAnimation,
+          after: { name: 'timeline', length: 1, loop: false },
+        },
+      ],
+    },
   };
   const entry = {
     ...record(1),
@@ -270,9 +279,9 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
       revision: 'r1',
       name: null,
       format: null,
-      counts: { bones: 0, cubes: 0, textures: 0, animations: 1 }
+      counts: { bones: 0, cubes: 0, textures: 0, animations: 1 },
     },
-    diff
+    diff,
   };
   assert.equal(isProjectDiffContract(diff), true);
   assert.equal(isTraceLogEntry(entry), true);
@@ -285,24 +294,12 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
 // A ledger must start with one header and reject duplicate/non-increasing state.
 {
   const store = new TraceLogStore({ autoFlush: false, maxEntries: 10 });
-  assert.equal(
-    store.append(record(1)).error?.details?.reason,
-    'trace_log_header_required'
-  );
+  assert.equal(store.append(record(1)).error?.details?.reason, 'trace_log_header_required');
   appendHeader(store);
-  assert.equal(
-    store.append(header()).error?.details?.reason,
-    'trace_log_header_duplicated'
-  );
+  assert.equal(store.append(header()).error?.details?.reason, 'trace_log_header_duplicated');
   assert.equal(store.append(record(2)).error, undefined);
-  assert.equal(
-    store.append(record(2)).error?.details?.reason,
-    'trace_log_sequence_invalid'
-  );
-  assert.equal(
-    store.append(record(1)).error?.details?.reason,
-    'trace_log_sequence_invalid'
-  );
+  assert.equal(store.append(record(2)).error?.details?.reason, 'trace_log_sequence_invalid');
+  assert.equal(store.append(record(1)).error?.details?.reason, 'trace_log_sequence_invalid');
   assert.equal(store.append(record(3)).error, undefined);
 }
 
@@ -316,10 +313,7 @@ const nestedTriggerValue = (depth: number): Record<string, unknown> => {
   store.clear();
   assert.equal(store.size(), 0);
   assert.equal(store.getText(), '');
-  assert.equal(
-    store.append(record(2)).error?.details?.reason,
-    'trace_log_header_required'
-  );
+  assert.equal(store.append(record(2)).error?.details?.reason, 'trace_log_header_required');
   appendHeader(store);
   assert.equal(store.append(record(1)).error, undefined);
   assert.equal(parseTraceLogText(store.getText()).ok, true);

@@ -5,7 +5,7 @@ import type {
   AssetDiagnostic,
   AssetMotionChannel,
   AssetPortDecl,
-  AssetValueType
+  AssetValueType,
 } from '../../../project/program/asset/contract';
 import type {
   AssetBooleanValue,
@@ -13,7 +13,7 @@ import type {
   AssetNumberValue,
   AssetTypedExpression,
   AssetValue,
-  AssetVectorValue
+  AssetVectorValue,
 } from './value/contract';
 import type { AssetExactFrame } from './frame';
 
@@ -169,8 +169,8 @@ export interface TypedGeometryBlock {
   readonly span: SourceSpan;
 }
 
-export type TypedGeometryStatement = TypedGeometryProperty |
-  TypedGeometrySurfaceBind | TypedGeometryBlock;
+export type TypedGeometryStatement =
+  TypedGeometryProperty | TypedGeometrySurfaceBind | TypedGeometryBlock;
 
 export interface TypedGeometryPayload {
   readonly kind: 'typed-geometry';

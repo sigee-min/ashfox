@@ -1,17 +1,10 @@
-import type {
-  AnimationScalar,
-  AnimationVec3,
-  TransformChannel
-} from '../../model';
+import type { AnimationScalar, AnimationVec3, TransformChannel } from '../../model';
 import { canonicalMinecraftRotation } from '../../model/transform';
-import type {
-  MinecraftAnimationScalar,
-  MinecraftAnimationVector
-} from './types';
+import type { MinecraftAnimationScalar, MinecraftAnimationVector } from './types';
 
 export const serializeAnimationScalar = (
   value: AnimationScalar,
-  negate: boolean
+  negate: boolean,
 ): MinecraftAnimationScalar => {
   if (typeof value === 'number') {
     const result = negate ? -value : value;
@@ -23,12 +16,13 @@ export const serializeAnimationScalar = (
 
 export const serializeAnimationVector = (
   value: AnimationVec3,
-  property: TransformChannel['property']
+  property: TransformChannel['property'],
 ): MinecraftAnimationVector => {
-  if (property === 'rotation' &&
-    value.every((component) => typeof component === 'number')) {
+  if (property === 'rotation' && value.every((component) => typeof component === 'number')) {
     const target = canonicalMinecraftRotation([
-      value[0] as number, value[1] as number, value[2] as number
+      value[0] as number,
+      value[1] as number,
+      value[2] as number,
     ]);
     return [target[0], target[1], target[2]];
   }
@@ -40,13 +34,13 @@ export const serializeAnimationVector = (
     return [
       serializeAnimationScalar(value[0], false),
       serializeAnimationScalar(value[1], true),
-      serializeAnimationScalar(value[2], true)
+      serializeAnimationScalar(value[2], true),
     ];
   }
   return [
     serializeAnimationScalar(value[0], property === 'position'),
     serializeAnimationScalar(value[1], false),
-    serializeAnimationScalar(value[2], false)
+    serializeAnimationScalar(value[2], false),
   ];
 };
 

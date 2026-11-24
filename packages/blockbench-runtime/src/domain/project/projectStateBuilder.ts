@@ -1,4 +1,10 @@
-import { FormatKind, FORMAT_KINDS, ProjectInfo, ProjectState, ProjectStateDetail } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  FormatKind,
+  FORMAT_KINDS,
+  ProjectInfo,
+  ProjectState,
+  ProjectStateDetail,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { FormatPort } from '../../ports/formats';
 import { FormatOverrides, matchesFormatKind } from '../formats';
 import { SessionState } from '../../session';
@@ -7,7 +13,7 @@ import {
   cloneTrackedBone,
   cloneTrackedCube,
   cloneTrackedMesh,
-  cloneTrackedTexture
+  cloneTrackedTexture,
 } from './snapshotClone';
 
 export class ProjectStateBuilder {
@@ -51,7 +57,7 @@ export class ProjectStateBuilder {
       id: snapshot.id ?? 'active',
       name: snapshot.name ?? null,
       format: snapshot.format ?? null,
-      formatId: snapshot.formatId ?? null
+      formatId: snapshot.formatId ?? null,
     };
   }
 
@@ -59,7 +65,7 @@ export class ProjectStateBuilder {
     snapshot: SessionState,
     detail: ProjectStateDetail,
     active: boolean,
-    revision: string
+    revision: string,
   ): ProjectState {
     const counts = {
       bones: snapshot.bones.length,
@@ -68,10 +74,10 @@ export class ProjectStateBuilder {
       meshVertices: (snapshot.meshes ?? []).reduce((acc, mesh) => acc + mesh.vertices.length, 0),
       meshFaces: (snapshot.meshes ?? []).reduce((acc, mesh) => acc + mesh.faces.length, 0),
       textures: snapshot.textures.length,
-      animations: snapshot.animations.length
+      animations: snapshot.animations.length,
     };
     return {
-      id: active ? snapshot.id ?? 'active' : 'none',
+      id: active ? (snapshot.id ?? 'active') : 'none',
       active,
       name: snapshot.name ?? null,
       format: snapshot.format ?? null,
@@ -92,9 +98,9 @@ export class ProjectStateBuilder {
             ...(snapshot.meshes !== undefined
               ? { meshes: snapshot.meshes.map(cloneTrackedMesh) }
               : {}),
-            animations: snapshot.animations.map(cloneTrackedAnimation)
+            animations: snapshot.animations.map(cloneTrackedAnimation),
           }
-        : {})
+        : {}),
     };
   }
 
@@ -107,4 +113,3 @@ export class ProjectStateBuilder {
     return match ? match[0] : null;
   }
 }
-

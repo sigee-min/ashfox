@@ -7,7 +7,7 @@ import type {
   Capabilities,
   PaintTexturePayload,
   TextureUsageResult,
-  ToolError
+  ToolError,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { toDomainTextureUsage } from '../../../../src/usecases/domainMappers';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
@@ -16,7 +16,7 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'geckolib', animations: true, enabled: true }],
-  limits: { maxCubes: 256, maxTextureSize: 64, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 256, maxTextureSize: 64, maxAnimationSeconds: 120 },
 };
 
 type HarnessOptions = {
@@ -35,26 +35,30 @@ type HarnessOptions = {
 
 export const createUsage = (
   textureName = 'atlas',
-  uv: [number, number, number, number] = [0, 0, 16, 16]
+  uv: [number, number, number, number] = [0, 0, 16, 16],
 ): TextureUsageResult => ({
-  textures: [{
-    id: 'tex1',
-    name: textureName,
-    width: 16,
-    height: 16,
-    cubeCount: 1,
-    faceCount: 1,
-    cubes: [{
-      id: 'cube1',
-      name: 'cube',
-      faces: [{ face: 'north', uv }]
-    }]
-  }]
+  textures: [
+    {
+      id: 'tex1',
+      name: textureName,
+      width: 16,
+      height: 16,
+      cubeCount: 1,
+      faceCount: 1,
+      cubes: [
+        {
+          id: 'cube1',
+          name: 'cube',
+          faces: [{ face: 'north', uv }],
+        },
+      ],
+    },
+  ],
 });
 
 export const usageIdFor = (
   usage: TextureUsageResult,
-  resolution = { width: 16, height: 16 }
+  resolution = { width: 16, height: 16 },
 ): string => computeTextureUsageId(toDomainTextureUsage(usage), resolution);
 
 export const createHarness = (options: HarnessOptions = {}) => {
@@ -62,7 +66,7 @@ export const createHarness = (options: HarnessOptions = {}) => {
   const usage = options.usage ?? createUsage();
   const projectResolution = options.projectResolution ?? {
     width: 16,
-    height: 16
+    height: 16,
   };
   const calls = { importCount: 0, updateCount: 0, renderCount: 0 };
   const editor = {
@@ -70,7 +74,7 @@ export const createHarness = (options: HarnessOptions = {}) => {
       if (options.usageError) return { error: options.usageError };
       return { result: usage };
     },
-    getProjectTextureResolution: () => projectResolution
+    getProjectTextureResolution: () => projectResolution,
   } as unknown as EditorPort;
   const snapshot: SessionState = {
     id: 'p1',
@@ -80,22 +84,26 @@ export const createHarness = (options: HarnessOptions = {}) => {
     dirty: false,
     uvPixelsPerBlock: undefined,
     bones: [{ name: 'root', pivot: [0, 0, 0] }],
-    cubes: options.snapshotCubes ?? [{
-      id: 'cube1',
-      name: 'cube',
-      bone: 'root',
-      from: [0, 0, 0],
-      to: [16, 16, 16]
-    }],
-    textures: options.snapshotTextures ?? [{
-      id: 'tex1',
-      name: 'atlas',
-      width: 16,
-      height: 16
-    }],
+    cubes: options.snapshotCubes ?? [
+      {
+        id: 'cube1',
+        name: 'cube',
+        bone: 'root',
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+      },
+    ],
+    textures: options.snapshotTextures ?? [
+      {
+        id: 'tex1',
+        name: 'atlas',
+        width: 16,
+        height: 16,
+      },
+    ],
     animations: [],
     animationsStatus: 'available',
-    animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+    animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
   };
   const ctx: TextureToolContext = {
     ensureActive: () => null,
@@ -110,13 +118,13 @@ export const createHarness = (options: HarnessOptions = {}) => {
             if (options.renderError) return { error: options.renderError };
             if (options.renderWithoutResult) return {};
             return { result: { image, width: 16, height: 16 } };
-          }
+          },
         },
     capabilities,
     getUvPolicyConfig: () => ({
       ...DEFAULT_UV_POLICY,
       scaleTolerance: 2,
-      ...(options.policy ?? {})
+      ...(options.policy ?? {}),
     }),
     importTexture: () => {
       calls.importCount += 1;
@@ -131,7 +139,7 @@ export const createHarness = (options: HarnessOptions = {}) => {
         return { ok: false, error: options.updateError };
       }
       return { ok: true, value: { id: 'tex1', name: 'atlas' } };
-    }
+    },
   };
   return { ctx, usage, calls };
 };
@@ -142,27 +150,27 @@ export const fillOp = {
   y: 0,
   width: 4,
   height: 4,
-  color: '#228833'
+  color: '#228833',
 } as const;
 
 export const createPayload = (
-  override: Partial<PaintTexturePayload> = {}
+  override: Partial<PaintTexturePayload> = {},
 ): PaintTexturePayload => ({
   mode: 'create',
   name: 'atlas_new',
   width: 16,
   height: 16,
   ops: [fillOp],
-  ...override
+  ...override,
 });
 
 export const updatePayload = (
-  override: Partial<PaintTexturePayload> = {}
+  override: Partial<PaintTexturePayload> = {},
 ): PaintTexturePayload => ({
   mode: 'update',
   targetName: 'atlas',
   width: 16,
   height: 16,
   ops: [fillOp],
-  ...override
+  ...override,
 });

@@ -10,20 +10,20 @@ const hasMissingRevision = (response: ToolResponse<unknown>): boolean => {
 };
 
 const normalizePayload = (payload: unknown): Record<string, unknown> =>
-  (isRecord(payload) ? { ...payload } : {});
+  isRecord(payload) ? { ...payload } : {};
 
 export const buildRevisionNextActions = (
   tool: string,
   payload: Record<string, unknown>,
-  priorityBase = 1
+  priorityBase = 1,
 ): NextAction[] => [
   callTool('get_project_state', { detail: 'summary' }, REVISION_REFRESH_REASON, priorityBase),
   callTool(
     tool,
     { ...payload, ifRevision: refTool('get_project_state', '/project/revision') },
     REVISION_RETRY_REASON(tool),
-    priorityBase + 1
-  )
+    priorityBase + 1,
+  ),
 ];
 
 const dedupeByTool = (actions: NextAction[]): NextAction[] => {
@@ -40,7 +40,7 @@ const dedupeByTool = (actions: NextAction[]): NextAction[] => {
 export const appendMissingRevisionNextActions = <T>(
   tool: string,
   payload: unknown,
-  response: ToolResponse<T>
+  response: ToolResponse<T>,
 ): ToolResponse<T> => {
   if (!hasMissingRevision(response as ToolResponse<unknown>)) return response;
   const actions = buildRevisionNextActions(tool, normalizePayload(payload));
@@ -48,4 +48,3 @@ export const appendMissingRevisionNextActions = <T>(
   const deduped = dedupeByTool(nextActions);
   return { ...response, nextActions: deduped };
 };
-

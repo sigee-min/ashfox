@@ -1,7 +1,4 @@
-import type {
-  TextureOpLike,
-  TextureRasterFailureReason
-} from '../../../domain/textureOps';
+import type { TextureOpLike, TextureRasterFailureReason } from '../../../domain/textureOps';
 import { applyTextureOps, parseHexColor } from '../../../domain/texturePaint';
 import { applyUvPaintPixels } from '../../../domain/uv/paintPixels';
 import {
@@ -9,7 +6,7 @@ import {
   TEXTURE_OP_INVALID,
   TEXTURE_OP_LINEWIDTH_INVALID,
   UV_PAINT_SOURCE_DATA_MISMATCH,
-  UV_PAINT_SOURCE_TARGET_POSITIVE
+  UV_PAINT_SOURCE_TARGET_POSITIVE,
 } from '../../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../../result';
 import { uvPaintPixelMessages } from '../context';
@@ -17,7 +14,7 @@ import {
   countChangedPixels,
   overlayPatchRectsPreserveTransparent,
   overlayTextureSpaceRects,
-  type Rect
+  type Rect,
 } from '../paintFacesPixels';
 import type { RasterizedMeshFacePaint } from './contract';
 
@@ -36,7 +33,7 @@ export interface MeshFaceRasterRequest {
 
 const textureOpMessage = (
   reason: 'invalid_color' | 'invalid_line_width' | TextureRasterFailureReason,
-  label: string
+  label: string,
 ): string => {
   switch (reason) {
     case 'invalid_line_width':
@@ -54,7 +51,7 @@ const applySingleOp = (
   width: number,
   height: number,
   op: TextureOpLike,
-  label: string
+  label: string,
 ): UsecaseResult<void> => {
   const applied = applyTextureOps(pixels, width, height, [op], parseHexColor);
   return applied.ok
@@ -62,25 +59,29 @@ const applySingleOp = (
     : fail({
         code: 'invalid_payload',
         message: textureOpMessage(applied.reason, label),
-        details: { opIndex: applied.opIndex, reason: applied.reason }
+        details: { opIndex: applied.opIndex, reason: applied.reason },
       });
 };
 
 export const rasterizeMeshFacePaint = (
-  request: MeshFaceRasterRequest
+  request: MeshFaceRasterRequest,
 ): UsecaseResult<RasterizedMeshFacePaint> => {
   const expectedLength = request.textureWidth * request.textureHeight * 4;
   if (request.currentPixels.length !== expectedLength) {
     return fail({
       code: 'invalid_payload',
-      message: UV_PAINT_SOURCE_DATA_MISMATCH(request.textureLabel)
+      message: UV_PAINT_SOURCE_DATA_MISMATCH(request.textureLabel),
     });
   }
-  if (request.sourceWidth <= 0 || request.sourceHeight <= 0 ||
-    request.textureWidth <= 0 || request.textureHeight <= 0) {
+  if (
+    request.sourceWidth <= 0 ||
+    request.sourceHeight <= 0 ||
+    request.textureWidth <= 0 ||
+    request.textureHeight <= 0
+  ) {
     return fail({
       code: 'invalid_payload',
-      message: UV_PAINT_SOURCE_TARGET_POSITIVE(request.textureLabel)
+      message: UV_PAINT_SOURCE_TARGET_POSITIVE(request.textureLabel),
     });
   }
   const pixels = new Uint8ClampedArray(request.currentPixels);
@@ -93,7 +94,7 @@ export const rasterizeMeshFacePaint = (
       request.sourceWidth,
       request.sourceHeight,
       request.op,
-      request.textureLabel
+      request.textureLabel,
     );
     if (!applied.ok) return applied;
     overlayTextureSpaceRects(
@@ -101,36 +102,34 @@ export const rasterizeMeshFacePaint = (
       textureSpace,
       rects,
       request.textureWidth,
-      request.textureHeight
+      request.textureHeight,
     );
     return ok({ pixels, changedPixels: countChangedPixels(before, pixels) });
   }
-  const sourceData = new Uint8ClampedArray(
-    request.sourceWidth * request.sourceHeight * 4
-  );
+  const sourceData = new Uint8ClampedArray(request.sourceWidth * request.sourceHeight * 4);
   const applied = applySingleOp(
     sourceData,
     request.sourceWidth,
     request.sourceHeight,
     request.op,
-    request.textureLabel
+    request.textureLabel,
   );
   if (!applied.ok) return applied;
   const patch = applyUvPaintPixels({
     source: {
       width: request.sourceWidth,
       height: request.sourceHeight,
-      data: sourceData
+      data: sourceData,
     },
     target: { width: request.textureWidth, height: request.textureHeight },
     config: {
       rects,
       mapping: request.mapping,
       padding: 0,
-      anchor: [0, 0]
+      anchor: [0, 0],
     },
     label: request.textureLabel,
-    messages: uvPaintPixelMessages
+    messages: uvPaintPixelMessages,
   });
   if (!patch.ok) return fail(patch.error);
   overlayPatchRectsPreserveTransparent(
@@ -138,7 +137,7 @@ export const rasterizeMeshFacePaint = (
     patch.data.data,
     rects,
     request.textureWidth,
-    request.textureHeight
+    request.textureHeight,
   );
   return ok({ pixels, changedPixels: countChangedPixels(before, pixels) });
 };

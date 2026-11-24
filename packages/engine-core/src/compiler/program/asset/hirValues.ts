@@ -8,25 +8,20 @@ import {
   type AssetExpectedType,
   type AssetValue,
   type AssetTypedExpression,
-  type AssetValueDiagnostic
+  type AssetValueDiagnostic,
 } from './value/contract';
 import { compileAssetExpression } from './valueCompile';
 import { evaluateAssetExpression } from './valueEvaluate';
 import type { AssetExactUnitVector } from './frame';
 
-export type HirIssue = (
-  path: string,
-  span: SourceSpan,
-  code: string,
-  message: string
-) => void;
+export type HirIssue = (path: string, span: SourceSpan, code: string, message: string) => void;
 
 const freeze = <T>(value: T): T => Object.freeze(value);
 
 const report = (
   path: string,
   diagnostics: readonly AssetValueDiagnostic[],
-  issue: HirIssue
+  issue: HirIssue,
 ): void => {
   for (const item of diagnostics) issue(path, item.span, item.code, item.message);
 };
@@ -36,7 +31,7 @@ export const compileHirExpression = (
   expected: AssetExpectedType,
   environment: AssetExpressionTypeEnvironment,
   path: string,
-  issue: HirIssue
+  issue: HirIssue,
 ): AssetTypedExpression | null => {
   const result = compileAssetExpression(expression, environment, expected);
   if (!result.ok) {
@@ -50,7 +45,7 @@ export const evaluateHirExpression = (
   expression: AssetTypedExpression,
   environment: AssetExpressionValueEnvironment,
   path: string,
-  issue: HirIssue
+  issue: HirIssue,
 ): AssetValue | null => {
   const result = evaluateAssetExpression(expression, environment);
   if (!result.ok) {
@@ -66,15 +61,13 @@ export const compileAndEvaluateHirExpression = (
   types: AssetExpressionTypeEnvironment,
   values: AssetExpressionValueEnvironment,
   path: string,
-  issue: HirIssue
+  issue: HirIssue,
 ): AssetValue | null => {
   const typed = compileHirExpression(expression, expected, types, path, issue);
   return typed === null ? null : evaluateHirExpression(typed, values, path, issue);
 };
 
-export const exactUnitVector = (
-  value: AssetValue
-): AssetExactUnitVector | null => {
+export const exactUnitVector = (value: AssetValue): AssetExactUnitVector | null => {
   if (value.kind !== 'vector' || value.type !== 'vec3<unit>' || value.values.length !== 3) {
     return null;
   }
@@ -82,12 +75,13 @@ export const exactUnitVector = (
   return freeze([
     value.values[0]!.value,
     value.values[1]!.value,
-    value.values[2]!.value
+    value.values[2]!.value,
   ]) as AssetExactUnitVector;
 };
 
-export const exactZeroUnitVector = (): AssetExactUnitVector => freeze([
-  assetExactNumber(0n, 1n, 'unit'),
-  assetExactNumber(0n, 1n, 'unit'),
-  assetExactNumber(0n, 1n, 'unit')
-]) as AssetExactUnitVector;
+export const exactZeroUnitVector = (): AssetExactUnitVector =>
+  freeze([
+    assetExactNumber(0n, 1n, 'unit'),
+    assetExactNumber(0n, 1n, 'unit'),
+    assetExactNumber(0n, 1n, 'unit'),
+  ]) as AssetExactUnitVector;

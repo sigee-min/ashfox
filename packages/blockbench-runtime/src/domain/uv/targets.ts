@@ -24,7 +24,10 @@ export const collectTextureTargets = (entries: TargetLike[]): TextureTargetSet =
 export const collectSingleTarget = (entry: TargetLike): TextureTargetSet =>
   collectTextureTargets([entry]);
 
-export const expandTextureTargets = (usage: TextureUsage, targets: TextureTargetSet): TextureTargetSet => {
+export const expandTextureTargets = (
+  usage: TextureUsage,
+  targets: TextureTargetSet,
+): TextureTargetSet => {
   if (targets.ids.size === 0 && targets.names.size === 0) return targets;
   const ids = new Set(targets.ids);
   const names = new Set(targets.names);
@@ -41,11 +44,8 @@ export const expandTextureTargets = (usage: TextureUsage, targets: TextureTarget
 
 export const isIssueTarget = (
   issue: { textureId?: string; textureName: string },
-  targets: TextureTargetSet
+  targets: TextureTargetSet,
 ): boolean => {
   if (issue.textureId && targets.ids.has(issue.textureId)) return true;
   return targets.names.has(issue.textureName);
 };
-
-
-

@@ -8,13 +8,17 @@ import {
   runCreateAnimationClip,
   runDeleteAnimationClip,
   runUpdateAnimationClip,
-  type AnimationClipCrudDeps
+  type AnimationClipCrudDeps,
 } from './animation/clipCrudUsecases';
-import { runSetFramePose, type PoseUsecaseDeps, type SetFramePosePayload } from './animation/poseUsecase';
+import {
+  runSetFramePose,
+  type PoseUsecaseDeps,
+  type SetFramePosePayload,
+} from './animation/poseUsecase';
 import {
   runSetTriggerKeyframes,
   type SetTriggerKeyframesPayload,
-  type TriggerUsecaseDeps
+  type TriggerUsecaseDeps,
 } from './animation/triggerUsecase';
 
 export interface AnimationServiceDeps {
@@ -55,7 +59,7 @@ export class AnimationService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => runCreateAnimationClip(this.getClipCrudDeps(), payload)
+      () => runCreateAnimationClip(this.getClipCrudDeps(), payload),
     );
   }
 
@@ -72,7 +76,7 @@ export class AnimationService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => runUpdateAnimationClip(this.getClipCrudDeps(), payload)
+      () => runUpdateAnimationClip(this.getClipCrudDeps(), payload),
     );
   }
 
@@ -87,7 +91,7 @@ export class AnimationService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => runDeleteAnimationClip(this.getClipCrudDeps(), payload)
+      () => runDeleteAnimationClip(this.getClipCrudDeps(), payload),
     );
   }
 
@@ -103,18 +107,18 @@ export class AnimationService {
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => runSetFramePose(this.getPoseDeps(), payload)
+      () => runSetFramePose(this.getPoseDeps(), payload),
     );
   }
 
   setTriggerKeyframes(
-    payload: SetTriggerKeyframesPayload & { ifRevision?: string }
+    payload: SetTriggerKeyframesPayload & { ifRevision?: string },
   ): UsecaseResult<{ clip: string; clipId?: string; channel: TriggerChannel }> {
     return withActiveAndRevision(
       this.ensureActive,
       this.ensureRevisionMatch,
       payload.ifRevision,
-      () => runSetTriggerKeyframes(this.getTriggerDeps(), payload)
+      () => runSetTriggerKeyframes(this.getTriggerDeps(), payload),
     );
   }
 
@@ -133,7 +137,7 @@ export class AnimationService {
       editor: this.editor,
       capabilities: this.capabilities,
       getSnapshot: this.getSnapshot,
-      ensureAnimationsSupported: () => this.ensureAnimationsSupported()
+      ensureAnimationsSupported: () => this.ensureAnimationsSupported(),
     };
   }
 
@@ -142,7 +146,7 @@ export class AnimationService {
       session: this.session,
       editor: this.editor,
       getSnapshot: this.getSnapshot,
-      ensureAnimationsSupported: () => this.ensureAnimationsSupported()
+      ensureAnimationsSupported: () => this.ensureAnimationsSupported(),
     };
   }
 
@@ -151,7 +155,7 @@ export class AnimationService {
       session: this.session,
       editor: this.editor,
       getSnapshot: this.getSnapshot,
-      ensureAnimationsSupported: () => this.ensureAnimationsSupported()
+      ensureAnimationsSupported: () => this.ensureAnimationsSupported(),
     };
   }
 }

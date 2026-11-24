@@ -7,7 +7,11 @@ export const resolveBoneNameById = (bones: SessionState['bones'], id: string): s
 
 type TargetNamed = { id?: string | null; name: string };
 
-export const resolveTargetByIdOrName = <T extends TargetNamed>(items: T[], id?: string, name?: string): T | null => {
+export const resolveTargetByIdOrName = <T extends TargetNamed>(
+  items: T[],
+  id?: string,
+  name?: string,
+): T | null => {
   if (id) {
     return items.find((item) => item.id === id) ?? null;
   }
@@ -19,7 +23,10 @@ export const resolveTargetByIdOrName = <T extends TargetNamed>(items: T[], id?: 
 
 export const resolveTargetLabel = (id?: string, name?: string): string => id ?? name ?? 'unknown';
 
-export const collectDescendantBones = (bones: SessionState['bones'], rootName: string): string[] => {
+export const collectDescendantBones = (
+  bones: SessionState['bones'],
+  rootName: string,
+): string[] => {
   const childrenMap = new Map<string, string[]>();
   bones.forEach((bone) => {
     if (!bone.parent) return;
@@ -43,10 +50,11 @@ export const collectDescendantBones = (bones: SessionState['bones'], rootName: s
   return result;
 };
 
-export const isDescendantBone = (bones: SessionState['bones'], rootName: string, candidateParent: string): boolean => {
+export const isDescendantBone = (
+  bones: SessionState['bones'],
+  rootName: string,
+  candidateParent: string,
+): boolean => {
   const descendants = collectDescendantBones(bones, rootName);
   return descendants.includes(candidateParent);
 };
-
-
-

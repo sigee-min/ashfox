@@ -19,7 +19,7 @@ export const startMcpNetServer = (
   net: NetModule,
   config: NetServerConfig,
   router: import('./router').McpRouter,
-  log: Logger
+  log: Logger,
 ): TransportServerHandle => {
   const server = net.createServer((socket) => {
     acceptMcpNetConnection(socket, config, router, log);
@@ -34,7 +34,7 @@ export const startMcpNetServer = (
       stopped = true;
       server.close();
       log.info('MCP server stopped (net)');
-    }
+    },
   };
 };
 
@@ -42,11 +42,7 @@ interface ServerReadiness {
   readonly ready: Promise<void>;
 }
 
-const serverReadiness = (
-  server: Server,
-  config: NetServerConfig,
-  log: Logger
-): ServerReadiness => {
+const serverReadiness = (server: Server, config: NetServerConfig, log: Logger): ServerReadiness => {
   let settled = false;
   let resolveReady: () => void = () => undefined;
   let rejectReady: (error: unknown) => void = () => undefined;
@@ -68,7 +64,7 @@ const serverReadiness = (
       }
       log.info('MCP server started (net)', {
         host: config.host,
-        port: config.port
+        port: config.port,
       });
     });
   } catch (error) {

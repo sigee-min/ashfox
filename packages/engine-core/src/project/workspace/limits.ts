@@ -24,26 +24,28 @@ export const DEFAULT_WORKSPACE_LIMITS: WorkspaceLimits = Object.freeze({
   maxSourceBytes: 4 * 1024 * 1024,
   maxImportEdges: 4096,
   maxImportDepth: 64,
-  maxDiagnostics: 256
+  maxDiagnostics: 256,
 });
 
 export type WorkspaceLimitsOverride = Partial<WorkspaceLimits>;
 
 const WORKSPACE_LIMIT_KEYS = new Set<keyof WorkspaceLimits>(
-  Object.keys(DEFAULT_WORKSPACE_LIMITS) as (keyof WorkspaceLimits)[]
+  Object.keys(DEFAULT_WORKSPACE_LIMITS) as (keyof WorkspaceLimits)[],
 );
 
 export const withWorkspaceLimits = (
-  override: WorkspaceLimitsOverride | undefined
+  override: WorkspaceLimitsOverride | undefined,
 ): WorkspaceLimits => {
-  if (override !== undefined && (!isClosedContractRecord(override) ||
-      Object.keys(override).some((key) =>
-        !WORKSPACE_LIMIT_KEYS.has(key as keyof WorkspaceLimits)))) {
+  if (
+    override !== undefined &&
+    (!isClosedContractRecord(override) ||
+      Object.keys(override).some((key) => !WORKSPACE_LIMIT_KEYS.has(key as keyof WorkspaceLimits)))
+  ) {
     throw new TypeError('Workspace limits must be a closed limits object.');
   }
   const candidate = {
     ...DEFAULT_WORKSPACE_LIMITS,
-    ...(override ?? {})
+    ...(override ?? {}),
   };
   for (const [name, value] of Object.entries(candidate)) {
     if (!Number.isSafeInteger(value) || value < 1) {

@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 
-import { runDeleteProject, type ProjectDeleteContext } from '../../../../src/usecases/project/delete';
+import {
+  runDeleteProject,
+  type ProjectDeleteContext,
+} from '../../../../src/usecases/project/delete';
 import {
   PROJECT_DELETE_NAME_REQUIRED,
   PROJECT_MISMATCH,
-  PROJECT_NO_ACTIVE
+  PROJECT_NO_ACTIVE,
 } from '../../../../src/shared/messages';
 
 type Snapshot = {
@@ -18,7 +21,7 @@ const activeSnapshot: Snapshot = {
   id: 'p1',
   format: 'geckolib',
   formatId: 'geckolib_model',
-  name: 'dragon'
+  name: 'dragon',
 };
 
 const createContext = (options?: {
@@ -31,12 +34,12 @@ const createContext = (options?: {
     ensureRevisionMatch: () => options?.revisionError ?? null,
     getSnapshot: () => options?.snapshot ?? activeSnapshot,
     editor: {
-      closeProject: () => options?.closeError ?? null
+      closeProject: () => options?.closeError ?? null,
     },
     session: {
       reset: () => {
         resetCount += 1;
-      }
+      },
     },
     projectState: {
       normalize: (snapshot: Snapshot) => snapshot,
@@ -46,17 +49,17 @@ const createContext = (options?: {
               id: snapshot.id,
               name: snapshot.name,
               format: snapshot.format,
-              formatId: snapshot.formatId ?? null
+              formatId: snapshot.formatId ?? null,
             }
-          : null
-    }
+          : null,
+    },
   } as unknown as ProjectDeleteContext;
   return { ctx, resetCount: () => resetCount };
 };
 
 {
   const { ctx } = createContext({
-    revisionError: { code: 'invalid_state', message: 'revision mismatch' }
+    revisionError: { code: 'invalid_state', message: 'revision mismatch' },
   });
   const res = runDeleteProject(ctx, { target: { name: 'dragon' }, ifRevision: 'r0' });
   assert.equal(res.ok, false);
@@ -90,8 +93,8 @@ const createContext = (options?: {
       id: null,
       format: null,
       formatId: null,
-      name: null
-    }
+      name: null,
+    },
   });
   const res = runDeleteProject(ctx, { target: { name: 'dragon' } });
   assert.equal(res.ok, false);
@@ -110,14 +113,14 @@ const createContext = (options?: {
     assert.equal(res.error.message, PROJECT_MISMATCH);
     assert.deepEqual(res.error.details, {
       expected: { name: 'other' },
-      actual: { name: 'dragon' }
+      actual: { name: 'dragon' },
     });
   }
 }
 
 {
   const { ctx, resetCount } = createContext({
-    closeError: { code: 'io_error', message: 'close failed' }
+    closeError: { code: 'io_error', message: 'close failed' },
   });
   const res = runDeleteProject(ctx, { target: { name: 'dragon' } });
   assert.equal(res.ok, false);

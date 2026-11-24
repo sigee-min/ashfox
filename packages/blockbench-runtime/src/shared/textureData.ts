@@ -23,7 +23,10 @@ export const estimateDataUriByteLength = (dataUri: string): number | null => {
   if (comma === -1) return null;
   const meta = raw.slice(0, comma);
   if (!meta.toLowerCase().includes('base64')) return null;
-  const payload = raw.slice(comma + 1).trim().replace(/\s/g, '');
+  const payload = raw
+    .slice(comma + 1)
+    .trim()
+    .replace(/\s/g, '');
   if (!payload) return null;
   let padding = 0;
   if (payload.endsWith('==')) padding = 2;

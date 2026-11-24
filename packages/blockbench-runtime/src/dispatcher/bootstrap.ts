@@ -13,7 +13,7 @@ import { ToolService } from '../usecases/ToolService';
 export const buildDefaultToolService = (
   session: ProjectSession,
   capabilities: Capabilities,
-  log: Logger
+  log: Logger,
 ): ToolService => {
   const editor = new BlockbenchEditor(log);
   const host = new BlockbenchHost();
@@ -32,6 +32,6 @@ export const buildDefaultToolService = (
     textureRenderer,
     viewportRefresher,
     tmpStore,
-    policies: { snapshotPolicy: 'hybrid' }
+    policies: { snapshotPolicy: 'hybrid' },
   });
 };

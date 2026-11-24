@@ -7,13 +7,14 @@ import type { TextureComposition } from './types';
  */
 export const composeTextureRaster = (
   _document: ProjectDocument,
-  texture: TextureAsset
+  texture: TextureAsset,
 ): TextureComposition => {
   const raster = texture.raster;
-  if (raster === undefined ||
+  if (
+    raster === undefined ||
     (raster.backgroundAlpha !== 0 && raster.backgroundAlpha !== 255) ||
-    raster.canvasDetails.some((detail) => detail.alpha !== 0 &&
-      detail.alpha !== 255)) {
+    raster.canvasDetails.some((detail) => detail.alpha !== 0 && detail.alpha !== 255)
+  ) {
     throw new TypeError('Texture raster alpha must be explicit.');
   }
   return {
@@ -22,6 +23,6 @@ export const composeTextureRaster = (
     // Source order is the paint order. Sorting by generated IDs would make
     // overlapping author operations change meaning.
     canvasDetails: [...raster.canvasDetails],
-    alphaMasks: [...(raster.alphaMasks ?? [])]
+    alphaMasks: [...(raster.alphaMasks ?? [])],
   };
 };

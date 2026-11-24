@@ -1,4 +1,5 @@
-export const MCP_VALIDATION_TYPE_MESSAGE = (path: string, schemaType: string) => `${path} must be ${schemaType}`;
+export const MCP_VALIDATION_TYPE_MESSAGE = (path: string, schemaType: string) =>
+  `${path} must be ${schemaType}`;
 export const MCP_VALIDATION_ENUM_MESSAGE = (path: string, values: ReadonlyArray<unknown>) =>
   `${path} must be one of ${values.join(', ')}`;
 export const MCP_VALIDATION_MIN_ITEMS_MESSAGE = (path: string, minItems: number) =>
@@ -11,12 +12,12 @@ export const MCP_VALIDATION_MAXIMUM_MESSAGE = (path: string, maximum: number) =>
   `${path} must be at most ${maximum}`;
 export const MCP_VALIDATION_PATTERN_MESSAGE = (path: string, pattern: string) =>
   `${path} must match ${pattern}`;
-export const MCP_VALIDATION_MIN_PROPERTIES_MESSAGE = (
-  path: string,
-  minimum: number
-) => `${path} must have at least ${minimum} properties`;
-export const MCP_VALIDATION_REQUIRED_MESSAGE = (path: string, key: string) => `${path}.${key} is required`;
-export const MCP_VALIDATION_NOT_ALLOWED_MESSAGE = (path: string, key: string) => `${path}.${key} is not allowed`;
+export const MCP_VALIDATION_MIN_PROPERTIES_MESSAGE = (path: string, minimum: number) =>
+  `${path} must have at least ${minimum} properties`;
+export const MCP_VALIDATION_REQUIRED_MESSAGE = (path: string, key: string) =>
+  `${path}.${key} is required`;
+export const MCP_VALIDATION_NOT_ALLOWED_MESSAGE = (path: string, key: string) =>
+  `${path}.${key} is not allowed`;
 export const MCP_VALIDATION_ANY_OF_MESSAGE = (path: string, candidates?: string[]) =>
   candidates && candidates.length > 0
     ? `${path} must include one of: ${candidates.join(', ')}`

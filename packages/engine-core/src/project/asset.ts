@@ -1,8 +1,5 @@
 import type { ProjectDocument, Revision } from '../model';
-import type {
-  AuthoredAssetWorkspace,
-  Sha256Digest
-} from './workspace/contract';
+import type { AuthoredAssetWorkspace, Sha256Digest } from './workspace/contract';
 import type { WorkspaceEntrySelector } from './workspace/graph/contract';
 
 /** Immutable identity of one concrete product built from a workspace entry. */

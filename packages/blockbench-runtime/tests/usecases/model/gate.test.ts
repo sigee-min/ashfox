@@ -10,14 +10,14 @@ import { createEditorStub } from '../../fakes';
 const triVertices = () => [
   { id: 'v0', pos: [0, 0, 0] as [number, number, number] },
   { id: 'v1', pos: [1, 0, 0] as [number, number, number] },
-  { id: 'v2', pos: [0, 1, 0] as [number, number, number] }
+  { id: 'v2', pos: [0, 1, 0] as [number, number, number] },
 ];
 
 const triFaces = () => [
   {
     id: 'f0',
-    vertices: ['v0', 'v1', 'v2']
-  }
+    vertices: ['v0', 'v1', 'v2'],
+  },
 ];
 
 const capabilities: Capabilities = {
@@ -28,10 +28,10 @@ const capabilities: Capabilities = {
       format: 'Java Block/Item',
       animations: false,
       enabled: true,
-      flags: { meshes: false }
-    }
+      flags: { meshes: false },
+    },
   ],
-  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const createService = () => {
@@ -53,7 +53,7 @@ const createService = () => {
     deleteMesh: () => {
       deleteCalls += 1;
       return null;
-    }
+    },
   };
   const service = new ModelService({
     session,
@@ -61,11 +61,11 @@ const createService = () => {
     capabilities,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => null,
-    ensureRevisionMatch: () => null
+    ensureRevisionMatch: () => null,
   });
   return {
     service,
-    getCalls: () => ({ addCalls, updateCalls, deleteCalls })
+    getCalls: () => ({ addCalls, updateCalls, deleteCalls }),
   };
 };
 
@@ -74,7 +74,7 @@ const createService = () => {
   const res = service.addMesh({
     name: 'wing',
     vertices: triVertices(),
-    faces: triFaces()
+    faces: triFaces(),
   });
   assert.equal(res.ok, false);
   if (!res.ok) {

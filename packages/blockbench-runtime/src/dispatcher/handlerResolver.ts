@@ -5,12 +5,12 @@ import {
   isStatefulToolName,
   type ResponseHandlerMap,
   type StatefulHandlerMap,
-  type StatefulToolName
+  type StatefulToolName,
 } from './handlerMaps';
 import type { Handler } from './responseHelpers';
 
 type StatefulCall<K extends StatefulToolName> = (
-  payload: ToolPayloadMap[K]
+  payload: ToolPayloadMap[K],
 ) => UsecaseResult<BaseResult<K>> | Promise<UsecaseResult<BaseResult<K>>>;
 
 export type HandlerResolverDeps = {

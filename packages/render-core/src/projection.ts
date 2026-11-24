@@ -3,15 +3,9 @@ import * as THREE from 'three';
 import type { ProjectDocument } from '@ashfox/engine-core';
 
 import { addNodeGeometry } from './sceneGeometry';
-import {
-  createProjectMaterials,
-  disposeMaterial
-} from './sceneMaterials';
+import { createProjectMaterials, disposeMaterial } from './sceneMaterials';
 import { applyNodeTransform } from './sceneTransform';
-import type {
-  ProjectSceneOptions,
-  ProjectSceneProjection
-} from './sceneTypes';
+import type { ProjectSceneOptions, ProjectSceneProjection } from './sceneTypes';
 
 const disposeObject = (object: THREE.Object3D): void => {
   const mesh = object as THREE.Mesh;
@@ -30,14 +24,12 @@ const disposeObject = (object: THREE.Object3D): void => {
 };
 
 const orderedSceneNodes = (document: ProjectDocument) =>
-  Object.values(document.scene.nodes).sort((left, right) =>
-    left.id.localeCompare(right.id)
-  );
+  Object.values(document.scene.nodes).sort((left, right) => left.id.localeCompare(right.id));
 
 /** Project-to-Three projection boundary owned by the renderer. */
 export const projectToThreeScene = (
   document: ProjectDocument,
-  options: ProjectSceneOptions
+  options: ProjectSceneOptions,
 ): ProjectSceneProjection => {
   const root = new THREE.Group();
   root.name = 'ashfoxProjectScene';
@@ -47,19 +39,20 @@ export const projectToThreeScene = (
     document,
     options.assets,
     options.untexturedColor,
-    options.showTextures !== false
+    options.showTextures !== false,
   );
   const readiness: ProjectSceneProjection['readiness'] = {
     status: 'pending',
-    error: null
+    error: null,
   };
-  const ready = materials.ready.then(() => {
-    readiness.status = 'ready';
-  }).catch((error: unknown) => {
-    readiness.status = 'failed';
-    readiness.error =
-      error instanceof Error ? error.message : String(error);
-  });
+  const ready = materials.ready
+    .then(() => {
+      readiness.status = 'ready';
+    })
+    .catch((error: unknown) => {
+      readiness.status = 'failed';
+      readiness.error = error instanceof Error ? error.message : String(error);
+    });
   const orderedNodes = orderedSceneNodes(document);
 
   for (const node of orderedNodes) {
@@ -71,24 +64,24 @@ export const projectToThreeScene = (
     // PlaneNode basis is the signed chart authority. Its retired Euler
     // rotation is retained for Bedrock lowering only; applying both here
     // would rotate the basis a second time and mirror east/west patches.
-    const webTransform = node.kind === 'plane' && node.basis
-      ? { ...node.transform, rotation: [0, 0, 0] as const }
-      : node.transform;
+    const webTransform =
+      node.kind === 'plane' && node.basis
+        ? { ...node.transform, rotation: [0, 0, 0] as const }
+        : node.transform;
     applyNodeTransform(document, node, group, webTransform);
     objectsByNodeId.set(node.id, group);
     addNodeGeometry(node, group, {
       materials,
       textures: document.textures,
       options,
-      selectable
+      selectable,
     });
   }
 
   for (const node of orderedNodes) {
     const group = objectsByNodeId.get(node.id);
     if (!group) continue;
-    const parent =
-      node.parentId === null ? root : objectsByNodeId.get(node.parentId);
+    const parent = node.parentId === null ? root : objectsByNodeId.get(node.parentId);
     (parent ?? root).add(group);
   }
 
@@ -102,6 +95,6 @@ export const projectToThreeScene = (
     dispose: () => {
       root.traverse(disposeObject);
       materials.dispose();
-    }
+    },
   };
 };

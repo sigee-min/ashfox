@@ -6,5 +6,10 @@ export { readNodeId, readTextureId, readTextureAliases, readAnimationId } from '
 export { readTextureSize } from './utils/texture';
 export { assignVec2, assignVec3 } from './utils/vectors';
 export { assignAnimationLength } from './utils/animation';
-export { normalizeParent, moveOutlinerNode, removeOutlinerNode, attachToOutliner } from './utils/outliner';
+export {
+  normalizeParent,
+  moveOutlinerNode,
+  removeOutlinerNode,
+  attachToOutliner,
+} from './utils/outliner';
 export { hasUnsavedChanges, markProjectSaved } from './utils/projectState';

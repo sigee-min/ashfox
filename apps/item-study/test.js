@@ -12,7 +12,7 @@ const output = path.join(temporary, 'previews');
 try {
   fs.cpSync(path.resolve(__dirname, '../../examples/items'), project, {
     recursive: true,
-    filter: (file) => !file.split(path.sep).includes('dist')
+    filter: (file) => !file.split(path.sep).includes('dist'),
   });
   const input = path.join(project, '.ashfoxworkspace');
   const original = fs.readFileSync(path.join(project, 'src/iron_sword.ashfox'));
@@ -24,8 +24,11 @@ try {
   const receipt = JSON.parse(fs.readFileSync(path.join(first.directory, 'receipt.json'), 'utf8'));
   assert.ok(receipt.items.length > 0, 'native workspace produces actual sprites');
   for (const file of fs.readdirSync(first.directory)) {
-    assert.deepEqual(fs.readFileSync(path.join(first.directory, file)),
-      fs.readFileSync(path.join(second.directory, file)), file);
+    assert.deepEqual(
+      fs.readFileSync(path.join(first.directory, file)),
+      fs.readFileSync(path.join(second.directory, file)),
+      file,
+    );
   }
   const png = fs.readFileSync(path.join(first.directory, 'iron_sword.png'));
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
@@ -42,7 +45,9 @@ try {
   fs.writeFileSync(blocked, 'user file');
   assert.throws(() => buildWorkspace(input, blocked));
   assert.equal(fs.readFileSync(blocked, 'utf8'), 'user file');
-  console.log('Native item studio: deterministic snapshots, source preservation and failed-build isolation passed');
+  console.log(
+    'Native item studio: deterministic snapshots, source preservation and failed-build isolation passed',
+  );
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
 }

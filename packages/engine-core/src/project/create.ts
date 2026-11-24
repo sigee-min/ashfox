@@ -1,8 +1,4 @@
-import {
-  PROJECT_DOCUMENT_SCHEMA_VERSION,
-  type ProjectDocument,
-  type Revision
-} from '../model';
+import { PROJECT_DOCUMENT_SCHEMA_VERSION, type ProjectDocument, type Revision } from '../model';
 
 export interface CreateProjectDocumentInput {
   id: string;
@@ -21,7 +17,7 @@ export const createProjectDocument = ({
   id,
   name,
   revision,
-  createdAt
+  createdAt,
 }: CreateProjectDocumentInput): ProjectDocument => {
   const timestamp = requiredText(createdAt, 'Creation timestamp');
   return {
@@ -33,7 +29,7 @@ export const createProjectDocument = ({
       forward: 'north',
       textureResolution: {
         width: 16,
-        height: 16
+        height: 16,
       },
       surfacePixelDensity: 1,
       coordinateSystem: {
@@ -41,16 +37,16 @@ export const createProjectDocument = ({
         handedness: 'right',
         unit: 'pixel',
         rotationUnit: 'degree',
-        rotationOrder: 'xyz'
-      }
+        rotationOrder: 'xyz',
+      },
     },
     scene: {
       roots: [],
-      nodes: {}
+      nodes: {},
     },
     textures: {},
     animations: {},
     createdAt: timestamp,
-    updatedAt: timestamp
+    updatedAt: timestamp,
   };
 };

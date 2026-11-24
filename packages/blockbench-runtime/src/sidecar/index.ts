@@ -25,7 +25,7 @@ const startSidecar = (config: ServerConfig): void => {
     callTool: async (name: string, args: unknown): Promise<ToolResponse<unknown>> => {
       const response = await client.requestValidated(name, args);
       return response;
-    }
+    },
   };
 
   const router = new McpRouter(
@@ -34,12 +34,12 @@ const startSidecar = (config: ServerConfig): void => {
       token: config.token,
       endpoint: { host: config.host, port: config.port },
       serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
-      instructions: SIDECAR_TOOL_INSTRUCTIONS
+      instructions: SIDECAR_TOOL_INSTRUCTIONS,
     },
     executor,
     log,
     resourceStore,
-    DEFAULT_TOOL_REGISTRY
+    DEFAULT_TOOL_REGISTRY,
   );
 
   const server = createMcpHttpServer(http, router, log);
@@ -60,19 +60,13 @@ const startSidecar = (config: ServerConfig): void => {
   });
 };
 
-const validation = resolveSidecarServerConfig(
-  process.argv.slice(2),
-  process.env
-);
+const validation = resolveSidecarServerConfig(process.argv.slice(2), process.env);
 if (!validation.ok) {
   log.error('invalid sidecar config', {
     reason: validation.reason,
-    message: validation.message
+    message: validation.message,
   });
   process.exitCode = 1;
 } else {
   startSidecar(validation.config);
 }
-
-
-

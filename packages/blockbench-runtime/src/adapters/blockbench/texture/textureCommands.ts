@@ -7,16 +7,23 @@ import type {
   ReadTextureCommand,
   TextureSource,
   TextureStat,
-  UpdateTextureCommand
+  UpdateTextureCommand,
 } from '../../../ports/editor';
 import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import type { PreviewItem, TextureConstructor, TextureInstance } from '../../../types/blockbench';
-import { readGlobals, readTextureId, readTextureSize, removeEntity, renameEntity, withUndo } from '../blockbenchUtils';
+import {
+  readGlobals,
+  readTextureId,
+  readTextureSize,
+  removeEntity,
+  renameEntity,
+  withUndo,
+} from '../blockbenchUtils';
 import { getTextureApi } from '../api';
 import {
   ADAPTER_TEXTURE_CANVAS_UNAVAILABLE,
   ADAPTER_TEXTURE_DATA_UNAVAILABLE,
-  TEXTURE_NOT_FOUND
+  TEXTURE_NOT_FOUND,
 } from '../../../shared/messages';
 import { getTextureDataUri } from './textureData';
 import {
@@ -24,7 +31,7 @@ import {
   applyTextureDimensions,
   applyTextureImage,
   applyTextureMeta,
-  finalizeTextureChange
+  finalizeTextureChange,
 } from './textureOps';
 import { findTextureRef, listTextureStats } from './textureLookup';
 
@@ -37,7 +44,11 @@ export const runImportTexture = (log: Logger, params: ImportTextureCommand): Too
     const TextureCtor = api.TextureCtor as TextureConstructor;
     let imageMissing = false;
     withUndo({ textures: true }, 'Import texture', () => {
-      const tex = new TextureCtor({ name: params.name, width: params.width, height: params.height });
+      const tex = new TextureCtor({
+        name: params.name,
+        width: params.width,
+        height: params.height,
+      });
       if (params.id) tex.ashfoxId = params.id;
       if (typeof tex.add === 'function') {
         tex.add();
@@ -115,13 +126,16 @@ export const runDeleteTexture = (log: Logger, params: DeleteTextureCommand): Too
   } catch (err) {
     const message = errorMessage(err, 'texture delete failed');
     log.error('texture delete error', { message });
-    return toolError('unknown', message, { reason: 'adapter_exception', context: 'texture_delete' });
+    return toolError('unknown', message, {
+      reason: 'adapter_exception',
+      context: 'texture_delete',
+    });
   }
 };
 
 export const runReadTexture = (
   log: Logger,
-  params: ReadTextureCommand
+  params: ReadTextureCommand,
 ): { result?: TextureSource; error?: ToolError } => {
   try {
     const api = getTextureApi();
@@ -148,13 +162,18 @@ export const runReadTexture = (
         height,
         path,
         dataUri: dataUri ?? undefined,
-        image: image ?? undefined
-      }
+        image: image ?? undefined,
+      },
     };
   } catch (err) {
     const message = errorMessage(err, 'texture read failed');
     log.error('texture read error', { message });
-    return { error: toolError('unknown', message, { reason: 'adapter_exception', context: 'texture_read' }) };
+    return {
+      error: toolError('unknown', message, {
+        reason: 'adapter_exception',
+        context: 'texture_read',
+      }),
+    };
   }
 };
 
@@ -175,23 +194,27 @@ const selectTextureImageSource = (texture: TextureInstance): CanvasImageSource |
   return null;
 };
 
-const applyTextureContent = (
-  tex: TextureInstance,
-  params: TextureWriteCommand
-): boolean => {
+const applyTextureContent = (tex: TextureInstance, params: TextureWriteCommand): boolean => {
   applyTextureDefaults(tex);
   applyTextureDimensions(tex, params.width, params.height);
   applyTextureMeta(tex, params);
   if (!applyTextureImage(tex, params.image)) return false;
-  if (applyTextureDimensions(tex, params.width, params.height) && !applyTextureImage(tex, params.image)) {
+  if (
+    applyTextureDimensions(tex, params.width, params.height) &&
+    !applyTextureImage(tex, params.image)
+  ) {
     return false;
   }
   finalizeTextureChange(tex);
   return true;
 };
 
-const collectPreviewCandidates = (registry: { selected?: PreviewItem | null; all?: PreviewItem[] } | undefined): PreviewItem[] =>
-  [registry?.selected, ...(registry?.all ?? [])].filter((entry): entry is PreviewItem => Boolean(entry));
+const collectPreviewCandidates = (
+  registry: { selected?: PreviewItem | null; all?: PreviewItem[] } | undefined,
+): PreviewItem[] =>
+  [registry?.selected, ...(registry?.all ?? [])].filter((entry): entry is PreviewItem =>
+    Boolean(entry),
+  );
 
 const refreshTextureViewport = (log: Logger): void => {
   try {
@@ -207,10 +230,12 @@ const refreshTextureViewport = (log: Logger): void => {
     }
     if (rendered.size === 0) {
       globals.Blockbench?.dispatchEvent?.('ashfox:texture_changed', {
-        source: 'texture_commands'
+        source: 'texture_commands',
       });
     }
   } catch (err) {
-    log.warn('texture viewport refresh failed', { message: errorMessage(err, 'texture viewport refresh failed') });
+    log.warn('texture viewport refresh failed', {
+      message: errorMessage(err, 'texture viewport refresh failed'),
+    });
   }
 };

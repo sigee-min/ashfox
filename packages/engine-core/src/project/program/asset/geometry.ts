@@ -6,7 +6,7 @@ import type {
   AssetGeometryPayload,
   AssetGeometryProperty,
   AssetGeometrySurfaceBind,
-  AssetGeometryStatement
+  AssetGeometryStatement,
 } from './contract';
 
 export interface AssetGeometryReader {
@@ -35,9 +35,7 @@ const freeze = <T>(value: T): T => Object.freeze(value);
 
 const keywords = new Set(['bone', 'cube', 'plane', 'locator', 'face']);
 
-const block = (
-  reader: AssetGeometryReader
-): AssetGeometryBlock => {
+const block = (reader: AssetGeometryReader): AssetGeometryBlock => {
   const start = reader.take();
   const keyword = start.value as AssetGeometryBlock['keyword'];
   const id = reader.id('Expected a geometry node name.').value;
@@ -48,18 +46,30 @@ const block = (
     while (!reader.check('}') && !reader.end()) {
       if (reader.checkWord('surface')) statements.push(reader.surfaceBinding());
       else if (reader.assignment()) statements.push(reader.property());
-      else if (reader.checkWord('bone') || reader.checkWord('cube') ||
-        reader.checkWord('plane') || reader.checkWord('locator') ||
-        reader.checkWord('face')) statements.push(block(reader));
+      else if (
+        reader.checkWord('bone') ||
+        reader.checkWord('cube') ||
+        reader.checkWord('plane') ||
+        reader.checkWord('locator') ||
+        reader.checkWord('face')
+      )
+        statements.push(block(reader));
       else {
-        reader.fail('asset.invalid-geometry-scope',
-          'Only geometry nodes and properties are allowed in a component geometry block.');
+        reader.fail(
+          'asset.invalid-geometry-scope',
+          'Only geometry nodes and properties are allowed in a component geometry block.',
+        );
         reader.recover();
       }
     }
     const close = reader.expect('}', 'Expected } to close a geometry node.');
-    return freeze({ kind: 'geometry-block', keyword, id,
-      statements: freeze(statements), span: join(start.span, close.span) });
+    return freeze({
+      kind: 'geometry-block',
+      keyword,
+      id,
+      statements: freeze(statements),
+      span: join(start.span, close.span),
+    });
   } finally {
     reader.leaveDepth();
   }
@@ -67,7 +77,7 @@ const block = (
 
 export const parseGeometryPayload = (
   reader: AssetGeometryReader,
-  start: ProgramToken
+  start: ProgramToken,
 ): AssetGeometryPayload => {
   reader.expect('{', 'Expected { to begin component geometry.');
   reader.enterDepth(start);
@@ -76,17 +86,22 @@ export const parseGeometryPayload = (
     while (!reader.check('}') && !reader.end()) {
       if (reader.checkWord('surface')) statements.push(reader.surfaceBinding());
       else if (reader.assignment()) statements.push(reader.property());
-      else if (reader.current().kind === 'identifier' &&
-        keywords.has(reader.current().value)) statements.push(block(reader));
+      else if (reader.current().kind === 'identifier' && keywords.has(reader.current().value))
+        statements.push(block(reader));
       else {
-        reader.fail('asset.invalid-geometry-scope',
-          'Component geometry accepts only bone, cube, plane, locator, face, and properties.');
+        reader.fail(
+          'asset.invalid-geometry-scope',
+          'Component geometry accepts only bone, cube, plane, locator, face, and properties.',
+        );
         reader.recover();
       }
     }
     const close = reader.expect('}', 'Expected } to close component geometry.');
-    return freeze({ kind: 'geometry', statements: freeze(statements),
-      span: join(start.span, close.span) });
+    return freeze({
+      kind: 'geometry',
+      statements: freeze(statements),
+      span: join(start.span, close.span),
+    });
   } finally {
     reader.leaveDepth();
   }

@@ -6,7 +6,7 @@ export type FormatOverrides = Partial<Record<FormatKind, string>>;
 export function resolveFormatId(
   kind: FormatKind,
   formats: FormatDescriptor[],
-  overrides?: FormatOverrides
+  overrides?: FormatOverrides,
 ): string | null {
   const overrideId = overrides?.[kind];
   if (overrideId) {
@@ -48,7 +48,14 @@ export function matchesFormatKind(kind: FormatKind, value: string | null | undef
 function getPatterns(kind: FormatKind): string[] {
   switch (kind) {
     case 'Java Block/Item':
-      return ['java_block', 'java block', 'java_item', 'java item', 'java-block', 'java block/item'];
+      return [
+        'java_block',
+        'java block',
+        'java_item',
+        'java item',
+        'java-block',
+        'java block/item',
+      ];
     case 'geckolib':
       return ['geckolib', 'gecko_lib', 'gecko'];
     case 'animated_java':
@@ -59,7 +66,3 @@ function getPatterns(kind: FormatKind): string[] {
       return [];
   }
 }
-
-
-
-

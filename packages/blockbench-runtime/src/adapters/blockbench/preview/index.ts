@@ -1,5 +1,10 @@
 import { errorMessage, Logger } from '../../../logging';
-import { RenderPreviewOutputKind, RenderPreviewPayload, RenderPreviewResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  RenderPreviewOutputKind,
+  RenderPreviewPayload,
+  RenderPreviewResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { toolError } from '../../../shared/tooling/toolResponse';
 import { readGlobals } from '../blockbenchUtils';
 import {
@@ -13,7 +18,7 @@ import {
   snapshotAnimation,
   snapshotCamera,
   type CameraLike,
-  type ControlsLike
+  type ControlsLike,
 } from './previewUtils';
 import {
   ADAPTER_PREVIEW_ANGLE_FIXED_ONLY,
@@ -29,7 +34,7 @@ import {
   ADAPTER_PREVIEW_TIME_NON_NEGATIVE,
   ADAPTER_PREVIEW_TURNTABLE_CONTROLS_UNAVAILABLE,
   ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY,
-  ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY_FIX
+  ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY_FIX,
 } from '../../../shared/messages';
 
 const DEFAULT_TURNTABLE_FPS = 20;
@@ -52,8 +57,8 @@ export class BlockbenchPreviewAdapter {
         error: {
           code: 'invalid_payload',
           message: ADAPTER_PREVIEW_FIXED_SINGLE_ONLY,
-          fix: ADAPTER_PREVIEW_FIXED_SINGLE_ONLY_FIX
-        }
+          fix: ADAPTER_PREVIEW_FIXED_SINGLE_ONLY_FIX,
+        },
       };
     }
     if (params.mode === 'turntable' && outputKind !== 'sequence') {
@@ -61,8 +66,8 @@ export class BlockbenchPreviewAdapter {
         error: {
           code: 'invalid_payload',
           message: ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY,
-          fix: ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY_FIX
-        }
+          fix: ADAPTER_PREVIEW_TURNTABLE_SEQUENCE_ONLY_FIX,
+        },
       };
     }
     const preview = selectPreview(previewRegistry?.selected, previewRegistry?.all ?? []);
@@ -82,8 +87,8 @@ export class BlockbenchPreviewAdapter {
         error: {
           code: 'not_implemented',
           message: ADAPTER_PREVIEW_CONTROLS_UNAVAILABLE,
-          fix: ADAPTER_PREVIEW_CONTROLS_UNAVAILABLE_FIX
-        }
+          fix: ADAPTER_PREVIEW_CONTROLS_UNAVAILABLE_FIX,
+        },
       };
     }
 
@@ -92,8 +97,8 @@ export class BlockbenchPreviewAdapter {
         error: {
           code: 'not_implemented',
           message: ADAPTER_PREVIEW_TURNTABLE_CONTROLS_UNAVAILABLE,
-          fix: ADAPTER_PREVIEW_CONTROLS_UNAVAILABLE_FIX
-        }
+          fix: ADAPTER_PREVIEW_CONTROLS_UNAVAILABLE_FIX,
+        },
       };
     }
 
@@ -118,8 +123,8 @@ export class BlockbenchPreviewAdapter {
           error: {
             code: 'invalid_payload',
             message: ADAPTER_PREVIEW_ANGLE_FIXED_ONLY,
-            fix: ADAPTER_PREVIEW_ANGLE_FIXED_ONLY_FIX
-          }
+            fix: ADAPTER_PREVIEW_ANGLE_FIXED_ONLY_FIX,
+          },
         };
       }
       if (params.mode === 'fixed' && params.angle) {
@@ -144,8 +149,8 @@ export class BlockbenchPreviewAdapter {
           result: {
             kind: outputKind,
             frameCount: 1,
-            image: { ...parsed.value, ...size }
-          }
+            image: { ...parsed.value, ...size },
+          },
         };
       }
 
@@ -154,17 +159,32 @@ export class BlockbenchPreviewAdapter {
       }
 
       if (!controls) {
-        return { error: { code: 'not_implemented', message: ADAPTER_PREVIEW_TURNTABLE_CONTROLS_UNAVAILABLE } };
+        return {
+          error: {
+            code: 'not_implemented',
+            message: ADAPTER_PREVIEW_TURNTABLE_CONTROLS_UNAVAILABLE,
+          },
+        };
       }
       const fps = params.fps ?? DEFAULT_TURNTABLE_FPS;
       const durationSeconds = params.durationSeconds ?? DEFAULT_TURNTABLE_SECONDS;
-      if (!Number.isFinite(fps) || fps <= 0 || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
-        return { error: { code: 'invalid_payload', message: ADAPTER_PREVIEW_FPS_DURATION_POSITIVE } };
+      if (
+        !Number.isFinite(fps) ||
+        fps <= 0 ||
+        !Number.isFinite(durationSeconds) ||
+        durationSeconds <= 0
+      ) {
+        return {
+          error: { code: 'invalid_payload', message: ADAPTER_PREVIEW_FPS_DURATION_POSITIVE },
+        };
       }
       const requestedFrames = Math.max(1, Math.round(durationSeconds * fps));
       const frameCount = Math.min(requestedFrames, MAX_TURNTABLE_FRAMES);
       if (frameCount !== requestedFrames) {
-        this.log.info('preview frames clamped', { requested: requestedFrames, clamped: frameCount });
+        this.log.info('preview frames clamped', {
+          requested: requestedFrames,
+          clamped: frameCount,
+        });
       }
       const step = (Math.PI * 2) / frameCount;
 
@@ -185,13 +205,18 @@ export class BlockbenchPreviewAdapter {
         result: {
           kind: outputKind,
           frameCount,
-          frames
-        }
+          frames,
+        },
       };
     } catch (err) {
       const message = errorMessage(err, 'render preview failed');
       this.log.error('preview error', { message });
-      return { error: toolError('unknown', message, { reason: 'adapter_exception', context: 'render_preview' }) };
+      return {
+        error: toolError('unknown', message, {
+          reason: 'adapter_exception',
+          context: 'render_preview',
+        }),
+      };
     } finally {
       restoreCamera(camera, controls, state);
       restoreAnimation(animationState);
@@ -200,6 +225,3 @@ export class BlockbenchPreviewAdapter {
     }
   }
 }
-
-
-

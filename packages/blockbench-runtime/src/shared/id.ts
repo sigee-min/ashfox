@@ -7,5 +7,3 @@ export const createId = (prefix: string): string => {
   idCounter += 1;
   return `${prefix}_${Date.now().toString(36)}_${idCounter}`;
 };
-
-

@@ -8,10 +8,7 @@ import { buildUvAtlasMessages } from '../../../src/shared/messages';
 
 const uvAtlasMessages = buildUvAtlasMessages();
 
-const buildUsage = (
-  textureName: string,
-  cubes: TrackedCube[]
-): TextureUsage => ({
+const buildUsage = (textureName: string, cubes: TrackedCube[]): TextureUsage => ({
   textures: [
     {
       id: `${textureName}-id`,
@@ -21,10 +18,10 @@ const buildUsage = (
       cubes: cubes.map((cube) => ({
         id: cube.id,
         name: cube.name,
-        faces: [{ face: 'north' }]
-      }))
-    }
-  ]
+        faces: [{ face: 'north' }],
+      })),
+    },
+  ],
 });
 
 const cubeHuge: TrackedCube = {
@@ -32,7 +29,7 @@ const cubeHuge: TrackedCube = {
   name: 'cube-huge',
   from: [0, 0, 0],
   to: [2048, 2048, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const usageHuge = buildUsage('tex-huge', [cubeHuge]);
@@ -43,7 +40,7 @@ const planHuge = buildUvAtlasPlan({
   maxResolution: { width: 64, height: 64 },
   padding: 0,
   policy: DEFAULT_UV_POLICY,
-  messages: uvAtlasMessages
+  messages: uvAtlasMessages,
 });
 
 assert.equal(planHuge.ok, false);

@@ -76,8 +76,14 @@ const resolveCachedGuide = (args: {
 };
 
 export const loadGuideMarkdown: GuideLoader = (name, fallback) => {
-  const fs = loadNativeModule<FsModule>('fs', { message: 'Filesystem access required', optional: true });
-  const path = loadNativeModule<PathModule>('path', { message: 'Filesystem access required', optional: true });
+  const fs = loadNativeModule<FsModule>('fs', {
+    message: 'Filesystem access required',
+    optional: true,
+  });
+  const path = loadNativeModule<PathModule>('path', {
+    message: 'Filesystem access required',
+    optional: true,
+  });
   if (!fs || !path) return fallback;
 
   const cached = resolveCachedGuide({ fs, path, name });

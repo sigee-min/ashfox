@@ -25,14 +25,14 @@ withEnv(
     ASHFOX_HOST: undefined,
     ASHFOX_PORT: undefined,
     ASHFOX_PATH: undefined,
-    ASHFOX_TOKEN: undefined
+    ASHFOX_TOKEN: undefined,
   },
   () => {
     const config = resolveEndpointConfig();
     assert.equal(config.host, DEFAULT_SERVER_HOST);
     assert.equal(config.port, DEFAULT_SERVER_PORT);
     assert.equal(config.path, DEFAULT_SERVER_PATH);
-  }
+  },
 );
 
 withEnv(
@@ -40,14 +40,14 @@ withEnv(
     ASHFOX_HOST: '127.0.0.1',
     ASHFOX_PORT: '9999',
     ASHFOX_PATH: 'mcp-api',
-    ASHFOX_TOKEN: undefined
+    ASHFOX_TOKEN: undefined,
   },
   () => {
     const config = resolveEndpointConfig();
     assert.equal(config.host, '127.0.0.1');
     assert.equal(config.port, 9999);
     assert.equal(config.path, '/mcp-api');
-  }
+  },
 );
 
 withEnv(
@@ -55,14 +55,14 @@ withEnv(
     ASHFOX_HOST: ' ',
     ASHFOX_PORT: '70000',
     ASHFOX_PATH: ' ',
-    ASHFOX_TOKEN: undefined
+    ASHFOX_TOKEN: undefined,
   },
   () => {
     const config = resolveEndpointConfig();
     assert.equal(config.host, DEFAULT_SERVER_HOST);
     assert.equal(config.port, DEFAULT_SERVER_PORT);
     assert.equal(config.path, DEFAULT_SERVER_PATH);
-  }
+  },
 );
 
 withEnv(
@@ -70,11 +70,11 @@ withEnv(
     ASHFOX_HOST: '0.0.0.0',
     ASHFOX_PORT: undefined,
     ASHFOX_PATH: undefined,
-    ASHFOX_TOKEN: 'secret-from-environment'
+    ASHFOX_TOKEN: 'secret-from-environment',
   },
   () => {
     const config = resolveEndpointConfig();
     assert.equal(config.host, '0.0.0.0');
     assert.equal(config.token, 'secret-from-environment');
-  }
+  },
 );

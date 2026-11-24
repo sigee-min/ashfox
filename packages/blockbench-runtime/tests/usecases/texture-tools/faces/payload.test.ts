@@ -5,19 +5,22 @@ import type { Capabilities, PaintFacesPayload } from '@ashfox/blockbench-contrac
 import { DEFAULT_ANIMATION_TIME_POLICY } from '../../../../src/domain/animation/timePolicy';
 import { DEFAULT_UV_POLICY } from '../../../../src/domain/uv/policy';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
-import { normalizePaintTarget, resolveTextureForPaintFaces } from '../../../../src/usecases/textureTools/paintFacesPayload';
+import {
+  normalizePaintTarget,
+  resolveTextureForPaintFaces,
+} from '../../../../src/usecases/textureTools/paintFacesPayload';
 
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'geckolib', animations: true, enabled: true }],
-  limits: { maxCubes: 256, maxTextureSize: 64, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 256, maxTextureSize: 64, maxAnimationSeconds: 120 },
 };
 
 const basePayload: PaintFacesPayload = {
   textureName: 'atlas',
   target: { cubeName: 'cube', face: 'north' },
-  op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' }
+  op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#336699' },
 };
 
 const createContext = (options?: {
@@ -25,18 +28,16 @@ const createContext = (options?: {
   resolution?: { width: number; height: number } | null;
   createBlankTexture?: TextureToolContext['createBlankTexture'];
 }) => {
-  let textures =
-    options?.textures ??
-    [
-      {
-        id: 'tex1',
-        name: 'atlas',
-        width: 16,
-        height: 16
-      }
-    ];
+  let textures = options?.textures ?? [
+    {
+      id: 'tex1',
+      name: 'atlas',
+      width: 16,
+      height: 16,
+    },
+  ];
   const editor = {
-    getProjectTextureResolution: () => options?.resolution ?? { width: 16, height: 16 }
+    getProjectTextureResolution: () => options?.resolution ?? { width: 16, height: 16 },
   } as unknown as EditorPort;
   const ctx: TextureToolContext = {
     ensureActive: () => null,
@@ -53,20 +54,20 @@ const createContext = (options?: {
       textures,
       animations: [],
       animationsStatus: 'available',
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     capabilities,
     getUvPolicyConfig: () => DEFAULT_UV_POLICY,
     importTexture: () => ({ ok: true, value: { id: 'tex1', name: 'atlas' } }),
     updateTexture: () => ({ ok: true, value: { id: 'tex1', name: 'atlas' } }),
-    createBlankTexture: options?.createBlankTexture
+    createBlankTexture: options?.createBlankTexture,
   };
   return {
     ctx,
     setTextures: (next: Array<{ id?: string; name: string; width?: number; height?: number }>) => {
       textures = next;
-    }
+    },
   };
 };
 
@@ -98,31 +99,19 @@ const createContext = (options?: {
   const { ctx } = createContext({
     textures: [
       { id: 'tex-id', name: 'atlas' },
-      { id: 'another', name: 'other' }
-    ]
+      { id: 'another', name: 'other' },
+    ],
   });
-  const res = resolveTextureForPaintFaces(
-    ctx,
-    basePayload,
-    ctx.getSnapshot(),
-    'tex-id',
-    'other'
-  );
+  const res = resolveTextureForPaintFaces(ctx, basePayload, ctx.getSnapshot(), 'tex-id', 'other');
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
 }
 
 {
   const { ctx } = createContext({
-    textures: [{ id: 'tex-id', name: 'atlas', width: 16, height: 16 }]
+    textures: [{ id: 'tex-id', name: 'atlas', width: 16, height: 16 }],
   });
-  const res = resolveTextureForPaintFaces(
-    ctx,
-    basePayload,
-    ctx.getSnapshot(),
-    'tex-id',
-    undefined
-  );
+  const res = resolveTextureForPaintFaces(ctx, basePayload, ctx.getSnapshot(), 'tex-id', undefined);
   assert.equal(res.ok, true);
   if (res.ok) assert.equal(res.value.id, 'tex-id');
 }
@@ -134,7 +123,7 @@ const createContext = (options?: {
     basePayload,
     ctx.getSnapshot(),
     undefined,
-    'atlas'
+    'atlas',
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'not_implemented');
@@ -143,14 +132,17 @@ const createContext = (options?: {
 {
   const { ctx } = createContext({
     textures: [],
-    createBlankTexture: () => ({ ok: true, value: { id: 'tex-new', name: 'atlas', created: true } })
+    createBlankTexture: () => ({
+      ok: true,
+      value: { id: 'tex-new', name: 'atlas', created: true },
+    }),
   });
   const res = resolveTextureForPaintFaces(
     ctx,
     { ...basePayload, width: 999, height: 999 },
     ctx.getSnapshot(),
     undefined,
-    'atlas'
+    'atlas',
   );
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -165,14 +157,14 @@ const createContext = (options?: {
     createBlankTexture: () => {
       harness.setTextures([{ id: 'tex-new', name: 'atlas', width: 16, height: 16 }]);
       return { ok: true, value: { id: 'tex-new', name: 'atlas', created: true } };
-    }
+    },
   });
   const res = resolveTextureForPaintFaces(
     harness.ctx,
     basePayload,
     harness.ctx.getSnapshot(),
     undefined,
-    'atlas'
+    'atlas',
   );
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -184,14 +176,17 @@ const createContext = (options?: {
 {
   const harness = createContext({
     textures: [],
-    createBlankTexture: () => ({ ok: true, value: { id: 'tex-new', name: 'atlas', created: true } })
+    createBlankTexture: () => ({
+      ok: true,
+      value: { id: 'tex-new', name: 'atlas', created: true },
+    }),
   });
   const res = resolveTextureForPaintFaces(
     harness.ctx,
     basePayload,
     harness.ctx.getSnapshot(),
     undefined,
-    'atlas'
+    'atlas',
   );
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');

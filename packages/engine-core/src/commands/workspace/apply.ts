@@ -9,7 +9,7 @@ import type { WorkspaceApplyInput } from '../types';
 const opaqueObjectSchema: CommandInputSchema = {
   type: 'object',
   properties: {},
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 /** The command closes the envelope while the workspace stage owns deep rules. */
@@ -23,67 +23,56 @@ const inputSchema: CommandInputSchema = {
         entryName: {
           type: 'string',
           minLength: 1,
-          pattern: '^[A-Za-z_][A-Za-z0-9_]*$'
-        }
+          pattern: '^[A-Za-z_][A-Za-z0-9_]*$',
+        },
       },
       required: ['packageName', 'entryName'],
-      additionalProperties: false
+      additionalProperties: false,
     },
     changes: {
       type: 'object',
       properties: {
         expectedWorkspaceHash: {
           type: 'string',
-          pattern: '^sha256:[0-9a-f]{64}$'
+          pattern: '^sha256:[0-9a-f]{64}$',
         },
         writes: {
           type: 'array',
-          items: opaqueObjectSchema
+          items: opaqueObjectSchema,
         },
         deletes: {
           type: 'array',
-          items: opaqueObjectSchema
+          items: opaqueObjectSchema,
         },
         manifest: opaqueObjectSchema,
       },
       required: ['expectedWorkspaceHash', 'writes', 'deletes'],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: ['entry', 'changes'],
-  additionalProperties: false
+  additionalProperties: false,
 };
 
-const sameEntry = (
-  left: AssetProject['entry'],
-  right: AssetProject['entry']
-): boolean => left.packageName === right.packageName &&
-  left.entryName === right.entryName;
+const sameEntry = (left: AssetProject['entry'], right: AssetProject['entry']): boolean =>
+  left.packageName === right.packageName && left.entryName === right.entryName;
 
-const diagnosticPath = (
-  diagnostic: WorkspaceDiagnostic | undefined,
-  fallback: string
-): string => {
+const diagnosticPath = (diagnostic: WorkspaceDiagnostic | undefined, fallback: string): string => {
   const source = diagnostic?.source;
   if (source === undefined) return fallback;
-  const packagePrefix = source.packageName === null
-    ? ''
-    : `${source.packageName}:`;
+  const packagePrefix = source.packageName === null ? '' : `${source.packageName}:`;
   return `${fallback}:${packagePrefix}${source.path}:${source.start.line}:${source.start.column}`;
 };
 
-const diagnosticFailure = (
-  diagnostics: readonly WorkspaceDiagnostic[],
-  fallback: string
-) => {
+const diagnosticFailure = (diagnostics: readonly WorkspaceDiagnostic[], fallback: string) => {
   const first = diagnostics[0];
   return {
     ok: false as const,
     error: {
       code: 'invalid_state' as const,
       message: first?.message ?? 'Workspace change could not be compiled.',
-      path: diagnosticPath(first, fallback)
-    }
+      path: diagnosticPath(first, fallback),
+    },
   };
 };
 
@@ -97,15 +86,17 @@ export const applyWorkspaceCommand = defineCommand({
     const staged = applyWorkspaceChangeSet(project.workspace, payload.changes);
     if (!staged.ok) return diagnosticFailure(staged.diagnostics, 'payload.changes');
 
-    if (staged.workspaceHash === project.build.workspaceHash &&
-        sameEntry(project.entry, payload.entry)) {
+    if (
+      staged.workspaceHash === project.build.workspaceHash &&
+      sameEntry(project.entry, payload.entry)
+    ) {
       return {
         ok: false as const,
         error: {
           code: 'no_change' as const,
           message: 'Workspace change does not change the selected asset project.',
-          path: 'payload.changes'
-        }
+          path: 'payload.changes',
+        },
       };
     }
 
@@ -116,8 +107,8 @@ export const applyWorkspaceCommand = defineCommand({
         id: project.id,
         revision: project.revision,
         createdAt: project.createdAt,
-        updatedAt: project.updatedAt
-      }
+        updatedAt: project.updatedAt,
+      },
     });
     if (!opened.ok) return diagnosticFailure(opened.diagnostics, 'payload.entry');
     return {
@@ -129,16 +120,9 @@ export const applyWorkspaceCommand = defineCommand({
           createdEntityIds: [],
           changedEntityIds: [project.id],
           removedEntityIds: [],
-          invalidated: [
-            'scene',
-            'textures',
-            'uv',
-            'animations',
-            'validation',
-            'preview'
-          ]
-        }
-      }
+          invalidated: ['scene', 'textures', 'uv', 'animations', 'validation', 'preview'],
+        },
+      },
     };
-  }
+  },
 });

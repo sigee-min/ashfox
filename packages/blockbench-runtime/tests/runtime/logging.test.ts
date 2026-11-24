@@ -16,7 +16,7 @@ import { ConsoleLogger, errorMessage, safeFormatMeta, safeStringify } from '../.
     dataUri: 'data:image/png;base64,AAAA',
     deep,
     manyKeys,
-    manyItems
+    manyItems,
   });
   assert.match(text, /\[redacted:authorization\]/);
   assert.match(text, /\[redacted:api_key\]/);
@@ -43,7 +43,7 @@ import { ConsoleLogger, errorMessage, safeFormatMeta, safeStringify } from '../.
     enumerable: true,
     get: () => {
       throw new Error('explode');
-    }
+    },
   });
   const value = safeStringify(bad);
   assert.match(value, /^\[unserializable meta: explode\]/);
@@ -99,4 +99,3 @@ import { ConsoleLogger, errorMessage, safeFormatMeta, safeStringify } from '../.
   assert.equal(lines.length, 1);
   assert.match(lines[0] ?? '', /\[dynamic\] \[debug\] hit/);
 }
-

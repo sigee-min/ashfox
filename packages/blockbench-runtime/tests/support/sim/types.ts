@@ -31,7 +31,10 @@ export type BlockbenchSimOptions = {
   animations?: TrackedAnimation[];
   preview?: RenderPreviewResult;
   formatCaps?: FormatDescriptor | null;
-  resolveFormatCaps?: (formatId?: string | null, format?: FormatKind | null) => FormatDescriptor | null | undefined;
+  resolveFormatCaps?: (
+    formatId?: string | null,
+    format?: FormatKind | null,
+  ) => FormatDescriptor | null | undefined;
 };
 
 export type SimCounters = {

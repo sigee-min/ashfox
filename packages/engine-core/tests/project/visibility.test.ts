@@ -1,22 +1,13 @@
 import assert from 'node:assert/strict';
 
-import {
-  effectivelyVisibleSceneNodeIds,
-  isSceneNodeEffectivelyVisible
-} from '../../src';
+import { effectivelyVisibleSceneNodeIds, isSceneNodeEffectivelyVisible } from '../../src';
 import { createSceneProject } from '../helpers';
 
 {
   const project = createSceneProject();
   project.scene.nodes['bone-root'].visible = false;
-  assert.equal(
-    isSceneNodeEffectivelyVisible(project, 'cube-body'),
-    false
-  );
-  assert.deepEqual(
-    [...effectivelyVisibleSceneNodeIds(project)],
-    []
-  );
+  assert.equal(isSceneNodeEffectivelyVisible(project, 'cube-body'), false);
+  assert.deepEqual([...effectivelyVisibleSceneNodeIds(project)], []);
 }
 
 {
@@ -35,19 +26,16 @@ import { createSceneProject } from '../helpers';
         id: 'bone-hidden',
         name: 'hidden',
         parentId: 'bone-root',
-        visible: false
+        visible: false,
       },
       'cube-body': {
         ...cube,
         parentId: 'bone-hidden',
-        visible: true
-      }
-    }
+        visible: true,
+      },
+    },
   };
-  assert.deepEqual(
-    [...effectivelyVisibleSceneNodeIds(project)].sort(),
-    ['bone-root']
-  );
+  assert.deepEqual([...effectivelyVisibleSceneNodeIds(project)].sort(), ['bone-root']);
 }
 
 {
@@ -63,20 +51,14 @@ import { createSceneProject } from '../helpers';
     nodes: {
       'bone-root': {
         ...root,
-        parentId: 'cube-body'
+        parentId: 'cube-body',
       },
       'cube-body': {
         ...cube,
-        parentId: 'bone-root'
-      }
-    }
+        parentId: 'bone-root',
+      },
+    },
   };
-  assert.deepEqual(
-    [...effectivelyVisibleSceneNodeIds(project)],
-    []
-  );
-  assert.equal(
-    isSceneNodeEffectivelyVisible(project, 'missing-node'),
-    false
-  );
+  assert.deepEqual([...effectivelyVisibleSceneNodeIds(project)], []);
+  assert.equal(isSceneNodeEffectivelyVisible(project, 'missing-node'), false);
 }

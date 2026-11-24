@@ -15,7 +15,7 @@ import type { BlockbenchCanvasApi } from '../../../../src/types/blockbench';
     },
     updateAllPositions: () => {
       calls.push('updateAllPositions');
-    }
+    },
   };
   const ok = invalidateCanvas(canvas, 'geometry');
   assert.equal(ok, true);
@@ -30,7 +30,7 @@ import type { BlockbenchCanvasApi } from '../../../../src/types/blockbench';
     },
     updateAll: () => {
       calls.push('updateAll');
-    }
+    },
   };
   const ok = invalidateCanvas(canvas, 'animation');
   assert.equal(ok, true);
@@ -42,7 +42,7 @@ import type { BlockbenchCanvasApi } from '../../../../src/types/blockbench';
   const canvas: BlockbenchCanvasApi = {
     updateAll: () => {
       calls.push('updateAll');
-    }
+    },
   };
   const ok = invalidateCanvas(canvas, 'texture');
   assert.equal(ok, true);
@@ -52,7 +52,7 @@ import type { BlockbenchCanvasApi } from '../../../../src/types/blockbench';
 {
   const canvas: BlockbenchCanvasApi = {
     updateAll: () => undefined,
-    updateView: () => undefined
+    updateView: () => undefined,
   };
   assert.equal(invalidateCanvas(canvas, 'none'), false);
 }

@@ -13,7 +13,7 @@ import {
   PROJECT_MATCH_NAME_REQUIRED,
   PROJECT_MISMATCH,
   PROJECT_NO_ACTIVE,
-  PROJECT_UV_PIXELS_PER_BLOCK_INVALID
+  PROJECT_UV_PIXELS_PER_BLOCK_INVALID,
 } from '../../../src/shared/messages';
 import { createEditorStub, createFormatPortStub } from '../../fakes';
 
@@ -21,7 +21,7 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'geckolib', animations: true, enabled: true }],
-  limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 64, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 type ServiceHarness = {
@@ -34,7 +34,7 @@ const createHarness = (options?: {
   active?: boolean;
   setUvError?: ToolError | null;
   autoCreateProjectTexture?: boolean;
-}) : ServiceHarness => {
+}): ServiceHarness => {
   const session = new ProjectSession();
   if (options?.active) {
     const created = session.create('geckolib', 'active', 'geckolib_model');
@@ -47,15 +47,14 @@ const createHarness = (options?: {
   const formats = createFormatPortStub('geckolib_model', 'GeckoLib');
   const projectState = new ProjectStateBuilder({
     listFormats: () => formats.listFormats(),
-    getActiveFormatId: () =>
-      session.snapshot().id ? formats.getActiveFormatId() : null
+    getActiveFormatId: () => (session.snapshot().id ? formats.getActiveFormatId() : null),
   });
   const editor: ProjectServiceDeps['editor'] = {
     ...baseEditor,
     setProjectUvPixelsPerBlock: (value: number) => {
       uvCalls.push(value);
       return options?.setUvError ?? null;
-    }
+    },
   };
 
   const deps: ProjectServiceDeps = {
@@ -68,7 +67,7 @@ const createHarness = (options?: {
       track: () => 'r1',
       hash: () => 'h1',
       get: () => null,
-      remember: () => undefined
+      remember: () => undefined,
     },
     getSnapshot: () => session.snapshot(),
     ensureRevisionMatch: () => null,
@@ -76,17 +75,17 @@ const createHarness = (options?: {
       createBlankTexture: ({ name }) => {
         createdTextures.push(name);
         return { ok: true, value: { id: 'tex1', name, created: true } };
-      }
+      },
     },
     policies: {
-      autoCreateProjectTexture: options?.autoCreateProjectTexture ?? false
-    }
+      autoCreateProjectTexture: options?.autoCreateProjectTexture ?? false,
+    },
   };
 
   return {
     service: new ProjectLifecycleService(deps),
     uvCalls,
-    createdTextures
+    createdTextures,
   };
 };
 
@@ -137,7 +136,7 @@ const createHarness = (options?: {
     onMissing: 'create',
     format: 'geckolib',
     name: 'demo',
-    uvPixelsPerBlock: 0
+    uvPixelsPerBlock: 0,
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -152,7 +151,7 @@ const createHarness = (options?: {
     onMissing: 'create',
     format: 'geckolib',
     name: 'dragon',
-    uvPixelsPerBlock: 32
+    uvPixelsPerBlock: 32,
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -168,7 +167,7 @@ const createHarness = (options?: {
   const res = service.ensureProject({
     match: 'name',
     name: 'other',
-    onMismatch: 'error'
+    onMismatch: 'error',
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -182,7 +181,7 @@ const createHarness = (options?: {
   const res = service.ensureProject({
     match: 'name',
     name: 'other',
-    onMismatch: 'create'
+    onMismatch: 'create',
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -198,7 +197,7 @@ const createHarness = (options?: {
     match: 'name',
     name: 'other',
     onMismatch: 'reuse',
-    uvPixelsPerBlock: 24
+    uvPixelsPerBlock: 24,
   });
   assert.equal(res.ok, true);
   if (res.ok) {

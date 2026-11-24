@@ -11,9 +11,9 @@ const baseUsage: TextureUsage = {
       height: 16,
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-    }
-  ]
+      cubes: [{ name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+    },
+  ],
 };
 
 const resizedUsage: TextureUsage = {
@@ -24,13 +24,12 @@ const resizedUsage: TextureUsage = {
       height: 64,
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-    }
-  ]
+      cubes: [{ name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+    },
+  ],
 };
 
 const baseId = computeTextureUsageId(baseUsage);
 const resizedId = computeTextureUsageId(resizedUsage);
 
 assert.notEqual(baseId, resizedId);
-

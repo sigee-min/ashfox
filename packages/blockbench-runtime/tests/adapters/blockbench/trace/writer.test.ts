@@ -11,7 +11,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -34,7 +34,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   const writer = new BlockbenchTraceLogWriter({
     mode: 'writeFile',
     destPath: dir,
-    fileName: 'trace.ndjson'
+    fileName: 'trace.ndjson',
   });
   try {
     withGlobals(
@@ -42,14 +42,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         Blockbench: {
           writeFile: (targetPath: string) => {
             writtenPath = targetPath;
-          }
+          },
         },
-        Project: null
+        Project: null,
       },
       () => {
         const err = writer.write('trace-data');
         assert.equal(err, null);
-      }
+      },
     );
     assert.equal(path.normalize(writtenPath), path.normalize(path.join(dir, 'trace.ndjson')));
   } finally {
@@ -63,14 +63,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   withGlobals(
     {
       Blockbench: undefined,
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
       assert.equal(err?.details?.reason, 'blockbench_missing');
-    }
+    },
   );
 }
 
@@ -80,7 +80,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   withGlobals(
     {
       Blockbench: {},
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
@@ -88,7 +88,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       assert.equal(err?.code, 'not_implemented');
       assert.equal(err?.details?.reason, 'writefile_unavailable');
       assert.equal(err?.details?.missingPath, true);
-    }
+    },
   );
 }
 
@@ -101,14 +101,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       Blockbench: {
         exportFile: (payload: { content: string; name: string }) => {
           exported.push(payload);
-        }
+        },
       },
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(exported.length, 1);
   assert.equal(exported[0].name, 'trace.ndjson');
@@ -118,23 +118,23 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
 {
   const writer = new BlockbenchTraceLogWriter({
     mode: 'auto',
-    destPath: path.join(os.tmpdir(), 'ashfox-trace-auto-error.ndjson')
+    destPath: path.join(os.tmpdir(), 'ashfox-trace-auto-error.ndjson'),
   });
   withGlobals(
     {
       Blockbench: {
         writeFile: () => {
           throw new Error('write boom');
-        }
+        },
       },
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
       assert.notEqual(err, null);
       assert.equal(err?.code, 'io_error');
       assert.equal(err?.details?.reason, 'trace_log_write_failed');
-    }
+    },
   );
 }
 
@@ -144,14 +144,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   withGlobals(
     {
       Blockbench: {},
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
       assert.equal(err?.details?.reason, 'export_unavailable');
-    }
+    },
   );
 }
 
@@ -163,16 +163,16 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
       Blockbench: {
         exportFile: () => {
           throw new Error('export boom');
-        }
+        },
       },
-      Project: null
+      Project: null,
     },
     () => {
       const err = writer.write('trace-data');
       assert.notEqual(err, null);
       assert.equal(err?.code, 'io_error');
       assert.equal(err?.details?.reason, 'trace_log_export_failed');
-    }
+    },
   );
 }
 
@@ -181,21 +181,21 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   let writtenPath = '';
   const writer = new BlockbenchTraceLogWriter({
     mode: 'writeFile',
-    fileName: 'trace.ndjson'
+    fileName: 'trace.ndjson',
   });
   withGlobals(
     {
       Blockbench: {
         writeFile: (targetPath: string) => {
           writtenPath = targetPath;
-        }
+        },
       },
-      Project: { save_path: path.join('C:', 'tmp', 'project.bbmodel') }
+      Project: { save_path: path.join('C:', 'tmp', 'project.bbmodel') },
     },
     () => {
       const err = writer.write('trace-data');
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(path.normalize(writtenPath), path.normalize(path.join('C:', 'tmp', 'trace.ndjson')));
 }
@@ -208,7 +208,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   const writer = new BlockbenchTraceLogWriter({
     mode: 'writeFile',
     destPath: targetFile,
-    fileName: 'trace.ndjson'
+    fileName: 'trace.ndjson',
   });
   try {
     withGlobals(
@@ -216,14 +216,14 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         Blockbench: {
           writeFile: (targetPath: string) => {
             writtenPath = targetPath;
-          }
+          },
         },
-        Project: null
+        Project: null,
       },
       () => {
         const err = writer.write('trace-data');
         assert.equal(err, null);
-      }
+      },
     );
     assert.equal(path.normalize(writtenPath), path.normalize(targetFile));
   } finally {
@@ -239,7 +239,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
   const writer = new BlockbenchTraceLogWriter({
     mode: 'writeFile',
     destPath: basePath,
-    fileName: 'trace.ndjson'
+    fileName: 'trace.ndjson',
   });
   try {
     withGlobals(
@@ -248,20 +248,22 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
           writeFile: (targetPath: string) => {
             attempted.push(targetPath);
             if (attempted.length === 1) {
-              const err = new Error(`EISDIR: illegal operation on a directory, open '${targetPath}'`) as Error & {
+              const err = new Error(
+                `EISDIR: illegal operation on a directory, open '${targetPath}'`,
+              ) as Error & {
                 code?: string;
               };
               err.code = 'EISDIR';
               throw err;
             }
-          }
+          },
         },
-        Project: null
+        Project: null,
       },
       () => {
         const err = writer.write('trace-data');
         assert.equal(err, null);
-      }
+      },
     );
     assert.equal(attempted.length, 2);
     assert.equal(path.normalize(attempted[0]), path.normalize(basePath));

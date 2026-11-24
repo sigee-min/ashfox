@@ -11,17 +11,22 @@ import type {
   TrackedMeshFace as ContractTrackedMeshFace,
   TrackedMeshFaceUv as ContractTrackedMeshFaceUv,
   TrackedMeshVertex as ContractTrackedMeshVertex,
-  TrackedTexture as ContractTrackedTexture
+  TrackedTexture as ContractTrackedTexture,
 } from '@ashfox/blockbench-contracts/types/internal';
-import type { TextureFrameOrderType, TextureMeta, TexturePbrChannel, TextureRenderMode, TextureRenderSides } from '@ashfox/blockbench-contracts/types/texture';
+import type {
+  TextureFrameOrderType,
+  TextureMeta,
+  TexturePbrChannel,
+  TextureRenderMode,
+  TextureRenderSides,
+} from '@ashfox/blockbench-contracts/types/texture';
 import type { AnimationTimePolicy } from '../domain/animation/timePolicy';
 
-type MutableContract<T> =
-  T extends readonly unknown[]
+type MutableContract<T> = T extends readonly unknown[]
+  ? { -readonly [TKey in keyof T]: MutableContract<T[TKey]> }
+  : T extends object
     ? { -readonly [TKey in keyof T]: MutableContract<T[TKey]> }
-    : T extends object
-      ? { -readonly [TKey in keyof T]: MutableContract<T[TKey]> }
-      : T;
+    : T;
 
 export type MeshUvPolicy = MutableContract<ContractMeshUvPolicy>;
 export type TrackedBone = MutableContract<ContractTrackedBone>;
@@ -32,10 +37,8 @@ export type TrackedMeshFaceUv = MutableContract<ContractTrackedMeshFaceUv>;
 export type TrackedMeshFace = MutableContract<ContractTrackedMeshFace>;
 export type TrackedMesh = MutableContract<ContractTrackedMesh>;
 export type TrackedTexture = MutableContract<ContractTrackedTexture>;
-export type TrackedAnimationChannel =
-  MutableContract<ContractTrackedAnimationChannel>;
-export type TrackedAnimationTrigger =
-  MutableContract<ContractTrackedAnimationTrigger>;
+export type TrackedAnimationChannel = MutableContract<ContractTrackedAnimationChannel>;
+export type TrackedAnimationTrigger = MutableContract<ContractTrackedAnimationTrigger>;
 export type TrackedAnimation = MutableContract<ContractTrackedAnimation>;
 
 export type BoneUpdate = {

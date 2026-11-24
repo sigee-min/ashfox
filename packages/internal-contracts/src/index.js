@@ -20,9 +20,11 @@ const isClosedContractRecord = (value) => {
     return Reflect.ownKeys(value).every((key) => {
       if (typeof key !== 'string') return false;
       const descriptor = Object.getOwnPropertyDescriptor(value, key);
-      return descriptor !== undefined &&
+      return (
+        descriptor !== undefined &&
         descriptor.enumerable === true &&
-        Object.prototype.hasOwnProperty.call(descriptor, 'value');
+        Object.prototype.hasOwnProperty.call(descriptor, 'value')
+      );
     });
   } catch (_error) {
     return false;
@@ -75,8 +77,9 @@ const isDenseContractArray = (value) => {
 const hasExactContractKeys = (value, keys) => {
   try {
     const actual = Reflect.ownKeys(value);
-    return actual.length === keys.size &&
-      actual.every((key) => typeof key === 'string' && keys.has(key));
+    return (
+      actual.length === keys.size && actual.every((key) => typeof key === 'string' && keys.has(key))
+    );
   } catch (_error) {
     return false;
   }
@@ -89,9 +92,7 @@ const isCanonicalIsoDate = (value) => {
 };
 
 const isNonEmptyContractText = (value) =>
-  typeof value === 'string' &&
-  value.length > 0 &&
-  value.trim() === value;
+  typeof value === 'string' && value.length > 0 && value.trim() === value;
 
 const isUniqueContractTextArray = (value) =>
   (() => {
@@ -111,19 +112,9 @@ const FINITE_JSON_CONTRACT_MAX_DEPTH_ALLOWANCE = 16;
 
 const invalidFiniteJsonSnapshot = () => ({ ok: false });
 
-const createFiniteJsonSnapshotAtDepth = (
-  value,
-  seen,
-  depth,
-  budget,
-  options
-) => {
+const createFiniteJsonSnapshotAtDepth = (value, seen, depth, budget, options) => {
   if (depth > options.maxDepth) return invalidFiniteJsonSnapshot();
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean'
-  ) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
     return { ok: true, value };
   }
   if (typeof value === 'number') {
@@ -176,7 +167,7 @@ const createFiniteJsonSnapshotAtDepth = (
         seen,
         depth + 1,
         budget,
-        options
+        options,
       );
       if (!entry.ok) return entry;
       snapshot.push(entry.value);
@@ -191,9 +182,7 @@ const createFiniteJsonSnapshotAtDepth = (
   }
   if (Reflect.has(value, 'toJSON')) return invalidFiniteJsonSnapshot();
   const keys = Reflect.ownKeys(value);
-  const snapshot = options.objectPrototype === 'standard'
-    ? {}
-    : Object.create(null);
+  const snapshot = options.objectPrototype === 'standard' ? {} : Object.create(null);
   for (const key of keys) {
     if (typeof key !== 'string' || key === 'toJSON') {
       return invalidFiniteJsonSnapshot();
@@ -206,10 +195,7 @@ const createFiniteJsonSnapshotAtDepth = (
     ) {
       return invalidFiniteJsonSnapshot();
     }
-    if (
-      descriptor.value === undefined &&
-      options.omitUndefinedObjectProperties
-    ) {
+    if (descriptor.value === undefined && options.omitUndefinedObjectProperties) {
       continue;
     }
     const entry = createFiniteJsonSnapshotAtDepth(
@@ -217,14 +203,14 @@ const createFiniteJsonSnapshotAtDepth = (
       seen,
       depth + 1,
       budget,
-      options
+      options,
     );
     if (!entry.ok) return entry;
     Object.defineProperty(snapshot, key, {
       value: entry.value,
       enumerable: true,
       configurable: true,
-      writable: true
+      writable: true,
     });
   }
   seen.delete(value);
@@ -236,10 +222,7 @@ const createFiniteJsonSnapshot = (value, options = {}) => {
     const requestedAllowance = Number.isSafeInteger(options.depthAllowance)
       ? Math.max(0, options.depthAllowance)
       : 0;
-    const depthAllowance = Math.min(
-      FINITE_JSON_CONTRACT_MAX_DEPTH_ALLOWANCE,
-      requestedAllowance
-    );
+    const depthAllowance = Math.min(FINITE_JSON_CONTRACT_MAX_DEPTH_ALLOWANCE, requestedAllowance);
     return createFiniteJsonSnapshotAtDepth(
       value,
       new WeakSet(),
@@ -247,19 +230,16 @@ const createFiniteJsonSnapshot = (value, options = {}) => {
       { containers: 0 },
       {
         maxDepth: FINITE_JSON_CONTRACT_MAX_DEPTH + depthAllowance,
-        omitUndefinedObjectProperties:
-          options.omitUndefinedObjectProperties === true,
-        objectPrototype:
-          options.objectPrototype === 'standard' ? 'standard' : 'null'
-      }
+        omitUndefinedObjectProperties: options.omitUndefinedObjectProperties === true,
+        objectPrototype: options.objectPrototype === 'standard' ? 'standard' : 'null',
+      },
     );
   } catch (_error) {
     return invalidFiniteJsonSnapshot();
   }
 };
 
-const isFiniteJsonValue = (value) =>
-  createFiniteJsonSnapshot(value).ok;
+const isFiniteJsonValue = (value) => createFiniteJsonSnapshot(value).ok;
 
 const utf8ContractByteLength = (value) => {
   let bytes = 0;
@@ -269,11 +249,7 @@ const utf8ContractByteLength = (value) => {
       bytes += 1;
     } else if (codeUnit <= 0x7ff) {
       bytes += 2;
-    } else if (
-      codeUnit >= 0xd800 &&
-      codeUnit <= 0xdbff &&
-      index + 1 < value.length
-    ) {
+    } else if (codeUnit >= 0xd800 && codeUnit <= 0xdbff && index + 1 < value.length) {
       const next = value.charCodeAt(index + 1);
       if (next >= 0xdc00 && next <= 0xdfff) {
         bytes += 4;
@@ -305,5 +281,5 @@ module.exports = {
   SIDECAR_IPC_SCHEMA_VERSION,
   SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
   TRACE_LOG_SCHEMA_VERSION,
-  utf8ContractByteLength
+  utf8ContractByteLength,
 };

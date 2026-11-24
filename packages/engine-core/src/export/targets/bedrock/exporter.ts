@@ -10,39 +10,45 @@ import { buildMinecraftGeometry } from '../../minecraft/geometry';
 import type { ExportBundle } from '../../contract';
 import { exportTargetDescriptorForPreset } from '../../compatibility';
 
-const createTextureCopy = (document: ExportAdaptedDocument,
-  texture: ExportTextureAsset) => {
+const createTextureCopy = (document: ExportAdaptedDocument, texture: ExportTextureAsset) => {
   if (!texture.minecraft) {
     throw new Error(`Texture "${texture.id}" has no Minecraft binding.`);
   }
-  return createTextureExportFile(document, texture,
-    `textures/${texture.minecraft.resource.path}.${texture.minecraft.extension}`);
+  return createTextureExportFile(
+    document,
+    texture,
+    `textures/${texture.minecraft.resource.path}.${texture.minecraft.extension}`,
+  );
 };
 
-const buildMinecraftBedrockGeometry = (document: ExportAdaptedDocument,
-  profile: MinecraftBedrockExportProfile) => {
+const buildMinecraftBedrockGeometry = (
+  document: ExportAdaptedDocument,
+  profile: MinecraftBedrockExportProfile,
+) => {
   return buildMinecraftGeometry(document, {
     formatVersion: profile.geometryFormatVersion,
     identifier: profile.geometryIdentifier,
-    ...(profile.visibleBounds ? { visibleBounds: profile.visibleBounds } : {})
+    ...(profile.visibleBounds ? { visibleBounds: profile.visibleBounds } : {}),
   });
 };
 
-const buildMinecraftBedrockAnimations = (document: ExportAdaptedDocument,
-  profile: MinecraftBedrockExportProfile) => {
+const buildMinecraftBedrockAnimations = (
+  document: ExportAdaptedDocument,
+  profile: MinecraftBedrockExportProfile,
+) => {
   return buildMinecraftActorAnimation(document, {
     formatVersion: profile.animationFormatVersion,
-    dialect: 'bedrock'
+    dialect: 'bedrock',
   });
 };
 
 export const exportMinecraftBedrock = (
   document: ExportAdaptedDocument,
-  build: AssetBuildIdentity
+  build: AssetBuildIdentity,
 ): ExportBundle => {
   const validation = validateExportTarget(document, {
     profileId: 'minecraft.bedrock',
-    errorMessage: 'Minecraft Bedrock export validation failed.'
+    errorMessage: 'Minecraft Bedrock export validation failed.',
   });
   const validatedDocument = validation.document;
   const profile = validation.profile;
@@ -58,10 +64,7 @@ export const exportMinecraftBedrock = (
   return createExportBundle(validatedDocument, build, validation.findings, {
     target: exportTargetDescriptorForPreset('bedrock').target,
     rootPath: 'bedrock-resource-pack-assets',
-    entrypoints: [
-      geometryPath,
-      ...(hasAnimations ? [animationPath] : [])
-    ],
+    entrypoints: [geometryPath, ...(hasAnimations ? [animationPath] : [])],
     files: [
       createCompactJsonExportFile('geometry', geometryPath, geometry),
       ...(hasAnimations
@@ -69,11 +72,11 @@ export const exportMinecraftBedrock = (
             createCompactJsonExportFile(
               'animation',
               animationPath,
-              buildMinecraftBedrockAnimations(validatedDocument, profile)
-            )
+              buildMinecraftBedrockAnimations(validatedDocument, profile),
+            ),
           ]
         : []),
-      ...textureFiles
+      ...textureFiles,
     ],
   });
 };

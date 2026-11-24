@@ -8,7 +8,7 @@ const dupA: Cube = {
   name: 'dup',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const dupB: Cube = {
@@ -16,7 +16,7 @@ const dupB: Cube = {
   name: 'dup',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const usageAmbiguous: TextureUsage = {
@@ -25,12 +25,14 @@ const usageAmbiguous: TextureUsage = {
       name: 'tex',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ name: 'dup', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-    }
-  ]
+      cubes: [{ name: 'dup', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+    },
+  ],
 };
 
-const ambiguousResult = estimateUvPixelsPerBlock(usageAmbiguous, [dupA, dupB], { modelUnitsPerBlock: 16 });
+const ambiguousResult = estimateUvPixelsPerBlock(usageAmbiguous, [dupA, dupB], {
+  modelUnitsPerBlock: 16,
+});
 assert.equal(ambiguousResult, null);
 
 const cubeA: Cube = {
@@ -38,7 +40,7 @@ const cubeA: Cube = {
   name: 'cube-a',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const cubeB: Cube = {
@@ -46,7 +48,7 @@ const cubeB: Cube = {
   name: 'cube-b',
   from: [0, 0, 0],
   to: [8, 8, 1],
-  bone: 'root'
+  bone: 'root',
 };
 
 const usageUnique: TextureUsage = {
@@ -57,11 +59,13 @@ const usageUnique: TextureUsage = {
       faceCount: 2,
       cubes: [
         { id: cubeA.id, name: cubeA.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] },
-        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }
-      ]
-    }
-  ]
+        { id: cubeB.id, name: cubeB.name, faces: [{ face: 'north', uv: [0, 0, 8, 8] }] },
+      ],
+    },
+  ],
 };
 
-const uniqueResult = estimateUvPixelsPerBlock(usageUnique, [cubeA, cubeB], { modelUnitsPerBlock: 16 });
+const uniqueResult = estimateUvPixelsPerBlock(usageUnique, [cubeA, cubeB], {
+  modelUnitsPerBlock: 16,
+});
 assert.equal(uniqueResult, 16);

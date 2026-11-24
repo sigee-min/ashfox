@@ -30,4 +30,3 @@ export const removeCubes = (state: SessionState, names: string[] | Set<string>):
   state.cubes = state.cubes.filter((c) => !nameSet.has(c.name));
   return before - state.cubes.length;
 };
-

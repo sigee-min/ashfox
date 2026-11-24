@@ -1,12 +1,7 @@
 import type { EntityId } from '../model';
 
-export const INVARIANT_SEVERITIES = [
-  'error',
-  'warning',
-  'info'
-] as const;
-export type InvariantSeverity =
-  (typeof INVARIANT_SEVERITIES)[number];
+export const INVARIANT_SEVERITIES = ['error', 'warning', 'info'] as const;
+export type InvariantSeverity = (typeof INVARIANT_SEVERITIES)[number];
 
 export type InvariantCode =
   | 'document.schema_version'
@@ -86,7 +81,7 @@ export class ProjectInvariantError extends Error {
 
   constructor(report: ValidationReport) {
     super(
-      `Project document violates ${report.findings.filter((finding) => finding.severity === 'error').length} invariant(s).`
+      `Project document violates ${report.findings.filter((finding) => finding.severity === 'error').length} invariant(s).`,
     );
     this.name = 'ProjectInvariantError';
     this.report = report;

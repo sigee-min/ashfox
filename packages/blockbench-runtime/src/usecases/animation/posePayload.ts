@@ -3,7 +3,7 @@ import {
   ANIMATION_POSE_BONES_REQUIRED,
   ANIMATION_POSE_CHANNEL_REQUIRED,
   ANIMATION_POSE_VALUE_INVALID,
-  MODEL_BONE_NOT_FOUND
+  MODEL_BONE_NOT_FOUND,
 } from '../../shared/messages';
 import { fail, ok, type UsecaseResult } from '../result';
 
@@ -35,7 +35,7 @@ export const resolvePoseFps = (anim: { fps?: number }): number => {
 export const buildPoseUpdates = (
   bones: PoseBoneInput[],
   boneNames: ReadonlySet<string>,
-  fallbackInterp?: PoseInterp
+  fallbackInterp?: PoseInterp,
 ): UsecaseResult<PoseUpdate[]> => {
   if (!Array.isArray(bones) || bones.length === 0) {
     return fail({ code: 'invalid_payload', message: ANIMATION_POSE_BONES_REQUIRED });
@@ -52,7 +52,7 @@ export const buildPoseUpdates = (
     const channels = [
       { key: 'rot' as const, value: entry.rot },
       { key: 'pos' as const, value: entry.pos },
-      { key: 'scale' as const, value: entry.scale }
+      { key: 'scale' as const, value: entry.scale },
     ];
     if (!channels.some((channel) => channel.value !== undefined)) {
       return fail({ code: 'invalid_payload', message: ANIMATION_POSE_CHANNEL_REQUIRED });
@@ -68,7 +68,7 @@ export const buildPoseUpdates = (
         bone: entry.name,
         channel: channel.key,
         value: vector,
-        interp: entry.interp ?? fallbackInterp
+        interp: entry.interp ?? fallbackInterp,
       });
     }
   }
@@ -76,7 +76,9 @@ export const buildPoseUpdates = (
   return ok(updates);
 };
 
-const normalizePoseVector = (value: [number, number, number] | undefined): [number, number, number] | null => {
+const normalizePoseVector = (
+  value: [number, number, number] | undefined,
+): [number, number, number] | null => {
   if (!Array.isArray(value) || value.length < 3) return null;
   const next: [number, number, number] = [Number(value[0]), Number(value[1]), Number(value[2])];
   if (next.some((entry) => !Number.isFinite(entry))) return null;

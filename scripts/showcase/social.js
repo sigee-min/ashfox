@@ -7,36 +7,68 @@ const { execFileSync, spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '../..');
 const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-social-'));
 const out = path.join(root, 'apps/site/public');
-const chrome = process.env.ASHFOX_CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const chrome =
+  process.env.ASHFOX_CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const data = (file, mime) => `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;
-const screenshot = (args, target) => new Promise((resolve, reject) => {
-  const child = spawn(chrome, args, { stdio: 'ignore' });
-  let complete = false, failure, stopping;
-  const ready = () => fs.existsSync(target) &&
-    fs.readFileSync(target).subarray(-12).toString('hex') === '0000000049454e44ae426082';
-  const poll = setInterval(() => {
-    if (complete || !ready()) return;
-    complete = true;
-    child.kill('SIGTERM');
-    stopping = setTimeout(() => child.kill('SIGKILL'), 2000);
-  }, 100);
-  const timeout = setTimeout(() => {
-    failure = new Error('Social card capture timed out'); child.kill('SIGKILL');
-  }, 30000);
-  const clear = () => { clearInterval(poll); clearTimeout(timeout); clearTimeout(stopping); };
-  child.once('error', error => { clear(); reject(error); });
-  child.once('exit', () => { clear(); failure || !(complete || ready()) ? reject(failure || new Error('Incomplete social card')) : resolve(); });
-});
+const screenshot = (args, target) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(chrome, args, { stdio: 'ignore' });
+    let complete = false,
+      failure,
+      stopping;
+    const ready = () =>
+      fs.existsSync(target) &&
+      fs.readFileSync(target).subarray(-12).toString('hex') === '0000000049454e44ae426082';
+    const poll = setInterval(() => {
+      if (complete || !ready()) return;
+      complete = true;
+      child.kill('SIGTERM');
+      stopping = setTimeout(() => child.kill('SIGKILL'), 2000);
+    }, 100);
+    const timeout = setTimeout(() => {
+      failure = new Error('Social card capture timed out');
+      child.kill('SIGKILL');
+    }, 30000);
+    const clear = () => {
+      clearInterval(poll);
+      clearTimeout(timeout);
+      clearTimeout(stopping);
+    };
+    child.once('error', (error) => {
+      clear();
+      reject(error);
+    });
+    child.once('exit', () => {
+      clear();
+      failure || !(complete || ready())
+        ? reject(failure || new Error('Incomplete social card'))
+        : resolve();
+    });
+  });
 const main = async () => {
-try {
-  execFileSync(process.execPath, [path.join(root, 'apps/cli/dist/ashfox.cjs'), 'capture',
-    path.join(root, 'examples/griffin/workbench/main.ashfox'), '--width', '900', '--height', '900',
-    '--background', 'transparent', '--output', path.join(stage, 'griffin.png')], { stdio: 'inherit' });
-  const model = data(path.join(stage, 'griffin.png'), 'image/png');
-  const logo = data(path.join(root, 'assets/brand/ashfox-mark.svg'), 'image/svg+xml');
-  for (const kind of ['landing', 'docs']) {
-    const docs = kind === 'docs';
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        path.join(root, 'apps/cli/dist/ashfox.cjs'),
+        'capture',
+        path.join(root, 'examples/griffin/workbench/main.ashfox'),
+        '--width',
+        '900',
+        '--height',
+        '900',
+        '--background',
+        'transparent',
+        '--output',
+        path.join(stage, 'griffin.png'),
+      ],
+      { stdio: 'inherit' },
+    );
+    const model = data(path.join(stage, 'griffin.png'), 'image/png');
+    const logo = data(path.join(root, 'assets/brand/ashfox-mark.svg'), 'image/svg+xml');
+    for (const kind of ['landing', 'docs']) {
+      const docs = kind === 'docs';
+      const html = `<!doctype html><html><head><meta charset="utf-8"><style>
       *{box-sizing:border-box}html,body{margin:0;width:1200px;height:630px;overflow:hidden}
       body{background:#111518;color:#f4efdf;font-family:Arial,Helvetica,sans-serif}
       .brand{position:absolute;left:64px;top:48px;display:flex;align-items:center;gap:12px;font-weight:800;font-size:32px;letter-spacing:-1px}
@@ -55,16 +87,36 @@ try {
       ${docs ? '<div class="code"><small>SOURCE → GAME ASSET</small><b>ashfox-model</b> 1<br><b>asset</b> griffin {<br>&nbsp; …<br>}<br><br><b>.ashfox</b> → GLB · PNG · WAV</div>' : `<img class="model" src="${model}">`}
       <div class="footer"><span>${docs ? 'DSL reference · Guides · Game integration' : 'Models · Textures · Sound'}</span><span>ashfox.io${docs ? '/docs' : ''}</span></div>
     </body></html>`;
-    const file = path.join(stage, kind + '.html'); fs.writeFileSync(file, html);
-    const target = path.join(stage, kind + '.png');
-    await screenshot(['--headless=new', '--disable-gpu', '--disable-background-networking', '--disable-component-update', '--disable-extensions', '--no-first-run', '--no-default-browser-check',
-      `--user-data-dir=${path.join(stage, 'profile-' + kind)}`, '--hide-scrollbars', '--force-device-scale-factor=1',
-      '--window-size=1200,630', '--virtual-time-budget=1500', `--screenshot=${target}`,
-      'file://' + file], target);
-    fs.copyFileSync(target, path.join(out, docs ? 'og-docs.png' : 'og.png'));
+      const file = path.join(stage, kind + '.html');
+      fs.writeFileSync(file, html);
+      const target = path.join(stage, kind + '.png');
+      await screenshot(
+        [
+          '--headless=new',
+          '--disable-gpu',
+          '--disable-background-networking',
+          '--disable-component-update',
+          '--disable-extensions',
+          '--no-first-run',
+          '--no-default-browser-check',
+          `--user-data-dir=${path.join(stage, 'profile-' + kind)}`,
+          '--hide-scrollbars',
+          '--force-device-scale-factor=1',
+          '--window-size=1200,630',
+          '--virtual-time-budget=1500',
+          `--screenshot=${target}`,
+          'file://' + file,
+        ],
+        target,
+      );
+      fs.copyFileSync(target, path.join(out, docs ? 'og-docs.png' : 'og.png'));
+    }
+    console.log('Generated landing and documentation social cards (1200 × 630).');
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
   }
-  console.log('Generated landing and documentation social cards (1200 × 630).');
-} finally { fs.rmSync(stage, { recursive: true, force: true }); }
-
 };
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

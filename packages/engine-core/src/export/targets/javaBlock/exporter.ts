@@ -3,31 +3,21 @@ import {
   type CubeFaceDirection,
   type CubeNode,
   type PlaneNode,
-  type Vec3
+  type Vec3,
 } from '../../../model';
 import type { ExportAdaptedDocument, ExportTextureAsset } from '../../adapter';
 import type { AssetBuildIdentity } from '../../../project/asset';
 import { createTextureExportFile } from '../../texture';
-import {
-  effectivelyVisibleSceneNodeIds
-} from '../../../sceneVisibility';
-import {
-  exportCompatibilityFor,
-  exportTargetDescriptorForPreset
-} from '../../compatibility';
+import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
+import { exportCompatibilityFor, exportTargetDescriptorForPreset } from '../../compatibility';
 import { createCompactJsonExportFile } from '../../json';
 import { createExportBundle } from '../../pipeline/bundle';
-import { assertValidatedExportTargetDocument,
-  validateExportTarget } from '../../pipeline/validate';
+import { assertValidatedExportTargetDocument, validateExportTarget } from '../../pipeline/validate';
 import type { ExportBundle } from '../../contract';
-import {
-  buildMinecraftJavaBlockState,
-  buildMinecraftJavaPackMetadata
-} from './pack';
+import { buildMinecraftJavaBlockState, buildMinecraftJavaPackMetadata } from './pack';
 
 const javaBlockSupportsMultiAxisRotation =
-  exportCompatibilityFor('java_block')?.supportsJavaBlockMultiAxisRotation ??
-  false;
+  exportCompatibilityFor('java_block')?.supportsJavaBlockMultiAxisRotation ?? false;
 
 export interface MinecraftJavaFace {
   uv: [number, number, number, number];
@@ -74,11 +64,11 @@ export interface MinecraftJavaModel {
 const addPosition = (value: Vec3, position: Vec3): [number, number, number] => [
   value[0] + position[0],
   value[1] + position[1],
-  value[2] + position[2]
+  value[2] + position[2],
 ];
 
 const compileJavaRotation = (
-  cube: CubeNode
+  cube: CubeNode,
 ): MinecraftJavaAxisRotation | MinecraftJavaEulerRotation | undefined => {
   const rotation = cube.transform.rotation;
   const activeAxes = rotation
@@ -89,19 +79,15 @@ const compileJavaRotation = (
 
   const origin = addPosition(cube.transform.pivot, cube.transform.position);
   const primary = activeAxes[0] ?? { angle: 0, index: 1 };
-  const canUseAxisRotation =
-    activeAxes.length <= 1 && Math.abs(primary.angle) <= 45;
+  const canUseAxisRotation = activeAxes.length <= 1 && Math.abs(primary.angle) <= 45;
 
-  if (
-    canUseAxisRotation ||
-    !javaBlockSupportsMultiAxisRotation
-  ) {
+  if (canUseAxisRotation || !javaBlockSupportsMultiAxisRotation) {
     const axes = ['x', 'y', 'z'] as const;
     return {
       origin,
       axis: axes[primary.index],
       angle: primary.angle,
-      ...(cube.rescale ? { rescale: true } : {})
+      ...(cube.rescale ? { rescale: true } : {}),
     };
   }
 
@@ -110,12 +96,12 @@ const compileJavaRotation = (
     ...(Math.abs(rotation[0]) > 0.000001 ? { x: rotation[0] } : {}),
     ...(Math.abs(rotation[1]) > 0.000001 ? { y: rotation[1] } : {}),
     ...(Math.abs(rotation[2]) > 0.000001 ? { z: rotation[2] } : {}),
-    ...(cube.rescale ? { rescale: true } : {})
+    ...(cube.rescale ? { rescale: true } : {}),
   };
 };
 
 const textureBindingFor = (
-  texture: ExportTextureAsset
+  texture: ExportTextureAsset,
 ): NonNullable<ExportTextureAsset['minecraft']> => {
   if (!texture.minecraft) {
     throw new Error(`Texture "${texture.id}" has no Minecraft binding.`);
@@ -125,10 +111,10 @@ const textureBindingFor = (
 
 const compileJavaElement = (
   document: ExportAdaptedDocument,
-  cube: CubeNode
+  cube: CubeNode,
 ): MinecraftJavaElement => {
-  if (cube.geometryMode !== 'axis-box') throw new RangeError(
-    'Minecraft Java block export does not accept oriented entity boxes.');
+  if (cube.geometryMode !== 'axis-box')
+    throw new RangeError('Minecraft Java block export does not accept oriented entity boxes.');
   const from = addPosition(cube.bounds.from, cube.transform.position);
   const to = addPosition(cube.bounds.to, cube.transform.position);
   for (let axis = 0; axis < 3; axis += 1) {
@@ -147,14 +133,14 @@ const compileJavaElement = (
       (face.uv[0] * 16) / resolution.width,
       (face.uv[1] * 16) / resolution.height,
       (face.uv[2] * 16) / resolution.width,
-      (face.uv[3] * 16) / resolution.height
+      (face.uv[3] * 16) / resolution.height,
     ];
     faces[direction] = {
       uv,
       texture: `#${binding.key}`,
       ...(face.rotation ? { rotation: face.rotation } : {}),
       ...(face.cullFace ? { cullface: face.cullFace } : {}),
-      ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {})
+      ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {}),
     };
   }
   const rotation = compileJavaRotation(cube);
@@ -166,12 +152,12 @@ const compileJavaElement = (
     ...(rotation ? { rotation } : {}),
     ...(cube.shade === false ? { shade: false } : {}),
     ...(cube.lightEmission ? { light_emission: cube.lightEmission } : {}),
-    faces
+    faces,
   };
 };
 
 const compileJavaPlaneRotation = (
-  plane: PlaneNode
+  plane: PlaneNode,
 ): MinecraftJavaAxisRotation | MinecraftJavaEulerRotation | undefined => {
   const rotation = plane.transform.rotation;
   const activeAxes = rotation
@@ -180,10 +166,7 @@ const compileJavaPlaneRotation = (
   if (activeAxes.length === 0) return undefined;
   const origin = addPosition(plane.transform.pivot, plane.transform.position);
   const primary = activeAxes[0]!;
-  if (
-    activeAxes.length <= 1 ||
-    !javaBlockSupportsMultiAxisRotation
-  ) {
+  if (activeAxes.length <= 1 || !javaBlockSupportsMultiAxisRotation) {
     const axes = ['x', 'y', 'z'] as const;
     return { origin, axis: axes[primary.index]!, angle: primary.angle };
   }
@@ -191,24 +174,20 @@ const compileJavaPlaneRotation = (
     origin,
     ...(Math.abs(rotation[0]) > 0.000001 ? { x: rotation[0] } : {}),
     ...(Math.abs(rotation[1]) > 0.000001 ? { y: rotation[1] } : {}),
-    ...(Math.abs(rotation[2]) > 0.000001 ? { z: rotation[2] } : {})
+    ...(Math.abs(rotation[2]) > 0.000001 ? { z: rotation[2] } : {}),
   };
 };
 
 const compileJavaPlaneElement = (
   document: ExportAdaptedDocument,
-  plane: PlaneNode
+  plane: PlaneNode,
 ): MinecraftJavaElement => {
   const from = [...plane.transform.position] as [number, number, number];
-  const to: [number, number, number] = [
-    from[0] + plane.size[0],
-    from[1] + plane.size[1],
-    from[2]
-  ];
+  const to: [number, number, number] = [from[0] + plane.size[0], from[1] + plane.size[1], from[2]];
   const faces: Partial<Record<CubeFaceDirection, MinecraftJavaFace>> = {};
   const entries = [
     ['south', plane.faces.front],
-    ['north', plane.faces.back]
+    ['north', plane.faces.back],
   ] as const;
   for (const [direction, face] of entries) {
     if (!face.enabled || face.textureId === null || !face.uv) continue;
@@ -219,11 +198,11 @@ const compileJavaPlaneElement = (
         (face.uv[0] * 16) / resolution.width,
         (face.uv[1] * 16) / resolution.height,
         (face.uv[2] * 16) / resolution.width,
-        (face.uv[3] * 16) / resolution.height
+        (face.uv[3] * 16) / resolution.height,
       ],
       texture: `#${binding.key}`,
       ...(face.rotation ? { rotation: face.rotation } : {}),
-      ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {})
+      ...(face.tintIndex !== undefined ? { tintindex: face.tintIndex } : {}),
     };
   }
   const rotation = compileJavaPlaneRotation(plane);
@@ -232,14 +211,14 @@ const compileJavaPlaneElement = (
     from,
     to,
     ...(rotation ? { rotation } : {}),
-    faces
+    faces,
   };
 };
 
 const compileTextureMap = (document: ExportAdaptedDocument): Record<string, string> => {
   const textures: Record<string, string> = {};
   const orderedTextures = Object.values(document.textures).sort((left, right) =>
-    left.id.localeCompare(right.id)
+    left.id.localeCompare(right.id),
   );
   for (const texture of orderedTextures) {
     const binding = textureBindingFor(texture);
@@ -251,11 +230,13 @@ const compileTextureMap = (document: ExportAdaptedDocument): Record<string, stri
   return textures;
 };
 
-const createTextureCopy = (document: ExportAdaptedDocument,
-  texture: ExportTextureAsset) => {
+const createTextureCopy = (document: ExportAdaptedDocument, texture: ExportTextureAsset) => {
   const binding = textureBindingFor(texture);
-  return createTextureExportFile(document, texture,
-    `assets/${binding.resource.namespace}/textures/${binding.resource.path}.${binding.extension}`);
+  return createTextureExportFile(
+    document,
+    texture,
+    `assets/${binding.resource.namespace}/textures/${binding.resource.path}.${binding.extension}`,
+  );
 };
 
 export const buildMinecraftJavaModel = (document: ExportAdaptedDocument): MinecraftJavaModel => {
@@ -265,19 +246,12 @@ export const buildMinecraftJavaModel = (document: ExportAdaptedDocument): Minecr
     throw new Error('Project does not use the minecraft.java_block profile.');
   }
 
-  const visibleNodeIds =
-    effectivelyVisibleSceneNodeIds(document);
+  const visibleNodeIds = effectivelyVisibleSceneNodeIds(document);
   const cubes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is CubeNode =>
-        node.kind === 'cube' && visibleNodeIds.has(node.id)
-    )
+    .filter((node): node is CubeNode => node.kind === 'cube' && visibleNodeIds.has(node.id))
     .sort((left, right) => left.id.localeCompare(right.id));
   const planes = Object.values(document.scene.nodes)
-    .filter(
-      (node): node is PlaneNode =>
-        node.kind === 'plane' && visibleNodeIds.has(node.id)
-    )
+    .filter((node): node is PlaneNode => node.kind === 'plane' && visibleNodeIds.has(node.id))
     .sort((left, right) => left.id.localeCompare(right.id));
   const model: MinecraftJavaModel = {
     ...(profile.parent ? { parent: profile.parent } : {}),
@@ -288,36 +262,32 @@ export const buildMinecraftJavaModel = (document: ExportAdaptedDocument): Minecr
       ? {
           texture_size: [
             document.settings.textureResolution.width,
-            document.settings.textureResolution.height
-          ] as [number, number]
+            document.settings.textureResolution.height,
+          ] as [number, number],
         }
       : {}),
     textures: compileTextureMap(document),
     elements: [
       ...cubes.map((cube) => compileJavaElement(document, cube)),
-      ...planes.map((plane) =>
-        compileJavaPlaneElement(document, plane)
-      )
-    ]
+      ...planes.map((plane) => compileJavaPlaneElement(document, plane)),
+    ],
   };
   return model;
 };
 
 export const exportMinecraftJavaBlock = (
   document: ExportAdaptedDocument,
-  build: AssetBuildIdentity
+  build: AssetBuildIdentity,
 ): ExportBundle => {
   const validation = validateExportTarget(document, {
     profileId: 'minecraft.java_block',
-    errorMessage: 'Minecraft Java export validation failed.'
+    errorMessage: 'Minecraft Java export validation failed.',
   });
   const validatedDocument = validation.document;
   const profile = validation.profile;
   const packMetadataPath = 'pack.mcmeta';
-  const modelPath =
-    `assets/${profile.namespace}/models/block/${profile.modelPath}.json`;
-  const blockstatePath =
-    `assets/${profile.namespace}/blockstates/${profile.modelPath}.json`;
+  const modelPath = `assets/${profile.namespace}/models/block/${profile.modelPath}.json`;
+  const blockstatePath = `assets/${profile.namespace}/blockstates/${profile.modelPath}.json`;
   const model = buildMinecraftJavaModel(validatedDocument);
   const textureFiles = Object.values(validatedDocument.textures)
     .sort((left, right) => left.id.localeCompare(right.id))
@@ -326,24 +296,20 @@ export const exportMinecraftJavaBlock = (
   return createExportBundle(validatedDocument, build, validation.findings, {
     target: exportTargetDescriptorForPreset('java_block').target,
     rootPath: 'resource-pack',
-    entrypoints: [
-      packMetadataPath,
-      blockstatePath,
-      modelPath
-    ],
+    entrypoints: [packMetadataPath, blockstatePath, modelPath],
     files: [
       createCompactJsonExportFile(
         'manifest',
         packMetadataPath,
-        buildMinecraftJavaPackMetadata(validatedDocument)
+        buildMinecraftJavaPackMetadata(validatedDocument),
       ),
       createCompactJsonExportFile(
         'blockstate',
         blockstatePath,
-        buildMinecraftJavaBlockState(validatedDocument)
+        buildMinecraftJavaBlockState(validatedDocument),
       ),
       createCompactJsonExportFile('model', modelPath, model),
-      ...textureFiles
+      ...textureFiles,
     ],
   });
 };

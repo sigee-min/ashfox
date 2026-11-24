@@ -20,14 +20,14 @@ type MeshHarness = {
 const triVertices = () => [
   { id: 'v0', pos: [0, 0, 0] as [number, number, number] },
   { id: 'v1', pos: [1, 0, 0] as [number, number, number] },
-  { id: 'v2', pos: [0, 1, 0] as [number, number, number] }
+  { id: 'v2', pos: [0, 1, 0] as [number, number, number] },
 ];
 
 const triFaces = () => [
   {
     id: 'f0',
-    vertices: ['v0', 'v1', 'v2']
-  }
+    vertices: ['v0', 'v1', 'v2'],
+  },
 ];
 
 const createHarness = (options?: {
@@ -43,7 +43,7 @@ const createHarness = (options?: {
   const calls = {
     addMesh: 0,
     updateMesh: 0,
-    deleteMesh: 0
+    deleteMesh: 0,
   };
   const editor: EditorPort = {
     ...baseEditor,
@@ -59,14 +59,14 @@ const createHarness = (options?: {
       calls.deleteMesh += 1;
       return options?.deleteMeshError ?? null;
     },
-    getProjectTextureResolution: () => ({ width: 64, height: 64 })
+    getProjectTextureResolution: () => ({ width: 64, height: 64 }),
   };
   const service = new MeshService({
     session,
     editor,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => options?.ensureActiveError ?? null,
-    ensureRevisionMatch: () => options?.ensureRevisionError ?? null
+    ensureRevisionMatch: () => options?.ensureRevisionError ?? null,
   });
   return { session, service, calls };
 };
@@ -86,7 +86,7 @@ const createHarness = (options?: {
     id: 'mesh-1',
     name: 'wing',
     vertices: triVertices(),
-    faces: triFaces()
+    faces: triFaces(),
   });
   assert.equal(res.ok, true);
   assert.equal(calls.addMesh, 1);
@@ -103,7 +103,7 @@ const createHarness = (options?: {
   const res = service.addMesh({
     name: 'bad_uv',
     vertices: triVertices(),
-    faces: [{ vertices: ['v0', 'v1', 'v2'], uv: [{ vertexId: 'v0', uv: [0, 0] }] }]
+    faces: [{ vertices: ['v0', 'v1', 'v2'], uv: [{ vertexId: 'v0', uv: [0, 0] }] }],
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -115,7 +115,10 @@ const createHarness = (options?: {
 
 {
   const { service, session, calls } = createHarness();
-  assert.equal(service.addMesh({ name: 'body', vertices: triVertices(), faces: triFaces() }).ok, true);
+  assert.equal(
+    service.addMesh({ name: 'body', vertices: triVertices(), faces: triFaces() }).ok,
+    true,
+  );
   const res = service.updateMesh({
     name: 'body',
     newName: 'body_main',
@@ -123,9 +126,9 @@ const createHarness = (options?: {
     vertices: [
       { id: 'v0', pos: [0, 0, 0] },
       { id: 'v1', pos: [2, 0, 0] },
-      { id: 'v2', pos: [0, 2, 0] }
+      { id: 'v2', pos: [0, 2, 0] },
     ],
-    faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }]
+    faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'] }],
   });
   assert.equal(res.ok, true);
   assert.equal(calls.updateMesh, 1);
@@ -138,10 +141,13 @@ const createHarness = (options?: {
 
 {
   const { service, calls } = createHarness();
-  assert.equal(service.addMesh({ name: 'body', vertices: triVertices(), faces: triFaces() }).ok, true);
+  assert.equal(
+    service.addMesh({ name: 'body', vertices: triVertices(), faces: triFaces() }).ok,
+    true,
+  );
   const res = service.updateMesh({
     name: 'body',
-    faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'], uv: [{ vertexId: 'v0', uv: [0, 0] }] }]
+    faces: [{ id: 'f0', vertices: ['v0', 'v1', 'v2'], uv: [{ vertexId: 'v0', uv: [0, 0] }] }],
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -153,8 +159,14 @@ const createHarness = (options?: {
 
 {
   const { service, calls } = createHarness();
-  assert.equal(service.addMesh({ name: 'm1', vertices: triVertices(), faces: triFaces() }).ok, true);
-  assert.equal(service.addMesh({ name: 'm2', vertices: triVertices(), faces: triFaces() }).ok, true);
+  assert.equal(
+    service.addMesh({ name: 'm1', vertices: triVertices(), faces: triFaces() }).ok,
+    true,
+  );
+  assert.equal(
+    service.addMesh({ name: 'm2', vertices: triVertices(), faces: triFaces() }).ok,
+    true,
+  );
   const res = service.deleteMesh({ names: ['m1', 'm2'] });
   assert.equal(res.ok, true);
   if (res.ok) assert.equal(res.value.deleted.length, 2);

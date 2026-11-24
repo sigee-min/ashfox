@@ -17,13 +17,16 @@ export interface AssetTextureChartPlan {
 /** Geometry usage collected after component instantiation. */
 export interface AssetTextureUsage {
   readonly chart: string;
-  readonly shape: Readonly<{
-    readonly kind: 'box';
-    readonly size: readonly [number, number, number];
-  } | {
-    readonly kind: 'flat';
-    readonly size: readonly [number, number];
-  }>;
+  readonly shape: Readonly<
+    | {
+        readonly kind: 'box';
+        readonly size: readonly [number, number, number];
+      }
+    | {
+        readonly kind: 'flat';
+        readonly size: readonly [number, number];
+      }
+  >;
   readonly span: SourceSpan;
 }
 
@@ -43,5 +46,5 @@ export type AssetTextureIssue = (
   path: string,
   span: SourceSpan,
   code: string,
-  message: string
+  message: string,
 ) => void;

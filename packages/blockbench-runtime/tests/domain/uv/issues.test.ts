@@ -16,12 +16,12 @@ const usage: TextureUsage = {
           name: 'base',
           faces: [
             { face: 'north', uv: [0, 0, 3, 1] },
-            { face: 'south', uv: [0, 0, 3, 3] }
-          ]
-        }
-      ]
-    }
-  ]
+            { face: 'south', uv: [0, 0, 3, 3] },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 const issues = computeUvRectIssues(usage, { minArea: 9, maxAspect: 3 });

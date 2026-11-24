@@ -7,7 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist');
-const chrome = process.env.ASHFOX_CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const chrome =
+  process.env.ASHFOX_CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const harness = `<!doctype html><html data-missing="false"><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/"></iframe><pre id="status">running</pre><script>
 const test = async () => {
   const w = document.querySelector('iframe').contentWindow, d = w.document;
@@ -159,36 +160,105 @@ let hold;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
-    if (missingModel && /^\/assets\/griffin-[a-f0-9]+\.glb$/.test(url.pathname)) { response.writeHead(404).end(); return; }
-    if (url.pathname === '/hold') { hold = response; return; }
-    if (url.pathname === '/done') { hold?.end(); hold = undefined; response.end('done'); return; }
-    if (url.pathname === '/test') { response.setHeader('Content-Type', 'text/html'); response.end(harness.replace('data-missing="false"', `data-missing="${missingModel}"`).replace('iframe src="/"', `iframe src="${localePath}"`)); return; }
+    if (missingModel && /^\/assets\/griffin-[a-f0-9]+\.glb$/.test(url.pathname)) {
+      response.writeHead(404).end();
+      return;
+    }
+    if (url.pathname === '/hold') {
+      hold = response;
+      return;
+    }
+    if (url.pathname === '/done') {
+      hold?.end();
+      hold = undefined;
+      response.end('done');
+      return;
+    }
+    if (url.pathname === '/test') {
+      response.setHeader('Content-Type', 'text/html');
+      response.end(
+        harness
+          .replace('data-missing="false"', `data-missing="${missingModel}"`)
+          .replace('iframe src="/"', `iframe src="${localePath}"`),
+      );
+      return;
+    }
     const relative = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
     const target = path.resolve(root, `.${relative}`);
-    if (!target.startsWith(root + path.sep)) { response.writeHead(403).end(); return; }
-    const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.mp4': 'video/mp4', '.gif': 'image/gif', '.svg': 'image/svg+xml' };
+    if (!target.startsWith(root + path.sep)) {
+      response.writeHead(403).end();
+      return;
+    }
+    const mime = {
+      '.html': 'text/html',
+      '.js': 'text/javascript',
+      '.css': 'text/css',
+      '.png': 'image/png',
+      '.mp4': 'video/mp4',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+    };
     response.setHeader('Content-Type', mime[path.extname(target)] || 'application/octet-stream');
     response.end(await readFile(target));
-  } catch { response.writeHead(404).end(); }
+  } catch {
+    response.writeHead(404).end();
+  }
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 try {
-  for (const [width, reduced, missing, locale = '/'] of [[1440, false, false], [390, false, false], [320, false, false], [390, true, false], [390, true, true], [1440, false, false, '/ko/'], [390, false, false, '/ko/'], [320, true, true, '/ko/']]) {
+  for (const [width, reduced, missing, locale = '/'] of [
+    [1440, false, false],
+    [390, false, false],
+    [320, false, false],
+    [390, true, false],
+    [390, true, true],
+    [1440, false, false, '/ko/'],
+    [390, false, false, '/ko/'],
+    [320, true, true, '/ko/'],
+  ]) {
     localePath = locale;
     missingModel = missing;
     const profile = await mkdtemp(path.join(tmpdir(), 'ashfox-site-test-'));
     try {
       const html = await new Promise((resolve, reject) => {
-        const browser = spawn(chrome, ['--headless=new', '--autoplay-policy=no-user-gesture-required', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', `--user-data-dir=${profile}`, `--window-size=${width},1000`, ...(reduced ? ['--force-prefers-reduced-motion'] : []), '--dump-dom', `http://127.0.0.1:${server.address().port}/test`], { stdio: ['ignore', 'pipe', 'ignore'] });
+        const browser = spawn(
+          chrome,
+          [
+            '--headless=new',
+            '--autoplay-policy=no-user-gesture-required',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-background-networking',
+            `--user-data-dir=${profile}`,
+            `--window-size=${width},1000`,
+            ...(reduced ? ['--force-prefers-reduced-motion'] : []),
+            '--dump-dom',
+            `http://127.0.0.1:${server.address().port}/test`,
+          ],
+          { stdio: ['ignore', 'pipe', 'ignore'] },
+        );
         let output = '';
-        browser.stdout.on('data', (chunk) => { output += chunk; });
+        browser.stdout.on('data', (chunk) => {
+          output += chunk;
+        });
         const timeout = setTimeout(() => browser.kill('SIGTERM'), 30000);
         browser.on('error', reject);
-        browser.on('close', () => { clearTimeout(timeout); resolve(output); });
+        browser.on('close', () => {
+          clearTimeout(timeout);
+          resolve(output);
+        });
       });
       await writeFile(path.join(tmpdir(), 'ashfox-landing-browser-last.html'), html);
-      assert.ok(html.includes('data-result="passed"'), html.match(/<pre id="status">([\s\S]*?)<\/pre>/u)?.[1] || html.slice(-1000));
+      assert.ok(
+        html.includes('data-result="passed"'),
+        html.match(/<pre id="status">([\s\S]*?)<\/pre>/u)?.[1] || html.slice(-1000),
+      );
       console.log(`Landing browser verified: ${locale} ${width}px, reduced motion ${reduced}`);
-    } finally { await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+    } finally {
+      await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    }
   }
-} finally { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); }
+} finally {
+  server.closeAllConnections();
+  await new Promise((resolve) => server.close(resolve));
+}

@@ -15,11 +15,12 @@ export const encodeMessage = (message: SidecarMessage): string => `${JSON.string
 export const createLineDecoder = (
   onMessage: (message: SidecarMessage) => void,
   onError?: (err: Error) => void,
-  maxFrameBytes = SIDECAR_IPC_MAX_FRAME_BYTES
+  maxFrameBytes = SIDECAR_IPC_MAX_FRAME_BYTES,
 ): LineDecoder => {
-  const frameLimit = Number.isFinite(maxFrameBytes) && maxFrameBytes > 0
-    ? Math.trunc(maxFrameBytes)
-    : SIDECAR_IPC_MAX_FRAME_BYTES;
+  const frameLimit =
+    Number.isFinite(maxFrameBytes) && maxFrameBytes > 0
+      ? Math.trunc(maxFrameBytes)
+      : SIDECAR_IPC_MAX_FRAME_BYTES;
   let buffer = '';
   let bufferBytes = 0;
   let discardingOversizedFrame = false;

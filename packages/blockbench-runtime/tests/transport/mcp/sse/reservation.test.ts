@@ -3,10 +3,7 @@ import assert from 'node:assert/strict';
 import { SessionStore } from '../../../../src/transport/mcp/session';
 import { handleSseGet } from '../../../../src/transport/mcp/routerHttpHandlers';
 import { MCP_MAX_SSE_CONNECTIONS_PER_SESSION } from '../../../../src/transport/limits';
-import type {
-  ResponsePlan,
-  SseConnection
-} from '../../../../src/transport/mcp/types';
+import type { ResponsePlan, SseConnection } from '../../../../src/transport/mcp/types';
 
 const sessions = new SessionStore();
 const session = sessions.create('session-1', '2025-06-18');
@@ -18,27 +15,23 @@ const context = {
     kind: 'json',
     status,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
+    body: JSON.stringify(body),
+  }),
 };
 const request = {
   method: 'GET',
   url: '/mcp',
-  headers: { accept: 'text/event-stream' }
+  headers: { accept: 'text/event-stream' },
 };
 
-const plans = Array.from(
-  { length: 10 },
-  () => handleSseGet(context, request)
-);
+const plans = Array.from({ length: 10 }, () => handleSseGet(context, request));
 const granted = plans.filter(
-  (plan): plan is Extract<ResponsePlan, { kind: 'sse' }> =>
-    plan.kind === 'sse'
+  (plan): plan is Extract<ResponsePlan, { kind: 'sse' }> => plan.kind === 'sse',
 );
 assert.equal(granted.length, MCP_MAX_SSE_CONNECTIONS_PER_SESSION);
 assert.equal(
   plans.filter((plan) => plan.kind === 'json' && plan.status === 429).length,
-  10 - MCP_MAX_SSE_CONNECTIONS_PER_SESSION
+  10 - MCP_MAX_SSE_CONNECTIONS_PER_SESSION,
 );
 assert.equal(session.sseReservations, MCP_MAX_SSE_CONNECTIONS_PER_SESSION);
 
@@ -47,7 +40,7 @@ for (const plan of granted) {
   const connection: SseConnection = {
     send: () => undefined,
     close: () => undefined,
-    isClosed: () => false
+    isClosed: () => false,
   };
   const cleanup = plan.onOpen?.(connection);
   if (typeof cleanup === 'function') cleanups.push(cleanup);
@@ -68,7 +61,7 @@ assert.equal(session.sseReservations, 0);
   const raceContext = {
     ...context,
     sessions: raceSessions,
-    getSessionFromHeaders: () => raceSession
+    getSessionFromHeaders: () => raceSession,
   };
   const racePlan = handleSseGet(raceContext, request);
   assert.equal(racePlan.kind, 'sse');
@@ -81,7 +74,7 @@ assert.equal(session.sseReservations, 0);
     close: () => {
       closeCalls += 1;
     },
-    isClosed: () => closeCalls > 0
+    isClosed: () => closeCalls > 0,
   };
   if (racePlan.kind === 'sse') racePlan.onOpen?.(ghostConnection);
   assert.equal(closeCalls, 1);
@@ -96,7 +89,7 @@ assert.equal(session.sseReservations, 0);
   const pruneContext = {
     ...context,
     sessions: pruneSessions,
-    getSessionFromHeaders: () => pruneSession
+    getSessionFromHeaders: () => pruneSession,
   };
   const prunePlan = handleSseGet(pruneContext, request);
   assert.equal(prunePlan.kind, 'sse');

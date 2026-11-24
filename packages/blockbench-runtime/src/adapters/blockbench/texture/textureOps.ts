@@ -17,7 +17,11 @@ export const applyTextureDefaults = (tex: TextureInstance): void => {
   if (tex.keep_size === undefined) tex.keep_size = true;
 };
 
-export const applyTextureDimensions = (tex: TextureInstance, width?: number, height?: number): boolean => {
+export const applyTextureDimensions = (
+  tex: TextureInstance,
+  width?: number,
+  height?: number,
+): boolean => {
   const nextWidth = normalizeTextureSize(width);
   const nextHeight = normalizeTextureSize(height);
   if (!nextWidth || !nextHeight) return false;
@@ -81,7 +85,7 @@ export const applyTextureImage = (tex: TextureInstance, source: CanvasImageSourc
         activeCtx.drawImage(source, 0, 0, activeCanvas.width, activeCanvas.height);
         return activeCanvas;
       },
-      { no_undo: true }
+      { no_undo: true },
     );
     return true;
   }
@@ -105,7 +109,7 @@ export const applyTextureMeta = (
     frameInterpolate?: boolean;
     internal?: boolean;
     keepSize?: boolean;
-  }
+  },
 ): void => {
   if (!tex || !params) return;
   const patch: Record<string, unknown> = {};

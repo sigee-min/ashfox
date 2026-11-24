@@ -41,7 +41,7 @@ export const findUvOverlapIssues = (usage: TextureUsage): UvOverlapIssue[] => {
       textureId: entry.id ?? undefined,
       textureName: entry.name,
       conflictCount: conflicts.count,
-      example: conflicts.example ?? undefined
+      example: conflicts.example ?? undefined,
     });
   });
   return issues;
@@ -64,7 +64,7 @@ const collectRectGroups = (entry: TextureUsage['textures'][number]): RectGroup[]
       groups.push({
         key,
         rect,
-        faces: [{ cubeName: cube.name, face: face.face, rect }]
+        faces: [{ cubeName: cube.name, face: face.face, rect }],
       });
     });
   });
@@ -94,7 +94,12 @@ const toRect = (uv: [number, number, number, number]): UvRect | null => {
   const maxX = normalizeCoord(Math.max(x1, x2));
   const minY = normalizeCoord(Math.min(y1, y2));
   const maxY = normalizeCoord(Math.max(y1, y2));
-  if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
+  if (
+    !Number.isFinite(minX) ||
+    !Number.isFinite(maxX) ||
+    !Number.isFinite(minY) ||
+    !Number.isFinite(maxY)
+  ) {
     return null;
   }
   if (maxX <= minX || maxY <= minY) return null;
@@ -112,6 +117,3 @@ const formatCoord = (value: number): string => {
   const rounded = Math.round(value * 1000) / 1000;
   return String(rounded);
 };
-
-
-

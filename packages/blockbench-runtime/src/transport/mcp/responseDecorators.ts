@@ -1,9 +1,14 @@
-import type { RenderPreviewResult, ToolPayloadMap, ToolResponse, ToolResultMap } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  RenderPreviewResult,
+  ToolPayloadMap,
+  ToolResponse,
+  ToolResultMap,
+} from '@ashfox/blockbench-contracts/types/internal';
 import {
   buildRenderPreviewContent,
   buildRenderPreviewStructured,
   buildTextureContent,
-  buildTextureStructured
+  buildTextureStructured,
 } from './content';
 import { buildEnsureProjectNextActions } from '../../shared/nextActionPolicies';
 import { askUser, callTool, readResource, refTool, refUser } from './nextActions';
@@ -11,7 +16,7 @@ import { askUser, callTool, readResource, refTool, refUser } from './nextActions
 const nextActionFactories = { askUser, callTool, readResource, refTool, refUser };
 
 export const attachRenderPreviewContent = (
-  response: ToolResponse<RenderPreviewResult>
+  response: ToolResponse<RenderPreviewResult>,
 ): ToolResponse<RenderPreviewResult> => {
   if (!response.ok) return response;
   const content = buildRenderPreviewContent(response.data);
@@ -23,7 +28,7 @@ export const attachRenderPreviewContent = (
 };
 
 export const attachTextureContent = (
-  response: ToolResponse<ToolResultMap['read_texture']>
+  response: ToolResponse<ToolResultMap['read_texture']>,
 ): ToolResponse<ToolResultMap['read_texture']> => {
   if (!response.ok) return response;
   const content = buildTextureContent(response.data);
@@ -36,7 +41,7 @@ export const attachTextureContent = (
 
 export const attachEnsureProjectDialogNextActions = (
   payload: ToolPayloadMap['ensure_project'],
-  response: ToolResponse<ToolResultMap['ensure_project']>
+  response: ToolResponse<ToolResultMap['ensure_project']>,
 ): ToolResponse<ToolResultMap['ensure_project']> => {
   if (response.ok) return response;
   const nextActions = buildEnsureProjectNextActions(payload, response, nextActionFactories);
@@ -46,7 +51,7 @@ export const attachEnsureProjectDialogNextActions = (
 export const decorateToolResponse = (
   toolName: string,
   payload: unknown,
-  response: ToolResponse<unknown>
+  response: ToolResponse<unknown>,
 ): ToolResponse<unknown> => {
   if (toolName === 'render_preview') {
     return attachRenderPreviewContent(response as ToolResponse<RenderPreviewResult>);
@@ -57,9 +62,8 @@ export const decorateToolResponse = (
   if (toolName === 'ensure_project') {
     return attachEnsureProjectDialogNextActions(
       payload as ToolPayloadMap['ensure_project'],
-      response as ToolResponse<ToolResultMap['ensure_project']>
+      response as ToolResponse<ToolResultMap['ensure_project']>,
     );
   }
   return response;
 };
-

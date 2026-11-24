@@ -22,7 +22,7 @@ export const resolveTargetOrError = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options: ResolveTargetOptions
+  options: ResolveTargetOptions,
 ): { target?: T; error?: ToolError } => {
   const requiredErr = ensureIdOrName(id, name, options.required);
   if (requiredErr) return { error: requiredErr };
@@ -40,12 +40,8 @@ export const resolveTargetOrError = <T extends TargetNamed>(
   const target = resolveTargetByIdOrName(items, id, name);
   if (!target) {
     return {
-      error: { code: 'invalid_payload', message: options.notFound(resolveTargetLabel(id, name)) }
+      error: { code: 'invalid_payload', message: options.notFound(resolveTargetLabel(id, name)) },
     };
   }
   return { target };
 };
-
-
-
-

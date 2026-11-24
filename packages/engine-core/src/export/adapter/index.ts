@@ -1,31 +1,13 @@
-import type {
-  AssetId,
-  CubeNode,
-  PlaneNode,
-  ProjectDocument,
-  TextureAsset
-} from '../../model';
+import type { AssetId, CubeNode, PlaneNode, ProjectDocument, TextureAsset } from '../../model';
 import { cubeGeometryCorners } from '../../model';
 import { effectivelyVisibleSceneNodeIds } from '../../sceneVisibility';
 import { resourceToken } from '../../resourceToken';
-import type {
-  ExportFormatProfile,
-  MinecraftTextureBinding
-} from './contract';
-import {
-  type ExportPreset
-} from '../compatibility';
+import type { ExportFormatProfile, MinecraftTextureBinding } from './contract';
+import { type ExportPreset } from '../compatibility';
 import { exportProfileForAdapter } from '../compatibility/profiles';
-import {
-  readExportAdapterInput,
-  type ExportAdapterInput
-} from './input';
+import { readExportAdapterInput, type ExportAdapterInput } from './input';
 
-export {
-  ExportAdapterInputError,
-  readExportAdapterInput,
-  type ExportAdapterInput
-} from './input';
+export { ExportAdapterInputError, readExportAdapterInput, type ExportAdapterInput } from './input';
 
 /**
  * Ephemeral delivery configuration.  It is deliberately not part of the
@@ -42,10 +24,7 @@ export interface ExportTextureAsset extends TextureAsset {
 }
 
 /** Target-shaped transient view consumed only by delivery adapters. */
-export interface ExportAdaptedDocument extends Omit<
-  ProjectDocument,
-  'textures'
-> {
+export interface ExportAdaptedDocument extends Omit<ProjectDocument, 'textures'> {
   formatProfile: ExportFormatProfile;
   textures: Readonly<Record<AssetId, ExportTextureAsset>>;
   /** Delivery-only transforms applied after canonical compilation. */
@@ -61,13 +40,13 @@ type DeliveryShapedProject = ProjectDocument & {
 };
 
 const canonicalTextureAssets = (
-  textures: Readonly<Record<AssetId, ExportTextureAsset>>
+  textures: Readonly<Record<AssetId, ExportTextureAsset>>,
 ): Record<AssetId, TextureAsset> =>
   Object.fromEntries(
     Object.entries(textures).map(([id, texture]) => {
       const { minecraft: _minecraft, ...canonicalTexture } = texture;
       return [id, canonicalTexture];
-    })
+    }),
   );
 
 /**
@@ -75,9 +54,7 @@ const canonicalTextureAssets = (
  * adapter view. This makes each target selection a fresh projection from
  * canonical project authority, never a conversion from another target.
  */
-const canonicalProjectFromDeliveryShape = (
-  document: DeliveryShapedProject
-): ProjectDocument => {
+const canonicalProjectFromDeliveryShape = (document: DeliveryShapedProject): ProjectDocument => {
   const {
     formatProfile: _formatProfile,
     deliveryAdaptation: _deliveryAdaptation,
@@ -86,36 +63,38 @@ const canonicalProjectFromDeliveryShape = (
   } = document;
   const canonical = {
     ...canonicalFields,
-    textures: canonicalTextureAssets(textures)
+    textures: canonicalTextureAssets(textures),
   } as ProjectDocument;
-  const translation = typeof _deliveryAdaptation === 'object' &&
+  const translation =
+    typeof _deliveryAdaptation === 'object' &&
     _deliveryAdaptation !== null &&
     'sceneTranslation' in _deliveryAdaptation &&
     Array.isArray(_deliveryAdaptation.sceneTranslation) &&
     _deliveryAdaptation.sceneTranslation.length === 3 &&
     _deliveryAdaptation.sceneTranslation.every(
-      (value: unknown) => typeof value === 'number' && Number.isFinite(value)
+      (value: unknown) => typeof value === 'number' && Number.isFinite(value),
     )
-    ? _deliveryAdaptation.sceneTranslation as [number, number, number]
-    : null;
-  return translation ? {
-    ...canonical,
-    scene: translatedScene(canonical.scene, translation.map(
-      (value) => -value
-    ) as [number, number, number])
-  } : canonical;
+      ? (_deliveryAdaptation.sceneTranslation as [number, number, number])
+      : null;
+  return translation
+    ? {
+        ...canonical,
+        scene: translatedScene(
+          canonical.scene,
+          translation.map((value) => -value) as [number, number, number],
+        ),
+      }
+    : canonical;
 };
 
 const primitiveBounds = (
-  node: CubeNode | PlaneNode
+  node: CubeNode | PlaneNode,
 ): readonly [readonly number[], readonly number[]] => {
   if (node.kind === 'cube') {
     const corners = cubeGeometryCorners(node);
     return [
-      [0, 1, 2].map((axis) => Math.min(...corners.map((corner) =>
-        corner[axis]!)) - node.inflate),
-      [0, 1, 2].map((axis) => Math.max(...corners.map((corner) =>
-        corner[axis]!)) + node.inflate)
+      [0, 1, 2].map((axis) => Math.min(...corners.map((corner) => corner[axis]!)) - node.inflate),
+      [0, 1, 2].map((axis) => Math.max(...corners.map((corner) => corner[axis]!)) + node.inflate),
     ];
   }
   return [
@@ -123,18 +102,18 @@ const primitiveBounds = (
     [
       node.transform.position[0] + node.size[0],
       node.transform.position[1] + node.size[1],
-      node.transform.position[2]
-    ]
+      node.transform.position[2],
+    ],
   ];
 };
 
 const javaBlockSceneTranslation = (
-  document: ProjectDocument
+  document: ProjectDocument,
 ): readonly [number, number, number] | null => {
   const visible = effectivelyVisibleSceneNodeIds(document);
   const primitives = Object.values(document.scene.nodes).filter(
     (node): node is CubeNode | PlaneNode =>
-      (node.kind === 'cube' || node.kind === 'plane') && visible.has(node.id)
+      (node.kind === 'cube' || node.kind === 'plane') && visible.has(node.id),
   );
   if (primitives.length === 0) return null;
   const minimum = [Infinity, Infinity, Infinity];
@@ -149,55 +128,63 @@ const javaBlockSceneTranslation = (
   if (minimum.some((value, axis) => maximum[axis]! - value > 48)) {
     return null;
   }
-  return [0, 1, 2].map((axis) =>
-    8 - (minimum[axis]! + maximum[axis]!) / 2
-  ) as [number, number, number];
+  return [0, 1, 2].map((axis) => 8 - (minimum[axis]! + maximum[axis]!) / 2) as [
+    number,
+    number,
+    number,
+  ];
 };
 
 const translatedScene = (
   scene: ProjectDocument['scene'],
-  translation: readonly [number, number, number]
+  translation: readonly [number, number, number],
 ): ProjectDocument['scene'] => ({
   ...scene,
-  nodes: Object.fromEntries(Object.entries(scene.nodes).map(
-    ([id, node]) => {
+  nodes: Object.fromEntries(
+    Object.entries(scene.nodes).map(([id, node]) => {
       if (node.kind !== 'cube' && node.kind !== 'plane') return [id, node];
-      return [id, {
-        ...node,
-        transform: {
-          ...node.transform,
-          position: node.transform.position.map((value, axis) =>
-            value + translation[axis]!) as [number, number, number]
-        }
-      }];
-    }
-  ))
+      return [
+        id,
+        {
+          ...node,
+          transform: {
+            ...node.transform,
+            position: node.transform.position.map((value, axis) => value + translation[axis]!) as [
+              number,
+              number,
+              number,
+            ],
+          },
+        },
+      ];
+    }),
+  ),
 });
 
 /** Removes ephemeral delivery data before canonical validation or persistence. */
 export const canonicalProjectFromExportAdapter = (
-  document: ExportAdaptedDocument
+  document: ExportAdaptedDocument,
 ): ProjectDocument => canonicalProjectFromDeliveryShape(document);
 
 const isMinecraftProfile = (
-  profile: ExportFormatProfile
-): profile is Extract<ExportFormatProfile, {
-  id:
-    | 'minecraft.java_block'
-    | 'minecraft.bedrock'
-    | 'minecraft.java.geckolib5';
-}> =>
+  profile: ExportFormatProfile,
+): profile is Extract<
+  ExportFormatProfile,
+  {
+    id: 'minecraft.java_block' | 'minecraft.bedrock' | 'minecraft.java.geckolib5';
+  }
+> =>
   profile.id === 'minecraft.java_block' ||
   profile.id === 'minecraft.bedrock' ||
   profile.id === 'minecraft.java.geckolib5';
 
 const profileKind = (
-  profile: Extract<ExportFormatProfile, {
-    id:
-      | 'minecraft.java_block'
-      | 'minecraft.bedrock'
-      | 'minecraft.java.geckolib5';
-  }>
+  profile: Extract<
+    ExportFormatProfile,
+    {
+      id: 'minecraft.java_block' | 'minecraft.bedrock' | 'minecraft.java.geckolib5';
+    }
+  >,
 ): 'block' | 'item' | 'entity' =>
   profile.id === 'minecraft.java_block'
     ? profile.modelKind
@@ -207,10 +194,10 @@ const profileKind = (
 
 export function resolveExportAdapter(
   document: ProjectDocument,
-  input: ExportAdapterInput
+  input: ExportAdapterInput,
 ): ResolvedExportAdapter {
-  if (arguments.length !== 2) throw new TypeError(
-    'resolveExportAdapter expects a document and closed adapter input.');
+  if (arguments.length !== 2)
+    throw new TypeError('resolveExportAdapter expects a document and closed adapter input.');
   void document;
   const snapshot = readExportAdapterInput(input);
   const profile = exportProfileForAdapter(snapshot);
@@ -222,7 +209,7 @@ export function resolveExportAdapter(
 
 const adapterTextures = (
   document: ProjectDocument,
-  profile: ExportFormatProfile
+  profile: ExportFormatProfile,
 ): ExportAdaptedDocument['textures'] => {
   if (!isMinecraftProfile(profile)) return document.textures;
   return Object.fromEntries(
@@ -236,13 +223,13 @@ const adapterTextures = (
             {
               namespace: profile.namespace,
               kind: profileKind(profile),
-              modelPath: profile.modelPath
+              modelPath: profile.modelPath,
             },
             id,
-            index
-          )
-        }
-      ])
+            index,
+          ),
+        },
+      ]),
   );
 };
 
@@ -253,7 +240,7 @@ const createMinecraftTextureBinding = (
     modelPath: string;
   },
   id: string,
-  ordinal: number
+  ordinal: number,
 ): MinecraftTextureBinding => {
   const token = resourceToken(id, 'texture');
   const suffix = ordinal === 0 ? '' : `_${token}`;
@@ -261,27 +248,24 @@ const createMinecraftTextureBinding = (
     key: ordinal === 0 ? 'base' : `${token}_${ordinal}`,
     resource: {
       namespace: location.namespace,
-      path: `${location.kind}/${location.modelPath}${suffix}`
+      path: `${location.kind}/${location.modelPath}${suffix}`,
     },
     extension: 'png',
-    particle: ordinal === 0
+    particle: ordinal === 0,
   };
 };
 
 /** Builds a non-persisted target view immediately before export. */
 export function adaptProjectForExport(
   document: ProjectDocument,
-  input: ExportAdapterInput
+  input: ExportAdapterInput,
 ): ExportAdaptedDocument {
-  if (arguments.length !== 2) throw new TypeError(
-    'adaptProjectForExport expects a document and closed adapter input.');
-  const canonical = canonicalProjectFromDeliveryShape(
-    document as DeliveryShapedProject
-  );
+  if (arguments.length !== 2)
+    throw new TypeError('adaptProjectForExport expects a document and closed adapter input.');
+  const canonical = canonicalProjectFromDeliveryShape(document as DeliveryShapedProject);
   const adapter = resolveExportAdapter(canonical, input);
-  const sceneTranslation = adapter.profile.id === 'minecraft.java_block'
-    ? javaBlockSceneTranslation(canonical)
-    : null;
+  const sceneTranslation =
+    adapter.profile.id === 'minecraft.java_block' ? javaBlockSceneTranslation(canonical) : null;
   return {
     ...canonical,
     formatProfile: adapter.profile,
@@ -289,8 +273,8 @@ export function adaptProjectForExport(
     ...(sceneTranslation
       ? {
           scene: translatedScene(canonical.scene, sceneTranslation),
-          deliveryAdaptation: { sceneTranslation }
+          deliveryAdaptation: { sceneTranslation },
         }
-      : {})
+      : {}),
   };
 }

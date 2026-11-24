@@ -6,7 +6,7 @@ import type {
   CubeInstance,
   GroupInstance,
   MeshInstance,
-  OutlinerNode
+  OutlinerNode,
 } from '../../../types/blockbench';
 import { isRecord } from '../../../domain/guards';
 import { CUBE_FACE_DIRECTIONS } from '../../../shared/toolConstants';
@@ -23,7 +23,7 @@ export const walkNodes = (
   bones: SessionState['bones'],
   cubes: SessionState['cubes'],
   meshes: SessionState['meshes'],
-  globals: BlockbenchGlobals
+  globals: BlockbenchGlobals,
 ) => {
   (nodes ?? []).forEach((node) => {
     if (isGroup(node, globals)) {
@@ -35,7 +35,7 @@ export const walkNodes = (
         pivot: toVec3(node.origin ?? node.pivot ?? [0, 0, 0]),
         rotation: toOptionalVec3(node.rotation),
         scale: toOptionalVec3(node.scale),
-        visibility: readVisibility(node)
+        visibility: readVisibility(node),
       });
       walkNodes(node.children ?? [], boneName, bones, cubes, meshes, globals);
       return;
@@ -48,7 +48,7 @@ export const walkNodes = (
         to: toVec3(node.to ?? [0, 0, 0]),
         origin: toOptionalVec3(node.origin),
         rotation: toOptionalVec3(node.rotation),
-        bone: parent ?? (node.parent?.name ?? 'root'),
+        bone: parent ?? node.parent?.name ?? 'root',
         uv: toOptionalVec2(node.uv_offset ?? node.uv),
         uvOffset: toOptionalVec2(node.uv_offset),
         inflate: node.inflate,
@@ -58,7 +58,7 @@ export const walkNodes = (
         shade: node.shade,
         lightEmission: node.light_emission,
         rescale: node.rescale,
-        faces: toCubeFaces(node.faces)
+        faces: toCubeFaces(node.faces),
       });
       return;
     }
@@ -66,18 +66,21 @@ export const walkNodes = (
       meshes?.push({
         id: readNodeId(node),
         name: String(node.name ?? 'mesh'),
-        bone: parent ?? (node.parent?.name ?? undefined),
+        bone: parent ?? node.parent?.name ?? undefined,
         origin: toOptionalVec3(node.origin),
         rotation: toOptionalVec3(node.rotation),
         visibility: readVisibility(node),
         vertices: toMeshVertices(node.vertices),
-        faces: toMeshFaces(node.faces)
+        faces: toMeshFaces(node.faces),
       });
     }
   });
 };
 
-const isGroup = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is GroupInstance => {
+const isGroup = (
+  node: OutlinerNode | null | undefined,
+  globals: BlockbenchGlobals,
+): node is GroupInstance => {
   if (!node) return false;
   const groupCtor = globals.Group;
   if (groupCtor && node instanceof groupCtor) return true;
@@ -87,7 +90,10 @@ const isGroup = (node: OutlinerNode | null | undefined, globals: BlockbenchGloba
   return hasChildren && !hasCubeVectors;
 };
 
-const isCube = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is CubeInstance => {
+const isCube = (
+  node: OutlinerNode | null | undefined,
+  globals: BlockbenchGlobals,
+): node is CubeInstance => {
   if (!node) return false;
   const cubeCtor = globals.Cube;
   if (cubeCtor && node instanceof cubeCtor) return true;
@@ -95,7 +101,10 @@ const isCube = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobal
   return isVec3Like(node.from) && isVec3Like(node.to);
 };
 
-const isMesh = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobals): node is MeshInstance => {
+const isMesh = (
+  node: OutlinerNode | null | undefined,
+  globals: BlockbenchGlobals,
+): node is MeshInstance => {
   if (!node) return false;
   const meshCtor = globals.Mesh;
   if (meshCtor && node instanceof meshCtor) return true;
@@ -106,9 +115,19 @@ const isMesh = (node: OutlinerNode | null | undefined, globals: BlockbenchGlobal
 
 const isVec3Like = (value: unknown): value is Vec3Like => {
   if (Array.isArray(value)) {
-    return value.length >= 3 && typeof value[0] === 'number' && typeof value[1] === 'number' && typeof value[2] === 'number';
+    return (
+      value.length >= 3 &&
+      typeof value[0] === 'number' &&
+      typeof value[1] === 'number' &&
+      typeof value[2] === 'number'
+    );
   }
-  return isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number' && typeof value.z === 'number';
+  return (
+    isRecord(value) &&
+    typeof value.x === 'number' &&
+    typeof value.y === 'number' &&
+    typeof value.z === 'number'
+  );
 };
 
 const toVec3 = (value: Vec3Like): [number, number, number] => {
@@ -118,7 +137,9 @@ const toVec3 = (value: Vec3Like): [number, number, number] => {
   return [value?.x ?? 0, value?.y ?? 0, value?.z ?? 0];
 };
 
-const toOptionalVec3 = (value: Vec3Like | null | undefined): [number, number, number] | undefined => {
+const toOptionalVec3 = (
+  value: Vec3Like | null | undefined,
+): [number, number, number] | undefined => {
   if (!value) return undefined;
   return toVec3(value);
 };
@@ -126,12 +147,13 @@ const toOptionalVec3 = (value: Vec3Like | null | undefined): [number, number, nu
 const toOptionalVec2 = (value: unknown): [number, number] | undefined => {
   if (!value) return undefined;
   if (Array.isArray(value)) return [value[0] ?? 0, value[1] ?? 0];
-  if (isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number') return [value.x, value.y];
+  if (isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number')
+    return [value.x, value.y];
   return undefined;
 };
 
 const toCubeFaces = (
-  value: Record<string, CubeFace> | undefined
+  value: Record<string, CubeFace> | undefined,
 ): Partial<Record<CubeFaceDirection, TrackedCubeFace>> | undefined => {
   if (!isRecord(value)) return undefined;
   const result: Partial<Record<CubeFaceDirection, TrackedCubeFace>> = {};
@@ -147,14 +169,18 @@ const toCubeFaces = (
     const uv = toOptionalVec4(valueFace.uv);
     result[direction] = {
       enabled: valueFace.enabled !== false,
-      ...(typeof valueFace.texture === 'string' || valueFace.texture === false || valueFace.texture === null
+      ...(typeof valueFace.texture === 'string' ||
+      valueFace.texture === false ||
+      valueFace.texture === null
         ? { texture: valueFace.texture }
         : {}),
       ...(uv ? { uv } : {}),
       ...(rotation === undefined ? {} : { rotation }),
       ...(cullface ? { cullface } : {}),
       ...(typeof valueFace.tint === 'number' ? { tintIndex: valueFace.tint } : {}),
-      ...(typeof valueFace.material_name === 'string' ? { materialInstance: valueFace.material_name } : {})
+      ...(typeof valueFace.material_name === 'string'
+        ? { materialInstance: valueFace.material_name }
+        : {}),
     };
   }
   return Object.keys(result).length > 0 ? result : undefined;
@@ -177,8 +203,13 @@ const toMeshVertices = (value: unknown): Array<{ id: string; pos: [number, numbe
 };
 
 const toMeshFaces = (
-  value: unknown
-): Array<{ id?: string; vertices: string[]; uv?: Array<{ vertexId: string; uv: [number, number] }>; texture?: string | false }> => {
+  value: unknown,
+): Array<{
+  id?: string;
+  vertices: string[];
+  uv?: Array<{ vertexId: string; uv: [number, number] }>;
+  texture?: string | false;
+}> => {
   if (!isRecord(value)) return [];
   const result: Array<{
     id?: string;
@@ -194,14 +225,16 @@ const toMeshFaces = (
           .filter((entry): entry is [string, [unknown, unknown]] => Array.isArray(entry[1]))
           .map(([vertexId, pair]) => ({
             vertexId,
-            uv: [Number(pair[0] ?? 0), Number(pair[1] ?? 0)] as [number, number]
+            uv: [Number(pair[0] ?? 0), Number(pair[1] ?? 0)] as [number, number],
           }))
       : undefined;
     result.push({
       id,
       vertices: face.vertices.map((vertexId) => String(vertexId)),
       ...(uv && uv.length > 0 ? { uv } : {}),
-      ...(typeof face.texture === 'string' || face.texture === false ? { texture: face.texture } : {})
+      ...(typeof face.texture === 'string' || face.texture === false
+        ? { texture: face.texture }
+        : {}),
     });
   }
   return result;

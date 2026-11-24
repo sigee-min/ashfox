@@ -9,10 +9,17 @@ import {
   ADAPTER_CUBE_APPLY_TEXTURE_UNAVAILABLE,
   ADAPTER_CUBE_TEXTURE_API_UNAVAILABLE,
   TEXTURE_ASSIGN_NO_TARGETS,
-  TEXTURE_NOT_FOUND
+  TEXTURE_NOT_FOUND,
 } from '../../../shared/messages';
 import type { CubeFaceDirection } from '../../../types/blockbench';
-import { ALL_FACES, ensureFaceEntry, ensureFaceMap, enforceManualUvMode, normalizeFaces, resolveFaceTextureRef } from './uvUtils';
+import {
+  ALL_FACES,
+  ensureFaceEntry,
+  ensureFaceMap,
+  enforceManualUvMode,
+  normalizeFaces,
+  resolveFaceTextureRef,
+} from './uvUtils';
 
 export class BlockbenchTextureAssignAdapter {
   private readonly log: Logger;
@@ -48,7 +55,10 @@ export class BlockbenchTextureAssignAdapter {
           enforceManualUvMode(cube, { preserve: true });
           const faceMap = ensureFaceMap(cube);
           const targets = faces ?? ALL_FACES;
-          const uvBackup = new Map<CubeFaceDirection, [number, number, number, number] | undefined>();
+          const uvBackup = new Map<
+            CubeFaceDirection,
+            [number, number, number, number] | undefined
+          >();
           targets.forEach((faceKey) => {
             const face = faceMap[faceKey];
             if (face?.uv) {
@@ -74,7 +84,11 @@ export class BlockbenchTextureAssignAdapter {
           });
         });
       });
-      this.log.info('texture assigned', { texture: texture?.name, cubeCount: cubes.length, faces: faces ?? 'all' });
+      this.log.info('texture assigned', {
+        texture: texture?.name,
+        cubeCount: cubes.length,
+        faces: faces ?? 'all',
+      });
       return null;
     });
   }

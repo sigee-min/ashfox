@@ -5,18 +5,32 @@ export interface JavaResourcePack {
   readonly directory: string;
   /** Informational project version; format fields below control emitted bytes. */
   readonly minecraftVersion: string;
-  readonly metadata: Readonly<{ description: string }> & (
-    Readonly<{ format: 'legacy'; packFormat: number }> |
-    Readonly<{ format: 'range'; minFormat: readonly [number, number]; maxFormat: readonly [number, number] }>
-  );
+  readonly metadata: Readonly<{ description: string }> &
+    (
+      | Readonly<{ format: 'legacy'; packFormat: number }>
+      | Readonly<{
+          format: 'range';
+          minFormat: readonly [number, number];
+          maxFormat: readonly [number, number];
+        }>
+    );
   readonly itemDefinitions: 'legacy' | 'modern';
   readonly archive: boolean;
   readonly icon: string | null;
   readonly models: readonly string[];
-  readonly items: readonly Readonly<{ source: string; id: string; parent: 'generated' | 'handheld' }>[];
+  readonly items: readonly Readonly<{
+    source: string;
+    id: string;
+    parent: 'generated' | 'handheld';
+  }>[];
   readonly sounds: readonly Readonly<{
-    source: string; id: string; replace: boolean; subtitle: string | null;
-    volume: number; pitch: number; stream: boolean;
+    source: string;
+    id: string;
+    replace: boolean;
+    subtitle: string | null;
+    volume: number;
+    pitch: number;
+    stream: boolean;
     variants: 'all' | readonly Readonly<{ id: string; weight: number }>[];
   }>[];
 }

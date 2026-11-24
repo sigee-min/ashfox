@@ -1,13 +1,8 @@
-import type {
-  CommandEffects,
-  InvalidatedArea
-} from '../types';
+import type { CommandEffects, InvalidatedArea } from '../types';
 
 type EffectState = 'created' | 'changed' | 'removed';
 
-const effectStates = (
-  effects: CommandEffects
-): Map<string, EffectState> => {
+const effectStates = (effects: CommandEffects): Map<string, EffectState> => {
   const states = new Map<string, EffectState>();
   effects.createdEntityIds.forEach((id) => states.set(id, 'created'));
   effects.changedEntityIds.forEach((id) => {
@@ -26,20 +21,12 @@ const effectStates = (
 
 const mergeEntityEffects = (
   current: CommandEffects,
-  next: CommandEffects
-): Pick<
-  CommandEffects,
-  'createdEntityIds' | 'changedEntityIds' | 'removedEntityIds'
-> => {
+  next: CommandEffects,
+): Pick<CommandEffects, 'createdEntityIds' | 'changedEntityIds' | 'removedEntityIds'> => {
   const states = effectStates(current);
   for (const id of next.createdEntityIds) {
     const previous = states.get(id);
-    states.set(
-      id,
-      previous === undefined || previous === 'created'
-        ? 'created'
-        : 'changed'
-    );
+    states.set(id, previous === undefined || previous === 'created' ? 'created' : 'changed');
   }
   for (const id of next.changedEntityIds) {
     if (!states.has(id)) states.set(id, 'changed');
@@ -55,26 +42,21 @@ const mergeEntityEffects = (
   return {
     createdEntityIds: ids.filter((id) => states.get(id) === 'created'),
     changedEntityIds: ids.filter((id) => states.get(id) === 'changed'),
-    removedEntityIds: ids.filter((id) => states.get(id) === 'removed')
+    removedEntityIds: ids.filter((id) => states.get(id) === 'removed'),
   };
 };
 
 export const mergeCommandEffects = (
   current: CommandEffects,
-  next: CommandEffects
+  next: CommandEffects,
 ): CommandEffects => ({
   ...mergeEntityEffects(current, next),
-  invalidated: [
-    ...new Set<InvalidatedArea>([
-      ...current.invalidated,
-      ...next.invalidated
-    ])
-  ]
+  invalidated: [...new Set<InvalidatedArea>([...current.invalidated, ...next.invalidated])],
 });
 
 export const emptyCommandEffects = (): CommandEffects => ({
   createdEntityIds: [],
   changedEntityIds: [],
   removedEntityIds: [],
-  invalidated: []
+  invalidated: [],
 });

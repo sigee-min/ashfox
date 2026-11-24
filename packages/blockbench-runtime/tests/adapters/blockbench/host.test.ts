@@ -33,7 +33,10 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const captured: { run?: () => void } = {};
   let reloadCalls = 0;
   const originalSetTimeout = globalThis.setTimeout;
-  (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = ((fn: () => void, delay?: number) => {
+  (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = ((
+    fn: () => void,
+    delay?: number,
+  ) => {
     captured.run = fn;
     capturedDelay = Number(delay ?? 0);
     return 0 as unknown as ReturnType<typeof setTimeout>;
@@ -44,13 +47,13 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         Plugins: {
           devReload: () => {
             reloadCalls += 1;
-          }
-        }
+          },
+        },
       },
       () => {
         const error = host.schedulePluginReload(Number.NaN);
         assert.equal(error, null);
-      }
+      },
     );
   } finally {
     (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = originalSetTimeout;
@@ -65,7 +68,10 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const host = new BlockbenchHost();
   let capturedDelay = -1;
   const originalSetTimeout = globalThis.setTimeout;
-  (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = ((fn: () => void, delay?: number) => {
+  (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = ((
+    fn: () => void,
+    delay?: number,
+  ) => {
     capturedDelay = Number(delay ?? 0);
     return 0 as unknown as ReturnType<typeof setTimeout>;
   }) as typeof setTimeout;
@@ -73,13 +79,13 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     withGlobals(
       {
         Plugins: {
-          devReload: () => undefined
-        }
+          devReload: () => undefined,
+        },
       },
       () => {
         const error = host.schedulePluginReload(50_000);
         assert.equal(error, null);
-      }
+      },
     );
   } finally {
     (globalThis as unknown as { setTimeout: typeof setTimeout }).setTimeout = originalSetTimeout;

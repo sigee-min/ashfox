@@ -23,9 +23,14 @@ import {
   UpdateCubeCommand,
   UpdateMeshCommand,
   UpdateTextureCommand,
-  TriggerKeyframeCommand
+  TriggerKeyframeCommand,
 } from '../../../ports/editor';
-import { RenderPreviewPayload, RenderPreviewResult, ToolError, FormatKind } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  RenderPreviewPayload,
+  RenderPreviewResult,
+  ToolError,
+  FormatKind,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { Logger } from '../../../logging';
 import { BlockbenchProjectAdapter } from '../project';
 import { BlockbenchTextureAdapter } from '../texture';
@@ -52,7 +57,7 @@ export class BlockbenchEditor implements EditorPort {
     name: string,
     formatId: string,
     kind: FormatKind,
-    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> }
+    options?: { confirmDiscard?: boolean; dialog?: Record<string, unknown> },
   ): ToolError | null {
     return this.project.createProject(name, formatId, kind, options);
   }

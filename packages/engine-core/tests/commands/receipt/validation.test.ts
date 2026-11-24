@@ -4,13 +4,10 @@ import {
   COMMAND_RECEIPT_SCHEMA_VERSION,
   isValidCommandReceipt,
   isValidCommandReceiptLedger,
-  type CommandReceipt
+  type CommandReceipt,
 } from '../../../src';
 
-const receipt = (
-  commandId: string,
-  completedAt: string
-): CommandReceipt => ({
+const receipt = (commandId: string, completedAt: string): CommandReceipt => ({
   schemaVersion: COMMAND_RECEIPT_SCHEMA_VERSION,
   commandId,
   projectId: 'project-receipt-contract',
@@ -25,73 +22,68 @@ const receipt = (
     createdEntityIds: ['cube-new'],
     changedEntityIds: [],
     removedEntityIds: [],
-    invalidated: ['scene', 'preview']
+    invalidated: ['scene', 'preview'],
   },
-  findings: [{
-    code: 'document.required_value',
-    severity: 'warning',
-    message: 'Review the generated name.',
-    path: 'name',
-    entityIds: ['cube-new']
-  }]
+  findings: [
+    {
+      code: 'document.required_value',
+      severity: 'warning',
+      message: 'Review the generated name.',
+      path: 'name',
+      entityIds: ['cube-new'],
+    },
+  ],
 });
 
-const current = receipt(
-  'command-current',
-  '2026-08-06T03:00:00.000Z'
-);
-const older = receipt(
-  'command-older',
-  '2026-08-06T02:00:00.000Z'
-);
+const current = receipt('command-current', '2026-08-06T03:00:00.000Z');
+const older = receipt('command-older', '2026-08-06T02:00:00.000Z');
 
 assert.equal(isValidCommandReceipt(current), true);
-assert.equal(
-  isValidCommandReceipt(current, 'project-receipt-contract'),
-  true
-);
+assert.equal(isValidCommandReceipt(current, 'project-receipt-contract'), true);
 assert.equal(isValidCommandReceipt(current, 'project-foreign'), false);
 assert.equal(isValidCommandReceipt({ ...current, schemaVersion: 2 }), false);
 assert.equal(isValidCommandReceipt({ ...current, source: 'external' }), false);
-assert.equal(
-  isValidCommandReceipt({ ...current, completedAt: '2026-08-06' }),
-  false
-);
+assert.equal(isValidCommandReceipt({ ...current, completedAt: '2026-08-06' }), false);
 assert.equal(
   isValidCommandReceipt({
     ...current,
     effects: {
       ...current.effects,
-      changedEntityIds: ['cube-new', 'cube-new']
-    }
+      changedEntityIds: ['cube-new', 'cube-new'],
+    },
   }),
-  false
+  false,
 );
 assert.equal(isValidCommandReceipt({ ...current, extra: true }), false);
 assert.equal(
   isValidCommandReceipt({
     ...current,
-    findings: [{
-      ...current.findings[0],
-      severity: 'fatal'
-    }]
+    findings: [
+      {
+        ...current.findings[0],
+        severity: 'fatal',
+      },
+    ],
   }),
-  false
+  false,
 );
 
-assert.equal(isValidCommandReceiptLedger(
-  [current, older],
-  { projectId: current.projectId, maxEntries: 100 }
-), true);
-assert.equal(isValidCommandReceiptLedger(
-  [older, current],
-  { projectId: current.projectId, maxEntries: 100 }
-), false);
-assert.equal(isValidCommandReceiptLedger(
-  [current, { ...older, commandId: current.commandId }],
-  { projectId: current.projectId, maxEntries: 100 }
-), false);
-assert.equal(isValidCommandReceiptLedger(
-  [current, older],
-  { projectId: current.projectId, maxEntries: 1 }
-), false);
+assert.equal(
+  isValidCommandReceiptLedger([current, older], { projectId: current.projectId, maxEntries: 100 }),
+  true,
+);
+assert.equal(
+  isValidCommandReceiptLedger([older, current], { projectId: current.projectId, maxEntries: 100 }),
+  false,
+);
+assert.equal(
+  isValidCommandReceiptLedger([current, { ...older, commandId: current.commandId }], {
+    projectId: current.projectId,
+    maxEntries: 100,
+  }),
+  false,
+);
+assert.equal(
+  isValidCommandReceiptLedger([current, older], { projectId: current.projectId, maxEntries: 1 }),
+  false,
+);

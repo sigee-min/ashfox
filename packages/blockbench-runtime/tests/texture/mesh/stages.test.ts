@@ -4,7 +4,7 @@ import type { PaintMeshFacePayload } from '@ashfox/blockbench-contracts/types/in
 import {
   normalizePaintMeshFaceRequest,
   rasterizeMeshFacePaint,
-  validateMeshPaintGeometry
+  validateMeshPaintGeometry,
 } from '../../../src/usecases/textureTools/mesh';
 
 const payload: PaintMeshFacePayload = {
@@ -16,8 +16,8 @@ const payload: PaintMeshFacePayload = {
     y: 0,
     width: 2,
     height: 2,
-    color: '#ff0000'
-  }
+    color: '#ff0000',
+  },
 };
 
 const normalized = normalizePaintMeshFaceRequest(payload);
@@ -28,11 +28,11 @@ assert.deepEqual(normalized.value, {
     meshId: 'mesh-wing',
     meshName: undefined,
     faceId: 'front',
-    scope: 'single_face'
+    scope: 'single_face',
   },
   coordSpace: 'face',
   mapping: 'stretch',
-  op: payload.op
+  op: payload.op,
 });
 
 const outside = validateMeshPaintGeometry(
@@ -40,7 +40,7 @@ const outside = validateMeshPaintGeometry(
   { op: 'set_pixel', x: 3, y: 3, color: '#ff0000' },
   [{ x1: 0, y1: 0, x2: 2, y2: 2 }],
   { x1: 0, y1: 0, x2: 2, y2: 2 },
-  { sourceWidth: 4, sourceHeight: 4 }
+  { sourceWidth: 4, sourceHeight: 4 },
 );
 assert.equal(outside.ok, false, 'geometry rejects ops outside selected UVs');
 
@@ -57,7 +57,7 @@ const raster = rasterizeMeshFacePaint({
   op: payload.op,
   coordSpace: 'face',
   mapping: 'stretch',
-  textureLabel: 'atlas'
+  textureLabel: 'atlas',
 });
 if (!raster.ok) throw new Error(raster.error.message);
 assert.equal(raster.ok, true);

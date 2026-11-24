@@ -4,7 +4,10 @@ export const resolveTextureSize = (
 ): { width?: number; height?: number } => {
   const pick = (value?: number): number | undefined =>
     typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined;
-  const candidates = [primary, ...fallbacks].filter(Boolean) as Array<{ width?: number; height?: number }>;
+  const candidates = [primary, ...fallbacks].filter(Boolean) as Array<{
+    width?: number;
+    height?: number;
+  }>;
   let width: number | undefined;
   let height: number | undefined;
   candidates.forEach((entry) => {
@@ -13,6 +16,3 @@ export const resolveTextureSize = (
   });
   return { width, height };
 };
-
-
-

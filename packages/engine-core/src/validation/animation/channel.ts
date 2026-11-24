@@ -1,25 +1,14 @@
 import { isFiniteNumber } from '../shared/value';
 import type { ClipValidationContext } from './context';
-import {
-  validateAnimationVector,
-  validateKeyframeEasing
-} from './value';
+import { validateAnimationVector, validateKeyframeEasing } from './value';
 
-const INTERPOLATIONS = new Set<string>([
-  'linear',
-  'step',
-  'catmullrom'
-]);
-const PROPERTIES = new Set<string>([
-  'position',
-  'rotation',
-  'scale'
-]);
+const INTERPOLATIONS = new Set<string>(['linear', 'step', 'catmullrom']);
+const PROPERTIES = new Set<string>(['position', 'rotation', 'scale']);
 
 const validateChannelTarget = (
   channel: ClipValidationContext['clip']['channels'][string],
   path: string,
-  context: ClipValidationContext
+  context: ClipValidationContext,
 ): void => {
   const { clip, document, add } = context;
   if (!document.scene.nodes[channel.targetNodeId]) {
@@ -29,7 +18,7 @@ const validateChannelTarget = (
       message: `Animation channel targets missing node "${channel.targetNodeId}".`,
       path: `${path}.targetNodeId`,
       entityIds: [channel.targetNodeId],
-      clipIds: [clip.id]
+      clipIds: [clip.id],
     });
   }
   if (!PROPERTIES.has(channel.property)) {
@@ -38,20 +27,19 @@ const validateChannelTarget = (
       severity: 'error',
       message: 'Animation channel property must be position, rotation, or scale.',
       path: `${path}.property`,
-      clipIds: [clip.id]
+      clipIds: [clip.id],
     });
   }
   if (
     channel.rotationSpace !== undefined &&
-    (channel.property !== 'rotation' ||
-      !['bone', 'entity'].includes(channel.rotationSpace))
+    (channel.property !== 'rotation' || !['bone', 'entity'].includes(channel.rotationSpace))
   ) {
     add({
       code: 'animation.invalid_value',
       severity: 'error',
       message: 'rotationSpace is valid only on rotation channels and must be bone or entity.',
       path: `${path}.rotationSpace`,
-      clipIds: [clip.id]
+      clipIds: [clip.id],
     });
   }
 };
@@ -59,7 +47,7 @@ const validateChannelTarget = (
 const validateChannelKeys = (
   channel: ClipValidationContext['clip']['channels'][string],
   path: string,
-  context: ClipValidationContext
+  context: ClipValidationContext,
 ): void => {
   const { clip, add, registerId } = context;
   if (channel.keys.length === 0) {
@@ -68,7 +56,7 @@ const validateChannelKeys = (
       severity: 'error',
       message: 'Animation transform channels require at least one keyframe.',
       path: `${path}.keys`,
-      clipIds: [clip.id]
+      clipIds: [clip.id],
     });
   }
   let previousTime = -Infinity;
@@ -77,20 +65,10 @@ const validateChannelKeys = (
     registerId(keyframe.id, keyPath);
     validateAnimationVector(keyframe.value, `${keyPath}.value`, clip.id, add);
     if (keyframe.preValue) {
-      validateAnimationVector(
-        keyframe.preValue,
-        `${keyPath}.preValue`,
-        clip.id,
-        add
-      );
+      validateAnimationVector(keyframe.preValue, `${keyPath}.preValue`, clip.id, add);
     }
     if (keyframe.postValue) {
-      validateAnimationVector(
-        keyframe.postValue,
-        `${keyPath}.postValue`,
-        clip.id,
-        add
-      );
+      validateAnimationVector(keyframe.postValue, `${keyPath}.postValue`, clip.id, add);
     }
     if (!INTERPOLATIONS.has(keyframe.interpolation)) {
       add({
@@ -98,16 +76,11 @@ const validateChannelKeys = (
         severity: 'error',
         message: 'Animation interpolation must be linear, step, or catmullrom.',
         path: `${keyPath}.interpolation`,
-        clipIds: [clip.id]
+        clipIds: [clip.id],
       });
     }
     if (keyframe.easing) {
-      validateKeyframeEasing(
-        keyframe.easing,
-        `${keyPath}.easing`,
-        clip.id,
-        add
-      );
+      validateKeyframeEasing(keyframe.easing, `${keyPath}.easing`, clip.id, add);
     }
     if (
       !isFiniteNumber(keyframe.timeSeconds) ||
@@ -119,7 +92,7 @@ const validateChannelKeys = (
         severity: 'error',
         message: 'Animation key time must be within the clip duration.',
         path: `${keyPath}.timeSeconds`,
-        clipIds: [clip.id]
+        clipIds: [clip.id],
       });
     }
     if (keyframe.timeSeconds <= previousTime) {
@@ -128,16 +101,14 @@ const validateChannelKeys = (
         severity: 'error',
         message: 'Animation keys must be strictly ordered by time.',
         path: `${keyPath}.timeSeconds`,
-        clipIds: [clip.id]
+        clipIds: [clip.id],
       });
     }
     previousTime = keyframe.timeSeconds;
   }
 };
 
-export const validateTransformChannels = (
-  context: ClipValidationContext
-): void => {
+export const validateTransformChannels = (context: ClipValidationContext): void => {
   const { clip, path, add, registerId } = context;
   for (const [channelKey, channel] of Object.entries(clip.channels)) {
     const channelPath = `${path}.channels.${channelKey}`;
@@ -148,7 +119,7 @@ export const validateTransformChannels = (
         severity: 'error',
         message: `Animation channel key "${channelKey}" does not match ID "${channel.id}".`,
         path: channelPath,
-        clipIds: [clip.id]
+        clipIds: [clip.id],
       });
     }
     validateChannelTarget(channel, channelPath, context);

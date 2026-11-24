@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { isJsonContentType, parsePostMessage, validateProtocolHeader } from '../../../../src/transport/mcp/routerPost';
+import {
+  isJsonContentType,
+  parsePostMessage,
+  validateProtocolHeader,
+} from '../../../../src/transport/mcp/routerPost';
 import { noopLog } from '../../../helpers';
 import { MCP_UNSUPPORTED_PROTOCOL } from '../../../../src/shared/messages';
 
@@ -19,7 +23,7 @@ for (const invalid of [
   { jsonrpc: '2.0', method: 'ping', id: true },
   { jsonrpc: '2.0', method: 'ping', id: {} },
   { jsonrpc: '2.0', method: 'ping', params: 'invalid' },
-  { jsonrpc: '2.0', method: 'ping', unexpected: true }
+  { jsonrpc: '2.0', method: 'ping', unexpected: true },
 ]) {
   const parsed = parsePostMessage(JSON.stringify(invalid), noopLog);
   assert.equal(parsed.ok, false);
@@ -50,7 +54,7 @@ for (const invalid of [
 {
   const parsed = parsePostMessage(
     JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', id: 42, params: {} }),
-    noopLog
+    noopLog,
   );
   assert.equal(parsed.ok, true);
   if (parsed.ok) {

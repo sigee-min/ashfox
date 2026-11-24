@@ -5,7 +5,7 @@ import { ALL_FACES } from '../../../../src/adapters/blockbench/geometry/uvUtils'
 import {
   ADAPTER_CUBE_APPLY_TEXTURE_UNAVAILABLE,
   TEXTURE_ASSIGN_NO_TARGETS,
-  TEXTURE_NOT_FOUND
+  TEXTURE_NOT_FOUND,
 } from '../../../../src/shared/messages';
 import { noopLog } from '../../../helpers';
 
@@ -15,7 +15,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -89,13 +89,13 @@ class FakeTexture {
     {
       Cube: undefined,
       Texture: FakeTexture,
-      Outliner: { root: [] }
+      Outliner: { root: [] },
     },
     () => {
       const err = adapter.assignTexture({ textureName: 'atlas' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
-    }
+    },
   );
 }
 
@@ -109,14 +109,14 @@ class FakeTexture {
     {
       Cube: FakeCube,
       Texture: FakeTexture,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.assignTexture({ textureName: 'missing' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, TEXTURE_NOT_FOUND('missing'));
-    }
+    },
   );
 }
 
@@ -131,14 +131,14 @@ class FakeTexture {
     {
       Cube: FakeCube,
       Texture: FakeTexture,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.assignTexture({ textureName: 'atlas', cubeNames: ['missing'] });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'invalid_payload');
       assert.equal(err?.message, TEXTURE_ASSIGN_NO_TARGETS);
-    }
+    },
   );
 }
 
@@ -150,7 +150,7 @@ class FakeTexture {
     name: 'body',
     ashfoxId: 'cube-1',
     from: [0, 0, 0] as [number, number, number],
-    to: [1, 1, 1] as [number, number, number]
+    to: [1, 1, 1] as [number, number, number],
   };
   const outliner = { root: [cube] as unknown[] };
   const adapter = new BlockbenchTextureAssignAdapter(noopLog);
@@ -158,14 +158,14 @@ class FakeTexture {
     {
       Cube: FakeCube,
       Texture: FakeTexture,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.assignTexture({ textureName: 'atlas' });
       assert.notEqual(err, null);
       assert.equal(err?.code, 'not_implemented');
       assert.equal(err?.message, ADAPTER_CUBE_APPLY_TEXTURE_UNAVAILABLE);
-    }
+    },
   );
 }
 
@@ -182,16 +182,16 @@ class FakeTexture {
     {
       Cube: FakeCube,
       Texture: FakeTexture,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.assignTexture({
         textureName: 'atlas',
         cubeIds: ['cube-1'],
-        faces: ['north', 'south']
+        faces: ['north', 'south'],
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(cube.mapAutoUVCalls, 1);
   assert.deepEqual(cube.setUVModeCalls, [false]);
@@ -215,18 +215,17 @@ class FakeTexture {
     {
       Cube: FakeCube,
       Texture: FakeTexture,
-      Outliner: outliner
+      Outliner: outliner,
     },
     () => {
       const err = adapter.assignTexture({
         textureName: 'atlas',
-        faces: []
+        faces: [],
       });
       assert.equal(err, null);
-    }
+    },
   );
   assert.deepEqual(cube.applyTextureCalls, [true]);
   assert.equal(cube.faces.east.texture, 'tex-uuid');
   assert.equal(cube.faces.down.texture, 'tex-uuid');
 }
-

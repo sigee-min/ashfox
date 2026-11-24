@@ -1,4 +1,9 @@
-import type { AutoUvAtlasPayload, AutoUvAtlasResult, Capabilities, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  AutoUvAtlasPayload,
+  AutoUvAtlasResult,
+  Capabilities,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { ProjectSession, SessionState } from '../session';
 import { EditorPort } from '../ports/editor';
 import { BoneService } from './model/BoneService';
@@ -34,7 +39,7 @@ export class ModelService {
       editor: deps.editor,
       getSnapshot: deps.getSnapshot,
       ensureActive: deps.ensureActive,
-      ensureRevisionMatch: deps.ensureRevisionMatch
+      ensureRevisionMatch: deps.ensureRevisionMatch,
     });
     this.cubeService = new CubeService({
       session: deps.session,
@@ -44,14 +49,14 @@ export class ModelService {
       ensureActive: deps.ensureActive,
       ensureRevisionMatch: deps.ensureRevisionMatch,
       autoUvAtlas: deps.autoUvAtlas,
-      runWithoutRevisionGuard: deps.runWithoutRevisionGuard
+      runWithoutRevisionGuard: deps.runWithoutRevisionGuard,
     });
     this.meshService = new MeshService({
       session: deps.session,
       editor: deps.editor,
       getSnapshot: deps.getSnapshot,
       ensureActive: deps.ensureActive,
-      ensureRevisionMatch: deps.ensureRevisionMatch
+      ensureRevisionMatch: deps.ensureRevisionMatch,
     });
   }
 
@@ -221,8 +226,3 @@ export class ModelService {
     return null;
   }
 }
-
-
-
-
-

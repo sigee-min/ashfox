@@ -10,9 +10,9 @@ const poseBoneSchema: JsonSchema = {
     rot: numberArray(3, 3),
     pos: numberArray(3, 3),
     scale: numberArray(3, 3),
-    interp: { type: 'string', enum: ['linear', 'step', 'catmullrom'] }
+    interp: { type: 'string', enum: ['linear', 'step', 'catmullrom'] },
   },
-  anyOf: [{ required: ['rot'] }, { required: ['pos'] }, { required: ['scale'] }]
+  anyOf: [{ required: ['rot'] }, { required: ['pos'] }, { required: ['scale'] }],
 };
 
 export const animationToolSchemas: Record<string, JsonSchema> = {
@@ -27,8 +27,8 @@ export const animationToolSchemas: Record<string, JsonSchema> = {
       loop: { type: 'boolean' },
       fps: { type: 'number' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   update_animation_clip: {
     type: 'object',
@@ -41,8 +41,8 @@ export const animationToolSchemas: Record<string, JsonSchema> = {
       loop: { type: 'boolean' },
       fps: { type: 'number' },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   delete_animation_clip: {
     type: 'object',
@@ -53,8 +53,8 @@ export const animationToolSchemas: Record<string, JsonSchema> = {
       ids: { type: 'array', minItems: 1, items: { type: 'string' } },
       names: { type: 'array', minItems: 1, items: { type: 'string' } },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   set_frame_pose: {
     type: 'object',
@@ -67,8 +67,8 @@ export const animationToolSchemas: Record<string, JsonSchema> = {
       bones: { type: 'array', minItems: 1, items: poseBoneSchema },
       interp: { type: 'string', enum: ['linear', 'step', 'catmullrom'] },
       ifRevision: revisionProp,
-      ...metaProps
-    }
+      ...metaProps,
+    },
   },
   set_trigger_keyframes: {
     type: 'object',
@@ -92,15 +92,14 @@ export const animationToolSchemas: Record<string, JsonSchema> = {
               anyOf: [
                 { type: 'string' },
                 { type: 'array', items: { type: 'string' } },
-                { type: 'object' }
-              ]
-            }
-          }
-        }
+                { type: 'object' },
+              ],
+            },
+          },
+        },
       },
       ifRevision: revisionProp,
-      ...metaProps
-    }
-  }
+      ...metaProps,
+    },
+  },
 };
-

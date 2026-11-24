@@ -21,25 +21,28 @@ export const keyframeTimeBucket = (time: number, policy?: AnimationTimePolicyInp
 
 type TimedKey = { time: number };
 
-type ChannelKey = TimedKey & { value: [number, number, number]; interp?: 'linear' | 'step' | 'catmullrom' };
+type ChannelKey = TimedKey & {
+  value: [number, number, number];
+  interp?: 'linear' | 'step' | 'catmullrom';
+};
 
 export const mergeChannelKeys = (
   existing: ChannelKey[] | undefined,
   incoming: ChannelKey[],
-  policy?: AnimationTimePolicyInput
+  policy?: AnimationTimePolicyInput,
 ): ChannelKey[] => {
   const resolved = resolvePolicy(policy);
   const merged = new Map<number, ChannelKey>();
   for (const key of existing ?? []) {
     merged.set(keyframeTimeBucket(key.time, resolved), {
       ...key,
-      time: normalizeKeyframeTimeWithPolicy(key.time, resolved)
+      time: normalizeKeyframeTimeWithPolicy(key.time, resolved),
     });
   }
   for (const key of incoming) {
     merged.set(keyframeTimeBucket(key.time, resolved), {
       ...key,
-      time: normalizeKeyframeTimeWithPolicy(key.time, resolved)
+      time: normalizeKeyframeTimeWithPolicy(key.time, resolved),
     });
   }
   return [...merged.values()].sort((a, b) => a.time - b.time);
@@ -64,7 +67,7 @@ const triggerKeySignature = (key: TriggerKey, policy: AnimationTimePolicy): stri
 export const mergeTriggerKeys = (
   existing: TriggerKey[] | undefined,
   incoming: TriggerKey[],
-  policy?: AnimationTimePolicyInput
+  policy?: AnimationTimePolicyInput,
 ): TriggerKey[] => {
   const resolved = resolvePolicy(policy);
   const merged = new Map<string, TriggerKey>();

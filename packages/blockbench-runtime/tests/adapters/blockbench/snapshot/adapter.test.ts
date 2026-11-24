@@ -26,7 +26,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     Animations: globals.Animations,
     Animation: globals.Animation,
     Format: globals.Format,
-    ModelFormat: globals.ModelFormat
+    ModelFormat: globals.ModelFormat,
   };
   globals.Blockbench = overrides.Blockbench;
   globals.Project = overrides.Project;
@@ -57,10 +57,10 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       Project: {
         name: 'dragon',
         uuid: 'project-id',
-        ashfoxUvPixelsPerBlock: 24
+        ashfoxUvPixelsPerBlock: 24,
       },
       Blockbench: {
-        hasUnsavedChanges: () => true
+        hasUnsavedChanges: () => true,
       },
       Format: { id: 'geckolib' },
       Outliner: {
@@ -76,11 +76,11 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
                 to: [4, 14, 7],
                 uv_offset: [0, 0],
                 visibility: true,
-                box_uv: true
-              }
-            ]
-          }
-        ]
+                box_uv: true,
+              },
+            ],
+          },
+        ],
       },
       Texture: {
         all: [
@@ -88,9 +88,9 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
             id: 'tex-1',
             name: 'minecraft_dragon',
             width: 64,
-            height: 64
-          }
-        ]
+            height: 64,
+          },
+        ],
       },
       Animations: [
         {
@@ -103,13 +103,13 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
             body: {
               keyframes: [
                 { channel: 'rotation', time: 0, data_points: [0, 0, 0] },
-                { channel: 'timeline', time: 1, data_point: 'tick' }
-              ]
-            }
-          }
-        }
+                { channel: 'timeline', time: 1, data_point: 'tick' },
+              ],
+            },
+          },
+        },
       ],
-      Animation: { selected: null, all: [] }
+      Animation: { selected: null, all: [] },
     },
     () => {
       const result = snapshot.readSnapshot();
@@ -127,7 +127,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       assert.equal(result?.animations[0].channels?.length, 1);
       assert.equal(result?.animations[0].triggers?.length, 1);
       assert.equal(result?.animationTimePolicy.timeEpsilon, 1e-9);
-    }
+    },
   );
 }
 
@@ -137,19 +137,19 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     {
       Project: {
         name: 'generic-rig',
-        id: 'generic-id'
+        id: 'generic-id',
       },
       Format: { id: 'free' },
       Outliner: { root: [] },
       Texture: { all: [] },
-      Animations: []
+      Animations: [],
     },
     () => {
       const result = snapshot.readSnapshot();
       assert.notEqual(result, null);
       assert.equal(result?.format, 'Generic Model');
       assert.equal(result?.formatId, 'free');
-    }
+    },
   );
 }
 
@@ -161,7 +161,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
         name: 'root-only',
         id: 'root-id',
         dirty: false,
-        ashfox: { uv_pixels_per_block: 32 }
+        ashfox: { uv_pixels_per_block: 32 },
       },
       Format: { id: 'minecraft_block' },
       Outliner: {
@@ -169,12 +169,12 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
           {
             name: 'cube_only',
             from: [0, 0, 0],
-            to: [1, 1, 1]
-          }
-        ]
+            to: [1, 1, 1],
+          },
+        ],
       },
       Texture: { all: [] },
-      Animations: []
+      Animations: [],
     },
     () => {
       const result = snapshot.readSnapshot();
@@ -183,7 +183,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       assert.equal(result?.cubes[0].bone, 'root');
       assert.equal(result?.uvPixelsPerBlock, 32);
       assert.equal(result?.dirty, false);
-    }
+    },
   );
 }
 
@@ -197,25 +197,25 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     error: (_msg: string, fields?: Record<string, unknown>) => {
       const text = typeof fields?.message === 'string' ? fields.message : 'unknown';
       messages.push(text);
-    }
+    },
   };
   const snapshot = new BlockbenchSnapshot(logger);
   const throwingOutliner = {};
   Object.defineProperty(throwingOutliner, 'root', {
     get: () => {
       throw new Error('root broken');
-    }
+    },
   });
   withGlobals(
     {
       Project: { name: 'broken' },
-      Outliner: throwingOutliner
+      Outliner: throwingOutliner,
     },
     () => {
       const result = snapshot.readSnapshot();
       assert.equal(result, null);
       assert.equal(messages.length, 1);
       assert.equal(messages[0].includes('root broken'), true);
-    }
+    },
   );
 }

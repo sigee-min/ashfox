@@ -44,7 +44,10 @@ export const compileGamePack = async (
         let data = read(file.path);
         if (pack.audio === 'ogg') {
           if (variant.playback.kind === 'loop')
-            throw new BuildFailure('sound.loop.codec', `${source.id}/${variant.id}: loops require WAV delivery`);
+            throw new BuildFailure(
+              'sound.loop.codec',
+              `${source.id}/${variant.id}: loops require WAV delivery`,
+            );
           if (!encoder)
             throw new BuildFailure('pack.encoder', 'OGG game assets require a Vorbis encoder');
           let ogg = encoded.get(file.path);

@@ -22,7 +22,7 @@ import {
   VALIDATION_UV_OUT_OF_BOUNDS,
   VALIDATION_UV_OVERLAP,
   VALIDATION_UV_SCALE_MISMATCH,
-  VALIDATION_UV_SCALE_MISMATCH_SUMMARY
+  VALIDATION_UV_SCALE_MISMATCH_SUMMARY,
 } from '../messages/validation';
 
 export const buildValidationMessages = () => ({
@@ -49,5 +49,5 @@ export const buildValidationMessages = () => ({
   faceUvOutOfBounds: VALIDATION_FACE_UV_OUT_OF_BOUNDS,
   uvOverlap: VALIDATION_UV_OVERLAP,
   uvScaleMismatch: VALIDATION_UV_SCALE_MISMATCH,
-  uvScaleMismatchSummary: VALIDATION_UV_SCALE_MISMATCH_SUMMARY
+  uvScaleMismatchSummary: VALIDATION_UV_SCALE_MISMATCH_SUMMARY,
 });

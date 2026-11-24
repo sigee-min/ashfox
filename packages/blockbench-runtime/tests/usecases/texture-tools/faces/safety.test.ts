@@ -11,8 +11,10 @@ import { runPaintFaces } from '../../../../src/usecases/textureTools/texturePain
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
-  formats: [{ format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } }],
-  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  formats: [
+    { format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } },
+  ],
+  limits: { maxCubes: 256, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 const createOpaque = (width: number, height: number): Uint8ClampedArray => {
@@ -44,12 +46,12 @@ const createContext = () => {
             name: 'body_main',
             faces: [
               { face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] },
-              { face: 'south' as const, uv: [8, 0, 16, 8] as [number, number, number, number] }
-            ]
-          }
-        ]
-      }
-    ]
+              { face: 'south' as const, uv: [8, 0, 16, 8] as [number, number, number, number] },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   const editor = {
@@ -59,11 +61,11 @@ const createContext = () => {
         name: 'minecraft_dragon',
         width,
         height,
-        image
-      }
+        image,
+      },
     }),
     getProjectTextureResolution: () => ({ width, height }),
-    getTextureUsage: () => ({ result: usage })
+    getTextureUsage: () => ({ result: usage }),
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
@@ -72,9 +74,9 @@ const createContext = () => {
       result: {
         image,
         width: renderWidth,
-        height: renderHeight
-      }
-    })
+        height: renderHeight,
+      },
+    }),
   };
 
   const ctx: TextureToolContext = {
@@ -89,7 +91,7 @@ const createContext = () => {
       cubes: [{ id: 'cube1', name: 'body_main', from: [-4, 6, -7], to: [4, 14, 7], bone: 'root' }],
       textures: [{ id: 'tex1', name: 'minecraft_dragon', width, height }],
       animations: [],
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -107,10 +109,10 @@ const createContext = () => {
         uvUsageId: '',
         usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 2, unresolvedCount: 0 },
         warningCodes: [],
-        textureUsage: usage
-      }
+        textureUsage: usage,
+      },
     }),
-    runWithoutRevisionGuard: (fn) => fn()
+    runWithoutRevisionGuard: (fn) => fn(),
   };
 
   return { ctx, getUpdateCalls: () => updateCalls };
@@ -123,7 +125,7 @@ const run = (ctx: TextureToolContext, payload: PaintFacesPayload) => runPaintFac
   const res = run(ctx, {
     textureName: 'minecraft_dragon',
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 8, height: 8, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 8, height: 8, color: '#3f6f3b' },
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -143,7 +145,7 @@ const run = (ctx: TextureToolContext, payload: PaintFacesPayload) => runPaintFac
   const res = run(ctx, {
     textureName: 'minecraft_dragon',
     target: { cubeName: 'body_main' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 16, height: 8, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 16, height: 8, color: '#3f6f3b' },
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -166,7 +168,7 @@ const run = (ctx: TextureToolContext, payload: PaintFacesPayload) => runPaintFac
     width: 16,
     height: 16,
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 4, height: 4, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 4, height: 4, color: '#3f6f3b' },
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -192,27 +194,27 @@ const assertBlocked = (payload: PaintFacesPayload, expectedText: string) => {
 assertBlocked(
   {
     textureName: 'minecraft_dragon',
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' },
   } as unknown as PaintFacesPayload,
-  'target object'
+  'target object',
 );
 
 assertBlocked(
   {
     textureName: 'minecraft_dragon',
     target: { face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' },
   },
-  'cubeId or cubeName'
+  'cubeId or cubeName',
 );
 
 assertBlocked(
   {
     textureName: 'minecraft_dragon',
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1 } as unknown as PaintFacesPayload['op']
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1 } as unknown as PaintFacesPayload['op'],
   },
-  'invalid texture op'
+  'invalid texture op',
 );
 
 assertBlocked(
@@ -220,9 +222,9 @@ assertBlocked(
     textureName: 'minecraft_dragon',
     coordSpace: 'texture',
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' },
   },
-  'requires width and height'
+  'requires width and height',
 );
 
 assertBlocked(
@@ -232,16 +234,16 @@ assertBlocked(
     width: 8,
     height: 8,
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' },
   },
-  'match texture size'
+  'match texture size',
 );
 
 assertBlocked(
   {
     textureName: 'minecraft_dragon',
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 100, y: 100, width: 2, height: 2, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 100, y: 100, width: 2, height: 2, color: '#3f6f3b' },
   },
-  'outside the face source bounds'
+  'outside the face source bounds',
 );

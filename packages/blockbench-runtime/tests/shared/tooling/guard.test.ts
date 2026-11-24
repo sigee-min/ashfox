@@ -15,71 +15,89 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
 // NextAction arguments share the finite-JSON traversal budget and retain $ref semantics.
 {
   const shared = { material: 'stone' };
-  assert.equal(isNextActionContract({
-    type: 'call_tool',
-    tool: 'paint_faces',
-    arguments: { first: shared, second: shared },
-    reason: 'Reuse the same selection.'
-  }), true);
+  assert.equal(
+    isNextActionContract({
+      type: 'call_tool',
+      tool: 'paint_faces',
+      arguments: { first: shared, second: shared },
+      reason: 'Reuse the same selection.',
+    }),
+    true,
+  );
 
   const cyclic: Record<string, unknown> = {};
   cyclic.self = cyclic;
-  assert.equal(isNextActionContract({
-    type: 'call_tool',
-    tool: 'paint_faces',
-    arguments: { cyclic },
-    reason: 'Rejected cycle.'
-  }), false);
+  assert.equal(
+    isNextActionContract({
+      type: 'call_tool',
+      tool: 'paint_faces',
+      arguments: { cyclic },
+      reason: 'Rejected cycle.',
+    }),
+    false,
+  );
 
   let dag: Record<string, unknown> = { leaf: true };
   for (let depth = 0; depth < 16; depth += 1) {
     dag = { left: dag, right: dag };
   }
-  assert.equal(isNextActionContract({
-    type: 'call_tool',
-    tool: 'paint_faces',
-    arguments: { dag },
-    reason: 'Rejected traversal bomb.'
-  }), false);
+  assert.equal(
+    isNextActionContract({
+      type: 'call_tool',
+      tool: 'paint_faces',
+      arguments: { dag },
+      reason: 'Rejected traversal bomb.',
+    }),
+    false,
+  );
 
-  assert.equal(isNextActionContract({
-    type: 'call_tool',
-    tool: 'paint_faces',
-    arguments: {
-      toolValue: {
-        $ref: {
-          kind: 'tool',
-          tool: 'get_project_state',
-          pointer: '/data/id',
-          note: 'Use the observed project.'
-        }
+  assert.equal(
+    isNextActionContract({
+      type: 'call_tool',
+      tool: 'paint_faces',
+      arguments: {
+        toolValue: {
+          $ref: {
+            kind: 'tool',
+            tool: 'get_project_state',
+            pointer: '/data/id',
+            note: 'Use the observed project.',
+          },
+        },
+        userValue: { $ref: { kind: 'user', hint: 'Choose a texture.' } },
       },
-      userValue: { $ref: { kind: 'user', hint: 'Choose a texture.' } }
-    },
-    reason: 'Resolve declared references.'
-  }), true);
-  assert.equal(isNextActionContract({
-    type: 'call_tool',
-    tool: 'paint_faces',
-    arguments: {
-      invalid: {
-        $ref: { kind: 'user', hint: 'Choose a texture.' },
-        extra: true
-      }
-    },
-    reason: 'Reject ambiguous references.'
-  }), false);
+      reason: 'Resolve declared references.',
+    }),
+    true,
+  );
+  assert.equal(
+    isNextActionContract({
+      type: 'call_tool',
+      tool: 'paint_faces',
+      arguments: {
+        invalid: {
+          $ref: { kind: 'user', hint: 'Choose a texture.' },
+          extra: true,
+        },
+      },
+      reason: 'Reject ambiguous references.',
+    }),
+    false,
+  );
 
-  const throwingArguments = new Proxy({}, {
-    getPrototypeOf: () => {
-      throw new Error('hostile reflection');
-    }
-  });
+  const throwingArguments = new Proxy(
+    {},
+    {
+      getPrototypeOf: () => {
+        throw new Error('hostile reflection');
+      },
+    },
+  );
   const hostileAction = {
     type: 'call_tool',
     tool: 'paint_faces',
     arguments: throwingArguments,
-    reason: 'Reject hostile arguments.'
+    reason: 'Reject hostile arguments.',
   };
   assert.doesNotThrow(() => isNextActionContract(hostileAction));
   assert.equal(isNextActionContract(hostileAction), false);
@@ -101,8 +119,8 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
     error: {
       code: 'invented',
       message: 'not declared',
-      details: { value: Number.NaN }
-    }
+      details: { value: Number.NaN },
+    },
   });
   assert.equal(res.ok, false);
   if (!res.ok) {
@@ -115,11 +133,11 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
 {
   Object.defineProperty(Object.prototype, 'code', {
     value: 'unknown',
-    configurable: true
+    configurable: true,
   });
   Object.defineProperty(Object.prototype, 'message', {
     value: 'inherited',
-    configurable: true
+    configurable: true,
   });
   try {
     const res = normalizeToolResponseShape({ ok: false, error: {} });
@@ -140,12 +158,12 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
     data: {},
     content: [
       { type: 'text', text: 'ok' },
-      { type: 'text', text: 'bad', extra: true }
+      { type: 'text', text: 'bad', extra: true },
     ],
     nextActions: [
       { type: 'noop', reason: 'done' },
-      { type: 'noop', reason: '', extra: true }
-    ]
+      { type: 'noop', reason: '', extra: true },
+    ],
   });
   assert.equal(res.ok, true);
   if (res.ok) {
@@ -164,20 +182,17 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
     type: 'call_tool',
     tool: 'paint_faces',
     arguments: { dag },
-    reason: 'Reject aggregate traversal amplification.'
+    reason: 'Reject aggregate traversal amplification.',
   };
   assert.equal(isNextActionContract(action), true);
   const response = normalizeToolResponseShape({
     ok: true,
     data: {},
-    nextActions: [action, action, action, action]
+    nextActions: [action, action, action, action],
   });
   assert.equal(response.ok, false);
   if (!response.ok) {
-    assert.equal(
-      response.error.details?.reason,
-      'malformed_tool_response'
-    );
+    assert.equal(response.error.details?.reason, 'malformed_tool_response');
   }
 }
 
@@ -189,24 +204,27 @@ import { normalizeToolResponseShape } from '../../../src/shared/tooling/toolResp
     ok: true,
     data: {},
     content: [{ type: 'text', text: 'ok' }],
-    structuredContent: cyclic
+    structuredContent: cyclic,
   });
   assert.equal(cyclicResponse.ok, false);
   assert.doesNotThrow(() => JSON.stringify(cyclicResponse));
 
   let descriptorReads = 0;
-  const hostileError = new Proxy({ code: 'unknown', message: 'boom' }, {
-    getOwnPropertyDescriptor: (target, key) => {
-      descriptorReads += 1;
-      if (descriptorReads > 2) throw new Error('second reflection pass');
-      return Reflect.getOwnPropertyDescriptor(target, key);
-    }
-  });
+  const hostileError = new Proxy(
+    { code: 'unknown', message: 'boom' },
+    {
+      getOwnPropertyDescriptor: (target, key) => {
+        descriptorReads += 1;
+        if (descriptorReads > 2) throw new Error('second reflection pass');
+        return Reflect.getOwnPropertyDescriptor(target, key);
+      },
+    },
+  );
   let hostileResponse: ReturnType<typeof normalizeToolResponseShape> | undefined;
   assert.doesNotThrow(() => {
     hostileResponse = normalizeToolResponseShape({
       ok: false,
-      error: hostileError
+      error: hostileError,
     });
   });
   assert.equal(hostileResponse?.ok, false);

@@ -11,5 +11,3 @@ export const writeGlobalValue = (key: string, value: unknown): void => {
 export const deleteGlobalValue = (key: string): void => {
   delete readGlobalStore()[key];
 };
-
-

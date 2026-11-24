@@ -24,7 +24,7 @@ export const runSetProjectTextureResolution = (
   log: Logger,
   width: number,
   height: number,
-  modifyUv?: boolean
+  modifyUv?: boolean,
 ): ToolError | null => {
   try {
     const globals = readGlobals();
@@ -54,11 +54,17 @@ export const runSetProjectTextureResolution = (
   } catch (err) {
     const message = errorMessage(err, 'project texture resolution update failed');
     log.error('project texture resolution update error', { message });
-    return toolError('unknown', message, { reason: 'adapter_exception', context: 'project_texture_resolution' });
+    return toolError('unknown', message, {
+      reason: 'adapter_exception',
+      context: 'project_texture_resolution',
+    });
   }
 };
 
-export const runSetProjectUvPixelsPerBlock = (log: Logger, pixelsPerBlock: number): ToolError | null => {
+export const runSetProjectUvPixelsPerBlock = (
+  log: Logger,
+  pixelsPerBlock: number,
+): ToolError | null => {
   try {
     const globals = readGlobals();
     const project = globals.Project ?? globals.Blockbench?.project ?? null;
@@ -71,7 +77,7 @@ export const runSetProjectUvPixelsPerBlock = (log: Logger, pixelsPerBlock: numbe
     const ashfox =
       ashfoxRaw && typeof ashfoxRaw === 'object'
         ? (ashfoxRaw as Record<string, unknown>)
-        : ({}) as Record<string, unknown>;
+        : ({} as Record<string, unknown>);
     ashfox.uvPixelsPerBlock = pixelsPerBlock;
     ashfox.uv_pixels_per_block = pixelsPerBlock;
     projectRecord.ashfox = ashfox;
@@ -80,8 +86,9 @@ export const runSetProjectUvPixelsPerBlock = (log: Logger, pixelsPerBlock: numbe
   } catch (err) {
     const message = errorMessage(err, 'project uv pixels per block update failed');
     log.error('project uv pixels per block update error', { message });
-    return toolError('unknown', message, { reason: 'adapter_exception', context: 'project_uv_pixels_per_block' });
+    return toolError('unknown', message, {
+      reason: 'adapter_exception',
+      context: 'project_uv_pixels_per_block',
+    });
   }
 };
-
-

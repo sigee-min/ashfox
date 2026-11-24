@@ -1,14 +1,22 @@
 import type { JsonRpcMessage, JsonRpcResponse } from './types';
-import { DEFAULT_PROTOCOL_VERSION, IMPLICIT_SESSION_METHODS, jsonRpcError, randomId } from './routerUtils';
+import {
+  DEFAULT_PROTOCOL_VERSION,
+  IMPLICIT_SESSION_METHODS,
+  jsonRpcError,
+  randomId,
+} from './routerUtils';
 import {
   MCP_INITIALIZE_REQUIRES_ID,
   MCP_PROTOCOL_VERSION_MISMATCH,
   MCP_SESSION_CAPACITY_REACHED,
-  MCP_SESSION_ID_REQUIRED
+  MCP_SESSION_ID_REQUIRED,
 } from '../../shared/messages';
 import type { McpSession, SessionStore } from './session';
 
-export const getSessionFromHeaders = (sessions: SessionStore, headers: Record<string, string>): McpSession | null => {
+export const getSessionFromHeaders = (
+  sessions: SessionStore,
+  headers: Record<string, string>,
+): McpSession | null => {
   const id = headers['mcp-session-id'];
   if (!id) return null;
   return sessions.get(id);
@@ -19,7 +27,7 @@ export const resolveSession = (
   message: JsonRpcMessage,
   id: JsonRpcResponse['id'],
   protocolHeader: string | undefined,
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ):
   | { ok: true; session: McpSession; newSessionId?: string }
   | { ok: false; status: number; error: JsonRpcResponse } => {
@@ -28,7 +36,7 @@ export const resolveSession = (
       return {
         ok: false,
         status: 400,
-        error: jsonRpcError(null, -32600, MCP_INITIALIZE_REQUIRES_ID)
+        error: jsonRpcError(null, -32600, MCP_INITIALIZE_REQUIRES_ID),
       };
     }
     const newId = randomId();
@@ -37,7 +45,7 @@ export const resolveSession = (
       return {
         ok: false,
         status: 429,
-        error: jsonRpcError(id, -32000, MCP_SESSION_CAPACITY_REACHED)
+        error: jsonRpcError(id, -32000, MCP_SESSION_CAPACITY_REACHED),
       };
     }
     return { ok: true, session, newSessionId: newId };
@@ -51,7 +59,7 @@ export const resolveSession = (
         return {
           ok: false,
           status: 429,
-          error: jsonRpcError(id, -32000, MCP_SESSION_CAPACITY_REACHED)
+          error: jsonRpcError(id, -32000, MCP_SESSION_CAPACITY_REACHED),
         };
       }
       implicit.initialized = true;
@@ -60,14 +68,14 @@ export const resolveSession = (
     return {
       ok: false,
       status: 400,
-      error: jsonRpcError(id, -32000, MCP_SESSION_ID_REQUIRED)
+      error: jsonRpcError(id, -32000, MCP_SESSION_ID_REQUIRED),
     };
   }
   if (protocolHeader && session.protocolVersion !== protocolHeader) {
     return {
       ok: false,
       status: 400,
-      error: jsonRpcError(id, -32600, MCP_PROTOCOL_VERSION_MISMATCH)
+      error: jsonRpcError(id, -32600, MCP_PROTOCOL_VERSION_MISMATCH),
     };
   }
   return { ok: true, session };

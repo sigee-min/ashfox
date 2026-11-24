@@ -2,7 +2,7 @@ import { SseConnection } from './types';
 import {
   MCP_MAX_SESSIONS,
   MCP_MAX_SSE_CONNECTIONS,
-  MCP_MAX_SSE_CONNECTIONS_PER_SESSION
+  MCP_MAX_SSE_CONNECTIONS_PER_SESSION,
 } from '../limits';
 
 export type McpSession = {
@@ -29,16 +29,13 @@ export class SessionStore {
   constructor(
     maxSessions = MCP_MAX_SESSIONS,
     maxSseConnections = MCP_MAX_SSE_CONNECTIONS,
-    maxSseConnectionsPerSession = MCP_MAX_SSE_CONNECTIONS_PER_SESSION
+    maxSseConnectionsPerSession = MCP_MAX_SSE_CONNECTIONS_PER_SESSION,
   ) {
     this.maxSessions = normalizePositiveLimit(maxSessions, MCP_MAX_SESSIONS);
-    this.maxSseConnections = normalizePositiveLimit(
-      maxSseConnections,
-      MCP_MAX_SSE_CONNECTIONS
-    );
+    this.maxSseConnections = normalizePositiveLimit(maxSseConnections, MCP_MAX_SSE_CONNECTIONS);
     this.maxSseConnectionsPerSession = normalizePositiveLimit(
       maxSseConnectionsPerSession,
-      MCP_MAX_SSE_CONNECTIONS_PER_SESSION
+      MCP_MAX_SSE_CONNECTIONS_PER_SESSION,
     );
   }
 
@@ -64,7 +61,7 @@ export class SessionStore {
       createdAt: now,
       lastSeenAt: now,
       sseConnections: new Set(),
-      sseReservations: 0
+      sseReservations: 0,
     };
     this.sessions.set(id, session);
     return session;
@@ -108,10 +105,8 @@ export class SessionStore {
   reserveSse(session: McpSession): boolean {
     if (!this.isActive(session)) return false;
     if (
-      session.sseConnections.size + session.sseReservations >=
-        this.maxSseConnectionsPerSession ||
-      this.totalSseConnections + this.totalSseReservations >=
-        this.maxSseConnections
+      session.sseConnections.size + session.sseReservations >= this.maxSseConnectionsPerSession ||
+      this.totalSseConnections + this.totalSseReservations >= this.maxSseConnections
     ) {
       return false;
     }
@@ -176,14 +171,8 @@ export class SessionStore {
     for (const conn of session.sseConnections) {
       conn.close();
     }
-    this.totalSseConnections = Math.max(
-      0,
-      this.totalSseConnections - session.sseConnections.size
-    );
-    this.totalSseReservations = Math.max(
-      0,
-      this.totalSseReservations - session.sseReservations
-    );
+    this.totalSseConnections = Math.max(0, this.totalSseConnections - session.sseConnections.size);
+    this.totalSseReservations = Math.max(0, this.totalSseReservations - session.sseReservations);
     session.sseConnections.clear();
     session.sseReservations = 0;
     if (this.sessions.get(session.id) === session) {

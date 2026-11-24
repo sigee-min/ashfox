@@ -8,13 +8,17 @@ type Vec3 = [number, number, number];
 
 export const collectMeshFindings = (
   state: Snapshot,
-  messages: ValidationMessages
+  messages: ValidationMessages,
 ): ValidationFinding[] => {
   const findings: ValidationFinding[] = [];
   const meshes = state.meshes ?? [];
 
   findDuplicates(meshes.map((mesh) => mesh.name)).forEach((name) => {
-    findings.push({ code: 'duplicate_mesh', message: messages.duplicateMesh(name), severity: 'error' });
+    findings.push({
+      code: 'duplicate_mesh',
+      message: messages.duplicateMesh(name),
+      severity: 'error',
+    });
   });
 
   meshes.forEach((mesh) => {
@@ -25,7 +29,7 @@ export const collectMeshFindings = (
         findings.push({
           code: 'mesh_vertex_invalid',
           message: messages.meshVertexInvalid(mesh.name, id || '(empty)'),
-          severity: 'error'
+          severity: 'error',
         });
         return;
       }
@@ -33,7 +37,7 @@ export const collectMeshFindings = (
         findings.push({
           code: 'mesh_vertex_duplicate',
           message: messages.meshVertexDuplicate(mesh.name, id),
-          severity: 'error'
+          severity: 'error',
         });
         return;
       }
@@ -46,7 +50,7 @@ export const collectMeshFindings = (
         findings.push({
           code: 'mesh_face_vertices_invalid',
           message: messages.meshFaceVerticesInvalid(mesh.name, faceId),
-          severity: 'error'
+          severity: 'error',
         });
         return;
       }
@@ -56,7 +60,7 @@ export const collectMeshFindings = (
         findings.push({
           code: 'mesh_face_vertices_invalid',
           message: messages.meshFaceVerticesInvalid(mesh.name, faceId),
-          severity: 'error'
+          severity: 'error',
         });
       }
 
@@ -67,7 +71,7 @@ export const collectMeshFindings = (
           findings.push({
             code: 'mesh_face_vertex_unknown',
             message: messages.meshFaceVertexUnknown(mesh.name, faceId, vertexId),
-            severity: 'error'
+            severity: 'error',
           });
           return;
         }
@@ -78,7 +82,7 @@ export const collectMeshFindings = (
         findings.push({
           code: 'mesh_face_degenerate',
           message: messages.meshFaceDegenerate(mesh.name, faceId),
-          severity: 'error'
+          severity: 'error',
         });
       }
 
@@ -87,14 +91,14 @@ export const collectMeshFindings = (
           findings.push({
             code: 'mesh_face_uv_vertex_unknown',
             message: messages.meshFaceUvVertexUnknown(mesh.name, faceId, uv.vertexId),
-            severity: 'error'
+            severity: 'error',
           });
         }
         if (!Number.isFinite(uv.uv[0]) || !Number.isFinite(uv.uv[1])) {
           findings.push({
             code: 'mesh_face_uv_invalid',
             message: messages.meshFaceUvInvalid(mesh.name, faceId, uv.vertexId),
-            severity: 'error'
+            severity: 'error',
           });
         }
       });
@@ -129,5 +133,5 @@ const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b
 const crossProduct = (a: Vec3, b: Vec3): Vec3 => [
   a[1] * b[2] - a[2] * b[1],
   a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0]
+  a[0] * b[1] - a[1] * b[0],
 ];

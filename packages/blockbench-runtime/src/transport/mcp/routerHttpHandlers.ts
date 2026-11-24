@@ -5,7 +5,7 @@ import { supportsSse } from './routerUtils';
 import {
   MCP_ACCEPT_SSE_REQUIRED,
   MCP_SESSION_ID_REQUIRED,
-  MCP_TOO_MANY_SSE
+  MCP_TOO_MANY_SSE,
 } from '../../shared/messages';
 
 type RouterHttpContext = {
@@ -17,16 +17,20 @@ type RouterHttpContext = {
 
 export const handleSseGet = (ctx: RouterHttpContext, req: HttpRequest): ResponsePlan => {
   if (!supportsSse(req.headers.accept)) {
-    return ctx.jsonResponse(406, { error: { code: 'not_acceptable', message: MCP_ACCEPT_SSE_REQUIRED } });
+    return ctx.jsonResponse(406, {
+      error: { code: 'not_acceptable', message: MCP_ACCEPT_SSE_REQUIRED },
+    });
   }
   const session = ctx.getSessionFromHeaders(req.headers);
   if (!session) {
-    return ctx.jsonResponse(400, { error: { code: 'invalid_state', message: MCP_SESSION_ID_REQUIRED } });
+    return ctx.jsonResponse(400, {
+      error: { code: 'invalid_state', message: MCP_SESSION_ID_REQUIRED },
+    });
   }
 
   if (!ctx.sessions.reserveSse(session)) {
     return ctx.jsonResponse(429, {
-      error: { code: 'too_many_requests', message: MCP_TOO_MANY_SSE }
+      error: { code: 'too_many_requests', message: MCP_TOO_MANY_SSE },
     });
   }
   ctx.sessions.touch(session);
@@ -61,14 +65,16 @@ export const handleSseGet = (ctx: RouterHttpContext, req: HttpRequest): Response
       }
       return () => ctx.sessions.detachSse(session, conn);
     },
-    onCancel: releaseReservation
+    onCancel: releaseReservation,
   };
 };
 
 export const handleSessionDelete = (ctx: RouterHttpContext, req: HttpRequest): ResponsePlan => {
   const session = ctx.getSessionFromHeaders(req.headers);
   if (!session) {
-    return ctx.jsonResponse(400, { error: { code: 'invalid_state', message: MCP_SESSION_ID_REQUIRED } });
+    return ctx.jsonResponse(400, {
+      error: { code: 'invalid_state', message: MCP_SESSION_ID_REQUIRED },
+    });
   }
   ctx.sessions.close(session);
   return ctx.jsonResponse(200, { ok: true });

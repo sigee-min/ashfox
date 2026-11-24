@@ -1,4 +1,11 @@
-import type { ProjectDiff, ProjectState, ProjectStateDetail, ToolError, ToolResponse, WithState } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ProjectDiff,
+  ProjectState,
+  ProjectStateDetail,
+  ToolError,
+  ToolResponse,
+  WithState,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { buildResponseMeta } from './responseMeta';
 
 type ResultLike<T> = { ok: true; value: T } | { ok: false; error: ToolError };
@@ -6,8 +13,13 @@ type ResultLike<T> = { ok: true; value: T } | { ok: false; error: ToolError };
 export type StateAttachmentDeps = {
   includeStateByDefault: () => boolean;
   includeDiffByDefault: () => boolean;
-  getProjectState: (payload: { detail: ProjectStateDetail }) => ResultLike<{ project: ProjectState }>;
-  getProjectDiff: (payload: { sinceRevision: string; detail?: ProjectStateDetail }) => ResultLike<{ diff: ProjectDiff }>;
+  getProjectState: (payload: {
+    detail: ProjectStateDetail;
+  }) => ResultLike<{ project: ProjectState }>;
+  getProjectDiff: (payload: {
+    sinceRevision: string;
+    detail?: ProjectStateDetail;
+  }) => ResultLike<{ diff: ProjectDiff }>;
 };
 
 type StatePayload = {
@@ -20,7 +32,7 @@ type StatePayload = {
 export const attachStateToResponse = <TPayload extends StatePayload, TResult>(
   deps: StateAttachmentDeps,
   payload: TPayload,
-  response: ToolResponse<TResult>
+  response: ToolResponse<TResult>,
 ): ToolResponse<WithState<TResult>> => {
   const shouldIncludeState = payload?.includeState ?? deps.includeStateByDefault();
   const shouldIncludeDiff = payload?.includeDiff ?? deps.includeDiffByDefault();
@@ -28,15 +40,15 @@ export const attachStateToResponse = <TPayload extends StatePayload, TResult>(
   const meta = buildResponseMeta(
     {
       getProjectState: deps.getProjectState,
-      getProjectDiff: deps.getProjectDiff
+      getProjectDiff: deps.getProjectDiff,
     },
     {
       includeState: shouldIncludeState,
       includeDiff: shouldIncludeDiff,
       diffDetail: payload?.diffDetail ?? 'summary',
       ifRevision: payload?.ifRevision,
-      includeRevision: shouldIncludeRevision
-    }
+      includeRevision: shouldIncludeRevision,
+    },
   );
   const project = meta.state ?? null;
   const revision = meta.revision;
@@ -50,8 +62,8 @@ export const attachStateToResponse = <TPayload extends StatePayload, TResult>(
         ...(response.data as Record<string, unknown>),
         ...(shouldIncludeRevision && revision ? { revision } : {}),
         ...(shouldIncludeState ? { state: project } : {}),
-        ...(shouldIncludeDiff ? { diff: diffValue ?? null } : {})
-      } as WithState<TResult>
+        ...(shouldIncludeDiff ? { diff: diffValue ?? null } : {}),
+      } as WithState<TResult>,
     };
   }
   const details: Record<string, unknown> = { ...(response.error.details ?? {}) };
@@ -68,10 +80,6 @@ export const attachStateToResponse = <TPayload extends StatePayload, TResult>(
     ok: false,
     ...(response.content ? { content: response.content } : {}),
     ...(response.structuredContent ? { structuredContent: response.structuredContent } : {}),
-    error: { ...response.error, details }
+    error: { ...response.error, details },
   };
 };
-
-
-
-

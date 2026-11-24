@@ -9,7 +9,7 @@ import {
   removeOutlinerNode,
   renameEntity,
   setVisibility,
-  withUndo
+  withUndo,
 } from '../blockbenchUtils';
 import { getGroupApi } from '../api';
 import { findGroup, findGroupRef } from '../outlinerLookup';
@@ -34,7 +34,7 @@ export class BlockbenchBoneAdapter {
           name: params.name,
           origin: params.pivot,
           rotation: params.rotation,
-          scale: params.scale
+          scale: params.scale,
         }).init?.();
         if (group) {
           setVisibility(group, params.visibility);
@@ -63,7 +63,11 @@ export class BlockbenchBoneAdapter {
       if (params.id) {
         target.ashfoxId = params.id;
       }
-      const parent = params.parentRoot ? null : params.parent ? findGroup(params.parent) : undefined;
+      const parent = params.parentRoot
+        ? null
+        : params.parent
+          ? findGroup(params.parent)
+          : undefined;
       if (params.parent && !parent) {
         return { code: 'invalid_payload', message: MODEL_PARENT_BONE_NOT_FOUND(params.parent) };
       }
@@ -79,7 +83,11 @@ export class BlockbenchBoneAdapter {
           moveOutlinerNode(target, parent ?? null, outliner, this.log, 'bone');
         }
       });
-      this.log.info('bone updated', { name: params.name, newName: params.newName, parent: params.parent });
+      this.log.info('bone updated', {
+        name: params.name,
+        newName: params.newName,
+        parent: params.parent,
+      });
       return null;
     });
   }
@@ -102,4 +110,3 @@ export class BlockbenchBoneAdapter {
     });
   }
 }
-

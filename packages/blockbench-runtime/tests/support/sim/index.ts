@@ -17,15 +17,24 @@ import type {
   UpdateAnimationCommand,
   DeleteAnimationCommand,
   KeyframeCommand,
-  TriggerKeyframeCommand
+  TriggerKeyframeCommand,
 } from '../../../src/ports/editor';
 import type { FormatDescriptor } from '../../../src/ports/formats';
 import type { SnapshotPort } from '../../../src/ports/snapshot';
-import type { FormatKind, RenderPreviewResult, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  FormatKind,
+  RenderPreviewResult,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { CubeInstance, TextureInstance } from '../../../src/types/blockbench';
 import { buildTextureUsageResult } from '../../../src/adapters/blockbench/texture/usage';
 import { DEFAULT_TEXTURE_SIZE } from './constants';
-import type { BlockbenchSimOptions, BlockbenchSimProject, BlockbenchSimState, SimCounters } from './types';
+import type {
+  BlockbenchSimOptions,
+  BlockbenchSimProject,
+  BlockbenchSimState,
+  SimCounters,
+} from './types';
 import { buildSnapshot } from './snapshot';
 import { createUvOps } from './uv';
 import { createTextureOps } from './textures';
@@ -52,9 +61,12 @@ export class BlockbenchSim {
       name: null,
       format: null,
       formatId: null,
-      textureResolution: options.project?.textureResolution ?? { width: DEFAULT_TEXTURE_SIZE, height: DEFAULT_TEXTURE_SIZE },
+      textureResolution: options.project?.textureResolution ?? {
+        width: DEFAULT_TEXTURE_SIZE,
+        height: DEFAULT_TEXTURE_SIZE,
+      },
       uvPixelsPerBlock: options.project?.uvPixelsPerBlock,
-      ...(options.project ?? {})
+      ...(options.project ?? {}),
     };
     this.state = {
       project,
@@ -63,27 +75,27 @@ export class BlockbenchSim {
       bones: options.bones ?? [],
       animations: options.animations ?? [],
       writes: [],
-      preview: options.preview
+      preview: options.preview,
     };
     this.formatCaps = options.formatCaps ?? null;
     this.resolveFormatCaps = options.resolveFormatCaps;
     this.uvOps = createUvOps({
       state: this.state,
-      syncTextures: () => this.textureOps?.syncTexturesToProjectResolution()
+      syncTextures: () => this.textureOps?.syncTexturesToProjectResolution(),
     });
     this.textureOps = createTextureOps({
       state: this.state,
       counters: this.counters,
       isSingleTexture: () => this.isSingleTexture(),
       isPerTextureUvSize: () => this.isPerTextureUvSize(),
-      applyProjectTextureResolution: this.uvOps.applyProjectTextureResolution
+      applyProjectTextureResolution: this.uvOps.applyProjectTextureResolution,
     });
     this.cubeOps = createCubeOps({
       state: this.state,
       counters: this.counters,
       findTexture: this.textureOps.findTexture,
       applyAutoUv: this.uvOps.applyAutoUv,
-      enforceManualUvMode: this.uvOps.enforceManualUvMode
+      enforceManualUvMode: this.uvOps.enforceManualUvMode,
     });
     this.boneOps = createBoneOps({ state: this.state });
     this.animationOps = createAnimationOps({ state: this.state });
@@ -99,7 +111,7 @@ export class BlockbenchSim {
           format: kind,
           formatId,
           textureResolution: { width: DEFAULT_TEXTURE_SIZE, height: DEFAULT_TEXTURE_SIZE },
-          uvPixelsPerBlock: undefined
+          uvPixelsPerBlock: undefined,
         };
         this.resetCollections();
         this.updateFormatCaps(formatId, kind);
@@ -112,7 +124,7 @@ export class BlockbenchSim {
           format: null,
           formatId: null,
           textureResolution: null,
-          uvPixelsPerBlock: undefined
+          uvPixelsPerBlock: undefined,
         };
         this.resetCollections();
         this.formatCaps = null;
@@ -132,19 +144,21 @@ export class BlockbenchSim {
       deleteCube: (params: DeleteCubeCommand) => this.cubeOps.deleteCube(params),
       addMesh: () => ({
         code: 'not_implemented',
-        message: 'Mesh simulation is not implemented.'
+        message: 'Mesh simulation is not implemented.',
       }),
       updateMesh: () => ({
         code: 'not_implemented',
-        message: 'Mesh simulation is not implemented.'
+        message: 'Mesh simulation is not implemented.',
       }),
       deleteMesh: () => ({
         code: 'not_implemented',
-        message: 'Mesh simulation is not implemented.'
+        message: 'Mesh simulation is not implemented.',
       }),
       createAnimation: (params: AnimationCommand) => this.animationOps.createAnimation(params),
-      updateAnimation: (params: UpdateAnimationCommand) => this.animationOps.updateAnimation(params),
-      deleteAnimation: (params: DeleteAnimationCommand) => this.animationOps.deleteAnimation(params),
+      updateAnimation: (params: UpdateAnimationCommand) =>
+        this.animationOps.updateAnimation(params),
+      deleteAnimation: (params: DeleteAnimationCommand) =>
+        this.animationOps.deleteAnimation(params),
       setKeyframes: (_params: KeyframeCommand) => null,
       setTriggerKeyframes: (_params: TriggerKeyframeCommand) => null,
       renderPreview: (_params) => this.renderPreview(),
@@ -161,13 +175,13 @@ export class BlockbenchSim {
         return null;
       },
       getTextureUsage: (params) =>
-        buildTextureUsageResult(params, { cubes: this.state.cubes, textures: this.state.textures })
+        buildTextureUsageResult(params, { cubes: this.state.cubes, textures: this.state.textures }),
     };
   }
 
   get snapshotPort(): SnapshotPort {
     return {
-      readSnapshot: () => buildSnapshot(this.state)
+      readSnapshot: () => buildSnapshot(this.state),
     };
   }
 
@@ -180,7 +194,19 @@ export class BlockbenchSim {
     cubes?: Array<
       Pick<
         CubeInstance,
-        'id' | 'name' | 'from' | 'to' | 'origin' | 'rotation' | 'uv' | 'uv_offset' | 'inflate' | 'mirror' | 'visibility' | 'box_uv' | 'faces'
+        | 'id'
+        | 'name'
+        | 'from'
+        | 'to'
+        | 'origin'
+        | 'rotation'
+        | 'uv'
+        | 'uv_offset'
+        | 'inflate'
+        | 'mirror'
+        | 'visibility'
+        | 'box_uv'
+        | 'faces'
       >
     >;
     textures?: Array<Pick<TextureInstance, 'id' | 'name' | 'width' | 'height' | 'path'>>;
@@ -191,7 +217,7 @@ export class BlockbenchSim {
       name: data.name ?? this.state.project.name,
       formatId: data.formatId ?? this.state.project.formatId,
       textureResolution: data.textureResolution ?? this.state.project.textureResolution,
-      uvPixelsPerBlock: data.uvPixelsPerBlock ?? this.state.project.uvPixelsPerBlock
+      uvPixelsPerBlock: data.uvPixelsPerBlock ?? this.state.project.uvPixelsPerBlock,
     };
     this.updateFormatCaps(this.state.project.formatId ?? null, this.state.project.format ?? null);
     if (data.textures) {
@@ -223,9 +249,9 @@ export class BlockbenchSim {
               width: DEFAULT_TEXTURE_SIZE,
               height: DEFAULT_TEXTURE_SIZE,
               dataUri: 'data:image/png;base64,',
-              byteLength: 0
-            }
-          }
+              byteLength: 0,
+            },
+          },
         };
   }
 

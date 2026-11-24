@@ -40,7 +40,10 @@ export class BlockbenchUvAdapter {
           }
         });
       });
-      this.log.info('face UV updated', { cube: target?.name ?? params.cubeName, faces: faceEntries.length });
+      this.log.info('face UV updated', {
+        cube: target?.name ?? params.cubeName,
+        faces: faceEntries.length,
+      });
       return null;
     });
   }

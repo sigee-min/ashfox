@@ -10,7 +10,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     key,
     exists: Object.prototype.hasOwnProperty.call(globals, key),
     value: globals[key],
-    next: value
+    next: value,
   }));
   for (const entry of previous) {
     if (entry.next === undefined) delete globals[entry.key];
@@ -34,7 +34,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     updateCube: (params: unknown) => unknown;
   };
   adapter.cubes = {
-    updateCube: () => null
+    updateCube: () => null,
   };
   withGlobals(
     {
@@ -42,15 +42,15 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({ name: 'body_main', to: [4, 14, 7] });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(previewRenderCalls, 1);
 }
@@ -63,7 +63,7 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
     updateCube: (params: unknown) => unknown;
   };
   adapter.cubes = {
-    updateCube: () => ({ code: 'invalid_payload', message: 'bad request' })
+    updateCube: () => ({ code: 'invalid_payload', message: 'bad request' }),
   };
   withGlobals(
     {
@@ -71,15 +71,15 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.updateCube({ name: 'body_main', to: [4, 14, 7] });
       assert.notEqual(err, null);
-    }
+    },
   );
   assert.equal(previewRenderCalls, 0);
 }
@@ -102,16 +102,16 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.createAnimation({ name: 'idle', length: 1, loop: true, fps: 24 });
       assert.equal(err, null);
-    }
+    },
   );
   assert.equal(previewRenderCalls, 1);
 }
@@ -127,16 +127,16 @@ const withGlobals = (overrides: Record<string, unknown>, fn: () => void) => {
         selected: {
           render: () => {
             previewRenderCalls += 1;
-          }
-        }
+          },
+        },
       },
       Undo: undefined,
-      Blockbench: undefined
+      Blockbench: undefined,
     },
     () => {
       const err = adapter.createAnimation({ name: 'idle', length: 1, loop: true, fps: 24 });
       assert.notEqual(err, null);
-    }
+    },
   );
   assert.equal(previewRenderCalls, 0);
 }

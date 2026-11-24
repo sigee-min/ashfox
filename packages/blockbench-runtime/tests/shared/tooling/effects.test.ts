@@ -4,7 +4,7 @@ import { TOOL_NAMES } from '../../../src/shared/toolConstants';
 import {
   TOOL_VIEWPORT_EFFECTS,
   VIEWPORT_EFFECTS,
-  getViewportEffectForTool
+  getViewportEffectForTool,
 } from '../../../src/shared/tooling/viewportEffects';
 
 {

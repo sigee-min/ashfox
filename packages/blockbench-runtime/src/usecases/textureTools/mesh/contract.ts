@@ -2,8 +2,7 @@ import type { TextureOpLike } from '../../../domain/textureOps';
 import type { TextureToolContext } from '../context';
 import type { Rect } from '../paintFacesPixels';
 
-export type SnapshotTexture =
-  ReturnType<TextureToolContext['getSnapshot']>['textures'][number];
+export type SnapshotTexture = ReturnType<TextureToolContext['getSnapshot']>['textures'][number];
 export type SnapshotMesh = NonNullable<
   ReturnType<TextureToolContext['getSnapshot']>['meshes']
 >[number];

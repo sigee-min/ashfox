@@ -1,9 +1,5 @@
 import { createHash } from 'node:crypto';
-import {
-  readdir,
-  readFile,
-  stat
-} from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,26 +10,17 @@ const landingMessages = siteMessages(defaultLocale);
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = path.resolve(siteRoot, '../..');
 const outputRoot = path.join(siteRoot, 'dist');
-const showcaseRoot = path.join(
-  repositoryRoot,
-  'assets',
-  'showcase',
-  'shared-creatures'
-);
+const showcaseRoot = path.join(repositoryRoot, 'assets', 'showcase', 'shared-creatures');
 const showcaseManifestPath = path.join(showcaseRoot, 'showcase.json');
-const canonicalWorkspaceRelativePath =
-  'assets/workspaces/shared-creatures.ashfoxworkspace';
-const canonicalWorkspacePath = path.join(
-  repositoryRoot,
-  canonicalWorkspaceRelativePath
-);
+const canonicalWorkspaceRelativePath = 'assets/workspaces/shared-creatures.ashfoxworkspace';
+const canonicalWorkspacePath = path.join(repositoryRoot, canonicalWorkspaceRelativePath);
 const griffinGlbRelativePath = 'examples/griffin.glb';
 const griffinGlbSourcePath = path.join(
   repositoryRoot,
   'assets',
   'exports',
   'griffin',
-  'griffin.glb'
+  'griffin.glb',
 );
 
 const walk = async (directory) => {
@@ -42,7 +29,7 @@ const walk = async (directory) => {
     entries.map(async (entry) => {
       const entryPath = path.join(directory, entry.name);
       return entry.isDirectory() ? walk(entryPath) : [entryPath];
-    })
+    }),
   );
   return nested.flat();
 };
@@ -55,16 +42,12 @@ const exists = async (target) => {
   }
 };
 
-const digestBytes = (bytes) =>
-  `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const digestBytes = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
-const attribute = (tag, name) =>
-  tag.match(new RegExp(`\\s${name}="([^"]*)"`, 'u'))?.[1] ?? null;
+const attribute = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`, 'u'))?.[1] ?? null;
 
 const failures = [];
-const htmlFiles = (await walk(outputRoot)).filter((file) =>
-  file.endsWith('.html')
-);
+const htmlFiles = (await walk(outputRoot)).filter((file) => file.endsWith('.html'));
 const indexedCanonicalUrls = [];
 const retiredAuthoredContractTerms = [
   /\bminecraft-model\b/iu,
@@ -134,13 +117,13 @@ const retiredAuthoredStatementSyntax = [
   /(^|\n)[ \t]*(?:pixel|rect)\s*\(/u,
   /\b(?:direction|cluster)\s*=(?!=)/iu,
   /(^|\n)[ \t]*(?:shadow|base|light)\s*=\s*#[0-9a-f]{6}\s*;/iu,
-  /(^|\n)[ \t]*(?:annotate|assert)\b/iu
+  /(^|\n)[ \t]*(?:annotate|assert)\b/iu,
 ];
 const retiredCaptureModeTerms = [
   /\b(?:createResultPng|createAnimatedGif|renderAnimatedGif|resultCaptureFile)\b/u,
   /\bkind\s*[:=]\s*['"](?:result|animation|history)['"]/iu,
   /\b(?:result|animation|history)[ _-]+capture\b/iu,
-  /\bcapture[ _-]+(?:result|animation|history)\b/iu
+  /\bcapture[ _-]+(?:result|animation|history)\b/iu,
 ];
 
 const retiredContractSourceScopes = [
@@ -151,25 +134,30 @@ const retiredContractSourceScopes = [
   path.join(repositoryRoot, 'packages/internal-contracts/src'),
   path.join(repositoryRoot, 'docs'),
   path.join(repositoryRoot, 'examples'),
-  path.join(repositoryRoot, 'skills/ashfox')
+  path.join(repositoryRoot, 'skills/ashfox'),
 ];
 // Release history records removed contracts; only current guidance is checked.
 const retiredContractFiles = [
   path.join(repositoryRoot, 'README.md'),
   path.join(repositoryRoot, 'CONTRIBUTING.md'),
   path.join(repositoryRoot, 'development-manifest.json'),
-  path.join(repositoryRoot, 'development-manifest.schema.json')
+  path.join(repositoryRoot, 'development-manifest.schema.json'),
 ];
 const retiredSourceFiles = [
-  ...(await Promise.all(retiredContractSourceScopes.map(async (scope) =>
-    (await walk(scope)).filter((file) =>
-      /\.(?:ashfox|json|md|mjs|js|ts|tsx)$/u.test(file))
-  ))).flat(),
-  ...retiredContractFiles
+  ...(
+    await Promise.all(
+      retiredContractSourceScopes.map(async (scope) =>
+        (await walk(scope)).filter((file) => /\.(?:ashfox|json|md|mjs|js|ts|tsx)$/u.test(file)),
+      ),
+    )
+  ).flat(),
+  ...retiredContractFiles,
 ];
 // Model retirement rules do not define the sprite or sound property grammar.
-const isOtherAssetGrammar = source => /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound)\b/u.test(source.trim()) ||
-  (/^ashfox-model 1\s+module\b/u.test(source.trim()) && /\bexport\s+(?:mask|material|stamp)\b/u.test(source));
+const isOtherAssetGrammar = (source) =>
+  /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound)\b/u.test(source.trim()) ||
+  (/^ashfox-model 1\s+module\b/u.test(source.trim()) &&
+    /\bexport\s+(?:mask|material|stamp)\b/u.test(source));
 for (const file of retiredSourceFiles) {
   const source = await readFile(file, 'utf8');
   for (const term of retiredAuthoredContractTerms) {
@@ -186,9 +174,11 @@ for (const file of retiredSourceFiles) {
   // authored/documentation text so ordinary TypeScript/JavaScript `class`,
   // `extends`, and similar language constructs do not become false positives.
   if (/\.(?:ashfox|md|html|json)$/u.test(file)) {
-    const modelStatements = isOtherAssetGrammar(source) ? '' : source.replace(
-      /```(?:text|ashfox)?\n(ashfox-model 1[\s\S]*?)```/gu,
-      (block, body) => isOtherAssetGrammar(body) ? '' : block);
+    const modelStatements = isOtherAssetGrammar(source)
+      ? ''
+      : source.replace(/```(?:text|ashfox)?\n(ashfox-model 1[\s\S]*?)```/gu, (block, body) =>
+          isOtherAssetGrammar(body) ? '' : block,
+        );
     for (const term of retiredAuthoredStatementSyntax) {
       if (term.test(modelStatements)) {
         failures.push(`${file}: retired authored statement syntax remains in source`);
@@ -209,17 +199,10 @@ for (const file of htmlFiles) {
       failures.push(`${file}: retired capture mode term is published`);
     }
   }
-  const ids = new Set(
-    [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1])
-  );
-  const hrefs = [...html.matchAll(/\shref="([^"]+)"/g)]
-    .map((match) => match[1]);
+  const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
+  const hrefs = [...html.matchAll(/\shref="([^"]+)"/g)].map((match) => match[1]);
   for (const href of hrefs) {
-    if (
-      /^(?:https?:|mailto:)/.test(href) ||
-      href === '/' ||
-      href.startsWith('/?')
-    ) {
+    if (/^(?:https?:|mailto:)/.test(href) || href === '/' || href.startsWith('/?')) {
       continue;
     }
     if (href.startsWith('#')) {
@@ -244,8 +227,7 @@ for (const file of htmlFiles) {
       }
     }
   }
-  const sources = [...html.matchAll(/\ssrc="([^"]+)"/g)]
-    .map((match) => match[1]);
+  const sources = [...html.matchAll(/\ssrc="([^"]+)"/g)].map((match) => match[1]);
   for (const source of sources) {
     if (/^(?:https?:|data:)/.test(source)) continue;
     const pathname = source.split(/[?#]/)[0];
@@ -268,7 +250,7 @@ for (const file of htmlFiles) {
     '<meta property="og:url"',
     '<meta property="og:image"',
     '<meta name="twitter:card"',
-    '<link rel="canonical"'
+    '<link rel="canonical"',
   ];
   const isNotFoundPage = path.basename(file) === '404.html';
   for (const metadata of requiredMetadata) {
@@ -316,50 +298,68 @@ if (await exists(sitemapPath)) {
 }
 
 const landingHtml = await readFile(path.join(outputRoot, 'index.html'), 'utf8');
-const showcaseManifest = JSON.parse(
-  await readFile(showcaseManifestPath, 'utf8')
-);
-const expectedShowcaseIdentities = [
-  'workbench/griffin',
-  'creatures/fox',
-  'creatures/goblin'
-];
-const manifestIdentities = showcaseManifest.entries?.map(
-  (entry) => `${entry.packageName}/${entry.entryName}`
-) ?? [];
+const showcaseManifest = JSON.parse(await readFile(showcaseManifestPath, 'utf8'));
+const expectedShowcaseIdentities = ['workbench/griffin', 'creatures/fox', 'creatures/goblin'];
+const manifestIdentities =
+  showcaseManifest.entries?.map((entry) => `${entry.packageName}/${entry.entryName}`) ?? [];
 if (
   showcaseManifest.format !== 'ashfox-showcase' ||
   showcaseManifest.version !== 1 ||
   showcaseManifest.workspace?.path !== canonicalWorkspaceRelativePath ||
   manifestIdentities.join('|') !== expectedShowcaseIdentities.join('|')
 ) {
-  failures.push(
-    'showcase manifest must describe the canonical Griffin/Fox/Goblin replay set'
-  );
+  failures.push('showcase manifest must describe the canonical Griffin/Fox/Goblin replay set');
 }
 
-for (const required of ['data-live-model', 'data-model-motion="wing_display"', 'data-item-image', 'data-landing-audio', 'data-source-code', 'id="quick-start"']) {
+for (const required of [
+  'data-live-model',
+  'data-model-motion="wing_display"',
+  'data-item-image',
+  'data-landing-audio',
+  'data-source-code',
+  'id="quick-start"',
+]) {
   if (!landingHtml.includes(required)) failures.push(`Landing is missing ${required}`);
 }
-for (const [pattern, extension] of [[/<script defer src="(\/assets\/hero-[a-f0-9]{12}\.js)"/, 'js'], [/data-model-src="(\/assets\/griffin-[a-f0-9]{12}\.glb)"/, 'glb']]) {
+for (const [pattern, extension] of [
+  [/<script defer src="(\/assets\/hero-[a-f0-9]{12}\.js)"/, 'js'],
+  [/data-model-src="(\/assets\/griffin-[a-f0-9]{12}\.glb)"/, 'glb'],
+]) {
   const match = landingHtml.match(pattern);
-  if (!match || !(await exists(path.join(outputRoot, match[1])))) failures.push(`Missing content-hashed hero ${extension}`);
+  if (!match || !(await exists(path.join(outputRoot, match[1]))))
+    failures.push(`Missing content-hashed hero ${extension}`);
   else {
-    const digest = createHash('sha256').update(await readFile(path.join(outputRoot, match[1]))).digest('hex').slice(0, 12);
-    if (!match[1].endsWith(`-${digest}.${extension}`)) failures.push(`Stale hero ${extension} fingerprint`);
+    const digest = createHash('sha256')
+      .update(await readFile(path.join(outputRoot, match[1])))
+      .digest('hex')
+      .slice(0, 12);
+    if (!match[1].endsWith(`-${digest}.${extension}`))
+      failures.push(`Stale hero ${extension} fingerprint`);
   }
 }
-if (landingHtml.includes('src="/media/landing/hero.js"')) failures.push('Viewer must not reuse the previously cached script URL');
-if (/data-character-player|data-workspace-download|data-showroom-data/u.test(landingHtml)) failures.push('Retired showroom is still published');
-if (/<audio[^>]*autoplay/u.test(landingHtml)) failures.push('Landing sound must require an explicit play action');
-for (const name of ['griffin.glb', 'sword.png', 'amethyst.png', 'bird-base.wav', 'bird-alternate.wav']) {
-  if (!(await exists(path.join(outputRoot, 'media/landing', name)))) failures.push(`Missing landing asset: ${name}`);
+if (landingHtml.includes('src="/media/landing/hero.js"'))
+  failures.push('Viewer must not reuse the previously cached script URL');
+if (/data-character-player|data-workspace-download|data-showroom-data/u.test(landingHtml))
+  failures.push('Retired showroom is still published');
+if (/<audio[^>]*autoplay/u.test(landingHtml))
+  failures.push('Landing sound must require an explicit play action');
+for (const name of [
+  'griffin.glb',
+  'sword.png',
+  'amethyst.png',
+  'bird-base.wav',
+  'bird-alternate.wav',
+]) {
+  if (!(await exists(path.join(outputRoot, 'media/landing', name))))
+    failures.push(`Missing landing asset: ${name}`);
 }
 const heroModel = await readFile(path.join(outputRoot, 'media/landing/griffin.glb'));
-if (heroModel.subarray(0, 4).toString('ascii') !== 'glTF') failures.push('Live model must be a real GLB');
+if (heroModel.subarray(0, 4).toString('ascii') !== 'glTF')
+  failures.push('Live model must be a real GLB');
 const heroJson = JSON.parse(heroModel.subarray(20, 20 + heroModel.readUInt32LE(12)).toString());
 for (const name of ['look_around', 'wing_display', 'greeting']) {
-  if (!heroJson.animations?.some(clip => clip.name === name)) failures.push(`Missing live motion: ${name}`);
+  if (!heroJson.animations?.some((clip) => clip.name === name))
+    failures.push(`Missing live motion: ${name}`);
 }
 if (heroJson.extensionsRequired?.length) failures.push('Landing GLB must use portable encoding');
 
@@ -377,16 +377,22 @@ if (!(await exists(publishedGriffinGlbPath))) {
     failures.push('published Griffin GLB must be byte-identical and current');
   }
 }
-const publishedWorkspaceFiles = outputFiles.filter((file) =>
-  file.endsWith('.ashfoxworkspace') && file.startsWith(path.join(outputRoot, 'assets/workspaces'))
+const publishedWorkspaceFiles = outputFiles.filter(
+  (file) =>
+    file.endsWith('.ashfoxworkspace') &&
+    file.startsWith(path.join(outputRoot, 'assets/workspaces')),
 );
 if (publishedWorkspaceFiles.length) failures.push('Internal model snapshots must not be published');
-const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public')))
-  .filter((file) => file.endsWith('.ashfoxworkspace'));
+const committedPublicWorkspaces = (await walk(path.join(siteRoot, 'public'))).filter((file) =>
+  file.endsWith('.ashfoxworkspace'),
+);
 if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
-if (!landingHtml.includes('href="/media/landing/griffin.glb"') || !landingHtml.includes('href="/examples/griffin/workbench/main.ashfox"')) {
+if (
+  !landingHtml.includes('href="/media/landing/griffin.glb"') ||
+  !landingHtml.includes('href="/examples/griffin/workbench/main.ashfox"')
+) {
   failures.push('Landing must offer the actual model and example source');
 }
 
@@ -399,7 +405,7 @@ for (const requiredReadmeReference of [
   'assets/exports/griffin/griffin.glb',
   'examples/shared-creatures/',
   'https://ashfox.io/#examples',
-  'https://ashfox.io/docs/guides/cli/'
+  'https://ashfox.io/docs/guides/cli/',
 ]) {
   if (!rootReadme.includes(requiredReadmeReference)) {
     failures.push(`README showcase reference is missing: ${requiredReadmeReference}`);
@@ -411,20 +417,15 @@ if (!rootReadme.includes(landingMessages.provenance)) {
 for (const readmeReplay of [
   'griffin-build-replay.gif',
   'fox-build-replay.gif',
-  'goblin-build-replay.gif'
+  'goblin-build-replay.gif',
 ]) {
-  if (!(await exists(path.join(
-    repositoryRoot,
-    'assets/showcase/shared-creatures',
-    readmeReplay
-  )))) {
+  if (
+    !(await exists(path.join(repositoryRoot, 'assets/showcase/shared-creatures', readmeReplay)))
+  ) {
     failures.push(`README replay target is missing: ${readmeReplay}`);
   }
 }
-if (!(await exists(path.join(
-  repositoryRoot,
-  'assets/exports/griffin/griffin.glb'
-)))) {
+if (!(await exists(path.join(repositoryRoot, 'assets/exports/griffin/griffin.glb')))) {
   failures.push('README Griffin GLB target is missing');
 }
 
@@ -433,31 +434,37 @@ const agentInstructionControlCount = (
 ).length;
 if (agentInstructionControlCount !== 1) {
   failures.push(
-    `landing has ${agentInstructionControlCount} agent instruction controls, expected 1`
+    `landing has ${agentInstructionControlCount} agent instruction controls, expected 1`,
   );
 }
-const instructionButtons = landingHtml.match(
-  /<button(?=[^>]*\sdata-copy-agent-instruction(?:\s|>))[^>]*>/gu
-) ?? [];
-if (instructionButtons.some((button) =>
-  attribute(button, 'data-instruction') !== landingMessages.instruction
-)) {
+const instructionButtons =
+  landingHtml.match(/<button(?=[^>]*\sdata-copy-agent-instruction(?:\s|>))[^>]*>/gu) ?? [];
+if (
+  instructionButtons.some(
+    (button) => attribute(button, 'data-instruction') !== landingMessages.instruction,
+  )
+) {
   failures.push('every setup button must copy the current agent instruction');
 }
-if (!landingHtml.includes('id="quick-start"') ||
-    !landingHtml.includes('class="hero-start"')) {
+if (!landingHtml.includes('id="quick-start"') || !landingHtml.includes('class="hero-start"')) {
   failures.push('landing must provide a reachable source authoring setup');
 }
-for (const required of ['Assets<br><span>as Code.</span>', 'Built for voxel games.', 'id="workflow"',
-  'id="frontier"', '/docs/guides/assets-as-code/', landingMessages.provenance]) {
-  if (!landingHtml.includes(required)) failures.push(`Assets as Code landing is missing ${required}`);
+for (const required of [
+  'Assets<br><span>as Code.</span>',
+  'Built for voxel games.',
+  'id="workflow"',
+  'id="frontier"',
+  '/docs/guides/assets-as-code/',
+  landingMessages.provenance,
+]) {
+  if (!landingHtml.includes(required))
+    failures.push(`Assets as Code landing is missing ${required}`);
 }
 for (const entry of ['griffin', 'fox', 'goblin']) {
-  if (!landingHtml.includes(`/examples/${entry}.glb`)) failures.push(`Advanced example ${entry} has no output`);
+  if (!landingHtml.includes(`/examples/${entry}.glb`))
+    failures.push(`Advanced example ${entry} has no output`);
 }
-const siteScriptSource = landingHtml.match(
-  /<script type="module" src="([^"]+)"/
-)?.[1];
+const siteScriptSource = landingHtml.match(/<script type="module" src="([^"]+)"/)?.[1];
 if (!siteScriptSource) {
   failures.push('landing module script is missing');
 } else {

@@ -21,7 +21,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
 
   const textures: TextureStat[] = [
     { id: 'tex1', name: 'atlas', width: 16, height: 16 },
-    { id: 'tex2', name: 'mask', width: 8, height: 8 }
+    { id: 'tex2', name: 'mask', width: 8, height: 8 },
   ];
   const imageA = createMockImage('data:image/png;base64,AAAA');
   const imageB = createMockImage('data:image/png;base64,BBBB');
@@ -30,44 +30,55 @@ const createServiceSetup = (options: SetupOptions = {}) => {
     name: 'atlas',
     width: 16,
     height: 16,
-    contentHash: hashCanvasImage(imageA) ?? undefined
+    contentHash: hashCanvasImage(imageA) ?? undefined,
   });
   session.addTexture({
     id: 'tex2',
     name: 'mask',
     width: 8,
     height: 8,
-    contentHash: hashCanvasImage(imageB) ?? undefined
+    contentHash: hashCanvasImage(imageB) ?? undefined,
   });
 
   const editor: EditorPort = {
     ...createEditorStub({ textures }),
     importTexture: (params) => {
       if (options.editorImportError) return options.editorImportError;
-      textures.push({ id: params.id ?? null, name: params.name, width: params.width ?? 16, height: params.height ?? 16 });
+      textures.push({
+        id: params.id ?? null,
+        name: params.name,
+        width: params.width ?? 16,
+        height: params.height ?? 16,
+      });
       return null;
     },
     updateTexture: (params) => {
       if (options.editorUpdateError) return options.editorUpdateError;
-      const idx = textures.findIndex((entry) => (params.id && entry.id === params.id) || (params.name && entry.name === params.name));
+      const idx = textures.findIndex(
+        (entry) =>
+          (params.id && entry.id === params.id) || (params.name && entry.name === params.name),
+      );
       if (idx >= 0) {
         textures[idx] = {
           ...textures[idx],
           id: params.id ?? textures[idx].id,
           name: params.newName ?? textures[idx].name,
           width: params.width ?? textures[idx].width,
-          height: params.height ?? textures[idx].height
+          height: params.height ?? textures[idx].height,
         };
       }
       return null;
     },
     deleteTexture: (params) => {
       if (options.editorDeleteError) return options.editorDeleteError;
-      const idx = textures.findIndex((entry) => (params.id && entry.id === params.id) || (params.name && entry.name === params.name));
+      const idx = textures.findIndex(
+        (entry) =>
+          (params.id && entry.id === params.id) || (params.name && entry.name === params.name),
+      );
       if (idx >= 0) textures.splice(idx, 1);
       return null;
     },
-    listTextures: () => textures
+    listTextures: () => textures,
   };
 
   const service = new TextureWriteService({
@@ -75,7 +86,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
     editor,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => options.ensureActiveError ?? null,
-    ensureRevisionMatch: () => options.ensureRevisionError ?? null
+    ensureRevisionMatch: () => options.ensureRevisionError ?? null,
   });
 
   return { service, session, imageA, imageB };
@@ -115,7 +126,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
     image,
     width: 32,
     height: 16,
-    namespace: 'minecraft'
+    namespace: 'minecraft',
   });
   assert.equal(res.ok, true);
   const snapshot = session.snapshot();
@@ -153,7 +164,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
 // updateTexture should propagate editor errors.
 {
   const { service, imageB } = createServiceSetup({
-    editorUpdateError: { code: 'unknown', message: 'editor failed' }
+    editorUpdateError: { code: 'unknown', message: 'editor failed' },
   });
   const res = service.updateTexture({ name: 'atlas', image: imageB });
   assert.equal(res.ok, false);
@@ -182,13 +193,16 @@ const createServiceSetup = (options: SetupOptions = {}) => {
   const res = service.deleteTexture({ name: 'mask' });
   assert.equal(res.ok, true);
   const snapshot = session.snapshot();
-  assert.equal(snapshot.textures.some((texture) => texture.name === 'mask'), false);
+  assert.equal(
+    snapshot.textures.some((texture) => texture.name === 'mask'),
+    false,
+  );
 }
 
 // deleteTexture should propagate editor failures.
 {
   const { service } = createServiceSetup({
-    editorDeleteError: { code: 'unknown', message: 'delete failed' }
+    editorDeleteError: { code: 'unknown', message: 'delete failed' },
   });
   const res = service.deleteTexture({ name: 'atlas' });
   assert.equal(res.ok, false);

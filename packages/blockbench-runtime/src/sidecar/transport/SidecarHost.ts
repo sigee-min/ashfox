@@ -1,14 +1,26 @@
-import { Dispatcher, ToolName, ToolPayloadMap, ToolResponse } from '@ashfox/blockbench-contracts/types/internal';
+import {
+  Dispatcher,
+  ToolName,
+  ToolPayloadMap,
+  ToolResponse,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { errorMessage, Logger } from '../../logging';
 import {
   PROTOCOL_VERSION,
   SidecarMessage,
   SidecarRequestMessage,
   SidecarResponseMessage,
-  normalizeSidecarMessage
+  normalizeSidecarMessage,
 } from '../../transport/protocol';
 import { toolError } from '../../shared/tooling/toolResponse';
-import { attachIpcReadable, createIpcDecoder, detachIpcReadable, IpcReadable, IpcWritable, sendIpcMessage } from './ipc';
+import {
+  attachIpcReadable,
+  createIpcDecoder,
+  detachIpcReadable,
+  IpcReadable,
+  IpcWritable,
+  sendIpcMessage,
+} from './ipc';
 
 type DispatcherToolName = ToolName;
 type DispatcherPayload = ToolPayloadMap[ToolName];
@@ -30,7 +42,7 @@ export class SidecarHost {
     this.onData = onData;
 
     attachIpcReadable(this.readable, this.onData, this.log, {
-      onEnd: () => this.log.warn('sidecar ipc stream ended')
+      onEnd: () => this.log.warn('sidecar ipc stream ended'),
     });
   }
 
@@ -49,7 +61,7 @@ export class SidecarHost {
           type: 'error',
           ts: Date.now(),
           message: 'Sidecar host expected a sidecar peer role.',
-          details: { reason: 'sidecar_peer_role_invalid' }
+          details: { reason: 'sidecar_peer_role_invalid' },
         });
         return;
       }
@@ -62,7 +74,7 @@ export class SidecarHost {
       this.sendContractFailure(
         message.id,
         'sidecar_handshake_required',
-        'Sidecar v1 handshake is required before tool requests.'
+        'Sidecar v1 handshake is required before tool requests.',
       );
       return;
     }
@@ -76,7 +88,10 @@ export class SidecarHost {
     }
     let result: ToolResponse<unknown>;
     try {
-      result = await this.dispatcher.handle(message.tool as DispatcherToolName, message.payload as DispatcherPayload);
+      result = await this.dispatcher.handle(
+        message.tool as DispatcherToolName,
+        message.payload as DispatcherPayload,
+      );
     } catch (err) {
       const msg = errorMessage(err, 'handler error');
       const response: SidecarResponseMessage = {
@@ -86,8 +101,8 @@ export class SidecarHost {
         ok: false,
         error: toolError('unknown', msg, {
           reason: 'sidecar_handler_exception',
-          tool: message.tool
-        })
+          tool: message.tool,
+        }),
       };
       this.send(response);
       return;
@@ -98,7 +113,7 @@ export class SidecarHost {
       ...(result.structuredContent !== undefined
         ? { structuredContent: result.structuredContent }
         : {}),
-      ...(result.nextActions ? { nextActions: result.nextActions } : {})
+      ...(result.nextActions ? { nextActions: result.nextActions } : {}),
     };
     const candidate: unknown = result.ok
       ? {
@@ -107,7 +122,7 @@ export class SidecarHost {
           ts: Date.now(),
           ok: true,
           data: result.data,
-          ...extensions
+          ...extensions,
         }
       : {
           type: 'response',
@@ -115,17 +130,17 @@ export class SidecarHost {
           ts: Date.now(),
           ok: false,
           error: result.error,
-          ...extensions
+          ...extensions,
         };
     const response = normalizeSidecarMessage(candidate);
     if (!response || response.type !== 'response') {
       this.log.warn('sidecar dispatcher returned an invalid v1 response', {
-        tool: message.tool
+        tool: message.tool,
       });
       this.sendContractFailure(
         message.id,
         'sidecar_response_contract_invalid',
-        'Sidecar dispatcher returned data outside the closed v1 contract.'
+        'Sidecar dispatcher returned data outside the closed v1 contract.',
       );
       return;
     }
@@ -133,22 +148,18 @@ export class SidecarHost {
       this.sendContractFailure(
         message.id,
         'sidecar_response_send_failed',
-        'Sidecar response could not be sent within the v1 transport contract.'
+        'Sidecar response could not be sent within the v1 transport contract.',
       );
     }
   }
 
-  private sendContractFailure(
-    id: string,
-    reason: string,
-    message: string
-  ): void {
+  private sendContractFailure(id: string, reason: string, message: string): void {
     const response: SidecarResponseMessage = {
       type: 'response',
       id,
       ts: Date.now(),
       ok: false,
-      error: toolError('invalid_state', message, { reason })
+      error: toolError('invalid_state', message, { reason }),
     };
     this.send(response);
   }

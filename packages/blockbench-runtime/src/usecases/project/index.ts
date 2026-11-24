@@ -11,7 +11,7 @@ import type {
   GetProjectDiffPayload,
   GetProjectDiffResult,
   GetProjectStatePayload,
-  GetProjectStateResult
+  GetProjectStateResult,
 } from './contract';
 
 export class ProjectService {
@@ -40,7 +40,7 @@ export class ProjectService {
   createProject(
     format: Capabilities['formats'][number]['format'],
     name: string,
-    options?: CreateProjectOptions
+    options?: CreateProjectOptions,
   ): UsecaseResult<CreateProjectResult> {
     return this.lifecycle.createProject(format, name, options);
   }
@@ -49,8 +49,3 @@ export class ProjectService {
     return this.projectState.matchOverrideKind(formatId);
   }
 }
-
-
-
-
-

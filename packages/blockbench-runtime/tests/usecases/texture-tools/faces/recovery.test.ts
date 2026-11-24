@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import type { EditorPort } from '../../../../src/ports/editor';
 import type { TextureRendererPort } from '../../../../src/ports/textureRenderer';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
-import { captureTextureBackup, maybeRollbackTextureLoss, type TextureBackup } from '../../../../src/usecases/textureTools/paintFacesRecovery';
+import {
+  captureTextureBackup,
+  maybeRollbackTextureLoss,
+  type TextureBackup,
+} from '../../../../src/usecases/textureTools/paintFacesRecovery';
 
 const makePixels = (width: number, height: number, opaquePixels: number): Uint8ClampedArray => {
   const data = new Uint8ClampedArray(width * height * 4);
@@ -29,8 +33,8 @@ const createSetup = (options: SetupOptions = {}) => {
         name: 'atlas',
         width: 16,
         height: 16,
-        image: { tag: 'atlas' } as unknown as CanvasImageSource
-      }
+        image: { tag: 'atlas' } as unknown as CanvasImageSource,
+      },
     } as ReturnType<EditorPort['readTexture']>);
 
   const readPixels =
@@ -39,26 +43,26 @@ const createSetup = (options: SetupOptions = {}) => {
       result: {
         width: 16,
         height: 16,
-        data: makePixels(16, 16, 256)
-      }
+        data: makePixels(16, 16, 256),
+      },
     }));
 
   const updateTexture =
     options.updateTexture ??
     (() => ({
       ok: true,
-      value: { id: 'tex1', name: 'atlas' }
+      value: { id: 'tex1', name: 'atlas' },
     }));
 
   const ctx = {
     editor: {
-      readTexture: () => readTexture
+      readTexture: () => readTexture,
     } as unknown as EditorPort,
-    updateTexture
+    updateTexture,
   } as unknown as TextureToolContext;
 
   const textureRenderer = {
-    readPixels
+    readPixels,
   } as TextureRendererPort;
 
   return { ctx, textureRenderer };
@@ -67,22 +71,30 @@ const createSetup = (options: SetupOptions = {}) => {
 // captureTextureBackup should return null when texture read fails.
 {
   const { ctx, textureRenderer } = createSetup({
-    readTexture: { error: { code: 'unknown', message: 'read failed' } }
+    readTexture: { error: { code: 'unknown', message: 'read failed' } },
   });
-  const backup = captureTextureBackup(ctx, textureRenderer as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.equal(backup, null);
 }
 
 // captureTextureBackup should return null when image is missing.
 {
   const { ctx, textureRenderer } = createSetup({
-    readTexture: { result: { id: 'tex1', name: 'atlas', width: 16, height: 16 } }
+    readTexture: { result: { id: 'tex1', name: 'atlas', width: 16, height: 16 } },
   });
-  const backup = captureTextureBackup(ctx, textureRenderer as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.equal(backup, null);
 }
 
@@ -95,44 +107,60 @@ const createSetup = (options: SetupOptions = {}) => {
         name: 'atlas',
         width: 0,
         height: 16,
-        image: {} as CanvasImageSource
-      }
-    }
+        image: {} as CanvasImageSource,
+      },
+    },
   });
-  const backup = captureTextureBackup(ctx, textureRenderer as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.equal(backup, null);
 }
 
 // captureTextureBackup should return null when renderer readPixels is unavailable.
 {
   const { ctx } = createSetup();
-  const backup = captureTextureBackup(ctx, {} as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    {} as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.equal(backup, null);
 }
 
 // captureTextureBackup should return null when pixel read fails.
 {
   const { ctx, textureRenderer } = createSetup({
-    readPixels: () => ({ error: { code: 'unknown', message: 'pixels failed' } })
+    readPixels: () => ({ error: { code: 'unknown', message: 'pixels failed' } }),
   });
-  const backup = captureTextureBackup(ctx, textureRenderer as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.equal(backup, null);
 }
 
 // captureTextureBackup should return opaque pixel counts when successful.
 {
   const { ctx, textureRenderer } = createSetup({
-    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 123) } })
+    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 123) } }),
   });
-  const backup = captureTextureBackup(ctx, textureRenderer as NonNullable<TextureToolContext['textureRenderer']>, {
-    name: 'atlas'
-  });
+  const backup = captureTextureBackup(
+    ctx,
+    textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
+    {
+      name: 'atlas',
+    },
+  );
   assert.ok(backup);
   assert.equal(backup?.opaquePixels, 123);
 }
@@ -141,7 +169,7 @@ const guardBackup: TextureBackup = {
   image: { tag: 'before' } as unknown as CanvasImageSource,
   width: 16,
   height: 16,
-  opaquePixels: 400
+  opaquePixels: 400,
 };
 
 // maybeRollbackTextureLoss should no-op when recovery was not attempted.
@@ -152,7 +180,7 @@ const guardBackup: TextureBackup = {
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 0,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
@@ -165,7 +193,7 @@ const guardBackup: TextureBackup = {
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: null
+    backup: null,
   });
   assert.equal(err, null);
 }
@@ -173,14 +201,14 @@ const guardBackup: TextureBackup = {
 // maybeRollbackTextureLoss should no-op when current texture read fails.
 {
   const { ctx, textureRenderer } = createSetup({
-    readTexture: { error: { code: 'unknown', message: 'read failed' } }
+    readTexture: { error: { code: 'unknown', message: 'read failed' } },
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
@@ -194,16 +222,16 @@ const guardBackup: TextureBackup = {
         name: 'atlas',
         width: 0,
         height: 16,
-        image: {} as CanvasImageSource
-      }
-    }
+        image: {} as CanvasImageSource,
+      },
+    },
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
@@ -216,21 +244,21 @@ const guardBackup: TextureBackup = {
     textureRenderer: {} as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
 
 {
   const { ctx, textureRenderer } = createSetup({
-    readPixels: () => ({ error: { code: 'unknown', message: 'pixels failed' } })
+    readPixels: () => ({ error: { code: 'unknown', message: 'pixels failed' } }),
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
@@ -238,14 +266,14 @@ const guardBackup: TextureBackup = {
 // maybeRollbackTextureLoss should no-op when opacity drop is not suspicious.
 {
   const { ctx, textureRenderer } = createSetup({
-    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 399) } })
+    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 399) } }),
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.equal(err, null);
 }
@@ -254,7 +282,7 @@ const guardBackup: TextureBackup = {
 {
   const { ctx, textureRenderer } = createSetup({
     readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 8) } }),
-    updateTexture: () => ({ ok: false, error: { code: 'io_error', message: 'rollback failed' } })
+    updateTexture: () => ({ ok: false, error: { code: 'io_error', message: 'rollback failed' } }),
   });
   const err = maybeRollbackTextureLoss({
     ctx,
@@ -262,7 +290,7 @@ const guardBackup: TextureBackup = {
     texture: { id: 'tex1', name: 'atlas' },
     ifRevision: 'r1',
     recoveryAttempts: 1,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.notEqual(err, null);
   assert.equal(err?.code, 'io_error');
@@ -272,14 +300,14 @@ const guardBackup: TextureBackup = {
 {
   const { ctx, textureRenderer } = createSetup({
     readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 8) } }),
-    updateTexture: () => ({ ok: false, error: { code: 'no_change', message: 'same image' } })
+    updateTexture: () => ({ ok: false, error: { code: 'no_change', message: 'same image' } }),
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 2,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.notEqual(err, null);
   assert.equal(err?.code, 'invalid_state');
@@ -289,17 +317,16 @@ const guardBackup: TextureBackup = {
 // maybeRollbackTextureLoss should return guard error after successful rollback.
 {
   const { ctx, textureRenderer } = createSetup({
-    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 8) } })
+    readPixels: () => ({ result: { width: 16, height: 16, data: makePixels(16, 16, 8) } }),
   });
   const err = maybeRollbackTextureLoss({
     ctx,
     textureRenderer: textureRenderer as NonNullable<TextureToolContext['textureRenderer']>,
     texture: { name: 'atlas' },
     recoveryAttempts: 3,
-    backup: guardBackup
+    backup: guardBackup,
   });
   assert.notEqual(err, null);
   assert.equal(err?.code, 'invalid_state');
   assert.equal(err?.details?.recoveryAttempts, 3);
 }
-

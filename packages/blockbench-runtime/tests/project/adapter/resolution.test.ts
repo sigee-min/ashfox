@@ -16,7 +16,7 @@ const logger: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 const getGlobals = (): TestGlobals => globalThis as unknown as TestGlobals;
@@ -27,7 +27,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     Blockbench: globals.Blockbench,
     Project: globals.Project,
     setProjectResolution: globals.setProjectResolution,
-    updateProjectResolution: globals.updateProjectResolution
+    updateProjectResolution: globals.updateProjectResolution,
   };
   globals.Blockbench = overrides.Blockbench;
   globals.Project = overrides.Project;
@@ -53,25 +53,25 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
 {
   withGlobals(
     {
-      Project: { texture_width: 64, texture_height: 32 }
+      Project: { texture_width: 64, texture_height: 32 },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       assert.deepEqual(adapter.getProjectTextureResolution(), { width: 64, height: 32 });
-    }
+    },
   );
 }
 
 {
   withGlobals(
     {
-      Project: null as unknown as object
+      Project: null as unknown as object,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
       const err = adapter.setProjectTextureResolution(32, 32, true);
       assert.deepEqual(err, { code: 'invalid_state', message: PROJECT_NO_ACTIVE });
-    }
+    },
   );
 }
 
@@ -88,7 +88,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       },
       updateProjectResolution: () => {
         updateCount += 1;
-      }
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -97,7 +97,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       assert.equal(callCount, 1);
       assert.equal(updateCount, 1);
       assert.deepEqual(captured, { width: 32, height: 48, modifyUv: true });
-    }
+    },
   );
 }
 
@@ -109,14 +109,14 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
     setTextureSize(width: number, height: number) {
       this.texture_width = width;
       this.texture_height = height;
-    }
+    },
   };
   withGlobals(
     {
       Project: project,
       updateProjectResolution: () => {
         updateCount += 1;
-      }
+      },
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -125,7 +125,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       assert.equal(project.texture_width, 24);
       assert.equal(project.texture_height, 40);
       assert.equal(updateCount, 1);
-    }
+    },
   );
 }
 
@@ -133,7 +133,7 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
   const project: Record<string, unknown> = {};
   withGlobals(
     {
-      Project: project
+      Project: project,
     },
     () => {
       const adapter = new BlockbenchProjectAdapter(logger);
@@ -141,6 +141,6 @@ const withGlobals = (overrides: TestGlobals, run: () => void) => {
       assert.equal(err, null);
       assert.equal(project.ashfoxUvPixelsPerBlock, 32);
       assert.deepEqual(project.ashfox, { uvPixelsPerBlock: 32, uv_pixels_per_block: 32 });
-    }
+    },
   );
 }

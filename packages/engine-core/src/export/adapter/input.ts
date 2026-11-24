@@ -1,7 +1,4 @@
-import {
-  isExportModelPathValid,
-  isExportNamespaceValid
-} from '../compatibility/names';
+import { isExportModelPathValid, isExportNamespaceValid } from '../compatibility/names';
 import { EXPORT_PRESETS } from '../compatibility/queries';
 import type { ExportPreset } from '../compatibility/contract';
 
@@ -21,7 +18,10 @@ export type ExportAdapterInput =
 export class ExportAdapterInputError extends TypeError {
   readonly code = 'export.adapter_input_invalid' as const;
 
-  constructor(readonly path: string, message: string) {
+  constructor(
+    readonly path: string,
+    message: string,
+  ) {
     super(`${path}: ${message}`);
     this.name = 'ExportAdapterInputError';
   }
@@ -31,21 +31,16 @@ const fail = (path: string, message: string): never => {
   throw new ExportAdapterInputError(path, message);
 };
 
-const dataValue = (
-  value: object,
-  key: string
-): unknown => {
+const dataValue = (value: object, key: string): unknown => {
   let descriptor: PropertyDescriptor | undefined;
   try {
     descriptor = Object.getOwnPropertyDescriptor(value, key);
   } catch {
     return fail(`exportAdapter.${key}`, 'Field descriptor could not be read.');
   }
-  if (descriptor === undefined) return fail(`exportAdapter.${key}`,
-    'Required field is missing.');
+  if (descriptor === undefined) return fail(`exportAdapter.${key}`, 'Required field is missing.');
   if (!descriptor.enumerable || !('value' in descriptor)) {
-    return fail(`exportAdapter.${key}`,
-      'Field must be an enumerable own data property.');
+    return fail(`exportAdapter.${key}`, 'Field must be an enumerable own data property.');
   }
   return descriptor.value;
 };
@@ -59,14 +54,14 @@ const exactKeys = (value: object, expected: readonly string[]): void => {
   }
   const expectedSet = new Set(expected);
   for (const key of keys) {
-    if (typeof key !== 'string') return fail('exportAdapter',
-      'Symbol fields are not allowed.');
-    if (!expectedSet.has(key)) return fail(`exportAdapter.${key}`,
-      'Unknown field is not part of the current contract.');
+    if (typeof key !== 'string') return fail('exportAdapter', 'Symbol fields are not allowed.');
+    if (!expectedSet.has(key))
+      return fail(`exportAdapter.${key}`, 'Unknown field is not part of the current contract.');
   }
-  for (const key of expected) if (!keys.includes(key)) {
-    fail(`exportAdapter.${key}`, 'Required field is missing.');
-  }
+  for (const key of expected)
+    if (!keys.includes(key)) {
+      fail(`exportAdapter.${key}`, 'Required field is missing.');
+    }
 };
 
 const canonicalText = (value: unknown, path: string): string => {
@@ -77,8 +72,8 @@ const canonicalText = (value: unknown, path: string): string => {
 };
 
 export function readExportAdapterInput(value: unknown): ExportAdapterInput {
-  if (arguments.length !== 1) throw new TypeError(
-    'readExportAdapterInput expects exactly one input.');
+  if (arguments.length !== 1)
+    throw new TypeError('readExportAdapterInput expects exactly one input.');
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return fail('exportAdapter', 'Input must be a closed plain object.');
   }
@@ -88,31 +83,23 @@ export function readExportAdapterInput(value: unknown): ExportAdapterInput {
   } catch {
     return fail('exportAdapter', 'Input prototype could not be read.');
   }
-  if (prototype !== Object.prototype && prototype !== null) return fail(
-    'exportAdapter', 'Custom prototypes are not allowed.');
+  if (prototype !== Object.prototype && prototype !== null)
+    return fail('exportAdapter', 'Custom prototypes are not allowed.');
 
   const target = dataValue(value, 'target');
-  if (typeof target !== 'string' || !EXPORT_PRESETS.includes(
-    target as ExportPreset)) return fail('exportAdapter.target',
-    'Unknown export target.');
+  if (typeof target !== 'string' || !EXPORT_PRESETS.includes(target as ExportPreset))
+    return fail('exportAdapter.target', 'Unknown export target.');
   const preset = target as ExportPreset;
   const minecraft = preset !== 'glb' && preset !== 'gltf';
-  exactKeys(value, minecraft
-    ? ['target', 'namespace', 'modelPath']
-    : ['target', 'modelPath']);
+  exactKeys(value, minecraft ? ['target', 'namespace', 'modelPath'] : ['target', 'modelPath']);
 
-  const modelPath = canonicalText(dataValue(value, 'modelPath'),
-    'exportAdapter.modelPath');
-  if (!isExportModelPathValid(preset, modelPath)) return fail(
-    'exportAdapter.modelPath',
-    'Value must be a safe extensionless relative path.');
-  if (!minecraft) return Object.freeze({ target: preset, modelPath }) as
-    ExportAdapterInput;
+  const modelPath = canonicalText(dataValue(value, 'modelPath'), 'exportAdapter.modelPath');
+  if (!isExportModelPathValid(preset, modelPath))
+    return fail('exportAdapter.modelPath', 'Value must be a safe extensionless relative path.');
+  if (!minecraft) return Object.freeze({ target: preset, modelPath }) as ExportAdapterInput;
 
-  const namespace = canonicalText(dataValue(value, 'namespace'),
-    'exportAdapter.namespace');
-  if (!isExportNamespaceValid(preset, namespace)) return fail(
-    'exportAdapter.namespace', 'Value is not a valid Minecraft namespace.');
-  return Object.freeze({ target: preset, namespace, modelPath }) as
-    ExportAdapterInput;
+  const namespace = canonicalText(dataValue(value, 'namespace'), 'exportAdapter.namespace');
+  if (!isExportNamespaceValid(preset, namespace))
+    return fail('exportAdapter.namespace', 'Value is not a valid Minecraft namespace.');
+  return Object.freeze({ target: preset, namespace, modelPath }) as ExportAdapterInput;
 }

@@ -10,7 +10,7 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'Generic Model', animations: true, enabled: true }],
-  limits: { maxCubes: 32, maxTextureSize: 64, maxAnimationSeconds: 8 }
+  limits: { maxCubes: 32, maxTextureSize: 64, maxAnimationSeconds: 8 },
 };
 
 {

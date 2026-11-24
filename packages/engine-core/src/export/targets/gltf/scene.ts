@@ -1,43 +1,26 @@
-import type {
-  ProjectDocument,
-  SceneNode
-} from '../../../model';
+import type { ProjectDocument, SceneNode } from '../../../model';
 import {
   boneTransformMatchesCanonicalFrame,
   cubeGeometryPivot,
-  isCanonicalBoneFrame
+  isCanonicalBoneFrame,
 } from '../../../model';
-import {
-  effectivelyVisibleSceneNodeIds
-} from '../../../sceneVisibility';
+import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
 import { compileOpaqueCubeFaceOcclusion } from '../../occlusion/cube';
-import {
-  compileRigidGltfBatches,
-  gltfNodeGeometryRotation
-} from './rigid';
+import { compileRigidGltfBatches, gltfNodeGeometryRotation } from './rigid';
 import {
   addVec3,
   isIdentityRotation,
   isIdentityScale,
   multiplyVec3,
   quaternionFromEuler,
-  subtractVec3
+  subtractVec3,
 } from './spatial';
-import type {
-  GltfCompiledScene,
-  GltfSceneCompileOptions
-} from './graph';
+import type { GltfCompiledScene, GltfSceneCompileOptions } from './graph';
 import type { GltfNode } from './contract';
 
-export type {
-  GltfCompiledScene,
-  GltfSceneCompileOptions
-} from './graph';
+export type { GltfCompiledScene, GltfSceneCompileOptions } from './graph';
 
-const parentOrigin = (
-  document: ProjectDocument,
-  node: SceneNode
-): [number, number, number] => {
+const parentOrigin = (document: ProjectDocument, node: SceneNode): [number, number, number] => {
   if (node.parentId === null) return [0, 0, 0];
   const parent = document.scene.nodes[node.parentId];
   if (!parent || parent.kind !== 'bone') return [0, 0, 0];
@@ -47,57 +30,48 @@ const parentOrigin = (
 const restTranslation = (
   document: ProjectDocument,
   node: SceneNode,
-  unitScale: number
+  unitScale: number,
 ): [number, number, number] => {
   if (node.kind === 'locator') {
     return multiplyVec3(node.transform.position, unitScale);
   }
-  const geometryPivot = node.kind === 'cube' ? cubeGeometryPivot(node) :
-    node.transform.pivot;
+  const geometryPivot = node.kind === 'cube' ? cubeGeometryPivot(node) : node.transform.pivot;
   const origin = addVec3(geometryPivot, node.transform.position);
-  return multiplyVec3(
-    subtractVec3(origin, parentOrigin(document, node)),
-    unitScale
-  );
+  return multiplyVec3(subtractVec3(origin, parentOrigin(document, node)), unitScale);
 };
 
-const createGltfNode = (
-  node: SceneNode,
-  translation: [number, number, number]
-): GltfNode => {
+const createGltfNode = (node: SceneNode, translation: [number, number, number]): GltfNode => {
   const rotation = gltfNodeGeometryRotation(node);
-  return ({
-  name: node.name,
-  ...(translation.some((value) => Math.abs(value) > 0.000001)
-    ? { translation }
-    : {}),
-  ...(!isIdentityRotation(rotation)
-    ? { rotation: quaternionFromEuler(rotation) }
-    : {}),
-  ...(!isIdentityScale(node.transform.scale)
-    ? {
-        scale: [
-          node.transform.scale[0],
-          node.transform.scale[1],
-          node.transform.scale[2]
-        ] as [number, number, number]
-      }
-    : {}),
-  extras: {
-    ashfoxId: node.id,
-    ashfoxKind: node.kind,
-    visible: node.visible,
-    ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
-    ...(node.kind === 'bone' && node.canonicalFrame !== undefined ? {
-      ashfoxCanonicalFrame: node.canonicalFrame
-    } : {})
-  }
-  });
+  return {
+    name: node.name,
+    ...(translation.some((value) => Math.abs(value) > 0.000001) ? { translation } : {}),
+    ...(!isIdentityRotation(rotation) ? { rotation: quaternionFromEuler(rotation) } : {}),
+    ...(!isIdentityScale(node.transform.scale)
+      ? {
+          scale: [node.transform.scale[0], node.transform.scale[1], node.transform.scale[2]] as [
+            number,
+            number,
+            number,
+          ],
+        }
+      : {}),
+    extras: {
+      ashfoxId: node.id,
+      ashfoxKind: node.kind,
+      visible: node.visible,
+      ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
+      ...(node.kind === 'bone' && node.canonicalFrame !== undefined
+        ? {
+            ashfoxCanonicalFrame: node.canonicalFrame,
+          }
+        : {}),
+    },
+  };
 };
 
 export const compileGltfScene = (
   document: ProjectDocument,
-  options: GltfSceneCompileOptions
+  options: GltfSceneCompileOptions,
 ): GltfCompiledScene => {
   const nodes: GltfNode[] = [];
   const nodeIndexById = new Map<string, number>();
@@ -110,13 +84,15 @@ export const compileGltfScene = (
     .sort((left, right) => left.id.localeCompare(right.id));
   const compileOptions: GltfSceneCompileOptions = {
     ...options,
-    cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(document)
+    cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(document),
   };
 
   for (const node of orderedNodes) {
-    if (node.kind === 'bone' && node.canonicalFrame !== undefined &&
-      (!isCanonicalBoneFrame(node.canonicalFrame) ||
-        !boneTransformMatchesCanonicalFrame(node))) {
+    if (
+      node.kind === 'bone' &&
+      node.canonicalFrame !== undefined &&
+      (!isCanonicalBoneFrame(node.canonicalFrame) || !boneTransformMatchesCanonicalFrame(node))
+    ) {
       throw new RangeError(`Bone ${node.id} has an invalid canonical frame.`);
     }
     const translation = restTranslation(document, node, options.unitScale);
@@ -132,7 +108,7 @@ export const compileGltfScene = (
     document,
     orderedNodes,
     restTranslationById,
-    compileOptions
+    compileOptions,
   );
   const meshes = compiledBatches.meshes;
   const skins: [] = [];
@@ -163,6 +139,6 @@ export const compileGltfScene = (
     nodeIndexById,
     restTranslationById,
     restRotationById,
-    restScaleById
+    restScaleById,
   };
 };

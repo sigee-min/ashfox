@@ -27,8 +27,10 @@ const createTransparent = (width: number, height: number): Uint8ClampedArray =>
 const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
-  formats: [{ format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } }],
-  limits: { maxCubes: 128, maxTextureSize: 256, maxAnimationSeconds: 120 }
+  formats: [
+    { format: 'geckolib', animations: true, enabled: true, flags: { singleTexture: true } },
+  ],
+  limits: { maxCubes: 128, maxTextureSize: 256, maxAnimationSeconds: 120 },
 };
 
 // Recovery path should rollback when post-recovery texture opacity collapses.
@@ -42,9 +44,17 @@ const capabilities: Capabilities = {
         name: 'minecraft_dragon',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'cube1', name: 'body_main', faces: [{ face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] }] }]
-      }
-    ]
+        cubes: [
+          {
+            id: 'cube1',
+            name: 'body_main',
+            faces: [
+              { face: 'north' as const, uv: [0, 0, 8, 8] as [number, number, number, number] },
+            ],
+          },
+        ],
+      },
+    ],
   };
   let currentImage: TaggedImage = { tag: 'before' };
   let preflightCalls = 0;
@@ -58,11 +68,11 @@ const capabilities: Capabilities = {
         name: 'minecraft_dragon',
         width,
         height,
-        image: currentImage as unknown as CanvasImageSource
-      }
+        image: currentImage as unknown as CanvasImageSource,
+      },
     }),
     getProjectTextureResolution: () => ({ width, height }),
-    getTextureUsage: () => ({ result: usage })
+    getTextureUsage: () => ({ result: usage }),
   } as unknown as EditorPort;
 
   const textureRenderer: TextureRendererPort = {
@@ -77,9 +87,9 @@ const capabilities: Capabilities = {
       result: {
         image: { tag: 'after' } as unknown as CanvasImageSource,
         width,
-        height
-      }
-    })
+        height,
+      },
+    }),
   };
 
   const ctx: TextureToolContext = {
@@ -94,7 +104,7 @@ const capabilities: Capabilities = {
       cubes: [{ id: 'cube1', name: 'body_main', from: [-4, 6, -7], to: [4, 14, 7], bone: 'root' }],
       textures: [{ id: 'tex1', name: 'minecraft_dragon', width, height }],
       animations: [],
-      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY
+      animationTimePolicy: DEFAULT_ANIMATION_TIME_POLICY,
     }),
     editor,
     textureRenderer,
@@ -116,8 +126,8 @@ const capabilities: Capabilities = {
           uvUsageId: '',
           usageSummary: { textureCount: 1, cubeCount: 1, faceCount: 1, unresolvedCount: 0 },
           warningCodes: preflightCalls === 1 ? ['uv_scale_mismatch'] : [],
-          textureUsage: usage
-        }
+          textureUsage: usage,
+        },
       };
     },
     autoUvAtlas: () =>
@@ -127,17 +137,17 @@ const capabilities: Capabilities = {
           applied: true,
           steps: 1,
           resolution: { width, height },
-          textures: []
-        }
+          textures: [],
+        },
       }) as const,
-    runWithoutRevisionGuard: (fn) => fn()
+    runWithoutRevisionGuard: (fn) => fn(),
   };
 
   const res = runPaintFaces(ctx, {
     ifRevision: 'r1',
     textureName: 'minecraft_dragon',
     target: { cubeName: 'body_main', face: 'north' },
-    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' }
+    op: { op: 'fill_rect', x: 0, y: 0, width: 1, height: 1, color: '#3f6f3b' },
   });
 
   assert.equal(res.ok, false);

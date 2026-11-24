@@ -11,7 +11,7 @@ export {
   type Revision,
   type SurfacePixelDensity,
   type Vec2,
-  type Vec3
+  type Vec3,
 } from './identity';
 export {
   CUBE_FACE_DIRECTIONS,
@@ -36,13 +36,13 @@ export {
   type PlaneFaces,
   type PlaneNode,
   type SceneNode,
-  type Transform
+  type Transform,
 } from './scene';
 export {
   type BlobRef,
   type TextureAsset,
   type TextureCanvasDetail,
-  type TextureAlphaMask
+  type TextureAlphaMask,
 } from './texture';
 export {
   type AnimationClip,
@@ -54,7 +54,7 @@ export {
   type AnimationVec3,
   type KeyframeEasing,
   type TransformChannel,
-  type TransformKeyframe
+  type TransformKeyframe,
 } from './motion';
 export type { ProjectDocument } from './document';
 export type { CompiledForwardDirection, CompiledModel } from './compiled';

@@ -7,7 +7,7 @@ import {
   TEXTURE_ALREADY_EXISTS,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX,
   TEXTURE_RENDERER_NO_IMAGE,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../../src/shared/messages';
 
 const normalizeMessage = (value: string): string => value.replace(/[.]$/, '');
@@ -16,7 +16,7 @@ const capabilities: Capabilities = {
   pluginVersion: 'test',
   blockbenchVersion: 'test',
   formats: [{ format: 'geckolib', animations: true, enabled: true }],
-  limits: { maxCubes: 128, maxTextureSize: 32, maxAnimationSeconds: 120 }
+  limits: { maxCubes: 128, maxTextureSize: 32, maxAnimationSeconds: 120 },
 };
 
 const createHarness = (options?: {
@@ -34,13 +34,13 @@ const createHarness = (options?: {
     capabilities,
     editor: {
       listTextures: () => options?.textures ?? [],
-      getProjectTextureResolution: () => ({ width: 16, height: 16 })
+      getProjectTextureResolution: () => ({ width: 16, height: 16 }),
     },
     textureRenderer: {
       renderPixels: ({
         data,
         width,
-        height
+        height,
       }: {
         data: Uint8ClampedArray;
         width: number;
@@ -54,22 +54,22 @@ const createHarness = (options?: {
           result: {
             image: { tag: 'img' } as unknown as CanvasImageSource,
             width,
-            height
-          }
+            height,
+          },
         };
-      }
+      },
     },
     importTexture: () => {
       importCalls += 1;
       if (options?.importError) return { ok: false as const, error: options.importError };
       return { ok: true as const, value: { id: 'tex1', name: 'atlas' } };
-    }
+    },
   };
   return {
     ctx,
     getImportCalls: () => importCalls,
     getRenderCalls: () => renderCalls,
-    getCapturedData: () => capturedData
+    getCapturedData: () => capturedData,
   };
 };
 
@@ -77,12 +77,16 @@ const createHarness = (options?: {
   const { ctx } = createHarness();
   const res = runCreateBlankTexture({ ...ctx, textureRenderer: undefined }, { name: 'atlas' });
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(normalizeMessage(res.error.message), normalizeMessage(TEXTURE_RENDERER_UNAVAILABLE));
+  if (!res.ok)
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(TEXTURE_RENDERER_UNAVAILABLE),
+    );
 }
 
 {
   const { ctx, getImportCalls, getRenderCalls } = createHarness({
-    textures: [{ id: 'tex_a', name: 'atlas', width: 16, height: 16 }]
+    textures: [{ id: 'tex_a', name: 'atlas', width: 16, height: 16 }],
   });
   const res = runCreateBlankTexture(ctx, { name: 'atlas', allowExisting: true });
   assert.equal(res.ok, true);
@@ -96,12 +100,15 @@ const createHarness = (options?: {
 
 {
   const { ctx } = createHarness({
-    textures: [{ name: 'atlas', width: 16, height: 16 }]
+    textures: [{ name: 'atlas', width: 16, height: 16 }],
   });
   const res = runCreateBlankTexture(ctx, { name: 'atlas' });
   assert.equal(res.ok, false);
   if (!res.ok) {
-    assert.equal(normalizeMessage(res.error.message), normalizeMessage(TEXTURE_ALREADY_EXISTS('atlas')));
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(TEXTURE_ALREADY_EXISTS('atlas')),
+    );
   }
 }
 
@@ -111,7 +118,10 @@ const createHarness = (options?: {
   assert.equal(res.ok, false);
   if (!res.ok) {
     assert.equal(res.error.code, 'invalid_payload');
-    assert.equal(normalizeMessage(res.error.message), normalizeMessage(TEXTURE_PAINT_SIZE_EXCEEDS_MAX(32)));
+    assert.equal(
+      normalizeMessage(res.error.message),
+      normalizeMessage(TEXTURE_PAINT_SIZE_EXCEEDS_MAX(32)),
+    );
     assert.ok(typeof res.error.fix === 'string');
   }
 }
@@ -122,7 +132,7 @@ const createHarness = (options?: {
     name: 'atlas',
     width: 2,
     height: 2,
-    background: '#112233'
+    background: '#112233',
   });
   assert.equal(res.ok, true);
   assert.equal(getRenderCalls(), 1);
@@ -141,11 +151,14 @@ const createHarness = (options?: {
   const { ctx } = createHarness({ renderWithoutResult: true });
   const res = runCreateBlankTexture(ctx, { name: 'atlas' });
   assert.equal(res.ok, false);
-  if (!res.ok) assert.equal(normalizeMessage(res.error.message), normalizeMessage(TEXTURE_RENDERER_NO_IMAGE));
+  if (!res.ok)
+    assert.equal(normalizeMessage(res.error.message), normalizeMessage(TEXTURE_RENDERER_NO_IMAGE));
 }
 
 {
-  const { ctx } = createHarness({ importError: { code: 'invalid_state', message: 'import failed' } });
+  const { ctx } = createHarness({
+    importError: { code: 'invalid_state', message: 'import failed' },
+  });
   const res = runCreateBlankTexture(ctx, { name: 'atlas' });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(normalizeMessage(res.error.message), 'import failed');

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { handleResourceTemplatesList, handleResourcesList, handleResourcesRead } from '../../../../src/transport/mcp/routerRpcResources';
+import {
+  handleResourceTemplatesList,
+  handleResourcesList,
+  handleResourcesRead,
+} from '../../../../src/transport/mcp/routerRpcResources';
 import type { RpcContext } from '../../../../src/transport/mcp/routerRpcTypes';
 import type { ToolExecutor } from '../../../../src/transport/mcp/executor';
 import { SessionStore } from '../../../../src/transport/mcp/session';
@@ -11,13 +15,13 @@ import { MCP_RESOURCE_NOT_FOUND, MCP_URI_REQUIRED } from '../../../../src/shared
 
 const createContext = (resources?: RpcContext['resources']): RpcContext => {
   const executor: ToolExecutor = {
-    callTool: async () => ({ ok: true, data: {} })
+    callTool: async () => ({ ok: true, data: {} }),
   };
   const toolRegistry: ToolRegistry = {
     tools: [],
     map: new Map(),
     hash: 'test',
-    count: 0
+    count: 0,
   };
   return {
     executor,
@@ -25,19 +29,17 @@ const createContext = (resources?: RpcContext['resources']): RpcContext => {
     resources,
     toolRegistry,
     sessions: new SessionStore(),
-    config: { path: '/mcp' }
+    config: { path: '/mcp' },
   };
 };
 
-const createResources = (
-  overrides: Partial<ResourceStore> = {}
-): ResourceStore => ({
+const createResources = (overrides: Partial<ResourceStore> = {}): ResourceStore => ({
   list: () => [],
   read: () => null,
   listTemplates: () => [],
   has: () => false,
   put: () => undefined,
-  ...overrides
+  ...overrides,
 });
 
 {
@@ -49,7 +51,11 @@ const createResources = (
 }
 
 {
-  const outcome = handleResourcesRead(createContext(), { jsonrpc: '2.0', method: 'resources/read', params: {} }, 1);
+  const outcome = handleResourcesRead(
+    createContext(),
+    { jsonrpc: '2.0', method: 'resources/read', params: {} },
+    1,
+  );
   assert.equal(outcome.type, 'response');
   if (outcome.type !== 'response') throw new Error('Expected a response.');
   assert.equal(outcome.status, 400);
@@ -60,7 +66,7 @@ const createResources = (
   const outcome = handleResourcesRead(
     createContext(createResources()),
     { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'ashfox://missing' } },
-    1
+    1,
   );
   assert.equal(outcome.type, 'response');
   if (outcome.type !== 'response') throw new Error('Expected a response.');
@@ -70,11 +76,17 @@ const createResources = (
 
 {
   const outcome = handleResourcesRead(
-    createContext(createResources({
-      read: (uri) => ({ uri, mimeType: 'application/json', text: '{"ok":true}' }),
-    })),
-    { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'ashfox://logs/trace-report.json' } },
-    5
+    createContext(
+      createResources({
+        read: (uri) => ({ uri, mimeType: 'application/json', text: '{"ok":true}' }),
+      }),
+    ),
+    {
+      jsonrpc: '2.0',
+      method: 'resources/read',
+      params: { uri: 'ashfox://logs/trace-report.json' },
+    },
+    5,
   );
   assert.equal(outcome.type, 'response');
   if (outcome.type !== 'response') throw new Error('Expected a response.');
@@ -84,24 +96,26 @@ const createResources = (
       {
         uri: 'ashfox://logs/trace-report.json',
         mimeType: 'application/json',
-        text: '{"ok":true}'
-      }
-    ]
+        text: '{"ok":true}',
+      },
+    ],
   });
 }
 
 {
   const outcome = handleResourceTemplatesList(
-    createContext(createResources({
-      listTemplates: () => [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }]
-    })),
-    9
+    createContext(
+      createResources({
+        listTemplates: () => [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }],
+      }),
+    ),
+    9,
   );
   assert.equal(outcome.type, 'response');
   if (outcome.type !== 'response') throw new Error('Expected a response.');
   assert.equal(outcome.status, 200);
   assert.deepEqual(outcome.response.result, {
     resourceTemplates: [{ uriTemplate: 'ashfox://textures/{name}', name: 'Texture by name' }],
-    nextCursor: null
+    nextCursor: null,
   });
 }

@@ -1,4 +1,9 @@
-import { ResourceContent, ResourceDescriptor, ResourceStore, ResourceTemplate } from '../../ports/resources';
+import {
+  ResourceContent,
+  ResourceDescriptor,
+  ResourceStore,
+  ResourceTemplate,
+} from '../../ports/resources';
 
 export class InMemoryResourceStore implements ResourceStore {
   private readonly entries = new Map<string, ResourceContent>();
@@ -13,7 +18,7 @@ export class InMemoryResourceStore implements ResourceStore {
       uri: entry.uri,
       name: entry.name,
       mimeType: entry.mimeType,
-      description: entry.description
+      description: entry.description,
     }));
   }
 
@@ -33,6 +38,3 @@ export class InMemoryResourceStore implements ResourceStore {
     this.entries.set(resource.uri, resource);
   }
 }
-
-
-

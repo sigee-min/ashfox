@@ -9,7 +9,7 @@ const logger: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 {
@@ -17,7 +17,7 @@ const logger: Logger = {
   const service = {
     notifyViewportRefresh: (tool: string) => {
       refreshed.push(tool);
-    }
+    },
   };
   const payload = {} as ToolPayloadMap['list_capabilities'];
   const response: ToolResponse<{ ok: true }> = { ok: true, data: { ok: true } };
@@ -26,7 +26,7 @@ const logger: Logger = {
     'list_capabilities',
     payload,
     response,
-    { refreshViewport: true }
+    { refreshViewport: true },
   );
   assert.equal(out.ok, true);
   assert.deepEqual(refreshed, ['list_capabilities']);
@@ -37,16 +37,19 @@ const logger: Logger = {
   const service = {
     notifyViewportRefresh: (tool: string) => {
       refreshed.push(tool);
-    }
+    },
   };
   const payload = {} as ToolPayloadMap['list_capabilities'];
-  const response: ToolResponse<{ ok: true }> = { ok: false, error: { code: 'invalid_payload', message: 'x' } };
+  const response: ToolResponse<{ ok: true }> = {
+    ok: false,
+    error: { code: 'invalid_payload', message: 'x' },
+  };
   finalizeToolResponse(
     { service: service as never, log: logger },
     'list_capabilities',
     payload,
     response,
-    { refreshViewport: true }
+    { refreshViewport: true },
   );
   assert.deepEqual(refreshed, []);
 }

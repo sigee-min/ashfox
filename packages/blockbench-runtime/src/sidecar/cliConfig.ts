@@ -1,12 +1,5 @@
-import {
-  validateServerConfig,
-  type ServerConfigValidationResult
-} from '../serverConfig';
-import {
-  DEFAULT_SERVER_HOST,
-  DEFAULT_SERVER_PATH,
-  DEFAULT_SERVER_PORT
-} from '../config';
+import { validateServerConfig, type ServerConfigValidationResult } from '../serverConfig';
+import { DEFAULT_SERVER_HOST, DEFAULT_SERVER_PATH, DEFAULT_SERVER_PORT } from '../config';
 
 type CliArgument = {
   present: boolean;
@@ -26,7 +19,7 @@ const withDefault = (argument: CliArgument, fallback: string): unknown =>
 
 export const resolveSidecarServerConfig = (
   args: readonly string[],
-  environment: Readonly<Record<string, string | undefined>> = {}
+  environment: Readonly<Record<string, string | undefined>> = {},
 ): ServerConfigValidationResult => {
   const host = readArgument(args, '--host');
   const port = readArgument(args, '--port');
@@ -38,6 +31,6 @@ export const resolveSidecarServerConfig = (
     host: withDefault(host, DEFAULT_SERVER_HOST),
     port: typeof rawPort === 'string' ? Number(rawPort) : Number.NaN,
     path: withDefault(path, DEFAULT_SERVER_PATH),
-    token: token.present ? token.value : environment.ASHFOX_TOKEN
+    token: token.present ? token.value : environment.ASHFOX_TOKEN,
   });
 };

@@ -3,7 +3,12 @@ import type { ProjectSession, SessionState } from '../../session';
 import type { EditorPort } from '../../ports/editor';
 import { ok, fail, type UsecaseResult } from '../result';
 import { resolveAnimationTarget } from '../targetResolvers';
-import { ensureIdAvailable, ensureNameAvailable, ensureRenameAvailable, resolveEntityId } from '../crudChecks';
+import {
+  ensureIdAvailable,
+  ensureNameAvailable,
+  ensureRenameAvailable,
+  resolveEntityId,
+} from '../crudChecks';
 import { ensureNonBlankString } from '../../shared/payloadValidation';
 import { resolveTargets } from '../targetSelectors';
 import { buildIdNameMismatchMessage } from '../../shared/targetMessages';
@@ -13,7 +18,7 @@ import {
   ANIMATION_CLIP_ID_OR_NAME_REQUIRED,
   ANIMATION_CLIP_NAME_REQUIRED,
   ANIMATION_CLIP_NOT_FOUND,
-  ANIMATION_ID_EXISTS
+  ANIMATION_ID_EXISTS,
 } from '../../shared/messages';
 
 export type CreateAnimationClipPayload = {
@@ -50,7 +55,7 @@ export interface AnimationClipCrudDeps {
 
 export const runCreateAnimationClip = (
   deps: AnimationClipCrudDeps,
-  payload: CreateAnimationClipPayload
+  payload: CreateAnimationClipPayload,
 ): UsecaseResult<{ id: string; name: string }> => {
   const supportErr = deps.ensureAnimationsSupported();
   if (supportErr) return fail(supportErr);
@@ -61,7 +66,10 @@ export const runCreateAnimationClip = (
   if (nameBlankErr) return fail(nameBlankErr);
   const idBlankErr = ensureNonBlankString(payload.id, 'Animation id');
   if (idBlankErr) return fail(idBlankErr);
-  const lengthErr = validateAnimationLength(payload.length, deps.capabilities.limits.maxAnimationSeconds);
+  const lengthErr = validateAnimationLength(
+    payload.length,
+    deps.capabilities.limits.maxAnimationSeconds,
+  );
   if (lengthErr) return fail(lengthErr);
   const fpsErr = validateAnimationFps(payload.fps);
   if (fpsErr) return fail(fpsErr);
@@ -76,7 +84,7 @@ export const runCreateAnimationClip = (
     name: payload.name,
     length: payload.length,
     loop: payload.loop,
-    fps: payload.fps
+    fps: payload.fps,
   });
   if (err) return fail(err);
   deps.session.addAnimation({
@@ -85,14 +93,14 @@ export const runCreateAnimationClip = (
     length: payload.length,
     loop: payload.loop,
     fps: payload.fps,
-    channels: []
+    channels: [],
   });
   return ok({ id, name: payload.name });
 };
 
 export const runUpdateAnimationClip = (
   deps: AnimationClipCrudDeps,
-  payload: UpdateAnimationClipPayload
+  payload: UpdateAnimationClipPayload,
 ): UsecaseResult<{ id: string; name: string }> => {
   const supportErr = deps.ensureAnimationsSupported();
   if (supportErr) return fail(supportErr);
@@ -108,10 +116,18 @@ export const runUpdateAnimationClip = (
   const target = resolved.target!;
   const targetName = target.name;
   const targetId = resolveEntityId(target.id, payload.id, 'anim');
-  const renameErr = ensureRenameAvailable(snapshot.animations, payload.newName, targetName, ANIMATION_CLIP_EXISTS);
+  const renameErr = ensureRenameAvailable(
+    snapshot.animations,
+    payload.newName,
+    targetName,
+    ANIMATION_CLIP_EXISTS,
+  );
   if (renameErr) return fail(renameErr);
   if (payload.length !== undefined) {
-    const lengthErr = validateAnimationLength(payload.length, deps.capabilities.limits.maxAnimationSeconds);
+    const lengthErr = validateAnimationLength(
+      payload.length,
+      deps.capabilities.limits.maxAnimationSeconds,
+    );
     if (lengthErr) return fail(lengthErr);
   }
   if (payload.fps !== undefined) {
@@ -124,7 +140,7 @@ export const runUpdateAnimationClip = (
     newName: payload.newName,
     length: payload.length,
     loop: payload.loop,
-    fps: payload.fps
+    fps: payload.fps,
   });
   if (err) return fail(err);
   deps.session.updateAnimation(targetName, {
@@ -132,14 +148,14 @@ export const runUpdateAnimationClip = (
     newName: payload.newName,
     length: payload.length,
     loop: payload.loop,
-    fps: payload.fps
+    fps: payload.fps,
   });
   return ok({ id: targetId, name: payload.newName ?? targetName });
 };
 
 export const runDeleteAnimationClip = (
   deps: AnimationClipCrudDeps,
-  payload: DeleteAnimationClipPayload
+  payload: DeleteAnimationClipPayload,
 ): UsecaseResult<{ id: string; name: string; deleted: Array<{ id?: string; name: string }> }> => {
   const supportErr = deps.ensureAnimationsSupported();
   if (supportErr) return fail(supportErr);
@@ -152,8 +168,8 @@ export const runDeleteAnimationClip = (
     {
       required: { message: ANIMATION_CLIP_ID_OR_NAME_REQUIRED },
       mismatch: { kind: 'Animation clip', plural: 'clips', message: buildIdNameMismatchMessage },
-      notFound: ANIMATION_CLIP_NOT_FOUND
-    }
+      notFound: ANIMATION_CLIP_NOT_FOUND,
+    },
   );
   if (!resolvedTargets.ok) return fail(resolvedTargets.error);
   const targets = resolvedTargets.value;
@@ -164,7 +180,9 @@ export const runDeleteAnimationClip = (
   const nameSet = new Set(targets.map((target) => target.name));
   deps.session.removeAnimations(nameSet);
   const deleted = targets.map((target) => ({ id: target.id ?? undefined, name: target.name }));
-  const primary = deleted[0] ?? { id: targets[0]?.id ?? undefined, name: targets[0]?.name ?? 'unknown' };
+  const primary = deleted[0] ?? {
+    id: targets[0]?.id ?? undefined,
+    name: targets[0]?.name ?? 'unknown',
+  };
   return ok({ id: primary.id ?? primary.name, name: primary.name, deleted });
 };
-

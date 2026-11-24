@@ -9,6 +9,6 @@ export const registerPluginSettings = (deps: {
   registerEndpointSettings({
     readGlobals: deps.readGlobals,
     config: deps.endpointConfig,
-    restartServer: deps.restartServer
+    restartServer: deps.restartServer,
   });
 };

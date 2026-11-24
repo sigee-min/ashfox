@@ -12,7 +12,7 @@ import {
   SERVER_HTTP_PERMISSION_MESSAGE,
   SERVER_NET_PERMISSION_DETAIL,
   SERVER_NET_PERMISSION_MESSAGE,
-  SERVER_NO_TRANSPORT
+  SERVER_NO_TRANSPORT,
 } from './shared/messages';
 import { loadNativeModule } from './shared/nativeModules';
 import { validateServerConfig } from './serverConfig';
@@ -27,7 +27,7 @@ export type { ServerConfig } from './serverConfig';
 type HttpModule = {
   createServer: (
     options: { maxHeaderSize: number },
-    handler: (req: IncomingMessage, res: ServerResponse) => void
+    handler: (req: IncomingMessage, res: ServerResponse) => void,
   ) => HttpServer;
 };
 
@@ -39,7 +39,7 @@ const startHttpServer = (
   http: HttpModule,
   config: ServerConfig,
   router: McpRouter,
-  log: Logger
+  log: Logger,
 ): TransportServerHandle | null => {
   const server = createMcpHttpServer(http, router, log);
   let startSettled = false;
@@ -60,7 +60,11 @@ const startHttpServer = (
         startSettled = true;
         resolveReady();
       }
-      log.info('MCP server started (http)', { host: config.host, port: config.port, path: config.path });
+      log.info('MCP server started (http)', {
+        host: config.host,
+        port: config.port,
+        path: config.path,
+      });
     });
   } catch (err) {
     log.error('MCP server failed to start (http)', { message: errorMessage(err) });
@@ -76,7 +80,7 @@ const startHttpServer = (
       stopped = true;
       server.close();
       log.info('MCP server stopped (http)');
-    }
+    },
   };
 };
 
@@ -85,13 +89,13 @@ export function startServer(
   dispatcher: Dispatcher,
   log: Logger,
   resources?: ResourceStore,
-  toolRegistry?: ToolRegistry
+  toolRegistry?: ToolRegistry,
 ): TransportServerHandle | null {
   const validation = validateServerConfig(rawConfig);
   if (!validation.ok) {
     log.error('MCP server config invalid', {
       reason: validation.reason,
-      message: validation.message
+      message: validation.message,
     });
     return null;
   }
@@ -104,17 +108,17 @@ export function startServer(
       token: config.token,
       endpoint: { host: config.host, port: config.port },
       serverInfo: { name: PLUGIN_ID, version: PLUGIN_VERSION },
-      instructions: SERVER_TOOL_INSTRUCTIONS
+      instructions: SERVER_TOOL_INSTRUCTIONS,
     },
     executor,
     log,
     resources,
-    toolRegistry
+    toolRegistry,
   );
 
   const http = loadNativeModule<HttpModule>('http', {
     message: SERVER_HTTP_PERMISSION_MESSAGE,
-    optional: true
+    optional: true,
   });
   if (http && typeof http.createServer === 'function') {
     const stop = startHttpServer(http, config, router, log);
@@ -124,14 +128,14 @@ export function startServer(
   const net = loadNativeModule<NetModule>('net', {
     message: SERVER_NET_PERMISSION_MESSAGE,
     detail: SERVER_NET_PERMISSION_DETAIL,
-    optional: false
+    optional: false,
   });
   if (net && typeof net.createServer === 'function') {
     try {
       return startMcpNetServer(net, { host: config.host, port: config.port }, router, log);
     } catch (err) {
       log.error('MCP server failed to start (net)', {
-        message: errorMessage(err)
+        message: errorMessage(err),
       });
     }
   }

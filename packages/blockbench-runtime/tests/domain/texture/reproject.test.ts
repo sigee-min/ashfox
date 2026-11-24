@@ -29,7 +29,7 @@ const countOpaque = (data: Uint8ClampedArray): number => {
     sourceHeight: 4,
     destWidth: 4,
     destHeight: 4,
-    mappings: [{ from: [0.2, 0.2, 0.8, 0.8], to: [1.2, 1.2, 1.8, 1.8] }]
+    mappings: [{ from: [0.2, 0.2, 0.8, 0.8], to: [1.2, 1.2, 1.8, 1.8] }],
   });
   assert.equal(countOpaque(out) > 0, true);
 }
@@ -42,8 +42,7 @@ const countOpaque = (data: Uint8ClampedArray): number => {
     sourceHeight: 4,
     destWidth: 4,
     destHeight: 4,
-    mappings: [{ from: [1, 1, 1, 2], to: [1, 1, 2, 2] }]
+    mappings: [{ from: [1, 1, 1, 2], to: [1, 1, 2, 2] }],
   });
   assert.equal(countOpaque(out), 0);
 }
-

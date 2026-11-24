@@ -12,13 +12,13 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
       add_cube: ((payload: unknown) => {
         calls.push(`retry:${String((payload as { id?: string }).id ?? 'none')}`);
         return { ok: true, value: { ok: true } };
-      }) as never
+      }) as never,
     },
     statefulHandlers: {
       add_cube: ((payload: unknown) => {
         calls.push(`stateful:${String((payload as { id?: string }).id ?? 'none')}`);
         return { ok: true, value: { ok: true } };
-      }) as never
+      }) as never,
     },
     responseHandlers: {},
     wrapRetryHandler: (_name, handler) =>
@@ -30,7 +30,7 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
       asHandler((payload) => {
         calls.push('wrapStateful');
         return (handler as (x: unknown) => unknown)(payload);
-      })
+      }),
   });
   const handler = resolver('add_cube');
   assert.ok(handler);
@@ -46,7 +46,7 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
       add_cube: ((payload: unknown) => {
         calls.push(`stateful:${String((payload as { id?: string }).id ?? 'none')}`);
         return { ok: true, value: { ok: true } };
-      }) as never
+      }) as never,
     },
     responseHandlers: {},
     wrapRetryHandler: (_name, handler) =>
@@ -55,7 +55,7 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
       asHandler((payload) => {
         calls.push('wrapStateful');
         return (handler as (x: unknown) => unknown)(payload);
-      })
+      }),
   });
   const handler = resolver('add_cube');
   assert.ok(handler);
@@ -72,12 +72,12 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
       list_capabilities: ((payload: unknown) => {
         calls.push(`response:${String(payload ?? 'none')}`);
         return { ok: true, data: {} };
-      }) as never
+      }) as never,
     },
     wrapRetryHandler: (_name, handler) =>
       asHandler((payload) => (handler as (x: unknown) => unknown)(payload)),
     wrapStatefulHandler: (_name, handler) =>
-      asHandler((payload) => (handler as (x: unknown) => unknown)(payload))
+      asHandler((payload) => (handler as (x: unknown) => unknown)(payload)),
   });
   const handler = resolver('list_capabilities');
   assert.ok(handler);
@@ -93,7 +93,7 @@ const asHandler = (fn: (payload: unknown) => unknown): Handler => fn as Handler;
     wrapRetryHandler: (_name, handler) =>
       asHandler((payload) => (handler as (x: unknown) => unknown)(payload)),
     wrapStatefulHandler: (_name, handler) =>
-      asHandler((payload) => (handler as (x: unknown) => unknown)(payload))
+      asHandler((payload) => (handler as (x: unknown) => unknown)(payload)),
   });
   assert.equal(resolver('list_capabilities'), null);
 }

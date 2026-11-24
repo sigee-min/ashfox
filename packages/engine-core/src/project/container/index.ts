@@ -4,6 +4,6 @@ export {
   type ReadWorkspaceFileOptions,
   type ReadWorkspaceFileResult,
   type WorkspaceFileInput,
-  type WriteWorkspaceFileResult
+  type WriteWorkspaceFileResult,
 } from './contract';
 export { readWorkspaceFile, writeWorkspaceFile } from './codec';

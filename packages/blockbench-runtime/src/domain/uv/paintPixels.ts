@@ -44,7 +44,7 @@ export const applyUvPaintPixels = (input: {
     targetWidth,
     targetHeight,
     label,
-    messages.rects
+    messages.rects,
   );
   if (!normalized.ok) return normalized;
   const rects = normalized.data;
@@ -97,7 +97,7 @@ const copyPixel = (
   sx: number,
   sy: number,
   tx: number,
-  ty: number
+  ty: number,
 ) => {
   const sIdx = (sy * sourceWidth + sx) * 4;
   const tIdx = (ty * targetWidth + tx) * 4;
@@ -114,9 +114,5 @@ const mod = (value: number, modulus: number): number => {
 
 const err = (code: 'invalid_payload', message: string): DomainResult<never> => ({
   ok: false,
-  error: { code, message }
+  error: { code, message },
 });
-
-
-
-

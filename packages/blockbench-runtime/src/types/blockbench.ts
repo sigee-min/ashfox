@@ -252,7 +252,7 @@ export interface AnimatorInstance extends UnknownRecord {
     time?: number,
     channel?: string,
     undo?: boolean,
-    select?: boolean
+    select?: boolean,
   ) => UnknownRecord | null | undefined;
 }
 
@@ -376,4 +376,3 @@ export interface BlockbenchGlobals {
 
 export const readBlockbenchGlobals = (): BlockbenchGlobals =>
   globalThis as typeof globalThis & BlockbenchGlobals;
-

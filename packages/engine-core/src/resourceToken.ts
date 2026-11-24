@@ -1,7 +1,4 @@
-export const resourceToken = (
-  value: string,
-  fallback = 'asset'
-): string =>
+export const resourceToken = (value: string, fallback = 'asset'): string =>
   value
     .trim()
     .toLowerCase()

@@ -5,11 +5,11 @@ export type AnimationTimePolicy = {
 
 export const DEFAULT_ANIMATION_TIME_POLICY: AnimationTimePolicy = {
   timeEpsilon: 1e-9,
-  triggerDedupeByValue: true
+  triggerDedupeByValue: true,
 };
 
 export const resolveAnimationTimePolicy = (
-  policy?: Partial<AnimationTimePolicy>
+  policy?: Partial<AnimationTimePolicy>,
 ): AnimationTimePolicy => {
   const resolved: AnimationTimePolicy = { ...DEFAULT_ANIMATION_TIME_POLICY };
   if (policy) {

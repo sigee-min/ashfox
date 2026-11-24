@@ -11,7 +11,7 @@ import {
   MODEL_MESH_NOT_FOUND,
   TEXTURE_ID_OR_NAME_REQUIRED,
   TEXTURE_ID_OR_NAME_REQUIRED_FIX,
-  TEXTURE_NOT_FOUND
+  TEXTURE_NOT_FOUND,
 } from '../shared/messages';
 import { resolveTargetsFromSelectors } from './targetSelectors';
 
@@ -26,19 +26,19 @@ type ResolveOptions = {
 export const resolveAnimationTarget = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
-  name: string | undefined
+  name: string | undefined,
 ) =>
   resolveSingleTarget(items, id, name, {
     required: { message: ANIMATION_CLIP_ID_OR_NAME_REQUIRED },
     mismatch: { kind: 'Animation clip', plural: 'clips', message: buildIdNameMismatchMessage },
-    notFound: ANIMATION_CLIP_NOT_FOUND
+    notFound: ANIMATION_CLIP_NOT_FOUND,
   });
 
 export const resolveBoneTarget = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options?: ResolveOptions
+  options?: ResolveOptions,
 ) =>
   resolveSingleTarget(items, id, name, {
     required: options?.required ?? { message: MODEL_BONE_ID_OR_NAME_REQUIRED },
@@ -47,16 +47,16 @@ export const resolveBoneTarget = <T extends TargetNamed>(
       plural: 'bones',
       idLabel: options?.idLabel,
       nameLabel: options?.nameLabel,
-      message: buildIdNameMismatchMessage
+      message: buildIdNameMismatchMessage,
     },
-    notFound: MODEL_BONE_NOT_FOUND
+    notFound: MODEL_BONE_NOT_FOUND,
   });
 
 export const resolveCubeTarget = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options?: ResolveOptions
+  options?: ResolveOptions,
 ) =>
   resolveSingleTarget(items, id, name, {
     required: options?.required ?? { message: MODEL_CUBE_ID_OR_NAME_REQUIRED },
@@ -65,16 +65,16 @@ export const resolveCubeTarget = <T extends TargetNamed>(
       plural: 'cubes',
       idLabel: options?.idLabel,
       nameLabel: options?.nameLabel,
-      message: buildIdNameMismatchMessage
+      message: buildIdNameMismatchMessage,
     },
-    notFound: MODEL_CUBE_NOT_FOUND
+    notFound: MODEL_CUBE_NOT_FOUND,
   });
 
 export const resolveMeshTarget = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options?: ResolveOptions
+  options?: ResolveOptions,
 ) =>
   resolveSingleTarget(items, id, name, {
     required: options?.required ?? { message: MODEL_MESH_ID_OR_NAME_REQUIRED },
@@ -83,32 +83,32 @@ export const resolveMeshTarget = <T extends TargetNamed>(
       plural: 'meshes',
       idLabel: options?.idLabel,
       nameLabel: options?.nameLabel,
-      message: buildIdNameMismatchMessage
+      message: buildIdNameMismatchMessage,
     },
-    notFound: MODEL_MESH_NOT_FOUND
+    notFound: MODEL_MESH_NOT_FOUND,
   });
 
 export const resolveTextureTarget = <T extends TargetNamed>(
   items: T[],
   id: string | undefined,
   name: string | undefined,
-  options?: ResolveOptions
+  options?: ResolveOptions,
 ) =>
   resolveSingleTarget(items, id, name, {
     required:
       options?.required ??
       ({
         message: TEXTURE_ID_OR_NAME_REQUIRED,
-        fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX
+        fix: TEXTURE_ID_OR_NAME_REQUIRED_FIX,
       } as { message: string; fix?: string }),
     mismatch: {
       kind: 'Texture',
       plural: 'textures',
       idLabel: options?.idLabel,
       nameLabel: options?.nameLabel,
-      message: buildIdNameMismatchMessage
+      message: buildIdNameMismatchMessage,
     },
-    notFound: TEXTURE_NOT_FOUND
+    notFound: TEXTURE_NOT_FOUND,
   });
 
 const resolveSingleTarget = <T extends TargetNamed>(
@@ -132,10 +132,9 @@ const resolveSingleTarget = <T extends TargetNamed>(
       }) => string;
     };
     notFound: (label: string) => string;
-  }
+  },
 ): { target?: T; error?: ToolError } => {
   const resolved = resolveTargetsFromSelectors(items, [{ id, name }], options);
   if (!resolved.ok) return { error: resolved.error };
   return { target: resolved.value[0] };
 };
-

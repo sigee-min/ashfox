@@ -5,7 +5,7 @@ import {
   DEFAULT_SERVER_PATH,
   DEFAULT_SERVER_PORT,
   PLUGIN_ID,
-  computeCapabilities
+  computeCapabilities,
 } from '../../src/config';
 import type { FormatDescriptor } from '../../src/ports/formats';
 
@@ -20,7 +20,10 @@ import type { FormatDescriptor } from '../../src/ports/formats';
   const capabilities = computeCapabilities(undefined, []);
   assert.equal(capabilities.blockbenchVersion, 'unknown');
   assert.equal(capabilities.formats.length, 4);
-  assert.equal(capabilities.formats.every((format) => format.enabled === false), true);
+  assert.equal(
+    capabilities.formats.every((format) => format.enabled === false),
+    true,
+  );
   assert.equal(capabilities.guidance?.retryPolicy?.maxAttempts, 2);
 }
 
@@ -33,7 +36,7 @@ import type { FormatDescriptor } from '../../src/ports/formats';
       perTextureUvSize: false,
       boxUv: true,
       optionalBoxUv: true,
-      uvRotation: true
+      uvRotation: true,
     },
     {
       id: 'geckolib',
@@ -41,10 +44,10 @@ import type { FormatDescriptor } from '../../src/ports/formats';
       singleTexture: false,
       perTextureUvSize: true,
       animationMode: true,
-      boneRig: true
+      boneRig: true,
     },
     { id: 'animated_java', name: 'Animated Java', animationMode: true },
-    { id: 'free', name: 'Generic Model', animationMode: true, meshes: true, armatureRig: true }
+    { id: 'free', name: 'Generic Model', animationMode: true, meshes: true, armatureRig: true },
   ];
   const capabilities = computeCapabilities(
     '5.0.7',
@@ -54,8 +57,8 @@ import type { FormatDescriptor } from '../../src/ports/formats';
       pngOnly: true,
       fixedOutput: 'single',
       turntableOutput: 'sequence',
-      response: 'dataUri'
-    }
+      response: 'dataUri',
+    },
   );
   assert.equal(capabilities.blockbenchVersion, '5.0.7');
   assert.equal(capabilities.preview?.fixedOutput, 'single');

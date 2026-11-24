@@ -10,7 +10,7 @@ import {
   removeOutlinerNode,
   renameEntity,
   setVisibility,
-  withUndo
+  withUndo,
 } from '../blockbenchUtils';
 import { getCubeApi } from '../api';
 import { findCubeRef, findGroup } from '../outlinerLookup';
@@ -41,7 +41,7 @@ export class BlockbenchCubeAdapter {
           uv_offset: params.uvOffset ?? params.uv,
           box_uv: params.boxUv,
           inflate: params.inflate,
-          mirror_uv: params.mirror
+          mirror_uv: params.mirror,
         }).init?.();
         if (cube) {
           enforceManualUvMode(cube);
@@ -109,7 +109,11 @@ export class BlockbenchCubeAdapter {
         }
       });
       if (applyError) return applyError;
-      this.log.info('cube updated', { name: params.name, newName: params.newName, bone: params.bone });
+      this.log.info('cube updated', {
+        name: params.name,
+        newName: params.newName,
+        bone: params.bone,
+      });
       return null;
     });
   }
@@ -170,14 +174,14 @@ const buildVecMismatchError = (field: string, expected: Vec3, actual: Vec3 | nul
     reason: 'cube_vector_mismatch',
     field,
     expected,
-    actual
-  }
+    actual,
+  },
 });
 
 const applyVerifiedVec3 = (
   target: Record<string, unknown>,
   field: Vec3Field,
-  value: Vec3 | undefined
+  value: Vec3 | undefined,
 ): ToolError | null => {
   if (!value) return null;
   assignVec3(target, field, value);
@@ -194,4 +198,3 @@ const applyBoxUvMode = (target: Record<string, unknown>, boxUv: boolean | undefi
     setUvMode.call(target, boxUv);
   }
 };
-

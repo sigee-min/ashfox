@@ -218,10 +218,21 @@ export interface ToolResultMap {
   paint_mesh_face: WithState<PaintMeshFaceResult>;
   ensure_project: WithState<EnsureProjectResult>;
   delete_texture: WithState<{ id: string; name: string }>;
-  assign_texture: WithState<{ textureId?: string; textureName: string; cubeCount: number; faces?: CubeFaceDirection[] }>;
+  assign_texture: WithState<{
+    textureId?: string;
+    textureName: string;
+    cubeCount: number;
+    faces?: CubeFaceDirection[];
+  }>;
   add_bone: WithState<{ id: string; name: string }>;
   update_bone: WithState<{ id: string; name: string }>;
-  delete_bone: WithState<{ id: string; name: string; removedBones: number; removedCubes: number; deleted: DeletedTarget[] }>;
+  delete_bone: WithState<{
+    id: string;
+    name: string;
+    removedBones: number;
+    removedCubes: number;
+    deleted: DeletedTarget[];
+  }>;
   add_cube: WithState<{ id: string; name: string }>;
   update_cube: WithState<{ id: string; name: string }>;
   delete_cube: WithState<{ id: string; name: string; deleted: DeletedTarget[] }>;

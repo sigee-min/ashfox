@@ -27,7 +27,7 @@ const VALID_DATA_URI = 'data:image/png;base64,AAAA';
     const result = saveDataUriToTmp(VALID_DATA_URI, {
       cwd: tmpRoot,
       nameHint: '  pot name  ',
-      prefix: 'prefix'
+      prefix: 'prefix',
     });
     assert.equal(result.ok, true);
     if (result.ok) {

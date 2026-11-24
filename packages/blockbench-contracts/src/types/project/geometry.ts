@@ -1,10 +1,5 @@
 import { MESH_UV_POLICY_LIMITS } from '../../mcpSchemas/constants';
-import type {
-  TrackedBone,
-  TrackedCube,
-  TrackedCubeFace,
-  TrackedMesh
-} from './index';
+import type { TrackedBone, TrackedCube, TrackedCubeFace, TrackedMesh } from './index';
 import { MESH_SYMMETRY_AXES } from './index';
 import {
   hasShape,
@@ -20,16 +15,12 @@ import {
   isVec2,
   isVec3,
   isVec4,
-  optional
+  optional,
 } from './shared';
 
-export const isTrackedBoneContract = (
-  value: unknown
-): value is TrackedBone =>
+export const isTrackedBoneContract = (value: unknown): value is TrackedBone =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['name', 'pivot'], [
-    'id', 'parent', 'rotation', 'scale', 'visibility'
-  ]) &&
+  hasShape(value, ['name', 'pivot'], ['id', 'parent', 'rotation', 'scale', 'visibility']) &&
   isString(value.name) &&
   isVec3(value.pivot) &&
   optional(value, 'id', isString) &&
@@ -38,63 +29,58 @@ export const isTrackedBoneContract = (
   optional(value, 'scale', isVec3) &&
   optional(value, 'visibility', isBoolean);
 
-export const isTrackedCubeFaceContract = (
-  value: unknown
-): value is TrackedCubeFace =>
+export const isTrackedCubeFaceContract = (value: unknown): value is TrackedCubeFace =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['enabled'], [
-    'texture',
-    'uv',
-    'rotation',
-    'cullface',
-    'tintIndex',
-    'materialInstance'
-  ]) &&
+  hasShape(
+    value,
+    ['enabled'],
+    ['texture', 'uv', 'rotation', 'cullface', 'tintIndex', 'materialInstance'],
+  ) &&
   isBoolean(value.enabled) &&
   optional(
     value,
     'texture',
     (entry): entry is string | false | null =>
-      entry === false || entry === null || typeof entry === 'string'
+      entry === false || entry === null || typeof entry === 'string',
   ) &&
   optional(value, 'uv', isVec4) &&
   optional(
     value,
     'rotation',
     (entry): entry is 0 | 90 | 180 | 270 =>
-      entry === 0 || entry === 90 || entry === 180 || entry === 270
+      entry === 0 || entry === 90 || entry === 180 || entry === 270,
   ) &&
   optional(value, 'cullface', isCubeFaceDirection) &&
   optional(value, 'tintIndex', isFiniteNumber) &&
   optional(value, 'materialInstance', isString);
 
-const isTrackedCubeFaces = (
-  value: unknown
-): value is NonNullable<TrackedCube['faces']> =>
+const isTrackedCubeFaces = (value: unknown): value is NonNullable<TrackedCube['faces']> =>
   isClosedContractRecord(value) &&
-  Object.keys(value).every((key) =>
-    isCubeFaceDirection(key) && isTrackedCubeFaceContract(value[key])
+  Object.keys(value).every(
+    (key) => isCubeFaceDirection(key) && isTrackedCubeFaceContract(value[key]),
   );
 
-export const isTrackedCubeContract = (
-  value: unknown
-): value is TrackedCube =>
+export const isTrackedCubeContract = (value: unknown): value is TrackedCube =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['name', 'from', 'to', 'bone'], [
-    'id',
-    'origin',
-    'rotation',
-    'uv',
-    'uvOffset',
-    'inflate',
-    'mirror',
-    'visibility',
-    'boxUv',
-    'shade',
-    'lightEmission',
-    'rescale',
-    'faces'
-  ]) &&
+  hasShape(
+    value,
+    ['name', 'from', 'to', 'bone'],
+    [
+      'id',
+      'origin',
+      'rotation',
+      'uv',
+      'uvOffset',
+      'inflate',
+      'mirror',
+      'visibility',
+      'boxUv',
+      'shade',
+      'lightEmission',
+      'rescale',
+      'faces',
+    ],
+  ) &&
   isString(value.name) &&
   isVec3(value.from) &&
   isVec3(value.to) &&
@@ -113,55 +99,45 @@ export const isTrackedCubeContract = (
   optional(value, 'rescale', isBoolean) &&
   optional(value, 'faces', isTrackedCubeFaces);
 
-const isMeshUvPolicy = (
-  value: unknown
-): value is NonNullable<TrackedMesh['uvPolicy']> =>
+const isMeshUvPolicy = (value: unknown): value is NonNullable<TrackedMesh['uvPolicy']> =>
   isClosedContractRecord(value) &&
   hasShape(value, [], ['symmetryAxis', 'texelDensity', 'padding']) &&
   optional(
     value,
     'symmetryAxis',
     (entry): entry is NonNullable<TrackedMesh['uvPolicy']>['symmetryAxis'] =>
-      isEnumValue(MESH_SYMMETRY_AXES, entry)
+      isEnumValue(MESH_SYMMETRY_AXES, entry),
   ) &&
-  optional(
-    value,
-    'texelDensity',
-    (entry) => isFiniteNumberInRange(
+  optional(value, 'texelDensity', (entry) =>
+    isFiniteNumberInRange(
       entry,
       MESH_UV_POLICY_LIMITS.minTexelDensity,
-      MESH_UV_POLICY_LIMITS.maxTexelDensity
-    )
+      MESH_UV_POLICY_LIMITS.maxTexelDensity,
+    ),
   ) &&
-  optional(
-    value,
-    'padding',
-    (entry) => isFiniteNumberInRange(
+  optional(value, 'padding', (entry) =>
+    isFiniteNumberInRange(
       entry,
       MESH_UV_POLICY_LIMITS.minPadding,
-      MESH_UV_POLICY_LIMITS.maxPadding
-    )
+      MESH_UV_POLICY_LIMITS.maxPadding,
+    ),
   );
 
-const isTrackedMeshVertex = (
-  value: unknown
-): value is TrackedMesh['vertices'][number] =>
+const isTrackedMeshVertex = (value: unknown): value is TrackedMesh['vertices'][number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['id', 'pos']) &&
   isString(value.id) &&
   isVec3(value.pos);
 
 const isTrackedMeshFaceUv = (
-  value: unknown
+  value: unknown,
 ): value is NonNullable<TrackedMesh['faces'][number]['uv']>[number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['vertexId', 'uv']) &&
   isString(value.vertexId) &&
   isVec2(value.uv);
 
-const isTrackedMeshFace = (
-  value: unknown
-): value is TrackedMesh['faces'][number] =>
+const isTrackedMeshFace = (value: unknown): value is TrackedMesh['faces'][number] =>
   isClosedContractRecord(value) &&
   hasShape(value, ['vertices'], ['id', 'uv', 'texture']) &&
   isStringArray(value.vertices) &&
@@ -170,17 +146,16 @@ const isTrackedMeshFace = (
   optional(
     value,
     'texture',
-    (entry): entry is string | false =>
-      entry === false || typeof entry === 'string'
+    (entry): entry is string | false => entry === false || typeof entry === 'string',
   );
 
-export const isTrackedMeshContract = (
-  value: unknown
-): value is TrackedMesh =>
+export const isTrackedMeshContract = (value: unknown): value is TrackedMesh =>
   isClosedContractRecord(value) &&
-  hasShape(value, ['name', 'vertices', 'faces'], [
-    'id', 'bone', 'origin', 'rotation', 'visibility', 'uvPolicy'
-  ]) &&
+  hasShape(
+    value,
+    ['name', 'vertices', 'faces'],
+    ['id', 'bone', 'origin', 'rotation', 'visibility', 'uvPolicy'],
+  ) &&
   isString(value.name) &&
   isArrayOf(value.vertices, isTrackedMeshVertex) &&
   isArrayOf(value.faces, isTrackedMeshFace) &&

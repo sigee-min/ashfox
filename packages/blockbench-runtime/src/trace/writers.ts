@@ -16,7 +16,13 @@ export class ResourceTraceLogWriter implements TraceLogWriter {
 
   constructor(
     store: ResourceStore,
-    options?: { uri?: string; name?: string; description?: string; includeReport?: boolean; reportUri?: string }
+    options?: {
+      uri?: string;
+      name?: string;
+      description?: string;
+      includeReport?: boolean;
+      reportUri?: string;
+    },
   ) {
     this.store = store;
     this.uri = options?.uri ?? DEFAULT_URI;
@@ -32,7 +38,7 @@ export class ResourceTraceLogWriter implements TraceLogWriter {
       name: this.name,
       description: this.description,
       mimeType: 'application/x-ndjson',
-      text
+      text,
     });
     if (this.includeReport) {
       const report = buildTraceLogReport(text);
@@ -41,10 +47,9 @@ export class ResourceTraceLogWriter implements TraceLogWriter {
         name: 'ashfox trace report',
         description: 'Aggregated trace log summary (auto-generated).',
         mimeType: 'application/json',
-        text: JSON.stringify(report, null, 2)
+        text: JSON.stringify(report, null, 2),
       });
     }
     return null;
   }
 }
-

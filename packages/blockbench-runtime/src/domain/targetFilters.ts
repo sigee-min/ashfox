@@ -11,15 +11,11 @@ export const buildTargetFilters = (ids?: string[], names?: string[]): TargetFilt
   return {
     ids: idSet,
     names: nameSet,
-    hasFilters: idSet.size > 0 || nameSet.size > 0
+    hasFilters: idSet.size > 0 || nameSet.size > 0,
   };
 };
 
-export const matchTargetFilters = (
-  filters: TargetFilters,
-  id?: string,
-  name?: string
-): boolean => {
+export const matchTargetFilters = (filters: TargetFilters, id?: string, name?: string): boolean => {
   if (!filters.hasFilters) return true;
   const hasIds = filters.ids.size > 0;
   const hasNames = filters.names.size > 0;
@@ -38,5 +34,5 @@ export const matchTargetFilters = (
 
 export const filterByTargetFilters = <T extends { id?: string; name: string }>(
   items: T[],
-  filters: TargetFilters
+  filters: TargetFilters,
 ): T[] => items.filter((item) => matchTargetFilters(filters, item.id, item.name));

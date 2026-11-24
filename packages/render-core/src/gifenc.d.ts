@@ -13,7 +13,7 @@ declare module 'gifenc' {
       indexedPixels: Uint8Array,
       width: number,
       height: number,
-      options: GifFrameOptions
+      options: GifFrameOptions,
     ) => void;
     finish: () => void;
     bytes: () => Uint8Array;
@@ -28,12 +28,12 @@ declare module 'gifenc' {
     options?: {
       format?: 'rgb565' | 'rgb444' | 'rgba4444';
       oneBitAlpha?: boolean;
-    }
+    },
   ) => number[][];
 
   export const applyPalette: (
     rgba: Uint8Array | Uint8ClampedArray,
     palette: readonly (readonly number[])[],
-    format?: 'rgb565' | 'rgb444' | 'rgba4444'
+    format?: 'rgb565' | 'rgb444' | 'rgba4444',
   ) => Uint8Array;
 }

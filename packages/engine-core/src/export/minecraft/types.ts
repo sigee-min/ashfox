@@ -2,7 +2,7 @@ export type MinecraftAnimationScalar = number | string;
 export type MinecraftAnimationVector = [
   MinecraftAnimationScalar,
   MinecraftAnimationScalar,
-  MinecraftAnimationScalar
+  MinecraftAnimationScalar,
 ];
 
 export interface MinecraftAnimationKeyframe {
@@ -19,9 +19,7 @@ export type MinecraftAnimationTimeline = Record<
   MinecraftAnimationVector | MinecraftAnimationKeyframe
 >;
 
-export type MinecraftAnimationChannel =
-  | MinecraftAnimationVector
-  | MinecraftAnimationTimeline;
+export type MinecraftAnimationChannel = MinecraftAnimationVector | MinecraftAnimationTimeline;
 
 export interface MinecraftBoneAnimation {
   relative_to?: { rotation: 'entity' } | 'entity';
@@ -46,14 +44,8 @@ export interface MinecraftActorAnimation {
   blend_weight?: MinecraftAnimationScalar;
   override_previous_animation?: boolean;
   bones?: Record<string, MinecraftBoneAnimation>;
-  sound_effects?: Record<
-    string,
-    MinecraftAnimationEffect | MinecraftAnimationEffect[]
-  >;
-  particle_effects?: Record<
-    string,
-    MinecraftAnimationEffect | MinecraftAnimationEffect[]
-  >;
+  sound_effects?: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]>;
+  particle_effects?: Record<string, MinecraftAnimationEffect | MinecraftAnimationEffect[]>;
   timeline?: Record<string, string | readonly string[]>;
 }
 

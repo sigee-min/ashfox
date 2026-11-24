@@ -157,9 +157,7 @@ export interface GltfAnimation {
 export interface GltfDocument {
   asset: GltfAsset;
   extensionsUsed?: Array<'EXT_meshopt_compression' | 'KHR_mesh_quantization'>;
-  extensionsRequired?: Array<
-    'EXT_meshopt_compression' | 'KHR_mesh_quantization'
-  >;
+  extensionsRequired?: Array<'EXT_meshopt_compression' | 'KHR_mesh_quantization'>;
   scene: 0;
   scenes: Array<{ name?: string; nodes: number[] }>;
   nodes: GltfNode[];

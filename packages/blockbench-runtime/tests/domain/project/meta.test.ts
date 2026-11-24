@@ -15,7 +15,7 @@ const project: ProjectState = {
   bones: [],
   cubes: [],
   textures: [],
-  animations: []
+  animations: [],
 };
 
 const diff: ProjectDiff = {
@@ -25,8 +25,8 @@ const diff: ProjectDiff = {
     bones: { added: 0, removed: 0, changed: 0 },
     cubes: { added: 0, removed: 0, changed: 1 },
     textures: { added: 0, removed: 0, changed: 0 },
-    animations: { added: 0, removed: 0, changed: 0 }
-  }
+    animations: { added: 0, removed: 0, changed: 0 },
+  },
 };
 
 {
@@ -36,13 +36,13 @@ const diff: ProjectDiff = {
       stateCalls += 1;
       return { ok: true, value: { project } };
     },
-    getProjectDiff: () => ({ ok: true, value: { diff } })
+    getProjectDiff: () => ({ ok: true, value: { diff } }),
   };
   const meta = buildStateMeta(deps, {
     includeState: false,
     includeDiff: false,
     diffDetail: 'summary',
-    includeRevision: false
+    includeRevision: false,
   });
   assert.deepEqual(meta, {});
   assert.equal(stateCalls, 0);
@@ -51,12 +51,12 @@ const diff: ProjectDiff = {
 {
   const deps: StateMetaDeps = {
     getProjectState: () => ({ ok: true, value: { project } }),
-    getProjectDiff: () => ({ ok: true, value: { diff } })
+    getProjectDiff: () => ({ ok: true, value: { diff } }),
   };
   const meta = buildStateMeta(deps, {
     includeState: true,
     includeDiff: false,
-    diffDetail: 'summary'
+    diffDetail: 'summary',
   });
   assert.equal(meta.revision, 'r1');
   assert.equal(meta.state?.name, 'dragon');
@@ -70,13 +70,13 @@ const diff: ProjectDiff = {
     getProjectDiff: () => {
       diffCalls += 1;
       return { ok: true, value: { diff } };
-    }
+    },
   };
   const meta = buildStateMeta(deps, {
     includeState: true,
     includeDiff: true,
     diffDetail: 'full',
-    ifRevision: 'r0'
+    ifRevision: 'r0',
   });
   assert.equal(meta.revision, undefined);
   assert.equal(meta.state, null);
@@ -91,12 +91,12 @@ const diff: ProjectDiff = {
     getProjectDiff: () => {
       diffCalls += 1;
       return { ok: true, value: { diff } };
-    }
+    },
   };
   const meta = buildStateMeta(deps, {
     includeState: false,
     includeDiff: true,
-    diffDetail: 'summary'
+    diffDetail: 'summary',
   });
   assert.equal(meta.diff, null);
   assert.equal(diffCalls, 0);
@@ -105,13 +105,16 @@ const diff: ProjectDiff = {
 {
   const deps: StateMetaDeps = {
     getProjectState: () => ({ ok: true, value: { project } }),
-    getProjectDiff: () => ({ ok: false, error: { code: 'invalid_payload', message: 'bad revision' } })
+    getProjectDiff: () => ({
+      ok: false,
+      error: { code: 'invalid_payload', message: 'bad revision' },
+    }),
   };
   const meta = buildStateMeta(deps, {
     includeState: false,
     includeDiff: true,
     diffDetail: 'summary',
-    ifRevision: 'bad'
+    ifRevision: 'bad',
   });
   assert.equal(meta.diff, null);
 }

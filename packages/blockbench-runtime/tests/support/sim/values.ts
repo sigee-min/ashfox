@@ -2,7 +2,10 @@ import type { TextureResolution } from '../../../src/ports/editor';
 import type { ToolError } from '@ashfox/blockbench-contracts/types/internal';
 import type { CubeFace, CubeFaceDirection, CubeInstance } from '../../../src/types/blockbench';
 import { CUBE_FACE_DIRECTIONS } from '../../../src/shared/toolConstants';
-import { computeExpectedUvSizeWithOverflow, DEFAULT_UV_POLICY } from '../../../src/domain/uv/policy';
+import {
+  computeExpectedUvSizeWithOverflow,
+  DEFAULT_UV_POLICY,
+} from '../../../src/domain/uv/policy';
 
 export const ensureFaces = (cube: CubeInstance): Record<string, CubeFace> => {
   const faces = cube.faces ?? {};
@@ -19,7 +22,9 @@ export const normalizeSize = (value?: number): number | null => {
   return Math.trunc(value);
 };
 
-export const normalizeVec3 = (value?: [number, number, number] | { x: number; y: number; z: number }) => {
+export const normalizeVec3 = (
+  value?: [number, number, number] | { x: number; y: number; z: number },
+) => {
   if (!value) return null;
   if (Array.isArray(value)) return [value[0], value[1], value[2]] as [number, number, number];
   return [value.x ?? 0, value.y ?? 0, value.z ?? 0] as [number, number, number];
@@ -42,7 +47,7 @@ export const resolveUvOrigin = (cube: CubeInstance): [number, number] => {
 export const buildBoxUvLayout = (
   cube: CubeInstance,
   origin: [number, number],
-  resolution: TextureResolution
+  resolution: TextureResolution,
 ): Record<CubeFaceDirection, [number, number, number, number]> => {
   const from = normalizeVec3(cube.from) ?? [0, 0, 0];
   const to = normalizeVec3(cube.to) ?? [0, 0, 0];
@@ -53,7 +58,8 @@ export const buildBoxUvLayout = (
 
   const resolveSize = (width: number, height: number): { width: number; height: number } => {
     const expected = computeExpectedUvSizeWithOverflow({ width, height }, resolution, policy);
-    if (expected && !expected.exceedsTexture) return { width: expected.width, height: expected.height };
+    if (expected && !expected.exceedsTexture)
+      return { width: expected.width, height: expected.height };
     return { width, height };
   };
 
@@ -67,32 +73,41 @@ export const buildBoxUvLayout = (
 
   return {
     west: [u, v + depthHeight, u + depthWidth, v + depthHeight + sideHeight],
-    north: [u + depthWidth, v + depthHeight, u + depthWidth + northSize.width, v + depthHeight + sideHeight],
+    north: [
+      u + depthWidth,
+      v + depthHeight,
+      u + depthWidth + northSize.width,
+      v + depthHeight + sideHeight,
+    ],
     east: [
       u + depthWidth + northSize.width,
       v + depthHeight,
       u + depthWidth + northSize.width + depthWidth,
-      v + depthHeight + sideHeight
+      v + depthHeight + sideHeight,
     ],
     south: [
       u + depthWidth + northSize.width + depthWidth,
       v + depthHeight,
       u + depthWidth + northSize.width + depthWidth + northSize.width,
-      v + depthHeight + sideHeight
+      v + depthHeight + sideHeight,
     ],
     up: [u + depthWidth, v, u + depthWidth + northSize.width, v + depthHeight],
-    down: [u + depthWidth + northSize.width, v, u + depthWidth + northSize.width + northSize.width, v + depthHeight]
+    down: [
+      u + depthWidth + northSize.width,
+      v,
+      u + depthWidth + northSize.width + northSize.width,
+      v + depthHeight,
+    ],
   };
 };
 
 export const scaleVec2 = (
   value: [number, number] | { x: number; y: number },
   scaleX: number,
-  scaleY: number
+  scaleY: number,
 ): [number, number] => {
   const vec = normalizeVec2(value) ?? [0, 0];
   return [vec[0] * scaleX, vec[1] * scaleY];
 };
 
 export const error = (code: ToolError['code'], message: string): ToolError => ({ code, message });
-

@@ -4,7 +4,7 @@ import { guardOptionalRevision } from '../../../src/shared/tooling/optionalRevis
 
 {
   const service = {
-    ensureRevisionMatchIfProvided: () => null
+    ensureRevisionMatchIfProvided: () => null,
   };
   assert.equal(guardOptionalRevision(service as never, undefined), null);
   assert.equal(guardOptionalRevision(service as never, {}), null);
@@ -16,7 +16,7 @@ import { guardOptionalRevision } from '../../../src/shared/tooling/optionalRevis
     ensureRevisionMatchIfProvided: (revision: string) => {
       assert.equal(revision, 'r1');
       return null;
-    }
+    },
   };
   assert.equal(guardOptionalRevision(service as never, { ifRevision: 'r1' }), null);
 }
@@ -26,8 +26,8 @@ import { guardOptionalRevision } from '../../../src/shared/tooling/optionalRevis
     ensureRevisionMatchIfProvided: () => ({
       code: 'invalid_state',
       message: 'revision mismatch',
-      details: {}
-    })
+      details: {},
+    }),
   };
   const result = guardOptionalRevision(service as never, { ifRevision: 'r1' });
   assert.equal(result?.ok, false);

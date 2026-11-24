@@ -5,7 +5,11 @@ import { sha256Digest } from './provenance/digest';
  * validation boundaries. Denominators are always serialized as integers. */
 export const exactCornerDigest = (
   denominator: bigint | number | string,
-  numerators: readonly (readonly string[])[]
-): string => sha256Digest(canonicalJsonString({
-  denominator: denominator.toString(), numerators
-}));
+  numerators: readonly (readonly string[])[],
+): string =>
+  sha256Digest(
+    canonicalJsonString({
+      denominator: denominator.toString(),
+      numerators,
+    }),
+  );

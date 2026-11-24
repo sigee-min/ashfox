@@ -1,6 +1,11 @@
 import type { Cube, TextureUsage } from '../model';
 import { computeTextureUsageId } from '../textureUsage';
-import { computeUvOverlapIssues, computeUvScaleIssues, formatOverlapExample, formatScaleExample } from './issues';
+import {
+  computeUvOverlapIssues,
+  computeUvScaleIssues,
+  formatOverlapExample,
+  formatScaleExample,
+} from './issues';
 import { expandTextureTargets, isIssueTarget, type TextureTargetSet } from './targets';
 import type { UvPolicyConfig } from './policy';
 
@@ -24,7 +29,7 @@ export const guardUvUsageId = (
   usage: TextureUsage,
   expectedUsageId: string,
   projectResolution: { width: number; height: number } | undefined,
-  messages: UvGuardMessages
+  messages: UvGuardMessages,
 ): UvGuardError | null => {
   const currentUsageId = computeTextureUsageId(usage, projectResolution);
   if (currentUsageId === expectedUsageId) return null;
@@ -32,14 +37,14 @@ export const guardUvUsageId = (
     code: 'invalid_state',
     message: messages.usageChangedMessage,
     fix: messages.usageChangedFix,
-    details: { reason: 'uv_usage_mismatch', expected: expectedUsageId, current: currentUsageId }
+    details: { reason: 'uv_usage_mismatch', expected: expectedUsageId, current: currentUsageId },
   };
 };
 
 export const guardUvOverlaps = (
   usage: TextureUsage,
   targets: TextureTargetSet,
-  messages: UvGuardMessages
+  messages: UvGuardMessages,
 ): UvGuardError | null => {
   const expanded = expandTextureTargets(usage, targets);
   const blocking = computeUvOverlapIssues(usage).filter((issue) => isIssueTarget(issue, expanded));
@@ -61,9 +66,9 @@ export const guardUvOverlaps = (
         textureId: issue.textureId ?? undefined,
         textureName: issue.textureName,
         conflictCount: issue.conflictCount,
-        example: issue.example
-      }))
-    }
+        example: issue.example,
+      })),
+    },
   };
 };
 
@@ -97,9 +102,9 @@ export const guardUvScale = (args: {
         textureId: issue.textureId ?? undefined,
         textureName: issue.textureName,
         mismatchCount: issue.mismatchCount,
-        example: issue.example
-      }))
-    }
+        example: issue.example,
+      })),
+    },
   };
 };
 
@@ -113,7 +118,12 @@ export const guardUvUsage = (args: {
   messages: UvGuardMessages;
 }): UvGuardError | null => {
   if (args.expectedUsageId) {
-    const usageErr = guardUvUsageId(args.usage, args.expectedUsageId, args.resolution, args.messages);
+    const usageErr = guardUvUsageId(
+      args.usage,
+      args.expectedUsageId,
+      args.resolution,
+      args.messages,
+    );
     if (usageErr) return usageErr;
   }
   const overlapErr = guardUvOverlaps(args.usage, args.targets, args.messages);
@@ -124,11 +134,6 @@ export const guardUvUsage = (args: {
     resolution: args.resolution,
     policy: args.policy,
     targets: args.targets,
-    messages: args.messages
+    messages: args.messages,
   });
 };
-
-
-
-
-

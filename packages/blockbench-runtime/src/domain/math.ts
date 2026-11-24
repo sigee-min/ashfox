@@ -3,5 +3,3 @@ export const clamp = (value: number, min: number, max: number): number => {
   if (value > max) return max;
   return value;
 };
-
-

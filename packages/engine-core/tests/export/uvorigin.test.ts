@@ -6,16 +6,38 @@ import { compileGltfCubePrimitiveData } from '../../src/export/targets/gltf/cube
 import { compileGltfPlanePrimitiveData } from '../../src/export/targets/gltf/plane';
 
 const document = exportProject().document;
-const cube = Object.values(document.scene.nodes).find(node => node.kind === 'cube');
+const cube = Object.values(document.scene.nodes).find((node) => node.kind === 'cube');
 assert.ok(cube && cube.kind === 'cube');
 const texture = Object.values(document.textures)[0];
 assert.ok(texture);
-const face = { enabled: true, textureId: texture.id, uv: [0, 0, 2, 2] as [number, number, number, number], rotation: 0 as const };
-const options = { writer: new GltfBinaryWriter(false), unitScale: 1,
-  materialByTextureId: new Map([[texture.id, 0]]), singleSidedMaterialByTextureId: new Map([[texture.id, 0]]) };
-const texturedCube = { ...cube, faces: { north: face, south: face, east: face, west: face, up: face, down: face } };
-const plane: PlaneNode = { ...cube, kind: 'plane', coverageId: 'test', size: [2, 2], sidedness: 'double', faces: { front: face, back: face } };
-for (const primitives of [compileGltfCubePrimitiveData(document, texturedCube, options), compileGltfPlanePrimitiveData(document, plane, options)]) {
+const face = {
+  enabled: true,
+  textureId: texture.id,
+  uv: [0, 0, 2, 2] as [number, number, number, number],
+  rotation: 0 as const,
+};
+const options = {
+  writer: new GltfBinaryWriter(false),
+  unitScale: 1,
+  materialByTextureId: new Map([[texture.id, 0]]),
+  singleSidedMaterialByTextureId: new Map([[texture.id, 0]]),
+};
+const texturedCube = {
+  ...cube,
+  faces: { north: face, south: face, east: face, west: face, up: face, down: face },
+};
+const plane: PlaneNode = {
+  ...cube,
+  kind: 'plane',
+  coverageId: 'test',
+  size: [2, 2],
+  sidedness: 'double',
+  faces: { front: face, back: face },
+};
+for (const primitives of [
+  compileGltfCubePrimitiveData(document, texturedCube, options),
+  compileGltfPlanePrimitiveData(document, plane, options),
+]) {
   assert.ok(primitives.length > 0);
   for (const primitive of primitives) {
     assert.ok(primitive.uvs);

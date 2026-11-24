@@ -2,27 +2,33 @@ import type { AnimationClip, BlockbenchGlobals, UnknownRecord } from '../../../t
 import type { TrackedAnimationChannel, TrackedAnimationTrigger } from '../../../session';
 import { isRecord } from '../../../domain/guards';
 import { normalizeKeyframeTime } from '../../../domain/animation/keyframes';
-import { normalizeAnimationChannel, normalizeTriggerChannel } from '../../../domain/animation/channels';
+import {
+  normalizeAnimationChannel,
+  normalizeTriggerChannel,
+} from '../../../domain/animation/channels';
 
 export const getAnimationState = (
-  globals: BlockbenchGlobals
+  globals: BlockbenchGlobals,
 ): { animations: AnimationClip[]; status: 'available' | 'unavailable' } => {
-  if (Array.isArray(globals.Animations)) return { animations: globals.Animations, status: 'available' };
-  if (Array.isArray(globals.Animation?.all)) return { animations: globals.Animation.all, status: 'available' };
+  if (Array.isArray(globals.Animations))
+    return { animations: globals.Animations, status: 'available' };
+  if (Array.isArray(globals.Animation?.all))
+    return { animations: globals.Animation.all, status: 'available' };
   return { animations: [], status: 'unavailable' };
 };
 
 export const extractChannels = (
-  anim: AnimationClip
+  anim: AnimationClip,
 ): { channels?: TrackedAnimationChannel[]; triggers?: TrackedAnimationTrigger[] } => {
   const animators = anim?.animators;
   if (!animators || typeof animators !== 'object') return {};
   const channels: TrackedAnimationChannel[] = [];
-  const triggerBuckets: Record<'sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']> = {
-    sound: [],
-    particle: [],
-    timeline: []
-  };
+  const triggerBuckets: Record<'sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']> =
+    {
+      sound: [],
+      particle: [],
+      timeline: [],
+    };
   Object.entries(animators).forEach(([bone, animator]) => {
     if (!isRecord(animator)) return;
     const grouped = collectAnimatorChannels(animator);
@@ -34,14 +40,16 @@ export const extractChannels = (
       triggerBuckets[entry.type].push(...entry.keys);
     });
   });
-  const triggers = (Object.entries(triggerBuckets) as Array<
-    ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
-  >)
+  const triggers = (
+    Object.entries(triggerBuckets) as Array<
+      ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
+    >
+  )
     .filter(([, keys]) => keys.length > 0)
     .map(([type, keys]) => ({ type, keys }));
   return {
     channels: channels.length > 0 ? channels : undefined,
-    triggers: triggers.length > 0 ? triggers : undefined
+    triggers: triggers.length > 0 ? triggers : undefined,
   };
 };
 
@@ -51,12 +59,12 @@ export const normalizeLoop = (loopValue: unknown): boolean => {
 };
 
 const collectAnimatorChannels = (
-  animator: UnknownRecord
+  animator: UnknownRecord,
 ): Array<{ channel: 'rot' | 'pos' | 'scale'; keys: TrackedAnimationChannel['keys'] }> => {
   const buckets: Record<'rot' | 'pos' | 'scale', TrackedAnimationChannel['keys']> = {
     rot: [],
     pos: [],
-    scale: []
+    scale: [],
   };
   const keyframes = Array.isArray(animator.keyframes) ? animator.keyframes : [];
   keyframes.forEach((kf) => {
@@ -67,7 +75,7 @@ const collectAnimatorChannels = (
     buckets[channel].push({
       time: normalizeKeyframeTime(Number(kf.time ?? kf.frame ?? 0)),
       value: [value[0], value[1], value[2]],
-      interp: normalizeInterp(kf.interpolation)
+      interp: normalizeInterp(kf.interpolation),
     });
   });
   return Object.entries(buckets)
@@ -76,12 +84,12 @@ const collectAnimatorChannels = (
 };
 
 const collectAnimatorTriggers = (
-  animator: UnknownRecord
+  animator: UnknownRecord,
 ): Array<{ type: 'sound' | 'particle' | 'timeline'; keys: TrackedAnimationTrigger['keys'] }> => {
   const buckets: Record<'sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']> = {
     sound: [],
     particle: [],
-    timeline: []
+    timeline: [],
   };
   const keyframes = Array.isArray(animator.keyframes) ? animator.keyframes : [];
   keyframes.forEach((kf) => {
@@ -92,18 +100,20 @@ const collectAnimatorTriggers = (
     if (value === null) return;
     buckets[type].push({
       time: normalizeKeyframeTime(Number(kf.time ?? kf.frame ?? 0)),
-      value
+      value,
     });
   });
-  return (Object.entries(buckets) as Array<
-    ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
-  >)
+  return (
+    Object.entries(buckets) as Array<
+      ['sound' | 'particle' | 'timeline', TrackedAnimationTrigger['keys']]
+    >
+  )
     .filter(([, keys]) => keys.length > 0)
     .map(([type, keys]) => ({ type, keys }));
 };
 
 const normalizeTriggerValue = (
-  value: unknown
+  value: unknown,
 ): string | string[] | Record<string, unknown> | null => {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) {

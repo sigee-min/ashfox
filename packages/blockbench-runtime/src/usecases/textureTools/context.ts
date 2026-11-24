@@ -3,7 +3,7 @@ import type {
   AutoUvAtlasResult,
   Capabilities,
   PreflightTextureResult,
-  ToolError
+  ToolError,
 } from '@ashfox/blockbench-contracts/types/internal';
 import type { EditorPort } from '../../ports/editor';
 import type { TextureRendererPort } from '../../ports/textureRenderer';
@@ -15,7 +15,7 @@ import {
   buildUvGuardMessages,
   buildUvPaintMessages,
   buildUvPaintPixelMessages,
-  buildUvPaintSourceMessages
+  buildUvPaintSourceMessages,
 } from '../../shared/messages';
 
 export type TextureToolContext = {
@@ -50,7 +50,12 @@ export type TextureToolContext = {
     cubeNames?: string[];
     faces?: import('../../ports/editor').CubeFaceDirection[];
     ifRevision?: string;
-  }) => UsecaseResult<{ textureId?: string; textureName: string; cubeCount: number; faces?: import('../../ports/editor').CubeFaceDirection[] }>;
+  }) => UsecaseResult<{
+    textureId?: string;
+    textureName: string;
+    cubeCount: number;
+    faces?: import('../../ports/editor').CubeFaceDirection[];
+  }>;
   createBlankTexture?: (payload: {
     name: string;
     width?: number;
@@ -64,9 +69,7 @@ export type TextureToolContext = {
     textureName?: string;
     includeUsage?: boolean;
   }) => UsecaseResult<PreflightTextureResult>;
-  autoUvAtlas?: (
-    payload: AutoUvAtlasPayload
-  ) => UsecaseResult<AutoUvAtlasResult>;
+  autoUvAtlas?: (payload: AutoUvAtlasPayload) => UsecaseResult<AutoUvAtlasResult>;
   runWithoutRevisionGuard?: <T>(fn: () => T) => T;
 };
 
@@ -75,4 +78,3 @@ export const uvGuardMessages = buildUvGuardMessages();
 export const uvPaintMessages = buildUvPaintMessages();
 export const uvPaintPixelMessages = buildUvPaintPixelMessages();
 export const uvPaintSourceMessages = buildUvPaintSourceMessages();
-

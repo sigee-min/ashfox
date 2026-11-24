@@ -6,7 +6,7 @@ type NamedEntity = { name: string; id?: string | null };
 export const ensureNameAvailable = (
   items: NamedEntity[],
   name: string,
-  message: (value: string) => string
+  message: (value: string) => string,
 ): ToolError | null =>
   items.some((item) => item.name === name)
     ? { code: 'invalid_payload', message: message(name) }
@@ -15,7 +15,7 @@ export const ensureNameAvailable = (
 export const ensureIdAvailable = (
   items: NamedEntity[],
   id: string,
-  message: (value: string) => string
+  message: (value: string) => string,
 ): ToolError | null =>
   items.some((item) => item.id && item.id === id)
     ? { code: 'invalid_payload', message: message(id) }
@@ -25,7 +25,7 @@ export const ensureRenameAvailable = (
   items: NamedEntity[],
   newName: string | undefined,
   currentName: string,
-  message: (value: string) => string
+  message: (value: string) => string,
 ): ToolError | null => {
   if (!newName || newName === currentName) return null;
   const conflict = items.some((item) => item.name === newName && item.name !== currentName);
@@ -35,6 +35,5 @@ export const ensureRenameAvailable = (
 export const resolveEntityId = (
   existingId: string | undefined | null,
   requestedId: string | undefined,
-  prefix: string
+  prefix: string,
 ): string => requestedId ?? existingId ?? createId(prefix);
-

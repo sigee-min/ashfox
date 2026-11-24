@@ -26,14 +26,14 @@ const createServiceSetup = (options: SetupOptions = {}) => {
     assignTexture: (payload) => {
       calls.push(payload);
       return options.editorAssignError ?? null;
-    }
+    },
   };
 
   const service = new TextureAssignmentService({
     editor,
     getSnapshot: () => session.snapshot(),
     ensureActive: () => options.ensureActiveError ?? null,
-    ensureRevisionMatch: () => options.ensureRevisionError ?? null
+    ensureRevisionMatch: () => options.ensureRevisionError ?? null,
   });
 
   return { service, calls };
@@ -42,11 +42,11 @@ const createServiceSetup = (options: SetupOptions = {}) => {
 // ensureActive errors should short-circuit before assignment.
 {
   const { service, calls } = createServiceSetup({
-    ensureActiveError: { code: 'invalid_state', message: 'inactive' }
+    ensureActiveError: { code: 'invalid_state', message: 'inactive' },
   });
   const res = service.assignTexture({
     textureName: 'atlas',
-    cubeNames: ['body']
+    cubeNames: ['body'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_state');
@@ -57,7 +57,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
 {
   const { service } = createServiceSetup();
   const res = service.assignTexture({
-    cubeNames: ['body']
+    cubeNames: ['body'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -68,7 +68,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
   const { service } = createServiceSetup();
   const res = service.assignTexture({
     textureName: 'atlas',
-    cubeNames: ['missing']
+    cubeNames: ['missing'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -80,7 +80,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
   const res = service.assignTexture({
     textureName: 'atlas',
     cubeNames: ['body'],
-    faces: ['north', 'invalid_face' as unknown as 'north']
+    faces: ['north', 'invalid_face' as unknown as 'north'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_payload');
@@ -90,11 +90,11 @@ const createServiceSetup = (options: SetupOptions = {}) => {
 // editor assignment failures should propagate.
 {
   const { service } = createServiceSetup({
-    editorAssignError: { code: 'unknown', message: 'assign failed' }
+    editorAssignError: { code: 'unknown', message: 'assign failed' },
   });
   const res = service.assignTexture({
     textureName: 'atlas',
-    cubeNames: ['body']
+    cubeNames: ['body'],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.message.startsWith('assign failed'), true);
@@ -106,7 +106,7 @@ const createServiceSetup = (options: SetupOptions = {}) => {
   const res = service.assignTexture({
     textureName: 'atlas',
     cubeNames: ['body'],
-    faces: ['north', 'north', 'south']
+    faces: ['north', 'north', 'south'],
   });
   assert.equal(res.ok, true);
   if (res.ok) {

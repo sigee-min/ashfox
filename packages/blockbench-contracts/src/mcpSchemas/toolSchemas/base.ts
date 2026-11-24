@@ -11,9 +11,9 @@ export const baseToolSchemas: Record<string, JsonSchema> = {
       detail: { type: 'string', enum: PROJECT_STATE_DETAILS },
       includeUsage: {
         type: 'boolean',
-        description: 'Include textureUsage in the response (defaults to true when detail=full).'
-      }
-    }
+        description: 'Include textureUsage in the response (defaults to true when detail=full).',
+      },
+    },
   },
   read_texture: {
     type: 'object',
@@ -23,8 +23,8 @@ export const baseToolSchemas: Record<string, JsonSchema> = {
       name: { type: 'string' },
       saveToTmp: { type: 'boolean' },
       tmpName: { type: 'string' },
-      tmpPrefix: { type: 'string' }
-    }
+      tmpPrefix: { type: 'string' },
+    },
   },
   export_trace_log: {
     type: 'object',
@@ -32,8 +32,8 @@ export const baseToolSchemas: Record<string, JsonSchema> = {
     properties: {
       mode: { type: 'string', enum: ['auto', 'writeFile', 'export'] },
       destPath: { type: 'string' },
-      fileName: { type: 'string' }
-    }
+      fileName: { type: 'string' },
+    },
   },
   reload_plugins: {
     type: 'object',
@@ -41,8 +41,7 @@ export const baseToolSchemas: Record<string, JsonSchema> = {
     additionalProperties: false,
     properties: {
       confirm: { type: 'boolean', enum: [true] },
-      delayMs: { type: 'number' }
-    }
-  }
+      delayMs: { type: 'number' },
+    },
+  },
 };
-

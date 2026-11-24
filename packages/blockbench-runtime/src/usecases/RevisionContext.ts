@@ -37,7 +37,7 @@ export class RevisionContext implements RevisionContextLike {
       allowAutoRetry: false,
       expected,
       currentRevision,
-      active: hasProject
+      active: hasProject,
     });
     return decision.ok ? null : decision.error;
   }
@@ -60,8 +60,3 @@ export class RevisionContext implements RevisionContextLike {
     }
   }
 }
-
-
-
-
-

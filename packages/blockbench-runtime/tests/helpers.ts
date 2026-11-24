@@ -9,7 +9,7 @@ export const ok = <T>(value: T): UsecaseResult<T> => ({ ok: true, value });
 export const DEFAULT_LIMITS: Limits = {
   maxCubes: 2048,
   maxTextureSize: 256,
-  maxAnimationSeconds: 120
+  maxAnimationSeconds: 120,
 };
 
 export const noopLog: Logger = {
@@ -17,7 +17,7 @@ export const noopLog: Logger = {
   debug: () => undefined,
   info: () => undefined,
   warn: () => undefined,
-  error: () => undefined
+  error: () => undefined,
 };
 
 export const registerAsync = (promise: Promise<unknown>) => {
@@ -27,5 +27,3 @@ export const registerAsync = (promise: Promise<unknown>) => {
 };
 
 export const unsafePayload = <T>(value: unknown): T => value as T;
-
-

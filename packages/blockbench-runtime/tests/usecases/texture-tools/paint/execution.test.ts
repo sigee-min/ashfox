@@ -1,13 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { runPaintTexture } from '../../../../src/usecases/textureTools/texturePaint';
-import {
-  createHarness,
-  createPayload,
-  createUsage,
-  fillOp,
-  usageIdFor
-} from './fixture';
+import { createHarness, createPayload, createUsage, fillOp, usageIdFor } from './fixture';
 
 {
   const { ctx } = createHarness({ noRenderer: true });
@@ -18,7 +12,7 @@ import {
 
 {
   const { ctx } = createHarness({
-    renderError: { code: 'io_error', message: 'render failed' }
+    renderError: { code: 'io_error', message: 'render failed' },
   });
   const res = runPaintTexture(ctx, createPayload());
   assert.equal(res.ok, false);
@@ -34,14 +28,14 @@ import {
 
 {
   const { ctx } = createHarness({
-    updateError: { code: 'io_error', message: 'update failed' }
+    updateError: { code: 'io_error', message: 'update failed' },
   });
   const res = runPaintTexture(ctx, {
     mode: 'update',
     targetName: 'atlas',
     width: 16,
     height: 16,
-    ops: [fillOp]
+    ops: [fillOp],
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.ok(res.error.message.startsWith('update failed'));
@@ -49,7 +43,7 @@ import {
 
 {
   const { ctx } = createHarness({
-    importError: { code: 'io_error', message: 'import failed' }
+    importError: { code: 'io_error', message: 'import failed' },
   });
   const res = runPaintTexture(ctx, createPayload());
   assert.equal(res.ok, false);
@@ -77,7 +71,7 @@ import {
     height: 16,
     ops: [fillOp],
     uvPaint: { mapping: 'stretch' },
-    uvUsageId: usageIdFor(usage)
+    uvUsageId: usageIdFor(usage),
   });
   assert.equal(res.ok, true);
   if (res.ok) {

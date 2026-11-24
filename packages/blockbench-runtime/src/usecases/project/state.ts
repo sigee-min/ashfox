@@ -1,4 +1,8 @@
-import type { ProjectDiff, ProjectState, ProjectStateDetail } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  ProjectDiff,
+  ProjectState,
+  ProjectStateDetail,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { ok, fail, type UsecaseResult } from '../result';
 import { diffSnapshots } from '../../domain/project/diff';
 import { ensureNonBlankString } from '../../shared/payloadValidation';
@@ -18,7 +22,10 @@ export class ProjectStateService {
     this.getSnapshot = deps.getSnapshot;
   }
 
-  getProjectState(payload: { detail?: ProjectStateDetail; includeUsage?: boolean }): UsecaseResult<{ project: ProjectState }> {
+  getProjectState(payload: {
+    detail?: ProjectStateDetail;
+    includeUsage?: boolean;
+  }): UsecaseResult<{ project: ProjectState }> {
     const detail: ProjectStateDetail = payload.detail ?? 'summary';
     const includeUsage = payload.includeUsage ?? detail === 'full';
     const snapshot = this.getSnapshot();
@@ -37,12 +44,15 @@ export class ProjectStateService {
     const project: ProjectState = {
       ...baseProject,
       ...(resolution ? { textureResolution: resolution } : {}),
-      ...(textureUsage ? { textureUsage } : {})
+      ...(textureUsage ? { textureUsage } : {}),
     };
     return ok({ project });
   }
 
-  getProjectDiff(payload: { sinceRevision: string; detail?: ProjectStateDetail }): UsecaseResult<{ diff: ProjectDiff }> {
+  getProjectDiff(payload: {
+    sinceRevision: string;
+    detail?: ProjectStateDetail;
+  }): UsecaseResult<{ diff: ProjectDiff }> {
     const detail: ProjectStateDetail = payload.detail ?? 'summary';
     const revisionBlankErr = ensureNonBlankString(payload.sinceRevision, 'sinceRevision');
     if (revisionBlankErr) return fail(revisionBlankErr);
@@ -61,7 +71,7 @@ export class ProjectStateService {
       meshes: [],
       textures: [],
       animations: [],
-      animationsStatus: snapshot.animationsStatus
+      animationsStatus: snapshot.animationsStatus,
     };
     const diffResult = diffSnapshots(previous ?? emptyBase, snapshot, detail === 'full');
     const sets = detail === 'full' ? diffResult.sets : undefined;
@@ -76,9 +86,9 @@ export class ProjectStateService {
             cubes: sets.cubes,
             meshes: sets.meshes,
             textures: sets.textures,
-            animations: sets.animations
+            animations: sets.animations,
           }
-        : {})
+        : {}),
     };
     this.revision.remember(snapshot, currentRevision);
     return ok({ diff });

@@ -11,7 +11,8 @@ export const MCP_ORIGIN_NOT_ALLOWED = 'Origin is not allowed for this endpoint';
 export const MCP_CONTENT_TYPE_REQUIRED = 'content-type must be application/json';
 export const MCP_JSONRPC_PARSE_ERROR = 'Parse error';
 export const MCP_JSONRPC_INVALID_REQUEST = 'Invalid Request';
-export const MCP_UNSUPPORTED_PROTOCOL = (version: string) => `Unsupported protocol version: ${version}`;
+export const MCP_UNSUPPORTED_PROTOCOL = (version: string) =>
+  `Unsupported protocol version: ${version}`;
 export const MCP_INITIALIZE_REQUIRES_ID = 'initialize requires id';
 export const MCP_SESSION_UNAVAILABLE = 'Session unavailable';
 export const MCP_SERVER_NOT_INITIALIZED = 'Server not initialized';
@@ -31,5 +32,4 @@ export const MCP_REQUEST_TIMEOUT = 'request timeout';
 export const MCP_INVALID_REQUEST_LINE = 'invalid request line';
 export const MCP_INVALID_CONTENT_LENGTH = 'invalid content-length';
 export const MCP_INVALID_HEADER = 'invalid request header';
-export const MCP_TRANSFER_ENCODING_UNSUPPORTED =
-  'transfer-encoding is unsupported';
+export const MCP_TRANSFER_ENCODING_UNSUPPORTED = 'transfer-encoding is unsupported';

@@ -1,8 +1,5 @@
 /** Recursively seals a canonical value while preserving object identity. */
-export const deepFreeze = <T>(
-  value: T,
-  seen = new WeakSet<object>()
-): T => {
+export const deepFreeze = <T>(value: T, seen = new WeakSet<object>()): T => {
   if (typeof value !== 'object' || value === null || seen.has(value)) {
     return value;
   }

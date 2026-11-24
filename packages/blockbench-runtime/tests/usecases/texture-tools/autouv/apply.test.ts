@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 
 import type { TextureUsage } from '../../../../src/domain/model';
 import type { AtlasPlan } from '../../../../src/domain/uv/atlas';
-import { applyAutoUvAtlasPlan, toReprojectTextureRenderer } from '../../../../src/usecases/textureTools/autoUvAtlasApply';
+import {
+  applyAutoUvAtlasPlan,
+  toReprojectTextureRenderer,
+} from '../../../../src/usecases/textureTools/autoUvAtlasApply';
 import type { TextureToolContext } from '../../../../src/usecases/textureTools/context';
 
 type TaggedImage = { tag: string };
@@ -14,16 +17,16 @@ const baseUsage: TextureUsage = {
       name: 'atlas',
       cubeCount: 1,
       faceCount: 1,
-      cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-    }
-  ]
+      cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+    },
+  ],
 };
 
 const basePlan: AtlasPlan = {
   resolution: { width: 16, height: 16 },
   steps: 0,
   textures: [],
-  assignments: [{ cubeId: 'cube1', cubeName: 'cube', face: 'north', uv: [0, 0, 8, 8] }]
+  assignments: [{ cubeId: 'cube1', cubeName: 'cube', face: 'north', uv: [0, 0, 8, 8] }],
 };
 
 const createOpaque = (width: number, height: number): Uint8ClampedArray => {
@@ -70,38 +73,60 @@ const createHarness = (options?: {
           image:
             options?.readTextureImage === undefined
               ? (currentImage as unknown as CanvasImageSource)
-              : options.readTextureImage ?? undefined,
+              : (options.readTextureImage ?? undefined),
           width: options?.readTextureSize?.width ?? width,
-          height: options?.readTextureSize?.height ?? height
-        }
+          height: options?.readTextureSize?.height ?? height,
+        },
       }),
       setFaceUv: () => {
         setFaceUvCalls += 1;
         if (options?.setFaceUvError) return { code: 'invalid_state', message: 'setFaceUv failed' };
         return null;
-      }
+      },
     } as never,
-    updateTexture: (
-      payload: Parameters<TextureToolContext['updateTexture']>[0]
-    ) => {
+    updateTexture: (payload: Parameters<TextureToolContext['updateTexture']>[0]) => {
       updateCalls += 1;
       currentImage = payload.image as unknown as TaggedImage;
-      if (options?.updateFail) return { ok: false, error: { code: 'invalid_state', message: 'update failed' } };
-      if (options?.updateNoChange) return { ok: false, error: { code: 'no_change', message: 'same' } };
+      if (options?.updateFail)
+        return { ok: false, error: { code: 'invalid_state', message: 'update failed' } };
+      if (options?.updateNoChange)
+        return { ok: false, error: { code: 'no_change', message: 'same' } };
       if (updateCalls > 1) rollbackCalls += 1;
       return { ok: true, value: { id: 'tex1', name: 'atlas' } };
     },
     ensureActive: () => null,
     ensureRevisionMatch: () => null,
-    getSnapshot: () => ({ id: 'p', format: 'geckolib', formatId: 'g', name: 'demo', bones: [], cubes: [], textures: [], animations: [], animationTimePolicy: { fpsDefault: 20, minKeyframeStep: 0.05, maxAnimationSeconds: 600, trimDecimals: 4 } } as never),
-    capabilities: { pluginVersion: 'test', blockbenchVersion: 'test', formats: [], limits: { maxCubes: 64, maxTextureSize: 64, maxAnimationSeconds: 120 } },
+    getSnapshot: () =>
+      ({
+        id: 'p',
+        format: 'geckolib',
+        formatId: 'g',
+        name: 'demo',
+        bones: [],
+        cubes: [],
+        textures: [],
+        animations: [],
+        animationTimePolicy: {
+          fpsDefault: 20,
+          minKeyframeStep: 0.05,
+          maxAnimationSeconds: 600,
+          trimDecimals: 4,
+        },
+      }) as never,
+    capabilities: {
+      pluginVersion: 'test',
+      blockbenchVersion: 'test',
+      formats: [],
+      limits: { maxCubes: 64, maxTextureSize: 64, maxAnimationSeconds: 120 },
+    },
     getUvPolicyConfig: () => ({ pixelsPerBlock: 16 }),
-    importTexture: () => ({ ok: true, value: { id: 'x', name: 'x' } })
+    importTexture: () => ({ ok: true, value: { id: 'x', name: 'x' } }),
   } as never;
 
   const renderer = toReprojectTextureRenderer({
     readPixels: ({ image }) => {
-      if (options?.readPixelsError) return { error: { code: 'invalid_state', message: 'read failed' } };
+      if (options?.readPixelsError)
+        return { error: { code: 'invalid_state', message: 'read failed' } };
       const tagged = image as unknown as TaggedImage;
       if (options?.rollbackDrop && tagged.tag === 'after') {
         return { result: { width, height, data: createTransparent(width, height) } };
@@ -109,9 +134,10 @@ const createHarness = (options?: {
       return { result: { width, height, data: createOpaque(width, height) } };
     },
     renderPixels: () => {
-      if (options?.renderError) return { error: { code: 'invalid_state', message: 'render failed' } };
+      if (options?.renderError)
+        return { error: { code: 'invalid_state', message: 'render failed' } };
       return { result: { image: { tag: 'after' } as unknown as CanvasImageSource, width, height } };
-    }
+    },
   });
   assert.ok(renderer);
 
@@ -120,7 +146,7 @@ const createHarness = (options?: {
     usage,
     plan,
     renderer: renderer!,
-    getCalls: () => ({ updateCalls, rollbackCalls, setFaceUvCalls })
+    getCalls: () => ({ updateCalls, rollbackCalls, setFaceUvCalls }),
   };
 };
 
@@ -136,7 +162,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, true);
   assert.equal(harness.getCalls().setFaceUvCalls, 1);
@@ -149,7 +175,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_state');
@@ -163,20 +189,20 @@ const createHarness = (options?: {
         name: 'atlas',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }]
-      }
-    ]
+        cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north', uv: [0, 0, 8, 8] }] }],
+      },
+    ],
   };
   const harness = createHarness({
     usage: usageWithoutSize,
-    readTextureSize: { width: 0, height: 0 }
+    readTextureSize: { width: 0, height: 0 },
   });
   const res = applyAutoUvAtlasPlan({
     ctx: harness.ctx,
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.code, 'invalid_state');
@@ -189,7 +215,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.ok(res.error.message.startsWith('read failed'));
@@ -202,7 +228,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.ok(res.error.message.startsWith('render failed'));
@@ -215,7 +241,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.ok(res.error.message.startsWith('update failed'));
@@ -228,7 +254,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, true);
   assert.equal(harness.getCalls().updateCalls, 1);
@@ -243,9 +269,9 @@ const createHarness = (options?: {
         name: 'atlas',
         cubeCount: 1,
         faceCount: 1,
-        cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north' }] }]
-      }
-    ]
+        cubes: [{ id: 'cube1', name: 'cube', faces: [{ face: 'north' }] }],
+      },
+    ],
   };
   const harness = createHarness({ usage: usageWithoutFaceUv });
   const res = applyAutoUvAtlasPlan({
@@ -253,7 +279,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, true);
 }
@@ -265,7 +291,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.ok(res.error.message.startsWith('setFaceUv failed'));
@@ -278,7 +304,7 @@ const createHarness = (options?: {
     payload: {},
     usage: harness.usage,
     plan: harness.plan,
-    textureRenderer: harness.renderer
+    textureRenderer: harness.renderer,
   });
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.error.details?.reason, 'texture_recovery_guard');

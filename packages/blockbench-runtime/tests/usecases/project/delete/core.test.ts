@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 
 import { ADAPTER_PROJECT_CLOSE_NOT_APPLIED } from '../../../../src/shared/messages';
-import { runDeleteProject, type ProjectDeleteContext } from '../../../../src/usecases/project/delete';
+import {
+  runDeleteProject,
+  type ProjectDeleteContext,
+} from '../../../../src/usecases/project/delete';
 
 type Snapshot = {
   id: string | null;
@@ -14,14 +17,14 @@ const activeSnapshot: Snapshot = {
   id: 'p1',
   format: 'geckolib',
   formatId: 'geckolib_model',
-  name: 'dragon'
+  name: 'dragon',
 };
 
 const closedSnapshot: Snapshot = {
   id: null,
   format: null,
   formatId: null,
-  name: null
+  name: null,
 };
 
 const buildContext = (options?: {
@@ -42,12 +45,12 @@ const buildContext = (options?: {
         if (options?.closeError) return options.closeError;
         if (options?.applyClose !== false) active = false;
         return null;
-      }
+      },
     },
     session: {
       reset: () => {
         resetCount += 1;
-      }
+      },
     },
     projectState: {
       normalize: (snapshot: Snapshot) => snapshot,
@@ -57,15 +60,15 @@ const buildContext = (options?: {
               id: snapshot.id,
               name: snapshot.name,
               format: snapshot.format,
-              formatId: snapshot.formatId ?? null
+              formatId: snapshot.formatId ?? null,
             }
-          : null
-    }
+          : null,
+    },
   } as unknown as ProjectDeleteContext;
   return {
     ctx,
     resetCalls: () => resetCount,
-    closeCalls: () => closeCount
+    closeCalls: () => closeCount,
   };
 };
 

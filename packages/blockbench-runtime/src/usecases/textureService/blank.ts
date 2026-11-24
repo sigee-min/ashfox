@@ -11,7 +11,7 @@ import {
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX,
   TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX,
   TEXTURE_RENDERER_NO_IMAGE,
-  TEXTURE_RENDERER_UNAVAILABLE
+  TEXTURE_RENDERER_UNAVAILABLE,
 } from '../../shared/messages';
 import { withActiveOnly } from '../guards';
 import { fail, ok, type UsecaseResult } from '../result';
@@ -42,7 +42,7 @@ export type CreateBlankTextureContext = {
 
 export const runCreateBlankTexture = (
   ctx: CreateBlankTextureContext,
-  payload: CreateBlankTexturePayload
+  payload: CreateBlankTexturePayload,
 ): UsecaseResult<{ id: string; name: string; created: boolean }> =>
   withActiveOnly<{ id: string; name: string; created: boolean }>(ctx.ensureActive, () => {
     if (!payload.name) {
@@ -69,17 +69,20 @@ export const runCreateBlankTexture = (
       const sizeMessage = mapDimensionError(sizeCheck, {
         nonPositive: (axis) => DIMENSION_POSITIVE_MESSAGE(axis, axis),
         nonInteger: (axis) => DIMENSION_INTEGER_MESSAGE(axis, axis),
-        exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize)
+        exceedsMax: (limit) => TEXTURE_PAINT_SIZE_EXCEEDS_MAX(limit || maxSize),
       });
       if (sizeCheck.reason === 'exceeds_max') {
         return fail({
           code: 'invalid_payload',
           message: sizeMessage ?? TEXTURE_PAINT_SIZE_EXCEEDS_MAX(maxSize),
           fix: TEXTURE_PAINT_SIZE_EXCEEDS_MAX_FIX(maxSize),
-          details: { width, height, maxSize }
+          details: { width, height, maxSize },
         });
       }
-      return fail({ code: 'invalid_payload', message: sizeMessage ?? DIMENSION_POSITIVE_MESSAGE('width/height') });
+      return fail({
+        code: 'invalid_payload',
+        message: sizeMessage ?? DIMENSION_POSITIVE_MESSAGE('width/height'),
+      });
     }
 
     const data = new Uint8ClampedArray(width * height * 4);
@@ -98,7 +101,7 @@ export const runCreateBlankTexture = (
       image: renderRes.result.image,
       width,
       height,
-      ifRevision: payload.ifRevision
+      ifRevision: payload.ifRevision,
     });
     if (!created.ok) return fail(created.error);
     return ok({ id: created.value.id, name: created.value.name, created: true });

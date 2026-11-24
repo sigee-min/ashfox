@@ -13,7 +13,9 @@ export interface SnapshotContextDeps {
   policyContext: PolicyContextLike;
 }
 
-export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSession['snapshot']>> {
+export class SnapshotContext implements SnapshotContextLike<
+  ReturnType<ProjectSession['snapshot']>
+> {
   private readonly session: ProjectSession;
   private readonly snapshotPort: SnapshotPort;
   private readonly projectState: ProjectStateBuilder;
@@ -46,14 +48,14 @@ export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSe
     if (!this.policyContext.getAutoAttachActiveProject()) {
       return {
         ...stateError,
-        fix: 'Use ensure_project to create or reuse an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.',
       };
     }
     const live = this.snapshotPort.readSnapshot();
     if (!live) {
       return {
         ...stateError,
-        fix: 'Use ensure_project to create or reuse an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.',
       };
     }
     const merged = mergeSnapshots(this.session.snapshot(), live);
@@ -61,7 +63,7 @@ export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSe
     if (!this.projectState.toProjectInfo(normalized) || !normalized.format) {
       return {
         ...stateError,
-        fix: 'Use ensure_project to create or reuse an active project before mutating.'
+        fix: 'Use ensure_project to create or reuse an active project before mutating.',
       };
     }
     const attachRes = this.session.attach(normalized);
@@ -69,11 +71,7 @@ export class SnapshotContext implements SnapshotContextLike<ReturnType<ProjectSe
       ? null
       : {
           ...attachRes.error,
-          fix: 'Call get_project_state and retry, or create a new project.'
+          fix: 'Call get_project_state and retry, or create a new project.',
         };
   }
 }
-
-
-
-

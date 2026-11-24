@@ -18,9 +18,7 @@ export const previewToolSchemas: Record<string, JsonSchema> = {
       saveToTmp: { type: 'boolean' },
       tmpName: { type: 'string' },
       tmpPrefix: { type: 'string' },
-      ...stateProps
-    }
-  }
+      ...stateProps,
+    },
+  },
 };
-
-

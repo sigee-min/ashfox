@@ -6,7 +6,7 @@ import {
   PROJECT_DELETE_NAME_REQUIRED,
   PROJECT_DELETE_NAME_REQUIRED_FIX,
   PROJECT_MISMATCH,
-  PROJECT_NO_ACTIVE
+  PROJECT_NO_ACTIVE,
 } from '../../shared/messages';
 import type { ProjectServiceDeps } from './types';
 
@@ -17,8 +17,11 @@ export type ProjectDeleteContext = Pick<
 
 export const runDeleteProject = (
   ctx: ProjectDeleteContext,
-  payload: { target?: { name?: string }; force?: boolean; ifRevision?: string }
-): UsecaseResult<{ action: 'deleted'; project: { id: string; format: FormatKind; name: string | null; formatId?: string | null } }> => {
+  payload: { target?: { name?: string }; force?: boolean; ifRevision?: string },
+): UsecaseResult<{
+  action: 'deleted';
+  project: { id: string; format: FormatKind; name: string | null; formatId?: string | null };
+}> => {
   const revisionErr = ctx.ensureRevisionMatch(payload.ifRevision);
   if (revisionErr) return fail(revisionErr);
   const targetName = payload.target?.name;
@@ -26,7 +29,7 @@ export const runDeleteProject = (
     return fail({
       code: 'invalid_payload',
       message: PROJECT_DELETE_NAME_REQUIRED,
-      fix: PROJECT_DELETE_NAME_REQUIRED_FIX
+      fix: PROJECT_DELETE_NAME_REQUIRED_FIX,
     });
   }
   const targetBlankErr = ensureNonBlankString(targetName, 'target.name');
@@ -43,8 +46,8 @@ export const runDeleteProject = (
       message: PROJECT_MISMATCH,
       details: {
         expected: { name: targetName },
-        actual: { name: info.name ?? null }
-      }
+        actual: { name: info.name ?? null },
+      },
     });
   }
   const closeResult = ctx.editor.closeProject({ force: payload.force });
@@ -61,9 +64,9 @@ export const runDeleteProject = (
         actual: {
           name: postInfo.name ?? null,
           format: postNormalized.format,
-          formatId: postNormalized.formatId ?? null
-        }
-      }
+          formatId: postNormalized.formatId ?? null,
+        },
+      },
     });
   }
   ctx.session.reset();
@@ -73,7 +76,7 @@ export const runDeleteProject = (
       id: info.id,
       format: normalized.format,
       name: info.name ?? null,
-      formatId: normalized.formatId ?? null
-    }
+      formatId: normalized.formatId ?? null,
+    },
   });
 };

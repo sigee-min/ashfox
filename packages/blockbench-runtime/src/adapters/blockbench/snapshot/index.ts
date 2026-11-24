@@ -11,7 +11,7 @@ import {
   getProjectDirty,
   getProjectId,
   getProjectName,
-  guessFormatKind
+  guessFormatKind,
 } from './projectMeta';
 import { resolveAnimationTimePolicy } from '../../../domain/animation/timePolicy';
 import { normalizePixelsPerBlock } from '../../../domain/uv/policy';
@@ -41,7 +41,7 @@ export class BlockbenchSnapshot implements SnapshotPort {
       const dirty = getProjectDirty(globals);
 
       const root = globals.Outliner?.root;
-      const nodes = Array.isArray(root) ? root : root?.children ?? [];
+      const nodes = Array.isArray(root) ? root : (root?.children ?? []);
       walkNodes(nodes, undefined, bones, cubes, meshes, globals);
       ensureRootBone(bones, cubes);
 
@@ -54,7 +54,7 @@ export class BlockbenchSnapshot implements SnapshotPort {
             name: tex?.name ?? tex?.id ?? 'texture',
             path: tex?.path ?? tex?.source,
             width: size.width ?? 0,
-            height: size.height ?? 0
+            height: size.height ?? 0,
           });
         });
       }
@@ -69,13 +69,16 @@ export class BlockbenchSnapshot implements SnapshotPort {
           loop: normalizeLoop(anim?.loop),
           fps: Number(anim?.snapping ?? anim?.fps ?? 0) || undefined,
           channels,
-          triggers
+          triggers,
         });
       });
 
       const projectRecord = project as Record<string, unknown> | null | undefined;
       const ashfoxRaw = projectRecord?.ashfox;
-      const ashfox = ashfoxRaw && typeof ashfoxRaw === 'object' ? (ashfoxRaw as Record<string, unknown>) : undefined;
+      const ashfox =
+        ashfoxRaw && typeof ashfoxRaw === 'object'
+          ? (ashfoxRaw as Record<string, unknown>)
+          : undefined;
       const uvPixelsPerBlock =
         projectRecord?.ashfoxUvPixelsPerBlock ??
         (ashfox?.uvPixelsPerBlock as number | undefined) ??
@@ -94,7 +97,7 @@ export class BlockbenchSnapshot implements SnapshotPort {
         textures,
         animations,
         animationsStatus: animState.status,
-        animationTimePolicy: resolveAnimationTimePolicy()
+        animationTimePolicy: resolveAnimationTimePolicy(),
       };
     } catch (err) {
       const message = errorMessage(err, 'snapshot read failed');
@@ -103,6 +106,3 @@ export class BlockbenchSnapshot implements SnapshotPort {
     }
   }
 }
-
-
-

@@ -1,4 +1,9 @@
-import type { AutoUvAtlasPayload, AutoUvAtlasResult, Capabilities, ToolError } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  AutoUvAtlasPayload,
+  AutoUvAtlasResult,
+  Capabilities,
+  ToolError,
+} from '@ashfox/blockbench-contracts/types/internal';
 import type { EditorPort } from '../../ports/editor';
 import type { ProjectSession, SessionState } from '../../session';
 import { ok, fail, type UsecaseResult } from '../result';
@@ -13,10 +18,15 @@ import {
   MODEL_CUBE_NOT_FOUND,
   MODEL_CUBE_NAME_REQUIRED,
   MODEL_CUBE_NAME_REQUIRED_FIX,
-  MODEL_BONE_NOT_FOUND
+  MODEL_BONE_NOT_FOUND,
 } from '../../shared/messages';
 import { ensureNonBlankFields } from './validators';
-import { ensureIdAvailable, ensureNameAvailable, ensureRenameAvailable, resolveEntityId } from '../crudChecks';
+import {
+  ensureIdAvailable,
+  ensureNameAvailable,
+  ensureRenameAvailable,
+  resolveEntityId,
+} from '../crudChecks';
 import { resolveTargets } from '../targetSelectors';
 import { buildIdNameMismatchMessage } from '../../shared/targetMessages';
 import { createCubeMutationPolicy, type CubeMutationPolicy } from './cubeMutationPolicy';
@@ -57,7 +67,7 @@ export class CubeService {
           this.session.addBone({ name: 'root', pivot: [0, 0, 0] });
         },
         autoUvAtlas: deps.autoUvAtlas,
-        runWithoutRevisionGuard: deps.runWithoutRevisionGuard
+        runWithoutRevisionGuard: deps.runWithoutRevisionGuard,
       });
   }
 
@@ -87,18 +97,18 @@ export class CubeService {
           return fail({
             code: 'invalid_payload',
             message: MODEL_CUBE_NAME_REQUIRED,
-            fix: MODEL_CUBE_NAME_REQUIRED_FIX
+            fix: MODEL_CUBE_NAME_REQUIRED_FIX,
           });
         }
         const blankErr = ensureNonBlankFields([
           [payload.name, 'Cube name'],
           [payload.bone, 'Cube bone'],
-          [payload.boneId, 'Cube boneId']
+          [payload.boneId, 'Cube boneId'],
         ]);
         if (blankErr) return fail(blankErr);
         const resolvedBoneName = this.resolveCubeBone(snapshot, {
           boneId: payload.boneId,
-          bone: payload.bone
+          bone: payload.bone,
         });
         if (!resolvedBoneName.ok) return fail(resolvedBoneName.error);
         const nameErr = ensureNameAvailable(snapshot.cubes, payload.name, MODEL_CUBE_EXISTS);
@@ -120,7 +130,7 @@ export class CubeService {
           mirror: payload.mirror,
           visibility: payload.visibility,
           boxUv: payload.boxUv,
-          uvOffset: payload.uvOffset
+          uvOffset: payload.uvOffset,
         });
         if (err) return fail(err);
         this.session.addCube({
@@ -135,11 +145,11 @@ export class CubeService {
           mirror: payload.mirror,
           visibility: payload.visibility,
           boxUv: payload.boxUv,
-          uvOffset: payload.uvOffset
+          uvOffset: payload.uvOffset,
         });
         this.mutationPolicy.afterAddCube();
         return ok({ id, name: payload.name });
-      }
+      },
     );
   }
 
@@ -172,7 +182,7 @@ export class CubeService {
           [payload.name, 'Cube name'],
           [payload.newName, 'Cube newName'],
           [payload.bone, 'Cube bone'],
-          [payload.boneId, 'Cube boneId']
+          [payload.boneId, 'Cube boneId'],
         ]);
         if (blankErr) return fail(blankErr);
         const resolved = resolveCubeTarget(snapshot.cubes, payload.id, payload.name);
@@ -180,12 +190,17 @@ export class CubeService {
         const target = resolved.target!;
         const targetName = target.name;
         const targetId = resolveEntityId(target.id, payload.id, 'cube');
-        const renameErr = ensureRenameAvailable(snapshot.cubes, payload.newName, targetName, MODEL_CUBE_EXISTS);
+        const renameErr = ensureRenameAvailable(
+          snapshot.cubes,
+          payload.newName,
+          targetName,
+          MODEL_CUBE_EXISTS,
+        );
         if (renameErr) return fail(renameErr);
         const boneRes = this.resolveCubeBoneUpdate(snapshot, {
           boneRoot: payload.boneRoot,
           boneId: payload.boneId,
-          bone: payload.bone
+          bone: payload.bone,
         });
         if (!boneRes.ok) return fail(boneRes.error);
         const boneUpdate = boneRes.value;
@@ -197,7 +212,11 @@ export class CubeService {
           id: targetId,
           name: targetName,
           newName: payload.newName,
-          bone: payload.boneRoot ? undefined : typeof boneUpdate === 'string' ? boneUpdate : undefined,
+          bone: payload.boneRoot
+            ? undefined
+            : typeof boneUpdate === 'string'
+              ? boneUpdate
+              : undefined,
           boneRoot: payload.boneRoot,
           from: payload.from,
           to: payload.to,
@@ -207,7 +226,7 @@ export class CubeService {
           mirror: payload.mirror,
           visibility: payload.visibility,
           boxUv: payload.boxUv,
-          uvOffset: payload.uvOffset
+          uvOffset: payload.uvOffset,
         });
         if (err) return fail(err);
         const geometryChanged = this.isGeometryChanged(target, payload);
@@ -223,11 +242,11 @@ export class CubeService {
           mirror: payload.mirror,
           visibility: payload.visibility,
           boxUv: payload.boxUv,
-          uvOffset: payload.uvOffset
+          uvOffset: payload.uvOffset,
         });
         this.mutationPolicy.afterUpdateCube(geometryChanged);
         return ok({ id: targetId, name: payload.newName ?? targetName });
-      }
+      },
     );
   }
 
@@ -252,8 +271,8 @@ export class CubeService {
           {
             required: { message: MODEL_CUBE_ID_OR_NAME_REQUIRED },
             mismatch: { kind: 'Cube', plural: 'cubes', message: buildIdNameMismatchMessage },
-            notFound: MODEL_CUBE_NOT_FOUND
-          }
+            notFound: MODEL_CUBE_NOT_FOUND,
+          },
         );
         if (!resolvedTargets.ok) return fail(resolvedTargets.error);
         const targets = resolvedTargets.value;
@@ -263,10 +282,16 @@ export class CubeService {
         }
         const nameSet = new Set(targets.map((target) => target.name));
         this.session.removeCubes(nameSet);
-        const deleted = targets.map((target) => ({ id: target.id ?? undefined, name: target.name }));
-        const primary = deleted[0] ?? { id: targets[0]?.id ?? undefined, name: targets[0]?.name ?? 'unknown' };
+        const deleted = targets.map((target) => ({
+          id: target.id ?? undefined,
+          name: target.name,
+        }));
+        const primary = deleted[0] ?? {
+          id: targets[0]?.id ?? undefined,
+          name: targets[0]?.name ?? 'unknown',
+        };
         return ok({ id: primary.id ?? primary.name, name: primary.name, deleted });
-      }
+      },
     );
   }
 
@@ -282,13 +307,13 @@ export class CubeService {
 
   private resolveCubeBone(
     snapshot: SessionState,
-    payload: { boneId?: string; bone?: string }
+    payload: { boneId?: string; bone?: string },
   ): UsecaseResult<string> {
     const hasExplicit = payload.boneId !== undefined || payload.bone !== undefined;
     if (hasExplicit) {
       const resolved = resolveBoneTarget(snapshot.bones, payload.boneId, payload.bone, {
         idLabel: 'boneId',
-        nameLabel: 'bone'
+        nameLabel: 'bone',
       });
       if (resolved.error) return fail(resolved.error);
       return ok(resolved.target!.name);
@@ -303,7 +328,7 @@ export class CubeService {
 
   private resolveCubeBoneUpdate(
     snapshot: SessionState,
-    payload: { boneRoot?: boolean; boneId?: string; bone?: string }
+    payload: { boneRoot?: boolean; boneId?: string; bone?: string },
   ): UsecaseResult<string | 'root' | undefined> {
     const boneUpdateRaw = payload.boneRoot
       ? 'root'
@@ -327,7 +352,7 @@ export class CubeService {
 
   private isGeometryChanged(
     target: { from: [number, number, number]; to: [number, number, number]; inflate?: number },
-    payload: { from?: [number, number, number]; to?: [number, number, number]; inflate?: number }
+    payload: { from?: [number, number, number]; to?: [number, number, number]; inflate?: number },
   ): boolean {
     if (payload.from && !vecEqual(payload.from, target.from)) return true;
     if (payload.to && !vecEqual(payload.to, target.to)) return true;
@@ -338,4 +363,3 @@ export class CubeService {
 
 const vecEqual = (a: [number, number, number], b: [number, number, number]) =>
   a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
-

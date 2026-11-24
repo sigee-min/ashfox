@@ -9,7 +9,7 @@ const {
   DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE,
   DEVELOPMENT_MANIFEST_SCHEMA_VERSION,
   fail,
-  MANIFEST_KEYS
+  MANIFEST_KEYS,
 } = require('./contract');
 const { validateArchitecture } = require('./architecture');
 const { validateQuality } = require('./quality');
@@ -17,45 +17,29 @@ const {
   validateEngineering,
   validateProductExperience,
   validateVersioning,
-  validateWorkflow
+  validateWorkflow,
 } = require('./policy');
 const {
   assertClosedOrderedRecord,
   assertExactValue,
   assertExistingFile,
-  readRootPackageWorkspaces
+  readRootPackageWorkspaces,
 } = require('./reader');
 const { freezeManifest } = require('./snapshot');
 
 const validateDevelopmentManifest = (value, repoRoot) => {
   const root = path.resolve(repoRoot);
   const manifest = assertClosedOrderedRecord(value, '$', MANIFEST_KEYS.root);
-  assertExactValue(
-    manifest.$schema,
-    DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE,
-    '$schema'
-  );
-  assertExactValue(
-    manifest.schemaVersion,
-    DEVELOPMENT_MANIFEST_SCHEMA_VERSION,
-    'schemaVersion'
-  );
+  assertExactValue(manifest.$schema, DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE, '$schema');
+  assertExactValue(manifest.schemaVersion, DEVELOPMENT_MANIFEST_SCHEMA_VERSION, 'schemaVersion');
   assertExistingFile(root, DEVELOPMENT_MANIFEST_SCHEMA_FILENAME, '$schema');
   validateProductExperience(manifest.productExperience);
   validateEngineering(manifest.engineering);
   validateWorkflow(manifest.workflow);
   validateVersioning(manifest.versioning, root);
   const workspaces = readRootPackageWorkspaces(root);
-  validateArchitecture(
-    manifest.architecture,
-    root,
-    workspaces
-  );
-  validateQuality(
-    manifest.quality,
-    root,
-    manifest.architecture.workspaceSourceScopes
-  );
+  validateArchitecture(manifest.architecture, root, workspaces);
+  validateQuality(manifest.quality, root, manifest.architecture.workspaceSourceScopes);
   return freezeManifest(manifest);
 };
 
@@ -91,8 +75,8 @@ const main = () => {
   const manifest = readDevelopmentManifest(repoRoot);
   console.log(
     `development manifest v${manifest.schemaVersion} ok: ` +
-    `${manifest.architecture.workspaceSourceScopes.length} workspace scopes, ` +
-    `${manifest.architecture.forbiddenDependencies.length} dependency rules`
+      `${manifest.architecture.workspaceSourceScopes.length} workspace scopes, ` +
+      `${manifest.architecture.forbiddenDependencies.length} dependency rules`,
   );
 };
 
@@ -105,5 +89,5 @@ module.exports = {
   DEVELOPMENT_MANIFEST_SCHEMA_VERSION,
   parseDevelopmentManifest,
   readDevelopmentManifest,
-  validateDevelopmentManifest
+  validateDevelopmentManifest,
 };

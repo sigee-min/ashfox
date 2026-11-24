@@ -16,5 +16,5 @@ module.exports = {
   arrowParens: 'always',
   // Template literal contents are data (DSL sources, HTML, shaders); never reformat them.
   embeddedLanguageFormatting: 'off',
-  endOfLine: 'lf'
+  endOfLine: 'lf',
 };

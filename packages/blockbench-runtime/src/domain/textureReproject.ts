@@ -14,7 +14,8 @@ type NormalizedRect = {
   height: number;
 };
 
-const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+const clamp = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value));
 
 const normalizeRange = (a: number, b: number, max: number): [number, number] | null => {
   if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(max) || max <= 0) return null;
@@ -30,7 +31,11 @@ const normalizeRange = (a: number, b: number, max: number): [number, number] | n
   return [start, end];
 };
 
-const normalizeRect = (rect: TextureRect, maxWidth: number, maxHeight: number): NormalizedRect | null => {
+const normalizeRect = (
+  rect: TextureRect,
+  maxWidth: number,
+  maxHeight: number,
+): NormalizedRect | null => {
   const xRange = normalizeRange(rect[0], rect[2], maxWidth);
   const yRange = normalizeRange(rect[1], rect[3], maxHeight);
   if (!xRange || !yRange) return null;

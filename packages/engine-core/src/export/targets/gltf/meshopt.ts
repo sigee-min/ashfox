@@ -2,11 +2,7 @@ import { MeshoptEncoder } from 'meshoptimizer';
 
 import { stringifyCompactDeterministicJson } from '../../json';
 import type { CompiledGltf } from './build';
-import type {
-  GltfAccessor,
-  GltfBufferView,
-  GltfDocument
-} from './contract';
+import type { GltfAccessor, GltfBufferView, GltfDocument } from './contract';
 
 type MeshoptMode = 'ATTRIBUTES' | 'TRIANGLES' | 'INDICES';
 
@@ -61,20 +57,17 @@ const componentCount = (accessor: GltfAccessor): number => {
   }
 };
 
-const triangleAccessorIndices = (
-  document: GltfDocument
-): ReadonlySet<number> => new Set(
-  document.meshes?.flatMap((mesh) =>
-    mesh.primitives.flatMap((primitive) =>
-      primitive.indices === undefined || primitive.mode !== 4
-        ? []
-        : [primitive.indices]
-    )
-  ) ?? []
-);
+const triangleAccessorIndices = (document: GltfDocument): ReadonlySet<number> =>
+  new Set(
+    document.meshes?.flatMap((mesh) =>
+      mesh.primitives.flatMap((primitive) =>
+        primitive.indices === undefined || primitive.mode !== 4 ? [] : [primitive.indices],
+      ),
+    ) ?? [],
+  );
 
 const accessorsByBufferView = (
-  document: GltfDocument
+  document: GltfDocument,
 ): ReadonlyMap<number, Array<[number, GltfAccessor]>> => {
   const result = new Map<number, Array<[number, GltfAccessor]>>();
   document.accessors?.forEach((accessor, index) => {
@@ -89,9 +82,7 @@ const increment = (counts: Map<number, number>, key: number): void => {
   counts.set(key, (counts.get(key) ?? 0) + 1);
 };
 
-const reorderCandidates = (
-  document: GltfDocument
-): ReorderCandidate[] => {
+const reorderCandidates = (document: GltfDocument): ReorderCandidate[] => {
   const accessors = document.accessors;
   const views = document.bufferViews;
   if (!accessors || !views) return [];
@@ -103,21 +94,16 @@ const reorderCandidates = (
       if (primitive.mode !== 4 || primitive.indices === undefined) continue;
       const position = accessors[primitive.attributes.POSITION];
       const index = accessors[primitive.indices];
-      if (
-        !position ||
-        !index ||
-        (index.componentType !== 5123 && index.componentType !== 5125)
-      ) {
+      if (!position || !index || (index.componentType !== 5123 && index.componentType !== 5125)) {
         continue;
       }
       const vertexView = views[position.bufferView];
       const indexView = views[index.bufferView];
       const attributes = Object.values(primitive.attributes).map(
-        (accessorIndex) => accessors[accessorIndex]
+        (accessorIndex) => accessors[accessorIndex],
       );
-      const stride = vertexView?.byteStride ?? (
-        vertexView ? vertexView.byteLength / position.count : 0
-      );
+      const stride =
+        vertexView?.byteStride ?? (vertexView ? vertexView.byteLength / position.count : 0);
       const indexSize = index.componentType === 5125 ? 4 : 2;
       if (
         !vertexView ||
@@ -135,7 +121,7 @@ const reorderCandidates = (
           (accessor) =>
             !accessor ||
             accessor.bufferView !== position.bufferView ||
-            accessor.count !== position.count
+            accessor.count !== position.count,
         )
       ) {
         continue;
@@ -146,7 +132,7 @@ const reorderCandidates = (
         vertexCount: position.count,
         vertexStride: stride,
         indexCount: index.count,
-        indexComponentType: index.componentType
+        indexComponentType: index.componentType,
       });
       increment(vertexUses, position.bufferView);
       increment(indexUses, index.bufferView);
@@ -154,27 +140,25 @@ const reorderCandidates = (
   }
   return candidates.filter(
     ({ vertexView, indexView }) =>
-      vertexUses.get(vertexView) === 1 && indexUses.get(indexView) === 1
+      vertexUses.get(vertexView) === 1 && indexUses.get(indexView) === 1,
   );
 };
 
 const readIndices = (
   source: Uint8Array,
   count: number,
-  componentType: 5123 | 5125
+  componentType: 5123 | 5125,
 ): Uint32Array => {
   const view = new DataView(source.buffer, source.byteOffset, source.byteLength);
   return Uint32Array.from({ length: count }, (_, index) =>
-    componentType === 5125
-      ? view.getUint32(index * 4, true)
-      : view.getUint16(index * 2, true)
+    componentType === 5125 ? view.getUint32(index * 4, true) : view.getUint16(index * 2, true),
   );
 };
 
 const writeIndices = (
   target: Uint8Array,
   indices: Uint32Array,
-  componentType: 5123 | 5125
+  componentType: 5123 | 5125,
 ): void => {
   const view = new DataView(target.buffer, target.byteOffset, target.byteLength);
   indices.forEach((index, offset) => {
@@ -195,20 +179,16 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
     const indexView = views[candidate.indexView];
     const indexSource = compiled.binary.subarray(
       indexView.byteOffset,
-      indexView.byteOffset + indexView.byteLength
+      indexView.byteOffset + indexView.byteLength,
     );
-    const indices = readIndices(
-      indexSource,
-      candidate.indexCount,
-      candidate.indexComponentType
-    );
+    const indices = readIndices(indexSource, candidate.indexCount, candidate.indexComponentType);
     const [remap, unique] = MeshoptEncoder.reorderMesh(indices, true, false);
     if (unique !== candidate.vertexCount || remap.length !== candidate.vertexCount) {
       continue;
     }
     const vertexSource = compiled.binary.subarray(
       vertexView.byteOffset,
-      vertexView.byteOffset + vertexView.byteLength
+      vertexView.byteOffset + vertexView.byteLength,
     );
     const reordered = new Uint8Array(vertexSource.byteLength);
     for (let oldVertex = 0; oldVertex < candidate.vertexCount; oldVertex += 1) {
@@ -217,18 +197,15 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
       const start = oldVertex * candidate.vertexStride;
       reordered.set(
         vertexSource.subarray(start, start + candidate.vertexStride),
-        newVertex * candidate.vertexStride
+        newVertex * candidate.vertexStride,
       );
     }
     binary ??= compiled.binary.slice();
     binary.set(reordered, vertexView.byteOffset);
     writeIndices(
-      binary.subarray(
-        indexView.byteOffset,
-        indexView.byteOffset + indexView.byteLength
-      ),
+      binary.subarray(indexView.byteOffset, indexView.byteOffset + indexView.byteLength),
       indices,
-      candidate.indexComponentType
+      candidate.indexComponentType,
     );
   }
   return binary ? { ...compiled, binary } : compiled;
@@ -237,7 +214,7 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
 const layoutForBufferView = (
   view: GltfBufferView,
   accessors: readonly [number, GltfAccessor][],
-  triangles: ReadonlySet<number>
+  triangles: ReadonlySet<number>,
 ): BufferViewLayout | null => {
   if (view.buffer !== 0 || view.byteLength === 0 || accessors.length === 0) {
     return null;
@@ -252,8 +229,7 @@ const layoutForBufferView = (
     const [accessorIndex, accessor] = accessors[0];
     const stride = componentByteSize(accessor);
     const mode = triangles.has(accessorIndex) ? 'TRIANGLES' : 'INDICES';
-    return view.byteLength === count * stride &&
-      (mode !== 'TRIANGLES' || count % 3 === 0)
+    return view.byteLength === count * stride && (mode !== 'TRIANGLES' || count % 3 === 0)
       ? { count, stride, mode }
       : null;
   }
@@ -268,9 +244,9 @@ const layoutForBufferView = (
   ) {
     return null;
   }
-  const fits = accessors.every(([, accessor]) =>
-    (accessor.byteOffset ?? 0) +
-      componentByteSize(accessor) * componentCount(accessor) <= stride
+  const fits = accessors.every(
+    ([, accessor]) =>
+      (accessor.byteOffset ?? 0) + componentByteSize(accessor) * componentCount(accessor) <= stride,
   );
   return fits ? { count, stride, mode: 'ATTRIBUTES' } : null;
 };
@@ -293,17 +269,17 @@ class AlignedByteWriter {
 const appendUncompressedView = (
   writer: AlignedByteWriter,
   view: GltfBufferView,
-  source: Uint8Array
+  source: Uint8Array,
 ): GltfBufferView => ({
   ...view,
   buffer: 0,
-  byteOffset: writer.append(source)
+  byteOffset: writer.append(source),
 });
 
 const appendCompressedView = (
   writer: AlignedByteWriter,
   view: GltfBufferView,
-  encoded: EncodedBufferView
+  encoded: EncodedBufferView,
 ): GltfBufferView => ({
   ...view,
   buffer: 1,
@@ -314,25 +290,22 @@ const appendCompressedView = (
       byteLength: encoded.bytes.byteLength,
       byteStride: encoded.layout.stride,
       count: encoded.layout.count,
-      mode: encoded.layout.mode
-    }
-  }
+      mode: encoded.layout.mode,
+    },
+  },
 });
 
 const withExtension = (
-  values: GltfDocument['extensionsUsed']
+  values: GltfDocument['extensionsUsed'],
 ): NonNullable<GltfDocument['extensionsUsed']> => [
-  ...new Set([...(values ?? []), 'EXT_meshopt_compression' as const])
+  ...new Set([...(values ?? []), 'EXT_meshopt_compression' as const]),
 ];
 
 const compiledByteLength = (compiled: CompiledGltf): number =>
-  new TextEncoder().encode(
-    stringifyCompactDeterministicJson(compiled.document)
-  ).byteLength + compiled.binary.byteLength;
+  new TextEncoder().encode(stringifyCompactDeterministicJson(compiled.document)).byteLength +
+  compiled.binary.byteLength;
 
-export const compressGltfWithMeshopt = async (
-  compiled: CompiledGltf
-): Promise<CompiledGltf> => {
+export const compressGltfWithMeshopt = async (compiled: CompiledGltf): Promise<CompiledGltf> => {
   if (
     compiled.binary.byteLength === 0 ||
     !compiled.document.bufferViews ||
@@ -351,22 +324,10 @@ export const compressGltfWithMeshopt = async (
   const accessors = accessorsByBufferView(optimized.document);
   const encoded = new Map<number, EncodedBufferView>();
   optimized.document.bufferViews?.forEach((view, index) => {
-    const layout = layoutForBufferView(
-      view,
-      accessors.get(index) ?? [],
-      triangles
-    );
+    const layout = layoutForBufferView(view, accessors.get(index) ?? [], triangles);
     if (!layout) return;
-    const source = optimized.binary.subarray(
-      view.byteOffset,
-      view.byteOffset + view.byteLength
-    );
-    const bytes = MeshoptEncoder.encodeGltfBuffer(
-      source,
-      layout.count,
-      layout.stride,
-      layout.mode
-    );
+    const source = optimized.binary.subarray(view.byteOffset, view.byteOffset + view.byteLength);
+    const bytes = MeshoptEncoder.encodeGltfBuffer(source, layout.count, layout.stride, layout.mode);
     if (source.byteLength - bytes.byteLength > EXTENSION_JSON_COST) {
       encoded.set(index, { layout, bytes });
     }
@@ -375,10 +336,7 @@ export const compressGltfWithMeshopt = async (
 
   const writer = new AlignedByteWriter();
   const bufferViews = optimized.document.bufferViews!.map((view, index) => {
-    const source = optimized.binary.subarray(
-      view.byteOffset,
-      view.byteOffset + view.byteLength
-    );
+    const source = optimized.binary.subarray(view.byteOffset, view.byteOffset + view.byteLength);
     const compressed = encoded.get(index);
     return compressed
       ? appendCompressedView(writer, view, compressed)
@@ -392,19 +350,18 @@ export const compressGltfWithMeshopt = async (
     document: {
       ...optimized.document,
       extensionsUsed: withExtension(optimized.document.extensionsUsed),
-      extensionsRequired: withExtension(
-        optimized.document.extensionsRequired
-      ),
-      buffers: [{
-        byteLength: binary.byteLength,
-        ...(physicalBuffer?.uri ? { uri: physicalBuffer.uri } : {})
-      }, {
-        byteLength: optimized.binary.byteLength
-      }],
-      bufferViews
-    }
+      extensionsRequired: withExtension(optimized.document.extensionsRequired),
+      buffers: [
+        {
+          byteLength: binary.byteLength,
+          ...(physicalBuffer?.uri ? { uri: physicalBuffer.uri } : {}),
+        },
+        {
+          byteLength: optimized.binary.byteLength,
+        },
+      ],
+      bufferViews,
+    },
   };
-  return compiledByteLength(result) < compiledByteLength(optimized)
-    ? result
-    : optimized;
+  return compiledByteLength(result) < compiledByteLength(optimized) ? result : optimized;
 };

@@ -54,14 +54,19 @@ export const buildUvAtlasPlan = (context: BuildContext): DomainResult<AtlasPlan>
   let height = prepared.data.start.height;
   let steps = 0;
   while (true) {
-    const planRes = buildPlanForResolution(context.usage, prepared.data.cubeById, prepared.data.cubeByName, {
-      width,
-      height,
-      padding: prepared.data.padding,
-      policy: context.policy,
-      baseResolution: prepared.data.base,
-      messages: context.messages
-    });
+    const planRes = buildPlanForResolution(
+      context.usage,
+      prepared.data.cubeById,
+      prepared.data.cubeByName,
+      {
+        width,
+        height,
+        padding: prepared.data.padding,
+        policy: context.policy,
+        baseResolution: prepared.data.base,
+        messages: context.messages,
+      },
+    );
     if (planRes.ok) {
       return {
         ok: true,
@@ -69,8 +74,8 @@ export const buildUvAtlasPlan = (context: BuildContext): DomainResult<AtlasPlan>
           resolution: { width, height },
           steps,
           textures: planRes.data.textures,
-          assignments: planRes.data.assignments
-        }
+          assignments: planRes.data.assignments,
+        },
       };
     }
     const reason = planRes.error.details?.reason;
@@ -102,9 +107,13 @@ const prepareBuildContext = (context: BuildContext): DomainResult<PreparedBuildC
   }
 
   const baseWidth =
-    context.baseResolution?.width !== undefined ? toPositiveInt(context.baseResolution.width) : startWidth;
+    context.baseResolution?.width !== undefined
+      ? toPositiveInt(context.baseResolution.width)
+      : startWidth;
   const baseHeight =
-    context.baseResolution?.height !== undefined ? toPositiveInt(context.baseResolution.height) : startHeight;
+    context.baseResolution?.height !== undefined
+      ? toPositiveInt(context.baseResolution.height)
+      : startHeight;
   if (!baseWidth || !baseHeight) {
     return atlasFailure('invalid_payload', context.messages.resolutionPositive);
   }
@@ -124,8 +133,8 @@ const prepareBuildContext = (context: BuildContext): DomainResult<PreparedBuildC
       max: { width: maxWidth, height: maxHeight },
       padding: Math.max(0, Math.trunc(context.padding)),
       cubeById: lookup.byId,
-      cubeByName: lookup.byName
-    }
+      cubeByName: lookup.byName,
+    },
   };
 };
 
@@ -149,7 +158,7 @@ const nextResolutionStep = (
   width: number,
   height: number,
   max: { width: number; height: number },
-  messages: UvAtlasMessages
+  messages: UvAtlasMessages,
 ): DomainResult<{ width: number; height: number }> => {
   const nextWidth = width * 2;
   const nextHeight = height * 2;
@@ -160,7 +169,7 @@ const nextResolutionStep = (
       nextWidth,
       nextHeight,
       maxWidth: max.width,
-      maxHeight: max.height
+      maxHeight: max.height,
     });
   }
   return { ok: true, data: { width: nextWidth, height: nextHeight } };
@@ -177,7 +186,7 @@ const buildPlanForResolution = (
     policy: UvPolicyConfig;
     baseResolution: { width: number; height: number };
     messages: UvAtlasMessages;
-  }
+  },
 ): DomainResult<{ textures: AtlasTexturePlan[]; assignments: AtlasAssignment[] }> => {
   const textures: AtlasTexturePlan[] = [];
   const assignments: AtlasAssignment[] = [];
@@ -186,7 +195,13 @@ const buildPlanForResolution = (
     const groupsRes = buildGroups(entry, cubeById, cubeByName, config);
     if (!groupsRes.ok) return groupsRes;
     const groups = groupsRes.data;
-    const placementsRes = packGroups(groups, config.width, config.height, config.padding, config.messages);
+    const placementsRes = packGroups(
+      groups,
+      config.width,
+      config.height,
+      config.padding,
+      config.messages,
+    );
     if (!placementsRes.ok) return placementsRes;
     const placements = placementsRes.data;
     const plans: AtlasGroupPlan[] = [];
@@ -195,27 +210,27 @@ const buildPlanForResolution = (
         placement.x,
         placement.y,
         placement.x + placement.group.width,
-        placement.y + placement.group.height
+        placement.y + placement.group.height,
       ];
       plans.push({
         width: placement.group.width,
         height: placement.group.height,
         rect,
-        faceCount: placement.group.faces.length
+        faceCount: placement.group.faces.length,
       });
       placement.group.faces.forEach((face) => {
         assignments.push({
           cubeId: face.cubeId,
           cubeName: face.cubeName,
           face: face.face,
-          uv: rect
+          uv: rect,
         });
       });
     });
     textures.push({
       textureId: entry.id ?? undefined,
       textureName: entry.name,
-      groups: plans
+      groups: plans,
     });
   }
   return { ok: true, data: { textures, assignments } };

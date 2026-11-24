@@ -4,17 +4,23 @@ import {
   SidecarMessage,
   SidecarRequestMessage,
   SidecarResponseMessage,
-  isSidecarMessage
+  isSidecarMessage,
 } from '../../transport/protocol';
 import {
   ToolPayloadMap,
   ToolResponse,
-  ToolName
+  ToolName,
 } from '@ashfox/blockbench-contracts/types/internal';
 import { normalizeToolResponse } from '../../shared/tooling/toolResponseGuard';
 import { toolError } from '../../shared/tooling/toolResponse';
 import { SIDECAR_INFLIGHT_LIMIT_REACHED } from '../../shared/messages';
-import { attachIpcReadable, createIpcDecoder, IpcReadable, IpcWritable, sendIpcMessage } from './ipc';
+import {
+  attachIpcReadable,
+  createIpcDecoder,
+  IpcReadable,
+  IpcWritable,
+  sendIpcMessage,
+} from './ipc';
 
 type Pending = {
   resolve: (value: ToolResponse<unknown>) => void;
@@ -48,7 +54,12 @@ export class SidecarClient {
   private phase: 'idle' | 'hello-sent' | 'ready' = 'idle';
   private protocolVersion: typeof PROTOCOL_VERSION | null = null;
 
-  constructor(readable: IpcReadable, writable: IpcWritable, log: Logger, options: ClientOptions = {}) {
+  constructor(
+    readable: IpcReadable,
+    writable: IpcWritable,
+    log: Logger,
+    options: ClientOptions = {},
+  ) {
     this.readable = readable;
     this.writable = writable;
     this.log = log;
@@ -70,7 +81,7 @@ export class SidecarClient {
       type: 'hello',
       version: PROTOCOL_VERSION,
       role: 'sidecar',
-      ts: Date.now()
+      ts: Date.now(),
     });
     if (!sent && this.phase === 'hello-sent') this.phase = 'idle';
   }
@@ -84,35 +95,30 @@ export class SidecarClient {
       ready: this.phase === 'ready',
       inFlight: this.pending.size,
       maxInFlight: this.maxInFlight,
-      protocolVersion: this.protocolVersion
+      protocolVersion: this.protocolVersion,
     };
   }
 
   request<TName extends ToolName>(
     tool: TName,
-    payload: ToolPayloadMap[TName]
+    payload: ToolPayloadMap[TName],
   ): Promise<ToolResponse<unknown>> {
     return this.requestValidated(tool, payload);
   }
 
-  requestValidated(
-    tool: unknown,
-    payload: unknown
-  ): Promise<ToolResponse<unknown>> {
+  requestValidated(tool: unknown, payload: unknown): Promise<ToolResponse<unknown>> {
     if (this.phase !== 'ready') {
       return Promise.resolve({
         ok: false,
-        error: toolError(
-          'invalid_state',
-          'Sidecar v1 handshake is not ready.',
-          { reason: 'sidecar_handshake_not_ready' }
-        )
+        error: toolError('invalid_state', 'Sidecar v1 handshake is not ready.', {
+          reason: 'sidecar_handshake_not_ready',
+        }),
       });
     }
     if (!this.canAccept()) {
       return Promise.resolve({
         ok: false,
-        error: { code: 'invalid_state', message: SIDECAR_INFLIGHT_LIMIT_REACHED }
+        error: { code: 'invalid_state', message: SIDECAR_INFLIGHT_LIMIT_REACHED },
       });
     }
 
@@ -122,7 +128,7 @@ export class SidecarClient {
       id,
       ts: Date.now(),
       tool,
-      payload
+      payload,
     };
     if (!isSidecarMessage(candidate) || candidate.type !== 'request') {
       return Promise.resolve({
@@ -130,8 +136,8 @@ export class SidecarClient {
         error: toolError(
           'invalid_payload',
           'Sidecar request does not match the closed v1 tool contract.',
-          { reason: 'sidecar_request_contract_invalid' }
-        )
+          { reason: 'sidecar_request_contract_invalid' },
+        ),
       });
     }
     const message: SidecarRequestMessage = candidate;
@@ -147,11 +153,9 @@ export class SidecarClient {
         this.pending.delete(id);
         resolve({
           ok: false,
-          error: toolError(
-            'io_error',
-            'Sidecar request could not be written.',
-            { reason: 'sidecar_request_send_failed' }
-          )
+          error: toolError('io_error', 'Sidecar request could not be written.', {
+            reason: 'sidecar_request_send_failed',
+          }),
         });
       }
     });
@@ -198,19 +202,27 @@ export class SidecarClient {
         ok: true,
         data: message.data,
         ...(message.content ? { content: message.content } : {}),
-        ...(message.structuredContent !== undefined ? { structuredContent: message.structuredContent } : {}),
-        ...(message.nextActions ? { nextActions: message.nextActions } : {})
+        ...(message.structuredContent !== undefined
+          ? { structuredContent: message.structuredContent }
+          : {}),
+        ...(message.nextActions ? { nextActions: message.nextActions } : {}),
       };
-      pending.resolve(normalizeToolResponse(response, { source: 'sidecar_client', ensureReason: true }));
+      pending.resolve(
+        normalizeToolResponse(response, { source: 'sidecar_client', ensureReason: true }),
+      );
       return;
     }
     const response = {
       ok: false,
       error: message.error,
       ...(message.content ? { content: message.content } : {}),
-      ...(message.structuredContent !== undefined ? { structuredContent: message.structuredContent } : {}),
-      ...(message.nextActions ? { nextActions: message.nextActions } : {})
+      ...(message.structuredContent !== undefined
+        ? { structuredContent: message.structuredContent }
+        : {}),
+      ...(message.nextActions ? { nextActions: message.nextActions } : {}),
     };
-    pending.resolve(normalizeToolResponse(response, { source: 'sidecar_client', ensureReason: true }));
+    pending.resolve(
+      normalizeToolResponse(response, { source: 'sidecar_client', ensureReason: true }),
+    );
   }
 }

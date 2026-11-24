@@ -1,4 +1,7 @@
-import type { AutoUvAtlasPayload, AutoUvAtlasResult } from '@ashfox/blockbench-contracts/types/internal';
+import type {
+  AutoUvAtlasPayload,
+  AutoUvAtlasResult,
+} from '@ashfox/blockbench-contracts/types/internal';
 import { toDomainSnapshot, toDomainTextureUsage } from '../domainMappers';
 import { withActiveOnly } from '../guards';
 import { fail, ok, type UsecaseResult } from '../result';
@@ -6,7 +9,7 @@ import {
   TEXTURE_AUTO_UV_NO_TEXTURES,
   TEXTURE_AUTO_UV_RESOLUTION_MISSING,
   TEXTURE_AUTO_UV_REPROJECT_UNAVAILABLE,
-  TEXTURE_AUTO_UV_UNRESOLVED_REFS
+  TEXTURE_AUTO_UV_UNRESOLVED_REFS,
 } from '../../shared/messages';
 import type { TextureToolContext } from './context';
 import { applyAutoUvAtlasPlan, toReprojectTextureRenderer } from './autoUvAtlasApply';
@@ -14,7 +17,7 @@ import { applyAutoUvAtlasPlanConfig, buildAutoUvAtlasPlan } from './autoUvAtlasP
 
 export const runAutoUvAtlas = (
   ctx: TextureToolContext,
-  payload: AutoUvAtlasPayload
+  payload: AutoUvAtlasPayload,
 ): UsecaseResult<AutoUvAtlasResult> => {
   return withActiveOnly<AutoUvAtlasResult>(ctx.ensureActive, () => {
     const apply = payload.apply !== false;
@@ -33,7 +36,7 @@ export const runAutoUvAtlas = (
     if (unresolvedCount > 0) {
       return fail({
         code: 'invalid_state',
-        message: TEXTURE_AUTO_UV_UNRESOLVED_REFS(unresolvedCount)
+        message: TEXTURE_AUTO_UV_UNRESOLVED_REFS(unresolvedCount),
       });
     }
 
@@ -41,7 +44,7 @@ export const runAutoUvAtlas = (
     if (!resolution) {
       return fail({
         code: 'invalid_state',
-        message: TEXTURE_AUTO_UV_RESOLUTION_MISSING
+        message: TEXTURE_AUTO_UV_RESOLUTION_MISSING,
       });
     }
     const padding =
@@ -65,7 +68,7 @@ export const runAutoUvAtlas = (
       maxEdgeSafe,
       padding,
       policy,
-      apply
+      apply,
     });
     if (!planRes.ok) return fail(planRes.error);
     const builtPlan = planRes.value;
@@ -76,7 +79,7 @@ export const runAutoUvAtlas = (
         applied: false,
         steps: plan.steps,
         resolution: plan.resolution,
-        textures: plan.textures
+        textures: plan.textures,
       });
     }
 
@@ -92,7 +95,7 @@ export const runAutoUvAtlas = (
       payload,
       usage,
       plan,
-      textureRenderer
+      textureRenderer,
     });
     if (!applyRes.ok) return fail(applyRes.error);
 
@@ -100,9 +103,7 @@ export const runAutoUvAtlas = (
       applied: true,
       steps: plan.steps,
       resolution: plan.resolution,
-      textures: plan.textures
+      textures: plan.textures,
     });
   });
 };
-
-

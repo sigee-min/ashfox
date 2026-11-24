@@ -1,4 +1,5 @@
-export const UV_USAGE_CHANGED_MESSAGE = 'UV usage changed since the last mapping refresh. Retry after UV refresh.';
+export const UV_USAGE_CHANGED_MESSAGE =
+  'UV usage changed since the last mapping refresh. Retry after UV refresh.';
 export const UV_USAGE_CHANGED_FIX = 'Retry after automatic UV refresh completes.';
 
 export const UV_BOUNDS_NEGATIVE = 'UV bounds must be non-negative.';
@@ -15,8 +16,7 @@ export const UV_ATLAS_DERIVE_SIZE_FAILED = (cube: string, face: string) =>
   `Failed to derive UV size for ${cube} (${face}).`;
 export const UV_ATLAS_UV_SIZE_EXCEEDS = (cube: string, face: string) =>
   `UV size exceeds atlas resolution for ${cube} (${face}). This face is too large for the maximum atlas size.`;
-export const UV_ATLAS_OVERFLOW =
-  'UV atlas overflow. Reduce model complexity or texture density.';
+export const UV_ATLAS_OVERFLOW = 'UV atlas overflow. Reduce model complexity or texture density.';
 
 export const TEXTURE_AUTO_UV_NO_TEXTURES = 'No textures available for auto UV atlas.';
 export const TEXTURE_AUTO_UV_RESOLUTION_MISSING = 'Project texture resolution is missing.';
@@ -42,13 +42,14 @@ export const UV_ASSIGNMENT_FACES_REQUIRED = 'faces is required for each assignme
 export const UV_ASSIGNMENT_FACES_NON_EMPTY = 'faces must include at least one mapping';
 export const UV_ASSIGNMENT_INVALID_FACE = (face: string) => `invalid face: ${face}`;
 export const UV_ASSIGNMENT_UV_FORMAT = (face: string) => `UV for ${face} must be [x1,y1,x2,y2]`;
-export const UV_ASSIGNMENT_UV_NUMBERS = (face: string) => `UV for ${face} must contain finite numbers`;
+export const UV_ASSIGNMENT_UV_NUMBERS = (face: string) =>
+  `UV for ${face} must contain finite numbers`;
 
 export const TEXTURE_FACE_UV_SMALL_RECTS = (
   cubeName: string,
   count: number,
   minArea: number,
-  example: string
+  example: string,
 ) =>
   `UV rects on "${cubeName}" are very small (<= ${minArea}px^2). ${count} face(s) affected.${example}`;
 
@@ -56,7 +57,7 @@ export const TEXTURE_FACE_UV_SKEWED_RECTS = (
   cubeName: string,
   count: number,
   maxAspect: number,
-  example: string
+  example: string,
 ) =>
   `UV rects on "${cubeName}" are highly non-square (aspect >= ${maxAspect}:1). ${count} face(s) affected.${example}`;
 
@@ -64,17 +65,13 @@ export const UV_OVERLAP_MESSAGE = (
   names: string,
   suffix: string,
   example: string,
-  plural: boolean
+  plural: boolean,
 ) =>
   `UV overlap detected for texture${plural ? 's' : ''} ${names}${suffix}. UV rects must not overlap.${example}`;
 export const UV_OVERLAP_FIX =
   'UVs must not overlap. Wait for automatic UV recovery and retry painting after the layout refreshes.';
 
-export const UV_SCALE_MESSAGE = (
-  names: string,
-  suffix: string,
-  example: string,
-  plural: boolean
-) => `UV scale mismatch detected for texture${plural ? 's' : ''} ${names}${suffix}.${example}`;
+export const UV_SCALE_MESSAGE = (names: string, suffix: string, example: string, plural: boolean) =>
+  `UV scale mismatch detected for texture${plural ? 's' : ''} ${names}${suffix}.${example}`;
 export const UV_SCALE_FIX =
   'Wait for automatic UV recovery and retry. If this repeats, increase texture resolution (e.g., 64x64+), reduce cube count, or simplify UVs.';

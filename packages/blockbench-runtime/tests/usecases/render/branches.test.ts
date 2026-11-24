@@ -7,48 +7,46 @@ import {
   PREVIEW_FRAME_DATA_UNAVAILABLE,
   PREVIEW_FRAMES_UNAVAILABLE,
   PREVIEW_IMAGE_DATA_UNAVAILABLE,
-  TMP_STORE_UNAVAILABLE
+  TMP_STORE_UNAVAILABLE,
 } from '../../../src/shared/messages';
 
-const normalizedMessage = (message: string): string => (message.endsWith('.') ? message : `${message}.`);
+const normalizedMessage = (message: string): string =>
+  message.endsWith('.') ? message : `${message}.`;
 
-const createEditor = (
-  renderPreview: EditorPort['renderPreview']
-): EditorPort =>
-  ({
-    createProject: () => null,
-    closeProject: () => null,
-    importTexture: () => null,
-    updateTexture: () => null,
-    deleteTexture: () => null,
-    readTexture: () => ({ error: { code: 'invalid_payload', message: 'unused' } }),
-    assignTexture: () => null,
-    setFaceUv: () => null,
-    addBone: () => null,
-    updateBone: () => null,
-    deleteBone: () => null,
-    addCube: () => null,
-    updateCube: () => null,
-    deleteCube: () => null,
-    addMesh: () => null,
-    updateMesh: () => null,
-    deleteMesh: () => null,
-    createAnimation: () => null,
-    updateAnimation: () => null,
-    deleteAnimation: () => null,
-    setKeyframes: () => null,
-    setTriggerKeyframes: () => null,
-    renderPreview,
-    writeFile: () => null,
-    listTextures: () => [],
-    getProjectTextureResolution: () => null,
-    setProjectTextureResolution: () => null,
-    setProjectUvPixelsPerBlock: () => null,
-    getTextureUsage: () => ({ result: { textures: [] } })
-  });
+const createEditor = (renderPreview: EditorPort['renderPreview']): EditorPort => ({
+  createProject: () => null,
+  closeProject: () => null,
+  importTexture: () => null,
+  updateTexture: () => null,
+  deleteTexture: () => null,
+  readTexture: () => ({ error: { code: 'invalid_payload', message: 'unused' } }),
+  assignTexture: () => null,
+  setFaceUv: () => null,
+  addBone: () => null,
+  updateBone: () => null,
+  deleteBone: () => null,
+  addCube: () => null,
+  updateCube: () => null,
+  deleteCube: () => null,
+  addMesh: () => null,
+  updateMesh: () => null,
+  deleteMesh: () => null,
+  createAnimation: () => null,
+  updateAnimation: () => null,
+  deleteAnimation: () => null,
+  setKeyframes: () => null,
+  setTriggerKeyframes: () => null,
+  renderPreview,
+  writeFile: () => null,
+  listTextures: () => [],
+  getProjectTextureResolution: () => null,
+  setProjectTextureResolution: () => null,
+  setProjectUvPixelsPerBlock: () => null,
+  getTextureUsage: () => ({ result: { textures: [] } }),
+});
 
 const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort => ({
-  saveDataUri
+  saveDataUri,
 });
 
 {
@@ -57,10 +55,16 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
       result: {
         kind: 'single',
         frameCount: 1,
-        image: { mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 16, height: 16 }
-      }
+        image: {
+          mime: 'image/png',
+          dataUri: 'data:image/png;base64,AAAA',
+          byteLength: 1,
+          width: 16,
+          height: 16,
+        },
+      },
     })),
-    ensureActive: () => ({ code: 'invalid_state', message: 'inactive' })
+    ensureActive: () => ({ code: 'invalid_state', message: 'inactive' }),
   });
   const res = service.renderPreview({ mode: 'fixed' });
   assert.equal(res.ok, false);
@@ -70,7 +74,7 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
 {
   const service = new RenderService({
     editor: createEditor(() => ({ error: { code: 'invalid_payload', message: 'preview failed' } })),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'fixed' });
   assert.equal(res.ok, false);
@@ -81,11 +85,17 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
   const result = {
     kind: 'single' as const,
     frameCount: 1,
-    image: { mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 16, height: 16 }
+    image: {
+      mime: 'image/png',
+      dataUri: 'data:image/png;base64,AAAA',
+      byteLength: 1,
+      width: 16,
+      height: 16,
+    },
   };
   const service = new RenderService({
     editor: createEditor(() => ({ result })),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'fixed', saveToTmp: false });
   assert.equal(res.ok, true);
@@ -95,7 +105,7 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
 {
   const service = new RenderService({
     editor: createEditor(() => ({ result: { kind: 'single', frameCount: 1 } })),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'fixed', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -108,10 +118,16 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
       result: {
         kind: 'single',
         frameCount: 1,
-        image: { mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 16, height: 16 }
-      }
+        image: {
+          mime: 'image/png',
+          dataUri: 'data:image/png;base64,AAAA',
+          byteLength: 1,
+          width: 16,
+          height: 16,
+        },
+      },
     })),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'fixed', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -124,11 +140,20 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
       result: {
         kind: 'single',
         frameCount: 1,
-        image: { mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 16, height: 16 }
-      }
+        image: {
+          mime: 'image/png',
+          dataUri: 'data:image/png;base64,AAAA',
+          byteLength: 1,
+          width: 16,
+          height: 16,
+        },
+      },
     })),
-    tmpStore: createTmpStore(() => ({ ok: false, error: { code: 'io_error', message: 'tmp failed' } })),
-    ensureActive: () => null
+    tmpStore: createTmpStore(() => ({
+      ok: false,
+      error: { code: 'io_error', message: 'tmp failed' },
+    })),
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'fixed', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -141,20 +166,31 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
       result: {
         kind: 'single',
         frameCount: 1,
-        image: { mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 32, height: 32 }
-      }
+        image: {
+          mime: 'image/png',
+          dataUri: 'data:image/png;base64,AAAA',
+          byteLength: 1,
+          width: 32,
+          height: 32,
+        },
+      },
     })),
     tmpStore: createTmpStore((_dataUri, options) => ({
       ok: true,
       data: {
         path: `${options?.prefix}_${options?.nameHint}.png`,
         mimeType: 'image/png',
-        byteLength: 4
-      }
+        byteLength: 4,
+      },
     })),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
-  const res = service.renderPreview({ mode: 'fixed', saveToTmp: true, tmpPrefix: 'pv', tmpName: 'still' });
+  const res = service.renderPreview({
+    mode: 'fixed',
+    saveToTmp: true,
+    tmpPrefix: 'pv',
+    tmpName: 'still',
+  });
   assert.equal(res.ok, true);
   if (res.ok) {
     assert.equal(res.value.saved?.image?.path, 'pv_still.png');
@@ -167,8 +203,11 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
 {
   const service = new RenderService({
     editor: createEditor(() => ({ result: { kind: 'sequence', frameCount: 0, frames: [] } })),
-    tmpStore: createTmpStore(() => ({ ok: true, data: { path: 'unused', mimeType: 'image/png', byteLength: 1 } })),
-    ensureActive: () => null
+    tmpStore: createTmpStore(() => ({
+      ok: true,
+      data: { path: 'unused', mimeType: 'image/png', byteLength: 1 },
+    })),
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'turntable', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -178,10 +217,17 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
 {
   const service = new RenderService({
     editor: createEditor(() => ({
-      result: { kind: 'sequence', frameCount: 1, frames: [{ index: 0, mime: 'image/png', dataUri: '', byteLength: 0, width: 8, height: 8 }] }
+      result: {
+        kind: 'sequence',
+        frameCount: 1,
+        frames: [{ index: 0, mime: 'image/png', dataUri: '', byteLength: 0, width: 8, height: 8 }],
+      },
     })),
-    tmpStore: createTmpStore(() => ({ ok: true, data: { path: 'unused', mimeType: 'image/png', byteLength: 1 } })),
-    ensureActive: () => null
+    tmpStore: createTmpStore(() => ({
+      ok: true,
+      data: { path: 'unused', mimeType: 'image/png', byteLength: 1 },
+    })),
+    ensureActive: () => null,
   });
   const res = service.renderPreview({ mode: 'turntable', saveToTmp: true });
   assert.equal(res.ok, false);
@@ -196,19 +242,38 @@ const createTmpStore = (saveDataUri: TmpStorePort['saveDataUri']): TmpStorePort 
         kind: 'sequence',
         frameCount: 2,
         frames: [
-          { index: 0, mime: 'image/png', dataUri: 'data:image/png;base64,AAAA', byteLength: 1, width: 8, height: 8 },
-          { index: 1, mime: 'image/png', dataUri: 'data:image/png;base64,BBBB', byteLength: 1, width: 8, height: 8 }
-        ]
-      }
+          {
+            index: 0,
+            mime: 'image/png',
+            dataUri: 'data:image/png;base64,AAAA',
+            byteLength: 1,
+            width: 8,
+            height: 8,
+          },
+          {
+            index: 1,
+            mime: 'image/png',
+            dataUri: 'data:image/png;base64,BBBB',
+            byteLength: 1,
+            width: 8,
+            height: 8,
+          },
+        ],
+      },
     })),
     tmpStore: createTmpStore((dataUri, options) => {
       const path = `${options?.nameHint}.png`;
       saved.push(`${path}:${dataUri.slice(-4)}`);
       return { ok: true, data: { path, mimeType: 'image/png', byteLength: 2 } };
     }),
-    ensureActive: () => null
+    ensureActive: () => null,
   });
-  const res = service.renderPreview({ mode: 'turntable', saveToTmp: true, tmpName: 'turn', tmpPrefix: 'pv' });
+  const res = service.renderPreview({
+    mode: 'turntable',
+    saveToTmp: true,
+    tmpName: 'turn',
+    tmpPrefix: 'pv',
+  });
   assert.equal(res.ok, true);
   if (res.ok) {
     assert.equal(res.value.saved?.frames?.length, 2);
