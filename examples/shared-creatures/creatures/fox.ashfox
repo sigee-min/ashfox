@@ -4,7 +4,7 @@ asset fox {
   import "./surface.ashfox" as surface;
   import "./body.ashfox" as body;
   export asset fox {
-    settings { density = 16; forward = north; }
+    settings { density = 16; forward = north; profile = creature; }
     skeleton = rig.CreatureSkeleton;
     motion = rig.idle;
     motion = rig.curious;

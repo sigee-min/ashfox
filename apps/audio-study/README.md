@@ -20,9 +20,9 @@ The server opens at `http://127.0.0.1:3134`. The English viewer offers sound
 selection, playback, variations, comparison and downloads. It has no model
 preview, source editor or review form.
 
-Viewer builds require FFmpeg for OGG encoding and round-trip validation.
-Set `ASHFOX_FFMPEG_PATH` when it is not on PATH. Native WAV synthesis in the
-shared core does not require FFmpeg or a browser.
+Viewer builds use the built-in WebAssembly Vorbis encoder and decoder for OGG
+output and round-trip validation; no external FFmpeg is needed. Native WAV
+synthesis in the shared core also requires no browser.
 
 The default scratch store is `.ashfox/audio-native`, ignored by Git. Override
 it with `ASHFOX_AUDIO_STORE`. Initialization copies examples once; subsequent

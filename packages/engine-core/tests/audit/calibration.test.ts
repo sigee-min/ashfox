@@ -439,20 +439,31 @@ const compileFile = (rel: string) => {
   assert.equal(res.ok, true, res.ok ? '' : JSON.stringify(res.diagnostics));
   const prod = res.products[0]!;
   assert.equal(prod.kind, 'model');
-  return evaluateAssetQuality(
-    { model: prod.model, telemetry: prod.telemetry },
-    { profile: 'creature' },
-  );
+  return evaluateAssetQuality({ model: prod.model, telemetry: prod.telemetry });
 };
 
-const currentFox = compileFile('examples/fox/creatures/fox.ashfox');
-const currentGriffin = compileFile('examples/griffin/workbench/main.ashfox');
-assert.ok(currentFox.score > 0 && currentGriffin.score > 0);
-assert.ok(
-  currentGriffin.score < 75,
-  `legacy griffin should fail threshold (${currentGriffin.score})`,
-);
+const foxReport = compileFile('examples/fox/creatures/fox.ashfox');
+const goblinReport = compileFile('examples/goblin/creatures/goblin.ashfox');
+const griffinReport = compileFile('examples/griffin/workbench/main.ashfox');
+const markerReport = compileFile('examples/minecraft/marker.ashfox');
+const lanternReport = compileFile('examples/prop/lantern.ashfox');
+
+for (const [name, report] of [
+  ['fox', foxReport],
+  ['goblin', goblinReport],
+  ['griffin', griffinReport],
+  ['marker', markerReport],
+  ['lantern', lanternReport],
+] as const) {
+  assert.equal(
+    report.passed,
+    true,
+    `${name} should pass audit: ${JSON.stringify(report.hardGates.filter((g) => !g.passed))}`,
+  );
+  assert.ok(report.score >= 85, `${name} expected >= 85, got ${report.score}`);
+  assert.equal(report.grade, 'excellent', `${name} expected excellent, got ${report.grade}`);
+}
 
 console.log(
-  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${currentFox.score} griffin=${currentGriffin.score}`,
+  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} griffin=${griffinReport.score} marker=${markerReport.score} lantern=${lanternReport.score}`,
 );

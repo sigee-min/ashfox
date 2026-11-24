@@ -80,8 +80,9 @@ project-relative, and outside source paths and reserved directories.
 
 Volume must be greater than 0 and at most 1, pitch greater than 0 and at most 2.
 Weights are positive integers. All source variants still compile; selection
-controls which ones are delivered in the pack. FFmpeg's Vorbis encoder currently
-uses a fixed quality-5 profile, PCM input is the source compiler's 48 kHz mono WAV.
+controls which ones are delivered in the pack. The built-in WebAssembly Vorbis
+encoder uses a fixed quality-5 profile with a deterministic stream serial, and
+PCM input is the source compiler's 48 kHz mono WAV.
 
 The example's format 88.0 comes from the
 [26.2 release notes](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-2).
@@ -104,11 +105,11 @@ npx --no-install ashfox build .ashfoxworkspace --json
 npx --no-install ashfox verify dist/build --json
 ```
 
-Sound packs require FFmpeg with `libvorbis`. Use `ffmpeg` on PATH, or set
-`ASHFOX_FFMPEG_PATH` to its executable path. No dependency download happens during
-build. Sprite/model-only packs and individual WAV exports require no encoder.
-`check` validates the source graph and declarations without running FFmpeg;
-`build` also validates exported files, merges, encoding and publication.
+Sound packs use the CLI's built-in WebAssembly OGG Vorbis encoder/decoder and
+require no external FFmpeg or network downloads during build. Sprite/model-only
+packs and individual WAV exports require no audio encoding. `check` validates the
+source graph and declarations without encoding OGG; `build` also validates exported
+files, merges, encoding and publication.
 
 The returned `exports` contains the named pack destination. Inside that immutable
 directory are:

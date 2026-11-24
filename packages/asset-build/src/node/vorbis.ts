@@ -1,163 +1,133 @@
-import { parentPort } from 'node:worker_threads';
-import { spawn } from 'node:child_process';
+import { createOggEncoder } from 'wasm-media-encoders';
+import { OggVorbisDecoder } from '@wasm-audio-decoders/ogg-vorbis';
 import { BuildFailure } from '../bundle/contract';
-import { digest } from '../shared/digest';
 import type { PackEncoder } from '../packs/compile';
-/** Parent acknowledges subprocess ownership before spawn, closing the abort race. */
-const encoderTurn = (): Promise<void> => {
-  const port = parentPort;
-  if (!port) return Promise.resolve();
-  return new Promise((resolve) => {
-    const ready = (message: unknown): void => {
-      if (message !== 'encoding-ready') return;
-      port.off('message', ready);
-      resolve();
-    };
-    port.on('message', ready);
-    port.postMessage({ phase: 'encoding' });
-  });
+
+const CHUNK_FRAMES = 4096;
+const MAX_OGG_BYTES = 16 * 1024 * 1024;
+const VORBIS_QUALITY = 5;
+const OGG_SERIAL_NUMBER = 0;
+
+const ascii = (bytes: Uint8Array, start: number, end: number): string =>
+  new TextDecoder('ascii').decode(bytes.subarray(start, end));
+
+const assertNotAborted = (signal?: AbortSignal): void => {
+  if (signal?.aborted) throw new BuildFailure('build.cancelled', 'Encoding cancelled', 130);
 };
-/** No shell or temporary output files; cancellation owns and kills the encoder. */
-const execute = async (
-  file: string,
-  args: readonly string[],
-  signal?: AbortSignal,
-  input?: Uint8Array,
-): Promise<Uint8Array> => {
-  await encoderTurn();
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new BuildFailure('build.cancelled', 'Encoding cancelled', 130));
-      return;
+
+const yieldTurn = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+const parseCanonicalMonoWav = (
+  wav: Uint8Array,
+): { readonly sampleRate: number; readonly samples: Float32Array } => {
+  if (wav.length < 44) throw new BuildFailure('audio.invalid', 'Expected 48 kHz mono PCM16 WAV', 3);
+  const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
+  const sampleRate = view.getUint32(24, true);
+  const dataSize = view.getUint32(40, true);
+  if (
+    ascii(wav, 0, 4) !== 'RIFF' ||
+    ascii(wav, 8, 12) !== 'WAVE' ||
+    ascii(wav, 12, 16) !== 'fmt ' ||
+    ascii(wav, 36, 40) !== 'data' ||
+    view.getUint16(20, true) !== 1 ||
+    view.getUint16(22, true) !== 1 ||
+    sampleRate !== 48000 ||
+    view.getUint16(34, true) !== 16 ||
+    dataSize !== wav.length - 44
+  ) {
+    throw new BuildFailure('audio.invalid', 'Expected 48 kHz mono PCM16 WAV', 3);
+  }
+  const frames = dataSize / 2;
+  const samples = new Float32Array(frames);
+  for (let i = 0; i < frames; i++) samples[i] = view.getInt16(44 + i * 2, true) / 32768;
+  return { sampleRate, samples };
+};
+
+const concatChunks = (chunks: readonly Uint8Array[], totalBytes: number): Uint8Array => {
+  const out = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+};
+
+export const decodeVorbis = async (
+  ogg: Uint8Array,
+): Promise<{
+  readonly sampleRate: number;
+  readonly channels: number;
+  readonly samples: Float32Array;
+}> => {
+  if (ogg.length < 4 || ascii(ogg, 0, 4) !== 'OggS') {
+    throw new BuildFailure('audio.invalid', 'Encoder did not return OGG', 3);
+  }
+  const decoder = new OggVorbisDecoder();
+  await decoder.ready;
+  try {
+    const decoded = await decoder.decodeFile(ogg);
+    if (decoded.errors.length > 0 || decoded.channelData.length === 0) {
+      throw new BuildFailure('audio.invalid', 'Vorbis decode failed', 3);
     }
-    const child = spawn(file, [...args], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
-    const chunks: Buffer[] = [],
-      errors: Buffer[] = [];
-    let total = 0,
-      errorSize = 0,
-      failure: BuildFailure | undefined;
-    const stop = (error: BuildFailure): void => {
-      failure ??= error;
-      child.kill('SIGKILL');
+    return {
+      sampleRate: decoded.sampleRate,
+      channels: decoded.channelData.length,
+      samples: decoded.channelData[0]!,
     };
-    const cancel = (): void => stop(new BuildFailure('build.cancelled', 'Encoding cancelled', 130));
-    const timer = setTimeout(
-      () => stop(new BuildFailure('audio.timeout', 'Vorbis encoder exceeded 15 seconds', 3)),
-      15000,
-    );
-    const cleanup = (): void => {
-      parentPort?.postMessage({ phase: 'compile' });
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', cancel);
-    };
-    signal?.addEventListener('abort', cancel, { once: true });
-    if (signal?.aborted) cancel();
-    child.stdout.on('data', (data: Buffer) => {
-      total += data.length;
-      if (total > 16 * 1024 * 1024)
-        stop(new BuildFailure('audio.budget', 'Encoder output exceeded budget', 3));
-      else chunks.push(data);
-    });
-    child.stderr.on('data', (data: Buffer) => {
-      errorSize += data.length;
-      if (errorSize <= 8192) errors.push(data);
-    });
-    child.on('error', (error) => {
-      cleanup();
-      reject(
-        new BuildFailure(
-          'audio.encoder',
-          `Cannot run FFmpeg. Install it or set ASHFOX_FFMPEG_PATH. ${error.message}`,
-          3,
-        ),
-      );
-    });
-    child.on('close', (code) => {
-      cleanup();
-      if (failure) reject(failure);
-      else if (code !== 0)
-        reject(
-          new BuildFailure(
-            'audio.encoder',
-            'FFmpeg failed: ' + Buffer.concat(errors).toString(),
-            3,
-          ),
-        );
-      else resolve(new Uint8Array(Buffer.concat(chunks)));
-    });
-    child.stdin.on('error', () => {
-      /* Early exit is reported by close/error. */
-    });
-    child.stdin.end(input);
-  });
+  } finally {
+    decoder.free();
+  }
 };
+
+const encodeOggChunks = async (
+  sampleRate: number,
+  samples: Float32Array,
+  signal?: AbortSignal,
+): Promise<Uint8Array> => {
+  const encoder = await createOggEncoder();
+  encoder.configure({
+    sampleRate,
+    channels: 1,
+    vbrQuality: VORBIS_QUALITY,
+    oggSerialNo: OGG_SERIAL_NUMBER,
+  });
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  const append = (view: Uint8Array): void => {
+    if (!view.length) return;
+    totalBytes += view.length;
+    if (totalBytes > MAX_OGG_BYTES) {
+      throw new BuildFailure('audio.budget', 'Encoder output exceeded budget', 3);
+    }
+    chunks.push(Uint8Array.from(view));
+  };
+  for (let offset = 0; offset < samples.length; offset += CHUNK_FRAMES) {
+    assertNotAborted(signal);
+    const end = Math.min(offset + CHUNK_FRAMES, samples.length);
+    append(encoder.encode([samples.subarray(offset, end)]));
+    await yieldTurn();
+  }
+  append(encoder.finalize());
+  return concatChunks(chunks, totalBytes);
+};
+
 export const createVorbisEncoder = async (signal?: AbortSignal): Promise<PackEncoder> => {
-  const file = process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg';
-  const version = await execute(file, ['-version'], signal);
+  assertNotAborted(signal);
   return {
-    fingerprint: 'ffmpeg-libvorbis-q5-bitexact-v1:' + digest(version),
+    fingerprint: 'wasm-vorbis-q5-serial0-v1',
     encode: async (wav) => {
-      const encoded = await execute(
-        file,
-        [
-          '-v',
-          'error',
-          '-nostdin',
-          '-fflags',
-          '+bitexact',
-          '-i',
-          'pipe:0',
-          '-map_metadata',
-          '-1',
-          '-ac',
-          '1',
-          '-ar',
-          '48000',
-          '-c:a',
-          'libvorbis',
-          '-q:a',
-          '5',
-          '-flags:a',
-          '+bitexact',
-          '-fflags',
-          '+bitexact',
-          '-f',
-          'ogg',
-          'pipe:1',
-        ],
-        signal,
-        wav,
-      );
-      if (new TextDecoder().decode(encoded.slice(0, 4)) !== 'OggS')
-        throw new BuildFailure('audio.invalid', 'Encoder did not return OGG', 3);
-      const decoded = await execute(
-        file,
-        [
-          '-v',
-          'error',
-          '-nostdin',
-          '-i',
-          'pipe:0',
-          '-f',
-          'f32le',
-          '-ac',
-          '1',
-          '-ar',
-          '48000',
-          'pipe:1',
-        ],
-        signal,
-        encoded,
-      );
-      // The native encoder owns a canonical 44-byte PCM16 mono WAV header.
-      const frames = (wav.length - 44) / 2;
-      if (!decoded.length || decoded.length % 4 || Math.abs(decoded.length / 4 - frames) > 1024)
+      assertNotAborted(signal);
+      const { sampleRate, samples } = parseCanonicalMonoWav(wav);
+      const encoded = await encodeOggChunks(sampleRate, samples, signal);
+      const decoded = await decodeVorbis(encoded);
+      if (!decoded.samples.length || Math.abs(decoded.samples.length - samples.length) > 1024) {
         throw new BuildFailure('audio.invalid', 'Vorbis duration mismatch', 3);
-      const view = new DataView(decoded.buffer, decoded.byteOffset, decoded.byteLength);
-      for (let offset = 0; offset < decoded.length; offset += 4) {
-        const sample = view.getFloat32(offset, true);
-        if (!Number.isFinite(sample) || Math.abs(sample) >= 1)
+      }
+      for (const sample of decoded.samples) {
+        if (!Number.isFinite(sample) || Math.abs(sample) >= 1) {
           throw new BuildFailure('audio.clipping', 'Decoded Vorbis clips; lower source peakDb', 1);
+        }
       }
       return encoded;
     },

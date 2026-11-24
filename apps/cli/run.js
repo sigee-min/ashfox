@@ -6,7 +6,7 @@ const { discoverTests, selectTests } = require('../../scripts/tests/discovery');
 
 const profile = process.argv[2] ?? 'default';
 const profiles = {
-  default: (file) => !['capture.test.ts', 'packaudio.test.ts'].includes(path.basename(file)),
+  default: (file) => path.basename(file) !== 'capture.test.ts',
   packs: (file) => ['packs.test.ts', 'packaudio.test.ts'].includes(path.basename(file)),
   capture: (file) => path.basename(file) === 'capture.test.ts',
 };

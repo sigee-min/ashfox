@@ -2,7 +2,9 @@ import { compilePack, type PackEncoder } from '../packs/compile';
 import {
   compileDirectoryWorkspace,
   encodeCanonicalPng,
+  evaluateAssetQuality,
   exportProductionProjectResolved,
+  formatDeliveryGateFailure,
   openAssetProject,
   rasterizeTexture,
   type ExportAdapterInput,
@@ -52,6 +54,22 @@ export const compileBundle = async (
     if (product.kind === 'sprite')
       files.push({ path: `${target.name}.png`, bytes: product.sprite.png });
     else if (product.kind === 'model') {
+      const hasProfile = product.model.profile !== undefined;
+      const audit = evaluateAssetQuality({ model: product.model, telemetry: product.telemetry });
+      if (!hasProfile) {
+        throw new BuildFailure(
+          'quality.profile-required',
+          formatDeliveryGateFailure(target.name, false, audit),
+          3,
+        );
+      }
+      if (!audit.passed) {
+        throw new BuildFailure(
+          'quality.gate',
+          formatDeliveryGateFailure(target.name, true, audit),
+          3,
+        );
+      }
       const opened =
         projects.get(key) ??
         openAssetProject({

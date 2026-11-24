@@ -113,7 +113,7 @@ const main = async (): Promise<void> => {
         itemDefinitions: ['legacy', 'modern'],
         metadata: ['legacy', 'range'],
         audio: 'vorbis',
-        encoder: 'FFmpeg via PATH or ASHFOX_FFMPEG_PATH',
+        encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
         archive: 'zip',
       },
       usage:

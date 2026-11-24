@@ -142,6 +142,15 @@ async function main() {
   });
   assert.equal(recovered.ok, true, JSON.stringify(recovered));
   png(Buffer.from(recovered.result.data, 'base64'), 160, 128);
+  const sheetTurnaround = success(
+    run(['capture', fox, '--sheet', 'turnaround', '--width', '320', '--height', '320']),
+  );
+  png(sheetTurnaround, 320, 320);
+  const sheetInspect = success(
+    run(['capture', fox, '--sheet', 'inspect', '--width', '320', '--height', '320']),
+  );
+  png(sheetInspect, 320, 320);
+  assert.notDeepEqual(sheetTurnaround, sheetInspect);
   const exit = new Promise((resolve) => child.once('exit', resolve));
   child.stdin.end();
   assert.equal(await exit, 0);

@@ -74,6 +74,7 @@ export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): 
     'node',
     'texture',
     'mode',
+    'sheet',
     'format',
     'namespace',
     'modelPath',
@@ -140,5 +141,6 @@ export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): 
     result.stage = enumValue(v.stage, ['final', 'silhouette', 'shade', 'grain'], 'stage');
   if (v.mode !== undefined)
     result.mode = enumValue(v.mode, ['motion', 'turntable', 'build'], 'mode');
+  if (v.sheet !== undefined) result.sheet = enumValue(v.sheet, ['turnaround', 'inspect'], 'sheet');
   return result;
 };

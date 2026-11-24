@@ -1,193 +1,333 @@
 ashfox-model 1
 asset griffin {
-import "./animation.ashfox" as animation;
-export surface contract Plumage { atlas { width = 128px; height = 1024px; } chart haunch box { width = 46px; height = 22px; coverage = opaque; }
-chart chest box { width = 44px; height = 22px; coverage = opaque; }
-chart breast box { width = 24px; height = 13px; coverage = opaque; }
-chart skull box { width = 32px; height = 16px; coverage = opaque; }
-chart hind_claw_left0 box { width = 8px; height = 4px; coverage = opaque; }
-chart hind_claw_left1 box { width = 8px; height = 4px; coverage = opaque; }
-chart hind_claw_left2 box { width = 8px; height = 4px; coverage = opaque; }
-chart hind_claw_right0 box { width = 8px; height = 4px; coverage = opaque; }
-chart hind_claw_right1 box { width = 8px; height = 4px; coverage = opaque; }
-chart hind_claw_right2 box { width = 8px; height = 4px; coverage = opaque; }
-chart beak box { width = 24px; height = 10px; coverage = opaque; }
-chart crest_left box { width = 12px; height = 7px; coverage = opaque; }
-chart crest_right box { width = 12px; height = 7px; coverage = opaque; }
-chart foreleg_left box { width = 12px; height = 13px; coverage = opaque; }
-chart forefoot_left box { width = 22px; height = 9px; coverage = opaque; }
-chart talon_left0 box { width = 10px; height = 6px; coverage = opaque; }
-chart talon_left1 box { width = 10px; height = 6px; coverage = opaque; }
-chart talon_left2 box { width = 10px; height = 6px; coverage = opaque; }
-chart hind_thigh_left box { width = 20px; height = 14px; coverage = opaque; }
-chart hind_shin_left box { width = 12px; height = 8px; coverage = opaque; }
-chart hind_paw_left box { width = 24px; height = 10px; coverage = opaque; }
-chart shoulder_left box { width = 30px; height = 12px; coverage = opaque; }
-chart wing_arm_left box { width = 34px; height = 10px; coverage = opaque; }
-chart feather_left0 box { width = 44px; height = 20px; coverage = opaque; }
-chart tip_left0 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_left1 box { width = 42px; height = 19px; coverage = opaque; }
-chart tip_left1 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_left2 box { width = 40px; height = 18px; coverage = opaque; }
-chart tip_left2 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_left3 box { width = 38px; height = 17px; coverage = opaque; }
-chart tip_left3 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_left4 box { width = 36px; height = 16px; coverage = opaque; }
-chart tip_left4 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_left5 box { width = 34px; height = 15px; coverage = opaque; }
-chart tip_left5 box { width = 16px; height = 6px; coverage = opaque; }
-chart foreleg_right box { width = 12px; height = 13px; coverage = opaque; }
-chart forefoot_right box { width = 22px; height = 9px; coverage = opaque; }
-chart talon_right0 box { width = 10px; height = 6px; coverage = opaque; }
-chart talon_right1 box { width = 10px; height = 6px; coverage = opaque; }
-chart talon_right2 box { width = 10px; height = 6px; coverage = opaque; }
-chart hind_thigh_right box { width = 20px; height = 14px; coverage = opaque; }
-chart hind_shin_right box { width = 12px; height = 8px; coverage = opaque; }
-chart hind_paw_right box { width = 24px; height = 10px; coverage = opaque; }
-chart shoulder_right box { width = 30px; height = 12px; coverage = opaque; }
-chart wing_arm_right box { width = 34px; height = 10px; coverage = opaque; }
-chart feather_right0 box { width = 44px; height = 20px; coverage = opaque; }
-chart tip_right0 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_right1 box { width = 42px; height = 19px; coverage = opaque; }
-chart tip_right1 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_right2 box { width = 40px; height = 18px; coverage = opaque; }
-chart tip_right2 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_right3 box { width = 38px; height = 17px; coverage = opaque; }
-chart tip_right3 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_right4 box { width = 36px; height = 16px; coverage = opaque; }
-chart tip_right4 box { width = 16px; height = 6px; coverage = opaque; }
-chart feather_right5 box { width = 34px; height = 15px; coverage = opaque; }
-chart tip_right5 box { width = 16px; height = 6px; coverage = opaque; }
-chart tail_base box { width = 28px; height = 14px; coverage = opaque; }
-chart tail_rise box { width = 8px; height = 7px; coverage = opaque; }
-chart tail_tuft box { width = 16px; height = 9px; coverage = opaque; } material = opaque; }
-export surface griffin_skin: Plumage { material = opaque; texture atlas { atlas = (128px, 1024px); background = shade; background-alpha = 255; palette { shade = #292d32; eye = #102426; gleam = #56d9c5; gold = (#66411f, #ba8241, #dfa85c);
-ivory = (#929286, #d6d3be, #f5edda);
-beak = (#8b551e, #d99d35, #ffd166);
-feather = (#665749, #b2a58e, #e3d8be);
-dark = (#292d32, #494947, #777268);
-claw = (#24272b, #484b50, #73767b); } stamp eye_mark { pixels = "eee/egg/eee"; e = eye; g = gleam; } chart haunch box { origin = (0px, 0px); fill = gold;  }
-chart chest box { origin = (0px, 23px); fill = ivory;  }
-chart breast box { origin = (0px, 46px); fill = ivory;  }
-chart skull box { origin = (0px, 60px); fill = ivory; face west { stamp eye_mark { anchor = top_left; offset = (1px, 2px); } } face east { stamp eye_mark { anchor = top_right; offset = (-1px, 2px); flip = x; } } }
-chart beak box { origin = (0px, 77px); fill = beak;  }
-chart crest_left box { origin = (0px, 95px); fill = ivory;  }
-chart crest_right box { origin = (0px, 103px); fill = ivory;  }
-chart foreleg_left box { origin = (0px, 111px); fill = beak;  }
-chart forefoot_left box { origin = (0px, 125px); fill = beak;  }
-chart talon_left0 box { origin = (0px, 135px); fill = claw;  }
-chart talon_left1 box { origin = (0px, 142px); fill = claw;  }
-chart talon_left2 box { origin = (0px, 149px); fill = claw;  }
-chart hind_thigh_left box { origin = (0px, 156px); fill = gold;  }
-chart hind_shin_left box { origin = (0px, 171px); fill = gold;  }
-chart hind_paw_left box { origin = (0px, 180px); fill = gold;  }
-chart shoulder_left box { origin = (0px, 191px); fill = ivory;  }
-chart wing_arm_left box { origin = (0px, 204px); fill = ivory;  }
-chart feather_left0 box { origin = (0px, 215px); fill = feather;  }
-chart tip_left0 box { origin = (0px, 236px); fill = dark;  }
-chart feather_left1 box { origin = (0px, 243px); fill = feather;  }
-chart tip_left1 box { origin = (0px, 263px); fill = dark;  }
-chart feather_left2 box { origin = (0px, 270px); fill = feather;  }
-chart tip_left2 box { origin = (0px, 289px); fill = dark;  }
-chart feather_left3 box { origin = (0px, 296px); fill = feather;  }
-chart tip_left3 box { origin = (0px, 314px); fill = dark;  }
-chart feather_left4 box { origin = (0px, 321px); fill = feather;  }
-chart tip_left4 box { origin = (0px, 338px); fill = dark;  }
-chart feather_left5 box { origin = (0px, 345px); fill = feather;  }
-chart tip_left5 box { origin = (0px, 361px); fill = dark;  }
-chart foreleg_right box { origin = (0px, 368px); fill = beak;  }
-chart forefoot_right box { origin = (0px, 382px); fill = beak;  }
-chart talon_right0 box { origin = (0px, 392px); fill = claw;  }
-chart talon_right1 box { origin = (0px, 399px); fill = claw;  }
-chart talon_right2 box { origin = (0px, 406px); fill = claw;  }
-chart hind_thigh_right box { origin = (0px, 413px); fill = gold;  }
-chart hind_shin_right box { origin = (0px, 428px); fill = gold;  }
-chart hind_paw_right box { origin = (0px, 437px); fill = gold;  }
-chart shoulder_right box { origin = (0px, 448px); fill = ivory;  }
-chart wing_arm_right box { origin = (0px, 461px); fill = ivory;  }
-chart feather_right0 box { origin = (0px, 472px); fill = feather;  }
-chart tip_right0 box { origin = (0px, 493px); fill = dark;  }
-chart feather_right1 box { origin = (0px, 500px); fill = feather;  }
-chart tip_right1 box { origin = (0px, 520px); fill = dark;  }
-chart feather_right2 box { origin = (0px, 527px); fill = feather;  }
-chart tip_right2 box { origin = (0px, 546px); fill = dark;  }
-chart feather_right3 box { origin = (0px, 553px); fill = feather;  }
-chart tip_right3 box { origin = (0px, 571px); fill = dark;  }
-chart feather_right4 box { origin = (0px, 578px); fill = feather;  }
-chart tip_right4 box { origin = (0px, 595px); fill = dark;  }
-chart feather_right5 box { origin = (0px, 602px); fill = feather;  }
-chart tip_right5 box { origin = (0px, 618px); fill = dark;  }
-chart tail_base box { origin = (0px, 625px); fill = gold;  }
-chart tail_rise box { origin = (0px, 640px); fill = gold;  }
-chart tail_tuft box { origin = (0px, 648px); fill = dark;  } chart hind_claw_left0 box { origin = (0px, 660px); fill = claw; }
-chart hind_claw_left1 box { origin = (0px, 665px); fill = claw; }
-chart hind_claw_left2 box { origin = (0px, 670px); fill = claw; }
-chart hind_claw_right0 box { origin = (0px, 675px); fill = claw; }
-chart hind_claw_right1 box { origin = (0px, 680px); fill = claw; }
-chart hind_claw_right2 box { origin = (0px, 685px); fill = claw; }
-grain clustered { seed = 7319; } tone voxel; } }
-export component Griffin { requires rig skeleton: animation.GriffinRig; requires surface skin: Plumage; bind bone root to skeleton.root;
-bind bone head to skeleton.head;
-bind bone wing_left to skeleton.wing_left;
-bind bone wing_right to skeleton.wing_right;
-bind bone tail to skeleton.tail; geometry { bone root { cube hind_claw_left0 { origin = (-6u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_left0; }
-cube hind_claw_left1 { origin = (-4u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_left1; }
-cube hind_claw_left2 { origin = (-2u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_left2; }
-cube hind_claw_right0 { origin = (1u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_right0; }
-cube hind_claw_right1 { origin = (3u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_right1; }
-cube hind_claw_right2 { origin = (5u, 0u, 4u); size = (1u, 1u, 3u); surface = skin.hind_claw_right2; }
-cube haunch { origin = (-5u, 10u, 0u); size = (10u, 9u, 13u); surface = skin.haunch; }
-cube chest { origin = (-6u, 10u, -8u); size = (12u, 12u, 10u); surface = skin.chest; }
-cube breast { origin = (-4u, 11u, -11u); size = (8u, 9u, 4u); surface = skin.breast; }
-cube foreleg_left { origin = (-5u, 3u, -9u); size = (3u, 10u, 3u); surface = skin.foreleg_left; }
-cube forefoot_left { origin = (-6u, 1u, -12u); size = (5u, 3u, 6u); surface = skin.forefoot_left; }
-cube talon_left0 { origin = (-6u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_left0; }
-cube talon_left1 { origin = (-4u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_left1; }
-cube talon_left2 { origin = (-2u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_left2; }
-cube hind_thigh_left { origin = (-6u, 6u, 7u); size = (4u, 8u, 6u); surface = skin.hind_thigh_left; }
-cube hind_shin_left { origin = (-5u, 2u, 9u); size = (3u, 5u, 3u); surface = skin.hind_shin_left; }
-cube hind_paw_left { origin = (-6u, 0u, 6u); size = (5u, 3u, 7u); surface = skin.hind_paw_left; }
-cube foreleg_right { origin = (2u, 3u, -9u); size = (3u, 10u, 3u); surface = skin.foreleg_right; }
-cube forefoot_right { origin = (1u, 1u, -12u); size = (5u, 3u, 6u); surface = skin.forefoot_right; }
-cube talon_right0 { origin = (1u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_right0; }
-cube talon_right1 { origin = (3u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_right1; }
-cube talon_right2 { origin = (5u, 0u, -14u); size = (1u, 2u, 4u); surface = skin.talon_right2; }
-cube hind_thigh_right { origin = (2u, 6u, 7u); size = (4u, 8u, 6u); surface = skin.hind_thigh_right; }
-cube hind_shin_right { origin = (2u, 2u, 9u); size = (3u, 5u, 3u); surface = skin.hind_shin_right; }
-cube hind_paw_right { origin = (1u, 0u, 6u); size = (5u, 3u, 7u); surface = skin.hind_paw_right; } bone head { cube skull { origin = (-4u, 21u, -13u); size = (8u, 8u, 8u); surface = skin.skull; }
-cube beak { origin = (-3u, 21u, -18u); size = (6u, 4u, 6u); surface = skin.beak; }
-cube crest_left { origin = (-4u, 28u, -9u); size = (2u, 3u, 4u); surface = skin.crest_left; }
-cube crest_right { origin = (2u, 28u, -9u); size = (2u, 3u, 4u); surface = skin.crest_right; } }
-bone wing_left { cube shoulder_left { origin = (-13u, 19u, -5u); size = (8u, 5u, 7u); surface = skin.shoulder_left; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube wing_arm_left { origin = (-23u, 19u, -3u); size = (11u, 4u, 6u); surface = skin.wing_arm_left; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left0 { origin = (-12u, 20u, 0u); size = (4u, 2u, 18u); surface = skin.feather_left0; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left0 { origin = (-12u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left0; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left1 { origin = (-15u, 20u, 1u); size = (4u, 2u, 17u); surface = skin.feather_left1; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left1 { origin = (-15u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left1; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left2 { origin = (-18u, 20u, 2u); size = (4u, 2u, 16u); surface = skin.feather_left2; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left2 { origin = (-18u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left2; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left3 { origin = (-21u, 20u, 3u); size = (4u, 2u, 15u); surface = skin.feather_left3; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left3 { origin = (-21u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left3; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left4 { origin = (-24u, 20u, 4u); size = (4u, 2u, 14u); surface = skin.feather_left4; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left4 { origin = (-24u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left4; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube feather_left5 { origin = (-27u, 20u, 5u); size = (4u, 2u, 13u); surface = skin.feather_left5; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
-cube tip_left5 { origin = (-27u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_left5; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); } }
-bone wing_right { cube shoulder_right { origin = (5u, 19u, -5u); size = (8u, 5u, 7u); surface = skin.shoulder_right; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube wing_arm_right { origin = (12u, 19u, -3u); size = (11u, 4u, 6u); surface = skin.wing_arm_right; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right0 { origin = (8u, 20u, 0u); size = (4u, 2u, 18u); surface = skin.feather_right0; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right0 { origin = (8u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right0; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right1 { origin = (11u, 20u, 1u); size = (4u, 2u, 17u); surface = skin.feather_right1; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right1 { origin = (11u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right1; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right2 { origin = (14u, 20u, 2u); size = (4u, 2u, 16u); surface = skin.feather_right2; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right2 { origin = (14u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right2; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right3 { origin = (17u, 20u, 3u); size = (4u, 2u, 15u); surface = skin.feather_right3; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right3 { origin = (17u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right3; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right4 { origin = (20u, 20u, 4u); size = (4u, 2u, 14u); surface = skin.feather_right4; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right4 { origin = (20u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right4; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube feather_right5 { origin = (23u, 20u, 5u); size = (4u, 2u, 13u); surface = skin.feather_right5; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
-cube tip_right5 { origin = (23u, 20u, 18u); size = (4u, 2u, 4u); surface = skin.tip_right5; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); } }
-bone tail { cube tail_base { origin = (-1u, 12u, 12u); size = (2u, 2u, 12u); surface = skin.tail_base; }
-cube tail_rise { origin = (-1u, 13u, 22u); size = (2u, 5u, 2u); surface = skin.tail_rise; }
-cube tail_tuft { origin = (-2u, 16u, 21u); size = (4u, 5u, 4u); surface = skin.tail_tuft; } } } } }
-export asset griffin { settings { density = 16; forward = north; } skeleton = animation.GriffinSkeleton; motion = animation.idle; motion = animation.look_around; motion = animation.wing_display; motion = animation.wing_flap; motion = animation.greeting; motion = animation.alert; use Griffin as griffin { bind skeleton = animation.GriffinRig; bind skin = griffin_skin; }; }
+  import "./animation.ashfox" as animation;
+  export surface contract Plumage {
+    chart haunch box { coverage = opaque; }
+    chart chest box { coverage = opaque; }
+    chart breast box { coverage = opaque; }
+    chart mantle box { coverage = opaque; }
+    chart skull box { coverage = opaque; }
+    chart brow box { coverage = opaque; }
+    chart beak box { coverage = opaque; }
+    chart beak_tip box { coverage = opaque; }
+    chart crest box { coverage = opaque; }
+    chart crest_plume flat { coverage = opaque; }
+    chart foreleg box { coverage = opaque; }
+    chart forefoot box { coverage = opaque; }
+    chart talon box { coverage = opaque; }
+    chart hind_thigh box { coverage = opaque; }
+    chart hind_shin box { coverage = opaque; }
+    chart hind_paw box { coverage = opaque; }
+    chart hind_claw box { coverage = opaque; }
+    chart shoulder box { coverage = opaque; }
+    chart wing_arm box { coverage = opaque; }
+    chart feather_a box { coverage = opaque; }
+    chart feather_b box { coverage = opaque; }
+    chart feather_c box { coverage = opaque; }
+    chart feather_tip box { coverage = opaque; }
+    chart tail_base box { coverage = opaque; }
+    chart tail_rise box { coverage = opaque; }
+    chart tail_tuft box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface griffin_skin: Plumage {
+    material = opaque;
+    texture atlas {
+      background = shade; background-alpha = 255;
+      palette {
+        shade = #23262b;
+        eye = #102426;
+        gleam = #56d9c5;
+        gold = (#66411f, #ba8241, #e6b368);
+        gold_deep = (#452a13, #825526, #b87e3c);
+        ivory = (#8f8e82, #d8d5c2, #f8f2e2);
+        ivory_mid = (#6d6b62, #aaa698, #d9d3c3);
+        beak = (#8b551e, #dfa338, #ffd66e);
+        feather = (#645546, #b5a890, #e8dec5);
+        dark = (#24272c, #494947, #7a746a);
+        claw = (#1b1d20, #3f4247, #6d7076);
+      }
+      stamp eye_mark {
+        pixels = "eee/egg/eee";
+        e = eye;
+        g = gleam;
+      }
+      stamp breast_crest {
+        pixels = "..gg../.gggg./gggggg/.gggg./..gg..";
+        g = gold_deep;
+      }
+
+      chart haunch box {
+        fill = gold;
+        grain = clustered;
+        pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+        pattern stripe { paint = gold_deep; axis = u; period = 6px; width = 1px; phase = 1; }
+      }
+      chart chest box {
+        fill = ivory;
+        grain = soft;
+        pattern gradient { from = gold_deep; to = ivory; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+        pattern border { paint = ivory_mid; width = 1px; edges = bottom; }
+      }
+      chart breast box {
+        fill = ivory;
+        grain = soft;
+        pattern gradient { from = ivory_mid; to = ivory; axis = y; space = local; soft = 0.2ratio; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+        face north { stamp breast_crest { at = (1px, 1px); protect = true; } }
+      }
+      chart mantle box {
+        fill = ivory_mid;
+        grain = soft;
+        pattern gradient { from = feather; to = ivory; axis = y; space = local; soft = 0.2ratio; }
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart skull box {
+        fill = ivory;
+        grain = soft;
+        pattern gradient { from = ivory_mid; to = ivory; axis = y; space = local; soft = 0.2ratio; }
+        pattern border { paint = feather; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+        face west { stamp eye_mark { anchor = top_left; offset = (1px, 2px); protect = true; } }
+        face east { stamp eye_mark { anchor = top_right; offset = (-1px, 2px); flip = x; protect = true; } }
+      }
+      chart brow box {
+        fill = ivory_mid;
+        grain = soft;
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+      }
+      chart beak box {
+        fill = beak;
+        grain = none;
+        pattern gradient { from = gold_deep; to = beak; axis = y; space = local; soft = 0.2ratio; }
+        pattern border { paint = gold_deep; width = 1px; edges = bottom; }
+      }
+      chart beak_tip box {
+        fill = beak;
+        grain = none;
+        pattern border { paint = dark; width = 1px; edges = bottom; }
+      }
+      chart crest box {
+        fill = ivory;
+        grain = soft;
+        pattern gradient { from = feather; to = ivory; axis = y; space = local; soft = 0.25ratio; }
+        pattern border { paint = dark; width = 1px; edges = top; }
+      }
+      chart crest_plume flat {
+        fill = feather;
+        grain = soft;
+        pattern gradient { from = dark; to = ivory; axis = y; space = local; soft = 0.25ratio; }
+      }
+      chart foreleg box {
+        fill = beak;
+        grain = none;
+        pattern gradient { from = gold_deep; to = beak; axis = y; space = model; soft = 0.2ratio; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart forefoot box {
+        fill = beak;
+        grain = none;
+        pattern border { paint = gold_deep; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart talon box {
+        fill = claw;
+        grain = none;
+        pattern border { paint = dark; width = 1px; edges = top; }
+      }
+      chart hind_thigh box {
+        fill = gold;
+        grain = clustered;
+        pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart hind_shin box {
+        fill = gold_deep;
+        grain = clustered;
+        pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.2ratio; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart hind_paw box {
+        fill = gold;
+        grain = clustered;
+        pattern border { paint = gold_deep; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart hind_claw box {
+        fill = claw;
+        grain = none;
+        pattern border { paint = dark; width = 1px; edges = top; }
+      }
+      chart shoulder box {
+        fill = ivory;
+        grain = soft;
+        pattern gradient { from = feather; to = ivory; axis = y; space = local; soft = 0.25ratio; }
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart wing_arm box {
+        fill = ivory_mid;
+        grain = soft;
+        pattern gradient { from = dark; to = ivory; axis = y; space = local; soft = 0.25ratio; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart feather_a box {
+        fill = feather;
+        grain = soft;
+        pattern gradient { from = dark; to = ivory; axis = y; space = local; soft = 0.25ratio; }
+        pattern stripe { paint = ivory_mid; axis = v; period = 3px; width = 1px; phase = 0; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart feather_b box {
+        fill = feather;
+        grain = soft;
+        pattern gradient { from = dark; to = feather; axis = y; space = local; soft = 0.25ratio; }
+        pattern stripe { paint = ivory; axis = v; period = 3px; width = 1px; phase = 1; }
+      }
+      chart feather_c box {
+        fill = feather;
+        grain = soft;
+        pattern gradient { from = dark; to = feather; axis = y; space = local; soft = 0.25ratio; }
+        pattern border { paint = ivory_mid; width = 1px; edges = top; }
+      }
+      chart feather_tip box {
+        fill = dark;
+        grain = none;
+        pattern gradient { from = claw; to = dark; axis = y; space = local; soft = 0.2ratio; }
+        pattern border { paint = feather; width = 1px; edges = top; }
+      }
+      chart tail_base box {
+        fill = gold;
+        grain = clustered;
+        pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.25ratio; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart tail_rise box {
+        fill = gold;
+        grain = clustered;
+        pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.25ratio; }
+      }
+      chart tail_tuft box {
+        fill = dark;
+        grain = clustered;
+        pattern gradient { from = claw; to = feather; axis = y; space = local; soft = 0.25ratio; }
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+      }
+      grain clustered { seed = 7319; }
+      tone painterly;
+    }
+  }
+
+  export component Griffin {
+    requires rig skeleton: animation.GriffinRig;
+    requires surface skin: Plumage;
+    bind bone root to skeleton.root;
+    bind bone torso to skeleton.torso;
+    bind bone head to skeleton.head;
+    bind bone wing_left to skeleton.wing_left;
+    bind bone wing_right to skeleton.wing_right;
+    bind bone foreleg_left to skeleton.foreleg_left;
+    bind bone foreleg_right to skeleton.foreleg_right;
+    bind bone tail to skeleton.tail;
+    bind bone tail_tip to skeleton.tail_tip;
+    geometry {
+      bone root {
+        bone torso {
+          cube haunch { origin = (-5u, 10u, 0u); size = (10u, 9u, 13u); surface = skin.haunch; }
+          cube chest { origin = (-6u, 10u, -8u); size = (12u, 12u, 10u); pivot = (0u, 16u, -3u); rotation = (4deg, 0deg, 0deg); surface = skin.chest; }
+          cube breast { origin = (-4u, 11u, -11u); size = (8u, 9u, 4u); pivot = (0u, 15.5u, -9u); rotation = (12deg, 0deg, 0deg); surface = skin.breast; }
+          cube mantle { origin = (-6.5u, 18.5u, -9u); size = (13u, 4u, 7u); pivot = (0u, 20u, -6u); rotation = (-12deg, 0deg, 0deg); surface = skin.mantle; }
+
+          cube hind_thigh_l { origin = (-6u, 6u, 7u); size = (4u, 8u, 6u); pivot = (-4u, 12u, 10u); rotation = (-10deg, 0deg, 0deg); mirror-x = hind_thigh_r; surface = skin.hind_thigh; }
+          cube hind_shin_l { origin = (-5.5u, 2u, 9u); size = (3u, 5u, 3u); mirror-x = hind_shin_r; surface = skin.hind_shin; }
+          cube hind_paw_l { origin = (-6u, 0u, 6u); size = (5u, 3u, 7u); mirror-x = hind_paw_r; surface = skin.hind_paw; }
+          cube hind_claw_l0 { origin = (-6u, 0u, 4u); size = (1u, 1u, 3u); mirror-x = hind_claw_r0; surface = skin.hind_claw; }
+          cube hind_claw_l1 { origin = (-4u, 0u, 4u); size = (1u, 1u, 3u); mirror-x = hind_claw_r1; surface = skin.hind_claw; }
+          cube hind_claw_l2 { origin = (-2u, 0u, 4u); size = (1u, 1u, 3u); mirror-x = hind_claw_r2; surface = skin.hind_claw; }
+
+          bone foreleg_left {
+            cube foreleg_l { origin = (-5u, 3u, -9u); size = (3u, 9u, 3u); pivot = (-3.5u, 11u, -7.5u); rotation = (-5deg, 0deg, 0deg); surface = skin.foreleg; }
+            cube forefoot_l { origin = (-6u, 1u, -12u); size = (5u, 3u, 6u); surface = skin.forefoot; }
+            cube talon_l0 { origin = (-6u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+            cube talon_l1 { origin = (-4u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+            cube talon_l2 { origin = (-2u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+          }
+          bone foreleg_right {
+            cube foreleg_r { origin = (2u, 3u, -9u); size = (3u, 9u, 3u); pivot = (3.5u, 11u, -7.5u); rotation = (-5deg, 0deg, 0deg); surface = skin.foreleg; }
+            cube forefoot_r { origin = (1u, 1u, -12u); size = (5u, 3u, 6u); surface = skin.forefoot; }
+            cube talon_r0 { origin = (1u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+            cube talon_r1 { origin = (3u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+            cube talon_r2 { origin = (5u, 0u, -14u); size = (1u, 2u, 3u); surface = skin.talon; }
+          }
+
+          bone head {
+            cube skull { origin = (-4u, 21u, -13u); size = (8u, 8u, 8u); pivot = (0u, 24u, -9u); rotation = (4deg, 0deg, 0deg); surface = skin.skull; }
+            cube brow_l { origin = (-4.2u, 26.5u, -13.5u); size = (3u, 2u, 4u); pivot = (-3u, 27u, -11.5u); rotation = (8deg, 0deg, -12deg); mirror-x = brow_r; surface = skin.brow; }
+            cube beak { origin = (-3u, 21.5u, -18u); size = (6u, 4u, 6u); surface = skin.beak; }
+            cube beak_tip { origin = (-2u, 20.5u, -19.5u); size = (4u, 3u, 3u); pivot = (0u, 22.5u, -18u); rotation = (16deg, 0deg, 0deg); surface = skin.beak_tip; }
+            cube crest_l { origin = (-4u, 28u, -9u); size = (2u, 3u, 4u); pivot = (-3u, 28u, -7u); rotation = (-16deg, 0deg, -14deg); mirror-x = crest_r; surface = skin.crest; }
+            plane crest_plume_l { origin = (-3.5u, 27u, -8u); size = (4u, 4u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); rotation = (-12deg, 0deg, -14deg); mirror-x = crest_plume_r; surface = skin.crest_plume; }
+          }
+
+          bone wing_left {
+            cube shoulder_l { origin = (-13u, 19u, -5u); size = (8u, 5u, 7u); surface = skin.shoulder; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube wing_arm_l { origin = (-23u, 19u, -3u); size = (11u, 4u, 6u); surface = skin.wing_arm; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l0 { origin = (-12u, 20u, 0u); size = (4u, 2u, 16u); surface = skin.feather_a; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l0 { origin = (-12u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l1 { origin = (-15u, 20u, 1u); size = (4u, 2u, 16u); surface = skin.feather_a; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l1 { origin = (-15u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l2 { origin = (-18u, 20u, 2u); size = (4u, 2u, 14u); surface = skin.feather_b; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l2 { origin = (-18u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l3 { origin = (-21u, 20u, 3u); size = (4u, 2u, 14u); surface = skin.feather_b; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l3 { origin = (-21u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l4 { origin = (-24u, 20u, 4u); size = (4u, 2u, 12u); surface = skin.feather_c; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l4 { origin = (-24u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube feather_l5 { origin = (-27u, 20u, 5u); size = (4u, 2u, 12u); surface = skin.feather_c; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+            cube tip_l5 { origin = (-27u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, -30deg); pivot = (-5u, 20u, -2u); }
+          }
+
+          bone wing_right {
+            cube shoulder_r { origin = (5u, 19u, -5u); size = (8u, 5u, 7u); surface = skin.shoulder; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube wing_arm_r { origin = (12u, 19u, -3u); size = (11u, 4u, 6u); surface = skin.wing_arm; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r0 { origin = (8u, 20u, 0u); size = (4u, 2u, 16u); surface = skin.feather_a; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r0 { origin = (8u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r1 { origin = (11u, 20u, 1u); size = (4u, 2u, 16u); surface = skin.feather_a; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r1 { origin = (11u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r2 { origin = (14u, 20u, 2u); size = (4u, 2u, 14u); surface = skin.feather_b; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r2 { origin = (14u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r3 { origin = (17u, 20u, 3u); size = (4u, 2u, 14u); surface = skin.feather_b; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r3 { origin = (17u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r4 { origin = (20u, 20u, 4u); size = (4u, 2u, 12u); surface = skin.feather_c; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r4 { origin = (20u, 20u, 16u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube feather_r5 { origin = (23u, 20u, 5u); size = (4u, 2u, 12u); surface = skin.feather_c; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+            cube tip_r5 { origin = (23u, 20u, 17u); size = (4u, 2u, 4u); surface = skin.feather_tip; rotation = (-20deg, 0deg, 30deg); pivot = (5u, 20u, -2u); }
+          }
+
+          bone tail {
+            cube tail_base { origin = (-1.5u, 12u, 12u); size = (3u, 3u, 10u); pivot = (0u, 13.5u, 12u); rotation = (-10deg, 0deg, 0deg); surface = skin.tail_base; }
+            bone tail_tip {
+              cube tail_rise { origin = (-1u, 12u, 21u); size = (2u, 5u, 2u); pivot = (0u, 14u, 22u); rotation = (18deg, 0deg, 0deg); surface = skin.tail_rise; }
+              cube tail_tuft { origin = (-2u, 16u, 21u); size = (4u, 5u, 4u); surface = skin.tail_tuft; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  export asset griffin {
+    settings { density = 16; forward = north; profile = creature; }
+    skeleton = animation.GriffinSkeleton;
+    motion = animation.idle;
+    motion = animation.look_around;
+    motion = animation.wing_display;
+    motion = animation.wing_flap;
+    motion = animation.greeting;
+    motion = animation.alert;
+    use Griffin as griffin { bind skeleton = animation.GriffinRig; bind skin = griffin_skin; };
+  }
 }

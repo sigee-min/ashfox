@@ -15,7 +15,7 @@ npx --no-install ashfox --version
 
 <!-- ashfox:check -->
 The second command prints the installed product version. Run
-`npx --no-install ashfox doctor` to check optional Chrome and FFmpeg support.
+`npx --no-install ashfox doctor` to check optional Chrome support.
 <!-- ashfox:check-end -->
 
 The package contains the complete CLI and works with Node.js 24+ on macOS,
@@ -77,30 +77,27 @@ is assumed by either installation path.
 
 | Task | Additional tool |
 | --- | --- |
-| Inspect source; export PNG, WAV or model files; build WAV game packs | None |
+| Inspect source; export PNG, WAV, OGG or model files; build WAV/OGG game or Minecraft sound packs | None |
 | Capture images, atlas details or waveforms; create GIF replays | Chrome or Chromium |
-| Build OGG sounds or a Minecraft pack containing sounds | FFmpeg with `libvorbis` |
 
-Install these tools with your usual operating-system installer or package manager.
-Ashfox does not install them automatically. Chrome need not be open, and capture
-does not require FFmpeg. Set executable paths if automatic discovery fails.
+Install Chrome or Chromium with your usual operating-system installer or package
+manager if you need visual captures or GIF replays. Ashfox does not install it
+automatically. Chrome need not be open, and OGG encoding works built in without
+FFmpeg. Set `ASHFOX_CHROME_PATH` if automatic discovery fails.
 
 macOS/Linux:
 
 ```sh
 export ASHFOX_CHROME_PATH="/path/to/chrome"
-export ASHFOX_FFMPEG_PATH="/path/to/ffmpeg"
 ```
 
 Windows PowerShell:
 
 ```powershell
 $env:ASHFOX_CHROME_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-$env:ASHFOX_FFMPEG_PATH = 'C:\tools\ffmpeg\bin\ffmpeg.exe'
 ```
 
-Paths must identify executable files, not directories. Check `ffmpeg -encoders`
-for `libvorbis` before requesting OGG output.
+The path must identify an executable file, not a directory.
 
 ## Shells and binary output
 
@@ -117,6 +114,6 @@ and install its exact CLI asset URL in your project. Review the lockfile change,
 rebuild your assets and compare their appearance before adopting it. Restore
 the previous dependency and lockfile and run `npm ci` to return to that version.
 For offline projects, retain each tarball in a versioned local folder.
-Pin Chrome/FFmpeg too when image or OGG byte comparisons matter.
+Pin Chrome too when image byte comparisons matter.
 
 Continue with [your first asset](ai-agent-quick-start.md).

@@ -110,7 +110,7 @@ Changes to `main` land through scoped pull requests rather than direct commits:
   `npm run quality:pr -- --branch "$(git branch --show-current)" --title "<title>" --body-file <file>`
 
 Real rendering needs Chrome or Chromium; select it with `ASHFOX_CHROME_PATH`.
-Audio encoding and showcase movies need FFmpeg; select it with `ASHFOX_FFMPEG_PATH`.
+OGG audio encoding and showcase movies use built-in WebAssembly encoders and require no external FFmpeg.
 Compilation and regular CLI checks do not require a browser UI session.
 
 ## Examples and media

@@ -4,6 +4,8 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const HME = require('h264-mp4-encoder');
+const { GifReader } = require('omggif');
 
 const root = path.resolve(__dirname, '../..');
 const output = path.join(root, 'assets/showcase/shared-creatures');
@@ -20,71 +22,98 @@ const run = (args) =>
     maxBuffer: 32 * 1024 * 1024,
     timeout: 120_000,
   });
-const movie = (name) =>
-  execFileSync(
-    process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg',
-    [
-      '-v',
-      'error',
-      '-y',
-      '-i',
-      path.join(stage, `${name}.gif`),
-      '-an',
-      '-c:v',
-      'libx264',
-      '-pix_fmt',
-      'yuv420p',
-      '-crf',
-      '18',
-      '-movflags',
-      '+faststart',
-      path.join(stage, `${name}.mp4`),
-    ],
-    { timeout: 120_000 },
-  );
-try {
-  const published = [];
-  for (const [name, source] of Object.entries(sources)) {
-    const view = ['--width', '640', '--height', '360', '--environment', 'studio'];
-    run(['capture', source, ...view, '--output', path.join(stage, `${name}-poster.png`)]);
-    run([
-      'replay',
-      source,
-      ...view,
-      '--mode',
-      'build',
-      '--output',
-      path.join(stage, `${name}-build-replay.gif`),
-    ]);
-    movie(`${name}-build-replay`);
-    published.push(`${name}-poster.png`, `${name}-build-replay.gif`, `${name}-build-replay.mp4`);
-    const asset = JSON.parse(run(['inspect', source]).toString());
-    for (const clip of asset.animations) {
-      const file = `${name}-${clip.name}`;
+
+const clearRect = (canvas, stride, rect) => {
+  for (let y = rect.y; y < rect.y + rect.height; y++) {
+    const start = (y * stride + rect.x) * 4;
+    canvas.fill(0, start, start + rect.width * 4);
+  }
+};
+
+const gifToMp4 = async (gifPath, mp4Path) => {
+  const reader = new GifReader(fs.readFileSync(gifPath));
+  const encoder = await HME.createH264MP4Encoder();
+  try {
+    encoder.width = reader.width;
+    encoder.height = reader.height;
+    encoder.frameRate = 10;
+    encoder.quantizationParameter = 20;
+    encoder.speed = 5;
+    encoder.initialize();
+    const canvas = new Uint8Array(reader.width * reader.height * 4);
+    let prevDisposal = 0;
+    let prevInfo = null;
+    let savedCanvas = null;
+    for (let i = 0; i < reader.numFrames(); i++) {
+      if (prevDisposal === 2 && prevInfo) clearRect(canvas, reader.width, prevInfo);
+      else if (prevDisposal === 3 && savedCanvas) canvas.set(savedCanvas);
+      const info = reader.frameInfo(i);
+      savedCanvas = info.disposal === 3 ? canvas.slice() : null;
+      reader.decodeAndBlitFrameRGBA(i, canvas);
+      encoder.addFrameRgba(canvas);
+      prevDisposal = info.disposal;
+      prevInfo = info;
+    }
+    encoder.finalize();
+    fs.writeFileSync(mp4Path, encoder.FS.readFile(encoder.outputFilename));
+  } finally {
+    encoder.delete();
+  }
+};
+
+const main = async () => {
+  try {
+    const published = [];
+    for (const [name, source] of Object.entries(sources)) {
+      const view = ['--width', '640', '--height', '360', '--environment', 'studio'];
+      run(['capture', source, ...view, '--output', path.join(stage, `${name}-poster.png`)]);
       run([
         'replay',
         source,
         ...view,
-        '--clip',
-        clip.name,
-        '--duration',
-        String(clip.durationSeconds),
-        '--fps',
-        '10',
+        '--mode',
+        'build',
         '--output',
-        path.join(stage, `${file}.gif`),
+        path.join(stage, `${name}-build-replay.gif`),
       ]);
-      movie(file);
-      published.push(`${file}.mp4`);
+      await gifToMp4(
+        path.join(stage, `${name}-build-replay.gif`),
+        path.join(stage, `${name}-build-replay.mp4`),
+      );
+      published.push(`${name}-poster.png`, `${name}-build-replay.gif`, `${name}-build-replay.mp4`);
+      const asset = JSON.parse(run(['inspect', source]).toString());
+      for (const clip of asset.animations) {
+        const file = `${name}-${clip.name}`;
+        run([
+          'replay',
+          source,
+          ...view,
+          '--clip',
+          clip.name,
+          '--duration',
+          String(clip.durationSeconds),
+          '--fps',
+          '10',
+          '--output',
+          path.join(stage, `${file}.gif`),
+        ]);
+        await gifToMp4(path.join(stage, `${file}.gif`), path.join(stage, `${file}.mp4`));
+        published.push(`${file}.mp4`);
+      }
+      console.log(`CLI showcase rendered: ${name}`);
     }
-    console.log(`CLI showcase rendered: ${name}`);
+    fs.mkdirSync(output, { recursive: true });
+    for (const file of published) fs.copyFileSync(path.join(stage, file), path.join(output, file));
+    execFileSync(process.execPath, [path.join(__dirname, 'verify.js'), '--write'], {
+      cwd: root,
+      stdio: 'inherit',
+    });
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
   }
-  fs.mkdirSync(output, { recursive: true });
-  for (const file of published) fs.copyFileSync(path.join(stage, file), path.join(output, file));
-  execFileSync(process.execPath, [path.join(__dirname, 'verify.js'), '--write'], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-} finally {
-  fs.rmSync(stage, { recursive: true, force: true });
-}
+};
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.stack : String(error));
+  process.exitCode = 1;
+});

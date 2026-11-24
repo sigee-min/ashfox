@@ -262,6 +262,7 @@ export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/d
 export {
   DEFAULT_AUDIT_THRESHOLD,
   evaluateAssetQuality,
+  formatDeliveryGateFailure,
   type AuditDeduction,
   type AuditGateId,
   type AuditGateResult,

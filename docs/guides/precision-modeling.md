@@ -75,25 +75,47 @@ asset study {
   }
   export surface contract Fur {
     atlas { width = Dimensions.atlasWidth; height = Dimensions.atlasHeight; }
+    chart snout box { width = 8px; height = 4px; coverage = opaque; }
     chart head box { width = Dimensions.chartWidth; height = Dimensions.chartHeight; coverage = opaque; }
+    chart plume box { width = 8px; height = 3px; coverage = opaque; }
     material = opaque;
   }
   export surface red_fur: Fur {
     material = opaque;
     texture atlas {
       atlas = (Dimensions.atlasWidth, Dimensions.atlasHeight);
-      background = dark; background-alpha = 255;
-      palette { dark = #140b0a; coat = (#5a1c10, #b94722, #ef8040); eye = #090707; }
+      background = bg; background-alpha = 255;
+      palette {
+        bg = #140b0a;
+        dark = (#0d0707, #140b0a, #261614);
+        muzzle = (#784628, #b57b50, #f0c28e);
+        coat = (#5a1c10, #b94722, #ef8040);
+        cream = (#7d4b28, #d29a62, #ffe1a8);
+        eye = #090707;
+      }
       stamp eye { pixels = "e"; e = eye; }
+      chart snout box {
+        origin = (0px, 16px); fill = muzzle; grain = clustered;
+        pattern gradient { from = dark; to = muzzle; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
       chart head box {
-        origin = Dimensions.chartOrigin; fill = coat;
+        origin = Dimensions.chartOrigin; fill = coat; grain = soft;
+        pattern gradient { from = cream; to = coat; axis = y; space = local; soft = 0.25ratio; }
+        pattern border { paint = cream; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
         face north {
-          stamp eye { anchor = top_left; offset = (1px, 1px); }
-          stamp eye { anchor = top_right; offset = (-1px, 1px); }
+          stamp eye { anchor = top_left; offset = (1px, 1px); protect = true; }
+          stamp eye { anchor = top_right; offset = (-1px, 1px); protect = true; }
         }
       }
+      chart plume box {
+        origin = (24px, 16px); fill = cream; grain = none;
+        pattern border { paint = coat; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
       grain clustered { seed = 8923; }
-      tone voxel;
+      tone painterly;
     }
   }
   export component Head {
@@ -107,6 +129,14 @@ asset study {
           size = Dimensions.size;
           surface = skin.head;
         }
+        cube plume {
+          origin = (-1u, 4u, -1u);
+          size = (2u, 1u, 2u);
+          pivot = (0u, 4u, 0u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.plume;
+        }
+        cube snout { origin = (-1u, 0u, -3u); size = (2u, 2u, 2u); surface = skin.snout; }
       }
     }
   }
@@ -119,7 +149,7 @@ asset study {
     }
   }
   export asset study {
-    settings { density = 16; forward = north; }
+    settings { density = 16; forward = north; profile = block; }
     skeleton = HeadSkeleton;
     motion = idle;
     use Head as head { bind skeleton = HeadRig; bind skin = red_fur; };

@@ -53,7 +53,6 @@ const run = (command: string, input = config) => {
     {
       encoding: 'utf8',
       timeout: 120000,
-      env: { ...process.env, ASHFOX_FFMPEG_PATH: '/missing/wav-needs-no-encoder' },
     },
   );
   if (child.error) throw child.error;

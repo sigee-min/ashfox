@@ -17,7 +17,7 @@ Start in your project folder:
 
 Commands:
   init <new-folder>        Create a grouped asset project offline
-  doctor                  Check the CLI and optional Chrome/FFmpeg tools
+  doctor                  Check the CLI and optional Chrome tool
   inspect <source|png>     Inspect an asset
   export <source>          Export GLB, PNG or WAV to stdout
   capture <source|png>     Capture a chosen view to stdout (requires Chrome)
@@ -83,14 +83,7 @@ const doctor = (json: boolean): void => {
   const browser = chrome
     ? spawnSync(chrome, ['--version'], { timeout: 5000, encoding: 'utf8' })
     : undefined;
-  const encoder = process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg';
-  const ffmpeg = spawnSync(encoder, ['-hide_banner', '-encoders'], {
-    timeout: 5000,
-    encoding: 'utf8',
-    maxBuffer: 1024 * 1024,
-  });
   const capture = browser?.status === 0;
-  const ogg = ffmpeg.status === 0 && /\blibvorbis\b/.test(ffmpeg.stdout);
   emit(
     'doctor',
     {
@@ -98,12 +91,12 @@ const doctor = (json: boolean): void => {
       node: process.version,
       platform: process.platform,
       arch: process.arch,
-      exports: { glb: true, png: true, wav: true },
+      exports: { glb: true, png: true, wav: true, ogg: true },
       capture: { available: capture, executable: chrome ?? null },
-      ogg: { available: ogg, executable: encoder },
+      ogg: { available: true, builtin: true },
     },
     json,
-    `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV: ready\nCapture: ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\nOGG: ${ogg ? 'ready' : 'optional — install FFmpeg with libvorbis or set ASHFOX_FFMPEG_PATH'}\n`,
+    `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV / OGG: ready (built-in)\nCapture: ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\n`,
   );
 };
 export const runOnboarding = (args: readonly string[]): boolean => {

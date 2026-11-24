@@ -3,11 +3,11 @@
   "version": 1,
   "workspace": {
     "path": "assets/workspaces/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:71360db1d8ff727fd28e1fc782bd5c2fca47882e86867a98736cce73aac0a149",
-    "workspaceHash": "sha256:797ef8e3c0ffd04a5420a77386bc3600bef8fe0fdac03bdd5463a327afc9d03b"
+    "sha256": "sha256:a95b4b5bc9217535c56163fc2a4e161fbe2d03f873b78604be01efbff366c851",
+    "workspaceHash": "sha256:1cce95b5bef893c88731d0f78e1c0b1776120fb0748c490f59c92e3d6b1e1eaa"
   },
   "capture": {
-    "fingerprint": "sha256:c320ead5cefc4df0e95f43be86e32bbac4839d57f84546ba9501858b2d3eb057",
+    "fingerprint": "sha256:2acd119805eb867755aee8aa9160e6ba88bafea34b55f94532db21d90e3d41f2",
     "environment": "studio",
     "camera": "perspective",
     "width": 640,
@@ -18,149 +18,149 @@
     {
       "video": {
         "artifact": "griffin-build-replay.mp4",
-        "sha256": "sha256:0fd322d99eeaee306876df653e1524dce64700e7cc42655512c68f6483cfd0fa",
-        "byteLength": 210922
+        "sha256": "sha256:ddb048b4670404be1582b944735308e348a2f71e9d8d0a03b0c4d7427c65abd4",
+        "byteLength": 461409
       },
       "motions": [
         {
           "name": "wing_display",
           "duration": 3.6,
           "artifact": "griffin-wing_display.mp4",
-          "sha256": "sha256:d76c34e54125e00a3f581508715744401c5bac9080bd8c37726297eb594c75f2",
-          "byteLength": 130692
+          "sha256": "sha256:7760bd3da16e6231275a8d932932dd8c5834dac58e65aac51649a98791e53591",
+          "byteLength": 221045
         },
         {
           "name": "alert",
           "duration": 2.4,
           "artifact": "griffin-alert.mp4",
-          "sha256": "sha256:46ea6eadd9c2236a88418687a671d9e7505d14d2b80a708e40703103991584cf",
-          "byteLength": 86992
+          "sha256": "sha256:3e73ccb4031c2c79dfa8bfedbf2bd36ef6dcce50c5621caf98b67ad952bb91b9",
+          "byteLength": 154616
         },
         {
           "name": "look_around",
           "duration": 4,
           "artifact": "griffin-look_around.mp4",
-          "sha256": "sha256:a0e206d633cec8b0edbba23542a0057ea40f0f0c613f63bad8782946ca27b2ca",
-          "byteLength": 70192
+          "sha256": "sha256:a518afe99edcdede45b7d7859129e28f63a4b93b3ccff1f9c15cfd13cfb36248",
+          "byteLength": 139225
         },
         {
           "name": "greeting",
           "duration": 3,
           "artifact": "griffin-greeting.mp4",
-          "sha256": "sha256:a3bbcf0447bae5ec3811e6e3236336f281b4d3df67be03dc1cf2ff3b84c983ba",
-          "byteLength": 111562
+          "sha256": "sha256:72984e797b9ce9d723ae37d483deb8cd0a0b1a5f4e83ba00d8c1584beece45ba",
+          "byteLength": 216797
         },
         {
           "name": "idle",
           "duration": 3,
           "artifact": "griffin-idle.mp4",
-          "sha256": "sha256:57cfc12025dcf8b1e518758e542156fac03dffb633620c7ee89b8385631f2de5",
-          "byteLength": 91096
+          "sha256": "sha256:9eeca8ccb0c12615442f8b0ba782d2cffb4b805711b96e1c31f0aad6f31439c9",
+          "byteLength": 244284
         },
         {
           "name": "wing_flap",
           "duration": 1.6,
           "artifact": "griffin-wing_flap.mp4",
-          "sha256": "sha256:cd8598945ec75845d449d89519eee3c90cda10157580cdcda7bb7758005017ba",
-          "byteLength": 59463
+          "sha256": "sha256:6478ce66aace0d494694336db9737fea4541ec860a847d458e101d87dcf5d526",
+          "byteLength": 120850
         }
       ],
       "packageName": "workbench",
       "entryName": "griffin",
-      "closureHash": "sha256:f8dcca1f122943dab0c4444c97400dd39533d53728e8f0763de23b37d42b7aa7",
-      "buildKey": "sha256:f426d389d8e36546133b3ae4c05d27f597ae54a5f3b7188b5a150c73bde50e4c",
-      "productHash": "sha256:ee56875a75fcaad13ce166e325d431ba7a526160078da02d047cf1d7ad726440",
+      "closureHash": "sha256:5101e8d4164de147b3349bbd21cb2390ab06af37284264fe229b0875a560157c",
+      "buildKey": "sha256:216e499b330cb6e617eeead9c3ecd20aa34b45bb8146abc8f60d2dbb84739234",
+      "productHash": "sha256:445ded6035d97f596590c8d5368268c638f5e529e938620df21ecf04546645e4",
       "artifact": "griffin-build-replay.gif",
       "poster": "griffin-poster.png",
-      "artifactSha256": "sha256:77436c3dead6304f11cf84efdce21096fe06719aa55b50708e589d474c625a2b",
-      "posterSha256": "sha256:e9a1f0223c2396fb4af6a74806852f9dd7cc43bf406e2eaf9e63fbda6f8cf51c",
-      "byteLength": 1934717,
-      "frameCount": 152,
-      "eventCount": 123
+      "artifactSha256": "sha256:1e1964df8f01fab4004fb0386b4217e47df99d686039ae47f7fcff46604c1d89",
+      "posterSha256": "sha256:29bce037ffcd2d00187f46d84fdaa8064fbe0910ae273e83c89802c478a4456a",
+      "byteLength": 2177342,
+      "frameCount": 164,
+      "eventCount": 135
     },
     {
       "video": {
         "artifact": "fox-build-replay.mp4",
-        "sha256": "sha256:248f0237409ed6d6e68f0e22a0e14f518852cb5ec0c144d84db7167baf9a5262",
-        "byteLength": 112758
+        "sha256": "sha256:50e1aa8d678044f8ef34e1c3141dfc0e0668a86e11662cb977d604adc7e811b2",
+        "byteLength": 277121
       },
       "motions": [
         {
           "name": "curious",
           "duration": 4,
           "artifact": "fox-curious.mp4",
-          "sha256": "sha256:af9f883562e848cec7aba0c4f41e9a1e7df040539d240784697ef89f95c80bcc",
-          "byteLength": 131174
+          "sha256": "sha256:41819c6b409682d592cb653b65cb49245f07517de6747f929cf742ca5bbcd011",
+          "byteLength": 234099
         },
         {
           "name": "tail_wag",
           "duration": 2.4,
           "artifact": "fox-tail_wag.mp4",
-          "sha256": "sha256:c0d7c6225a05198cc652f3b0928787915bc64e109518038ed062c82c35c1e122",
-          "byteLength": 79869
+          "sha256": "sha256:85a33341358de64ff2cbdb5b50825c508786ba3647a4bd0de527168e80161ef2",
+          "byteLength": 141554
         },
         {
           "name": "idle",
           "duration": 2,
           "artifact": "fox-idle.mp4",
-          "sha256": "sha256:9a84bcbf90dea93035249e23130ff1ec7a05e8aeebcb0bc8570de715c6132cb6",
-          "byteLength": 48361
+          "sha256": "sha256:633f9b508a9572f13de992eccd4e2a707f0d5f2fc72b08df20e85d9c3cf8664b",
+          "byteLength": 134050
         }
       ],
       "packageName": "creatures",
       "entryName": "fox",
-      "closureHash": "sha256:50f415f03971a86d78c2b8b33cd3dd71bb9f35afba858c4abe2f09625eaf4f49",
-      "buildKey": "sha256:255032757652c1d79aa6f63e05780b22f53213e7d0357885bbbc5c13e2cb8490",
-      "productHash": "sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db",
+      "closureHash": "sha256:d670803f8c5ebf25a8b07015023bfc0be4ee97bd8d6e80236d99f68387993077",
+      "buildKey": "sha256:720748fde32ff5343447d4be0d3b0fc8736e3827b0c82d86686e6a9c4b852308",
+      "productHash": "sha256:814c9a6f128a458557af33e367e62b1882194db5811e716e17c1e16d0207e0b2",
       "artifact": "fox-build-replay.gif",
       "poster": "fox-poster.png",
-      "artifactSha256": "sha256:8c2c36626b6c0aa3b2aee00f16a6d0d7b1846ac7e315c92792b51001cc705a48",
-      "posterSha256": "sha256:163ceff6f906800a75e243a86e72d15db6f201a7674530b9fe9c855155b927dc",
-      "byteLength": 757256,
-      "frameCount": 78,
-      "eventCount": 49
+      "artifactSha256": "sha256:09660b5c560ecb0b094af3be1d2010f4654ccecf40ac82bfd4f371d797989bfa",
+      "posterSha256": "sha256:2e81105028d4657635bd6db7dceeed1f6bbbc6b7f5d45f354e7a485f36adddf0",
+      "byteLength": 1018370,
+      "frameCount": 96,
+      "eventCount": 67
     },
     {
       "video": {
         "artifact": "goblin-build-replay.mp4",
-        "sha256": "sha256:26058d4ba96b2d22cc3dce46a52707defd393e55151620dbee5c8e6fd8dc254a",
-        "byteLength": 117307
+        "sha256": "sha256:53cb6b7913a99fe7c3a592875bf8781ef07bef0f1b46528de76e1445579431b1",
+        "byteLength": 291021
       },
       "motions": [
         {
           "name": "idle",
           "duration": 2,
           "artifact": "goblin-idle.mp4",
-          "sha256": "sha256:e3f5436538bed4fc2019a3398632a95348e25e028326e524505a8199656a99d8",
-          "byteLength": 46600
+          "sha256": "sha256:a5bfbfbec3d351ba38b3f91b4ef6237c1c1835f7d20848f1a09a6fba956c2c98",
+          "byteLength": 118162
         },
         {
           "name": "lookout",
           "duration": 4,
           "artifact": "goblin-lookout.mp4",
-          "sha256": "sha256:f1ae2f0175c6eb7e57fe35cc90f9aa4f9623cb4c4c7e6a645e1a8d5762692512",
-          "byteLength": 82348
+          "sha256": "sha256:d65d27f9ce32dc7fe8a164bea44b8971ffb93004c4059f64455683436fa9cafc",
+          "byteLength": 153210
         },
         {
           "name": "challenge",
           "duration": 3,
           "artifact": "goblin-challenge.mp4",
-          "sha256": "sha256:aee245426a8e70afc35b5ccfc2786e9d845fd7433b561209b580d96578a3558d",
-          "byteLength": 91260
+          "sha256": "sha256:c4561e808109734450283486f9e8e35ed692e62cae30919be027f3c1f292c4ee",
+          "byteLength": 170058
         }
       ],
       "packageName": "creatures",
       "entryName": "goblin",
-      "closureHash": "sha256:38acdc6bd23a53da720b8118952fd9a74c3b1df97f319f6fa1d1576b04b8fd5a",
-      "buildKey": "sha256:2119162eb24ed4cc1e608a1bc872d7d6c7f64d2655ef5a998a16ba6ab6e1e18a",
-      "productHash": "sha256:9989d5a1f5536c38b2e8e0ee27791c376d3231b291d67579c90aaec2b19c436a",
+      "closureHash": "sha256:0983e691b0cb51c96cb7a34e31484c6cfe3887aa6ee20522bb8a0e15e72ec855",
+      "buildKey": "sha256:a2d6b1a72d6c3e63c28553151f029c0e981b4984b1fc337afc1dadf3123d08f1",
+      "productHash": "sha256:d8f699dfd678d36c7290245e9d0c8cd34c0f10ffb222643085266dcade6aa7af",
       "artifact": "goblin-build-replay.gif",
       "poster": "goblin-poster.png",
-      "artifactSha256": "sha256:14c2e67d075a72cb77f159ac5e8b5f1327736859f18616c8c0b57fa4bcf38d3b",
-      "posterSha256": "sha256:b7c424058d12cb1a44011a18d9e3362c879c7d894526a269eec3b70c1ac363df",
-      "byteLength": 812583,
-      "frameCount": 86,
-      "eventCount": 57
+      "artifactSha256": "sha256:1c6357957c1ca1fc095c4d570be37d4645ba549980671bd6ea2b7a3375fd6a76",
+      "posterSha256": "sha256:c5e852485dcbc3bfce7730e58d783263146f865a24f51ae6514c94cbd6594a86",
+      "byteLength": 1050535,
+      "frameCount": 110,
+      "eventCount": 81
     }
   ]
 }

@@ -17,7 +17,7 @@ preserves the previous selected build.
 | `source.changed` | Source changed during compilation. Finish edits and start a fresh build. |
 | `pack.source` / unknown sound variant | Reference an existing compatible export and an actual variant ID. Read the source's `variants`. |
 | `pack.collision` | Two bindings emit the same file, or a file conflicts with a directory. Give them distinct IDs/paths or remove the duplicate. |
-| `audio.encoder` | Install FFmpeg with libvorbis or correct `ASHFOX_FFMPEG_PATH`; it must point to an executable, not a directory. |
+| `audio.encoder` | Built-in WebAssembly Vorbis encoding/decoding failed; verify the input WAV or rebuild the package installation. |
 | `audio.clipping` | Lower the sound source's peak ceiling and rebuild. OGG can overshoot a WAV peak. |
 | `audio.timeout` / `build.timeout` | Reduce the job or investigate a hung encoder. Do not extend a timeout by editing generated receipts. |
 | Writer conflict / exit 4 | Wait for the other writer; use disjoint destinations for independent jobs. |
@@ -54,7 +54,7 @@ immutable result before using it. If unsure, choose new output directories.
 ## Report a reproducible issue
 
 Include the CLI command, diagnostic JSON, compiler/Node versions, relevant source
-and configuration, and FFmpeg version if OGG is involved. Include the intended
+and configuration. Include the intended
 engine/importer and the exact failing asset ID. Keep credentials and unrelated
 project files out of the report.
 

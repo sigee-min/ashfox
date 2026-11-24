@@ -4,6 +4,7 @@ import { BuildFailure } from '@ashfox/asset-build';
 import {
   encodeCanonicalPng,
   evaluateAssetQuality,
+  formatDeliveryGateFailure,
   rasterizeTexture,
   measureSceneGeometry,
   inspectNodeSurface,
@@ -143,10 +144,13 @@ export const capture = async (
       'textures',
       'node',
       'texture',
+      'sheet',
     ] as const)
       if (v[key] !== DEFAULT_VIEW[key])
         throw new BuildFailure('observe.option', key + ' requires a model', 2);
   }
+  if (replay && v.sheet !== undefined)
+    throw new BuildFailure('observe.option', 'sheet requires capture, not replay', 2);
   if (asset.kind !== 'sprite' && v.stage !== 'final')
     throw new BuildFailure('observe.option', 'stage requires a sprite source', 2);
   if (asset.kind !== 'sound' && v.variant !== undefined)
@@ -189,6 +193,22 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
   if (asset.product?.kind === 'sound')
     return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
   if (asset.product?.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
+  const hasProfile = asset.product.model.profile !== undefined;
+  const audit = auditAsset(asset);
+  if (!hasProfile) {
+    throw new BuildFailure(
+      'quality.profile-required',
+      formatDeliveryGateFailure(asset.product.entry.entryName, false, audit),
+      3,
+    );
+  }
+  if (!audit.passed) {
+    throw new BuildFailure(
+      'quality.gate',
+      formatDeliveryGateFailure(asset.product.entry.entryName, true, audit),
+      3,
+    );
+  }
   const opened = openAssetProject({
     workspace: asset.product.workspace,
     entry: asset.product.entry,

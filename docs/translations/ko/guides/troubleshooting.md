@@ -13,7 +13,7 @@
 | `source.changed` | 컴파일 중 소스 변경. 편집을 마치고 새 빌드 시작 |
 | `pack.source` / 알 수 없는 사운드 변형 | 호환되는 기존 export와 실제 변형 ID 참조. 원본의 `variants` 확인 |
 | `pack.collision` | 같은 파일을 내는 연결 또는 파일·폴더 충돌. ID·경로를 구분하거나 중복 제거 |
-| `audio.encoder` | libvorbis 포함 FFmpeg 설치 또는 `ASHFOX_FFMPEG_PATH` 수정. 폴더가 아닌 실행 파일 지정 |
+| `audio.encoder` | 내장 WebAssembly Vorbis 인코딩·디코딩 실패. 입력 WAV 확인 또는 패키지 설치 재빌드 |
 | `audio.clipping` | 원본 피크 상한을 낮추고 재빌드. OGG는 WAV 피크를 넘을 수 있음 |
 | `audio.timeout` / `build.timeout` | 작업 축소 또는 멈춘 인코더 조사. 생성 영수증을 편집해 제한을 늘리지 말 것 |
 | 쓰기 충돌 / 종료 4 | 다른 작업 대기. 독립 작업은 겹치지 않는 대상 사용 |
@@ -39,6 +39,6 @@
 
 ## 재현 가능한 문제 보고
 
-CLI 명령, 진단 JSON, 컴파일러·Node 버전, 관련 원본·설정, OGG 사용 시 FFmpeg 버전을 포함합니다. 대상 엔진·임포터와 정확히 실패한 에셋 ID를 알려주세요. 자격 증명과 관련 없는 프로젝트 파일은 제외합니다.
+CLI 명령, 진단 JSON, 컴파일러·Node 버전, 관련 원본·설정을 포함합니다. 대상 엔진·임포터와 정확히 실패한 에셋 ID를 알려주세요. 자격 증명과 관련 없는 프로젝트 파일은 제외합니다.
 
 캡처 실패는 `ASHFOX_CHROME_PATH`, 알 수 없는 클립·노드·변형 ID, [관찰 가이드](observe.md)의 미디어 예산을 확인합니다. 오류는 stderr로 보내 stdout에 오류 텍스트가 섞이지 않습니다. 세션 load 실패·취소는 이전 리비전을 유지하므로 `source`를 읽고 그 `expectedRevision`으로 다시 시도하세요.

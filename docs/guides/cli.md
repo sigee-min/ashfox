@@ -41,8 +41,8 @@ removes the new partial folder. `init --json` reports the directory and files.
 First-run commands print readable errors to stderr; `doctor` and `init` with
 `--json` use the project response envelope on stdout, including failures.
 
-`doctor` reports the CLI/Node versions and whether Chrome can launch and FFmpeg
-advertises `libvorbis`. Missing optional tools do not cause a failure exit code.
+`doctor` reports the CLI/Node versions, built-in OGG readiness, and whether
+Chrome can launch. Missing optional Chrome does not cause a failure exit code.
 `doctor --json` reports availability without creating project files. This is an
 environment check; use a real capture or OGG build to verify your asset pipeline.
 An explicitly configured executable path takes precedence over discovery.
@@ -74,7 +74,7 @@ npx --no-install ashfox verify game-assets/dist/build --json
 
 Use the actual `build.directory`, not an export directory, for `verify`.
 All declared entries and reachable modules must compile, even if not exported.
-`check` does not invoke FFmpeg or certify target delivery; run `build` to check
+`check` does not run OGG encoding or certify target delivery; run `build` to check
 export constraints, file collisions and encoding.
 
 ## Read the response
