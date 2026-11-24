@@ -11,6 +11,7 @@ import { rasterizeCanonicalTexture } from '../../textures/textureRecipe/raster';
 import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
 import type { SpriteBuild, SpriteProduct } from './contract';
 import { paintItem } from './paint';
+import { opaqueHex } from './preview';
 
 const stable = (v: unknown): unknown => {
   if (typeof v === 'string' && /^#[0-9a-f]{6}$/iu.test(v)) return v.toUpperCase();
@@ -40,6 +41,77 @@ const closure = (study: ItemStudy, item: Item): unknown => ({
   ),
 });
 
+type Bounds = readonly [number, number, number, number];
+
+/** Opaque pixel coverage of a 16x16 RGBA buffer. */
+const coverage = (bytes: Uint8Array) => {
+  const positions: number[] = [],
+    colors = new Set<string>();
+  for (let i = 0; i < 256; i++)
+    if (bytes[i * 4 + 3]) {
+      positions.push(i);
+      colors.add(`${bytes[i * 4]},${bytes[i * 4 + 1]},${bytes[i * 4 + 2]}`);
+    }
+  return { positions, colors };
+};
+
+const boundsOf = (positions: readonly number[]): Bounds => {
+  const xs = positions.map((i) => i % 16),
+    ys = positions.map((i) => Math.floor(i / 16));
+  return Object.freeze([
+    Math.min(...xs),
+    Math.min(...ys),
+    Math.max(...xs) + 1,
+    Math.max(...ys) + 1,
+  ]) as Bounds;
+};
+
+const compileItem = (
+  study: ItemStudy,
+  item: Item,
+  sourceHash: string,
+  file: string,
+): SpriteProduct => {
+  const index = study.items.indexOf(item);
+  const final = paintItem(study, item, index, 'final');
+  const bytes = final.raster.rgba.copy();
+  const { positions, colors } = coverage(bytes);
+  if (!positions.length)
+    throw new SpriteInputError({
+      code: 'sprite.empty',
+      file,
+      pointer: `/items/${index}`,
+      expected: 'nonempty output',
+      actual: 'transparent item',
+    });
+  const bounds = boundsOf(positions);
+  const png = encodeCanonicalPng(final.raster),
+    closureHash = digest(closure(study, item));
+  return Object.freeze({
+    id: item.id,
+    ...final,
+    png,
+    stages: Object.freeze({
+      silhouette: paintItem(study, item, index, 'silhouette').raster,
+      shade: paintItem(study, item, index, 'shade').raster,
+      grain: paintItem(study, item, index, 'grain').raster,
+    }),
+    receipt: Object.freeze({
+      id: item.id,
+      sourceHash,
+      closureHash,
+      policy: SPRITE_POLICY,
+      buildKey: digest({ closureHash, policy: SPRITE_POLICY }),
+      productHash: digest({ kind: 'sprite', width: 16, height: 16, rgba: [...bytes] }),
+      pngHash: sha256ByteDigest(png),
+      width: 16,
+      height: 16,
+      colors: colors.size,
+      bounds,
+    }),
+  });
+};
+
 export const compileItemStudy = (source: string, file = 'study.items.json'): SpriteBuild => {
   try {
     const study = readItemStudy(source, file);
@@ -50,61 +122,7 @@ export const compileItemStudy = (source: string, file = 'study.items.json'): Spr
       materials: sort(study.materials),
       stamps: sort(study.stamps),
     });
-    const products: SpriteProduct[] = [];
-    for (const item of sort(study.items)) {
-      const index = study.items.indexOf(item);
-      const final = paintItem(study, item, index, 'final');
-      const bytes = final.raster.rgba.copy();
-      const positions: number[] = [],
-        colors = new Set<string>();
-      for (let i = 0; i < 256; i++)
-        if (bytes[i * 4 + 3]) {
-          positions.push(i);
-          colors.add(`${bytes[i * 4]},${bytes[i * 4 + 1]},${bytes[i * 4 + 2]}`);
-        }
-      if (!positions.length)
-        throw new SpriteInputError({
-          code: 'sprite.empty',
-          file,
-          pointer: `/items/${index}`,
-          expected: 'nonempty output',
-          actual: 'transparent item',
-        });
-      const xs = positions.map((i) => i % 16),
-        ys = positions.map((i) => Math.floor(i / 16));
-      const png = encodeCanonicalPng(final.raster),
-        closureHash = digest(closure(study, item));
-      products.push(
-        Object.freeze({
-          id: item.id,
-          ...final,
-          png,
-          stages: Object.freeze({
-            silhouette: paintItem(study, item, index, 'silhouette').raster,
-            shade: paintItem(study, item, index, 'shade').raster,
-            grain: paintItem(study, item, index, 'grain').raster,
-          }),
-          receipt: Object.freeze({
-            id: item.id,
-            sourceHash,
-            closureHash,
-            policy: SPRITE_POLICY,
-            buildKey: digest({ closureHash, policy: SPRITE_POLICY }),
-            productHash: digest({ kind: 'sprite', width: 16, height: 16, rgba: [...bytes] }),
-            pngHash: sha256ByteDigest(png),
-            width: 16,
-            height: 16,
-            colors: colors.size,
-            bounds: Object.freeze([
-              Math.min(...xs),
-              Math.min(...ys),
-              Math.max(...xs) + 1,
-              Math.max(...ys) + 1,
-            ]) as readonly [number, number, number, number],
-          }),
-        }),
-      );
-    }
+    const products = sort(study.items).map((item) => compileItem(study, item, sourceHash, file));
     return Object.freeze({ ok: true, sourceHash, products: Object.freeze(products) });
   } catch (error) {
     if (error instanceof SpriteInputError) return { ok: false, diagnostics: [error.diagnostic] };
@@ -119,17 +137,8 @@ export const spritePreviewPng = (raster: CanonicalTextureRaster, scale = 16): Ui
   for (let y = 0; y < raster.height; y++)
     for (let x = 0; x < raster.width; x++) {
       const i = (y * raster.width + x) * 4;
-      if (raster.rgba.at(i + 3) !== 255) continue;
-      const color =
-        '#' +
-        [0, 1, 2]
-          .map((c) =>
-            raster.rgba
-              .at(i + c)!
-              .toString(16)
-              .padStart(2, '0'),
-          )
-          .join('');
+      const color = opaqueHex(raster.rgba, i);
+      if (color === null) continue;
       details.push({
         id: `p${i}`,
         x: x * scale,

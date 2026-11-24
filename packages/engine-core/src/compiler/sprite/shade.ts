@@ -25,40 +25,44 @@ export const materialRamp = (material: Material): readonly string[] => {
     colors[2]!,
   ];
 };
+/** Largest integer whose square does not exceed `squared`, bounded by 256. */
+const isqrt256 = (squared: number): number => {
+  let low = 0,
+    high = 256;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (mid * mid <= squared) low = mid;
+    else high = mid - 1;
+  }
+  return low;
+};
+const roundNormal = (x: number, y: number, w: number, h: number): readonly number[] => {
+  const nx = Math.trunc(((2 * x + 1 - w) * 256) / w);
+  const ny = Math.trunc(((2 * y + 1 - h) * 256) / h);
+  // Integer hemisphere height curves the light field instead of diagonal bands.
+  const squared = Math.max(0, 65536 - nx * nx - ny * ny);
+  return [nx, ny, isqrt256(squared)];
+};
+const axisNormal = (shade: Shade, x: number, y: number): readonly number[] => {
+  const [a, b] = shade.axis!;
+  const dx = b[0] - a[0],
+    dy = b[1] - a[1];
+  const cross = dx * (y - a[1]) - dy * (x - a[0]);
+  const sign = Math.sign(cross),
+    length = Math.abs(dx) + Math.abs(dy);
+  return [Math.trunc((-dy * sign * 256) / length), Math.trunc((dx * sign * 256) / length), 128];
+};
+const toneBand = (score: number): number =>
+  score <= -240 ? 0 : score <= -64 ? 1 : score < 64 ? 2 : score < 240 ? 3 : 4;
 /** Q8 stylized surface field. No runtime trigonometry, randomness or GPU. */
 export const baseTone = (shade: Shade, x: number, y: number, w: number, h: number): number => {
   if (shade.contrast === 0 || shade.form === 'flat') return 2;
   const [lx, ly] = LIGHTS[shade.light]!;
-  let nx: number,
-    ny: number,
-    nz = 128;
-  if (shade.form === 'round') {
-    nx = Math.trunc(((2 * x + 1 - w) * 256) / w);
-    ny = Math.trunc(((2 * y + 1 - h) * 256) / h);
-    // Integer hemisphere height curves the light field instead of diagonal bands.
-    const squared = Math.max(0, 65536 - nx * nx - ny * ny);
-    let low = 0,
-      high = 256;
-    while (low < high) {
-      const mid = Math.ceil((low + high) / 2);
-      if (mid * mid <= squared) low = mid;
-      else high = mid - 1;
-    }
-    nz = low;
-  } else {
-    const [a, b] = shade.axis!;
-    const dx = b[0] - a[0],
-      dy = b[1] - a[1];
-    const cross = dx * (y - a[1]) - dy * (x - a[0]);
-    const sign = Math.sign(cross),
-      length = Math.abs(dx) + Math.abs(dy);
-    nx = Math.trunc((-dy * sign * 256) / length);
-    ny = Math.trunc((dx * sign * 256) / length);
-  }
+  const [nx, ny, nz] = shade.form === 'round' ? roundNormal(x, y, w, h) : axisNormal(shade, x, y);
   const score = Math.trunc(
-    ((nx * lx + ny * ly + nz - 128) * shade.contrast) / (Math.abs(lx) + Math.abs(ly)),
+    ((nx! * lx + ny! * ly + nz! - 128) * shade.contrast) / (Math.abs(lx) + Math.abs(ly)),
   );
-  return score <= -240 ? 0 : score <= -64 ? 1 : score < 64 ? 2 : score < 240 ? 3 : 4;
+  return toneBand(score);
 };
 /** Fixed 2x2 clusters in part-local coordinates. The seed never affects base tone. */
 export const grainDelta = (x: number, y: number, seed: number): number => {
