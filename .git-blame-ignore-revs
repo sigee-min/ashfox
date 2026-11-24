@@ -1,0 +1,6 @@
+# Mechanical formatting commits hidden from `git blame`.
+# Use with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Update the hash if the formatting commit is rebased or squash-merged.
+
+# chore(format): apply prettier to repository code
+c32fbbd9f04f9d6325b7224bf0a355677c63e6ee

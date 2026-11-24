@@ -68,6 +68,7 @@ not required for this product path.
 | Java pack delivery with FFmpeg | `npm run test:packs` |
 | Blockbench compatibility | `npm run test:blockbench` |
 | Repository rules and types | `npm run quality:check` |
+| Code formatting | `npm run format` (write) and `npm run quality:format` (check) |
 | Example output bytes unchanged | `npm run quality:products` |
 | Complete release gate | `npm run quality` |
 
@@ -75,6 +76,13 @@ not required for this product path.
 artifact digests with `scripts/quality/products-baseline.json`. Refactors must
 leave it unchanged; reseal with `npm run quality:products:seal` only in a change
 that intends to alter compiled output, and explain the difference in review.
+
+Prettier formats TypeScript and JavaScript code. Its options derive from
+`engineering.style` in the development manifest; change the manifest, not the
+derived `prettier.config.js`. Files listed as format-pending in `.prettierignore`
+are formatted when the engine-core sweep splits them. Run
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip formatting
+commits in `git blame`.
 
 Real rendering needs Chrome or Chromium; select it with `ASHFOX_CHROME_PATH`.
 Audio encoding and showcase movies need FFmpeg; select it with `ASHFOX_FFMPEG_PATH`.

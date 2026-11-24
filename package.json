@@ -45,7 +45,7 @@
     "quality:commits": "node scripts/quality/commitConvention.test.js && node scripts/quality/commitConvention.js",
     "format": "prettier --write \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs}\" \"*.js\"",
     "quality:format": "prettier --check \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs}\" \"*.js\"",
-    "quality:check": "npm run typecheck && npm run typecheck:tests && npm run quality:manifest && npm run test:discovery && npm run quality:commits && node scripts/quality/check.test.js && node scripts/quality/check.js && npm run quality:architecture",
+    "quality:check": "npm run quality:format && npm run typecheck && npm run typecheck:tests && npm run quality:manifest && npm run test:discovery && npm run quality:commits && node scripts/quality/check.test.js && node scripts/quality/check.js && npm run quality:architecture",
     "quality:architecture": "node scripts/quality/architecture.test.js && node scripts/quality/architecture.js && node scripts/quality/scriptArchitecture.test.js && node scripts/quality/scriptArchitecture.js",
     "quality:audit": "node scripts/quality/audit.js",
     "quality:deadcode": "node scripts/quality/deadcode.test.js && node scripts/quality/deadcode.js",
