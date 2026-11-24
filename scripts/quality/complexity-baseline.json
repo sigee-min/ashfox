@@ -29,105 +29,6 @@
     "lines": 94,
     "cognitive": 36
   },
-  "packages/engine-core/src/compiler/program/asset/assembly.ts::buildAssetAssembly": {
-    "lines": 158,
-    "cognitive": 58
-  },
-  "packages/engine-core/src/compiler/program/asset/assembly.ts::buildUse": {
-    "lines": 136,
-    "cognitive": 38
-  },
-  "packages/engine-core/src/compiler/program/asset/assembly.ts::validateGeometryHierarchy": {
-    "lines": 61,
-    "cognitive": 36
-  },
-  "packages/engine-core/src/compiler/program/asset/assembly.ts::validateGeometryHierarchy/walk": {
-    "nesting": 5
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerAssetGeometry": {
-    "lines": 147,
-    "nesting": 5,
-    "cognitive": 128
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerCube": {
-    "lines": 86,
-    "cognitive": 38
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerPlane": {
-    "cognitive": 19
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::validateStructure": {
-    "cognitive": 27
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalLayout.ts::createGeometryLayout": {
-    "lines": 98,
-    "cognitive": 73
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalRig.ts::lowerBones": {
-    "lines": 81,
-    "cognitive": 36
-  },
-  "packages/engine-core/src/compiler/program/asset/canonicalRig.ts::lowerMotion": {
-    "lines": 132,
-    "cognitive": 57
-  },
-  "packages/engine-core/src/compiler/program/asset/compile.ts::compileResolvedAssetWorkspaceEntry": {
-    "lines": 87
-  },
-  "packages/engine-core/src/compiler/program/asset/compile.ts::validateScene": {
-    "lines": 82,
-    "cognitive": 29
-  },
-  "packages/engine-core/src/compiler/program/asset/component.ts::buildComponent": {
-    "lines": 136,
-    "cognitive": 62
-  },
-  "packages/engine-core/src/compiler/program/asset/definition.ts::buildRigContract": {
-    "lines": 78,
-    "cognitive": 51
-  },
-  "packages/engine-core/src/compiler/program/asset/definition.ts::buildSurface": {
-    "cognitive": 21
-  },
-  "packages/engine-core/src/compiler/program/asset/definition.ts::buildSurfaceContract": {
-    "cognitive": 20
-  },
-  "packages/engine-core/src/compiler/program/asset/geometrySupport.ts::exactVector": {
-    "cognitive": 18
-  },
-  "packages/engine-core/src/compiler/program/asset/geometrySupport.ts::surfacePlan": {
-    "lines": 79
-  },
-  "packages/engine-core/src/compiler/program/asset/hir.ts::buildAssetHir": {
-    "lines": 119,
-    "cognitive": 23
-  },
-  "packages/engine-core/src/compiler/program/asset/hirGeometry.ts::compileBlock": {
-    "lines": 108,
-    "cognitive": 39
-  },
-  "packages/engine-core/src/compiler/program/asset/instantiate.ts::instantiateAsset": {
-    "lines": 61,
-    "cognitive": 28
-  },
-  "packages/engine-core/src/compiler/program/asset/instantiate.ts::instantiateGeometry": {
-    "cognitive": 33
-  },
-  "packages/engine-core/src/compiler/program/asset/instantiate.ts::placeConnections": {
-    "lines": 75,
-    "cognitive": 52
-  },
-  "packages/engine-core/src/compiler/program/asset/motion.ts::buildMotion": {
-    "lines": 98,
-    "cognitive": 27
-  },
-  "packages/engine-core/src/compiler/program/asset/motion.ts::buildTrack": {
-    "lines": 94,
-    "cognitive": 21
-  },
-  "packages/engine-core/src/compiler/program/asset/parentCycles.ts::uniqueParentCycles": {
-    "cognitive": 28
-  },
   "packages/engine-core/src/compiler/program/asset/texture/compose.ts::applyChart": {
     "lines": 96,
     "cognitive": 21
@@ -176,11 +77,6 @@
   "packages/engine-core/src/compiler/program/asset/texturePlan.ts::materializeAssetTexturePlan": {
     "lines": 97,
     "cognitive": 20
-  },
-  "packages/engine-core/src/compiler/program/asset/workspaceCompile.ts::compileWorkspaceCandidate": {
-    "lines": 82,
-    "nesting": 5,
-    "cognitive": 46
   },
   "packages/engine-core/src/compiler/sprite/compile.ts::compileItemStudy": {
     "lines": 71

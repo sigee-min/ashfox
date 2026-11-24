@@ -12,6 +12,7 @@ import {
   assetExactNumber,
   isAssetNumberValueShape,
   type AssetExactNumber,
+  type AssetNumberValue,
   type AssetValue,
   type AssetVectorValue,
 } from './value/contract';
@@ -139,6 +140,33 @@ export const exactNumber = (
   return entry.value.value;
 };
 
+interface VectorShape {
+  readonly length: number;
+  readonly unit: 'unit' | 'texel' | 'degree' | 'ratio';
+}
+
+const VECTOR_SHAPES: Readonly<Record<AssetVectorValue['type'], VectorShape>> = Object.freeze({
+  'vec2<unit>': { length: 2, unit: 'unit' },
+  'vec2<texel>': { length: 2, unit: 'texel' },
+  'texel-rect': { length: 4, unit: 'texel' },
+  'vec3<unit>': { length: 3, unit: 'unit' },
+  'vec3<degree>': { length: 3, unit: 'degree' },
+  'vec3<ratio>': { length: 3, unit: 'ratio' },
+});
+
+/** Number components of a well-shaped vector of exactly the requested type. */
+const vectorComponents = (
+  value: AssetValue,
+  type: AssetVectorValue['type'],
+): readonly AssetNumberValue[] | null => {
+  if (value.kind !== 'vector' || value.type !== type || !Array.isArray(value.values)) return null;
+  const components = value.values;
+  return components.length === VECTOR_SHAPES[type].length &&
+    components.every((component) => isAssetNumberValueShape(component))
+    ? components
+    : null;
+};
+
 export const exactVector = (
   entry: PropertyEntry | undefined,
   type: AssetVectorValue['type'],
@@ -146,12 +174,8 @@ export const exactVector = (
   path: string,
   ownerSpan: SourceSpan,
 ): readonly AssetExactNumber[] | null => {
-  if (
-    entry === undefined ||
-    entry.value.kind !== 'vector' ||
-    entry.value.type !== type ||
-    !Array.isArray(entry.value.values)
-  ) {
+  const components = entry === undefined ? null : vectorComponents(entry.value, type);
+  if (entry === undefined || components === null) {
     report(
       context,
       path,
@@ -161,30 +185,8 @@ export const exactVector = (
     );
     return null;
   }
-  const expected =
-    type === 'vec2<unit>' || type === 'vec2<texel>' ? 2 : type === 'texel-rect' ? 4 : 3;
-  if (
-    entry.value.values.length !== expected ||
-    !entry.value.values.every((value) => isAssetNumberValueShape(value))
-  ) {
-    report(
-      context,
-      path,
-      entry.span,
-      'asset.geometry-value',
-      `Geometry value must be an exact ${type} vector.`,
-    );
-    return null;
-  }
-  const unit =
-    type === 'vec2<texel>' || type === 'texel-rect'
-      ? 'texel'
-      : type === 'vec3<degree>'
-        ? 'degree'
-        : type === 'vec3<ratio>'
-          ? 'ratio'
-          : 'unit';
-  if (entry.value.values.some((value) => value.value.unit !== unit || value.type !== unit)) {
+  const { unit } = VECTOR_SHAPES[type];
+  if (components.some((value) => value.value.unit !== unit || value.type !== unit)) {
     report(
       context,
       path,
@@ -194,7 +196,7 @@ export const exactVector = (
     );
     return null;
   }
-  return entry.value.values.map((value) => value.value);
+  return components.map((value) => value.value);
 };
 
 export const canonical = (
@@ -346,24 +348,31 @@ export const directionOf = (node: InstantiatedGeometryNode): string => {
 
 export type SurfaceBindings = ReadonlyMap<string, InstantiatedAssetIr['surfaces']>;
 
-export const surfacePlan = (
+const validChartBounds = (plan: AssetTexturePlan, chart: AssetTextureChartPlan): boolean =>
+  Number.isSafeInteger(plan.texture.width) &&
+  Number.isSafeInteger(plan.texture.height) &&
+  plan.texture.width > 0 &&
+  plan.texture.height > 0 &&
+  Number.isSafeInteger(chart.origin[0]) &&
+  Number.isSafeInteger(chart.origin[1]) &&
+  chart.origin[0] >= 0 &&
+  chart.origin[1] >= 0 &&
+  Number.isSafeInteger(chart.width) &&
+  Number.isSafeInteger(chart.height) &&
+  chart.width > 0 &&
+  chart.height > 0 &&
+  chart.origin[0] + chart.width <= plan.texture.width &&
+  chart.origin[1] + chart.height <= plan.texture.height &&
+  typeof plan.texture.id === 'string' &&
+  plan.texture.id.length > 0;
+
+const resolveMaterializedSurface = (
   node: InstantiatedGeometryNode,
+  surface: NonNullable<InstantiatedGeometryNode['surface']>,
   surfaces: SurfaceBindings,
   plans: ReadonlyMap<string, AssetTexturePlan>,
   context: Context,
-  layout: 'box' | 'flat',
 ): SurfacePlan | null => {
-  const surface = node.surface;
-  if (surface === null) {
-    report(
-      context,
-      node.sourcePath,
-      node.span,
-      'asset.geometry-surface',
-      `${node.kind} requires one concrete surface chart binding.`,
-    );
-    return null;
-  }
   const bindings = surfaces.get(surface.surface.key) ?? [];
   const binding = bindings[0];
   const plan = plans.get(surface.surface.key);
@@ -386,34 +395,40 @@ export const surfacePlan = (
     );
     return null;
   }
-  if (chart.layout !== layout) {
+  return freeze({ plan, chart, material: binding.material });
+};
+
+export const surfacePlan = (
+  node: InstantiatedGeometryNode,
+  surfaces: SurfaceBindings,
+  plans: ReadonlyMap<string, AssetTexturePlan>,
+  context: Context,
+  layout: 'box' | 'flat',
+): SurfacePlan | null => {
+  const surface = node.surface;
+  if (surface === null) {
+    report(
+      context,
+      node.sourcePath,
+      node.span,
+      'asset.geometry-surface',
+      `${node.kind} requires one concrete surface chart binding.`,
+    );
+    return null;
+  }
+  const resolved = resolveMaterializedSurface(node, surface, surfaces, plans, context);
+  if (resolved === null) return null;
+  if (resolved.chart.layout !== layout) {
     report(
       context,
       node.sourcePath,
       surface.span,
       'asset.geometry-surface',
-      `Chart "${surface.chart}" has layout ${chart.layout}, expected ${layout}.`,
+      `Chart "${surface.chart}" has layout ${resolved.chart.layout}, expected ${layout}.`,
     );
     return null;
   }
-  if (
-    !Number.isSafeInteger(plan.texture.width) ||
-    !Number.isSafeInteger(plan.texture.height) ||
-    plan.texture.width <= 0 ||
-    plan.texture.height <= 0 ||
-    !Number.isSafeInteger(chart.origin[0]) ||
-    !Number.isSafeInteger(chart.origin[1]) ||
-    chart.origin[0] < 0 ||
-    chart.origin[1] < 0 ||
-    !Number.isSafeInteger(chart.width) ||
-    !Number.isSafeInteger(chart.height) ||
-    chart.width <= 0 ||
-    chart.height <= 0 ||
-    chart.origin[0] + chart.width > plan.texture.width ||
-    chart.origin[1] + chart.height > plan.texture.height ||
-    typeof plan.texture.id !== 'string' ||
-    plan.texture.id.length === 0
-  ) {
+  if (!validChartBounds(resolved.plan, resolved.chart)) {
     report(
       context,
       node.sourcePath,
@@ -423,7 +438,7 @@ export const surfacePlan = (
     );
     return null;
   }
-  return freeze({ plan, chart, material: binding.material });
+  return resolved;
 };
 
 export const signedAxis = (entries: readonly AssetExactNumber[]): Vec3 | null => {

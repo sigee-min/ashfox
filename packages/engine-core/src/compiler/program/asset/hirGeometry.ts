@@ -128,15 +128,38 @@ const compileSurface = (
   });
 };
 
-const compileBlock = (
+interface ChildScope {
+  readonly kinds: ReadonlySet<string>;
+  readonly message: string;
+}
+
+const leafScope: ChildScope = Object.freeze({
+  kinds: new Set<string>(),
+  message: 'Plane, locator, and face nodes cannot contain geometry children.',
+});
+
+const childScopes: Readonly<Record<GeometryKind, ChildScope>> = Object.freeze({
+  bone: {
+    kinds: new Set(['bone', 'cube', 'plane', 'locator']),
+    message: 'Bones may contain only bone, cube, plane, or locator children.',
+  },
+  cube: { kinds: new Set(['face']), message: 'Cubes may contain only direct face children.' },
+  plane: leafScope,
+  locator: leafScope,
+  face: leafScope,
+});
+
+const ownsSurface = (keyword: GeometryKind): boolean => keyword === 'cube' || keyword === 'plane';
+
+/** Compiles schema-checked properties into `typed`; returns every declared property name. */
+const compileProperties = (
   statement: AssetGeometryBlock,
   context: GeometryCompileContext,
-): TypedGeometryBlock => {
+  typed: TypedGeometryStatement[],
+): ReadonlySet<string> => {
   const schema = schemas[statement.keyword];
-  const properties = propertyStatements(statement);
   const names = new Set<string>();
-  const typed: TypedGeometryStatement[] = [];
-  for (const property of properties) {
+  for (const property of propertyStatements(statement)) {
     if (names.has(property.name))
       context.issue(
         context.path,
@@ -158,6 +181,14 @@ const compileBlock = (
     const value = compileProperty(property, expected, context);
     if (value !== null) typed.push(value);
   }
+  return names;
+};
+
+const checkRequiredProperties = (
+  statement: AssetGeometryBlock,
+  names: ReadonlySet<string>,
+  context: GeometryCompileContext,
+): void => {
   for (const required of requiredFields[statement.keyword]) {
     if (!names.has(required))
       context.issue(
@@ -167,10 +198,18 @@ const compileBlock = (
         'A ' + statement.keyword + ' requires an explicit "' + required + '" property.',
       );
   }
+};
+
+const compileSurfaces = (
+  statement: AssetGeometryBlock,
+  context: GeometryCompileContext,
+  typed: TypedGeometryStatement[],
+): void => {
   const surfaces = statement.statements.filter(
     (child): child is AssetGeometrySurfaceBind => child.kind === 'geometry-surface-bind',
   );
-  if (surfaces.length > 0 && statement.keyword !== 'cube' && statement.keyword !== 'plane') {
+  const owner = ownsSurface(statement.keyword);
+  if (surfaces.length > 0 && !owner) {
     context.issue(
       context.path,
       surfaces[0]!.span,
@@ -178,7 +217,7 @@ const compileBlock = (
       'Only cube and plane nodes may own surface chart bindings.',
     );
   }
-  if ((statement.keyword === 'cube' || statement.keyword === 'plane') && surfaces.length !== 1) {
+  if (owner && surfaces.length !== 1) {
     context.issue(
       context.path,
       statement.span,
@@ -187,47 +226,57 @@ const compileBlock = (
     );
   }
   for (const surface of surfaces) typed.push(compileSurface(surface, context));
-  const childKinds =
-    statement.keyword === 'bone'
-      ? new Set(['bone', 'cube', 'plane', 'locator'])
-      : statement.keyword === 'cube'
-        ? new Set(['face'])
-        : new Set<string>();
+};
+
+const checkCubeFace = (
+  face: AssetGeometryBlock,
+  faceNames: Set<string>,
+  context: GeometryCompileContext,
+): void => {
+  if (!faceDirections.has(face.id))
+    context.issue(
+      context.path,
+      face.span,
+      'asset.invalid-geometry-face',
+      'Cube faces must use a canonical face direction.',
+    );
+  if (faceNames.has(face.id))
+    context.issue(
+      context.path,
+      face.span,
+      'asset.duplicate-geometry-face',
+      'Cube face directions must be unique.',
+    );
+  faceNames.add(face.id);
+};
+
+const compileChildren = (
+  statement: AssetGeometryBlock,
+  context: GeometryCompileContext,
+  typed: TypedGeometryStatement[],
+): void => {
+  const scope = childScopes[statement.keyword];
   const faceNames = new Set<string>();
   for (const child of statement.statements) {
     if (child.kind !== 'geometry-block') continue;
-    if (!childKinds.has(child.keyword)) {
-      context.issue(
-        context.path,
-        child.span,
-        'asset.invalid-geometry-scope',
-        statement.keyword === 'bone'
-          ? 'Bones may contain only bone, cube, plane, or locator children.'
-          : statement.keyword === 'cube'
-            ? 'Cubes may contain only direct face children.'
-            : 'Plane, locator, and face nodes cannot contain geometry children.',
-      );
+    if (!scope.kinds.has(child.keyword)) {
+      context.issue(context.path, child.span, 'asset.invalid-geometry-scope', scope.message);
       continue;
     }
-    if (statement.keyword === 'cube') {
-      if (!faceDirections.has(child.id))
-        context.issue(
-          context.path,
-          child.span,
-          'asset.invalid-geometry-face',
-          'Cube faces must use a canonical face direction.',
-        );
-      if (faceNames.has(child.id))
-        context.issue(
-          context.path,
-          child.span,
-          'asset.duplicate-geometry-face',
-          'Cube face directions must be unique.',
-        );
-      faceNames.add(child.id);
-    }
+    if (statement.keyword === 'cube') checkCubeFace(child, faceNames, context);
     typed.push(compileBlock(child, context));
   }
+};
+
+const compileBlock = (
+  statement: AssetGeometryBlock,
+  context: GeometryCompileContext,
+): TypedGeometryBlock => {
+  const typed: TypedGeometryStatement[] = [];
+  const names = compileProperties(statement, context, typed);
+  checkRequiredProperties(statement, names, context);
+  compileSurfaces(statement, context, typed);
+  compileChildren(statement, context, typed);
   return freeze({
     kind: 'typed-geometry-block',
     keyword: statement.keyword,
