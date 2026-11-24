@@ -85,4 +85,4 @@ structure, types and bindings; captures and playback let you judge the result.
 [DSL reference](docs/language/README.md) ·
 [CLI guide](https://ashfox.io/docs/guides/cli/)
 
-[Contribute](CONTRIBUTING.md) · [MIT license](LICENSE)
+[Contribute](.github/CONTRIBUTING.md) · [MIT license](LICENSE)

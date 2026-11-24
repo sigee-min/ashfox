@@ -5,4 +5,4 @@ build/
 coverage/
 .ashfox/
 # Copied byte-for-byte into the release starter project.
-scripts/release/project/
+**/scripts/release/project/

@@ -7,8 +7,8 @@ const Ajv2020 = require('ajv/dist/2020');
 const { DevelopmentManifestError, validateDevelopmentManifest } = require('./index');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
-const manifestPath = path.join(repoRoot, 'development-manifest.json');
-const schemaPath = path.join(repoRoot, 'development-manifest.schema.json');
+const manifestPath = path.join(repoRoot, 'config', 'development-manifest.json');
+const schemaPath = path.join(repoRoot, 'config', 'development-manifest.schema.json');
 const source = fs.readFileSync(manifestPath, 'utf8');
 const rawManifest = JSON.parse(source);
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));

@@ -18,7 +18,7 @@ const compilerConfig = (name = 'tsconfig.json') => {
   if (read.error) {
     throw new Error(ts.flattenDiagnosticMessageText(read.error.messageText, '\n'));
   }
-  return ts.parseJsonConfigFileContent(read.config, ts.sys, repoRoot);
+  return ts.parseJsonConfigFileContent(read.config, ts.sys, path.dirname(configPath));
 };
 
 const moduleExportNames = (config) => {
@@ -190,8 +190,8 @@ const runTsPrune = () => {
   const npmExecPath = process.env.npm_execpath;
   const cmd = npmExecPath ? process.execPath : process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const args = npmExecPath
-    ? [npmExecPath, 'exec', '--', 'ts-prune', '-p', 'tsconfig.deadcode.json']
-    : ['exec', '--', 'ts-prune', '-p', 'tsconfig.deadcode.json'];
+    ? [npmExecPath, 'exec', '--', 'ts-prune', '-p', 'config/tsconfig.deadcode.json']
+    : ['exec', '--', 'ts-prune', '-p', 'config/tsconfig.deadcode.json'];
   const run = spawnSync(cmd, args, { encoding: 'utf8' });
   if (run.status !== 0) {
     const error = new Error('deadcode gate failed to run ts-prune');
@@ -276,7 +276,7 @@ const main = () => {
     process.exitCode = error.status ?? 1;
     return;
   }
-  const deadcodeConfig = compilerConfig('tsconfig.deadcode.json');
+  const deadcodeConfig = compilerConfig('config/tsconfig.deadcode.json');
   const publicEntries = publicEntryFiles(repoRoot);
   const report = inspectUnusedExports({
     output,

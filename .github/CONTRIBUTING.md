@@ -2,12 +2,12 @@
 
 This guide is for people changing Ashfox itself: its implementation, documentation,
 translations and releases. To create assets or integrate Ashfox into a game, use
-[the user documentation](docs/README.md).
+[the user documentation](../docs/README.md).
 
-The [development manifest](development-manifest.json) and its
-[closed schema](development-manifest.schema.json) are the versioned repository
+The [development manifest](../config/development-manifest.json) and its
+[closed schema](../config/development-manifest.schema.json) are the versioned repository
 rule authority. Read them before changing code, then use the
-[codebase map](docs/architecture/codebase.md) for ownership and dependency boundaries.
+[codebase map](../docs/architecture/codebase.md) for ownership and dependency boundaries.
 This guide describes onboarding and commands rather than defining parallel rules.
 
 ## Product path
@@ -17,7 +17,7 @@ replays, builds and exports them. Projects configure grouped inputs and determin
 delivery through `.ashfoxworkspace` or `.ashfoxworkspace.mjs`.
 The website publishes documentation, examples and read-only model previews.
 
-Asset agents use the [Ashfox skill](skills/ashfox/SKILL.md), public guides and the
+Asset agents use the [Ashfox skill](../skills/ashfox/SKILL.md), public guides and the
 installed CLI contract. Repository contributors use this guide, the development
 manifest, and the repository PR skills in `.agents/skills/` (`open-pr`, `review-pr`).
 The published `skills/ashfox/` skill is an asset workflow guide, not a repository bootstrap.
@@ -88,7 +88,7 @@ which may only shrink: after reducing a function, run
 
 Prettier formats TypeScript and JavaScript code. Its options derive from
 `engineering.style` in the development manifest; change the manifest, not the
-derived `prettier.config.js`. Run
+derived `config/prettier.config.js`. Run
 `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip formatting
 commits in `git blame`.
 
@@ -103,7 +103,7 @@ Changes to `main` land through scoped pull requests rather than direct commits:
   commit policy (`!`, plus a `BREAKING CHANGE:` footer when breaking). Default to
   **Squash and merge** so the PR title becomes the commit on `main`.
 - **Template and CI check**: Fill all sections in
-  [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) (`Summary`,
+  [PULL_REQUEST_TEMPLATE.md](PULL_REQUEST_TEMPLATE.md) (`Summary`,
   `Scope & Impact`, `Verification`, `Review Checklist`). Non-draft PRs require
   checked verification and review items. CI validates this via
   `.github/workflows/pr-check.yml`; dry-run locally with:
@@ -130,13 +130,13 @@ then publishes them and their descriptor. Build replay is reconstructed from the
 finished model; it does not represent source editing history or agent reasoning.
 Review regenerated media visually before committing it.
 
-For local review application setup, see [audio study](apps/audio-study/README.md)
-and [item study](apps/item-study/README.md). These tools inspect source results;
+For local review application setup, see [audio study](../apps/audio-study/README.md)
+and [item study](../apps/item-study/README.md). These tools inspect source results;
 game delivery continues through the common CLI.
 
 ## Documentation and releases
 
-The [contributor guides](docs/contributing/README.md) cover documentation publishing,
+The [contributor guides](../docs/contributing/README.md) cover documentation publishing,
 translations, release maintenance and branding. `docs/public.json` selects public
 user pages; implementation documentation stays outside that catalog.
 

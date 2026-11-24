@@ -16,7 +16,7 @@ Structured review runbook for Ashfox repository changes.
 1. **Gather context and authority**:
    - Inspect the PR metadata and diff (`gh pr view`, `gh pr diff`, or
      `git diff main...HEAD`).
-   - Read [development-manifest.json](../../../development-manifest.json) and
+   - Read [development-manifest.json](../../../config/development-manifest.json) and
      [codebase.md](../../../docs/architecture/codebase.md) for the touched areas.
 
 2. **Check PR hygiene**:
@@ -39,7 +39,7 @@ Structured review runbook for Ashfox repository changes.
      changed, verify the PR intends that change, explains it in
      `## Scope & Impact`, and adds regression coverage.
    - **Complexity & format hygiene**: `scripts/quality/complexity-baseline.json`
-     stays `{}` and `.prettierignore` gains no source exemptions.
+     stays `{}` and `config/.prettierignore` gains no source exemptions.
    - **Docs & localization**: user-visible behavior or CLI changes update docs
      and translations together.
 

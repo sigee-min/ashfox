@@ -13,7 +13,7 @@ const { assertSourcePatternRegistryMatches, sourcePatternFindings } = require('.
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const manifest = readDevelopmentManifest(repoRoot);
-const prettierConfig = require('../../prettier.config');
+const prettierConfig = require('../../config/prettier.config');
 
 // Prettier owns formatting; its options must stay derived from the manifest style.
 assert.equal(manifest.engineering.style.formatter, 'prettier');

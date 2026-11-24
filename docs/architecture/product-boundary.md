@@ -2,7 +2,7 @@
 
 Ashfox has one asset production path: native source, CLI compilation and game
 integration. This document explains that boundary; repository rules remain in the
-[development manifest](../../development-manifest.json).
+[development manifest](../../config/development-manifest.json).
 
 ## Responsibilities
 
@@ -27,7 +27,7 @@ The installable asset skill points to the user guides and installed CLI. It does
 not connect to a page API. Skill distribution uses descriptor version 2, which
 points to documentation and rejects the removed browser fields. Install the new
 skill package to replace a version 1 browser skill; its old updater cannot accept
-the new descriptor. Repository contributors use CONTRIBUTING.md instead.
+the new descriptor. Repository contributors use `.github/CONTRIBUTING.md` instead.
 Optional Blockbench compatibility remains separately owned and is not required
 for source authoring, builds or game delivery.
 

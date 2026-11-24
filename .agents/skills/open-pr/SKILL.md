@@ -14,11 +14,11 @@ assets, use [the published asset skill](../../../skills/ashfox/SKILL.md) instead
 ## Steps
 
 1. **Read authority files first**:
-   - [development-manifest.json](../../../development-manifest.json) for engineering,
+   - [development-manifest.json](../../../config/development-manifest.json) for engineering,
      workflow, commit, and quality rules.
    - [codebase.md](../../../docs/architecture/codebase.md) for ownership and
      dependency boundaries.
-   - [CONTRIBUTING.md](../../../CONTRIBUTING.md) for verification commands.
+   - [CONTRIBUTING.md](../../../.github/CONTRIBUTING.md) for verification commands.
 
 2. **Create a scoped branch from `main`**:
    - Sync `main` (`git fetch origin && git switch main && git pull --ff-only`).
