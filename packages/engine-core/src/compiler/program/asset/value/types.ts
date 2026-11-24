@@ -1,12 +1,12 @@
-import { freeze } from '../../../immutable';
-import type { ProgramUnit } from '../../../project/program/syntax/contract';
+import { freeze } from '../../../../immutable';
+import type { ProgramUnit } from '../../../../project/program/syntax/contract';
 import {
   type AssetExpressionScalarType,
   type AssetExpressionType,
   type AssetScalarUnit,
   type AssetVectorComponentType,
   type AssetVectorValueType,
-} from './value/contract';
+} from './contract';
 
 export type AssetTypeInfo =
   | Readonly<{

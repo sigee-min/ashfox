@@ -15,7 +15,7 @@ import {
   type AssetValue,
   type AssetVectorValue,
 } from './value/contract';
-import { toAssetCanonicalNumber } from './valueEvaluate';
+import { toAssetCanonicalNumber } from './value/evaluate';
 
 export const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 export const NUMBER_BOUNDARY = Object.freeze({

@@ -33,7 +33,7 @@ import {
   type InstantiatedSocketEndpoint,
   type InstantiatedSurfaceBinding
 } from './ir';
-import { evaluateAssetExpression } from './valueEvaluate';
+import { evaluateAssetExpression } from './value/evaluate';
 import {
   assetExactNumber,
   assetNumberValue,

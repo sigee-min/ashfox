@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { compileAssetExpression } from '../../../src/compiler/program/asset/valueCompile';
-import { evaluateAssetExpression } from '../../../src/compiler/program/asset/valueEvaluate';
+import { compileAssetExpression } from '../../../src/compiler/program/asset/value/compile';
+import { evaluateAssetExpression } from '../../../src/compiler/program/asset/value/evaluate';
 import type { ProgramExpr } from '../../../src/project/program/syntax/contract';
 import type { AssetValueType } from '../../../src/project/program/asset/contract';
 

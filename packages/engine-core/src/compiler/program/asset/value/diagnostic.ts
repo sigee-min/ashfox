@@ -1,6 +1,6 @@
 import { freeze } from '../../../../immutable';
 import type { SourceSpan } from '../../../../project/source/contract';
-import { assetTypeCompatible } from '../valueTypes';
+import { assetTypeCompatible } from './types';
 import type {
   AssetExpressionType,
   AssetValueDiagnostic,

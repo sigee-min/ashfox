@@ -92,14 +92,6 @@
   "packages/engine-core/src/compiler/program/asset/definition.ts::buildSurfaceContract": {
     "cognitive": 20
   },
-  "packages/engine-core/src/compiler/program/asset/design.ts::elaborateAssetDesigns": {
-    "lines": 150,
-    "cognitive": 109
-  },
-  "packages/engine-core/src/compiler/program/asset/designCall.ts::evaluateDesignCall": {
-    "lines": 92,
-    "cognitive": 35
-  },
   "packages/engine-core/src/compiler/program/asset/geometrySupport.ts::exactVector": {
     "cognitive": 18
   },
@@ -183,47 +175,6 @@
   },
   "packages/engine-core/src/compiler/program/asset/texturePlan.ts::materializeAssetTexturePlan": {
     "lines": 97,
-    "cognitive": 20
-  },
-  "packages/engine-core/src/compiler/program/asset/valueArithmetic.ts::assetExactOperation": {
-    "lines": 91,
-    "cognitive": 47
-  },
-  "packages/engine-core/src/compiler/program/asset/valueCompile.ts::compileAssetExpression": {
-    "lines": 116,
-    "cognitive": 79
-  },
-  "packages/engine-core/src/compiler/program/asset/valueCompile.ts::expectedChildren": {
-    "cognitive": 48
-  },
-  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::numberNode": {
-    "cognitive": 22
-  },
-  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::typedBinary": {
-    "lines": 110,
-    "cognitive": 81
-  },
-  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::typedCall": {
-    "lines": 65,
-    "cognitive": 38
-  },
-  "packages/engine-core/src/compiler/program/asset/valueEvaluate.ts::evaluateAssetExpression": {
-    "lines": 156,
-    "nesting": 5,
-    "cognitive": 119
-  },
-  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::equalValue": {
-    "cognitive": 29
-  },
-  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::evaluateAssetBinary": {
-    "lines": 90,
-    "cognitive": 69
-  },
-  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::evaluateAssetCall": {
-    "lines": 72,
-    "cognitive": 46
-  },
-  "packages/engine-core/src/compiler/program/asset/valueRuntime.ts::cloneAssetValue": {
     "cognitive": 20
   },
   "packages/engine-core/src/compiler/program/asset/workspaceCompile.ts::compileWorkspaceCandidate": {
