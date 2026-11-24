@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { AssetGeometryProperty } from '../../../project/program/asset/contract';
 import type {
   AssetGeometryBlock,
@@ -14,8 +15,6 @@ import type {
   TypedGeometryStatement,
   TypedGeometrySurfaceBind,
 } from './contract';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 export interface GeometryCompileContext {
   readonly path: string;

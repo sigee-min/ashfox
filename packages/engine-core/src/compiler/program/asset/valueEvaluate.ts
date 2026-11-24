@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import {
   assetBooleanValue,
@@ -13,7 +14,6 @@ import {
   type AssetNumberValue,
   type AssetValue,
   type AssetValueDiagnostic,
-  type AssetValueDiagnosticCode,
   type AssetValueResult,
   type AssetTypedExpression,
   isAssetColorLiteral,
@@ -21,7 +21,8 @@ import {
   isAssetExactNumberWithinBudget,
   isAssetScalarUnit
 } from './value/contract';
-import type { AssetOperationResult } from './valueArithmetic';
+import { diagnostic } from './value/diagnostic';
+import { succeed, type AssetOperationResult } from './valueArithmetic';
 import {
   assetTypeCompatible,
   assetVectorInfo
@@ -35,19 +36,7 @@ import {
 import { evaluateAssetBinary, evaluateAssetCall } from './valueOperation';
 const MAX_EXPRESSION_NODES = 16384;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
-const freeze = <T>(value: T): T => Object.freeze(value);
 const isBooleanPayload = (value: boolean): boolean => typeof value === 'boolean';
-
-const immutableSpan = (span: SourceSpan): SourceSpan => freeze({
-  start: freeze({ offset: span.start.offset, line: span.start.line, column: span.start.column }),
-  end: freeze({ offset: span.end.offset, line: span.end.line, column: span.end.column })
-});
-
-const diagnostic = (
-  code: AssetValueDiagnosticCode,
-  message: string,
-  span: SourceSpan
-): AssetValueDiagnostic => freeze({ code, message, span: immutableSpan(span) });
 
 const failed = (
   diagnostics: readonly AssetValueDiagnostic[]
@@ -57,9 +46,6 @@ const failed = (
 });
 
 const succeeded = (value: AssetValue): AssetExpressionEvaluationResult =>
-  freeze({ ok: true, value });
-
-const success = <T>(value: T): AssetOperationResult<T> =>
   freeze({ ok: true, value });
 
 const childrenOf = (expression: AssetTypedExpression): readonly AssetTypedExpression[] => {
@@ -177,7 +163,7 @@ export const evaluateAssetExpression = (
           'Unary result is outside the closed value ABI.', current.span));
         continue;
       }
-      result = success(value);
+      result = succeed(value);
     } else if (current.kind === 'vector') {
       const numberValues = childValues as AssetValue[];
       if (numberValues.some((value) => value.kind !== 'number')) {
@@ -193,7 +179,7 @@ export const evaluateAssetExpression = (
         continue;
       }
       try {
-        result = success(assetVectorValue(numberValues as AssetNumberValue[], info.type));
+        result = succeed(assetVectorValue(numberValues as AssetNumberValue[], info.type));
       } catch {
         diagnostics.push(diagnostic('asset.value.invalid-vector',
           'Vector node has an invalid closed value shape.', current.span));
@@ -215,7 +201,7 @@ export const evaluateAssetExpression = (
           'Vector member is outside the value component count.', current.span));
         continue;
       }
-      result = success(selected);
+      result = succeed(selected);
     } else if (current.kind === 'binary') {
       result = evaluateAssetBinary(
         current.operator, childValues[0]!, childValues[1]!);

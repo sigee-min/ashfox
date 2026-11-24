@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetValueType } from '../../../project/program/asset/contract';
@@ -15,8 +16,6 @@ import { evaluateAssetExpression } from './valueEvaluate';
 import type { AssetExactUnitVector } from './frame';
 
 export type HirIssue = (path: string, span: SourceSpan, code: string, message: string) => void;
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const report = (
   path: string,

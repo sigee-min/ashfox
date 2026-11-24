@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import { canonicalJsonString } from '../../../canonicalJson';
 import { deepFreeze } from '../../../immutable';
 import type { CompiledModel } from '../../../model/compiled';
@@ -46,9 +47,6 @@ interface RootLocation {
   readonly path: string;
   readonly span: SourceSpan;
 }
-
-const compareText = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
 
 const sourceRef = (packageName: string, path: string, span: SourceSpan): SourceRef =>
   Object.freeze({

@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type {
   ProgramBinaryOperator,
   ProgramCallExpr,
@@ -25,8 +26,6 @@ export interface ProgramExpressionReader {
   readonly enterDepth?: () => void;
   readonly leaveDepth?: () => void;
 }
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const exactDecimal = (text: string): {
   readonly numerator: bigint;

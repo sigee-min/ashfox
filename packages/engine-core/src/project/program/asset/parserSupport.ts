@@ -4,7 +4,6 @@ import type { SourceSpan } from '../../source/contract';
 
 export type Token = ProgramToken;
 export class ParserAbort extends Error {}
-export const freeze = <T>(value: T): T => Object.freeze(value);
 export const join = (left: SourceSpan, right: SourceSpan): SourceSpan =>
   Object.freeze({ start: left.start, end: right.end });
 export const valueName = (value: ProgramExpr): string | null =>

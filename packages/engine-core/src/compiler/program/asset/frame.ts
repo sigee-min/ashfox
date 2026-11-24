@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import { assetExactNumber, type AssetExactNumber } from './value/contract';
 
 export type AssetSignedCoordinate = -1 | 0 | 1;
@@ -19,7 +20,6 @@ export interface AssetExactFrame {
   readonly determinant: -1 | 1;
 }
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const MAX_FRAME_INTEGER_BITS = 512;
 
 const integerBits = (value: bigint): number => {

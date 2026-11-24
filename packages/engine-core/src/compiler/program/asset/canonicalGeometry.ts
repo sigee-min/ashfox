@@ -1,4 +1,5 @@
-import { deepFreeze } from '../../../immutable';
+import { compareText } from '../../../stableOrder';
+import { deepFreeze, freeze } from '../../../immutable';
 import { createGeometryLayout } from './canonicalLayout';
 import { lowerAssetFrameToBoneTransform } from './frameLower';
 import type { SourceSpan } from '../../../project/source/contract';
@@ -8,9 +9,9 @@ import type { InstantiatedAssetIr, InstantiatedBone, InstantiatedComponentInstan
   InstantiatedGeometryNode, InstantiatedSocketConnection } from './ir';
 import type { AssetTexturePlan } from './texture/contract';
 import {
-  CUBE_FACES, INTEGER_BOUNDARY, MAX_SAFE, NUMBER_BOUNDARY, compare, exactNumber,
+  CUBE_FACES, INTEGER_BOUNDARY, MAX_SAFE, NUMBER_BOUNDARY, exactNumber,
   exactToVector2, exactToVector3, exactVector, addExact, boolean, canonical, cubeUv,
-  directionOf, freeze, positiveIntegral, propertyMap, report, signedAxis,
+  directionOf, positiveIntegral, propertyMap, report, signedAxis,
   surfacePlan, transformFor, type CanonicalGeometryIssue, type Context, type GeometryRecord,
   type PropertyEntry, type SurfaceBindings, visibleFor
 } from './geometrySupport';
@@ -213,7 +214,7 @@ const flatten = (
   context: Context
 ): readonly GeometryRecord[] => {
   const records: GeometryRecord[] = [];
-  for (const instance of [...instances].sort((left, right) => compare(left.id, right.id))) {
+  for (const instance of [...instances].sort((left, right) => compareText(left.id, right.id))) {
     const pending = [...instance.geometry].reverse().map((node) => ({ node, instance,
       parentNodeId: null as string | null }));
     while (pending.length > 0) {
@@ -259,7 +260,7 @@ export const lowerAssetGeometry = (
   const context: Context = { issue, failed: false };
   try {
     const planMap = new Map<string, AssetTexturePlan>();
-    for (const plan of [...plans].sort((left, right) => compare(left.surfaceSymbol.key, right.surfaceSymbol.key))) {
+    for (const plan of [...plans].sort((left, right) => compareText(left.surfaceSymbol.key, right.surfaceSymbol.key))) {
       if (planMap.has(plan.surfaceSymbol.key)) report(context, ir.instances[0]?.sourcePath ?? ir.asset.key,
         firstSpan(ir) ?? (() => { throw new Error('No source span for duplicate texture plan.'); })(),
         'asset.duplicate-texture-plan', `Texture plan for surface "${plan.surfaceSymbol.key}" is duplicated.`);
@@ -267,7 +268,7 @@ export const lowerAssetGeometry = (
     }
     const skeleton = new Map<string, InstantiatedBone>();
     const semantic = new Map<string, string>();
-    for (const bone of [...ir.bones].sort((left, right) => compare(left.id, right.id))) {
+    for (const bone of [...ir.bones].sort((left, right) => compareText(left.id, right.id))) {
       if (skeleton.has(bone.id)) report(context, bone.sourcePath, bone.span,
         'asset.duplicate-bone-id', `Bone identifier "${bone.id}" is duplicated.`);
       else skeleton.set(bone.id, bone);
@@ -286,7 +287,7 @@ export const lowerAssetGeometry = (
       else byId.set(record.node.id, record);
     }
     const connections = new Map<string, InstantiatedSocketConnection>();
-    for (const connection of [...ir.connections].sort((left, right) => compare(left.id, right.id))) {
+    for (const connection of [...ir.connections].sort((left, right) => compareText(left.id, right.id))) {
       if (connections.has(connection.targetBoneId)) report(context, ir.instances[0]?.sourcePath ?? ir.asset.key,
         connection.span, 'asset.duplicate-socket-authority',
         `Socket target "${connection.targetBoneId}" has more than one connection.`);
@@ -347,7 +348,7 @@ export const lowerAssetGeometry = (
       if (parent !== undefined && geometryBones.has(parent)) visit(parent);
       visiting.delete(id); visited.add(id);
     };
-    for (const id of [...geometryBones.keys()].sort(compare)) visit(id);
+    for (const id of [...geometryBones.keys()].sort(compareText)) visit(id);
     if (context.failed) return null;
     const layout = createGeometryLayout(ir, records, connections, parentFor, context);
     const surfaces = new Map<string, InstantiatedAssetIr['surfaces'][number][]>();
@@ -358,7 +359,7 @@ export const lowerAssetGeometry = (
     }
     const output: SceneNode[] = [];
     for (const rawRecord of records.filter((candidate) => candidate.node.kind !== 'face')
-      .sort((left, right) => compare(left.node.id, right.node.id))) {
+      .sort((left, right) => compareText(left.node.id, right.node.id))) {
       const record = layout.shifted(rawRecord);
       if (record === null) {
         report(context, rawRecord.node.sourcePath, rawRecord.node.span,
@@ -389,7 +390,7 @@ export const lowerAssetGeometry = (
       }
     }
     if (context.failed) return null;
-    const nodes = output.sort((left, right) => compare(left.id, right.id));
+    const nodes = output.sort((left, right) => compareText(left.id, right.id));
     return deepFreeze({ nodes, roots: [] as EntityId[] });
   } catch {
     const span = firstSpan(ir);

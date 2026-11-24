@@ -1,3 +1,6 @@
+/** Shallow-freezes a value while keeping its mutable static type for builders. */
+export const freeze = <T>(value: T): T => Object.freeze(value);
+
 /** Recursively seals a canonical value while preserving object identity. */
 export const deepFreeze = <T>(value: T, seen = new WeakSet<object>()): T => {
   if (typeof value !== 'object' || value === null || seen.has(value)) {

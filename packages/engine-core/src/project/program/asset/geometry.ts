@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../syntax/contract';
 import type { ProgramToken } from '../syntax/lex';
 import type { SourceSpan } from '../../source/contract';
@@ -30,8 +31,6 @@ export interface AssetGeometryReader {
 
 const join = (left: SourceSpan, right: SourceSpan): SourceSpan =>
   Object.freeze({ start: left.start, end: right.end });
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const keywords = new Set(['bone', 'cube', 'plane', 'locator', 'face']);
 

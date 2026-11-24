@@ -1,5 +1,5 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../../../project/program/syntax/contract';
-import type { SourceSpan } from '../../../project/source/contract';
 import {
   assetExactNumber,
   AssetValueNumericLimitError,
@@ -10,9 +10,9 @@ import {
   type AssetExpressionType,
   type AssetScalarValueType,
   type AssetTypedExpression,
-  type AssetValueDiagnostic,
-  type AssetValueDiagnosticCode
+  type AssetValueDiagnostic
 } from './value/contract';
+import { diagnostic, fitsExpected, immutableSpan } from './value/diagnostic';
 import {
   assetScalarInfo,
   assetTypeCompatible,
@@ -21,31 +21,6 @@ import {
   assetVectorType,
   type AssetTypeInfo
 } from './valueTypes';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
-
-const immutableSpan = (span: SourceSpan): SourceSpan => freeze({
-  start: freeze({ offset: span.start.offset, line: span.start.line, column: span.start.column }),
-  end: freeze({ offset: span.end.offset, line: span.end.line, column: span.end.column })
-});
-
-const diagnostic = (
-  code: AssetValueDiagnosticCode,
-  message: string,
-  span: SourceSpan
-): AssetValueDiagnostic => freeze({ code, message, span: immutableSpan(span) });
-
-const fitsExpected = (
-  actual: AssetExpressionType,
-  expected: AssetExpressionType | undefined,
-  span: SourceSpan,
-  diagnostics: AssetValueDiagnostic[]
-): boolean => {
-  if (expected === undefined || assetTypeCompatible(actual, expected)) return true;
-  diagnostics.push(diagnostic('asset.value.type-mismatch',
-    'Expression type "' + actual + '" does not satisfy expected type "' + expected + '".', span));
-  return false;
-};
 
 const scalarNode = (
   node: AssetTypedExpression

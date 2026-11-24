@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { UvRect, Vec2, Vec3 } from '../../../model/identity';
 import type { Transform } from '../../../model/scene';
@@ -28,10 +29,6 @@ export const INTEGER_BOUNDARY = Object.freeze({
   integral: true,
 });
 export const CUBE_FACES = ['north', 'south', 'east', 'west', 'up', 'down'] as const;
-
-export const freeze = <T>(value: T): T => Object.freeze(value);
-export const compare = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
 
 export type CanonicalGeometryIssue = (
   path: string,

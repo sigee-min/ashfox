@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import { deepFreeze } from '../../../immutable';
 import type { AuthoredAssetWorkspace, Sha256Digest } from '../../../project/workspace/contract';
 import {
@@ -31,9 +32,6 @@ type CompileWorkspaceCandidateResult =
       readonly products: readonly CandidateProduct[];
     }>
   | Readonly<{ readonly ok: false; readonly diagnostics: readonly WorkspaceDiagnostic[] }>;
-
-const compareText = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
 
 const diagnosticKey = (item: WorkspaceDiagnostic): string =>
   [

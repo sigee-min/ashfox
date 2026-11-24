@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramUnit } from '../../../project/program/syntax/contract';
 import {
   type AssetExpressionScalarType,
@@ -21,8 +22,6 @@ export type AssetTypeInfo =
       readonly type: AssetVectorValueType;
     }>
   | Readonly<{ readonly kind: 'bool' | 'color'; readonly type: 'bool' | 'color' }>;
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const vectorEntry = (
   type: AssetVectorValueType,

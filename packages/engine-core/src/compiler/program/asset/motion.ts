@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type {
   AssetMotionDecl,
   AssetPropertyDecl,
@@ -16,8 +17,6 @@ import type {
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { compileAndEvaluateHirExpression } from './hirValues';
 import { ASSET_BUDGET } from './budgets';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const properties = (
   context: AssemblyContext,

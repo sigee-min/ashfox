@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type {
   AssetAssemblyDecl,
@@ -49,7 +50,6 @@ type Port = TypedComponent['ports'][number];
 type Instance = Readonly<{ readonly use: AssetAssemblyUse; readonly component: TypedComponent }>;
 
 const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const bindingKind = (port: Port): AssetSymbolKind =>
   port.domain === 'rig' ? 'rig-contract' : 'surface';

@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
 import {
@@ -40,8 +41,6 @@ import {
   type AssetValue,
   type AssetVectorValue
 } from './value/contract';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const LIMITS: Readonly<Record<AssetBudgetDimension, number>> = freeze({
   instances: 1024,

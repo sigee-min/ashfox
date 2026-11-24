@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { AssetId, TextureAsset } from '../../../model';
 import type { TextureRaster } from '../../../model/texture';
 import { sha256Digest } from '../../../provenance/digest';
@@ -14,8 +15,6 @@ import {
   surfacePayload,
   type TextureReporter,
 } from './texture/prepare';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const textureIdFor = (key: string, name: string): string => {
   const digest = sha256Digest(key).slice(7, 19);

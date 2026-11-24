@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../source/contract';
 import type {
   ProgramChartStatement,
@@ -21,7 +22,6 @@ type ChartLayout = ProgramTextureChart['layout'];
 type FaceDirection = ProgramTextureChartFace['direction'];
 type ChartScope = 'chart' | 'face';
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const join = (left: SourceSpan, right: SourceSpan): SourceSpan =>
   Object.freeze({ start: left.start, end: right.end });
 

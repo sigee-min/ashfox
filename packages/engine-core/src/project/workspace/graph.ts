@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import {
   hasExactContractKeys,
   isClosedContractRecord
@@ -75,9 +76,6 @@ interface WorkspaceCompilationSnapshot {
   readonly indexes: ReadonlyMap<string, PackageIndex>;
   readonly cache: WorkspaceSourceParseCache;
 }
-
-const compareText = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
 
 const packageFor = (
   indexes: ReadonlyMap<string, PackageIndex>,

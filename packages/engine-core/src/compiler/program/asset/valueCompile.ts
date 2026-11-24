@@ -1,5 +1,5 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../../../project/program/syntax/contract';
-import type { SourceSpan } from '../../../project/source/contract';
 import {
   type AssetExpressionCompileResult,
   type AssetExpressionScalarType,
@@ -10,12 +10,11 @@ import {
   type AssetVectorComponentType,
   type AssetTypedExpression,
   type AssetValueDiagnostic,
-  type AssetValueDiagnosticCode,
   isAssetColorLiteral
 } from './value/contract';
+import { diagnostic, fitsExpected, immutableSpan } from './value/diagnostic';
 import {
   assetScalarInfo,
-  assetTypeCompatible,
   assetVectorInfo,
   assetVectorType,
   isAssetExpressionType
@@ -29,18 +28,6 @@ import {
 } from './valueCompileNodes';
 
 const MAX_EXPRESSION_NODES = 16384;
-const freeze = <T>(value: T): T => Object.freeze(value);
-
-const immutableSpan = (span: SourceSpan): SourceSpan => freeze({
-  start: freeze({ offset: span.start.offset, line: span.start.line, column: span.start.column }),
-  end: freeze({ offset: span.end.offset, line: span.end.line, column: span.end.column })
-});
-
-const diagnostic = (
-  code: AssetValueDiagnosticCode,
-  message: string,
-  span: SourceSpan
-): AssetValueDiagnostic => freeze({ code, message, span: immutableSpan(span) });
 
 const failed = (
   diagnostics: readonly AssetValueDiagnostic[]
@@ -51,18 +38,6 @@ const failed = (
 
 const succeeded = (value: AssetTypedExpression): AssetExpressionCompileResult =>
   freeze({ ok: true, value });
-
-const fitsExpected = (
-  actual: AssetExpressionType,
-  expected: AssetExpressionType | undefined,
-  span: SourceSpan,
-  diagnostics: AssetValueDiagnostic[]
-): boolean => {
-  if (expected === undefined || assetTypeCompatible(actual, expected)) return true;
-  diagnostics.push(diagnostic('asset.value.type-mismatch',
-    'Expression type "' + actual + '" does not satisfy expected type "' + expected + '".', span));
-  return false;
-};
 
 const expectedScalar = (
   expected: AssetExpressionType | undefined

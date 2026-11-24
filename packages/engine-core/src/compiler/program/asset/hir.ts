@@ -3,7 +3,7 @@ import type {
   WorkspaceCompilationClosure,
   WorkspaceCompilationFile,
 } from '../../../project/workspace/closure';
-import { deepFreeze } from '../../../immutable';
+import { deepFreeze, freeze } from '../../../immutable';
 import { ASSET_BUDGET, AssetBudgetAbort } from './budgets';
 import {
   type AssetHirResult,
@@ -36,7 +36,6 @@ import { buildComponent } from './component';
 import { buildMotion } from './motion';
 import { elaborateAssetDesigns } from './design';
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
 
 interface BuildState extends AssemblyState {

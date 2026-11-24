@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type {
   AssetDeclaration, AssetDesignDecl, AssetDesignField
 } from '../../../project/program/asset/contract';
@@ -9,8 +10,6 @@ import type {
 import { ASSET_BUDGET, AssetBudgetAbort } from './budgets';
 import { compileAndEvaluateHirExpression, type HirIssue } from './hirValues';
 import type { AssetValue } from './value/contract';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 interface DesignOwner {
   readonly file: WorkspaceCompilationFile;

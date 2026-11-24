@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramBinaryOperator } from '../../../project/program/syntax/contract';
 import {
   assetExactNumber,
@@ -8,8 +9,6 @@ import {
   type AssetValueDiagnosticCode,
 } from './value/contract';
 
-const freeze = <T>(value: T): T => Object.freeze(value);
-
 export type AssetOperationResult<T> =
   | Readonly<{ readonly ok: true; readonly value: T }>
   | Readonly<{
@@ -18,10 +17,12 @@ export type AssetOperationResult<T> =
       readonly message: string;
     }>;
 
-const success = <T>(value: T): AssetOperationResult<T> => freeze({ ok: true, value });
+export const succeed = <T>(value: T): AssetOperationResult<T> => freeze({ ok: true, value });
 
-const failure = (code: AssetValueDiagnosticCode, message: string): AssetOperationResult<never> =>
-  freeze({ ok: false, code, message });
+export const fail = (
+  code: AssetValueDiagnosticCode,
+  message: string,
+): AssetOperationResult<never> => freeze({ ok: false, code, message });
 
 const exactInputError = (value: AssetExactNumber): AssetValueDiagnosticCode | null => {
   if (
@@ -43,11 +44,11 @@ const normalize = (
   unit: AssetExactNumber['unit'],
 ): AssetOperationResult<AssetExactNumber> => {
   try {
-    return success(assetExactNumber(numerator, denominator, unit));
+    return succeed(assetExactNumber(numerator, denominator, unit));
   } catch (error) {
     return error instanceof AssetValueNumericLimitError
-      ? failure('asset.value.rational-limit', 'Exact arithmetic exceeds the numeric budget.')
-      : failure('asset.value.invalid-number', 'Exact arithmetic produced an invalid number.');
+      ? fail('asset.value.rational-limit', 'Exact arithmetic exceeds the numeric budget.')
+      : fail('asset.value.invalid-number', 'Exact arithmetic produced an invalid number.');
   }
 };
 
@@ -60,7 +61,7 @@ export const assetExactOperation = (
   const leftError = exactInputError(left);
   const rightError = exactInputError(right);
   if (leftError !== null || rightError !== null)
-    return failure(
+    return fail(
       leftError === 'asset.value.rational-limit' || rightError === 'asset.value.rational-limit'
         ? 'asset.value.rational-limit'
         : 'asset.value.invalid-number',
@@ -70,7 +71,7 @@ export const assetExactOperation = (
     );
   if (operator === '+' || operator === '-') {
     if (left.unit !== right.unit)
-      return failure('asset.value.unit-mismatch', 'Arithmetic operands must use compatible units.');
+      return fail('asset.value.unit-mismatch', 'Arithmetic operands must use compatible units.');
     const numerator =
       operator === '+'
         ? left.numerator * right.denominator + right.numerator * left.denominator
@@ -84,11 +85,11 @@ export const assetExactOperation = (
         code: 'asset.value.invalid-type',
         message: 'Plain arithmetic must produce an exact integer.',
       });
-    return success(value);
+    return succeed(value);
   }
   if (operator === '*') {
     if (left.unit !== 'plain' && right.unit !== 'plain')
-      return failure(
+      return fail(
         'asset.value.invalid-operator',
         'Multiplication may have at most one dimensional operand.',
       );
@@ -105,13 +106,13 @@ export const assetExactOperation = (
         code: 'asset.value.invalid-type',
         message: 'Plain arithmetic must produce an exact integer.',
       });
-    return success(value);
+    return succeed(value);
   }
   if (operator === '/' && right.numerator === 0n)
-    return failure('asset.value.division-by-zero', 'Division by zero is not allowed.');
+    return fail('asset.value.division-by-zero', 'Division by zero is not allowed.');
   if (operator === '/') {
     if (right.unit !== 'plain' && left.unit !== right.unit)
-      return failure(
+      return fail(
         'asset.value.unit-mismatch',
         'Division requires a plain divisor or matching units.',
       );
@@ -128,24 +129,18 @@ export const assetExactOperation = (
         code: 'asset.value.invalid-type',
         message: 'A plain division result must be an exact integer.',
       });
-    return success(value);
+    return succeed(value);
   }
   if (operator !== '%')
-    return failure(
-      'asset.value.invalid-operator',
-      'Operator is not valid for exact scalar operands.',
-    );
+    return fail('asset.value.invalid-operator', 'Operator is not valid for exact scalar operands.');
   if (right.numerator === 0n)
-    return failure('asset.value.division-by-zero', 'Remainder by zero is not allowed.');
+    return fail('asset.value.division-by-zero', 'Remainder by zero is not allowed.');
   if (
     left.unit !== 'plain' ||
     right.unit !== 'plain' ||
     left.denominator !== 1n ||
     right.denominator !== 1n
   )
-    return failure(
-      'asset.value.invalid-operator',
-      'Remainder requires exact integer plain operands.',
-    );
+    return fail('asset.value.invalid-operator', 'Remainder requires exact integer plain operands.');
   return normalize(left.numerator % right.numerator, 1n, 'plain');
 };

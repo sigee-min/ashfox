@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../syntax/contract';
 import type { SourceSpan } from '../../source/contract';
 import type {
@@ -6,7 +7,7 @@ import type {
   AssetDesignField,
   AssetValueType,
 } from './contract';
-import { freeze, join, type Token } from './parserSupport';
+import { join, type Token } from './parserSupport';
 
 export interface AssetValueTypeReader {
   readonly id: (message?: string) => Token;

@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { ProgramExpr } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetFrameDecl } from '../../../project/program/asset/contract';
@@ -17,8 +18,6 @@ import {
   evaluateHirExpression,
   type HirIssue,
 } from './hirValues';
-
-const freeze = <T>(value: T): T => Object.freeze(value);
 
 const identityFrame = (): TypedFrame =>
   freeze({

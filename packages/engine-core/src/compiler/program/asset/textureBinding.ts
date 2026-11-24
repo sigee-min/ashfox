@@ -1,5 +1,6 @@
+import { compareText } from '../../../stableOrder';
 import type { SourceSpan } from '../../../project/source/contract';
-import { deepFreeze } from '../../../immutable';
+import { deepFreeze, freeze } from '../../../immutable';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
 import { toAssetCanonicalNumber } from './valueEvaluate';
 import { isAssetNumberValueShape, type AssetNumberValue, type AssetValue } from './value/contract';
@@ -19,10 +20,6 @@ const INTEGER_BOUNDARY = Object.freeze({
   maximum: MAX_SIZE,
   integral: true,
 });
-const freeze = <T>(value: T): T => Object.freeze(value);
-const codeUnitOrder = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
-
 export type AssetTextureBindingResult =
   | Readonly<{
       readonly ok: true;
@@ -54,16 +51,16 @@ interface SelectedSurface {
 }
 
 const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  codeUnitOrder(left.path, right.path) ||
+  compareText(left.path, right.path) ||
   left.span.start.offset - right.span.start.offset ||
   left.span.end.offset - right.span.end.offset ||
-  codeUnitOrder(left.code, right.code) ||
-  codeUnitOrder(left.message, right.message);
+  compareText(left.code, right.code) ||
+  compareText(left.message, right.message);
 
 const compareUsage = (left: CollectedUsage, right: CollectedUsage): number =>
-  codeUnitOrder(left.surfaceKey, right.surfaceKey) ||
-  codeUnitOrder(left.chart, right.chart) ||
-  codeUnitOrder(left.path, right.path) ||
+  compareText(left.surfaceKey, right.surfaceKey) ||
+  compareText(left.chart, right.chart) ||
+  compareText(left.path, right.path) ||
   left.usage.span.start.offset - right.usage.span.start.offset ||
   JSON.stringify(left.usage.shape).localeCompare(JSON.stringify(right.usage.shape));
 
@@ -260,14 +257,14 @@ const assetLocation = (hir: TypedAssetHir, ir: InstantiatedAssetIr): Location =>
   const asset =
     hir.assets[ir.asset.key] ??
     Object.values(hir.assets).sort((left, right) =>
-      codeUnitOrder(left.symbol.key, right.symbol.key),
+      compareText(left.symbol.key, right.symbol.key),
     )[0];
   const path = hir.modules[asset?.symbol.modulePath ?? ir.asset.modulePath]?.path ?? hir.rootPath;
   if (asset !== undefined) return { path, span: asset.span };
-  const instance = [...ir.instances].sort((left, right) => codeUnitOrder(left.id, right.id))[0];
+  const instance = [...ir.instances].sort((left, right) => compareText(left.id, right.id))[0];
   if (instance !== undefined) return { path: instance.sourcePath, span: instance.span };
   const binding = [...ir.surfaces].sort((left, right) =>
-    codeUnitOrder(left.surface.key, right.surface.key),
+    compareText(left.surface.key, right.surface.key),
   )[0];
   if (binding !== undefined) return { path: pathForBinding(hir, binding), span: binding.span };
   throw new Error('Texture lowering requires a validated asset source span.');
@@ -288,7 +285,7 @@ const selectedSurfaces = (
   }
   const result: SelectedSurface[] = [];
   const bindings = [...ir.surfaces].sort((left, right) =>
-    codeUnitOrder(left.surface.key, right.surface.key),
+    compareText(left.surface.key, right.surface.key),
   );
   const selected = new Set<string>();
   for (const binding of bindings) {
@@ -350,7 +347,7 @@ const selectedSurfaces = (
         `Geometry selects surface "${usage.surfaceKey}" without an asset surface binding.`,
       );
   return result.sort((left, right) =>
-    codeUnitOrder(left.surface.symbol.key, right.surface.symbol.key),
+    compareText(left.surface.symbol.key, right.surface.symbol.key),
   );
 };
 
@@ -362,7 +359,7 @@ export const lowerAssetTextures = (
   const diagnostics: AssetDiagnostic[] = [];
   const seen = new Set<string>();
   const usages: CollectedUsage[] = [];
-  for (const instance of [...ir.instances].sort((left, right) => codeUnitOrder(left.id, right.id)))
+  for (const instance of [...ir.instances].sort((left, right) => compareText(left.id, right.id)))
     walkGeometry(instance.geometry, usages, diagnostics, seen);
   if (diagnostics.length >= MAX_DIAGNOSTICS)
     return deepFreeze({ ok: false, diagnostics: [...diagnostics].sort(compareDiagnostics) });

@@ -1,5 +1,6 @@
+import { compareText } from '../../../stableOrder';
 import type { SourceSpan } from '../../../project/source/contract';
-import { deepFreeze } from '../../../immutable';
+import { deepFreeze, freeze } from '../../../immutable';
 import type { AnimationClip, AnimationLoopMode, TransformChannel,
   TransformKeyframe } from '../../../model/motion';
 import type { EntityId, Vec3 } from '../../../model/identity';
@@ -37,10 +38,6 @@ const INTEGER_BOUNDARY = Object.freeze({
   maximum: MAX_MOTION_FPS,
   integral: true
 });
-const freeze = <T>(value: T): T => Object.freeze(value);
-const codeUnitOrder = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
-
 export type CanonicalRigLoweringResult =
   | Readonly<{
       readonly ok: true;
@@ -235,14 +232,14 @@ const lowerBones = (
     if (parent !== null && parent !== undefined) visit(parent);
     state.set(id, 2);
   };
-  for (const id of [...byId.keys()].sort(codeUnitOrder)) visit(id);
+  for (const id of [...byId.keys()].sort(compareText)) visit(id);
   if (diagnostics.length > 0) return null;
   // Canonical runtimes subtract parent pivots to recover the local translation.
   // Accumulate offsets without rotating them here; parent rotation/scale is
   // applied exactly once by the runtime hierarchy, just as in socket frames.
   const layout = createBoneLayouts(byId, parents);
   const lowered: BoneNode[] = [];
-  for (const id of [...byId.keys()].sort(codeUnitOrder)) {
+  for (const id of [...byId.keys()].sort(compareText)) {
     const bone = byId.get(id)!;
     const canonicalLayout = layout(id);
     if (canonicalLayout === null) {
@@ -253,9 +250,9 @@ const lowerBones = (
     const node = lowerBone(bone, parents.get(id) ?? null, canonicalLayout, diagnostics);
     if (node !== null) lowered.push(node);
   }
-  lowered.sort((left, right) => codeUnitOrder(left.id, right.id));
+  lowered.sort((left, right) => compareText(left.id, right.id));
   const roots = lowered.filter((bone) => bone.parentId === null)
-    .map((bone) => bone.id).sort(codeUnitOrder);
+    .map((bone) => bone.id).sort(compareText);
   return deepFreeze({
     bones: deepFreeze(lowered),
     roots: deepFreeze(roots),
@@ -450,7 +447,7 @@ const lowerMotion = (
     channelIds.set(channelId, output);
   }
   channels.push(...[...channelIds.values()].sort((left, right) =>
-    codeUnitOrder(left.id, right.id)));
+    compareText(left.id, right.id)));
   if (diagnostics.length !== initialDiagnostics) return null;
   return freeze({ id: clipId, name: symbol.name, durationSeconds: duration,
     fps, loop: motion.loop as AnimationLoopMode,
@@ -459,10 +456,10 @@ const lowerMotion = (
 };
 
 const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  codeUnitOrder(left.path, right.path) ||
+  compareText(left.path, right.path) ||
   left.span.start.offset - right.span.start.offset ||
   left.span.end.offset - right.span.end.offset ||
-  codeUnitOrder(left.code, right.code) || codeUnitOrder(left.message, right.message);
+  compareText(left.code, right.code) || compareText(left.message, right.message);
 
 /** Lower the canonical skeleton and its already-retargeted rest-relative motions. */
 export const lowerAssetRigAndMotions = (
@@ -475,14 +472,14 @@ export const lowerAssetRigAndMotions = (
     const seenIds = new Map<string, string>();
     const clips: AnimationClip[] = [];
     for (const motion of [...ir.motions].sort((left, right) =>
-      codeUnitOrder(left.symbol.key, right.symbol.key))) {
+      compareText(left.symbol.key, right.symbol.key))) {
       const clip = lowerMotion(motion, plan.semanticToId, seenIds, diagnostics);
       if (clip !== null) clips.push(clip);
     }
     if (diagnostics.length > 0) return deepFreeze({ ok: false,
       diagnostics: deepFreeze([...diagnostics].sort(compareDiagnostics)) });
     const animations: Record<string, AnimationClip> = Object.create(null) as Record<string, AnimationClip>;
-    for (const clip of clips.sort((left, right) => codeUnitOrder(left.id, right.id))) {
+    for (const clip of clips.sort((left, right) => compareText(left.id, right.id))) {
       animations[clip.id] = clip;
     }
     return deepFreeze({ ok: true, bones: plan.bones, roots: plan.roots,

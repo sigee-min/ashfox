@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type {
   AssetRigContractDecl,
   AssetSkeletonDecl,
@@ -25,7 +26,6 @@ import { buildTypedFrame } from './hirFrames';
 import { compileAndEvaluateHirExpression } from './hirValues';
 import { validateConcreteSurfaceCharts } from './surface';
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
 
 const texel = (

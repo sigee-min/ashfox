@@ -1,4 +1,4 @@
-import { compareStableText } from '../../stableOrder';
+import { compareText } from '../../stableOrder';
 
 export interface SourcePosition {
   readonly offset: number;
@@ -126,12 +126,12 @@ export const sortWorkspaceDiagnostics = (
 ): readonly WorkspaceDiagnostic[] =>
   [...diagnostics].sort(
     (left, right) =>
-      compareStableText(packageForSort(left), packageForSort(right)) ||
-      compareStableText(sourcePathForSort(left), sourcePathForSort(right)) ||
+      compareText(packageForSort(left), packageForSort(right)) ||
+      compareText(sourcePathForSort(left), sourcePathForSort(right)) ||
       sourceOffsetForSort(left) - sourceOffsetForSort(right) ||
-      compareStableText(left.code, right.code) ||
-      compareStableText(left.message, right.message) ||
-      compareStableText(chainForSort(left), chainForSort(right)),
+      compareText(left.code, right.code) ||
+      compareText(left.message, right.message) ||
+      compareText(chainForSort(left), chainForSort(right)),
   );
 
 export const errorDiagnostic = (

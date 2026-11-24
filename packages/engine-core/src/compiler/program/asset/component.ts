@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { AssetComponentDecl } from '../../../project/program/asset/contract';
 import type {
   AssetSymbolKind,
@@ -14,7 +15,6 @@ import { validateGeometryHierarchy } from './assembly';
 import { buildTypedFrame } from './hirFrames';
 import { compileGeometryPayload } from './hirGeometry';
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
 
 const portKind = (domain: TypedPort['domain']): AssetSymbolKind =>

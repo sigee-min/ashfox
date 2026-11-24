@@ -1,8 +1,8 @@
+import { freeze } from '../../../immutable';
 import { lexProgramSource } from '../syntax/lex';
 import { sourceSpan } from '../../source/lexer';
 import { ASHFOX_ASSET_GRAMMAR, type AssetSourceParseResult } from './contract';
 import { Parser } from './parser';
-import { freeze } from './parserSupport';
 
 export const parseAssetSource = (source: string, path = 'main.ashfox'): AssetSourceParseResult => {
   const lexical = lexProgramSource(source);

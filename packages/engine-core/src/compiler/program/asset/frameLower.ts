@@ -1,3 +1,4 @@
+import { freeze } from '../../../immutable';
 import type { Transform } from '../../../model/scene';
 import { canonicalQuaternionFromEuler } from '../../../model/transform';
 import { isAssetExactFrame, type AssetExactFrame } from './frame';
@@ -8,7 +9,6 @@ type Matrix3 = readonly [
   readonly [number, number, number],
 ];
 
-const freeze = <T>(value: T): T => Object.freeze(value);
 const vector = (values: readonly number[]): readonly [number, number, number] =>
   freeze([values[0]!, values[1]!, values[2]!]);
 const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);

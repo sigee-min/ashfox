@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import { canonicalJsonString } from '../../canonicalJson';
 import { parseAssetSource } from '../program/asset/parse';
 import type {
@@ -59,8 +60,6 @@ export const createWorkspaceSourceParseCache = (): WorkspaceSourceParseCache => 
 
 export const keyFor = (packageName: string, path: string): string => `${packageName}\u0000${path}`;
 export const qualified = (packageName: string, path: string): string => `${packageName}:${path}`;
-export const compareText = (left: string, right: string): number =>
-  left < right ? -1 : left > right ? 1 : 0;
 export const sourceKey = (ref: NodeRef): string => keyFor(ref.packageName, ref.path);
 const sourceRefFor = (packageName: string, path: string, ref: SourceRef): SourceRef =>
   Object.freeze({ packageName, path, start: ref.start, end: ref.end });
