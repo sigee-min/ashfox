@@ -4,8 +4,8 @@ These guides are for people changing and maintaining Ashfox itself. To create
 assets, configure an asset workspace or integrate build outputs into a game,
 start with the [Ashfox user documentation](../README.md).
 
-Read [CONTRIBUTING.md](../../CONTRIBUTING.md) for repository setup and verification.
-The [development manifest](../../development-manifest.json) remains the repository
+Read [.github/CONTRIBUTING.md](../../.github/CONTRIBUTING.md) for repository setup and verification.
+The [development manifest](../../config/development-manifest.json) remains the repository
 rule authority; these guides explain workflows without defining parallel policy.
 
 | Contributor task | Guide |

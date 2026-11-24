@@ -139,9 +139,9 @@ const retiredContractSourceScopes = [
 // Release history records removed contracts; only current guidance is checked.
 const retiredContractFiles = [
   path.join(repositoryRoot, 'README.md'),
-  path.join(repositoryRoot, 'CONTRIBUTING.md'),
-  path.join(repositoryRoot, 'development-manifest.json'),
-  path.join(repositoryRoot, 'development-manifest.schema.json'),
+  path.join(repositoryRoot, '.github/CONTRIBUTING.md'),
+  path.join(repositoryRoot, 'config/development-manifest.json'),
+  path.join(repositoryRoot, 'config/development-manifest.schema.json'),
 ];
 const retiredSourceFiles = [
   ...(

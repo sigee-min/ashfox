@@ -24,7 +24,7 @@ for (const file of tests) {
     timeout: 600_000,
     env: {
       ...process.env,
-      TS_NODE_PROJECT: path.resolve(__dirname, '../../tsconfig.tests.json'),
+      TS_NODE_PROJECT: path.resolve(__dirname, '../../config/tsconfig.tests.json'),
       TS_NODE_COMPILER_OPTIONS: JSON.stringify({ module: 'CommonJS' }),
     },
   });

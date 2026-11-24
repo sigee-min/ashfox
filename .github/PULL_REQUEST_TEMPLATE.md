@@ -1,20 +1,25 @@
-## What changed
+## Summary
 
-Describe the user-visible outcome.
+<!-- What changed and why, in 1-3 bullets. Link any issue (`Closes #...`). -->
 
-## Why
+## Scope & Impact
 
-Explain the problem or need this change addresses.
+- **Changed areas**: <!-- e.g. `packages/engine-core`, `apps/cli`, `docs/` -->
+- **External contracts / compiled outputs**: <!-- Unchanged (`quality:products` ok) / Changed (explain why resealed) -->
+- **Breaking change**: <!-- None / Yes (`!` in title + `BREAKING CHANGE:` in body) -->
+- **Rollback**: <!-- Safe to revert squash commit / Notes if migration or reseal needed -->
 
-## Checks
+## Verification
 
-- [ ] Relevant focused tests
-- [ ] `npm test`
-- [ ] Relevant build command
+- [ ] `npm run quality:check` (format, typecheck, manifest, commits, architecture, complexity)
+- [ ] `npm run quality:products` (example output bytes unchanged, or reseal explained above)
+- [ ] `npm run quality` (complete release gate before ready-for-review)
 
-## Review
+<!-- Paste focused commands or key verification output here. -->
 
-- [ ] Project state still has one mutation authority.
-- [ ] Stateful success, cancellation, invalid input, and failure paths terminate cleanly.
-- [ ] User-facing behavior and documentation agree.
-- [ ] No generated output, local project data, or secrets are included.
+## Review Checklist
+
+- [ ] Single mutation authority preserved; no derived write path or compatibility shim introduced.
+- [ ] Stateful paths (success, cancellation, stale revision, invalid input, exception) terminate cleanly.
+- [ ] User-visible behavior, CLI contracts, and docs/translations stay aligned.
+- [ ] No generated output (`dist/`, local `.ashfox/`), unrelated work, or secrets included.

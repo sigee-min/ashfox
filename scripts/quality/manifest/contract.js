@@ -1,8 +1,8 @@
 'use strict';
 
-const DEVELOPMENT_MANIFEST_FILENAME = 'development-manifest.json';
-const DEVELOPMENT_MANIFEST_SCHEMA_FILENAME = 'development-manifest.schema.json';
-const DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE = `./${DEVELOPMENT_MANIFEST_SCHEMA_FILENAME}`;
+const DEVELOPMENT_MANIFEST_FILENAME = 'config/development-manifest.json';
+const DEVELOPMENT_MANIFEST_SCHEMA_FILENAME = 'config/development-manifest.schema.json';
+const DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE = './development-manifest.schema.json';
 const DEVELOPMENT_MANIFEST_SCHEMA_VERSION = 1;
 
 const frozen = (values) => Object.freeze(values);

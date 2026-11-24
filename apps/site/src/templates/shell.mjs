@@ -18,7 +18,7 @@ const structuredDataScript = (value) =>
     : '';
 
 export const githubUrl = 'https://github.com/sigee-min/ashfox';
-export const contributeUrl = `${githubUrl}/blob/main/CONTRIBUTING.md`;
+export const contributeUrl = `${githubUrl}/blob/main/.github/CONTRIBUTING.md`;
 
 const brandMark = `
   <span class="brand-mark" aria-hidden="true">

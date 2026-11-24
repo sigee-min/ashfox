@@ -1,6 +1,6 @@
 'use strict';
 
-// Derived configuration: the style authority is development-manifest.json.
+// Derived configuration: the style authority is config/development-manifest.json.
 const { engineering } = require('./development-manifest.json');
 
 const { style } = engineering;
