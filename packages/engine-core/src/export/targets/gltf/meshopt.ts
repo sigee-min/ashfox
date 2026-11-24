@@ -82,6 +82,73 @@ const increment = (counts: Map<number, number>, key: number): void => {
   counts.set(key, (counts.get(key) ?? 0) + 1);
 };
 
+const isValidReorderLayout = (
+  primitive: NonNullable<GltfDocument['meshes']>[number]['primitives'][number],
+  position: GltfAccessor,
+  index: GltfAccessor,
+  vertexView: GltfBufferView | undefined,
+  indexView: GltfBufferView | undefined,
+  accessors: readonly GltfAccessor[],
+  stride: number,
+): boolean => {
+  const indexSize = index.componentType === 5125 ? 4 : 2;
+  if (
+    !vertexView ||
+    !indexView ||
+    vertexView.buffer !== 0 ||
+    indexView.buffer !== 0 ||
+    vertexView.target !== 34962 ||
+    indexView.target !== 34963
+  ) {
+    return false;
+  }
+  if (
+    !Number.isSafeInteger(stride) ||
+    stride <= 0 ||
+    vertexView.byteLength !== position.count * stride ||
+    (index.byteOffset ?? 0) !== 0 ||
+    indexView.byteLength !== index.count * indexSize
+  ) {
+    return false;
+  }
+  return Object.values(primitive.attributes).every((accessorIndex) => {
+    const accessor = accessors[accessorIndex];
+    return (
+      accessor !== undefined &&
+      accessor.bufferView === position.bufferView &&
+      accessor.count === position.count
+    );
+  });
+};
+
+const primitiveReorderCandidate = (
+  primitive: NonNullable<GltfDocument['meshes']>[number]['primitives'][number],
+  accessors: readonly GltfAccessor[],
+  views: readonly GltfBufferView[],
+): ReorderCandidate | null => {
+  if (primitive.mode !== 4 || primitive.indices === undefined) return null;
+  const position = accessors[primitive.attributes.POSITION];
+  const index = accessors[primitive.indices];
+  if (!position || !index || (index.componentType !== 5123 && index.componentType !== 5125)) {
+    return null;
+  }
+  const vertexView = views[position.bufferView];
+  const indexView = views[index.bufferView];
+  const stride =
+    vertexView?.byteStride ?? (vertexView ? vertexView.byteLength / position.count : 0);
+  if (!isValidReorderLayout(primitive, position, index, vertexView, indexView, accessors, stride)) {
+    return null;
+  }
+  return {
+    vertexView: position.bufferView,
+    indexView: index.bufferView,
+    vertexCount: position.count,
+    vertexStride: stride,
+    indexCount: index.count,
+    indexComponentType: index.componentType,
+  };
+};
+
 const reorderCandidates = (document: GltfDocument): ReorderCandidate[] => {
   const accessors = document.accessors;
   const views = document.bufferViews;
@@ -91,51 +158,11 @@ const reorderCandidates = (document: GltfDocument): ReorderCandidate[] => {
   const indexUses = new Map<number, number>();
   for (const mesh of document.meshes ?? []) {
     for (const primitive of mesh.primitives) {
-      if (primitive.mode !== 4 || primitive.indices === undefined) continue;
-      const position = accessors[primitive.attributes.POSITION];
-      const index = accessors[primitive.indices];
-      if (!position || !index || (index.componentType !== 5123 && index.componentType !== 5125)) {
-        continue;
-      }
-      const vertexView = views[position.bufferView];
-      const indexView = views[index.bufferView];
-      const attributes = Object.values(primitive.attributes).map(
-        (accessorIndex) => accessors[accessorIndex],
-      );
-      const stride =
-        vertexView?.byteStride ?? (vertexView ? vertexView.byteLength / position.count : 0);
-      const indexSize = index.componentType === 5125 ? 4 : 2;
-      if (
-        !vertexView ||
-        !indexView ||
-        vertexView.buffer !== 0 ||
-        indexView.buffer !== 0 ||
-        vertexView.target !== 34962 ||
-        indexView.target !== 34963 ||
-        !Number.isSafeInteger(stride) ||
-        stride <= 0 ||
-        vertexView.byteLength !== position.count * stride ||
-        (index.byteOffset ?? 0) !== 0 ||
-        indexView.byteLength !== index.count * indexSize ||
-        attributes.some(
-          (accessor) =>
-            !accessor ||
-            accessor.bufferView !== position.bufferView ||
-            accessor.count !== position.count,
-        )
-      ) {
-        continue;
-      }
-      candidates.push({
-        vertexView: position.bufferView,
-        indexView: index.bufferView,
-        vertexCount: position.count,
-        vertexStride: stride,
-        indexCount: index.count,
-        indexComponentType: index.componentType,
-      });
-      increment(vertexUses, position.bufferView);
-      increment(indexUses, index.bufferView);
+      const candidate = primitiveReorderCandidate(primitive, accessors, views);
+      if (!candidate) continue;
+      candidates.push(candidate);
+      increment(vertexUses, candidate.vertexView);
+      increment(indexUses, candidate.indexView);
     }
   }
   return candidates.filter(
@@ -211,29 +238,26 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
   return binary ? { ...compiled, binary } : compiled;
 };
 
-const layoutForBufferView = (
+const indexViewLayout = (
   view: GltfBufferView,
   accessors: readonly [number, GltfAccessor][],
   triangles: ReadonlySet<number>,
+  count: number,
 ): BufferViewLayout | null => {
-  if (view.buffer !== 0 || view.byteLength === 0 || accessors.length === 0) {
-    return null;
-  }
-  const counts = new Set(accessors.map(([, accessor]) => accessor.count));
-  if (counts.size !== 1) return null;
-  const count = accessors[0][1].count;
-  if (count === 0) return null;
+  if (accessors.length !== 1) return null;
+  const [accessorIndex, accessor] = accessors[0];
+  const stride = componentByteSize(accessor);
+  const mode = triangles.has(accessorIndex) ? 'TRIANGLES' : 'INDICES';
+  return view.byteLength === count * stride && (mode !== 'TRIANGLES' || count % 3 === 0)
+    ? { count, stride, mode }
+    : null;
+};
 
-  if (view.target === 34963) {
-    if (accessors.length !== 1) return null;
-    const [accessorIndex, accessor] = accessors[0];
-    const stride = componentByteSize(accessor);
-    const mode = triangles.has(accessorIndex) ? 'TRIANGLES' : 'INDICES';
-    return view.byteLength === count * stride && (mode !== 'TRIANGLES' || count % 3 === 0)
-      ? { count, stride, mode }
-      : null;
-  }
-
+const attributeViewLayout = (
+  view: GltfBufferView,
+  accessors: readonly [number, GltfAccessor][],
+  count: number,
+): BufferViewLayout | null => {
   const stride = view.byteStride ?? view.byteLength / count;
   if (
     !Number.isSafeInteger(stride) ||
@@ -249,6 +273,24 @@ const layoutForBufferView = (
       (accessor.byteOffset ?? 0) + componentByteSize(accessor) * componentCount(accessor) <= stride,
   );
   return fits ? { count, stride, mode: 'ATTRIBUTES' } : null;
+};
+
+const layoutForBufferView = (
+  view: GltfBufferView,
+  accessors: readonly [number, GltfAccessor][],
+  triangles: ReadonlySet<number>,
+): BufferViewLayout | null => {
+  if (view.buffer !== 0 || view.byteLength === 0 || accessors.length === 0) {
+    return null;
+  }
+  const counts = new Set(accessors.map(([, accessor]) => accessor.count));
+  if (counts.size !== 1) return null;
+  const count = accessors[0][1].count;
+  if (count === 0) return null;
+
+  return view.target === 34963
+    ? indexViewLayout(view, accessors, triangles, count)
+    : attributeViewLayout(view, accessors, count);
 };
 
 class AlignedByteWriter {

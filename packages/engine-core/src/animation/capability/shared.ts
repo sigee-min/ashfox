@@ -13,6 +13,9 @@ import type {
   AnimationExportTarget,
 } from './types';
 
+export const sortedById = <T extends { readonly id: string }>(values: readonly T[]): readonly T[] =>
+  [...values].sort((left, right) => left.id.localeCompare(right.id));
+
 export const isNumericAnimationScalar = (value: AnimationScalar): boolean =>
   typeof value === 'number' && Number.isFinite(value);
 

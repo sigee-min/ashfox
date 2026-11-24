@@ -49,10 +49,10 @@ const copyExactBytes = (value: unknown): Uint8Array | null => {
 export const orderedTextures = (document: ProjectDocument): TextureAsset[] =>
   Object.values(document.textures).sort((left, right) => left.id.localeCompare(right.id));
 
-export const validateResolvedTexture = (
+const readResolvedDescriptors = (
   texture: TextureAsset,
   resolved: ResolvedBlob,
-): ResolvedBlob => {
+): { bytesDescriptor: PropertyDescriptor; typeDescriptor: PropertyDescriptor } => {
   if (
     typeof resolved !== 'object' ||
     resolved === null ||
@@ -85,22 +85,22 @@ export const validateResolvedTexture = (
       `Resolved texture "${texture.id}" did not provide Uint8Array bytes.`,
     );
   }
-  const bytes = copyExactBytes(bytesDescriptor.value);
-  if (bytes === null)
-    throw new BlobResolutionError(
-      'blob.invalid_bytes',
-      texture.id,
-      texture.source,
-      `Resolved texture "${texture.id}" did not provide exact dense bytes.`,
-    );
-  const contentType = typeDescriptor.value;
-  if (typeof contentType !== 'string')
+  return { bytesDescriptor, typeDescriptor };
+};
+
+const assertResolvedMetadata = (
+  texture: TextureAsset,
+  bytes: Uint8Array,
+  contentType: unknown,
+): string => {
+  if (typeof contentType !== 'string') {
     throw new BlobResolutionError(
       'blob.content_type_mismatch',
       texture.id,
       texture.source,
       `Resolved texture "${texture.id}" content type must be a primitive string.`,
     );
+  }
   if (contentType !== texture.source.contentType) {
     throw new BlobResolutionError(
       'blob.content_type_mismatch',
@@ -128,7 +128,25 @@ export const validateResolvedTexture = (
       `Resolved texture "${texture.id}" does not match its SHA-256 authority.`,
     );
   }
-  return Object.freeze({ bytes, contentType: contentType as string });
+  return contentType;
+};
+
+export const validateResolvedTexture = (
+  texture: TextureAsset,
+  resolved: ResolvedBlob,
+): ResolvedBlob => {
+  const { bytesDescriptor, typeDescriptor } = readResolvedDescriptors(texture, resolved);
+  const bytes = copyExactBytes(bytesDescriptor.value);
+  if (bytes === null) {
+    throw new BlobResolutionError(
+      'blob.invalid_bytes',
+      texture.id,
+      texture.source,
+      `Resolved texture "${texture.id}" did not provide exact dense bytes.`,
+    );
+  }
+  const contentType = assertResolvedMetadata(texture, bytes, typeDescriptor.value);
+  return Object.freeze({ bytes, contentType });
 };
 
 export const requireResolvedTexture = (
