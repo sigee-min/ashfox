@@ -1,18 +1,13 @@
 import type { ProgramTextureChart } from '../../../../project/program/syntax/contract';
-import type { SourceSpan } from '../../../../project/source/contract';
 import type { TextureAlphaMask, TextureCanvasDetail } from '../../../../model/texture';
-import type { AssetTextureChartPlan, AssetTextureIssue } from './contract';
+import type { PreparedChart } from './chart';
+import type { AssetTextureChartPlan } from './contract';
+import { readInteger, type TextureExpressionContext } from './expressions';
+import { applyGrain, applyVoxelTone } from './grain';
+import { readRole } from './palette';
+import { applyPatternStatement } from './pattern';
+import type { PreparedTexture } from './prepare';
 import {
-  properties,
-  readInteger,
-  readRole,
-  readTexelVector,
-  type TextureExpressionContext,
-} from './expressions';
-import {
-  applyGrain,
-  applyPattern,
-  applyVoxelTone,
   createPaintGrid,
   detailBudgetAllows,
   fill,
@@ -22,21 +17,161 @@ import {
   type PaintGrid,
   type TextureRegion,
 } from './raster';
-import {
-  propertyIssue,
-  type PreparedChart,
-  type PreparedTexture,
-  type TextureReporter,
-} from './prepare';
+import { propertyIssue, type TextureReporter } from './report';
 import { stampUse } from './stamp';
 
-const issueFrom =
-  (report: TextureReporter): AssetTextureIssue =>
-  (_path, span, code, message): void =>
-    report.report(span, code, message);
+type ChartStatement = ProgramTextureChart['statements'][number];
+type FaceStatement = Extract<ChartStatement, { kind: 'face' }>;
+type StampStatement = Extract<ChartStatement, { kind: 'stamp' }>;
+
+const reportScopePropertyIssue = (statement: ChartStatement, report: TextureReporter): void => {
+  if (statement.kind === 'coverage') {
+    report.report(
+      statement.span,
+      'asset.texture.invalid-face',
+      'Coverage belongs only to chart scope.',
+    );
+  } else {
+    report.report(
+      statement.span,
+      'asset.texture.invalid-face',
+      'Face scopes may not contain chart properties.',
+    );
+  }
+};
+
+const applyStampStatement = (
+  statement: StampStatement,
+  chart: ProgramTextureChart,
+  regions: readonly TextureRegion[],
+  prepared: PreparedTexture,
+  context: TextureExpressionContext,
+  grid: PaintGrid,
+  report: TextureReporter,
+  root: boolean,
+): boolean => {
+  if (chart.layout === 'box' && root) {
+    report.report(
+      statement.span,
+      'asset.texture.invalid-scope',
+      'Box stamp placement must belong to a face scope.',
+    );
+    return false;
+  }
+  const region = regions[0];
+  if (region === undefined) return false;
+  stampUse(statement, region, prepared.stamps, context, prepared.palette, grid, report);
+  return true;
+};
+
+const applyFaceStatement = (
+  statement: FaceStatement,
+  chart: ProgramTextureChart,
+  regions: readonly TextureRegion[],
+  prepared: PreparedTexture,
+  context: TextureExpressionContext,
+  grid: PaintGrid,
+  report: TextureReporter,
+  root: boolean,
+  faceSeen: Set<string>,
+): boolean => {
+  if (chart.layout !== 'box' || !root) {
+    report.report(
+      statement.span,
+      'asset.texture.invalid-scope',
+      'Face scopes are only valid inside box charts.',
+    );
+    return false;
+  }
+  if (faceSeen.has(statement.direction)) {
+    report.report(
+      statement.span,
+      'asset.texture.duplicate-face',
+      'A box chart may declare each face scope only once.',
+    );
+    return false;
+  }
+  faceSeen.add(statement.direction);
+  const region = regions.find((candidate) => candidate.direction === statement.direction);
+  if (region === undefined) {
+    report.report(
+      statement.span,
+      'asset.texture.invalid-scope',
+      'Box face has no geometry-owned region.',
+    );
+    return false;
+  }
+  return chartStatements(
+    statement.statements,
+    chart,
+    [region],
+    prepared,
+    context,
+    grid,
+    report,
+    false,
+  );
+};
+
+interface ChartStatementState {
+  stampSeen: boolean;
+  readonly faceSeen: Set<string>;
+}
+
+const applyChartStatement = (
+  statement: ChartStatement,
+  state: ChartStatementState,
+  chart: ProgramTextureChart,
+  regions: readonly TextureRegion[],
+  prepared: PreparedTexture,
+  context: TextureExpressionContext,
+  grid: PaintGrid,
+  report: TextureReporter,
+  root: boolean,
+): boolean => {
+  if (statement.kind === 'property' || statement.kind === 'coverage') {
+    if (root) return true;
+    reportScopePropertyIssue(statement, report);
+    return false;
+  }
+  if (statement.kind === 'pattern') {
+    return applyPatternStatement(
+      statement,
+      state.stampSeen,
+      regions,
+      prepared,
+      context,
+      grid,
+      report,
+    );
+  }
+  if (statement.kind === 'stamp') {
+    state.stampSeen = true;
+    return applyStampStatement(statement, chart, regions, prepared, context, grid, report, root);
+  }
+  if (statement.kind === 'face') {
+    return applyFaceStatement(
+      statement,
+      chart,
+      regions,
+      prepared,
+      context,
+      grid,
+      report,
+      root,
+      state.faceSeen,
+    );
+  }
+  report.report(
+    chart.span,
+    'asset.texture.invalid-statement',
+    'Texture chart statement is malformed.',
+  );
+  return false;
+};
 
 const chartStatements = (
-  statements: readonly ProgramTextureChart['statements'][number][],
+  statements: readonly ChartStatement[],
   chart: ProgramTextureChart,
   regions: readonly TextureRegion[],
   prepared: PreparedTexture,
@@ -46,270 +181,22 @@ const chartStatements = (
   root: boolean,
 ): boolean => {
   let valid = true;
-  let stampSeen = false;
-  const faceSeen = new Set<string>();
+  const state: ChartStatementState = { stampSeen: false, faceSeen: new Set<string>() };
   for (const statement of statements) {
-    if (statement.kind === 'property' || statement.kind === 'coverage') {
-      if (statement.kind === 'coverage' && !root) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-face',
-          'Coverage belongs only to chart scope.',
-        );
-        valid = false;
-      } else if (statement.kind === 'property' && !root) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-face',
-          'Face scopes may not contain chart properties.',
-        );
-        valid = false;
-      }
-      continue;
+    if (
+      !applyChartStatement(statement, state, chart, regions, prepared, context, grid, report, root)
+    ) {
+      valid = false;
     }
-    if (statement.kind === 'pattern') {
-      if (stampSeen) {
-        report.report(
-          statement.span,
-          'asset.texture.order',
-          'Blotch patterns must precede stamp placement.',
-        );
-        valid = false;
-        continue;
-      }
-      const entries = properties(
-        statement.properties,
-        ['paint', 'scale', 'density', 'phase'],
-        statement.span,
-        report.path,
-        propertyIssue(report),
-      );
-      if (entries === null) {
-        valid = false;
-        continue;
-      }
-      const paint = entries.get('paint');
-      const scale = entries.get('scale');
-      const density = entries.get('density');
-      const phase = entries.get('phase');
-      if (
-        paint === undefined ||
-        scale === undefined ||
-        density === undefined ||
-        phase === undefined
-      ) {
-        report.report(
-          statement.span,
-          'asset.texture.missing-property',
-          'Blotch pattern is incomplete.',
-        );
-        valid = false;
-        continue;
-      }
-      const selected = readRole(
-        paint.value,
-        prepared.palette,
-        true,
-        report.path,
-        propertyIssue(report),
-        paint.span,
-      );
-      const scaleValue = readTexelScale(scale.value, context, report, scale.span);
-      const densityValue = readRatioValue(density.value, context, report, density.span);
-      const phaseValue = readInteger(
-        phase.value,
-        context,
-        'plain',
-        report.path,
-        propertyIssue(report),
-        phase.span,
-      );
-      if (
-        selected === null ||
-        scaleValue === null ||
-        densityValue === null ||
-        phaseValue === null
-      ) {
-        valid = false;
-        continue;
-      }
-      if (
-        scaleValue.some((value) => value < 1 || value > 128) ||
-        phaseValue < 0n ||
-        phaseValue > 0xffffffffn ||
-        densityValue.numerator < 0n ||
-        densityValue.numerator > densityValue.denominator
-      ) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-pattern',
-          'Blotch settings are outside their closed bounds.',
-        );
-        valid = false;
-        continue;
-      }
-      const ok = applyPattern(
-        grid,
-        regions,
-        {
-          paint: selected.name,
-          scale: scaleValue,
-          density: densityValue,
-          phase: Number(phaseValue),
-        },
-        issueFrom(report),
-        report.path,
-        statement.span,
-      );
-      if (!ok) valid = false;
-      continue;
-    }
-    if (statement.kind === 'stamp') {
-      stampSeen = true;
-      if (chart.layout === 'box' && root) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-scope',
-          'Box stamp placement must belong to a face scope.',
-        );
-        valid = false;
-      } else {
-        const region = regions[0];
-        if (region === undefined) valid = false;
-        else stampUse(statement, region, prepared.stamps, context, prepared.palette, grid, report);
-      }
-      continue;
-    }
-    if (statement.kind === 'face') {
-      if (chart.layout !== 'box' || !root) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-scope',
-          'Face scopes are only valid inside box charts.',
-        );
-        valid = false;
-        continue;
-      }
-      if (faceSeen.has(statement.direction)) {
-        report.report(
-          statement.span,
-          'asset.texture.duplicate-face',
-          'A box chart may declare each face scope only once.',
-        );
-        valid = false;
-        continue;
-      }
-      faceSeen.add(statement.direction);
-      const region = regions.find((candidate) => candidate.direction === statement.direction);
-      if (region === undefined) {
-        report.report(
-          statement.span,
-          'asset.texture.invalid-scope',
-          'Box face has no geometry-owned region.',
-        );
-        valid = false;
-        continue;
-      }
-      if (
-        !chartStatements(
-          statement.statements,
-          chart,
-          [region],
-          prepared,
-          context,
-          grid,
-          report,
-          false,
-        )
-      )
-        valid = false;
-      continue;
-    }
-    report.report(
-      chart.span,
-      'asset.texture.invalid-statement',
-      'Texture chart statement is malformed.',
-    );
-    valid = false;
   }
   return valid;
 };
 
-const readTexelScale = (
-  expression: Parameters<typeof readTexelVector>[0],
-  context: TextureExpressionContext,
-  report: TextureReporter,
-  fallback: SourceSpan,
-): readonly [number, number, number] | null => {
-  if (
-    expression.kind !== 'vector' ||
-    !Array.isArray(expression.values) ||
-    expression.values.length !== 3
-  ) {
-    report.report(
-      expression.span ?? fallback,
-      'asset.texture.invalid-vector',
-      'Pattern scale requires three texel scalars.',
-    );
-    return null;
-  }
-  const result: number[] = [];
-  for (const entry of expression.values) {
-    const value = context.evaluate(entry, 'texel');
-    if (
-      value?.kind !== 'number' ||
-      value.value.unit !== 'texel' ||
-      value.value.denominator !== 1n
-    ) {
-      report.report(
-        entry.span,
-        'asset.texture.invalid-vector',
-        'Pattern scale requires integral texel scalars.',
-      );
-      return null;
-    }
-    const converted = Number(value.value.numerator);
-    if (!Number.isSafeInteger(converted)) {
-      report.report(
-        entry.span,
-        'asset.texture.invalid-vector',
-        'Pattern scale exceeds the safe texel range.',
-      );
-      return null;
-    }
-    result.push(converted);
-  }
-  return [result[0]!, result[1]!, result[2]!] as const;
-};
-
-const readRatioValue = (
-  expression: Parameters<typeof readTexelVector>[0],
-  context: TextureExpressionContext,
-  report: TextureReporter,
-  fallback: SourceSpan,
-): Readonly<{ readonly numerator: bigint; readonly denominator: bigint }> | null => {
-  const value = context.evaluate(expression, 'ratio');
-  if (value?.kind !== 'number' || value.value.unit !== 'ratio' || value.value.denominator <= 0n) {
-    report.report(
-      expression.span ?? fallback,
-      'asset.texture.invalid-ratio',
-      'Pattern density requires a ratio.',
-    );
-    return null;
-  }
-  return { numerator: value.value.numerator, denominator: value.value.denominator };
-};
-
-const applyChart = (
+const fillChartBase = (
   chart: PreparedChart,
   prepared: PreparedTexture,
-  context: TextureExpressionContext,
-  owner: string,
   report: TextureReporter,
-): Readonly<{
-  readonly details: readonly TextureCanvasDetail[];
-  readonly mask: TextureAlphaMask | null;
-}> | null => {
+): PaintGrid | null => {
   const grid = createPaintGrid(chart.abiWidth, chart.abiHeight, prepared.palette);
   const fillEntry = chart.chart.statements.find(
     (entry) => entry.kind === 'property' && entry.name === 'fill',
@@ -326,29 +213,24 @@ const applyChart = (
   const selectedId = selected === null ? null : roleId(grid, selected.name);
   if (selectedId === null) return null;
   fill(grid, 0, 0, chart.abiWidth, chart.abiHeight, selectedId, 2);
-  if (
-    !chartStatements(
-      chart.chart.statements,
-      chart.chart,
-      chart.regions,
-      prepared,
-      context,
-      grid,
-      report,
-      true,
-    )
-  )
-    return null;
-  if (report.bad) return null;
-  if (chart.coverage !== null)
-    for (let index = 0; index < chart.coverage.length; index += 1) {
-      if (chart.coverage[index] === '0') {
-        grid.fixed[index] = 1;
-        grid.values[index] = 0;
-        grid.tones[index] = 0;
-      }
+  return grid;
+};
+
+const applyChartCoverage = (grid: PaintGrid, coverage: string): void => {
+  for (let index = 0; index < coverage.length; index += 1) {
+    if (coverage[index] === '0') {
+      grid.fixed[index] = 1;
+      grid.values[index] = 0;
+      grid.tones[index] = 0;
     }
-  if (prepared.tone) applyVoxelTone(grid, chart.regions);
+  }
+};
+
+const readGrainSeed = (
+  prepared: PreparedTexture,
+  context: TextureExpressionContext,
+  report: TextureReporter,
+): number | null => {
   const seed =
     prepared.grain.seed === null
       ? 0n
@@ -368,18 +250,49 @@ const applyChart = (
     );
     return null;
   }
+  return Number(seed);
+};
+
+const applyChart = (
+  chart: PreparedChart,
+  prepared: PreparedTexture,
+  context: TextureExpressionContext,
+  owner: string,
+  report: TextureReporter,
+): Readonly<{
+  readonly details: readonly TextureCanvasDetail[];
+  readonly mask: TextureAlphaMask | null;
+}> | null => {
+  const grid = fillChartBase(chart, prepared, report);
+  if (grid === null) return null;
+  const composed = chartStatements(
+    chart.chart.statements,
+    chart.chart,
+    chart.regions,
+    prepared,
+    context,
+    grid,
+    report,
+    true,
+  );
+  if (!composed || report.bad) return null;
+  if (chart.coverage !== null) applyChartCoverage(grid, chart.coverage);
+  if (prepared.tone) applyVoxelTone(grid, chart.regions);
+  const seed = readGrainSeed(prepared, context, report);
+  if (seed === null) return null;
   if (
     !applyGrain(
       grid,
       chart.regions,
-      Number(seed),
+      seed,
       owner,
       report.path,
       prepared.grain.span,
       propertyIssue(report),
     )
-  )
+  ) {
     return null;
+  }
   const details = gridDetails(
     grid,
     owner,
@@ -397,6 +310,7 @@ const applyChart = (
   return Object.freeze({ details, mask });
 };
 
+/** Compose all prepared charts into canonical canvas details and alpha masks. */
 export const composeTextureCharts = (
   prepared: PreparedTexture,
   context: TextureExpressionContext,

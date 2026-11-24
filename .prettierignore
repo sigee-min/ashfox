@@ -9,11 +9,5 @@ scripts/release/project/
 
 # Format-pending: formatting exceeds architecture size limits until the
 # engine-core sweep splits these owners. Remove entries as they are split.
-packages/engine-core/src/compiler/directory/compile.ts
-packages/engine-core/src/compiler/program/asset/texture/expressions.ts
-packages/engine-core/src/compiler/program/asset/texture/prepare.ts
-packages/engine-core/src/compiler/program/asset/texture/raster.ts
 packages/engine-core/src/validation/document/scene.ts
-packages/engine-core/tests/program/asset/texture.test.ts
-packages/engine-core/tests/program/asset/texturebinding.test.ts
 packages/render-core/src/observation/browser.ts

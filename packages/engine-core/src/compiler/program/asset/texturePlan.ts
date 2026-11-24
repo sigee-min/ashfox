@@ -4,17 +4,18 @@ import type { TextureRaster } from '../../../model/texture';
 import { sha256Digest } from '../../../provenance/digest';
 import { canonicalPngDigest, encodeCanonicalPng } from '../../../textures/textureRecipe/png';
 import { rasterizeCanonicalTexture } from '../../../textures/textureRecipe/raster';
+import type { SourceSpan } from '../../../project/source/contract';
 import type { TypedSurface, TypedSurfaceContract } from './contract';
-import type { AssetTextureIssue, AssetTexturePlan, AssetTextureUsage } from './texture/contract';
 import { composeTextureCharts } from './texture/compose';
+import type { AssetTextureIssue, AssetTexturePlan, AssetTextureUsage } from './texture/contract';
+import { prepareTexture, type PreparedTexture } from './texture/prepare';
 import {
   createTextureReporter,
   expressionContextFor,
   integerContract,
-  prepareTexture,
   surfacePayload,
   type TextureReporter,
-} from './texture/prepare';
+} from './texture/report';
 
 const textureIdFor = (key: string, name: string): string => {
   const digest = sha256Digest(key).slice(7, 19);
@@ -76,6 +77,112 @@ const validateUsages = (
   return valid;
 };
 
+const validateSurfaceBinding = (
+  surface: TypedSurface,
+  contract: TypedSurfaceContract,
+  owner: SourceSpan,
+  report: TextureReporter,
+): boolean => {
+  if (
+    surface === null ||
+    typeof surface !== 'object' ||
+    contract === null ||
+    typeof contract !== 'object' ||
+    surface.contract.key !== contract.symbol.key
+  ) {
+    report.report(
+      owner,
+      'asset.texture.contract-mismatch',
+      'Texture surface and contract identities must match.',
+    );
+    return false;
+  }
+  if (surface.material !== contract.material) {
+    report.report(
+      surface.span,
+      'asset.texture.material-mismatch',
+      'Texture surface material must match its surface contract.',
+    );
+    return false;
+  }
+  return true;
+};
+
+const buildTextureAsset = (
+  surface: TypedSurface,
+  textureId: string,
+  width: number,
+  height: number,
+  prepared: PreparedTexture,
+  composed: NonNullable<ReturnType<typeof composeTextureCharts>>,
+): TextureAsset => {
+  const rasterSpec: TextureRaster = freeze({
+    background: prepared.background,
+    backgroundAlpha: prepared.backgroundAlpha,
+    canvasDetails: composed.details,
+    alphaMasks: composed.masks,
+  });
+  const raster = rasterizeCanonicalTexture(width, height, {
+    background: rasterSpec.background,
+    backgroundAlpha: rasterSpec.backgroundAlpha,
+    canvasDetails: rasterSpec.canvasDetails,
+    alphaMasks: rasterSpec.alphaMasks ?? [],
+  });
+  const encoded = encodeCanonicalPng(raster);
+  const pngHash = canonicalPngDigest(encoded);
+  return freeze({
+    id: textureId as AssetId,
+    name: surface.symbol.name,
+    width,
+    height,
+    source: freeze({
+      bucket: 'inline',
+      key: textureId + '.png',
+      contentType: 'image/png',
+      contentHash: pngHash,
+      byteLength: encoded.length,
+    }),
+    visible: true,
+    sampling: 'nearest',
+    colorSpace: 'srgb',
+    renderMode: 'default',
+    renderSides: surface.material === 'double' ? 'double' : 'auto',
+    atlasMode: 'preserve',
+    raster: rasterSpec,
+  });
+};
+
+const compileSurfacePlan = (
+  surface: TypedSurface,
+  contract: TypedSurfaceContract,
+  usages: readonly AssetTextureUsage[],
+  path: string,
+  owner: SourceSpan,
+  report: TextureReporter,
+): AssetTexturePlan | null => {
+  if (!validateSurfaceBinding(surface, contract, owner, report)) return null;
+  if (!Array.isArray(usages) || !validateUsages(usages, contract, report)) return null;
+  const payload = surfacePayload(surface, report);
+  if (payload === null) return null;
+  const context = expressionContextFor(surface, contract, path, report);
+  if (context === null) return null;
+  const prepared = prepareTexture(payload, context, contract, usages, report);
+  if (prepared === null) return null;
+  const textureId = textureIdFor(surface.symbol.key, surface.symbol.name);
+  const composed = composeTextureCharts(prepared, context, textureId, report);
+  if (composed === null) return null;
+  const width = integerContract(contract.atlas.width, report, contract.atlas.span, 'Atlas width');
+  const height = integerContract(
+    contract.atlas.height,
+    report,
+    contract.atlas.span,
+    'Atlas height',
+  );
+  if (width === null || height === null || report.bad) return null;
+  const texture = buildTextureAsset(surface, textureId, width, height, prepared, composed);
+  return freeze({ surfaceSymbol: symbolCopy(surface), texture, charts: composed.charts });
+};
+
 /** Materialize one surface after exact geometry usage dimensions are known. */
 export const materializeAssetTexturePlan = (
   surface: TypedSurface,
@@ -87,90 +194,16 @@ export const materializeAssetTexturePlan = (
   const owner = surface?.span ?? contract?.span;
   const report = createTextureReporter(path, owner, issue);
   try {
-    if (
-      surface === null ||
-      typeof surface !== 'object' ||
-      contract === null ||
-      typeof contract !== 'object' ||
-      surface.contract.key !== contract.symbol.key
-    ) {
-      report.report(
-        owner,
-        'asset.texture.contract-mismatch',
-        'Texture surface and contract identities must match.',
-      );
-      return null;
-    }
-    if (surface.material !== contract.material) {
-      report.report(
-        surface.span,
-        'asset.texture.material-mismatch',
-        'Texture surface material must match its surface contract.',
-      );
-      return null;
-    }
-    if (!Array.isArray(usages) || !validateUsages(usages, contract, report)) return null;
-    const payload = surfacePayload(surface, report);
-    if (payload === null) return null;
-    const context = expressionContextFor(surface, contract, path, report);
-    if (context === null) return null;
-    const prepared = prepareTexture(payload, context, contract, usages, report);
-    if (prepared === null) return null;
-    const textureId = textureIdFor(surface.symbol.key, surface.symbol.name);
-    const composed = composeTextureCharts(prepared, context, textureId, report);
-    if (composed === null) return null;
-    const width = integerContract(contract.atlas.width, report, contract.atlas.span, 'Atlas width');
-    const height = integerContract(
-      contract.atlas.height,
-      report,
-      contract.atlas.span,
-      'Atlas height',
-    );
-    if (width === null || height === null) return null;
-    const rasterSpec: TextureRaster = freeze({
-      background: prepared.background,
-      backgroundAlpha: prepared.backgroundAlpha,
-      canvasDetails: composed.details,
-      alphaMasks: composed.masks,
-    });
-    const raster = rasterizeCanonicalTexture(width, height, {
-      background: rasterSpec.background,
-      backgroundAlpha: rasterSpec.backgroundAlpha,
-      canvasDetails: rasterSpec.canvasDetails,
-      alphaMasks: rasterSpec.alphaMasks ?? [],
-    });
-    const encoded = encodeCanonicalPng(raster);
-    const pngHash = canonicalPngDigest(encoded);
-    const texture: TextureAsset = freeze({
-      id: textureId as AssetId,
-      name: surface.symbol.name,
-      width,
-      height,
-      source: freeze({
-        bucket: 'inline',
-        key: textureId + '.png',
-        contentType: 'image/png',
-        contentHash: pngHash,
-        byteLength: encoded.length,
-      }),
-      visible: true,
-      sampling: 'nearest',
-      colorSpace: 'srgb',
-      renderMode: 'default',
-      renderSides: surface.material === 'double' ? 'double' : 'auto',
-      atlasMode: 'preserve',
-      raster: rasterSpec,
-    });
-    if (report.bad) return null;
-    return freeze({ surfaceSymbol: symbolCopy(surface), texture, charts: composed.charts });
+    return compileSurfacePlan(surface, contract, usages, path, owner, report);
   } catch (error) {
     if (report.sinkFailed) throw error;
-    if (!report.bad)
+    if (!report.bad) {
       report.report(
         owner,
         'asset.texture.invalid',
         'Texture payload is malformed or exceeds the bounded materialization budget.',
       );
+    }
     return null;
   }
 };
