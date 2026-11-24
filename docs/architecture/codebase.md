@@ -183,7 +183,9 @@ and private child bones retain their local shape and attachment.
 
 ## Verification boundary
 
-`npm run quality:architecture` enforces dependency and owner boundaries.
+`npm run quality:architecture` enforces dependency and owner boundaries and the
+function complexity ratchet. `npm run quality:products` proves that compiled
+example outputs are byte-identical to their sealed digests.
 `npm run quality:manifest` verifies repository policy. Workspace tests prove
 closed paths, package/lock consistency, atomic changes, closure identity, and
 bounded graphs. Asset compiler tests prove nominal typing, exact frames,

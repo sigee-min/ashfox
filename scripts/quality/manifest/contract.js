@@ -91,8 +91,16 @@ const MANIFEST_KEYS = Object.freeze({
     'maxCodeFileStemLength',
     'newSourceFileRatchetLines',
     'maxFunctionLines',
+    'complexity',
     'ownerLayout',
     'forbiddenSourcePatterns',
+  ]),
+  complexity: frozen([
+    'scopes',
+    'maxFunctionLines',
+    'maxNestingDepth',
+    'maxCognitiveComplexity',
+    'baseline',
   ]),
   ownerLayout: frozen([
     'contractFile',

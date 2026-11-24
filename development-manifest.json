@@ -212,6 +212,15 @@
     "maxCodeFileStemLength": 20,
     "newSourceFileRatchetLines": 500,
     "maxFunctionLines": 200,
+    "complexity": {
+      "scopes": [
+        "packages/engine-core/src/"
+      ],
+      "maxFunctionLines": 60,
+      "maxNestingDepth": 4,
+      "maxCognitiveComplexity": 15,
+      "baseline": "scripts/quality/complexity-baseline.json"
+    },
     "ownerLayout": {
       "contractFile": "contract",
       "testFileSuffix": ".test",

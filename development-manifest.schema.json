@@ -324,6 +324,41 @@
         }
       }
     },
+    "complexity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopes",
+        "maxFunctionLines",
+        "maxNestingDepth",
+        "maxCognitiveComplexity",
+        "baseline"
+      ],
+      "properties": {
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(?:apps|packages)/[a-z0-9-]+/src/(?:[A-Za-z0-9_-]+/)*$"
+          }
+        },
+        "maxFunctionLines": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "maxNestingDepth": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "maxCognitiveComplexity": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "baseline": {
+          "type": "string",
+          "pattern": "^scripts/quality/[a-z0-9-]+\\.json$"
+        }
+      }
+    },
     "engineeringPrinciple": {
       "type": "object",
       "additionalProperties": false,
@@ -733,6 +768,7 @@
         "maxCodeFileStemLength",
         "newSourceFileRatchetLines",
         "maxFunctionLines",
+        "complexity",
         "ownerLayout",
         "forbiddenSourcePatterns"
       ],
@@ -748,6 +784,9 @@
         },
         "maxFunctionLines": {
           "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "complexity": {
+          "$ref": "#/$defs/complexity"
         },
         "ownerLayout": {
           "$ref": "#/$defs/ownerLayout"

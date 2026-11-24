@@ -1,0 +1,497 @@
+{
+  "packages/engine-core/src/animation/capability/gltfExport.ts::analyzeGltfClip": {
+    "lines": 79,
+    "cognitive": 19
+  },
+  "packages/engine-core/src/animation/capability/gltfExport.ts::analyzeGltfClipAdaptations": {
+    "lines": 112
+  },
+  "packages/engine-core/src/animation/capability/minecraftExport.ts::analyzeMinecraftClip": {
+    "lines": 90,
+    "cognitive": 27
+  },
+  "packages/engine-core/src/commands/batch/validate.ts::validateCommandBatch": {
+    "lines": 84,
+    "cognitive": 16
+  },
+  "packages/engine-core/src/commands/schema.ts::validateObject": {
+    "lines": 61,
+    "cognitive": 25
+  },
+  "packages/engine-core/src/commands/workspace/open.ts::openAssetProject": {
+    "lines": 66
+  },
+  "packages/engine-core/src/compiler/directory/compile.ts::compileDirectoryWorkspace": {
+    "lines": 85,
+    "cognitive": 69
+  },
+  "packages/engine-core/src/compiler/directory/sprite.ts::compileDirectorySprite": {
+    "lines": 94,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/compiler/program/asset/assembly.ts::buildAssetAssembly": {
+    "lines": 158,
+    "cognitive": 58
+  },
+  "packages/engine-core/src/compiler/program/asset/assembly.ts::buildUse": {
+    "lines": 136,
+    "cognitive": 38
+  },
+  "packages/engine-core/src/compiler/program/asset/assembly.ts::validateGeometryHierarchy": {
+    "lines": 61,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/compiler/program/asset/assembly.ts::validateGeometryHierarchy/walk": {
+    "nesting": 5
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerAssetGeometry": {
+    "lines": 147,
+    "nesting": 5,
+    "cognitive": 128
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerCube": {
+    "lines": 86,
+    "cognitive": 38
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::lowerPlane": {
+    "cognitive": 19
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts::validateStructure": {
+    "cognitive": 27
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalLayout.ts::createGeometryLayout": {
+    "lines": 98,
+    "cognitive": 73
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalRig.ts::lowerBones": {
+    "lines": 81,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/compiler/program/asset/canonicalRig.ts::lowerMotion": {
+    "lines": 132,
+    "cognitive": 57
+  },
+  "packages/engine-core/src/compiler/program/asset/compile.ts::compileResolvedAssetWorkspaceEntry": {
+    "lines": 87
+  },
+  "packages/engine-core/src/compiler/program/asset/compile.ts::validateScene": {
+    "lines": 82,
+    "cognitive": 29
+  },
+  "packages/engine-core/src/compiler/program/asset/component.ts::buildComponent": {
+    "lines": 136,
+    "cognitive": 62
+  },
+  "packages/engine-core/src/compiler/program/asset/definition.ts::buildRigContract": {
+    "lines": 78,
+    "cognitive": 51
+  },
+  "packages/engine-core/src/compiler/program/asset/definition.ts::buildSurface": {
+    "cognitive": 21
+  },
+  "packages/engine-core/src/compiler/program/asset/definition.ts::buildSurfaceContract": {
+    "cognitive": 20
+  },
+  "packages/engine-core/src/compiler/program/asset/design.ts::elaborateAssetDesigns": {
+    "lines": 150,
+    "cognitive": 109
+  },
+  "packages/engine-core/src/compiler/program/asset/designCall.ts::evaluateDesignCall": {
+    "lines": 92,
+    "cognitive": 35
+  },
+  "packages/engine-core/src/compiler/program/asset/geometrySupport.ts::exactVector": {
+    "cognitive": 18
+  },
+  "packages/engine-core/src/compiler/program/asset/geometrySupport.ts::surfacePlan": {
+    "lines": 79
+  },
+  "packages/engine-core/src/compiler/program/asset/hir.ts::buildAssetHir": {
+    "lines": 119,
+    "cognitive": 23
+  },
+  "packages/engine-core/src/compiler/program/asset/hirGeometry.ts::compileBlock": {
+    "lines": 108,
+    "cognitive": 39
+  },
+  "packages/engine-core/src/compiler/program/asset/instantiate.ts::instantiateAsset": {
+    "lines": 61,
+    "cognitive": 28
+  },
+  "packages/engine-core/src/compiler/program/asset/instantiate.ts::instantiateGeometry": {
+    "cognitive": 33
+  },
+  "packages/engine-core/src/compiler/program/asset/instantiate.ts::placeConnections": {
+    "lines": 75,
+    "cognitive": 52
+  },
+  "packages/engine-core/src/compiler/program/asset/motion.ts::buildMotion": {
+    "lines": 98,
+    "cognitive": 27
+  },
+  "packages/engine-core/src/compiler/program/asset/motion.ts::buildTrack": {
+    "lines": 94,
+    "cognitive": 21
+  },
+  "packages/engine-core/src/compiler/program/asset/parentCycles.ts::uniqueParentCycles": {
+    "cognitive": 28
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/compose.ts::applyChart": {
+    "lines": 96,
+    "cognitive": 21
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/compose.ts::chartStatements": {
+    "lines": 199,
+    "cognitive": 61
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/expressions.ts::createTextureExpressionContext": {
+    "lines": 80,
+    "cognitive": 28
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/expressions.ts::readPalette": {
+    "cognitive": 17
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/prepare.ts::prepareStamp": {
+    "cognitive": 24
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/prepare.ts::prepareTexture": {
+    "lines": 106,
+    "cognitive": 57
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/raster.ts::applyVoxelTone": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/raster.ts::relax": {
+    "nesting": 5,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/compiler/program/asset/texture/stamp.ts::stampUse": {
+    "lines": 142,
+    "cognitive": 53
+  },
+  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::lowerAssetTextures": {
+    "lines": 71,
+    "cognitive": 20
+  },
+  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::selectedSurfaces": {
+    "lines": 80,
+    "cognitive": 19
+  },
+  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::walkGeometry": {
+    "lines": 69,
+    "cognitive": 24
+  },
+  "packages/engine-core/src/compiler/program/asset/texturePlan.ts::materializeAssetTexturePlan": {
+    "lines": 97,
+    "cognitive": 20
+  },
+  "packages/engine-core/src/compiler/program/asset/valueArithmetic.ts::assetExactOperation": {
+    "lines": 97,
+    "cognitive": 47
+  },
+  "packages/engine-core/src/compiler/program/asset/valueCompile.ts::compileAssetExpression": {
+    "lines": 116,
+    "cognitive": 79
+  },
+  "packages/engine-core/src/compiler/program/asset/valueCompile.ts::expectedChildren": {
+    "cognitive": 48
+  },
+  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::numberNode": {
+    "cognitive": 22
+  },
+  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::typedBinary": {
+    "lines": 110,
+    "cognitive": 81
+  },
+  "packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts::typedCall": {
+    "lines": 65,
+    "cognitive": 38
+  },
+  "packages/engine-core/src/compiler/program/asset/valueEvaluate.ts::evaluateAssetExpression": {
+    "lines": 156,
+    "nesting": 5,
+    "cognitive": 119
+  },
+  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::equalValue": {
+    "cognitive": 29
+  },
+  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::evaluateAssetBinary": {
+    "lines": 90,
+    "cognitive": 69
+  },
+  "packages/engine-core/src/compiler/program/asset/valueOperation.ts::evaluateAssetCall": {
+    "lines": 75,
+    "cognitive": 46
+  },
+  "packages/engine-core/src/compiler/program/asset/valueRuntime.ts::cloneAssetValue": {
+    "cognitive": 20
+  },
+  "packages/engine-core/src/compiler/program/asset/workspaceCompile.ts::compileWorkspaceCandidate": {
+    "lines": 82,
+    "nesting": 5,
+    "cognitive": 46
+  },
+  "packages/engine-core/src/compiler/sprite/compile.ts::compileItemStudy": {
+    "lines": 71
+  },
+  "packages/engine-core/src/compiler/sprite/paint.ts::paintItem": {
+    "lines": 104,
+    "cognitive": 66
+  },
+  "packages/engine-core/src/compiler/sprite/paint.ts::paintItem/<forEach callback>": {
+    "lines": 65
+  },
+  "packages/engine-core/src/compiler/sprite/preview.ts::spriteSheetPng": {
+    "lines": 61
+  },
+  "packages/engine-core/src/compiler/sprite/shade.ts::baseTone": {
+    "cognitive": 20
+  },
+  "packages/engine-core/src/export/compatibility/validate.ts::validateExportCompatibilityProfile": {
+    "lines": 126,
+    "cognitive": 31
+  },
+  "packages/engine-core/src/export/minecraft/channel.ts::compileKeyframe": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/export/minecraft/compile.ts::compileClip": {
+    "cognitive": 23
+  },
+  "packages/engine-core/src/export/minecraft/geometry.ts::compileBone": {
+    "lines": 61
+  },
+  "packages/engine-core/src/export/minecraft/triggers.ts::compileMinecraftAnimationTriggers": {
+    "cognitive": 35
+  },
+  "packages/engine-core/src/export/occlusion/cube.ts::compileOpaqueCubeFaceOcclusion": {
+    "cognitive": 20
+  },
+  "packages/engine-core/src/export/pipeline/bundle.ts::createExportBundle": {
+    "lines": 99,
+    "cognitive": 23
+  },
+  "packages/engine-core/src/export/pipeline/bundle.ts::embeddedGlbImageDigests": {
+    "cognitive": 23
+  },
+  "packages/engine-core/src/export/pipeline/bundle.ts::verifyExportBundleLineage": {
+    "lines": 91,
+    "cognitive": 42
+  },
+  "packages/engine-core/src/export/pipeline/dataSnapshot.ts::snapshotData": {
+    "lines": 98,
+    "cognitive": 26
+  },
+  "packages/engine-core/src/export/targets/gltf/animation.ts::compileGltfAnimations": {
+    "lines": 85,
+    "cognitive": 24
+  },
+  "packages/engine-core/src/export/targets/gltf/binary.ts::GltfBinaryWriter/addInterleavedVertexAccessors": {
+    "lines": 125,
+    "cognitive": 68
+  },
+  "packages/engine-core/src/export/targets/gltf/binary.ts::vertexLayout": {
+    "cognitive": 19
+  },
+  "packages/engine-core/src/export/targets/gltf/exporter.ts::buildGltf": {
+    "lines": 144,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/export/targets/gltf/meshopt.ts::layoutForBufferView": {
+    "cognitive": 18
+  },
+  "packages/engine-core/src/export/targets/gltf/meshopt.ts::reorderCandidates": {
+    "lines": 61,
+    "cognitive": 29
+  },
+  "packages/engine-core/src/export/targets/gltf/plane.ts::compileGltfPlanePrimitiveData": {
+    "cognitive": 22
+  },
+  "packages/engine-core/src/export/targets/gltf/rigid.ts::compileRigidGltfBatches": {
+    "lines": 63,
+    "cognitive": 23
+  },
+  "packages/engine-core/src/export/targets/gltf/scene.ts::compileGltfScene": {
+    "lines": 73
+  },
+  "packages/engine-core/src/export/targets/gltf/textures.ts::validateResolvedTexture": {
+    "lines": 81
+  },
+  "packages/engine-core/src/export/targets/javaBlock/exporter.ts::compileJavaElement": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/model/measurement/geometry.ts::localCorners": {
+    "cognitive": 22
+  },
+  "packages/engine-core/src/model/measurement/geometry.ts::measureSceneGeometry": {
+    "lines": 95,
+    "cognitive": 50
+  },
+  "packages/engine-core/src/project/directory/gameRead.ts::readGamePack": {
+    "lines": 78,
+    "cognitive": 27
+  },
+  "packages/engine-core/src/project/directory/packRead.ts::readResourcePacks": {
+    "lines": 130,
+    "cognitive": 85
+  },
+  "packages/engine-core/src/project/directory/read.ts::readDirectoryWorkspace": {
+    "lines": 161,
+    "cognitive": 70
+  },
+  "packages/engine-core/src/project/program/asset/parser.ts::Parser/joint": {
+    "cognitive": 28
+  },
+  "packages/engine-core/src/project/program/asset/parser.ts::Parser/rigContract": {
+    "cognitive": 21
+  },
+  "packages/engine-core/src/project/program/asset/parser.ts::Parser/socket": {
+    "cognitive": 18
+  },
+  "packages/engine-core/src/project/program/asset/parser.ts::Parser/surface": {
+    "cognitive": 18
+  },
+  "packages/engine-core/src/project/program/asset/parser.ts::Parser/surfaceContract": {
+    "cognitive": 19
+  },
+  "packages/engine-core/src/project/program/syntax/expression.ts::parseProgramExpressionInner": {
+    "lines": 193,
+    "cognitive": 123
+  },
+  "packages/engine-core/src/project/program/syntax/expression.ts::parseProgramExpressionInner/primary": {
+    "lines": 143
+  },
+  "packages/engine-core/src/project/program/syntax/lex.ts::lexProgramSource": {
+    "lines": 172,
+    "nesting": 6,
+    "cognitive": 153
+  },
+  "packages/engine-core/src/project/program/syntax/texture.ts::validateStamp": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/project/sprite/json.ts::parseSpriteJson": {
+    "lines": 71,
+    "cognitive": 59
+  },
+  "packages/engine-core/src/project/sprite/read.ts::readItemStudy": {
+    "lines": 169,
+    "cognitive": 123
+  },
+  "packages/engine-core/src/project/sprite/source.ts::parseSpriteSource": {
+    "lines": 138,
+    "cognitive": 109
+  },
+  "packages/engine-core/src/project/workspace/change.ts::stageWorkspaceChangeSet": {
+    "lines": 141,
+    "cognitive": 113
+  },
+  "packages/engine-core/src/project/workspace/graph.ts::resolveWorkspaceEntryCompilationFromSnapshot": {
+    "lines": 157,
+    "cognitive": 45
+  },
+  "packages/engine-core/src/project/workspace/graph.ts::resolveWorkspaceEntryCompilationFromSnapshot/visit": {
+    "lines": 92
+  },
+  "packages/engine-core/src/project/workspace/graph.ts::validateCompilationSnapshot": {
+    "nesting": 5,
+    "cognitive": 30
+  },
+  "packages/engine-core/src/project/workspace/graphSource.ts::validateDeclaredModuleImports": {
+    "lines": 91,
+    "cognitive": 34
+  },
+  "packages/engine-core/src/project/workspace/graphSource.ts::validateDeclaredModuleImports/walk": {
+    "lines": 70
+  },
+  "packages/engine-core/src/project/workspace/path.ts::validatePath": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/project/workspace/reader.ts::readAuthoredAssetWorkspace": {
+    "lines": 80,
+    "cognitive": 31
+  },
+  "packages/engine-core/src/project/workspace/schema.ts::readLockedPackage": {
+    "lines": 68,
+    "cognitive": 39
+  },
+  "packages/engine-core/src/project/workspace/schema.ts::readPackageManifest": {
+    "cognitive": 25
+  },
+  "packages/engine-core/src/project/workspace/seal.ts::sealWorkspaceCandidate": {
+    "lines": 135,
+    "cognitive": 32
+  },
+  "packages/engine-core/src/project/workspace/validation.ts::addPackageRootFindings": {
+    "cognitive": 22
+  },
+  "packages/engine-core/src/project/workspace/validation.ts::checkDependencyPins": {
+    "cognitive": 28
+  },
+  "packages/engine-core/src/project/workspace/validation.ts::validateContents": {
+    "lines": 145,
+    "cognitive": 91
+  },
+  "packages/engine-core/src/provenance/digest.ts::sha256ByteDigest": {
+    "lines": 74
+  },
+  "packages/engine-core/src/textures/textureRecipe/png.ts::encodeCanonicalPng": {
+    "cognitive": 16
+  },
+  "packages/engine-core/src/textures/textureRecipe/raster.ts::assertTextureComposition": {
+    "lines": 63,
+    "cognitive": 22
+  },
+  "packages/engine-core/src/validation/animation/channel.ts::validateChannelKeys": {
+    "lines": 63
+  },
+  "packages/engine-core/src/validation/document/scene.ts::validateSceneNode": {
+    "lines": 178,
+    "nesting": 5,
+    "cognitive": 67
+  },
+  "packages/engine-core/src/validation/document/textures.ts::validateTextureRaster": {
+    "lines": 99,
+    "cognitive": 41
+  },
+  "packages/engine-core/src/validation/scene/cube.ts::validateCube": {
+    "lines": 172,
+    "cognitive": 45
+  },
+  "packages/engine-core/src/validation/scene/plane.ts::validatePlane": {
+    "lines": 128,
+    "cognitive": 32
+  },
+  "packages/engine-core/src/validation/target/actor.ts::validateProfile": {
+    "lines": 73,
+    "cognitive": 17
+  },
+  "packages/engine-core/src/validation/target/animation.ts::validateAnimationLocatorVisibility": {
+    "nesting": 5,
+    "cognitive": 36
+  },
+  "packages/engine-core/src/validation/target/animation.ts::validateAnimationSamplingBudget": {
+    "lines": 76,
+    "cognitive": 19
+  },
+  "packages/engine-core/src/validation/target/block.ts::validateJavaCube": {
+    "lines": 91,
+    "cognitive": 18
+  },
+  "packages/engine-core/src/validation/target/block.ts::validateJavaPlane": {
+    "lines": 66,
+    "cognitive": 16
+  },
+  "packages/engine-core/src/validation/target/block.ts::validateTextureBindings": {
+    "lines": 93,
+    "cognitive": 23
+  },
+  "packages/engine-core/src/validation/target/gltf.ts::validateScene": {
+    "cognitive": 30
+  },
+  "packages/engine-core/src/validation/texture/validate.ts::validateTextureRaster": {
+    "lines": 66
+  },
+  "packages/engine-core/src/validation/texture/validate.ts::validateTextures": {
+    "lines": 79,
+    "cognitive": 23
+  }
+}

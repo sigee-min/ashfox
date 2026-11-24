@@ -123,11 +123,42 @@ const validateOwnerLayout = (quality, repoRoot) => {
   }
 };
 
+const validateComplexity = (quality, repoRoot) => {
+  const complexity = assertClosedOrderedRecord(
+    quality.complexity,
+    'quality.complexity',
+    MANIFEST_KEYS.complexity,
+  );
+  assertSortedUniqueTextArray(
+    complexity.scopes,
+    'quality.complexity.scopes',
+    (scope) => isRepositoryDirectoryPrefix(scope) && /^(?:apps|packages)\/[^/]+\/src\//.test(scope),
+  );
+  for (let index = 0; index < complexity.scopes.length; index += 1) {
+    assertExistingDirectory(
+      repoRoot,
+      complexity.scopes[index],
+      `quality.complexity.scopes[${index}]`,
+    );
+  }
+  for (const key of ['maxFunctionLines', 'maxNestingDepth', 'maxCognitiveComplexity']) {
+    assertPositiveSafeInteger(complexity[key], `quality.complexity.${key}`);
+  }
+  if (complexity.maxFunctionLines > quality.maxFunctionLines) {
+    fail('quality.complexity.maxFunctionLines', 'must not exceed quality.maxFunctionLines');
+  }
+  if (!isRepositoryPath(complexity.baseline) || !complexity.baseline.endsWith('.json')) {
+    fail('quality.complexity.baseline', 'must name a repository JSON file');
+  }
+  assertExistingFile(repoRoot, complexity.baseline, 'quality.complexity.baseline');
+};
+
 const validateQuality = (value, repoRoot, workspaceSourceScopes) => {
   const quality = assertClosedOrderedRecord(value, 'quality', MANIFEST_KEYS.quality);
   for (const key of MANIFEST_KEYS.quality.slice(0, 4)) {
     assertPositiveSafeInteger(quality[key], `quality.${key}`);
   }
+  validateComplexity(quality, repoRoot);
   validateOwnerLayout(quality, repoRoot);
   if (
     !isDenseContractArray(quality.forbiddenSourcePatterns) ||

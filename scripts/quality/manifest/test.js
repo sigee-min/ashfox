@@ -67,6 +67,13 @@ assert.equal(manifest.quality.maxSourceFileLines, 600);
 assert.equal(manifest.quality.maxCodeFileStemLength, 20);
 assert.equal(manifest.quality.newSourceFileRatchetLines, 500);
 assert.equal(manifest.quality.maxFunctionLines, 200);
+assert.deepEqual(manifest.quality.complexity, {
+  scopes: ['packages/engine-core/src/'],
+  maxFunctionLines: 60,
+  maxNestingDepth: 4,
+  maxCognitiveComplexity: 15,
+  baseline: 'scripts/quality/complexity-baseline.json',
+});
 assert.deepEqual(manifest.quality.ownerLayout, {
   contractFile: 'contract',
   testFileSuffix: '.test',
@@ -269,6 +276,14 @@ expectInvalid(deliveryMayMutate, 'versioning.deliveryTargets.canonicalMutation')
 const excessiveFunctionLimit = copyManifest();
 excessiveFunctionLimit.quality.maxFunctionLines = 501;
 expectInvalid(excessiveFunctionLimit, 'quality.maxFunctionLines');
+
+const looseComplexityLimit = copyManifest();
+looseComplexityLimit.quality.complexity.maxFunctionLines = 201;
+expectInvalid(looseComplexityLimit, 'quality.complexity.maxFunctionLines');
+
+const missingComplexityScope = copyManifest();
+missingComplexityScope.quality.complexity.scopes = ['packages/engine-core/src/missing/'];
+expectInvalid(missingComplexityScope, 'quality.complexity.scopes[0]');
 
 const invalidFileStemLimit = copyManifest();
 invalidFileStemLimit.quality.maxCodeFileStemLength = 0;

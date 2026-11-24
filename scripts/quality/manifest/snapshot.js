@@ -74,6 +74,10 @@ const freezeManifest = (value) =>
       maxCodeFileStemLength: value.quality.maxCodeFileStemLength,
       newSourceFileRatchetLines: value.quality.newSourceFileRatchetLines,
       maxFunctionLines: value.quality.maxFunctionLines,
+      complexity: Object.freeze({
+        ...value.quality.complexity,
+        scopes: Object.freeze([...value.quality.complexity.scopes]),
+      }),
       ownerLayout: Object.freeze({
         contractFile: value.quality.ownerLayout.contractFile,
         testFileSuffix: value.quality.ownerLayout.testFileSuffix,
