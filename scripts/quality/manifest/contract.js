@@ -47,6 +47,8 @@ const MANIFEST_KEYS = Object.freeze({
   engineering: frozen(['style', 'principles', 'testing', 'exceptions']),
   engineeringStyle: frozen([
     'typescriptStrict',
+    'formatter',
+    'printWidth',
     'indentSpaces',
     'quotes',
     'semicolons',

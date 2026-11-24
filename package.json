@@ -43,6 +43,8 @@
     "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "quality:manifest": "node scripts/quality/manifest/test.js && node scripts/quality/manifest/index.js",
     "quality:commits": "node scripts/quality/commitConvention.test.js && node scripts/quality/commitConvention.js",
+    "format": "prettier --write \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs}\" \"*.js\"",
+    "quality:format": "prettier --check \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs}\" \"*.js\"",
     "quality:check": "npm run typecheck && npm run typecheck:tests && npm run quality:manifest && npm run test:discovery && npm run quality:commits && node scripts/quality/check.test.js && node scripts/quality/check.js && npm run quality:architecture",
     "quality:architecture": "node scripts/quality/architecture.test.js && node scripts/quality/architecture.js && node scripts/quality/scriptArchitecture.test.js && node scripts/quality/scriptArchitecture.js",
     "quality:audit": "node scripts/quality/audit.js",
@@ -75,6 +77,7 @@
     "esbuild": "^0.28.1",
     "fflate": "^0.8.3",
     "gltf-validator": "^2.0.0-dev.3.10",
+    "prettier": "^3.10.1",
     "ts-node": "^10.9.2",
     "ts-prune": "^0.10.3",
     "typescript": "^5.6.3"

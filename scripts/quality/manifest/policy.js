@@ -128,6 +128,8 @@ const validateEngineeringStyle = (value) => {
     MANIFEST_KEYS.engineeringStyle
   );
   assertExactValue(style.typescriptStrict, true, 'engineering.style.typescriptStrict');
+  assertExactValue(style.formatter, 'prettier', 'engineering.style.formatter');
+  assertExactValue(style.printWidth, 100, 'engineering.style.printWidth');
   assertExactValue(style.indentSpaces, 2, 'engineering.style.indentSpaces');
   assertExactValue(style.quotes, 'single', 'engineering.style.quotes');
   assertExactValue(style.semicolons, 'required', 'engineering.style.semicolons');

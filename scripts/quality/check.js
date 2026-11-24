@@ -3,7 +3,6 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const ts = require('typescript');
 const {
   readDevelopmentManifest
 } = require('./manifest');
@@ -52,80 +51,6 @@ const workspaceSourceDirectories = () =>
       .map((directory) => path.join(directory, 'src'))
   );
 
-const requiresSemicolon = (node) =>
-  ts.isVariableStatement(node) ||
-  ts.isExpressionStatement(node) ||
-  ts.isReturnStatement(node) ||
-  ts.isThrowStatement(node) ||
-  ts.isBreakStatement(node) ||
-  ts.isContinueStatement(node) ||
-  ts.isImportDeclaration(node) ||
-  ts.isImportEqualsDeclaration(node) ||
-  ts.isExportDeclaration(node) ||
-  ts.isExportAssignment(node) ||
-  ts.isTypeAliasDeclaration(node) ||
-  ts.isPropertyDeclaration(node);
-
-const sourceStyleViolations = (filePath, source, style) => {
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
-  );
-  const findings = [];
-  const indentedLines = new Set();
-  const lines = source.split(/\r?\n/);
-  const report = (node, rule) => {
-    const line = sourceFile.getLineAndCharacterOfPosition(
-      node.getStart(sourceFile)
-    ).line + 1;
-    findings.push({
-      file: relativePath(filePath),
-      line,
-      rule,
-      snippet: lines[line - 1].trim().slice(0, 200)
-    });
-  };
-  const visit = (node) => {
-    const start = node.getStart(sourceFile);
-    const position = sourceFile.getLineAndCharacterOfPosition(start);
-    const lineStart = sourceFile.getPositionOfLineAndCharacter(
-      position.line,
-      0
-    );
-    const indentation = source.slice(lineStart, start);
-    if (!indentedLines.has(position.line) && /^\s*$/.test(indentation)) {
-      indentedLines.add(position.line);
-      if (
-        indentation.includes('\t') ||
-        position.character % style.indentSpaces !== 0
-      ) {
-        report(node, 'style-indentation');
-      }
-    }
-    if (
-      style.quotes === 'single' &&
-      ts.isStringLiteral(node) &&
-      !ts.isJsxAttribute(node.parent) &&
-      source[start] === '"'
-    ) {
-      report(node, 'style-quotes');
-    }
-    if (
-      style.semicolons === 'required' &&
-      requiresSemicolon(node) &&
-      !source.slice(start, node.end).trimEnd().endsWith(';')
-    ) {
-      report(node, 'style-semicolons');
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
-  return findings;
-};
-
 const main = () => {
   const repositoryViolations = repositoryPolicyViolations(
     repoRoot,
@@ -153,11 +78,6 @@ const main = () => {
       source,
       sourcePolicies
     ));
-    findings.push(...sourceStyleViolations(
-      filePath,
-      source,
-      developmentManifest.engineering.style
-    ));
   }
 
   if (findings.length > 0) {
@@ -176,5 +96,3 @@ const main = () => {
 };
 
 if (require.main === module) main();
-
-module.exports = { sourceStyleViolations };

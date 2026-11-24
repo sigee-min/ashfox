@@ -1,0 +1,8 @@
+# Prettier formats TypeScript and JavaScript code only; see package.json `format`.
+node_modules/
+dist/
+build/
+coverage/
+.ashfox/
+# Copied byte-for-byte into the release starter project.
+scripts/release/project/

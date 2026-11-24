@@ -289,6 +289,8 @@
       "additionalProperties": false,
       "required": [
         "typescriptStrict",
+        "formatter",
+        "printWidth",
         "indentSpaces",
         "quotes",
         "semicolons",
@@ -298,6 +300,12 @@
       "properties": {
         "typescriptStrict": {
           "const": true
+        },
+        "formatter": {
+          "const": "prettier"
+        },
+        "printWidth": {
+          "const": 100
         },
         "indentSpaces": {
           "const": 2

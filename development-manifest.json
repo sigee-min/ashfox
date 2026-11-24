@@ -50,6 +50,8 @@
   "engineering": {
     "style": {
       "typescriptStrict": true,
+      "formatter": "prettier",
+      "printWidth": 100,
       "indentSpaces": 2,
       "quotes": "single",
       "semicolons": "required",

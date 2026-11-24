@@ -5,7 +5,6 @@ const path = require('node:path');
 const {
   readDevelopmentManifest
 } = require('./manifest');
-const { sourceStyleViolations } = require('./check');
 const {
   dependencyPolicyViolations,
   importBoundaryViolations,
@@ -18,42 +17,15 @@ const {
 } = require('./patterns');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
-const style = readDevelopmentManifest(repoRoot).engineering.style;
 const manifest = readDevelopmentManifest(repoRoot);
-const fixturePath = path.join(
-  repoRoot,
-  'packages',
-  'engine-core',
-  'src',
-  'quality-style-fixture.tsx'
-);
-const rulesFor = (source) => sourceStyleViolations(
-  fixturePath,
-  source,
-  style
-).map((finding) => finding.rule);
+const prettierConfig = require('../../prettier.config');
 
-assert.deepEqual(rulesFor([
-  "import { value } from './value';",
-  'export const render = (): string => {',
-  "  const label = 'ready';",
-  '  return <span title="status">{label}</span>;',
-  '};',
-  ''
-].join('\n')), []);
-
-assert.ok(rulesFor('export const value = "wrong";\n').includes(
-  'style-quotes'
-));
-assert.ok(rulesFor("export const value = 'missing'\n").includes(
-  'style-semicolons'
-));
-assert.ok(rulesFor([
-  'export const run = (): void => {',
-  '   execute();',
-  '};',
-  ''
-].join('\n')).includes('style-indentation'));
+// Prettier owns formatting; its options must stay derived from the manifest style.
+assert.equal(manifest.engineering.style.formatter, 'prettier');
+assert.equal(prettierConfig.printWidth, manifest.engineering.style.printWidth);
+assert.equal(prettierConfig.tabWidth, manifest.engineering.style.indentSpaces);
+assert.equal(prettierConfig.singleQuote, manifest.engineering.style.quotes === 'single');
+assert.equal(prettierConfig.semi, manifest.engineering.style.semicolons === 'required');
 
 assert.deepEqual(
   tombstoneViolations(
