@@ -192,16 +192,16 @@ const stampMapping = (reader: ProgramTextureReader): ProgramProperty => {
   });
 };
 
-const validateStamp = (
+/** Reads the stamp pixel rows, or reports why they are unusable. */
+const stampRows = (
   reader: ProgramTextureReader,
   properties: readonly ProgramProperty[],
-  span: SourceSpan,
   start: Token,
-): void => {
+): readonly string[] | null => {
   const pixels = properties.filter((property) => property.name === 'pixels');
   if (pixels.length !== 1 || pixels[0]!.value.kind !== 'string') {
     reader.fail('program.invalid-stamp', 'Stamp requires exactly one pixels string.', start);
-    return;
+    return null;
   }
   const rows = pixels[0]!.value.value.split('/');
   const width = rows[0]?.length ?? 0;
@@ -211,8 +211,19 @@ const validateStamp = (
       'Stamp pixels must be nonempty equal-width rows using . or lowercase symbols.',
       start,
     );
-    return;
+    return null;
   }
+  return rows;
+};
+
+const validateStamp = (
+  reader: ProgramTextureReader,
+  properties: readonly ProgramProperty[],
+  span: SourceSpan,
+  start: Token,
+): void => {
+  const rows = stampRows(reader, properties, start);
+  if (rows === null) return;
   const mappings = properties.filter((property) => property.name !== 'pixels');
   const seen = new Set<string>();
   for (const mapping of mappings) {

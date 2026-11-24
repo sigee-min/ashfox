@@ -22,9 +22,6 @@ packages/engine-core/src/compiler/program/asset/texture/raster.ts
 packages/engine-core/src/compiler/program/asset/valueCompile.ts
 packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts
 packages/engine-core/src/compiler/program/asset/valueEvaluate.ts
-packages/engine-core/src/project/program/asset/parser.ts
-packages/engine-core/src/project/program/syntax/expression.ts
-packages/engine-core/src/project/program/syntax/lex.ts
 packages/engine-core/src/project/sprite/read.ts
 packages/engine-core/src/project/workspace/change.ts
 packages/engine-core/src/project/workspace/graph.ts
@@ -32,7 +29,6 @@ packages/engine-core/src/project/workspace/graphSource.ts
 packages/engine-core/src/project/workspace/schema.ts
 packages/engine-core/src/project/workspace/validation.ts
 packages/engine-core/src/validation/document/scene.ts
-packages/engine-core/tests/program/asset/parser.test.ts
 packages/engine-core/tests/program/asset/texture.test.ts
 packages/engine-core/tests/program/asset/texturebinding.test.ts
 packages/render-core/src/observation/browser.ts
