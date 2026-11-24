@@ -209,3 +209,88 @@ if (unprotected.ok && unprotected.products[0]?.kind === 'model') {
     assert.equal(pixelAt(rgba, tex.width, eastUv[0], eastUv[1]), '#e04040');
   }
 }
+
+// Verify ancestor bone rotation moves occluder away from styled_cube so AO drops to 0.
+const boneRotated = compileSingle(
+  painterlySource({ ao: true, stampProtect: true }).replace(
+    'cube occluder { origin = (3u, 0u, -3u); size = (4u, 6u, 6u); surface = skin.armor; }',
+    'bone swung { pivot = (0u, 0u, -10u); rotation = (0deg, 90deg, 0deg); cube occluder { origin = (3u, 0u, -3u); size = (4u, 6u, 6u); surface = skin.armor; } }',
+  ),
+);
+assert.equal(boneRotated.ok, true, boneRotated.ok ? '' : JSON.stringify(boneRotated.diagnostics));
+if (boneRotated.ok && boneRotated.products[0]?.kind === 'model') {
+  const tex = Object.values(boneRotated.products[0].model.textures)[0]!;
+  const styledTel = boneRotated.products[0].telemetry?.textures[tex.id]?.charts.find(
+    (c) => c.id === 'styled',
+  );
+  assert.equal(styledTel?.aoTexels, 0);
+}
+
+// Verify non-default-axis plane maps texels via its u-axis/v-axis/normal for model gradient and AO.
+const planeBasisSource = `ashfox-model 1
+asset main {
+  rig contract R {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+  }
+  skeleton S implements R { bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
+  surface contract Skin {
+    chart blk box { coverage = opaque; }
+    chart fin flat { coverage = opaque; }
+    material = opaque;
+  }
+  surface surf: Skin {
+    material = opaque;
+    texture tex {
+      background = bg; background-alpha = 255;
+      palette {
+        bg = #101010;
+        coat = (#402010, #804020, #c06030);
+        cream = (#705030, #b09060, #ffe0a0);
+      }
+      chart blk box { fill = coat; }
+      chart fin flat {
+        fill = coat;
+        pattern gradient { from = cream; to = coat; axis = z; space = model; soft = 0.0ratio; }
+        pattern ao { strength = 0.9ratio; radius = 2u; }
+      }
+    }
+  }
+  component Body {
+    requires rig skeleton: R;
+    requires surface skin: Skin;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); surface = skin.blk; }
+        plane fin { origin = (10u, 0u, 0u); size = (4u, 4u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); surface = skin.fin; }
+      }
+    }
+  }
+  export asset main {
+    settings { density = 16; forward = north; }
+    skeleton = S;
+    use Body as body { bind skeleton = R; bind skin = surf; };
+  }
+}`;
+const planeRes = compileSingle(planeBasisSource);
+assert.equal(planeRes.ok, true, planeRes.ok ? '' : JSON.stringify(planeRes.diagnostics));
+if (planeRes.ok && planeRes.products[0]?.kind === 'model') {
+  const tex = Object.values(planeRes.products[0].model.textures)[0]!;
+  const finTel = planeRes.products[0].telemetry?.textures[tex.id]?.charts.find(
+    (c) => c.id === 'fin',
+  )!;
+  assert.ok(finTel.aoTexels > 0, 'touching cube must cast AO onto u-axis=Z plane');
+  assert.ok(finTel.distinctRoles >= 2, 'model-Z gradient must paint both cream and coat roles');
+  const finNode = planeRes.products[0].model.scene.nodes['body/root/fin']!;
+  assert.equal(finNode.kind, 'plane');
+  if (finNode.kind === 'plane') {
+    const rgba = rasterBytes(tex.width, tex.height, tex.raster!);
+    const uv = finNode.faces.front.uv!;
+    assert.notEqual(
+      pixelAt(rgba, tex.width, uv[0], uv[1]),
+      pixelAt(rgba, tex.width, uv[2] - 1, uv[1]),
+    );
+  }
+}

@@ -2,7 +2,6 @@ import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { InstantiatedGeometryNode, InstantiatedGeometryProperty } from './ir';
 import {
-  assetBooleanValue,
   assetExactNumber,
   assetNumberValue,
   assetVectorValue,
@@ -76,26 +75,15 @@ const mirrorPropertyValue = (
 const mirrorCubeProperties = (
   properties: readonly InstantiatedGeometryProperty[],
   kind: 'cube' | 'plane',
-  span: SourceSpan,
 ): readonly InstantiatedGeometryProperty[] => {
   const size = vectorValue(properties, 'size');
-  const mapped = properties.map((property) => {
-    if (kind === 'cube' && property.name === 'mirror' && property.value.kind === 'boolean') {
-      return freeze({
-        name: property.name,
-        value: assetBooleanValue(!property.value.value),
-        span: property.span,
-      });
-    }
-    return freeze({
+  const mapped = properties.map((property) =>
+    freeze({
       name: property.name,
       value: mirrorPropertyValue(property, kind, size),
       span: property.span,
-    });
-  });
-  if (kind === 'cube' && !mapped.some((entry) => entry.name === 'mirror')) {
-    mapped.push(freeze({ name: 'mirror', value: assetBooleanValue(true), span }));
-  }
+    }),
+  );
   return freeze(mapped);
 };
 
@@ -138,9 +126,10 @@ export const mirrorInstantiatedNode = (
     kind: node.kind,
     id: mirroredId,
     attachmentBoneId: node.attachmentBoneId,
-    properties: mirrorCubeProperties(node.properties, kind, span),
+    properties: mirrorCubeProperties(node.properties, kind),
     surface: node.surface,
     children: mirrorChildFaces(node.children, mirroredId),
+    ...(kind === 'cube' ? { uvMirrorX: !(node.uvMirrorX === true) } : {}),
     sourcePath: node.sourcePath,
     span,
   });

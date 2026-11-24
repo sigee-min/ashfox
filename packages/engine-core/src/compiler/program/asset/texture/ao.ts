@@ -9,7 +9,7 @@ import type {
   InstantiatedGeometryNode,
   InstantiatedGeometryProperty,
 } from '../ir';
-import type { SceneObb } from './contract';
+import type { BoneTransform, PlaneBasisSpec, SceneObb } from './contract';
 import { properties, type TextureExpressionContext } from './expressions';
 import {
   boxSurfacePoint,
@@ -35,8 +35,18 @@ const FACE_NORMALS: Readonly<Record<FaceDirection, Vec3>> = {
   down: [0, -1, 0],
 };
 
-const toNumber = (value: InstantiatedGeometryProperty['value']): number | null =>
-  value.kind === 'number' ? Number(value.value.numerator) / Number(value.value.denominator) : null;
+const add3 = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub3 = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot3 = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const scale3 = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s];
+const cross3 = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+const numVal = (v: { readonly numerator: bigint; readonly denominator: bigint }): number =>
+  Number(v.numerator) / Number(v.denominator);
 
 const vec3Prop = (
   props: readonly InstantiatedGeometryProperty[],
@@ -44,13 +54,22 @@ const vec3Prop = (
   fallback: Vec3,
 ): Vec3 => {
   const entry = props.find((p) => p.name === name);
-  if (entry === undefined || entry.value.kind !== 'vector' || entry.value.values.length !== 3) {
+  if (entry === undefined || entry.value.kind !== 'vector' || entry.value.values.length !== 3)
     return fallback;
-  }
-  const nums = entry.value.values.map(
-    (v) => Number(v.value.numerator) / Number(v.value.denominator),
-  );
+  const nums = entry.value.values.map((v) => numVal(v.value));
   return nums.every(Number.isFinite) ? [nums[0]!, nums[1]!, nums[2]!] : fallback;
+};
+
+const vec2Prop = (
+  props: readonly InstantiatedGeometryProperty[],
+  name: string,
+): readonly [number, number] | null => {
+  const entry = props.find((p) => p.name === name);
+  if (entry === undefined || entry.value.kind !== 'vector' || entry.value.values.length !== 2)
+    return null;
+  const a = numVal(entry.value.values[0]!.value);
+  const b = numVal(entry.value.values[1]!.value);
+  return Number.isFinite(a) && Number.isFinite(b) ? [a, b] : null;
 };
 
 const boolProp = (
@@ -68,120 +87,213 @@ const scalarProp = (
   fallback: number,
 ): number => {
   const entry = props.find((p) => p.name === name);
-  const val = entry === undefined ? null : toNumber(entry.value);
-  return val !== null && Number.isFinite(val) ? val : fallback;
+  if (entry?.value.kind !== 'number') return fallback;
+  const val = numVal(entry.value.value);
+  return Number.isFinite(val) ? val : fallback;
 };
 
-const add3 = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const sub3 = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const dot3 = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-
-const transformLocalPoint = (
-  local: Vec3,
-  pivot: Vec3,
-  rotation: Vec3,
-  position: Vec3,
-  placement: Vec3,
+const chainTransformPoint = (
+  localFromPivot: Vec3,
+  ownerOrigin: Vec3,
+  ownerRotation: Vec3,
+  ancestors: readonly BoneTransform[],
 ): Vec3 => {
-  const rotated = canonicalRotatePoint(sub3(local, pivot), rotation);
-  return add3(add3(rotated, pivot), add3(position, placement));
+  const parent = ancestors[0];
+  let point = add3(
+    canonicalRotatePoint(localFromPivot, ownerRotation),
+    sub3(ownerOrigin, parent ? parent.origin : [0, 0, 0]),
+  );
+  for (let i = 0; i < ancestors.length; i += 1) {
+    const bone = ancestors[i]!;
+    const grandParent = ancestors[i + 1];
+    point = add3(
+      canonicalRotatePoint(point, bone.rotation),
+      sub3(bone.origin, grandParent ? grandParent.origin : [0, 0, 0]),
+    );
+  }
+  return point;
 };
 
-const makeObb = (
-  id: string,
-  chartKey: string | null,
-  origin: Vec3,
-  size: Vec3,
-  inflate: number,
-  pivot: Vec3,
-  position: Vec3,
-  rotation: Vec3,
-  placementOffset: Vec3,
-): SceneObb => {
-  const half: Vec3 = [size[0] / 2 + inflate, size[1] / 2 + inflate, size[2] / 2 + inflate];
-  const localCenter: Vec3 = [
-    origin[0] + size[0] / 2,
-    origin[1] + size[1] / 2,
-    origin[2] + size[2] / 2,
-  ];
-  const center = transformLocalPoint(localCenter, pivot, rotation, position, placementOffset);
-  const ax = canonicalRotatePoint([1, 0, 0], rotation);
-  const ay = canonicalRotatePoint([0, 1, 0], rotation);
-  const az = canonicalRotatePoint([0, 0, 1], rotation);
+const chainRotateDir = (
+  dir: Vec3,
+  ownerRotation: Vec3,
+  ancestors: readonly BoneTransform[],
+): Vec3 => {
+  let vec = canonicalRotatePoint(dir, ownerRotation);
+  for (const bone of ancestors) vec = canonicalRotatePoint(vec, bone.rotation);
+  return vec;
+};
+
+const worldAabbFromBasis = (
+  center: Vec3,
+  ax: Vec3,
+  ay: Vec3,
+  az: Vec3,
+  half: Vec3,
+): Readonly<{ readonly min: Vec3; readonly max: Vec3 }> => {
   const ext = (i: 0 | 1 | 2): number =>
     Math.abs(ax[i]) * half[0] + Math.abs(ay[i]) * half[1] + Math.abs(az[i]) * half[2];
-  const aabbMin: Vec3 = [center[0] - ext(0), center[1] - ext(1), center[2] - ext(2)];
-  const aabbMax: Vec3 = [center[0] + ext(0), center[1] + ext(1), center[2] + ext(2)];
   return {
-    id,
+    min: [center[0] - ext(0), center[1] - ext(1), center[2] - ext(2)],
+    max: [center[0] + ext(0), center[1] + ext(1), center[2] + ext(2)],
+  };
+};
+
+const buildCubeObb = (
+  node: InstantiatedGeometryNode,
+  chartKey: string | null,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
+): SceneObb => {
+  const origin = add3(vec3Prop(node.properties, 'origin', [0, 0, 0]), offset);
+  const position = vec3Prop(node.properties, 'position', [0, 0, 0]);
+  const rotation = vec3Prop(node.properties, 'rotation', [0, 0, 0]);
+  const pivot = add3(vec3Prop(node.properties, 'pivot', [0, 0, 0]), offset);
+  const size = vec3Prop(node.properties, 'size', [1, 1, 1]);
+  const inflate = scalarProp(node.properties, 'inflate', 0);
+  const ownerOrigin = add3(pivot, position);
+  const half: Vec3 = [size[0] / 2 + inflate, size[1] / 2 + inflate, size[2] / 2 + inflate];
+  const localCenter = sub3(
+    [origin[0] + size[0] / 2, origin[1] + size[1] / 2, origin[2] + size[2] / 2],
+    pivot,
+  );
+  const center = chainTransformPoint(localCenter, ownerOrigin, rotation, ancestors);
+  const ax = chainRotateDir([1, 0, 0], rotation, ancestors);
+  const ay = chainRotateDir([0, 1, 0], rotation, ancestors);
+  const az = chainRotateDir([0, 0, 1], rotation, ancestors);
+  const aabb = worldAabbFromBasis(center, ax, ay, az, half);
+  return {
+    id: node.id,
     chartKey,
     origin,
     size,
     pivot,
     position,
     rotation,
-    placementOffset,
+    ownerOrigin,
+    ancestors,
     center,
     half,
     ax,
     ay,
     az,
-    aabbMin,
-    aabbMax,
+    aabbMin: aabb.min,
+    aabbMax: aabb.max,
   };
 };
 
-const obbFromNode = (node: InstantiatedGeometryNode, placement: Vec3): SceneObb | null => {
-  if (!boolProp(node.properties, 'visible', true)) return null;
-  const origin = vec3Prop(node.properties, 'origin', [0, 0, 0]);
-  const position = vec3Prop(node.properties, 'position', [0, 0, 0]);
+const buildPlaneObb = (
+  node: InstantiatedGeometryNode,
+  chartKey: string | null,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
+): SceneObb | null => {
+  const size2 = vec2Prop(node.properties, 'size');
+  if (size2 === null) return null;
+  const rawOrigin = vec3Prop(node.properties, 'origin', [0, 0, 0]);
+  const hasPos = node.properties.some((p) => p.name === 'position');
+  const position = add3(
+    hasPos ? vec3Prop(node.properties, 'position', [0, 0, 0]) : rawOrigin,
+    offset,
+  );
   const rotation = vec3Prop(node.properties, 'rotation', [0, 0, 0]);
   const pivot = vec3Prop(node.properties, 'pivot', [0, 0, 0]);
+  const u = vec3Prop(node.properties, 'u-axis', [1, 0, 0]);
+  const v = vec3Prop(node.properties, 'v-axis', [0, 1, 0]);
+  const normal = cross3(u, v);
+  const basis: PlaneBasisSpec = { u, v, normal };
+  const ownerOrigin = add3(pivot, position);
+  const half: Vec3 = [size2[0] / 2, size2[1] / 2, 0.02];
+  const localCenter = add3(
+    add3(scale3(u, half[0] - pivot[0]), scale3(v, half[1] - pivot[1])),
+    scale3(normal, -pivot[2]),
+  );
+  const center = chainTransformPoint(localCenter, ownerOrigin, rotation, ancestors);
+  const ax = chainRotateDir(u, rotation, ancestors);
+  const ay = chainRotateDir(v, rotation, ancestors);
+  const az = chainRotateDir(normal, rotation, ancestors);
+  const aabb = worldAabbFromBasis(center, ax, ay, az, half);
+  return {
+    id: node.id,
+    chartKey,
+    origin: rawOrigin,
+    size: [size2[0], size2[1], 0],
+    pivot,
+    position,
+    rotation,
+    ownerOrigin,
+    ancestors,
+    planeBasis: basis,
+    center,
+    half,
+    ax,
+    ay,
+    az,
+    aabbMin: aabb.min,
+    aabbMax: aabb.max,
+  };
+};
+
+const buildNodeObb = (
+  node: InstantiatedGeometryNode,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
+): SceneObb | null => {
   const chartKey =
     node.surface === null ? null : `${node.surface.surface.key}\u0000${node.surface.chart}`;
-  if (node.kind === 'cube') {
-    const size = vec3Prop(node.properties, 'size', [1, 1, 1]);
-    const inflate = scalarProp(node.properties, 'inflate', 0);
-    return makeObb(node.id, chartKey, origin, size, inflate, pivot, position, rotation, placement);
-  }
-  if (node.kind === 'plane') {
-    const sizeEntry = node.properties.find((p) => p.name === 'size');
-    if (sizeEntry?.value.kind !== 'vector' || sizeEntry.value.values.length !== 2) return null;
-    const sw =
-      Number(sizeEntry.value.values[0]!.value.numerator) /
-      Number(sizeEntry.value.values[0]!.value.denominator);
-    const sh =
-      Number(sizeEntry.value.values[1]!.value.numerator) /
-      Number(sizeEntry.value.values[1]!.value.denominator);
-    const u = vec3Prop(node.properties, 'u-axis', [1, 0, 0]);
-    const v = vec3Prop(node.properties, 'v-axis', [0, 1, 0]);
-    const min: [number, number, number] = [origin[0], origin[1], origin[2]];
-    const max: [number, number, number] = [origin[0], origin[1], origin[2]];
-    for (let i = 0; i < 3; i += 1) {
-      const span = u[i]! * sw + v[i]! * sh;
-      if (span < 0) min[i]! += span;
-      else max[i]! += span;
-    }
-    const size: Vec3 = [
-      Math.max(0.05, max[0] - min[0]),
-      Math.max(0.05, max[1] - min[1]),
-      Math.max(0.05, max[2] - min[2]),
-    ];
-    return makeObb(node.id, chartKey, min, size, 0, pivot, position, rotation, placement);
-  }
+  if (node.kind === 'cube') return buildCubeObb(node, chartKey, offset, ancestors);
+  if (node.kind === 'plane') return buildPlaneObb(node, chartKey, offset, ancestors);
   return null;
+};
+
+const boneTransformOf = (node: InstantiatedGeometryNode, offset: Vec3): BoneTransform => {
+  const pivot = add3(vec3Prop(node.properties, 'pivot', [0, 0, 0]), offset);
+  const position = vec3Prop(node.properties, 'position', [0, 0, 0]);
+  const rotation = vec3Prop(node.properties, 'rotation', [0, 0, 0]);
+  return { origin: add3(pivot, position), rotation };
 };
 
 const collectObbs = (
   nodes: readonly InstantiatedGeometryNode[],
-  placement: Vec3,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
   out: SceneObb[],
 ): void => {
   for (const node of nodes) {
-    const obb = obbFromNode(node, placement);
+    if (!boolProp(node.properties, 'visible', true)) continue;
+    if (node.kind === 'bone') {
+      collectObbs(node.children, offset, [boneTransformOf(node, offset), ...ancestors], out);
+      continue;
+    }
+    const obb = buildNodeObb(node, offset, ancestors);
     if (obb !== null) out.push(obb);
-    if (node.children.length > 0) collectObbs(node.children, placement, out);
+    if (node.children.length > 0) collectObbs(node.children, offset, ancestors, out);
   }
+};
+
+const texelSurfaceAndNormal = (
+  obb: SceneObb,
+  region: TextureRegion,
+  x: number,
+  y: number,
+): Readonly<{ readonly point: Vec3; readonly normal: Vec3 }> => {
+  if (obb.planeBasis !== undefined) {
+    const { u, v, normal } = obb.planeBasis;
+    const su = x + 0.5 - obb.pivot[0];
+    const sv = region.height - 0.5 - y - obb.pivot[1];
+    const localFromPivot = add3(add3(scale3(u, su), scale3(v, sv)), scale3(normal, -obb.pivot[2]));
+    return {
+      point: chainTransformPoint(localFromPivot, obb.ownerOrigin, obb.rotation, obb.ancestors),
+      normal: chainRotateDir(normal, obb.rotation, obb.ancestors),
+    };
+  }
+  const p = boxSurfacePoint(region, x, y);
+  const localFromPivot = sub3(add3(obb.origin, p), obb.pivot);
+  const dir = region.direction ?? 'north';
+  return {
+    point: chainTransformPoint(localFromPivot, obb.ownerOrigin, obb.rotation, obb.ancestors),
+    normal: chainRotateDir(FACE_NORMALS[dir], obb.rotation, obb.ancestors),
+  };
 };
 
 const computeBounds = (
@@ -204,16 +316,11 @@ export const buildTextureSceneContext = (ir: InstantiatedAssetIr): TextureSceneC
   const obbs: SceneObb[] = [];
   for (const instance of ir.instances) {
     const o = instance.placement.origin;
-    const offset: Vec3 = [
-      Number(o[0].numerator) / Number(o[0].denominator),
-      Number(o[1].numerator) / Number(o[1].denominator),
-      Number(o[2].numerator) / Number(o[2].denominator),
-    ];
-    collectObbs(
-      instance.geometry,
-      instance.placementAuthority === 'socket' ? offset : [0, 0, 0],
-      obbs,
-    );
+    const offset: Vec3 =
+      instance.placementAuthority === 'socket'
+        ? [numVal(o[0]), numVal(o[1]), numVal(o[2])]
+        : [0, 0, 0];
+    collectObbs(instance.geometry, offset, [], obbs);
   }
   const byChart = new Map<string, SceneObb[]>();
   for (const obb of obbs) {
@@ -225,10 +332,8 @@ export const buildTextureSceneContext = (ir: InstantiatedAssetIr): TextureSceneC
   const bounds = computeBounds(obbs);
   const worldPointFor = (chartKey: string, region: TextureRegion, x: number, y: number): Vec3 => {
     const obb = byChart.get(chartKey)?.[0];
-    const p = boxSurfacePoint(region, x, y);
-    if (obb === undefined) return p;
-    const local: Vec3 = [obb.origin[0] + p[0], obb.origin[1] + p[1], obb.origin[2] + p[2]];
-    return transformLocalPoint(local, obb.pivot, obb.rotation, obb.position, obb.placementOffset);
+    if (obb === undefined) return boxSurfacePoint(region, x, y);
+    return texelSurfaceAndNormal(obb, region, x, y).point;
   };
   return { obbs, byChart, boundsMin: bounds.min, boundsMax: bounds.max, worldPointFor };
 };
@@ -251,29 +356,28 @@ const distanceToObb = (point: Vec3, obb: SceneObb, radius: number): number => {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 };
 
-const probePointForTexel = (obb: SceneObb, region: TextureRegion, x: number, y: number): Vec3 => {
-  const localOffset = boxSurfacePoint(region, x, y);
-  const dir = region.direction ?? 'north';
-  const normal = FACE_NORMALS[dir];
-  const local: Vec3 = [
-    obb.origin[0] + localOffset[0] + normal[0] * 0.08,
-    obb.origin[1] + localOffset[1] + normal[1] * 0.08,
-    obb.origin[2] + localOffset[2] + normal[2] * 0.08,
-  ];
-  return transformLocalPoint(local, obb.pivot, obb.rotation, obb.position, obb.placementOffset);
-};
-
 const aoStepAt = (
-  point: Vec3,
-  ownerId: string,
+  surface: Readonly<{ readonly point: Vec3; readonly normal: Vec3 }>,
+  owner: SceneObb,
   obbs: readonly SceneObb[],
   radius: number,
   strength: number,
 ): number => {
+  const probeFront = add3(surface.point, scale3(surface.normal, 0.08));
+  const probeBack =
+    owner.planeBasis !== undefined
+      ? add3(surface.point, scale3(surface.normal, -0.08))
+      : probeFront;
   let nearest = Infinity;
   for (const other of obbs) {
-    if (other.id === ownerId) continue;
-    const dist = distanceToObb(point, other, radius);
+    if (other.id === owner.id) continue;
+    const dist =
+      owner.planeBasis !== undefined
+        ? Math.min(
+            distanceToObb(probeFront, other, radius),
+            distanceToObb(probeBack, other, radius),
+          )
+        : distanceToObb(probeFront, other, radius);
     if (dist < nearest) nearest = dist;
     if (nearest === 0) break;
   }
@@ -361,8 +465,8 @@ const applyAoRegion = (
 ): void => {
   for (let y = 0; y < region.height; y += 1) {
     for (let x = 0; x < region.width; x += 1) {
-      const probe = probePointForTexel(owner, region, x, y);
-      const step = aoStepAt(probe, owner.id, obbs, radius, strength);
+      const surface = texelSurfaceAndNormal(owner, region, x, y);
+      const step = aoStepAt(surface, owner, obbs, radius, strength);
       const index = (region.y + y) * grid.width + region.x + x;
       if (step > grid.ao[index]!) grid.ao[index] = step;
     }
@@ -391,8 +495,7 @@ export const applyAoPattern = (
   }
   const owner = scene?.byChart.get(chartKey)?.[0];
   if (owner === undefined || scene === undefined) return true;
-  for (const region of regions) {
+  for (const region of regions)
     applyAoRegion(grid, region, owner, scene.obbs, params.radius, params.strength);
-  }
   return true;
 };

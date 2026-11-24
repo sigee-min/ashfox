@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 
-import { compileDirectoryWorkspace } from '../../../src';
+import {
+  compileDirectoryWorkspace,
+  openAssetProject,
+  validateAssetProjectExportTarget,
+} from '../../../src';
 
 const workspaceConfig = (): string =>
   JSON.stringify({
@@ -107,14 +111,27 @@ if (compiled.ok) {
   assert.equal(product.kind, 'model');
   if (product.kind === 'model') {
     const nodes = product.model.scene.nodes;
+    const earLeft = nodes['body/root/ear_left'];
     const earRight = nodes['body/root/ear_right'];
+    assert.ok(earLeft && earLeft.kind === 'cube');
     assert.ok(earRight && earRight.kind === 'cube' && earRight.geometryMode === 'axis-box');
-    if (earRight && earRight.kind === 'cube' && earRight.geometryMode === 'axis-box') {
+    if (
+      earLeft &&
+      earLeft.kind === 'cube' &&
+      earRight &&
+      earRight.kind === 'cube' &&
+      earRight.geometryMode === 'axis-box'
+    ) {
       assert.deepEqual(earRight.bounds.from, [2, 4, -1]);
       assert.deepEqual(earRight.bounds.to, [4, 7, 0]);
       assert.deepEqual(earRight.transform.pivot, [3, 4, 0]);
       assert.deepEqual(earRight.transform.rotation, [5, -10, 15]);
-      assert.equal(earRight.mirror, true);
+      assert.equal(earRight.mirror, false);
+      assert.equal(earRight.boxUv, false);
+      const ln = earLeft.faces.north.uv!;
+      const le = earLeft.faces.east.uv!;
+      assert.deepEqual(earRight.faces.north.uv, [ln[2], ln[1], ln[0], ln[3]]);
+      assert.deepEqual(earRight.faces.west.uv, [le[2], le[1], le[0], le[3]]);
       assert.equal(earRight.faces.west.enabled, false);
       assert.equal(earRight.faces.east.enabled, true);
     }
@@ -123,6 +140,24 @@ if (compiled.ok) {
     if (tuftRight && tuftRight.kind === 'plane') {
       assert.deepEqual(tuftRight.transform.position, [4, 7, 0]);
       assert.deepEqual(tuftRight.basis?.uAxis, [-1, 0, 0]);
+    }
+    // Baked UVs on mirrored cubes pass glTF/GLB validation and export cleanly.
+    const opened = openAssetProject({
+      workspace: product.workspace,
+      entry: product.entry,
+      identity: { id: 'mirror', revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
+    });
+    assert.equal(opened.ok, true);
+    if (opened.ok) {
+      const targetValidation = validateAssetProjectExportTarget(opened.project, {
+        target: 'glb',
+        modelPath: 'mirror',
+      });
+      assert.equal(
+        targetValidation.valid,
+        true,
+        targetValidation.valid ? '' : JSON.stringify(targetValidation.findings),
+      );
     }
   }
 }

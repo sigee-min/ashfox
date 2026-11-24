@@ -28,6 +28,17 @@ export interface AssetAuthoringTelemetry {
   readonly textures: Readonly<Record<string, TextureAuthoringTelemetry>>;
 }
 
+export interface BoneTransform {
+  readonly origin: Vec3;
+  readonly rotation: Vec3;
+}
+
+export interface PlaneBasisSpec {
+  readonly u: Vec3;
+  readonly v: Vec3;
+  readonly normal: Vec3;
+}
+
 export interface SceneObb {
   readonly id: string;
   readonly chartKey: string | null;
@@ -36,7 +47,9 @@ export interface SceneObb {
   readonly pivot: Vec3;
   readonly position: Vec3;
   readonly rotation: Vec3;
-  readonly placementOffset: Vec3;
+  readonly ownerOrigin: Vec3;
+  readonly ancestors: readonly BoneTransform[];
+  readonly planeBasis?: PlaneBasisSpec;
   readonly center: Vec3;
   readonly half: Vec3;
   readonly ax: Vec3;

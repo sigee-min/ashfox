@@ -162,11 +162,32 @@ const collectCubeFaces = (
   return faceByDirection;
 };
 
+const flipRectU = (rect: UvRect): UvRect => freeze([rect[2], rect[1], rect[0], rect[3]]);
+
+const mirroredCubeUvs = (
+  uv: Readonly<Record<(typeof CUBE_FACES)[number], UvRect>>,
+): Readonly<Record<(typeof CUBE_FACES)[number], UvRect>> =>
+  freeze({
+    north: flipRectU(uv.north),
+    south: flipRectU(uv.south),
+    up: flipRectU(uv.up),
+    down: flipRectU(uv.down),
+    west: flipRectU(uv.east),
+    east: flipRectU(uv.west),
+  });
+
+const mirrorFaceRotation = (rotation: 0 | 90 | 180 | 270): 0 | 90 | 180 | 270 => {
+  if (rotation === 90) return 270;
+  if (rotation === 270) return 90;
+  return rotation;
+};
+
 const buildCubeFace = (
   direction: (typeof CUBE_FACES)[number],
   faceByDirection: ReadonlyMap<string, InstantiatedGeometryNode>,
   surface: SurfacePlan,
   uv: Readonly<Record<(typeof CUBE_FACES)[number], UvRect>>,
+  flipRotation: boolean,
   context: Context,
 ): CubeFace => {
   const child = faceByDirection.get(direction);
@@ -187,12 +208,14 @@ const buildCubeFace = (
     child === undefined
       ? true
       : boolean(childProperties.get('enabled'), true, context, child.sourcePath);
-  const rotation = child === undefined ? 0 : lowerFaceRotation(child, childProperties, context);
+  const rawRot =
+    child === undefined ? 0 : (lowerFaceRotation(child, childProperties, context) ?? 0);
+  const rotation = flipRotation ? mirrorFaceRotation(rawRot) : rawRot;
   return freeze({
     enabled: enabled ?? false,
     textureId: surface.plan.texture.id,
     uv: uv[direction],
-    rotation: rotation ?? 0,
+    rotation,
   });
 };
 
@@ -279,15 +302,17 @@ export const lowerCube = (
   if (canonical === null) return null;
   const { originNumbers, toNumbers, sizeNumbers, transform, inflate, mirror, surface } = canonical;
   verifyBoxChart(node, inputs.size, surface, context);
-  const uv = cubeUv(surface.chart.origin, [sizeNumbers[0], sizeNumbers[1], sizeNumbers[2]]);
+  const baseUv = cubeUv(surface.chart.origin, [sizeNumbers[0], sizeNumbers[1], sizeNumbers[2]]);
+  const bakedMirror = node.uvMirrorX === true;
+  const uv = bakedMirror ? mirroredCubeUvs(baseUv) : baseUv;
   const faceByDirection = collectCubeFaces(node, context);
   const faces: CubeFaces = {
-    north: buildCubeFace('north', faceByDirection, surface, uv, context),
-    south: buildCubeFace('south', faceByDirection, surface, uv, context),
-    east: buildCubeFace('east', faceByDirection, surface, uv, context),
-    west: buildCubeFace('west', faceByDirection, surface, uv, context),
-    up: buildCubeFace('up', faceByDirection, surface, uv, context),
-    down: buildCubeFace('down', faceByDirection, surface, uv, context),
+    north: buildCubeFace('north', faceByDirection, surface, uv, bakedMirror, context),
+    south: buildCubeFace('south', faceByDirection, surface, uv, bakedMirror, context),
+    east: buildCubeFace('east', faceByDirection, surface, uv, bakedMirror, context),
+    west: buildCubeFace('west', faceByDirection, surface, uv, bakedMirror, context),
+    up: buildCubeFace('up', faceByDirection, surface, uv, bakedMirror, context),
+    down: buildCubeFace('down', faceByDirection, surface, uv, bakedMirror, context),
   };
   return {
     id: node.id,
@@ -299,9 +324,11 @@ export const lowerCube = (
     transform,
     visible: visibleFor(inputs.properties, context, node),
     inflate,
-    mirror,
-    boxUv: true,
-    uvOffset: freeze([surface.chart.origin[0], surface.chart.origin[1]]),
+    mirror: bakedMirror ? false : mirror,
+    boxUv: !bakedMirror,
+    ...(bakedMirror
+      ? {}
+      : { uvOffset: freeze([surface.chart.origin[0], surface.chart.origin[1]]) }),
     faces,
   };
 };
