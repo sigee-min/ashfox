@@ -17,31 +17,31 @@ const crc32 = (bytes: Uint8Array, start: number, end: number): number => {
   return (crc ^ 0xffffffff) >>> 0;
 };
 
-/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
- * exact final buffer. No full-size scanline, compressed or chunk copies. */
-export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
-  assertCanonicalTextureRaster(raster);
-  const stride = raster.width * 4 + 1;
-  const scanlineLength = stride * raster.height;
-  const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
-  const bytes = new Uint8Array(57 + compressedLength);
-  const view = new DataView(bytes.buffer);
-  const beginChunk = (offset: number, type: string, length: number): number => {
-    view.setUint32(offset, length);
-    for (let index = 0; index < 4; index += 1) bytes[offset + 4 + index] = type.charCodeAt(index);
-    return offset + 8;
-  };
-  const endChunk = (offset: number, length: number): void => {
-    view.setUint32(offset + 8 + length, crc32(bytes, offset + 4, offset + 8 + length));
-  };
-  bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
-  const header = beginChunk(8, 'IHDR', 13);
-  view.setUint32(header, raster.width);
-  view.setUint32(header + 4, raster.height);
-  bytes.set([8, 6, 0, 0, 0], header + 8);
-  endChunk(8, 13);
+const beginPngChunk = (
+  bytes: Uint8Array,
+  view: DataView,
+  offset: number,
+  type: string,
+  length: number,
+): number => {
+  view.setUint32(offset, length);
+  for (let index = 0; index < 4; index += 1) bytes[offset + 4 + index] = type.charCodeAt(index);
+  return offset + 8;
+};
 
-  let output = beginChunk(33, 'IDAT', compressedLength);
+const endPngChunk = (bytes: Uint8Array, view: DataView, offset: number, length: number): void => {
+  view.setUint32(offset + 8 + length, crc32(bytes, offset + 4, offset + 8 + length));
+};
+
+const writeStoredDeflateIdat = (
+  bytes: Uint8Array,
+  view: DataView,
+  raster: CanonicalTextureRaster,
+  stride: number,
+  scanlineLength: number,
+  compressedLength: number,
+): void => {
+  let output = beginPngChunk(bytes, view, 33, 'IDAT', compressedLength);
   bytes[output++] = 0x78;
   bytes[output++] = 0x01;
   let pixel = 0,
@@ -71,9 +71,27 @@ export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array =
     offset += length;
   }
   view.setUint32(output, (((second % 65521) << 16) | (first % 65521)) >>> 0);
-  endChunk(33, compressedLength);
-  beginChunk(45 + compressedLength, 'IEND', 0);
-  endChunk(45 + compressedLength, 0);
+  endPngChunk(bytes, view, 33, compressedLength);
+};
+
+/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
+ * exact final buffer. No full-size scanline, compressed or chunk copies. */
+export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
+  assertCanonicalTextureRaster(raster);
+  const stride = raster.width * 4 + 1;
+  const scanlineLength = stride * raster.height;
+  const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
+  const bytes = new Uint8Array(57 + compressedLength);
+  const view = new DataView(bytes.buffer);
+  bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
+  const header = beginPngChunk(bytes, view, 8, 'IHDR', 13);
+  view.setUint32(header, raster.width);
+  view.setUint32(header + 4, raster.height);
+  bytes.set([8, 6, 0, 0, 0], header + 8);
+  endPngChunk(bytes, view, 8, 13);
+  writeStoredDeflateIdat(bytes, view, raster, stride, scanlineLength, compressedLength);
+  beginPngChunk(bytes, view, 45 + compressedLength, 'IEND', 0);
+  endPngChunk(bytes, view, 45 + compressedLength, 0);
   return bytes;
 };
 

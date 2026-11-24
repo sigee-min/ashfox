@@ -19,8 +19,7 @@ type ActorProfile = Extract<
 const targetNameFor = (profile: ActorProfile): 'Bedrock' | 'GeckoLib 5' =>
   profile.id === 'minecraft.bedrock' ? 'Bedrock' : 'GeckoLib 5';
 
-const validateProfile = (profile: ActorProfile, add: FindingSink): void => {
-  const targetName = targetNameFor(profile);
+const validateProfileKind = (profile: ActorProfile, add: FindingSink): void => {
   if (
     profile.id === 'minecraft.java.geckolib5' &&
     !['entity', 'block', 'item'].includes(profile.assetKind)
@@ -40,6 +39,54 @@ const validateProfile = (profile: ActorProfile, add: FindingSink): void => {
       path: 'formatProfile.geometryKind',
     });
   }
+};
+
+const isInvalidResourcePath = (value: string): boolean =>
+  !RESOURCE_PATH_PATTERN.test(value) ||
+  value.startsWith('/') ||
+  value.endsWith('/') ||
+  value.includes('..') ||
+  value.endsWith('.json');
+
+const validateProfilePaths = (profile: ActorProfile, add: FindingSink): void => {
+  const targetName = targetNameFor(profile);
+  for (const [field, value] of [
+    ['modelPath', profile.modelPath],
+    ['animationPath', profile.animationPath],
+  ] as const) {
+    if (!isInvalidResourcePath(value)) continue;
+    add({
+      code: 'format.invalid_resource_path',
+      severity: 'error',
+      message: `${targetName} ${field === 'modelPath' ? 'model' : 'animation'} path "${value}" is invalid.`,
+      path: `formatProfile.${field}`,
+    });
+  }
+};
+
+const validateVisibleBounds = (
+  bounds: NonNullable<ActorProfile['visibleBounds']>,
+  add: FindingSink,
+): void => {
+  if (
+    !isFiniteNumber(bounds.width) ||
+    bounds.width <= 0 ||
+    !isFiniteNumber(bounds.height) ||
+    bounds.height <= 0
+  ) {
+    add({
+      code: 'value.not_finite',
+      severity: 'error',
+      message: 'Visible bounds width and height must be finite and positive.',
+      path: 'formatProfile.visibleBounds',
+    });
+  }
+  validateVec(bounds.offset, 3, 'formatProfile.visibleBounds.offset', add);
+};
+
+const validateProfile = (profile: ActorProfile, add: FindingSink): void => {
+  const targetName = targetNameFor(profile);
+  validateProfileKind(profile, add);
   if (!RESOURCE_NAMESPACE_PATTERN.test(profile.namespace)) {
     add({
       code: 'format.invalid_namespace',
@@ -48,25 +95,7 @@ const validateProfile = (profile: ActorProfile, add: FindingSink): void => {
       path: 'formatProfile.namespace',
     });
   }
-  for (const [field, value] of [
-    ['modelPath', profile.modelPath],
-    ['animationPath', profile.animationPath],
-  ] as const) {
-    if (
-      !RESOURCE_PATH_PATTERN.test(value) ||
-      value.startsWith('/') ||
-      value.endsWith('/') ||
-      value.includes('..') ||
-      value.endsWith('.json')
-    ) {
-      add({
-        code: 'format.invalid_resource_path',
-        severity: 'error',
-        message: `${targetName} ${field === 'modelPath' ? 'model' : 'animation'} path "${value}" is invalid.`,
-        path: `formatProfile.${field}`,
-      });
-    }
-  }
+  validateProfilePaths(profile, add);
   if (!BEDROCK_GEOMETRY_IDENTIFIER_PATTERN.test(profile.geometryIdentifier)) {
     add({
       code: 'format.invalid_identifier',
@@ -75,22 +104,7 @@ const validateProfile = (profile: ActorProfile, add: FindingSink): void => {
       path: 'formatProfile.geometryIdentifier',
     });
   }
-  if (profile.visibleBounds) {
-    if (
-      !isFiniteNumber(profile.visibleBounds.width) ||
-      profile.visibleBounds.width <= 0 ||
-      !isFiniteNumber(profile.visibleBounds.height) ||
-      profile.visibleBounds.height <= 0
-    ) {
-      add({
-        code: 'value.not_finite',
-        severity: 'error',
-        message: 'Visible bounds width and height must be finite and positive.',
-        path: 'formatProfile.visibleBounds',
-      });
-    }
-    validateVec(profile.visibleBounds.offset, 3, 'formatProfile.visibleBounds.offset', add);
-  }
+  if (profile.visibleBounds) validateVisibleBounds(profile.visibleBounds, add);
 };
 
 const validateActorCube = (

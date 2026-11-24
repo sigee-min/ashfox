@@ -220,14 +220,13 @@ const validateArray = (
   return null;
 };
 
-const validateObject = (
-  value: unknown,
-  schema: Extract<CommandInputSchema, { type: 'object' }>,
+type ObjectSchema = Extract<CommandInputSchema, { type: 'object' }>;
+
+const validateObjectConstraints = (
+  value: Readonly<Record<string, unknown>>,
+  schema: ObjectSchema,
   path: string,
 ): SchemaIssue | null => {
-  if (!isRecord(value)) {
-    return { path, message: 'Expected an object.', expected: 'object' };
-  }
   const propertyCount = Object.keys(value).length;
   if (schema.minProperties !== undefined && propertyCount < schema.minProperties) {
     return {
@@ -259,6 +258,14 @@ const validateObject = (
       expected: `at least one of ${schema.atLeastOne.join(', ')}`,
     };
   }
+  return null;
+};
+
+const validateAdditionalProperties = (
+  value: Readonly<Record<string, unknown>>,
+  schema: ObjectSchema,
+  path: string,
+): SchemaIssue | null => {
   const unknownKeys = Object.keys(value).filter((key) => !(key in schema.properties));
   if (schema.additionalProperties === false) {
     if (unknownKeys[0]) {
@@ -268,12 +275,25 @@ const validateObject = (
         expected: 'registered property',
       };
     }
-  } else if (typeof schema.additionalProperties === 'object') {
+    return null;
+  }
+  if (typeof schema.additionalProperties === 'object') {
     for (const key of unknownKeys) {
       const issue = validateCommandInput(value[key], schema.additionalProperties, `${path}.${key}`);
       if (issue) return issue;
     }
   }
+  return null;
+};
+
+const validateObject = (value: unknown, schema: ObjectSchema, path: string): SchemaIssue | null => {
+  if (!isRecord(value)) {
+    return { path, message: 'Expected an object.', expected: 'object' };
+  }
+  const constraintIssue = validateObjectConstraints(value, schema, path);
+  if (constraintIssue) return constraintIssue;
+  const additionalIssue = validateAdditionalProperties(value, schema, path);
+  if (additionalIssue) return additionalIssue;
   for (const [key, propertySchema] of Object.entries(schema.properties)) {
     if (!(key in value)) continue;
     const issue = validateCommandInput(value[key], propertySchema, `${path}.${key}`);

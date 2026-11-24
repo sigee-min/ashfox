@@ -158,43 +158,49 @@ const validateCube = (
   }
 };
 
+const validatePlane = (
+  node: Extract<ProjectDocument['scene']['nodes'][string], { kind: 'plane' }>,
+  nodeId: string,
+  path: string,
+  add: FindingSink,
+): void => {
+  for (const direction of PLANE_FACE_DIRECTIONS) {
+    const face = node.faces[direction];
+    if (!face.enabled) continue;
+    if (face.textureId !== null && !face.uv) {
+      add({
+        code: 'format.uv_missing',
+        severity: 'error',
+        message: 'Textured glTF plane faces require explicit UV rectangles.',
+        path: `${path}.faces.${direction}.uv`,
+        entityIds: [nodeId],
+        assetIds: [face.textureId],
+      });
+    }
+    if (
+      face.tintIndex !== undefined ||
+      (face.materialInstance !== undefined && face.materialInstance !== 'cutout')
+    ) {
+      add({
+        code: 'format.unsupported_data',
+        severity: 'error',
+        message:
+          face.tintIndex !== undefined
+            ? 'glTF cannot preserve Minecraft plane tint indices.'
+            : 'glTF only maps the canonical cutout material instance to alpha MASK.',
+        path: `${path}.faces.${direction}`,
+        entityIds: [nodeId],
+      });
+    }
+  }
+};
+
 const validateScene = (document: ExportAdaptedDocument, add: FindingSink): void => {
   for (const [nodeId, node] of Object.entries(document.scene.nodes)) {
     const path = `scene.nodes.${nodeId}`;
     if (!isSceneNodeEffectivelyVisible(document, nodeId)) continue;
-    if (node.kind === 'cube') {
-      validateCube(node, nodeId, path, add);
-    }
-    if (node.kind === 'plane') {
-      for (const direction of PLANE_FACE_DIRECTIONS) {
-        const face = node.faces[direction];
-        if (!face.enabled) continue;
-        if (face.textureId !== null && !face.uv)
-          add({
-            code: 'format.uv_missing',
-            severity: 'error',
-            message: 'Textured glTF plane faces require explicit UV rectangles.',
-            path: `${path}.faces.${direction}.uv`,
-            entityIds: [nodeId],
-            assetIds: [face.textureId],
-          });
-        if (
-          face.tintIndex !== undefined ||
-          (face.materialInstance !== undefined && face.materialInstance !== 'cutout')
-        ) {
-          add({
-            code: 'format.unsupported_data',
-            severity: 'error',
-            message:
-              face.tintIndex !== undefined
-                ? 'glTF cannot preserve Minecraft plane tint indices.'
-                : 'glTF only maps the canonical cutout material instance to alpha MASK.',
-            path: `${path}.faces.${direction}`,
-            entityIds: [nodeId],
-          });
-        }
-      }
-    }
+    if (node.kind === 'cube') validateCube(node, nodeId, path, add);
+    else if (node.kind === 'plane') validatePlane(node, nodeId, path, add);
   }
 };
 

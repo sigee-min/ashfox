@@ -31,7 +31,6 @@ packages/engine-core/src/project/workspace/graph.ts
 packages/engine-core/src/project/workspace/graphSource.ts
 packages/engine-core/src/project/workspace/schema.ts
 packages/engine-core/src/project/workspace/validation.ts
-packages/engine-core/src/validation/document/scene.ts
 packages/engine-core/tests/program/asset/parser.test.ts
 packages/engine-core/tests/program/asset/texture.test.ts
 packages/engine-core/tests/program/asset/texturebinding.test.ts
