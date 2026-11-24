@@ -5,7 +5,7 @@ import { commandBatchFailure } from './failure';
 
 const MAX_BATCH_OPERATIONS = 64;
 
-export const validateCommandBatch = (
+const validateBatchHeader = (
   project: AssetProject,
   batch: CommandBatch,
   source: CommandSource,
@@ -58,34 +58,54 @@ export const validateCommandBatch = (
       expected: `1-${MAX_BATCH_OPERATIONS} operations`,
     });
   }
+  return null;
+};
+
+const validateBatchOperation = (
+  project: AssetProject,
+  operation: CommandBatch['operations'][number],
+  index: number,
+  source: CommandSource,
+): CommandBatchFailure | null => {
+  const definition = getCommandDefinition(operation.name);
+  if (!definition) {
+    return commandBatchFailure(project, {
+      code: 'invalid_payload',
+      message: `Command "${String(operation.name)}" is not registered.`,
+      path: `operations[${index}].name`,
+      expected: 'registered command name',
+    });
+  }
+  if (!commandAllowedForSource(operation.name, source)) {
+    return commandBatchFailure(project, {
+      code: 'invalid_payload',
+      message: `Command "${operation.name}" is not available to ${source}.`,
+      path: `operations[${index}].name`,
+      expected: 'command available to this trusted source',
+    });
+  }
+  const issue = definition.validate(operation.payload);
+  if (issue) {
+    return commandBatchFailure(project, {
+      code: 'invalid_payload',
+      message: issue.message,
+      path: `operations[${index}].payload${issue.path.slice(1)}`,
+      expected: issue.expected,
+    });
+  }
+  return null;
+};
+
+export const validateCommandBatch = (
+  project: AssetProject,
+  batch: CommandBatch,
+  source: CommandSource,
+): CommandBatchFailure | null => {
+  const headerFailure = validateBatchHeader(project, batch, source);
+  if (headerFailure) return headerFailure;
   for (let index = 0; index < batch.operations.length; index += 1) {
-    const operation = batch.operations[index];
-    const definition = getCommandDefinition(operation.name);
-    if (!definition) {
-      return commandBatchFailure(project, {
-        code: 'invalid_payload',
-        message: `Command "${String(operation.name)}" is not registered.`,
-        path: `operations[${index}].name`,
-        expected: 'registered command name',
-      });
-    }
-    if (!commandAllowedForSource(operation.name, source)) {
-      return commandBatchFailure(project, {
-        code: 'invalid_payload',
-        message: `Command "${operation.name}" is not available to ${source}.`,
-        path: `operations[${index}].name`,
-        expected: 'command available to this trusted source',
-      });
-    }
-    const issue = definition.validate(operation.payload);
-    if (issue) {
-      return commandBatchFailure(project, {
-        code: 'invalid_payload',
-        message: issue.message,
-        path: `operations[${index}].payload${issue.path.slice(1)}`,
-        expected: issue.expected,
-      });
-    }
+    const failure = validateBatchOperation(project, batch.operations[index], index, source);
+    if (failure) return failure;
   }
   return null;
 };

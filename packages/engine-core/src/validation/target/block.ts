@@ -49,96 +49,231 @@ const validateProfileIdentity = (document: ExportAdaptedDocument, add: FindingSi
   }
 };
 
-const validateTextureBindings = (document: ExportAdaptedDocument, add: FindingSink): void => {
-  const textureKeys = new Map<string, string>();
-  const texturePaths = new Map<string, string>();
-  let particleAssetId: string | undefined;
-  for (const [assetId, texture] of Object.entries(document.textures)) {
-    const path = `textures.${assetId}`;
-    if (!texture.minecraft) {
-      add({
-        code: 'format.texture_binding_missing',
-        severity: 'error',
-        message: 'Java export requires a Minecraft resource binding for every texture.',
-        path: `${path}.minecraft`,
-        assetIds: [assetId],
-      });
-      continue;
-    }
-    validateResourceLocation(texture.minecraft.resource, `${path}.minecraft.resource`, add);
-    if (texture.minecraft.resource.path.endsWith('.png')) {
-      add({
-        code: 'format.invalid_resource_path',
-        severity: 'error',
-        message: 'Minecraft texture resource paths must omit the .png extension.',
-        path: `${path}.minecraft.resource.path`,
-        assetIds: [assetId],
-      });
-    }
-    if (!TEXTURE_KEY_PATTERN.test(texture.minecraft.key)) {
-      add({
-        code: 'format.invalid_identifier',
-        severity: 'error',
-        message: `Minecraft texture key "${texture.minecraft.key}" is invalid.`,
-        path: `${path}.minecraft.key`,
-        assetIds: [assetId],
-        fix: 'Use lowercase letters, digits, underscore, dot, or hyphen.',
-      });
-    }
-    const existing = textureKeys.get(texture.minecraft.key);
-    if (existing && existing !== assetId) {
+interface TextureBindingState {
+  readonly textureKeys: Map<string, string>;
+  readonly texturePaths: Map<string, string>;
+  particleAssetId: string | undefined;
+}
+
+const validateTextureBindingKey = (
+  assetId: string,
+  minecraft: NonNullable<ExportAdaptedDocument['textures'][string]['minecraft']>,
+  path: string,
+  state: TextureBindingState,
+  add: FindingSink,
+): void => {
+  if (!TEXTURE_KEY_PATTERN.test(minecraft.key)) {
+    add({
+      code: 'format.invalid_identifier',
+      severity: 'error',
+      message: `Minecraft texture key "${minecraft.key}" is invalid.`,
+      path: `${path}.minecraft.key`,
+      assetIds: [assetId],
+      fix: 'Use lowercase letters, digits, underscore, dot, or hyphen.',
+    });
+  }
+  const existing = state.textureKeys.get(minecraft.key);
+  if (existing && existing !== assetId) {
+    add({
+      code: 'format.texture_key_duplicate',
+      severity: 'error',
+      message: `Minecraft texture key "${minecraft.key}" is used by multiple assets.`,
+      path: `${path}.minecraft.key`,
+      assetIds: [existing, assetId],
+    });
+  }
+  state.textureKeys.set(minecraft.key, assetId);
+};
+
+const validateTextureBindingPath = (
+  assetId: string,
+  texture: ExportAdaptedDocument['textures'][string],
+  minecraft: NonNullable<ExportAdaptedDocument['textures'][string]['minecraft']>,
+  path: string,
+  state: TextureBindingState,
+  add: FindingSink,
+): void => {
+  const texturePath = `${minecraft.resource.namespace}:` + minecraft.resource.path;
+  const existingPath = state.texturePaths.get(texturePath);
+  if (existingPath && existingPath !== assetId) {
+    add({
+      code: 'format.texture_path_duplicate',
+      severity: 'error',
+      message: `Java texture output "${texturePath}.png" is used by multiple assets.`,
+      path: `${path}.minecraft.resource`,
+      assetIds: [existingPath, assetId],
+    });
+  }
+  state.texturePaths.set(texturePath, assetId);
+  if (minecraft.particle) {
+    if (state.particleAssetId) {
       add({
         code: 'format.texture_key_duplicate',
         severity: 'error',
-        message: `Minecraft texture key "${texture.minecraft.key}" is used by multiple assets.`,
-        path: `${path}.minecraft.key`,
-        assetIds: [existing, assetId],
+        message: 'Only one Java texture binding may define the particle alias.',
+        path: `${path}.minecraft.particle`,
+        assetIds: [state.particleAssetId, assetId],
       });
     }
-    textureKeys.set(texture.minecraft.key, assetId);
-    const texturePath =
-      `${texture.minecraft.resource.namespace}:` + texture.minecraft.resource.path;
-    const existingPath = texturePaths.get(texturePath);
-    if (existingPath && existingPath !== assetId) {
-      add({
-        code: 'format.texture_path_duplicate',
-        severity: 'error',
-        message: `Java texture output "${texturePath}.png" is used by multiple assets.`,
-        path: `${path}.minecraft.resource`,
-        assetIds: [existingPath, assetId],
-      });
-    }
-    texturePaths.set(texturePath, assetId);
-    if (texture.minecraft.particle) {
-      if (particleAssetId) {
-        add({
-          code: 'format.texture_key_duplicate',
-          severity: 'error',
-          message: 'Only one Java texture binding may define the particle alias.',
-          path: `${path}.minecraft.particle`,
-          assetIds: [particleAssetId, assetId],
-        });
-      }
-      particleAssetId = assetId;
-    }
-    if (texture.source.contentType !== 'image/png' || texture.minecraft.extension !== 'png') {
-      add({
-        code: 'format.texture_type_unsupported',
-        severity: 'error',
-        message: 'Java resource-pack textures must be PNG files.',
-        path: `${path}.source.contentType`,
-        assetIds: [assetId],
-      });
-    }
+    state.particleAssetId = assetId;
   }
-  const explicitParticleAsset = textureKeys.get('particle');
-  if (particleAssetId && explicitParticleAsset) {
+  if (texture.source.contentType !== 'image/png' || minecraft.extension !== 'png') {
+    add({
+      code: 'format.texture_type_unsupported',
+      severity: 'error',
+      message: 'Java resource-pack textures must be PNG files.',
+      path: `${path}.source.contentType`,
+      assetIds: [assetId],
+    });
+  }
+};
+
+const validateTextureBinding = (
+  assetId: string,
+  texture: ExportAdaptedDocument['textures'][string],
+  state: TextureBindingState,
+  add: FindingSink,
+): void => {
+  const path = `textures.${assetId}`;
+  const minecraft = texture.minecraft;
+  if (!minecraft) {
+    add({
+      code: 'format.texture_binding_missing',
+      severity: 'error',
+      message: 'Java export requires a Minecraft resource binding for every texture.',
+      path: `${path}.minecraft`,
+      assetIds: [assetId],
+    });
+    return;
+  }
+  validateResourceLocation(minecraft.resource, `${path}.minecraft.resource`, add);
+  if (minecraft.resource.path.endsWith('.png')) {
+    add({
+      code: 'format.invalid_resource_path',
+      severity: 'error',
+      message: 'Minecraft texture resource paths must omit the .png extension.',
+      path: `${path}.minecraft.resource.path`,
+      assetIds: [assetId],
+    });
+  }
+  validateTextureBindingKey(assetId, minecraft, path, state, add);
+  validateTextureBindingPath(assetId, texture, minecraft, path, state, add);
+};
+
+const validateTextureBindings = (document: ExportAdaptedDocument, add: FindingSink): void => {
+  const state: TextureBindingState = {
+    textureKeys: new Map<string, string>(),
+    texturePaths: new Map<string, string>(),
+    particleAssetId: undefined,
+  };
+  for (const [assetId, texture] of Object.entries(document.textures)) {
+    validateTextureBinding(assetId, texture, state, add);
+  }
+  const explicitParticleAsset = state.textureKeys.get('particle');
+  if (state.particleAssetId && explicitParticleAsset) {
     add({
       code: 'format.texture_key_duplicate',
       severity: 'error',
       message: 'The generated particle alias conflicts with an explicit "particle" texture key.',
-      path: `textures.${particleAssetId}.minecraft.particle`,
-      assetIds: [explicitParticleAsset, particleAssetId],
+      path: `textures.${state.particleAssetId}.minecraft.particle`,
+      assetIds: [explicitParticleAsset, state.particleAssetId],
+    });
+  }
+};
+
+const validateJavaRotation = (
+  rotation: readonly [number, number, number],
+  minecraftVersion: string,
+  axisLabel: string,
+  path: string,
+  nodeId: string,
+  add: FindingSink,
+): void => {
+  if (javaBlockSupportsMultiAxisRotation) return;
+  const activeRotations = rotation.filter((value) => Math.abs(value) > EPSILON);
+  const angle = activeRotations[0] ?? 0;
+  if (
+    activeRotations.length > 1 ||
+    !JAVA_ROTATION_ANGLES.some((allowed) => Math.abs(allowed - angle) <= EPSILON)
+  ) {
+    add({
+      code: 'format.rotation_unsupported',
+      severity: 'error',
+      message: `Java ${minecraftVersion} supports one ${axisLabel} at -45, -22.5, 0, 22.5, or 45 degrees.`,
+      path: `${path}.transform.rotation`,
+      entityIds: [nodeId],
+    });
+  }
+};
+
+const validateJavaFaces = <Direction extends string>(
+  faces: Readonly<
+    Record<
+      Direction,
+      { readonly enabled: boolean; readonly textureId: string | null; readonly uv?: unknown }
+    >
+  >,
+  directions: readonly Direction[],
+  faceLabel: string,
+  path: string,
+  nodeId: string,
+  add: FindingSink,
+): void => {
+  for (const direction of directions) {
+    const face = faces[direction];
+    if (!face.enabled) continue;
+    if (face.textureId === null) {
+      add({
+        code: 'format.texture_binding_missing',
+        severity: 'error',
+        message: `Enabled ${faceLabel} require a texture.`,
+        path: `${path}.faces.${direction}.textureId`,
+        entityIds: [nodeId],
+      });
+    }
+    if (!face.uv) {
+      add({
+        code: 'format.uv_missing',
+        severity: 'error',
+        message: `Enabled ${faceLabel} require an explicit UV rectangle.`,
+        path: `${path}.faces.${direction}.uv`,
+        entityIds: [nodeId],
+      });
+    }
+  }
+};
+
+const validateJavaCubeBounds = (
+  node: Extract<
+    ProjectDocument['scene']['nodes'][string],
+    { kind: 'cube'; geometryMode: 'axis-box' }
+  >,
+  nodeId: string,
+  path: string,
+  add: FindingSink,
+): void => {
+  const inflatedFrom = node.bounds.from.map(
+    (value, index) => value + node.transform.position[index] - node.inflate,
+  );
+  const inflatedTo = node.bounds.to.map(
+    (value, index) => value + node.transform.position[index] + node.inflate,
+  );
+  if (inflatedFrom.some((value, index) => value > inflatedTo[index])) {
+    add({
+      code: 'cube.invalid_bounds',
+      severity: 'error',
+      message: 'Java element bounds become reversed after applying inflate.',
+      path: `${path}.inflate`,
+      entityIds: [nodeId],
+    });
+  }
+  if ([...inflatedFrom, ...inflatedTo].some((value) => value < -16 || value > 32)) {
+    add({
+      code: 'format.coordinate_overflow',
+      severity: 'error',
+      message: 'Java block element coordinates must remain between -16 and 32 after inflate.',
+      path: `${path}.bounds`,
+      entityIds: [nodeId],
     });
   }
 };
@@ -171,68 +306,16 @@ const validateJavaCube = (
       entityIds: [nodeId],
     });
   }
-  const inflatedFrom = node.bounds.from.map(
-    (value, index) => value + node.transform.position[index] - node.inflate,
+  validateJavaCubeBounds(node, nodeId, path, add);
+  validateJavaRotation(
+    node.transform.rotation,
+    profile.minecraftVersion,
+    'rotation axis',
+    path,
+    nodeId,
+    add,
   );
-  const inflatedTo = node.bounds.to.map(
-    (value, index) => value + node.transform.position[index] + node.inflate,
-  );
-  if (inflatedFrom.some((value, index) => value > inflatedTo[index])) {
-    add({
-      code: 'cube.invalid_bounds',
-      severity: 'error',
-      message: 'Java element bounds become reversed after applying inflate.',
-      path: `${path}.inflate`,
-      entityIds: [nodeId],
-    });
-  }
-  if ([...inflatedFrom, ...inflatedTo].some((value) => value < -16 || value > 32)) {
-    add({
-      code: 'format.coordinate_overflow',
-      severity: 'error',
-      message: 'Java block element coordinates must remain between -16 and 32 after inflate.',
-      path: `${path}.bounds`,
-      entityIds: [nodeId],
-    });
-  }
-  const activeRotations = node.transform.rotation.filter((value) => Math.abs(value) > EPSILON);
-  if (!javaBlockSupportsMultiAxisRotation) {
-    const angle = activeRotations[0] ?? 0;
-    if (
-      activeRotations.length > 1 ||
-      !JAVA_ROTATION_ANGLES.some((allowed) => Math.abs(allowed - angle) <= EPSILON)
-    ) {
-      add({
-        code: 'format.rotation_unsupported',
-        severity: 'error',
-        message: `Java ${profile.minecraftVersion} supports one rotation axis at -45, -22.5, 0, 22.5, or 45 degrees.`,
-        path: `${path}.transform.rotation`,
-        entityIds: [nodeId],
-      });
-    }
-  }
-  for (const direction of CUBE_FACE_DIRECTIONS) {
-    const face = node.faces[direction];
-    if (!face.enabled) continue;
-    if (face.textureId === null) {
-      add({
-        code: 'format.texture_binding_missing',
-        severity: 'error',
-        message: 'Enabled Java faces require a texture.',
-        path: `${path}.faces.${direction}.textureId`,
-        entityIds: [nodeId],
-      });
-    }
-    if (!face.uv) {
-      add({
-        code: 'format.uv_missing',
-        severity: 'error',
-        message: 'Enabled Java faces require an explicit UV rectangle.',
-        path: `${path}.faces.${direction}.uv`,
-        entityIds: [nodeId],
-      });
-    }
-  }
+  validateJavaFaces(node.faces, CUBE_FACE_DIRECTIONS, 'Java faces', path, nodeId, add);
 };
 
 const validateJavaPlane = (
@@ -265,41 +348,15 @@ const validateJavaPlane = (
       path: `${path}.size`,
       entityIds: [nodeId],
     });
-  const activeRotations = node.transform.rotation.filter((value) => Math.abs(value) > EPSILON);
-  if (!javaBlockSupportsMultiAxisRotation) {
-    const angle = activeRotations[0] ?? 0;
-    if (
-      activeRotations.length > 1 ||
-      !JAVA_ROTATION_ANGLES.some((allowed) => Math.abs(allowed - angle) <= EPSILON)
-    )
-      add({
-        code: 'format.rotation_unsupported',
-        severity: 'error',
-        message: `Java ${profile.minecraftVersion} supports one plane rotation axis at -45, -22.5, 0, 22.5, or 45 degrees.`,
-        path: `${path}.transform.rotation`,
-        entityIds: [nodeId],
-      });
-  }
-  for (const direction of PLANE_FACE_DIRECTIONS) {
-    const face = node.faces[direction];
-    if (!face.enabled) continue;
-    if (face.textureId === null)
-      add({
-        code: 'format.texture_binding_missing',
-        severity: 'error',
-        message: 'Enabled Java plane faces require a texture.',
-        path: `${path}.faces.${direction}.textureId`,
-        entityIds: [nodeId],
-      });
-    if (!face.uv)
-      add({
-        code: 'format.uv_missing',
-        severity: 'error',
-        message: 'Enabled Java plane faces require an explicit UV rectangle.',
-        path: `${path}.faces.${direction}.uv`,
-        entityIds: [nodeId],
-      });
-  }
+  validateJavaRotation(
+    node.transform.rotation,
+    profile.minecraftVersion,
+    'plane rotation axis',
+    path,
+    nodeId,
+    add,
+  );
+  validateJavaFaces(node.faces, PLANE_FACE_DIRECTIONS, 'Java plane faces', path, nodeId, add);
 };
 
 const validateSceneNodes = (document: ExportAdaptedDocument, add: FindingSink): void => {

@@ -12,10 +12,7 @@ const SHA_256_ROUND_CONSTANTS = new Uint32Array([
 const rotateRight = (value: number, bits: number): number =>
   (value >>> bits) | (value << (32 - bits));
 
-/** A synchronous, runtime-neutral SHA-256 implementation for Node and web. */
-export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
-  const input = inputBytes instanceof Uint8Array ? inputBytes : Uint8Array.from(inputBytes);
-  const completeLength = input.length - (input.length % 64);
+const padSha256Tail = (input: Uint8Array, completeLength: number): Uint8Array => {
   // Read complete blocks in place; only the final one or two blocks need
   // padding. Scratch storage stays bounded even for large texture artifacts.
   const tail = new Uint8Array(input.length % 64 < 56 ? 64 : 128);
@@ -27,7 +24,71 @@ export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
   for (let offset = 0; offset < 8; offset += 1) {
     tail[tail.length - 1 - offset] = Number((bitLength >> BigInt(offset * 8)) & 0xffn);
   }
+  return tail;
+};
 
+const compressSha256Block = (
+  state: Uint32Array,
+  words: Uint32Array,
+  bytes: Uint8Array,
+  block: number,
+): void => {
+  for (let index = 0; index < 16; index += 1) {
+    const start = block + index * 4;
+    words[index] =
+      ((bytes[start] << 24) |
+        (bytes[start + 1] << 16) |
+        (bytes[start + 2] << 8) |
+        bytes[start + 3]) >>>
+      0;
+  }
+  for (let index = 16; index < 64; index += 1) {
+    const previous15 = words[index - 15];
+    const previous2 = words[index - 2];
+    const sigma0 = rotateRight(previous15, 7) ^ rotateRight(previous15, 18) ^ (previous15 >>> 3);
+    const sigma1 = rotateRight(previous2, 17) ^ rotateRight(previous2, 19) ^ (previous2 >>> 10);
+    words[index] = (words[index - 16] + sigma0 + words[index - 7] + sigma1) >>> 0;
+  }
+
+  let a = state[0],
+    b = state[1],
+    c = state[2],
+    d = state[3];
+  let e = state[4],
+    f = state[5],
+    g = state[6],
+    h = state[7];
+  for (let index = 0; index < 64; index += 1) {
+    const sum1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
+    const choice = (e & f) ^ (~e & g);
+    const first = (h + sum1 + choice + SHA_256_ROUND_CONSTANTS[index] + words[index]) >>> 0;
+    const sum0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
+    const majority = (a & b) ^ (a & c) ^ (b & c);
+    const second = (sum0 + majority) >>> 0;
+    h = g;
+    g = f;
+    f = e;
+    e = (d + first) >>> 0;
+    d = c;
+    c = b;
+    b = a;
+    a = (first + second) >>> 0;
+  }
+  state[0] = (state[0] + a) >>> 0;
+  state[1] = (state[1] + b) >>> 0;
+  state[2] = (state[2] + c) >>> 0;
+  state[3] = (state[3] + d) >>> 0;
+  state[4] = (state[4] + e) >>> 0;
+  state[5] = (state[5] + f) >>> 0;
+  state[6] = (state[6] + g) >>> 0;
+  state[7] = (state[7] + h) >>> 0;
+};
+
+/** A synchronous, runtime-neutral SHA-256 implementation for Node and web. */
+export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
+  const input = inputBytes instanceof Uint8Array ? inputBytes : Uint8Array.from(inputBytes);
+  const completeLength = input.length - (input.length % 64);
+  const tail = padSha256Tail(input, completeLength);
   const state = new Uint32Array([
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
   ]);
@@ -35,55 +96,7 @@ export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
   for (let chunk = 0; chunk < completeLength + tail.length; chunk += 64) {
     const bytes = chunk < completeLength ? input : tail;
     const block = chunk < completeLength ? chunk : chunk - completeLength;
-    for (let index = 0; index < 16; index += 1) {
-      const start = block + index * 4;
-      words[index] =
-        ((bytes[start] << 24) |
-          (bytes[start + 1] << 16) |
-          (bytes[start + 2] << 8) |
-          bytes[start + 3]) >>>
-        0;
-    }
-    for (let index = 16; index < 64; index += 1) {
-      const previous15 = words[index - 15];
-      const previous2 = words[index - 2];
-      const sigma0 = rotateRight(previous15, 7) ^ rotateRight(previous15, 18) ^ (previous15 >>> 3);
-      const sigma1 = rotateRight(previous2, 17) ^ rotateRight(previous2, 19) ^ (previous2 >>> 10);
-      words[index] = (words[index - 16] + sigma0 + words[index - 7] + sigma1) >>> 0;
-    }
-
-    let a = state[0],
-      b = state[1],
-      c = state[2],
-      d = state[3];
-    let e = state[4],
-      f = state[5],
-      g = state[6],
-      h = state[7];
-    for (let index = 0; index < 64; index += 1) {
-      const sum1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
-      const choice = (e & f) ^ (~e & g);
-      const first = (h + sum1 + choice + SHA_256_ROUND_CONSTANTS[index] + words[index]) >>> 0;
-      const sum0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
-      const majority = (a & b) ^ (a & c) ^ (b & c);
-      const second = (sum0 + majority) >>> 0;
-      h = g;
-      g = f;
-      f = e;
-      e = (d + first) >>> 0;
-      d = c;
-      c = b;
-      b = a;
-      a = (first + second) >>> 0;
-    }
-    state[0] = (state[0] + a) >>> 0;
-    state[1] = (state[1] + b) >>> 0;
-    state[2] = (state[2] + c) >>> 0;
-    state[3] = (state[3] + d) >>> 0;
-    state[4] = (state[4] + e) >>> 0;
-    state[5] = (state[5] + f) >>> 0;
-    state[6] = (state[6] + g) >>> 0;
-    state[7] = (state[7] + h) >>> 0;
+    compressSha256Block(state, words, bytes, block);
   }
   return 'sha256:' + [...state].map((word) => word.toString(16).padStart(8, '0')).join('');
 };

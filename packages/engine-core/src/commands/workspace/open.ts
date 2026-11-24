@@ -96,6 +96,29 @@ const documentValidationDiagnostics = (
     );
 };
 
+const buildCompiledDocument = (
+  identity: AssetProjectIdentitySeed,
+  model: Extract<ReturnType<typeof compileAssetWorkspaceEntry>, { ok: true }>['model'],
+): ReturnType<typeof createProjectDocument> => {
+  const document = createProjectDocument({
+    id: identity.id,
+    name: model.name,
+    revision: identity.revision,
+    createdAt: identity.createdAt,
+  });
+  document.updatedAt = identity.updatedAt ?? identity.createdAt;
+  document.settings.textureResolution = {
+    width: model.textureResolution[0],
+    height: model.textureResolution[1],
+  };
+  document.settings.forward = model.forward;
+  document.settings.surfacePixelDensity = (model.textureDensity / 16) as 1 | 2 | 4 | 8;
+  document.scene = model.scene;
+  document.textures = model.textures;
+  document.animations = model.animations;
+  return document;
+};
+
 /** Build one selected entry into a transient host session. */
 export const openAssetProject = (input: OpenAssetProjectInput): OpenAssetProjectResult => {
   try {
@@ -119,22 +142,7 @@ export const openAssetProject = (input: OpenAssetProjectInput): OpenAssetProject
     if (!opened.ok) return deepFreeze({ ok: false as const, diagnostics: opened.diagnostics });
     const compiled = compileAssetWorkspaceEntry(opened.value, input.entry);
     if (!compiled.ok) return deepFreeze({ ok: false as const, diagnostics: compiled.diagnostics });
-    const document = createProjectDocument({
-      id: input.identity.id,
-      name: compiled.model.name,
-      revision: input.identity.revision,
-      createdAt: input.identity.createdAt,
-    });
-    document.updatedAt = input.identity.updatedAt ?? input.identity.createdAt;
-    document.settings.textureResolution = {
-      width: compiled.model.textureResolution[0],
-      height: compiled.model.textureResolution[1],
-    };
-    document.settings.forward = compiled.model.forward;
-    document.settings.surfacePixelDensity = (compiled.model.textureDensity / 16) as 1 | 2 | 4 | 8;
-    document.scene = compiled.model.scene;
-    document.textures = compiled.model.textures;
-    document.animations = compiled.model.animations;
+    const document = buildCompiledDocument(input.identity, compiled.model);
     const validationDiagnostics = documentValidationDiagnostics(
       document,
       opened.value,

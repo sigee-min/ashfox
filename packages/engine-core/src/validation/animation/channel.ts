@@ -44,12 +44,83 @@ const validateChannelTarget = (
   }
 };
 
+type Keyframe = ClipValidationContext['clip']['channels'][string]['keys'][number];
+
+const validateKeyframeValues = (
+  keyframe: Keyframe,
+  keyPath: string,
+  context: ClipValidationContext,
+): void => {
+  const { clip, add } = context;
+  validateAnimationVector(keyframe.value, `${keyPath}.value`, clip.id, add);
+  if (keyframe.preValue) {
+    validateAnimationVector(keyframe.preValue, `${keyPath}.preValue`, clip.id, add);
+  }
+  if (keyframe.postValue) {
+    validateAnimationVector(keyframe.postValue, `${keyPath}.postValue`, clip.id, add);
+  }
+  if (!INTERPOLATIONS.has(keyframe.interpolation)) {
+    add({
+      code: 'animation.invalid_value',
+      severity: 'error',
+      message: 'Animation interpolation must be linear, step, or catmullrom.',
+      path: `${keyPath}.interpolation`,
+      clipIds: [clip.id],
+    });
+  }
+  if (keyframe.easing) {
+    validateKeyframeEasing(keyframe.easing, `${keyPath}.easing`, clip.id, add);
+  }
+};
+
+const validateKeyframeTime = (
+  keyframe: Keyframe,
+  keyPath: string,
+  previousTime: number,
+  context: ClipValidationContext,
+): void => {
+  const { clip, add } = context;
+  if (
+    !isFiniteNumber(keyframe.timeSeconds) ||
+    keyframe.timeSeconds < 0 ||
+    keyframe.timeSeconds > clip.durationSeconds
+  ) {
+    add({
+      code: 'animation.key_out_of_range',
+      severity: 'error',
+      message: 'Animation key time must be within the clip duration.',
+      path: `${keyPath}.timeSeconds`,
+      clipIds: [clip.id],
+    });
+  }
+  if (keyframe.timeSeconds <= previousTime) {
+    add({
+      code: 'animation.key_order',
+      severity: 'error',
+      message: 'Animation keys must be strictly ordered by time.',
+      path: `${keyPath}.timeSeconds`,
+      clipIds: [clip.id],
+    });
+  }
+};
+
+const validateKeyframe = (
+  keyframe: Keyframe,
+  keyPath: string,
+  previousTime: number,
+  context: ClipValidationContext,
+): void => {
+  context.registerId(keyframe.id, keyPath);
+  validateKeyframeValues(keyframe, keyPath, context);
+  validateKeyframeTime(keyframe, keyPath, previousTime, context);
+};
+
 const validateChannelKeys = (
   channel: ClipValidationContext['clip']['channels'][string],
   path: string,
   context: ClipValidationContext,
 ): void => {
-  const { clip, add, registerId } = context;
+  const { clip, add } = context;
   if (channel.keys.length === 0) {
     add({
       code: 'animation.invalid_timing',
@@ -61,49 +132,7 @@ const validateChannelKeys = (
   }
   let previousTime = -Infinity;
   for (const [keyIndex, keyframe] of channel.keys.entries()) {
-    const keyPath = `${path}.keys[${keyIndex}]`;
-    registerId(keyframe.id, keyPath);
-    validateAnimationVector(keyframe.value, `${keyPath}.value`, clip.id, add);
-    if (keyframe.preValue) {
-      validateAnimationVector(keyframe.preValue, `${keyPath}.preValue`, clip.id, add);
-    }
-    if (keyframe.postValue) {
-      validateAnimationVector(keyframe.postValue, `${keyPath}.postValue`, clip.id, add);
-    }
-    if (!INTERPOLATIONS.has(keyframe.interpolation)) {
-      add({
-        code: 'animation.invalid_value',
-        severity: 'error',
-        message: 'Animation interpolation must be linear, step, or catmullrom.',
-        path: `${keyPath}.interpolation`,
-        clipIds: [clip.id],
-      });
-    }
-    if (keyframe.easing) {
-      validateKeyframeEasing(keyframe.easing, `${keyPath}.easing`, clip.id, add);
-    }
-    if (
-      !isFiniteNumber(keyframe.timeSeconds) ||
-      keyframe.timeSeconds < 0 ||
-      keyframe.timeSeconds > clip.durationSeconds
-    ) {
-      add({
-        code: 'animation.key_out_of_range',
-        severity: 'error',
-        message: 'Animation key time must be within the clip duration.',
-        path: `${keyPath}.timeSeconds`,
-        clipIds: [clip.id],
-      });
-    }
-    if (keyframe.timeSeconds <= previousTime) {
-      add({
-        code: 'animation.key_order',
-        severity: 'error',
-        message: 'Animation keys must be strictly ordered by time.',
-        path: `${keyPath}.timeSeconds`,
-        clipIds: [clip.id],
-      });
-    }
+    validateKeyframe(keyframe, `${path}.keys[${keyIndex}]`, previousTime, context);
     previousTime = keyframe.timeSeconds;
   }
 };

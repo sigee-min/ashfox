@@ -84,6 +84,57 @@ const assertTextureRect = (
   }
 };
 
+const assertCanvasDetail = (
+  detail: TextureComposition['canvasDetails'][number],
+  index: number,
+  width: number,
+  height: number,
+): void => {
+  if (detail === null || typeof detail !== 'object') {
+    throw new TypeError(`Texture raster detail ${index} must be an object.`);
+  }
+  parseSurfaceColor(detail.color);
+  if (detail.alpha !== 0 && detail.alpha !== 255) {
+    throw new RangeError(`Texture raster detail ${index} alpha must be 0 or 255.`);
+  }
+  assertTextureRect(
+    detail.x,
+    detail.y,
+    detail.width,
+    detail.height,
+    width,
+    height,
+    `Texture raster detail ${index}`,
+  );
+};
+
+const assertAlphaMask = (
+  mask: TextureComposition['alphaMasks'][number],
+  index: number,
+  width: number,
+  height: number,
+): void => {
+  if (mask === null || typeof mask !== 'object') {
+    throw new TypeError(`Texture alpha mask ${index} must be an object.`);
+  }
+  assertTextureRect(
+    mask.x,
+    mask.y,
+    mask.width,
+    mask.height,
+    width,
+    height,
+    `Texture alpha mask ${index}`,
+  );
+  if (
+    typeof mask.bits !== 'string' ||
+    !/^[01]+$/u.test(mask.bits) ||
+    mask.bits.length !== mask.width * mask.height
+  ) {
+    throw new RangeError(`Texture alpha mask ${index} must exactly fill its binary rectangle.`);
+  }
+};
+
 const assertTextureComposition = (
   width: number,
   height: number,
@@ -108,43 +159,10 @@ const assertTextureComposition = (
     throw new RangeError('Texture raster details exceed the bounded asset budget.');
   }
   for (const [index, detail] of composition.canvasDetails.entries()) {
-    if (detail === null || typeof detail !== 'object') {
-      throw new TypeError(`Texture raster detail ${index} must be an object.`);
-    }
-    parseSurfaceColor(detail.color);
-    if (detail.alpha !== 0 && detail.alpha !== 255) {
-      throw new RangeError(`Texture raster detail ${index} alpha must be 0 or 255.`);
-    }
-    assertTextureRect(
-      detail.x,
-      detail.y,
-      detail.width,
-      detail.height,
-      width,
-      height,
-      `Texture raster detail ${index}`,
-    );
+    assertCanvasDetail(detail, index, width, height);
   }
   for (const [index, mask] of composition.alphaMasks.entries()) {
-    if (mask === null || typeof mask !== 'object') {
-      throw new TypeError(`Texture alpha mask ${index} must be an object.`);
-    }
-    assertTextureRect(
-      mask.x,
-      mask.y,
-      mask.width,
-      mask.height,
-      width,
-      height,
-      `Texture alpha mask ${index}`,
-    );
-    if (
-      typeof mask.bits !== 'string' ||
-      !/^[01]+$/u.test(mask.bits) ||
-      mask.bits.length !== mask.width * mask.height
-    ) {
-      throw new RangeError(`Texture alpha mask ${index} must exactly fill its binary rectangle.`);
-    }
+    assertAlphaMask(mask, index, width, height);
   }
 };
 
