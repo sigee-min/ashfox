@@ -278,6 +278,9 @@ const finalizeModel = (
     id: `model:${sha256Digest(ir.asset.key).slice('sha256:'.length)}`,
     name: ir.asset.name,
     forward: ir.settings.forward,
+    ...(ir.settings.profile !== null && ir.settings.profile !== undefined
+      ? { profile: ir.settings.profile }
+      : {}),
     textureDensity: 16,
     textureResolution: Object.freeze([resolution[0], resolution[1]]),
     scene,

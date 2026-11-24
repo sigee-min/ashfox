@@ -1,5 +1,6 @@
 import type { ProgramExpr, ProgramTextureDecl } from '../syntax/contract';
 import type { SourceDiagnostic, SourceSpan } from '../../source/contract';
+import type { AssetQualityProfile } from '../../../model/compiled';
 
 /** The asset language keeps the versioned header while using a package-aware
  * source unit.  These declarations are compiler input only; they are not a
@@ -299,6 +300,7 @@ export interface AssetSettingsDecl {
   readonly kind: 'settings';
   readonly density: ProgramExpr | null;
   readonly forward: 'north' | 'south' | 'east' | 'west' | null;
+  readonly profile: AssetQualityProfile | null;
   readonly span: SourceSpan;
 }
 

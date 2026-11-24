@@ -373,7 +373,11 @@ export const instantiateAsset = (hir: TypedAssetHir): AssetInstantiationResult =
       ok: true,
       ir: freeze({
         asset: asset.symbol,
-        settings: freeze({ density: asset.settings.density, forward: asset.settings.forward }),
+        settings: freeze({
+          density: asset.settings.density,
+          forward: asset.settings.forward,
+          profile: asset.settings.profile,
+        }),
         rig: rig.symbol,
         skeleton: skeleton.symbol,
         bones: bonePlan.bones,

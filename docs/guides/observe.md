@@ -13,9 +13,10 @@ starter folder:
 ```sh
 npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 --output fox.png
 npx --no-install ashfox inspect fox.ashfox
+npx --no-install ashfox audit fox.ashfox
 ```
 
-`capture` writes PNG bytes to stdout. `inspect` writes JSON. Redirect the output,
+`capture` writes PNG bytes to stdout. `inspect` and `audit` write JSON. Redirect the output,
 pipe it to a consumer, or collect it with your process API. No browser window needs
 manual control. Rendering requires Chrome or Chromium; set `ASHFOX_CHROME_PATH`
 when it is not at a standard installation path. An explicit invalid path fails.
@@ -46,7 +47,9 @@ Use new filenames when repeating these commands. Find actual node, texture, clip
 and variant IDs with `inspect`; names are also accepted for clips and textures.
 Sound capture is a peak-envelope waveform. Use `export` to receive playable WAV.
 Sprite inspection returns the receipt and per-pixel source ownership evidence.
-Model inspection returns nodes, texture metadata, animation channels and settings.
+Model inspection returns nodes, texture metadata, animation channels, settings,
+and an embedded quantitative `audit` report. `ashfox audit` returns that report
+directly and accepts `--profile creature|prop|block` and `--threshold 0..100`.
 `inspect --node NODE_ID` adds rest-pose subtree measurements and face/UV inspection.
 
 | Option | Accepted values and behavior |

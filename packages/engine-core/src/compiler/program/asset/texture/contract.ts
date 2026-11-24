@@ -1,32 +1,20 @@
 import type { AssetSymbolId } from '../contract';
 import type { SourceSpan } from '../../../../project/source/contract';
 import type { Vec3 } from '../../../../model/identity';
+import type {
+  AssetAuthoringTelemetry,
+  ChartAuthoringTelemetry,
+  GrainMode,
+  TextureAuthoringTelemetry,
+} from '../../../../model/telemetry';
 import type { TextureAsset } from '../../../../model/texture';
 
-export type GrainMode = 'clustered' | 'soft' | 'none';
-
-export interface ChartAuthoringTelemetry {
-  readonly id: string;
-  readonly layout: 'box' | 'flat';
-  readonly visibleTexels: number;
-  readonly authoredDeltaTexels: number;
-  readonly aoTexels: number;
-  readonly protectedTexels: number;
-  readonly distinctRoles: number;
-  readonly regionGrainModes: Readonly<Record<string, GrainMode>>;
-  readonly faceSymmetry: Readonly<Record<string, number>>;
-}
-
-export interface TextureAuthoringTelemetry {
-  readonly textureId: string;
-  readonly tone: 'none' | 'voxel' | 'painterly';
-  readonly defaultGrain: GrainMode;
-  readonly charts: readonly ChartAuthoringTelemetry[];
-}
-
-export interface AssetAuthoringTelemetry {
-  readonly textures: Readonly<Record<string, TextureAuthoringTelemetry>>;
-}
+export type {
+  AssetAuthoringTelemetry,
+  ChartAuthoringTelemetry,
+  GrainMode,
+  TextureAuthoringTelemetry,
+};
 
 export interface BoneTransform {
   readonly origin: Vec3;

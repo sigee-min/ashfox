@@ -184,10 +184,26 @@ const readConnect = (reader: AssetReader): AssetAssemblyConnect => {
   });
 };
 
+const readProfileSetting = (
+  reader: AssetReader,
+  values: ReturnType<typeof readProperties>,
+): AssetSettingsDecl['profile'] => {
+  const expr = propertyValue(values, 'profile');
+  if (expr === undefined) return null;
+  const raw = nameOr(expr, '');
+  if (isOneOf(['creature', 'prop', 'block'] as const, raw)) return raw;
+  reader.failSpan(
+    'asset.invalid-profile',
+    'Asset settings profile must be creature|prop|block.',
+    expr.span,
+  );
+  return null;
+};
+
 const readSettings = (reader: AssetReader): AssetSettingsDecl => {
   const start = reader.expectWord('settings', 'Expected settings.');
   const values = readProperties(reader, 'asset settings');
-  checkClosedProperties(reader, values, ['density', 'forward'], 'asset settings');
+  checkClosedProperties(reader, values, ['density', 'forward', 'profile'], 'asset settings');
   const density = propertyValue(values, 'density') ?? null;
   const forwardRaw = nameOr(propertyValue(values, 'forward'), '');
   const forward = isOneOf(['north', 'south', 'east', 'west'] as const, forwardRaw)
@@ -200,10 +216,12 @@ const readSettings = (reader: AssetReader): AssetSettingsDecl => {
       start.span,
     );
   }
+  const profile = readProfileSetting(reader, values);
   return Object.freeze({
     kind: 'settings',
     density,
     forward,
+    profile,
     span: join(start.span, reader.blockEnd()),
   });
 };

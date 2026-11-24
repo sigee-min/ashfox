@@ -1,18 +1,46 @@
 import { AUDIO_POLICY } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
+import type { AssetQualityProfile, AuditOptions } from '@ashfox/engine-core';
 import { DEFAULT_VIEW, type Prepared, type ViewOptions } from './contract';
 import { readInput, readView, record, text } from './read';
 import { prepareWorker } from './worker';
 import { ChromeRenderer } from './chrome';
-import { inspect, capture, exportAsset, mediaRecord } from './operations';
+import { auditAsset, inspect, capture, exportAsset, mediaRecord } from './operations';
+const readAuditParams = (params: unknown, currentRevision: string): AuditOptions => {
+  const p = record(params, ['profile', 'threshold', 'expectedRevision']);
+  if (p.expectedRevision !== undefined && p.expectedRevision !== currentRevision)
+    throw new BuildFailure('observe.stale', 'Revision mismatch', 2);
+  let profile: AssetQualityProfile | undefined;
+  if (p.profile !== undefined) {
+    if (!['creature', 'prop', 'block'].includes(String(p.profile)))
+      throw new BuildFailure('observe.option', 'Invalid profile: ' + String(p.profile), 2);
+    profile = p.profile as AssetQualityProfile;
+  }
+  let threshold: number | undefined;
+  if (p.threshold !== undefined) {
+    if (
+      typeof p.threshold !== 'number' ||
+      !Number.isInteger(p.threshold) ||
+      p.threshold < 0 ||
+      p.threshold > 100
+    )
+      throw new BuildFailure('observe.option', 'threshold must be integer 0..100', 2);
+    threshold = p.threshold;
+  }
+  return {
+    ...(profile !== undefined ? { profile } : {}),
+    ...(threshold !== undefined ? { threshold } : {}),
+  };
+};
 export const observationCapabilities = {
   format: 'ashfox-observer',
   version: 1,
-  commands: ['inspect', 'capture', 'replay', 'export', 'stdio'],
+  commands: ['audit', 'inspect', 'capture', 'replay', 'export', 'stdio'],
   methods: [
     'capabilities',
     'load',
     'source',
+    'audit',
     'inspect',
     'view',
     'capture',
@@ -73,6 +101,12 @@ export class ObservationSession {
     if (method === 'source') {
       record(params, []);
       return { revision: this.asset.revision, files: this.asset.files };
+    }
+    if (method === 'audit') {
+      return {
+        revision: this.asset.revision,
+        ...auditAsset(this.asset, readAuditParams(params, this.asset.revision)),
+      };
     }
     const p = record(params, ['options', 'expectedRevision', 'reset']);
     if (p.expectedRevision !== undefined && p.expectedRevision !== this.asset.revision)

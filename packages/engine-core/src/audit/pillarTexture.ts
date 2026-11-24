@@ -1,0 +1,203 @@
+import type { AssetQualityProfile } from '../model/compiled';
+import {
+  PROFILE_WEIGHTS,
+  ramp,
+  round2,
+  round4,
+  type AuditDeduction,
+  type AuditPillarReport,
+  type AuditSubmetric,
+} from './contract';
+import type { TelemetrySummary } from './hardGates';
+import type { AuditRasterStats } from './rasterStats';
+
+const computeFocusRatio = (
+  profile: AssetQualityProfile,
+  telemetry: TelemetrySummary,
+  telemetryAvailable: boolean,
+  lumRange: number,
+  noiseRate: number,
+): number => {
+  const coherence = 1 - ramp(noiseRate, 0.06, 0.25);
+  const nonFlatGate = telemetryAvailable
+    ? ramp(telemetry.globalDeltaRatio, 0.01, 0.06)
+    : ramp(lumRange, 0.03, 0.09);
+  if (!telemetryAvailable) return coherence * nonFlatGate;
+  const symScore = ramp(telemetry.avgForwardSymmetry, 0.55, 0.95);
+  const protectBonus = telemetry.hasProtectedFocalTexels
+    ? profile === 'creature'
+      ? 0.3
+      : 0.15
+    : 0;
+  const focusScore = Math.min(1, symScore * 0.85 + protectBonus);
+  return nonFlatGate * (0.55 * coherence + 0.45 * focusScore);
+};
+
+const makeDeduction = (
+  metric: AuditSubmetric,
+  summary: string,
+  targets: readonly string[],
+  fix: string,
+): AuditDeduction | null => {
+  const lost = round2(metric.maxScore - metric.score);
+  if (lost < 0.5) return null;
+  return { metricId: metric.id, pillar: 'texture', lostPoints: lost, summary, targets, fix };
+};
+
+const metric = (
+  id: string,
+  label: string,
+  ratio: number,
+  maxScore: number,
+  value: number,
+  target: number,
+  detail: string,
+): AuditSubmetric => ({
+  id,
+  label,
+  score: round2(ratio * maxScore),
+  maxScore,
+  value,
+  target,
+  detail,
+});
+
+const computeTextureRatios = (
+  profile: AssetQualityProfile,
+  telemetry: TelemetrySummary,
+  telemetryAvailable: boolean,
+  raster: AuditRasterStats,
+) => ({
+  pre: telemetryAvailable
+    ? 0.55 * ramp(telemetry.globalDeltaRatio, 0.05, 0.45) +
+      0.45 * ramp(telemetry.craftedChartRatio, 0.15, 0.85)
+    : 0,
+  role: telemetryAvailable ? ramp(telemetry.weightedDistinctRoles, 1.1, 3.0) : 0,
+  ao: telemetryAvailable
+    ? 0.6 * ramp(telemetry.aoTexelRatio, 0.0, 0.1) + 0.4 * ramp(telemetry.aoChartRatio, 0.0, 0.5)
+    : 0,
+  value: 0.55 * ramp(raster.lumRange, 0.08, 0.34) + 0.45 * ramp(raster.upDownContrast, 0.0, 0.12),
+  focus: computeFocusRatio(
+    profile,
+    telemetry,
+    telemetryAvailable,
+    raster.lumRange,
+    raster.isolatedNoiseRate,
+  ),
+});
+
+const computeTextureMetrics = (
+  profile: AssetQualityProfile,
+  telemetry: TelemetrySummary,
+  telemetryAvailable: boolean,
+  raster: AuditRasterStats,
+): readonly AuditSubmetric[] => {
+  const w = PROFILE_WEIGHTS[profile];
+  const r = computeTextureRatios(profile, telemetry, telemetryAvailable, raster);
+  return [
+    metric(
+      'texture.preGrainCoverage',
+      'Pre-Grain Authored Coverage',
+      r.pre,
+      w.preGrainCoverage,
+      round4(telemetry.globalDeltaRatio),
+      0.45,
+      `${Math.round(telemetry.globalDeltaRatio * 100)}% pre-grain delta, ${Math.round(telemetry.craftedChartRatio * 100)}% crafted charts.`,
+    ),
+    metric(
+      'texture.roleDepth',
+      'Palette Role Depth',
+      r.role,
+      w.roleDepth,
+      round2(telemetry.weightedDistinctRoles),
+      3.0,
+      `Weighted mean ${round2(telemetry.weightedDistinctRoles)} distinct roles per chart.`,
+    ),
+    metric(
+      'texture.contactAo',
+      '3D Contact AO Shading',
+      r.ao,
+      w.contactAo,
+      round4(telemetry.aoTexelRatio),
+      0.1,
+      `${Math.round(telemetry.aoTexelRatio * 100)}% AO texels across ${Math.round(telemetry.aoChartRatio * 100)}% charts.`,
+    ),
+    metric(
+      'texture.valueHierarchy',
+      'Luminance & Top-Down Value Hierarchy',
+      r.value,
+      w.valueHierarchy,
+      round4(raster.lumRange),
+      0.34,
+      `lumRange=${round2(raster.lumRange)}, upDownContrast=${round2(raster.upDownContrast)}.`,
+    ),
+    metric(
+      'texture.coherenceAndFocus',
+      'Cluster Coherence & Focal Craft',
+      r.focus,
+      w.coherenceAndFocus,
+      round4(1 - raster.isolatedNoiseRate),
+      0.94,
+      `isolatedNoise=${round2(raster.isolatedNoiseRate)}, forwardSym=${round2(telemetry.avgForwardSymmetry)}, protected=${telemetry.hasProtectedFocalTexels}.`,
+    ),
+  ];
+};
+
+const buildTextureDeductions = (
+  metrics: readonly AuditSubmetric[],
+  telemetry: TelemetrySummary,
+  raster: AuditRasterStats,
+): readonly AuditDeduction[] =>
+  [
+    makeDeduction(
+      metrics[0]!,
+      `Pre-grain authored coverage is low (${metrics[0]!.detail}).`,
+      telemetry.bareChartIds,
+      'Replace bare fill charts with gradient, border, stripe, ao, and stamp details.',
+    ),
+    makeDeduction(
+      metrics[1]!,
+      `Low palette role variety (${metrics[1]!.detail}).`,
+      telemetry.bareChartIds,
+      'Use highlight, mid, shade, and accent palette roles within each chart.',
+    ),
+    makeDeduction(
+      metrics[2]!,
+      `Contact AO is sparse (${metrics[2]!.detail}).`,
+      [],
+      'Add `pattern ao` inside charts to shade 3D joint crevices and overhangs.',
+    ),
+    makeDeduction(
+      metrics[3]!,
+      `Weak value hierarchy (${metrics[3]!.detail}).`,
+      [],
+      'Apply vertical gradients (`space = model; axis = y;`) and brighter upward-facing tones.',
+    ),
+    makeDeduction(
+      metrics[4]!,
+      `Focal clarity or coherence lost points (${metrics[4]!.detail}).`,
+      raster.noisyTextureIds,
+      'Use symmetric face stamps (`protect = true`) and avoid raw 1px noise.',
+    ),
+  ].filter((d): d is AuditDeduction => d !== null);
+
+export const evaluateTexturePillar = (
+  profile: AssetQualityProfile,
+  telemetry: TelemetrySummary,
+  telemetryAvailable: boolean,
+  raster: AuditRasterStats,
+): { readonly pillar: AuditPillarReport; readonly deductions: readonly AuditDeduction[] } => {
+  const w = PROFILE_WEIGHTS[profile];
+  const metrics = computeTextureMetrics(profile, telemetry, telemetryAvailable, raster);
+  const score = round2(metrics.reduce((sum, m) => sum + m.score, 0));
+  return {
+    pillar: {
+      id: 'texture',
+      label: 'Texture & Value Craft',
+      score,
+      maxScore: w.textureMax,
+      metrics,
+    },
+    deductions: buildTextureDeductions(metrics, telemetry, raster),
+  };
+};

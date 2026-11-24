@@ -297,7 +297,7 @@ forward direction used by the asset.
 
 ```text
 export asset fox {
-  settings { density = 16; forward = north; }
+  settings { density = 16; forward = north; profile = creature; }
   skeleton = CreatureSkeleton;
   motion = idle;
   motion = walk;
@@ -309,7 +309,9 @@ export asset fox {
 ```
 
 `density` is currently `16`; `forward` is `north`, `south`, `east`, or
-`west`. A `use` creates a named component instance and binds every required
+`west`. The optional `profile` (`creature`, `prop`, or `block`) declares the
+asset quality audit rubric weighting used by `ashfox audit` and `ashfox inspect`.
+A `use` creates a named component instance and binds every required
 port. The assembly's `skeleton` property names the concrete implementation.
 The `use` block's rig-port binding names the matching rig contract. An asset may select
 multiple different motions, but each selected motion must use the same rig as

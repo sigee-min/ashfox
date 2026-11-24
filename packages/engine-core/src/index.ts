@@ -31,6 +31,7 @@ export {
   type PlaneFaces,
   type PlaneNode,
   type ProjectDocument,
+  type AssetQualityProfile,
   type CompiledForwardDirection,
   type CompiledModel,
   type ProjectForwardDirection,
@@ -257,3 +258,19 @@ export type { DirectoryWorkspace, DirectoryFile } from './project/directory/cont
 export type { DirectoryCompilation, DirectoryProduct } from './compiler/directory/compile';
 
 export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/directory/pack';
+
+export {
+  DEFAULT_AUDIT_THRESHOLD,
+  evaluateAssetQuality,
+  type AuditDeduction,
+  type AuditGateId,
+  type AuditGateResult,
+  type AuditModelInput,
+  type AuditOptions,
+  type AuditPillarId,
+  type AuditPillarReport,
+  type AuditProfileSource,
+  type AuditReport,
+  type AuditSubmetric,
+  type QualityGrade,
+} from './audit';

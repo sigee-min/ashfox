@@ -57,5 +57,10 @@ export {
   type TransformKeyframe,
 } from './motion';
 export type { ProjectDocument } from './document';
-export type { CompiledForwardDirection, CompiledModel } from './compiled';
+export type { AssetQualityProfile, CompiledForwardDirection, CompiledModel } from './compiled';
+export type {
+  AssetAuthoringTelemetry,
+  ChartAuthoringTelemetry,
+  TextureAuthoringTelemetry,
+} from './telemetry';
 export { canonicalMinecraftRotation } from './transform';

@@ -276,6 +276,7 @@
           "workspace": "packages/engine-core",
           "roots": [
             "animation",
+            "audit",
             "commands",
             "export",
             "program",

@@ -48,7 +48,7 @@ const result = (ok: boolean, value: unknown, diagnostics: readonly unknown[] = [
 };
 const main = async (): Promise<void> => {
   if (runOnboarding(args)) return;
-  if (['inspect', 'capture', 'replay', 'export', 'stdio'].includes(command)) {
+  if (['audit', 'inspect', 'capture', 'replay', 'export', 'stdio'].includes(command)) {
     await runObservation(args, __filename, controller.signal);
     return;
   }
@@ -74,6 +74,7 @@ const main = async (): Promise<void> => {
         'build',
         'verify',
         'capabilities',
+        'audit',
         'inspect',
         'capture',
         'replay',
@@ -116,7 +117,7 @@ const main = async (): Promise<void> => {
         archive: 'zip',
       },
       usage:
-        'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox inspect|capture|replay|export <source|png> [options]; ashfox stdio',
+        'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox audit|inspect|capture|replay|export <source|png> [options]; ashfox stdio',
     });
     return;
   }
@@ -204,7 +205,7 @@ if (!isMainThread) {
             );
       if (isOnboardingCommand(command) && !args.includes('--json'))
         process.stderr.write(`ashfox: ${failure.message}\n`);
-      else if (['inspect', 'capture', 'replay', 'export', 'stdio'].includes(command))
+      else if (['audit', 'inspect', 'capture', 'replay', 'export', 'stdio'].includes(command))
         process.stderr.write(
           JSON.stringify({ ok: false, error: { code: failure.code, message: failure.message } }) +
             '\n',
