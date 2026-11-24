@@ -1,5 +1,6 @@
 import type { ProgramTextureDecl } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
+import type { AssetQualityProfile } from '../../../model/compiled';
 import type {
   AssetDeclaration,
   AssetDiagnostic,
@@ -240,6 +241,7 @@ export interface TypedAssetAssembly {
   readonly settings: Readonly<{
     readonly density: AssetIntegerValue;
     readonly forward: 'north' | 'south' | 'east' | 'west' | null;
+    readonly profile?: AssetQualityProfile | null;
   }>;
   readonly skeleton: AssetSymbolId;
   readonly motions: readonly AssetSymbolId[];

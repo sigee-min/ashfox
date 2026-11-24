@@ -172,6 +172,7 @@ const buildSettings = (
   return freeze({
     density: validDensity ? (density as AssetIntegerValue) : zeroInteger(),
     forward: settings?.forward ?? null,
+    profile: settings?.profile ?? null,
   });
 };
 

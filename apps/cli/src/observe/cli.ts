@@ -12,6 +12,7 @@ const numeric = new Set([
   'fps',
   'duration',
   'scale',
+  'threshold',
 ]);
 const boolean = new Set(['wireframe', 'skeleton', 'textures']);
 const inputBytes = async (): Promise<Buffer> => {
@@ -123,9 +124,13 @@ export const runObservation = async (
   const session = new ObservationSession(executable);
   try {
     await session.run('load', { input }, signal);
-    const result = await session.run(command, { options }, signal);
+    const result =
+      command === 'audit'
+        ? await session.run('audit', options, signal)
+        : await session.run(command, { options }, signal);
     let bytes: Buffer;
-    if (command === 'inspect') bytes = Buffer.from(JSON.stringify(result) + '\n');
+    if (command === 'inspect' || command === 'audit')
+      bytes = Buffer.from(JSON.stringify(result) + '\n');
     else {
       const media = result as { encoding: string; data: string };
       if (media.encoding !== 'base64')

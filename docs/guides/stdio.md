@@ -79,6 +79,7 @@ Decode the base64 in your host process; no output file is needed.
 | `capabilities` | `{}`; discover methods, output kinds and limits |
 | `load` | `{input}` initially; `{input, expectedRevision}` when replacing the current asset |
 | `source` | `{}`; get the loaded source graph and revision |
+| `audit` | `{profile?, threshold?, expectedRevision?}`; run pure-CPU quantitative quality audit on loaded model |
 | `inspect`, `capture`, `replay`, `export` | `{options?, expectedRevision?, reset?}`; options use camelCase JSON keys corresponding to CLI flags |
 | `view` | `{options?, reset?}`; persist view settings for subsequent operations |
 | `cancel` | `{id}` identifying the active request; returns `cancelled: true/false` |

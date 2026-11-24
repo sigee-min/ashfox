@@ -1,4 +1,5 @@
 import type { SourceSpan } from '../../../project/source/contract';
+import type { AssetQualityProfile } from '../../../model/compiled';
 import type { AssetDiagnostic, AssetMotionChannel } from '../../../project/program/asset/contract';
 import type { AssetExactFrame } from './frame';
 import type {
@@ -132,6 +133,7 @@ export interface InstantiatedAssetIr {
   readonly settings: Readonly<{
     readonly density: AssetNumberValue;
     readonly forward: 'north' | 'south' | 'east' | 'west';
+    readonly profile?: AssetQualityProfile | null;
   }>;
   readonly rig: AssetSymbolId;
   readonly skeleton: AssetSymbolId;

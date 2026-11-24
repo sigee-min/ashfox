@@ -3,14 +3,25 @@ import { createHash } from 'node:crypto';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
   encodeCanonicalPng,
+  evaluateAssetQuality,
   rasterizeTexture,
   measureSceneGeometry,
   inspectNodeSurface,
   openAssetProject,
   exportProductionProjectResolved,
+  type AuditOptions,
+  type AuditReport,
 } from '@ashfox/engine-core';
 import { DEFAULT_VIEW, type Prepared, type Media, type ViewOptions } from './contract';
 import { ChromeRenderer } from './chrome';
+export const auditAsset = (asset: Prepared, options: AuditOptions = {}): AuditReport => {
+  if (asset.product?.kind !== 'model')
+    throw new BuildFailure('observe.kind', 'audit requires a model asset', 2);
+  return evaluateAssetQuality(
+    { model: asset.product.model, telemetry: asset.product.telemetry },
+    options,
+  );
+};
 export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
   if (asset.document) {
     const d = asset.document;
@@ -40,6 +51,7 @@ export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
       })),
       animations: Object.values(d.animations),
       settings: d.settings,
+      ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset) } : {}),
     };
   }
   const product = asset.product;
