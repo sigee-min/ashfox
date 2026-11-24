@@ -18,8 +18,9 @@ delivery through `.ashfoxworkspace` or `.ashfoxworkspace.mjs`.
 The website publishes documentation, examples and read-only model previews.
 
 Asset agents use the [Ashfox skill](skills/ashfox/SKILL.md), public guides and the
-installed CLI contract. Repository contributors use this guide and the development
-manifest. The skill is an asset workflow guide, not a repository bootstrap.
+installed CLI contract. Repository contributors use this guide, the development
+manifest, and the repository PR skills in `.agents/skills/` (`open-pr`, `review-pr`).
+The published `skills/ashfox/` skill is an asset workflow guide, not a repository bootstrap.
 
 ## Project areas
 
@@ -68,6 +69,7 @@ not required for this product path.
 | Java pack delivery with FFmpeg | `npm run test:packs` |
 | Blockbench compatibility | `npm run test:blockbench` |
 | Repository rules and types | `npm run quality:check` |
+| PR metadata and template check | `npm run quality:pr:test` |
 | Code formatting | `npm run format` (write) and `npm run quality:format` (check) |
 | Example output bytes unchanged | `npm run quality:products` |
 | Function size and complexity ratchet | `npm run quality:complexity` |
@@ -86,10 +88,26 @@ which may only shrink: after reducing a function, run
 
 Prettier formats TypeScript and JavaScript code. Its options derive from
 `engineering.style` in the development manifest; change the manifest, not the
-derived `prettier.config.js`. Files listed as format-pending in `.prettierignore`
-are formatted when the engine-core sweep splits them. Run
+derived `prettier.config.js`. Run
 `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip formatting
 commits in `git blame`.
+
+## Pull request workflow
+
+Changes to `main` land through scoped pull requests rather than direct commits:
+
+- **Branch naming**: `<type>/<short-slug>` using a type from `workflow.commits.types`
+  in the development manifest (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`)
+  and a lowercase kebab-case slug.
+- **PR title and merge strategy**: Use Conventional Commits matching the manifest
+  commit policy (`!`, plus a `BREAKING CHANGE:` footer when breaking). Default to
+  **Squash and merge** so the PR title becomes the commit on `main`.
+- **Template and CI check**: Fill all sections in
+  [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) (`Summary`,
+  `Scope & Impact`, `Verification`, `Review Checklist`). Non-draft PRs require
+  checked verification and review items. CI validates this via
+  `.github/workflows/pr-check.yml`; dry-run locally with:
+  `npm run quality:pr -- --branch "$(git branch --show-current)" --title "<title>" --body-file <file>`
 
 Real rendering needs Chrome or Chromium; select it with `ASHFOX_CHROME_PATH`.
 Audio encoding and showcase movies need FFmpeg; select it with `ASHFOX_FFMPEG_PATH`.

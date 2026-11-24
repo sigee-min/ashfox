@@ -13,4 +13,6 @@ Before changing this repository:
 
 The repository manifest governs changes to Ashfox itself. Asset authors use the
 native `.ashfox` sources, CLI and public user guides; these are separate audiences.
+Repository PR workflows (`open-pr`, `review-pr`) live in `.agents/skills/`;
+do not confuse them with the published asset-authoring skill in `skills/ashfox/`.
 Do not copy the manifest's rules into this bootstrap file.
