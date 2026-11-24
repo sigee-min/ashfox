@@ -128,55 +128,6 @@
   "packages/engine-core/src/compiler/program/asset/parentCycles.ts::uniqueParentCycles": {
     "cognitive": 28
   },
-  "packages/engine-core/src/compiler/program/asset/texture/compose.ts::applyChart": {
-    "lines": 96,
-    "cognitive": 21
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/compose.ts::chartStatements": {
-    "lines": 199,
-    "cognitive": 61
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/expressions.ts::createTextureExpressionContext": {
-    "lines": 80,
-    "cognitive": 28
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/expressions.ts::readPalette": {
-    "cognitive": 17
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/prepare.ts::prepareStamp": {
-    "cognitive": 24
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/prepare.ts::prepareTexture": {
-    "lines": 106,
-    "cognitive": 57
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/raster.ts::applyVoxelTone": {
-    "cognitive": 16
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/raster.ts::relax": {
-    "nesting": 5,
-    "cognitive": 36
-  },
-  "packages/engine-core/src/compiler/program/asset/texture/stamp.ts::stampUse": {
-    "lines": 142,
-    "cognitive": 53
-  },
-  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::lowerAssetTextures": {
-    "lines": 71,
-    "cognitive": 20
-  },
-  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::selectedSurfaces": {
-    "lines": 80,
-    "cognitive": 19
-  },
-  "packages/engine-core/src/compiler/program/asset/textureBinding.ts::walkGeometry": {
-    "lines": 69,
-    "cognitive": 24
-  },
-  "packages/engine-core/src/compiler/program/asset/texturePlan.ts::materializeAssetTexturePlan": {
-    "lines": 97,
-    "cognitive": 20
-  },
   "packages/engine-core/src/compiler/program/asset/valueArithmetic.ts::assetExactOperation": {
     "lines": 91,
     "cognitive": 47
