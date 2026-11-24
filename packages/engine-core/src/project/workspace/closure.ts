@@ -4,15 +4,14 @@ import type { Sha256Digest, WorkspaceFile } from './contract';
 import type { SourceRef } from './diagnostic';
 import { canonicalJsonString } from '../../canonicalJson';
 import { sha256Digest } from '../../provenance/digest';
-import {
-  keyFor,
-  qualified,
-  sourceKey,
-  type NodeRef,
-  type PackageIndex,
-  type ParsedState,
-} from './graphSource';
-import type { WorkspaceEntryBuild, WorkspaceGraphEdge, WorkspaceGraphNode } from './graph/contract';
+import { keyFor, qualified, sourceKey, type ParsedState } from './graphSource';
+import type {
+  NodeRef,
+  PackageIndex,
+  WorkspaceEntryBuild,
+  WorkspaceGraphEdge,
+  WorkspaceGraphNode,
+} from './graph/contract';
 
 /** Identity used by the compiler for one package-qualified source unit. */
 export interface WorkspaceSourceIdentity {

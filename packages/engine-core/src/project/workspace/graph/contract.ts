@@ -1,5 +1,25 @@
-import type { Sha256Digest } from '../contract';
+import type { LockedPackage, Sha256Digest, WorkspaceFile } from '../contract';
 import type { SourceRef } from '../diagnostic';
+import type { WorkspacePackageView } from '../validation';
+
+export interface PackageIndex {
+  readonly view: WorkspacePackageView;
+  readonly lock: LockedPackage;
+  readonly filesByPath: ReadonlyMap<string, WorkspaceFile>;
+  readonly entriesByName: ReadonlyMap<string, string>;
+  readonly modulesByPath: ReadonlyMap<string, { readonly subpath: string; readonly path: string }>;
+  readonly modulesBySubpath: ReadonlyMap<
+    string,
+    { readonly subpath: string; readonly path: string }
+  >;
+}
+
+export interface NodeRef {
+  readonly kind: 'entry' | 'module';
+  readonly packageName: string;
+  readonly name: string;
+  readonly path: string;
+}
 
 export interface WorkspaceEntrySelector {
   readonly packageName: string;

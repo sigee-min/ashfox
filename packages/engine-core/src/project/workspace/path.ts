@@ -123,17 +123,7 @@ const hasControlOrForbiddenPathCharacter = (value: string): boolean => {
   return false;
 };
 
-const validatePath = (
-  value: unknown,
-  options: { readonly allowEmpty: boolean; readonly maxCodeUnits: number },
-): string => {
-  if (typeof value !== 'string') {
-    throw new WorkspacePathError('workspace.path.type', 'Logical paths must be strings.');
-  }
-  if (value.length === 0) {
-    if (options.allowEmpty) return value;
-    throw new WorkspacePathError('workspace.path.empty', 'Logical paths must not be empty.');
-  }
+const checkPathEncodingAndLength = (value: string, maxCodeUnits: number): void => {
   if (!isWellFormedUtf16(value)) {
     throw new WorkspacePathError(
       'workspace.path.utf16',
@@ -146,12 +136,15 @@ const validatePath = (
       'Logical paths must already be NFC-normalized.',
     );
   }
-  if (value.length > options.maxCodeUnits) {
+  if (value.length > maxCodeUnits) {
     throw new WorkspacePathError(
       'workspace.path.length',
-      `Logical paths may contain at most ${options.maxCodeUnits} code units.`,
+      `Logical paths may contain at most ${maxCodeUnits} code units.`,
     );
   }
+};
+
+const checkPathStructure = (value: string): void => {
   if (value.startsWith('/') || value.endsWith('/')) {
     throw new WorkspacePathError(
       'workspace.path.absolute',
@@ -177,6 +170,21 @@ const validatePath = (
       'Logical paths must not contain empty, dot, or parent segments.',
     );
   }
+};
+
+const validatePath = (
+  value: unknown,
+  options: { readonly allowEmpty: boolean; readonly maxCodeUnits: number },
+): string => {
+  if (typeof value !== 'string') {
+    throw new WorkspacePathError('workspace.path.type', 'Logical paths must be strings.');
+  }
+  if (value.length === 0) {
+    if (options.allowEmpty) return value;
+    throw new WorkspacePathError('workspace.path.empty', 'Logical paths must not be empty.');
+  }
+  checkPathEncodingAndLength(value, options.maxCodeUnits);
+  checkPathStructure(value);
   return value;
 };
 
