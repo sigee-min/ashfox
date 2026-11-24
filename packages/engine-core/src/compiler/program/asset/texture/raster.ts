@@ -17,6 +17,7 @@ export interface TextureRegion {
   readonly width: number;
   readonly height: number;
   readonly direction?: FaceDirection;
+  readonly boxSize?: readonly [number, number, number];
   readonly pointAt: (x: number, y: number) => readonly [number, number, number];
 }
 
@@ -39,6 +40,7 @@ export interface PaintGrid {
   readonly values: Uint16Array;
   readonly tones: Uint8Array;
   readonly fixed: Uint8Array;
+  readonly ao: Uint8Array;
 }
 
 export interface PatternSettings {
@@ -92,7 +94,50 @@ export const createPaintGrid = (
     values: new Uint16Array(width * height),
     tones: new Uint8Array(width * height),
     fixed: new Uint8Array(width * height),
+    ao: new Uint8Array(width * height),
   };
+};
+
+export interface TextureSceneContext {
+  readonly obbs: readonly import('./contract').SceneObb[];
+  readonly byChart: ReadonlyMap<string, readonly import('./contract').SceneObb[]>;
+  readonly boundsMin: readonly [number, number, number];
+  readonly boundsMax: readonly [number, number, number];
+  readonly worldPointFor: (
+    chartId: string,
+    region: TextureRegion,
+    x: number,
+    y: number,
+  ) => readonly [number, number, number];
+}
+
+/** Map a region-local pixel (x, y) to continuous 3D surface coordinates in [0, w] x [0, h] x [0, d]. */
+export const boxSurfacePoint = (
+  region: TextureRegion,
+  x: number,
+  y: number,
+): readonly [number, number, number] => {
+  if (region.boxSize === undefined || region.direction === undefined) {
+    return [x + 0.5, region.height - 0.5 - y, 0] as const;
+  }
+  const [w, h, d] = region.boxSize;
+  const dir: FaceDirection = region.direction;
+  if (dir === 'north') return [x + 0.5, h - 0.5 - y, 0] as const;
+  if (dir === 'south') return [w - 0.5 - x, h - 0.5 - y, d] as const;
+  if (dir === 'west') return [0, h - 0.5 - y, d - 0.5 - x] as const;
+  if (dir === 'east') return [w, h - 0.5 - y, x + 0.5] as const;
+  if (dir === 'up') return [x + 0.5, h, d - 0.5 - y] as const;
+  return [x + 0.5, 0, y + 0.5] as const;
+};
+
+/** Apply accumulated Contact AO tone reductions onto unfixed ramp texels. */
+export const applyAoToGrid = (grid: PaintGrid): void => {
+  for (let index = 0; index < grid.ao.length; index += 1) {
+    const step = grid.ao[index]!;
+    if (step === 0 || grid.fixed[index] !== 0) continue;
+    if (grid.roles[grid.values[index]!]?.kind !== 'ramp') continue;
+    grid.tones[index] = Math.max(0, grid.tones[index]! - step);
+  }
 };
 
 export const roleId = (grid: PaintGrid, name: string): number | null =>
@@ -200,7 +245,9 @@ export const boxRegions = (
     },
   };
   return Object.freeze(
-    ['north', 'south', 'east', 'west', 'up', 'down'].map((id) => regions[id as FaceDirection]!),
+    ['north', 'south', 'east', 'west', 'up', 'down'].map((id) =>
+      Object.freeze({ ...regions[id as FaceDirection]!, boxSize: size }),
+    ),
   );
 };
 

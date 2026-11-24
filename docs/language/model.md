@@ -126,14 +126,16 @@ Geometry nodes may be nested as follows:
 | Node | Required properties | Useful optional properties |
 | --- | --- | --- |
 | `bone` | none | `position`, `rotation`, `pivot`, `visible` |
-| `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror` |
-| `plane` | `origin`, `size`, `u-axis`, `v-axis`, one surface chart | `position`, `rotation`, `pivot`, `visible` |
+| `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror-x` |
+| `plane` | `origin`, `size`, `u-axis`, `v-axis`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror-x` |
 | `locator` | none | `position`, `rotation`, `visible` |
 | `face` inside a cube | none | `enabled`, `rotation` |
 
 Bones can contain bones, cubes, planes, and locators. Cubes can contain face
 blocks named `north`, `south`, `east`, `west`, `up`, or `down`. A face rotation
-is one of `0`, `90`, `180`, or `270`.
+is one of `0`, `90`, `180`, or `270`. Giving a `cube` or `plane` `mirror-x = <id>;`
+synthesizes a sibling mirrored across `x = 0` with flipped `rotation.y`/`rotation.z`,
+mirrored UV orientation, and swapped `east`/`west` face overrides.
 
 `cube` sizes and `plane` sizes must be positive. A plane's `size` is a two
 component unit vector and its `u-axis` and `v-axis` are distinct signed unit
@@ -143,10 +145,10 @@ bone.
 
 ### Surface contracts and surfaces
 
-A surface contract declares an atlas and the named charts that geometry may
-use. The concrete surface supplies the material and texture recipe. A chart's
-dimensions are part of the contract; a box chart used by a cube must match the
-cube's UV net exactly.
+A surface contract declares the named charts that geometry may use. Atlas
+dimensions and chart `width`/`height` may be omitted for deterministic compiler
+auto-inference and auto-packing from bound geometry dimensions, or specified
+explicitly when an external layout must be locked.
 
 **Snippet — a chart contract and concrete surface:**
 
@@ -183,10 +185,10 @@ export surface warm_fur: Fur {
 
 Contracts can declare `box` or `flat` charts. Chart coverage is `opaque`,
 `binary`, or `optional`; material is `opaque`, `cutout`, or `double`. Texture
-recipes declare an atlas, background, palette, and charts, with exactly one
-`grain clustered { seed = ...; }` block. Use `tone voxel` for the pixel shading
-shown here and add face-local stamps for deliberate marks. The precision guide
-shows exact pixel marks and anchored stamps.
+recipes declare a background, palette, and charts, with optional `grain`
+(`clustered`, `soft`, or `none`, overridable per chart or face) and `tone`
+(`voxel` or `painterly`). See [model textures](textures.md) for patterns,
+face fills/mirroring, 3D contact AO, and stamps.
 
 ## 4. Rigs and skeletons
 

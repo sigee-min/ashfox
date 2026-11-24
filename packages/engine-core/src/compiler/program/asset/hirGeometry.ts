@@ -10,6 +10,7 @@ import type { AssetExpressionTypeEnvironment, AssetExpectedType } from './value/
 import { compileHirExpression, type HirIssue } from './hirValues';
 import type {
   TypedGeometryBlock,
+  TypedGeometryMirrorBind,
   TypedGeometryPayload,
   TypedGeometryProperty,
   TypedGeometryStatement,
@@ -151,6 +152,33 @@ const childScopes: Readonly<Record<GeometryKind, ChildScope>> = Object.freeze({
 
 const ownsSurface = (keyword: GeometryKind): boolean => keyword === 'cube' || keyword === 'plane';
 
+const compileMirrorProperty = (
+  statement: AssetGeometryBlock,
+  property: AssetGeometryProperty,
+  context: GeometryCompileContext,
+): TypedGeometryMirrorBind | null => {
+  if (statement.keyword !== 'cube' && statement.keyword !== 'plane') {
+    context.issue(
+      context.path,
+      property.span,
+      'asset.invalid-geometry-property',
+      'Property "mirror-x" is allowed only on cube and plane nodes.',
+    );
+    return null;
+  }
+  const value = property.value;
+  if (value.kind !== 'name' || value.value.length === 0 || value.value === statement.id) {
+    context.issue(
+      context.path,
+      value.span,
+      'asset.invalid-mirror-target',
+      'mirror-x must name a distinct sibling geometry node identifier.',
+    );
+    return null;
+  }
+  return freeze({ kind: 'typed-geometry-mirror', targetId: value.value, span: property.span });
+};
+
 /** Compiles schema-checked properties into `typed`; returns every declared property name. */
 const compileProperties = (
   statement: AssetGeometryBlock,
@@ -168,6 +196,11 @@ const compileProperties = (
         'Geometry property "' + property.name + '" is declared more than once.',
       );
     names.add(property.name);
+    if (property.name === 'mirror-x') {
+      const mirrored = compileMirrorProperty(statement, property, context);
+      if (mirrored !== null) typed.push(mirrored);
+      continue;
+    }
     const expected = schema[property.name];
     if (expected === undefined) {
       context.issue(

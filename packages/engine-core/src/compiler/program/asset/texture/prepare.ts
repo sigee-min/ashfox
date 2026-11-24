@@ -205,12 +205,11 @@ const validateTopStatements = (payload: ProgramTextureDecl, report: TextureRepor
   return !report.bad;
 };
 
-const readAtlasDimensions = (
-  atlas: ProgramProperty,
-  context: TextureExpressionContext,
+const readContractAtlas = (
   contract: TypedSurfaceContract,
   report: TextureReporter,
 ): readonly [number, number] | null => {
+  if (contract.atlas === null) return null;
   const contractWidth = integerContract(
     contract.atlas.width,
     report,
@@ -230,6 +229,18 @@ const readAtlasDimensions = (
   ) {
     return null;
   }
+  return [contractWidth, contractHeight] as const;
+};
+
+const readAtlasDimensions = (
+  atlas: ProgramProperty | undefined,
+  context: TextureExpressionContext,
+  contract: TypedSurfaceContract,
+  report: TextureReporter,
+): Readonly<{ readonly explicit: readonly [number, number] | null }> | null => {
+  const fromContract = readContractAtlas(contract, report);
+  if (contract.atlas !== null && fromContract === null) return null;
+  if (atlas === undefined) return { explicit: fromContract };
   const atlasValue = readTexelVector(
     atlas.value,
     context,
@@ -238,7 +249,23 @@ const readAtlasDimensions = (
     propertyIssue(report),
     atlas.span,
   );
-  if (atlasValue === null || atlasValue[0] !== contractWidth || atlasValue[1] !== contractHeight) {
+  if (
+    atlasValue === null ||
+    atlasValue[0]! <= 0 ||
+    atlasValue[1]! <= 0 ||
+    atlasValue[0]! * atlasValue[1]! > MAX_PIXELS
+  ) {
+    report.report(
+      atlas.value.span,
+      'asset.texture.invalid-atlas',
+      'Texture atlas dimensions must be positive texels within bounds.',
+    );
+    return null;
+  }
+  if (
+    fromContract !== null &&
+    (atlasValue[0] !== fromContract[0] || atlasValue[1] !== fromContract[1])
+  ) {
     report.report(
       atlas.value.span,
       'asset.texture.atlas-mismatch',
@@ -246,7 +273,7 @@ const readAtlasDimensions = (
     );
     return null;
   }
-  return [contractWidth, contractHeight] as const;
+  return { explicit: [atlasValue[0]!, atlasValue[1]!] as const };
 };
 
 const readBackgroundAlpha = (
@@ -273,13 +300,41 @@ const readBackgroundAlpha = (
   return alphaValue === 0n ? 0 : 255;
 };
 
+const readGrainBlock = (
+  payload: ProgramTextureDecl,
+  grains: readonly ProgramTextureGrain[],
+  report: TextureReporter,
+): ProgramTextureGrain | null => {
+  if (grains.length > 1) {
+    report.report(
+      grains[1]!.span,
+      'asset.texture.grain-count',
+      'Texture may declare at most one grain block.',
+    );
+    return null;
+  }
+  if (grains.length === 0) {
+    return { kind: 'grain', algorithm: 'none', seed: null, span: payload.span };
+  }
+  const grain = grains[0]!;
+  if (grain.seed !== null && grain.seed.name !== 'seed') {
+    report.report(
+      grain.seed.span,
+      'asset.texture.invalid-grain',
+      'Grain accepts only the seed property.',
+    );
+    return null;
+  }
+  return grain;
+};
+
 const readTextureBlocks = (
   payload: ProgramTextureDecl,
   report: TextureReporter,
 ): Readonly<{
   readonly palette: ProgramTexturePalette;
   readonly grain: ProgramTextureGrain;
-  readonly tone: boolean;
+  readonly tone: 'none' | 'voxel' | 'painterly';
 }> | null => {
   const palettes = payload.statements.filter(
     (entry): entry is ProgramTexturePalette => entry.kind === 'palette',
@@ -287,7 +342,10 @@ const readTextureBlocks = (
   const grains = payload.statements.filter(
     (entry): entry is ProgramTextureGrain => entry.kind === 'grain',
   );
-  const tones = payload.statements.filter((entry) => entry.kind === 'tone');
+  const tones = payload.statements.filter(
+    (entry): entry is Extract<ProgramTextureDecl['statements'][number], { kind: 'tone' }> =>
+      entry.kind === 'tone',
+  );
   if (palettes.length !== 1) {
     report.report(
       payload.span,
@@ -296,41 +354,30 @@ const readTextureBlocks = (
     );
     return null;
   }
-  if (grains.length !== 1 || grains[0]!.algorithm !== 'clustered') {
-    report.report(
-      payload.span,
-      'asset.texture.grain-count',
-      'Texture requires exactly one clustered grain block.',
-    );
-    return null;
-  }
-  if (grains[0]!.seed !== null && grains[0]!.seed.name !== 'seed') {
-    report.report(
-      grains[0]!.seed.span,
-      'asset.texture.invalid-grain',
-      'Clustered grain accepts only the seed property.',
-    );
-    return null;
-  }
+  const grain = readGrainBlock(payload, grains, report);
+  if (grain === null) return null;
   if (tones.length > 1) {
     report.report(
       tones[1]!.span,
       'asset.texture.duplicate-tone',
-      'Texture may declare tone voxel only once.',
+      'Texture may declare tone only once.',
     );
     return null;
   }
-  return { palette: palettes[0]!, grain: grains[0]!, tone: tones.length === 1 };
+  const tone = tones[0]?.mode ?? 'none';
+  return { palette: palettes[0]!, grain, tone };
 };
 
 export interface PreparedTexture {
+  readonly width: number;
+  readonly height: number;
   readonly background: string;
   readonly backgroundAlpha: 0 | 255;
   readonly palette: ReadonlyMap<string, PaletteRole>;
   readonly stamps: ReadonlyMap<string, TextureStamp>;
   readonly charts: readonly PreparedChart[];
   readonly grain: ProgramTextureGrain;
-  readonly tone: boolean;
+  readonly tone: 'none' | 'voxel' | 'painterly';
 }
 
 const readRequiredHeader = (
@@ -340,7 +387,7 @@ const readRequiredHeader = (
   report: TextureReporter,
 ): Readonly<{
   readonly background: ProgramProperty;
-  readonly dimensions: readonly [number, number];
+  readonly explicitAtlas: readonly [number, number] | null;
   readonly backgroundAlpha: 0 | 255;
 }> | null => {
   const top = textureProperties(payload, report);
@@ -348,11 +395,11 @@ const readRequiredHeader = (
   const atlas = top.get('atlas');
   const background = top.get('background');
   const alpha = top.get('background-alpha');
-  if (atlas === undefined || background === undefined || alpha === undefined) {
+  if (background === undefined || alpha === undefined) {
     report.report(
       payload.span,
       'asset.texture.missing-property',
-      'Texture requires atlas, background, and background-alpha properties.',
+      'Texture requires background and background-alpha properties.',
     );
     return null;
   }
@@ -360,7 +407,7 @@ const readRequiredHeader = (
   if (dimensions === null) return null;
   const backgroundAlpha = readBackgroundAlpha(alpha, context, report);
   if (backgroundAlpha === null) return null;
-  return { background, dimensions, backgroundAlpha };
+  return { background, explicitAtlas: dimensions.explicit, backgroundAlpha };
 };
 
 /** Validate and lower a surface texture declaration into prepared charts, palette, and stamps. */
@@ -392,25 +439,26 @@ export const prepareTexture = (
   );
   const stamps = prepareStamps(declarations, context, palette, report);
   if (stamps === null) return null;
-  const charts = prepareCharts(
+  const layout = prepareCharts(
     payload,
     contract,
-    header.dimensions[0],
-    header.dimensions[1],
+    header.explicitAtlas,
     usages,
     context,
     palette,
     report,
   );
-  if (charts === null || report.bad) return null;
+  if (layout === null || report.bad) return null;
   const bg = selectedBackground.role;
   const background = bg.kind === 'ramp' ? bg.base : bg.color;
   return Object.freeze({
+    width: layout.atlas[0],
+    height: layout.atlas[1],
     background,
     backgroundAlpha: header.backgroundAlpha,
     palette,
     stamps,
-    charts,
+    charts: layout.charts,
     grain: blocks.grain,
     tone: blocks.tone,
   });

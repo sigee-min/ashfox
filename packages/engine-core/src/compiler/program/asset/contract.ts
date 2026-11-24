@@ -93,15 +93,15 @@ export interface TypedAtlasSize {
 export interface TypedChartAbi {
   readonly id: string;
   readonly layout: 'box' | 'flat';
-  readonly width: AssetTexelValue;
-  readonly height: AssetTexelValue;
+  readonly width: AssetTexelValue | null;
+  readonly height: AssetTexelValue | null;
   readonly coverage: 'opaque' | 'binary' | 'optional';
   readonly span: SourceSpan;
 }
 
 export interface TypedSurfaceContract {
   readonly symbol: AssetSymbolId;
-  readonly atlas: TypedAtlasSize;
+  readonly atlas: TypedAtlasSize | null;
   readonly charts: Readonly<Record<string, TypedChartAbi>>;
   readonly material: 'opaque' | 'cutout' | 'double';
   readonly slots: Readonly<Record<string, AssetValueType>>;
@@ -161,6 +161,12 @@ export interface TypedGeometrySurfaceBind {
   readonly span: SourceSpan;
 }
 
+export interface TypedGeometryMirrorBind {
+  readonly kind: 'typed-geometry-mirror';
+  readonly targetId: string;
+  readonly span: SourceSpan;
+}
+
 export interface TypedGeometryBlock {
   readonly kind: 'typed-geometry-block';
   readonly keyword: 'bone' | 'cube' | 'plane' | 'locator' | 'face';
@@ -170,7 +176,7 @@ export interface TypedGeometryBlock {
 }
 
 export type TypedGeometryStatement =
-  TypedGeometryProperty | TypedGeometrySurfaceBind | TypedGeometryBlock;
+  TypedGeometryProperty | TypedGeometrySurfaceBind | TypedGeometryMirrorBind | TypedGeometryBlock;
 
 export interface TypedGeometryPayload {
   readonly kind: 'typed-geometry';

@@ -33,6 +33,7 @@ import {
 } from './ir';
 import { evaluateAssetExpression } from './value/evaluate';
 import { type AssetValue } from './value/contract';
+import { mirrorInstantiatedNode } from './instantiateMirror';
 
 const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
   left.path.localeCompare(right.path) ||
@@ -180,6 +181,40 @@ const evaluateBlockProperties = (
   return freeze(properties);
 };
 
+const registerNodeId = (
+  ctx: GeometryWalkContext,
+  id: string,
+  span: SourceSpan,
+  kind: InstantiatedGeometryNode['kind'],
+): void => {
+  if (ctx.session.nodeIds.has(id)) {
+    ctx.session.issue(
+      ctx.path,
+      span,
+      'asset.duplicate-emitted-id',
+      `Instantiated node id "${id}" is not unique.`,
+    );
+  }
+  ctx.session.nodeIds.add(id);
+  ctx.session.ledger.use(kind === 'face' ? 'faces' : 'nodes', ctx.path, span);
+};
+
+const emitMirroredSibling = (
+  ctx: GeometryWalkContext,
+  statement: TypedGeometryBlock,
+  node: InstantiatedGeometryNode,
+  lexicalPath: readonly string[],
+  nodes: InstantiatedGeometryNode[],
+): void => {
+  const mirrorBind = statement.statements.find((entry) => entry.kind === 'typed-geometry-mirror');
+  if (mirrorBind === undefined) return;
+  const mirroredId = [ctx.instanceId, ...lexicalPath, mirrorBind.targetId].join('/');
+  registerNodeId(ctx, mirroredId, mirrorBind.span, node.kind);
+  const mirrored = mirrorInstantiatedNode(node, mirroredId, mirrorBind.span);
+  for (const child of mirrored.children) registerNodeId(ctx, child.id, child.span, child.kind);
+  nodes.push(mirrored);
+};
+
 const walkGeometry = (
   ctx: GeometryWalkContext,
   statements: readonly TypedGeometryStatement[],
@@ -197,32 +232,19 @@ const walkGeometry = (
     }
     const id = [ctx.instanceId, ...nextPath].join('/');
     const nextAttachment = statement.keyword === 'bone' ? id : attachment;
-    if (ctx.session.nodeIds.has(id)) {
-      ctx.session.issue(
-        ctx.path,
-        statement.span,
-        'asset.duplicate-emitted-id',
-        `Instantiated node id "${id}" is not unique.`,
-      );
-    }
-    ctx.session.nodeIds.add(id);
-    ctx.session.ledger.use(
-      statement.keyword === 'face' ? 'faces' : 'nodes',
-      ctx.path,
-      statement.span,
-    );
-    nodes.push(
-      freeze({
-        kind: statement.keyword,
-        id,
-        attachmentBoneId: attachment,
-        properties: evaluateBlockProperties(ctx, statement),
-        surface: surfaceOf(ctx.session, ctx.path, statement, ctx.surfaceBindings),
-        children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
-        sourcePath: ctx.path,
-        span: statement.span,
-      }),
-    );
+    registerNodeId(ctx, id, statement.span, statement.keyword);
+    const node = freeze({
+      kind: statement.keyword,
+      id,
+      attachmentBoneId: attachment,
+      properties: evaluateBlockProperties(ctx, statement),
+      surface: surfaceOf(ctx.session, ctx.path, statement, ctx.surfaceBindings),
+      children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
+      sourcePath: ctx.path,
+      span: statement.span,
+    });
+    nodes.push(node);
+    emitMirroredSibling(ctx, statement, node, lexicalPath, nodes);
   }
   return nodes;
 };

@@ -4,6 +4,7 @@ import { compareText } from '../../../stableOrder';
 import type { TypedAssetHir, TypedSurface, TypedSurfaceContract } from './contract';
 import type { InstantiatedAssetIr, InstantiatedSurfaceBinding } from './ir';
 import type { AssetTexturePlan } from './texture/contract';
+import { buildTextureSceneContext, type TextureSceneContext } from './texture/ao';
 import {
   addIssue,
   collectGeometryUsages,
@@ -159,6 +160,7 @@ const selectedSurfaces = (
 const materializeSelectedSurfaces = (
   selected: readonly SelectedSurface[],
   bySurface: ReadonlyMap<string, readonly CollectedUsage[]>,
+  scene: TextureSceneContext,
   diagnostics: AssetDiagnostic[],
   seen: Set<string>,
 ): Readonly<{
@@ -179,6 +181,7 @@ const materializeSelectedSurfaces = (
       surfaceUsages,
       item.path,
       (path, span, code, message) => addIssue(diagnostics, seen, { path, span }, code, message),
+      scene,
     );
     if (plan === null) {
       if (diagnostics.length === before) {
@@ -231,7 +234,14 @@ export const lowerAssetTextures = (
       'The selected asset must materialize at least one surface texture.',
     );
   }
-  const { plans, resolution } = materializeSelectedSurfaces(selected, bySurface, diagnostics, seen);
+  const scene = buildTextureSceneContext(ir);
+  const { plans, resolution } = materializeSelectedSurfaces(
+    selected,
+    bySurface,
+    scene,
+    diagnostics,
+    seen,
+  );
   if (diagnostics.length > 0) {
     return deepFreeze({ ok: false, diagnostics: [...diagnostics].sort(compareDiagnostics) });
   }

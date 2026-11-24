@@ -10,6 +10,10 @@ import {
   readTexelVector,
   type TextureExpressionContext,
 } from './expressions';
+import type { TextureSceneContext } from './ao';
+import { applyAoPattern } from './ao';
+import { applyBorderPattern, applyStripePattern } from './decor';
+import { applyGradientPattern } from './gradient';
 import { readRole } from './palette';
 import type { PreparedTexture } from './prepare';
 import { applyPattern, type PaintGrid, type PatternSettings, type TextureRegion } from './raster';
@@ -170,24 +174,49 @@ const readPatternSettings = (
   };
 };
 
-/** Validate and paint one blotch pattern statement across the target regions. */
+/** Validate and paint one procedural pattern statement across the target regions. */
 export const applyPatternStatement = (
   statement: PatternStatement,
+  chartKey: string,
+  chartId: string,
   stampSeen: boolean,
   regions: readonly TextureRegion[],
   prepared: PreparedTexture,
   context: TextureExpressionContext,
   grid: PaintGrid,
+  scene: TextureSceneContext | undefined,
   report: TextureReporter,
 ): boolean => {
-  if (stampSeen) {
+  if (stampSeen && statement.algorithm !== 'ao') {
     report.report(
       statement.span,
       'asset.texture.order',
-      'Blotch patterns must precede stamp placement.',
+      'Procedural patterns must precede stamp placement.',
     );
     return false;
   }
+  if (statement.algorithm === 'gradient') {
+    return applyGradientPattern(
+      statement,
+      chartKey,
+      regions,
+      prepared,
+      context,
+      grid,
+      scene,
+      report,
+    );
+  }
+  if (statement.algorithm === 'border') {
+    return applyBorderPattern(statement, regions, prepared, context, grid, report);
+  }
+  if (statement.algorithm === 'stripe') {
+    return applyStripePattern(statement, regions, prepared, context, grid, report);
+  }
+  if (statement.algorithm === 'ao') {
+    return applyAoPattern(statement, chartKey, regions, context, grid, scene, report);
+  }
+  void chartId;
   const settings = readPatternSettings(statement, prepared, context, report);
   if (settings === null) return false;
   return applyPattern(grid, regions, settings, issueFrom(report), report.path, statement.span);

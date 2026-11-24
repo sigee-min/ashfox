@@ -1,5 +1,5 @@
 import type { SourceSpan } from '../../../../project/source/contract';
-import type { AssetTextureIssue } from './contract';
+import type { AssetTextureIssue, GrainMode } from './contract';
 import { coherentValue, hashText } from './cluster';
 import type { PaletteRole } from './palette';
 import {
@@ -11,6 +11,8 @@ import {
   type TextureRegion,
 } from './raster';
 
+export type { GrainMode } from './contract';
+
 const UINT32 = 0x100000000;
 const HALF = UINT32 / 2;
 
@@ -19,12 +21,13 @@ const quantization = (
 ): Readonly<{
   readonly offset: number;
   readonly thresholds: readonly number[];
-}> =>
-  anchor === 4
-    ? { offset: 2, thresholds: [0.29, 0.68] }
-    : anchor === 0
-      ? { offset: 0, thresholds: [0.29, 0.72] }
-      : { offset: 0, thresholds: [0.2, 0.4, 0.6, 0.8] };
+}> => {
+  if (anchor === 4) return { offset: 2, thresholds: [0.29, 0.68] };
+  if (anchor === 3) return { offset: 2, thresholds: [0.25, 0.65] };
+  if (anchor === 1) return { offset: 0, thresholds: [0.35, 0.75] };
+  if (anchor === 0) return { offset: 0, thresholds: [0.29, 0.72] };
+  return { offset: 0, thresholds: [0.2, 0.4, 0.6, 0.8] };
+};
 
 const rawToneAt = (
   point: readonly [number, number, number],
@@ -160,28 +163,44 @@ const grainRegion = (region: TextureRegion, grid: PaintGrid, seed: number): void
   }
 };
 
-/** Apply bounded clustered grain across every eligible chart region. */
-export const applyGrain = (
+const softGrainRegion = (region: TextureRegion, grid: PaintGrid, seed: number): void => {
+  for (let y = 0; y < region.height; y += 1) {
+    for (let x = 0; x < region.width; x += 1) {
+      const index = (region.y + y) * grid.width + region.x + x;
+      if (grid.fixed[index] !== 0 || !eligible(grid.roles[grid.values[index]!])) continue;
+      const anchor = grid.tones[index]!;
+      const norm = coherentValue(region.pointAt(x, y), [3, 3, 3], seed, 419) / UINT32;
+      const delta = norm < 0.18 ? -1 : norm > 0.82 ? 1 : 0;
+      const next = Math.max(0, Math.min(4, anchor + delta)) as PaintTone;
+      paint(grid, region.x + x, region.y + y, grid.values[index]!, next);
+    }
+  }
+};
+
+/** Apply region-resolved grain modes across all eligible regions. */
+export const applyGrainModes = (
   grid: PaintGrid,
   regions: readonly TextureRegion[],
+  modeFor: (region: TextureRegion) => GrainMode,
   seed: number,
   domain: string,
   path: string,
   span: SourceSpan,
   issue: AssetTextureIssue,
 ): boolean => {
-  if (
-    sampleBudget(
-      regions.filter((region) => region.width * region.height > 4),
-      24,
-    ) === null
-  ) {
+  const active = regions.filter(
+    (region) => region.width * region.height > 4 && modeFor(region) !== 'none',
+  );
+  if (sampleBudget(active, 24) === null) {
     issue(path, span, 'asset.texture-budget', 'Clustered grain exceeds the bounded work budget.');
     return false;
   }
   const finalSeed = (seed ^ hashText(domain)) >>> 0;
-  for (const region of regions)
-    if (region.width * region.height > 4) grainRegion(region, grid, finalSeed);
+  for (const region of active) {
+    const mode = modeFor(region);
+    if (mode === 'soft') softGrainRegion(region, grid, finalSeed);
+    else if (mode === 'clustered') grainRegion(region, grid, finalSeed);
+  }
   return true;
 };
 

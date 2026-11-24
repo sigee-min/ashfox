@@ -29,7 +29,13 @@ import { buildAssetHir } from './hir';
 import { instantiateAsset } from './instantiate';
 import { parentCycles } from './parentCycles';
 import type { InstantiatedAssetIr } from './ir';
+import type { AssetAuthoringTelemetry, TextureAuthoringTelemetry } from './texture/telemetry';
 import { lowerAssetTextures } from './textureBinding';
+
+type CompileAssetWorkspaceFailure = Readonly<{
+  readonly ok: false;
+  readonly diagnostics: readonly WorkspaceDiagnostic[];
+}>;
 
 export type CompileAssetWorkspaceEntryResult =
   | Readonly<{
@@ -37,10 +43,16 @@ export type CompileAssetWorkspaceEntryResult =
       readonly model: CompiledModel;
       readonly build: AssetBuildIdentity;
     }>
+  | CompileAssetWorkspaceFailure;
+
+export type CompileAssetWorkspaceDetailedResult =
   | Readonly<{
-      readonly ok: false;
-      readonly diagnostics: readonly WorkspaceDiagnostic[];
-    }>;
+      readonly ok: true;
+      readonly model: CompiledModel;
+      readonly build: AssetBuildIdentity;
+      readonly telemetry: AssetAuthoringTelemetry;
+    }>
+  | CompileAssetWorkspaceFailure;
 
 interface RootLocation {
   readonly packageName: string;
@@ -56,7 +68,7 @@ const sourceRef = (packageName: string, path: string, span: SourceSpan): SourceR
     end: Object.freeze({ ...span.end }),
   });
 
-const fail = (diagnostics: readonly WorkspaceDiagnostic[]): CompileAssetWorkspaceEntryResult =>
+const fail = (diagnostics: readonly WorkspaceDiagnostic[]): CompileAssetWorkspaceFailure =>
   deepFreeze({
     ok: false as const,
     diagnostics: sortWorkspaceDiagnostics(diagnostics),
@@ -278,8 +290,12 @@ const finalizeModel = (
 };
 
 type LoweringResult =
-  | Readonly<{ readonly ok: true; readonly model: CompiledModel }>
-  | Readonly<{ readonly ok: false; readonly result: CompileAssetWorkspaceEntryResult }>;
+  | Readonly<{
+      readonly ok: true;
+      readonly model: CompiledModel;
+      readonly telemetry: AssetAuthoringTelemetry;
+    }>
+  | Readonly<{ readonly ok: false; readonly result: CompileAssetWorkspaceFailure }>;
 
 type GeometryNodes = NonNullable<ReturnType<typeof lowerAssetGeometry>>['nodes'];
 
@@ -344,7 +360,11 @@ const lowerClosure = (closure: WorkspaceEntryCompilation['closure']): LoweringRe
     location,
   );
   if (!finalized.ok) return { ok: false, result: fail(finalized.diagnostics) };
-  return { ok: true, model: finalized.model };
+  const textureTelemetry: Record<string, TextureAuthoringTelemetry> = Object.create(null);
+  for (const plan of textures.plans) {
+    if (plan.telemetry !== undefined) textureTelemetry[plan.texture.id] = plan.telemetry;
+  }
+  return { ok: true, model: finalized.model, telemetry: { textures: textureTelemetry } };
 };
 
 const buildIdentity = (
@@ -363,19 +383,34 @@ const buildIdentity = (
     productHash: sha256Digest(canonicalJsonString(model)) as Sha256Digest,
   });
 
+/** Internal lowering returning model, build identity, and pre-grain authoring telemetry. */
+export const compileResolvedAssetWorkspaceEntryDetailed = (
+  workspaceHash: Sha256Digest,
+  resolved: WorkspaceEntryCompilation,
+): CompileAssetWorkspaceDetailedResult => {
+  try {
+    const lowered = lowerClosure(resolved.closure);
+    if (!lowered.ok) return lowered.result;
+    const build = buildIdentity(workspaceHash, resolved, lowered.model);
+    return deepFreeze({
+      ok: true as const,
+      model: lowered.model,
+      build,
+      telemetry: lowered.telemetry,
+    });
+  } catch {
+    return fail([errorDiagnostic('asset.compiler-failure', 'Asset compilation failed closed.')]);
+  }
+};
+
 /** Internal lowering of a closure from the current validated compilation snapshot. */
 export const compileResolvedAssetWorkspaceEntry = (
   workspaceHash: Sha256Digest,
   resolved: WorkspaceEntryCompilation,
 ): CompileAssetWorkspaceEntryResult => {
-  try {
-    const lowered = lowerClosure(resolved.closure);
-    if (!lowered.ok) return lowered.result;
-    const build = buildIdentity(workspaceHash, resolved, lowered.model);
-    return deepFreeze({ ok: true as const, model: lowered.model, build });
-  } catch {
-    return fail([errorDiagnostic('asset.compiler-failure', 'Asset compilation failed closed.')]);
-  }
+  const result = compileResolvedAssetWorkspaceEntryDetailed(workspaceHash, resolved);
+  if (!result.ok) return result;
+  return deepFreeze({ ok: true as const, model: result.model, build: result.build });
 };
 
 /** Compile one selected workspace entry through the complete hermetic pipeline. */

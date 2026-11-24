@@ -53,6 +53,29 @@ const texel = (
   return value as AssetTexelValue;
 };
 
+const optionalChartSizes = (
+  chart: AssetSurfaceContractDecl['charts'][number],
+  path: string,
+  issue: AssemblyContext['issue'],
+): Readonly<{
+  readonly width: AssetTexelValue | null;
+  readonly height: AssetTexelValue | null;
+}> | null => {
+  if (chart.width === null && chart.height === null) return { width: null, height: null };
+  if (chart.width === null || chart.height === null) {
+    issue(
+      path,
+      chart.span,
+      'asset.invalid-size',
+      'Chart width and height must either both be declared or both be omitted for auto-inference.',
+    );
+    return null;
+  }
+  const width = texel(chart.width, path, chart.span, issue);
+  const height = texel(chart.height, path, chart.span, issue);
+  return width !== null && height !== null ? { width, height } : null;
+};
+
 const buildSurfaceContractCharts = (
   context: AssemblyContext,
   state: AssemblyState,
@@ -68,8 +91,7 @@ const buildSurfaceContractCharts = (
         `Surface chart "${chart.id}" is declared more than once.`,
       );
     }
-    const chartWidth = texel(chart.width, state.path, chart.span, context.issue);
-    const chartHeight = texel(chart.height, state.path, chart.span, context.issue);
+    const sizes = optionalChartSizes(chart, state.path, context.issue);
     if (chart.coverage === null) {
       context.issue(
         state.path,
@@ -78,12 +100,12 @@ const buildSurfaceContractCharts = (
         'Surface charts require an explicit coverage policy.',
       );
     }
-    if (chartWidth !== null && chartHeight !== null && chart.coverage !== null) {
+    if (sizes !== null && chart.coverage !== null) {
       charts[chart.id] = freeze({
         id: chart.id,
         layout: chart.layout,
-        width: chartWidth,
-        height: chartHeight,
+        width: sizes.width,
+        height: sizes.height,
         coverage: chart.coverage,
         span: chart.span,
       });
@@ -118,26 +140,7 @@ export const buildSurfaceContract = (
   entry: AssemblyEntry,
 ): TypedSurfaceContract | null => {
   const declaration = entry.declaration as AssetSurfaceContractDecl;
-  const width = texel(
-    declaration.atlas?.width ?? null,
-    state.path,
-    declaration.atlas?.span ?? declaration.span,
-    context.issue,
-  );
-  const height = texel(
-    declaration.atlas?.height ?? null,
-    state.path,
-    declaration.atlas?.span ?? declaration.span,
-    context.issue,
-  );
-  if (declaration.atlas === null) {
-    context.issue(
-      state.path,
-      declaration.span,
-      'asset.missing-atlas',
-      'Surface contracts require one explicit atlas.',
-    );
-  }
+  const atlas = readContractAtlas(context, state, declaration);
   if (declaration.material === null) {
     context.issue(
       state.path,
@@ -148,15 +151,27 @@ export const buildSurfaceContract = (
   }
   const charts = buildSurfaceContractCharts(context, state, declaration);
   const slots = buildSurfaceContractSlots(context, state, declaration);
-  if (width === null || height === null || declaration.material === null) return null;
+  if ((declaration.atlas !== null && atlas === null) || declaration.material === null) return null;
   return freeze({
     symbol: entry.symbol,
-    atlas: freeze({ width, height, span: declaration.atlas?.span ?? declaration.span }),
+    atlas,
     charts,
     material: declaration.material,
     slots,
     span: declaration.span,
   });
+};
+
+const readContractAtlas = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  declaration: AssetSurfaceContractDecl,
+): TypedSurfaceContract['atlas'] => {
+  if (declaration.atlas === null) return null;
+  const width = texel(declaration.atlas.width, state.path, declaration.atlas.span, context.issue);
+  const height = texel(declaration.atlas.height, state.path, declaration.atlas.span, context.issue);
+  if (width === null || height === null) return null;
+  return freeze({ width, height, span: declaration.atlas.span });
 };
 
 const buildSurfaceSlots = (

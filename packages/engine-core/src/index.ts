@@ -74,8 +74,14 @@ export {
 } from './project/workspace';
 export {
   compileAssetWorkspaceEntry,
+  type CompileAssetWorkspaceDetailedResult,
   type CompileAssetWorkspaceEntryResult,
 } from './compiler/program/asset/compile';
+export type {
+  AssetAuthoringTelemetry,
+  ChartAuthoringTelemetry,
+  TextureAuthoringTelemetry,
+} from './compiler/program/asset/texture/telemetry';
 export type { AssetBuildIdentity, AssetProject, AssetProjectIdentitySeed } from './project/asset';
 export {
   isAssetProjectAuthorityValid,

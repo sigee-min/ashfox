@@ -3,10 +3,12 @@ import type {
   ProgramTextureChart,
   ProgramTextureDecl,
 } from '../../../../project/program/syntax/contract';
+import type { SourceSpan } from '../../../../project/source/contract';
 import type { TypedSurfaceContract } from '../contract';
 import type { AssetTextureUsage } from './contract';
 import { properties, readTexelVector, type TextureExpressionContext } from './expressions';
 import { hasChartOverlap } from './overlap';
+import { packCharts } from './pack';
 import { readRole, type PaletteRole } from './palette';
 import { boxRegions, type TextureRegion } from './raster';
 import { integerContract, ownEntries, propertyIssue, type TextureReporter } from './report';
@@ -16,6 +18,21 @@ export interface PreparedChart {
   readonly abiWidth: number;
   readonly abiHeight: number;
   readonly origin: readonly [number, number];
+  readonly regions: readonly TextureRegion[];
+  readonly coverage: string | null;
+}
+
+export interface PreparedChartLayout {
+  readonly atlas: readonly [number, number];
+  readonly charts: readonly PreparedChart[];
+}
+
+interface DraftChart {
+  readonly chart: ProgramTextureChart;
+  readonly abiWidth: number;
+  readonly abiHeight: number;
+  readonly origin: readonly [number, number] | null;
+  readonly originSpan: SourceSpan;
   readonly regions: readonly TextureRegion[];
   readonly coverage: string | null;
 }
@@ -37,47 +54,53 @@ const usageMatches = (
   left.size.length === right.size.length &&
   left.size.every((value, index) => value === right.size[index]);
 
-const boxChartRegions = (
+const resolvedDimensions = (
+  chart: ProgramTextureChart,
+  abi: TypedSurfaceContract['charts'][string],
   first: AssetTextureUsage,
-  size: readonly [number, number, number],
-  width: number,
-  height: number,
   report: TextureReporter,
-): readonly TextureRegion[] | null => {
-  const expectedWidth = 2 * size[0] + 2 * size[2];
-  const expectedHeight = size[1] + size[2];
-  if (expectedWidth !== width || expectedHeight !== height) {
+): readonly [number, number] | null => {
+  const shape = first.shape;
+  if (shape.kind !== chart.layout) {
+    report.report(
+      first.span,
+      'asset.texture.chart-layout-mismatch',
+      'Geometry usage shape must match its chart layout.',
+    );
+    return null;
+  }
+  const inferred: readonly [number, number] =
+    shape.kind === 'flat'
+      ? [shape.size[0], shape.size[1]]
+      : [2 * shape.size[0] + 2 * shape.size[2], shape.size[1] + shape.size[2]];
+  if (abi.width === null || abi.height === null) return inferred;
+  const width = integerContract(abi.width, report, abi.span, 'Chart width');
+  const height = integerContract(abi.height, report, abi.span, 'Chart height');
+  if (width === null || height === null) return null;
+  if (width !== inferred[0] || height !== inferred[1]) {
     report.report(
       first.span,
       'asset.texture.chart-size-mismatch',
-      'Box geometry dimensions must equal the contract chart net dimensions.',
+      shape.kind === 'flat'
+        ? 'Flat geometry size must equal its contract chart dimensions.'
+        : 'Box geometry dimensions must equal the contract chart net dimensions.',
     );
     return null;
   }
-  const regions = boxRegions(size);
-  if (
-    regions === null ||
-    regions.some((region) => region.x + region.width > width || region.y + region.height > height)
-  ) {
-    report.report(
-      first.span,
-      'asset.texture.invalid-chart-layout',
-      'Box chart face regions do not fit the declared chart rectangle.',
-    );
-    return null;
-  }
-  return regions;
+  return [width, height] as const;
 };
 
-const usageRegions = (
+const resolveRegions = (
   chart: ProgramTextureChart,
-  width: number,
-  height: number,
+  abi: TypedSurfaceContract['charts'][string],
   usages: readonly AssetTextureUsage[],
   report: TextureReporter,
-): readonly TextureRegion[] | null => {
-  const matches = usages; // Already grouped by chart within this preparation.
-  if (matches.length === 0) {
+): Readonly<{
+  readonly width: number;
+  readonly height: number;
+  readonly regions: readonly TextureRegion[];
+}> | null => {
+  if (usages.length === 0) {
     report.report(
       chart.span,
       'asset.texture.unused-chart',
@@ -85,28 +108,30 @@ const usageRegions = (
     );
     return null;
   }
-  const first = matches[0]!;
-  if (matches.some((usage) => !usageMatches(first.shape, usage.shape))) {
+  const first = usages[0]!;
+  if (usages.some((usage) => !usageMatches(first.shape, usage.shape))) {
     report.report(
-      matches[1]!.span,
+      usages[1]!.span,
       'asset.texture.usage-mismatch',
       'A chart may be used more than once only with identical geometry dimensions.',
     );
     return null;
   }
-  const shape = first.shape;
-  if (shape.kind === 'flat') {
-    if (shape.size[0] !== width || shape.size[1] !== height) {
-      report.report(
-        first.span,
-        'asset.texture.chart-size-mismatch',
-        'Flat geometry size must equal its contract chart dimensions.',
-      );
-      return null;
-    }
-    return Object.freeze([flatRegion(width, height)]);
+  const dims = resolvedDimensions(chart, abi, first, report);
+  if (dims === null) return null;
+  const [width, height] = dims;
+  if (first.shape.kind === 'flat')
+    return { width, height, regions: Object.freeze([flatRegion(width, height)]) };
+  const regions = boxRegions(first.shape.size);
+  if (regions === null || regions.some((r) => r.x + r.width > width || r.y + r.height > height)) {
+    report.report(
+      first.span,
+      'asset.texture.invalid-chart-layout',
+      'Box chart face regions do not fit the declared chart rectangle.',
+    );
+    return null;
   }
-  return boxChartRegions(first, shape.size, width, height, report);
+  return { width, height, regions };
 };
 
 const chartCoverage = (
@@ -162,30 +187,40 @@ const readChartOriginAndFill = (
   palette: ReadonlyMap<string, PaletteRole>,
   report: TextureReporter,
 ): Readonly<{
-  readonly origin: readonly [number, number];
-  readonly originSpan: ProgramProperty['value']['span'];
+  readonly origin: readonly [number, number] | null;
+  readonly originSpan: SourceSpan;
 }> | null => {
   const propertyEntries = chart.statements.filter(
     (entry): entry is ProgramProperty => entry.kind === 'property',
   );
   const entries = properties(
     propertyEntries,
-    ['origin', 'fill'],
+    ['origin', 'fill', 'grain'],
     chart.span,
     report.path,
     propertyIssue(report),
   );
   if (entries === null) return null;
-  const originEntry = entries.get('origin');
   const fillEntry = entries.get('fill');
-  if (originEntry === undefined || fillEntry === undefined) {
+  if (fillEntry === undefined) {
     report.report(
       chart.span,
       'asset.texture.missing-property',
-      'Every chart requires origin and fill properties.',
+      'Every chart requires a fill property.',
     );
     return null;
   }
+  const selected = readRole(
+    fillEntry.value,
+    palette,
+    true,
+    report.path,
+    propertyIssue(report),
+    fillEntry.span,
+  );
+  if (selected === null) return null;
+  const originEntry = entries.get('origin');
+  if (originEntry === undefined) return { origin: null, originSpan: chart.span };
   const origin = readTexelVector(
     originEntry.value,
     context,
@@ -202,28 +237,17 @@ const readChartOriginAndFill = (
     );
     return null;
   }
-  const selected = readRole(
-    fillEntry.value,
-    palette,
-    true,
-    report.path,
-    propertyIssue(report),
-    fillEntry.span,
-  );
-  if (selected === null) return null;
   return { origin: [origin[0]!, origin[1]!] as const, originSpan: originEntry.value.span };
 };
 
-const prepareChart = (
+const prepareDraftChart = (
   chart: ProgramTextureChart,
   contractChart: TypedSurfaceContract['charts'][string],
-  atlasWidth: number,
-  atlasHeight: number,
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
   report: TextureReporter,
-): PreparedChart | null => {
+): DraftChart | null => {
   if (chart.layout !== contractChart.layout) {
     report.report(
       chart.span,
@@ -232,30 +256,26 @@ const prepareChart = (
     );
     return null;
   }
-  const width = integerContract(contractChart.width, report, contractChart.span, 'Chart width');
-  const height = integerContract(contractChart.height, report, contractChart.span, 'Chart height');
-  if (width === null || height === null) return null;
+  const resolved = resolveRegions(chart, contractChart, usages, report);
   const placement = readChartOriginAndFill(chart, context, palette, report);
-  const regions = usageRegions(chart, width, height, usages, report);
-  if (placement === null || regions === null) return null;
-  if (placement.origin[0] + width > atlasWidth || placement.origin[1] + height > atlasHeight) {
-    report.report(
-      placement.originSpan,
-      'asset.texture.out-of-bounds',
-      'Chart lies outside the permitted texture atlas.',
-    );
-    return null;
-  }
-  const coverage = chartCoverage(chart, width, height, contractChart.coverage, report);
-  if (coverage === null && contractChart.coverage === 'binary') return null;
-  return Object.freeze({
+  if (resolved === null || placement === null) return null;
+  const coverage = chartCoverage(
     chart,
-    abiWidth: width,
-    abiHeight: height,
+    resolved.width,
+    resolved.height,
+    contractChart.coverage,
+    report,
+  );
+  if (coverage === null && contractChart.coverage === 'binary') return null;
+  return {
+    chart,
+    abiWidth: resolved.width,
+    abiHeight: resolved.height,
     origin: placement.origin,
-    regions,
+    originSpan: placement.originSpan,
+    regions: resolved.regions,
     coverage,
-  });
+  };
 };
 
 const groupBy = <T>(items: readonly T[], keyOf: (item: T) => string): ReadonlyMap<string, T[]> => {
@@ -290,24 +310,123 @@ const reportChartOverlaps = (charts: readonly PreparedChart[], report: TextureRe
   }
 };
 
-/** Prepare and validate every contract-declared chart and check atlas rectangle overlap. */
+const pow2AtLeast = (value: number): number => {
+  let size = 16;
+  while (size < value && size < 4096) size *= 2;
+  return size;
+};
+
+const resolveExplicitOrigins = (
+  drafts: readonly DraftChart[],
+  explicitAtlas: readonly [number, number] | null,
+  report: TextureReporter,
+): PreparedChartLayout | null => {
+  const maxRight = Math.max(...drafts.map((d) => d.origin![0] + d.abiWidth), 16);
+  const maxBottom = Math.max(...drafts.map((d) => d.origin![1] + d.abiHeight), 16);
+  const atlas: readonly [number, number] =
+    explicitAtlas ?? ([pow2AtLeast(maxRight), pow2AtLeast(maxBottom)] as const);
+  if (maxRight > 4096 || maxBottom > 4096 || atlas[0] * atlas[1] > 4096 * 4096) {
+    report.report(
+      drafts[0]!.originSpan,
+      'asset.texture.out-of-bounds',
+      'Charts exceed the maximum atlas dimensions.',
+    );
+    return null;
+  }
+  const charts: PreparedChart[] = [];
+  for (const draft of drafts) {
+    if (
+      draft.origin![0] + draft.abiWidth > atlas[0] ||
+      draft.origin![1] + draft.abiHeight > atlas[1]
+    ) {
+      report.report(
+        draft.originSpan,
+        'asset.texture.out-of-bounds',
+        'Chart lies outside the permitted texture atlas.',
+      );
+      return null;
+    }
+    charts.push(
+      Object.freeze({
+        chart: draft.chart,
+        abiWidth: draft.abiWidth,
+        abiHeight: draft.abiHeight,
+        origin: draft.origin!,
+        regions: draft.regions,
+        coverage: draft.coverage,
+      }),
+    );
+  }
+  reportChartOverlaps(charts, report);
+  return Object.freeze({ atlas, charts: Object.freeze(charts) });
+};
+
+const finalizeChartPlacement = (
+  drafts: readonly DraftChart[],
+  explicitAtlas: readonly [number, number] | null,
+  payloadSpan: SourceSpan,
+  report: TextureReporter,
+): PreparedChartLayout | null => {
+  if (drafts.length === 0) {
+    return Object.freeze({
+      atlas: explicitAtlas ?? ([16, 16] as const),
+      charts: Object.freeze([]),
+    });
+  }
+  const withOrigin = drafts.filter((d) => d.origin !== null);
+  const withoutOrigin = drafts.filter((d) => d.origin === null);
+  if (withOrigin.length > 0 && withoutOrigin.length > 0) {
+    report.report(
+      withOrigin[0]!.originSpan,
+      'asset.texture.mixed-origin',
+      'Charts in one texture must either all declare origin or all omit origin for auto-packing.',
+    );
+    return null;
+  }
+  const sorted = [...drafts].sort((left, right) => left.chart.id.localeCompare(right.chart.id));
+  if (withoutOrigin.length === 0) return resolveExplicitOrigins(sorted, explicitAtlas, report);
+  const packed = packCharts(
+    sorted.map((d) => ({ id: d.chart.id, width: d.abiWidth, height: d.abiHeight })),
+    explicitAtlas,
+  );
+  if (packed === null) {
+    report.report(
+      payloadSpan,
+      'asset.texture.out-of-bounds',
+      'Auto-packed charts do not fit within the permitted texture atlas.',
+    );
+    return null;
+  }
+  const charts = sorted.map((draft) =>
+    Object.freeze({
+      chart: draft.chart,
+      abiWidth: draft.abiWidth,
+      abiHeight: draft.abiHeight,
+      origin: packed.origins.get(draft.chart.id)!,
+      regions: draft.regions,
+      coverage: draft.coverage,
+    }),
+  );
+  return Object.freeze({ atlas: packed.atlas, charts: Object.freeze(charts) });
+};
+
+/** Prepare and validate every contract-declared chart, auto-packing when origins are omitted. */
 export const prepareCharts = (
   payload: ProgramTextureDecl,
   contract: TypedSurfaceContract,
-  atlasWidth: number,
-  atlasHeight: number,
+  explicitAtlas: readonly [number, number] | null,
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
   report: TextureReporter,
-): readonly PreparedChart[] | null => {
+): PreparedChartLayout | null => {
   const sources = payload.statements.filter(
     (entry): entry is ProgramTextureChart => entry.kind === 'chart',
   );
   const sourcesById = groupBy(sources, (source) => source.id);
   const usagesByChart = groupBy(usages, (usage) => usage.chart);
   const entries = ownEntries(contract.charts);
-  const charts: PreparedChart[] = [];
+  const drafts: DraftChart[] = [];
   for (const [id, abi] of entries) {
     const matches = sourcesById.get(id) ?? [];
     if (matches.length !== 1) {
@@ -318,17 +437,15 @@ export const prepareCharts = (
       );
       continue;
     }
-    const chart = prepareChart(
+    const draft = prepareDraftChart(
       matches[0]!,
       abi,
-      atlasWidth,
-      atlasHeight,
       usagesByChart.get(id) ?? [],
       context,
       palette,
       report,
     );
-    if (chart !== null) charts.push(chart);
+    if (draft !== null) drafts.push(draft);
   }
   for (const chart of sources) {
     if (contract.charts[chart.id] === undefined) {
@@ -339,8 +456,6 @@ export const prepareCharts = (
       );
     }
   }
-  if (charts.length !== entries.length) return null;
-  charts.sort((left, right) => left.chart.id.localeCompare(right.chart.id));
-  reportChartOverlaps(charts, report);
-  return Object.freeze(charts);
+  if (drafts.length !== entries.length) return null;
+  return finalizeChartPlacement(drafts, explicitAtlas, payload.span, report);
 };
