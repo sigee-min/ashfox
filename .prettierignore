@@ -6,6 +6,3 @@ coverage/
 .ashfox/
 # Copied byte-for-byte into the release starter project.
 scripts/release/project/
-
-# Format-pending: formatting exceeds architecture size limits until the
-# engine-core sweep splits these owners. Remove entries as they are split.
