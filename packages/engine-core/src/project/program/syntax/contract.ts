@@ -96,15 +96,15 @@ export interface ProgramProperty {
 /** Deterministic source-level procedural chart pattern. */
 export interface ProgramTexturePattern {
   readonly kind: 'pattern';
-  readonly algorithm: 'blotch';
+  readonly algorithm: 'blotch' | 'gradient' | 'border' | 'stripe' | 'ao';
   readonly properties: readonly ProgramProperty[];
   readonly span: SourceSpan;
 }
 
-/** Export-stable voxel face tone policy for box charts. */
+/** Export-stable voxel or painterly face tone policy for box charts. */
 export interface ProgramTextureTone {
   readonly kind: 'tone';
-  readonly mode: 'voxel';
+  readonly mode: 'voxel' | 'painterly';
   readonly span: SourceSpan;
 }
 
@@ -159,7 +159,7 @@ export interface ProgramTexturePalette {
 /** Texture-wide deterministic within-ramp microvariation pass. */
 export interface ProgramTextureGrain {
   readonly kind: 'grain';
-  readonly algorithm: 'clustered';
+  readonly algorithm: 'clustered' | 'soft' | 'none';
   readonly seed: ProgramProperty | null;
   readonly span: SourceSpan;
 }

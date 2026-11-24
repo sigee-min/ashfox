@@ -18,11 +18,11 @@ import { withWorkspaceLimits } from '../../../project/workspace/limits';
 import { joinLogicalPath } from '../../../project/workspace/path';
 import { computeWorkspaceHash } from '../../../project/workspace/hash';
 import {
-  compileResolvedAssetWorkspaceEntry,
-  type CompileAssetWorkspaceEntryResult,
+  compileResolvedAssetWorkspaceEntryDetailed,
+  type CompileAssetWorkspaceDetailedResult,
 } from './compile';
 
-type CandidateProduct = Extract<CompileAssetWorkspaceEntryResult, { readonly ok: true }> & {
+type CandidateProduct = Extract<CompileAssetWorkspaceDetailedResult, { readonly ok: true }> & {
   readonly entry: WorkspaceEntrySelector;
 };
 type CompileWorkspaceCandidateResult =
@@ -115,7 +115,7 @@ const compileEntries = (
       continue;
     }
     recordReachableModules(resolved.value, reachableModules);
-    const compiled = compileResolvedAssetWorkspaceEntry(workspaceHash, resolved.value);
+    const compiled = compileResolvedAssetWorkspaceEntryDetailed(workspaceHash, resolved.value);
     if (!compiled.ok && !sink.push(compiled.diagnostics)) break;
     if (compiled.ok && collectProducts) products.push({ entry: selector, ...compiled });
   }

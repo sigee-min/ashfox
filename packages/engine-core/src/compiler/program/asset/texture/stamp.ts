@@ -11,6 +11,7 @@ import {
 } from './expressions';
 import { readRole, type PaletteRole } from './palette';
 import {
+  paint,
   paintStamp,
   roleId,
   type PaintGrid,
@@ -85,14 +86,24 @@ const applyAnchor = (
   return [shiftedX, shiftedY];
 };
 
-const readProtectPadding = (
+interface ProtectPolicy {
+  readonly padding: number;
+  readonly protectCells: boolean;
+  readonly freezeRect: boolean;
+}
+
+const readProtectPolicy = (
   protect: ProgramProperty | undefined,
   region: TextureRegion,
   context: TextureExpressionContext,
   report: TextureReporter,
   fallback: SourceSpan,
-): number | null => {
-  if (protect === undefined) return 0;
+): ProtectPolicy | null => {
+  if (protect === undefined) return { padding: 0, protectCells: true, freezeRect: false };
+  const evaluated = context.evaluate(protect.value);
+  if (evaluated?.kind === 'boolean') {
+    return { padding: 0, protectCells: evaluated.value, freezeRect: false };
+  }
   const margin = readInteger(
     protect.value,
     context,
@@ -106,11 +117,11 @@ const readProtectPadding = (
     report.report(
       protect.value.span ?? fallback,
       'asset.texture.invalid-protection',
-      'Stamp protection requires a nonnegative integral texel margin bounded by its face.',
+      'Stamp protection requires a boolean or nonnegative integral texel margin bounded by its face.',
     );
     return null;
   }
-  return Number(margin);
+  return { padding: Number(margin), protectCells: true, freezeRect: true };
 };
 
 const withinFaceBounds = (
@@ -147,6 +158,7 @@ const paintStampCell = (
   y: number,
   roleName: string,
   palette: ReadonlyMap<string, PaletteRole>,
+  protectCells: boolean,
   report: TextureReporter,
   span: SourceSpan,
 ): void => {
@@ -159,7 +171,9 @@ const paintStampCell = (
     span,
   );
   const id = selected === null ? null : roleId(grid, selected.name);
-  if (id !== null) paintStamp(grid, region.x + x, region.y + y, id, 2);
+  if (id === null) return;
+  if (protectCells) paintStamp(grid, region.x + x, region.y + y, id, 2);
+  else paint(grid, region.x + x, region.y + y, id, 2);
 };
 
 const paintStampCells = (
@@ -170,6 +184,7 @@ const paintStampCells = (
   stamp: TextureStamp,
   flip: StampFlip,
   palette: ReadonlyMap<string, PaletteRole>,
+  protectCells: boolean,
   report: TextureReporter,
   span: SourceSpan,
 ): void => {
@@ -186,6 +201,7 @@ const paintStampCells = (
         y + targetRow,
         cell.role,
         palette,
+        protectCells,
         report,
         span,
       );
@@ -280,10 +296,10 @@ export const stampUse = (
   const resolved = resolveStampPlacement(entries, statement, region, stamp, context, report);
   if (resolved === null) return;
   const protect = entries.get('protect');
-  const padding = readProtectPadding(protect, region, context, report, statement.span);
-  if (padding === null) return;
+  const policy = readProtectPolicy(protect, region, context, report, statement.span);
+  if (policy === null) return;
   const [x, y] = resolved.coords;
-  if (!withinFaceBounds(x, y, padding, stamp, region)) {
+  if (!withinFaceBounds(x, y, policy.padding, stamp, region)) {
     report.report(
       resolved.positionSpan,
       'asset.texture.stamp-out-of-bounds',
@@ -291,8 +307,19 @@ export const stampUse = (
     );
     return;
   }
-  // Explicit protection freezes the whole rectangle, including transparent stamp cells.
+  // Explicit texel padding freezes the whole rectangle, including transparent stamp cells.
   // Binary coverage is applied later and remains authoritative over alpha.
-  if (protect !== undefined) freezeProtection(grid, region, x, y, padding, stamp);
-  paintStampCells(grid, region, x, y, stamp, resolved.flip, palette, report, statement.span);
+  if (policy.freezeRect) freezeProtection(grid, region, x, y, policy.padding, stamp);
+  paintStampCells(
+    grid,
+    region,
+    x,
+    y,
+    stamp,
+    resolved.flip,
+    palette,
+    policy.protectCells,
+    report,
+    statement.span,
+  );
 };

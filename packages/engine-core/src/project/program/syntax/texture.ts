@@ -58,11 +58,32 @@ const invalidProperty = (
   return property;
 };
 
+const GRAIN_ALGORITHMS = ['clustered', 'soft', 'none'] as const;
+type GrainAlgorithm = (typeof GRAIN_ALGORITHMS)[number];
+
 const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
   const start = reader.take();
-  const algorithm = reader.word('Expected a grain algorithm.');
-  if (algorithm !== 'clustered')
-    reader.fail('program.invalid-grain', 'Grain algorithm must be clustered.', start);
+  const rawAlgorithm = reader.word('Expected a grain algorithm.');
+  if (!GRAIN_ALGORITHMS.includes(rawAlgorithm as GrainAlgorithm)) {
+    reader.fail(
+      'program.invalid-grain',
+      'Grain algorithm must be clustered, soft, or none.',
+      start,
+    );
+  }
+  const algorithm: GrainAlgorithm = GRAIN_ALGORITHMS.includes(rawAlgorithm as GrainAlgorithm)
+    ? (rawAlgorithm as GrainAlgorithm)
+    : 'clustered';
+  const current = reader.current();
+  if (current.kind !== 'symbol' || current.value !== '{') {
+    reader.finish();
+    return freeze({
+      kind: 'grain',
+      algorithm,
+      seed: null,
+      span: join(start.span, reader.finishEnd()),
+    });
+  }
   const properties = reader.block(() => {
     const propertyStart = reader.current();
     const property = reader.property('grain');
@@ -70,17 +91,18 @@ const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
   });
   const seen = new Set<string>();
   for (const property of properties) {
-    if (seen.has(property.name))
+    if (seen.has(property.name)) {
       reader.fail(
         'program.duplicate-property',
         'Grain property "' + property.name + '" is declared more than once.',
         start,
       );
+    }
     seen.add(property.name);
   }
   return freeze({
     kind: 'grain',
-    algorithm: 'clustered',
+    algorithm,
     seed: properties[0] ?? null,
     span: join(start.span, reader.blockEnd()),
   });
@@ -89,10 +111,15 @@ const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
 const tone = (reader: ProgramTextureReader): ProgramTextureTone => {
   const start = reader.take();
   const mode = reader.word('Expected a texture tone mode.');
-  if (mode !== 'voxel')
-    reader.fail('program.invalid-tone', 'Texture tone mode must be voxel.', start);
+  if (mode !== 'voxel' && mode !== 'painterly') {
+    reader.fail('program.invalid-tone', 'Texture tone mode must be voxel or painterly.', start);
+  }
   reader.finish();
-  return freeze({ kind: 'tone', mode: 'voxel', span: join(start.span, reader.finishEnd()) });
+  return freeze({
+    kind: 'tone',
+    mode: mode === 'painterly' ? 'painterly' : 'voxel',
+    span: join(start.span, reader.finishEnd()),
+  });
 };
 
 const chartProperty = (reader: ProgramTextureReader, scope: ChartScope): ProgramProperty => {
@@ -100,7 +127,7 @@ const chartProperty = (reader: ProgramTextureReader, scope: ChartScope): Program
   return invalidProperty(
     reader,
     reader.property(scope === 'face' ? 'chart-face' : 'chart'),
-    scope === 'face' ? [] : ['origin', 'fill'],
+    scope === 'face' ? ['fill', 'mirror', 'grain'] : ['origin', 'fill', 'grain'],
     scope === 'face' ? 'chart face' : 'chart',
     start,
   );
@@ -117,25 +144,42 @@ const coverage = (reader: ProgramTextureReader): ProgramTextureCoverage => {
   return freeze({ kind: 'coverage', bits: bits.value, span: join(start.span, bits.span) });
 };
 
+const PATTERN_PROPERTIES: Readonly<Record<ProgramTexturePattern['algorithm'], readonly string[]>> =
+  Object.freeze({
+    blotch: ['paint', 'scale', 'density', 'phase'],
+    gradient: ['from', 'to', 'axis', 'space', 'soft'],
+    border: ['paint', 'width', 'edges'],
+    stripe: ['paint', 'axis', 'period', 'width', 'phase'],
+    ao: ['strength', 'radius'],
+  });
+
 const pattern = (reader: ProgramTextureReader): ProgramTexturePattern => {
   const start = reader.take();
-  const algorithm = reader.word('Expected a pattern algorithm.');
-  if (algorithm !== 'blotch')
-    reader.fail('program.invalid-pattern', 'Pattern algorithm must be blotch.', start);
+  const rawAlgorithm = reader.word('Expected a pattern algorithm.');
+  const allowed = Object.prototype.hasOwnProperty.call(PATTERN_PROPERTIES, rawAlgorithm)
+    ? PATTERN_PROPERTIES[rawAlgorithm as ProgramTexturePattern['algorithm']]
+    : null;
+  if (allowed === null) {
+    reader.fail(
+      'program.invalid-pattern',
+      'Pattern algorithm must be blotch, gradient, border, stripe, or ao.',
+      start,
+    );
+  }
   const properties = reader.block(() => {
     const propertyStart = reader.current();
     const property = reader.property('pattern');
     return invalidProperty(
       reader,
       property,
-      ['paint', 'scale', 'density', 'phase'],
+      allowed ?? PATTERN_PROPERTIES.blotch,
       'pattern',
       propertyStart,
     );
   });
   return freeze({
     kind: 'pattern',
-    algorithm: 'blotch',
+    algorithm: (allowed === null ? 'blotch' : rawAlgorithm) as ProgramTexturePattern['algorithm'],
     properties: freeze(properties),
     span: join(start.span, reader.blockEnd()),
   });
@@ -303,14 +347,6 @@ const chartStatement = (
   scope: ChartScope,
   claimed: Set<string> | null,
 ): ProgramChartStatement => {
-  if (reader.checkWord('grain')) {
-    reader.fail(
-      'program.invalid-scope',
-      'Grain is only allowed directly in texture scope.',
-      reader.current(),
-    );
-    return reader.abort();
-  }
   if (reader.checkWord('pattern')) return pattern(reader);
   if (reader.checkWord('shade')) {
     reader.fail(

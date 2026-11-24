@@ -1,6 +1,63 @@
 import type { AssetSymbolId } from '../contract';
 import type { SourceSpan } from '../../../../project/source/contract';
+import type { Vec3 } from '../../../../model/identity';
 import type { TextureAsset } from '../../../../model/texture';
+
+export type GrainMode = 'clustered' | 'soft' | 'none';
+
+export interface ChartAuthoringTelemetry {
+  readonly id: string;
+  readonly layout: 'box' | 'flat';
+  readonly visibleTexels: number;
+  readonly authoredDeltaTexels: number;
+  readonly aoTexels: number;
+  readonly protectedTexels: number;
+  readonly distinctRoles: number;
+  readonly regionGrainModes: Readonly<Record<string, GrainMode>>;
+  readonly faceSymmetry: Readonly<Record<string, number>>;
+}
+
+export interface TextureAuthoringTelemetry {
+  readonly textureId: string;
+  readonly tone: 'none' | 'voxel' | 'painterly';
+  readonly defaultGrain: GrainMode;
+  readonly charts: readonly ChartAuthoringTelemetry[];
+}
+
+export interface AssetAuthoringTelemetry {
+  readonly textures: Readonly<Record<string, TextureAuthoringTelemetry>>;
+}
+
+export interface BoneTransform {
+  readonly origin: Vec3;
+  readonly rotation: Vec3;
+}
+
+export interface PlaneBasisSpec {
+  readonly u: Vec3;
+  readonly v: Vec3;
+  readonly normal: Vec3;
+}
+
+export interface SceneObb {
+  readonly id: string;
+  readonly chartKey: string | null;
+  readonly origin: Vec3;
+  readonly size: Vec3;
+  readonly pivot: Vec3;
+  readonly position: Vec3;
+  readonly rotation: Vec3;
+  readonly ownerOrigin: Vec3;
+  readonly ancestors: readonly BoneTransform[];
+  readonly planeBasis?: PlaneBasisSpec;
+  readonly center: Vec3;
+  readonly half: Vec3;
+  readonly ax: Vec3;
+  readonly ay: Vec3;
+  readonly az: Vec3;
+  readonly aabbMin: Vec3;
+  readonly aabbMax: Vec3;
+}
 
 /** The normalized chart record consumed by canonical lowering. */
 export interface AssetTextureChartPlan {
@@ -33,13 +90,12 @@ export interface AssetTextureUsage {
 /**
  * Compiler-private texture product. All source operations have already been
  * reduced to the canonical texture raster and its deterministic PNG digest.
- * The source blob reference carries the digest and byte length; raw encoded
- * bytes are intentionally not retained in the compiler product.
  */
 export interface AssetTexturePlan {
   readonly surfaceSymbol: AssetSymbolId;
   readonly texture: TextureAsset;
   readonly charts: Readonly<Record<string, AssetTextureChartPlan>>;
+  readonly telemetry?: TextureAuthoringTelemetry;
 }
 
 export type AssetTextureIssue = (

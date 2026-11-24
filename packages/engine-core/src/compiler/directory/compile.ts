@@ -24,6 +24,7 @@ import {
   type WorkspaceEntrySelector,
 } from '../../project/workspace';
 import { compileWorkspaceCandidate } from '../program/asset/workspaceCompile';
+import type { AssetAuthoringTelemetry } from '../program/asset/texture/telemetry';
 import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
 
@@ -40,6 +41,7 @@ export type DirectoryProduct =
       readonly sourcePath: string;
       readonly model: CompiledModel;
       readonly workspace: AuthoredAssetWorkspace;
+      readonly telemetry?: AssetAuthoringTelemetry;
     }
   | {
       readonly kind: 'sound';
@@ -289,6 +291,7 @@ const compileModels = (
       sourcePath: modelSources.get(entryKey(result.entry))!,
       model: result.model,
       workspace: checked.workspace,
+      ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
     });
   }
 };

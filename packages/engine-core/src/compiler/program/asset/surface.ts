@@ -39,19 +39,22 @@ const property = (chart: ProgramTextureChart, name: string): ProgramProperty | n
 const originOf = (
   chart: ProgramTextureChart,
 ): {
+  readonly present: boolean;
   readonly value: readonly [bigint, bigint] | null;
   readonly span: SourceSpan;
 } => {
   const entry = property(chart, 'origin');
-  const value = entry?.value;
-  if (value?.kind !== 'vector' || value.values.length !== 2) {
-    return { value: null, span: entry?.span ?? chart.span };
+  if (entry === null) return { present: false, value: null, span: chart.span };
+  const value = entry.value;
+  if (value.kind !== 'vector' || value.values.length !== 2) {
+    return { present: true, value: null, span: entry.span };
   }
   const x = integer(value.values[0]!, 'texel');
   const y = integer(value.values[1]!, 'texel');
   return {
+    present: true,
     value: x === null || y === null ? null : [x, y],
-    span: entry?.span ?? chart.span,
+    span: entry.span,
   };
 };
 
@@ -75,7 +78,7 @@ const chartMap = (
         'Surface texture chart "' + statement.id + '" is declared more than once.',
       );
     const origin = originOf(statement);
-    if (origin.value === null)
+    if (origin.present && origin.value === null)
       issue(
         path,
         origin.span,
@@ -109,7 +112,7 @@ const chartMap = (
   return charts;
 };
 
-const chartDimension = (value: TypedChartAbi['width']): bigint => {
+const chartDimension = (value: NonNullable<TypedChartAbi['width']>): bigint => {
   if (value.value.unit !== 'texel' || value.value.denominator !== 1n) {
     throw new Error('Typed chart dimensions must be integral texel values.');
   }
@@ -157,6 +160,38 @@ export const validateConcreteSurfaceCharts = (
     );
 };
 
+const validateChartBounds = (
+  chart: TypedChartAbi,
+  concrete: ConcreteChart,
+  definition: TypedSurfaceContract,
+  path: string,
+  issue: SurfaceIssue,
+): void => {
+  if (concrete.origin === null) return;
+  if (concrete.origin[0] < 0n || concrete.origin[1] < 0n) {
+    issue(
+      path,
+      concrete.originSpan,
+      'asset.chart-out-of-bounds',
+      'Surface chart "' + chart.id + '" lies outside its contract atlas.',
+    );
+    return;
+  }
+  if (chart.width === null || chart.height === null || definition.atlas === null) return;
+  const width = chartDimension(chart.width);
+  const height = chartDimension(chart.height);
+  const atlasWidth = chartDimension(definition.atlas.width);
+  const atlasHeight = chartDimension(definition.atlas.height);
+  if (concrete.origin[0] + width > atlasWidth || concrete.origin[1] + height > atlasHeight) {
+    issue(
+      path,
+      concrete.originSpan,
+      'asset.chart-out-of-bounds',
+      'Surface chart "' + chart.id + '" lies outside its contract atlas.',
+    );
+  }
+};
+
 const validateChartPair = (
   chart: TypedChartAbi,
   concrete: ConcreteChart,
@@ -171,24 +206,7 @@ const validateChartPair = (
       'asset.chart-layout-mismatch',
       'Surface chart "' + chart.id + '" has the wrong layout.',
     );
-  const width = chartDimension(chart.width);
-  const height = chartDimension(chart.height);
-  const atlasWidth = chartDimension(definition.atlas.width);
-  const atlasHeight = chartDimension(definition.atlas.height);
-  if (
-    concrete.origin !== null &&
-    (concrete.origin[0] < 0n ||
-      concrete.origin[1] < 0n ||
-      concrete.origin[0] + width > atlasWidth ||
-      concrete.origin[1] + height > atlasHeight)
-  ) {
-    issue(
-      path,
-      concrete.originSpan,
-      'asset.chart-out-of-bounds',
-      'Surface chart "' + chart.id + '" lies outside its contract atlas.',
-    );
-  }
+  validateChartBounds(chart, concrete, definition, path, issue);
   if (chart.coverage === 'binary' && concrete.coverage === null)
     issue(
       path,
@@ -196,16 +214,26 @@ const validateChartPair = (
       'asset.missing-coverage',
       'Binary chart "' + chart.id + '" requires an explicit coverage payload.',
     );
-  if (
-    concrete.coverage !== null &&
-    (concrete.layout !== 'flat' || BigInt(concrete.coverage.length) !== width * height)
-  )
+  if (concrete.coverage !== null && concrete.layout !== 'flat') {
     issue(
       path,
       concrete.coverageSpan ?? concrete.span,
       'asset.chart-coverage-mismatch',
       'Chart coverage must be flat and contain exactly one bit per ABI texel.',
     );
+  } else if (
+    concrete.coverage !== null &&
+    chart.width !== null &&
+    chart.height !== null &&
+    BigInt(concrete.coverage.length) !== chartDimension(chart.width) * chartDimension(chart.height)
+  ) {
+    issue(
+      path,
+      concrete.coverageSpan ?? concrete.span,
+      'asset.chart-coverage-mismatch',
+      'Chart coverage must be flat and contain exactly one bit per ABI texel.',
+    );
+  }
   if (chart.coverage === 'opaque' && concrete.coverage !== null)
     issue(
       path,

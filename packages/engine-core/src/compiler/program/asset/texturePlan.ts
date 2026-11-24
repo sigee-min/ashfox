@@ -7,12 +7,12 @@ import { rasterizeCanonicalTexture } from '../../../textures/textureRecipe/raste
 import type { SourceSpan } from '../../../project/source/contract';
 import type { TypedSurface, TypedSurfaceContract } from './contract';
 import { composeTextureCharts } from './texture/compose';
+import type { TextureSceneContext } from './texture/ao';
 import type { AssetTextureIssue, AssetTexturePlan, AssetTextureUsage } from './texture/contract';
 import { prepareTexture, type PreparedTexture } from './texture/prepare';
 import {
   createTextureReporter,
   expressionContextFor,
-  integerContract,
   surfacePayload,
   type TextureReporter,
 } from './texture/report';
@@ -159,6 +159,7 @@ const compileSurfacePlan = (
   path: string,
   owner: SourceSpan,
   report: TextureReporter,
+  scene?: TextureSceneContext,
 ): AssetTexturePlan | null => {
   if (!validateSurfaceBinding(surface, contract, owner, report)) return null;
   if (!Array.isArray(usages) || !validateUsages(usages, contract, report)) return null;
@@ -169,18 +170,31 @@ const compileSurfacePlan = (
   const prepared = prepareTexture(payload, context, contract, usages, report);
   if (prepared === null) return null;
   const textureId = textureIdFor(surface.symbol.key, surface.symbol.name);
-  const composed = composeTextureCharts(prepared, context, textureId, report);
-  if (composed === null) return null;
-  const width = integerContract(contract.atlas.width, report, contract.atlas.span, 'Atlas width');
-  const height = integerContract(
-    contract.atlas.height,
+  const composed = composeTextureCharts(
+    prepared,
+    context,
+    textureId,
     report,
-    contract.atlas.span,
-    'Atlas height',
+    surface.symbol.key,
+    scene,
   );
-  if (width === null || height === null || report.bad) return null;
+  if (composed === null) return null;
+  const width = prepared.width;
+  const height = prepared.height;
+  if (width <= 0 || height <= 0 || report.bad) return null;
   const texture = buildTextureAsset(surface, textureId, width, height, prepared, composed);
-  return freeze({ surfaceSymbol: symbolCopy(surface), texture, charts: composed.charts });
+  const telemetry = freeze({
+    textureId: texture.id,
+    tone: prepared.tone,
+    defaultGrain: prepared.grain.algorithm,
+    charts: composed.chartTelemetry,
+  });
+  return freeze({
+    surfaceSymbol: symbolCopy(surface),
+    texture,
+    charts: composed.charts,
+    telemetry,
+  });
 };
 
 /** Materialize one surface after exact geometry usage dimensions are known. */
@@ -190,11 +204,12 @@ export const materializeAssetTexturePlan = (
   usages: readonly AssetTextureUsage[],
   path: string,
   issue: AssetTextureIssue,
+  scene?: TextureSceneContext,
 ): AssetTexturePlan | null => {
   const owner = surface?.span ?? contract?.span;
   const report = createTextureReporter(path, owner, issue);
   try {
-    return compileSurfacePlan(surface, contract, usages, path, owner, report);
+    return compileSurfacePlan(surface, contract, usages, path, owner, report, scene);
   } catch (error) {
     if (report.sinkFailed) throw error;
     if (!report.bad) {
