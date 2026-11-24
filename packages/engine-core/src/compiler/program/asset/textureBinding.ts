@@ -2,7 +2,7 @@ import { compareText } from '../../../stableOrder';
 import type { SourceSpan } from '../../../project/source/contract';
 import { deepFreeze, freeze } from '../../../immutable';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
-import { toAssetCanonicalNumber } from './valueEvaluate';
+import { toAssetCanonicalNumber } from './value/evaluate';
 import { isAssetNumberValueShape, type AssetNumberValue, type AssetValue } from './value/contract';
 import type {
   InstantiatedAssetIr,

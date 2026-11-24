@@ -8,13 +8,53 @@ import {
   isAssetExactNumberInput,
   isAssetExactNumberWithinBudget,
   isAssetNumberValueShape,
+  type AssetBooleanValue,
+  type AssetColorValue,
   type AssetExactNumber,
   type AssetExpressionValueEnvironment,
   type AssetNumberValue,
   type AssetValue,
   type AssetValueDiagnosticCode,
-} from './value/contract';
-import { assetVectorInfo } from './valueTypes';
+  type AssetVectorValue,
+} from './contract';
+import { assetVectorInfo } from './types';
+
+const cloneNumber = (value: AssetNumberValue): AssetValue | null => {
+  if (!isAssetNumberValueShape(value)) return null;
+  return assetNumberValue(
+    assetExactNumber(value.value.numerator, value.value.denominator, value.value.unit),
+  );
+};
+
+const cloneBoolean = (value: AssetBooleanValue): AssetValue | null =>
+  value.type === 'bool' && typeof value.value === 'boolean' ? assetBooleanValue(value.value) : null;
+
+const cloneColor = (value: AssetColorValue): AssetValue | null =>
+  value.type === 'color' && isAssetColorLiteral(value.value) ? assetColorValue(value.value) : null;
+
+const cloneVector = (value: AssetVectorValue, seen: Set<AssetValue>): AssetValue | null => {
+  const info = assetVectorInfo(value.type);
+  if (
+    info === null ||
+    !Array.isArray(value.values) ||
+    value.values.length !== info.arity ||
+    seen.has(value)
+  )
+    return null;
+  seen.add(value);
+  try {
+    const entries: AssetNumberValue[] = [];
+    for (const entry of value.values) {
+      const cloned = cloneAssetValue(entry, seen);
+      if (cloned === null || cloned.kind !== 'number' || cloned.type !== info.component)
+        return null;
+      entries.push(cloned);
+    }
+    return assetVectorValue(entries, info.type);
+  } finally {
+    seen.delete(value);
+  }
+};
 
 /** Clone only values that satisfy the closed runtime ABI. */
 export const cloneAssetValue = (
@@ -23,42 +63,15 @@ export const cloneAssetValue = (
 ): AssetValue | null => {
   try {
     if (value === null || typeof value !== 'object') return null;
-    if (value.kind === 'number') {
-      if (!isAssetNumberValueShape(value)) return null;
-      return assetNumberValue(
-        assetExactNumber(value.value.numerator, value.value.denominator, value.value.unit),
-      );
-    }
-    if (value.kind === 'boolean') {
-      return value.type === 'bool' && typeof value.value === 'boolean'
-        ? assetBooleanValue(value.value)
-        : null;
-    }
-    if (value.kind === 'color') {
-      return value.type === 'color' && isAssetColorLiteral(value.value)
-        ? assetColorValue(value.value)
-        : null;
-    }
-    const info = assetVectorInfo(value.type);
-    if (
-      info === null ||
-      !Array.isArray(value.values) ||
-      value.values.length !== info.arity ||
-      seen.has(value)
-    )
-      return null;
-    seen.add(value);
-    try {
-      const entries: AssetNumberValue[] = [];
-      for (const entry of value.values) {
-        const cloned = cloneAssetValue(entry, seen);
-        if (cloned === null || cloned.kind !== 'number' || cloned.type !== info.component)
-          return null;
-        entries.push(cloned);
-      }
-      return assetVectorValue(entries, info.type);
-    } finally {
-      seen.delete(value);
+    switch (value.kind) {
+      case 'number':
+        return cloneNumber(value);
+      case 'boolean':
+        return cloneBoolean(value);
+      case 'color':
+        return cloneColor(value);
+      default:
+        return cloneVector(value, seen);
     }
   } catch {
     return null;

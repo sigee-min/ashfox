@@ -9,11 +9,11 @@ import {
   type AssetValue,
   type AssetValueResult,
 } from '../../../src/compiler/program/asset/value/contract';
-import { compileAssetExpression } from '../../../src/compiler/program/asset/valueCompile';
+import { compileAssetExpression } from '../../../src/compiler/program/asset/value/compile';
 import {
   evaluateAssetExpression,
   toAssetCanonicalNumber,
-} from '../../../src/compiler/program/asset/valueEvaluate';
+} from '../../../src/compiler/program/asset/value/evaluate';
 
 const span = (offset = 0): SourceSpan =>
   Object.freeze({

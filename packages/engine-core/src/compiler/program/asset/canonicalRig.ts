@@ -14,7 +14,7 @@ import {
   type AssetNumberValue,
   type AssetVectorValue
 } from './value/contract';
-import { toAssetCanonicalNumber } from './valueEvaluate';
+import { toAssetCanonicalNumber } from './value/evaluate';
 import type { AssetExactFrame } from './frame';
 import { createBoneLayouts } from './canonicalLayout';
 import { lowerAssetFrameToBoneTransform } from './frameLower';

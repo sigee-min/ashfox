@@ -12,10 +12,10 @@ import {
   type AssetValue,
   type AssetValueDiagnostic
 } from '../value/contract';
-import { compileAssetExpression } from '../valueCompile';
-import { evaluateAssetExpression } from '../valueEvaluate';
-import { assetTypeCompatible, isAssetExpressionType } from '../valueTypes';
-import { cloneAssetValue } from '../valueRuntime';
+import { compileAssetExpression } from '../value/compile';
+import { evaluateAssetExpression } from '../value/evaluate';
+import { assetTypeCompatible, isAssetExpressionType } from '../value/types';
+import { cloneAssetValue } from '../value/runtime';
 import type { AssetTextureIssue } from './contract';
 
 export type PaletteRole =

@@ -14,14 +14,10 @@ packages/engine-core/src/compiler/program/asset/canonicalGeometry.ts
 packages/engine-core/src/compiler/program/asset/canonicalRig.ts
 packages/engine-core/src/compiler/program/asset/component.ts
 packages/engine-core/src/compiler/program/asset/definition.ts
-packages/engine-core/src/compiler/program/asset/design.ts
 packages/engine-core/src/compiler/program/asset/instantiate.ts
 packages/engine-core/src/compiler/program/asset/texture/expressions.ts
 packages/engine-core/src/compiler/program/asset/texture/prepare.ts
 packages/engine-core/src/compiler/program/asset/texture/raster.ts
-packages/engine-core/src/compiler/program/asset/valueCompile.ts
-packages/engine-core/src/compiler/program/asset/valueCompileNodes.ts
-packages/engine-core/src/compiler/program/asset/valueEvaluate.ts
 packages/engine-core/src/project/program/asset/parser.ts
 packages/engine-core/src/project/program/syntax/expression.ts
 packages/engine-core/src/project/program/syntax/lex.ts

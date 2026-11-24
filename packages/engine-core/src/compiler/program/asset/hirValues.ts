@@ -11,8 +11,8 @@ import {
   type AssetTypedExpression,
   type AssetValueDiagnostic,
 } from './value/contract';
-import { compileAssetExpression } from './valueCompile';
-import { evaluateAssetExpression } from './valueEvaluate';
+import { compileAssetExpression } from './value/compile';
+import { evaluateAssetExpression } from './value/evaluate';
 import type { AssetExactUnitVector } from './frame';
 
 export type HirIssue = (path: string, span: SourceSpan, code: string, message: string) => void;
