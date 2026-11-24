@@ -13,19 +13,22 @@
   "packageName": "creatures",
   "entryName": "fox",
   "entryPath": "creatures/fox.ashfox",
-  "workspaceHash": "sha256:6932f0afffd62451b61463e98fa5f867a7a4e7a8a6bf4c6bbf9926ff8d765922",
-  "closureHash": "sha256:50f415f03971a86d78c2b8b33cd3dd71bb9f35afba858c4abe2f09625eaf4f49",
-  "buildKey": "sha256:255032757652c1d79aa6f63e05780b22f53213e7d0357885bbbc5c13e2cb8490",
+  "workspaceHash": "sha256:c144481998328e6f74090444a0d24e8e898d04e2716894a65af711e39f382f6d",
+  "closureHash": "sha256:d670803f8c5ebf25a8b07015023bfc0be4ee97bd8d6e80236d99f68387993077",
+  "buildKey": "sha256:720748fde32ff5343447d4be0d3b0fc8736e3827b0c82d86686e6a9c4b852308",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db",
+  "productHash": "sha256:814c9a6f128a458557af33e367e62b1882194db5811e716e17c1e16d0207e0b2",
   "textures": [
     {
       "id": "red_fox_e2f07af12d3c",
       "path": null,
-      "coverageIds": [],
-      "embeddedSha256": "sha256:7663e96b374dff2202a477a92cdf1306bc566ca3fe8290e3df957d864432a490",
-      "pngSha256": "sha256:7663e96b374dff2202a477a92cdf1306bc566ca3fe8290e3df957d864432a490",
-      "byteLength": 32900
+      "coverageIds": [
+        "red_fox_e2f07af12d3c\u0000cheek_tuft",
+        "red_fox_e2f07af12d3c\u0000tail_plume"
+      ],
+      "embeddedSha256": "sha256:4c319953e74619c8cac618395bc42c517419f7d27d2d7f9efd929bb0da5442b4",
+      "pngSha256": "sha256:4c319953e74619c8cac618395bc42c517419f7d27d2d7f9efd929bb0da5442b4",
+      "byteLength": 32964
     }
   ],
   "files": [
@@ -34,8 +37,8 @@
       "role": "model",
       "path": "fox.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:c7f48ebbda7411ed2a1e162a938f6330bd7a1e199799d3ef470bdbf794e33838",
-      "byteLength": 147064
+      "sha256": "sha256:f14797522f0dbdca3f94502f7639e46d50f5617b2ab3bc7c1269128999547c84",
+      "byteLength": 191208
     }
   ]
 }

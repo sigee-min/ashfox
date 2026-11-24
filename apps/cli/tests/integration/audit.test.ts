@@ -1,16 +1,19 @@
 'use strict';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
 const root = path.resolve(__dirname, '../../../..');
 const cli = path.join(__dirname, '../../dist/ashfox.cjs');
 const foxEntry = path.join(root, 'examples/fox/creatures/fox.ashfox');
+const lanternEntry = path.join(root, 'examples/prop/lantern.ashfox');
 const spriteEntry = path.join(root, 'examples/items/src/apple.ashfox');
 
-const run = (args: string[]) =>
+const run = (args: string[], cwd = root) =>
   spawnSync(process.execPath, [cli, ...args], {
-    cwd: root,
+    cwd,
     encoding: 'utf8',
     timeout: 120000,
     maxBuffer: 16 * 1024 * 1024,
@@ -28,7 +31,7 @@ async function main() {
   const report = JSON.parse(audited.stdout);
   assert.equal(report.schemaVersion, 1);
   assert.equal(report.profile, 'creature');
-  assert.equal(report.profileSource, 'inferred');
+  assert.equal(report.profileSource, 'authored');
   assert.equal(typeof report.score, 'number');
   assert.equal(report.telemetryAvailable, true);
   assert.equal(report.pillars.length, 3);
@@ -98,7 +101,115 @@ async function main() {
   const exit = new Promise((resolve) => child.on('exit', resolve));
   child.stdin.end();
   assert.equal(await exit, 0);
-  console.log('CLI audit, capabilities, inspect.audit and stdio audit protocol passed');
+
+  const lanternAudit = run(['audit', lanternEntry]);
+  assert.equal(lanternAudit.status, 0, lanternAudit.stderr);
+  const lanternReport = JSON.parse(lanternAudit.stdout);
+  assert.equal(lanternReport.profile, 'prop');
+  assert.equal(lanternReport.passed, true);
+
+  const badSheet = run(['capture', foxEntry, '--sheet', 'bogus']);
+  assert.notEqual(badSheet.status, 0);
+  assert.match(badSheet.stderr, /observe\.option/);
+
+  verifyDeliveryGates();
+  console.log('CLI audit, delivery gate, inspect.audit and stdio audit protocol passed');
+}
+
+function bareBoxSource(profileLine: string): string {
+  return `ashfox-model 1
+asset box_demo {
+  export rig contract Rig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+  }
+  export skeleton Skel implements Rig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+  export surface contract Surf { chart body box { coverage = opaque; } material = opaque; }
+  export surface coat: Surf {
+    material = opaque;
+    texture atlas {
+      background = bg;
+      background-alpha = 255;
+      palette { bg = #101014; tone = (#7a5230, #9a6e44, #bc8e60); }
+      chart body box { fill = tone; }
+    }
+  }
+  export component Box {
+    requires rig skeleton: Rig;
+    requires surface skin: Surf;
+    bind bone root to skeleton.root;
+    geometry { bone root { cube body { origin = (-4u, 0u, -4u); size = (8u, 8u, 8u); surface = skin.body; } } }
+  }
+  export asset box_demo {
+    settings { density = 16; forward = north; ${profileLine} }
+    skeleton = Skel;
+    use Box as model { bind skeleton = Rig; bind skin = coat; };
+  }
+}`;
+}
+
+function verifyDeliveryGates() {
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-delivery-gate-')));
+  try {
+    const unprofiled = path.join(dir, 'unprofiled.ashfox');
+    fs.writeFileSync(unprofiled, bareBoxSource(''));
+    const expUnprofiled = run(['export', unprofiled]);
+    assert.notEqual(expUnprofiled.status, 0);
+    assert.match(expUnprofiled.stderr, /quality\.profile-required/);
+
+    const lowCraft = path.join(dir, 'lowcraft.ashfox');
+    fs.writeFileSync(lowCraft, bareBoxSource('profile = prop;'));
+    const expLowCraft = run(['export', lowCraft]);
+    assert.notEqual(expLowCraft.status, 0);
+    assert.match(expLowCraft.stderr, /quality\.gate/);
+
+    const pkgDir = path.join(dir, 'ws');
+    const wsFile = path.join(pkgDir, '.ashfoxworkspace');
+    fs.mkdirSync(path.join(pkgDir, 'src'), { recursive: true });
+    fs.writeFileSync(
+      wsFile,
+      JSON.stringify({
+        format: 'ashfox-workspace',
+        version: 2,
+        name: 'gate-test',
+        packages: [
+          {
+            name: 'src',
+            root: 'src',
+            manifest: {
+              format: 'ashfox-package',
+              version: 1,
+              dependencies: [],
+              entries: [{ name: 'box_demo', path: 'main.ashfox' }],
+              modules: [],
+            },
+          },
+        ],
+        include: ['**/*.ashfox'],
+        ignore: [],
+        build: { directory: 'dist/build' },
+        exports: [
+          {
+            name: 'box_demo',
+            entry: { packageName: 'src', entryName: 'box_demo' },
+            format: 'glb',
+            directory: 'dist/models',
+          },
+        ],
+      }),
+    );
+    fs.writeFileSync(path.join(pkgDir, 'src/main.ashfox'), bareBoxSource(''));
+    const checkOk = run(['check', wsFile, '--json'], pkgDir);
+    assert.equal(checkOk.status, 0, checkOk.stdout + checkOk.stderr);
+    const buildBlocked = run(['build', wsFile, '--json'], pkgDir);
+    assert.notEqual(buildBlocked.status, 0);
+    assert.match(buildBlocked.stdout + buildBlocked.stderr, /quality\.profile-required/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 main().catch((error) => {

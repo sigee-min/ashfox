@@ -14,7 +14,6 @@ const run = (...args: string[]) =>
   spawnSync(process.execPath, [cli, ...args], {
     encoding: 'utf8',
     timeout: 120000,
-    env: { ...process.env, ASHFOX_FFMPEG_PATH: path.join(temp, 'missing-ffmpeg') },
   });
 const success = (...args: string[]) => {
   const child = run(...args);

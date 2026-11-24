@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import { readWorkspaceFile } from '../../../src/project/container/codec';
 import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/compile';
 
-// Approved showroom motion update: planted fox idle and three clips per creature. Hashes cover canonical
-// geometry, all texture recipe/raster data, and all authored animation channels.
+// Approved Lv4 Hytale showroom rebuild: articulated anatomy, painterly surfaces, and three clips per creature.
+// Hashes cover canonical geometry, all texture recipe/raster data, and all authored animation channels.
 const baseline = {
-  fox: 'sha256:65ee6094aa66891c04858cd9fa343dc0b8ae1877bf80b82a39a22274d8a913db',
-  goblin: 'sha256:9989d5a1f5536c38b2e8e0ee27791c376d3231b291d67579c90aaec2b19c436a',
+  fox: 'sha256:814c9a6f128a458557af33e367e62b1882194db5811e716e17c1e16d0207e0b2',
+  goblin: 'sha256:d8f699dfd678d36c7290245e9d0c8cd34c0f10ffb222643085266dcade6aa7af',
 };
 const source = readFileSync(
   resolve(__dirname, '../../../../../assets/workspaces/shared-creatures.ashfoxworkspace'),

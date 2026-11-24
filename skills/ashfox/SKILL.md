@@ -31,17 +31,31 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
 
 - Edit source files directly. Use an optional `.ashfoxworkspace` or
   `.ashfoxworkspace.mjs` to configure builds; keep a single configuration per root.
-- For one asset, inspect identifiers, edit the source, capture useful angles and
-  texture details, and replay each changed motion. Listen to sound variants.
-  Successful compilation alone does not establish visual or audio quality.
+- For models, set `settings.profile = creature | prop | block` explicitly. Use
+  Hytale / modern Blockbench craft instead of bare boxes and flat 1-line `fill`
+  coats: decompose organic limbs with tapered `15°`/`22.5°`/`45°` joints and thin
+  `plane` silhouettes (`ears`, `tufts`, `fins`, `plumes`), use `mirror-x` for
+  paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
+  layout is required.
+- Author textures with `tone painterly`, deliberate `base` -> `gradient` ->
+  `border` / `stripe` -> `ao` shading layers and anatomical face/detail pixels,
+  `stamp ... protect = [eyes]`, and material-appropriate `grain` (`clustered` for
+  fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
+- Run `ashfox audit` alongside visual inspection: hit **0 failed Hard Gates**
+  and `score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and
+  `export`) block any model without `settings.profile` or failing the quality gate.
+- Capture `--sheet turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) and `--sheet
+  inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`), inspect `TEXTURE_ID` atlases,
+  and replay each changed motion. Listen to sound variants. Successful
+  compilation alone does not establish visual or audio quality.
 - Use `ashfox stdio` for repeated operations on an asset in memory. Follow its
   revision contract when replacing the complete source graph.
 - For game delivery, run check, build and verify against the configured workspace.
   Consume deterministic outputs through the game's adapter; do not hand-edit
   generated PNG, GLB, audio or runtime manifests.
 - Save or export the files requested by the user. Report exact output locations,
-  what was inspected, and any behavior still unverified in the receiving game.
-  Do not claim successful output from a preflight check alone.
+  audit score/profile, what was inspected, and any behavior still unverified in
+  the receiving game. Do not claim successful output from a preflight check alone.
 
 ## Skill updates
 

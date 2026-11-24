@@ -7,8 +7,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@ashfox/audio-core": "^0.0.0",
     "@ashfox/engine-core": "^0.0.0",
+    "@wasm-audio-decoders/ogg-vorbis": "^0.1.20",
     "fflate": "^0.8.3",
-    "@ashfox/audio-core": "^0.0.0"
+    "wasm-media-encoders": "^0.7.0"
   }
 }

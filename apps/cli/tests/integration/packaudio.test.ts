@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnSync, spawn } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
+import { createVorbisEncoder, decodeVorbis } from '@ashfox/asset-build';
 import { unzipSync } from 'fflate';
 const root = path.resolve(__dirname, '../../../..'),
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-packaudio-'));
 const project = path.join(temp, 'project'),
   config = path.join(project, '.ashfoxworkspace');
 const executable = path.join(__dirname, '../../dist/ashfox.cjs');
-const encoder = process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg';
 fs.cpSync(path.join(root, 'examples/resource-pack'), project, {
   recursive: true,
   filter: (p) => !p.split(path.sep).includes('dist'),
@@ -31,7 +31,6 @@ const success = (r: ReturnType<typeof run>) => {
   return r.result;
 };
 const write = (value: unknown) => fs.writeFileSync(config, JSON.stringify(value));
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const main = async () => {
   const first = success(run('build'));
   const pack = first.exports.find((e: { id: string }) => e.id === 'game_pack'),
@@ -44,15 +43,10 @@ const main = async () => {
     const [namespace, name] = sound.name.split(':');
     const ogg = files[`assets/${namespace}/sounds/${name}.ogg`];
     assert.equal(Buffer.from(ogg.subarray(0, 4)).toString(), 'OggS');
-    const decoded = spawnSync(
-      encoder,
-      ['-v', 'error', '-i', 'pipe:0', '-f', 'f32le', '-ac', '1', '-ar', '48000', 'pipe:1'],
-      { input: ogg, maxBuffer: 8 * 1024 * 1024 },
-    );
-    assert.equal(decoded.status, 0, String(decoded.stderr));
-    assert.ok(decoded.stdout.length > 0);
-    for (let i = 0; i < decoded.stdout.length; i += 4)
-      assert.ok(Math.abs(decoded.stdout.readFloatLE(i)) < 1);
+    const decoded = await decodeVorbis(ogg);
+    assert.equal(decoded.sampleRate, 48000);
+    assert.ok(decoded.samples.length > 0);
+    for (const sample of decoded.samples) assert.ok(Math.abs(sample) < 1);
   }
   assert.equal(
     success(run('build')).bundleHash,
@@ -69,8 +63,9 @@ const main = async () => {
   const current = path.join(project, 'dist/build/current.json'),
     pointer = fs.readFileSync(current);
   assert.equal(
-    run('build', config, { ...process.env, ASHFOX_FFMPEG_PATH: path.join(temp, 'missing') }).ok,
-    false,
+    success(run('build', config, { ...process.env, PATH: '' })).bundleHash,
+    first.bundleHash,
+    'Built-in WASM Vorbis must succeed deterministically without external PATH tools',
   );
   assert.deepEqual(fs.readFileSync(current), pointer);
   const invalid = structuredClone(original);
@@ -80,32 +75,9 @@ const main = async () => {
   assert.equal(run('build').ok, false);
   assert.deepEqual(fs.readFileSync(current), pointer);
   write(original);
-  // Hold a real encoder child open and cancel after it starts, proving cleanup.
-  const stub = path.join(temp, 'encoder'),
-    pidFile = path.join(temp, 'encoder.pid');
-  fs.writeFileSync(
-    stub,
-    '#!' +
-      process.execPath +
-      '\n' +
-      `if (process.argv.includes('-version')) { process.stdout.write('test-encoder'); } else { require('node:fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); process.stdin.resume(); setInterval(() => {}, 1000); }\n`,
-  );
-  fs.chmodSync(stub, 0o755);
-  const child = spawn(process.execPath, [executable, 'build', config, '--json'], {
-    env: { ...process.env, ASHFOX_FFMPEG_PATH: stub },
-  });
-  let stdout = '';
-  child.stdout.on('data', (d) => {
-    stdout += d;
-  });
-  const closed = new Promise((resolve) => child.on('close', (code) => resolve(code)));
-  for (let i = 0; i < 1000 && !fs.existsSync(pidFile); i++) await sleep(5);
-  assert.ok(fs.existsSync(pidFile));
-  const pid = Number(fs.readFileSync(pidFile));
-  child.kill('SIGINT');
-  assert.equal(await closed, 130);
-  assert.equal(JSON.parse(String(stdout)).ok, false);
-  assert.throws(() => process.kill(pid, 0), /ESRCH/);
+  const aborted = new AbortController();
+  aborted.abort();
+  await assert.rejects(() => createVorbisEncoder(aborted.signal), /Encoding cancelled/);
   assert.deepEqual(fs.readFileSync(current), pointer);
   assert.equal(fs.existsSync(path.join(project, 'dist/pack/.writer')), false);
   const selected = structuredClone(original);
@@ -151,7 +123,7 @@ const main = async () => {
     );
   success(run('verify', path.join(project, 'dist/build')));
   console.log(
-    'audio packs: real Vorbis decode, exact references, cold reproducibility, variant settings, missing encoder and child cancellation ok',
+    'audio packs: real WASM Vorbis decode, exact references, cold reproducibility, variant settings, empty PATH build and abort handling ok',
   );
 };
 main()

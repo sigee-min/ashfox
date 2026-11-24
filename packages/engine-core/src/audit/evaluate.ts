@@ -95,3 +95,21 @@ export const evaluateAssetQuality = (
     telemetryAvailable,
   });
 };
+
+/** Format actionable delivery gate diagnostics when build/export blocks an asset. */
+export const formatDeliveryGateFailure = (
+  name: string,
+  hasProfile: boolean,
+  report: AuditReport,
+): string => {
+  if (!hasProfile) {
+    return `Model "${name}" requires settings { profile = creature | prop | block; } before build/export.`;
+  }
+  const failedGates = report.hardGates.filter((g) => !g.passed).map((g) => g.id);
+  const topFixes = report.topDeductions
+    .slice(0, 3)
+    .map((d) => `${d.metricId}: ${d.summary} -> ${d.fix}`)
+    .join(' | ');
+  const gateText = failedGates.length > 0 ? ` failedGates=[${failedGates.join(', ')}]` : '';
+  return `Model "${name}" failed quality gate (${report.score}/${report.threshold}, ${report.grade})${gateText}. ${topFixes}`;
+};

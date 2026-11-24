@@ -30,7 +30,7 @@
 | `sounds[].subtitle` | 기존 번역 키 또는 `null`. 번역을 추론하지 않음 |
 | `sounds[].volume`, `pitch`, `stream` | 선택된 사운드 객체의 재생 설정 |
 
-volume은 0 초과 1 이하, pitch는 0 초과 2 이하이며 weight는 양의 정수입니다. 원본 변형은 모두 컴파일되고 선택은 팩 전달만 제어합니다. 현재 Vorbis는 고정 quality-5이며 PCM 입력은 컴파일러의 48kHz 모노 WAV입니다.
+volume은 0 초과 1 이하, pitch는 0 초과 2 이하이며 weight는 양의 정수입니다. 원본 변형은 모두 컴파일되고 선택은 팩 전달만 제어합니다. 내장 WebAssembly Vorbis 인코더는 고정 quality-5와 결정적 스트림 시리얼을 사용하며 PCM 입력은 컴파일러의 48kHz 모노 WAV입니다.
 
 예제의 포맷 88.0은 [26.2 릴리스 노트](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-2), 현대 메타데이터는 [1.21.9 변경](https://www.minecraft.net/en-us/article/minecraft-java-edition-1-21-9), 새 아이템 진입점은 [클라이언트 아이템 계약](https://docs.neoforged.net/docs/1.21.4/resources/client/models/items/), 이벤트 매핑은 [사운드 정의 계약](https://docs.neoforged.net/docs/1.21.8/resources/client/sounds/)을 따릅니다. 최신 버전 별칭이 아닌 예제값·명시적 스키마 선택입니다. 메타데이터 변경이 형상·애니메이션·게임 등록을 다른 버전으로 변환하지 않습니다. 모델 exporter는 기존 호환 프로필을 유지하며 넓은 포맷 범위 선언이 그 범위를 인증하지도 않습니다.
 
@@ -38,7 +38,7 @@ volume은 0 초과 1 이하, pitch는 0 초과 2 이하이며 weight는 양의 �
 
 {{source-code:1}}
 
-사운드 팩에는 `libvorbis` 포함 FFmpeg가 필요합니다. PATH의 `ffmpeg` 또는 `ASHFOX_FFMPEG_PATH`의 실행 파일을 사용합니다. 빌드 중 의존성을 받지 않습니다. 스프라이트·모델 전용 팩과 개별 WAV에는 인코더가 필요 없습니다. `check`는 FFmpeg 없이 그래프·선언을 검사하고 `build`는 출력·병합·인코딩·발행도 검증합니다.
+사운드 팩은 CLI에 내장된 WebAssembly OGG Vorbis 인코더·디코더를 사용하므로 외부 FFmpeg나 빌드 중 다운로드가 필요 없습니다. 스프라이트·모델 전용 팩과 개별 WAV에는 오디오 인코딩이 필요 없습니다. `check`는 OGG 인코딩 없이 그래프·선언을 검사하고 `build`는 출력·병합·인코딩·발행도 검증합니다.
 
 반환 `exports`에는 이름 있는 팩 대상이 있고 불변 디렉터리 안에는 다음이 있습니다.
 
@@ -48,7 +48,7 @@ volume은 0 초과 1 이하, pitch는 0 초과 2 이하이며 weight는 양의 �
 
 팩 메타데이터는 `packs[].metadata`에서 한 번 생성하고 병합 시 개별 블록 exporter의 `pack.mcmeta`는 생략합니다. 다른 경로 중복은 바이트가 같아도 실패합니다. namespace마다 팩 안의 `sounds.json` 하나로 합칩니다. 선택 사운드는 인코딩 후 독립 디코딩하여 길이·클리핑을 확인하고 실제 출력 경로로 참조합니다.
 
-빌드 실패는 이전 완전한 출력을 보존합니다. `verify`는 정식 번들을 검사하며 게임 빌드 전체에서 반환 빌드를 유지하세요. OGG 바이트 일치가 필요하면 FFmpeg를 고정합니다. 팩은 압축 전 8,192파일·64MiB입니다. [CLI 제한](cli.md)을 참고하세요.
+빌드 실패는 이전 완전한 출력을 보존합니다. `verify`는 정식 번들을 검사하며 게임 빌드 전체에서 반환 빌드를 유지하세요. OGG 인코딩은 내장 시리얼을 고정해 별도 외부 도구 없이도 바이트 단위로 결정적입니다. 팩은 압축 전 8,192파일·64MiB입니다. [CLI 제한](cli.md)을 참고하세요.
 
 ## Minecraft에서 사용하기
 

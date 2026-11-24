@@ -12,4 +12,4 @@ export {
   type AuditSubmetric,
   type QualityGrade,
 } from './contract';
-export { evaluateAssetQuality } from './evaluate';
+export { evaluateAssetQuality, formatDeliveryGateFailure } from './evaluate';

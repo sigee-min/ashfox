@@ -81,6 +81,8 @@
     "esbuild": "^0.28.1",
     "fflate": "^0.8.3",
     "gltf-validator": "^2.0.0-dev.3.10",
+    "h264-mp4-encoder": "^1.0.12",
+    "omggif": "^1.0.10",
     "prettier": "^3.10.1",
     "ts-node": "^10.9.2",
     "ts-prune": "^0.10.3",

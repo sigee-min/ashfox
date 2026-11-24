@@ -4,7 +4,7 @@ asset goblin {
   import "./goblin-surface.ashfox" as surface;
   import "./goblin-body.ashfox" as body;
   export asset goblin {
-    settings { density = 16; forward = north; }
+    settings { density = 16; forward = north; profile = creature; }
     skeleton = rig.RaiderSkeleton;
     motion = rig.idle;
     motion = rig.lookout;

@@ -1,6 +1,6 @@
 ashfox-model 1
 asset marker {
-  export rig contract CreatureRig {
+  export rig contract MarkerRig {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root {
@@ -11,43 +11,106 @@ asset marker {
       mirror = none;
     }
   }
-  export skeleton Wolf implements CreatureRig {
+  export skeleton MarkerSkeleton implements MarkerRig {
     bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
-  export surface contract Fur {
-    atlas { width = 16px; height = 8px; }
-    chart body box { width = 16px; height = 8px; coverage = opaque; }
+  export surface contract RuneStone {
+    chart plinth box { coverage = opaque; }
+    chart pillar box { coverage = opaque; }
+    chart band box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    chart finial box { coverage = opaque; }
     material = opaque;
   }
-  export surface red_fur: Fur {
+  export surface carved_marker: RuneStone {
     material = opaque;
     texture atlas {
-      atlas = (16px, 8px);
-      background = shadow;
+      background = void;
       background-alpha = 255;
-      palette { shadow = #4a170f; body = (#4a170f, #a83a1f, #e06b32); }
-      chart body box { origin = (0px, 0px); fill = body; }
-      grain clustered { seed = 23; }
-      tone voxel;
+      palette {
+        void = #14161a;
+        stone = (#313640, #5c6575, #94a1b5);
+        stone_dark = (#1e2228, #3b424d, #626d7d);
+        bronze = (#5a3b18, #9e6b29, #d9a148);
+        rune = (#1c5e5a, #32b8aa, #82fff0);
+      }
+      stamp rune_glyph {
+        pixels = ".rr./r..r/r..r/.rr.";
+        r = rune;
+      }
+      chart plinth box {
+        fill = stone_dark;
+        grain = clustered;
+        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.25ratio; }
+        pattern border { paint = stone; width = 1px; edges = top; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart pillar box {
+        fill = stone;
+        grain = clustered;
+        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+        face north { stamp rune_glyph { at = (1px, 2px); protect = true; } }
+        face south { stamp rune_glyph { at = (1px, 2px); protect = true; } }
+      }
+      chart band box {
+        fill = bronze;
+        grain = none;
+        pattern border { paint = rune; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart cap box {
+        fill = stone;
+        grain = soft;
+        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.2ratio; }
+        pattern border { paint = bronze; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart finial box {
+        fill = rune;
+        grain = soft;
+        pattern gradient { from = bronze; to = rune; axis = y; space = local; soft = 0.2ratio; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      grain clustered { seed = 2309; }
+      tone painterly;
     }
   }
-  export component Body {
-    requires rig skeleton: CreatureRig;
-    requires surface skin: Fur;
+  export component MarkerBody {
+    requires rig skeleton: MarkerRig;
+    requires surface skin: RuneStone;
     bind bone root to skeleton.root;
     geometry {
       bone root {
-        cube torso {
-          origin = (0u, 0u, 0u);
-          size = (4u, 4u, 4u);
-          surface = skin.body;
+        cube plinth { origin = (-5u, 0u, -5u); size = (10u, 2u, 10u); surface = skin.plinth; }
+        cube pillar { origin = (-3u, 2u, -3u); size = (6u, 8u, 6u); surface = skin.pillar; }
+        cube band {
+          origin = (-4u, 7u, -4u);
+          size = (8u, 2u, 8u);
+          pivot = (0u, 8u, 0u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.band;
+        }
+        cube cap {
+          origin = (-4u, 10u, -4u);
+          size = (8u, 2u, 8u);
+          pivot = (0u, 11u, 0u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.cap;
+        }
+        cube finial {
+          origin = (-2u, 12u, -2u);
+          size = (4u, 2u, 4u);
+          pivot = (0u, 13u, 0u);
+          rotation = (0deg, 45deg, 0deg);
+          surface = skin.finial;
         }
       }
     }
   }
   export asset marker {
-    settings { density = 16; forward = north; }
-    skeleton = Wolf;
-    use Body as body { bind skeleton = CreatureRig; bind skin = red_fur; };
+    settings { density = 16; forward = north; profile = block; }
+    skeleton = MarkerSkeleton;
+    use MarkerBody as body { bind skeleton = MarkerRig; bind skin = carved_marker; };
   }
 }

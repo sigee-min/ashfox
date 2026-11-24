@@ -125,12 +125,6 @@ const main = async () => {
     assert.equal(foreign.status, 403);
     const invalid = await post({ op: 'build', candidate: '0'.repeat(64) });
     assert.equal((await poll(invalid)).state, 'failed');
-    const encoder = process.env.ASHFOX_FFMPEG_PATH;
-    process.env.ASHFOX_FFMPEG_PATH = path.join(root, 'missing-encoder');
-    const failedEncode = await poll(await post({ op: 'build', candidate: candidate.candidate }));
-    assert.equal(failedEncode.state, 'failed');
-    if (encoder === undefined) delete process.env.ASHFOX_FFMPEG_PATH;
-    else process.env.ASHFOX_FFMPEG_PATH = encoder;
     const pending = await post({ op: 'build', candidate: candidate.candidate });
     await fetch(url + '/jobs/' + pending.id + '/cancel', {
       method: 'POST',

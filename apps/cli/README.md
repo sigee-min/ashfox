@@ -21,9 +21,9 @@ Run `--help` for a short command guide or `capabilities` for the machine contrac
 existing folder or npm project. No network access is required for initialization.
 Missing optional tools in `doctor` do not prevent normal exports.
 
-Capture and GIF replay require Chrome or Chromium. OGG output requires FFmpeg
-with `libvorbis`. Ordinary inspection and GLB/PNG/WAV exports require neither.
-Use `ASHFOX_CHROME_PATH` and `ASHFOX_FFMPEG_PATH` to select executables when needed.
+Capture and GIF replay require Chrome or Chromium. Ordinary inspection and
+GLB/PNG/WAV/OGG exports require no external tools.
+Use `ASHFOX_CHROME_PATH` to select Chrome or Chromium when needed.
 See [installation and platform notes](https://ashfox.io/docs/guides/install/).
 
 ## Work in memory

@@ -16,7 +16,7 @@ const instructions = ({ cli, starter, onboarding, grouped = false }) => ({
     : `Download and extract the [starter assets](${starter}), then run the install\ncommand above inside that folder:\n\n` +
       commands(['npx --no-install ashfox export sword.ashfox --output sword.png']),
   check: onboarding
-    ? 'The second command prints the installed product version. Run\n`npx --no-install ashfox doctor` to check optional Chrome and FFmpeg support.'
+    ? 'The second command prints the installed product version. Run\n`npx --no-install ashfox doctor` to check optional Chrome support.'
     : 'The second command prints `ok: true` and the supported commands.',
   offline: commands([
     'npm install --offline --save-dev ./tools/ashfox-cli.tgz',

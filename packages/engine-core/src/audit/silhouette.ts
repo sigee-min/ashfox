@@ -125,44 +125,109 @@ export const findBuriedCubes = (obbs: readonly AuditObb[]): readonly string[] =>
 
 const GRID = 48;
 
+const plotPoint = (
+  pt: Vec3,
+  axisU: 0 | 1 | 2,
+  axisV: 0 | 1 | 2,
+  centerU: number,
+  centerV: number,
+  scale: number,
+  grid: Uint8Array,
+): void => {
+  const halfGrid = (GRID - 1) * 0.5;
+  const gx = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (pt[axisU]! - centerU) * scale)));
+  const gy = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (pt[axisV]! - centerV) * scale)));
+  grid[gy * GRID + gx] = 1;
+};
+
+const drawFaceQuad = (
+  base: Vec3,
+  edgeA: Vec3,
+  edgeB: Vec3,
+  axisU: 0 | 1 | 2,
+  axisV: 0 | 1 | 2,
+  centerU: number,
+  centerV: number,
+  scale: number,
+  grid: Uint8Array,
+): void => {
+  const spanA = Math.hypot(edgeA[axisU]!, edgeA[axisV]!) * 2 * scale;
+  const spanB = Math.hypot(edgeB[axisU]!, edgeB[axisV]!) * 2 * scale;
+  const stepsA = Math.min(20, Math.max(4, Math.ceil(spanA * 1.5)));
+  const stepsB = Math.min(20, Math.max(4, Math.ceil(spanB * 1.5)));
+  for (let i = 0; i <= stepsA; i += 1) {
+    const s = (i / stepsA) * 2 - 1;
+    for (let j = 0; j <= stepsB; j += 1) {
+      const t = (j / stepsB) * 2 - 1;
+      plotPoint(
+        [
+          base[0] + edgeA[0] * s + edgeB[0] * t,
+          base[1] + edgeA[1] * s + edgeB[1] * t,
+          base[2] + edgeA[2] * s + edgeB[2] * t,
+        ],
+        axisU,
+        axisV,
+        centerU,
+        centerV,
+        scale,
+        grid,
+      );
+    }
+  }
+};
+
+const scaledAxis = (axis: Vec3, scale: number): Vec3 => [
+  axis[0] * scale,
+  axis[1] * scale,
+  axis[2] * scale,
+];
+
 const projectAxis = (
   obb: AuditObb,
   axisU: 0 | 1 | 2,
   axisV: 0 | 1 | 2,
-  minU: number,
-  minV: number,
+  centerU: number,
+  centerV: number,
   scale: number,
   grid: Uint8Array,
 ): void => {
-  const steps = 6;
-  for (let i = 0; i <= steps; i += 1) {
-    const sx = (i / steps) * 2 - 1;
-    for (let j = 0; j <= steps; j += 1) {
-      const sy = (j / steps) * 2 - 1;
-      for (let k = 0; k <= steps; k += 1) {
-        if (i !== 0 && i !== steps && j !== 0 && j !== steps && k !== 0 && k !== steps) continue;
-        const sz = (k / steps) * 2 - 1;
-        const px =
-          obb.center[0] +
-          obb.ax[0] * obb.half[0] * sx +
-          obb.ay[0] * obb.half[1] * sy +
-          obb.az[0] * obb.half[2] * sz;
-        const py =
-          obb.center[1] +
-          obb.ax[1] * obb.half[0] * sx +
-          obb.ay[1] * obb.half[1] * sy +
-          obb.az[1] * obb.half[2] * sz;
-        const pz =
-          obb.center[2] +
-          obb.ax[2] * obb.half[0] * sx +
-          obb.ay[2] * obb.half[1] * sy +
-          obb.az[2] * obb.half[2] * sz;
-        const pt = [px, py, pz] as const;
-        const gx = Math.min(GRID - 1, Math.max(0, Math.floor((pt[axisU] - minU) * scale)));
-        const gy = Math.min(GRID - 1, Math.max(0, Math.floor((pt[axisV] - minV) * scale)));
-        grid[gy * GRID + gx] = 1;
-      }
-    }
+  const ex = scaledAxis(obb.ax, obb.half[0]);
+  const ey = scaledAxis(obb.ay, obb.half[1]);
+  const ez = scaledAxis(obb.az, obb.half[2]);
+  for (const s of [-1, 1]) {
+    drawFaceQuad(
+      [obb.center[0] + ex[0] * s, obb.center[1] + ex[1] * s, obb.center[2] + ex[2] * s],
+      ey,
+      ez,
+      axisU,
+      axisV,
+      centerU,
+      centerV,
+      scale,
+      grid,
+    );
+    drawFaceQuad(
+      [obb.center[0] + ey[0] * s, obb.center[1] + ey[1] * s, obb.center[2] + ey[2] * s],
+      ex,
+      ez,
+      axisU,
+      axisV,
+      centerU,
+      centerV,
+      scale,
+      grid,
+    );
+    drawFaceQuad(
+      [obb.center[0] + ez[0] * s, obb.center[1] + ez[1] * s, obb.center[2] + ez[2] * s],
+      ex,
+      ey,
+      axisU,
+      axisV,
+      centerU,
+      centerV,
+      scale,
+      grid,
+    );
   }
 };
 
@@ -240,10 +305,12 @@ const renderViewGrid = (
 ): Uint8Array => {
   const spanU = Math.max(0.01, worldMax[axisU]! - worldMin[axisU]!);
   const spanV = Math.max(0.01, worldMax[axisV]! - worldMin[axisV]!);
-  const scale = (GRID - 2) / Math.max(spanU, spanV);
+  const centerU = (worldMin[axisU]! + worldMax[axisU]!) * 0.5;
+  const centerV = (worldMin[axisV]! + worldMax[axisV]!) * 0.5;
+  const scale = (GRID - 4) / Math.max(spanU, spanV);
   const grid = new Uint8Array(GRID * GRID);
   for (const obb of obbs) {
-    projectAxis(obb, axisU, axisV, worldMin[axisU]!, worldMin[axisV]!, scale, grid);
+    projectAxis(obb, axisU, axisV, centerU, centerV, scale, grid);
   }
   return grid;
 };

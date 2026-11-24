@@ -35,6 +35,8 @@ see [Stdio and memory](stdio.md).
 
 ```sh
 npx --no-install ashfox capture fox.ashfox --camera front --width 1024 --height 768 --output front.png
+npx --no-install ashfox capture fox.ashfox --sheet turnaround --width 1024 --height 1024 --output turnaround.png
+npx --no-install ashfox capture fox.ashfox --sheet inspect --width 1024 --height 1024 --output inspect.png
 npx --no-install ashfox capture fox.ashfox --clip tail_wag --time 0.4 --skeleton --output pose.png
 npx --no-install ashfox capture fox.ashfox --wireframe --no-textures --output structure.png
 npx --no-install ashfox capture fox.ashfox --node NODE_ID --zoom 1.5 --output node.png
@@ -55,6 +57,7 @@ directly and accepts `--profile creature|prop|block` and `--threshold 0..100`.
 | Option | Accepted values and behavior |
 | --- | --- |
 | `--camera` | `perspective` (default), `native`, `front`, `back`, `left`, `right`, `top`, `bottom`; signed presets respect authored forward |
+| `--sheet` | `turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) or `inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`) 2×2 contact sheet for model `capture` |
 | `--azimuth`, `--elevation` | Degrees, −360…360 and −89…89; orbit uses model axes, 0° looks from negative Z, +90° from positive X; elevation is above the XZ plane |
 | `--zoom` | 0.1…10, default 1; values above 1 move closer and can crop |
 | `--width`, `--height` | Integer 16…2048, defaults 640×360 for model/waveform |

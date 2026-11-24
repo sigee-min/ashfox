@@ -14,7 +14,6 @@ const run = (...args: string[]) =>
     env: {
       ...process.env,
       ASHFOX_CHROME_PATH: path.join(temp, 'missing-chrome'),
-      ASHFOX_FFMPEG_PATH: path.join(temp, 'missing-ffmpeg'),
     },
   });
 try {
@@ -27,8 +26,10 @@ try {
   assert.notEqual(run('--version', 'extra').status, 0);
   const diagnosed = run('doctor', '--json');
   assert.equal(diagnosed.status, 0);
-  assert.equal(JSON.parse(String(diagnosed.stdout)).result.capture.available, false);
-  assert.equal(JSON.parse(String(diagnosed.stdout)).result.ogg.available, false);
+  const diagnosis = JSON.parse(String(diagnosed.stdout)).result;
+  assert.equal(diagnosis.capture.available, false);
+  assert.equal(diagnosis.ogg.available, true);
+  assert.equal(diagnosis.ogg.builtin, true);
   assert.deepEqual(fs.readdirSync(temp), []);
   const invalid = run('init');
   assert.equal(invalid.status, 2);

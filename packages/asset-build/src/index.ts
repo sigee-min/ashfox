@@ -13,3 +13,4 @@ export { readStandalone } from './node/standalone';
 export { readSingleSnapshot } from './node/snapshot';
 
 export { runJob } from './node/job';
+export { createVorbisEncoder, decodeVorbis } from './node/vorbis';

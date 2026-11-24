@@ -107,8 +107,8 @@ WAV에는 루프 지시가 들어 있지 않습니다. WAV를 직접 쓰는 플�
 단발은 `{ kind: "oneshot" }`입니다.
 
 OGG와 Minecraft 전달은 정확한 루프 계약을 보존하지 못하므로 루프를 거부합니다.
-단발 OGG에는 libvorbis가 있는 FFmpeg가 필요합니다. 오디오 스터디는 루프 WAV를
-재생하고 루프의 OGG 다운로드를 제공하지 않습니다.
+단발 OGG는 외부 FFmpeg 없이 내장 WebAssembly Vorbis 인코더로 처리됩니다. 오디오 스터디는
+루프 WAV를 재생하고 루프의 OGG 다운로드를 제공하지 않습니다.
 
 ## 듣고 확인하기
 

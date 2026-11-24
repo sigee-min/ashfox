@@ -358,20 +358,46 @@ asset sample {
     }
   }
   export surface contract Skin {
-    atlas { width = 16px; height = 8px; }
+    atlas { width = 32px; height = 32px; }
+    chart base box { width = 16px; height = 4px; coverage = opaque; }
     chart body box { width = 16px; height = 8px; coverage = opaque; }
+    chart cap box { width = 12px; height = 3px; coverage = opaque; }
     material = opaque;
   }
   export surface red: Skin {
     material = opaque;
     texture atlas {
-      atlas = (16px, 8px);
-      background = shade;
+      atlas = (32px, 32px);
+      background = bg;
       background-alpha = 255;
-      palette { shade = #21100c; body = (#7d2417, #c94f2a, #ef8141); }
-      chart body box { origin = (0px, 0px); fill = body; }
+      palette {
+        bg = #21100c;
+        shade = (#140908, #21100c, #3b1c15);
+        stone = (#2a2a30, #4c4c57, #7a7a8a);
+        body = (#7d2417, #c94f2a, #ef8141);
+        gold = (#7a5214, #c98f28, #ffcf5c);
+        eye = (#b89e78, #fff2d6, #ffffff);
+      }
+      stamp crest { pixels = ".gg./gggg/.gg."; g = gold; }
+      chart base box {
+        origin = (0px, 0px); fill = stone; grain = clustered;
+        pattern gradient { from = shade; to = stone; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart body box {
+        origin = (16px, 0px); fill = body; grain = soft;
+        pattern gradient { from = shade; to = body; axis = y; space = model; soft = 0.2ratio; }
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+        face north { stamp crest { at = (0px, 0px); protect = true; } }
+      }
+      chart cap box {
+        origin = (0px, 16px); fill = gold; grain = none;
+        pattern border { paint = eye; width = 1px; edges = top; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
       grain clustered { seed = 23; }
-      tone voxel;
+      tone painterly;
     }
   }
   export component Body {
@@ -381,10 +407,18 @@ asset sample {
     bind bone root to skeleton.root;
     geometry {
       bone root {
+        cube base { origin = (-3u, 0u, -3u); size = (6u, 2u, 2u); surface = skin.base; }
         cube body {
-          origin = (-2u, 0u, -2u);
+          origin = (-2u, 2u, -2u);
           size = dimensions;
           surface = skin.body;
+        }
+        cube cap {
+          origin = (-2u, 6u, -2u);
+          size = (4u, 1u, 2u);
+          pivot = (0u, 6u, -1u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.cap;
         }
       }
     }
@@ -401,7 +435,7 @@ asset sample {
     }
   }
   export asset sample {
-    settings { density = 16; forward = north; }
+    settings { density = 16; forward = north; profile = block; }
     skeleton = SampleSkeleton;
     motion = idle;
     use Body as body {

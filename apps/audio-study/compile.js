@@ -1,21 +1,17 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
 const { hash, validate } = require('./storage');
 const { measure, AUDIO_POLICY } = require('./engine');
 // The shared core owns syntax, variant streams, synthesis, mastering and WAV.
-// This host adapter only writes artifacts and optionally encodes the viewer's OGG.
-const { runJob } = require('@ashfox/asset-build');
+// This host adapter writes artifacts and runs built-in WASM Vorbis encoding/decoding.
+const { runJob, createVorbisEncoder, decodeVorbis } = require('@ashfox/asset-build');
 const compile = async (files, directory, signal) => {
   validate(files);
   const products = await runJob(path.join(__dirname, 'synthesis.js'), files, signal);
-  const encoder = process.env.ASHFOX_FFMPEG_PATH || 'ffmpeg';
-  const execute = (args) =>
-    execFileSync(encoder, args, { timeout: 15000, maxBuffer: 8 * 1024 * 1024 });
-  const encoderVersion = products.some(({ product }) => product.playback.kind === 'oneshot')
-    ? execute(['-version']).toString().split('\n')[0]
-    : null;
+  const hasOneshot = products.some(({ product }) => product.playback.kind === 'oneshot');
+  const encoder = hasOneshot ? await createVorbisEncoder(signal) : null;
+  const encoderVersion = encoder ? encoder.fingerprint : null;
   fs.mkdirSync(directory, { recursive: true });
   const entries = [];
   for (const { file, product } of products) {
@@ -27,39 +23,10 @@ const compile = async (files, directory, signal) => {
     fs.writeFileSync(path.join(directory, wavName), wav);
     let encoded = {};
     if (product.playback.kind === 'oneshot') {
-      execute([
-        '-v',
-        'error',
-        '-y',
-        '-i',
-        path.join(directory, wavName),
-        '-map_metadata',
-        '-1',
-        '-ac',
-        '1',
-        '-c:a',
-        'libvorbis',
-        '-q:a',
-        '5',
-        path.join(directory, oggName),
-      ]);
-      const ogg = fs.readFileSync(path.join(directory, oggName));
-      const decoded = execute([
-        '-v',
-        'error',
-        '-i',
-        path.join(directory, oggName),
-        '-f',
-        'f32le',
-        '-ac',
-        '1',
-        '-ar',
-        '48000',
-        'pipe:1',
-      ]);
-      const decodedPcm = Float64Array.from({ length: decoded.length / 4 }, (_, i) =>
-        decoded.readFloatLE(i * 4),
-      );
+      const ogg = Buffer.from(await encoder.encode(wav));
+      fs.writeFileSync(path.join(directory, oggName), ogg);
+      const decoded = await decodeVorbis(ogg);
+      const decodedPcm = Float64Array.from(decoded.samples);
       const stats = measure(decodedPcm);
       if (stats.peak >= 1 || Math.abs(decodedPcm.length - product.frames) > 1024)
         throw new Error('Encoded output exceeds peak/duration limits');

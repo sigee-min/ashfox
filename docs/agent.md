@@ -42,8 +42,8 @@ For projects using another language, Node is a build dependency, not a game
 runtime requirement.
 
 Set up missing prerequisites using the environment's supported installer when
-authorized. Chrome/Chromium is needed for captures and replays; FFmpeg with
-libvorbis is needed for OGG delivery. Install only the tools the task needs,
+authorized. Chrome/Chromium is needed for captures and replays; OGG encoding is
+built in. Install only the tools the task needs,
 then rerun doctor. Respect the agent environment's permissions. If fetching,
 installation or a required tool is blocked, report the specific missing access
 and the smallest user action needed; do not claim setup or review succeeded.

@@ -17,44 +17,53 @@ module goblin_body {
       bone pelvis {
         cube hips { origin = (-4u, 9u, -2.5u); size = (8u, 4u, 5u); surface = skin.pelvis; }
         cube belt { origin = (-5u, 12u, -3.5u); size = (10u, 2u, 7u); surface = skin.belt; }
+        cube buckle { origin = (-1.5u, 11.5u, -4.1u); size = (3u, 3u, 1u); surface = skin.buckle; }
+        plane loincloth_front { origin = (-3u, 7u, -3.5u); size = (6u, 5u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.loincloth; }
+        plane loincloth_back { origin = (-3u, 7u, 3.5u); size = (6u, 5u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.loincloth; }
         bone torso {
           cube chest { origin = (-5u, 13u, -3u); size = (10u, 9u, 6u); surface = skin.torso; }
+          cube strap { origin = (-3u, 13.5u, -3.5u); size = (6u, 8u, 1u); pivot = (0u, 17.5u, -3u); rotation = (0deg, 0deg, -22.5deg); surface = skin.strap; }
           bone head {
-            cube skull { origin = (-4u, 21u, -5u); size = (8u, 8u, 8u); surface = skin.head; }
+            cube skull { origin = (-4u, 21u, -5u); size = (8u, 8u, 8u); pivot = (0u, 24u, -1u); rotation = (4deg, 0deg, 0deg); surface = skin.head; }
+            cube brow { origin = (-4.5u, 26u, -5.5u); size = (9u, 2u, 2u); pivot = (0u, 27u, -4.5u); rotation = (8deg, 0deg, 0deg); surface = skin.brow; }
             cube snout { origin = (-3u, 21u, -8u); size = (6u, 3u, 3u); surface = skin.snout; }
-            cube left_tusk { origin = (-3u, 20u, -8u); size = (1u, 2u, 1u); surface = skin.tusk; }
-            cube right_tusk { origin = (2u, 20u, -8u); size = (1u, 2u, 1u); surface = skin.tusk; }
-            cube left_ear { origin = (-7u, 23u, -2u); size = (3u, 4u, 2u); surface = skin.ear; }
-            cube right_ear { origin = (4u, 23u, -2u); size = (3u, 4u, 2u); surface = skin.ear; }
-            cube left_ear_tip { origin = (-9u, 24u, -1.5u); size = (2u, 3u, 2u); surface = skin.ear_tip; }
-            cube right_ear_tip { origin = (7u, 24u, -1.5u); size = (2u, 3u, 2u); surface = skin.ear_tip; }
-            cube mohawk { origin = (-1u, 29u, -4u); size = (2u, 3u, 7u); surface = skin.mohawk; }
+            cube tusk_l { origin = (-3u, 20u, -8.3u); size = (1u, 2u, 1u); pivot = (-2.5u, 21u, -8u); rotation = (-14deg, 0deg, 0deg); mirror-x = tusk_r; surface = skin.tusk; }
+            cube ear_l { origin = (-7u, 23u, -2u); size = (4u, 3u, 2u); pivot = (-4u, 24.5u, -1u); rotation = (0deg, 10deg, -18deg); mirror-x = ear_r; surface = skin.ear; }
+            cube ear_tip_l { origin = (-9.5u, 24u, -1.5u); size = (3u, 2u, 2u); pivot = (-4u, 24.5u, -1u); rotation = (0deg, 10deg, -24deg); mirror-x = ear_tip_r; surface = skin.ear_tip; }
+            cube mohawk_front { origin = (-1u, 28.5u, -4.5u); size = (2u, 3u, 4u); pivot = (0u, 29u, -2.5u); rotation = (-12deg, 0deg, 0deg); surface = skin.mohawk; }
+            cube mohawk_back { origin = (-1u, 28.5u, -0.5u); size = (2u, 3u, 4u); pivot = (0u, 29u, 1.5u); rotation = (16deg, 0deg, 0deg); surface = skin.mohawk; }
           }
           bone left_arm {
-            cube pauldron { origin = (-9u, 18u, -2.5u); size = (5u, 3u, 5u); surface = skin.pauldron; }
-            cube arm { origin = (-8u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
-            cube hand { origin = (-8u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
-            cube shield { origin = (-12u, 8u, -4u); size = (8u, 10u, 2u); surface = skin.shield; }
+            cube pauldron_l { origin = (-9u, 18.5u, -2.5u); size = (5u, 3u, 5u); pivot = (-5u, 19.5u, 0u); rotation = (0deg, 0deg, 16deg); surface = skin.pauldron; }
+            cube arm_l { origin = (-8u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
+            cube bracer_l { origin = (-8.5u, 10.5u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+            cube hand_l { origin = (-8u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
+            cube shield { origin = (-11.5u, 8u, -4u); size = (8u, 10u, 2u); pivot = (-8u, 13u, -3u); rotation = (0deg, 12deg, 0deg); surface = skin.shield; }
+            cube shield_boss { origin = (-9.5u, 11u, -4.6u); size = (4u, 4u, 1u); pivot = (-8u, 13u, -3u); rotation = (0deg, 12deg, 0deg); surface = skin.boss; }
           }
           bone right_arm {
-            cube pauldron { origin = (4u, 18u, -2.5u); size = (5u, 3u, 5u); surface = skin.pauldron; }
-            cube arm { origin = (5u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
-            cube hand { origin = (5u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
+            cube pauldron_r { origin = (4u, 18.5u, -2.5u); size = (5u, 3u, 5u); pivot = (5u, 19.5u, 0u); rotation = (0deg, 0deg, -16deg); surface = skin.pauldron; }
+            cube arm_r { origin = (5u, 10u, -1.5u); size = (3u, 9u, 3u); surface = skin.arm; }
+            cube bracer_r { origin = (4.5u, 10.5u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+            cube hand_r { origin = (5u, 8u, -2u); size = (3u, 3u, 3u); surface = skin.hand; }
             bone weapon {
               cube grip { origin = (5.5u, 9u, -5u); size = (2u, 2u, 4u); surface = skin.grip; }
-              cube crossguard { origin = (2.5u, 9.5u, -6u); size = (8u, 1u, 1u); surface = skin.crossguard; }
+              cube crossguard { origin = (3.5u, 9.5u, -6u); size = (6u, 1u, 1u); pivot = (6.5u, 10u, -5.5u); rotation = (0deg, 0deg, 22.5deg); surface = skin.crossguard; }
               cube blade { origin = (5.5u, 9u, -20u); size = (2u, 2u, 14u); surface = skin.blade; }
+              cube blade_tip { origin = (6u, 9.5u, -22.5u); size = (1u, 1u, 3u); surface = skin.blade_tip; }
               cube pommel { origin = (5u, 8.5u, -2u); size = (3u, 3u, 2u); surface = skin.pommel; }
             }
           }
         }
         bone left_leg {
-          cube leg { origin = (-4u, 2u, -2u); size = (4u, 9u, 4u); surface = skin.leg; }
-          cube boot { origin = (-4u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
+          cube leg_l { origin = (-4u, 2u, -2u); size = (4u, 8u, 4u); surface = skin.leg; }
+          cube boot_cuff_l { origin = (-4.5u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
+          cube boot_l { origin = (-4u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
         }
         bone right_leg {
-          cube leg { origin = (0u, 2u, -2u); size = (4u, 9u, 4u); surface = skin.leg; }
-          cube boot { origin = (0u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
+          cube leg_r { origin = (0u, 2u, -2u); size = (4u, 8u, 4u); surface = skin.leg; }
+          cube boot_cuff_r { origin = (-0.5u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
+          cube boot_r { origin = (0u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
         }
       }
     }

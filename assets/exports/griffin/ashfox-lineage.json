@@ -13,19 +13,21 @@
   "packageName": "workbench",
   "entryName": "griffin",
   "entryPath": "workbench/main.ashfox",
-  "workspaceHash": "sha256:b82d9c0ef55132fbb21b8d24d47f6e90d9bab4431ed7018e1b56a27bde48ff79",
-  "closureHash": "sha256:f8dcca1f122943dab0c4444c97400dd39533d53728e8f0763de23b37d42b7aa7",
-  "buildKey": "sha256:f426d389d8e36546133b3ae4c05d27f597ae54a5f3b7188b5a150c73bde50e4c",
+  "workspaceHash": "sha256:6f20934ada781b5ef3987c4459f1740ed363f07b140c95024a0cebc0648b5361",
+  "closureHash": "sha256:5101e8d4164de147b3349bbd21cb2390ab06af37284264fe229b0875a560157c",
+  "buildKey": "sha256:216e499b330cb6e617eeead9c3ecd20aa34b45bb8146abc8f60d2dbb84739234",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:ee56875a75fcaad13ce166e325d431ba7a526160078da02d047cf1d7ad726440",
+  "productHash": "sha256:445ded6035d97f596590c8d5368268c638f5e529e938620df21ecf04546645e4",
   "textures": [
     {
       "id": "griffin_skin_93201f4752bc",
       "path": null,
-      "coverageIds": [],
-      "embeddedSha256": "sha256:0fd96f68bc38eea55cf932b9f1e597e2d1ac37f51db5196fb0fb557185cf62d5",
-      "pngSha256": "sha256:0fd96f68bc38eea55cf932b9f1e597e2d1ac37f51db5196fb0fb557185cf62d5",
-      "byteLength": 525420
+      "coverageIds": [
+        "griffin_skin_93201f4752bc\u0000crest_plume"
+      ],
+      "embeddedSha256": "sha256:55ed0e599157fd82d1cc01fa3a52c7afb8aabe6b2fcfb4f814a33ef94f6399d0",
+      "pngSha256": "sha256:55ed0e599157fd82d1cc01fa3a52c7afb8aabe6b2fcfb4f814a33ef94f6399d0",
+      "byteLength": 65737
     }
   ],
   "files": [
@@ -34,8 +36,8 @@
       "role": "model",
       "path": "griffin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:ad08af7b6a4518f555ba9df6f94545b79e1c1a7bba564bc5cae87a999e9b2125",
-      "byteLength": 850176
+      "sha256": "sha256:8df69e2403a3d70ed0762c74f3003c4fa83d72d02b0b93e232da0d0af360e55f",
+      "byteLength": 426468
     }
   ]
 }

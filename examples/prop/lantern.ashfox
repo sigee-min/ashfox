@@ -1,0 +1,149 @@
+ashfox-model 1
+asset lantern {
+  export rig contract LanternRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+  export skeleton LanternSkeleton implements LanternRig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+  export surface contract LanternSurface {
+    chart base box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart core box { coverage = opaque; }
+    chart strut box { coverage = opaque; }
+    chart hood box { coverage = opaque; }
+    chart crown box { coverage = opaque; }
+    chart hoop flat { coverage = opaque; }
+    material = opaque;
+  }
+  export surface iron_amber: LanternSurface {
+    material = opaque;
+    texture atlas {
+      background = void;
+      background-alpha = 255;
+      palette {
+        void = #101116;
+        iron = (#1c2029, #363e4f, #5c6882);
+        stone = (#282a30, #4e525c, #7c828f);
+        amber = (#8c3d0e, #e07f1e, #ffe066);
+        amber_core = (#c75c14, #ffaa2b, #fff5a8);
+      }
+      stamp heart_glow {
+        pixels = ".cc./cccc/cccc/.cc.";
+        c = amber_core;
+      }
+      chart base box {
+        fill = stone;
+        grain = clustered;
+        pattern gradient { from = iron; to = stone; axis = y; space = model; soft = 0.25ratio; }
+        pattern border { paint = iron; width = 1px; edges = top; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart collar box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = amber; width = 1px; edges = top; }
+        pattern ao { strength = 0.8ratio; radius = 2u; }
+      }
+      chart core box {
+        fill = amber;
+        grain = soft;
+        pattern gradient { from = amber; to = amber_core; axis = y; space = local; soft = 0.25ratio; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+        face north { stamp heart_glow { at = (0px, 1px); protect = true; } }
+        face south { stamp heart_glow { at = (0px, 1px); protect = true; } }
+      }
+      chart strut box {
+        fill = iron;
+        grain = none;
+        pattern gradient { from = iron; to = stone; axis = y; space = model; soft = 0.2ratio; }
+        pattern border { paint = amber; width = 1px; edges = top; }
+      }
+      chart hood box {
+        fill = iron;
+        grain = none;
+        pattern gradient { from = iron; to = stone; axis = y; space = local; soft = 0.2ratio; }
+        pattern border { paint = amber; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.85ratio; radius = 2u; }
+      }
+      chart crown box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = stone; width = 1px; edges = top; }
+        pattern ao { strength = 0.75ratio; radius = 2u; }
+      }
+      chart hoop flat {
+        fill = iron;
+        grain = none;
+        pattern border { paint = amber; width = 1px; edges = all; }
+      }
+      grain clustered { seed = 5107; }
+      tone painterly;
+    }
+  }
+  export component Lantern {
+    requires rig skeleton: LanternRig;
+    requires surface skin: LanternSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube base { origin = (-4u, 0u, -4u); size = (8u, 2u, 8u); surface = skin.base; }
+        cube collar {
+          origin = (-3u, 2u, -3u);
+          size = (6u, 2u, 6u);
+          pivot = (0u, 3u, 0u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.collar;
+        }
+        cube core { origin = (-2u, 3u, -2u); size = (4u, 6u, 4u); surface = skin.core; }
+        cube strut_front_l {
+          origin = (-3u, 3u, -3u);
+          size = (1u, 7u, 1u);
+          mirror-x = strut_front_r;
+          surface = skin.strut;
+        }
+        cube strut_back_l {
+          origin = (-3u, 3u, 2u);
+          size = (1u, 7u, 1u);
+          mirror-x = strut_back_r;
+          surface = skin.strut;
+        }
+        cube hood {
+          origin = (-4u, 9u, -4u);
+          size = (8u, 2u, 8u);
+          pivot = (0u, 10u, 0u);
+          rotation = (0deg, 22.5deg, 0deg);
+          surface = skin.hood;
+        }
+        cube crown { origin = (-2u, 11u, -2u); size = (4u, 2u, 4u); surface = skin.crown; }
+        plane hoop {
+          origin = (-1.5u, 13u, 0u);
+          size = (3u, 3u);
+          u-axis = (1u, 0u, 0u);
+          v-axis = (0u, 1u, 0u);
+          surface = skin.hoop;
+        }
+        plane hoop_front {
+          origin = (1.5u, 13u, -0.05u);
+          size = (3u, 3u);
+          u-axis = (-1u, 0u, 0u);
+          v-axis = (0u, 1u, 0u);
+          surface = skin.hoop;
+        }
+      }
+    }
+  }
+  export asset lantern {
+    settings { density = 16; forward = north; profile = prop; }
+    skeleton = LanternSkeleton;
+    use Lantern as model { bind skeleton = LanternRig; bind skin = iron_amber; };
+  }
+}
