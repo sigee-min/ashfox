@@ -81,16 +81,20 @@ const createStoredTextureMap = (
   };
 };
 
-export const createProjectMaterials = (
+interface TextureResource {
+  texture: TextureAsset;
+  map: THREE.Texture | null;
+}
+
+const collectTextureResources = (
   document: ProjectDocument,
   assets: ProjectAssets,
-  untexturedColor = '#808892',
-  showTextures = true,
-): ProjectMaterialLibrary => {
+  showTextures: boolean,
+): { resources: Map<string, TextureResource>; readiness: Promise<void>[] } => {
   const readiness: Promise<void>[] = [];
-  const resources = new Map<string, { texture: TextureAsset; map: THREE.Texture | null }>();
+  const resources = new Map<string, TextureResource>();
   for (const texture of showTextures ? Object.values(document.textures) : []) {
-    let map: THREE.Texture | null;
+    let map: THREE.Texture | null = null;
     if (texture.raster) {
       map = createRasterTextureMap(document, texture);
     } else if (assets[texture.id]) {
@@ -98,43 +102,68 @@ export const createProjectMaterials = (
       map = stored.map;
       readiness.push(stored.ready);
     } else {
-      map = null;
       readiness.push(Promise.reject(new Error(`Texture "${texture.name}" has no local bytes.`)));
     }
     resources.set(texture.id, { texture, map });
   }
-  const materials = new Map<string, THREE.Material>();
-  const fallback = new THREE.MeshStandardMaterial({
-    color: untexturedColor,
-    roughness: 0.9,
+  return { resources, readiness };
+};
+
+const buildStandardMaterial = (
+  resource: TextureResource,
+  emission: number,
+): THREE.MeshStandardMaterial => {
+  const additive = resource.texture.renderMode === 'additive';
+  const transparent = additive || resource.texture.raster?.backgroundAlpha === 0;
+  const baseColor = resource.map ? '#ffffff' : previewColor(resource.texture);
+  return new THREE.MeshStandardMaterial({
+    color: baseColor,
+    map: resource.map,
+    transparent,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    depthWrite: !additive && resource.texture.raster?.backgroundAlpha !== 0,
+    side: resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide,
+    roughness: 0.84,
+    metalness: 0.02,
+    emissive: emission > 0 ? baseColor : '#000000',
+    emissiveMap: emission > 0 ? resource.map : null,
+    emissiveIntensity: emission,
   });
+};
+
+const disposeProjectResources = (
+  materials: Map<string, THREE.Material>,
+  fallback: THREE.Material,
+  resources: Map<string, TextureResource>,
+): void => {
+  for (const material of materials.values()) material.dispose();
+  fallback.dispose();
+  for (const { map } of resources.values()) {
+    if (!map) continue;
+    const url = map.userData.ashfoxObjectUrl;
+    if (typeof url === 'string') URL.revokeObjectURL(url);
+    map.dispose();
+  }
+};
+
+export const createProjectMaterials = (
+  document: ProjectDocument,
+  assets: ProjectAssets,
+  untexturedColor = '#808892',
+  showTextures = true,
+): ProjectMaterialLibrary => {
+  const { resources, readiness } = collectTextureResources(document, assets, showTextures);
+  const materials = new Map<string, THREE.Material>();
+  const fallback = new THREE.MeshStandardMaterial({ color: untexturedColor, roughness: 0.9 });
 
   const resolve = (textureId: string | null, lightEmission = 0): THREE.Material => {
-    if (textureId === null) return fallback;
-    const resource = resources.get(textureId);
+    const resource = textureId === null ? undefined : resources.get(textureId);
     if (!resource) return fallback;
     const emission = materialEmissionIntensity(resource.texture.renderMode, lightEmission);
     const key = `${textureId}:${emission}`;
-    const cached = materials.get(key);
-    if (cached) return cached;
-    const additive = resource.texture.renderMode === 'additive';
-    const common = {
-      color: resource.map ? '#ffffff' : previewColor(resource.texture),
-      map: resource.map,
-      transparent: additive || resource.texture.raster?.backgroundAlpha === 0,
-      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-      depthWrite: !additive && resource.texture.raster?.backgroundAlpha !== 0,
-      side: resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide,
-    } as const;
-    const material = new THREE.MeshStandardMaterial({
-      ...common,
-      roughness: 0.84,
-      metalness: 0.02,
-      emissive:
-        emission > 0 ? (resource.map ? '#ffffff' : previewColor(resource.texture)) : '#000000',
-      emissiveMap: emission > 0 ? resource.map : null,
-      emissiveIntensity: emission,
-    });
+    const existing = materials.get(key);
+    if (existing) return existing;
+    const material = buildStandardMaterial(resource, emission);
     materials.set(key, material);
     return material;
   };
@@ -142,16 +171,7 @@ export const createProjectMaterials = (
   return {
     resolve,
     ready: Promise.all(readiness).then(() => undefined),
-    dispose: () => {
-      for (const material of materials.values()) material.dispose();
-      fallback.dispose();
-      for (const { map } of resources.values()) {
-        if (!map) continue;
-        const url = map.userData.ashfoxObjectUrl;
-        if (typeof url === 'string') URL.revokeObjectURL(url);
-        map.dispose();
-      }
-    },
+    dispose: () => disposeProjectResources(materials, fallback, resources),
   };
 };
 

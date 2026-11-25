@@ -213,7 +213,11 @@
     "maxFunctionLines": 200,
     "complexity": {
       "scopes": [
-        "packages/engine-core/src/"
+        "apps/cli/src/",
+        "packages/asset-build/src/",
+        "packages/audio-core/src/",
+        "packages/engine-core/src/",
+        "packages/render-core/src/"
       ],
       "maxFunctionLines": 60,
       "maxNestingDepth": 4,

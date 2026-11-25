@@ -197,81 +197,69 @@ const planeMaterial = (
   return result;
 };
 
+const planeCenter = (node: Extract<SceneNode, { kind: 'plane' }>): [number, number, number] => {
+  if (!node.basis) {
+    return [
+      node.size[0] / 2 - node.transform.pivot[0],
+      node.size[1] / 2 - node.transform.pivot[1],
+      -node.transform.pivot[2],
+    ];
+  }
+  const u = node.size[0] / 2 - node.transform.pivot[0];
+  const v = node.size[1] / 2 - node.transform.pivot[1];
+  const n = node.transform.pivot[2];
+  return [0, 1, 2].map(
+    (axis) =>
+      node.basis!.uAxis[axis] * u + node.basis!.vAxis[axis] * v - node.basis!.normal[axis] * n,
+  ) as [number, number, number];
+};
+
+const placePlaneObject = (
+  target: THREE.Object3D,
+  center: readonly [number, number, number],
+  basis: Extract<SceneNode, { kind: 'plane' }>['basis'],
+): void => {
+  target.position.fromArray(center);
+  if (!basis) return;
+  const basisMatrix = new THREE.Matrix4().makeBasis(
+    new THREE.Vector3(...basis.uAxis),
+    new THREE.Vector3(...basis.vAxis),
+    new THREE.Vector3(...basis.normal),
+  );
+  target.setRotationFromMatrix(basisMatrix);
+};
+
 const addPlaneGeometry = (
   node: Extract<SceneNode, { kind: 'plane' }>,
   group: THREE.Group,
   context: GeometryBuildContext,
 ): void => {
-  const center: [number, number, number] = node.basis
-    ? [
-        node.basis.uAxis[0] * (node.size[0] / 2 - node.transform.pivot[0]) +
-          node.basis.vAxis[0] * (node.size[1] / 2 - node.transform.pivot[1]) -
-          node.basis.normal[0] * node.transform.pivot[2],
-        node.basis.uAxis[1] * (node.size[0] / 2 - node.transform.pivot[0]) +
-          node.basis.vAxis[1] * (node.size[1] / 2 - node.transform.pivot[1]) -
-          node.basis.normal[1] * node.transform.pivot[2],
-        node.basis.uAxis[2] * (node.size[0] / 2 - node.transform.pivot[0]) +
-          node.basis.vAxis[2] * (node.size[1] / 2 - node.transform.pivot[1]) -
-          node.basis.normal[2] * node.transform.pivot[2],
-      ]
-    : [
-        node.size[0] / 2 - node.transform.pivot[0],
-        node.size[1] / 2 - node.transform.pivot[1],
-        -node.transform.pivot[2],
-      ];
-  // A canonical double-sided plane has identical front/back material and UV
-  // records. One DoubleSide mesh avoids two coplanar depth writers (and the
-  // resulting z-fighting) while retaining the source sidedness decision.
-  const directions = ['front'] as const;
-  for (const direction of directions) {
-    const face = node.faces[direction];
-    if (!face.enabled) continue;
+  const center = planeCenter(node);
+  const face = node.faces.front;
+  if (face.enabled) {
     const geometry = new THREE.PlaneGeometry(node.size[0], node.size[1]);
-    applyPlaneFaceUvs(geometry, node, direction, context.textures);
+    applyPlaneFaceUvs(geometry, node, 'front', context.textures);
+    const textureId = context.options.showTextures === false ? null : face.textureId;
     const mesh = new THREE.Mesh(
       geometry,
-      planeMaterial(
-        context.materials.resolve(context.options.showTextures === false ? null : face.textureId),
-        node.sidedness,
-      ),
+      planeMaterial(context.materials.resolve(textureId), node.sidedness),
     );
-    mesh.position.fromArray(center);
-    if (node.basis) {
-      const basisMatrix = new THREE.Matrix4().makeBasis(
-        new THREE.Vector3(...node.basis.uAxis),
-        new THREE.Vector3(...node.basis.vAxis),
-        new THREE.Vector3(...node.basis.normal),
-      );
-      mesh.setRotationFromMatrix(basisMatrix);
-    }
+    placePlaneObject(mesh, center, node.basis);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.nodeId = node.id;
     mesh.userData.kind = node.kind;
-    mesh.userData.planeSide = direction;
+    mesh.userData.planeSide = 'front';
     mesh.userData.ownsMaterial = true;
     group.add(mesh);
     context.selectable.push(mesh);
   }
-
   if (!context.options.showWireframe) return;
   const outline = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.PlaneGeometry(node.size[0], node.size[1])),
-    new THREE.LineBasicMaterial({
-      color: '#172028',
-      transparent: true,
-      opacity: 0.66,
-    }),
+    new THREE.LineBasicMaterial({ color: '#172028', transparent: true, opacity: 0.66 }),
   );
-  outline.position.fromArray(center);
-  if (node.basis) {
-    const basisMatrix = new THREE.Matrix4().makeBasis(
-      new THREE.Vector3(...node.basis.uAxis),
-      new THREE.Vector3(...node.basis.vAxis),
-      new THREE.Vector3(...node.basis.normal),
-    );
-    outline.setRotationFromMatrix(basisMatrix);
-  }
+  placePlaneObject(outline, center, node.basis);
   outline.userData.overlay = true;
   group.add(outline);
 };

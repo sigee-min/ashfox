@@ -99,6 +99,61 @@ export const applyBuildCaptureFrame = (
   );
 };
 
+const MARKETING_PHASE_LABELS: Readonly<Record<string, string>> = {
+  start: 'An idea takes shape',
+  geometry: 'Taking shape',
+  texture: 'Adding color',
+  motion: 'Coming to life',
+  complete: 'Ready for your game',
+};
+
+const drawGifFrameOverlay = (
+  context: CanvasRenderingContext2D,
+  frame: ReturnType<typeof createBuildCapturePlan>['frames'][number],
+  eventCount: number,
+  marketing: boolean | undefined,
+): void => {
+  if (marketing) {
+    drawShowcasePhase(context, MARKETING_PHASE_LABELS[frame.event.category] ?? 'Creating');
+    return;
+  }
+  drawBuildFrameOverlay(context, frame.event.label, frame.eventIndex, eventCount, frame.progress);
+};
+
+const recordBuildGifFrames = async (
+  plan: ReturnType<typeof createBuildCapturePlan>,
+  options: BuildGifCaptureOptions,
+  surface: GifCaptureSurface,
+  neutral: ProjectSceneProjection,
+  textured: ProjectSceneProjection,
+): Promise<Uint8Array> => {
+  for (const frame of plan.frames) {
+    throwIfCaptureAborted(options.signal);
+    applyBuildCaptureFrame(frame, options.document, neutral, textured);
+    encodeGifSurfaceFrame(surface, (context) =>
+      drawGifFrameOverlay(context, frame, plan.events.length, options.marketing),
+    );
+    const byteLength = gifCaptureByteLength(surface);
+    if (byteLength > MAX_BUILD_CAPTURE_BYTES) {
+      throw new Error(
+        `Build replay produced more than ${MAX_BUILD_CAPTURE_BYTES} bytes. ` +
+          'Reduce visible model detail.',
+      );
+    }
+    options.onProgress?.(frame.index + 1, plan.frames.length);
+    await yieldCaptureFrame(options.signal);
+  }
+  throwIfCaptureAborted(options.signal);
+  const bytes = finishGifCaptureSurface(surface);
+  if (bytes.byteLength > MAX_BUILD_CAPTURE_BYTES) {
+    throw new Error(
+      `Build replay produced ${bytes.byteLength} bytes; the exact limit is ` +
+        `${MAX_BUILD_CAPTURE_BYTES}. Reduce visible model detail.`,
+    );
+  }
+  return bytes;
+};
+
 export const renderBuildGif = async (
   options: BuildGifCaptureOptions,
 ): Promise<GifCaptureResult> => {
@@ -123,49 +178,7 @@ export const renderBuildGif = async (
       waitForProjectionTextures(neutral, options.signal),
       waitForProjectionTextures(textured, options.signal),
     ]);
-    for (const frame of plan.frames) {
-      throwIfCaptureAborted(options.signal);
-      applyBuildCaptureFrame(frame, options.document, neutral, textured);
-      encodeGifSurfaceFrame(surface, (context) => {
-        if (options.marketing) {
-          drawShowcasePhase(
-            context,
-            {
-              start: 'An idea takes shape',
-              geometry: 'Taking shape',
-              texture: 'Adding color',
-              motion: 'Coming to life',
-              complete: 'Ready for your game',
-            }[frame.event.category] ?? 'Creating',
-          );
-          return;
-        }
-        drawBuildFrameOverlay(
-          context,
-          frame.event.label,
-          frame.eventIndex,
-          plan.events.length,
-          frame.progress,
-        );
-      });
-      const byteLength = gifCaptureByteLength(surface);
-      if (byteLength > MAX_BUILD_CAPTURE_BYTES) {
-        throw new Error(
-          `Build replay produced more than ${MAX_BUILD_CAPTURE_BYTES} bytes. ` +
-            'Reduce visible model detail.',
-        );
-      }
-      options.onProgress?.(frame.index + 1, plan.frames.length);
-      await yieldCaptureFrame(options.signal);
-    }
-    throwIfCaptureAborted(options.signal);
-    const bytes = finishGifCaptureSurface(surface);
-    if (bytes.byteLength > MAX_BUILD_CAPTURE_BYTES) {
-      throw new Error(
-        `Build replay produced ${bytes.byteLength} bytes; the exact limit is ` +
-          `${MAX_BUILD_CAPTURE_BYTES}. Reduce visible model detail.`,
-      );
-    }
+    const bytes = await recordBuildGifFrames(plan, options, surface, neutral, textured);
     return {
       bytes,
       width: surface.width,

@@ -68,7 +68,13 @@ assert.equal(manifest.quality.maxCodeFileStemLength, 20);
 assert.equal(manifest.quality.newSourceFileRatchetLines, 500);
 assert.equal(manifest.quality.maxFunctionLines, 200);
 assert.deepEqual(manifest.quality.complexity, {
-  scopes: ['packages/engine-core/src/'],
+  scopes: [
+    'apps/cli/src/',
+    'packages/asset-build/src/',
+    'packages/audio-core/src/',
+    'packages/engine-core/src/',
+    'packages/render-core/src/',
+  ],
   maxFunctionLines: 60,
   maxNestingDepth: 4,
   maxCognitiveComplexity: 15,

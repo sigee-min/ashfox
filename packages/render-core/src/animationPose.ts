@@ -9,6 +9,35 @@ import {
 import { applyNodeTransform, localNodePosition } from './sceneTransform';
 import type { ProjectSceneProjection } from './sceneTypes';
 
+const applyChannelSample = (
+  object: THREE.Object3D,
+  property: 'position' | 'rotation' | 'scale',
+  value: NumericAnimationVec3,
+): void => {
+  if (property === 'position') {
+    object.position.fromArray(value);
+  } else if (property === 'rotation') {
+    object.rotation.order = 'XYZ';
+    object.rotation.set(
+      THREE.MathUtils.degToRad(value[0]),
+      THREE.MathUtils.degToRad(value[1]),
+      THREE.MathUtils.degToRad(value[2]),
+    );
+  } else {
+    object.scale.fromArray(value);
+  }
+};
+
+const restChannelValue = (
+  document: ProjectDocument,
+  node: ProjectDocument['scene']['nodes'][string],
+  property: 'position' | 'rotation' | 'scale',
+): NumericAnimationVec3 => {
+  if (property === 'position') return localNodePosition(document, node);
+  if (property === 'rotation') return node.transform.rotation;
+  return node.transform.scale;
+};
+
 export const applyAnimationPose = (
   document: ProjectDocument,
   projection: ProjectSceneProjection,
@@ -29,25 +58,8 @@ export const applyAnimationPose = (
     const node = document.scene.nodes[channel.targetNodeId];
     if (!object || !node) continue;
 
-    const restValue: NumericAnimationVec3 =
-      channel.property === 'position'
-        ? localNodePosition(document, node)
-        : channel.property === 'rotation'
-          ? node.transform.rotation
-          : node.transform.scale;
+    const restValue = restChannelValue(document, node, channel.property);
     const value = sampleComposedNumericTransformChannel(channel, timeSeconds, { restValue });
-    if (!value) continue;
-    if (channel.property === 'position') {
-      object.position.fromArray(value);
-    } else if (channel.property === 'rotation') {
-      object.rotation.order = 'XYZ';
-      object.rotation.set(
-        THREE.MathUtils.degToRad(value[0]),
-        THREE.MathUtils.degToRad(value[1]),
-        THREE.MathUtils.degToRad(value[2]),
-      );
-    } else {
-      object.scale.fromArray(value);
-    }
+    if (value) applyChannelSample(object, channel.property, value);
   }
 };

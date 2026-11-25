@@ -138,6 +138,25 @@ const doctor = (json: boolean): void => {
     `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV / OGG: ready (built-in)\nRender (Chrome): ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\n`,
   );
 };
+const parseJsonCommandArgs = (
+  command: string,
+  rest: readonly string[],
+): { readonly positional: string[]; readonly json: boolean } => {
+  const jsonCount = rest.filter((arg) => arg === '--json').length;
+  if (jsonCount > 1 || rest.some((arg) => arg.startsWith('--') && arg !== '--json')) {
+    throw new BuildFailure('cli.arguments', 'Only --json is supported for this command.', 2);
+  }
+  const positional = rest.filter((arg) => arg !== '--json');
+  if (positional.length !== (command === 'init' ? 1 : 0)) {
+    const usage =
+      command === 'init'
+        ? 'Usage: ashfox init <new-folder> [--json]'
+        : 'Usage: ashfox doctor [--json]';
+    throw new BuildFailure('cli.arguments', usage, 2);
+  }
+  return { positional, json: jsonCount > 0 };
+};
+
 export const runOnboarding = (args: readonly string[]): boolean => {
   const command = args[0] ?? 'help';
   if (!isOnboardingCommand(command)) return false;
@@ -146,23 +165,8 @@ export const runOnboarding = (args: readonly string[]): boolean => {
     process.stdout.write(command === '--version' ? cliVersion + '\n' : help);
     return true;
   }
-  const rest = args.slice(1);
-  if (
-    rest.filter((arg) => arg === '--json').length > 1 ||
-    rest.some((arg) => arg.startsWith('--') && arg !== '--json')
-  ) {
-    throw new BuildFailure('cli.arguments', 'Only --json is supported for this command.', 2);
-  }
-  const positional = rest.filter((arg) => arg !== '--json');
-  if (positional.length !== (command === 'init' ? 1 : 0))
-    throw new BuildFailure(
-      'cli.arguments',
-      command === 'init'
-        ? 'Usage: ashfox init <new-folder> [--json]'
-        : 'Usage: ashfox doctor [--json]',
-      2,
-    );
-  if (command === 'init') init(positional[0], rest.includes('--json'));
-  else doctor(rest.includes('--json'));
+  const { positional, json } = parseJsonCommandArgs(command, args.slice(1));
+  if (command === 'init') init(positional[0], json);
+  else doctor(json);
   return true;
 };

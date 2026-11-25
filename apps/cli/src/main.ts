@@ -120,21 +120,24 @@ const main = async (): Promise<void> => {
   });
   result(true, published);
 };
-const executeWorker = async (): Promise<void> => {
-  if (workerData.observe) {
-    try {
-      parentPort!.postMessage({ ok: true, value: prepare(workerData.observe) });
-    } catch (error) {
-      parentPort!.postMessage({
-        ok: false,
-        message: error instanceof Error ? error.message : String(error),
-        code: error instanceof BuildFailure ? error.code : 'observe.compile',
-        exitCode: error instanceof BuildFailure ? error.exitCode : 1,
-      });
-    }
-    return;
+const runObserveWorker = (observe: Parameters<typeof prepare>[0]): void => {
+  try {
+    parentPort!.postMessage({ ok: true, value: prepare(observe) });
+  } catch (error) {
+    parentPort!.postMessage({
+      ok: false,
+      message: error instanceof Error ? error.message : String(error),
+      code: error instanceof BuildFailure ? error.code : 'observe.compile',
+      exitCode: error instanceof BuildFailure ? error.exitCode : 1,
+    });
   }
-  const input = workerData as { snapshot: Snapshot; toolchain: string; command: string };
+};
+
+const runBuildWorker = async (input: {
+  snapshot: Snapshot;
+  toolchain: string;
+  command: string;
+}): Promise<void> => {
   try {
     let value: CompiledBundle | { sourceHash: string; products: readonly unknown[] };
     if (input.command === 'check') {
@@ -143,7 +146,9 @@ const executeWorker = async (): Promise<void> => {
         sourceHash: checked.sourceHash,
         products: checked.products.map((p) => ({ kind: p.kind, entry: p.entry })),
       };
-    } else value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal);
+    } else {
+      value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal);
+    }
     parentPort!.postMessage({ ok: true, value });
   } catch (error) {
     parentPort!.postMessage({
@@ -153,6 +158,14 @@ const executeWorker = async (): Promise<void> => {
       exitCode: error instanceof BuildFailure ? error.exitCode : 3,
     });
   }
+};
+
+const executeWorker = async (): Promise<void> => {
+  if (workerData.observe) {
+    runObserveWorker(workerData.observe);
+    return;
+  }
+  await runBuildWorker(workerData as { snapshot: Snapshot; toolchain: string; command: string });
 };
 if (!isMainThread) {
   parentPort!.on('message', (message) => {

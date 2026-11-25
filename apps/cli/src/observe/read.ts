@@ -51,68 +51,50 @@ const enumValue = <const T extends string>(
     throw new BuildFailure('observe.option', 'Invalid ' + key + ': ' + String(value), 2);
   return value as T;
 };
-export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): ViewOptions => {
-  const v = record(value, [
-    'width',
-    'height',
-    'camera',
-    'azimuth',
-    'elevation',
-    'zoom',
-    'environment',
-    'background',
-    'clip',
-    'time',
-    'fps',
-    'duration',
-    'wireframe',
-    'skeleton',
-    'textures',
-    'scale',
-    'stage',
-    'variant',
-    'node',
-    'texture',
-    'mode',
-    'sheet',
-    'format',
-    'namespace',
-    'modelPath',
-  ]);
-  const result = { ...previous };
+const NUMERIC_RANGES = {
+  width: [16, 2048],
+  height: [16, 2048],
+  azimuth: [-360, 360],
+  elevation: [-89, 89],
+  zoom: [0.1, 10],
+  time: [0, 60],
+  fps: [1, 30],
+  duration: [0.01, 30],
+  scale: [1, 32],
+} as const;
+const INTEGER_KEYS = new Set<string>(['width', 'height', 'fps', 'scale']);
+
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
+const applyPrimitiveViewOptions = (
+  v: Record<string, unknown>,
+  result: Mutable<ViewOptions>,
+): void => {
   for (const key of ['clip', 'variant', 'node', 'texture', 'namespace', 'modelPath'] as const)
     if (v[key] !== undefined) result[key] = text(v[key], key);
-  for (const key of ['wireframe', 'skeleton', 'textures'] as const)
-    if (v[key] !== undefined) {
-      if (typeof v[key] !== 'boolean')
-        throw new BuildFailure('observe.option', key + ' must be boolean', 2);
-      result[key] = v[key];
-    }
-  const ranges = {
-    width: [16, 2048],
-    height: [16, 2048],
-    azimuth: [-360, 360],
-    elevation: [-89, 89],
-    zoom: [0.1, 10],
-    time: [0, 60],
-    fps: [1, 30],
-    duration: [0.01, 30],
-    scale: [1, 32],
-  } as const;
-  for (const key of Object.keys(ranges) as (keyof typeof ranges)[])
-    if (v[key] !== undefined) {
-      const n = v[key];
-      const [min, max] = ranges[key];
-      if (
-        typeof n !== 'number' ||
-        !Number.isFinite(n) ||
-        n < min ||
-        n > max ||
-        (['width', 'height', 'fps', 'scale'].includes(key) && !Number.isInteger(n))
-      )
-        throw new BuildFailure('observe.option', 'Invalid ' + key, 2);
-      result[key] = n;
-    }
+  for (const key of ['wireframe', 'skeleton', 'textures'] as const) {
+    if (v[key] === undefined) continue;
+    if (typeof v[key] !== 'boolean')
+      throw new BuildFailure('observe.option', key + ' must be boolean', 2);
+    result[key] = v[key];
+  }
+  for (const key of Object.keys(NUMERIC_RANGES) as (keyof typeof NUMERIC_RANGES)[]) {
+    const n = v[key];
+    if (n === undefined) continue;
+    const [min, max] = NUMERIC_RANGES[key];
+    if (
+      typeof n !== 'number' ||
+      !Number.isFinite(n) ||
+      n < min ||
+      n > max ||
+      (INTEGER_KEYS.has(key) && !Number.isInteger(n))
+    )
+      throw new BuildFailure('observe.option', 'Invalid ' + key, 2);
+    result[key] = n;
+  }
+};
+
+const applyEnumViewOptions = (v: Record<string, unknown>, result: Mutable<ViewOptions>): void => {
   if (v.format !== undefined)
     result.format = enumValue(
       v.format,
@@ -142,5 +124,38 @@ export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): 
   if (v.mode !== undefined)
     result.mode = enumValue(v.mode, ['motion', 'turntable', 'build'], 'mode');
   if (v.sheet !== undefined) result.sheet = enumValue(v.sheet, ['turnaround', 'inspect'], 'sheet');
+};
+
+export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): ViewOptions => {
+  const v = record(value, [
+    'width',
+    'height',
+    'camera',
+    'azimuth',
+    'elevation',
+    'zoom',
+    'environment',
+    'background',
+    'clip',
+    'time',
+    'fps',
+    'duration',
+    'wireframe',
+    'skeleton',
+    'textures',
+    'scale',
+    'stage',
+    'variant',
+    'node',
+    'texture',
+    'mode',
+    'sheet',
+    'format',
+    'namespace',
+    'modelPath',
+  ]);
+  const result = { ...previous };
+  applyPrimitiveViewOptions(v, result);
+  applyEnumViewOptions(v, result);
   return result;
 };

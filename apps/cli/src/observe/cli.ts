@@ -83,118 +83,145 @@ interface ParsedCommon {
   readonly audit: { profile?: string; threshold?: string };
 }
 
-const parseArgs = (args: readonly string[], mode: 'check' | 'media'): ParsedCommon => {
-  let file: string | undefined,
-    output: string | undefined,
-    name: string | undefined,
-    stdin = false,
-    inputJson = false,
-    inputFormat = 'source',
-    gif = false,
-    jsonFlag = false;
-  const options: Record<string, unknown> = {};
-  const audit: { profile?: string; threshold?: string } = {};
-  for (let i = 1; i < args.length; i++) {
-    const arg = args[i];
-    if (mode === 'check' && arg === '--json') {
-      if (jsonFlag) throw new BuildFailure('observe.arguments', 'Duplicate --json', 2);
-      jsonFlag = true;
-      continue;
-    }
-    if (arg === '--stdin') {
-      if (stdin) throw new BuildFailure('observe.arguments', 'Duplicate --stdin', 2);
-      stdin = true;
-      continue;
-    }
-    if (arg === '--input-json') {
-      inputJson = true;
-      continue;
-    }
-    if (arg.startsWith('--')) {
-      const key = arg.slice(2);
-      if (mode === 'media' && boolean.has(key)) {
-        if (key === 'gif') {
-          if (gif) throw new BuildFailure('observe.arguments', 'Duplicate --gif', 2);
-          gif = true;
-        } else {
-          if (key in options) throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
-          options[key] = true;
-        }
-        continue;
-      }
-      if (mode === 'media' && key === 'no-textures') {
-        if ('textures' in options)
-          throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
-        options.textures = false;
-        continue;
-      }
-      const value = args[++i];
-      if (value === undefined || value.startsWith('--'))
-        throw new BuildFailure('observe.arguments', 'Missing value for ' + arg, 2);
-      if (key === 'name') {
-        name = value;
-        continue;
-      }
-      if (key === 'input-format') {
-        if (!['source', 'png'].includes(value))
-          throw new BuildFailure('observe.arguments', 'input-format is source or png', 2);
-        inputFormat = value;
-        continue;
-      }
-      if (mode === 'check') {
-        if (key === 'profile') audit.profile = value;
-        else if (key === 'threshold') audit.threshold = value;
-        else if (key === 'node') options.node = value;
-        else throw new BuildFailure('observe.arguments', 'Unknown option: ' + arg, 2);
-        continue;
-      }
-      if (key === 'output') {
-        output = value;
-        continue;
-      }
-      if (key === 'model-path') {
-        options.modelPath = value;
-        continue;
-      }
-      if (key in options) throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
-      options[key] = numeric.has(key) ? Number(value) : value;
+interface ParseState {
+  file?: string;
+  output?: string;
+  name?: string;
+  stdin: boolean;
+  inputJson: boolean;
+  inputFormat: string;
+  gif: boolean;
+  jsonFlag: boolean;
+  readonly options: Record<string, unknown>;
+  readonly audit: { profile?: string; threshold?: string };
+}
+
+const applyMediaBooleanFlag = (state: ParseState, key: string, arg: string): boolean => {
+  if (boolean.has(key)) {
+    if (key === 'gif') {
+      if (state.gif) throw new BuildFailure('observe.arguments', 'Duplicate --gif', 2);
+      state.gif = true;
     } else {
-      if (file) throw new BuildFailure('observe.arguments', 'Expected one input', 2);
-      file = arg;
+      if (key in state.options) throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
+      state.options[key] = true;
     }
+    return true;
   }
-  return { file, output, name, stdin, inputJson, inputFormat, gif, options, audit };
+  if (key !== 'no-textures') return false;
+  if ('textures' in state.options)
+    throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
+  state.options.textures = false;
+  return true;
+};
+
+const applyCheckOnlyOption = (state: ParseState, key: string, arg: string, value: string): void => {
+  if (key === 'profile') state.audit.profile = value;
+  else if (key === 'threshold') state.audit.threshold = value;
+  else if (key === 'node') state.options.node = value;
+  else throw new BuildFailure('observe.arguments', 'Unknown option: ' + arg, 2);
+};
+
+const applyValueOption = (
+  state: ParseState,
+  mode: 'check' | 'media',
+  key: string,
+  arg: string,
+  value: string | undefined,
+): void => {
+  if (value === undefined || value.startsWith('--'))
+    throw new BuildFailure('observe.arguments', 'Missing value for ' + arg, 2);
+  if (key === 'name') {
+    state.name = value;
+    return;
+  }
+  if (key === 'input-format') {
+    if (!['source', 'png'].includes(value))
+      throw new BuildFailure('observe.arguments', 'input-format is source or png', 2);
+    state.inputFormat = value;
+    return;
+  }
+  if (mode === 'check') {
+    applyCheckOnlyOption(state, key, arg, value);
+    return;
+  }
+  if (key === 'output') {
+    state.output = value;
+    return;
+  }
+  const targetKey = key === 'model-path' ? 'modelPath' : key;
+  if (key !== 'model-path' && key in state.options)
+    throw new BuildFailure('observe.arguments', 'Duplicate ' + arg, 2);
+  state.options[targetKey] = numeric.has(key) ? Number(value) : value;
+};
+
+const applyCliToken = (
+  state: ParseState,
+  mode: 'check' | 'media',
+  arg: string,
+  nextArg: string | undefined,
+): boolean => {
+  if (mode === 'check' && arg === '--json') {
+    if (state.jsonFlag) throw new BuildFailure('observe.arguments', 'Duplicate --json', 2);
+    state.jsonFlag = true;
+    return false;
+  }
+  if (arg === '--stdin') {
+    if (state.stdin) throw new BuildFailure('observe.arguments', 'Duplicate --stdin', 2);
+    state.stdin = true;
+    return false;
+  }
+  if (arg === '--input-json') {
+    state.inputJson = true;
+    return false;
+  }
+  if (!arg.startsWith('--')) {
+    if (state.file) throw new BuildFailure('observe.arguments', 'Expected one input', 2);
+    state.file = arg;
+    return false;
+  }
+  const key = arg.slice(2);
+  if (mode === 'media' && applyMediaBooleanFlag(state, key, arg)) return false;
+  applyValueOption(state, mode, key, arg, nextArg);
+  return true;
+};
+
+const parseArgs = (args: readonly string[], mode: 'check' | 'media'): ParsedCommon => {
+  const state: ParseState = {
+    stdin: false,
+    inputJson: false,
+    inputFormat: 'source',
+    gif: false,
+    jsonFlag: false,
+    options: {},
+    audit: {},
+  };
+  for (let i = 1; i < args.length; i++) {
+    if (applyCliToken(state, mode, args[i], args[i + 1])) i++;
+  }
+  return state;
+};
+
+const resolveMemoryInput = async (parsed: ParsedCommon): Promise<SourceInput> => {
+  const bytes = await inputBytes();
+  if (parsed.inputFormat === 'png') return readInput({ png: bytes.toString('base64') });
+  const source = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  if (parsed.inputJson) return readInput(JSON.parse(source));
+  return readInput({ source, ...(parsed.name ? { name: parsed.name } : {}) });
 };
 
 const loadSourceInput = async (parsed: ParsedCommon): Promise<SourceInput> => {
-  let { stdin } = parsed;
-  const { file, name, inputJson, inputFormat } = parsed;
-  if ((stdin || inputJson) && file)
+  const useStdin = parsed.stdin || (!parsed.file && !parsed.inputJson);
+  if ((parsed.stdin || parsed.inputJson) && parsed.file)
     throw new BuildFailure('observe.arguments', 'Choose file or stdin', 2);
-  if (!file && !stdin && !inputJson) {
-    if (process.stdin.isTTY)
-      throw new BuildFailure('observe.arguments', 'Supply a file or pipe source to stdin', 2);
-    stdin = true;
-  }
-  if (name && !stdin) throw new BuildFailure('observe.arguments', '--name requires --stdin', 2);
-  if (inputJson && stdin)
+  if (!parsed.file && !parsed.stdin && !parsed.inputJson && process.stdin.isTTY)
+    throw new BuildFailure('observe.arguments', 'Supply a file or pipe source to stdin', 2);
+  if (parsed.name && !useStdin)
+    throw new BuildFailure('observe.arguments', '--name requires --stdin', 2);
+  if (parsed.inputJson && parsed.stdin)
     throw new BuildFailure('observe.arguments', 'Choose --stdin or --input-json', 2);
-  if (inputFormat !== 'source' && !stdin)
+  if (parsed.inputFormat !== 'source' && !useStdin)
     throw new BuildFailure('observe.arguments', 'input-format requires --stdin', 2);
-  const bytes = file ? undefined : await inputBytes();
-  const source =
-    bytes && inputFormat !== 'png'
-      ? new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-      : undefined;
-  return readInput(
-    file
-      ? { file }
-      : inputJson
-        ? JSON.parse(source!)
-        : inputFormat === 'png'
-          ? { png: bytes!.toString('base64') }
-          : { source, ...(name ? { name } : {}) },
-  );
+  return parsed.file ? readInput({ file: parsed.file }) : resolveMemoryInput(parsed);
 };
 
 const parseAuditFlags = (audit: { profile?: string; threshold?: string }): AuditOptions => {

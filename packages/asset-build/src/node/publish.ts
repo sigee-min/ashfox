@@ -64,6 +64,56 @@ const write = (directory: string, relative: string, bytes: string | Uint8Array):
     fs.closeSync(fd);
   }
 };
+const publishMirrorAsset = (
+  snapshotRoot: string,
+  destination: string,
+  bundleHash: string,
+  asset: CompiledBundle['catalog']['assets'][number],
+) => {
+  const directory = contained(snapshotRoot, asset.directory);
+  noLinks(path.join(directory, 'bundles'));
+  fs.mkdirSync(path.join(directory, 'bundles'), { recursive: true });
+  const target = path.join(directory, 'bundles', bundleHash);
+  const pending = fs.mkdtempSync(path.join(directory, '.pending-'));
+  const prefix = `assets/${asset.id}/`;
+  try {
+    for (const file of asset.files)
+      write(
+        pending,
+        file.path.slice(prefix.length),
+        fs.readFileSync(contained(destination, file.path)),
+      );
+    if (!fs.existsSync(target)) fs.renameSync(pending, target);
+    noLinks(target);
+    const expected = asset.files.map((file) => file.path.slice(prefix.length)).sort();
+    if (json(listFiles(target)) !== json(expected))
+      throw new BuildFailure('output.integrity', target, 3);
+    for (const file of asset.files) {
+      const bytes = fs.readFileSync(contained(target, file.path.slice(prefix.length)));
+      if (bytes.length !== file.byteLength || digest(bytes) !== file.sha256)
+        throw new BuildFailure('output.integrity', file.path, 3);
+    }
+    return { id: asset.id, directory: target };
+  } finally {
+    if (fs.existsSync(pending)) fs.rmSync(pending, { recursive: true });
+  }
+};
+
+const writeCurrentPointer = (output: string, bundleHash: string): void => {
+  const pointer = path.join(output, `.current-${process.pid}.json`);
+  try {
+    write(
+      output,
+      path.basename(pointer),
+      json({ format: 'ashfox-current', version: 1, bundleHash }),
+    );
+    noLinks(path.join(output, 'current.json'));
+    fs.renameSync(pointer, path.join(output, 'current.json'));
+  } finally {
+    if (fs.existsSync(pointer)) fs.unlinkSync(pointer);
+  }
+};
+
 /** Mirrors are immutable; only the build directory owns the publication pointer. */
 export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
   const output = contained(snapshot.root, snapshot.config.build.directory);
@@ -77,48 +127,11 @@ export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
     verifyBundle(temp, bundle.bundleHash);
     if (fs.existsSync(destination)) verifyBundle(destination, bundle.bundleHash);
     else fs.renameSync(temp, destination);
-    const exports = bundle.catalog.assets.map((asset) => {
-      const directory = contained(snapshot.root, asset.directory);
-      noLinks(path.join(directory, 'bundles'));
-      fs.mkdirSync(path.join(directory, 'bundles'), { recursive: true });
-      const target = path.join(directory, 'bundles', bundle.bundleHash);
-      const pending = fs.mkdtempSync(path.join(directory, '.pending-'));
-      const prefix = `assets/${asset.id}/`;
-      try {
-        for (const file of asset.files)
-          write(
-            pending,
-            file.path.slice(prefix.length),
-            fs.readFileSync(contained(destination, file.path)),
-          );
-        if (!fs.existsSync(target)) fs.renameSync(pending, target);
-        noLinks(target);
-        const expected = asset.files.map((file) => file.path.slice(prefix.length)).sort();
-        if (json(listFiles(target)) !== json(expected))
-          throw new BuildFailure('output.integrity', target, 3);
-        for (const file of asset.files) {
-          const bytes = fs.readFileSync(contained(target, file.path.slice(prefix.length)));
-          if (bytes.length !== file.byteLength || digest(bytes) !== file.sha256)
-            throw new BuildFailure('output.integrity', file.path, 3);
-        }
-        return { id: asset.id, directory: target };
-      } finally {
-        if (fs.existsSync(pending)) fs.rmSync(pending, { recursive: true });
-      }
-    });
+    const exports = bundle.catalog.assets.map((asset) =>
+      publishMirrorAsset(snapshot.root, destination, bundle.bundleHash, asset),
+    );
     assertSnapshot(snapshot);
-    const pointer = path.join(output, `.current-${process.pid}.json`);
-    try {
-      write(
-        output,
-        path.basename(pointer),
-        json({ format: 'ashfox-current', version: 1, bundleHash: bundle.bundleHash }),
-      );
-      noLinks(path.join(output, 'current.json'));
-      fs.renameSync(pointer, path.join(output, 'current.json'));
-    } finally {
-      if (fs.existsSync(pointer)) fs.unlinkSync(pointer);
-    }
+    writeCurrentPointer(output, bundle.bundleHash);
     return {
       requestKey: bundle.receipt.requestKey,
       bundleHash: bundle.bundleHash,
