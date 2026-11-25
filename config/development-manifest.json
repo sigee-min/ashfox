@@ -331,8 +331,10 @@
         "apps/site"
       ],
       "forbidden": [
+        "apps/audio-study",
         "apps/blockbench-mcp-sidecar",
         "apps/blockbench-plugin",
+        "apps/item-study",
         "apps/mcp-gateway",
         "apps/web",
         "apps/worker",
@@ -388,6 +390,7 @@
       "scripts/build-public.js",
       "scripts/build-skill-release.js",
       "scripts/capture-showcase.js",
+      "scripts/corpus",
       "scripts/export-examples.js",
       "scripts/items",
       "scripts/quality/coverage.js",

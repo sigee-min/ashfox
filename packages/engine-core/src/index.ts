@@ -117,28 +117,6 @@ export {
 } from './project/frame';
 
 export {
-  AGENT_ACCESSIBLE_COMMAND_NAMES,
-  COMMAND_RECEIPT_SCHEMA_VERSION,
-  commandAllowedForSource,
-  executeAgentCommandBatch,
-  executeSystemCommandBatch,
-  executeWebCommandBatch,
-  getAgentCommandDefinition,
-  isValidCommandReceipt,
-  isValidCommandReceiptLedger,
-  listAgentCommandDefinitions,
-  type CommandBatch,
-  type CommandBatchResult,
-  type CommandEffects,
-  type CommandError,
-  type CommandReceipt,
-  type CommandReceiptLedgerOptions,
-  type CommandSource,
-  type ProjectCommandOperation,
-  type WorkspaceApplyInput,
-} from './commands';
-
-export {
   ProjectInvariantError,
   assertProjectDocument,
   validateProjectDocument,
@@ -169,12 +147,6 @@ export {
   type NumericAnimationVec3,
 } from './animation/numericChannel';
 
-export {
-  cubeFaceDimensions,
-  faceTexelSize,
-  packUvAtlas,
-  reduceAtlasPixelsPerBlock,
-} from './textures/uvAtlas';
 export {
   composeTextureRaster,
   rasterizeCanonicalTexture,

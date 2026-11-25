@@ -67,8 +67,8 @@ restore the pinned package and run `check <workspace>`, `build`, and `check <bui
 Treat any nonzero exit code as a failed asset build. Consume the exact paths
 returned by the successful build rather than a stale export from a previous run.
 
-Pin the CLI and the execution environment, including Node, OS/architecture and
-FFmpeg when producing OGG. Reproducibility is scoped to the same toolchain and
+Pin the CLI and the execution environment, including Node and OS/architecture.
+Reproducibility is scoped to the same toolchain and
 execution profile; byte equality across arbitrary machines is not promised.
 Give concurrent jobs separate output directories.
 

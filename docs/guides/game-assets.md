@@ -42,8 +42,8 @@ even when the bytes match. Paths cannot escape the package or occupy the reserve
 Minecraft-specific file trees are not interpreted as generic models.
 
 `audio: wav` needs no external encoder. `audio: ogg` converts bound sounds through
-the same bounded FFmpeg Vorbis adapter used for Java packs. A pack with no sounds
-never invokes FFmpeg. The original WAV exports remain available separately.
+the built-in WebAssembly OGG Vorbis encoder with no external tools required. A pack with no sounds
+never invokes audio encoding. The original WAV exports remain available separately.
 The package always emits a folder; `archive: true` adds a stable ZIP containing
 exactly that folder's files, with `assets.json` at the archive root.
 

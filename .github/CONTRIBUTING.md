@@ -28,7 +28,6 @@ The published `skills/ashfox/` skill is an asset workflow guide, not a repositor
 | --- | --- |
 | `apps/cli` | Native asset commands (`init`, `doctor`, `check`, `render`, `build`, `export`) and integration tests |
 | `apps/site` | Landing, localized user guides and read-only example previews |
-| `apps/audio-study`, `apps/item-study` | Local review applications |
 | `packages/engine-core` | Host-independent source contracts, compiler and exports |
 | `packages/asset-build` | Bundle assembly, delivery and Node I/O adapters |
 | `packages/audio-core` | Deterministic audio synthesis |
@@ -62,10 +61,8 @@ not required for this product path.
 | Landing interaction and responsive layout | `npm --workspace @ashfox/site run test:browser` |
 | Downloadable documentation examples | `node scripts/docs/build.js && node scripts/docs/test.js` (add `--capture` for renders) |
 | Skill packages and update verification | `npm run test:skill` |
-| Audio synthesis and local review | `npm run test:audio-core` and `npm --workspace @ashfox/audio-study run test` |
-| Audio encoding and HTTP lifecycle | `npm --workspace @ashfox/audio-study run test:integration` |
-| Item snapshots and failed-build isolation | `npm --workspace @ashfox/item-study run test` |
-| Java pack delivery with FFmpeg | `npm --workspace @ashfox/cli run test:packs` |
+| Audio synthesis | `npm run test:audio-core` |
+| Java pack delivery with built-in OGG | `npm --workspace @ashfox/cli run test:packs` |
 | Repository rules, types, complexity and architecture | `npm run quality:check` |
 | PR metadata and template check | `npm run quality:pr -- ...` (`node scripts/quality/prCheck.test.js`) |
 | Code formatting | `npm run format` |
@@ -127,10 +124,6 @@ The capture command renders all three creatures into staged PNG/GIF/MP4 files,
 then publishes them and their descriptor. Build replay is reconstructed from the
 finished model; it does not represent source editing history or agent reasoning.
 Review regenerated media visually before committing it.
-
-For local review application setup, see [audio study](../apps/audio-study/README.md)
-and [item study](../apps/item-study/README.md). These tools inspect source results;
-game delivery continues through the common CLI.
 
 ## Documentation and releases
 

@@ -1,5 +1,4 @@
 export declare const PROJECT_DOCUMENT_SCHEMA_VERSION: 1;
-export declare const COMMAND_RECEIPT_SCHEMA_VERSION: 1;
 export declare const EXPORT_BUNDLE_SCHEMA_VERSION: 1;
 export declare const SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION: 2;
 

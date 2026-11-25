@@ -143,7 +143,7 @@ and clipping, and referenced by its actual emitted path.
 
 A failed build preserves the previous complete output. `check <build-dir>` verifies the
 canonical bundle; keep the returned build selected throughout your game build.
-Pin FFmpeg when byte-identical OGG results are required. Packs are limited to
+Built-in WASM Vorbis encoding uses a fixed stream serial and is byte-deterministic without external tools. Packs are limited to
 8,192 files / 64 MiB before archiving; see [CLI limits](cli.md).
 
 ## Use in Minecraft

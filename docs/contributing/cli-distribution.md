@@ -55,8 +55,8 @@ capture suite. The release notes include the exact version's CHANGELOG entry.
 
 The first visit should lead to one install command and one successful export.
 Avoid requiring a repository clone, a build, a GitHub account, a global install,
-or moving a downloaded package into the right folder. Keep Chrome and FFmpeg
-optional and explain them only for capture and OGG tasks.
+or moving a downloaded package into the right folder. Keep Chrome optional and
+explain it only for rendering tasks.
 
 The [installation guide](../guides/install.md) carries the generated stable
 commands. `scripts/release/instructions.js` owns the install check, first export,
@@ -117,10 +117,10 @@ worker/child-process paths and embedded browser renderer; do not
 assume that bundling one JavaScript entry point makes the CLI self-contained.
 
 Target macOS arm64/x64, Linux x64/arm64 and Windows x64 first. Each target needs
-fresh-machine tests covering exports, persistent stdio, cancellation, Chrome
-capture and external FFmpeg discovery. Establish signing/notarization and Linux
-runtime compatibility before presenting this as the default path. Chrome and
-FFmpeg remain optional external tools.
+fresh-machine tests covering exports, cancellation, and Chrome
+rendering. Establish signing/notarization and Linux
+runtime compatibility before presenting this as the default path. Chrome remains
+an optional external tool.
 
 Then offer platform-specific archives with a single `ashfox` executable and
 checksums. A small shell/PowerShell installer can detect the platform, download
