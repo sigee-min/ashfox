@@ -60,7 +60,7 @@
     {
       "input": "examples/game-assets/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:ca673a1abe89371023840ab71e86da457ca49a7ffc8a29288d7e97829cdea6f3",
+      "sourceHash": "sha256:52e914f39a96e214b8dcd3ed24daa408ea2ecf3f5facf340d5047fe0f0dcf019",
       "products": [
         {
           "entry": "items/iron_sword",
@@ -84,10 +84,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "ec079709dd738c2d2d57e5273a2cc34917bc5522dc8a72d2f1796ad6acd2e77a"
+          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "48d4d2e9cd45dfa5efb24429f9875ac58b2175474a2e2a154440bf61b52c0a47",
+      "catalogHash": "d055ac6749dfe417db689f0aa65eccf032b9692becb4d3cd91c8aadf4c99b53b",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -99,11 +99,11 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "6cc9f179a0b0db361c2d48ce358f165cd3cbbec538c2323731a4a9efc25441aa"
+          "sha256": "93922593f76bfb5dc12237c8c9c661600083e7cee2847a90d7197a0175ea0853"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "4dbdd6a0078ebd9f2ccd20a7698b6eaa7ccdbe39d9ab35534df54ef5d66d20f6"
+          "sha256": "a1c0fc3d87fd59476baf86d7c6ef3996f235e392b9c48cfc800df2331a71277d"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
@@ -111,7 +111,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "7ca778c5c91f908013a17130c6af4cfaaf83395ee5fc7da7ec5e05f4cba3258c"
+          "sha256": "f832bd51c482e347846879e3deeb71f498952cfca0715bc26a27d43809bf6ae1"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
@@ -123,7 +123,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin/griffin.glb",
-          "sha256": "4dbdd6a0078ebd9f2ccd20a7698b6eaa7ccdbe39d9ab35534df54ef5d66d20f6"
+          "sha256": "a1c0fc3d87fd59476baf86d7c6ef3996f235e392b9c48cfc800df2331a71277d"
         },
         {
           "path": "assets/voxel_game/game-assets/sprites/items/iron_sword.png",
@@ -131,11 +131,11 @@
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "d8520bd80130259430c15aed5a2dc13d554a40f6877ad27728917b4c4492ddff"
+          "sha256": "29c5ebef13c8d76802e31155f75a5240501883b4864297889670475d6084ec70"
         },
         {
           "path": "catalog.json",
-          "sha256": "48d4d2e9cd45dfa5efb24429f9875ac58b2175474a2e2a154440bf61b52c0a47"
+          "sha256": "d055ac6749dfe417db689f0aa65eccf032b9692becb4d3cd91c8aadf4c99b53b"
         }
       ]
     },
@@ -196,7 +196,7 @@
     {
       "input": "examples/items/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:66bd09c58e1c8a07d7b4fc9aa653de5063f2e3c58c192a44e7c0d37926a9a166",
+      "sourceHash": "sha256:69e5de649998e916bcc2c66a9ba99344738783f662ab61ad51b155d46adce731",
       "products": [
         {
           "entry": "items/amber_potion",
@@ -300,19 +300,19 @@
     {
       "input": "examples/minecraft/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:312bc2fcfb40996c70b4ebb072bfdb2974540feab477d5b09378857d03d3d905",
+      "sourceHash": "sha256:375d873aadaa1999011b00b0e074e77d46bacd1591023ea859324d04a13cf041",
       "products": [
         {
           "entry": "blocks/marker",
           "kind": "model",
-          "sha256": "9f57a8ae64daf5ffe5735eab5bb30545a17ef21334ca5e8b8c63238047f64026"
+          "sha256": "36d2565981a5af987d15ec9625e5a9600d90d222ece125ea2dfdf7aa488fb50c"
         }
       ],
-      "catalogHash": "5b3c80841a8a3d505c7350209ae32286d78990a0fe32f2641b5d8b7e4828f1db",
+      "catalogHash": "37d996c2a930a7f5671d6b267ec17e9a11bb8a0ab69677ef603cf6998ebec6d9",
       "files": [
         {
           "path": "assets/java_block/ashfox-lineage.json",
-          "sha256": "e7f0a38e337d3b54f51e643124ff943c81f52bed89457f0de3d51ddedc267417"
+          "sha256": "2ba2b45b16975c316a9f26e7e78eb3864e971d62d837bf39aa1b7c641b7aaeba"
         },
         {
           "path": "assets/java_block/assets/demo/blockstates/props/marker.json",
@@ -324,7 +324,7 @@
         },
         {
           "path": "assets/java_block/assets/demo/textures/block/props/marker.png",
-          "sha256": "e3ff81ca5552340530963ccc6453406c2aafe013a5405023cbc218829975127f"
+          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
         },
         {
           "path": "assets/java_block/pack.mcmeta",
@@ -332,14 +332,14 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "5b3c80841a8a3d505c7350209ae32286d78990a0fe32f2641b5d8b7e4828f1db"
+          "sha256": "37d996c2a930a7f5671d6b267ec17e9a11bb8a0ab69677ef603cf6998ebec6d9"
         }
       ]
     },
     {
       "input": "examples/pipeline/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:ec30e5ceb81f949fa1d0272e6e0607f78845e273e2bcb1b87e59a264a4e29e68",
+      "sourceHash": "sha256:f5a96fea183abc94a734ae55922b92872509835e63392410e321204966ea1e40",
       "products": [
         {
           "entry": "items/iron_sword",
@@ -363,10 +363,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "ec079709dd738c2d2d57e5273a2cc34917bc5522dc8a72d2f1796ad6acd2e77a"
+          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "8b84e2d6c2c1d57d7d15663be93f2d50be3a0d0ff50ef975c062767ea6b31f17",
+      "catalogHash": "b6a648eb79c5ea74d579afdae80d36fd7bb2ef3966f94a303b48368e174531c5",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -378,11 +378,11 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "5607d4806089fee1f5d8ddb5bdcd53e4c9cb2e688a25e452713d51edb63c1f2b"
+          "sha256": "800908098f6c0e98acc5a142092086b5967b0aec32c9aa95b913b62eb32679bc"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "4dbdd6a0078ebd9f2ccd20a7698b6eaa7ccdbe39d9ab35534df54ef5d66d20f6"
+          "sha256": "a1c0fc3d87fd59476baf86d7c6ef3996f235e392b9c48cfc800df2331a71277d"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
@@ -390,7 +390,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "8b84e2d6c2c1d57d7d15663be93f2d50be3a0d0ff50ef975c062767ea6b31f17"
+          "sha256": "b6a648eb79c5ea74d579afdae80d36fd7bb2ef3966f94a303b48368e174531c5"
         }
       ]
     },
@@ -429,12 +429,12 @@
     {
       "input": "examples/resource-pack/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:3ecfdaa99dc6d266d76c18f5c6d6ba753f0f61220946164955a1ad4173d7cc27",
+      "sourceHash": "sha256:6bf5954a1408f8c54ea92adbba60b0693101fad200533664165bcbf97cae5473",
       "products": [
         {
           "entry": "blocks/marker",
           "kind": "model",
-          "sha256": "2b9e8d431b71f8e51d90c899c62a7f3c80c4456f0e176f6274690c138168f2c9"
+          "sha256": "36d2565981a5af987d15ec9625e5a9600d90d222ece125ea2dfdf7aa488fb50c"
         },
         {
           "entry": "items/iron_sword",
@@ -456,7 +456,7 @@
           ]
         }
       ],
-      "catalogHash": "dc5b0244e0fb4ec9c2aaf1c8da1d925369fd4653a4282ad9b7e7aecfaf023d24",
+      "catalogHash": "9bf167a6a0ebf092cc4c95f87962b3d1878abae6976054f601d28350ae4a6884",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -468,11 +468,11 @@
         },
         {
           "path": "assets/game_pack/game_pack.zip",
-          "sha256": "29f5965067204716c4820a480da22077f21f4c9ad097664c1b3f7d9e798ac651"
+          "sha256": "3da9ce36a8df51cb105098fe2d84dd2ae0624b52cade1768dadfa07621b7f5ab"
         },
         {
           "path": "assets/game_pack/resource-pack/ashfox-lineage.json",
-          "sha256": "88e4fd77ee04d5d7e89a20d5b1553f05cd4ada6f8fb91bcdd094d4455f5ee6de"
+          "sha256": "2a1aff631370170fdd2b7e42e54aa3fe43b52ce3b01b85fa74f0bbac0c0d2286"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/items/rune_blade.json",
@@ -516,7 +516,7 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/textures/block/stone.png",
-          "sha256": "8da1bb98dc058ec3ce28d907147386f286f20e6716476680c911ffa1ea943c4d"
+          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/textures/item/iron_sword.png",
@@ -536,7 +536,7 @@
         },
         {
           "path": "assets/marker/ashfox-lineage.json",
-          "sha256": "88e4fd77ee04d5d7e89a20d5b1553f05cd4ada6f8fb91bcdd094d4455f5ee6de"
+          "sha256": "2a1aff631370170fdd2b7e42e54aa3fe43b52ce3b01b85fa74f0bbac0c0d2286"
         },
         {
           "path": "assets/marker/assets/minecraft/blockstates/stone.json",
@@ -548,7 +548,7 @@
         },
         {
           "path": "assets/marker/assets/minecraft/textures/block/stone.png",
-          "sha256": "8da1bb98dc058ec3ce28d907147386f286f20e6716476680c911ffa1ea943c4d"
+          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
         },
         {
           "path": "assets/marker/pack.mcmeta",
@@ -556,67 +556,67 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "dc5b0244e0fb4ec9c2aaf1c8da1d925369fd4653a4282ad9b7e7aecfaf023d24"
+          "sha256": "9bf167a6a0ebf092cc4c95f87962b3d1878abae6976054f601d28350ae4a6884"
         }
       ]
     },
     {
       "input": "examples/shared-creatures/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:c53d038c8eabafee5df61fae0e658af95d9ab0e1af4faea72df4c298aa82b448",
+      "sourceHash": "sha256:00ffae136e29e02425f6a2d82eb90e174b3ce67a3649b4a78752563287caac31",
       "products": [
         {
           "entry": "creatures/fox",
           "kind": "model",
-          "sha256": "0ae14c10d936e55f4fa419a29c7fa4a4cc6ced5dec7b9d8a8fab3fd8738f36b3"
+          "sha256": "be6fea87e8db8527d7d99806f14c596ba89dc77d40e0f4d0f5049713a2f3f2e7"
         },
         {
           "entry": "creatures/goblin",
           "kind": "model",
-          "sha256": "7c9d7156149914d627d34188f6f5ed5cc66a44f2dcc7ce88e99054659cc7d898"
+          "sha256": "731ed598b7395efb4fdc0ae04909131c032aa752d50d6e7a3f47080fc14d8db3"
         },
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "1fd5154ec49405289ba5cb07fc2e5e4b6e2266786742d9d0e80a7c8f4c4331e9"
+          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "9c579e4b0b2d995c0deb4f8a01ceb205f5d61ee2b80f7a9f156d2ff19f151854",
+      "catalogHash": "1a049fce60a74c9619ec14359c3eb15524df23b5151df9e1b21ff1546cfeb8d7",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "538999d277fbdec3e32cc9df8f8bc6d1014174d7b2b2a057763571df614e0f43"
+          "sha256": "4b9efbf0b65143d26676e0315e45e99293bc4a001d1e0781a004c1474bfdab89"
         },
         {
           "path": "assets/fox/fox.glb",
-          "sha256": "a785730b99821ff2e765844b74dd82e4021f9f5e8ae4ceb2e875fa1360f73845"
+          "sha256": "59b13522e99db212b01d675e54ee8d8d22be40690bd6b7e08f958932e5253da9"
         },
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "fe81c7b9af3697b6a2a4ddffa2c1d899b6d8fd994c3d0cc64c00ac943c6b8494"
+          "sha256": "562a3e09468976ea039af9f63aa257c81115def9837c197eb6c4676a9fefdbda"
         },
         {
           "path": "assets/goblin/goblin.glb",
-          "sha256": "9f24dbf1e40aae3357360e89b336625da506223afca5de6ddceac1465d4bb583"
+          "sha256": "7c14893bd7976fc9471d4696a1dc0808354edc85e87e357199ad9cf54e9da207"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "b61ca34da464d61fed1c5aebc17871b4893483e7f5c5aeebb4b5d7c8cb3c7a6a"
+          "sha256": "db7ab2be8b31b2d16e65114141a739d079062760a9bfca898ee057e062002e81"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "5a877c11718c1d45928369225e4e297b02bb4f7a05f3a12cd58ff62b23173ffd"
+          "sha256": "a1c0fc3d87fd59476baf86d7c6ef3996f235e392b9c48cfc800df2331a71277d"
         },
         {
           "path": "catalog.json",
-          "sha256": "9c579e4b0b2d995c0deb4f8a01ceb205f5d61ee2b80f7a9f156d2ff19f151854"
+          "sha256": "1a049fce60a74c9619ec14359c3eb15524df23b5151df9e1b21ff1546cfeb8d7"
         }
       ]
     },
     {
       "input": "examples/sounds/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:ee2642d61426162a4f8e5c82d583d52a8ed39bdc90dcf8205f25eb8b3b4734c2",
+      "sourceHash": "sha256:71b60e8d1ac34718cfed2cb6bd352430c823455b5eac752ec6c4a5ad37c40223",
       "products": [
         {
           "entry": "sounds/bell_pattern",
@@ -960,7 +960,7 @@
     {
       "input": "examples/structure/medieval_cottage.ashfox",
       "ok": true,
-      "sourceHash": "sha256:2303a91d00937db73531c7b4de74f222f6679637d17d95fa01a34b9320d473de",
+      "sourceHash": "sha256:9b6a21375bca096b7ecb7cb2c2ddf9a9456f77f09df01eeb12ad5bdef0fca0a6",
       "products": [
         {
           "entry": "standalone/medieval_cottage",
@@ -969,22 +969,30 @@
           "document": "45bf27e4acf8c01310248053f0cf6f992c8fc59be639895e5a192085fc63f87e"
         }
       ],
-      "catalogHash": "6190eaa6aa4460c2c80aae2aea67912756ab5d0edec7064138ef0392eae4c32b",
+      "catalogHash": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93",
       "files": [
         {
-          "path": "assets/medieval_cottage/medieval_cottage.nbt",
+          "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
+          "sha256": "32496038c20807918b516ccaf2d4bf902fb7f392692004388f49877188a861fe"
+        },
+        {
+          "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
+          "sha256": "124d20480b91b39e8390a0dbed9aad9cb5821a499e77f62014c6b3b587295efd"
+        },
+        {
+          "path": "assets/medieval_cottage_java_structure/medieval_cottage_java_structure.nbt",
           "sha256": "df0803c170983fb34dcdcf0aec4e30856f1c23200fd84aa754f315cc3fca98ac"
         },
         {
           "path": "catalog.json",
-          "sha256": "6190eaa6aa4460c2c80aae2aea67912756ab5d0edec7064138ef0392eae4c32b"
+          "sha256": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93"
         }
       ]
     },
     {
       "input": "examples/structure/watchtower.ashfox",
       "ok": true,
-      "sourceHash": "sha256:040af7abc59055bc2b8e45e924706af87e88fdc7691025dd92acb95d77823cf0",
+      "sourceHash": "sha256:20feb77f18dfdaeea795a9acc9853904d6d645c1cc489040bf737f6ec2f1a71a",
       "products": [
         {
           "entry": "standalone/watchtower",
@@ -993,15 +1001,23 @@
           "document": "4127a2c94454343710b1b16b0b294f297fe29b02465936cbfb6f200f766a13d9"
         }
       ],
-      "catalogHash": "18f598544ae2557f66d1a98fab571b609bb73a43e705c195f9eb9c6e6cc98e9c",
+      "catalogHash": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb",
       "files": [
         {
-          "path": "assets/watchtower/watchtower.nbt",
+          "path": "assets/watchtower_glb/ashfox-lineage.json",
+          "sha256": "0bd9e49f82e5e50b3c2070237d739bd3b67272a9aa4ae8031cc1b661bb4b9105"
+        },
+        {
+          "path": "assets/watchtower_glb/watchtower_glb.glb",
+          "sha256": "1a8caf912c7739962d45847e14b230cdf7e0ae0d970ae33f9cbe3b7689ed7f10"
+        },
+        {
+          "path": "assets/watchtower_java_structure/watchtower_java_structure.nbt",
           "sha256": "01efc57f4d0556664c0a3262b23fec5a4f557dcbe258f89e039a9b6f9dbe6360"
         },
         {
           "path": "catalog.json",
-          "sha256": "18f598544ae2557f66d1a98fab571b609bb73a43e705c195f9eb9c6e6cc98e9c"
+          "sha256": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb"
         }
       ]
     }

@@ -76,8 +76,8 @@ if (landing) {
   }).observe(landing.querySelector('.world-sound'));
   const paths = {
     model: '/examples/griffin/workbench/main.ashfox',
-    item: '/examples/items/src/iron_sword.ashfox',
-    sound: '/examples/sounds/src/bird_call.ashfox',
+    item: '/examples/items/assets/sprites/iron_sword.ashfox',
+    sound: '/examples/sounds/assets/sounds/bird_call.ashfox',
   };
   const modelPreview = landing.querySelector('[data-source-preview]').getAttribute('src');
   let revision = 0;

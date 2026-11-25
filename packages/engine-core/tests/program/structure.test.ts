@@ -185,7 +185,7 @@ structure s {
       packages: [
         {
           name: 'p',
-          root: '',
+          root: 'assets/models',
           manifest: {
             format: 'ashfox-package',
             version: 1,
@@ -195,12 +195,12 @@ structure s {
           },
         },
       ],
-      include: ['**/*.ashfox'],
+      include: ['assets/**/*.ashfox'],
       ignore: [],
       build: { directory: 'build' },
       exports: [],
     }),
-    [{ path: 'rune_pillar.ashfox', source: fixtureSrc }],
+    [{ path: 'assets/models/rune_pillar.ashfox', source: fixtureSrc }],
   );
   assert.equal(modelRes.ok, true);
   const compiledPillar: CompiledModel = (
@@ -258,13 +258,32 @@ structure s {
 
 const testShowcases = (): void => {
   const dir = path.join(REPO_ROOT, 'examples/structure');
+  const rewriteImports = (src: string) =>
+    src
+      .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
+      .replaceAll('./props/', '../models/props/');
   const files: DirectoryFile[] = [
-    'medieval_cottage.ashfox',
-    'watchtower.ashfox',
-    'furnishings.ashfox',
-    'props/rune_pillar.ashfox',
-    'props/wall_lantern.ashfox',
-  ].map((rel) => ({ path: rel, source: fs.readFileSync(path.join(dir, rel), 'utf8') }));
+    {
+      path: 'assets/structures/medieval_cottage.ashfox',
+      source: rewriteImports(fs.readFileSync(path.join(dir, 'medieval_cottage.ashfox'), 'utf8')),
+    },
+    {
+      path: 'assets/structures/watchtower.ashfox',
+      source: rewriteImports(fs.readFileSync(path.join(dir, 'watchtower.ashfox'), 'utf8')),
+    },
+    {
+      path: 'assets/module/furnishings.ashfox',
+      source: fs.readFileSync(path.join(dir, 'furnishings.ashfox'), 'utf8'),
+    },
+    {
+      path: 'assets/models/props/rune_pillar.ashfox',
+      source: fs.readFileSync(path.join(dir, 'props/rune_pillar.ashfox'), 'utf8'),
+    },
+    {
+      path: 'assets/models/props/wall_lantern.ashfox',
+      source: fs.readFileSync(path.join(dir, 'props/wall_lantern.ashfox'), 'utf8'),
+    },
+  ];
 
   const config = JSON.stringify({
     format: 'ashfox-workspace',
@@ -273,24 +292,24 @@ const testShowcases = (): void => {
     packages: [
       {
         name: 'showcase',
-        root: '',
+        root: 'assets',
         manifest: {
           format: 'ashfox-package',
           version: 1,
           entries: [
-            { name: 'medieval_cottage', path: 'medieval_cottage.ashfox' },
-            { name: 'watchtower', path: 'watchtower.ashfox' },
+            { name: 'medieval_cottage', path: 'structures/medieval_cottage.ashfox' },
+            { name: 'watchtower', path: 'structures/watchtower.ashfox' },
           ],
           modules: [
-            { subpath: './furnishings', path: 'furnishings.ashfox' },
-            { subpath: './props/rune_pillar', path: 'props/rune_pillar.ashfox' },
-            { subpath: './props/wall_lantern', path: 'props/wall_lantern.ashfox' },
+            { subpath: './furnishings', path: 'module/furnishings.ashfox' },
+            { subpath: './props/rune_pillar', path: 'models/props/rune_pillar.ashfox' },
+            { subpath: './props/wall_lantern', path: 'models/props/wall_lantern.ashfox' },
           ],
           dependencies: [],
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'build' },
     exports: [],

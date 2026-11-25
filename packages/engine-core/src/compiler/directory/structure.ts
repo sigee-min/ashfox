@@ -2,7 +2,11 @@ import type { CompiledModel } from '../../model/compiled';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { parseAssetSource } from '../../project/program/asset/parse';
 import { lexProgramSource } from '../../project/program/syntax/lex';
-import { parseStructureSource, type StructureSourceUnit } from '../../project/structure';
+import {
+  parseStructureSource,
+  StructureInputError,
+  type StructureSourceUnit,
+} from '../../project/structure';
 import {
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
   DEFAULT_WORKSPACE_LIMITS,
@@ -225,6 +229,7 @@ export const compileDirectoryStructure = (
   entryPath: string,
 ): {
   readonly structure: StructureProduct;
+  readonly rootUnit: StructureSourceUnit;
   readonly structurePaths: readonly string[];
   readonly customPaths: readonly string[];
 } => {
@@ -238,9 +243,24 @@ export const compileDirectoryStructure = (
     customModelPaths: new Set(),
   };
   visitStructureUnit(state, entryPath);
+  const rootUnit = state.units.get(entryPath)!;
+  const nonEmptyLines = filesByPath
+    .get(entryPath)!
+    .source.split(/\r?\n/u)
+    .filter((l) => l.trim().length > 0).length;
+  if (nonEmptyLines > 140 && rootUnit.imports.length === 0 && rootUnit.prefabs.length >= 3) {
+    throw new StructureInputError({
+      code: 'structure.monolithic-entry',
+      file: entryPath,
+      pointer: 'build',
+      expected: 'modular imports or fewer inline prefabs',
+      actual: `${rootUnit.prefabs.length} inline prefabs across ${nonEmptyLines} non-empty lines`,
+    });
+  }
   const structure = compileStructureUnits(entryPath, state.units, state.customModels, relativePath);
   return {
     structure,
+    rootUnit,
     structurePaths: [...state.units.keys()],
     customPaths: [...state.customModelPaths],
   };

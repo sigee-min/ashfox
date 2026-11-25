@@ -1,10 +1,9 @@
+import { AUDIO_POLICY, type SoundProduct } from '@ashfox/audio-core';
 import {
-  compileSoundSource,
-  parseSoundSource,
-  soundBudget,
-  AUDIO_POLICY,
-  type SoundProduct,
-} from '@ashfox/audio-core';
+  validateAssetDeclarations,
+  type AssetDeclarations,
+} from '../../project/directory/declarations';
+import { parseAssetSource } from '../../project/program/asset/parse';
 import {
   readDirectoryWorkspace,
   isDirectorySource,
@@ -12,6 +11,8 @@ import {
 } from '../../project/directory/read';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { lexProgramSource } from '../../project/program/syntax/lex';
+import { compilePreparedSound, prepareDirectorySound } from './sound';
+import { validateCanonicalLayout } from './layout';
 import { compileDirectorySprite } from './sprite';
 import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
 import type { SpriteProduct } from '../sprite/contract';
@@ -37,6 +38,7 @@ export type DirectoryProduct =
       readonly entry: WorkspaceEntrySelector;
       readonly sourcePath: string;
       readonly sprite: SpriteProduct;
+      readonly declarations: AssetDeclarations;
     }
   | {
       readonly kind: 'model';
@@ -45,18 +47,21 @@ export type DirectoryProduct =
       readonly model: CompiledModel;
       readonly workspace: AuthoredAssetWorkspace;
       readonly telemetry?: AssetAuthoringTelemetry;
+      readonly declarations: AssetDeclarations;
     }
   | {
       readonly kind: 'sound';
       readonly entry: WorkspaceEntrySelector;
       readonly sourcePath: string;
       readonly sounds: readonly SoundProduct[];
+      readonly declarations: AssetDeclarations;
     }
   | {
       readonly kind: 'structure';
       readonly entry: WorkspaceEntrySelector;
       readonly sourcePath: string;
       readonly structure: StructureProduct;
+      readonly declarations: AssetDeclarations;
     };
 type DirectoryDiagnostic = {
   readonly code: string;
@@ -74,7 +79,7 @@ export type DirectoryCompilation =
   | { readonly ok: false; readonly diagnostics: readonly DirectoryDiagnostic[] };
 type DirectoryFailure = Extract<DirectoryCompilation, { readonly ok: false }>;
 type Entry = { readonly entry: WorkspaceEntrySelector; readonly path: string };
-type SoundRecipe = ReturnType<typeof parseSoundSource>;
+type PreparedSound = ReturnType<typeof prepareDirectorySound>;
 type Files = ReadonlyMap<string, DirectoryFile>;
 
 /** Mutable product accumulator shared by the entry compilers. */
@@ -87,7 +92,7 @@ interface EntryOutput {
 
 const EXPORT_FORMATS = {
   sprite: ['png'],
-  model: ['glb', 'java_block', 'geckolib5', 'bedrock'],
+  model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
   sound: ['wav'],
   structure: ['java_structure', 'glb'],
 } as const;
@@ -151,25 +156,24 @@ const declaredEntries = (config: DirectoryWorkspace): readonly Entry[] => {
   return entries;
 };
 
-/** Parses every sound entry while enforcing the cumulative workspace sound budget. */
-const parseSoundRecipes = (
+/** Prepares every sound entry and module while enforcing cumulative workspace sound budgets. */
+const prepareSoundEntries = (
   entries: readonly Entry[],
   kinds: ReadonlyMap<string, string | undefined>,
   filesByPath: Files,
-): ReadonlyMap<string, SoundRecipe> => {
-  const recipes = new Map<string, SoundRecipe>();
+): ReadonlyMap<string, PreparedSound> => {
+  const prepared = new Map<string, PreparedSound>();
   const total = { outputFrames: 0, eventFrames: 0, weightedFrames: 0 };
   for (const e of entries) {
     if (kinds.get(e.path) !== 'sound') continue;
-    const recipe = parseSoundSource(filesByPath.get(e.path)!.source, e.path),
-      budget = soundBudget(recipe);
-    recipes.set(e.path, recipe);
-    total.outputFrames += budget.outputFrames;
-    total.eventFrames += budget.eventFrames;
-    total.weightedFrames += budget.weightedFrames;
-    assertSoundBudget(e.path, recipes.size, total);
+    const item = prepareDirectorySound(filesByPath, e.path);
+    prepared.set(e.path, item);
+    total.outputFrames += item.budget.outputFrames;
+    total.eventFrames += item.budget.eventFrames;
+    total.weightedFrames += item.budget.weightedFrames;
+    assertSoundBudget(e.path, prepared.size, total);
   }
-  return recipes;
+  return prepared;
 };
 
 const assertSoundBudget = (
@@ -211,32 +215,56 @@ const compileSpriteEntry = (
   const sprite = compiled.result.products[0]!;
   if (sprite.id !== e.entry.entryName)
     throw new Error('Entry name must match sprite id: ' + e.path);
-  output.products.push({ kind: 'sprite', entry: e.entry, sourcePath: e.path, sprite });
+  const unit = spriteUnits.get(e.path)!;
+  const declarations = validateAssetDeclarations('sprite', unit.outputs, unit.previews, e.path);
+  output.products.push({
+    kind: 'sprite',
+    entry: e.entry,
+    sourcePath: e.path,
+    sprite,
+    declarations,
+  });
   compiled.paths.forEach((p) => output.spritePaths.add(p));
   return null;
 };
 
-const compileSoundEntry = (
-  e: Entry,
-  filesByPath: Files,
-  recipe: SoundRecipe,
-  output: EntryOutput,
-): void => {
-  if (recipe.id !== e.entry.entryName) throw new Error('Entry name must match sound id: ' + e.path);
-  const sounds = compileSoundSource(filesByPath.get(e.path)!.source, e.path);
-  output.products.push({ kind: 'sound', entry: e.entry, sourcePath: e.path, sounds });
-  output.spritePaths.add(e.path);
+const compileSoundEntry = (e: Entry, prepared: PreparedSound, output: EntryOutput): void => {
+  const compiled = compilePreparedSound(prepared, e.path);
+  if (compiled.unit.id !== e.entry.entryName) {
+    throw new Error('Entry name must match sound id: ' + e.path);
+  }
+  const declarations = validateAssetDeclarations(
+    'sound',
+    compiled.unit.outputs,
+    compiled.unit.previews,
+    e.path,
+  );
+  output.products.push({
+    kind: 'sound',
+    entry: e.entry,
+    sourcePath: e.path,
+    sounds: compiled.sounds,
+    declarations,
+  });
+  compiled.soundPaths.forEach((p) => output.spritePaths.add(p));
 };
 
 const compileStructureEntry = (e: Entry, filesByPath: Files, output: EntryOutput): void => {
   const result = compileDirectoryStructure(filesByPath, e.path);
   if (result.structure.id !== e.entry.entryName)
     throw new Error('Entry name must match structure id: ' + e.path);
+  const declarations = validateAssetDeclarations(
+    'structure',
+    result.rootUnit.outputs,
+    result.rootUnit.previews,
+    e.path,
+  );
   output.products.push({
     kind: 'structure',
     entry: e.entry,
     sourcePath: e.path,
     structure: result.structure,
+    declarations,
   });
   result.structurePaths.forEach((p) => output.spritePaths.add(p));
   result.customPaths.forEach((p) => output.structureCustomPaths.add(p));
@@ -254,7 +282,7 @@ const compileEntries = (
     ]),
   );
   const spriteUnits = new Map<string, SpriteSourceUnit>();
-  const soundRecipes = parseSoundRecipes(entries, kinds, filesByPath);
+  const preparedSounds = prepareSoundEntries(entries, kinds, filesByPath);
   const output: EntryOutput = {
     products: [],
     spritePaths: new Set(),
@@ -266,8 +294,7 @@ const compileEntries = (
     if (kind === 'sprite') {
       const failure = compileSpriteEntry(e, filesByPath, spriteUnits, output);
       if (failure) return failure;
-    } else if (kind === 'sound')
-      compileSoundEntry(e, filesByPath, soundRecipes.get(e.path)!, output);
+    } else if (kind === 'sound') compileSoundEntry(e, preparedSounds.get(e.path)!, output);
     else if (kind === 'structure') compileStructureEntry(e, filesByPath, output);
     else output.modelEntries.push(e);
   }
@@ -325,21 +352,25 @@ const compileModels = (
       packages: [],
     },
   };
-  const sources = files.filter(
-    (f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path),
-  );
+  const sources = files.filter((f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path));
   const sealed = sealWorkspaceCandidate(base, sources, manifest, DEFAULT_WORKSPACE_LIMITS);
   if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
   const checked = compileWorkspaceCandidate(sealed.value, {}, true);
   if (!checked.ok) throw new Error(JSON.stringify(checked.diagnostics));
   const modelSources = new Map(output.modelEntries.map((e) => [entryKey(e.entry), e.path]));
   for (const result of checked.products) {
+    const sourcePath = modelSources.get(entryKey(result.entry))!;
+    const parsedUnit = parseAssetSource(filesByPath.get(sourcePath)!.source, sourcePath).unit;
+    const rawOutputs = parsedUnit?.kind === 'asset' ? parsedUnit.outputs : [];
+    const rawPreviews = parsedUnit?.kind === 'asset' ? parsedUnit.previews : [];
+    const declarations = validateAssetDeclarations('model', rawOutputs, rawPreviews, sourcePath);
     output.products.push({
       kind: 'model',
       entry: result.entry,
-      sourcePath: modelSources.get(entryKey(result.entry))!,
+      sourcePath,
       model: result.model,
       workspace: checked.workspace,
+      declarations,
       ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
     });
   }
@@ -403,7 +434,13 @@ const compileDirectory = (
   const config = readDirectoryWorkspace(configuration);
   assertSourceBudget(files);
   const filesByPath = declaredFiles(config, files);
-  const output = compileEntries(declaredEntries(config), filesByPath);
+  const entries = declaredEntries(config);
+  validateCanonicalLayout(
+    config,
+    filesByPath,
+    entries.map((e) => e.path),
+  );
+  const output = compileEntries(entries, filesByPath);
   if ('ok' in output) return output;
   compileModels(config, files, output);
   const productsByEntry = new Map(

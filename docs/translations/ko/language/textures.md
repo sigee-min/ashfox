@@ -46,7 +46,7 @@ chart·face에는 `paint`, `scale`, `density`, `phase`를 모두 가진 `pattern
 | `density` | 0–1 `ratio` |
 | `phase` | 정수 0–4294967295 |
 
-패턴은 스탬프 배치 앞에 오고 형상이 아닌 팔레트 픽셀을 제어합니다. 대응 계약과 완전한 레시피는 [기존 크리처 표면](../../examples/shared-creatures/creatures/surface.ashfox)을 참고하세요.
+패턴은 스탬프 배치 앞에 오고 형상이 아닌 팔레트 픽셀을 제어합니다. 대응 계약과 완전한 레시피는 [기존 크리처 표면](../../examples/shared-creatures/assets/models/creatures/surface.ashfox)을 참고하세요.
 
 레시피 `coverage = …;`는 flat chart에만 속하며 face·box에는 쓸 수 없습니다. 따옴표 없는 이진 숫자가 행 순서로 정확히 `width * height`비트여야 합니다. binary 계약에는 이 마스크가 필요하며 opaque에는 0비트가 있을 수 없습니다. 계약의 `opaque|binary|optional` 열거형과 다른 픽셀 마스크입니다.
 

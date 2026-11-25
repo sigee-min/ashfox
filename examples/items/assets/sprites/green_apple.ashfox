@@ -1,6 +1,6 @@
 ashfox-model 1
 sprite green_apple {
-  import "./shared.ashfox" as shared;
+  import "../module/shared.ashfox" as shared;
   profile = "minecraft-item-v1";
   canvas = [16, 16];
   palette {

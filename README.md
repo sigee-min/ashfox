@@ -69,9 +69,9 @@ The creatures share a [reusable source project](examples/shared-creatures/).
 
 | Asset | Source | Output |
 | --- | --- | --- |
-| Pixel sword | [Native source](examples/items/src/iron_sword.ashfox) | [PNG](assets/readme/sword.png) |
+| Pixel sword | [Native source](examples/items/assets/sprites/iron_sword.ashfox) | [PNG](assets/readme/sword.png) |
 | Amethyst | [Item examples](examples/items/) | [PNG](assets/readme/amethyst.png) |
-| Claw strike | [Native source](examples/sounds/src/claw_hit.ashfox) | [WAV](assets/docs/claw.wav) |
+| Claw strike | [Native source](examples/sounds/assets/sounds/claw_hit.ashfox) | [WAV](assets/docs/claw.wav) |
 
 ## Build on it
 

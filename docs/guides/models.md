@@ -6,14 +6,14 @@ general GLB or an appropriate Minecraft exporter.
 
 ## Start from a static prop
 
-The [marker source](../../examples/minecraft/marker.ashfox) is one complete file.
+The [marker source](../../examples/minecraft/assets/models/marker.ashfox) is one complete file.
 It is also included in the [starter download](/downloads/starter.zip).
 From your asset folder:
 
 ```sh
 npx --no-install ashfox check marker.ashfox
-npx --no-install ashfox export marker.ashfox --output marker.glb
-npx --no-install ashfox render marker.ashfox --camera front --output marker-front.png
+npx --no-install ashfox build marker.ashfox --json
+npx --no-install ashfox render marker.ashfox --output marker-front.png
 ```
 
 The GLB is the model for your engine; the PNG is an observation of it. Static
@@ -42,7 +42,7 @@ for shared design variables and exact resize relationships.
 | Profile | Example | What it demonstrates |
 | --- | --- | --- |
 | `block` | `examples/block/rune_bricks.ashfox` | Single-cube 16×16×16 textured block without forced rotation or symmetry |
-| `block` | `examples/minecraft/marker.ashfox` | Orthogonal stepped altar block with protected runes and bevel border |
+| `block` | `examples/minecraft/assets/models/marker.ashfox` | Orthogonal stepped altar block with protected runes and bevel border |
 | `prop` | `examples/prop/lantern.ashfox` | Emissive cutout cage prop with orthogonal tiers and brass roof brackets |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | Modular prop split across rig, surface, body, and socket-mounted clasp |
 | `creature` | `examples/griffin/workbench/main.ashfox` | Multi-module animated creature (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
@@ -74,7 +74,7 @@ See [Output formats](choose-a-format.md).
 
 ## Review before shipping
 
-Use `render` for front, side and orbit views and `render --gif --clip NAME` for motion.
+Use `render --view <name>` with declared `preview` blocks for front, side, orbit, and motion GIF views.
 Then import the generated GLB into your intended viewer or engine. Inspect silhouette,
 face direction, texture seams, scale and attachments. For animation, watch every
 clip through a full cycle. Validation cannot certify that a model looks correct

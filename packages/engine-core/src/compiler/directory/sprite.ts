@@ -30,7 +30,18 @@ interface SpriteGraph {
   readonly parsed: Map<string, SpriteSourceUnit>;
   readonly units: Map<string, SpriteSourceUnit>;
   readonly visiting: Set<string>;
+  readonly usedImports: Map<string, Set<string>>;
+  readonly usedDecls: Set<string>;
 }
+
+const spriteSyntaxError = (code: string, file: string, expected: string, actual: string) =>
+  new SpriteInputError({ code, file, pointer: 'build', expected, actual });
+
+const markSpriteImportUsed = (graph: SpriteGraph, path: string, alias: string): void => {
+  const used = graph.usedImports.get(path) ?? new Set<string>();
+  used.add(alias);
+  graph.usedImports.set(path, used);
+};
 
 const visitUnit = (graph: SpriteGraph, path: string): void => {
   if (graph.visiting.has(path)) throw new Error('Sprite import cycle: ' + path);
@@ -52,54 +63,92 @@ const symbol = (path: string, id: unknown): string =>
   's' + sha256Digest(path + ':' + String(id)).slice(-32);
 
 /** Owner path and local id named by a `local` or `alias.name` reference. */
-const referenceTarget = (units: Units, path: string, reference: string): [string, string] => {
+const referenceTarget = (graph: SpriteGraph, path: string, reference: string): [string, string] => {
   const parts = reference.split('.');
   if (parts.length === 1) return [path, parts[0]!];
   if (parts.length !== 2) throw new Error('Expected local or alias.name reference');
-  const imported = units.get(path)!.imports.find((i) => i.alias === parts[0]);
+  const imported = graph.units.get(path)!.imports.find((i) => i.alias === parts[0]);
   if (!imported) throw new Error('Unknown import alias ' + parts[0]);
+  markSpriteImportUsed(graph, path, imported.alias);
   return [relative(path, imported.path), parts[1]!];
 };
 
-const resolve = (units: Units, path: string, reference: unknown, kind: DeclarationKind): string => {
+const resolve = (
+  graph: SpriteGraph,
+  path: string,
+  reference: unknown,
+  kind: DeclarationKind,
+): string => {
   if (typeof reference !== 'string') throw new Error('Expected source reference');
-  const [owner, id] = referenceTarget(units, path, reference);
-  if (!units.get(owner)![kind].some((d) => d.id === id))
+  const [owner, id] = referenceTarget(graph, path, reference);
+  if (!graph.units.get(owner)![kind].some((d) => d.id === id))
     throw new Error(`Missing ${kind} declaration ${reference}`);
+  graph.usedDecls.add(`${owner}\u0000${kind}\u0000${id}`);
   return symbol(owner, id);
 };
 
-const resolveLayer = (units: Units, entry: string, l: Record<string, unknown>): unknown => {
+const resolveLayer = (graph: SpriteGraph, entry: string, l: Record<string, unknown>): unknown => {
   if (l.op === 'part')
     return {
       ...l,
-      mask: resolve(units, entry, l.mask, 'masks'),
-      material: resolve(units, entry, l.material, 'materials'),
+      mask: resolve(graph, entry, l.mask, 'masks'),
+      material: resolve(graph, entry, l.material, 'materials'),
     };
-  if (l.op === 'stamp') return { ...l, stamp: resolve(units, entry, l.stamp, 'stamps') };
+  if (l.op === 'stamp') return { ...l, stamp: resolve(graph, entry, l.stamp, 'stamps') };
   return l;
 };
 
 const declarations = (units: Units, kind: DeclarationKind) =>
   [...units].flatMap(([p, u]) => u[kind].map((m) => ({ ...m, id: symbol(p, m.id) })));
 
-const studyOf = (units: Units, entry: string) => {
-  const root = units.get(entry)!;
+const checkSpriteHygiene = (graph: SpriteGraph): void => {
+  for (const [unitPath, unit] of graph.units) {
+    const used = graph.usedImports.get(unitPath) ?? new Set<string>();
+    const dead = unit.imports.find((i) => !used.has(i.alias));
+    if (dead)
+      throw spriteSyntaxError('sprite.unused-import', unitPath, 'referenced import', dead.alias);
+  }
+  const root = graph.units.get(graph.entry)!;
+  for (const kind of ['masks', 'materials', 'stamps'] as const) {
+    const unused = root[kind].find(
+      (decl) => !graph.usedDecls.has(`${graph.entry}\u0000${kind}\u0000${String(decl.id)}`),
+    );
+    if (unused) {
+      throw spriteSyntaxError(
+        'sprite.unused-declaration',
+        graph.entry,
+        'used declaration',
+        String(unused.id),
+      );
+    }
+  }
+  const src = graph.files.get(graph.entry)!.source;
+  const nonEmptyLines = src.split(/\r?\n/u).filter((l) => l.trim().length > 0).length;
+  const totalDecls = root.masks.length + root.materials.length + root.stamps.length;
+  if (nonEmptyLines > 120 && root.imports.length === 0 && totalDecls >= 4) {
+    throw spriteSyntaxError(
+      'sprite.monolithic-entry',
+      graph.entry,
+      'modular imports into sprite entry',
+      `${totalDecls} inline declarations across ${nonEmptyLines} non-empty lines`,
+    );
+  }
+};
+
+const studyOf = (graph: SpriteGraph, entry: string) => {
+  const root = graph.units.get(entry)!;
   if (!root.item) throw new Error('Entry must declare sprite');
+  const layers = (root.item.layers as Record<string, unknown>[]).map((l) =>
+    resolveLayer(graph, entry, l),
+  );
+  checkSpriteHygiene(graph);
   return {
     format: 'ashfox-item-study',
     version: 1,
-    masks: declarations(units, 'masks'),
-    materials: declarations(units, 'materials'),
-    stamps: declarations(units, 'stamps'),
-    items: [
-      {
-        ...root.item,
-        layers: (root.item.layers as Record<string, unknown>[]).map((l) =>
-          resolveLayer(units, entry, l),
-        ),
-      },
-    ],
+    masks: declarations(graph.units, 'masks'),
+    materials: declarations(graph.units, 'materials'),
+    stamps: declarations(graph.units, 'stamps'),
+    items: [{ ...root.item, layers }],
   };
 };
 
@@ -119,10 +168,18 @@ export const compileDirectorySprite = (
   entry: string,
   parsed: Map<string, SpriteSourceUnit>,
 ) => {
-  const graph: SpriteGraph = { files, entry, parsed, units: new Map(), visiting: new Set() };
+  const graph: SpriteGraph = {
+    files,
+    entry,
+    parsed,
+    units: new Map(),
+    visiting: new Set(),
+    usedImports: new Map(),
+    usedDecls: new Set(),
+  };
   try {
     visitUnit(graph, entry);
-    const result = compileItemStudy(JSON.stringify(studyOf(graph.units, entry)), entry);
+    const result = compileItemStudy(JSON.stringify(studyOf(graph, entry)), entry);
     return { result, paths: [...graph.units.keys()].sort() };
   } catch (error) {
     return {

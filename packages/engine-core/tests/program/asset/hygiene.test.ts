@@ -12,7 +12,7 @@ const compileFiles = (entry: string, files: readonly { path: string; source: str
     packages: [
       {
         name: 'hygiene',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
@@ -24,14 +24,14 @@ const compileFiles = (entry: string, files: readonly { path: string; source: str
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
   });
   return compileDirectoryWorkspace(
     cfg,
-    files.map((f) => ({ path: `pkg/${f.path}`, source: f.source })),
+    files.map((f) => ({ path: `assets/models/${f.path}`, source: f.source })),
   );
 };
 

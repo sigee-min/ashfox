@@ -1,6 +1,6 @@
 # 프로젝트 설정
 
-[저장소 컨벤션](repository-layout.md)은 권장 `asset/` → 루트 `build/` 배치를 정의합니다. 현재 소스에서는 같은 버전 2 객체를 내보내는 코드형 `.ashfoxworkspace.mjs`도 지원하며 다음 CLI 릴리스에 포함됩니다. 루트마다 설정 형식 하나만 사용하세요.
+[저장소 컨벤션](repository-layout.md)은 표준 `assets/{models,sprites,sounds,structures,module}/` → 루트 `build/` 배치를 정의합니다. 현재 소스에서는 같은 버전 2 객체를 내보내는 코드형 `.ashfoxworkspace.mjs`도 지원하며 다음 CLI 릴리스에 포함됩니다. 루트마다 설정 형식 하나만 사용하세요.
 
 네이티브 `.ashfox` 파일이 영속적인 에셋 원본입니다. 워크스페이스는 선택 사항입니다. 공통 소스 선택·패키지·제외·빌드·출력 규칙이 필요할 때만 루트 `.ashfoxworkspace`를 사용하세요. 설정만 담으며 원본이나 컴파일 상태는 담지 않습니다. 모델·스프라이트·사운드 파일은 워크스페이스 없이 직접 컴파일할 수 있습니다.
 
@@ -12,7 +12,7 @@ CLI는 가장 가까운 `.ashfoxworkspace`를 위로 탐색하며 Git 루트나 
 
 {{source-code:1}}
 
-[완전한 아이템 프로젝트](/downloads/items.zip)를 내려받아 압축을 푸세요. 설정은 [`examples/items/.ashfoxworkspace`](../../examples/items/.ashfoxworkspace)에 있고 원본은 `examples/items/src/`에 있습니다. 설정과 원본을 함께 Git에 보관하세요.
+[완전한 아이템 프로젝트](/downloads/items.zip)를 내려받아 압축을 푸세요. 설정은 [`examples/items/.ashfoxworkspace`](../../examples/items/.ashfoxworkspace)에 있고 원본은 `examples/items/assets/`에 있습니다. 설정과 원본을 함께 Git에 보관하세요.
 
 압축을 푼 예제 폴더에서 실행합니다.
 

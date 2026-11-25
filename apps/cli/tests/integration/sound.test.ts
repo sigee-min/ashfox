@@ -22,15 +22,15 @@ const success = (...args: string[]) => {
 };
 const main = async () => {
   const input = path.join(temp, 'bell_pattern.ashfox');
-  fs.copyFileSync(path.join(root, 'examples/sounds/src/bell_pattern.ashfox'), input);
+  fs.copyFileSync(path.join(root, 'examples/sounds/assets/sounds/bell_pattern.ashfox'), input);
   const capabilities = success('doctor', '--json').result.sound;
   assert.ok(capabilities.features.includes('loops'));
   assert.equal(capabilities.output, 'fixed-gain');
   const inspection = success('check', input).result;
   const details = inspection.variants ?? inspection;
   assert.ok(JSON.stringify(details).includes('96960'));
-  const output = path.join(temp, 'bell.wav');
-  assert.equal(run('export', input, '--output', output).status, 0);
+  const directBuilt = success('build', input, '--json').result;
+  const output = path.join(directBuilt.exports[0].directory, 'bell_pattern/base.wav');
   verifyPcm(fs.readFileSync(output), 96960);
   const config = {
     ...readSnapshot(input).config,

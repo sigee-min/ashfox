@@ -1,0 +1,146 @@
+ashfox-model 1
+
+// Fixed gain measured against the previous render, with 2 dB migration headroom.
+sound bird_call {
+  import "../module/bird_voices.ashfox" as bv;
+  duration = 4;
+  sampleRate = 48000;
+  seed = 7349;
+  voices = [
+    bv.opening_whistle,
+    bv.quick_answer,
+    bv.rising_warble,
+    bv.first_trill,
+    bv.soft_pickup,
+    bv.bright_reply,
+    bv.curved_whistle,
+    bv.closing_trill,
+  ];
+  sequences = [{
+    id = "phrase";
+    start = 0;
+    repeat = {
+      count = 1;
+      period = 0;
+    };
+    steps = [{
+      id = "opening_whistle";
+      voice = "opening_whistle";
+      at = 0.16;
+      duration = 0.27;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "quick_answer";
+      voice = "quick_answer";
+      at = 0.53;
+      duration = 0.16;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "rising_warble";
+      voice = "rising_warble";
+      at = 0.82;
+      duration = 0.32;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "first_trill";
+      voice = "first_trill";
+      at = 1.25;
+      duration = 0.42;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "soft_pickup";
+      voice = "soft_pickup";
+      at = 2.03;
+      duration = 0.23;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "bright_reply";
+      voice = "bright_reply";
+      at = 2.37;
+      duration = 0.18;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "curved_whistle";
+      voice = "curved_whistle";
+      at = 2.68;
+      duration = 0.34;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }, {
+      id = "closing_trill";
+      voice = "closing_trill";
+      at = 3.17;
+      duration = 0.48;
+      gain = 1;
+      pitchCents = 0;
+      vary = {
+        timing = [0, 0];
+        pitchCents = [0, 0];
+        gain = [1, 1];
+        duration = [1, 1];
+      };
+    }];
+  }];
+  variants = [{
+    id = "base";
+    seed = 218;
+  }, {
+    id = "alternate";
+    seed = 907;
+  }];
+  playback = {
+    kind = "oneshot";
+  };
+  output = {
+    gainDb = -13.7;
+    peakDb = -6;
+  };
+}

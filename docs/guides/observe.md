@@ -1,38 +1,32 @@
 # Render and check one asset
 
-Use the CLI as a headless asset compiler and renderer: load one model, item, sound, or existing
-PNG; run `check` to inspect identifiers and audit scores; render views or animations with `render`; export final binaries with `export`.
+Use the CLI as a unified asset compiler and renderer: load any `.ashfox` source (model, sprite, sound, or structure); run `check` to inspect identifiers, declared outputs/previews, and quality audit scores; render declared `preview [name]` blocks with `render [--view <name>]`; build declared targets with `build`.
 
 ## First render and check
 
-After [installing the CLI](install.md), run these commands in the extracted
-starter folder:
+After [installing the CLI](install.md), run these commands on a starter asset:
 
 ```sh
-npx --no-install ashfox render fox.ashfox --azimuth 45 --elevation 20 --output fox.png
 npx --no-install ashfox check fox.ashfox
+npx --no-install ashfox render fox.ashfox --output fox.png
 ```
 
-`render` writes PNG bytes to stdout (or `--output <file>`). `check` writes an `ashfox-cli-result` JSON envelope with source summary, nodes, textures, animations, and quantitative quality `audit` metrics.
+`render` writes PNG or animated GIF bytes to stdout (or `--output <file>`). `check` writes an `ashfox-cli-result` JSON envelope with source summary, declared `outputs` and `previews`, nodes/textures/animations (for models and structures), variants (for sounds), and quantitative quality `audit` metrics.
 Rendering requires Chrome or Chromium; set `ASHFOX_CHROME_PATH` when it is not at a standard installation path. An explicit invalid path fails.
-Compilation, checking, auditing, and `export` do not require Chrome.
+Compilation, checking, auditing, and `build` do not require Chrome.
 
 The renderer applies the shared scene projection, camera presets, material rules,
 and animation sampling from Ashfox’s rendering library. It starts a private headless process
 with an ephemeral browser profile and removes that profile on normal cleanup.
-No implicit workspace or asset folder is created by single-asset `check`, `render`, or `export`.
+No implicit workspace or asset folder is created by single-asset `check` or `render`.
 
 ## In-memory inputs (stdin and JSON)
 
-`check`, `render`, and `export` can read from memory without touching disk when using `--stdin` or `--input-json`:
+`check` and `render` can read from memory without touching disk when using `--stdin` or `--input-json`:
 
 ```sh
 # Pipe a standalone .ashfox source on stdin
 cat marker.ashfox | npx --no-install ashfox render --stdin --name marker.ashfox > marker.png
-
-# Inspect or upscale an existing PNG
-npx --no-install ashfox check sword.png
-cat sword.png | npx --no-install ashfox render --stdin --input-format png --scale 16 > large.png
 
 # Pass a multi-file source graph as JSON on stdin
 # {"name":"main.ashfox","source":"...","files":{"shared.ashfox":"..."}}
@@ -41,94 +35,71 @@ cat graph.json | npx --no-install ashfox check --input-json
 
 When piping memory sources with relative imports, send `--input-json` with `{ "name": "main.ashfox", "source": "...", "files": { ... } }`. Existing `--output` paths are rejected (`wx`), never overwritten.
 
-## Choose what to see
+## Declare `preview` views in `.ashfox`
 
-```sh
-npx --no-install ashfox render fox.ashfox --camera front --width 1024 --height 768 --output front.png
-npx --no-install ashfox render fox.ashfox --sheet turnaround --width 1024 --height 1024 --output turnaround.png
-npx --no-install ashfox render fox.ashfox --sheet inspect --width 1024 --height 1024 --output inspect.png
-npx --no-install ashfox render fox.ashfox --clip tail_wag --time 0.4 --skeleton --output pose.png
-npx --no-install ashfox render fox.ashfox --wireframe --no-textures --output structure.png
-npx --no-install ashfox render fox.ashfox --node NODE_ID --zoom 1.5 --output node.png
-npx --no-install ashfox render fox.ashfox --texture TEXTURE_ID --scale 8 --output atlas.png
-npx --no-install ashfox render sword.ashfox --stage silhouette --scale 16 --output shape.png
-npx --no-install ashfox render claw_hit.ashfox --variant base --width 640 --height 200 --output waveform.png
+Instead of asset-specific CLI flags, declare one or more named `preview` blocks inside any `asset`, `sprite`, `sound`, or `structure` entry and select one with `--view <name>` (defaulting to `default`):
+
+```text
+asset fox {
+  preview default { azimuth = 45; elevation = 20; width = 640; height = 360; }
+  preview turnaround { sheet = turnaround; width = 1024; height = 1024; }
+  preview wag { kind = gif; clip = "tail_wag"; duration = 1; fps = 8; }
+  ...
+}
 ```
 
-Use new filenames when repeating these commands. Find actual node, texture, clip,
-and variant IDs with `check`; names are also accepted for clips and textures.
-Sound render is a peak-envelope waveform. Use `export` to receive playable WAV.
-Sprite checking returns the receipt and per-pixel source ownership evidence.
-Model checking returns nodes, texture metadata, animation channels, settings,
-and an embedded quantitative `audit` report (`--profile creature|prop|block` and `--threshold 0..100` override check targets; single-asset flags bypass ancestor `.ashfoxworkspace` files).
-`check --node NODE_ID` adds rest-pose subtree measurements and face/UV inspection.
+```sh
+npx --no-install ashfox render fox.ashfox --view default --output orbit.png
+npx --no-install ashfox render fox.ashfox --view turnaround --output turnaround.png
+npx --no-install ashfox render fox.ashfox --view wag --output wag.gif
+```
 
-| Option | Accepted values and behavior |
+Use new filenames when repeating these commands. Sound `render` captures a peak-envelope waveform; use `build` to produce playable WAV files.
+
+| Preview field | Accepted values and asset compatibility |
 | --- | --- |
-| `--camera` | `perspective` (default), `native`, `front`, `back`, `left`, `right`, `top`, `bottom`; signed presets respect authored forward |
-| `--sheet` | `turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) or `inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`) 2×2 contact sheet for still `render` |
-| `--azimuth`, `--elevation` | Degrees, −360…360 and −89…89; orbit uses model axes, 0° looks from negative Z, +90° from positive X; elevation is above the XZ plane |
-| `--zoom` | 0.1…10, default 1; values above 1 move closer and can crop |
-| `--width`, `--height` | Integer 16…2048, defaults 640×360 for model/waveform |
-| `--environment` | `studio`, `day`, `evening`, `night` |
-| `--background` | `environment`, `transparent`, `checker`, `light`, `dark`; PNG/sprite defaults preserve transparency |
-| `--clip`, `--time` | Clip ID/name and seconds; a nonzero time requires a clip and cannot exceed its duration |
-| `--wireframe`, `--skeleton`, `--no-textures` | Model inspection overlays and neutral geometry |
-| `--node` | Model node ID; `render` isolates its subtree, `check` measures it |
-| `--texture` | Render one model texture atlas as a PNG |
-| `--scale` | Integer 1…32 for sprites, existing PNGs and atlases; nearest-neighbor scaling, maximum 4096×4096 |
-| `--stage` | Sprite `final`, `silhouette`, `shade`, `grain` |
-| `--variant` | Sound variant ID; defaults to the first compiled variant |
-| `--gif` | Render animated GIF (`--clip`, `--mode turntable`, or `--mode build`) |
+| `kind` | `still` (default PNG) or `gif` (animated GIF) |
+| `camera` | `perspective`, `native`, `front`, `back`, `left`, `right`, `top`, `bottom` (model/structure) |
+| `sheet` | `turnaround` or `inspect` 2×2 contact sheet (still model/structure) |
+| `azimuth`, `elevation`, `zoom` | Orbit angles (`-360..360`, `-89..89`) and zoom (`0.1..10`) (model/structure) |
+| `width`, `height` | Integer `16..2048` (defaults `640x360` for model/structure/waveform) |
+| `environment`, `background` | `studio`/`day`/`evening`/`night`; `environment`/`transparent`/`checker`/`light`/`dark` |
+| `clip`, `time` | Clip ID/name and seconds (model) |
+| `mode`, `fps`, `duration` | GIF mode (`motion`, `turntable`, `build`), `fps` (`1..30`), `duration` (`0.01..30`) |
+| `wireframe`, `skeleton`, `textures` | Booleans controlling model overlays |
+| `texture` | Render one model texture atlas as PNG |
+| `scale` | Integer `1..32` nearest-neighbor scaling (sprites and texture atlases) |
+| `stage` | Sprite `final`, `silhouette`, `shade`, `grain` |
+| `variant` | Sound variant ID (defaults to first compiled variant) |
+| `cutaway` | Structure horizontal slice height Y (`1..64`) |
 
-Orbit options override the direction of the camera preset. When either is given,
-missing azimuth/elevation defaults to 45°/20°. Model/waveform dimensions and PNG
-scale are separate controls. Camera controls do not transform source geometry.
+Limits are 300 frames and 100 million rendered pixels per GIF. Build replay uses fixed `640x360` at `10` fps.
 
-## Render a motion or build GIF
+## Declare `outputs` and run `build`
 
-```sh
-npx --no-install ashfox render fox.ashfox --gif --clip tail_wag > tail-wag.gif
-npx --no-install ashfox render fox.ashfox --gif --mode turntable --duration 3 > turntable.gif
-npx --no-install ashfox render fox.ashfox --gif --mode build --camera perspective > build.gif
+Declare build targets inside the entry's `outputs { ... }` clause (optional; defaults are portable GLB for models, PNG for sprites, WAV for sounds, and both `java_structure` `.nbt` and portable `.glb` for structures):
+
+```text
+asset marker {
+  outputs {
+    glb;
+    java_block namespace = "demo" path = "props/marker";
+  }
+  ...
+}
 ```
 
-Motion and turntable GIF renders accept `--fps` (1…30, default 10), `--duration`
-(0.01…30 seconds), camera controls, and render dimensions. Motion defaults to the
-clip duration; turntable defaults to 3 seconds without a selected clip. Motion
-samples advance from `--time` and wrap at clip duration. Framing is held across
-sampled poses instead of following each frame. Limits are 300 frames and 100
-million rendered pixels; reduce resolution, duration, or frame rate when exceeded.
-
-Build replay uses the browser's canonical reconstruction: geometry, textures,
-idle motion when available, then completion. It is **not a recording of your edit
-history**. This mode uses fixed 640×360 at 10 fps and supports the browser's
-perspective/native/front/left/right/top camera presets and environments. Custom
-orbit, timing, overlays, `--sheet`, and framing options are rejected for build replay.
-
-## Export the selected asset
-
 ```sh
-npx --no-install ashfox export fox.ashfox > fox.glb
-npx --no-install ashfox export sword.ashfox > sword.png
-npx --no-install ashfox export claw_hit.ashfox --variant base > claw.wav
-npx --no-install ashfox export marker.ashfox --format java_block --namespace demo > marker.zip
-npx --no-install ashfox export fox.ashfox --format gltf > fox-gltf.zip
+npx --no-install ashfox build marker.ashfox --json
 ```
 
-Defaults are portable GLB for models, native PNG for sprites, and WAV for sounds.
-Model `--format` accepts `glb`, `gltf`, `java_block`, `geckolib5`, `bedrock`.
-Minecraft formats require `--namespace`; `--model-path` overrides the default
-entry name. Multi-file formats return a ZIP; GLB returns raw GLB. Model delivery
-requires an authored `settings.profile` and passing audit gate (`score >= 75`).
-Configured multi-asset game bundles and sound resource packs use
-[the project build pipeline](workspace.md).
+Valid output formats are `glb`, `gltf`, `java_block`, `geckolib5`, and `bedrock` for models; `png` for sprites; `wav` for sounds; and `java_structure` / `glb` for structures. Model and structure builds require a passing quality audit (`settings.profile` + `score >= 75` for models; `score >= 75` for structures). Configured multi-asset game bundles and sound resource packs use [the project build pipeline](workspace.md).
 
 ## Compare actual views
 
 ![Fox from the front](/media/guides/fox-front.png)
 ![Fox at an orbit angle](/media/guides/fox-angle.png)
 
-These are renders of the same source. Camera settings change the observation,
-not the exported geometry. [Review and refine](authoring-and-review.md) explains
-how to use views and motion when changing an asset.
+These are renders of the same source. Preview settings change observation only,
+never built geometry or outputs. [Review and refine](authoring-and-review.md) explains
+how to inspect views and motion when iterating on an asset.

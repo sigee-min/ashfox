@@ -46,7 +46,7 @@
         "version": 1
       },
       "name": "creatures",
-      "root": "creatures"
+      "root": "assets/models/creatures"
     },
     {
       "manifest": {
@@ -75,11 +75,11 @@
         "version": 1
       },
       "name": "workbench",
-      "root": "workbench"
+      "root": "assets/models/workbench"
     }
   ],
   "include": [
-    "**/*.ashfox"
+    "assets/**/*.ashfox"
   ],
   "ignore": [],
   "build": {

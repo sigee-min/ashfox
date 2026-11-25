@@ -109,7 +109,7 @@ const main = async () => {
   }
   assert.notEqual(waves[0].sha256, waves[1].sha256);
   for (const item of first.exports) assert.ok(fs.statSync(item.directory).isDirectory());
-  const soundPath = path.join(project, 'sounds/claw_hit.ashfox'),
+  const soundPath = path.join(project, 'assets/sounds/claw_hit.ashfox'),
     original = fs.readFileSync(soundPath, 'utf8');
   fs.writeFileSync(soundPath, original.replace('sampleRate = 48000', 'sampleRate = 44100'));
   assert.equal(run('build').code, 1);
@@ -153,20 +153,20 @@ const main = async () => {
   assert.equal(run('check').code, 2);
   fs.writeFileSync(config, configBytes);
   const ignored = JSON.parse(String(configBytes));
-  ignored.ignore.push('sounds/**');
+  ignored.ignore.push('assets/sounds/**');
   fs.writeFileSync(config, JSON.stringify(ignored));
   assert.equal(run('check').code, 2);
   fs.writeFileSync(config, configBytes);
   const ignoredTree = JSON.parse(String(configBytes));
-  ignoredTree.ignore.push('ignored/**');
+  ignoredTree.ignore.push('assets/ignored/**');
   fs.writeFileSync(config, JSON.stringify(ignoredTree));
-  fs.mkdirSync(path.join(project, 'ignored'));
-  fs.symlinkSync(project, path.join(project, 'ignored/loop'));
+  fs.mkdirSync(path.join(project, 'assets/ignored'), { recursive: true });
+  fs.symlinkSync(project, path.join(project, 'assets/ignored/loop'));
   success(run('check'));
-  fs.unlinkSync(path.join(project, 'ignored/loop'));
-  fs.rmdirSync(path.join(project, 'ignored'));
+  fs.unlinkSync(path.join(project, 'assets/ignored/loop'));
+  fs.rmdirSync(path.join(project, 'assets/ignored'));
   fs.writeFileSync(config, configBytes);
-  const link = path.join(project, 'linked.ashfox');
+  const link = path.join(project, 'assets/linked.ashfox');
   fs.symlinkSync(soundPath, link);
   assert.equal(run('check').code, 1);
   fs.unlinkSync(link);

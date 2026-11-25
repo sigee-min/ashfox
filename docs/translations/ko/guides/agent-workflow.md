@@ -6,8 +6,8 @@
 
 ```text
 선택한 .ashfox 원본과 가져오는 모듈을 읽고 관련 없는 에셋은 보존해라.
-단일 에셋이면 check로 확인하고 원본을 수정한 뒤 유용한 시점을 render하고 바뀐 동작을 --gif로 확인해라.
-메모리 출력에는 --stdin이나 --input-json을 쓰고 요청한 파일만 저장해라.
+단일 에셋이면 check로 확인하고 원본을 수정한 뒤 선언된 preview 뷰(--view)와 GIF를 render하고 build해라.
+메모리 출력에는 --stdin이나 --input-json을 쓰고 선언한 출력 위치만 보고해라.
 설정된 게임 전달 작업이면 워크스페이스의 check, build, check <build-dir>도 실행해라.
 관찰한 결과와 대상 게임에서 아직 확인해야 하는 내용을 보고해라.
 ```
@@ -17,10 +17,10 @@
 ## 작업 순서
 
 1. 단일 에셋, stdin/JSON 메모리 그래프, 설정된 워크스페이스 빌드 중 [실행 방식](choose-a-format.md)을 선택합니다.
-2. `ashfox check`로 식별자와 품질 감사 지표를 확인합니다. 단일 에셋 플래그(`--node`, `--profile`, `--threshold`, `--stdin`, `--input-json`)는 상위 워크스페이스를 무시하고, 워크스페이스 확인은 프로젝트 규칙을 검증합니다.
-3. `.ashfox` 소스 파일을 편집하거나 `--input-json`으로 전체 소스 그래프를 전달합니다.
-4. `ashfox render`로 시점·아틀라스를 렌더링하고 `ashfox render --gif`로 바뀐 동작을 확인하며 사운드 변형을 들어봅니다.
-5. 선택한 에셋을 출력하거나 설정된 전달물에 `check`·`build`·`check <build-dir>`을 실행합니다.
+2. `ashfox check`로 식별자·선언(`outputs`/`previews`)·품질 감사 지표를 확인합니다. 단일 에셋 플래그(`--stdin`, `--input-json`)는 상위 워크스페이스를 무시하고, 워크스페이스 확인은 프로젝트 규칙과 표준 디렉터리 배치를 검증합니다.
+3. `.ashfox` 소스 파일(`outputs`, `preview`)을 편집하거나 `--input-json`으로 전체 소스 그래프를 전달합니다.
+4. `ashfox render <source> --view <name>`으로 시점·아틀라스·동작 GIF(`kind = gif;`)를 렌더링하고 `ashfox build` WAV 변형을 들어봅니다.
+5. `ashfox build <source>`로 선택한 에셋을 빌드하거나 설정된 전달물에 `check`·`build`·`check <build-dir>`을 실행합니다.
 6. 미디어나 출력 위치를 반환하고, 관찰된 결과와 아직 검증하지 않은 대상 게임 동작을 구분합니다.
 
 ## 전달 방식
@@ -31,4 +31,4 @@
 
 ## 편집하며 관찰하기
 
-편집 후 [단일 에셋 렌더링과 확인](observe.md)으로 `ashfox check` ID·품질 점수를 확인하고 `ashfox render`로 시점·텍스처를, `ashfox render --gif`로 바뀐 동작을 확인합니다. 단일 에셋 명령은 워크스페이스 발행 없이 파일이나 `--stdin`/`--input-json`에서 바로 실행됩니다.
+편집 후 [단일 에셋 렌더링과 확인](observe.md)으로 `ashfox check` ID·선언·품질 점수를 확인하고, `preview` 블록으로 선언한 각도·텍스처·동작을 `ashfox render --view <name>`으로 확인합니다. 단일 에셋 명령은 워크스페이스 발행 없이 파일이나 `--stdin`/`--input-json`에서 바로 실행됩니다.

@@ -51,11 +51,11 @@ axis. Grain uses `mode: clustered-v1`, amount 0–1 and an integer seed. Patches
 have local `at`, `rows`, `colors` and protection width 0–2 and must remain inside
 the part mask. Use `patches = [];` when there are none.
 
-Start with [apple source](../../examples/items/src/apple.ashfox) and its
-[shared module](../../examples/items/src/shared.ashfox) for complete part, ramp,
-patch and reusable-shape examples. Keep both files. Standalone imports must stay
-below the entry directory. A configured project must declare every imported
-module. Use explicit relative paths; sprite package-name imports are not supported.
+Start with [apple source](../../examples/items/assets/sprites/apple.ashfox) and its
+[shared module](../../examples/items/assets/module/shared.ashfox) for complete part, ramp,
+patch and reusable-shape examples. Keep shared sprite modules under `assets/module/` when shared
+across multiple sprites in a workspace. Standalone imports must resolve relative `.ashfox` paths
+inside the entry subtree; a configured project must declare every imported module.
 
 The canvas is fixed at 16×16 in the current profile. Out-of-bounds placement,
 unbound row characters, unknown settings and invalid shading parameters fail
@@ -64,13 +64,13 @@ compilation. Enlarging a preview does not increase the delivered resolution.
 ## Review pixels
 
 ```sh
-npx --no-install ashfox render gem.ashfox --scale 16 --background checker --output gem-preview.png
+npx --no-install ashfox render gem.ashfox --view checker --output gem-preview.png
 npx --no-install ashfox check gem.ashfox
 ```
 
-Check the native image as well as the enlarged view. `check` returns a receipt
-and pixel ownership evidence. On sources with shaded parts, use `--stage
-silhouette`, `--stage shade` or `--stage grain` to inspect the construction.
+Check the native image as well as the enlarged view (`preview checker { scale = 16; background = checker; }`). `check` returns a receipt
+and pixel ownership evidence. On sources with shaded parts, declare `stage = silhouette`,
+`stage = shade`, or `stage = grain` in a `preview` block and pass `--view <name>` to inspect the construction.
 
 ![Final sword pixels enlarged](/media/guides/sword.png)
 ![The same sword at the silhouette stage](/media/guides/sword-shape.png)

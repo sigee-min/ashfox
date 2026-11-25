@@ -8,7 +8,6 @@ export const prepareWorker = async (
 ): Promise<Prepared> => {
   if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
   const sealed = sealObservation(input);
-  if (!('configuration' in sealed)) return sealed;
   const result = await runJob<Prepared>(file, { observe: sealed }, signal);
   if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
   if (input.file && readSingleSnapshot(resolveInputFile(input.file)).hash !== sealed.hash)

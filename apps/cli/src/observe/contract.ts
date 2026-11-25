@@ -1,4 +1,5 @@
 import type {
+  AssetDeclarations,
   ProjectDocument,
   DirectoryProduct,
   DirectoryFile,
@@ -6,14 +7,14 @@ import type {
 } from '@ashfox/engine-core';
 export interface SourceInput {
   readonly file?: string;
-  readonly png?: string;
   readonly source?: string;
   readonly name?: string;
   readonly files?: Readonly<Record<string, string>>;
 }
 export interface Prepared {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'png';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure';
   readonly revision: string;
+  readonly declarations: AssetDeclarations;
   readonly products?: readonly {
     readonly kind: string;
     readonly entry: DirectoryProduct['entry'];
@@ -27,7 +28,6 @@ export interface Prepared {
     readonly receipt: SpriteProduct['receipt'];
     readonly evidence: SpriteProduct['evidence'];
   };
-  readonly png?: string;
 }
 export interface Media {
   readonly mime: string;

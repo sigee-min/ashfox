@@ -16,17 +16,28 @@ const config = {
   packages: [
     {
       name: 'items',
-      root: 'src',
+      root: 'assets/sprites',
       manifest: {
         format: 'ashfox-package',
         version: 1,
         entries: names.map((name) => ({ name, path: name + '.ashfox' })),
+        modules: [],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'shared_modules',
+      root: 'assets/module',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [],
         modules: [{ subpath: './shared', path: 'shared.ashfox' }],
         dependencies: [],
       },
     },
   ],
-  include: ['src/**/*.ashfox'],
+  include: ['assets/**/*.ashfox'],
   ignore: [],
   build: { directory: 'dist/build' },
   exports: names.map((name) => ({
@@ -78,15 +89,19 @@ const success = (reply: ReturnType<typeof run>) => {
   return reply.result;
 };
 try {
-  fs.mkdirSync(path.join(temp, 'src'));
+  fs.mkdirSync(path.join(temp, 'assets/sprites'), { recursive: true });
+  fs.mkdirSync(path.join(temp, 'assets/module'), { recursive: true });
   fs.copyFileSync(
-    path.join(root, 'examples/items/src/shared.ashfox'),
-    path.join(temp, 'src/shared.ashfox'),
+    path.join(root, 'examples/items/assets/module/shared.ashfox'),
+    path.join(temp, 'assets/module/shared.ashfox'),
   );
-  const source = fs.readFileSync(path.join(root, 'examples/items/src/apple.ashfox'), 'utf8');
+  const source = fs.readFileSync(
+    path.join(root, 'examples/items/assets/sprites/apple.ashfox'),
+    'utf8',
+  );
   for (const name of names)
     fs.writeFileSync(
-      path.join(temp, 'src', name + '.ashfox'),
+      path.join(temp, 'assets/sprites', name + '.ashfox'),
       source.replace('sprite apple {', 'sprite ' + name + ' {'),
     );
   write(config);

@@ -2,20 +2,16 @@
 
 Start with a single command for one asset. Add a workspace when a project needs
 shared source selection, IDs and delivery folders. Pass `--stdin` or `--input-json`
-when driving `check`, `render`, or `export` from memory.
+when driving `check` or `render` from memory.
 
 | Task | Single-asset CLI | Workspace build |
 | --- | --- | --- |
-| Native model, sprite and sound source | Yes (`check`, `render`, `export`) | Yes, declared sources |
-| Existing PNG input | Yes (`check`, `render`, `export`) | No |
+| Native model, sprite, sound, structure source | Yes (`check`, `render`, `build`) | Yes, declared sources |
 | Inspect structure & audit scores | `check` | `check <workspace>` / `build` |
-| Desired-angle PNG, atlas, waveform | `render` | Separate single-asset `render` |
-| Animation or turntable GIF | `render --gif` | Separate single-asset `render --gif` |
+| Desired-angle PNG, atlas, cutaway, waveform | `render --view <name>` | Separate single-asset `render` |
+| Animation, turntable, or build replay GIF | `render --view <name>` (`kind = gif;` in preview) | Separate single-asset `render --view <name>` |
 | Source replacement in memory | `--stdin` / `--input-json` | Source files on disk |
-| GLB | Raw binary (`export`) | Named export |
-| glTF | ZIP via `export --format gltf` | Not a workspace export format |
-| Java block, GeckoLib 5, Bedrock models | ZIP (`export`) | Named export directories |
-| Sprite PNG / sound WAV | Raw binary (`export`) | Named exports |
+| GLB / glTF / Minecraft targets / NBT / PNG / WAV | `outputs { ... }` + `build` | Named `exports` + `build` |
 | OGG / complete Java resource pack / game manifest | Use a workspace build | Yes |
 
 See [render and check](observe.md) and [workspace settings](workspace.md).

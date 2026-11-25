@@ -10,7 +10,7 @@ const workspaceConfig = (): string =>
     packages: [
       {
         name: 'audit-adv',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
@@ -20,14 +20,16 @@ const workspaceConfig = (): string =>
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
   });
 
 const compile = (source: string) => {
-  const res = compileDirectoryWorkspace(workspaceConfig(), [{ path: 'pkg/main.ashfox', source }]);
+  const res = compileDirectoryWorkspace(workspaceConfig(), [
+    { path: 'assets/models/main.ashfox', source },
+  ]);
   assert.equal(res.ok, true, res.ok ? '' : JSON.stringify(res.diagnostics));
   const product = res.products[0];
   assert.equal(product?.kind, 'model');

@@ -1,19 +1,15 @@
 # 작업 흐름과 포맷 선택
 
-에셋 하나는 단일 명령으로 시작하세요. 공통 소스 선택·ID·전달 폴더가 필요하면 워크스페이스를 추가합니다. 메모리에서 `check`, `render`, `export`를 구동하려면 `--stdin` 또는 `--input-json`을 전달하세요.
+에셋 하나는 단일 명령으로 시작하세요. 공통 소스 선택·ID·전달 폴더가 필요하면 워크스페이스를 추가합니다. 메모리에서 `check`나 `render`를 구동하려면 `--stdin` 또는 `--input-json`을 전달하세요.
 
 | 작업 | 단일 에셋 CLI | 워크스페이스 빌드 |
 | --- | --- | --- |
-| 네이티브 모델·스프라이트·사운드 원본 | 지원 (`check`, `render`, `export`) | 선언한 원본 |
-| 기존 PNG 입력 | 지원 (`check`, `render`, `export`) | 미지원 |
+| 네이티브 모델·스프라이트·사운드·구조물 원본 | 지원 (`check`, `render`, `build`) | 선언한 원본 |
 | 구조·품질 감사 점수 확인 | `check` | `check <workspace>` / `build` |
-| 원하는 각도 PNG·아틀라스·파형 | `render` | 별도 단일 에셋 `render` |
-| 애니메이션·턴테이블 GIF | `render --gif` | 별도 단일 에셋 `render --gif` |
+| 원하는 각도 PNG·아틀라스·단면·파형 | `render --view <name>` | 별도 단일 에셋 `render` |
+| 애니메이션·턴테이블·빌드 리플레이 GIF | `render --view <name>` (`preview`에 `kind = gif;`) | 별도 단일 에셋 `render --view <name>` |
 | 메모리의 원본 교체 | `--stdin` / `--input-json` | 디스크 원본 |
-| GLB | 바이너리 (`export`) | 이름 있는 export |
-| glTF | `export --format gltf` ZIP | 워크스페이스 포맷 아님 |
-| Java block·GeckoLib 5·Bedrock 모델 | ZIP (`export`) | 이름 있는 export 디렉터리 |
-| 스프라이트 PNG·사운드 WAV | 바이너리 (`export`) | 이름 있는 export |
+| GLB / glTF / Minecraft / NBT / PNG / WAV | `outputs { ... }` + `build` | 이름 있는 `exports` + `build` |
 | OGG·완전한 Java 리소스 팩·게임 매니페스트 | 워크스페이스 빌드 사용 | 지원 |
 
 [렌더링과 확인](observe.md)과 [워크스페이스 설정](workspace.md)을 참고하세요.

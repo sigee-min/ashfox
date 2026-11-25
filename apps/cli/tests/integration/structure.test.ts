@@ -36,15 +36,25 @@ const testCheckShowcases = (): void => {
 };
 
 const testExports = (temp: string): void => {
-  const cottage = path.join(REPO_ROOT, 'examples/structure/medieval_cottage.ashfox');
-  const nbtPath = path.join(temp, 'cottage.nbt');
-  const glbPath = path.join(temp, 'cottage.glb');
-
-  assert.equal(
-    runCli('export', '--format', 'java_structure', cottage, '--output', nbtPath).status,
-    0,
+  const stage = path.join(temp, 'standalone_struct');
+  fs.mkdirSync(path.join(stage, 'props'), { recursive: true });
+  for (const rel of [
+    'medieval_cottage.ashfox',
+    'furnishings.ashfox',
+    'props/rune_pillar.ashfox',
+    'props/wall_lantern.ashfox',
+  ]) {
+    fs.copyFileSync(path.join(REPO_ROOT, 'examples/structure', rel), path.join(stage, rel));
+  }
+  const cottage = path.join(stage, 'medieval_cottage.ashfox');
+  const built = runJson('build', '--json', cottage).result;
+  assert.equal(built.exports.length, 2);
+  const nbtExp = built.exports.find((e: { id: string }) => e.id.includes('java_structure'));
+  const glbExp = built.exports.find((e: { id: string }) => e.id.includes('glb'));
+  assert.ok(nbtExp && glbExp);
+  const decoded = decodeStructureNbt(
+    fs.readFileSync(path.join(nbtExp.directory, `${nbtExp.id}.nbt`)),
   );
-  const decoded = decodeStructureNbt(fs.readFileSync(nbtPath));
   assert.equal(decoded.dataVersion, 3955);
   assert.deepEqual(decoded.size, [13, 12, 13]);
   assert.ok(decoded.palette.some((entry) => entry.Name === 'minecraft:chiseled_stone_bricks'));
@@ -53,9 +63,10 @@ const testExports = (temp: string): void => {
       (entry) => entry.Name === 'minecraft:lantern' && entry.Properties?.hanging === 'false',
     ),
   );
-
-  assert.equal(runCli('export', '--format', 'glb', cottage, '--output', glbPath).status, 0);
-  const glbMagic = fs.readFileSync(glbPath).subarray(0, 4).toString('utf8');
+  const glbMagic = fs
+    .readFileSync(path.join(glbExp.directory, `${glbExp.id}.glb`))
+    .subarray(0, 4)
+    .toString('utf8');
   assert.equal(glbMagic, 'glTF');
 };
 

@@ -7,7 +7,7 @@ export type DirectoryExport = Readonly<{
 }> &
   (
     | Readonly<{ format: 'png' | 'wav' | 'java_structure' }>
-    | Readonly<{ format: 'glb'; encoding?: 'portable' | 'optimized' }>
+    | Readonly<{ format: 'glb' | 'gltf'; encoding?: 'portable' | 'optimized'; modelPath?: string }>
     | Readonly<{
         format: 'java_block' | 'geckolib5' | 'bedrock';
         namespace: string;

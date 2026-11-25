@@ -78,7 +78,6 @@ sound bell_pattern {
 ```sh
 npx --no-install ashfox check bell_pattern.ashfox
 npx --no-install ashfox build bell_pattern.ashfox --json
-npx --no-install ashfox export bell_pattern.ashfox --variant base --output bell.wav
 ```
 
 ## 음량과 변주 선택
@@ -116,7 +115,7 @@ OGG와 Minecraft 전달은 정확한 루프 계약을 보존하지 못하므로 
 감소를 확인하세요. 파형·경계 차이·인접 기울기·스펙트로그램은 청취를 보조합니다.
 수치만으로 동물이나 재질의 사실감을 증명할 수 없습니다.
 
-저장소 `examples/sounds/src`에는 새 구절, 발걸음, 충전 마법, 금속·나무·유리
+저장소 `examples/sounds/assets/`에는 새 구절(`bird_call.ashfox`와 모듈형 `bird_voices.ashfox`), 발걸음, 충전 마법, 금속·나무·유리
 공명, 바람·불·기계 루프가 있습니다. 녹음이나 사실감을 보증하는 프리셋이 아니라
 청취가 필요한 절차적 연구 예제입니다. `bell_pattern.ashfox`는 다섯 기능을
 함께 사용합니다.

@@ -23,6 +23,31 @@ const run = (args) =>
     timeout: 120_000,
   });
 
+const renderWithPreview = (entryRel, previewBody, outPath) => {
+  const absEntry = path.join(root, entryRel);
+  const dir = path.dirname(absEntry);
+  const entryName = path.basename(absEntry);
+  const files = {};
+  for (const file of fs.readdirSync(dir)) {
+    if (file !== entryName && file.endsWith('.ashfox')) {
+      files[file] = fs.readFileSync(path.join(dir, file), 'utf8');
+    }
+  }
+  const source = fs
+    .readFileSync(absEntry, 'utf8')
+    .replace(/(\}\s*)$/, `  preview showcase {\n${previewBody}\n  }\n$1`);
+  return execFileSync(
+    process.execPath,
+    [cli, 'render', '--input-json', '--view', 'showcase', '--output', outPath],
+    {
+      input: JSON.stringify({ source, name: entryName, files }),
+      cwd: root,
+      maxBuffer: 32 * 1024 * 1024,
+      timeout: 120_000,
+    },
+  );
+};
+
 const clearRect = (canvas, stride, rect) => {
   for (let y = rect.y; y < rect.y + rect.height; y++) {
     const start = (y * stride + rect.x) * 4;
@@ -65,18 +90,13 @@ const main = async () => {
   try {
     const published = [];
     for (const [name, source] of Object.entries(sources)) {
-      const view = ['--width', '640', '--height', '360', '--environment', 'studio'];
-      run(['render', source, ...view, '--output', path.join(stage, `${name}-poster.png`)]);
-      run([
-        'render',
+      const baseFields = '    width = 640;\n    height = 360;\n    environment = studio;';
+      renderWithPreview(source, baseFields, path.join(stage, `${name}-poster.png`));
+      renderWithPreview(
         source,
-        '--gif',
-        ...view,
-        '--mode',
-        'build',
-        '--output',
+        `${baseFields}\n    kind = gif;\n    mode = build;`,
         path.join(stage, `${name}-build-replay.gif`),
-      ]);
+      );
       await gifToMp4(
         path.join(stage, `${name}-build-replay.gif`),
         path.join(stage, `${name}-build-replay.mp4`),
@@ -85,20 +105,11 @@ const main = async () => {
       const asset = JSON.parse(run(['check', source]).toString()).result;
       for (const clip of asset.animations) {
         const file = `${name}-${clip.name}`;
-        run([
-          'render',
+        renderWithPreview(
           source,
-          '--gif',
-          ...view,
-          '--clip',
-          clip.name,
-          '--duration',
-          String(clip.durationSeconds),
-          '--fps',
-          '10',
-          '--output',
+          `${baseFields}\n    kind = gif;\n    clip = "${clip.name}";\n    duration = ${clip.durationSeconds};\n    fps = 10;`,
           path.join(stage, `${file}.gif`),
-        ]);
+        );
         await gifToMp4(path.join(stage, `${file}.gif`), path.join(stage, `${file}.mp4`));
         published.push(`${file}.mp4`);
       }

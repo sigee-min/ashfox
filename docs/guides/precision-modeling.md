@@ -215,8 +215,8 @@ A useful refinement request is: “Make the head wider, keep both eyes the same
 pixel size, and preserve the expression.” Review motion again after changing
 parts near a joint.
 
-Use `check study.ashfox --node NODE_ID` for measurements and surface details;
-find node IDs with `check study.ashfox`. See the
-[CLI observation guide](observe.md) to check dimensions. Measurements describe
+Use `check study.ashfox` to inspect node IDs, measurements, surface details,
+and declared `outputs`/`previews`. See the [CLI observation guide](observe.md)
+to declare preview views. Measurements describe
 the resting geometry; watching the rendered model is still necessary to judge
 its appearance and moving attachments.

@@ -14,7 +14,7 @@ const workspaceConfig = (): string =>
     packages: [
       {
         name: 'demo',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
@@ -24,14 +24,14 @@ const workspaceConfig = (): string =>
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
   });
 
 const compileSingle = (source: string) =>
-  compileDirectoryWorkspace(workspaceConfig(), [{ path: 'pkg/main.ashfox', source }]);
+  compileDirectoryWorkspace(workspaceConfig(), [{ path: 'assets/models/main.ashfox', source }]);
 
 const mirrorSource = (extraGeometry = ''): string => `ashfox-model 1
 asset main {

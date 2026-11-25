@@ -10,6 +10,7 @@ import { failWorkspaceConfig, readClosedRecord } from './validate';
 const EXPORT_FORMATS = [
   'png',
   'glb',
+  'gltf',
   'wav',
   'java_structure',
   'java_block',
@@ -77,12 +78,11 @@ const isMinecraftExport = (value: unknown): boolean =>
   'format' in value &&
   MINECRAFT_FORMATS.includes(String(value.format) as (typeof MINECRAFT_FORMATS)[number]);
 
-const hasGlbEncoding = (value: unknown): boolean =>
+const isGltfExport = (value: unknown): boolean =>
   value !== null &&
   typeof value === 'object' &&
   'format' in value &&
-  value.format === 'glb' &&
-  'encoding' in value;
+  (value.format === 'glb' || value.format === 'gltf');
 
 const validateExportAdapter = (entry: Record<string, unknown>, pointer: string): void => {
   try {
@@ -100,6 +100,23 @@ const validateExportAdapter = (entry: Record<string, unknown>, pointer: string):
   }
 };
 
+const hasGltfField = (value: unknown, field: 'encoding' | 'modelPath'): boolean =>
+  isGltfExport(value) && typeof value === 'object' && value !== null && field in value;
+
+const exportKeysFor = (value: unknown): readonly string[] => {
+  if (isMinecraftExport(value)) {
+    return ['name', 'entry', 'format', 'directory', 'namespace', 'modelPath'];
+  }
+  return [
+    'name',
+    'entry',
+    'format',
+    'directory',
+    ...(hasGltfField(value, 'encoding') ? ['encoding'] : []),
+    ...(hasGltfField(value, 'modelPath') ? ['modelPath'] : []),
+  ];
+};
+
 const readDirectoryExport = (
   value: unknown,
   index: number,
@@ -107,16 +124,14 @@ const readDirectoryExport = (
   names: Set<string>,
 ): string => {
   const pointer = `/exports/${index}`;
-  const minecraft = isMinecraftExport(value);
-  const hasEncoding = hasGlbEncoding(value);
-  const keys = minecraft
-    ? ['name', 'entry', 'format', 'directory', 'namespace', 'modelPath']
-    : ['name', 'entry', 'format', 'directory', ...(hasEncoding ? ['encoding'] : [])];
-  const entry = readClosedRecord(value, keys, pointer);
-  if (hasEncoding && !['portable', 'optimized'].includes(String(entry.encoding))) {
+  const entry = readClosedRecord(value, exportKeysFor(value), pointer);
+  if ('encoding' in entry && !['portable', 'optimized'].includes(String(entry.encoding))) {
     failWorkspaceConfig(`${pointer}/encoding`, 'portable|optimized', entry.encoding);
   }
-  if (minecraft) validateExportAdapter(entry, pointer);
+  if ('modelPath' in entry && !directoryPath(entry.modelPath)) {
+    failWorkspaceConfig(`${pointer}/modelPath`, 'relative modelPath', entry.modelPath);
+  }
+  if (isMinecraftExport(entry)) validateExportAdapter(entry, pointer);
   const name = entry.name;
   if (typeof name !== 'string' || !/^[a-z][a-z0-9_]{0,47}$/.test(name) || names.has(name)) {
     return failWorkspaceConfig(`${pointer}/name`, 'unique export id', name);

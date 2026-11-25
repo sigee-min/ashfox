@@ -2,7 +2,7 @@
 
 “호기심 있게 둘러보기, 천천히 날개 펴기, 짧은 인사를 추가하고 발은 고정해라”처럼 동작이 전달할 의미를 에이전트에게 알려주세요. 각각 선택할 수 있도록 이름 있는 클립을 요청합니다.
 
-`check`로 클립 이름을 찾고 `render --clip NAME --time SECONDS`로 포즈, `render --gif --clip NAME`으로 전체 주기를 확인합니다. 정지 포즈는 `--clip`을 생략하세요. 스타터 폴더에서 실행합니다.
+`check`로 클립 이름을 찾고, 포즈(`clip = "NAME"; time = SECONDS;`)나 전체 주기(`kind = gif; clip = "NAME";`)를 `preview` 블록에 선언한 뒤 `render --view <name>`으로 확인합니다. 예를 들면 다음과 같습니다.
 
 {{source-code:0}}
 
@@ -58,7 +58,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent-origin`**을 사용�
 
 여러 다른 동작을 선택할 수 있지만 각 동작은 한 번만 할당하며 모두 선택된 skeleton의 rig를 대상으로 해야 합니다. component의 rig 포트도 같은 계약에 연결해야 합니다.
 
-`check`로 클립 이름과 길이를 확인한 뒤 `render --gif --clip NAME`으로 재생하세요. 특정 시점은 `render --clip NAME --time SECONDS`로 확인하고, 기본 자세는 `--clip` 없이 렌더링합니다.
+`check`로 클립 이름과 길이를 확인한 뒤, `preview` 블록(`kind = gif; clip = "NAME";` 또는 `clip = "NAME"; time = SECONDS;`)을 선언해 `render --view <name>`으로 재생하세요.
 
 ## Griffin의 여섯 클립
 

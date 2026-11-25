@@ -29,7 +29,7 @@ preserves gallery layout. Videos never autoplay. Without JavaScript the links
 open the MP4 directly. The modal traps keyboard focus through native dialog
 behavior and prevents background scrolling.
 
-The sound showcase exports `examples/sounds/src/bird_call.ashfox` through the CLI
+The sound showcase exports `examples/sounds/assets/sounds/bird_call.ashfox` through the CLI
 as `bird-base.wav` and `bird-alternate.wav`, with waveforms derived from those
 exact files. Playback, variation, downloads and the source tab refer to this same
 source. The claw-hit example remains available in the sound collection and guides.

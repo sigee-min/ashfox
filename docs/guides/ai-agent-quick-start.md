@@ -8,24 +8,24 @@ before running these commands from your asset folder.
 
 ```sh
 npx --no-install ashfox check sword.ashfox
-npx --no-install ashfox export sword.ashfox --output sword.png
+npx --no-install ashfox build sword.ashfox --json
 ```
 
-Open `sword.png` with an image viewer. It is a transparent 16×16 item, ready to
+Open the built PNG in `dist/iron_sword/exports/`. It is a transparent 16×16 item, ready to
 use as an image asset. This step needs no browser or audio encoder.
 
 ![Iron sword enlarged against a checker background](/media/guides/sword.png)
 
 The illustration above is an enlarged preview. The native export remains 16×16.
-`sword.ashfox` imports `shared.ashfox`; keep both source files together.
+`sword.ashfox` imports `../module/shared.ashfox`; keep the canonical `assets/` layout together.
 
 ## 2. Look from the angle you want
 
-With Chrome/Chromium installed:
+With Chrome/Chromium installed, declare named `preview` blocks in `fox.ashfox` and render them with `--view`:
 
 ```sh
-npx --no-install ashfox render fox.ashfox --azimuth 45 --elevation 20 --output fox-angle.png
-npx --no-install ashfox render fox.ashfox --gif --clip tail_wag --output tail-wag.gif
+npx --no-install ashfox render fox.ashfox --view orbit --output fox-angle.png
+npx --no-install ashfox render fox.ashfox --view tail_wag --output tail-wag.gif
 ```
 
 ![Fox captured at 45 degrees azimuth and 20 degrees elevation](/media/guides/fox-angle.png)

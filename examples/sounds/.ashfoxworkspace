@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "sounds",
-      "root": "src",
+      "root": "assets/sounds",
       "manifest": {
         "format": "ashfox-package",
         "version": 1,
@@ -74,13 +74,29 @@
         "modules": [],
         "dependencies": []
       }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          {
+            "subpath": "./bird_voices",
+            "path": "bird_voices.ashfox"
+          }
+        ],
+        "dependencies": []
+      }
     }
   ],
   "include": [
-    "src/**/*.ashfox"
+    "assets/**/*.ashfox"
   ],
   "ignore": [
-    "src/drafts/**"
+    "assets/drafts/**"
   ],
   "build": {
     "directory": "build"

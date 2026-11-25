@@ -4,7 +4,7 @@
 
 ## 정적 소품으로 시작하기
 
-[marker 원본](../../examples/minecraft/marker.ashfox)은 완전한 파일 하나이며 [스타터 다운로드](/downloads/starter.zip)에도 포함됩니다. 에셋 폴더에서 실행하세요.
+[marker 원본](../../examples/minecraft/assets/models/marker.ashfox)은 완전한 파일 하나이며 [스타터 다운로드](/downloads/starter.zip)에도 포함됩니다. 에셋 폴더에서 실행하세요.
 
 {{source-code:0}}
 
@@ -29,7 +29,7 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | 프로파일 | 예제 | 보여주는 구성 |
 | --- | --- | --- |
 | `block` | `examples/block/rune_bricks.ashfox` | 불필요한 회전·대칭 강제 없이 텍스처로 표현한 단일 큐브 16×16×16 블록 |
-| `block` | `examples/minecraft/marker.ashfox` | 보호 스탬프 룬과 테두리가 적용된 직교 단차 제단 블록 |
+| `block` | `examples/minecraft/assets/models/marker.ashfox` | 보호 스탬프 룬과 테두리가 적용된 직교 단차 제단 블록 |
 | `prop` | `examples/prop/lantern.ashfox` | 직교 계단 구조와 황동 지붕 브래킷이 있는 발광 컷아웃 랜턴 소품 |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | rig·surface·body·소켓 결합 자물쇠로 분리된 모듈형 소품 |
 | `creature` | `examples/griffin/workbench/main.ashfox` | 다중 모듈 애니메이션 크리처 (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
@@ -50,4 +50,4 @@ Minecraft는 지원되는 모델 export에 `namespace`와 `modelPath`를 설정�
 
 ## 배포 전 리뷰하기
 
-`render`로 정면·측면·회전 시점을 확인하고 `render --gif --clip NAME`으로 동작을 봅니다. 생성 GLB를 대상 뷰어나 엔진에 가져와 실루엣, 얼굴 방향, 텍스처 이음새, 크기, 부착물을 검사하세요. 애니메이션은 모든 클립의 전체 주기를 확인합니다. 검증이 게임 조명·카메라에서의 외형까지 보장하지는 않습니다.
+선언한 `preview` 블록과 `render --view <name>`으로 정면·측면·회전 시점 및 동작 GIF를 확인합니다. 생성 GLB를 대상 뷰어나 엔진에 가져와 실루엣, 얼굴 방향, 텍스처 이음새, 크기, 부착물을 검사하세요. 애니메이션은 모든 클립의 전체 주기를 확인합니다. 검증이 게임 조명·카메라에서의 외형까지 보장하지는 않습니다.

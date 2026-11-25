@@ -62,4 +62,4 @@ sprite 또는 가져온 sprite module 안에 둡니다. 재사용 선언에는 e
 
 {{source-code:1}}
 
-추가 마스크·재질·스탬프는 [공용 아이템 모듈](../../examples/items/src/shared.ashfox), 한 프로젝트에서 여러 개를 출력하려면 [워크스페이스 설정](../guides/workspace.md)을 참고하세요.
+추가 마스크·재질·스탬프는 [공용 아이템 모듈](../../examples/items/assets/module/shared.ashfox), 한 프로젝트에서 여러 개를 출력하려면 [워크스페이스 설정](../guides/workspace.md)을 참고하세요.

@@ -68,7 +68,8 @@ syntax. For diagnostics use [troubleshooting](https://ashfox.io/docs/guides/trou
 
 ## Create, review and deliver
 
-Use grouped native `.ashfox` sources under `asset/` for new repositories.
+Use canonical native `.ashfox` sources under `assets/{models,sprites,sounds,structures,module}/`
+for new repositories (shared modules imported by 2+ entries belong under `assets/module/`).
 Keep generated outputs under the root `build/`, ignored by Git. Follow an
 existing project's conventions when present. Configure a supported workspace
 only when needed; consult `doctor --json` first. Do not overwrite an
@@ -76,11 +77,11 @@ existing configuration or run starter generation over existing assets.
 
 After setup, continue the user's asset request. If none was provided, ask what
 they want to make; do not manufacture an arbitrary asset or stop at a docs link.
-Keep editable authority in `.ashfox` files and their imported modules. Check
-identifiers and audit scores with `ashfox check`, edit source, compile, and
-examine `ashfox render` images at useful angles and native pixel size. Render
-changed motions (`render --gif`) and listen to exported sound when the host
-supports it. Compilation alone does not establish visual or audio quality.
+Keep editable authority in `.ashfox` files and their imported modules (`outputs { ... }`,
+`preview [name] { ... }`). Check identifiers and audit scores with `ashfox check`,
+edit source, compile with `ashfox build`, and examine `ashfox render [--view <name>]`
+images and GIFs (`kind = gif;` in preview). Listen to built sound outputs when the
+host supports it. Compilation alone does not establish visual or audio quality.
 
 Use `check <workspace>`, `build <workspace>`, and `check <build-dir>` for
 configured delivery when supported.

@@ -225,12 +225,12 @@ sound bell_pattern {
 ```
 
 
-저장소의 `examples/sounds/src/bell_pattern.ashfox`는 곡선·반복·변주·공명·루프를
+저장소의 `examples/sounds/assets/sounds/bell_pattern.ashfox`는 곡선·반복·변주·공명·루프를
 함께 사용하며 출력은 96960프레임(2.02초)입니다. 다음처럼 실행합니다.
 
 ```sh
+npx --no-install ashfox check bell_pattern.ashfox
 npx --no-install ashfox build bell_pattern.ashfox --json
-npx --no-install ashfox export bell_pattern.ashfox --variant base --output bell.wav
 ```
 
 [사운드 만들고 검토하기](../guides/sounds.md)에서 청취와 전달 절차를 확인하세요.

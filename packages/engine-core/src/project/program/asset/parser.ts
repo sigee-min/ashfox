@@ -18,6 +18,12 @@ import { parseAssetDesign, parseAssetValueType } from './design';
 import { ParserAbort, badName, join, type AssetReader, type Token } from './parserSupport';
 import { parseRigContract, parseSkeleton, parseSocketContract } from './rig';
 import { parseSurface, parseSurfaceContract } from './surface';
+import {
+  parseOutputsTokens,
+  parsePreviewTokens,
+  type RawDeclaredOutput,
+  type RawDeclaredPreview,
+} from '../../directory/declarations';
 
 export class Parser {
   private index = 0;
@@ -359,6 +365,36 @@ export class Parser {
     return parseSurface(this.reader(), exported);
   }
 
+  private unitDeclarationBlock(
+    kind: AssetSourceUnit['kind'],
+    outputs: RawDeclaredOutput[],
+    previews: RawDeclaredPreview[],
+  ): boolean {
+    const isOutputs = this.matchWord('outputs');
+    if (!isOutputs && !this.matchWord('preview')) return false;
+    if (kind !== 'asset') {
+      this.fail('asset.invalid-declaration', 'outputs and preview apply only inside asset units.');
+    }
+    try {
+      if (isOutputs) {
+        const res = parseOutputsTokens(this.tokens, this.index, this.path);
+        outputs.push(...res.outputs);
+        this.index = res.nextIndex;
+      } else {
+        const res = parsePreviewTokens(this.tokens, this.index, this.path);
+        previews.push(res.preview);
+        this.index = res.nextIndex;
+      }
+    } catch (error) {
+      this.fail(
+        'asset.invalid-declaration',
+        error instanceof Error ? error.message : 'Invalid declaration block.',
+      );
+      throw new ParserAbort();
+    }
+    return true;
+  }
+
   private unit(kind: AssetSourceUnit['kind']): AssetSourceUnit | null {
     const start = this.take();
     const id = this.id('Expected a source unit name.');
@@ -366,9 +402,12 @@ export class Parser {
     this.enter();
     const imports: AssetImportDecl[] = [];
     const declarations: AssetDeclaration[] = [];
+    const outputs: RawDeclaredOutput[] = [];
+    const previews: RawDeclaredPreview[] = [];
     try {
       while (!this.check('}') && !this.end()) {
         if (this.checkWord('import')) imports.push(this.importDecl());
+        else if (this.unitDeclarationBlock(kind, outputs, previews)) continue;
         else {
           const exported = this.matchWord('export');
           const declaration = this.declaration(exported);
@@ -381,6 +420,9 @@ export class Parser {
         id: id.value,
         imports: Object.freeze(imports),
         declarations: Object.freeze(declarations),
+        ...(kind === 'asset'
+          ? { outputs: Object.freeze(outputs), previews: Object.freeze(previews) }
+          : {}),
         span: join(start.span, close.span),
       }) as AssetSourceUnit;
     } finally {

@@ -19,7 +19,7 @@ const workspaceConfig = (): string =>
     packages: [
       {
         name: 'audit-cal',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
@@ -29,7 +29,7 @@ const workspaceConfig = (): string =>
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
@@ -40,7 +40,7 @@ const compileAndAudit = (
   options?: { readonly profile?: AssetQualityProfile; readonly threshold?: number },
 ): AuditReport => {
   const compiled = compileDirectoryWorkspace(workspaceConfig(), [
-    { path: 'pkg/main.ashfox', source },
+    { path: 'assets/models/main.ashfox', source },
   ]);
   assert.equal(compiled.ok, true, compiled.ok ? '' : JSON.stringify(compiled.diagnostics));
   const product = compiled.products[0];
@@ -409,7 +409,7 @@ assert.equal(overriddenBlock.profile, 'block');
 assert.equal(overriddenBlock.profileSource, 'override');
 
 const badProfile = compileDirectoryWorkspace(workspaceConfig(), [
-  { path: 'pkg/main.ashfox', source: propSource('profile = weapon;') },
+  { path: 'assets/models/main.ashfox', source: propSource('profile = weapon;') },
 ]);
 assert.equal(badProfile.ok, false);
 assert.ok(
@@ -427,9 +427,12 @@ const compileFile = (rel: string) => {
   const files = fs
     .readdirSync(dir)
     .filter((f) => f.endsWith('.ashfox'))
-    .map((f) => ({ path: `pkg/${f}`, source: fs.readFileSync(path.join(dir, f), 'utf8') }));
+    .map((f) => ({
+      path: `assets/models/${f}`,
+      source: fs.readFileSync(path.join(dir, f), 'utf8'),
+    }));
   const entry = path.basename(rel);
-  const entrySource = files.find((f) => f.path === `pkg/${entry}`)!.source;
+  const entrySource = files.find((f) => f.path === `assets/models/${entry}`)!.source;
   const entryName = entrySource.match(/\basset\s+(\w+)/)?.[1] ?? 'main';
   const cfg = JSON.stringify({
     format: 'ashfox-workspace',
@@ -438,19 +441,19 @@ const compileFile = (rel: string) => {
     packages: [
       {
         name: 'ex',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
           dependencies: [],
           entries: [{ name: entryName, path: entry }],
           modules: files
-            .filter((f) => f.path !== `pkg/${entry}`)
-            .map((f) => ({ subpath: `./${f.path.slice(4)}`, path: f.path.slice(4) })),
+            .filter((f) => f.path !== `assets/models/${entry}`)
+            .map((f) => ({ subpath: `./${f.path.slice(14)}`, path: f.path.slice(14) })),
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
@@ -465,7 +468,7 @@ const compileFile = (rel: string) => {
 const foxReport = compileFile('examples/fox/creatures/fox.ashfox');
 const goblinReport = compileFile('examples/goblin/creatures/goblin.ashfox');
 const griffinReport = compileFile('examples/griffin/workbench/main.ashfox');
-const markerReport = compileFile('examples/minecraft/marker.ashfox');
+const markerReport = compileFile('examples/minecraft/assets/models/marker.ashfox');
 const lanternReport = compileFile('examples/prop/lantern.ashfox');
 
 for (const [name, report] of [

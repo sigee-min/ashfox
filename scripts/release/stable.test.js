@@ -79,7 +79,7 @@ const main = async () => {
     assert.match(read(file), /v1.1.0/);
     assert.match(read(file), /ashfox --version/);
     assert.match(read(file), /ashfox init assets/);
-    assert.match(read(file), /assets\/asset\/items\/sword.ashfox/);
+    assert.match(read(file), /assets\/assets\/sprites\/sword\.ashfox/);
     assert.doesNotMatch(read(file), /ashfox capabilities|Download and extract|published 1.0.0/);
   }
   assert.equal(

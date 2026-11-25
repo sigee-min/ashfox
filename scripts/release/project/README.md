@@ -1,6 +1,6 @@
 # Asset project
 
-Edit grouped sources in `asset/`. Customize `.ashfoxworkspace.mjs` to declare
+Edit grouped sources under `assets/{models,sprites,sounds,structures,module}/`. Customize `.ashfoxworkspace.mjs` to declare
 packages, stable export IDs, formats and output paths. Keep generated `build/`
 out of Git. This executable configuration is trusted Node.js project code.
 

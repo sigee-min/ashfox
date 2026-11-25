@@ -1,12 +1,7 @@
 ashfox-model 1
 
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
-sound bird_call {
-  duration = 4;
-  sampleRate = 48000;
-  seed = 7349;
-  voices = [{
-    id = "opening_whistle";
+module bird_voices {
+  export voice opening_whistle = {
     source = {
       kind = "chirp";
       trillHz = 8;
@@ -52,8 +47,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "quick_answer";
+  };
+  export voice quick_answer = {
     source = {
       kind = "chirp";
       trillHz = 13;
@@ -99,8 +94,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "rising_warble";
+  };
+  export voice rising_warble = {
     source = {
       kind = "chirp";
       trillHz = 18;
@@ -149,8 +144,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "first_trill";
+  };
+  export voice first_trill = {
     source = {
       kind = "chirp";
       trillHz = 34;
@@ -199,8 +194,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "soft_pickup";
+  };
+  export voice soft_pickup = {
     source = {
       kind = "chirp";
       trillHz = 9;
@@ -246,8 +241,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "bright_reply";
+  };
+  export voice bright_reply = {
     source = {
       kind = "chirp";
       trillHz = 12;
@@ -293,8 +288,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "curved_whistle";
+  };
+  export voice curved_whistle = {
     source = {
       kind = "chirp";
       trillHz = 16;
@@ -343,8 +338,8 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }, {
-    id = "closing_trill";
+  };
+  export voice closing_trill = {
     source = {
       kind = "chirp";
       trillHz = 42;
@@ -393,132 +388,5 @@ sound bird_call {
     };
     highpass = 1500;
     lowpass = 11500;
-  }];
-  sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "opening_whistle";
-      voice = "opening_whistle";
-      at = 0.16;
-      duration = 0.27;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "quick_answer";
-      voice = "quick_answer";
-      at = 0.53;
-      duration = 0.16;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "rising_warble";
-      voice = "rising_warble";
-      at = 0.82;
-      duration = 0.32;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "first_trill";
-      voice = "first_trill";
-      at = 1.25;
-      duration = 0.42;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "soft_pickup";
-      voice = "soft_pickup";
-      at = 2.03;
-      duration = 0.23;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "bright_reply";
-      voice = "bright_reply";
-      at = 2.37;
-      duration = 0.18;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "curved_whistle";
-      voice = "curved_whistle";
-      at = 2.68;
-      duration = 0.34;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "closing_trill";
-      voice = "closing_trill";
-      at = 3.17;
-      duration = 0.48;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
-  }];
-  variants = [{
-    id = "base";
-    seed = 218;
-  }, {
-    id = "alternate";
-    seed = 907;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -13.7;
-    peakDb = -6;
   };
 }
