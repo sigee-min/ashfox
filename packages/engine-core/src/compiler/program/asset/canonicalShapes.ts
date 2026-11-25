@@ -309,8 +309,9 @@ export const lowerCube = (
     sizeNumbers[1] * d,
     sizeNumbers[2] * d,
   ]);
-  const bakedMirror = node.uvMirrorX === true;
-  const useBoxUv = !bakedMirror && d === 1;
+  const uvMirrorX = node.uvMirrorX === true;
+  const useBoxUv = !uvMirrorX && d === 1;
+  const bakedMirror = useBoxUv ? false : uvMirrorX !== mirror;
   const uv = bakedMirror ? mirroredCubeUvs(baseUv) : baseUv;
   const faceByDirection = collectCubeFaces(node, context);
   const faces: CubeFaces = {
@@ -331,7 +332,7 @@ export const lowerCube = (
     transform,
     visible: visibleFor(inputs.properties, context, node),
     inflate,
-    mirror: bakedMirror ? false : mirror,
+    mirror: useBoxUv ? mirror : false,
     boxUv: useBoxUv,
     ...(useBoxUv ? { uvOffset: freeze([surface.chart.origin[0], surface.chart.origin[1]]) } : {}),
     faces,

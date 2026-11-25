@@ -325,3 +325,42 @@ if (emissiveTex.ok && emissiveTex.products[0]?.kind === 'model') {
   const tex = Object.values(emissiveTex.products[0].model.textures)[0]!;
   assert.equal(tex.renderMode, 'emissive');
 }
+
+// Verify mirror = true bakes mirrored face UVs when density > 1 disables boxUv.
+const unmirroredDense = compileSingle(withHeader('density = 2;'));
+const mirroredDense = compileSingle(
+  withHeader('density = 2;').replace(
+    'cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); surface = skin.blk; }',
+    'cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); mirror = true; surface = skin.blk; }',
+  ),
+);
+assert.equal(unmirroredDense.ok, true);
+assert.equal(mirroredDense.ok, true);
+if (
+  unmirroredDense.ok &&
+  mirroredDense.ok &&
+  unmirroredDense.products[0]?.kind === 'model' &&
+  mirroredDense.products[0]?.kind === 'model'
+) {
+  const rawNode = unmirroredDense.products[0].model.scene.nodes['body/root/blk']!;
+  const mirNode = mirroredDense.products[0].model.scene.nodes['body/root/blk']!;
+  assert.equal(rawNode.kind, 'cube');
+  assert.equal(mirNode.kind, 'cube');
+  if (rawNode.kind === 'cube' && mirNode.kind === 'cube') {
+    assert.equal(mirNode.boxUv, false);
+    assert.equal(mirNode.mirror, false);
+    assert.ok(mirNode.faces.north.uv![0] > mirNode.faces.north.uv![2]);
+    assert.deepEqual(mirNode.faces.east.uv, [
+      rawNode.faces.west.uv![2],
+      rawNode.faces.west.uv![1],
+      rawNode.faces.west.uv![0],
+      rawNode.faces.west.uv![3],
+    ]);
+    assert.deepEqual(mirNode.faces.west.uv, [
+      rawNode.faces.east.uv![2],
+      rawNode.faces.east.uv![1],
+      rawNode.faces.east.uv![0],
+      rawNode.faces.east.uv![3],
+    ]);
+  }
+}
