@@ -77,7 +77,7 @@ sound bell_pattern {
 ```
 
 ```sh
-npx --no-install ashfox inspect bell_pattern.ashfox
+npx --no-install ashfox check bell_pattern.ashfox
 npx --no-install ashfox build bell_pattern.ashfox --json
 npx --no-install ashfox export bell_pattern.ashfox --variant base --output bell.wav
 ```

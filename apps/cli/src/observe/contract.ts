@@ -14,6 +14,10 @@ export interface SourceInput {
 export interface Prepared {
   readonly kind: 'model' | 'sprite' | 'sound' | 'png';
   readonly revision: string;
+  readonly products?: readonly {
+    readonly kind: string;
+    readonly entry: DirectoryProduct['entry'];
+  }[];
   readonly files: readonly DirectoryFile[];
   readonly product?: DirectoryProduct;
   readonly document?: ProjectDocument;

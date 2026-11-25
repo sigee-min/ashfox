@@ -105,7 +105,7 @@ Commands that return PNG, GIF, WAV, GLB or ZIP produce binary stdout. For a save
 file, use `--output preview.png`; this works without depending on shell binary
 redirection behavior, including older Windows PowerShell versions. Existing
 files are rejected; choose a new filename. For in-memory use, collect bytes in
-Node or another process API as shown in [stdio and memory](stdio.md).
+Node or another process API as shown in [render and check](observe.md#in-memory-inputs-stdin-and-json).
 
 ## Upgrade or reproduce an installation
 

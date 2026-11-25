@@ -1,7 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { AUDIO_POLICY } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
+import { renderCapabilities } from '../observe/operations';
 import { findChrome } from './browser';
 
 declare const ASHFOX_VERSION: string;
@@ -17,16 +19,11 @@ Start in your project folder:
 
 Commands:
   init <new-folder>        Create a grouped asset project offline
-  doctor                  Check the CLI and optional Chrome tool
-  inspect <source|png>     Inspect an asset
-  export <source>          Export GLB, PNG or WAV to stdout
-  capture <source|png>     Capture a chosen view to stdout (requires Chrome)
-  replay <source>         Render an animated GIF
-  stdio                   Start a JSON-lines session
-  check <source|workspace> Validate sources
-  build <source|workspace> Build configured outputs
-  verify <build-folder>    Verify a build
-  capabilities            Print the complete machine-readable contract
+  doctor                  Check runtime readiness and machine-readable contract
+  check <input>            Validate sources/builds, inspect structure, and run quality audit
+  render <source|png>      Render PNG images, turnaround sheets, or animated GIFs (--gif)
+  build <source|workspace> Build configured outputs and verify quality gates
+  export <source>          Export GLB, glTF, Minecraft ZIP, PNG, or WAV directly
 
 --output <file> saves media; existing files are refused.
 --version prints the installed product version. doctor/init accept --json.
@@ -88,15 +85,54 @@ const doctor = (json: boolean): void => {
     'doctor',
     {
       version: cliVersion,
+      cliVersion,
       node: process.version,
       platform: process.platform,
       arch: process.arch,
+      commands: ['init', 'doctor', 'check', 'render', 'build', 'export'],
       exports: { glb: true, png: true, wav: true, ogg: true },
       capture: { available: capture, executable: chrome ?? null },
       ogg: { available: true, builtin: true },
+      render: renderCapabilities,
+      workspace: {
+        file: '.ashfoxworkspace',
+        executableFile: '.ashfoxworkspace.mjs',
+        version: 2,
+        required: false,
+      },
+      sound: {
+        contract: AUDIO_POLICY,
+        sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'],
+        features: ['curves', 'sequences', 'variation', 'loops'],
+        sampleRate: 48000,
+        channels: 1,
+        loopCodecs: ['wav'],
+        output: 'fixed-gain',
+        limits: {
+          durationSeconds: 30,
+          variants: 8,
+          workspaceSources: 32,
+          workspaceRawFrames: 11520000,
+          eventFrames: 24000000,
+          weightedFrames: 192000000,
+        },
+      },
+      source: '.ashfox',
+      outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'],
+      legacyFallback: false,
+      packs: {
+        formats: ['minecraft_java', 'game_assets'],
+        itemDefinitions: ['legacy', 'modern'],
+        metadata: ['legacy', 'range'],
+        audio: 'vorbis',
+        encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
+        archive: 'zip',
+      },
+      usage:
+        'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source|png> [options]; ashfox build <source|workspace>; ashfox export <source> [options]',
     },
     json,
-    `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV / OGG: ready (built-in)\nCapture: ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\n`,
+    `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV / OGG: ready (built-in)\nRender (Chrome): ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\n`,
   );
 };
 export const runOnboarding = (args: readonly string[]): boolean => {

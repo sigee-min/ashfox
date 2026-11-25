@@ -1,10 +1,10 @@
 # 문제 해결
 
-프로젝트 명령은 JSON 응답의 `diagnostics[].code`와 `message`를 반환합니다. 단일 에셋 명령은 stderr로 JSON 오류를, stdio 세션은 `error.code`·`error.message`가 있는 `ok: false` 응답을 반환합니다. 종료 코드가 0이 아니면 새 빌드를 성공한 결과로 사용하면 안 됩니다. 발행 실패 시 이전 선택 빌드는 보존합니다.
+프로젝트·확인 명령(`init --json`, `doctor --json`, `check`, `build`)은 JSON 응답의 `diagnostics[].code`와 `message`를 반환합니다. 단일 에셋 미디어 명령(`render`, `export`)은 stderr로 JSON 오류를 반환합니다. 종료 코드가 0이 아니면 새 빌드를 성공한 결과로 사용하면 안 됩니다. 발행 실패 시 이전 선택 빌드는 보존합니다.
 
 | 증상·코드 | 조치 |
 | --- | --- |
-| `cli.arguments` | 프로젝트 명령 `check`, `build`, `verify`, `capabilities`의 플래그는 `--json`만 지원. 관찰 옵션은 [캡처](observe.md) 참고 |
+| `cli.arguments` | `init`, `doctor`, `build`의 플래그는 `--json`만 지원. `check`, `render`, `export` 옵션은 [렌더링과 확인](observe.md) 참고 |
 | `workspace.config` | 표시된 필드 수정. 루트는 필수 package·build·export와 선택 `packs`를 갖는 정확한 버전 2 설정이며 알 수 없는 필드는 실패 |
 | 예상하지 않은 에셋 빌드 | check·build는 상위 `.ashfoxworkspace`의 전체 프로젝트 선택. 독립 관찰·export는 명시 입력만 선택. 파일을 명시하거나 독립 진입점을 설정 범위 밖에 배치 |
 | 누락·미등록 원본이나 모듈 | 선택된 원본과 도달 가능한 모듈 등록, include·ignore·상대 import 수정 |
@@ -41,4 +41,4 @@
 
 CLI 명령, 진단 JSON, 컴파일러·Node 버전, 관련 원본·설정을 포함합니다. 대상 엔진·임포터와 정확히 실패한 에셋 ID를 알려주세요. 자격 증명과 관련 없는 프로젝트 파일은 제외합니다.
 
-캡처 실패는 `ASHFOX_CHROME_PATH`, 알 수 없는 클립·노드·변형 ID, [관찰 가이드](observe.md)의 미디어 예산을 확인합니다. 오류는 stderr로 보내 stdout에 오류 텍스트가 섞이지 않습니다. 세션 load 실패·취소는 이전 리비전을 유지하므로 `source`를 읽고 그 `expectedRevision`으로 다시 시도하세요.
+렌더링 실패는 `ASHFOX_CHROME_PATH`, 알 수 없는 클립·노드·변형 ID, [렌더링과 확인](observe.md)의 미디어 제한을 확인합니다. `render` 오류는 stderr로 보내 stdout에 오류 텍스트가 섞이지 않습니다.

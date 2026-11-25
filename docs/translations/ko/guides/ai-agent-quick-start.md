@@ -38,7 +38,7 @@ sword.ashfox와 가져오는 shared.ashfox를 읽고 원본만 편집해라.
 ## 4. 다음 작업 선택하기
 
 - [모델 만들기](models.md), [아이템 그리기](sprites.md), [사운드 만들기](sounds.md).
-- 지속적인 에이전트 세션을 포함한 [원본·미디어 메모리 전달](stdio.md).
+- stdin/JSON 메모리 입력을 포함한 [렌더링과 확인](observe.md).
 - [웹 게임에서 에셋 실행](web-game.md).
 - [Minecraft 리소스 팩 빌드](minecraft-packs.md).
 - 공통 출력 규칙이 필요할 때 [여러 에셋 관리](workspace.md).

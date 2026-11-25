@@ -359,7 +359,7 @@ const main = () => {
   }
   const current = requireBytes(DESCRIPTOR_PATH, 'descriptor');
   if (!current.equals(Buffer.from(source, 'utf8'))) {
-    fail('descriptor is stale; run npm run showcase:seal');
+    fail('descriptor is stale; run node scripts/showcase/verify.js --write');
   }
   console.log(`showcase descriptor current: ${EXPECTED_SELECTORS.length} entries`);
 };

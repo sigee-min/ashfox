@@ -33,7 +33,6 @@ starter['package.json'] = Buffer.from('{"name":"my-ashfox-assets","private":true
 zip('starter.zip', starter);
 for (const name of ['items', 'game-assets', 'resource-pack'])
   zip(name + '.zip', sources('examples/' + name));
-zip('stdio-client.zip', sources('examples/stdio-client'));
 const game = sources('examples/web-game');
 for (const [file, bytes] of Object.entries(sources('examples/game-assets')))
   game['assets/' + file] = bytes;

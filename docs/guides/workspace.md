@@ -42,9 +42,9 @@ Its sources are under `examples/items/src/`. Keep the configuration and sources 
 From the extracted example folder:
 
 ```sh
-npx --no-install ashfox check .ashfoxworkspace --json
+npx --no-install ashfox check .ashfoxworkspace
 npx --no-install ashfox build .ashfoxworkspace --json
-npx --no-install ashfox verify build --json
+npx --no-install ashfox check build
 ```
 
 The CLI returns the immutable bundle and export paths. Resolve the selected build

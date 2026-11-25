@@ -12,8 +12,8 @@ No recordings, external samples or executable source expressions are accepted.
 ## Local viewer
 
 ```sh
-npm run build:audio
-npm run audio:review
+npm --workspace @ashfox/audio-study run build
+npm --workspace @ashfox/audio-study run dev
 ```
 
 The server opens at `http://127.0.0.1:3134`. The English viewer offers sound
@@ -31,7 +31,7 @@ silently replace a working session. Legacy JSON stores are not migrated.
 
 ## Agent workflow
 
-Use `npm run audio:agent` with one JSON request on stdin, or `POST /api`.
+Use `npm --workspace @ashfox/audio-study run agent` with one JSON request on stdin, or `POST /api`.
 `GET /capabilities` supplies exact request fields, syntax and native examples.
 
 1. `inspect` the head and complete source inventory.
@@ -54,8 +54,8 @@ Game-specific runtime integration consumes CLI build outputs.
 ## Verification
 
 ```sh
-npm run test:audio
-npm run test:audio:integration
+npm --workspace @ashfox/audio-study run test
+npm --workspace @ashfox/audio-study run test:integration
 ```
 
 The integration suite uses the real encoder and HTTP API, checks shared-core

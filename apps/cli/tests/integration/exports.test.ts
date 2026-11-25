@@ -110,7 +110,7 @@ try {
     );
     assert.equal(item.model.model, 'demo:item/' + name);
   }
-  success(run('verify', path.join(temp, 'dist/build')));
+  success(run('check', path.join(temp, 'dist/build')));
   assert.equal(success(run('build')).bundleHash, first.bundleHash);
   const readerPath = path.join(temp, 'readers.cjs');
   require('esbuild').buildSync({

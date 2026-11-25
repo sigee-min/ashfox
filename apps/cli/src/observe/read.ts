@@ -1,13 +1,13 @@
 import { BuildFailure } from '@ashfox/asset-build';
 import { DEFAULT_VIEW, type SourceInput, type ViewOptions } from './contract';
-export const record = (value: unknown, keys: readonly string[]): Record<string, unknown> => {
+const record = (value: unknown, keys: readonly string[]): Record<string, unknown> => {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new BuildFailure('observe.contract', 'Expected object', 2);
   for (const key of Object.keys(value))
     if (!keys.includes(key)) throw new BuildFailure('observe.contract', 'Unknown field: ' + key, 2);
   return value as Record<string, unknown>;
 };
-export const text = (value: unknown, name: string): string => {
+const text = (value: unknown, name: string): string => {
   if (typeof value !== 'string' || !value.length)
     throw new BuildFailure('observe.contract', 'Expected nonempty string: ' + name, 2);
   return value;

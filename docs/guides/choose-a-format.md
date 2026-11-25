@@ -1,23 +1,24 @@
 # Choose a workflow and format
 
 Start with a single command for one asset. Add a workspace when a project needs
-shared source selection, IDs and delivery folders. Use a persistent stdio session
-when an agent or application needs repeated operations on an asset in memory.
+shared source selection, IDs and delivery folders. Pass `--stdin` or `--input-json`
+when driving `check`, `render`, or `export` from memory.
 
-| Task | Single-asset CLI | Stdio session | Workspace build |
-| --- | --- | --- | --- |
-| Native model, sprite and sound source | Yes | Yes, files or memory graph | Yes, declared sources |
-| Existing PNG input | Yes | Yes, file or base64 | No |
-| Desired-angle PNG, atlas, waveform | `capture` | `capture` | Separate observation command |
-| Animation or turntable GIF | `replay` | `replay` | Separate observation command |
-| Source replacement in memory | New stdin input | `load` with expected revision | Source files on disk |
-| GLB | Raw binary | Base64 media | Named export |
-| glTF | ZIP via `export --format gltf` | ZIP media | Not a workspace export format |
-| Java block, GeckoLib 5, Bedrock models | ZIP | ZIP media | Named export directories |
-| Sprite PNG / sound WAV | Raw binary | Base64 media | Named exports |
-| OGG / complete Java resource pack / game manifest | Use a workspace build | Not a session export | Yes |
+| Task | Single-asset CLI | Workspace build |
+| --- | --- | --- |
+| Native model, sprite and sound source | Yes (`check`, `render`, `export`) | Yes, declared sources |
+| Existing PNG input | Yes (`check`, `render`, `export`) | No |
+| Inspect structure & audit scores | `check` | `check <workspace>` / `build` |
+| Desired-angle PNG, atlas, waveform | `render` | Separate single-asset `render` |
+| Animation or turntable GIF | `render --gif` | Separate single-asset `render --gif` |
+| Source replacement in memory | `--stdin` / `--input-json` | Source files on disk |
+| GLB | Raw binary (`export`) | Named export |
+| glTF | ZIP via `export --format gltf` | Not a workspace export format |
+| Java block, GeckoLib 5, Bedrock models | ZIP (`export`) | Named export directories |
+| Sprite PNG / sound WAV | Raw binary (`export`) | Named exports |
+| OGG / complete Java resource pack / game manifest | Use a workspace build | Yes |
 
-See [observation](observe.md), [stdio](stdio.md) and [workspace settings](workspace.md).
+See [render and check](observe.md) and [workspace settings](workspace.md).
 
 ## Choose the receiving format
 

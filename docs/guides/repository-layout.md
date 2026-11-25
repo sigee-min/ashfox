@@ -131,7 +131,7 @@ own disjoint output directories. Current source/worker budgets still apply; see
 
 ```sh
 npx --no-install ashfox build .ashfoxworkspace.mjs --json
-npx --no-install ashfox verify build/assets/compiler --json
+npx --no-install ashfox check build/assets/compiler --json
 node assets.mjs
 ```
 

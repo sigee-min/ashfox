@@ -6,8 +6,9 @@ description: Create, refine, animate, and review voxel game assets as native .as
 # Ashfox
 
 Create assets as code. The editable authority is the project's `.ashfox` files
-and their imported modules. Use the CLI to inspect, capture, replay, compile and
-export them. The website provides documentation and example previews.
+and their imported modules. Use the CLI (`init`, `doctor`, `check`, `render`,
+`build`, `export`) to validate, inspect, audit, render, compile and export them.
+The website provides documentation and example previews.
 
 Read https://ashfox.io/agent.md in full for the shared installation and documentation entry point. A skill is optional; users can start by pasting the landing page setup prompt into their existing coding agent.
 
@@ -21,7 +22,7 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
    https://ashfox.io/docs/guides/install/ and explain the installation needed.
 3. Read https://ashfox.io/docs/guides/agent-workflow/ and the relevant DSL reference
    before using unfamiliar language features. Use `ashfox --help` and
-   `ashfox capabilities` for the installed command contract. Published examples
+   `ashfox doctor --json` for the installed command contract. Published examples
    may describe a newer CLI; check release notes when a feature is unavailable.
 4. Follow the existing asset repository configuration. New projects use grouped
    sources under `asset/`, generated outputs under root `build/`, and Git ignores
@@ -38,20 +39,20 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
   paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
   layout is required.
 - Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (20–42% pre-grain delta with moderate `ao` and omitted-`from` `gradient`), warm darks (`luma >= 0.14`, no near-black crush), painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals, and material-appropriate `grain` (`clustered` for fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
-- Run `ashfox audit` alongside visual inspection: hit **0 failed Hard Gates**
-  and `score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and
+- Run `ashfox check <source>` alongside visual inspection: hit **0 failed Hard Gates**
+  and `audit.score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and
   `export`) block any model without `settings.profile` or failing the quality gate.
-- Capture `--sheet turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) and `--sheet
-  inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`), inspect `TEXTURE_ID` atlases,
-  and replay each changed motion. Listen to sound variants. Successful
-  compilation alone does not establish visual or audio quality.
-- Use `ashfox stdio` for repeated operations on an asset in memory. Follow its
-  revision contract when replacing the complete source graph.
-- For game delivery, run check, build and verify against the configured workspace.
+- Render `--sheet turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) and `--sheet
+  inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`), render `--texture TEXTURE_ID` atlases,
+  and render animated GIFs (`ashfox render --gif --clip ...`) for each changed motion.
+  Listen to exported WAV/OGG sound variants. Compilation alone does not establish visual or audio quality.
+- Pass `--stdin` or `--input-json` to `check`, `render`, or `export` when operating on
+  source graphs in memory.
+- For game delivery, run `check <workspace>`, `build <workspace>`, and `check <build-dir>`.
   Consume deterministic outputs through the game's adapter; do not hand-edit
   generated PNG, GLB, audio or runtime manifests.
 - Save or export the files requested by the user. Report exact output locations,
-  audit score/profile, what was inspected, and any behavior still unverified in
+  `check` audit score/profile, what was inspected/rendered, and any behavior still unverified in
   the receiving game. Do not claim successful output from a preflight check alone.
 
 ## Skill updates

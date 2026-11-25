@@ -90,10 +90,6 @@
         "route": "/docs/guides/save-and-export/"
       },
       {
-        "source": "guides/stdio.md",
-        "route": "/docs/guides/stdio/"
-      },
-      {
         "source": "guides/automation.md",
         "route": "/docs/guides/automation/"
       },

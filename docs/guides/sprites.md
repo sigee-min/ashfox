@@ -64,11 +64,11 @@ compilation. Enlarging a preview does not increase the delivered resolution.
 ## Review pixels
 
 ```sh
-npx --no-install ashfox capture gem.ashfox --scale 16 --background checker --output gem-preview.png
-npx --no-install ashfox inspect gem.ashfox
+npx --no-install ashfox render gem.ashfox --scale 16 --background checker --output gem-preview.png
+npx --no-install ashfox check gem.ashfox
 ```
 
-Check the native image as well as the enlarged view. `inspect` returns a receipt
+Check the native image as well as the enlarged view. `check` returns a receipt
 and pixel ownership evidence. On sources with shaded parts, use `--stage
 silhouette`, `--stage shade` or `--stage grain` to inspect the construction.
 

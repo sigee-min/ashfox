@@ -5,7 +5,7 @@ const commands = (lines) => '```sh\n' + lines.join('\n') + '\n```';
 const instructions = ({ cli, starter, onboarding, grouped = false }) => ({
   install: commands([
     `npm install --save-dev ${cli}`,
-    `npx --no-install ashfox ${onboarding ? '--version' : 'capabilities'}`,
+    `npx --no-install ashfox ${onboarding ? '--version' : 'doctor --json'}`,
   ]),
   start: onboarding
     ? 'Create the bundled starter offline and export your first item:\n\n' +
@@ -20,7 +20,7 @@ const instructions = ({ cli, starter, onboarding, grouped = false }) => ({
     : 'The second command prints `ok: true` and the supported commands.',
   offline: commands([
     'npm install --offline --save-dev ./tools/ashfox-cli.tgz',
-    `npx --no-install ashfox ${onboarding ? '--version' : 'capabilities'}`,
+    `npx --no-install ashfox ${onboarding ? '--version' : 'doctor --json'}`,
   ]),
   availability: onboarding
     ? 'The stable CLI includes help, version, environment checks and offline starter creation.'

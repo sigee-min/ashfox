@@ -1,13 +1,12 @@
-import { AUDIO_POLICY } from '@ashfox/audio-core';
-import { runOnboarding, cliVersion, isOnboardingCommand } from './onboarding/cli';
-import { runObservation } from './observe/cli';
+import { runOnboarding, isOnboardingCommand } from './onboarding/cli';
+import { runAssetCheck, runMediaCommand } from './observe/cli';
 import { prepare } from './observe/prepare';
-import { observationCapabilities } from './observe/session';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { runWorker } from './worker';
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
+import * as path from 'node:path';
 import {
   readSnapshot,
   checkSnapshot,
@@ -46,10 +45,78 @@ const result = (ok: boolean, value: unknown, diagnostics: readonly unknown[] = [
     }) + '\n',
   );
 };
+
+const ASSET_CHECK_FLAGS = new Set([
+  '--stdin',
+  '--input-json',
+  '--name',
+  '--input-format',
+  '--node',
+  '--profile',
+  '--threshold',
+]);
+
+const hasAncestorWorkspace = (file: string): boolean => {
+  let directory = path.dirname(fs.realpathSync(file));
+  while (true) {
+    if (
+      fs.existsSync(path.join(directory, '.ashfoxworkspace')) ||
+      fs.existsSync(path.join(directory, '.ashfoxworkspace.mjs'))
+    )
+      return true;
+    if (fs.existsSync(path.join(directory, '.git')) || path.dirname(directory) === directory)
+      return false;
+    directory = path.dirname(directory);
+  }
+};
+
+const runCheck = async (): Promise<void> => {
+  const usesSingleAssetOptions = args.slice(1).some((a) => ASSET_CHECK_FLAGS.has(a));
+  const positional: string[] = [];
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--json' || arg === '--stdin' || arg === '--input-json') continue;
+    if (['--name', '--input-format', '--node', '--profile', '--threshold'].includes(arg)) {
+      i++;
+      continue;
+    }
+    if (!arg.startsWith('--')) positional.push(arg);
+  }
+  const target = positional[0];
+  if (
+    !usesSingleAssetOptions &&
+    positional.length === 1 &&
+    fs.existsSync(target) &&
+    fs.statSync(target).isDirectory()
+  ) {
+    if (args.some((a) => a.startsWith('--') && a !== '--json'))
+      throw new BuildFailure('cli.arguments', 'Directory verification accepts only --json', 2);
+    result(true, verifyCurrent(target));
+    return;
+  }
+  if (usesSingleAssetOptions || positional.length === 0 || target?.endsWith('.png')) {
+    result(true, await runAssetCheck(args, __filename, controller.signal));
+    return;
+  }
+  if (positional.length !== 1 || args.some((a) => a.startsWith('--') && a !== '--json')) {
+    throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
+  }
+  if (target.endsWith('.ashfox') && !hasAncestorWorkspace(target)) {
+    result(true, await runAssetCheck(args, __filename, controller.signal));
+    return;
+  }
+  const snapshot = readSnapshot(target);
+  result(true, await runWorker(__filename, snapshot, '', 'check', controller.signal));
+};
+
 const main = async (): Promise<void> => {
   if (runOnboarding(args)) return;
-  if (['audit', 'inspect', 'capture', 'replay', 'export', 'stdio'].includes(command)) {
-    await runObservation(args, __filename, controller.signal);
+  if (['render', 'export'].includes(command)) {
+    await runMediaCommand(args, __filename, controller.signal);
+    return;
+  }
+  if (command === 'check') {
+    await runCheck();
     return;
   }
   if (
@@ -63,80 +130,14 @@ const main = async (): Promise<void> => {
     );
   }
   const positional = args.slice(1).filter((a) => a !== '--json');
-  if (command === 'capabilities') {
-    if (positional.length) throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
-    result(true, {
-      cliVersion,
-      commands: [
-        'init',
-        'doctor',
-        'check',
-        'build',
-        'verify',
-        'capabilities',
-        'audit',
-        'inspect',
-        'capture',
-        'replay',
-        'export',
-        'stdio',
-      ],
-      observation: observationCapabilities,
-      workspace: {
-        file: '.ashfoxworkspace',
-        executableFile: '.ashfoxworkspace.mjs',
-        version: 2,
-        required: false,
-      },
-      sound: {
-        contract: AUDIO_POLICY,
-        sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'],
-        features: ['curves', 'sequences', 'variation', 'loops'],
-        sampleRate: 48000,
-        channels: 1,
-        loopCodecs: ['wav'],
-        output: 'fixed-gain',
-        limits: {
-          durationSeconds: 30,
-          variants: 8,
-          workspaceSources: 32,
-          workspaceRawFrames: 11520000,
-          eventFrames: 24000000,
-          weightedFrames: 192000000,
-        },
-      },
-      source: '.ashfox',
-      outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'],
-      legacyFallback: false,
-      packs: {
-        formats: ['minecraft_java', 'game_assets'],
-        itemDefinitions: ['legacy', 'modern'],
-        metadata: ['legacy', 'range'],
-        audio: 'vorbis',
-        encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
-        archive: 'zip',
-      },
-      usage:
-        'ashfox check|build <source|workspace>; ashfox verify <build-directory>; ashfox audit|inspect|capture|replay|export <source|png> [options]; ashfox stdio',
-    });
-    return;
-  }
-  if (!['check', 'build', 'verify'].includes(command) || positional.length !== 1) {
+  if (command !== 'build' || positional.length !== 1) {
     throw new BuildFailure(
       'cli.arguments',
-      'Expected check|build .ashfox source or optional workspace, or verify build-directory',
+      'Unknown or invalid command. Expected init, doctor, check, render, build, or export.',
       2,
     );
   }
-  if (command === 'verify') {
-    result(true, verifyCurrent(positional[0]));
-    return;
-  }
   const snapshot = readSnapshot(positional[0]);
-  if (command === 'check') {
-    result(true, await runWorker(__filename, snapshot, '', 'check', controller.signal));
-    return;
-  }
   const toolchain = JSON.stringify({
     code: crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),
     node: process.version,
@@ -205,7 +206,7 @@ if (!isMainThread) {
             );
       if (isOnboardingCommand(command) && !args.includes('--json'))
         process.stderr.write(`ashfox: ${failure.message}\n`);
-      else if (['audit', 'inspect', 'capture', 'replay', 'export', 'stdio'].includes(command))
+      else if (['render', 'export'].includes(command))
         process.stderr.write(
           JSON.stringify({ ok: false, error: { code: failure.code, message: failure.message } }) +
             '\n',

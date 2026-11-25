@@ -1,14 +1,13 @@
 # Troubleshooting
 
-Project commands return `diagnostics[].code` and `message` in their JSON response.
-Single-asset commands report JSON errors on stderr; stdio sessions return an
-`ok: false` reply with `error.code` and `error.message`. A nonzero exit
+Project and check commands (`init --json`, `doctor --json`, `check`, `build`) return `diagnostics[].code` and `message` in their JSON response.
+Single-asset media commands (`render`, `export`) report JSON errors on stderr. A nonzero exit
 code means the new build must not be consumed as successful. Failed publication
 preserves the previous selected build.
 
 | Symptom / code | What to do |
 | --- | --- |
-| `cli.arguments` | For project commands (`check`, `build`, `verify`, `capabilities`), only `--json` is a flag. For observation options, see [capture](observe.md). |
+| `cli.arguments` | `init`, `doctor`, and `build` accept only `--json`. For `check`, `render`, and `export` options, see [Render and check](observe.md). |
 | `workspace.config` | Fix the reported field. The root is an exact version-2 configuration with required package/build/export fields and optional `packs`. Unknown fields fail. |
 | Unexpected assets build | For `check` and `build`, a parent `.ashfoxworkspace` selects the whole project. Standalone observation/export commands always select their explicit input. Pass that file explicitly or move a standalone entry outside its scope. |
 | Missing/undeclared source or module | Register every selected source and reachable module; fix include/ignore rules and relative imports. |
@@ -58,7 +57,6 @@ and configuration. Include the intended
 engine/importer and the exact failing asset ID. Keep credentials and unrelated
 project files out of the report.
 
-For capture failures, check `ASHFOX_CHROME_PATH`, unknown clip/node/variant IDs,
-and the media budget in the [observation guide](observe.md). Capture errors use
-stderr, leaving stdout free of error text. A failed or cancelled session load
-keeps the previous revision; read `source` and retry with its `expectedRevision`.
+For render failures, check `ASHFOX_CHROME_PATH`, unknown clip/node/variant IDs,
+and the media budget in the [render guide](observe.md). `render` errors use
+stderr, leaving stdout free of error text.

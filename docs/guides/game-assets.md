@@ -136,7 +136,7 @@ plays sound, follow [the web-game example](web-game.md).
 
 ```sh
 npx --no-install ashfox build .ashfoxworkspace --json
-npx --no-install ashfox verify dist/build --json
+npx --no-install ashfox check dist/build
 ```
 
 Use the returned pack directory, or unpack its ZIP into your game’s asset

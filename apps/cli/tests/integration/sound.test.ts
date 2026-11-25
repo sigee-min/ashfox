@@ -23,10 +23,10 @@ const success = (...args: string[]) => {
 const main = async () => {
   const input = path.join(temp, 'bell_pattern.ashfox');
   fs.copyFileSync(path.join(root, 'examples/sounds/src/bell_pattern.ashfox'), input);
-  const capabilities = success('capabilities').result.sound;
+  const capabilities = success('doctor', '--json').result.sound;
   assert.ok(capabilities.features.includes('loops'));
   assert.equal(capabilities.output, 'fixed-gain');
-  const inspection = success('inspect', input);
+  const inspection = success('check', input).result;
   const details = inspection.variants ?? inspection;
   assert.ok(JSON.stringify(details).includes('96960'));
   const output = path.join(temp, 'bell.wav');
@@ -66,7 +66,7 @@ const main = async () => {
       variant.frames,
     );
   }
-  success('verify', path.join(temp, config.build.directory), '--json');
+  success('check', path.join(temp, config.build.directory), '--json');
   const bad = structuredClone(manifest);
   bad.assets[0].variants[0].playback.endFrame--;
   assert.throws(() => readGameAssetManifest(bad), /playback/);
@@ -83,7 +83,7 @@ const main = async () => {
   assert.match(failed.stdout, /sound.loop.codec/);
   assert.doesNotMatch(failed.stdout, /ENOENT/);
   assert.equal(
-    success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash,
+    success('check', path.join(temp, config.build.directory), '--json').result.bundleHash,
     built.bundleHash,
   );
   fs.writeFileSync(
@@ -128,7 +128,7 @@ const main = async () => {
   assert.match(minecraft.stdout, /sound.loop.target/);
   assert.doesNotMatch(minecraft.stdout, /ENOENT/);
   assert.equal(
-    success('verify', path.join(temp, config.build.directory), '--json').result.bundleHash,
+    success('check', path.join(temp, config.build.directory), '--json').result.bundleHash,
     built.bundleHash,
   );
 

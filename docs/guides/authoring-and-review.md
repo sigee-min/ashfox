@@ -27,14 +27,14 @@ Give the agent the actual source folder and intended output ID. Use
 | Sound | Every variant, attack/release, clipping, loudness relative to other effects |
 | Bundle | Expected IDs, paths, selected variants and receiving-engine import settings |
 
-Use [CLI observation](observe.md) for model views, motion GIFs, native/enlarged
-sprites and sound waveforms. Export WAV for listening. A capture identifies an
-observation; a game export contains the asset itself.
+Use [CLI render and check](observe.md) for model views, motion GIFs, native/enlarged
+sprites and sound waveforms. Export WAV for listening. `render` creates an
+observation; `export` produces the asset itself.
 
 ## Iterate safely
 
-For one asset, edit source, `inspect`, then `capture` or `replay` and export it.
-For a configured delivery, run `check`, `build` and `verify`, and inspect the
+For one asset, edit source, `check`, then `render` (or `render --gif`) and `export` it.
+For a configured delivery, run `check <workspace>`, `build <workspace>`, and `check <build-dir>`, and inspect the
 newly returned output directory. Do not accidentally review a previous bundle.
 Keep source changes in Git so you can compare and revert deliberately.
 

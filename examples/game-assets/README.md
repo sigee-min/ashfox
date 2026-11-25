@@ -5,7 +5,7 @@ one engine-neutral folder and ZIP:
 
 ```sh
 npx --no-install ashfox build .ashfoxworkspace --json
-npx --no-install ashfox verify dist/build --json
+npx --no-install ashfox check dist/build
 ```
 
 No FFmpeg is needed with the example's `audio: wav`. Set `audio: ogg` and provide

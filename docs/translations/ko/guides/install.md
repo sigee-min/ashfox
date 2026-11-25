@@ -62,7 +62,7 @@ Windows PowerShell:
 
 ## 셸과 바이너리 출력
 
-PNG·GIF·WAV·GLB·ZIP을 반환하는 명령은 stdout에 바이너리를 출력합니다. 파일로 저장하려면 `--output preview.png`를 사용하세요. 이전 Windows PowerShell을 포함해 셸의 바이너리 리다이렉션 동작에 의존하지 않습니다. 기존 파일은 거부하므로 새 파일명을 선택합니다. 메모리로 사용할 때는 [stdio와 메모리](stdio.md)처럼 Node 또는 다른 프로세스 API에서 바이트를 수집하세요.
+PNG·GIF·WAV·GLB·ZIP을 반환하는 명령은 stdout에 바이너리를 출력합니다. 파일로 저장하려면 `--output preview.png`를 사용하세요. 이전 Windows PowerShell을 포함해 셸의 바이너리 리다이렉션 동작에 의존하지 않습니다. 기존 파일은 거부하므로 새 파일명을 선택합니다. 메모리로 사용할 때는 [렌더링과 확인](observe.md#in-memory-inputs-stdin-and-json)처럼 Node 또는 다른 프로세스 API에서 `--stdin`/`--input-json`과 stdout 바이트를 수집하세요.
 
 ## 설치 업그레이드와 재현
 

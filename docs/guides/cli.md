@@ -6,17 +6,17 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 | --- | --- | --- |
 | `--help` / `help` | None | Human-readable command guide |
 | `--version` | None | Product version |
-| `doctor [--json]` | None | Basic exports and optional tool availability |
 | `init <new-folder> [--json]` | New folder | Offline starter sources |
-| `capabilities --json` | None | Supported commands, output formats and pack settings |
-| `check <input> --json` | `.ashfox` entry, `.ashfoxworkspace` or `.ashfoxworkspace.mjs` | Source hash and compiled product kinds/entries |
-| `build <input> --json` | `.ashfox` entry, `.ashfoxworkspace` or `.ashfoxworkspace.mjs` | Verified bundle, catalog and export directories |
-| `verify <directory> --json` | Configured build directory | Selected bundle, receipt and catalog after integrity checks |
+| `doctor [--json]` | None | Runtime readiness and machine-readable contract |
+| `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, PNG, or build folder | Source validation, node/asset inspection, quality audit, or build integrity check |
+| `render <input> [options]` | `.ashfox` source or PNG | PNG still image, contact sheet (`--sheet`), waveform, or GIF (`--gif`) |
+| `build <input> [--json]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Verified bundle, catalog, and export directories |
+| `export <input> [options]` | `.ashfox` source or PNG | GLB, glTF ZIP, Minecraft ZIP, PNG, or WAV |
 
-`capabilities`, `check`, `build` and `verify` return JSON even without `--json`,
-and accept no other flags. `help` is human-readable; use `capabilities` for agents. Their settings belong in source files, `.ashfoxworkspace` or `.ashfoxworkspace.mjs`.
-Single-asset observation commands are documented below and have their own options.
-There is no `watch`, `clean` or automatic game-install command.
+`init`, `doctor`, `check`, and `build` return JSON using the `ashfox-cli-result` envelope (`doctor`/`init` take `--json`; `check`/`build` always return JSON).
+`help` is human-readable; use `doctor --json` for agents to inspect the complete contract.
+`render` and `export` write binary media to stdout (or `--output <file>`) and JSON diagnostics to stderr.
+There is no `watch`, `clean`, or automatic game-install command.
 
 ## First-run commands
 
@@ -33,8 +33,8 @@ npx --no-install ashfox export assets/asset/items/sword.ashfox --output sword.pn
 
 Run from the repository where you installed the CLI. `init` creates a new folder
 with grouped `asset/` sources, `.ashfoxworkspace.mjs`, the `assets.mjs` game
-adapter and a `.gitignore` for root `build/` from that compiler's bundled starter.
-Its parent must exist. Existing folders (even empty ones), files and symlinks are
+adapter, and a `.gitignore` for root `build/` from that compiler's bundled starter.
+Its parent must exist. Existing folders (even empty ones), files, and symlinks are
 refused; no existing project is merged or rewritten. It does not install npm
 packages or contact the network. A write failure
 removes the new partial folder. `init --json` reports the directory and files.
@@ -43,10 +43,9 @@ First-run commands print readable errors to stderr; `doctor` and `init` with
 
 `doctor` reports the CLI/Node versions, built-in OGG readiness, and whether
 Chrome can launch. Missing optional Chrome does not cause a failure exit code.
-`doctor --json` reports availability without creating project files. This is an
-environment check; use a real capture or OGG build to verify your asset pipeline.
+`doctor --json` returns runtime readiness plus supported commands, render/export
+formats, sound synthesis contracts, and workspace schemas without creating project files.
 An explicitly configured executable path takes precedence over discovery.
-
 
 ## Build one source
 
@@ -64,27 +63,26 @@ If an ancestor `.ashfoxworkspace` or `.ashfoxworkspace.mjs` exists, its entire p
 one entry does not bypass project checks. Discovery stops at the nearest Git
 root or filesystem root. Invalid configuration fails instead of falling back.
 
-## Build a project
+## Build and check a project
 
 ```sh
-npx --no-install ashfox check game-assets/.ashfoxworkspace --json
+npx --no-install ashfox check game-assets/.ashfoxworkspace
 npx --no-install ashfox build game-assets/.ashfoxworkspace --json
-npx --no-install ashfox verify game-assets/dist/build --json
+npx --no-install ashfox check game-assets/dist/build
 ```
 
-Use the actual `build.directory`, not an export directory, for `verify`.
-All declared entries and reachable modules must compile, even if not exported.
-`check` does not run OGG encoding or certify target delivery; run `build` to check
-export constraints, file collisions and encoding.
+Pass the `build.directory` (not an export directory) to `check` to verify a built bundle's receipt and hashes.
+Passing a workspace or entry validates declared sources and reachable modules; passing `--node`, `--profile`, `--threshold`, `--stdin`, `--input-json`, or a standalone `.ashfox` file runs structural inspection and model quality audit.
+`check` on a workspace does not run OGG encoding or certify target delivery; run `build` to check export constraints, file collisions, and encoding.
 
 ## Read the response
 
-Each project-command response has `format: ashfox-cli-result`, `version: 1`, `command`, `ok`,
-`diagnostics` and `result`. On failure, `result` is `null`; read each diagnostic's
+Each envelope response has `format: ashfox-cli-result`, `version: 1`, `command`, `ok`,
+`diagnostics`, and `result`. On failure, `result` is `null`; read each diagnostic's
 `code` and `message`. Do not treat a partial or empty stdout file as success.
 
 A successful build result supplies `requestKey`, `bundleHash`, `bundlePath`,
-`catalogPath` and `exports: [{id, directory}]`. Paths are actual absolute paths
+`catalogPath`, and `exports: [{id, directory}]`. Paths are actual absolute paths
 for this machine. The catalog's file paths are relative to `bundlePath`.
 
 | Exit code | Meaning |
@@ -92,7 +90,7 @@ for this machine. The catalog's file paths are relative to `bundlePath`.
 | 0 | Success |
 | 1 | Source/compiler or declared build validation failure |
 | 2 | Invalid arguments or configuration |
-| 3 | I/O, encoder, internal, target-export or integrity failure |
+| 3 | I/O, encoder, internal, quality gate, target-export, or integrity failure |
 | 4 | Another writer owns an output lock |
 | 130 | Cancelled |
 
@@ -107,36 +105,29 @@ Compilation runs in a worker with a 120-second limit and a 256 MiB V8 heap limit
 This is not a total process-memory limit. Sources are bounded to 512 files and
 8 MiB; filesystem discovery is bounded to 20,000 entries. Configuration is limited
 to 256 KiB. Each pack allows at most 8,192 files and 64 MiB before archiving.
-Each FFmpeg operation is limited to 15 seconds and 16 MiB captured output.
+Each animated GIF render is limited to 300 frames and 100 million rendered pixels.
 
 SIGINT or SIGTERM cancels ongoing work and preserves the previous selected build.
 A final synchronous publication can already have completed when cancellation
 arrives. The CLI never rolls back a completed successful publication.
 
-## Single-asset commands
+## Render and export media
 
-`inspect`, `capture`, `replay`, `export` and `stdio` operate independently of
-workspace builds. They use stdout for JSON or media; errors use stderr and file
-saving is explicit. Their options and transport differ from the project commands
-above. See [Inspect and capture one asset](observe.md) for all flags, memory input,
-headless renderer setup and persistent session examples.
+`render` and `export` operate on single assets (file, PNG, `--stdin`, or `--input-json`), writing raw bytes to stdout or `--output <file>` and JSON errors to stderr.
+See [Render and check one asset](observe.md) for all flags, memory inputs (`--stdin`, `--input-json`), and headless Chrome options.
 
 | Command | Output | Error channel |
 | --- | --- | --- |
-| `inspect` | Inspection JSON | stderr JSON |
-| `capture` | PNG bytes | stderr JSON |
-| `replay` | GIF bytes | stderr JSON |
-| `export` | PNG/WAV/GLB bytes or ZIP | stderr JSON |
-| `stdio` | JSON-lines responses with matching request IDs | Request failures in response; fatal transport errors on stderr |
+| `render` | PNG bytes (or animated GIF with `--gif`) | stderr JSON |
+| `export` | GLB, PNG, WAV bytes, or format ZIP | stderr JSON |
 
-These commands do not use the project response envelope or accept `--json`.
-See [observation options](observe.md) and [session protocol](stdio.md).
+`render` and `export` reject `--json`; omit `--output` when piping or capturing stdout bytes in code (binary stdout to a TTY is refused).
 
 ## Executable project configuration
 
 `check` and `build` accept `.ashfoxworkspace.mjs`, including ancestor discovery
 for source builds. This is trusted Node ESM, evaluated to the existing version-2
-workspace contract. `init <new-folder>` now creates grouped `asset/` sources,
-this configuration, a game adapter and a `.gitignore` for root `build/`.
+workspace contract. `init <new-folder>` creates grouped `asset/` sources,
+this configuration, a game adapter, and a `.gitignore` for root `build/`.
 See the [complete convention](repository-layout.md), including evaluation limits,
-output identities and migration from existing JSON workspaces.
+output identities, and migration from existing JSON workspaces.

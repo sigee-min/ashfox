@@ -87,7 +87,6 @@ for (const name of [
   'items.zip',
   'game-assets.zip',
   'resource-pack.zip',
-  'stdio-client.zip',
   'web-game.zip',
 ]) {
   assert.deepEqual(

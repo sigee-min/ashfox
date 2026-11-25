@@ -51,7 +51,7 @@ const main = async () => {
       process.execPath,
       [
         path.join(root, 'apps/cli/dist/ashfox.cjs'),
-        'capture',
+        'render',
         path.join(root, 'examples/griffin/workbench/main.ashfox'),
         '--width',
         '900',

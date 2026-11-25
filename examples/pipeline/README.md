@@ -6,7 +6,7 @@ this directory. Edit the `.ashfox` files and rebuild:
 ```sh
 npm run build:cli
 node apps/cli/dist/ashfox.cjs build examples/pipeline/.ashfoxworkspace --json
-node apps/cli/dist/ashfox.cjs verify examples/pipeline/dist/build --json
+node apps/cli/dist/ashfox.cjs check examples/pipeline/dist/build
 ```
 
 `dist/build/current.json` identifies one complete bundle. Its `catalog.json`

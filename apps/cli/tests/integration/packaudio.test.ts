@@ -59,7 +59,7 @@ const main = async () => {
     success(run('build', path.join(cold, '.ashfoxworkspace'))).bundleHash,
     first.bundleHash,
   );
-  success(run('verify', path.join(project, 'dist/build')));
+  success(run('check', path.join(project, 'dist/build')));
   const current = path.join(project, 'dist/build/current.json'),
     pointer = fs.readFileSync(current);
   assert.equal(
@@ -121,7 +121,7 @@ const main = async () => {
       fs.readFileSync(path.join(engine.directory, 'game-assets', v.file)).toString('ascii', 0, 4),
       'OggS',
     );
-  success(run('verify', path.join(project, 'dist/build')));
+  success(run('check', path.join(project, 'dist/build')));
   console.log(
     'audio packs: real WASM Vorbis decode, exact references, cold reproducibility, variant settings, empty PATH build and abort handling ok',
   );

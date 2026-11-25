@@ -12,8 +12,8 @@ This guide describes onboarding and commands rather than defining parallel rules
 
 ## Product path
 
-Ashfox assets are native `.ashfox` source files. The CLI inspects, captures,
-replays, builds and exports them. Projects configure grouped inputs and deterministic
+Ashfox assets are native `.ashfox` source files. The CLI checks, renders,
+builds and exports them. Projects configure grouped inputs and deterministic
 delivery through `.ashfoxworkspace` or `.ashfoxworkspace.mjs`.
 The website publishes documentation, examples and read-only model previews.
 
@@ -26,7 +26,7 @@ The published `skills/ashfox/` skill is an asset workflow guide, not a repositor
 
 | Area | Responsibility |
 | --- | --- |
-| `apps/cli` | Native asset commands, stdio sessions and integration tests |
+| `apps/cli` | Native asset commands (`init`, `doctor`, `check`, `render`, `build`, `export`) and integration tests |
 | `apps/site` | Landing, localized user guides and read-only example previews |
 | `apps/audio-study`, `apps/item-study` | Local review applications |
 | `packages/engine-core` | Host-independent source contracts, compiler and exports |
@@ -43,7 +43,7 @@ Use Node.js 24 or newer and install the repository dependencies:
 ```sh
 npm ci
 npm run build:cli
-npm run build:site
+npm run build:public
 npm run preview:public
 ```
 
@@ -61,18 +61,18 @@ not required for this product path.
 | Real PNG/GIF capture | `npm run test:cli:capture` |
 | Site and localized documentation | `npm run test:site` |
 | Landing interaction and responsive layout | `npm --workspace @ashfox/site run test:browser` |
-| Downloadable documentation examples | `npm run test:docs` and `npm run test:docs:capture` |
+| Downloadable documentation examples | `node scripts/docs/build.js && node scripts/docs/test.js` (add `--capture` for renders) |
 | Skill packages and update verification | `npm run test:skill` |
-| Audio synthesis and local review | `npm run test:audio-core` and `npm run test:audio` |
-| Audio encoding and HTTP lifecycle | `npm run test:audio:integration` |
-| Item snapshots and failed-build isolation | `npm run test:items` |
-| Java pack delivery with FFmpeg | `npm run test:packs` |
+| Audio synthesis and local review | `npm run test:audio-core` and `npm --workspace @ashfox/audio-study run test` |
+| Audio encoding and HTTP lifecycle | `npm --workspace @ashfox/audio-study run test:integration` |
+| Item snapshots and failed-build isolation | `npm --workspace @ashfox/item-study run test` |
+| Java pack delivery with FFmpeg | `npm --workspace @ashfox/cli run test:packs` |
 | Blockbench compatibility | `npm run test:blockbench` |
-| Repository rules and types | `npm run quality:check` |
-| PR metadata and template check | `npm run quality:pr:test` |
-| Code formatting | `npm run format` (write) and `npm run quality:format` (check) |
+| Repository rules, types, complexity and architecture | `npm run quality:check` |
+| PR metadata and template check | `npm run quality:pr -- ...` (`node scripts/quality/prCheck.test.js`) |
+| Code formatting | `npm run format` |
 | Example output bytes unchanged | `npm run quality:products` |
-| Function size and complexity ratchet | `npm run quality:complexity` |
+| Function size and complexity ratchet | `node scripts/quality/complexity.js` |
 | Complete release gate | `npm run quality` |
 
 `quality:products` compiles every example in memory and compares product and
@@ -80,11 +80,11 @@ artifact digests with `scripts/quality/products-baseline.json`. Refactors must
 leave it unchanged; reseal with `npm run quality:products:seal` only in a change
 that intends to alter compiled output, and explain the difference in review.
 
-`quality:complexity` limits function lines, control nesting and cognitive
+Complexity gates limit function lines, control nesting and cognitive
 complexity in the scopes declared by `quality.complexity` in the development
 manifest. Existing violations are listed in `scripts/quality/complexity-baseline.json`,
 which may only shrink: after reducing a function, run
-`npm run quality:complexity:tighten` and commit the smaller baseline.
+`node scripts/quality/complexity.js --write` and commit the smaller baseline.
 
 Prettier formats TypeScript and JavaScript code. Its options derive from
 `engineering.style` in the development manifest; change the manifest, not the

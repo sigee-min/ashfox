@@ -17,7 +17,7 @@ npx --no-install ashfox export claw_hit.ashfox --output claw.wav
 Without `--output`, the bytes go to stdout for another process to consume.
 Existing output files are refused; choose a new path or remove the previous
 generated file deliberately. For camera images and GIFs, use
-[capture and replay](observe.md). No workspace is needed for these commands.
+[render and check](observe.md). No workspace is needed for these commands.
 
 ## Select project output files
 
@@ -38,10 +38,10 @@ build, or use the `bundleHash` and paths returned by a successful `build` call.
 Never choose a bundle by modification time or mix files from two hashes.
 
 ```sh
-npx --no-install ashfox verify dist/build --json
+npx --no-install ashfox check dist/build
 ```
 
-Verification checks canonical file hashes, metadata and exact file coverage.
+Checking a build directory verifies canonical file hashes, metadata and exact file coverage.
 Runtime manifests in general game packs must match the files they reference.
 It does not recompile source or certify visual/audio quality.
 
@@ -57,6 +57,6 @@ For a fresh build, choose new empty output directories or remove only a known,
 disposable generated output tree. Do not delete source or manually edit receipts.
 
 The CLI refuses to take ownership of a nonempty unknown directory. Export mirrors
-are verified during publication; `verify` checks the canonical build. If a delivery
+are verified during publication; `check <build-dir>` verifies the canonical build. If a delivery
 copy was later modified, copy it again from verified canonical output or compare
 its files against the catalog's hashes.

@@ -207,7 +207,7 @@ const complexityViolations = (current, baseline) => {
       if (value === undefined || value < allowed) {
         findings.push(
           `${key}: baseline ${metric} ${allowed} is stale (now ${value ?? 'within limit'}); ` +
-            'run npm run quality:complexity:tighten',
+            'run node scripts/quality/complexity.js --write',
         );
       }
     }

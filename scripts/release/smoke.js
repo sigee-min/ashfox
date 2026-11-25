@@ -105,7 +105,7 @@ const main = async () => {
         await execute('build', 'created/.ashfoxworkspace.mjs', '--json'),
       ).result;
       const verified = JSON.parse(
-        await execute('verify', 'created/build/assets/compiler', '--json'),
+        await execute('check', 'created/build/assets/compiler', '--json'),
       ).result;
       assert.equal(built.bundleHash, verified.bundleHash);
       assert.equal(verified.catalog.assets.length, 3);
@@ -132,36 +132,11 @@ const main = async () => {
         execute('export', 'created/asset/items/sword.ashfox', '--output', 'sword.png'),
       );
       assert.deepEqual(fs.readFileSync(path.join(folder, 'sword.png')), png);
-      const requests = [
-        { id: 'probe', method: 'capabilities', params: {} },
-        {
-          id: 'load',
-          method: 'load',
-          params: { input: { file: path.join(folder, 'created/asset/items/sword.ashfox') } },
-        },
-        { id: 'inspect', method: 'inspect', params: {} },
-        { id: 'close', method: 'close', params: {} },
-      ];
-      const session = await run(
-        'npx',
-        ['--no-install', '--offline', 'ashfox', 'stdio'],
-        folder,
-        requests.map((request) => JSON.stringify(request)).join('\n') + '\n',
+      const checkedSword = JSON.parse(
+        (await execute('check', 'created/asset/items/sword.ashfox')).toString(),
       );
-      const replies = session
-        .toString()
-        .trim()
-        .split('\n')
-        .map((line) => JSON.parse(line));
-      assert.deepEqual(
-        replies.map((reply) => reply.id),
-        requests.map((request) => request.id),
-      );
-      assert.ok(
-        replies.every((reply) => reply.ok),
-        JSON.stringify(replies),
-      );
-      assert.equal(JSON.parse(await execute('capabilities')).ok, true);
+      assert.equal(checkedSword.ok, true);
+      assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
       for (const [source, magic] of [
         ['fox.ashfox', 'glTF'],
         ['sword.ashfox', '\x89PNG'],
@@ -171,7 +146,7 @@ const main = async () => {
       }
       fs.rmSync(path.join(folder, 'node_modules'), { recursive: true });
       await run('npm', ['ci', '--offline', '--ignore-scripts', '--no-audit', '--no-fund'], folder);
-      assert.equal(JSON.parse(await execute('capabilities')).ok, true);
+      assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
     }
     console.log('Release URL/offline installation, version, exports and lockfile restoration pass');
   } finally {
