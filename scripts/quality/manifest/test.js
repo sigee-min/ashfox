@@ -152,28 +152,34 @@ assert.equal(schema.$defs.engineering.properties.exceptions.maxItems, 0);
 assert.equal(schema.$defs.engineering.properties.exceptions.items, false);
 assert.equal(schema.$defs.engineeringException, undefined);
 assertClosedSchemaObjects(schema);
-assert.equal(
-  rootPackage.scripts['quality:manifest'],
-  'node scripts/quality/manifest/test.js && ' + 'node scripts/quality/manifest/index.js',
+assert.match(
+  rootPackage.scripts.typecheck,
+  /config\/tsconfig\.tests\.json/,
+  'typecheck must cover test contracts in strict mode',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
-  /(?:^|&&\s*)npm run quality:manifest(?:\s*&&|$)/,
+  /(?:^|&&\s*)npm run typecheck(?:\s*&&|$)/,
+  'quality:check must execute strict source and test typechecks',
+);
+assert.match(
+  rootPackage.scripts['quality:check'],
+  /(?:^|&&\s*)node scripts\/quality\/manifest\/test\.js(?:\s*&&|$)/,
+  'quality:check must execute the manifest contract tests',
+);
+assert.match(
+  rootPackage.scripts['quality:check'],
+  /(?:^|&&\s*)node scripts\/quality\/manifest\/index\.js(?:\s*&&|$)/,
   'quality:check must execute the manifest hard gate',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
-  /(?:^|&&\s*)npm run test:discovery(?:\s*&&|$)/,
+  /(?:^|&&\s*)node scripts\/tests\/test\.js(?:\s*&&|$)/,
   'quality:check must execute the stable recursive discovery contract',
 );
 assert.match(
   rootPackage.scripts['quality:check'],
-  /(?:^|&&\s*)npm run typecheck:tests(?:\s*&&|$)/,
-  'quality:check must typecheck every test contract in strict mode',
-);
-assert.match(
-  rootPackage.scripts['quality:check'],
-  /(?:^|&&\s*)npm run quality:commits(?:\s*&&|$)/,
+  /(?:^|&&\s*)node scripts\/quality\/commitConvention\.js(?:\s*&&|$)/,
   'quality:check must enforce manifest commit conventions',
 );
 assert.equal(

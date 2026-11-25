@@ -66,10 +66,11 @@ const main = async () => {
     const published = [];
     for (const [name, source] of Object.entries(sources)) {
       const view = ['--width', '640', '--height', '360', '--environment', 'studio'];
-      run(['capture', source, ...view, '--output', path.join(stage, `${name}-poster.png`)]);
+      run(['render', source, ...view, '--output', path.join(stage, `${name}-poster.png`)]);
       run([
-        'replay',
+        'render',
         source,
+        '--gif',
         ...view,
         '--mode',
         'build',
@@ -81,12 +82,13 @@ const main = async () => {
         path.join(stage, `${name}-build-replay.mp4`),
       );
       published.push(`${name}-poster.png`, `${name}-build-replay.gif`, `${name}-build-replay.mp4`);
-      const asset = JSON.parse(run(['inspect', source]).toString());
+      const asset = JSON.parse(run(['check', source]).toString()).result;
       for (const clip of asset.animations) {
         const file = `${name}-${clip.name}`;
         run([
-          'replay',
+          'render',
           source,
+          '--gif',
           ...view,
           '--clip',
           clip.name,

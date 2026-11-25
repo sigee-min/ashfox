@@ -8,7 +8,7 @@ The configuration is the authority for metadata, IDs and packaging:
 ```sh
 npm run build:cli
 node apps/cli/dist/ashfox.cjs build examples/resource-pack/.ashfoxworkspace --json
-node apps/cli/dist/ashfox.cjs verify examples/resource-pack/dist/build --json
+node apps/cli/dist/ashfox.cjs check examples/resource-pack/dist/build
 ```
 
 FFmpeg with `libvorbis` is required for the sound bindings. Put it on PATH or set

@@ -1,5 +1,4 @@
 import { zipSync } from 'fflate';
-import { createHash } from 'node:crypto';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
   encodeCanonicalPng,
@@ -15,7 +14,23 @@ import {
 } from '@ashfox/engine-core';
 import { DEFAULT_VIEW, type Prepared, type Media, type ViewOptions } from './contract';
 import { ChromeRenderer } from './chrome';
-export const auditAsset = (asset: Prepared, options: AuditOptions = {}): AuditReport => {
+
+export const renderCapabilities = {
+  format: 'ashfox-render',
+  version: 1,
+  inputs: ['ashfox-file', 'png-file', 'memory-source-graph', 'base64-png'],
+  media: ['image/png', 'image/gif', 'audio/wav', 'model/gltf-binary', 'application/zip'],
+  formats: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock', 'png', 'wav'],
+  viewDefaults: DEFAULT_VIEW,
+  limits: {
+    inputBytes: 16 * 1024 * 1024,
+    compileSeconds: 120,
+    renderSeconds: 120,
+    mediaBytes: 32 * 1024 * 1024,
+  },
+};
+
+const auditAsset = (asset: Prepared, options: AuditOptions = {}): AuditReport => {
   if (asset.product?.kind !== 'model')
     throw new BuildFailure('observe.kind', 'audit requires a model asset', 2);
   return evaluateAssetQuality(
@@ -23,7 +38,16 @@ export const auditAsset = (asset: Prepared, options: AuditOptions = {}): AuditRe
     options,
   );
 };
-export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
+
+export const inspect = (asset: Prepared, v: ViewOptions, auditOptions?: AuditOptions): unknown => {
+  if (
+    auditOptions &&
+    (auditOptions.profile !== undefined || auditOptions.threshold !== undefined)
+  ) {
+    if (asset.product?.kind !== 'model')
+      throw new BuildFailure('observe.kind', 'profile and threshold require a model asset', 2);
+  }
+  const summary = asset.products ? { sourceHash: asset.revision, products: asset.products } : {};
   if (asset.document) {
     const d = asset.document;
     if (v.node) {
@@ -41,6 +65,7 @@ export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
       };
     }
     return {
+      ...summary,
       kind: asset.kind,
       revision: asset.revision,
       nodes: Object.values(d.scene.nodes),
@@ -52,12 +77,13 @@ export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
       })),
       animations: Object.values(d.animations),
       settings: d.settings,
-      ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset) } : {}),
+      ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset, auditOptions) } : {}),
     };
   }
   const product = asset.product;
   if (asset.sprite)
     return {
+      ...summary,
       kind: 'sprite',
       revision: asset.revision,
       receipt: asset.sprite.receipt,
@@ -65,6 +91,7 @@ export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
     };
   if (product?.kind === 'sound')
     return {
+      ...summary,
       kind: 'sound',
       revision: asset.revision,
       variants: product.sounds.map(({ wav, ...metadata }) => metadata),
@@ -77,7 +104,8 @@ export const inspect = (asset: Prepared, v: ViewOptions): unknown => {
     height: bytes.readUInt32BE(20),
   };
 };
-export const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
+
+const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
   if (asset.document) {
     if (v.texture) {
       const texture =
@@ -115,7 +143,8 @@ export const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
   }
   throw new BuildFailure('observe.kind', 'Unsupported asset', 2);
 };
-export const selectSound = (asset: Prepared, variant?: string) => {
+
+const selectSound = (asset: Prepared, variant?: string) => {
   if (asset.product?.kind !== 'sound')
     throw new BuildFailure('observe.kind', 'Expected a sound', 2);
   const sound = variant
@@ -124,10 +153,11 @@ export const selectSound = (asset: Prepared, variant?: string) => {
   if (!sound) throw new BuildFailure('observe.variant', 'Unknown variant: ' + variant, 2);
   return sound;
 };
-export const capture = async (
+
+export const renderMedia = async (
   asset: Prepared,
   v: ViewOptions,
-  replay: boolean,
+  gif: boolean,
   renderer: ChromeRenderer,
   signal: AbortSignal,
 ): Promise<Media> => {
@@ -149,14 +179,14 @@ export const capture = async (
       if (v[key] !== DEFAULT_VIEW[key])
         throw new BuildFailure('observe.option', key + ' requires a model', 2);
   }
-  if (replay && v.sheet !== undefined)
-    throw new BuildFailure('observe.option', 'sheet requires capture, not replay', 2);
+  if (gif && v.sheet !== undefined)
+    throw new BuildFailure('observe.option', 'sheet requires still render, not --gif', 2);
   if (asset.kind !== 'sprite' && v.stage !== 'final')
     throw new BuildFailure('observe.option', 'stage requires a sprite source', 2);
   if (asset.kind !== 'sound' && v.variant !== undefined)
     throw new BuildFailure('observe.option', 'variant requires a sound source', 2);
   if (v.format || v.namespace || v.modelPath)
-    throw new BuildFailure('observe.option', 'Export format options do not apply to capture', 2);
+    throw new BuildFailure('observe.option', 'Export format options do not apply to render', 2);
   const abort = () => {
     void renderer.close();
   };
@@ -166,7 +196,7 @@ export const capture = async (
     await renderer.start();
     await renderer.evaluate('AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v)) + ')');
     const reply = (await renderer.evaluate(
-      'AshfoxObserver.capture(' + JSON.stringify(v) + ',' + replay + ')',
+      'AshfoxObserver.capture(' + JSON.stringify(v) + ',' + gif + ')',
     )) as { mime: string; data: string };
     if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
     const bytes = Buffer.from(reply.data, 'base64');
@@ -177,6 +207,7 @@ export const capture = async (
     signal.removeEventListener('abort', abort);
   }
 };
+
 export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
   const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
   if (
@@ -254,10 +285,3 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
     bytes: zipSync(files, { level: 0, mtime: new Date(1980, 0, 1) }),
   };
 };
-export const mediaRecord = (media: Media) => ({
-  mime: media.mime,
-  encoding: 'base64',
-  byteLength: media.bytes.length,
-  sha256: createHash('sha256').update(media.bytes).digest('hex'),
-  data: Buffer.from(media.bytes).toString('base64'),
-});

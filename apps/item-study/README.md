@@ -4,8 +4,8 @@ Create items in `.ashfox` source files using the [sprite guide](../../docs/guide
 Build game outputs with the [CLI](../../docs/guides/cli.md).
 
 ```sh
-npm run build:items
-npm run items:studio
+npm --workspace @ashfox/item-study run build
+npm --workspace @ashfox/item-study run dev
 node apps/item-study/serve.js examples/items/.ashfoxworkspace
 ```
 
@@ -19,6 +19,6 @@ provenance. Preview backgrounds and enlarged images are presentation only.
 Author changes in source files, then compile again. Use the common CLI for
 resource packs and engine-neutral bundles; the studio is an optional viewer.
 
-Use `node apps/cli/dist/ashfox.cjs capabilities` after `npm run build:cli`.
+Use `node apps/cli/dist/ashfox.cjs doctor --json` after `npm run build:cli`.
 The former item-specific agent alias and JSON candidate harness are removed.
-Run `npm run test:items` to verify the local studio and compiler integration.
+Run `npm --workspace @ashfox/item-study run test` to verify the local studio and compiler integration.

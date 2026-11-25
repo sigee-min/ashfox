@@ -42,7 +42,7 @@ const main = () => {
 
   if (!fs.existsSync(summaryPath)) {
     throw new Error(
-      'coverage: missing coverage/coverage-summary.json (run `npm run test:cov:blockbench` first)',
+      'coverage: missing coverage/coverage-summary.json (run `npm run test:blockbench` first)',
     );
   }
 
@@ -57,7 +57,7 @@ const main = () => {
 
   if (!fs.existsSync(baselinePath)) {
     throw new Error(
-      'coverage: missing config/quality/coverage-baseline.json (run `npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline`)',
+      'coverage: missing config/quality/coverage-baseline.json (run `npm run test:blockbench && node scripts/quality/coverage.js --update-baseline`)',
     );
   }
 
@@ -103,7 +103,7 @@ const main = () => {
     for (const line of regressions) console.error(`- ${line}`);
     console.error('To update baseline intentionally:');
     console.error(
-      '  npm run test:cov:blockbench && node scripts/quality/coverage.js --update-baseline',
+      '  npm run test:blockbench && node scripts/quality/coverage.js --update-baseline',
     );
     process.exitCode = 1;
     return;

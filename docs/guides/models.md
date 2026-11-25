@@ -11,9 +11,9 @@ It is also included in the [starter download](/downloads/starter.zip).
 From your asset folder:
 
 ```sh
-npx --no-install ashfox inspect marker.ashfox
+npx --no-install ashfox check marker.ashfox
 npx --no-install ashfox export marker.ashfox --output marker.glb
-npx --no-install ashfox capture marker.ashfox --camera front --output marker-front.png
+npx --no-install ashfox render marker.ashfox --camera front --output marker-front.png
 ```
 
 The GLB is the model for your engine; the PNG is an observation of it. Static
@@ -62,7 +62,7 @@ See [Output formats](choose-a-format.md).
 
 ## Review before shipping
 
-Use `capture` for front, side and orbit views and `replay --clip NAME` for motion.
+Use `render` for front, side and orbit views and `render --gif --clip NAME` for motion.
 Then import the generated GLB into your intended viewer or engine. Inspect silhouette,
 face direction, texture seams, scale and attachments. For animation, watch every
 clip through a full cycle. Validation cannot certify that a model looks correct

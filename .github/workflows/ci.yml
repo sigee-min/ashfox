@@ -23,9 +23,9 @@ jobs:
       - run: npm run quality:check
         env:
           ASHFOX_COMMIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-      - run: npm run quality:deadcode
+      - run: node scripts/quality/deadcode.test.js && node scripts/quality/deadcode.js
       - run: npm run quality:products
-      - run: npm run quality:audit
+      - run: node scripts/quality/audit.js
       - run: npm run release:validate
 
   public-site-track:
@@ -55,8 +55,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:blockbench
-      - run: npm run test:cov:blockbench
-      - run: npm run quality:coverage
+      - run: node scripts/quality/coverage.js
       - run: npm run build:blockbench
 
   sound-platforms:

@@ -30,6 +30,8 @@ try {
   assert.equal(diagnosis.capture.available, false);
   assert.equal(diagnosis.ogg.available, true);
   assert.equal(diagnosis.ogg.builtin, true);
+  assert.deepEqual(diagnosis.commands, ['init', 'doctor', 'check', 'render', 'build', 'export']);
+  assert.ok(Array.isArray(diagnosis.render.formats));
   assert.deepEqual(fs.readdirSync(temp), []);
   const invalid = run('init');
   assert.equal(invalid.status, 2);

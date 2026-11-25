@@ -47,8 +47,8 @@ fails the run and cannot advance stable documentation. No administrator token
 is needed by the workflow: the repository setting is configured separately.
 
 The package smoke test uses `npx --no-install --offline ashfox`, including Windows
-command shims, help/version, doctor, offline init, GLB/PNG/WAV and a stdio
-load/inspect/close session. Optional browser rendering still has its separate CLI
+command shims, help/version, doctor, offline init, GLB/PNG/WAV and in-memory
+--stdin/--input-json check and render. Optional browser rendering still has its separate CLI
 capture suite. The release notes include the exact version's CHANGELOG entry.
 
 ## User experience

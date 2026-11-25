@@ -7,7 +7,7 @@ before running these commands from your asset folder.
 ## 1. Produce an item PNG
 
 ```sh
-npx --no-install ashfox inspect sword.ashfox
+npx --no-install ashfox check sword.ashfox
 npx --no-install ashfox export sword.ashfox --output sword.png
 ```
 
@@ -24,8 +24,8 @@ The illustration above is an enlarged preview. The native export remains 16×16.
 With Chrome/Chromium installed:
 
 ```sh
-npx --no-install ashfox capture fox.ashfox --azimuth 45 --elevation 20 --output fox-angle.png
-npx --no-install ashfox replay fox.ashfox --clip tail_wag --output tail-wag.gif
+npx --no-install ashfox render fox.ashfox --azimuth 45 --elevation 20 --output fox-angle.png
+npx --no-install ashfox render fox.ashfox --gif --clip tail_wag --output tail-wag.gif
 ```
 
 ![Fox captured at 45 degrees azimuth and 20 degrees elevation](/media/guides/fox-angle.png)
@@ -53,7 +53,7 @@ replace looking at the image or listening to a sound.
 ## 4. Choose your next task
 
 - [Create a model](models.md), [draw an item](sprites.md), or [make a sound](sounds.md).
-- [Pass source and media in memory](stdio.md), including persistent agent sessions.
+- [Render, check, and pass source from stdin/JSON](observe.md).
 - [Run the assets in a web game](web-game.md).
 - [Build a Minecraft resource pack](minecraft-packs.md).
 - [Manage several assets](workspace.md) when shared output rules become useful.

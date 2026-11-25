@@ -34,7 +34,7 @@ try {
     run('check', entry);
     run('build', entry);
     const id = matchText(source, /(?:sprite|sound|asset) (\w+) \{/)[1];
-    run('verify', path.join(folder, 'dist', id, 'build'));
+    run('check', path.join(folder, 'dist', id, 'build'));
   }
   for (const file of fs
     .readdirSync(path.join(root, 'docs/language'))
@@ -49,7 +49,7 @@ try {
       run('check', entry);
       run('build', entry);
       const id = matchText(match[1], /(?:sprite|sound|asset) (\w+) \{/)[1];
-      run('verify', path.join(folder, 'dist', id, 'build'));
+      run('check', path.join(folder, 'dist', id, 'build'));
     }
   }
   const markdown = fs.readFileSync(path.join(root, 'docs/guides/workspace.md'), 'utf8');
@@ -65,7 +65,7 @@ try {
   fs.writeFileSync(entry, JSON.stringify(config));
   run('check', entry);
   run('build', entry);
-  run('verify', path.join(folder, 'build'));
+  run('check', path.join(folder, 'build'));
   console.log('Published complete source and workspace examples compile, build and verify');
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });

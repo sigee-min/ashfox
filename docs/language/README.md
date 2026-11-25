@@ -59,7 +59,6 @@ or automatic attachment inference. Reuse model components and explicit imports.
 ```sh
 npx --no-install ashfox check sample.ashfox --json
 npx --no-install ashfox build sample.ashfox --json
-npx --no-install ashfox inspect sample.ashfox
 ```
 
 A standalone entry compiles its explicit import closure. In an ancestor

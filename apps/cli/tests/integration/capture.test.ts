@@ -29,7 +29,7 @@ const png = (bytes: Buffer, width: number, height: number) => {
 };
 async function main() {
   const left = success(
-    run(['capture', fox, '--camera', 'left', '--width', '160', '--height', '128']),
+    run(['render', fox, '--camera', 'left', '--width', '160', '--height', '128']),
   );
   png(left, 160, 128);
   const isolated = path.join(temp, 'ashfox.cjs');
@@ -37,7 +37,7 @@ async function main() {
   const cold = success(
     spawnSync(
       process.execPath,
-      [isolated, 'capture', fox, '--camera', 'left', '--width', '160', '--height', '128'],
+      [isolated, 'render', fox, '--camera', 'left', '--width', '160', '--height', '128'],
       { cwd: temp, timeout: 120000, maxBuffer: 64 * 1024 * 1024 },
     ),
   );
@@ -48,11 +48,11 @@ async function main() {
   );
   fs.unlinkSync(isolated);
   const right = success(
-    run(['capture', fox, '--camera', 'right', '--width', '160', '--height', '128']),
+    run(['render', fox, '--camera', 'right', '--width', '160', '--height', '128']),
   );
   assert.notDeepEqual(left, right);
   const orbit = success(
-    run(['capture', fox, '--azimuth', '45', '--elevation', '20', '--background', 'transparent']),
+    run(['render', fox, '--azimuth', '45', '--elevation', '20', '--background', 'transparent']),
   );
   png(orbit, 640, 360);
   const idat = [];
@@ -64,21 +64,22 @@ async function main() {
   }
   assert.equal(orbit[25], 6);
   assert.equal(inflateSync(Buffer.concat(idat))[4], 0, 'Transparent corner retains alpha');
-  const sprite = success(run(['capture', sword, '--scale', '16', '--background', 'checker']));
+  const sprite = success(run(['render', sword, '--scale', '16', '--background', 'checker']));
   png(sprite, 256, 256);
   const stage = success(
-    run(['capture', sword, '--stage', 'silhouette', '--scale', '16', '--background', 'checker']),
+    run(['render', sword, '--stage', 'silhouette', '--scale', '16', '--background', 'checker']),
   );
   assert.notDeepEqual(sprite, stage);
   const raw = success(run(['export', sword]));
   const fromStdin = success(
-    run(['capture', '--stdin', '--input-format', 'png', '--scale', '2'], { input: raw }),
+    run(['render', '--stdin', '--input-format', 'png', '--scale', '2'], { input: raw }),
   );
   png(fromStdin, 32, 32);
   const gif = success(
     run([
-      'replay',
+      'render',
       fox,
+      '--gif',
       '--clip',
       'tail_wag',
       '--duration',
@@ -93,74 +94,56 @@ async function main() {
   );
   assert.equal(gif.subarray(0, 6).toString(), 'GIF89a');
   const build = success(
-    run(['replay', path.join(root, 'examples/minecraft/marker.ashfox'), '--mode', 'build']),
+    run([
+      'render',
+      path.join(root, 'examples/minecraft/marker.ashfox'),
+      '--gif',
+      '--mode',
+      'build',
+    ]),
   );
   assert.equal(build.subarray(0, 6).toString(), 'GIF89a');
-  const bad = run(['capture', fox, '--clip', 'nonexistent']);
+  const badSheetGif = run(['render', fox, '--gif', '--sheet', 'turnaround']);
+  assert.notEqual(badSheetGif.status, 0);
+  const bad = run(['render', fox, '--clip', 'nonexistent']);
   assert.notEqual(bad.status, 0);
   assert.equal(bad.stdout.length, 0);
-  const noBrowser = run(['capture', fox], {
+  const noBrowser = run(['render', fox], {
     env: { ...process.env, ASHFOX_CHROME_PATH: '/not/a/browser' },
   });
   // Explicit invalid executable must fail, without searching another installation.
   assert.notEqual(noBrowser.status, 0);
   assert.equal(noBrowser.stdout.length, 0);
   const sound = path.join(root, 'examples/sounds/src/claw_hit.ashfox');
-  const wave = success(run(['capture', sound, '--width', '320', '--height', '128']));
+  const wave = success(run(['render', sound, '--width', '320', '--height', '128']));
   png(wave, 320, 128);
-  const child = spawn(process.execPath, [cli, 'stdio'], {
-    cwd: temp,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  let buffer = '';
-  const pending = new Map();
-  child.stdout.on('data', (chunk) => {
-    buffer += chunk;
-    let end;
-    while ((end = buffer.indexOf('\n')) >= 0) {
-      const reply = JSON.parse(String(buffer.slice(0, end)));
-      buffer = buffer.slice(end + 1);
-      pending.get(reply.id)?.(reply);
-      pending.delete(reply.id);
-    }
-  });
-  const request = (id: string, method: string, params = {}) =>
-    new Promise<{ ok: boolean; result: { revision: string; cancelled: boolean; data: string } }>(
-      (resolve) => {
-        pending.set(id, resolve);
-        child.stdin.write(JSON.stringify({ id, method, params }) + '\n');
-      },
-    );
-  assert.equal((await request('load', 'load', { input: { file: fox } })).ok, true);
-  const running = request('render', 'replay', { options: { clip: 'idle', duration: 10, fps: 30 } });
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  assert.equal((await request('cancel', 'cancel', { id: 'render' })).result.cancelled, true);
-  assert.equal((await running).ok, false);
-  assert.equal((await request('inspect', 'inspect')).ok, true);
-  const recovered = await request('capture', 'capture', {
-    options: { width: 160, height: 128, camera: 'front' },
-  });
-  assert.equal(recovered.ok, true, JSON.stringify(recovered));
-  png(Buffer.from(recovered.result.data, 'base64'), 160, 128);
+  const longRender = spawn(
+    process.execPath,
+    [cli, 'render', fox, '--gif', '--clip', 'idle', '--duration', '10', '--fps', '30'],
+    { cwd: temp, stdio: ['ignore', 'ignore', 'pipe'] },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  longRender.kill('SIGINT');
+  const cancelCode = await new Promise<number | null>((resolve) =>
+    longRender.once('exit', (code) => resolve(code)),
+  );
+  assert.notEqual(cancelCode, 0);
   const sheetTurnaround = success(
-    run(['capture', fox, '--sheet', 'turnaround', '--width', '320', '--height', '320']),
+    run(['render', fox, '--sheet', 'turnaround', '--width', '320', '--height', '320']),
   );
   png(sheetTurnaround, 320, 320);
   const sheetInspect = success(
-    run(['capture', fox, '--sheet', 'inspect', '--width', '320', '--height', '320']),
+    run(['render', fox, '--sheet', 'inspect', '--width', '320', '--height', '320']),
   );
   png(sheetInspect, 320, 320);
   assert.notDeepEqual(sheetTurnaround, sheetInspect);
-  const exit = new Promise((resolve) => child.once('exit', resolve));
-  child.stdin.end();
-  assert.equal(await exit, 0);
   assert.deepEqual(fs.readdirSync(temp), [], 'No implicit asset files or workspace');
   fs.writeFileSync('/tmp/ashfox-observer-fox.png', orbit);
   fs.writeFileSync('/tmp/ashfox-observer-sword.png', sprite);
   fs.writeFileSync('/tmp/ashfox-observer-motion.gif', gif);
   fs.writeFileSync('/tmp/ashfox-observer-wave.png', wave);
   console.log(
-    'Real headless captures: camera/alpha, sprite stages, PNG stdin, motion/build GIF, waveform, cancellation and recovery passed',
+    'Real headless renders: camera/alpha, sprite stages, PNG stdin, motion/build GIF, waveform and cancellation passed',
   );
 }
 main()

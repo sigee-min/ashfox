@@ -6,14 +6,14 @@
 | --- | --- | --- |
 | `--help` / `help` | 없음 | 사람이 읽는 명령 안내 |
 | `--version` | 없음 | 제품 버전 |
-| `doctor [--json]` | 없음 | 기본 출력·선택 도구 상태 |
 | `init <new-folder> [--json]` | 새 폴더 | 오프라인 스타터 원본 |
-| `capabilities --json` | 없음 | 명령·출력 포맷·팩 설정 |
-| `check <input> --json` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 소스 해시와 컴파일된 종류·진입점 |
-| `build <input> --json` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 검증된 번들·카탈로그·출력 디렉터리 |
-| `verify <directory> --json` | 설정된 빌드 디렉터리 | 무결성 검사 후 선택 번들·영수증·카탈로그 |
+| `doctor [--json]` | 없음 | 실행 환경 준비 상태·기계 판독 계약 |
+| `check <input> [options]` | `.ashfox` 진입점, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, PNG 또는 빌드 디렉터리 | 원본 검증·노드/에셋 검사·품질 감사 또는 빌드 무결성 검사 |
+| `render <input> [options]` | `.ashfox` 원본 또는 PNG | PNG 정지 이미지·컨택트 시트(`--sheet`)·파형 또는 GIF(`--gif`) |
+| `build <input> [--json]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 검증된 번들·카탈로그·출력 디렉터리 |
+| `export <input> [options]` | `.ashfox` 원본 또는 PNG | GLB, glTF ZIP, Minecraft ZIP, PNG 또는 WAV |
 
-`capabilities`, `check`, `build`, `verify`는 `--json` 없이도 JSON을 반환하며 다른 플래그는 받지 않습니다. 사람은 `help`, 에이전트는 `capabilities`를 사용합니다. 설정은 소스, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`에 둡니다. 단일 에셋 관찰 명령에는 별도 옵션이 있습니다. `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
+`doctor --json`, `check`, `build`는 JSON(`ashfox-cli-result`)을 반환합니다. 사람은 `help`, 에이전트는 `doctor --json`을 사용합니다. 설정은 소스, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`에 둡니다. 단일 에셋 `check`, `render`, `export` 옵션은 아래에서 설명합니다. `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
 
 ## 첫 실행 명령
 
@@ -37,7 +37,7 @@ CLI를 설치한 저장소에서 실행합니다. `init`은 새 폴더에 그룹
 
 {{source-code:2}}
 
-`verify`에는 export 디렉터리가 아닌 실제 `build.directory`를 사용합니다. 출력하지 않는 항목도 선언된 모든 진입점과 도달 가능한 모듈은 컴파일되어야 합니다. `check`는 OGG 인코딩을 실행하거나 대상 전달을 인증하지 않습니다. 출력 제약·파일 충돌·인코딩은 `build`로 확인하세요.
+`check <build-dir>`에는 export 디렉터리가 아닌 실제 `build.directory`를 사용합니다. 출력하지 않는 항목도 선언된 모든 진입점과 도달 가능한 모듈은 컴파일되어야 합니다. `check`는 OGG 인코딩을 실행하거나 대상 전달을 인증하지 않습니다. 출력 제약·파일 충돌·인코딩은 `build`로 확인하세요.
 
 ## 응답 읽기
 
@@ -64,19 +64,17 @@ export와 팩 연결에는 고정 개수 상한이 없습니다.
 
 SIGINT·SIGTERM은 진행 작업을 취소하고 이전 선택 빌드를 보존합니다. 취소 도착 시 마지막 동기 발행이 이미 끝났을 수 있습니다. 완료된 성공 발행은 롤백하지 않습니다.
 
-## 단일 에셋 명령
+## 미디어 렌더링 및 출력
 
-`inspect`, `capture`, `replay`, `export`, `stdio`는 워크스페이스 빌드와 독립적입니다. stdout은 JSON·미디어, stderr는 오류에 쓰며 저장은 명시적입니다. 프로젝트 명령과 옵션·전송 방식이 다릅니다. 플래그·메모리 입력·헤드리스 렌더러·세션 예제는 [단일 에셋 관찰](observe.md)을 참고하세요.
+`render`와 `export`는 워크스페이스 빌드와 독립적입니다. stdout은 바이너리 미디어, stderr는 오류에 쓰며 저장은 명시적(`--output <file>`)입니다. `check`는 `ashfox-cli-result` JSON을 반환합니다. 플래그·메모리 입력·헤드리스 렌더러 예제는 [렌더링과 확인](observe.md)을 참고하세요.
 
 | 명령 | 출력 | 오류 채널 |
 | --- | --- | --- |
-| `inspect` | 검사 JSON | stderr JSON |
-| `capture` | PNG 바이트 | stderr JSON |
-| `replay` | GIF 바이트 | stderr JSON |
+| `check` | JSON (`ashfox-cli-result`) | JSON 진단 또는 stderr |
+| `render` | PNG 또는 GIF(`--gif`) 바이트 | stderr JSON |
 | `export` | PNG·WAV·GLB 바이트 또는 ZIP | stderr JSON |
-| `stdio` | 요청 ID와 대응하는 JSON-lines | 요청 실패는 응답, 치명적인 전송 오류는 stderr |
 
-이 명령은 프로젝트 응답 형식이나 `--json`을 사용하지 않습니다. [관찰 옵션](observe.md)과 [세션 프로토콜](stdio.md)을 참고하세요.
+`render`와 `export`는 프로젝트 응답 형식이나 `--json`을 사용하지 않습니다. [렌더링과 확인](observe.md)을 참고하세요.
 
 ## 코드형 프로젝트 설정
 

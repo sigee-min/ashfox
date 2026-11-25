@@ -17,7 +17,7 @@ export function buildAssets(cli = path.join(root, 'node_modules/@ashfox/cli/dist
     return report.result;
   };
   const built = run('build', '.ashfoxworkspace.mjs');
-  const verified = run('verify', path.dirname(path.dirname(built.bundlePath)));
+  const verified = run('check', path.dirname(path.dirname(built.bundlePath)));
   if (verified.bundleHash !== built.bundleHash) throw new Error('Build changed before integration');
   const catalog = verified.catalog;
   return {

@@ -16,6 +16,6 @@ Bundle, pack and shared code cannot import Node adapters. Encoding is injected
 through the `PackEncoder` contract. The old flat implementation paths have been
 removed; no re-export shims remain.
 
-Run `npm run test:cli`, `npm run test:packs` and `npm run quality:architecture`
+Run `npm run test:cli`, `npm --workspace @ashfox/cli run test:packs` and `npm run quality:check`
 from the repository root. The CLI integration suite covers deterministic bundles,
 invalid inputs, interrupted publication, corruption and installation.

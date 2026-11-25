@@ -19,12 +19,11 @@ contains complete model, item and sound sources; no workspace setup is needed.
 
 | Your task | Guide |
 | --- | --- |
-| Choose an angle, inspect PNG pixels or watch animation | [Observe an asset](guides/observe.md) |
+| Choose an angle, inspect structure, or watch animation | [Render and check an asset](guides/observe.md) |
 | Create a prop or creature | [Models](guides/models.md) |
 | Draw and shade an item | [Sprites](guides/sprites.md) |
 | Synthesize and listen to effects | [Sounds](guides/sounds.md) |
 | Refine the result with an agent | [Review and refine](guides/authoring-and-review.md) |
-| Pass source, images and requests in memory | [Stdio and memory](guides/stdio.md) |
 | Choose a format or execution mode | [Support matrix](guides/choose-a-format.md) |
 | See models, items and sound working together | [Playable web example](guides/web-game.md) |
 | Deliver to Minecraft Java | [Minecraft resource packs](guides/minecraft-packs.md) |
@@ -39,7 +38,7 @@ contains complete model, item and sound sources; no workspace setup is needed.
 `.ashfoxworkspace` configures multi-asset builds and delivery. PNG, GLB, audio and
 ZIP are generated results; changing them does not update the source.
 
-Compare single-asset commands, stdio sessions and configured builds in the
+Compare single-asset commands (`check`, `render`, `export`) and configured workspace builds in the
 [support matrix](guides/choose-a-format.md).
 
 ## DSL reference

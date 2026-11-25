@@ -20,7 +20,7 @@ for (const [name, source] of [
       path.join(out, 'amethyst-preview.png'),
       execFileSync(
         process.execPath,
-        [cli, 'capture', input, '--scale', '12', '--background', 'checker'],
+        [cli, 'render', input, '--scale', '12', '--background', 'checker'],
         { timeout: 120000 },
       ),
     );

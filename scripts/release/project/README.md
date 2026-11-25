@@ -9,7 +9,7 @@ https://ashfox.io/docs/guides/install/ . Commit the package and lock files.
 
 ```sh
 npx --no-install ashfox build .ashfoxworkspace.mjs --json
-npx --no-install ashfox verify build/assets/compiler --json
+npx --no-install ashfox check build/assets/compiler --json
 node assets.mjs
 ```
 

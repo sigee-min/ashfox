@@ -310,7 +310,7 @@ export asset fox {
 
 `density` is currently `16`; `forward` is `north`, `south`, `east`, or
 `west`. The optional `profile` (`creature`, `prop`, or `block`) declares the
-asset quality audit rubric weighting used by `ashfox audit` and `ashfox inspect`.
+asset quality audit rubric weighting used by `ashfox check`.
 A `use` creates a named component instance and binds every required
 port. The assembly's `skeleton` property names the concrete implementation.
 The `use` block's rig-port binding names the matching rig contract. An asset may select

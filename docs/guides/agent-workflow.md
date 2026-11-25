@@ -8,23 +8,26 @@ A browser connection is not required for the file-based pipeline.
 
 ```text
 Read the selected .ashfox source and imported modules. Preserve unrelated assets.
-For a single asset, inspect it, make the source change, capture useful views and
-replay changed motions. Use stdio for in-memory output; save only requested files.
-For a configured game delivery, additionally check, build and verify the workspace.
-Report the observed result and what remains to be checked in the receiving game.
+For a single asset, check it, edit source, render useful views and animated GIFs,
+and export only requested files. For a configured game delivery, run check, build,
+and bundle check against the workspace and build folder. Report the observed result
+and what remains to be checked in the receiving game.
 ```
 
-Add the subject, dimensions, palette, motion/sound intent and destination.
+Add the subject, dimensions, palette, motion/sound intent, and destination.
 
 ## Working sequence
 
-1. Choose the [execution mode](choose-a-format.md): one asset, in-memory session,
-   or configured build.
-2. Inspect source and identifiers. Single-asset observation ignores ancestor
-   workspace files; a project build follows their source-selection rules.
-3. Edit source or replace the complete session graph with `expectedRevision`.
-4. Inspect, capture relevant angles/pixels and listen to sound variants.
-5. Export the selected asset, or check/build/verify a configured delivery.
+1. Choose the [execution mode](choose-a-format.md): one asset, stdin/JSON memory graph,
+   or configured workspace build.
+2. Run `ashfox check` to inspect identifiers and quality audit metrics. Single-asset
+   flags (`--node`, `--profile`, `--threshold`, `--stdin`, `--input-json`) ignore
+   ancestor workspace files; workspace checks validate project rules.
+3. Edit `.ashfox` source files (or pipe full source graphs via `--input-json`).
+4. Run `ashfox render` for key views/atlases, `ashfox render --gif` for changed
+   motions, and listen to exported WAV variants.
+5. Export the selected asset (`ashfox export`), or `check` + `build` + `check <build-dir>`
+   for a configured delivery.
 6. Return media or output locations and distinguish observed results from
    receiving-game behavior that has not been checked.
 
@@ -35,13 +38,11 @@ Use [Game assets](game-assets.md) for runtime IDs and import hints or
 [Minecraft packs](minecraft-packs.md) for item and sound-event mappings. Choose
 explicit format settings; do not infer compatibility from a version label.
 
-Edit source files directly or use the stdio source-replacement operation.
-Project `build` publishes complete output after validation.
+Edit source files directly. Project `build` publishes complete output after validation.
 
 ## Observe while editing
 
-Use [single-asset capture](observe.md) after edits: inspect IDs, capture relevant
-angles and texture details, and replay each changed motion. Read PNG/GIF bytes
-from stdout or use a persistent `ashfox stdio` session. In that session, `load`
-replaces the complete source graph with an expected revision; failed compilation
-preserves the previous asset. Capture does not require workspace publication.
+Use [single-asset render and check](observe.md) after edits: inspect IDs and
+quality scores with `ashfox check`, render key angles and textures with
+`ashfox render`, and animate changed clips with `ashfox render --gif`.
+Single-asset commands work directly from files or stdin/JSON without workspace publication.

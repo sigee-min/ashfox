@@ -14,7 +14,7 @@ Run `node scripts/docs/media.js` after rebuilding the CLI to regenerate guide
 images, GIF and WAV; `assets/docs/receipt.json` records sources, commands and hashes.
 The public site copies media but not that internal receipt.
 
-Run `npm run test:site`, `npm run test:docs:capture`, CLI documentation tests and
+Run `npm run test:site`, `node scripts/docs/test.js --capture`, CLI documentation tests and
 `npm run build:public`. Real media generation requires Chrome/Chromium. The public
 web-game example is tested from its downloadable ZIP, not from private packages.
 

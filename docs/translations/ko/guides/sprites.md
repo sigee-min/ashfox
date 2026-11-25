@@ -33,7 +33,7 @@ part 마스크는 `1`과 `.`을 씁니다. material은 그림자·기본·밝은
 
 {{source-code:2}}
 
-확대 보기와 원래 이미지를 함께 확인하세요. `inspect`는 영수증과 픽셀별 원본 소유권 증거를 반환합니다. 명암 part가 있는 원본은 `--stage silhouette`, `--stage shade`, `--stage grain`으로 구성 단계를 확인합니다.
+확대 보기와 원래 이미지를 함께 확인하세요. `check`는 영수증과 픽셀별 원본 소유권 증거를 반환합니다. 명암 part가 있는 원본은 `--stage silhouette`, `--stage shade`, `--stage grain`으로 구성 단계를 확인합니다.
 
 ![확대한 검의 최종 픽셀](/media/guides/sword.png)
 ![같은 검의 실루엣 단계](/media/guides/sword-shape.png)

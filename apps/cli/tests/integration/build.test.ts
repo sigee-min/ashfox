@@ -68,7 +68,7 @@ const main = async () => {
   const first = success(run('build'));
   const current = path.join(project, 'dist/build/current.json'),
     pointer = fs.readFileSync(current);
-  const verified = success(run('verify', path.join(project, 'dist/build')));
+  const verified = success(run('check', path.join(project, 'dist/build')));
   assert.equal(verified.bundleHash, first.bundleHash);
   const again = success(run('build'));
   assert.equal(again.bundleHash, first.bundleHash);
@@ -142,11 +142,11 @@ const main = async () => {
   assert.ok(!fs.existsSync(lock), 'storage exception releases lock');
   const pngPath = path.join(first.bundlePath, png.path);
   fs.writeFileSync(pngPath, Buffer.from('corrupt'));
-  assert.equal(run('verify', path.join(project, 'dist/build')).code, 3);
+  assert.equal(run('check', path.join(project, 'dist/build')).code, 3);
   fs.writeFileSync(pngPath, pngBytes);
   const extra = path.join(first.bundlePath, 'unexpected.txt');
   fs.writeFileSync(extra, 'extra');
-  assert.equal(run('verify', path.join(project, 'dist/build')).code, 3);
+  assert.equal(run('check', path.join(project, 'dist/build')).code, 3);
   fs.unlinkSync(extra);
   const configBytes = fs.readFileSync(config);
   fs.writeFileSync(config, '{"format":"ashfox-workspace","version":1}');

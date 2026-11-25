@@ -58,12 +58,12 @@ an earlier commit as the result of the current PR. An accepted preview of a
 branch is not proof that a later merged build is identical.
 
 [Work with an agent](agent-workflow.md) explains the editing loop.
-[Inspect and capture](observe.md) covers views, pixels, motion and stdio.
+[Render and check](observe.md) covers views, pixels, GIFs and stdin/JSON inputs.
 
 ## Add CI when the local loop works
 
 Start with the scripts in [build automation](automation.md). Use `npm ci` to
-restore the pinned package and run check, build and verify before the game build.
+restore the pinned package and run `check <workspace>`, `build`, and `check <build-dir>` before the game build.
 Treat any nonzero exit code as a failed asset build. Consume the exact paths
 returned by the successful build rather than a stale export from a previous run.
 

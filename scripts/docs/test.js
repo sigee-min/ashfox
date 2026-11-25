@@ -53,7 +53,11 @@ const cli = (folder, ...args) =>
 try {
   const starter = extract('starter');
   install(starter);
-  run('npx', ['--no-install', 'ashfox', 'inspect', 'sword.ashfox'], starter);
+  const checked = JSON.parse(
+    run('npx', ['--no-install', 'ashfox', 'check', 'sword.ashfox'], starter),
+  );
+  assert.equal(checked.ok, true);
+  assert.equal(checked.result.kind, 'sprite');
   for (const [source, magic] of [
     ['fox.ashfox', 'glTF'],
     ['sword.ashfox', '\x89PNG'],
@@ -62,11 +66,9 @@ try {
     const bytes = cli(starter, 'export', source);
     assert.equal(bytes.subarray(0, 4).toString('latin1'), magic);
   }
-  const client = extract('stdio-client');
-  fs.copyFileSync(path.join(client, 'client.mjs'), path.join(starter, 'client.mjs'));
   if (process.argv.includes('--capture')) {
     for (const source of ['fox.ashfox', 'sword.ashfox']) {
-      const bytes = run(process.execPath, ['client.mjs', source, '--cancel-demo'], starter);
+      const bytes = cli(starter, 'render', source);
       assert.equal(bytes.subarray(0, 4).toString('latin1'), '\x89PNG');
     }
   }

@@ -12,12 +12,11 @@ Ashfox는 복셀 게임을 위한 오픈소스 Assets as Code 도구입니다. �
 
 | 작업 | 가이드 |
 | --- | --- |
-| 시점 선택, PNG 픽셀 확인, 애니메이션 관찰 | [에셋 관찰](guides/observe.md) |
+| 시점 선택, PNG 픽셀 확인, 애니메이션 관찰 | [렌더링과 확인](guides/observe.md) |
 | 소품이나 크리처 만들기 | [모델](guides/models.md) |
 | 아이템 그리기와 명암 표현 | [스프라이트](guides/sprites.md) |
 | 효과음 합성과 청취 | [사운드](guides/sounds.md) |
 | 에이전트와 결과 다듬기 | [리뷰와 개선](guides/authoring-and-review.md) |
-| 소스·이미지·요청을 메모리로 전달 | [Stdio와 메모리](guides/stdio.md) |
 | 포맷과 실행 방식 선택 | [지원 범위](guides/choose-a-format.md) |
 | 모델·아이템·사운드를 함께 사용 | [실행 가능한 웹 예제](guides/web-game.md) |
 | Minecraft Java에 전달 | [Minecraft 리소스 팩](guides/minecraft-packs.md) |
@@ -30,7 +29,7 @@ Ashfox는 복셀 게임을 위한 오픈소스 Assets as Code 도구입니다. �
 
 `.ashfox` 파일과 가져오는 모듈이 편집 가능한 에셋입니다. 선택적인 `.ashfoxworkspace`는 여러 에셋의 빌드와 전달을 설정합니다. PNG·GLB·오디오·ZIP은 생성된 결과물이므로 이를 수정해도 원본이 바뀌지 않습니다.
 
-[지원 범위](guides/choose-a-format.md)에서 단일 에셋 명령, stdio 세션, 워크스페이스 빌드를 비교하세요.
+[지원 범위](guides/choose-a-format.md)에서 단일 에셋 명령(`check`, `render`, `export`)과 워크스페이스 빌드를 비교하세요.
 
 ## DSL 레퍼런스
 

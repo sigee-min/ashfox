@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnSync, spawn } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { unzipSync } from 'fflate';
 const root = path.resolve(__dirname, '../../../..'),
   cli = path.join(__dirname, '../../dist/ashfox.cjs');
@@ -19,23 +19,24 @@ const run = (args: string[], stdin?: string | Buffer | undefined) =>
     maxBuffer: 64 * 1024 * 1024,
   });
 const success = (reply: ReturnType<typeof run>) => {
-  assert.equal(reply.status, 0, String(reply.stderr));
+  assert.equal(reply.status, 0, String(reply.stderr) + String(reply.stdout));
   return reply.stdout;
 };
 async function main() {
-  const inspected = JSON.parse(
-    String(success(run(['inspect', '--input-json'], JSON.stringify(input)))),
-  );
-  assert.equal(inspected.kind, 'sprite');
-  assert.equal(inspected.receipt.width, 16);
-  assert.equal(inspected.evidence.length, 256);
+  const checkedSprite = JSON.parse(
+    String(success(run(['check', '--input-json'], JSON.stringify(input)))),
+  ).result;
+  assert.equal(checkedSprite.kind, 'sprite');
+  assert.equal(checkedSprite.receipt.width, 16);
+  assert.equal(checkedSprite.evidence.length, 256);
   const png = success(run(['export', '--input-json'], JSON.stringify(input)));
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
   const fromPng = JSON.parse(
-    String(success(run(['inspect', '--stdin', '--input-format', 'png'], png))),
-  );
+    String(success(run(['check', '--stdin', '--input-format', 'png'], png))),
+  ).result;
+  assert.equal(fromPng.kind, 'png');
   assert.equal(fromPng.width, 16);
-  const bad = run(['capture', '--stdin'], 'invalid');
+  const bad = run(['render', '--stdin'], 'invalid');
   assert.notEqual(bad.status, 0);
   assert.equal(bad.stdout.length, 0);
   assert.match(bad.stderr.toString(), /error/);
@@ -45,7 +46,15 @@ async function main() {
     path.join(root, 'examples/minecraft/marker.ashfox'),
     path.join(temp, 'marker.ashfox'),
   );
-  assert.equal(JSON.parse(String(success(run(['inspect', 'marker.ashfox'])))).kind, 'model');
+  const markerCheck = JSON.parse(
+    String(success(run(['check', 'marker.ashfox', '--profile', 'block']))),
+  ).result;
+  assert.equal(markerCheck.kind, 'model');
+  const nodeId = markerCheck.nodes.find((n: { kind: string }) => n.kind === 'cube').id;
+  const nodeCheck = JSON.parse(
+    String(success(run(['check', 'marker.ashfox', '--node', nodeId]))),
+  ).result;
+  assert.equal(nodeCheck.node.id, nodeId);
   const glb = success(run(['export', 'marker.ashfox']));
   assert.equal(glb.subarray(0, 4).toString(), 'glTF');
   const zip = success(
@@ -58,70 +67,9 @@ async function main() {
   const collision = run(['export', 'marker.ashfox', '--output', 'model.glb']);
   assert.notEqual(collision.status, 0);
   assert.deepEqual(fs.readFileSync(path.join(temp, 'model.glb')), original);
-  const child = spawn(process.execPath, [cli, 'stdio'], {
-    cwd: temp,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  let text = '',
-    errors = '';
-  const waiting = new Map();
-  child.stdout.on('data', (data) => {
-    text += data;
-    let end;
-    while ((end = text.indexOf('\n')) >= 0) {
-      const reply = JSON.parse(String(text.slice(0, end)));
-      text = text.slice(end + 1);
-      waiting.get(reply.id)?.(reply);
-      waiting.delete(reply.id);
-    }
-  });
-  child.stderr.on('data', (data) => (errors += data));
-  const request = (id: string, method: string, params = {}) =>
-    new Promise<{ ok: boolean; result: { revision: string; cancelled: boolean; data: string } }>(
-      (resolve) => {
-        waiting.set(id, resolve);
-        child.stdin.write(JSON.stringify({ id, method, params }) + '\n');
-      },
-    );
-  const loaded = await request('load', 'load', { input });
-  assert.equal(loaded.ok, true);
-  const revision = loaded.result.revision;
-  assert.equal((await request('bad', 'load', { input, expectedRevision: 'stale' })).ok, false);
-  assert.equal((await request('source', 'source')).result.revision, revision);
-  const invalid = { ...input, source: 'invalid' };
-  assert.equal(
-    (await request('invalid', 'load', { input: invalid, expectedRevision: revision })).ok,
-    false,
-  );
-  assert.equal((await request('inspect', 'inspect')).result.revision, revision);
-  assert.equal((await request('unknown', 'capture', { options: { fake: true } })).ok, false);
-  assert.equal((await request('emptycancel', 'cancel', { id: 'absent' })).result.cancelled, false);
-  const compile = request('compiling', 'load', {
-    input: { file: path.join(root, 'examples/fox/creatures/fox.ashfox') },
-    expectedRevision: revision,
-  });
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  assert.equal(
-    (await request('stopcompile', 'cancel', { id: 'compiling' })).result.cancelled,
-    true,
-  );
-  assert.equal((await compile).ok, false);
-  assert.equal((await request('retained', 'source')).result.revision, revision);
-  const updated = await request('update', 'load', {
-    input: { ...input, source: source + '\n' },
-    expectedRevision: revision,
-  });
-  assert.equal(updated.ok, true);
-  assert.notEqual(updated.result.revision, revision);
-  assert.equal((await request('close', 'close')).ok, true);
-  assert.equal((await request('closed', 'inspect')).ok, false);
-  const exit = new Promise((resolve) => child.on('exit', resolve));
-  child.stdin.end();
-  assert.equal(await exit, 0);
-  assert.equal(errors, '');
   assert.deepEqual(fs.readdirSync(temp).sort(), ['.ashfoxworkspace', 'marker.ashfox', 'model.glb']);
   console.log(
-    'Observation stdio, source graph, PNG input, exports, no implicit writes, closed options, stale load and failure preservation passed',
+    'Single-asset check, source graph, PNG input, exports, no implicit writes and collision preservation passed',
   );
 }
 main()

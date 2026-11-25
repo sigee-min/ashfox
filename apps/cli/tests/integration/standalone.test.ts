@@ -35,7 +35,7 @@ try {
     assert.equal(build.ok, true, JSON.stringify(build));
     assert.equal(run('build', input).result.bundleHash, build.result.bundleHash);
     const id = check.result.products[0].entry.entryName;
-    assert.equal(run('verify', path.join(directory, 'dist', id, 'build')).ok, true);
+    assert.equal(run('check', path.join(directory, 'dist', id, 'build')).ok, true);
     assert.equal(fs.existsSync(path.join(directory, '.ashfoxworkspace')), false);
   }
   const apple = path.join(temp, 'sprite/apple.ashfox');

@@ -175,7 +175,7 @@ const main = async () => {
     success(run('build', path.join(cold, '.ashfoxworkspace'))).bundleHash,
     first.bundleHash,
   );
-  success(run('verify', path.join(project, 'dist/build')));
+  success(run('check', path.join(project, 'dist/build')));
   const current = path.join(project, 'dist/build/current.json'),
     pointer = fs.readFileSync(current);
   const collision = structuredClone(original);

@@ -20,7 +20,7 @@ After [installing the CLI tarball](install.md), add scripts to your game project
   "scripts": {
     "assets:check": "ashfox check assets/.ashfoxworkspace --json",
     "assets:build": "ashfox build assets/.ashfoxworkspace --json",
-    "assets:verify": "ashfox verify assets/dist/build --json"
+    "assets:verify": "ashfox check assets/dist/build --json"
   }
 }
 ```
@@ -50,7 +50,7 @@ console.log(pack.directory); // Pass this exact immutable directory to your copy
 
 This uses Node directly and also works where shell executable shims differ.
 `execFileSync` throws on a failed command. Do not continue using yesterday's pack
-as if the failed build succeeded. A separate `verify` call checks the selected
+as if the failed build succeeded. A separate `check <build-dir>` call checks the selected
 canonical bundle; retain the build hash throughout your consumer run.
 
 ## Reproducibility and concurrency

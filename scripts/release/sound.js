@@ -25,7 +25,7 @@ const verifySoundCli = (cli, write = false) => {
       maxBuffer: 16 * 1024 * 1024,
     });
   try {
-    const capabilities = JSON.parse(run(['capabilities'])).result.sound;
+    const capabilities = JSON.parse(run(['doctor', '--json'])).result.sound;
     assert.deepEqual(capabilities.features, ['curves', 'sequences', 'variation', 'loops']);
     assert.ok(capabilities.sources.includes('resonator'));
     const results = [];
@@ -36,7 +36,7 @@ const verifySoundCli = (cli, write = false) => {
       );
       const input = path.join(temp, name + '.ashfox');
       fs.writeFileSync(input, source);
-      const inspected = JSON.parse(run(['inspect', input]));
+      const inspected = JSON.parse(run(['check', input])).result;
       for (const variant of inspected.variants) {
         const output = path.join(temp, name + '-' + variant.variant + '.wav');
         run(['export', input, '--variant', variant.variant, '--output', output]);

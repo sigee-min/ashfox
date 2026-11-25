@@ -66,7 +66,7 @@ try {
     success(run('build', path.join(cold, '.ashfoxworkspace'))).bundleHash,
     first.bundleHash,
   );
-  success(run('verify', path.join(project, 'dist/build')));
+  success(run('check', path.join(project, 'dist/build')));
   const current = path.join(project, 'dist/build/current.json'),
     pointer = fs.readFileSync(current);
   const collision = structuredClone(original);
@@ -112,7 +112,7 @@ try {
   );
   fs.appendFileSync(path.join(old, 'resource-pack/pack.mcmeta'), 'corrupt');
   // Canonical verification remains valid when a delivery mirror was changed later.
-  success(run('verify', path.join(project, 'dist/build')));
+  success(run('check', path.join(project, 'dist/build')));
   assert.equal(run('build').ok, false, 'republication must reject corrupt mirrors');
   console.log(
     'declarative packs: exact ZIP, PNG/model links, format configuration, cold build, collision/lock and mirror integrity ok',

@@ -85,7 +85,7 @@ assert.deepEqual(complexityViolations(current, { a: { lines: 8 }, b: current.b }
   'a: lines grew from 8 to 9',
 ]);
 assert.deepEqual(complexityViolations({}, { a: { lines: 9 } }), [
-  'a: baseline lines 9 is stale (now within limit); run npm run quality:complexity:tighten',
+  'a: baseline lines 9 is stale (now within limit); run node scripts/quality/complexity.js --write',
 ]);
 assert.match(complexityViolations({ a: { lines: 7 } }, { a: { lines: 9 } })[0], /stale \(now 7\)/);
 

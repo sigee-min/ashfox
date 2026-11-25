@@ -1,7 +1,7 @@
 # Ashfox CLI
 
 The open-source Assets as Code toolkit for voxel games. Define models, textures
-and sounds as `.ashfox` source, version them in Git, and build them with Ashfox. Inspect one asset, capture it from a chosen angle, and export files or
+and sounds as `.ashfox` source, version them in Git, and build them with Ashfox. Check one asset, render it from a chosen angle, and export files or
 pass bytes directly to your game pipeline. Node.js 24 or newer is required.
 
 ## Install and start
@@ -16,12 +16,12 @@ npx --no-install ashfox init my-game
 npx --no-install ashfox build my-game/.ashfoxworkspace.mjs --json
 ```
 
-Run `--help` for a short command guide or `capabilities` for the machine contract.
+Run `--help` for a short command guide or `doctor --json` for the machine contract.
 `init` requires a new folder under an existing parent and never modifies an
 existing folder or npm project. No network access is required for initialization.
 Missing optional tools in `doctor` do not prevent normal exports.
 
-Capture and GIF replay require Chrome or Chromium. Ordinary inspection and
+Rendering and GIF output require Chrome or Chromium. Ordinary checking and
 GLB/PNG/WAV/OGG exports require no external tools.
 Use `ASHFOX_CHROME_PATH` to select Chrome or Chromium when needed.
 See [installation and platform notes](https://ashfox.io/docs/guides/install/).
@@ -29,11 +29,10 @@ See [installation and platform notes](https://ashfox.io/docs/guides/install/).
 ## Work in memory
 
 Omit `--output` to receive binary media on stdout. Errors go to stderr; existing
-output files are refused. Use `npx --no-install ashfox stdio` for a persistent
-JSON-lines session that loads, edits and captures source in memory. File imports
+output files are refused. Use `--stdin` or `--input-json` with `check`, `render`,
+and `export` to load and render source in memory without touching disk. File imports
 resolve beneath the input directory; memory inputs supply their complete graph.
-See [capture](https://ashfox.io/docs/guides/observe/) and the
-[runnable stdio client](https://ashfox.io/docs/guides/stdio/).
+See [render and check](https://ashfox.io/docs/guides/observe/).
 
 ## Build a project
 
@@ -43,7 +42,7 @@ From an installed project folder:
 ```sh
 npx --no-install ashfox check .ashfoxworkspace
 npx --no-install ashfox build .ashfoxworkspace
-npx --no-install ashfox verify dist/build
+npx --no-install ashfox check dist/build
 ```
 
 Use your configured build directory for verification. Project commands return
@@ -67,11 +66,11 @@ The grouped starter keeps source under `asset/` and ignored output under root
 Native sounds define reusable `voices`, finite `sequences`, scalar-or-curve
 controls, seeded event variation and optional baked loops. Sources include
 noise, FM, vocal, chirp and modal resonator. `output.gainDb` is fixed; excess
-peak fails instead of being normalized away. `ashfox capabilities` reports the
+peak fails instead of being normalized away. `ashfox doctor --json` reports the
 sound contract fingerprint. Legacy layers, pitch pairs, sweeps and RMS targets
 are rejected; use the current sound syntax reference.
 
-`ashfox inspect sound.ashfox` reports raw and delivered frames, decoded PCM
+`ashfox check sound.ashfox` reports raw and delivered frames, decoded PCM
 statistics and playback intent. A standalone loop WAV requires the consumer to
 enable full-buffer looping; `game_assets` WAV manifests preserve that intent.
 Loop OGG and Minecraft delivery fail explicitly. One-shot OGG remains supported.

@@ -100,9 +100,9 @@ compatibility profiles. Declaring a broad pack-format range does not certify it.
 ## Execution and output
 
 ```sh
-npx --no-install ashfox check .ashfoxworkspace --json
+npx --no-install ashfox check .ashfoxworkspace
 npx --no-install ashfox build .ashfoxworkspace --json
-npx --no-install ashfox verify dist/build --json
+npx --no-install ashfox check dist/build
 ```
 
 Sound packs use the CLI's built-in WebAssembly OGG Vorbis encoder/decoder and
@@ -141,7 +141,7 @@ even if their bytes match. Namespaces have one merged `sounds.json` per pack.
 Every selected sound file is encoded, independently decoded, checked for duration
 and clipping, and referenced by its actual emitted path.
 
-A failed build preserves the previous complete output. `verify` checks the
+A failed build preserves the previous complete output. `check <build-dir>` verifies the
 canonical bundle; keep the returned build selected throughout your game build.
 Pin FFmpeg when byte-identical OGG results are required. Packs are limited to
 8,192 files / 64 MiB before archiving; see [CLI limits](cli.md).

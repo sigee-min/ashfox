@@ -11,9 +11,9 @@ const fox = 'examples/fox/creatures/fox.ashfox',
   sword = 'examples/items/src/iron_sword.ashfox',
   sound = 'examples/sounds/src/claw_hit.ashfox';
 const jobs = {
-  'fox-front.png': ['capture', fox, '--camera', 'front', '--width', '480', '--height', '320'],
+  'fox-front.png': ['render', fox, '--camera', 'front', '--width', '480', '--height', '320'],
   'fox-angle.png': [
-    'capture',
+    'render',
     fox,
     '--azimuth',
     '45',
@@ -24,9 +24,9 @@ const jobs = {
     '--height',
     '320',
   ],
-  'sword.png': ['capture', sword, '--scale', '12', '--background', 'checker'],
+  'sword.png': ['render', sword, '--scale', '12', '--background', 'checker'],
   'sword-shape.png': [
-    'capture',
+    'render',
     sword,
     '--stage',
     'silhouette',
@@ -35,11 +35,12 @@ const jobs = {
     '--background',
     'checker',
   ],
-  'claw-wave.png': ['capture', sound, '--width', '480', '--height', '160'],
+  'claw-wave.png': ['render', sound, '--width', '480', '--height', '160'],
   'claw.wav': ['export', sound, '--variant', 'base'],
   'fox-motion.gif': [
-    'replay',
+    'render',
     fox,
+    '--gif',
     '--clip',
     'tail_wag',
     '--width',

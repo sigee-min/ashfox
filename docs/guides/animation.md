@@ -4,12 +4,12 @@ Tell your agent what the movement should communicate: “Add a curious look
 around, a slow wing stretch, and a quick greeting. Keep the feet planted.”
 Ask for named clips so you can choose each movement independently.
 
-Use `inspect` to find clip names, `capture --clip NAME --time SECONDS` to inspect
-a pose, and `replay --clip NAME` to watch a full cycle. Omit `--clip` for rest pose.
+Use `check` to find clip names, `render --clip NAME --time SECONDS` to inspect
+a pose, and `render --gif --clip NAME` to watch a full cycle. Omit `--clip` for rest pose.
 For example, from the starter folder:
 
 ```sh
-npx --no-install ashfox replay fox.ashfox --clip tail_wag --output tail-wag.gif
+npx --no-install ashfox render fox.ashfox --gif --clip tail_wag --output tail-wag.gif
 ```
 
 ![Fox tail-wag clip](/media/guides/fox-motion.gif)
@@ -126,9 +126,9 @@ The asset can select multiple different motions, but a motion may be assigned
 only once and every assigned motion must target the selected skeleton's rig.
 The component's rig port must bind to that same rig contract too.
 
-Use `inspect` to find clip names and durations, then `replay --clip NAME` to
-watch a clip. Inspect a specific pose with `capture --clip NAME --time SECONDS`.
-Omit `--clip` to capture the rest pose.
+Use `check` to find clip names and durations, then `render --gif --clip NAME` to
+watch a clip. Inspect a specific pose with `render --clip NAME --time SECONDS`.
+Omit `--clip` to render the rest pose.
 
 ## Griffin's six clips
 

@@ -3,7 +3,7 @@
 ```sh
 npm run build:cli
 node apps/cli/dist/ashfox.cjs build examples/minecraft/.ashfoxworkspace --json
-node apps/cli/dist/ashfox.cjs verify examples/minecraft/dist/build --json
+node apps/cli/dist/ashfox.cjs check examples/minecraft/dist/build
 ```
 
 `marker.ashfox` is a static textured model. The workspace selects `java_block`,

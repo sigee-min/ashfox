@@ -48,7 +48,7 @@ try {
     assert.equal(png.subarray(1, 4).toString(), 'PNG');
     assert.ok(png.readUInt32BE(16) > 0);
   }
-  assert.equal(success(run('verify', path.join(block, 'dist/build'))).bundleHash, first.bundleHash);
+  assert.equal(success(run('check', path.join(block, 'dist/build'))).bundleHash, first.bundleHash);
   const cold = path.join(temp, 'cold');
   copy('minecraft', cold);
   assert.equal(
@@ -105,7 +105,7 @@ try {
     assert.ok(Object.keys(read(path.join(built.bundlePath, animation.path)).animations).length);
     assert.ok(catalog.files.some((f: { path: string }) => f.path.endsWith('.png')));
   }
-  success(run('verify', path.join(actors, 'dist/build')));
+  success(run('check', path.join(actors, 'dist/build')));
   const actorPointer = fs.readFileSync(path.join(actors, 'dist/build/current.json'));
   workspace.exports[0].format = 'java_block';
   write(actorConfig, workspace);

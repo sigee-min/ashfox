@@ -10,14 +10,19 @@ import {
 } from '@ashfox/asset-build';
 import { openAssetProject, encodeCanonicalPng } from '@ashfox/engine-core';
 import type { Prepared, SourceInput } from './contract';
+export const resolveInputFile = (file: string): string => {
+  const requested = path.resolve(file);
+  return path.join(fs.realpathSync(path.dirname(requested)), path.basename(requested));
+};
 export const sealObservation = (input: SourceInput): Snapshot | Prepared => {
   if (input.png || input.file?.endsWith('.png')) {
-    if (input.file) {
-      const stat = fs.lstatSync(input.file);
+    const resolved = input.file ? resolveInputFile(input.file) : undefined;
+    if (resolved) {
+      const stat = fs.lstatSync(resolved);
       if (!stat.isFile() || stat.size > 16 * 1024 * 1024)
         throw new BuildFailure('observe.png', 'PNG exceeds 16 MiB or is not a regular file', 2);
     }
-    const bytes = input.png ? Buffer.from(input.png, 'base64') : fs.readFileSync(input.file!);
+    const bytes = input.png ? Buffer.from(input.png, 'base64') : fs.readFileSync(resolved!);
     if (
       !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
       bytes.length < 24 ||
@@ -37,9 +42,10 @@ export const sealObservation = (input: SourceInput): Snapshot | Prepared => {
   }
   let snapshot;
   if (input.file) {
-    if (!input.file.endsWith('.ashfox'))
+    const resolved = resolveInputFile(input.file);
+    if (!resolved.endsWith('.ashfox'))
       throw new BuildFailure('observe.input', 'Expected a single .ashfox or .png file', 2);
-    snapshot = readSingleSnapshot(input.file);
+    snapshot = readSingleSnapshot(resolved);
   } else {
     const name = input.name ?? 'main.ashfox';
     if (name !== path.basename(name) || !name.endsWith('.ashfox'))
@@ -70,11 +76,13 @@ export const sealObservation = (input: SourceInput): Snapshot | Prepared => {
 };
 export const prepare = (snapshot: Snapshot): Prepared => {
   const compiled = checkSnapshot(snapshot),
-    product = compiled.products[0];
+    product = compiled.products[0],
+    products = compiled.products.map((entry) => ({ kind: entry.kind, entry: entry.entry }));
   if (product.kind === 'sprite')
     return {
       kind: 'sprite',
       revision: compiled.sourceHash,
+      products,
       files: snapshot.files,
       sprite: {
         png: product.sprite.png,
@@ -88,7 +96,13 @@ export const prepare = (snapshot: Snapshot): Prepared => {
       },
     };
   if (product.kind !== 'model')
-    return { kind: product.kind, revision: compiled.sourceHash, product, files: snapshot.files };
+    return {
+      kind: product.kind,
+      revision: compiled.sourceHash,
+      products,
+      product,
+      files: snapshot.files,
+    };
   const opened = openAssetProject({
     workspace: product.workspace,
     entry: product.entry,
@@ -98,6 +112,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
   return {
     kind: 'model',
     revision: compiled.sourceHash,
+    products,
     product,
     document: opened.project.document,
     files: snapshot.files,
