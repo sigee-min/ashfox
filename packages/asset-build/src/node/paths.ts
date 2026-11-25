@@ -31,19 +31,20 @@ export const noLinks = (target: string): void => {
     if (fs.lstatSync(current).isSymbolicLink()) throw new BuildFailure('path.symlink', current, 3);
   }
 };
+const collectDirectoryFiles = (directory: string, relative: string, found: string[]): void => {
+  for (const entry of fs.readdirSync(path.join(directory, relative), { withFileTypes: true })) {
+    const next = relative ? `${relative}/${entry.name}` : entry.name;
+    if (!safeRelative(next) || entry.isSymbolicLink())
+      throw new BuildFailure('output.path', next, 3);
+    if (entry.isDirectory()) collectDirectoryFiles(directory, next, found);
+    else if (entry.isFile()) found.push(next);
+    else throw new BuildFailure('output.special-file', next, 3);
+    if (found.length > 8192) throw new BuildFailure('output.budget', 'Too many files', 3);
+  }
+};
+
 export const listFiles = (directory: string): readonly string[] => {
   const found: string[] = [];
-  const visit = (relative: string): void => {
-    for (const entry of fs.readdirSync(path.join(directory, relative), { withFileTypes: true })) {
-      const next = relative ? `${relative}/${entry.name}` : entry.name;
-      if (!safeRelative(next) || entry.isSymbolicLink())
-        throw new BuildFailure('output.path', next, 3);
-      if (entry.isDirectory()) visit(next);
-      else if (entry.isFile()) found.push(next);
-      else throw new BuildFailure('output.special-file', next, 3);
-      if (found.length > 8192) throw new BuildFailure('output.budget', 'Too many files', 3);
-    }
-  };
-  visit('');
+  collectDirectoryFiles(directory, '', found);
   return found.sort();
 };

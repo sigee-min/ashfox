@@ -40,7 +40,17 @@ export class ChromeRenderer {
         3,
       );
     this.profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-render-'));
-    const child = spawn(
+    const child = this.spawnProcess(executable, this.profile);
+    this.attachPipes(child);
+    try {
+      await this.initializeObserver();
+    } catch (error) {
+      await this.close();
+      throw error;
+    }
+  }
+  private spawnProcess(executable: string, profile: string): ChildProcess {
+    return spawn(
       executable,
       [
         '--headless=new',
@@ -52,11 +62,13 @@ export class ChromeRenderer {
         '--no-default-browser-check',
         '--use-angle=swiftshader',
         '--enable-unsafe-swiftshader',
-        '--user-data-dir=' + this.profile,
+        '--user-data-dir=' + profile,
         'about:blank',
       ],
       { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] },
     );
+  }
+  private attachPipes(child: ChildProcess): void {
     this.child = child;
     this.pipe = child.stdio[3] as Writable;
     const pipe = this.pipe;
@@ -66,54 +78,55 @@ export class ChromeRenderer {
       });
     });
     pipe.on('error', (error) => this.fail(error));
-    (child.stdio[4] as Readable).on('data', (chunk: Buffer) => {
-      this.buffer = Buffer.concat([this.buffer, chunk]);
-      if (this.buffer.length > 96 * 1024 * 1024) {
-        this.fail(new Error('Renderer response exceeds 96 MiB'));
-        void this.close();
-        return;
-      }
-      let end;
-      while ((end = this.buffer.indexOf(0)) >= 0) {
-        const data = this.buffer.subarray(0, end).toString();
-        this.buffer = this.buffer.subarray(end + 1);
-        let reply: Reply;
-        try {
-          reply = JSON.parse(data);
-        } catch (error) {
-          this.fail(error instanceof Error ? error : new Error(String(error)));
-          continue;
-        }
-        if (reply.id === undefined) continue;
-        const pending = this.pending.get(reply.id);
-        if (!pending) continue;
-        clearTimeout(pending.timer);
-        this.pending.delete(reply.id);
-        if (reply.error) pending.reject(new Error(reply.error.message));
-        else pending.resolve(reply.result ?? {});
-      }
-    });
+    (child.stdio[4] as Readable).on('data', (chunk) => this.consumeChunk(chunk));
     child.once('error', (error) => this.fail(error));
     child.once('exit', () => this.fail(new Error('Renderer process exited')));
-    try {
-      const target = await this.call('Target.createTarget', { url: 'about:blank' });
-      const attached = await this.call('Target.attachToTarget', {
-        targetId: target.targetId,
-        flatten: true,
-      });
-      this.session = String(attached.sessionId);
-      await this.call('Runtime.enable', {}, this.session);
-      await this.evaluate(
-        'document.head.innerHTML = ' +
-          JSON.stringify(
-            "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; img-src data: blob:; style-src 'unsafe-inline'\">",
-          ),
-      );
-      await this.evaluate(ASHFOX_OBSERVER_BUNDLE);
-    } catch (error) {
-      await this.close();
-      throw error;
+  }
+  private consumeChunk(chunk: Buffer): void {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+    if (this.buffer.length > 96 * 1024 * 1024) {
+      this.fail(new Error('Renderer response exceeds 96 MiB'));
+      void this.close();
+      return;
     }
+    let end;
+    while ((end = this.buffer.indexOf(0)) >= 0) {
+      const data = this.buffer.subarray(0, end).toString();
+      this.buffer = this.buffer.subarray(end + 1);
+      this.handleFrame(data);
+    }
+  }
+  private handleFrame(data: string): void {
+    let reply: Reply;
+    try {
+      reply = JSON.parse(data);
+    } catch (error) {
+      this.fail(error instanceof Error ? error : new Error(String(error)));
+      return;
+    }
+    if (reply.id === undefined) return;
+    const pending = this.pending.get(reply.id);
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    this.pending.delete(reply.id);
+    if (reply.error) pending.reject(new Error(reply.error.message));
+    else pending.resolve(reply.result ?? {});
+  }
+  private async initializeObserver(): Promise<void> {
+    const target = await this.call('Target.createTarget', { url: 'about:blank' });
+    const attached = await this.call('Target.attachToTarget', {
+      targetId: target.targetId,
+      flatten: true,
+    });
+    this.session = String(attached.sessionId);
+    await this.call('Runtime.enable', {}, this.session);
+    await this.evaluate(
+      'document.head.innerHTML = ' +
+        JSON.stringify(
+          "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; img-src data: blob:; style-src 'unsafe-inline'\">",
+        ),
+    );
+    await this.evaluate(ASHFOX_OBSERVER_BUNDLE);
   }
   private fail(error: Error): void {
     for (const pending of this.pending.values()) {

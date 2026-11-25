@@ -26,6 +26,19 @@ const disposeObject = (object: THREE.Object3D): void => {
 const orderedSceneNodes = (document: ProjectDocument) =>
   Object.values(document.scene.nodes).sort((left, right) => left.id.localeCompare(right.id));
 
+const attachHierarchy = (
+  root: THREE.Group,
+  nodes: readonly ProjectDocument['scene']['nodes'][string][],
+  objectsByNodeId: Map<string, THREE.Group>,
+): void => {
+  for (const node of nodes) {
+    const group = objectsByNodeId.get(node.id);
+    if (!group) continue;
+    const parent = node.parentId === null ? root : objectsByNodeId.get(node.parentId);
+    (parent ?? root).add(group);
+  }
+};
+
 /** Project-to-Three projection boundary owned by the renderer. */
 export const projectToThreeScene = (
   document: ProjectDocument,
@@ -41,10 +54,7 @@ export const projectToThreeScene = (
     options.untexturedColor,
     options.showTextures !== false,
   );
-  const readiness: ProjectSceneProjection['readiness'] = {
-    status: 'pending',
-    error: null,
-  };
+  const readiness: ProjectSceneProjection['readiness'] = { status: 'pending', error: null };
   const ready = materials.ready
     .then(() => {
       readiness.status = 'ready';
@@ -54,37 +64,22 @@ export const projectToThreeScene = (
       readiness.error = error instanceof Error ? error.message : String(error);
     });
   const orderedNodes = orderedSceneNodes(document);
-
   for (const node of orderedNodes) {
     const group = new THREE.Group();
     group.name = node.name;
     group.visible = node.visible;
     group.userData.nodeId = node.id;
     group.userData.kind = node.kind;
-    // PlaneNode basis is the signed chart authority. Its retired Euler
-    // rotation is retained for Bedrock lowering only; applying both here
-    // would rotate the basis a second time and mirror east/west patches.
+    // PlaneNode basis is the signed chart authority; its retired Euler rotation would double-rotate.
     const webTransform =
       node.kind === 'plane' && node.basis
         ? { ...node.transform, rotation: [0, 0, 0] as const }
         : node.transform;
     applyNodeTransform(document, node, group, webTransform);
     objectsByNodeId.set(node.id, group);
-    addNodeGeometry(node, group, {
-      materials,
-      textures: document.textures,
-      options,
-      selectable,
-    });
+    addNodeGeometry(node, group, { materials, textures: document.textures, options, selectable });
   }
-
-  for (const node of orderedNodes) {
-    const group = objectsByNodeId.get(node.id);
-    if (!group) continue;
-    const parent = node.parentId === null ? root : objectsByNodeId.get(node.parentId);
-    (parent ?? root).add(group);
-  }
-
+  attachHierarchy(root, orderedNodes, objectsByNodeId);
   return {
     documentReference: document,
     root,

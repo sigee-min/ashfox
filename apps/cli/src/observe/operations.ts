@@ -39,48 +39,53 @@ const auditAsset = (asset: Prepared, options: AuditOptions = {}): AuditReport =>
   );
 };
 
+const inspectDocument = (
+  asset: Prepared,
+  d: NonNullable<Prepared['document']>,
+  summary: Record<string, unknown>,
+  nodeId: string | undefined,
+  auditOptions?: AuditOptions,
+): unknown => {
+  if (nodeId) {
+    if (!d.scene.nodes[nodeId])
+      throw new BuildFailure('observe.node', 'Unknown node: ' + nodeId, 2);
+    return {
+      node: d.scene.nodes[nodeId],
+      measurement: measureSceneGeometry(d, {
+        nodeId,
+        scope: 'subtree',
+        groundY: 0,
+        tolerance: 0.001,
+      }),
+      surface: inspectNodeSurface(d, nodeId),
+    };
+  }
+  return {
+    ...summary,
+    kind: asset.kind,
+    revision: asset.revision,
+    nodes: Object.values(d.scene.nodes),
+    textures: Object.values(d.textures).map((t) => ({
+      id: t.id,
+      name: t.name,
+      width: t.width,
+      height: t.height,
+    })),
+    animations: Object.values(d.animations),
+    settings: d.settings,
+    ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset, auditOptions) } : {}),
+  };
+};
+
 export const inspect = (asset: Prepared, v: ViewOptions, auditOptions?: AuditOptions): unknown => {
   if (
     auditOptions &&
-    (auditOptions.profile !== undefined || auditOptions.threshold !== undefined)
-  ) {
-    if (asset.product?.kind !== 'model')
-      throw new BuildFailure('observe.kind', 'profile and threshold require a model asset', 2);
-  }
+    (auditOptions.profile !== undefined || auditOptions.threshold !== undefined) &&
+    asset.product?.kind !== 'model'
+  )
+    throw new BuildFailure('observe.kind', 'profile and threshold require a model asset', 2);
   const summary = asset.products ? { sourceHash: asset.revision, products: asset.products } : {};
-  if (asset.document) {
-    const d = asset.document;
-    if (v.node) {
-      if (!d.scene.nodes[v.node])
-        throw new BuildFailure('observe.node', 'Unknown node: ' + v.node, 2);
-      return {
-        node: d.scene.nodes[v.node],
-        measurement: measureSceneGeometry(d, {
-          nodeId: v.node,
-          scope: 'subtree',
-          groundY: 0,
-          tolerance: 0.001,
-        }),
-        surface: inspectNodeSurface(d, v.node),
-      };
-    }
-    return {
-      ...summary,
-      kind: asset.kind,
-      revision: asset.revision,
-      nodes: Object.values(d.scene.nodes),
-      textures: Object.values(d.textures).map((t) => ({
-        id: t.id,
-        name: t.name,
-        width: t.width,
-        height: t.height,
-      })),
-      animations: Object.values(d.animations),
-      settings: d.settings,
-      ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset, auditOptions) } : {}),
-    };
-  }
-  const product = asset.product;
+  if (asset.document) return inspectDocument(asset, asset.document, summary, v.node, auditOptions);
   if (asset.sprite)
     return {
       ...summary,
@@ -89,12 +94,12 @@ export const inspect = (asset: Prepared, v: ViewOptions, auditOptions?: AuditOpt
       receipt: asset.sprite.receipt,
       evidence: asset.sprite.evidence,
     };
-  if (product?.kind === 'sound')
+  if (asset.product?.kind === 'sound')
     return {
       ...summary,
       kind: 'sound',
       revision: asset.revision,
-      variants: product.sounds.map(({ wav, ...metadata }) => metadata),
+      variants: asset.product.sounds.map(({ wav, ...metadata }) => metadata),
     };
   const bytes = Buffer.from(asset.png!, 'base64');
   return {
@@ -233,24 +238,31 @@ const assertExportGate = (asset: Prepared): void => {
   }
 };
 
-export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
-  const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
-  if (
-    v.format &&
-    !{
-      sprite: ['png'],
-      sound: ['wav'],
-      model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
-    }[kind].includes(v.format)
-  )
-    throw new BuildFailure('observe.format', 'Format does not match asset kind', 2);
-  if (asset.png) return { mime: 'image/png', bytes: Buffer.from(asset.png, 'base64') };
-  if (asset.sprite) return { mime: 'image/png', bytes: asset.sprite.png };
-  if (asset.product?.kind === 'sound')
-    return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
-  assertExportGate(asset);
-  const modelProduct = asset.product!;
-  if (modelProduct.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
+const packageModelBundle = (
+  bundle: Awaited<ReturnType<typeof exportProductionProjectResolved>>,
+  format: string,
+): Media => {
+  if (format === 'glb') {
+    const file = bundle.files.find((f) => f.kind === 'binary' && f.path.endsWith('.glb'));
+    if (!file || file.kind !== 'binary') throw new BuildFailure('observe.export', 'Missing GLB', 3);
+    return { mime: 'model/gltf-binary', bytes: file.data };
+  }
+  const files: Record<string, Uint8Array> = {};
+  for (const file of [...bundle.files].sort((a, b) => a.path.localeCompare(b.path))) {
+    if (file.kind === 'blob-copy') throw new BuildFailure('observe.export', 'Unresolved file', 3);
+    files[file.path] = file.kind === 'binary' ? file.data : Buffer.from(JSON.stringify(file.data));
+  }
+  return {
+    mime: 'application/zip',
+    bytes: zipSync(files, { level: 0, mtime: new Date(1980, 0, 1) }),
+  };
+};
+
+const exportModelProduct = async (
+  asset: Prepared,
+  modelProduct: Extract<NonNullable<Prepared['product']>, { readonly kind: 'model' }>,
+  v: ViewOptions,
+): Promise<Media> => {
   const opened = openAssetProject({
     workspace: modelProduct.workspace,
     entry: modelProduct.entry,
@@ -281,18 +293,23 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
     encoding: 'portable',
     resolveBlob: async (ref) => textures.get(ref.key) ?? null,
   });
-  if (format === 'glb') {
-    const file = bundle.files.find((f) => f.kind === 'binary' && f.path.endsWith('.glb'));
-    if (!file || file.kind !== 'binary') throw new BuildFailure('observe.export', 'Missing GLB', 3);
-    return { mime: 'model/gltf-binary', bytes: file.data };
-  }
-  const files: Record<string, Uint8Array> = {};
-  for (const file of [...bundle.files].sort((a, b) => a.path.localeCompare(b.path))) {
-    if (file.kind === 'blob-copy') throw new BuildFailure('observe.export', 'Unresolved file', 3);
-    files[file.path] = file.kind === 'binary' ? file.data : Buffer.from(JSON.stringify(file.data));
-  }
-  return {
-    mime: 'application/zip',
-    bytes: zipSync(files, { level: 0, mtime: new Date(1980, 0, 1) }),
-  };
+  return packageModelBundle(bundle, format);
+};
+
+export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
+  const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
+  const allowed = {
+    sprite: ['png'],
+    sound: ['wav'],
+    model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
+  }[kind];
+  if (v.format && !allowed.includes(v.format))
+    throw new BuildFailure('observe.format', 'Format does not match asset kind', 2);
+  if (asset.png) return { mime: 'image/png', bytes: Buffer.from(asset.png, 'base64') };
+  if (asset.sprite) return { mime: 'image/png', bytes: asset.sprite.png };
+  if (asset.product?.kind === 'sound')
+    return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
+  assertExportGate(asset);
+  if (asset.product?.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
+  return exportModelProduct(asset, asset.product, v);
 };

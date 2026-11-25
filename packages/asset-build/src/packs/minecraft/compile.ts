@@ -8,29 +8,35 @@ import {
 } from '../../bundle/contract';
 import { json } from '../../shared/digest';
 import { safeRelative } from '../../shared/path';
-export const compileJavaPack = async (
-  pack: JavaResourcePack,
+interface PackWriter {
+  add: (filePath: string, content: Uint8Array) => void;
+  addJson: (filePath: string, value: unknown) => void;
+  asset: (id: string) => CatalogAsset;
+  bytes: (filePath: string) => Uint8Array;
+  png: (id: string) => Uint8Array;
+  files: Artifact[];
+}
+
+const createPackWriter = (
+  packName: string,
   assets: readonly CatalogAsset[],
   artifacts: readonly Artifact[],
-  encoder?: PackEncoder,
-): Promise<readonly Artifact[]> => {
-  const files = new Map<string, Artifact>();
-  const add = (path: string, bytes: Uint8Array): void => {
-    const key = path.toLowerCase();
-    if (!safeRelative(path) || files.has(key))
-      throw new BuildFailure('pack.collision', `${pack.name}: ${path}`);
-    files.set(key, { path, bytes });
+): PackWriter => {
+  const fileMap = new Map<string, Artifact>();
+  const add = (filePath: string, content: Uint8Array): void => {
+    const key = filePath.toLowerCase();
+    if (!safeRelative(filePath) || fileMap.has(key))
+      throw new BuildFailure('pack.collision', `${packName}: ${filePath}`);
+    fileMap.set(key, { path: filePath, bytes: content });
   };
-  const addJson = (path: string, value: unknown): void =>
-    add(path, new TextEncoder().encode(json(value)));
   const asset = (id: string): CatalogAsset => {
     const found = assets.find((a) => a.id === id);
-    if (!found) throw new BuildFailure('pack.source', `${pack.name}: missing export ${id}`);
+    if (!found) throw new BuildFailure('pack.source', `${packName}: missing export ${id}`);
     return found;
   };
-  const bytes = (path: string): Uint8Array => {
-    const found = artifacts.find((a) => a.path === path);
-    if (!found) throw new BuildFailure('pack.source', path);
+  const bytes = (filePath: string): Uint8Array => {
+    const found = artifacts.find((a) => a.path === filePath);
+    if (!found) throw new BuildFailure('pack.source', filePath);
     return found.bytes;
   };
   const png = (id: string): Uint8Array => {
@@ -40,8 +46,66 @@ export const compileJavaPack = async (
       throw new BuildFailure('pack.source', id + ': expected sprite');
     return bytes(file.path);
   };
+  return {
+    add,
+    addJson: (filePath, value) => add(filePath, new TextEncoder().encode(json(value))),
+    asset,
+    bytes,
+    png,
+    get files() {
+      return [...fileMap.values()];
+    },
+  };
+};
+
+const appendSoundEventVariants = async (
+  sound: JavaResourcePack['sounds'][number],
+  writer: PackWriter,
+  encoded: Map<string, Uint8Array>,
+  encoder?: PackEncoder,
+) => {
+  if (!encoder)
+    throw new BuildFailure('pack.encoder', 'Sound packs require the Node Vorbis encoder adapter');
+  const source = writer.asset(sound.source);
+  if (!('variants' in source.metadata))
+    throw new BuildFailure('pack.source', sound.source + ': expected sound');
+  if (source.metadata.variants.some((v) => v.playback.kind === 'loop'))
+    throw new BuildFailure(
+      'sound.loop.target',
+      sound.source + ': Minecraft sound events do not support loop playback',
+    );
+  const selected =
+    sound.variants === 'all'
+      ? source.metadata.variants.map((v) => ({ id: v.id, weight: 1 }))
+      : sound.variants;
+  const [namespace, event] = sound.id.split(':');
+  const entries = [];
+  for (const variant of [...selected].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    if (!source.metadata.variants.some((v) => v.id === variant.id))
+      throw new BuildFailure('pack.variant', `${sound.source}: ${variant.id}`);
+    const file = source.files.find((f) => f.path.endsWith(`/${variant.id}.wav`));
+    if (!file) throw new BuildFailure('pack.source', sound.source + ': missing WAV');
+    let ogg = encoded.get(file.path);
+    if (!ogg) {
+      ogg = await encoder.encode(writer.bytes(file.path));
+      encoded.set(file.path, ogg);
+    }
+    const resource = `${event}/${variant.id}`;
+    writer.add(`assets/${namespace}/sounds/${resource}.ogg`, ogg);
+    entries.push({
+      name: `${namespace}:${resource}`,
+      volume: sound.volume,
+      pitch: sound.pitch,
+      stream: sound.stream,
+      weight: variant.weight,
+    });
+  }
+  return { namespace: namespace!, event: event!, entries };
+};
+
+const appendPackAssets = (pack: JavaResourcePack, writer: PackWriter): void => {
   const metadata = pack.metadata;
-  addJson('pack.mcmeta', {
+  writer.addJson('pack.mcmeta', {
     pack:
       metadata.format === 'legacy'
         ? { pack_format: metadata.packFormat, description: metadata.description }
@@ -51,74 +115,54 @@ export const compileJavaPack = async (
             description: metadata.description,
           },
   });
-  if (pack.icon !== null) add('pack.png', png(pack.icon));
+  if (pack.icon !== null) writer.add('pack.png', writer.png(pack.icon));
   for (const source of [...pack.models].sort()) {
-    for (const file of asset(source).files) {
+    for (const file of writer.asset(source).files) {
       const relative = file.path.slice(`assets/${source}/`.length);
       // Pack metadata is owned by this declaration, not by individual block exports.
-      if (relative !== 'pack.mcmeta') add(relative, bytes(file.path));
+      if (relative !== 'pack.mcmeta') writer.add(relative, writer.bytes(file.path));
     }
   }
   for (const item of [...pack.items].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-    const [namespace, path] = item.id.split(':');
-    add(`assets/${namespace}/textures/item/${path}.png`, png(item.source));
-    addJson(`assets/${namespace}/models/item/${path}.json`, {
+    const [namespace, itemPath] = item.id.split(':');
+    writer.add(`assets/${namespace}/textures/item/${itemPath}.png`, writer.png(item.source));
+    writer.addJson(`assets/${namespace}/models/item/${itemPath}.json`, {
       parent: `minecraft:item/${item.parent}`,
-      textures: { layer0: `${namespace}:item/${path}` },
+      textures: { layer0: `${namespace}:item/${itemPath}` },
     });
     if (pack.itemDefinitions === 'modern')
-      addJson(`assets/${namespace}/items/${path}.json`, {
-        model: { type: 'minecraft:model', model: `${namespace}:item/${path}` },
+      writer.addJson(`assets/${namespace}/items/${itemPath}.json`, {
+        model: { type: 'minecraft:model', model: `${namespace}:item/${itemPath}` },
       });
   }
+};
+
+export const compileJavaPack = async (
+  pack: JavaResourcePack,
+  assets: readonly CatalogAsset[],
+  artifacts: readonly Artifact[],
+  encoder?: PackEncoder,
+): Promise<readonly Artifact[]> => {
+  const writer = createPackWriter(pack.name, assets, artifacts);
+  appendPackAssets(pack, writer);
   const sounds = new Map<string, Map<string, unknown>>(),
     encoded = new Map<string, Uint8Array>();
   for (const sound of [...pack.sounds].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-    if (!encoder)
-      throw new BuildFailure('pack.encoder', 'Sound packs require the Node Vorbis encoder adapter');
-    const source = asset(sound.source);
-    if (!('variants' in source.metadata))
-      throw new BuildFailure('pack.source', sound.source + ': expected sound');
-    if (source.metadata.variants.some((v) => v.playback.kind === 'loop'))
-      throw new BuildFailure(
-        'sound.loop.target',
-        sound.source + ': Minecraft sound events do not support loop playback',
-      );
-    const selected =
-      sound.variants === 'all'
-        ? source.metadata.variants.map((v) => ({ id: v.id, weight: 1 }))
-        : sound.variants;
-    const [namespace, event] = sound.id.split(':');
-    const entries = [];
-    for (const variant of [...selected].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-      if (!source.metadata.variants.some((v) => v.id === variant.id))
-        throw new BuildFailure('pack.variant', `${sound.source}: ${variant.id}`);
-      const file = source.files.find((f) => f.path.endsWith(`/${variant.id}.wav`));
-      if (!file) throw new BuildFailure('pack.source', sound.source + ': missing WAV');
-      let ogg = encoded.get(file.path);
-      if (!ogg) {
-        ogg = await encoder.encode(bytes(file.path));
-        encoded.set(file.path, ogg);
-      }
-      const resource = `${event}/${variant.id}`;
-      add(`assets/${namespace}/sounds/${resource}.ogg`, ogg);
-      entries.push({
-        name: `${namespace}:${resource}`,
-        volume: sound.volume,
-        pitch: sound.pitch,
-        stream: sound.stream,
-        weight: variant.weight,
-      });
-    }
-    const events = sounds.get(namespace!) ?? new Map<string, unknown>();
-    events.set(event!, {
+    const { namespace, event, entries } = await appendSoundEventVariants(
+      sound,
+      writer,
+      encoded,
+      encoder,
+    );
+    const events = sounds.get(namespace) ?? new Map<string, unknown>();
+    events.set(event, {
       replace: sound.replace,
       ...(sound.subtitle === null ? {} : { subtitle: sound.subtitle }),
       sounds: entries,
     });
-    sounds.set(namespace!, events);
+    sounds.set(namespace, events);
   }
   for (const [namespace, events] of sounds)
-    addJson(`assets/${namespace}/sounds.json`, Object.fromEntries(events));
-  return archivePack(pack.name, 'resource-pack', pack.archive, [...files.values()]);
+    writer.addJson(`assets/${namespace}/sounds.json`, Object.fromEntries(events));
+  return archivePack(pack.name, 'resource-pack', pack.archive, writer.files);
 };

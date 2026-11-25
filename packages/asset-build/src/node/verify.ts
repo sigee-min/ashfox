@@ -35,138 +35,118 @@ const readJson = (file: string): unknown => {
   if (text !== json(value)) fail('Metadata must be canonical JSON');
   return value;
 };
-const metadata = (kind: unknown, value: unknown): AssetMetadata => {
-  if (kind === 'pack') {
-    if (
-      value !== null &&
-      typeof value === 'object' &&
-      'resourceRoot' in value &&
-      value.resourceRoot === 'game-assets'
-    ) {
-      const r = record(value, ['resourceRoot', 'manifest', 'archive']);
-      if (
-        r.manifest !== 'assets.json' ||
-        (r.archive !== null &&
-          (typeof r.archive !== 'string' ||
-            !safeRelative(r.archive) ||
-            !r.archive.endsWith('.zip')))
-      )
-        fail('Invalid game pack metadata');
-      return {
-        resourceRoot: 'game-assets',
-        manifest: 'assets.json',
-        archive: r.archive as string | null,
-      };
-    }
-    const r = record(value, ['minecraftVersion', 'resourceRoot', 'archive']);
-    if (
-      typeof r.minecraftVersion !== 'string' ||
-      !r.minecraftVersion ||
-      r.resourceRoot !== 'resource-pack' ||
-      (r.archive !== null &&
-        (typeof r.archive !== 'string' || !safeRelative(r.archive) || !r.archive.endsWith('.zip')))
-    )
-      fail('Invalid pack metadata');
+const isArchiveField = (archive: unknown): archive is string | null =>
+  archive === null ||
+  (typeof archive === 'string' && safeRelative(archive) && archive.endsWith('.zip'));
+
+const verifyPackMetadata = (value: unknown): AssetMetadata => {
+  if (
+    value !== null &&
+    typeof value === 'object' &&
+    'resourceRoot' in value &&
+    value.resourceRoot === 'game-assets'
+  ) {
+    const r = record(value, ['resourceRoot', 'manifest', 'archive']);
+    if (r.manifest !== 'assets.json' || !isArchiveField(r.archive))
+      fail('Invalid game pack metadata');
     return {
-      minecraftVersion: r.minecraftVersion as string,
-      resourceRoot: 'resource-pack',
+      resourceRoot: 'game-assets',
+      manifest: 'assets.json',
       archive: r.archive as string | null,
     };
   }
+  const r = record(value, ['minecraftVersion', 'resourceRoot', 'archive']);
+  if (
+    typeof r.minecraftVersion !== 'string' ||
+    !r.minecraftVersion ||
+    r.resourceRoot !== 'resource-pack' ||
+    !isArchiveField(r.archive)
+  )
+    fail('Invalid pack metadata');
+  return {
+    minecraftVersion: r.minecraftVersion as string,
+    resourceRoot: 'resource-pack',
+    archive: r.archive as string | null,
+  };
+};
+
+const verifyModelMetadata = (value: unknown): AssetMetadata => {
+  const r = record(value, ['clips']);
+  if (!Array.isArray(r.clips)) return fail('Invalid clips');
+  return {
+    clips: r.clips.map((raw) => {
+      const clip = record(raw, ['name', 'durationSeconds']);
+      if (
+        typeof clip.name !== 'string' ||
+        typeof clip.durationSeconds !== 'number' ||
+        !Number.isFinite(clip.durationSeconds) ||
+        clip.durationSeconds < 0
+      )
+        fail('Invalid clip');
+      return { name: clip.name as string, durationSeconds: clip.durationSeconds as number };
+    }),
+  };
+};
+
+const verifyAudioVariantMetadata = (raw: unknown) => {
+  const variant = record(raw, [
+    'id',
+    'frames',
+    'sampleRate',
+    'channels',
+    'playback',
+    'peak',
+    'rms',
+    'dc',
+    'seamDelta',
+    'maxAdjacentDelta',
+  ]);
+  if (
+    typeof variant.id !== 'string' ||
+    !Number.isSafeInteger(variant.frames) ||
+    (variant.frames as number) <= 0 ||
+    variant.sampleRate !== 48000 ||
+    variant.channels !== 1
+  )
+    fail('Invalid audio metadata');
+  for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta']) {
+    if (typeof variant[key] !== 'number' || !Number.isFinite(variant[key]))
+      fail('Invalid audio statistics');
+  }
+  return {
+    id: variant.id as string,
+    frames: variant.frames as number,
+    sampleRate: 48000 as const,
+    channels: 1 as const,
+    peak: variant.peak as number,
+    rms: variant.rms as number,
+    dc: variant.dc as number,
+    seamDelta: variant.seamDelta as number,
+    maxAdjacentDelta: variant.maxAdjacentDelta as number,
+    playback: readPlayback(variant.playback, variant.frames as number),
+  };
+};
+
+const metadata = (kind: unknown, value: unknown): AssetMetadata => {
+  if (kind === 'pack') return verifyPackMetadata(value);
   if (kind === 'sprite') {
     const r = record(value, ['width', 'height']);
     if (r.width !== 16 || r.height !== 16) fail('Invalid sprite dimensions');
     return { width: 16, height: 16 };
   }
-  if (kind === 'model') {
-    const r = record(value, ['clips']);
-    if (!Array.isArray(r.clips)) return fail('Invalid clips');
-    return {
-      clips: r.clips.map((raw) => {
-        const clip = record(raw, ['name', 'durationSeconds']);
-        if (
-          typeof clip.name !== 'string' ||
-          typeof clip.durationSeconds !== 'number' ||
-          !Number.isFinite(clip.durationSeconds) ||
-          clip.durationSeconds < 0
-        )
-          fail('Invalid clip');
-        return { name: clip.name as string, durationSeconds: clip.durationSeconds as number };
-      }),
-    };
-  }
+  if (kind === 'model') return verifyModelMetadata(value);
   const r = record(value, ['variants']);
   if (!Array.isArray(r.variants)) return fail('Invalid variants');
-  return {
-    variants: r.variants.map((raw) => {
-      const variant = record(raw, [
-        'id',
-        'frames',
-        'sampleRate',
-        'channels',
-        'playback',
-        'peak',
-        'rms',
-        'dc',
-        'seamDelta',
-        'maxAdjacentDelta',
-      ]);
-      if (
-        typeof variant.id !== 'string' ||
-        !Number.isSafeInteger(variant.frames) ||
-        (variant.frames as number) <= 0 ||
-        variant.sampleRate !== 48000 ||
-        variant.channels !== 1
-      )
-        fail('Invalid audio metadata');
-      for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta']) {
-        if (typeof variant[key] !== 'number' || !Number.isFinite(variant[key]))
-          fail('Invalid audio statistics');
-      }
-      return {
-        id: variant.id as string,
-        frames: variant.frames as number,
-        sampleRate: 48000,
-        channels: 1,
-        peak: variant.peak as number,
-        rms: variant.rms as number,
-        dc: variant.dc as number,
-        seamDelta: variant.seamDelta as number,
-        maxAdjacentDelta: variant.maxAdjacentDelta as number,
-        playback: readPlayback(variant.playback, variant.frames as number),
-      };
-    }),
-  };
+  return { variants: r.variants.map(verifyAudioVariantMetadata) };
 };
-export const verifyBundle = (
+
+const verifyReceiptFiles = (
   directory: string,
-  hash: string,
-): { receipt: Receipt; catalog: Catalog } => {
-  noLinks(directory);
-  if (!isHash(hash)) return fail('Invalid bundle hash');
-  const r = record(readJson(path.join(directory, 'receipt.json')), [
-    'format',
-    'version',
-    'sourceHash',
-    'requestKey',
-    'toolchain',
-    'catalogHash',
-    'files',
-  ]);
-  if (
-    r.format !== 'ashfox-build-receipt' ||
-    r.version !== 1 ||
-    typeof r.sourceHash !== 'string' ||
-    !isHash(r.requestKey) ||
-    !isHash(r.catalogHash) ||
-    typeof r.toolchain !== 'string' ||
-    !Array.isArray(r.files)
-  )
-    fail('Invalid receipt');
-  if (digest('ashfox-bundle:1\n' + json(r)) !== hash) fail('Receipt hash mismatch');
+  rawFiles: unknown[],
+): { names: string[]; fileRecords: FileRecord[] } => {
   const names: string[] = [],
     fileRecords: FileRecord[] = [];
-  for (const raw of r.files as unknown[]) {
+  for (const raw of rawFiles) {
     const file = record(raw, ['path', 'sha256', 'byteLength']);
     if (
       typeof file.path !== 'string' ||
@@ -200,6 +180,148 @@ export const verifyBundle = (
     fail('Duplicate or unordered files');
   if (json(listFiles(directory)) !== json([...names, 'receipt.json'].sort()))
     fail('Missing or additional files');
+  return { names, fileRecords };
+};
+
+const verifySoundCoverage = (
+  directory: string,
+  details: Extract<AssetMetadata, { readonly variants: readonly unknown[] }>,
+  assetFiles: readonly FileRecord[],
+): void => {
+  const variants = new Set(details.variants.map((v) => v.id));
+  if (
+    variants.size !== details.variants.length ||
+    !variants.size ||
+    variants.size > 8 ||
+    assetFiles.length !== variants.size
+  )
+    fail('Invalid sound file coverage');
+  for (const variant of details.variants) {
+    const file = assetFiles.find((f) => f.path.endsWith(`/${variant.id}.wav`));
+    if (!file) return fail('Missing sound WAV');
+    const pcm = fs.readFileSync(contained(directory, file.path));
+    verifyPcm(pcm, variant.frames);
+    const stats = pcmStatistics(pcm, variant.frames);
+    for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta'] as const) {
+      if (stats[key] !== variant[key]) fail('Audio statistics do not match PCM');
+    }
+  }
+};
+
+const verifyGameManifestAssets = (
+  directory: string,
+  root: string,
+  manifestFile: string,
+  assetFiles: readonly FileRecord[],
+): void => {
+  const manifest = readGameAssetManifest(readJson(contained(directory, root + manifestFile)));
+  const references = manifest.assets
+    .flatMap((a) => a.files)
+    .map((f) => ({ ...f, path: root + f.path }))
+    .sort((a, b) => (a.path < b.path ? -1 : 1));
+  const actual = assetFiles
+    .filter((f) => f.path.startsWith(root) && f.path !== root + manifestFile)
+    .sort((a, b) => (a.path < b.path ? -1 : 1));
+  if (json(references) !== json(actual)) fail('Game manifest lineage mismatch');
+  for (const sound of manifest.assets) {
+    if (sound.kind !== 'sound' || sound.codec !== 'wav') continue;
+    for (const variant of sound.variants)
+      verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames);
+  }
+};
+
+const verifyPackCoverage = (
+  directory: string,
+  assetId: string,
+  details: Extract<AssetMetadata, { readonly resourceRoot: string }>,
+  assetFiles: readonly FileRecord[],
+): void => {
+  const prefix = `assets/${assetId}/`;
+  const root = prefix + details.resourceRoot + '/';
+  const entry = details.resourceRoot === 'resource-pack' ? 'pack.mcmeta' : details.manifest;
+  if (
+    !assetFiles.some((f) => f.path === root + entry) ||
+    (details.archive !== null && !assetFiles.some((f) => f.path === prefix + details.archive)) ||
+    assetFiles.some((f) => !f.path.startsWith(root) && f.path !== prefix + details.archive)
+  )
+    fail('Invalid pack file coverage');
+  if (details.resourceRoot === 'game-assets')
+    verifyGameManifestAssets(directory, root, details.manifest, assetFiles);
+};
+
+const verifyCatalogAsset = (
+  directory: string,
+  rawAsset: unknown,
+  receiptFiles: unknown[],
+  fileRecords: readonly FileRecord[],
+  ids: Set<string>,
+  referenced: string[],
+): CatalogAsset => {
+  const asset = record(rawAsset, ['id', 'kind', 'directory', 'files', 'metadata']);
+  if (
+    typeof asset.id !== 'string' ||
+    !/^[a-z][a-z0-9_]{0,47}$/u.test(asset.id) ||
+    ids.has(asset.id) ||
+    !['model', 'sprite', 'sound', 'pack'].includes(String(asset.kind)) ||
+    typeof asset.directory !== 'string' ||
+    !safeRelative(asset.directory) ||
+    !Array.isArray(asset.files)
+  )
+    fail('Invalid asset');
+  ids.add(asset.id as string);
+  const assetFiles: FileRecord[] = [];
+  for (const rawFile of asset.files as unknown[]) {
+    const file = record(rawFile, ['path', 'sha256', 'byteLength']);
+    if (
+      typeof file.path !== 'string' ||
+      !file.path.startsWith(`assets/${asset.id}/`) ||
+      !receiptFiles.some((f) => json(f) === json(file))
+    )
+      fail('Catalog lineage mismatch');
+    referenced.push(file.path as string);
+    assetFiles.push(fileRecords.find((f) => f.path === file.path)!);
+  }
+  const details = metadata(asset.kind, asset.metadata);
+  if (asset.kind === 'sound' && 'variants' in details)
+    verifySoundCoverage(directory, details, assetFiles);
+  if (asset.kind === 'pack' && 'resourceRoot' in details)
+    verifyPackCoverage(directory, asset.id as string, details, assetFiles);
+  return {
+    id: asset.id as string,
+    kind: asset.kind as CatalogAsset['kind'],
+    directory: asset.directory as string,
+    files: assetFiles,
+    metadata: details,
+  };
+};
+
+export const verifyBundle = (
+  directory: string,
+  hash: string,
+): { receipt: Receipt; catalog: Catalog } => {
+  noLinks(directory);
+  if (!isHash(hash)) return fail('Invalid bundle hash');
+  const r = record(readJson(path.join(directory, 'receipt.json')), [
+    'format',
+    'version',
+    'sourceHash',
+    'requestKey',
+    'toolchain',
+    'catalogHash',
+    'files',
+  ]);
+  if (
+    r.format !== 'ashfox-build-receipt' ||
+    r.version !== 1 ||
+    typeof r.sourceHash !== 'string' ||
+    !isHash(r.requestKey) ||
+    !isHash(r.catalogHash) ||
+    typeof r.toolchain !== 'string' ||
+    !Array.isArray(r.files)
+  )
+    fail('Invalid receipt');
+  if (digest('ashfox-bundle:1\n' + json(r)) !== hash) fail('Receipt hash mismatch');
+  const { names, fileRecords } = verifyReceiptFiles(directory, r.files as unknown[]);
   const c = record(readJson(path.join(directory, 'catalog.json')), ['format', 'version', 'assets']);
   if (
     c.format !== 'ashfox-catalog' ||
@@ -209,92 +331,10 @@ export const verifyBundle = (
   )
     fail('Invalid catalog');
   const ids = new Set<string>(),
-    referenced: string[] = [],
-    assets: CatalogAsset[] = [];
-  for (const raw of c.assets as unknown[]) {
-    const asset = record(raw, ['id', 'kind', 'directory', 'files', 'metadata']);
-    if (
-      typeof asset.id !== 'string' ||
-      !/^[a-z][a-z0-9_]{0,47}$/u.test(asset.id) ||
-      ids.has(asset.id) ||
-      !['model', 'sprite', 'sound', 'pack'].includes(String(asset.kind)) ||
-      typeof asset.directory !== 'string' ||
-      !safeRelative(asset.directory) ||
-      !Array.isArray(asset.files)
-    )
-      fail('Invalid asset');
-    ids.add(asset.id as string);
-    const assetFiles: FileRecord[] = [];
-    for (const rawFile of asset.files as unknown[]) {
-      const file = record(rawFile, ['path', 'sha256', 'byteLength']);
-      if (
-        typeof file.path !== 'string' ||
-        !file.path.startsWith(`assets/${asset.id}/`) ||
-        !(r.files as unknown[]).some((f) => json(f) === json(file))
-      )
-        fail('Catalog lineage mismatch');
-      referenced.push(file.path as string);
-      assetFiles.push(fileRecords.find((f) => f.path === file.path)!);
-    }
-    const details = metadata(asset.kind, asset.metadata);
-    if (asset.kind === 'sound' && 'variants' in details) {
-      const variants = new Set(details.variants.map((v) => v.id));
-      if (
-        variants.size !== details.variants.length ||
-        !variants.size ||
-        variants.size > 8 ||
-        assetFiles.length !== variants.size
-      )
-        fail('Invalid sound file coverage');
-      for (const variant of details.variants) {
-        const file = assetFiles.find((f) => f.path.endsWith(`/${variant.id}.wav`));
-        if (!file) return fail('Missing sound WAV');
-        const pcm = fs.readFileSync(contained(directory, file.path));
-        verifyPcm(pcm, variant.frames);
-        const stats = pcmStatistics(pcm, variant.frames);
-        for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta'] as const) {
-          if (stats[key] !== variant[key]) fail('Audio statistics do not match PCM');
-        }
-      }
-    }
-    if (asset.kind === 'pack' && 'resourceRoot' in details) {
-      const prefix = `assets/${asset.id}/`;
-      const root = prefix + details.resourceRoot + '/';
-      const entry = details.resourceRoot === 'resource-pack' ? 'pack.mcmeta' : details.manifest;
-      if (
-        !assetFiles.some((f) => f.path === root + entry) ||
-        (details.archive !== null &&
-          !assetFiles.some((f) => f.path === prefix + details.archive)) ||
-        assetFiles.some((f) => !f.path.startsWith(root) && f.path !== prefix + details.archive)
-      )
-        fail('Invalid pack file coverage');
-      if (details.resourceRoot === 'game-assets') {
-        const manifest = readGameAssetManifest(
-          readJson(contained(directory, root + details.manifest)),
-        );
-        const references = manifest.assets
-          .flatMap((a) => a.files)
-          .map((f) => ({ ...f, path: root + f.path }))
-          .sort((a, b) => (a.path < b.path ? -1 : 1));
-        const actual = assetFiles
-          .filter((f) => f.path.startsWith(root) && f.path !== root + details.manifest)
-          .sort((a, b) => (a.path < b.path ? -1 : 1));
-        if (json(references) !== json(actual)) fail('Game manifest lineage mismatch');
-        for (const sound of manifest.assets)
-          if (sound.kind === 'sound' && sound.codec === 'wav') {
-            for (const variant of sound.variants)
-              verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames);
-          }
-      }
-    }
-    assets.push({
-      id: asset.id as string,
-      kind: asset.kind as CatalogAsset['kind'],
-      directory: asset.directory as string,
-      files: assetFiles,
-      metadata: details,
-    });
-  }
+    referenced: string[] = [];
+  const assets = (c.assets as unknown[]).map((raw) =>
+    verifyCatalogAsset(directory, raw, r.files as unknown[], fileRecords, ids, referenced),
+  );
   if (json(referenced.sort()) !== json(names.filter((n) => n !== 'catalog.json')))
     fail('Catalog coverage mismatch');
   return {

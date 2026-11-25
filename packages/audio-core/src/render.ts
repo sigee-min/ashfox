@@ -29,57 +29,61 @@ export const measure = (pcm: Float64Array) => {
     maxAdjacentDelta,
   };
 };
+const createSourceSampler = (
+  event: ReturnType<typeof schedule> extends Generator<infer E> ? E : never,
+  rate: number,
+): ((i: number) => number) => {
+  const { voice, frames: length } = event;
+  const source = voice.source;
+  const bipolar = (domain: 'noise' | 'breath' | 'jitter' | 'trill-phase') => {
+    const r = event.stream(domain);
+    return () => r() * 2 - 1;
+  };
+  if (source.kind === 'fm') {
+    const fm = createFm(source, length, event.pitch);
+    return (i) => fm(i);
+  }
+  if (source.kind === 'vocal') {
+    const vocal = createVoice(source, rate, event.pitch, bipolar('jitter'), bipolar('breath'));
+    return (i) => vocal(i / (length - 1));
+  }
+  if (source.kind === 'chirp') {
+    const chirp = createChirp(
+      source,
+      rate,
+      event.pitch,
+      bipolar('jitter'),
+      bipolar('breath'),
+      bipolar('trill-phase'),
+    );
+    return (i) => chirp(i / rate, i / (length - 1));
+  }
+  if (source.kind === 'resonator') {
+    return createResonator(source, event.pitch, event.stream('excitation'));
+  }
+  return bipolar('noise');
+};
+
 export const render = (
   input: SoundRecipe,
   variant: SoundVariant = input.variants[0],
 ): Float64Array => {
-  const recipe = readRecipe(input),
-    rate = recipe.sampleRate;
+  const recipe = readRecipe(input);
+  const rate = recipe.sampleRate;
   if (!recipe.variants.some((v) => v.id === variant.id && v.seed === variant.seed))
     fail('recipe.variants', 'renderer variant must be declared');
   const result = new Float64Array(frame(recipe.duration));
   for (const event of schedule(recipe, variant)) {
-    const { voice, frames: length, start } = event,
-      source = voice.source;
-    const bipolar = (domain: 'noise' | 'breath' | 'jitter' | 'trill-phase') => {
-      const r = event.stream(domain);
-      return () => r() * 2 - 1;
-    };
-    const noise = bipolar('noise');
-    const fm = source.kind === 'fm' ? createFm(source, length, event.pitch) : null;
-    const vocal =
-      source.kind === 'vocal'
-        ? createVoice(source, rate, event.pitch, bipolar('jitter'), bipolar('breath'))
-        : null;
-    const chirp =
-      source.kind === 'chirp'
-        ? createChirp(
-            source,
-            rate,
-            event.pitch,
-            bipolar('jitter'),
-            bipolar('breath'),
-            bipolar('trill-phase'),
-          )
-        : null;
-    const resonator =
-      source.kind === 'resonator'
-        ? createResonator(source, event.pitch, event.stream('excitation'))
-        : null;
+    const sampler = createSourceSampler(event, rate);
+    const { voice, frames: length, start } = event;
     let previous = 0,
       hp = 0,
       lp = 0;
     for (let i = 0; i < length; i++) {
-      const t = i / rate,
-        u = i / (length - 1);
-      let value: number;
-      if (fm) value = fm(i);
-      else if (chirp) value = chirp(t, u);
-      else if (vocal) value = vocal(u);
-      else if (resonator) value = resonator(i);
-      else value = noise();
-      const hpA = Math.exp((-TAU * evaluate(voice.highpass, u)) / rate),
-        lpA = 1 - Math.exp((-TAU * evaluate(voice.lowpass, u)) / rate);
+      const u = i / (length - 1);
+      const value = sampler(i);
+      const hpA = Math.exp((-TAU * evaluate(voice.highpass, u)) / rate);
+      const lpA = 1 - Math.exp((-TAU * evaluate(voice.lowpass, u)) / rate);
       hp = hpA * (hp + value - previous);
       previous = value;
       lp += lpA * (hp - lp);

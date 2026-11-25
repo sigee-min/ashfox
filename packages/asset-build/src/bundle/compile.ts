@@ -12,6 +12,7 @@ import {
 import {
   BuildFailure,
   type Artifact,
+  type AssetMetadata,
   type CatalogAsset,
   type CompiledBundle,
   type Snapshot,
@@ -25,6 +26,181 @@ export const checkSnapshot = (snapshot: Snapshot) => {
     throw new BuildFailure('workspace.compile', JSON.stringify(compiled.diagnostics));
   return compiled;
 };
+type CheckedWorkspace = ReturnType<typeof checkSnapshot>;
+type CompiledProduct = CheckedWorkspace['products'][number];
+type ExportTarget = CheckedWorkspace['config']['exports'][number];
+type PackConfig = NonNullable<CheckedWorkspace['config']['packs']>[number];
+type OpenedProject = Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>;
+
+const entryKey = (entry: { readonly packageName: string; readonly entryName: string }): string =>
+  JSON.stringify([entry.packageName, entry.entryName]);
+
+const assertModelDeliveryGate = (
+  targetName: string,
+  product: Extract<CompiledProduct, { readonly kind: 'model' }>,
+): void => {
+  const hasProfile = product.model.profile !== undefined;
+  const audit = evaluateAssetQuality({ model: product.model, telemetry: product.telemetry });
+  if (!hasProfile)
+    throw new BuildFailure(
+      'quality.profile-required',
+      formatDeliveryGateFailure(targetName, false, audit),
+      3,
+    );
+  if (!audit.passed)
+    throw new BuildFailure('quality.gate', formatDeliveryGateFailure(targetName, true, audit), 3);
+};
+
+const openTargetProject = (
+  product: Extract<CompiledProduct, { readonly kind: 'model' }>,
+  buildKey: string,
+  key: string,
+  projects: Map<string, OpenedProject>,
+  remaining: Map<string, number>,
+): OpenedProject => {
+  const cached = projects.get(key);
+  if (cached) return cached;
+  const opened = openAssetProject({
+    workspace: product.workspace,
+    entry: product.entry,
+    identity: { id: 'cli', revision: buildKey, createdAt: '2000-01-01T00:00:00.000Z' },
+  });
+  if (!opened.ok) throw new BuildFailure('export.project', JSON.stringify(opened));
+  if ((remaining.get(key) ?? 0) > 1) projects.set(key, opened);
+  return opened;
+};
+
+const compileModelFiles = async (
+  target: ExportTarget,
+  product: Extract<CompiledProduct, { readonly kind: 'model' }>,
+  buildKey: string,
+  key: string,
+  projects: Map<string, OpenedProject>,
+  remaining: Map<string, number>,
+): Promise<Artifact[]> => {
+  assertModelDeliveryGate(target.name, product);
+  if (target.format === 'png' || target.format === 'wav')
+    throw new BuildFailure('export.format', target.name);
+  const opened = openTargetProject(product, buildKey, key, projects, remaining);
+  const document = opened.project.document;
+  const textures = new Map(Object.values(document.textures).map((t) => [t.source.key, t]));
+  const adapter: ExportAdapterInput =
+    'namespace' in target
+      ? { target: target.format, namespace: target.namespace, modelPath: target.modelPath }
+      : { target: 'glb', modelPath: target.name };
+  const bundle = await exportProductionProjectResolved(opened.project, adapter, {
+    resolveBlob: async (ref) => {
+      const texture = textures.get(ref.key);
+      return texture
+        ? {
+            bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
+            contentType: 'image/png',
+          }
+        : null;
+    },
+    ...(target.format === 'glb' ? { encoding: target.encoding ?? 'portable' } : {}),
+  });
+  return bundle.files.map((file) => {
+    if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
+    return {
+      path: file.path,
+      bytes: file.kind === 'binary' ? file.data : new TextEncoder().encode(json(file.data)),
+    };
+  });
+};
+
+const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
+  if (product.kind === 'sprite')
+    return { width: product.sprite.receipt.width, height: product.sprite.receipt.height };
+  if (product.kind === 'model')
+    return {
+      clips: Object.values(product.model.animations).map((clip) => ({
+        name: clip.name,
+        durationSeconds: clip.durationSeconds,
+      })),
+    };
+  return {
+    variants: product.sounds.map((sound) => ({
+      id: sound.variant,
+      frames: sound.frames,
+      sampleRate: sound.sampleRate,
+      channels: sound.channels,
+      playback: sound.playback,
+      peak: sound.peak,
+      rms: sound.rms,
+      dc: sound.dc,
+      seamDelta: sound.seamDelta,
+      maxAdjacentDelta: sound.maxAdjacentDelta,
+    })),
+  };
+};
+
+const compileExportTarget = async (
+  target: ExportTarget,
+  compiled: CheckedWorkspace,
+  products: Map<string, CompiledProduct>,
+  projects: Map<string, OpenedProject>,
+  remaining: Map<string, number>,
+  artifacts: Artifact[],
+): Promise<CatalogAsset> => {
+  const key = entryKey(target.entry);
+  const product = products.get(key);
+  if (!product) throw new BuildFailure('export.entry', target.name);
+  const files: Artifact[] =
+    product.kind === 'sprite'
+      ? [{ path: `${target.name}.png`, bytes: product.sprite.png }]
+      : product.kind === 'model'
+        ? await compileModelFiles(target, product, compiled.buildKey, key, projects, remaining)
+        : product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
+  const uses = remaining.get(key)! - 1;
+  remaining.set(key, uses);
+  if (uses === 0) projects.delete(key);
+  const records = files
+    .map((file) => {
+      if (!safeRelative(file.path)) throw new BuildFailure('export.path', file.path);
+      const relative = `assets/${target.name}/${file.path}`;
+      artifacts.push({ path: relative, bytes: file.bytes });
+      return { path: relative, sha256: digest(file.bytes), byteLength: file.bytes.length };
+    })
+    .sort((a, b) => (a.path < b.path ? -1 : 1));
+  return {
+    id: target.name,
+    kind: product.kind,
+    directory: target.directory,
+    files: records,
+    metadata: buildProductMetadata(product),
+  };
+};
+
+const compilePackTarget = async (
+  pack: PackConfig,
+  assets: CatalogAsset[],
+  artifacts: Artifact[],
+  encoder?: PackEncoder,
+): Promise<CatalogAsset> => {
+  const files = await compilePack(pack, assets, artifacts, encoder);
+  const records = files
+    .map((file) => {
+      const relative = `assets/${pack.name}/${file.path}`;
+      artifacts.push({ path: relative, bytes: file.bytes });
+      return { path: relative, sha256: digest(file.bytes), byteLength: file.bytes.length };
+    })
+    .sort((a, b) => (a.path < b.path ? -1 : 1));
+  const metadata: AssetMetadata =
+    pack.format === 'minecraft_java'
+      ? {
+          minecraftVersion: pack.minecraftVersion,
+          resourceRoot: 'resource-pack',
+          archive: pack.archive ? `${pack.name}.zip` : null,
+        }
+      : {
+          resourceRoot: 'game-assets',
+          manifest: 'assets.json',
+          archive: pack.archive ? `${pack.name}.zip` : null,
+        };
+  return { id: pack.name, kind: 'pack', directory: pack.directory, files: records, metadata };
+};
+
 export const compileBundle = async (
   snapshot: Snapshot,
   toolchain: string,
@@ -34,161 +210,19 @@ export const compileBundle = async (
   const compiled = checked,
     artifacts: Artifact[] = [],
     assets: CatalogAsset[] = [];
-  const entryKey = (entry: { readonly packageName: string; readonly entryName: string }) =>
-    JSON.stringify([entry.packageName, entry.entryName]);
   const products = new Map(compiled.products.map((product) => [entryKey(product.entry), product]));
   const remaining = new Map<string, number>();
   for (const target of compiled.config.exports) {
     const key = entryKey(target.entry);
     remaining.set(key, (remaining.get(key) ?? 0) + 1);
   }
-  const projects = new Map<
-    string,
-    Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>
-  >();
-  for (const target of [...compiled.config.exports].sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    const key = entryKey(target.entry);
-    const product = products.get(key);
-    if (!product) throw new BuildFailure('export.entry', target.name);
-    const files: Artifact[] = [];
-    if (product.kind === 'sprite')
-      files.push({ path: `${target.name}.png`, bytes: product.sprite.png });
-    else if (product.kind === 'model') {
-      const hasProfile = product.model.profile !== undefined;
-      const audit = evaluateAssetQuality({ model: product.model, telemetry: product.telemetry });
-      if (!hasProfile) {
-        throw new BuildFailure(
-          'quality.profile-required',
-          formatDeliveryGateFailure(target.name, false, audit),
-          3,
-        );
-      }
-      if (!audit.passed) {
-        throw new BuildFailure(
-          'quality.gate',
-          formatDeliveryGateFailure(target.name, true, audit),
-          3,
-        );
-      }
-      const opened =
-        projects.get(key) ??
-        openAssetProject({
-          workspace: product.workspace,
-          entry: product.entry,
-          identity: {
-            id: 'cli',
-            revision: compiled.buildKey,
-            createdAt: '2000-01-01T00:00:00.000Z',
-          },
-        });
-      if (!opened.ok) throw new BuildFailure('export.project', JSON.stringify(opened));
-      if ((remaining.get(key) ?? 0) > 1) projects.set(key, opened);
-      const document = opened.project.document;
-      const textures = new Map(
-        Object.values(document.textures).map((texture) => [texture.source.key, texture]),
-      );
-      if (target.format === 'png' || target.format === 'wav')
-        throw new BuildFailure('export.format', target.name);
-      const adapter: ExportAdapterInput =
-        'namespace' in target
-          ? { target: target.format, namespace: target.namespace, modelPath: target.modelPath }
-          : { target: 'glb', modelPath: target.name };
-      const bundle = await exportProductionProjectResolved(opened.project, adapter, {
-        resolveBlob: async (ref) => {
-          const texture = textures.get(ref.key);
-          return texture
-            ? {
-                bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
-                contentType: 'image/png',
-              }
-            : null;
-        },
-        ...(target.format === 'glb' ? { encoding: target.encoding ?? 'portable' } : {}),
-      });
-      for (const file of bundle.files) {
-        if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
-        files.push({
-          path: file.path,
-          bytes: file.kind === 'binary' ? file.data : new TextEncoder().encode(json(file.data)),
-        });
-      }
-    } else {
-      for (const sound of product.sounds)
-        files.push({ path: `${target.name}/${sound.variant}.wav`, bytes: sound.wav });
-    }
-    const uses = remaining.get(key)! - 1;
-    remaining.set(key, uses);
-    if (uses === 0) projects.delete(key);
-    const records = files
-      .map((file) => {
-        if (!safeRelative(file.path)) throw new BuildFailure('export.path', file.path);
-        const relative = `assets/${target.name}/${file.path}`;
-        artifacts.push({ path: relative, bytes: file.bytes });
-        return { path: relative, sha256: digest(file.bytes), byteLength: file.bytes.length };
-      })
-      .sort((a, b) => (a.path < b.path ? -1 : 1));
-    const metadata =
-      product.kind === 'sprite'
-        ? { width: product.sprite.receipt.width, height: product.sprite.receipt.height }
-        : product.kind === 'model'
-          ? {
-              clips: Object.values(product.model.animations).map((clip) => ({
-                name: clip.name,
-                durationSeconds: clip.durationSeconds,
-              })),
-            }
-          : {
-              variants: product.sounds.map((sound) => ({
-                id: sound.variant,
-                frames: sound.frames,
-                sampleRate: sound.sampleRate,
-                channels: sound.channels,
-                playback: sound.playback,
-                peak: sound.peak,
-                rms: sound.rms,
-                dc: sound.dc,
-                seamDelta: sound.seamDelta,
-                maxAdjacentDelta: sound.maxAdjacentDelta,
-              })),
-            };
-    assets.push({
-      id: target.name,
-      kind: product.kind,
-      directory: target.directory,
-      files: records,
-      metadata,
-    });
-  }
-  for (const pack of [...(compiled.config.packs ?? [])].sort((a, b) =>
-    a.name < b.name ? -1 : 1,
-  )) {
-    const files = await compilePack(pack, assets, artifacts, encoder);
-    const records = files
-      .map((file) => {
-        const path = `assets/${pack.name}/${file.path}`;
-        artifacts.push({ path, bytes: file.bytes });
-        return { path, sha256: digest(file.bytes), byteLength: file.bytes.length };
-      })
-      .sort((a, b) => (a.path < b.path ? -1 : 1));
-    assets.push({
-      id: pack.name,
-      kind: 'pack',
-      directory: pack.directory,
-      files: records,
-      metadata:
-        pack.format === 'minecraft_java'
-          ? {
-              minecraftVersion: pack.minecraftVersion,
-              resourceRoot: 'resource-pack',
-              archive: pack.archive ? `${pack.name}.zip` : null,
-            }
-          : {
-              resourceRoot: 'game-assets',
-              manifest: 'assets.json',
-              archive: pack.archive ? `${pack.name}.zip` : null,
-            },
-    });
-  }
+  const projects = new Map<string, OpenedProject>();
+  for (const target of [...compiled.config.exports].sort((a, b) => (a.name < b.name ? -1 : 1)))
+    assets.push(
+      await compileExportTarget(target, compiled, products, projects, remaining, artifacts),
+    );
+  for (const pack of [...(compiled.config.packs ?? [])].sort((a, b) => (a.name < b.name ? -1 : 1)))
+    assets.push(await compilePackTarget(pack, assets, artifacts, encoder));
   const effectiveToolchain = encoder
     ? json({ compiler: toolchain, vorbis: encoder.fingerprint })
     : toolchain;
@@ -196,8 +230,7 @@ export const compileBundle = async (
   const catalogBytes = new TextEncoder().encode(json(catalog));
   artifacts.push({ path: 'catalog.json', bytes: catalogBytes });
   artifacts.sort((a, b) => (a.path < b.path ? -1 : 1));
-  const names = new Set(artifacts.map((file) => file.path.toLowerCase()));
-  if (names.size !== artifacts.length)
+  if (new Set(artifacts.map((file) => file.path.toLowerCase())).size !== artifacts.length)
     throw new BuildFailure('export.collision', 'Duplicate output path');
   const receipt = {
     format: 'ashfox-build-receipt' as const,

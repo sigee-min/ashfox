@@ -32,12 +32,11 @@ const readText = (file: string, limit: number): string => {
     fs.closeSync(descriptor);
   }
 };
-export const readSnapshot = (input: string): Snapshot => {
-  const requested = path.resolve(input);
-  const selectedFile = path.join(
-    fs.realpathSync(path.dirname(requested)),
-    path.basename(requested),
-  );
+type WorkspaceConfigResolution =
+  | { readonly kind: 'standalone'; readonly snapshot: Snapshot }
+  | { readonly kind: 'config'; readonly file: string };
+
+const resolveWorkspaceConfigFile = (selectedFile: string): WorkspaceConfigResolution => {
   let file = selectedFile;
   noLinks(file);
   if (!fs.statSync(file).isFile())
@@ -58,9 +57,8 @@ export const readSnapshot = (input: string): Snapshot => {
         file = candidates[0];
         break;
       }
-      if (fs.existsSync(path.join(directory, '.git')) || path.dirname(directory) === directory) {
-        return readStandalone(file, readText);
-      }
+      if (fs.existsSync(path.join(directory, '.git')) || path.dirname(directory) === directory)
+        return { kind: 'standalone', snapshot: readStandalone(file, readText) };
       directory = path.dirname(directory);
     }
   }
@@ -70,6 +68,12 @@ export const readSnapshot = (input: string): Snapshot => {
       'Expected .ashfox source, .ashfoxworkspace or .ashfoxworkspace.mjs',
       2,
     );
+  return { kind: 'config', file };
+};
+
+const loadWorkspaceConfig = (
+  file: string,
+): { root: string; configuration: string; config: Snapshot['config'] } => {
   const root = fs.realpathSync(path.dirname(file));
   const alternatives = ['.ashfoxworkspace', '.ashfoxworkspace.mjs'].filter((name) =>
     fs.existsSync(path.join(root, name)),
@@ -82,9 +86,8 @@ export const readSnapshot = (input: string): Snapshot => {
   const configuration = file.endsWith('.mjs')
     ? evaluateConfiguration(file)
     : readText(file, 262144);
-  let config: Snapshot['config'];
   try {
-    config = readDirectoryWorkspace(configuration);
+    return { root, configuration, config: readDirectoryWorkspace(configuration) };
   } catch (error) {
     throw new BuildFailure(
       'workspace.config',
@@ -92,21 +95,85 @@ export const readSnapshot = (input: string): Snapshot => {
       2,
     );
   }
-  if (input.endsWith('.ashfox')) {
-    const relative = path.relative(root, selectedFile).split(path.sep).join('/');
-    const declared = config.packages.some((pkg) =>
-      pkg.manifest.entries.some(
-        (entry) => [pkg.root, entry.path].filter(Boolean).join('/') === relative,
-      ),
+};
+
+const assertEntryIncluded = (
+  config: Snapshot['config'],
+  root: string,
+  selectedFile: string,
+): void => {
+  const relative = path.relative(root, selectedFile).split(path.sep).join('/');
+  const declared = config.packages.some((pkg) =>
+    pkg.manifest.entries.some(
+      (entry) => [pkg.root, entry.path].filter(Boolean).join('/') === relative,
+    ),
+  );
+  if (!declared || !isDirectorySource(config, relative)) {
+    throw new BuildFailure(
+      'source.entry',
+      'Source is not an included entry in the repository configuration: ' + relative,
+      2,
     );
-    if (!declared || !isDirectorySource(config, relative)) {
-      throw new BuildFailure(
-        'source.entry',
-        'Source is not an included entry in the repository configuration: ' + relative,
-        2,
-      );
-    }
   }
+};
+
+interface WorkspaceScanState {
+  readonly root: string;
+  readonly config: Snapshot['config'];
+  readonly excluded: readonly string[];
+  readonly files: { path: string; source: string }[];
+  visited: number;
+  total: number;
+}
+
+const isIgnoredScanPath = (
+  next: string,
+  excluded: readonly string[],
+  ignore: readonly string[],
+): boolean =>
+  excluded.some((prefix) => next === prefix || next.startsWith(prefix + '/')) ||
+  ignore.some((glob) => glob.endsWith('/**') && matchDirectoryPattern(next, glob.slice(0, -3)));
+
+const appendWorkspaceSourceFile = (state: WorkspaceScanState, next: string): void => {
+  const source = readText(contained(state.root, next), 8 * 1024 * 1024);
+  state.total += Buffer.byteLength(source);
+  if (state.total > 8 * 1024 * 1024 || state.files.length >= 512)
+    throw new BuildFailure('source.budget', 'Source budget exceeded');
+  state.files.push({ path: next, source });
+};
+
+const visitWorkspaceEntry = (
+  state: WorkspaceScanState,
+  relative: string,
+  entry: fs.Dirent,
+): void => {
+  const next = relative ? `${relative}/${entry.name}` : entry.name;
+  if (++state.visited > 20000)
+    throw new BuildFailure('source.budget', 'Directory scan exceeds 20000 entries');
+  if (isIgnoredScanPath(next, state.excluded, state.config.ignore)) return;
+  if (!safeRelative(next)) throw new BuildFailure('source.path', next);
+  if (entry.isSymbolicLink()) throw new BuildFailure('source.symlink', next);
+  if (entry.isDirectory()) visitWorkspaceDirectory(state, next);
+  else if (isDirectorySource(state.config, next)) appendWorkspaceSourceFile(state, next);
+};
+
+const visitWorkspaceDirectory = (state: WorkspaceScanState, relative: string): void => {
+  const entries = fs
+    .readdirSync(path.join(state.root, relative), { withFileTypes: true })
+    .sort((a, b) => (a.name < b.name ? -1 : 1));
+  for (const entry of entries) visitWorkspaceEntry(state, relative, entry);
+};
+
+export const readSnapshot = (input: string): Snapshot => {
+  const requested = path.resolve(input);
+  const selectedFile = path.join(
+    fs.realpathSync(path.dirname(requested)),
+    path.basename(requested),
+  );
+  const resolved = resolveWorkspaceConfigFile(selectedFile);
+  if (resolved.kind === 'standalone') return resolved.snapshot;
+  const { root, configuration, config } = loadWorkspaceConfig(resolved.file);
+  if (input.endsWith('.ashfox')) assertEntryIncluded(config, root, selectedFile);
   const excluded = [
     '.git',
     'node_modules',
@@ -118,43 +185,15 @@ export const readSnapshot = (input: string): Snapshot => {
   excluded.forEach((directory) => {
     if (directory !== '.git') noLinks(contained(root, directory));
   });
-  const files: { path: string; source: string }[] = [];
-  let visited = 0,
-    total = 0;
-  const visit = (relative: string): void => {
-    for (const entry of fs
-      .readdirSync(path.join(root, relative), { withFileTypes: true })
-      .sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      const next = relative ? `${relative}/${entry.name}` : entry.name;
-      if (++visited > 20000)
-        throw new BuildFailure('source.budget', 'Directory scan exceeds 20000 entries');
-      if (
-        excluded.some((prefix) => next === prefix || next.startsWith(prefix + '/')) ||
-        config.ignore.some(
-          (glob) => glob.endsWith('/**') && matchDirectoryPattern(next, glob.slice(0, -3)),
-        )
-      )
-        continue;
-      if (!safeRelative(next)) throw new BuildFailure('source.path', next);
-      if (entry.isSymbolicLink()) throw new BuildFailure('source.symlink', next);
-      if (entry.isDirectory()) visit(next);
-      else if (isDirectorySource(config, next)) {
-        const source = readText(contained(root, next), 8 * 1024 * 1024);
-        total += Buffer.byteLength(source);
-        if (total > 8 * 1024 * 1024 || files.length >= 512)
-          throw new BuildFailure('source.budget', 'Source budget exceeded');
-        files.push({ path: next, source });
-      }
-    }
-  };
-  visit('');
+  const state: WorkspaceScanState = { root, config, excluded, files: [], visited: 0, total: 0 };
+  visitWorkspaceDirectory(state, '');
   return {
     input: selectedFile,
     root,
     configuration,
     config,
-    files,
-    hash: digest(json({ configuration, files })),
+    files: state.files,
+    hash: digest(json({ configuration, files: state.files })),
   };
 };
 export const assertSnapshot = (snapshot: Snapshot): void => {
