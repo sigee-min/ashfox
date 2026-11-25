@@ -105,20 +105,19 @@ export const inspect = (asset: Prepared, v: ViewOptions, auditOptions?: AuditOpt
   };
 };
 
+const resolveTexture = (document: NonNullable<Prepared['document']>, selector: string) => {
+  const texture =
+    document.textures[selector] ??
+    Object.values(document.textures).find((t) => t.name === selector);
+  if (!texture) throw new BuildFailure('observe.texture', 'Unknown texture', 2);
+  return Buffer.from(encodeCanonicalPng(rasterizeTexture(document, texture))).toString('base64');
+};
+
 const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
   if (asset.document) {
-    if (v.texture) {
-      const texture =
-        asset.document.textures[v.texture] ??
-        Object.values(asset.document.textures).find((t) => t.name === v.texture);
-      if (!texture) throw new BuildFailure('observe.texture', 'Unknown texture', 2);
-      return {
-        png: Buffer.from(encodeCanonicalPng(rasterizeTexture(asset.document, texture))).toString(
-          'base64',
-        ),
-      };
-    }
-    return { document: asset.document };
+    return v.texture
+      ? { png: resolveTexture(asset.document, v.texture) }
+      : { document: asset.document };
   }
   if (asset.png) return { png: asset.png };
   if (asset.sprite)
@@ -154,28 +153,24 @@ const selectSound = (asset: Prepared, variant?: string) => {
   return sound;
 };
 
-export const renderMedia = async (
-  asset: Prepared,
-  v: ViewOptions,
-  gif: boolean,
-  renderer: ChromeRenderer,
-  signal: AbortSignal,
-): Promise<Media> => {
+const MODEL_ONLY_VIEW_KEYS = [
+  'camera',
+  'azimuth',
+  'elevation',
+  'zoom',
+  'clip',
+  'time',
+  'wireframe',
+  'skeleton',
+  'textures',
+  'node',
+  'texture',
+  'sheet',
+] as const;
+
+const assertRenderOptions = (asset: Prepared, v: ViewOptions, gif: boolean): void => {
   if (asset.kind !== 'model') {
-    for (const key of [
-      'camera',
-      'azimuth',
-      'elevation',
-      'zoom',
-      'clip',
-      'time',
-      'wireframe',
-      'skeleton',
-      'textures',
-      'node',
-      'texture',
-      'sheet',
-    ] as const)
+    for (const key of MODEL_ONLY_VIEW_KEYS)
       if (v[key] !== DEFAULT_VIEW[key])
         throw new BuildFailure('observe.option', key + ' requires a model', 2);
   }
@@ -187,6 +182,16 @@ export const renderMedia = async (
     throw new BuildFailure('observe.option', 'variant requires a sound source', 2);
   if (v.format || v.namespace || v.modelPath)
     throw new BuildFailure('observe.option', 'Export format options do not apply to render', 2);
+};
+
+export const renderMedia = async (
+  asset: Prepared,
+  v: ViewOptions,
+  gif: boolean,
+  renderer: ChromeRenderer,
+  signal: AbortSignal,
+): Promise<Media> => {
+  assertRenderOptions(asset, v, gif);
   const abort = () => {
     void renderer.close();
   };
@@ -208,21 +213,7 @@ export const renderMedia = async (
   }
 };
 
-export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
-  const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
-  if (
-    v.format &&
-    !{
-      sprite: ['png'],
-      sound: ['wav'],
-      model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
-    }[kind].includes(v.format)
-  )
-    throw new BuildFailure('observe.format', 'Format does not match asset kind', 2);
-  if (asset.png) return { mime: 'image/png', bytes: Buffer.from(asset.png, 'base64') };
-  if (asset.sprite) return { mime: 'image/png', bytes: asset.sprite.png };
-  if (asset.product?.kind === 'sound')
-    return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
+const assertExportGate = (asset: Prepared): void => {
   if (asset.product?.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
   const hasProfile = asset.product.model.profile !== undefined;
   const audit = auditAsset(asset);
@@ -240,9 +231,29 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
       3,
     );
   }
+};
+
+export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
+  const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
+  if (
+    v.format &&
+    !{
+      sprite: ['png'],
+      sound: ['wav'],
+      model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
+    }[kind].includes(v.format)
+  )
+    throw new BuildFailure('observe.format', 'Format does not match asset kind', 2);
+  if (asset.png) return { mime: 'image/png', bytes: Buffer.from(asset.png, 'base64') };
+  if (asset.sprite) return { mime: 'image/png', bytes: asset.sprite.png };
+  if (asset.product?.kind === 'sound')
+    return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
+  assertExportGate(asset);
+  const modelProduct = asset.product!;
+  if (modelProduct.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
   const opened = openAssetProject({
-    workspace: asset.product.workspace,
-    entry: asset.product.entry,
+    workspace: modelProduct.workspace,
+    entry: modelProduct.entry,
     identity: { id: 'observe', revision: asset.revision, createdAt: '2000-01-01T00:00:00.000Z' },
   });
   if (!opened.ok) throw new BuildFailure('observe.model', 'Cannot open model');
@@ -260,11 +271,11 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
     throw new BuildFailure('observe.format', 'Expected model format', 2);
   const adapter =
     format === 'glb' || format === 'gltf'
-      ? { target: format, modelPath: v.modelPath ?? asset.product.entry.entryName }
+      ? { target: format, modelPath: v.modelPath ?? modelProduct.entry.entryName }
       : {
           target: format,
           namespace: v.namespace ?? '',
-          modelPath: v.modelPath ?? asset.product.entry.entryName,
+          modelPath: v.modelPath ?? modelProduct.entry.entryName,
         };
   const bundle = await exportProductionProjectResolved(opened.project, adapter, {
     encoding: 'portable',

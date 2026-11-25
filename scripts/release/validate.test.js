@@ -49,10 +49,6 @@ try {
     `${JSON.stringify({ '.': 'not-semver' }, null, 2)}\n`,
   );
   writeFixture(
-    'packages/blockbench-runtime/src/config.ts',
-    "export const PLUGIN_VERSION = 'not-semver';\n",
-  );
-  writeFixture(
     '.github/release-please/config.json',
     `${JSON.stringify(
       {
@@ -63,7 +59,7 @@ try {
             component: 'ashfox',
             'include-component-in-tag': false,
             'bump-patch-for-minor-pre-major': true,
-            'extra-files': ['packages/blockbench-runtime/src/config.ts'],
+            'extra-files': [],
           },
         },
       },
@@ -99,7 +95,7 @@ try {
   );
   writeFixture('.github/workflows/release-please.yml', validWorkflow);
   const failures = releaseValidationFailures(fixtureRoot, developmentManifest);
-  assert.equal(failures.filter((failure) => failure.includes('strict SemVer')).length, 3);
+  assert.equal(failures.filter((failure) => failure.includes('strict SemVer')).length, 2);
   assert.equal(
     failures.some((failure) => failure.includes('Version mismatch')),
     false,

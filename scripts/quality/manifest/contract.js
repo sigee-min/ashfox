@@ -194,23 +194,14 @@ const COMMIT_TYPES = frozen(['chore', 'docs', 'feat', 'fix', 'refactor', 'test']
 const FORBIDDEN_SOURCE_PATTERN_IDS = frozen([
   'as-any',
   'as-unknown-as',
-  'bare-document',
-  'bare-window',
   'browser-authoring-contract',
-  'catch-without-binding',
   'console-in-src',
   'double-assertion',
   'engine-core-host-dependency',
   'explicit-any',
-  'globalThis-as',
-  'throw-in-src',
-  'todo-fixme-comment',
   'ts-ignore',
 ]);
-const SYNCHRONIZED_PRODUCT_VERSION_FILES = frozen([
-  '.github/release-please/manifest.json',
-  'packages/blockbench-runtime/src/config.ts',
-]);
+const SYNCHRONIZED_PRODUCT_VERSION_FILES = frozen(['.github/release-please/manifest.json']);
 
 const SOURCE_SCOPE_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 const DIRECTORY_PREFIX_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)+\/$/;

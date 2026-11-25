@@ -21,12 +21,12 @@ const { readHistoricalSourceSizeBaselines } = require('./sourceSizeRatchet');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const engineIndex = path.join(repoRoot, 'packages/engine-core/src/index.ts');
-const runtimeLogging = path.join(repoRoot, 'packages/blockbench-runtime/src/logging.ts');
+const assetBuildIndex = path.join(repoRoot, 'packages/asset-build/src/index.ts');
 const aliasCycle = dependencyGraph(
-  [engineIndex, runtimeLogging],
+  [engineIndex, assetBuildIndex],
   new Map([
-    [engineIndex, "import '@ashfox/blockbench-runtime/logging';"],
-    [runtimeLogging, "import '@ashfox/engine-core';"],
+    [engineIndex, "import '@ashfox/asset-build';"],
+    [assetBuildIndex, "import '@ashfox/engine-core';"],
   ]),
 );
 assert.equal(

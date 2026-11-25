@@ -6,15 +6,9 @@ const ts = require('typescript');
 const LINE_PATTERN_REGISTRY = Object.freeze({
   'as-any': /\bas any\b/,
   'as-unknown-as': /\bas unknown as\b/,
-  'bare-document': /(^|[^\w.])document\s*(\.|\?\.|\[|\()/,
-  'bare-window': /(^|[^\w.])window\s*(\.|\?\.|\[|\()/,
-  'catch-without-binding': /catch\s*\{/,
   'console-in-src': /\bconsole\.(log|warn|error|info|debug)\(/,
   'engine-core-host-dependency':
     /@ashfox\/blockbench-|@ashfox\/backend-|\bBlockbench\b|\bMCP\b|\/mcp\b|from ['"](?:react|next|three)['"]/,
-  'globalThis-as': /\bglobalThis\s+as\b/,
-  'throw-in-src': /\bthrow\b/,
-  'todo-fixme-comment': /\/\/\s*(TODO|FIXME)\b|\/\*\s*(TODO|FIXME)\b/,
   'ts-ignore': /@ts-ignore|@ts-expect-error/,
   'browser-authoring-contract': /window\.ashfox|data-ashfox-agent-manifest|agent-manifest\.json/,
 });

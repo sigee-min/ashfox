@@ -121,15 +121,10 @@ const sourceRulesFor = (file, source) =>
   sourcePatternFindings(path.join(repoRoot, file), file, source, sourcePolicies).map(
     (finding) => finding.rule,
   );
-assert.deepEqual(
-  sourceRulesFor('packages/blockbench-runtime/src/logging.ts', "console.log('allowed');\n"),
-  [],
-);
 assert.ok(
-  sourceRulesFor(
-    'packages/blockbench-runtime/src/usecases/example.ts',
-    "console.log('blocked');\n",
-  ).includes('console-in-src'),
+  sourceRulesFor('packages/engine-core/src/example.ts', "console.log('blocked');\n").includes(
+    'console-in-src',
+  ),
 );
 assert.deepEqual(sourceRulesFor('docs/example.ts', "console.log('outside');\n"), []);
 const unsafeRules = sourceRulesFor(

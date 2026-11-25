@@ -202,64 +202,42 @@ const runTsPrune = () => {
   return run.stdout || '';
 };
 
-const reachabilityScopes = (options) => {
-  const contractsRoot = path.join(repoRoot, 'packages/blockbench-contracts/src');
-  const contractsEntries = [...packageExportEntries(path.dirname(contractsRoot))]
-    .filter((entry) => entry.startsWith('packages/blockbench-contracts/src/'))
-    .map((entry) => entry.replace('packages/blockbench-contracts/src/', ''));
-  return [
-    ...[
-      ['cli', 'apps/cli/src', ['main.ts', 'worker.ts', 'observe/worker.ts']],
-      ['asset-build', 'packages/asset-build/src', ['index.ts']],
-      ['audio-core', 'packages/audio-core/src', ['index.ts']],
+const reachabilityScopes = (options) => [
+  ...[
+    ['cli', 'apps/cli/src', ['main.ts', 'worker.ts', 'observe/worker.ts']],
+    ['asset-build', 'packages/asset-build/src', ['index.ts']],
+    ['audio-core', 'packages/audio-core/src', ['index.ts']],
+    [
+      'render-core',
+      'packages/render-core/src',
       [
-        'render-core',
-        'packages/render-core/src',
-        [
-          'index.ts',
-          'observation/browser.ts',
-          'gifenc.d.ts',
-          ...[...packageExportEntries(path.join(repoRoot, 'packages/render-core'))].map((file) =>
-            file.replace('packages/render-core/src/', ''),
-          ),
-        ],
+        'index.ts',
+        'observation/browser.ts',
+        'gifenc.d.ts',
+        ...[...packageExportEntries(path.join(repoRoot, 'packages/render-core'))].map((file) =>
+          file.replace('packages/render-core/src/', ''),
+        ),
       ],
-    ].map(([label, directory, entries]) => ({
-      label,
-      root: path.join(repoRoot, directory),
-      entries,
-      options,
-    })),
-    {
-      label: 'engine',
-      root: path.join(repoRoot, 'packages/engine-core/src'),
-      entries: ['index.ts'],
-      options,
-    },
-    {
-      label: 'runtime',
-      root: path.join(repoRoot, 'packages/blockbench-runtime/src'),
-      entries: ['logging.ts', 'plugin.ts', 'server.ts', 'sidecar/index.ts'],
-      options,
-    },
-    {
-      label: 'contracts',
-      root: contractsRoot,
-      entries: contractsEntries,
-      options,
-    },
-  ];
-};
+    ],
+  ].map(([label, directory, entries]) => ({
+    label,
+    root: path.join(repoRoot, directory),
+    entries,
+    options,
+  })),
+  {
+    label: 'engine',
+    root: path.join(repoRoot, 'packages/engine-core/src'),
+    entries: ['index.ts'],
+    options,
+  },
+];
 
 const checkedSourcePrefixes = Object.freeze([
   'apps/cli/src/',
   'packages/asset-build/src/',
   'packages/audio-core/src/',
   'packages/render-core/src/',
-  'apps/blockbench-mcp-sidecar/src/',
-  'apps/blockbench-plugin/src/',
-  'packages/blockbench-contracts/src/',
-  'packages/blockbench-runtime/src/',
   'packages/engine-core/src/',
   'packages/internal-contracts/src/',
 ]);

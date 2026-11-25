@@ -608,15 +608,12 @@
         },
         "synchronizedFiles": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 1,
+          "maxItems": 1,
           "uniqueItems": true,
           "prefixItems": [
             {
               "const": ".github/release-please/manifest.json"
-            },
-            {
-              "const": "packages/blockbench-runtime/src/config.ts"
             }
           ],
           "items": false
@@ -793,8 +790,8 @@
         },
         "forbiddenSourcePatterns": {
           "type": "array",
-          "minItems": 14,
-          "maxItems": 14,
+          "minItems": 8,
+          "maxItems": 8,
           "uniqueItems": true,
           "items": {
             "$ref": "#/$defs/forbiddenSourcePattern"
@@ -815,17 +812,11 @@
           "enum": [
             "as-any",
             "as-unknown-as",
-            "bare-document",
-            "bare-window",
             "browser-authoring-contract",
-            "catch-without-binding",
             "console-in-src",
             "double-assertion",
             "engine-core-host-dependency",
             "explicit-any",
-            "globalThis-as",
-            "throw-in-src",
-            "todo-fixme-comment",
             "ts-ignore"
           ]
         },

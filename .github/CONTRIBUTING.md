@@ -33,7 +33,6 @@ The published `skills/ashfox/` skill is an asset workflow guide, not a repositor
 | `packages/asset-build` | Bundle assembly, delivery and Node I/O adapters |
 | `packages/audio-core` | Deterministic audio synthesis |
 | `packages/render-core` | Headless scene rendering, capture and build replay |
-| `packages/blockbench-*`, `apps/blockbench-*` | Optional Blockbench compatibility |
 | `scripts/` | Build, release, media and quality automation |
 
 ## Setup
@@ -67,7 +66,6 @@ not required for this product path.
 | Audio encoding and HTTP lifecycle | `npm --workspace @ashfox/audio-study run test:integration` |
 | Item snapshots and failed-build isolation | `npm --workspace @ashfox/item-study run test` |
 | Java pack delivery with FFmpeg | `npm --workspace @ashfox/cli run test:packs` |
-| Blockbench compatibility | `npm run test:blockbench` |
 | Repository rules, types, complexity and architecture | `npm run quality:check` |
 | PR metadata and template check | `npm run quality:pr -- ...` (`node scripts/quality/prCheck.test.js`) |
 | Code formatting | `npm run format` |

@@ -129,8 +129,6 @@ const retiredCaptureModeTerms = [
 const retiredContractSourceScopes = [
   path.join(repositoryRoot, 'apps/site/src'),
   path.join(repositoryRoot, 'packages/engine-core/src'),
-  path.join(repositoryRoot, 'packages/blockbench-contracts/src'),
-  path.join(repositoryRoot, 'packages/blockbench-runtime/src'),
   path.join(repositoryRoot, 'packages/internal-contracts/src'),
   path.join(repositoryRoot, 'docs'),
   path.join(repositoryRoot, 'examples'),
