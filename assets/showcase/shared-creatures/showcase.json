@@ -3,8 +3,8 @@
   "version": 1,
   "workspace": {
     "path": "assets/workspaces/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:e02c850db9d3cc5b9fe700dafb2cfe0aa1720db28777979451f8e0f805ac50c3",
-    "workspaceHash": "sha256:bc8587c279787fd7f746f95b53544acf5b1300119464679aa8760b662287de63"
+    "sha256": "sha256:f53084d22ef5afb68d313001f8bfd1ad7bfcd786b7926a6307273f13a693128a",
+    "workspaceHash": "sha256:d8bd048ff7018a248bcce5a7197ee68c723dffde7f636659ed24436aa3290f3b"
   },
   "capture": {
     "fingerprint": "sha256:7ca232004f2284d0c3a819af1f8a7bdbb2743bace9f0f1613d7a0fd9d3754a41",
@@ -67,9 +67,9 @@
       ],
       "packageName": "workbench",
       "entryName": "griffin",
-      "closureHash": "sha256:06d7ac7b323ff26b3db9394d4bcfc21e7d0de3f5a71fefed4fca73b56a226399",
-      "buildKey": "sha256:260b22cc36d412d12fd295090af7201793e6873b28f071c57b985bfa058cc551",
-      "productHash": "sha256:6ea2689e85459654a94d10d8214f7a8dc63cb234ff8335b886aa01ab4656c201",
+      "closureHash": "sha256:8f44e250a5304606b89e54d8059457257ad99e173e11b8f9fb4a365391ac3fae",
+      "buildKey": "sha256:80ec465a1fd602a933b486e6eb793ace5efeace296e14b78def7ef6fa2294f24",
+      "productHash": "sha256:1fd5154ec49405289ba5cb07fc2e5e4b6e2266786742d9d0e80a7c8f4c4331e9",
       "artifact": "griffin-build-replay.gif",
       "poster": "griffin-poster.png",
       "artifactSha256": "sha256:b3b193282ea9f75d541240b3b6beacce84d87cafb321dbcb2de37c5a7b337925",

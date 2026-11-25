@@ -1,0 +1,21 @@
+ashfox-model 1
+asset treasure_chest {
+  import "./rig.ashfox" as rig;
+  import "./surface.ashfox" as surface;
+  import "./body.ashfox" as body;
+
+  export asset treasure_chest {
+    settings { density = 16; forward = north; profile = prop; }
+    skeleton = rig.ChestSkeleton;
+    motion = rig.idle;
+    motion = rig.open;
+    use body.ChestBody as chest {
+      bind skeleton = rig.ChestRig;
+      bind skin = surface.oak_iron;
+    };
+    use body.ClaspMount as clasp {
+      bind skin = surface.brass_gem;
+    };
+    connect chest.lock_mount -> clasp.mount;
+  }
+}

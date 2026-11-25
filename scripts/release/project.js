@@ -5,7 +5,7 @@ const { starterFiles } = require('./starter');
 const projectFiles = (root) => {
   const files = {};
   for (const [name, source] of Object.entries(starterFiles(root))) {
-    if (name === 'marker.ashfox') continue;
+    if (['marker.ashfox', 'lantern.ashfox', 'rune_bricks.ashfox'].includes(name)) continue;
     const group = ['sword.ashfox', 'shared.ashfox'].includes(name)
       ? 'items'
       : name === 'claw_hit.ashfox'

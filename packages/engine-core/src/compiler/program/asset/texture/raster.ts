@@ -31,6 +31,7 @@ export interface TextureStamp {
   readonly width: number;
   readonly height: number;
   readonly cells: readonly (TextureStampCell | null)[];
+  readonly span?: SourceSpan;
 }
 
 export interface PaintGrid {

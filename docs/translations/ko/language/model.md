@@ -135,6 +135,16 @@ asset 조립은 구체 skeleton 하나, 서로 다른 motion 0개 이상, compon
 
 {{source-code:8}}
 
+### 작성 컨벤션과 위생 규칙
+
+컴파일 단계에서 독립 진입점과 워크스페이스 전반의 모듈형 `.ashfox` 구조 위생을 강제합니다.
+
+- `asset.unused-import` — 어떤 선언도 참조하지 않는 import 별칭을 제거합니다.
+- `asset.unused-declaration` — 진입점의 미사용 선언이나 모듈의 미사용 비공개 선언을 제거합니다.
+- `asset.texture.unused-stamp` — 선언한 모든 `stamp`는 최소 한 차트 면에서 사용하거나 삭제해야 합니다.
+- `asset.monolithic-entry` — 과도하게 큰 진입점이나 인라인 표면이 포함된 대형 크리처(프리미티브 20개 이상)는 `rig`, `surface`, `body` 모듈로 분리하세요.
+- `asset.mixed-module-concerns` — 하나의 import 모듈 파일 안에 리그·동작, 구체 surface, 형상 component를 함께 섞지 마세요.
+
 ## 완전한 원본
 
 작은 애니메이션 큐브의 완전한 단일 파일입니다. 큰 형상·공유 치수·픽셀 앵커에는 위 절이나 [정밀 모델링](../guides/precision-modeling.md)을 사용하세요.

@@ -73,6 +73,7 @@ directories in the build response rather than guessing filenames.
 | Chart mismatch or off-grid pixels | Geometry dimensions, chart net, atlas placement and stamp bounds |
 | Rig or socket mismatch | Nominal contract identity, complete binds and explicit connections |
 | Named design check failed | The authored relationship; checks do not repair geometry |
+| Unused code or mixed modules | Remove dead imports, declarations, or stamps; split multi-concern modules |
 
 Diagnostics include source locations or field pointers. Fix the earliest source
 error before interpreting downstream errors. A successful compile validates the

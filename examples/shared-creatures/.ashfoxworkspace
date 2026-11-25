@@ -62,6 +62,14 @@
           {
             "path": "animation.ashfox",
             "subpath": "./animation"
+          },
+          {
+            "path": "body.ashfox",
+            "subpath": "./body"
+          },
+          {
+            "path": "surface.ashfox",
+            "subpath": "./surface"
           }
         ],
         "version": 1

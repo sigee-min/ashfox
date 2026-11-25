@@ -1,0 +1,141 @@
+ashfox-model 1
+module chest_surface {
+  export surface contract ChestSurface {
+    chart base box { coverage = opaque; }
+    chart wall box { coverage = opaque; }
+    chart rim box { coverage = opaque; }
+    chart band box { coverage = opaque; }
+    chart handle box { coverage = opaque; }
+    chart lid box { coverage = opaque; }
+    chart lid_crown box { coverage = opaque; }
+    chart lid_slope box { coverage = opaque; }
+    chart strap box { coverage = opaque; }
+    chart strap_top box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface contract ClaspSurface {
+    chart plate box { coverage = opaque; }
+    chart gem box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface oak_iron: ChestSurface {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 2;
+      background = dark_oak;
+      background-alpha = 255;
+      palette {
+        dark_oak = (#2b1a10, #3d2719, #543622);
+        oak = (#4f311d, #805232, #b3784a);
+        oak_light = (#694228, #9c6840, #d49662);
+        iron = (#343b47, #576275, #8493ad);
+        brass = (#7d561c, #cc8e30, #ffd466);
+      }
+      stamp nail_stud {
+        pixels = "bb/bb";
+        b = brass;
+      }
+
+      chart base box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = top; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart wall box {
+        fill = oak;
+        grain = clustered;
+        pattern stripe { paint = dark_oak; axis = y; period = 6px; width = 1px; phase = 0; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart rim box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart band box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = top; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart handle box {
+        fill = brass;
+        grain = none;
+        pattern border { paint = iron; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart lid box {
+        fill = oak_light;
+        grain = clustered;
+        pattern stripe { paint = oak; axis = z; period = 6px; width = 1px; phase = 0; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart lid_crown box {
+        fill = oak_light;
+        grain = clustered;
+        pattern border { paint = oak; width = 1px; edges = all; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart lid_slope box {
+        fill = oak;
+        grain = clustered;
+        pattern border { paint = oak_light; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart strap box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = all; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        face north { stamp nail_stud { at = (1px, 2px); protect = true; } }
+      }
+      chart strap_top box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = all; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+
+      grain clustered { seed = 6401; }
+      tone painterly;
+    }
+  }
+
+  export surface brass_gem: ClaspSurface {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 2;
+      render-mode = emissive;
+      background = dark;
+      background-alpha = 255;
+      palette {
+        dark = (#2c1e0c, #422c12, #634421);
+        brass = (#7d561c, #cc8e30, #ffd466);
+        ruby = (#8f1d2c, #d9384d, #ff8593);
+      }
+      stamp keyhole {
+        pixels = "..dd../.dddd./..dd../..dd..";
+        d = dark;
+      }
+      chart plate box {
+        fill = brass;
+        grain = none;
+        pattern border { paint = dark; width = 1px; edges = all; }
+        face north { stamp keyhole { at = (1px, 1px); protect = true; } }
+      }
+      chart gem box {
+        fill = ruby;
+        grain = soft;
+        pattern gradient { from = dark; to = ruby; axis = y; space = local; soft = 0.25ratio; }
+      }
+      grain soft { seed = 6402; }
+      tone painterly;
+    }
+  }
+}

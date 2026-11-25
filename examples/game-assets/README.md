@@ -8,8 +8,7 @@ npx --no-install ashfox build .ashfoxworkspace --json
 npx --no-install ashfox check dist/build
 ```
 
-No FFmpeg is needed with the example's `audio: wav`. Set `audio: ogg` and provide
-FFmpeg on PATH or through `ASHFOX_FFMPEG_PATH` for OGG output.
+No external audio encoder is needed: WAV output works directly and `audio: ogg` uses Ashfox's built-in Vorbis encoder.
 
 Find the returned export named `voxel_game`. Its directory contains
 `game-assets/assets.json`, GLB/PNG/audio files, and `voxel_game.zip`. Use IDs such as
