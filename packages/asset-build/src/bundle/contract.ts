@@ -29,6 +29,11 @@ export type AssetMetadata =
       readonly archive: string | null;
     }
   | { readonly width: number; readonly height: number }
+  | {
+      readonly size: readonly [number, number, number];
+      readonly blockCount: number;
+      readonly interiorCells: number;
+    }
   | { readonly clips: readonly { readonly name: string; readonly durationSeconds: number }[] }
   | {
       readonly variants: readonly {
@@ -46,7 +51,7 @@ export type AssetMetadata =
     };
 export interface CatalogAsset {
   readonly id: string;
-  readonly kind: 'model' | 'sprite' | 'sound' | 'pack';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'pack';
   readonly directory: string;
   readonly metadata: AssetMetadata;
   readonly files: readonly FileRecord[];

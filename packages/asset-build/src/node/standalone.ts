@@ -17,10 +17,16 @@ interface StandaloneVisitState {
   total: number;
 }
 
+const assertChildKind = (childKind: string, rootKind: string, target: string): void => {
+  const valid = childKind === 'module' || (rootKind === 'structure' && childKind === 'model');
+  if (!valid) throw new BuildFailure('source.import', 'Expected module: ' + target);
+};
+
 const visitStandaloneModule = (
   state: StandaloneVisitState,
   relative: string,
   depth: number,
+  rootKind?: string,
 ): ReturnType<typeof inspectNativeSource> => {
   if (depth > 32 || state.active.has(relative)) throw new BuildFailure('source.cycle', relative);
   if (!safeRelative(relative) || !relative.endsWith('.ashfox'))
@@ -34,6 +40,7 @@ const visitStandaloneModule = (
   state.files.push({ path: relative, source });
   state.seen.add(relative);
   state.active.add(relative);
+  const effectiveRootKind = rootKind ?? unit.kind;
   for (const specifier of unit.imports) {
     if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
       throw new BuildFailure(
@@ -42,8 +49,8 @@ const visitStandaloneModule = (
       );
     }
     const target = path.posix.normalize(path.posix.join(path.posix.dirname(relative), specifier));
-    if (visitStandaloneModule(state, target, depth + 1).kind !== 'module')
-      throw new BuildFailure('source.import', 'Expected module: ' + target);
+    const child = visitStandaloneModule(state, target, depth + 1, effectiveRootKind);
+    assertChildKind(child.kind, effectiveRootKind, target);
   }
   state.active.delete(relative);
   return unit;
@@ -82,7 +89,12 @@ const buildStandaloneConfig = (
       {
         name: entry.id,
         entry: { packageName: 'standalone', entryName: entry.id },
-        format: { model: 'glb', sprite: 'png', sound: 'wav' }[entry.kind],
+        format: {
+          model: 'glb',
+          sprite: 'png',
+          sound: 'wav',
+          structure: 'java_structure',
+        }[entry.kind],
         directory: 'dist/' + entry.id + '/exports',
       },
     ],

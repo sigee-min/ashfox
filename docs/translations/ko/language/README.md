@@ -12,6 +12,7 @@ Ashfox DSL은 모델·픽셀 텍스처·사운드의 원본 형식입니다. 이
 | [모델 텍스처](textures.md) | 표면 계약, 아틀라스 차트, 팔레트, 스탬프, 픽셀 좌표 |
 | [스프라이트 문법](sprites.md) | 네이티브 레코드, 재사용 형상, 재질, 레이어, 검증 |
 | [사운드 문법](sounds.md) | 리터럴 레코드, 소스 변형, 필드 범위, 합성 동작 |
+| [구조물 문법](structures.md) | Minecraft `.nbt`·Unity GLB 건축물, 팔레트, 프리팹, 지붕, 단면 보기 |
 
 여러 에셋을 다루는 프로젝트는 [워크스페이스 설정](../guides/workspace.md)을 참고하세요. 별도의 JSON 계약이며 모든 원본을 감싸야 하는 래퍼는 아닙니다. 완전한 제작 과정은 [모델](../guides/models.md), [스프라이트](../guides/sprites.md), [사운드](../guides/sounds.md)에 있습니다.
 
@@ -26,6 +27,8 @@ Ashfox DSL은 모델·픽셀 텍스처·사운드의 원본 형식입니다. 이
 | `sprite name { … }` | 픽셀 스프라이트 하나 | import, 재사용 스프라이트 선언, profile, canvas, palette, layers |
 | 스프라이트에서 쓰는 `module name { … }` | 재사용 스프라이트 선언 | import와 공개 mask·material·stamp |
 | `sound name { … }` | 효과음 하나 | 리터럴 사운드 속성, 레이어, 변형, 출력 설정 |
+| `structure id { … }` | Minecraft·GLB 건축물 | 블록 상태 팔레트, 커스텀 `.ashfox` 소품, 프리팹, 지붕, 단면·실내 연산 |
+| 구조물에서 쓰는 `module id { … }` | 재사용 실내 가구 | 선택적 팔레트와 `export prefab` 모듈 |
 
 모델의 바깥 `asset` 단위는 소스 네임스페이스이며 내부의 `export asset` 선언이 빌드할 조립체입니다. 스프라이트와 사운드는 내부 조립체가 필요 없습니다. 모델·스프라이트 모듈은 키워드가 같지만 내용은 다릅니다. import가 모듈을 다른 종류의 에셋으로 변환하지 않습니다.
 

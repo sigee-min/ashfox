@@ -13,7 +13,10 @@ import {
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import { compileDirectorySprite } from './sprite';
+import { compileDirectoryStructure } from './structure';
 import type { SpriteProduct } from '../sprite/contract';
+import type { StructureProduct } from '../structure/contract';
+import { StructureInputError } from '../../project/structure';
 import { sha256Digest } from '../../provenance/digest';
 import { SPRITE_POLICY, SpriteInputError } from '../../project/sprite/contract';
 import { sealWorkspaceCandidate } from '../../project/workspace/seal';
@@ -48,6 +51,12 @@ export type DirectoryProduct =
       readonly entry: WorkspaceEntrySelector;
       readonly sourcePath: string;
       readonly sounds: readonly SoundProduct[];
+    }
+  | {
+      readonly kind: 'structure';
+      readonly entry: WorkspaceEntrySelector;
+      readonly sourcePath: string;
+      readonly structure: StructureProduct;
     };
 type DirectoryDiagnostic = {
   readonly code: string;
@@ -72,6 +81,7 @@ type Files = ReadonlyMap<string, DirectoryFile>;
 interface EntryOutput {
   readonly products: DirectoryProduct[];
   readonly spritePaths: Set<string>;
+  readonly structureCustomPaths: Set<string>;
   readonly modelEntries: Entry[];
 }
 
@@ -79,6 +89,7 @@ const EXPORT_FORMATS = {
   sprite: ['png'],
   model: ['glb', 'java_block', 'geckolib5', 'bedrock'],
   sound: ['wav'],
+  structure: ['java_structure', 'glb'],
 } as const;
 const SOUND_LIMITS = {
   sources: 32,
@@ -217,7 +228,21 @@ const compileSoundEntry = (
   output.spritePaths.add(e.path);
 };
 
-/** Compiles sprite and sound entries in declaration order and defers models. */
+const compileStructureEntry = (e: Entry, filesByPath: Files, output: EntryOutput): void => {
+  const result = compileDirectoryStructure(filesByPath, e.path);
+  if (result.structure.id !== e.entry.entryName)
+    throw new Error('Entry name must match structure id: ' + e.path);
+  output.products.push({
+    kind: 'structure',
+    entry: e.entry,
+    sourcePath: e.path,
+    structure: result.structure,
+  });
+  result.structurePaths.forEach((p) => output.spritePaths.add(p));
+  result.customPaths.forEach((p) => output.structureCustomPaths.add(p));
+};
+
+/** Compiles sprite, structure, and sound entries in declaration order and defers models. */
 const compileEntries = (
   entries: readonly Entry[],
   filesByPath: Files,
@@ -230,7 +255,12 @@ const compileEntries = (
   );
   const spriteUnits = new Map<string, SpriteSourceUnit>();
   const soundRecipes = parseSoundRecipes(entries, kinds, filesByPath);
-  const output: EntryOutput = { products: [], spritePaths: new Set(), modelEntries: [] };
+  const output: EntryOutput = {
+    products: [],
+    spritePaths: new Set(),
+    structureCustomPaths: new Set(),
+    modelEntries: [],
+  };
   for (const e of entries) {
     const kind = kinds.get(e.path);
     if (kind === 'sprite') {
@@ -238,6 +268,7 @@ const compileEntries = (
       if (failure) return failure;
     } else if (kind === 'sound')
       compileSoundEntry(e, filesByPath, soundRecipes.get(e.path)!, output);
+    else if (kind === 'structure') compileStructureEntry(e, filesByPath, output);
     else output.modelEntries.push(e);
   }
   return output;
@@ -263,7 +294,9 @@ const compileModels = (
   output: EntryOutput,
 ): void => {
   if (!output.modelEntries.length) {
-    if (files.some((f) => !output.spritePaths.has(f.path)))
+    if (
+      files.some((f) => !output.spritePaths.has(f.path) && !output.structureCustomPaths.has(f.path))
+    )
       throw new Error('Every declared module must be reachable');
     return;
   }
@@ -334,12 +367,13 @@ const productOrder = (a: DirectoryProduct, b: DirectoryProduct): number => {
 
 const compileFailure = (error: unknown): DirectoryFailure => {
   const sprite = error instanceof SpriteInputError ? error.diagnostic : null;
+  const structure = error instanceof StructureInputError ? error.detail : null;
   return {
     ok: false,
     diagnostics: [
       {
-        code: sprite ? sprite.code : 'workspace.compile',
-        file: sprite ? sprite.file : '.ashfoxworkspace',
+        code: sprite ? sprite.code : structure ? structure.code : 'workspace.compile',
+        file: sprite ? sprite.file : structure ? structure.file : '.ashfoxworkspace',
         message: error instanceof Error ? error.message : String(error),
       },
     ],

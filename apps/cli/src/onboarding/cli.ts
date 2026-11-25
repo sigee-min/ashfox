@@ -23,7 +23,7 @@ Commands:
   check <input>            Validate sources/builds, inspect structure, and run quality audit
   render <source|png>      Render PNG images, turnaround sheets, or animated GIFs (--gif)
   build <source|workspace> Build configured outputs and verify quality gates
-  export <source>          Export GLB, glTF, Minecraft ZIP, PNG, or WAV directly
+  export <source>          Export GLB, glTF, Minecraft ZIP/NBT, PNG, or WAV directly
 
 --output <file> saves media; existing files are refused.
 --version prints the installed product version. doctor/init accept --json.

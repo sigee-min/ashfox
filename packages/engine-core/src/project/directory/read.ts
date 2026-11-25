@@ -7,7 +7,15 @@ import type { DirectoryWorkspace } from './contract';
 import type { DirectoryPack } from './pack';
 import { failWorkspaceConfig, readClosedRecord } from './validate';
 
-const EXPORT_FORMATS = ['png', 'glb', 'wav', 'java_block', 'geckolib5', 'bedrock'] as const;
+const EXPORT_FORMATS = [
+  'png',
+  'glb',
+  'wav',
+  'java_structure',
+  'java_block',
+  'geckolib5',
+  'bedrock',
+] as const;
 const MINECRAFT_FORMATS = ['java_block', 'geckolib5', 'bedrock'] as const;
 const RESERVED_OUTPUT_ROOTS = ['.git', 'node_modules', '.ashfox', '.ashfoxworkspace'] as const;
 

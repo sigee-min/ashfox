@@ -247,3 +247,26 @@ export {
   type AuditSubmetric,
   type QualityGrade,
 } from './audit';
+export {
+  exportStructureGltfResolved,
+  type StructureGltfOptions,
+} from './export/pipeline/structure';
+export {
+  parseStructureSource,
+  StructureInputError,
+  type StructureDiagnosticDetail,
+  type StructureSourceUnit,
+} from './project/structure';
+export {
+  buildStructureDocument,
+  compileStructureUnits,
+  decodeStructureNbt,
+  encodeStructureNbt,
+  evaluateStructureQuality,
+  type DecodedStructureNbt,
+  type StructureAuditMetrics,
+  type StructureAuditReport,
+  type StructureCustomPlacement,
+  type StructureGrid,
+  type StructureProduct,
+} from './compiler/structure';

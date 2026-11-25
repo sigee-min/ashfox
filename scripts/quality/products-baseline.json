@@ -956,6 +956,54 @@
           "sha256": "a73ecf6a274d11de4c9047cd88b4e4070e6e70dee12bb17bed62f0e3b42223bc"
         }
       ]
+    },
+    {
+      "input": "examples/structure/medieval_cottage.ashfox",
+      "ok": true,
+      "sourceHash": "sha256:2303a91d00937db73531c7b4de74f222f6679637d17d95fa01a34b9320d473de",
+      "products": [
+        {
+          "entry": "standalone/medieval_cottage",
+          "kind": "structure",
+          "nbt": "df0803c170983fb34dcdcf0aec4e30856f1c23200fd84aa754f315cc3fca98ac",
+          "document": "45bf27e4acf8c01310248053f0cf6f992c8fc59be639895e5a192085fc63f87e"
+        }
+      ],
+      "catalogHash": "6190eaa6aa4460c2c80aae2aea67912756ab5d0edec7064138ef0392eae4c32b",
+      "files": [
+        {
+          "path": "assets/medieval_cottage/medieval_cottage.nbt",
+          "sha256": "df0803c170983fb34dcdcf0aec4e30856f1c23200fd84aa754f315cc3fca98ac"
+        },
+        {
+          "path": "catalog.json",
+          "sha256": "6190eaa6aa4460c2c80aae2aea67912756ab5d0edec7064138ef0392eae4c32b"
+        }
+      ]
+    },
+    {
+      "input": "examples/structure/watchtower.ashfox",
+      "ok": true,
+      "sourceHash": "sha256:040af7abc59055bc2b8e45e924706af87e88fdc7691025dd92acb95d77823cf0",
+      "products": [
+        {
+          "entry": "standalone/watchtower",
+          "kind": "structure",
+          "nbt": "01efc57f4d0556664c0a3262b23fec5a4f557dcbe258f89e039a9b6f9dbe6360",
+          "document": "4127a2c94454343710b1b16b0b294f297fe29b02465936cbfb6f200f766a13d9"
+        }
+      ],
+      "catalogHash": "18f598544ae2557f66d1a98fab571b609bb73a43e705c195f9eb9c6e6cc98e9c",
+      "files": [
+        {
+          "path": "assets/watchtower/watchtower.nbt",
+          "sha256": "01efc57f4d0556664c0a3262b23fec5a4f557dcbe258f89e039a9b6f9dbe6360"
+        },
+        {
+          "path": "catalog.json",
+          "sha256": "18f598544ae2557f66d1a98fab571b609bb73a43e705c195f9eb9c6e6cc98e9c"
+        }
+      ]
     }
   ]
 }

@@ -130,6 +130,10 @@
       {
         "source": "language/sounds.md",
         "route": "/docs/language/sounds/"
+      },
+      {
+        "source": "language/structures.md",
+        "route": "/docs/language/structures/"
       }
     ]
   },

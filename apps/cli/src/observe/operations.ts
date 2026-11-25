@@ -1,8 +1,10 @@
 import { zipSync } from 'fflate';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
+  buildStructureDocument,
   encodeCanonicalPng,
   evaluateAssetQuality,
+  exportStructureGltfResolved,
   formatDeliveryGateFailure,
   rasterizeTexture,
   measureSceneGeometry,
@@ -19,8 +21,15 @@ export const renderCapabilities = {
   format: 'ashfox-render',
   version: 1,
   inputs: ['ashfox-file', 'png-file', 'memory-source-graph', 'base64-png'],
-  media: ['image/png', 'image/gif', 'audio/wav', 'model/gltf-binary', 'application/zip'],
-  formats: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock', 'png', 'wav'],
+  media: [
+    'image/png',
+    'image/gif',
+    'audio/wav',
+    'model/gltf-binary',
+    'application/zip',
+    'application/octet-stream',
+  ],
+  formats: ['glb', 'gltf', 'java_block', 'java_structure', 'geckolib5', 'bedrock', 'png', 'wav'],
   viewDefaults: DEFAULT_VIEW,
   limits: {
     inputBytes: 16 * 1024 * 1024,
@@ -74,6 +83,16 @@ const inspectDocument = (
     animations: Object.values(d.animations),
     settings: d.settings,
     ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset, auditOptions) } : {}),
+    ...(asset.product?.kind === 'structure'
+      ? {
+          structure: {
+            size: asset.product.structure.grid.size,
+            palette: asset.product.structure.grid.states,
+            customAssets: Object.keys(asset.product.structure.customModels),
+          },
+          audit: asset.product.structure.audit,
+        }
+      : {}),
   };
 };
 
@@ -120,9 +139,15 @@ const resolveTexture = (document: NonNullable<Prepared['document']>, selector: s
 
 const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
   if (asset.document) {
-    return v.texture
-      ? { png: resolveTexture(asset.document, v.texture) }
-      : { document: asset.document };
+    const activeDoc =
+      asset.product?.kind === 'structure' && v.cutaway !== undefined
+        ? buildStructureDocument(
+            asset.product.structure.grid,
+            asset.product.structure.customModels,
+            { cutawayY: v.cutaway },
+          )
+        : asset.document;
+    return v.texture ? { png: resolveTexture(activeDoc, v.texture) } : { document: activeDoc };
   }
   if (asset.png) return { png: asset.png };
   if (asset.sprite)
@@ -173,12 +198,16 @@ const MODEL_ONLY_VIEW_KEYS = [
   'sheet',
 ] as const;
 
+const assertNonModelViewDefaults = (v: ViewOptions): void => {
+  for (const key of MODEL_ONLY_VIEW_KEYS)
+    if (v[key] !== DEFAULT_VIEW[key])
+      throw new BuildFailure('observe.option', key + ' requires a model or structure', 2);
+};
+
 const assertRenderOptions = (asset: Prepared, v: ViewOptions, gif: boolean): void => {
-  if (asset.kind !== 'model') {
-    for (const key of MODEL_ONLY_VIEW_KEYS)
-      if (v[key] !== DEFAULT_VIEW[key])
-        throw new BuildFailure('observe.option', key + ' requires a model', 2);
-  }
+  if (asset.kind !== 'model' && asset.kind !== 'structure') assertNonModelViewDefaults(v);
+  if (v.cutaway !== undefined && asset.kind !== 'structure')
+    throw new BuildFailure('observe.option', 'cutaway requires a structure source', 2);
   if (gif && v.sheet !== undefined)
     throw new BuildFailure('observe.option', 'sheet requires still render, not --gif', 2);
   if (asset.kind !== 'sprite' && v.stage !== 'final')
@@ -279,7 +308,7 @@ const exportModelProduct = async (
     ]),
   );
   const format = v.format ?? 'glb';
-  if (format === 'png' || format === 'wav')
+  if (format === 'png' || format === 'wav' || format === 'java_structure')
     throw new BuildFailure('observe.format', 'Expected model format', 2);
   const adapter =
     format === 'glb' || format === 'gltf'
@@ -296,11 +325,39 @@ const exportModelProduct = async (
   return packageModelBundle(bundle, format);
 };
 
+const exportStructureProduct = async (
+  asset: Prepared,
+  product: Extract<NonNullable<Prepared['product']>, { readonly kind: 'structure' }>,
+  v: ViewOptions,
+): Promise<Media> => {
+  if (!product.structure.audit.passed) {
+    throw new BuildFailure(
+      'quality.gate',
+      `Structure "${product.entry.entryName}" scored ${product.structure.audit.score}/100 (requires >= ${product.structure.audit.threshold}).`,
+      3,
+    );
+  }
+  const format = v.format ?? 'java_structure';
+  if (format === 'java_structure') {
+    return { mime: 'application/octet-stream', bytes: product.structure.nbt };
+  }
+  if (format !== 'glb')
+    throw new BuildFailure('observe.format', 'Expected java_structure or glb', 2);
+  const bundle = await exportStructureGltfResolved(
+    product.structure.document,
+    v.modelPath ?? product.entry.entryName,
+    asset.revision,
+    { encoding: 'portable' },
+  );
+  return packageModelBundle(bundle, 'glb');
+};
+
 export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Media> => {
   const kind = asset.kind === 'png' ? 'sprite' : asset.kind;
   const allowed = {
     sprite: ['png'],
     sound: ['wav'],
+    structure: ['java_structure', 'glb'],
     model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
   }[kind];
   if (v.format && !allowed.includes(v.format))
@@ -309,6 +366,7 @@ export const exportAsset = async (asset: Prepared, v: ViewOptions): Promise<Medi
   if (asset.sprite) return { mime: 'image/png', bytes: asset.sprite.png };
   if (asset.product?.kind === 'sound')
     return { mime: 'audio/wav', bytes: selectSound(asset, v.variant).wav };
+  if (asset.product?.kind === 'structure') return exportStructureProduct(asset, asset.product, v);
   assertExportGate(asset);
   if (asset.product?.kind !== 'model') throw new BuildFailure('observe.kind', 'No model', 2);
   return exportModelProduct(asset, asset.product, v);

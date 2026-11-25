@@ -110,6 +110,7 @@ export const applyCameraPreset = (
   camera.up.set(0, 1, 0);
   const direction = cameraDirection();
   const distance = frame?.distance ?? direction.length() * 68;
+  camera.far = Math.max(camera.far, Math.ceil(distance * 4));
   camera.position.copy(target).add(direction.multiplyScalar(distance));
   camera.lookAt(target);
   camera.updateProjectionMatrix();
@@ -131,6 +132,7 @@ export const applySignedProjectViewPreset = (
   camera.up.set(...axes.cross);
   const direction = new THREE.Vector3(...axes.depth);
   const distance = frame?.distance ?? direction.length() * 68;
+  camera.far = Math.max(camera.far, Math.ceil(distance * 4));
   camera.position.copy(target).add(direction.multiplyScalar(distance));
   camera.lookAt(target);
   camera.updateProjectionMatrix();

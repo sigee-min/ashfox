@@ -1,9 +1,11 @@
 export interface ViewOptions {
-  readonly format?: 'glb' | 'gltf' | 'java_block' | 'geckolib5' | 'bedrock' | 'png' | 'wav';
+  readonly format?:
+    'glb' | 'gltf' | 'java_block' | 'java_structure' | 'geckolib5' | 'bedrock' | 'png' | 'wav';
   readonly namespace?: string;
   readonly modelPath?: string;
   readonly width: number;
   readonly height: number;
+  readonly cutaway?: number;
   readonly camera:
     'perspective' | 'native' | 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
   readonly azimuth?: number;

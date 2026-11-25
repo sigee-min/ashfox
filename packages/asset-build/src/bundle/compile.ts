@@ -4,6 +4,7 @@ import {
   encodeCanonicalPng,
   evaluateAssetQuality,
   exportProductionProjectResolved,
+  exportStructureGltfResolved,
   formatDeliveryGateFailure,
   openAssetProject,
   rasterizeTexture,
@@ -109,9 +110,46 @@ const compileModelFiles = async (
   });
 };
 
+const compileStructureFiles = async (
+  target: ExportTarget,
+  product: Extract<CompiledProduct, { readonly kind: 'structure' }>,
+  buildKey: string,
+): Promise<Artifact[]> => {
+  if (!product.structure.audit.passed) {
+    throw new BuildFailure(
+      'quality.gate',
+      `Structure "${target.name}" scored ${product.structure.audit.score}/100 (requires >= ${product.structure.audit.threshold}).`,
+      3,
+    );
+  }
+  if (target.format === 'java_structure') {
+    return [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
+  }
+  if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
+  const bundle = await exportStructureGltfResolved(
+    product.structure.document,
+    target.name,
+    buildKey,
+    { encoding: target.encoding ?? 'portable' },
+  );
+  return bundle.files.map((file) => {
+    if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
+    return {
+      path: file.path,
+      bytes: file.kind === 'binary' ? file.data : new TextEncoder().encode(json(file.data)),
+    };
+  });
+};
+
 const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
   if (product.kind === 'sprite')
     return { width: product.sprite.receipt.width, height: product.sprite.receipt.height };
+  if (product.kind === 'structure')
+    return {
+      size: product.structure.grid.size,
+      blockCount: product.structure.audit.metrics.blockCount,
+      interiorCells: product.structure.audit.metrics.interiorCells,
+    };
   if (product.kind === 'model')
     return {
       clips: Object.values(product.model.animations).map((clip) => ({
@@ -149,9 +187,11 @@ const compileExportTarget = async (
   const files: Artifact[] =
     product.kind === 'sprite'
       ? [{ path: `${target.name}.png`, bytes: product.sprite.png }]
-      : product.kind === 'model'
-        ? await compileModelFiles(target, product, compiled.buildKey, key, projects, remaining)
-        : product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
+      : product.kind === 'structure'
+        ? await compileStructureFiles(target, product, compiled.buildKey)
+        : product.kind === 'model'
+          ? await compileModelFiles(target, product, compiled.buildKey, key, projects, remaining)
+          : product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
   const uses = remaining.get(key)! - 1;
   remaining.set(key, uses);
   if (uses === 0) projects.delete(key);

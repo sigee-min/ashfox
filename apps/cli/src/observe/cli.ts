@@ -17,6 +17,7 @@ const numeric = new Set([
   'fps',
   'duration',
   'scale',
+  'cutaway',
 ]);
 const boolean = new Set(['wireframe', 'skeleton', 'textures', 'gif']);
 
