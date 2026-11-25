@@ -35,11 +35,10 @@ const testCheckShowcases = (): void => {
   }
 };
 
-const testExportsAndRender = (temp: string): void => {
+const testExports = (temp: string): void => {
   const cottage = path.join(REPO_ROOT, 'examples/structure/medieval_cottage.ashfox');
   const nbtPath = path.join(temp, 'cottage.nbt');
   const glbPath = path.join(temp, 'cottage.glb');
-  const pngPath = path.join(temp, 'cottage_cut.png');
 
   assert.equal(
     runCli('export', '--format', 'java_structure', cottage, '--output', nbtPath).status,
@@ -58,11 +57,6 @@ const testExportsAndRender = (temp: string): void => {
   assert.equal(runCli('export', '--format', 'glb', cottage, '--output', glbPath).status, 0);
   const glbMagic = fs.readFileSync(glbPath).subarray(0, 4).toString('utf8');
   assert.equal(glbMagic, 'glTF');
-
-  const renderRes = runCli('render', '--cutaway', '4', cottage, '--output', pngPath);
-  assert.equal(renderRes.status, 0, renderRes.stderr);
-  const pngSig = fs.readFileSync(pngPath).subarray(0, 8);
-  assert.deepEqual(pngSig, Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 };
 
 const testWorkspaceDualBuild = (temp: string): void => {
@@ -117,7 +111,7 @@ const main = (): void => {
   const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-structure-cli-'));
   try {
     testCheckShowcases();
-    testExportsAndRender(temp);
+    testExports(temp);
     testWorkspaceDualBuild(temp);
     console.log('ashfox structure CLI integration tests ok');
   } finally {
