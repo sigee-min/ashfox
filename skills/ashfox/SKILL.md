@@ -35,9 +35,9 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
 - For models, set `settings.profile = creature | prop | block` explicitly. Use
   Hytale / modern Blockbench craft instead of bare boxes and flat 1-line `fill`
   coats: decompose organic limbs with tapered `15°`/`22.5°`/`45°` joints and thin
-  `plane` silhouettes (`ears`, `tufts`, `fins`, `plumes`), use `mirror-x` for
+  `plane` silhouettes (`ears`, `tufts`, `fins`, `plumes`) on `creature`/`prop` assets, keep `block` assets crisp and grid-aligned without fake twists or forced symmetry, use `mirror-x` for
   paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
-  layout is required.
+  layout is required. Keep multi-part models modular (`rig.ashfox`, `surface.ashfox`, `body.ashfox`, plus a thin `asset` entry): the compiler rejects unused imports, unused declarations, unused stamps, and monolithic or concern-mixing files.
 - Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (20–42% pre-grain delta with moderate `ao` and omitted-`from` `gradient`), warm darks (`luma >= 0.14`, no near-black crush), painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals, and material-appropriate `grain` (`clustered` for fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
 - Run `ashfox check <source>` alongside visual inspection: hit **0 failed Hard Gates**
   and `audit.score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and

@@ -72,8 +72,15 @@ export const evaluateAssetQuality = (
   const telemetryAvailable = input.telemetry !== undefined;
   const telemetry = summarizeTelemetry(input.telemetry, input.model.forward);
   const hardGates = evaluateHardGates(profile, scene, raster, telemetry, telemetryAvailable);
+  const singleCubeBlock = profile === 'block' && scene.obbs.length === 1;
   const form = evaluateFormPillar(profile, scene, anatomy);
-  const texture = evaluateTexturePillar(profile, telemetry, telemetryAvailable, raster);
+  const texture = evaluateTexturePillar(
+    profile,
+    telemetry,
+    telemetryAvailable,
+    raster,
+    singleCubeBlock,
+  );
   const rig = evaluateRigPillar(profile, input.model, scene, telemetry, telemetryAvailable, raster);
   const rawScore = form.pillar.score + texture.pillar.score + rig.pillar.score;
   const score = Math.max(0, Math.min(100, Math.round(rawScore)));

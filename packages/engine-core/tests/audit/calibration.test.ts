@@ -259,7 +259,7 @@ asset main {
         dark = (#32221b, #4a3126, #694536);
         eye = #242630;
       }
-      stamp eye_dot { pixels = "eee/eee/eee"; e = eye; }
+      ${highCraft ? 'stamp eye_dot { pixels = "eee/eee/eee"; e = eye; }' : ''}
       ${allBoxIds.map(boxChartRule).join('\n      ')}
       ${lv4 ? 'chart fin flat { fill = coat; coverage = 00110111111111111111111011000000; grain = soft; pattern gradient { to = belly; axis = y; space = model; soft = 0.2ratio; } }' : ''}
       grain clustered { seed = 42; }

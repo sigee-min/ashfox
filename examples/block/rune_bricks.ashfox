@@ -1,0 +1,102 @@
+ashfox-model 1
+asset rune_bricks {
+  export rig contract BlockRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+
+  export skeleton BlockSkeleton implements BlockRig {
+    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  }
+
+  export surface contract BrickBlock {
+    chart block box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface mossy_rune_bricks: BrickBlock {
+    material = opaque;
+    texture atlas {
+      density = 1;
+      background = mortar;
+      background-alpha = 255;
+      palette {
+        mortar = (#262b33, #303742, #444d5c);
+        slate = (#3b4352, #5a657a, #7d8ba6);
+        limestone = (#6b7380, #9aa4b3, #cad3e0);
+        moss = (#40613f, #679158, #97c47a);
+        rune = (#2b8782, #4cd1c8, #a6fff2);
+      }
+
+      stamp rune_mark {
+        pixels = ".rrr./r...r/.rrr./r...r/.rrr.";
+        r = rune;
+      }
+      stamp masonry_crack {
+        pixels = "m..../mm.../..mm./...mm";
+        m = mortar;
+      }
+      stamp moss_clump {
+        pixels = ".ggg./ggggg/g.gg./..g..";
+        g = moss;
+      }
+
+      chart block box {
+        fill = slate;
+        grain = clustered;
+        pattern stripe { paint = limestone; axis = y; period = 5px; width = 1px; phase = 0; }
+        pattern border { paint = mortar; width = 1px; edges = bottom; }
+        face up {
+          fill = limestone;
+          grain = clustered;
+          pattern blotch { paint = moss; scale = (4px, 4px, 4px); density = 0.35ratio; phase = 11; }
+          pattern border { paint = slate; width = 1px; edges = all; }
+        }
+        face down {
+          fill = slate;
+          grain = none;
+        }
+        face north {
+          stamp rune_mark { at = (5px, 5px); protect = true; }
+          stamp masonry_crack { at = (1px, 2px); protect = true; }
+        }
+        face south {
+          stamp moss_clump { at = (2px, 10px); protect = true; }
+          stamp masonry_crack { at = (10px, 3px); protect = true; }
+        }
+        face west {
+          stamp moss_clump { at = (1px, 1px); protect = true; }
+          stamp masonry_crack { at = (8px, 11px); protect = true; }
+        }
+        face east { mirror = west; }
+      }
+
+      grain clustered { seed = 3109; }
+      tone painterly;
+    }
+  }
+
+  export component FullBlock {
+    requires rig skeleton: BlockRig;
+    requires surface skin: BrickBlock;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube block { origin = (-8u, 0u, -8u); size = (16u, 16u, 16u); surface = skin.block; }
+      }
+    }
+  }
+
+  export asset rune_bricks {
+    settings { density = 16; forward = north; profile = block; }
+    skeleton = BlockSkeleton;
+    use FullBlock as cube_block { bind skeleton = BlockRig; bind skin = mossy_rune_bricks; };
+  }
+}

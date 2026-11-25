@@ -38,6 +38,7 @@ interface ComposeContext {
   readonly context: TextureExpressionContext;
   readonly scene: TextureSceneContext | undefined;
   readonly report: TextureReporter;
+  readonly usedStamps: Set<string>;
 }
 
 interface ChartRunState {
@@ -72,6 +73,7 @@ const applyStampStatement = (
   }
   const region = regions[0];
   if (region === undefined) return false;
+  compose.usedStamps.add(statement.id);
   stampUse(
     statement,
     region,
@@ -386,6 +388,24 @@ const applyChart = (
   return Object.freeze({ details, mask, telemetry });
 };
 
+const reportUnusedStamps = (
+  stamps: PreparedTexture['stamps'],
+  usedStamps: ReadonlySet<string>,
+  report: TextureReporter,
+): boolean => {
+  let unused = false;
+  for (const [name, stamp] of stamps) {
+    if (usedStamps.has(name)) continue;
+    report.report(
+      stamp.span ?? report.owner,
+      'asset.texture.unused-stamp',
+      `Stamp "${name}" is declared but never placed on any chart or face.`,
+    );
+    unused = true;
+  }
+  return unused;
+};
+
 /** Compose all prepared charts into canonical canvas details, masks, and pre-grain telemetry. */
 export const composeTextureCharts = (
   prepared: PreparedTexture,
@@ -404,7 +424,14 @@ export const composeTextureCharts = (
   const masks: TextureAlphaMask[] = [];
   const chartTelemetry: ChartAuthoringTelemetry[] = [];
   const charts = Object.create(null) as Record<string, AssetTextureChartPlan>;
-  const compose: ComposeContext = { surfaceKey, prepared, context, scene, report };
+  const compose: ComposeContext = {
+    surfaceKey,
+    prepared,
+    context,
+    scene,
+    report,
+    usedStamps: new Set<string>(),
+  };
   for (const chart of prepared.charts) {
     const result = applyChart(chart, compose, owner + ':' + chart.chart.id);
     if (result === null) return null;
@@ -422,6 +449,7 @@ export const composeTextureCharts = (
       span: chart.chart.span,
     });
   }
+  if (reportUnusedStamps(prepared.stamps, compose.usedStamps, report)) return null;
   if (!detailBudgetAllows(details, masks, report.path, report.owner, propertyIssue(report)))
     return null;
   return Object.freeze({

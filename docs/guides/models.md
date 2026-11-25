@@ -37,10 +37,20 @@ Model lengths use `u`, pixel dimensions use `px`, times use `s`, and angles use
 sources and legal values. Use [Dimensions and pixel detail](precision-modeling.md)
 for shared design variables and exact resize relationships.
 
+## Reference examples by profile
+
+| Profile | Example | What it demonstrates |
+| --- | --- | --- |
+| `block` | `examples/block/rune_bricks.ashfox` | Single-cube 16×16×16 textured block without forced rotation or symmetry |
+| `block` | `examples/minecraft/marker.ashfox` | Orthogonal stepped altar block with protected runes and bevel border |
+| `prop` | `examples/prop/lantern.ashfox` | Emissive cutout cage prop with orthogonal tiers and brass roof brackets |
+| `prop` | `examples/prop/treasure_chest/chest.ashfox` | Modular prop split across rig, surface, body, and socket-mounted clasp |
+| `creature` | `examples/griffin/workbench/main.ashfox` | Multi-module animated creature (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
+
 ## Create an animated creature
 
 Extract [the game project](/downloads/game-assets.zip) and start with `models/workbench/`. Keep
-`main.ashfox` and `animation.ashfox` together, and preserve the package/module
+`main.ashfox`, `animation.ashfox`, `surface.ashfox`, and `body.ashfox` together, and preserve the package/module
 entries when copying them into a configured project. Reusing an imported module
 requires its source file; the entry alone is not a complete backup.
 

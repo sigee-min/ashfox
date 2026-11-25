@@ -49,17 +49,17 @@ const profileFormTargets = (profile: AssetQualityProfile) => {
     return {
       minParts: 2,
       targetParts: 12,
-      angleTarget: 0.3,
+      angleTarget: 0.15,
       nonBoxTarget: 0.34,
       compactTarget: 1.38,
     };
   }
   return {
-    minParts: 3,
-    targetParts: 12,
-    angleTarget: 0.15,
-    nonBoxTarget: 0.24,
-    compactTarget: 1.24,
+    minParts: 1,
+    targetParts: 8,
+    angleTarget: 0,
+    nonBoxTarget: 0.08,
+    compactTarget: 1.05,
   };
 };
 
@@ -91,6 +91,19 @@ const metric = (
   detail,
 });
 
+const balanceRatio = (
+  profile: AssetQualityProfile,
+  frontSymmetryIoU: number,
+  baseStability: boolean,
+  taper: number,
+): number => {
+  const grounded = baseStability ? 1 : 0.2;
+  if (profile === 'block') return grounded;
+  if (profile === 'prop') return 0.65 * grounded + 0.35 * taper;
+  const rawBal = 0.65 * ramp(frontSymmetryIoU, 0.35, 0.72) + 0.35 * grounded;
+  return 0.75 * rawBal + 0.25 * taper;
+};
+
 const silhouetteAndBalanceMetrics = (
   profile: AssetQualityProfile,
   scene: AuditSceneGeometry,
@@ -101,23 +114,26 @@ const silhouetteAndBalanceMetrics = (
   const count = anatomy.structuralObbs.length;
   const sil = analyzeSilhouettes(scene.obbs, scene.worldMin, scene.worldMax);
   const nonBox = Math.max(0, 1 - sil.avgFillRatio);
-  const rawSilRatio =
-    count === 0
-      ? 0
-      : 0.5 * ramp(nonBox, 0.03, t.nonBoxTarget) +
-        0.5 * ramp(sil.avgCompactness, 1.02, t.compactTarget);
+  const rawSil =
+    0.5 * ramp(nonBox, 0.03, t.nonBoxTarget) +
+    0.5 * ramp(sil.avgCompactness, 1.02, t.compactTarget);
+  const shapedSil = profile === 'block' ? 0.65 + 0.35 * rawSil : rawSil;
   const solidCardGuard = 1 - 0.35 * ramp(anatomy.solidPlaneCount, 0, 2);
-  const silRatio = rawSilRatio * (1 - 0.6 * anatomy.overlapPenalty) * solidCardGuard;
-  const rawBal =
+  const silRatio =
+    count === 0 ? 0 : shapedSil * (1 - 0.6 * anatomy.overlapPenalty) * solidCardGuard;
+  const balRatio =
     count === 0
       ? 0
-      : 0.65 * ramp(sil.frontSymmetryIoU, 0.5, 0.92) + 0.35 * (sil.baseStability ? 1 : 0.2);
-  const balRatio =
-    profile === 'block' ? rawBal : 0.75 * rawBal + 0.25 * anatomy.taperAndArticulationScore;
+      : balanceRatio(
+          profile,
+          sil.frontSymmetryIoU,
+          sil.baseStability,
+          anatomy.taperAndArticulationScore,
+        );
   return [
     metric(
       'form.silhouette',
-      '3-View Silhouette Breakup',
+      profile === 'block' ? 'Silhouette & Clean Seating' : '3-View Silhouette Breakup',
       silRatio,
       w.silhouette,
       round4(nonBox),
@@ -126,11 +142,11 @@ const silhouetteAndBalanceMetrics = (
     ),
     metric(
       'form.balance',
-      'Symmetry & Base Stability',
+      profile === 'creature' ? 'Symmetry & Base Stability' : 'Base Stability & Taper',
       balRatio,
       w.balance,
       round4(sil.frontSymmetryIoU),
-      0.92,
+      profile === 'creature' ? 0.72 : 1.0,
       `frontSymmetryIoU=${round2(sil.frontSymmetryIoU)}, groundedBase=${sil.baseStability}, taper=${round2(anatomy.taperAndArticulationScore)}.`,
     ),
   ];
@@ -147,18 +163,20 @@ const computeFormMetrics = (
   const count = obbs.length;
   const entropy = partSizeTierEntropy(obbs);
   const microGuard = 1 - 0.18 * ramp(anatomy.microSpeckCount, 0, 2);
-  const partsRatio =
-    count === 0
-      ? 0
-      : (0.6 * ramp(count, t.minParts, t.targetParts) + 0.4 * ramp(entropy, 0.2, 0.85)) *
-        microGuard;
+  const rawParts =
+    profile === 'block' && count === 1
+      ? 0.72
+      : 0.6 * ramp(count, t.minParts, t.targetParts) + 0.4 * ramp(entropy, 0.2, 0.85);
+  const partsRatio = count === 0 ? 0 : rawParts * microGuard;
   const angledCount = obbs.filter((o) => o.angled || o.isPlane).length;
   const angledShare = count > 0 ? angledCount / count : 0;
-  const rawAngles = count === 0 ? 0 : ramp(angledShare, 0, t.angleTarget);
   const anglesRatio =
-    profile === 'block'
-      ? rawAngles
-      : (0.55 * rawAngles + 0.45 * anatomy.taperAndArticulationScore) * microGuard;
+    count === 0
+      ? 0
+      : profile === 'block'
+        ? (1 - anatomy.overlapPenalty) * microGuard
+        : (0.55 * ramp(angledShare, 0, t.angleTarget) + 0.45 * anatomy.taperAndArticulationScore) *
+          microGuard;
   return [
     metric(
       'form.parts',
@@ -171,12 +189,14 @@ const computeFormMetrics = (
     ),
     metric(
       'form.angles',
-      'Angled Sculpting & Planes',
+      profile === 'block' ? 'Grid Alignment & Step Craft' : 'Angled Sculpting & Planes',
       anglesRatio,
       w.angles,
-      round4(angledShare),
-      t.angleTarget,
-      `${angledCount}/${count} angled cubes/planes (${Math.round(angledShare * 100)}%), taper=${round2(anatomy.taperAndArticulationScore)}.`,
+      round4(profile === 'block' ? 1 - anatomy.overlapPenalty : angledShare),
+      profile === 'block' ? 1.0 : t.angleTarget,
+      profile === 'block'
+        ? `orthogonal step craft, overlap=${round2(anatomy.overlapPenalty)}, microSpecks=${anatomy.microSpeckCount}.`
+        : `${angledCount}/${count} angled cubes/planes (${Math.round(angledShare * 100)}%), taper=${round2(anatomy.taperAndArticulationScore)}.`,
     ),
     ...silhouetteAndBalanceMetrics(profile, scene, anatomy),
   ];
@@ -189,6 +209,7 @@ export const evaluateFormPillar = (
 ): { readonly pillar: AuditPillarReport; readonly deductions: readonly AuditDeduction[] } => {
   const w = PROFILE_WEIGHTS[profile];
   const metrics = computeFormMetrics(profile, scene, anatomy);
+  const overlapDominates = anatomy.overlapPenalty > 0.25;
   const deductions = [
     makeDeduction(
       metrics[0]!,
@@ -197,18 +218,28 @@ export const evaluateFormPillar = (
     ),
     makeDeduction(
       metrics[1]!,
-      `Low angled/plane detail (${metrics[1]!.detail}).`,
-      'Use 22.5° rotated cubes, sloped joints, or thin plane accents (ears, fins, fur tufts).',
+      profile === 'block'
+        ? `Grid alignment or overlap issue (${metrics[1]!.detail}).`
+        : `Low angled/plane detail (${metrics[1]!.detail}).`,
+      profile === 'block'
+        ? 'Separate intersecting opaque cubes and remove stray micro-speck geometry.'
+        : 'Use 22.5° rotated cubes, sloped joints, or thin plane accents (ears, fins, fur tufts).',
     ),
     makeDeduction(
       metrics[2]!,
-      `Silhouette remains boxy (${metrics[2]!.detail}).`,
-      'Taper limbs, break outer silhouettes with stepped overhangs and angled planes.',
+      overlapDominates
+        ? `Cube overlap or Z-fighting (${metrics[2]!.detail}).`
+        : `Silhouette remains boxy (${metrics[2]!.detail}).`,
+      overlapDominates
+        ? 'Separate overlapping opaque cubes or recess socket joins cleanly.'
+        : 'Taper limbs, break outer silhouettes with stepped overhangs and angled planes.',
     ),
     makeDeduction(
       metrics[3]!,
-      `Weak symmetry or base balance (${metrics[3]!.detail}).`,
-      'Use mirror-x on paired parts and keep center of mass over the base footprint.',
+      `Weak ${profile === 'creature' ? 'symmetry or ' : ''}base balance (${metrics[3]!.detail}).`,
+      profile === 'creature'
+        ? 'Use mirror-x on paired parts and keep center of mass over the base footprint.'
+        : 'Keep the center of mass over a grounded base footprint and vary part proportions cleanly.',
     ),
   ].filter((d): d is AuditDeduction => d !== null);
   const score = round2(metrics.reduce((sum, m) => sum + m.score, 0));

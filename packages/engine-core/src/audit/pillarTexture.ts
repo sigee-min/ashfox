@@ -26,12 +26,12 @@ const computeFocusRatio = (
     ? ramp(telemetry.globalDeltaRatio, 0.01, 0.06)
     : ramp(raster.lumRange, 0.03, 0.09);
   if (!telemetryAvailable) return coherence * nonFlatGate * ppuFactor;
+  if (profile !== 'creature') {
+    const focusScore = Math.min(1, coherence + (telemetry.hasProtectedFocalTexels ? 0.2 : 0));
+    return nonFlatGate * (0.8 * coherence + 0.2 * focusScore) * ppuFactor;
+  }
   const symScore = ramp(telemetry.avgForwardSymmetry, 0.55, 0.95);
-  const protectBonus = telemetry.hasProtectedFocalTexels
-    ? profile === 'creature'
-      ? 0.3
-      : 0.15
-    : 0;
+  const protectBonus = telemetry.hasProtectedFocalTexels ? 0.3 : 0;
   const focusScore = Math.min(1, symScore * 0.85 + protectBonus);
   return nonFlatGate * (0.65 * coherence + 0.35 * focusScore) * ppuFactor;
 };
@@ -70,24 +70,29 @@ const computeTextureRatios = (
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
   raster: AuditRasterStats,
+  singleCubeBlock: boolean,
 ) => {
   const preRise = telemetryAvailable
     ? 0.55 * ramp(telemetry.globalDeltaRatio, 0.05, 0.3) +
       0.45 * ramp(telemetry.craftedChartRatio, 0.15, 0.85)
     : 0;
-  const preRestGuard = 1 - 0.85 * ramp(telemetry.globalDeltaRatio, 0.38, 0.82);
+  const preRestGuard = 1 - 0.85 * ramp(telemetry.globalDeltaRatio, 0.68, 0.94);
   const roleBase = telemetryAvailable ? ramp(telemetry.weightedDistinctRoles, 1.1, 2.8) : 0;
   const valueBase =
     0.5 * ramp(raster.lumRange, 0.08, 0.34) +
     0.3 * ramp(raster.upDownContrast, 0.0, 0.12) +
     0.2 * ramp(raster.lumP90, 0.25, 0.58);
   const crushGuard = 1 - 0.9 * ramp(raster.darkCrushRate, 0.03, 0.2);
+  const aoRatio = !telemetryAvailable
+    ? 0
+    : singleCubeBlock
+      ? 0.5 * ramp(raster.upDownContrast, 0.02, 0.12) +
+        0.5 * ramp(telemetry.globalDeltaRatio, 0.12, 0.35)
+      : 0.6 * ramp(telemetry.aoTexelRatio, 0.0, 0.1) + 0.4 * ramp(telemetry.aoChartRatio, 0.0, 0.5);
   return {
     pre: preRise * preRestGuard,
     role: 0.6 * roleBase + 0.4 * raster.paletteHarmonyScore,
-    ao: telemetryAvailable
-      ? 0.6 * ramp(telemetry.aoTexelRatio, 0.0, 0.1) + 0.4 * ramp(telemetry.aoChartRatio, 0.0, 0.5)
-      : 0,
+    ao: aoRatio,
     value: valueBase * crushGuard,
     focus: computeFocusRatio(profile, telemetry, telemetryAvailable, raster),
   };
@@ -98,9 +103,10 @@ const computeTextureMetrics = (
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
   raster: AuditRasterStats,
+  singleCubeBlock: boolean,
 ): readonly AuditSubmetric[] => {
   const w = PROFILE_WEIGHTS[profile];
-  const r = computeTextureRatios(profile, telemetry, telemetryAvailable, raster);
+  const r = computeTextureRatios(profile, telemetry, telemetryAvailable, raster, singleCubeBlock);
   return [
     metric(
       'texture.preGrainCoverage',
@@ -122,12 +128,14 @@ const computeTextureMetrics = (
     ),
     metric(
       'texture.contactAo',
-      '3D Contact AO Shading',
+      singleCubeBlock ? 'Directional Block Contrast' : '3D Contact AO Shading',
       r.ao,
       w.contactAo,
-      round4(telemetry.aoTexelRatio),
-      0.1,
-      `${Math.round(telemetry.aoTexelRatio * 100)}% AO texels across ${Math.round(telemetry.aoChartRatio * 100)}% charts.`,
+      round4(singleCubeBlock ? raster.upDownContrast : telemetry.aoTexelRatio),
+      singleCubeBlock ? 0.12 : 0.1,
+      singleCubeBlock
+        ? `Single-cube block surface shading: upDownContrast=${round2(raster.upDownContrast)}, preDelta=${Math.round(telemetry.globalDeltaRatio * 100)}%.`
+        : `${Math.round(telemetry.aoTexelRatio * 100)}% AO texels across ${Math.round(telemetry.aoChartRatio * 100)}% charts.`,
     ),
     metric(
       'texture.valueHierarchy',
@@ -151,16 +159,22 @@ const computeTextureMetrics = (
 };
 
 const buildTextureDeductions = (
+  profile: AssetQualityProfile,
   metrics: readonly AuditSubmetric[],
   telemetry: TelemetrySummary,
   raster: AuditRasterStats,
-): readonly AuditDeduction[] =>
-  [
+): readonly AuditDeduction[] => {
+  const overBusy = telemetry.globalDeltaRatio > 0.68;
+  return [
     makeDeduction(
       metrics[0]!,
-      `Pre-grain authored coverage is low (${metrics[0]!.detail}).`,
+      overBusy
+        ? `Surface is overly busy with too little calm rest area (${metrics[0]!.detail}).`
+        : `Pre-grain authored coverage is low (${metrics[0]!.detail}).`,
       telemetry.bareChartIds,
-      'Replace bare fill charts with gradient, border, stripe, ao, and stamp details.',
+      overBusy
+        ? 'Reduce competing patterns so >= 32% of texels remain calm base fill.'
+        : 'Replace bare fill charts with gradient, border, stripe, ao, and stamp details.',
     ),
     makeDeduction(
       metrics[1]!,
@@ -184,18 +198,28 @@ const buildTextureDeductions = (
       metrics[4]!,
       `Focal clarity or coherence lost points (${metrics[4]!.detail}).`,
       raster.noisyTextureIds,
-      'Use symmetric face stamps (`protect = true`) and avoid raw 1px noise.',
+      profile === 'creature'
+        ? 'Use symmetric face stamps (`protect = true`) and avoid raw 1px noise.'
+        : 'Avoid raw 1px noise/clutter and protect focal stamps with `protect = true`.',
     ),
   ].filter((d): d is AuditDeduction => d !== null);
+};
 
 export const evaluateTexturePillar = (
   profile: AssetQualityProfile,
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
   raster: AuditRasterStats,
+  singleCubeBlock = false,
 ): { readonly pillar: AuditPillarReport; readonly deductions: readonly AuditDeduction[] } => {
   const w = PROFILE_WEIGHTS[profile];
-  const metrics = computeTextureMetrics(profile, telemetry, telemetryAvailable, raster);
+  const metrics = computeTextureMetrics(
+    profile,
+    telemetry,
+    telemetryAvailable,
+    raster,
+    singleCubeBlock,
+  );
   const score = round2(metrics.reduce((sum, m) => sum + m.score, 0));
   return {
     pillar: {
@@ -205,6 +229,6 @@ export const evaluateTexturePillar = (
       maxScore: w.textureMax,
       metrics,
     },
-    deductions: buildTextureDeductions(metrics, telemetry, raster),
+    deductions: buildTextureDeductions(profile, metrics, telemetry, raster),
   };
 };

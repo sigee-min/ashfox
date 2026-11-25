@@ -11,9 +11,7 @@ node apps/cli/dist/ashfox.cjs build examples/resource-pack/.ashfoxworkspace --js
 node apps/cli/dist/ashfox.cjs check examples/resource-pack/dist/build
 ```
 
-FFmpeg with `libvorbis` is required for the sound bindings. Put it on PATH or set
-`ASHFOX_FFMPEG_PATH` to its executable. To build without audio, set the pack's
-`sounds` to `[]`; original WAV exports still work without FFmpeg.
+OGG Vorbis audio encoding is built in cleanly (`game_pack` encodes WAV variants automatically). To build without audio, set the pack's `sounds` to `[]`.
 
 Use the returned `exports` entry named `game_pack`. Its `directory` contains
 `resource-pack/` and `game_pack.zip`. The example replaces iron sword and stone

@@ -26,6 +26,7 @@ import { sha256Digest } from '../../../provenance/digest';
 import { lowerAssetGeometry } from './canonicalGeometry';
 import { lowerAssetRigAndMotions } from './canonicalRig';
 import { buildAssetHir } from './hir';
+import { checkAssetHygiene } from './hygiene';
 import { instantiateAsset } from './instantiate';
 import { parentCycles } from './parentCycles';
 import type { InstantiatedAssetIr } from './ir';
@@ -344,6 +345,8 @@ const lowerClosure = (closure: WorkspaceEntryCompilation['closure']): LoweringRe
   });
   const hir = buildAssetHir(closure);
   if (!hir.ok) return failWith(hir.diagnostics);
+  const hygiene = checkAssetHygiene(closure, hir.hir);
+  if (hygiene.length > 0) return failWith(hygiene);
   const instantiated = instantiateAsset(hir.hir);
   if (!instantiated.ok) return failWith(instantiated.diagnostics);
   const textures = lowerAssetTextures(hir.hir, instantiated.ir);

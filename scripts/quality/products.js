@@ -14,9 +14,12 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const BASELINE_PATH = path.join(__dirname, 'products-baseline.json');
 const TOOLCHAIN = 'ashfox-product-oracle:1';
 const STANDALONE_SOURCES = Object.freeze([
+  'examples/block/rune_bricks.ashfox',
   'examples/fox/creatures/fox.ashfox',
   'examples/goblin/creatures/goblin.ashfox',
   'examples/griffin/workbench/main.ashfox',
+  'examples/prop/lantern.ashfox',
+  'examples/prop/treasure_chest/chest.ashfox',
 ]);
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');

@@ -328,6 +328,17 @@ nearby geometry.
 connect body.hand -> shield.mount;
 ```
 
+### Authoring conventions & hygiene
+
+Compile-time checks enforce clean modular `.ashfox` source structure across every
+standalone entry and workspace:
+
+- `asset.unused-import` — remove imported module aliases that no declaration references.
+- `asset.unused-declaration` — remove dead local declarations in an entry or unused private helpers in a module.
+- `asset.texture.unused-stamp` — apply every declared `stamp` on at least one chart face or remove it.
+- `asset.monolithic-entry` — split oversized entries or creature assemblies (>= 20 primitives with inline surfaces) into focused modules (`rig`, `surface`, `body`).
+- `asset.mixed-module-concerns` — do not combine rig contracts/motion, concrete surfaces, and geometry components inside one imported module file.
+
 ## Complete source
 
 The following is a complete one-file source for a small animated cube. It is
@@ -415,8 +426,6 @@ asset sample {
         cube cap {
           origin = (-2u, 6u, -2u);
           size = (4u, 1u, 2u);
-          pivot = (0u, 6u, -1u);
-          rotation = (0deg, 22.5deg, 0deg);
           surface = skin.cap;
         }
       }

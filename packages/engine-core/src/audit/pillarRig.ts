@@ -84,8 +84,7 @@ const staticRigRatio = (
 ): { readonly ratio: number; readonly detail: string } => {
   const cleanHierarchy = !scene.hasOrphanEmptyBones && scene.obbs.length >= 1;
   const clips = Object.values(animations);
-  const animated = clips.some((c) => clipMotionQuality(c).animatedJoints >= 1);
-  const ratio = (cleanHierarchy ? 0.75 : 0.35) + (animated || scene.boneCount >= 2 ? 0.25 : 0);
+  const ratio = cleanHierarchy ? 1.0 : 0.35;
   return {
     ratio,
     detail: `cleanHierarchy=${cleanHierarchy}, bones=${scene.boneCount}, clips=${clips.length}.`,

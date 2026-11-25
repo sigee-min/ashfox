@@ -12,6 +12,8 @@ const starterFiles = (root) => {
     'shared.ashfox': 'examples/items/src/shared.ashfox',
     'claw_hit.ashfox': 'examples/sounds/src/claw_hit.ashfox',
     'marker.ashfox': 'examples/minecraft/marker.ashfox',
+    'rune_bricks.ashfox': 'examples/block/rune_bricks.ashfox',
+    'lantern.ashfox': 'examples/prop/lantern.ashfox',
   }))
     files[name] = fs.readFileSync(path.join(root, source), 'utf8');
   return files;

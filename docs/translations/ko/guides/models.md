@@ -24,9 +24,19 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 
 모든 원본은 `ashfox-model 1`로 시작하고 확장자는 `.ashfox`입니다. 모델 길이는 `u`, 픽셀 크기는 `px`, 시간은 `s`, 각도는 `deg`를 씁니다. 완전한 원본과 유효값은 [모델 언어 문법](../language/model.md), 공용 설계 변수와 정확한 크기 관계는 [치수와 픽셀 상세](precision-modeling.md)를 참고하세요.
 
+## 프로파일별 레퍼런스 예제
+
+| 프로파일 | 예제 | 보여주는 구성 |
+| --- | --- | --- |
+| `block` | `examples/block/rune_bricks.ashfox` | 불필요한 회전·대칭 강제 없이 텍스처로 표현한 단일 큐브 16×16×16 블록 |
+| `block` | `examples/minecraft/marker.ashfox` | 보호 스탬프 룬과 테두리가 적용된 직교 단차 제단 블록 |
+| `prop` | `examples/prop/lantern.ashfox` | 직교 계단 구조와 황동 지붕 브래킷이 있는 발광 컷아웃 랜턴 소품 |
+| `prop` | `examples/prop/treasure_chest/chest.ashfox` | rig·surface·body·소켓 결합 자물쇠로 분리된 모듈형 소품 |
+| `creature` | `examples/griffin/workbench/main.ashfox` | 다중 모듈 애니메이션 크리처 (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
+
 ## 애니메이션 크리처 만들기
 
-[게임 프로젝트](/downloads/game-assets.zip)를 풀고 `models/workbench/`에서 시작합니다. `main.ashfox`와 `animation.ashfox`를 함께 보관하고 설정된 프로젝트로 복사할 때 패키지·모듈 항목을 유지하세요. import한 모듈을 재사용하려면 그 소스 파일도 필요합니다. 진입점만으로 완전한 백업이 되지는 않습니다.
+[게임 프로젝트](/downloads/game-assets.zip)를 풀고 `models/workbench/`에서 시작합니다. `main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`를 함께 보관하고 설정된 프로젝트로 복사할 때 패키지·모듈 항목을 유지하세요. import한 모듈을 재사용하려면 그 소스 파일도 필요합니다. 진입점만으로 완전한 백업이 되지는 않습니다.
 
 [애니메이션](animation.md)을 따라 이름 있는 동작을 할당합니다. 일반 게임 번들은 `assets.json`에 출력 클립 이름과 길이를 기록합니다. 재생 시점은 게임 코드가 결정합니다. CLI는 애니메이션 이름에서 공격 타이밍·이동 상태·사운드 이벤트 바인딩을 추론하지 않습니다.
 

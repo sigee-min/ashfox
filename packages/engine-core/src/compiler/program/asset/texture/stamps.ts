@@ -122,6 +122,7 @@ const prepareStamp = (
     width: rows[0]!.length,
     height: rows.length,
     cells: buildStampCells(rows, mappings),
+    span: declaration.span,
   });
 };
 
