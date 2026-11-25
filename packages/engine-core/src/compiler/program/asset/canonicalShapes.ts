@@ -113,8 +113,9 @@ const verifyBoxChart = (
   surface: SurfacePlan,
   context: Context,
 ): void => {
-  const expectedWidth = 2n * size[0]!.numerator + 2n * size[2]!.numerator;
-  const expectedHeight = size[1]!.numerator + size[2]!.numerator;
+  const d = BigInt(surface.chart.density);
+  const expectedWidth = (2n * size[0]!.numerator + 2n * size[2]!.numerator) * d;
+  const expectedHeight = (size[1]!.numerator + size[2]!.numerator) * d;
   const chartMatches =
     expectedWidth <= BigInt(MAX_SAFE) &&
     expectedHeight <= BigInt(MAX_SAFE) &&
@@ -302,8 +303,14 @@ export const lowerCube = (
   if (canonical === null) return null;
   const { originNumbers, toNumbers, sizeNumbers, transform, inflate, mirror, surface } = canonical;
   verifyBoxChart(node, inputs.size, surface, context);
-  const baseUv = cubeUv(surface.chart.origin, [sizeNumbers[0], sizeNumbers[1], sizeNumbers[2]]);
+  const d = surface.chart.density;
+  const baseUv = cubeUv(surface.chart.origin, [
+    sizeNumbers[0] * d,
+    sizeNumbers[1] * d,
+    sizeNumbers[2] * d,
+  ]);
   const bakedMirror = node.uvMirrorX === true;
+  const useBoxUv = !bakedMirror && d === 1;
   const uv = bakedMirror ? mirroredCubeUvs(baseUv) : baseUv;
   const faceByDirection = collectCubeFaces(node, context);
   const faces: CubeFaces = {
@@ -325,10 +332,8 @@ export const lowerCube = (
     visible: visibleFor(inputs.properties, context, node),
     inflate,
     mirror: bakedMirror ? false : mirror,
-    boxUv: !bakedMirror,
-    ...(bakedMirror
-      ? {}
-      : { uvOffset: freeze([surface.chart.origin[0], surface.chart.origin[1]]) }),
+    boxUv: useBoxUv,
+    ...(useBoxUv ? { uvOffset: freeze([surface.chart.origin[0], surface.chart.origin[1]]) } : {}),
     faces,
   };
 };

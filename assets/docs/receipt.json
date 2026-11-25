@@ -1,7 +1,7 @@
 {
   "format": "ashfox-doc-media",
   "version": 1,
-  "compiler": "f5df41006a8231e5c2f77cfd4aee8bd636a517393d876e50d50606e0ad71d4c0",
+  "compiler": "4bf6872c8f914246394f5b6d2377b7dd3124629b785846dcf86361f2b6fac6f1",
   "sources": [
     {
       "file": "examples/fox/creatures/fox.ashfox",
@@ -9,15 +9,15 @@
     },
     {
       "file": "examples/fox/creatures/rig.ashfox",
-      "sha256": "e7841c2a6dd5f401f0d76fb6514f4b772a21e1e740094e6cc27ca200f803ad3d"
+      "sha256": "7b0b9b4b8e5918f600d21f0c0b7a1da6e63608ec4e7a20e0bcb69b75b6185ef7"
     },
     {
       "file": "examples/fox/creatures/surface.ashfox",
-      "sha256": "3f6448a4d6cdf5a6b8dff489bb4c9fa03f59f7fe18ba297d5b3b1b77cc3fff2d"
+      "sha256": "75bffcac63d1bbe5e060af008385bbd5bb15818429aef8f9019fcee52413fba6"
     },
     {
       "file": "examples/fox/creatures/body.ashfox",
-      "sha256": "012efc7936ed40e913cb17b24e129bfde85ec4c4b30b76f955248670e3b2cf7a"
+      "sha256": "1a87a9f7ab87fe02f11fe603f9eaf75f3e1a06abb0663ed8ba955190ead0a51a"
     },
     {
       "file": "examples/items/src/iron_sword.ashfox",
@@ -45,7 +45,7 @@
         "--height",
         "320"
       ],
-      "sha256": "156bb0ab70bb1ebf74f28d99428ead0c854a8df64d7d2325e302a71ad1acccaa"
+      "sha256": "e5e23f8506b747c34a446c281ced46784ff5045e29785f94032b1bb2a04f3c5b"
     },
     {
       "name": "fox-angle.png",
@@ -61,7 +61,7 @@
         "--height",
         "320"
       ],
-      "sha256": "576183a75e2a077ac40d75563417a2b04f79020ccb4ae6d6b19b34e0e6a8f7bc"
+      "sha256": "595b50d9afc7b153c6813a3f765a3a71f095b35715f0a6054aa60c1b18c9c491"
     },
     {
       "name": "sword.png",
@@ -125,7 +125,7 @@
         "--fps",
         "6"
       ],
-      "sha256": "7d8923cbc7f1e18c2b8bd503f25ec276c33383de2250a06a2462ae3780bc75f8"
+      "sha256": "d385a7acdceb5a5365751dd473fed7757a7ca14ca109bb4a8d21d7849986c84d"
     }
   ]
 }

@@ -7,110 +7,144 @@ asset marker {
       parent = none;
       role = root;
       frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
-      channels = (rotation, scale);
+      channels = rotation;
       mirror = none;
     }
   }
+
   export skeleton MarkerSkeleton implements MarkerRig {
     bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
+
   export surface contract RuneStone {
-    chart plinth box { coverage = opaque; }
+    chart plinth_low box { coverage = opaque; }
+    chart stone box { coverage = opaque; }
+    chart buttress box { coverage = opaque; }
     chart pillar box { coverage = opaque; }
     chart band box { coverage = opaque; }
+    chart cornice box { coverage = opaque; }
     chart cap box { coverage = opaque; }
     chart finial box { coverage = opaque; }
     material = opaque;
   }
+
   export surface carved_marker: RuneStone {
     material = opaque;
     texture atlas {
-      background = void;
+      density = 1;
+      background = shade;
       background-alpha = 255;
       palette {
-        void = #14161a;
-        stone = (#313640, #5c6575, #94a1b5);
-        stone_dark = (#1e2228, #3b424d, #626d7d);
-        bronze = (#5a3b18, #9e6b29, #d9a148);
-        rune = (#1c5e5a, #32b8aa, #82fff0);
+        shade = #2e3440;
+        slate = (#384152, #5a667d, #8493ad);
+        limestone = (#6c727a, #a2a8b0, #d6dce3);
+        bronze = (#734e26, #ba823c, #eab668);
+        rune = (#2c8580, #48cfc7, #a4faec);
+        moss = (#436343, #6b965d, #9bc97e);
       }
+
       stamp rune_glyph {
-        pixels = ".rr./r..r/r..r/.rr.";
+        pixels = ".rrrr./rr..rr/.rrrr./..rr../.rrrr./rr..rr/.rrrr.";
         r = rune;
       }
-      chart plinth box {
-        fill = stone_dark;
+      stamp cap_seal {
+        pixels = ".rr./rrrr/rrrr/.rr.";
+        r = rune;
+      }
+
+      chart plinth_low box {
+        fill = slate;
         grain = clustered;
-        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.25ratio; }
-        pattern border { paint = stone; width = 1px; edges = top; }
-        pattern ao { strength = 0.85ratio; radius = 2u; }
+        pattern border { paint = moss; width = 1px; edges = bottom; }
+      }
+      chart stone box {
+        fill = slate;
+        grain = clustered;
+        pattern gradient { from = slate; to = limestone; axis = y; space = local; soft = 0.15ratio; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart buttress box {
+        fill = slate;
+        grain = clustered;
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
       }
       chart pillar box {
-        fill = stone;
-        grain = clustered;
-        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.25ratio; }
-        pattern ao { strength = 0.85ratio; radius = 2u; }
-        face north { stamp rune_glyph { at = (1px, 2px); protect = true; } }
-        face south { stamp rune_glyph { at = (1px, 2px); protect = true; } }
+        fill = limestone;
+        grain = soft;
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        face north { stamp rune_glyph { at = (0px, 1px); protect = true; } }
+        face south { stamp rune_glyph { at = (0px, 1px); protect = true; } }
+        face east { stamp rune_glyph { at = (0px, 1px); protect = true; } }
+        face west { stamp rune_glyph { at = (0px, 1px); protect = true; } }
       }
       chart band box {
         fill = bronze;
         grain = none;
-        pattern border { paint = rune; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart cornice box {
+        fill = slate;
+        grain = clustered;
+        pattern border { paint = limestone; width = 1px; edges = top; }
       }
       chart cap box {
-        fill = stone;
+        fill = limestone;
         grain = soft;
-        pattern gradient { from = stone_dark; to = stone; axis = y; space = model; soft = 0.2ratio; }
-        pattern border { paint = bronze; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern gradient { from = slate; to = limestone; axis = y; space = local; soft = 0.15ratio; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
       }
       chart finial box {
-        fill = rune;
-        grain = soft;
-        pattern gradient { from = bronze; to = rune; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
+        fill = slate;
+        grain = none;
+        face up { stamp cap_seal { at = (0px, 0px); protect = true; } }
+        face north { stamp cap_seal { at = (0px, 0px); protect = true; } }
+        face south { stamp cap_seal { at = (0px, 0px); protect = true; } }
       }
-      grain clustered { seed = 2309; }
+      grain clustered { seed = 4201; }
       tone painterly;
     }
   }
+
   export component MarkerBody {
     requires rig skeleton: MarkerRig;
     requires surface skin: RuneStone;
     bind bone root to skeleton.root;
     geometry {
       bone root {
-        cube plinth { origin = (-5u, 0u, -5u); size = (10u, 2u, 10u); surface = skin.plinth; }
-        cube pillar { origin = (-3u, 2u, -3u); size = (6u, 8u, 6u); surface = skin.pillar; }
-        cube band {
-          origin = (-4u, 7u, -4u);
+        cube plinth_low { origin = (-7u, 0u, -7u); size = (14u, 2u, 14u); surface = skin.plinth_low; }
+        cube plinth { origin = (-6u, 2u, -6u); size = (12u, 2u, 12u); surface = skin.stone; }
+        cube pillar { origin = (-3u, 4u, -3u); size = (6u, 10u, 6u); surface = skin.pillar; }
+        cube buttress_fl { origin = (-4u, 4u, -4u); size = (2u, 8u, 2u); mirror-x = buttress_fr; surface = skin.buttress; }
+        cube buttress_bl { origin = (-4u, 4u, 2u); size = (2u, 8u, 2u); mirror-x = buttress_br; surface = skin.buttress; }
+        cube collar {
+          origin = (-4u, 14u, -4u);
           size = (8u, 2u, 8u);
-          pivot = (0u, 8u, 0u);
+          pivot = (0u, 15u, 0u);
           rotation = (0deg, 22.5deg, 0deg);
           surface = skin.band;
         }
+        cube cornice { origin = (-5u, 16u, -5u); size = (10u, 2u, 10u); surface = skin.cornice; }
         cube cap {
-          origin = (-4u, 10u, -4u);
+          origin = (-4u, 18u, -4u);
           size = (8u, 2u, 8u);
-          pivot = (0u, 11u, 0u);
+          pivot = (0u, 19u, 0u);
           rotation = (0deg, 22.5deg, 0deg);
           surface = skin.cap;
         }
         cube finial {
-          origin = (-2u, 12u, -2u);
-          size = (4u, 2u, 4u);
-          pivot = (0u, 13u, 0u);
+          origin = (-2u, 20u, -2u);
+          size = (4u, 4u, 4u);
+          pivot = (0u, 22u, 0u);
           rotation = (0deg, 45deg, 0deg);
           surface = skin.finial;
         }
       }
     }
   }
+
   export asset marker {
     settings { density = 16; forward = north; profile = block; }
     skeleton = MarkerSkeleton;
-    use MarkerBody as body { bind skeleton = MarkerRig; bind skin = carved_marker; };
+    use MarkerBody as model { bind skeleton = MarkerRig; bind skin = carved_marker; };
   }
 }

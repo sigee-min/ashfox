@@ -108,7 +108,16 @@ const planFor = (layout: 'box' | 'flat', width: number, height: number): AssetTe
     surfaceSymbol: skin,
     texture,
     charts: {
-      body: { id: 'body', layout, origin: [10, 20], width, height, coverage: null, span: span() },
+      body: {
+        id: 'body',
+        layout,
+        origin: [10, 20],
+        width,
+        height,
+        density: 1,
+        coverage: null,
+        span: span(),
+      },
     },
   };
 };

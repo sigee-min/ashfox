@@ -267,8 +267,9 @@ export const texelSurfaceAndNormal = (
 ): Readonly<{ readonly point: Vec3; readonly normal: Vec3 }> => {
   if (obb.planeBasis !== undefined) {
     const { u, v, normal } = obb.planeBasis;
-    const su = x + 0.5 - obb.pivot[0];
-    const sv = region.height - 0.5 - y - obb.pivot[1];
+    const s = region.density ?? 1;
+    const su = (x + 0.5) / s - obb.pivot[0];
+    const sv = (region.height - 0.5 - y) / s - obb.pivot[1];
     const localFromPivot = add3(add3(scale3(u, su), scale3(v, sv)), scale3(normal, -obb.pivot[2]));
     return {
       point: chainTransformPoint(localFromPivot, obb.ownerOrigin, obb.rotation, obb.ancestors),

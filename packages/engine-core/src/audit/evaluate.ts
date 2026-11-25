@@ -10,6 +10,7 @@ import {
   type AuditReport,
   type QualityGrade,
 } from './contract';
+import { analyzeAnatomy } from './anatomy';
 import { analyzeSceneGeometry, type AuditSceneGeometry } from './geometry';
 import { evaluateHardGates, summarizeTelemetry } from './hardGates';
 import { evaluateFormPillar } from './pillarForm';
@@ -64,13 +65,14 @@ export const evaluateAssetQuality = (
   options: AuditOptions = {},
 ): AuditReport => {
   const scene = analyzeSceneGeometry(input.model.scene, input.model.textures);
+  const anatomy = analyzeAnatomy(scene);
   const { profile, source: profileSource } = resolveProfile(input.model, scene, options.profile);
   const threshold = options.threshold ?? DEFAULT_AUDIT_THRESHOLD;
   const raster = analyzeRasterStats(scene, input.model.textures);
   const telemetryAvailable = input.telemetry !== undefined;
   const telemetry = summarizeTelemetry(input.telemetry, input.model.forward);
   const hardGates = evaluateHardGates(profile, scene, raster, telemetry, telemetryAvailable);
-  const form = evaluateFormPillar(profile, scene);
+  const form = evaluateFormPillar(profile, scene, anatomy);
   const texture = evaluateTexturePillar(profile, telemetry, telemetryAvailable, raster);
   const rig = evaluateRigPillar(profile, input.model, scene, telemetry, telemetryAvailable, raster);
   const rawScore = form.pillar.score + texture.pillar.score + rig.pillar.score;

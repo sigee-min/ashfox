@@ -86,8 +86,8 @@ asset study {
       atlas = (Dimensions.atlasWidth, Dimensions.atlasHeight);
       background = bg; background-alpha = 255;
       palette {
-        bg = #140b0a;
-        dark = (#0d0707, #140b0a, #261614);
+        bg = #2c201d;
+        dark = (#2e1e1a, #4a3028, #6b463b);
         muzzle = (#784628, #b57b50, #f0c28e);
         coat = (#5a1c10, #b94722, #ef8040);
         cream = (#7d4b28, #d29a62, #ffe1a8);
@@ -96,14 +96,12 @@ asset study {
       stamp eye { pixels = "e"; e = eye; }
       chart snout box {
         origin = (0px, 16px); fill = muzzle; grain = clustered;
-        pattern gradient { from = dark; to = muzzle; axis = y; space = model; soft = 0.25ratio; }
-        pattern ao { strength = 0.85ratio; radius = 2u; }
+        pattern ao { strength = 0.4ratio; radius = 0.7u; }
       }
       chart head box {
         origin = Dimensions.chartOrigin; fill = coat; grain = soft;
-        pattern gradient { from = cream; to = coat; axis = y; space = local; soft = 0.25ratio; }
         pattern border { paint = cream; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
         face north {
           stamp eye { anchor = top_left; offset = (1px, 1px); protect = true; }
           stamp eye { anchor = top_right; offset = (-1px, 1px); protect = true; }
@@ -111,8 +109,7 @@ asset study {
       }
       chart plume box {
         origin = (24px, 16px); fill = cream; grain = none;
-        pattern border { paint = coat; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
       }
       grain clustered { seed = 8923; }
       tone painterly;

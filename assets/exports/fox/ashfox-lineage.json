@@ -13,11 +13,11 @@
   "packageName": "creatures",
   "entryName": "fox",
   "entryPath": "creatures/fox.ashfox",
-  "workspaceHash": "sha256:c144481998328e6f74090444a0d24e8e898d04e2716894a65af711e39f382f6d",
-  "closureHash": "sha256:d670803f8c5ebf25a8b07015023bfc0be4ee97bd8d6e80236d99f68387993077",
-  "buildKey": "sha256:720748fde32ff5343447d4be0d3b0fc8736e3827b0c82d86686e6a9c4b852308",
+  "workspaceHash": "sha256:a77baad0b103a9b8f8e59fbc3aef242af300c680e1e60e559d2282740b9e8de3",
+  "closureHash": "sha256:94f3be65671a6fde7fba887fb60442c12e7facc802b9c2f401d486d6af2a3e13",
+  "buildKey": "sha256:f304e90fcfe340557b8ac207833099610647bac7a96112b37ff362518805e8f9",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:814c9a6f128a458557af33e367e62b1882194db5811e716e17c1e16d0207e0b2",
+  "productHash": "sha256:0ae14c10d936e55f4fa419a29c7fa4a4cc6ced5dec7b9d8a8fab3fd8738f36b3",
   "textures": [
     {
       "id": "red_fox_e2f07af12d3c",
@@ -26,9 +26,9 @@
         "red_fox_e2f07af12d3c\u0000cheek_tuft",
         "red_fox_e2f07af12d3c\u0000tail_plume"
       ],
-      "embeddedSha256": "sha256:4c319953e74619c8cac618395bc42c517419f7d27d2d7f9efd929bb0da5442b4",
-      "pngSha256": "sha256:4c319953e74619c8cac618395bc42c517419f7d27d2d7f9efd929bb0da5442b4",
-      "byteLength": 32964
+      "embeddedSha256": "sha256:cae90bb7f309229393cbf91c1100196d2fa96a16e689b7507138602ab8476096",
+      "pngSha256": "sha256:cae90bb7f309229393cbf91c1100196d2fa96a16e689b7507138602ab8476096",
+      "byteLength": 65737
     }
   ],
   "files": [
@@ -37,8 +37,8 @@
       "role": "model",
       "path": "fox.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:f14797522f0dbdca3f94502f7639e46d50f5617b2ab3bc7c1269128999547c84",
-      "byteLength": 191208
+      "sha256": "sha256:4923d09179b5a2545185d02b586273ada052c7574b0dfa3e3f271c12e5b63900",
+      "byteLength": 245672
     }
   ]
 }

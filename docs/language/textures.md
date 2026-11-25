@@ -27,12 +27,14 @@ bound; matching spelling alone does not make distinct contracts equal.
 | Statement | Meaning |
 | --- | --- |
 | `atlas = (16px, 8px);` | Optional texture dimensions; omit for deterministic auto-packing |
+| `density = 2;` | Optional atlas PPU multiplier (`1`, `2`, or `4`; defaults to `1`, `2` recommended for `creature`/`prop`) |
+| `render-mode = emissive;` | Optional surface shading (`default` or `emissive` self-lit glow for lantern cores/eyes/runes) |
 | `background = shade;` | Palette role used outside charts |
 | `background-alpha = 255;` | Integer alpha in `[0,255]` |
-| `palette { shade = #21100c; coat = (#7d2417, #c94f2a, #ef8141); }` | Flat colors or three-color ramps |
+| `palette { shade = #2e2420; coat = (#7d2417, #c94f2a, #ef8141); }` | Flat colors or three-color ramps (keep darks above `luma >= 0.14` to avoid crushed blacks) |
 | `chart body box { fill = coat; }` | Chart recipe; omit `origin` to auto-pack (all charts in a texture must agree), optionally set `grain = clustered\|soft\|none;` |
 | `grain clustered\|soft\|none { seed = 23; }` | Optional texture-level default grain (`seed` optional; defaults to `none` when omitted) |
-| `tone voxel\|painterly;` | Optional shading mode (`voxel` directional flat tones or `painterly` form-following gradient + bevel rim) |
+| `tone voxel\|painterly;` | Optional shading mode (`voxel` directional flat tones or `painterly` gentle form-following contour gradient) |
 | `stamp eye { pixels = "ee/e."; e = shade; }` | Reusable pixel symbol |
 
 Geometry references the required surface port and chart with
@@ -59,7 +61,7 @@ A chart or face supports five deterministic patterns:
 | Pattern | Required & optional properties | Purpose |
 | --- | --- | --- |
 | `pattern blotch` | `paint`, `scale` (`vec3<texel>` 1–128), `density` (`ratio` 0–1), `phase` | Organic spotted fur/stone clusters |
-| `pattern gradient` | `to`, `axis` (`u\|v\|x\|y\|z`), optional `from`, `space` (`local\|model`), `soft` (`ratio`) | Ordered-dither transition (belly/dorsal/model-wide shading) |
+| `pattern gradient` | `to`, `axis` (`u\|v\|x\|y\|z`), optional `from`, `space` (`local\|model`), `soft` (`ratio`) | Organic 2px-clustered contour transition (belly/dorsal/model-wide shading) |
 | `pattern border` | `paint`, optional `width` (`1px`–`16px`), `edges` (`all\|top\|bottom\|sides`) | Trim, belts, armor outlines, wood frames |
 | `pattern stripe` | `paint`, `axis` (`u\|v\|x\|y\|z`), `period`, optional `width`, `phase` | Feathers, ribs, fur striping, planks |
 | `pattern ao` | optional `strength` (`ratio` 0–1), `radius` (`unit` or `texel` <= 16) | 3D contact ambient occlusion from adjacent geometry |
@@ -70,9 +72,9 @@ before `grain`.
 
 The recipe `coverage = …;` form belongs to a flat chart, never a face or box
 chart. Its unquoted binary digits run row by row and must contain exactly
-`width * height` bits. Binary contract coverage requires this mask; opaque
-coverage cannot contain zero bits. It is a pixel mask, distinct from the
-contract's `opaque|binary|optional` enum.
+`(width * density) * (height * density)` bits. Binary contract coverage
+requires this mask; opaque coverage cannot contain zero bits. It is a pixel
+mask, distinct from the contract's `opaque|binary|optional` enum.
 
 ## Stamps
 

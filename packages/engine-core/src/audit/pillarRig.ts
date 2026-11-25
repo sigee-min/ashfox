@@ -116,7 +116,11 @@ const buildRigMetrics = (
     profile === 'creature'
       ? creatureRigRatio(scene, model.animations)
       : staticRigRatio(scene, model.animations);
-  const uvRatio = 0.65 * raster.uvDensityScore + 0.35 * ramp(raster.atlasUtilization, 0.08, 0.45);
+  const ppuScore =
+    profile === 'block' ? ramp(raster.meanPpu, 0.5, 1.0) : ramp(raster.meanPpu, 1.0, 2.0);
+  const uvRatio =
+    ppuScore *
+    (0.7 + 0.18 * raster.ppuConsistency + 0.12 * ramp(raster.atlasUtilization, 0.08, 0.45));
   return {
     rigDetail: rigInfo.detail,
     metrics: [
@@ -144,9 +148,9 @@ const buildRigMetrics = (
         label: 'UV Density & Atlas Packing',
         score: round2(uvRatio * w.uvEfficiency),
         maxScore: w.uvEfficiency,
-        value: round4(uvRatio),
-        target: 1.0,
-        detail: `uvDensityScore=${round2(raster.uvDensityScore)}, atlasUtilization=${Math.round(raster.atlasUtilization * 100)}%.`,
+        value: round4(raster.meanPpu),
+        target: profile === 'block' ? 1.0 : 2.0,
+        detail: `meanPpu=${round2(raster.meanPpu)}, ppuConsistency=${round2(raster.ppuConsistency)}, atlasUtil=${Math.round(raster.atlasUtilization * 100)}%.`,
       },
     ],
   };
@@ -187,7 +191,7 @@ export const evaluateRigPillar = (
     makeDeduction(
       metrics[2]!,
       `UV density/packing (${metrics[2]!.detail}).`,
-      'Use auto-atlas sizing (`width`/`height` omitted on charts) with 1 texel = 1 unit scale.',
+      'Use density = 2 for creature/prop (density = 1 for block) with consistent texel scale and auto-atlas.',
     ),
   ].filter((d): d is AuditDeduction => d !== null);
   const score = round2(metrics.reduce((sum, m) => sum + m.score, 0));

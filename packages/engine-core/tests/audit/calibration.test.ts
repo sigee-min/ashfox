@@ -160,7 +160,7 @@ const creatureSource = (level: 2 | 3 | 4): string => {
   ];
   const chartContractDecls = [
     ...allBoxIds.map((id) => `chart ${id} box { coverage = opaque; }`),
-    ...(lv4 ? ['chart fin flat { coverage = opaque; }'] : []),
+    ...(lv4 ? ['chart fin flat { coverage = binary; }'] : []),
   ].join('\n    ');
   const boxChartRule = (id: string): string => {
     if (!highCraft) {
@@ -171,23 +171,41 @@ const creatureSource = (level: 2 | 3 | 4): string => {
     if (id === 'head') {
       return `chart head box {
         fill = coat; grain = soft;
-        pattern gradient { from = belly; to = coat; axis = y; space = local; soft = 0.2ratio; }
+        pattern gradient { to = belly; axis = y; space = local; soft = 0.18ratio; }
         pattern border { paint = dark; width = 1px; edges = bottom; }
-        ${lv4 ? 'pattern ao { strength = 0.75ratio; radius = 2u; }' : ''}
-        face north { stamp eye_dot { at = (1px, 2px); protect = true; } stamp eye_dot { at = (5px, 2px); protect = true; } }
+        ${lv4 ? 'pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+        face north { stamp eye_dot { at = (2px, 4px); protect = true; } stamp eye_dot { at = (10px, 4px); protect = true; } }
       }`;
     }
     if (id === 'chest' || id === 'muzzle' || id === 'paw_f' || id === 'paw_b') {
       return `chart ${id} box {
-        fill = belly; ${lv4 ? 'grain = none; pattern ao { strength = 0.75ratio; radius = 2u; }' : ''}
-        pattern border { paint = coat; width = 1px; edges = all; }
+        fill = belly; ${lv4 ? 'grain = none; pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+        pattern border { paint = coat; width = 1px; edges = bottom; }
+      }`;
+    }
+    if (!lv4) {
+      return `chart ${id} box {
+        fill = coat; grain = soft;
+        pattern gradient { to = dark; axis = y; space = model; soft = 0.2ratio; }
+        ${id === 'torso' ? 'pattern ao { strength = 0.45ratio; radius = 0.8u; }' : ''}
+      }`;
+    }
+    if (id === 'torso' || id === 'tail_a' || id === 'tail_b') {
+      return `chart ${id} box {
+        fill = coat; grain = clustered;
+        pattern gradient { from = dark; to = coat; axis = y; space = model; soft = 0.15ratio; }
+        ${id === 'torso' ? 'pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+      }`;
+    }
+    if (id === 'u_leg_f' || id === 'u_leg_b') {
+      return `chart ${id} box {
+        fill = coat; grain = soft;
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
       }`;
     }
     return `chart ${id} box {
-      fill = coat; grain = clustered;
-      pattern gradient { from = belly; to = coat; axis = y; space = model; soft = 0.25ratio; }
-      ${lv4 || id === 'torso' ? 'pattern ao { strength = 0.85ratio; radius = 2u; }' : ''}
-      ${lv4 ? 'pattern stripe { paint = dark; axis = u; period = 4px; width = 1px; phase = 0; }' : ''}
+      fill = coat; grain = soft;
+      pattern border { paint = dark; width = 1px; edges = bottom; }
     }`;
   };
   return `ashfox-model 1
@@ -227,22 +245,23 @@ asset main {
   ${lv4 ? 'motion alert for R { duration = 1s; fps = 20; loop = loop; rest-relative = true; track head.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 0.5s = (-10deg, 12deg, 0deg) linear; key 1s = (0deg, 0deg, 0deg) linear; } }' : ''}
   surface contract Skin {
     ${chartContractDecls}
-    material = opaque;
+    material = ${lv4 ? 'double' : 'opaque'};
   }
   surface craft: Skin {
-    material = opaque;
+    material = ${lv4 ? 'double' : 'opaque'};
     texture atlas {
+      ${highCraft ? 'density = 2;' : ''}
       background = bg; background-alpha = 255;
       palette {
-        bg = #121010;
-        coat = (#4a2614, #8f4b26, #cf7942);
+        bg = #2c2420;
+        coat = (#5a2e18, #94512b, #cf7a44);
         belly = (#8b6b45, #caa676, #f5dbb2);
-        dark = (#20130d, #3b2318, #5c3726);
-        eye = #1b1b22;
+        dark = (#32221b, #4a3126, #694536);
+        eye = #242630;
       }
-      stamp eye_dot { pixels = "ee/ee"; e = eye; }
+      stamp eye_dot { pixels = "eee/eee/eee"; e = eye; }
       ${allBoxIds.map(boxChartRule).join('\n      ')}
-      ${lv4 ? 'chart fin flat { fill = coat; grain = soft; pattern gradient { from = belly; to = dark; axis = y; space = model; soft = 0.2ratio; } }' : ''}
+      ${lv4 ? 'chart fin flat { fill = coat; coverage = 00110111111111111111111011000000; grain = soft; pattern gradient { to = belly; axis = y; space = model; soft = 0.2ratio; } }' : ''}
       grain clustered { seed = 42; }
       tone ${highCraft ? 'painterly' : 'voxel'};
     }
@@ -258,14 +277,14 @@ asset main {
     geometry {
       bone body {
         cube torso_core { origin = (-4u, 5u, -5u); size = (8u, 7u, 11u); surface = skin.torso; }
-        cube chest { origin = (-3.5u, 4u, -6.5u); size = (7u, 6u, 5u); ${lv4 ? 'pivot = (0u, 7u, -4u); rotation = (12deg, 0deg, 0deg);' : ''} surface = skin.chest; }
-        cube ruff { origin = (-4.5u, 9u, -5.5u); size = (9u, 3u, 4u); ${lv4 ? 'pivot = (0u, 10u, -4u); rotation = (-10deg, 0deg, 0deg);' : ''} surface = skin.ruff; }
+        cube chest { origin = ${lv4 ? '(-3.5u, 4u, -8.5u); size = (7u, 6u, 4u)' : '(-3.5u, 4u, -6.5u); size = (7u, 6u, 5u)'}; ${lv4 ? 'pivot = (0u, 7u, -6.5u); rotation = (12deg, 0deg, 0deg);' : ''} surface = skin.chest; }
+        cube ruff { origin = ${lv4 ? '(-4.5u, 11.5u, -5.5u)' : '(-4.5u, 9u, -5.5u)'}; size = (9u, 3u, 4u); ${lv4 ? 'pivot = (0u, 12.5u, -4u); rotation = (-10deg, 0deg, 0deg);' : ''} surface = skin.ruff; }
         ${lv4 ? 'cube ridge_l { origin = (-2u, 11.5u, -2u); size = (2u, 2u, 6u); pivot = (-1u, 11.5u, 1u); rotation = (0deg, 0deg, -18deg); mirror-x = ridge_r; surface = skin.ridge; }' : ''}
         ${lv4 ? 'plane crest_l { origin = (-4u, 11u, -2u); size = (2u, 4u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); mirror-x = crest_r; surface = skin.fin; }' : ''}
         bone head {
           cube skull { origin = (-4u, 9u, -12u); size = (8u, 7u, 7u); ${highCraft ? 'pivot = (0u, 12u, -9u); rotation = (5deg, 0deg, 0deg);' : ''} surface = skin.head; }
           cube muzzle { origin = (-2.5u, 9.5u, -15u); size = (5u, 3u, 4u); surface = skin.muzzle; }
-          cube nose { origin = (-1u, 11.5u, -15.5u); size = (2u, 1u, 1u); surface = skin.nose; }
+          cube nose { origin = (-1u, 11.5u, ${lv4 ? '-16u); size = (2u, 2u, 2u)' : '-15.5u); size = (2u, 1u, 1u)'}; surface = skin.nose; }
           cube ear_l { origin = (-4u, 15u, -10u); size = (2u, 4u, 2u); ${highCraft ? 'pivot = (-3u, 15u, -9u); rotation = (0deg, 0deg, -16deg); mirror-x = ear_r;' : ''} surface = skin.ear; }
           ${!highCraft ? 'cube ear_r { origin = (2u, 15u, -10u); size = (2u, 4u, 2u); surface = skin.ear; }' : ''}
           bone jaw {
@@ -273,12 +292,12 @@ asset main {
           }
         }
         bone leg_fl {
-          cube upper_fl { origin = (-4u, 3u, -5u); size = (3u, 5u, 3u); ${highCraft ? 'mirror-x = upper_fr;' : ''} surface = skin.u_leg_f; }
+          cube upper_fl { origin = ${lv4 ? '(-4u, 2.5u, -5u); size = (3u, 3u, 3u)' : '(-4u, 3u, -5u); size = (3u, 5u, 3u)'}; ${highCraft ? 'mirror-x = upper_fr;' : ''} surface = skin.u_leg_f; }
           cube paw_fl { origin = (-4u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; }
           ${!highCraft ? 'cube upper_fr { origin = (1u, 3u, -5u); size = (3u, 5u, 3u); surface = skin.u_leg_f; } cube paw_fr { origin = (1u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; }' : ''}
         }
         ${highCraft ? 'bone leg_fr { cube paw_fr { origin = (1u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; } }' : ''}
-        ${lv4 ? 'bone leg_bl { cube upper_bl { origin = (-4u, 3u, 3u); size = (3u, 5u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : highCraft ? 'cube upper_bl { origin = (-4u, 3u, 3u); size = (3u, 5u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; }' : ''}
+        ${lv4 ? 'bone leg_bl { cube upper_bl { origin = (-4u, 2.5u, 3u); size = (3u, 3u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : highCraft ? 'cube upper_bl { origin = (-4u, 3u, 3u); size = (3u, 5u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; }' : ''}
         ${lv4 ? 'bone leg_br { cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : ''}
         ${highCraft ? `bone tail { cube tail_a { origin = (-2u, 6u, 5u); size = (4u, 4u, 6u); pivot = (0u, 8u, 5u); rotation = (18deg, 0deg, 0deg); surface = skin.tail_a; } cube tail_b { origin = (-1.5u, 7u, 10u); size = (3u, 3u, 5u); ${lv4 ? 'pivot = (0u, 8.5u, 10u); rotation = (24deg, 0deg, 0deg);' : ''} surface = skin.tail_b; } }` : ''}
       }
@@ -313,11 +332,12 @@ asset main {
   surface lantern: Skin {
     material = opaque;
     texture atlas {
+      density = 2;
       background = bg; background-alpha = 255;
-      palette { bg = #101010; iron = (#2b2e38, #4b5263, #7a859e); glow = (#a85410, #e69222, #ffdf70); }
-      chart base box { fill = iron; grain = clustered; pattern ao { strength = 0.8ratio; radius = 2u; } pattern border { paint = glow; width = 1px; edges = all; } }
-      chart metal box { fill = glow; grain = soft; pattern gradient { from = glow; to = iron; axis = y; space = model; soft = 0.2ratio; } }
-      chart cap box { fill = iron; grain = clustered; pattern ao { strength = 0.8ratio; radius = 2u; } pattern border { paint = glow; width = 1px; edges = all; } }
+      palette { bg = #2c2e36; iron = (#323745, #525b70, #7e8aa6); glow = (#a85410, #e69222, #ffdf70); }
+      chart base box { fill = iron; grain = clustered; pattern ao { strength = 0.4ratio; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = top; } }
+      chart metal box { fill = glow; grain = soft; pattern gradient { from = glow; to = iron; axis = y; space = model; soft = 0.15ratio; } }
+      chart cap box { fill = iron; grain = none; pattern ao { strength = 0.4ratio; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = bottom; } }
       tone painterly;
     }
   }

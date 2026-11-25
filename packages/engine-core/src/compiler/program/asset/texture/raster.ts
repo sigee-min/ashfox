@@ -16,6 +16,7 @@ export interface TextureRegion {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly density?: 1 | 2 | 4;
   readonly direction?: FaceDirection;
   readonly boxSize?: readonly [number, number, number];
   readonly pointAt: (x: number, y: number) => readonly [number, number, number];
@@ -117,17 +118,20 @@ export const boxSurfacePoint = (
   x: number,
   y: number,
 ): readonly [number, number, number] => {
+  const s = region.density ?? 1;
+  const px = (x + 0.5) / s;
+  const py = (y + 0.5) / s;
   if (region.boxSize === undefined || region.direction === undefined) {
-    return [x + 0.5, region.height - 0.5 - y, 0] as const;
+    return [px, region.height / s - py, 0] as const;
   }
   const [w, h, d] = region.boxSize;
   const dir: FaceDirection = region.direction;
-  if (dir === 'north') return [x + 0.5, h - 0.5 - y, 0] as const;
-  if (dir === 'south') return [w - 0.5 - x, h - 0.5 - y, d] as const;
-  if (dir === 'west') return [0, h - 0.5 - y, d - 0.5 - x] as const;
-  if (dir === 'east') return [w, h - 0.5 - y, x + 0.5] as const;
-  if (dir === 'up') return [x + 0.5, h, d - 0.5 - y] as const;
-  return [x + 0.5, 0, y + 0.5] as const;
+  if (dir === 'north') return [px, h - py, 0] as const;
+  if (dir === 'south') return [w - px, h - py, d] as const;
+  if (dir === 'west') return [0, h - py, d - px] as const;
+  if (dir === 'east') return [w, h - py, px] as const;
+  if (dir === 'up') return [px, h, d - py] as const;
+  return [px, 0, py] as const;
 };
 
 /** Apply accumulated Contact AO tone reductions onto unfixed ramp texels. */
@@ -198,15 +202,18 @@ const validBox = (size: readonly [number, number, number]): boolean =>
 /** Return the canonical net for a geometry-owned box chart. */
 export const boxRegions = (
   size: readonly [number, number, number],
+  density: 1 | 2 | 4 = 1,
 ): readonly TextureRegion[] | null => {
   if (!validBox(size)) return null;
-  const [width, height, depth] = size;
+  const width = size[0] * density;
+  const height = size[1] * density;
+  const depth = size[2] * density;
   const regions: Readonly<Record<FaceDirection, TextureRegion>> = {
     west: {
       x: 0,
       y: depth,
       width: depth,
-      height: height,
+      height,
       direction: 'west',
       pointAt: (x, y) => [0, y, depth - 1 - x],
     },
@@ -246,7 +253,7 @@ export const boxRegions = (
   };
   return Object.freeze(
     ['north', 'south', 'east', 'west', 'up', 'down'].map((id) =>
-      Object.freeze({ ...regions[id as FaceDirection]!, boxSize: size }),
+      Object.freeze({ ...regions[id as FaceDirection]!, density, boxSize: size }),
     ),
   );
 };
