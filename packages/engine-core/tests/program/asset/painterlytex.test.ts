@@ -205,8 +205,8 @@ if (unprotected.ok && unprotected.products[0]?.kind === 'model') {
   const node = unprotected.products[0].model.scene.nodes['body/root/styled_cube']!;
   if (node.kind === 'cube') {
     const eastUv = node.faces.east.uv!;
-    // Top row at (0,0) gets painterly bevel light tone (#e04040) instead of flat midtone (#a02020).
-    assert.equal(pixelAt(rgba, tex.width, eastUv[0], eastUv[1]), '#e04040');
+    // Top row at (0,0) gets painterly upper step tone (#c03030) instead of flat midtone (#a02020).
+    assert.equal(pixelAt(rgba, tex.width, eastUv[0], eastUv[1]), '#c03030');
   }
 }
 
@@ -292,5 +292,75 @@ if (planeRes.ok && planeRes.products[0]?.kind === 'model') {
       pixelAt(rgba, tex.width, uv[0], uv[1]),
       pixelAt(rgba, tex.width, uv[2] - 1, uv[1]),
     );
+  }
+}
+
+// Verify texture density and render-mode contracts & emissive compilation.
+const withHeader = (header: string): string =>
+  planeBasisSource.replace('texture tex {', `texture tex {\n      ${header}`);
+
+const badDensity = compileSingle(withHeader('density = 3;'));
+assert.equal(badDensity.ok, false);
+assert.ok(
+  badDensity.diagnostics.some(
+    (d) =>
+      d.code === 'asset.texture.invalid-density' ||
+      d.message.includes('asset.texture.invalid-density'),
+  ),
+);
+
+const badRenderMode = compileSingle(withHeader('render-mode = neon;'));
+assert.equal(badRenderMode.ok, false);
+assert.ok(
+  badRenderMode.diagnostics.some(
+    (d) =>
+      d.code === 'asset.texture.invalid-render-mode' ||
+      d.message.includes('asset.texture.invalid-render-mode'),
+  ),
+);
+
+const emissiveTex = compileSingle(withHeader('density = 2; render-mode = emissive;'));
+assert.equal(emissiveTex.ok, true, emissiveTex.ok ? '' : JSON.stringify(emissiveTex.diagnostics));
+if (emissiveTex.ok && emissiveTex.products[0]?.kind === 'model') {
+  const tex = Object.values(emissiveTex.products[0].model.textures)[0]!;
+  assert.equal(tex.renderMode, 'emissive');
+}
+
+// Verify mirror = true bakes mirrored face UVs when density > 1 disables boxUv.
+const unmirroredDense = compileSingle(withHeader('density = 2;'));
+const mirroredDense = compileSingle(
+  withHeader('density = 2;').replace(
+    'cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); surface = skin.blk; }',
+    'cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); mirror = true; surface = skin.blk; }',
+  ),
+);
+assert.equal(unmirroredDense.ok, true);
+assert.equal(mirroredDense.ok, true);
+if (
+  unmirroredDense.ok &&
+  mirroredDense.ok &&
+  unmirroredDense.products[0]?.kind === 'model' &&
+  mirroredDense.products[0]?.kind === 'model'
+) {
+  const rawNode = unmirroredDense.products[0].model.scene.nodes['body/root/blk']!;
+  const mirNode = mirroredDense.products[0].model.scene.nodes['body/root/blk']!;
+  assert.equal(rawNode.kind, 'cube');
+  assert.equal(mirNode.kind, 'cube');
+  if (rawNode.kind === 'cube' && mirNode.kind === 'cube') {
+    assert.equal(mirNode.boxUv, false);
+    assert.equal(mirNode.mirror, false);
+    assert.ok(mirNode.faces.north.uv![0] > mirNode.faces.north.uv![2]);
+    assert.deepEqual(mirNode.faces.east.uv, [
+      rawNode.faces.west.uv![2],
+      rawNode.faces.west.uv![1],
+      rawNode.faces.west.uv![0],
+      rawNode.faces.west.uv![3],
+    ]);
+    assert.deepEqual(mirNode.faces.west.uv, [
+      rawNode.faces.east.uv![2],
+      rawNode.faces.east.uv![1],
+      rawNode.faces.east.uv![0],
+      rawNode.faces.east.uv![3],
+    ]);
   }
 }

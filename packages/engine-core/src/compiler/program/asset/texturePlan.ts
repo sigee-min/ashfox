@@ -145,7 +145,7 @@ const buildTextureAsset = (
     visible: true,
     sampling: 'nearest',
     colorSpace: 'srgb',
-    renderMode: 'default',
+    renderMode: prepared.renderMode,
     renderSides: surface.material === 'double' ? 'double' : 'auto',
     atlasMode: 'preserve',
     raster: rasterSpec,

@@ -229,7 +229,7 @@ export const evaluateHardGates = (
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
 ): readonly AuditGateResult[] => {
-  const cleanNoise = raster.isolatedNoiseRate <= 0.25;
+  const cleanNoise = raster.isolatedNoiseRate <= 0.2 && raster.checkerRate <= 0.18;
   return [
     ...spatialGates(scene),
     {
@@ -246,10 +246,10 @@ export const evaluateHardGates = (
       id: 'anti_noise_coherence',
       passed: cleanNoise,
       message: cleanNoise
-        ? `Isolated 1px noise rate ${(raster.isolatedNoiseRate * 100).toFixed(1)}% within limit (<= 25%).`
-        : `Excessive 1px isolated noise (${(raster.isolatedNoiseRate * 100).toFixed(1)}% > 25% limit).`,
+        ? `Noise ${(raster.isolatedNoiseRate * 100).toFixed(1)}% / checker ${(raster.checkerRate * 100).toFixed(1)}% within limits (<= 20% / 18%).`
+        : `Excessive 1px noise or checkerboard (${(raster.isolatedNoiseRate * 100).toFixed(1)}% / ${(raster.checkerRate * 100).toFixed(1)}%).`,
       targets: cleanNoise ? [] : raster.noisyTextureIds,
-      fix: 'Replace high-frequency confetti stamps with cohesive gradients, clusters, and clean patches.',
+      fix: 'Replace confetti noise and 1px checker dithering with cohesive organic gradients and clustered textures.',
     },
     structuralGate(profile, scene),
   ];

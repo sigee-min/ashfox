@@ -15,14 +15,17 @@ const computeFocusRatio = (
   profile: AssetQualityProfile,
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
-  lumRange: number,
-  noiseRate: number,
+  raster: AuditRasterStats,
 ): number => {
-  const coherence = 1 - ramp(noiseRate, 0.06, 0.25);
+  const noiseCoherence = 1 - ramp(raster.isolatedNoiseRate, 0.04, 0.2);
+  const clutterCoherence = 1 - 0.8 * ramp(raster.highFreqClutterRate, 0.08, 0.3);
+  const checkerCoherence = 1 - 0.8 * ramp(raster.checkerRate, 0.03, 0.16);
+  const coherence = noiseCoherence * clutterCoherence * checkerCoherence;
+  const ppuFactor = profile === 'block' ? 1 : 0.55 + 0.45 * ramp(raster.meanPpu, 1.0, 2.0);
   const nonFlatGate = telemetryAvailable
     ? ramp(telemetry.globalDeltaRatio, 0.01, 0.06)
-    : ramp(lumRange, 0.03, 0.09);
-  if (!telemetryAvailable) return coherence * nonFlatGate;
+    : ramp(raster.lumRange, 0.03, 0.09);
+  if (!telemetryAvailable) return coherence * nonFlatGate * ppuFactor;
   const symScore = ramp(telemetry.avgForwardSymmetry, 0.55, 0.95);
   const protectBonus = telemetry.hasProtectedFocalTexels
     ? profile === 'creature'
@@ -30,7 +33,7 @@ const computeFocusRatio = (
       : 0.15
     : 0;
   const focusScore = Math.min(1, symScore * 0.85 + protectBonus);
-  return nonFlatGate * (0.55 * coherence + 0.45 * focusScore);
+  return nonFlatGate * (0.65 * coherence + 0.35 * focusScore) * ppuFactor;
 };
 
 const makeDeduction = (
@@ -67,24 +70,28 @@ const computeTextureRatios = (
   telemetry: TelemetrySummary,
   telemetryAvailable: boolean,
   raster: AuditRasterStats,
-) => ({
-  pre: telemetryAvailable
-    ? 0.55 * ramp(telemetry.globalDeltaRatio, 0.05, 0.45) +
+) => {
+  const preRise = telemetryAvailable
+    ? 0.55 * ramp(telemetry.globalDeltaRatio, 0.05, 0.3) +
       0.45 * ramp(telemetry.craftedChartRatio, 0.15, 0.85)
-    : 0,
-  role: telemetryAvailable ? ramp(telemetry.weightedDistinctRoles, 1.1, 3.0) : 0,
-  ao: telemetryAvailable
-    ? 0.6 * ramp(telemetry.aoTexelRatio, 0.0, 0.1) + 0.4 * ramp(telemetry.aoChartRatio, 0.0, 0.5)
-    : 0,
-  value: 0.55 * ramp(raster.lumRange, 0.08, 0.34) + 0.45 * ramp(raster.upDownContrast, 0.0, 0.12),
-  focus: computeFocusRatio(
-    profile,
-    telemetry,
-    telemetryAvailable,
-    raster.lumRange,
-    raster.isolatedNoiseRate,
-  ),
-});
+    : 0;
+  const preRestGuard = 1 - 0.85 * ramp(telemetry.globalDeltaRatio, 0.38, 0.82);
+  const roleBase = telemetryAvailable ? ramp(telemetry.weightedDistinctRoles, 1.1, 2.8) : 0;
+  const valueBase =
+    0.5 * ramp(raster.lumRange, 0.08, 0.34) +
+    0.3 * ramp(raster.upDownContrast, 0.0, 0.12) +
+    0.2 * ramp(raster.lumP90, 0.25, 0.58);
+  const crushGuard = 1 - 0.9 * ramp(raster.darkCrushRate, 0.03, 0.2);
+  return {
+    pre: preRise * preRestGuard,
+    role: 0.6 * roleBase + 0.4 * raster.paletteHarmonyScore,
+    ao: telemetryAvailable
+      ? 0.6 * ramp(telemetry.aoTexelRatio, 0.0, 0.1) + 0.4 * ramp(telemetry.aoChartRatio, 0.0, 0.5)
+      : 0,
+    value: valueBase * crushGuard,
+    focus: computeFocusRatio(profile, telemetry, telemetryAvailable, raster),
+  };
+};
 
 const computeTextureMetrics = (
   profile: AssetQualityProfile,
@@ -138,7 +145,7 @@ const computeTextureMetrics = (
       w.coherenceAndFocus,
       round4(1 - raster.isolatedNoiseRate),
       0.94,
-      `isolatedNoise=${round2(raster.isolatedNoiseRate)}, forwardSym=${round2(telemetry.avgForwardSymmetry)}, protected=${telemetry.hasProtectedFocalTexels}.`,
+      `noise=${round2(raster.isolatedNoiseRate)}, clutter=${round2(raster.highFreqClutterRate)}, checker=${round2(raster.checkerRate)}, sym=${round2(telemetry.avgForwardSymmetry)}.`,
     ),
   ];
 };

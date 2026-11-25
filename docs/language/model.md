@@ -371,9 +371,9 @@ asset sample {
       background = bg;
       background-alpha = 255;
       palette {
-        bg = #21100c;
-        shade = (#140908, #21100c, #3b1c15);
-        stone = (#2a2a30, #4c4c57, #7a7a8a);
+        bg = #2e201b;
+        shade = (#301f19, #4d3228, #70493a);
+        stone = (#35353d, #565663, #828291);
         body = (#7d2417, #c94f2a, #ef8141);
         gold = (#7a5214, #c98f28, #ffcf5c);
         eye = (#b89e78, #fff2d6, #ffffff);
@@ -381,20 +381,19 @@ asset sample {
       stamp crest { pixels = ".gg./gggg/.gg."; g = gold; }
       chart base box {
         origin = (0px, 0px); fill = stone; grain = clustered;
-        pattern gradient { from = shade; to = stone; axis = y; space = model; soft = 0.25ratio; }
-        pattern ao { strength = 0.85ratio; radius = 2u; }
+        pattern border { paint = shade; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.4ratio; radius = 0.7u; }
       }
       chart body box {
         origin = (16px, 0px); fill = body; grain = soft;
-        pattern gradient { from = shade; to = body; axis = y; space = model; soft = 0.2ratio; }
-        pattern border { paint = gold; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern gradient { from = shade; to = body; axis = y; space = model; soft = 0.15ratio; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
         face north { stamp crest { at = (0px, 0px); protect = true; } }
       }
       chart cap box {
         origin = (0px, 16px); fill = gold; grain = none;
         pattern border { paint = eye; width = 1px; edges = top; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
       }
       grain clustered { seed = 23; }
       tone painterly;

@@ -13,11 +13,11 @@
   "packageName": "creatures",
   "entryName": "goblin",
   "entryPath": "creatures/goblin.ashfox",
-  "workspaceHash": "sha256:e29c0fef5b02c91bdd4c4e7b28453391bb2d02927d8c7f7ab46cf8b9b96a1b7c",
-  "closureHash": "sha256:0983e691b0cb51c96cb7a34e31484c6cfe3887aa6ee20522bb8a0e15e72ec855",
-  "buildKey": "sha256:a2d6b1a72d6c3e63c28553151f029c0e981b4984b1fc337afc1dadf3123d08f1",
+  "workspaceHash": "sha256:37ac6e7023ea9ff92bb849bf570563495d1a7b7b0a61463bc11c2ff58a7c36ac",
+  "closureHash": "sha256:9fa2ba5334056da2d9400d8612a705e487eb5da86c37e29db96f8e06b687c1d8",
+  "buildKey": "sha256:2cf628e1b1e8c89311ce7e00bc6406332428f2d450703e3808ccfe42e2998952",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:d8f699dfd678d36c7290245e9d0c8cd34c0f10ffb222643085266dcade6aa7af",
+  "productHash": "sha256:7c9d7156149914d627d34188f6f5ed5cc66a44f2dcc7ce88e99054659cc7d898",
   "textures": [
     {
       "id": "raider_a4c69c16930e",
@@ -25,9 +25,9 @@
       "coverageIds": [
         "raider_a4c69c16930e\u0000loincloth"
       ],
-      "embeddedSha256": "sha256:7ba0b30950243890df5aaa6d91c3e1fb2abdc0e33a031b7f30b9749fcbce44c6",
-      "pngSha256": "sha256:7ba0b30950243890df5aaa6d91c3e1fb2abdc0e33a031b7f30b9749fcbce44c6",
-      "byteLength": 32900
+      "embeddedSha256": "sha256:74b587f22bfd6708df0acbae5d81edd0780826daead774ac33b71ced1baa2501",
+      "pngSha256": "sha256:74b587f22bfd6708df0acbae5d81edd0780826daead774ac33b71ced1baa2501",
+      "byteLength": 131278
     }
   ],
   "files": [
@@ -36,8 +36,8 @@
       "role": "model",
       "path": "goblin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:42d3a688734969aeb5aefcfe91ed2ddc2f57c502e806a9bb5489e98b1ece58cc",
-      "byteLength": 232988
+      "sha256": "sha256:4fc68bc3490b1e02496a46a58aad494cf8d215113f82dc344d386bd88171d8af",
+      "byteLength": 321704
     }
   ]
 }

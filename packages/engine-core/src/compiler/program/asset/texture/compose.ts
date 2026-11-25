@@ -417,6 +417,7 @@ export const composeTextureCharts = (
       origin: chart.origin,
       width: chart.abiWidth,
       height: chart.abiHeight,
+      density: prepared.density,
       coverage: chart.coverage,
       span: chart.chart.span,
     });

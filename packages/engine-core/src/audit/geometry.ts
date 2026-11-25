@@ -38,6 +38,7 @@ export interface AuditObb {
   readonly volume: number;
   readonly angled: boolean;
   readonly isPlane: boolean;
+  readonly solidPlane: boolean;
   readonly opaque: boolean;
 }
 
@@ -151,13 +152,37 @@ const planeLocalPoint = (node: PlaneNode, u: number, v: number, n: number): Vec3
 
 const hasAngledRotation = (rot: Vec3): boolean => rot.some((deg) => Math.abs(deg) >= 2.5);
 
-const isOpaqueTexture = (tex: TextureAsset | undefined): boolean =>
-  tex !== undefined &&
-  tex.renderMode === 'default' &&
-  tex.raster !== undefined &&
-  tex.raster.backgroundAlpha === 255 &&
-  tex.raster.canvasDetails.every((d) => d.alpha === 255) &&
-  (tex.raster.alphaMasks === undefined || tex.raster.alphaMasks.length === 0);
+const faceMaskCoversUv = (
+  face: CubeFace,
+  masks: readonly {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+    readonly bits: string;
+  }[],
+): boolean => {
+  const uv = face.uv;
+  if (!uv) return false;
+  const x0 = Math.min(uv[0], uv[2]);
+  const x1 = Math.max(uv[0], uv[2]);
+  const y0 = Math.min(uv[1], uv[3]);
+  const y1 = Math.max(uv[1], uv[3]);
+  return masks.some(
+    (m) =>
+      m.bits.includes('0') && m.x < x1 && m.x + m.width > x0 && m.y < y1 && m.y + m.height > y0,
+  );
+};
+
+const isOpaqueFace = (face: CubeFace, tex: TextureAsset | undefined): boolean => {
+  if (!face.enabled || face.textureId === null || tex === undefined || tex.raster === undefined) {
+    return false;
+  }
+  if (tex.renderMode !== 'default' || tex.raster.backgroundAlpha !== 255) return false;
+  if (!tex.raster.canvasDetails.every((d) => d.alpha === 255)) return false;
+  const masks = tex.raster.alphaMasks ?? [];
+  return !faceMaskCoversUv(face, masks);
+};
 
 const buildObbFromBasisPoints = (
   nodeId: string,
@@ -168,6 +193,7 @@ const buildObbFromBasisPoints = (
   p001: Vec3,
   angled: boolean,
   isPlane: boolean,
+  solidPlane: boolean,
   opaque: boolean,
 ): AuditObb => {
   const vx = sub(p100, p000);
@@ -212,6 +238,7 @@ const buildObbFromBasisPoints = (
     volume: Math.max(0, half[0] * half[1] * half[2] * 8),
     angled,
     isPlane,
+    solidPlane,
     opaque,
   };
 };
@@ -230,7 +257,7 @@ const cubeObb = (
     chain.some((entry) => hasAngledRotation(entry.transform.rotation));
   const opaque = CUBE_FACE_DIRECTIONS.every((dir) => {
     const face = node.faces[dir];
-    return face.enabled && face.textureId !== null && isOpaqueTexture(textures[face.textureId]);
+    return face.textureId !== null && isOpaqueFace(face, textures[face.textureId]);
   });
   return buildObbFromBasisPoints(
     node.id,
@@ -241,11 +268,29 @@ const cubeObb = (
     mapPt([f[0], f[1], t[2]]),
     angled,
     false,
+    false,
     opaque,
   );
 };
 
-const planeObb = (node: PlaneNode, chain: readonly SceneNode[]): AuditObb => {
+const isCutoutPlane = (
+  node: PlaneNode,
+  textures: Readonly<Record<string, TextureAsset>>,
+): boolean => {
+  const face = node.faces.front;
+  if (face.textureId === null || face.uv === undefined) return false;
+  const masks = textures[face.textureId]?.raster?.alphaMasks;
+  if (!masks || masks.length === 0) return false;
+  const ux = Math.min(face.uv[0], face.uv[2]);
+  const uy = Math.min(face.uv[1], face.uv[3]);
+  return masks.some((m) => m.x === ux && m.y === uy && m.bits.includes('0'));
+};
+
+const planeObb = (
+  node: PlaneNode,
+  chain: readonly SceneNode[],
+  textures: Readonly<Record<string, TextureAsset>>,
+): AuditObb => {
   const mapPt = (u: number, v: number, n: number): Vec3 =>
     toModelSpace(planeLocalPoint(node, u, v, n), chain);
   return buildObbFromBasisPoints(
@@ -257,6 +302,7 @@ const planeObb = (node: PlaneNode, chain: readonly SceneNode[]): AuditObb => {
     mapPt(0, 0, 0.05),
     true,
     true,
+    !isCutoutPlane(node, textures),
     false,
   );
 };
@@ -351,7 +397,8 @@ const collectGeometryPairs = (
   for (const node of nodes) {
     if (!visible.has(node.id) || (node.kind !== 'cube' && node.kind !== 'plane')) continue;
     const chain = boneChain(sceneNodes, node);
-    const obb = node.kind === 'cube' ? cubeObb(node, chain, textures) : planeObb(node, chain);
+    const obb =
+      node.kind === 'cube' ? cubeObb(node, chain, textures) : planeObb(node, chain, textures);
     obbs.push(obb);
     pairs.push({ node, obb });
     for (let k = 0; k < 3; k += 1) {

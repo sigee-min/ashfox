@@ -138,11 +138,12 @@ const buildPlaneFaces = (
   readonly textureId: string;
   readonly faces: PlaneFaces;
 } => {
+  const d = surface.chart.density;
   const uv: UvRect = freeze([
     surface.chart.origin[0],
     surface.chart.origin[1],
-    surface.chart.origin[0] + sizeNumbers[0],
-    surface.chart.origin[1] + sizeNumbers[1],
+    surface.chart.origin[0] + sizeNumbers[0] * d,
+    surface.chart.origin[1] + sizeNumbers[1] * d,
   ]);
   const textureId = surface.plan.texture.id;
   const sidedness = surface.material === 'double' ? 'double' : 'front';
@@ -203,7 +204,8 @@ export const lowerPlane = (
   const canonical = readPlaneCanonical(node, inputs, surfaces, plans, context);
   if (canonical === null) return null;
   const { sizeNumbers, transform, surface } = canonical;
-  if (surface.chart.width !== sizeNumbers[0] || surface.chart.height !== sizeNumbers[1]) {
+  const d = surface.chart.density;
+  if (surface.chart.width !== sizeNumbers[0] * d || surface.chart.height !== sizeNumbers[1] * d) {
     report(
       context,
       node.sourcePath,

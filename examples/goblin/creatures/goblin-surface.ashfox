@@ -4,7 +4,6 @@ module goblin_surface {
     chart torso box { coverage = opaque; }
     chart pelvis box { coverage = opaque; }
     chart head box { coverage = opaque; }
-    chart brow box { coverage = opaque; }
     chart snout box { coverage = opaque; }
     chart ear box { coverage = opaque; }
     chart ear_tip box { coverage = opaque; }
@@ -15,9 +14,8 @@ module goblin_surface {
     chart cuff box { coverage = opaque; }
     chart boot box { coverage = opaque; }
     chart belt box { coverage = opaque; }
-    chart strap box { coverage = opaque; }
     chart buckle box { coverage = opaque; }
-    chart loincloth flat { coverage = opaque; }
+    chart loincloth flat { coverage = binary; }
     chart pauldron box { coverage = opaque; }
     chart blade box { coverage = opaque; }
     chart blade_tip box { coverage = opaque; }
@@ -28,39 +26,44 @@ module goblin_surface {
     chart boss box { coverage = opaque; }
     chart tusk box { coverage = opaque; }
     chart mohawk box { coverage = opaque; }
-    material = opaque;
+    material = double;
   }
 
   export surface raider: RaiderSkin {
-    material = opaque;
+    material = double;
     texture atlas {
+      density = 2;
       background = void; background-alpha = 255;
       palette {
-        void = #090b09;
-        skin = (#263416, #57782e, #95b54e);
-        skin_dark = (#17210e, #364b1d, #628233);
-        leather = (#28140d, #61351e, #a16534);
-        leather_dark = (#150b08, #382116, #6a432b);
-        iron = (#343a3c, #7c878a, #cbd2d0);
-        iron_dark = (#1d2224, #4c575a, #849092);
-        cloth = (#2a0c0e, #852831, #cf565b);
-        brass = (#614217, #b5822a, #f2c35a);
-        eye = #f0d258;
-        pupil = #080908;
-        tooth = (#8b7b59, #d0bd8d, #f5ead0);
+        void = #2a3324;
+        skin = (#3c5c22, #6f9c3b, #a7cf5e);
+        skin_dark = (#2c441a, #50752b, #7ea644);
+        leather = (#4c2c1b, #7e4b2c, #b57644);
+        leather_dark = (#362017, #593525, #84533c);
+        iron = (#4e5861, #8b98a6, #cdd7e0);
+        iron_dark = (#343b42, #5c6670, #8a95a1);
+        cloth = (#521f24, #9c3842, #d9646b);
+        brass = (#7a551c, #c99232, #f5cb64);
+        eye = #ffd94a;
+        glint = #fff9e6;
+        pupil = #211a14;
+        tooth = (#9c8b68, #d9c79b, #f8edd4);
       }
-      stamp face {
-        pixels = "......../dd....dd/.yk..ky./......../..d..d../...dd...";
+      stamp goblin_face {
+        pixels = "..dddd....dddd../...dddd..dddd.../..kgyk....kygk../..kkdk....kdkk../................/....dd....dd....";
         d = skin_dark;
         y = eye;
+        g = glint;
         k = pupil;
       }
-      stamp armor_mark {
-        pixels = "....ii..../...iiii.../..iiddi.../.iidddii../...iiii.../....ii....";
+      stamp armor_strap {
+        pixels = "llbb................/..llll............../....llbb............/......llii........../........iidii......./..........iiiii...../............bbll..../..............llll../................bbll";
+        l = leather_dark;
+        b = brass;
         i = iron;
         d = iron_dark;
       }
-      stamp shield_mark {
+      stamp shield_crest {
         pixels = "..iiii../.i....i./i..bb..i/i.bbbb.i/i..bb..i/.i....i./..iiii..";
         i = iron;
         b = brass;
@@ -68,43 +71,32 @@ module goblin_surface {
 
       chart torso box {
         fill = leather;
-        grain = clustered;
-        pattern gradient { from = leather_dark; to = leather; axis = y; space = model; soft = 0.25ratio; }
-        pattern ao { strength = 0.85ratio; radius = 2u; }
-        pattern border { paint = leather_dark; width = 1px; edges = bottom; }
-        face north { stamp armor_mark { at = (0px, 1px); protect = true; } }
+        grain = soft;
+        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2ratio; }
+        pattern ao { strength = 0.45ratio; radius = 0.9u; }
+        face north { stamp armor_strap { at = (0px, 2px); protect = true; } }
       }
       chart head box {
         fill = skin;
         grain = soft;
-        pattern gradient { from = skin_dark; to = skin; axis = y; space = local; soft = 0.2ratio; }
-        pattern border { paint = skin_dark; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
-        face north { stamp face { at = (0px, 1px); protect = true; } }
-      }
-      chart brow box {
-        fill = skin_dark;
-        grain = soft;
-        pattern border { paint = skin; width = 1px; edges = top; }
+        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2ratio; }
+        pattern ao { strength = 0.4ratio; radius = 0.9u; }
+        face north { stamp goblin_face { at = (0px, 3px); protect = true; } }
       }
       chart blade box {
         fill = iron;
         grain = none;
-        pattern gradient { from = iron_dark; to = iron; axis = y; space = local; soft = 0.2ratio; }
-        pattern border { paint = iron; width = 1px; edges = sides; }
       }
       chart blade_tip box {
         fill = iron;
         grain = none;
-        pattern border { paint = iron_dark; width = 1px; edges = bottom; }
       }
       chart shield box {
         fill = leather_dark;
         grain = clustered;
-        pattern gradient { from = leather_dark; to = leather; axis = y; space = local; soft = 0.2ratio; }
         pattern border { paint = iron; width = 1px; edges = all; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
-        face north { stamp shield_mark { at = (0px, 1px); protect = true; } }
+        pattern ao { strength = 0.4ratio; radius = 0.9u; }
+        face west { stamp shield_crest { at = (4px, 6px); protect = true; } }
       }
       chart boss box {
         fill = iron;
@@ -113,118 +105,87 @@ module goblin_surface {
       }
       chart pelvis box {
         fill = cloth;
-        grain = clustered;
-        pattern gradient { from = leather_dark; to = cloth; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        grain = soft;
       }
       chart belt box {
         fill = leather_dark;
         grain = clustered;
-        pattern border { paint = leather; width = 1px; edges = top; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
-      }
-      chart strap box {
-        fill = leather;
-        grain = clustered;
-        pattern border { paint = brass; width = 1px; edges = sides; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
       }
       chart buckle box {
         fill = brass;
         grain = none;
-        pattern border { paint = iron_dark; width = 1px; edges = all; }
       }
       chart loincloth flat {
+        coverage = 111111111111111111111111111111111111111111111111111111111111111111111111011111111110011111111110001111111100001100110011;
         fill = cloth;
         grain = soft;
-        pattern gradient { from = leather_dark; to = cloth; axis = y; space = local; soft = 0.25ratio; }
-        pattern border { paint = brass; width = 1px; edges = bottom; }
+        pattern border { paint = brass; width = 1px; edges = top; }
       }
       chart boot box {
         fill = leather_dark;
         grain = clustered;
-        pattern gradient { from = leather_dark; to = leather; axis = y; space = local; soft = 0.2ratio; }
-        pattern border { paint = iron_dark; width = 1px; edges = top; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
       }
       chart cuff box {
         fill = leather;
-        grain = clustered;
-        pattern border { paint = leather_dark; width = 1px; edges = bottom; }
+        grain = soft;
       }
       chart leg box {
         fill = cloth;
         grain = soft;
-        pattern gradient { from = leather_dark; to = cloth; axis = y; space = model; soft = 0.25ratio; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2ratio; }
       }
       chart pauldron box {
         fill = iron_dark;
         grain = none;
-        pattern gradient { from = iron_dark; to = iron; axis = y; space = local; soft = 0.2ratio; }
-        pattern border { paint = brass; width = 1px; edges = all; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern border { paint = brass; width = 1px; edges = bottom; }
       }
       chart bracer box {
         fill = iron_dark;
         grain = none;
-        pattern border { paint = iron; width = 1px; edges = top; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
       }
       chart snout box {
-        fill = skin_dark;
+        fill = skin;
         grain = soft;
-        pattern gradient { from = skin_dark; to = skin; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.75ratio; radius = 2u; }
       }
       chart ear box {
         fill = skin;
         grain = soft;
-        pattern gradient { from = skin_dark; to = skin; axis = y; space = local; soft = 0.2ratio; }
       }
       chart ear_tip box {
         fill = skin_dark;
         grain = soft;
-        pattern border { paint = skin; width = 1px; edges = bottom; }
       }
       chart arm box {
         fill = skin;
         grain = soft;
-        pattern gradient { from = skin_dark; to = skin; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.8ratio; radius = 2u; }
+        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2ratio; }
       }
       chart hand box {
         fill = skin_dark;
         grain = soft;
-        pattern border { paint = skin; width = 1px; edges = top; }
       }
       chart crossguard box {
-        fill = iron_dark;
+        fill = brass;
         grain = none;
-        pattern border { paint = brass; width = 1px; edges = all; }
       }
       chart grip box {
-        fill = leather;
-        grain = clustered;
-        pattern stripe { paint = leather_dark; axis = v; period = 2px; width = 1px; phase = 0; }
+        fill = leather_dark;
+        grain = soft;
       }
       chart pommel box {
         fill = iron_dark;
         grain = none;
-        pattern border { paint = brass; width = 1px; edges = all; }
       }
       chart tusk box {
         fill = tooth;
         grain = none;
-        pattern border { paint = leather_dark; width = 1px; edges = bottom; }
       }
       chart mohawk box {
         fill = cloth;
         grain = clustered;
-        pattern gradient { from = leather_dark; to = cloth; axis = y; space = local; soft = 0.25ratio; }
-        pattern stripe { paint = brass; axis = u; period = 3px; width = 1px; phase = 0; }
+        pattern gradient { to = brass; axis = y; space = local; soft = 0.3ratio; }
       }
-      grain clustered { seed = 44021; }
+      grain soft { seed = 44021; }
       tone painterly;
     }
   }

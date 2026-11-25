@@ -92,9 +92,9 @@ export const createViewportEnvironment = (id: ViewportEnvironmentId): ViewportEn
 };
 
 export const addViewportLighting = (scene: THREE.Scene): void => {
-  scene.add(new THREE.HemisphereLight('#dfe9ff', '#22242a', 1.45));
+  scene.add(new THREE.HemisphereLight('#edf3ff', '#6c7686', 1.65));
 
-  const keyLight = new THREE.DirectionalLight('#fff3df', 2.7);
+  const keyLight = new THREE.DirectionalLight('#fff5e6', 2.15);
   keyLight.position.set(14, 26, -18);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(1024, 1024);
@@ -106,7 +106,11 @@ export const addViewportLighting = (scene: THREE.Scene): void => {
   keyLight.shadow.camera.bottom = -10;
   scene.add(keyLight);
 
-  const rimLight = new THREE.DirectionalLight('#7fa8ff', 1.1);
-  rimLight.position.set(-18, 12, 16);
+  const fillLight = new THREE.DirectionalLight('#d8e6ff', 1.0);
+  fillLight.position.set(-16, 12, -12);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight('#bfd6ff', 0.95);
+  rimLight.position.set(-12, 16, 18);
   scene.add(rimLight);
 };

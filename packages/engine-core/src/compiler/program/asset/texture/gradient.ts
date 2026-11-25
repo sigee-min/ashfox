@@ -20,8 +20,6 @@ type PatternStatement = Extract<ProgramTextureChart['statements'][number], { kin
 type GradientAxis = 'u' | 'v' | 'x' | 'y' | 'z';
 type GradientSpace = 'local' | 'model';
 
-const BAYER_4X4: readonly number[] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-
 const AXES = new Set<GradientAxis>(['u', 'v', 'x', 'y', 'z']);
 
 const readNameOption = (
@@ -77,7 +75,10 @@ const computeLocalRatio = (
   if (axis === 'v') return region.height <= 1 ? 0.5 : y / (region.height - 1);
   const idx = axisIndex(axis);
   const point = boxSurfacePoint(region, x, y);
-  const span = region.boxSize ? region.boxSize[idx]! : idx === 1 ? region.height : region.width;
+  const d = region.density ?? 1;
+  const span = region.boxSize
+    ? region.boxSize[idx]!
+    : (idx === 1 ? region.height : region.width) / d;
   return span <= 0 ? 0.5 : Math.max(0, Math.min(1, point[idx]! / span));
 };
 
@@ -98,10 +99,8 @@ const computeModelRatio = (
   return Math.max(0, Math.min(1, (worldPoint[idx]! - min) / (max - min)));
 };
 
-const thresholdAt = (x: number, y: number, soft: number): number => {
-  const bayer = (BAYER_4X4[(y & 3) * 4 + (x & 3)]! + 0.5) / 16;
-  return 0.5 + (bayer - 0.5) * soft;
-};
+const thresholdAt = (x: number, y: number, soft: number): number =>
+  0.5 + Math.sin((x >> 1) * 1.7 + (y >> 1) * 2.3) * 0.5 * soft;
 
 interface GradientSpec {
   readonly fromId: number | null;
@@ -111,6 +110,28 @@ interface GradientSpec {
   readonly soft: number;
 }
 
+const paintGradientTexel = (
+  grid: PaintGrid,
+  chartId: string,
+  region: TextureRegion,
+  x: number,
+  y: number,
+  spec: GradientSpec,
+  band: number,
+  scene: TextureSceneContext | undefined,
+): void => {
+  const t =
+    spec.space === 'model' && spec.axis !== 'u' && spec.axis !== 'v'
+      ? computeModelRatio(chartId, region, spec.axis, x, y, scene)
+      : computeLocalRatio(region, spec.axis, x, y);
+  const thresh = thresholdAt(x, y, spec.soft);
+  if (t >= thresh) {
+    paint(grid, region.x + x, region.y + y, spec.toId, t - thresh < band ? 1 : 2);
+  } else if (spec.fromId !== null) {
+    paint(grid, region.x + x, region.y + y, spec.fromId, thresh - t < band ? 3 : 2);
+  }
+};
+
 const paintGradientRegion = (
   grid: PaintGrid,
   chartId: string,
@@ -118,15 +139,10 @@ const paintGradientRegion = (
   spec: GradientSpec,
   scene: TextureSceneContext | undefined,
 ): void => {
+  const band = Math.max(0.06, spec.soft * 0.35);
   for (let y = 0; y < region.height; y += 1) {
     for (let x = 0; x < region.width; x += 1) {
-      const t =
-        spec.space === 'model' && spec.axis !== 'u' && spec.axis !== 'v'
-          ? computeModelRatio(chartId, region, spec.axis, x, y, scene)
-          : computeLocalRatio(region, spec.axis, x, y);
-      const useTo = t >= thresholdAt(x, y, spec.soft);
-      const role = useTo ? spec.toId : spec.fromId;
-      if (role !== null) paint(grid, region.x + x, region.y + y, role, 2);
+      paintGradientTexel(grid, chartId, region, x, y, spec, band, scene);
     }
   }
 };

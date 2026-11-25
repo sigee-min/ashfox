@@ -54,6 +54,7 @@ export interface AssetTextureChartPlan {
   readonly origin: readonly [number, number];
   readonly width: number;
   readonly height: number;
+  readonly density: 1 | 2 | 4;
   readonly coverage: string | null;
   /** Source owner retained for canonical lowering diagnostics. */
   readonly span: SourceSpan;

@@ -37,10 +37,7 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
   `plane` silhouettes (`ears`, `tufts`, `fins`, `plumes`), use `mirror-x` for
   paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
   layout is required.
-- Author textures with `tone painterly`, deliberate `base` -> `gradient` ->
-  `border` / `stripe` -> `ao` shading layers and anatomical face/detail pixels,
-  `stamp ... protect = [eyes]`, and material-appropriate `grain` (`clustered` for
-  fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
+- Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (20–42% pre-grain delta with moderate `ao` and omitted-`from` `gradient`), warm darks (`luma >= 0.14`, no near-black crush), painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals, and material-appropriate `grain` (`clustered` for fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
 - Run `ashfox audit` alongside visual inspection: hit **0 failed Hard Gates**
   and `score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and
   `export`) block any model without `settings.profile` or failing the quality gate.

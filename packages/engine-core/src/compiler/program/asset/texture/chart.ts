@@ -37,12 +37,13 @@ interface DraftChart {
   readonly coverage: string | null;
 }
 
-const flatRegion = (width: number, height: number): TextureRegion =>
+const flatRegion = (width: number, height: number, density: 1 | 2 | 4): TextureRegion =>
   Object.freeze({
     x: 0,
     y: 0,
     width,
     height,
+    density,
     pointAt: (x: number, y: number) => [x, y, 0] as const,
   });
 
@@ -57,6 +58,7 @@ const usageMatches = (
 const resolvedDimensions = (
   chart: ProgramTextureChart,
   abi: TypedSurfaceContract['charts'][string],
+  density: 1 | 2 | 4,
   first: AssetTextureUsage,
   report: TextureReporter,
 ): readonly [number, number] | null => {
@@ -71,8 +73,11 @@ const resolvedDimensions = (
   }
   const inferred: readonly [number, number] =
     shape.kind === 'flat'
-      ? [shape.size[0], shape.size[1]]
-      : [2 * shape.size[0] + 2 * shape.size[2], shape.size[1] + shape.size[2]];
+      ? [shape.size[0] * density, shape.size[1] * density]
+      : [
+          (2 * shape.size[0] + 2 * shape.size[2]) * density,
+          (shape.size[1] + shape.size[2]) * density,
+        ];
   if (abi.width === null || abi.height === null) return inferred;
   const width = integerContract(abi.width, report, abi.span, 'Chart width');
   const height = integerContract(abi.height, report, abi.span, 'Chart height');
@@ -93,6 +98,7 @@ const resolvedDimensions = (
 const resolveRegions = (
   chart: ProgramTextureChart,
   abi: TypedSurfaceContract['charts'][string],
+  density: 1 | 2 | 4,
   usages: readonly AssetTextureUsage[],
   report: TextureReporter,
 ): Readonly<{
@@ -117,12 +123,12 @@ const resolveRegions = (
     );
     return null;
   }
-  const dims = resolvedDimensions(chart, abi, first, report);
+  const dims = resolvedDimensions(chart, abi, density, first, report);
   if (dims === null) return null;
   const [width, height] = dims;
   if (first.shape.kind === 'flat')
-    return { width, height, regions: Object.freeze([flatRegion(width, height)]) };
-  const regions = boxRegions(first.shape.size);
+    return { width, height, regions: Object.freeze([flatRegion(width, height, density)]) };
+  const regions = boxRegions(first.shape.size, density);
   if (regions === null || regions.some((r) => r.x + r.width > width || r.y + r.height > height)) {
     report.report(
       first.span,
@@ -243,6 +249,7 @@ const readChartOriginAndFill = (
 const prepareDraftChart = (
   chart: ProgramTextureChart,
   contractChart: TypedSurfaceContract['charts'][string],
+  density: 1 | 2 | 4,
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
@@ -256,7 +263,7 @@ const prepareDraftChart = (
     );
     return null;
   }
-  const resolved = resolveRegions(chart, contractChart, usages, report);
+  const resolved = resolveRegions(chart, contractChart, density, usages, report);
   const placement = readChartOriginAndFill(chart, context, palette, report);
   if (resolved === null || placement === null) return null;
   const coverage = chartCoverage(
@@ -415,6 +422,7 @@ export const prepareCharts = (
   payload: ProgramTextureDecl,
   contract: TypedSurfaceContract,
   explicitAtlas: readonly [number, number] | null,
+  density: 1 | 2 | 4,
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
@@ -440,6 +448,7 @@ export const prepareCharts = (
     const draft = prepareDraftChart(
       matches[0]!,
       abi,
+      density,
       usagesByChart.get(id) ?? [],
       context,
       palette,
