@@ -12,7 +12,7 @@ Minecraft 팩은 여러 전달 대상 중 하나입니다. 일반 복셀·로우
 
 표시한 필드는 모두 필수입니다. `source`는 export 이름, `id`는 런타임 ID, `path`는 패키지 안 상대 디렉터리입니다. 패키지 안 ID는 고유해야 합니다. 바이트가 같아도 파일·폴더 충돌과 중복 출력 경로는 실패합니다. 경로는 팩 밖으로 나가거나 예약 `assets.json`을 차지할 수 없습니다. 연결은 `glb`, `png`, `wav` export만 받으며 Minecraft 전용 파일 트리를 일반 모델로 해석하지 않습니다.
 
-`audio: wav`에는 외부 인코더가 필요 없습니다. `audio: ogg`는 Java 팩과 같은 제한된 FFmpeg Vorbis 어댑터로 사운드를 변환합니다. 사운드가 없으면 FFmpeg를 실행하지 않습니다. WAV 원본 export는 별도로 유지됩니다. 항상 폴더를 출력하며 `archive: true`는 그 파일만 포함하고 루트에 `assets.json`을 두는 안정적인 ZIP을 추가합니다.
+`audio: wav`에는 외부 인코더가 필요 없습니다. `audio: ogg`는 외부 도구 없이 내장 WebAssembly OGG Vorbis 인코더로 사운드를 변환합니다. 사운드가 없으면 오디오 인코딩을 실행하지 않습니다. WAV 원본 export는 별도로 유지됩니다. 항상 폴더를 출력하며 `archive: true`는 그 파일만 포함하고 루트에 `assets.json`을 두는 안정적인 ZIP을 추가합니다.
 
 ## GLB 이식성과 임포트 설정
 

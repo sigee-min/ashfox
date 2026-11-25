@@ -19,7 +19,7 @@ npm start
 ```
 
 Open the local URL printed by the server.
-Keep the terminal running. This example uses WAV and needs no FFmpeg. Chrome is
+Keep the terminal running. This example uses WAV. Chrome is
 not required for the asset build; use a browser with WebGL to view the game.
 Do not open `index.html` as a file URL: model and audio loading use HTTP paths.
 

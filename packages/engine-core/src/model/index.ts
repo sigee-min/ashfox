@@ -4,7 +4,6 @@ export {
   SURFACE_PIXEL_DENSITIES,
   type AssetId,
   type EntityId,
-  type JsonPrimitive,
   type JsonValue,
   type ProjectId,
   type ProjectForwardDirection,

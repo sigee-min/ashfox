@@ -109,8 +109,7 @@ must honor it. One-shots carry `{ kind: "oneshot" }`.
 
 Loop OGG and Minecraft delivery are rejected because those paths cannot preserve
 the exact loop contract. One-shot OGG uses the built-in WebAssembly Vorbis
-encoder with no external FFmpeg required. The audio study plays loop WAV
-directly and offers no OGG download for it.
+encoder with no external tools required.
 
 ## Listen and inspect
 

@@ -3,7 +3,6 @@
 /** Current-only serialized schema authorities. Historical internal registries,
  * generic version lookup, and unused routing versions are deliberately absent. */
 const PROJECT_DOCUMENT_SCHEMA_VERSION = 1;
-const COMMAND_RECEIPT_SCHEMA_VERSION = 1;
 const EXPORT_BUNDLE_SCHEMA_VERSION = 1;
 const SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION = 2;
 
@@ -128,7 +127,6 @@ const utf8ContractByteLength = (value) => {
 };
 
 module.exports = {
-  COMMAND_RECEIPT_SCHEMA_VERSION,
   EXPORT_BUNDLE_SCHEMA_VERSION,
   hasExactContractKeys,
   isCanonicalIsoDate,

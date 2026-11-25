@@ -27,12 +27,11 @@ authority.
 | --- | --- |
 | `apps/cli` | Standalone command-line product; `src/` owns execution and `tests/` owns CLI integration scenarios. |
 | `apps/site` | Public documentation, landing and read-only example previews. |
-| `apps/audio-study`, `apps/item-study` | Independent local source/result review tools with their own npm workspaces. |
 | `packages/engine-core` | Host-independent source contracts, compilation, commands and asset export. |
 | `packages/asset-build` | Bundle assembly, delivery targets and explicit Node I/O adapters. |
 | `packages/audio-core`, `packages/render-core` | Shared audio synthesis and observation rendering. |
 | `packages/internal-contracts` | Closed shared contract guards and schema version authorities. |
-| `scripts/{public,skill,showcase,corpus,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
+| `scripts/{public,skill,showcase,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
 | `examples/`, `assets/`, `docs/`, `skills/` | Native examples, published media, documentation sources and agent skill sources. |
 
 Local review applications are not release automation. Their npm commands route to
@@ -195,19 +194,13 @@ texture raster and PNG encoder. Its public entry points are `readItemStudy`,
 `compileItemStudy`, `spritePreviewPng`, and `spriteSheetPng`. The native
 `parseSpriteSource` front end lowers into the same validated plan. Directory
 configuration lives in `project/directory/`; `compiler/directory/` compiles
-model and sprite entries through `compileDirectoryWorkspace` without empty model documents.
-
-`apps/item-study/` owns complete preview snapshots and the read-only source/result
-studio. Source edits and delivery use the common native CLI. The obsolete JSON
-candidate harness and item-specific CLI forwarding entry are removed. Style-related
-mechanical constraints are enforced by the compiler profile. See
-[the studio](../../apps/item-study/README.md).
+model and sprite entries through compileAssetWorkspaceEntry` and directory configuration lives in `project/directory/`; `compiler/directory/` compiles model and sprite entries through `compileDirectoryWorkspace` without empty model documents. Style-related mechanical constraints are enforced by the compiler profile.
 
 ## CLI resource-pack delivery
 
 Optional directory `packs` declarations bind named exports to item and sound
 resources. The directory owner validates the closed configuration; asset-build
-assembles bytes and archives, and its Node adapters own FFmpeg and publication.
+assembles bytes and archives, and its Node adapters own built-in WASM Vorbis encoding and publication.
 See [resource-pack configuration](../guides/minecraft-packs.md). Pack-format choices are
 project data; changing a version label does not change the source compiler.
 

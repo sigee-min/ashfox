@@ -4,9 +4,7 @@
   "private": true,
   "packageManager": "npm@10.8.2",
   "workspaces": [
-    "apps/audio-study",
     "apps/cli",
-    "apps/item-study",
     "apps/site",
     "packages/asset-build",
     "packages/audio-core",
@@ -23,7 +21,7 @@
     "preview:public": "node scripts/public/serve.js",
     "showcase:capture": "node scripts/showcase/capture.js",
     "showcase:check": "node scripts/showcase/verify.js",
-    "test": "npm run typecheck && npm --workspace @ashfox/audio-study run test && npm --workspace @ashfox/item-study run test && node scripts/tests/test.js && npm run test:skill && npm run test:site && npm run test:engine-core && npm run test:audio-core && npm run test:cli",
+    "test": "npm run typecheck && node scripts/tests/test.js && npm run test:skill && npm run test:site && npm run test:engine-core && npm run test:audio-core && npm run test:cli",
     "test:engine-core": "npm --workspace @ashfox/engine-core run test",
     "test:audio-core": "npm --workspace @ashfox/audio-core run test",
     "test:cli": "npm --workspace @ashfox/cli run test",

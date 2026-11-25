@@ -36,7 +36,7 @@ const canonical = (value) => {
 
 const digestValue = (value) => sha256(JSON.stringify(canonical(value)));
 
-/** Deterministic stand-in for FFmpeg so pack assembly is covered without host tools. */
+/** Deterministic stand-in for WASM Vorbis encoding so pack assembly is covered without encoder overhead. */
 const identityEncoder = Object.freeze({
   fingerprint: 'ashfox-product-oracle:identity-vorbis',
   encode: async (wav) => Uint8Array.from(wav),

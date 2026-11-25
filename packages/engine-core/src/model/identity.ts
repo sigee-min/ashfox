@@ -25,7 +25,7 @@ export type SurfacePixelDensity = (typeof SURFACE_PIXEL_DENSITIES)[number];
 export const isSurfacePixelDensity = (value: unknown): value is SurfacePixelDensity =>
   typeof value === 'number' && SURFACE_PIXEL_DENSITIES.includes(value as SurfacePixelDensity);
 
-export type JsonPrimitive = string | number | boolean | null;
+type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 export interface ProjectSettings {
