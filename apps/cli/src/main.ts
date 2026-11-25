@@ -1,5 +1,5 @@
-import { runOnboarding, isOnboardingCommand } from './onboarding/cli';
-import { runAssetCheck, runMediaCommand } from './observe/cli';
+import { runOnboarding, isOnboardingCommand, formatCliResult } from './onboarding/cli';
+import { inspectCheckArgs, runAssetCheck, runMediaCommand } from './observe/cli';
 import { prepare } from './observe/prepare';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { runWorker } from './worker';
@@ -34,27 +34,8 @@ if (isMainThread) {
 const args = process.argv.slice(2),
   command = args[0] ?? 'help';
 const result = (ok: boolean, value: unknown, diagnostics: readonly unknown[] = []): void => {
-  process.stdout.write(
-    JSON.stringify({
-      format: 'ashfox-cli-result',
-      version: 1,
-      command,
-      ok,
-      diagnostics,
-      result: value,
-    }) + '\n',
-  );
+  process.stdout.write(formatCliResult(command, ok, value, diagnostics));
 };
-
-const ASSET_CHECK_FLAGS = new Set([
-  '--stdin',
-  '--input-json',
-  '--name',
-  '--input-format',
-  '--node',
-  '--profile',
-  '--threshold',
-]);
 
 const hasAncestorWorkspace = (file: string): boolean => {
   let directory = path.dirname(fs.realpathSync(file));
@@ -71,34 +52,19 @@ const hasAncestorWorkspace = (file: string): boolean => {
 };
 
 const runCheck = async (): Promise<void> => {
-  const usesSingleAssetOptions = args.slice(1).some((a) => ASSET_CHECK_FLAGS.has(a));
-  const positional: string[] = [];
-  for (let i = 1; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === '--json' || arg === '--stdin' || arg === '--input-json') continue;
-    if (['--name', '--input-format', '--node', '--profile', '--threshold'].includes(arg)) {
-      i++;
-      continue;
-    }
-    if (!arg.startsWith('--')) positional.push(arg);
-  }
-  const target = positional[0];
-  if (
-    !usesSingleAssetOptions &&
-    positional.length === 1 &&
-    fs.existsSync(target) &&
-    fs.statSync(target).isDirectory()
-  ) {
-    if (args.some((a) => a.startsWith('--') && a !== '--json'))
+  const checkArgs = inspectCheckArgs(args);
+  const { target, singleAsset, nonJsonFlags } = checkArgs;
+  if (!singleAsset && target && fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+    if (nonJsonFlags.length > 0)
       throw new BuildFailure('cli.arguments', 'Directory verification accepts only --json', 2);
     result(true, verifyCurrent(target));
     return;
   }
-  if (usesSingleAssetOptions || positional.length === 0 || target?.endsWith('.png')) {
+  if (singleAsset || !target || target.endsWith('.png')) {
     result(true, await runAssetCheck(args, __filename, controller.signal));
     return;
   }
-  if (positional.length !== 1 || args.some((a) => a.startsWith('--') && a !== '--json')) {
+  if (nonJsonFlags.length > 0 || !checkArgs.target) {
     throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
   }
   if (target.endsWith('.ashfox') && !hasAncestorWorkspace(target)) {

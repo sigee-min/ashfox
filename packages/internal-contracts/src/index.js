@@ -5,8 +5,6 @@
 const PROJECT_DOCUMENT_SCHEMA_VERSION = 1;
 const COMMAND_RECEIPT_SCHEMA_VERSION = 1;
 const EXPORT_BUNDLE_SCHEMA_VERSION = 1;
-const SIDECAR_IPC_SCHEMA_VERSION = 1;
-const TRACE_LOG_SCHEMA_VERSION = 1;
 const SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION = 2;
 
 const isClosedContractRecord = (value) => {
@@ -106,141 +104,6 @@ const isUniqueContractTextArray = (value) =>
     return true;
   })();
 
-const FINITE_JSON_CONTRACT_MAX_DEPTH = 64;
-const FINITE_JSON_CONTRACT_MAX_CONTAINERS = 100000;
-const FINITE_JSON_CONTRACT_MAX_DEPTH_ALLOWANCE = 16;
-
-const invalidFiniteJsonSnapshot = () => ({ ok: false });
-
-const createFiniteJsonSnapshotAtDepth = (value, seen, depth, budget, options) => {
-  if (depth > options.maxDepth) return invalidFiniteJsonSnapshot();
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
-    return { ok: true, value };
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value)
-      ? { ok: true, value: Object.is(value, -0) ? 0 : value }
-      : invalidFiniteJsonSnapshot();
-  }
-  if (typeof value !== 'object' || seen.has(value)) {
-    return invalidFiniteJsonSnapshot();
-  }
-  budget.containers += 1;
-  if (budget.containers > FINITE_JSON_CONTRACT_MAX_CONTAINERS) {
-    return invalidFiniteJsonSnapshot();
-  }
-  seen.add(value);
-
-  if (Array.isArray(value)) {
-    if (Object.getPrototypeOf(value) !== Array.prototype) {
-      return invalidFiniteJsonSnapshot();
-    }
-    if (Reflect.has(value, 'toJSON')) return invalidFiniteJsonSnapshot();
-    const keys = Reflect.ownKeys(value);
-    const descriptors = new Map();
-    for (const key of keys) {
-      if (typeof key !== 'string') return invalidFiniteJsonSnapshot();
-      const descriptor = Object.getOwnPropertyDescriptor(value, key);
-      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
-        return invalidFiniteJsonSnapshot();
-      }
-      descriptors.set(key, descriptor);
-    }
-    const lengthDescriptor = descriptors.get('length');
-    if (
-      !lengthDescriptor ||
-      !Number.isSafeInteger(lengthDescriptor.value) ||
-      lengthDescriptor.value < 0 ||
-      keys.length !== lengthDescriptor.value + 1 ||
-      lengthDescriptor.enumerable
-    ) {
-      return invalidFiniteJsonSnapshot();
-    }
-    const snapshot = [];
-    for (let index = 0; index < lengthDescriptor.value; index += 1) {
-      const descriptor = descriptors.get(String(index));
-      if (!descriptor || !descriptor.enumerable) {
-        return invalidFiniteJsonSnapshot();
-      }
-      const entry = createFiniteJsonSnapshotAtDepth(
-        descriptor.value,
-        seen,
-        depth + 1,
-        budget,
-        options,
-      );
-      if (!entry.ok) return entry;
-      snapshot.push(entry.value);
-    }
-    seen.delete(value);
-    return { ok: true, value: snapshot };
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  if (prototype !== Object.prototype && prototype !== null) {
-    return invalidFiniteJsonSnapshot();
-  }
-  if (Reflect.has(value, 'toJSON')) return invalidFiniteJsonSnapshot();
-  const keys = Reflect.ownKeys(value);
-  const snapshot = options.objectPrototype === 'standard' ? {} : Object.create(null);
-  for (const key of keys) {
-    if (typeof key !== 'string' || key === 'toJSON') {
-      return invalidFiniteJsonSnapshot();
-    }
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (
-      !descriptor ||
-      !descriptor.enumerable ||
-      !Object.prototype.hasOwnProperty.call(descriptor, 'value')
-    ) {
-      return invalidFiniteJsonSnapshot();
-    }
-    if (descriptor.value === undefined && options.omitUndefinedObjectProperties) {
-      continue;
-    }
-    const entry = createFiniteJsonSnapshotAtDepth(
-      descriptor.value,
-      seen,
-      depth + 1,
-      budget,
-      options,
-    );
-    if (!entry.ok) return entry;
-    Object.defineProperty(snapshot, key, {
-      value: entry.value,
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  }
-  seen.delete(value);
-  return { ok: true, value: snapshot };
-};
-
-const createFiniteJsonSnapshot = (value, options = {}) => {
-  try {
-    const requestedAllowance = Number.isSafeInteger(options.depthAllowance)
-      ? Math.max(0, options.depthAllowance)
-      : 0;
-    const depthAllowance = Math.min(FINITE_JSON_CONTRACT_MAX_DEPTH_ALLOWANCE, requestedAllowance);
-    return createFiniteJsonSnapshotAtDepth(
-      value,
-      new WeakSet(),
-      0,
-      { containers: 0 },
-      {
-        maxDepth: FINITE_JSON_CONTRACT_MAX_DEPTH + depthAllowance,
-        omitUndefinedObjectProperties: options.omitUndefinedObjectProperties === true,
-        objectPrototype: options.objectPrototype === 'standard' ? 'standard' : 'null',
-      },
-    );
-  } catch (_error) {
-    return invalidFiniteJsonSnapshot();
-  }
-};
-
-const isFiniteJsonValue = (value) => createFiniteJsonSnapshot(value).ok;
-
 const utf8ContractByteLength = (value) => {
   let bytes = 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -266,20 +129,14 @@ const utf8ContractByteLength = (value) => {
 
 module.exports = {
   COMMAND_RECEIPT_SCHEMA_VERSION,
-  createFiniteJsonSnapshot,
   EXPORT_BUNDLE_SCHEMA_VERSION,
-  FINITE_JSON_CONTRACT_MAX_CONTAINERS,
-  FINITE_JSON_CONTRACT_MAX_DEPTH,
   hasExactContractKeys,
   isCanonicalIsoDate,
   isClosedContractRecord,
   isDenseContractArray,
-  isFiniteJsonValue,
   isNonEmptyContractText,
   isUniqueContractTextArray,
   PROJECT_DOCUMENT_SCHEMA_VERSION,
-  SIDECAR_IPC_SCHEMA_VERSION,
   SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
-  TRACE_LOG_SCHEMA_VERSION,
   utf8ContractByteLength,
 };

@@ -1,7 +1,6 @@
 # Codebase map
 
-See [the source and CLI product boundary](product-boundary.md) for the division
-between asset authoring, game delivery and the public website.
+This document maps ownership and dependency boundaries across Ashfox; repository rules remain in [development-manifest.json](../../config/development-manifest.json).
 
 Ashfox assets are authored as native `.ashfox` files. They compile independently,
 including their explicit relative imports. An optional `.ashfoxworkspace` supplies
@@ -29,12 +28,11 @@ authority.
 | `apps/cli` | Standalone command-line product; `src/` owns execution and `tests/` owns CLI integration scenarios. |
 | `apps/site` | Public documentation, landing and read-only example previews. |
 | `apps/audio-study`, `apps/item-study` | Independent local source/result review tools with their own npm workspaces. |
-| `apps/blockbench-*` | Optional supported Blockbench entry points. |
 | `packages/engine-core` | Host-independent source contracts, compilation, commands and asset export. |
 | `packages/asset-build` | Bundle assembly, delivery targets and explicit Node I/O adapters. |
 | `packages/audio-core`, `packages/render-core` | Shared audio synthesis and observation rendering. |
-| `packages/*contracts`, `packages/blockbench-*` | Shared contracts and the supported Blockbench runtime/conformance implementation. |
-| `scripts/{public,blockbench,skill,showcase,corpus,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
+| `packages/internal-contracts` | Closed shared contract guards and schema version authorities. |
+| `scripts/{public,skill,showcase,corpus,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
 | `examples/`, `assets/`, `docs/`, `skills/` | Native examples, published media, documentation sources and agent skill sources. |
 
 Local review applications are not release automation. Their npm commands route to
@@ -130,8 +128,7 @@ source branches are not part of Ashfox v1.
 | texture raster and PNG encoding | `packages/engine-core/src/textures/` |
 | canonical and target validation | `packages/engine-core/src/validation/` |
 | target compatibility and artifact bytes | `packages/engine-core/src/export/` |
-| source observation, capture and stdio session revisions | `apps/cli/src/observe/` |
-| optional Blockbench compatibility route | `packages/blockbench-runtime/src/` |
+| source observation, rendering, check and export CLI | `apps/cli/src/observe/` |
 
 Only the asset parser interprets package-aware declarations and imports. Only
 the compiler resolves nominal symbols and erases source types. Project-file,
@@ -141,7 +138,8 @@ not import parser or HIR internals.
 Design elaboration consumes the sealed parsed closure and substitutes exact
 values before HIR; it does not parse again or create another durable source.
 Read-only measurements in `model/measurement/` consume concrete products and
-expose bounded rest-pose geometry and face UV evidence. CLI stdio sessions bind source replacement to the current revision; build
+expose bounded rest-pose geometry and face UV evidence. Single-asset `check`,
+`render`, and `export` support `--stdin` and `--input-json` without touching disk; build
 verification binds delivery to its source and output receipts.
 
 ## Build replay boundary
@@ -161,9 +159,6 @@ Typed HIR and instantiated plans are compiler-private and erased before the
 runtime product. A concrete product does not retain module, class-like, or
 generic objects. A package artifact may deduplicate immutable blobs by digest,
 but those blobs do not become a second authoring authority.
-
-Blockbench remains an optional compatibility product. It may consume public
-engine contracts for transient conversion, while engine-core cannot import upward into any host.
 
 ## Rig coordinate boundary
 
@@ -206,7 +201,7 @@ model and sprite entries through `compileDirectoryWorkspace` without empty model
 studio. Source edits and delivery use the common native CLI. The obsolete JSON
 candidate harness and item-specific CLI forwarding entry are removed. Style-related
 mechanical constraints are enforced by the compiler profile. See
-[the item design](item-sprites.md) and [the studio](../../apps/item-study/README.md).
+[the studio](../../apps/item-study/README.md).
 
 ## CLI resource-pack delivery
 
@@ -227,7 +222,7 @@ animation sampling, capture surfaces and deterministic build replay. CLI observa
 GLB with a read-only viewer. CLI bundles
 the headless browser entry and drives it through a private Chrome pipe, with no
 network endpoint. `apps/cli/src/observe` owns closed stdin contracts, isolated
-source compilation, revision-guarded in-memory sessions and binary stdout.
+source compilation, and binary stdout.
 See [the observation guide](../guides/observe.md).
 
 ## Executable repository configuration

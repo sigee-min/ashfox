@@ -86,7 +86,7 @@ assert.deepEqual(manifest.quality.ownerLayout, {
   testOwners: rawManifest.quality.ownerLayout.testOwners,
 });
 assert.deepEqual(manifest.architecture.workspaceSourceScopes, ['apps', 'packages']);
-assert.equal(manifest.architecture.forbiddenDependencies.length, 9);
+assert.equal(manifest.architecture.forbiddenDependencies.length, 6);
 
 assert.ok(Object.isFrozen(manifest));
 assert.ok(Object.isFrozen(manifest.productExperience.projectFile));
@@ -351,6 +351,7 @@ const consolePolicy = sourcePatternAllowanceOutsideScope.quality.forbiddenSource
   (policy) => policy.id === 'console-in-src',
 );
 consolePolicy.scope = ['apps/'];
+consolePolicy.allowedPaths = ['packages/engine-core/src/index.ts'];
 expectInvalid(
   sourcePatternAllowanceOutsideScope,
   `quality.forbiddenSourcePatterns[${sourcePatternAllowanceOutsideScope.quality.forbiddenSourcePatterns.indexOf(consolePolicy)}].allowedPaths[0]`,
@@ -398,8 +399,8 @@ expectInvalid(unsortedRules, 'architecture.forbiddenDependencies');
 
 const duplicateTarget = copyManifest();
 duplicateTarget.architecture.forbiddenDependencies[2].targets = [
-  'packages/blockbench-runtime/src/plugin/',
-  'packages/blockbench-runtime/src/plugin/',
+  'packages/asset-build/src/node/',
+  'packages/asset-build/src/node/',
 ];
 expectInvalid(duplicateTarget, 'architecture.forbiddenDependencies[2].targets');
 

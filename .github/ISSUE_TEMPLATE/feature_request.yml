@@ -9,8 +9,8 @@ body:
     attributes:
       label: Product surface
       options:
-        - Web studio
-        - Blockbench MCP
+        - CLI / compiler
+        - Game or Minecraft export
         - Public site or documentation
     validations:
       required: true

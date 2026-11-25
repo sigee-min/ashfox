@@ -33,6 +33,44 @@ const inputBytes = async (): Promise<Buffer> => {
   return Buffer.concat(chunks);
 };
 
+const CHECK_VALUE_FLAGS = new Set([
+  '--name',
+  '--input-format',
+  '--node',
+  '--profile',
+  '--threshold',
+]);
+const CHECK_SINGLE_ASSET_FLAGS = new Set(['--stdin', '--input-json', ...CHECK_VALUE_FLAGS]);
+
+export const inspectCheckArgs = (
+  args: readonly string[],
+): {
+  readonly target?: string;
+  readonly singleAsset: boolean;
+  readonly nonJsonFlags: readonly string[];
+} => {
+  const positionals: string[] = [];
+  const nonJsonFlags: string[] = [];
+  let singleAsset = false;
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--json') continue;
+    if (CHECK_SINGLE_ASSET_FLAGS.has(arg)) {
+      singleAsset = true;
+      nonJsonFlags.push(arg);
+      if (CHECK_VALUE_FLAGS.has(arg)) i++;
+      continue;
+    }
+    if (arg.startsWith('--')) nonJsonFlags.push(arg);
+    else positionals.push(arg);
+  }
+  return {
+    target: positionals.length === 1 ? positionals[0] : undefined,
+    singleAsset,
+    nonJsonFlags,
+  };
+};
+
 interface ParsedCommon {
   readonly file?: string;
   readonly output?: string;

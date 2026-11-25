@@ -1,1 +1,0 @@
-export { MeshService } from './service';

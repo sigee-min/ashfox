@@ -185,8 +185,7 @@
       "sourceOfTruth": "package.json",
       "automation": "release-please",
       "synchronizedFiles": [
-        ".github/release-please/manifest.json",
-        "packages/blockbench-runtime/src/config.ts"
+        ".github/release-please/manifest.json"
       ],
       "changeOwner": "release-pr",
       "verification": "npm run release:validate"
@@ -244,35 +243,6 @@
           ]
         },
         {
-          "workspace": "packages/blockbench-conformance",
-          "roots": [
-            "protocol",
-            "revision",
-            "schema"
-          ]
-        },
-        {
-          "workspace": "packages/blockbench-runtime",
-          "roots": [
-            "adapters",
-            "config",
-            "dispatcher",
-            "domain",
-            "plugin",
-            "project",
-            "runtime",
-            "schema",
-            "session",
-            "shared",
-            "sidecar",
-            "support",
-            "texture",
-            "trace",
-            "transport",
-            "usecases"
-          ]
-        },
-        {
           "workspace": "packages/engine-core",
           "roots": [
             "animation",
@@ -304,30 +274,9 @@
         "allowedPaths": []
       },
       {
-        "id": "bare-document",
-        "scope": [
-          "packages/blockbench-runtime/src/"
-        ],
-        "allowedPaths": []
-      },
-      {
-        "id": "bare-window",
-        "scope": [
-          "packages/blockbench-runtime/src/"
-        ],
-        "allowedPaths": []
-      },
-      {
         "id": "browser-authoring-contract",
         "scope": [
           "apps/site/src/"
-        ],
-        "allowedPaths": []
-      },
-      {
-        "id": "catch-without-binding",
-        "scope": [
-          "packages/blockbench-runtime/src/"
         ],
         "allowedPaths": []
       },
@@ -337,9 +286,7 @@
           "apps/",
           "packages/"
         ],
-        "allowedPaths": [
-          "packages/blockbench-runtime/src/logging.ts"
-        ]
+        "allowedPaths": []
       },
       {
         "id": "double-assertion",
@@ -365,32 +312,6 @@
         "allowedPaths": []
       },
       {
-        "id": "globalThis-as",
-        "scope": [
-          "packages/blockbench-runtime/src/"
-        ],
-        "allowedPaths": [
-          "packages/blockbench-runtime/src/shared/globalState.ts",
-          "packages/blockbench-runtime/src/types/blockbench.ts"
-        ]
-      },
-      {
-        "id": "throw-in-src",
-        "scope": [
-          "packages/blockbench-runtime/src/"
-        ],
-        "allowedPaths": [
-          "packages/blockbench-runtime/src/plugin/runtime.ts"
-        ]
-      },
-      {
-        "id": "todo-fixme-comment",
-        "scope": [
-          "packages/blockbench-runtime/src/"
-        ],
-        "allowedPaths": []
-      },
-      {
         "id": "ts-ignore",
         "scope": [
           "apps/",
@@ -410,11 +331,16 @@
         "apps/site"
       ],
       "forbidden": [
+        "apps/blockbench-mcp-sidecar",
+        "apps/blockbench-plugin",
         "apps/mcp-gateway",
         "apps/web",
         "apps/worker",
         "packages/backend-core",
-        "packages/backend-engine"
+        "packages/backend-engine",
+        "packages/blockbench-conformance",
+        "packages/blockbench-contracts",
+        "packages/blockbench-runtime"
       ]
     },
     "tombstones": [
@@ -457,12 +383,14 @@
       "packages/engine-core/src/projectFile/workspace",
       "scripts/agent-browser",
       "scripts/audio",
+      "scripts/blockbench",
       "scripts/build-blockbench.js",
       "scripts/build-public.js",
       "scripts/build-skill-release.js",
       "scripts/capture-showcase.js",
       "scripts/export-examples.js",
       "scripts/items",
+      "scripts/quality/coverage.js",
       "scripts/readme.js",
       "scripts/serve-public.js",
       "scripts/showcase.js",
@@ -526,30 +454,6 @@
           "packages/asset-build/src/bundle/",
           "packages/asset-build/src/node/",
           "packages/asset-build/src/packs/"
-        ]
-      },
-      {
-        "source": "packages/blockbench-runtime/src/adapters/",
-        "targets": [
-          "packages/blockbench-runtime/src/plugin/",
-          "packages/blockbench-runtime/src/transport/",
-          "packages/blockbench-runtime/src/usecases/"
-        ]
-      },
-      {
-        "source": "packages/blockbench-runtime/src/domain/",
-        "targets": [
-          "packages/blockbench-runtime/src/adapters/",
-          "packages/blockbench-runtime/src/plugin/",
-          "packages/blockbench-runtime/src/transport/",
-          "packages/blockbench-runtime/src/usecases/"
-        ]
-      },
-      {
-        "source": "packages/blockbench-runtime/src/usecases/",
-        "targets": [
-          "packages/blockbench-runtime/src/plugin/",
-          "packages/blockbench-runtime/src/transport/"
         ]
       },
       {

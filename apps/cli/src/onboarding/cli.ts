@@ -29,19 +29,23 @@ Commands:
 --version prints the installed product version. doctor/init accept --json.
 Full options: https://ashfox.io/docs/guides/cli/
 `;
+export const formatCliResult = (
+  command: string,
+  ok: boolean,
+  result: unknown,
+  diagnostics: readonly unknown[] = [],
+): string =>
+  JSON.stringify({
+    format: 'ashfox-cli-result',
+    version: 1,
+    command,
+    ok,
+    diagnostics,
+    result,
+  }) + '\n';
+
 const emit = (command: string, value: unknown, json: boolean, human: string): void => {
-  process.stdout.write(
-    json
-      ? JSON.stringify({
-          format: 'ashfox-cli-result',
-          version: 1,
-          command,
-          ok: true,
-          diagnostics: [],
-          result: value,
-        }) + '\n'
-      : human,
-  );
+  process.stdout.write(json ? formatCliResult(command, true, value) : human);
 };
 const init = (folder: string, json: boolean): void => {
   const target = path.resolve(folder);
@@ -119,7 +123,6 @@ const doctor = (json: boolean): void => {
       },
       source: '.ashfox',
       outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'],
-      legacyFallback: false,
       packs: {
         formats: ['minecraft_java', 'game_assets'],
         itemDefinitions: ['legacy', 'modern'],

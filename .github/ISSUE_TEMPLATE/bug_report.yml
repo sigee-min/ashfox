@@ -9,8 +9,8 @@ body:
     attributes:
       label: Product surface
       options:
-        - Web studio
-        - Blockbench MCP
+        - CLI / compiler
+        - Game or Minecraft export
         - Public site or documentation
     validations:
       required: true
@@ -35,7 +35,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Include the ashfox version or commit, browser or Blockbench version, operating system, and export format.
+      description: Include the ashfox version or commit, Node.js version, operating system, and export format.
     validations:
       required: true
   - type: textarea
