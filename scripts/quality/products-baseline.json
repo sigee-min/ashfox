@@ -1130,14 +1130,14 @@
           "entry": "structures/ryokan_pavilion",
           "kind": "structure",
           "nbt": "80675c82e0bb3cc0fbccafdc50ed718734d5b91c69e87a1b3b79d7e67482ec1f",
-          "playableMeta": "0d5aae694ed8d55691f7c136ba0d6a250de22d3d70d220a501c019249be844e3",
+          "playableMeta": "f1925a9e356a0dce8f898375a60ea1610b6c3c4efea3e0e5e061b952a688e225",
           "document": "b1bdc46fee28ad79292c5503c9c11e9ce7a87cb1470c9cab4922cd6e50eb6361"
         },
         {
           "entry": "structures/scifi_outpost",
           "kind": "structure",
-          "nbt": "74511adbd18f0416b0edbb0bade6677c23c6fe58fa9c571cc2d1d23d0db11d3c",
-          "playableMeta": "127eecad45c5d4172b0cb5aef475a0a1aed4e4cab28450b0a68a491846905dfe",
+          "nbt": "cebc6d60e2aac50e3f93d4806f746d3cfba32952bc7010be1d4764403424f8c7",
+          "playableMeta": "35de3c251daccfe5e3671896cd5508b19dfdb48a5f98cab80cfb9d4da40859b0",
           "document": "3b24331ceed31e2958b590230ddac5ba7501a8afa5dc6bcc02bd1991182f363f"
         },
         {
@@ -1162,7 +1162,7 @@
           "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "580959e6d0c42e6c7bcb26c247226d06f42a078e483a7028c9a978c7b8fce728",
+      "catalogHash": "38503903849df28e1fa4d982eebf40f073e4e7c37a27f46025ab59a4dbe6558f",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
@@ -1214,23 +1214,23 @@
         },
         {
           "path": "assets/ryokan_pavilion_glb/ashfox-lineage.json",
-          "sha256": "eb0ca956bc38444c6c32e7251f0194420cd946a907d8379f5eaeb4562455cc34"
+          "sha256": "0e4e76eb9770ea08fb8b00417a14f5712975789b7586b18c0d22198af67340a4"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.glb",
-          "sha256": "d820915a3fcb3355ece90638a42ad795a5a7bb7ebb86c685e1cbafffa2549855"
+          "sha256": "ae2a0a3178c8cf2c2a05eeb31786ac954b8db5085ac59097ff211bb69673244c"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.hooks.json",
-          "sha256": "76c42c7cde6d73f98a6cd2aaee4e3cdfd8e188855acb72690c93a821acf0c170"
+          "sha256": "5b149bb8e46b2c9a9d6e59453d8d25b6cbed7f2fd51f0fa76c4334b49e8bdebb"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.structure.json",
-          "sha256": "fce543ef06f1fcef2ab54c84c6b6b55f571c465f86d21b9ebaa500b9251edbcf"
+          "sha256": "b1bf3734522dc51f712d395d6726c4cd4b1ec2e41fc636fa09e3a2a864c1ae15"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.hooks.json",
-          "sha256": "76c42c7cde6d73f98a6cd2aaee4e3cdfd8e188855acb72690c93a821acf0c170"
+          "sha256": "5b149bb8e46b2c9a9d6e59453d8d25b6cbed7f2fd51f0fa76c4334b49e8bdebb"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.nbt",
@@ -1238,27 +1238,27 @@
         },
         {
           "path": "assets/scifi_outpost_glb/ashfox-lineage.json",
-          "sha256": "fd889055286049c5af25b9ab19bfa7b05dba6373457b62933c4e373c887adce6"
+          "sha256": "d5852f75d66b9c3478dfc0573781b01d6cf847b12378a2187630e6c5fd2382cc"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.glb",
-          "sha256": "ac6e4071b55b0abc9a22de82d22bf190b4070b3757984f66cf5b5864c425d96d"
+          "sha256": "e12ce2ef5b15e0acbd9f3d20e37eee0186771539b540c0e893f0cf1a2ba5a066"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.hooks.json",
-          "sha256": "f7b9dcb3f12ad451d390219057db93226d9ee54a2c68b740d63e557151012d89"
+          "sha256": "7e5fd289649e8d681df9efc32cc53a2366191eb43c6604e6475c0431329e2dca"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.structure.json",
-          "sha256": "b1326aed08c951798cf255b1e994df4d371dc9119a3e40788763976f17baf9fc"
+          "sha256": "b50639947376b78d9133275312843798efd9bf85f59549046da3e2fb4af41103"
         },
         {
           "path": "assets/scifi_outpost_nbt/scifi_outpost_nbt.hooks.json",
-          "sha256": "f7b9dcb3f12ad451d390219057db93226d9ee54a2c68b740d63e557151012d89"
+          "sha256": "7e5fd289649e8d681df9efc32cc53a2366191eb43c6604e6475c0431329e2dca"
         },
         {
           "path": "assets/scifi_outpost_nbt/scifi_outpost_nbt.nbt",
-          "sha256": "74511adbd18f0416b0edbb0bade6677c23c6fe58fa9c571cc2d1d23d0db11d3c"
+          "sha256": "cebc6d60e2aac50e3f93d4806f746d3cfba32952bc7010be1d4764403424f8c7"
         },
         {
           "path": "assets/tavern_glb/ashfox-lineage.json",
@@ -1310,7 +1310,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "78d32916dffd346958bb0619f9643b7847547b34972c3f5d1e345c466b7979b9"
+          "sha256": "7a532df6643c9e3af09252906ccda1a3a149ea3b5644651c7164fcaffaf29858"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
@@ -1330,19 +1330,19 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.glb",
-          "sha256": "81f170fb1d0fb208f88048908091ffbb1efe287dda7706da88bec9e1eff8cd5f"
+          "sha256": "697f48186ef69ba3342055269a304df7c1c3b29eae4bc883b2bc50305912d93a"
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.structure.json",
-          "sha256": "fce543ef06f1fcef2ab54c84c6b6b55f571c465f86d21b9ebaa500b9251edbcf"
+          "sha256": "b1bf3734522dc51f712d395d6726c4cd4b1ec2e41fc636fa09e3a2a864c1ae15"
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.glb",
-          "sha256": "6c6c9ad56840b21e3a5c84c1fcee51ffa67558e3c253ccdd013682525bd388fa"
+          "sha256": "69aeab436fd925cff820cee228247de93dbbf893ddd787fc706f4dab7e8d7105"
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.structure.json",
-          "sha256": "b1326aed08c951798cf255b1e994df4d371dc9119a3e40788763976f17baf9fc"
+          "sha256": "b50639947376b78d9133275312843798efd9bf85f59549046da3e2fb4af41103"
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.glb",
@@ -1714,7 +1714,7 @@
         },
         {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "53cf70a181a54d2057340c75f3979343b58f5740f560c24147678106c11301c5"
+          "sha256": "925e2b4db184dd88ad253b696d228b433e2f5efab684f7282b0084a7838eaf29"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
@@ -1742,7 +1742,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "580959e6d0c42e6c7bcb26c247226d06f42a078e483a7028c9a978c7b8fce728"
+          "sha256": "38503903849df28e1fa4d982eebf40f073e4e7c37a27f46025ab59a4dbe6558f"
         }
       ]
     }

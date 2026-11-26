@@ -1,4 +1,7 @@
-import type { CardinalFacing, IntVec2, IntVec3 } from '../../../project/structure/contract';
+import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
+import { resolveMezzanineRect, resolvePartitionDoorway, resolvePlatformRect } from './zoneRect';
+export { resolvePlatformRect } from './zoneRect';
+
 import {
   InteriorContractError,
   SUBVOXEL_UNITS_PER_BLOCK,
@@ -13,7 +16,6 @@ import {
   type RailingStyle,
   type StyleDnaArch,
   type SubVoxelBoxIR,
-  type VolumeAnchor,
 } from './contract';
 
 export interface VolumeZoneSurface {
@@ -103,28 +105,15 @@ const pushZone = (
   z1: number,
   surfaceY: number,
 ): void => {
-  c.zones.push({ id, kind, x0_b: x0, x1_b: x1, z0_b: z0, z1_b: z1, surface_y_16: surfaceY });
-};
-
-const WEST = new Set<VolumeAnchor>(['west', 'nw', 'sw']);
-const EAST = new Set<VolumeAnchor>(['east', 'ne', 'se']);
-const NORTH = new Set<VolumeAnchor>(['north', 'nw', 'ne']);
-const SOUTH = new Set<VolumeAnchor>(['south', 'sw', 'se']);
-
-const resolveAnchor = (
-  anchor: VolumeAnchor,
-  ix0: number,
-  ix1: number,
-  iz0: number,
-  iz1: number,
-  w: number,
-  d: number,
-): IntVec2 => {
-  const [cx, cz] = [Math.floor((ix0 + ix1 - w + 1) / 2), Math.floor((iz0 + iz1 - d + 1) / 2)];
-  return [
-    Math.max(ix0, WEST.has(anchor) ? ix0 : EAST.has(anchor) ? ix1 - w + 1 : cx),
-    Math.max(iz0, NORTH.has(anchor) ? iz0 : SOUTH.has(anchor) ? iz1 - d + 1 : cz),
-  ];
+  c.zones.push({
+    id,
+    kind,
+    x0_b: x0,
+    x1_b: x1,
+    z0_b: z0,
+    z1_b: z1,
+    surface_y_16: surfaceY,
+  });
 };
 
 const emitRailing = (
@@ -160,22 +149,6 @@ const stepBoundsFor = (
   if (sf === 'south') return [px0 + 4, pz1, px1 - 4, pz1 + 6];
   if (sf === 'north') return [px0 + 4, pz0 - 6, px1 - 4, pz0];
   return sf === 'east' ? [px1, pz0 + 4, px1 + 6, pz1 - 4] : [px0 - 6, pz0 + 4, px0, pz1 - 4];
-};
-
-/** Resolves anchored block footprint [ox, oz, w, d] for a platform or sunken volume inside room bounds. */
-export const resolvePlatformRect = (
-  room: Pick<InteriorRoomInput, 'bounds_from' | 'bounds_to'>,
-  spec: PlatformVolumeSpec,
-): { readonly ox: number; readonly oz: number; readonly w: number; readonly d: number } => {
-  const [bf, bt] = [room.bounds_from, room.bounds_to];
-  const [w, d] = [
-    Math.max(1, Math.min(spec.size[0], bt[0] - bf[0] - 1)),
-    Math.max(1, Math.min(spec.size[1], bt[2] - bf[2] - 1)),
-  ];
-  const [ox, oz] =
-    spec.from ??
-    resolveAnchor(spec.on ?? 'north', bf[0] + 1, bt[0] - 1, bf[2] + 1, bt[2] - 1, w, d);
-  return { ox, oz, w, d };
 };
 
 const emitPlatformBoxes = (
@@ -241,20 +214,6 @@ const emitPlatformOrSunken = (c: VolCtx, spec: PlatformVolumeSpec): void => {
   pushZone(c, spec.id, spec.kind, ox, ox + w - 1, oz, oz + d - 1, surfY);
 };
 
-const mezSpan = (
-  min: number,
-  max: number,
-  on: CardinalFacing,
-  lo: CardinalFacing,
-  hi: CardinalFacing,
-  depth: number,
-): IntVec2 =>
-  on === hi
-    ? [Math.max(min, max - depth + 1), max]
-    : on === lo
-      ? [min, Math.min(max, min + depth - 1)]
-      : [min, max];
-
 const emitMezzanineSupports = (
   c: VolCtx,
   spec: MezzanineVolumeSpec,
@@ -274,15 +233,14 @@ const emitMezzanineSupports = (
 
 const emitMezzanine = (c: VolCtx, spec: MezzanineVolumeSpec): void => {
   const [bf, bt] = [c.room.bounds_from, c.room.bounds_to];
-  const [ix0, iy0, iz0] = [bf[0] + 1, bf[1] + 1, bf[2] + 1];
-  const [ix1, iy1, iz1] = [bt[0] - 1, bt[1] - 1, bt[2] - 1];
+  const [iy0, iy1] = [bf[1] + 1, bt[1] - 1];
   const yOff = Math.max(
     2,
     Math.min(iy1 - iy0 - 1, spec.y_offset_b ?? Math.max(3, Math.floor((iy1 - iy0 + 1) * 0.5))),
   );
   const [deckTop, deckBot] = [(iy0 + yOff) * U, (iy0 + yOff) * U - 4];
-  const [ox0, ox1] = mezSpan(ix0, ix1, spec.on, 'west', 'east', spec.depth);
-  const [oz0, oz1] = mezSpan(iz0, iz1, spec.on, 'north', 'south', spec.depth);
+  const rect = resolveMezzanineRect(c.room, spec);
+  const [ox0, ox1, oz0, oz1] = [rect.ox, rect.ox + rect.w - 1, rect.oz, rect.oz + rect.d - 1];
   const r: readonly [number, number, number, number] = [
     ox0 * U,
     oz0 * U,
@@ -459,8 +417,7 @@ const emitPartitionSolid = (
 
 const emitPartition = (c: VolCtx, spec: PartitionVolumeSpec): void => {
   const [fy, cy] = [(c.room.bounds_from[1] + 1) * U, c.room.bounds_to[1] * U];
-  const doorAt = spec.doorway_at ?? Math.floor((spec.span_from + spec.span_to) / 2);
-  const doorW = Math.max(2, spec.doorway_width ?? 2);
+  const { doorAt, doorW } = resolvePartitionDoorway(spec);
   const slideOff = Math.round(Math.max(0, Math.min(1, spec.open_ratio ?? 0.4)) * 10);
   const fx = spec.at_pos * U + 7;
   for (let u = spec.span_from; u <= spec.span_to; u += 1) {

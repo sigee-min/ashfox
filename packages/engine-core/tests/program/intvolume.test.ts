@@ -17,6 +17,8 @@ import {
   buildInteriorShell,
   filterSafeExteriorCorbels,
 } from '../../src/compiler/structure/interior/shell';
+import { lowerVolumeAst } from '../../src/compiler/structure/interior/lowerItems';
+import { solveInteriorLayout } from '../../src/compiler/structure/interior/solver';
 import { buildSculptedVolumes } from '../../src/compiler/structure/interior/volume';
 
 const makeRyokanRoom = (): InteriorRoomInput => ({
@@ -299,7 +301,146 @@ const testVanillaNbtLoweringInvariants = (): void => {
   }
 };
 
+const testVolumeZoneAndDoorwayRegressions = (): void => {
+  const base = makeRyokanRoom();
+  const regRoom: InteriorRoomInput = {
+    ...base,
+    room_id: 'reg_room',
+    bounds_from: [0, 0, 0],
+    bounds_to: [10, 7, 10],
+    openings: [{ id: 'd', kind: 'door', wall: 'south', from: [5, 1, 10], to: [5, 2, 10] }],
+    volumes: [
+      {
+        kind: 'mezzanine',
+        id: 'mez',
+        on: 'north',
+        depth: 3,
+        y_offset_b: 3,
+        railing: 'timber',
+        support_pillars: true,
+      },
+      { kind: 'platform', id: 'south_stage', on: 'south', size: [3, 2], height_16: 4 },
+      { kind: 'sunken', id: 'pit', from: [4, 4], size: [2, 2], height_16: -4 },
+    ],
+    props: [{ id: 'at_pillar', kind: 'chair', at: [1, 1, 3], size: [1, 1], facing: 'south' }],
+    stories: [],
+    draperies: [],
+    seed: 11,
+  };
+  const volumes = buildSculptedVolumes(regRoom);
+  const solved = solveInteriorLayout(regRoom, volumes.boxes);
+  assert.equal(
+    solved.clearance.clear_path_cells.some((c) => c[0] === 1 && c[2] === 3),
+    false,
+  );
+  assert.equal(solved.placed_props[0]!.nudged, true);
+
+  const nbt = lowerInteriorToVanillaNbt(regRoom);
+  assert.equal(
+    nbt.blocks.some((b) => b.pos[2] >= 8 && b.state.includes('slab')),
+    true,
+  );
+  assert.equal(
+    nbt.blocks.some((b) => b.pos[2] <= 2 && b.pos[1] === 1 && b.state.includes('slab')),
+    false,
+  );
+  const shell = buildInteriorShell(regRoom);
+  assert.equal(
+    shell.boxes.some(
+      (b) =>
+        (b.semantic_tag ?? '').startsWith('floor_') &&
+        b.from_16[0] >= 64 &&
+        b.to_16[0] <= 96 &&
+        b.from_16[2] >= 64 &&
+        b.to_16[2] <= 96,
+    ),
+    false,
+  );
+
+  // Verify omitted doorway_at/doorway_width matches centered 2-wide geometry doorway across solver and volumes.
+  const screenRoom: InteriorRoomInput = {
+    ...regRoom,
+    bounds_to: [10, 8, 10],
+    openings: [{ id: 's_door', kind: 'door', wall: 'south', from: [5, 1, 10], to: [6, 2, 10] }],
+    volumes: [
+      {
+        kind: 'partition',
+        id: 'screen',
+        style: 'screen',
+        axis: 'x',
+        at_pos: 5,
+        span_from: 1,
+        span_to: 9,
+      },
+    ],
+    props: [],
+  };
+  const screenVol = buildSculptedVolumes(screenRoom);
+  assert.deepEqual(screenVol.doorway_clearances, [
+    [5, 1, 5],
+    [6, 1, 5],
+  ]);
+  const screenSolved = solveInteriorLayout(screenRoom, screenVol.boxes);
+  assert.equal(screenSolved.clearance.passed, true);
+  assert.equal(
+    screenSolved.clearance.clear_path_cells.some((c) => c[2] < 5),
+    true,
+  );
+
+  // Verify nested props inside explicit-from platform anchor & stay inside platform bounds under collision nudging.
+  const nestedVols: InteriorRoomInput['volumes'][number][] = [];
+  const nestedProps: NonNullable<InteriorRoomInput['props']>[number][] = [];
+  lowerVolumeAst(
+    {
+      kind: 'platform',
+      id: 'dais',
+      from: [1, 1],
+      size: [2, 2],
+      height_16: 4,
+      nested: [
+        { item: 'prop', spec: { id: 'p_c1', kind: 'chair' } },
+        { item: 'prop', spec: { id: 'p_c2', kind: 'chair' } },
+      ],
+    },
+    {
+      name: 'r1',
+      kind: 'room',
+      acousticSpace: 'timber_room',
+      from: [0, 0, 0],
+      to: [10, 8, 10],
+      enclosed: true,
+    },
+    nestedVols,
+    nestedProps,
+    [],
+  );
+  for (const np of nestedProps) {
+    assert.ok(np.at[0] >= 1 && np.at[0] <= 2 && np.at[2] >= 1 && np.at[2] <= 2);
+    assert.equal(np.at[1], 1.25);
+  }
+  const daisSolved = solveInteriorLayout({
+    ...screenRoom,
+    volumes: nestedVols,
+    props: nestedProps,
+  });
+  const [p1, p2] = daisSolved.placed_props;
+  assert.ok(p1 && p2);
+  assert.notDeepEqual(
+    [p1.resolved_at[0], p1.resolved_at[2]],
+    [p2.resolved_at[0], p2.resolved_at[2]],
+  );
+  for (const pp of daisSolved.placed_props) {
+    assert.ok(
+      pp.resolved_at[0] >= 1 &&
+        pp.resolved_at[0] <= 2 &&
+        pp.resolved_at[2] >= 1 &&
+        pp.resolved_at[2] <= 2,
+    );
+  }
+};
+
 testClosedStyleDnaContract();
 testFiveLayerShellAndCorbelGuard();
 testSculptedSpatialVolumes();
 testVanillaNbtLoweringInvariants();
+testVolumeZoneAndDoorwayRegressions();

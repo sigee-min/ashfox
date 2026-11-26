@@ -16,6 +16,7 @@ import { compileAllDraperies } from './drapery';
 import { compileInteriorProps, type CustomPropMount } from './props';
 import { hashSeed01 } from './propsGeo';
 import { compileStoryVignette } from './vignettes';
+import { resolvePartitionDoorway, resolveZoneRect, type ZoneFootprint } from './zoneRect';
 
 export interface ClearPathReport {
   readonly clear_path_cells: readonly IntVec3[];
@@ -104,10 +105,9 @@ const collectPartitionBlocked = (room: InteriorRoomInput): ReadonlySet<string> =
 };
 
 const addPartitionCells = (vol: PartitionVolumeSpec, blocked: Set<string>): void => {
-  const doorStart = vol.doorway_at ?? -999;
-  const doorEnd = doorStart + (vol.doorway_width ?? 1) - 1;
+  const { doorAt, doorW } = resolvePartitionDoorway(vol);
   for (let u = vol.span_from; u <= vol.span_to; u += 1) {
-    if (u >= doorStart && u <= doorEnd) continue;
+    if (u >= doorAt && u < doorAt + doorW) continue;
     const x = vol.axis === 'x' ? u : vol.at_pos;
     const z = vol.axis === 'z' ? u : vol.at_pos;
     blocked.add(cellKey(x, z));
@@ -343,7 +343,7 @@ const canPlacePropAt = (
   spec: InteriorPropSpec,
   x: number,
   z: number,
-  room: InteriorRoomInput,
+  bounds: ZoneFootprint,
   occupied: ReadonlySet<string>,
   doorClear: ReadonlySet<string>,
   winClear: ReadonlySet<string>,
@@ -352,12 +352,7 @@ const canPlacePropAt = (
   const [wB, dB] = spec.size ?? [1, 1];
   const rw = spec.facing === 'east' || spec.facing === 'west' ? dB : wB;
   const rd = spec.facing === 'east' || spec.facing === 'west' ? wB : dB;
-  if (
-    x < room.bounds_from[0] + 1 ||
-    x + rw - 1 > room.bounds_to[0] - 1 ||
-    z < room.bounds_from[2] + 1 ||
-    z + rd - 1 > room.bounds_to[2] - 1
-  ) {
+  if (x < bounds.x0 || x + rw - 1 > bounds.x1 || z < bounds.z0 || z + rd - 1 > bounds.z1) {
     return false;
   }
   const cells = footprintCells(spec, x, z);
@@ -379,15 +374,16 @@ const findCandidatePlacement = (
   winClear: ReadonlySet<string>,
   stairCells: ReadonlySet<string>,
 ): readonly [number, number] => {
+  const bounds = resolveZoneRect(room, spec.zone_id);
   const sx = Math.round(spec.at[0]);
   const sz = Math.round(spec.at[2]);
-  if (canPlacePropAt(spec, sx, sz, room, occupied, doorClear, winClear, stairCells)) {
+  if (canPlacePropAt(spec, sx, sz, bounds, occupied, doorClear, winClear, stairCells)) {
     return [sx, sz];
   }
   const candidates: [number, number, number][] = [];
-  for (let z = room.bounds_from[2] + 1; z <= room.bounds_to[2] - 1; z += 1) {
-    for (let x = room.bounds_from[0] + 1; x <= room.bounds_to[0] - 1; x += 1) {
-      if (canPlacePropAt(spec, x, z, room, occupied, doorClear, winClear, stairCells)) {
+  for (let z = bounds.z0; z <= bounds.z1; z += 1) {
+    for (let x = bounds.x0; x <= bounds.x1; x += 1) {
+      if (canPlacePropAt(spec, x, z, bounds, occupied, doorClear, winClear, stairCells)) {
         const dist =
           Math.abs(x - sx) + Math.abs(z - sz) + hashSeed01(room.seed, `${spec.id}:${x},${z}`) * 0.1;
         candidates.push([dist, x, z]);
@@ -441,7 +437,12 @@ const resolvePropSpecs = (
       for (const c of footprintCells(spec, rx, rz)) occupied.add(c);
     }
     resolvedSpecs.push({ ...spec, at: nextAt });
-    placements.push({ id: spec.id, original_at: spec.at, resolved_at: nextAt, nudged });
+    placements.push({
+      id: spec.id,
+      original_at: spec.at,
+      resolved_at: nextAt,
+      nudged,
+    });
   }
   return { resolvedSpecs, placements };
 };

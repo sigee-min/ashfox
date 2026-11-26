@@ -2,7 +2,7 @@ import { compareText } from '@ashfox/internal-contracts';
 import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
 import type { StructureGrid } from '../contract';
 import { encodeStructureNbt } from '../nbt';
-import { resolvePlatformRect } from './volume';
+import { resolvePartitionDoorway, resolvePlatformRect } from './zoneRect';
 import {
   MIN_VANILLA_HEADROOM_BLOCKS,
   SUBVOXEL_UNITS_PER_BLOCK,
@@ -207,7 +207,12 @@ const applyMezzanineRailing = (
   if (vol.railing === 'none') return;
   const rail = railStateFor(vol.railing, c.room.style_dna.arch);
   const alongX = vol.on === 'north' || vol.on === 'south';
-  const edgeMap: Record<CardinalFacing, number> = { north: z1, south: z0, west: x1, east: x0 };
+  const edgeMap: Record<CardinalFacing, number> = {
+    north: z1,
+    south: z0,
+    west: x1,
+    east: x0,
+  };
   const fixed = edgeMap[vol.on];
   const [u0, u1] = alongX ? [x0, x1] : [z0, z1];
   for (let u = u0; u <= u1; u += 1)
@@ -283,8 +288,8 @@ const applyPartitionVolume = (c: LowerCtx, vol: PartitionVolumeSpec): void => {
   const [baseU, baseF] = alongX ? [c.off[0], c.off[2]] : [c.off[2], c.off[0]];
   const fixed = vol.at_pos - baseF;
   const [s0, s1] = [vol.span_from - baseU, vol.span_to - baseU];
-  const doorAt = (vol.doorway_at ?? Math.floor((vol.span_from + vol.span_to) / 2)) - baseU;
-  const doorW = Math.max(2, vol.doorway_width ?? 2);
+  const { doorAt: rawDoorAt, doorW } = resolvePartitionDoorway(vol);
+  const doorAt = rawDoorAt - baseU;
   const partState =
     vol.style === 'colonnade'
       ? c.pal.trim
@@ -397,7 +402,10 @@ const collectLoweredBlocks = (ctx: LowerCtx): readonly VanillaNbtBlockCell[] => 
   for (let ly = 0; ly < ctx.h; ly += 1)
     for (let lz = 0; lz < ctx.d; lz += 1)
       for (let lx = 0; lx < ctx.w; lx += 1)
-        blocks.push({ pos: [lx, ly, lz], state: ctx.cells[idxOf(ctx, lx, ly, lz)]! });
+        blocks.push({
+          pos: [lx, ly, lz],
+          state: ctx.cells[idxOf(ctx, lx, ly, lz)]!,
+        });
   return blocks;
 };
 

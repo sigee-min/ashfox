@@ -20,15 +20,19 @@ import {
   type InteriorOpeningSpan,
   type InteriorPropKind,
   type InteriorPropSpec,
-  type InteriorStoryKind,
-  type InteriorStorySpec,
   type InteriorVolumeSpec,
   type MountSurface,
   type PartitionStyle,
   type RailingStyle,
   type TrussStyle,
 } from './contract';
-import { propSurfaceHeight16 } from './props';
+import {
+  rectToFootprint,
+  resolveAnchor,
+  resolveMezzanineRect,
+  resolvePlatformRect,
+  type ZoneFootprint,
+} from './zoneRect';
 
 const DEFAULT_PROP_SIZE: Readonly<Record<string, IntVec2>> = {
   dining_set: [3, 1],
@@ -77,16 +81,13 @@ const anchorPos = (
   on: InteriorAnchor,
   size: IntVec2 = [1, 1],
   yB = room.from[1] + 1,
+  zone?: ZoneFootprint,
 ): Vec3 => {
-  const [ix0, ix1] = [room.from[0] + 1, room.to[0] - 1];
-  const [iz0, iz1] = [room.from[2] + 1, room.to[2] - 1];
-  const [w, d] = size;
-  const west = on === 'west' || on === 'nw' || on === 'sw';
-  const east = on === 'east' || on === 'ne' || on === 'se';
-  const north = on === 'north' || on === 'nw' || on === 'ne';
-  const south = on === 'south' || on === 'sw' || on === 'se';
-  const x = west ? ix0 : east ? Math.max(ix0, ix1 - w + 1) : Math.floor((ix0 + ix1 - w + 1) / 2);
-  const z = north ? iz0 : south ? Math.max(iz0, iz1 - d + 1) : Math.floor((iz0 + iz1 - d + 1) / 2);
+  const x0 = zone ? zone.x0 : room.from[0] + 1;
+  const x1 = zone ? zone.x1 : room.to[0] - 1;
+  const z0 = zone ? zone.z0 : room.from[2] + 1;
+  const z1 = zone ? zone.z1 : room.to[2] - 1;
+  const [x, z] = resolveAnchor(on, x0, x1, z0, z1, size[0], size[1]);
   return [x, yB, z];
 };
 
@@ -107,6 +108,7 @@ export const convertPropAst = (
   onFallback: InteriorAnchor,
   yB: number,
   zoneId?: string,
+  zone?: ZoneFootprint,
 ): InteriorPropSpec | null => {
   if (ast.kind === 'rug') return null;
   if ((ast.kind === 'chandelier' || ast.kind === 'pendant') && !ast.asset_alias) return null;
@@ -120,7 +122,7 @@ export const convertPropAst = (
   return {
     id: ast.id,
     kind,
-    at: ast.at ?? anchorPos(room, on, size, floorY),
+    at: ast.at ?? anchorPos(room, on, size, floorY, zone),
     size,
     facing: ast.facing ?? ANCHOR_FACING[on],
     mount_on: mountOn,
@@ -169,13 +171,14 @@ const lowerNestedItems = (
   volumes: InteriorVolumeSpec[],
   props: InteriorPropSpec[],
   stories: InteriorStoryAst[],
+  zone?: ZoneFootprint,
 ): void => {
   const fallbackWall = OPPOSITE_WALL[ANCHOR_FACING[on]];
   for (const sub of items) {
     if (sub.item === 'alcove') volumes.push(convertAlcoveAst(sub.spec, room, fallbackWall));
     else if (sub.item === 'story') stories.push(sub.spec);
     else {
-      const converted = convertPropAst(sub.spec, room, on, yB, zoneId);
+      const converted = convertPropAst(sub.spec, room, on, yB, zoneId, zone);
       if (converted) props.push(converted);
     }
   }
@@ -190,7 +193,7 @@ const lowerPlatformVolume = (
 ): void => {
   const size: IntVec2 = v.size ?? [3, 2];
   const yB = room.from[1] + 1 + v.height_16 / SUBVOXEL_UNITS_PER_BLOCK;
-  volumes.push({
+  const volSpec: Extract<InteriorVolumeSpec, { kind: 'platform' | 'sunken' }> = {
     kind: v.kind,
     id: v.id,
     ...(v.on ? { on: v.on } : {}),
@@ -199,12 +202,18 @@ const lowerPlatformVolume = (
     height_16: v.height_16,
     ...(v.step_facing ? { step_facing: v.step_facing } : {}),
     ...(v.floor_pattern
-      ? { floor_pattern: v.floor_pattern as InteriorArchitectureSpec['floor_pattern'] }
+      ? {
+          floor_pattern: v.floor_pattern as InteriorArchitectureSpec['floor_pattern'],
+        }
       : {}),
     ...(v.trim_tile ? { trim_tile: v.trim_tile } : {}),
     ...(v.railing ? { railing: v.railing as RailingStyle } : {}),
-  });
-  lowerNestedItems(v.nested, room, v.on ?? 'north', yB, v.id, volumes, props, stories);
+  };
+  volumes.push(volSpec);
+  const zone = rectToFootprint(
+    resolvePlatformRect({ bounds_from: room.from, bounds_to: room.to }, volSpec),
+  );
+  lowerNestedItems(v.nested, room, v.on ?? 'north', yB, v.id, volumes, props, stories, zone);
 };
 
 const lowerMezzanineVolume = (
@@ -216,7 +225,7 @@ const lowerMezzanineVolume = (
 ): void => {
   const h = room.to[1] - room.from[1] - 1;
   const yOff = v.y_offset_b ?? Math.max(3, Math.floor(h * 0.5));
-  volumes.push({
+  const mezSpec: Extract<InteriorVolumeSpec, { kind: 'mezzanine' }> = {
     kind: 'mezzanine',
     id: v.id,
     on: v.on,
@@ -225,8 +234,22 @@ const lowerMezzanineVolume = (
     railing: v.railing as RailingStyle,
     ...(v.stair_at ? { stair_at: v.stair_at } : {}),
     ...(v.support_pillars !== undefined ? { support_pillars: v.support_pillars } : {}),
-  });
-  lowerNestedItems(v.nested, room, v.on, room.from[1] + 1 + yOff, v.id, volumes, props, stories);
+  };
+  volumes.push(mezSpec);
+  const zone = rectToFootprint(
+    resolveMezzanineRect({ bounds_from: room.from, bounds_to: room.to }, mezSpec),
+  );
+  lowerNestedItems(
+    v.nested,
+    room,
+    v.on,
+    room.from[1] + 1 + yOff,
+    v.id,
+    volumes,
+    props,
+    stories,
+    zone,
+  );
 };
 
 const lowerPartitionVolume = (
@@ -441,47 +464,3 @@ export const expandDraperyForRoom = (
     },
   ];
 };
-
-const storyTargetCenter = (
-  target: InteriorPropSpec | undefined,
-  room: StructureRoomMeta,
-): readonly [number, number] => {
-  const u = SUBVOXEL_UNITS_PER_BLOCK;
-  if (!target) {
-    return [((room.from[0] + room.to[0] + 1) * u) / 2, ((room.from[2] + room.to[2] + 1) * u) / 2];
-  }
-  const [rawW, rawD] = target.size ?? [1, 1];
-  const [wB, dB] =
-    target.facing === 'east' || target.facing === 'west' ? [rawD, rawW] : [rawW, rawD];
-  return [(target.at[0] + wB * 0.5) * u, (target.at[2] + dB * 0.5) * u];
-};
-
-const lowerSingleStory = (
-  s: InteriorStoryAst,
-  props: readonly InteriorPropSpec[],
-  room: StructureRoomMeta,
-): InteriorStorySpec => {
-  const u = SUBVOXEL_UNITS_PER_BLOCK;
-  const target = s.on_target
-    ? props.find((p) => p.id === s.on_target || p.kind === s.on_target)
-    : props[0];
-  const [cx, cz] = storyTargetCenter(target, room);
-  const surfaceY = target
-    ? target.at[1] * u + propSurfaceHeight16(target.kind)
-    : (room.from[1] + 1) * u + 16;
-  return {
-    id: s.id,
-    kind: s.kind as InteriorStoryKind,
-    on_target: target?.id ?? s.on_target ?? 'floor',
-    surface_y_16: surfaceY,
-    center_xz_16: [cx, cz],
-    facing: s.facing ?? target?.facing ?? 'south',
-    ...(s.seed !== undefined ? { seed: s.seed } : {}),
-  };
-};
-
-export const lowerStories = (
-  stories: readonly InteriorStoryAst[],
-  props: readonly InteriorPropSpec[],
-  room: StructureRoomMeta,
-): readonly InteriorStorySpec[] => stories.map((s) => lowerSingleStory(s, props, room));

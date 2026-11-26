@@ -1,6 +1,7 @@
 import type { InteriorRoomOp, InteriorStoryAst } from '../../../project/structure/interiorDef';
 import type { StructureOpeningMeta, StructureRoomMeta } from '../contract';
 import {
+  SUBVOXEL_UNITS_PER_BLOCK,
   parseClosedStyleDna,
   type CeilingStyle,
   type InteriorArchitectureSpec,
@@ -8,6 +9,8 @@ import {
   type InteriorPropSpec,
   type InteriorRadiosityConfig,
   type InteriorRoomInput,
+  type InteriorStoryKind,
+  type InteriorStorySpec,
   type InteriorSunShaftConfig,
   type InteriorVolumeSpec,
   type StyleDna,
@@ -17,9 +20,9 @@ import {
   convertPropAst,
   expandDraperyForRoom,
   lowerGroupProps,
-  lowerStories,
   lowerVolumeAst,
 } from './lowerItems';
+import { propSurfaceHeight16 } from './props';
 import { resolveInteriorArchitecture } from './shell';
 
 export interface LoweredInteriorContext {
@@ -92,6 +95,50 @@ const extractShaftConfig = (op: InteriorRoomOp) => {
     ...(s.shaft_length_b !== undefined ? { shaft_length_b: s.shaft_length_b } : {}),
   };
 };
+
+const storyTargetCenter = (
+  target: InteriorPropSpec | undefined,
+  room: StructureRoomMeta,
+): readonly [number, number] => {
+  const u = SUBVOXEL_UNITS_PER_BLOCK;
+  if (!target) {
+    return [((room.from[0] + room.to[0] + 1) * u) / 2, ((room.from[2] + room.to[2] + 1) * u) / 2];
+  }
+  const [rawW, rawD] = target.size ?? [1, 1];
+  const [wB, dB] =
+    target.facing === 'east' || target.facing === 'west' ? [rawD, rawW] : [rawW, rawD];
+  return [(target.at[0] + wB * 0.5) * u, (target.at[2] + dB * 0.5) * u];
+};
+
+const lowerSingleStory = (
+  s: InteriorStoryAst,
+  props: readonly InteriorPropSpec[],
+  room: StructureRoomMeta,
+): InteriorStorySpec => {
+  const u = SUBVOXEL_UNITS_PER_BLOCK;
+  const target = s.on_target
+    ? props.find((p) => p.id === s.on_target || p.kind === s.on_target)
+    : props[0];
+  const [cx, cz] = storyTargetCenter(target, room);
+  const surfaceY = target
+    ? target.at[1] * u + propSurfaceHeight16(target.kind)
+    : (room.from[1] + 1) * u + 16;
+  return {
+    id: s.id,
+    kind: s.kind as InteriorStoryKind,
+    on_target: target?.id ?? s.on_target ?? 'floor',
+    surface_y_16: surfaceY,
+    center_xz_16: [cx, cz],
+    facing: s.facing ?? target?.facing ?? 'south',
+    ...(s.seed !== undefined ? { seed: s.seed } : {}),
+  };
+};
+
+const lowerStories = (
+  stories: readonly InteriorStoryAst[],
+  props: readonly InteriorPropSpec[],
+  room: StructureRoomMeta,
+): readonly InteriorStorySpec[] => stories.map((s) => lowerSingleStory(s, props, room));
 
 /** Lowers an ashfox 1 InteriorRoomOp + evaluated room bounds/openings into InteriorRoomInput. */
 export const lowerInteriorAstToInput = (
