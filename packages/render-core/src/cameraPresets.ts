@@ -43,6 +43,46 @@ const computeFrameDistance = (
   return Math.max(12, (Math.max(widthDistance, heightDistance) + depth / 2) * padding);
 };
 
+const BOX_CORNER_SIGNS: readonly [number, number, number][] = [
+  [-1, -1, -1],
+  [1, -1, -1],
+  [-1, 1, -1],
+  [1, 1, -1],
+  [-1, -1, 1],
+  [1, -1, 1],
+  [-1, 1, 1],
+  [1, 1, 1],
+];
+
+const computeCornerFrameDistance = (
+  camera: THREE.PerspectiveCamera,
+  size: THREE.Vector3,
+  right: THREE.Vector3,
+  up: THREE.Vector3,
+  dir: THREE.Vector3,
+  padding: number,
+): number => {
+  const tanHalfV = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  const tanHalfH = tanHalfV * camera.aspect;
+  const hx = size.x / 2;
+  const hy = size.y / 2;
+  const hz = size.z / 2;
+  let minDistance = 0;
+  for (const [cx, cy, cz] of BOX_CORNER_SIGNS) {
+    const sx = cx * hx;
+    const sy = cy * hy;
+    const sz = cz * hz;
+    const rx = sx * right.x + sy * right.y + sz * right.z;
+    const ry = sx * up.x + sy * up.y + sz * up.z;
+    const rz = sx * dir.x + sy * dir.y + sz * dir.z;
+    minDistance = Math.max(
+      minDistance,
+      rz + Math.max(Math.abs(rx) / tanHalfH, Math.abs(ry) / tanHalfV),
+    );
+  }
+  return Math.max(4, minDistance * 1.15 * padding);
+};
+
 const resolveSubjectBounds = (
   subject: THREE.Object3D | THREE.Box3 | undefined,
 ): THREE.Box3 | null => {
@@ -152,6 +192,7 @@ export const frameBoxAtAngles = (
   elevationDeg: number,
   zoom = 1,
   fov = 42,
+  padding = CAMERA_PADDING,
 ): THREE.Vector3 => {
   const target = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
@@ -164,13 +205,9 @@ export const frameBoxAtAngles = (
   ).normalize();
   const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), dir).normalize();
   const up = new THREE.Vector3().crossVectors(dir, right).normalize();
-  const projW =
-    Math.abs(right.x) * size.x + Math.abs(right.y) * size.y + Math.abs(right.z) * size.z;
-  const projH = Math.abs(up.x) * size.x + Math.abs(up.y) * size.y + Math.abs(up.z) * size.z;
-  const projD = Math.abs(dir.x) * size.x + Math.abs(dir.y) * size.y + Math.abs(dir.z) * size.z;
   camera.fov = fov;
   camera.up.set(0, 1, 0);
-  const distance = computeFrameDistance(camera, projW, projH, projD, CAMERA_PADDING) / zoom;
+  const distance = computeCornerFrameDistance(camera, size, right, up, dir, padding) / zoom;
   camera.near = 0.1;
   camera.far = Math.max(camera.far, Math.ceil(distance * 4), 256);
   camera.position.copy(target).add(dir.multiplyScalar(distance));

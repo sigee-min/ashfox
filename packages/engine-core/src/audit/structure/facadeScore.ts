@@ -184,6 +184,18 @@ const archItem = (
   fix: string,
 ): MetricSpec => ({ metric: auditSubmetric(id, label, ratio, maxScore, val, target, detail), fix });
 
+const collectMassingFeatures = (grid: StructureGrid) => {
+  const jettyFloors = grid.floors.filter(
+    (f) => f.jetty && Object.values(f.jetty).some((v) => (v ?? 0) > 0),
+  ).length;
+  const octagonRooms = grid.rooms.filter((r) => r.shape === 'octagon').length;
+  const bayArcadeOpenings = grid.openings.filter(
+    (o) => o.kind === 'bay_window' || o.kind === 'arcade',
+  ).length;
+  const multiRoofWings = Math.max(0, grid.roofCount - 1);
+  return { jettyFloors, octagonRooms, bayArcadeOpenings, multiRoofWings };
+};
+
 const archRatios = (
   grid: StructureGrid,
   blockCount: number,
@@ -191,23 +203,44 @@ const archRatios = (
   interiorCells: number,
   accessibleDoorways: number,
   facade: FacadeStats,
-) => ({
-  footprint:
-    0.55 * ramp(blockCount, 40, 220) + 0.45 * ramp(Math.min(grid.size[0], grid.size[2]), 5, 11),
-  roof:
-    0.45 * ramp(facade.roofShapeBlocks + grid.roofCount * 12, 4, 24) +
-    0.25 * (grid.hasRoofTrim || facade.roofShapeBlocks >= 12 ? 1 : 0) +
-    0.3 * ramp(facade.heightVariance + grid.dormerCount + grid.chimneyCount, 0.5, 2.2),
-  form: 0.6 * ramp(shapeKinds, 2, 6) + 0.4 * ramp(facade.heightVariance, 0.35, 1.8),
-  comp: Math.max(
-    0.4 * ramp(grid.rooms.length + grid.floors.length, 1, 4) +
-      0.35 * ramp(interiorCells, 16, 80) +
-      0.25 * (accessibleDoorways >= 1 ? 1 : 0),
-    interiorCells >= 45 && accessibleDoorways >= 1 ? 0.78 : 0,
-  ),
-  rooms: grid.rooms.length || (interiorCells >= 45 ? 1 : 0),
-  roofDetail: `${facade.roofShapeBlocks} roof slope/trim blocks, variance ${facade.heightVariance.toFixed(2)}`,
-});
+) => {
+  const massing = collectMassingFeatures(grid);
+  const massingBonus =
+    massing.jettyFloors + massing.octagonRooms + massing.bayArcadeOpenings + massing.multiRoofWings;
+  return {
+    footprint:
+      0.55 * ramp(blockCount, 40, 220) + 0.45 * ramp(Math.min(grid.size[0], grid.size[2]), 5, 11),
+    roof: Math.min(
+      1,
+      0.45 * ramp(facade.roofShapeBlocks + grid.roofCount * 12, 4, 24) +
+        0.25 * (grid.hasRoofTrim || facade.roofShapeBlocks >= 12 ? 1 : 0) +
+        0.3 *
+          ramp(
+            facade.heightVariance + grid.dormerCount + grid.chimneyCount + massing.multiRoofWings,
+            0.5,
+            2.2,
+          ),
+    ),
+    form: Math.min(
+      1,
+      0.6 * ramp(shapeKinds, 2, 6) +
+        0.4 * ramp(facade.heightVariance, 0.35, 1.8) +
+        0.22 * ramp(massingBonus, 1, 4),
+    ),
+    comp: Math.min(
+      1,
+      Math.max(
+        0.4 * ramp(grid.rooms.length + grid.floors.length + massing.octagonRooms, 1, 4) +
+          0.35 * ramp(interiorCells, 16, 80) +
+          0.25 * (accessibleDoorways >= 1 ? 1 : 0) +
+          0.12 * ramp(massing.jettyFloors + massing.bayArcadeOpenings, 1, 3),
+        interiorCells >= 45 && accessibleDoorways >= 1 ? 0.78 : 0,
+      ),
+    ),
+    rooms: grid.rooms.length || (interiorCells >= 45 ? 1 : 0),
+    roofDetail: `${facade.roofShapeBlocks} roof slope/trim blocks, variance ${facade.heightVariance.toFixed(2)}`,
+  };
+};
 
 /** Evaluates Pillar 1: Architecture & Silhouette (30 pts). */
 export const evaluateArchitecture = (
@@ -263,26 +296,61 @@ export const evaluateArchitecture = (
   ]);
 };
 
-/** Evaluates Pillar 2: Facade Relief & Rhythm (25 pts). */
-export const evaluateFacade = (
+const facadeRatios = (
   grid: StructureGrid,
   accessibleDoorways: number,
   facade: FacadeStats,
+  trimCount: number,
 ) => {
   const openingSweet =
     facade.openingRatio > 0.45
       ? ramp(1 - facade.openingRatio, 0.25, 0.55)
       : ramp(facade.openingRatio, 0.02, 0.08);
+  const bayArcade = grid.openings.filter(
+    (o) => o.kind === 'bay_window' || o.kind === 'arcade',
+  ).length;
+  const trimBonus = trimCount > 0 ? ramp(trimCount, 4, 40) : 0;
+  return {
+    relief: Math.min(
+      1,
+      ramp(facade.facadeReliefRatio, 0.02, 0.16) + 0.22 * trimBonus + 0.15 * ramp(bayArcade, 1, 3),
+    ),
+    openings: Math.min(
+      1,
+      0.65 * openingSweet + 0.35 * (accessibleDoorways >= 1 ? 1 : 0) + 0.15 * ramp(bayArcade, 1, 2),
+    ),
+    accents: ramp(
+      facade.exteriorAccents +
+        grid.customPlacements.length +
+        Math.min(8, Math.floor(trimCount / 4)),
+      1,
+      6,
+    ),
+    reliefDetail:
+      trimCount > 0
+        ? `${Math.round(facade.facadeReliefRatio * 100)}% relief, ${trimCount} sub-voxel trims`
+        : `${Math.round(facade.facadeReliefRatio * 100)}% exterior relief elements`,
+  };
+};
+
+/** Evaluates Pillar 2: Facade Relief & Rhythm (25 pts). */
+export const evaluateFacade = (
+  grid: StructureGrid,
+  accessibleDoorways: number,
+  facade: FacadeStats,
+  trimCount = 0,
+) => {
+  const r = facadeRatios(grid, accessibleDoorways, facade, trimCount);
   return scoreSpecs('facade', [
     {
       metric: auditSubmetric(
         'facade.relief',
         'Facade Relief & Depth',
-        ramp(facade.facadeReliefRatio, 0.02, 0.16),
+        r.relief,
         9,
         facade.facadeReliefRatio,
         0.16,
-        `${Math.round(facade.facadeReliefRatio * 100)}% exterior relief elements`,
+        r.reliefDetail,
       ),
       fix: 'Break flat walls with recessed windows, shutters, sills, lintels, and pilasters.',
     },
@@ -290,7 +358,7 @@ export const evaluateFacade = (
       metric: auditSubmetric(
         'facade.openings',
         'Openings & Fenestration Rhythm',
-        0.65 * openingSweet + 0.35 * (accessibleDoorways >= 1 ? 1 : 0),
+        r.openings,
         7,
         facade.openingRatio,
         0.1,
@@ -314,7 +382,7 @@ export const evaluateFacade = (
       metric: auditSubmetric(
         'facade.accents',
         'Exterior Lanterns & Trim Accents',
-        ramp(facade.exteriorAccents + grid.customPlacements.length, 1, 6),
+        r.accents,
         4,
         facade.exteriorAccents,
         6,

@@ -36,13 +36,13 @@
 
 | 연산 | 동작 |
 | --- | --- |
-| `floor name y = n height = h { … }` | 한 층(`height >= 3`, `y` = 바닥 슬래브 높이) 단위로 방과 개구부 범위 지정 |
-| `room id from = (x, z) size = (w, d) kind = … [plinth = k] floor = k wall = k [frame = k] [ceiling = k];` | 시맨틱 방 선언(`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`); 인접 방은 1블록 벽 공유 가능 |
-| `facade on room.wall, … { door …; window …; arch …; }` | 문(`porch { depth; floor; pillars; lamps; steps; }` 포함), 창문(`at\|repeat\|symmetric`·리세스·창틀·덧창), 연결 아치 배치 |
+| `floor name y = n height = h [jetty = n \| jetty_n = n …] { … }` | 한 층(`height >= 3`, `y` = 바닥 슬래브 높이) 단위로 방과 개구부 범위 지정 및 선택적 목재 `jetty` 캔틸레버 돌출(`0..2`)·까치발 적용 |
+| `room id from = (x, z) size = (w, d) kind = … [shape = rect\|octagon] [plinth = k] floor = k wall = k [frame = k] [ceiling = k];` | 시맨틱 방 선언(`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`, 직사각 또는 8각형); 인접 방은 1블록 벽 공유 가능 |
+| `facade on room.wall, … { door …; window …; arch …; bay_window …; arcade …; }` | 문(`porch` 포함), 창문(`at\|repeat\|symmetric`·리세스·창틀·덧창), 돌출형 `bay_window`, 아치형 `arcade` 열주, 연결 아치 배치 |
 | `staircase [in_room = r] style = straight\|l_turn\|u_turn\|spiral at = (x, z) [y_from = n y_to = n] facing = … stair = k [landing = k rail = k headroom = 3];` | 최소 머리 공간(`>= 2`) 확보와 상층 바닥 자동 개구부를 포함한 계단 생성 |
-| `roof [on = r \| from = … to = …] style = gable\|hip\|pyramid axis = x\|z [overhang = n pitch = shallow\|standard\|steep trim = k under_eave = true] stair = k ridge = r [gable = g] [{ dormer …; chimney …; }];` | 처마 돌출·트림·도머·굴뚝이 포함된 경사 지붕 생성 |
+| `roof [on = r \| from = … to = …] style = gable\|hip\|pyramid\|spire axis = x\|z [overhang = n pitch = shallow\|standard\|steep trim = k under_eave = true battlement = true] stair = k ridge = r [gable = g] [{ … }];` | 처마 돌출·트림·교차 골(valley)·흉벽(`battlement`)·첨탑(`spire`)·도머·굴뚝이 포함된 경사 지붕 생성 |
 | `furnish room = r { place_anchor prefab = … on = …; hang block = k at = … drop = n; }` | 모서리·벽·중앙 기준 가구 프리팹 앵커 배치 및 천장 조명 매달기 |
-| `weathering { ground_moss …; corner_quoin …; chimney_soot …; eave_shadow …; }` | 시드 기반 이끼·모서리 굄돌·굴뚝 그을음·처마 음영 풍화 적용(`rate` `0..1`) |
+| `weathering { ground_moss …; corner_quoin …; chimney_soot …; }` | 시드 기반 바닥 이끼·모서리 굄돌·굴뚝 그을음 풍화 적용(`rate` `0..1`; 처마 음영은 정점 AO로 자동 베이크됨) |
 | `socket id kind = entry\|road\|wall_join\|courtyard (room = r wall = … \| at = …) normal = … [pool = "…" target = "…"];` | `.structure.json`과 `.nbt` 지그소 엔티티용 월드 연결 소켓 정의 |
 | `compound_place alias at = (x, y, z) rotate = 0\|90\|180\|270;` | `compound` 단위 안에 import한 하위 `structure` 배치 |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | 저수준 복셀, ASCII 평면도, 반복·대칭, 프리팹 배치 연산 |

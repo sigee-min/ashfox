@@ -58,18 +58,32 @@ const craftItem = (
 ) => ({ metric: auditSubmetric(id, label, ratio, maxScore, val, target, detail), fix });
 
 const craftRatios = (grid: StructureGrid, m: StructureAuditMetrics, mesh?: StructureBakedMesh) => {
+  const trimCount = mesh?.trimCount ?? 0;
+  const trimBonus = trimCount > 0 ? ramp(trimCount, 4, 40) : 0;
   const mod =
     0.55 * ramp(m.prefabUses, 0, 3) +
     0.25 * (grid.density === 2 ? 1 : 0.4) +
     0.2 * Math.max(m.semanticRatio, m.prefabUses >= 2 ? 0.8 : 0);
-  const custom =
-    0.6 * ramp(m.customAssetCount, 0, 2) + 0.4 * ramp(grid.customPlacements.length, 0, 4);
+  const custom = Math.min(
+    1,
+    0.6 * ramp(m.customAssetCount, 0, 2) +
+      0.4 * ramp(grid.customPlacements.length, 0, 4) +
+      0.25 * trimBonus,
+  );
   const hasMeshStats = (mesh?.rawFaceCount ?? 0) > 0;
-  const opt = hasMeshStats ? ramp(1 - m.greedyCompressionRatio, 0.2, 0.6) : 0.75;
+  const opt = hasMeshStats
+    ? Math.min(1, ramp(1 - m.greedyCompressionRatio, 0.2, 0.6) + 0.2 * trimBonus)
+    : Math.min(1, 0.75 + 0.25 * trimBonus);
   const optDetail = hasMeshStats
-    ? `${Math.round((1 - m.greedyCompressionRatio) * 100)}% quad reduction`
-    : 'Greedy stats deferred';
-  return { mod, custom, opt, optDetail };
+    ? `${Math.round((1 - m.greedyCompressionRatio) * 100)}% quad reduction${trimCount > 0 ? `, ${trimCount} trims` : ''}`
+    : trimCount > 0
+      ? `${trimCount} sub-voxel trims`
+      : 'Greedy stats deferred';
+  const customDetail =
+    trimCount > 0
+      ? `${m.customAssetCount} custom prop types (${grid.customPlacements.length} placed), ${trimCount} trims`
+      : `${m.customAssetCount} custom prop types (${grid.customPlacements.length} placed)`;
+  return { mod, custom, opt, optDetail, customDetail };
 };
 
 /** Evaluates Pillar 4: Modularity & Craft (20 pts). */
@@ -107,7 +121,7 @@ export const evaluateCraftPillar = (
       4,
       m.customAssetCount,
       2,
-      `${m.customAssetCount} custom prop types (${grid.customPlacements.length} placed)`,
+      r.customDetail,
       'Import and place custom .ashfox props such as wall lanterns or carved pillars.',
     ),
     craftItem(

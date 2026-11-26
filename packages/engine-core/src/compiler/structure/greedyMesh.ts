@@ -12,79 +12,38 @@ import type {
   StructureGrid,
   StructureLightingField,
   StructurePropInstance,
+  StructureRoomMeta,
 } from './contract';
-import { computeFaceShade, FACE_BASIS, FACE_CORNER_TABLE, samplePropLightRgb } from './lighting';
-import { shapeBoxSpecs, tileForFace, type CachedBlockState, type LocalBoxSpec } from './shapes';
-
-interface BatchDraft {
-  readonly layer: BlockRenderLayer;
-  readonly textureId: string;
-  readonly positions: number[];
-  readonly normals: number[];
-  readonly uvs: number[];
-  readonly colors: number[];
-  readonly indices: number[];
-}
+import { computeFaceShade, FACE_BASIS, samplePropLightRgb } from './lighting';
+import {
+  shapeBoxSpecs,
+  setVec3,
+  tileForBoxFace,
+  tileForFace,
+  writeQuadUv,
+  writeSpecBoxUv,
+  type CachedBlockState,
+  type LocalBoxSpec,
+} from './shapes';
+import {
+  emitArchitecturalTrims,
+  getBatch,
+  pushQuad,
+  type BatchDraft,
+  type MeshCtx,
+  type NonFullScratch,
+} from './trim';
 
 interface MaskCell {
   readonly key: string;
   readonly layer: BlockRenderLayer;
+  readonly tileId: string;
   readonly textureId: string;
   readonly flip: boolean;
   readonly colors: readonly number[];
 }
 
-interface MeshCtx {
-  readonly grid: StructureGrid;
-  readonly descriptors: readonly BlockDescriptor[];
-  readonly parsedStates: readonly CachedBlockState[];
-  readonly lighting: StructureLightingField;
-  readonly maxY: number;
-  readonly batches: Map<string, BatchDraft>;
-}
-
 const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
-
-const getBatch = (
-  batches: Map<string, BatchDraft>,
-  layer: BlockRenderLayer,
-  textureId: string,
-): BatchDraft => {
-  const key = `${layer}:${textureId}`;
-  let batch = batches.get(key);
-  if (!batch) {
-    batch = { layer, textureId, positions: [], normals: [], uvs: [], colors: [], indices: [] };
-    batches.set(key, batch);
-  }
-  return batch;
-};
-
-const pushQuad = (
-  batch: BatchDraft,
-  dir: CubeFaceDirection,
-  from: readonly [number, number, number],
-  to: readonly [number, number, number],
-  uvs: readonly number[],
-  colors: readonly number[],
-  flip: boolean,
-): void => {
-  const base = batch.positions.length / 3;
-  const t = FACE_CORNER_TABLE[dir];
-  const normal = FACE_BASIS[dir].normal;
-  for (let i = 0; i < 4; i += 1) {
-    const k = i * 3;
-    batch.positions.push(
-      t[k]! ? to[0] : from[0],
-      t[k + 1]! ? to[1] : from[1],
-      t[k + 2]! ? to[2] : from[2],
-    );
-    batch.normals.push(normal[0], normal[1], normal[2]);
-    batch.uvs.push(uvs[i * 2]!, uvs[i * 2 + 1]!);
-    batch.colors.push(colors[k]!, colors[k + 1]!, colors[k + 2]!);
-  }
-  if (flip) batch.indices.push(base + 1, base + 2, base + 3, base + 1, base + 3, base);
-  else batch.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-};
 
 const isFaceCulled = (
   ctx: MeshCtx,
@@ -115,12 +74,6 @@ const sliceDimsFor = (dir: CubeFaceDirection, w: number, maxY: number, d: number
   return { axis: 1, sliceLen: maxY, uLen: w, vLen: d };
 };
 
-const setVec3 = (out: [number, number, number], x: number, y: number, z: number): void => {
-  out[0] = x;
-  out[1] = y;
-  out[2] = z;
-};
-
 const writeSliceBounds = (
   axis: 0 | 1 | 2,
   s: number,
@@ -143,17 +96,6 @@ const writeSliceBounds = (
     setVec3(from, u - hw, s, v - hd);
     setVec3(to, u + mw - hw, s + 1, v + mh - hd);
   }
-};
-
-const writeQuadUv = (uvs: number[], pu: number, pv: number, uSpan: number, vSpan: number): void => {
-  uvs[0] = pu;
-  uvs[1] = pv + vSpan;
-  uvs[2] = pu + uSpan;
-  uvs[3] = pv + vSpan;
-  uvs[4] = pu + uSpan;
-  uvs[5] = pv;
-  uvs[6] = pu;
-  uvs[7] = pv;
 };
 
 const makeMaskCell = (
@@ -193,6 +135,7 @@ const makeMaskCell = (
   return {
     key: `${desc.layer}|${textureId}|${shade.aoCode}|${shade.quantizedTint}|${shade.flip ? 1 : 0}`,
     layer: desc.layer,
+    tileId,
     textureId,
     flip: shade.flip,
     colors: shade.colors,
@@ -260,7 +203,7 @@ const emitMergedSliceQuads = (
         for (let dx = 0; dx < mw; dx += 1) mask[(v + dy) * dims.uLen + u + dx] = null;
       writeSliceBounds(dims.axis, s, u, v, mw, mh, hw, hd, fromBuf, toBuf);
       writeQuadUv(uvsBuf, (u & 1) * 0.5, (v & 1) * 0.5, mw * 0.5, mh * 0.5);
-      const batch = getBatch(ctx.batches, cell.layer, cell.textureId);
+      const batch = getBatch(ctx.batches, cell.layer, cell.tileId);
       pushQuad(batch, dir, fromBuf, toBuf, uvsBuf, cell.colors, cell.flip);
       merged += 1;
     }
@@ -299,27 +242,22 @@ const connectsNeighbor = (
   return v > 0 && (ctx.descriptors[v]!.solidOpaque || ctx.descriptors[v]!.shape === shape);
 };
 
-interface NonFullScratch {
-  readonly from: [number, number, number];
-  readonly to: [number, number, number];
-  readonly uvs: number[];
-  readonly colors: number[];
-}
-
-const writeSpecBoxUv = (
-  dir: CubeFaceDirection,
-  spec: LocalBoxSpec,
+const isNearEnclosedRoom = (
+  rooms: readonly StructureRoomMeta[],
   x: number,
   y: number,
   z: number,
-  uvs: number[],
-): void => {
-  const ew = dir === 'east' || dir === 'west';
-  const ud = dir === 'up' || dir === 'down';
-  const uSpan = ((ew ? spec.to[2] - spec.from[2] : spec.to[0] - spec.from[0]) / 16) * 0.5;
-  const vSpan = ((ud ? spec.to[2] - spec.from[2] : spec.to[1] - spec.from[1]) / 16) * 0.5;
-  writeQuadUv(uvs, ((ew ? z : x) & 1) * 0.5, ((ud ? z : y) & 1) * 0.5, uSpan, vSpan);
-};
+): boolean =>
+  rooms.some(
+    (r) =>
+      r.enclosed &&
+      x >= r.from[0] - 1 &&
+      x <= r.to[0] + 1 &&
+      y >= r.from[1] - 1 &&
+      y <= r.to[1] + 1 &&
+      z >= r.from[2] - 1 &&
+      z <= r.to[2] + 1,
+  );
 
 const emitBoxSpecFaces = (
   ctx: MeshCtx,
@@ -344,13 +282,10 @@ const emitBoxSpecFaces = (
     y + spec.to[1] / 16,
     z + spec.to[2] / 16 - d / 2,
   );
-  const layer: BlockRenderLayer = spec.emissive ? 'emissive' : desc.layer;
+  const layer: BlockRenderLayer = spec.layer ?? (spec.emissive ? 'emissive' : desc.layer);
   const { grid, descriptors, lighting, maxY, batches } = ctx;
   for (const dir of DIRS6) {
-    const texId = structureTileTextureId(
-      layer,
-      spec.tileOverride ?? tileForFace(desc, dir, cached.facing),
-    );
+    const tileId = tileForBoxFace(desc, spec, dir, cached.facing);
     const shade = computeFaceShade(
       grid,
       descriptors,
@@ -366,7 +301,7 @@ const emitBoxSpecFaces = (
     );
     writeSpecBoxUv(dir, spec, x, y, z, scratch.uvs);
     pushQuad(
-      getBatch(batches, layer, texId),
+      getBatch(batches, layer, tileId),
       dir,
       scratch.from,
       scratch.to,
@@ -378,15 +313,9 @@ const emitBoxSpecFaces = (
   return 6;
 };
 
-const emitNonFullBlocks = (ctx: MeshCtx): number => {
+const emitNonFullBlocks = (ctx: MeshCtx, scratch: NonFullScratch): number => {
   const [w, _h, d] = ctx.grid.size;
   const conns: [boolean, boolean, boolean, boolean] = [false, false, false, false];
-  const scratch: NonFullScratch = {
-    from: [0, 0, 0],
-    to: [0, 0, 0],
-    uvs: new Array<number>(8),
-    colors: new Array<number>(12),
-  };
   let count = 0;
   for (let idx = 0; idx < ctx.maxY * d * w; idx += 1) {
     const v = ctx.grid.voxels[idx]!;
@@ -401,17 +330,60 @@ const emitNonFullBlocks = (ctx: MeshCtx): number => {
     conns[2] = connectsNeighbor(ctx, x + 1, y, z, desc.shape);
     conns[3] = connectsNeighbor(ctx, x - 1, y, z, desc.shape);
     const cached = ctx.parsedStates[v]!;
-    for (const spec of shapeBoxSpecs(desc, cached.parsed, cached.facing, conns)) {
+    const interiorGlow =
+      desc.shape === 'pane' &&
+      desc.top !== 'iron_bars' &&
+      isNearEnclosedRoom(ctx.grid.rooms, x, y, z);
+    for (const spec of shapeBoxSpecs(desc, cached.parsed, cached.facing, conns, interiorGlow)) {
       count += emitBoxSpecFaces(ctx, desc, cached, spec, x, y, z, scratch);
     }
   }
   return count;
 };
 
+const SHAPE_EXTRA_TILES: Partial<
+  Record<
+    BlockDescriptor['shape'],
+    readonly { readonly layer: BlockRenderLayer; readonly tileId: string }[]
+  >
+> = {
+  campfire: [
+    { layer: 'opaque', tileId: 'spruce_planks' },
+    { layer: 'opaque', tileId: 'oak_planks' },
+    { layer: 'emissive', tileId: 'hearth_ember' },
+  ],
+  lantern: [{ layer: 'opaque', tileId: 'iron_flue' }],
+  torch: [
+    { layer: 'opaque', tileId: 'iron_flue' },
+    { layer: 'opaque', tileId: 'spruce_planks' },
+  ],
+  bed: [
+    { layer: 'opaque', tileId: 'spruce_planks' },
+    { layer: 'opaque', tileId: 'timber_trim' },
+    { layer: 'opaque', tileId: 'plaster_white' },
+  ],
+  table: [{ layer: 'opaque', tileId: 'timber_trim' }],
+  pane: [
+    { layer: 'opaque', tileId: 'timber_trim' },
+    { layer: 'emissive', tileId: 'window_glow' },
+  ],
+  door: [
+    { layer: 'opaque', tileId: 'timber_trim' },
+    { layer: 'opaque', tileId: 'iron_flue' },
+    { layer: 'cutout', tileId: 'glass' },
+    { layer: 'cutout', tileId: 'iron_bars' },
+    { layer: 'opaque', tileId: 'oak_planks' },
+    { layer: 'opaque', tileId: 'spruce_planks' },
+    { layer: 'opaque', tileId: 'iron_block' },
+    { layer: 'opaque', tileId: 'gold_block' },
+  ],
+};
+
 const collectBakedTileRequests = (
   grid: StructureGrid,
   descriptors: readonly BlockDescriptor[],
   maxY: number,
+  batches: ReadonlyMap<string, BatchDraft>,
 ) => {
   const reqs: { readonly layer: BlockRenderLayer; readonly tileId: string }[] = [];
   const usedStates = new Set<number>();
@@ -427,14 +399,11 @@ const collectBakedTileRequests = (
       { layer: desc.layer, tileId: desc.bottom },
       { layer: desc.layer, tileId: desc.side },
       { layer: desc.layer, tileId: desc.front },
+      ...(SHAPE_EXTRA_TILES[desc.shape] ?? []),
     );
-    if (desc.shape === 'campfire') {
-      reqs.push(
-        { layer: 'opaque', tileId: 'spruce_planks' },
-        { layer: 'opaque', tileId: 'oak_planks' },
-      );
-    }
   }
+  for (const b of batches.values())
+    if (b.indices.length > 0) reqs.push({ layer: b.layer, tileId: b.tileId });
   return reqs;
 };
 
@@ -478,14 +447,28 @@ export const buildStructureBakedMesh = (
     const facing: CardinalFacing = f === 'south' || f === 'east' || f === 'west' ? f : 'north';
     return { parsed, facing };
   });
+  const ctx: MeshCtx = {
+    grid,
+    descriptors,
+    parsedStates,
+    lighting,
+    maxY,
+    batches: new Map(),
+  };
+  const scratch: NonFullScratch = {
+    from: [0, 0, 0],
+    to: [0, 0, 0],
+    uvs: new Array<number>(8),
+    colors: new Array<number>(12),
+  };
+  const fullCounts = greedyMeshFullBlocks(ctx);
+  const nonFullCount = emitNonFullBlocks(ctx, scratch);
+  const trimCount = emitArchitecturalTrims(ctx, scratch);
   const textures: Readonly<Record<string, TextureAsset>> = buildStructureTileTextures(
-    collectBakedTileRequests(grid, descriptors, maxY),
+    collectBakedTileRequests(grid, descriptors, maxY, ctx.batches),
     grid.density,
     grid.seed,
   );
-  const ctx: MeshCtx = { grid, descriptors, parsedStates, lighting, maxY, batches: new Map() };
-  const fullCounts = greedyMeshFullBlocks(ctx);
-  const nonFullCount = emitNonFullBlocks(ctx);
   const batches: StructureBakedBatch[] = [...ctx.batches.values()]
     .filter((b) => b.indices.length > 0)
     .sort((a, b) => compareText(a.layer, b.layer) || compareText(a.textureId, b.textureId));
@@ -495,5 +478,6 @@ export const buildStructureBakedMesh = (
     instances: collectPropInstances(grid, lighting, customModels, maxY),
     rawFaceCount: fullCounts.rawFaces + nonFullCount,
     mergedQuadCount: fullCounts.mergedQuads + nonFullCount,
+    trimCount,
   };
 };

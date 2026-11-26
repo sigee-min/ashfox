@@ -9,6 +9,7 @@ import type {
 } from '../../project/structure/contract';
 import { formatBlockState, parseBlockState } from '../../project/structure/state';
 import type { StructureRoomMeta } from './contract';
+import { emitBattlementRing, emitHipPyramid, emitSpireRoof } from './octagon';
 
 export type VoxelSetter = (
   x: number,
@@ -36,6 +37,8 @@ export interface RoofOpInput {
   readonly ridge: string;
   readonly gable?: string;
   readonly underEave?: boolean;
+  readonly battlement?: boolean;
+  readonly canPlace?: (x: number, y: number, z: number, kind: 'roof' | 'gable') => boolean;
   readonly dormers?: readonly RoofDormerSpec[];
   readonly chimneys?: readonly RoofChimneySpec[];
 }
@@ -62,37 +65,23 @@ const withStair = (
   });
 };
 
-const fillSpanX = (
+const fillGableSpan = (
+  axis: 'x' | 'z',
+  fixed: number,
   y: number,
-  z: number,
-  lx: number,
-  rx: number,
+  a: number,
+  b: number,
   key: string | undefined,
   resolve: StateResolver,
   owner: string,
   put: VoxelSetter,
 ): void => {
   if (!key) return;
-  for (let fx = lx + 1; fx <= rx - 1; fx += 1) {
-    const r = resolve(key, owner, [fx, y, z]);
-    put(fx, y, z, r.state, r.assetAlias);
-  }
-};
-
-const fillSpanZ = (
-  x: number,
-  y: number,
-  nz: number,
-  sz: number,
-  key: string | undefined,
-  resolve: StateResolver,
-  owner: string,
-  put: VoxelSetter,
-): void => {
-  if (!key) return;
-  for (let fz = nz + 1; fz <= sz - 1; fz += 1) {
-    const r = resolve(key, owner, [x, y, fz]);
-    put(x, y, fz, r.state, r.assetAlias);
+  for (let i = a + 1; i <= b - 1; i += 1) {
+    const x = axis === 'z' ? i : fixed;
+    const z = axis === 'z' ? fixed : i;
+    const r = resolve(key, owner, [x, y, z]);
+    put(x, y, z, r.state, r.assetAlias);
   }
 };
 
@@ -139,6 +128,7 @@ const emitGableZ = (
   min: IntVec3,
   max: IntVec3,
   put: VoxelSetter,
+  gablePut: VoxelSetter,
   resolve: StateResolver,
   owner: string,
   cells: IntVec3[],
@@ -151,7 +141,8 @@ const emitGableZ = (
     if (y > max[1]) break;
     for (let z = min[2]; z <= max[2]; z += 1) {
       emitGableZCell(op, lx, rx, y, z, level, max[1], put, resolve, owner, cells);
-      if (z === min[2] || z === max[2]) fillSpanX(y, z, lx, rx, op.gable, resolve, owner, put);
+      if (z === min[2] || z === max[2])
+        fillGableSpan('z', z, y, lx, rx, op.gable, resolve, owner, gablePut);
     }
   }
 };
@@ -190,6 +181,7 @@ const emitGableX = (
   min: IntVec3,
   max: IntVec3,
   put: VoxelSetter,
+  gablePut: VoxelSetter,
   resolve: StateResolver,
   owner: string,
   cells: IntVec3[],
@@ -202,74 +194,8 @@ const emitGableX = (
     if (y > max[1]) break;
     for (let x = min[0]; x <= max[0]; x += 1) {
       emitGableXCell(op, x, y, nz, sz, level, min[0], max[0], put, resolve, owner, cells);
-      if (x === min[0] || x === max[0]) fillSpanZ(x, y, nz, sz, op.gable, resolve, owner, put);
-    }
-  }
-};
-
-const emitHipRing = (
-  y: number,
-  x0: number,
-  x1: number,
-  z0: number,
-  z1: number,
-  stairKey: string,
-  ridgeKey: string,
-  resolve: StateResolver,
-  owner: string,
-  put: VoxelSetter,
-  cells: IntVec3[],
-  half: 'bottom' | 'top' = 'bottom',
-): void => {
-  if (x0 === x1 && z0 === z1) {
-    const r = resolve(ridgeKey, owner, [x0, y, z0]);
-    put(x0, y, z0, r.state, r.assetAlias);
-    cells.push([x0, y, z0]);
-    return;
-  }
-  const stair = resolve(stairKey, owner, [x0, y, z0]).state;
-  const ridge = resolve(ridgeKey, owner, [x0, y, z0]).state;
-  for (let x = x0; x <= x1; x += 1) {
-    put(x, y, z0, z0 === z1 ? ridge : withStair(stair, 'south', half), null);
-    cells.push([x, y, z0]);
-    if (z1 !== z0) {
-      put(x, y, z1, withStair(stair, 'north', half), null);
-      cells.push([x, y, z1]);
-    }
-  }
-  for (let z = z0 + 1; z < z1; z += 1) {
-    put(x0, y, z, withStair(stair, 'east', half), null);
-    cells.push([x0, y, z]);
-    if (x1 !== x0) {
-      put(x1, y, z, withStair(stair, 'west', half), null);
-      cells.push([x1, y, z]);
-    }
-  }
-};
-
-const emitHipPyramid = (
-  op: RoofOpInput,
-  min: IntVec3,
-  max: IntVec3,
-  put: VoxelSetter,
-  resolve: StateResolver,
-  owner: string,
-  cells: IntVec3[],
-): void => {
-  const half = Math.min(Math.ceil((max[0] - min[0] + 1) / 2), Math.ceil((max[2] - min[2] + 1) / 2));
-  for (let level = 0; level < half; level += 1) {
-    const y = min[1] + pitchStepY(op.pitch, level);
-    if (y > max[1]) break;
-    const x0 = min[0] + level;
-    const x1 = max[0] - level;
-    const z0 = min[2] + level;
-    const z1 = max[2] - level;
-    if (x0 > x1 || z0 > z1) break;
-    if (level > 0)
-      emitHipRing(y - 1, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells, 'top');
-    emitHipRing(y, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells);
-    if (op.pitch === 'steep' && y + 1 <= max[1]) {
-      emitHipRing(y + 1, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells);
+      if (x === min[0] || x === max[0])
+        fillGableSpan('x', x, y, nz, sz, op.gable, resolve, owner, gablePut);
     }
   }
 };
@@ -442,6 +368,54 @@ const maxCellY = (cells: readonly IntVec3[], fallback: number): number => {
   return peak;
 };
 
+const emitSlopedBody = (
+  op: RoofOpInput,
+  min: IntVec3,
+  max: IntVec3,
+  roofPut: VoxelSetter,
+  gablePut: VoxelSetter,
+  resolve: StateResolver,
+  ownerPath: string,
+  roofCells: IntVec3[],
+): void => {
+  if (op.style === 'spire') {
+    emitSpireRoof(op, min, max, roofPut, resolve, ownerPath, roofCells);
+    return;
+  }
+  let sMin = min;
+  let sMax = max;
+  if (op.battlement && max[0] - min[0] >= 4 && max[2] - min[2] >= 4) {
+    emitBattlementRing(
+      min,
+      max,
+      false,
+      op.gable ?? op.trim ?? op.ridge,
+      resolve,
+      ownerPath,
+      roofPut,
+      roofCells,
+    );
+    sMin = [min[0] + 1, min[1] + 1, min[2] + 1];
+    sMax = [max[0] - 1, max[1], max[2] - 1];
+  }
+  if (op.style === 'gable') {
+    if (op.axis === 'z')
+      emitGableZ(op, sMin, sMax, roofPut, gablePut, resolve, ownerPath, roofCells);
+    else emitGableX(op, sMin, sMax, roofPut, gablePut, resolve, ownerPath, roofCells);
+  } else
+    emitHipPyramid(
+      op.pitch,
+      op.stair,
+      op.ridge,
+      sMin,
+      sMax,
+      roofPut,
+      resolve,
+      ownerPath,
+      roofCells,
+    );
+};
+
 export const emitRoof = (
   op: RoofOpInput,
   rooms: ReadonlyMap<string, StructureRoomMeta>,
@@ -465,11 +439,14 @@ export const emitRoof = (
     Math.max(op.from[2], op.to[2]) + op.overhang,
   ];
   const roofCells: IntVec3[] = [];
-  if (op.style === 'gable') {
-    if (op.axis === 'z') emitGableZ(op, min, max, put, resolve, ownerPath, roofCells);
-    else emitGableX(op, min, max, put, resolve, ownerPath, roofCells);
-  } else emitHipPyramid(op, min, max, put, resolve, ownerPath, roofCells);
-  emitUnderEaves(op, min, max, put, resolve, ownerPath);
+  const roofPut: VoxelSetter = (x, y, z, s, a) => {
+    if (!op.canPlace || op.canPlace(x, y, z, 'roof')) put(x, y, z, s, a);
+  };
+  const gablePut: VoxelSetter = (x, y, z, s, a) => {
+    if (!op.canPlace || op.canPlace(x, y, z, 'gable')) put(x, y, z, s, a);
+  };
+  emitSlopedBody(op, min, max, roofPut, gablePut, resolve, ownerPath, roofCells);
+  emitUnderEaves(op, min, max, roofPut, resolve, ownerPath);
   for (const d of op.dormers ?? []) emitDormer(d, op, min, max, put, carve, resolve, ownerPath);
   const peakY = maxCellY(roofCells, min[1]);
   const chimneyTops = (op.chimneys ?? []).map((c) =>

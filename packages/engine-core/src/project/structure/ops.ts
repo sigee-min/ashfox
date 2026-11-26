@@ -26,6 +26,7 @@ import {
   asVec3,
   assertAllowedAttrs,
   failSyntax,
+  parseFloorJetty,
   parseRoofOp,
   parseWeatheringOp,
   peek,
@@ -128,16 +129,20 @@ const parseRoomOp = (cursor: Cursor): StructureOp => {
   assertAllowedAttrs(
     cursor,
     attrs,
-    new Set(['from', 'size', 'kind', 'plinth', 'floor', 'wall', 'frame', 'ceiling']),
+    new Set(['from', 'size', 'kind', 'shape', 'plinth', 'floor', 'wall', 'frame', 'ceiling']),
   );
   const kind = asStr(cursor, attrs.kind, 'kind');
   if (!ROOM_KINDS.has(kind)) failSyntax(cursor, 'valid room kind');
+  const shape = asOptStr(cursor, attrs.shape, 'shape');
+  if (shape !== undefined && shape !== 'rect' && shape !== 'octagon')
+    failSyntax(cursor, 'shape = rect|octagon');
   return {
     op: 'room',
     name,
     from: asVec2(cursor, attrs.from, 'from'),
     size: asVec2(cursor, attrs.size, 'size'),
     kind: kind as RoomKind,
+    ...(shape ? { shape: shape as 'rect' | 'octagon' } : {}),
     ...pickOptStrs(cursor, attrs, [
       ['plinth', 'plinth'],
       ['floor', 'floor'],
@@ -214,7 +219,16 @@ const OPENING_KEYS = new Set([
   'hinge',
 ]);
 
-const parseOpening = (cursor: Cursor, kind: 'door' | 'window' | 'arch'): FacadeOpeningSpec => {
+type OpeningKind = FacadeOpeningSpec['kind'];
+const OPENING_KINDS = new Set<string>(['door', 'window', 'arch', 'bay_window', 'arcade']);
+
+const defaultOpeningSize = (kind: OpeningKind): readonly [number, number] => {
+  if (kind === 'bay_window') return [3, 2];
+  if (kind === 'arch' || kind === 'arcade') return [2, 3];
+  return [1, 2];
+};
+
+const parseOpening = (cursor: Cursor, kind: OpeningKind): FacadeOpeningSpec => {
   const attrs = readAttrsUntil(cursor, [';', 'porch']);
   let porch: PorchSpec | undefined;
   if (peek(cursor).value === 'porch') {
@@ -222,9 +236,10 @@ const parseOpening = (cursor: Cursor, kind: 'door' | 'window' | 'arch'): FacadeO
     porch = parsePorchBlock(cursor);
   } else take(cursor, ';');
   assertAllowedAttrs(cursor, attrs, OPENING_KEYS);
-  const width = asInt(cursor, attrs.width ?? (kind === 'arch' ? 2 : 1), 'width');
-  const height = asInt(cursor, attrs.height ?? (kind === 'arch' ? 3 : 2), 'height');
-  if (width < 1 || height < 1 || (kind === 'door' && height < 2))
+  const [defW, defH] = defaultOpeningSize(kind);
+  const width = asInt(cursor, attrs.width ?? defW, 'width');
+  const height = asInt(cursor, attrs.height ?? defH, 'height');
+  if (width < 1 || height < 1 || ((kind === 'door' || kind === 'arcade') && height < 2))
     failSyntax(cursor, 'valid opening width/height');
   const hinge = asOptStr(cursor, attrs.hinge, 'hinge');
   if (hinge !== undefined && hinge !== 'left' && hinge !== 'right')
@@ -262,9 +277,8 @@ const parseFacadeOp = (cursor: Cursor): StructureOp => {
   const openings: FacadeOpeningSpec[] = [];
   while (peek(cursor).value !== '}') {
     const kind = readName(cursor);
-    if (kind !== 'door' && kind !== 'window' && kind !== 'arch')
-      failSyntax(cursor, 'door, window, or arch');
-    else openings.push(parseOpening(cursor, kind));
+    if (!OPENING_KINDS.has(kind)) failSyntax(cursor, 'door, window, arch, bay_window, or arcade');
+    else openings.push(parseOpening(cursor, kind as OpeningKind));
   }
   take(cursor, '}');
   return { op: 'facade', targets, openings };
@@ -410,12 +424,18 @@ export const parseOpBlock = (cursor: Cursor, depth: number): readonly StructureO
 const parseFloorOp = (cursor: Cursor, depth: number): StructureOp => {
   const name = readName(cursor);
   const attrs = readAttrsUntil(cursor, ['{']);
-  assertAllowedAttrs(cursor, attrs, new Set(['y', 'height']));
+  assertAllowedAttrs(
+    cursor,
+    attrs,
+    new Set(['y', 'height', 'jetty', 'jetty_n', 'jetty_s', 'jetty_e', 'jetty_w']),
+  );
+  const jetty = parseFloorJetty(cursor, attrs);
   return {
     op: 'floor',
     name,
     y: asScalar(cursor, attrs.y, 'y'),
     height: asScalar(cursor, attrs.height, 'height'),
+    ...(jetty ? { jetty } : {}),
     ops: parseOpBlock(cursor, depth),
   };
 };

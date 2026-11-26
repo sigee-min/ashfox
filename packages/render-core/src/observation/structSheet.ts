@@ -10,9 +10,11 @@ import {
 } from '../captureSurface';
 import {
   buildStructureScene,
+  createTwilightSkyTexture,
   frameStructureShadows,
   type StructureObservationPayload,
   type StructureObservationSlice,
+  type StructureSceneBuildOptions,
 } from '../structureRender';
 import { createViewportEnvironment } from '../viewportEnvironment';
 import type { ViewOptions } from './contract';
@@ -49,39 +51,50 @@ const drawSheetBadge = (
 
 const drawGridDividers = (
   ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  w: number,
+  h: number,
   cols: number,
   rows: number,
   tileW: number,
   tileH: number,
 ): void => {
   ctx.fillStyle = '#16191f';
-  for (let c = 1; c < cols; c += 1) ctx.fillRect(c * tileW - 1, 0, 2, height);
-  for (let r = 1; r < rows; r += 1) ctx.fillRect(0, r * tileH - 1, width, 2);
+  for (let c = 1; c < cols; c += 1) ctx.fillRect(c * tileW - 1, 0, 2, h);
+  for (let r = 1; r < rows; r += 1) ctx.fillRect(0, r * tileH - 1, w, 2);
+};
+
+const FRONT_AZIMUTH: Readonly<Record<string, number>> = {
+  east: 90,
+  west: -90,
+  north: 0,
+  south: 180,
 };
 
 const detectFrontAzimuth = (payload: StructureObservationPayload): number => {
   const entrySocket = payload.playableMeta.sockets.find((s) => s.kind === 'entry');
   const door = payload.playableMeta.interactables.find((i) => i.kind === 'door');
-  const facing = entrySocket?.normal ?? door?.facing;
-  if (facing === 'east') return 90;
-  if (facing === 'west') return -90;
-  if (facing === 'north') return 0;
-  return 180;
+  return FRONT_AZIMUTH[entrySocket?.normal ?? door?.facing ?? 'south'] ?? 180;
 };
 
-const exteriorTileSpecs = (payload: StructureObservationPayload): readonly ExteriorTileSpec[] => {
-  const frontAz = detectFrontAzimuth(payload);
-  return [
-    { label: 'HERO SW', azimuth: -135, elevation: 26, twilight: false },
-    { label: 'HERO NE', azimuth: 45, elevation: 26, twilight: false },
-    { label: 'FRONT', azimuth: frontAz, elevation: 6, twilight: false },
-    { label: 'LEFT', azimuth: frontAz - 90, elevation: 6, twilight: false },
-    { label: 'RIGHT', azimuth: frontAz + 90, elevation: 6, twilight: false },
-    { label: 'TWILIGHT', azimuth: frontAz - 40, elevation: 24, twilight: true },
-  ];
-};
+const tileSpecs = (
+  frontAz: number,
+  mode: 'exterior' | 'turnaround',
+): readonly ExteriorTileSpec[] =>
+  mode === 'exterior'
+    ? [
+        { label: 'HERO SW', azimuth: -135, elevation: 26, twilight: false },
+        { label: 'HERO NE', azimuth: 45, elevation: 26, twilight: false },
+        { label: 'FRONT', azimuth: frontAz, elevation: 6, twilight: false },
+        { label: 'LEFT', azimuth: frontAz - 90, elevation: 6, twilight: false },
+        { label: 'RIGHT', azimuth: frontAz + 90, elevation: 6, twilight: false },
+        { label: 'TWILIGHT', azimuth: frontAz - 40, elevation: 24, twilight: true },
+      ]
+    : [
+        { label: 'FRONT', azimuth: frontAz, elevation: 12, twilight: false },
+        { label: '3/4', azimuth: 45, elevation: 22, twilight: false },
+        { label: 'SIDE', azimuth: frontAz - 90, elevation: 12, twilight: false },
+        { label: 'BACK', azimuth: frontAz + 180, elevation: 12, twilight: false },
+      ];
 
 const deriveCutSlices = (
   payload: StructureObservationPayload,
@@ -90,19 +103,10 @@ const deriveCutSlices = (
     ? payload.cutSlices
     : collectStructureCutBands(payload.floors, payload.size[1]);
 
-interface WorldBox {
-  readonly minX: number;
-  readonly maxX: number;
-  readonly minY: number;
-  readonly maxY: number;
-  readonly minZ: number;
-  readonly maxZ: number;
-}
-
 const roomWorldBounds = (
   payload: StructureObservationPayload,
   room: StructureObservationPayload['rooms'][number],
-): WorldBox => {
+) => {
   const [w, _h, d] = payload.size;
   return {
     minX: room.from[0] + 1 - w / 2,
@@ -113,6 +117,8 @@ const roomWorldBounds = (
     maxZ: room.to[2] - d / 2,
   };
 };
+
+type WorldBox = ReturnType<typeof roomWorldBounds>;
 
 const insideBox = (p: readonly [number, number, number], b: WorldBox): boolean =>
   p[0] >= b.minX - 0.5 &&
@@ -145,16 +151,84 @@ const roomToInteriorCam = (
   const focal = pickZoneFocalTarget(payload, b);
   const dx = cx - focal[0];
   const dz = cz - focal[2];
-  const pull = Math.hypot(dx, dz) > 0.25 ? 0.58 : 0;
+  const pull = Math.hypot(dx, dz) > 0.25 ? 0.44 : 0;
+  const insetX = Math.min(1.1, Math.max(0.65, (b.maxX - b.minX) * 0.24));
+  const insetZ = Math.min(1.1, Math.max(0.65, (b.maxZ - b.minZ) * 0.24));
   return {
     label: room.name.toUpperCase(),
     eye: [
-      THREE.MathUtils.clamp(cx + dx * pull, b.minX + 0.85, b.maxX - 0.85),
-      Math.min(b.maxY - 0.35, b.minY + 1.6),
-      THREE.MathUtils.clamp(cz + dz * pull, b.minZ + 0.85, b.maxZ - 0.85),
+      THREE.MathUtils.clamp(cx + dx * pull, b.minX + insetX, b.maxX - insetX),
+      Math.min(b.maxY - 0.35, b.minY + 1.65),
+      THREE.MathUtils.clamp(cz + dz * pull, b.minZ + insetZ, b.maxZ - insetZ),
     ],
     lookAt: focal,
   };
+};
+
+const frameHeroAngles = (
+  cam: THREE.PerspectiveCamera,
+  b: THREE.Box3,
+  az: number,
+  el: number,
+  zoom: number,
+) =>
+  frameBoxAtAngles(
+    cam,
+    b,
+    az,
+    el,
+    zoom * (Math.abs(el) >= 20 && Math.abs(el) < 80 ? 1.15 : 1.08),
+    42,
+    1.03,
+  );
+
+const synthesizeThresholdHeroCam = (
+  payload: StructureObservationPayload,
+  room: StructureObservationPayload['rooms'][number],
+  primaryCam: InteriorCameraSpec,
+): InteriorCameraSpec => {
+  const b = roomWorldBounds(payload, room);
+  const cx = (b.minX + b.maxX) / 2;
+  const cz = (b.minZ + b.maxZ) / 2;
+  const insetX = Math.min(1.15, Math.max(0.7, (b.maxX - b.minX) * 0.25));
+  const insetZ = Math.min(1.15, Math.max(0.7, (b.maxZ - b.minZ) * 0.25));
+  const eyeX = THREE.MathUtils.clamp(cx * 2 - primaryCam.eye[0], b.minX + insetX, b.maxX - insetX);
+  const eyeZ = THREE.MathUtils.clamp(cz * 2 - primaryCam.eye[2], b.minZ + insetZ, b.maxZ - insetZ);
+  return {
+    label: 'THRESHOLD / HERO',
+    eye: [eyeX, Math.min(b.maxY - 0.35, b.minY + 1.65), eyeZ],
+    lookAt: [cx, Math.min(b.maxY - 0.4, b.minY + 1.35), cz],
+  };
+};
+
+const fallbackInteriorCameras = (
+  payload: StructureObservationPayload,
+): readonly InteriorCameraSpec[] => {
+  const [w, h, d] = payload.size;
+  const nav = payload.playableMeta.navigation.floorLevels;
+  const levels =
+    payload.floors.length > 0
+      ? payload.floors.map((f) => f.y + 1)
+      : nav.length > 0
+        ? nav.map((y) => Math.max(1, y))
+        : h >= 14
+          ? [1, 6]
+          : [1];
+  const cams = levels.slice(0, 4).map((floorY, idx) => ({
+    label: `ROOM ${idx + 1}`,
+    eye: [-w * 0.16, Math.min(h - 1.2, floorY + 1.6), d * 0.16] as const,
+    lookAt: [w * 0.15, Math.min(h - 1.3, floorY + 1.35), -d * 0.18] as const,
+  }));
+  if (cams.length !== 3) return cams;
+  const y0 = levels[0] ?? 1;
+  return [
+    ...cams,
+    {
+      label: 'THRESHOLD / HERO',
+      eye: [w * 0.16, Math.min(h - 1.2, y0 + 1.6), -d * 0.16] as const,
+      lookAt: [-w * 0.14, Math.min(h - 1.3, y0 + 1.35), d * 0.14] as const,
+    },
+  ];
 };
 
 const computeInteriorCameras = (
@@ -168,41 +242,42 @@ const computeInteriorCameras = (
           (a.to[0] - a.from[0]) * (a.to[2] - a.from[2]) || compareText(a.name, b.name),
     )
     .slice(0, 4);
-  if (enclosed.length > 0) return enclosed.map((room) => roomToInteriorCam(payload, room));
-  const [w, h, d] = payload.size;
-  const levels =
-    payload.floors.length > 0
-      ? payload.floors.map((f) => f.y + 1)
-      : payload.playableMeta.navigation.floorLevels.length > 0
-        ? payload.playableMeta.navigation.floorLevels.map((y) => Math.max(1, y))
-        : h >= 14
-          ? [1, 6]
-          : [1];
-  return levels.slice(0, 4).map((floorY, idx) => ({
-    label: `ROOM ${idx + 1}`,
-    eye: [-w * 0.16, Math.min(h - 1.2, floorY + 1.6), d * 0.16] as const,
-    lookAt: [w * 0.15, Math.min(h - 1.3, floorY + 1.35), -d * 0.18] as const,
-  }));
+  if (enclosed.length === 0) return fallbackInteriorCameras(payload);
+  const cams = enclosed.map((room) => roomToInteriorCam(payload, room));
+  if (cams.length === 3) cams.push(synthesizeThresholdHeroCam(payload, enclosed[0]!, cams[0]!));
+  return cams;
 };
+
+type SheetEnvironmentId = ViewOptions['environment'] | 'blueprint' | 'twilight';
 
 const applySurfaceBackdrop = (
   surface: CaptureSurface,
   backgroundStyle: ViewOptions['background'],
-  envId: ViewOptions['environment'] | 'blueprint',
-): void => {
+  envId: SheetEnvironmentId,
+): (() => void) | null => {
   surface.scene.fog = null;
   if (backgroundStyle !== 'environment') {
     surface.scene.background = null;
     surface.renderer.setClearColor(0x000000, 0);
-    return;
+    return null;
   }
   if (envId === 'blueprint') {
     surface.scene.background = new THREE.Color('#131924');
-    return;
+    return null;
+  }
+  if (envId === 'twilight') {
+    const sky = createTwilightSkyTexture();
+    surface.scene.background = sky;
+    return () => sky.dispose();
   }
   const env = createViewportEnvironment(envId);
   surface.scene.background = env.background;
-  env.dispose();
+  return () => env.dispose();
+};
+
+type TileRenderOptions = StructureSceneBuildOptions & {
+  readonly envId: SheetEnvironmentId;
+  readonly positionCamera: (bounds: THREE.Box3, camera: THREE.PerspectiveCamera) => void;
 };
 
 const renderTileToCanvas = async (
@@ -210,40 +285,23 @@ const renderTileToCanvas = async (
   tileCanvas: ReturnType<typeof createCanvas2d>,
   payload: StructureObservationPayload,
   v: ViewOptions,
-  options: {
-    readonly bakedMesh?: StructureObservationPayload['bakedMesh'];
-    readonly document?: StructureObservationPayload['document'];
-    readonly clipY?: number;
-    readonly twilight?: boolean;
-    readonly interiorFill?: boolean;
-    readonly envId: ViewOptions['environment'] | 'blueprint';
-    readonly positionCamera: (bounds: THREE.Box3) => void;
-  },
+  options: TileRenderOptions,
   signal: AbortSignal,
 ): Promise<void> => {
   surface.renderer.localClippingEnabled =
     options.clipY !== undefined && options.bakedMesh === undefined;
-  const handle = await buildStructureScene(
-    payload,
-    {
-      bakedMesh: options.bakedMesh,
-      document: options.document,
-      clipY: options.clipY,
-      twilight: options.twilight,
-      interiorFill: options.interiorFill,
-    },
-    signal,
-  );
+  const handle = await buildStructureScene(payload, options, signal);
   surface.scene.add(handle.root);
+  const disposeBackdrop = applySurfaceBackdrop(surface, v.background, options.envId);
   try {
-    applySurfaceBackdrop(surface, v.background, options.envId);
     frameStructureShadows(surface.scene, handle.bounds, options.twilight ?? false);
-    options.positionCamera(handle.bounds);
+    options.positionCamera(handle.bounds, surface.camera);
     surface.renderer.render(surface.scene, surface.camera);
     const bg = v.background === 'environment' ? 'transparent' : v.background;
     fillBackground(tileCanvas.context, tileCanvas.canvas.width, tileCanvas.canvas.height, bg);
     tileCanvas.context.drawImage(surface.renderCanvas, 0, 0);
   } finally {
+    disposeBackdrop?.();
     surface.scene.remove(handle.root);
     handle.dispose();
   }
@@ -253,21 +311,17 @@ const renderGridSheet = async (
   cols: number,
   rows: number,
   v: ViewOptions,
+  sheetBg: string,
   renderItem: (
     idx: number,
     surface: CaptureSurface,
     tileCanvas: ReturnType<typeof createCanvas2d>,
-  ) => Promise<string>,
+  ) => Promise<string | null>,
 ): Promise<{ mime: string; data: string }> => {
   const tileW = Math.max(16, Math.floor(v.width / cols));
   const tileH = Math.max(16, Math.floor(v.height / rows));
   const sheetCanvas = createCanvas2d(v.width, v.height);
-  fillBackground(
-    sheetCanvas.context,
-    v.width,
-    v.height,
-    v.background === 'environment' ? 'transparent' : v.background,
-  );
+  fillBackground(sheetCanvas.context, v.width, v.height, sheetBg);
   const surface = createCaptureSurface({
     width: tileW,
     height: tileH,
@@ -280,11 +334,11 @@ const renderGridSheet = async (
     const total = cols * rows;
     for (let idx = 0; idx < total; idx += 1) {
       const label = await renderItem(idx, surface, tileCanvas);
-      if (!label) continue;
+      if (label === null) continue;
       const dx = (idx % cols) * tileW;
       const dy = Math.floor(idx / cols) * tileH;
       sheetCanvas.context.drawImage(tileCanvas.canvas, dx, dy);
-      drawSheetBadge(sheetCanvas.context, dx, dy, label);
+      if (label.length > 0) drawSheetBadge(sheetCanvas.context, dx, dy, label);
     }
     drawGridDividers(sheetCanvas.context, v.width, v.height, cols, rows, tileW, tileH);
     return { mime: 'image/png', data: sheetCanvas.canvas.toDataURL('image/png').split(',')[1] };
@@ -293,139 +347,130 @@ const renderGridSheet = async (
   }
 };
 
-const renderExteriorSheet = (
-  payload: StructureObservationPayload,
-  v: ViewOptions,
-  signal: AbortSignal,
-) => {
-  const specs = exteriorTileSpecs(payload);
-  return renderGridSheet(2, 3, v, async (idx, surface, tileCanvas) => {
-    const spec = specs[idx]!;
-    await renderTileToCanvas(
-      surface,
-      tileCanvas,
-      payload,
-      v,
-      {
-        twilight: spec.twilight,
-        envId: spec.twilight ? 'evening' : v.environment === 'studio' ? 'day' : v.environment,
-        positionCamera: (bounds) =>
-          frameBoxAtAngles(
-            surface.camera,
-            bounds,
-            spec.azimuth,
-            spec.elevation,
-            v.zoom * (spec.elevation >= 20 ? 1.32 : 1.08),
-            42,
-          ),
-      },
-      signal,
-    );
-    return spec.label;
-  });
-};
+type SheetTileConfig = TileRenderOptions & { readonly label: string };
 
-const renderCutawaySheet = (
+const renderConfiguredSheet = (
+  cols: number,
+  rows: number,
+  tiles: readonly SheetTileConfig[],
   payload: StructureObservationPayload,
   v: ViewOptions,
   signal: AbortSignal,
-) => {
-  const slices = deriveCutSlices(payload);
-  const rows = Math.max(1, Math.ceil(slices.length / 2));
-  return renderGridSheet(2, rows, v, async (idx, surface, tileCanvas) => {
-    const slice = slices[idx];
-    if (!slice) return '';
-    await renderTileToCanvas(
-      surface,
-      tileCanvas,
-      payload,
-      v,
-      {
-        bakedMesh: slice.bakedMesh,
-        document: slice.document,
-        clipY: slice.cutY,
-        envId: 'blueprint',
-        positionCamera: (bounds) => frameBoxAtAngles(surface.camera, bounds, 35, 62, v.zoom, 42),
-      },
-      signal,
-    );
-    return slice.label;
-  });
-};
+  sheetBg?: string,
+) =>
+  renderGridSheet(
+    cols,
+    rows,
+    v,
+    sheetBg ?? (v.background === 'environment' ? 'transparent' : v.background),
+    async (idx, surface, tileCanvas) => {
+      const tile = tiles[idx];
+      if (!tile) return null;
+      await renderTileToCanvas(surface, tileCanvas, payload, v, tile, signal);
+      return tile.label;
+    },
+  );
 
-const renderInteriorSheet = (
-  payload: StructureObservationPayload,
-  v: ViewOptions,
-  signal: AbortSignal,
-) => {
-  const cams = computeInteriorCameras(payload);
-  const cols = cams.length === 1 ? 1 : 2;
-  const rows = Math.max(1, Math.ceil(cams.length / cols));
-  return renderGridSheet(cols, rows, v, async (idx, surface, tileCanvas) => {
-    const cam = cams[idx];
-    if (!cam) return '';
-    await renderTileToCanvas(
-      surface,
-      tileCanvas,
-      payload,
-      v,
-      {
-        interiorFill: true,
-        envId: v.environment,
-        positionCamera: () => applyEyeLevelCamera(surface.camera, cam.eye, cam.lookAt, 65),
-      },
-      signal,
-    );
-    return cam.label;
-  });
-};
-
-const renderTurnaroundSheet = (
-  payload: StructureObservationPayload,
-  v: ViewOptions,
-  signal: AbortSignal,
-) => {
-  const frontAz = detectFrontAzimuth(payload);
-  const turnSpecs = [
-    { label: 'FRONT', azimuth: frontAz, elevation: 12 },
-    { label: '3/4', azimuth: 45, elevation: 22 },
-    { label: 'SIDE', azimuth: frontAz - 90, elevation: 12 },
-    { label: 'BACK', azimuth: frontAz + 180, elevation: 12 },
-  ];
-  return renderGridSheet(2, 2, v, async (idx, surface, tileCanvas) => {
-    const spec = turnSpecs[idx]!;
-    await renderTileToCanvas(
-      surface,
-      tileCanvas,
-      payload,
-      v,
-      {
-        envId: v.environment,
-        positionCamera: (bounds) =>
-          frameBoxAtAngles(
-            surface.camera,
-            bounds,
-            spec.azimuth,
-            spec.elevation,
-            v.zoom * (spec.elevation >= 20 ? 1.32 : 1.08),
-            42,
-          ),
-      },
-      signal,
-    );
-    return spec.label;
-  });
-};
+const angleTiles = (
+  defaultEnv: SheetEnvironmentId,
+  specs: readonly ExteriorTileSpec[],
+  zoom: number,
+): readonly SheetTileConfig[] =>
+  specs.map((spec) => ({
+    label: spec.label,
+    twilight: spec.twilight,
+    envId: spec.twilight ? 'twilight' : defaultEnv,
+    positionCamera: (bounds, cam) =>
+      frameHeroAngles(cam, bounds, spec.azimuth, spec.elevation, zoom),
+  }));
 
 const resolveSingleAzimuth = (payload: StructureObservationPayload, v: ViewOptions): number => {
   if (v.azimuth !== undefined) return v.azimuth;
   const frontAz = detectFrontAzimuth(payload);
-  if (v.camera === 'front') return frontAz;
-  if (v.camera === 'back') return frontAz + 180;
-  if (v.camera === 'left') return frontAz - 90;
-  if (v.camera === 'right') return frontAz + 90;
-  if (v.camera === 'top') return 0;
-  return 45;
+  const map: Readonly<Record<string, number>> = {
+    front: frontAz,
+    back: frontAz + 180,
+    left: frontAz - 90,
+    right: frontAz + 90,
+    top: 0,
+  };
+  return map[v.camera] ?? 45;
+};
+
+const cutawayTiles = (
+  slices: readonly StructureObservationSlice[],
+  zoom: number,
+): readonly SheetTileConfig[] => {
+  const base: SheetTileConfig[] = slices.map((s) => ({
+    label: s.label,
+    bakedMesh: s.bakedMesh,
+    document: s.document,
+    clipY: s.cutY,
+    envId: 'blueprint',
+    positionCamera: (b, cam) => frameBoxAtAngles(cam, b, 35, 58, zoom * 1.18, 42, 1.04),
+  }));
+  if (base.length === 3) {
+    base.push({
+      label: 'ISOMETRIC OVERVIEW',
+      envId: 'blueprint',
+      dioramaBase: false,
+      positionCamera: (b, cam) => frameBoxAtAngles(cam, b, -135, 24, zoom * 1.12, 42, 1.03),
+    });
+  }
+  return base;
+};
+
+const interiorTiles = (
+  cams: readonly InteriorCameraSpec[],
+  envId: SheetEnvironmentId,
+): readonly SheetTileConfig[] =>
+  cams.map((cam) => ({
+    label: cam.label,
+    interiorFill: true,
+    envId,
+    positionCamera: (_b, camObj) => applyEyeLevelCamera(camObj, cam.eye, cam.lookAt, 65),
+  }));
+
+const buildSheetPlan = (
+  payload: StructureObservationPayload,
+  v: ViewOptions,
+): { cols: number; rows: number; tiles: readonly SheetTileConfig[]; sheetBg?: string } => {
+  const frontAz = detectFrontAzimuth(payload);
+  if (v.sheet === 'exterior') {
+    const dayEnv = v.environment === 'studio' ? 'day' : v.environment;
+    return { cols: 2, rows: 3, tiles: angleTiles(dayEnv, tileSpecs(frontAz, 'exterior'), v.zoom) };
+  }
+  if (v.sheet === 'cutaway') {
+    const slices = deriveCutSlices(payload);
+    const tiles = cutawayTiles(slices, v.zoom);
+    const sheetBg = v.background === 'environment' ? '#131924' : v.background;
+    return { cols: 2, rows: Math.max(1, Math.ceil(tiles.length / 2)), tiles, sheetBg };
+  }
+  if (v.sheet === 'interior') {
+    const cams = computeInteriorCameras(payload);
+    const cols = cams.length === 1 ? 1 : 2;
+    return {
+      cols,
+      rows: Math.max(1, Math.ceil(cams.length / cols)),
+      tiles: interiorTiles(cams, v.environment),
+    };
+  }
+  if (v.sheet === 'turnaround') {
+    return {
+      cols: 2,
+      rows: 2,
+      tiles: angleTiles(v.environment, tileSpecs(frontAz, 'turnaround'), v.zoom),
+    };
+  }
+  const az = resolveSingleAzimuth(payload, v);
+  const el = v.elevation ?? (v.camera === 'top' ? 88 : v.camera === 'bottom' ? -88 : 22);
+  const single: SheetTileConfig = {
+    label: '',
+    clipY: v.cutaway,
+    envId: v.environment,
+    positionCamera: (b, cam) => frameHeroAngles(cam, b, az, el, v.zoom),
+  };
+  return { cols: 1, rows: 1, tiles: [single] };
 };
 
 /** Captures single-view or 3-mode architectural sheets for structures. */
@@ -434,37 +479,6 @@ export const captureStructureObservation = async (
   v: ViewOptions,
   signal: AbortSignal,
 ): Promise<{ mime: string; data: string }> => {
-  if (v.sheet === 'exterior') return renderExteriorSheet(payload, v, signal);
-  if (v.sheet === 'cutaway') return renderCutawaySheet(payload, v, signal);
-  if (v.sheet === 'interior') return renderInteriorSheet(payload, v, signal);
-  if (v.sheet === 'turnaround') return renderTurnaroundSheet(payload, v, signal);
-
-  const surface = createCaptureSurface({
-    width: v.width,
-    height: v.height,
-    cameraMode: 'perspective',
-    environment: v.environment,
-    forward: 'north',
-  });
-  const output = createCanvas2d(v.width, v.height);
-  const singleAz = resolveSingleAzimuth(payload, v);
-  const singleEl = v.elevation ?? (v.camera === 'top' ? 88 : v.camera === 'bottom' ? -88 : 22);
-  try {
-    await renderTileToCanvas(
-      surface,
-      output,
-      payload,
-      v,
-      {
-        clipY: v.cutaway,
-        envId: v.environment,
-        positionCamera: (bounds) =>
-          frameBoxAtAngles(surface.camera, bounds, singleAz, singleEl, v.zoom, 42),
-      },
-      signal,
-    );
-    return { mime: 'image/png', data: output.canvas.toDataURL('image/png').split(',')[1] };
-  } finally {
-    disposeCaptureSurface(surface);
-  }
+  const plan = buildSheetPlan(payload, v);
+  return renderConfiguredSheet(plan.cols, plan.rows, plan.tiles, payload, v, signal, plan.sheetBg);
 };

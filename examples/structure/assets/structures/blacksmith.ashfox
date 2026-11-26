@@ -7,12 +7,12 @@ structure blacksmith {
 
   density = 2;
   seed = 303;
-  size = (16, 18, 14);
+  size = (16, 19, 15);
   data_version = 3955;
 
   params {
     w = 16;
-    d = 14;
+    d = 15;
   }
 
   outputs {
@@ -53,7 +53,7 @@ structure blacksmith {
 
   build {
     floor ground y = 0 height = 5 {
-      room smithy from = (1, 1) size = (8, 10) kind = workshop plinth = deepslate floor = stone_brick wall = cobble frame = deepslate ceiling = spruce_plank;
+      room smithy from = (1, 1) size = (8, 11) kind = workshop plinth = deepslate floor = stone_brick wall = cobble frame = deepslate ceiling = spruce_plank;
       room shop from = (8, 1) size = (7, 10) kind = living plinth = cobble floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
 
       facade on smithy.east {
@@ -61,10 +61,14 @@ structure blacksmith {
       }
 
       facade on smithy.south {
-        arch at = center width = 3 height = 3 frame = deepslate lintel = beam;
+        arcade at = center width = 3 height = 3 frame = deepslate lintel = beam;
       }
 
-      facade on smithy.west, smithy.north {
+      facade on smithy.west {
+        arcade at = 2 width = 3 height = 3 frame = deepslate lintel = beam;
+      }
+
+      facade on smithy.north {
         window at = center width = 2 height = 2 y_offset = 1 glass = bars recess = 1 sill = sill lintel = beam;
       }
 
@@ -83,7 +87,7 @@ structure blacksmith {
       }
     }
 
-    floor upper y = 5 height = 4 {
+    floor upper y = 5 height = 4 jetty_s = 1 {
       room loft from = (8, 1) size = (7, 10) kind = bedroom floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
 
       facade on loft.south, loft.north {
@@ -91,10 +95,10 @@ structure blacksmith {
       }
     }
 
-    staircase in_room = shop style = straight at = (10, 3) y_from = 0 y_to = 5 facing = south width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
+    staircase in_room = shop style = straight at = (12, 3) y_from = 0 y_to = 5 facing = south width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
 
     roof on = smithy style = gable axis = x overhang = 1 pitch = shallow stair = roof_stair trim = trim_stair ridge = ridge gable = cobble under_eave = true {
-      chimney room = smithy corner = nw offset = (1, 1) width = 2 rise = 3 block = chimney_brick cap = true;
+      chimney room = smithy corner = nw offset = (1, 1) width = 2 rise = 4 block = chimney_brick cap = true;
     }
 
     roof on = loft style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true;
@@ -118,10 +122,11 @@ structure blacksmith {
       ground_moss height = 2 target = cobble into = moss_cobble rate = 0.35;
       corner_quoin target = plaster corners = stone_brick;
       chimney_soot radius = 2 rate = 0.5;
-      eave_shadow target = plaster into = stone_brick rate = 0.25;
     }
 
-    place kit.CrateStack at = (2, 1, 11) rotate = 0;
+    box from = (1, 0, 12) to = (7, 0, 13) block = stone_brick;
+    place kit.OutdoorForge at = (3, 1, 13) rotate = 0;
+    place kit.CrateStack at = (1, 1, 12) rotate = 0;
     set at = (13, 3, 11) block = sign facing = south;
 
     socket forge_entry kind = entry room = shop wall = south normal = south pool = "village:streets" target = "road_join";

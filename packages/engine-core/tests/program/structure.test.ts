@@ -308,6 +308,29 @@ const testCanonicalWorkspaceShowcases = (): void => {
     assert.ok(product.structure.playableMeta.colliders.length > 0);
     assert.ok(product.structure.playableMeta.zones.length > 0);
   }
+  const byName = new Map(compiled.products.map((p) => [p.entry.entryName, p] as const));
+  const cottage = byName.get('medieval_cottage')!;
+  const tavern = byName.get('tavern')!;
+  const smith = byName.get('blacksmith')!;
+  const tower = byName.get('watchtower')!;
+  if (cottage.kind === 'structure') {
+    assert.deepEqual(cottage.structure.grid.size, [15, 20, 15]);
+    assert.ok(cottage.structure.grid.openings.some((o) => o.kind === 'bay_window'));
+  }
+  if (tavern.kind === 'structure') {
+    assert.ok(
+      tavern.structure.grid.floors.some((f) => f.jetty?.south === 1 && f.jetty?.east === 1),
+    );
+    assert.ok(tavern.structure.grid.openings.some((o) => o.kind === 'bay_window'));
+  }
+  if (smith.kind === 'structure') {
+    assert.ok(smith.structure.grid.openings.some((o) => o.kind === 'arcade'));
+  }
+  if (tower.kind === 'structure') {
+    assert.deepEqual(tower.structure.grid.size, [13, 27, 13]);
+    assert.ok(tower.structure.grid.rooms.every((r) => r.shape === 'octagon'));
+    assert.ok(tower.structure.grid.floors.some((f) => f.jetty?.north === 1));
+  }
 };
 
 const testLightingRingAndMultiLightReRelaxation = (): void => {
@@ -388,12 +411,62 @@ structure placed_rooms {
   assert.equal(built.grid.openings.find((o) => o.room === 'main_b')?.wall, 'west');
 };
 
+const testMassingOctagonSpireAndValleys = (): void => {
+  const src = `ashfox-model 1
+structure massing_test {
+  size = (15, 22, 15);
+  palette {
+    stone = "minecraft:stone_bricks";
+    plank = "minecraft:oak_planks";
+    timber = "minecraft:spruce_log[axis=y]";
+    stair = "minecraft:deepslate_brick_stairs";
+    ridge = "minecraft:deepslate_brick_slab[type=bottom]";
+    glass = "minecraft:glass_pane";
+    sill = "minecraft:spruce_slab[type=top]";
+    door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
+  }
+  build {
+    floor f0 y = 0 height = 4 {
+      room base from = (2, 2) size = (9, 9) kind = tower shape = octagon plinth = stone floor = plank wall = stone frame = timber ceiling = plank;
+      facade on base.south {
+        door at = center width = 1 height = 2 block = door;
+        arcade at = 0 width = 2 height = 3 frame = timber lintel = sill;
+      }
+      facade on base.east {
+        bay_window at = center width = 3 height = 2 y_offset = 1 glass = glass frame = timber sill = sill lintel = sill;
+      }
+    }
+    floor f1 y = 4 height = 4 jetty = 1 {
+      room top from = (2, 2) size = (9, 9) kind = tower shape = octagon floor = plank wall = stone frame = timber ceiling = stone;
+    }
+    roof on = top style = spire axis = x overhang = 0 pitch = steep stair = stair ridge = ridge gable = stone battlement = true;
+    roof from = (3, 12, 3) to = (9, 18, 9) style = gable axis = z stair = stair ridge = ridge gable = stone;
+  }
+}`;
+  const built = compileStructureUnits(
+    'm.ashfox',
+    new Map([['m.ashfox', parseStructureSource(src, 'm.ashfox')]]),
+    {},
+    relativePosix,
+  );
+  assert.equal(built.grid.rooms[0]?.shape, 'octagon');
+  assert.equal(built.grid.floors[1]?.jetty?.south, 1);
+  assert.deepEqual(built.grid.rooms[1]?.from, [1, 4, 1]);
+  assert.deepEqual(built.grid.rooms[1]?.to, [11, 8, 11]);
+  assert.ok(built.grid.openings.some((o) => o.kind === 'bay_window'));
+  assert.ok(built.grid.openings.some((o) => o.kind === 'arcade'));
+  assert.ok(built.grid.states.some((s) => s.includes('minecraft:lantern')));
+  const [w, _h, d] = built.grid.size;
+  assert.equal(built.grid.voxels[(0 * d + 2) * w + 2], -1);
+};
+
 const main = async (): Promise<void> => {
   testParserAndSemanticDsl();
   testLowLevelGridAndHonestBareAudit();
   await testBakedGreedyInstancingAndHygiene();
   testLightingRingAndMultiLightReRelaxation();
   testPlacedSemanticRooms();
+  testMassingOctagonSpireAndValleys();
   testCanonicalWorkspaceShowcases();
   console.log('ashfox structure compiler v2 tests ok');
 };

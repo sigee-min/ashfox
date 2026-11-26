@@ -5,6 +5,7 @@ import {
   withBlockProperties,
 } from '../../project/structure/state';
 import type {
+  StructureFloorMeta,
   StructureGrid,
   StructureOpeningMeta,
   StructureRoomMeta,
@@ -190,6 +191,34 @@ export const runStaircaseOp = (
   );
 };
 
+const resolveRoofBounds = (
+  on: string | undefined,
+  size: IntVec3,
+  explicitFrom: IntVec3 | null,
+  explicitTo: IntVec3 | null,
+  rooms: ReadonlyMap<string, StructureRoomMeta>,
+  fail: (code: string, msg: string) => never,
+): { readonly from: IntVec3; readonly to: IntVec3 } => {
+  if (!on) return { from: explicitFrom!, to: explicitTo! };
+  const targets =
+    on === 'all'
+      ? [...rooms.values()]
+      : [rooms.get(on)].filter((r): r is StructureRoomMeta => Boolean(r));
+  if (targets.length === 0) fail('structure.unknown-room', `Unknown roof room "${on}"`);
+  return {
+    from: [
+      Math.min(...targets.map((r) => r.from[0])),
+      Math.max(...targets.map((r) => r.to[1])),
+      Math.min(...targets.map((r) => r.from[2])),
+    ],
+    to: [
+      Math.max(...targets.map((r) => r.to[0])),
+      size[1] - 1,
+      Math.max(...targets.map((r) => r.to[2])),
+    ],
+  };
+};
+
 export const runRoofOp = (
   ownerPath: string,
   size: IntVec3,
@@ -205,27 +234,9 @@ export const runRoofOp = (
     pos?: IntVec3,
   ) => { readonly state: string; readonly assetAlias: string | null },
   fail: (code: string, msg: string) => never,
+  canPlace?: (x: number, y: number, z: number, kind: 'roof' | 'gable') => boolean,
 ) => {
-  const targets = op.on
-    ? op.on === 'all'
-      ? [...rooms.values()]
-      : [rooms.get(op.on)].filter(Boolean)
-    : [];
-  if (op.on && targets.length === 0) fail('structure.unknown-room', `Unknown roof room "${op.on}"`);
-  const from: IntVec3 = op.on
-    ? [
-        Math.min(...targets.map((r) => r!.from[0])),
-        Math.max(...targets.map((r) => r!.to[1])),
-        Math.min(...targets.map((r) => r!.from[2])),
-      ]
-    : explicitFrom!;
-  const to: IntVec3 = op.on
-    ? [
-        Math.max(...targets.map((r) => r!.to[0])),
-        size[1] - 1,
-        Math.max(...targets.map((r) => r!.to[2])),
-      ]
-    : explicitTo!;
+  const { from, to } = resolveRoofBounds(op.on, size, explicitFrom, explicitTo, rooms, fail);
   return emitRoof(
     {
       style: op.style,
@@ -239,6 +250,8 @@ export const runRoofOp = (
       ridge: op.ridge,
       gable: op.gable,
       underEave: op.underEave,
+      battlement: op.battlement,
+      canPlace,
       dormers: op.dormers,
       chimneys: op.chimneys,
     },
@@ -261,7 +274,7 @@ export const finalizeEvaluatedGrid = (
   voxels: Int32Array,
   states: readonly string[],
   customTags: readonly (string | null)[],
-  floors: readonly { readonly name: string; readonly y: number; readonly height: number }[],
+  floors: readonly StructureFloorMeta[],
   rooms: readonly StructureRoomMeta[],
   openings: readonly StructureOpeningMeta[],
   sockets: readonly StructureSocketMeta[],

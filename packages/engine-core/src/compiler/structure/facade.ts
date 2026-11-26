@@ -3,11 +3,17 @@ import type {
   CardinalFacing,
   FacadeOpeningSpec,
   IntVec3,
-  PorchSpec,
   RoomKind,
 } from '../../project/structure/contract';
 import { withBlockFacing, withBlockProperties } from '../../project/structure/state';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
+import {
+  emitArcadeOpening,
+  emitBayWindow,
+  emitPorchStructure,
+  type MassingOpeningCtx,
+} from './massing';
+import { isOctagonCorner, isOctagonOutside, isOctagonPerimeter, octagonWallRange } from './octagon';
 
 export interface FacadeEvalContext {
   readonly ownerPath: string;
@@ -49,21 +55,28 @@ const buildWallFrame = (room: StructureRoomMeta, wall: CardinalFacing): WallFram
   const [x0, y0, z0] = room.from;
   const [x1, y1, z1] = room.to;
   const [ox, oz] = OUTWARD[wall];
+  const [u0, u1] =
+    room.shape === 'octagon'
+      ? octagonWallRange(room.from, room.to, wall)
+      : wall === 'north' || wall === 'south'
+        ? [x0 + 1, x1 - 1]
+        : [z0 + 1, z1 - 1];
+  const spanLen = u1 - u0 + 1;
   if (wall === 'north' || wall === 'south') {
     const zBase = wall === 'north' ? z0 : z1;
     return {
-      spanLen: x1 - x0 - 1,
+      spanLen,
       minY: y0 + 1,
       maxY: y1 - 1,
-      cellAt: (u, d = 0) => [x0 + 1 + u + ox * d, zBase + oz * d],
+      cellAt: (u, d = 0) => [u0 + u + ox * d, zBase + oz * d],
     };
   }
   const xBase = wall === 'west' ? x0 : x1;
   return {
-    spanLen: z1 - z0 - 1,
+    spanLen,
     minY: y0 + 1,
     maxY: y1 - 1,
-    cellAt: (u, d = 0) => [xBase + ox * d, z0 + 1 + u + oz * d],
+    cellAt: (u, d = 0) => [xBase + ox * d, u0 + u + oz * d],
   };
 };
 
@@ -135,71 +148,6 @@ const checkOpeningBounds = (
   return meta;
 };
 
-const emitPorchPillars = (
-  ctx: FacadeEvalContext,
-  frame: WallFrame,
-  uStart: number,
-  uEnd: number,
-  yBase: number,
-  yTop: number,
-  porch: PorchSpec,
-): void => {
-  if (!porch.pillars) return;
-  for (const pu of [uStart, uEnd]) {
-    const [px, pz] = frame.cellAt(pu, porch.depth);
-    for (let py = yBase; py <= yTop + 1; py += 1) {
-      const res = ctx.resolve(porch.pillars, ctx.ownerPath, [px, py, pz]);
-      ctx.put(px, py, pz, res.state, res.assetAlias);
-    }
-    if (porch.lamps) {
-      const lamp = ctx.resolve(porch.lamps, ctx.ownerPath, [px, yTop + 2, pz]);
-      ctx.put(px, yTop + 2, pz, lamp.state, lamp.assetAlias);
-    }
-  }
-  for (let d = 1; d <= porch.depth; d += 1) {
-    for (let u = uStart; u <= uEnd; u += 1) {
-      const [cx, cz] = frame.cellAt(u, d);
-      const cap = ctx.resolve(porch.floor, ctx.ownerPath, [cx, yTop + 1, cz]);
-      ctx.put(cx, yTop + 1, cz, cap.state, cap.assetAlias);
-    }
-  }
-};
-
-const emitPorch = (
-  ctx: FacadeEvalContext,
-  frame: WallFrame,
-  u0: number,
-  yBase: number,
-  yTop: number,
-  spec: FacadeOpeningSpec,
-  porch: PorchSpec,
-): void => {
-  const uStart = Math.max(-1, u0 - 1);
-  const uEnd = Math.min(frame.spanLen, u0 + spec.width);
-  const floorY = ctx.room.from[1];
-  for (let d = 1; d <= porch.depth; d += 1) {
-    for (let u = uStart; u <= uEnd; u += 1) {
-      const [px, pz] = frame.cellAt(u, d);
-      const res = ctx.resolve(porch.floor, ctx.ownerPath, [px, floorY, pz]);
-      ctx.put(px, floorY, pz, res.state, res.assetAlias);
-    }
-  }
-  if (porch.steps) {
-    for (let u = u0; u < u0 + spec.width; u += 1) {
-      const [sx, sz] = frame.cellAt(u, porch.depth);
-      const res = ctx.resolve(porch.steps, ctx.ownerPath, [sx, floorY, sz]);
-      ctx.put(
-        sx,
-        floorY,
-        sz,
-        withBlockProperties(res.state, { facing: OPPOSITE[ctx.wall], half: 'bottom' }),
-        null,
-      );
-    }
-  }
-  emitPorchPillars(ctx, frame, uStart, uEnd, yBase, yTop, porch);
-};
-
 const emitSillAndLintel = (
   ctx: FacadeEvalContext,
   frame: WallFrame,
@@ -249,7 +197,9 @@ const emitFramePair = (
   y1: number,
   frameKey: string,
 ): void => {
-  if (fu < -1 || fu > frame.spanLen) return;
+  const minU = ctx.room.shape === 'octagon' ? 0 : -1;
+  const maxU = ctx.room.shape === 'octagon' ? frame.spanLen - 1 : frame.spanLen;
+  if (fu < minU || fu > maxU) return;
   for (let y = y0; y <= y1; y += 1) {
     const [fx, fz] = frame.cellAt(fu, 0);
     const res = ctx.resolve(frameKey, ctx.ownerPath, [fx, y, fz]);
@@ -303,6 +253,23 @@ const emitSingleOpening = (
   spec: FacadeOpeningSpec,
 ): void => {
   const y1 = y0 + spec.height - 1;
+  if (spec.kind === 'bay_window' || spec.kind === 'arcade') {
+    const mCtx: MassingOpeningCtx = {
+      ownerPath: ctx.ownerPath,
+      wall: ctx.wall,
+      roomFromY: ctx.room.from[1],
+      roomToY: ctx.room.to[1],
+      spanLen: frame.spanLen,
+      cellAt: frame.cellAt,
+      put: ctx.put,
+      carve: ctx.carve,
+      resolve: ctx.resolve,
+    };
+    if (spec.kind === 'bay_window') emitBayWindow(mCtx, u0, y0, y1, spec);
+    else emitArcadeOpening(mCtx, u0, y0, y1, spec, undefined);
+    emitShuttersAndFrame(ctx, frame, u0, y0, y1, spec);
+    return;
+  }
   for (let col = 0; col < spec.width; col += 1) {
     const [wx, wz] = frame.cellAt(u0 + col, 0);
     for (let y = y0; y <= y1; y += 1) {
@@ -316,7 +283,25 @@ const emitSingleOpening = (
   }
   emitSillAndLintel(ctx, frame, u0, y0, y1, spec);
   emitShuttersAndFrame(ctx, frame, u0, y0, y1, spec);
-  if (spec.kind === 'door' && spec.porch) emitPorch(ctx, frame, u0, y0, y1, spec, spec.porch);
+  if (spec.kind === 'door' && spec.porch) {
+    emitPorchStructure(
+      {
+        ownerPath: ctx.ownerPath,
+        wall: ctx.wall,
+        roomFromY: ctx.room.from[1],
+        shape: ctx.room.shape,
+        spanLen: frame.spanLen,
+        cellAt: frame.cellAt,
+        put: ctx.put,
+        resolve: ctx.resolve,
+      },
+      u0,
+      y0,
+      y1,
+      spec.width,
+      spec.porch,
+    );
+  }
 };
 
 export const applyFacadeTarget = (
@@ -345,6 +330,7 @@ export const applyFacadeTarget = (
 export interface RoomShellSpec {
   readonly name: string;
   readonly kind: RoomKind;
+  readonly shape?: 'rect' | 'octagon';
   readonly from: IntVec3;
   readonly to: IntVec3;
   readonly plinth?: string;
@@ -407,6 +393,26 @@ const fillRoomVertical = (
   }
 };
 
+const roomCellRoles = (
+  spec: RoomShellSpec,
+  x: number,
+  z: number,
+): { readonly onPerim: boolean; readonly isCorner: boolean } | null => {
+  if (spec.shape === 'octagon') {
+    if (isOctagonOutside(x, z, spec.from, spec.to)) return null;
+    return {
+      onPerim: isOctagonPerimeter(x, z, spec.from, spec.to),
+      isCorner: isOctagonCorner(x, z, spec.from, spec.to),
+    };
+  }
+  const [x0, _y0, z0] = spec.from;
+  const [x1, _y1, z1] = spec.to;
+  return {
+    onPerim: x === x0 || x === x1 || z === z0 || z === z1,
+    isCorner: (x === x0 || x === x1) && (z === z0 || z === z1),
+  };
+};
+
 const fillRoomColumn = (
   spec: RoomShellSpec,
   ownerPath: string,
@@ -420,10 +426,11 @@ const fillRoomColumn = (
     pos: IntVec3,
   ) => { readonly state: string; readonly assetAlias: string | null },
 ): void => {
-  const [x0, y0, z0] = spec.from;
-  const [x1, y1, z1] = spec.to;
-  const onPerim = x === x0 || x === x1 || z === z0 || z === z1;
-  const isCorner = (x === x0 || x === x1) && (z === z0 || z === z1);
+  const roles = roomCellRoles(spec, x, z);
+  if (!roles) return;
+  const { onPerim, isCorner } = roles;
+  const y0 = spec.from[1];
+  const y1 = spec.to[1];
   const baseKey = onPerim ? (spec.plinth ?? spec.wall ?? spec.floor) : spec.floor;
   if (baseKey) {
     const res = resolve(baseKey, ownerPath, [x, y0, z]);
@@ -469,5 +476,6 @@ export const emitRoomShell = (
     from: spec.from,
     to: spec.to,
     enclosed: spec.kind !== 'courtyard',
+    ...(spec.shape ? { shape: spec.shape } : {}),
   };
 };
