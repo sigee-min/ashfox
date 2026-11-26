@@ -262,7 +262,7 @@ const drawSeamOrAuditPanel = (
   );
 };
 
-/** Pure-CPU 4-panel 800x520 inspection sheet RGBA buffer for Sound v2 products. */
+/** Pure-CPU 4-panel 800x520 inspection sheet RGBA buffer for sound products. */
 export const renderSoundInspectSheet = (
   products: readonly SoundProduct[],
   audit: SoundAuditReport = evaluateSoundQuality(products),
@@ -273,7 +273,7 @@ export const renderSoundInspectSheet = (
   const mono = decodeWavMono(primary.wav, primary.channels);
   const metrics = analyzeSoundProducts(products);
   drawWaveformPanel(buf, mono, metrics);
-  drawSpectrogramPanel(buf, metrics, primary.sampleRate);
+  drawSpectrogramPanel(buf, metrics, primary.sample_rate);
   drawSpectrumBarsPanel(buf, metrics);
   drawSeamOrAuditPanel(buf, products, mono, metrics, audit);
   drawBadge(buf, 8, 8, `WAVEFORM + ENV (${primary.variant})`);

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module surface {
   export surface contract Fur {
     chart torso box { coverage = opaque; }
@@ -31,7 +31,7 @@ module surface {
     material = double;
     texture atlas {
       density = 2;
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #4d261a;
         coat = (#9b3b1e, #d9642c, #f49b56);
@@ -70,31 +70,31 @@ module surface {
       chart torso box {
         fill = coat;
         grain = soft;
-        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25ratio; }
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart pelvis box {
         fill = coat;
         grain = soft;
-        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25ratio; }
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart chest box {
         fill = coat;
         grain = soft;
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern ao { strength = 0.45; radius = 1u; }
         face north { stamp chest_heart { at = (0px, 2px); protect = true; } }
       }
       chart ruff box {
         fill = cream;
         grain = soft;
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern ao { strength = 0.4; radius = 1u; }
       }
       chart head box {
         fill = coat;
         grain = soft;
-        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.4; radius = 1u; }
         face north {
           stamp fox_eyes { at = (0px, 3px); protect = true; }
           stamp cheek_blaze { at = (0px, 8px); protect = true; }
@@ -103,7 +103,7 @@ module surface {
       chart muzzle box {
         fill = cream;
         grain = soft;
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern ao { strength = 0.4; radius = 1u; }
         face north { stamp muzzle_cleft { at = (0px, 2px); protect = true; } }
       }
       chart nose box {
@@ -113,7 +113,7 @@ module surface {
       chart ear_base box {
         fill = coat;
         grain = soft;
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart ear_tip box {
         fill = sock;
@@ -122,7 +122,7 @@ module surface {
       chart ear_inner box {
         fill = ear_pink;
         grain = soft;
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern ao { strength = 0.4; radius = 1u; }
       }
       chart cheek_tuft flat {
         coverage = 111000111110111111111111011110001100;
@@ -132,14 +132,14 @@ module surface {
       chart front_shoulder box {
         fill = coat;
         grain = clustered;
-        pattern gradient { to = sock; axis = y; space = local; soft = 0.25ratio; }
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern gradient { to = sock; axis = y; space = local; soft = 0.25; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart front_leg box {
         fill = sock;
         grain = soft;
-        pattern gradient { to = paw; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern gradient { to = paw; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.4; radius = 1u; }
       }
       chart front_paw box {
         fill = paw;
@@ -149,14 +149,14 @@ module surface {
       chart back_leg box {
         fill = coat;
         grain = clustered;
-        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25ratio; }
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart back_shin box {
         fill = coat_deep;
         grain = soft;
-        pattern gradient { to = sock; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern gradient { to = sock; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.4; radius = 1u; }
       }
       chart back_hock box {
         fill = sock;
@@ -170,13 +170,13 @@ module surface {
       chart tail_base box {
         fill = coat_deep;
         grain = soft;
-        pattern ao { strength = 0.45ratio; radius = 1u; }
+        pattern ao { strength = 0.45; radius = 1u; }
       }
       chart tail_main box {
         fill = coat;
         grain = soft;
-        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25ratio; }
-        pattern ao { strength = 0.4ratio; radius = 1u; }
+        pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; }
+        pattern ao { strength = 0.4; radius = 1u; }
       }
       chart tail_tip box {
         fill = cream;

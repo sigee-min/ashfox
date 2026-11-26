@@ -6,11 +6,11 @@ import {
 } from '../../../src/project/workspace/graph';
 import { workspaceFixture } from './fixtures';
 
-const malformed = 'ashfox-model 1\nasset broken {';
+const malformed = 'ashfox 1\nmodel broken {';
 const fixture = (unusedSource = malformed) =>
   workspaceFixture(
     [
-      { path: 'dragon/main.ashfox', source: 'ashfox-model 1\nasset main {}' },
+      { path: 'dragon/main.ashfox', source: 'ashfox 1\nmodel main {}' },
       { path: 'dragon/other.ashfox', source: malformed },
       { path: 'dragon/unused.ashfox', source: unusedSource },
     ],

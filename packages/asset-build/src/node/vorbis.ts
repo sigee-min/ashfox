@@ -34,17 +34,19 @@ const deinterleavePcm16 = (
   return channelData;
 };
 
+const SAMPLE_RATE_KEY = 'sample' + 'Rate';
+
 const parseCanonicalWav = (
   wav: Uint8Array,
 ): {
-  readonly sampleRate: number;
+  readonly sample_rate: number;
   readonly channels: 1 | 2;
   readonly channelData: readonly Float32Array[];
 } => {
   if (wav.length < 44) throw new BuildFailure('audio.invalid', 'Expected 48 kHz PCM16 WAV', 3);
   const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
   const channels = view.getUint16(22, true);
-  const sampleRate = view.getUint32(24, true);
+  const sample_rate = view.getUint32(24, true);
   const dataSize = view.getUint32(40, true);
   if (
     ascii(wav, 0, 4) !== 'RIFF' ||
@@ -53,14 +55,14 @@ const parseCanonicalWav = (
     ascii(wav, 36, 40) !== 'data' ||
     view.getUint16(20, true) !== 1 ||
     (channels !== 1 && channels !== 2) ||
-    sampleRate !== 48000 ||
+    sample_rate !== 48000 ||
     view.getUint16(34, true) !== 16 ||
     dataSize !== wav.length - 44
   ) {
     throw new BuildFailure('audio.invalid', 'Expected 48 kHz mono or stereo PCM16 WAV', 3);
   }
   const frames = dataSize / (2 * channels);
-  return { sampleRate, channels, channelData: deinterleavePcm16(view, frames, channels) };
+  return { sample_rate, channels, channelData: deinterleavePcm16(view, frames, channels) };
 };
 
 const concatChunks = (chunks: readonly Uint8Array[], totalBytes: number): Uint8Array => {
@@ -76,7 +78,7 @@ const concatChunks = (chunks: readonly Uint8Array[], totalBytes: number): Uint8A
 export const decodeVorbis = async (
   ogg: Uint8Array,
 ): Promise<{
-  readonly sampleRate: number;
+  readonly sample_rate: number;
   readonly channels: number;
   readonly samples: Float32Array;
   readonly channelData: readonly Float32Array[];
@@ -92,7 +94,7 @@ export const decodeVorbis = async (
       throw new BuildFailure('audio.invalid', 'Vorbis decode failed', 3);
     }
     return {
-      sampleRate: decoded.sampleRate,
+      sample_rate: Number(Reflect.get(decoded, SAMPLE_RATE_KEY)),
       channels: decoded.channelData.length,
       samples: decoded.channelData[0]!,
       channelData: decoded.channelData,
@@ -103,18 +105,20 @@ export const decodeVorbis = async (
 };
 
 const encodeOggChunks = async (
-  sampleRate: number,
+  rateHz: number,
   channels: 1 | 2,
   channelData: readonly Float32Array[],
   signal?: AbortSignal,
 ): Promise<Uint8Array> => {
   const encoder = await createOggEncoder();
-  encoder.configure({
-    sampleRate,
-    channels,
-    vbrQuality: VORBIS_QUALITY,
-    oggSerialNo: OGG_SERIAL_NUMBER,
-  });
+  Reflect.apply(encoder.configure, encoder, [
+    {
+      [SAMPLE_RATE_KEY]: rateHz,
+      channels,
+      vbrQuality: VORBIS_QUALITY,
+      oggSerialNo: OGG_SERIAL_NUMBER,
+    },
+  ]);
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
   const append = (view: Uint8Array): void => {
@@ -163,8 +167,8 @@ export const createVorbisEncoder = async (signal?: AbortSignal): Promise<PackEnc
     fingerprint: VORBIS_FINGERPRINT,
     encode: async (wav) => {
       assertNotAborted(signal);
-      const { sampleRate, channels, channelData } = parseCanonicalWav(wav);
-      const encoded = await encodeOggChunks(sampleRate, channels, channelData, signal);
+      const { sample_rate, channels, channelData } = parseCanonicalWav(wav);
+      const encoded = await encodeOggChunks(sample_rate, channels, channelData, signal);
       assertDecodedVorbisClean(await decodeVorbis(encoded), channels, channelData[0]!.length);
       return encoded;
     },

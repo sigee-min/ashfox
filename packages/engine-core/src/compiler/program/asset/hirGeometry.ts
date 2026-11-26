@@ -51,8 +51,8 @@ const schemas: Readonly<Record<GeometryKind, Schema>> = Object.freeze({
     rotation: 'vec3<degree>',
     pivot: 'vec3<unit>',
     visible: 'bool',
-    'u-axis': 'vec3<unit>',
-    'v-axis': 'vec3<unit>',
+    u_axis: 'vec3<unit>',
+    v_axis: 'vec3<unit>',
   }),
   locator: Object.freeze({
     position: 'vec3<unit>',
@@ -65,7 +65,7 @@ const schemas: Readonly<Record<GeometryKind, Schema>> = Object.freeze({
 const requiredFields: Readonly<Record<GeometryKind, readonly string[]>> = Object.freeze({
   bone: [],
   cube: ['origin', 'size'],
-  plane: ['origin', 'size', 'u-axis', 'v-axis'],
+  plane: ['origin', 'size', 'u_axis', 'v_axis'],
   locator: [],
   face: [],
 });
@@ -162,7 +162,7 @@ const compileMirrorProperty = (
       context.path,
       property.span,
       'asset.invalid-geometry-property',
-      'Property "mirror-x" is allowed only on cube and plane nodes.',
+      'Property "mirror_x" is allowed only on cube and plane nodes.',
     );
     return null;
   }
@@ -172,7 +172,7 @@ const compileMirrorProperty = (
       context.path,
       value.span,
       'asset.invalid-mirror-target',
-      'mirror-x must name a distinct sibling geometry node identifier.',
+      'mirror_x must name a distinct sibling geometry node identifier.',
     );
     return null;
   }
@@ -196,7 +196,7 @@ const compileProperties = (
         'Geometry property "' + property.name + '" is declared more than once.',
       );
     names.add(property.name);
-    if (property.name === 'mirror-x') {
+    if (property.name === 'mirror_x') {
       const mirrored = compileMirrorProperty(statement, property, context);
       if (mirrored !== null) typed.push(mirrored);
       continue;

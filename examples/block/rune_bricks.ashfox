@@ -1,32 +1,28 @@
-ashfox-model 1
-asset rune_bricks {
-  export rig contract BlockRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+ashfox 1
+model rune_bricks {
+  rig contract BlockRig {
     joint root {
       parent = none;
       role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
   }
 
-  export skeleton BlockSkeleton implements BlockRig {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  skeleton BlockSkeleton implements BlockRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
   }
 
-  export surface contract BrickBlock {
+  surface contract BrickBlock {
     chart block box { coverage = opaque; }
     material = opaque;
   }
 
-  export surface mossy_rune_bricks: BrickBlock {
+  surface mossy_rune_bricks: BrickBlock {
     material = opaque;
     texture atlas {
       density = 1;
       background = mortar;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         mortar = (#262b33, #303742, #444d5c);
         slate = (#3b4352, #5a657a, #7d8ba6);
@@ -56,7 +52,7 @@ asset rune_bricks {
         face up {
           fill = limestone;
           grain = clustered;
-          pattern blotch { paint = moss; scale = (4px, 4px, 4px); density = 0.35ratio; phase = 11; }
+          pattern blotch { paint = moss; scale = (4px, 4px, 4px); density = 0.35; phase = 11; }
           pattern border { paint = slate; width = 1px; edges = all; }
         }
         face down {
@@ -83,7 +79,7 @@ asset rune_bricks {
     }
   }
 
-  export component FullBlock {
+  component FullBlock {
     requires rig skeleton: BlockRig;
     requires surface skin: BrickBlock;
     bind bone root to skeleton.root;
@@ -94,9 +90,7 @@ asset rune_bricks {
     }
   }
 
-  export asset rune_bricks {
-    settings { density = 16; forward = north; profile = block; }
-    skeleton = BlockSkeleton;
-    use FullBlock as cube_block { bind skeleton = BlockRig; bind skin = mossy_rune_bricks; };
-  }
+  settings { density = 16; forward = north; profile = block; }
+  skeleton = BlockSkeleton;
+  use FullBlock as cube_block { skeleton = BlockRig; skin = mossy_rune_bricks; }
 }

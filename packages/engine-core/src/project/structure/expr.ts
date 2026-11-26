@@ -130,37 +130,6 @@ const parseBinary = (cursor: Cursor, minPrec: number, depth: number): ExprNode =
   return left;
 };
 
-const formatExpr = (node: ExprNode): string => {
-  if (node.kind === 'lit') return String(node.value);
-  if (node.kind === 'ref') return node.name;
-  if (node.kind === 'unary') return `${node.op}${formatExpr(node.inner)}`;
-  if (node.kind === 'call') return `${node.fn}(${node.args.map(formatExpr).join(', ')})`;
-  return `(${formatExpr(node.left)} ${node.op} ${formatExpr(node.right)})`;
-};
-
-const tryStaticNumber = (node: ExprNode): number | null => {
-  if (node.kind === 'lit') return node.value;
-  if (node.kind === 'unary' && node.inner.kind === 'lit') {
-    return node.op === '-' ? -node.inner.value : node.inner.value;
-  }
-  return null;
-};
-
-export const parseScalarExpr = (cursor: Cursor): StructureScalarExpr => {
-  const node = parseBinary(cursor, 0, 0);
-  const literal = tryStaticNumber(node);
-  return literal !== null ? literal : formatExpr(node);
-};
-
-export const parseExprVec2 = (cursor: Cursor): ExprVec2 => {
-  take(cursor, '(');
-  const x = parseScalarExpr(cursor);
-  take(cursor, ',');
-  const z = parseScalarExpr(cursor);
-  take(cursor, ')');
-  return [x, z];
-};
-
 const failExpr = (file: string, pointer: string, message: string): never => {
   throw new StructureInputError({
     code: 'structure.bad-expr',

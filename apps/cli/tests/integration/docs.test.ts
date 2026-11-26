@@ -23,9 +23,7 @@ const run = (command: string, input: string) => {
 try {
   for (const guide of ['sprites', 'sounds', 'precision-modeling']) {
     const markdown = fs.readFileSync(path.join(root, 'docs/guides', `${guide}.md`), 'utf8');
-    const source = [
-      ...markdown.matchAll(/```(?:ashfox|text)\n(ashfox-model 1\n[\s\S]*?)```/g),
-    ][0]?.[1];
+    const source = [...markdown.matchAll(/```(?:ashfox|text)\n(ashfox 1\n[\s\S]*?)```/g)][0]?.[1];
     assert.ok(source, `${guide} must provide a complete source`);
     const folder = path.join(temp, guide);
     fs.mkdirSync(folder);
@@ -33,7 +31,7 @@ try {
     fs.writeFileSync(entry, source);
     run('check', entry);
     run('build', entry);
-    const id = matchText(source, /(?:sprite|sound|asset) (\w+) \{/)[1];
+    const id = matchText(source, /(?:sprite|sound|model) (\w+) \{/)[1];
     run('check', path.join(folder, 'dist', id, 'build'));
   }
   for (const file of fs
@@ -48,7 +46,7 @@ try {
       fs.writeFileSync(entry, match[1]);
       run('check', entry);
       run('build', entry);
-      const id = matchText(match[1], /(?:sprite|sound|asset|structure) (\w+) \{/)[1];
+      const id = matchText(match[1], /(?:sprite|sound|model|structure) (\w+) \{/)[1];
       run('check', path.join(folder, 'dist', id, 'build'));
     }
   }

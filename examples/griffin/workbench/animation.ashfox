@@ -1,34 +1,31 @@
-ashfox-model 1
+ashfox 1
 module animation {
   export rig contract GriffinRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
-    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint torso { parent = root; role = body; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint head { parent = torso; role = head; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint wing_left { parent = torso; role = wing; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint wing_right { parent = torso; role = wing; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint foreleg_left { parent = torso; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint foreleg_right { parent = torso; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint tail { parent = torso; role = tail; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
-    joint tail_tip { parent = tail; role = tail; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+    joint root { parent = none; role = root; channels = rotation; }
+    joint torso { parent = root; role = body; channels = rotation; }
+    joint head { parent = torso; role = head; channels = rotation; }
+    joint wing_left { parent = torso; role = wing; channels = rotation; }
+    joint wing_right { parent = torso; role = wing; channels = rotation; }
+    joint foreleg_left { parent = torso; role = leg; channels = rotation; }
+    joint foreleg_right { parent = torso; role = leg; channels = rotation; }
+    joint tail { parent = torso; role = tail; channels = rotation; }
+    joint tail_tip { parent = tail; role = tail; channels = rotation; }
   }
 
   export skeleton GriffinSkeleton implements GriffinRig {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind torso { parent-origin = (0u, 14u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind head { parent-origin = (0u, 8u, -8u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind wing_left { parent-origin = (-5u, 6u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind wing_right { parent-origin = (5u, 6u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind foreleg_left { parent-origin = (-3.5u, -4u, -7.5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind foreleg_right { parent-origin = (3.5u, -4u, -7.5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind tail { parent-origin = (0u, -1u, 12u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind tail_tip { parent-origin = (0u, 1u, 10u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind torso { parent_origin = (0u, 14u, 0u); }
+    bind head { parent_origin = (0u, 8u, -8u); }
+    bind wing_left { parent_origin = (-5u, 6u, -2u); }
+    bind wing_right { parent_origin = (5u, 6u, -2u); }
+    bind foreleg_left { parent_origin = (-3.5u, -4u, -7.5u); }
+    bind foreleg_right { parent_origin = (3.5u, -4u, -7.5u); }
+    bind tail { parent_origin = (0u, -1u, 12u); }
+    bind tail_tip { parent_origin = (0u, 1u, 10u); }
   }
 
   export motion idle for GriffinRig {
-    duration = 3s; fps = 20; loop = loop; rest-relative = true;
-    track torso.rotation {
+    duration = 3s; fps = 20; loop = loop;track torso.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 1.5s = (2deg, 0deg, 0deg) linear;
       key 3s = (0deg, 0deg, 0deg) linear;
@@ -61,8 +58,7 @@ module animation {
   }
 
   export motion look_around for GriffinRig {
-    duration = 4s; fps = 24; loop = loop; rest-relative = true;
-    track head.rotation {
+    duration = 4s; fps = 24; loop = loop;track head.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
       key 0.8s = (0deg, -22deg, -3deg) catmullrom;
       key 1.4s = (0deg, -22deg, -3deg) catmullrom;
@@ -80,8 +76,7 @@ module animation {
   }
 
   export motion wing_display for GriffinRig {
-    duration = 3.6s; fps = 24; loop = loop; rest-relative = true;
-    track wing_left.rotation {
+    duration = 3.6s; fps = 24; loop = loop;track wing_left.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
       key 0.9s = (0deg, 0deg, -22deg) catmullrom;
       key 2.4s = (0deg, 0deg, -22deg) catmullrom;
@@ -108,8 +103,7 @@ module animation {
   }
 
   export motion wing_flap for GriffinRig {
-    duration = 1.6s; fps = 24; loop = loop; rest-relative = true;
-    track wing_left.rotation {
+    duration = 1.6s; fps = 24; loop = loop;track wing_left.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
       key 0.4s = (0deg, 0deg, -18deg) catmullrom;
       key 0.8s = (0deg, 0deg, 16deg) catmullrom;
@@ -133,8 +127,7 @@ module animation {
   }
 
   export motion greeting for GriffinRig {
-    duration = 3s; fps = 24; loop = loop; rest-relative = true;
-    track head.rotation {
+    duration = 3s; fps = 24; loop = loop;track head.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
       key 0.65s = (17deg, 0deg, 0deg) catmullrom;
       key 1.1s = (2deg, 0deg, 0deg) catmullrom;
@@ -164,8 +157,7 @@ module animation {
   }
 
   export motion alert for GriffinRig {
-    duration = 2.4s; fps = 24; loop = loop; rest-relative = true;
-    track head.rotation {
+    duration = 2.4s; fps = 24; loop = loop;track head.rotation {
       key 0s = (0deg, 0deg, 0deg) catmullrom;
       key 0.25s = (-8deg, -12deg, 0deg) catmullrom;
       key 1.1s = (-8deg, -12deg, 0deg) catmullrom;

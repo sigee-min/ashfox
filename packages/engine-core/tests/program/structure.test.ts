@@ -33,7 +33,7 @@ const walkWorkspaceFiles = (rootDir: string, base = ''): DirectoryFile[] => {
   return out;
 };
 
-const TEST_MOD = `ashfox-model 1
+const TEST_MOD = `ashfox 1
 module deco {
   palette {
     plank = "minecraft:oak_planks";
@@ -43,26 +43,23 @@ module deco {
     unused_in_cottage = "minecraft:blue_carpet";
   }
   export prefab SleepSet {
-    layer y = 0 origin = (0, 0) {
-      "HF"
-      "CP"
-    } map {
-      H = bed_h;
-      F = bed_f;
-      C = chest;
-      P = plank;
-    };
+    layer {
+      y = 0b;
+      origin = (0b, 0b);
+      rows = ["hf", "cp"];
+      map { h = bed_h; f = bed_f; c = chest; p = plank; }
+    }
   }
   export prefab ExtraRug {
-    set at = (0, 0, 0) block = unused_in_cottage;
+    set { at = (0b, 0b, 0b); block = unused_in_cottage; }
   }
 }
 `;
 
-const LOW_LEVEL_HUT = `ashfox-model 1
+const LOW_LEVEL_HUT = `ashfox 1
 structure test_hut {
   import "./deco.ashfox" as deco;
-  size = (9, 9, 9);
+  size = (9b, 9b, 9b);
   data_version = 3955;
   palette {
     cobble = "minecraft:cobblestone";
@@ -73,16 +70,14 @@ structure test_hut {
     door_lo = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
     door_hi = "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false]";
   }
-  build {
-    box from = (1, 0, 1) to = (7, 0, 7) block = cobble;
-    hollow from = (1, 1, 1) to = (7, 5, 7) block = brick;
-    carve from = (2, 1, 2) to = (6, 5, 6);
-    set at = (4, 1, 7) block = door_lo;
-    set at = (4, 2, 7) block = door_hi;
-    set at = (3, 1, 3) block = torch;
-    roof style = gable axis = z from = (1, 5, 1) to = (7, 8, 7) stair = stair ridge = ridge gable = brick;
-    place deco.SleepSet at = (2, 1, 2) rotate = 90;
-  }
+  box { from = (1b, 0b, 1b); to = (7b, 0b, 7b); block = cobble; }
+  hollow { from = (1b, 1b, 1b); to = (7b, 5b, 7b); block = brick; }
+  carve { from = (2b, 1b, 2b); to = (6b, 5b, 6b); }
+  set { at = (4b, 1b, 7b); block = door_lo; }
+  set { at = (4b, 2b, 7b); block = door_hi; }
+  set { at = (3b, 1b, 3b); block = torch; }
+  roof { style = gable; axis = z; from = (1b, 5b, 1b); to = (7b, 8b, 7b); stair = stair; ridge = ridge; gable = brick; }
+  place deco.SleepSet { at = (2b, 1b, 2b); rotate = 90; }
 }
 `;
 
@@ -94,7 +89,7 @@ const testParserAndSemanticDsl = (): void => {
   assert.equal(unit.density, 2);
 
   assert.throws(
-    () => parseStructureSource('ashfox-model 1\nstructure bad { size = (1, 1); build {} }', 'bad'),
+    () => parseStructureSource('ashfox 1\nstructure bad { size = (1b, 1b); }', 'bad'),
     StructureInputError,
   );
 
@@ -188,11 +183,11 @@ const validateGltfBinary = async (
 };
 
 const testBakedGreedyInstancingAndHygiene = async (): Promise<void> => {
-  const unusedPalette = `ashfox-model 1
+  const unusedPalette = `ashfox 1
 structure s {
-  size = (3, 3, 3);
+  size = (3b, 3b, 3b);
   palette { a = "minecraft:stone"; b = "minecraft:cobblestone"; }
-  build { box from = (0, 0, 0) to = (2, 0, 2) block = a; }
+  box { from = (0b, 0b, 0b); to = (2b, 0b, 2b); block = a; }
 }`;
   assert.throws(
     () =>
@@ -207,30 +202,28 @@ structure s {
   );
 
   const pillarModel = compileRunePillarFixture();
-  const customSrc = `ashfox-model 1
+  const customSrc = `ashfox 1
 structure s {
   import "./rune_pillar.ashfox" as rp;
-  size = (7, 7, 7);
+  size = (7b, 7b, 7b);
   seed = 12;
   density = 2;
   palette {
     stone = "minecraft:stone_bricks";
     stair = "minecraft:oak_stairs";
     fence = "minecraft:oak_fence";
-    pillar = asset rp as "minecraft:chiseled_stone_bricks";
+    pillar = asset(rp, "minecraft:chiseled_stone_bricks");
   }
-  build {
-    box from = (0, 0, 0) to = (6, 0, 6) block = stone;
-    walls from = (0, 1, 0) to = (6, 4, 6) block = stone;
-    set at = (1, 1, 1) block = pillar facing = north;
-    set at = (5, 1, 1) block = pillar facing = east;
-    set at = (1, 1, 5) block = pillar facing = south;
-    set at = (1, 1, 3) block = fence;
-    set at = (2, 1, 3) block = fence;
-    set at = (2, 2, 2) block = stair facing = east;
-    set at = (2, 2, 3) block = stair facing = south;
-    socket gate kind = road at = (3, 0, 6) normal = south pool = "v:road" target = "join";
-  }
+  box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = stone; }
+  walls { from = (0b, 1b, 0b); to = (6b, 4b, 6b); block = stone; }
+  set { at = (1b, 1b, 1b); block = pillar; facing = north; }
+  set { at = (5b, 1b, 1b); block = pillar; facing = east; }
+  set { at = (1b, 1b, 5b); block = pillar; facing = south; }
+  set { at = (1b, 1b, 3b); block = fence; }
+  set { at = (2b, 1b, 3b); block = fence; }
+  set { at = (2b, 2b, 2b); block = stair; facing = east; }
+  set { at = (2b, 2b, 3b); block = stair; facing = south; }
+  socket gate { kind = road; at = (3b, 0b, 6b); normal = south; pool = "v:road"; target = "join"; }
 }`;
   const built = compileStructureUnits(
     's.ashfox',
@@ -353,22 +346,20 @@ const testCanonicalWorkspaceShowcases = (): void => {
 };
 
 const testLightingRingAndMultiLightReRelaxation = (): void => {
-  const src = `ashfox-model 1
+  const src = `ashfox 1
 structure lit_canopy {
-  size = (7, 6, 7);
+  size = (7b, 6b, 7b);
   palette {
     stone = "minecraft:stone_bricks";
     leaves = "minecraft:oak_leaves";
     torch = "minecraft:torch";
     soul = "minecraft:soul_lantern[hanging=false]";
   }
-  build {
-    box from = (0, 0, 0) to = (6, 0, 6) block = stone;
-    box from = (1, 4, 1) to = (5, 4, 5) block = leaves;
-    set at = (1, 1, 1) block = torch;
-    set at = (5, 1, 5) block = soul;
-    set at = (3, 1, 3) block = torch;
-  }
+  box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = stone; }
+  box { from = (1b, 4b, 1b); to = (5b, 4b, 5b); block = leaves; }
+  set { at = (1b, 1b, 1b); block = torch; }
+  set { at = (5b, 1b, 5b); block = soul; }
+  set { at = (3b, 1b, 3b); block = torch; }
 }`;
   const built = compileStructureUnits(
     'lit.ashfox',
@@ -382,34 +373,34 @@ structure lit_canopy {
 };
 
 const testPlacedSemanticRooms = (): void => {
-  const src = `ashfox-model 1
+  const src = `ashfox 1
 structure placed_rooms {
-  size = (24, 10, 24);
+  size = (24b, 10b, 24b);
   palette {
     stone = "minecraft:stone_bricks";
     plank = "minecraft:oak_planks";
     door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
   }
   prefab HutA {
-    floor f0 y = 0 height = 4 {
-      room main_a from = (1, 1) size = (5, 5) kind = living plinth = stone floor = plank wall = stone ceiling = plank;
-      facade on main_a.south {
-        door at = center width = 1 height = 2 block = door;
+    floor f0 {
+      y = 0b; height = 4b;
+      room main_a { from = (1b, 1b); size = (5b, 5b); kind = living; plinth = stone; floor = plank; wall = stone; ceiling = plank; }
+      facade main_a.south {
+        door { at = center; width = 1b; height = 2b; block = door; }
       }
     }
   }
   prefab HutB {
-    floor f1 y = 0 height = 4 {
-      room main_b from = (0, 0) size = (4, 6) kind = living plinth = stone floor = plank wall = stone ceiling = plank;
-      facade on main_b.south {
-        door at = center width = 1 height = 2 block = door;
+    floor f1 {
+      y = 0b; height = 4b;
+      room main_b { from = (0b, 0b); size = (4b, 6b); kind = living; plinth = stone; floor = plank; wall = stone; ceiling = plank; }
+      facade main_b.south {
+        door { at = center; width = 1b; height = 2b; block = door; }
       }
     }
   }
-  build {
-    place HutA at = (10, 0, 10) rotate = 0;
-    place HutB at = (8, 1, 2) rotate = 90;
-  }
+  place HutA { at = (10b, 0b, 10b); rotate = 0; }
+  place HutB { at = (8b, 1b, 2b); rotate = 90; }
 }`;
   const built = compileStructureUnits(
     'placed.ashfox',
@@ -431,9 +422,9 @@ structure placed_rooms {
 };
 
 const testMassingOctagonSpireAndValleys = (): void => {
-  const src = `ashfox-model 1
+  const src = `ashfox 1
 structure massing_test {
-  size = (15, 22, 15);
+  size = (15b, 22b, 15b);
   palette {
     stone = "minecraft:stone_bricks";
     plank = "minecraft:oak_planks";
@@ -444,23 +435,23 @@ structure massing_test {
     sill = "minecraft:spruce_slab[type=top]";
     door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
   }
-  build {
-    floor f0 y = 0 height = 4 {
-      room base from = (2, 2) size = (9, 9) kind = tower shape = octagon plinth = stone floor = plank wall = stone frame = timber ceiling = plank;
-      facade on base.south {
-        door at = center width = 1 height = 2 block = door;
-        arcade at = 0 width = 2 height = 3 frame = timber lintel = sill;
-      }
-      facade on base.east {
-        bay_window at = center width = 3 height = 2 y_offset = 1 glass = glass frame = timber sill = sill lintel = sill;
-      }
+  floor f0 {
+    y = 0b; height = 4b;
+    room base { from = (2b, 2b); size = (9b, 9b); kind = tower; shape = octagon; plinth = stone; floor = plank; wall = stone; frame = timber; ceiling = plank; }
+    facade base.south {
+      door { at = center; width = 1b; height = 2b; block = door; }
+      arcade { at = 0b; width = 2b; height = 3b; frame = timber; lintel = sill; }
     }
-    floor f1 y = 4 height = 4 jetty = 1 {
-      room top from = (2, 2) size = (9, 9) kind = tower shape = octagon floor = plank wall = stone frame = timber ceiling = stone;
+    facade base.east {
+      bay_window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; frame = timber; sill = sill; lintel = sill; }
     }
-    roof on = top style = spire axis = x overhang = 0 pitch = steep stair = stair ridge = ridge gable = stone battlement = true;
-    roof from = (3, 12, 3) to = (9, 18, 9) style = gable axis = z stair = stair ridge = ridge gable = stone;
   }
+  floor f1 {
+    y = 4b; height = 4b; jetty = 1b;
+    room top { from = (2b, 2b); size = (9b, 9b); kind = tower; shape = octagon; floor = plank; wall = stone; frame = timber; ceiling = stone; }
+  }
+  roof { on = top; style = spire; axis = x; overhang = 0b; pitch = steep; stair = stair; ridge = ridge; gable = stone; battlement = true; }
+  roof { from = (3b, 12b, 3b); to = (9b, 18b, 9b); style = gable; axis = z; stair = stair; ridge = ridge; gable = stone; }
 }`;
   const built = compileStructureUnits(
     'm.ashfox',
@@ -487,7 +478,7 @@ const main = async (): Promise<void> => {
   testPlacedSemanticRooms();
   testMassingOctagonSpireAndValleys();
   testCanonicalWorkspaceShowcases();
-  console.log('ashfox structure compiler v2 tests ok');
+  console.log('ashfox structure compiler tests ok');
 };
 const pending = main().catch((err) => {
   console.error(err);

@@ -1,14 +1,14 @@
 # 모델 문법 레퍼런스
 
-Ashfox 원본은 에셋의 형상·표면·리그·동작을 정의하고 [CLI](../guides/cli.md)로 직접 컴파일합니다. 정확한 `ashfox-model 1` 헤더 뒤에 소스 단위 하나를 쓰세요.
+Ashfox 원본은 에셋의 형상·표면·리그·동작을 정의하고 [CLI](../guides/cli.md)로 직접 컴파일합니다. 정확한 `ashfox 1` 헤더 뒤에 소스 단위 하나를 쓰세요.
 
 예제는 구분해서 표시합니다. **조각**은 큰 원본 안에 넣는 부분이고 **완전한 원본**은 헤더·단위·선언·조립을 포함해 작은 에셋 파일 하나로 쓸 수 있습니다.
 
-상세 스펙은 [값과 표현식](values.md), [컴포넌트와 소켓](components.md), [모델 텍스처](textures.md)에 있습니다. 다른 종류는 별도 [스프라이트](sprites.md)·[사운드](sounds.md) 문법을 사용합니다.
+상세 스펙은 [값과 표현식](values.md), [컴포넌트와 소켓](components.md), [모델 텍스처](textures.md)에 있습니다. 다른 에셋 종류는 [스프라이트](sprites.md), [사운드](sounds.md), [구조물](structures.md) 선언과 `ashfox 1` 헤더를 공유합니다.
 
 ## 1. 소스 단위
 
-재사용 `module`과 진입점 `asset` 모델 단위를 설명합니다. 다른 종류는 [스프라이트](../guides/sprites.md)·[사운드](../guides/sounds.md)를 보세요. 단위 안의 선언은 export하여 다른 단위가 참조할 수 있습니다.
+재사용 `module`과 진입점 `model` 단위를 설명합니다. 다른 종류는 [스프라이트](../guides/sprites.md)·[사운드](../guides/sounds.md)를 보세요. 단위 안의 선언은 export하여 다른 단위가 참조할 수 있습니다.
 
 **조각 — 두 소스 단위 형태:**
 
@@ -16,7 +16,7 @@ Ashfox 원본은 에셋의 형상·표면·리그·동작을 정의하고 [CLI](
 
 {{source-code:1}}
 
-블록은 중괄호, 속성 대입은 `;`로 끝냅니다. component `use`도 닫는 중괄호 뒤 `;`가 필요합니다. 파일당 단위 하나를 유지하며 버전이 있는 소스 헤더를 다른 모델·언어 이름으로 바꾸지 마세요.
+블록은 중괄호, 속성 대입은 `;`로 끝냅니다. component `use`도 닫는 중괄호 뒤 `;`가 필요합니다. 파일당 단위 하나를 유지하고 모든 파일은 `ashfox 1`로 시작합니다.
 
 ### Import와 이름
 
@@ -38,12 +38,12 @@ import는 따옴표 경로와 로컬 별칭입니다. 가져온 선언은 `alias
 | `16px`, `16tx` | 텍스처 픽셀 |
 | `12deg` | 도 단위 회전 |
 | `1.5s` | 초 단위 동작 시간 |
-| `1ratio` | 크기 비율 |
+| `0.5`, `50%` | 크기 또는 강도 비율 |
 | `16` | density·fps 같은 정수 |
 | `true`, `false` | 불리언 |
 | `#d16b3a` | 색 |
 
-벡터는 `(0u, 4u, 0u)`, `(0deg, 10deg, 0deg)`, `(1ratio, 1ratio, 1ratio)` 같은 괄호를 사용합니다. 이름 있는 값·산술·비교·벡터 `.x`, `.y`, `.z`를 쓸 수 있습니다. 주변 선언의 기대 단위를 유지하세요. `4u`와 `4px`는 다릅니다.
+벡터는 `(0u, 4u, 0u)`, `(0deg, 10deg, 0deg)`, `(1, 1, 1)` 같은 괄호를 사용합니다. 이름 있는 값·산술·비교·벡터 `.x`, `.y`, `.z`를 쓸 수 있습니다. 주변 선언의 기대 단위를 유지하세요. `4u`와 `4px`는 다릅니다.
 
 지원 선언은 다음과 같습니다.
 
@@ -52,7 +52,7 @@ import는 따옴표 경로와 로컬 별칭입니다. 가져온 선언은 `alias
 - `surface contract`, `surface`: 차트 배치·재질·픽셀.
 - `component`: 타입 포트를 갖는 재사용 형상.
 - `motion`: 이름 있는 관절 트랙.
-- `asset`: 선택한 skeleton·동작·component 인스턴스와 선택적 socket 연결.
+- `settings`, `skeleton`, `motions`, `use`, `connect`: `model` 본문에서 직접 지정하는 스켈레톤·동작·component 인스턴스와 선택적 socket 연결.
 
 ## 3. 형상과 표면
 
@@ -69,14 +69,14 @@ component는 재사용 형상 트리를 소유합니다. 보통 rig contract·su
 | 노드 | 필수 속성 | 유용한 선택 속성 |
 | --- | --- | --- |
 | `bone` | 없음 | `position`, `rotation`, `pivot`, `visible` |
-| `cube` | `origin`, `size`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror` |
-| `plane` | `origin`, `size`, `u-axis`, `v-axis`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible` |
+| `cube` | `origin`, `size`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror_x` |
+| `plane` | `origin`, `size`, `u_axis`, `v_axis`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
 | `locator` | 없음 | `position`, `rotation`, `visible` |
 | cube 안 `face` | 없음 | `enabled`, `rotation` |
 
-bone에는 bone·cube·plane·locator가 들어갑니다. cube에는 `north`, `south`, `east`, `west`, `up`, `down` face가 들어가며 면 회전은 `0`, `90`, `180`, `270`입니다.
+bone에는 bone·cube·plane·locator가 들어갑니다. cube에는 `north`, `south`, `east`, `west`, `up`, `down` face가 들어가며 면 회전은 `0`, `90`, `180`, `270`입니다. `cube`나 `plane`에 `mirror_x = <id>;`를 주면 `x = 0` 대칭 형제 노드를 합성합니다.
 
-cube·plane 크기는 양수여야 합니다. plane의 size는 unit 두 성분이고 u-axis·v-axis는 서로 다른 부호 있는 단위 축입니다. 바인딩된 본은 이미 rig에서 배치를 받으므로 충돌하는 position·rotation·pivot을 추가하지 마세요.
+cube·plane 크기는 양수여야 합니다. plane의 size는 unit 두 성분이고 `u_axis`·`v_axis`는 서로 다른 부호 있는 단위 축입니다. 바인딩된 본은 이미 rig에서 배치를 받으므로 충돌하는 position·rotation·pivot을 추가하지 마세요.
 
 ### 표면 계약과 표면
 
@@ -96,38 +96,38 @@ rig contract는 관절 이름·부모 관계·로컬 프레임·허용 채널·�
 
 {{source-code:5}}
 
-관절은 `channels = rotation`, `channels = scale` 또는 둘의 튜플을 선언합니다. motion은 허용 채널만 사용합니다. parent·mirror는 관절 이름이며 없으면 `none`입니다. 프레임은 부호 있는 직교 축이고 skeleton bind마다 정지 `parent-origin`과 프레임을 명시합니다.
+관절은 `channels = rotation`, `channels = scale` 또는 둘의 튜플을 선언합니다. motion은 허용 채널만 사용합니다. parent·mirror는 관절 이름(없으면 생략 또는 `none`, 항등 `handedness = right`와 항등 `frame`도 생략 가능)입니다. 프레임은 부호 있는 직교 축이고 skeleton bind마다 정지 `parent_origin`과 비항등 프레임을 명시합니다.
 
-바인딩의 **`parent-origin`**은 부모 관절 프레임 기준이고 루트는 모델 프레임입니다. 회전 없는 몸통 y가 `13u`, 어깨 모델 y가 `19.5u`, x가 `6.5u`라면 `(6.5u, 6.5u, 0u)`를 사용합니다. 부모 프레임은 자식 배치 전에 이 오프셋을 회전·반사합니다. 모호한 skeleton `origin`은 별칭 없이 거부합니다. 형상·socket frame의 origin은 각 문서화된 공간을 유지합니다.
+바인딩의 **`parent_origin`**은 부모 관절 프레임 기준이고 루트는 모델 프레임입니다. 회전 없는 몸통 y가 `13u`, 어깨 모델 y가 `19.5u`, x가 `6.5u`라면 `(6.5u, 6.5u, 0u)`를 사용합니다. 부모 프레임은 자식 배치 전에 이 오프셋을 회전·반사합니다. 모호한 skeleton `origin`은 별칭 없이 거부합니다. 형상·socket frame의 origin은 각 문서화된 공간을 유지합니다.
 
 ## 5. 동작
 
 motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관절 하나의 `rotation` 또는 `scale`을 대상으로 합니다.
 
-**조각 — 정지 기준 상대 회전:**
+**조각 — 정지 공간 기준 상대 회전:**
 
 {{source-code:6}}
 
-필수 속성입니다.
+속성 규칙입니다.
 
 - `duration`: 양의 초.
 - `fps`: 정수 1–240.
 - `loop`: `once`, `loop`, `hold_on_last_frame`.
-- `rest-relative`: 반드시 `true`.
+- `rest_relative`: 기본값이 `true`입니다.
 
 키 시간은 길이 안에서 엄격히 증가합니다. 각 키 끝에는 `linear`, `step`, `catmullrom` 중 하나를 붙여 다음 키까지 구간을 제어합니다. linear는 혼합, step은 시작값 유지, catmullrom은 이웃 키를 사용한 곡선입니다.
 
-회전은 `vec3<degree>`, 크기는 `(1ratio, 1ratio, 1ratio)` 같은 양의 `vec3<ratio>`이며 관절이 scale 채널을 허용해야 합니다. position·ik는 대상이 될 수 없습니다. 현재 언어는 정지 기준 상대 회전·크기만 지원합니다.
+회전은 `vec3<degree>`, 크기는 `(1, 1, 1)` 같은 양의 `vec3<ratio>`이며 관절이 scale 채널을 허용해야 합니다. position·ik는 대상이 될 수 없습니다. 현재 언어는 정지 공간 기준 상대 회전·크기만 지원합니다.
 
 ## 6. 조립
 
-asset 조립은 구체 skeleton 하나, 서로 다른 motion 0개 이상, component 인스턴스 1개 이상을 선택하고 고정 density·forward를 설정합니다.
+`model` 단위는 본문에서 직접 구체 skeleton 하나, 서로 다른 motion 0개 이상(`motions = [...]`), component 인스턴스 1개 이상을 선택하고 고정 density·forward를 설정합니다.
 
 **조각 — skeleton·motion·component 선택:**
 
 {{source-code:7}}
 
-현재 density는 `16`, forward는 `north`, `south`, `east`, `west`입니다. use는 이름 있는 인스턴스를 만들고 모든 required 포트를 연결합니다. 조립 skeleton은 구체 구현, use의 rig 포트 바인딩은 대응 rig contract를 지정합니다. 여러 동작은 모두 skeleton과 같은 rig를 사용하고 한 번씩만 나타나야 합니다.
+현재 density는 `16`, forward는 `north`, `south`, `east`, `west`입니다. 선택적 `profile`(`creature`, `prop`, `block`)은 `ashfox check`의 품질 감사 가중치를 지정합니다. `use`는 이름 있는 인스턴스를 만들고 모든 required 포트를 연결합니다. 조립의 `skeleton`은 구체 구현, `use`의 rig 포트 바인딩은 대응 rig contract를 지정합니다. `motions = [...]`에 여러 동작을 나열할 수 있으며 모두 skeleton과 같은 rig를 사용하고 한 번씩만 나타나야 합니다.
 
 소켓 부착에는 명시적 계약과 제공·요구 endpoint를 연결합니다. 방향은 `provider.port -> required.port`이며 가까운 형상으로 부착을 추론하지 않습니다.
 

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module chest_body {
   import "./rig.ashfox" as rig;
   import "./surface.ashfox" as surface;
@@ -29,17 +29,17 @@ module chest_body {
         cube plinth { origin = (-5u, 0u, -4u); size = (ChestDims.width, 2u, ChestDims.depth); surface = skin.base; }
         cube hull { origin = (-4.5u, 2u, -3.5u); size = (9u, ChestDims.body_h, 7u); surface = skin.wall; }
         cube rim { origin = (-5u, 6u, -4u); size = (10u, 1u, 8u); surface = skin.rim; }
-        cube corner_fl { origin = (-5.5u, 2u, -4.5u); size = (1u, 4u, 1u); mirror-x = corner_fr; surface = skin.band; }
-        cube corner_bl { origin = (-5.5u, 2u, 3.5u); size = (1u, 4u, 1u); mirror-x = corner_br; surface = skin.band; }
-        cube handle_l { origin = (-5.5u, 3.5u, -1.5u); size = (1u, 1u, 3u); pivot = (-4.5u, 4u, 0u); rotation = (0deg, 0deg, 22.5deg); mirror-x = handle_r; surface = skin.handle; }
+        cube corner_fl { origin = (-5.5u, 2u, -4.5u); size = (1u, 4u, 1u); mirror_x = corner_fr; surface = skin.band; }
+        cube corner_bl { origin = (-5.5u, 2u, 3.5u); size = (1u, 4u, 1u); mirror_x = corner_br; surface = skin.band; }
+        cube handle_l { origin = (-5.5u, 3.5u, -1.5u); size = (1u, 1u, 3u); pivot = (-4.5u, 4u, 0u); rotation = (0deg, 0deg, 22.5deg); mirror_x = handle_r; surface = skin.handle; }
         bone lid {
           cube lid_main { origin = (-5u, 7u, -4u); size = (10u, 3u, 8u); surface = skin.lid; }
           cube lid_crown { origin = (-4u, 10u, -3u); size = (8u, 2u, 6u); surface = skin.lid_crown; }
           cube lid_eave_front { origin = (-4u, 10u, -4u); size = (8u, 1u, 1u); pivot = (0u, 10u, -3u); rotation = (-22.5deg, 0deg, 0deg); surface = skin.lid_slope; }
           cube lid_eave_back { origin = (-4u, 10u, 3u); size = (8u, 1u, 1u); pivot = (0u, 10u, 3u); rotation = (22.5deg, 0deg, 0deg); surface = skin.lid_slope; }
-          cube lid_strap_front_l { origin = (-3.5u, 7u, -5u); size = (2u, 3u, 1u); mirror-x = lid_strap_front_r; surface = skin.strap; }
-          cube lid_strap_back_l { origin = (-3.5u, 7u, 4u); size = (2u, 3u, 1u); mirror-x = lid_strap_back_r; surface = skin.strap; }
-          cube lid_strap_top_l { origin = (-3.5u, 12u, -3u); size = (2u, 1u, 6u); mirror-x = lid_strap_top_r; surface = skin.strap_top; }
+          cube lid_strap_front_l { origin = (-3.5u, 7u, -5u); size = (2u, 3u, 1u); mirror_x = lid_strap_front_r; surface = skin.strap; }
+          cube lid_strap_back_l { origin = (-3.5u, 7u, 4u); size = (2u, 3u, 1u); mirror_x = lid_strap_back_r; surface = skin.strap; }
+          cube lid_strap_top_l { origin = (-3.5u, 12u, -3u); size = (2u, 1u, 6u); mirror_x = lid_strap_top_r; surface = skin.strap_top; }
         }
       }
     }

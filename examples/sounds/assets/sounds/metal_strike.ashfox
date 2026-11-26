@@ -1,74 +1,61 @@
-ashfox-model 1
+ashfox 1
 sound metal_strike {
-  profile = "impact";
-  duration = 2.55;
-  sampleRate = 48000;
+  profile = impact;
+  duration = 2.55s;
   channels = 2;
   seed = 7349;
-  space = { preset = "stone_hall"; mix = 0.22; };
-  voices = [{
-    id = "steel_ring";
-    source = {
-      kind = "material";
-      material = "steel";
-      pitch = 310;
-      size = 1.2;
-      hardness = 0.92;
-      damping = 0.36;
-      brightness = 0.8;
-      modes = 26;
-      strike = "mallet";
-    };
+  space { preset = stone_hall; mix = 22%; }
+  voice steel_ring : material {
+    material = steel;
+    pitch = 310hz;
+    size = 1.2;
+    hardness = 92%;
+    damping = 36%;
+    brightness = 80%;
+    modes = 26;
+    strike = mallet;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 14500hz), (0.35, 3400hz), (1, 950hz)]; }
+      q = 1.1;
+    }
+    highpass = 50hz;
     drive = 1.8;
-    highpass = 50;
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 14500; }, { at = 0.35; value = 3400; }, { at = 1; value = 950; }]; }; q = 1.1; };
     pan = -0.14;
-    gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
-  }, {
-    id = "iron_anvil";
-    source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.88; };
-      modes = [
-        { id = "sub"; hz = 78; decay = 0.32; gain = 0.9; },
-        { id = "low"; hz = 156; decay = 0.36; gain = 1.0; },
-        { id = "mid"; hz = 468; decay = 0.24; gain = 0.6; },
-        { id = "bite"; hz = 1120; decay = 0.14; gain = 0.38; }
-      ];
-      pitchDropCents = 85;
-      pitchDropSeconds = 0.022;
-    };
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+  voice iron_anvil : resonator {
+    excitation mallet { duration = 8ms; hardness = 88%; }
+    mode sub { hz = 78hz; decay = 0.32s; gain = 0.9; }
+    mode low { hz = 156hz; decay = 0.36s; gain = 1; }
+    mode mid { hz = 468hz; decay = 0.24s; gain = 0.6; }
+    mode bite { hz = 1120hz; decay = 0.14s; gain = 0.38; }
+    pitch_drop_cents = 85cents;
+    pitch_drop_seconds = 22ms;
+    highpass = 35hz;
     drive = 1.5;
-    highpass = 35;
     pan = 0.08;
-    gain = { env = "ad"; attack = 0.002; peak = 0.92; curve = "exp"; };
-  }, {
-    id = "clang_spark";
-    source = {
-      kind = "granular";
-      texture = "spark";
-      density = 135;
-      grainMs = 12;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8500; }, { at = 1; value = 1200; }]; };
-      spread = 0.72;
-      burstiness = 0.65;
-      turbulence = 0.55;
-    };
-    highpass = 600;
+    gain { env = ad; attack = 2ms; peak = 0.92; curve = exp; }
+  }
+  voice clang_spark : granular {
+    texture = spark;
+    density = 135;
+    grain_ms = 12ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 8500hz), (1, 1200hz)]; }
+    spread = 72%;
+    burstiness = 65%;
+    turbulence = 55%;
+    highpass = 600hz;
     pan = 0.2;
-    gain = { env = "ad"; attack = 0.002; peak = 0.7; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "forge";
-    start = 0.02;
-    repeat = { count = 4; period = 0.64; };
-    steps = [
-      { id = "ring"; voice = "steel_ring"; at = 0; duration = 0.36; vary = { timing = [-0.005, 0.005]; pitchCents = [-55, 55]; gain = [0.9, 1.1]; }; },
-      { id = "anvil"; voice = "iron_anvil"; at = 0; duration = 0.34; vary = { pitchCents = [-55, 55]; gain = [0.9, 1.1]; }; },
-      { id = "hit"; voice = "clang_spark"; at = 0; duration = 0.22; vary = { pitchCents = [-80, 80]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -1.5; targetLufs = -12; punch = 0.4; air = 0.2; glue = 0.2; limit = true; };
+    gain { env = ad; attack = 2ms; peak = 0.7; curve = exp; }
+  }
+  seq forge {
+    start = 20ms;
+    repeat { count = 4; period = 0.64s; }
+    step ring { voice = steel_ring; at = 0s; duration = 0.36s; vary_timing = -0.005s..5ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    step anvil { voice = iron_anvil; at = 0s; duration = 0.34s; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    step hit { voice = clang_spark; at = 0s; duration = 0.22s; vary_pitch = -80cents..80cents; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 5db; peak = -1.5db; target = -12lufs; punch = 40%; air = 20%; glue = 20%; limit = true; }
 }

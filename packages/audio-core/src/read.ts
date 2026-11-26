@@ -225,7 +225,6 @@ const ROOT_REQUIRED = [
   'id',
   'profile',
   'duration',
-  'sampleRate',
   'seed',
   'variants',
   'output',
@@ -284,11 +283,11 @@ const readRecipeVariants = (rawVariants: unknown): SoundRecipe['variants'] => {
 export const readRecipeWithBudget = (
   input: unknown,
 ): { readonly recipe: SoundRecipe; readonly budget: SoundBudget } => {
-  const root = closed(input, ROOT_REQUIRED, 'recipe', ['channels', 'space']);
+  const root = closed(input, ROOT_REQUIRED, 'recipe', ['sample_rate', 'channels', 'space']);
   const recipeId = id(root.id, 'recipe.id');
   const profile = choice(root.profile, SOUND_PROFILES, 'recipe.profile');
   const duration = number(root.duration, 0.05, 30, 'recipe.duration');
-  number(root.sampleRate, 48000, 48000, 'recipe.sampleRate');
+  if (root.sample_rate !== undefined) number(root.sample_rate, 48000, 48000, 'recipe.sample_rate');
   const channels =
     root.channels === undefined
       ? 1
@@ -310,7 +309,7 @@ export const readRecipeWithBudget = (
     id: recipeId,
     profile,
     duration,
-    sampleRate: 48000,
+    sample_rate: 48000,
     channels,
     seed,
     ...(space !== undefined ? { space } : {}),

@@ -2,65 +2,45 @@ import assert from 'node:assert/strict';
 import { compileSoundSource, evaluateSoundQuality, renderSoundInspectSheet } from '../../src';
 
 const oneshot = compileSoundSource(
-  `ashfox-model 1
+  `ashfox 1
 sound sheet_oneshot {
-  profile = "ui";
-  duration = 0.28;
-  sampleRate = 48000;
+  profile = ui;
+  duration = 0.28s;
   seed = 5;
-  voices = [{
-    id = "ping";
-    source = { kind = "osc"; waveform = "triangle"; pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 880; }, { at = 1; value = 1320; }]; }; unison = 2; detuneCents = 8; };
-    filter = { kind = "lowpass"; cutoff = 6400; q = 1.2; };
-    gain = { env = "ad"; attack = 0.005; peak = 0.85; curve = "exp"; };
-  }, {
-    id = "spark";
-    source = { kind = "noise"; color = "white"; };
-    highpass = 4500;
-    gain = { env = "ad"; attack = 0.003; peak = 0.25; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "chime";
-    start = 0.01;
-    steps = [
-      { id = "a"; voice = "ping"; at = 0; duration = 0.24; },
-      { id = "b"; voice = "spark"; at = 0; duration = 0.05; }
-    ];
-  }];
-  variants = [{ id = "take1"; seed = 101; }];
-  playback = { kind = "oneshot"; };
-  output = { peakDb = -1; gainDb = 2; punch = 0.25; air = 0.15; limit = true; };
+  voice ping : osc {
+    waveform = triangle;
+    pitch = 880hz -> 1320hz;
+    unison = 2;
+    detune_cents = 8cents;
+    filter lowpass { cutoff = 6400hz; q = 1.2; }
+    gain { env = ad; attack = 5ms; peak = 0.85; curve = exp; }
+  }
+  voice spark : noise { color = white; highpass = 4500hz; gain { env = ad; attack = 3ms; peak = 0.25; curve = exp; } }
+  seq chime { start = 10ms; step a { voice = ping; at = 0s; duration = 0.24s; } step b { voice = spark; at = 0s; duration = 50ms; } }
+  variant take1 { seed = 101; }
+  master { peak = -1db; gain = 2db; punch = 25%; air = 15%; limit = true; }
 }`,
   'oneshot.ashfox',
 );
 
 const loop = compileSoundSource(
-  `ashfox-model 1
+  `ashfox 1
 sound sheet_loop {
-  profile = "ambient";
-  duration = 1.0;
-  sampleRate = 48000;
+  profile = ambient;
+  duration = 1s;
   channels = 2;
   seed = 9;
-  playback = { kind = "loop"; start = 0; end = 1.0; crossfade = 0.05; };
-  space = { preset = "timber_room"; mix = 0.25; decay = 0.4; damping = 4200; size = 0.8; };
-  voices = [{
-    id = "bed";
-    source = { kind = "noise"; color = "pink"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 480; }, { at = 0.5; value = 1200; }, { at = 1; value = 480; }]; };
-      q = 1.6;
-    };
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.5; }, { at = 0.5; value = 0.9; }, { at = 1; value = 0.5; }]; };
-  }];
-  sequences = [{
-    id = "main";
-    start = 0;
-    steps = [{ id = "s"; voice = "bed"; at = 0; duration = 1.0; }];
-  }];
-  variants = [{ id = "v1"; seed = 1; }, { id = "v2"; seed = 2; }];
-  output = { peakDb = -2; gainDb = 4; warmth = 0.2; glue = 0.25; width = 1.1; limit = true; };
+  loop { at = 0s..1s; xfade = 50ms; }
+  space { preset = timber_room; mix = 25%; decay = 0.4s; damping = 4200hz; size = 0.8; }
+  voice bed : noise {
+    color = pink;
+    filter bandpass { cutoff = 480hz -> 1200hz -> 480hz; q = 1.6; }
+    gain = 0.5 -> 0.9 -> 0.5;
+  }
+  seq main { start = 0s; step s { voice = bed; at = 0s; duration = 1s; } }
+  variant v1 { seed = 1; }
+  variant v2 { seed = 2; }
+  master { peak = -2db; gain = 4db; warmth = 20%; glue = 25%; width = 1.1; limit = true; }
 }`,
   'loop.ashfox',
 );

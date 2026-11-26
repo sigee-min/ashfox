@@ -245,7 +245,7 @@ export interface StructurePrefab {
 }
 
 export interface StructureSourceUnit {
-  readonly kind: 'structure' | 'module' | 'compound';
+  readonly kind: 'structure' | 'module';
   readonly id: string;
   readonly imports: readonly StructureImport[];
   readonly outputs: readonly RawDeclaredOutput[];

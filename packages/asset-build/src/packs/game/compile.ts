@@ -79,8 +79,8 @@ const compileSoundGameAsset = async (
     variants.push({
       id: variant.id,
       file: add(`${variant.id}.${packAudio}`, data),
-      durationSeconds: variant.frames / variant.sampleRate,
-      sampleRate: variant.sampleRate,
+      durationSeconds: variant.frames / variant.sample_rate,
+      sample_rate: variant.sample_rate,
       channels: variant.channels,
       frames: variant.frames,
       playback: variant.playback,

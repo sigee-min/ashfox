@@ -1,65 +1,47 @@
-ashfox-model 1
-
+ashfox 1
 module bird_voices {
-  export voice opening_whistle = {
-    source = {
-      kind = "chirp";
-      trillHz = 11;
-      trillCents = 38;
-      trillDepth = 0.14;
-      breath = 0.08;
-      jitterCents = 42;
-      brightness = 0.65;
-      pitch = {
-        domain = "log";
-        interpolation = "smooth";
-        points = [{ at = 0; value = 2200; }, { at = 0.25; value = 4400; }, { at = 0.65; value = 5200; }, { at = 1; value = 2900; }];
-      };
-    };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2600; }, { at = 1; value = 6400; }]; };
+  export voice opening_whistle : chirp {
+    trill_hz = 11hz;
+    trill_cents = 38cents;
+    trill_depth = 14%;
+    breath = 8%;
+    jitter_cents = 42cents;
+    brightness = 65%;
+    pitch { domain = log; interpolation = smooth; points = [(0, 2200hz), (0.25, 4400hz), (0.65, 5200hz), (1, 2900hz)]; }
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 2600hz), (1, 6400hz)]; }
       q = 0.9;
-    };
+    }
     pan = -0.2;
-    gain = { env = "adsr"; attack = 0.015; decay = 0.08; sustain = 0.72; release = 0.06; peak = 0.9; curve = "exp"; };
-  };
-  export voice answering_trill = {
-    source = {
-      kind = "chirp";
-      trillHz = 18;
-      trillCents = 55;
-      trillDepth = 0.22;
-      breath = 0.12;
-      jitterCents = 30;
-      brightness = 0.75;
-      pitch = {
-        domain = "log";
-        interpolation = "smooth";
-        points = [{ at = 0; value = 3600; }, { at = 0.35; value = 5600; }, { at = 1; value = 2400; }];
-      };
-    };
-    highpass = 900;
+    gain { env = adsr; attack = 15ms; decay = 80ms; sustain = 72%; release = 60ms; peak = 0.9; curve = exp; }
+  }
+  export voice answering_trill : chirp {
+    trill_hz = 18hz;
+    trill_cents = 55cents;
+    trill_depth = 22%;
+    breath = 12%;
+    jitter_cents = 30cents;
+    brightness = 75%;
+    pitch { domain = log; interpolation = smooth; points = [(0, 3600hz), (0.35, 5600hz), (1, 2400hz)]; }
+    highpass = 900hz;
     pan = 0.22;
-    gain = { env = "ad"; attack = 0.01; peak = 0.85; curve = "exp"; };
-  };
-  export voice forest_air = {
-    source = { kind = "noise"; color = "white"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 4800; }, { at = 0.5; value = 8200; }, { at = 1; value = 4800; }]; };
+    gain { env = ad; attack = 10ms; peak = 0.85; curve = exp; }
+  }
+  export voice forest_air : noise {
+    color = white;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 4800hz), (0.5, 8200hz), (1, 4800hz)]; }
       q = 0.9;
-    };
-    gain = { env = "adsr"; attack = 0.04; decay = 0.2; sustain = 0.55; release = 0.2; peak = 0.35; };
-  };
-  export voice canopy_low = {
-    source = { kind = "noise"; color = "brown"; };
-    filter = {
-      kind = "lowpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 220; }, { at = 0.5; value = 420; }, { at = 1; value = 220; }]; };
-      q = 1.0;
-    };
-    highpass = 45;
-    gain = { env = "adsr"; attack = 0.04; decay = 0.2; sustain = 0.72; release = 0.2; peak = 0.85; };
-  };
+    }
+    gain { env = adsr; attack = 40ms; decay = 0.2s; sustain = 55%; release = 0.2s; peak = 0.35; }
+  }
+  export voice canopy_low : noise {
+    color = brown;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 220hz), (0.5, 420hz), (1, 220hz)]; }
+      q = 1;
+    }
+    highpass = 45hz;
+    gain { env = adsr; attack = 40ms; decay = 0.2s; sustain = 72%; release = 0.2s; peak = 0.85; }
+  }
 }

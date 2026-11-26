@@ -40,51 +40,47 @@ Save this complete source as `study.ashfox` and run `ashfox build study.ashfox`.
 exactly one pixel wide. The atlas stays explicit and bounded.
 
 ```text
-ashfox-model 1
-asset study {
+ashfox 1
+model study {
   export design Dimensions {
     width: unit = 4u;
     height: unit = 4u;
     depth: unit = 4u;
     size: vec3<unit> = (Dimensions.width, Dimensions.height, Dimensions.depth);
     ground: vec3<unit> = (0u, 0u, 0u);
-    origin: vec3<unit> = box_origin(Dimensions.ground, Dimensions.size, (0.5ratio, 0ratio, 0.5ratio));
-    chartWidth: texel = texels(Dimensions.width * 2 + Dimensions.depth * 2, 1);
-    chartHeight: texel = texels(Dimensions.height + Dimensions.depth, 1);
-    atlasWidth: texel = 64px;
-    atlasHeight: texel = 32px;
-    chartOrigin: vec2<texel> = (0px, 0px);
-    check eyeSpace = Dimensions.width >= 4u;
-    check fitsAtlasWidth = Dimensions.chartWidth <= Dimensions.atlasWidth;
-    check fitsAtlasHeight = Dimensions.chartHeight <= Dimensions.atlasHeight;
+    origin: vec3<unit> = box_origin(Dimensions.ground, Dimensions.size, (0.5, 0, 0.5));
+    chart_width: texel = texels(Dimensions.width * 2 + Dimensions.depth * 2, 1);
+    chart_height: texel = texels(Dimensions.height + Dimensions.depth, 1);
+    atlas_width: texel = 64px;
+    atlas_height: texel = 32px;
+    chart_origin: vec2<texel> = (0px, 0px);
+    check eye_space = Dimensions.width >= 4u;
+    check fits_atlas_width = Dimensions.chart_width <= Dimensions.atlas_width;
+    check fits_atlas_height = Dimensions.chart_height <= Dimensions.atlas_height;
   }
   export rig contract HeadRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root {
       parent = none; role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
-      channels = (rotation, scale); mirror = none;
+      channels = (rotation, scale);
     }
   }
   export skeleton HeadSkeleton implements HeadRig {
     bind root {
-      parent-origin = Dimensions.ground;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      parent_origin = Dimensions.ground;
     }
   }
   export surface contract Fur {
-    atlas { width = Dimensions.atlasWidth; height = Dimensions.atlasHeight; }
+    atlas { width = Dimensions.atlas_width; height = Dimensions.atlas_height; }
     chart snout box { width = 8px; height = 4px; coverage = opaque; }
-    chart head box { width = Dimensions.chartWidth; height = Dimensions.chartHeight; coverage = opaque; }
+    chart head box { width = Dimensions.chart_width; height = Dimensions.chart_height; coverage = opaque; }
     chart plume box { width = 8px; height = 3px; coverage = opaque; }
     material = opaque;
   }
   export surface red_fur: Fur {
     material = opaque;
     texture atlas {
-      atlas = (Dimensions.atlasWidth, Dimensions.atlasHeight);
-      background = bg; background-alpha = 255;
+      atlas = (Dimensions.atlas_width, Dimensions.atlas_height);
+      background = bg; background_alpha = 255;
       palette {
         bg = #2c201d;
         dark = (#2e1e1a, #4a3028, #6b463b);
@@ -96,12 +92,12 @@ asset study {
       stamp eye { pixels = "e"; e = eye; }
       chart snout box {
         origin = (0px, 16px); fill = muzzle; grain = clustered;
-        pattern ao { strength = 0.4ratio; radius = 0.7u; }
+        pattern ao { strength = 0.4; radius = 0.7u; }
       }
       chart head box {
-        origin = Dimensions.chartOrigin; fill = coat; grain = soft;
+        origin = Dimensions.chart_origin; fill = coat; grain = soft;
         pattern border { paint = cream; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
         face north {
           stamp eye { anchor = top_left; offset = (1px, 1px); protect = true; }
           stamp eye { anchor = top_right; offset = (-1px, 1px); protect = true; }
@@ -109,7 +105,7 @@ asset study {
       }
       chart plume box {
         origin = (24px, 16px); fill = cream; grain = none;
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       grain clustered { seed = 8923; }
       tone painterly;
@@ -138,19 +134,17 @@ asset study {
     }
   }
   export motion idle for HeadRig {
-    duration = 2s; fps = 20; loop = loop; rest-relative = true;
+    duration = 2s; fps = 20; loop = loop;
     track root.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 1s = (0deg, 3deg, 0deg) linear;
       key 2s = (0deg, 0deg, 0deg) linear;
     }
   }
-  export asset study {
-    settings { density = 16; forward = north; profile = block; }
-    skeleton = HeadSkeleton;
-    motion = idle;
-    use Head as head { bind skeleton = HeadRig; bind skin = red_fur; };
-  }
+  settings { density = 16; forward = north; profile = block; }
+  skeleton = HeadSkeleton;
+  motions = [idle];
+  use Head as head { skeleton = HeadRig; skin = red_fur; }
 }
 ```
 

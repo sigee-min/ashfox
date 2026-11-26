@@ -1,81 +1,66 @@
-ashfox-model 1
+ashfox 1
 sound sword_slash {
-  profile = "impact";
-  duration = 0.56;
-  sampleRate = 48000;
+  profile = impact;
+  duration = 0.56s;
   channels = 2;
   seed = 5193;
-  space = { preset = "courtyard"; mix = 0.16; };
-  voices = [{
-    id = "steel_scrape";
-    source = {
-      kind = "material";
-      material = "steel";
-      pitch = 680;
-      size = 0.9;
-      hardness = 0.9;
-      damping = 0.38;
-      brightness = 0.85;
-      modes = 22;
-      strike = "scrape";
-    };
-    highpass = 120;
+  space { preset = courtyard; mix = 16%; }
+  voice steel_scrape : material {
+    material = steel;
+    pitch = 680hz;
+    size = 0.9;
+    hardness = 90%;
+    damping = 38%;
+    brightness = 85%;
+    modes = 22;
+    strike = scrape;
+    highpass = 120hz;
     pan = -0.16;
-    gain = { env = "ad"; attack = 0.004; peak = 0.88; curve = "exp"; };
-  }, {
-    id = "steel_ring";
-    source = {
-      kind = "material";
-      material = "steel";
-      pitch = 1180;
-      size = 0.75;
-      hardness = 0.92;
-      damping = 0.28;
-      brightness = 0.88;
-      modes = 20;
-      strike = "mallet";
-    };
-    highpass = 220;
+    gain { env = ad; attack = 4ms; peak = 0.88; curve = exp; }
+  }
+  voice steel_ring : material {
+    material = steel;
+    pitch = 1180hz;
+    size = 0.75;
+    hardness = 92%;
+    damping = 28%;
+    brightness = 88%;
+    modes = 20;
+    strike = mallet;
+    highpass = 220hz;
     pan = 0.18;
-    gain = { env = "ad"; attack = 0.002; peak = 0.72; curve = "exp"; };
-  }, {
-    id = "air_slice";
-    source = { kind = "noise"; color = "white"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1800; }, { at = 0.25; value = 8800; }, { at = 1; value = 950; }]; };
+    gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
+  }
+  voice air_slice : noise {
+    color = white;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 1800hz), (0.25, 8800hz), (1, 950hz)]; }
       q = 1.1;
-    };
-    highpass = 85;
+    }
+    highpass = 85hz;
     drive = 1.6;
     pan = 0.1;
-    gain = { env = "ad"; attack = 0.006; peak = 0.96; curve = "exp"; };
-  }, {
-    id = "hilt_thump";
-    source = {
-      kind = "material";
-      material = "leather";
-      pitch = 110;
-      size = 1.1;
-      hardness = 0.72;
-      damping = 0.75;
-      modes = 10;
-      strike = "mallet";
-    };
-    highpass = 45;
-    gain = { env = "ad"; attack = 0.002; peak = 0.65; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "slash";
-    start = 0.01;
-    steps = [
-      { id = "whoosh"; voice = "air_slice"; at = 0; duration = 0.34; vary = { duration = [0.9, 1.1]; gain = [0.9, 1.1]; }; },
-      { id = "edge"; voice = "steel_scrape"; at = 0.01; duration = 0.38; vary = { pitchCents = [-65, 65]; }; },
-      { id = "ring"; voice = "steel_ring"; at = 0.015; duration = 0.44; vary = { pitchCents = [-60, 60]; }; },
-      { id = "punch"; voice = "hilt_thump"; at = 0.01; duration = 0.22; vary = { pitchCents = [-45, 45]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -1.5; targetLufs = -13; punch = 0.45; air = 0.25; limit = true; };
+    gain { env = ad; attack = 6ms; peak = 0.96; curve = exp; }
+  }
+  voice hilt_thump : material {
+    material = leather;
+    pitch = 110hz;
+    size = 1.1;
+    hardness = 72%;
+    damping = 75%;
+    modes = 10;
+    strike = mallet;
+    highpass = 45hz;
+    gain { env = ad; attack = 2ms; peak = 0.65; curve = exp; }
+  }
+  seq slash {
+    start = 10ms;
+    step whoosh { voice = air_slice; at = 0s; duration = 0.34s; vary_gain = 90%..110%; vary_duration = 90%..110%; }
+    step edge { voice = steel_scrape; at = 10ms; duration = 0.38s; vary_pitch = -65cents..65cents; }
+    step ring { voice = steel_ring; at = 15ms; duration = 0.44s; vary_pitch = -60cents..60cents; }
+    step punch { voice = hilt_thump; at = 10ms; duration = 0.22s; vary_pitch = -45cents..45cents; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 5db; peak = -1.5db; target = -13lufs; punch = 45%; air = 25%; limit = true; }
 }

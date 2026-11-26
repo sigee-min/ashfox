@@ -111,7 +111,7 @@ const main = async () => {
   for (const item of first.exports) assert.ok(fs.statSync(item.directory).isDirectory());
   const soundPath = path.join(project, 'assets/sounds/claw_hit.ashfox'),
     original = fs.readFileSync(soundPath, 'utf8');
-  fs.writeFileSync(soundPath, original.replace('sampleRate = 48000', 'sampleRate = 44100'));
+  fs.writeFileSync(soundPath, original.replace('seed = 42;', 'sample_rate = 44100hz; seed = 42;'));
   assert.equal(run('build').code, 1);
   assert.deepEqual(fs.readFileSync(current), pointer);
   fs.writeFileSync(soundPath, original);

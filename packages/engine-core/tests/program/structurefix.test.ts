@@ -135,29 +135,27 @@ const testQualifiedCustomModelAliases = (): void => {
     'props/wall_lantern.ashfox',
     readPropFixture('wall_lantern'),
   );
-  const m1 = `ashfox-model 1
+  const m1 = `ashfox 1
 module m1 {
   import "./props/rune_pillar.ashfox" as prop;
-  palette { p = asset prop as "minecraft:chiseled_stone_bricks"; }
-  export prefab A { set at = (0, 0, 0) block = p; }
+  palette { p = asset(prop, "minecraft:chiseled_stone_bricks"); }
+  export prefab A { set { at = (0b, 0b, 0b); block = p; } }
 }`;
-  const m2 = `ashfox-model 1
+  const m2 = `ashfox 1
 module m2 {
   import "./props/wall_lantern.ashfox" as prop;
-  palette { p = asset prop as "minecraft:lantern[hanging=false]"; }
-  export prefab B { set at = (0, 0, 0) block = p; }
+  palette { p = asset(prop, "minecraft:lantern[hanging=false]"); }
+  export prefab B { set { at = (0b, 0b, 0b); block = p; } }
 }`;
-  const root = `ashfox-model 1
+  const root = `ashfox 1
 structure s {
   import "./m1.ashfox" as a;
   import "./m2.ashfox" as b;
-  size = (5, 5, 5);
+  size = (5b, 5b, 5b);
   palette { stone = "minecraft:stone_bricks"; }
-  build {
-    box from = (0, 0, 0) to = (4, 0, 4) block = stone;
-    place a.A at = (1, 1, 1) rotate = 0;
-    place b.B at = (3, 1, 1) rotate = 0;
-  }
+  box { from = (0b, 0b, 0b); to = (4b, 0b, 4b); block = stone; }
+  place a.A { at = (1b, 1b, 1b); rotate = 0; }
+  place b.B { at = (3b, 1b, 1b); rotate = 0; }
 }`;
   const units = new Map([
     ['m1.ashfox', parseStructureSource(m1, 'm1.ashfox')],
@@ -182,8 +180,8 @@ structure s {
 
 const testPreservedCustomBoneRotationAndMirror = async (): Promise<void> => {
   const rotatedSource = readPropFixture('rune_pillar').replace(
-    /export skeleton PillarSkeleton implements PillarRig \{\s*bind root \{\s*parent-origin = \(0u, 0u, 0u\);\s*frame \{ x = \(1, 0, 0\); y = \(0, 1, 0\); z = \(0, 0, 1\); \}/u,
-    'export skeleton PillarSkeleton implements PillarRig {\n    bind root {\n      parent-origin = (0u, 0u, 0u);\n      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }',
+    /skeleton PillarSkeleton implements PillarRig \{\s*bind root \{\s*parent_origin = \(0u, 0u, 0u\);\s*\}/u,
+    'skeleton PillarSkeleton implements PillarRig {\n    bind root {\n      parent_origin = (0u, 0u, 0u);\n      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }\n    }',
   );
   const rotatedModel = compileSingleModel(
     'rune_pillar',
@@ -194,25 +192,24 @@ const testPreservedCustomBoneRotationAndMirror = async (): Promise<void> => {
   assert.equal(rotatedBone.kind, 'bone');
   assert.notEqual(rotatedBone.transform.rotation[0], 0);
 
-  const mirrorMod = `ashfox-model 1
+  const mirrorMod = `ashfox 1
 module mod_m {
   palette { stair = "minecraft:oak_stairs[facing=east,half=bottom,shape=straight]"; }
   export prefab wing {
-    mirror axis = x center = 1 {
-      set at = (0, 0, 0) block = stair;
+    mirror {
+      axis = x; center = 1b;
+      set { at = (0b, 0b, 0b); block = stair; }
     }
   }
 }`;
-  const root = `ashfox-model 1
+  const root = `ashfox 1
 structure mirror_test {
   import "./mod_m.ashfox" as m;
   import "./rotated_pillar.ashfox" as rp;
-  size = (10, 4, 10);
-  palette { rp_block = asset rp as "minecraft:chiseled_stone_bricks"; }
-  build {
-    set at = (1, 1, 1) block = rp_block;
-    place m.wing at = (5, 0, 5) rotate = 90;
-  }
+  size = (10b, 4b, 10b);
+  palette { rp_block = asset(rp, "minecraft:chiseled_stone_bricks"); }
+  set { at = (1b, 1b, 1b); block = rp_block; }
+  place m.wing { at = (5b, 0b, 5b); rotate = 90; }
 }`;
   const units = new Map([
     ['mod_m.ashfox', parseStructureSource(mirrorMod, 'mod_m.ashfox')],
@@ -241,20 +238,19 @@ structure mirror_test {
 };
 
 const testEastWestWindowMullions = (): void => {
-  const src = `ashfox-model 1
+  const src = `ashfox 1
 structure ew_window {
-  size = (9, 7, 9);
+  size = (9b, 7b, 9b);
   palette {
     stone = "minecraft:stone_bricks";
     glass = "minecraft:glass";
     door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
   }
-  build {
-    floor f0 y = 0 height = 5 {
-      room hall from = (1, 1) size = (7, 7) kind = living plinth = stone floor = stone wall = stone ceiling = stone;
-      facade on hall.south { door at = center width = 1 height = 2 block = door; }
-      facade on hall.east { window at = center width = 1 height = 2 y_offset = 1 glass = glass; }
-    }
+  floor f0 {
+    y = 0b; height = 5b;
+    room hall { from = (1b, 1b); size = (7b, 7b); kind = living; plinth = stone; floor = stone; wall = stone; ceiling = stone; }
+    facade hall.south { door { at = center; width = 1b; height = 2b; block = door; } }
+    facade hall.east { window { at = center; width = 1b; height = 2b; y_offset = 1b; glass = glass; } }
   }
 }`;
   const built = compileStructureUnits(
@@ -284,7 +280,7 @@ structure ew_window {
 
 const testSteepGableRoofsAndGables = (): void => {
   for (const axis of ['x', 'z'] as const) {
-    const src = `ashfox-model 1
+    const src = `ashfox 1
 structure steep_${axis} {
   size = (11, 14, 11);
   palette {
@@ -292,10 +288,8 @@ structure steep_${axis} {
     stair = "minecraft:oak_stairs";
     ridge = "minecraft:oak_slab[type=bottom]";
   }
-  build {
-    box from = (1, 0, 1) to = (9, 0, 9) block = stone;
-    roof style = gable axis = ${axis} from = (1, 1, 1) to = (9, 10, 9) pitch = steep stair = stair ridge = ridge gable = stone;
-  }
+  box { from = (1b, 0b, 1b); to = (9b, 0b, 9b); block = stone; }
+  roof { style = gable; axis = ${axis}; from = (1b, 1b, 1b); to = (9b, 10b, 9b); pitch = steep; stair = stair; ridge = ridge; gable = stone; }
 }`;
     const built = compileStructureUnits(
       `steep_${axis}.ashfox`,
@@ -324,15 +318,14 @@ const testBayWindowMinWidth = (): void => {
   assert.throws(
     () =>
       parseStructureSource(
-        `ashfox-model 1
+        `ashfox 1
 structure narrow_bay {
-  size = (9, 7, 9);
+  size = (9b, 7b, 9b);
   palette { s = "minecraft:stone_bricks"; g = "minecraft:glass"; }
-  build {
-    floor f0 y = 0 height = 5 {
-      room hall from = (1, 1) size = (7, 7) kind = living plinth = s floor = s wall = s ceiling = s;
-      facade on hall.south { bay_window at = center width = 2 height = 2 y_offset = 1 glass = g; }
-    }
+  floor f0 {
+    y = 0b; height = 5b;
+    room hall { from = (1b, 1b); size = (7b, 7b); kind = living; plinth = s; floor = s; wall = s; ceiling = s; }
+    facade hall.south { bay_window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = g; } }
   }
 }`,
         'narrow_bay.ashfox',

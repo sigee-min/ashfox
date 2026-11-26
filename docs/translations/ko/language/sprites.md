@@ -4,17 +4,17 @@
 
 ## 루트와 리터럴 문법
 
-`ashfox-model 1` 다음에 `sprite name { … }`를 씁니다. 루트 필수 속성은 `profile`, `canvas`, `palette`이며 레이어는 원본 순서대로 이름 있는 선언입니다.
+`ashfox 1` 다음에 `sprite name { … }`를 씁니다. 루트 필수 속성은 `profile`, `canvas`, `palette`이며 레이어는 원본 순서대로 이름 있는 선언입니다.
 
 | 형태 | 예제 |
 | --- | --- |
 | 대입 | `canvas = (32px, 32px);` |
 | 중첩 레코드 | `palette { glint = #ffffff; }` |
-| 목록 | `points = [(10, 15), (17, 22), (28, 11)];` |
+| 목록 | `points = [(10px, 15px), (17px, 22px), (28px, 11px)];` |
 | 빈 목록 | `patches = [];` |
 | 참조 | `material = shared.steel;` |
 
-픽셀 좌표(`canvas`, `at`, `axis`, 도형 좌표·반지름·두께)와 달리 `contrast`, `specular`, `amount`, `density`, `jitter`, `seed` 등 단위 없는 수치에는 `px`를 쓰지 않습니다.
+픽셀 좌표(`canvas`, `at`, `axis`, 도형 점·위치·반지름·두께)에는 `px`를 사용합니다(정수 또는 `0.5px` 단위 중심/반지름). `contrast`, `specular`, `amount`, `density`, `jitter`, `seed` 등 단위 없는 수치에는 `px`를 쓰지 않으며 백분율(`%`)은 비율 필드에 허용됩니다.
 
 ## 레이어 선언
 
@@ -23,10 +23,10 @@
 | 레이어 | 필드 | 의미 |
 | --- | --- | --- |
 | `fill name` | `material`, `pattern`, 선택 `grain` | 전체 캔버스를 심리스 래핑 패턴으로 채움 (`tile` 용도) |
-| `shape name` | `shape`, `material`, `shade`, 선택 `grain`, `mirror`, `pattern`, `clip` | 파라메트릭 도형(`rect`, `ellipse`, `capsule`, `polygon`, `line`) 래스터화 |
+| `rect`/`ellipse`/`capsule`/`polygon`/`line name` | 도형 필드, `material`, `shade`, 선택 `grain`, `mirror`, `pattern`, `clip` | 파라메트릭 도형을 직접 선언해 래스터화 (`points`, `cx`/`cy`/`rx`/`ry`, `from`/`to`/`radius` 등) |
 | `part name` | `mask`, `material`, `at`, `shade`, 선택 `grain`, `mirror`, `pattern`, `patches` | 재사용 마스크 명암 및 보호 패치 |
 | `pattern name` | `material`, `pattern`, 선택 `clip` (`occupied` 또는 `canvas`) | 2D 표면 패턴(`solid`, `gradient`, `blotch`, `stripe`, `brick`, `plank`, `voronoi`, `dither`, `crack`) |
-| `outline name` | `mode` (`sel_out`, `dark`, `colored`), 선택 `color`, `strength` (`1..3`), `innerRim` | 실루엣 인식 픽셀 아웃라인과 좌상단 내측 림 하이라이트 |
+| `outline name` | `mode` (`sel_out`, `dark`, `colored`), 선택 `color`, `strength` (`1..3`), `inner_rim` | 실루엣 인식 픽셀 아웃라인과 좌상단 내측 림 하이라이트 |
 | `paint name` | `at`, `rows`, `colors` | 팔레트 바인딩 ASCII 픽셀 |
 | `stamp name` | `stamp`, `at`, `flip`, `colors` | 재사용 스탬프 배치 (`none`, `x`, `y`, `xy`) |
 | `erase name` | `shape` 또는 (`at`, `rows`) | 영역 지우기 |

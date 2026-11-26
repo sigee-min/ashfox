@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module chest_surface {
   export surface contract ChestSurface {
     chart base box { coverage = opaque; }
@@ -26,7 +26,7 @@ module chest_surface {
       atlas = (128px, 128px);
       density = 2;
       background = dark_oak;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         dark_oak = (#2b1a10, #3d2719, #543622);
         oak = (#4f311d, #805232, #b3784a);
@@ -43,62 +43,62 @@ module chest_surface {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart wall box {
         fill = oak;
         grain = clustered;
         pattern stripe { paint = dark_oak; axis = y; period = 6px; width = 1px; phase = 0; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart rim box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart band box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart handle box {
         fill = brass;
         grain = none;
         pattern border { paint = iron; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart lid box {
         fill = oak_light;
         grain = clustered;
         pattern stripe { paint = oak; axis = z; period = 6px; width = 1px; phase = 0; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart lid_crown box {
         fill = oak_light;
         grain = clustered;
         pattern border { paint = oak; width = 1px; edges = all; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart lid_slope box {
         fill = oak;
         grain = clustered;
         pattern border { paint = oak_light; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart strap box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = all; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
         face north { stamp nail_stud { at = (1px, 2px); protect = true; } }
       }
       chart strap_top box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = all; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
 
       grain clustered { seed = 6401; }
@@ -111,9 +111,9 @@ module chest_surface {
     texture atlas {
       atlas = (128px, 128px);
       density = 2;
-      render-mode = emissive;
+      render_mode = emissive;
       background = dark;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         dark = (#2c1e0c, #422c12, #634421);
         brass = (#7d561c, #cc8e30, #ffd466);
@@ -132,7 +132,7 @@ module chest_surface {
       chart gem box {
         fill = ruby;
         grain = soft;
-        pattern gradient { from = dark; to = ruby; axis = y; space = local; soft = 0.25ratio; }
+        pattern gradient { from = dark; to = ruby; axis = y; space = local; soft = 0.25; }
       }
       grain soft { seed = 6402; }
       tone painterly;

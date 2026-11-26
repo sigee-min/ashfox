@@ -220,7 +220,7 @@ export const evaluateFormPillar = (
       metrics[3]!,
       `Weak ${profile === 'creature' ? 'symmetry or ' : ''}base balance (${metrics[3]!.detail}).`,
       profile === 'creature'
-        ? 'Use mirror-x on paired parts and keep center of mass over the base footprint.'
+        ? 'Use mirror = x on paired parts and keep center of mass over the base footprint.'
         : 'Keep the center of mass over a grounded base footprint and vary part proportions cleanly.',
     ),
   ].filter((d): d is AuditDeduction => d !== null);

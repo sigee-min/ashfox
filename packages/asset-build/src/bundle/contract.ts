@@ -46,7 +46,7 @@ export type AssetMetadata =
       readonly variants: readonly {
         readonly id: string;
         readonly frames: number;
-        readonly sampleRate: number;
+        readonly sample_rate: number;
         readonly channels: 1 | 2;
         readonly playback: SoundProduct['playback'];
         readonly peak: number;

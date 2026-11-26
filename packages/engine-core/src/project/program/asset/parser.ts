@@ -1,9 +1,8 @@
-import { compareText } from '../../../stableOrder';
 import type { ProgramExpr } from '../syntax/contract';
 import { parseProgramExpression } from '../syntax/expression';
 import { PROGRAM_PARSE_NESTING_LIMIT } from '../syntax/limits';
 import type { SourceSpan } from '../../source/contract';
-import { parseAssembly, parseMotion } from './assembly';
+import { buildAssemblyDecl, createAssemblyState, parseMotion, readAssemblyEntry } from './assembly';
 import { parseComponent } from './component';
 import {
   ASHFOX_ASSET_GRAMMAR,
@@ -16,7 +15,18 @@ import {
   type AssetValueType,
 } from './contract';
 import { parseAssetDesign, parseAssetValueType } from './design';
-import { ParserAbort, badName, join, type AssetReader, type Token } from './parserSupport';
+import {
+  ParserAbort,
+  badName,
+  buildParseResult,
+  isAssignmentTokens,
+  isKebabAssignmentTokens,
+  join,
+  readImportDecl,
+  readOutputsList,
+  type AssetReader,
+  type Token,
+} from './parserSupport';
 import { parseRigContract, parseSkeleton, parseSocketContract } from './rig';
 import { parseSurface, parseSurfaceContract } from './surface';
 import {
@@ -192,16 +202,11 @@ export class Parser {
   }
 
   private assignment(): boolean {
-    if (this.current().kind !== 'identifier') return false;
-    let next = this.index + 1;
-    while (
-      this.tokens[next]?.kind === 'symbol' &&
-      (this.tokens[next]?.value === '-' || this.tokens[next]?.value === '.') &&
-      this.tokens[next + 1]?.kind === 'identifier'
-    ) {
-      next += 2;
-    }
-    return this.tokens[next]?.kind === 'symbol' && this.tokens[next]?.value === '=';
+    return isAssignmentTokens(this.tokens, this.index);
+  }
+
+  private kebabAssignment(): boolean {
+    return isKebabAssignmentTokens(this.tokens, this.index);
   }
 
   private finish(): void {
@@ -300,38 +305,26 @@ export class Parser {
   }
 
   private importDecl(): AssetImportDecl {
-    const start = this.expectWord('import', 'Expected import.');
-    const path = this.current();
-    if (path.kind !== 'string') {
-      this.fail('asset.invalid-import-path', 'Imports require a quoted relative path.', path);
-    } else this.take();
-    this.expectWord('as', 'Expected as after an import path.');
-    const alias = this.id('Expected an import alias.');
-    this.finish();
-    return Object.freeze({
-      kind: 'import',
-      path: path.value,
-      alias: alias.value,
-      ref: Object.freeze({ path: this.path, span: path.span }),
-      span: join(start.span, alias.span),
-    });
+    return readImportDecl(this.reader(), this.path);
   }
 
   private design(exported: boolean): AssetDeclaration {
+    const reader = this.reader();
     return parseAssetDesign(
       {
-        take: () => this.take(),
-        id: (message) => this.id(message),
+        take: reader.take,
+        id: reader.id,
         count: () => this.count(),
         matchWord: (word) => this.matchWord(word),
-        expect: (value, message) => this.expect(value, message),
-        valueType: () => this.valueType(),
-        expression: () => this.expression(),
-        finish: () => this.finish(),
+        expect: reader.expect,
+        valueType: reader.valueType,
+        expression: reader.expression,
+        finish: reader.finish,
         block: (read) => {
-          this.block(read);
+          reader.block(read);
         },
-        blockEnd: () => this.blockEnd(),
+        blockEnd: reader.blockEnd,
+        fail: reader.fail,
       },
       exported,
     );
@@ -353,8 +346,7 @@ export class Parser {
     if (keyword === 'surface') return this.surfaceDeclaration(exported);
     if (keyword === 'component') return parseComponent(this.reader(), exported);
     if (keyword === 'motion') return parseMotion(this.reader(), exported);
-    if (keyword === 'asset') return parseAssembly(this.reader(), exported);
-    this.scopeError('module or asset unit');
+    this.scopeError('module or model unit');
     return null;
   }
 
@@ -371,29 +363,40 @@ export class Parser {
     outputs: RawDeclaredOutput[],
     previews: RawDeclaredPreview[],
   ): boolean {
-    const isOutputs = this.matchWord('outputs');
+    const isAssign = this.checkWord('outputs') && this.assignment();
+    const isOutputs = isAssign || this.matchWord('outputs');
     if (!isOutputs && !this.matchWord('preview')) return false;
     if (kind !== 'asset') {
-      this.fail('asset.invalid-declaration', 'outputs and preview apply only inside asset units.');
+      this.fail('asset.invalid-declaration', 'outputs and preview apply only to models.');
+    }
+    if (isAssign) {
+      readOutputsList(this.reader(), outputs);
+      return true;
     }
     try {
-      if (isOutputs) {
-        const res = parseOutputsTokens(this.tokens, this.index, this.path);
-        outputs.push(...res.outputs);
-        this.index = res.nextIndex;
-      } else {
-        const res = parsePreviewTokens(this.tokens, this.index, this.path);
-        previews.push(res.preview);
-        this.index = res.nextIndex;
-      }
+      const res = isOutputs
+        ? parseOutputsTokens(this.tokens, this.index, this.path)
+        : parsePreviewTokens(this.tokens, this.index, this.path);
+      if ('outputs' in res) outputs.push(...res.outputs);
+      else previews.push(res.preview);
+      this.index = res.nextIndex;
     } catch (error) {
       this.fail(
         'asset.invalid-declaration',
-        error instanceof Error ? error.message : 'Invalid declaration block.',
+        error instanceof Error ? error.message : 'Invalid block.',
       );
       throw new ParserAbort();
     }
     return true;
+  }
+
+  private isAssemblyStatement(): boolean {
+    return (
+      this.checkWord('settings') ||
+      this.checkWord('use') ||
+      this.checkWord('connect') ||
+      ((this.checkWord('skeleton') || this.checkWord('motions')) && this.assignment())
+    );
   }
 
   private unit(kind: AssetSourceUnit['kind']): AssetSourceUnit | null {
@@ -405,17 +408,28 @@ export class Parser {
     const declarations: AssetDeclaration[] = [];
     const outputs: RawDeclaredOutput[] = [];
     const previews: RawDeclaredPreview[] = [];
+    const assembly = kind === 'asset' ? createAssemblyState() : null;
     try {
       while (!this.check('}') && !this.end()) {
-        if (this.checkWord('import')) imports.push(this.importDecl());
+        if (this.kebabAssignment()) {
+          this.fail('asset.invalid-key', 'kebab-case property keys are forbidden; use snake_case.');
+          this.recover();
+        } else if (this.checkWord('import')) imports.push(this.importDecl());
         else if (this.unitDeclarationBlock(kind, outputs, previews)) continue;
-        else {
-          const exported = this.matchWord('export');
-          const declaration = this.declaration(exported);
+        else if (assembly !== null && this.isAssemblyStatement()) {
+          readAssemblyEntry(this.reader(), assembly);
+        } else {
+          const declaration = this.declaration(this.matchWord('export'));
           if (declaration !== null) declarations.push(declaration);
         }
       }
       const close = this.expect('}', 'Expected } to close a source unit.');
+      if (assembly !== null) {
+        this.count();
+        declarations.push(
+          buildAssemblyDecl(id.value, true, assembly, join(start.span, close.span)),
+        );
+      }
       return Object.freeze({
         kind,
         id: id.value,
@@ -436,7 +450,7 @@ export class Parser {
     const version = this.tokens[this.index + 1];
     if (
       header.kind !== 'identifier' ||
-      header.value !== 'ashfox-model' ||
+      header.value !== 'ashfox' ||
       version?.kind !== 'number' ||
       version.value !== '1'
     ) {
@@ -447,11 +461,11 @@ export class Parser {
     this.take();
     const unit = this.checkWord('module')
       ? this.unit('module')
-      : this.checkWord('asset')
+      : this.checkWord('model')
         ? this.unit('asset')
         : null;
     if (unit === null)
-      this.fail('asset.expected-unit', 'Source must declare one module or asset unit.');
+      this.fail('asset.expected-unit', 'Source must declare one module or model unit.');
     if (!this.end()) this.fail('asset.trailing-source', 'Only one source unit is allowed.');
     return unit;
   }
@@ -461,21 +475,8 @@ export class Parser {
     try {
       unit = this.parse();
     } catch (error) {
-      if (!(error instanceof ParserAbort)) {
-        this.fail('asset.parser-failure', 'Source could not be parsed safely.');
-      }
+      if (!(error instanceof ParserAbort)) this.fail('asset.parser-failure', 'Parse failed.');
     }
-    if (this.diagnostics.length > 0) unit = null;
-    return Object.freeze({
-      path: this.path,
-      source: this.source,
-      grammar: ASHFOX_ASSET_GRAMMAR,
-      unit,
-      diagnostics: Object.freeze(
-        [...this.diagnostics].sort(
-          (a, b) => a.span.start.offset - b.span.start.offset || compareText(a.code, b.code),
-        ),
-      ),
-    });
+    return buildParseResult(this.path, this.source, unit, this.diagnostics);
   }
 }

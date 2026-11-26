@@ -42,7 +42,7 @@ export interface InstantiatedGeometryNode {
   readonly properties: readonly InstantiatedGeometryProperty[];
   readonly surface: InstantiatedGeometrySurface | null;
   readonly children: readonly InstantiatedGeometryNode[];
-  /** Internal flag set by mirror-x expansion so canonical lowering bakes mirrored UVs. */
+  /** Internal flag set by mirror = x expansion so canonical lowering bakes mirrored UVs. */
   readonly uvMirrorX?: boolean;
   readonly sourcePath: string;
   readonly span: SourceSpan;

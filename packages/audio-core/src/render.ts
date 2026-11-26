@@ -181,7 +181,7 @@ export const renderValidatedRecipe = (recipe: SoundRecipe, variantId?: string): 
   const variant =
     variantId === undefined ? recipe.variants[0] : recipe.variants.find((v) => v.id === variantId);
   if (!variant) return fail('recipe.variants', 'renderer variant must be declared');
-  const rate = recipe.sampleRate;
+  const rate = recipe.sample_rate;
   const channels = recipe.channels ?? 1;
   const result = new Float64Array(frame(recipe.duration) * channels);
   for (const event of schedule(recipe, variant)) renderEventInto(event, rate, channels, result);

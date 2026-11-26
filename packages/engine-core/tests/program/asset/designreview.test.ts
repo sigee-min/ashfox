@@ -8,7 +8,7 @@ const compile = (source: string) =>
     entryName: 'wolf',
   });
 const add = (design: string, expression = '(4u, 4u, 4u)') =>
-  VALID_ASSET_SOURCE.replace('asset wolf {', `asset wolf { ${design}`).replace(
+  VALID_ASSET_SOURCE.replace('model wolf {', `model wolf { ${design}`).replace(
     'size = (4u, 4u, 4u);',
     `size = ${expression};`,
   );
@@ -24,13 +24,13 @@ assert.ok(axes.ok, axes.ok ? '' : JSON.stringify(axes.diagnostics));
 const local = compile(
   VALID_ASSET_SOURCE.replace('component Body {', 'component Body { param dimensions: vec3<unit>;')
     .replace('size = (4u, 4u, 4u);', 'size = (dimensions.x, dimensions.y, dimensions.z);')
-    .replace('use Body as body {', 'use Body as body { set dimensions = (4u, 4u, 4u);'),
+    .replace('use Body as body {', 'use Body as body { dimensions = (4u, 4u, 4u);'),
 );
 assert.ok(local.ok, local.ok ? '' : JSON.stringify(local.diagnostics));
 const shadowed = compile(
   add('design dimensions { x: unit = 8u; }')
     .replace('component Body {', 'component Body { param dimensions: vec3<unit>;')
-    .replace('use Body as body {', 'use Body as body { set dimensions = (4u, 4u, 4u);'),
+    .replace('use Body as body {', 'use Body as body { dimensions = (4u, 4u, 4u);'),
 );
 assert.equal(shadowed.ok, false);
 if (!shadowed.ok) assert.ok(shadowed.diagnostics.some((d) => d.code === 'asset.design-namespace'));

@@ -37,10 +37,10 @@ When piping memory sources with relative imports, send `--input-json` with `{ "n
 
 ## Declare `preview` views in `.ashfox`
 
-Instead of asset-specific CLI flags, declare one or more named `preview` blocks inside any `asset`, `sprite`, `sound`, or `structure` entry and select one with `--view <name>` (defaulting to `default`):
+Instead of asset-specific CLI flags, declare one or more named `preview` blocks inside any `model`, `sprite`, `sound`, or `structure` entry and select one with `--view <name>` (defaulting to `default`):
 
 ```text
-asset fox {
+model fox {
   preview default { azimuth = 45; elevation = 20; width = 640; height = 360; }
   preview turnaround { sheet = turnaround; width = 1024; height = 1024; }
   preview wag { kind = gif; clip = "tail_wag"; duration = 1; fps = 8; }
@@ -80,7 +80,7 @@ Limits are 300 frames and 100 million rendered pixels per GIF. Build replay uses
 Declare build targets inside the entry's `outputs { ... }` clause (optional; defaults are portable GLB for models, PNG for sprites, WAV for sounds, and both `java_structure` `.nbt` and portable `.glb` for structures):
 
 ```text
-asset marker {
+model marker {
   outputs {
     glb;
     java_block namespace = "demo" path = "props/marker";

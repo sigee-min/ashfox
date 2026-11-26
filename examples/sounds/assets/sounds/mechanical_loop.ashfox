@@ -1,66 +1,63 @@
-ashfox-model 1
+ashfox 1
 sound mechanical_loop {
-  profile = "ambient";
-  duration = 3.0;
-  sampleRate = 48000;
+  profile = ambient;
+  duration = 3s;
   channels = 2;
   seed = 7349;
-  space = { preset = "timber_room"; mix = 0.18; };
-  voices = [{
-    id = "turbine_hum";
-    source = {
-      kind = "osc";
-      waveform = "saw";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 88; }, { at = 0.5; value = 112; }, { at = 1; value = 88; }]; };
-      unison = 3;
-      detuneCents = 18;
-    };
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 480; }, { at = 0.5; value = 3800; }, { at = 1; value = 480; }]; }; q = 1.6; };
-    drive = 2.0;
-    highpass = 35;
+  space { preset = timber_room; mix = 18%; }
+  voice turbine_hum : osc {
+    waveform = saw;
+    pitch { domain = log; interpolation = smooth; points = [(0, 88hz), (0.5, 112hz), (1, 88hz)]; }
+    unison = 3;
+    detune_cents = 18cents;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 480hz), (0.5, 3800hz), (1, 480hz)]; }
+      q = 1.6;
+    }
+    highpass = 35hz;
+    drive = 2;
     pan = -0.15;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.45; }, { at = 0.5; value = 0.65; }, { at = 1; value = 0.45; }]; };
-  }, {
-    id = "gear_ratchet";
-    source = {
-      kind = "material";
-      material = "iron";
-      pitch = 340;
-      size = 0.85;
-      hardness = 0.9;
-      damping = 0.58;
-      brightness = 0.78;
-      modes = 20;
-      strike = "mallet";
-    };
+    gain { domain = linear; interpolation = smooth; points = [(0, 0.45), (0.5, 0.65), (1, 0.45)]; }
+  }
+  voice gear_ratchet : material {
+    material = iron;
+    pitch = 340hz;
+    size = 0.85;
+    hardness = 90%;
+    damping = 58%;
+    brightness = 78%;
+    modes = 20;
+    strike = mallet;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 12000hz), (1, 2400hz)]; }
+      q = 1;
+    }
+    highpass = 60hz;
     drive = 1.6;
-    highpass = 60;
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 12000; }, { at = 1; value = 2400; }]; }; q = 1.0; };
     pan = 0.2;
-    gain = { env = "ad"; attack = 0.002; peak = 1.0; curve = "exp"; };
-  }, {
-    id = "steam_chuff";
-    source = { kind = "noise"; color = "white"; };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8500; }, { at = 1; value = 680; }]; }; q = 1.1; };
+    gain { env = ad; attack = 2ms; peak = 1; curve = exp; }
+  }
+  voice steam_chuff : noise {
+    color = white;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 8500hz), (1, 680hz)]; }
+      q = 1.1;
+    }
     pan = -0.2;
-    gain = { env = "ad"; attack = 0.006; peak = 0.95; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "bed";
-    start = 0.05;
-    steps = [
-      { id = "motor"; voice = "turbine_hum"; at = 0; duration = 2.85; vary = { pitchCents = [-35, 35]; }; }
-    ];
-  }, {
-    id = "cogs";
-    start = 0.06;
-    repeat = { count = 7; period = 0.36; };
-    steps = [
-      { id = "tick"; voice = "gear_ratchet"; at = 0; duration = 0.14; vary = { pitchCents = [-55, 55]; timing = [-0.004, 0.004]; }; },
-      { id = "chuff"; voice = "steam_chuff"; at = 0.14; duration = 0.22; vary = { gain = [0.85, 1.15]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "loop"; start = 0.35; end = 2.55; crossfade = 0.08; };
-  output = { gainDb = 3; peakDb = -1.5; targetLufs = -14; punch = 0.25; warmth = 0.2; glue = 0.25; limit = true; };
+    gain { env = ad; attack = 6ms; peak = 0.95; curve = exp; }
+  }
+  seq bed {
+    start = 50ms;
+    step motor { voice = turbine_hum; at = 0s; duration = 2.85s; vary_pitch = -35cents..35cents; }
+  }
+  seq cogs {
+    start = 60ms;
+    repeat { count = 7; period = 0.36s; }
+    step tick { voice = gear_ratchet; at = 0s; duration = 0.14s; vary_timing = -0.004s..4ms; vary_pitch = -55cents..55cents; }
+    step chuff { voice = steam_chuff; at = 0.14s; duration = 0.22s; vary_gain = 85%..115%; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  loop { at = 0.35s..2.55s; xfade = 80ms; }
+  master { gain = 3db; peak = -1.5db; target = -14lufs; punch = 25%; warmth = 20%; glue = 25%; limit = true; }
 }

@@ -1,18 +1,26 @@
 import { deepFreeze } from '../../immutable';
-import { lexProgramSource } from '../program/syntax/lex';
-import { assertWellFormedSourceText } from '../workspace/path';
 import {
-  parseOutputsTokens,
-  parsePreviewTokens,
+  lowerAssignOutputs,
+  lowerOutputsFromBlock,
+  lowerPreviewFromBlock,
   type RawDeclaredOutput,
   type RawDeclaredPreview,
 } from '../directory/declarations';
+import type {
+  AshfoxAssignStmt,
+  AshfoxBlock,
+  AshfoxExpr,
+  AshfoxNamedBlock,
+  AshfoxStatement,
+} from '../program/syntax/blockAst';
+import { parseAshfoxProgram } from '../program/syntax/blockParser';
+import { assertWellFormedSourceText } from '../workspace/path';
 import {
   DEFAULT_DATA_VERSION,
   DEFAULT_STRUCTURE_DENSITY,
   MAX_STRUCTURE_DIM,
   MAX_STRUCTURE_VOLUME,
-  type Cursor,
+  StructureInputError,
   type IntVec3,
   type StructureDensity,
   type StructureImport,
@@ -22,21 +30,14 @@ import {
   type StructurePrefab,
   type StructureSourceUnit,
 } from './contract';
-import { evaluateScalarExpr, parseScalarExpr } from './expr';
-import {
-  failSyntax,
-  peek,
-  readInt,
-  readName,
-  readNumberLiteral,
-  readString,
-  take,
-} from './grammar';
-import { parseOpBlock } from './ops';
+import { evaluateScalarExpr } from './expr';
+import { exprToNumber, exprToScalar, failAst } from './grammar';
+import { STRUCTURE_OP_KINDS, parseOpStatements, parseSingleOp } from './ops';
 import { formatBlockState, isValidMinecraftState, parseBlockState } from './state';
 
 interface StructureDraft {
-  readonly kind: 'structure' | 'module' | 'compound';
+  readonly file: string;
+  readonly kind: 'structure' | 'module';
   readonly imports: StructureImport[];
   readonly aliases: Set<string>;
   readonly outputs: RawDeclaredOutput[];
@@ -45,108 +46,120 @@ interface StructureDraft {
   readonly palette: Record<string, StructurePaletteEntry>;
   readonly prefabs: StructurePrefab[];
   readonly prefabNames: Set<string>;
+  readonly ops: StructureOp[];
   density: StructureDensity | null;
   seed: number | null;
   size: IntVec3 | null;
   dataVersion: number;
-  ops: readonly StructureOp[] | null;
 }
 
-const readImport = (cursor: Cursor, draft: StructureDraft): void => {
-  const path = readString(cursor);
-  take(cursor, 'as');
-  const alias = readName(cursor);
-  take(cursor, ';');
-  if (draft.aliases.has(alias)) failSyntax(cursor, 'unique import alias');
-  draft.aliases.add(alias);
-  draft.imports.push({ path, alias });
-};
-
-const readMixEntry = (cursor: Cursor): { readonly state: string; readonly weight: number } => {
-  const raw = readString(cursor);
-  if (!isValidMinecraftState(raw)) failSyntax(cursor, 'valid minecraft block state in mix');
-  let weight = 1;
-  if (peek(cursor).value === '*') {
-    take(cursor, '*');
-    weight = readNumberLiteral(cursor);
-    if (!Number.isFinite(weight) || weight <= 0) failSyntax(cursor, 'positive mix weight');
+const readMixEntry = (
+  expr: AshfoxExpr,
+  file: string,
+): { readonly state: string; readonly weight: number } => {
+  if (expr.kind === 'string') {
+    if (!isValidMinecraftState(expr.value))
+      return failAst(file, expr.span, 'minecraft block state', expr.value);
+    return { state: formatBlockState(parseBlockState(expr.value)), weight: 1 };
   }
-  return { state: formatBlockState(parseBlockState(raw)), weight };
-};
-
-const readMixPalette = (cursor: Cursor): StructurePaletteEntry => {
-  take(cursor, 'mix');
-  take(cursor, '(');
-  const entries: { readonly state: string; readonly weight: number }[] = [readMixEntry(cursor)];
-  while (peek(cursor).value === ',') {
-    take(cursor, ',');
-    entries.push(readMixEntry(cursor));
-  }
-  take(cursor, ')');
-  return { kind: 'mix', entries };
-};
-
-const readPaletteEntry = (cursor: Cursor): StructurePaletteEntry => {
-  if (peek(cursor).value === 'asset') {
-    take(cursor, 'asset');
-    const alias = readName(cursor);
-    let fallback = 'minecraft:oak_planks';
-    if (peek(cursor).value === 'as') {
-      take(cursor, 'as');
-      fallback = readString(cursor);
-      if (!isValidMinecraftState(fallback)) failSyntax(cursor, 'valid minecraft fallback state');
+  if (expr.kind === 'binary' && expr.operator === '*' && expr.left.kind === 'string') {
+    if (!isValidMinecraftState(expr.left.value)) {
+      return failAst(file, expr.left.span, 'minecraft block state', expr.left.value);
     }
-    return { kind: 'asset', alias, fallback: formatBlockState(parseBlockState(fallback)) };
+    const weight = exprToNumber(expr.right, file, true);
+    if (!Number.isFinite(weight) || weight <= 0) {
+      return failAst(file, expr.right.span, 'positive mix weight', String(weight));
+    }
+    return { state: formatBlockState(parseBlockState(expr.left.value)), weight };
   }
-  if (peek(cursor).value === 'mix') return readMixPalette(cursor);
-  const state = readString(cursor);
-  if (!isValidMinecraftState(state)) failSyntax(cursor, 'valid minecraft block state');
-  return { kind: 'block', state: formatBlockState(parseBlockState(state)) };
+  return failAst(file, expr.span, '"minecraft:..." [* weight]', expr.kind);
 };
 
-const readPalette = (cursor: Cursor, draft: StructureDraft): void => {
-  take(cursor, '{');
-  while (peek(cursor).value !== '}') {
-    const key = readName(cursor);
-    if (key in draft.palette) failSyntax(cursor, `unique palette key ${key}`);
-    take(cursor, '=');
-    draft.palette[key] = readPaletteEntry(cursor);
-    take(cursor, ';');
+const readAssetPaletteEntry = (
+  args: readonly AshfoxExpr[],
+  file: string,
+): StructurePaletteEntry => {
+  const aliasExpr = args[0]!;
+  if (aliasExpr.kind !== 'path' || aliasExpr.segments.length !== 1) {
+    return failAst(file, aliasExpr.span, 'import alias', aliasExpr.kind);
   }
-  take(cursor, '}');
+  let fallback = 'minecraft:oak_planks';
+  const fallbackExpr = args[1];
+  if (fallbackExpr) {
+    if (fallbackExpr.kind !== 'string' || !isValidMinecraftState(fallbackExpr.value)) {
+      return failAst(file, fallbackExpr.span, 'valid minecraft fallback state', fallbackExpr.kind);
+    }
+    fallback = fallbackExpr.value;
+  }
+  return {
+    kind: 'asset',
+    alias: aliasExpr.value,
+    fallback: formatBlockState(parseBlockState(fallback)),
+  };
 };
 
-const readParamValue = (cursor: Cursor, draft: StructureDraft): StructureParamValue => {
-  const next = peek(cursor);
-  if (next.kind === 'string') return take(cursor).value;
-  if (next.kind === 'identifier' && (next.value === 'true' || next.value === 'false')) {
-    return take(cursor).value === 'true';
+const readPaletteExpr = (expr: AshfoxExpr, file: string): StructurePaletteEntry => {
+  if (expr.kind === 'string') {
+    if (!isValidMinecraftState(expr.value))
+      return failAst(file, expr.span, 'minecraft block state', expr.value);
+    return { kind: 'block', state: formatBlockState(parseBlockState(expr.value)) };
   }
-  const expr = parseScalarExpr(cursor);
-  return evaluateScalarExpr(expr, draft.params, cursor.file, 'params');
-};
-
-const readParams = (cursor: Cursor, draft: StructureDraft): void => {
-  take(cursor, '{');
-  while (peek(cursor).value !== '}') {
-    const key = readName(cursor);
-    if (key in draft.params) failSyntax(cursor, `unique param ${key}`);
-    take(cursor, '=');
-    draft.params[key] = readParamValue(cursor, draft);
-    take(cursor, ';');
+  if (expr.kind === 'call' && expr.callee === 'mix' && expr.args.length > 0) {
+    return { kind: 'mix', entries: expr.args.map((arg) => readMixEntry(arg, file)) };
   }
-  take(cursor, '}');
-};
-
-const readSizeVec3 = (cursor: Cursor): IntVec3 => {
-  take(cursor, '(');
-  const w = readInt(cursor);
-  take(cursor, ',');
-  const h = readInt(cursor);
-  take(cursor, ',');
-  const d = readInt(cursor);
-  take(cursor, ')');
   if (
+    expr.kind === 'call' &&
+    expr.callee === 'asset' &&
+    expr.args.length >= 1 &&
+    expr.args.length <= 2
+  ) {
+    return readAssetPaletteEntry(expr.args, file);
+  }
+  return failAst(file, expr.span, 'minecraft state, mix(...), or asset(...)', expr.kind);
+};
+
+const readPalette = (block: AshfoxBlock, draft: StructureDraft): void => {
+  for (const stmt of block.statements) {
+    if (stmt.kind !== 'assign' || stmt.easing !== null || stmt.segments.length !== 1) {
+      return failAst(draft.file, stmt.span, 'palette key = value;', stmt.kind);
+    }
+    if (stmt.path in draft.palette) {
+      return failAst(draft.file, stmt.span, `unique palette key ${stmt.path}`, stmt.path);
+    }
+    draft.palette[stmt.path] = readPaletteExpr(stmt.value, draft.file);
+  }
+};
+
+const readParams = (block: AshfoxBlock, draft: StructureDraft): void => {
+  for (const stmt of block.statements) {
+    if (stmt.kind !== 'assign' || stmt.easing !== null || stmt.segments.length !== 1) {
+      return failAst(draft.file, stmt.span, 'param key = value;', stmt.kind);
+    }
+    if (stmt.path in draft.params) {
+      return failAst(draft.file, stmt.span, `unique param ${stmt.path}`, stmt.path);
+    }
+    if (stmt.value.kind === 'string' || stmt.value.kind === 'boolean') {
+      draft.params[stmt.path] = stmt.value.value;
+    } else {
+      const scalar = exprToScalar(stmt.value, draft.file);
+      draft.params[stmt.path] = evaluateScalarExpr(scalar, draft.params, draft.file, 'params');
+    }
+  }
+};
+
+const readSizeVec3 = (expr: AshfoxExpr, file: string): IntVec3 => {
+  if (expr.kind !== 'tuple' || expr.elements.length !== 3) {
+    return failAst(file, expr.span, 'size = (w, h, d)', expr.kind);
+  }
+  const [w, h, d] = expr.elements.map((el: AshfoxExpr) => exprToNumber(el, file)) as [
+    number,
+    number,
+    number,
+  ];
+  if (
+    !Number.isSafeInteger(w) ||
+    !Number.isSafeInteger(h) ||
+    !Number.isSafeInteger(d) ||
     w < 1 ||
     h < 1 ||
     d < 1 ||
@@ -155,101 +168,137 @@ const readSizeVec3 = (cursor: Cursor): IntVec3 => {
     d > MAX_STRUCTURE_DIM ||
     w * h * d > MAX_STRUCTURE_VOLUME
   ) {
-    failSyntax(cursor, `size within 1..${MAX_STRUCTURE_DIM} and volume <= ${MAX_STRUCTURE_VOLUME}`);
+    failAst(
+      file,
+      expr.span,
+      `size within 1..${MAX_STRUCTURE_DIM} and volume <= ${MAX_STRUCTURE_VOLUME}`,
+      `(${w}, ${h}, ${d})`,
+    );
   }
   return [w, h, d];
 };
 
-const readPrefab = (cursor: Cursor, exported: boolean, draft: StructureDraft): void => {
-  const id = readName(cursor);
-  if (draft.prefabNames.has(id)) failSyntax(cursor, `unique prefab ${id}`);
-  draft.prefabNames.add(id);
-  draft.prefabs.push({ id, exported, ops: parseOpBlock(cursor, 0) });
-};
-
-const readScalarField = (cursor: Cursor, keyword: string, draft: StructureDraft): boolean => {
-  if (keyword === 'size') {
-    if (draft.size !== null) failSyntax(cursor, 'single size declaration');
-    take(cursor, '=');
-    draft.size = readSizeVec3(cursor);
-    take(cursor, ';');
-    return true;
-  }
-  if (keyword === 'density') {
-    if (draft.density !== null) failSyntax(cursor, 'single density declaration');
-    take(cursor, '=');
-    const val = readInt(cursor);
-    if (val !== 1 && val !== 2) failSyntax(cursor, 'density = 1 or 2');
+const SCALAR_HANDLERS: Readonly<
+  Record<string, (stmt: AshfoxAssignStmt, draft: StructureDraft) => void>
+> = {
+  outputs: (stmt, draft) => draft.outputs.push(...lowerAssignOutputs(stmt, draft.file)),
+  size: (stmt, draft) => {
+    if (draft.size !== null) failAst(draft.file, stmt.span, 'single size', stmt.path);
+    draft.size = readSizeVec3(stmt.value, draft.file);
+  },
+  density: (stmt, draft) => {
+    if (draft.density !== null) failAst(draft.file, stmt.span, 'single density', stmt.path);
+    const val = exprToNumber(stmt.value, draft.file);
+    if (val !== 1 && val !== 2) failAst(draft.file, stmt.span, 'density = 1 or 2', String(val));
     draft.density = val as StructureDensity;
-    take(cursor, ';');
-    return true;
-  }
-  if (keyword === 'seed') {
-    if (draft.seed !== null) failSyntax(cursor, 'single seed declaration');
-    take(cursor, '=');
-    draft.seed = readInt(cursor);
-    take(cursor, ';');
-    return true;
-  }
-  if (keyword === 'data_version') {
-    take(cursor, '=');
-    draft.dataVersion = readInt(cursor);
-    take(cursor, ';');
-    return true;
-  }
-  return false;
+  },
+  seed: (stmt, draft) => {
+    if (draft.seed !== null) failAst(draft.file, stmt.span, 'single seed', stmt.path);
+    const val = exprToNumber(stmt.value, draft.file);
+    if (!Number.isSafeInteger(val)) failAst(draft.file, stmt.span, 'integer seed', String(val));
+    draft.seed = val;
+  },
+  data_version: (stmt, draft) => {
+    const val = exprToNumber(stmt.value, draft.file);
+    if (!Number.isSafeInteger(val)) failAst(draft.file, stmt.span, 'integer data_version', '');
+    draft.dataVersion = val;
+  },
 };
 
-const readStructureField = (cursor: Cursor, keyword: string, draft: StructureDraft): void => {
-  if (readScalarField(cursor, keyword, draft)) return;
-  if (keyword === 'outputs') {
-    const res = parseOutputsTokens(cursor.tokens, cursor.offset, cursor.file);
-    cursor.offset = res.nextIndex;
-    draft.outputs.push(...res.outputs);
-  } else if (keyword === 'preview') {
-    const res = parsePreviewTokens(cursor.tokens, cursor.offset, cursor.file);
-    cursor.offset = res.nextIndex;
-    draft.previews.push(res.preview);
-  } else if (keyword === 'build') {
-    if (draft.ops !== null) failSyntax(cursor, 'single build block');
-    draft.ops = parseOpBlock(cursor, 0);
-  } else {
-    failSyntax(cursor, 'size, density, seed, data_version, params, palette, prefab, or build');
-  }
+const readScalarAssign = (stmt: AshfoxAssignStmt, draft: StructureDraft): void => {
+  const handler = SCALAR_HANDLERS[stmt.path];
+  if (!handler)
+    failAst(draft.file, stmt.span, 'size, density, seed, data_version, or outputs', stmt.path);
+  handler(stmt, draft);
 };
 
-const readMember = (cursor: Cursor, draft: StructureDraft): void => {
-  const exported = peek(cursor).value === 'export';
-  if (exported) take(cursor, 'export');
-  const keyword = readName(cursor);
-  if (keyword === 'import' && !exported) return readImport(cursor, draft);
-  if (keyword === 'params' && !exported) return readParams(cursor, draft);
-  if (keyword === 'palette' && !exported) return readPalette(cursor, draft);
-  if (keyword === 'prefab') {
-    if (draft.kind === 'module' && !exported) failSyntax(cursor, 'export prefab inside module');
-    return readPrefab(cursor, exported, draft);
+const addPrefabDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: StructureDraft): void => {
+  if (!stmt.name) return failAst(draft.file, stmt.span, 'prefab <name> { ... }', 'unnamed');
+  if (draft.kind === 'module' && !exported) {
+    return failAst(draft.file, stmt.span, 'export prefab inside module', stmt.name);
   }
-  if (exported || draft.kind === 'module') failSyntax(cursor, 'export prefab declaration');
-  readStructureField(cursor, keyword, draft);
+  if (draft.prefabNames.has(stmt.name)) {
+    return failAst(draft.file, stmt.span, `unique prefab ${stmt.name}`, stmt.name);
+  }
+  draft.prefabNames.add(stmt.name);
+  draft.prefabs.push({
+    id: stmt.name,
+    exported,
+    ops: parseOpStatements(stmt.block.statements, draft.file),
+  });
+};
+
+const readNamedDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: StructureDraft): void => {
+  if (stmt.blockKind === 'prefab') return addPrefabDecl(stmt, exported, draft);
+  if (!exported && stmt.blockKind === 'params' && stmt.name === null) {
+    return readParams(stmt.block, draft);
+  }
+  if (!exported && stmt.blockKind === 'palette' && stmt.name === null) {
+    return readPalette(stmt.block, draft);
+  }
+  if (exported || draft.kind === 'module') {
+    failAst(draft.file, stmt.span, 'export prefab declaration', stmt.blockKind);
+  }
+  if (stmt.blockKind === 'outputs' && stmt.name === null) {
+    draft.outputs.push(...lowerOutputsFromBlock(stmt.block, draft.file));
+    return;
+  }
+  if (stmt.blockKind === 'preview') {
+    draft.previews.push(lowerPreviewFromBlock(stmt, draft.file));
+    return;
+  }
+  if (STRUCTURE_OP_KINDS.has(stmt.blockKind)) {
+    draft.ops.push(parseSingleOp(stmt, draft.file, 0));
+    return;
+  }
+  failAst(draft.file, stmt.span, 'structure declaration or operation', stmt.blockKind);
+};
+
+const readTopMember = (stmt: AshfoxStatement, draft: StructureDraft): void => {
+  if (stmt.kind === 'import') {
+    if (draft.aliases.has(stmt.alias)) {
+      failAst(draft.file, stmt.span, 'unique import alias', stmt.alias);
+    }
+    draft.aliases.add(stmt.alias);
+    draft.imports.push({ path: stmt.path, alias: stmt.alias });
+    return;
+  }
+  if (stmt.kind === 'export') {
+    readNamedDecl(stmt.declaration, true, draft);
+    return;
+  }
+  if (stmt.kind === 'assign') {
+    if (draft.kind === 'module') failAst(draft.file, stmt.span, 'export prefab', stmt.path);
+    readScalarAssign(stmt, draft);
+    return;
+  }
+  if (stmt.kind === 'named-block') {
+    readNamedDecl(stmt, false, draft);
+    return;
+  }
+  failAst(draft.file, stmt.span, 'structure statement', stmt.stmtKind);
 };
 
 export const parseStructureSource = (source: string, file: string): StructureSourceUnit => {
   assertWellFormedSourceText(source);
-  const lexical = lexProgramSource(source);
-  const cursor: Cursor = { tokens: lexical.tokens, file, offset: 0 };
-  if (lexical.diagnostics.length > 0 || lexical.tokens.length > 32_000) {
-    failSyntax(cursor, 'valid .ashfox tokens within budget');
+  const parsed = parseAshfoxProgram(source, file);
+  if (parsed.diagnostics.length > 0 || parsed.file === null) {
+    const first = parsed.diagnostics[0];
+    throw new StructureInputError({
+      code: 'structure.syntax',
+      file,
+      pointer: first ? `line:${first.span.start.line}:${first.span.start.column}` : 'line:1:1',
+      expected: 'valid ashfox 1 structure or module source',
+      actual: first?.message ?? 'syntax error',
+    });
   }
-  take(cursor, 'ashfox-model');
-  take(cursor, '1');
-  const rawKind = take(cursor).value;
-  if (rawKind !== 'structure' && rawKind !== 'module' && rawKind !== 'compound') {
-    failSyntax(cursor, 'structure, module, or compound');
-  }
-  const kind = rawKind as StructureSourceUnit['kind'];
-  const id = readName(cursor);
-  take(cursor, '{');
+  const top = parsed.file.top;
+  const kind: 'structure' | 'module' =
+    top.kind === 'structure' || top.kind === 'module'
+      ? top.kind
+      : failAst(file, top.span, 'structure or module', top.kind);
   const draft: StructureDraft = {
+    file,
     kind,
     imports: [],
     aliases: new Set(),
@@ -259,21 +308,19 @@ export const parseStructureSource = (source: string, file: string): StructureSou
     palette: {},
     prefabs: [],
     prefabNames: new Set(),
+    ops: [],
     density: null,
     seed: null,
     size: null,
     dataVersion: DEFAULT_DATA_VERSION,
-    ops: null,
   };
-  while (peek(cursor).value !== '}') readMember(cursor, draft);
-  take(cursor, '}');
-  if (peek(cursor).kind !== 'eof') failSyntax(cursor, 'end of file');
-  if (kind !== 'module' && (draft.size === null || draft.ops === null)) {
-    failSyntax(cursor, 'size and build blocks');
+  for (const stmt of top.block.statements) readTopMember(stmt, draft);
+  if (draft.kind === 'structure' && (draft.size === null || draft.ops.length === 0)) {
+    failAst(file, top.span, 'size and structure operations', 'missing');
   }
   return deepFreeze({
-    kind,
-    id,
+    kind: draft.kind,
+    id: top.name,
     imports: draft.imports,
     outputs: draft.outputs,
     previews: draft.previews,
@@ -284,6 +331,6 @@ export const parseStructureSource = (source: string, file: string): StructureSou
     dataVersion: draft.dataVersion,
     palette: draft.palette,
     prefabs: draft.prefabs,
-    ops: draft.ops ?? [],
+    ops: draft.ops,
   });
 };

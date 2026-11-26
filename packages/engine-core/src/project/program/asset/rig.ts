@@ -85,22 +85,8 @@ const readJoint = (reader: AssetReader): AssetJointDecl => {
     ['parent', 'role', 'channels', 'mirror'],
     'rig contract joint',
   );
-  if (frame === null) {
-    reader.failSpan(
-      'asset.missing-frame',
-      'Every rig joint requires an explicit local frame.',
-      id.span,
-    );
-  }
   const channels = readJointChannels(reader, propertyValue(values, 'channels'), id.span);
   const mirrorValue = propertyValue(values, 'mirror');
-  if (mirrorValue === undefined) {
-    reader.failSpan(
-      'asset.missing-joint-mirror',
-      'Every rig joint requires an explicit mirror = none|<joint> declaration.',
-      id.span,
-    );
-  }
   const roleValue = propertyValue(values, 'role');
   return Object.freeze({
     kind: 'joint',
@@ -215,15 +201,15 @@ const readBind = (reader: AssetReader): AssetBindDecl => {
   if (ambiguous) {
     reader.failSpan(
       'asset.bind-coordinate-space',
-      'Skeleton binds require parent-origin in the parent joint frame; ambiguous origin is not supported.',
+      'Skeleton binds require parent_origin in the parent joint frame; ambiguous origin is not supported.',
       ambiguous.span,
     );
   }
-  checkClosedProperties(reader, values, ['parent-origin'], 'skeleton bind');
+  checkClosedProperties(reader, values, ['parent_origin'], 'skeleton bind');
   return Object.freeze({
     kind: 'bind',
     joint: joint.value,
-    parentOrigin: propertyValue(values, 'parent-origin') ?? null,
+    parentOrigin: propertyValue(values, 'parent_origin') ?? null,
     frame: frame ?? frameOrNull(values, start.span),
     span: join(start.span, close.span),
   });
@@ -249,14 +235,7 @@ export const parseSocketContract = (
   );
   checkClosedProperties(reader, values, ['handedness'], 'socket contract');
   const handednessValue = propertyValue(values, 'handedness');
-  const handedness = nameOr(handednessValue, '');
-  if (handednessValue === undefined) {
-    reader.failSpan(
-      'asset.missing-handedness',
-      'Socket contracts require an explicit handedness = right|left declaration.',
-      id.span,
-    );
-  }
+  const handedness = nameOr(handednessValue, 'right');
   if (!isOneOf(['right', 'left'] as const, handedness)) {
     reader.fail('asset.invalid-handedness', 'Socket handedness must be right or left.', id);
   }
@@ -286,13 +265,6 @@ export const parseRigContract = (reader: AssetReader, exported: boolean): AssetR
     'Expected } to close a rig contract.',
     () => readRigEntry(reader, state),
   );
-  if (state.handedness === null) {
-    reader.failSpan(
-      'asset.missing-handedness',
-      'Rig contracts require an explicit handedness = right|left declaration.',
-      id.span,
-    );
-  }
   return Object.freeze({
     kind: 'rig-contract',
     exported,

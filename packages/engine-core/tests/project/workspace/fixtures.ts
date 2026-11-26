@@ -16,7 +16,7 @@ import {
 } from '../../../src/project/workspace';
 
 export const assetSource = (name: string, imports: readonly string[] = []): string =>
-  `ashfox-model 1\nasset ${name} {${imports
+  `ashfox 1\nmodel ${name} {${imports
     .map((item) => ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`)
     .join('')}}`;
 
@@ -25,7 +25,7 @@ export const moduleSource = (
   imports: readonly string[] = [],
   exported = false,
 ): string =>
-  `ashfox-model 1\nmodule ${name} {${imports
+  `ashfox 1\nmodule ${name} {${imports
     .map((item) => ` import "${item}" as ${item.replace(/[^A-Za-z0-9_]/gu, '_')};`)
     .join('')}${exported ? ` export component ${name}_component {}` : ''}}`;
 

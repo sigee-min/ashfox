@@ -29,9 +29,9 @@ props do not need an idle animation. No workspace is required.
 | `surface` | Choose palette, raster detail and material behavior |
 | `component` | Create cubes/planes and bind them to bones/surfaces |
 | `motion` | Animate supported joint channels |
-| `asset` assembly | Select the skeleton, components and assigned motions |
+| `model` assembly | Select the skeleton, components and assigned motions |
 
-Every source begins with `ashfox-model 1`. File extensions are `.ashfox`.
+Every source begins with `ashfox 1`. File extensions are `.ashfox`.
 Model lengths use `u`, pixel dimensions use `px`, times use `s`, and angles use
 `deg`. Read [Model language syntax](../language/model.md) for complete
 sources and legal values. Use [Dimensions and pixel detail](precision-modeling.md)

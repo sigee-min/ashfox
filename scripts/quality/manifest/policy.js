@@ -261,7 +261,7 @@ const validateAssetWorkspaceVersioning = (value, repoRoot) => {
   );
   const expectedWorkspace = {
     version: 2,
-    sourceGrammar: 'ashfox-model 1',
+    sourceGrammar: 'ashfox 1',
     container: 'ashfox-workspace:2',
     compatibility: 'exact-current-contract',
     authority: 'packages/engine-core/src/project/directory/contract.ts',

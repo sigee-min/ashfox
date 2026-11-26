@@ -215,7 +215,7 @@ const escapeText = (value) =>
 const renderDiffPatch = (prevItem, nextItem, patchEl) => {
   const prevLine = prevItem ? prevItem.codeLine : nextItem.codeLine;
   patchEl.innerHTML = [
-    '<span class="diff-ctx">  1  ashfox-model 1</span>',
+    '<span class="diff-ctx">  1  ashfox 1</span>',
     `<span class="diff-del">-    ${escapeText(prevLine)}</span>`,
     `<span class="diff-add">+    ${escapeText(nextItem.codeLine)}</span>`,
   ].join('\n');

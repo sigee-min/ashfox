@@ -109,7 +109,7 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
   const variant = record(raw, [
     'id',
     'frames',
-    'sampleRate',
+    'sample_rate',
     'channels',
     'playback',
     'peak',
@@ -122,7 +122,7 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
     typeof variant.id !== 'string' ||
     !Number.isSafeInteger(variant.frames) ||
     (variant.frames as number) <= 0 ||
-    variant.sampleRate !== 48000 ||
+    variant.sample_rate !== 48000 ||
     (variant.channels !== 1 && variant.channels !== 2)
   )
     fail('Invalid audio metadata');
@@ -133,7 +133,7 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
   return {
     id: variant.id as string,
     frames: variant.frames as number,
-    sampleRate: 48000 as const,
+    sample_rate: 48000 as const,
     channels: variant.channels as 1 | 2,
     peak: variant.peak as number,
     rms: variant.rms as number,

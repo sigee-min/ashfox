@@ -6,12 +6,11 @@ Ashfox assets are authored as native `.ashfox` files. They compile independently
 including their explicit relative imports. An optional `.ashfoxworkspace` supplies
 repository-wide selection, ignore, package, build and export rules when needed;
 it is not required to author or compile an asset. Generated products and receipts
-are rebuildable outputs. See [Directory workspace v2](../guides/workspace.md).
+are rebuildable outputs. See [Directory workspace](../guides/workspace.md).
 
-The source header remains `ashfox-model 1`. Native sprite units share the lexer
-and compile beside existing model entries. The former embedded v1 workspace is
-an explicit import format and an internal model-compiler projection; it is not
-a fallback when opening a directory project's root configuration.
+The shared source header is `ashfox 1`. Native sprite, sound, and structure units share the block lexer
+and compile beside model entries. Embedded workspace snapshots are an internal
+compiler projection, not a fallback when opening a directory project's root configuration.
 
 `AssetProject` is the transient host session. It binds host id/revision/time,
 one validated workspace head, one explicit entry selector, the exact build
@@ -103,24 +102,24 @@ identity, not only to the selected closure.
 | --- | --- | --- |
 | `design` | exact typed shared values, construction datums, and named boolean checks | a cyclic solution, rounded pixel, extra rig joint, or implicit placement |
 | `rig contract` | nominal joints, signed frames, allowed channels, mirror pairs, typed sockets | a match from bone names or similar hierarchy |
-| `skeleton` | complete parent-relative rest-frame implementation of one rig | missing joints, axes, scale, IK, or root motion policy |
+| `skeleton` | complete parent-joint-relative rest-frame implementation of one rig | missing joints, axes, scale, IK, or root motion policy |
 | `component` | reusable geometry and typed rig/socket/surface ports | caller locals, nearby attachment, or arbitrary parent links |
 | `surface contract` | chart layout, dimensions, coverage, slots, and material ABI | a texture/chart pair from unrelated owners |
 | `surface` | concrete palette, grain, stamp, chart, and raster source | hidden UV, repaint, target fork, or visual repair |
-| `motion` | rest-relative rig-joint rotation/scale tracks | name-based retargeting, position semantics, IK, or conflict resolution |
+| `motion` | rest-space relative rig-joint rotation/scale tracks | name-based retargeting, position semantics, IK, or conflict resolution |
 | `asset` | concrete skeleton, component instances, surface bindings, socket connections, and motions | automatic assembly or optional connection |
 
 Composition and nominal contracts are the reuse model. Classes, inheritance,
 mixins, structural subtyping, general generics, runtime imports, mutable
 registries, implicit index resolution, wildcard imports, and target-specific
-source branches are not part of Ashfox v1.
+source branches are not part of Ashfox.
 
 ## Ownership
 
 | Decision | Owner |
 | --- | --- |
 | workspace records, paths, locks, changes, hashes, and graph closure | `packages/engine-core/src/project/workspace/` |
-| v1 source tokens and exact expression grammar | `packages/engine-core/src/project/program/syntax/` |
+| source tokens and exact expression grammar | `packages/engine-core/src/project/program/syntax/` |
 | package-aware asset AST and parser | `packages/engine-core/src/project/program/asset/` |
 | nominal resolution, Typed HIR, instantiation, and concrete lowering | `packages/engine-core/src/compiler/program/asset/` |
 | concrete scene and product contracts | `packages/engine-core/src/model/` |
@@ -161,7 +160,7 @@ but those blobs do not become a second authoring authority.
 
 ## Rig coordinate boundary
 
-Skeleton binds require `parent-origin`; the origin and axes belong to the
+Skeleton binds require `parent_origin`; the origin and axes belong to the
 parent joint frame. Roots use the model frame. Instantiation composes those
 frames for socket placement. The IR retains `parentRestFrame` on bones and
 `parentPlacement` on socket connections; there is no ambiguous rest-frame
@@ -188,7 +187,7 @@ independent rendered judgment; it never repairs source or canonical output.
 
 ## Item sprite, tile, and directory compiler
 
-The sprite compiler reads Sprite v2 `.ashfox` in `project/sprite/`, lowers
+The sprite compiler reads sprite `.ashfox` sources in `project/sprite/`, lowers
 OKLCH hue-shifted 5-stop ramps, parametric shapes/masks, 2D patterns, selective outlines, and bounded grain in `compiler/sprite/`, evaluates pure-CPU `audit/sprite/` quality gates, renders 512×512 4-panel `--sheet inspect` previews via `spriteInspectSheetPng`, and reuses the canonical texture raster and PNG encoder (`readSpriteDocument`, `compileSpriteDocument`, `spritePreviewPng`, `evaluateSpriteQuality`). Directory configuration lives in `project/directory/`; `compiler/directory/` compiles model, sprite, and sound entries through `compileDirectoryWorkspace` without empty model documents. Style-related constraints are enforced by the authored asset profile (`item | tile | icon | decal` for sprites, `impact | foley | creature | magic | ui | ambient` for sounds).
 
 ## CLI resource-pack delivery

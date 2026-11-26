@@ -131,7 +131,12 @@ const resolve = (
   return symbol(owner, id, graph.cache?.spriteSymbols);
 };
 
-const PATTERN_MAT_KEYS = ['toMaterial', 'mortarMaterial', 'edgeMaterial', 'crackMaterial'] as const;
+const PATTERN_MAT_KEYS = [
+  'to_material',
+  'mortar_material',
+  'edge_material',
+  'crack_material',
+] as const;
 
 const resolvePatternRefs = (graph: SpriteGraph, entry: string, rawPattern: unknown): unknown => {
   if (!rawPattern || typeof rawPattern !== 'object' || Array.isArray(rawPattern)) return rawPattern;

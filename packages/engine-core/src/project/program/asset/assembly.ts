@@ -1,3 +1,4 @@
+import type { SourceSpan } from '../../source/contract';
 import type {
   AssetAssemblyConnect,
   AssetAssemblyDecl,
@@ -5,7 +6,6 @@ import type {
   AssetKeyframeDecl,
   AssetMotionDecl,
   AssetParamSetDecl,
-  AssetPortBindingDecl,
   AssetPropertyDecl,
   AssetQualifiedName,
   AssetSettingsDecl,
@@ -63,7 +63,7 @@ const readTrack = (reader: AssetReader): AssetTrackDecl => {
   if (property !== 'rotation' && property !== 'scale') {
     reader.fail(
       'asset.invalid-motion-property',
-      'Rig motion only supports rest-relative rotation and scale tracks; position and IK are forbidden.',
+      'Rig motion only supports rest-space relative rotation and scale tracks; position and IK are forbidden.',
       propertyToken,
     );
   }
@@ -113,67 +113,46 @@ export const parseMotion = (reader: AssetReader, exported: boolean): AssetMotion
   });
 };
 
-const readParameterSet = (reader: AssetReader): AssetParamSetDecl => {
-  const start = reader.expectWord('set', 'Expected set.');
-  const id = reader.id('Expected a component parameter name.');
-  reader.expect('=', 'Expected = in a parameter assignment.');
-  const value = reader.expression();
-  reader.finish();
-  return Object.freeze({
-    kind: 'param-set',
-    id: id.value,
-    value,
-    span: join(start.span, value.span),
-  });
-};
-
-const readPortBinding = (reader: AssetReader): AssetPortBindingDecl => {
-  const start = reader.expectWord('bind', 'Expected bind.');
-  const port = reader.id('Expected a component port name.');
-  reader.expect('=', 'Expected = in a component port binding.');
-  const target = reader.qualified('Expected a qualified concrete component port target.');
-  reader.finish();
-  return Object.freeze({
-    kind: 'port-binding',
-    port: port.value,
-    target,
-    span: join(start.span, target.span),
-  });
-};
-
 const readAssemblyUse = (reader: AssetReader): AssetAssemblyUse => {
   const start = reader.expectWord('use', 'Expected use.');
   const component = reader.qualified('Expected component name.');
-  reader.expectWord('as', 'Expected as after component name.');
-  const id = reader.id('Expected component instance name.');
+  const id = reader.checkWord('as')
+    ? (reader.take(), reader.id('Expected component instance name.').value)
+    : component.segments[component.segments.length - 1]!;
   const parameterSets: AssetParamSetDecl[] = [];
-  const portBindings: AssetPortBindingDecl[] = [];
   const close = readBraced(
     reader,
     'Expected { to begin component bindings.',
     'Expected } to close component bindings.',
     () => {
-      if (reader.checkWord('set')) parameterSets.push(readParameterSet(reader));
-      else if (reader.checkWord('bind')) portBindings.push(readPortBinding(reader));
-      else reader.scopeError('asset component use');
+      if (reader.assignment()) {
+        const property = readProperty(reader);
+        parameterSets.push(
+          Object.freeze({
+            kind: 'param-set',
+            id: property.name,
+            value: property.value,
+            span: property.span,
+          }),
+        );
+      } else reader.scopeError('asset component use');
     },
   );
-  reader.finish();
+  const endSpan = reader.match(';') ? reader.prevSpan() : close.span;
   return Object.freeze({
     kind: 'use',
     component,
-    id: id.value,
+    id,
     parameterSets: Object.freeze(parameterSets),
-    portBindings: Object.freeze(portBindings),
-    span: join(start.span, close.span),
+    portBindings: Object.freeze([]),
+    span: join(start.span, endSpan),
   });
 };
 
 const readConnect = (reader: AssetReader): AssetAssemblyConnect => {
   const start = reader.expectWord('connect', 'Expected connect.');
   const from = reader.qualified('Expected a source socket path.');
-  reader.expect('-', 'Expected -> in a socket connection.');
-  reader.expect('>', 'Expected -> in a socket connection.');
+  reader.expect('->', 'Expected -> in a socket connection.');
   const to = reader.qualified('Expected a target socket path.');
   reader.finish();
   return Object.freeze({
@@ -226,17 +205,43 @@ const readSettings = (reader: AssetReader): AssetSettingsDecl => {
   });
 };
 
-interface AssemblyState {
+export interface AssemblyState {
   settings: AssetSettingsDecl | null;
   settingsSeen: boolean;
   skeleton: AssetQualifiedName | null;
   skeletonSeen: boolean;
+  motionsSeen: boolean;
   readonly motions: AssetQualifiedName[];
   readonly uses: AssetAssemblyUse[];
   readonly connections: AssetAssemblyConnect[];
 }
 
-const readAssemblyEntry = (reader: AssetReader, state: AssemblyState): void => {
+export const createAssemblyState = (): AssemblyState => ({
+  settings: null,
+  settingsSeen: false,
+  skeleton: null,
+  skeletonSeen: false,
+  motionsSeen: false,
+  motions: [],
+  uses: [],
+  connections: [],
+});
+
+const readMotionsAssignment = (reader: AssetReader): readonly AssetQualifiedName[] => {
+  reader.expectWord('motions', 'Expected motions.');
+  reader.expect('=', 'Expected = after motions.');
+  reader.expect('[', 'Expected [ to begin motions list.');
+  const motions: AssetQualifiedName[] = [];
+  while (!reader.check(']') && !reader.end()) {
+    motions.push(reader.qualified('Expected motion name.'));
+    if (!reader.match(',')) break;
+  }
+  reader.expect(']', 'Expected ] to close motions list.');
+  reader.finish();
+  return Object.freeze(motions);
+};
+
+export const readAssemblyEntry = (reader: AssetReader, state: AssemblyState): void => {
   if (reader.checkWord('settings')) {
     if (state.settingsSeen) {
       reader.failSpan(
@@ -257,39 +262,35 @@ const readAssemblyEntry = (reader: AssetReader, state: AssemblyState): void => {
     }
     state.skeletonSeen = true;
     state.skeleton = readNamedAssignment(reader, 'skeleton');
-  } else if (reader.checkWord('motion')) state.motions.push(readNamedAssignment(reader, 'motion'));
-  else if (reader.checkWord('use')) state.uses.push(readAssemblyUse(reader));
+  } else if (reader.checkWord('motions')) {
+    if (state.motionsSeen) {
+      reader.failSpan(
+        'asset.duplicate-motions',
+        'An asset may contain only one motions list.',
+        reader.current().span,
+      );
+    }
+    state.motionsSeen = true;
+    state.motions.push(...readMotionsAssignment(reader));
+  } else if (reader.checkWord('use')) state.uses.push(readAssemblyUse(reader));
   else if (reader.checkWord('connect')) state.connections.push(readConnect(reader));
-  else reader.scopeError('asset assembly');
+  else reader.scopeError('model');
 };
 
-export const parseAssembly = (reader: AssetReader, exported: boolean): AssetAssemblyDecl => {
-  const start = reader.expectWord('asset', 'Expected asset.');
-  const id = reader.id('Expected asset name.');
-  const state: AssemblyState = {
-    settings: null,
-    settingsSeen: false,
-    skeleton: null,
-    skeletonSeen: false,
-    motions: [],
-    uses: [],
-    connections: [],
-  };
-  const close = readBraced(
-    reader,
-    'Expected { to begin an asset assembly.',
-    'Expected } to close an asset assembly.',
-    () => readAssemblyEntry(reader, state),
-  );
-  return Object.freeze({
+export const buildAssemblyDecl = (
+  id: string,
+  exported: boolean,
+  state: AssemblyState,
+  span: SourceSpan,
+): AssetAssemblyDecl =>
+  Object.freeze({
     kind: 'asset',
     exported,
-    id: id.value,
+    id,
     settings: state.settings,
     skeleton: state.skeleton,
     motions: Object.freeze(state.motions),
     uses: Object.freeze(state.uses),
     connections: Object.freeze(state.connections),
-    span: join(start.span, close.span),
+    span,
   });
-};

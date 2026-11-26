@@ -12,7 +12,7 @@
 
 ## 먼저 관절 배치하기
 
-skeleton 바인딩은 **부모 관절 좌표계의 `parent-origin`**을 사용합니다. 루트는 모델 좌표입니다. 회전하지 않은 몸통이 `(0u, 13u, 0u)`, 어깨의 모델 위치가 `(6.5u, 19.5u, 0u)`라면 `parent-origin = (6.5u, 6.5u, 0u)`입니다. 부모는 자식과 함께 이 오프셋을 회전·반사합니다. 과거 속성 `origin`은 추측하지 않고 거부합니다. 무기는 리그에서 손 관절 아래에 두고 원점을 손잡이에 놓으세요. 전체 동작으로 회전 방향·손 접촉·발 고정을 확인합니다.
+skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용합니다. 루트는 모델 좌표입니다. 회전하지 않은 몸통이 `(0u, 13u, 0u)`, 어깨의 모델 위치가 `(6.5u, 19.5u, 0u)`라면 `parent_origin = (6.5u, 6.5u, 0u)`입니다. 부모는 자식과 함께 이 오프셋을 회전·반사합니다. 과거 속성 `origin`은 추측하지 않고 거부합니다. 무기는 리그에서 손 관절 아래에 두고 원점을 손잡이에 놓으세요. 전체 동작으로 회전 방향·손 접촉·발 고정을 확인합니다.
 
 ## motion 만들기
 
@@ -22,7 +22,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent-origin`**을 사용�
 
 {{source-code:1}}
 
-`duration`은 양수, `fps`는 정수 1–240입니다. 재사용 리그 동작에는 `rest-relative = true`가 필요합니다. 키 시간은 길이 안에 있고 엄격히 증가해야 합니다.
+`duration`은 양수, `fps`는 정수 1–240입니다. 재사용 리그 동작은 기본적으로 정지 공간 기준 상대(`rest_relative = true`)입니다. 키 시간은 길이 안에 있고 엄격히 증가해야 합니다.
 
 ### 회전과 크기 트랙
 
@@ -75,7 +75,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent-origin`**을 사용�
 
 [Griffin 원본](../../examples/griffin/workbench/main.ashfox)과 [애니메이션 모듈](../../examples/griffin/workbench/animation.ashfox)을 함께 사용합니다. 완전한 그래프는 [게임 프로젝트](/downloads/game-assets.zip)에 있습니다. 압축을 푼 폴더에서 `models/workbench/main.ashfox`를 출력하세요.
 
-여섯 동작 모두 rest-relative입니다. 대상은 `head`, `wing_left`, `wing_right`, `tail` 등 의미 있는 리그 관절입니다.
+여섯 동작 모두 정지 공간 기준 상대입니다. 대상은 `head`, `wing_left`, `wing_right`, `tail` 등 의미 있는 리그 관절입니다.
 
 ## 모든 동작 리뷰하기
 
@@ -85,4 +85,4 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent-origin`**을 사용�
 
 ## 완전한 원본
 
-[언어 레퍼런스의 완전한 원본](../language/model.md)은 rig·skeleton·surface·component·motion·asset 조립을 갖춘 작은 애니메이션 큐브입니다. 독립 시작 파일이 필요할 때 사용하세요. 이 페이지는 동작 조각이므로 주변 surface·component 선언을 의도적으로 생략합니다.
+[언어 레퍼런스의 완전한 원본](../language/model.md)은 rig·skeleton·surface·component·motion·조립을 갖춘 작은 애니메이션 큐브입니다. 독립 시작 파일이 필요할 때 사용하세요. 이 페이지는 동작 조각이므로 주변 surface·component 선언을 의도적으로 생략합니다.

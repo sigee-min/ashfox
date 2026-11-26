@@ -90,7 +90,7 @@ const edgeDefinitionScore = (
 const ITEM_SILHOUETTE_FIXES = [
   'Adjust sprite scale/coverage to sit cleanly in canvas.',
   'Center silhouette mass near canvas midpoint.',
-  'Add sel_out outline with optional innerRim.',
+  'Add sel_out outline with optional inner_rim.',
 ] as const;
 
 const TILE_SILHOUETTE_FIXES = [

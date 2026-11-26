@@ -68,7 +68,7 @@ assert.ok(!race.ok && race.diagnostics.some((item) => item.code === 'workspace.c
 
 const invalid = workspaceFixture(
   [
-    { path: 'dragon/main.ashfox', source: 'ashfox-model 1\nasset main {' },
+    { path: 'dragon/main.ashfox', source: 'ashfox 1\nmodel main {' },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
   ],
   { modules: [{ subpath: './util', path: 'util.ashfox' }] },

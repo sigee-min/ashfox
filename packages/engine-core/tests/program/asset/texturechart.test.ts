@@ -140,7 +140,7 @@ const texture = (
         vector([number(BigInt(width), 1n, 'texel'), number(BigInt(height), 1n, 'texel')]),
       ),
       property('background', name('accent')),
-      property('background-alpha', number(255n)),
+      property('background_alpha', number(255n)),
       palette,
       chart,
       grain,

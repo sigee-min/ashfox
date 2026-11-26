@@ -40,10 +40,10 @@ const readWavPeakBins = (wav) => {
 };
 
 const readWavDurationSec = (wav) => {
-  const sampleRate = Math.max(1, wav.readUInt32LE(24));
+  const sampleRateHz = Math.max(1, wav.readUInt32LE(24));
   const channels = Math.max(1, wav.readUInt16LE(22));
   const frames = Math.floor((wav.length - 44) / (2 * channels));
-  return Number((frames / sampleRate).toFixed(2));
+  return Number((frames / sampleRateHz).toFixed(2));
 };
 
 const writeWaveSvg = (wavBytes, svgName, color) => {

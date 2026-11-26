@@ -48,15 +48,15 @@ const compileAndAudit = (
   return evaluateAssetQuality({ model: product.model, telemetry: product.telemetry }, options);
 };
 
-const lv0Source = (): string => `ashfox-model 1
-asset main {
+const lv0Source = (): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     chart body box { coverage = opaque; }
@@ -65,7 +65,7 @@ asset main {
   surface base: Skin {
     material = opaque;
     texture atlas {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette { bg = #101010; body = (#686868, #7f7f7f, #969696); }
       chart body box { fill = body; }
     }
@@ -76,22 +76,20 @@ asset main {
     bind bone root to skeleton.root;
     geometry { bone root { cube c0 { origin = (-4u, 0u, -4u); size = (8u, 8u, 8u); surface = skin.body; } } }
   }
-  export asset main {
-    settings { density = 16; forward = north; profile = creature; }
+  settings { density = 16; forward = north; profile = creature; }
     skeleton = S;
-    use Body as b { bind skeleton = R; bind skin = base; };
-  }
+    use Body as b { skeleton = R; skin = base; }
 }`;
 
-const lv1Source = (): string => `ashfox-model 1
-asset main {
+const lv1Source = (): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     chart torso box { coverage = opaque; }
@@ -103,7 +101,7 @@ asset main {
   surface base: Skin {
     material = opaque;
     texture atlas {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette { bg = #101010; coat = (#502818, #8a4828, #c46d40); }
       chart torso box { fill = coat; }
       chart head box { fill = coat; }
@@ -129,11 +127,9 @@ asset main {
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; profile = creature; }
+  settings { density = 16; forward = north; profile = creature; }
     skeleton = S;
-    use Body as b { bind skeleton = R; bind skin = base; };
-  }
+    use Body as b { skeleton = R; skin = base; }
 }`;
 
 const creatureSource = (level: 2 | 3 | 4): string => {
@@ -171,36 +167,36 @@ const creatureSource = (level: 2 | 3 | 4): string => {
     if (id === 'head') {
       return `chart head box {
         fill = coat; grain = soft;
-        pattern gradient { to = belly; axis = y; space = local; soft = 0.18ratio; }
+        pattern gradient { to = belly; axis = y; space = local; soft = 0.18; }
         pattern border { paint = dark; width = 1px; edges = bottom; }
-        ${lv4 ? 'pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+        ${lv4 ? 'pattern ao { strength = 0.35; radius = 0.6u; }' : ''}
         face north { stamp eye_dot { at = (2px, 4px); protect = true; } stamp eye_dot { at = (10px, 4px); protect = true; } }
       }`;
     }
     if (id === 'chest' || id === 'muzzle' || id === 'paw_f' || id === 'paw_b') {
       return `chart ${id} box {
-        fill = belly; ${lv4 ? 'grain = none; pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+        fill = belly; ${lv4 ? 'grain = none; pattern ao { strength = 0.35; radius = 0.6u; }' : ''}
         pattern border { paint = coat; width = 1px; edges = bottom; }
       }`;
     }
     if (!lv4) {
       return `chart ${id} box {
         fill = coat; grain = soft;
-        pattern gradient { to = dark; axis = y; space = model; soft = 0.2ratio; }
-        ${id === 'torso' ? 'pattern ao { strength = 0.45ratio; radius = 0.8u; }' : ''}
+        pattern gradient { to = dark; axis = y; space = model; soft = 0.2; }
+        ${id === 'torso' ? 'pattern ao { strength = 0.45; radius = 0.8u; }' : ''}
       }`;
     }
     if (id === 'torso' || id === 'tail_a' || id === 'tail_b') {
       return `chart ${id} box {
         fill = coat; grain = clustered;
-        pattern gradient { from = dark; to = coat; axis = y; space = model; soft = 0.15ratio; }
-        ${id === 'torso' ? 'pattern ao { strength = 0.35ratio; radius = 0.6u; }' : ''}
+        pattern gradient { from = dark; to = coat; axis = y; space = model; soft = 0.15; }
+        ${id === 'torso' ? 'pattern ao { strength = 0.35; radius = 0.6u; }' : ''}
       }`;
     }
     if (id === 'u_leg_f' || id === 'u_leg_b') {
       return `chart ${id} box {
         fill = coat; grain = soft;
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }`;
     }
     return `chart ${id} box {
@@ -208,8 +204,8 @@ const creatureSource = (level: 2 | 3 | 4): string => {
       pattern border { paint = dark; width = 1px; edges = bottom; }
     }`;
   };
-  return `ashfox-model 1
-asset main {
+  return `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
@@ -224,25 +220,25 @@ asset main {
     ${lv4 ? 'joint leg_br { parent = body; role = leg; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }' : ''}
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind body { parent-origin = (0u, 6u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind head { parent-origin = (0u, 5u, -5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind jaw { parent-origin = (0u, -1u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind leg_fl { parent-origin = (-3u, -1u, -4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind leg_fr { parent-origin = (3u, -1u, -4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    ${highCraft ? 'bind tail { parent-origin = (0u, 2u, 6u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
-    ${lv4 ? 'bind leg_bl { parent-origin = (-3u, -1u, 4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
-    ${lv4 ? 'bind leg_br { parent-origin = (3u, -1u, 4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind body { parent_origin = (0u, 6u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind head { parent_origin = (0u, 5u, -5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind jaw { parent_origin = (0u, -1u, -2u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind leg_fl { parent_origin = (-3u, -1u, -4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind leg_fr { parent_origin = (3u, -1u, -4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    ${highCraft ? 'bind tail { parent_origin = (0u, 2u, 6u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
+    ${lv4 ? 'bind leg_bl { parent_origin = (-3u, -1u, 4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
+    ${lv4 ? 'bind leg_br { parent_origin = (3u, -1u, 4u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }' : ''}
   }
   motion idle for R {
-    duration = 2s; fps = 20; loop = loop; rest-relative = true;
+    duration = 2s; fps = 20; loop = loop; rest_relative = true;
     track head.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1s = (4deg, 6deg, 0deg) linear; key 2s = (0deg, 0deg, 0deg) linear; }
     ${highCraft ? 'track body.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1s = (3deg, 0deg, 0deg) linear; key 2s = (0deg, 0deg, 0deg) linear; }' : ''}
     ${lv4 ? 'track jaw.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1s = (5deg, 0deg, 0deg) linear; key 2s = (0deg, 0deg, 0deg) linear; }' : ''}
     ${lv4 ? 'track leg_fl.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 1s = (-4deg, 0deg, 0deg) linear; key 2s = (0deg, 0deg, 0deg) linear; }' : ''}
     ${highCraft ? 'track tail.rotation { key 0s = (0deg, -8deg, 0deg) linear; key 1s = (4deg, 8deg, 0deg) linear; key 2s = (0deg, -8deg, 0deg) linear; }' : ''}
   }
-  ${lv4 ? 'motion alert for R { duration = 1s; fps = 20; loop = loop; rest-relative = true; track head.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 0.5s = (-10deg, 12deg, 0deg) linear; key 1s = (0deg, 0deg, 0deg) linear; } }' : ''}
+  ${lv4 ? 'motion alert for R { duration = 1s; fps = 20; loop = loop; rest_relative = true; track head.rotation { key 0s = (0deg, 0deg, 0deg) linear; key 0.5s = (-10deg, 12deg, 0deg) linear; key 1s = (0deg, 0deg, 0deg) linear; } }' : ''}
   surface contract Skin {
     ${chartContractDecls}
     material = ${lv4 ? 'double' : 'opaque'};
@@ -251,7 +247,7 @@ asset main {
     material = ${lv4 ? 'double' : 'opaque'};
     texture atlas {
       ${highCraft ? 'density = 2;' : ''}
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #2c2420;
         coat = (#5a2e18, #94512b, #cf7a44);
@@ -261,7 +257,7 @@ asset main {
       }
       ${highCraft ? 'stamp eye_dot { pixels = "eee/eee/eee"; e = eye; }' : ''}
       ${allBoxIds.map(boxChartRule).join('\n      ')}
-      ${lv4 ? 'chart fin flat { fill = coat; coverage = 00110111111111111111111011000000; grain = soft; pattern gradient { to = belly; axis = y; space = model; soft = 0.2ratio; } }' : ''}
+      ${lv4 ? 'chart fin flat { fill = coat; coverage = 00110111111111111111111011000000; grain = soft; pattern gradient { to = belly; axis = y; space = model; soft = 0.2; } }' : ''}
       grain clustered { seed = 42; }
       tone ${highCraft ? 'painterly' : 'voxel'};
     }
@@ -279,49 +275,46 @@ asset main {
         cube torso_core { origin = (-4u, 5u, -5u); size = (8u, 7u, 11u); surface = skin.torso; }
         cube chest { origin = ${lv4 ? '(-3.5u, 4u, -8.5u); size = (7u, 6u, 4u)' : '(-3.5u, 4u, -6.5u); size = (7u, 6u, 5u)'}; ${lv4 ? 'pivot = (0u, 7u, -6.5u); rotation = (12deg, 0deg, 0deg);' : ''} surface = skin.chest; }
         cube ruff { origin = ${lv4 ? '(-4.5u, 11.5u, -5.5u)' : '(-4.5u, 9u, -5.5u)'}; size = (9u, 3u, 4u); ${lv4 ? 'pivot = (0u, 12.5u, -4u); rotation = (-10deg, 0deg, 0deg);' : ''} surface = skin.ruff; }
-        ${lv4 ? 'cube ridge_l { origin = (-2u, 11.5u, -2u); size = (2u, 2u, 6u); pivot = (-1u, 11.5u, 1u); rotation = (0deg, 0deg, -18deg); mirror-x = ridge_r; surface = skin.ridge; }' : ''}
-        ${lv4 ? 'plane crest_l { origin = (-4u, 11u, -2u); size = (2u, 4u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); mirror-x = crest_r; surface = skin.fin; }' : ''}
+        ${lv4 ? 'cube ridge_l { origin = (-2u, 11.5u, -2u); size = (2u, 2u, 6u); pivot = (-1u, 11.5u, 1u); rotation = (0deg, 0deg, -18deg); mirror_x = ridge_r; surface = skin.ridge; }' : ''}
+        ${lv4 ? 'plane crest_l { origin = (-4u, 11u, -2u); size = (2u, 4u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); mirror_x = crest_r; surface = skin.fin; }' : ''}
         bone head {
           cube skull { origin = (-4u, 9u, -12u); size = (8u, 7u, 7u); ${highCraft ? 'pivot = (0u, 12u, -9u); rotation = (5deg, 0deg, 0deg);' : ''} surface = skin.head; }
           cube muzzle { origin = (-2.5u, 9.5u, -15u); size = (5u, 3u, 4u); surface = skin.muzzle; }
           cube nose { origin = (-1u, 11.5u, ${lv4 ? '-16u); size = (2u, 2u, 2u)' : '-15.5u); size = (2u, 1u, 1u)'}; surface = skin.nose; }
-          cube ear_l { origin = (-4u, 15u, -10u); size = (2u, 4u, 2u); ${highCraft ? 'pivot = (-3u, 15u, -9u); rotation = (0deg, 0deg, -16deg); mirror-x = ear_r;' : ''} surface = skin.ear; }
+          cube ear_l { origin = (-4u, 15u, -10u); size = (2u, 4u, 2u); ${highCraft ? 'pivot = (-3u, 15u, -9u); rotation = (0deg, 0deg, -16deg); mirror_x = ear_r;' : ''} surface = skin.ear; }
           ${!highCraft ? 'cube ear_r { origin = (2u, 15u, -10u); size = (2u, 4u, 2u); surface = skin.ear; }' : ''}
           bone jaw {
             cube lower_jaw { origin = (-2u, 8u, -14.5u); size = (4u, 2u, 4u); ${lv4 ? 'pivot = (0u, 9.5u, -11u); rotation = (8deg, 0deg, 0deg);' : ''} surface = skin.jaw; }
           }
         }
         bone leg_fl {
-          cube upper_fl { origin = ${lv4 ? '(-4u, 2.5u, -5u); size = (3u, 3u, 3u)' : '(-4u, 3u, -5u); size = (3u, 5u, 3u)'}; ${highCraft ? 'mirror-x = upper_fr;' : ''} surface = skin.u_leg_f; }
+          cube upper_fl { origin = ${lv4 ? '(-4u, 2.5u, -5u); size = (3u, 3u, 3u)' : '(-4u, 3u, -5u); size = (3u, 5u, 3u)'}; ${highCraft ? 'mirror_x = upper_fr;' : ''} surface = skin.u_leg_f; }
           cube paw_fl { origin = (-4u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; }
           ${!highCraft ? 'cube upper_fr { origin = (1u, 3u, -5u); size = (3u, 5u, 3u); surface = skin.u_leg_f; } cube paw_fr { origin = (1u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; }' : ''}
         }
         ${highCraft ? 'bone leg_fr { cube paw_fr { origin = (1u, 0u, -6u); size = (3u, 3u, 4u); surface = skin.paw_f; } }' : ''}
-        ${lv4 ? 'bone leg_bl { cube upper_bl { origin = (-4u, 2.5u, 3u); size = (3u, 3u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : highCraft ? 'cube upper_bl { origin = (-4u, 3u, 3u); size = (3u, 5u, 3u); mirror-x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; }' : ''}
+        ${lv4 ? 'bone leg_bl { cube upper_bl { origin = (-4u, 2.5u, 3u); size = (3u, 3u, 3u); mirror_x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : highCraft ? 'cube upper_bl { origin = (-4u, 3u, 3u); size = (3u, 5u, 3u); mirror_x = upper_br; surface = skin.u_leg_b; } cube paw_bl { origin = (-4u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; }' : ''}
         ${lv4 ? 'bone leg_br { cube paw_br { origin = (1u, 0u, 2u); size = (3u, 3u, 4u); surface = skin.paw_b; } }' : ''}
         ${highCraft ? `bone tail { cube tail_a { origin = (-2u, 6u, 5u); size = (4u, 4u, 6u); pivot = (0u, 8u, 5u); rotation = (18deg, 0deg, 0deg); surface = skin.tail_a; } cube tail_b { origin = (-1.5u, 7u, 10u); size = (3u, 3u, 5u); ${lv4 ? 'pivot = (0u, 8.5u, 10u); rotation = (24deg, 0deg, 0deg);' : ''} surface = skin.tail_b; } }` : ''}
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; profile = creature; }
+  settings { density = 16; forward = north; profile = creature; }
     skeleton = S;
-    motion = idle;
-    ${lv4 ? 'motion = alert;' : ''}
-    use Body as b { bind skeleton = R; bind skin = craft; };
-  }
+    motions = [${lv4 ? 'idle, alert' : 'idle'}];
+    use Body as b { skeleton = R; skin = craft; }
 }`;
 };
 
-const propSource = (profileLine = 'profile = prop;'): string => `ashfox-model 1
-asset main {
+const propSource = (profileLine = 'profile = prop;'): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     chart base box { coverage = opaque; }
@@ -333,11 +326,11 @@ asset main {
     material = opaque;
     texture atlas {
       density = 2;
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette { bg = #2c2e36; iron = (#323745, #525b70, #7e8aa6); glow = (#a85410, #e69222, #ffdf70); }
-      chart base box { fill = iron; grain = clustered; pattern ao { strength = 0.4ratio; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = top; } }
-      chart metal box { fill = glow; grain = soft; pattern gradient { from = glow; to = iron; axis = y; space = model; soft = 0.15ratio; } }
-      chart cap box { fill = iron; grain = none; pattern ao { strength = 0.4ratio; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = bottom; } }
+      chart base box { fill = iron; grain = clustered; pattern ao { strength = 0.4; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = top; } }
+      chart metal box { fill = glow; grain = soft; pattern gradient { from = glow; to = iron; axis = y; space = model; soft = 0.15; } }
+      chart cap box { fill = iron; grain = none; pattern ao { strength = 0.4; radius = 0.7u; } pattern border { paint = glow; width = 1px; edges = bottom; } }
       tone painterly;
     }
   }
@@ -353,11 +346,9 @@ asset main {
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; ${profileLine} }
+  settings { density = 16; forward = north; ${profileLine} }
     skeleton = S;
-    use Lantern as l { bind skeleton = R; bind skin = lantern; };
-  }
+    use Lantern as l { skeleton = R; skin = lantern; }
 }`;
 
 const lv0 = compileAndAudit(lv0Source());
@@ -433,7 +424,7 @@ const compileFile = (rel: string) => {
     }));
   const entry = path.basename(rel);
   const entrySource = files.find((f) => f.path === `assets/models/${entry}`)!.source;
-  const entryName = entrySource.match(/\basset\s+(\w+)/)?.[1] ?? 'main';
+  const entryName = entrySource.match(/\bmodel\s+(\w+)/)?.[1] ?? 'main';
   const cfg = JSON.stringify({
     format: 'ashfox-workspace',
     version: 2,

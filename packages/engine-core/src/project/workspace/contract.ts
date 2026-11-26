@@ -10,7 +10,7 @@ export const ASHFOX_WORKSPACE_FORMAT = 'ashfox-workspace' as const;
 export const ASHFOX_PACKAGE_FORMAT = 'ashfox-package' as const;
 export const ASHFOX_LOCK_FORMAT = 'ashfox-lock' as const;
 export const ASHFOX_WORKSPACE_VERSION = 1 as const;
-export const ASHFOX_MODEL_GRAMMAR = 'ashfox-model 1' as const;
+export const ASHFOX_MODEL_GRAMMAR = 'ashfox 1' as const;
 /**
  * Exact build-policy identity. The source grammar deliberately remains v1,
  * while compiler semantics may still hard-cut. A lock produced for a prior

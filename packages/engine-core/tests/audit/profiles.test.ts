@@ -58,7 +58,7 @@ const evaluateRepoAsset = (entryRelPath: string, workspaceDir?: string): AuditRe
     ? loadWorkspaceFiles(absDir)
     : [{ path: entry, source: fs.readFileSync(absEntry, 'utf8') }];
   const pkgFiles = rawFiles.map((f) => ({ path: `assets/models/${f.path}`, source: f.source }));
-  const entryMatch = rawFiles.find((f) => f.path === entry)?.source.match(/export asset (\S+)/u);
+  const entryMatch = rawFiles.find((f) => f.path === entry)?.source.match(/\bmodel\s+(\S+)/u);
   const assetName = entryMatch?.[1] ?? path.basename(entry, '.ashfox');
   const compiled = compileDirectoryWorkspace(
     makeWorkspaceConfig(assetName, entry, rawFiles),
@@ -75,7 +75,7 @@ const evaluateRepoAsset = (entryRelPath: string, workspaceDir?: string): AuditRe
 };
 
 const evaluateInline = (source: string): AuditReport => {
-  const entryMatch = source.match(/export asset (\S+)/u);
+  const entryMatch = source.match(/\bmodel\s+(\S+)/u);
   const name = entryMatch?.[1] ?? 'inline';
   const compiled = compileDirectoryWorkspace(
     makeWorkspaceConfig(name, 'main.ashfox', [{ path: 'main.ashfox' }]),
@@ -105,17 +105,15 @@ const minRig = `  rig contract R {
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
   skeleton Skel implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }`;
 
-const blockSingleSource = (densePattern: boolean): string => `ashfox-model 1
-asset test_block {
+const blockSingleSource = (densePattern: boolean): string => `ashfox 1
+model test_block {
 ${minRig}
-  export asset test_block {
-    settings { density = 16; forward = north; profile = block; }
+  settings { density = 16; forward = north; profile = block; }
     skeleton = Skel;
-    use Body as body { bind skel = R; bind skin = Stone; };
-  }
+    use Body as body { skel = R; skin = Stone; }
   surface contract Surface { chart block box { coverage = opaque; } material = opaque; }
   surface Stone: Surface {
     material = opaque;
@@ -123,7 +121,7 @@ ${minRig}
       atlas = (64px, 64px);
       density = 1;
       background = base;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         base = (#51565e, #7c828a, #aeb5bf);
         trim = (#3f444c, #5f6670, #c2c8d1);
@@ -134,8 +132,8 @@ ${minRig}
         fill = base;
         grain = clustered;
         pattern border { paint = trim; width = 1px; edges = all; }
-        ${densePattern ? 'pattern stripe { paint = trim; axis = y; period = 2px; width = 1px; phase = 0; }\n        pattern gradient { from = trim; to = moss; axis = y; space = local; soft = 0.25ratio; }' : ''}
-        pattern ao { strength = 0.25ratio; radius = 0.5u; }
+        ${densePattern ? 'pattern stripe { paint = trim; axis = y; period = 2px; width = 1px; phase = 0; }\n        pattern gradient { from = trim; to = moss; axis = y; space = local; soft = 0.25; }' : ''}
+        pattern ao { strength = 0.25; radius = 0.5u; }
         face north { stamp crest { at = (5px, 6px); protect = true; } }
       }
       grain clustered { seed = 101; }
@@ -154,14 +152,12 @@ ${minRig}
   }
 }`;
 
-const asymmetricPropSource = `ashfox-model 1
-asset desk_lamp {
+const asymmetricPropSource = `ashfox 1
+model desk_lamp {
 ${minRig}
-  export asset desk_lamp {
-    settings { density = 16; forward = north; profile = prop; }
+  settings { density = 16; forward = north; profile = prop; }
     skeleton = Skel;
-    use Lamp as lamp { bind skel = R; bind skin = Brass; };
-  }
+    use Lamp as lamp { skel = R; skin = Brass; }
   surface contract Surface {
     chart base box { coverage = opaque; }
     chart arm box { coverage = opaque; }
@@ -175,7 +171,7 @@ ${minRig}
       atlas = (128px, 128px);
       density = 2;
       background = brass;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         brass = (#6b4a17, #a87528, #ebc063);
         glow = (#cc7a19, #ffa833, #ffeb99);
@@ -184,25 +180,25 @@ ${minRig}
         fill = brass;
         grain = none;
         pattern border { paint = glow; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart arm box {
         fill = brass;
         grain = none;
         pattern border { paint = glow; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart top_arm box {
         fill = brass;
         grain = none;
         pattern border { paint = glow; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart shade box {
         fill = brass;
         grain = none;
         pattern border { paint = glow; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       tone painterly;
     }

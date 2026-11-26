@@ -2,7 +2,7 @@
 
 Ashfox source describes an asset's geometry, surfaces, rig, and motions. A
 model source compiles directly through the [CLI](../guides/cli.md). Start every source
-file with the exact header `ashfox-model 1`, then write one source unit.
+file with the exact header `ashfox 1`, then write one source unit.
 
 The examples in this page are deliberately labeled. A **snippet** is a
 fragment to place in a larger source file. A **complete source** includes its
@@ -11,33 +11,32 @@ source file.
 
 For the full specification, see [values and expressions](values.md),
 [components and sockets](components.md), and [model textures](textures.md).
-Other asset kinds have separate [sprite](sprites.md) and [sound](sounds.md) grammars.
+Other asset kinds share `ashfox 1` with [sprite](sprites.md), [sound](sounds.md), and [structure](structures.md) declarations.
 
 ## 1. Source units
 
-This page covers model units: reusable `module` and entry-oriented `asset`.
+This page covers model units: reusable `module` and entry-oriented `model`.
 For other asset kinds, see [sprites](../guides/sprites.md) and [sounds](../guides/sounds.md).
 Declarations inside a unit can be exported so another unit can refer to them.
 
 **Snippet — two source unit shapes:**
 
 ```text
-ashfox-model 1
+ashfox 1
 module creatures {
   // reusable declarations go here
 }
 ```
 ```text
-ashfox-model 1
-asset fox {
-  // declarations and the exported asset assembly go here
+ashfox 1
+model fox {
+  // declarations and the exported model assembly go here
 }
 ```
 
 Use braces for blocks and end property assignments with `;`. A component
 `use` also ends with `;` after its closing brace. Keep one
-unit per source file. The source header is versioned; do not replace it with a
-different model or language name.
+unit per source file. Start every file with `ashfox 1`.
 
 ### Imports and names
 
@@ -50,10 +49,8 @@ name.
 ```text
 import "./animation.ashfox" as animation;
 
-export asset griffin {
-  skeleton = animation.GriffinSkeleton;
-  motion = animation.idle;
-}
+skeleton = animation.GriffinSkeleton;
+motions = [animation.idle];
 ```
 
 The path, alias, declaration name, and every required binding are explicit.
@@ -71,13 +68,13 @@ Assignments use `name = expression;`. Common literal units are:
 | `16px` or `16tx` | texture pixels |
 | `12deg` | rotation degrees |
 | `1.5s` | motion time in seconds |
-| `1ratio` | scale ratio |
+| `0.5` or `50%` | scale or strength ratio |
 | `16` | an integer, such as density or fps |
 | `true`, `false` | a boolean |
 | `#d16b3a` | a color |
 
 Vectors use parentheses, for example `(0u, 4u, 0u)`,
-`(0deg, 10deg, 0deg)`, or `(1ratio, 1ratio, 1ratio)`. Expressions can use
+`(0deg, 10deg, 0deg)`, or `(1, 1, 1)`. Expressions can use
 named values, arithmetic, comparisons, and vector members such as `.x`, `.y`,
 and `.z`. Keep the unit that the surrounding declaration expects; `4u` and
 `4px` are different values.
@@ -91,8 +88,7 @@ The supported declaration families are:
 - `surface contract` and `surface` for chart layouts, materials, and pixels.
 - `component` for reusable geometry with typed ports.
 - `motion` for named rig-joint tracks.
-- `asset` for the selected skeleton, motions, component instances, and
-  optional socket connections.
+- `settings`, `skeleton`, `motions`, `use`, and `connect` statements directly inside `model` for the selected skeleton, motions, component instances, and optional socket connections.
 
 ## 3. Geometry and surfaces
 
@@ -126,19 +122,19 @@ Geometry nodes may be nested as follows:
 | Node | Required properties | Useful optional properties |
 | --- | --- | --- |
 | `bone` | none | `position`, `rotation`, `pivot`, `visible` |
-| `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror-x` |
-| `plane` | `origin`, `size`, `u-axis`, `v-axis`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror-x` |
+| `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror_x` |
+| `plane` | `origin`, `size`, `u_axis`, `v_axis`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
 | `locator` | none | `position`, `rotation`, `visible` |
 | `face` inside a cube | none | `enabled`, `rotation` |
 
 Bones can contain bones, cubes, planes, and locators. Cubes can contain face
 blocks named `north`, `south`, `east`, `west`, `up`, or `down`. A face rotation
-is one of `0`, `90`, `180`, or `270`. Giving a `cube` or `plane` `mirror-x = <id>;`
+is one of `0`, `90`, `180`, or `270`. Giving a `cube` or `plane` `mirror_x = <id>;`
 synthesizes a sibling mirrored across `x = 0` with flipped `rotation.y`/`rotation.z`,
 mirrored UV orientation, and swapped `east`/`west` face overrides.
 
 `cube` sizes and `plane` sizes must be positive. A plane's `size` is a two
-component unit vector and its `u-axis` and `v-axis` are distinct signed unit
+component unit vector and its `u_axis` and `v_axis` are distinct signed unit
 axes. A bound geometry bone already receives its placement from the rig
 binding, so do not add a competing `position`, `rotation`, or `pivot` to that
 bone.
@@ -168,7 +164,7 @@ export surface warm_fur: Fur {
   texture atlas {
     atlas = (16px, 8px);
     background = shade;
-    background-alpha = 255;
+    background_alpha = 255;
     palette {
       shade = #4a170f;
       coat = (#4a170f, #a83a1f, #e06b32);
@@ -200,50 +196,38 @@ that contract by giving every joint a concrete rest origin and frame.
 
 ```text
 export rig contract CreatureRig {
-  handedness = right;
-  frame {
-    x = (1, 0, 0);
-    y = (0, 1, 0);
-    z = (0, 0, 1);
-  }
   joint root {
     parent = none;
     role = root;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     channels = (rotation, scale);
-    mirror = none;
   }
   joint head {
     parent = root;
     role = head;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     channels = rotation;
-    mirror = none;
   }
 }
 
 export skeleton CreatureSkeleton implements CreatureRig {
   bind root {
-    parent-origin = (0u, 0u, 0u);
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    parent_origin = (0u, 0u, 0u);
   }
   bind head {
-    parent-origin = (0u, 4u, 0u);
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    parent_origin = (0u, 4u, 0u);
   }
 }
 ```
 
 Each joint declares `channels = rotation`, `channels = scale`, or both as a
 tuple. A motion can only use channels allowed by its joint. `parent` and
-`mirror` name joints; use `none` when a joint has no parent or mirror. Frames
-use signed orthogonal axes, and each skeleton bind supplies its rest `parent-origin`
-and frame explicitly.
+`mirror` name joints (omit `mirror` or set `mirror = none;` when absent; identity `handedness = right` and `frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }` may be omitted). Frames
+use signed orthogonal axes, and each skeleton bind supplies its rest `parent_origin`
+and any non-identity frame explicitly.
 
-A skeleton bind uses **`parent-origin`**, measured in the parent joint's frame.
+A skeleton bind uses **`parent_origin`**, measured in the parent joint's frame.
 A root uses the model frame. If an unrotated torso is at `y = 13u` and its
 shoulder should be at model `y = 19.5u`, bind the shoulder with
-`parent-origin = (6.5u, 6.5u, 0u)` for a shoulder at model `x = 6.5u`.
+`parent_origin = (6.5u, 6.5u, 0u)` for a shoulder at model `x = 6.5u`.
 The parent frame rotates or reflects this offset before placing the child.
 The ambiguous skeleton property `origin` is rejected; it has no alias.
 Geometry `origin` and socket-frame `origin` keep their own documented spaces.
@@ -253,14 +237,13 @@ Geometry `origin` and socket-frame `origin` keep their own documented spaces.
 A motion names the rig contract it animates. Tracks address one joint and one
 supported channel: `rotation` or `scale`.
 
-**Snippet — a rest-relative rotation motion:**
+**Snippet — a rest-space relative rotation motion:**
 
 ```text
 export motion idle for CreatureRig {
   duration = 1s;
   fps = 20;
   loop = loop;
-  rest-relative = true;
   track head.rotation {
     key 0s = (0deg, 0deg, 0deg) linear;
     key 0.5s = (0deg, 4deg, 0deg) linear;
@@ -269,12 +252,12 @@ export motion idle for CreatureRig {
 }
 ```
 
-Motion properties are required:
+Motion properties:
 
 - `duration` is a positive number of seconds.
 - `fps` is an integer from `1` through `240`.
 - `loop` is `once`, `loop`, or `hold_on_last_frame`.
-- `rest-relative` must be `true`.
+- `rest_relative` defaults to `true`.
 
 Key times must be within the duration and strictly increasing. Every key ends
 with one interpolation name: `linear`, `step`, or `catmullrom`. The name on a
@@ -283,28 +266,27 @@ values, `step` holds the starting value, and `catmullrom` makes a smooth curve
 using neighboring keys.
 
 Rotation keys use `vec3<degree>` values. Scale keys use positive
-`vec3<ratio>` values such as `(1ratio, 1ratio, 1ratio)`, and their rig joint
+`vec3<ratio>` values such as `(1, 1, 1)`, and their rig joint
 must allow the `scale` channel. A motion key cannot target `position` or `ik`;
-this language currently supports rest-relative rotation and scale only.
+this language currently supports rest-space relative rotation and scale only.
 
 ## 6. Assembly
 
-An asset assembly selects one concrete skeleton, zero or more distinct motions,
-and one or more component instances. It also sets the fixed density and
-forward direction used by the asset.
+A `model` unit selects one concrete skeleton, zero or more distinct motions (`motions = [...]`),
+and one or more component instances directly in its body. It also sets the fixed density and
+forward direction used by the model.
 
 **Snippet — selecting a skeleton, motions, and component:**
 
 ```text
-export asset fox {
+model fox {
   settings { density = 16; forward = north; profile = creature; }
   skeleton = CreatureSkeleton;
-  motion = idle;
-  motion = walk;
+  motions = [idle, walk];
   use CreatureBody as body {
-    bind skeleton = CreatureRig;
-    bind skin = warm_fur;
-  };
+    skeleton = CreatureRig;
+    skin = warm_fur;
+  }
 }
 ```
 
@@ -312,9 +294,9 @@ export asset fox {
 `west`. The optional `profile` (`creature`, `prop`, or `block`) declares the
 asset quality audit rubric weighting used by `ashfox check`.
 A `use` creates a named component instance and binds every required
-port. The assembly's `skeleton` property names the concrete implementation.
-The `use` block's rig-port binding names the matching rig contract. An asset may select
-multiple different motions, but each selected motion must use the same rig as
+port. The `skeleton` property names the concrete implementation.
+The `use` block's rig-port binding names the matching rig contract. A model may select
+multiple different motions in `motions = [...]`, but each selected motion must use the same rig as
 the skeleton and may appear only once.
 
 For socket-anchored parts, declare explicit socket contracts and connect
@@ -349,23 +331,18 @@ dimensions, or pixel anchors.
 **Complete source — `sample.ashfox`:**
 
 ```ashfox
-ashfox-model 1
-asset sample {
+ashfox 1
+model sample {
   export rig contract SampleRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root {
       parent = none;
       role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
   }
   export skeleton SampleSkeleton implements SampleRig {
     bind root {
-      parent-origin = (0u, 0u, 0u);
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      parent_origin = (0u, 0u, 0u);
     }
   }
   export surface contract Skin {
@@ -380,7 +357,7 @@ asset sample {
     texture atlas {
       atlas = (32px, 32px);
       background = bg;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         bg = #2e201b;
         shade = (#301f19, #4d3228, #70493a);
@@ -393,18 +370,18 @@ asset sample {
       chart base box {
         origin = (0px, 0px); fill = stone; grain = clustered;
         pattern border { paint = shade; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.4ratio; radius = 0.7u; }
+        pattern ao { strength = 0.4; radius = 0.7u; }
       }
       chart body box {
         origin = (16px, 0px); fill = body; grain = soft;
-        pattern gradient { from = shade; to = body; axis = y; space = model; soft = 0.15ratio; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern gradient { from = shade; to = body; axis = y; space = model; soft = 0.15; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
         face north { stamp crest { at = (0px, 0px); protect = true; } }
       }
       chart cap box {
         origin = (0px, 16px); fill = gold; grain = none;
         pattern border { paint = eye; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       grain clustered { seed = 23; }
       tone painterly;
@@ -435,22 +412,19 @@ asset sample {
     duration = 1s;
     fps = 20;
     loop = loop;
-    rest-relative = true;
     track root.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 0.5s = (0deg, 4deg, 0deg) linear;
       key 1s = (0deg, 0deg, 0deg) linear;
     }
   }
-  export asset sample {
-    settings { density = 16; forward = north; profile = block; }
-    skeleton = SampleSkeleton;
-    motion = idle;
-    use Body as body {
-      set dimensions = (4u, 4u, 4u);
-      bind skeleton = SampleRig;
-      bind skin = red;
-    };
+  settings { density = 16; forward = north; profile = block; }
+  skeleton = SampleSkeleton;
+  motions = [idle];
+  use Body as body {
+    dimensions = (4u, 4u, 4u);
+    skeleton = SampleRig;
+    skin = red;
   }
 }
 ```

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module furnishings {
   palette {
     bed_h = "minecraft:red_bed[facing=north,part=head]";
@@ -28,73 +28,64 @@ module furnishings {
   }
 
   export prefab CozyBedroom {
-    layer y = 0 origin = (0, 0) {
-      "CB."
-      "PF."
-      "cc."
-    } map {
-      C = chest_n;
-      B = bed_h;
-      F = bed_f;
-      P = plank;
-      c = carpet_r;
-    };
-    set at = (0, 1, 1) block = pot;
+    layer {
+      y = 0b;
+      origin = (0b, 0b);
+      rows = ["ab.", "ed.", "cc."];
+      map { a = chest_n; b = bed_h; d = bed_f; e = plank; c = carpet_r; }
+    }
+    set { at = (0b, 1b, 1b); block = pot; }
   }
 
   export prefab KitchenHearth {
-    box from = (0, 0, 0) to = (2, 1, 0) block = brick;
-    set at = (1, 0, 0) block = furnace;
-    set at = (0, 0, 1) block = barrel;
-    set at = (2, 0, 1) block = craft;
-    set at = (1, 2, 0) block = lantern;
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = brick; }
+    set { at = (1b, 0b, 0b); block = furnace; }
+    set { at = (0b, 0b, 1b); block = barrel; }
+    set { at = (2b, 0b, 1b); block = craft; }
+    set { at = (1b, 2b, 0b); block = lantern; }
   }
 
   export prefab StudyCorner {
-    box from = (0, 0, 0) to = (2, 1, 0) block = book;
-    set at = (0, 0, 1) block = craft;
-    set at = (2, 0, 1) block = barrel;
-    set at = (0, 1, 1) block = torch;
-    set at = (1, 0, 1) block = carpet_b;
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = book; }
+    set { at = (0b, 0b, 1b); block = craft; }
+    set { at = (2b, 0b, 1b); block = barrel; }
+    set { at = (0b, 1b, 1b); block = torch; }
+    set { at = (1b, 0b, 1b); block = carpet_b; }
   }
 
   export prefab GuardBunk {
-    layer y = 0 origin = (0, 0) {
-      "FHC"
-      "c.B"
-    } map {
-      F = bunk_f;
-      H = bunk_h;
-      C = chest_s;
-      B = barrel;
-      c = carpet_b;
-    };
-    set at = (2, 1, 0) block = lantern;
+    layer {
+      y = 0b;
+      origin = (0b, 0b);
+      rows = ["abd", "c.e"];
+      map { a = bunk_f; b = bunk_h; d = chest_s; e = barrel; c = carpet_b; }
+    }
+    set { at = (2b, 1b, 0b); block = lantern; }
   }
 
   export prefab ForgeArea {
-    box from = (0, 0, 0) to = (2, 1, 0) block = deepslate;
-    set at = (1, 0, 0) block = blast;
-    set at = (0, 0, 1) block = cauldron;
-    set at = (1, 0, 2) block = anvil;
-    set at = (2, 0, 1) block = barrel;
-    set at = (2, 1, 1) block = lantern;
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = deepslate; }
+    set { at = (1b, 0b, 0b); block = blast; }
+    set { at = (0b, 0b, 1b); block = cauldron; }
+    set { at = (1b, 0b, 2b); block = anvil; }
+    set { at = (2b, 0b, 1b); block = barrel; }
+    set { at = (2b, 1b, 1b); block = lantern; }
   }
 
   export prefab TavernBar {
-    box from = (0, 0, 0) to = (3, 0, 0) block = barrel;
-    box from = (0, 0, 1) to = (3, 0, 1) block = plank;
-    box from = (0, 1, 0) to = (3, 1, 0) block = book;
-    set at = (0, 1, 1) block = lantern;
-    set at = (3, 1, 1) block = pot;
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 0b); block = barrel; }
+    box { from = (0b, 0b, 1b); to = (3b, 0b, 1b); block = plank; }
+    box { from = (0b, 1b, 0b); to = (3b, 1b, 0b); block = book; }
+    set { at = (0b, 1b, 1b); block = lantern; }
+    set { at = (3b, 1b, 1b); block = pot; }
   }
 
   export prefab DiningTable {
-    set at = (1, 0, 0) block = stair_s;
-    set at = (0, 0, 1) block = slab;
-    set at = (1, 0, 1) block = slab;
-    set at = (2, 0, 1) block = slab;
-    set at = (1, 0, 2) block = stair_n;
-    set at = (1, 1, 1) block = lantern;
+    set { at = (1b, 0b, 0b); block = stair_s; }
+    set { at = (0b, 0b, 1b); block = slab; }
+    set { at = (1b, 0b, 1b); block = slab; }
+    set { at = (2b, 0b, 1b); block = slab; }
+    set { at = (1b, 0b, 2b); block = stair_n; }
+    set { at = (1b, 1b, 1b); block = lantern; }
   }
 }

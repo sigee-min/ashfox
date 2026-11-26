@@ -21,18 +21,18 @@ const design = `export design Dimensions {
   zero: vec3<unit> = (0u, 0u, 0u);
   anchor: vec3<unit> = (2u, 0u, -2u);
   origin: vec3<unit> = mirror_x(Dimensions.anchor, 0u);
-  atlasOrigin: vec2<texel> = (Dimensions.width - Dimensions.width, 0px);
+  atlas_origin: vec2<texel> = (Dimensions.width - Dimensions.width, 0px);
   seed: integer = 23;
   check positive = Dimensions.edge > 0u;
 }`;
 const withDesign = (body: string) =>
-  VALID_ASSET_SOURCE.replace('asset wolf {', 'asset wolf {\n' + body);
+  VALID_ASSET_SOURCE.replace('model wolf {', 'model wolf {\n' + body);
 const source = withDesign(design)
   .replace('origin = (0u, 0u, 0u);', 'origin = Dimensions.zero;')
   .replaceAll('width = 16px;', 'width = Dimensions.width;')
   .replaceAll('height = 8px;', 'height = Dimensions.height;')
   .replace('atlas = (16px, 8px);', 'atlas = (Dimensions.width, Dimensions.height);')
-  .replace('origin = (0px, 0px);', 'origin = Dimensions.atlasOrigin;')
+  .replace('origin = (0px, 0px);', 'origin = Dimensions.atlas_origin;')
   .replace('origin = (-2u, 0u, -2u);', 'origin = Dimensions.origin;')
   .replace('size = (4u, 4u, 4u);', 'size = Dimensions.size;')
   .replace('seed = 23;', 'seed = Dimensions.seed;');
@@ -93,7 +93,7 @@ const parameter = compile(
   withDesign(design)
     .replace('export component Body {', 'export component Body { param width: unit;')
     .replace('size = (4u, 4u, 4u);', 'size = (width, 4u, 4u);')
-    .replace('use Body as body {', 'use Body as body { set width = Dimensions.edge;'),
+    .replace('use Body as body {', 'use Body as body { width = Dimensions.edge;'),
 );
 assert.ok(parameter.ok, parameter.ok ? '' : JSON.stringify(parameter.diagnostics));
 if (parameter.ok && baseline.ok)
@@ -104,12 +104,12 @@ const motion = compile(
   tilt: vec3<degree> = (5deg, 0deg, 0deg);
 }
 export motion idle for CreatureRig {
-  duration = Timing.duration; fps = 20; loop = loop; rest-relative = true;
+  duration = Timing.duration; fps = 20; loop = loop; rest_relative = true;
   track root.rotation {
     key 0s = (0deg, 0deg, 0deg) linear;
     key Timing.duration = Timing.tilt linear;
   }
-}`).replace('skeleton = Wolf;', 'skeleton = Wolf; motion = idle;'),
+}`).replace('skeleton = Wolf;', 'skeleton = Wolf; motions = [idle];'),
 );
 assert.ok(motion.ok, motion.ok ? '' : JSON.stringify(motion.diagnostics));
 
@@ -134,8 +134,8 @@ const imported = (moduleSource: string): AuthoredAssetWorkspace => {
       {
         path: 'wolf/main.ashfox',
         source: VALID_ASSET_SOURCE.replace(
-          'asset wolf {',
-          'asset wolf { import "./dims.ashfox" as dims;',
+          'model wolf {',
+          'model wolf { import "./dims.ashfox" as dims;',
         ).replace('size = (4u, 4u, 4u);', 'size = (dims.D.edge, dims.D.edge, dims.D.edge);'),
       },
       { path: 'wolf/dims.ashfox', source: moduleSource },
@@ -165,13 +165,13 @@ const imported = (moduleSource: string): AuthoredAssetWorkspace => {
   };
 };
 const shared = compileAssetWorkspaceEntry(
-  imported('ashfox-model 1 module dims { export design D { edge: unit = 4u; } }'),
+  imported('ashfox 1 module dims { export design D { edge: unit = 4u; } }'),
   selector,
 );
 assert.ok(shared.ok, shared.ok ? '' : JSON.stringify(shared.diagnostics));
 if (shared.ok && baseline.ok) assert.equal(shared.build.productHash, baseline.build.productHash);
 const privateDesign = compileAssetWorkspaceEntry(
-  imported('ashfox-model 1 module dims { design D { edge: unit = 4u; } }'),
+  imported('ashfox 1 module dims { design D { edge: unit = 4u; } }'),
   selector,
 );
 assert.equal(privateDesign.ok, false);
@@ -179,7 +179,7 @@ if (!privateDesign.ok)
   assert.ok(privateDesign.diagnostics.some((item) => item.code === 'asset.design-reference'));
 
 const badType = parseAssetSource(
-  'ashfox-model 1 module d { design D { width: float = 2; } }',
+  'ashfox 1 module d { design D { width: float = 2; } }',
   'd.ashfox',
 );
 assert.equal(badType.unit, null);

@@ -22,9 +22,9 @@
 | --- | --- |
 | `atlas = (16px, 8px);` | 선택적 텍스처 크기; 생략 시 결정적 자동 패킹 |
 | `density = 2;` | 선택적 아틀라스 PPU 배수(`1`, `2`, `4`; 기본 `1`, `creature`/`prop`은 `2` 권장) |
-| `render-mode = emissive;` | 선택적 표면 셰이딩(`default` 또는 발광 코어·눈·룬용 `emissive`) |
+| `render_mode = emissive;` | 선택적 표면 셰이딩(`default` 또는 발광 코어·눈·룬용 `emissive`) |
 | `background = shade;` | 차트 밖 팔레트 역할 |
-| `background-alpha = 255;` | 정수 alpha `[0,255]` |
+| `background_alpha = 255;` | 정수 alpha `[0,255]` |
 | `palette { shade = #2e2420; coat = ramp(#c94f2a, warm); }` | 단색, 3색 램프 `(#shadow, #base, #light)`, 또는 OKLCH 색조 이동 프리셋 `ramp(#hex, warm|cool|metal|gem|wood|stone|organic|cloth|emissive|vivid)` (어두운 색은 `luma >= 0.14` 권장) |
 | `chart body box { fill = coat; }` | 차트 레시피; `origin` 생략 시 자동 패킹, 선택 `grain = clustered\|soft\|fur\|wood\|cloth\|brushed\|none;` |
 | `grain clustered\|soft\|fur\|wood\|cloth\|brushed\|none { seed = 23; }` | 선택적 텍스처 기본 grain (`seed` 선택; 생략 시 `none`) |

@@ -280,7 +280,7 @@ const readOutlineLayer = (
   id: string,
   pointer: string,
 ): SpriteLayer => {
-  readRecord(ctx.file, layer, pointer, ['id', 'op', 'mode'], ['color', 'strength', 'innerRim']);
+  readRecord(ctx.file, layer, pointer, ['id', 'op', 'mode'], ['color', 'strength', 'inner_rim']);
   const mode = readChoice(ctx.file, layer.mode, `${pointer}/mode`, ['sel_out', 'dark', 'colored']);
   let color: string | undefined;
   if (mode === 'colored') {
@@ -300,10 +300,10 @@ const readOutlineLayer = (
       layer.strength === undefined
         ? 2
         : readInt(ctx.file, layer.strength, `${pointer}/strength`, 1, 3),
-    innerRim:
-      layer.innerRim === undefined
+    inner_rim:
+      layer.inner_rim === undefined
         ? false
-        : readBool(ctx.file, layer.innerRim, `${pointer}/innerRim`),
+        : readBool(ctx.file, layer.inner_rim, `${pointer}/inner_rim`),
   };
 };
 

@@ -34,9 +34,7 @@ if (reopened.ok) {
 const invalidWorkspace = {
   ...validAssetWorkspace(),
   files: validAssetWorkspace().files.map((file) =>
-    file.path === 'wolf/main.ashfox'
-      ? { ...file, source: 'ashfox-model 1\nasset wolf {' }
-      : { ...file },
+    file.path === 'wolf/main.ashfox' ? { ...file, source: 'ashfox 1\nmodel wolf {' } : { ...file },
   ),
 };
 const invalid = openAssetProject({

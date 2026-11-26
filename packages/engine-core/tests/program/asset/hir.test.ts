@@ -16,7 +16,7 @@ import { workspaceFixture } from '../../project/workspace/fixtures';
 const frame = 'frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }';
 const socketFrame = frame;
 
-const rig = `ashfox-model 1
+const rig = `ashfox 1
 module rig {
   export socket contract WingMount { handedness = right; ${socketFrame} }
   export rig contract DragonRig {
@@ -26,11 +26,11 @@ module rig {
     socket wing: WingMount { joint = chest; capacity = many; ${frame} }
   }
   export skeleton Adult implements DragonRig {
-    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
-    bind chest { parent-origin = (0u, 20u, 0u); ${frame} }
+    bind root { parent_origin = (0u, 0u, 0u); ${frame} }
+    bind chest { parent_origin = (0u, 20u, 0u); ${frame} }
   }
   export motion idle for DragonRig {
-    duration = 1s; fps = 24; loop = loop; rest-relative = true;
+    duration = 1s; fps = 24; loop = loop; rest_relative = true;
     track chest.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 1s = (10deg, 0deg, 0deg) step;
@@ -38,7 +38,7 @@ module rig {
   }
 }`;
 
-const surface = `ashfox-model 1
+const surface = `ashfox 1
 module surface {
   export surface contract Skin {
     atlas { width = 64px; height = 64px; }
@@ -51,7 +51,7 @@ module surface {
   }
 }`;
 
-const body = `ashfox-model 1
+const body = `ashfox 1
 module body {
   import "./rig.ashfox" as r; import "./surface.ashfox" as s;
   export component Body {
@@ -68,7 +68,7 @@ module body {
   }
 }`;
 
-const mount = `ashfox-model 1
+const mount = `ashfox 1
 module mount {
   import "./rig.ashfox" as r; import "./surface.ashfox" as s;
   export component Mount {
@@ -78,17 +78,15 @@ module mount {
   }
 }`;
 
-const root = `ashfox-model 1
-asset package {
+const root = `ashfox 1
+model package {
   import "./rig.ashfox" as r; import "./surface.ashfox" as s;
   import "./body.ashfox" as b; import "./mount.ashfox" as m;
-  export asset boss {
-    settings { density = 16; forward = north; }
-    skeleton = r.Adult; motion = r.idle;
-    use b.Body as body { set length = 4u; bind skeleton = r.DragonRig; bind skin = s.scales; };
-    use m.Mount as mount { bind skin = s.scales; };
+  settings { density = 16; forward = north; }
+    skeleton = r.Adult; motions = [r.idle];
+use b.Body as body { length = 4u; skeleton = r.DragonRig; skin = s.scales; }
+    use m.Mount as mount { skin = s.scales; }
     connect skeleton.wing -> mount.wing;
-  }
 }`;
 
 const modulePaths = [
@@ -104,7 +102,7 @@ const workspaceFor = (
 ): AuthoredAssetWorkspace => {
   const workspace = workspaceFixture(
     [
-      { path: 'dragon/main.ashfox', source: rootSource.replace('asset package {', 'asset boss {') },
+      { path: 'dragon/main.ashfox', source: rootSource.replace('model package {', 'model boss {') },
       { path: 'dragon/rig.ashfox', source: overrides.rig ?? rig },
       { path: 'dragon/surface.ashfox', source: overrides.surface ?? surface },
       { path: 'dragon/body.ashfox', source: overrides.body ?? body },
@@ -209,8 +207,8 @@ expectCode(
 );
 
 const conflictingBind = rig.replace(
-  `bind root { parent-origin = (0u, 0u, 0u); ${frame} }`,
-  'bind root { parent-origin = (0u, 0u, 0u); frame { origin = (1u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }',
+  `bind root { parent_origin = (0u, 0u, 0u); ${frame} }`,
+  'bind root { parent_origin = (0u, 0u, 0u); frame { origin = (1u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }',
 );
 expectCode(
   compileWorkspace(workspaceFor(root, { rig: conflictingBind })),
@@ -233,8 +231,8 @@ expectCode(compileWorkspace(workspaceFor(root, { rig: longMotion })), 'asset.mot
 const scaleMotion = rig
   .replace('channels = rotation;', 'channels = scale;')
   .replace('track chest.rotation', 'track chest.scale')
-  .replace('(0deg, 0deg, 0deg)', '(1ratio, 1ratio, 1ratio)')
-  .replace('(10deg, 0deg, 0deg)', '(0ratio, 1ratio, 1ratio)');
+  .replace('(0deg, 0deg, 0deg)', '(1, 1, 1)')
+  .replace('(10deg, 0deg, 0deg)', '(0, 1, 1)');
 expectCode(
   compileWorkspace(workspaceFor(root, { rig: scaleMotion })),
   'asset.invalid-motion-scale',
@@ -282,5 +280,8 @@ expectCode(
   'asset.duplicate-geometry-face',
 );
 
-const extraRootAsset = root.replace('  }\n}', '  }\n  asset private {}\n}');
-expectCode(compileWorkspace(workspaceFor(extraRootAsset)), 'asset.root-export');
+const extraRootAsset = root.replace(
+  'connect skeleton.wing -> mount.wing;\n}',
+  'connect skeleton.wing -> mount.wing;\n  asset private {}\n}',
+);
+parserCode(extraRootAsset, 'asset.invalid-scope');

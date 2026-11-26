@@ -137,6 +137,22 @@ const determinant = (x: AssetSignedAxis, y: AssetSignedAxis, z: AssetSignedAxis)
   return null;
 };
 
+const defaultTypedFrame = (
+  path: string,
+  explicitOrigin: ProgramExpr | null,
+  required: boolean,
+  ownerSpan: SourceSpan,
+  issue: HirIssue,
+): TypedFrame | null => {
+  if (required) {
+    issue(path, ownerSpan, 'asset.missing-frame', 'This declaration requires an explicit frame.');
+    return null;
+  }
+  if (explicitOrigin === null) return identityFrame();
+  const o = origin(explicitOrigin, path, issue);
+  return o === null ? null : freeze({ ...identityFrame(), origin: o });
+};
+
 export const buildTypedFrame = (
   path: string,
   declaration: AssetFrameDecl | null,
@@ -147,9 +163,7 @@ export const buildTypedFrame = (
   issue: HirIssue,
 ): TypedFrame | null => {
   if (declaration === null) {
-    if (required)
-      issue(path, ownerSpan, 'asset.missing-frame', 'This declaration requires an explicit frame.');
-    return required ? null : identityFrame();
+    return defaultTypedFrame(path, explicitOrigin, required, ownerSpan, issue);
   }
   const properties = propertyMap(declaration, path, issue);
   if (explicitOrigin !== null && properties.has('origin')) {

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 sprite ruby_potion {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -7,31 +7,31 @@ sprite ruby_potion {
     shine = #ffffff;
     bubble = #ffc2d4;
   }
-  shape cork {
-    shape { kind = rect; x = 14; y = 4; width = 4; height = 4; }
+  rect cork {
+    x = 14px; y = 4px; width = 4px; height = 4px;
     material = shared.cork_wood;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16, 4), (16, 8)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16px, 4px), (16px, 8px)]; }
   }
-  shape bottle_neck {
-    shape { kind = rect; x = 13; y = 8; width = 6; height = 5; }
+  rect bottle_neck {
+    x = 13px; y = 8px; width = 6px; height = 5px;
     material = shared.glass;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16, 8), (16, 13)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16px, 8px), (16px, 13px)]; }
   }
-  shape bottle_lip {
-    shape { kind = capsule; x1 = 12; y1 = 8; x2 = 19; y2 = 8; radius = 1.1; }
+  capsule bottle_lip {
+    from = (12px, 8px); to = (19px, 8px); radius = 1.1px;
     material = shared.glass;
-    shade { form = cylinder; light = top_left; contrast = 2; specular = 1; axis = [(12, 8), (19, 8)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 1; }
   }
-  shape bottle_body {
-    shape { kind = ellipse; cx = 15.5; cy = 19.5; rx = 8.3; ry = 7.9; }
+  ellipse bottle_body {
+    cx = 15.5px; cy = 19.5px; rx = 8.3px; ry = 7.9px;
     material = shared.glass;
     shade { form = round; light = top_left; contrast = 2; specular = 2; }
   }
-  shape liquid {
-    shape { kind = ellipse; cx = 15.5; cy = 20.8; rx = 6.7; ry = 5.8; }
+  ellipse liquid {
+    cx = 15.5px; cy = 20.8px; rx = 6.7px; ry = 5.8px;
     material = shared.ruby_liquid;
     shade { form = round; light = top_left; contrast = 2; specular = 2; }
-    pattern { kind = gradient; axis = y; toMaterial = shared.apple_blush; dither = false; seed = 11; }
+    pattern gradient { axis = y; to_material = shared.apple_blush; dither = false; seed = 11; }
   }
   paint spec {
     at = (10px, 14px);
@@ -45,5 +45,5 @@ sprite ruby_potion {
     ];
     colors { s = shine; b = bubble; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }

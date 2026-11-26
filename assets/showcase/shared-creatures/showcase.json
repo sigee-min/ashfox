@@ -3,8 +3,8 @@
   "version": 1,
   "workspace": {
     "path": "assets/workspaces/shared-creatures.ashfoxworkspace",
-    "sha256": "sha256:f53084d22ef5afb68d313001f8bfd1ad7bfcd786b7926a6307273f13a693128a",
-    "workspaceHash": "sha256:d8bd048ff7018a248bcce5a7197ee68c723dffde7f636659ed24436aa3290f3b"
+    "sha256": "sha256:a39a6f5fa8fa2c44a3dbeeda8e45afe5cda3088b0d3d9f28421fc1a24fe32ac7",
+    "workspaceHash": "sha256:102233786b100dec5d2e0f75be0c8f7b00a894f930d8de2330d444fd39972acd"
   },
   "capture": {
     "fingerprint": "sha256:c6e2bb53485a46c95db1e1f79767671bc7fce4e4b964ac29b686196915b50086",
@@ -67,8 +67,8 @@
       ],
       "packageName": "workbench",
       "entryName": "griffin",
-      "closureHash": "sha256:8f44e250a5304606b89e54d8059457257ad99e173e11b8f9fb4a365391ac3fae",
-      "buildKey": "sha256:80ec465a1fd602a933b486e6eb793ace5efeace296e14b78def7ef6fa2294f24",
+      "closureHash": "sha256:7af1b45fb64d60fdbabc19b2c89664ac99694805ba7e37f0805ffd85e508a003",
+      "buildKey": "sha256:bb377eb58060e93c79532b464754f4cd33e013430db6e1c61c09865b0df51718",
       "productHash": "sha256:1f4179711a58855696cbddd077d1cfc8d6e74146e92662520233e13066f90d2a",
       "artifact": "griffin-build-replay.gif",
       "poster": "griffin-poster.png",
@@ -109,8 +109,8 @@
       ],
       "packageName": "creatures",
       "entryName": "fox",
-      "closureHash": "sha256:94f3be65671a6fde7fba887fb60442c12e7facc802b9c2f401d486d6af2a3e13",
-      "buildKey": "sha256:f304e90fcfe340557b8ac207833099610647bac7a96112b37ff362518805e8f9",
+      "closureHash": "sha256:a16cf164585fcecdb8d7f5fd14c78568a6c48b15f936875e2bb2b32b46fca117",
+      "buildKey": "sha256:1eb04ae9bae1a38545de55bf938ca8dad9da3352fe871ac966b85d7bdcbe9d58",
       "productHash": "sha256:6fbf67b12a4916549728382acef3e2ccf2004e676a26bfb6325d80199fc0e96e",
       "artifact": "fox-build-replay.gif",
       "poster": "fox-poster.png",
@@ -151,8 +151,8 @@
       ],
       "packageName": "creatures",
       "entryName": "goblin",
-      "closureHash": "sha256:9fa2ba5334056da2d9400d8612a705e487eb5da86c37e29db96f8e06b687c1d8",
-      "buildKey": "sha256:2cf628e1b1e8c89311ce7e00bc6406332428f2d450703e3808ccfe42e2998952",
+      "closureHash": "sha256:36af6c9c5db7445924c82c67ce380e9859e99d27a5dbdd4bc00341bcc797f74a",
+      "buildKey": "sha256:e7544da0d3c3f62ccce2a13f3fabd68e4d620bb66c1031709466f0d8f2c18220",
       "productHash": "sha256:7e3a89685f7e6ba5bcff80242da2dd8fd15a1e2a35e8e683fc9a3c8b95503fd5",
       "artifact": "goblin-build-replay.gif",
       "poster": "goblin-poster.png",

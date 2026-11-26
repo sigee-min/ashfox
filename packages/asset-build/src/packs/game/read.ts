@@ -102,7 +102,7 @@ const validateSoundVariant = (
     'id',
     'file',
     'durationSeconds',
-    'sampleRate',
+    'sample_rate',
     'channels',
     'frames',
     'playback',
@@ -116,7 +116,7 @@ const validateSoundVariant = (
     (v.frames as number) < 2400 ||
     (v.frames as number) > 1440000 ||
     v.durationSeconds !== (v.frames as number) / 48000 ||
-    v.sampleRate !== 48000 ||
+    v.sample_rate !== 48000 ||
     (v.channels !== 1 && v.channels !== 2)
   ) {
     fail('Invalid sound variant');

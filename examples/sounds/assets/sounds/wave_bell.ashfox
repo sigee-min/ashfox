@@ -1,84 +1,69 @@
-ashfox-model 1
+ashfox 1
 sound wave_bell {
-  profile = "ui";
-  duration = 2.2;
-  sampleRate = 48000;
+  profile = ui;
+  duration = 2.2s;
   channels = 2;
   seed = 6024;
-  space = { preset = "stone_hall"; mix = 0.32; };
-  voices = [{
-    id = "bronze_toll";
-    source = {
-      kind = "material";
-      material = "bronze";
-      pitch = 220;
-      size = 1.6;
-      hardness = 0.82;
-      damping = 0.24;
-      brightness = 0.76;
-      modes = 28;
-      strike = "mallet";
-    };
-    filter = {
-      kind = "lowpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 13500; }, { at = 0.35; value = 4200; }, { at = 1; value = 1100; }]; };
+  space { preset = stone_hall; mix = 32%; }
+  voice bronze_toll : material {
+    material = bronze;
+    pitch = 220hz;
+    size = 1.6;
+    hardness = 82%;
+    damping = 24%;
+    brightness = 76%;
+    modes = 28;
+    strike = mallet;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 13500hz), (0.35, 4200hz), (1, 1100hz)]; }
       q = 1.1;
-    };
+    }
+    highpass = 40hz;
     drive = 1.5;
-    highpass = 40;
     pan = -0.14;
-    gain = { env = "ad"; attack = 0.003; peak = 1.0; curve = "exp"; };
-  }, {
-    id = "war_horn";
-    source = {
-      kind = "osc";
-      waveform = "saw";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 110; }, { at = 0.28; value = 146; }, { at = 1; value = 138; }]; };
-      unison = 3;
-      detuneCents = 18;
-    };
-    filter = {
-      kind = "lowpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 480; }, { at = 0.3; value = 3200; }, { at = 1; value = 540; }]; };
+    gain { env = ad; attack = 3ms; peak = 1; curve = exp; }
+  }
+  voice war_horn : osc {
+    waveform = saw;
+    pitch { domain = log; interpolation = smooth; points = [(0, 110hz), (0.28, 146hz), (1, 138hz)]; }
+    unison = 3;
+    detune_cents = 18cents;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 480hz), (0.3, 3200hz), (1, 540hz)]; }
       q = 1.25;
-    };
+    }
+    highpass = 45hz;
     drive = 1.4;
-    highpass = 45;
     pan = 0.14;
-    gain = { env = "adsr"; attack = 0.04; decay = 0.28; sustain = 0.68; release = 0.45; peak = 0.78; };
-  }, {
-    id = "mallet_sub";
-    source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.01; hardness = 0.65; };
-      modes = [
-        { id = "sub"; hz = 65; decay = 0.42; gain = 0.95; },
-        { id = "body"; hz = 130; decay = 0.34; gain = 1.0; },
-        { id = "ring"; hz = 390; decay = 0.2; gain = 0.5; }
-      ];
-      pitchDropCents = 45;
-      pitchDropSeconds = 0.02;
-    };
-    highpass = 32;
-    gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
-  }, {
-    id = "strike_air";
-    source = { kind = "noise"; color = "white"; };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9800; }, { at = 1; value = 1800; }]; }; q = 1.3; };
+    gain { env = adsr; attack = 40ms; decay = 0.28s; sustain = 68%; release = 0.45s; peak = 0.78; }
+  }
+  voice mallet_sub : resonator {
+    excitation mallet { duration = 10ms; hardness = 65%; }
+    mode sub { hz = 65hz; decay = 0.42s; gain = 0.95; }
+    mode body { hz = 130hz; decay = 0.34s; gain = 1; }
+    mode ring { hz = 390hz; decay = 0.2s; gain = 0.5; }
+    pitch_drop_cents = 45cents;
+    pitch_drop_seconds = 20ms;
+    highpass = 32hz;
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+  voice strike_air : noise {
+    color = white;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 9800hz), (1, 1800hz)]; }
+      q = 1.3;
+    }
     pan = 0.22;
-    gain = { env = "ad"; attack = 0.002; peak = 0.52; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "warning";
-    start = 0.02;
-    steps = [
-      { id = "toll"; voice = "bronze_toll"; at = 0; duration = 1.1; vary = { pitchCents = [-55, 55]; timing = [-0.005, 0.005]; gain = [0.9, 1.1]; }; },
-      { id = "horn"; voice = "war_horn"; at = 0.08; duration = 1.65; vary = { pitchCents = [-45, 45]; }; },
-      { id = "thump"; voice = "mallet_sub"; at = 0; duration = 0.45; vary = { pitchCents = [-45, 45]; }; },
-      { id = "air"; voice = "strike_air"; at = 0; duration = 0.22; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 4; peakDb = -1.5; targetLufs = -12; warmth = 0.25; glue = 0.25; limit = true; };
+    gain { env = ad; attack = 2ms; peak = 0.52; curve = exp; }
+  }
+  seq warning {
+    start = 20ms;
+    step toll { voice = bronze_toll; at = 0s; duration = 1.1s; vary_timing = -0.005s..5ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    step horn { voice = war_horn; at = 80ms; duration = 1.65s; vary_pitch = -45cents..45cents; }
+    step thump { voice = mallet_sub; at = 0s; duration = 0.45s; vary_pitch = -45cents..45cents; }
+    step air { voice = strike_air; at = 0s; duration = 0.22s; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 4db; peak = -1.5db; target = -12lufs; warmth = 25%; glue = 25%; limit = true; }
 }

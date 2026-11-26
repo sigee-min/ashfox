@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module body {
   import "./rig.ashfox" as rig;
   import "./surface.ashfox" as surface;
@@ -23,10 +23,10 @@ module body {
           cube skull { origin = (-4u, 12.6u, -13u); size = (8u, 6u, 7u); pivot = (0u, 15.6u, -9.5u); rotation = (3deg, 0deg, 0deg); surface = skin.head; }
           cube muzzle { origin = (-2u, 12.6u, -17u); size = (4u, 3u, 4u); surface = skin.muzzle; }
           cube nose { origin = (-1u, 14.3u, -17.8u); size = (2u, 1u, 2u); surface = skin.nose; }
-          cube ear_base_l { origin = (-3.8u, 18.4u, -10u); size = (3u, 3u, 2u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror-x = ear_base_r; surface = skin.ear_base; }
-          cube ear_tip_l { origin = (-3.3u, 21.3u, -9.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror-x = ear_tip_r; surface = skin.ear_tip; }
-          cube ear_inner_l { origin = (-3.3u, 18.8u, -10.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror-x = ear_inner_r; surface = skin.ear_inner; }
-          plane cheek_tuft_l { origin = (-4.05u, 12.4u, -12.4u); size = (3u, 3u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); rotation = (0deg, -22deg, 0deg); mirror-x = cheek_tuft_r; surface = skin.cheek_tuft; }
+          cube ear_base_l { origin = (-3.8u, 18.4u, -10u); size = (3u, 3u, 2u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_base_r; surface = skin.ear_base; }
+          cube ear_tip_l { origin = (-3.3u, 21.3u, -9.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
+          cube ear_inner_l { origin = (-3.3u, 18.8u, -10.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_inner_r; surface = skin.ear_inner; }
+          plane cheek_tuft_l { origin = (-4.05u, 12.4u, -12.4u); size = (3u, 3u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); rotation = (0deg, -22deg, 0deg); mirror_x = cheek_tuft_r; surface = skin.cheek_tuft; }
         }
         bone tail {
           cube tail_base { origin = (-1.5u, 9.6u, 7.6u); size = (3u, 3u, 6u); pivot = (0u, 11.1u, 7.6u); rotation = (-12deg, 0deg, 0deg); surface = skin.tail_base; }
@@ -34,7 +34,7 @@ module body {
             cube tail_mid { origin = (-2.5u, 9.4u, 12.6u); size = (5u, 5u, 7u); pivot = (0u, 11.9u, 13u); rotation = (12deg, 0deg, 0deg); surface = skin.tail_main; }
             cube tail_end { origin = (-2u, 11.2u, 18.8u); size = (4u, 4u, 5u); pivot = (0u, 13.2u, 19u); rotation = (18deg, 0deg, 0deg); surface = skin.tail_tip; }
             cube tail_end_tip { origin = (-1u, 13.4u, 22.8u); size = (2u, 2u, 3u); pivot = (0u, 14.4u, 23u); rotation = (22deg, 0deg, 0deg); surface = skin.tail_tip_fine; }
-            plane tail_plume_l { origin = (-2.55u, 10u, 13.5u); size = (4u, 3u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); rotation = (0deg, -14deg, 0deg); mirror-x = tail_plume_r; surface = skin.tail_plume; }
+            plane tail_plume_l { origin = (-2.55u, 10u, 13.5u); size = (4u, 3u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); rotation = (0deg, -14deg, 0deg); mirror_x = tail_plume_r; surface = skin.tail_plume; }
           }
         }
         bone front_left {

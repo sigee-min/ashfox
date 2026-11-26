@@ -97,7 +97,7 @@ const SOUND_CAPABILITIES = {
     'granular',
     'mastering',
   ],
-  sampleRate: 48000,
+  sample_rate: 48000,
   channels: [1, 2],
   loopCodecs: ['wav'],
   output: 'fixed-gain',

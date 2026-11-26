@@ -1,25 +1,20 @@
-ashfox-model 1
-asset wall_lantern {
-  export rig contract LanternRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+ashfox 1
+model wall_lantern {
+  rig contract LanternRig {
     joint root {
       parent = none;
       role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
   }
 
-  export skeleton LanternSkeleton implements LanternRig {
+  skeleton LanternSkeleton implements LanternRig {
     bind root {
-      parent-origin = (0u, 0u, 0u);
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      parent_origin = (0u, 0u, 0u);
     }
   }
 
-  export surface contract LanternFrame {
+  surface contract LanternFrame {
     chart plate box { coverage = opaque; }
     chart arm box { coverage = opaque; }
     chart brace box { coverage = opaque; }
@@ -31,18 +26,18 @@ asset wall_lantern {
     material = double;
   }
 
-  export surface contract LanternGlow {
+  surface contract LanternGlow {
     chart core box { coverage = opaque; }
     material = opaque;
   }
 
-  export surface forged_iron: LanternFrame {
+  surface forged_iron: LanternFrame {
     material = double;
     texture atlas {
       atlas = (128px, 64px);
       density = 2;
       background = slate;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         slate = #2a303b;
         iron = (#2e3545, #475269, #6f80a1);
@@ -52,40 +47,40 @@ asset wall_lantern {
         fill = iron;
         grain = soft;
         pattern border { paint = brass; width = 1px; edges = all; }
-        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+        pattern ao { strength = 0.35; radius = 0.5u; }
       }
       chart arm box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = top; }
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart brace box {
         fill = iron;
         grain = none;
-        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+        pattern ao { strength = 0.3; radius = 0.5u; }
       }
       chart base box {
         fill = iron;
         grain = none;
         pattern border { paint = brass; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+        pattern ao { strength = 0.35; radius = 0.5u; }
       }
       chart strut box {
         fill = iron;
         grain = none;
-        pattern ao { strength = 0.3ratio; radius = 0.4u; }
+        pattern ao { strength = 0.3; radius = 0.4u; }
       }
       chart hood box {
         fill = iron;
         grain = soft;
         pattern border { paint = brass; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+        pattern ao { strength = 0.35; radius = 0.5u; }
       }
       chart collar box {
         fill = brass;
         grain = none;
-        pattern ao { strength = 0.25ratio; radius = 0.4u; }
+        pattern ao { strength = 0.25; radius = 0.4u; }
       }
       chart ring flat {
         fill = iron;
@@ -98,14 +93,14 @@ asset wall_lantern {
     }
   }
 
-  export surface warm_amber: LanternGlow {
+  surface warm_amber: LanternGlow {
     material = opaque;
     texture atlas {
       atlas = (128px, 64px);
       density = 2;
-      render-mode = emissive;
+      render_mode = emissive;
       background = ember;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         ember = #bd5816;
         amber = (#a64a14, #eb8a24, #ffde66);
@@ -118,7 +113,7 @@ asset wall_lantern {
       chart core box {
         fill = amber;
         grain = soft;
-        pattern gradient { from = amber; to = flame; axis = y; space = local; soft = 0.15ratio; }
+        pattern gradient { from = amber; to = flame; axis = y; space = local; soft = 0.15; }
         face north { stamp heart { at = (1px, 3px); protect = true; } }
         face south { stamp heart { at = (1px, 3px); protect = true; } }
         face east { stamp heart { at = (1px, 3px); protect = true; } }
@@ -129,7 +124,7 @@ asset wall_lantern {
     }
   }
 
-  export component WallLantern {
+  component WallLantern {
     requires rig skel: LanternRig;
     requires surface frame: LanternFrame;
     requires surface glow: LanternGlow;
@@ -142,19 +137,17 @@ asset wall_lantern {
         cube base { origin = (-4u, 0u, -4u); size = (8u, 2u, 8u); surface = frame.base; }
         cube collar { origin = (-3u, 2u, -3u); size = (6u, 1u, 6u); surface = frame.collar; }
         cube core { origin = (-2u, 3u, -2u); size = (4u, 5u, 4u); surface = glow.core; }
-        cube strut_fl { origin = (-3u, 3u, -3u); size = (1u, 5u, 1u); mirror-x = strut_fr; surface = frame.strut; }
-        cube strut_bl { origin = (-3u, 3u, 2u); size = (1u, 5u, 1u); mirror-x = strut_br; surface = frame.strut; }
+        cube strut_fl { origin = (-3u, 3u, -3u); size = (1u, 5u, 1u); mirror_x = strut_fr; surface = frame.strut; }
+        cube strut_bl { origin = (-3u, 3u, 2u); size = (1u, 5u, 1u); mirror_x = strut_br; surface = frame.strut; }
         cube hood { origin = (-4u, 8u, -4u); size = (8u, 2u, 8u); surface = frame.hood; }
         cube cap { origin = (-3u, 10u, -3u); size = (6u, 1u, 6u); surface = frame.collar; }
-        plane ring_x { origin = (-1.5u, 11u, 0u); size = (3u, 3u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = frame.ring; }
-        plane ring_z { origin = (0u, 11u, -1.5u); size = (3u, 3u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); surface = frame.ring; }
+        plane ring_x { origin = (-1.5u, 11u, 0u); size = (3u, 3u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = frame.ring; }
+        plane ring_z { origin = (0u, 11u, -1.5u); size = (3u, 3u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); surface = frame.ring; }
       }
     }
   }
 
-  export asset wall_lantern {
-    settings { density = 16; forward = north; profile = prop; }
-    skeleton = LanternSkeleton;
-    use WallLantern as model { bind skel = LanternRig; bind frame = forged_iron; bind glow = warm_amber; };
-  }
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = LanternSkeleton;
+  use WallLantern as model { skel = LanternRig; frame = forged_iron; glow = warm_amber; }
 }

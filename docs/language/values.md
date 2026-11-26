@@ -1,14 +1,13 @@
 # Values and expressions
 
-This page applies to model `asset` and `module` units. Sprite and sound
-properties use their own [literal grammars](README.md#the-three-value-grammars).
+This page applies to model `model` and `module` units. Sprite, sound, and structure
+properties use their own [domain syntax](README.md#domain-syntax-summary).
 
 ## Tokens and punctuation
 
 Names are case-sensitive ASCII identifiers: `[A-Za-z_][A-Za-z0-9_]*`.
-Use underscores in authored names. Hyphenated property keywords such as
-`parent-origin` are language-defined; hyphens in expressions mean subtraction.
-Workspace export IDs have a separate lowercase naming rule.
+All property keywords and identifiers use `snake_case`; hyphens in expressions
+always mean subtraction. Workspace export IDs have a separate lowercase naming rule.
 
 Whitespace and newlines do not terminate declarations. Write `;` after
 assignments, imports, parameter/port declarations, checks and motion keys.
@@ -36,15 +35,15 @@ There is no arbitrary generic type constructor.
 | `texel` | `16px`, `16tx` | Texture distance; pixel placement must be integral |
 | `degree` | `15deg` | Rotation angle |
 | `second` | `0.5s` | Motion time |
-| `ratio` | `0.5ratio` | Dimensionless ratio with an explicit type |
+| `ratio` | `0.5` or `50%` | Dimensionless ratio with an explicit type |
 | `bool` | `true` | `true` or `false` |
 | `color` | `#c94f2a` | RGB color |
 | `vec2<unit>` | `(2u, 3u)` | Two model distances |
 | `vec3<unit>` | `(2u, 3u, 4u)` | Position or size |
 | `vec3<degree>` | `(0deg, 15deg, 0deg)` | Euler rotation |
-| `vec3<ratio>` | `(1ratio, 1ratio, 1ratio)` | Scale/alignment ratios |
+| `vec3<ratio>` | `(1, 1, 1)` or `(100%, 100%, 100%)` | Scale/alignment ratios |
 | `vec2<texel>` | `(0px, 8px)` | Atlas or face pixel position |
-| `texel-rect` | `(0px, 0px, 4px, 4px)` | Four texel components |
+| `texel_rect` | `(0px, 0px, 4px, 4px)` | Four texel components |
 
 Write explicit units at API boundaries. Plain integer literals can acquire a
 field's expected numeric unit in supported typed contexts; explicit incompatible
@@ -95,9 +94,9 @@ export design Dimensions {
   height: unit = 4u;
   depth: unit = 4u;
   size: vec3<unit> = (Dimensions.width, Dimensions.height, Dimensions.depth);
-  netWidth: texel = texels(Dimensions.width * 2 + Dimensions.depth * 2, 1);
-  check positiveWidth = Dimensions.width > 0u;
-  check fitsAtlas = Dimensions.netWidth <= 32px;
+  net_width: texel = texels(Dimensions.width * 2 + Dimensions.depth * 2, 1);
+  check positive_width = Dimensions.width > 0u;
+  check fits_atlas = Dimensions.net_width <= 32px;
 }
 ```
 

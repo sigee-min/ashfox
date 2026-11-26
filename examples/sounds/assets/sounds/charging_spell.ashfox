@@ -1,63 +1,55 @@
-ashfox-model 1
+ashfox 1
 sound charging_spell {
-  profile = "magic";
-  duration = 2.4;
-  sampleRate = 48000;
+  profile = magic;
+  duration = 2.4s;
   channels = 2;
   seed = 7349;
-  space = { preset = "ethereal"; mix = 0.32; };
-  voices = [{
-    id = "arc_core";
-    source = {
-      kind = "osc";
-      waveform = "saw";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 110; }, { at = 0.7; value = 440; }, { at = 1; value = 1100; }]; };
-      unison = 4;
-      detuneCents = 24;
-    };
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 900; }, { at = 1; value = 12000; }]; }; q = 1.5; };
+  space { preset = ethereal; mix = 32%; }
+  voice arc_core : osc {
+    waveform = saw;
+    pitch { domain = log; interpolation = smooth; points = [(0, 110hz), (0.7, 440hz), (1, 1100hz)]; }
+    unison = 4;
+    detune_cents = 24cents;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 900hz), (1, 12000hz)]; }
+      q = 1.5;
+    }
     drive = 1.6;
     pan = -0.18;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0; }, { at = 0.15; value = 0.35; }, { at = 0.88; value = 0.92; }, { at = 1; value = 0; }]; };
-  }, {
-    id = "fm_surge";
-    source = {
-      kind = "fm";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 420; }, { at = 1; value = 1480; }]; };
-      ratio = 1.5;
-      index = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.4; }, { at = 1; value = 4.2; }]; };
-      vibratoHz = 9;
-      vibratoCents = 28;
-    };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1400; }, { at = 1; value = 9500; }]; }; q = 1.4; };
+    gain { domain = linear; interpolation = smooth; points = [(0, 0), (0.15, 0.35), (0.88, 0.92), (1, 0)]; }
+  }
+  voice fm_surge : fm {
+    pitch { domain = log; interpolation = smooth; points = [(0, 420hz), (1, 1480hz)]; }
+    ratio = 1.5;
+    index { domain = linear; interpolation = smooth; points = [(0, 0.4), (1, 4.2)]; }
+    vibrato_hz = 9hz;
+    vibrato_cents = 28cents;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 1400hz), (1, 9500hz)]; }
+      q = 1.4;
+    }
     pan = 0.22;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0; }, { at = 0.25; value = 0.45; }, { at = 0.85; value = 0.95; }, { at = 1; value = 0; }]; };
-  }, {
-    id = "sparkle_dust";
-    source = {
-      kind = "granular";
-      texture = "spark";
-      density = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 18; }, { at = 0.65; value = 110; }, { at = 1; value = 260; }]; };
-      grainMs = 15;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 900; }, { at = 0.65; value = 3200; }, { at = 1; value = 6800; }]; };
-      spread = 0.82;
-      burstiness = 0.45;
-      turbulence = 0.55;
-    };
-    highpass = 1200;
+    gain { domain = linear; interpolation = smooth; points = [(0, 0), (0.25, 0.45), (0.85, 0.95), (1, 0)]; }
+  }
+  voice sparkle_dust : granular {
+    texture = spark;
+    density { domain = linear; interpolation = smooth; points = [(0, 18), (0.65, 110), (1, 260)]; }
+    grain_ms = 15ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 900hz), (0.65, 3200hz), (1, 6800hz)]; }
+    spread = 82%;
+    burstiness = 45%;
+    turbulence = 55%;
+    highpass = 1200hz;
     pan = 0.08;
-    gain = { env = "adsr"; attack = 0.08; decay = 0.25; sustain = 0.72; release = 0.22; peak = 0.78; };
-  }];
-  sequences = [{
-    id = "surge";
-    start = 0.04;
-    steps = [
-      { id = "core"; voice = "arc_core"; at = 0; duration = 2.2; vary = { pitchCents = [-55, 55]; }; },
-      { id = "choir"; voice = "fm_surge"; at = 1.68; duration = 0.56; vary = { pitchCents = [-55, 55]; }; },
-      { id = "sparks"; voice = "sparkle_dust"; at = 0.06; duration = 2.14; vary = { pitchCents = [-70, 70]; gain = [0.85, 1.15]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 2; peakDb = -1.5; targetLufs = -14; air = 0.35; width = 1.25; glue = 0.3; limit = true; };
+    gain { env = adsr; attack = 80ms; decay = 0.25s; sustain = 72%; release = 0.22s; peak = 0.78; }
+  }
+  seq surge {
+    start = 40ms;
+    step core { voice = arc_core; at = 0s; duration = 2.2s; vary_pitch = -55cents..55cents; }
+    step choir { voice = fm_surge; at = 1.68s; duration = 0.56s; vary_pitch = -55cents..55cents; }
+    step sparks { voice = sparkle_dust; at = 60ms; duration = 2.14s; vary_pitch = -70cents..70cents; vary_gain = 85%..115%; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 2db; peak = -1.5db; target = -14lufs; air = 35%; width = 1.25; glue = 30%; limit = true; }
 }

@@ -1,74 +1,61 @@
-ashfox-model 1
+ashfox 1
 sound griffin_call {
-  profile = "creature";
-  duration = 1.45;
-  sampleRate = 48000;
+  profile = creature;
+  duration = 1.45s;
   channels = 2;
   seed = 42;
-  space = { preset = "cavern"; mix = 0.24; };
-  voices = [{
-    id = "shriek";
-    source = {
-      kind = "vocal";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.22; value = 430; }, { at = 0.82; value = 165; }, { at = 1; value = 130; }]; };
-      formants = [
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 540; }, { at = 0.25; value = 780; }, { at = 1; value = 460; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1520; }, { at = 0.25; value = 2150; }, { at = 1; value = 1340; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2780; }, { at = 0.25; value = 3450; }, { at = 1; value = 2520; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3950; }, { at = 0.25; value = 4600; }, { at = 1; value = 3650; }]; }
-      ];
-      bandwidths = [110, 210, 340, 460];
-      breath = 0.24;
-      jitter = 0.24;
-      roughness = 0.45;
-      growl = 0.35;
-      chest = 0.4;
-    };
+  space { preset = cavern; mix = 24%; }
+  voice shriek : vocal {
+    pitch { domain = log; interpolation = smooth; points = [(0, 240hz), (0.22, 430hz), (0.82, 165hz), (1, 130hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 540hz), (0.25, 780hz), (1, 460hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 1520hz), (0.25, 2150hz), (1, 1340hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 2780hz), (0.25, 3450hz), (1, 2520hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 3950hz), (0.25, 4600hz), (1, 3650hz)]; }
+    bandwidths = [110hz, 210hz, 340hz, 460hz];
+    breath = 24%;
+    jitter = 24%;
+    roughness = 45%;
+    growl = 35%;
+    chest = 40%;
+    highpass = 60hz;
+    lowpass { domain = log; interpolation = smooth; points = [(0, 9000hz), (1, 3200hz)]; }
     drive = 1.6;
-    highpass = 60;
-    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9000; }, { at = 1; value = 3200; }]; };
     pan = -0.12;
-    gain = { env = "adsr"; attack = 0.025; decay = 0.16; sustain = 0.72; release = 0.18; peak = 0.95; };
-  }, {
-    id = "eagle_overtone";
-    source = {
-      kind = "chirp";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1400; }, { at = 0.25; value = 2500; }, { at = 1; value = 980; }]; };
-      trillHz = 14;
-      trillCents = 35;
-      trillDepth = 0.16;
-      breath = 0.14;
-      jitterCents = 35;
-      brightness = 0.62;
-    };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3800; }, { at = 1; value = 1500; }]; }; q = 1.1; };
+    gain { env = adsr; attack = 25ms; decay = 0.16s; sustain = 72%; release = 0.18s; peak = 0.95; }
+  }
+  voice eagle_overtone : chirp {
+    pitch { domain = log; interpolation = smooth; points = [(0, 1400hz), (0.25, 2500hz), (1, 980hz)]; }
+    trill_hz = 14hz;
+    trill_cents = 35cents;
+    trill_depth = 16%;
+    breath = 14%;
+    jitter_cents = 35cents;
+    brightness = 62%;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 3800hz), (1, 1500hz)]; }
+      q = 1.1;
+    }
     pan = 0.18;
-    gain = { env = "ad"; attack = 0.02; peak = 0.38; curve = "exp"; };
-  }, {
-    id = "wind_air";
-    source = {
-      kind = "granular";
-      texture = "wind";
-      density = 36;
-      grainMs = 45;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1800; }, { at = 1; value = 650; }]; };
-      spread = 0.6;
-      turbulence = 0.5;
-    };
-    highpass = 120;
+    gain { env = ad; attack = 20ms; peak = 0.38; curve = exp; }
+  }
+  voice wind_air : granular {
+    texture = wind;
+    density = 36;
+    grain_ms = 45ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 1800hz), (1, 650hz)]; }
+    spread = 60%;
+    turbulence = 50%;
+    highpass = 120hz;
     pan = 0.1;
-    gain = { env = "adsr"; attack = 0.02; decay = 0.2; sustain = 0.48; release = 0.18; peak = 0.42; };
-  }];
-  sequences = [{
-    id = "cry";
-    start = 0.02;
-    steps = [
-      { id = "roar"; voice = "shriek"; at = 0; duration = 1.25; vary = { pitchCents = [-65, 65]; timing = [0, 0.02]; }; },
-      { id = "scream"; voice = "eagle_overtone"; at = 0.02; duration = 0.9; vary = { pitchCents = [-70, 70]; }; },
-      { id = "air"; voice = "wind_air"; at = 0; duration = 1.2; vary = { pitchCents = [-60, 60]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 4; peakDb = -1.5; targetLufs = -14; punch = 0.2; warmth = 0.25; glue = 0.25; limit = true; };
+    gain { env = adsr; attack = 20ms; decay = 0.2s; sustain = 48%; release = 0.18s; peak = 0.42; }
+  }
+  seq cry {
+    start = 20ms;
+    step roar { voice = shriek; at = 0s; duration = 1.25s; vary_timing = 0s..20ms; vary_pitch = -65cents..65cents; }
+    step scream { voice = eagle_overtone; at = 20ms; duration = 0.9s; vary_pitch = -70cents..70cents; }
+    step air { voice = wind_air; at = 0s; duration = 1.2s; vary_pitch = -60cents..60cents; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 4db; peak = -1.5db; target = -14lufs; punch = 20%; warmth = 25%; glue = 25%; limit = true; }
 }

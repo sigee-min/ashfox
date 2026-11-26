@@ -193,7 +193,7 @@ const buildProductMetadata = (
     variants: product.sounds.map((sound) => ({
       id: sound.variant,
       frames: sound.frames,
-      sampleRate: sound.sampleRate,
+      sample_rate: sound.sample_rate,
       channels: sound.channels,
       playback: sound.playback,
       peak: sound.peak,

@@ -244,8 +244,8 @@ const verifySnapshotLexerAndSprites = (griffin: CompiledModel): void => {
   );
   const lexed = lexProgramSource(griffinMain);
   assert.equal(lexed.diagnostics.length, 0);
-  assert.equal(lexed.tokens[0]?.value, 'ashfox-model');
-  const badLex = lexProgramSource('ashfox-model 1\n/* unclosed');
+  assert.equal(lexed.tokens[0]?.value, 'ashfox');
+  const badLex = lexProgramSource('ashfox 1\n/* unclosed');
   assert.ok(badLex.diagnostics.some((d) => d.code === 'program.unclosed-comment'));
 
   const itemProducts = compileWorkspaceDir('examples/items').filter(
@@ -271,35 +271,35 @@ const verifySnapshotLexerAndSprites = (griffin: CompiledModel): void => {
     'x',
   );
   assert.ok(polyMask.some((v) => v === 1));
-  const spriteSrc = `ashfox-model 1
-sprite blade_v2 {
+  const spriteSrc = `ashfox 1
+sprite blade {
   export material steel { ramp { mode = auto; base = #7b93a8; preset = metal; } }
   export material gold { ramp { mode = auto; base = #d8a642; preset = warm; } }
   profile = item;
   canvas = (32px, 32px);
   palette { gem = #4cc9f0; }
-  shape blade_body {
-    shape { kind = polygon; points = [(24, 4), (27, 4), (27, 7), (12, 22), (9, 19)]; }
+  polygon blade_body {
+    points = [(24px, 4px), (27px, 4px), (27px, 7px), (12px, 22px), (9px, 19px)];
     material = steel;
-    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(9, 22), (27, 4)]; }
-    grain { mode = directional; axis = diagonal; amount = 1; seed = 11; }
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(9px, 22px), (27px, 4px)]; }
+    grain directional { axis = diagonal; amount = 1; seed = 11; }
   }
-  shape guard {
-    shape { kind = capsule; x1 = 6; y1 = 18; x2 = 14; y2 = 26; radius = 1.6; }
+  capsule guard {
+    from = (6px, 18px); to = (14px, 26px); radius = 1.6px;
     material = gold;
     shade { form = round; light = top_left; contrast = 2; specular = 1; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }`;
-  const parsed = parseSpriteSource(spriteSrc, 'blade_v2.ashfox');
+  const parsed = parseSpriteSource(spriteSrc, 'blade.ashfox');
   const spriteDoc = {
     masks: parsed.masks,
     materials: parsed.materials,
     stamps: parsed.stamps,
     item: parsed.item!,
   };
-  const builtA = compileSpriteDocument(spriteDoc, 'blade_v2.ashfox');
-  const builtB = compileSpriteDocument(spriteDoc, 'blade_v2.ashfox');
+  const builtA = compileSpriteDocument(spriteDoc, 'blade.ashfox');
+  const builtB = compileSpriteDocument(spriteDoc, 'blade.ashfox');
   assert.equal(builtA.ok, true, builtA.ok ? '' : JSON.stringify(builtA.diagnostics));
   assert.equal(builtB.ok, true, builtB.ok ? '' : JSON.stringify(builtB.diagnostics));
   if (!builtA.ok || !builtB.ok) throw new Error('expected sprite build');

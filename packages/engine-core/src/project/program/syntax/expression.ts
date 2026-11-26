@@ -47,10 +47,9 @@ const UNITS: Readonly<Partial<Record<string, ProgramNumberExpr['unit']>>> = Obje
   '': 'plain',
   u: 'unit',
   px: 'texel',
-  tx: 'texel',
   deg: 'degree',
   s: 'second',
-  ratio: 'ratio',
+  ms: 'second',
   '%': 'ratio',
 });
 
@@ -169,7 +168,14 @@ const numberLiteral = (reader: Reader, token: ProgramToken): ProgramExpr => {
   return freeze({
     kind: 'number',
     numerator: parsed?.numerator ?? 0n,
-    denominator: parsed?.denominator ?? 1n,
+    denominator:
+      parsed === null
+        ? 1n
+        : rawUnit === 'ms'
+          ? parsed.denominator * 1000n
+          : rawUnit === '%'
+            ? parsed.denominator * 100n
+            : parsed.denominator,
     text: match?.[1] ?? '0',
     unit: unit ?? 'plain',
     rawUnit,

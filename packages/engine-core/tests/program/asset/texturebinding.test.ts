@@ -155,7 +155,7 @@ const payload = (
         ]),
       ),
       property('background', nameExpr('accent')),
-      property('background-alpha', numberExpr(255n)),
+      property('background_alpha', numberExpr(255n)),
       palette,
       chart,
       grain,

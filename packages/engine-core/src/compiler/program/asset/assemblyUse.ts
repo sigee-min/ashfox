@@ -1,5 +1,11 @@
 import { freeze } from '../../../immutable';
-import type { AssetAssemblyUse, AssetQualifiedName } from '../../../project/program/asset/contract';
+import type {
+  AssetAssemblyUse,
+  AssetParamSetDecl,
+  AssetPortBindingDecl,
+  AssetQualifiedName,
+} from '../../../project/program/asset/contract';
+import type { ProgramExpr } from '../../../project/program/syntax/contract';
 import { nullRecord } from './diagnostics';
 import type { AssetValue } from './value/contract';
 import {
@@ -175,6 +181,56 @@ const buildUsePortBindings = <S extends { readonly path: string }>(
   return freeze(portBindings);
 };
 
+const qualifiedTarget = (expr: ProgramExpr): AssetQualifiedName | null => {
+  if (expr.kind === 'name') {
+    return freeze({
+      kind: 'qualified-name',
+      segments: freeze(expr.value.split('.')),
+      span: expr.span,
+    });
+  }
+  if (expr.kind === 'member' && expr.object.kind === 'name') {
+    return freeze({
+      kind: 'qualified-name',
+      segments: freeze([...expr.object.value.split('.'), expr.member]),
+      span: expr.span,
+    });
+  }
+  return null;
+};
+
+const splitUseEntries = <S extends { readonly path: string }>(
+  context: UseBuildContext<S>,
+  state: S,
+  use: AssetAssemblyUse,
+  component: TypedComponent,
+): Readonly<{
+  readonly parameterSets: readonly AssetParamSetDecl[];
+  readonly portBindings: readonly AssetPortBindingDecl[];
+}> => {
+  const portNames = new Set(component.ports.map((port) => port.id));
+  const parameterSets: AssetParamSetDecl[] = [];
+  const portBindings: AssetPortBindingDecl[] = [...use.portBindings];
+  for (const entry of use.parameterSets) {
+    if (!portNames.has(entry.id)) {
+      parameterSets.push(entry);
+      continue;
+    }
+    const target = qualifiedTarget(entry.value);
+    if (target === null) {
+      context.issue(
+        state.path,
+        entry.value.span,
+        'asset.invalid-port-binding',
+        'Component port binding "' + entry.id + '" requires a qualified symbol.',
+      );
+      continue;
+    }
+    portBindings.push(freeze({ kind: 'port-binding', port: entry.id, target, span: entry.span }));
+  }
+  return { parameterSets: freeze(parameterSets), portBindings: freeze(portBindings) };
+};
+
 export const buildUse = <S extends { readonly path: string }>(
   context: UseBuildContext<S>,
   state: S,
@@ -192,13 +248,22 @@ export const buildUse = <S extends { readonly path: string }>(
       'Component instance "' + use.id + '" is declared more than once.',
     );
   }
+  const resolved = splitUseEntries(context, state, use, component);
+  const normalizedUse: AssetAssemblyUse = freeze({ ...use, ...resolved });
   const typed: TypedAssetUse = freeze({
     component: component.symbol,
     id: use.id,
-    parameters: buildUseParameters(context, state, use, component),
-    portBindings: buildUsePortBindings(context, state, use, component, skeleton, surfaces),
+    parameters: buildUseParameters(context, state, normalizedUse, component),
+    portBindings: buildUsePortBindings(
+      context,
+      state,
+      normalizedUse,
+      component,
+      skeleton,
+      surfaces,
+    ),
     span: use.span,
   });
-  instances.set(use.id, { use, component });
+  instances.set(use.id, { use: normalizedUse, component });
   return typed;
 };

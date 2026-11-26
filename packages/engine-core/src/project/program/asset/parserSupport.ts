@@ -1,11 +1,18 @@
 import type { ProgramExpr } from '../syntax/contract';
 import type { ProgramToken } from '../syntax/lex';
 import type { SourceSpan } from '../../source/contract';
-import type {
-  AssetFrameDecl,
-  AssetPropertyDecl,
-  AssetQualifiedName,
-  AssetValueType,
+import { compareText } from '../../../stableOrder';
+import type { RawDeclaredOutput } from '../../directory/declarations';
+import {
+  ASHFOX_ASSET_GRAMMAR,
+  type AssetDiagnostic,
+  type AssetFrameDecl,
+  type AssetImportDecl,
+  type AssetPropertyDecl,
+  type AssetQualifiedName,
+  type AssetSourceParseResult,
+  type AssetSourceUnit,
+  type AssetValueType,
 } from './contract';
 
 export type Token = ProgramToken;
@@ -97,13 +104,54 @@ export const readBraced = (
   }
 };
 
+export const isSnakeCase = (value: string): boolean => /^[a-z][a-z0-9_]*$/.test(value);
+
+export const isAssignmentTokens = (tokens: readonly Token[], index: number): boolean => {
+  if (tokens[index]?.kind !== 'identifier') return false;
+  let next = index + 1;
+  while (
+    tokens[next]?.kind === 'symbol' &&
+    tokens[next]?.value === '.' &&
+    tokens[next + 1]?.kind === 'identifier'
+  ) {
+    next += 2;
+  }
+  return tokens[next]?.kind === 'symbol' && tokens[next]?.value === '=';
+};
+
+export const isKebabAssignmentTokens = (tokens: readonly Token[], index: number): boolean => {
+  if (tokens[index]?.kind !== 'identifier') return false;
+  let next = index + 1;
+  let sawHyphen = false;
+  while (
+    tokens[next]?.kind === 'symbol' &&
+    (tokens[next]?.value === '-' || tokens[next]?.value === '.') &&
+    tokens[next + 1]?.kind === 'identifier'
+  ) {
+    if (tokens[next]?.value === '-') sawHyphen = true;
+    next += 2;
+  }
+  return sawHyphen && tokens[next]?.kind === 'symbol' && tokens[next]?.value === '=';
+};
+
+const validatePropertySegment = (reader: AssetReader, token: Token): void => {
+  if (isSnakeCase(token.value)) return;
+  reader.failSpan(
+    'asset.invalid-key',
+    'Property key "' + token.value + '" must be snake_case in ashfox 1.',
+    token.span,
+  );
+};
+
 export const readProperty = (reader: AssetReader): AssetPropertyDecl => {
   const start = reader.current();
-  let name = reader.id('Expected a property name.').value;
-  while (reader.match('-')) name += '-' + reader.id().value;
+  const first = reader.id('Expected a property name.');
+  validatePropertySegment(reader, first);
+  let name = first.value;
   while (reader.match('.')) {
-    name += '.' + reader.id().value;
-    while (reader.match('-')) name += '-' + reader.id().value;
+    const segment = reader.id();
+    validatePropertySegment(reader, segment);
+    name += '.' + segment.value;
   }
   reader.expect('=', 'Expected = in a property declaration.');
   const value = reader.expression();
@@ -191,6 +239,24 @@ export const readNamedAssignment = (reader: AssetReader, name: string): AssetQua
   });
 };
 
+export const readImportDecl = (reader: AssetReader, sourcePath: string): AssetImportDecl => {
+  const start = reader.expectWord('import', 'Expected import.');
+  const path = reader.current();
+  if (path.kind !== 'string') {
+    reader.fail('asset.invalid-import-path', 'Imports require a quoted relative path.', path);
+  } else reader.take();
+  reader.expectWord('as', 'Expected as after an import path.');
+  const alias = reader.id('Expected an import alias.');
+  reader.finish();
+  return Object.freeze({
+    kind: 'import',
+    path: path.value,
+    alias: alias.value,
+    ref: Object.freeze({ path: sourcePath, span: path.span }),
+    span: join(start.span, alias.span),
+  });
+};
+
 /** Parses a `frame` block while diagnosing duplicate frames in the same declaration. */
 export const readUniqueFrame = (
   reader: AssetReader,
@@ -205,3 +271,35 @@ export const readUniqueFrame = (
   }
   return readFrame(reader);
 };
+
+/** Parses `outputs = [format, ...];` at model unit scope. */
+export const readOutputsList = (reader: AssetReader, outputs: RawDeclaredOutput[]): void => {
+  reader.take();
+  reader.expect('=', 'Expected = after outputs.');
+  reader.expect('[', 'Expected [ to begin outputs list.');
+  while (!reader.check(']') && !reader.end()) {
+    outputs.push({ format: reader.id('Expected output format name.').value, attributes: {} });
+    if (!reader.match(',')) break;
+  }
+  reader.expect(']', 'Expected ] to close outputs list.');
+  reader.finish();
+};
+
+/** Freezes the final `AssetSourceParseResult` with deterministically sorted diagnostics. */
+export const buildParseResult = (
+  path: string,
+  source: string,
+  unit: AssetSourceUnit | null,
+  diagnostics: readonly AssetDiagnostic[],
+): AssetSourceParseResult =>
+  Object.freeze({
+    path,
+    source,
+    grammar: ASHFOX_ASSET_GRAMMAR,
+    unit: diagnostics.length > 0 ? null : unit,
+    diagnostics: Object.freeze(
+      [...diagnostics].sort(
+        (a, b) => a.span.start.offset - b.span.start.offset || compareText(a.code, b.code),
+      ),
+    ),
+  });

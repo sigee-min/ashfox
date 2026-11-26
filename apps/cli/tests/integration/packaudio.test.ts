@@ -44,7 +44,7 @@ const main = async () => {
     const ogg = files[`assets/${namespace}/sounds/${name}.ogg`];
     assert.equal(Buffer.from(ogg.subarray(0, 4)).toString(), 'OggS');
     const decoded = await decodeVorbis(ogg);
-    assert.equal(decoded.sampleRate, 48000);
+    assert.equal(decoded.sample_rate, 48000);
     assert.ok(decoded.samples.length > 0);
     for (const sample of decoded.samples) assert.ok(Math.abs(sample) < 1);
   }

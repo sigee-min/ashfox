@@ -307,8 +307,8 @@ for (const rootOrigin of [
     [
       property('origin', vector([1, 2, 3])),
       property('size', assetVectorValue([number(4), number(2)], 'vec2<unit>')),
-      property('u-axis', vector([1, 0, 0])),
-      property('v-axis', vector([0, 1, 0])),
+      property('u_axis', vector([1, 0, 0])),
+      property('v_axis', vector([0, 1, 0])),
     ],
     [],
     { port: 'skin', chart: 'body', surface: skin, span: span() },

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module goblin_surface {
   export surface contract RaiderSkin {
     chart torso box { coverage = opaque; }
@@ -33,7 +33,7 @@ module goblin_surface {
     material = double;
     texture atlas {
       density = 2;
-      background = void; background-alpha = 255;
+      background = void; background_alpha = 255;
       palette {
         void = #2a3324;
         skin = (#3c5c22, #6f9c3b, #a7cf5e);
@@ -72,15 +72,15 @@ module goblin_surface {
       chart torso box {
         fill = leather;
         grain = soft;
-        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.45ratio; radius = 0.9u; }
+        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.45; radius = 0.9u; }
         face north { stamp armor_strap { at = (0px, 2px); protect = true; } }
       }
       chart head box {
         fill = skin;
         grain = soft;
-        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2ratio; }
-        pattern ao { strength = 0.4ratio; radius = 0.9u; }
+        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.4; radius = 0.9u; }
         face north { stamp goblin_face { at = (0px, 3px); protect = true; } }
       }
       chart blade box {
@@ -95,7 +95,7 @@ module goblin_surface {
         fill = leather_dark;
         grain = clustered;
         pattern border { paint = iron; width = 1px; edges = all; }
-        pattern ao { strength = 0.4ratio; radius = 0.9u; }
+        pattern ao { strength = 0.4; radius = 0.9u; }
         face west { stamp shield_crest { at = (4px, 6px); protect = true; } }
       }
       chart boss box {
@@ -132,7 +132,7 @@ module goblin_surface {
       chart leg box {
         fill = cloth;
         grain = soft;
-        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2ratio; }
+        pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2; }
       }
       chart pauldron box {
         fill = iron_dark;
@@ -158,7 +158,7 @@ module goblin_surface {
       chart arm box {
         fill = skin;
         grain = soft;
-        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2ratio; }
+        pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; }
       }
       chart hand box {
         fill = skin_dark;
@@ -183,7 +183,7 @@ module goblin_surface {
       chart mohawk box {
         fill = cloth;
         grain = clustered;
-        pattern gradient { to = brass; axis = y; space = local; soft = 0.3ratio; }
+        pattern gradient { to = brass; axis = y; space = local; soft = 0.3; }
       }
       grain soft { seed = 44021; }
       tone painterly;

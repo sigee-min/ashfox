@@ -1,5 +1,5 @@
-ashfox-model 1
-compound village_compound {
+ashfox 1
+structure village_compound {
   import "./medieval_cottage.ashfox" as cottage;
   import "./watchtower.ashfox" as tower;
   import "./blacksmith.ashfox" as smith;
@@ -8,55 +8,46 @@ compound village_compound {
 
   density = 2;
   seed = 505;
-  size = (48, 28, 40);
+  size = (48b, 28b, 40b);
   data_version = 3955;
 
-  outputs {
-    java_structure;
-    glb;
-  }
+  outputs = [java_structure, glb];
 
   preview exterior { sheet = exterior; }
   preview cutaway { sheet = cutaway; }
 
   palette {
-    cobble = mix("minecraft:cobblestone" * 0.65, "minecraft:mossy_cobblestone" * 0.25, "minecraft:stone_bricks" * 0.1);
+    cobble = mix("minecraft:cobblestone" * 65%, "minecraft:mossy_cobblestone" * 25%, "minecraft:stone_bricks" * 10%);
     moss_cobble = "minecraft:mossy_cobblestone";
-    road_stone = mix("minecraft:stone_bricks" * 0.7, "minecraft:cobblestone" * 0.3);
+    road_stone = mix("minecraft:stone_bricks" * 70%, "minecraft:cobblestone" * 30%);
     grass = "minecraft:grass_block";
     wall = "minecraft:stone_brick_wall";
   }
 
-  build {
-    box from = (0, 0, 19) to = (47, 0, 22) block = road_stone;
-    box from = (16, 0, 16) to = (23, 0, 25) block = cobble;
-    box from = (8, 0, 16) to = (11, 0, 25) block = road_stone;
-    box from = (28, 0, 17) to = (31, 0, 25) block = road_stone;
-    box from = (1, 0, 1) to = (46, 0, 1) block = wall;
-    box from = (1, 0, 38) to = (46, 0, 38) block = wall;
-    box from = (40, 0, 13) to = (45, 0, 17) block = grass;
-    box from = (40, 0, 24) to = (45, 0, 28) block = grass;
-
-    compound_place cottage at = (2, 0, 2) rotate = 0;
-    compound_place tavern at = (20, 0, 2) rotate = 0;
-    compound_place tower at = (3, 0, 25) rotate = 180;
-    compound_place smith at = (22, 0, 24) rotate = 180;
-
-    place kit.WellHead at = (18, 1, 19) rotate = 0;
-    place kit.LampPost at = (16, 1, 18) rotate = 0;
-    place kit.LampPost at = (23, 1, 22) rotate = 0;
-    place kit.LampPost at = (7, 1, 19) rotate = 0;
-    place kit.LampPost at = (33, 1, 22) rotate = 0;
-    place kit.MarketCart at = (40, 1, 19) rotate = 0;
-    place kit.CrateStack at = (44, 1, 19) rotate = 0;
-    place kit.GardenTree at = (41, 1, 14) rotate = 0;
-    place kit.GardenTree at = (41, 1, 25) rotate = 0;
-
-    weathering {
-      ground_moss height = 2 target = cobble into = moss_cobble rate = 0.3;
-    }
-
-    socket west_gate kind = road at = (0, 0, 20) normal = west pool = "village:streets" target = "road_join";
-    socket east_gate kind = road at = (47, 0, 20) normal = east pool = "village:streets" target = "road_join";
+  box { from = (0b, 0b, 19b); to = (47b, 0b, 22b); block = road_stone; }
+  box { from = (16b, 0b, 16b); to = (23b, 0b, 25b); block = cobble; }
+  box { from = (8b, 0b, 16b); to = (11b, 0b, 25b); block = road_stone; }
+  box { from = (28b, 0b, 17b); to = (31b, 0b, 25b); block = road_stone; }
+  box { from = (1b, 0b, 1b); to = (46b, 0b, 1b); block = wall; }
+  box { from = (1b, 0b, 38b); to = (46b, 0b, 38b); block = wall; }
+  box { from = (40b, 0b, 13b); to = (45b, 0b, 17b); block = grass; }
+  box { from = (40b, 0b, 24b); to = (45b, 0b, 28b); block = grass; }
+  compound_place cottage { at = (2b, 0b, 2b); rotate = 0; }
+  compound_place tavern { at = (20b, 0b, 2b); rotate = 0; }
+  compound_place tower { at = (3b, 0b, 25b); rotate = 180; }
+  compound_place smith { at = (22b, 0b, 24b); rotate = 180; }
+  place kit.WellHead { at = (18b, 1b, 19b); rotate = 0; }
+  place kit.LampPost { at = (16b, 1b, 18b); rotate = 0; }
+  place kit.LampPost { at = (23b, 1b, 22b); rotate = 0; }
+  place kit.LampPost { at = (7b, 1b, 19b); rotate = 0; }
+  place kit.LampPost { at = (33b, 1b, 22b); rotate = 0; }
+  place kit.MarketCart { at = (40b, 1b, 19b); rotate = 0; }
+  place kit.CrateStack { at = (44b, 1b, 19b); rotate = 0; }
+  place kit.GardenTree { at = (41b, 1b, 14b); rotate = 0; }
+  place kit.GardenTree { at = (41b, 1b, 25b); rotate = 0; }
+  weathering {
+    ground_moss { height = 2b; target = cobble; into = moss_cobble; rate = 30%; }
   }
+  socket west_gate { kind = road; at = (0b, 0b, 20b); normal = west; pool = "village:streets"; target = "road_join"; }
+  socket east_gate { kind = road; at = (47b, 0b, 20b); normal = east; pool = "village:streets"; target = "road_join"; }
 }

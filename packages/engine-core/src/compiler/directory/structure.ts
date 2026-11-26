@@ -267,9 +267,9 @@ const visitStructureUnit = (
   if (state.visiting.has(filePath)) throw new Error(`Structure import cycle: ${filePath}`);
   const file = state.filesByPath.get(filePath);
   if (!file) throw new Error(`Missing or ignored source: ${filePath}`);
-  if (topKindOf(state, filePath, file.source) === 'asset') {
+  if (topKindOf(state, filePath, file.source) === 'model') {
     if (!alias || !ownerPath || filePath === state.entryPath)
-      throw new Error(`Unexpected asset entry: ${filePath}`);
+      throw new Error(`Unexpected model entry: ${filePath}`);
     state.customModels[qualifyCustomAssetKey(ownerPath, alias)] = compileImportedModel(
       filePath,
       state.filesByPath,
@@ -284,7 +284,7 @@ const visitStructureUnit = (
   state.visiting.add(filePath);
   const unit = parseStructureCached(state, filePath, file.source);
   const ownerKind = ownerPath ? state.units.get(ownerPath)?.kind : undefined;
-  const allowStructure = ownerKind === 'compound';
+  const allowStructure = ownerKind === 'structure';
   if (
     filePath !== state.entryPath &&
     unit.kind !== 'module' &&

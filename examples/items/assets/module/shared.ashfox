@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module shared {
   export material steel {
     ramp { mode = auto; base = #7f9bb8; preset = metal; }

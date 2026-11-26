@@ -267,7 +267,7 @@ export interface SoundRecipe {
   readonly id: string;
   readonly profile: SoundProfile;
   readonly duration: number;
-  readonly sampleRate: 48000;
+  readonly sample_rate: 48000;
   readonly channels?: 1 | 2;
   readonly seed: number;
   readonly variants: readonly SoundVariant[];
@@ -292,7 +292,7 @@ export interface SoundProduct {
   readonly wav: Uint8Array;
   readonly frames: number;
   readonly rawFrames: number;
-  readonly sampleRate: 48000;
+  readonly sample_rate: 48000;
   readonly channels: 1 | 2;
   readonly peak: number;
   readonly rms: number;

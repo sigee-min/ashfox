@@ -8,7 +8,7 @@ Start with the [complete model](model.md#complete-source) for its rig and surfac
 ## Parameters
 
 Declare `param name: type;` inside a component. Parameters have no default value;
-every instance supplies each declared parameter exactly once with `set`.
+every instance supplies each declared parameter and required port directly as `name = value;`.
 Use a [closed value type](values.md#closed-value-types), not a stringly typed record.
 
 Fragment replacing the complete model's `Body` component:
@@ -31,13 +31,13 @@ export component Body {
 }
 ```
 
-Its instance in `export asset sample`:
+Its instance in `model sample`:
 
 ```text
 use Body as body {
-  set size = (4u, 4u, 4u);
-  bind skeleton = SampleRig;
-  bind skin = red;
+  size = (4u, 4u, 4u);
+  skeleton = SampleRig;
+  skin = red;
 };
 ```
 
@@ -56,15 +56,15 @@ Unknown, duplicate, missing and incorrectly typed parameter values fail.
 | `provides socket hand: Mount capacity = one;` | Provider accepting one connection; `many` allows several |
 | `bind bone root to skeleton.root;` | Bind a component geometry bone to a joint through the rig port |
 | `bind socket mount to bone anchor { frame { … } }` | Bind a component socket endpoint to a geometry bone with an explicit local frame |
-| Instance `bind skeleton = Rig;` | Select the rig contract for the component port; it must match the assembly skeleton |
-| Instance `bind skin = concrete_surface;` | Supply a concrete surface that implements the required contract |
+| Instance `skeleton = Rig;` | Select the rig contract for the component port; it must match the assembly skeleton |
+| Instance `skin = concrete_surface;` | Supply a concrete surface that implements the required contract |
 | `connect body.hand -> shield.mount;` | Connect a provided endpoint to a required endpoint |
 
 The assembly's `skeleton = ConcreteSkeleton;` selects the implementation.
-The `use` block's rig-port bind names its **rig contract**, not the skeleton.
-Socket ports are satisfied by `connect`, not by `bind port = …`.
+The `use` block's rig-port binding names its **rig contract**, not the skeleton.
+Socket ports are satisfied by `connect`, not by direct property binding.
 Only socket providers participate in `connect`; provided ports cannot receive
-an assembly `bind`. Use required rig/surface ports for those dependencies.
+an assembly binding. Use required rig/surface ports for those dependencies.
 
 ## Socket contracts and frames
 
@@ -121,7 +121,7 @@ Every required socket needs exactly one provider. Providers respect `one` or
 authorities and connection cycles fail. Connections are directional:
 `provider.port -> required.port`.
 
-Skeleton `parent-origin` uses the parent joint's frame; geometry `origin` and
+Skeleton `parent_origin` uses the parent joint's frame; geometry `origin` and
 socket-frame `origin` have their own local spaces. See
 [rigs and skeletons](model.md#4-rigs-and-skeletons) before authoring offsets.
 After changing attachment locations, inspect both rest pose and every motion.
