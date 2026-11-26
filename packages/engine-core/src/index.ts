@@ -308,7 +308,6 @@ export { evaluateStructureQuality } from './audit/structure/evaluate';
 export type { StructureAuditMetrics, StructureAuditReport } from './audit/structure/contract';
 export {
   buildStructureBakedMesh,
-  buildStructureDocument,
   collectStructureCutBands,
   compileStructureUnits as compileStructureUnitsRaw,
   decodeStructureNbt,

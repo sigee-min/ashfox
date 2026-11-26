@@ -16,7 +16,7 @@ import {
   fillBackground,
   renderModelFrames,
 } from './modelRender';
-import { captureStructureObservation } from './structSheet';
+import { captureStructureGif, captureStructureObservation } from './structSheet';
 
 interface Payload {
   readonly document?: ProjectDocument;
@@ -259,8 +259,11 @@ export const capture = async (
   v: ViewOptions,
   replay: boolean,
 ): Promise<{ mime: string; data: string }> => {
-  if (loaded.structure && !replay) {
-    return captureStructureObservation(loaded.structure, v, new AbortController().signal);
+  if (loaded.structure) {
+    const signal = new AbortController().signal;
+    return replay
+      ? captureStructureGif(loaded.structure, v, signal)
+      : captureStructureObservation(loaded.structure, v, signal);
   }
   if (!loaded.document) return captureNonModelAsset(v, replay);
   const model = loaded.document;

@@ -23,7 +23,6 @@ export interface StructureObservationSlice {
   readonly label: string;
   readonly cutY: number;
   readonly bakedMesh?: BakedMesh;
-  readonly document?: ProjectDocument;
 }
 
 export interface StructureObservationPayload {
@@ -34,13 +33,11 @@ export interface StructureObservationPayload {
   readonly playableMeta: PlayableMeta;
   readonly floors: readonly FloorMeta[];
   readonly rooms: readonly RoomMeta[];
-  readonly document?: ProjectDocument;
   readonly cutSlices?: readonly StructureObservationSlice[];
 }
 
 export interface StructureSceneBuildOptions {
   readonly bakedMesh?: BakedMesh;
-  readonly document?: ProjectDocument;
   readonly twilight?: boolean;
   readonly interiorFill?: boolean;
   readonly clipY?: number;
@@ -303,6 +300,8 @@ const appendStructureGeometry = async (
       : null;
   if (activeMesh.batches.length > 0) {
     appendBakedBatches(root, activeMesh, options.twilight ?? false, clipPlanes, disposables);
+  }
+  if (activeMesh.instances.length > 0) {
     await appendCustomInstances(
       root,
       activeMesh,
@@ -311,23 +310,10 @@ const appendStructureGeometry = async (
       disposables,
       signal,
     );
-    return;
   }
-  const doc = options.document ?? payload.document;
-  if (!doc) return;
-  const projection = projectToThreeScene(doc, {
-    assets: {},
-    showSkeleton: false,
-    showTextures: true,
-    showWireframe: false,
-  });
-  await waitForProjectionTextures(projection, signal);
-  projection.root.scale.setScalar(VOXEL_MODEL_SCALE);
-  root.add(projection.root);
-  disposables.push(() => projection.dispose());
 };
 
-/** Builds a Three.js renderable group for StructureBakedMesh (with Document fallback). */
+/** Builds a Three.js renderable group for StructureBakedMesh. */
 export const buildStructureScene = async (
   payload: StructureObservationPayload,
   options: StructureSceneBuildOptions,

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   StructureInputError,
-  buildStructureDocument,
+  buildStructureBakedMesh,
   compileDirectoryWorkspace,
   compileStructureUnits,
   decodeStructureNbt,
@@ -255,13 +255,22 @@ structure s {
   assert.ok(nbt.palette.some((e) => e.Name === 'minecraft:jigsaw'));
   assert.ok(nbt.blocks.some((b) => nbt.palette[b.state]?.Name === 'minecraft:jigsaw'));
 
-  const fullDoc = buildStructureDocument(built.grid, { 's.ashfox#rp': pillarModel });
-  const cutDoc = buildStructureDocument(
+  const cutMesh = buildStructureBakedMesh(
     built.grid,
+    built.lighting,
     { 's.ashfox#rp': pillarModel },
     { cutawayY: 2 },
   );
-  assert.ok(Object.keys(cutDoc.scene.nodes).length < Object.keys(fullDoc.scene.nodes).length);
+  assert.ok(cutMesh.mergedQuadCount < built.bakedMesh.mergedQuadCount);
+  assert.ok(built.bakedMesh.textures.struct_atlas_opaque);
+  assert.ok(built.bakedMesh.textures.struct_atlas_cutout);
+  const atlasBatches = built.bakedMesh.batches.filter((b) =>
+    b.textureId.startsWith('struct_atlas_'),
+  );
+  assert.ok(atlasBatches.length <= 3 && atlasBatches.length >= 2);
+  for (const batch of atlasBatches) {
+    for (const uv of batch.uvs) assert.ok(uv >= 0 && uv <= 1, `atlas UV out of [0,1]: ${uv}`);
+  }
   const stubNodes = Object.values(built.document.scene.nodes);
   assert.ok(stubNodes.length <= 8);
   assert.ok(stubNodes.every((n) => n.kind === 'bone'));
@@ -322,6 +331,16 @@ const testCanonicalWorkspaceShowcases = (): void => {
       tavern.structure.grid.floors.some((f) => f.jetty?.south === 1 && f.jetty?.east === 1),
     );
     assert.ok(tavern.structure.grid.openings.some((o) => o.kind === 'bay_window'));
+    const tavernTris = tavern.structure.bakedMesh.batches.reduce(
+      (sum, b) => sum + b.indices.length / 3,
+      0,
+    );
+    assert.ok(
+      typeof tavern.structure.bakedMesh.trimCount === 'number' &&
+        tavern.structure.bakedMesh.trimCount < 1600,
+    );
+    assert.ok(tavern.structure.bakedMesh.batches.length <= 16);
+    assert.ok(tavernTris < 22000);
   }
   if (smith.kind === 'structure') {
     assert.ok(smith.structure.grid.openings.some((o) => o.kind === 'arcade'));

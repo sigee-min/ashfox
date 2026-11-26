@@ -1,8 +1,9 @@
-import type { AxisCubeNode, CubeFace, CubeFaceDirection, CubeFaces } from '../../model/scene';
+import type { CubeFaceDirection } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
 import type { ParsedBlockState } from '../../project/structure/state';
-import type { TileUvRef } from './atlas';
-import type { BlockDescriptor } from './blocks';
+import type { BlockDescriptor, BlockRenderLayer } from './blocks';
+import type { StructureGrid, StructureLightingField } from './contract';
+import { computeFaceShade, FACE_BASIS } from './lighting';
 import {
   bedBoxes,
   campfireBoxes,
@@ -23,7 +24,29 @@ export interface CachedBlockState {
   readonly facing: CardinalFacing;
 }
 
-const DIRS: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
+const NO_CONNS: readonly boolean[] = [false, false, false, false];
+
+interface GridSliceAxis {
+  readonly dir: CubeFaceDirection;
+  readonly axis: 0 | 1 | 2;
+  readonly step: -1 | 1;
+  readonly nbSlice: 0 | 3;
+  readonly ud: boolean;
+}
+
+const GRID_SLICE_AXES: readonly GridSliceAxis[] = [
+  { dir: 'north', axis: 2, step: -1, nbSlice: 3, ud: false },
+  { dir: 'south', axis: 2, step: 1, nbSlice: 0, ud: false },
+  { dir: 'west', axis: 0, step: -1, nbSlice: 3, ud: false },
+  { dir: 'east', axis: 0, step: 1, nbSlice: 0, ud: false },
+  { dir: 'down', axis: 1, step: -1, nbSlice: 3, ud: true },
+  { dir: 'up', axis: 1, step: 1, nbSlice: 0, ud: true },
+];
+
+const SELF_OCC_SCRATCH = new Uint8Array(64);
+const NB_OCC_SCRATCH = new Uint8Array(64);
+const NB_FACE_SCRATCH = new Uint8Array(16);
+const SLICE_MASK_SCRATCH = new Uint8Array(16);
 
 export const tileForFace = (
   desc: BlockDescriptor,
@@ -72,40 +95,19 @@ export const writeQuadUv = (
   uvs[7] = pv;
 };
 
-export const writeSpecBoxUv = (
-  dir: CubeFaceDirection,
-  spec: LocalBoxSpec,
-  x: number,
-  y: number,
-  z: number,
-  uvs: number[],
-): void => {
+/** Writes local [0..1] UVs for non-repeating sub-voxel and trim boxes. */
+export const writeSpecBoxUv = (dir: CubeFaceDirection, spec: LocalBoxSpec, uvs: number[]): void => {
   const ew = dir === 'east' || dir === 'west';
   const ud = dir === 'up' || dir === 'down';
-  const uSpan = ((ew ? spec.to[2] - spec.from[2] : spec.to[0] - spec.from[0]) / 16) * 0.5;
-  const vSpan = ((ud ? spec.to[2] - spec.from[2] : spec.to[1] - spec.from[1]) / 16) * 0.5;
-  writeQuadUv(uvs, ((ew ? z : x) & 1) * 0.5, ((ud ? z : y) & 1) * 0.5, uSpan, vSpan);
-};
-
-export const makeFace = (uvRef: TileUvRef, enabled = true): CubeFace => ({
-  enabled,
-  textureId: uvRef.textureId,
-  uv: [uvRef.u, uvRef.v, uvRef.u + uvRef.size, uvRef.v + uvRef.size],
-  rotation: 0,
-});
-
-export const makeBoxFaces = (
-  desc: BlockDescriptor,
-  facing: CardinalFacing,
-  uvs: ReadonlyMap<string, TileUvRef>,
-  visible: readonly boolean[] = [true, true, true, true, true, true],
-): CubeFaces => {
-  const entries = DIRS.map((dir, i) => {
-    const tile = tileForFace(desc, dir, facing);
-    const ref = uvs.get(`${desc.layer}:${tile}`) ?? [...uvs.values()][0]!;
-    return [dir, makeFace(ref, visible[i]!)];
-  });
-  return Object.fromEntries(entries) as CubeFaces;
+  const rawU = ew ? spec.to[2] - spec.from[2] : spec.to[0] - spec.from[0];
+  const rawV = ud ? spec.to[2] - spec.from[2] : spec.to[1] - spec.from[1];
+  const uSpan = Math.min(1, Math.max(0, rawU / 16));
+  const vSpan = Math.min(1, Math.max(0, rawV / 16));
+  const fx = ew ? spec.from[2] : spec.from[0];
+  const fy = ud ? spec.from[2] : 16 - spec.to[1];
+  const pu = fx >= 0 && fx + rawU <= 16 ? fx / 16 : 0;
+  const pv = fy >= 0 && fy + rawV <= 16 ? fy / 16 : 0;
+  writeQuadUv(uvs, pu, pv, uSpan, vSpan);
 };
 
 const fenceBoxes = (
@@ -237,40 +239,247 @@ export const shapeBoxSpecs = (
     : trapdoorBoxes(parsed.properties, facing);
 };
 
-export const buildNonFullCubes = (
-  idPrefix: string,
-  parentId: string,
-  ox: number,
-  oy: number,
-  oz: number,
-  cachedState: CachedBlockState,
+const occAt = (occ: Uint8Array, axis: 0 | 1 | 2, s: number, u: number, v: number): number => {
+  if (axis === 2) return occ[(v * 4 + s) * 4 + u]!;
+  if (axis === 0) return occ[(v * 4 + u) * 4 + s]!;
+  return occ[(s * 4 + v) * 4 + u]!;
+};
+
+const fillVoxelGrid4 = (specs: readonly LocalBoxSpec[], out: Uint8Array): void => {
+  out.fill(0);
+  for (const spec of specs) {
+    const x0 = spec.from[0] >> 2;
+    const x1 = spec.to[0] >> 2;
+    const y0 = spec.from[1] >> 2;
+    const y1 = spec.to[1] >> 2;
+    const z0 = spec.from[2] >> 2;
+    const z1 = spec.to[2] >> 2;
+    for (let y = y0; y < y1; y += 1) {
+      for (let z = z0; z < z1; z += 1) {
+        for (let x = x0; x < x1; x += 1) out[(y * 4 + z) * 4 + x] = 1;
+      }
+    }
+  }
+};
+
+export interface CulledShapeContext {
+  readonly grid: StructureGrid;
+  readonly descriptors: readonly BlockDescriptor[];
+  readonly parsedStates: readonly CachedBlockState[];
+  readonly lighting: StructureLightingField;
+  readonly maxY: number;
+}
+
+export interface CulledShapeScratch {
+  readonly from: [number, number, number];
+  readonly to: [number, number, number];
+  readonly uvs: number[];
+  readonly colors: number[];
+}
+
+export type EmitCulledQuadFn = (
+  layer: BlockRenderLayer,
+  tileId: string,
+  dir: CubeFaceDirection,
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  uvs: readonly number[],
+  colors: readonly number[],
+  flip: boolean,
+) => void;
+
+const readNeighborFaceMask = (
+  ctx: CulledShapeContext,
+  nx: number,
+  ny: number,
+  nz: number,
+  cfg: GridSliceAxis,
+): void => {
+  const [w, _h, d] = ctx.grid.size;
+  if (nx < 0 || nx >= w || ny < 0 || ny >= ctx.maxY || nz < 0 || nz >= d) {
+    NB_FACE_SCRATCH.fill(0);
+    return;
+  }
+  const idx = (ny * d + nz) * w + nx;
+  const nv = ctx.grid.voxels[idx]!;
+  if (nv <= 0 || ctx.grid.customTags[idx] !== null) {
+    NB_FACE_SCRATCH.fill(0);
+    return;
+  }
+  const ndesc = ctx.descriptors[nv]!;
+  if (ndesc.solidOpaque) {
+    NB_FACE_SCRATCH.fill(1);
+    return;
+  }
+  if (ndesc.shape !== 'stair' && ndesc.shape !== 'slab') {
+    NB_FACE_SCRATCH.fill(0);
+    return;
+  }
+  const ncached = ctx.parsedStates[nv]!;
+  fillVoxelGrid4(shapeBoxSpecs(ndesc, ncached.parsed, ncached.facing, NO_CONNS), NB_OCC_SCRATCH);
+  for (let v = 0; v < 4; v += 1) {
+    for (let u = 0; u < 4; u += 1) {
+      NB_FACE_SCRATCH[v * 4 + u] = occAt(NB_OCC_SCRATCH, cfg.axis, cfg.nbSlice, u, v);
+    }
+  }
+};
+
+const cellVisible4 = (
+  axis: 0 | 1 | 2,
+  step: -1 | 1,
+  s: number,
+  u: number,
+  v: number,
+  atEdge: boolean,
+): 0 | 1 => {
+  if (!occAt(SELF_OCC_SCRATCH, axis, s, u, v)) return 0;
+  const blocked = atEdge
+    ? NB_FACE_SCRATCH[v * 4 + u]!
+    : occAt(SELF_OCC_SCRATCH, axis, s + step, u, v);
+  return blocked ? 0 : 1;
+};
+
+const fillSliceFaceMask4 = (
+  axis: 0 | 1 | 2,
+  step: -1 | 1,
+  s: number,
+  outMask: Uint8Array,
+): boolean => {
+  const ns = s + step;
+  const atEdge = ns < 0 || ns > 3;
+  let any = false;
+  for (let v = 0; v < 4; v += 1) {
+    for (let u = 0; u < 4; u += 1) {
+      const vis = cellVisible4(axis, step, s, u, v, atEdge);
+      outMask[v * 4 + u] = vis;
+      if (vis) any = true;
+    }
+  }
+  return any;
+};
+
+const greedySpan4 = (mask: Uint8Array, u0: number, v0: number): readonly [number, number] => {
+  let mw = 1;
+  while (u0 + mw < 4 && mask[v0 * 4 + u0 + mw] === 1) mw += 1;
+  let mh = 1;
+  outer: while (v0 + mh < 4) {
+    for (let k = 0; k < mw; k += 1) if (mask[(v0 + mh) * 4 + u0 + k] !== 1) break outer;
+    mh += 1;
+  }
+  return [mw, mh];
+};
+
+const writeGridBoxBounds = (
+  axis: 0 | 1 | 2,
+  s: number,
+  u: number,
+  v: number,
+  mw: number,
+  mh: number,
+  bx: number,
+  bz: number,
+  y: number,
+  from: [number, number, number],
+  to: [number, number, number],
+): void => {
+  if (axis === 2) {
+    setVec3(from, bx + u * 0.25, y + v * 0.25, bz + s * 0.25);
+    setVec3(to, bx + (u + mw) * 0.25, y + (v + mh) * 0.25, bz + (s + 1) * 0.25);
+  } else if (axis === 0) {
+    setVec3(from, bx + s * 0.25, y + v * 0.25, bz + u * 0.25);
+    setVec3(to, bx + (s + 1) * 0.25, y + (v + mh) * 0.25, bz + (u + mw) * 0.25);
+  } else {
+    setVec3(from, bx + u * 0.25, y + s * 0.25, bz + v * 0.25);
+    setVec3(to, bx + (u + mw) * 0.25, y + (s + 1) * 0.25, bz + (v + mh) * 0.25);
+  }
+};
+
+const clearMaskSpan4 = (mask: Uint8Array, u: number, v: number, mw: number, mh: number): void => {
+  for (let dy = 0; dy < mh; dy += 1)
+    for (let dx = 0; dx < mw; dx += 1) mask[(v + dy) * 4 + u + dx] = 0;
+};
+
+const emitCulledSliceQuads4 = (
+  ctx: CulledShapeContext,
+  emitQuad: EmitCulledQuadFn,
+  cfg: GridSliceAxis,
+  s: number,
+  x: number,
+  y: number,
+  z: number,
+  layer: BlockRenderLayer,
+  tileId: string,
+  colors: readonly number[],
+  flip: boolean,
+  scratch: CulledShapeScratch,
+): number => {
+  const [w, _h, d] = ctx.grid.size;
+  const bx = x - w / 2;
+  const bz = z - d / 2;
+  let emitted = 0;
+  for (let v = 0; v < 4; v += 1) {
+    for (let u = 0; u < 4; u += 1) {
+      if (SLICE_MASK_SCRATCH[v * 4 + u] !== 1) continue;
+      const [mw, mh] = greedySpan4(SLICE_MASK_SCRATCH, u, v);
+      clearMaskSpan4(SLICE_MASK_SCRATCH, u, v, mw, mh);
+      writeGridBoxBounds(cfg.axis, s, u, v, mw, mh, bx, bz, y, scratch.from, scratch.to);
+      const pv = cfg.ud ? v * 0.25 : 1 - (v + mh) * 0.25;
+      writeQuadUv(scratch.uvs, u * 0.25, pv, mw * 0.25, mh * 0.25);
+      emitQuad(layer, tileId, cfg.dir, scratch.from, scratch.to, scratch.uvs, colors, flip);
+      emitted += 1;
+    }
+  }
+  return emitted;
+};
+
+/** Emits 4x4x4-culled faces for stairs and slabs (internal + neighbor + bottom occlusion). */
+export const emitCulledGridShape = (
+  ctx: CulledShapeContext,
+  emitQuad: EmitCulledQuadFn,
   desc: BlockDescriptor,
-  conns: readonly boolean[],
-  uvs: ReadonlyMap<string, TileUvRef>,
-): readonly AxisCubeNode[] => {
-  const { parsed, facing } = cachedState;
-  const specs = shapeBoxSpecs(desc, parsed, facing, conns);
-  const faces = makeBoxFaces(desc, facing, uvs);
-  return specs.map((spec, idx) => ({
-    id: `${idPrefix}_${idx}`,
-    kind: 'cube',
-    name: `${idPrefix}_${idx}`,
-    parentId,
-    geometryMode: 'axis-box',
-    bounds: {
-      from: [ox + spec.from[0], oy + spec.from[1], oz + spec.from[2]],
-      to: [ox + spec.to[0], oy + spec.to[1], oz + spec.to[2]],
-    },
-    transform: {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      pivot: [0, 0, 0],
-    },
-    visible: true,
-    inflate: 0,
-    mirror: false,
-    boxUv: false,
-    faces,
-  }));
+  cached: CachedBlockState,
+  x: number,
+  y: number,
+  z: number,
+  scratch: CulledShapeScratch,
+): number => {
+  fillVoxelGrid4(shapeBoxSpecs(desc, cached.parsed, cached.facing, NO_CONNS), SELF_OCC_SCRATCH);
+  let count = 0;
+  for (const cfg of GRID_SLICE_AXES) {
+    const normal = FACE_BASIS[cfg.dir].normal;
+    readNeighborFaceMask(ctx, x + normal[0], y + normal[1], z + normal[2], cfg);
+    const tileId = tileForFace(desc, cfg.dir, cached.facing);
+    let shade: ReturnType<typeof computeFaceShade> | null = null;
+    for (let s = 0; s < 4; s += 1) {
+      if (!fillSliceFaceMask4(cfg.axis, cfg.step, s, SLICE_MASK_SCRATCH)) continue;
+      shade ??= computeFaceShade(
+        ctx.grid,
+        ctx.descriptors,
+        ctx.lighting,
+        x,
+        y,
+        z,
+        cfg.dir,
+        desc.layer === 'emissive',
+        ctx.maxY,
+        false,
+        scratch.colors,
+      );
+      count += emitCulledSliceQuads4(
+        ctx,
+        emitQuad,
+        cfg,
+        s,
+        x,
+        y,
+        z,
+        desc.layer,
+        tileId,
+        shade.colors,
+        shade.flip,
+        scratch,
+      );
+    }
+  }
+  return count;
 };
