@@ -4,17 +4,38 @@ import { compileGltfCubePrimitiveData } from './cube';
 import { compileGltfPlanePrimitiveData } from './plane';
 import { compileGltfPrimitive } from './primitive';
 import type { GltfPrimitiveData } from './data';
-import { quaternionFromEuler, rotateVec3ByQuaternion } from './spatial';
 import type { GltfSceneCompileOptions } from './graph';
-import type { GltfMesh } from './contract';
+import type { GltfMesh, GltfNode, GltfSkin } from './contract';
+import {
+  computePositionsBounds,
+  normalizePositionsWithBounds,
+  type PositionBounds,
+} from './vertexLayout';
+
+export type Mat4 = readonly number[];
 
 interface PrimitiveBatch {
   material: number | undefined;
   hasUvs: boolean;
-  primitives: GltfPrimitiveData[];
+  primitives: Array<GltfPrimitiveData & { jointId?: string | null }>;
 }
 
-/** A canonical plane basis already maps its chart into model space.  Its
+interface MergedGroup {
+  positions: number[];
+  normals: number[];
+  uvs?: number[];
+  joints?: number[];
+  material: number | undefined;
+  indices: number[];
+}
+
+export interface CompiledModelGltf {
+  meshes: GltfMesh[];
+  skins: GltfSkin[];
+  meshNodes: GltfNode[];
+}
+
+/** A canonical plane basis already maps its chart into model space. Its
  * transform rotation is a basis-less lowering hint for consumers that cannot
  * read the basis and must never be applied a second time by glTF. */
 export const gltfNodeGeometryRotation = (node: SceneNode): Vec3 =>
@@ -24,15 +45,12 @@ export const gltfNodeGeometryRotation = (node: SceneNode): Vec3 =>
       ? cubeGeometryRotation(node)
       : node.transform.rotation;
 
-export interface CompiledRigidBatches {
-  meshes: GltfMesh[];
-  meshIndexByOwnerId: ReadonlyMap<string, number>;
-}
-
-const animatedNodeIds = (document: ProjectDocument): ReadonlySet<string> =>
+export const animatedNodeIds = (document: ProjectDocument): ReadonlySet<string> =>
   new Set(
     Object.values(document.animations).flatMap((clip) =>
-      Object.values(clip.channels).map((channel) => channel.targetNodeId),
+      Object.values(clip.channels).flatMap((channel) =>
+        channel.keys.length > 0 ? [channel.targetNodeId] : [],
+      ),
     ),
   );
 
@@ -52,70 +70,167 @@ export const primitiveDataForGltfNode = (
   }
 };
 
-const normalize = (value: Vec3): [number, number, number] => {
-  const length = Math.hypot(value[0], value[1], value[2]);
-  return length <= 0.000001 ? [0, 1, 0] : [value[0] / length, value[1] / length, value[2] / length];
+export const identityMat4 = (): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+export const trsMat4 = (
+  t: readonly [number, number, number],
+  q: readonly [number, number, number, number],
+  s: readonly [number, number, number],
+): number[] => {
+  const [x, y, z, w] = q;
+  const x2 = x + x;
+  const y2 = y + y;
+  const z2 = z + z;
+  const xx = x * x2;
+  const xy = x * y2;
+  const xz = x * z2;
+  const yy = y * y2;
+  const yz = y * z2;
+  const zz = z * z2;
+  const wx = w * x2;
+  const wy = w * y2;
+  const wz = w * z2;
+  return [
+    (1 - (yy + zz)) * s[0],
+    (xy + wz) * s[0],
+    (xz - wy) * s[0],
+    0,
+    (xy - wz) * s[1],
+    (1 - (xx + zz)) * s[1],
+    (yz + wx) * s[1],
+    0,
+    (xz + wy) * s[2],
+    (yz - wx) * s[2],
+    (1 - (xx + yy)) * s[2],
+    0,
+    t[0],
+    t[1],
+    t[2],
+    1,
+  ];
 };
 
-const inverseScaledNormal = (normal: number, scale: number): number =>
-  Math.abs(scale) <= 0.000001 ? 0 : normal / scale;
-
-const flipTriangleWinding = (indices: readonly number[]): number[] => {
-  const result = [...indices];
-  for (let index = 0; index + 2 < result.length; index += 3) {
-    const second = result[index + 1];
-    result[index + 1] = result[index + 2];
-    result[index + 2] = second;
+export const multiplyMat4 = (a: Mat4, b: Mat4): number[] => {
+  const out = new Array<number>(16);
+  for (let col = 0; col < 4; col += 1) {
+    const b0 = b[col * 4]!;
+    const b1 = b[col * 4 + 1]!;
+    const b2 = b[col * 4 + 2]!;
+    const b3 = b[col * 4 + 3]!;
+    for (let row = 0; row < 4; row += 1) {
+      out[col * 4 + row] = a[row]! * b0 + a[4 + row]! * b1 + a[8 + row]! * b2 + a[12 + row]! * b3;
+    }
   }
-  return result;
+  return out;
 };
 
-export const bakeGltfPrimitiveToParent = (
-  node: SceneNode,
-  translation: Vec3,
+const upper3x3Cofactors = (m: Mat4) => {
+  const a00 = m[0]!;
+  const a10 = m[1]!;
+  const a20 = m[2]!;
+  const a01 = m[4]!;
+  const a11 = m[5]!;
+  const a21 = m[6]!;
+  const a02 = m[8]!;
+  const a12 = m[9]!;
+  const a22 = m[10]!;
+  const c00 = a11 * a22 - a12 * a21;
+  const c01 = a02 * a21 - a01 * a22;
+  const c02 = a01 * a12 - a02 * a11;
+  const c10 = a12 * a20 - a10 * a22;
+  const c11 = a00 * a22 - a02 * a20;
+  const c12 = a02 * a10 - a00 * a12;
+  const c20 = a10 * a21 - a11 * a20;
+  const c21 = a01 * a20 - a00 * a21;
+  const c22 = a00 * a11 - a01 * a10;
+  const det = a00 * c00 + a01 * c10 + a02 * c20;
+  return { c00, c01, c02, c10, c11, c12, c20, c21, c22, det };
+};
+
+export const invertAffineMat4 = (m: Mat4): number[] => {
+  const c = upper3x3Cofactors(m);
+  if (Math.abs(c.det) <= 1e-12) return [...identityMat4()];
+  const d = 1 / c.det;
+  const tx = m[12]!;
+  const ty = m[13]!;
+  const tz = m[14]!;
+  return [
+    c.c00 * d,
+    c.c10 * d,
+    c.c20 * d,
+    0,
+    c.c01 * d,
+    c.c11 * d,
+    c.c21 * d,
+    0,
+    c.c02 * d,
+    c.c12 * d,
+    c.c22 * d,
+    0,
+    -(c.c00 * tx + c.c01 * ty + c.c02 * tz) * d,
+    -(c.c10 * tx + c.c11 * ty + c.c12 * tz) * d,
+    -(c.c20 * tx + c.c21 * ty + c.c22 * tz) * d,
+    1,
+  ];
+};
+
+export const transformPrimitiveByWorldMat4 = (
   primitive: GltfPrimitiveData,
-): GltfPrimitiveData => {
-  const rotation = quaternionFromEuler(gltfNodeGeometryRotation(node));
-  const scale = node.transform.scale;
+  world: Mat4,
+  jointId: string | null,
+): GltfPrimitiveData & { jointId: string | null } => {
+  const cof = upper3x3Cofactors(world);
+  const sign = cof.det < 0 ? -1 : 1;
   const positions: number[] = [];
   const normals: number[] = [];
-  for (let offset = 0; offset < primitive.positions.length; offset += 3) {
-    const position = rotateVec3ByQuaternion(
-      [
-        primitive.positions[offset] * scale[0],
-        primitive.positions[offset + 1] * scale[1],
-        primitive.positions[offset + 2] * scale[2],
-      ],
-      rotation,
-    );
+  for (let i = 0; i < primitive.positions.length; i += 3) {
+    const px = primitive.positions[i]!;
+    const py = primitive.positions[i + 1]!;
+    const pz = primitive.positions[i + 2]!;
     positions.push(
-      position[0] + translation[0],
-      position[1] + translation[1],
-      position[2] + translation[2],
+      world[0]! * px + world[4]! * py + world[8]! * pz + world[12]!,
+      world[1]! * px + world[5]! * py + world[9]! * pz + world[13]!,
+      world[2]! * px + world[6]! * py + world[10]! * pz + world[14]!,
     );
-    const normal = normalize(
-      rotateVec3ByQuaternion(
-        [
-          inverseScaledNormal(primitive.normals[offset], scale[0]),
-          inverseScaledNormal(primitive.normals[offset + 1], scale[1]),
-          inverseScaledNormal(primitive.normals[offset + 2], scale[2]),
-        ],
-        rotation,
-      ),
-    );
-    normals.push(...normal);
+    const nx = primitive.normals[i]!;
+    const ny = primitive.normals[i + 1]!;
+    const nz = primitive.normals[i + 2]!;
+    const rnx = (cof.c00 * nx + cof.c10 * ny + cof.c20 * nz) * sign;
+    const rny = (cof.c01 * nx + cof.c11 * ny + cof.c21 * nz) * sign;
+    const rnz = (cof.c02 * nx + cof.c12 * ny + cof.c22 * nz) * sign;
+    const len = Math.hypot(rnx, rny, rnz);
+    if (len <= 1e-6) normals.push(0, 1, 0);
+    else normals.push(rnx / len, rny / len, rnz / len);
+  }
+  const indices = [...primitive.indices];
+  if (cof.det < 0) {
+    for (let i = 0; i + 2 < indices.length; i += 3) {
+      const tmp = indices[i + 1]!;
+      indices[i + 1] = indices[i + 2]!;
+      indices[i + 2] = tmp;
+    }
   }
   return {
     positions,
     normals,
     ...(primitive.uvs ? { uvs: primitive.uvs } : {}),
     ...(primitive.material === undefined ? {} : { material: primitive.material }),
-    indices:
-      scale[0] * scale[1] * scale[2] < 0
-        ? flipTriangleWinding(primitive.indices)
-        : primitive.indices,
-    ...(primitive.sourceNodeId === undefined ? {} : { sourceNodeId: primitive.sourceNodeId }),
+    indices,
+    jointId,
   };
+};
+
+const findDrivingJointId = (
+  document: ProjectDocument,
+  node: SceneNode,
+  animated: ReadonlySet<string>,
+): string | null => {
+  let cur: SceneNode | undefined = node;
+  while (cur) {
+    if (cur.kind === 'bone' || animated.has(cur.id)) return cur.id;
+    cur = cur.parentId ? document.scene.nodes[cur.parentId] : undefined;
+  }
+  return null;
 };
 
 const batchKey = (material: number | undefined, hasUvs: boolean): string =>
@@ -124,81 +239,184 @@ const batchKey = (material: number | undefined, hasUvs: boolean): string =>
 const compareBatches = (left: PrimitiveBatch, right: PrimitiveBatch): number =>
   (left.material ?? -1) - (right.material ?? -1) || Number(left.hasUvs) - Number(right.hasUvs);
 
-const appendNodePrimitives = (
-  document: ProjectDocument,
-  node: SceneNode,
-  animated: ReadonlySet<string>,
-  restTranslationById: ReadonlyMap<string, Vec3>,
-  options: GltfSceneCompileOptions,
-  batchesByOwner: Map<string, Map<string, PrimitiveBatch>>,
-): void => {
-  if (node.kind !== 'cube' && node.kind !== 'plane') return;
-  const ownerId = node.parentId !== null && !animated.has(node.id) ? node.parentId : node.id;
-  const ownerBatches = batchesByOwner.get(ownerId) ?? new Map<string, PrimitiveBatch>();
-  const bake = ownerId !== node.id;
-  const translation = restTranslationById.get(node.id) ?? [0, 0, 0];
-  for (const source of primitiveDataForGltfNode(document, node, options)) {
-    const authoredSource = { ...source, sourceNodeId: node.id };
-    const primitive = bake
-      ? bakeGltfPrimitiveToParent(node, translation, authoredSource)
-      : authoredSource;
-    const key = batchKey(primitive.material, primitive.uvs !== undefined);
-    const batch = ownerBatches.get(key) ?? {
-      material: primitive.material,
-      hasUvs: primitive.uvs !== undefined,
-      primitives: [],
-    };
-    batch.primitives.push(primitive);
-    ownerBatches.set(key, batch);
+export const appendNumbers = (dst: number[], src: readonly number[]): void => {
+  for (let i = 0; i < src.length; i += 1) dst.push(src[i]!);
+};
+
+const mergeBatch = (
+  batch: PrimitiveBatch,
+  jointIndexById: ReadonlyMap<string, number> | undefined,
+): MergedGroup => {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const joints: number[] = [];
+  const indices: number[] = [];
+  for (const prim of batch.primitives) {
+    const base = positions.length / 3;
+    appendNumbers(positions, prim.positions);
+    appendNumbers(normals, prim.normals);
+    if (batch.hasUvs && prim.uvs) appendNumbers(uvs, prim.uvs);
+    if (jointIndexById && prim.jointId !== undefined && prim.jointId !== null) {
+      const jointIdx = jointIndexById.get(prim.jointId)!;
+      const vCount = prim.positions.length / 3;
+      for (let v = 0; v < vCount; v += 1) joints.push(jointIdx);
+    }
+    for (let i = 0; i < prim.indices.length; i += 1) indices.push(base + prim.indices[i]!);
   }
-  batchesByOwner.set(ownerId, ownerBatches);
+  return {
+    positions,
+    normals,
+    ...(batch.hasUvs ? { uvs } : {}),
+    ...(jointIndexById ? { joints } : {}),
+    material: batch.material,
+    indices,
+  };
 };
 
-const compileBatchMesh = (
-  owner: SceneNode,
-  batches: ReadonlyMap<string, PrimitiveBatch>,
+const buildMergedGroups = (
+  primitives: readonly (GltfPrimitiveData & { jointId: string | null })[],
+  jointIndexById: ReadonlyMap<string, number> | undefined,
+): MergedGroup[] => {
+  const byKey = new Map<string, PrimitiveBatch>();
+  for (const prim of primitives) {
+    const hasUvs = prim.uvs !== undefined;
+    const key = batchKey(prim.material, hasUvs);
+    const batch = byKey.get(key) ?? { material: prim.material, hasUvs, primitives: [] };
+    batch.primitives.push(prim);
+    byKey.set(key, batch);
+  }
+  return [...byKey.values()].sort(compareBatches).map((batch) => mergeBatch(batch, jointIndexById));
+};
+
+const compileQuantizedGroups = (
+  groups: readonly MergedGroup[],
   options: GltfSceneCompileOptions,
-): GltfMesh => {
-  const primitives = [...batches.values()]
-    .sort(compareBatches)
-    .flatMap((batch) =>
-      batch.primitives.map((primitive) =>
-        compileGltfPrimitive(
-          options.writer,
-          primitive.positions,
-          primitive.normals,
-          primitive.uvs,
-          primitive.joints,
-          primitive.material,
-          primitive.indices,
-          primitive.sourceNodeId === undefined
-            ? undefined
-            : { ashfoxSourceNodeId: primitive.sourceNodeId },
-        ),
-      ),
+): {
+  readonly primitives: ReturnType<typeof compileGltfPrimitive>[];
+  readonly bounds: PositionBounds;
+} => {
+  const bounds = computePositionsBounds(groups.map((group) => group.positions));
+  const quantize = options.writer.isQuantized;
+  const primitives = groups.map((group) => {
+    const positions = quantize
+      ? normalizePositionsWithBounds(group.positions, bounds)
+      : group.positions;
+    return compileGltfPrimitive(
+      options.writer,
+      positions,
+      group.normals,
+      group.uvs,
+      group.joints,
+      group.material,
+      group.indices,
     );
-  return { name: `${owner.name} rigid batch`, primitives };
+  });
+  return { primitives, bounds };
 };
 
-export const compileRigidGltfBatches = (
+const findCommonSkeletonNode = (
+  document: ProjectDocument,
+  usedJointIds: readonly string[],
+  nodeIndexById: ReadonlyMap<string, number>,
+): number | undefined => {
+  if (usedJointIds.length === 0) return undefined;
+  const chains = usedJointIds.map((id) => {
+    const path: string[] = [];
+    let cur: SceneNode | undefined = document.scene.nodes[id];
+    while (cur) {
+      path.push(cur.id);
+      cur = cur.parentId ? document.scene.nodes[cur.parentId] : undefined;
+    }
+    return path.reverse();
+  });
+  let common: string | undefined;
+  const minLen = Math.min(...chains.map((chain) => chain.length));
+  for (let depth = 0; depth < minLen; depth += 1) {
+    const candidate = chains[0]![depth]!;
+    if (chains.every((chain) => chain[depth] === candidate)) common = candidate;
+    else break;
+  }
+  return common === undefined ? undefined : nodeIndexById.get(common);
+};
+
+const buildSkinForMesh = (
+  document: ProjectDocument,
+  usedJointIds: readonly string[],
+  nodeIndexById: ReadonlyMap<string, number>,
+  worldMatrixById: ReadonlyMap<string, Mat4>,
+  bounds: PositionBounds,
+  options: GltfSceneCompileOptions,
+): GltfSkin => {
+  const dequantMat = options.writer.isQuantized
+    ? trsMat4([...bounds.center], [0, 0, 0, 1], [...bounds.halfExtent])
+    : undefined;
+  const ibmFloats: number[] = [];
+  const joints: number[] = [];
+  for (const id of usedJointIds) {
+    joints.push(nodeIndexById.get(id)!);
+    const invWorld = invertAffineMat4(worldMatrixById.get(id)!);
+    const ibm = dequantMat ? multiplyMat4(invWorld, dequantMat) : invWorld;
+    appendNumbers(ibmFloats, ibm);
+  }
+  const skeleton = findCommonSkeletonNode(document, usedJointIds, nodeIndexById);
+  return {
+    name: `${document.name}_skin`,
+    joints,
+    ...(skeleton === undefined ? {} : { skeleton }),
+    inverseBindMatrices: options.writer.addFloatMatrixAccessor(ibmFloats),
+  };
+};
+
+export const compileMergedModelGltf = (
   document: ProjectDocument,
   orderedNodes: readonly SceneNode[],
-  restTranslationById: ReadonlyMap<string, Vec3>,
+  worldMatrixById: ReadonlyMap<string, Mat4>,
+  nodeIndexById: ReadonlyMap<string, number>,
+  animated: ReadonlySet<string>,
   options: GltfSceneCompileOptions,
-): CompiledRigidBatches => {
-  const animated = animatedNodeIds(document);
-  const batchesByOwner = new Map<string, Map<string, PrimitiveBatch>>();
+): CompiledModelGltf => {
+  const allPrimitives: Array<GltfPrimitiveData & { jointId: string | null }> = [];
   for (const node of orderedNodes) {
-    appendNodePrimitives(document, node, animated, restTranslationById, options, batchesByOwner);
+    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
+    const world = worldMatrixById.get(node.id)!;
+    const jointId = animated.size > 0 ? findDrivingJointId(document, node, animated) : null;
+    for (const source of primitiveDataForGltfNode(document, node, options)) {
+      allPrimitives.push(transformPrimitiveByWorldMat4(source, world, jointId));
+    }
   }
-
   const meshes: GltfMesh[] = [];
-  const meshIndexByOwnerId = new Map<string, number>();
-  for (const owner of orderedNodes) {
-    const batches = batchesByOwner.get(owner.id);
-    if (!batches || batches.size === 0) continue;
-    meshIndexByOwnerId.set(owner.id, meshes.length);
-    meshes.push(compileBatchMesh(owner, batches, options));
+  const skins: GltfSkin[] = [];
+  const meshNodes: GltfNode[] = [];
+  const skinnedSource = allPrimitives.filter((p) => p.jointId !== null);
+  const staticSource = allPrimitives.filter((p) => p.jointId === null);
+
+  if (skinnedSource.length > 0) {
+    const usedSet = new Set(skinnedSource.map((p) => p.jointId!));
+    const usedJointIds = orderedNodes.filter((n) => usedSet.has(n.id)).map((n) => n.id);
+    const jointIndexById = new Map(usedJointIds.map((id, idx) => [id, idx]));
+    const groups = buildMergedGroups(skinnedSource, jointIndexById);
+    const { primitives, bounds } = compileQuantizedGroups(groups, options);
+    const skinIdx = skins.length;
+    skins.push(
+      buildSkinForMesh(document, usedJointIds, nodeIndexById, worldMatrixById, bounds, options),
+    );
+    const meshIdx = meshes.length;
+    meshes.push({ name: `${document.name}_skinned`, primitives });
+    meshNodes.push({ name: `${document.name}_mesh`, mesh: meshIdx, skin: skinIdx });
   }
-  return { meshes, meshIndexByOwnerId };
+  if (staticSource.length > 0) {
+    const groups = buildMergedGroups(staticSource, undefined);
+    const { primitives, bounds } = compileQuantizedGroups(groups, options);
+    const meshIdx = meshes.length;
+    meshes.push({ name: `${document.name}_static`, primitives });
+    meshNodes.push({
+      name: `${document.name}_static`,
+      mesh: meshIdx,
+      ...(options.writer.isQuantized
+        ? { translation: [...bounds.center], scale: [...bounds.halfExtent] }
+        : {}),
+    });
+  }
+  return { meshes, skins, meshNodes };
 };

@@ -1,4 +1,5 @@
 import { sha256ByteDigest } from '../../provenance/digest';
+import { zlibDeflateFixed } from './pngDeflate';
 import {
   assertCanonicalTextureRaster,
   canonicalRgbaBackingBuffer,
@@ -38,74 +39,21 @@ const endPngChunk = (bytes: Uint8Array, view: DataView, offset: number, length: 
   view.setUint32(offset + 8 + length, crc32(bytes, offset + 4, offset + 8 + length));
 };
 
-interface StoredDeflateState {
-  output: number;
-  pixel: number;
-  column: number;
-  first: number;
-  second: number;
-  adlerCount: number;
-}
-
-const writeStoredDeflateBlock = (
-  bytes: Uint8Array,
-  raster: CanonicalTextureRaster,
-  backing: Uint8Array | undefined,
-  stride: number,
-  length: number,
-  state: StoredDeflateState,
-): void => {
-  for (let index = 0; index < length; index += 1) {
-    const byte =
-      state.column === 0
-        ? 0
-        : backing !== undefined
-          ? backing[state.pixel++]!
-          : raster.rgba.at(state.pixel++)!;
-    bytes[state.output++] = byte;
-    if (++state.column === stride) state.column = 0;
-    state.first += byte;
-    state.second += state.first;
-    // zlib's NMAX keeps both sums bounded without per-byte division.
-    if (++state.adlerCount === 5552) {
-      state.first %= 65521;
-      state.second %= 65521;
-      state.adlerCount = 0;
+const filterSubScanlines = (raster: CanonicalTextureRaster): Uint8Array => {
+  const rowBytes = raster.width * 4;
+  const stride = rowBytes + 1;
+  const out = new Uint8Array(stride * raster.height);
+  const rgba = canonicalRgbaBackingBuffer(raster.rgba) ?? raster.rgba.copy();
+  for (let row = 0; row < raster.height; row += 1) {
+    const outBase = row * stride;
+    const inBase = row * rowBytes;
+    out[outBase] = 1;
+    for (let x = 0; x < rowBytes; x += 1) {
+      const left = x >= 4 ? rgba[inBase + x - 4]! : 0;
+      out[outBase + 1 + x] = (rgba[inBase + x]! - left) & 0xff;
     }
   }
-};
-
-const writeStoredDeflateIdat = (
-  bytes: Uint8Array,
-  view: DataView,
-  raster: CanonicalTextureRaster,
-  stride: number,
-  scanlineLength: number,
-  compressedLength: number,
-): void => {
-  let output = beginPngChunk(bytes, view, 33, 'IDAT', compressedLength);
-  bytes[output++] = 0x78;
-  bytes[output++] = 0x01;
-  const backing = canonicalRgbaBackingBuffer(raster.rgba);
-  const state: StoredDeflateState = {
-    output,
-    pixel: 0,
-    column: 0,
-    first: 1,
-    second: 0,
-    adlerCount: 0,
-  };
-  for (let offset = 0; offset < scanlineLength;) {
-    const length = Math.min(65535, scanlineLength - offset);
-    bytes[state.output++] = offset + length === scanlineLength ? 1 : 0;
-    view.setUint16(state.output, length, true);
-    view.setUint16(state.output + 2, ~length & 0xffff, true);
-    state.output += 4;
-    writeStoredDeflateBlock(bytes, raster, backing, stride, length, state);
-    offset += length;
-  }
-  view.setUint32(state.output, (((state.second % 65521) << 16) | (state.first % 65521)) >>> 0);
-  endPngChunk(bytes, view, 33, compressedLength);
+  return out;
 };
 
 interface CachedPngEntry {
@@ -129,9 +77,8 @@ const isCacheableCanonicalRaster = (raster: CanonicalTextureRaster): boolean =>
   raster.rgba.length === raster.width * raster.height * 4;
 
 const encodePngRaw = (raster: CanonicalTextureRaster): Uint8Array => {
-  const stride = raster.width * 4 + 1;
-  const scanlineLength = stride * raster.height;
-  const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
+  const zlibPayload = zlibDeflateFixed(filterSubScanlines(raster));
+  const compressedLength = zlibPayload.length;
   const bytes = new Uint8Array(57 + compressedLength);
   const view = new DataView(bytes.buffer);
   bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -140,7 +87,9 @@ const encodePngRaw = (raster: CanonicalTextureRaster): Uint8Array => {
   view.setUint32(header + 4, raster.height);
   bytes.set([8, 6, 0, 0, 0], header + 8);
   endPngChunk(bytes, view, 8, 13);
-  writeStoredDeflateIdat(bytes, view, raster, stride, scanlineLength, compressedLength);
+  const idatOffset = beginPngChunk(bytes, view, 33, 'IDAT', compressedLength);
+  bytes.set(zlibPayload, idatOffset);
+  endPngChunk(bytes, view, 33, compressedLength);
   beginPngChunk(bytes, view, 45 + compressedLength, 'IEND', 0);
   endPngChunk(bytes, view, 45 + compressedLength, 0);
   return bytes;
@@ -156,8 +105,7 @@ const getOrEncodeCachedPng = (raster: CanonicalTextureRaster): CachedPngEntry =>
   return entry;
 };
 
-/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
- * exact final buffer. No full-size scanline, compressed or chunk copies. */
+/** Emits a deterministic Filter-1 (Sub) + Fixed-Huffman DEFLATE RGBA8 PNG. */
 export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
   if (isCacheableCanonicalRaster(raster)) {
     return getOrEncodeCachedPng(raster).bytes.slice();

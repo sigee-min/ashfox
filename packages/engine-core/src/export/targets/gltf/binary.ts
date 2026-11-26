@@ -21,12 +21,14 @@ export interface GltfVertexAccessors {
 }
 
 const align4 = (value: number): number => (value + 3) & ~3;
+const normalizedByte = (value: number): number =>
+  Math.round(Math.max(-1, Math.min(1, value)) * 127);
 const normalizedShort = (value: number): number =>
   Math.round(Math.max(-1, Math.min(1, value)) * 32767);
 const normalizedUnsignedShort = (value: number): number =>
   Math.round(Math.max(0, Math.min(1, value)) * 65535);
 
-const writeVec3Component = (
+const writePositionComponent = (
   view: DataView,
   offset: number,
   value: number,
@@ -34,6 +36,19 @@ const writeVec3Component = (
 ): void => {
   if (quantized) {
     view.setInt16(offset, normalizedShort(value), true);
+  } else {
+    view.setFloat32(offset, value, true);
+  }
+};
+
+const writeNormalComponent = (
+  view: DataView,
+  offset: number,
+  value: number,
+  quantized: boolean,
+): void => {
+  if (quantized) {
+    view.setInt8(offset, normalizedByte(value));
   } else {
     view.setFloat32(offset, value, true);
   }
@@ -49,7 +64,7 @@ const writeVertexUv = (
   if (layout.uvOffset === undefined) return;
   const stride = layout.quantizedUv ? 2 : 4;
   for (let component = 0; component < 2; component += 1) {
-    const uv = uvs[vertex * 2 + component];
+    const uv = uvs[vertex * 2 + component]!;
     const offset = base + layout.uvOffset + component * stride;
     if (layout.quantizedUv) {
       view.setUint16(offset, normalizedUnsignedShort(uv), true);
@@ -85,8 +100,9 @@ const writeVertexColor = (
   layout: VertexLayout,
 ): void => {
   if (layout.colorOffset === undefined) return;
-  for (let component = 0; component < 3; component += 1) {
-    const channel = Math.round(Math.max(0, Math.min(1, colors[vertex * 3 + component]!)) * 255);
+  const count = layout.colorComponentCount;
+  for (let component = 0; component < count; component += 1) {
+    const channel = Math.round(Math.max(0, Math.min(1, colors[vertex * count + component]!)) * 255);
     view.setUint8(base + layout.colorOffset + component, channel);
   }
 };
@@ -103,26 +119,26 @@ const encodeInterleavedVertices = (
   const bytes = new Uint8Array(count * layout.stride);
   const view = new DataView(bytes.buffer);
   const posSize = layout.quantizedPosition ? 2 : 4;
-  const normSize = layout.quantizedNormal ? 2 : 4;
+  const normSize = layout.quantizedNormal ? 1 : 4;
   for (let vertex = 0; vertex < count; vertex += 1) {
     const base = vertex * layout.stride;
     for (let component = 0; component < 3; component += 1) {
-      writeVec3Component(
+      writePositionComponent(
         view,
         base + component * posSize,
-        positions[vertex * 3 + component],
+        positions[vertex * 3 + component]!,
         layout.quantizedPosition,
       );
-      writeVec3Component(
+      writeNormalComponent(
         view,
         base + layout.normalOffset + component * normSize,
-        normals[vertex * 3 + component],
+        normals[vertex * 3 + component]!,
         layout.quantizedNormal,
       );
     }
     if (uvs) writeVertexUv(view, base, vertex, uvs, layout);
     if (colors) writeVertexColor(view, base, vertex, colors, layout);
-    if (joints) writeVertexSkin(view, base, joints[vertex], layout);
+    if (joints) writeVertexSkin(view, base, joints[vertex]!, layout);
   }
   return bytes;
 };
@@ -136,6 +152,10 @@ export class GltfBinaryWriter {
     accessors: [],
     usesMeshQuantization: false,
   };
+
+  get isQuantized(): boolean {
+    return this.quantize;
+  }
 
   get byteLength(): number {
     return this.totalLength;
@@ -166,22 +186,9 @@ export class GltfBinaryWriter {
             : componentCount === 3
               ? 'VEC3'
               : 'VEC4',
+      ...(includeBounds ? this.bounds(values, componentCount) : {}),
     };
-    if (includeBounds && count > 0) {
-      const min = new Array<number>(componentCount).fill(Number.POSITIVE_INFINITY);
-      const max = new Array<number>(componentCount).fill(Number.NEGATIVE_INFINITY);
-      for (let index = 0; index < values.length; index += componentCount) {
-        for (let component = 0; component < componentCount; component += 1) {
-          const value = values[index + component];
-          min[component] = Math.min(min[component], value);
-          max[component] = Math.max(max[component], value);
-        }
-      }
-      accessor.min = min;
-      accessor.max = max;
-    }
-    this.state.accessors.push(accessor);
-    return this.state.accessors.length - 1;
+    return this.addAccessor(accessor);
   }
 
   addNormalizedShortAccessor(values: readonly number[], componentCount: 4): number {
@@ -233,7 +240,8 @@ export class GltfBinaryWriter {
     const count = assertValidInterleavedInputs(positions, normals, uvs, joints, colors);
     const layout = computeVertexLayout(positions, normals, uvs, joints, colors, this.quantize);
     const bytes = encodeInterleavedVertices(count, layout, positions, normals, uvs, joints, colors);
-    this.state.usesMeshQuantization ||= layout.quantizedPosition || layout.quantizedNormal;
+    this.state.usesMeshQuantization ||=
+      layout.quantizedPosition || layout.quantizedNormal || layout.quantizedUv;
     const bufferView = this.append(bytes, 34962, layout.stride);
     const encodedPositions = layout.quantizedPosition ? positions.map(normalizedShort) : positions;
     return this.createInterleavedAccessors(
@@ -268,7 +276,7 @@ export class GltfBinaryWriter {
     const normal = this.addAccessor({
       bufferView,
       byteOffset: layout.normalOffset,
-      componentType: layout.quantizedNormal ? 5122 : 5126,
+      componentType: layout.quantizedNormal ? 5120 : 5126,
       ...(layout.quantizedNormal ? { normalized: true } : {}),
       count,
       type: 'VEC3',
@@ -291,7 +299,7 @@ export class GltfBinaryWriter {
         componentType: 5121,
         normalized: true,
         count,
-        type: 'VEC3',
+        type: layout.colorComponentCount === 4 ? 'VEC4' : 'VEC3',
       });
     }
     if (hasJoints) this.appendSkinAccessors(result, bufferView, count, layout);
@@ -336,14 +344,13 @@ export class GltfBinaryWriter {
       }
     }
     const bufferView = this.append(bytes, target);
-    this.state.accessors.push({
+    return this.addAccessor({
       bufferView,
       componentType: useUint32 ? 5125 : 5123,
       count: values.length,
       type: 'SCALAR',
       ...this.bounds(values, 1),
     });
-    return this.state.accessors.length - 1;
   }
 
   addBufferView(bytes: Uint8Array): number {
@@ -373,9 +380,9 @@ export class GltfBinaryWriter {
     const max = new Array<number>(componentCount).fill(Number.NEGATIVE_INFINITY);
     for (let index = 0; index < values.length; index += componentCount) {
       for (let component = 0; component < componentCount; component += 1) {
-        const value = values[index + component];
-        min[component] = Math.min(min[component], value);
-        max[component] = Math.max(max[component], value);
+        const value = values[index + component]!;
+        min[component] = Math.min(min[component]!, value);
+        max[component] = Math.max(max[component]!, value);
       }
     }
     return { min, max };

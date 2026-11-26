@@ -1,5 +1,11 @@
 import type { GltfBinaryWriter } from './binary';
 import type { GltfPrimitive } from './contract';
+import {
+  computeUvTransform,
+  normalizePositionsWithBounds,
+  type PositionBounds,
+  type UvTransform,
+} from './vertexLayout';
 
 export const compileGltfPrimitive = (
   writer: GltfBinaryWriter,
@@ -9,7 +15,6 @@ export const compileGltfPrimitive = (
   joints: readonly number[] | undefined,
   material: number | undefined,
   indices: readonly number[],
-  extras?: { readonly ashfoxSourceNodeId: string },
   colors?: readonly number[],
 ): GltfPrimitive => {
   const attributes = writer.addInterleavedVertexAccessors(positions, normals, uvs, joints, colors);
@@ -29,6 +34,32 @@ export const compileGltfPrimitive = (
     indices: writer.addIndexAccessor(indices),
     ...(material === undefined ? {} : { material }),
     mode: 4,
-    ...(extras === undefined ? {} : { extras }),
   };
+};
+
+export const compileQuantizedGltfPrimitive = (
+  writer: GltfBinaryWriter,
+  positions: readonly number[],
+  normals: readonly number[],
+  uvs: readonly number[] | undefined,
+  indices: readonly number[],
+  bounds: PositionBounds,
+  resolveMaterial: (uvTransform: UvTransform | undefined) => number | undefined,
+  colors?: readonly number[],
+): GltfPrimitive => {
+  const quantize = writer.isQuantized;
+  const qPositions = quantize ? normalizePositionsWithBounds(positions, bounds) : positions;
+  const uvResult = quantize && uvs !== undefined ? computeUvTransform(uvs) : undefined;
+  const qUvs = uvResult ? uvResult.normalizedUvs : uvs;
+  const matIdx = resolveMaterial(uvResult?.transform);
+  return compileGltfPrimitive(
+    writer,
+    qPositions,
+    normals,
+    qUvs,
+    undefined,
+    matIdx,
+    indices,
+    colors,
+  );
 };

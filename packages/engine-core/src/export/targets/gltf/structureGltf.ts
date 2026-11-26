@@ -1,12 +1,6 @@
 import type { StructureProduct } from '../../../compiler/structure/contract';
 import type { CompiledModel } from '../../../model/compiled';
-import {
-  cubeGeometryPivot,
-  sealCanonicalBoneFrame,
-  type ProjectDocument,
-  type SceneNode,
-  type Vec3,
-} from '../../../model';
+import { sealCanonicalBoneFrame, type ProjectDocument } from '../../../model';
 import type { TextureAsset } from '../../../model/texture';
 import { createProjectDocument } from '../../../project/create';
 import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
@@ -18,26 +12,25 @@ import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf } from './build';
 import type {
   GltfDocument,
+  GltfExtensionName,
   GltfImage,
   GltfMaterial,
   GltfMesh,
   GltfNode,
-  GltfPrimitive,
   GltfSampler,
 } from './contract';
-import { compileGltfCubePrimitiveData } from './cube';
 import type { GltfPrimitiveData } from './data';
-import { compileGltfPlanePrimitiveData } from './plane';
-import { compileGltfPrimitive } from './primitive';
-import { gltfNodeGeometryRotation } from './rigid';
+import { createGltfMaterial } from './exporter';
+import { compileQuantizedGltfPrimitive } from './primitive';
 import {
-  addVec3,
-  isIdentityRotation,
-  multiplyVec3,
-  quaternionFromEuler,
-  rotateVec3ByQuaternion,
-  subtractVec3,
-} from './spatial';
+  appendNumbers,
+  gltfNodeGeometryRotation,
+  primitiveDataForGltfNode,
+  transformPrimitiveByWorldMat4,
+} from './rigid';
+import { computeWorldMatrices, restTranslation } from './scene';
+import { quaternionFromEuler, rotateVec3ByQuaternion } from './spatial';
+import { computePositionsBounds, type PositionBounds, type UvTransform } from './vertexLayout';
 
 const GLTF_UNIT_SCALE = 1 / 16;
 
@@ -45,44 +38,51 @@ interface MaterialRegistry {
   readonly materials: GltfMaterial[];
   readonly texIndexById: ReadonlyMap<string, number>;
   readonly cache: Map<string, number>;
+  usesTextureTransform: boolean;
 }
 
 interface GltfBuildCtx {
   readonly textures: Readonly<Record<string, TextureAsset>>;
   readonly matReg: MaterialRegistry;
   readonly writer: GltfBinaryWriter;
+  usesGpuInstancing: boolean;
 }
+
+interface TexMeta {
+  readonly tex: TextureAsset;
+  readonly masked: boolean;
+}
+
+type TaggedPrimitive = GltfPrimitiveData & { readonly texMeta?: TexMeta };
 
 const getMaterialIndex = (
   reg: MaterialRegistry,
   tex: TextureAsset,
   mode: 'opaque' | 'cutout' | 'emissive' | 'model',
   masked = false,
+  uvTransform?: UvTransform,
 ): number => {
   const isCutout = mode === 'cutout' || masked;
   const isEmissive = mode === 'emissive' || tex.renderMode === 'emissive';
   const doubleSided = isCutout || tex.renderSides === 'double';
-  const key = `${tex.id}:${isCutout ? 'M' : isEmissive ? 'E' : tex.renderMode}:${doubleSided ? 'D' : 'S'}`;
+  const uvKey = uvTransform
+    ? `:uv(${uvTransform.offset[0]},${uvTransform.offset[1]},${uvTransform.scale[0]},${uvTransform.scale[1]})`
+    : '';
+  const key = `${tex.id}:${isCutout ? 'M' : isEmissive ? 'E' : tex.renderMode}:${doubleSided ? 'D' : 'S'}${uvKey}`;
   const hit = reg.cache.get(key);
   if (hit !== undefined) return hit;
-  const texIndex = reg.texIndexById.get(tex.id)!;
-  const mat: GltfMaterial = {
-    name: tex.name,
-    pbrMetallicRoughness: {
-      baseColorTexture: { index: texIndex },
-      metallicFactor: 0,
-      roughnessFactor: 1,
-    },
-    ...(isEmissive ? { emissiveTexture: { index: texIndex }, emissiveFactor: [1, 1, 1] } : {}),
-    ...(isCutout
-      ? { alphaMode: 'MASK', alphaCutoff: 0.5 }
-      : tex.renderMode === 'additive' || tex.renderMode === 'layered'
-        ? { alphaMode: 'BLEND' }
-        : {}),
-    ...(doubleSided ? { doubleSided: true } : {}),
-  };
+  if (uvTransform) reg.usesTextureTransform = true;
   const idx = reg.materials.length;
-  reg.materials.push(mat);
+  reg.materials.push(
+    createGltfMaterial(
+      tex,
+      reg.texIndexById.get(tex.id)!,
+      isCutout,
+      doubleSided,
+      isEmissive,
+      uvTransform,
+    ),
+  );
   reg.cache.set(key, idx);
   return idx;
 };
@@ -94,8 +94,9 @@ const modelStubDocument = (id: string, model: CompiledModel): ProjectDocument =>
     revision: 'prop-1',
     createdAt: '2026-01-01T00:00:00.000Z',
   });
-  for (const node of Object.values(model.scene.nodes))
+  for (const node of Object.values(model.scene.nodes)) {
     if (node.kind === 'bone') sealCanonicalBoneFrame(node);
+  }
   doc.scene = model.scene;
   doc.textures = { ...model.textures };
   return doc;
@@ -124,117 +125,7 @@ const collectUsedTextures = (product: StructureProduct) => {
   return { textures, modelTexRemap };
 };
 
-interface WorldTransform {
-  readonly pos: Vec3;
-  readonly rot: readonly [number, number, number, number];
-  readonly scale: Vec3;
-}
-
-const multiplyQuat = (
-  a: readonly [number, number, number, number],
-  b: readonly [number, number, number, number],
-): readonly [number, number, number, number] => [
-  a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
-  a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
-  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
-  a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
-];
-
-const localNodeTranslation = (doc: ProjectDocument, node: SceneNode): Vec3 => {
-  if (node.kind === 'locator') return multiplyVec3(node.transform.position, GLTF_UNIT_SCALE);
-  const parent = node.parentId ? doc.scene.nodes[node.parentId] : undefined;
-  const pOrigin: Vec3 =
-    parent && parent.kind === 'bone'
-      ? addVec3(parent.transform.pivot, parent.transform.position)
-      : [0, 0, 0];
-  const pivot = node.kind === 'cube' ? cubeGeometryPivot(node) : node.transform.pivot;
-  return multiplyVec3(
-    subtractVec3(addVec3(pivot, node.transform.position), pOrigin),
-    GLTF_UNIT_SCALE,
-  );
-};
-
-const composeWorldTransform = (
-  parent: WorldTransform,
-  doc: ProjectDocument,
-  node: SceneNode,
-): WorldTransform => {
-  const localT = localNodeTranslation(doc, node);
-  const rotT = rotateVec3ByQuaternion(
-    [localT[0] * parent.scale[0], localT[1] * parent.scale[1], localT[2] * parent.scale[2]],
-    parent.rot,
-  );
-  const rotVec = gltfNodeGeometryRotation(node);
-  const localQ = isIdentityRotation(rotVec) ? ([0, 0, 0, 1] as const) : quaternionFromEuler(rotVec);
-  return {
-    pos: [parent.pos[0] + rotT[0], parent.pos[1] + rotT[1], parent.pos[2] + rotT[2]],
-    rot: multiplyQuat(parent.rot, localQ),
-    scale: [
-      parent.scale[0] * node.transform.scale[0],
-      parent.scale[1] * node.transform.scale[1],
-      parent.scale[2] * node.transform.scale[2],
-    ],
-  };
-};
-
-const normalizeVec = (x: number, y: number, z: number): [number, number, number] => {
-  const len = Math.hypot(x, y, z);
-  return len <= 1e-6 ? [0, 1, 0] : [x / len, y / len, z / len];
-};
-
-const transformPrimitiveData = (
-  prim: GltfPrimitiveData,
-  xf: WorldTransform,
-  material: number | undefined,
-): GltfPrimitiveData => {
-  const positions: number[] = [];
-  const normals: number[] = [];
-  for (let i = 0; i < prim.positions.length; i += 3) {
-    const p = rotateVec3ByQuaternion(
-      [
-        prim.positions[i]! * xf.scale[0],
-        prim.positions[i + 1]! * xf.scale[1],
-        prim.positions[i + 2]! * xf.scale[2],
-      ],
-      xf.rot,
-    );
-    positions.push(p[0] + xf.pos[0], p[1] + xf.pos[1], p[2] + xf.pos[2]);
-    const n = rotateVec3ByQuaternion(
-      [
-        Math.abs(xf.scale[0]) <= 1e-6 ? 0 : prim.normals[i]! / xf.scale[0],
-        Math.abs(xf.scale[1]) <= 1e-6 ? 0 : prim.normals[i + 1]! / xf.scale[1],
-        Math.abs(xf.scale[2]) <= 1e-6 ? 0 : prim.normals[i + 2]! / xf.scale[2],
-      ],
-      xf.rot,
-    );
-    normals.push(...normalizeVec(n[0], n[1], n[2]));
-  }
-  const indices = [...prim.indices];
-  if (xf.scale[0] * xf.scale[1] * xf.scale[2] < 0) {
-    for (let i = 0; i + 2 < indices.length; i += 3) {
-      const tmp = indices[i + 1]!;
-      indices[i + 1] = indices[i + 2]!;
-      indices[i + 2] = tmp;
-    }
-  }
-  return {
-    positions,
-    normals,
-    ...(prim.uvs ? { uvs: prim.uvs } : {}),
-    ...(material === undefined ? {} : { material }),
-    indices,
-  };
-};
-
-const appendNumbers = (dst: number[], src: readonly number[]): void => {
-  for (let i = 0; i < src.length; i += 1) dst.push(src[i]!);
-};
-
-const compileMaterialGroup = (
-  writer: GltfBinaryWriter,
-  matKey: number,
-  list: readonly GltfPrimitiveData[],
-): GltfPrimitive => {
+const mergeMaterialGroup = (matKey: number, list: readonly TaggedPrimitive[]) => {
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -247,22 +138,18 @@ const compileMaterialGroup = (
     if (hasUvs && p.uvs) appendNumbers(uvs, p.uvs);
     for (let i = 0; i < p.indices.length; i += 1) indices.push(base + p.indices[i]!);
   }
-  return compileGltfPrimitive(
-    writer,
+  return {
+    material: matKey >= 0 ? matKey : undefined,
+    texMeta: list[0]?.texMeta,
     positions,
     normals,
-    hasUvs ? uvs : undefined,
-    undefined,
-    matKey >= 0 ? matKey : undefined,
+    uvs: hasUvs ? uvs : undefined,
     indices,
-  );
+  };
 };
 
-const mergeAndCompilePrimitives = (
-  writer: GltfBinaryWriter,
-  prims: readonly GltfPrimitiveData[],
-): GltfPrimitive[] => {
-  const byMat = new Map<number, GltfPrimitiveData[]>();
+const mergeCustomByMaterial = (prims: readonly TaggedPrimitive[]) => {
+  const byMat = new Map<number, TaggedPrimitive[]>();
   for (const p of prims) {
     const key = p.material ?? -1;
     const list = byMat.get(key) ?? [];
@@ -271,53 +158,64 @@ const mergeAndCompilePrimitives = (
   }
   return [...byMat.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([matKey, list]) => compileMaterialGroup(writer, matKey, list));
+    .map(([matKey, list]) => mergeMaterialGroup(matKey, list));
 };
 
 const buildCustomMaterialMaps = (texRemap: ReadonlyMap<string, string>, ctx: GltfBuildCtx) => {
   const materialByTextureId = new Map<string, number>();
   const singleSidedMaterialByTextureId = new Map<string, number>();
+  const texMetaByMat = new Map<number, TexMeta>();
   for (const [origId, remappedId] of texRemap) {
     const tex = ctx.textures[remappedId];
     if (!tex) continue;
-    materialByTextureId.set(origId, getMaterialIndex(ctx.matReg, tex, 'model', false));
-    if (tex.renderSides === 'double')
-      singleSidedMaterialByTextureId.set(origId, getMaterialIndex(ctx.matReg, tex, 'model', true));
+    const matIdx = getMaterialIndex(ctx.matReg, tex, 'model', false);
+    materialByTextureId.set(origId, matIdx);
+    texMetaByMat.set(matIdx, { tex, masked: false });
+    if (tex.renderSides === 'double') {
+      const ssIdx = getMaterialIndex(ctx.matReg, tex, 'model', true);
+      singleSidedMaterialByTextureId.set(origId, ssIdx);
+      texMetaByMat.set(ssIdx, { tex, masked: true });
+    }
   }
-  return { materialByTextureId, singleSidedMaterialByTextureId };
+  return { materialByTextureId, singleSidedMaterialByTextureId, texMetaByMat };
 };
 
-const buildChildrenMap = (doc: ProjectDocument, visible: ReadonlySet<string>) => {
-  const childrenMap = new Map<string | null, SceneNode[]>();
-  for (const node of Object.values(doc.scene.nodes)) {
-    if (!visible.has(node.id)) continue;
-    const list = childrenMap.get(node.parentId) ?? [];
-    list.push(node);
-    childrenMap.set(node.parentId, list);
-  }
-  return childrenMap;
-};
-
-const appendCustomNodePrimitives = (
+const collectCustomModelPrimitives = (
   doc: ProjectDocument,
-  node: SceneNode,
-  parentXf: WorldTransform,
-  childrenMap: ReadonlyMap<string | null, SceneNode[]>,
-  opts: Parameters<typeof compileGltfCubePrimitiveData>[2],
-  collected: GltfPrimitiveData[],
-): void => {
-  const xf = composeWorldTransform(parentXf, doc, node);
-  if (node.kind === 'cube' || node.kind === 'plane') {
-    const raw =
-      node.kind === 'cube'
-        ? compileGltfCubePrimitiveData(doc, node, opts)
-        : compileGltfPlanePrimitiveData(doc, node, opts);
-    for (const p of raw) collected.push(transformPrimitiveData(p, xf, p.material));
+  texRemap: ReadonlyMap<string, string>,
+  ctx: GltfBuildCtx,
+): TaggedPrimitive[] => {
+  const visible = effectivelyVisibleSceneNodeIds(doc);
+  const orderedNodes = Object.values(doc.scene.nodes)
+    .filter((n) => visible.has(n.id))
+    .sort((a, b) => compareText(a.id, b.id));
+  const tMap = new Map<string, [number, number, number]>();
+  const rMap = new Map<string, [number, number, number]>();
+  const sMap = new Map<string, [number, number, number]>();
+  for (const n of orderedNodes) {
+    tMap.set(n.id, restTranslation(doc, n, GLTF_UNIT_SCALE));
+    rMap.set(n.id, [...gltfNodeGeometryRotation(n)]);
+    sMap.set(n.id, [...n.transform.scale]);
   }
-  const children = [...(childrenMap.get(node.id) ?? [])].sort((a, b) => compareText(a.id, b.id));
-  for (const child of children) {
-    appendCustomNodePrimitives(doc, child, xf, childrenMap, opts, collected);
+  const worldMap = computeWorldMatrices(orderedNodes, tMap, rMap, sMap);
+  const { texMetaByMat, ...maps } = buildCustomMaterialMaps(texRemap, ctx);
+  const opts = {
+    writer: ctx.writer,
+    ...maps,
+    unitScale: GLTF_UNIT_SCALE,
+    cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(doc),
+  };
+  const collected: TaggedPrimitive[] = [];
+  for (const node of orderedNodes) {
+    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
+    const world = worldMap.get(node.id)!;
+    for (const p of primitiveDataForGltfNode(doc, node, opts)) {
+      const xf = transformPrimitiveByWorldMat4(p, world, null);
+      const texMeta = p.material === undefined ? undefined : texMetaByMat.get(p.material);
+      collected.push({ ...xf, ...(texMeta ? { texMeta } : {}) });
+    }
   }
+  return collected;
 };
 
 const bakeCustomModelMesh = (
@@ -325,48 +223,50 @@ const bakeCustomModelMesh = (
   model: CompiledModel,
   texRemap: ReadonlyMap<string, string>,
   ctx: GltfBuildCtx,
-): GltfMesh => {
+): { readonly mesh: GltfMesh; readonly bounds: PositionBounds } => {
   const doc = modelStubDocument(assetKey, model);
-  const visible = effectivelyVisibleSceneNodeIds(doc);
-  const childrenMap = buildChildrenMap(doc, visible);
-  const maps = buildCustomMaterialMaps(texRemap, ctx);
-  const opts = {
-    writer: ctx.writer,
-    ...maps,
-    unitScale: GLTF_UNIT_SCALE,
-    cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(doc),
-  };
-  const collected: GltfPrimitiveData[] = [];
-  const identity: WorldTransform = { pos: [0, 0, 0], rot: [0, 0, 0, 1], scale: [1, 1, 1] };
-  for (const rootId of doc.scene.roots) {
-    const root = doc.scene.nodes[rootId];
-    if (root && visible.has(root.id))
-      appendCustomNodePrimitives(doc, root, identity, childrenMap, opts, collected);
-  }
-  return { name: assetKey, primitives: mergeAndCompilePrimitives(ctx.writer, collected) };
+  const groups = mergeCustomByMaterial(collectCustomModelPrimitives(doc, texRemap, ctx));
+  const bounds = computePositionsBounds(groups.map((g) => g.positions));
+  const primitives = groups.map((g) =>
+    compileQuantizedGltfPrimitive(
+      ctx.writer,
+      g.positions,
+      g.normals,
+      g.uvs,
+      g.indices,
+      bounds,
+      (uvTx) =>
+        uvTx && g.texMeta
+          ? getMaterialIndex(ctx.matReg, g.texMeta.tex, 'model', g.texMeta.masked, uvTx)
+          : g.material,
+    ),
+  );
+  return { mesh: { name: assetKey, primitives }, bounds };
 };
 
-const compileBakedVoxelMesh = (product: StructureProduct, ctx: GltfBuildCtx): GltfMesh | null => {
+const compileBakedVoxelMesh = (
+  product: StructureProduct,
+  ctx: GltfBuildCtx,
+): { readonly mesh: GltfMesh; readonly bounds: PositionBounds } | null => {
   const active = product.bakedMesh.batches.filter(
     (b) => b.indices.length > 0 && b.positions.length > 0,
   );
   if (active.length === 0) return null;
+  const bounds = computePositionsBounds(active.map((b) => b.positions));
   const primitives = active.map((batch) => {
     const tex = ctx.textures[batch.textureId];
-    const matIdx = tex ? getMaterialIndex(ctx.matReg, tex, batch.layer) : undefined;
-    return compileGltfPrimitive(
+    return compileQuantizedGltfPrimitive(
       ctx.writer,
       batch.positions,
       batch.normals,
       batch.uvs,
-      undefined,
-      matIdx,
       batch.indices,
-      undefined,
+      bounds,
+      (uvTx) => (tex ? getMaterialIndex(ctx.matReg, tex, batch.layer, false, uvTx) : undefined),
       batch.colors.length > 0 ? batch.colors : undefined,
     );
   });
-  return { name: `${product.id}_voxels`, primitives };
+  return { mesh: { name: `${product.id}_voxels`, primitives }, bounds };
 };
 
 export interface BuiltStructureGltf {
@@ -388,6 +288,71 @@ const encodeGltfTextures = (ordered: readonly TextureAsset[], writer: GltfBinary
   return { images, samplers, texIndexById };
 };
 
+const emitInstancedPropNode = (
+  assetKey: string,
+  meshIdx: number,
+  bounds: PositionBounds,
+  group: readonly StructureProduct['bakedMesh']['instances'][number][],
+  ctx: GltfBuildCtx,
+): GltfNode => {
+  const translations: number[] = [];
+  const rotations: number[] = [];
+  const scales: number[] = [];
+  const quantize = ctx.writer.isQuantized;
+  for (const inst of group) {
+    const rotQ =
+      inst.rotation !== 0 ? quaternionFromEuler([0, inst.rotation, 0]) : ([0, 0, 0, 1] as const);
+    const offset = quantize
+      ? rotateVec3ByQuaternion([...bounds.center], rotQ)
+      : ([0, 0, 0] as const);
+    translations.push(
+      inst.translation[0] + offset[0],
+      inst.translation[1] + offset[1],
+      inst.translation[2] + offset[2],
+    );
+    rotations.push(rotQ[0], rotQ[1], rotQ[2], rotQ[3]);
+    if (quantize) scales.push(bounds.halfExtent[0], bounds.halfExtent[1], bounds.halfExtent[2]);
+  }
+  ctx.usesGpuInstancing = true;
+  return {
+    name: `props_${assetKey}`,
+    mesh: meshIdx,
+    extensions: {
+      EXT_mesh_gpu_instancing: {
+        attributes: {
+          TRANSLATION: ctx.writer.addFloatAccessor(translations, 3, false),
+          ROTATION: ctx.writer.addFloatAccessor(rotations, 4, false),
+          ...(quantize ? { SCALE: ctx.writer.addFloatAccessor(scales, 3, false) } : {}),
+        },
+      },
+    },
+  };
+};
+
+const emitSinglePropNode = (
+  meshIdx: number,
+  bounds: PositionBounds,
+  inst: StructureProduct['bakedMesh']['instances'][number],
+  propNum: number,
+  quantize: boolean,
+): GltfNode => {
+  const rotQ = inst.rotation !== 0 ? quaternionFromEuler([0, inst.rotation, 0]) : undefined;
+  const offset = quantize
+    ? rotateVec3ByQuaternion([...bounds.center], rotQ ?? [0, 0, 0, 1])
+    : ([0, 0, 0] as const);
+  return {
+    name: `prop_${propNum}`,
+    mesh: meshIdx,
+    translation: [
+      inst.translation[0] + offset[0],
+      inst.translation[1] + offset[1],
+      inst.translation[2] + offset[2],
+    ],
+    ...(rotQ ? { rotation: rotQ } : {}),
+    ...(quantize ? { scale: [...bounds.halfExtent] } : {}),
+  };
+};
+
 const appendCustomInstances = (
   product: StructureProduct,
   modelTexRemap: ReadonlyMap<CompiledModel, ReadonlyMap<string, string>>,
@@ -396,51 +361,69 @@ const appendCustomInstances = (
   nodes: GltfNode[],
   children: number[],
 ): void => {
-  const meshByModel = new Map<CompiledModel, number>();
+  const byKey = new Map<string, StructureProduct['bakedMesh']['instances'][number][]>();
   for (const inst of product.bakedMesh.instances) {
-    const model = product.customModels[inst.assetKey];
-    if (!model) continue;
-    let meshIdx = meshByModel.get(model);
-    if (meshIdx === undefined) {
-      const baked = bakeCustomModelMesh(inst.assetKey, model, modelTexRemap.get(model)!, ctx);
-      if (baked.primitives.length === 0) continue;
-      meshIdx = meshes.length;
-      meshes.push(baked);
-      meshByModel.set(model, meshIdx);
-    }
-    children.push(nodes.length);
-    nodes.push({
-      name: `prop_${children.length}`,
-      mesh: meshIdx,
-      translation: [inst.translation[0], inst.translation[1], inst.translation[2]],
-      ...(inst.rotation !== 0 ? { rotation: quaternionFromEuler([0, inst.rotation, 0]) } : {}),
-    });
+    if (!product.customModels[inst.assetKey]) continue;
+    const list = byKey.get(inst.assetKey) ?? [];
+    list.push(inst);
+    byKey.set(inst.assetKey, list);
   }
+  for (const [assetKey, group] of byKey) {
+    const model = product.customModels[assetKey]!;
+    const baked = bakeCustomModelMesh(assetKey, model, modelTexRemap.get(model)!, ctx);
+    if (baked.mesh.primitives.length === 0) continue;
+    const meshIdx = meshes.length;
+    meshes.push(baked.mesh);
+    children.push(nodes.length);
+    nodes.push(
+      group.length >= 2
+        ? emitInstancedPropNode(assetKey, meshIdx, baked.bounds, group, ctx)
+        : emitSinglePropNode(
+            meshIdx,
+            baked.bounds,
+            group[0]!,
+            children.length,
+            ctx.writer.isQuantized,
+          ),
+    );
+  }
+};
+
+const collectStructureExtensions = (ctx: GltfBuildCtx) => {
+  const used: GltfExtensionName[] = [];
+  const required: GltfExtensionName[] = [];
+  if (ctx.writer.state.usesMeshQuantization) {
+    used.push('KHR_mesh_quantization');
+    required.push('KHR_mesh_quantization');
+  }
+  if (ctx.matReg.usesTextureTransform) used.push('KHR_texture_transform');
+  if (ctx.usesGpuInstancing) used.push('EXT_mesh_gpu_instancing');
+  return {
+    ...(used.length > 0 ? { extensionsUsed: used } : {}),
+    ...(required.length > 0 ? { extensionsRequired: required } : {}),
+  };
 };
 
 const assembleStructureGltfDocument = (
   id: string,
-  writer: GltfBinaryWriter,
+  ctx: GltfBuildCtx,
   binary: Uint8Array,
   nodes: GltfNode[],
   meshes: GltfMesh[],
   ordered: readonly TextureAsset[],
   images: GltfImage[],
   samplers: GltfSampler[],
-  materials: GltfMaterial[],
 ): GltfDocument => ({
   asset: { version: '2.0', generator: 'ashfox engine core' },
-  ...(writer.state.usesMeshQuantization
-    ? { extensionsUsed: ['KHR_mesh_quantization'], extensionsRequired: ['KHR_mesh_quantization'] }
-    : {}),
+  ...collectStructureExtensions(ctx),
   scene: 0,
   scenes: [{ name: id, nodes: [0] }],
   nodes,
   ...(binary.byteLength > 0
     ? {
         buffers: [{ byteLength: binary.byteLength }],
-        bufferViews: writer.state.bufferViews,
-        accessors: writer.state.accessors,
+        bufferViews: ctx.writer.state.bufferViews,
+        accessors: ctx.writer.state.accessors,
       }
     : {}),
   ...(meshes.length > 0 ? { meshes } : {}),
@@ -449,7 +432,7 @@ const assembleStructureGltfDocument = (
         images,
         samplers,
         textures: ordered.map((t, i) => ({ sampler: i, source: i, name: t.name })),
-        materials,
+        materials: ctx.matReg.materials,
       }
     : {}),
 });
@@ -464,31 +447,37 @@ export const buildStructureGltf = (
   const { images, samplers, texIndexById } = encodeGltfTextures(ordered, writer);
   const ctx: GltfBuildCtx = {
     textures,
-    matReg: { materials: [], texIndexById, cache: new Map() },
+    matReg: { materials: [], texIndexById, cache: new Map(), usesTextureTransform: false },
     writer,
+    usesGpuInstancing: false,
   };
   const meshes: GltfMesh[] = [];
   const nodes: GltfNode[] = [{ name: product.id }];
   const children: number[] = [];
-  const voxelMesh = compileBakedVoxelMesh(product, ctx);
-  if (voxelMesh) {
-    meshes.push(voxelMesh);
+  const voxel = compileBakedVoxelMesh(product, ctx);
+  if (voxel) {
+    meshes.push(voxel.mesh);
     children.push(nodes.length);
-    nodes.push({ name: `${product.id}_mesh`, mesh: 0 });
+    nodes.push({
+      name: `${product.id}_mesh`,
+      mesh: 0,
+      ...(writer.isQuantized
+        ? { translation: [...voxel.bounds.center], scale: [...voxel.bounds.halfExtent] }
+        : {}),
+    });
   }
   appendCustomInstances(product, modelTexRemap, ctx, meshes, nodes, children);
   if (children.length > 0) nodes[0]!.children = children;
   const binary = writer.toUint8Array();
   const document = assembleStructureGltfDocument(
     product.id,
-    writer,
+    ctx,
     binary,
     nodes,
     meshes,
     ordered,
     images,
     samplers,
-    ctx.matReg.materials,
   );
   return { compiled: { document, binary, textureFiles: [] }, textures };
 };

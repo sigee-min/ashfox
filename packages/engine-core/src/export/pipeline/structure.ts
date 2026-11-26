@@ -91,7 +91,7 @@ export async function exportStructureGltfResolved(
   buildKey: string,
   options: StructureGltfOptions = {},
 ): Promise<ExportBundle> {
-  const encoding = options.encoding ?? 'portable';
+  const encoding = options.encoding ?? 'optimized';
   if (isStructureProduct(input)) {
     return exportBakedStructureBundle(input, modelPath, buildKey, encoding);
   }

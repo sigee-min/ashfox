@@ -32,6 +32,7 @@ const align4 = (value: number): number => (value + 3) & ~3;
 
 const componentByteSize = (accessor: GltfAccessor): number => {
   switch (accessor.componentType) {
+    case 5120:
     case 5121:
       return 1;
     case 5122:
