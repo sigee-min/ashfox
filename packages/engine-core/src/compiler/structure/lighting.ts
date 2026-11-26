@@ -1,6 +1,5 @@
 import { clamp01 } from '@ashfox/internal-contracts';
 import type { CompiledModel } from '../../model/compiled';
-import type { Vec3 } from '../../model/identity';
 import type { CubeFaceDirection } from '../../model/scene';
 import type { IntVec3 } from '../../project/structure/contract';
 import type { BlockDescriptor } from './blocks';
@@ -472,24 +471,4 @@ export const FACE_CORNER_TABLE: Readonly<Record<CubeFaceDirection, readonly numb
   west: [0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0],
   up: [0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0],
   down: [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
-};
-
-const pickCorner = (t: readonly number[], i: number, from: Vec3, to: Vec3): Vec3 => [
-  t[i]! ? to[0] : from[0],
-  t[i + 1]! ? to[1] : from[1],
-  t[i + 2]! ? to[2] : from[2],
-];
-
-export const faceCorners = (
-  dir: CubeFaceDirection,
-  from: Vec3,
-  to: Vec3,
-): readonly [Vec3, Vec3, Vec3, Vec3] => {
-  const t = FACE_CORNER_TABLE[dir];
-  return [
-    pickCorner(t, 0, from, to),
-    pickCorner(t, 3, from, to),
-    pickCorner(t, 6, from, to),
-    pickCorner(t, 9, from, to),
-  ];
 };
