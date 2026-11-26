@@ -10,7 +10,7 @@ import {
 } from '../../src';
 import { adaptProjectForExport } from '../../src/export/adapter';
 import { validateExportTarget } from '../../src/export/pipeline/validate';
-import { buildGltf } from '../../src/export/targets/gltf/exporter';
+import { buildGltf, exportGltf } from '../../src/export/targets/gltf/exporter';
 import {
   attachModelLods,
   attachStructureLods,
@@ -193,7 +193,7 @@ const testCreatureModelsThreeTierLod = async (): Promise<void> => {
     assert.ok(b1 <= Math.ceil(b0 * 0.55), `${entryName} bones ${b0} -> ${b1}`);
     assert.ok(mesh2.indices.length > 0 && mesh2.colors.length === mesh2.positions.length);
 
-    const adapted = adaptProjectForExport(doc, { target: 'gltf', modelPath: entryName });
+    const adapted = adaptProjectForExport(doc, { target: 'glb', modelPath: entryName });
     const validated = validateExportTarget(adapted, { profileId: 'gltf.2', errorMessage: 'err' });
     const compiled = buildGltf(validated.document);
     const withLod = attachModelLods(compiled, doc);
@@ -218,10 +218,94 @@ const testCreatureModelsThreeTierLod = async (): Promise<void> => {
   }
 };
 
+const testGltfExternalBufferUriAndMixedLod1 = async (): Promise<void> => {
+  const dir = path.join(REPO_ROOT, 'examples/fox/creatures');
+  const files = walkFiles(dir, 'model');
+  const modules = files
+    .map((f) => f.path.replace(/^model\//, ''))
+    .filter((p) => p !== 'fox.ashfox')
+    .map((p) => ({ subpath: `./${p.replace(/\.ashfox$/, '')}`, path: p }));
+  const ws = workspaceFixture(files, {
+    root: 'model',
+    packageName: 'test',
+    entries: [{ name: 'fox', path: 'fox.ashfox' }],
+    modules,
+  });
+  const opened = openAssetProject({
+    workspace: ws,
+    entry: { packageName: 'test', entryName: 'fox' },
+    identity: { id: 'fox', revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
+  });
+  assert.equal(opened.ok, true);
+  if (!opened.ok) return;
+  const doc = opened.project.document;
+
+  const gltfBundle = exportGltf(
+    adaptProjectForExport(doc, { target: 'gltf', modelPath: 'fox' }),
+    opened.project.build,
+  );
+  const gltfFile = gltfBundle.files.find((f) => f.path.endsWith('fox.gltf'));
+  const binFile = gltfBundle.files.find((f) => f.path.endsWith('fox.bin'));
+  assert.ok(gltfFile && gltfFile.kind === 'json');
+  assert.ok(binFile && binFile.kind === 'binary');
+  const parsed = JSON.parse(gltfFile.text) as GltfLodDocument;
+  assert.equal(parsed.buffers?.[0]?.uri, 'fox.bin');
+  assert.equal(parsed.buffers?.[0]?.byteLength, binFile.data.byteLength);
+
+  const ext = new Map<string, Uint8Array>([['fox.bin', binFile.data]]);
+  for (const tf of gltfBundle.files) {
+    if (tf.kind === 'binary') ext.set(path.posix.basename(tf.path), tf.data);
+  }
+  const gltfReport = await validator.validateBytes(Buffer.from(gltfFile.text), {
+    externalResourceFunction: async (uri) => ext.get(path.posix.basename(uri)) ?? new Uint8Array(),
+  });
+  assert.equal(gltfReport.issues.numErrors, 0, JSON.stringify(gltfReport.issues.messages));
+  assert.equal(gltfReport.issues.numWarnings, 0, JSON.stringify(gltfReport.issues.messages));
+
+  const largestCubeId = [...computeModelBoundsAndPartSizes(doc).parts.values()]
+    .filter((p) => p.kind === 'cube')
+    .sort((a, b) => b.volume - a.volume)[0]!.id;
+  const sampleCube = doc.scene.nodes[largestCubeId]!;
+  const staticCube = {
+    ...structuredClone(sampleCube),
+    id: 'static_pedestal',
+    name: 'static_pedestal',
+    parentId: null,
+  };
+  const hybridDoc = {
+    ...structuredClone(doc),
+    id: 'hybrid',
+    scene: {
+      ...structuredClone(doc.scene),
+      roots: [...doc.scene.roots, staticCube.id],
+      nodes: { ...structuredClone(doc.scene.nodes), [staticCube.id]: staticCube },
+    },
+  };
+  const hybridBundle = exportGltf(
+    adaptProjectForExport(hybridDoc, { target: 'gltf', modelPath: 'hybrid' }),
+    opened.project.build,
+  );
+  const hybridFile = hybridBundle.files.find((f) => f.path.endsWith('hybrid.gltf'));
+  assert.ok(hybridFile && hybridFile.kind === 'json');
+  const hybridDocJson = JSON.parse(hybridFile.text) as GltfLodDocument;
+  const lod0 = hybridDocJson.nodes.find((n) => n.name === 'hybrid_LOD0');
+  const lod1 = hybridDocJson.nodes.find((n) => n.name === 'hybrid_LOD1');
+  assert.ok(lod0 && lod1);
+  const countMeshesInSubtree = (node: (typeof hybridDocJson.nodes)[number]): number =>
+    (node.mesh !== undefined ? 1 : 0) +
+    (node.children ?? []).reduce(
+      (sum, ci) => sum + countMeshesInSubtree(hybridDocJson.nodes[ci]!),
+      0,
+    );
+  assert.ok(countMeshesInSubtree(lod0) >= 2, 'LOD0 should include both skinned and static meshes');
+  assert.ok(countMeshesInSubtree(lod1) >= 2, 'LOD1 should include both skinned and static meshes');
+};
+
 const main = async (): Promise<void> => {
   await testStructureThreeTierLod();
   testStairWedgeAndWindowGlowPreservation();
   await testCreatureModelsThreeTierLod();
+  await testGltfExternalBufferUriAndMixedLod1();
   console.log('ashfox semantic lod tests ok');
 };
 

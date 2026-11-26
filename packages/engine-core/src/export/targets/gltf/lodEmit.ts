@@ -185,7 +185,7 @@ const finalize = (c: CompiledGltf, st: State, rootNodes: number[]): CompiledGltf
     extensionsUsed: [...used],
     scenes: [{ ...(c.document.scenes[0] ?? {}), nodes: rootNodes }],
     nodes: st.nodes,
-    buffers: [{ byteLength: binary.byteLength }],
+    buffers: [{ ...(c.document.buffers?.[0] ?? {}), byteLength: binary.byteLength }],
     bufferViews: [...bv, ...newBv],
     accessors: [...(c.document.accessors ?? []), ...newAcc],
     meshes: st.meshes,
@@ -396,6 +396,12 @@ const appendLod1Model = (
     }));
 };
 
+const pushLod1ModelNode = (st: State, id: string, meshes: GltfLodNode[]): number => {
+  if (meshes.length <= 1) return st.nodes.push({ ...(meshes[0] ?? {}), name: `${id}_LOD1` }) - 1;
+  const children = meshes.map((m) => st.nodes.push({ ...m }) - 1);
+  return st.nodes.push({ name: `${id}_LOD1`, children }) - 1;
+};
+
 export const attachModelLods = (
   compiled: CompiledGltf,
   sourceDocument: ProjectDocument,
@@ -413,8 +419,7 @@ export const attachModelLods = (
     appendLod1Model(sourceDocument, st, baseById),
     buildModelLod2Mesh(sourceDocument),
   ];
-  const l1Spec = l1Meshes[0] ?? {};
-  const l1Idx = st.nodes.push({ ...l1Spec, name: `${sourceDocument.id}_LOD1` }) - 1;
+  const l1Idx = pushLod1ModelNode(st, sourceDocument.id, l1Meshes);
   const l2Res = colorMesh(
     st,
     `${sourceDocument.id}_lod2`,
@@ -435,11 +440,15 @@ export const attachModelLods = (
     options.hysteresis,
   );
   const roots = [...(compiled.document.scenes[0]?.nodes ?? [])];
-  const l0MeshPos = roots.findIndex((idx) => st.nodes[idx]?.mesh !== undefined);
+  const meshRoots = roots.filter((idx) => st.nodes[idx]?.mesh !== undefined);
+  const boneRoots = roots.filter((idx) => st.nodes[idx]?.mesh === undefined);
   const l0Idx =
-    l0MeshPos >= 0
-      ? roots[l0MeshPos]!
-      : st.nodes.push({ name: `${sourceDocument.id}_LOD0`, children: roots }) - 1;
+    meshRoots.length === 1
+      ? meshRoots[0]!
+      : st.nodes.push({
+          name: `${sourceDocument.id}_LOD0`,
+          ...(meshRoots.length > 0 ? { children: meshRoots } : {}),
+        }) - 1;
   const prev = st.nodes[l0Idx]!;
   st.nodes[l0Idx] = {
     ...prev,
@@ -451,6 +460,5 @@ export const attachModelLods = (
       ashfox: { lod: meta },
     },
   };
-  const sceneRoots = l0MeshPos >= 0 ? [...roots, l1Idx, l2Idx] : [l0Idx, l1Idx, l2Idx];
-  return finalize(compiled, st, sceneRoots);
+  return finalize(compiled, st, [...boneRoots, l0Idx, l1Idx, l2Idx]);
 };

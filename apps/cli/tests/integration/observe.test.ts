@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
+import * as THREE from 'three';
+import { createAshfoxLod, updateAshfoxLodWithHysteresis } from '@ashfox/render-core';
 
 const root = path.resolve(__dirname, '../../../..'),
   cli = path.join(__dirname, '../../dist/ashfox.cjs');
@@ -92,6 +94,24 @@ async function main() {
   );
   assert.ok(fs.existsSync(path.join(jbDir, 'pack.mcmeta')));
   assert.ok(jbModel.elements.length > 0);
+
+  const sceneRoot = new THREE.Group();
+  const skeletonRoot = new THREE.Bone();
+  skeletonRoot.name = 'body';
+  const tier0 = new THREE.Group();
+  tier0.name = 'griffin_LOD0';
+  const tier1 = new THREE.Group();
+  tier1.name = 'griffin_LOD1';
+  const tier2 = new THREE.Group();
+  tier2.name = 'griffin_LOD2';
+  sceneRoot.add(skeletonRoot, tier0, tier1, tier2);
+  const lod = createAshfoxLod(sceneRoot, { distances: [0, 18, 45] });
+  assert.equal(lod.children.includes(skeletonRoot), true);
+  assert.equal(lod.levels.length, 3);
+  updateAshfoxLodWithHysteresis(lod, new THREE.Vector3(0, 0, 30));
+  assert.equal(tier0.visible, false);
+  assert.equal(tier1.visible, true);
+  assert.equal(skeletonRoot.visible, true);
   console.log('5-verb check/build/render hardcut, declared multi-outputs, and retired flags pass');
 }
 main()

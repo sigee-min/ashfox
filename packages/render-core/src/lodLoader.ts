@@ -66,11 +66,15 @@ export const createAshfoxLod = (
   if (tiers.length === 0) {
     lod.addLevel(gltfScene, distances[0] ?? 0);
   } else {
+    const tierObjects = new Set(tiers.map((entry) => entry.object));
+    const tierParent = tiers[0]!.object.parent ?? gltfScene;
+    const nonTierSiblings = tierParent.children.filter((child) => !tierObjects.has(child));
     tiers.forEach((entry, index) => {
       const dist = distances[entry.tier] ?? distances[index] ?? index * 25;
       lod.addLevel(entry.object, dist, hysteresis);
       entry.object.visible = index === 0;
     });
+    for (const sibling of nonTierSiblings) lod.add(sibling);
   }
 
   const state: AshfoxLodState = {
