@@ -1,0 +1,124 @@
+ashfox-model 1
+structure tavern {
+  import "../module/furnishings.ashfox" as deco;
+  import "../module/arch_kit.ashfox" as kit;
+  import "../models/props/wall_lantern.ashfox" as custom_lantern;
+  import "../models/props/rune_pillar.ashfox" as custom_pillar;
+  import "../models/props/hanging_sign.ashfox" as custom_sign;
+
+  density = 2;
+  seed = 404;
+  size = (17, 17, 15);
+  data_version = 3955;
+
+  params {
+    w = 17;
+    d = 15;
+  }
+
+  outputs {
+    java_structure;
+    glb;
+  }
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    cobble = mix("minecraft:cobblestone" * 0.65, "minecraft:mossy_cobblestone" * 0.35);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    stone_brick = mix("minecraft:stone_bricks" * 0.75, "minecraft:mossy_stone_bricks" * 0.15, "minecraft:cracked_stone_bricks" * 0.1);
+    plaster = mix("minecraft:white_terracotta" * 0.85, "minecraft:calcite" * 0.15);
+    timber = "minecraft:dark_oak_log[axis=y]";
+    beam = "minecraft:dark_oak_log[axis=x]";
+    oak_floor = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    roof_stair = "minecraft:dark_oak_stairs";
+    trim_stair = "minecraft:spruce_stairs";
+    ridge = "minecraft:dark_oak_slab[type=bottom]";
+    porch_stair = "minecraft:stone_brick_stairs[facing=north,half=bottom]";
+    oak_stair = "minecraft:oak_stairs";
+    fence = "minecraft:dark_oak_fence";
+    glass = "minecraft:glass_pane";
+    sill = "minecraft:spruce_slab[type=top]";
+    shutter = "minecraft:spruce_trapdoor[facing=south,half=bottom,open=true]";
+    door = "minecraft:dark_oak_door[facing=north,half=lower,hinge=left,open=false]";
+    chimney_brick = "minecraft:bricks";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = asset custom_lantern as "minecraft:lantern[hanging=false]";
+    pillar = asset custom_pillar as "minecraft:chiseled_stone_bricks";
+    sign = asset custom_sign as "minecraft:oak_wall_sign[facing=south]";
+  }
+
+  build {
+    floor ground y = 0 height = 5 {
+      room taproom from = (1, 1) size = (15, 11) kind = tavern plinth = stone_brick floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+
+      facade on taproom.south {
+        door at = center width = 2 height = 2 block = door hinge = left frame = timber lintel = beam porch {
+          depth = 2;
+          floor = stone_brick;
+          pillars = timber;
+          lamps = lantern;
+          steps = porch_stair;
+        }
+        window symmetric = 3 width = 2 height = 2 y_offset = 1 glass = glass recess = 1 sill = sill shutter = shutter lintel = beam;
+      }
+
+      facade on taproom.north, taproom.east, taproom.west {
+        window symmetric = 3 width = 2 height = 2 y_offset = 1 glass = glass recess = 1 sill = sill shutter = shutter lintel = beam;
+      }
+    }
+
+    floor upper y = 5 height = 4 {
+      room inn_west from = (1, 1) size = (8, 11) kind = bedroom floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+      room inn_east from = (8, 1) size = (8, 11) kind = hallway floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+
+      facade on inn_west.east {
+        door at = center width = 1 height = 2 block = door hinge = left frame = timber lintel = beam;
+      }
+
+      facade on inn_west.south, inn_west.north, inn_east.south, inn_east.north {
+        window at = center width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+    }
+
+    staircase in_room = taproom style = u_turn at = (10, 4) y_from = 0 y_to = 5 facing = west width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
+
+    roof from = (0, 9, 0) to = (16, 16, 12) style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
+      dormer wall = south offset = 0 width = 3 height = 3 window = glass;
+      chimney room = taproom corner = nw offset = (1, 1) width = 2 rise = 4 block = chimney_brick cap = true;
+    }
+
+    furnish room = taproom {
+      place_anchor prefab = deco.TavernBar on = nw offset = (0, 0) rotate = 0;
+      place_anchor prefab = deco.DiningTable on = sw offset = (1, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = inn_west {
+      place_anchor prefab = deco.CozyBedroom on = nw offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = inn_east {
+      place_anchor prefab = deco.StudyCorner on = ne offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    weathering {
+      ground_moss height = 2 target = cobble into = moss_cobble rate = 0.3;
+      corner_quoin target = plaster corners = stone_brick;
+      chimney_soot radius = 2 rate = 0.45;
+      eave_shadow target = plaster into = stone_brick rate = 0.2;
+    }
+
+    place kit.CrateStack at = (13, 1, 12) rotate = 0;
+    set at = (3, 1, 12) block = pillar;
+    set at = (11, 3, 12) block = sign facing = south;
+
+    socket tavern_entry kind = entry room = taproom wall = south normal = south pool = "village:streets" target = "road_join";
+    socket east_lane kind = road at = (w - 1, 0, floor(d / 2)) normal = east pool = "village:streets" target = "road_join";
+  }
+}

@@ -1,0 +1,42 @@
+ashfox-model 1
+module arch_kit {
+  import "../models/props/wall_lantern.ashfox" as lantern_prop;
+
+  palette {
+    cobble = mix("minecraft:cobblestone" * 0.7, "minecraft:mossy_cobblestone" * 0.3);
+    stone_brick = "minecraft:stone_bricks";
+    timber = "minecraft:spruce_log[axis=y]";
+    plank = "minecraft:oak_planks";
+    slab = "minecraft:spruce_slab[type=bottom]";
+    fence = "minecraft:spruce_fence";
+    barrel = "minecraft:barrel[facing=up]";
+    chest = "minecraft:chest[facing=south]";
+    cauldron = "minecraft:cauldron";
+    lantern = asset lantern_prop as "minecraft:lantern[hanging=false]";
+  }
+
+  export prefab WellHead {
+    walls from = (0, 0, 0) to = (2, 0, 2) block = cobble;
+    set at = (1, 0, 1) block = cauldron;
+    set at = (0, 1, 0) block = fence;
+    set at = (2, 1, 0) block = fence;
+    set at = (0, 2, 0) block = fence;
+    set at = (2, 2, 0) block = fence;
+    box from = (0, 3, 0) to = (2, 3, 2) block = slab;
+    set at = (1, 2, 1) block = lantern;
+  }
+
+  export prefab CrateStack {
+    set at = (0, 0, 0) block = barrel;
+    set at = (1, 0, 0) block = plank;
+    set at = (0, 0, 1) block = chest;
+    set at = (1, 1, 0) block = barrel;
+  }
+
+  export prefab LampPost {
+    set at = (0, 0, 0) block = stone_brick;
+    set at = (0, 1, 0) block = timber;
+    set at = (0, 2, 0) block = fence;
+    set at = (0, 3, 0) block = lantern;
+  }
+}

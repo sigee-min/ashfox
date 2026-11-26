@@ -1,0 +1,52 @@
+ashfox-model 1
+compound village_compound {
+  import "./medieval_cottage.ashfox" as cottage;
+  import "./watchtower.ashfox" as tower;
+  import "./blacksmith.ashfox" as smith;
+  import "./tavern.ashfox" as tavern;
+  import "../module/arch_kit.ashfox" as kit;
+
+  density = 2;
+  seed = 505;
+  size = (46, 22, 36);
+  data_version = 3955;
+
+  outputs {
+    java_structure;
+    glb;
+  }
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+
+  palette {
+    cobble = mix("minecraft:cobblestone" * 0.65, "minecraft:mossy_cobblestone" * 0.25, "minecraft:stone_bricks" * 0.1);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    road_stone = mix("minecraft:stone_bricks" * 0.7, "minecraft:cobblestone" * 0.3);
+    wall = "minecraft:stone_brick_wall";
+  }
+
+  build {
+    box from = (0, 0, 17) to = (45, 0, 20) block = road_stone;
+    box from = (16, 0, 15) to = (21, 0, 22) block = cobble;
+    box from = (1, 0, 1) to = (44, 0, 1) block = wall;
+    box from = (1, 0, 34) to = (44, 0, 34) block = wall;
+
+    compound_place cottage at = (2, 0, 2) rotate = 0;
+    compound_place tavern at = (20, 0, 2) rotate = 0;
+    compound_place tower at = (2, 0, 21) rotate = 180;
+    compound_place smith at = (22, 0, 21) rotate = 180;
+
+    place kit.WellHead at = (17, 1, 17) rotate = 0;
+    place kit.LampPost at = (15, 1, 17) rotate = 0;
+    place kit.LampPost at = (22, 1, 19) rotate = 0;
+    place kit.CrateStack at = (39, 1, 18) rotate = 0;
+
+    weathering {
+      ground_moss height = 2 target = cobble into = moss_cobble rate = 0.3;
+    }
+
+    socket west_gate kind = road at = (0, 0, 18) normal = west pool = "village:streets" target = "road_join";
+    socket east_gate kind = road at = (45, 0, 18) normal = east pool = "village:streets" target = "road_join";
+  }
+}

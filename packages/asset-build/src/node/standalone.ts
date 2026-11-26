@@ -42,7 +42,10 @@ interface StandaloneVisitState {
 }
 
 const assertChildKind = (childKind: string, rootKind: string, target: string): void => {
-  const valid = childKind === 'module' || (rootKind === 'structure' && childKind === 'model');
+  const valid =
+    childKind === 'module' ||
+    ((rootKind === 'structure' || rootKind === 'compound') &&
+      (childKind === 'model' || childKind === 'structure'));
   if (!valid) throw new BuildFailure('source.import', 'Expected module: ' + target);
 };
 

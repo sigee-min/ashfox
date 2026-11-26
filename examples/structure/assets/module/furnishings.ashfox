@@ -10,9 +10,16 @@ module furnishings {
     barrel = "minecraft:barrel[facing=up]";
     craft = "minecraft:crafting_table";
     furnace = "minecraft:furnace[facing=south,lit=true]";
+    blast = "minecraft:blast_furnace[facing=south,lit=true]";
+    anvil = "minecraft:anvil[facing=east]";
+    cauldron = "minecraft:cauldron";
     brick = "minecraft:bricks";
+    deepslate = "minecraft:deepslate_bricks";
     pot = "minecraft:flower_pot";
     plank = "minecraft:oak_planks";
+    slab = "minecraft:oak_slab[type=top]";
+    stair_n = "minecraft:oak_stairs[facing=north,half=bottom]";
+    stair_s = "minecraft:oak_stairs[facing=south,half=bottom]";
     book = "minecraft:bookshelf";
     carpet_r = "minecraft:red_carpet";
     carpet_b = "minecraft:blue_carpet";
@@ -63,5 +70,31 @@ module furnishings {
       c = carpet_b;
     };
     set at = (2, 1, 0) block = lantern;
+  }
+
+  export prefab ForgeArea {
+    box from = (0, 0, 0) to = (2, 1, 0) block = deepslate;
+    set at = (1, 0, 0) block = blast;
+    set at = (0, 0, 1) block = cauldron;
+    set at = (1, 0, 2) block = anvil;
+    set at = (2, 0, 1) block = barrel;
+    set at = (2, 1, 1) block = lantern;
+  }
+
+  export prefab TavernBar {
+    box from = (0, 0, 0) to = (3, 0, 0) block = barrel;
+    box from = (0, 0, 1) to = (3, 0, 1) block = plank;
+    box from = (0, 1, 0) to = (3, 1, 0) block = book;
+    set at = (0, 1, 1) block = lantern;
+    set at = (3, 1, 1) block = pot;
+  }
+
+  export prefab DiningTable {
+    set at = (1, 0, 0) block = stair_s;
+    set at = (0, 0, 1) block = slab;
+    set at = (1, 0, 1) block = slab;
+    set at = (2, 0, 1) block = slab;
+    set at = (1, 0, 2) block = stair_n;
+    set at = (1, 1, 1) block = lantern;
   }
 }

@@ -16,15 +16,15 @@ const starterFiles = (root) => {
     'assets/models/marker.ashfox': 'examples/minecraft/assets/models/marker.ashfox',
     'assets/models/rune_bricks.ashfox': 'examples/block/rune_bricks.ashfox',
     'assets/models/lantern.ashfox': 'examples/prop/lantern.ashfox',
-    'assets/module/furnishings.ashfox': 'examples/structure/furnishings.ashfox',
-    'assets/models/props/wall_lantern.ashfox': 'examples/structure/props/wall_lantern.ashfox',
-    'assets/models/props/rune_pillar.ashfox': 'examples/structure/props/rune_pillar.ashfox',
+    'assets/module/furnishings.ashfox': 'examples/structure/assets/module/furnishings.ashfox',
+    'assets/models/props/wall_lantern.ashfox':
+      'examples/structure/assets/models/props/wall_lantern.ashfox',
+    'assets/models/props/rune_pillar.ashfox':
+      'examples/structure/assets/models/props/rune_pillar.ashfox',
+    'assets/structures/watchtower.ashfox': 'examples/structure/assets/structures/watchtower.ashfox',
   })) {
     files[name] = read(source);
   }
-  files['assets/structures/watchtower.ashfox'] = read('examples/structure/watchtower.ashfox')
-    .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
-    .replaceAll('./props/', '../models/props/');
   return files;
 };
 module.exports = { starterFiles };

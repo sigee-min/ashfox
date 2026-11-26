@@ -141,22 +141,46 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
   };
 };
 
+const STRUCTURE_META_BASE_KEYS = ['size', 'blockCount', 'interiorCells'] as const;
+const STRUCTURE_META_PLAYABLE_KEYS = [
+  'size',
+  'blockCount',
+  'interiorCells',
+  'zoneCount',
+  'lightCount',
+  'interactableCount',
+] as const;
+
+const requireNonNegativeInt = (value: unknown): number => {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    fail('Invalid structure metadata');
+  }
+  return value as number;
+};
+
 const verifyStructureMetadata = (value: unknown): AssetMetadata => {
-  const r = record(value, ['size', 'blockCount', 'interiorCells']);
+  const hasPlayable =
+    isClosedContractRecord(value) &&
+    ('zoneCount' in value || 'lightCount' in value || 'interactableCount' in value);
+  const r = record(value, hasPlayable ? STRUCTURE_META_PLAYABLE_KEYS : STRUCTURE_META_BASE_KEYS);
   if (
     !Array.isArray(r.size) ||
     r.size.length !== 3 ||
-    r.size.some((n) => !Number.isSafeInteger(n) || (n as number) < 1) ||
-    !Number.isSafeInteger(r.blockCount) ||
-    !Number.isSafeInteger(r.interiorCells)
+    r.size.some((n) => !Number.isSafeInteger(n) || (n as number) < 1)
   ) {
     fail('Invalid structure metadata');
   }
   const s = r.size as [number, number, number];
+  const blockCount = requireNonNegativeInt(r.blockCount);
+  const interiorCells = requireNonNegativeInt(r.interiorCells);
+  if (!hasPlayable) return { size: [s[0], s[1], s[2]], blockCount, interiorCells };
   return {
     size: [s[0], s[1], s[2]],
-    blockCount: r.blockCount as number,
-    interiorCells: r.interiorCells as number,
+    blockCount,
+    interiorCells,
+    zoneCount: requireNonNegativeInt(r.zoneCount),
+    lightCount: requireNonNegativeInt(r.lightCount),
+    interactableCount: requireNonNegativeInt(r.interactableCount),
   };
 };
 
