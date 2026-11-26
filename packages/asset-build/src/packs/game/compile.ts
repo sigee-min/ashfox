@@ -7,9 +7,10 @@ import {
   type CatalogAsset,
   type PackEncoder,
 } from '../../bundle/contract';
-import type { GameAssetManifest, RuntimeAsset } from './contract';
+import type { GameAssetManifest, GamePackOptions, RuntimeAsset } from './contract';
 import { digest, json } from '../../shared/digest';
 import { archivePack } from '../archive';
+import { deduplicateSharedGlbTextures } from './sharedTextures';
 import { indexCatalogAssetFiles, type IndexedCatalogAssetFiles } from '../sourceIndex';
 type RuntimeAssetDetail =
   | Omit<Extract<RuntimeAsset, { kind: 'model' }>, 'files'>
@@ -228,14 +229,53 @@ const compileBindingDetail = (
   throw new BuildFailure('pack.source', source.id + ': unsupported metadata');
 };
 
+const finalizeGamePack = (
+  pack: GameAssetPack,
+  pending: ReadonlyArray<{
+    readonly detail: RuntimeAssetDetail;
+    readonly paths: readonly string[];
+  }>,
+  files: readonly Artifact[],
+  deduplicate: boolean,
+): readonly Artifact[] => {
+  const deduped = deduplicateSharedGlbTextures(files, deduplicate);
+  const fileByPath = new Map(deduped.files.map((f) => [f.path, f]));
+  const runtime: RuntimeAsset[] = pending.map(({ detail, paths }) => ({
+    ...detail,
+    files: paths.map((p) => {
+      const f = fileByPath.get(p)!;
+      return { path: f.path, sha256: digest(f.bytes), byteLength: f.bytes.length };
+    }),
+  }));
+  const sharedRecords = deduped.sharedTextures.map((f) => ({
+    path: f.path,
+    sha256: digest(f.bytes),
+    byteLength: f.bytes.length,
+  }));
+  const manifest: GameAssetManifest = {
+    format: 'ashfox-game-assets',
+    version: 1,
+    ...(sharedRecords.length > 0 ? { sharedTextures: sharedRecords } : {}),
+    assets: runtime,
+  };
+  readGameAssetManifest(manifest);
+  const outputFiles: Artifact[] = [
+    ...deduped.files,
+    ...deduped.sharedTextures,
+    { path: 'assets.json', bytes: encodeUtf8(json(manifest)) },
+  ];
+  return archivePack(pack.name, 'game-assets', pack.archive, outputFiles);
+};
+
 export const compileGamePack = async (
   pack: GameAssetPack,
   assets: readonly CatalogAsset[],
   artifacts: readonly Artifact[],
   encoder?: PackEncoder,
+  options: GamePackOptions = {},
 ): Promise<readonly Artifact[]> => {
   const files: Artifact[] = [],
-    runtime: RuntimeAsset[] = [],
+    pending: Array<{ readonly detail: RuntimeAssetDetail; readonly paths: readonly string[] }> = [],
     encoded = new Map<string, Uint8Array>(),
     context = createGamePackContext(assets, artifacts);
   for (const binding of [...pack.assets].sort((a, b) => compareText(a.id, b.id))) {
@@ -243,10 +283,11 @@ export const compileGamePack = async (
     const sourceFiles = context.sourceFiles.get(binding.source);
     if (!source || !sourceFiles || source.kind === 'pack')
       throw new BuildFailure('pack.source', binding.source);
-    const mapped: Artifact[] = [];
+    const paths: string[] = [];
     const add = (name: string, bytes: Uint8Array): string => {
       const path = `${binding.path}/${name}`;
-      mapped.push({ path, bytes });
+      files.push({ path, bytes });
+      paths.push(path);
       return path;
     };
     const detail = await compileBindingDetail(
@@ -259,18 +300,7 @@ export const compileGamePack = async (
       add,
       encoder,
     );
-    files.push(...mapped);
-    runtime.push({
-      ...detail,
-      files: mapped.map((f) => ({
-        path: f.path,
-        sha256: digest(f.bytes),
-        byteLength: f.bytes.length,
-      })),
-    });
+    pending.push({ detail, paths });
   }
-  const manifest: GameAssetManifest = { format: 'ashfox-game-assets', version: 1, assets: runtime };
-  readGameAssetManifest(manifest);
-  files.push({ path: 'assets.json', bytes: encodeUtf8(json(manifest)) });
-  return archivePack(pack.name, 'game-assets', pack.archive, files);
+  return finalizeGamePack(pack, pending, files, options.deduplicateTextures ?? true);
 };

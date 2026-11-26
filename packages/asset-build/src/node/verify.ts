@@ -283,8 +283,10 @@ const verifyGameManifestAssets = (
   const manifest = readGameAssetManifest(
     readJson(contained(directory, root + manifestFile), cache),
   );
-  const references = manifest.assets
-    .flatMap((a) => a.files)
+  const references = [
+    ...manifest.assets.flatMap((a) => a.files),
+    ...(manifest.sharedTextures ?? []),
+  ]
     .map((f) => ({ ...f, path: root + f.path }))
     .sort((a, b) => compareText(a.path, b.path));
   const actual = assetFiles

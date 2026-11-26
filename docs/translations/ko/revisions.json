@@ -8,7 +8,7 @@
   "guides/automation.md": "94c6ee5eaf18a328b484e2f409d955107a01ddb1c0b24867651756e102b9fa36",
   "guides/choose-a-format.md": "2252f961c6de91fe5102b7106938f615e5713733c9d9ebd381936c25df3153ae",
   "guides/cli.md": "61e987edc08f254d088505e43edf1a6e5ddbc8824a858ff789c418a4d46dfd32",
-  "guides/game-assets.md": "7a6cc726764d79983b65e8152b10591ce2c97bd61585c3784048a1631409f563",
+  "guides/game-assets.md": "6477b32476266df2ac2b0ae29cedd7b7d63b24a17d65e8587f2f0283c1d91347",
   "guides/install.md": "2eec857bd57b37aa38d58f9627dc1e41881e3dd63f622f3455a4b32a2799b80c",
   "guides/minecraft-packs.md": "f5664479bd128da8cbe05ff7cda397483497e3b38b2dbfdb924e4b4e7cdcefee",
   "guides/models.md": "76685eba71dd764b1ec69bd67b295894227b70a403968e4d547c2da0aa7a3c8c",
@@ -26,7 +26,7 @@
   "language/model.md": "f3023e824875ad03b65d6d6ab639786948ef67f0d676d3b8639bad20f75bbaa3",
   "language/sounds.md": "5189cdcc83481b7c5b09d6336a10632a189c9243228e0fa98f205ffa3f163ec1",
   "language/sprites.md": "42cd72dc683c76665a003f269cb5ba9f3e869c453e874e3bac7b8ef99d3ddd32",
-  "language/structures.md": "01c679abe230d86a07ba18621ad52fe01e5f53352c7c175dacc04174c3461b41",
+  "language/structures.md": "e222056f922eebae4c19bdc69472023896175a82bddcbb6a2dc98cfc54007bba",
   "language/textures.md": "d5734e7a16beb2bea49e3dc264dfa5c8d46cf3c4903598c17cb45eaa51be6fa5",
   "language/values.md": "b106bf897f8435c0c49a2fd063a1948bea60b02f41cc916117210639cd9b7500"
 }
