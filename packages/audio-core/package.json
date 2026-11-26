@@ -4,5 +4,8 @@
   "private": true,
   "main": "src/index.ts",
   "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@ashfox/internal-contracts": "^0.0.0"
+  },
   "scripts": { "test": "node run.js" }
 }
