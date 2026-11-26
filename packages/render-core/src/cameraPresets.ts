@@ -29,29 +29,43 @@ const frameDimensions = (
   }
 };
 
-const objectFrame = (
+const computeFrameDistance = (
   camera: THREE.PerspectiveCamera,
-  mode: UnsignedCameraMode,
-  object: THREE.Object3D | undefined,
-): { target: THREE.Vector3; distance: number } | null => {
-  if (!object) return null;
-  object.updateWorldMatrix(true, true);
-  const bounds = new THREE.Box3().setFromObject(object);
-  if (bounds.isEmpty()) return null;
-
-  const target = bounds.getCenter(new THREE.Vector3());
-  const size = bounds.getSize(new THREE.Vector3());
-  const [width, height, depth] = frameDimensions(mode, size);
+  width: number,
+  height: number,
+  depth: number,
+  padding: number,
+): number => {
   const verticalFov = THREE.MathUtils.degToRad(camera.fov);
   const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
   const widthDistance = width / 2 / Math.tan(horizontalFov / 2);
   const heightDistance = height / 2 / Math.tan(verticalFov / 2);
-  const distance = Math.max(
-    12,
-    (Math.max(widthDistance, heightDistance) + depth / 2) *
-      (mode === 'native' ? NATIVE_GAMEPLAY_PADDING : CAMERA_PADDING),
-  );
-  return { target, distance };
+  return Math.max(12, (Math.max(widthDistance, heightDistance) + depth / 2) * padding);
+};
+
+const resolveSubjectBounds = (
+  subject: THREE.Object3D | THREE.Box3 | undefined,
+): THREE.Box3 | null => {
+  if (!subject) return null;
+  if (subject instanceof THREE.Box3) return subject;
+  subject.updateWorldMatrix(true, true);
+  const bounds = new THREE.Box3().setFromObject(subject);
+  return bounds.isEmpty() ? null : bounds;
+};
+
+const objectFrame = (
+  camera: THREE.PerspectiveCamera,
+  mode: UnsignedCameraMode,
+  subject: THREE.Object3D | THREE.Box3 | undefined,
+): { target: THREE.Vector3; distance: number } | null => {
+  const bounds = resolveSubjectBounds(subject);
+  if (!bounds) return null;
+
+  const target = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  const [width, height, depth] = frameDimensions(mode, size);
+  const padding = mode === 'native' ? NATIVE_GAMEPLAY_PADDING : CAMERA_PADDING;
+  return { target, distance: computeFrameDistance(camera, width, height, depth, padding) };
 };
 
 const spanAlong = (size: THREE.Vector3, axis: ProjectAxisVector): number =>
@@ -60,33 +74,24 @@ const spanAlong = (size: THREE.Vector3, axis: ProjectAxisVector): number =>
 const signedObjectFrame = (
   camera: THREE.PerspectiveCamera,
   view: ProjectSignedView,
-  object: THREE.Object3D | undefined,
+  subject: THREE.Object3D | THREE.Box3 | undefined,
   forward: ProjectForwardDirection,
 ): { target: THREE.Vector3; distance: number } | null => {
-  if (!object) return null;
-  object.updateWorldMatrix(true, true);
-  const bounds = new THREE.Box3().setFromObject(object);
-  if (bounds.isEmpty()) return null;
+  const bounds = resolveSubjectBounds(subject);
+  if (!bounds) return null;
   const target = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
   const axes = projectSignedViewFrame(forward, view);
   const width = spanAlong(size, axes.inline);
   const height = spanAlong(size, axes.cross);
   const depth = spanAlong(size, axes.depth);
-  const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
-  const widthDistance = width / 2 / Math.tan(horizontalFov / 2);
-  const heightDistance = height / 2 / Math.tan(verticalFov / 2);
-  return {
-    target,
-    distance: Math.max(12, (Math.max(widthDistance, heightDistance) + depth / 2) * CAMERA_PADDING),
-  };
+  return { target, distance: computeFrameDistance(camera, width, height, depth, CAMERA_PADDING) };
 };
 
 export const applyCameraPreset = (
   camera: THREE.PerspectiveCamera,
   mode: CameraMode,
-  object?: THREE.Object3D,
+  object?: THREE.Object3D | THREE.Box3,
   forward: ProjectForwardDirection = 'north',
 ): THREE.Vector3 => {
   const signedView =
@@ -123,7 +128,7 @@ export const applyCameraPreset = (
 export const applySignedProjectViewPreset = (
   camera: THREE.PerspectiveCamera,
   view: ProjectSignedView,
-  object?: THREE.Object3D,
+  object?: THREE.Object3D | THREE.Box3,
   forward: ProjectForwardDirection = 'north',
 ): THREE.Vector3 => {
   const axes = projectSignedViewFrame(forward, view);

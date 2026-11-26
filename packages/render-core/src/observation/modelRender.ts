@@ -42,17 +42,39 @@ export const createCanvas2d = (width: number, height: number) => {
   return { canvas, context };
 };
 
+const buildChildrenByParent = (nodes: ProjectDocument['scene']['nodes']): Map<string, string[]> => {
+  const childrenByParent = new Map<string, string[]>();
+  for (const node of Object.values(nodes)) {
+    if (!node.parentId) continue;
+    const children = childrenByParent.get(node.parentId);
+    if (children) children.push(node.id);
+    else childrenByParent.set(node.parentId, [node.id]);
+  }
+  return childrenByParent;
+};
+
 export const applyNodeVisibilityFilter = (
   model: ProjectDocument,
   projection: ReturnType<typeof projectToThreeScene>,
   nodeId: string,
 ): void => {
-  if (!model.scene.nodes[nodeId]) throw new Error('Unknown node: ' + nodeId);
+  const { nodes } = model.scene;
+  if (!nodes[nodeId]) throw new Error('Unknown node: ' + nodeId);
+  const childrenByParent = buildChildrenByParent(nodes);
   const selected = new Set([nodeId]);
-  for (let pass = 0; pass < Object.keys(model.scene.nodes).length; pass++)
-    for (const n of Object.values(model.scene.nodes))
-      if (n.parentId && selected.has(n.parentId)) selected.add(n.id);
-  for (const n of Object.values(model.scene.nodes))
+  const queue = [nodeId];
+  for (let head = 0; head < queue.length; head++) {
+    const currentId = queue[head];
+    if (currentId === undefined) continue;
+    const children = childrenByParent.get(currentId);
+    if (!children) continue;
+    for (const childId of children) {
+      if (selected.has(childId)) continue;
+      selected.add(childId);
+      queue.push(childId);
+    }
+  }
+  for (const n of Object.values(nodes))
     if (n.kind !== 'bone' && !selected.has(n.id))
       projection.objectsByNodeId.get(n.id)!.visible = false;
 };
@@ -65,15 +87,36 @@ const sampleAnimatedBounds = (
   clip: ProjectDocument['animations'][string] | undefined,
 ): THREE.Box3 => {
   const bounds = new THREE.Box3();
+  const sampleBounds = new THREE.Box3();
   const sampleCount = replay && clip ? 33 : 1;
   for (let i = 0; i < sampleCount; i++) {
     const time = replay && clip ? (clip.durationSeconds * i) / 32 : v.time;
     applyAnimationPose(model, projection, clip?.id ?? null, time);
     projection.root.updateMatrixWorld(true);
     const rootObject = v.node ? projection.objectsByNodeId.get(v.node)! : projection.root;
-    bounds.union(new THREE.Box3().setFromObject(rootObject));
+    bounds.union(sampleBounds.setFromObject(rootObject));
   }
   return bounds;
+};
+
+const updateDirectionalShadowBounds = (
+  scene: THREE.Scene,
+  target: THREE.Vector3,
+  span: number,
+): void => {
+  for (const child of scene.children) {
+    if (!(child instanceof THREE.DirectionalLight && child.castShadow)) continue;
+    child.shadow.camera.left = -span;
+    child.shadow.camera.right = span;
+    child.shadow.camera.top = span;
+    child.shadow.camera.bottom = -span;
+    child.shadow.camera.far = span * 4;
+    child.shadow.bias = -0.002;
+    child.shadow.camera.updateProjectionMatrix();
+    child.position.copy(target).add(new THREE.Vector3(span * 0.6, span * 0.9, -span * 0.7));
+    child.target.position.copy(target);
+    child.target.updateMatrixWorld();
+  }
 };
 
 export const computeTargetFraming = (
@@ -87,41 +130,19 @@ export const computeTargetFraming = (
   // Stable framing covers sampled poses, so motion does not pump the camera.
   const bounds = sampleAnimatedBounds(model, projection, v, replay, clip);
   const target = bounds.getCenter(new THREE.Vector3());
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(...bounds.getSize(new THREE.Vector3()).toArray()),
-  );
-  box.position.copy(target);
   if (v.camera === 'back' || v.camera === 'bottom')
     applySignedProjectViewPreset(
       surface.camera,
       v.camera === 'back' ? 'rear' : 'down',
-      box,
+      bounds,
       model.settings.forward,
     );
-  else applyCameraPreset(surface.camera, v.camera, box, model.settings.forward);
+  else applyCameraPreset(surface.camera, v.camera, bounds, model.settings.forward);
   const distance = surface.camera.position.distanceTo(target) / v.zoom;
   if (distance > 120) {
-    const span = Math.max(
-      box.geometry.boundingBox?.getSize(new THREE.Vector3()).length() ?? distance,
-      120,
-    );
-    for (const child of surface.scene.children) {
-      if (child instanceof THREE.DirectionalLight && child.castShadow) {
-        child.shadow.camera.left = -span;
-        child.shadow.camera.right = span;
-        child.shadow.camera.top = span;
-        child.shadow.camera.bottom = -span;
-        child.shadow.camera.far = span * 4;
-        child.shadow.bias = -0.002;
-        child.shadow.camera.updateProjectionMatrix();
-        child.position.copy(target).add(new THREE.Vector3(span * 0.6, span * 0.9, -span * 0.7));
-        child.target.position.copy(target);
-        child.target.updateMatrixWorld();
-      }
-    }
+    const span = Math.max(bounds.getSize(new THREE.Vector3()).length(), 120);
+    updateDirectionalShadowBounds(surface.scene, target, span);
   }
-  box.geometry.dispose();
-  (box.material as THREE.Material).dispose();
   surface.scene.fog = null;
   if (v.background !== 'environment') {
     surface.scene.background = null;
