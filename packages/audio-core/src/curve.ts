@@ -38,7 +38,12 @@ const compileCurve = (curve: Curve): CompiledCurve => {
       logB: isLog ? Math.log(b.value) : 0,
     });
   }
-  return { isLog, isSmooth: curve.interpolation === 'smooth', segments, index: 0 };
+  return {
+    isLog,
+    isSmooth: curve.interpolation === 'smooth',
+    segments,
+    index: 0,
+  };
 };
 
 const selectSegment = (compiled: CompiledCurve, u: number): CurveSegment => {
@@ -88,8 +93,12 @@ const pushSourceControls = (result: [string, Control][], s: SoundVoice['source']
   if (s.kind === 'fm') result.push(['source.index', s.index]);
   if (s.kind === 'chirp') result.push(['source.brightness', s.brightness]);
   if (s.kind === 'granular') result.push(['source.density', s.density]);
-  if (s.kind === 'vocal') {
+  if (s.kind === 'vocal' && s.formants) {
     s.formants.forEach((f, i) => result.push([`source.formants[${i}]`, f]));
+  }
+  if (s.kind === 'whoosh') {
+    result.push(['source.velocity', s.velocity]);
+    if (s.sweepPan !== undefined) result.push(['source.sweepPan', s.sweepPan]);
   }
 };
 
@@ -102,6 +111,7 @@ export const controls = (voice: SoundVoice): readonly (readonly [string, Control
     result.push(['filter.cutoff', voice.filter.cutoff]);
     if (voice.filter.q !== undefined) result.push(['filter.q', voice.filter.q]);
   }
+  if (voice.pan !== undefined) result.push(['pan', voice.pan]);
   pushSourceControls(result, voice.source);
   return result;
 };

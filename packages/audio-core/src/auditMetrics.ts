@@ -19,6 +19,9 @@ export interface SoundMetrics {
   readonly crestDb: number;
   readonly onsetPunchDb: number;
   readonly stereoCorrelation: number;
+  readonly stereoIacc: number;
+  readonly stereoSideRatio: number;
+  readonly loopPeriodicity: number;
   readonly leadingSilenceRatio: number;
   readonly trailingSilenceRatio: number;
   readonly attackSeconds: number;
@@ -65,28 +68,94 @@ export const decodeWavStereo = (
 export const decodeWavMono = (wav: Uint8Array, channels: 1 | 2): Float64Array =>
   decodeWavStereo(wav, channels).mono;
 
-const computeStereoCorrelation = (
+const computeStereoMetrics = (
   left: Float64Array,
   right: Float64Array,
   channels: 1 | 2,
-): number => {
-  if (channels === 1) return 1;
-  let sumLR = 0;
-  let sumL2 = 0;
-  let sumR2 = 0;
+): {
+  readonly stereoCorrelation: number;
+  readonly stereoIacc: number;
+  readonly stereoSideRatio: number;
+} => {
+  if (channels === 1) return { stereoCorrelation: 1, stereoIacc: 1, stereoSideRatio: 0 };
+  let sumLR = 0,
+    sumL2 = 0,
+    sumR2 = 0,
+    midSq = 0,
+    sideSq = 0;
   for (let i = 0; i < left.length; i += 1) {
-    const l = left[i]!;
-    const r = right[i]!;
+    const l = left[i]!,
+      r = right[i]!;
     sumLR += l * r;
     sumL2 += l * l;
     sumR2 += r * r;
+    const mid = 0.5 * (l + r),
+      side = 0.5 * (l - r);
+    midSq += mid * mid;
+    sideSq += side * side;
   }
   const denom = Math.sqrt(sumL2 * sumR2);
-  return denom <= 1e-18 ? 1 : Math.max(-1, Math.min(1, sumLR / denom));
+  const stereoCorrelation = denom <= 1e-18 ? 1 : Math.max(-1, Math.min(1, sumLR / denom));
+  const totalMs = midSq + sideSq;
+  const stereoSideRatio = totalMs <= 1e-18 ? 0 : sideSq / totalMs;
+  if (denom <= 1e-18 || left.length < 64) {
+    return { stereoCorrelation, stereoIacc: 1, stereoSideRatio };
+  }
+  let maxIacc = Math.abs(stereoCorrelation);
+  for (let lag = -24; lag <= 24; lag += 4) {
+    if (lag === 0) continue;
+    let c = 0,
+      eL = 0,
+      eR = 0;
+    const start = Math.max(0, -lag),
+      end = Math.min(left.length, left.length - lag);
+    for (let i = start; i < end; i += 4) {
+      const l = left[i]!,
+        r = right[i + lag]!;
+      c += l * r;
+      eL += l * l;
+      eR += r * r;
+    }
+    const d = Math.sqrt(eL * eR);
+    if (d > 1e-18) maxIacc = Math.max(maxIacc, Math.abs(c) / d);
+  }
+  return { stereoCorrelation, stereoIacc: Math.min(1, maxIacc), stereoSideRatio };
+};
+
+const computeLoopPeriodicity = (envelope: readonly number[], isLoop: boolean): number => {
+  const n = envelope.length;
+  if (!isLoop || n < 80) return 0;
+  let sum = 0;
+  for (let i = 0; i < n; i += 1) sum += envelope[i]!;
+  const mean = sum / n;
+  if (mean <= 1e-6) return 0;
+  let varSum = 0;
+  for (let i = 0; i < n; i += 1) {
+    const d = envelope[i]! - mean;
+    varSum += d * d;
+  }
+  if (varSum / (n * mean * mean) < 0.01) return 0;
+  const maxLag = Math.min(Math.floor(n / 2), 500);
+  let best = 0;
+  for (let lag = 30; lag <= maxLag; lag += 2) {
+    let num = 0,
+      e1 = 0,
+      e2 = 0;
+    for (let i = 0; i < n - lag; i += 1) {
+      const a = envelope[i]! - mean,
+        b = envelope[i + lag]! - mean;
+      num += a * b;
+      e1 += a * a;
+      e2 += b * b;
+    }
+    const d = Math.sqrt(e1 * e2);
+    if (d > 1e-12) best = Math.max(best, num / d);
+  }
+  return Math.max(0, Math.min(1, best));
 };
 
 const kWeightMeanSq = (samples: Float64Array): number => {
-  const s = new Float64Array(8); // [s1x1, s1x2, s1y1, s1y2, s2x1, s2x2, s2y1, s2y2]
+  const s = new Float64Array(8);
   let sumSq = 0;
   for (let i = 0; i < samples.length; i += 1) {
     const x = samples[i]!;
@@ -190,8 +259,8 @@ const measureOnsetAttack = (
   let crossing = firstActive;
   while (crossing < lastActive && Math.abs(mono[crossing]!) < highThresh) crossing += 1;
   const searchEnd = Math.min(lastActive, crossing + Math.round(rate * 0.06));
-  let peakIdx = firstActive;
-  let peakAbs = 0;
+  let peakIdx = firstActive,
+    peakAbs = 0;
   for (let i = firstActive; i <= searchEnd; i += 1) {
     if (Math.abs(mono[i]!) > peakAbs) {
       peakAbs = Math.abs(mono[i]!);
@@ -255,9 +324,7 @@ const frameShapeDiff = (
   bins: number,
 ): number => {
   let diff = 0;
-  for (let k = 1; k < bins; k += 1) {
-    diff += Math.abs(cur[k]! / curSum - prev[k]! / prevSum);
-  }
+  for (let k = 1; k < bins; k += 1) diff += Math.abs(cur[k]! / curSum - prev[k]! / prevSum);
   return Math.min(1, diff * 0.5);
 };
 
@@ -266,9 +333,9 @@ const accumulateFlux = (
   bins: number,
 ): { readonly meanPower: Float64Array; readonly fluxSum: number; readonly fluxCount: number } => {
   const meanPower = new Float64Array(bins);
-  let fluxSum = 0;
-  let fluxCount = 0;
-  let prevSum = 0;
+  let fluxSum = 0,
+    fluxCount = 0,
+    prevSum = 0;
   for (let f = 0; f < frames.length; f += 1) {
     const cur = frames[f]!;
     for (let k = 1; k < bins; k += 1) meanPower[k] += cur[k]! * cur[k]!;
@@ -290,11 +357,11 @@ const accumulateBands = (
 ) => {
   const bands = { sub: 0, low: 0, lowMid: 0, highMid: 0, presence: 0, air: 0 };
   const logBins = new Float64Array(24);
-  const logMin = Math.log(40);
-  const logRange = Math.log(16000) - logMin;
-  let totalPower = 0;
-  let weightedHz = 0;
-  let harsh = 0;
+  const logMin = Math.log(40),
+    logRange = Math.log(16000) - logMin;
+  let totalPower = 0,
+    weightedHz = 0,
+    harsh = 0;
   for (let k = 1; k < bins; k += 1) {
     const p = meanPower[k]! / Math.max(1, frameCount);
     const hz = (k * rate) / FFT_SIZE;
@@ -304,8 +371,7 @@ const accumulateBands = (
     const b = bandIndex(hz);
     if (b) bands[b] += p;
     if (hz >= 40 && hz < 16000) {
-      const li = Math.min(23, Math.floor(((Math.log(hz) - logMin) / logRange) * 24));
-      logBins[li] += p;
+      logBins[Math.min(23, Math.floor(((Math.log(hz) - logMin) / logRange) * 24))] += p;
     }
   }
   return { bands, logBins, totalPower, weightedHz, harsh };
@@ -349,8 +415,8 @@ const summarizeSpectra = (frames: readonly Float64Array[], rate: number) => {
 const computeVariantDistinctness = (products: readonly SoundProduct[]): number => {
   if (products.length < 2) return 1;
   const a = decodeWavMono(products[0]!.wav, products[0]!.channels);
-  let sumDiff = 0;
-  let comparisons = 0;
+  let sumDiff = 0,
+    comparisons = 0;
   for (let p = 1; p < products.length; p += 1) {
     const b = decodeWavMono(products[p]!.wav, products[p]!.channels);
     const len = Math.min(a.length, b.length);
@@ -380,12 +446,15 @@ export const analyzeSingleProduct = (
   const spec = summarizeSpectra(frames, product.sample_rate);
   const peakDb = 20 * Math.log10(Math.max(1e-8, product.peak));
   const rmsDb = 20 * Math.log10(Math.max(1e-8, product.rms));
+  const stereo = computeStereoMetrics(left, right, product.channels);
+  const loopPeriodicity = computeLoopPeriodicity(env.envelope, product.playback.kind === 'loop');
   return {
     peakDb,
     rmsDb,
     lufs: computeKWeightedLufs(left, right, product.channels),
     crestDb: peakDb - rmsDb,
-    stereoCorrelation: computeStereoCorrelation(left, right, product.channels),
+    ...stereo,
+    loopPeriodicity,
     ...env,
     ...spec,
     loopSeamJump: product.rms > 1e-6 ? product.seamDelta / Math.max(0.15, product.peak) : 0,

@@ -1,5 +1,5 @@
 {
-  "contract": "sound-v3:material-granular-morph-fdn8-master:pcm16",
+  "contract": "sound:stereo-fx-whoosh-waveguide-cascade:pcm16",
   "results": [
     {
       "name": "bell_pattern",
@@ -10,7 +10,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "999adaf45a8198ad1a47b7bcf94a515365528b8b2ecab92dfa70d9cf3b8add8d"
+      "sha256": "a8c28ed3d73ac90b076e1976911ea3c43b3c30e9eb7d9e4bdbbfcc6e4b71d552"
     },
     {
       "name": "bell_pattern",
@@ -21,7 +21,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "eccf76613a6b30dbeffff6f25ad639749b9affadf7a6512fab1371dd63a22e58"
+      "sha256": "0ad09004cf5dcd933406e49dfcd9ee2e2a0696ea4fc4c8618b50e679e27169c0"
     },
     {
       "name": "wind_loop",
@@ -32,7 +32,7 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "da47c8872f8f43ef6e67e2644f0cab20a2b42a61ffe8b75c1fb07a647182607e"
+      "sha256": "60a0269b7d7ec16468c189dead6b4a5524c5127b405fafae2e77321f9db45a08"
     },
     {
       "name": "wind_loop",
@@ -43,7 +43,7 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "c0d0a1e3227e0c1583614160e6364f55b1e7a2c034fe5d1e60e60856b4f6d1f9"
+      "sha256": "f5417e1919bda180927823211b83b3e80b874c74b22688198d8102b969706348"
     },
     {
       "name": "footsteps",
@@ -52,7 +52,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "8357b9ff29a13f9ee2316369456b02215f5e8316b6ba870c3f842ba21c8f7665"
+      "sha256": "ea7b9d1f15312c049e0c015f623f5aadf7131929c5890531746d62a57511e06b"
     },
     {
       "name": "footsteps",
@@ -61,7 +61,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "6ee910fefda9c03254d734614ca1261635c6128954d8dd87e14176267a64af02"
+      "sha256": "f7611ccd48fa29cf77338199ffb404de51c440eb9f91be99d458bf73422caf0f"
     },
     {
       "name": "charging_spell",
@@ -70,7 +70,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "795ea5afba2532f9035ed713084e0715a71a2b3c081916f238182ff203b6e3fe"
+      "sha256": "59fa9935959f3d8d723451e966f8f10e1062a5f5713d59abb5432e450aee7ce8"
     },
     {
       "name": "charging_spell",
@@ -79,7 +79,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "3c97e3e2d2fe562bdb2299f399e27dcca55bfd614ce5ebfe72161480312fbe60"
+      "sha256": "eb30f71d7184b89dfa6cca487033e26758d9cd5cc896b6b0abb724b2c8189912"
     },
     {
       "name": "metal_strike",
@@ -88,7 +88,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "776dee93858122c2c581d39e95a97c7273cb925e1c45ec98c89bdfbd19d3f877"
+      "sha256": "1e574b9b828027cd68a3696120705d21de05c123f8c892db1dd4afe4816e9164"
     },
     {
       "name": "metal_strike",
@@ -97,7 +97,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "4a388e10f92246b9d7565f606b85ce50d01ac6cb7ce25291634b8df9216f13fd"
+      "sha256": "47c407b8aa62b770fa541dec4d4d4a56c42272c0c5224c03a68d6067714955c5"
     },
     {
       "name": "bird_call",
@@ -106,7 +106,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "2293efd7a4e962ddbbbeea30de5c674ffec31019296a1aa2fba353c34c1dc219"
+      "sha256": "0dfb282bc6ecebaffcba081fcad3df26d318cbaee2056119a60338a8778fae9d"
     },
     {
       "name": "bird_call",
@@ -115,7 +115,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "c42ebd0c35eb62ef8748a2681a1b0d9a709a8c6ee99b998d1715bfb00ee34d09"
+      "sha256": "f8c213e78c35cf530748b028c8410466480c496452e68bf5d1242452c8991f37"
     }
   ]
 }

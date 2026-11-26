@@ -2,44 +2,48 @@ ashfox 1
 sound frog_croak {
   profile = creature;
   duration = 1.15s;
-  channels = 2;
   seed = 42;
   space { preset = courtyard; mix = 22%; }
+
   voice throat : vocal {
-    pitch { domain = log; interpolation = smooth; points = [(0, 112hz), (0.35, 92hz), (1, 64hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 380hz), (0.3, 540hz), (1, 360hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 960hz), (0.3, 1280hz), (1, 920hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 2150hz), (0.3, 2600hz), (1, 2050hz)]; }
-    bandwidths = [75hz, 140hz, 260hz];
-    breath = 14%;
-    jitter = 18%;
-    roughness = 72%;
-    growl = 45%;
-    chest = 30%;
+    pitch = log(0: 112hz -> 0.35: 92hz -> 1: 64hz);
+    vowels = oo -> aw -> uh;
+    breath = 0.14;
+    jitter = 0.18;
+    roughness = 0.72;
+    growl = 0.48;
+    chest = 0.35;
+    rattle = 0.65;
     highpass = 55hz;
-    lowpass { domain = log; interpolation = smooth; points = [(0, 5400hz), (1, 1800hz)]; }
-    drive = 2;
+    lowpass = log(0: 5400hz -> 1: 1800hz);
+    eq { low = (140hz, 2db); }
+    drive : tube { amount = 2.0; }
     pan = -0.1;
-    gain { env = adsr; attack = 25ms; decay = 0.12s; sustain = 72%; release = 80ms; peak = 0.95; }
+    gain { env = adsr; attack = 25ms; decay = 120ms; sustain = 0.72; release = 80ms; peak = 0.95; }
   }
+
   voice pond_water : granular {
     texture = water;
     density = 28;
     grain_ms = 24ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 1400hz), (1, 650hz)]; }
-    spread = 65%;
-    turbulence = 45%;
+    pitch = log(0: 1400hz -> 1: 650hz);
+    spread = 0.65;
+    turbulence = 0.45;
+    stereo_width = 0.78;
+    itd_ms = 0.25ms;
     highpass = 180hz;
+    duck { by = throat; amount = 25%; release_ms = 80ms; }
     pan = 0.16;
-    gain { env = ad; attack = 15ms; peak = 0.42; curve = exp; }
+    gain { env = ad; attack = 15ms; peak = 0.45; curve = exp; }
   }
+
   seq ribbit {
     start = 20ms;
-    repeat { count = 2; period = 0.52s; }
-    step croak { voice = throat; at = 0s; duration = 0.44s; vary_timing = -0.01s..10ms; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; }
-    step splash { voice = pond_water; at = 10ms; duration = 0.36s; vary_pitch = -60cents..60cents; }
+    repeat { count = 2; period = 520ms; }
+    step croak { voice = throat; at = 0s; duration = 440ms; vary_pitch = -65cents..65cents; vary_timing = -10ms..10ms; vary_gain = 90%..110%; }
+    step splash { voice = pond_water; at = 10ms; duration = 360ms; vary_pitch = -60cents..60cents; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 8db; peak = -1.5db; target = -14lufs; warmth = 20%; punch = 20%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 8db; target = -14lufs; peak = -1.5db; punch = 20%; warmth = 20%; limit = true; }
 }

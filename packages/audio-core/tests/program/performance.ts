@@ -14,14 +14,11 @@ const recipe: SoundRecipe = {
       gain: 0.1,
       source: modal
         ? {
-            kind: 'resonator',
-            excitation: { kind: 'noise', duration: 0.05 },
-            modes: Array.from({ length: 16 }, (_, i) => ({
-              id: `m_${i}`,
-              hz: 40 + i * 1000,
-              decay: 10,
-              gain: 1,
-            })),
+            kind: 'material',
+            material: 'steel',
+            pitch: 320,
+            modes: 16,
+            damping: 0.25,
           }
         : fm
           ? { kind: 'fm', pitch: 3000, ratio: 4, index: 4, vibratoHz: 25, vibratoCents: 100 }

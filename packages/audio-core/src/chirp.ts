@@ -71,7 +71,7 @@ export const createChirp = (
   random: () => number,
   breath: () => number,
   trillRandom: () => number,
-) => {
+): ((time: number, progress: number, outLR: Float64Array) => void) => {
   const state: ChirpState = {
     phase: 0,
     jitterFrom: random(),
@@ -81,6 +81,9 @@ export const createChirp = (
     trillPhase: trillRandom() * 0.25,
     jitterPeriod: Math.round(rate * 0.018),
   };
-  return (time: number, progress: number) =>
-    sampleChirp(state, source, rate, pitchShift, random, breath, time, progress);
+  return (time: number, progress: number, outLR: Float64Array): void => {
+    const sample = sampleChirp(state, source, rate, pitchShift, random, breath, time, progress);
+    outLR[0] = sample;
+    outLR[1] = sample;
+  };
 };

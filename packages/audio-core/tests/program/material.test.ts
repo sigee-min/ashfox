@@ -10,38 +10,47 @@ import { random } from '../../src/random';
 import { measure } from '../../src/render';
 import { fixture } from './fixture';
 
-const RATE = 48000;
-
-const renderMaterial = (source: MaterialSource, frames: number, seed: number): Float64Array => {
+const renderMaterialStereo = (
+  source: MaterialSource,
+  frames: number,
+  seed: number,
+): { readonly mono: Float64Array; readonly stereo: Float64Array } => {
   const synth = createMaterial(source, frames, 1, random(seed));
-  const out = new Float64Array(frames);
-  for (let i = 0; i < frames; i++) out[i] = synth(i);
-  return out;
+  const mono = new Float64Array(frames);
+  const stereo = new Float64Array(frames * 2);
+  const lr = new Float64Array(2);
+  for (let i = 0; i < frames; i++) {
+    synth(i, lr);
+    stereo[i * 2] = lr[0]!;
+    stereo[i * 2 + 1] = lr[1]!;
+    mono[i] = 0.5 * (lr[0]! + lr[1]!);
+  }
+  return { mono, stereo };
 };
 
 // 1. All 10 MaterialPresets produce finite non-silent output.
 for (const material of MATERIAL_PRESETS) {
-  const pcm = renderMaterial({ kind: 'material', material, pitch: 320 }, 12000, 101);
-  const stats = measure(pcm);
+  const { mono } = renderMaterialStereo({ kind: 'material', material, pitch: 320 }, 12000, 101);
+  const stats = measure(mono);
   assert.ok(stats.peak > 1e-4, `${material} peak too low: ${stats.peak}`);
   assert.ok(stats.rms > 1e-5, `${material} rms too low: ${stats.rms}`);
 }
 
 // 2. Strike modes: mallet, scrape, and bounce (bounces: 3 shows multiple energy bursts).
-const mallet = renderMaterial(
+const mallet = renderMaterialStereo(
   { kind: 'material', material: 'steel', pitch: 440, strike: 'mallet', hardness: 0.7 },
   12000,
   202,
-);
-const scrape = renderMaterial(
+).mono;
+const scrape = renderMaterialStereo(
   { kind: 'material', material: 'steel', pitch: 440, strike: 'scrape', hardness: 0.7 },
   12000,
   202,
-);
+).mono;
 assert.ok(measure(scrape).rms > 1e-4);
 assert.notDeepEqual(mallet, scrape);
 
-const bounce = renderMaterial(
+const bounce = renderMaterialStereo(
   {
     kind: 'material',
     material: 'wood',
@@ -52,8 +61,8 @@ const bounce = renderMaterial(
   },
   24000,
   303,
-);
-const chunkSize = 240; // 5 ms windows
+).mono;
+const chunkSize = 240;
 const chunkRms: number[] = [];
 for (let start = 0; start + chunkSize <= bounce.length; start += chunkSize) {
   let sq = 0;
@@ -74,8 +83,12 @@ for (const level of chunkRms) {
 assert.ok(burstCount >= 3, `expected >= 3 distinct bounce bursts, got ${burstCount}`);
 
 // 3. Curved pitch modulation differs from constant pitch.
-const flat = renderMaterial({ kind: 'material', material: 'glass', pitch: 300 }, 12000, 404);
-const curved = renderMaterial(
+const flat = renderMaterialStereo(
+  { kind: 'material', material: 'glass', pitch: 300 },
+  12000,
+  404,
+).mono;
+const curved = renderMaterialStereo(
   {
     kind: 'material',
     material: 'glass',
@@ -90,12 +103,29 @@ const curved = renderMaterial(
   },
   12000,
   404,
-);
+).mono;
 assert.notDeepEqual(flat.slice(2400), curved.slice(2400));
 
-// 4. Determinism across identical seeds (direct and via compileSoundRecipe).
-const a = renderMaterial({ kind: 'material', material: 'bell', pitch: 520 }, 8000, 505);
-const b = renderMaterial({ kind: 'material', material: 'bell', pitch: 520 }, 8000, 505);
+// 4. Material dispersion features: twinBeat, splash, and stereoSpread dispersion produce L/R variation & shimmer.
+const dryBell = renderMaterialStereo(
+  { kind: 'material', material: 'bell', pitch: 520, twinBeat: 0, splash: 0, stereoSpread: 0 },
+  16000,
+  505,
+);
+const richBell = renderMaterialStereo(
+  { kind: 'material', material: 'bell', pitch: 520, twinBeat: 0.8, splash: 0.7, stereoSpread: 0.8 },
+  16000,
+  505,
+);
+assert.notDeepEqual(dryBell.mono, richBell.mono);
+let lrDiff = 0;
+for (let i = 0; i < 16000; i++)
+  lrDiff += Math.abs(richBell.stereo[i * 2]! - richBell.stereo[i * 2 + 1]!);
+assert.ok(lrDiff / 16000 > 1e-3, 'stereoSpread should disperse modes across L/R');
+
+// 5. Determinism across identical seeds (direct and via compileSoundRecipe).
+const a = renderMaterialStereo({ kind: 'material', material: 'bell', pitch: 520 }, 8000, 505);
+const b = renderMaterialStereo({ kind: 'material', material: 'bell', pitch: 520 }, 8000, 505);
 assert.deepEqual(a, b);
 
 const base = fixture();
@@ -119,5 +149,5 @@ const recipe = {
 assert.deepEqual(compileSoundRecipe(recipe)[0]!.wav, compileSoundRecipe(recipe)[0]!.wav);
 
 process.stdout.write(
-  `material: all ${MATERIAL_PRESETS.length} presets, mallet/scrape/bounce bursts, curved pitch, and determinism passed\n`,
+  'material: all 10 presets, strike modes, twinBeat, splash, stereoSpread, and determinism passed\n',
 );

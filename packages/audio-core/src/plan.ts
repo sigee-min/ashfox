@@ -6,12 +6,11 @@ import { fail } from './validate';
 
 const weight = (voice: SoundVoice): number => {
   const s = voice.source;
-  if (s.kind === 'resonator') return 4 + 4 * s.modes.length;
   if (s.kind === 'material') return 4 + 4 * (s.modes ?? 24);
   if (s.kind === 'granular') return 24;
   if (s.kind === 'osc') return 2 * (s.unison ?? 1);
   if (s.kind === 'noise') return 2;
-  return { fm: 128, chirp: 8, vocal: 16 }[s.kind];
+  return { fm: 128, chirp: 8, vocal: 16, whoosh: 12, waveguide: 16 }[s.kind];
 };
 
 export interface SoundBudget {
@@ -24,6 +23,25 @@ interface VoiceEntry {
   readonly voice: SoundVoice;
   readonly path: string;
 }
+
+const validateDuckTargets = (voices: Map<string, VoiceEntry>): void => {
+  for (const { voice, path } of voices.values()) {
+    if (!voice.duck) continue;
+    if (!voices.has(voice.duck.by)) {
+      fail(`${path}.duck.by`, `unknown duck trigger voice "${voice.duck.by}"`);
+    }
+    if (voice.duck.by === voice.id) {
+      fail(`${path}.duck.by`, 'voice cannot duck itself');
+    }
+    let cur: string | undefined = voice.duck.by;
+    const seen = new Set<string>([voice.id]);
+    while (cur) {
+      if (seen.has(cur)) fail(`${path}.duck.by`, 'circular ducking dependency');
+      seen.add(cur);
+      cur = voices.get(cur)?.voice.duck?.by;
+    }
+  }
+};
 
 const validateVoices = (recipe: SoundRecipe): Map<string, VoiceEntry> => {
   const voices = new Map(
@@ -45,6 +63,7 @@ const validateVoices = (recipe: SoundRecipe): Map<string, VoiceEntry> => {
     }
     for (const [, c] of controls(voice)) if (typeof c !== 'number') knots += c.points.length;
   }
+  validateDuckTargets(voices);
   if (knots > 1024) fail('recipe.voices', `curve knot limit 1024; received ${knots}`);
   return voices;
 };
@@ -138,7 +157,7 @@ const validateStepTimingAndKnots = (
 
 const SOURCE_PITCH_LIMITS: Readonly<
   Record<
-    'osc' | 'fm' | 'vocal' | 'chirp' | 'resonator' | 'material' | 'granular',
+    'osc' | 'fm' | 'vocal' | 'chirp' | 'material' | 'granular' | 'waveguide',
     readonly [number, number]
   >
 > = {
@@ -146,9 +165,9 @@ const SOURCE_PITCH_LIMITS: Readonly<
   fm: [40, 3000],
   vocal: [50, 1200],
   chirp: [300, 8000],
-  resonator: [40, 16000],
   material: [20, 4000],
   granular: [60, 12000],
+  waveguide: [20, 8000],
 };
 
 const validateStepEndpoints = (
@@ -193,6 +212,7 @@ const sourcePitchRange = (
   stepPitch: number,
   pitchRange: readonly [number, number],
 ): readonly [number, number] | null => {
+  if (s.kind === 'whoosh') return null;
   if (s.kind === 'noise' || (s.kind === 'granular' && s.pitch === undefined)) {
     if (stepPitch !== 0 || pitchRange.some((v) => v !== 0)) {
       fail(
@@ -203,9 +223,6 @@ const sourcePitchRange = (
       );
     }
     return null;
-  }
-  if (s.kind === 'resonator') {
-    return [Math.min(...s.modes.map((m) => m.hz)), Math.max(...s.modes.map((m) => m.hz))];
   }
   return bounds(s.kind === 'granular' ? s.pitch! : s.pitch);
 };
@@ -229,7 +246,7 @@ const validateStepGainAndPitch = (
     fail(p + '.vary.gain', 'combined event gain exceeds 4');
   const s = voice.source;
   const frequencies = sourcePitchRange(s, p, stepPitch, pitchRange);
-  if (!frequencies || s.kind === 'noise') return;
+  if (!frequencies || s.kind === 'noise' || s.kind === 'whoosh') return;
   const lo = 2 ** ((stepPitch + pitchRange[0]) / 1200);
   const hi = 2 ** ((stepPitch + pitchRange[1]) / 1200);
   const limits = SOURCE_PITCH_LIMITS[s.kind];
@@ -237,15 +254,6 @@ const validateStepGainAndPitch = (
     fail(
       p + '.vary.pitchCents',
       `shifted pitch support ${frequencies[0] * lo}..${frequencies[1] * hi} exceeds ${limits.join('..')} Hz; ${context}`,
-    );
-  if (
-    s.kind === 'resonator' &&
-    s.excitation.kind !== 'impulse' &&
-    s.excitation.duration > span.shortest
-  )
-    fail(
-      info.path + '.source.excitation.duration',
-      `excitation exceeds shortest event ${span.shortest}; ${context}`,
     );
 };
 

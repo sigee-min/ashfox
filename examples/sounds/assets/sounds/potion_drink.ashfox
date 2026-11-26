@@ -2,68 +2,84 @@ ashfox 1
 sound potion_drink {
   profile = foley;
   duration = 1.35s;
-  channels = 2;
   seed = 3107;
   space { preset = timber_room; mix = 20%; }
-  voice cork_pop : resonator {
-    excitation mallet { duration = 8ms; hardness = 72%; }
-    mode sub { hz = 120hz; decay = 0.12s; gain = 0.9; }
-    mode pop { hz = 310hz; decay = 90ms; gain = 1; }
-    mode neck { hz = 860hz; decay = 50ms; gain = 0.65; }
-    pitch_drop_cents = 140cents;
-    pitch_drop_seconds = 20ms;
+
+  voice cork_pop : modal_plate {
+    material = wood;
+    pitch = 290hz;
+    size = 0.75;
+    hardness = 0.72;
+    damping = 0.65;
+    brightness = 0.65;
+    modes = 14;
+    strike = mallet;
+    splash = 0.45;
+    stereo_spread = 0.35;
     highpass = 38hz;
+    eq { low = (140hz, 2db); }
     gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
   }
+
   voice swallow_glugs : granular {
     texture = bubble;
-    density { domain = linear; interpolation = smooth; points = [(0, 24), (0.5, 46), (1, 18)]; }
+    density = lin(0: 24 -> 0.5: 46 -> 1: 18);
     grain_ms = 34ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 280hz), (0.5, 540hz), (1, 360hz)]; }
-    spread = 65%;
-    burstiness = 58%;
-    turbulence = 45%;
+    pitch = log(0: 280hz -> 0.5: 540hz -> 1: 360hz);
+    spread = 0.65;
+    burstiness = 0.58;
+    turbulence = 0.45;
+    stereo_width = 0.72;
+    itd_ms = 0.22ms;
     highpass = 75hz;
     pan = -0.14;
-    gain { env = adsr; attack = 12ms; decay = 80ms; sustain = 72%; release = 60ms; peak = 0.96; curve = exp; }
+    gain { env = adsr; attack = 12ms; decay = 80ms; sustain = 0.72; release = 60ms; peak = 0.96; curve = exp; }
   }
+
   voice fluid_slosh : granular {
     texture = water;
     density = 68;
     grain_ms = 22ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 1350hz), (0.5, 2400hz), (1, 850hz)]; }
-    spread = 75%;
-    turbulence = 55%;
+    pitch = log(0: 1350hz -> 0.5: 2400hz -> 1: 850hz);
+    spread = 0.75;
+    turbulence = 0.55;
+    stereo_width = 0.8;
+    itd_ms = 0.28ms;
     highpass = 180hz;
     pan = 0.16;
-    gain { env = adsr; attack = 15ms; decay = 0.12s; sustain = 65%; release = 0.1s; peak = 0.75; }
+    gain { env = adsr; attack = 15ms; decay = 120ms; sustain = 0.65; release = 100ms; peak = 0.75; }
   }
-  voice vial_clink : material {
+
+  voice vial_clink : modal_plate {
     material = glass;
     pitch = 1760hz;
     size = 0.75;
-    hardness = 88%;
-    damping = 22%;
-    brightness = 85%;
+    hardness = 0.88;
+    damping = 0.22;
+    brightness = 0.85;
     modes = 16;
     strike = mallet;
+    twin_beat = 0.45;
+    stereo_spread = 0.55;
     highpass = 120hz;
     pan = 0.22;
     gain { env = ad; attack = 2ms; peak = 0.68; curve = exp; }
   }
+
   seq gulp {
     start = 20ms;
-    repeat { count = 3; period = 0.34s; }
-    step glug { voice = swallow_glugs; at = 0s; duration = 0.3s; vary_timing = -0.008s..8ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; }
+    repeat { count = 3; period = 340ms; }
+    step glug { voice = swallow_glugs; at = 0s; duration = 300ms; vary_pitch = -65cents..65cents; vary_timing = -8ms..8ms; vary_gain = 85%..115%; }
   }
+
   seq bottle {
     start = 10ms;
-    step pop { voice = cork_pop; at = 0s; duration = 0.22s; vary_pitch = -55cents..55cents; }
+    step pop { voice = cork_pop; at = 0s; duration = 220ms; vary_pitch = -55cents..55cents; }
     step slosh { voice = fluid_slosh; at = 10ms; duration = 1.15s; vary_pitch = -55cents..55cents; }
-    step clink_start { voice = vial_clink; at = 0s; duration = 0.24s; vary_pitch = -45cents..45cents; }
-    step clink_end { voice = vial_clink; at = 0.96s; duration = 0.28s; pitch_cents = 140cents; vary_pitch = -45cents..45cents; }
+    step clink_start { voice = vial_clink; at = 0s; duration = 240ms; vary_pitch = -45cents..45cents; }
+    step clink_end { voice = vial_clink; at = 960ms; duration = 280ms; pitch = 140cents; vary_pitch = -45cents..45cents; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -13lufs; air = 25%; punch = 25%; warmth = 15%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -13lufs; peak = -1.5db; punch = 25%; warmth = 15%; air = 25%; limit = true; }
 }

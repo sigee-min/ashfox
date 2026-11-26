@@ -275,6 +275,7 @@ export type {
   DirectoryFile,
 } from './project/directory/contract';
 export type { DirectoryCompilation, DirectoryProduct } from './compiler/directory/compile';
+export { prepareDirectorySound } from './compiler/directory/sound';
 
 export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/directory/pack';
 

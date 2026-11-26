@@ -1,25 +1,22 @@
 ashfox 1
 sound bird_call {
-  import "../module/bird_voices.ashfox" as bv;
+  import "../module/bird_voices.ashfox" as bv { bright = 0.72; };
+
   profile = creature;
   duration = 2.2s;
-  channels = 2;
   seed = 7349;
   space { preset = courtyard; mix = 22%; }
-  use bv.opening_whistle;
-  use bv.answering_trill;
-  use bv.forest_air;
-  use bv.canopy_low;
+
   seq phrase {
     start = 40ms;
-    step call1 { voice = opening_whistle; at = 0s; duration = 0.42s; vary_timing = 0s..30ms; vary_pitch = -80cents..80cents; }
-    step reply1 { voice = answering_trill; at = 0.54s; duration = 0.45s; vary_pitch = -90cents..90cents; vary_gain = 85%..115%; }
-    step call2 { voice = opening_whistle; at = 1.12s; duration = 0.36s; pitch_cents = 120cents; vary_pitch = -60cents..60cents; }
-    step reply2 { voice = answering_trill; at = 1.56s; duration = 0.48s; pitch_cents = -100cents; vary_pitch = -80cents..80cents; }
-    step bed { voice = forest_air; at = 0s; duration = 2s; }
-    step low { voice = canopy_low; at = 0s; duration = 2s; }
+    step call1 { voice = bv.opening_whistle; at = 0s; duration = 420ms; vary_pitch = -80cents..80cents; vary_timing = 0ms..30ms; }
+    step reply1 { voice = bv.answering_trill; at = 0.54s; duration = 450ms; vary_pitch = -90cents..90cents; vary_gain = 85%..115%; }
+    step call2 { voice = bv.opening_whistle; at = 1.12s; duration = 360ms; pitch = 120cents; vary_pitch = -60cents..60cents; }
+    step reply2 { voice = bv.answering_trill; at = 1.56s; duration = 480ms; pitch = -100cents; vary_pitch = -80cents..80cents; }
+    step bed { voice = bv.forest_air; at = 0s; duration = 2s; }
+    step low { voice = bv.canopy_low; at = 0s; duration = 2s; }
   }
-  variant base { seed = 218; }
-  variant alternate { seed = 907; }
-  master { gain = 4db; peak = -1.5db; target = -14lufs; air = 15%; glue = 20%; limit = true; }
+
+  variants { base = 218; alternate = 907; }
+  master { gain = 4db; target = -14lufs; peak = -1.5db; air = 15%; glue = 20%; limit = true; }
 }

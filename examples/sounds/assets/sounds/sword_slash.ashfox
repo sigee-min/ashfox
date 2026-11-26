@@ -2,65 +2,71 @@ ashfox 1
 sound sword_slash {
   profile = impact;
   duration = 0.56s;
-  channels = 2;
   seed = 5193;
   space { preset = courtyard; mix = 16%; }
-  voice steel_scrape : material {
-    material = steel;
-    pitch = 680hz;
-    size = 0.9;
-    hardness = 90%;
-    damping = 38%;
-    brightness = 85%;
-    modes = 22;
-    strike = scrape;
-    highpass = 120hz;
-    pan = -0.16;
-    gain { env = ad; attack = 4ms; peak = 0.88; curve = exp; }
+
+  voice air_slice : aero_whoosh {
+    velocity = lin(0: 0.35 -> 0.25: 2.8 -> 1: 0.2);
+    thickness = 0.025;
+    doppler = 0.85;
+    sweep_pan = -0.75 -> 0.72;
+    noise_tone = 0.6;
+    highpass = 85hz;
+    drive : grit { amount = 1.6; }
+    gain { env = ad; attack = 6ms; peak = 0.96; curve = exp; }
   }
-  voice steel_ring : material {
+
+  voice blade_flex : waveguide {
+    model = blade;
+    pitch = log(0: 520hz -> 0.4: 680hz -> 1: 610hz);
+    damping = 0.34;
+    stiffness = 0.68;
+    brightness = 0.85;
+    highpass = 120hz;
+    pan = -0.3 -> 0.35;
+    gain { env = ad; attack = 4ms; peak = 0.86; curve = exp; }
+  }
+
+  voice steel_ring : modal_plate {
     material = steel;
     pitch = 1180hz;
     size = 0.75;
-    hardness = 92%;
-    damping = 28%;
-    brightness = 88%;
+    hardness = 0.92;
+    damping = 0.28;
+    brightness = 0.88;
     modes = 20;
     strike = mallet;
+    twin_beat = 0.48;
+    splash = 0.4;
+    stereo_spread = 0.6;
     highpass = 220hz;
     pan = 0.18;
     gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
   }
-  voice air_slice : noise {
-    color = white;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 1800hz), (0.25, 8800hz), (1, 950hz)]; }
-      q = 1.1;
-    }
-    highpass = 85hz;
-    drive = 1.6;
-    pan = 0.1;
-    gain { env = ad; attack = 6ms; peak = 0.96; curve = exp; }
-  }
-  voice hilt_thump : material {
+
+  voice hilt_thump : modal_plate {
     material = leather;
     pitch = 110hz;
     size = 1.1;
-    hardness = 72%;
-    damping = 75%;
+    hardness = 0.72;
+    damping = 0.75;
     modes = 10;
     strike = mallet;
+    splash = 0.42;
+    stereo_spread = 0.3;
     highpass = 45hz;
+    eq { low = (110hz, 2.5db); }
     gain { env = ad; attack = 2ms; peak = 0.65; curve = exp; }
   }
+
   seq slash {
     start = 10ms;
-    step whoosh { voice = air_slice; at = 0s; duration = 0.34s; vary_gain = 90%..110%; vary_duration = 90%..110%; }
-    step edge { voice = steel_scrape; at = 10ms; duration = 0.38s; vary_pitch = -65cents..65cents; }
-    step ring { voice = steel_ring; at = 15ms; duration = 0.44s; vary_pitch = -60cents..60cents; }
-    step punch { voice = hilt_thump; at = 10ms; duration = 0.22s; vary_pitch = -45cents..45cents; }
+    step whoosh { voice = air_slice; at = 0s; duration = 340ms; vary_duration = 90%..110%; vary_gain = 90%..110%; }
+    step edge { voice = blade_flex; at = 10ms; duration = 380ms; vary_pitch = -65cents..65cents; }
+    step ring { voice = steel_ring; at = 15ms; duration = 440ms; vary_pitch = -60cents..60cents; }
+    step punch { voice = hilt_thump; at = 10ms; duration = 220ms; vary_pitch = -45cents..45cents; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -13lufs; punch = 45%; air = 25%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -13lufs; peak = -1.5db; punch = 45%; air = 25%; limit = true; }
 }

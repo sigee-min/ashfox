@@ -30,9 +30,29 @@ const createBrownNoise = (bipolar: () => number): (() => number) => {
   };
 };
 
-export const createNoise = (source: NoiseSource, uniform: () => number): (() => number) => {
+const createChannelNoise = (color: NoiseSource['color'], uniform: () => number): (() => number) => {
   const bipolar = () => uniform() * 2 - 1;
-  if (source.color === 'white') return bipolar;
-  if (source.color === 'pink') return createPinkNoise(bipolar);
+  if (color === 'white') return bipolar;
+  if (color === 'pink') return createPinkNoise(bipolar);
   return createBrownNoise(bipolar);
+};
+
+export const createNoise = (
+  source: NoiseSource,
+  uniformL: () => number,
+  uniformR?: () => number,
+): ((outLR: Float64Array) => void) => {
+  const genL = createChannelNoise(source.color, uniformL);
+  if (!uniformR) {
+    return (outLR: Float64Array): void => {
+      const sample = genL();
+      outLR[0] = sample;
+      outLR[1] = sample;
+    };
+  }
+  const genR = createChannelNoise(source.color, uniformR);
+  return (outLR: Float64Array): void => {
+    outLR[0] = genL();
+    outLR[1] = genR();
+  };
 };

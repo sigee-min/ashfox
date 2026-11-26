@@ -7,11 +7,22 @@ import { fixture } from './fixture';
 
 const RATE = 48000;
 
-const renderGranular = (source: GranularSource, frames: number, seed: number): Float64Array => {
+const renderGranular = (
+  source: GranularSource,
+  frames: number,
+  seed: number,
+): { readonly mono: Float64Array; readonly stereo: Float64Array } => {
   const synth = createGranular(source, RATE, frames, 1, random(seed), random(seed + 1));
-  const out = new Float64Array(frames);
-  for (let i = 0; i < frames; i++) out[i] = synth(i);
-  return out;
+  const mono = new Float64Array(frames);
+  const stereo = new Float64Array(frames * 2);
+  const lr = new Float64Array(2);
+  for (let i = 0; i < frames; i++) {
+    synth(i, lr);
+    stereo[i * 2] = lr[0]!;
+    stereo[i * 2 + 1] = lr[1]!;
+    mono[i] = 0.5 * (lr[0]! + lr[1]!);
+  }
+  return { mono, stereo };
 };
 
 const zeroCrossingRate = (pcm: Float64Array): number => {
@@ -40,15 +51,15 @@ const windowRmsStats = (
 
 // 1. All 7 GranularTextures produce finite non-silent output.
 for (const texture of GRANULAR_TEXTURES) {
-  const pcm = renderGranular({ kind: 'granular', texture, density: 80 }, RATE, 701);
-  const stats = measure(pcm);
+  const { mono } = renderGranular({ kind: 'granular', texture, density: 80 }, RATE, 701);
+  const stats = measure(mono);
   assert.ok(stats.peak > 1e-4, `${texture} peak too low: ${stats.peak}`);
   assert.ok(stats.rms > 1e-5, `${texture} rms too low: ${stats.rms}`);
 }
 
 // 2. Ember & bubble produce distinct acoustic profiles.
-const ember = renderGranular({ kind: 'granular', texture: 'ember', density: 90 }, RATE, 702);
-const bubble = renderGranular({ kind: 'granular', texture: 'bubble', density: 90 }, RATE, 702);
+const ember = renderGranular({ kind: 'granular', texture: 'ember', density: 90 }, RATE, 702).mono;
+const bubble = renderGranular({ kind: 'granular', texture: 'bubble', density: 90 }, RATE, 702).mono;
 assert.ok(
   Math.abs(zeroCrossingRate(ember) - zeroCrossingRate(bubble)) > 0.02,
   'ember and bubble should differ distinctly in zero-crossing rate',
@@ -59,12 +70,12 @@ const uniform = renderGranular(
   { kind: 'granular', texture: 'spark', density: 20, grainMs: 8, burstiness: 0, turbulence: 0 },
   RATE * 2,
   703,
-);
+).mono;
 const bursty = renderGranular(
   { kind: 'granular', texture: 'spark', density: 20, grainMs: 8, burstiness: 0.95, turbulence: 0 },
   RATE * 2,
   703,
-);
+).mono;
 assert.notDeepEqual(uniform, bursty);
 const uniformStats = windowRmsStats(uniform, 2400);
 const burstyStats = windowRmsStats(bursty, 2400);
@@ -78,15 +89,25 @@ const calm = renderGranular(
   { kind: 'granular', texture: 'wind', density: 90, turbulence: 0 },
   RATE,
   704,
-);
+).mono;
 const turbulent = renderGranular(
   { kind: 'granular', texture: 'wind', density: 90, turbulence: 1 },
   RATE,
   704,
-);
+).mono;
 assert.notDeepEqual(calm, turbulent);
 
-// 5. Pitch optionality: omitted pitch requires zero pitch variation; curve pitch works when supplied.
+// 5. True-Stereo constant-power panning + ITD Haas delay ring produce distinct L/R spatialization.
+const wide = renderGranular(
+  { kind: 'granular', texture: 'spark', density: 90, stereoWidth: 0.95, itdMs: 0.35 },
+  RATE,
+  706,
+).stereo;
+let sideSq = 0;
+for (let i = 0; i < RATE; i++) sideSq += (wide[i * 2]! - wide[i * 2 + 1]!) ** 2;
+assert.ok(Math.sqrt(sideSq / RATE) > 1e-3, 'granular should emit true stereo side energy');
+
+// 6. Pitch optionality: omitted pitch requires zero pitch variation; curve pitch works when supplied.
 const base = fixture();
 const noPitchRecipe = {
   ...base,
@@ -145,7 +166,7 @@ const flatPitch = renderGranular(
   { kind: 'granular', texture: 'bubble', density: 80, pitch: 300 },
   RATE,
   705,
-);
+).mono;
 const curvePitch = renderGranular(
   {
     kind: 'granular',
@@ -162,9 +183,9 @@ const curvePitch = renderGranular(
   },
   RATE,
   705,
-);
+).mono;
 assert.notDeepEqual(flatPitch.slice(24000), curvePitch.slice(24000));
 
 process.stdout.write(
-  `granular: all ${GRANULAR_TEXTURES.length} textures, burstiness clustering, turbulence, and pitch optionality passed\n`,
+  `granular: all ${GRANULAR_TEXTURES.length} textures, burstiness, turbulence, stereo ITD, and pitch optionality passed\n`,
 );

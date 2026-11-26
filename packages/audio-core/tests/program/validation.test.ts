@@ -79,7 +79,7 @@ assertSoundError(
   'bounces without strike',
 );
 
-// 5. Mono output.width !== 1 rejected.
+// 5. Mono output.width !== 1 rejected (both explicit channels: 1 and width != 1).
 assertSoundError(
   () => readRecipe({ ...base, channels: 1, output: { gainDb: 0, peakDb: -1, width: 1.2 } }),
   /width requires channels = 2/,
@@ -87,12 +87,12 @@ assertSoundError(
 );
 
 assertSoundError(
-  () => readRecipe({ ...base, output: { gainDb: 0, peakDb: -1, width: 0 } }),
+  () => readRecipe({ ...base, channels: 1, output: { gainDb: 0, peakDb: -1, width: 0 } }),
   /width requires channels = 2/,
-  'implicit mono output.width = 0',
+  'mono output.width = 0',
 );
 
-// 6. Mismatched vocal formants / bandwidths lengths rejected.
+// 6. Mismatched vocal formants / bandwidths lengths rejected, and vocal missing both vowels and formants rejected.
 assertSoundError(
   () =>
     readRecipe({
@@ -117,23 +117,13 @@ assertSoundError(
   () =>
     readRecipe({
       ...base,
-      voices: [
-        {
-          ...base.voices[0],
-          source: {
-            kind: 'vocal',
-            pitch: 220,
-            formants: [500, 1500, 2500, 3500],
-            bandwidths: [100, 200, 300],
-          },
-        },
-      ],
+      voices: [{ ...base.voices[0], source: { kind: 'vocal', pitch: 220 } }],
     }),
-  /expected 4 bandwidths to match formants/,
-  'vocal 4 formants vs 3 bandwidths',
+  /vocal requires vowels or formants/,
+  'vocal without vowels or formants',
 );
 
-// 7. Additional Audio 2.0 boundary checks.
+// 7. Boundary & duck/drift/resonator checks.
 assertSoundError(
   () => readRecipe({ ...base, space: { mix: 0.9 } }),
   /recipe\.space\.mix/,
@@ -146,4 +136,35 @@ assertSoundError(
   'targetLufs > -6',
 );
 
-process.stdout.write('validation: Audio 2.0 fail-closed SoundError guards passed\n');
+assertSoundError(
+  () =>
+    readRecipe({
+      ...base,
+      voices: [{ ...base.voices[0], duck: { by: 'tone', amount: 0.5, releaseMs: 80 } }],
+    }),
+  /cannot duck itself/,
+  'self duck',
+);
+
+assertSoundError(
+  () =>
+    readRecipe({
+      ...base,
+      channels: 1,
+      voices: [{ ...base.voices[0], drift: { target: 'pan', depth: 0.3 } }],
+    }),
+  /pan drift requires channels = 2/,
+  'mono pan drift',
+);
+
+assertSoundError(
+  () =>
+    readRecipe({
+      ...base,
+      voices: [{ ...base.voices[0], source: { kind: 'resonator' } }],
+    }),
+  /unsupported source resonator/,
+  'legacy resonator rejected',
+);
+
+process.stdout.write('validation: fail-closed SoundError guards passed\n');

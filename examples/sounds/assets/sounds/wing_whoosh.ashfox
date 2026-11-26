@@ -2,59 +2,65 @@ ashfox 1
 sound wing_whoosh {
   profile = foley;
   duration = 0.72s;
-  channels = 2;
   seed = 42;
   space { preset = courtyard; mix = 20%; }
-  voice air_sweep : noise {
-    color = pink;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 160hz), (0.35, 2400hz), (1, 360hz)]; }
-      q = 1.1;
-    }
+
+  voice air_sweep : aero_whoosh {
+    velocity = lin(0: 0.25 -> 0.35: 2.2 -> 1: 0.2);
+    thickness = 0.12;
+    doppler = 0.65;
+    sweep_pan = -0.65 -> 0.65;
+    noise_tone = 0.75;
     highpass = 45hz;
-    pan = -0.18;
-    gain { env = adsr; attack = 40ms; decay = 0.16s; sustain = 55%; release = 0.18s; peak = 0.95; }
+    gain { env = adsr; attack = 40ms; decay = 160ms; sustain = 0.55; release = 180ms; peak = 0.95; }
   }
+
   voice feather_flutter : granular {
     texture = foliage;
     density = 110;
     grain_ms = 20ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 2200hz), (0.35, 6400hz), (1, 1500hz)]; }
-    spread = 72%;
-    turbulence = 58%;
+    pitch = log(0: 2200hz -> 0.35: 6400hz -> 1: 1500hz);
+    spread = 0.72;
+    turbulence = 0.58;
+    stereo_width = 0.85;
+    itd_ms = 0.32ms;
     highpass = 550hz;
+    duck { by = wing_thump; amount = 28%; release_ms = 80ms; }
     pan = 0.22;
-    gain { env = adsr; attack = 30ms; decay = 0.14s; sustain = 45%; release = 0.14s; peak = 0.85; }
+    gain { env = adsr; attack = 30ms; decay = 140ms; sustain = 0.45; release = 140ms; peak = 0.85; }
   }
-  voice wing_thump : material {
+
+  voice wing_thump : modal_plate {
     material = leather;
     pitch = 74hz;
     size = 1.5;
-    hardness = 55%;
-    damping = 76%;
-    brightness = 52%;
+    hardness = 0.55;
+    damping = 0.76;
+    brightness = 0.52;
     modes = 12;
     strike = mallet;
+    splash = 0.35;
+    stereo_spread = 0.35;
     highpass = 30hz;
+    eq { low = (95hz, 2.5db); }
     gain { env = ad; attack = 5ms; peak = 0.95; curve = exp; }
   }
+
   voice wing_air : noise {
     color = white;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 6200hz), (1, 1800hz)]; }
-      q = 1.1;
-    }
+    filter : bandpass { cutoff = log(0: 6200hz -> 1: 1800hz); q = 1.1; }
     pan = 0.14;
     gain { env = ad; attack = 4ms; peak = 0.48; curve = exp; }
   }
+
   seq flap {
     start = 15ms;
-    step thump { voice = wing_thump; at = 0s; duration = 0.38s; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; }
-    step air { voice = wing_air; at = 0s; duration = 0.16s; }
-    step sweep { voice = air_sweep; at = 10ms; duration = 0.62s; vary_gain = 90%..110%; vary_duration = 92%..108%; }
-    step flutter { voice = feather_flutter; at = 20ms; duration = 0.54s; vary_pitch = -65cents..65cents; }
+    step thump { voice = wing_thump; at = 0s; duration = 380ms; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; }
+    step air { voice = wing_air; at = 0s; duration = 160ms; }
+    step sweep { voice = air_sweep; at = 10ms; duration = 620ms; vary_duration = 92%..108%; vary_gain = 90%..110%; }
+    step flutter { voice = feather_flutter; at = 20ms; duration = 540ms; vary_pitch = -65cents..65cents; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -13lufs; punch = 30%; air = 25%; warmth = 20%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -13lufs; peak = -1.5db; punch = 30%; warmth = 20%; air = 25%; limit = true; }
 }

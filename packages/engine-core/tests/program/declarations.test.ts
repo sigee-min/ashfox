@@ -25,31 +25,33 @@ const ws = (
 
 const soundMod = `ashfox 1
 module tones {
-  export voice ping : resonator {
-    excitation impulse {}
-    mode body { hz = 640hz; decay = 0.35s; gain = 1; }
-    gain = 0 -> 0.8 -> 0;
+  params { hz = 640hz; }
+  export voice ping : modal_plate {
+    material = bell;
+    pitch = hz;
+    damping = 0.35;
+    modes = 8;
     highpass = 120hz;
     lowpass = 6000hz;
-  }
-  export seq chime {
-    start = 0s;
-    step hit { voice = ping; at = 0s; duration = 0.35s; gain = 1; pitch_cents = 0cents; }
+    gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0);
   }
 }`;
 
 const soundEntry = `ashfox 1
 sound bell {
-  import "../module/tones.ashfox" as t;
+  import "../module/tones.ashfox" as t { hz = 720hz; };
   outputs { wav; }
   preview default { width = 320; height = 160; variant = main; }
   profile = ui;
   duration = 0.5s;
+  sample_rate = 48000hz;
   seed = 7;
-  voices = [t.ping];
-  sequences = [t.chime];
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  seq chime {
+    step hit { voice = t.ping; at = 0s; duration = 350ms; }
+  }
+  variants { main = 1; }
+  playback = oneshot;
+  master { gain = -12db; peak = -3db; }
 }`;
 
 const compiledSound = compileDirectoryWorkspace(
@@ -86,11 +88,12 @@ const deadSoundImport = compileDirectoryWorkspace(
 sound bell {
   import "../module/tones.ashfox" as t;
   profile = ui;
-  duration = 0.4s; seed = 1;
-  voice v : noise { color = white; gain = 0 -> 0.8 -> 0; highpass = 100hz; lowpass = 3000hz; }
-  seq s { start = 0s; step k { voice = v; at = 0s; duration = 0.3s; } }
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  duration = 0.4s;
+  seed = 1;
+  voice v : noise { color = white; highpass = 100hz; lowpass = 3000hz; gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0); }
+  seq s { step k { voice = v; at = 0s; duration = 300ms; } }
+  variants { main = 1; }
+  master { gain = -12db; peak = -3db; }
 }`,
     },
     { path: 'assets/module/tones.ashfox', source: soundMod },
@@ -109,11 +112,12 @@ const badSoundOut = compileDirectoryWorkspace(
 sound bad {
   outputs { glb; }
   profile = ui;
-  duration = 0.4s; seed = 1;
-  voice v : noise { color = white; gain = 0 -> 0.8 -> 0; highpass = 100hz; lowpass = 3000hz; }
-  seq s { start = 0s; step k { voice = v; at = 0s; duration = 0.3s; } }
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  duration = 0.4s;
+  seed = 1;
+  voice v : noise { color = white; highpass = 100hz; lowpass = 3000hz; gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0); }
+  seq s { step k { voice = v; at = 0s; duration = 300ms; } }
+  variants { main = 1; }
+  master { gain = -12db; peak = -3db; }
 }`,
     },
   ],

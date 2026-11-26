@@ -7,6 +7,11 @@ import {
   type SoundStep,
   type SoundVary,
   type SoundVoice,
+  type VoiceDriftSpec,
+  type VoiceDriveSpec,
+  type VoiceDuckSpec,
+  type VoiceEqSpec,
+  type VoiceFxItem,
 } from './contract';
 import { validatePlan, type SoundBudget } from './plan';
 import { readControl, readGainControl, readSource, readVoiceFilter } from './readSource';
@@ -18,6 +23,9 @@ const VARY_BOUNDS = {
   gain: [0, 2, 1, 1],
   duration: [0.25, 4, 1, 1],
 } as const;
+
+const DRIVE_MODES = ['tape', 'tube', 'grit', 'fold'] as const;
+const DRIFT_TARGETS = ['gain', 'cutoff', 'pitch', 'pan'] as const;
 
 const readVaryRange = (
   vary: Record<string, unknown>,
@@ -125,6 +133,155 @@ const readPlayback = (raw: unknown, duration: number): SoundRecipe['playback'] =
   return fail('recipe.playback.kind', 'expected oneshot or loop');
 };
 
+const readOptNum = (
+  record: Record<string, unknown>,
+  key: string,
+  min: number,
+  max: number,
+  path: string,
+): number | undefined =>
+  record[key] !== undefined ? number(record[key], min, max, `${path}.${key}`) : undefined;
+
+const readVoiceEq = (raw: unknown, path: string): VoiceEqSpec => {
+  const eq = closed(raw, [], path, ['low', 'mid', 'high']);
+  if (Object.keys(eq).length === 0) fail(path, 'eq requires at least one band');
+  const out: {
+    low?: { hz: number; db: number };
+    mid?: { hz: number; db: number; q?: number };
+    high?: { hz: number; db: number };
+  } = {};
+  if (eq.low !== undefined) {
+    const low = closed(eq.low, ['hz', 'db'], `${path}.low`);
+    out.low = {
+      hz: number(low.hz, 20, 1000, `${path}.low.hz`),
+      db: number(low.db, -18, 18, `${path}.low.db`),
+    };
+  }
+  if (eq.mid !== undefined) {
+    const mid = closed(eq.mid, ['hz', 'db'], `${path}.mid`, ['q']);
+    const q = readOptNum(mid, 'q', 0.3, 10, `${path}.mid`);
+    out.mid = {
+      hz: number(mid.hz, 100, 8000, `${path}.mid.hz`),
+      db: number(mid.db, -18, 18, `${path}.mid.db`),
+      ...(q !== undefined ? { q } : {}),
+    };
+  }
+  if (eq.high !== undefined) {
+    const high = closed(eq.high, ['hz', 'db'], `${path}.high`);
+    out.high = {
+      hz: number(high.hz, 1000, 18000, `${path}.high.hz`),
+      db: number(high.db, -18, 18, `${path}.high.db`),
+    };
+  }
+  return out;
+};
+
+const readVoiceDrive = (raw: unknown, path: string): VoiceDriveSpec => {
+  if (typeof raw === 'number') return number(raw, 0, 10, path);
+  const d = closed(raw, ['amount', 'mode'], path);
+  return {
+    amount: number(d.amount, 0, 10, `${path}.amount`),
+    mode: choice(d.mode, DRIVE_MODES, `${path}.mode`),
+  };
+};
+
+const readChorusFx = (f: Record<string, unknown>, path: string): VoiceFxItem => {
+  closed(f, ['kind', 'mix'], path, ['rate', 'depth']);
+  const rate = readOptNum(f, 'rate', 0.05, 10, path);
+  const depth = readOptNum(f, 'depth', 0, 1, path);
+  return {
+    kind: 'chorus',
+    mix: number(f.mix, 0, 1, `${path}.mix`),
+    ...(rate !== undefined ? { rate } : {}),
+    ...(depth !== undefined ? { depth } : {}),
+  };
+};
+
+const readPhaserFx = (f: Record<string, unknown>, path: string): VoiceFxItem => {
+  closed(f, ['kind', 'mix'], path, ['rate', 'stages']);
+  const rate = readOptNum(f, 'rate', 0.05, 10, path);
+  const stages =
+    f.stages !== undefined ? number(f.stages, 2, 12, `${path}.stages`, true) : undefined;
+  return {
+    kind: 'phaser',
+    mix: number(f.mix, 0, 1, `${path}.mix`),
+    ...(rate !== undefined ? { rate } : {}),
+    ...(stages !== undefined ? { stages } : {}),
+  };
+};
+
+const readDelayFx = (f: Record<string, unknown>, path: string): VoiceFxItem => {
+  closed(f, ['kind', 'mix', 'timeMs'], path, ['feedback', 'damping', 'pingPong']);
+  const feedback = readOptNum(f, 'feedback', 0, 0.95, path);
+  const damping = readOptNum(f, 'damping', 200, 18000, path);
+  const pingPong = f.pingPong !== undefined ? bool(f.pingPong, `${path}.pingPong`) : undefined;
+  return {
+    kind: 'delay',
+    mix: number(f.mix, 0, 1, `${path}.mix`),
+    timeMs: number(f.timeMs, 1, 1000, `${path}.timeMs`),
+    ...(feedback !== undefined ? { feedback } : {}),
+    ...(damping !== undefined ? { damping } : {}),
+    ...(pingPong !== undefined ? { pingPong } : {}),
+  };
+};
+
+const readShimmerFx = (f: Record<string, unknown>, path: string): VoiceFxItem => {
+  closed(f, ['kind', 'mix'], path, ['feedback', 'shiftSemitones']);
+  const feedback = readOptNum(f, 'feedback', 0, 0.95, path);
+  const shiftSemitones = readOptNum(f, 'shiftSemitones', 0, 24, path);
+  return {
+    kind: 'shimmer',
+    mix: number(f.mix, 0, 1, `${path}.mix`),
+    ...(feedback !== undefined ? { feedback } : {}),
+    ...(shiftSemitones !== undefined ? { shiftSemitones } : {}),
+  };
+};
+
+const FX_READERS: Readonly<
+  Record<string, (f: Record<string, unknown>, path: string) => VoiceFxItem>
+> = {
+  chorus: readChorusFx,
+  phaser: readPhaserFx,
+  delay: readDelayFx,
+  shimmer: readShimmerFx,
+};
+
+const readVoiceFxItem = (raw: unknown, path: string): VoiceFxItem => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return fail(path, 'expected fx item');
+  const f = raw as Record<string, unknown>;
+  const kind = choice(f.kind, ['chorus', 'phaser', 'delay', 'shimmer'], `${path}.kind`);
+  return FX_READERS[kind]!(f, path);
+};
+
+const readVoiceFx = (raw: unknown, path: string): readonly VoiceFxItem[] =>
+  list(raw, 1, 6, path).map((item, i) => readVoiceFxItem(item, `${path}[${i}]`));
+
+const readVoiceDuck = (raw: unknown, path: string): VoiceDuckSpec => {
+  const d = closed(raw, ['by', 'amount', 'releaseMs'], path);
+  return {
+    by: id(d.by, `${path}.by`),
+    amount: number(d.amount, 0, 1, `${path}.amount`),
+    releaseMs: number(d.releaseMs, 5, 2000, `${path}.releaseMs`),
+  };
+};
+
+const readVoiceDrift = (raw: unknown, path: string, channels: 1 | 2): VoiceDriftSpec => {
+  const d = closed(raw, ['depth', 'target'], path, ['rate', 'seed']);
+  const target = choice(d.target, DRIFT_TARGETS, `${path}.target`);
+  if (channels === 1 && target === 'pan') {
+    fail(`${path}.target`, 'pan drift requires channels = 2');
+  }
+  const rate = readOptNum(d, 'rate', 0.05, 20, path);
+  const seed =
+    d.seed !== undefined ? number(d.seed, 1, 0xffffffff, `${path}.seed`, true) : undefined;
+  return {
+    depth: number(d.depth, 0, 1, `${path}.depth`),
+    target,
+    ...(rate !== undefined ? { rate } : {}),
+    ...(seed !== undefined ? { seed } : {}),
+  };
+};
+
 const readVoiceEntry = (
   raw: unknown,
   i: number,
@@ -136,34 +293,35 @@ const readVoiceEntry = (
     'highpass',
     'lowpass',
     'filter',
+    'eq',
     'drive',
+    'fx',
     'pan',
+    'duck',
+    'drift',
   ]);
-  const voice: {
-    id: string;
-    source: SoundVoice['source'];
-    gain: SoundVoice['gain'];
-    highpass?: SoundVoice['highpass'];
-    lowpass?: SoundVoice['lowpass'];
-    filter?: SoundVoice['filter'];
-    drive?: number;
-    pan?: number;
-  } = {
+  const pan = v.pan !== undefined ? readControl(v.pan, -1, 1, p + '.pan', true) : undefined;
+  if (pan !== undefined && channels === 1 && (typeof pan !== 'number' || pan !== 0)) {
+    fail(p + '.pan', 'pan requires channels = 2');
+  }
+  return {
     id: id(v.id, p + '.id', voiceIds),
     source: readSource(v.source, p + '.source'),
     gain: readGainControl(v.gain, p + '.gain'),
+    ...(v.highpass !== undefined
+      ? { highpass: readControl(v.highpass, 10, 10000, p + '.highpass') }
+      : {}),
+    ...(v.lowpass !== undefined
+      ? { lowpass: readControl(v.lowpass, 20, 18000, p + '.lowpass') }
+      : {}),
+    ...(v.filter !== undefined ? { filter: readVoiceFilter(v.filter, p + '.filter') } : {}),
+    ...(v.eq !== undefined ? { eq: readVoiceEq(v.eq, p + '.eq') } : {}),
+    ...(v.drive !== undefined ? { drive: readVoiceDrive(v.drive, p + '.drive') } : {}),
+    ...(v.fx !== undefined ? { fx: readVoiceFx(v.fx, p + '.fx') } : {}),
+    ...(pan !== undefined ? { pan } : {}),
+    ...(v.duck !== undefined ? { duck: readVoiceDuck(v.duck, p + '.duck') } : {}),
+    ...(v.drift !== undefined ? { drift: readVoiceDrift(v.drift, p + '.drift', channels) } : {}),
   };
-  if (v.highpass !== undefined)
-    voice.highpass = readControl(v.highpass, 10, 10000, p + '.highpass');
-  if (v.lowpass !== undefined) voice.lowpass = readControl(v.lowpass, 20, 18000, p + '.lowpass');
-  if (v.filter !== undefined) voice.filter = readVoiceFilter(v.filter, p + '.filter');
-  if (v.drive !== undefined) voice.drive = number(v.drive, 0, 10, p + '.drive');
-  if (v.pan !== undefined) {
-    const pan = number(v.pan, -1, 1, p + '.pan');
-    if (channels === 1 && pan !== 0) fail(p + '.pan', 'pan requires channels = 2');
-    voice.pan = pan;
-  }
-  return voice;
 };
 
 const readVoices = (
@@ -178,15 +336,6 @@ const readVoices = (
   });
   return { voiceIds, voices };
 };
-
-const readOptNum = (
-  record: Record<string, unknown>,
-  key: string,
-  min: number,
-  max: number,
-  path: string,
-): number | undefined =>
-  record[key] !== undefined ? number(record[key], min, max, `${path}.${key}`) : undefined;
 
 const readSpace = (raw: unknown): SoundRecipe['space'] | undefined => {
   if (raw === undefined) return undefined;
@@ -225,6 +374,7 @@ const ROOT_REQUIRED = [
   'id',
   'profile',
   'duration',
+  'sample_rate',
   'seed',
   'variants',
   'output',
@@ -283,14 +433,14 @@ const readRecipeVariants = (rawVariants: unknown): SoundRecipe['variants'] => {
 export const readRecipeWithBudget = (
   input: unknown,
 ): { readonly recipe: SoundRecipe; readonly budget: SoundBudget } => {
-  const root = closed(input, ROOT_REQUIRED, 'recipe', ['sample_rate', 'channels', 'space']);
+  const root = closed(input, ROOT_REQUIRED, 'recipe', ['channels', 'space']);
   const recipeId = id(root.id, 'recipe.id');
   const profile = choice(root.profile, SOUND_PROFILES, 'recipe.profile');
   const duration = number(root.duration, 0.05, 30, 'recipe.duration');
-  if (root.sample_rate !== undefined) number(root.sample_rate, 48000, 48000, 'recipe.sample_rate');
+  number(root.sample_rate, 48000, 48000, 'recipe.sample_rate');
   const channels =
     root.channels === undefined
-      ? 1
+      ? 2
       : (number(root.channels, 1, 2, 'recipe.channels', true) as 1 | 2);
   const seed = number(root.seed, 1, 0xffffffff, 'recipe.seed', true);
   const space = readSpace(root.space);

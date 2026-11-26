@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createFm } from '../../src/fm';
+
 const tau = 2 * Math.PI,
   size = 512,
   period = 16;
@@ -12,7 +13,12 @@ const source = {
   vibratoCents: 0,
 };
 const oscillator = createFm(source, 4800, 1);
-const values = Array.from({ length: 128 }, (_, i) => oscillator(i)).slice(64, 80);
+const lr = new Float64Array(2);
+const values = Array.from({ length: 128 }, (_, i) => {
+  oscillator(i, lr);
+  assert.equal(lr[0], lr[1]);
+  return lr[0]!;
+}).slice(64, 80);
 // Independent dense analytic waveform projected onto the output passband.
 // High-rate phase starts with one 384 kHz increment; startup FIR edges excluded.
 const reference = Array.from({ length: size }, (_, i) =>

@@ -53,27 +53,36 @@ assert.throws(() => {
 
 for (const bad of [
   text.replace('duration = 1s;', 'duration = NaN;'),
-  text.replace('profile = ui;', 'profile = "ui";'),
-  text.replace('variant base', 'variant (base)'),
-  text.replace('output {', 'output = {'),
+  text.replace('playback = oneshot;', 'playback = oneshot'),
+  text.replace('profile = ui;', 'profile = 123;'),
+  text.replace('master {', 'output = {'),
 ])
   assert.throws(() => parseSoundSource(bad));
 
 assert.throws(
-  () => parseSoundSource(text.replace('highpass = 10;', 'highpass = 20000;'), 'owned.ashfox'),
+  () => parseSoundSource(text.replace('highpass = 10hz;', 'highpass = 20000hz;'), 'owned.ashfox'),
   /owned.ashfox:\d+:\d+: sound.invalid: recipe.voices\[0\].highpass/,
 );
-assert.throws(() => parseSoundSource('ashfox 1 sound x { a = 1; a = 2; }'), /duplicate/);
+assert.throws(() => parseSoundSource('ashfox 1 sound x { seed = 1; seed = 2; }'), /duplicate/);
 assert.throws(
   () =>
     parseSoundSource(
-      'ashfox 1 sound x { voice v { gain { env = ad; attack = -1s; attack = 10ms; peak = 0.5; } } }',
+      'ashfox 1 sound x { voice v : noise { color = white; highpass = 10hz; highpass = 20hz; gain = 0.5; } }',
     ),
   /duplicate/,
 );
 assert.throws(
   () =>
-    parseSoundSource('ashfox 1 sound x { seq s { step a { vary_gain = 1%; vary_gain = 2%; } } }'),
+    parseSoundSource(
+      'ashfox 1 sound x { voice v : noise { color = white; gain { env = ad; attack = 5ms; attack = 10ms; peak = 0.5; } } }',
+    ),
+  /duplicate/,
+);
+assert.throws(
+  () =>
+    parseSoundSource(
+      'ashfox 1 sound x { seq s { step a { voice = v; at = 0s; duration = 0.2s; vary_gain = 90%..110%; vary_gain = 95%..105%; } } }',
+    ),
   /duplicate/,
 );
 assert.equal(
