@@ -141,6 +141,12 @@ const run = async (): Promise<void> => {
   assert.ok(product.interiorAudits[0]!.score >= 85);
   assert.ok(product.playableMeta.interiors && product.playableMeta.interiors.length === 1);
   assert.ok(product.playableMeta.interiors[0]!.hooks.length > 0);
+  const hookSchemas = new Set(product.hooks?.anchors.map((a) => a.schema) ?? []);
+  assert.ok(hookSchemas.has('std.sit'), 'Expected interior sit hook in HooksDocument');
+  assert.ok(hookSchemas.has('std.door_hinge'), 'Expected interior door_hinge/slide hook');
+  assert.ok(hookSchemas.has('std.toggle_light'), 'Expected interior toggle_light hook');
+  assert.ok(hookSchemas.has('std.station'), 'Expected interior station hook');
+  assert.ok(hookSchemas.has('std.sfx'), 'Expected interior spatial audio hook');
 
   const layers = new Set(product.bakedMesh.batches.map((b) => b.layer));
   assert.ok(layers.has('translucent'), 'Expected translucent stained-glass batch');
@@ -152,6 +158,8 @@ const run = async (): Promise<void> => {
   const glb = glbFile.data;
   const jsonLen = Buffer.from(glb).readUInt32LE(12);
   const gltf = JSON.parse(Buffer.from(glb.subarray(20, 20 + jsonLen)).toString('utf8')) as {
+    nodes?: { name?: string }[];
+    extras?: { ashfox?: { hooks?: { anchors?: { schema?: string }[] } } };
     materials?: {
       alphaMode?: string;
       doubleSided?: boolean;
@@ -159,6 +167,14 @@ const run = async (): Promise<void> => {
       extras?: Record<string, unknown>;
     }[];
   };
+  assert.ok(
+    gltf.nodes?.some((n) => n.name?.startsWith('anchor_sit_')),
+    'Expected glTF anchor_* Empty Node for interior sit hook',
+  );
+  assert.ok(
+    gltf.extras?.ashfox?.hooks?.anchors?.some((a) => a.schema === 'std.sfx'),
+    'Expected spatial audio hook in glTF extras.ashfox.hooks',
+  );
   assert.ok(
     gltf.materials?.some(
       (m) =>

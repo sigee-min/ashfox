@@ -187,6 +187,6 @@ structure ryokan_pavilion {
   place kit.GardenTree { at = (1b, 1b, 14b); rotate = 0; }
   set { at = (5b, 3b, 15b); block = sign; facing = south; }
 
-  socket south_entry { kind = entry; room = engawa; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket east_garden { kind = road; at = (w - 1, 0, floor(d / 2)); normal = east; pool = "village:streets"; target = "road_join"; }
+  anchor south_entry : std.entry { at = (4b, 1b, 14b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor east_garden : std.road { at = (16b, 0b, 8b); facing = east; pool = "village:streets"; target = "road_join"; }
 }

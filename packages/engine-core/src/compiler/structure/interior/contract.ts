@@ -5,7 +5,6 @@ import type {
   CardinalFacing,
   IntVec2,
   IntVec3,
-  RoomKind,
 } from '../../../project/structure/contract';
 
 export const SUBVOXEL_UNITS_PER_BLOCK = 16 as const;
@@ -229,7 +228,7 @@ export interface InteriorOpeningSpan {
 
 export interface InteriorRoomInput {
   readonly room_id: string;
-  readonly kind: RoomKind;
+  readonly kind: string;
   readonly style_dna: StyleDna;
   readonly architecture: InteriorArchitectureSpec;
   readonly bounds_from: IntVec3;

@@ -183,6 +183,6 @@ structure scifi_outpost {
   place kit.CrateStack { at = (1b, 1b, 14b); rotate = 0; }
   set { at = (2b, 1b, 15b); block = relay; }
 
-  socket outpost_entry { kind = entry; room = airlock; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket dock_link { kind = road; at = (w - 1, 0, floor(d / 2)); normal = east; pool = "village:streets"; target = "road_join"; }
+  anchor outpost_entry : std.entry { at = (5b, 1b, 15b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor dock_link : std.road { at = (16b, 0b, 9b); facing = east; pool = "village:streets"; target = "road_join"; }
 }

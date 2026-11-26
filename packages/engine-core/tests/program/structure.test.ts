@@ -306,23 +306,22 @@ const testCanonicalWorkspaceShowcases = (): void => {
     assert.equal(product.structure.audit.passed, true, product.entry.entryName);
     assert.ok(product.structure.audit.score >= 85, product.entry.entryName);
     assert.equal(product.structure.audit.grade, 'excellent');
-    for (const ia of product.structure.interiorAudits ?? []) {
-      assert.equal(ia.passed, true, `${product.entry.entryName}: ${JSON.stringify(ia)}`);
-      assert.ok(ia.score >= 85, `${product.entry.entryName} interior score ${ia.score}`);
-    }
+    assert.ok((product.structure.interiorAudits ?? []).every((ia) => ia.passed && ia.score >= 85));
     assert.ok(product.structure.bakedMesh.batches.length > 0);
     assert.ok(product.structure.playableMeta.colliders.length > 0);
     assert.ok(product.structure.playableMeta.zones.length > 0);
   }
   const byName = new Map(compiled.products.map((p) => [p.entry.entryName, p] as const));
-  const cottage = byName.get('medieval_cottage')!;
-  const tavern = byName.get('tavern')!;
-  const smith = byName.get('blacksmith')!;
-  const tower = byName.get('watchtower')!;
-  const ryokan = byName.get('ryokan_pavilion')!;
-  const scifi = byName.get('scifi_outpost')!;
-  assert.ok(ryokan.kind === 'structure' && (ryokan.structure.interiorAudits?.length ?? 0) >= 1);
-  assert.ok(scifi.kind === 'structure' && (scifi.structure.interiorAudits?.length ?? 0) >= 1);
+  for (const k of ['ryokan_pavilion', 'scifi_outpost']) {
+    const p = byName.get(k);
+    assert.ok(p?.kind === 'structure' && (p.structure.interiorAudits?.length ?? 0) >= 1, k);
+  }
+  const [cottage, tavern, smith, tower] = [
+    byName.get('medieval_cottage')!,
+    byName.get('tavern')!,
+    byName.get('blacksmith')!,
+    byName.get('watchtower')!,
+  ];
   if (cottage.kind === 'structure') {
     assert.deepEqual(cottage.structure.grid.size, [15, 20, 15]);
     assert.ok(cottage.structure.grid.openings.some((o) => o.kind === 'bay_window'));
@@ -333,19 +332,15 @@ const testCanonicalWorkspaceShowcases = (): void => {
     );
     assert.ok(tavern.structure.grid.openings.some((o) => o.kind === 'bay_window'));
     const tavernTris = tavern.structure.bakedMesh.batches.reduce(
-      (sum, b) => sum + b.indices.length / 3,
+      (s, b) => s + b.indices.length / 3,
       0,
     );
-    assert.ok(
-      typeof tavern.structure.bakedMesh.trimCount === 'number' &&
-        tavern.structure.bakedMesh.trimCount < 1600,
-    );
-    assert.ok(tavern.structure.bakedMesh.batches.length <= 16);
-    assert.ok(tavernTris < 22000);
+    assert.ok((tavern.structure.bakedMesh.trimCount ?? 9999) < 1600);
+    assert.ok(tavern.structure.bakedMesh.batches.length <= 16 && tavernTris < 22000);
   }
-  if (smith.kind === 'structure') {
-    assert.ok(smith.structure.grid.openings.some((o) => o.kind === 'arcade'));
-  }
+  assert.ok(
+    smith.kind === 'structure' && smith.structure.grid.openings.some((o) => o.kind === 'arcade'),
+  );
   if (tower.kind === 'structure') {
     assert.deepEqual(tower.structure.grid.size, [13, 27, 13]);
     assert.ok(tower.structure.grid.rooms.every((r) => r.shape === 'octagon'));

@@ -404,6 +404,23 @@ const assembleStructureGltfDocument = (
     : {}),
 });
 
+const createGltfBuildCtx = (
+  textures: Readonly<Record<string, TextureAsset>>,
+  texIndexById: ReadonlyMap<string, number>,
+  writer: GltfBinaryWriter,
+): GltfBuildCtx => ({
+  textures,
+  matReg: {
+    materials: [],
+    texIndexById,
+    cache: new Map(),
+    usesTextureTransform: false,
+    usesUnlit: false,
+  },
+  writer,
+  usesGpuInstancing: false,
+});
+
 export const buildStructureGltf = (
   product: StructureProduct,
   options: { readonly quantize?: boolean; readonly includeLods?: boolean } = {},
@@ -412,18 +429,7 @@ export const buildStructureGltf = (
   const { textures, modelTexRemap } = collectUsedTextures(product);
   const ordered = Object.values(textures).sort((a, b) => compareText(a.id, b.id));
   const { images, samplers, texIndexById } = encodeGltfTextures(ordered, writer);
-  const ctx: GltfBuildCtx = {
-    textures,
-    matReg: {
-      materials: [],
-      texIndexById,
-      cache: new Map(),
-      usesTextureTransform: false,
-      usesUnlit: false,
-    },
-    writer,
-    usesGpuInstancing: false,
-  };
+  const ctx = createGltfBuildCtx(textures, texIndexById, writer);
   const meshes: GltfMesh[] = [];
   const nodes: GltfNode[] = [{ name: product.id }];
   const children: number[] = [];

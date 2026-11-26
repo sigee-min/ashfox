@@ -111,6 +111,24 @@ const parseLayerOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
   };
 };
 
+const extractRoomInterior = (
+  ops: readonly StructureOp[],
+  roomName: string,
+  file: string,
+  span: AshfoxNamedBlock['span'],
+): Extract<StructureOp, { op: 'interior' }> | undefined => {
+  let rawInterior: Extract<StructureOp, { op: 'interior' }> | undefined;
+  for (const childOp of ops) {
+    if (childOp.op === 'interior') {
+      if (rawInterior) failAst(file, span, 'at most one interior { ... } block', 'interior');
+      rawInterior = childOp;
+    } else if (childOp.op !== 'hook_decl' && childOp.op !== 'anchor') {
+      failAst(file, span, 'optional interior { ... } or hook blocks', childOp.op);
+    }
+  }
+  return rawInterior ? { ...rawInterior, room: rawInterior.room ?? roomName } : undefined;
+};
+
 const parseRoomOp = (stmt: AshfoxNamedBlock, file: string, depth: number): StructureOp => {
   if (!stmt.name) return failAst(file, stmt.span, 'room <name> { ... }', 'unnamed room');
   const { attrs, ops } = splitOpContainer(stmt.block, file, depth);
@@ -128,18 +146,7 @@ const parseRoomOp = (stmt: AshfoxNamedBlock, file: string, depth: number): Struc
   if (shape !== undefined && shape !== 'rect' && shape !== 'octagon') {
     failAst(file, attrs.shape?.span ?? stmt.span, 'shape = rect|octagon', shape);
   }
-  let rawInterior: Extract<StructureOp, { op: 'interior' }> | undefined;
-  for (const childOp of ops) {
-    if (childOp.op === 'interior') {
-      if (rawInterior) failAst(file, stmt.span, 'at most one interior { ... } block', 'interior');
-      rawInterior = childOp;
-    } else if (childOp.op !== 'hook_decl' && childOp.op !== 'anchor') {
-      failAst(file, stmt.span, 'optional interior { ... } or hook blocks', childOp.op);
-    }
-  }
-  const interior = rawInterior
-    ? { ...rawInterior, room: rawInterior.room ?? stmt.name }
-    : undefined;
+  const interior = extractRoomInterior(ops, stmt.name, file, stmt.span);
   return {
     op: 'room',
     name: stmt.name,
