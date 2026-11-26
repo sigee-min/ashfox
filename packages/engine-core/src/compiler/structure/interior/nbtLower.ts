@@ -80,11 +80,11 @@ const isPassableVanillaState = (state: string): boolean =>
   state.includes('_door') ||
   state.includes('_carpet') ||
   state.includes('torch') ||
-  state.includes('lantern');
+  (state.includes('lantern') && !state.includes('sea_lantern'));
 
 const isWallMountableState = (state: string): boolean =>
   state.includes('torch') ||
-  state.includes('lantern') ||
+  (state.includes('lantern') && !state.includes('sea_lantern')) ||
   state.includes('trapdoor') ||
   state.includes('pane') ||
   state.includes('bars') ||
@@ -92,7 +92,7 @@ const isWallMountableState = (state: string): boolean =>
   state.includes('slab');
 
 const isHangingState = (state: string): boolean =>
-  state.includes('hanging=true') || state.includes('chain') || state.includes('sea_lantern');
+  state.includes('hanging=true') || state.includes('chain');
 
 interface LowerCtx {
   readonly w: number;

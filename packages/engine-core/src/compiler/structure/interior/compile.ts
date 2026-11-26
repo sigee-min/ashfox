@@ -8,7 +8,7 @@ import {
 import { putVoxel, resolvePaletteEntry } from '../jigsaw';
 import type { EvalState } from '../weathering';
 import { evaluateInteriorAudit } from './audit';
-import type { InteriorSubVoxelIR } from './contract';
+import type { InteriorRoomInput, InteriorSubVoxelIR } from './contract';
 import type { CompiledInteriorRoom, CustomPropMount } from './types';
 import { lowerInteriorAstToInput } from './lowerAst';
 import { lowerInteriorToVanillaNbt } from './nbtLower';
@@ -143,16 +143,111 @@ const resolveMountAliases = (
     return { ...m, asset_alias: qualified };
   });
 
-const compileSingleInterior = (
+const hasUpperRoomFloorAt = (
+  rooms: readonly StructureRoomMeta[],
+  self: StructureRoomMeta,
+  x: number,
+  y: number,
+  z: number,
+): boolean =>
+  rooms.some(
+    (r) =>
+      r !== self &&
+      x >= r.from[0] &&
+      x <= r.to[0] &&
+      z >= r.from[2] &&
+      z <= r.to[2] &&
+      y >= r.from[1] &&
+      y <= r.to[1],
+  );
+
+const findRoofCoverY = (state: EvalState, x: number, yStart: number, z: number): number => {
+  const [, h] = state.size;
+  for (let y = yStart; y < h; y += 1) {
+    if (voxelAt(state, x, y, z) > 0) return y;
+  }
+  return -1;
+};
+
+const isHangingBelowCell = (state: EvalState, x: number, yBelow: number, z: number): boolean => {
+  const v = voxelAt(state, x, yBelow, z);
+  if (v <= 0) return false;
+  const name = state.states[v] ?? '';
+  return (
+    name.includes('hanging=true') ||
+    name.includes('chain') ||
+    name.includes('lantern') ||
+    name.includes('bell') ||
+    name.includes('banner')
+  );
+};
+
+const clearTrussCeilingCell = (
   state: EvalState,
   ownerPath: string,
-  op: InteriorRoomOp,
   room: StructureRoomMeta,
+  rooms: readonly StructureRoomMeta[],
+  x: number,
+  z: number,
+): void => {
+  const y = room.to[1];
+  if (hasUpperRoomFloorAt(rooms, room, x, y, z) || voxelAt(state, x, y, z) <= 0) return;
+  const yRoof = findRoofCoverY(state, x, y + 1, z);
+  if (yRoof <= y + 1) return;
+  if (!isHangingBelowCell(state, x, y - 1, z)) {
+    putVoxel(state, ownerPath, [x, y, z], 'minecraft:air', null, true);
+    return;
+  }
+  for (let cy = y; cy < yRoof; cy += 1) {
+    putVoxel(state, ownerPath, [x, cy, z], 'minecraft:chain', null, true);
+  }
+};
+
+const canClearWholeTrussCeiling = (
+  state: EvalState,
+  room: StructureRoomMeta,
+  rooms: readonly StructureRoomMeta[],
+): boolean => {
+  const y = room.to[1];
+  for (let z = room.from[2] + 1; z <= room.to[2] - 1; z += 1) {
+    for (let x = room.from[0] + 1; x <= room.to[0] - 1; x += 1) {
+      if (hasUpperRoomFloorAt(rooms, room, x, y, z)) return false;
+      if (findRoofCoverY(state, x, y + 1, z) < 0) return false;
+    }
+  }
+  return true;
+};
+
+const clearOpenTrussCeiling = (
+  state: EvalState,
+  ownerPath: string,
+  room: StructureRoomMeta,
+  rooms: readonly StructureRoomMeta[],
+  input: Pick<InteriorRoomInput, 'architecture' | 'volumes'>,
+): void => {
+  if (
+    input.architecture.ceiling !== 'open_truss' &&
+    !input.volumes.some((v) => v.kind === 'open_truss')
+  ) {
+    return;
+  }
+  if (!canClearWholeTrussCeiling(state, room, rooms)) return;
+  for (let z = room.from[2] + 1; z <= room.to[2] - 1; z += 1) {
+    for (let x = room.from[0] + 1; x <= room.to[0] - 1; x += 1) {
+      clearTrussCeilingCell(state, ownerPath, room, rooms, x, z);
+    }
+  }
+};
+
+const reconcileRoomVoxels = (
+  state: EvalState,
+  ownerPath: string,
+  volumes: ReturnType<typeof buildSculptedVolumes>,
   roomOpenings: readonly StructureOpeningMeta[],
-): CompiledInteriorRoom => {
-  const ctx = lowerInteriorAstToInput(op, room, roomOpenings, state.seed);
-  const shell = buildInteriorShell(ctx.roomInput, collectCorbelCandidates(room));
-  const volumes = buildSculptedVolumes(ctx.roomInput);
+  room: StructureRoomMeta,
+  rooms: readonly StructureRoomMeta[],
+  input: InteriorRoomInput,
+): void => {
   applyVolumeCarvesToGrid(
     state,
     ownerPath,
@@ -161,6 +256,21 @@ const compileSingleInterior = (
     volumes.sunken_cells,
     roomOpenings,
   );
+  clearOpenTrussCeiling(state, ownerPath, room, rooms, input);
+};
+
+const compileSingleInterior = (
+  state: EvalState,
+  ownerPath: string,
+  op: InteriorRoomOp,
+  room: StructureRoomMeta,
+  roomOpenings: readonly StructureOpeningMeta[],
+  rooms: readonly StructureRoomMeta[],
+): CompiledInteriorRoom => {
+  const ctx = lowerInteriorAstToInput(op, room, roomOpenings, state.seed);
+  const shell = buildInteriorShell(ctx.roomInput, collectCorbelCandidates(room));
+  const volumes = buildSculptedVolumes(ctx.roomInput);
+  reconcileRoomVoxels(state, ownerPath, volumes, roomOpenings, room, rooms, ctx.roomInput);
   const solved = solveInteriorLayout(ctx.roomInput, [...shell.boxes, ...volumes.boxes]);
   const windowPanes = generateTranslucentWindowPanes(ctx.roomInput);
   const ir: InteriorSubVoxelIR = {
@@ -220,7 +330,7 @@ export const compileEvaluatedInteriors = (
       throw new Error(`Unknown interior target room "${targetName ?? ''}" in ${ownerPath}`);
     }
     const roomOpenings = openings.filter((o) => o.room === room.name);
-    out.push(compileSingleInterior(state, ownerPath, op, room, roomOpenings));
+    out.push(compileSingleInterior(state, ownerPath, op, room, roomOpenings, rooms));
   }
   return out;
 };

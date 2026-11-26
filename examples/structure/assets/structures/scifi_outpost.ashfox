@@ -61,7 +61,7 @@ structure scifi_outpost {
         wall_line {
           on = east;
           terminal { size = (2, 1); }
-          holo_screen { size = (2, 1); }
+          holo_screen { size = (1, 1); }
         }
         drapery conduits { kind = cables; on = ceiling_span; sag = 0.4; }
         lighting { kind = neon_channel; color = "#00e5ff"; bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.45; }

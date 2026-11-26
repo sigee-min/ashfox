@@ -369,6 +369,47 @@ structure rot_mez_test {
     true,
     'Rotated 3x1 table collider must include rotated tabletop point [5.5,1.95,5.5]',
   );
+
+  // Verify open_truss clears flat voxel ceiling inside room and east wall_line advances by rotated Z span.
+  const [tw, , td] = product.grid.size;
+  const ceilMidState = product.grid.states[product.grid.voxels[(7 * td + 6) * tw + 7]!]!;
+  assert.equal(
+    ceilMidState,
+    'minecraft:air',
+    'open_truss must clear flat voxel ceiling inside hall',
+  );
+
+  const eastLineSrc = `ashfox 1
+structure east_wall_line_test {
+  size = (11b, 9b, 11b);
+  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  floor f { y = 0b; height = 7b;
+    room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
+      interior {
+        dna { arch = rustic; organic = 0; }
+        wall_line {
+          on = east;
+          shelving s1 { size = (2, 1); }
+          shelving s2 { size = (2, 1); }
+        }
+      }
+    }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  }
+}`;
+  const eastProd = compileStructureUnits(
+    'ewl.ashfox',
+    new Map([['ewl.ashfox', parseStructureSource(eastLineSrc, 'ewl.ashfox')]]),
+    {},
+    rel,
+  );
+  const [s1, s2] = eastProd.grid.interiors![0]!.input.props ?? [];
+  assert.deepEqual(s1?.at, [9, 1, 1], 'First east wall_line shelf must hug east wall x=9 at z=1');
+  assert.deepEqual(
+    s2?.at,
+    [9, 1, 3],
+    'Second east wall_line shelf must advance by rotated span 2 to [9,1,3]',
+  );
   console.log('ashfox interior wiring integration tests ok');
 };
 

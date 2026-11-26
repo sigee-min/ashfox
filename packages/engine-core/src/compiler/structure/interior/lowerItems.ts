@@ -103,6 +103,9 @@ const inferMountSurface = (ast: InteriorPropAst): MountSurface => {
 const resolvePropSize = (ast: InteriorPropAst): IntVec2 =>
   ast.size ?? (ast.length ? [ast.length, 1] : (DEFAULT_PROP_SIZE[ast.kind] ?? [1, 1]));
 
+const facingSize = (size: IntVec2, facing: CardinalFacing): IntVec2 =>
+  facing === 'east' || facing === 'west' ? [size[1], size[0]] : size;
+
 export const convertPropAst = (
   ast: InteriorPropAst,
   room: StructureRoomMeta,
@@ -118,14 +121,15 @@ export const convertPropAst = (
     : (ast.kind as InteriorPropKind);
   const size = resolvePropSize(ast);
   const on = ast.on ?? onFallback;
+  const facing = ast.facing ?? ANCHOR_FACING[on];
   const mountOn = inferMountSurface(ast);
   const floorY = mountOn === 'ceiling' ? room.to[1] - (ast.drop ?? 1.5) : yB;
   return {
     id: ast.id,
     kind,
-    at: ast.at ?? anchorPos(room, on, size, floorY, zone),
+    at: ast.at ?? anchorPos(room, on, facingSize(size, facing), floorY, zone),
     size,
-    facing: ast.facing ?? ANCHOR_FACING[on],
+    facing,
     mount_on: mountOn,
     ...optFields<InteriorPropSpec>([
       ['zone_id', zoneId],
@@ -313,15 +317,17 @@ const placeWallLineProp = (
   floorY: number,
 ): { readonly prop: InteriorPropSpec | null; readonly advance: number } => {
   const size = resolvePropSize(pAst);
+  const facing = pAst.facing ?? ANCHOR_FACING[anchor];
+  const [rw, rd] = facingSize(size, facing);
   const alongX = anchor === 'north' || anchor === 'south' || anchor === 'center';
-  const span = alongX ? size[0] : size[1];
-  const base = anchorPos(room, anchor, size, floorY);
-  const maxU = (alongX ? room.to[0] : room.to[2]) - 1 - span;
+  const span = alongX ? rw : rd;
+  const base = anchorPos(room, anchor, [rw, rd], floorY);
+  const maxU = (alongX ? room.to[0] : room.to[2]) - span;
   const at: Vec3 = alongX
     ? [Math.min(maxU, room.from[0] + 1 + cursor), floorY, base[2]]
     : [base[0], floorY, Math.min(maxU, room.from[2] + 1 + cursor)];
   return {
-    prop: convertPropAst({ ...pAst, at, facing: ANCHOR_FACING[anchor] }, room, anchor, floorY),
+    prop: convertPropAst({ ...pAst, at, facing }, room, anchor, floorY),
     advance: span,
   };
 };
