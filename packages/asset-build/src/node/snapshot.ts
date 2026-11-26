@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -10,6 +11,8 @@ import { digest, json } from '../shared/digest';
 import { contained, noLinks, safeRelative } from './paths';
 import { evaluateConfiguration } from './configuration';
 import { readStandalone } from './standalone';
+
+const STRICT_UTF8_DECODER = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 const readText = (file: string, limit: number): string => {
   noLinks(file);
@@ -27,7 +30,7 @@ const readText = (file: string, limit: number): string => {
     ) {
       throw new BuildFailure('source.changed', file);
     }
-    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    return STRICT_UTF8_DECODER.decode(bytes);
   } finally {
     fs.closeSync(descriptor);
   }
@@ -160,7 +163,7 @@ const visitWorkspaceEntry = (
 const visitWorkspaceDirectory = (state: WorkspaceScanState, relative: string): void => {
   const entries = fs
     .readdirSync(path.join(state.root, relative), { withFileTypes: true })
-    .sort((a, b) => (a.name < b.name ? -1 : 1));
+    .sort((a, b) => compareText(a.name, b.name));
   for (const entry of entries) visitWorkspaceEntry(state, relative, entry);
 };
 

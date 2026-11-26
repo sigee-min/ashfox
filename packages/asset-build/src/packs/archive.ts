@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import { zipSync, type Zippable } from 'fflate';
 import { BuildFailure, type Artifact } from '../bundle/contract';
 import { safeRelative } from '../shared/path';
@@ -8,7 +9,7 @@ export const archivePack = (
   archive: boolean,
   files: readonly Artifact[],
 ): readonly Artifact[] => {
-  const ordered = [...files].sort((a, b) => (a.path < b.path ? -1 : 1)),
+  const ordered = [...files].sort((a, b) => compareText(a.path, b.path)),
     paths = new Set<string>();
   for (const file of ordered) {
     const key = file.path.toLowerCase();
