@@ -181,7 +181,7 @@ const handleSoundBlockDecl = (
   }
   if (first === 'variant') {
     const id = cursor.name();
-    const props = lowerBlockProps(readBlockItems(cursor, 0, `variant.${id}`, fail));
+    const props = lowerBlockProps(readBlockItems(cursor, 0, `variant.${id}`, fail), fail);
     draft.localVariants.push({ id, ...props });
     return true;
   }

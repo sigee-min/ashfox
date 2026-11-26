@@ -36,10 +36,14 @@ const VARY_STEP_KEYS: Readonly<Record<string, string>> = {
 
 export const mapSoundKey = (key: string): string => SNAKE_TO_CAMEL[key] ?? key;
 
-export const lowerBlockProps = (items: readonly ParsedBlockItem[]): Record<string, unknown> => {
+export const lowerBlockProps = (
+  items: readonly ParsedBlockItem[],
+  fail: (msg: string) => never,
+): Record<string, unknown> => {
   const out: Record<string, unknown> = Object.create(null);
   for (const item of items) {
     const k = mapSoundKey(item.key);
+    if (k in out) fail(`duplicate property ${item.key}`);
     out[k] = item.value;
   }
   return out;
@@ -51,7 +55,7 @@ export const lowerSubBlock = (
   rawItems: readonly ParsedBlockItem[],
   fail: (msg: string) => never,
 ): Record<string, unknown> => {
-  const rec = lowerBlockProps(rawItems);
+  const rec = lowerBlockProps(rawItems, fail);
   if (tag !== null && (kind === 'filter' || kind === 'excitation' || kind === 'source')) {
     if ('kind' in rec) fail(`duplicate kind in ${kind}`);
     return { kind: tag, ...rec };
@@ -117,6 +121,7 @@ const lowerStepBlock = (
   for (const item of items) {
     const varyKey = VARY_STEP_KEYS[item.key];
     if (varyKey) {
+      if (varyKey in vary) fail(`duplicate step property ${item.key}`);
       vary[varyKey] = item.value;
       continue;
     }
@@ -152,6 +157,7 @@ export const lowerSeqBlock = (
     if ('steps' in seq) fail('cannot mix steps list with step blocks');
     seq.steps = steps;
   }
+  if (!('start' in seq)) seq.start = 0;
   return seq;
 };
 
@@ -184,6 +190,7 @@ export const lowerLoopBlock = (
   for (const item of items) {
     if (item.key === 'at') {
       if (!Array.isArray(item.value) || item.value.length !== 2) fail('loop at requires a..b');
+      if ('start' in out || 'end' in out) fail('duplicate loop property at');
       out.start = item.value[0];
       out.end = item.value[1];
       continue;

@@ -138,13 +138,14 @@ const readAssemblyUse = (reader: AssetReader): AssetAssemblyUse => {
       } else reader.scopeError('asset component use');
     },
   );
+  const endSpan = reader.match(';') ? reader.prevSpan() : close.span;
   return Object.freeze({
     kind: 'use',
     component,
     id,
     parameterSets: Object.freeze(parameterSets),
     portBindings: Object.freeze([]),
-    span: join(start.span, close.span),
+    span: join(start.span, endSpan),
   });
 };
 

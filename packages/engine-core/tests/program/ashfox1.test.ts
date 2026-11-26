@@ -355,6 +355,12 @@ model wolf {
     assert.ok(Object.values(compiled.model.scene.nodes).some((n) => n.id.includes('ear_r')));
     assert.ok(Object.values(compiled.model.animations).some((a) => a.name === 'idle'));
   }
+  const mainWithSemicolon = mainSrc.replace(
+    'use body.WolfBody { skeleton = rig.CreatureRig; skin = surface.coat; }',
+    'use body.WolfBody { skeleton = rig.CreatureRig; skin = surface.coat; };',
+  );
+  const semiRes = parseAssetSource(mainWithSemicolon);
+  assert.equal(semiRes.diagnostics.length, 0, JSON.stringify(semiRes.diagnostics));
 }
 
 console.log('ashfox 1 unified grammar tests pass');

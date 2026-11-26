@@ -64,6 +64,28 @@ assert.throws(
   /owned.ashfox:\d+:\d+: sound.invalid: recipe.voices\[0\].highpass/,
 );
 assert.throws(() => parseSoundSource('ashfox 1 sound x { a = 1; a = 2; }'), /duplicate/);
+assert.throws(
+  () =>
+    parseSoundSource(
+      'ashfox 1 sound x { voice v { gain { env = ad; attack = -1s; attack = 10ms; peak = 0.5; } } }',
+    ),
+  /duplicate/,
+);
+assert.throws(
+  () =>
+    parseSoundSource('ashfox 1 sound x { seq s { step a { vary_gain = 1%; vary_gain = 2%; } } }'),
+  /duplicate/,
+);
+assert.equal(
+  parseSoundSource(
+    (() => {
+      const noStart = text.replace(/^\s*start\s*=.*;\r?\n?/m, '');
+      assert.notEqual(noStart, text);
+      return noStart;
+    })(),
+  ).sequences[0].start,
+  0,
+);
 assert.throws(() => encodeWav(new Float64Array([NaN])), /Non-finite/);
 assert.throws(() => master(new Float64Array([0, 0]), recipe.output), /silent/);
 assert.throws(() => master(new Float64Array([1, -1]), { gainDb: 0, peakDb: -3 }), /lower gainDb/);
