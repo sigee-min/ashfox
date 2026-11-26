@@ -376,8 +376,8 @@ const expandOpeningDrapery = (
       : o.kind === 'door' || o.kind === 'arch',
   );
   return matches.map((op, i) => {
-    const offX = OPENING_INWARD_X[op.wall] * 16;
-    const offZ = OPENING_INWARD_Z[op.wall] * 16;
+    const offX = OPENING_INWARD_X[op.wall] * 9.5;
+    const offZ = OPENING_INWARD_Z[op.wall] * 9.5;
     return {
       id: `${d.id}_${i}`,
       kind: d.kind as InteriorDraperyKind,

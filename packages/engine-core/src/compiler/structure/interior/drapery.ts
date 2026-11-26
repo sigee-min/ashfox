@@ -117,7 +117,7 @@ const buildCurtains = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
     spec.facing,
   );
   const drop = Math.max(12, yTop - yBot);
-  const tile = spec.tile_id ?? 'carpet_red';
+  const tile = spec.tile_id ?? (spec.color ? 'plaster_white' : 'carpet_red');
   const out: SubVoxelBoxIR[] = [
     axisBox(
       `${spec.id}:rod`,
@@ -144,7 +144,7 @@ const buildCurtains = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
 const buildNoren = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
   const { alongX, u0, u1, fixed, yTop, width } = spanAxes(spec.from_16, spec.to_16, spec.facing);
   const panels = Math.max(2, spec.split_panels ?? 3);
-  const tile = spec.tile_id ?? 'carpet_blue';
+  const tile = spec.tile_id ?? (spec.color ? 'plaster_white' : 'carpet_blue');
   const drop = Math.max(8, Math.min(14, Math.abs(spec.from_16[1] - spec.to_16[1]) || 10));
   const out: SubVoxelBoxIR[] = [
     axisBox(

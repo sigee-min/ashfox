@@ -70,7 +70,6 @@ structure ryokan_pavilion {
           cabinet { size = (2, 1); }
         }
         drapery noren { kind = noren; on = doors; split_panels = 3; color = "#243b55"; }
-        drapery curtains { on = windows; tieback = true; color = "#dcd3be"; }
         lighting { bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.25; }
         sun_shaft { enabled = true; sun_dir = (0.3, -0.75, 0.58); intensity = 0.34; shaft_length = 5.5; }
       }
@@ -90,7 +89,6 @@ structure ryokan_pavilion {
           on = west;
           cabinet { size = (2, 1); }
         }
-        drapery curtains { on = windows; color = "#c88642"; }
         lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.45; }
         sun_shaft { enabled = true; sun_dir = (0.3, -0.75, 0.58); intensity = 0.55; shaft_length = 4.5; }
       }
@@ -126,7 +124,6 @@ structure ryokan_pavilion {
           low_table loft_table { size = (2, 1); }
           story scholar_study { on = loft_table; }
         }
-        drapery curtains { on = windows; color = "#eae2cf"; }
         lighting { bounces = 2; ambient_floor = 0.16; }
         sun_shaft { enabled = true; sun_dir = (0.3, -0.75, 0.58); intensity = 0.45; shaft_length = 4.5; }
       }

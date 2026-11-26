@@ -74,7 +74,7 @@ export const DEFAULT_ARCHITECTURE_BY_ARCH: Readonly<
   scifi: archSpec('grate', 'led_strip', 'tech_ribbed', 'neon_channel', 'coffered', '#4ce8ff'),
   gothic: archSpec('stone_slab', 'stone_plinth', 'stone_dado', 'stone_cornice', 'vault'),
   desert: archSpec('tile', 'stone_plinth', 'brick_dado', 'stone_cornice', 'beamed'),
-  industrial: archSpec('grate', 'stone_plinth', 'brick_dado', 'strip_light', 'open_truss', '#ff8'),
+  industrial: archSpec('stone_slab', 'stone_plinth', 'brick_dado', 'timber_cornice', 'open_truss'),
   nordic: archSpec('plank', 'trim', 'paneled', 'timber_cornice', 'open_truss'),
 };
 
