@@ -100,6 +100,15 @@ const main = async () => {
   assert.equal(manifest.assets.length, 4);
   assert.equal(files['pack.mcmeta'], undefined);
   const names = [];
+  for (const f of manifest.sharedTextures ?? []) {
+    const data = files[f.path];
+    assert.ok(data, f.path);
+    names.push(f.path);
+    assert.equal(data.length, f.byteLength);
+    assert.equal(crypto.createHash('sha256').update(data).digest('hex'), f.sha256);
+    assert.deepEqual(Buffer.from(data), fs.readFileSync(path.join(output, 'game-assets', f.path)));
+  }
+  assert.ok((manifest.sharedTextures ?? []).length >= 2, 'multi-GLB pack extracts sharedTextures');
   for (const asset of manifest.assets) {
     for (const f of asset.files) {
       const data = files[f.path];
@@ -114,9 +123,13 @@ const main = async () => {
     }
     if (asset.kind === 'model') {
       const data = files[asset.model];
+      const baseDir = path.posix.dirname(asset.model);
       const result = await validator.validateBytes(data, {
-        externalResourceFunction: async () => {
-          throw Error('GLB must be self-contained');
+        externalResourceFunction: async (uri: string) => {
+          const resolved = path.posix.normalize(path.posix.join(baseDir, uri));
+          const bytes = files[resolved];
+          if (!bytes) throw Error(`Missing external resource: ${resolved}`);
+          return bytes;
         },
       });
       assert.equal(result.issues.numErrors, 0, JSON.stringify(result.issues));
@@ -132,7 +145,9 @@ const main = async () => {
       assert.ok(
         gltf.images.every(
           (image: { bufferView: number | undefined; uri: string | undefined }) =>
-            image.bufferView !== undefined && image.uri === undefined,
+            image.bufferView === undefined &&
+            typeof image.uri === 'string' &&
+            image.uri.includes('textures/'),
         ),
       );
       assert.deepEqual(

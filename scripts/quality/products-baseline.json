@@ -11,22 +11,22 @@
         {
           "entry": "standalone/rune_bricks",
           "kind": "model",
-          "sha256": "f83801c0edf64a05adf6a32a4e607f6a2eb88d6ac97d8ffa605207b0a84b9d29"
+          "sha256": "c3516671621d38b0b8ed29bf0396832d115af2eb6b00dea0982ce179ed1d1b90"
         }
       ],
-      "catalogHash": "212df4e7aa56ceb94d2bdbc189df169e5ada40c7d3aa9cc50e015de5f328ef31",
+      "catalogHash": "914ebad224e258cd6e56c7d4a62b9d2bf959ca94f83a69ad64945008d6875ccb",
       "files": [
         {
           "path": "assets/rune_bricks/ashfox-lineage.json",
-          "sha256": "9dc65b9c0bccdc297619205b0db7d454fe5a23207396b53ecebd62d01bf9b44f"
+          "sha256": "5da49856913cb7b59f855cd7a88681b9e26f7b869f7fb1265eec66c5c5518dc8"
         },
         {
           "path": "assets/rune_bricks/rune_bricks.glb",
-          "sha256": "5c0287156ed868b7af8ab02d2c9bf9209f397208ec6b7f246582ba02ff1e66d4"
+          "sha256": "25b015cb38c7121b900d21573168e7fce17333d9481c98e1f84a9d353bf60503"
         },
         {
           "path": "catalog.json",
-          "sha256": "212df4e7aa56ceb94d2bdbc189df169e5ada40c7d3aa9cc50e015de5f328ef31"
+          "sha256": "914ebad224e258cd6e56c7d4a62b9d2bf959ca94f83a69ad64945008d6875ccb"
         }
       ]
     },
@@ -38,22 +38,22 @@
         {
           "entry": "standalone/fox",
           "kind": "model",
-          "sha256": "103307f053ab6d8385a52e3d754d375691689a4b112ebc55fd0917ab36887f32"
+          "sha256": "23b8b862a14833ed6f1dea128512af420e302631f3b6aacc0254fd6ae9c033d0"
         }
       ],
-      "catalogHash": "5c4e2592e9ed4cbc93fcbe9f3e403d25b56b6e7f1db272e1b842e7a89fc74516",
+      "catalogHash": "afa482d6441d8dd9289d951317666e886737b7bfb7a961b83983c9ce364b1a05",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "544199ca134cffdbbef2f4bffc0e70cacd26d3d67cbba0c4fd0e8f751de0c306"
+          "sha256": "45c39d1d9f05272c8c42d91fe77243a46c1c61ee76ce775714b403711146c905"
         },
         {
           "path": "assets/fox/fox.glb",
-          "sha256": "c3eac834193a315782998590e5b4ef02e170b4973f98fd58dba333b2f003be28"
+          "sha256": "9d8121b15f66b33462d3cc203fa8ba093f55ff6345ea63c9cf570adfb17424c2"
         },
         {
           "path": "catalog.json",
-          "sha256": "5c4e2592e9ed4cbc93fcbe9f3e403d25b56b6e7f1db272e1b842e7a89fc74516"
+          "sha256": "afa482d6441d8dd9289d951317666e886737b7bfb7a961b83983c9ce364b1a05"
         }
       ]
     },
@@ -65,7 +65,7 @@
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "entry": "sounds/claw_hit",
@@ -84,10 +84,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
+          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
         }
       ],
-      "catalogHash": "48601f7e1075f994d3700141194d72def100785bed1b1b9eb31994c34406fe1f",
+      "catalogHash": "9e9d98f9e63d49319f0c6777857a4c6deed23ead13e8c4a01cf67336380abe35",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -99,19 +99,19 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "9eed22703593b9f9cf59f49f5a27b9ab951ac476deb79ee07da835dc49a796c3"
+          "sha256": "c5e003a517e97229341eca65cfa151f0fcbf75735f9c102a580c854c43725a73"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "742da83969eb41b682a0446f0d2b1bba35187df5a38ff76feeb4c292fa50a706"
+          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "7b007219a52d1488e6c1907efb18ca4ba111ea46b1e42216ccc1b9fdc5eea4ac"
+          "sha256": "87af15713ae4d5c7d2daa4327894ea5df5e3a1b81c865de105ef3fb2430316a4"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
@@ -123,19 +123,19 @@
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin/griffin.glb",
-          "sha256": "742da83969eb41b682a0446f0d2b1bba35187df5a38ff76feeb4c292fa50a706"
+          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
         },
         {
           "path": "assets/voxel_game/game-assets/sprites/items/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "4fdcff176625c2909866c2da0f80c3463948e61c1d342c9665d6660155386466"
+          "sha256": "9f966ce70237edf03349ad1f160b00f10fed62a733a711559088ef123db8d246"
         },
         {
           "path": "catalog.json",
-          "sha256": "48601f7e1075f994d3700141194d72def100785bed1b1b9eb31994c34406fe1f"
+          "sha256": "9e9d98f9e63d49319f0c6777857a4c6deed23ead13e8c4a01cf67336380abe35"
         }
       ]
     },
@@ -147,22 +147,22 @@
         {
           "entry": "standalone/goblin",
           "kind": "model",
-          "sha256": "6238fc149d26614c8e636aca3106658973b1759321a192bef5eb8735ef622cf2"
+          "sha256": "83731dd180e797d9c87bc32f8aed09578ed3fd6788fddf501441b4c84a83bef0"
         }
       ],
-      "catalogHash": "bd53cd4a2e1d564e2633d814cb1a7423ff246a9b46b5b178dccb0becff68a2df",
+      "catalogHash": "cff6abc5528dd701f1e07cf496dd290da0be60ed600a83b9ab55a993e4c29efc",
       "files": [
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "b9c968f6e5cdbc43f77e994479b5f3bdfbf0fa8ede9d4a9170fc1bbf2f67a444"
+          "sha256": "db2535fabf1f7be2443ef6bb391077c7f02121838814e5b604b726dc993ef594"
         },
         {
           "path": "assets/goblin/goblin.glb",
-          "sha256": "6863f9058c1e19051450d1748d8412122847af26c3b6b2cfcf4f24cbb138acd0"
+          "sha256": "c4afe148ce63588233fd18cd77d35f03919f02757eb74b5dee89c878d208903b"
         },
         {
           "path": "catalog.json",
-          "sha256": "bd53cd4a2e1d564e2633d814cb1a7423ff246a9b46b5b178dccb0becff68a2df"
+          "sha256": "cff6abc5528dd701f1e07cf496dd290da0be60ed600a83b9ab55a993e4c29efc"
         }
       ]
     },
@@ -174,22 +174,22 @@
         {
           "entry": "standalone/griffin",
           "kind": "model",
-          "sha256": "d4c65f9336a32a6c72ec76b99baa5feaf3816f35b5318daa2a80894f1d0ed383"
+          "sha256": "6dd9728d4e175c23ab56c4c7c072b824f2110c5ff272fe24a4ed851df30ab95d"
         }
       ],
-      "catalogHash": "e22800dd054f88583f852670fbf486e5bed35df8d9531ef034956c4f2c4bb85e",
+      "catalogHash": "7780039b2793e9db3aa65144f080291356fb3fd787411e450aea5ed8a3450649",
       "files": [
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "e1e301a8c2bb08fc98f33e2cb9b3abc6f1267df22c23cd686cb2e9f4f5fc0e14"
+          "sha256": "752d8306a9e73e6b4f7e36368ae1167befd428c80a2c85fb43658e4eda20b449"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "5f2843743873158e5e99ca934d36dc24317d6508f890219b2fa78669300ae3aa"
+          "sha256": "02e255af2cf3a321a0909e7624063e69839c59d13b9f13c2eafc958edb6a673a"
         },
         {
           "path": "catalog.json",
-          "sha256": "e22800dd054f88583f852670fbf486e5bed35df8d9531ef034956c4f2c4bb85e"
+          "sha256": "7780039b2793e9db3aa65144f080291356fb3fd787411e450aea5ed8a3450649"
         }
       ]
     },
@@ -201,117 +201,117 @@
         {
           "entry": "items/amber_potion",
           "kind": "sprite",
-          "sha256": "274cdbd373e82ae59f057a83e488bc9a4b1a898c4d696c86fc41416788562361"
+          "sha256": "f28420276d0d39ead8c00c438363671714cc4113f51303a964f6b8a189ba36e2"
         },
         {
           "entry": "items/amethyst",
           "kind": "sprite",
-          "sha256": "8b1d158cdec840a1aeb065b4fcf86a87d73b0eb70c5128660291fbc1ceb91e78"
+          "sha256": "fee2ee649d235e80de3367c989653142b85926f298890f75da54667498d3860c"
         },
         {
           "entry": "items/apple",
           "kind": "sprite",
-          "sha256": "354f558399e12afb39a761b2ac2a2115e879b2010f1593b9ed41b8bf581a4b3b"
+          "sha256": "d1929d77457956cc29410d6ed90d89f4cb102eac02fd279542d7e2ff78d7ca3e"
         },
         {
           "entry": "items/blue_potion",
           "kind": "sprite",
-          "sha256": "bacd354ff4d2a61d1f79749fa4b11bbc590b35a5101d928971fd2a8279e373b8"
+          "sha256": "48b6435cd96070fb5987460e56f329441a3b25176e7306c824741fa60c338280"
         },
         {
           "entry": "items/copper_sword",
           "kind": "sprite",
-          "sha256": "8c0f3f1963658b972911fab10d25b325842952e8fceb6ef0c5e00c106095bd27"
+          "sha256": "0daa82a3dd22a9a65d2d71f07c2b96211096a04f1b4c6d823f6c7beff87c935b"
         },
         {
           "entry": "items/crystal_sword",
           "kind": "sprite",
-          "sha256": "86bbe1c26557dc06f9ed8b85a6a4263893c0e7ed7ed28726c40586cc5eccc24a"
+          "sha256": "6ed2c81c22b96fb7de2ddfe5f25f489e977181dee6fef0073c69060b60afff04"
         },
         {
           "entry": "items/golden_apple",
           "kind": "sprite",
-          "sha256": "4247f3750e3e0c8273c13ab88b491c33a690a2c8f168b0fc17e245ae2ec1c475"
+          "sha256": "16ca4a02ece9532d42febed4b2f7433278bae403ff22bd0f7b61f67d9aac6eaa"
         },
         {
           "entry": "items/green_apple",
           "kind": "sprite",
-          "sha256": "87a351bd05b1716f88075362aba9c39a8f8acfb62718be13c703914d25f2d08e"
+          "sha256": "04135721332ecf1ee517f9a92acaad959dced0b0867db8d3c046844193306bea"
         },
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "entry": "items/mossy_stone",
           "kind": "sprite",
-          "sha256": "2250c98efd9f892c4efee513ef5fac31dea87285b2e105dd35b50094640c6784"
+          "sha256": "6abd7ed9c1cf39dd84898bd9e5a2f3fdda21d35436e584af6796e46f2f26fa92"
         },
         {
           "entry": "items/oak_planks",
           "kind": "sprite",
-          "sha256": "0b4009d81c4a174790c2715765693d275ef4951d8f09e480a802faeebc6a100c"
+          "sha256": "55e1c705d2e243c40c71ee3599ea10ee46ecf9ac07125c2a6858d626ed98a72a"
         },
         {
           "entry": "items/ruby_potion",
           "kind": "sprite",
-          "sha256": "1c7873e86a4a1312d67e271022ac874ccf2eb567ac3753c1cf70ddaec2c9dc2d"
+          "sha256": "b057d3a8fb7b03221a0350badfd1d8aed6324df7afd282c74dff5ce02e3adee5"
         }
       ],
-      "catalogHash": "a73b13e5b434b0943d1b4aaf50140c45f4c32d86bb12737d25b375cdf5d72197",
+      "catalogHash": "df1ec9a33603c8284d06af53efeba1c5db1cc3638e31547c99be1ceff7e6b4fe",
       "files": [
         {
           "path": "assets/amber_potion/amber_potion.png",
-          "sha256": "274cdbd373e82ae59f057a83e488bc9a4b1a898c4d696c86fc41416788562361"
+          "sha256": "f28420276d0d39ead8c00c438363671714cc4113f51303a964f6b8a189ba36e2"
         },
         {
           "path": "assets/amethyst/amethyst.png",
-          "sha256": "8b1d158cdec840a1aeb065b4fcf86a87d73b0eb70c5128660291fbc1ceb91e78"
+          "sha256": "fee2ee649d235e80de3367c989653142b85926f298890f75da54667498d3860c"
         },
         {
           "path": "assets/apple/apple.png",
-          "sha256": "354f558399e12afb39a761b2ac2a2115e879b2010f1593b9ed41b8bf581a4b3b"
+          "sha256": "d1929d77457956cc29410d6ed90d89f4cb102eac02fd279542d7e2ff78d7ca3e"
         },
         {
           "path": "assets/blue_potion/blue_potion.png",
-          "sha256": "bacd354ff4d2a61d1f79749fa4b11bbc590b35a5101d928971fd2a8279e373b8"
+          "sha256": "48b6435cd96070fb5987460e56f329441a3b25176e7306c824741fa60c338280"
         },
         {
           "path": "assets/copper_sword/copper_sword.png",
-          "sha256": "8c0f3f1963658b972911fab10d25b325842952e8fceb6ef0c5e00c106095bd27"
+          "sha256": "0daa82a3dd22a9a65d2d71f07c2b96211096a04f1b4c6d823f6c7beff87c935b"
         },
         {
           "path": "assets/crystal_sword/crystal_sword.png",
-          "sha256": "86bbe1c26557dc06f9ed8b85a6a4263893c0e7ed7ed28726c40586cc5eccc24a"
+          "sha256": "6ed2c81c22b96fb7de2ddfe5f25f489e977181dee6fef0073c69060b60afff04"
         },
         {
           "path": "assets/golden_apple/golden_apple.png",
-          "sha256": "4247f3750e3e0c8273c13ab88b491c33a690a2c8f168b0fc17e245ae2ec1c475"
+          "sha256": "16ca4a02ece9532d42febed4b2f7433278bae403ff22bd0f7b61f67d9aac6eaa"
         },
         {
           "path": "assets/green_apple/green_apple.png",
-          "sha256": "87a351bd05b1716f88075362aba9c39a8f8acfb62718be13c703914d25f2d08e"
+          "sha256": "04135721332ecf1ee517f9a92acaad959dced0b0867db8d3c046844193306bea"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/mossy_stone/mossy_stone.png",
-          "sha256": "2250c98efd9f892c4efee513ef5fac31dea87285b2e105dd35b50094640c6784"
+          "sha256": "6abd7ed9c1cf39dd84898bd9e5a2f3fdda21d35436e584af6796e46f2f26fa92"
         },
         {
           "path": "assets/oak_planks/oak_planks.png",
-          "sha256": "0b4009d81c4a174790c2715765693d275ef4951d8f09e480a802faeebc6a100c"
+          "sha256": "55e1c705d2e243c40c71ee3599ea10ee46ecf9ac07125c2a6858d626ed98a72a"
         },
         {
           "path": "assets/ruby_potion/ruby_potion.png",
-          "sha256": "1c7873e86a4a1312d67e271022ac874ccf2eb567ac3753c1cf70ddaec2c9dc2d"
+          "sha256": "b057d3a8fb7b03221a0350badfd1d8aed6324df7afd282c74dff5ce02e3adee5"
         },
         {
           "path": "catalog.json",
-          "sha256": "a73b13e5b434b0943d1b4aaf50140c45f4c32d86bb12737d25b375cdf5d72197"
+          "sha256": "df1ec9a33603c8284d06af53efeba1c5db1cc3638e31547c99be1ceff7e6b4fe"
         }
       ]
     },
@@ -323,14 +323,14 @@
         {
           "entry": "blocks/marker",
           "kind": "model",
-          "sha256": "36d2565981a5af987d15ec9625e5a9600d90d222ece125ea2dfdf7aa488fb50c"
+          "sha256": "d3940f42c9ffabe686ad9dec2740bd573077f378bc2dbec7885e0dd304a18038"
         }
       ],
-      "catalogHash": "0e660d75f34cb01914e99d5bf8bc54a517701106d9f9ac63371a931d2c4371e9",
+      "catalogHash": "e6d14351cbf8e9d5f5527add6466ae785d20b55c99eec4773bc53363d2dc2a55",
       "files": [
         {
           "path": "assets/java_block/ashfox-lineage.json",
-          "sha256": "8231116ab3a931793dd651365c77af124ad06310c583b256a4f205a3d5754d5c"
+          "sha256": "a5f3644fb8a809f2daef491a081a73174f6a2500d3b65926bd721c615e295a87"
         },
         {
           "path": "assets/java_block/assets/demo/blockstates/props/marker.json",
@@ -342,7 +342,7 @@
         },
         {
           "path": "assets/java_block/assets/demo/textures/block/props/marker.png",
-          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
+          "sha256": "4f887cc04c8e7bcd5d796a40d3c6b84a7257faf3e0ae950f7493f84e83143357"
         },
         {
           "path": "assets/java_block/pack.mcmeta",
@@ -350,7 +350,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "0e660d75f34cb01914e99d5bf8bc54a517701106d9f9ac63371a931d2c4371e9"
+          "sha256": "e6d14351cbf8e9d5f5527add6466ae785d20b55c99eec4773bc53363d2dc2a55"
         }
       ]
     },
@@ -362,7 +362,7 @@
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "entry": "sounds/claw_hit",
@@ -381,10 +381,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
+          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
         }
       ],
-      "catalogHash": "670fc2b5747704d5568d780cfc097a2db47b6f372ddab38e9180deff35054314",
+      "catalogHash": "04553d408c62e5bd7903419d5064ea62a14d6620b8e736096669da5fc549c41a",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -396,19 +396,19 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "dea5dc1718b98c1fc9448fbd6cf3bc0563347d6c06bc43529e42fd57cbaccebb"
+          "sha256": "4341f16b9280d37452998769893830a4736f0a2cad60a2bc90ac742164a91c83"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "742da83969eb41b682a0446f0d2b1bba35187df5a38ff76feeb4c292fa50a706"
+          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "catalog.json",
-          "sha256": "670fc2b5747704d5568d780cfc097a2db47b6f372ddab38e9180deff35054314"
+          "sha256": "04553d408c62e5bd7903419d5064ea62a14d6620b8e736096669da5fc549c41a"
         }
       ]
     },
@@ -420,22 +420,22 @@
         {
           "entry": "standalone/lantern",
           "kind": "model",
-          "sha256": "fa668be082eddc5b9a49e4b736390a5dfe444a1d009e547aa1185b4280435a1c"
+          "sha256": "aaf71455761ed70f3b27ad77f9f85594796e77f0cf04d06b0435051cbd590eb4"
         }
       ],
-      "catalogHash": "d6c2da9c5ef5a7097e2b5f4d41aa4a2958617fce7466e8c9ac54cb1aae868157",
+      "catalogHash": "69f0af565f2df3875789af46343795c27db09bccd0f56d3891d37ba1da99930e",
       "files": [
         {
           "path": "assets/lantern/ashfox-lineage.json",
-          "sha256": "d308cd1232e0d53156e96ba3bb7390175bcd7f91a3d35cc00e2f8fc19ad2d942"
+          "sha256": "ec9460b5588537ce974142bfde2ead6505fbd3560e24fe8a2a5248e90780a999"
         },
         {
           "path": "assets/lantern/lantern.glb",
-          "sha256": "41521b364029ed568c256b86d2b44cd491a5b1a82d1b5a215ffd0410d0f2dd56"
+          "sha256": "4e0c6fbe42f6df7415f20ab2bc08b78207a6b3798566f258a7d33871b68dca67"
         },
         {
           "path": "catalog.json",
-          "sha256": "d6c2da9c5ef5a7097e2b5f4d41aa4a2958617fce7466e8c9ac54cb1aae868157"
+          "sha256": "69f0af565f2df3875789af46343795c27db09bccd0f56d3891d37ba1da99930e"
         }
       ]
     },
@@ -452,12 +452,12 @@
         {
           "entry": "blocks/marker",
           "kind": "model",
-          "sha256": "36d2565981a5af987d15ec9625e5a9600d90d222ece125ea2dfdf7aa488fb50c"
+          "sha256": "d3940f42c9ffabe686ad9dec2740bd573077f378bc2dbec7885e0dd304a18038"
         },
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "entry": "sounds/claw_hit",
@@ -474,7 +474,7 @@
           ]
         }
       ],
-      "catalogHash": "e3f58e1745193075e8ff45f9172ce5c83cae9ef733ec08207589931de89e3ce2",
+      "catalogHash": "8e4270dcca1d498d704afe8bb06ded2d6bce3616b32c98962ba16e1b93fa4b56",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -486,11 +486,11 @@
         },
         {
           "path": "assets/game_pack/game_pack.zip",
-          "sha256": "8dced2f3b66930934317168dd380890a47b1a2ac1c4945bae934f92b5549782c"
+          "sha256": "c7bb4d6f04c8c33f426040be11b8f1d66d2142f7d4b08ca17424f20e52bcf906"
         },
         {
           "path": "assets/game_pack/resource-pack/ashfox-lineage.json",
-          "sha256": "c7da7a791e42f43be79fd4f4f7f9425dccbd1e329255b5f799fcedf58e970eed"
+          "sha256": "3a552180599ada8f61611f2ac1850d74fd442a8ac1f71dba673457e07482fa88"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/items/rune_blade.json",
@@ -514,7 +514,7 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/textures/item/rune_blade.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/blockstates/stone.json",
@@ -534,11 +534,11 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/textures/block/stone.png",
-          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
+          "sha256": "4f887cc04c8e7bcd5d796a40d3c6b84a7257faf3e0ae950f7493f84e83143357"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/textures/item/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/game_pack/resource-pack/pack.mcmeta",
@@ -546,15 +546,15 @@
         },
         {
           "path": "assets/game_pack/resource-pack/pack.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+          "sha256": "abd3653396819c72112a3988c0ec7e89ae025aaf0ed9bdb3404fece5176ca625"
         },
         {
           "path": "assets/marker/ashfox-lineage.json",
-          "sha256": "c7da7a791e42f43be79fd4f4f7f9425dccbd1e329255b5f799fcedf58e970eed"
+          "sha256": "3a552180599ada8f61611f2ac1850d74fd442a8ac1f71dba673457e07482fa88"
         },
         {
           "path": "assets/marker/assets/minecraft/blockstates/stone.json",
@@ -566,7 +566,7 @@
         },
         {
           "path": "assets/marker/assets/minecraft/textures/block/stone.png",
-          "sha256": "d4d78bf3701d96c3910c8ca5e939530a1dcb9a221988ef9c604c2e67a7f27b99"
+          "sha256": "4f887cc04c8e7bcd5d796a40d3c6b84a7257faf3e0ae950f7493f84e83143357"
         },
         {
           "path": "assets/marker/pack.mcmeta",
@@ -574,7 +574,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "e3f58e1745193075e8ff45f9172ce5c83cae9ef733ec08207589931de89e3ce2"
+          "sha256": "8e4270dcca1d498d704afe8bb06ded2d6bce3616b32c98962ba16e1b93fa4b56"
         }
       ]
     },
@@ -586,48 +586,48 @@
         {
           "entry": "creatures/fox",
           "kind": "model",
-          "sha256": "be6fea87e8db8527d7d99806f14c596ba89dc77d40e0f4d0f5049713a2f3f2e7"
+          "sha256": "6084dec220814e1a6affd361f21abfeb548c4eb2a1779b79bc934f2c0e28112b"
         },
         {
           "entry": "creatures/goblin",
           "kind": "model",
-          "sha256": "731ed598b7395efb4fdc0ae04909131c032aa752d50d6e7a3f47080fc14d8db3"
+          "sha256": "1ffda9e7739a0515e5cc17f895c5a0addfefd50c9edbe9597fb9ce42cfe849bb"
         },
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
+          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
         }
       ],
-      "catalogHash": "4cd2444914f3e33161f0fc2776ddf65873876462939dea34ca39119c34c61f66",
+      "catalogHash": "7003b03c41e3e398216d5439cea9ea4a2cdb0fe5a114982086780ed5ab5b80ca",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "fdb663499a4d10a27134cee1ccb000d871651f963b53d144dfa1ae8769906be8"
+          "sha256": "7254ad6e1ac939550348ee0e9d4b9a93c8bbd1255a6ccc2117d57e57de9f80d3"
         },
         {
           "path": "assets/fox/fox.glb",
-          "sha256": "31a9910837ac9a33be1a5491e8b16e4c1d769ae0efc876c07a5efc5c3ca81499"
+          "sha256": "3601c6d633f4c14363ee05c1c6d67700163089518f0a5cbf5940fb0bf05bb79a"
         },
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "698c792437a2d1c7798bc5d675dbddc795aa3c64bebd7036b63ba3d7273b47fe"
+          "sha256": "15a14d4a948e79c48d2218567a6b614aaad27fa99b9c6a9a73c843382f9b85b1"
         },
         {
           "path": "assets/goblin/goblin.glb",
-          "sha256": "371530e58f5307c5ad44d1923b683388d3ca901b4dfb24f8a8e9bda56595884c"
+          "sha256": "1d7cc99fcbc3bac9f08a5f551870f7214a298b3fac76668f938f5a51c60579bf"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "ecbfb81acf3d27516b12105a5cce4abd4b36b6b9d96a1f0d413f5135dcba837a"
+          "sha256": "dd05987aee519d5ec7d522bceef8bc1914d692ad0c710ed2380a9a67bf39bb92"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "742da83969eb41b682a0446f0d2b1bba35187df5a38ff76feeb4c292fa50a706"
+          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
         },
         {
           "path": "catalog.json",
-          "sha256": "4cd2444914f3e33161f0fc2776ddf65873876462939dea34ca39119c34c61f66"
+          "sha256": "7003b03c41e3e398216d5439cea9ea4a2cdb0fe5a114982086780ed5ab5b80ca"
         }
       ]
     },
@@ -1073,46 +1073,46 @@
           "kind": "structure",
           "nbt": "0eb7c630b114fc59c887503aa590e299776f03efed097cc3fad372fa8af1412b",
           "playableMeta": "262f03f39a003ade2e4526a9c016e9868c2186540b02d34f57d55441d0e7ab97",
-          "document": "bb4331c59533959a3d816080633956a4d74908478de113d0e0811356c6156e68"
+          "document": "462ab01fff3a8210dd42049cb8eac847ff5f30f4cf687f8d1715404bc9afe904"
         },
         {
           "entry": "structures/medieval_cottage",
           "kind": "structure",
           "nbt": "269e9575eaa3b715719672ddd99da4cd44c4c631276b31e33a06e63d39fbc13e",
           "playableMeta": "edc3f0daa48b21e5c30a65489477b46de94b0759fca0b94a37d42894daa9e5c6",
-          "document": "087749e06be3f9b3ce19e192eb61b7797933bcc46208801396b3e48b67f54d17"
+          "document": "171f7598c7f3b7e23cbd310b52788dc74a2ff6073167e3c635a2f91195649c1a"
         },
         {
           "entry": "structures/tavern",
           "kind": "structure",
           "nbt": "8e8c533a8d8592b712599d4c8c06b1e43c3c83b52aada68193c1fab89143db45",
           "playableMeta": "9c78f547eca2f25504a6f0c94a641fe33935bc5f5b38ef6e5ddad834a5f533c4",
-          "document": "8f43f0faa8c4249f8edc6a0cac2be39295d5be797d8a5199ed3f12c705229731"
+          "document": "9b20560147cb60f32679b040427fd41fc3d35c85bd304755d2b9ffe0aaa256ee"
         },
         {
           "entry": "structures/village_compound",
           "kind": "structure",
           "nbt": "58862ea5c3716584a8589a7ba143c3a4b6ca52931436999ee9f2a3232e4a6f1e",
           "playableMeta": "ea3df66548a59ac5d40fe249b2f992b8cf35974b9b5faa1d002c8fce23bc457e",
-          "document": "23b7971053aad478350fd405804227503775a3f93452e997b50d25b699d09416"
+          "document": "c4f1b5f49794e9f07f8fbafdd342921407ff727154ecd883f57066b95cba7d1c"
         },
         {
           "entry": "structures/watchtower",
           "kind": "structure",
           "nbt": "877324c6813a32a790d54c776fa3072fbde64ff72450abd619c861ee06f1ec60",
           "playableMeta": "0042767c92032d56785a95b05ddfd5bbe7f2560eccb2683ea476ad7c711386b4",
-          "document": "3fe179785a46ef59c1b3df71db2edcf04c5f6f8eeb12b0c66e8cbc906e46455a"
+          "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "2265a6d7389dc70bec60d0e5f42ab47f7ba13416110100284d494f66c096bfae",
+      "catalogHash": "9deae2f9cb2114769120f1c97d58506500ce20900af37d53ae2d6097f514f6d0",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
-          "sha256": "5f64707929bcd6420e1a15829aa2f255e2bf7c2a51c9db6dedd07c9c79d1a517"
+          "sha256": "7a034545830788f6d0b214365a6e1f8bdb2a893dc9c191566e3085dbf6d3e2ee"
         },
         {
           "path": "assets/blacksmith_glb/blacksmith_glb.glb",
-          "sha256": "8d2db423103e377e943292a1d9862bbf667bcc26fa9f8c7f371efc2217068376"
+          "sha256": "847163402162d476f1da6f417bc8fe88545bc8cd3fe781db94c371ca90ee5e23"
         },
         {
           "path": "assets/blacksmith_glb/blacksmith_glb.structure.json",
@@ -1124,11 +1124,11 @@
         },
         {
           "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
-          "sha256": "377bf4f9bb6261b772ca8ca0fbb10c5de86cc469bd99badc9895b3c56ef9f669"
+          "sha256": "d9013ac7b463c9b42a6c11f7d6e374510656f5ecd86adce400f12030d811cd20"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
-          "sha256": "8ceeacca81cade15d9d6f88391742cc0cfb8b65080248fa68cc8dc936e9deeec"
+          "sha256": "044aa25c98705746dc79f66b0773d4125ef67d9503f96d0e1c4d7802c19f69cb"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.structure.json",
@@ -1140,11 +1140,11 @@
         },
         {
           "path": "assets/tavern_glb/ashfox-lineage.json",
-          "sha256": "313c74feca96b43dd908b66fb650ec1cd917ba43290cfc5316430835f34d5222"
+          "sha256": "7896a964d6645eec4e8d776a70250f3d40d4ee422bf820ee7701e6704f0e9d3b"
         },
         {
           "path": "assets/tavern_glb/tavern_glb.glb",
-          "sha256": "d5afe45cdc204d9f22f7e1ae2436e7135b7577eedec94358106259776cb8d32b"
+          "sha256": "67dd33b0f1eb752361edd1726fbb5ae2001c14c950afb723e8e29041e3fee298"
         },
         {
           "path": "assets/tavern_glb/tavern_glb.structure.json",
@@ -1156,11 +1156,11 @@
         },
         {
           "path": "assets/village_compound_glb/ashfox-lineage.json",
-          "sha256": "40d5539963c6f2ab8bd8a5d9a1dae3f824bba5d99f5a2256f78693330f8738a3"
+          "sha256": "da7037ad541f044305ceb8d9969bb10bf0e7243e5aff11adb00b57e995f2d777"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.glb",
-          "sha256": "42a4bd56c58ec135b316cad57bd22ee791fb69d638a15bdd3393b9d291377446"
+          "sha256": "9d9dce2b38be7df87b254e5878f24644847da5b9a9d338aaec7326ac41edbb0d"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.structure.json",
@@ -1172,11 +1172,11 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "c7e2e5dd835d5b091fd26da03ae61e62935c9baa3cf6c331b9266b5bd4f9f5b7"
+          "sha256": "7caccc06e16867da3c34f0a7424919d65358c676d124cb7c69bdc7b4fd484a12"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
-          "sha256": "8d2db423103e377e943292a1d9862bbf667bcc26fa9f8c7f371efc2217068376"
+          "sha256": "dce73d0f9cb2f079dbe80d84287123f2a31d8f9c732339c42546218ff0f0a560"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.structure.json",
@@ -1184,7 +1184,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.glb",
-          "sha256": "8ceeacca81cade15d9d6f88391742cc0cfb8b65080248fa68cc8dc936e9deeec"
+          "sha256": "1266dd1cc237555d68d4680f577f86394c10a54e44db53fcd5d36e99a853207c"
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.structure.json",
@@ -1192,7 +1192,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.glb",
-          "sha256": "d5afe45cdc204d9f22f7e1ae2436e7135b7577eedec94358106259776cb8d32b"
+          "sha256": "cc705b6a38c97ecc42d506417a02dc1b80dcd17d525ca250a0d0eff84e471a28"
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.structure.json",
@@ -1200,7 +1200,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.glb",
-          "sha256": "42a4bd56c58ec135b316cad57bd22ee791fb69d638a15bdd3393b9d291377446"
+          "sha256": "661c99ef5414eecd71971cbc7b4b63d198b46824d1bbe23fe8b430a199626026"
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.structure.json",
@@ -1208,23 +1208,271 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/watchtower/watchtower_glb.glb",
-          "sha256": "aec21ce4e63bb4bd7abb047bdaab2eaf702426cf335917d0e7030620952236d1"
+          "sha256": "27d89b3577e50bf59c8da690f72be8440b9e6dae5d02389658c6233e3b9def7f"
         },
         {
           "path": "assets/village_pack/game-assets/structures/watchtower/watchtower_glb.structure.json",
           "sha256": "52a3fcb9f2679fe6de37549933acf4e3cf10d60423cf6c49a1b539b56bf0e406"
         },
         {
+          "path": "assets/village_pack/game-assets/textures/02915d679abe.png",
+          "sha256": "02915d679abe4d2d1d5f9911b1859202fa15d81324bcb14b1c169d493c3bb7d5"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/029f29c3e30a.png",
+          "sha256": "029f29c3e30a48cd5a950896cdac3d0ed02685591b84445fd59c8e52da0e8323"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/07cc516742fb.png",
+          "sha256": "07cc516742fba5245b8c84d149ade0b93eea3c4a3c3acfe449d49737abc8af92"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/09e09b0574a5.png",
+          "sha256": "09e09b0574a526ca00a1a1f768f3a54add0d50924e947ac806abbcd6410d1c28"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/0cf468c3a9f9.png",
+          "sha256": "0cf468c3a9f92801981041d4fc0979ec5e734526776453ca61eaf66b731b3fd6"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/1610e93a077e.png",
+          "sha256": "1610e93a077e7cd37d720f24c0e858f59068f317ac28dfb6db95dd76e75a7ee4"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/1aa0b852e6e2.png",
+          "sha256": "1aa0b852e6e22623c918c8781fb0761b084f86864e4a555e23ddcfbe076bd230"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/201ee69583e4.png",
+          "sha256": "201ee69583e41fe142e641ebe0cc6dbc10247fcece0127e52177ef9bad98d07c"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/31544f548ab0.png",
+          "sha256": "31544f548ab0fed7870c85b4ab7c9bb283d8ac329b4bc069616e77cb357f12e3"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/371541d030a0.png",
+          "sha256": "371541d030a03911bf428dbaf39a91255d8e8850b15de810bb506839e8486587"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/41b3741b32e4.png",
+          "sha256": "41b3741b32e48d64acf0238dc147c87ec380b745bb17d2a3167d503e8fff7dc8"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/43ae0ceca91a.png",
+          "sha256": "43ae0ceca91ada6c3e39ed26d06a10b8209cb092a15fb99ce39aebca266f6301"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/46715bc7c529.png",
+          "sha256": "46715bc7c5293a00d40960e6deab6ab1c664660af9add8f335ea323602484740"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/48efeb687a1b.png",
+          "sha256": "48efeb687a1bbefe246489caef011a6ad4b3efcf064757437e8e2acfb16efee4"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/4d27ccbf11b0.png",
+          "sha256": "4d27ccbf11b0b946fdc73f7477991f040c50148407c733b250f46cc00e88626b"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/5e80402d90f0.png",
+          "sha256": "5e80402d90f0978af8e65a6545885fa30fc73fbe15576207ada598b354dc8163"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/639dbfe05fad.png",
+          "sha256": "639dbfe05fad0597348ba2e41178351ce96345f8bb7835565ffb7cde0fbcc6ab"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/64db227c8556.png",
+          "sha256": "64db227c855625219edbc2bc477ade4bd60b6155a54071737a04263ba3ed9028"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/652a60e4c382.png",
+          "sha256": "652a60e4c3827949f23c6d88bd7a78a1204c766bd18d8c78ddf91c0e3f71fbe9"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/69c15443b15f.png",
+          "sha256": "69c15443b15f1c489c6829d2354c7be4036a06c2e8bb1cc50f815cd4233ca6f6"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/70d22f3eafb2.png",
+          "sha256": "70d22f3eafb2c42033c8e2223d5e650afb7b2fd6d89b32bc131abfb2cf40d5d6"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/735c4fa9ea5d.png",
+          "sha256": "735c4fa9ea5db9e2d2ab206ecd364a826e2a9208fa7d15fb13875d86bf96d7e1"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/7413d86703b1.png",
+          "sha256": "7413d86703b1be01f6657925b55e92f2fa5643c3a9fbec9fdfdbc61ebcc795f5"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/7d4e2c801b67.png",
+          "sha256": "7d4e2c801b6712801b11bab001203777bacc709b5b066ea4305bc5411cd01378"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/827e778de33c.png",
+          "sha256": "827e778de33c3a6180802fd51648583f383510d63a0397b10d457a6931b9515a"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/8874f24b16f3.png",
+          "sha256": "8874f24b16f322996d12a387e0a2544f349251b64934100b307810adb3bfb9cb"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/8b2eb30dec86.png",
+          "sha256": "8b2eb30dec86d0d60477b680cdd3e196e5e68b172447c8f8aaa71c6560590c94"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/8bf2cff85673.png",
+          "sha256": "8bf2cff85673830dccbc47ea60abe4d8b7dd3a1d6efaa5c9bef3a8a15131700b"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/8cd5df45a690.png",
+          "sha256": "8cd5df45a690864dc0b7ffcf78bcc0318230bd5e32ab2ec82a1a43d1724799f2"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/8e0f654f1fe1.png",
+          "sha256": "8e0f654f1fe12dda8d268bcb33b10c003ab912c21b9050845535ff6a793d8122"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/90fc3d7b88ba.png",
+          "sha256": "90fc3d7b88ba85880bcc2fa899995966a767eaf75328547594ff4332137f8960"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/92b2374c3b18.png",
+          "sha256": "92b2374c3b18ca86e12e98a44f539b16dc89defede1887ce9d7bd5b4fe88e7e3"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/941f51d3e699.png",
+          "sha256": "941f51d3e6993bcde4a83fff9d89a70477d5dd973d30bf5d57a54aefdd431cc4"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/96c2d9125efa.png",
+          "sha256": "96c2d9125efafaa19c774d94b2d164c1102d1112c884c76b35534be58042a007"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/97246db297a8.png",
+          "sha256": "97246db297a8f5662e2493f4854f0d9e76eae7221b54ed42d19b9c01e2cb6bca"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/9c0bc49e8101.png",
+          "sha256": "9c0bc49e8101cf3d5f290c153691b8f9c8384359fb55674665634e8e88f9c9f0"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/a08daf7ff693.png",
+          "sha256": "a08daf7ff6939ff477d113bb9b93ad0c893f43f9d3291b5cef526ddfe5797284"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/a26789ad23d4.png",
+          "sha256": "a26789ad23d43ece6fbababec027ba171c99193c831651dbd0f3fe022c5e76cb"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/a370ac8ee9e0.png",
+          "sha256": "a370ac8ee9e079ceca08ed4c51015ace8111593cc89e8fc44f585de483057fe5"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/a48337bf0782.png",
+          "sha256": "a48337bf078222d02865b36f3279fff0a85a43b3280f084ab404b2891f381893"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/ab296f79b9d2.png",
+          "sha256": "ab296f79b9d24b5283f69a04bdd819779e3ffab86bc2ee779775f253fa2f6661"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/b0957a47ddaf.png",
+          "sha256": "b0957a47ddafe127105c329da5f46ce6915e09689271dd232baad989a717666e"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/b138cc4f0bbd.png",
+          "sha256": "b138cc4f0bbd0f300f24ad8a4197c1794ed559e4ceebbb60a6fc1324ff9ad85d"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/b3558b06ed47.png",
+          "sha256": "b3558b06ed47f1bfc87ca8c3bf36b7ff44f9e3e29580af05e374754c1deccb67"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/bc8037f3efba.png",
+          "sha256": "bc8037f3efba2054b2e4f3d4f0487e24a3614f133d6ddb744e8ade851344cef5"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/c2451e970e25.png",
+          "sha256": "c2451e970e25ef8aff732824a08547408af4940a962383328ca2b83826939e06"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/ca135fdd41a3.png",
+          "sha256": "ca135fdd41a3d040626f9e81ef027e5bbf354eb2219731c6f6dd8b2fcd2ba333"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/cc15045b2bb8.png",
+          "sha256": "cc15045b2bb8ee5189b83b4c01f821f1530e70e1c02a5acc88da127e6584ec3e"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/cd0a798b7601.png",
+          "sha256": "cd0a798b7601dd15165927a913c598547d474712b04f18cc0a4d0973b234c967"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/cd4df1cacadd.png",
+          "sha256": "cd4df1cacadd3f249dc4644e14c31769d0770fac1cc5b186b04fdabc7b7f7de4"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/cfce56b25601.png",
+          "sha256": "cfce56b25601ce40f433b8a7f5be2db741e9f34b923b84ea98133b8dd847223d"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/d4fb831a44ea.png",
+          "sha256": "d4fb831a44ea687ffb263d70bf8b122d894accc6faf0a007299ea6080046ee8e"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/dcf05cf703e1.png",
+          "sha256": "dcf05cf703e1e4b27eb222b9ebef5d00c7ffd9485b0996d3ace9bf937c60eb20"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/dd6f9fe4b8ab.png",
+          "sha256": "dd6f9fe4b8abfc496b9f714c861391f6a1f95766f6142b72be811b2d9cebabd2"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/dd8ad80976b2.png",
+          "sha256": "dd8ad80976b27644e458d0c1556c51449598998f8914b165af8b61fe7e82d0d6"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/e1cb57ca6bf3.png",
+          "sha256": "e1cb57ca6bf3f6354343c7c9b04500379b8fe864b9c8f26eb645ce61201eaa20"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/e598a1000d1e.png",
+          "sha256": "e598a1000d1e8c265f5f4a67b0cdcdf87ff330b942653c43dfa07feadc70394a"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/ec172904c59c.png",
+          "sha256": "ec172904c59cf5cbb5bf5256627ab63740a9d92279a028fcfef6f6c00e53ffd0"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/eddc0d60ad87.png",
+          "sha256": "eddc0d60ad874c84df26b3b8eed5755ed53dbbc74e44947c7b3e6c8e2500bb57"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/f644bf36d030.png",
+          "sha256": "f644bf36d0306fbf3436d18e3dad389e9ab51b6ef14bbd206a1e77c1a467c88b"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/fbefbf4a0914.png",
+          "sha256": "fbefbf4a091472d8c863a568c22042bb9dc338752b7e5f4bc35f50e4faacc6bf"
+        },
+        {
+          "path": "assets/village_pack/game-assets/textures/fc4b1b1b2002.png",
+          "sha256": "fc4b1b1b2002e59c368da3cb976a4efbd3daeaf300d535fb77b297e465cce85e"
+        },
+        {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "426e95c8452d04a45f7fdfd7861baf68f85e4b78a214fc650b9c4ef5d1ae04c1"
+          "sha256": "2303615fa7dee951c84cbf95a307fc05b4bafd35946c81be6383cae4065176e9"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
-          "sha256": "9571bd57b55e654e38ca00d96f4a82917691adfef6481bd1ebfc4cf2147cbce2"
+          "sha256": "7c1b2fabe61fe5a09c03a3a710655401aa57bfecf2fee101a245202fc717d5c8"
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.glb",
-          "sha256": "aec21ce4e63bb4bd7abb047bdaab2eaf702426cf335917d0e7030620952236d1"
+          "sha256": "4e5e63ca842eab7f84df317933796e8a2119d802d283ae9ccbcca043051f136f"
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.structure.json",
@@ -1236,7 +1484,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "2265a6d7389dc70bec60d0e5f42ab47f7ba13416110100284d494f66c096bfae"
+          "sha256": "9deae2f9cb2114769120f1c97d58506500ce20900af37d53ae2d6097f514f6d0"
         }
       ]
     }
