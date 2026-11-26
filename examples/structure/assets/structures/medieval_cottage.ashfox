@@ -1,0 +1,126 @@
+ashfox-model 1
+structure medieval_cottage {
+  import "../module/furnishings.ashfox" as deco;
+  import "../models/props/wall_lantern.ashfox" as custom_lantern;
+  import "../models/props/rune_pillar.ashfox" as custom_pillar;
+  import "../models/props/hanging_sign.ashfox" as custom_sign;
+
+  density = 2;
+  seed = 101;
+  size = (15, 17, 15);
+  data_version = 3955;
+
+  params {
+    w = 15;
+    d = 15;
+    mid_x = floor(w / 2);
+  }
+
+  outputs {
+    java_structure;
+    glb;
+  }
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    cobble = mix("minecraft:cobblestone" * 0.7, "minecraft:mossy_cobblestone" * 0.3);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    stone_brick = mix("minecraft:stone_bricks" * 0.75, "minecraft:cracked_stone_bricks" * 0.15, "minecraft:mossy_stone_bricks" * 0.1);
+    plaster = mix("minecraft:white_terracotta" * 0.85, "minecraft:calcite" * 0.15);
+    timber = "minecraft:spruce_log[axis=y]";
+    beam = "minecraft:spruce_log[axis=x]";
+    oak_floor = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    roof_stair = "minecraft:spruce_stairs";
+    trim_stair = "minecraft:dark_oak_stairs";
+    ridge = "minecraft:spruce_slab[type=bottom]";
+    porch_stair = "minecraft:cobblestone_stairs[facing=north,half=bottom]";
+    porch_floor = "minecraft:stone_bricks";
+    oak_stair = "minecraft:oak_stairs";
+    fence = "minecraft:spruce_fence";
+    glass = "minecraft:glass_pane";
+    sill = "minecraft:spruce_slab[type=top]";
+    shutter = "minecraft:oak_trapdoor[facing=south,half=bottom,open=true]";
+    door = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
+    chimney_brick = "minecraft:bricks";
+    carpet = "minecraft:red_carpet";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = asset custom_lantern as "minecraft:lantern[hanging=false]";
+    pillar = asset custom_pillar as "minecraft:chiseled_stone_bricks";
+    sign = asset custom_sign as "minecraft:oak_wall_sign[facing=south]";
+  }
+
+  build {
+    floor ground y = 0 height = 4 {
+      room hall from = (1, 1) size = (8, 11) kind = living plinth = cobble floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+      room kitchen from = (8, 1) size = (6, 11) kind = workshop plinth = cobble floor = stone_brick wall = plaster frame = timber ceiling = spruce_plank;
+
+      facade on hall.south {
+        door at = center width = 1 height = 2 block = door hinge = left frame = timber lintel = beam porch {
+          depth = 2;
+          floor = porch_floor;
+          pillars = timber;
+          lamps = lantern;
+          steps = porch_stair;
+        }
+        window at = 2 width = 1 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+
+      facade on hall.east {
+        arch at = center width = 2 height = 3 frame = timber lintel = beam;
+      }
+
+      facade on hall.west, kitchen.east, hall.north, kitchen.north, kitchen.south {
+        window at = center width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+    }
+
+    floor loft y = 4 height = 4 {
+      room bedroom from = (1, 1) size = (13, 11) kind = bedroom floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+
+      facade on bedroom.south, bedroom.north {
+        window symmetric = 3 width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+    }
+
+    staircase in_room = hall style = l_turn at = (3, 7) y_from = 0 y_to = 4 facing = north width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
+
+    roof on = bedroom style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
+      dormer wall = south offset = 0 width = 3 height = 3 window = glass;
+      chimney room = kitchen corner = ne offset = (1, 1) width = 2 rise = 4 block = chimney_brick cap = true;
+    }
+
+    furnish room = hall {
+      place_anchor prefab = deco.StudyCorner on = nw offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = kitchen {
+      place_anchor prefab = deco.KitchenHearth on = ne offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = bedroom {
+      place_anchor prefab = deco.CozyBedroom on = nw offset = (0, 0) rotate = 0;
+      place_anchor prefab = deco.DiningTable on = se offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    weathering {
+      ground_moss height = 2 target = cobble into = moss_cobble rate = 0.35;
+      corner_quoin target = plaster corners = stone_brick;
+      chimney_soot radius = 2 rate = 0.4;
+      eave_shadow target = plaster into = stone_brick rate = 0.2;
+    }
+
+    box from = (4, 1, 8) to = (6, 1, 10) block = carpet;
+    set at = (2, 1, 12) block = pillar;
+    set at = (mid_x + 2, 2, 12) block = sign facing = south;
+
+    socket front_entry kind = entry room = hall wall = south normal = south pool = "village:streets" target = "road_join";
+    socket east_path kind = road at = (w - 1, 0, floor(d / 2)) normal = east pool = "village:streets" target = "road_join";
+  }
+}

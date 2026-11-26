@@ -1,0 +1,109 @@
+ashfox-model 1
+asset rune_pillar {
+  export rig contract PillarRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+
+  export skeleton PillarSkeleton implements PillarRig {
+    bind root {
+      parent-origin = (0u, 0u, 0u);
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export surface contract PillarSurface {
+    chart base box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart shaft box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    chart finial box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface rune_stone: PillarSurface {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 2;
+      render-mode = emissive;
+      background = dark;
+      background-alpha = 255;
+      palette {
+        dark = (#2b303a, #3e4554, #576073);
+        stone = (#4b5261, #6c7587, #95a0b5);
+        brass = (#7a551c, #c48c2f, #f5cb5c);
+        cyan = (#176e6a, #32bfb5, #96fff7);
+      }
+      stamp rune {
+        pixels = ".cccc./cc..cc/..cc../..cc../cc..cc/.cccc.";
+        c = cyan;
+      }
+      chart base box {
+        fill = dark;
+        grain = clustered;
+        pattern border { paint = brass; width = 1px; edges = top; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart collar box {
+        fill = stone;
+        grain = clustered;
+        pattern border { paint = brass; width = 1px; edges = all; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart shaft box {
+        fill = stone;
+        grain = clustered;
+        pattern border { paint = dark; width = 1px; edges = all; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        face north { stamp rune { at = (4px, 4px); protect = true; } }
+        face south { stamp rune { at = (4px, 4px); protect = true; } }
+        face east { stamp rune { at = (4px, 4px); protect = true; } }
+        face west { stamp rune { at = (4px, 4px); protect = true; } }
+      }
+      chart cap box {
+        fill = dark;
+        grain = clustered;
+        pattern border { paint = brass; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+      }
+      chart finial box {
+        fill = brass;
+        grain = none;
+        pattern ao { strength = 0.25ratio; radius = 0.4u; }
+      }
+      grain clustered { seed = 911; }
+      tone painterly;
+    }
+  }
+
+  export component Pillar {
+    requires rig skel: PillarRig;
+    requires surface skin: PillarSurface;
+    bind bone root to skel.root;
+    geometry {
+      bone root {
+        cube plinth { origin = (-7u, 0u, -7u); size = (14u, 2u, 14u); surface = skin.base; }
+        cube lo_collar { origin = (-6u, 2u, -6u); size = (12u, 2u, 12u); surface = skin.collar; }
+        cube shaft { origin = (-5u, 4u, -5u); size = (10u, 8u, 10u); surface = skin.shaft; }
+        cube hi_collar { origin = (-6u, 12u, -6u); size = (12u, 2u, 12u); surface = skin.collar; }
+        cube cap { origin = (-7u, 14u, -7u); size = (14u, 2u, 14u); surface = skin.cap; }
+        cube finial_fl { origin = (-6.5u, 15.5u, -6.5u); size = (2u, 2u, 2u); rotation = (0deg, 45deg, 0deg); pivot = (-5.5u, 16u, -5.5u); mirror-x = finial_fr; surface = skin.finial; }
+        cube finial_bl { origin = (-6.5u, 15.5u, 4.5u); size = (2u, 2u, 2u); rotation = (0deg, 45deg, 0deg); pivot = (-5.5u, 16u, 5.5u); mirror-x = finial_br; surface = skin.finial; }
+      }
+    }
+  }
+
+  export asset rune_pillar {
+    settings { density = 16; forward = north; profile = prop; }
+    skeleton = PillarSkeleton;
+    use Pillar as body { bind skel = PillarRig; bind skin = rune_stone; };
+  }
+}

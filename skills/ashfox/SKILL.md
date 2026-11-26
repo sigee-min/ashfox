@@ -57,8 +57,7 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
 - Save or build the outputs requested by the user (`outputs { ... }`). Report exact output locations,
   `check` audit score/profile, what views were inspected/rendered, and any behavior still unverified in
   the receiving game. Do not claim successful output from a preflight check alone.
-- For Minecraft/GLB buildings (`structure <id>`), `outputs { java_structure; glb; }` builds both Java `.nbt` and `1 block = 1.0m` GLB (standalone default), embed custom `.ashfox` props
-  via `palette` (`asset alias as "minecraft:..."`), and inspect furnished rooms with a declared `preview ... { cutaway = <y>; }` rendered via `ashfox render --view <name>`.
+- For Minecraft/GLB buildings (`structure <id>` or `compound <id>` under `assets/structures/`), author with `density = 2`, `seed`, `mix(...)` material palettes, semantic `floor`/`room`/`facade`/`staircase`/`roof`/`furnish`/`weathering`/`socket`/`compound_place` ops, and Lv4 custom props (`assets/models/props/*.ashfox`) via `palette` (`asset alias as "minecraft:..."`). `outputs { java_structure; glb; }` builds `.nbt`, baked Voxel AO/lightmap `1 block = 1.0m` `.glb`, and `.structure.json` (`PlayableStructureMeta`), which `game_assets` packs can bind directly. Inspect exteriors, per-floor horizontal sections, and interior eye-level views with `preview ... { sheet = exterior | cutaway | interior; }` (or `cutaway = <y>`) rendered via `ashfox render --view <name>`, and hit 0 failed Hard Gates (`playable_circulation`, `weatherproof_enclosure`, etc.) with `audit.score >= 75` (target `>= 85`).
 
 ## Skill updates
 
