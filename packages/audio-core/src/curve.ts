@@ -1,21 +1,75 @@
-import type { Control, SoundVoice } from './contract';
+import type { Control, Curve, SoundVoice } from './contract';
 
 export const frame = (seconds: number): number => Math.floor(seconds * 48000 + 0.5);
 
+interface CurveSegment {
+  readonly startAt: number;
+  readonly endAt: number;
+  readonly dt: number;
+  readonly aValue: number;
+  readonly bValue: number;
+  readonly logA: number;
+  readonly logB: number;
+}
+
+interface CompiledCurve {
+  readonly isLog: boolean;
+  readonly isSmooth: boolean;
+  readonly segments: readonly CurveSegment[];
+  index: number;
+}
+
+const compiledCurves = new WeakMap<Curve, CompiledCurve>();
+
+const compileCurve = (curve: Curve): CompiledCurve => {
+  const isLog = curve.domain === 'log';
+  const points = curve.points;
+  const segments: CurveSegment[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i]!;
+    const b = points[i + 1]!;
+    segments.push({
+      startAt: a.at,
+      endAt: b.at,
+      dt: b.at - a.at,
+      aValue: a.value,
+      bValue: b.value,
+      logA: isLog ? Math.log(a.value) : 0,
+      logB: isLog ? Math.log(b.value) : 0,
+    });
+  }
+  return { isLog, isSmooth: curve.interpolation === 'smooth', segments, index: 0 };
+};
+
+const selectSegment = (compiled: CompiledCurve, u: number): CurveSegment => {
+  const { segments } = compiled;
+  const lastSeg = segments.length - 1;
+  if (lastSeg === 0) return segments[0]!;
+  let index = compiled.index;
+  if (index > 0 && !(u > segments[index]!.startAt)) {
+    index = u <= segments[0]!.endAt ? 0 : index - 1;
+    while (index > 0 && !(u > segments[index]!.startAt)) index--;
+  }
+  while (index < lastSeg && u > segments[index]!.endAt) index++;
+  compiled.index = index;
+  return segments[index]!;
+};
+
 export const evaluate = (control: Control, u: number): number => {
   if (typeof control === 'number') return control;
-  const points = control.points;
-  let index = 0;
-  while (index < points.length - 2 && u > points[index + 1].at) index++;
-  const a = points[index],
-    b = points[index + 1];
-  const v = Math.max(0, Math.min(1, (u - a.at) / (b.at - a.at)));
-  const w = control.interpolation === 'smooth' ? v * v * (3 - 2 * v) : v;
-  if (w === 0) return a.value;
-  if (w === 1) return b.value;
-  return control.domain === 'log'
-    ? Math.exp(Math.log(a.value) * (1 - w) + Math.log(b.value) * w)
-    : a.value * (1 - w) + b.value * w;
+  let compiled = compiledCurves.get(control);
+  if (!compiled) {
+    compiled = compileCurve(control);
+    compiledCurves.set(control, compiled);
+  }
+  const seg = selectSegment(compiled, u);
+  const v = Math.max(0, Math.min(1, (u - seg.startAt) / seg.dt));
+  const w = compiled.isSmooth ? v * v * (3 - 2 * v) : v;
+  if (w === 0) return seg.aValue;
+  if (w === 1) return seg.bValue;
+  return compiled.isLog
+    ? Math.exp(seg.logA * (1 - w) + seg.logB * w)
+    : seg.aValue * (1 - w) + seg.bValue * w;
 };
 
 export const bounds = (control: Control): readonly [number, number] =>

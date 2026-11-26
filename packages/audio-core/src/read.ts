@@ -6,7 +6,7 @@ import {
   type SoundVary,
   type SoundVoice,
 } from './contract';
-import { validatePlan } from './plan';
+import { validatePlan, type SoundBudget } from './plan';
 import { readControl, readGainControl, readSource, readVoiceFilter } from './readSource';
 import { bool, choice, closed, fail, freeze, id, list, number, ordered } from './validate';
 
@@ -222,7 +222,9 @@ const readRecipeVariants = (rawVariants: unknown): SoundRecipe['variants'] => {
   });
 };
 
-export const readRecipe = (input: unknown): SoundRecipe => {
+export const readRecipeWithBudget = (
+  input: unknown,
+): { readonly recipe: SoundRecipe; readonly budget: SoundBudget } => {
   const root = closed(input, ROOT_REQUIRED, 'recipe', ['channels', 'space']);
   const recipeId = id(root.id, 'recipe.id');
   const profile = choice(root.profile, SOUND_PROFILES, 'recipe.profile');
@@ -259,6 +261,8 @@ export const readRecipe = (input: unknown): SoundRecipe => {
     sequences,
     playback,
   };
-  validatePlan(normalized);
-  return freeze(normalized) as SoundRecipe;
+  const budget = validatePlan(normalized);
+  return { recipe: freeze(normalized) as SoundRecipe, budget };
 };
+
+export const readRecipe = (input: unknown): SoundRecipe => readRecipeWithBudget(input).recipe;

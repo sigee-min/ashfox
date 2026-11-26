@@ -1,4 +1,5 @@
 import type { SoundRecipe, SoundVariant } from './contract';
+import { createChirp } from './chirp';
 import { evaluate, frame } from './curve';
 import { evaluateGain } from './envelope';
 import { createSvf } from './filter';
@@ -47,13 +48,14 @@ export const measure = (pcm: Float64Array, channels: 1 | 2 = 1) => {
 const createSourceSampler = (event: Event, rate: number): ((i: number) => number) => {
   const { voice, frames: length } = event;
   const source = voice.source;
+  const invLen = 1 / Math.max(1, length - 1);
   const bipolar = (domain: 'noise' | 'breath' | 'jitter' | 'trill-phase') => {
     const r = event.stream(domain);
     return () => r() * 2 - 1;
   };
   if (source.kind === 'osc') {
     const osc = createOsc(source, rate, event.pitch);
-    return (i) => osc(i / Math.max(1, length - 1));
+    return (i) => osc(i * invLen);
   }
   if (source.kind === 'fm') {
     const fm = createFm(source, length, event.pitch);
@@ -61,11 +63,11 @@ const createSourceSampler = (event: Event, rate: number): ((i: number) => number
   }
   if (source.kind === 'vocal') {
     const vocal = createVoice(source, rate, event.pitch, bipolar('jitter'), bipolar('breath'));
-    return (i) => vocal(i / Math.max(1, length - 1));
+    return (i) => vocal(i * invLen);
   }
   if (source.kind === 'chirp') {
     const chirp = createChirpForEvent(event, rate, bipolar);
-    return (i) => chirp(i / rate, i / Math.max(1, length - 1));
+    return (i) => chirp(i / rate, i * invLen);
   }
   if (source.kind === 'resonator') {
     return createResonator(source, event.pitch, event.stream('excitation'));
@@ -73,7 +75,6 @@ const createSourceSampler = (event: Event, rate: number): ((i: number) => number
   return createNoise(source, rate, event.stream('noise'));
 };
 
-import { createChirp } from './chirp';
 const createChirpForEvent = (
   event: Event,
   rate: number,
@@ -144,8 +145,9 @@ const renderEventInto = (
   const angle = (((voice.pan ?? 0) + 1) * Math.PI) / 4;
   const panL = channels === 2 ? Math.cos(angle) : 1;
   const panR = channels === 2 ? Math.sin(angle) : 0;
+  const invLen = 1 / Math.max(1, length - 1);
   for (let i = 0; i < length; i++) {
-    const u = i / Math.max(1, length - 1);
+    const u = i * invLen;
     const sig = applyVoiceFilters(voice, sampler(i), u, hp, svf, lp, drive, driveNorm);
     const sample = sig * evaluateGain(voice.gain, i, length, rate) * event.gain;
     if (!Number.isFinite(sample)) fail(event.path, `non-finite DSP sample at frame ${i}`);
@@ -153,20 +155,33 @@ const renderEventInto = (
   }
 };
 
+const assertFiniteSamples = (pcm: Float64Array): void => {
+  for (let i = 0; i < pcm.length; i++) {
+    if (!Number.isFinite(pcm[i])) throw new Error('sound.nonfinite: non-finite PCM');
+  }
+};
+
+export const renderValidatedRecipe = (recipe: SoundRecipe, variantId?: string): Float64Array => {
+  const variant =
+    variantId === undefined ? recipe.variants[0] : recipe.variants.find((v) => v.id === variantId);
+  if (!variant) return fail('recipe.variants', 'renderer variant must be declared');
+  const rate = recipe.sampleRate;
+  const channels = recipe.channels ?? 1;
+  const result = new Float64Array(frame(recipe.duration) * channels);
+  for (const event of schedule(recipe, variant)) renderEventInto(event, rate, channels, result);
+  const spaced = applySpace(result, channels, rate, recipe.space);
+  assertFiniteSamples(spaced);
+  return spaced;
+};
+
 export const render = (
   input: SoundRecipe,
   variant: SoundVariant = input.variants[0],
 ): Float64Array => {
   const recipe = readRecipe(input);
-  const rate = recipe.sampleRate;
-  const channels = recipe.channels ?? 1;
   if (!recipe.variants.some((v) => v.id === variant.id && v.seed === variant.seed))
     fail('recipe.variants', 'renderer variant must be declared');
-  const result = new Float64Array(frame(recipe.duration) * channels);
-  for (const event of schedule(recipe, variant)) renderEventInto(event, rate, channels, result);
-  const spaced = applySpace(result, channels, rate, recipe.space);
-  measure(spaced, channels);
-  return spaced;
+  return renderValidatedRecipe(recipe, variant.id);
 };
 
 export const master = (
