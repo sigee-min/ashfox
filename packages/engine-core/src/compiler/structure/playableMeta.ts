@@ -359,6 +359,29 @@ const NON_COLLIDING_INTERIOR_TAGS =
 const isCollidingInteriorBox = (tag: string): boolean =>
   !NON_COLLIDING_INTERIOR_TAGS.some((p) => tag.startsWith(p));
 
+const rotatedBoxBounds16 = (
+  box: NonNullable<StructureGrid['interiors']>[number]['ir']['boxes'][number],
+): readonly [number, number, number, number] => {
+  const [x0, , z0] = box.from_16;
+  const [x1, , z1] = box.to_16;
+  const rad = ((box.rotation_y_deg ?? 0) * Math.PI) / 180;
+  if (!box.pivot_16 || Math.abs(rad) <= 1e-4) return [x0, z0, x1, z1];
+  const [px, , pz] = box.pivot_16;
+  const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
+  let [minX, minZ, maxX, maxZ] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const cx of [x0, x1]) {
+    for (const cz of [z0, z1]) {
+      const rx = px + (cx - px) * cos - (cz - pz) * sin;
+      const rz = pz + (cx - px) * sin + (cz - pz) * cos;
+      minX = Math.min(minX, rx);
+      minZ = Math.min(minZ, rz);
+      maxX = Math.max(maxX, rx);
+      maxZ = Math.max(maxZ, rz);
+    }
+  }
+  return [minX, minZ, maxX, maxZ];
+};
+
 const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollider[] => {
   const [w, , d] = grid.size;
   const [hw, hd] = [w / 2, d / 2];
@@ -368,9 +391,10 @@ const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollide
       if (!isCollidingInteriorBox(box.semantic_tag ?? '')) continue;
       const material: ColliderMaterial =
         box.layer === 'translucent' ? 'glass' : classifyMaterial(box.tile_id);
+      const [x0, z0, x1, z1] = rotatedBoxBounds16(box);
       out.push({
-        from: [box.from_16[0] / 16 - hw, box.from_16[1] / 16, box.from_16[2] / 16 - hd],
-        to: [box.to_16[0] / 16 - hw, box.to_16[1] / 16, box.to_16[2] / 16 - hd],
+        from: [x0 / 16 - hw, box.from_16[1] / 16, z0 / 16 - hd],
+        to: [x1 / 16 - hw, box.to_16[1] / 16, z1 / 16 - hd],
         material,
       });
     }

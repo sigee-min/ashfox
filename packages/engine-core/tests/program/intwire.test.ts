@@ -323,6 +323,52 @@ structure alcove_carve_test {
     (b) => b.pos[0] === 7 && b.pos[1] === 2 && b.pos[2] === 2 && b.state === oakIdx,
   );
   assert.equal(sealed, false, 'Alcove niche in NBT must not remain sealed by oak_planks');
+
+  // Verify rotated prop colliders include rotated tabletop bounds and clamped mezzanine seats nested chair at deck Y.
+  const rotMezSrc = `ashfox 1
+structure rot_mez_test {
+  size = (11b, 8b, 11b);
+  palette { stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  floor f { y = 0b; height = 6b;
+    room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = stone; ceiling = oak;
+      interior {
+        dna { arch = rustic; organic = 0; }
+        mezzanine loft { on = north; depth = 3; y_offset = 4; railing = timber; chair loft_seat {} }
+        table rot_tbl { at = (4, 1, 4); size = (3, 1); rotation_deg = 90; }
+      }
+    }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  }
+}`;
+  const rotMezProd = compileStructureUnits(
+    'rm.ashfox',
+    new Map([['rm.ashfox', parseStructureSource(rotMezSrc, 'rm.ashfox')]]),
+    {},
+    rel,
+  );
+  const rmInterior = rotMezProd.grid.interiors![0]!;
+  const deckBox = rmInterior.ir.boxes.find((b) => b.semantic_tag === 'volume_mezzanine')!;
+  const loftChairHook = rmInterior.playable_meta.hooks.find(
+    (h) => h.kind === 'sit' && h.prop_id === 'loft_seat',
+  )!;
+  assert.equal(deckBox.to_16[1] / 16, 4);
+  assert.equal(loftChairHook.position[1], 4, 'Mezzanine chair must sit flush at clamped deck Y=4');
+  const [rw, , rd] = rotMezProd.grid.size;
+  const pt: readonly [number, number, number] = [5.5 - rw / 2, 1.95, 5.5 - rd / 2];
+  const hitsRot = rotMezProd.playableMeta.colliders.some(
+    (c) =>
+      pt[0] >= c.from[0] &&
+      pt[0] <= c.to[0] &&
+      pt[1] >= c.from[1] &&
+      pt[1] <= c.to[1] &&
+      pt[2] >= c.from[2] &&
+      pt[2] <= c.to[2],
+  );
+  assert.equal(
+    hitsRot,
+    true,
+    'Rotated 3x1 table collider must include rotated tabletop point [5.5,1.95,5.5]',
+  );
   console.log('ashfox interior wiring integration tests ok');
 };
 

@@ -1,5 +1,10 @@
 import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
-import { resolveMezzanineRect, resolvePartitionDoorway, resolvePlatformRect } from './zoneRect';
+import {
+  resolveMezzanineRect,
+  resolveMezzanineYOffset,
+  resolvePartitionDoorway,
+  resolvePlatformRect,
+} from './zoneRect';
 export { resolvePlatformRect } from './zoneRect';
 
 import {
@@ -240,12 +245,8 @@ const emitMezzanineSupports = (
 };
 
 const emitMezzanine = (c: VolCtx, spec: MezzanineVolumeSpec): void => {
-  const [bf, bt] = [c.room.bounds_from, c.room.bounds_to];
-  const [iy0, iy1] = [bf[1] + 1, bt[1] - 1];
-  const yOff = Math.max(
-    2,
-    Math.min(iy1 - iy0 - 1, spec.y_offset_b ?? Math.max(3, Math.floor((iy1 - iy0 + 1) * 0.5))),
-  );
+  const iy0 = c.room.bounds_from[1] + 1;
+  const yOff = resolveMezzanineYOffset(c.room, spec.y_offset_b);
   const [deckTop, deckBot] = [(iy0 + yOff) * U, (iy0 + yOff) * U - 4];
   const rect = resolveMezzanineRect(c.room, spec);
   const [ox0, ox1, oz0, oz1] = [rect.ox, rect.ox + rect.w - 1, rect.oz, rect.oz + rect.d - 1];

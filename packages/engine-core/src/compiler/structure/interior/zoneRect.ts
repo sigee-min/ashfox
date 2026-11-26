@@ -167,3 +167,13 @@ export const diningChairCellOffsets = (
     return [rx, rz] as const;
   });
 };
+
+/** Resolves clamped mezzanine deck vertical offset in blocks above the interior floor. */
+export const resolveMezzanineYOffset = (
+  room: Pick<InteriorRoomInput, 'bounds_from' | 'bounds_to'>,
+  requestedYOffsetB?: number,
+): number => {
+  const [iy0, iy1] = [room.bounds_from[1] + 1, room.bounds_to[1] - 1];
+  const fallback = Math.max(3, Math.floor((iy1 - iy0 + 1) * 0.5));
+  return Math.max(2, Math.min(iy1 - iy0 - 1, requestedYOffsetB ?? fallback));
+};

@@ -30,6 +30,7 @@ import {
   rectToFootprint,
   resolveAnchor,
   resolveMezzanineRect,
+  resolveMezzanineYOffset,
   resolvePlatformRect,
   type ZoneFootprint,
 } from './zoneRect';
@@ -223,8 +224,10 @@ const lowerMezzanineVolume = (
   props: InteriorPropSpec[],
   stories: InteriorStoryAst[],
 ): void => {
-  const h = room.to[1] - room.from[1] - 1;
-  const yOff = v.y_offset_b ?? Math.max(3, Math.floor(h * 0.5));
+  const yOff = resolveMezzanineYOffset(
+    { bounds_from: room.from, bounds_to: room.to },
+    v.y_offset_b,
+  );
   const mezSpec: Extract<InteriorVolumeSpec, { kind: 'mezzanine' }> = {
     kind: 'mezzanine',
     id: v.id,
