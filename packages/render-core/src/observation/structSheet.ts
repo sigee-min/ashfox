@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 import { collectStructureCutBands } from '@ashfox/engine-core';
-import { compareText } from '@ashfox/internal-contracts';
 import { applyEyeLevelCamera, frameBoxAtAngles } from '../cameraPresets';
 import {
   createCaptureSurface,
@@ -15,23 +14,20 @@ import {
   type StructureObservationPayload,
   type StructureObservationSlice,
   type StructureSceneBuildOptions,
+  type StructureSceneHandle,
 } from '../structureRender';
 import { createViewportEnvironment } from '../viewportEnvironment';
 import type { ViewOptions } from './contract';
 import { createCanvas2d, fillBackground } from './modelRender';
-
-interface InteriorCameraSpec {
-  readonly label: string;
-  readonly eye: readonly [number, number, number];
-  readonly lookAt: readonly [number, number, number];
-}
-
-interface ExteriorTileSpec {
-  readonly label: string;
-  readonly azimuth: number;
-  readonly elevation: number;
-  readonly twilight: boolean;
-}
+import {
+  computeInteriorCameras,
+  detectFrontAzimuth,
+  frameHeroAngles,
+  resolveSingleAzimuth,
+  tileSpecs,
+  type ExteriorTileSpec,
+  type InteriorCameraSpec,
+} from './structCamera';
 
 const drawSheetBadge = (
   ctx: CanvasRenderingContext2D,
@@ -63,190 +59,12 @@ const drawGridDividers = (
   for (let r = 1; r < rows; r += 1) ctx.fillRect(0, r * tileH - 1, w, 2);
 };
 
-const FRONT_AZIMUTH: Readonly<Record<string, number>> = {
-  east: 90,
-  west: -90,
-  north: 0,
-  south: 180,
-};
-
-const detectFrontAzimuth = (payload: StructureObservationPayload): number => {
-  const entrySocket = payload.playableMeta.sockets.find((s) => s.kind === 'entry');
-  const door = payload.playableMeta.interactables.find((i) => i.kind === 'door');
-  return FRONT_AZIMUTH[entrySocket?.normal ?? door?.facing ?? 'south'] ?? 180;
-};
-
-const tileSpecs = (
-  frontAz: number,
-  mode: 'exterior' | 'turnaround',
-): readonly ExteriorTileSpec[] =>
-  mode === 'exterior'
-    ? [
-        { label: 'HERO SW', azimuth: -135, elevation: 26, twilight: false },
-        { label: 'HERO NE', azimuth: 45, elevation: 26, twilight: false },
-        { label: 'FRONT', azimuth: frontAz, elevation: 6, twilight: false },
-        { label: 'LEFT', azimuth: frontAz - 90, elevation: 6, twilight: false },
-        { label: 'RIGHT', azimuth: frontAz + 90, elevation: 6, twilight: false },
-        { label: 'TWILIGHT', azimuth: frontAz - 40, elevation: 24, twilight: true },
-      ]
-    : [
-        { label: 'FRONT', azimuth: frontAz, elevation: 12, twilight: false },
-        { label: '3/4', azimuth: 45, elevation: 22, twilight: false },
-        { label: 'SIDE', azimuth: frontAz - 90, elevation: 12, twilight: false },
-        { label: 'BACK', azimuth: frontAz + 180, elevation: 12, twilight: false },
-      ];
-
 const deriveCutSlices = (
   payload: StructureObservationPayload,
 ): readonly StructureObservationSlice[] =>
   payload.cutSlices && payload.cutSlices.length > 0
     ? payload.cutSlices
     : collectStructureCutBands(payload.floors, payload.size[1]);
-
-const roomWorldBounds = (
-  payload: StructureObservationPayload,
-  room: StructureObservationPayload['rooms'][number],
-) => {
-  const [w, _h, d] = payload.size;
-  return {
-    minX: room.from[0] + 1 - w / 2,
-    maxX: room.to[0] - w / 2,
-    minY: room.from[1] + 1,
-    maxY: room.to[1],
-    minZ: room.from[2] + 1 - d / 2,
-    maxZ: room.to[2] - d / 2,
-  };
-};
-
-type WorldBox = ReturnType<typeof roomWorldBounds>;
-
-const insideBox = (p: readonly [number, number, number], b: WorldBox): boolean =>
-  p[0] >= b.minX - 0.5 &&
-  p[0] <= b.maxX + 0.5 &&
-  p[1] >= b.minY - 0.5 &&
-  p[1] <= b.maxY + 0.5 &&
-  p[2] >= b.minZ - 0.5 &&
-  p[2] <= b.maxZ + 0.5;
-
-const pickZoneFocalTarget = (
-  payload: StructureObservationPayload,
-  b: WorldBox,
-): readonly [number, number, number] => {
-  const item = payload.playableMeta.interactables.find(
-    (i) => i.kind !== 'door' && insideBox(i.position, b),
-  );
-  if (item) return [item.position[0], Math.min(b.maxY - 0.4, b.minY + 1.2), item.position[2]];
-  const light = payload.playableMeta.lights.find((l) => insideBox(l.position, b));
-  if (light) return [light.position[0], Math.min(b.maxY - 0.4, b.minY + 1.35), light.position[2]];
-  return [(b.minX + b.maxX) / 2, Math.min(b.maxY - 0.4, b.minY + 1.35), (b.minZ + b.maxZ) / 2];
-};
-
-const roomToInteriorCam = (
-  payload: StructureObservationPayload,
-  room: StructureObservationPayload['rooms'][number],
-): InteriorCameraSpec => {
-  const b = roomWorldBounds(payload, room);
-  const cx = (b.minX + b.maxX) / 2;
-  const cz = (b.minZ + b.maxZ) / 2;
-  const focal = pickZoneFocalTarget(payload, b);
-  const dx = cx - focal[0];
-  const dz = cz - focal[2];
-  const pull = Math.hypot(dx, dz) > 0.25 ? 0.44 : 0;
-  const insetX = Math.min(1.1, Math.max(0.65, (b.maxX - b.minX) * 0.24));
-  const insetZ = Math.min(1.1, Math.max(0.65, (b.maxZ - b.minZ) * 0.24));
-  return {
-    label: room.name.toUpperCase(),
-    eye: [
-      THREE.MathUtils.clamp(cx + dx * pull, b.minX + insetX, b.maxX - insetX),
-      Math.min(b.maxY - 0.35, b.minY + 1.65),
-      THREE.MathUtils.clamp(cz + dz * pull, b.minZ + insetZ, b.maxZ - insetZ),
-    ],
-    lookAt: focal,
-  };
-};
-
-const frameHeroAngles = (
-  cam: THREE.PerspectiveCamera,
-  b: THREE.Box3,
-  az: number,
-  el: number,
-  zoom: number,
-) =>
-  frameBoxAtAngles(
-    cam,
-    b,
-    az,
-    el,
-    zoom * (Math.abs(el) >= 20 && Math.abs(el) < 80 ? 1.15 : 1.08),
-    42,
-    1.03,
-  );
-
-const synthesizeThresholdHeroCam = (
-  payload: StructureObservationPayload,
-  room: StructureObservationPayload['rooms'][number],
-  primaryCam: InteriorCameraSpec,
-): InteriorCameraSpec => {
-  const b = roomWorldBounds(payload, room);
-  const cx = (b.minX + b.maxX) / 2;
-  const cz = (b.minZ + b.maxZ) / 2;
-  const insetX = Math.min(1.15, Math.max(0.7, (b.maxX - b.minX) * 0.25));
-  const insetZ = Math.min(1.15, Math.max(0.7, (b.maxZ - b.minZ) * 0.25));
-  const eyeX = THREE.MathUtils.clamp(cx * 2 - primaryCam.eye[0], b.minX + insetX, b.maxX - insetX);
-  const eyeZ = THREE.MathUtils.clamp(cz * 2 - primaryCam.eye[2], b.minZ + insetZ, b.maxZ - insetZ);
-  return {
-    label: 'THRESHOLD / HERO',
-    eye: [eyeX, Math.min(b.maxY - 0.35, b.minY + 1.65), eyeZ],
-    lookAt: [cx, Math.min(b.maxY - 0.4, b.minY + 1.35), cz],
-  };
-};
-
-const fallbackInteriorCameras = (
-  payload: StructureObservationPayload,
-): readonly InteriorCameraSpec[] => {
-  const [w, h, d] = payload.size;
-  const nav = payload.playableMeta.navigation.floorLevels;
-  const levels =
-    payload.floors.length > 0
-      ? payload.floors.map((f) => f.y + 1)
-      : nav.length > 0
-        ? nav.map((y) => Math.max(1, y))
-        : h >= 14
-          ? [1, 6]
-          : [1];
-  const cams = levels.slice(0, 4).map((floorY, idx) => ({
-    label: `ROOM ${idx + 1}`,
-    eye: [-w * 0.16, Math.min(h - 1.2, floorY + 1.6), d * 0.16] as const,
-    lookAt: [w * 0.15, Math.min(h - 1.3, floorY + 1.35), -d * 0.18] as const,
-  }));
-  if (cams.length !== 3) return cams;
-  const y0 = levels[0] ?? 1;
-  return [
-    ...cams,
-    {
-      label: 'THRESHOLD / HERO',
-      eye: [w * 0.16, Math.min(h - 1.2, y0 + 1.6), -d * 0.16] as const,
-      lookAt: [-w * 0.14, Math.min(h - 1.3, y0 + 1.35), d * 0.14] as const,
-    },
-  ];
-};
-
-const computeInteriorCameras = (
-  payload: StructureObservationPayload,
-): readonly InteriorCameraSpec[] => {
-  const enclosed = payload.rooms
-    .filter((r) => r.enclosed && r.kind !== 'courtyard')
-    .sort(
-      (a, b) =>
-        (b.to[0] - b.from[0]) * (b.to[2] - b.from[2]) -
-          (a.to[0] - a.from[0]) * (a.to[2] - a.from[2]) || compareText(a.name, b.name),
-    )
-    .slice(0, 4);
-  if (enclosed.length === 0) return fallbackInteriorCameras(payload);
-  const cams = enclosed.map((room) => roomToInteriorCam(payload, room));
-  if (cams.length === 3) cams.push(synthesizeThresholdHeroCam(payload, enclosed[0]!, cams[0]!));
-  return cams;
-};
 
 type SheetEnvironmentId = ViewOptions['environment'] | 'blueprint' | 'twilight';
 
@@ -280,17 +98,44 @@ type TileRenderOptions = StructureSceneBuildOptions & {
   readonly positionCamera: (bounds: THREE.Box3, camera: THREE.PerspectiveCamera) => void;
 };
 
+type SceneCacheEntry = {
+  readonly opts: StructureSceneBuildOptions;
+  readonly handle: StructureSceneHandle;
+};
+
+const sameSceneOptions = (a: StructureSceneBuildOptions, b: StructureSceneBuildOptions): boolean =>
+  a.bakedMesh === b.bakedMesh &&
+  a.document === b.document &&
+  a.clipY === b.clipY &&
+  (a.twilight ?? false) === (b.twilight ?? false) &&
+  (a.interiorFill ?? false) === (b.interiorFill ?? false) &&
+  a.dioramaBase === b.dioramaBase;
+
+const acquireCachedScene = async (
+  cache: SceneCacheEntry[],
+  payload: StructureObservationPayload,
+  options: TileRenderOptions,
+  signal: AbortSignal,
+): Promise<StructureSceneHandle> => {
+  const hit = cache.find((entry) => sameSceneOptions(entry.opts, options));
+  if (hit) return hit.handle;
+  const handle = await buildStructureScene(payload, options, signal);
+  cache.push({ opts: options, handle });
+  return handle;
+};
+
 const renderTileToCanvas = async (
   surface: CaptureSurface,
   tileCanvas: ReturnType<typeof createCanvas2d>,
   payload: StructureObservationPayload,
   v: ViewOptions,
   options: TileRenderOptions,
+  sceneCache: SceneCacheEntry[],
   signal: AbortSignal,
 ): Promise<void> => {
   surface.renderer.localClippingEnabled =
     options.clipY !== undefined && options.bakedMesh === undefined;
-  const handle = await buildStructureScene(payload, options, signal);
+  const handle = await acquireCachedScene(sceneCache, payload, options, signal);
   surface.scene.add(handle.root);
   const disposeBackdrop = applySurfaceBackdrop(surface, v.background, options.envId);
   try {
@@ -303,7 +148,6 @@ const renderTileToCanvas = async (
   } finally {
     disposeBackdrop?.();
     surface.scene.remove(handle.root);
-    handle.dispose();
   }
 };
 
@@ -349,7 +193,7 @@ const renderGridSheet = async (
 
 type SheetTileConfig = TileRenderOptions & { readonly label: string };
 
-const renderConfiguredSheet = (
+const renderConfiguredSheet = async (
   cols: number,
   rows: number,
   tiles: readonly SheetTileConfig[],
@@ -357,19 +201,25 @@ const renderConfiguredSheet = (
   v: ViewOptions,
   signal: AbortSignal,
   sheetBg?: string,
-) =>
-  renderGridSheet(
-    cols,
-    rows,
-    v,
-    sheetBg ?? (v.background === 'environment' ? 'transparent' : v.background),
-    async (idx, surface, tileCanvas) => {
-      const tile = tiles[idx];
-      if (!tile) return null;
-      await renderTileToCanvas(surface, tileCanvas, payload, v, tile, signal);
-      return tile.label;
-    },
-  );
+) => {
+  const sceneCache: SceneCacheEntry[] = [];
+  try {
+    return await renderGridSheet(
+      cols,
+      rows,
+      v,
+      sheetBg ?? (v.background === 'environment' ? 'transparent' : v.background),
+      async (idx, surface, tileCanvas) => {
+        const tile = tiles[idx];
+        if (!tile) return null;
+        await renderTileToCanvas(surface, tileCanvas, payload, v, tile, sceneCache, signal);
+        return tile.label;
+      },
+    );
+  } finally {
+    for (const entry of sceneCache) entry.handle.dispose();
+  }
+};
 
 const angleTiles = (
   defaultEnv: SheetEnvironmentId,
@@ -383,19 +233,6 @@ const angleTiles = (
     positionCamera: (bounds, cam) =>
       frameHeroAngles(cam, bounds, spec.azimuth, spec.elevation, zoom),
   }));
-
-const resolveSingleAzimuth = (payload: StructureObservationPayload, v: ViewOptions): number => {
-  if (v.azimuth !== undefined) return v.azimuth;
-  const frontAz = detectFrontAzimuth(payload);
-  const map: Readonly<Record<string, number>> = {
-    front: frontAz,
-    back: frontAz + 180,
-    left: frontAz - 90,
-    right: frontAz + 90,
-    top: 0,
-  };
-  return map[v.camera] ?? 45;
-};
 
 const cutawayTiles = (
   slices: readonly StructureObservationSlice[],

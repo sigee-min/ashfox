@@ -17,7 +17,6 @@ import {
 } from '../../project/structure/expr';
 import { parseBlockState, withBlockFacing } from '../../project/structure/state';
 import {
-  applyCompoundChild,
   buildCustomPlacementsFromTags,
   checkStructureUnitHygiene,
   collectReachableUnits,
@@ -32,6 +31,7 @@ import {
   expandRoomInFloor,
   getRoofGuard,
   registerFloorJetty,
+  runCompoundMerge,
   runWeatherAndSocketOp,
   transformAnchor,
   transformFacing,
@@ -218,13 +218,9 @@ const evalCompoundPlace = (
       `compound_place "${op.alias}" must target structure`,
     );
   const childResult = evaluateStructure(childPath, state.units, state.relative);
-  applyCompoundChild(
-    Object.assign(state, {
-      put: (x: number, y: number, z: number, s: string, a: string | null) =>
-        putVoxel(state, ownerPath, [x, y, z], s, a),
-      carve: (x: number, y: number, z: number) =>
-        putVoxel(state, ownerPath, [x, y, z], 'minecraft:air', null),
-    }),
+  runCompoundMerge(
+    state,
+    ownerPath,
     op.alias,
     childResult,
     applyFrame(evalVec3(state, ownerPath, op.at), frame),
@@ -349,12 +345,15 @@ const evalRoofOp = (
     guard.canPlace,
   );
   const worldCells = worldPlaced ? res.roofCells : res.roofCells.map((c) => applyFrame(c, frame));
+  const worldTops = worldPlaced
+    ? res.chimneyTops
+    : res.chimneyTops.map((c) => applyFrame(c, frame));
   guard.record(worldCells);
   state.roofCount += 1;
   if (res.hasTrim) state.hasRoofTrim = true;
   state.dormerCount += res.dormerCount;
   state.chimneyCount += res.chimneyCount;
-  state.chimneyTops.push(...res.chimneyTops);
+  state.chimneyTops.push(...worldTops);
   state.roofCells.push(...worldCells);
 };
 

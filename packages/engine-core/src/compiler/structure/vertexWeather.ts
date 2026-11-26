@@ -17,6 +17,46 @@ interface ChimneyStackInfo {
 }
 
 const CHIMNEY_CACHE = new WeakMap<StructureGrid, ChimneyStackInfo>();
+const ENCLOSED_ROOM_CACHE = new WeakMap<StructureGrid, Uint8Array>();
+
+const markRoomInMask = (
+  mask: Uint8Array,
+  [w, h, d]: readonly [number, number, number],
+  r: StructureGrid['rooms'][number],
+): void => {
+  const x0 = Math.max(0, r.from[0] - 1);
+  const x1 = Math.min(w - 1, r.to[0] + 1);
+  const y0 = Math.max(0, r.from[1] - 1);
+  const y1 = Math.min(h - 1, r.to[1] + 1);
+  const z0 = Math.max(0, r.from[2] - 1);
+  const z1 = Math.min(d - 1, r.to[2] + 1);
+  for (let y = y0; y <= y1; y += 1) {
+    const inY = y >= r.from[1] && y <= r.to[1];
+    for (let z = z0; z <= z1; z += 1) {
+      const inYZ = inY && z >= r.from[2] && z <= r.to[2];
+      const row = (y * d + z) * w;
+      for (let x = x0; x <= x1; x += 1) {
+        mask[row + x] |= inYZ && x >= r.from[0] && x <= r.to[0] ? 3 : 2;
+      }
+    }
+  }
+};
+
+const buildEnclosedMask = (grid: StructureGrid): Uint8Array => {
+  const [w, h, d] = grid.size;
+  const mask = new Uint8Array(w * h * d);
+  for (const r of grid.rooms) if (r.enclosed) markRoomInMask(mask, grid.size, r);
+  return mask;
+};
+
+const enclosedMaskFor = (grid: StructureGrid): Uint8Array => {
+  let mask = ENCLOSED_ROOM_CACHE.get(grid);
+  if (!mask) {
+    mask = buildEnclosedMask(grid);
+    ENCLOSED_ROOM_CACHE.set(grid, mask);
+  }
+  return mask;
+};
 
 const DIRS6: readonly IntVec3[] = [
   [1, 0, 0],
@@ -116,20 +156,20 @@ export const isInsideEnclosedRoom = (
   y: number,
   z: number,
 ): boolean => {
-  for (const r of grid.rooms) {
-    if (
-      r.enclosed &&
-      x >= r.from[0] &&
-      x <= r.to[0] &&
-      y >= r.from[1] &&
-      y <= r.to[1] &&
-      z >= r.from[2] &&
-      z <= r.to[2]
-    ) {
-      return true;
-    }
-  }
-  return false;
+  const [w, h, d] = grid.size;
+  if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
+  return (enclosedMaskFor(grid)[(y * d + z) * w + x]! & 1) !== 0;
+};
+
+export const isNearEnclosedRoom = (
+  grid: StructureGrid,
+  x: number,
+  y: number,
+  z: number,
+): boolean => {
+  const [w, h, d] = grid.size;
+  if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
+  return (enclosedMaskFor(grid)[(y * d + z) * w + x]! & 2) !== 0;
 };
 
 const hasOverheadCover = (grid: StructureGrid, x: number, y: number, z: number): boolean => {

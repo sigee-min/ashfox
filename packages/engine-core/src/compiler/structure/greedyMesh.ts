@@ -12,9 +12,9 @@ import type {
   StructureGrid,
   StructureLightingField,
   StructurePropInstance,
-  StructureRoomMeta,
 } from './contract';
 import { computeFaceShade, FACE_BASIS, samplePropLightRgb } from './lighting';
+import { isNearEnclosedRoom } from './vertexWeather';
 import {
   shapeBoxSpecs,
   setVec3,
@@ -25,14 +25,8 @@ import {
   type CachedBlockState,
   type LocalBoxSpec,
 } from './shapes';
-import {
-  emitArchitecturalTrims,
-  getBatch,
-  pushQuad,
-  type BatchDraft,
-  type MeshCtx,
-  type NonFullScratch,
-} from './trim';
+import { getBatch, pushQuad, type BatchDraft, type MeshCtx, type NonFullScratch } from './batch';
+import { emitArchitecturalTrims } from './trim';
 
 interface MaskCell {
   readonly key: string;
@@ -242,23 +236,6 @@ const connectsNeighbor = (
   return v > 0 && (ctx.descriptors[v]!.solidOpaque || ctx.descriptors[v]!.shape === shape);
 };
 
-const isNearEnclosedRoom = (
-  rooms: readonly StructureRoomMeta[],
-  x: number,
-  y: number,
-  z: number,
-): boolean =>
-  rooms.some(
-    (r) =>
-      r.enclosed &&
-      x >= r.from[0] - 1 &&
-      x <= r.to[0] + 1 &&
-      y >= r.from[1] - 1 &&
-      y <= r.to[1] + 1 &&
-      z >= r.from[2] - 1 &&
-      z <= r.to[2] + 1,
-  );
-
 const emitBoxSpecFaces = (
   ctx: MeshCtx,
   desc: BlockDescriptor,
@@ -331,9 +308,7 @@ const emitNonFullBlocks = (ctx: MeshCtx, scratch: NonFullScratch): number => {
     conns[3] = connectsNeighbor(ctx, x - 1, y, z, desc.shape);
     const cached = ctx.parsedStates[v]!;
     const interiorGlow =
-      desc.shape === 'pane' &&
-      desc.top !== 'iron_bars' &&
-      isNearEnclosedRoom(ctx.grid.rooms, x, y, z);
+      desc.shape === 'pane' && desc.top !== 'iron_bars' && isNearEnclosedRoom(ctx.grid, x, y, z);
     for (const spec of shapeBoxSpecs(desc, cached.parsed, cached.facing, conns, interiorGlow)) {
       count += emitBoxSpecFaces(ctx, desc, cached, spec, x, y, z, scratch);
     }

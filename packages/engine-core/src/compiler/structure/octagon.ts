@@ -52,7 +52,7 @@ export const octagonWallRange = (
   return wall === 'north' || wall === 'south' ? [from[0] + c, to[0] - c] : [from[2] + c, to[2] - c];
 };
 
-const withStairFacing = (
+export const withStairFacing = (
   baseState: string,
   facing: CardinalFacing,
   half: 'bottom' | 'top' = 'bottom',

@@ -7,9 +7,8 @@ import type {
   RoofPitch,
   RoofStyle,
 } from '../../project/structure/contract';
-import { formatBlockState, parseBlockState } from '../../project/structure/state';
 import type { StructureRoomMeta } from './contract';
-import { emitBattlementRing, emitHipPyramid, emitSpireRoof } from './octagon';
+import { emitBattlementRing, emitHipPyramid, emitSpireRoof, withStairFacing } from './octagon';
 
 export type VoxelSetter = (
   x: number,
@@ -53,18 +52,6 @@ export interface RoofEmitResult {
   readonly roofCells: readonly IntVec3[];
 }
 
-const withStair = (
-  baseState: string,
-  facing: CardinalFacing,
-  half: 'bottom' | 'top' = 'bottom',
-): string => {
-  const parsed = parseBlockState(baseState);
-  return formatBlockState({
-    name: parsed.name,
-    properties: { ...parsed.properties, half, facing },
-  });
-};
-
 const fillGableSpan = (
   axis: 'x' | 'z',
   fixed: number,
@@ -95,16 +82,13 @@ const emitGableZCell = (
   y: number,
   z: number,
   level: number,
-  maxY: number,
+  bounds: { readonly minZ: number; readonly maxZ: number; readonly maxY: number },
   put: VoxelSetter,
   resolve: StateResolver,
   owner: string,
   cells: IntVec3[],
 ): void => {
-  const k =
-    op.trim && (z === op.from[2] - op.overhang || z === op.to[2] + op.overhang)
-      ? op.trim
-      : op.stair;
+  const k = op.trim && (z === bounds.minZ || z === bounds.maxZ) ? op.trim : op.stair;
   if (lx === rx) {
     const r = resolve(op.ridge, owner, [lx, y, z]);
     put(lx, y, z, r.state, r.assetAlias);
@@ -114,12 +98,13 @@ const emitGableZCell = (
   const useSlab = op.pitch === 'shallow' && level % 2 === 1;
   const lRes = resolve(useSlab ? op.ridge : k, owner, [lx, y, z]);
   const rRes = resolve(useSlab ? op.ridge : k, owner, [rx, y, z]);
-  put(lx, y, z, useSlab ? lRes.state : withStair(lRes.state, 'east'), null);
-  put(rx, y, z, useSlab ? rRes.state : withStair(rRes.state, 'west'), null);
+  put(lx, y, z, useSlab ? lRes.state : withStairFacing(lRes.state, 'east'), null);
+  put(rx, y, z, useSlab ? rRes.state : withStairFacing(rRes.state, 'west'), null);
   cells.push([lx, y, z], [rx, y, z]);
-  if (op.pitch === 'steep' && y + 1 <= maxY) {
-    put(lx, y + 1, z, withStair(resolve(k, owner, [lx, y + 1, z]).state, 'east'), null);
-    put(rx, y + 1, z, withStair(resolve(k, owner, [rx, y + 1, z]).state, 'west'), null);
+  if (op.pitch === 'steep' && y + 1 <= bounds.maxY) {
+    put(lx, y + 1, z, withStairFacing(resolve(k, owner, [lx, y + 1, z]).state, 'east'), null);
+    put(rx, y + 1, z, withStairFacing(resolve(k, owner, [rx, y + 1, z]).state, 'west'), null);
+    cells.push([lx, y + 1, z], [rx, y + 1, z]);
   }
 };
 
@@ -134,15 +119,19 @@ const emitGableZ = (
   cells: IntVec3[],
 ): void => {
   const half = Math.ceil((max[0] - min[0] + 1) / 2);
+  const bounds = { minZ: min[2], maxZ: max[2], maxY: max[1] };
   for (let level = 0; level < half; level += 1) {
     const lx = min[0] + level;
     const rx = max[0] - level;
     const y = min[1] + pitchStepY(op.pitch, level);
     if (y > max[1]) break;
     for (let z = min[2]; z <= max[2]; z += 1) {
-      emitGableZCell(op, lx, rx, y, z, level, max[1], put, resolve, owner, cells);
-      if (z === min[2] || z === max[2])
+      emitGableZCell(op, lx, rx, y, z, level, bounds, put, resolve, owner, cells);
+      if (z === min[2] || z === max[2]) {
         fillGableSpan('z', z, y, lx, rx, op.gable, resolve, owner, gablePut);
+        if (op.pitch === 'steep' && y + 1 <= max[1] && lx < rx)
+          fillGableSpan('z', z, y + 1, lx, rx, op.gable, resolve, owner, gablePut);
+      }
     }
   }
 };
@@ -154,14 +143,13 @@ const emitGableXCell = (
   nz: number,
   sz: number,
   level: number,
-  minX: number,
-  maxX: number,
+  bounds: { readonly minX: number; readonly maxX: number; readonly maxY: number },
   put: VoxelSetter,
   resolve: StateResolver,
   owner: string,
   cells: IntVec3[],
 ): void => {
-  const k = op.trim && (x === minX || x === maxX) ? op.trim : op.stair;
+  const k = op.trim && (x === bounds.minX || x === bounds.maxX) ? op.trim : op.stair;
   if (nz === sz) {
     const r = resolve(op.ridge, owner, [x, y, nz]);
     put(x, y, nz, r.state, r.assetAlias);
@@ -171,9 +159,14 @@ const emitGableXCell = (
   const useSlab = op.pitch === 'shallow' && level % 2 === 1;
   const nRes = resolve(useSlab ? op.ridge : k, owner, [x, y, nz]);
   const sRes = resolve(useSlab ? op.ridge : k, owner, [x, y, sz]);
-  put(x, y, nz, useSlab ? nRes.state : withStair(nRes.state, 'south'), null);
-  put(x, y, sz, useSlab ? sRes.state : withStair(sRes.state, 'north'), null);
+  put(x, y, nz, useSlab ? nRes.state : withStairFacing(nRes.state, 'south'), null);
+  put(x, y, sz, useSlab ? sRes.state : withStairFacing(sRes.state, 'north'), null);
   cells.push([x, y, nz], [x, y, sz]);
+  if (op.pitch === 'steep' && y + 1 <= bounds.maxY) {
+    put(x, y + 1, nz, withStairFacing(resolve(k, owner, [x, y + 1, nz]).state, 'south'), null);
+    put(x, y + 1, sz, withStairFacing(resolve(k, owner, [x, y + 1, sz]).state, 'north'), null);
+    cells.push([x, y + 1, nz], [x, y + 1, sz]);
+  }
 };
 
 const emitGableX = (
@@ -187,15 +180,19 @@ const emitGableX = (
   cells: IntVec3[],
 ): void => {
   const half = Math.ceil((max[2] - min[2] + 1) / 2);
+  const bounds = { minX: min[0], maxX: max[0], maxY: max[1] };
   for (let level = 0; level < half; level += 1) {
     const nz = min[2] + level;
     const sz = max[2] - level;
     const y = min[1] + pitchStepY(op.pitch, level);
     if (y > max[1]) break;
     for (let x = min[0]; x <= max[0]; x += 1) {
-      emitGableXCell(op, x, y, nz, sz, level, min[0], max[0], put, resolve, owner, cells);
-      if (x === min[0] || x === max[0])
+      emitGableXCell(op, x, y, nz, sz, level, bounds, put, resolve, owner, cells);
+      if (x === min[0] || x === max[0]) {
         fillGableSpan('x', x, y, nz, sz, op.gable, resolve, owner, gablePut);
+        if (op.pitch === 'steep' && y + 1 <= max[1] && nz < sz)
+          fillGableSpan('x', x, y + 1, nz, sz, op.gable, resolve, owner, gablePut);
+      }
     }
   }
 };
@@ -214,17 +211,17 @@ const emitUnderEaves = (
   if (op.style !== 'gable' || op.axis === 'z') {
     for (let z = min[2]; z <= max[2]; z += 1) {
       const s0 = resolve(key, owner, [min[0], ey, z]).state;
-      put(min[0], ey, z, withStair(s0, 'east', 'top'), null);
+      put(min[0], ey, z, withStairFacing(s0, 'east', 'top'), null);
       const s1 = resolve(key, owner, [max[0], ey, z]).state;
-      put(max[0], ey, z, withStair(s1, 'west', 'top'), null);
+      put(max[0], ey, z, withStairFacing(s1, 'west', 'top'), null);
     }
   }
   if (op.style !== 'gable' || op.axis === 'x') {
     for (let x = min[0]; x <= max[0]; x += 1) {
       const s0 = resolve(key, owner, [x, ey, min[2]]).state;
-      put(x, ey, min[2], withStair(s0, 'south', 'top'), null);
+      put(x, ey, min[2], withStairFacing(s0, 'south', 'top'), null);
       const s1 = resolve(key, owner, [x, ey, max[2]]).state;
-      put(x, ey, max[2], withStair(s1, 'north', 'top'), null);
+      put(x, ey, max[2], withStairFacing(s1, 'north', 'top'), null);
     }
   }
 };

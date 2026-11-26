@@ -5,7 +5,8 @@ import type {
   IntVec3,
   StructureOp,
 } from '../../project/structure/contract';
-import type { StructureFloorMeta } from './contract';
+import { applyCompoundChild } from './compound';
+import type { StructureFloorMeta, StructureGrid } from './contract';
 import {
   applyFrame,
   applyWeatheringRules,
@@ -248,4 +249,27 @@ export const getRoofGuard = (state: EvalState, worldPlaced: boolean, frame: Fram
       ),
     record: (cells: readonly IntVec3[]): void => recordRoofMaxY(roofMaxY!, state.size, cells),
   };
+};
+
+export const runCompoundMerge = (
+  state: EvalState,
+  ownerPath: string,
+  alias: string,
+  childResult: { readonly grid: StructureGrid; readonly prefabUses: number },
+  origin: IntVec3,
+  rotate: BlockRotation,
+): void => {
+  const target = {
+    ...state,
+    put: (x: number, y: number, z: number, s: string, a: string | null) =>
+      putVoxel(state, ownerPath, [x, y, z], s, a),
+    carve: (x: number, y: number, z: number) =>
+      putVoxel(state, ownerPath, [x, y, z], 'minecraft:air', null),
+  };
+  applyCompoundChild(target, alias, childResult, origin, rotate);
+  state.roofCount = target.roofCount;
+  state.dormerCount = target.dormerCount;
+  state.chimneyCount = target.chimneyCount;
+  state.hasRoofTrim = target.hasRoofTrim;
+  state.prefabUses = target.prefabUses;
 };

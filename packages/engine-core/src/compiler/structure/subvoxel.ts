@@ -334,7 +334,9 @@ export const windowMullionSpecs = (alongX: boolean): readonly LocalBoxSpec[] => 
     alongX ? 9.2 : 8.6,
     'timber_trim',
   ),
-  bx(0, 7.4, 6.8, 16, 8.6, 9.2, 'timber_trim'),
+  alongX
+    ? bx(0, 7.4, 6.8, 16, 8.6, 9.2, 'timber_trim')
+    : bx(6.8, 7.4, 0, 9.2, 8.6, 16, 'timber_trim'),
 ];
 
 export const pilasterSpecs = (ox: -1 | 1, oz: -1 | 1): readonly LocalBoxSpec[] => {
@@ -348,7 +350,8 @@ export const pilasterSpecs = (ox: -1 | 1, oz: -1 | 1): readonly LocalBoxSpec[] =
   ];
 };
 
-export const stripSpec = (
+export const writeStripSpec = (
+  out: { from: [number, number, number]; to: [number, number, number]; tileOverride?: string },
   dir: CardinalFacing,
   depth: number,
   u0: number,
@@ -356,11 +359,37 @@ export const stripSpec = (
   y0: number,
   y1: number,
   tileId: string,
-): LocalBoxSpec => {
-  if (dir === 'north') return bx(u0, y0, -depth, u1, y1, 0, tileId);
-  if (dir === 'south') return bx(u0, y0, 16, u1, y1, 16 + depth, tileId);
-  if (dir === 'west') return bx(-depth, y0, u0, 0, y1, u1, tileId);
-  return bx(16, y0, u0, 16 + depth, y1, u1, tileId);
+): void => {
+  out.tileOverride = tileId;
+  if (dir === 'north') {
+    out.from[0] = u0;
+    out.from[1] = y0;
+    out.from[2] = -depth;
+    out.to[0] = u1;
+    out.to[1] = y1;
+    out.to[2] = 0;
+  } else if (dir === 'south') {
+    out.from[0] = u0;
+    out.from[1] = y0;
+    out.from[2] = 16;
+    out.to[0] = u1;
+    out.to[1] = y1;
+    out.to[2] = 16 + depth;
+  } else if (dir === 'west') {
+    out.from[0] = -depth;
+    out.from[1] = y0;
+    out.from[2] = u0;
+    out.to[0] = 0;
+    out.to[1] = y1;
+    out.to[2] = u1;
+  } else {
+    out.from[0] = 16;
+    out.from[1] = y0;
+    out.from[2] = u0;
+    out.to[0] = 16 + depth;
+    out.to[1] = y1;
+    out.to[2] = u1;
+  }
 };
 
 export const CARDINALS: readonly CardinalFacing[] = ['north', 'south', 'east', 'west'];
@@ -391,16 +420,21 @@ export const isTimberWallTile = (t: string): boolean =>
 export const isChimneyBrickTile = (tile: string): boolean =>
   tile === 'bricks' || tile === 'deepslate_tiles' || tile === 'deepslate_bricks';
 
+const addUpperLevels = <T>(
+  levels: Set<number>,
+  items: readonly T[],
+  yOf: (item: T) => number,
+): void => {
+  if (items.length === 0) return;
+  let minY = yOf(items[0]!);
+  for (const item of items) minY = Math.min(minY, yOf(item));
+  for (const item of items) if (yOf(item) > minY) levels.add(yOf(item));
+};
+
 export const collectBeltCourseLevels = (grid: StructureGrid): readonly number[] => {
   const levels = new Set<number>();
-  if (grid.floors.length > 0) {
-    const minY = Math.min(...grid.floors.map((f) => f.y));
-    for (const f of grid.floors) if (f.y > minY) levels.add(f.y);
-  }
-  if (grid.rooms.length > 0) {
-    const minRY = Math.min(...grid.rooms.map((r) => r.from[1]));
-    for (const r of grid.rooms) if (r.from[1] > minRY) levels.add(r.from[1]);
-  }
+  addUpperLevels(levels, grid.floors, (f) => f.y);
+  addUpperLevels(levels, grid.rooms, (r) => r.from[1]);
   return [...levels].sort((a, b) => a - b);
 };
 

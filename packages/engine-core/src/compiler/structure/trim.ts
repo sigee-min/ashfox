@@ -1,15 +1,9 @@
 import type { CubeFaceDirection } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
-import { structureTileTextureId } from './atlas';
-import type { BlockDescriptor, BlockRenderLayer } from './blocks';
-import type {
-  StructureGrid,
-  StructureLightingField,
-  StructureOpeningMeta,
-  StructureRoomMeta,
-} from './contract';
-import { computeFaceShade, FACE_BASIS, FACE_CORNER_TABLE } from './lighting';
-import { setVec3, writeSpecBoxUv, type CachedBlockState, type LocalBoxSpec } from './shapes';
+import { getBatch, pushQuad, type MeshCtx, type NonFullScratch } from './batch';
+import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
+import { computeFaceShade } from './lighting';
+import { setVec3, writeSpecBoxUv, type LocalBoxSpec } from './shapes';
 import {
   CARDINALS,
   OPPOSITE,
@@ -25,89 +19,68 @@ import {
   isTrueAirAt,
   openingSpan,
   pilasterSpecs,
-  stripSpec,
   voxelAt,
   windowMullionSpecs,
+  writeStripSpec,
 } from './subvoxel';
-
-export interface BatchDraft {
-  readonly layer: BlockRenderLayer;
-  readonly tileId: string;
-  readonly textureId: string;
-  readonly positions: number[];
-  readonly normals: number[];
-  readonly uvs: number[];
-  readonly colors: number[];
-  readonly indices: number[];
-}
-
-export interface NonFullScratch {
-  readonly from: [number, number, number];
-  readonly to: [number, number, number];
-  readonly uvs: number[];
-  readonly colors: number[];
-}
-
-export interface MeshCtx {
-  readonly grid: StructureGrid;
-  readonly descriptors: readonly BlockDescriptor[];
-  readonly parsedStates: readonly CachedBlockState[];
-  readonly lighting: StructureLightingField;
-  readonly maxY: number;
-  readonly batches: Map<string, BatchDraft>;
-}
 
 const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
 
-export const getBatch = (
-  batches: Map<string, BatchDraft>,
-  layer: BlockRenderLayer,
-  tileId: string,
-): BatchDraft => {
-  const textureId = structureTileTextureId(layer, tileId);
-  const key = `${layer}:${textureId}`;
-  let batch = batches.get(key);
-  if (!batch) {
-    batch = {
-      layer,
-      tileId,
-      textureId,
-      positions: [],
-      normals: [],
-      uvs: [],
-      colors: [],
-      indices: [],
-    };
-    batches.set(key, batch);
-  }
-  return batch;
-};
+const STRIP_SCRATCH: {
+  from: [number, number, number];
+  to: [number, number, number];
+  tileOverride?: string;
+} = { from: [0, 0, 0], to: [0, 0, 0], tileOverride: 'timber_trim' };
 
-export const pushQuad = (
-  batch: BatchDraft,
-  dir: CubeFaceDirection,
-  from: readonly [number, number, number],
-  to: readonly [number, number, number],
-  uvs: readonly number[],
-  colors: readonly number[],
-  flip: boolean,
-): void => {
-  const base = batch.positions.length / 3;
-  const t = FACE_CORNER_TABLE[dir];
-  const normal = FACE_BASIS[dir].normal;
-  for (let i = 0; i < 4; i += 1) {
-    const k = i * 3;
-    batch.positions.push(
-      t[k]! ? to[0] : from[0],
-      t[k + 1]! ? to[1] : from[1],
-      t[k + 2]! ? to[2] : from[2],
+const emitTrimBox = (
+  ctx: MeshCtx,
+  scratch: NonFullScratch,
+  vx: number,
+  vy: number,
+  vz: number,
+  sx: number,
+  sy: number,
+  sz: number,
+  spec: LocalBoxSpec,
+  skipDir?: CubeFaceDirection,
+): number => {
+  if (vy < 0 || vy >= ctx.maxY) return 0;
+  const [w, _h, d] = ctx.grid.size;
+  setVec3(
+    scratch.from,
+    vx + spec.from[0] / 16 - w / 2,
+    vy + spec.from[1] / 16,
+    vz + spec.from[2] / 16 - d / 2,
+  );
+  setVec3(
+    scratch.to,
+    vx + spec.to[0] / 16 - w / 2,
+    vy + spec.to[1] / 16,
+    vz + spec.to[2] / 16 - d / 2,
+  );
+  const layer = spec.layer ?? 'opaque';
+  const batch = getBatch(ctx.batches, layer, spec.tileOverride ?? 'timber_trim');
+  let count = 0;
+  for (const dir of DIRS6) {
+    if (dir === skipDir) continue;
+    const shade = computeFaceShade(
+      ctx.grid,
+      ctx.descriptors,
+      ctx.lighting,
+      sx,
+      sy,
+      sz,
+      dir,
+      layer === 'emissive',
+      ctx.maxY,
+      false,
+      scratch.colors,
     );
-    batch.normals.push(normal[0], normal[1], normal[2]);
-    batch.uvs.push(uvs[i * 2]!, uvs[i * 2 + 1]!);
-    batch.colors.push(colors[k]!, colors[k + 1]!, colors[k + 2]!);
+    writeSpecBoxUv(dir, spec, vx, vy, vz, scratch.uvs);
+    pushQuad(batch, dir, scratch.from, scratch.to, scratch.uvs, shade.colors, shade.flip);
+    count += 1;
   }
-  if (flip) batch.indices.push(base + 1, base + 2, base + 3, base + 1, base + 3, base);
-  else batch.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  return count;
 };
 
 const emitTrimSpecs = (
@@ -122,42 +95,8 @@ const emitTrimSpecs = (
   specs: readonly LocalBoxSpec[],
 ): number => {
   if (vy < 0 || vy >= ctx.maxY) return 0;
-  const [w, _h, d] = ctx.grid.size;
   let count = 0;
-  for (const spec of specs) {
-    setVec3(
-      scratch.from,
-      vx + spec.from[0] / 16 - w / 2,
-      vy + spec.from[1] / 16,
-      vz + spec.from[2] / 16 - d / 2,
-    );
-    setVec3(
-      scratch.to,
-      vx + spec.to[0] / 16 - w / 2,
-      vy + spec.to[1] / 16,
-      vz + spec.to[2] / 16 - d / 2,
-    );
-    const layer = spec.layer ?? 'opaque';
-    const batch = getBatch(ctx.batches, layer, spec.tileOverride ?? 'timber_trim');
-    for (const dir of DIRS6) {
-      const shade = computeFaceShade(
-        ctx.grid,
-        ctx.descriptors,
-        ctx.lighting,
-        sx,
-        sy,
-        sz,
-        dir,
-        layer === 'emissive',
-        ctx.maxY,
-        false,
-        scratch.colors,
-      );
-      writeSpecBoxUv(dir, spec, vx, vy, vz, scratch.uvs);
-      pushQuad(batch, dir, scratch.from, scratch.to, scratch.uvs, shade.colors, shade.flip);
-    }
-    count += 6;
-  }
+  for (const spec of specs) count += emitTrimBox(ctx, scratch, vx, vy, vz, sx, sy, sz, spec);
   return count;
 };
 
@@ -176,9 +115,8 @@ const emitStrip = (
   tileId: string,
 ): number => {
   const [ox, oz] = OUTWARD[dir];
-  return emitTrimSpecs(ctx, scratch, vx, vy, vz, vx + ox, vy, vz + oz, [
-    stripSpec(dir, depth, u0, u1, y0, y1, tileId),
-  ]);
+  writeStripSpec(STRIP_SCRATCH, dir, depth, u0, u1, y0, y1, tileId);
+  return emitTrimBox(ctx, scratch, vx, vy, vz, vx + ox, vy, vz + oz, STRIP_SCRATCH, OPPOSITE[dir]);
 };
 
 const solid = (ctx: MeshCtx, x: number, y: number, z: number): boolean =>
@@ -264,8 +202,12 @@ const emitJettyCorbelAt = (
 ): number => {
   const vy = y - 1;
   if (!solid(ctx, x, y, z) || voxelAt(ctx.grid, x, vy, z) > 0) return 0;
-  const hitDir = CARDINALS.find((dir) => solid(ctx, x - OUTWARD[dir][0], vy, z - OUTWARD[dir][1]));
-  return hitDir ? emitTrimSpecs(ctx, scratch, x, vy, z, x, vy, z, corbelStepSpecs(hitDir)) : 0;
+  for (const dir of CARDINALS) {
+    if (solid(ctx, x - OUTWARD[dir][0], vy, z - OUTWARD[dir][1])) {
+      return emitTrimSpecs(ctx, scratch, x, vy, z, x, vy, z, corbelStepSpecs(dir));
+    }
+  }
+  return 0;
 };
 
 const emitJettyCorbels = (ctx: MeshCtx, scratch: NonFullScratch): number => {
@@ -451,9 +393,10 @@ const emitChimneyCellCap = (
   const desc = ctx.descriptors[v]!;
   if (desc.shape !== 'full' || !isChimneyBrickTile(desc.top)) return 0;
   if (voxelAt(ctx.grid, x, y - 1, z) !== v || voxelAt(ctx.grid, x, y - 2, z) !== v) return 0;
-  const airSides = CARDINALS.filter(
-    (c) => voxelAt(ctx.grid, x + OUTWARD[c][0], y, z + OUTWARD[c][1]) <= 0,
-  ).length;
+  let airSides = 0;
+  for (const c of CARDINALS) {
+    if (voxelAt(ctx.grid, x + OUTWARD[c][0], y, z + OUTWARD[c][1]) <= 0) airSides += 1;
+  }
   if (airSides < 3) return 0;
   const above = voxelAt(ctx.grid, x, y + 1, z);
   const onSlab =
