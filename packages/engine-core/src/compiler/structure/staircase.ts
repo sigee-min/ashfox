@@ -149,6 +149,25 @@ const tryPlaceRail = (
   ctx.put(x, y, z, res.state, res.assetAlias);
 };
 
+const placeStringerSupport = (
+  ctx: StairEvalContext,
+  input: StaircaseInput,
+  x: number,
+  y: number,
+  z: number,
+  facing: CardinalFacing,
+): void => {
+  if (y <= input.yFrom + 1 || !ctx.isEmpty(x, y - 1, z)) return;
+  const res = ctx.resolve(input.stair, ctx.ownerPath, [x, y - 1, z]);
+  ctx.put(
+    x,
+    y - 1,
+    z,
+    withBlockProperties(res.state, { facing: OPPOSITE[facing], half: 'top' }),
+    res.assetAlias,
+  );
+};
+
 const emitRun = (
   ctx: StairEvalContext,
   input: StaircaseInput,
@@ -166,8 +185,11 @@ const emitRun = (
       const px = sx + fx * i + rx * w;
       const pz = sz + fz * i + rz * w;
       placeStep(ctx, input, px, y, pz, facing);
+      placeStringerSupport(ctx, input, px, y, pz, facing);
     }
+    tryPlaceRail(ctx, input, sx + fx * i - rx, y, sz + fz * i - rz);
     tryPlaceRail(ctx, input, sx + fx * i - rx, y + 1, sz + fz * i - rz);
+    tryPlaceRail(ctx, input, sx + fx * i + rx * input.width, y, sz + fz * i + rz * input.width);
     tryPlaceRail(ctx, input, sx + fx * i + rx * input.width, y + 1, sz + fz * i + rz * input.width);
   }
   return [sx + fx * steps, sz + fz * steps];
@@ -197,7 +219,10 @@ const emitSpiral = (ctx: StairEvalContext, input: StaircaseInput, rise: number):
     const y = input.yFrom + 1 + i;
     const [dx, dz, dir] = ring[(startOffset + i) % ring.length]!;
     if (dir) placeStep(ctx, input, cx + dx, y, cz + dz, dir);
-    else placeLanding(ctx, input, cx + dx, y, cz + dz);
+    else {
+      placeLanding(ctx, input, cx + dx, y, cz + dz);
+      placeStringerSupport(ctx, input, cx + dx, y, cz + dz, input.facing);
+    }
   }
 };
 

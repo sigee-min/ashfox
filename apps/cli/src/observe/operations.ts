@@ -1,7 +1,9 @@
 import { evaluateSoundQuality, renderSoundInspectSheet } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
+  buildStructureBakedMesh,
   buildStructureDocument,
+  collectStructureCutBands,
   encodeCanonicalPng,
   encodeRgbaBufferPng,
   evaluateAssetQuality,
@@ -155,47 +157,46 @@ const soundWavePayload = (asset: Prepared, v: ViewOptions): { readonly wave: num
 
 const buildStructureCutSlices = (
   structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
-) => {
-  const h = structure.grid.size[1];
-  const cuts: { label: string; cutY: number }[] = [];
-  if (structure.grid.floors.length > 0) {
-    for (const floor of structure.grid.floors) {
-      const cutY = Math.min(h, floor.y + Math.min(3, Math.max(2, Math.floor(floor.height * 0.75))));
-      cuts.push({ label: `${floor.name.toUpperCase()} (Y<${cutY})`, cutY });
-    }
-  } else {
-    for (let y = 4; y < h; y += 5) cuts.push({ label: `BAND Y<${y}`, cutY: y });
-  }
-  if (cuts.length === 0 || cuts[cuts.length - 1]!.cutY < h) {
-    cuts.push({ label: `ROOF (Y<${h})`, cutY: h });
-  }
-  return cuts.map((entry) => ({
+) =>
+  collectStructureCutBands(structure.grid.floors, structure.grid.size[1]).map((entry) => ({
     ...entry,
-    ...(structure.bakedMesh.batches.length === 0
+    ...(structure.bakedMesh.batches.length > 0
       ? {
+          bakedMesh: buildStructureBakedMesh(
+            structure.grid,
+            structure.lighting,
+            structure.customModels,
+            { cutawayY: entry.cutY },
+          ),
+        }
+      : {
           document: buildStructureDocument(structure.grid, structure.customModels, {
             cutawayY: entry.cutY,
           }),
-        }
-      : {}),
+        }),
   }));
-};
 
 const structurePayload = (
   structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
   v: ViewOptions,
 ) => {
-  const fallbackDoc =
-    structure.bakedMesh.batches.length === 0
-      ? v.cutaway !== undefined
-        ? buildStructureDocument(structure.grid, structure.customModels, { cutawayY: v.cutaway })
-        : structure.document
-      : undefined;
+  const hasBaked = structure.bakedMesh.batches.length > 0;
+  const bakedMesh =
+    hasBaked && v.cutaway !== undefined
+      ? buildStructureBakedMesh(structure.grid, structure.lighting, structure.customModels, {
+          cutawayY: v.cutaway,
+        })
+      : structure.bakedMesh;
+  const fallbackDoc = !hasBaked
+    ? v.cutaway !== undefined
+      ? buildStructureDocument(structure.grid, structure.customModels, { cutawayY: v.cutaway })
+      : structure.document
+    : undefined;
   return {
     structure: {
       id: structure.id,
       size: structure.grid.size,
-      bakedMesh: structure.bakedMesh,
+      bakedMesh,
       customModels: structure.customModels,
       playableMeta: structure.playableMeta,
       floors: structure.grid.floors,

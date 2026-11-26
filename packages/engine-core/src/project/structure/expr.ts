@@ -161,17 +161,6 @@ export const parseExprVec2 = (cursor: Cursor): ExprVec2 => {
   return [x, z];
 };
 
-export const parseExprVec3 = (cursor: Cursor): ExprVec3 => {
-  take(cursor, '(');
-  const x = parseScalarExpr(cursor);
-  take(cursor, ',');
-  const y = parseScalarExpr(cursor);
-  take(cursor, ',');
-  const z = parseScalarExpr(cursor);
-  take(cursor, ')');
-  return [x, y, z];
-};
-
 const failExpr = (file: string, pointer: string, message: string): never => {
   throw new StructureInputError({
     code: 'structure.bad-expr',

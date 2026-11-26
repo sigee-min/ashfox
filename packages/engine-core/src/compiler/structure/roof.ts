@@ -219,6 +219,7 @@ const emitHipRing = (
   owner: string,
   put: VoxelSetter,
   cells: IntVec3[],
+  half: 'bottom' | 'top' = 'bottom',
 ): void => {
   if (x0 === x1 && z0 === z1) {
     const r = resolve(ridgeKey, owner, [x0, y, z0]);
@@ -229,18 +230,18 @@ const emitHipRing = (
   const stair = resolve(stairKey, owner, [x0, y, z0]).state;
   const ridge = resolve(ridgeKey, owner, [x0, y, z0]).state;
   for (let x = x0; x <= x1; x += 1) {
-    put(x, y, z0, z0 === z1 ? ridge : withStair(stair, 'south'), null);
+    put(x, y, z0, z0 === z1 ? ridge : withStair(stair, 'south', half), null);
     cells.push([x, y, z0]);
     if (z1 !== z0) {
-      put(x, y, z1, withStair(stair, 'north'), null);
+      put(x, y, z1, withStair(stair, 'north', half), null);
       cells.push([x, y, z1]);
     }
   }
   for (let z = z0 + 1; z < z1; z += 1) {
-    put(x0, y, z, withStair(stair, 'east'), null);
+    put(x0, y, z, withStair(stair, 'east', half), null);
     cells.push([x0, y, z]);
     if (x1 !== x0) {
-      put(x1, y, z, withStair(stair, 'west'), null);
+      put(x1, y, z, withStair(stair, 'west', half), null);
       cells.push([x1, y, z]);
     }
   }
@@ -264,7 +265,12 @@ const emitHipPyramid = (
     const z0 = min[2] + level;
     const z1 = max[2] - level;
     if (x0 > x1 || z0 > z1) break;
+    if (level > 0)
+      emitHipRing(y - 1, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells, 'top');
     emitHipRing(y, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells);
+    if (op.pitch === 'steep' && y + 1 <= max[1]) {
+      emitHipRing(y + 1, x0, x1, z0, z1, op.stair, op.ridge, resolve, owner, put, cells);
+    }
   }
 };
 

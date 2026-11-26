@@ -6,7 +6,7 @@ structure watchtower {
 
   density = 2;
   seed = 202;
-  size = (13, 21, 13);
+  size = (13, 27, 13);
   data_version = 3955;
 
   params {

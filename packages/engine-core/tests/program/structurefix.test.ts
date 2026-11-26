@@ -17,7 +17,10 @@ const relativePosix = (owner: string, spec: string): string =>
   path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
 
 const readPropFixture = (name: string): string =>
-  fs.readFileSync(path.join(REPO_ROOT, 'examples/structure/props', `${name}.ashfox`), 'utf8');
+  fs.readFileSync(
+    path.join(REPO_ROOT, 'examples/structure/assets/models/props', `${name}.ashfox`),
+    'utf8',
+  );
 
 const compileSingleModel = (
   entryName: string,
@@ -61,13 +64,17 @@ const testMixedStructureAndSharedPropWorkspace = (): void => {
   const files: DirectoryFile[] = [
     {
       path: 'assets/structures/watchtower.ashfox',
-      source: read('watchtower.ashfox')
-        .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
-        .replaceAll('./props/', '../models/props/'),
+      source: read('assets/structures/watchtower.ashfox'),
     },
-    { path: 'assets/module/furnishings.ashfox', source: read('furnishings.ashfox') },
-    { path: 'assets/models/props/rune_pillar.ashfox', source: read('props/rune_pillar.ashfox') },
-    { path: 'assets/models/props/wall_lantern.ashfox', source: read('props/wall_lantern.ashfox') },
+    { path: 'assets/module/furnishings.ashfox', source: read('assets/module/furnishings.ashfox') },
+    {
+      path: 'assets/models/props/rune_pillar.ashfox',
+      source: read('assets/models/props/rune_pillar.ashfox'),
+    },
+    {
+      path: 'assets/models/props/wall_lantern.ashfox',
+      source: read('assets/models/props/wall_lantern.ashfox'),
+    },
   ];
   const config = JSON.stringify({
     format: 'ashfox-workspace',
@@ -176,8 +183,8 @@ structure s {
 
 const testPreservedCustomBoneRotationAndMirror = async (): Promise<void> => {
   const rotatedSource = readPropFixture('rune_pillar').replace(
-    /export skeleton Skel implements R \{\s*bind root \{\s*parent-origin = \(0u, 0u, 0u\);\s*frame \{ x = \(1, 0, 0\); y = \(0, 1, 0\); z = \(0, 0, 1\); \}/u,
-    'export skeleton Skel implements R {\n    bind root {\n      parent-origin = (0u, 0u, 0u);\n      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }',
+    /export skeleton PillarSkeleton implements PillarRig \{\s*bind root \{\s*parent-origin = \(0u, 0u, 0u\);\s*frame \{ x = \(1, 0, 0\); y = \(0, 1, 0\); z = \(0, 0, 1\); \}/u,
+    'export skeleton PillarSkeleton implements PillarRig {\n    bind root {\n      parent-origin = (0u, 0u, 0u);\n      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }',
   );
   const rotatedModel = compileSingleModel(
     'rune_pillar',
@@ -232,8 +239,9 @@ structure mirror_test {
   assert.ok(clonedBone && clonedBone.kind === 'bone');
   assert.deepEqual(clonedBone.transform.rotation, rotatedBone.transform.rotation);
   assert.deepEqual(clonedBone.canonicalFrame?.rotation, rotatedBone.canonicalFrame?.rotation);
-  const glb = await exportStructureGltfResolved(clonedDoc, 'mirror_test', 'fix-key');
+  const glb = await exportStructureGltfResolved(built, 'mirror_test', 'fix-key');
   assert.ok(glb.files.some((f) => f.path.endsWith('.glb')));
+  assert.ok(glb.files.some((f) => f.path.endsWith('.structure.json')));
 };
 
 const main = async (): Promise<void> => {

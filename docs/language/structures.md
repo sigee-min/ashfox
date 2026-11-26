@@ -9,11 +9,11 @@ and a `.structure.json` (`PlayableStructureMeta`) runtime manifest for game engi
 
 Use the shared `ashfox-model 1` header with an entry `structure`, a `compound`, or a reusable `module`:
 
-| Unit | Role | Allowed declarations |
-| --- | --- | --- |
-| `structure id { … }` | Buildable building entry | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `build` |
-| `compound id { … }` | Multi-building layout entry | Same as `structure`, importing child `structure` entries for `compound_place` |
-| `module id { … }` | Shared prefab & furnishing library | `import`, `palette`, `export prefab`, `prefab` |
+| Unit                 | Role                               | Allowed declarations                                                                                              |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `structure id { … }` | Buildable building entry           | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `build` |
+| `compound id { … }`  | Multi-building layout entry        | Same as `structure`, importing child `structure` entries for `compound_place`                                     |
+| `module id { … }`    | Shared prefab & furnishing library | `import`, `palette`, `export prefab`, `prefab`                                                                    |
 
 - `density = 1 | 2;`: procedural multi-tile texture resolution (`16px` at `1`, `32px` at `2`, defaults to `2`).
 - `seed = 101;`: deterministic PRNG seed for `mix(...)` palettes, weathering, and surface grain.
@@ -42,18 +42,18 @@ palette {
 
 Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and `build { … }`, compose buildings semantically and refine with voxel primitives:
 
-| Operation | Behavior |
-| --- | --- |
-| `floor name y = n height = h { … }` | Scope rooms and openings to one story (`height >= 3`; `y` = floor slab) |
-| `room id from = (x, z) size = (w, d) kind = … [plinth = k] floor = k wall = k [frame = k] [ceiling = k];` | Declare semantic room (`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`); adjacent rooms may share a 1-block wall |
-| `facade on room.wall, … { door …; window …; arch …; }` | Place doors (with optional `porch { depth; floor; pillars; lamps; steps; }`), recessed/shuttered windows (`at\|repeat\|symmetric`), and connecting arches |
-| `staircase [in_room = r] style = straight\|l_turn\|u_turn\|spiral at = (x, z) [y_from = n y_to = n] facing = … stair = k [landing = k rail = k headroom = 3];` | Generate stairs with protected `>= 2` headroom and automatic upper-slab cuts |
-| `roof [on = r \| from = … to = …] style = gable\|hip\|pyramid axis = x\|z [overhang = n pitch = shallow\|standard\|steep trim = k under_eave = true] stair = k ridge = r [gable = g] [{ dormer …; chimney …; }];` | Build pitched stair roofs with overhang trim, dormers, and chimneys |
-| `furnish room = r { place_anchor prefab = … on = …; hang block = k at = … drop = n; }` | Anchor furniture prefabs to corners/walls/center and hang ceiling lights |
-| `weathering { ground_moss …; corner_quoin …; chimney_soot …; eave_shadow …; }` | Apply deterministic moss, corner quoins, soot, and eave shading (`rate` `0..1`) |
-| `socket id kind = entry\|road\|wall_join\|courtyard (room = r wall = … \| at = …) normal = … [pool = "…" target = "…"];` | Record world-connection sockets in `.structure.json` and `.nbt` jigsaw entities |
-| `compound_place alias at = (x, y, z) rotate = 0\|90\|180\|270;` | Place an imported child `structure` inside a `compound` unit |
-| `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | Low-level voxel, ASCII floorplan, repeat/mirror, and prefab placement ops |
+| Operation                                                                                                                                                                                                         | Behavior                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `floor name y = n height = h { … }`                                                                                                                                                                               | Scope rooms and openings to one story (`height >= 3`; `y` = floor slab)                                                                                   |
+| `room id from = (x, z) size = (w, d) kind = … [plinth = k] floor = k wall = k [frame = k] [ceiling = k];`                                                                                                         | Declare semantic room (`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`); adjacent rooms may share a 1-block wall                           |
+| `facade on room.wall, … { door …; window …; arch …; }`                                                                                                                                                            | Place doors (with optional `porch { depth; floor; pillars; lamps; steps; }`), recessed/shuttered windows (`at\|repeat\|symmetric`), and connecting arches |
+| `staircase [in_room = r] style = straight\|l_turn\|u_turn\|spiral at = (x, z) [y_from = n y_to = n] facing = … stair = k [landing = k rail = k headroom = 3];`                                                    | Generate stairs with protected `>= 2` headroom and automatic upper-slab cuts                                                                              |
+| `roof [on = r \| from = … to = …] style = gable\|hip\|pyramid axis = x\|z [overhang = n pitch = shallow\|standard\|steep trim = k under_eave = true] stair = k ridge = r [gable = g] [{ dormer …; chimney …; }];` | Build pitched stair roofs with overhang trim, dormers, and chimneys                                                                                       |
+| `furnish room = r { place_anchor prefab = … on = …; hang block = k at = … drop = n; }`                                                                                                                            | Anchor furniture prefabs to corners/walls/center and hang ceiling lights                                                                                  |
+| `weathering { ground_moss …; corner_quoin …; chimney_soot …; eave_shadow …; }`                                                                                                                                    | Apply deterministic moss, corner quoins, soot, and eave shading (`rate` `0..1`)                                                                           |
+| `socket id kind = entry\|road\|wall_join\|courtyard (room = r wall = … \| at = …) normal = … [pool = "…" target = "…"];`                                                                                          | Record world-connection sockets in `.structure.json` and `.nbt` jigsaw entities                                                                           |
+| `compound_place alias at = (x, y, z) rotate = 0\|90\|180\|270;`                                                                                                                                                   | Place an imported child `structure` inside a `compound` unit                                                                                              |
+| `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place`                                                                                                                           | Low-level voxel, ASCII floorplan, repeat/mirror, and prefab placement ops                                                                                 |
 
 ## Complete canonical example
 
@@ -79,11 +79,13 @@ structure shrine_hut {
     moss_cobble = "minecraft:mossy_cobblestone";
     plaster = mix("minecraft:white_terracotta" * 0.85, "minecraft:calcite" * 0.15);
     stone_brick = "minecraft:stone_bricks";
+    chimney_brick = "minecraft:bricks";
     plank = "minecraft:oak_planks";
     spruce = "minecraft:spruce_planks";
     timber = "minecraft:spruce_log[axis=y]";
     beam = "minecraft:spruce_log[axis=x]";
     stair = "minecraft:spruce_stairs";
+    trim_stair = "minecraft:dark_oak_stairs";
     ridge = "minecraft:spruce_slab[type=bottom]";
     porch_stair = "minecraft:cobblestone_stairs[facing=north,half=bottom]";
     door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
@@ -95,6 +97,8 @@ structure shrine_hut {
     bed_h = "minecraft:red_bed[facing=north,part=head]";
     bed_f = "minecraft:red_bed[facing=north,part=foot]";
     chest = "minecraft:chest[facing=north]";
+    bookshelf = "minecraft:bookshelf";
+    table = "minecraft:crafting_table";
   }
 
   prefab BedNook {
@@ -105,6 +109,15 @@ structure shrine_hut {
       H = bed_h;
       F = bed_f;
       C = chest;
+    };
+  }
+
+  prefab StudyNook {
+    layer y = 0 origin = (0, 0) {
+      "BT"
+    } map {
+      B = bookshelf;
+      T = table;
     };
   }
 
@@ -125,10 +138,13 @@ structure shrine_hut {
       }
     }
 
-    roof on = cell style = gable axis = z overhang = 1 pitch = standard stair = stair ridge = ridge gable = plaster under_eave = true;
+    roof on = cell style = gable axis = z overhang = 1 pitch = standard stair = stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
+      chimney room = cell corner = nw offset = (0, 0) width = 1 rise = 2 block = chimney_brick cap = true;
+    }
 
     furnish room = cell {
       place_anchor prefab = BedNook on = nw offset = (0, 0) rotate = 0;
+      place_anchor prefab = StudyNook on = se offset = (0, 0) rotate = 0;
       hang block = lantern at = ceiling_center drop = 1;
     }
 

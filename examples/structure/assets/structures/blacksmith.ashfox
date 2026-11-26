@@ -7,7 +7,7 @@ structure blacksmith {
 
   density = 2;
   seed = 303;
-  size = (16, 15, 14);
+  size = (16, 18, 14);
   data_version = 3955;
 
   params {
@@ -94,7 +94,7 @@ structure blacksmith {
     staircase in_room = shop style = straight at = (10, 3) y_from = 0 y_to = 5 facing = south width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
 
     roof on = smithy style = gable axis = x overhang = 1 pitch = shallow stair = roof_stair trim = trim_stair ridge = ridge gable = cobble under_eave = true {
-      chimney room = smithy corner = nw offset = (1, 1) width = 2 rise = 5 block = chimney_brick cap = true;
+      chimney room = smithy corner = nw offset = (1, 1) width = 2 rise = 3 block = chimney_brick cap = true;
     }
 
     roof on = loft style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true;

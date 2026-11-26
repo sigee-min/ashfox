@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+import { collectStructureCutBands } from '@ashfox/engine-core';
 import { applyEyeLevelCamera, frameBoxAtAngles } from '../cameraPresets';
 import {
   createCaptureSurface,
@@ -83,23 +84,10 @@ const exteriorTileSpecs = (payload: StructureObservationPayload): readonly Exter
 
 const deriveCutSlices = (
   payload: StructureObservationPayload,
-): readonly StructureObservationSlice[] => {
-  if (payload.cutSlices && payload.cutSlices.length > 0) return payload.cutSlices;
-  const h = payload.size[1];
-  const cuts: StructureObservationSlice[] = [];
-  if (payload.floors.length > 0) {
-    for (const floor of payload.floors) {
-      const cutY = Math.min(h, floor.y + Math.min(3, Math.max(2, Math.floor(floor.height * 0.75))));
-      cuts.push({ label: `${floor.name.toUpperCase()} (Y<${cutY})`, cutY });
-    }
-  } else {
-    for (let y = 4; y < h; y += 5) cuts.push({ label: `BAND Y<${y}`, cutY: y });
-  }
-  if (cuts.length === 0 || cuts[cuts.length - 1]!.cutY < h) {
-    cuts.push({ label: `ROOF (Y<${h})`, cutY: h });
-  }
-  return cuts;
-};
+): readonly StructureObservationSlice[] =>
+  payload.cutSlices && payload.cutSlices.length > 0
+    ? payload.cutSlices
+    : collectStructureCutBands(payload.floors, payload.size[1]);
 
 interface WorldBox {
   readonly minX: number;
@@ -156,13 +144,13 @@ const roomToInteriorCam = (
   const focal = pickZoneFocalTarget(payload, b);
   const dx = cx - focal[0];
   const dz = cz - focal[2];
-  const pull = Math.hypot(dx, dz) > 0.25 ? 0.35 : 0;
+  const pull = Math.hypot(dx, dz) > 0.25 ? 0.58 : 0;
   return {
     label: room.name.toUpperCase(),
     eye: [
-      THREE.MathUtils.clamp(cx + dx * pull, b.minX + 0.75, b.maxX - 0.75),
+      THREE.MathUtils.clamp(cx + dx * pull, b.minX + 0.85, b.maxX - 0.85),
       Math.min(b.maxY - 0.35, b.minY + 1.6),
-      THREE.MathUtils.clamp(cz + dz * pull, b.minZ + 0.75, b.maxZ - 0.75),
+      THREE.MathUtils.clamp(cz + dz * pull, b.minZ + 0.85, b.maxZ - 0.85),
     ],
     lookAt: focal,
   };
@@ -321,7 +309,14 @@ const renderExteriorSheet = (
         twilight: spec.twilight,
         envId: spec.twilight ? 'evening' : v.environment === 'studio' ? 'day' : v.environment,
         positionCamera: (bounds) =>
-          frameBoxAtAngles(surface.camera, bounds, spec.azimuth, spec.elevation, v.zoom, 42),
+          frameBoxAtAngles(
+            surface.camera,
+            bounds,
+            spec.azimuth,
+            spec.elevation,
+            v.zoom * (spec.elevation >= 20 ? 1.32 : 1.08),
+            42,
+          ),
       },
       signal,
     );
@@ -406,7 +401,14 @@ const renderTurnaroundSheet = (
       {
         envId: v.environment,
         positionCamera: (bounds) =>
-          frameBoxAtAngles(surface.camera, bounds, spec.azimuth, spec.elevation, v.zoom, 42),
+          frameBoxAtAngles(
+            surface.camera,
+            bounds,
+            spec.azimuth,
+            spec.elevation,
+            v.zoom * (spec.elevation >= 20 ? 1.32 : 1.08),
+            42,
+          ),
       },
       signal,
     );

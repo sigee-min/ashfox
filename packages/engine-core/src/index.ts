@@ -309,6 +309,7 @@ export type { StructureAuditMetrics, StructureAuditReport } from './audit/struct
 export {
   buildStructureBakedMesh,
   buildStructureDocument,
+  collectStructureCutBands,
   compileStructureUnits as compileStructureUnitsRaw,
   decodeStructureNbt,
   encodeStructureNbt,

@@ -143,12 +143,9 @@ const compileStructureFiles = async (
     return [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
   }
   if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
-  const bundle = await exportStructureGltfResolved(
-    product.structure.document,
-    target.name,
-    buildKey,
-    { encoding: target.encoding ?? 'portable' },
-  );
+  const bundle = await exportStructureGltfResolved(product.structure, target.name, buildKey, {
+    encoding: target.encoding ?? 'portable',
+  });
   const artifacts = bundle.files.map((file) => {
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {

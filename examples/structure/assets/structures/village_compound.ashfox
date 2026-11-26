@@ -8,7 +8,7 @@ compound village_compound {
 
   density = 2;
   seed = 505;
-  size = (46, 22, 36);
+  size = (46, 28, 36);
   data_version = 3955;
 
   outputs {

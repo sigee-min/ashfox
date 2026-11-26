@@ -303,16 +303,14 @@ const emitSingleOpening = (
   spec: FacadeOpeningSpec,
 ): void => {
   const y1 = y0 + spec.height - 1;
-  const recessDepth = spec.kind === 'window' && (spec.recess ?? 0) > 0 ? -1 : 0;
   for (let col = 0; col < spec.width; col += 1) {
     const [wx, wz] = frame.cellAt(u0 + col, 0);
     for (let y = y0; y <= y1; y += 1) {
       ctx.carve(wx, y, wz);
       if (spec.kind === 'door') placeDoorCell(ctx, wx, y, wz, y0, col, spec);
       else if (spec.kind === 'window') {
-        const [gx, gz] = frame.cellAt(u0 + col, recessDepth);
-        const res = ctx.resolve(spec.glass ?? 'minecraft:glass_pane', ctx.ownerPath, [gx, y, gz]);
-        ctx.put(gx, y, gz, res.state, res.assetAlias);
+        const res = ctx.resolve(spec.glass ?? 'minecraft:glass_pane', ctx.ownerPath, [wx, y, wz]);
+        ctx.put(wx, y, wz, res.state, res.assetAlias);
       }
     }
   }

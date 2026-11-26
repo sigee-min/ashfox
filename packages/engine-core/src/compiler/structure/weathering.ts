@@ -192,6 +192,7 @@ const applyGroundMoss = (
 ): void => {
   const [w, h, d] = ctx.size;
   const target = ctx.resolve(rule.target, ctx.ownerPath, [0, 0, 0]).state;
+  ctx.resolve(rule.into, ctx.ownerPath, [0, 0, 0]);
   const maxY = Math.min(h - 1, rule.height);
   for (let y = 0; y <= maxY; y += 1) {
     const prob = rule.rate * (1 - y / (rule.height + 1));
@@ -209,6 +210,7 @@ const applyCornerQuoin = (
 ): void => {
   const [w, _h, d] = ctx.size;
   const target = ctx.resolve(rule.target, ctx.ownerPath, [0, 0, 0]).state;
+  ctx.resolve(rule.corners, ctx.ownerPath, [0, 0, 0]);
   for (const room of ctx.rooms) {
     const corners: readonly [number, number][] = [
       [room.from[0], room.from[2]],
@@ -259,21 +261,45 @@ const applyChimneySoot = (
   }
 };
 
+const EAVE_OFFSETS: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+const tryEaveNeighbors = (
+  ctx: WeatheringContext,
+  rx: number,
+  y: number,
+  rz: number,
+  target: string,
+  rule: Extract<WeatheringRule, { kind: 'eave_shadow' }>,
+  seen: Set<number>,
+): void => {
+  const [w, _h, d] = ctx.size;
+  for (const [ox, oz] of EAVE_OFFSETS) {
+    const x = rx + ox;
+    const z = rz + oz;
+    if (x < 0 || x >= w || z < 0 || z >= d) continue;
+    const idx = (y * d + z) * w + x;
+    if (seen.has(idx)) continue;
+    seen.add(idx);
+    tryReplaceVoxel(ctx, x, y, z, target, rule.into, rule.rate, 71);
+  }
+};
+
 const applyEaveShadow = (
   ctx: WeatheringContext,
   rule: Extract<WeatheringRule, { kind: 'eave_shadow' }>,
 ): void => {
-  const [w, _h, d] = ctx.size;
   const target = ctx.resolve(rule.target, ctx.ownerPath, [0, 0, 0]).state;
+  ctx.resolve(rule.into, ctx.ownerPath, [0, 0, 0]);
   const seen = new Set<number>();
   for (const [rx, ry, rz] of ctx.roofCells) {
     for (const dy of [1, 2]) {
-      const y = ry - dy;
-      if (y < 0) continue;
-      const idx = (y * d + rz) * w + rx;
-      if (seen.has(idx)) continue;
-      seen.add(idx);
-      tryReplaceVoxel(ctx, rx, y, rz, target, rule.into, rule.rate, 71);
+      if (ry - dy >= 0) tryEaveNeighbors(ctx, rx, ry - dy, rz, target, rule, seen);
     }
   }
 };
