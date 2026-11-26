@@ -29,6 +29,8 @@ interface SpriteGraph {
   readonly entry: string;
   readonly parsed: Map<string, SpriteSourceUnit>;
   readonly units: Map<string, SpriteSourceUnit>;
+  readonly importTargets: Map<string, ReadonlyMap<string, string>>;
+  readonly declIds: Map<string, Readonly<Record<DeclarationKind, ReadonlySet<string>>>>;
   readonly visiting: Set<string>;
   readonly usedImports: Map<string, Set<string>>;
   readonly usedDecls: Set<string>;
@@ -41,6 +43,18 @@ const markSpriteImportUsed = (graph: SpriteGraph, path: string, alias: string): 
   const used = graph.usedImports.get(path) ?? new Set<string>();
   used.add(alias);
   graph.usedImports.set(path, used);
+};
+
+const indexUnitLookups = (graph: SpriteGraph, path: string, unit: SpriteSourceUnit): void => {
+  graph.importTargets.set(
+    path,
+    new Map(unit.imports.map((imp) => [imp.alias, relative(path, imp.path)])),
+  );
+  graph.declIds.set(path, {
+    masks: new Set(unit.masks.map((d) => String(d.id))),
+    materials: new Set(unit.materials.map((d) => String(d.id))),
+    stamps: new Set(unit.stamps.map((d) => String(d.id))),
+  });
 };
 
 const visitUnit = (graph: SpriteGraph, path: string): void => {
@@ -56,6 +70,7 @@ const visitUnit = (graph: SpriteGraph, path: string): void => {
     throw new Error('Import must refer to a module: ' + path);
   for (const dependency of unit.imports) visitUnit(graph, relative(path, dependency.path));
   graph.units.set(path, unit);
+  indexUnitLookups(graph, path, unit);
   graph.visiting.delete(path);
 };
 
@@ -67,10 +82,10 @@ const referenceTarget = (graph: SpriteGraph, path: string, reference: string): [
   const parts = reference.split('.');
   if (parts.length === 1) return [path, parts[0]!];
   if (parts.length !== 2) throw new Error('Expected local or alias.name reference');
-  const imported = graph.units.get(path)!.imports.find((i) => i.alias === parts[0]);
-  if (!imported) throw new Error('Unknown import alias ' + parts[0]);
-  markSpriteImportUsed(graph, path, imported.alias);
-  return [relative(path, imported.path), parts[1]!];
+  const targetPath = graph.importTargets.get(path)!.get(parts[0]!);
+  if (!targetPath) throw new Error('Unknown import alias ' + parts[0]);
+  markSpriteImportUsed(graph, path, parts[0]!);
+  return [targetPath, parts[1]!];
 };
 
 const resolve = (
@@ -81,7 +96,7 @@ const resolve = (
 ): string => {
   if (typeof reference !== 'string') throw new Error('Expected source reference');
   const [owner, id] = referenceTarget(graph, path, reference);
-  if (!graph.units.get(owner)![kind].some((d) => d.id === id))
+  if (!graph.declIds.get(owner)![kind].has(id))
     throw new Error(`Missing ${kind} declaration ${reference}`);
   graph.usedDecls.add(`${owner}\u0000${kind}\u0000${id}`);
   return symbol(owner, id);
@@ -180,6 +195,8 @@ export const compileDirectorySprite = (
     entry,
     parsed,
     units: new Map(),
+    importTargets: new Map(),
+    declIds: new Map(),
     visiting: new Set(),
     usedImports: new Map(),
     usedDecls: new Set(),

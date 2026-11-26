@@ -1,3 +1,4 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { failWorkspaceConfig } from './validate';
 
 interface JsonScanState {
@@ -88,7 +89,7 @@ const scanValue = (state: JsonScanState, depth: number, pointer: string): void =
 
 /** Check depth and duplicate decoded keys before native JSON parsing loses them. */
 export const parseDirectoryJson = (source: string, file: string): unknown => {
-  if (new TextEncoder().encode(source).length > 262144) {
+  if (encodeUtf8(source).length > 262144) {
     failJson(file, '', 'source <= 256 KiB', 'oversized source');
   }
   const state: JsonScanState = { source, file, offset: 0 };

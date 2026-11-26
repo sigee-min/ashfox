@@ -126,8 +126,54 @@ const utf8ContractByteLength = (value) => {
   return bytes;
 };
 
+const DEFAULT_AUDIT_THRESHOLD = 75;
+
+const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+
+const UTF8_ENCODER = new TextEncoder();
+const UTF8_DECODER = new TextDecoder();
+const encodeUtf8 = (value) => UTF8_ENCODER.encode(value);
+const decodeUtf8 = (bytes) => UTF8_DECODER.decode(bytes);
+
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+const ramp = (value, low, high) =>
+  high <= low ? (value >= high ? 1 : 0) : clamp01((value - low) / (high - low));
+const round2 = (value) => Math.round(value * 100) / 100;
+const round4 = (value) => Math.round(value * 10000) / 10000;
+
+const auditSubmetric = (id, label, ratio, maxScore, value, target, detail) => ({
+  id,
+  label,
+  score: round2(clamp01(ratio) * maxScore),
+  maxScore,
+  value: round4(value),
+  target,
+  detail,
+});
+
+const gradeForAudit = (allGates, score, passed, threshold = DEFAULT_AUDIT_THRESHOLD) => {
+  if (!allGates || score < 50) return 'fail';
+  if (!passed || score < threshold) return 'needs_work';
+  return score >= 85 ? 'excellent' : 'pass';
+};
+
+const rankTopAuditDeductions = (gateDeductions, pillarDeductions, limit = 5) => {
+  const sorted = [...pillarDeductions].sort(
+    (left, right) =>
+      right.lostPoints - left.lostPoints || compareText(left.metricId, right.metricId),
+  );
+  return [...gateDeductions, ...sorted].slice(0, limit);
+};
+
 module.exports = {
+  auditSubmetric,
+  clamp01,
+  compareText,
+  decodeUtf8,
+  DEFAULT_AUDIT_THRESHOLD,
+  encodeUtf8,
   EXPORT_BUNDLE_SCHEMA_VERSION,
+  gradeForAudit,
   hasExactContractKeys,
   isCanonicalIsoDate,
   isClosedContractRecord,
@@ -135,6 +181,10 @@ module.exports = {
   isNonEmptyContractText,
   isUniqueContractTextArray,
   PROJECT_DOCUMENT_SCHEMA_VERSION,
+  ramp,
+  rankTopAuditDeductions,
+  round2,
+  round4,
   SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
   utf8ContractByteLength,
 };

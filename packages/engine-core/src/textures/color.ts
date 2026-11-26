@@ -22,3 +22,7 @@ export const parseSurfaceColor = (value: string): RgbColor => {
     b: Number.parseInt(hex.slice(4, 6), 16),
   };
 };
+
+/** Compute Rec. 709 / sRGB normalized luminance in [0, 1] from 8-bit RGB channels. */
+export const srgbLuma = (r: number, g: number, b: number): number =>
+  (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;

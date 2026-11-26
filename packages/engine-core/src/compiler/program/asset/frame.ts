@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { cross3, dot3 } from '../../../math/vec3';
 import { assetExactNumber, type AssetExactNumber } from './value/contract';
 
 export type AssetSignedCoordinate = -1 | 0 | 1;
@@ -48,18 +49,11 @@ const normalizedExactUnit = (value: unknown): value is AssetExactNumber => {
 const signed = (value: number): AssetSignedCoordinate | null =>
   value === -1 || value === 0 || value === 1 ? value : null;
 
-const dot = (left: AssetSignedAxis, right: AssetSignedAxis): number =>
-  left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
-
-const cross = (left: AssetSignedAxis, right: AssetSignedAxis): AssetSignedAxis | null => {
-  const values = [
-    left[1] * right[2] - left[2] * right[1],
-    left[2] * right[0] - left[0] * right[2],
-    left[0] * right[1] - left[1] * right[0],
-  ];
-  const x = signed(values[0]!);
-  const y = signed(values[1]!);
-  const z = signed(values[2]!);
+const crossSigned = (left: AssetSignedAxis, right: AssetSignedAxis): AssetSignedAxis | null => {
+  const values = cross3(left, right);
+  const x = signed(values[0]);
+  const y = signed(values[1]);
+  const z = signed(values[2]);
   return x === null || y === null || z === null ? null : freeze([x, y, z]);
 };
 
@@ -76,7 +70,7 @@ const determinant = (
   yAxis: AssetSignedAxis,
   zAxis: AssetSignedAxis,
 ): -1 | 1 | null => {
-  const crossed = cross(xAxis, yAxis);
+  const crossed = crossSigned(xAxis, yAxis);
   if (crossed === null) return null;
   if (sameAxis(crossed, zAxis)) return 1;
   if (
@@ -93,7 +87,7 @@ const determinant = (
   return null;
 };
 
-const validAxis = (axis: AssetSignedAxis): boolean => dot(axis, axis) === 1;
+const validAxis = (axis: AssetSignedAxis): boolean => dot3(axis, axis) === 1;
 
 export const isAssetExactFrame = (value: unknown): value is AssetExactFrame => {
   if (typeof value !== 'object' || value === null) return false;
@@ -112,9 +106,9 @@ export const isAssetExactFrame = (value: unknown): value is AssetExactFrame => {
     validAxis(frame.xAxis) &&
     validAxis(frame.yAxis) &&
     validAxis(frame.zAxis) &&
-    dot(frame.xAxis, frame.yAxis) === 0 &&
-    dot(frame.xAxis, frame.zAxis) === 0 &&
-    dot(frame.yAxis, frame.zAxis) === 0 &&
+    dot3(frame.xAxis, frame.yAxis) === 0 &&
+    dot3(frame.xAxis, frame.zAxis) === 0 &&
+    dot3(frame.yAxis, frame.zAxis) === 0 &&
     determinant(frame.xAxis, frame.yAxis, frame.zAxis) === frame.determinant
   );
 };

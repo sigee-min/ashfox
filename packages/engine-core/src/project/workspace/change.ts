@@ -1,4 +1,5 @@
 import {
+  compareText,
   isDenseContractArray,
   isClosedContractRecord,
   hasExactContractKeys,
@@ -67,7 +68,7 @@ const validDigest = (value: unknown): value is Sha256Digest =>
 const freezeFiles = (files: readonly WorkspaceFile[]): readonly WorkspaceFile[] =>
   Object.freeze(
     [...files]
-      .sort((left, right) => (left.path < right.path ? -1 : 1))
+      .sort((left, right) => compareText(left.path, right.path))
       .map((file) => Object.freeze({ path: file.path, source: file.source })),
   );
 

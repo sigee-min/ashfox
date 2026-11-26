@@ -23,71 +23,29 @@ const {
   isNonEmptyContractText,
 } = require('./reader');
 
-const validateProductExperience = (value) => {
-  const product = assertClosedOrderedRecord(
-    value,
-    'productExperience',
-    MANIFEST_KEYS.productExperience,
-  );
-  assertExactValue(
-    product.interactionModel,
-    'ai-authored-ai-compiled-human-observed',
-    'productExperience.interactionModel',
-  );
-  assertExactValue(
-    product.canonicalAuthority,
-    'native-ashfox-source',
-    'productExperience.canonicalAuthority',
-  );
+const validateProjectFile = (value) => {
   const projectFile = assertClosedOrderedRecord(
-    product.projectFile,
+    value,
     'productExperience.projectFile',
     MANIFEST_KEYS.projectFile,
   );
-  assertExactValue(
-    projectFile.extension,
-    '.ashfoxworkspace',
-    'productExperience.projectFile.extension',
-  );
-  assertExactValue(
-    projectFile.mediaType,
-    'application/vnd.ashfox.workspace+json',
-    'productExperience.projectFile.mediaType',
-  );
-  assertExactValue(projectFile.encoding, 'utf-8', 'productExperience.projectFile.encoding');
-  assertExactValue(projectFile.bom, 'forbidden', 'productExperience.projectFile.bom');
-  assertExactValue(
-    projectFile.authority,
-    'optional-repository-configuration',
-    'productExperience.projectFile.authority',
-  );
-  assertExactValue(
-    projectFile.loadMode,
-    'read-validate-build-atomic',
-    'productExperience.projectFile.loadMode',
-  );
-  assertExactValue(
-    projectFile.compiledState,
-    'derived-files-only',
-    'productExperience.projectFile.compiledState',
-  );
-  assertExactTextArray(
-    product.humanCapabilities,
-    HUMAN_CAPABILITIES,
-    'productExperience.humanCapabilities',
-  );
-  assertExactTextArray(
-    product.agentCapabilities,
-    AGENT_CAPABILITIES,
-    'productExperience.agentCapabilities',
-  );
-  assertExactTextArray(
-    product.forbiddenHumanAuthoring,
-    FORBIDDEN_HUMAN_AUTHORING,
-    'productExperience.forbiddenHumanAuthoring',
-  );
+  const expected = {
+    extension: '.ashfoxworkspace',
+    mediaType: 'application/vnd.ashfox.workspace+json',
+    encoding: 'utf-8',
+    bom: 'forbidden',
+    authority: 'optional-repository-configuration',
+    loadMode: 'read-validate-build-atomic',
+    compiledState: 'derived-files-only',
+  };
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    assertExactValue(projectFile[key], expectedValue, `productExperience.projectFile.${key}`);
+  }
+};
+
+const validateAgentDecision = (value) => {
   const decision = assertClosedOrderedRecord(
-    product.agentDecision,
+    value,
     'productExperience.agentDecision',
     MANIFEST_KEYS.agentDecision,
   );
@@ -106,6 +64,41 @@ const validateProductExperience = (value) => {
     AGENT_DECISION_EVIDENCE,
     'productExperience.agentDecision.requiredEvidence',
   );
+};
+
+const validateProductExperience = (value) => {
+  const product = assertClosedOrderedRecord(
+    value,
+    'productExperience',
+    MANIFEST_KEYS.productExperience,
+  );
+  assertExactValue(
+    product.interactionModel,
+    'ai-authored-ai-compiled-human-observed',
+    'productExperience.interactionModel',
+  );
+  assertExactValue(
+    product.canonicalAuthority,
+    'native-ashfox-source',
+    'productExperience.canonicalAuthority',
+  );
+  validateProjectFile(product.projectFile);
+  assertExactTextArray(
+    product.humanCapabilities,
+    HUMAN_CAPABILITIES,
+    'productExperience.humanCapabilities',
+  );
+  assertExactTextArray(
+    product.agentCapabilities,
+    AGENT_CAPABILITIES,
+    'productExperience.agentCapabilities',
+  );
+  assertExactTextArray(
+    product.forbiddenHumanAuthoring,
+    FORBIDDEN_HUMAN_AUTHORING,
+    'productExperience.forbiddenHumanAuthoring',
+  );
+  validateAgentDecision(product.agentDecision);
   assertExactValue(product.deliveryAuthority, 'human', 'productExperience.deliveryAuthority');
 };
 
@@ -229,10 +222,9 @@ const validateWorkflow = (value) => {
   );
 };
 
-const validateVersioning = (value, repoRoot) => {
-  const versioning = assertClosedOrderedRecord(value, 'versioning', MANIFEST_KEYS.versioning);
+const validateProductVersioning = (value, repoRoot) => {
   const product = assertClosedOrderedRecord(
-    versioning.product,
+    value,
     'versioning.product',
     MANIFEST_KEYS.productVersioning,
   );
@@ -259,59 +251,36 @@ const validateVersioning = (value, repoRoot) => {
       `versioning.product.synchronizedFiles[${index}]`,
     );
   }
+};
 
+const validateAssetWorkspaceVersioning = (value, repoRoot) => {
   const assetWorkspace = assertClosedOrderedRecord(
-    versioning.assetWorkspace,
+    value,
     'versioning.assetWorkspace',
     MANIFEST_KEYS.assetWorkspaceVersioning,
   );
-  assertExactValue(assetWorkspace.version, 2, 'versioning.assetWorkspace.version');
-  assertExactValue(
-    assetWorkspace.sourceGrammar,
-    'ashfox-model 1',
-    'versioning.assetWorkspace.sourceGrammar',
-  );
-  assertExactValue(
-    assetWorkspace.container,
-    'ashfox-workspace:2',
-    'versioning.assetWorkspace.container',
-  );
-  assertExactValue(
-    assetWorkspace.compatibility,
-    'exact-current-contract',
-    'versioning.assetWorkspace.compatibility',
-  );
-  assertExactValue(
-    assetWorkspace.authority,
-    'packages/engine-core/src/project/directory/contract.ts',
-    'versioning.assetWorkspace.authority',
-  );
-  assertExactValue(
-    assetWorkspace.compiler,
-    'packages/engine-core/src/compiler/directory/compile.ts',
-    'versioning.assetWorkspace.compiler',
-  );
-  assertExactValue(
-    assetWorkspace.releaseState,
-    'unreleased',
-    'versioning.assetWorkspace.releaseState',
-  );
-  assertExactValue(
-    assetWorkspace.replacementPolicy,
-    'apply-complete-change-set-atomically',
-    'versioning.assetWorkspace.replacementPolicy',
-  );
-  assertExactValue(
-    assetWorkspace.legacyAliases,
-    'forbidden',
-    'versioning.assetWorkspace.legacyAliases',
-  );
+  const expectedWorkspace = {
+    version: 2,
+    sourceGrammar: 'ashfox-model 1',
+    container: 'ashfox-workspace:2',
+    compatibility: 'exact-current-contract',
+    authority: 'packages/engine-core/src/project/directory/contract.ts',
+    compiler: 'packages/engine-core/src/compiler/directory/compile.ts',
+    releaseState: 'unreleased',
+    replacementPolicy: 'apply-complete-change-set-atomically',
+    legacyAliases: 'forbidden',
+  };
+  for (const [key, expectedValue] of Object.entries(expectedWorkspace)) {
+    assertExactValue(assetWorkspace[key], expectedValue, `versioning.assetWorkspace.${key}`);
+  }
   for (const key of ['authority', 'compiler']) {
     assertExistingFile(repoRoot, assetWorkspace[key], `versioning.assetWorkspace.${key}`);
   }
+};
 
+const validateDeliveryTargetVersioning = (value) => {
   const deliveryTargets = assertClosedOrderedRecord(
-    versioning.deliveryTargets,
+    value,
     'versioning.deliveryTargets',
     MANIFEST_KEYS.deliveryTargetVersioning,
   );
@@ -325,6 +294,13 @@ const validateVersioning = (value, repoRoot) => {
     false,
     'versioning.deliveryTargets.canonicalMutation',
   );
+};
+
+const validateVersioning = (value, repoRoot) => {
+  const versioning = assertClosedOrderedRecord(value, 'versioning', MANIFEST_KEYS.versioning);
+  validateProductVersioning(versioning.product, repoRoot);
+  validateAssetWorkspaceVersioning(versioning.assetWorkspace, repoRoot);
+  validateDeliveryTargetVersioning(versioning.deliveryTargets);
 };
 
 module.exports = {

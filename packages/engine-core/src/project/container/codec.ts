@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import { canonicalJsonString } from '../../canonicalJson';
 import { canonicalWorkspaceLock, canonicalWorkspaceManifest } from '../workspace/hash';
 import { readAuthoredAssetWorkspace } from '../workspace/reader';
@@ -28,7 +29,7 @@ const failure = (code: string, message: string): WorkspaceFileFailure =>
 
 const workspaceSource = (workspace: AuthoredAssetWorkspace): string => {
   const files: readonly WorkspaceFile[] = [...workspace.files]
-    .sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0))
+    .sort((left, right) => compareText(left.path, right.path))
     .map((file) => ({ path: file.path, source: file.source }));
   return `${canonicalJsonString({
     files,

@@ -1,6 +1,6 @@
-import type { ExportAdaptedDocument } from '../../export/adapter';
-import { validateExportCompatibilityProfile } from '../../export/compatibility/validate';
-import type { FindingSink } from '../contract';
+import type { ExportAdaptedDocument } from '../adapter';
+import { validateExportCompatibilityProfile } from '../compatibility/validate';
+import type { FindingSink } from '../../validation/contract';
 import { validateAnimationExportCapabilities } from './animation';
 import { validateGltfProfile } from './gltf';
 import { validateJavaBlockProfile } from './block';

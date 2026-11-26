@@ -58,6 +58,29 @@ const validateSourcePattern = (value, index, repoRoot, workspaceSourceScopes) =>
   }
 };
 
+const validateTestOwnerEntry = (entry, index, previousWorkspace, repoRoot) => {
+  const location = `quality.ownerLayout.testOwners[${index}]`;
+  const testOwner = assertClosedOrderedRecord(entry, location, MANIFEST_KEYS.testOwner);
+  if (!isRepositoryPath(testOwner.workspace)) {
+    fail(`${location}.workspace`, 'must be a repository workspace path');
+  }
+  if (previousWorkspace !== null && textCompare(previousWorkspace, testOwner.workspace) >= 0) {
+    fail('quality.ownerLayout.testOwners', 'workspaces must be unique and in ascending order');
+  }
+  assertExistingDirectory(repoRoot, `${testOwner.workspace}/tests`, `${location}.workspace`);
+  assertSortedUniqueTextArray(testOwner.roots, `${location}.roots`, (root) =>
+    /^[a-z][a-z0-9]*$/.test(root),
+  );
+  for (let rootIndex = 0; rootIndex < testOwner.roots.length; rootIndex += 1) {
+    assertExistingDirectory(
+      repoRoot,
+      `${testOwner.workspace}/tests/${testOwner.roots[rootIndex]}`,
+      `${location}.roots[${rootIndex}]`,
+    );
+  }
+  return testOwner.workspace;
+};
+
 const validateOwnerLayout = (quality, repoRoot) => {
   const owner = assertClosedOrderedRecord(
     quality.ownerLayout,
@@ -96,30 +119,12 @@ const validateOwnerLayout = (quality, repoRoot) => {
   }
   let previousWorkspace = null;
   for (let index = 0; index < owner.testOwners.length; index += 1) {
-    const location = `quality.ownerLayout.testOwners[${index}]`;
-    const testOwner = assertClosedOrderedRecord(
+    previousWorkspace = validateTestOwnerEntry(
       owner.testOwners[index],
-      location,
-      MANIFEST_KEYS.testOwner,
+      index,
+      previousWorkspace,
+      repoRoot,
     );
-    if (!isRepositoryPath(testOwner.workspace)) {
-      fail(`${location}.workspace`, 'must be a repository workspace path');
-    }
-    if (previousWorkspace !== null && textCompare(previousWorkspace, testOwner.workspace) >= 0) {
-      fail('quality.ownerLayout.testOwners', 'workspaces must be unique and in ascending order');
-    }
-    previousWorkspace = testOwner.workspace;
-    assertExistingDirectory(repoRoot, `${testOwner.workspace}/tests`, `${location}.workspace`);
-    assertSortedUniqueTextArray(testOwner.roots, `${location}.roots`, (root) =>
-      /^[a-z][a-z0-9]*$/.test(root),
-    );
-    for (let rootIndex = 0; rootIndex < testOwner.roots.length; rootIndex += 1) {
-      assertExistingDirectory(
-        repoRoot,
-        `${testOwner.workspace}/tests/${testOwner.roots[rootIndex]}`,
-        `${location}.roots[${rootIndex}]`,
-      );
-    }
   }
 };
 

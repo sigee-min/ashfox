@@ -52,42 +52,62 @@ const renderPagination = (documents, currentRoute, t) => {
   </nav>`;
 };
 
-export const renderDocumentationPage = ({ assets, config, document, documents }) => {
-  const { locale } = document;
-  const t = locale.ui;
-  const messages = siteMessages(locale);
-  const home = `${locale.prefix}/docs/`;
-  const navigation = docsNavigation(documents, document.route, t);
-  const alternatives = document.alternatives ?? [];
-  const studioDomain = studioDomainForRoute(document.route);
-  const notice =
-    document.fallback || document.stale
-      ? `<aside class="translation-notice" role="note">${escapeHtml(document.stale ? t.stale : t.fallback)} <a href="${document.originalRoute}">${escapeHtml(t.original)}</a></aside>`
-      : '';
-  const headLinks =
-    alternatives
-      .filter((option) => option.translated)
-      .map(
-        (option) =>
-          `<link rel="alternate" hreflang="${option.code}" href="${absoluteUrl(config.siteOrigin, option.route)}">`,
-      )
-      .join('') +
-    `<link rel="alternate" hreflang="x-default" href="${absoluteUrl(config.siteOrigin, document.originalRoute)}">`;
-  const tocLinks = document.toc
+const renderHeadLinks = (alternatives, siteOrigin, originalRoute) =>
+  alternatives
+    .filter((option) => option.translated)
+    .map(
+      (option) =>
+        `<link rel="alternate" hreflang="${option.code}" href="${absoluteUrl(siteOrigin, option.route)}">`,
+    )
+    .join('') +
+  `<link rel="alternate" hreflang="x-default" href="${absoluteUrl(siteOrigin, originalRoute)}">`;
+
+const renderTocLinks = (toc) =>
+  toc
     .map(
       (item) =>
         `<a class="toc-level-${item.level}" href="#${item.id}">${escapeHtml(item.text)}</a>`,
     )
     .join('');
+
+const renderTranslationNotice = (document, t) =>
+  document.fallback || document.stale
+    ? `<aside class="translation-notice" role="note">${escapeHtml(document.stale ? t.stale : t.fallback)} <a href="${document.originalRoute}">${escapeHtml(t.original)}</a></aside>`
+    : '';
+
+const renderDocsArticle = ({ document, documents, home, studioCallout, tocLinks, t }) => `
+      <article class="doc-article" data-doc-article>
+        <div class="doc-breadcrumb">
+          <a href="${home}">${escapeHtml(t.docs)}</a><span>/</span><span>${escapeHtml(document.sectionLabel)}</span>
+          ${studioCallout}
+        </div>
+        ${
+          document.toc.length > 0
+            ? `<details class="doc-mobile-toc"><summary>${escapeHtml(t.onThisPage)}</summary><nav aria-label="${escapeHtml(t.sections)}">${tocLinks}</nav></details>`
+            : ''
+        }
+        ${renderTranslationNotice(document, t)}
+        <div lang="${document.contentLanguage}" data-copy-label="${escapeHtml(t.copy)}" data-copied-label="${escapeHtml(t.copied)}" data-copy-code-label="${escapeHtml(t.copyCode)}" data-copy-failed-label="${escapeHtml(t.copyFailed)}">${document.html}</div>
+        ${renderPagination(documents, document.route, t)}
+        <div class="doc-end">
+          <span>${escapeHtml(t.ready)}</span>
+          <a href="${document.locale.prefix}/#quick-start">${escapeHtml(t.instructions)} →</a>
+        </div>
+      </article>`;
+
+const renderDocsBody = ({ assets, document, documents, home, locale, messages, t }) => {
+  const navigation = docsNavigation(documents, document.route, t);
+  const studioDomain = studioDomainForRoute(document.route);
+  const studioCallout = studioDomain
+    ? `<a class="linear-link" href="${locale.prefix}/assets/?domain=${studioDomain}">${escapeHtml(messages.studioBrowseDomain)} →</a>`
+    : '';
+  const tocLinks = renderTocLinks(document.toc);
   const toc =
     document.toc.length > 0
       ? `<nav class="page-toc" aria-label="${escapeHtml(t.onThisPage)}"><p>${escapeHtml(t.onThisPage)}</p>${tocLinks}</nav>`
       : '';
-  const studioCallout = studioDomain
-    ? `<a class="linear-link" href="${locale.prefix}/assets/?domain=${studioDomain}">${escapeHtml(messages.studioBrowseDomain)} →</a>`
-    : '';
   const searchSrc = assets.docsSearch?.[locale.code] || assets.docsSearch?.en || '';
-  const body = `
+  return `
     <main id="main" class="docs-shell" data-docs-search-url="${escapeHtml(searchSrc)}">
       <aside class="docs-sidebar">
         <button type="button" class="docs-search-trigger" data-docs-search-open>
@@ -100,24 +120,7 @@ export const renderDocumentationPage = ({ assets, config, document, documents })
         <summary>${escapeHtml(t.browse)} ⌄</summary>
         <div>${navigation}</div>
       </details>
-      <article class="doc-article" data-doc-article>
-        <div class="doc-breadcrumb">
-          <a href="${home}">${escapeHtml(t.docs)}</a><span>/</span><span>${escapeHtml(document.sectionLabel)}</span>
-          ${studioCallout}
-        </div>
-        ${
-          document.toc.length > 0
-            ? `<details class="doc-mobile-toc"><summary>${escapeHtml(t.onThisPage)}</summary><nav aria-label="${escapeHtml(t.sections)}">${tocLinks}</nav></details>`
-            : ''
-        }
-        ${notice}
-        <div lang="${document.contentLanguage}" data-copy-label="${escapeHtml(t.copy)}" data-copied-label="${escapeHtml(t.copied)}" data-copy-code-label="${escapeHtml(t.copyCode)}" data-copy-failed-label="${escapeHtml(t.copyFailed)}">${document.html}</div>
-        ${renderPagination(documents, document.route, t)}
-        <div class="doc-end">
-          <span>${escapeHtml(t.ready)}</span>
-          <a href="${locale.prefix}/#quick-start">${escapeHtml(t.instructions)} →</a>
-        </div>
-      </article>
+      ${renderDocsArticle({ document, documents, home, studioCallout, tocLinks, t })}
       ${toc}
     </main>
     <dialog class="docs-search-dialog" data-docs-search-dialog aria-label="${escapeHtml(messages.docsSearchLabel)}">
@@ -125,6 +128,35 @@ export const renderDocumentationPage = ({ assets, config, document, documents })
       <div class="docs-search-results" data-docs-search-results></div>
     </dialog>
   `;
+};
+
+const buildDocsStructuredData = (config, document, home) => ({
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: document.title,
+  inLanguage: document.contentLanguage,
+  description: document.description,
+  url: absoluteUrl(config.siteOrigin, document.route),
+  isPartOf: {
+    '@type': 'WebSite',
+    name: 'ashfox Docs',
+    url: absoluteUrl(config.siteOrigin, home),
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'ashfox',
+    url: absoluteUrl(config.siteOrigin, '/'),
+  },
+});
+
+export const renderDocumentationPage = ({ assets, config, document, documents }) => {
+  const { locale } = document;
+  const t = locale.ui;
+  const messages = siteMessages(locale);
+  const home = `${locale.prefix}/docs/`;
+  const alternatives = document.alternatives ?? [];
+  const headLinks = renderHeadLinks(alternatives, config.siteOrigin, document.originalRoute);
+  const body = renderDocsBody({ assets, document, documents, home, locale, messages, t });
   return pageShell({
     active: 'docs',
     locale,
@@ -137,24 +169,7 @@ export const renderDocumentationPage = ({ assets, config, document, documents })
     config,
     description: document.description,
     path: document.route,
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'TechArticle',
-      headline: document.title,
-      inLanguage: document.contentLanguage,
-      description: document.description,
-      url: absoluteUrl(config.siteOrigin, document.route),
-      isPartOf: {
-        '@type': 'WebSite',
-        name: 'ashfox Docs',
-        url: absoluteUrl(config.siteOrigin, home),
-      },
-      publisher: {
-        '@type': 'Organization',
-        name: 'ashfox',
-        url: absoluteUrl(config.siteOrigin, '/'),
-      },
-    },
+    structuredData: buildDocsStructuredData(config, document, home),
     title: document.title,
   });
 };

@@ -1,3 +1,4 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { readRecipe } from './read';
 import { SoundError } from './validate';
 import type { SoundRecipe } from './contract';
@@ -291,7 +292,7 @@ const parseUnitStatement = (cursor: SoundCursor, draft: SoundUnitDraft): void =>
 };
 
 export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSourceUnit => {
-  if (new TextEncoder().encode(source).length > 262144) {
+  if (encodeUtf8(source).length > 262144) {
     throw new Error(`${file}: sound source exceeds 256 KiB`);
   }
   const cursor = new SoundCursor(source, file);

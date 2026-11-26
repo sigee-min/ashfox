@@ -1,3 +1,4 @@
+import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
 import { compilePack, type PackEncoder } from '../packs/compile';
 import { evaluateSoundQuality, formatSoundGateFailure } from '@ashfox/audio-core';
 import {
@@ -121,7 +122,7 @@ const compileModelFiles = async (
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {
       path: file.path,
-      bytes: file.kind === 'binary' ? file.data : new TextEncoder().encode(json(file.data)),
+      bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
     };
   });
 };
@@ -152,7 +153,7 @@ const compileStructureFiles = async (
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {
       path: file.path,
-      bytes: file.kind === 'binary' ? file.data : new TextEncoder().encode(json(file.data)),
+      bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
     };
   });
 };
@@ -256,7 +257,7 @@ const compileExportTarget = async (
       artifacts.push({ path: relative, bytes: file.bytes });
       return { path: relative, sha256: digest(file.bytes), byteLength: file.bytes.length };
     })
-    .sort((a, b) => (a.path < b.path ? -1 : 1));
+    .sort((a, b) => compareText(a.path, b.path));
   return {
     id: target.name,
     kind: product.kind,
@@ -279,7 +280,7 @@ const compilePackTarget = async (
       artifacts.push({ path: relative, bytes: file.bytes });
       return { path: relative, sha256: digest(file.bytes), byteLength: file.bytes.length };
     })
-    .sort((a, b) => (a.path < b.path ? -1 : 1));
+    .sort((a, b) => compareText(a.path, b.path));
   const metadata: AssetMetadata =
     pack.format === 'minecraft_java'
       ? {
@@ -311,19 +312,19 @@ export const compileBundle = async (
     remaining.set(key, (remaining.get(key) ?? 0) + 1);
   }
   const projects = new Map<string, OpenedProject>();
-  for (const target of [...compiled.config.exports].sort((a, b) => (a.name < b.name ? -1 : 1)))
+  for (const target of [...compiled.config.exports].sort((a, b) => compareText(a.name, b.name)))
     assets.push(
       await compileExportTarget(target, compiled, products, projects, remaining, artifacts),
     );
-  for (const pack of [...(compiled.config.packs ?? [])].sort((a, b) => (a.name < b.name ? -1 : 1)))
+  for (const pack of [...(compiled.config.packs ?? [])].sort((a, b) => compareText(a.name, b.name)))
     assets.push(await compilePackTarget(pack, assets, artifacts, encoder));
   const effectiveToolchain = encoder
     ? json({ compiler: toolchain, vorbis: encoder.fingerprint })
     : toolchain;
   const catalog = { format: 'ashfox-catalog' as const, version: 1 as const, assets };
-  const catalogBytes = new TextEncoder().encode(json(catalog));
+  const catalogBytes = encodeUtf8(json(catalog));
   artifacts.push({ path: 'catalog.json', bytes: catalogBytes });
-  artifacts.sort((a, b) => (a.path < b.path ? -1 : 1));
+  artifacts.sort((a, b) => compareText(a.path, b.path));
   if (new Set(artifacts.map((file) => file.path.toLowerCase())).size !== artifacts.length)
     throw new BuildFailure('export.collision', 'Duplicate output path');
   const receipt = {

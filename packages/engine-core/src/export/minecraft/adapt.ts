@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { ExportAdaptedDocument } from '../adapter';
 import { minecraftActorAnimationNames } from './names';
 import type { ExportAdaptation } from '../contract';
@@ -13,7 +14,7 @@ export const minecraftNameAdaptations = (
   }
   const names = minecraftActorAnimationNames(document);
   return Object.values(document.animations)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .flatMap((clip) => {
       const exportedName = names.get(clip.id);
       return exportedName && exportedName !== clip.name

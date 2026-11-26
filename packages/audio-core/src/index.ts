@@ -1,11 +1,11 @@
+import { compareText } from '@ashfox/internal-contracts';
 import { parseSoundDocument } from './source';
 import { SoundError, fail } from './validate';
-import { render, master, measure } from './render';
+import { renderValidatedRecipe, master, measure } from './render';
 import { encodeWav } from './wav';
 import { bakeLoop } from './loop';
 import { frame } from './curve';
-import { readRecipe } from './read';
-import { validatePlan } from './plan';
+import { readRecipe, readRecipeWithBudget } from './read';
 import type { SoundProduct, SoundRecipe } from './contract';
 export {
   parseSoundSource,
@@ -37,8 +37,8 @@ export {
 } from './audit';
 export { renderSoundInspectSheet } from './sheet';
 export type { SoundBudget } from './plan';
-export const soundBudget = (recipe: SoundRecipe) => validatePlan(readRecipe(recipe));
-export const soundRecipeBudget = (rawRecipe: unknown) => validatePlan(readRecipe(rawRecipe));
+export const soundBudget = (recipe: SoundRecipe) => readRecipeWithBudget(recipe).budget;
+export const soundRecipeBudget = (rawRecipe: unknown) => readRecipeWithBudget(rawRecipe).budget;
 export type {
   SoundRecipe,
   SoundProduct,
@@ -61,7 +61,7 @@ const renderVariantProduct = (
 ): SoundProduct => {
   const channels = recipe.channels ?? 1;
   const pcm = master(
-    bakeLoop(render(recipe, variant), recipe.playback, channels),
+    bakeLoop(renderValidatedRecipe(recipe, variant.id), recipe.playback, channels),
     recipe.output,
     channels,
   );
@@ -99,7 +99,7 @@ export const compileSoundRecipe = (
   file = 'sound.ashfox',
 ): readonly SoundProduct[] => {
   const recipe = readRecipe(rawRecipe);
-  const sorted = [...recipe.variants].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const sorted = [...recipe.variants].sort((a, b) => compareText(a.id, b.id));
   return Object.freeze(
     sorted.map((variant) => {
       try {
@@ -116,7 +116,7 @@ export const compileSoundRecipe = (
 
 export const compileSoundSource = (source: string, file: string): readonly SoundProduct[] => {
   const { recipe, report } = parseSoundDocument(source, file);
-  const sorted = [...recipe.variants].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const sorted = [...recipe.variants].sort((a, b) => compareText(a.id, b.id));
   return Object.freeze(
     sorted.map((variant) => {
       try {

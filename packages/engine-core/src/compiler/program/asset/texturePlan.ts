@@ -2,8 +2,8 @@ import { freeze } from '../../../immutable';
 import type { AssetId, TextureAsset } from '../../../model';
 import type { TextureRaster } from '../../../model/texture';
 import { sha256Digest } from '../../../provenance/digest';
-import { canonicalPngDigest, encodeCanonicalPng } from '../../../textures/textureRecipe/png';
-import { rasterizeCanonicalTexture } from '../../../textures/textureRecipe/raster';
+import { encodeCanonicalPngSummary } from '../../../textures/textureRecipe/png';
+import { rasterizeTextureSpec } from '../../../textures/textureRecipe/raster';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { TypedSurface, TypedSurfaceContract } from './contract';
 import { composeTextureCharts } from './texture/compose';
@@ -122,14 +122,8 @@ const buildTextureAsset = (
     canvasDetails: composed.details,
     alphaMasks: composed.masks,
   });
-  const raster = rasterizeCanonicalTexture(width, height, {
-    background: rasterSpec.background,
-    backgroundAlpha: rasterSpec.backgroundAlpha,
-    canvasDetails: rasterSpec.canvasDetails,
-    alphaMasks: rasterSpec.alphaMasks ?? [],
-  });
-  const encoded = encodeCanonicalPng(raster);
-  const pngHash = canonicalPngDigest(encoded);
+  const raster = rasterizeTextureSpec(width, height, rasterSpec);
+  const { byteLength, contentHash } = encodeCanonicalPngSummary(raster);
   return freeze({
     id: textureId as AssetId,
     name: surface.symbol.name,
@@ -139,8 +133,8 @@ const buildTextureAsset = (
       bucket: 'inline',
       key: textureId + '.png',
       contentType: 'image/png',
-      contentHash: pngHash,
-      byteLength: encoded.length,
+      contentHash,
+      byteLength,
     }),
     visible: true,
     sampling: 'nearest',

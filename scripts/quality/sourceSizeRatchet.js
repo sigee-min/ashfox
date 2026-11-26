@@ -1,5 +1,6 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
+const { compareText } = require('../shared');
 
 const assertRatchetLines = (ratchetLines) => {
   if (!Number.isSafeInteger(ratchetLines) || ratchetLines < 1) {
@@ -62,10 +63,10 @@ const sourceSizeRatchetViolations = (fileStats, baseline, ratchetLines) => {
 
 const sameBaseline = (left, right) => {
   const leftEntries = Object.entries(left).sort(([leftKey], [rightKey]) =>
-    leftKey.localeCompare(rightKey),
+    compareText(leftKey, rightKey),
   );
   const rightEntries = Object.entries(right).sort(([leftKey], [rightKey]) =>
-    leftKey.localeCompare(rightKey),
+    compareText(leftKey, rightKey),
   );
   return JSON.stringify(leftEntries) === JSON.stringify(rightEntries);
 };

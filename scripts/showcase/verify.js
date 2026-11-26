@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { register } = require('ts-node');
+const { compareText, sha256: sha256Hex } = require('../shared');
 
 register({
   transpileOnly: true,
@@ -50,7 +51,7 @@ const fail = (message) => {
   throw new Error(`showcase: ${message}`);
 };
 
-const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const sha256 = (bytes) => `sha256:${sha256Hex(bytes)}`;
 
 const relativePath = (file) => path.relative(ROOT, file).split(path.sep).join('/');
 
@@ -68,11 +69,7 @@ const captureFingerprint = () => {
   const files = [
     ...CAPTURE_SOURCE_ROOTS.flatMap((root) => walkCaptureSources(path.join(ROOT, root))),
     ...CAPTURE_SOURCE_FILES.map((file) => path.join(ROOT, file)),
-  ].sort((left, right) => {
-    const leftPath = relativePath(left);
-    const rightPath = relativePath(right);
-    return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
-  });
+  ].sort((left, right) => compareText(relativePath(left), relativePath(right)));
   const digest = createHash('sha256');
   for (const file of files) {
     const bytes = fs.readFileSync(file);
@@ -232,7 +229,7 @@ const assertMediaInventory = (workspace) => {
   if (missing) fail(`missing media file: ${missing}`);
 };
 
-const createDescriptor = () => {
+const readValidatedWorkspace = () => {
   if (GIF_CAPTURE_WIDTH !== 640 || GIF_CAPTURE_HEIGHT !== 360 || BUILD_CAPTURE_FPS !== 10) {
     fail('capture contract must remain 640x360 at 10 fps');
   }
@@ -247,68 +244,76 @@ const createDescriptor = () => {
   }
   assertExactSelectors(read.workspace);
   assertMediaInventory(read.workspace);
+  return { workspace: read.workspace, workspaceBytes };
+};
 
-  let aggregateGifBytes = 0;
-  const entries = EXPECTED_SELECTORS.map((selector) => {
-    const project = openProject(read.workspace, selector);
-    const plan = createBuildCapturePlan(project.document);
-    const artifact = `${selector.entryName}-build-replay.gif`;
-    const poster = `${selector.entryName}-poster.png`;
-    const videoFile = `${selector.entryName}-build-replay.mp4`;
-    const videoBytes = requireBytes(path.join(SHOWCASE_PATH, videoFile), 'build movie');
-    if (
-      videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' ||
-      videoBytes.length > 2 * 1024 * 1024
-    )
-      fail(`Invalid build movie: ${videoFile}`);
-    const gifBytes = requireBytes(path.join(SHOWCASE_PATH, artifact), 'GIF');
-    const pngBytes = requireBytes(path.join(SHOWCASE_PATH, poster), 'poster');
-    if (gifBytes.byteLength > GIF_LIMIT) {
-      fail(`${artifact} exceeds 8 MiB`);
-    }
-    aggregateGifBytes += gifBytes.byteLength;
-    const gif = inspectGif(gifBytes, artifact);
-    const png = inspectPng(pngBytes, poster);
-    if (
-      gif.width !== GIF_CAPTURE_WIDTH ||
-      gif.height !== GIF_CAPTURE_HEIGHT ||
-      png.width !== GIF_CAPTURE_WIDTH ||
-      png.height !== GIF_CAPTURE_HEIGHT
-    ) {
-      fail(`${selector.entryName} media must be 640x360`);
-    }
-    if (gif.frameCount !== plan.frames.length) {
-      fail(`${artifact} has ${gif.frameCount} frames, expected ${plan.frames.length}`);
+const buildMotionDescriptors = (selector, animations) =>
+  Object.values(animations).map((clip) => {
+    const file = `${selector.entryName}-${clip.name}.mp4`;
+    const bytes = requireBytes(path.join(SHOWCASE_PATH, file), 'motion movie');
+    if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024) {
+      fail(`Invalid or oversized movie: ${file}`);
     }
     return {
-      video: { artifact: videoFile, sha256: sha256(videoBytes), byteLength: videoBytes.length },
-      motions: Object.values(project.document.animations).map((clip) => {
-        const file = `${selector.entryName}-${clip.name}.mp4`;
-        const bytes = requireBytes(path.join(SHOWCASE_PATH, file), 'motion movie');
-        if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024)
-          fail(`Invalid or oversized movie: ${file}`);
-        return {
-          name: clip.name,
-          duration: clip.durationSeconds,
-          artifact: file,
-          sha256: sha256(bytes),
-          byteLength: bytes.length,
-        };
-      }),
-      packageName: selector.packageName,
-      entryName: selector.entryName,
-      closureHash: project.build.closureHash,
-      buildKey: project.build.buildKey,
-      productHash: project.build.productHash,
-      artifact,
-      poster,
-      artifactSha256: sha256(gifBytes),
-      posterSha256: sha256(pngBytes),
-      byteLength: gifBytes.byteLength,
-      frameCount: plan.frames.length,
-      eventCount: plan.events.length,
+      name: clip.name,
+      duration: clip.durationSeconds,
+      artifact: file,
+      sha256: sha256(bytes),
+      byteLength: bytes.length,
     };
   });
+
+const buildEntryDescriptor = (workspace, selector) => {
+  const project = openProject(workspace, selector);
+  const plan = createBuildCapturePlan(project.document);
+  const artifact = `${selector.entryName}-build-replay.gif`;
+  const poster = `${selector.entryName}-poster.png`;
+  const videoFile = `${selector.entryName}-build-replay.mp4`;
+  const videoBytes = requireBytes(path.join(SHOWCASE_PATH, videoFile), 'build movie');
+  if (
+    videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' ||
+    videoBytes.length > 2 * 1024 * 1024
+  ) {
+    fail(`Invalid build movie: ${videoFile}`);
+  }
+  const gifBytes = requireBytes(path.join(SHOWCASE_PATH, artifact), 'GIF');
+  const pngBytes = requireBytes(path.join(SHOWCASE_PATH, poster), 'poster');
+  if (gifBytes.byteLength > GIF_LIMIT) fail(`${artifact} exceeds 8 MiB`);
+  const gif = inspectGif(gifBytes, artifact);
+  const png = inspectPng(pngBytes, poster);
+  if (
+    gif.width !== GIF_CAPTURE_WIDTH ||
+    gif.height !== GIF_CAPTURE_HEIGHT ||
+    png.width !== GIF_CAPTURE_WIDTH ||
+    png.height !== GIF_CAPTURE_HEIGHT
+  ) {
+    fail(`${selector.entryName} media must be 640x360`);
+  }
+  if (gif.frameCount !== plan.frames.length) {
+    fail(`${artifact} has ${gif.frameCount} frames, expected ${plan.frames.length}`);
+  }
+  return {
+    video: { artifact: videoFile, sha256: sha256(videoBytes), byteLength: videoBytes.length },
+    motions: buildMotionDescriptors(selector, project.document.animations),
+    packageName: selector.packageName,
+    entryName: selector.entryName,
+    closureHash: project.build.closureHash,
+    buildKey: project.build.buildKey,
+    productHash: project.build.productHash,
+    artifact,
+    poster,
+    artifactSha256: sha256(gifBytes),
+    posterSha256: sha256(pngBytes),
+    byteLength: gifBytes.byteLength,
+    frameCount: plan.frames.length,
+    eventCount: plan.events.length,
+  };
+};
+
+const createDescriptor = () => {
+  const { workspace, workspaceBytes } = readValidatedWorkspace();
+  const entries = EXPECTED_SELECTORS.map((selector) => buildEntryDescriptor(workspace, selector));
+  const aggregateGifBytes = entries.reduce((sum, entry) => sum + entry.byteLength, 0);
   if (aggregateGifBytes > GIF_AGGREGATE_LIMIT) {
     fail('GIF replay set exceeds 16 MiB');
   }
@@ -319,7 +324,7 @@ const createDescriptor = () => {
     workspace: {
       path: WORKSPACE_RELATIVE_PATH,
       sha256: sha256(workspaceBytes),
-      workspaceHash: openProject(read.workspace, EXPECTED_SELECTORS[0]).build.workspaceHash,
+      workspaceHash: openProject(workspace, EXPECTED_SELECTORS[0]).build.workspaceHash,
     },
     capture: {
       fingerprint: captureFingerprint(),

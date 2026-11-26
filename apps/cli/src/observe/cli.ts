@@ -6,6 +6,8 @@ import { inspect, renderMedia } from './operations';
 import { readInput } from './read';
 import { prepareWorker } from './worker';
 
+const FATAL_UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
+
 const inputBytes = async (): Promise<Buffer> => {
   let length = 0;
   const chunks: Buffer[] = [];
@@ -138,7 +140,7 @@ const parseArgs = (args: readonly string[], mode: 'check' | 'render'): ParsedCom
 
 const resolveMemoryInput = async (parsed: ParsedCommon): Promise<SourceInput> => {
   const bytes = await inputBytes();
-  const source = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  const source = FATAL_UTF8_DECODER.decode(bytes);
   if (parsed.inputJson) return readInput(JSON.parse(source));
   return readInput({ source, ...(parsed.name ? { name: parsed.name } : {}) });
 };

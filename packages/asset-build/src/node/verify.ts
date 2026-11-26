@@ -1,5 +1,6 @@
 import { readPlayback, verifyPcm, pcmStatistics } from '../bundle/audio';
-import { readGameAssetManifest } from '../packs/game/read';
+import { readClosedRecord, readGameAssetManifest } from '../packs/game/read';
+import { compareText, decodeUtf8, isClosedContractRecord } from '@ashfox/internal-contracts';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -15,22 +16,40 @@ import { contained, listFiles, noLinks, safeRelative } from './paths';
 const fail = (message: string): never => {
   throw new BuildFailure('output.integrity', message, 3);
 };
-const record = (value: unknown, keys: readonly string[]): Record<string, unknown> => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('Expected record');
-  const r = value as Record<string, unknown>;
-  if (
-    Object.keys(r).length !== keys.length ||
-    keys.some((k) => !Object.prototype.hasOwnProperty.call(r, k))
-  )
-    fail('Unexpected fields');
-  return r;
-};
+const record = (value: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> =>
+  readClosedRecord(value, keys, fail);
 const isHash = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value);
-const readJson = (file: string): unknown => {
+const shouldCacheBytes = (file: string): boolean =>
+  file.endsWith('.wav') || path.basename(file) === 'assets.json';
+const readCachedBytes = (file: string, cache: Map<string, Buffer>): Buffer => {
+  if (!shouldCacheBytes(file)) return fs.readFileSync(file);
+  const cached = cache.get(file);
+  if (cached) return cached;
+  const bytes = fs.readFileSync(file);
+  cache.set(file, bytes);
+  return bytes;
+};
+const isSortedText = (values: readonly string[]): boolean => {
+  for (let i = 1; i < values.length; i++) {
+    if (compareText(values[i - 1]!, values[i]!) > 0) return false;
+  }
+  return true;
+};
+const sameTextList = (left: readonly string[], right: readonly string[]): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
+const sameFileRecords = (left: readonly FileRecord[], right: readonly FileRecord[]): boolean =>
+  left.length === right.length &&
+  left.every(
+    (file, index) =>
+      file.path === right[index]!.path &&
+      file.sha256 === right[index]!.sha256 &&
+      file.byteLength === right[index]!.byteLength,
+  );
+const readJson = (file: string, cache?: Map<string, Buffer>): unknown => {
   noLinks(file);
   if (fs.statSync(file).size > 4 * 1024 * 1024) return fail('Oversized metadata');
-  const text = fs.readFileSync(file, 'utf8'),
+  const text = cache ? decodeUtf8(readCachedBytes(file, cache)) : fs.readFileSync(file, 'utf8'),
     value: unknown = JSON.parse(text);
   if (text !== json(value)) fail('Metadata must be canonical JSON');
   return value;
@@ -40,12 +59,7 @@ const isArchiveField = (archive: unknown): archive is string | null =>
   (typeof archive === 'string' && safeRelative(archive) && archive.endsWith('.zip'));
 
 const verifyPackMetadata = (value: unknown): AssetMetadata => {
-  if (
-    value !== null &&
-    typeof value === 'object' &&
-    'resourceRoot' in value &&
-    value.resourceRoot === 'game-assets'
-  ) {
+  if (isClosedContractRecord(value) && value.resourceRoot === 'game-assets') {
     const r = record(value, ['resourceRoot', 'manifest', 'archive']);
     if (r.manifest !== 'assets.json' || !isArchiveField(r.archive))
       fail('Invalid game pack metadata');
@@ -164,9 +178,11 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
 const verifyReceiptFiles = (
   directory: string,
   rawFiles: unknown[],
+  cache: Map<string, Buffer>,
 ): { names: string[]; fileRecords: FileRecord[] } => {
   const names: string[] = [],
-    fileRecords: FileRecord[] = [];
+    fileRecords: FileRecord[] = [],
+    seenLower = new Set<string>();
   for (const raw of rawFiles) {
     const file = record(raw, ['path', 'sha256', 'byteLength']);
     if (
@@ -184,22 +200,19 @@ const verifyReceiptFiles = (
     noLinks(target);
     if (
       fs.statSync(target).size !== file.byteLength ||
-      digest(fs.readFileSync(target)) !== file.sha256
+      digest(readCachedBytes(target, cache)) !== file.sha256
     )
       fail('Artifact mismatch: ' + relative);
     names.push(relative);
+    seenLower.add(relative.toLowerCase());
     fileRecords.push({
       path: relative,
       sha256: file.sha256 as string,
       byteLength: file.byteLength as number,
     });
   }
-  if (
-    new Set(names.map((n) => n.toLowerCase())).size !== names.length ||
-    json(names) !== json([...names].sort())
-  )
-    fail('Duplicate or unordered files');
-  if (json(listFiles(directory)) !== json([...names, 'receipt.json'].sort()))
+  if (seenLower.size !== names.length || !isSortedText(names)) fail('Duplicate or unordered files');
+  if (!sameTextList(listFiles(directory), [...names, 'receipt.json'].sort(compareText)))
     fail('Missing or additional files');
   return { names, fileRecords };
 };
@@ -208,6 +221,7 @@ const verifySoundCoverage = (
   directory: string,
   details: Extract<AssetMetadata, { readonly variants: readonly unknown[] }>,
   assetFiles: readonly FileRecord[],
+  cache: Map<string, Buffer>,
 ): void => {
   const variants = new Set(details.variants.map((v) => v.id));
   if (
@@ -217,10 +231,16 @@ const verifySoundCoverage = (
     assetFiles.length !== variants.size
   )
     fail('Invalid sound file coverage');
+  const wavByVariant = new Map<string, FileRecord>();
+  for (const file of assetFiles) {
+    const slash = file.path.lastIndexOf('/');
+    if (slash >= 0 && file.path.endsWith('.wav'))
+      wavByVariant.set(file.path.slice(slash + 1, -4), file);
+  }
   for (const variant of details.variants) {
-    const file = assetFiles.find((f) => f.path.endsWith(`/${variant.id}.wav`));
+    const file = wavByVariant.get(variant.id);
     if (!file) return fail('Missing sound WAV');
-    const pcm = fs.readFileSync(contained(directory, file.path));
+    const pcm = readCachedBytes(contained(directory, file.path), cache);
     verifyPcm(pcm, variant.frames, variant.channels);
     const stats = pcmStatistics(pcm, variant.frames, variant.channels);
     for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta'] as const) {
@@ -234,21 +254,28 @@ const verifyGameManifestAssets = (
   root: string,
   manifestFile: string,
   assetFiles: readonly FileRecord[],
+  cache: Map<string, Buffer>,
 ): void => {
-  const manifest = readGameAssetManifest(readJson(contained(directory, root + manifestFile)));
+  const manifest = readGameAssetManifest(
+    readJson(contained(directory, root + manifestFile), cache),
+  );
   const references = manifest.assets
     .flatMap((a) => a.files)
     .map((f) => ({ ...f, path: root + f.path }))
-    .sort((a, b) => (a.path < b.path ? -1 : 1));
+    .sort((a, b) => compareText(a.path, b.path));
   const actual = assetFiles
     .filter((f) => f.path.startsWith(root) && f.path !== root + manifestFile)
-    .sort((a, b) => (a.path < b.path ? -1 : 1));
-  if (json(references) !== json(actual)) fail('Game manifest lineage mismatch');
+    .sort((a, b) => compareText(a.path, b.path));
+  if (!sameFileRecords(references, actual)) fail('Game manifest lineage mismatch');
   for (const sound of manifest.assets) {
     if (sound.kind !== 'sound' || sound.codec !== 'wav') continue;
     for (const variant of sound.variants) {
       const ch = variant.channels === 2 ? 2 : 1;
-      verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames, ch);
+      verifyPcm(
+        readCachedBytes(contained(directory, root + variant.file), cache),
+        variant.frames,
+        ch,
+      );
     }
   }
 };
@@ -258,6 +285,7 @@ const verifyPackCoverage = (
   assetId: string,
   details: Extract<AssetMetadata, { readonly resourceRoot: string }>,
   assetFiles: readonly FileRecord[],
+  cache: Map<string, Buffer>,
 ): void => {
   const prefix = `assets/${assetId}/`;
   const root = prefix + details.resourceRoot + '/';
@@ -269,16 +297,16 @@ const verifyPackCoverage = (
   )
     fail('Invalid pack file coverage');
   if (details.resourceRoot === 'game-assets')
-    verifyGameManifestAssets(directory, root, details.manifest, assetFiles);
+    verifyGameManifestAssets(directory, root, details.manifest, assetFiles, cache);
 };
 
 const verifyCatalogAsset = (
   directory: string,
   rawAsset: unknown,
-  receiptFiles: unknown[],
-  fileRecords: readonly FileRecord[],
+  fileByPath: ReadonlyMap<string, FileRecord>,
   ids: Set<string>,
   referenced: string[],
+  cache: Map<string, Buffer>,
 ): CatalogAsset => {
   const asset = record(rawAsset, ['id', 'kind', 'directory', 'files', 'metadata']);
   if (
@@ -295,20 +323,22 @@ const verifyCatalogAsset = (
   const assetFiles: FileRecord[] = [];
   for (const rawFile of asset.files as unknown[]) {
     const file = record(rawFile, ['path', 'sha256', 'byteLength']);
+    const match = typeof file.path === 'string' ? fileByPath.get(file.path) : undefined;
     if (
-      typeof file.path !== 'string' ||
-      !file.path.startsWith(`assets/${asset.id}/`) ||
-      !receiptFiles.some((f) => json(f) === json(file))
+      !match ||
+      !match.path.startsWith(`assets/${asset.id}/`) ||
+      file.sha256 !== match.sha256 ||
+      file.byteLength !== match.byteLength
     )
-      fail('Catalog lineage mismatch');
-    referenced.push(file.path as string);
-    assetFiles.push(fileRecords.find((f) => f.path === file.path)!);
+      return fail('Catalog lineage mismatch');
+    referenced.push(match.path);
+    assetFiles.push(match);
   }
   const details = metadata(asset.kind, asset.metadata);
   if (asset.kind === 'sound' && 'variants' in details)
-    verifySoundCoverage(directory, details, assetFiles);
+    verifySoundCoverage(directory, details, assetFiles, cache);
   if (asset.kind === 'pack' && 'resourceRoot' in details)
-    verifyPackCoverage(directory, asset.id as string, details, assetFiles);
+    verifyPackCoverage(directory, asset.id as string, details, assetFiles, cache);
   return {
     id: asset.id as string,
     kind: asset.kind as CatalogAsset['kind'],
@@ -318,12 +348,10 @@ const verifyCatalogAsset = (
   };
 };
 
-export const verifyBundle = (
+const readValidatedReceipt = (
   directory: string,
   hash: string,
-): { receipt: Receipt; catalog: Catalog } => {
-  noLinks(directory);
-  if (!isHash(hash)) return fail('Invalid bundle hash');
+): Readonly<Record<string, unknown>> => {
   const r = record(readJson(path.join(directory, 'receipt.json')), [
     'format',
     'version',
@@ -344,8 +372,24 @@ export const verifyBundle = (
   )
     fail('Invalid receipt');
   if (digest('ashfox-bundle:1\n' + json(r)) !== hash) fail('Receipt hash mismatch');
-  const { names, fileRecords } = verifyReceiptFiles(directory, r.files as unknown[]);
-  const c = record(readJson(path.join(directory, 'catalog.json')), ['format', 'version', 'assets']);
+  return r;
+};
+
+export const verifyBundle = (
+  directory: string,
+  hash: string,
+): { receipt: Receipt; catalog: Catalog } => {
+  noLinks(directory);
+  if (!isHash(hash)) return fail('Invalid bundle hash');
+  const r = readValidatedReceipt(directory, hash);
+  const fileCache = new Map<string, Buffer>();
+  const { names, fileRecords } = verifyReceiptFiles(directory, r.files as unknown[], fileCache);
+  const fileByPath = new Map(fileRecords.map((file) => [file.path, file]));
+  const c = record(readJson(contained(directory, 'catalog.json'), fileCache), [
+    'format',
+    'version',
+    'assets',
+  ]);
   if (
     c.format !== 'ashfox-catalog' ||
     c.version !== 1 ||
@@ -356,9 +400,14 @@ export const verifyBundle = (
   const ids = new Set<string>(),
     referenced: string[] = [];
   const assets = (c.assets as unknown[]).map((raw) =>
-    verifyCatalogAsset(directory, raw, r.files as unknown[], fileRecords, ids, referenced),
+    verifyCatalogAsset(directory, raw, fileByPath, ids, referenced, fileCache),
   );
-  if (json(referenced.sort()) !== json(names.filter((n) => n !== 'catalog.json')))
+  if (
+    !sameTextList(
+      referenced.sort(compareText),
+      names.filter((n) => n !== 'catalog.json'),
+    )
+  )
     fail('Catalog coverage mismatch');
   return {
     receipt: {

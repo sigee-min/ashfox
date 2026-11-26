@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { AssetId, CubeNode, PlaneNode, ProjectDocument, TextureAsset } from '../../model';
 import { cubeGeometryCorners } from '../../model';
 import { effectivelyVisibleSceneNodeIds } from '../../sceneVisibility';
@@ -214,7 +215,7 @@ const adapterTextures = (
   if (!isMinecraftProfile(profile)) return document.textures;
   return Object.fromEntries(
     Object.entries(document.textures)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => compareText(left, right))
       .map(([id, texture], index) => [
         id,
         {

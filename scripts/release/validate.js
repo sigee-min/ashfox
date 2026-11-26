@@ -3,11 +3,12 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { readJson: readJsonFile } = require('../shared');
 const { readDevelopmentManifest } = require('../quality/manifest');
 
 const readText = (repoRoot, relativePath) =>
   fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
-const readJson = (repoRoot, relativePath) => JSON.parse(readText(repoRoot, relativePath));
+const readJson = (repoRoot, relativePath) => readJsonFile(path.join(repoRoot, relativePath));
 
 const isStrictSemVer = (value) => {
   if (typeof value !== 'string') return false;
@@ -73,11 +74,72 @@ const versionPolicyFailures = (policy, entries) => {
   return failures;
 };
 
+const releaseConfigFailures = (rootPackageConfig, packageName, productPolicy) => {
+  if (!rootPackageConfig) return ['release-please config must define packages["."].'];
+  const failures = [];
+  const releaseType = rootPackageConfig['release-type'];
+  const configuredPackageName = rootPackageConfig['package-name'];
+  const component = rootPackageConfig.component;
+  const includeComponentInTag = rootPackageConfig['include-component-in-tag'];
+  const preMajorPatchMode = rootPackageConfig['bump-patch-for-minor-pre-major'];
+  const extraFiles = Array.isArray(rootPackageConfig['extra-files'])
+    ? rootPackageConfig['extra-files']
+    : [];
+  if (releaseType !== 'node') {
+    failures.push(`release-type must be "node" (actual: ${String(releaseType)}).`);
+  }
+  if (configuredPackageName !== packageName) {
+    failures.push(
+      `release-please package-name(${String(configuredPackageName)}) ` +
+        `must match ${productPolicy.sourceOfTruth} name(${packageName}).`,
+    );
+  }
+  if (typeof component !== 'string' || component.trim().length === 0) {
+    failures.push('release-please component must be a non-empty string.');
+  }
+  if (includeComponentInTag !== false) {
+    failures.push(
+      'release-please include-component-in-tag must be false to keep ' + 'tags in vX.Y.Z format.',
+    );
+  }
+  if (preMajorPatchMode !== true) {
+    failures.push(
+      'release-please bump-patch-for-minor-pre-major must be true for ' +
+        'pre-1.0 patch-first releases.',
+    );
+  }
+  const managedExtraFiles = productPolicy.synchronizedFiles.filter(
+    (relativePath) => !relativePath.startsWith('.github/release-please/'),
+  );
+  for (const relativePath of managedExtraFiles) {
+    if (!extraFiles.includes(relativePath)) {
+      failures.push(
+        `release-please extra-files must include ${relativePath} to keep ` +
+          'the product version synchronized.',
+      );
+    }
+  }
+  return failures;
+};
+
+const releaseWorkflowFailures = (repoRoot) => {
+  const failures = [];
+  const releaseWorkflow = readText(repoRoot, '.github/workflows/release-please.yml');
+  for (const script of ['artifacts.js', 'smoke.js', 'publish.js']) {
+    if (!releaseWorkflow.includes(`node scripts/release/${script}`)) {
+      failures.push(`Release workflow must run ${script}.`);
+    }
+  }
+  if (releaseWorkflow.includes('overwrite_files: true')) {
+    failures.push('Release workflow must not overwrite published assets.');
+  }
+  return failures;
+};
+
 const releaseValidationFailures = (
   repoRoot,
   developmentManifest = readDevelopmentManifest(repoRoot),
 ) => {
-  const failures = [];
   const productPolicy = developmentManifest.versioning.product;
   const versionPaths = [productPolicy.sourceOfTruth, ...productPolicy.synchronizedFiles];
   const entries = versionPaths.map((relativePath) => ({
@@ -88,7 +150,7 @@ const releaseValidationFailures = (
       relativePath === productPolicy.sourceOfTruth,
     ),
   }));
-  failures.push(...versionPolicyFailures(productPolicy, entries));
+  const failures = versionPolicyFailures(productPolicy, entries);
 
   const sourcePackage = readJson(repoRoot, productPolicy.sourceOfTruth);
   const packageName = typeof sourcePackage.name === 'string' ? sourcePackage.name : '';
@@ -105,63 +167,10 @@ const releaseValidationFailures = (
   }
   const releaseConfigPath = path.posix.join(path.posix.dirname(releaseManifestPath), 'config.json');
   const releaseConfig = readJson(repoRoot, releaseConfigPath);
-  const rootPackageConfig = releaseConfig?.packages?.['.'];
-  if (!rootPackageConfig) {
-    failures.push('release-please config must define packages["."].');
-  } else {
-    const releaseType = rootPackageConfig['release-type'];
-    const configuredPackageName = rootPackageConfig['package-name'];
-    const component = rootPackageConfig.component;
-    const includeComponentInTag = rootPackageConfig['include-component-in-tag'];
-    const preMajorPatchMode = rootPackageConfig['bump-patch-for-minor-pre-major'];
-    const extraFiles = Array.isArray(rootPackageConfig['extra-files'])
-      ? rootPackageConfig['extra-files']
-      : [];
-    if (releaseType !== 'node') {
-      failures.push(`release-type must be "node" (actual: ${String(releaseType)}).`);
-    }
-    if (configuredPackageName !== packageName) {
-      failures.push(
-        `release-please package-name(${String(configuredPackageName)}) ` +
-          `must match ${productPolicy.sourceOfTruth} name(${packageName}).`,
-      );
-    }
-    if (typeof component !== 'string' || component.trim().length === 0) {
-      failures.push('release-please component must be a non-empty string.');
-    }
-    if (includeComponentInTag !== false) {
-      failures.push(
-        'release-please include-component-in-tag must be false to keep ' + 'tags in vX.Y.Z format.',
-      );
-    }
-    if (preMajorPatchMode !== true) {
-      failures.push(
-        'release-please bump-patch-for-minor-pre-major must be true for ' +
-          'pre-1.0 patch-first releases.',
-      );
-    }
-    const managedExtraFiles = productPolicy.synchronizedFiles.filter(
-      (relativePath) => !relativePath.startsWith('.github/release-please/'),
-    );
-    for (const relativePath of managedExtraFiles) {
-      if (!extraFiles.includes(relativePath)) {
-        failures.push(
-          `release-please extra-files must include ${relativePath} to keep ` +
-            'the product version synchronized.',
-        );
-      }
-    }
-  }
-
-  const releaseWorkflow = readText(repoRoot, '.github/workflows/release-please.yml');
-  for (const script of ['artifacts.js', 'smoke.js', 'publish.js']) {
-    if (!releaseWorkflow.includes(`node scripts/release/${script}`)) {
-      failures.push(`Release workflow must run ${script}.`);
-    }
-  }
-  if (releaseWorkflow.includes('overwrite_files: true')) {
-    failures.push('Release workflow must not overwrite published assets.');
-  }
+  failures.push(
+    ...releaseConfigFailures(releaseConfig?.packages?.['.'], packageName, productPolicy),
+    ...releaseWorkflowFailures(repoRoot),
+  );
   return failures;
 };
 

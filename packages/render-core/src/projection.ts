@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import type { ProjectDocument } from '@ashfox/engine-core';
+import { compareText } from '@ashfox/internal-contracts';
 
 import { addNodeGeometry } from './sceneGeometry';
 import { createProjectMaterials, disposeMaterial } from './sceneMaterials';
@@ -24,7 +25,7 @@ const disposeObject = (object: THREE.Object3D): void => {
 };
 
 const orderedSceneNodes = (document: ProjectDocument) =>
-  Object.values(document.scene.nodes).sort((left, right) => left.id.localeCompare(right.id));
+  Object.values(document.scene.nodes).sort((left, right) => compareText(left.id, right.id));
 
 const attachHierarchy = (
   root: THREE.Group,

@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { ProgramExpr } from '../syntax/contract';
 import { parseProgramExpression } from '../syntax/expression';
 import { PROGRAM_PARSE_NESTING_LIMIT } from '../syntax/limits';
@@ -472,7 +473,7 @@ export class Parser {
       unit,
       diagnostics: Object.freeze(
         [...this.diagnostics].sort(
-          (a, b) => a.span.start.offset - b.span.start.offset || a.code.localeCompare(b.code),
+          (a, b) => a.span.start.offset - b.span.start.offset || compareText(a.code, b.code),
         ),
       ),
     });

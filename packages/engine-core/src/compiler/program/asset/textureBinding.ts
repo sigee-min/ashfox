@@ -2,6 +2,7 @@ import { deepFreeze, freeze } from '../../../immutable';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
 import { compareText } from '../../../stableOrder';
 import type { TypedAssetHir, TypedSurface, TypedSurfaceContract } from './contract';
+import { compareDiagnostics } from './diagnostics';
 import type { InstantiatedAssetIr, InstantiatedSurfaceBinding } from './ir';
 import type { AssetTexturePlan } from './texture/contract';
 import { buildTextureSceneContext, type TextureSceneContext } from './texture/ao';
@@ -33,13 +34,6 @@ interface SelectedSurface {
   readonly contract: TypedSurfaceContract;
   readonly path: string;
 }
-
-const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  compareText(left.path, right.path) ||
-  left.span.start.offset - right.span.start.offset ||
-  left.span.end.offset - right.span.end.offset ||
-  compareText(left.code, right.code) ||
-  compareText(left.message, right.message);
 
 const pathForSurface = (
   hir: TypedAssetHir,

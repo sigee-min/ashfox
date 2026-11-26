@@ -34,15 +34,13 @@ const assertDensePlainArray = (value: unknown[], path: string, errorMessage: str
     snapshotError(errorMessage, path, 'Export arrays must use the plain array prototype.');
   }
   const ownKeys = Reflect.ownKeys(value);
-  const expected = new Set([
-    'length',
-    ...Array.from({ length: value.length }, (_entry, index) => String(index)),
-  ]);
-  if (
-    ownKeys.length !== expected.size ||
-    ownKeys.some((key) => typeof key !== 'string' || !expected.has(key))
-  ) {
+  if (ownKeys.length !== value.length + 1 || ownKeys[value.length] !== 'length') {
     snapshotError(errorMessage, path, 'Export arrays must be dense and contain no extra fields.');
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.prototype.hasOwnProperty.call(value, index)) {
+      snapshotError(errorMessage, path, 'Export arrays must be dense and contain no extra fields.');
+    }
   }
 };
 

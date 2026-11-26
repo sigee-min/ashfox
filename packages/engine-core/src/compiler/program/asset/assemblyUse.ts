@@ -1,5 +1,6 @@
 import { freeze } from '../../../immutable';
 import type { AssetAssemblyUse, AssetQualifiedName } from '../../../project/program/asset/contract';
+import { nullRecord } from './diagnostics';
 import type { AssetValue } from './value/contract';
 import {
   type AssetSymbolId,
@@ -25,8 +26,6 @@ export interface UseBuildContext<S extends { readonly path: string }> {
   ) => { readonly symbol: AssetSymbolId } | null;
 }
 
-const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
-
 const bindingKind = (port: TypedComponent['ports'][number]): AssetSymbolKind =>
   port.domain === 'rig' ? 'rig-contract' : 'surface';
 
@@ -36,7 +35,7 @@ const buildUseParameters = <S extends { readonly path: string }>(
   use: AssetAssemblyUse,
   component: TypedComponent,
 ): Readonly<Record<string, AssetValue>> => {
-  const parameters = record<AssetValue>();
+  const parameters = nullRecord<AssetValue>();
   const sets = new Map<string, AssetAssemblyUse['parameterSets'][number]>();
   for (const set of use.parameterSets) {
     if (sets.has(set.id)) {
@@ -149,7 +148,7 @@ const buildUsePortBindings = <S extends { readonly path: string }>(
   surfaces: Readonly<Record<string, TypedSurface>>,
 ): Readonly<Record<string, AssetSymbolId>> => {
   const bindings = new Map<string, AssetAssemblyUse['portBindings'][number]>();
-  const portBindings = record<AssetSymbolId>();
+  const portBindings = nullRecord<AssetSymbolId>();
   for (const binding of use.portBindings) {
     if (bindings.has(binding.port)) {
       context.issue(

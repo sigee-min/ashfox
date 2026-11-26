@@ -1,6 +1,8 @@
+import { compareText } from '../../../stableOrder';
 import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
+import { compareDiagnostics } from './diagnostics';
 import {
   type AssetSymbolId,
   type TypedAssetAssembly,
@@ -34,12 +36,6 @@ import {
 import { evaluateAssetExpression } from './value/evaluate';
 import { type AssetValue } from './value/contract';
 import { mirrorInstantiatedNode } from './instantiateMirror';
-
-const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  left.path.localeCompare(right.path) ||
-  left.span.start.offset - right.span.start.offset ||
-  left.span.end.offset - right.span.end.offset ||
-  left.code.localeCompare(right.code);
 
 const rootAsset = (hir: TypedAssetHir): TypedAssetAssembly | null => {
   const rootKeys = new Set(
@@ -116,8 +112,8 @@ const buildBones = (
     world: new Map<string, AssetExactFrame>(),
     active: new Set<string>(),
   };
-  for (const id of Object.keys(rig.joints).sort()) addBone(id, ctx);
-  ctx.bones.sort((left, right) => left.id.localeCompare(right.id));
+  for (const id of Object.keys(rig.joints).sort(compareText)) addBone(id, ctx);
+  ctx.bones.sort((left, right) => compareText(left.id, right.id));
   return freeze({ bones: freeze(ctx.bones), world: ctx.world });
 };
 

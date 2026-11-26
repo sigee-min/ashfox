@@ -4,6 +4,7 @@ import type {
   ProgramTextureDecl,
 } from '../../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../../project/source/contract';
+import { compareText } from '../../../../stableOrder';
 import type { TypedSurfaceContract } from '../contract';
 import type { AssetTextureUsage } from './contract';
 import { properties, readTexelVector, type TextureExpressionContext } from './expressions';
@@ -390,7 +391,7 @@ const finalizeChartPlacement = (
     );
     return null;
   }
-  const sorted = [...drafts].sort((left, right) => left.chart.id.localeCompare(right.chart.id));
+  const sorted = [...drafts].sort((left, right) => compareText(left.chart.id, right.chart.id));
   if (withoutOrigin.length === 0) return resolveExplicitOrigins(sorted, explicitAtlas, report);
   const packed = packCharts(
     sorted.map((d) => ({ id: d.chart.id, width: d.abiWidth, height: d.abiHeight })),

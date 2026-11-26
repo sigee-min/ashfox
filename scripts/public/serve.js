@@ -46,73 +46,77 @@ if (!fs.statSync(publicRoot, { throwIfNoEntry: false })?.isDirectory()) {
   throw new Error('Run npm run build:public before previewing.');
 }
 
-const server = http
-  .createServer((request, response) => {
-    const url = new URL(request.url ?? '/', `http://${host}:${port}`);
-    if (url.pathname === '/home' || url.pathname === '/home/') {
-      response.writeHead(301, { Location: '/' });
-      response.end();
-      return;
-    }
-    if (url.pathname === '/docs') {
-      response.writeHead(301, { Location: `${url.pathname}/` });
-      response.end();
-      return;
-    }
-    let file;
-    try {
-      file = resolveFile(url.pathname);
-    } catch {
-      file = null;
-    }
-    if (file === undefined) {
-      response.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-      if (request.method === 'HEAD') response.end();
-      else fs.createReadStream(path.join(publicRoot, '404.html')).pipe(response);
-      return;
-    }
-    if (!file) {
-      response.writeHead(400);
-      response.end('Bad request');
-      return;
-    }
-    const contentType =
-      contentTypes[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
-    const fileSize = fs.statSync(file).size;
-    const range = request.headers.range?.match(/^bytes=(\d*)-(\d*)$/);
-    let start = 0;
-    let end = fileSize - 1;
-    if (range) {
-      const [, requestedStart, requestedEnd] = range;
-      if (!requestedStart && requestedEnd) {
-        start = Math.max(0, fileSize - Number.parseInt(requestedEnd, 10));
-      } else {
-        start = Number.parseInt(requestedStart || '0', 10);
-        if (requestedEnd) end = Number.parseInt(requestedEnd, 10);
-      }
-      end = Math.min(end, fileSize - 1);
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) {
-        response.writeHead(416, {
-          'Content-Range': `bytes */${fileSize}`,
-        });
-        response.end();
-        return;
-      }
-    }
-    const headers = {
-      'Accept-Ranges': 'bytes',
-      'Cache-Control': 'no-store',
-      'Content-Length': String(end - start + 1),
-      'Content-Type': contentType,
-    };
-    if (range) headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
-    response.writeHead(range ? 206 : 200, headers);
-    if (request.method === 'HEAD') {
-      response.end();
-      return;
-    }
-    fs.createReadStream(file, { start, end }).pipe(response);
-  })
-  .listen(port, host, () => {
-    console.log(`ashfox preview: http://${host}:${server.address().port}/`);
-  });
+const parseByteRange = (rangeHeader, fileSize) => {
+  const match = rangeHeader?.match(/^bytes=(\d*)-(\d*)$/);
+  if (!match) return { ranged: false, valid: true, start: 0, end: fileSize - 1 };
+  const [, requestedStart, requestedEnd] = match;
+  let start = 0;
+  let end = fileSize - 1;
+  if (!requestedStart && requestedEnd) {
+    start = Math.max(0, fileSize - Number.parseInt(requestedEnd, 10));
+  } else {
+    start = Number.parseInt(requestedStart || '0', 10);
+    if (requestedEnd) end = Number.parseInt(requestedEnd, 10);
+  }
+  end = Math.min(end, fileSize - 1);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) {
+    return { ranged: true, valid: false, start: 0, end: -1 };
+  }
+  return { ranged: true, valid: true, start, end };
+};
+
+const handleRequest = (request, response) => {
+  const url = new URL(request.url ?? '/', `http://${host}:${port}`);
+  if (url.pathname === '/home' || url.pathname === '/home/') {
+    response.writeHead(301, { Location: '/' });
+    response.end();
+    return;
+  }
+  if (url.pathname === '/docs') {
+    response.writeHead(301, { Location: `${url.pathname}/` });
+    response.end();
+    return;
+  }
+  let file;
+  try {
+    file = resolveFile(url.pathname);
+  } catch {
+    file = null;
+  }
+  if (file === undefined) {
+    response.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+    if (request.method === 'HEAD') response.end();
+    else fs.createReadStream(path.join(publicRoot, '404.html')).pipe(response);
+    return;
+  }
+  if (!file) {
+    response.writeHead(400);
+    response.end('Bad request');
+    return;
+  }
+  const contentType = contentTypes[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
+  const fileSize = fs.statSync(file).size;
+  const range = parseByteRange(request.headers.range, fileSize);
+  if (!range.valid) {
+    response.writeHead(416, { 'Content-Range': `bytes */${fileSize}` });
+    response.end();
+    return;
+  }
+  const headers = {
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'no-store',
+    'Content-Length': String(range.end - range.start + 1),
+    'Content-Type': contentType,
+  };
+  if (range.ranged) headers['Content-Range'] = `bytes ${range.start}-${range.end}/${fileSize}`;
+  response.writeHead(range.ranged ? 206 : 200, headers);
+  if (request.method === 'HEAD') {
+    response.end();
+    return;
+  }
+  fs.createReadStream(file, { start: range.start, end: range.end }).pipe(response);
+};
+
+const server = http.createServer(handleRequest).listen(port, host, () => {
+  console.log(`ashfox preview: http://${host}:${server.address().port}/`);
+});

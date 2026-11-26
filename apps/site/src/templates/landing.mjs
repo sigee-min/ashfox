@@ -43,23 +43,7 @@ const renderHero = (t) => `
     </a>
   </section>`;
 
-const renderLiveDiffStage = (t, locale, assets, griffin) => `
-  <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
-    <div class="linear-head linear-head-compact" data-reveal>
-      <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
-      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
-    </div>
-    <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
-      <div class="diff-topbar">
-        <div class="segmented-strip" role="tablist" aria-label="${t('diffStageTitle')}">
-          <button type="button" data-diff-domain="3d" aria-pressed="true">${t('diffTab3d')}</button>
-          <button type="button" data-diff-domain="2d" aria-pressed="false">${t('diffTab2d')}</button>
-          <button type="button" data-diff-domain="sfx" aria-pressed="false">${t('diffTabSfx')}</button>
-        </div>
-        <span class="workbench-path" data-diff-filepath>examples/griffin/workbench/main.ashfox</span>
-      </div>
-      <div class="diff-split">
-        <div class="diff-editor source-window" id="source">
+const renderDiffEditor = (t) => `        <div class="diff-editor source-window" id="source">
           <div class="diff-token-bar">
             <span class="diff-token-label">${t('diffClickHint')}</span>
             <div class="diff-tokens" data-diff-tokens></div>
@@ -72,8 +56,9 @@ const renderLiveDiffStage = (t, locale, assets, griffin) => `
           <div class="source-code">
             <pre tabindex="0" aria-label="${t('sourceExcerpt')}"><code data-source-code>${t('loadingSource')}</code></pre>
           </div>
-        </div>
-        <div class="diff-output">
+        </div>`;
+
+const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-output">
           <div class="diff-stage-3d" data-diff-pane="3d">
             <div class="world-stage-wrap">
               <div class="world-stage" data-live-model data-model-src="${assets.heroModel}"><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="${t('heroAlt')}"></div>
@@ -111,16 +96,37 @@ const renderLiveDiffStage = (t, locale, assets, griffin) => `
             </div>
             <audio data-diff-audio preload="none" src="/media/catalog/bird-call.wav" hidden></audio>
           </div>
-        </div>
-      </div>
-      <div class="workbench-statusbar">
+        </div>`;
+
+const renderDiffStatusBar = (t, locale) => `      <div class="workbench-statusbar">
         <span data-model-status role="status">${t('modelStatus')}</span>
         <div class="world-index">
           <a data-diff-studio-link href="${locale.prefix}/assets/?asset=griffin">${t('openInStudio')} →</a>
           <a data-diff-source-link href="/examples/griffin/workbench/main.ashfox">${t('exploreSource')}</a>
           <a data-diff-download-link href="/media/catalog/griffin.glb" download>${t('downloadModel')}</a>
         </div>
+      </div>`;
+
+const renderLiveDiffStage = (t, locale, assets, griffin) => `
+  <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
+    <div class="linear-head linear-head-compact" data-reveal>
+      <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
+      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+    </div>
+    <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
+      <div class="diff-topbar">
+        <div class="segmented-strip" role="tablist" aria-label="${t('diffStageTitle')}">
+          <button type="button" data-diff-domain="3d" aria-pressed="true">${t('diffTab3d')}</button>
+          <button type="button" data-diff-domain="2d" aria-pressed="false">${t('diffTab2d')}</button>
+          <button type="button" data-diff-domain="sfx" aria-pressed="false">${t('diffTabSfx')}</button>
+        </div>
+        <span class="workbench-path" data-diff-filepath>examples/griffin/workbench/main.ashfox</span>
       </div>
+      <div class="diff-split">
+${renderDiffEditor(t)}
+${renderDiffOutput(t, assets, griffin)}
+      </div>
+${renderDiffStatusBar(t, locale)}
     </div>
   </section>`;
 

@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import * as path from 'node:path';
 import {
   inspectNativeSource,
@@ -180,7 +181,7 @@ export const readStandalone = (
   };
   const entry = visitStandaloneModule(state, entryPath, 0);
   const configuration = buildStandaloneConfig(entry, entryPath, state.files);
-  state.files.sort((a, b) => (a.path < b.path ? -1 : 1));
+  state.files.sort((a, b) => compareText(a.path, b.path));
   return {
     input,
     root,

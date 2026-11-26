@@ -6,6 +6,7 @@ import {
   type ResolvedBlob,
 } from '../../contract';
 import { sha256ByteDigest } from '../../../provenance/digest';
+import { compareText } from '../../../stableOrder';
 
 export interface GltfResolvedExportOptions {
   resolveBlob: BlobResolver;
@@ -25,16 +26,14 @@ const copyExactBytes = (value: unknown): Uint8Array | null => {
   if (
     !ArrayBuffer.isView(value) ||
     Object.getPrototypeOf(value) !== BUILTIN_UINT8_ARRAY_PROTOTYPE ||
-    typedArrayTag.call(value) !== 'Uint8Array'
-  )
+    typedArrayTag.call(value) !== 'Uint8Array' ||
+    Object.getOwnPropertySymbols(value).length !== 0
+  ) {
     return null;
-  const keys = Reflect.ownKeys(value);
+  }
   const length: number = typedArrayLength.call(value);
-  if (
-    keys.length !== length ||
-    keys.some((key, index) => typeof key !== 'string' || key !== String(index))
-  )
-    return null;
+  // Closed-contract anti-spoof: genuine Uint8Array keys are "0".."length-1"; rejects extra own fields.
+  if (Reflect.ownKeys(value).length !== length) return null;
   const result = new Uint8Array(length);
   // Genuine Uint8Array indexed elements cannot be holes, accessors or non-byte
   // values. The intrinsic copy avoids per-byte descriptors and user iterators.
@@ -47,7 +46,7 @@ const copyExactBytes = (value: unknown): Uint8Array | null => {
 };
 
 export const orderedTextures = (document: ProjectDocument): TextureAsset[] =>
-  Object.values(document.textures).sort((left, right) => left.id.localeCompare(right.id));
+  Object.values(document.textures).sort((left, right) => compareText(left.id, right.id));
 
 const readResolvedDescriptors = (
   texture: TextureAsset,
@@ -131,6 +130,11 @@ const assertResolvedMetadata = (
   return contentType;
 };
 
+const verifiedResolvedBlobs = new WeakMap<ResolvedBlob, string>();
+
+const resolvedAuthorityKey = (texture: TextureAsset): string =>
+  `${texture.id}\u0000${texture.source.contentType}\u0000${texture.source.byteLength ?? ''}\u0000${texture.source.contentHash}`;
+
 export const validateResolvedTexture = (
   texture: TextureAsset,
   resolved: ResolvedBlob,
@@ -146,7 +150,9 @@ export const validateResolvedTexture = (
     );
   }
   const contentType = assertResolvedMetadata(texture, bytes, typeDescriptor.value);
-  return Object.freeze({ bytes, contentType });
+  const sealed = Object.freeze({ bytes, contentType });
+  verifiedResolvedBlobs.set(sealed, resolvedAuthorityKey(texture));
+  return sealed;
 };
 
 export const requireResolvedTexture = (
@@ -158,6 +164,12 @@ export const requireResolvedTexture = (
     throw new ExportMaterializationRequiredError(
       `Embedded GLB export requires resolved bytes for texture "${texture.id}".`,
     );
+  }
+  if (
+    Object.isFrozen(resolved) &&
+    verifiedResolvedBlobs.get(resolved) === resolvedAuthorityKey(texture)
+  ) {
+    return resolved;
   }
   return validateResolvedTexture(texture, resolved);
 };

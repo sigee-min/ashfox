@@ -1,7 +1,13 @@
+import {
+  DEFAULT_AUDIT_THRESHOLD,
+  ramp,
+  round2,
+  type AuditQualityGrade,
+} from '@ashfox/internal-contracts';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import type { AssetAuthoringTelemetry } from '../model/telemetry';
 
-export type QualityGrade = 'fail' | 'needs_work' | 'pass' | 'excellent';
+export type QualityGrade = AuditQualityGrade;
 export type AuditProfileSource = 'authored' | 'override' | 'inferred';
 export type AuditPillarId = 'form' | 'texture' | 'rig';
 
@@ -92,7 +98,7 @@ export interface ProfileWeightSpec {
   readonly uvEfficiency: number;
 }
 
-export const DEFAULT_AUDIT_THRESHOLD = 75;
+export { DEFAULT_AUDIT_THRESHOLD, ramp, round2 };
 
 export const PROFILE_WEIGHTS: Readonly<Record<AssetQualityProfile, ProfileWeightSpec>> = {
   creature: {
@@ -147,12 +153,3 @@ export const PROFILE_WEIGHTS: Readonly<Record<AssetQualityProfile, ProfileWeight
     uvEfficiency: 4,
   },
 };
-
-export const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
-
-export const ramp = (value: number, low: number, high: number): number =>
-  high <= low ? (value >= high ? 1 : 0) : clamp01((value - low) / (high - low));
-
-export const round2 = (value: number): number => Math.round(value * 100) / 100;
-
-export const round4 = (value: number): number => Math.round(value * 10000) / 10000;

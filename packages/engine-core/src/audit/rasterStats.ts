@@ -1,8 +1,6 @@
 import type { TextureAsset } from '../model/texture';
-import {
-  rasterizeCanonicalTexture,
-  type CanonicalRgbaBytes,
-} from '../textures/textureRecipe/raster';
+import { srgbLuma } from '../textures/color';
+import { rasterizeTextureSpec } from '../textures/textureRecipe/raster';
 import {
   createColorStatsAcc,
   finalizeColorStats,
@@ -34,72 +32,60 @@ interface RasterBuffer {
   readonly width: number;
   readonly height: number;
   readonly isEmissive: boolean;
-  readonly rgba: CanonicalRgbaBytes;
+  readonly rgba: Uint8Array;
+  readonly lumas: Float64Array;
   readonly usedPixels: Uint8Array;
 }
 
-const srgbLuma = (r: number, g: number, b: number): number =>
-  (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+const NEIGHBOR_DIRS: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
+
+const pixelIndex = (width: number, x: number, y: number): number => y * width + x;
 
 const rasterizeTextureBuffer = (texture: TextureAsset): RasterBuffer | null => {
   if (texture.raster === undefined) return null;
-  const result = rasterizeCanonicalTexture(texture.width, texture.height, {
-    background: texture.raster.background,
-    backgroundAlpha: texture.raster.backgroundAlpha,
-    canvasDetails: [...texture.raster.canvasDetails],
-    alphaMasks: [...(texture.raster.alphaMasks ?? [])],
-  });
+  const result = rasterizeTextureSpec(texture.width, texture.height, texture.raster);
+  const rgba = result.rgba.copy();
+  const total = result.width * result.height;
+  const lumas = new Float64Array(total);
+  for (let i = 0, o = 0; i < total; i += 1, o += 4) {
+    if (rgba[o + 3] === 255) {
+      lumas[i] = srgbLuma(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!);
+    }
+  }
   return {
     width: result.width,
     height: result.height,
     isEmissive: texture.renderMode === 'emissive',
-    rgba: result.rgba,
-    usedPixels: new Uint8Array(result.width * result.height),
+    rgba,
+    lumas,
+    usedPixels: new Uint8Array(total),
   };
 };
 
-const pixelRgb = (buf: RasterBuffer, x: number, y: number): readonly [number, number, number] => {
-  const offset = (y * buf.width + x) * 4;
-  return [buf.rgba.at(offset) ?? 0, buf.rgba.at(offset + 1) ?? 0, buf.rgba.at(offset + 2) ?? 0];
-};
-
-const pixelAlpha = (buf: RasterBuffer, x: number, y: number): number =>
-  buf.rgba.at((y * buf.width + x) * 4 + 3) ?? 0;
-
-const pixelLuma = (buf: RasterBuffer, x: number, y: number): number => {
-  const offset = (y * buf.width + x) * 4;
-  return srgbLuma(
-    buf.rgba.at(offset) ?? 0,
-    buf.rgba.at(offset + 1) ?? 0,
-    buf.rgba.at(offset + 2) ?? 0,
-  );
-};
-
-const isIsolatedPixel = (
-  buf: RasterBuffer,
-  x: number,
-  y: number,
-): { readonly eligible: boolean; readonly isolated: boolean } => {
-  if (pixelAlpha(buf, x, y) !== 255) return { eligible: false, isolated: false };
-  const center = pixelLuma(buf, x, y);
-  const dirs = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ] as const;
+/** Return 0 = ineligible, 1 = eligible non-isolated, 2 = eligible isolated. */
+const classifyIsolatedPixel = (buf: RasterBuffer, x: number, y: number): 0 | 1 | 2 => {
+  const idx = pixelIndex(buf.width, x, y);
+  if (buf.rgba[idx * 4 + 3] !== 255) return 0;
+  const center = buf.lumas[idx]!;
   let neighbors = 0;
   let diffNeighbors = 0;
-  for (const [dx, dy] of dirs) {
-    const nx = x + dx;
-    const ny = y + dy;
+  for (let i = 0; i < 4; i += 1) {
+    const dir = NEIGHBOR_DIRS[i]!;
+    const nx = x + dir[0];
+    const ny = y + dir[1];
     if (nx < 0 || ny < 0 || nx >= buf.width || ny >= buf.height) continue;
-    if (pixelAlpha(buf, nx, ny) !== 255) continue;
+    const nIdx = pixelIndex(buf.width, nx, ny);
+    if (buf.rgba[nIdx * 4 + 3] !== 255) continue;
     neighbors += 1;
-    if (Math.abs(pixelLuma(buf, nx, ny) - center) > 0.14) diffNeighbors += 1;
+    if (Math.abs(buf.lumas[nIdx]! - center) > 0.14) diffNeighbors += 1;
   }
-  if (neighbors < 2) return { eligible: false, isolated: false };
-  return { eligible: true, isolated: diffNeighbors === neighbors };
+  if (neighbors < 2) return 0;
+  return diffNeighbors === neighbors ? 2 : 1;
 };
 
 const measureBufferNoise = (
@@ -109,10 +95,10 @@ const measureBufferNoise = (
   let isolated = 0;
   for (let y = 0; y < buf.height; y += 1) {
     for (let x = 0; x < buf.width; x += 1) {
-      const check = isIsolatedPixel(buf, x, y);
-      if (!check.eligible) continue;
+      const code = classifyIsolatedPixel(buf, x, y);
+      if (code === 0) continue;
       eligible += 1;
-      if (check.isolated) isolated += 1;
+      if (code === 2) isolated += 1;
     }
   }
   return { eligible, isolated };
@@ -162,34 +148,36 @@ interface FaceSampleAcc {
 const checkPairClutter = (
   buf: RasterBuffer,
   lCenter: number,
-  nx: number,
-  ny: number,
+  nIdx: number,
   acc: FaceSampleAcc,
 ): void => {
-  if (pixelAlpha(buf, nx, ny) !== 255) return;
+  if (buf.rgba[nIdx * 4 + 3] !== 255) return;
   acc.adjPairs += 1;
-  if (Math.abs(lCenter - pixelLuma(buf, nx, ny)) > 0.09) acc.harshPairs += 1;
+  if (Math.abs(lCenter - buf.lumas[nIdx]!) > 0.09) acc.harshPairs += 1;
 };
 
 const checkCheckerCenter = (
   buf: RasterBuffer,
   lCenter: number,
-  x: number,
-  y: number,
+  idx: number,
   acc: FaceSampleAcc,
 ): void => {
-  const dirs = [
-    [x - 1, y],
-    [x + 1, y],
-    [x, y - 1],
-    [x, y + 1],
-  ] as const;
-  if (dirs.some(([nx, ny]) => pixelAlpha(buf, nx, ny) !== 255)) return;
+  const w = buf.width;
+  const rgba = buf.rgba;
+  if (
+    rgba[(idx - 1) * 4 + 3] !== 255 ||
+    rgba[(idx + 1) * 4 + 3] !== 255 ||
+    rgba[(idx - w) * 4 + 3] !== 255 ||
+    rgba[(idx + w) * 4 + 3] !== 255
+  ) {
+    return;
+  }
   acc.checkerEligible += 1;
-  const dL = lCenter - pixelLuma(buf, x - 1, y);
-  const dR = lCenter - pixelLuma(buf, x + 1, y);
-  const dU = lCenter - pixelLuma(buf, x, y - 1);
-  const dD = lCenter - pixelLuma(buf, x, y + 1);
+  const lumas = buf.lumas;
+  const dL = lCenter - lumas[idx - 1]!;
+  const dR = lCenter - lumas[idx + 1]!;
+  const dU = lCenter - lumas[idx - w]!;
+  const dD = lCenter - lumas[idx + w]!;
   if (dL * dR > 0.015 && dU * dD > 0.015) acc.checkerHits += 1;
 };
 
@@ -201,11 +189,15 @@ const recordFaceTexel = (
   y: number,
   acc: FaceSampleAcc,
 ): boolean => {
-  buf.usedPixels[y * buf.width + x] = 1;
-  if (pixelAlpha(buf, x, y) !== 255) return false;
-  const [r, g, b] = pixelRgb(buf, x, y);
+  const idx = pixelIndex(buf.width, x, y);
+  buf.usedPixels[idx] = 1;
+  const offset = idx * 4;
+  if (buf.rgba[offset + 3] !== 255) return false;
+  const r = buf.rgba[offset]!;
+  const g = buf.rgba[offset + 1]!;
+  const b = buf.rgba[offset + 2]!;
   recordColorPixel(acc.color, r, g, b, buf.isEmissive);
-  const l = srgbLuma(r, g, b);
+  const l = buf.lumas[idx]!;
   acc.lumas.push(l);
   if (binding.isTop) {
     acc.topSum += l;
@@ -214,10 +206,10 @@ const recordFaceTexel = (
     acc.botSum += l;
     acc.botCount += 1;
   }
-  if (x + 1 < bounds.x1) checkPairClutter(buf, l, x + 1, y, acc);
-  if (y + 1 < bounds.y1) checkPairClutter(buf, l, x, y + 1, acc);
+  if (x + 1 < bounds.x1) checkPairClutter(buf, l, idx + 1, acc);
+  if (y + 1 < bounds.y1) checkPairClutter(buf, l, idx + buf.width, acc);
   if (x > bounds.x0 && x + 1 < bounds.x1 && y > bounds.y0 && y + 1 < bounds.y1) {
-    checkCheckerCenter(buf, l, x, y, acc);
+    checkCheckerCenter(buf, l, idx, acc);
   }
   return true;
 };
@@ -256,10 +248,47 @@ const finalizePpuStats = (
   return { meanPpu, ppuConsistency: 1 - ramp(relStd, 0.1, 0.55) };
 };
 
-const quantile = (sorted: readonly number[], p: number): number => {
-  if (sorted.length === 0) return 0;
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * p)));
-  return sorted[index]!;
+const quickselect = (arr: number[], k: number, leftInit: number, rightInit: number): number => {
+  let left = leftInit;
+  let right = rightInit;
+  while (left < right) {
+    const mid = (left + right) >>> 1;
+    const pivot = arr[mid]!;
+    let lt = left;
+    let i = left;
+    let gt = right;
+    while (i <= gt) {
+      const value = arr[i]!;
+      if (value < pivot) {
+        arr[i] = arr[lt]!;
+        arr[lt] = value;
+        lt += 1;
+        i += 1;
+      } else if (value > pivot) {
+        arr[i] = arr[gt]!;
+        arr[gt] = value;
+        gt -= 1;
+      } else {
+        i += 1;
+      }
+    }
+    if (k < lt) right = lt - 1;
+    else if (k > gt) left = gt + 1;
+    else return arr[k]!;
+  }
+  return arr[k]!;
+};
+
+const quantileIndex = (length: number, p: number): number =>
+  Math.min(length - 1, Math.max(0, Math.floor((length - 1) * p)));
+
+const lumaPercentiles = (lumas: number[]): readonly [number, number] => {
+  if (lumas.length === 0) return [0, 0];
+  const k10 = quantileIndex(lumas.length, 0.1);
+  const k90 = quantileIndex(lumas.length, 0.9);
+  const p10 = quickselect(lumas, k10, 0, lumas.length - 1);
+  const p90 = quickselect(lumas, k90, k10, lumas.length - 1);
+  return [p10, p90];
 };
 
 const buildTextureBuffers = (
@@ -326,9 +355,7 @@ export const analyzeRasterStats = (
     }
   }
   const noiseStats = aggregateBufferNoise(buffers);
-  acc.lumas.sort((a, b) => a - b);
-  const lumP10 = quantile(acc.lumas, 0.1);
-  const lumP90 = quantile(acc.lumas, 0.9);
+  const [lumP10, lumP90] = lumaPercentiles(acc.lumas);
   const upMean = acc.topCount > 0 ? acc.topSum / acc.topCount : 0;
   const downMean = acc.botCount > 0 ? acc.botSum / acc.botCount : 0;
   const ppuStats = finalizePpuStats(acc.ppuSamples);

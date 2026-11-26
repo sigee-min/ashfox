@@ -1,8 +1,8 @@
 import { CUBE_FACE_DIRECTIONS, PLANE_FACE_DIRECTIONS, type ProjectDocument } from '../../model';
-import type { ExportAdaptedDocument } from '../../export/adapter';
+import type { ExportAdaptedDocument } from '../adapter';
 import { isSceneNodeEffectivelyVisible } from '../../sceneVisibility';
-import type { FindingSink } from '../contract';
-import { exportCompatibilityFor } from '../../export/compatibility';
+import type { FindingSink } from '../../validation/contract';
+import { exportCompatibilityFor } from '../compatibility';
 
 const MODEL_PATH_PATTERN = /^[A-Za-z0-9_./-]+$/;
 

@@ -14,7 +14,12 @@ import { errorDiagnostic, sourceRefAt, type SourceRef } from '../../project/work
 import type { WorkspaceEntrySelector } from '../../project/workspace/graph/contract';
 import { readAuthoredAssetWorkspace } from '../../project/workspace/reader';
 import type { AuthoredAssetWorkspace } from '../../project/workspace/contract';
-import type { AssetProject, AssetProjectIdentitySeed } from '../../project/asset';
+import type {
+  AssetBuildIdentity,
+  AssetProject,
+  AssetProjectIdentitySeed,
+} from '../../project/asset';
+import type { ProjectDocument } from '../../model';
 
 export interface OpenAssetProjectInput {
   readonly workspace: AuthoredAssetWorkspace;
@@ -26,13 +31,34 @@ export type OpenAssetProjectResult =
   | Readonly<{ readonly ok: true; readonly project: AssetProject }>
   | Readonly<{ readonly ok: false; readonly diagnostics: readonly WorkspaceDiagnostic[] }>;
 
+export interface SealedAssetProjectAuthority {
+  readonly project: AssetProject;
+  readonly document: ProjectDocument;
+  readonly build: AssetBuildIdentity;
+}
+
 const verifiedAssetProjects = new WeakSet<object>();
+const sealedAssetProjects = new WeakMap<AssetProject, SealedAssetProjectAuthority>();
+
+export const readSealedAssetProjectAuthority = (
+  project: AssetProject,
+): SealedAssetProjectAuthority | undefined => sealedAssetProjects.get(project);
 
 const isDeepFrozen = (value: unknown, seen = new WeakSet<object>()): boolean => {
-  if (typeof value !== 'object' || value === null || seen.has(value)) return true;
+  if (value === null || typeof value !== 'object') return typeof value !== 'function';
+  if (seen.has(value)) return true;
   if (!Object.isFrozen(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== Array.prototype) return false;
   seen.add(value);
-  return Object.values(value).every((child) => isDeepFrozen(child, seen));
+  return Reflect.ownKeys(value).every((key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return (
+      descriptor !== undefined &&
+      Object.prototype.hasOwnProperty.call(descriptor, 'value') &&
+      isDeepFrozen(descriptor.value, seen)
+    );
+  });
 };
 
 const invalidIdentity = (identity: AssetProjectIdentitySeed): string | null => {
@@ -119,6 +145,40 @@ const buildCompiledDocument = (
   return document;
 };
 
+const snapshotIdentitySeed = (
+  identity: AssetProjectIdentitySeed,
+): AssetProjectIdentitySeed | null => {
+  if (
+    !isClosedContractRecord(identity) ||
+    !(
+      hasExactContractKeys(identity, new Set(['id', 'revision', 'createdAt'])) ||
+      hasExactContractKeys(identity, new Set(['id', 'revision', 'createdAt', 'updatedAt']))
+    )
+  ) {
+    return null;
+  }
+  return Object.freeze({
+    id: identity.id,
+    revision: identity.revision,
+    createdAt: identity.createdAt,
+    ...(identity.updatedAt === undefined ? {} : { updatedAt: identity.updatedAt }),
+  });
+};
+
+const sealOpenedAssetProject = (project: AssetProject): OpenAssetProjectResult => {
+  const result = deepFreeze({ ok: true as const, project });
+  verifiedAssetProjects.add(project);
+  sealedAssetProjects.set(
+    project,
+    Object.freeze({
+      project,
+      document: project.document,
+      build: project.build,
+    }),
+  );
+  return result;
+};
+
 /** Build one selected entry into a transient host session. */
 export const openAssetProject = (input: OpenAssetProjectInput): OpenAssetProjectResult => {
   try {
@@ -132,17 +192,19 @@ export const openAssetProject = (input: OpenAssetProjectInput): OpenAssetProject
           errorDiagnostic('asset-project.invalid-input', 'Asset project input must be an object.'),
         ],
       });
-    const identityFailure = invalidIdentity(input.identity);
-    if (identityFailure !== null)
+    const identity = snapshotIdentitySeed(input.identity);
+    const identityFailure =
+      identity === null ? 'Asset project identity must be an object.' : invalidIdentity(identity);
+    if (identity === null || identityFailure !== null)
       return deepFreeze({
         ok: false as const,
-        diagnostics: [errorDiagnostic('asset-project.invalid-identity', identityFailure)],
+        diagnostics: [errorDiagnostic('asset-project.invalid-identity', identityFailure!)],
       });
     const opened = readAuthoredAssetWorkspace(input.workspace);
     if (!opened.ok) return deepFreeze({ ok: false as const, diagnostics: opened.diagnostics });
     const compiled = compileAssetWorkspaceEntry(opened.value, input.entry);
     if (!compiled.ok) return deepFreeze({ ok: false as const, diagnostics: compiled.diagnostics });
-    const document = buildCompiledDocument(input.identity, compiled.model);
+    const document = buildCompiledDocument(identity, compiled.model);
     const validationDiagnostics = documentValidationDiagnostics(
       document,
       opened.value,
@@ -152,16 +214,19 @@ export const openAssetProject = (input: OpenAssetProjectInput): OpenAssetProject
     if (validationDiagnostics.length > 0)
       return deepFreeze({ ok: false as const, diagnostics: validationDiagnostics });
     const project: AssetProject = {
-      id: input.identity.id,
-      revision: input.identity.revision,
-      createdAt: input.identity.createdAt,
-      updatedAt: input.identity.updatedAt ?? input.identity.createdAt,
+      id: identity.id,
+      revision: identity.revision,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt ?? identity.createdAt,
       workspace: opened.value,
-      entry: deepFreeze({ ...input.entry }),
+      entry: deepFreeze({
+        packageName: compiled.build.packageName,
+        entryName: compiled.build.entryName,
+      }),
       build: compiled.build,
       document: deepFreeze(document),
     };
-    return deepFreeze({ ok: true as const, project });
+    return sealOpenedAssetProject(project);
   } catch {
     return deepFreeze({
       ok: false as const,

@@ -1,12 +1,12 @@
 import type { ProjectDocument } from '@ashfox/engine-core';
 
-import type { ProjectAssets } from '@ashfox/render-core/assets';
-import { applyAnimationPose } from '@ashfox/render-core/animationPose';
-import type { CameraMode } from '@ashfox/render-core/cameraPresets';
-import type { ProjectSceneProjection } from '@ashfox/render-core/sceneTypes';
-import type { ViewportEnvironmentId } from '@ashfox/render-core/viewportEnvironment';
+import type { ProjectAssets } from '../assets';
+import { applyAnimationPose } from '../animationPose';
+import type { CameraMode } from '../cameraPresets';
+import type { ProjectSceneProjection } from '../sceneTypes';
+import type { ViewportEnvironmentId } from '../viewportEnvironment';
 import { createBuildCapturePlan } from './buildCaptureTimeline';
-import { throwIfCaptureAborted, yieldCaptureFrame } from '@ashfox/render-core/captureAbort';
+import { throwIfCaptureAborted, yieldCaptureFrame } from '../captureAbort';
 import {
   createGifCaptureSurface,
   disposeGifCaptureSurface,
@@ -20,7 +20,7 @@ import {
   frameCaptureObject,
   requiredCaptureForward,
   waitForProjectionTextures,
-} from '@ashfox/render-core/captureSurface';
+} from '../captureSurface';
 import { drawBuildFrameOverlay, drawShowcasePhase } from './gifFrameOverlay';
 import { resolveBuildReviewClip } from './buildReviewClip';
 import { createCaptureProjection } from './projection';

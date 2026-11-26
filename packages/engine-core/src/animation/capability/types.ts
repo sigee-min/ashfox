@@ -1,4 +1,4 @@
-import type { ExportFormatProfile } from '../../export/adapter/contract';
+import type { ExportFormatProfile } from '../../model/exportFormat';
 
 export type AnimationPreviewIssueCode =
   | 'molang'

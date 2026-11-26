@@ -1,3 +1,16 @@
+import { evaluateStructureQuality } from './audit/structure/evaluate';
+import {
+  compileDirectoryWorkspace as compileDirectoryWorkspaceWithAudit,
+  type DirectoryCompilation,
+} from './compiler/directory/compile';
+import {
+  compileStructureUnits as compileStructureUnitsWithAudit,
+  type StructureProduct,
+} from './compiler/structure';
+import type { CompiledModel } from './model/compiled';
+import type { DirectoryFile } from './project/directory/contract';
+import type { StructureSourceUnit } from './project/structure';
+
 export {
   hasExactContractKeys,
   isCanonicalIsoDate,
@@ -222,7 +235,7 @@ export type {
   SpriteProduct,
   SpriteReceipt,
 } from './compiler/sprite/contract';
-export { encodeRgbaBufferPng, spriteInspectSheetPng } from './compiler/sprite/sheet';
+export { encodeRgbaBufferPng, spriteInspectSheetPng } from './audit/sprite/sheet';
 export { parseSpriteSource } from './project/sprite/source';
 export {
   DEFAULT_SPRITE_THRESHOLD,
@@ -251,7 +264,11 @@ export {
   type DeclaredOutputSpec,
   type DeclaredPreviewSpec,
 } from './project/directory/declarations';
-export { compileDirectoryWorkspace } from './compiler/directory/compile';
+export const compileDirectoryWorkspace = (
+  configuration: string,
+  files: readonly DirectoryFile[],
+): DirectoryCompilation =>
+  compileDirectoryWorkspaceWithAudit(configuration, files, evaluateStructureQuality);
 export type {
   DirectoryExport,
   DirectoryWorkspace,
@@ -287,16 +304,22 @@ export {
   type StructureDiagnosticDetail,
   type StructureSourceUnit,
 } from './project/structure';
+export { evaluateStructureQuality } from './audit/structure/evaluate';
+export type { StructureAuditMetrics, StructureAuditReport } from './audit/structure/contract';
 export {
   buildStructureDocument,
-  compileStructureUnits,
   decodeStructureNbt,
   encodeStructureNbt,
-  evaluateStructureQuality,
   type DecodedStructureNbt,
-  type StructureAuditMetrics,
-  type StructureAuditReport,
   type StructureCustomPlacement,
   type StructureGrid,
   type StructureProduct,
 } from './compiler/structure';
+
+export const compileStructureUnits = (
+  rootPath: string,
+  units: ReadonlyMap<string, StructureSourceUnit>,
+  customModels: Readonly<Record<string, CompiledModel>>,
+  relative: (owner: string, specifier: string) => string,
+): StructureProduct =>
+  compileStructureUnitsWithAudit(rootPath, units, customModels, relative, evaluateStructureQuality);

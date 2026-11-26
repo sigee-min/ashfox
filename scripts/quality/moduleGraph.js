@@ -1,15 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
-
-const textCompare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+const { compareText } = require('../shared');
 
 const sourceFiles = (root) => {
   const files = [];
   const visit = (directory) => {
     const entries = fs
       .readdirSync(directory, { withFileTypes: true })
-      .sort((left, right) => textCompare(left.name, right.name));
+      .sort((left, right) => compareText(left.name, right.name));
     for (const entry of entries) {
       const value = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(value);
@@ -58,12 +57,12 @@ const dependencyGraph = (files, sources, compilerOptions = {}) => {
 
 const reachableFiles = (graph, roots) => {
   const reached = new Set();
-  const pending = [...roots].sort(textCompare).reverse();
+  const pending = [...roots].sort(compareText).reverse();
   while (pending.length > 0) {
     const file = pending.pop();
     if (!file || reached.has(file) || !graph.has(file)) continue;
     reached.add(file);
-    const targets = [...graph.get(file)].sort(textCompare).reverse();
+    const targets = [...graph.get(file)].sort(compareText).reverse();
     pending.push(...targets);
   }
   return reached;

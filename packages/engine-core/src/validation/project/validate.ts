@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import { validateAnimations } from '../animation/validate';
 import { createValidationContext } from '../context';
 import { validateProjectDocumentContract } from '../document/contract';
@@ -10,11 +11,9 @@ import type { ValidationReport } from '../contract';
 const sortedByPathAndCode = (
   findings: ValidationReport['findings'],
 ): ValidationReport['findings'] =>
-  [...findings].sort((left, right) => {
-    const pathOrder = left.path.localeCompare(right.path);
-    if (pathOrder !== 0) return pathOrder;
-    return left.code.localeCompare(right.code);
-  });
+  [...findings].sort(
+    (left, right) => compareText(left.path, right.path) || compareText(left.code, right.code),
+  );
 
 const validateProjectDocumentWithCandidate = (value: unknown): ValidationReport => {
   const context = createValidationContext();

@@ -1,3 +1,5 @@
+import { compareText } from '@ashfox/internal-contracts';
+import { add3, dot3, length3, mul3, normalize3, sub3 } from '../math/vec3';
 import type { Vec3 } from '../model/identity';
 import {
   CUBE_FACE_DIRECTIONS,
@@ -53,17 +55,7 @@ export interface AuditSceneGeometry {
   readonly hasOrphanEmptyBones: boolean;
 }
 
-const EPS = 1e-6;
-const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const mul = (a: Vec3, b: Vec3): Vec3 => [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
-const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const len = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
-const norm = (v: Vec3): Vec3 => {
-  const length = len(v);
-  return length > EPS ? [v[0] / length, v[1] / length, v[2] / length] : [1, 0, 0];
-};
-const origin = (node: SceneNode): Vec3 => add(node.transform.pivot, node.transform.position);
+const origin = (node: SceneNode): Vec3 => add3(node.transform.pivot, node.transform.position);
 
 const isVisibleNode = (
   nodes: Readonly<Record<string, SceneNode>>,
@@ -121,9 +113,9 @@ const toModelSpace = (localPoint: Vec3, chain: readonly SceneNode[]): Vec3 => {
   for (let i = 0; i < chain.length; i += 1) {
     const owner = chain[i]!;
     const parent = chain[i + 1];
-    const translation = sub(origin(owner), parent ? origin(parent) : [0, 0, 0]);
-    point = add(
-      canonicalRotatePoint(mul(point, owner.transform.scale), owner.transform.rotation),
+    const translation = sub3(origin(owner), parent ? origin(parent) : [0, 0, 0]);
+    point = add3(
+      canonicalRotatePoint(mul3(point, owner.transform.scale), owner.transform.rotation),
       translation,
     );
   }
@@ -132,9 +124,9 @@ const toModelSpace = (localPoint: Vec3, chain: readonly SceneNode[]): Vec3 => {
 
 const cubeLocalPoint = (node: CubeNode, point: Vec3): Vec3 => {
   const pivot = cubeGeometryPivot(node);
-  const rel = sub(point, pivot);
+  const rel = sub3(point, pivot);
   return node.geometryMode === 'oriented-box'
-    ? add(canonicalRotatePoint(rel, cubeGeometryRotation(node)), pivot)
+    ? add3(canonicalRotatePoint(rel, cubeGeometryRotation(node)), pivot)
     : rel;
 };
 
@@ -196,10 +188,10 @@ const buildObbFromBasisPoints = (
   solidPlane: boolean,
   opaque: boolean,
 ): AuditObb => {
-  const vx = sub(p100, p000);
-  const vy = sub(p010, p000);
-  const vz = sub(p001, p000);
-  const half: Vec3 = [len(vx) * 0.5, len(vy) * 0.5, len(vz) * 0.5];
+  const vx = sub3(p100, p000);
+  const vy = sub3(p010, p000);
+  const vz = sub3(p001, p000);
+  const half: Vec3 = [length3(vx) * 0.5, length3(vy) * 0.5, length3(vz) * 0.5];
   const center: Vec3 = [
     p000[0] + (vx[0] + vy[0] + vz[0]) * 0.5,
     p000[1] + (vx[1] + vy[1] + vz[1]) * 0.5,
@@ -229,9 +221,9 @@ const buildObbFromBasisPoints = (
     parentId,
     center,
     half,
-    ax: norm(vx),
-    ay: norm(vy),
-    az: norm(vz),
+    ax: normalize3(vx),
+    ay: normalize3(vy),
+    az: normalize3(vz),
     corners,
     aabbMin,
     aabbMax,
@@ -346,7 +338,7 @@ const collectNodeFaces = (
   for (const dir of PLANE_FACE_DIRECTIONS) {
     const face = node.faces[dir];
     if (!face.enabled) continue;
-    const ny = Math.abs(dot(obb.az, [0, 1, 0]));
+    const ny = Math.abs(dot3(obb.az, [0, 1, 0]));
     out.push({
       nodeId: node.id,
       direction: dir,
@@ -419,7 +411,7 @@ export const analyzeSceneGeometry = (
   textures: Readonly<Record<string, TextureAsset>>,
 ): AuditSceneGeometry => {
   const visible = collectVisibleNodeIds(scene);
-  const nodes = Object.values(scene.nodes).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const nodes = Object.values(scene.nodes).sort((a, b) => compareText(a.id, b.id));
   const { obbs, pairs, min, max } = collectGeometryPairs(nodes, visible, scene.nodes, textures);
   const worldCenterY = obbs.length > 0 ? (min[1] + max[1]) * 0.5 : 0;
   const enabledFaces: AuditFaceBinding[] = [];

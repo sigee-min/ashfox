@@ -1,5 +1,5 @@
 import { readResourcePacks } from './packRead';
-import { readExportAdapterInput } from '../../export/adapter/input';
+import { readExportAdapterInput } from '../exportInput';
 import { parseDirectoryJson } from './json';
 import { readWorkspaceManifest, type WorkspacePackage } from '../workspace';
 import { deepFreeze } from '../../immutable';

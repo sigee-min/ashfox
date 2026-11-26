@@ -5,13 +5,23 @@ export const createSvf = (kind: SvfKind, rate: number) => {
   let ic1eq = 0;
   let ic2eq = 0;
   const maxHz = rate * 0.45;
+  let lastHz = NaN;
+  let lastQ = NaN;
+  let k = 0;
+  let a1 = 0;
+  let a2 = 0;
+  let a3 = 0;
   return (x: number, cutoffHz: number, q = 0.7071): number => {
     const hz = Math.max(10, Math.min(maxHz, cutoffHz));
-    const g = Math.tan((Math.PI * hz) / rate);
-    const k = 1 / Math.max(0.5, q);
-    const a1 = 1 / (1 + g * (g + k));
-    const a2 = g * a1;
-    const a3 = g * a2;
+    if (hz !== lastHz || q !== lastQ) {
+      lastHz = hz;
+      lastQ = q;
+      const g = Math.tan((Math.PI * hz) / rate);
+      k = 1 / Math.max(0.5, q);
+      a1 = 1 / (1 + g * (g + k));
+      a2 = g * a1;
+      a3 = g * a2;
+    }
     const v3 = x - ic2eq;
     const v1 = a1 * ic1eq + a2 * v3;
     const v2 = ic2eq + a2 * ic1eq + a3 * v3;

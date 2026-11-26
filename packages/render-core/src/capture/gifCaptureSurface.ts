@@ -3,15 +3,15 @@ import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 
 import type { ProjectForwardDirection } from '@ashfox/engine-core';
 
-import type { CameraMode } from '@ashfox/render-core/cameraPresets';
-import type { ViewportEnvironmentId } from '@ashfox/render-core/viewportEnvironment';
+import type { CameraMode } from '../cameraPresets';
+import type { ViewportEnvironmentId } from '../viewportEnvironment';
 import {
   createCaptureSurface,
   disposeCaptureSurface,
   renderCaptureSurface,
   type CaptureDimensions,
   type CaptureSurface,
-} from '@ashfox/render-core/captureSurface';
+} from '../captureSurface';
 import { BUILD_CAPTURE_FPS } from './buildCaptureTimeline';
 
 export const GIF_CAPTURE_WIDTH = 640;

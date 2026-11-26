@@ -1,151 +1,166 @@
 'use strict';
 
+const freezeList = (items) => Object.freeze([...items]);
+
+const freezeProductExperience = (productExperience) =>
+  Object.freeze({
+    interactionModel: productExperience.interactionModel,
+    canonicalAuthority: productExperience.canonicalAuthority,
+    projectFile: Object.freeze({ ...productExperience.projectFile }),
+    humanCapabilities: freezeList(productExperience.humanCapabilities),
+    agentCapabilities: freezeList(productExperience.agentCapabilities),
+    forbiddenHumanAuthoring: freezeList(productExperience.forbiddenHumanAuthoring),
+    agentDecision: Object.freeze({
+      compilationAuthority: productExperience.agentDecision.compilationAuthority,
+      confirmationRequired: productExperience.agentDecision.confirmationRequired,
+      requiredEvidence: freezeList(productExperience.agentDecision.requiredEvidence),
+    }),
+    deliveryAuthority: productExperience.deliveryAuthority,
+  });
+
+const freezeEngineering = (engineering) =>
+  Object.freeze({
+    style: Object.freeze({ ...engineering.style }),
+    principles: Object.freeze(
+      engineering.principles.map((principle) =>
+        Object.freeze({
+          id: principle.id,
+          rule: principle.rule,
+          enforcedBy: freezeList(principle.enforcedBy),
+        }),
+      ),
+    ),
+    testing: Object.freeze({
+      behaviorChangeRequiresRegression: engineering.testing.behaviorChangeRequiresRegression,
+      statefulPaths: freezeList(engineering.testing.statefulPaths),
+      userVisibleChangeRequiresDocs: engineering.testing.userVisibleChangeRequiresDocs,
+    }),
+    exceptions: Object.freeze([]),
+  });
+
+const freezeWorkflow = (workflow) =>
+  Object.freeze({
+    dirtyWorktree: workflow.dirtyWorktree,
+    changeScope: workflow.changeScope,
+    publicContractChange: workflow.publicContractChange,
+    generatedArtifacts: workflow.generatedArtifacts,
+    commits: Object.freeze({
+      format: workflow.commits.format,
+      subject: workflow.commits.subject,
+      types: freezeList(workflow.commits.types),
+      atomic: workflow.commits.atomic,
+      breakingChangeRequiresReview: workflow.commits.breakingChangeRequiresReview,
+    }),
+    verification: Object.freeze({
+      duringChange: workflow.verification.duringChange,
+      beforeHandoff: freezeList(workflow.verification.beforeHandoff),
+      beforePullRequest: freezeList(workflow.verification.beforePullRequest),
+    }),
+  });
+
+const freezeVersioning = (versioning) =>
+  Object.freeze({
+    product: Object.freeze({
+      scheme: versioning.product.scheme,
+      sourceOfTruth: versioning.product.sourceOfTruth,
+      automation: versioning.product.automation,
+      synchronizedFiles: freezeList(versioning.product.synchronizedFiles),
+      changeOwner: versioning.product.changeOwner,
+      verification: versioning.product.verification,
+    }),
+    assetWorkspace: Object.freeze({ ...versioning.assetWorkspace }),
+    deliveryTargets: Object.freeze({ ...versioning.deliveryTargets }),
+  });
+
+const freezeQuality = (quality) =>
+  Object.freeze({
+    maxSourceFileLines: quality.maxSourceFileLines,
+    maxCodeFileStemLength: quality.maxCodeFileStemLength,
+    newSourceFileRatchetLines: quality.newSourceFileRatchetLines,
+    maxFunctionLines: quality.maxFunctionLines,
+    complexity: Object.freeze({
+      ...quality.complexity,
+      scopes: freezeList(quality.complexity.scopes),
+    }),
+    ownerLayout: Object.freeze({
+      contractFile: quality.ownerLayout.contractFile,
+      testFileSuffix: quality.ownerLayout.testFileSuffix,
+      testFileExtension: quality.ownerLayout.testFileExtension,
+      testFileStem: quality.ownerLayout.testFileStem,
+      maxTestFileStemLength: quality.ownerLayout.maxTestFileStemLength,
+      maxTestFileLines: quality.ownerLayout.maxTestFileLines,
+      testOwnership: quality.ownerLayout.testOwnership,
+      testDiscovery: quality.ownerLayout.testDiscovery,
+      testOwners: Object.freeze(
+        quality.ownerLayout.testOwners.map((owner) =>
+          Object.freeze({
+            workspace: owner.workspace,
+            roots: freezeList(owner.roots),
+          }),
+        ),
+      ),
+    }),
+    forbiddenSourcePatterns: Object.freeze(
+      quality.forbiddenSourcePatterns.map((policy) =>
+        Object.freeze({
+          id: policy.id,
+          scope: freezeList(policy.scope),
+          allowedPaths: freezeList(policy.allowedPaths),
+        }),
+      ),
+    ),
+  });
+
+const freezeArchitecture = (architecture) =>
+  Object.freeze({
+    workspaceSourceScopes: freezeList(architecture.workspaceSourceScopes),
+    workspacePolicy: Object.freeze({
+      required: freezeList(architecture.workspacePolicy.required),
+      forbidden: freezeList(architecture.workspacePolicy.forbidden),
+    }),
+    tombstones: freezeList(architecture.tombstones),
+    packageDependencyPolicies: Object.freeze(
+      architecture.packageDependencyPolicies.map((policy) =>
+        Object.freeze({
+          workspace: policy.workspace,
+          sections: freezeList(policy.sections),
+          mode: policy.mode,
+          values: freezeList(policy.values),
+        }),
+      ),
+    ),
+    sourceImportBoundaries: Object.freeze(
+      architecture.sourceImportBoundaries.map((boundary) =>
+        Object.freeze({
+          source: boundary.source,
+          extensions: freezeList(boundary.extensions),
+          allowedExternalImports: freezeList(boundary.allowedExternalImports),
+          forbiddenExternalPrefixes: freezeList(boundary.forbiddenExternalPrefixes),
+          forbiddenExternalPackageRoots: freezeList(boundary.forbiddenExternalPackageRoots),
+          forbiddenRelativeTargets: freezeList(boundary.forbiddenRelativeTargets),
+        }),
+      ),
+    ),
+    forbiddenDependencies: Object.freeze(
+      architecture.forbiddenDependencies.map((rule) =>
+        Object.freeze({
+          source: rule.source,
+          targets: freezeList(rule.targets),
+        }),
+      ),
+    ),
+  });
+
 const freezeManifest = (value) =>
   Object.freeze({
     $schema: value.$schema,
     schemaVersion: value.schemaVersion,
-    productExperience: Object.freeze({
-      interactionModel: value.productExperience.interactionModel,
-      canonicalAuthority: value.productExperience.canonicalAuthority,
-      projectFile: Object.freeze({ ...value.productExperience.projectFile }),
-      humanCapabilities: Object.freeze([...value.productExperience.humanCapabilities]),
-      agentCapabilities: Object.freeze([...value.productExperience.agentCapabilities]),
-      forbiddenHumanAuthoring: Object.freeze([...value.productExperience.forbiddenHumanAuthoring]),
-      agentDecision: Object.freeze({
-        compilationAuthority: value.productExperience.agentDecision.compilationAuthority,
-        confirmationRequired: value.productExperience.agentDecision.confirmationRequired,
-        requiredEvidence: Object.freeze([
-          ...value.productExperience.agentDecision.requiredEvidence,
-        ]),
-      }),
-      deliveryAuthority: value.productExperience.deliveryAuthority,
-    }),
-    engineering: Object.freeze({
-      style: Object.freeze({ ...value.engineering.style }),
-      principles: Object.freeze(
-        value.engineering.principles.map((principle) =>
-          Object.freeze({
-            id: principle.id,
-            rule: principle.rule,
-            enforcedBy: Object.freeze([...principle.enforcedBy]),
-          }),
-        ),
-      ),
-      testing: Object.freeze({
-        behaviorChangeRequiresRegression:
-          value.engineering.testing.behaviorChangeRequiresRegression,
-        statefulPaths: Object.freeze([...value.engineering.testing.statefulPaths]),
-        userVisibleChangeRequiresDocs: value.engineering.testing.userVisibleChangeRequiresDocs,
-      }),
-      exceptions: Object.freeze([]),
-    }),
-    workflow: Object.freeze({
-      dirtyWorktree: value.workflow.dirtyWorktree,
-      changeScope: value.workflow.changeScope,
-      publicContractChange: value.workflow.publicContractChange,
-      generatedArtifacts: value.workflow.generatedArtifacts,
-      commits: Object.freeze({
-        format: value.workflow.commits.format,
-        subject: value.workflow.commits.subject,
-        types: Object.freeze([...value.workflow.commits.types]),
-        atomic: value.workflow.commits.atomic,
-        breakingChangeRequiresReview: value.workflow.commits.breakingChangeRequiresReview,
-      }),
-      verification: Object.freeze({
-        duringChange: value.workflow.verification.duringChange,
-        beforeHandoff: Object.freeze([...value.workflow.verification.beforeHandoff]),
-        beforePullRequest: Object.freeze([...value.workflow.verification.beforePullRequest]),
-      }),
-    }),
-    versioning: Object.freeze({
-      product: Object.freeze({
-        scheme: value.versioning.product.scheme,
-        sourceOfTruth: value.versioning.product.sourceOfTruth,
-        automation: value.versioning.product.automation,
-        synchronizedFiles: Object.freeze([...value.versioning.product.synchronizedFiles]),
-        changeOwner: value.versioning.product.changeOwner,
-        verification: value.versioning.product.verification,
-      }),
-      assetWorkspace: Object.freeze({ ...value.versioning.assetWorkspace }),
-      deliveryTargets: Object.freeze({ ...value.versioning.deliveryTargets }),
-    }),
-    quality: Object.freeze({
-      maxSourceFileLines: value.quality.maxSourceFileLines,
-      maxCodeFileStemLength: value.quality.maxCodeFileStemLength,
-      newSourceFileRatchetLines: value.quality.newSourceFileRatchetLines,
-      maxFunctionLines: value.quality.maxFunctionLines,
-      complexity: Object.freeze({
-        ...value.quality.complexity,
-        scopes: Object.freeze([...value.quality.complexity.scopes]),
-      }),
-      ownerLayout: Object.freeze({
-        contractFile: value.quality.ownerLayout.contractFile,
-        testFileSuffix: value.quality.ownerLayout.testFileSuffix,
-        testFileExtension: value.quality.ownerLayout.testFileExtension,
-        testFileStem: value.quality.ownerLayout.testFileStem,
-        maxTestFileStemLength: value.quality.ownerLayout.maxTestFileStemLength,
-        maxTestFileLines: value.quality.ownerLayout.maxTestFileLines,
-        testOwnership: value.quality.ownerLayout.testOwnership,
-        testDiscovery: value.quality.ownerLayout.testDiscovery,
-        testOwners: Object.freeze(
-          value.quality.ownerLayout.testOwners.map((owner) =>
-            Object.freeze({
-              workspace: owner.workspace,
-              roots: Object.freeze([...owner.roots]),
-            }),
-          ),
-        ),
-      }),
-      forbiddenSourcePatterns: Object.freeze(
-        value.quality.forbiddenSourcePatterns.map((policy) =>
-          Object.freeze({
-            id: policy.id,
-            scope: Object.freeze([...policy.scope]),
-            allowedPaths: Object.freeze([...policy.allowedPaths]),
-          }),
-        ),
-      ),
-    }),
-    architecture: Object.freeze({
-      workspaceSourceScopes: Object.freeze([...value.architecture.workspaceSourceScopes]),
-      workspacePolicy: Object.freeze({
-        required: Object.freeze([...value.architecture.workspacePolicy.required]),
-        forbidden: Object.freeze([...value.architecture.workspacePolicy.forbidden]),
-      }),
-      tombstones: Object.freeze([...value.architecture.tombstones]),
-      packageDependencyPolicies: Object.freeze(
-        value.architecture.packageDependencyPolicies.map((policy) =>
-          Object.freeze({
-            workspace: policy.workspace,
-            sections: Object.freeze([...policy.sections]),
-            mode: policy.mode,
-            values: Object.freeze([...policy.values]),
-          }),
-        ),
-      ),
-      sourceImportBoundaries: Object.freeze(
-        value.architecture.sourceImportBoundaries.map((boundary) =>
-          Object.freeze({
-            source: boundary.source,
-            extensions: Object.freeze([...boundary.extensions]),
-            allowedExternalImports: Object.freeze([...boundary.allowedExternalImports]),
-            forbiddenExternalPrefixes: Object.freeze([...boundary.forbiddenExternalPrefixes]),
-            forbiddenExternalPackageRoots: Object.freeze([
-              ...boundary.forbiddenExternalPackageRoots,
-            ]),
-            forbiddenRelativeTargets: Object.freeze([...boundary.forbiddenRelativeTargets]),
-          }),
-        ),
-      ),
-      forbiddenDependencies: Object.freeze(
-        value.architecture.forbiddenDependencies.map((rule) =>
-          Object.freeze({
-            source: rule.source,
-            targets: Object.freeze([...rule.targets]),
-          }),
-        ),
-      ),
-    }),
+    productExperience: freezeProductExperience(value.productExperience),
+    engineering: freezeEngineering(value.engineering),
+    workflow: freezeWorkflow(value.workflow),
+    versioning: freezeVersioning(value.versioning),
+    quality: freezeQuality(value.quality),
+    architecture: freezeArchitecture(value.architecture),
   });
 
 module.exports = { freezeManifest };

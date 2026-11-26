@@ -1,5 +1,6 @@
 import { CUBE_FACE_DIRECTIONS, type CubeNode, type ProjectDocument, type Vec3 } from './model';
 import { effectivelyVisibleSceneNodeIds } from './sceneVisibility';
+import { compareText } from './stableOrder';
 
 export interface FullyOccludedCube {
   innerId: string;
@@ -70,7 +71,7 @@ export const findFullyOccludedCubes = (document: ProjectDocument): readonly Full
       bounds: renderedBounds(cube),
     }))
     .filter((entry): entry is { cube: CubeNode; bounds: CubeBounds } => entry.bounds !== null)
-    .sort((left, right) => left.cube.id.localeCompare(right.cube.id));
+    .sort((left, right) => compareText(left.cube.id, right.cube.id));
 
   return cubes.flatMap((inner) => {
     const innerVolume = volume(inner.bounds);
@@ -92,7 +93,7 @@ export const findFullyOccludedCubes = (document: ProjectDocument): readonly Full
       })
       .sort(
         (left, right) =>
-          volume(left.bounds) - volume(right.bounds) || left.cube.id.localeCompare(right.cube.id),
+          volume(left.bounds) - volume(right.bounds) || compareText(left.cube.id, right.cube.id),
       )[0];
     return outer
       ? [

@@ -1,3 +1,4 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { MeshoptEncoder } from 'meshoptimizer';
 
 import { stringifyCompactDeterministicJson } from '../../json';
@@ -177,9 +178,17 @@ const readIndices = (
   componentType: 5123 | 5125,
 ): Uint32Array => {
   const view = new DataView(source.buffer, source.byteOffset, source.byteLength);
-  return Uint32Array.from({ length: count }, (_, index) =>
-    componentType === 5125 ? view.getUint32(index * 4, true) : view.getUint16(index * 2, true),
-  );
+  const indices = new Uint32Array(count);
+  if (componentType === 5125) {
+    for (let index = 0; index < count; index += 1) {
+      indices[index] = view.getUint32(index * 4, true);
+    }
+  } else {
+    for (let index = 0; index < count; index += 1) {
+      indices[index] = view.getUint16(index * 2, true);
+    }
+  }
+  return indices;
 };
 
 const writeIndices = (
@@ -188,14 +197,71 @@ const writeIndices = (
   componentType: 5123 | 5125,
 ): void => {
   const view = new DataView(target.buffer, target.byteOffset, target.byteLength);
-  indices.forEach((index, offset) => {
-    if (componentType === 5125) {
-      view.setUint32(offset * 4, index, true);
-    } else {
-      view.setUint16(offset * 2, index, true);
+  if (componentType === 5125) {
+    for (let offset = 0; offset < indices.length; offset += 1) {
+      view.setUint32(offset * 4, indices[offset]!, true);
     }
-  });
+  } else {
+    for (let offset = 0; offset < indices.length; offset += 1) {
+      view.setUint16(offset * 2, indices[offset]!, true);
+    }
+  }
 };
+
+const reorderVerticesWords = (
+  vertexSource: Uint8Array,
+  remap: Uint32Array,
+  vertexCount: number,
+  stride: number,
+): Uint8Array => {
+  const reordered = new Uint8Array(vertexSource.byteLength);
+  const srcWords = new Uint32Array(
+    vertexSource.buffer,
+    vertexSource.byteOffset,
+    vertexSource.byteLength >>> 2,
+  );
+  const dstWords = new Uint32Array(reordered.buffer);
+  const wordStride = stride >>> 2;
+  for (let oldVertex = 0; oldVertex < vertexCount; oldVertex += 1) {
+    const newVertex = remap[oldVertex]!;
+    if (newVertex === 0xffffffff) continue;
+    const srcStart = oldVertex * wordStride;
+    const dstStart = newVertex * wordStride;
+    for (let w = 0; w < wordStride; w += 1) {
+      dstWords[dstStart + w] = srcWords[srcStart + w]!;
+    }
+  }
+  return reordered;
+};
+
+const reorderVerticesBytes = (
+  vertexSource: Uint8Array,
+  remap: Uint32Array,
+  vertexCount: number,
+  stride: number,
+): Uint8Array => {
+  const reordered = new Uint8Array(vertexSource.byteLength);
+  for (let oldVertex = 0; oldVertex < vertexCount; oldVertex += 1) {
+    const newVertex = remap[oldVertex]!;
+    if (newVertex === 0xffffffff) continue;
+    const srcStart = oldVertex * stride;
+    const dstStart = newVertex * stride;
+    for (let b = 0; b < stride; b += 1) {
+      reordered[dstStart + b] = vertexSource[srcStart + b]!;
+    }
+  }
+  return reordered;
+};
+
+const reorderVertices = (
+  vertexSource: Uint8Array,
+  remap: Uint32Array,
+  vertexCount: number,
+  stride: number,
+): Uint8Array =>
+  stride % 4 === 0 && (vertexSource.byteOffset & 3) === 0
+    ? reorderVerticesWords(vertexSource, remap, vertexCount, stride)
+    : reorderVerticesBytes(vertexSource, remap, vertexCount, stride);
 
 const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
   const views = compiled.document.bufferViews;
@@ -217,16 +283,12 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
       vertexView.byteOffset,
       vertexView.byteOffset + vertexView.byteLength,
     );
-    const reordered = new Uint8Array(vertexSource.byteLength);
-    for (let oldVertex = 0; oldVertex < candidate.vertexCount; oldVertex += 1) {
-      const newVertex = remap[oldVertex];
-      if (newVertex === 0xffffffff) continue;
-      const start = oldVertex * candidate.vertexStride;
-      reordered.set(
-        vertexSource.subarray(start, start + candidate.vertexStride),
-        newVertex * candidate.vertexStride,
-      );
-    }
+    const reordered = reorderVertices(
+      vertexSource,
+      remap,
+      candidate.vertexCount,
+      candidate.vertexStride,
+    );
     binary ??= compiled.binary.slice();
     binary.set(reordered, vertexView.byteOffset);
     writeIndices(
@@ -344,7 +406,7 @@ const withExtension = (
 ];
 
 const compiledByteLength = (compiled: CompiledGltf): number =>
-  new TextEncoder().encode(stringifyCompactDeterministicJson(compiled.document)).byteLength +
+  encodeUtf8(stringifyCompactDeterministicJson(compiled.document)).byteLength +
   compiled.binary.byteLength;
 
 export const compressGltfWithMeshopt = async (compiled: CompiledGltf): Promise<CompiledGltf> => {

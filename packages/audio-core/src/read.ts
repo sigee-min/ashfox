@@ -4,8 +4,9 @@ import {
   type SoundSequence,
   type SoundStep,
   type SoundVary,
+  type SoundVoice,
 } from './contract';
-import { validatePlan } from './plan';
+import { validatePlan, type SoundBudget } from './plan';
 import { readControl, readGainControl, readSource, readVoiceFilter } from './readSource';
 import { bool, choice, closed, fail, freeze, id, list, number, ordered } from './validate';
 
@@ -104,50 +105,87 @@ const readSequences = (
   return { sequences, referenced };
 };
 
-const readPlayback = (raw: unknown, duration: number): void => {
+const readPlayback = (raw: unknown, duration: number): SoundRecipe['playback'] => {
   const playback = raw as Record<string, unknown> | null;
-  if (playback?.kind === 'oneshot') closed(playback, ['kind'], 'recipe.playback');
-  else if (playback?.kind === 'loop') {
+  if (playback?.kind === 'oneshot') {
+    closed(playback, ['kind'], 'recipe.playback');
+    return { kind: 'oneshot' };
+  }
+  if (playback?.kind === 'loop') {
     closed(playback, ['kind', 'start', 'end', 'crossfade'], 'recipe.playback');
-    number(playback.start, 0, duration, 'recipe.playback.start');
-    number(playback.end, 0, duration, 'recipe.playback.end');
-    number(playback.crossfade, 0.002, 1, 'recipe.playback.crossfade');
-  } else fail('recipe.playback.kind', 'expected oneshot or loop');
+    return {
+      kind: 'loop',
+      start: number(playback.start, 0, duration, 'recipe.playback.start'),
+      end: number(playback.end, 0, duration, 'recipe.playback.end'),
+      crossfade: number(playback.crossfade, 0.002, 1, 'recipe.playback.crossfade'),
+    };
+  }
+  return fail('recipe.playback.kind', 'expected oneshot or loop');
 };
 
-const readVoices = (rawVoices: unknown, channels: 1 | 2): Set<string> => {
-  const voices = new Set<string>();
-  ordered(list(rawVoices, 1, 16, 'recipe.voices')).forEach(({ raw, index: i }) => {
-    const p = `recipe.voices[${i}]`;
-    const v = closed(raw, ['id', 'source', 'gain'], p, [
-      'highpass',
-      'lowpass',
-      'filter',
-      'drive',
-      'pan',
-    ]);
-    id(v.id, p + '.id', voices);
-    readGainControl(v.gain, p + '.gain');
-    if (v.highpass !== undefined) readControl(v.highpass, 10, 10000, p + '.highpass');
-    if (v.lowpass !== undefined) readControl(v.lowpass, 20, 18000, p + '.lowpass');
-    if (v.filter !== undefined) readVoiceFilter(v.filter, p + '.filter');
-    if (v.drive !== undefined) number(v.drive, 0, 10, p + '.drive');
-    if (v.pan !== undefined) {
-      const pan = number(v.pan, -1, 1, p + '.pan');
-      if (channels === 1 && pan !== 0) fail(p + '.pan', 'pan requires channels = 2');
-    }
-    readSource(v.source, p + '.source');
+const readVoiceEntry = (
+  raw: unknown,
+  i: number,
+  channels: 1 | 2,
+  voiceIds: Set<string>,
+): SoundVoice => {
+  const p = `recipe.voices[${i}]`;
+  const v = closed(raw, ['id', 'source', 'gain'], p, [
+    'highpass',
+    'lowpass',
+    'filter',
+    'drive',
+    'pan',
+  ]);
+  const voice: {
+    id: string;
+    source: SoundVoice['source'];
+    gain: SoundVoice['gain'];
+    highpass?: SoundVoice['highpass'];
+    lowpass?: SoundVoice['lowpass'];
+    filter?: SoundVoice['filter'];
+    drive?: number;
+    pan?: number;
+  } = {
+    id: id(v.id, p + '.id', voiceIds),
+    source: readSource(v.source, p + '.source'),
+    gain: readGainControl(v.gain, p + '.gain'),
+  };
+  if (v.highpass !== undefined)
+    voice.highpass = readControl(v.highpass, 10, 10000, p + '.highpass');
+  if (v.lowpass !== undefined) voice.lowpass = readControl(v.lowpass, 20, 18000, p + '.lowpass');
+  if (v.filter !== undefined) voice.filter = readVoiceFilter(v.filter, p + '.filter');
+  if (v.drive !== undefined) voice.drive = number(v.drive, 0, 10, p + '.drive');
+  if (v.pan !== undefined) {
+    const pan = number(v.pan, -1, 1, p + '.pan');
+    if (channels === 1 && pan !== 0) fail(p + '.pan', 'pan requires channels = 2');
+    voice.pan = pan;
+  }
+  return voice;
+};
+
+const readVoices = (
+  rawVoices: unknown,
+  channels: 1 | 2,
+): { readonly voiceIds: Set<string>; readonly voices: readonly SoundVoice[] } => {
+  const voiceIds = new Set<string>();
+  const rawList = list(rawVoices, 1, 16, 'recipe.voices');
+  const voices = new Array<SoundVoice>(rawList.length);
+  ordered(rawList).forEach(({ raw, index: i }) => {
+    voices[i] = readVoiceEntry(raw, i, channels, voiceIds);
   });
-  return voices;
+  return { voiceIds, voices };
 };
 
-const readSpace = (raw: unknown): void => {
-  if (raw === undefined) return;
+const readSpace = (raw: unknown): SoundRecipe['space'] | undefined => {
+  if (raw === undefined) return undefined;
   const s = closed(raw, ['mix', 'decay', 'damping', 'size'], 'recipe.space');
-  number(s.mix, 0, 0.6, 'recipe.space.mix');
-  number(s.decay, 0.03, 1.5, 'recipe.space.decay');
-  number(s.damping, 1000, 14000, 'recipe.space.damping');
-  number(s.size, 0.2, 2, 'recipe.space.size');
+  return {
+    mix: number(s.mix, 0, 0.6, 'recipe.space.mix'),
+    decay: number(s.decay, 0.03, 1.5, 'recipe.space.decay'),
+    damping: number(s.damping, 1000, 14000, 'recipe.space.damping'),
+    size: number(s.size, 0.2, 2, 'recipe.space.size'),
+  };
 };
 
 const ROOT_REQUIRED = [
@@ -184,7 +222,9 @@ const readRecipeVariants = (rawVariants: unknown): SoundRecipe['variants'] => {
   });
 };
 
-export const readRecipe = (input: unknown): SoundRecipe => {
+export const readRecipeWithBudget = (
+  input: unknown,
+): { readonly recipe: SoundRecipe; readonly budget: SoundBudget } => {
   const root = closed(input, ROOT_REQUIRED, 'recipe', ['channels', 'space']);
   const recipeId = id(root.id, 'recipe.id');
   const profile = choice(root.profile, SOUND_PROFILES, 'recipe.profile');
@@ -195,18 +235,18 @@ export const readRecipe = (input: unknown): SoundRecipe => {
       ? 1
       : (number(root.channels, 1, 2, 'recipe.channels', true) as 1 | 2);
   const seed = number(root.seed, 1, 0xffffffff, 'recipe.seed', true);
-  readSpace(root.space);
-  const voices = readVoices(root.voices, channels);
-  const { sequences, referenced } = readSequences(root.sequences, voices);
-  for (const voice of voices) {
+  const space = readSpace(root.space);
+  const { voiceIds, voices } = readVoices(root.voices, channels);
+  const { sequences, referenced } = readSequences(root.sequences, voiceIds);
+  for (const voice of voiceIds) {
     if (!referenced.has(voice)) {
       fail(
-        `recipe.voices[${(root.voices as Record<string, unknown>[]).findIndex((v) => v.id === voice)}].id`,
+        `recipe.voices[${voices.findIndex((v) => v.id === voice)}].id`,
         `unreferenced voice ${voice}`,
       );
     }
   }
-  readPlayback(root.playback, duration);
+  const playback = readPlayback(root.playback, duration);
   const normalized: SoundRecipe = {
     id: recipeId,
     profile,
@@ -214,13 +254,15 @@ export const readRecipe = (input: unknown): SoundRecipe => {
     sampleRate: 48000,
     channels,
     seed,
-    ...(root.space !== undefined ? { space: root.space as SoundRecipe['space'] } : {}),
+    ...(space !== undefined ? { space } : {}),
     variants: readRecipeVariants(root.variants),
     output: readRecipeOutput(root.output),
-    voices: root.voices as SoundRecipe['voices'],
+    voices,
     sequences,
-    playback: root.playback as SoundRecipe['playback'],
+    playback,
   };
-  validatePlan(normalized);
-  return freeze(JSON.parse(JSON.stringify(normalized))) as SoundRecipe;
+  const budget = validatePlan(normalized);
+  return { recipe: freeze(normalized) as SoundRecipe, budget };
 };
+
+export const readRecipe = (input: unknown): SoundRecipe => readRecipeWithBudget(input).recipe;

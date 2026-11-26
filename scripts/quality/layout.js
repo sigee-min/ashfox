@@ -2,8 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-
-const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+const { compareText } = require('../shared');
 
 const ownerCodeFiles = (workspace) =>
   ['src', 'tests', 'testSupport']

@@ -1,9 +1,10 @@
 import { AUDIO_POLICY, type SoundProduct } from '@ashfox/audio-core';
+import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
+import { canonicalJsonString } from '../../canonicalJson';
 import {
   validateAssetDeclarations,
   type AssetDeclarations,
 } from '../../project/directory/declarations';
-import { parseAssetSource } from '../../project/program/asset/parse';
 import {
   readDirectoryWorkspace,
   isDirectorySource,
@@ -16,7 +17,7 @@ import { validateCanonicalLayout } from './layout';
 import { compileDirectorySprite } from './sprite';
 import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
 import type { SpriteProduct } from '../sprite/contract';
-import type { StructureProduct } from '../structure/contract';
+import type { StructureAuditEvaluator, StructureProduct } from '../structure/contract';
 import { StructureInputError } from '../../project/structure';
 import { sha256Digest } from '../../provenance/digest';
 import { SPRITE_POLICY, SpriteInputError } from '../../project/sprite/contract';
@@ -85,7 +86,7 @@ type Files = ReadonlyMap<string, DirectoryFile>;
 /** Mutable product accumulator shared by the entry compilers. */
 interface EntryOutput {
   readonly products: DirectoryProduct[];
-  readonly spritePaths: Set<string>;
+  readonly nonModelPaths: Set<string>;
   readonly structureCustomPaths: Set<string>;
   readonly modelEntries: Entry[];
 }
@@ -105,20 +106,10 @@ const SOUND_LIMITS = {
 
 const entryKey = (entry: WorkspaceEntrySelector): string =>
   JSON.stringify([entry.packageName, entry.entryName]);
-const ordered = (v: unknown): unknown =>
-  Array.isArray(v)
-    ? v.map(ordered)
-    : v && typeof v === 'object'
-      ? Object.fromEntries(
-          Object.entries(v)
-            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-            .map(([k, x]) => [k, ordered(x)]),
-        )
-      : v;
 const joinPath = (root: string, path: string): string => [root, path].filter(Boolean).join('/');
 
 const assertSourceBudget = (files: readonly DirectoryFile[]): void => {
-  const bytes = files.reduce((n, f) => n + new TextEncoder().encode(f.source).length, 0);
+  const bytes = files.reduce((n, f) => n + encodeUtf8(f.source).length, 0);
   if (files.length > 512 || bytes > 8 * 1024 * 1024)
     throw new Error('Workspace source budget exceeded');
 };
@@ -224,7 +215,7 @@ const compileSpriteEntry = (
     sprite,
     declarations,
   });
-  compiled.paths.forEach((p) => output.spritePaths.add(p));
+  compiled.paths.forEach((p) => output.nonModelPaths.add(p));
   return null;
 };
 
@@ -246,11 +237,16 @@ const compileSoundEntry = (e: Entry, prepared: PreparedSound, output: EntryOutpu
     sounds: compiled.sounds,
     declarations,
   });
-  compiled.soundPaths.forEach((p) => output.spritePaths.add(p));
+  compiled.soundPaths.forEach((p) => output.nonModelPaths.add(p));
 };
 
-const compileStructureEntry = (e: Entry, filesByPath: Files, output: EntryOutput): void => {
-  const result = compileDirectoryStructure(filesByPath, e.path);
+const compileStructureEntry = (
+  e: Entry,
+  filesByPath: Files,
+  output: EntryOutput,
+  evaluateStructureAudit: StructureAuditEvaluator,
+): void => {
+  const result = compileDirectoryStructure(filesByPath, e.path, evaluateStructureAudit);
   if (result.structure.id !== e.entry.entryName)
     throw new Error('Entry name must match structure id: ' + e.path);
   const declarations = validateAssetDeclarations(
@@ -266,7 +262,7 @@ const compileStructureEntry = (e: Entry, filesByPath: Files, output: EntryOutput
     structure: result.structure,
     declarations,
   });
-  result.structurePaths.forEach((p) => output.spritePaths.add(p));
+  result.structurePaths.forEach((p) => output.nonModelPaths.add(p));
   result.customPaths.forEach((p) => output.structureCustomPaths.add(p));
 };
 
@@ -274,6 +270,7 @@ const compileStructureEntry = (e: Entry, filesByPath: Files, output: EntryOutput
 const compileEntries = (
   entries: readonly Entry[],
   filesByPath: Files,
+  evaluateStructureAudit: StructureAuditEvaluator,
 ): EntryOutput | DirectoryFailure => {
   const kinds = new Map(
     entries.map((e) => [
@@ -285,7 +282,7 @@ const compileEntries = (
   const preparedSounds = prepareSoundEntries(entries, kinds, filesByPath);
   const output: EntryOutput = {
     products: [],
-    spritePaths: new Set(),
+    nonModelPaths: new Set(),
     structureCustomPaths: new Set(),
     modelEntries: [],
   };
@@ -295,7 +292,8 @@ const compileEntries = (
       const failure = compileSpriteEntry(e, filesByPath, spriteUnits, output);
       if (failure) return failure;
     } else if (kind === 'sound') compileSoundEntry(e, preparedSounds.get(e.path)!, output);
-    else if (kind === 'structure') compileStructureEntry(e, filesByPath, output);
+    else if (kind === 'structure')
+      compileStructureEntry(e, filesByPath, output, evaluateStructureAudit);
     else output.modelEntries.push(e);
   }
   return output;
@@ -314,7 +312,7 @@ const modelManifest = (
       entries: p.manifest.entries.filter((e) => modelPaths.has(joinPath(p.root, e.path))),
       modules: p.manifest.modules.filter((e) => {
         const pth = joinPath(p.root, e.path);
-        return !output.spritePaths.has(pth) && !excludedCustom.has(pth);
+        return !output.nonModelPaths.has(pth) && !excludedCustom.has(pth);
       }),
     },
   }));
@@ -329,7 +327,9 @@ const compileModels = (
 ): void => {
   if (!output.modelEntries.length) {
     if (
-      files.some((f) => !output.spritePaths.has(f.path) && !output.structureCustomPaths.has(f.path))
+      files.some(
+        (f) => !output.nonModelPaths.has(f.path) && !output.structureCustomPaths.has(f.path),
+      )
     )
       throw new Error('Every declared module must be reachable');
     return;
@@ -353,7 +353,7 @@ const compileModels = (
     },
   };
   const sources = files.filter(
-    (f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path),
+    (f) => !output.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
   );
   const sealed = sealWorkspaceCandidate(base, sources, manifest, DEFAULT_WORKSPACE_LIMITS);
   if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
@@ -362,10 +362,12 @@ const compileModels = (
   const modelSources = new Map(output.modelEntries.map((e) => [entryKey(e.entry), e.path]));
   for (const result of checked.products) {
     const sourcePath = modelSources.get(entryKey(result.entry))!;
-    const parsedUnit = parseAssetSource(filesByPath.get(sourcePath)!.source, sourcePath).unit;
-    const rawOutputs = parsedUnit?.kind === 'asset' ? parsedUnit.outputs : [];
-    const rawPreviews = parsedUnit?.kind === 'asset' ? parsedUnit.previews : [];
-    const declarations = validateAssetDeclarations('model', rawOutputs, rawPreviews, sourcePath);
+    const declarations = validateAssetDeclarations(
+      'model',
+      result.outputs,
+      result.previews,
+      sourcePath,
+    );
     output.products.push({
       kind: 'model',
       entry: result.entry,
@@ -400,19 +402,19 @@ const assertPackSounds = (
       const product = productsByEntry.get(entryKey(target.entry));
       if (product?.kind !== 'sound')
         throw new Error('Pack sound source kind mismatch: ' + sound.source);
+      const availableVariants = new Set(product.sounds.map((s) => s.variant));
       const unknownVariant =
-        sound.variants !== 'all' &&
-        sound.variants.some((v) => !product.sounds.some((s) => s.variant === v.id));
+        sound.variants !== 'all' && sound.variants.some((v) => !availableVariants.has(v.id));
       if (unknownVariant)
         throw new Error('Unknown sound variant in pack: ' + pack.name + '/' + sound.id);
     }
 };
 
-const productOrder = (a: DirectoryProduct, b: DirectoryProduct): number => {
-  const left = a.entry.packageName + ':' + a.entry.entryName,
-    right = b.entry.packageName + ':' + b.entry.entryName;
-  return left < right ? -1 : left > right ? 1 : 0;
-};
+const productOrder = (a: DirectoryProduct, b: DirectoryProduct): number =>
+  compareText(
+    `${a.entry.packageName}:${a.entry.entryName}`,
+    `${b.entry.packageName}:${b.entry.entryName}`,
+  );
 
 const compileFailure = (error: unknown): DirectoryFailure => {
   const sprite = error instanceof SpriteInputError ? error.diagnostic : null;
@@ -432,6 +434,7 @@ const compileFailure = (error: unknown): DirectoryFailure => {
 const compileDirectory = (
   configuration: string,
   files: readonly DirectoryFile[],
+  evaluateStructureAudit: StructureAuditEvaluator,
 ): DirectoryCompilation => {
   const config = readDirectoryWorkspace(configuration);
   assertSourceBudget(files);
@@ -442,7 +445,7 @@ const compileDirectory = (
     filesByPath,
     entries.map((e) => e.path),
   );
-  const output = compileEntries(entries, filesByPath);
+  const output = compileEntries(entries, filesByPath, evaluateStructureAudit);
   if ('ok' in output) return output;
   compileModels(config, files, output);
   const productsByEntry = new Map(
@@ -452,9 +455,10 @@ const compileDirectory = (
   assertPackSounds(config, productsByEntry);
   const products = output.products.sort(productOrder);
   const sourceHash = sha256Digest(
-    JSON.stringify(
-      ordered({ config, files: [...files].sort((a, b) => (a.path < b.path ? -1 : 1)) }),
-    ),
+    canonicalJsonString({
+      config,
+      files: [...files].sort((a, b) => compareText(a.path, b.path)),
+    }),
   );
   const buildKey = sha256Digest(
     sourceHash +
@@ -469,9 +473,10 @@ const compileDirectory = (
 export const compileDirectoryWorkspace = (
   configuration: string,
   files: readonly DirectoryFile[],
+  evaluateStructureAudit: StructureAuditEvaluator,
 ): DirectoryCompilation => {
   try {
-    return compileDirectory(configuration, files);
+    return compileDirectory(configuration, files, evaluateStructureAudit);
   } catch (error) {
     return compileFailure(error);
   }

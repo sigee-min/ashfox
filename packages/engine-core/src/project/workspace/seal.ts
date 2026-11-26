@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import { deepFreeze } from '../../immutable';
 import type {
   AuthoredAssetWorkspace,
@@ -190,7 +191,7 @@ export const sealWorkspaceCandidate = (
       ...candidate,
       lock: {
         ...candidate.lock,
-        packages: [...sealed.value, ...embedded].sort((a, b) => (a.name < b.name ? -1 : 1)),
+        packages: [...sealed.value, ...embedded].sort((a, b) => compareText(a.name, b.name)),
       },
     }),
     { limits },

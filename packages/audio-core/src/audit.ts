@@ -1,3 +1,11 @@
+import {
+  auditSubmetric,
+  DEFAULT_AUDIT_THRESHOLD,
+  gradeForAudit,
+  ramp,
+  rankTopAuditDeductions,
+  round2,
+} from '@ashfox/internal-contracts';
 import type { SoundProduct, SoundProfile } from './contract';
 import { analyzeSingleProduct, analyzeSoundProducts, type SoundMetrics } from './auditMetrics';
 
@@ -62,37 +70,7 @@ export interface SoundAuditReport {
   readonly topDeductions: readonly SoundAuditDeduction[];
 }
 
-export const DEFAULT_SOUND_THRESHOLD = 75;
-
-const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
-const ramp = (v: number, lo: number, hi: number): number =>
-  hi <= lo ? (v >= hi ? 1 : 0) : clamp01((v - lo) / (hi - lo));
-const round2 = (v: number): number => Math.round(v * 100) / 100;
-const round4 = (v: number): number => Math.round(v * 10000) / 10000;
-
-const sub = (
-  id: string,
-  label: string,
-  ratio: number,
-  maxScore: number,
-  value: number,
-  target: number,
-  detail: string,
-): SoundAuditSubmetric => ({
-  id,
-  label,
-  score: round2(clamp01(ratio) * maxScore),
-  maxScore,
-  value: round4(value),
-  target,
-  detail,
-});
-
-const gradeFor = (allGates: boolean, score: number, passed: boolean): SoundQualityGrade => {
-  if (!allGates || score < 50) return 'fail';
-  if (!passed || score < DEFAULT_SOUND_THRESHOLD) return 'needs_work';
-  return score >= 85 ? 'excellent' : 'pass';
-};
+export const DEFAULT_SOUND_THRESHOLD = DEFAULT_AUDIT_THRESHOLD;
 
 const gate = (
   id: SoundGateId,
@@ -227,7 +205,7 @@ const evaluateDynamics = (
   const shapeRatio =
     ramp(m.activeRatio, 0.14, activeHi) * (1 - ramp(m.leadingSilenceRatio, 0.12, 0.4));
   const metrics = [
-    sub(
+    auditSubmetric(
       'sound.crest',
       'Transient & Dynamic Range',
       crestRatio,
@@ -236,7 +214,7 @@ const evaluateDynamics = (
       (cLo + cHi) * 0.5,
       `crest=${m.crestDb.toFixed(1)}dB`,
     ),
-    sub(
+    auditSubmetric(
       'sound.attack',
       'Profile Attack Fit',
       attackRatio,
@@ -245,7 +223,7 @@ const evaluateDynamics = (
       0.02,
       `attack=${(m.attackSeconds * 1000).toFixed(0)}ms`,
     ),
-    sub(
+    auditSubmetric(
       'sound.envelope',
       'Active Envelope Framing',
       shapeRatio,
@@ -281,7 +259,7 @@ const evaluateSpectrum = (
   const richnessRatio = ramp(m.spectralEntropy, 0.16, 0.5);
   const motionRatio = ramp(m.spectralFlux, 0.04, 0.24);
   const metrics = [
-    sub(
+    auditSubmetric(
       'sound.balance',
       '6-Band Spectral Spread',
       balanceRatio,
@@ -290,7 +268,7 @@ const evaluateSpectrum = (
       5,
       `${activeBands}/6 active bands`,
     ),
-    sub(
+    auditSubmetric(
       'sound.richness',
       'Harmonic & Texture Density',
       richnessRatio,
@@ -299,7 +277,7 @@ const evaluateSpectrum = (
       0.5,
       `entropy=${m.spectralEntropy.toFixed(2)}`,
     ),
-    sub(
+    auditSubmetric(
       'sound.flux',
       'Temporal Spectral Motion',
       motionRatio,
@@ -334,7 +312,7 @@ const evaluatePolish = (
       : 1 - ramp(m.trailingSilenceRatio, 0.58, 0.85);
   const varRatio = products.length < 2 ? 0.7 : ramp(m.variantDistinctness, 0.01, 0.15);
   const metrics = [
-    sub(
+    auditSubmetric(
       'sound.loudness',
       'Perceptual Loudness',
       loudnessRatio,
@@ -343,7 +321,7 @@ const evaluatePolish = (
       -16,
       `rms=${m.rmsDb.toFixed(1)}dBFS`,
     ),
-    sub(
+    auditSubmetric(
       'sound.tail',
       products[0]!.playback.kind === 'loop' ? 'Loop Seam Continuity' : 'Tail Efficiency',
       seamRatio,
@@ -352,7 +330,7 @@ const evaluatePolish = (
       0,
       `seam=${m.loopSeamJump.toFixed(3)}`,
     ),
-    sub(
+    auditSubmetric(
       'sound.variants',
       'Variant Cohesion',
       varRatio,
@@ -400,7 +378,7 @@ export const evaluateSoundQuality = (
   const primary = products[0]!;
   const profile = options.profile ?? primary.profile;
   const profileSource = options.profile !== undefined ? 'override' : 'authored';
-  const threshold = options.threshold ?? DEFAULT_SOUND_THRESHOLD;
+  const threshold = options.threshold ?? DEFAULT_AUDIT_THRESHOLD;
   const metrics = analyzeSoundProducts(products);
   const hardGates = evaluateGates(products, metrics);
   const dyn = evaluateDynamics(profile, metrics);
@@ -421,9 +399,6 @@ export const evaluateSoundQuality = (
       summary: g.message,
       fix: g.fix,
     }));
-  const sorted = [...dyn.deductions, ...spec.deductions, ...pol.deductions].sort(
-    (a, b) => b.lostPoints - a.lostPoints || a.metricId.localeCompare(b.metricId),
-  );
   return Object.freeze({
     schemaVersion: 1 as const,
     profile,
@@ -431,10 +406,14 @@ export const evaluateSoundQuality = (
     threshold,
     passed,
     score,
-    grade: gradeFor(allGates, score, passed),
+    grade: gradeForAudit(allGates, score, passed),
     hardGates,
     pillars: [dyn.pillar, spec.pillar, pol.pillar],
-    topDeductions: [...gateDeductions, ...sorted].slice(0, 5),
+    topDeductions: rankTopAuditDeductions(gateDeductions, [
+      ...dyn.deductions,
+      ...spec.deductions,
+      ...pol.deductions,
+    ]),
   });
 };
 

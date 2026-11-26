@@ -1,9 +1,9 @@
+import { auditSubmetric } from '@ashfox/internal-contracts';
 import type { AssetQualityProfile } from '../model/compiled';
 import {
   PROFILE_WEIGHTS,
   ramp,
   round2,
-  round4,
   type AuditDeduction,
   type AuditPillarReport,
   type AuditSubmetric,
@@ -46,24 +46,6 @@ const makeDeduction = (
   if (lost < 0.5) return null;
   return { metricId: metric.id, pillar: 'texture', lostPoints: lost, summary, targets, fix };
 };
-
-const metric = (
-  id: string,
-  label: string,
-  ratio: number,
-  maxScore: number,
-  value: number,
-  target: number,
-  detail: string,
-): AuditSubmetric => ({
-  id,
-  label,
-  score: round2(ratio * maxScore),
-  maxScore,
-  value,
-  target,
-  detail,
-});
 
 const computeTextureRatios = (
   profile: AssetQualityProfile,
@@ -108,16 +90,16 @@ const computeTextureMetrics = (
   const w = PROFILE_WEIGHTS[profile];
   const r = computeTextureRatios(profile, telemetry, telemetryAvailable, raster, singleCubeBlock);
   return [
-    metric(
+    auditSubmetric(
       'texture.preGrainCoverage',
       'Pre-Grain Authored Coverage',
       r.pre,
       w.preGrainCoverage,
-      round4(telemetry.globalDeltaRatio),
+      telemetry.globalDeltaRatio,
       0.45,
       `${Math.round(telemetry.globalDeltaRatio * 100)}% pre-grain delta, ${Math.round(telemetry.craftedChartRatio * 100)}% crafted charts.`,
     ),
-    metric(
+    auditSubmetric(
       'texture.roleDepth',
       'Palette Role Depth',
       r.role,
@@ -126,32 +108,32 @@ const computeTextureMetrics = (
       3.0,
       `Weighted mean ${round2(telemetry.weightedDistinctRoles)} distinct roles per chart.`,
     ),
-    metric(
+    auditSubmetric(
       'texture.contactAo',
       singleCubeBlock ? 'Directional Block Contrast' : '3D Contact AO Shading',
       r.ao,
       w.contactAo,
-      round4(singleCubeBlock ? raster.upDownContrast : telemetry.aoTexelRatio),
+      singleCubeBlock ? raster.upDownContrast : telemetry.aoTexelRatio,
       singleCubeBlock ? 0.12 : 0.1,
       singleCubeBlock
         ? `Single-cube block surface shading: upDownContrast=${round2(raster.upDownContrast)}, preDelta=${Math.round(telemetry.globalDeltaRatio * 100)}%.`
         : `${Math.round(telemetry.aoTexelRatio * 100)}% AO texels across ${Math.round(telemetry.aoChartRatio * 100)}% charts.`,
     ),
-    metric(
+    auditSubmetric(
       'texture.valueHierarchy',
       'Luminance & Top-Down Value Hierarchy',
       r.value,
       w.valueHierarchy,
-      round4(raster.lumRange),
+      raster.lumRange,
       0.34,
       `lumRange=${round2(raster.lumRange)}, upDownContrast=${round2(raster.upDownContrast)}.`,
     ),
-    metric(
+    auditSubmetric(
       'texture.coherenceAndFocus',
       'Cluster Coherence & Focal Craft',
       r.focus,
       w.coherenceAndFocus,
-      round4(1 - raster.isolatedNoiseRate),
+      1 - raster.isolatedNoiseRate,
       0.94,
       `noise=${round2(raster.isolatedNoiseRate)}, clutter=${round2(raster.highFreqClutterRate)}, checker=${round2(raster.checkerRate)}, sym=${round2(telemetry.avgForwardSymmetry)}.`,
     ),

@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import {
   ASHFOX_LOCK_FORMAT,
   type LockedDependency,
@@ -233,9 +234,9 @@ const readLockedPackage = (value: unknown): WorkspaceReadResult<LockedPackage> =
       manifest: manifest.value,
       contentHash: hashes.value.contentHash,
       manifestHash: hashes.value.manifestHash,
-      files: Object.freeze(files.value.sort((a, b) => (a.path < b.path ? -1 : 1))),
+      files: Object.freeze(files.value.sort((a, b) => compareText(a.path, b.path))),
       interfaceHash: hashes.value.interfaceHash,
-      dependencies: Object.freeze(dependencies.value.sort((a, b) => (a.name < b.name ? -1 : 1))),
+      dependencies: Object.freeze(dependencies.value.sort((a, b) => compareText(a.name, b.name))),
     }),
   };
 };
@@ -273,7 +274,7 @@ export const readWorkspaceLock = (value: unknown): WorkspaceReadResult<Workspace
       format: ASHFOX_LOCK_FORMAT,
       version: 1,
       compilerFingerprint: fingerprint.value,
-      packages: Object.freeze(packages.value.sort((a, b) => (a.name < b.name ? -1 : 1))),
+      packages: Object.freeze(packages.value.sort((a, b) => compareText(a.name, b.name))),
     }),
   };
 };

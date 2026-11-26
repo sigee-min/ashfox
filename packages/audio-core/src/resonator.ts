@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import type { ResonatorSource } from './contract';
 import { frame } from './curve';
 
@@ -25,7 +26,7 @@ const sampleExcitation = (
 };
 
 export const createResonator = (source: ResonatorSource, pitch: number, random: () => number) => {
-  const sorted = [...source.modes].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const sorted = [...source.modes].sort((a, b) => compareText(a.id, b.id));
   const total = sorted.reduce((sum, mode) => sum + mode.gain, 0);
   const dropCents = source.pitchDropCents ?? 0;
   const dropFrames = Math.max(1, frame(source.pitchDropSeconds ?? 0.04));

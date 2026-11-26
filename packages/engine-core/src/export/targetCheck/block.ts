@@ -1,10 +1,18 @@
 import { CUBE_FACE_DIRECTIONS, PLANE_FACE_DIRECTIONS, type ProjectDocument } from '../../model';
-import type { ExportAdaptedDocument } from '../../export/adapter';
+import type { ExportAdaptedDocument } from '../adapter';
 import { isSceneNodeEffectivelyVisible } from '../../sceneVisibility';
-import { exportCompatibilityFor } from '../../export/compatibility';
-import { RESOURCE_NAMESPACE_PATTERN, validateResourceLocation } from '../shared/location';
-import { EPSILON, isIdentityPosition, isIdentityRotation, isIdentityScale } from '../shared/value';
-import type { FindingSink } from '../contract';
+import { exportCompatibilityFor } from '../compatibility';
+import {
+  RESOURCE_NAMESPACE_PATTERN,
+  validateResourceLocation,
+} from '../../validation/shared/location';
+import {
+  EPSILON,
+  isIdentityPosition,
+  isIdentityRotation,
+  isIdentityScale,
+} from '../../validation/shared/value';
+import type { FindingSink } from '../../validation/contract';
 
 const javaBlockSupportsMultiAxisRotation =
   exportCompatibilityFor('java_block')?.supportsJavaBlockMultiAxisRotation ?? false;

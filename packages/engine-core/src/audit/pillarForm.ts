@@ -1,10 +1,10 @@
+import { auditSubmetric } from '@ashfox/internal-contracts';
 import type { AssetQualityProfile } from '../model/compiled';
 import type { AuditAnatomyReport } from './anatomy';
 import {
   PROFILE_WEIGHTS,
   ramp,
   round2,
-  round4,
   type AuditDeduction,
   type AuditPillarReport,
   type AuditSubmetric,
@@ -73,24 +73,6 @@ const makeDeduction = (
   return { metricId: metric.id, pillar: 'form', lostPoints: lost, summary, targets: [], fix };
 };
 
-const metric = (
-  id: string,
-  label: string,
-  ratio: number,
-  maxScore: number,
-  value: number,
-  target: number,
-  detail: string,
-): AuditSubmetric => ({
-  id,
-  label,
-  score: round2(ratio * maxScore),
-  maxScore,
-  value,
-  target,
-  detail,
-});
-
 const balanceRatio = (
   profile: AssetQualityProfile,
   frontSymmetryIoU: number,
@@ -131,21 +113,21 @@ const silhouetteAndBalanceMetrics = (
           anatomy.taperAndArticulationScore,
         );
   return [
-    metric(
+    auditSubmetric(
       'form.silhouette',
       profile === 'block' ? 'Silhouette & Clean Seating' : '3-View Silhouette Breakup',
       silRatio,
       w.silhouette,
-      round4(nonBox),
+      nonBox,
       t.nonBoxTarget,
       `avgFillRatio=${round2(sil.avgFillRatio)}, overlap=${round2(anatomy.overlapPenalty)}, solidPlanes=${anatomy.solidPlaneCount}.`,
     ),
-    metric(
+    auditSubmetric(
       'form.balance',
       profile === 'creature' ? 'Symmetry & Base Stability' : 'Base Stability & Taper',
       balRatio,
       w.balance,
-      round4(sil.frontSymmetryIoU),
+      sil.frontSymmetryIoU,
       profile === 'creature' ? 0.72 : 1.0,
       `frontSymmetryIoU=${round2(sil.frontSymmetryIoU)}, groundedBase=${sil.baseStability}, taper=${round2(anatomy.taperAndArticulationScore)}.`,
     ),
@@ -178,7 +160,7 @@ const computeFormMetrics = (
         : (0.55 * ramp(angledShare, 0, t.angleTarget) + 0.45 * anatomy.taperAndArticulationScore) *
           microGuard;
   return [
-    metric(
+    auditSubmetric(
       'form.parts',
       'Parts & Scale Hierarchy',
       partsRatio,
@@ -187,12 +169,12 @@ const computeFormMetrics = (
       t.targetParts,
       `${count} structural parts, entropy=${round2(entropy)}, microSpecks=${anatomy.microSpeckCount}.`,
     ),
-    metric(
+    auditSubmetric(
       'form.angles',
       profile === 'block' ? 'Grid Alignment & Step Craft' : 'Angled Sculpting & Planes',
       anglesRatio,
       w.angles,
-      round4(profile === 'block' ? 1 - anatomy.overlapPenalty : angledShare),
+      profile === 'block' ? 1 - anatomy.overlapPenalty : angledShare,
       profile === 'block' ? 1.0 : t.angleTarget,
       profile === 'block'
         ? `orthogonal step craft, overlap=${round2(anatomy.overlapPenalty)}, microSpecks=${anatomy.microSpeckCount}.`

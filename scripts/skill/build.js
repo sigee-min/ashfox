@@ -1,8 +1,8 @@
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { zipSync } = require('fflate');
 const { SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION } = require('@ashfox/internal-contracts');
+const { readJson, sha256 } = require('../shared');
 
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'ashfox');
@@ -25,8 +25,6 @@ const releaseFiles = releaseFileDefinitions.map((file) => file.path);
 const portableFiles = releaseFileDefinitions
   .filter((file) => file.role === 'core')
   .map((file) => file.path);
-
-const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 const allFiles = (directory, prefix = '') =>
   fs
@@ -55,7 +53,40 @@ const packageDescriptor = (url, data, format) => ({
   bytes: data.length,
 });
 
-const buildSkillRelease = (publicOutput) => {
+const INSTALL_TARGETS = [
+  {
+    client: 'agent-skills',
+    project: '.agents/skills/ashfox',
+    user: '~/.agents/skills/ashfox',
+  },
+  {
+    client: 'claude-code',
+    project: '.claude/skills/ashfox',
+    user: '~/.claude/skills/ashfox',
+  },
+  {
+    client: 'cursor',
+    project: '.cursor/skills/ashfox',
+    user: '~/.cursor/skills/ashfox',
+  },
+  {
+    client: 'github-copilot',
+    project: '.github/skills/ashfox',
+    user: '~/.copilot/skills/ashfox',
+  },
+  {
+    client: 'gemini-cli',
+    project: '.gemini/skills/ashfox',
+    user: '~/.gemini/skills/ashfox',
+  },
+  {
+    client: 'codex',
+    project: '.codex/skills/ashfox',
+    user: '~/.codex/skills/ashfox',
+  },
+];
+
+const validateSkillSources = () => {
   const actualFiles = allFiles(skillRoot);
   if (JSON.stringify(actualFiles) !== JSON.stringify(releaseFiles)) {
     throw new Error(`ashfox skill files must be exactly: ${releaseFiles.join(', ')}`);
@@ -71,18 +102,19 @@ const buildSkillRelease = (publicOutput) => {
   if (!openAiMetadata.includes('$ashfox')) {
     throw new Error('ashfox skill default prompt must invoke $ashfox.');
   }
-  const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  const packageJson = readJson(path.join(repoRoot, 'package.json'));
   if (typeof packageJson.version !== 'string' || packageJson.version.length === 0) {
     throw new Error('Root package version is required for the skill release.');
   }
-  const outputRoot = path.join(publicOutput, 'skills', 'ashfox');
-  const filesOutput = path.join(outputRoot, 'files');
+  return packageJson.version;
+};
+
+const stageSkillFiles = (filesOutput) => {
   fs.mkdirSync(filesOutput, { recursive: true });
   const fileData = new Map();
   const files = releaseFileDefinitions.map((definition) => {
     const relative = definition.path;
-    const source = path.join(skillRoot, ...relative.split('/'));
-    const data = fs.readFileSync(source);
+    const data = fs.readFileSync(path.join(skillRoot, ...relative.split('/')));
     fileData.set(relative, data);
     const destination = path.join(filesOutput, ...relative.split('/'));
     fs.mkdirSync(path.dirname(destination), { recursive: true });
@@ -96,60 +128,36 @@ const buildSkillRelease = (publicOutput) => {
       ...(definition.clients ? { clients: definition.clients } : {}),
     };
   });
+  return { fileData, files };
+};
+
+const createSkillDescriptor = ({ release, archive, files }) => ({
+  schemaVersion: SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
+  name: 'ashfox',
+  release,
+  specificationUrl: 'https://agentskills.io/specification',
+  documentationUrl: 'https://ashfox.io/docs/guides/agent-workflow/',
+  sourceUrl: 'https://github.com/sigee-min/ashfox/tree/main/skills/ashfox',
+  packages: {
+    agentSkill: packageDescriptor(
+      'https://ashfox.io/skills/ashfox/ashfox.skill',
+      archive,
+      'agent-skill',
+    ),
+    claudeZip: packageDescriptor('https://ashfox.io/skills/ashfox/ashfox.zip', archive, 'zip'),
+  },
+  installTargets: INSTALL_TARGETS,
+  files,
+});
+
+const buildSkillRelease = (publicOutput) => {
+  const release = validateSkillSources();
+  const outputRoot = path.join(publicOutput, 'skills', 'ashfox');
+  const { fileData, files } = stageSkillFiles(path.join(outputRoot, 'files'));
   const archive = deterministicArchive(fileData);
-  const skillPackageTarget = path.join(outputRoot, 'ashfox.skill');
-  const claudePackageTarget = path.join(outputRoot, 'ashfox.zip');
-  fs.writeFileSync(skillPackageTarget, archive);
-  fs.writeFileSync(claudePackageTarget, archive);
-  const descriptor = {
-    schemaVersion: SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
-    name: 'ashfox',
-    release: packageJson.version,
-    specificationUrl: 'https://agentskills.io/specification',
-    documentationUrl: 'https://ashfox.io/docs/guides/agent-workflow/',
-    sourceUrl: 'https://github.com/sigee-min/ashfox/tree/main/skills/ashfox',
-    packages: {
-      agentSkill: packageDescriptor(
-        'https://ashfox.io/skills/ashfox/ashfox.skill',
-        archive,
-        'agent-skill',
-      ),
-      claudeZip: packageDescriptor('https://ashfox.io/skills/ashfox/ashfox.zip', archive, 'zip'),
-    },
-    installTargets: [
-      {
-        client: 'agent-skills',
-        project: '.agents/skills/ashfox',
-        user: '~/.agents/skills/ashfox',
-      },
-      {
-        client: 'claude-code',
-        project: '.claude/skills/ashfox',
-        user: '~/.claude/skills/ashfox',
-      },
-      {
-        client: 'cursor',
-        project: '.cursor/skills/ashfox',
-        user: '~/.cursor/skills/ashfox',
-      },
-      {
-        client: 'github-copilot',
-        project: '.github/skills/ashfox',
-        user: '~/.copilot/skills/ashfox',
-      },
-      {
-        client: 'gemini-cli',
-        project: '.gemini/skills/ashfox',
-        user: '~/.gemini/skills/ashfox',
-      },
-      {
-        client: 'codex',
-        project: '.codex/skills/ashfox',
-        user: '~/.codex/skills/ashfox',
-      },
-    ],
-    files,
-  };
+  fs.writeFileSync(path.join(outputRoot, 'ashfox.skill'), archive);
+  fs.writeFileSync(path.join(outputRoot, 'ashfox.zip'), archive);
+  const descriptor = createSkillDescriptor({ release, archive, files });
   fs.writeFileSync(
     path.join(outputRoot, 'latest.json'),
     `${JSON.stringify(descriptor, null, 2)}\n`,

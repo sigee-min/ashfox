@@ -1,6 +1,7 @@
 'use strict';
 
 const ts = require('typescript');
+const { compareText } = require('../shared');
 
 /** Executable implementations for the manifest-owned source rules. */
 const LINE_PATTERN_REGISTRY = Object.freeze({
@@ -13,8 +14,6 @@ const LINE_PATTERN_REGISTRY = Object.freeze({
   'browser-authoring-contract': /window\.ashfox|data-ashfox-agent-manifest|agent-manifest\.json/,
 });
 const AST_PATTERN_IDS = Object.freeze(['double-assertion', 'explicit-any']);
-
-const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 const registryIds = () =>
   [...Object.keys(LINE_PATTERN_REGISTRY), ...AST_PATTERN_IDS].sort(compareText);
