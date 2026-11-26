@@ -20,6 +20,7 @@ const DIST_BASE = [
 const DIST_EXTRA = [
   0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13,
 ];
+const CL_ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
 
 const reverseBits = (value: number, bits: number): number => {
   let reversed = 0;
@@ -71,6 +72,7 @@ const buildLengthTables = () => {
 
 const buildDistanceTables = () => {
   const code = new Uint8Array(30);
+  const bits = new Uint8Array(30).fill(5);
   for (let i = 0; i < 30; i += 1) code[i] = reverseBits(i, 5);
   const low = new Uint8Array(257);
   const high = new Uint8Array(257);
@@ -84,7 +86,7 @@ const buildDistanceTables = () => {
     const end = (DIST_BASE[idx]! + (1 << DIST_EXTRA[idx]!) - 2) >>> 7;
     for (let slot = start; slot <= end; slot += 1) high[slot] = idx;
   }
-  return { code, low, high };
+  return { code, bits, low, high };
 };
 
 const FIXED_LIT = buildFixedLitTables();
@@ -201,54 +203,275 @@ const findBestMatch = (
     : { length: 0, distance: 0 };
 };
 
-const writeLiteral = (writer: BitWriter, byte: number): void => {
-  writer.writeBits(FIXED_LIT.code[byte]!, FIXED_LIT.bits[byte]!);
-};
+interface LzToken {
+  readonly sym: number;
+  readonly len?: number;
+  readonly dist?: number;
+}
 
-const writeMatch = (writer: BitWriter, length: number, distance: number): void => {
-  const sym = LEN_TABLE.sym[length]!;
-  writer.writeBits(FIXED_LIT.code[sym]!, FIXED_LIT.bits[sym]!);
-  const lExtra = LEN_TABLE.extBits[length]!;
-  if (lExtra > 0) writer.writeBits(LEN_TABLE.extVal[length]!, lExtra);
-  const dIdx = distance <= 256 ? DIST_TABLE.low[distance]! : DIST_TABLE.high[(distance - 1) >>> 7]!;
-  writer.writeBits(DIST_TABLE.code[dIdx]!, 5);
-  const dExtra = DIST_EXTRA[dIdx]!;
-  if (dExtra > 0) writer.writeBits(distance - DIST_BASE[dIdx]!, dExtra);
-};
-
-const deflateFixedHuffman = (data: Uint8Array): Uint8Array => {
-  const writer = new BitWriter(data.length + 16);
-  // BFINAL = 1, BTYPE = 01 (Fixed Huffman) -> LSB-first bits 0b011 = 3.
-  writer.writeBits(3, 3);
+const collectLzTokens = (data: Uint8Array): LzToken[] => {
   const head = new Int32Array(32768).fill(-1);
   const prev = new Int32Array(WINDOW_SIZE).fill(-1);
+  const tokens: LzToken[] = [];
   let pos = 0;
   while (pos < data.length) {
     const match = findBestMatch(data, pos, head, prev);
     insertHash(data, pos, head, prev);
     if (match.length < MIN_MATCH) {
-      writeLiteral(writer, data[pos++]!);
+      tokens.push({ sym: data[pos++]! });
       continue;
     }
     if (match.length < MAX_MATCH && pos + 1 + MIN_MATCH <= data.length) {
       const next = findBestMatch(data, pos + 1, head, prev);
       if (next.length > match.length) {
-        writeLiteral(writer, data[pos++]!);
+        tokens.push({ sym: data[pos++]! });
         continue;
       }
     }
-    writeMatch(writer, match.length, match.distance);
+    tokens.push({ sym: LEN_TABLE.sym[match.length]!, len: match.length, dist: match.distance });
     const end = pos + match.length;
     for (let p = pos + 1; p < end; p += 1) insertHash(data, p, head, prev);
     pos = end;
   }
-  writer.writeBits(FIXED_LIT.code[256]!, FIXED_LIT.bits[256]!);
+  tokens.push({ sym: 256 });
+  return tokens;
+};
+
+interface HuffNode {
+  readonly freq: number;
+  readonly sym: number;
+  readonly left?: HuffNode;
+  readonly right?: HuffNode;
+}
+
+const assignDepths = (node: HuffNode, depth: number, lengths: Uint8Array): void => {
+  if (!node.left && !node.right) {
+    lengths[node.sym] = depth;
+    return;
+  }
+  if (node.left) assignDepths(node.left, depth + 1, lengths);
+  if (node.right) assignDepths(node.right, depth + 1, lengths);
+};
+
+const clampCodeLengths = (lengths: Uint8Array, maxBits: number): void => {
+  const blCount = new Uint16Array(maxBits + 1);
+  let excess = -(1 << maxBits);
+  const byDepth: number[] = [];
+  for (let i = 0; i < lengths.length; i += 1) {
+    const len = lengths[i]!;
+    if (len === 0) continue;
+    const clamped = Math.min(len, maxBits);
+    blCount[clamped]! += 1;
+    excess += 1 << (maxBits - clamped);
+    byDepth.push(i);
+  }
+  while (excess > 0) {
+    let b = maxBits - 1;
+    while (b > 0 && blCount[b] === 0) b -= 1;
+    if (b === 0) break;
+    blCount[b]! -= 1;
+    blCount[b + 1]! += 2;
+    blCount[maxBits]! -= 1;
+    excess -= 1;
+  }
+  byDepth.sort((a, b) => lengths[a]! - lengths[b]! || a - b);
+  let cursor = 0;
+  for (let bits = 1; bits <= maxBits; bits += 1) {
+    for (let k = 0; k < blCount[bits]!; k += 1) lengths[byDepth[cursor++]!] = bits;
+  }
+};
+
+const buildCodeLengths = (freqs: Uint32Array, maxBits: number): Uint8Array => {
+  const lengths = new Uint8Array(freqs.length);
+  const queue: HuffNode[] = [];
+  for (let s = 0; s < freqs.length; s += 1) {
+    if (freqs[s]! > 0) queue.push({ freq: freqs[s]!, sym: s });
+  }
+  if (queue.length <= 1) {
+    if (queue.length === 1) lengths[queue[0]!.sym] = 1;
+    return lengths;
+  }
+  while (queue.length > 1) {
+    queue.sort((a, b) => a.freq - b.freq || a.sym - b.sym);
+    const left = queue.shift()!;
+    const right = queue.shift()!;
+    queue.push({ freq: left.freq + right.freq, sym: Math.min(left.sym, right.sym), left, right });
+  }
+  assignDepths(queue[0]!, 0, lengths);
+  if (lengths.some((l) => l > maxBits)) clampCodeLengths(lengths, maxBits);
+  return lengths;
+};
+
+const buildCanonicalCodes = (lengths: Uint8Array, maxBits: number): Uint16Array => {
+  const blCount = new Uint16Array(maxBits + 1);
+  for (const l of lengths) if (l > 0) blCount[l]! += 1;
+  const nextCode = new Uint16Array(maxBits + 1);
+  let code = 0;
+  for (let bits = 1; bits <= maxBits; bits += 1) {
+    code = (code + blCount[bits - 1]!) << 1;
+    nextCode[bits] = code;
+  }
+  const codes = new Uint16Array(lengths.length);
+  for (let sym = 0; sym < lengths.length; sym += 1) {
+    const len = lengths[sym]!;
+    if (len > 0) codes[sym] = reverseBits(nextCode[len]!++, len);
+  }
+  return codes;
+};
+
+interface RleSym {
+  readonly sym: number;
+  readonly extraBits: number;
+  readonly extra: number;
+}
+
+const pushZeroRun = (out: RleSym[], count: number): void => {
+  let rem = count;
+  while (rem >= 11) {
+    const chunk = Math.min(rem, 138);
+    out.push({ sym: 18, extraBits: 7, extra: chunk - 11 });
+    rem -= chunk;
+  }
+  if (rem >= 3) {
+    out.push({ sym: 17, extraBits: 3, extra: rem - 3 });
+    rem = 0;
+  }
+  while (rem-- > 0) out.push({ sym: 0, extraBits: 0, extra: 0 });
+};
+
+const pushValueRun = (out: RleSym[], val: number, count: number): void => {
+  out.push({ sym: val, extraBits: 0, extra: 0 });
+  let rem = count - 1;
+  while (rem >= 3) {
+    const chunk = Math.min(rem, 6);
+    out.push({ sym: 16, extraBits: 2, extra: chunk - 3 });
+    rem -= chunk;
+  }
+  while (rem-- > 0) out.push({ sym: val, extraBits: 0, extra: 0 });
+};
+
+const rleCodeLengths = (combined: Uint8Array): RleSym[] => {
+  const out: RleSym[] = [];
+  let i = 0;
+  while (i < combined.length) {
+    const val = combined[i]!;
+    let run = 1;
+    while (i + run < combined.length && combined[i + run] === val) run += 1;
+    if (val === 0) pushZeroRun(out, run);
+    else pushValueRun(out, val, run);
+    i += run;
+  }
+  return out;
+};
+
+const distanceCodeIndex = (dist: number): number =>
+  dist <= 256 ? DIST_TABLE.low[dist]! : DIST_TABLE.high[(dist - 1) >>> 7]!;
+
+const countTokenBits = (
+  tokens: readonly LzToken[],
+  litBits: Uint8Array,
+  distBits: Uint8Array,
+): number => {
+  let total = 0;
+  for (const tok of tokens) {
+    total += litBits[tok.sym]!;
+    if (tok.len !== undefined && tok.dist !== undefined) {
+      total += LEN_TABLE.extBits[tok.len]!;
+      const dIdx = distanceCodeIndex(tok.dist);
+      total += distBits[dIdx]! + DIST_EXTRA[dIdx]!;
+    }
+  }
+  return total;
+};
+
+const writeTokens = (
+  writer: BitWriter,
+  tokens: readonly LzToken[],
+  litCode: Uint16Array,
+  litBits: Uint8Array,
+  distCode: Uint16Array | Uint8Array,
+  distBits: Uint8Array,
+): void => {
+  for (const tok of tokens) {
+    writer.writeBits(litCode[tok.sym]!, litBits[tok.sym]!);
+    if (tok.len === undefined || tok.dist === undefined) continue;
+    const lExtra = LEN_TABLE.extBits[tok.len]!;
+    if (lExtra > 0) writer.writeBits(LEN_TABLE.extVal[tok.len]!, lExtra);
+    const dIdx = distanceCodeIndex(tok.dist);
+    writer.writeBits(distCode[dIdx]!, distBits[dIdx]!);
+    const dExtra = DIST_EXTRA[dIdx]!;
+    if (dExtra > 0) writer.writeBits(tok.dist - DIST_BASE[dIdx]!, dExtra);
+  }
+};
+
+const trimTrailingZeros = (arr: Uint8Array, minLen: number): number => {
+  let len = arr.length;
+  while (len > minLen && arr[len - 1] === 0) len -= 1;
+  return len;
+};
+
+const prepareDynamicTables = (tokens: readonly LzToken[]) => {
+  const litFreq = new Uint32Array(286);
+  const distFreq = new Uint32Array(30);
+  for (const tok of tokens) {
+    litFreq[tok.sym]! += 1;
+    if (tok.dist !== undefined) distFreq[distanceCodeIndex(tok.dist)]! += 1;
+  }
+  if (distFreq.every((f) => f === 0)) distFreq[0] = 1;
+  const litLen = buildCodeLengths(litFreq, 15);
+  const distLen = buildCodeLengths(distFreq, 15);
+  const hlit = trimTrailingZeros(litLen, 257);
+  const hdist = trimTrailingZeros(distLen, 1);
+  const combined = new Uint8Array(hlit + hdist);
+  combined.set(litLen.subarray(0, hlit), 0);
+  combined.set(distLen.subarray(0, hdist), hlit);
+  const rle = rleCodeLengths(combined);
+  const clFreq = new Uint32Array(19);
+  for (const item of rle) clFreq[item.sym]! += 1;
+  const clLen = buildCodeLengths(clFreq, 7);
+  let hclen = 4;
+  for (let i = CL_ORDER.length - 1; i >= 4; i -= 1) {
+    if (clLen[CL_ORDER[i]!]! > 0) {
+      hclen = i + 1;
+      break;
+    }
+  }
+  let headerBits = 14 + hclen * 3;
+  for (const item of rle) headerBits += clLen[item.sym]! + item.extraBits;
+  return { litLen, distLen, hlit, hdist, hclen, rle, clLen, headerBits };
+};
+
+const deflateDynamicOrFixed = (data: Uint8Array): Uint8Array => {
+  const tokens = collectLzTokens(data);
+  const fixedBits = 3 + countTokenBits(tokens, FIXED_LIT.bits, DIST_TABLE.bits);
+  const dyn = prepareDynamicTables(tokens);
+  const dynBits = 3 + dyn.headerBits + countTokenBits(tokens, dyn.litLen, dyn.distLen);
+  const writer = new BitWriter(Math.ceil(Math.min(fixedBits, dynBits) / 8) + 8);
+  if (dynBits < fixedBits) {
+    // BFINAL = 1, BTYPE = 10 (Dynamic Huffman) -> LSB-first 0b101 = 5.
+    writer.writeBits(5, 3);
+    writer.writeBits(dyn.hlit - 257, 5);
+    writer.writeBits(dyn.hdist - 1, 5);
+    writer.writeBits(dyn.hclen - 4, 4);
+    for (let i = 0; i < dyn.hclen; i += 1) writer.writeBits(dyn.clLen[CL_ORDER[i]!]!, 3);
+    const clCodes = buildCanonicalCodes(dyn.clLen, 7);
+    for (const item of dyn.rle) {
+      writer.writeBits(clCodes[item.sym]!, dyn.clLen[item.sym]!);
+      if (item.extraBits > 0) writer.writeBits(item.extra, item.extraBits);
+    }
+    const litCodes = buildCanonicalCodes(dyn.litLen, 15);
+    const distCodes = buildCanonicalCodes(dyn.distLen, 15);
+    writeTokens(writer, tokens, litCodes, dyn.litLen, distCodes, dyn.distLen);
+  } else {
+    writer.writeBits(3, 3);
+    writeTokens(writer, tokens, FIXED_LIT.code, FIXED_LIT.bits, DIST_TABLE.code, DIST_TABLE.bits);
+  }
   return writer.finish();
 };
 
-/** Encodes raw PNG scanline bytes into a deterministic zlib/Fixed-Huffman DEFLATE stream. */
+/** Encodes raw PNG scanline bytes into a deterministic zlib/DEFLATE stream. */
 export const zlibDeflateFixed = (scanlines: Uint8Array): Uint8Array => {
-  const compressed = deflateFixedHuffman(scanlines);
+  const compressed = deflateDynamicOrFixed(scanlines);
   const adler = computeAdler32(scanlines);
   const out = new Uint8Array(2 + compressed.length + 4);
   out[0] = 0x78;

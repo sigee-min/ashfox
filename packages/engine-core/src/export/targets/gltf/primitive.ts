@@ -69,14 +69,14 @@ export const compileQuantizedGltfPrimitive = (
 const isPoolableBufferView = (
   view: GltfBufferView,
   index: number,
-  imageViews: ReadonlySet<number>,
+  excludedViews: ReadonlySet<number>,
 ): boolean =>
   view.buffer === 0 &&
   view.target === undefined &&
   view.byteStride === undefined &&
   view.extensions === undefined &&
   view.byteLength > 0 &&
-  !imageViews.has(index);
+  !excludedViews.has(index);
 
 const buildPooledBytes = (
   views: readonly GltfBufferView[],
@@ -159,6 +159,21 @@ const compactPooledViews = (
   return { nextViews, nextBinary, viewRemap, pooledViewIdx };
 };
 
+const excludedBufferViews = (
+  document: GltfDocument,
+  accessors: readonly GltfAccessor[],
+): ReadonlySet<number> => {
+  const excluded = new Set(
+    (document.images ?? []).flatMap((im) => ('bufferView' in im ? [im.bufferView] : [])),
+  );
+  for (const skin of document.skins ?? []) {
+    if (skin.inverseBindMatrices === undefined) continue;
+    const bv = accessors[skin.inverseBindMatrices]?.bufferView;
+    if (bv !== undefined) excluded.add(bv);
+  }
+  return excluded;
+};
+
 export const poolUncompressedBufferViews = (
   document: GltfDocument,
   binary: Uint8Array,
@@ -166,10 +181,8 @@ export const poolUncompressedBufferViews = (
   const views = document.bufferViews;
   const accessors = document.accessors;
   if (!views || !accessors || views.length < 2) return { document, binary };
-  const imageViews = new Set(
-    (document.images ?? []).flatMap((im) => ('bufferView' in im ? [im.bufferView] : [])),
-  );
-  const poolable = views.flatMap((v, i) => (isPoolableBufferView(v, i, imageViews) ? [i] : []));
+  const excluded = excludedBufferViews(document, accessors);
+  const poolable = views.flatMap((v, i) => (isPoolableBufferView(v, i, excluded) ? [i] : []));
   if (poolable.length < 2) return { document, binary };
 
   const pooled = buildPooledBytes(views, poolable, binary);

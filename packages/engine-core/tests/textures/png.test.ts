@@ -16,19 +16,35 @@ const crc = (bytes: Uint8Array): number => {
   return (value ^ 0xffffffff) >>> 0;
 };
 
-const unfilterSub = (raw: Uint8Array, width: number, height: number): Uint8Array => {
-  const rowBytes = width * 4;
+const unfilterSub = (raw: Uint8Array, width: number, height: number, bpp: number): Uint8Array => {
+  const rowBytes = width * bpp;
   const stride = rowBytes + 1;
   assert.equal(raw.length, stride * height);
-  const rgba = new Uint8Array(rowBytes * height);
+  const pixels = new Uint8Array(rowBytes * height);
   for (let row = 0; row < height; row += 1) {
     const inBase = row * stride;
     const outBase = row * rowBytes;
     assert.equal(raw[inBase], 1, 'Canonical PNG scanlines must use Filter-1 Sub');
     for (let x = 0; x < rowBytes; x += 1) {
-      const left = x >= 4 ? rgba[outBase + x - 4]! : 0;
-      rgba[outBase + x] = (raw[inBase + 1 + x]! + left) & 0xff;
+      const left = x >= bpp ? pixels[outBase + x - bpp]! : 0;
+      pixels[outBase + x] = (raw[inBase + 1 + x]! + left) & 0xff;
     }
+  }
+  return pixels;
+};
+
+const decodeIndexedRgba = (
+  indices: Uint8Array,
+  plte: Uint8Array,
+  trns: Uint8Array | undefined,
+): Uint8Array => {
+  const rgba = new Uint8Array(indices.length * 4);
+  for (let p = 0; p < indices.length; p += 1) {
+    const idx = indices[p]!;
+    rgba[p * 4] = plte[idx * 3]!;
+    rgba[p * 4 + 1] = plte[idx * 3 + 1]!;
+    rgba[p * 4 + 2] = plte[idx * 3 + 2]!;
+    rgba[p * 4 + 3] = trns && idx < trns.length ? trns[idx]! : 255;
   }
   return rgba;
 };
@@ -37,11 +53,16 @@ const verifyPngRoundTrip = (
   width: number,
   height: number,
   raster: ReturnType<typeof rasterizeCanonicalTexture>,
+  expectedColorType: 3 | 6,
 ): Uint8Array => {
   const png = encodeCanonicalPng(raster);
   assert.deepEqual(Array.from(png.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10]);
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
   const types: string[] = [];
+  let colorType = -1;
+  let plte: Uint8Array | undefined;
+  let trns: Uint8Array | undefined;
+  let idat: Uint8Array | undefined;
   let offset = 8;
   while (offset < png.length) {
     const length = view.getUint32(offset);
@@ -55,15 +76,21 @@ const verifyPngRoundTrip = (
     if (type === 'IHDR') {
       assert.equal(view.getUint32(offset + 8), width);
       assert.equal(view.getUint32(offset + 12), height);
-    }
-    if (type === 'IDAT') {
-      const raw = inflateSync(data);
-      assert.deepEqual(unfilterSub(raw, width, height), raster.rgba.copy());
-    }
+      colorType = data[9]!;
+      assert.equal(colorType, expectedColorType);
+    } else if (type === 'PLTE') plte = data;
+    else if (type === 'tRNS') trns = data;
+    else if (type === 'IDAT') idat = data;
     offset += length + 12;
   }
   assert.equal(offset, png.length);
-  assert.deepEqual(types, ['IHDR', 'IDAT', 'IEND']);
+  assert.equal(types[0], 'IHDR');
+  assert.equal(types[types.length - 1], 'IEND');
+  assert.ok(idat);
+  const raw = inflateSync(idat);
+  const pixels = unfilterSub(raw, width, height, colorType === 3 ? 1 : 4);
+  const recovered = colorType === 3 ? decodeIndexedRgba(pixels, plte!, trns) : pixels;
+  assert.deepEqual(recovered, raster.rgba.copy());
   return png;
 };
 
@@ -105,6 +132,7 @@ const makeSpec = (width: number, height: number, seed: number) => ({
 for (const [width, height] of [
   [1, 1],
   [16, 16],
+  [32, 32],
   [64, 254],
   [64, 255],
   [64, 256],
@@ -114,8 +142,9 @@ for (const [width, height] of [
 ] as const) {
   const rasterA = rasterizeCanonicalTexture(width, height, makeSpec(width, height, width));
   const rasterB = rasterizeCanonicalTexture(width, height, makeSpec(width, height, width));
-  const pngA = verifyPngRoundTrip(width, height, rasterA);
-  const pngB = verifyPngRoundTrip(width, height, rasterB);
+  const expectedType = width * height >= 2048 ? 3 : 6;
+  const pngA = verifyPngRoundTrip(width, height, rasterA, expectedType);
+  const pngB = verifyPngRoundTrip(width, height, rasterB, expectedType);
   const hashA = createHash('sha256').update(pngA).digest('hex');
   const hashB = createHash('sha256').update(pngB).digest('hex');
   assert.equal(hashA, hashB, `PNG encoding for ${width}x${height} must be byte-deterministic`);
@@ -134,28 +163,28 @@ for (const [width, height] of [
   }
 }
 
-// High-entropy checkerboard / gradient stress test (>32KB window exercise)
-const gradDetails = Array.from({ length: 64 }, (_, i) => ({
-  id: `g_${i}`,
-  x: (i % 16) * 8,
-  y: Math.floor(i / 16) * 32,
-  width: 8,
-  height: 32,
-  color: `#${((i * 37) & 0xff).toString(16).padStart(2, '0')}${((i * 73) & 0xff).toString(16).padStart(2, '0')}${((i * 113) & 0xff).toString(16).padStart(2, '0')}`,
-  alpha: (i % 5 === 0 ? 0 : 255) as 0 | 255,
+// >256-color RGBA8 fallback test + high-entropy stress test
+const richDetails = Array.from({ length: 300 }, (_, i) => ({
+  id: `r_${i}`,
+  x: (i % 20) * 6,
+  y: Math.floor(i / 20) * 8,
+  width: 6,
+  height: 8,
+  color: `#${((i * 19) & 0xff).toString(16).padStart(2, '0')}${((i * 47) & 0xff).toString(16).padStart(2, '0')}${((i * 83) & 0xff).toString(16).padStart(2, '0')}`,
+  alpha: (i % 7 === 0 ? 0 : 255) as 0 | 255,
 }));
-const gradRaster = rasterizeCanonicalTexture(128, 128, {
+const richRaster = rasterizeCanonicalTexture(128, 128, {
   background: '#223344',
   backgroundAlpha: 255,
-  canvasDetails: gradDetails,
+  canvasDetails: richDetails,
   alphaMasks: [],
 });
-const gradPng = verifyPngRoundTrip(128, 128, gradRaster);
+const richPng = verifyPngRoundTrip(128, 128, richRaster, 6);
 assert.ok(
-  (128 * 128 * 4) / gradPng.length >= 8,
-  'Expected >= 8x compression on multi-swatch pattern',
+  (128 * 128 * 4) / richPng.length >= 8,
+  'Expected >= 8x compression on >256-color pattern',
 );
 
 console.log(
-  'canonical compressed PNG: Filter-1 Sub, LZ77 + Fixed Huffman, determinism & >=10x reduction pass',
+  'canonical compressed PNG: Filter-1 Sub, PLTE+tRNS/RGBA8, LZ77 + Fixed Huffman, determinism & >=10x reduction pass',
 );
