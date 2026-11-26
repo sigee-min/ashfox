@@ -49,7 +49,11 @@ export const restTranslation = (
   return multiplyVec3(subtractVec3(origin, parentOrigin(document, node)), unitScale);
 };
 
-const createGltfNode = (node: SceneNode, translation: [number, number, number]): GltfNode => {
+const createGltfNode = (
+  node: SceneNode,
+  translation: [number, number, number],
+  compactExtras: boolean,
+): GltfNode => {
   const rotation = gltfNodeGeometryRotation(node);
   return {
     name: node.name,
@@ -64,12 +68,18 @@ const createGltfNode = (node: SceneNode, translation: [number, number, number]):
           ],
         }
       : {}),
-    extras: {
-      ashfoxId: node.id,
-      ashfoxKind: node.kind,
-      visible: node.visible,
-      ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
-    },
+    extras: compactExtras
+      ? {
+          ashfoxId: node.id,
+          ...(!node.visible ? { visible: false } : {}),
+          ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
+        }
+      : {
+          ashfoxId: node.id,
+          ashfoxKind: node.kind,
+          visible: node.visible,
+          ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
+        },
   };
 };
 
@@ -179,7 +189,7 @@ export const compileGltfScene = (
   const nodeIndexById = new Map<string, number>();
   for (const node of keptNodes) {
     nodeIndexById.set(node.id, nodes.length);
-    nodes.push(createGltfNode(node, restTranslationById.get(node.id)!));
+    nodes.push(createGltfNode(node, restTranslationById.get(node.id)!, options.writer.isQuantized));
   }
   linkGltfHierarchy(keptNodes, nodes, nodeIndexById);
   const rootNodeIndices = document.scene.roots

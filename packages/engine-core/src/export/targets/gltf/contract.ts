@@ -22,7 +22,7 @@ export interface GltfBuffer {
 
 export interface GltfBufferView {
   buffer: number;
-  byteOffset: number;
+  byteOffset?: number;
   byteLength: number;
   byteStride?: number;
   target?: 34962 | 34963;

@@ -349,7 +349,6 @@ export class GltfBinaryWriter {
       componentType: useUint32 ? 5125 : 5123,
       count: values.length,
       type: 'SCALAR',
-      ...this.bounds(values, 1),
     });
   }
 

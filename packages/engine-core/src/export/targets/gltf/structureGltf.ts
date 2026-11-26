@@ -298,18 +298,29 @@ const appendCustomInstances = (
   children: number[],
 ): ReadonlyMap<string, PositionBounds> => {
   const customBounds = new Map<string, PositionBounds>();
-  const byKey = new Map<string, StructureProduct['bakedMesh']['instances'][number][]>();
+  const byModel = new Map<
+    CompiledModel,
+    {
+      readonly assetKey: string;
+      readonly aliases: Set<string>;
+      readonly group: StructureProduct['bakedMesh']['instances'][number][];
+    }
+  >();
   for (const inst of product.bakedMesh.instances) {
-    if (!product.customModels[inst.assetKey]) continue;
-    const list = byKey.get(inst.assetKey) ?? [];
-    list.push(inst);
-    byKey.set(inst.assetKey, list);
+    const model = product.customModels[inst.assetKey];
+    if (!model) continue;
+    let entry = byModel.get(model);
+    if (!entry) {
+      entry = { assetKey: inst.assetKey, aliases: new Set(), group: [] };
+      byModel.set(model, entry);
+    }
+    entry.aliases.add(inst.assetKey);
+    entry.group.push(inst);
   }
-  for (const [assetKey, group] of byKey) {
-    const model = product.customModels[assetKey]!;
-    const baked = bakeCustomModelMesh(assetKey, model, modelTexRemap.get(model)!, ctx);
+  for (const [, { assetKey, aliases, group }] of byModel) {
+    const baked = bakeCustomModelMesh(assetKey, product.customModels[assetKey]!, modelTexRemap.get(product.customModels[assetKey]!)!, ctx);
     if (baked.mesh.primitives.length === 0) continue;
-    customBounds.set(assetKey, baked.bounds);
+    for (const alias of aliases) customBounds.set(alias, baked.bounds);
     const meshIdx = meshes.length;
     meshes.push(baked.mesh);
     children.push(nodes.length);

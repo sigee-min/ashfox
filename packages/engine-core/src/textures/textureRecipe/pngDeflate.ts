@@ -2,7 +2,7 @@ const WINDOW_SIZE = 32768;
 const WINDOW_MASK = WINDOW_SIZE - 1;
 const MIN_MATCH = 3;
 const MAX_MATCH = 258;
-const MAX_CHAIN = 64;
+const MAX_CHAIN = 256;
 const ADLER_MOD = 65521;
 const ADLER_NMAX = 5552;
 
