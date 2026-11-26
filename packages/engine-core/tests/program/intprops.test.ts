@@ -22,6 +22,9 @@ import {
   validateClearPath,
 } from '../../src/compiler/structure/interior/solver';
 import { compileStoryVignette } from '../../src/compiler/structure/interior/vignettes';
+import { buildInteriorShell } from '../../src/compiler/structure/interior/shell';
+import { lowerInteriorToVanillaNbt } from '../../src/compiler/structure/interior/nbtLower';
+import { buildSculptedVolumes } from '../../src/compiler/structure/interior/volume';
 
 const ZEN_DNA: StyleDna = { arch: 'japanese', furn: 'japanese', mood: 'zen_daylight', organic: 0 };
 const TAVERN_DNA: StyleDna = {
@@ -373,9 +376,71 @@ const testBfsSolverAndClearPath = (): void => {
   );
 };
 
+const testCodexInteriorRegressions = (): void => {
+  const room: InteriorRoomInput = {
+    room_id: 'reg_room',
+    kind: 'living',
+    style_dna: TAVERN_DNA,
+    architecture: {
+      floor_pattern: 'plank',
+      baseboard: 'trim',
+      wainscot: 'none',
+      ceiling: 'flat',
+    },
+    bounds_from: [0, 0, 0],
+    bounds_to: [10, 7, 10],
+    openings: [{ id: 'd', kind: 'door', wall: 'south', from: [5, 1, 10], to: [5, 2, 10] }],
+    volumes: [
+      {
+        kind: 'mezzanine',
+        id: 'mez',
+        on: 'north',
+        depth: 3,
+        y_offset_b: 3,
+        railing: 'timber',
+        support_pillars: true,
+      },
+      { kind: 'platform', id: 'south_stage', on: 'south', size: [3, 2], height_16: 4 },
+      { kind: 'sunken', id: 'pit', from: [4, 4], size: [2, 2], height_16: -4 },
+    ],
+    props: [{ id: 'at_pillar', kind: 'chair', at: [1, 1, 3], size: [1, 1], facing: 'south' }],
+    stories: [],
+    draperies: [],
+    seed: 11,
+  };
+  const volumes = buildSculptedVolumes(room);
+  const solved = solveInteriorLayout(room, volumes.boxes);
+  assert.equal(
+    solved.clearance.clear_path_cells.some((c) => c[0] === 1 && c[2] === 3),
+    false,
+    'Mezzanine support pillar at [1,1,3] must be excluded from clear_path',
+  );
+  assert.equal(solved.placed_props[0]!.nudged, true, 'Chair at pillar cell must be nudged');
+
+  const nbt = lowerInteriorToVanillaNbt(room);
+  const hasSouthSlab = nbt.blocks.some((b) => b.pos[2] >= 8 && b.state.includes('slab'));
+  const hasNwSlab = nbt.blocks.some(
+    (b) => b.pos[2] <= 2 && b.pos[1] === 1 && b.state.includes('slab'),
+  );
+  assert.equal(hasSouthSlab, true, 'South-anchored platform must lower at south end');
+  assert.equal(hasNwSlab, false, 'South-anchored platform must not default to NW corner');
+
+  const shell = buildInteriorShell(room);
+  const pitShellFloor = shell.boxes.some(
+    (b) =>
+      (b.semantic_tag ?? '').startsWith('floor_') &&
+      b.from_16[0] >= 4 * 16 &&
+      b.to_16[0] <= 6 * 16 &&
+      b.from_16[2] >= 4 * 16 &&
+      b.to_16[2] <= 6 * 16,
+  );
+  assert.equal(pitShellFloor, false, 'Sunken pit footprint must cut out shell floor panels');
+};
+
 testParametricPropsAndAutoJoin();
 testOrganicAndMounts();
 testStoryVignettes();
 testUniversalDrapery();
 testBfsSolverAndClearPath();
+testCodexInteriorRegressions();
 console.log('ashfox interior props, drapery & bfs solver tests ok');

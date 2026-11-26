@@ -126,11 +126,12 @@ structure tavern {
         centerpiece {
           on = south;
           table suite_table { size = (2, 1); }
+          chair { on = east; }
           story scholar_study { on = suite_table; }
         }
         drapery curtains { on = windows; tieback = true; color = "#7c2d2d"; }
         lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.3; }
-        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.45; shaft_length = 4.5; }
+        sun_shaft { enabled = true; sun_dir = (-0.42, -0.72, -0.55); intensity = 0.45; shaft_length = 4.5; }
       }
     }
     facade inn_hall.south {

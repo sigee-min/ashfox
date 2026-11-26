@@ -2,6 +2,7 @@ import { compareText } from '@ashfox/internal-contracts';
 import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
 import type { StructureGrid } from '../contract';
 import { encodeStructureNbt } from '../nbt';
+import { resolvePlatformRect } from './volume';
 import {
   MIN_VANILLA_HEADROOM_BLOCKS,
   SUBVOXEL_UNITS_PER_BLOCK,
@@ -174,13 +175,13 @@ const applyOpeningsAndClearance = (c: LowerCtx): void => {
 };
 
 const applyPlatformVolume = (c: LowerCtx, vol: PlatformVolumeSpec): void => {
-  if (vol.kind === 'sunken' || c.h < MIN_VANILLA_HEADROOM_BLOCKS + 3) return;
-  const x0 = vol.from ? vol.from[0] - c.off[0] : 1;
-  const z0 = vol.from ? vol.from[1] - c.off[2] : 1;
-  const x1 = Math.min(c.w - 2, x0 + vol.size[0] - 1);
-  const z1 = Math.min(c.d - 2, z0 + vol.size[1] - 1);
+  if (vol.kind !== 'sunken' && c.h < MIN_VANILLA_HEADROOM_BLOCKS + 3) return;
+  const rect = resolvePlatformRect(c.room, vol);
+  const [x0, z0] = [rect.ox - c.off[0], rect.oz - c.off[2]];
+  const [x1, z1] = [Math.min(c.w - 2, x0 + rect.w - 1), Math.min(c.d - 2, z0 + rect.d - 1)];
+  const ly = vol.kind === 'sunken' ? 0 : 1;
   for (let lz = Math.max(1, z0); lz <= z1; lz += 1) {
-    for (let lx = Math.max(1, x0); lx <= x1; lx += 1) setCell(c, lx, 1, lz, c.pal.slab);
+    for (let lx = Math.max(1, x0); lx <= x1; lx += 1) setCell(c, lx, ly, lz, c.pal.slab);
   }
 };
 
@@ -354,11 +355,8 @@ const pruneFloatingCell = (c: LowerCtx, lx: number, ly: number, lz: number): boo
 const runFloatingPrunePass = (c: LowerCtx): boolean => {
   let changed = false;
   for (let ly = 1; ly < c.h - 1; ly += 1) {
-    for (let lz = 1; lz < c.d - 1; lz += 1) {
-      for (let lx = 1; lx < c.w - 1; lx += 1) {
-        if (pruneFloatingCell(c, lx, ly, lz)) changed = true;
-      }
-    }
+    for (let lz = 1; lz < c.d - 1; lz += 1)
+      for (let lx = 1; lx < c.w - 1; lx += 1) if (pruneFloatingCell(c, lx, ly, lz)) changed = true;
   }
   return changed;
 };
@@ -366,26 +364,22 @@ const runFloatingPrunePass = (c: LowerCtx): boolean => {
 const columnHeadroom = (c: LowerCtx, lx: number, lz: number): number => {
   if (!isPassableVanillaState(c.cells[idxOf(c, lx, 1, lz)]!)) return c.h;
   let run = 0;
-  for (let ly = 1; ly < c.h; ly += 1) {
-    if (!isPassableVanillaState(c.cells[idxOf(c, lx, ly, lz)]!)) break;
+  for (let ly = 1; ly < c.h && isPassableVanillaState(c.cells[idxOf(c, lx, ly, lz)]!); ly += 1)
     run += 1;
-  }
   return run;
 };
 
 const computeMinHeadroom = (c: LowerCtx): number => {
   let minHead = c.h;
-  for (let lz = 1; lz < c.d - 1; lz += 1) {
+  for (let lz = 1; lz < c.d - 1; lz += 1)
     for (let lx = 1; lx < c.w - 1; lx += 1) minHead = Math.min(minHead, columnHeadroom(c, lx, lz));
-  }
   return minHead;
 };
 
 const countBlockedProtected = (c: LowerCtx): number => {
   let blocked = 0;
-  for (let i = 0; i < c.cells.length; i += 1) {
+  for (let i = 0; i < c.cells.length; i += 1)
     if (c.protectedClear[i] && !isPassableVanillaState(c.cells[i]!)) blocked += 1;
-  }
   return blocked;
 };
 
@@ -400,13 +394,10 @@ const applyVolumes = (ctx: LowerCtx, room: InteriorRoomInput): void => {
 
 const collectLoweredBlocks = (ctx: LowerCtx): readonly VanillaNbtBlockCell[] => {
   const blocks: VanillaNbtBlockCell[] = [];
-  for (let ly = 0; ly < ctx.h; ly += 1) {
-    for (let lz = 0; lz < ctx.d; lz += 1) {
-      for (let lx = 0; lx < ctx.w; lx += 1) {
+  for (let ly = 0; ly < ctx.h; ly += 1)
+    for (let lz = 0; lz < ctx.d; lz += 1)
+      for (let lx = 0; lx < ctx.w; lx += 1)
         blocks.push({ pos: [lx, ly, lz], state: ctx.cells[idxOf(ctx, lx, ly, lz)]! });
-      }
-    }
-  }
   return blocks;
 };
 

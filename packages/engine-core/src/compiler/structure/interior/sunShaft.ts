@@ -462,11 +462,13 @@ export const emitPlayableInteriorMeta = (
   room: InteriorRoomInput,
   ir: InteriorSubVoxelIR,
   lights: readonly PlayableLight[] = [],
+  resolvedHooks?: readonly PlayableInteriorHook[],
 ): PlayableInteriorMeta => {
   const hooks: PlayableInteriorHook[] = [];
   emitDoorHooks(room, hooks);
   emitPartitionHooks(room, hooks);
-  emitPropAndStoryHooks(room, hooks);
+  if (resolvedHooks) hooks.push(...resolvedHooks);
+  else emitPropAndStoryHooks(room, hooks);
   emitLightToggleHooks(ir, lights, hooks);
   emitAudioHooks(room, hooks);
   const w = Math.max(1, room.bounds_to[0] - room.bounds_from[0] + 1);

@@ -159,7 +159,7 @@ const run = async (): Promise<void> => {
   const glb = glbFile.data;
   const jsonLen = Buffer.from(glb).readUInt32LE(12);
   const gltf = JSON.parse(Buffer.from(glb.subarray(20, 20 + jsonLen)).toString('utf8')) as {
-    nodes?: { name?: string }[];
+    nodes?: { name?: string; extras?: { ashfox?: { hook?: { schema?: string } } } }[];
     extras?: { ashfox?: { hooks?: { anchors?: { schema?: string }[] } } };
     materials?: {
       alphaMode?: string;
@@ -169,7 +169,9 @@ const run = async (): Promise<void> => {
     }[];
   };
   assert.ok(
-    gltf.nodes?.some((n) => n.name?.startsWith('anchor_sit_')),
+    gltf.nodes?.some(
+      (n) => n.name?.startsWith('anchor_') && n.extras?.ashfox?.hook?.schema === 'std.sit',
+    ),
     'Expected glTF anchor_* Empty Node for interior sit hook',
   );
   assert.ok(
@@ -224,6 +226,43 @@ structure test_compound {
   assert.equal(compProduct.grid.interiors![0]!.room_id, 'hall_a.hall');
   assert.ok((compProduct.playableMeta.interiors?.length ?? 0) === 1);
   assert.ok(compProduct.hooks?.anchors.some((a) => a.id.startsWith('hall_a.')));
+
+  // Verify nudged props emit one resolved station hook (no stale duplicate) and sunken cuts voxel floor.
+  const dedupSrc = `ashfox 1
+structure dedup_sunken {
+  size = (11b, 10b, 11b);
+  palette { stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  floor f { y = 0b; height = 5b;
+    room r { from = (1b, 1b); size = (9b, 9b); kind = living; floor = oak; wall = stone; ceiling = oak;
+      interior {
+        dna { arch = rustic; }
+        sunken pit { from = (4, 4); size = (2, 2); height = -0.25; }
+        centerpiece { on = center; low_table tbl_a { size = (1, 1); } low_table tbl_b { size = (1, 1); } }
+      }
+    }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  }
+}`;
+  const dedupUnits = new Map<string, StructureSourceUnit>([
+    ['d.ashfox', parseStructureSource(dedupSrc, 'd.ashfox')],
+  ]);
+  const dedupProd = compileStructureUnits('d.ashfox', dedupUnits, {}, rel);
+  const stationHooks = dedupProd.playableMeta.interiors![0]!.hooks.filter(
+    (h) => h.kind === 'station',
+  );
+  assert.equal(
+    stationHooks.length,
+    2,
+    `Expected 2 unique station hooks, got ${stationHooks.length}`,
+  );
+  assert.notEqual(
+    `${stationHooks[0]!.position[0]},${stationHooks[0]!.position[2]}`,
+    `${stationHooks[1]!.position[0]},${stationHooks[1]!.position[2]}`,
+    'Resolved table hooks must occupy distinct positions',
+  );
+  const [dw, , dd] = dedupProd.grid.size;
+  const pitState = dedupProd.grid.states[dedupProd.grid.voxels[(0 * dd + 4) * dw + 4]!]!;
+  assert.equal(pitState, 'minecraft:oak_slab[type=bottom]');
   console.log('ashfox interior wiring integration tests ok');
 };
 

@@ -31,6 +31,7 @@ export interface InteriorVolumeResult {
   readonly zone_surfaces: readonly VolumeZoneSurface[];
   readonly alcove_carves: readonly IntVec3[];
   readonly doorway_clearances: readonly IntVec3[];
+  readonly sunken_cells: readonly IntVec3[];
 }
 
 interface VolCtx {
@@ -40,6 +41,7 @@ interface VolCtx {
   readonly zones: VolumeZoneSurface[];
   readonly carves: IntVec3[];
   readonly doorways: IntVec3[];
+  readonly sunken: IntVec3[];
 }
 
 type B6 = readonly [number, number, number, number, number, number];
@@ -119,9 +121,10 @@ const resolveAnchor = (
   d: number,
 ): IntVec2 => {
   const [cx, cz] = [Math.floor((ix0 + ix1 - w + 1) / 2), Math.floor((iz0 + iz1 - d + 1) / 2)];
-  const x = WEST.has(anchor) ? ix0 : EAST.has(anchor) ? ix1 - w + 1 : cx;
-  const z = NORTH.has(anchor) ? iz0 : SOUTH.has(anchor) ? iz1 - d + 1 : cz;
-  return [Math.max(ix0, x), Math.max(iz0, z)];
+  return [
+    Math.max(ix0, WEST.has(anchor) ? ix0 : EAST.has(anchor) ? ix1 - w + 1 : cx),
+    Math.max(iz0, NORTH.has(anchor) ? iz0 : SOUTH.has(anchor) ? iz1 - d + 1 : cz),
+  ];
 };
 
 const emitRailing = (
@@ -154,13 +157,25 @@ const stepBoundsFor = (
   px1: number,
   pz1: number,
 ): readonly [number, number, number, number] => {
-  const m: Record<CardinalFacing, readonly [number, number, number, number]> = {
-    south: [px0 + 4, pz1, px1 - 4, pz1 + 6],
-    north: [px0 + 4, pz0 - 6, px1 - 4, pz0],
-    east: [px1, pz0 + 4, px1 + 6, pz1 - 4],
-    west: [px0 - 6, pz0 + 4, px0, pz1 - 4],
-  };
-  return m[sf];
+  if (sf === 'south') return [px0 + 4, pz1, px1 - 4, pz1 + 6];
+  if (sf === 'north') return [px0 + 4, pz0 - 6, px1 - 4, pz0];
+  return sf === 'east' ? [px1, pz0 + 4, px1 + 6, pz1 - 4] : [px0 - 6, pz0 + 4, px0, pz1 - 4];
+};
+
+/** Resolves anchored block footprint [ox, oz, w, d] for a platform or sunken volume inside room bounds. */
+export const resolvePlatformRect = (
+  room: Pick<InteriorRoomInput, 'bounds_from' | 'bounds_to'>,
+  spec: PlatformVolumeSpec,
+): { readonly ox: number; readonly oz: number; readonly w: number; readonly d: number } => {
+  const [bf, bt] = [room.bounds_from, room.bounds_to];
+  const [w, d] = [
+    Math.max(1, Math.min(spec.size[0], bt[0] - bf[0] - 1)),
+    Math.max(1, Math.min(spec.size[1], bt[2] - bf[2] - 1)),
+  ];
+  const [ox, oz] =
+    spec.from ??
+    resolveAnchor(spec.on ?? 'north', bf[0] + 1, bt[0] - 1, bf[2] + 1, bt[2] - 1, w, d);
+  return { ox, oz, w, d };
 };
 
 const emitPlatformBoxes = (
@@ -183,6 +198,13 @@ const emitPlatformBoxes = (
   emit('pt', [px0 + 2, surfY - 1, pz0 + 2, px1 - 2, surfY, pz1 - 2], 'volume_sunken');
   emit('rn', [px0, surfY, pz0, px1, fy, pz0 + 2], 'volume_sunken_rim', c.tile);
   emit('rs', [px0, surfY, pz1 - 2, px1, fy, pz1], 'volume_sunken_rim', c.tile);
+  emit('rw', [px0, surfY, pz0 + 2, px0 + 2, fy, pz1 - 2], 'volume_sunken_rim', c.tile);
+  emit('re', [px1 - 2, surfY, pz0 + 2, px1, fy, pz1 - 2], 'volume_sunken_rim', c.tile);
+};
+
+const recordSunkenCells = (c: VolCtx, ox: number, oz: number, w: number, d: number): void => {
+  for (let z = oz; z < oz + d; z += 1)
+    for (let x = ox; x < ox + w; x += 1) c.sunken.push([x, c.room.bounds_from[1], z]);
 };
 
 const emitPlatformOrSunken = (c: VolCtx, spec: PlatformVolumeSpec): void => {
@@ -197,11 +219,8 @@ const emitPlatformOrSunken = (c: VolCtx, spec: PlatformVolumeSpec): void => {
       actual: String(spec.height_16),
     });
   }
-  const [bf, bt] = [c.room.bounds_from, c.room.bounds_to];
-  const [ix0, iy0, iz0] = [bf[0] + 1, bf[1] + 1, bf[2] + 1];
-  const [w, d] = [Math.min(spec.size[0], bt[0] - ix0), Math.min(spec.size[1], bt[2] - iz0)];
-  const [ox, oz] =
-    spec.from ?? resolveAnchor(spec.on ?? 'north', ix0, bt[0] - 1, iz0, bt[2] - 1, w, d);
+  const iy0 = c.room.bounds_from[1] + 1;
+  const { ox, oz, w, d } = resolvePlatformRect(c.room, spec);
   const [fy, surfY] = [iy0 * U, iy0 * U + spec.height_16];
   const rect: readonly [number, number, number, number] = [
     ox * U,
@@ -210,6 +229,7 @@ const emitPlatformOrSunken = (c: VolCtx, spec: PlatformVolumeSpec): void => {
     (oz + d) * U,
   ];
   emitPlatformBoxes(c, spec, rect, fy, surfY, spec.trim_tile ?? c.tile);
+  if (spec.kind === 'sunken') recordSunkenCells(c, ox, oz, w, d);
   if (spec.railing && spec.railing !== 'none')
     emitRailing(
       c,
@@ -458,6 +478,7 @@ export const buildSculptedVolumes = (room: InteriorRoomInput): InteriorVolumeRes
     zones: [],
     carves: [],
     doorways: [],
+    sunken: [],
   };
   for (const vol of room.volumes) {
     if (vol.kind === 'platform' || vol.kind === 'sunken') emitPlatformOrSunken(c, vol);
@@ -471,5 +492,6 @@ export const buildSculptedVolumes = (room: InteriorRoomInput): InteriorVolumeRes
     zone_surfaces: c.zones,
     alcove_carves: c.carves,
     doorway_clearances: c.doorways,
+    sunken_cells: c.sunken,
   };
 };

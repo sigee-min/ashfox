@@ -82,6 +82,7 @@ structure ryokan_pavilion {
         platform tatami_step {
           on = east; size = (4, 2); height = 0.25; step_facing = west;
           low_table engawa_table { size = (2, 1); }
+          cushion { on = west; }
           story tea_ceremony { on = engawa_table; }
         }
         alcove shrine_alcove { kind = tokonoma; wall = east; width = 2; height = 2; }
@@ -90,7 +91,7 @@ structure ryokan_pavilion {
           cabinet { size = (2, 1); }
         }
         lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.45; }
-        sun_shaft { enabled = true; sun_dir = (0.3, -0.75, 0.58); intensity = 0.55; shaft_length = 4.5; }
+        sun_shaft { enabled = true; sun_dir = (0.3, -0.75, -0.58); intensity = 0.55; shaft_length = 4.5; }
       }
     }
     facade engawa.south {

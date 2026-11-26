@@ -1,5 +1,6 @@
 import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
 import type { StructureRoomMeta } from '../contract';
+import { resolvePlatformRect } from './volume';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
   type BaseboardStyle,
@@ -243,16 +244,28 @@ const emitFloorCell = (
   push('c', [x0, fy - 0.5, z0, x0 + 16, fy + 0.25, z0 + 16], tile, `floor_${pat}`);
 };
 
+const collectSunkenMask = (input: InteriorRoomInput): ReadonlySet<string> => {
+  const cut = new Set<string>();
+  for (const vol of input.volumes) {
+    if (vol.kind !== 'sunken') continue;
+    const { ox, oz, w, d } = resolvePlatformRect(input, vol);
+    for (let z = oz; z < oz + d; z += 1) for (let x = ox; x < ox + w; x += 1) cut.add(`${x},${z}`);
+  }
+  return cut;
+};
+
 const emitFloorPattern = (
   from: IntVec3,
   to: IntVec3,
   pat: FloorPatternStyle,
   p: TileTuple,
+  cutMask: ReadonlySet<string>,
 ): readonly SubVoxelBoxIR[] => {
   const out: SubVoxelBoxIR[] = [];
   const fy = (from[1] + 1) * U;
   for (let z = from[2] + 1; z <= to[2] - 1; z += 1) {
-    for (let x = from[0] + 1; x <= to[0] - 1; x += 1) emitFloorCell(x, z, fy, pat, p, out);
+    for (let x = from[0] + 1; x <= to[0] - 1; x += 1)
+      if (!cutMask.has(`${x},${z}`)) emitFloorCell(x, z, fy, pat, p, out);
   }
   return out;
 };
@@ -333,14 +346,11 @@ const emitWainscot = (
   p: TileTuple,
 ): readonly SubVoxelBoxIR[] => {
   if (style === 'none') return [];
-  const [fy, cy] = [(fromY + 1) * U, toY * U];
-  const out: SubVoxelBoxIR[] = [];
-  for (const wc of walls) {
-    for (let u = wc.uMin; u <= wc.uMax; u += 1) {
+  const [fy, cy, out] = [(fromY + 1) * U, toY * U, [] as SubVoxelBoxIR[]];
+  for (const wc of walls)
+    for (let u = wc.uMin; u <= wc.uMax; u += 1)
       if (!isOpeningAt(openings, wc.wall, u, fromY + 1, fromY + 2))
         emitWainscotCell(wc, u, fy, baseH, cy, style, p, out);
-    }
-  }
   return out;
 };
 
@@ -398,12 +408,10 @@ const emitBaseAndMold = (
   toY: number,
   arch: InteriorArchitectureSpec,
   p: TileTuple,
-): readonly SubVoxelBoxIR[] => {
-  const bands = [baseboardBand(fromY, arch, p), moldingBand(toY, arch, p)].filter(
-    (b): b is BandTuple => b !== null,
-  );
-  return bands.flatMap((b) => emitPerimeterBand(walls, ops, b));
-};
+): readonly SubVoxelBoxIR[] =>
+  [baseboardBand(fromY, arch, p), moldingBand(toY, arch, p)]
+    .filter((b): b is BandTuple => b !== null)
+    .flatMap((b) => emitPerimeterBand(walls, ops, b));
 
 const emitCeilingRibs = (
   from: IntVec3,
@@ -464,7 +472,7 @@ export const buildInteriorShell = (
   const baseH = arch.baseboard === 'stone_plinth' ? 4 : arch.baseboard === 'led_strip' ? 1.5 : 2;
   const [from, to, ops] = [input.bounds_from, input.bounds_to, input.openings];
   const boxes: SubVoxelBoxIR[] = [
-    ...emitFloorPattern(from, to, arch.floor_pattern, p),
+    ...emitFloorPattern(from, to, arch.floor_pattern, p, collectSunkenMask(input)),
     ...emitBaseAndMold(walls, ops, from[1], to[1], arch, p),
     ...emitWainscot(walls, ops, from[1], to[1], baseH, arch.wainscot, p),
     ...emitCeiling(from, to, arch.ceiling, p),

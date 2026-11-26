@@ -41,6 +41,7 @@ export interface SolvedRoomLayout {
   readonly hooks: readonly PlayableInteriorHook[];
   readonly clearance: ClearPathReport;
   readonly placed_props: readonly ResolvedPropPlacement[];
+  readonly resolved_room: InteriorRoomInput;
 }
 
 const DIRS_4: readonly (readonly [number, number])[] = [
@@ -49,14 +50,9 @@ const DIRS_4: readonly (readonly [number, number])[] = [
   [0, 1],
   [0, -1],
 ];
-
-const TALL_WALL_PROPS = new Set<InteriorPropKind>([
-  'shelving',
-  'cabinet',
-  'fireplace',
-  'barrel_rack',
-  'display_case',
-]);
+const TALL_WALL_PROPS = new Set<InteriorPropKind>(
+  'shelving,cabinet,fireplace,barrel_rack,display_case'.split(',') as InteriorPropKind[],
+);
 
 const cellKey = (x: number, z: number): string => `${x},${z}`;
 
@@ -80,15 +76,13 @@ const collectDoorClearZones = (openings: readonly InteriorOpeningSpan[]): Readon
   return zones;
 };
 
-const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): ReadonlySet<string> => {
-  const zones = new Set<string>();
-  for (const op of openings) {
-    if (op.kind !== 'window' && op.kind !== 'bay_window') continue;
-    const [ix, , iz] = openingInwardCell(op);
-    zones.add(cellKey(ix, iz));
-  }
-  return zones;
-};
+const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): ReadonlySet<string> =>
+  new Set(
+    openings
+      .filter((o) => o.kind === 'window' || o.kind === 'bay_window')
+      .map((o) => openingInwardCell(o))
+      .map(([x, , z]) => cellKey(x, z)),
+  );
 
 const collectStairCells = (room: InteriorRoomInput): ReadonlySet<string> => {
   const out = new Set<string>();
@@ -120,12 +114,20 @@ const addPartitionCells = (vol: PartitionVolumeSpec, blocked: Set<string>): void
   }
 };
 
+const NON_WALK_OBSTACLE_PREFIXES =
+  'drapery:,floor_,baseboard_,wainscot_,molding_,volume_platform,volume_step,volume_sunken,window_pane_,partition_door,railing_'.split(
+    ',',
+  );
+
+const isNonWalkObstacle = (tag: string): boolean =>
+  NON_WALK_OBSTACLE_PREFIXES.some((p) => tag.startsWith(p));
+
 const boxHeightClearance = (
   box: SubVoxelBoxIR,
   floorY16: number,
 ): { blocksWalk: boolean; ceilingTop16: number | null } => {
   const tag = box.semantic_tag ?? '';
-  if (tag.startsWith('drapery:')) return { blocksWalk: false, ceilingTop16: null };
+  if (isNonWalkObstacle(tag)) return { blocksWalk: false, ceilingTop16: null };
   const relBot = box.from_16[1] - floorY16;
   const relTop = box.to_16[1] - floorY16;
   if (relTop <= 3.5) return { blocksWalk: false, ceilingTop16: null };
@@ -396,13 +398,36 @@ const findCandidatePlacement = (
   return candidates.length > 0 ? [candidates[0]![1], candidates[0]![2]] : [sx, sz];
 };
 
+const addStructuralBoxCells = (box: SubVoxelBoxIR, occupied: Set<string>): void => {
+  const bx0 = Math.floor(box.from_16[0] / SUBVOXEL_UNITS_PER_BLOCK);
+  const bx1 = Math.floor((box.to_16[0] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
+  const bz0 = Math.floor(box.from_16[2] / SUBVOXEL_UNITS_PER_BLOCK);
+  const bz1 = Math.floor((box.to_16[2] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
+  for (let z = bz0; z <= bz1; z += 1) {
+    for (let x = bx0; x <= bx1; x += 1) occupied.add(cellKey(x, z));
+  }
+};
+
+const collectStructuralOccupied = (
+  room: InteriorRoomInput,
+  structuralBoxes: readonly SubVoxelBoxIR[],
+): Set<string> => {
+  const occupied = new Set<string>(collectPartitionBlocked(room));
+  const floorY16 = (room.bounds_from[1] + 1) * SUBVOXEL_UNITS_PER_BLOCK;
+  for (const box of structuralBoxes) {
+    if (boxHeightClearance(box, floorY16).blocksWalk) addStructuralBoxCells(box, occupied);
+  }
+  return occupied;
+};
+
 const resolvePropSpecs = (
   room: InteriorRoomInput,
+  structuralBoxes: readonly SubVoxelBoxIR[] = [],
 ): {
   resolvedSpecs: InteriorPropSpec[];
   placements: Omit<ResolvedPropPlacement, 'surface_y_16'>[];
 } => {
-  const occupied = new Set<string>(collectPartitionBlocked(room));
+  const occupied = collectStructuralOccupied(room, structuralBoxes);
   const doorClear = collectDoorClearZones(room.openings);
   const winClear = collectWindowZones(room.openings);
   const stairCells = collectStairCells(room);
@@ -421,9 +446,28 @@ const resolvePropSpecs = (
   return { resolvedSpecs, placements };
 };
 
+const resolveStoryForPlacement = (
+  story: InteriorStorySpec,
+  placementById: ReadonlyMap<string, Omit<ResolvedPropPlacement, 'surface_y_16'>>,
+  surfaceMap: ReadonlyMap<string, number>,
+): InteriorStorySpec => {
+  const p = placementById.get(story.on_target);
+  const dx16 = p ? (p.resolved_at[0] - p.original_at[0]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
+  const dz16 = p ? (p.resolved_at[2] - p.original_at[2]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
+  const targetSurface = surfaceMap.get(story.on_target);
+  return {
+    ...story,
+    center_xz_16: [story.center_xz_16[0] + dx16, story.center_xz_16[1] + dz16],
+    ...(targetSurface !== undefined ? { surface_y_16: targetSurface } : {}),
+  };
+};
+
 /** Deterministically resolves prop placements, seats stories, compiles drapery, and validates BFS clear_path. */
-export const solveInteriorLayout = (room: InteriorRoomInput): SolvedRoomLayout => {
-  const { resolvedSpecs, placements } = resolvePropSpecs(room);
+export const solveInteriorLayout = (
+  room: InteriorRoomInput,
+  structuralBoxes: readonly SubVoxelBoxIR[] = [],
+): SolvedRoomLayout => {
+  const { resolvedSpecs, placements } = resolvePropSpecs(room, structuralBoxes);
   const compiledProps = compileInteriorProps(resolvedSpecs, room.style_dna, room.seed);
   const placed_props: ResolvedPropPlacement[] = placements.map((p) => ({
     ...p,
@@ -431,28 +475,23 @@ export const solveInteriorLayout = (room: InteriorRoomInput): SolvedRoomLayout =
   }));
   const boxes: SubVoxelBoxIR[] = [...compiledProps.boxes];
   const hooks: PlayableInteriorHook[] = [...compiledProps.hooks];
-  const placementById = new Map(placements.map((p) => [p.id, p]));
+  const resolvedStories: InteriorStorySpec[] = [];
+  const pMap = new Map(placements.map((p) => [p.id, p]));
   for (const story of room.stories ?? []) {
-    const p = placementById.get(story.on_target);
-    const dx16 = p ? (p.resolved_at[0] - p.original_at[0]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
-    const dz16 = p ? (p.resolved_at[2] - p.original_at[2]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
-    const targetSurface = compiledProps.surface_y_map.get(story.on_target);
-    const resolvedStory: InteriorStorySpec = {
-      ...story,
-      center_xz_16: [story.center_xz_16[0] + dx16, story.center_xz_16[1] + dz16],
-      ...(targetSurface !== undefined ? { surface_y_16: targetSurface } : {}),
-    };
+    const resolvedStory = resolveStoryForPlacement(story, pMap, compiledProps.surface_y_map);
+    resolvedStories.push(resolvedStory);
     const res = compileStoryVignette(resolvedStory, room.style_dna, room.seed);
     boxes.push(...res.boxes);
     hooks.push(...res.hooks);
   }
   boxes.push(...compileAllDraperies(room.draperies ?? []));
-  const clearance = validateClearPath(room, boxes, hooks);
+  const clearance = validateClearPath(room, [...structuralBoxes, ...boxes], hooks);
   return {
     boxes,
     custom_mounts: compiledProps.custom_mounts,
     hooks,
     clearance,
     placed_props,
+    resolved_room: { ...room, props: resolvedSpecs, stories: resolvedStories },
   };
 };
