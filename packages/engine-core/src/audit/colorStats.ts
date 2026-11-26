@@ -1,3 +1,4 @@
+import { srgbLuma } from '../textures/color';
 import { ramp } from './contract';
 
 export interface ColorStatsAcc {
@@ -45,7 +46,7 @@ export const recordColorPixel = (
   isEmissive: boolean,
 ): void => {
   acc.totalOpaque += 1;
-  const luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const luma = srgbLuma(r, g, b);
   if (luma < 0.14) acc.darkCrushed += 1;
   if (isEmissive) return;
   const { h, s, l } = rgbToHsl(r, g, b);

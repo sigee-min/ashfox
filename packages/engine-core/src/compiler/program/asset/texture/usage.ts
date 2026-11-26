@@ -50,7 +50,9 @@ export const compareUsage = (left: CollectedUsage, right: CollectedUsage): numbe
   compareText(left.chart, right.chart) ||
   compareText(left.path, right.path) ||
   left.usage.span.start.offset - right.usage.span.start.offset ||
-  JSON.stringify(left.usage.shape).localeCompare(JSON.stringify(right.usage.shape));
+  JSON.stringify(left.usage.shape) === JSON.stringify(right.usage.shape)
+    ? 0
+    : compareText(JSON.stringify(left.usage.shape), JSON.stringify(right.usage.shape));
 
 export const groupUsagesBySurface = (
   usages: readonly CollectedUsage[],

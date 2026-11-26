@@ -1,5 +1,9 @@
 import { sha256ByteDigest } from '../../provenance/digest';
-import { assertCanonicalTextureRaster, type CanonicalTextureRaster } from './raster';
+import {
+  assertCanonicalTextureRaster,
+  isCanonicalByteView,
+  type CanonicalTextureRaster,
+} from './raster';
 
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
   let crc = value;
@@ -74,10 +78,27 @@ const writeStoredDeflateIdat = (
   endPngChunk(bytes, view, 33, compressedLength);
 };
 
-/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
- * exact final buffer. No full-size scanline, compressed or chunk copies. */
-export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
-  assertCanonicalTextureRaster(raster);
+interface CachedPngEntry {
+  readonly bytes: Uint8Array;
+  digest: string | undefined;
+}
+
+const pngCache = new WeakMap<CanonicalTextureRaster, CachedPngEntry>();
+
+const isCacheableCanonicalRaster = (raster: CanonicalTextureRaster): boolean =>
+  raster !== null &&
+  typeof raster === 'object' &&
+  Object.isFrozen(raster) &&
+  Number.isSafeInteger(raster.width) &&
+  Number.isSafeInteger(raster.height) &&
+  raster.width > 0 &&
+  raster.height > 0 &&
+  raster.rgba !== null &&
+  typeof raster.rgba === 'object' &&
+  isCanonicalByteView(raster.rgba) &&
+  raster.rgba.length === raster.width * raster.height * 4;
+
+const encodePngRaw = (raster: CanonicalTextureRaster): Uint8Array => {
   const stride = raster.width * 4 + 1;
   const scanlineLength = stride * raster.height;
   const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
@@ -93,6 +114,54 @@ export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array =
   beginPngChunk(bytes, view, 45 + compressedLength, 'IEND', 0);
   endPngChunk(bytes, view, 45 + compressedLength, 0);
   return bytes;
+};
+
+const getOrEncodeCachedPng = (raster: CanonicalTextureRaster): CachedPngEntry => {
+  let entry = pngCache.get(raster);
+  if (entry === undefined) {
+    assertCanonicalTextureRaster(raster);
+    entry = { bytes: encodePngRaw(raster), digest: undefined };
+    pngCache.set(raster, entry);
+  }
+  return entry;
+};
+
+/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
+ * exact final buffer. No full-size scanline, compressed or chunk copies. */
+export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
+  if (isCacheableCanonicalRaster(raster)) {
+    return getOrEncodeCachedPng(raster).bytes.slice();
+  }
+  assertCanonicalTextureRaster(raster);
+  return encodePngRaw(raster);
+};
+
+/** Encode canonical PNG once and return non-aliasing bytes + SHA-256 digest. */
+export const encodeCanonicalPngWithDigest = (
+  raster: CanonicalTextureRaster,
+): Readonly<{ readonly bytes: Uint8Array; readonly digest: string }> => {
+  if (isCacheableCanonicalRaster(raster)) {
+    const entry = getOrEncodeCachedPng(raster);
+    if (entry.digest === undefined) entry.digest = sha256ByteDigest(entry.bytes);
+    return { bytes: entry.bytes.slice(), digest: entry.digest };
+  }
+  assertCanonicalTextureRaster(raster);
+  const bytes = encodePngRaw(raster);
+  return { bytes, digest: sha256ByteDigest(bytes) };
+};
+
+/** Encode canonical PNG once and return byte length + SHA-256 digest without copying bytes. */
+export const encodeCanonicalPngSummary = (
+  raster: CanonicalTextureRaster,
+): Readonly<{ readonly byteLength: number; readonly contentHash: string }> => {
+  if (isCacheableCanonicalRaster(raster)) {
+    const entry = getOrEncodeCachedPng(raster);
+    if (entry.digest === undefined) entry.digest = sha256ByteDigest(entry.bytes);
+    return { byteLength: entry.bytes.length, contentHash: entry.digest };
+  }
+  assertCanonicalTextureRaster(raster);
+  const bytes = encodePngRaw(raster);
+  return { byteLength: bytes.length, contentHash: sha256ByteDigest(bytes) };
 };
 
 export const canonicalRgbaDigest = (raster: CanonicalTextureRaster): string => {
