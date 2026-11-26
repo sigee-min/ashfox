@@ -84,14 +84,21 @@ const isVisibleNode = (
 
 export const collectVisibleNodeIds = (scene: SceneGraph): ReadonlySet<string> => {
   const memo = new Map<string, boolean>();
+  const visiting = new Set<string>();
   const visible = new Set<string>();
   for (const id of Object.keys(scene.nodes)) {
-    if (isVisibleNode(scene.nodes, id, memo, new Set())) visible.add(id);
+    if (isVisibleNode(scene.nodes, id, memo, visiting)) visible.add(id);
   }
   return visible;
 };
 
-const boneChain = (nodes: Readonly<Record<string, SceneNode>>, node: SceneNode): SceneNode[] => {
+const boneChain = (
+  nodes: Readonly<Record<string, SceneNode>>,
+  node: SceneNode,
+  cache: Map<string, readonly SceneNode[]>,
+): readonly SceneNode[] => {
+  const cached = cache.get(node.id);
+  if (cached !== undefined) return cached;
   const chain: SceneNode[] = [node];
   const seen = new Set<string>([node.id]);
   let parentId = node.parentId;
@@ -105,6 +112,7 @@ const boneChain = (nodes: Readonly<Record<string, SceneNode>>, node: SceneNode):
     chain.push(parent);
     parentId = parent.parentId;
   }
+  cache.set(node.id, chain);
   return chain;
 };
 
@@ -144,36 +152,72 @@ const planeLocalPoint = (node: PlaneNode, u: number, v: number, n: number): Vec3
 
 const hasAngledRotation = (rot: Vec3): boolean => rot.some((deg) => Math.abs(deg) >= 2.5);
 
-const faceMaskCoversUv = (
-  face: CubeFace,
-  masks: readonly {
-    readonly x: number;
-    readonly y: number;
-    readonly width: number;
-    readonly height: number;
-    readonly bits: string;
-  }[],
-): boolean => {
+interface TransparentMaskSpan {
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
+interface TextureOpacityInfo {
+  readonly detailsOpaque: boolean;
+  readonly transparentMasks: readonly TransparentMaskSpan[];
+}
+
+const buildTextureOpacityCache = (
+  textures: Readonly<Record<string, TextureAsset>>,
+): Map<string, TextureOpacityInfo> => {
+  const cache = new Map<string, TextureOpacityInfo>();
+  for (const [id, tex] of Object.entries(textures)) {
+    if (
+      tex.renderMode !== 'default' ||
+      tex.raster === undefined ||
+      tex.raster.backgroundAlpha !== 255
+    ) {
+      cache.set(id, { detailsOpaque: false, transparentMasks: [] });
+      continue;
+    }
+    const detailsOpaque = tex.raster.canvasDetails.every((d) => d.alpha === 255);
+    if (!detailsOpaque) {
+      cache.set(id, { detailsOpaque: false, transparentMasks: [] });
+      continue;
+    }
+    const transparentMasks: TransparentMaskSpan[] = [];
+    const masks = tex.raster.alphaMasks ?? [];
+    for (let i = 0; i < masks.length; i += 1) {
+      const m = masks[i]!;
+      if (m.bits.includes('0')) {
+        transparentMasks.push({ x0: m.x, y0: m.y, x1: m.x + m.width, y1: m.y + m.height });
+      }
+    }
+    cache.set(id, { detailsOpaque: true, transparentMasks });
+  }
+  return cache;
+};
+
+const faceMaskCoversUv = (face: CubeFace, masks: readonly TransparentMaskSpan[]): boolean => {
+  if (masks.length === 0) return false;
   const uv = face.uv;
   if (!uv) return false;
   const x0 = Math.min(uv[0], uv[2]);
   const x1 = Math.max(uv[0], uv[2]);
   const y0 = Math.min(uv[1], uv[3]);
   const y1 = Math.max(uv[1], uv[3]);
-  return masks.some(
-    (m) =>
-      m.bits.includes('0') && m.x < x1 && m.x + m.width > x0 && m.y < y1 && m.y + m.height > y0,
-  );
+  for (let i = 0; i < masks.length; i += 1) {
+    const m = masks[i]!;
+    if (m.x0 < x1 && m.x1 > x0 && m.y0 < y1 && m.y1 > y0) return true;
+  }
+  return false;
 };
 
-const isOpaqueFace = (face: CubeFace, tex: TextureAsset | undefined): boolean => {
-  if (!face.enabled || face.textureId === null || tex === undefined || tex.raster === undefined) {
-    return false;
-  }
-  if (tex.renderMode !== 'default' || tex.raster.backgroundAlpha !== 255) return false;
-  if (!tex.raster.canvasDetails.every((d) => d.alpha === 255)) return false;
-  const masks = tex.raster.alphaMasks ?? [];
-  return !faceMaskCoversUv(face, masks);
+const isOpaqueFace = (
+  face: CubeFace,
+  opacityCache: ReadonlyMap<string, TextureOpacityInfo>,
+): boolean => {
+  if (!face.enabled || face.textureId === null) return false;
+  const info = opacityCache.get(face.textureId);
+  if (info === undefined || !info.detailsOpaque) return false;
+  return !faceMaskCoversUv(face, info.transparentMasks);
 };
 
 const buildObbFromBasisPoints = (
@@ -238,7 +282,7 @@ const buildObbFromBasisPoints = (
 const cubeObb = (
   node: CubeNode,
   chain: readonly SceneNode[],
-  textures: Readonly<Record<string, TextureAsset>>,
+  opacityCache: ReadonlyMap<string, TextureOpacityInfo>,
 ): AuditObb => {
   const b = cubeUnrotatedBounds(node);
   const f = [b.from[0] - node.inflate, b.from[1] - node.inflate, b.from[2] - node.inflate] as const;
@@ -247,10 +291,13 @@ const cubeObb = (
   const angled =
     hasAngledRotation(cubeGeometryRotation(node)) ||
     chain.some((entry) => hasAngledRotation(entry.transform.rotation));
-  const opaque = CUBE_FACE_DIRECTIONS.every((dir) => {
-    const face = node.faces[dir];
-    return face.textureId !== null && isOpaqueFace(face, textures[face.textureId]);
-  });
+  let opaque = true;
+  for (let i = 0; i < CUBE_FACE_DIRECTIONS.length; i += 1) {
+    if (!isOpaqueFace(node.faces[CUBE_FACE_DIRECTIONS[i]!], opacityCache)) {
+      opaque = false;
+      break;
+    }
+  }
   return buildObbFromBasisPoints(
     node.id,
     node.parentId,
@@ -355,6 +402,7 @@ const boneStats = (
   nodes: readonly SceneNode[],
   visible: ReadonlySet<string>,
   sceneNodes: Readonly<Record<string, SceneNode>>,
+  chainCache: Map<string, readonly SceneNode[]>,
 ): {
   readonly boneCount: number;
   readonly maxBoneDepth: number;
@@ -364,7 +412,7 @@ const boneStats = (
   const usedAsParent = new Set(nodes.map((n) => n.parentId).filter((p): p is string => p !== null));
   let maxDepth = 0;
   for (const bone of bones) {
-    const chain = boneChain(sceneNodes, bone);
+    const chain = boneChain(sceneNodes, bone, chainCache);
     if (chain.length > maxDepth) maxDepth = chain.length;
   }
   const hasOrphanEmptyBones = bones.some((b) => !usedAsParent.has(b.id));
@@ -376,6 +424,8 @@ const collectGeometryPairs = (
   visible: ReadonlySet<string>,
   sceneNodes: Readonly<Record<string, SceneNode>>,
   textures: Readonly<Record<string, TextureAsset>>,
+  opacityCache: ReadonlyMap<string, TextureOpacityInfo>,
+  chainCache: Map<string, readonly SceneNode[]>,
 ): {
   readonly obbs: AuditObb[];
   readonly pairs: Array<{ readonly node: CubeNode | PlaneNode; readonly obb: AuditObb }>;
@@ -388,9 +438,9 @@ const collectGeometryPairs = (
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
   for (const node of nodes) {
     if (!visible.has(node.id) || (node.kind !== 'cube' && node.kind !== 'plane')) continue;
-    const chain = boneChain(sceneNodes, node);
+    const chain = boneChain(sceneNodes, node, chainCache);
     const obb =
-      node.kind === 'cube' ? cubeObb(node, chain, textures) : planeObb(node, chain, textures);
+      node.kind === 'cube' ? cubeObb(node, chain, opacityCache) : planeObb(node, chain, textures);
     obbs.push(obb);
     pairs.push({ node, obb });
     for (let k = 0; k < 3; k += 1) {
@@ -412,11 +462,20 @@ export const analyzeSceneGeometry = (
 ): AuditSceneGeometry => {
   const visible = collectVisibleNodeIds(scene);
   const nodes = Object.values(scene.nodes).sort((a, b) => compareText(a.id, b.id));
-  const { obbs, pairs, min, max } = collectGeometryPairs(nodes, visible, scene.nodes, textures);
+  const opacityCache = buildTextureOpacityCache(textures);
+  const chainCache = new Map<string, readonly SceneNode[]>();
+  const { obbs, pairs, min, max } = collectGeometryPairs(
+    nodes,
+    visible,
+    scene.nodes,
+    textures,
+    opacityCache,
+    chainCache,
+  );
   const worldCenterY = obbs.length > 0 ? (min[1] + max[1]) * 0.5 : 0;
   const enabledFaces: AuditFaceBinding[] = [];
   for (const pair of pairs) collectNodeFaces(pair.node, pair.obb, worldCenterY, enabledFaces);
-  const stats = boneStats(nodes, visible, scene.nodes);
+  const stats = boneStats(nodes, visible, scene.nodes, chainCache);
   return {
     visibleNodeIds: visible,
     obbs,

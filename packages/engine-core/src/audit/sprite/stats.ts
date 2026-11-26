@@ -1,5 +1,8 @@
-import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
-import { hexToOklch, relativeLuminance } from '../../textures/oklch';
+import {
+  canonicalRgbaBackingBuffer,
+  type CanonicalTextureRaster,
+} from '../../textures/textureRecipe/raster';
+import { hexToOklch, type OklchColor } from '../../textures/oklch';
 
 export interface SpriteRasterStats {
   readonly width: number;
@@ -21,11 +24,22 @@ export interface SpriteRasterStats {
   readonly wrapSeamJump: number;
 }
 
-const hexAt = (rgba: Uint8Array, i: number): string =>
-  '#' +
-  [rgba[i * 4]!, rgba[i * 4 + 1]!, rgba[i * 4 + 2]!]
-    .map((c) => c.toString(16).padStart(2, '0'))
-    .join('');
+const HEX_DIGITS = '0123456789abcdef';
+
+const rgb24ToHex = (rgb24: number): string => {
+  const r = (rgb24 >>> 16) & 0xff;
+  const g = (rgb24 >>> 8) & 0xff;
+  const b = rgb24 & 0xff;
+  return (
+    '#' +
+    HEX_DIGITS[r >>> 4]! +
+    HEX_DIGITS[r & 15]! +
+    HEX_DIGITS[g >>> 4]! +
+    HEX_DIGITS[g & 15]! +
+    HEX_DIGITS[b >>> 4]! +
+    HEX_DIGITS[b & 15]!
+  );
+};
 
 const colorDist = (rgba: Uint8Array, a: number, b: number): number => {
   const ia = a * 4,
@@ -131,7 +145,8 @@ const hueDelta = (a: number, b: number): number => {
 
 interface PixelAccum {
   readonly lums: number[];
-  readonly colors: Set<string>;
+  readonly colors: Set<number>;
+  readonly oklchCache: Map<number, OklchColor>;
   readonly darkHues: number[];
   readonly lightHues: number[];
   sumX: number;
@@ -143,6 +158,15 @@ interface PixelAccum {
   botN: number;
 }
 
+const getCachedOklch = (acc: PixelAccum, rgb24: number): OklchColor => {
+  let cached = acc.oklchCache.get(rgb24);
+  if (cached === undefined) {
+    cached = hexToOklch(rgb24ToHex(rgb24));
+    acc.oklchCache.set(rgb24, cached);
+  }
+  return cached;
+};
+
 const recordOpaquePixel = (
   acc: PixelAccum,
   rgba: Uint8Array,
@@ -151,11 +175,14 @@ const recordOpaquePixel = (
   y: number,
   midY: number,
 ): void => {
-  const i = y * w + x;
-  if (rgba[i * 4 + 3] === 0) return;
-  const hex = hexAt(rgba, i);
-  const lum = relativeLuminance(hex);
-  acc.colors.add(hex);
+  const o = (y * w + x) * 4;
+  if (rgba[o + 3] === 0) return;
+  const r = rgba[o]!;
+  const g = rgba[o + 1]!;
+  const b = rgba[o + 2]!;
+  const rgb24 = (r << 16) | (g << 8) | b;
+  const lum = 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255);
+  acc.colors.add(rgb24);
   acc.lums.push(lum);
   acc.sumX += x + 0.5;
   acc.sumY += y + 0.5;
@@ -167,7 +194,7 @@ const recordOpaquePixel = (
     acc.botSum += lum;
     acc.botN += 1;
   }
-  const oklch = hexToOklch(hex);
+  const oklch = getCachedOklch(acc, rgb24);
   if (oklch.c > 0.025) {
     if (lum < 0.35) acc.darkHues.push(oklch.h);
     if (lum > 0.45) acc.lightHues.push(oklch.h);
@@ -178,6 +205,7 @@ const collectPixelAccum = (rgba: Uint8Array, w: number, h: number, midY: number)
   const acc: PixelAccum = {
     lums: [],
     colors: new Set(),
+    oklchCache: new Map(),
     darkHues: [],
     lightHues: [],
     sumX: 0,
@@ -221,7 +249,7 @@ const opaquePixelBounds = (
 export const analyzeSpriteRaster = (raster: CanonicalTextureRaster): SpriteRasterStats => {
   const w = raster.width,
     h = raster.height;
-  const rgba = raster.rgba.copy();
+  const rgba = canonicalRgbaBackingBuffer(raster.rgba) ?? raster.rgba.copy();
   const [bx0, by0, bx1, by1] = opaquePixelBounds(rgba, w, h);
   const acc = collectPixelAccum(rgba, w, h, (by0 + by1) * 0.5);
   const n = acc.lums.length;

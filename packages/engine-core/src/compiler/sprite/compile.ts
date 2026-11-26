@@ -14,6 +14,7 @@ import {
   type CanonicalTextureRaster,
 } from '../../textures/textureRecipe/raster';
 import type { SpriteBuild, SpriteProduct } from './contract';
+import { buildMaterialRamps } from './ramp';
 import { paintSprite } from './paint';
 import { createCanonicalRaster } from './raster';
 
@@ -75,7 +76,8 @@ export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Spr
     const doc: SpriteDocument = readSpriteDocument(raw, file);
     const [width, height] = doc.item.canvas;
     const sourceHash = digest(doc);
-    const final = paintSprite(doc, 'final');
+    const ramps = buildMaterialRamps(doc.materials);
+    const final = paintSprite(doc, 'final', ramps);
     const bytes = final.raster.rgba.copy();
     const { positions, colors } = coverage(bytes, width * height);
     if (!positions.length) {
@@ -94,9 +96,9 @@ export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Spr
       ...final,
       png,
       stages: Object.freeze({
-        silhouette: paintSprite(doc, 'silhouette').raster,
-        shade: paintSprite(doc, 'shade').raster,
-        grain: paintSprite(doc, 'grain').raster,
+        silhouette: paintSprite(doc, 'silhouette', ramps).raster,
+        shade: paintSprite(doc, 'shade', ramps).raster,
+        grain: paintSprite(doc, 'grain', ramps).raster,
       }),
       receipt: Object.freeze({
         id: doc.item.id,

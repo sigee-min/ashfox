@@ -28,16 +28,24 @@ const srgbToLinear = (c: number): number =>
 const linearToSrgb = (c: number): number =>
   c <= 0.0031308 ? c * 12.92 : 1.055 * clamp01(c) ** (1 / 2.4) - 0.055;
 
+const HEX_DIGITS = '0123456789abcdef';
+
+const hexNibble = (code: number): number => {
+  if (code >= 48 && code <= 57) return code - 48;
+  if (code >= 97 && code <= 102) return code - 87;
+  return code >= 65 && code <= 70 ? code - 55 : 0;
+};
+
 const parseHexChannels = (hex: string): readonly [number, number, number] => [
-  Number.parseInt(hex.slice(1, 3), 16) / 255,
-  Number.parseInt(hex.slice(3, 5), 16) / 255,
-  Number.parseInt(hex.slice(5, 7), 16) / 255,
+  ((hexNibble(hex.charCodeAt(1)) << 4) | hexNibble(hex.charCodeAt(2))) / 255,
+  ((hexNibble(hex.charCodeAt(3)) << 4) | hexNibble(hex.charCodeAt(4))) / 255,
+  ((hexNibble(hex.charCodeAt(5)) << 4) | hexNibble(hex.charCodeAt(6))) / 255,
 ];
 
-const formatHexChannel = (v: number): string =>
-  Math.max(0, Math.min(255, Math.round(clamp01(v) * 255)))
-    .toString(16)
-    .padStart(2, '0');
+const formatHexChannel = (v: number): string => {
+  const n = Math.max(0, Math.min(255, Math.round(clamp01(v) * 255)));
+  return HEX_DIGITS[n >>> 4]! + HEX_DIGITS[n & 15]!;
+};
 
 export const relativeLuminance = (hex: string): number => {
   const [r, g, b] = parseHexChannels(hex);

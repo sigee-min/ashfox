@@ -30,30 +30,43 @@ export const coherentValue = (
   seed: number,
   stream: number,
 ): number => {
-  const cell = point.map((entry, index) => Math.floor(entry / scale[index]!)) as [
-    number,
-    number,
-    number,
-  ];
-  const fraction = point.map((entry, index) => modulo(entry, scale[index]!)) as [
-    number,
-    number,
-    number,
-  ];
-  const corner = (dx: number, dy: number, dz: number): number =>
-    hash(cell[0] + dx, cell[1] + dy, cell[2] + dz, seed, stream);
-  const x00 = interpolate(corner(0, 0, 0), corner(1, 0, 0), fraction[0], scale[0]);
-  const x10 = interpolate(corner(0, 1, 0), corner(1, 1, 0), fraction[0], scale[0]);
-  const x01 = interpolate(corner(0, 0, 1), corner(1, 0, 1), fraction[0], scale[0]);
-  const x11 = interpolate(corner(0, 1, 1), corner(1, 1, 1), fraction[0], scale[0]);
-  return (
-    interpolate(
-      interpolate(x00, x10, fraction[1], scale[1]),
-      interpolate(x01, x11, fraction[1], scale[1]),
-      fraction[2],
-      scale[2],
-    ) >>> 0
+  const px = point[0];
+  const py = point[1];
+  const pz = point[2];
+  const sx = scale[0];
+  const sy = scale[1];
+  const sz = scale[2];
+  const cx = Math.floor(px / sx);
+  const cy = Math.floor(py / sy);
+  const cz = Math.floor(pz / sz);
+  const fx = modulo(px, sx);
+  const fy = modulo(py, sy);
+  const fz = modulo(pz, sz);
+  const x00 = interpolate(
+    hash(cx, cy, cz, seed, stream),
+    hash(cx + 1, cy, cz, seed, stream),
+    fx,
+    sx,
   );
+  const x10 = interpolate(
+    hash(cx, cy + 1, cz, seed, stream),
+    hash(cx + 1, cy + 1, cz, seed, stream),
+    fx,
+    sx,
+  );
+  const x01 = interpolate(
+    hash(cx, cy, cz + 1, seed, stream),
+    hash(cx + 1, cy, cz + 1, seed, stream),
+    fx,
+    sx,
+  );
+  const x11 = interpolate(
+    hash(cx, cy + 1, cz + 1, seed, stream),
+    hash(cx + 1, cy + 1, cz + 1, seed, stream),
+    fx,
+    sx,
+  );
+  return interpolate(interpolate(x00, x10, fy, sy), interpolate(x01, x11, fy, sy), fz, sz) >>> 0;
 };
 
 export const hashText = (value: string): number => {

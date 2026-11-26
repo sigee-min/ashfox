@@ -9,10 +9,33 @@ export interface ProgramToken {
   readonly span: SourceSpan;
 }
 
-const identifierStart = (value: string): boolean => /[A-Za-z_]/.test(value);
-const identifierPart = (value: string): boolean => /[A-Za-z0-9_]/.test(value);
-const digit = (value: string): boolean => /[0-9]/.test(value);
-const hex = (value: string): boolean => /^[0-9A-Fa-f]{6}$/.test(value);
+const isIdentStartCode = (code: number): boolean =>
+  (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95;
+
+const isIdentPartCode = (code: number): boolean =>
+  isIdentStartCode(code) || (code >= 48 && code <= 57);
+
+const isDigitCode = (code: number): boolean => code >= 48 && code <= 57;
+
+const isHexCode = (code: number): boolean =>
+  (code >= 48 && code <= 57) || (code >= 65 && code <= 70) || (code >= 97 && code <= 102);
+
+const isSpaceAt = (source: string, index: number): boolean => {
+  const code = source.charCodeAt(index);
+  if (code < 128) return code === 32 || (code >= 9 && code <= 13);
+  return /\s/.test(source[index]!);
+};
+
+const isAlphaOrPercentCode = (code: number): boolean =>
+  (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 37;
+
+const hex = (value: string): boolean => {
+  if (value.length !== 6) return false;
+  for (let i = 0; i < 6; i += 1) {
+    if (!isHexCode(value.charCodeAt(i))) return false;
+  }
+  return true;
+};
 
 /** The grammar header is the one hyphenated keyword. */
 const HEADER = 'ashfox-model';
@@ -23,38 +46,38 @@ type SpanFactory = (start: number, end: number) => SourceSpan;
 
 const lineStartsFor = (source: string): readonly number[] => {
   const starts = [0];
-  for (let index = 0; index < source.length; index += 1) {
-    if (source[index] === '\n') starts.push(index + 1);
+  let pos = source.indexOf('\n');
+  while (pos !== -1) {
+    starts.push(pos + 1);
+    pos = source.indexOf('\n', pos + 1);
   }
   return starts;
 };
 
-const positionFrom = (
-  source: string,
-  starts: readonly number[],
-  offset: number,
-): SourcePosition => {
-  const bounded = Math.max(0, Math.min(Math.ceil(offset), source.length));
-  let low = 0;
-  let high = starts.length;
-  while (low + 1 < high) {
-    const middle = Math.floor((low + high) / 2);
-    if (starts[middle]! <= bounded) low = middle;
-    else high = middle;
+const findLineIndex = (starts: readonly number[], bounded: number, hint: number): number => {
+  let low = bounded >= starts[hint]! ? hint : 0;
+  while (low + 1 < starts.length && starts[low + 1]! <= bounded) {
+    low += 1;
   }
-  return Object.freeze({
-    offset,
-    line: low + 1,
-    column: bounded - starts[low]! + 1 + Math.max(0, offset - source.length),
-  });
+  return low;
 };
 
 const spanFactoryFor = (source: string): SpanFactory => {
   const starts = lineStartsFor(source);
+  let cursor = 0;
+  const posAt = (offset: number): SourcePosition => {
+    const bounded = Math.max(0, Math.min(Math.ceil(offset), source.length));
+    cursor = findLineIndex(starts, bounded, cursor);
+    return Object.freeze({
+      offset,
+      line: cursor + 1,
+      column: bounded - starts[cursor]! + 1 + Math.max(0, offset - source.length),
+    });
+  };
   return (start, end): SourceSpan =>
     Object.freeze({
-      start: positionFrom(source, starts, start),
-      end: positionFrom(source, starts, end),
+      start: posAt(start),
+      end: posAt(end),
     });
 };
 
@@ -97,20 +120,24 @@ const add = (state: LexState, kind: ProgramTokenKind, value: string, start: numb
   state.tokens.push(token(kind, value, state.span, start, state.index));
 };
 
-const skipWhile = (state: LexState, accept: (value: string) => boolean): void => {
-  while (state.index < state.source.length && accept(state.source[state.index]!)) state.index += 1;
+const skipCodes = (state: LexState, accept: (code: number) => boolean): void => {
+  const { source } = state;
+  let idx = state.index;
+  while (idx < source.length && accept(source.charCodeAt(idx))) idx += 1;
+  state.index = idx;
 };
 
-const skipWhitespace: Scanner = (state, current) => {
-  if (!/\s/.test(current)) return false;
-  state.index += 1;
-  return true;
+const skipWhitespaceRun = (state: LexState): void => {
+  const { source } = state;
+  let idx = state.index;
+  while (idx < source.length && isSpaceAt(source, idx)) idx += 1;
+  state.index = idx;
 };
 
 const skipLineComment: Scanner = (state, current) => {
   if (current !== '/' || at(state, 1) !== '/') return false;
-  state.index += 2;
-  skipWhile(state, (value) => value !== '\n');
+  const nl = state.source.indexOf('\n', state.index + 2);
+  state.index = nl === -1 ? state.source.length : nl;
   return true;
 };
 
@@ -191,7 +218,7 @@ const scanColor: Scanner = (state, current) => {
   if (current !== '#') return false;
   const start = state.index;
   state.index += 1;
-  skipWhile(state, (value) => /[0-9A-Fa-f]/.test(value));
+  skipCodes(state, isHexCode);
   const value = state.source.slice(start + 1, state.index);
   if (!hex(value)) {
     report(
@@ -210,7 +237,8 @@ const scanColor: Scanner = (state, current) => {
  * identifiers elsewhere must lex '-' as the subtraction operator. */
 const scanHeader: Scanner = (state) => {
   if (state.tokens.length !== 0 || !state.source.startsWith(HEADER, state.index)) return false;
-  if (/[A-Za-z0-9_$]/.test(at(state, HEADER.length))) return false;
+  const next = state.source.charCodeAt(state.index + HEADER.length);
+  if (isIdentPartCode(next) || next === 36) return false;
   const start = state.index;
   state.index += HEADER.length;
   add(state, 'identifier', HEADER, start);
@@ -218,15 +246,21 @@ const scanHeader: Scanner = (state) => {
 };
 
 const scanNumber: Scanner = (state, current) => {
-  if (!digit(current) && !(current === '.' && digit(at(state, 1)))) return false;
-  const start = state.index;
-  if (current === '.') state.index += 1;
-  skipWhile(state, digit);
-  if (at(state) === '.') {
-    state.index += 1;
-    skipWhile(state, digit);
+  const code = current.charCodeAt(0);
+  if (
+    !isDigitCode(code) &&
+    !(code === 46 && isDigitCode(state.source.charCodeAt(state.index + 1)))
+  ) {
+    return false;
   }
-  skipWhile(state, (value) => /[A-Za-z%]/.test(value));
+  const start = state.index;
+  if (code === 46) state.index += 1;
+  skipCodes(state, isDigitCode);
+  if (state.source.charCodeAt(state.index) === 46) {
+    state.index += 1;
+    skipCodes(state, isDigitCode);
+  }
+  skipCodes(state, isAlphaOrPercentCode);
   add(state, 'number', state.source.slice(start, state.index), start);
   return true;
 };
@@ -234,7 +268,7 @@ const scanNumber: Scanner = (state, current) => {
 /** Reads `{name}` after `$`; the cursor sits on the opening brace. */
 const readBracedInterpolation = (state: LexState, marker: number): void => {
   state.index += 1;
-  if (!identifierStart(at(state))) {
+  if (!isIdentStartCode(state.source.charCodeAt(state.index))) {
     report(
       state,
       'program.invalid-interpolation',
@@ -244,7 +278,7 @@ const readBracedInterpolation = (state: LexState, marker: number): void => {
     );
   } else {
     state.index += 1;
-    skipWhile(state, identifierPart);
+    skipCodes(state, isIdentPartCode);
   }
   if (at(state) === '}') state.index += 1;
   else {
@@ -266,7 +300,7 @@ const readInterpolation = (state: LexState): boolean => {
     readBracedInterpolation(state, marker);
     return true;
   }
-  if (!identifierStart(at(state))) {
+  if (!isIdentStartCode(state.source.charCodeAt(state.index))) {
     report(
       state,
       'program.invalid-interpolation',
@@ -277,18 +311,20 @@ const readInterpolation = (state: LexState): boolean => {
     return false;
   }
   state.index += 1;
-  skipWhile(state, identifierPart);
+  skipCodes(state, isIdentPartCode);
   return true;
 };
 
 const scanIdentifier: Scanner = (state, current) => {
-  const interpolated = current === '$' && (identifierStart(at(state, 1)) || at(state, 1) === '{');
-  if (!identifierStart(current) && !interpolated) return false;
+  const code = current.charCodeAt(0);
+  const nextCode = state.source.charCodeAt(state.index + 1);
+  const interpolated = code === 36 && (isIdentStartCode(nextCode) || nextCode === 123);
+  if (!isIdentStartCode(code) && !interpolated) return false;
   const start = state.index;
-  if (identifierStart(current)) state.index += 1;
+  if (isIdentStartCode(code)) state.index += 1;
   while (state.index < state.source.length) {
-    skipWhile(state, identifierPart);
-    if (at(state) !== '$' || !readInterpolation(state)) break;
+    skipCodes(state, isIdentPartCode);
+    if (state.source.charCodeAt(state.index) !== 36 || !readInterpolation(state)) break;
   }
   add(state, 'identifier', state.source.slice(start, state.index), start);
   return true;
@@ -308,17 +344,27 @@ const scanSymbol: Scanner = (state, current) => {
   return true;
 };
 
-const SCANNERS: readonly Scanner[] = Object.freeze([
-  skipWhitespace,
-  skipLineComment,
-  skipBlockComment,
-  scanString,
-  scanColor,
-  scanHeader,
-  scanNumber,
-  scanIdentifier,
-  scanSymbol,
-]);
+const scanSlashToken = (state: LexState, current: string): boolean =>
+  skipLineComment(state, current) || skipBlockComment(state, current) || scanSymbol(state, current);
+
+const scanNext = (state: LexState, current: string): boolean => {
+  const code = current.charCodeAt(0);
+  if (isSpaceAt(state.source, state.index)) {
+    skipWhitespaceRun(state);
+    return true;
+  }
+  if (code === 47) return scanSlashToken(state, current);
+  if (code === 34) return scanString(state, current);
+  if (code === 35) return scanColor(state, current);
+  if (state.tokens.length === 0 && scanHeader(state, current)) return true;
+  if (isDigitCode(code) || code === 46) {
+    if (scanNumber(state, current)) return true;
+  }
+  if (isIdentStartCode(code) || code === 36) {
+    if (scanIdentifier(state, current)) return true;
+  }
+  return scanSymbol(state, current);
+};
 
 /** Lexer for the versioned source language. Newlines are insignificant. */
 export const lexProgramSource = (
@@ -339,7 +385,7 @@ export const lexProgramSource = (
   const state: LexState = { source, span, tokens: [], diagnostics: [], index: 0 };
   while (state.index < source.length) {
     const current = source[state.index]!;
-    if (SCANNERS.some((scan) => scan(state, current))) continue;
+    if (scanNext(state, current)) continue;
     report(
       state,
       'program.invalid-character',

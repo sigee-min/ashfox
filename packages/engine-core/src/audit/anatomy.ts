@@ -1,5 +1,3 @@
-import { dot3, sub3 } from '../math/vec3';
-import type { Vec3 } from '../model/identity';
 import { ramp } from './contract';
 import type { AuditObb, AuditSceneGeometry } from './geometry';
 
@@ -45,37 +43,46 @@ const evaluateTaperAndArticulation = (
   return 0.4 * meanGroupTaper + 0.3 * depthRichness + 0.3 * sizeDiversity;
 };
 
-const pointInsideObb = (pt: Vec3, target: AuditObb): boolean => {
-  const d = sub3(pt, target.center);
+const pointInsideObb = (px: number, py: number, pz: number, target: AuditObb): boolean => {
+  const dx = px - target.center[0];
+  const dy = py - target.center[1];
+  const dz = pz - target.center[2];
   const margin = 0.02;
   return (
-    Math.abs(dot3(d, target.ax)) < target.half[0] - margin &&
-    Math.abs(dot3(d, target.ay)) < target.half[1] - margin &&
-    Math.abs(dot3(d, target.az)) < target.half[2] - margin
+    Math.abs(dx * target.ax[0] + dy * target.ax[1] + dz * target.ax[2]) < target.half[0] - margin &&
+    Math.abs(dx * target.ay[0] + dy * target.ay[1] + dz * target.ay[2]) < target.half[1] - margin &&
+    Math.abs(dx * target.az[0] + dy * target.az[1] + dz * target.az[2]) < target.half[2] - margin
   );
 };
 
 const cubeContainmentRatio = (small: AuditObb, large: AuditObb): number => {
   const steps = [-0.65, 0, 0.65] as const;
   let inside = 0;
-  for (const sx of steps) {
-    for (const sy of steps) {
-      for (const sz of steps) {
-        const pt: Vec3 = [
-          small.center[0] +
-            sx * small.half[0] * small.ax[0] +
-            sy * small.half[1] * small.ay[0] +
-            sz * small.half[2] * small.az[0],
-          small.center[1] +
-            sx * small.half[0] * small.ax[1] +
-            sy * small.half[1] * small.ay[1] +
-            sz * small.half[2] * small.az[1],
-          small.center[2] +
-            sx * small.half[0] * small.ax[2] +
-            sy * small.half[1] * small.ay[2] +
-            sz * small.half[2] * small.az[2],
-        ];
-        if (pointInsideObb(pt, large)) inside += 1;
+  const cx = small.center[0];
+  const cy = small.center[1];
+  const cz = small.center[2];
+  const axx = small.half[0] * small.ax[0];
+  const axy = small.half[0] * small.ax[1];
+  const axz = small.half[0] * small.ax[2];
+  const ayx = small.half[1] * small.ay[0];
+  const ayy = small.half[1] * small.ay[1];
+  const ayz = small.half[1] * small.ay[2];
+  const azx = small.half[2] * small.az[0];
+  const azy = small.half[2] * small.az[1];
+  const azz = small.half[2] * small.az[2];
+  for (let i = 0; i < 3; i += 1) {
+    const sx = steps[i]!;
+    const bx = cx + sx * axx;
+    const by = cy + sx * axy;
+    const bz = cz + sx * axz;
+    for (let j = 0; j < 3; j += 1) {
+      const sy = steps[j]!;
+      const mx = bx + sy * ayx;
+      const my = by + sy * ayy;
+      const mz = bz + sy * ayz;
+      for (let k = 0; k < 3; k += 1) {
+        const sz = steps[k]!;
+        if (pointInsideObb(mx + sz * azx, my + sz * azy, mz + sz * azz, large)) inside += 1;
       }
     }
   }

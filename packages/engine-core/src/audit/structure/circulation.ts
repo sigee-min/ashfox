@@ -13,12 +13,8 @@ export interface CirculationResult {
   readonly verticalConnectors: number;
 }
 
-const CARDINAL_XZ: readonly [number, number][] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
+const CARDINAL_DX = [1, -1, 0, 0] as const;
+const CARDINAL_DZ = [0, 0, 1, -1] as const;
 
 const isPassableAt = (
   grid: StructureGrid,
@@ -27,7 +23,9 @@ const isPassableAt = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
+  const w = grid.size[0];
+  const h = grid.size[1];
+  const d = grid.size[2];
   if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
   const st = grid.voxels[(y * d + z) * w + x]!;
   return st <= 0 || paletteMeta[st]!.isPassable;
@@ -40,12 +38,16 @@ const canStandAt = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
+  const w = grid.size[0];
+  const h = grid.size[1];
+  const d = grid.size[2];
   if (x < 0 || x >= w || y < 1 || y + 1 >= h || z < 0 || z >= d) return false;
-  if (!isPassableAt(grid, paletteMeta, x, y, z) || !isPassableAt(grid, paletteMeta, x, y + 1, z))
-    return false;
-  const below = grid.voxels[((y - 1) * d + z) * w + x]!;
-  const atFeet = grid.voxels[(y * d + z) * w + x]!;
+  const rowBase = (y * d + z) * w + x;
+  const atFeet = grid.voxels[rowBase]!;
+  if (atFeet > 0 && !paletteMeta[atFeet]!.isPassable) return false;
+  const atHead = grid.voxels[rowBase + w * d]!;
+  if (atHead > 0 && !paletteMeta[atHead]!.isPassable) return false;
+  const below = grid.voxels[rowBase - w * d]!;
   return (
     (below > 0 && paletteMeta[below]!.canStandOn) || (atFeet > 0 && paletteMeta[atFeet]!.isLadder)
   );
@@ -61,7 +63,8 @@ const isStepUpAllowed = (
   nx: number,
   nz: number,
 ): boolean => {
-  const [w, _h, d] = grid.size;
+  const w = grid.size[0];
+  const d = grid.size[2];
   if (!isPassableAt(grid, paletteMeta, cx, cy + 2, cz)) return false;
   const idx = (cy * d + cz) * w + cx;
   const st = grid.voxels[(cy * d + nz) * w + nx]!;
@@ -93,10 +96,11 @@ const expandCapsuleNeighbors = (
   visited: Uint8Array,
   queue: number[],
 ): void => {
-  const [w, _h, d] = grid.size;
+  const w = grid.size[0];
+  const d = grid.size[2];
   const cx = cur % w;
-  const cz = Math.floor(cur / w) % d;
-  const cy = Math.floor(cur / (w * d));
+  const cz = ((cur / w) | 0) % d;
+  const cy = (cur / (w * d)) | 0;
   const curSt = grid.voxels[cur]!;
   if (curSt > 0 && paletteMeta[curSt]!.isLadder) {
     if (canStandAt(grid, paletteMeta, cx, cy + 1, cz))
@@ -104,9 +108,9 @@ const expandCapsuleNeighbors = (
     if (canStandAt(grid, paletteMeta, cx, cy - 1, cz))
       enqueueNeighbor(cx, cy - 1, cz, w, d, visited, queue);
   }
-  for (const [dx, dz] of CARDINAL_XZ) {
-    const nx = cx + dx;
-    const nz = cz + dz;
+  for (let dir = 0; dir < 4; dir += 1) {
+    const nx = cx + CARDINAL_DX[dir]!;
+    const nz = cz + CARDINAL_DZ[dir]!;
     if (canStandAt(grid, paletteMeta, nx, cy, nz)) {
       enqueueNeighbor(nx, cy, nz, w, d, visited, queue);
     } else if (
@@ -131,10 +135,11 @@ const touchesExteriorAir = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, _h, d] = grid.size;
-  for (const [dx, dz] of CARDINAL_XZ) {
-    const nx = x + dx;
-    const nz = z + dz;
+  const w = grid.size[0];
+  const d = grid.size[2];
+  for (let dir = 0; dir < 4; dir += 1) {
+    const nx = x + CARDINAL_DX[dir]!;
+    const nz = z + CARDINAL_DZ[dir]!;
     if (nx < 0 || nx >= w || nz < 0 || nz >= d) return true;
     const nIdx = (y * d + nz) * w + nx;
     if (interiorMask[nIdx] === 0 && isPassableAt(grid, paletteMeta, nx, y, nz)) return true;

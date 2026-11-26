@@ -1,5 +1,4 @@
 import { compareText } from '@ashfox/internal-contracts';
-import { add3, cross3, dot3, length3, scale3, sub3 } from '../math/vec3';
 import type { Vec3 } from '../model/identity';
 import type { AuditObb } from './geometry';
 
@@ -10,52 +9,84 @@ export interface SilhouetteSummary {
   readonly baseStability: boolean;
 }
 
-const obbProjectedRadius = (obb: AuditObb, axis: Vec3, margin: number): number =>
-  (obb.half[0] + margin) * Math.abs(dot3(obb.ax, axis)) +
-  (obb.half[1] + margin) * Math.abs(dot3(obb.ay, axis)) +
-  (obb.half[2] + margin) * Math.abs(dot3(obb.az, axis));
+const obbRadiusScalar = (
+  obb: AuditObb,
+  ax: number,
+  ay: number,
+  az: number,
+  margin: number,
+): number =>
+  (obb.half[0] + margin) * Math.abs(obb.ax[0] * ax + obb.ax[1] * ay + obb.ax[2] * az) +
+  (obb.half[1] + margin) * Math.abs(obb.ay[0] * ax + obb.ay[1] * ay + obb.ay[2] * az) +
+  (obb.half[2] + margin) * Math.abs(obb.az[0] * ax + obb.az[1] * ay + obb.az[2] * az);
 
-const obbAxis = (obb: AuditObb, index: number): Vec3 =>
-  index === 0 ? obb.ax : index === 1 ? obb.ay : obb.az;
-
-const isSeparatingAxis = (
+const isSeparatingAxisScalar = (
   a: AuditObb,
   b: AuditObb,
-  delta: Vec3,
+  dx: number,
+  dy: number,
+  dz: number,
   pad: number,
-  axis: Vec3,
+  ax: number,
+  ay: number,
+  az: number,
 ): boolean => {
-  if (length3(axis) < 1e-6) return false;
-  const ra = obbProjectedRadius(a, axis, pad);
-  const rb = obbProjectedRadius(b, axis, pad);
-  return Math.abs(dot3(delta, axis)) > ra + rb;
+  if (ax * ax + ay * ay + az * az < 1e-12) return false;
+  const ra = obbRadiusScalar(a, ax, ay, az, pad);
+  const rb = obbRadiusScalar(b, ax, ay, az, pad);
+  return Math.abs(dx * ax + dy * ay + dz * az) > ra + rb;
+};
+
+const obbAxisVec = (obb: AuditObb, index: number): Vec3 =>
+  index === 0 ? obb.ax : index === 1 ? obb.ay : obb.az;
+
+const hasCrossSeparatingAxis = (
+  a: AuditObb,
+  b: AuditObb,
+  dx: number,
+  dy: number,
+  dz: number,
+  pad: number,
+): boolean => {
+  for (let i = 0; i < 3; i += 1) {
+    const u = obbAxisVec(a, i);
+    for (let j = 0; j < 3; j += 1) {
+      const v = obbAxisVec(b, j);
+      const cx = u[1] * v[2] - u[2] * v[1];
+      const cy = u[2] * v[0] - u[0] * v[2];
+      const cz = u[0] * v[1] - u[1] * v[0];
+      if (isSeparatingAxisScalar(a, b, dx, dy, dz, pad, cx, cy, cz)) return true;
+    }
+  }
+  return false;
 };
 
 export const obbsTouchWithin = (a: AuditObb, b: AuditObb, margin: number): boolean => {
-  const pad = margin * 0.5;
-  for (let i = 0; i < 3; i += 1) {
-    if (a.aabbMax[i]! + margin < b.aabbMin[i]! || b.aabbMax[i]! + margin < a.aabbMin[i]!) {
-      return false;
-    }
-  }
-  const delta = sub3(b.center, a.center);
   if (
-    isSeparatingAxis(a, b, delta, pad, a.ax) ||
-    isSeparatingAxis(a, b, delta, pad, a.ay) ||
-    isSeparatingAxis(a, b, delta, pad, a.az) ||
-    isSeparatingAxis(a, b, delta, pad, b.ax) ||
-    isSeparatingAxis(a, b, delta, pad, b.ay) ||
-    isSeparatingAxis(a, b, delta, pad, b.az)
+    a.aabbMax[0] + margin < b.aabbMin[0] ||
+    b.aabbMax[0] + margin < a.aabbMin[0] ||
+    a.aabbMax[1] + margin < b.aabbMin[1] ||
+    b.aabbMax[1] + margin < a.aabbMin[1] ||
+    a.aabbMax[2] + margin < b.aabbMin[2] ||
+    b.aabbMax[2] + margin < a.aabbMin[2]
   ) {
     return false;
   }
-  for (let i = 0; i < 3; i += 1) {
-    const ax = obbAxis(a, i);
-    for (let j = 0; j < 3; j += 1) {
-      if (isSeparatingAxis(a, b, delta, pad, cross3(ax, obbAxis(b, j)))) return false;
-    }
+  const pad = margin * 0.5;
+  const dx = b.center[0] - a.center[0];
+  const dy = b.center[1] - a.center[1];
+  const dz = b.center[2] - a.center[2];
+  if (
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, a.ax[0], a.ax[1], a.ax[2]) ||
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, a.ay[0], a.ay[1], a.ay[2]) ||
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, a.az[0], a.az[1], a.az[2]) ||
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, b.ax[0], b.ax[1], b.ax[2]) ||
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, b.ay[0], b.ay[1], b.ay[2]) ||
+    isSeparatingAxisScalar(a, b, dx, dy, dz, pad, b.az[0], b.az[1], b.az[2])
+  ) {
+    return false;
   }
-  return true;
+  return !hasCrossSeparatingAxis(a, b, dx, dy, dz, pad);
 };
 
 const collectComponent = (
@@ -118,11 +149,13 @@ const aabbContainsWithMargin = (inner: AuditObb, outer: AuditObb, margin: number
   inner.aabbMax[2] <= outer.aabbMax[2] + margin;
 
 const cornerInsideObb = (corner: Vec3, outer: AuditObb): boolean => {
-  const d = sub3(corner, outer.center);
+  const dx = corner[0] - outer.center[0];
+  const dy = corner[1] - outer.center[1];
+  const dz = corner[2] - outer.center[2];
   return (
-    Math.abs(dot3(d, outer.ax)) <= outer.half[0] + 0.05 &&
-    Math.abs(dot3(d, outer.ay)) <= outer.half[1] + 0.05 &&
-    Math.abs(dot3(d, outer.az)) <= outer.half[2] + 0.05
+    Math.abs(dx * outer.ax[0] + dy * outer.ax[1] + dz * outer.ax[2]) <= outer.half[0] + 0.05 &&
+    Math.abs(dx * outer.ay[0] + dy * outer.ay[1] + dz * outer.ay[2]) <= outer.half[1] + 0.05 &&
+    Math.abs(dx * outer.az[0] + dy * outer.az[1] + dz * outer.az[2]) <= outer.half[2] + 0.05
   );
 };
 
@@ -149,22 +182,17 @@ export const findBuriedCubes = (obbs: readonly AuditObb[]): readonly string[] =>
 const GRID = 48;
 
 const drawFaceQuad = (
-  base: Vec3,
-  edgeA: Vec3,
-  edgeB: Vec3,
-  axisU: 0 | 1 | 2,
-  axisV: 0 | 1 | 2,
+  baseU: number,
+  baseV: number,
+  aU: number,
+  aV: number,
+  bU: number,
+  bV: number,
   centerU: number,
   centerV: number,
   scale: number,
   grid: Uint8Array,
 ): void => {
-  const baseU = base[axisU];
-  const baseV = base[axisV];
-  const aU = edgeA[axisU];
-  const aV = edgeA[axisV];
-  const bU = edgeB[axisU];
-  const bV = edgeB[axisV];
   const halfGrid = (GRID - 1) * 0.5;
   const spanA = Math.hypot(aU, aV) * 2 * scale;
   const spanB = Math.hypot(bU, bV) * 2 * scale;
@@ -172,18 +200,12 @@ const drawFaceQuad = (
   const stepsB = Math.min(20, Math.max(4, Math.ceil(spanB * 1.5)));
   for (let i = 0; i <= stepsA; i += 1) {
     const s = (i / stepsA) * 2 - 1;
-    const rowU = baseU + aU * s;
-    const rowV = baseV + aV * s;
+    const rowU = baseU + aU * s - centerU;
+    const rowV = baseV + aV * s - centerV;
     for (let j = 0; j <= stepsB; j += 1) {
       const t = (j / stepsB) * 2 - 1;
-      const gx = Math.min(
-        GRID - 1,
-        Math.max(0, Math.round(halfGrid + (rowU + bU * t - centerU) * scale)),
-      );
-      const gy = Math.min(
-        GRID - 1,
-        Math.max(0, Math.round(halfGrid + (rowV + bV * t - centerV) * scale)),
-      );
+      const gx = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (rowU + bU * t) * scale)));
+      const gy = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (rowV + bV * t) * scale)));
       grid[gy * GRID + gx] = 1;
     }
   }
@@ -198,43 +220,18 @@ const projectAxis = (
   scale: number,
   grid: Uint8Array,
 ): void => {
-  const ex = scale3(obb.ax, obb.half[0]);
-  const ey = scale3(obb.ay, obb.half[1]);
-  const ez = scale3(obb.az, obb.half[2]);
-  for (const s of [-1, 1]) {
-    drawFaceQuad(
-      add3(obb.center, scale3(ex, s)),
-      ey,
-      ez,
-      axisU,
-      axisV,
-      centerU,
-      centerV,
-      scale,
-      grid,
-    );
-    drawFaceQuad(
-      add3(obb.center, scale3(ey, s)),
-      ex,
-      ez,
-      axisU,
-      axisV,
-      centerU,
-      centerV,
-      scale,
-      grid,
-    );
-    drawFaceQuad(
-      add3(obb.center, scale3(ez, s)),
-      ex,
-      ey,
-      axisU,
-      axisV,
-      centerU,
-      centerV,
-      scale,
-      grid,
-    );
+  const cu = obb.center[axisU]!;
+  const cv = obb.center[axisV]!;
+  const exU = obb.ax[axisU]! * obb.half[0];
+  const exV = obb.ax[axisV]! * obb.half[0];
+  const eyU = obb.ay[axisU]! * obb.half[1];
+  const eyV = obb.ay[axisV]! * obb.half[1];
+  const ezU = obb.az[axisU]! * obb.half[2];
+  const ezV = obb.az[axisV]! * obb.half[2];
+  for (let s = -1; s <= 1; s += 2) {
+    drawFaceQuad(cu + exU * s, cv + exV * s, eyU, eyV, ezU, ezV, centerU, centerV, scale, grid);
+    drawFaceQuad(cu + eyU * s, cv + eyV * s, exU, exV, ezU, ezV, centerU, centerV, scale, grid);
+    drawFaceQuad(cu + ezU * s, cv + ezV * s, exU, exV, eyU, eyV, centerU, centerV, scale, grid);
   }
 };
 

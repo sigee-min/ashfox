@@ -428,9 +428,13 @@ const toCanonicalRaster = (cells: readonly (string | null)[], w: number, h: numb
   return createCanonicalRaster(w, h, rgba);
 };
 
-export const paintSprite = (doc: SpriteDocument, stage: Stage) => {
+export const paintSprite = (
+  doc: SpriteDocument,
+  stage: Stage,
+  prebuiltRamps?: ReadonlyMap<string, FiveToneRamp>,
+) => {
   const [width, height] = doc.item.canvas;
-  const ramps = buildMaterialRamps(doc.materials);
+  const ramps = prebuiltRamps ?? buildMaterialRamps(doc.materials);
   const wrap = doc.item.profile === 'tile';
   const canvas: Canvas = {
     doc,

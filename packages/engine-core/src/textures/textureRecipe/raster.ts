@@ -28,21 +28,6 @@ export interface CanonicalTextureRaster {
   readonly rgba: CanonicalRgbaBytes;
 }
 
-const writePixel = (
-  rgba: Uint8Array,
-  width: number,
-  x: number,
-  y: number,
-  color: RgbColor,
-  alpha: 0 | 255,
-): void => {
-  const offset = (y * width + x) * 4;
-  rgba[offset] = color.r;
-  rgba[offset + 1] = color.g;
-  rgba[offset + 2] = color.b;
-  rgba[offset + 3] = alpha;
-};
-
 const fill = (
   rgba: Uint8Array,
   width: number,
@@ -53,9 +38,19 @@ const fill = (
   color: RgbColor,
   alpha: 0 | 255,
 ): void => {
-  for (let targetY = y; targetY < y + fillHeight; targetY += 1) {
-    for (let targetX = x; targetX < x + fillWidth; targetX += 1) {
-      writePixel(rgba, width, targetX, targetY, color, alpha);
+  const r = color.r;
+  const g = color.g;
+  const b = color.b;
+  const endY = y + fillHeight;
+  for (let targetY = y; targetY < endY; targetY += 1) {
+    let offset = (targetY * width + x) * 4;
+    const endOffset = offset + fillWidth * 4;
+    while (offset < endOffset) {
+      rgba[offset] = r;
+      rgba[offset + 1] = g;
+      rgba[offset + 2] = b;
+      rgba[offset + 3] = alpha;
+      offset += 4;
     }
   }
 };
@@ -110,6 +105,15 @@ const assertCanvasDetail = (
   return color;
 };
 
+const isBinaryBits = (bits: string): boolean => {
+  if (bits.length === 0) return false;
+  for (let i = 0; i < bits.length; i += 1) {
+    const code = bits.charCodeAt(i);
+    if (code !== 48 && code !== 49) return false;
+  }
+  return true;
+};
+
 const assertAlphaMask = (
   mask: TextureComposition['alphaMasks'][number],
   index: number,
@@ -130,8 +134,8 @@ const assertAlphaMask = (
   );
   if (
     typeof mask.bits !== 'string' ||
-    !/^[01]+$/u.test(mask.bits) ||
-    mask.bits.length !== mask.width * mask.height
+    mask.bits.length !== mask.width * mask.height ||
+    !isBinaryBits(mask.bits)
   ) {
     throw new RangeError(`Texture alpha mask ${index} must exactly fill its binary rectangle.`);
   }
@@ -260,13 +264,21 @@ const applyAlphaMasks = (
   width: number,
   masks: readonly TextureComposition['alphaMasks'][number][],
 ): void => {
-  for (const mask of masks) {
-    for (let row = 0; row < mask.height; row += 1) {
-      for (let column = 0; column < mask.width; column += 1) {
-        const offset = ((mask.y + row) * width + mask.x + column) * 4;
+  for (let m = 0; m < masks.length; m += 1) {
+    const mask = masks[m]!;
+    const mw = mask.width;
+    const mh = mask.height;
+    const mx = mask.x;
+    const my = mask.y;
+    const bits = mask.bits;
+    for (let row = 0; row < mh; row += 1) {
+      let alphaOffset = ((my + row) * width + mx) * 4 + 3;
+      const bitStart = row * mw;
+      for (let column = 0; column < mw; column += 1) {
         // Alpha is intentionally the final raster operation. Color paint
         // cannot overwrite a source-owned coverage decision.
-        rgba[offset + 3] = mask.bits[row * mask.width + column] === '1' ? 255 : 0;
+        rgba[alphaOffset] = bits.charCodeAt(bitStart + column) === 49 ? 255 : 0;
+        alphaOffset += 4;
       }
     }
   }

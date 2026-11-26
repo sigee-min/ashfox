@@ -270,6 +270,22 @@ export const sampleBudget = (regions: readonly TextureRegion[], cost: number): n
   return total;
 };
 
+const paintPatternRegion = (
+  grid: PaintGrid,
+  region: TextureRegion,
+  settings: PatternSettings,
+  selected: number,
+  threshold: number,
+): void => {
+  for (let y = 0; y < region.height; y += 1) {
+    for (let x = 0; x < region.width; x += 1) {
+      if (coherentValue(region.pointAt(x, y), settings.scale, settings.phase, 0) < threshold) {
+        paint(grid, region.x + x, region.y + y, selected, 2);
+      }
+    }
+  }
+};
+
 export const applyPattern = (
   grid: PaintGrid,
   regions: readonly TextureRegion[],
@@ -305,26 +321,29 @@ export const applyPattern = (
     issue(path, span, 'asset.texture.unknown-role', 'Blotch paint role is unavailable.');
     return false;
   }
-  for (const region of regions)
-    for (let y = 0; y < region.height; y += 1) {
-      for (let x = 0; x < region.width; x += 1) {
-        if (clusterActive(region.pointAt(x, y), settings.scale, settings.density, settings.phase)) {
-          paint(grid, region.x + x, region.y + y, selected, 2);
-        }
-      }
-    }
+  const threshold = Number(
+    (settings.density.numerator * 0x100000000n) / settings.density.denominator,
+  );
+  if (settings.density.numerator > 0n && threshold > 0) {
+    for (const region of regions) paintPatternRegion(grid, region, settings, selected, threshold);
+  }
   return true;
 };
 
-const clusterActive = (
-  point: readonly [number, number, number],
-  scale: readonly [number, number, number],
-  density: ClusterDensity,
-  seed: number,
-): boolean =>
-  density.numerator > 0n &&
-  BigInt(coherentValue(point, scale, seed, 0)) <
-    (density.numerator * 0x100000000n) / density.denominator;
+const cachedToneColor = (
+  grid: PaintGrid,
+  cache: (string | undefined)[],
+  selected: number,
+  tone: PaintTone,
+): string => {
+  const key = selected * 5 + tone;
+  let color = cache[key];
+  if (color === undefined) {
+    color = toneColor(grid.roles[selected]!, tone);
+    cache[key] = color;
+  }
+  return color;
+};
 
 export const gridDetails = (
   grid: PaintGrid,
@@ -336,10 +355,12 @@ export const gridDetails = (
   issue: AssetTextureIssue,
 ): readonly TextureCanvasDetail[] | null => {
   const result: TextureCanvasDetail[] = [];
+  const colorCache = new Array<string | undefined>(grid.roles.length * 5);
   for (let row = 0; row < grid.height; row += 1) {
     let column = 0;
+    const rowBase = row * grid.width;
     while (column < grid.width) {
-      const index = row * grid.width + column;
+      const index = rowBase + column;
       const selected = grid.values[index]!;
       if (selected === 0) {
         column += 1;
@@ -349,8 +370,8 @@ export const gridDetails = (
       let end = column + 1;
       while (
         end < grid.width &&
-        grid.values[row * grid.width + end] === selected &&
-        grid.tones[row * grid.width + end] === tone
+        grid.values[rowBase + end] === selected &&
+        grid.tones[rowBase + end] === tone
       )
         end += 1;
       if (result.length >= PRESERVE_RASTER_MAX_DETAILS) {
@@ -365,7 +386,7 @@ export const gridDetails = (
       result.push(
         Object.freeze({
           id: owner + ':paint:' + result.length,
-          color: toneColor(grid.roles[selected]!, tone as PaintTone),
+          color: cachedToneColor(grid, colorCache, selected, tone as PaintTone),
           alpha: 255,
           x: originX + column,
           y: originY + row,

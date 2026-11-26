@@ -216,6 +216,48 @@ const resolveDesignReference = (
   return literal(value.values[index]!, expression.span);
 };
 
+const transformDesignArray = <T>(
+  state: DesignState,
+  file: WorkspaceCompilationFile,
+  input: readonly unknown[],
+  depth: number,
+): T => {
+  let changed = false;
+  let out: unknown[] | null = null;
+  for (let index = 0; index < input.length; index += 1) {
+    const item = input[index];
+    const next = transformDesignValue(state, file, item, depth + 1);
+    if (next !== item) {
+      if (out === null) out = input.slice();
+      out[index] = next;
+      changed = true;
+    }
+  }
+  if (!changed) return (Object.isFrozen(input) ? input : freeze(input.slice())) as T;
+  return freeze(out!) as T;
+};
+
+const transformDesignRecord = <T>(
+  state: DesignState,
+  file: WorkspaceCompilationFile,
+  input: Record<string, unknown>,
+  depth: number,
+): T => {
+  const keys = Object.keys(input);
+  let out: Record<string, unknown> | null = null;
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index]!;
+    const value = input[key];
+    const next = key === 'span' ? value : transformDesignValue(state, file, value, depth + 1);
+    if (next !== value) {
+      if (out === null) out = { ...input };
+      out[key] = next;
+    }
+  }
+  if (out === null) return (Object.isFrozen(input) ? input : freeze({ ...input })) as T;
+  return freeze(out) as T;
+};
+
 const transformDesignValue = <T>(
   state: DesignState,
   file: WorkspaceCompilationFile,
@@ -233,23 +275,12 @@ const transformDesignValue = <T>(
     throw new AssetBudgetAbort();
   }
   if (input === null || typeof input !== 'object') return input;
-  if (Array.isArray(input)) {
-    return freeze(
-      input.map((item: unknown) => transformDesignValue(state, file, item, depth + 1)),
-    ) as T;
-  }
+  if (Array.isArray(input)) return transformDesignArray<T>(state, file, input, depth);
   if (isReference(input)) {
     const replacement = resolveDesignReference(state, file, input);
     if (replacement !== null) return replacement as T;
   }
-  return freeze(
-    Object.fromEntries(
-      Object.entries(input).map(([key, value]) => [
-        key,
-        key === 'span' ? value : transformDesignValue(state, file, value, depth + 1),
-      ]),
-    ),
-  ) as T;
+  return transformDesignRecord<T>(state, file, input as Record<string, unknown>, depth);
 };
 
 const evaluateDesignField = (
