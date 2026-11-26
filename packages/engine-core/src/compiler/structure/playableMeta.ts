@@ -40,6 +40,7 @@ const classifyMaterial = (stateName: string): ColliderMaterial => {
     stateName.includes('spruce') ||
     stateName.includes('birch') ||
     stateName.includes('plank') ||
+    stateName.includes('timber') ||
     stateName.includes('log') ||
     stateName.includes('wood') ||
     stateName.includes('chest') ||
@@ -350,6 +351,33 @@ const transformSockets = (grid: StructureGrid): readonly StructureSocketMeta[] =
   }));
 };
 
+const NON_COLLIDING_INTERIOR_TAGS =
+  'drapery:,floor_,baseboard_,wainscot_,molding_,ceiling_,window_pane_,partition_door,story_'.split(
+    ',',
+  );
+
+const isCollidingInteriorBox = (tag: string): boolean =>
+  !NON_COLLIDING_INTERIOR_TAGS.some((p) => tag.startsWith(p));
+
+const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollider[] => {
+  const [w, , d] = grid.size;
+  const [hw, hd] = [w / 2, d / 2];
+  const out: PlayableCollider[] = [];
+  for (const room of grid.interiors ?? []) {
+    for (const box of room.ir.boxes) {
+      if (!isCollidingInteriorBox(box.semantic_tag ?? '')) continue;
+      const material: ColliderMaterial =
+        box.layer === 'translucent' ? 'glass' : classifyMaterial(box.tile_id);
+      out.push({
+        from: [box.from_16[0] / 16 - hw, box.from_16[1] / 16, box.from_16[2] / 16 - hd],
+        to: [box.to_16[0] / 16 - hw, box.to_16[1] / 16, box.to_16[2] / 16 - hd],
+        material,
+      });
+    }
+  }
+  return out;
+};
+
 export const buildPlayableStructureMeta = (
   grid: StructureGrid,
   lights: readonly PlayableLight[],
@@ -361,7 +389,7 @@ export const buildPlayableStructureMeta = (
     id: grid.id,
     unitsPerBlock: 1,
     bounds: { min: [-w / 2, 0, -d / 2], max: [w / 2, h, d / 2] },
-    colliders: mergeColliders(grid, descriptors),
+    colliders: [...mergeColliders(grid, descriptors), ...collectInteriorColliders(grid)],
     zones: buildZones(grid),
     lights,
     interactables: buildInteractables(grid),

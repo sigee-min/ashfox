@@ -448,6 +448,31 @@ const testCodexInteriorRegressions = (): void => {
     [4.5, 5.5],
     'East-facing 3x1 table hook must center at [4.5, 5.5]',
   );
+
+  // Verify south-facing 3x1 dining_set rotates chairs within/around positive [4..7, 4..5] footprint and cabinet emits hinge.
+  const southDining = compileInteriorProp(
+    {
+      id: 's_dine',
+      kind: 'dining_set',
+      at: [4, 1, 4],
+      size: [3, 1],
+      seat_count: 6,
+      facing: 'south',
+    },
+    TAVERN_DNA,
+    2,
+  );
+  const sitXs = southDining.hooks.filter((h) => h.kind === 'sit').map((h) => h.position[0]);
+  assert.ok(
+    sitXs.every((x) => x >= 4 && x <= 7),
+    `South-facing dining chairs must stay within X=4..7, got ${JSON.stringify(sitXs)}`,
+  );
+  const cabRes = compileInteriorProp(
+    { id: 'cab1', kind: 'cabinet', at: [2, 1, 2], size: [1, 1], facing: 'east' },
+    TAVERN_DNA,
+    1,
+  );
+  assert.ok(cabRes.hooks.some((h) => h.kind === 'hinge' && h.target_id === 'cab1'));
 };
 
 testParametricPropsAndAutoJoin();

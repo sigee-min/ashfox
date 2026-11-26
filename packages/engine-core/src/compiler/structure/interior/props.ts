@@ -53,55 +53,26 @@ export interface CompiledPropsBundle {
   readonly surface_y_map: ReadonlyMap<string, number>;
 }
 
-const SURFACE_HEIGHT_16: Readonly<Record<InteriorPropKind, number>> = {
-  table: 16,
-  tables: 16,
-  dining_set: 16,
-  low_table: 8,
-  counter: 14,
-  l_counter: 14,
-  terminal: 12,
-  terminals: 12,
-  console_terminal: 12,
-  fireplace: 25,
-  cabinet: 24,
-  display_case: 25.5,
-  shelving: 28,
-  wall_shelf: 1.5,
-  barrel_rack: 14,
-  sofa: 8.5,
-  sofas: 8.5,
-  chair: 8.5,
-  swivel_chair: 9,
-  cushion: 2.8,
-  cushions: 2.8,
-  holo_screen: 3,
-  custom_prop: 8,
-};
+const SURFACE_HEIGHT_MAP: ReadonlyMap<string, number> = new Map(
+  'table:16,tables:16,dining_set:16,low_table:8,counter:14,l_counter:14,terminal:12,terminals:12,console_terminal:12,fireplace:25,cabinet:24,display_case:25.5,shelving:28,wall_shelf:1.5,barrel_rack:14,sofa:8.5,sofas:8.5,chair:8.5,swivel_chair:9,cushion:2.8,cushions:2.8,holo_screen:3,custom_prop:8'
+    .split(',')
+    .map((row) => {
+      const [k, v] = row.split(':');
+      return [k!, Number(v)];
+    }),
+);
 
-export const propSurfaceHeight16 = (kind: InteriorPropKind): number => SURFACE_HEIGHT_16[kind];
+export const propSurfaceHeight16 = (kind: InteriorPropKind): number =>
+  SURFACE_HEIGHT_MAP.get(kind) ?? 8;
 
-const SEAT_KINDS = new Set<InteriorPropKind>([
-  'chair',
-  'swivel_chair',
-  'sofa',
-  'sofas',
-  'cushion',
-  'cushions',
-  'dining_set',
-]);
-
-const STATION_KINDS = new Set<InteriorPropKind>([
-  'table',
-  'tables',
-  'low_table',
-  'counter',
-  'l_counter',
-  'terminal',
-  'terminals',
-  'console_terminal',
-  'dining_set',
-]);
+const SEAT_KINDS: ReadonlySet<string> = new Set(
+  'chair,swivel_chair,sofa,sofas,cushion,cushions,dining_set'.split(','),
+);
+const STATION_KINDS: ReadonlySet<string> = new Set(
+  'table,tables,low_table,counter,l_counter,terminal,terminals,console_terminal,dining_set'.split(
+    ',',
+  ),
+);
 
 const JOIN_GROUPS: Partial<Record<InteriorPropKind, string>> = {
   table: 'table',
@@ -278,6 +249,24 @@ const diningSeatOffsets = (
   return seats;
 };
 
+const CW_FACING: readonly CardinalFacing[] = ['north', 'east', 'south', 'west'];
+
+const rotateChairOffset = (
+  lx: number,
+  lz: number,
+  relFacing: CardinalFacing,
+  wB: number,
+  dB: number,
+  tableFacing: CardinalFacing,
+): readonly [number, number, CardinalFacing] => {
+  const rotIdx = CW_FACING.indexOf(tableFacing);
+  const nextFacing = CW_FACING[(CW_FACING.indexOf(relFacing) + rotIdx) % 4]!;
+  if (tableFacing === 'east') return [dB - 1 - lz, lx, nextFacing];
+  if (tableFacing === 'south') return [wB - 1 - lx, dB - 1 - lz, nextFacing];
+  if (tableFacing === 'west') return [lz, wB - 1 - lx, nextFacing];
+  return [lx, lz, nextFacing];
+};
+
 const buildDiningChairs = (
   spec: InteriorPropSpec,
   styleDna: StyleDna,
@@ -288,14 +277,14 @@ const buildDiningChairs = (
   const count = spec.seat_count ?? Math.max(2, wB * 2);
   const offsets = diningSeatOffsets(wB, dB, count);
   const mat = materialsForStyle(spec.style_override ?? styleDna.furn);
-  const { right, back } = facingAxes(spec.facing);
   const boxes: SubVoxelBoxIR[] = [];
   const hooks: PlayableInteriorHook[] = [];
   offsets.forEach(([lx, lz, relFacing], idx) => {
     const chairId = `${spec.id}:chair_${idx}`;
     const j = computeOrganicTransform(seed, chairId, organic, undefined, true);
-    const wx = spec.at[0] + right[0] * lx + back[0] * lz;
-    const wz = spec.at[2] + right[1] * lx + back[1] * lz;
+    const [rx, rz, chairFacing] = rotateChairOffset(lx, lz, relFacing, wB, dB, spec.facing);
+    const wx = spec.at[0] + rx;
+    const wz = spec.at[2] + rz;
     const origin16: Vec3 = [
       wx * SUBVOXEL_UNITS_PER_BLOCK + j.offset_x_16,
       spec.at[1] * SUBVOXEL_UNITS_PER_BLOCK,
@@ -305,7 +294,6 @@ const buildDiningChairs = (
       Math.abs(j.rotation_y_deg) < 4 && organic >= 0.5
         ? 12 * (idx % 2 === 0 ? 1 : -1)
         : j.rotation_y_deg;
-    const chairFacing = relFacing === 'north' ? spec.facing : relFacing;
     boxes.push(
       ...finalizeLocalBoxes(
         chairId,
@@ -328,6 +316,42 @@ const buildDiningChairs = (
     });
   });
   return { boxes, hooks };
+};
+
+const emitLitPropHooks = (
+  spec: InteriorPropSpec,
+  centerPos: Vec3,
+  mat: StyleMaterials,
+  hooks: PlayableInteriorHook[],
+): void => {
+  const isFire = spec.kind === 'fireplace';
+  if (
+    !isFire &&
+    spec.kind !== 'terminal' &&
+    spec.kind !== 'console_terminal' &&
+    spec.kind !== 'holo_screen'
+  ) {
+    return;
+  }
+  hooks.push(
+    {
+      kind: 'toggle_light',
+      id: `${spec.id}:light`,
+      position: centerPos,
+      color: isFire ? '#ff9e3d' : mat.emissiveColor,
+      default_on: true,
+      light_id: `${spec.id}:glow`,
+    },
+    {
+      kind: 'audio_emitter',
+      id: `${spec.id}:audio`,
+      cue_kind: isFire ? 'fire_loop' : 'tech_hum',
+      sound_id: isFire ? 'hearth_fire_loop' : 'console_tech_hum',
+      position: centerPos,
+      radius: isFire ? 7 : 5,
+      gain_db: isFire ? -12 : -18,
+    },
+  );
 };
 
 const collectPropHooks = (
@@ -355,31 +379,18 @@ const collectPropHooks = (
       station_kind: spec.kind,
     });
   }
-  if (
-    spec.kind === 'fireplace' ||
-    spec.kind === 'terminal' ||
-    spec.kind === 'console_terminal' ||
-    spec.kind === 'holo_screen'
-  ) {
-    const isFire = spec.kind === 'fireplace';
+  if (spec.kind === 'cabinet' || spec.kind === 'display_case') {
     hooks.push({
-      kind: 'toggle_light',
-      id: `${spec.id}:light`,
+      kind: 'hinge',
+      id: `hinge_${spec.id}`,
       position: centerPos,
-      color: isFire ? '#ff9e3d' : mat.emissiveColor,
-      default_on: true,
-      light_id: `${spec.id}:glow`,
-    });
-    hooks.push({
-      kind: 'audio_emitter',
-      id: `${spec.id}:audio`,
-      cue_kind: isFire ? 'fire_loop' : 'tech_hum',
-      sound_id: isFire ? 'hearth_fire_loop' : 'console_tech_hum',
-      position: centerPos,
-      radius: isFire ? 7 : 5,
-      gain_db: isFire ? -12 : -18,
+      facing: spec.facing,
+      pivot: centerPos,
+      travel: 90,
+      target_id: spec.id,
     });
   }
+  emitLitPropHooks(spec, centerPos, mat, hooks);
   return hooks;
 };
 

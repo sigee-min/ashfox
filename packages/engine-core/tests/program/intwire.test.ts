@@ -142,6 +142,26 @@ const run = async (): Promise<void> => {
   assert.ok(product.interiorAudits[0]!.score >= 85);
   assert.ok(product.playableMeta.interiors && product.playableMeta.interiors.length === 1);
   assert.ok(product.playableMeta.interiors[0]!.hooks.length > 0);
+  // Verify mezzanine deck box from interior.ir.boxes is included in exported colliders.
+  const mezBox = compiled.ir.boxes.find((b) => b.semantic_tag === 'volume_mezzanine')!;
+  const [pw, , pd] = product.grid.size;
+  const mezMid: readonly [number, number, number] = [
+    (mezBox.from_16[0] + mezBox.to_16[0]) / 32 - pw / 2,
+    (mezBox.from_16[1] + mezBox.to_16[1]) / 32,
+    (mezBox.from_16[2] + mezBox.to_16[2]) / 32 - pd / 2,
+  ];
+  assert.ok(
+    product.playableMeta.colliders.some(
+      (c) =>
+        mezMid[0] >= c.from[0] &&
+        mezMid[0] <= c.to[0] &&
+        mezMid[1] >= c.from[1] &&
+        mezMid[1] <= c.to[1] &&
+        mezMid[2] >= c.from[2] &&
+        mezMid[2] <= c.to[2],
+    ),
+    'Expected interior mezzanine deck midpoint inside exported playableMeta.colliders',
+  );
   const hookSchemas = new Set(product.hooks?.anchors.map((a) => a.schema) ?? []);
   assert.ok(hookSchemas.has('std.sit'), 'Expected interior sit hook in HooksDocument');
   assert.ok(hookSchemas.has('std.door_hinge'), 'Expected interior door_hinge/slide hook');

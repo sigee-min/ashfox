@@ -1116,73 +1116,73 @@
           "entry": "structures/blacksmith",
           "kind": "structure",
           "nbt": "ec3c5c10700b1e95bc5c83f2899f61154610d9bb7810ab471899360ba0724a3f",
-          "playableMeta": "05e4cce25b2ee8965ba5ed2a89a1f61f28469589ffcdcb8ba9cbcf74eb25f1db",
+          "playableMeta": "f01881f2b6969b0f67389af5eeeea131367d36c6922561f7cb2796d681cdfc90",
           "document": "462ab01fff3a8210dd42049cb8eac847ff5f30f4cf687f8d1715404bc9afe904"
         },
         {
           "entry": "structures/medieval_cottage",
           "kind": "structure",
           "nbt": "5bdabb89e313ed029db10c50d795f9778e59f36dd83733aa7322d3948f09b650",
-          "playableMeta": "736435500d29679f798dcde085b73b98646140beb543c6ff958a622afa07ae38",
+          "playableMeta": "f55f1bb1c2eaadfe8e2b1570456d3495f4bc830a8573827a4ba8d623b7ca3048",
           "document": "171f7598c7f3b7e23cbd310b52788dc74a2ff6073167e3c635a2f91195649c1a"
         },
         {
           "entry": "structures/ryokan_pavilion",
           "kind": "structure",
           "nbt": "80675c82e0bb3cc0fbccafdc50ed718734d5b91c69e87a1b3b79d7e67482ec1f",
-          "playableMeta": "fdeccc9cde1c4a4651bec36d3b43fc435f2cb4c4c55243cd043c9ab10331c401",
+          "playableMeta": "0d5aae694ed8d55691f7c136ba0d6a250de22d3d70d220a501c019249be844e3",
           "document": "b1bdc46fee28ad79292c5503c9c11e9ce7a87cb1470c9cab4922cd6e50eb6361"
         },
         {
           "entry": "structures/scifi_outpost",
           "kind": "structure",
           "nbt": "74511adbd18f0416b0edbb0bade6677c23c6fe58fa9c571cc2d1d23d0db11d3c",
-          "playableMeta": "ad30d96d3ccad9dd82b778d172c20fab004424ded9e4d255d4bfeb98332c5388",
+          "playableMeta": "127eecad45c5d4172b0cb5aef475a0a1aed4e4cab28450b0a68a491846905dfe",
           "document": "3b24331ceed31e2958b590230ddac5ba7501a8afa5dc6bcc02bd1991182f363f"
         },
         {
           "entry": "structures/tavern",
           "kind": "structure",
           "nbt": "3c29a86f99b3ef759fb4371822aaf2642c60626c2d83386c36a5496ed36629d9",
-          "playableMeta": "a714428df6cc3ffa0f5a58bb43ba481d8a341766eca0e0f5c3f56aee567b3755",
+          "playableMeta": "e2bda2f9462c9a2f2293e100382642be06c642c6fe19022212c82c53cfe69644",
           "document": "9b20560147cb60f32679b040427fd41fc3d35c85bd304755d2b9ffe0aaa256ee"
         },
         {
           "entry": "structures/village_compound",
           "kind": "structure",
           "nbt": "ea05aea0591bc49d4f0a92dd8d53d3b5b28cfaea336fc5ddcb13365fe726102d",
-          "playableMeta": "2b2187db1296d5c4b81837230e93c3ff480d670157099be7d48f52b7bcd51242",
+          "playableMeta": "147ad2a782eecd0d725328f6a3433258853cc2d7ae8da0d198b04d1b576a5ada",
           "document": "c4f1b5f49794e9f07f8fbafdd342921407ff727154ecd883f57066b95cba7d1c"
         },
         {
           "entry": "structures/watchtower",
           "kind": "structure",
           "nbt": "877324c6813a32a790d54c776fa3072fbde64ff72450abd619c861ee06f1ec60",
-          "playableMeta": "f67666bab311e344af5cd81a32fcfcd481d0630aa36fc02ae1a2c6dcefc33035",
+          "playableMeta": "5797e705a4e61e70b447a8e9a505be27c431b2971d1d4400b8429cf2e86916c9",
           "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "bab12e29d4332c46a60332a9315d11a0b178adc73f00db7b5354019f323fa709",
+      "catalogHash": "580959e6d0c42e6c7bcb26c247226d06f42a078e483a7028c9a978c7b8fce728",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
-          "sha256": "ac3a55fa74f194cf7929a37b6f239899e61bc05ac9a9dfeb9e90c00cb5a3718e"
+          "sha256": "7684b0d395a90e6bacc68640eab1b5ee55e7cd06b998c09c03d01e6b4edbd950"
         },
         {
           "path": "assets/blacksmith_glb/blacksmith_glb.glb",
-          "sha256": "e5fb9203aefadb77dec0f65ac5f7f902a0d425789575b5b0ab9949a3a3504e9c"
+          "sha256": "98093aec9fe2cc631f7eb7d52cc4fd754e5762ac5a7bd332a0f5a0b7cfc74030"
         },
         {
           "path": "assets/blacksmith_glb/blacksmith_glb.hooks.json",
-          "sha256": "4e73e305d94004dcf199460e2da19142bd5720c4ca27337a1db577ca7f828c30"
+          "sha256": "aa6bcca8e46c66172f834c7974fcd9bf5b489fd89497f44cbec460e999f9cb7e"
         },
         {
           "path": "assets/blacksmith_glb/blacksmith_glb.structure.json",
-          "sha256": "ec2b001d7ccc6637c04d6117d463d5f359529354b686a5afb90a701cd03de795"
+          "sha256": "0fff39ee3fc3971bbe4b9a0cbbd9b9d03f7ee30f58db067213fe1b1e790a2b22"
         },
         {
           "path": "assets/blacksmith_nbt/blacksmith_nbt.hooks.json",
-          "sha256": "4e73e305d94004dcf199460e2da19142bd5720c4ca27337a1db577ca7f828c30"
+          "sha256": "aa6bcca8e46c66172f834c7974fcd9bf5b489fd89497f44cbec460e999f9cb7e"
         },
         {
           "path": "assets/blacksmith_nbt/blacksmith_nbt.nbt",
@@ -1190,23 +1190,23 @@
         },
         {
           "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
-          "sha256": "175efe7ab9864a5913f42a063506138bbb601687ac95b0e4ce2db0bd0734900c"
+          "sha256": "e580df7c5d13e715e3d6bc13f85682ce9b4e4623c8462ef10fd96b766cef50fa"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
-          "sha256": "ad28ca6e861096117424313d327556ad51b6318100fd430c04cd22c5b31e7e27"
+          "sha256": "d9287b0995cfe659c888826006d45f7af3eb12e29fbf297d1f28722202f4e5cb"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.hooks.json",
-          "sha256": "8c484a194118cb3f9781422735d4d4507353e1331f172f2d9a9cac8d7b102d4d"
+          "sha256": "f59ef5b3c4fee6f17cdfc507a2a07a4ecfbd7ac6ff7a0e7d97524aaf56632d2d"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.structure.json",
-          "sha256": "6b749969cc41b99dcd1f50276181700accf2102153b8c1cb517fcdda85533011"
+          "sha256": "33826d5287ec1869efb91e84e6e226403e3a81f7c6e001bba4ce907e89272811"
         },
         {
           "path": "assets/medieval_cottage_nbt/medieval_cottage_nbt.hooks.json",
-          "sha256": "8c484a194118cb3f9781422735d4d4507353e1331f172f2d9a9cac8d7b102d4d"
+          "sha256": "f59ef5b3c4fee6f17cdfc507a2a07a4ecfbd7ac6ff7a0e7d97524aaf56632d2d"
         },
         {
           "path": "assets/medieval_cottage_nbt/medieval_cottage_nbt.nbt",
@@ -1214,23 +1214,23 @@
         },
         {
           "path": "assets/ryokan_pavilion_glb/ashfox-lineage.json",
-          "sha256": "e775b7486642f50e1c36ded0c5f3c41abfe0be90545e6c4777f4b3457cae93ee"
+          "sha256": "eb0ca956bc38444c6c32e7251f0194420cd946a907d8379f5eaeb4562455cc34"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.glb",
-          "sha256": "c7bc8e1efbc63388ffb95c9f9a71aa42e7d1057b296e5c8a10fdb70d67943d52"
+          "sha256": "d820915a3fcb3355ece90638a42ad795a5a7bb7ebb86c685e1cbafffa2549855"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.hooks.json",
-          "sha256": "a6d8e09205d5edcc9a41fdf7e9b852c52a09abc09ed7e52fc89a05af4a78cf16"
+          "sha256": "76c42c7cde6d73f98a6cd2aaee4e3cdfd8e188855acb72690c93a821acf0c170"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.structure.json",
-          "sha256": "7338cf9b798bd86a4444d7bfcf7022c028a8cd36af7fc34fee409fdd9a3a4934"
+          "sha256": "fce543ef06f1fcef2ab54c84c6b6b55f571c465f86d21b9ebaa500b9251edbcf"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.hooks.json",
-          "sha256": "a6d8e09205d5edcc9a41fdf7e9b852c52a09abc09ed7e52fc89a05af4a78cf16"
+          "sha256": "76c42c7cde6d73f98a6cd2aaee4e3cdfd8e188855acb72690c93a821acf0c170"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.nbt",
@@ -1238,7 +1238,7 @@
         },
         {
           "path": "assets/scifi_outpost_glb/ashfox-lineage.json",
-          "sha256": "ff1524f6d7c32100d31b568c8d157c9db22811ded5b9a6d64443af8fef8fc3d9"
+          "sha256": "fd889055286049c5af25b9ab19bfa7b05dba6373457b62933c4e373c887adce6"
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.glb",
@@ -1250,7 +1250,7 @@
         },
         {
           "path": "assets/scifi_outpost_glb/scifi_outpost_glb.structure.json",
-          "sha256": "6cbb61f2254903c52994c3fb9ca155c9b8abd90b7df5f427d02b6fed63603d3e"
+          "sha256": "b1326aed08c951798cf255b1e994df4d371dc9119a3e40788763976f17baf9fc"
         },
         {
           "path": "assets/scifi_outpost_nbt/scifi_outpost_nbt.hooks.json",
@@ -1262,23 +1262,23 @@
         },
         {
           "path": "assets/tavern_glb/ashfox-lineage.json",
-          "sha256": "5589ae7982dfd3855c1657b454412041c2d984e0a6b5f883a0b6647a40b5ab83"
+          "sha256": "cf2709b21d0e544d9cae95233513021e3761fc8067a58d0d7cd6e7e55c1477d4"
         },
         {
           "path": "assets/tavern_glb/tavern_glb.glb",
-          "sha256": "90d721b9f63a30354ecbf735d4f1f451dfe7152ebb6c1a2b9b3b25daa30081b1"
+          "sha256": "ddbc22bbc4958691615e867c12fc5dabd399905503f5cad2d2f1fc18e5a8c479"
         },
         {
           "path": "assets/tavern_glb/tavern_glb.hooks.json",
-          "sha256": "0f62514f42929d1aa846419539c089db14af1dc7ccde8692ff0d8920cdd93a9e"
+          "sha256": "085096fa5d2135d4490faaa3cd81f35316f6f1100ffee3f8ef12acf95e466da7"
         },
         {
           "path": "assets/tavern_glb/tavern_glb.structure.json",
-          "sha256": "d428e43e6e9475386b76962a4e0c29797f1fe43e95e725e85076daa9acd4c0b7"
+          "sha256": "2c4838441a779a0e5d337e99cd92c3289f74a16454f5c17f69b43442d32596fa"
         },
         {
           "path": "assets/tavern_nbt/tavern_nbt.hooks.json",
-          "sha256": "0f62514f42929d1aa846419539c089db14af1dc7ccde8692ff0d8920cdd93a9e"
+          "sha256": "085096fa5d2135d4490faaa3cd81f35316f6f1100ffee3f8ef12acf95e466da7"
         },
         {
           "path": "assets/tavern_nbt/tavern_nbt.nbt",
@@ -1286,23 +1286,23 @@
         },
         {
           "path": "assets/village_compound_glb/ashfox-lineage.json",
-          "sha256": "2bb3271000eaf457481fb12af1f37e2933c4493d9fb1979f5bc0ca9bee2f5348"
+          "sha256": "d081ca76f65c8ccc5b0cbbac8fa713d863719c736a3e30125cf8c1e2a5de87df"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.glb",
-          "sha256": "2e592c3acc43101a29d115aed212f7a33b724a16ee5f8cdd1ea5912ac28f4bc4"
+          "sha256": "d93074c4039b84a354da99cd58462bf5deea6ab920a5e6a450a25451938baeee"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.hooks.json",
-          "sha256": "add10e2cf50717fd7de33fc37a7da1bef8c7f1159dbc7981f2b2bdc457dddb6a"
+          "sha256": "2e5fe7020f8a77d04d29154b1cb33076f0677ac76f987f251f5e3c2b5b758327"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.structure.json",
-          "sha256": "757e6f5e8533dc399a17214412649bb7fd3d433fe8407c1d7c13c23b290561f0"
+          "sha256": "b32fbd1347d81731aa3fc74cbd42e0e15bf3be04561cc67a439f1516e5ec1e5d"
         },
         {
           "path": "assets/village_compound_nbt/village_compound_nbt.hooks.json",
-          "sha256": "add10e2cf50717fd7de33fc37a7da1bef8c7f1159dbc7981f2b2bdc457dddb6a"
+          "sha256": "2e5fe7020f8a77d04d29154b1cb33076f0677ac76f987f251f5e3c2b5b758327"
         },
         {
           "path": "assets/village_compound_nbt/village_compound_nbt.nbt",
@@ -1310,31 +1310,31 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "a9e4e0009de4ad4a59b3ae6971da87f4d0d1a14e202da7f182135fc899206904"
+          "sha256": "78d32916dffd346958bb0619f9643b7847547b34972c3f5d1e345c466b7979b9"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
-          "sha256": "cf34af55a5956533022a3df4b1264e61d969809a53e17f565dbbd4d46e50d2b8"
+          "sha256": "fcc4b1e5d9a1c83391c030044ed537eca7b50d4650b05d3c44bd147c242ab83d"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.structure.json",
-          "sha256": "ec2b001d7ccc6637c04d6117d463d5f359529354b686a5afb90a701cd03de795"
+          "sha256": "0fff39ee3fc3971bbe4b9a0cbbd9b9d03f7ee30f58db067213fe1b1e790a2b22"
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.glb",
-          "sha256": "ae86552e4e796838ef96c1a5ef344d2ea85f63279379c2746321ad56ba7b8c79"
+          "sha256": "4a19ba360f1316edb1644854ed7767d2264408747cb5d1b4e32139a0aaf9b33e"
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.structure.json",
-          "sha256": "6b749969cc41b99dcd1f50276181700accf2102153b8c1cb517fcdda85533011"
+          "sha256": "33826d5287ec1869efb91e84e6e226403e3a81f7c6e001bba4ce907e89272811"
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.glb",
-          "sha256": "7e2397af27ce82f3aa23197ddb417250a7c778a5581ed3139d7879952c37dbd1"
+          "sha256": "81f170fb1d0fb208f88048908091ffbb1efe287dda7706da88bec9e1eff8cd5f"
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.structure.json",
-          "sha256": "7338cf9b798bd86a4444d7bfcf7022c028a8cd36af7fc34fee409fdd9a3a4934"
+          "sha256": "fce543ef06f1fcef2ab54c84c6b6b55f571c465f86d21b9ebaa500b9251edbcf"
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.glb",
@@ -1342,23 +1342,23 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.structure.json",
-          "sha256": "6cbb61f2254903c52994c3fb9ca155c9b8abd90b7df5f427d02b6fed63603d3e"
+          "sha256": "b1326aed08c951798cf255b1e994df4d371dc9119a3e40788763976f17baf9fc"
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.glb",
-          "sha256": "4b72c094003ca7fea3f9241dc0af54b8e7a4b8f024813d12e8654ba37e0e9fe4"
+          "sha256": "21e5fee39c5ee8caedc73e4bb119193a0246a408f13f06485083772671a366be"
         },
         {
           "path": "assets/village_pack/game-assets/structures/tavern/tavern_glb.structure.json",
-          "sha256": "d428e43e6e9475386b76962a4e0c29797f1fe43e95e725e85076daa9acd4c0b7"
+          "sha256": "2c4838441a779a0e5d337e99cd92c3289f74a16454f5c17f69b43442d32596fa"
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.glb",
-          "sha256": "f3db6bd9a64ff04c11da8bfc7377056acd25b84c0b8c0d1d851199adce482c89"
+          "sha256": "e398430576d9ac4d0ea536b010f306ccd16c68d46b8d8a52b631df3061068ffd"
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.structure.json",
-          "sha256": "757e6f5e8533dc399a17214412649bb7fd3d433fe8407c1d7c13c23b290561f0"
+          "sha256": "b32fbd1347d81731aa3fc74cbd42e0e15bf3be04561cc67a439f1516e5ec1e5d"
         },
         {
           "path": "assets/village_pack/game-assets/structures/watchtower/watchtower_glb.glb",
@@ -1366,7 +1366,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/watchtower/watchtower_glb.structure.json",
-          "sha256": "00956481e742592dc1c9e1c713eb86f92a867126ca8c54e09bd7de432b420886"
+          "sha256": "442f89ef3a6ab5cbc7d6df465836c21155c283e4fcd8fbdffa32a0d5a5bfab07"
         },
         {
           "path": "assets/village_pack/game-assets/textures/011fa8be64a2.png",
@@ -1714,11 +1714,11 @@
         },
         {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "b61596b894e288ba9dac995678353170b25806f827b4b0bf7876c09914660dad"
+          "sha256": "53cf70a181a54d2057340c75f3979343b58f5740f560c24147678106c11301c5"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
-          "sha256": "7b0779595d17d200d07731d1bfb432c5892e5721c1e273851d450741a9fb16e3"
+          "sha256": "0ca733f35edcd6679f557677eca30f13229b540134d9ceed6b76130924af8441"
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.glb",
@@ -1730,7 +1730,7 @@
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.structure.json",
-          "sha256": "00956481e742592dc1c9e1c713eb86f92a867126ca8c54e09bd7de432b420886"
+          "sha256": "442f89ef3a6ab5cbc7d6df465836c21155c283e4fcd8fbdffa32a0d5a5bfab07"
         },
         {
           "path": "assets/watchtower_nbt/watchtower_nbt.hooks.json",
@@ -1742,7 +1742,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "bab12e29d4332c46a60332a9315d11a0b178adc73f00db7b5354019f323fa709"
+          "sha256": "580959e6d0c42e6c7bcb26c247226d06f42a078e483a7028c9a978c7b8fce728"
         }
       ]
     }
