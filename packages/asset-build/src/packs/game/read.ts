@@ -2,16 +2,16 @@ import { readPlayback } from '../../bundle/audio';
 import { BuildFailure } from '../../bundle/contract';
 import type { GameAssetManifest } from './contract';
 import { safeRelative } from '../../shared/path';
+import { isClosedContractRecord } from '@ashfox/internal-contracts';
 const fail = (message: string): never => {
   throw new BuildFailure('output.integrity', 'Game manifest: ' + message, 3);
 };
 
-const record = (v: unknown, keys: readonly string[]): Record<string, unknown> => {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) return fail('Expected record');
-  const r = v as Record<string, unknown>;
-  if (Object.keys(r).length !== keys.length || keys.some((k) => !Object.hasOwnProperty.call(r, k)))
+const record = (v: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> => {
+  if (!isClosedContractRecord(v)) return fail('Expected record');
+  if (Object.keys(v).length !== keys.length || keys.some((k) => !Object.hasOwnProperty.call(v, k)))
     fail('Unexpected fields');
-  return r;
+  return v;
 };
 
 const finite = (v: unknown, positive: boolean): boolean =>
@@ -126,9 +126,8 @@ const validateSpriteAsset = (
 };
 
 const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<string>): void => {
-  if (!raw || typeof raw !== 'object' || !('kind' in raw)) return fail('Invalid kind');
-  const assetKind = (raw as { readonly kind: unknown }).kind;
-  const a = record(raw, ['id', 'kind', 'files', ...fieldsForAssetKind(assetKind)]);
+  if (!isClosedContractRecord(raw) || !('kind' in raw)) return fail('Invalid kind');
+  const a = record(raw, ['id', 'kind', 'files', ...fieldsForAssetKind(raw.kind)]);
   if (typeof a.id !== 'string' || !/^[a-z][a-z0-9_.:/-]{0,127}$/.test(a.id) || ids.has(a.id))
     return fail('Invalid or duplicate ID');
   ids.add(a.id);

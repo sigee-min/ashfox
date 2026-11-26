@@ -8,8 +8,10 @@ const MAX_OGG_BYTES = 16 * 1024 * 1024;
 const VORBIS_QUALITY = 5;
 const OGG_SERIAL_NUMBER = 0;
 
+const ASCII_DECODER = new TextDecoder('ascii');
+
 const ascii = (bytes: Uint8Array, start: number, end: number): string =>
-  new TextDecoder('ascii').decode(bytes.subarray(start, end));
+  ASCII_DECODER.decode(bytes.subarray(start, end));
 
 const assertNotAborted = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw new BuildFailure('build.cancelled', 'Encoding cancelled', 130);

@@ -1,5 +1,6 @@
 import { readGameAssetManifest } from './read';
 import type { GameAssetPack } from '@ashfox/engine-core';
+import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
 import {
   BuildFailure,
   type Artifact,
@@ -9,35 +10,55 @@ import {
 import type { GameAssetManifest, RuntimeAsset } from './contract';
 import { digest, json } from '../../shared/digest';
 import { archivePack } from '../archive';
+import { indexCatalogAssetFiles, type IndexedCatalogAssetFiles } from '../sourceIndex';
 type RuntimeAssetDetail =
   | Omit<Extract<RuntimeAsset, { kind: 'model' }>, 'files'>
   | Omit<Extract<RuntimeAsset, { kind: 'sprite' }>, 'files'>
   | Omit<Extract<RuntimeAsset, { kind: 'sound' }>, 'files'>;
 
-const readArtifactBytes = (artifacts: readonly Artifact[], path: string): Uint8Array => {
-  const file = artifacts.find((f) => f.path === path);
-  if (!file) throw new BuildFailure('pack.source', path);
-  return file.bytes;
+interface GamePackContext {
+  readonly assetMap: ReadonlyMap<string, CatalogAsset>;
+  readonly artifactMap: ReadonlyMap<string, Uint8Array>;
+  readonly sourceFiles: ReadonlyMap<string, IndexedCatalogAssetFiles>;
+}
+
+const createGamePackContext = (
+  assets: readonly CatalogAsset[],
+  artifacts: readonly Artifact[],
+): GamePackContext => ({
+  assetMap: new Map(assets.map((asset) => [asset.id, asset])),
+  artifactMap: new Map(artifacts.map((artifact) => [artifact.path, artifact.bytes])),
+  sourceFiles: new Map(assets.map((asset) => [asset.id, indexCatalogAssetFiles(asset)])),
+});
+
+const readArtifactBytes = (
+  artifactMap: ReadonlyMap<string, Uint8Array>,
+  path: string,
+): Uint8Array => {
+  const bytes = artifactMap.get(path);
+  if (!bytes) throw new BuildFailure('pack.source', path);
+  return bytes;
 };
 
 const compileSoundGameAsset = async (
   bindingId: string,
   source: CatalogAsset,
+  sourceFiles: IndexedCatalogAssetFiles,
   variantsMeta: Extract<
     CatalogAsset['metadata'],
     { readonly variants: readonly unknown[] }
   >['variants'],
   packAudio: GameAssetPack['audio'],
-  artifacts: readonly Artifact[],
+  artifactMap: ReadonlyMap<string, Uint8Array>,
   encoded: Map<string, Uint8Array>,
   add: (name: string, bytes: Uint8Array) => string,
   encoder?: PackEncoder,
 ): Promise<RuntimeAssetDetail> => {
   const variants = [];
   for (const variant of variantsMeta) {
-    const file = source.files.find((f) => f.path.endsWith(`/${variant.id}.wav`));
-    if (!file) throw new BuildFailure('pack.source', `${source.id}/${variant.id}`);
-    let data = readArtifactBytes(artifacts, file.path);
+    const filePath = sourceFiles.wavPaths.get(variant.id);
+    if (!filePath) throw new BuildFailure('pack.source', `${source.id}/${variant.id}`);
+    let data = readArtifactBytes(artifactMap, filePath);
     if (packAudio === 'ogg') {
       if (variant.playback.kind === 'loop')
         throw new BuildFailure(
@@ -46,10 +67,10 @@ const compileSoundGameAsset = async (
         );
       if (!encoder)
         throw new BuildFailure('pack.encoder', 'OGG game assets require a Vorbis encoder');
-      let ogg = encoded.get(file.path);
+      let ogg = encoded.get(filePath);
       if (!ogg) {
         ogg = await encoder.encode(data);
-        encoded.set(file.path, ogg);
+        encoded.set(filePath, ogg);
       }
       data = ogg;
     }
@@ -69,18 +90,19 @@ const compileSoundGameAsset = async (
 const compileModelGameAsset = (
   bindingId: string,
   source: CatalogAsset,
+  sourceFiles: IndexedCatalogAssetFiles,
   clips: Extract<CatalogAsset['metadata'], { readonly clips: readonly unknown[] }>['clips'],
   unitsPerMeter: number,
-  artifacts: readonly Artifact[],
+  artifactMap: ReadonlyMap<string, Uint8Array>,
   add: (name: string, bytes: Uint8Array) => string,
 ): RuntimeAssetDetail => {
-  const file = source.files.find((f) => f.path.endsWith('.glb'));
-  if (!file) throw new BuildFailure('pack.source', source.id + ': expected embedded GLB');
-  const data = readArtifactBytes(artifacts, file.path),
+  const filePath = sourceFiles.glbPath;
+  if (!filePath) throw new BuildFailure('pack.source', source.id + ': expected embedded GLB');
+  const data = readArtifactBytes(artifactMap, filePath),
     view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const gltf = JSON.parse(
-    new TextDecoder().decode(data.slice(20, 20 + view.getUint32(12, true))),
-  ) as { extensionsRequired?: string[] };
+  const gltf = JSON.parse(decodeUtf8(data.subarray(20, 20 + view.getUint32(12, true)))) as {
+    extensionsRequired?: string[];
+  };
   return {
     id: bindingId,
     kind: 'model',
@@ -95,22 +117,71 @@ const compileModelGameAsset = (
 const compileSpriteGameAsset = (
   bindingId: string,
   source: CatalogAsset,
+  sourceFiles: IndexedCatalogAssetFiles,
   meta: Extract<CatalogAsset['metadata'], { readonly width: number }>,
   pack: GameAssetPack,
-  artifacts: readonly Artifact[],
+  artifactMap: ReadonlyMap<string, Uint8Array>,
   add: (name: string, bytes: Uint8Array) => string,
 ): RuntimeAssetDetail => {
-  const file = source.files.find((f) => f.path.endsWith('.png'));
-  if (!file) throw new BuildFailure('pack.source', source.id);
+  const filePath = sourceFiles.pngPath;
+  if (!filePath) throw new BuildFailure('pack.source', source.id);
   return {
     id: bindingId,
     kind: 'sprite',
-    image: add(`${source.id}.png`, readArtifactBytes(artifacts, file.path)),
+    image: add(`${source.id}.png`, readArtifactBytes(artifactMap, filePath)),
     width: meta.width,
     height: meta.height,
     pixelsPerUnit: pack.pixelsPerUnit,
     filter: pack.spriteFilter,
   };
+};
+
+const compileBindingDetail = (
+  bindingId: string,
+  source: CatalogAsset,
+  sourceFiles: IndexedCatalogAssetFiles,
+  pack: GameAssetPack,
+  artifactMap: ReadonlyMap<string, Uint8Array>,
+  encoded: Map<string, Uint8Array>,
+  add: (name: string, bytes: Uint8Array) => string,
+  encoder?: PackEncoder,
+): Promise<RuntimeAssetDetail> | RuntimeAssetDetail => {
+  if (source.kind === 'sound' && 'variants' in source.metadata) {
+    return compileSoundGameAsset(
+      bindingId,
+      source,
+      sourceFiles,
+      source.metadata.variants,
+      pack.audio,
+      artifactMap,
+      encoded,
+      add,
+      encoder,
+    );
+  }
+  if (source.kind === 'sprite' && 'width' in source.metadata) {
+    return compileSpriteGameAsset(
+      bindingId,
+      source,
+      sourceFiles,
+      source.metadata,
+      pack,
+      artifactMap,
+      add,
+    );
+  }
+  if (source.kind === 'model' && 'clips' in source.metadata) {
+    return compileModelGameAsset(
+      bindingId,
+      source,
+      sourceFiles,
+      source.metadata.clips,
+      pack.unitsPerMeter,
+      artifactMap,
+      add,
+    );
+  }
+  throw new BuildFailure('pack.source', source.id + ': unsupported metadata');
 };
 
 export const compileGamePack = async (
@@ -121,40 +192,29 @@ export const compileGamePack = async (
 ): Promise<readonly Artifact[]> => {
   const files: Artifact[] = [],
     runtime: RuntimeAsset[] = [],
-    encoded = new Map<string, Uint8Array>();
-  for (const binding of [...pack.assets].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-    const source = assets.find((a) => a.id === binding.source);
-    if (!source || source.kind === 'pack') throw new BuildFailure('pack.source', binding.source);
+    encoded = new Map<string, Uint8Array>(),
+    context = createGamePackContext(assets, artifacts);
+  for (const binding of [...pack.assets].sort((a, b) => compareText(a.id, b.id))) {
+    const source = context.assetMap.get(binding.source);
+    const sourceFiles = context.sourceFiles.get(binding.source);
+    if (!source || !sourceFiles || source.kind === 'pack')
+      throw new BuildFailure('pack.source', binding.source);
     const mapped: Artifact[] = [];
     const add = (name: string, bytes: Uint8Array): string => {
       const path = `${binding.path}/${name}`;
       mapped.push({ path, bytes });
       return path;
     };
-    let detail: RuntimeAssetDetail;
-    if (source.kind === 'sound' && 'variants' in source.metadata)
-      detail = await compileSoundGameAsset(
-        binding.id,
-        source,
-        source.metadata.variants,
-        pack.audio,
-        artifacts,
-        encoded,
-        add,
-        encoder,
-      );
-    else if (source.kind === 'sprite' && 'width' in source.metadata)
-      detail = compileSpriteGameAsset(binding.id, source, source.metadata, pack, artifacts, add);
-    else if (source.kind === 'model' && 'clips' in source.metadata)
-      detail = compileModelGameAsset(
-        binding.id,
-        source,
-        source.metadata.clips,
-        pack.unitsPerMeter,
-        artifacts,
-        add,
-      );
-    else throw new BuildFailure('pack.source', source.id + ': unsupported metadata');
+    const detail = await compileBindingDetail(
+      binding.id,
+      source,
+      sourceFiles,
+      pack,
+      context.artifactMap,
+      encoded,
+      add,
+      encoder,
+    );
     files.push(...mapped);
     runtime.push({
       ...detail,
@@ -167,6 +227,6 @@ export const compileGamePack = async (
   }
   const manifest: GameAssetManifest = { format: 'ashfox-game-assets', version: 1, assets: runtime };
   readGameAssetManifest(manifest);
-  files.push({ path: 'assets.json', bytes: new TextEncoder().encode(json(manifest)) });
+  files.push({ path: 'assets.json', bytes: encodeUtf8(json(manifest)) });
   return archivePack(pack.name, 'game-assets', pack.archive, files);
 };
