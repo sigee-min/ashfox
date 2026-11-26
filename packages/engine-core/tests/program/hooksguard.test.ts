@@ -15,20 +15,24 @@ const span = (file: string, line = 1): HookSourceSpan => ({
 
 const BR_SCHEMAS: readonly HookSchemaDecl[] = [
   {
-    id: 'br_rules.loot_spot',
-    namespace: 'br_rules',
-    name: 'loot_spot',
+    id: 'game_world.LootSpawn',
+    namespace: 'game_world',
+    name: 'LootSpawn',
     exported: true,
     inline: false,
     targets: ['anchor'],
-    span: span('modules/br_rules.ashfox', 3),
+    span: span('modules/game_world.ashfox', 3),
     fields: [
       {
         name: 'tier',
         type: { kind: 'union', values: ['common', 'rare', 'epic'] },
         optional: false,
-        defaultValue: { kind: 'string', value: 'common', span: span('modules/br_rules.ashfox', 4) },
-        span: span('modules/br_rules.ashfox', 4),
+        defaultValue: {
+          kind: 'string',
+          value: 'common',
+          span: span('modules/game_world.ashfox', 4),
+        },
+        span: span('modules/game_world.ashfox', 4),
       },
       {
         name: 'chance',
@@ -38,32 +42,32 @@ const BR_SCHEMAS: readonly HookSchemaDecl[] = [
           kind: 'number',
           value: 0.65,
           unit: 'plain',
-          span: span('modules/br_rules.ashfox', 5),
+          span: span('modules/game_world.ashfox', 5),
         },
-        span: span('modules/br_rules.ashfox', 5),
+        span: span('modules/game_world.ashfox', 5),
       },
       {
         name: 'table',
         type: { kind: 'string' },
         optional: false,
-        span: span('modules/br_rules.ashfox', 6),
+        span: span('modules/game_world.ashfox', 6),
       },
       {
         name: 'prefab',
         type: { kind: 'asset' },
         optional: true,
-        span: span('modules/br_rules.ashfox', 7),
+        span: span('modules/game_world.ashfox', 7),
       },
     ],
   },
   {
-    id: 'br_rules.melee_hit',
-    namespace: 'br_rules',
-    name: 'melee_hit',
+    id: 'game_world.MeleeHitbox',
+    namespace: 'game_world',
+    name: 'MeleeHitbox',
     exported: true,
     inline: false,
     targets: ['cue'],
-    span: span('modules/br_rules.ashfox', 11),
+    span: span('modules/game_world.ashfox', 11),
     fields: [
       {
         name: 'priority',
@@ -73,22 +77,22 @@ const BR_SCHEMAS: readonly HookSchemaDecl[] = [
           kind: 'number',
           value: 5,
           unit: 'plain',
-          span: span('modules/br_rules.ashfox', 12),
+          span: span('modules/game_world.ashfox', 12),
         },
-        span: span('modules/br_rules.ashfox', 12),
+        span: span('modules/game_world.ashfox', 12),
       },
       {
         name: 'offset',
         type: { kind: 'vec3' },
         optional: true,
-        span: span('modules/br_rules.ashfox', 13),
+        span: span('modules/game_world.ashfox', 13),
       },
       {
         name: 'event',
         type: { kind: 'bool' },
         optional: false,
-        defaultValue: { kind: 'bool', value: true, span: span('modules/br_rules.ashfox', 14) },
-        span: span('modules/br_rules.ashfox', 14),
+        defaultValue: { kind: 'bool', value: true, span: span('modules/game_world.ashfox', 14) },
+        span: span('modules/game_world.ashfox', 14),
       },
     ],
   },
@@ -100,19 +104,19 @@ const BR_SCHEMAS: readonly HookSchemaDecl[] = [
   assert.equal(all.ts.extension, '.d.ts');
   assert.equal(all.cs.extension, '.cs');
   assert.equal(all.gd.extension, '.gd');
-  assert.deepEqual(all.ts.schemas, ['br_rules.loot_spot', 'br_rules.melee_hit']);
+  assert.deepEqual(all.ts.schemas, ['game_world.LootSpawn', 'game_world.MeleeHitbox']);
 
   // TypeScript assertions: literal union, range/default JSDoc, optional, SchemaMap, getHooks.
-  assert.match(all.ts.content, /export interface BrRulesLootSpot/);
+  assert.match(all.ts.content, /export interface GameWorldLootSpawn/);
   assert.match(all.ts.content, /readonly tier: 'common' \| 'rare' \| 'epic';/);
   assert.match(all.ts.content, /@range float\[0, 1\] @default 0\.65/);
   assert.match(all.ts.content, /readonly prefab\?: AshfoxAssetRef;/);
-  assert.match(all.ts.content, /readonly 'br_rules\.loot_spot': BrRulesLootSpot;/);
+  assert.match(all.ts.content, /readonly 'game_world\.LootSpawn': GameWorldLootSpawn;/);
   assert.match(all.ts.content, /export declare function getHooks</);
 
   // Unity C# assertions: enum, [Range], nullable optional, keyword escape, defaults.
   assert.match(all.cs.content, /namespace Ashfox\.Hooks/);
-  assert.match(all.cs.content, /public enum BrRulesLootSpotTier/);
+  assert.match(all.cs.content, /public enum GameWorldLootSpawnTier/);
   assert.match(all.cs.content, /Common = 0,\s+Rare = 1,\s+Epic = 2/);
   assert.match(all.cs.content, /\[Range\(0\.0f, 1\.0f\)\]/);
   assert.match(all.cs.content, /public float chance = 0\.65f;/);
@@ -121,9 +125,9 @@ const BR_SCHEMAS: readonly HookSchemaDecl[] = [
   assert.match(all.cs.content, /public Vector3\? offset = null;/);
   assert.match(all.cs.content, /public bool @event = true;/);
 
-  // Godot GDScript assertions: enum, @export_range, Variant optional, keyword escape.
+  // Godot GDScript assertions: enum, @export_range, Variant optional.
   assert.match(all.gd.content, /class_name AshfoxHooks/);
-  assert.match(all.gd.content, /class BrRulesLootSpot:/);
+  assert.match(all.gd.content, /class GameWorldLootSpawn:/);
   assert.match(all.gd.content, /enum Tier \{ COMMON, RARE, EPIC \}/);
   assert.match(all.gd.content, /@export_range\(0, 1\)/);
   assert.match(all.gd.content, /@export var chance: float = 0\.65/);
@@ -158,47 +162,61 @@ const BR_SCHEMAS: readonly HookSchemaDecl[] = [
   );
 }
 
-// 2. Reject inline schema definitions in entry files across domains.
+// 2. Reject inline schema definitions in ashfox 1 entry files across all domains.
 {
   const res = checkWorkspaceModularity([
     {
       path: 'structures/tavern.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 structure tavern {
-  schema inline_loot on anchor {
-    tier: "common" | "epic";
+  floor ground {
+    room taproom {
+      schema InlineLoot : anchor {
+        field tier : enum(common, epic) = common;
+      }
+    }
   }
-  size = (9, 7, 9);
+  size = (9b, 7b, 9b);
 }`,
     },
     {
       path: 'sprites/sword.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sprite sword {
-  schema inline_sprite_meta on meta {
-    rarity: "rare";
+  schema InlineSpriteMeta : meta {
+    field rarity : enum(common, rare) = rare;
   }
 }`,
     },
     {
       path: 'sounds/hit.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sound hit {
-  schema inline_sound_cue on cue {
-    tag: string;
+  schema InlineSoundCue : cue {
+    field tag : string;
+  }
+}`,
+    },
+    {
+      path: 'vfx/slash.ashfox',
+      source: `ashfox 1
+vfx slash {
+  schema InlineVfxCue : cue {
+    field power : float(0..10) = 1.0;
   }
 }`,
     },
   ]);
   assert.equal(res.ok, false);
   const inlineDiags = res.diagnostics.filter((d) => d.code === 'hooks.inline-schema-forbidden');
-  assert.equal(inlineDiags.length, 3);
+  assert.equal(inlineDiags.length, 4);
   assert.deepEqual(
     inlineDiags.map((d) => d.token),
     [
-      'sounds/hit.ashfox#schema:inline_sound_cue',
-      'sprites/sword.ashfox#schema:inline_sprite_meta',
-      'structures/tavern.ashfox#schema:inline_loot',
+      'sounds/hit.ashfox#schema:InlineSoundCue',
+      'sprites/sword.ashfox#schema:InlineSpriteMeta',
+      'structures/tavern.ashfox#schema:InlineLoot',
+      'vfx/slash.ashfox#schema:InlineVfxCue',
     ],
   );
 }
@@ -208,7 +226,7 @@ sound hit {
   const res = checkWorkspaceModularity([
     {
       path: 'structures/cottage.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 structure cottage {
   palette {
     cobble = "minecraft:cobblestone";
@@ -216,19 +234,24 @@ structure cottage {
     plank = "minecraft:oak_planks";
   }
   prefab BedCorner {
-    set at = (0, 0, 0) block = plank;
-    set at = (1, 0, 0) block = cobble;
+    set at = (0b, 0b, 0b) block = plank;
+    set at = (1b, 0b, 0b) block = cobble;
   }
-  anchor loot_a as br.loot_spot at = (2, 1, 2) {
-    tier = "epic";
-    chance = 0.45;
-    table = "br:weapons";
+  floor ground {
+    room taproom {
+      anchor loot_a : game.LootSpawn {
+        at = (2b, 1b, 2b);
+        facing = south;
+        tier = epic;
+        mc_block = "minecraft:chest[facing=south]";
+      }
+    }
   }
 }`,
     },
     {
       path: 'structures/inn.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 structure inn {
   // Reordered palette keys should still produce identical structural hash.
   palette {
@@ -237,33 +260,42 @@ structure inn {
     brick = "minecraft:stone_bricks";
   }
   prefab SleepCorner {
-    set at = (0, 0, 0) block = plank;
-    set at = (1, 0, 0) block = cobble;
+    set at = (0b, 0b, 0b) block = plank;
+    set at = (1b, 0b, 0b) block = cobble;
   }
-  anchor loot_b as br.loot_spot at = (2, 1, 2) {
-    tier = "epic";
-    chance = 0.45;
-    table = "br:weapons";
+  floor ground {
+    room common_room {
+      anchor loot_b : game.LootSpawn {
+        at = (2b, 1b, 2b);
+        facing = south;
+        tier = epic;
+        mc_block = "minecraft:chest[facing=south]";
+      }
+    }
   }
 }`,
     },
     {
       path: 'sounds/slash_a.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sound slash_a {
-  voice blade_whoosh {
-    source { kind = "whoosh"; freq = 420Hz; }
-    gain = ad(10ms, 180ms);
+  profile = impact;
+  duration = 0.45s;
+  voice blade_whoosh : aero_whoosh {
+    cutoff = 1800hz -> 8800hz ease_out -> 950hz;
+    gain { env = ad; attack = 6ms; peak = 0.96; curve = exp; }
   }
 }`,
     },
     {
       path: 'sounds/slash_b.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sound slash_b {
-  voice axe_whoosh {
-    source { kind = "whoosh"; freq = 420Hz; }
-    gain = ad(10ms, 180ms);
+  profile = impact;
+  duration = 0.45s;
+  voice axe_whoosh : aero_whoosh {
+    cutoff = 1800hz -> 8800hz ease_out -> 950hz;
+    gain { env = ad; attack = 6ms; peak = 0.96; curve = exp; }
   }
 }`,
     },
@@ -278,46 +310,49 @@ sound slash_b {
   assert.ok(dupDiags.every((d) => d.message.includes('extract into a shared module')));
 }
 
-// 4. Legitimate non-duplicate hook usages & trivial palettes are NOT flagged, while unused imports/schemas are flagged.
+// 4. Legitimate ashfox 1 modular workspace + unused import/schema hygiene diagnostics.
 {
   const cleanAndHygiene = checkWorkspaceModularity([
     {
-      path: 'modules/br_rules.ashfox',
-      source: `ashfox-model 1
-module br_rules {
-  export schema loot_spot on anchor {
-    tier: "common" | "epic" = "common";
+      path: 'modules/game_world.ashfox',
+      source: `ashfox 1
+module game_world {
+  export schema LootSpawn : anchor {
+    field tier : enum(common, rare, epic) = common;
+    field respawn : second = 120s;
+    mc_block = "minecraft:chest[facing=\${facing}]";
   }
-  export schema unused_rule on meta {
-    radius: float(0..100) = 10;
+  export schema UnusedRule : meta {
+    field radius : unit = 14u;
   }
 }`,
     },
     {
       path: 'models/fox.ashfox',
-      source: `ashfox-model 1
-asset fox {
-  import "../modules/br_rules.ashfox" as br;
+      source: `ashfox 1
+model fox {
+  import "../modules/game_world.ashfox" as game;
   import "../modules/props.ashfox" as chest_prop;
   import "../modules/dead.ashfox" as unused_mod;
-  export asset fox {
-    anchor chest_a as br.loot_spot at = (1, 0, 1) {
-      tier = "epic";
-      prefab = chest_prop;
-    }
+
+  settings { density = 16; forward = north; profile = creature; }
+  anchor chest_a : game.LootSpawn {
+    at = (1u, 0u, 1u);
+    tier = epic;
+    prefab = chest_prop;
   }
 }`,
     },
     {
       path: 'sprites/gem.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sprite gem {
   palette { core = #4cc9f0; }
 }`,
     },
     {
       path: 'sprites/orb.ashfox',
-      source: `ashfox-model 1
+      source: `ashfox 1
 sprite orb {
   palette { core = #4cc9f0; }
 }`,
@@ -340,7 +375,7 @@ sprite orb {
       {
         code: 'modular.unused-schema',
         severity: 'warning',
-        token: 'modules/br_rules.ashfox#schema:br_rules.unused_rule',
+        token: 'modules/game_world.ashfox#schema:game_world.UnusedRule',
       },
     ],
   );
@@ -350,20 +385,26 @@ sprite orb {
 {
   const fileA = {
     path: 'entries/a.ashfox',
-    source: `ashfox-model 1
+    source: `ashfox 1
 structure a {
-  import "../modules/br.ashfox" as table;
-  anchor x as br.spot at = (0, 0, 0) {
-    table = "shadowed_lhs_key";
+  import "../modules/game.ashfox" as table;
+  import "../modules/game.ashfox" as game;
+  floor ground {
+    room hall {
+      anchor x : game.LootSpot {
+        at = (0b, 0b, 0b);
+        table = "shadowed_lhs_key";
+      }
+    }
   }
 }`,
   };
   const fileB = {
-    path: 'modules/br.ashfox',
-    source: `ashfox-model 1
-module br {
-  export schema spot on anchor {
-    table: string;
+    path: 'modules/game.ashfox',
+    source: `ashfox 1
+module game {
+  export schema LootSpot : anchor {
+    field table : string;
   }
 }`,
   };

@@ -1,7 +1,7 @@
 import { lexProgramSource, type ProgramToken } from '../project/program/syntax/lex';
 import { sha256Digest } from '../provenance/digest';
 import { compareText } from '../stableOrder';
-import type { HookDiagnostic, HookSourceSpan, HookSourceUnit, HookUnitKind } from './contract';
+import type { HookDiagnostic, HookSourceSpan, HookSourceUnit } from './contract';
 
 export type BoilerplateBlockKind = string;
 
@@ -50,7 +50,7 @@ type SchemaRec = { name: string; ns: string; inline: boolean; span: HookSourceSp
 type BlockRec = { kind: string; id: string; hash: string; count: number; span: HookSourceSpan };
 type FileFacts = {
   file: string;
-  unitKind: HookUnitKind;
+  unitKind: string;
   unitId: string;
   imports: ImportRec[];
   schemas: SchemaRec[];
@@ -62,13 +62,16 @@ type FileFacts = {
   importOffsets: Set<number>;
 };
 
-const UNIT_KINDS = new Set('module structure model asset sprite sound compound hooks'.split(' '));
+const UNIT_KINDS = new Set('module model sprite sound structure vfx hooks'.split(' '));
 const HOOK_KINDS = new Set('anchor volume cue meta zone'.split(' '));
 const NAMED_BLOCKS = new Set(
-  'prefab voice timeline sequence material surface component stamp mask'.split(' '),
+  'prefab voice seq timeline sequence material surface component stamp mask'.split(' '),
+);
+const CONTAINER_BLOCKS = new Set(
+  'floor room facade bone motion rig skeleton surface component element emitter seq'.split(' '),
 );
 const DECL_KW = new Set([
-  ...'module asset structure compound sprite sound hooks schema room floor'.split(' '),
+  ...'module model sprite sound structure vfx hooks schema room floor'.split(' '),
   ...HOOK_KINDS,
   ...NAMED_BLOCKS,
 ]);
@@ -156,7 +159,7 @@ const blockHash = (
 };
 
 const unitHeader = (tokens: readonly ProgramToken[]) => {
-  const idx = tokens[0]?.value === 'ashfox-model' ? (tokens[1]?.kind === 'number' ? 2 : 1) : 0;
+  const idx = tokens[0]?.value === 'ashfox' && tokens[1]?.value === '1' ? 2 : 0;
   const [decl, name, brace] = [tokens[idx], tokens[idx + 1], tokens[idx + 2]];
   if (
     decl?.kind === 'identifier' &&
@@ -164,15 +167,14 @@ const unitHeader = (tokens: readonly ProgramToken[]) => {
     name?.kind === 'identifier' &&
     brace?.value === '{'
   ) {
-    const unitKind: HookUnitKind = decl.value === 'asset' ? 'model' : (decl.value as HookUnitKind);
     return {
-      unitKind,
+      unitKind: decl.value,
       unitId: name.value,
       bodyStart: idx + 3,
       bodyEnd: matchBrace(tokens, idx + 2),
     };
   }
-  return { unitKind: 'hooks' as HookUnitKind, unitId: '', bodyStart: idx, bodyEnd: tokens.length };
+  return { unitKind: 'hooks', unitId: '', bodyStart: idx, bodyEnd: tokens.length };
 };
 
 const stmtEnd = (tokens: readonly ProgramToken[], start: number, limit: number): number => {
@@ -231,7 +233,7 @@ const scanBlockStmt = (
   const blockEnd = stmtEnd(tokens, kwIdx, end);
   const kind = tokens[kwIdx]!.value;
   addBlock(f, kind, tokens[kwIdx + 1]!.value, tokens.slice(kwIdx, blockEnd + 1), 1);
-  if (kind === 'surface' || kind === 'component') {
+  if (CONTAINER_BLOCKS.has(kind)) {
     const open = tokens.slice(kwIdx, blockEnd + 1).findIndex((t) => t.value === '{');
     if (open >= 0) scanRange(tokens, kwIdx + open + 1, blockEnd, f);
   }
@@ -242,7 +244,6 @@ const scanKeyword = (
   tokens: readonly ProgramToken[],
   kwIdx: number,
   end: number,
-  exported: boolean,
   f: FileFacts,
 ): number => {
   const kw = tokens[kwIdx]!;
@@ -256,7 +257,7 @@ const scanKeyword = (
   const hasName = tokens[kwIdx + 1]?.kind === 'identifier';
   if ((HOOK_KINDS.has(kw.value) || NAMED_BLOCKS.has(kw.value)) && hasName)
     return scanBlockStmt(tokens, kwIdx, end, f);
-  if (kw.value === 'asset' && exported && hasName) {
+  if (CONTAINER_BLOCKS.has(kw.value) && hasName) {
     const open = tokens.slice(kwIdx, end).findIndex((t) => t.value === '{');
     if (open >= 0) {
       const close = Math.min(end - 1, matchBrace(tokens, kwIdx + open));
@@ -275,10 +276,9 @@ const scanRange = (
 ): void => {
   let idx = start;
   while (idx < end) {
-    const exported = tokens[idx]?.kind === 'identifier' && tokens[idx]!.value === 'export';
-    const kwIdx = exported ? idx + 1 : idx;
-    idx =
-      tokens[kwIdx]?.kind === 'identifier' ? scanKeyword(tokens, kwIdx, end, exported, f) : idx + 1;
+    const kwIdx =
+      tokens[idx]?.kind === 'identifier' && tokens[idx]!.value === 'export' ? idx + 1 : idx;
+    idx = tokens[kwIdx]?.kind === 'identifier' ? scanKeyword(tokens, kwIdx, end, f) : idx + 1;
   }
 };
 
@@ -301,7 +301,7 @@ const checkIdentRef = (
   const isLhs = next?.kind === 'symbol' && (next.value === '=' || next.value === ':');
   const isVal = prev && VALUE_PREV.has(prev.value) && !isLhs && !DECL_KW.has(prev.value);
   if (aliases.has(tok.value) && isVal) f.usedAliases.add(tok.value);
-  if (prev?.kind === 'identifier' && prev.value === 'as' && schemas.has(tok.value))
+  if (prev?.kind === 'symbol' && prev.value === ':' && schemas.has(tok.value))
     f.localRefs.add(tok.value);
 };
 
