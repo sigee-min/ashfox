@@ -31,7 +31,7 @@ import {
   subtractVec3,
 } from './spatial';
 
-const [SCALE, SMALL_VOL, LOD1_TRIS, BONE_DROP] = [1 / 16, 0.015, 0.55, 0.55];
+const [SCALE, SMALL_VOL, LOD1_TRIS, LOD2_MAX_TRIS, BONE_DROP] = [1 / 16, 0.015, 0.55, 60, 0.55];
 const SHADE: Readonly<Record<CubeFaceDirection, number>> = {
   up: 1.0,
   north: 0.9,
@@ -222,11 +222,13 @@ export const computeModelBoundsAndPartSizes = (document: ProjectDocument): Model
   };
 };
 
-const selectCubes = (a: ModelBoundsAnalysis): ReadonlySet<string> => {
+const selectCubes = (
+  a: ModelBoundsAnalysis,
+  maxTris = a.lod0TriCount * LOD1_TRIS,
+): ReadonlySet<string> => {
   const cubes = [...a.parts.values()].filter((p) => p.kind === 'cube');
   const kept = cubes.filter((p) => p.volume >= a.totalPartVolume * SMALL_VOL);
   const work = kept.length > 0 ? kept : cubes;
-  const maxTris = a.lod0TriCount * LOD1_TRIS;
   let tris = work.reduce((s, p) => s + p.triCount, 0);
   if (tris <= maxTris || work.length <= 2) return new Set(work.map((p) => p.id));
   const sorted = [...work].sort((x, y) => x.volume - y.volume || compareText(x.id, y.id));
@@ -455,7 +457,7 @@ export const buildModelLod2Mesh = (document: ProjectDocument): ModelLod2Mesh => 
   const ctx: Lod2Ctx = {
     doc: document,
     kids: childrenOf(document, vis),
-    kept: selectCubes(a),
+    kept: selectCubes(a, Math.min(a.lod0TriCount * LOD1_TRIS, LOD2_MAX_TRIS)),
     opts,
     rasters: new Map(),
     colorsCache: new Map(),

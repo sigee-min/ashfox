@@ -194,11 +194,8 @@ const makeCell = (ctx: Ctx, dir: CubeFaceDirection, p: P3): Cell | null => {
   const tile = tileForFace(desc, dir, ctx.states[vox]!.facing);
   const sh = shOf(ctx, p, dir, desc.layer === 'emissive', true);
   fillCols(ctx, tile, sh.colors);
-  const k = ctx.horizon
-    ? `${tile}|${sh.quantizedTint}`
-    : `${desc.layer}|${tile}|${sh.aoCode}|${sh.quantizedTint}`;
   return {
-    key: `${k}|${sh.flip ? 1 : 0}`,
+    key: ctx.horizon ? tile : `${desc.layer}|${tile}`,
     layer: desc.layer,
     tile,
     flip: sh.flip,
@@ -369,8 +366,8 @@ const nonFullSpec = (ctx: Ctx, pos: P3, desc: BlockDescriptor, st: CachedBlockSt
       spec: { from: [0, y0, 0] as P3, to: [16, y0 + 8, 16] as P3 },
     };
   }
-  if (ctx.horizon || (desc.shape !== 'fence' && desc.shape !== 'wall')) return null;
-  const r = desc.shape === 'wall' ? 4 : 2;
+  if (ctx.horizon || desc.shape !== 'wall') return null;
+  const r = 4;
   return {
     layer: desc.layer,
     tile: desc.side,
