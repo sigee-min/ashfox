@@ -4,13 +4,9 @@ import type { TextureAsset } from '../../../model/texture';
 import { compareText } from '../../../stableOrder';
 import { encodeCanonicalPng } from '../../../textures/textureRecipe/png';
 import { rasterizeTextureSpec } from '../../../textures/textureRecipe/raster';
-import { adaptProjectForExport } from '../../adapter';
-import { validateExportTarget } from '../../pipeline/validate';
-import { compileGltfAnimations } from './animation';
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf } from './build';
 import type {
-  GltfAnimation,
   GltfDocument,
   GltfExtensionName,
   GltfMaterial,
@@ -33,7 +29,7 @@ export const DEFAULT_LOD_HYSTERESIS = 2.5;
 const ATTR_KEYS = ['POSITION', 'NORMAL', 'TEXCOORD_0', 'COLOR_0', 'JOINTS_0', 'WEIGHTS_0'] as const;
 
 export interface AshfoxLodMetadata {
-  readonly distances: readonly [number, number, number];
+  readonly distances: readonly number[];
   readonly hysteresis: number;
   readonly boundingSphere: readonly [number, number, number, number];
 }
@@ -51,7 +47,7 @@ export interface AttachLodOptions {
   readonly customBounds?: ReadonlyMap<string, PositionBounds>;
 }
 interface QMesh {
-  mesh: number;
+  meshIdx: number;
   bounds: PositionBounds;
 }
 type State = {
@@ -102,6 +98,14 @@ export const buildLodDocumentMetadata = (
   boundingSphere: [...boundingSphere],
 });
 
+const trScaleOf = (st: State, b: PositionBounds) =>
+  st.writer.isQuantized
+    ? {
+        translation: [...b.center] as [number, number, number],
+        scale: [...b.halfExtent] as [number, number, number],
+      }
+    : {};
+
 const colorMesh = (
   st: State,
   name: string,
@@ -132,51 +136,7 @@ const colorMesh = (
     () => mid,
     col?.length ? col : undefined,
   );
-  return { mesh: st.meshes.push({ name, primitives: [prim] }) - 1, bounds };
-};
-
-const quantizedNode = (name: string, ref: QMesh, q: boolean): GltfNode => ({
-  name,
-  mesh: ref.mesh,
-  ...(q
-    ? {
-        translation: [...ref.bounds.center] as [number, number, number],
-        scale: [...ref.bounds.halfExtent] as [number, number, number],
-      }
-    : {}),
-});
-
-const wrapLods = (
-  id: string,
-  nodes: GltfLodNode[],
-  l0C: readonly number[],
-  l1C: readonly number[],
-  l2M: QMesh | undefined,
-  l1M: QMesh | undefined,
-  meta: AshfoxLodMetadata,
-  q: boolean,
-) => {
-  const l1Kids = [...l1C];
-  let l1Mesh: number | undefined;
-  if (l1M) {
-    if (l1Kids.length === 0 && !q) l1Mesh = l1M.mesh;
-    else l1Kids.unshift(nodes.push(quantizedNode(`${id}_LOD1_voxels`, l1M, q)) - 1);
-  }
-  const l1 =
-    nodes.push({
-      name: `${id}_LOD1`,
-      ...(l1Mesh !== undefined ? { mesh: l1Mesh } : {}),
-      ...(l1Kids.length ? { children: l1Kids } : {}),
-    }) - 1;
-  const l2 = nodes.push(l2M ? quantizedNode(`${id}_LOD2`, l2M, q) : { name: `${id}_LOD2` }) - 1;
-  const l0 =
-    nodes.push({
-      name: `${id}_LOD0`,
-      ...(l0C.length ? { children: [...l0C] } : {}),
-      extensions: { MSFT_lod: { ids: [l1, l2] } },
-      extras: { MSFT_screencoverage: [0.5, 0.2, 0.05] },
-    }) - 1;
-  return nodes.push({ name: id, children: [l0, l1, l2], extras: { ashfox: { lod: meta } } }) - 1;
+  return { meshIdx: st.meshes.push({ name, primitives: [prim] }) - 1, bounds };
 };
 
 const shiftPrimitiveAccessors = (
@@ -205,12 +165,7 @@ const shiftMeshAccessors = (st: State) => {
   }
 };
 
-const finalize = (
-  c: CompiledGltf,
-  st: State,
-  wrapperIdx: number,
-  animations?: GltfAnimation[],
-): CompiledGltfWithLod => {
+const finalize = (c: CompiledGltf, st: State, rootNodes: number[]): CompiledGltfWithLod => {
   shiftMeshAccessors(st);
   const [baseLen, tail] = [(c.binary.byteLength + 3) & ~3, st.writer.toUint8Array()];
   const binary = new Uint8Array(baseLen + tail.byteLength);
@@ -234,7 +189,7 @@ const finalize = (
   const doc: GltfLodDocument = {
     ...c.document,
     extensionsUsed: [...used],
-    scenes: [{ ...(c.document.scenes[0] ?? {}), nodes: [wrapperIdx] }],
+    scenes: [{ ...(c.document.scenes[0] ?? {}), nodes: rootNodes }],
     nodes: st.nodes,
     buffers: [{ byteLength: binary.byteLength }],
     bufferViews: [...bv, ...newBv],
@@ -246,7 +201,6 @@ const finalize = (
     Object.assign(doc, { images: st.images, samplers: st.samplers, textures: st.textures });
   if (st.materials.length) doc.materials = st.materials;
   if (st.skins.length) doc.skins = st.skins;
-  if (animations?.length) doc.animations = animations;
   return { document: doc, binary, textureFiles: c.textureFiles };
 };
 
@@ -296,9 +250,7 @@ const resolveMat = (
     ...(layer === 'emissive' || tex.renderMode === 'emissive'
       ? { emissiveTexture: texInfo, emissiveFactor: [1, 1, 1] as [number, number, number] }
       : {}),
-    ...(layer === 'cutout'
-      ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true }
-      : {}),
+    ...(layer === 'cutout' ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true } : {}),
   };
   const mid = st.materials.push(mat) - 1;
   mats.set(key, mid);
@@ -332,7 +284,7 @@ const buildStructLod1 = (product: StructureProduct, st: State): QMesh | undefine
       b.colors.length ? b.colors : undefined,
     ),
   );
-  return { mesh: st.meshes.push({ name: `${product.id}_lod1`, primitives: prims }) - 1, bounds };
+  return { meshIdx: st.meshes.push({ name: `${product.id}_lod1`, primitives: prims }) - 1, bounds };
 };
 
 export const attachStructureLods = (
@@ -349,17 +301,20 @@ export const attachStructureLods = (
   const st = initState(compiled, options);
   const propRes = emitLod1PropNodes(st.nodes, st.meshes, st.writer, product, options.customBounds);
   if (propRes.usesGpuInstancing) st.usesGpuInstancing = true;
+  const l1Voxel = buildStructLod1(product, st);
+  const l1Kids = [...propRes.props];
+  if (l1Voxel) {
+    l1Kids.unshift(
+      st.nodes.push({
+        name: `${product.id}_lod1_voxels`,
+        mesh: l1Voxel.meshIdx,
+        ...trScaleOf(st, l1Voxel.bounds),
+      }) - 1,
+    );
+  }
   const b2 = lods.lod2.batches.find((b) => b.indices.length > 0 && b.positions.length > 0);
-  const l2M = b2
-    ? colorMesh(
-        st,
-        `${product.id}_lod2`,
-        `${product.id}_lod2_horizon`,
-        b2.positions,
-        b2.normals,
-        b2.indices,
-        b2.colors,
-      )
+  const l2Voxel = b2
+    ? colorMesh(st, `${product.id}_lod2`, `${product.id}_lod2_horizon`, b2.positions, b2.normals, b2.indices, b2.colors)
     : undefined;
   const [w, h, d] = product.grid.size;
   const meta = buildLodDocumentMetadata(
@@ -367,65 +322,36 @@ export const attachStructureLods = (
     [0, h * 0.5, 0, Math.hypot(w, h, d) * 0.5],
     options.hysteresis,
   );
-  const wrap = wrapLods(
-    product.id,
-    st.nodes,
-    compiled.document.scenes[0]?.nodes ?? [0],
-    propRes.props,
-    l2M,
-    buildStructLod1(product, st),
-    meta,
-    st.writer.isQuantized,
-  );
-  return finalize(compiled, st, wrap);
+  const l1Idx =
+    st.nodes.push({ name: `${product.id}_LOD1`, ...(l1Kids.length ? { children: l1Kids } : {}) }) -
+    1;
+  const l2Idx =
+    st.nodes.push({
+      name: `${product.id}_LOD2`,
+      ...(l2Voxel ? { mesh: l2Voxel.meshIdx, ...trScaleOf(st, l2Voxel.bounds) } : {}),
+    }) - 1;
+  const l0C = compiled.document.scenes[0]?.nodes ?? [0];
+  const l0Idx =
+    st.nodes.push({
+      name: `${product.id}_LOD0`,
+      ...(l0C.length ? { children: [...l0C] } : {}),
+      extensions: { MSFT_lod: { ids: [l1Idx, l2Idx] } },
+      extras: { MSFT_screencoverage: [0.5, 0.2, 0.05] },
+    }) - 1;
+  const wrapIdx =
+    st.nodes.push({
+      name: product.id,
+      children: [l0Idx, l1Idx, l2Idx],
+      extras: { ashfox: { lod: meta } },
+    }) - 1;
+  return finalize(compiled, st, [wrapIdx]);
 };
 
-const mergeAnims = (
-  base: readonly GltfAnimation[],
-  add: readonly GltfAnimation[],
-  nOff: number,
-  aOff: number,
-): GltfAnimation[] => {
-  const out = base.map((a) => ({ ...a, samplers: [...a.samplers], channels: [...a.channels] }));
-  const byName = new Map(out.filter((a) => a.name).map((a) => [a.name!, a]));
-  for (const a of add) {
-    const tgt = a.name ? byName.get(a.name) : undefined;
-    const sBase = tgt ? tgt.samplers.length : 0;
-    const samplers = a.samplers.map((s) => ({
-      ...s,
-      input: s.input + aOff,
-      output: s.output + aOff,
-    }));
-    const channels = a.channels.map((c) => ({
-      sampler: c.sampler + sBase,
-      target: { node: c.target.node + nOff, path: c.target.path },
-    }));
-    if (tgt) [tgt.samplers.push(...samplers), tgt.channels.push(...channels)];
-    else out.push({ ...a, samplers, channels });
-  }
-  return out;
-};
-
-const appendSceneNodes = (st: State, l1: ReturnType<typeof compileGltfScene>) => {
-  const [nOff, mOff, sOff] = [st.nodes.length, st.meshes.length, st.skins.length];
-  for (const n of l1.nodes) {
-    const c: GltfLodNode = { ...n };
-    if (c.mesh !== undefined) c.mesh += mOff;
-    if (c.skin !== undefined) c.skin += sOff;
-    if (c.children) c.children = c.children.map((x) => x + nOff);
-    st.nodes.push(c);
-  }
-  st.meshes.push(...l1.meshes);
-  for (const s of l1.skins) {
-    const c: GltfSkin = { ...s, joints: s.joints.map((j) => j + nOff) };
-    if (c.inverseBindMatrices !== undefined) c.inverseBindMatrices += st.aOff;
-    if (c.skeleton !== undefined) c.skeleton += nOff;
-    st.skins.push(c);
-  }
-  return nOff;
-};
-
-const appendLod1Model = (doc: ProjectDocument, st: State) => {
+const appendLod1Model = (
+  doc: ProjectDocument,
+  st: State,
+  baseById: ReadonlyMap<string, number>,
+) => {
   const [matMap, ssMap] = [new Map<string, number>(), new Map<string, number>()];
   for (const t of Object.values(doc.textures).sort((a, b) => compareText(a.id, b.id))) {
     const i = st.materials.findIndex((m) => m.name === t.name);
@@ -433,23 +359,28 @@ const appendLod1Model = (doc: ProjectDocument, st: State) => {
     if (i >= 0) matMap.set(t.id, i);
     if (s >= 0) ssMap.set(t.id, s);
   }
-  const lod1Doc = buildModelLod1Document(doc);
-  const l1 = compileGltfScene(lod1Doc, {
+  const l1 = compileGltfScene(buildModelLod1Document(doc), {
     writer: st.writer,
     materialByTextureId: matMap,
     singleSidedMaterialByTextureId: ssMap,
     unitScale: 1 / 16,
   });
-  let anims: GltfAnimation[] = [];
-  if (Object.keys(lod1Doc.animations).length > 0) {
-    const val = validateExportTarget(
-      adaptProjectForExport(lod1Doc, { target: 'gltf', modelPath: 'lod1' }),
-      { profileId: 'gltf.2', errorMessage: 'LOD1 animation validation failed.' },
-    );
-    anims = compileGltfAnimations(val.document, { ...l1, writer: st.writer, unitScale: 1 / 16 });
+  const [mOff, sOff] = [st.meshes.length, st.skins.length];
+  st.meshes.push(...l1.meshes);
+  const mapJoint = (j: number) => baseById.get(l1.nodes[j]?.extras?.ashfoxId ?? '') ?? j;
+  for (const s of l1.skins) {
+    const c: GltfSkin = { ...s, joints: s.joints.map(mapJoint) };
+    if (c.inverseBindMatrices !== undefined) c.inverseBindMatrices += st.aOff;
+    if (c.skeleton !== undefined) c.skeleton = mapJoint(c.skeleton);
+    st.skins.push(c);
   }
-  const nOff = appendSceneNodes(st, l1);
-  return { roots: l1.rootNodeIndices.map((i) => i + nOff), anims, nOff };
+  return l1.nodes
+    .filter((n) => n.mesh !== undefined)
+    .map((n) => ({
+      ...n,
+      mesh: n.mesh! + mOff,
+      ...(n.skin !== undefined ? { skin: n.skin + sOff } : {}),
+    }));
 };
 
 export const attachModelLods = (
@@ -463,8 +394,15 @@ export const attachModelLods = (
       document: { ...compiled.document, nodes: compiled.document.nodes.map((n) => ({ ...n })) },
     };
   const st = initState(compiled, options);
-  const [l1, l2] = [appendLod1Model(sourceDocument, st), buildModelLod2Mesh(sourceDocument)];
-  const l2M = colorMesh(
+  const baseById = new Map<string, number>();
+  st.nodes.forEach((n, i) => n.extras?.ashfoxId && baseById.set(n.extras.ashfoxId, i));
+  const [l1Meshes, l2] = [
+    appendLod1Model(sourceDocument, st, baseById),
+    buildModelLod2Mesh(sourceDocument),
+  ];
+  const l1Spec = l1Meshes[0] ?? {};
+  const l1Idx = st.nodes.push({ ...l1Spec, name: `${sourceDocument.id}_LOD1` }) - 1;
+  const l2Res = colorMesh(
     st,
     `${sourceDocument.id}_lod2`,
     `${sourceDocument.id}_lod2_proxy`,
@@ -473,25 +411,33 @@ export const attachModelLods = (
     l2.indices,
     l2.colors,
   );
+  const l2Idx =
+    st.nodes.push({
+      name: `${sourceDocument.id}_LOD2`,
+      ...(l2Res ? { mesh: l2Res.meshIdx, ...trScaleOf(st, l2Res.bounds) } : {}),
+    }) - 1;
   const meta = buildLodDocumentMetadata(
     options.distances ?? DEFAULT_MODEL_LOD_DISTANCES,
     computeModelBoundsAndPartSizes(sourceDocument).boundingSphere,
     options.hysteresis,
   );
-  const wrap = wrapLods(
-    sourceDocument.id,
-    st.nodes,
-    compiled.document.scenes[0]?.nodes ?? [0],
-    l1.roots,
-    l2M,
-    undefined,
-    meta,
-    st.writer.isQuantized,
-  );
-  return finalize(
-    compiled,
-    st,
-    wrap,
-    mergeAnims(compiled.document.animations ?? [], l1.anims, l1.nOff, st.aOff),
-  );
+  const roots = [...(compiled.document.scenes[0]?.nodes ?? [])];
+  const l0MeshPos = roots.findIndex((idx) => st.nodes[idx]?.mesh !== undefined);
+  const l0Idx =
+    l0MeshPos >= 0
+      ? roots[l0MeshPos]!
+      : st.nodes.push({ name: `${sourceDocument.id}_LOD0`, children: roots }) - 1;
+  const prev = st.nodes[l0Idx]!;
+  st.nodes[l0Idx] = {
+    ...prev,
+    name: `${sourceDocument.id}_LOD0`,
+    extensions: { ...(prev.extensions ?? {}), MSFT_lod: { ids: [l1Idx, l2Idx] } },
+    extras: {
+      ...(prev.extras ?? {}),
+      MSFT_screencoverage: [0.5, 0.2, 0.05],
+      ashfox: { lod: meta },
+    },
+  };
+  const sceneRoots = l0MeshPos >= 0 ? [...roots, l1Idx, l2Idx] : [l0Idx, l1Idx, l2Idx];
+  return finalize(compiled, st, sceneRoots);
 };

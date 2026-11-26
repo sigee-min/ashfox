@@ -1,12 +1,11 @@
 import { clamp01, compareText } from '@ashfox/internal-contracts';
 import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
-import type { TextureAsset } from '../../model/texture';
 import type { BlockRotation, CardinalFacing } from '../../project/structure/contract';
 import { parseBlockState } from '../../project/structure/state';
 import { parseSurfaceColor } from '../../textures/color';
 import { hexToOklch, oklchToHex } from '../../textures/oklch';
-import { buildStructureTileTextures } from './atlas';
+import { packStructureBatches } from './atlas';
 import { getBatch, pushQuad, type BatchDraft } from './batch';
 import { describeBlockState, type BlockDescriptor, type BlockRenderLayer } from './blocks';
 import type {
@@ -26,13 +25,16 @@ const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', '
 const CARDINALS: readonly CardinalFacing[] = ['north', 'south', 'east', 'west'];
 const S45 = Math.SQRT1_2;
 type P3 = readonly [number, number, number];
+type Box = { from: P3; to: P3 };
 interface Ctx {
   grid: StructureGrid;
   descs: readonly BlockDescriptor[];
   states: readonly CachedBlockState[];
   light: StructureLightingField;
   ext: Uint8Array;
-  batches: Map<string, BatchDraft>;
+  full: Map<string, BatchDraft>;
+  rep: Set<string>;
+  nonRep: Map<string, BatchDraft>;
   albedo: Map<string, P3>;
   horizon: boolean;
   from: [number, number, number];
@@ -48,20 +50,12 @@ interface Cell {
   cols: readonly number[];
 }
 
-const srgbLin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const shOf = (c: Ctx, p: P3, d: CubeFaceDirection, em: boolean, ao: boolean) =>
+  computeFaceShade(c.grid, c.descs, c.light, p[0], p[1], p[2], d, em, c.grid.size[1], ao);
 const faceRot = (f: CardinalFacing): BlockRotation =>
   f === 'east' ? 270 : f === 'south' ? 180 : f === 'west' ? 90 : 0;
 const faceAxes = (d: CubeFaceDirection): readonly [0 | 1 | 2, 0 | 1 | 2, 0 | 1 | 2] =>
   d === 'up' || d === 'down' ? [1, 0, 2] : d === 'east' || d === 'west' ? [0, 2, 1] : [2, 0, 1];
-const shOf = (
-  c: Ctx,
-  x: number,
-  y: number,
-  z: number,
-  d: CubeFaceDirection,
-  em: boolean,
-  ao: boolean,
-) => computeFaceShade(c.grid, c.descs, c.light, x, y, z, d, em, c.grid.size[1], ao);
 
 const tileAlbedo = (ctx: Ctx, tile: string): P3 => {
   const hit = ctx.albedo.get(tile);
@@ -69,14 +63,13 @@ const tileAlbedo = (ctx: Ctx, tile: string): P3 => {
   let [l, a, b, w] = [0, 0, 0, 0];
   for (const r of paintTileRects(tile, 1, ctx.grid.seed, 0)) {
     if (r.alpha === 0) continue;
-    const [area, ok] = [r.w * r.h, hexToOklch(r.color)];
+    const area = r.w * r.h;
+    const ok = hexToOklch(r.color);
     const rad = (ok.h * Math.PI) / 180;
-    [l, a, b, w] = [
-      l + ok.l * area,
-      a + ok.c * Math.cos(rad) * area,
-      b + ok.c * Math.sin(rad) * area,
-      w + area,
-    ];
+    l += ok.l * area;
+    a += ok.c * Math.cos(rad) * area;
+    b += ok.c * Math.sin(rad) * area;
+    w += area;
   }
   let res: P3 = [0.5, 0.5, 0.5];
   if (w > 0) {
@@ -94,27 +87,21 @@ const floodIdx = (g: StructureGrid, l: StructureLightingField, m: Uint8Array, p:
   const [w, h, d] = g.size;
   if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return -1;
   const idx = (y * d + z) * w + x;
-  return m[idx] === 0 &&
-    g.voxels[idx]! <= 0 &&
-    l.sky[idx]! >= 64 &&
-    !isInsideEnclosedRoom(g, x, y, z)
-    ? idx
-    : -1;
+  if (m[idx] !== 0 || g.voxels[idx]! > 0 || l.sky[idx]! < 64) return -1;
+  return isInsideEnclosedRoom(g, x, y, z) ? -1 : idx;
 };
 
 const buildExtMask = (g: StructureGrid, l: StructureLightingField): Uint8Array => {
   const [w, h, d] = g.size;
   const vol = w * h * d;
-  const [mask, q] = [new Uint8Array(vol), new Int32Array(vol)];
+  const mask = new Uint8Array(vol);
+  const q = new Int32Array(vol);
   let [head, tail] = [0, 0];
   for (let i = 0; i < vol; i += 1) {
     if (g.voxels[i]! > 0) continue;
     const [x, z, y] = [i % w, Math.floor(i / w) % d, Math.floor(i / (w * d))];
-    if (
-      (x === 0 || x === w - 1 || z === 0 || z === d - 1 || y === h - 1) &&
-      !isInsideEnclosedRoom(g, x, y, z)
-    )
-      [mask[i], q[tail++]] = [1, i];
+    const edge = x === 0 || x === w - 1 || z === 0 || z === d - 1 || y === h - 1;
+    if (edge && !isInsideEnclosedRoom(g, x, y, z)) [mask[i], q[tail++]] = [1, i];
   }
   while (head < tail) {
     const cur = q[head++]!;
@@ -145,12 +132,8 @@ const isExt = (
   const nv = ctx.grid.voxels[nIdx]!;
   if (nv <= 0 || ctx.grid.customTags[nIdx] !== null) return false;
   const nD = ctx.descs[nv]!;
-  return (
-    !nD.solidOpaque &&
-    !(desc.top === 'glass' && nv === own) &&
-    nD.shape !== 'pane' &&
-    nD.shape !== 'door'
-  );
+  if (nD.solidOpaque || (desc.top === 'glass' && nv === own)) return false;
+  return nD.shape !== 'pane' && nD.shape !== 'door';
 };
 
 const fillCols = (ctx: Ctx, tile: string, src: readonly number[]) => {
@@ -166,9 +149,9 @@ const fillCols = (ctx: Ctx, tile: string, src: readonly number[]) => {
   }
 };
 
-const batchFor = (ctx: Ctx, layer: BlockRenderLayer, tile: string): BatchDraft => {
-  if (!ctx.horizon) return getBatch(ctx.batches, layer, tile);
-  let b = ctx.batches.get('lod2');
+const batchFor = (ctx: Ctx, layer: BlockRenderLayer, tile: string, isFull: boolean): BatchDraft => {
+  if (!ctx.horizon) return getBatch(isFull ? ctx.full : ctx.nonRep, layer, tile);
+  let b = ctx.nonRep.get('lod2');
   if (!b) {
     b = {
       layer: 'opaque',
@@ -180,11 +163,12 @@ const batchFor = (ctx: Ctx, layer: BlockRenderLayer, tile: string): BatchDraft =
       colors: [],
       indices: [],
     };
-    ctx.batches.set('lod2', b);
+    ctx.nonRep.set('lod2', b);
   }
   return b;
 };
 
+const srgbLin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const pushLodQuad = (
   ctx: Ctx,
   b: BatchDraft,
@@ -208,7 +192,7 @@ const makeCell = (ctx: Ctx, dir: CubeFaceDirection, p: P3): Cell | null => {
   const n = FACE_BASIS[dir].normal;
   if (!isExt(ctx, vox, desc, x + n[0], y + n[1], z + n[2])) return null;
   const tile = tileForFace(desc, dir, ctx.states[vox]!.facing);
-  const sh = shOf(ctx, x, y, z, dir, desc.layer === 'emissive', true);
+  const sh = shOf(ctx, p, dir, desc.layer === 'emissive', true);
   fillCols(ctx, tile, sh.colors);
   const k = ctx.horizon
     ? `${tile}|${sh.quantizedTint}`
@@ -247,7 +231,8 @@ const emitSlice = (ctx: Ctx, dir: CubeFaceDirection, s: number, mask: (Cell | nu
   let [raw, merged] = [0, 0];
   for (let i = 0; i < mask.length; i += 1) {
     [pos[uAx], pos[vAx]] = [i % uLen, Math.floor(i / uLen)];
-    if ((mask[i] = makeCell(ctx, dir, pos))) raw += 1;
+    mask[i] = makeCell(ctx, dir, pos);
+    if (mask[i]) raw += 1;
   }
   const off: P3 = [-ctx.grid.size[0] / 2, 0, -ctx.grid.size[2] / 2];
   for (let i = 0; i < mask.length; i += 1) {
@@ -261,7 +246,9 @@ const emitSlice = (ctx: Ctx, dir: CubeFaceDirection, s: number, mask: (Cell | nu
     [ctx.from[uAx], ctx.to[uAx]] = [u + off[uAx]!, u + mw + off[uAx]!];
     [ctx.from[vAx], ctx.to[vAx]] = [v + off[vAx]!, v + mh + off[vAx]!];
     writeQuadUv(ctx.uvs, (u & 1) * 0.5, (v & 1) * 0.5, mw * 0.5, mh * 0.5);
-    pushLodQuad(ctx, batchFor(ctx, c.layer, c.tile), dir, c.cols, c.flip);
+    const b = batchFor(ctx, c.layer, c.tile, true);
+    if (!ctx.horizon && (mw > 1 || mh > 1)) ctx.rep.add(`${c.layer}:${b.textureId}`);
+    pushLodQuad(ctx, b, dir, c.cols, c.flip);
     merged += 1;
   }
   return { raw, merged };
@@ -273,7 +260,7 @@ const emitQuads = (
   layer: BlockRenderLayer,
   tile: string,
   dirs: readonly CubeFaceDirection[],
-  spec?: { from: P3; to: P3 },
+  spec?: Box,
 ) => {
   const [[x, y, z], [w, h, d]] = [pos, ctx.grid.size];
   const [f, t] = [spec?.from ?? [0, 0, 0], spec?.to ?? [16, 16, 16]];
@@ -284,16 +271,14 @@ const emitQuads = (
   for (const dir of dirs) {
     const n = FACE_BASIS[dir].normal;
     const [nx, ny, nz] = [x + n[0], y + n[1], z + n[2]];
-    const nv =
-      nx >= 0 && nx < w && ny >= 0 && ny < h && nz >= 0 && nz < d
-        ? ctx.grid.voxels[(ny * d + nz) * w + nx]!
-        : 0;
+    const inB = nx >= 0 && nx < w && ny >= 0 && ny < h && nz >= 0 && nz < d;
+    const nv = inB ? ctx.grid.voxels[(ny * d + nz) * w + nx]! : 0;
     if (spec ? nv > 0 && ctx.descs[nv]!.solidOpaque : !isExt(ctx, 0, own, nx, ny, nz)) continue;
-    const sh = shOf(ctx, x, y, z, dir, layer === 'emissive', false);
+    const sh = shOf(ctx, pos, dir, layer === 'emissive', false);
     fillCols(ctx, tile, sh.colors);
     if (spec) writeSpecBoxUv(dir, spec, ctx.uvs);
     else writeQuadUv(ctx.uvs, 0, 0, 0.5, 0.5);
-    pushLodQuad(ctx, batchFor(ctx, layer, tile), dir, ctx.cols, sh.flip);
+    pushLodQuad(ctx, batchFor(ctx, layer, tile, false), dir, ctx.cols, sh.flip);
     count += 1;
   }
   return count;
@@ -358,8 +343,9 @@ const emitStair = (ctx: Ctx, vis: Uint8Array, idx: number, pos: P3) => {
   const [ny, nz] = [top ? -S45 : S45, back ? -S45 : S45];
   const sN = ax ? [0, ny, nz] : [nz, ny, 0];
   const ord = (f === 'south' || f === 'west') !== top ? [0, 2, 1, 0, 3, 2] : [0, 1, 2, 0, 2, 3];
-  fillCols(ctx, desc.top, shOf(ctx, pos[0], pos[1], pos[2], 'up', false, false).colors);
-  pushWedge(batchFor(ctx, desc.layer, desc.top), ctx.cols, !ctx.horizon, pts, sN, ord);
+  const sh = shOf(ctx, pos, 'up', false, false);
+  fillCols(ctx, desc.top, sh.colors);
+  pushWedge(batchFor(ctx, desc.layer, desc.top, false), ctx.cols, !ctx.horizon, pts, sN, ord);
   return 2;
 };
 
@@ -434,33 +420,56 @@ const buildInstances = (
 };
 
 const buildTier = (
-  ctx: Ctx,
+  grid: StructureGrid,
+  descs: readonly BlockDescriptor[],
+  states: readonly CachedBlockState[],
+  light: StructureLightingField,
+  ext: Uint8Array,
   models: Readonly<Record<string, CompiledModel>>,
+  horizon: boolean,
 ): StructureBakedMesh => {
+  const ctx: Ctx = {
+    grid,
+    descs,
+    states,
+    light,
+    ext,
+    full: new Map(),
+    rep: new Set(),
+    nonRep: new Map(),
+    albedo: new Map(),
+    horizon,
+    from: [0, 0, 0],
+    to: [0, 0, 0],
+    uvs: new Array<number>(8),
+    cols: new Array<number>(12),
+  };
   let [raw, merged, other] = [0, 0, 0];
   for (const dir of DIRS6) {
     const [ax, uAx, vAx] = faceAxes(dir);
-    const mask = new Array<Cell | null>(ctx.grid.size[uAx] * ctx.grid.size[vAx]).fill(null);
-    for (let s = 0; s < ctx.grid.size[ax]; s += 1) {
+    const mask = new Array<Cell | null>(grid.size[uAx] * grid.size[vAx]).fill(null);
+    for (let s = 0; s < grid.size[ax]; s += 1) {
       const r = emitSlice(ctx, dir, s, mask);
       [raw, merged] = [raw + r.raw, merged + r.merged];
     }
   }
-  const vol = ctx.grid.size[0] * ctx.grid.size[1] * ctx.grid.size[2];
+  const vol = grid.size[0] * grid.size[1] * grid.size[2];
   const vis = new Uint8Array(vol);
   for (let i = 0; i < vol; i += 1) other += emitNonFull(ctx, vis, i);
-  const active = [...ctx.batches.values()].filter((b) => b.indices.length > 0);
-  const batches: StructureBakedBatch[] = active
-    .map(({ tileId: _t, ...rest }) => rest)
-    .sort((a, b) => compareText(a.layer, b.layer) || compareText(a.textureId, b.textureId));
-  const texList = active.map((b) => ({ layer: b.layer, tileId: b.tileId }));
-  const textures: Readonly<Record<string, TextureAsset>> = ctx.horizon
-    ? {}
-    : buildStructureTileTextures(texList, ctx.grid.density, ctx.grid.seed);
+  const packed = horizon
+    ? {
+        batches: [...ctx.nonRep.values()]
+          .filter((b) => b.indices.length > 0)
+          .map(({ tileId: _t, ...r }) => r) as readonly StructureBakedBatch[],
+        textures: {},
+      }
+    : packStructureBatches(ctx.full, ctx.rep, ctx.nonRep, grid);
   return {
-    batches,
-    textures,
-    instances: buildInstances(ctx.grid, ctx.light, models, ctx.horizon),
+    batches: [...packed.batches].sort(
+      (a, b) => compareText(a.layer, b.layer) || compareText(a.textureId, b.textureId),
+    ),
+    textures: packed.textures,
+    instances: buildInstances(grid, light, models, horizon),
     rawFaceCount: raw + other,
     mergedQuadCount: merged + other,
     trimCount: 0,
@@ -480,19 +489,8 @@ export const buildStructureLodLevels = (
     return { parsed, facing: f === 'south' || f === 'east' || f === 'west' ? f : 'north' };
   });
   const ext = buildExtMask(grid, lighting);
-  const mk = (horizon: boolean): Ctx => ({
-    grid,
-    descs,
-    states,
-    light: lighting,
-    ext,
-    batches: new Map(),
-    albedo: new Map(),
-    horizon,
-    from: [0, 0, 0],
-    to: [0, 0, 0],
-    uvs: new Array<number>(8),
-    cols: new Array<number>(12),
-  });
-  return { lod1: buildTier(mk(false), customModels), lod2: buildTier(mk(true), customModels) };
+  return {
+    lod1: buildTier(grid, descs, states, lighting, ext, customModels, false),
+    lod2: buildTier(grid, descs, states, lighting, ext, customModels, true),
+  };
 };

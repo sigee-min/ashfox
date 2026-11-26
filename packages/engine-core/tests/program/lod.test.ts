@@ -151,7 +151,7 @@ structure stair_hall {
   const lod1 = out.lodLevels!.lod1;
   assert.ok(lod1.trimCount === 0);
   assert.ok(triCountOf(lod1.batches) < triCountOf(out.bakedMesh.batches));
-  assert.ok(lod1.batches.some((b) => b.layer === 'emissive' || b.textureId.includes('glass')));
+  assert.ok(lod1.batches.some((b) => b.textureId.startsWith('struct_atlas_')));
 };
 
 const testCreatureModelsThreeTierLod = async (): Promise<void> => {
@@ -197,12 +197,13 @@ const testCreatureModelsThreeTierLod = async (): Promise<void> => {
     const validated = validateExportTarget(adapted, { profileId: 'gltf.2', errorMessage: 'err' });
     const compiled = buildGltf(validated.document);
     const withLod = attachModelLods(compiled, doc);
-    const rootIdx = withLod.document.scenes[0]?.nodes?.[0] ?? 0;
-    const wrap = withLod.document.nodes[rootIdx]!;
-    assert.equal(wrap.name, doc.id);
-    assert.deepEqual(wrap.extras?.ashfox?.lod?.distances, DEFAULT_MODEL_LOD_DISTANCES);
+    const sceneNodes = withLod.document.scenes[0]?.nodes ?? [];
     const lod0 = withLod.document.nodes.find((n) => n.name === `${doc.id}_LOD0`)!;
-    assert.equal(lod0.extensions?.MSFT_lod?.ids.length, 2);
+    assert.ok(lod0 && lod0.extensions?.MSFT_lod?.ids.length === 2);
+    assert.deepEqual(lod0.extras?.ashfox?.lod?.distances, DEFAULT_MODEL_LOD_DISTANCES);
+    const lod1Idx = withLod.document.nodes.findIndex((n) => n.name === `${doc.id}_LOD1`);
+    const lod2Idx = withLod.document.nodes.findIndex((n) => n.name === `${doc.id}_LOD2`);
+    assert.ok(sceneNodes.includes(lod1Idx) && sceneNodes.includes(lod2Idx));
 
     const texByName = new Map<string, Uint8Array>();
     for (const tf of compiled.textureFiles) {
