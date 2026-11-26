@@ -645,7 +645,7 @@
           "const": 2
         },
         "sourceGrammar": {
-          "const": "ashfox-model 1"
+          "const": "ashfox 1"
         },
         "container": {
           "const": "ashfox-workspace:2"

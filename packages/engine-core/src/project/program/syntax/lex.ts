@@ -30,17 +30,31 @@ const isAlphaOrPercentCode = (code: number): boolean =>
   (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 37;
 
 const hex = (value: string): boolean => {
-  if (value.length !== 6) return false;
-  for (let i = 0; i < 6; i += 1) {
+  if (value.length !== 6 && value.length !== 8) return false;
+  for (let i = 0; i < value.length; i += 1) {
     if (!isHexCode(value.charCodeAt(i))) return false;
   }
   return true;
 };
 
-/** The grammar header is the one hyphenated keyword. */
-const HEADER = 'ashfox-model';
-const TWO_CHARACTER_SYMBOLS: ReadonlySet<string> = new Set(['==', '!=', '<=', '>=']);
+const TWO_CHARACTER_SYMBOLS: ReadonlySet<string> = new Set(['==', '!=', '<=', '>=', '..', '->']);
 const ONE_CHARACTER_SYMBOLS = '{}[](),;=:+-*/%<>.';
+
+export const ALLOWED_NUMBER_UNITS: ReadonlySet<string> = new Set([
+  '',
+  's',
+  'ms',
+  'deg',
+  'u',
+  'px',
+  'b',
+  'hz',
+  'db',
+  'lufs',
+  'st',
+  'cents',
+  '%',
+]);
 
 type SpanFactory = (start: number, end: number) => SourceSpan;
 
@@ -224,24 +238,12 @@ const scanColor: Scanner = (state, current) => {
     report(
       state,
       'program.invalid-color',
-      'Colors must contain exactly six hexadecimal digits after #.',
+      'Colors must contain six or eight hexadecimal digits after #.',
       start,
       state.index,
     );
   }
   add(state, 'color', '#' + value.toLowerCase(), start);
-  return true;
-};
-
-/* Keep the header atomic only at the beginning of the token stream; authored
- * identifiers elsewhere must lex '-' as the subtraction operator. */
-const scanHeader: Scanner = (state) => {
-  if (state.tokens.length !== 0 || !state.source.startsWith(HEADER, state.index)) return false;
-  const next = state.source.charCodeAt(state.index + HEADER.length);
-  if (isIdentPartCode(next) || next === 36) return false;
-  const start = state.index;
-  state.index += HEADER.length;
-  add(state, 'identifier', HEADER, start);
   return true;
 };
 
@@ -256,11 +258,26 @@ const scanNumber: Scanner = (state, current) => {
   const start = state.index;
   if (code === 46) state.index += 1;
   skipCodes(state, isDigitCode);
-  if (state.source.charCodeAt(state.index) === 46) {
+  if (
+    code !== 46 &&
+    state.source.charCodeAt(state.index) === 46 &&
+    isDigitCode(state.source.charCodeAt(state.index + 1))
+  ) {
     state.index += 1;
     skipCodes(state, isDigitCode);
   }
+  const unitStart = state.index;
   skipCodes(state, isAlphaOrPercentCode);
+  const rawUnit = state.source.slice(unitStart, state.index);
+  if (!ALLOWED_NUMBER_UNITS.has(rawUnit)) {
+    report(
+      state,
+      'program.invalid-number-unit',
+      'Unsupported numeric unit "' + rawUnit + '".',
+      unitStart,
+      state.index,
+    );
+  }
   add(state, 'number', state.source.slice(start, state.index), start);
   return true;
 };
@@ -356,7 +373,6 @@ const scanNext = (state: LexState, current: string): boolean => {
   if (code === 47) return scanSlashToken(state, current);
   if (code === 34) return scanString(state, current);
   if (code === 35) return scanColor(state, current);
-  if (state.tokens.length === 0 && scanHeader(state, current)) return true;
   if (isDigitCode(code) || code === 46) {
     if (scanNumber(state, current)) return true;
   }
@@ -366,7 +382,7 @@ const scanNext = (state: LexState, current: string): boolean => {
   return scanSymbol(state, current);
 };
 
-/** Lexer for the versioned source language. Newlines are insignificant. */
+/** Lexer for the unified `ashfox 1` source language. Newlines are insignificant. */
 export const lexProgramSource = (
   source: string,
 ): {
