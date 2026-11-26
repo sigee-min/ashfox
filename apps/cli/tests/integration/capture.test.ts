@@ -27,6 +27,17 @@ const png = (bytes: Buffer, width: number, height: number) => {
   assert.equal(bytes.readUInt32BE(16), width);
   assert.equal(bytes.readUInt32BE(20), height);
 };
+const verifyStructureCutaway = () => {
+  const cottage = path.join(root, 'examples/structure/medieval_cottage.ashfox');
+  const full = success(run(['render', cottage, '--width', '160', '--height', '128']));
+  png(full, 160, 128);
+  const cut = success(
+    run(['render', cottage, '--cutaway', '4', '--width', '160', '--height', '128']),
+  );
+  png(cut, 160, 128);
+  assert.notDeepEqual(full, cut);
+};
+
 async function main() {
   const left = success(
     run(['render', fox, '--camera', 'left', '--width', '160', '--height', '128']),
@@ -137,6 +148,7 @@ async function main() {
   );
   png(sheetInspect, 320, 320);
   assert.notDeepEqual(sheetTurnaround, sheetInspect);
+  verifyStructureCutaway();
   assert.deepEqual(fs.readdirSync(temp), [], 'No implicit asset files or workspace');
   fs.writeFileSync('/tmp/ashfox-observer-fox.png', orbit);
   fs.writeFileSync('/tmp/ashfox-observer-sword.png', sprite);

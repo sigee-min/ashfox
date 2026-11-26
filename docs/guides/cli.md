@@ -9,9 +9,9 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 | `init <new-folder> [--json]` | New folder | Offline starter sources |
 | `doctor [--json]` | None | Runtime readiness and machine-readable contract |
 | `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, PNG, or build folder | Source validation, node/asset inspection, quality audit, or build integrity check |
-| `render <input> [options]` | `.ashfox` source or PNG | PNG still image, contact sheet (`--sheet`), waveform, or GIF (`--gif`) |
+| `render <input> [options]` | `.ashfox` source or PNG | PNG still image, `--cutaway <y>` structure slice, contact sheet (`--sheet`), waveform, or GIF (`--gif`) |
 | `build <input> [--json]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Verified bundle, catalog, and export directories |
-| `export <input> [options]` | `.ashfox` source or PNG | GLB, glTF ZIP, Minecraft ZIP, PNG, or WAV |
+| `export <input> [options]` | `.ashfox` source or PNG | GLB, glTF ZIP, Minecraft ZIP, Java structure (`.nbt` / `java_structure`), PNG, or WAV |
 
 `init`, `doctor`, `check`, and `build` return JSON using the `ashfox-cli-result` envelope (`doctor`/`init` take `--json`; `check`/`build` always return JSON).
 `help` is human-readable; use `doctor --json` for agents to inspect the complete contract.

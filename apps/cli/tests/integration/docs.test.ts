@@ -48,7 +48,7 @@ try {
       fs.writeFileSync(entry, match[1]);
       run('check', entry);
       run('build', entry);
-      const id = matchText(match[1], /(?:sprite|sound|asset) (\w+) \{/)[1];
+      const id = matchText(match[1], /(?:sprite|sound|asset|structure) (\w+) \{/)[1];
       run('check', path.join(folder, 'dist', id, 'build'));
     }
   }

@@ -20,6 +20,8 @@ const STANDALONE_SOURCES = Object.freeze([
   'examples/griffin/workbench/main.ashfox',
   'examples/prop/lantern.ashfox',
   'examples/prop/treasure_chest/chest.ashfox',
+  'examples/structure/medieval_cottage.ashfox',
+  'examples/structure/watchtower.ashfox',
 ]);
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -64,6 +66,14 @@ const productDigest = (product) => {
       entry,
       kind: product.kind,
       variants: product.sounds.map((sound) => ({ id: sound.variant, sha256: sha256(sound.wav) })),
+    };
+  }
+  if (product.kind === 'structure') {
+    return {
+      entry,
+      kind: product.kind,
+      nbt: sha256(product.structure.nbt),
+      document: digestValue(product.structure.document),
     };
   }
   return { entry, kind: product.kind, sha256: digestValue(product.model) };

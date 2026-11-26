@@ -1,0 +1,92 @@
+ashfox-model 1
+asset rune_pillar {
+  export rig contract R {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+
+  export skeleton Skel implements R {
+    bind root {
+      parent-origin = (0u, 0u, 0u);
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export surface contract StoneRune {
+    chart base box { coverage = opaque; }
+    chart shaft box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface RuneStone: StoneRune {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 1;
+      render-mode = emissive;
+      background = dark;
+      background-alpha = 255;
+      palette {
+        dark = (#2b303a, #3e4554, #576073);
+        stone = (#4b5261, #6c7587, #95a0b5);
+        brass = (#7a551c, #c48c2f, #f5cb5c);
+        cyan = (#176e6a, #32bfb5, #96fff7);
+      }
+      stamp rune {
+        pixels = ".cccc./cc..cc/..cc../..cc../cc..cc/.cccc.";
+        c = cyan;
+      }
+      chart base box {
+        fill = dark;
+        grain = clustered;
+        pattern border { paint = brass; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart shaft box {
+        fill = stone;
+        grain = clustered;
+        pattern border { paint = dark; width = 1px; edges = all; }
+        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        face north { stamp rune { at = (2px, 2px); protect = true; } }
+        face south { stamp rune { at = (2px, 2px); protect = true; } }
+        face east { stamp rune { at = (2px, 2px); protect = true; } }
+        face west { stamp rune { at = (2px, 2px); protect = true; } }
+      }
+      chart cap box {
+        fill = stone;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      grain clustered { seed = 911; }
+      tone painterly;
+    }
+  }
+
+  export component Pillar {
+    requires rig skel: R;
+    requires surface skin: StoneRune;
+    bind bone root to skel.root;
+    geometry {
+      bone root {
+        cube base { origin = (-7u, 0u, -7u); size = (14u, 3u, 14u); surface = skin.base; }
+        cube shaft { origin = (-5u, 3u, -5u); size = (10u, 10u, 10u); surface = skin.shaft; }
+        cube cap { origin = (-7u, 13u, -7u); size = (14u, 3u, 14u); surface = skin.cap; }
+      }
+    }
+  }
+
+  export asset rune_pillar {
+    settings { density = 16; forward = north; profile = block; }
+    skeleton = Skel;
+    use Pillar as body { bind skel = R; bind skin = RuneStone; };
+  }
+}

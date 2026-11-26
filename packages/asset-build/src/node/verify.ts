@@ -127,6 +127,25 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
   };
 };
 
+const verifyStructureMetadata = (value: unknown): AssetMetadata => {
+  const r = record(value, ['size', 'blockCount', 'interiorCells']);
+  if (
+    !Array.isArray(r.size) ||
+    r.size.length !== 3 ||
+    r.size.some((n) => !Number.isSafeInteger(n) || (n as number) < 1) ||
+    !Number.isSafeInteger(r.blockCount) ||
+    !Number.isSafeInteger(r.interiorCells)
+  ) {
+    fail('Invalid structure metadata');
+  }
+  const s = r.size as [number, number, number];
+  return {
+    size: [s[0], s[1], s[2]],
+    blockCount: r.blockCount as number,
+    interiorCells: r.interiorCells as number,
+  };
+};
+
 const metadata = (kind: unknown, value: unknown): AssetMetadata => {
   if (kind === 'pack') return verifyPackMetadata(value);
   if (kind === 'sprite') {
@@ -135,6 +154,7 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
     return { width: 16, height: 16 };
   }
   if (kind === 'model') return verifyModelMetadata(value);
+  if (kind === 'structure') return verifyStructureMetadata(value);
   const r = record(value, ['variants']);
   if (!Array.isArray(r.variants)) return fail('Invalid variants');
   return { variants: r.variants.map(verifyAudioVariantMetadata) };
@@ -262,7 +282,7 @@ const verifyCatalogAsset = (
     typeof asset.id !== 'string' ||
     !/^[a-z][a-z0-9_]{0,47}$/u.test(asset.id) ||
     ids.has(asset.id) ||
-    !['model', 'sprite', 'sound', 'pack'].includes(String(asset.kind)) ||
+    !['model', 'sprite', 'sound', 'structure', 'pack'].includes(String(asset.kind)) ||
     typeof asset.directory !== 'string' ||
     !safeRelative(asset.directory) ||
     !Array.isArray(asset.files)

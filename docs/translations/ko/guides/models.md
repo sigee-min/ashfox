@@ -33,6 +33,8 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `prop` | `examples/prop/lantern.ashfox` | 직교 계단 구조와 황동 지붕 브래킷이 있는 발광 컷아웃 랜턴 소품 |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | rig·surface·body·소켓 결합 자물쇠로 분리된 모듈형 소품 |
 | `creature` | `examples/griffin/workbench/main.ashfox` | 다중 모듈 애니메이션 크리처 (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
+| `structure` | `examples/structure/medieval_cottage.ashfox` | 가구 실내와 커스텀 `.ashfox` 소품을 결합해 `.nbt`·`1 block = 1.0m` GLB를 출력하는 박공 오두막 |
+| `structure` | `examples/structure/watchtower.ashfox` | 이층 침실·사다리·흉벽과 커스텀 랜턴을 갖춘 다층 석조 감시탑 |
 
 ## 애니메이션 크리처 만들기
 

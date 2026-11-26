@@ -97,6 +97,15 @@ export const prepare = (snapshot: Snapshot): Prepared => {
         },
       },
     };
+  if (product.kind === 'structure')
+    return {
+      kind: 'structure',
+      revision: compiled.sourceHash,
+      products,
+      product,
+      document: product.structure.document,
+      files: snapshot.files,
+    };
   if (product.kind !== 'model')
     return {
       kind: product.kind,

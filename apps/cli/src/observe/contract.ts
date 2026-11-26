@@ -12,7 +12,7 @@ export interface SourceInput {
   readonly files?: Readonly<Record<string, string>>;
 }
 export interface Prepared {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'png';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'png';
   readonly revision: string;
   readonly products?: readonly {
     readonly kind: string;

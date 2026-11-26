@@ -15,6 +15,7 @@ files are outputs; edit and version the source to change the asset.
 | [Model textures](textures.md) | Surface contracts, atlas charts, palettes, stamps and pixel coordinates |
 | [Sprite syntax](sprites.md) | Native sprite records, reusable shapes, materials, layers and validation |
 | [Sound syntax](sounds.md) | Literal records, source variants, field ranges and synthesis behavior |
+| [Structure syntax](structures.md) | Minecraft `.nbt` & Unity GLB buildings, palettes, prefabs, roofs and cutaway views |
 
 For projects with multiple assets, see [workspace configuration](../guides/workspace.md).
 It is a separate JSON contract, not a wrapper required around every source file.
@@ -33,6 +34,8 @@ The header identifies the language version for all three asset kinds.
 | `sprite name { … }` | One pixel sprite | Imports, reusable sprite declarations, profile, canvas, palette and layers |
 | `module name { … }` used by a sprite | Reusable sprite declarations | Imports and exported masks, materials and stamps |
 | `sound name { … }` | One sound effect | Literal sound properties, layers, variants and output settings |
+| `structure id { … }` | One Minecraft / GLB building | Block-state palette, custom `.ashfox` props, prefabs, roofs, cutaway & interior ops |
+| `module id { … }` used by a structure | Reusable building interiors | Optional palette and `export prefab` interior modules |
 
 A model's outer `asset` unit is the source namespace. Its inner
 `export asset` declaration is the buildable assembly. A sprite or sound needs

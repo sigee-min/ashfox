@@ -9,9 +9,9 @@
 | `init <new-folder> [--json]` | 새 폴더 | 오프라인 스타터 원본 |
 | `doctor [--json]` | 없음 | 실행 환경 준비 상태·기계 판독 계약 |
 | `check <input> [options]` | `.ashfox` 진입점, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, PNG 또는 빌드 디렉터리 | 원본 검증·노드/에셋 검사·품질 감사 또는 빌드 무결성 검사 |
-| `render <input> [options]` | `.ashfox` 원본 또는 PNG | PNG 정지 이미지·컨택트 시트(`--sheet`)·파형 또는 GIF(`--gif`) |
+| `render <input> [options]` | `.ashfox` 원본 또는 PNG | PNG 정지 이미지·구조물 `--cutaway <y>` 단면·컨택트 시트(`--sheet`)·파형 또는 GIF(`--gif`) |
 | `build <input> [--json]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 검증된 번들·카탈로그·출력 디렉터리 |
-| `export <input> [options]` | `.ashfox` 원본 또는 PNG | GLB, glTF ZIP, Minecraft ZIP, PNG 또는 WAV |
+| `export <input> [options]` | `.ashfox` 원본 또는 PNG | GLB, glTF ZIP, Minecraft ZIP, Java 구조물(`.nbt` / `java_structure`), PNG 또는 WAV |
 
 `doctor --json`, `check`, `build`는 JSON(`ashfox-cli-result`)을 반환합니다. 사람은 `help`, 에이전트는 `doctor --json`을 사용합니다. 설정은 소스, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`에 둡니다. 단일 에셋 `check`, `render`, `export` 옵션은 아래에서 설명합니다. `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
 

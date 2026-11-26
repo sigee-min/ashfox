@@ -61,8 +61,9 @@ const NUMERIC_RANGES = {
   fps: [1, 30],
   duration: [0.01, 30],
   scale: [1, 32],
+  cutaway: [1, 64],
 } as const;
-const INTEGER_KEYS = new Set<string>(['width', 'height', 'fps', 'scale']);
+const INTEGER_KEYS = new Set<string>(['width', 'height', 'fps', 'scale', 'cutaway']);
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
@@ -98,7 +99,7 @@ const applyEnumViewOptions = (v: Record<string, unknown>, result: Mutable<ViewOp
   if (v.format !== undefined)
     result.format = enumValue(
       v.format,
-      ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock', 'png', 'wav'],
+      ['glb', 'gltf', 'java_block', 'java_structure', 'geckolib5', 'bedrock', 'png', 'wav'],
       'format',
     );
   if (v.camera !== undefined)
@@ -150,6 +151,7 @@ export const readView = (value: unknown, previous: ViewOptions = DEFAULT_VIEW): 
     'texture',
     'mode',
     'sheet',
+    'cutaway',
     'format',
     'namespace',
     'modelPath',

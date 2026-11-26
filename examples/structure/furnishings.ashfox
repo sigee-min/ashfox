@@ -1,0 +1,67 @@
+ashfox-model 1
+module furnishings {
+  palette {
+    bed_h = "minecraft:red_bed[facing=north,part=head]";
+    bed_f = "minecraft:red_bed[facing=north,part=foot]";
+    bunk_h = "minecraft:blue_bed[facing=east,part=head]";
+    bunk_f = "minecraft:blue_bed[facing=east,part=foot]";
+    chest_n = "minecraft:chest[facing=north]";
+    chest_s = "minecraft:chest[facing=south]";
+    barrel = "minecraft:barrel[facing=up]";
+    craft = "minecraft:crafting_table";
+    furnace = "minecraft:furnace[facing=south,lit=true]";
+    brick = "minecraft:bricks";
+    pot = "minecraft:flower_pot";
+    plank = "minecraft:oak_planks";
+    book = "minecraft:bookshelf";
+    carpet_r = "minecraft:red_carpet";
+    carpet_b = "minecraft:blue_carpet";
+    torch = "minecraft:torch";
+    lantern = "minecraft:lantern[hanging=false]";
+  }
+
+  export prefab CozyBedroom {
+    layer y = 0 origin = (0, 0) {
+      "CB."
+      "PF."
+      "cc."
+    } map {
+      C = chest_n;
+      B = bed_h;
+      F = bed_f;
+      P = plank;
+      c = carpet_r;
+    };
+    set at = (0, 1, 1) block = pot;
+  }
+
+  export prefab KitchenHearth {
+    box from = (0, 0, 0) to = (2, 1, 0) block = brick;
+    set at = (1, 0, 0) block = furnace;
+    set at = (0, 0, 1) block = barrel;
+    set at = (2, 0, 1) block = craft;
+    set at = (1, 2, 0) block = lantern;
+  }
+
+  export prefab StudyCorner {
+    box from = (0, 0, 0) to = (2, 1, 0) block = book;
+    set at = (0, 0, 1) block = craft;
+    set at = (2, 0, 1) block = barrel;
+    set at = (0, 1, 1) block = torch;
+    set at = (1, 0, 1) block = carpet_b;
+  }
+
+  export prefab GuardBunk {
+    layer y = 0 origin = (0, 0) {
+      "FHC"
+      "c.B"
+    } map {
+      F = bunk_f;
+      H = bunk_h;
+      C = chest_s;
+      B = barrel;
+      c = carpet_b;
+    };
+    set at = (2, 1, 0) block = lantern;
+  }
+}

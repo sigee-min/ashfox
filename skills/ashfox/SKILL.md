@@ -54,6 +54,9 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
 - Save or export the files requested by the user. Report exact output locations,
   `check` audit score/profile, what was inspected/rendered, and any behavior still unverified in
   the receiving game. Do not claim successful output from a preflight check alone.
+- For Minecraft/GLB buildings (`structure <id>`), export both Java `.nbt` (`--format java_structure`,
+  standalone `build` default) and `1 block = 1.0m` GLB (`--format glb`), embed custom `.ashfox` props
+  via `palette` (`asset alias as "minecraft:..."`), and inspect furnished rooms with `render --cutaway <y>`.
 
 ## Skill updates
 

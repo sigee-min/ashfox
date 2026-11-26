@@ -100,6 +100,26 @@ export const computeTargetFraming = (
     );
   else applyCameraPreset(surface.camera, v.camera, box, model.settings.forward);
   const distance = surface.camera.position.distanceTo(target) / v.zoom;
+  if (distance > 120) {
+    const span = Math.max(
+      box.geometry.boundingBox?.getSize(new THREE.Vector3()).length() ?? distance,
+      120,
+    );
+    for (const child of surface.scene.children) {
+      if (child instanceof THREE.DirectionalLight && child.castShadow) {
+        child.shadow.camera.left = -span;
+        child.shadow.camera.right = span;
+        child.shadow.camera.top = span;
+        child.shadow.camera.bottom = -span;
+        child.shadow.camera.far = span * 4;
+        child.shadow.bias = -0.002;
+        child.shadow.camera.updateProjectionMatrix();
+        child.position.copy(target).add(new THREE.Vector3(span * 0.6, span * 0.9, -span * 0.7));
+        child.target.position.copy(target);
+        child.target.updateMatrixWorld();
+      }
+    }
+  }
   box.geometry.dispose();
   (box.material as THREE.Material).dispose();
   surface.scene.fog = null;

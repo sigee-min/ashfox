@@ -46,6 +46,8 @@ for shared design variables and exact resize relationships.
 | `prop` | `examples/prop/lantern.ashfox` | Emissive cutout cage prop with orthogonal tiers and brass roof brackets |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | Modular prop split across rig, surface, body, and socket-mounted clasp |
 | `creature` | `examples/griffin/workbench/main.ashfox` | Multi-module animated creature (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
+| `structure` | `examples/structure/medieval_cottage.ashfox` | Furnished gable-roof cottage with custom `.ashfox` props exporting `.nbt` and `1 block = 1.0m` GLB |
+| `structure` | `examples/structure/watchtower.ashfox` | Multi-story stone watchtower with guard bunk, ladder, battlements and custom lanterns |
 
 ## Create an animated creature
 
