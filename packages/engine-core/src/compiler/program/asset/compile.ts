@@ -290,7 +290,7 @@ const finalizeModel = (
   };
   return diagnostics.length > 0
     ? deepFreeze({ ok: false as const, diagnostics })
-    : deepFreeze({ ok: true as const, model: deepFreeze(model) });
+    : deepFreeze({ ok: true as const, model });
 };
 
 type LoweringResult =

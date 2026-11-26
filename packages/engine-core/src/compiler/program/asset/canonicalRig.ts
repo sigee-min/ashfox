@@ -16,6 +16,7 @@ import {
   type AssetVectorValue,
 } from './value/contract';
 import { lowerBones } from './canonicalBones';
+import { compareDiagnostics, nullRecord } from './diagnostics';
 import {
   INTEGER_BOUNDARY,
   MAX_MOTION_FRAMES,
@@ -425,13 +426,6 @@ const lowerMotion = (
   });
 };
 
-const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  compareText(left.path, right.path) ||
-  left.span.start.offset - right.span.start.offset ||
-  left.span.end.offset - right.span.end.offset ||
-  compareText(left.code, right.code) ||
-  compareText(left.message, right.message);
-
 /** Lower the canonical skeleton and its already-retargeted rest-relative motions. */
 export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLoweringResult => {
   const diagnostics: AssetDiagnostic[] = [];
@@ -452,10 +446,7 @@ export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLo
         diagnostics: deepFreeze([...diagnostics].sort(compareDiagnostics)),
       });
     }
-    const animations: Record<string, AnimationClip> = Object.create(null) as Record<
-      string,
-      AnimationClip
-    >;
+    const animations = nullRecord<AnimationClip>();
     for (const clip of clips.sort((left, right) => compareText(left.id, right.id))) {
       animations[clip.id] = clip;
     }

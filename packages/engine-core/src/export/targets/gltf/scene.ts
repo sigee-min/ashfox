@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { ProjectDocument, SceneNode } from '../../../model';
 import {
   boneTransformMatchesCanonicalFrame,
@@ -106,7 +107,7 @@ export const compileGltfScene = (
   const visibleNodeIds = effectivelyVisibleSceneNodeIds(document);
   const orderedNodes = Object.values(document.scene.nodes)
     .filter((node) => visibleNodeIds.has(node.id))
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareText(left.id, right.id));
   const compileOptions: GltfSceneCompileOptions = {
     ...options,
     cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(document),

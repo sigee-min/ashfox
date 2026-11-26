@@ -1,3 +1,5 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
+import { canonicalJsonString } from '../../canonicalJson';
 import {
   SPRITE_POLICY,
   SpriteInputError,
@@ -13,20 +15,21 @@ import {
 import type { SpriteBuild, SpriteProduct } from './contract';
 import { paintSprite } from './paint';
 
-const stable = (v: unknown): unknown => {
+const normalizeHexColors = (v: unknown): unknown => {
   if (typeof v === 'string' && /^#[0-9a-f]{6}$/iu.test(v)) return v.toUpperCase();
-  if (Array.isArray(v)) return v.map(stable);
-  if (v && typeof v === 'object')
+  if (Array.isArray(v)) return v.map(normalizeHexColors);
+  if (v && typeof v === 'object') {
     return Object.fromEntries(
       Object.entries(v)
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([k, value]) => [k, stable(value)]),
+        .filter(([, value]) => value !== undefined)
+        .map(([k, value]) => [k, normalizeHexColors(value)]),
     );
+  }
   return v;
 };
 
 const digest = (v: unknown): string =>
-  sha256ByteDigest(new TextEncoder().encode(JSON.stringify(stable(v))));
+  sha256ByteDigest(encodeUtf8(canonicalJsonString(normalizeHexColors(v))));
 
 const coverage = (bytes: Uint8Array, total: number) => {
   const positions: number[] = [],

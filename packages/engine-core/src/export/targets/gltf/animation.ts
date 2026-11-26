@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { AnimationClip, ProjectDocument, TransformChannel, Vec3 } from '../../../model';
 import type { ExportAdaptedDocument } from '../../adapter';
 import { canonicalQuaternionFromEuler } from '../../../model/transform';
@@ -228,7 +229,7 @@ const compileGltfClip = (
     },
   };
   const orderedChannels = Object.values(clip.channels).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   );
   for (const channel of orderedChannels) {
     appendGltfAnimationChannel(animation, clip, channel, options, caches);
@@ -248,7 +249,7 @@ export const compileGltfAnimations = (
   };
   const animations: GltfAnimation[] = [];
   const orderedClips = Object.values(document.animations).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   );
   for (const clip of orderedClips) {
     const compiled = compileGltfClip(clip, options, caches);

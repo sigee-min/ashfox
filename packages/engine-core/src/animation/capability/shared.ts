@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type {
   AnimationClip,
   AnimationScalar,
@@ -14,7 +15,7 @@ import type {
 } from './types';
 
 export const sortedById = <T extends { readonly id: string }>(values: readonly T[]): readonly T[] =>
-  [...values].sort((left, right) => left.id.localeCompare(right.id));
+  [...values].sort((left, right) => compareText(left.id, right.id));
 
 export const isNumericAnimationScalar = (value: AnimationScalar): boolean =>
   typeof value === 'number' && Number.isFinite(value);

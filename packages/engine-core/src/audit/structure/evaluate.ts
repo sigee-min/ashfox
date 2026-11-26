@@ -1,7 +1,33 @@
-import type { StructureAuditGate } from './contract';
+import { DEFAULT_AUDIT_THRESHOLD, gradeForAudit, round2 } from '@ashfox/internal-contracts';
+import { describeBlockState, type BlockDescriptor } from '../../compiler/structure/blocks';
 import { isValidMinecraftState } from '../../project/structure/state';
-import { describeBlockState } from './blocks';
-import type { StructureAuditMetrics, StructureAuditReport, StructureGrid } from './contract';
+import type {
+  StructureAuditGate,
+  StructureAuditMetrics,
+  StructureAuditReport,
+  StructureGrid,
+} from './contract';
+
+interface PaletteStateMeta {
+  readonly baseId: string;
+  readonly descriptor: BlockDescriptor;
+  readonly isDoor: boolean;
+  readonly isPassable: boolean;
+}
+
+const buildPaletteMeta = (states: readonly string[]): readonly PaletteStateMeta[] =>
+  states.map((state, index) => {
+    const descriptor = describeBlockState(state);
+    if (index === 0) {
+      return { baseId: state, descriptor, isDoor: false, isPassable: true };
+    }
+    const bracket = state.indexOf('[');
+    const baseId = bracket === -1 ? state : state.slice(0, bracket);
+    const isDoor = state.includes('_door');
+    const isPassable =
+      isDoor || state.includes('carpet') || state.includes('torch') || state.includes('lantern');
+    return { baseId, descriptor, isDoor, isPassable };
+  });
 
 const DIRS6: readonly [number, number, number][] = [
   [1, 0, 0],
@@ -63,44 +89,66 @@ const checkConnectedSolid = (
   return { blockCount, grounded, singleComponent: blockCount > 0 && queue.length === blockCount };
 };
 
-const isPassable = (grid: StructureGrid, idx: number): boolean => {
+const isPassable = (
+  grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
+  idx: number,
+): boolean => {
   const stateIdx = grid.voxels[idx]!;
-  if (stateIdx <= 0) return true;
-  const st = grid.states[stateIdx]!;
-  return (
-    st.includes('_door') || st.includes('carpet') || st.includes('torch') || st.includes('lantern')
-  );
+  return stateIdx <= 0 ? true : paletteMeta[stateIdx]!.isPassable;
 };
 
-const isWalkableAt = (grid: StructureGrid, x: number, y: number, z: number): boolean => {
+const isWalkableAt = (
+  grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
+  x: number,
+  y: number,
+  z: number,
+): boolean => {
   const [w, h, d] = grid.size;
   const idx = (y * d + z) * w + x;
   const st = grid.voxels[idx]!;
   if (st === 0) return true;
   if (grid.voxels[z * w + x]! <= 0 || y + 1 >= h) return false;
-  return isPassable(grid, idx) && isPassable(grid, ((y + 1) * d + z) * w + x);
+  return (
+    isPassable(grid, paletteMeta, idx) && isPassable(grid, paletteMeta, ((y + 1) * d + z) * w + x)
+  );
+};
+
+const analyzeInteriorLayer = (
+  grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
+  y: number,
+  doors: Set<string>,
+): number => {
+  const [w, _h, d] = grid.size;
+  let interiorCells = 0;
+  for (let z = 0; z < d; z += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const st = grid.voxels[(y * d + z) * w + x]!;
+      if (st > 0 && paletteMeta[st]!.isDoor) doors.add(`${x},${z}`);
+      if (isWalkableAt(grid, paletteMeta, x, y, z)) interiorCells += 1;
+    }
+  }
+  return interiorCells;
 };
 
 const analyzeInterior = (
   grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
 ): { readonly interiorCells: number; readonly accessibleDoorways: number } => {
-  const [w, h, d] = grid.size;
+  const h = grid.size[1];
   let interiorCells = 0;
   const doors = new Set<string>();
   for (let y = 1; y < h; y += 1) {
-    for (let z = 0; z < d; z += 1) {
-      for (let x = 0; x < w; x += 1) {
-        const st = grid.voxels[(y * d + z) * w + x]!;
-        if (st > 0 && grid.states[st]!.includes('_door')) doors.add(`${x},${z}`);
-        if (isWalkableAt(grid, x, y, z)) interiorCells += 1;
-      }
-    }
+    interiorCells += analyzeInteriorLayer(grid, paletteMeta, y, doors);
   }
   return { interiorCells, accessibleDoorways: doors.size };
 };
 
 const collectMetrics = (
   grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
   prefabUses: number,
   interior: { readonly interiorCells: number; readonly accessibleDoorways: number },
 ): StructureAuditMetrics => {
@@ -114,12 +162,11 @@ const collectMetrics = (
     const v = grid.voxels[i]!;
     if (v <= 0) continue;
     blockCount += 1;
-    const state = grid.states[v]!;
-    const desc = describeBlockState(state);
-    materials.add(state.split('[')[0]!);
-    shapes.add(desc.shape);
-    if (desc.light) lightSources += 1;
-    if (desc.furniture) furnitureCount += 1;
+    const meta = paletteMeta[v]!;
+    materials.add(meta.baseId);
+    shapes.add(meta.descriptor.shape);
+    if (meta.descriptor.light) lightSources += 1;
+    if (meta.descriptor.furniture) furnitureCount += 1;
     const tag = grid.customTags[i];
     if (tag) {
       customAliases.add(tag);
@@ -140,8 +187,7 @@ const collectMetrics = (
   };
 };
 
-const clampScore = (val: number, max: number): number =>
-  Math.round(Math.max(0, Math.min(max, val)) * 100) / 100;
+const clampScore = (val: number, max: number): number => round2(Math.max(0, Math.min(max, val)));
 
 const buildGates = (
   grid: StructureGrid,
@@ -211,21 +257,22 @@ export const evaluateStructureQuality = (
   grid: StructureGrid,
   prefabUses: number,
 ): StructureAuditReport => {
+  const paletteMeta = buildPaletteMeta(grid.states);
   const conn = checkConnectedSolid(grid);
-  const m = collectMetrics(grid, prefabUses, analyzeInterior(grid));
+  const m = collectMetrics(grid, paletteMeta, prefabUses, analyzeInterior(grid, paletteMeta));
   const gates = buildGates(grid, conn, m);
   const s = computePillarScores(grid, m);
   const allGatesPass = gates.every((g) => g.passed);
   const raw = Math.round(s.arch + s.interior + s.materials);
   const score = allGatesPass ? raw : Math.min(raw, 45);
-  const passed = allGatesPass && score >= 75;
+  const passed = allGatesPass && score >= DEFAULT_AUDIT_THRESHOLD;
   return {
     schemaVersion: 1,
     profile: 'structure',
-    threshold: 75,
+    threshold: DEFAULT_AUDIT_THRESHOLD,
     passed,
     score,
-    grade: !passed ? 'fail' : score >= 85 ? 'excellent' : 'pass',
+    grade: gradeForAudit(allGatesPass, score, passed, DEFAULT_AUDIT_THRESHOLD),
     hardGates: gates,
     pillars: [
       {

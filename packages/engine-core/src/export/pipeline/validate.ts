@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { ExportFormatProfile } from '../adapter/contract';
 import {
   adaptProjectForExport,
@@ -6,7 +7,7 @@ import {
   type ExportAdapterInput,
 } from '../adapter';
 import { validateProjectDocument } from '../../validation';
-import { validateFormatProfile } from '../../validation/target/validate';
+import { validateFormatProfile } from '../targetCheck/validate';
 import { createValidationContext } from '../../validation/context';
 import type { InvariantFinding, ValidationReport } from '../../validation/contract';
 import type { AssetProject } from '../../project/asset';
@@ -42,7 +43,7 @@ const validateAdaptedExportTarget = (adapted: ExportAdaptedDocument): Validation
   const adapterContext = createValidationContext();
   validateFormatProfile(snapshot, adapterContext.add);
   const findings = [...canonicalReport.findings, ...adapterContext.findings].sort(
-    (left, right) => left.path.localeCompare(right.path) || left.code.localeCompare(right.code),
+    (left, right) => compareText(left.path, right.path) || compareText(left.code, right.code),
   );
   return {
     valid: !findings.some((finding) => finding.severity === 'error'),

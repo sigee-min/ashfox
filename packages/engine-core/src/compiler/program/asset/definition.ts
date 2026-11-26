@@ -4,6 +4,7 @@ import type {
   AssetSkeletonDecl,
   AssetSocketContractDecl,
 } from '../../../project/program/asset/contract';
+import { nullRecord } from './diagnostics';
 import {
   type TypedRigContract,
   type TypedRigSocket,
@@ -12,8 +13,6 @@ import {
 } from './contract';
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { buildTypedFrame } from './hirFrames';
-
-const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
 
 export const buildSocketContract = (
   context: AssemblyContext,
@@ -144,7 +143,7 @@ const buildRigJoints = (
   state: AssemblyState,
   declaration: AssetRigContractDecl,
 ): Record<string, TypedRigContract['joints'][string]> => {
-  const joints = record<TypedRigContract['joints'][string]>();
+  const joints = nullRecord<TypedRigContract['joints'][string]>();
   for (const joint of declaration.joints) {
     if (joints[joint.id] !== undefined) {
       context.issue(
@@ -258,7 +257,7 @@ const buildRigSockets = (
   joints: TypedRigContract['joints'],
   socketContracts: Readonly<Record<string, TypedSocketContract>>,
 ): Readonly<Record<string, TypedRigSocket>> => {
-  const sockets = record<TypedRigSocket>();
+  const sockets = nullRecord<TypedRigSocket>();
   for (const socket of declaration.sockets) {
     if (sockets[socket.id] !== undefined) {
       context.issue(
@@ -361,7 +360,7 @@ export const buildSkeleton = (
     );
     return null;
   }
-  const binds = record<TypedSkeleton['binds'][string]>();
+  const binds = nullRecord<TypedSkeleton['binds'][string]>();
   for (const binding of declaration.binds) addSkeletonBind(context, state, rig, binding, binds);
   for (const joint of Object.keys(rig.joints)) {
     if (binds[joint] === undefined) {

@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import { assertProjectAnimationsExportable } from '../../animation/capability';
 import type { AnimationClip } from '../../model';
 import { assertValidatedExportTargetDocument } from '../pipeline/validate';
@@ -39,7 +40,7 @@ const compileClipBones = (
 ): Record<string, MinecraftBoneAnimation> => {
   const bones: Record<string, MinecraftBoneAnimation> = {};
   const channels = Object.values(clip.channels).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   );
   for (const channel of channels) {
     const target = animatedBone(document, channel.targetNodeId, visibleNodeIds);
@@ -90,7 +91,7 @@ const compileClip = (
     ...(Object.keys(bones).length > 0 ? { bones } : {}),
     ...compileMinecraftAnimationTriggers(
       document,
-      Object.values(clip.triggers).sort((left, right) => left.id.localeCompare(right.id)),
+      Object.values(clip.triggers).sort((left, right) => compareText(left.id, right.id)),
       options,
       visibleNodeIds,
     ),
@@ -107,7 +108,7 @@ export const buildMinecraftActorAnimation = (
   const animationNames = minecraftActorAnimationNames(document);
   const animations: Record<string, MinecraftActorAnimation> = {};
   for (const clip of Object.values(document.animations).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   )) {
     animations[animationNames.get(clip.id) ?? clip.name] = compileClip(
       document,

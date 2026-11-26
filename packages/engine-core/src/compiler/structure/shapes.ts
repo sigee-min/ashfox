@@ -1,9 +1,14 @@
 import type { Vec3 } from '../../model/identity';
 import type { AxisCubeNode, CubeFace, CubeFaceDirection, CubeFaces } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
-import { parseBlockState } from '../../project/structure/state';
+import type { ParsedBlockState } from '../../project/structure/state';
 import type { BlockDescriptor } from './blocks';
 import type { TileUvRef } from './atlas';
+
+export interface CachedBlockState {
+  readonly parsed: ParsedBlockState;
+  readonly facing: CardinalFacing;
+}
 
 export interface LocalBoxSpec {
   readonly from: Vec3;
@@ -168,15 +173,12 @@ export const buildNonFullCubes = (
   ox: number,
   oy: number,
   oz: number,
-  state: string,
+  cachedState: CachedBlockState,
   desc: BlockDescriptor,
   conns: readonly boolean[],
   uvs: ReadonlyMap<string, TileUvRef>,
 ): readonly AxisCubeNode[] => {
-  const parsed = parseBlockState(state);
-  const fRaw = parsed.properties.facing;
-  const facing: CardinalFacing =
-    fRaw === 'south' || fRaw === 'east' || fRaw === 'west' ? fRaw : 'north';
+  const { parsed, facing } = cachedState;
   const specs = simpleShapeBoxes(desc, parsed.properties, facing, conns);
   const faces = makeBoxFaces(desc, facing, uvs);
   return specs.map((spec, idx) => ({

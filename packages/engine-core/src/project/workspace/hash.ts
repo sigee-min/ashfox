@@ -1,3 +1,4 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { canonicalJsonString } from '../../canonicalJson';
 import { sha256ByteDigest, sha256Digest } from '../../provenance/digest';
 
@@ -107,7 +108,7 @@ export const canonicalWorkspaceLock = (lock: WorkspaceLock): WorkspaceLock => ({
 
 export const computeSourceContentHash = (source: string): Sha256Digest => {
   const checked = assertWellFormedSourceText(source);
-  return sha256ByteDigest(new TextEncoder().encode(checked)) as Sha256Digest;
+  return sha256ByteDigest(encodeUtf8(checked)) as Sha256Digest;
 };
 
 export const computePackageManifestHash = (pkg: WorkspacePackage): Sha256Digest =>

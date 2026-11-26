@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import type { AssetSourceUnit } from '../program/asset/contract';
 
 import type { Sha256Digest, WorkspaceFile } from './contract';
@@ -72,7 +73,7 @@ const exportedNames = (state: ParsedState): readonly string[] =>
     state.unit.declarations
       .filter((declaration) => declaration.exported)
       .map((declaration) => declaration.id)
-      .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0)),
+      .sort(compareText),
   );
 
 const packageInstanceKey = (pkg: PackageIndex): Sha256Digest => {

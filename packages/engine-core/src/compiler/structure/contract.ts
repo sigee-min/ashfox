@@ -1,4 +1,4 @@
-import type { AuditPillarId } from '../../audit/contract';
+import type { AuditQualityGrade } from '@ashfox/internal-contracts';
 import type { CompiledModel, ProjectDocument } from '../../model';
 import type { CardinalFacing, IntVec3 } from '../../project/structure/contract';
 
@@ -11,7 +11,7 @@ export interface StructureAuditGate {
 }
 
 export interface StructureAuditPillar {
-  readonly id: AuditPillarId;
+  readonly id: 'form' | 'texture' | 'rig';
   readonly label: string;
   readonly score: number;
   readonly maxScore: number;
@@ -80,11 +80,16 @@ export interface StructureAuditReport {
   readonly threshold: number;
   readonly passed: boolean;
   readonly score: number;
-  readonly grade: 'fail' | 'pass' | 'excellent';
+  readonly grade: AuditQualityGrade;
   readonly hardGates: readonly StructureAuditGate[];
   readonly pillars: readonly StructureAuditPillar[];
   readonly metrics: StructureAuditMetrics;
 }
+
+export type StructureAuditEvaluator = (
+  grid: StructureGrid,
+  prefabUses: number,
+) => StructureAuditReport;
 
 export interface StructureProduct {
   readonly id: string;

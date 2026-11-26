@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { AssetDeclaration, AssetDiagnostic } from '../../../project/program/asset/contract';
 import type {
   WorkspaceCompilationClosure,
@@ -30,8 +31,7 @@ import { buildSurface, buildSurfaceContract } from './definitionSurface';
 import { buildComponent } from './component';
 import { buildMotion } from './motion';
 import { elaborateAssetDesigns } from './design';
-
-const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
+import { compareDiagnostics, nullRecord } from './diagnostics';
 
 interface BuildState extends AssemblyState {
   readonly file: WorkspaceCompilationFile;
@@ -45,13 +45,6 @@ interface BuildSession {
   diagnosticLimitReported: boolean;
   treeLimitReported: boolean;
 }
-
-const compareDiagnostics = (left: AssetDiagnostic, right: AssetDiagnostic): number =>
-  left.path.localeCompare(right.path) ||
-  left.span.start.offset - right.span.start.offset ||
-  left.span.end.offset - right.span.end.offset ||
-  left.code.localeCompare(right.code) ||
-  left.message.localeCompare(right.message);
 
 const issueFor =
   (session: BuildSession): AssemblyContext['issue'] =>
@@ -176,18 +169,18 @@ const resolveFor =
   };
 
 const moduleFor = (state: BuildState): TypedAssetModule => {
-  const imports = record<string>();
+  const imports = nullRecord<string>();
   for (const [alias, target] of [...state.imports].sort(([left], [right]) =>
-    left.localeCompare(right),
+    compareText(left, right),
   ))
     imports[alias] = target;
-  const exports = record<AssetSymbolId>();
+  const exports = nullRecord<AssetSymbolId>();
   for (const [name, entry] of [...state.exports].sort(([left], [right]) =>
-    left.localeCompare(right),
+    compareText(left, right),
   ))
     exports[name] = entry.symbol;
   const declarations = [...state.symbols.values()]
-    .sort((left, right) => left.symbol.key.localeCompare(right.symbol.key))
+    .sort((left, right) => compareText(left.symbol.key, right.symbol.key))
     .map((entry) => entry.symbol);
   return freeze({
     path: state.path,
@@ -200,7 +193,7 @@ const moduleFor = (state: BuildState): TypedAssetModule => {
 
 const orderedStates = (states: ReadonlyMap<string, BuildState>): BuildState[] =>
   [...states.values()].sort((left, right) =>
-    left.file.identity.key.localeCompare(right.file.identity.key),
+    compareText(left.file.identity.key, right.file.identity.key),
   );
 
 const entriesOf = (
@@ -212,7 +205,7 @@ const entriesOf = (
     for (const entry of state.symbols.values()) {
       if (entry.symbol.kind === kind) entries.push({ state, entry });
     }
-  return entries.sort((left, right) => left.entry.symbol.key.localeCompare(right.entry.symbol.key));
+  return entries.sort((left, right) => compareText(left.entry.symbol.key, right.entry.symbol.key));
 };
 
 const add = <T extends { readonly symbol: AssetSymbolId }>(
@@ -293,7 +286,7 @@ const collect = <T extends { readonly symbol: AssetSymbolId }>(
   kind: AssetSymbolKind,
   build: (state: BuildState, entry: AssemblyEntry) => T | null,
 ): Record<string, T> => {
-  const target = record<T>();
+  const target = nullRecord<T>();
   for (const item of entriesOf(states, kind)) add(target, build(item.state, item.entry));
   return target;
 };
@@ -346,12 +339,12 @@ const buildDeclarations = (
 const indexModules = (
   states: ReadonlyMap<string, BuildState>,
 ): Pick<TypedAssetHir, 'modules' | 'symbols'> => {
-  const modules = record<TypedAssetModule>();
-  const symbols = record<AssetSymbolId>();
+  const modules = nullRecord<TypedAssetModule>();
+  const symbols = nullRecord<AssetSymbolId>();
   for (const state of orderedStates(states)) {
     modules[state.file.identity.key] = moduleFor(state);
     for (const entry of [...state.symbols.values()].sort((left, right) =>
-      left.symbol.key.localeCompare(right.symbol.key),
+      compareText(left.symbol.key, right.symbol.key),
     )) {
       symbols[entry.symbol.key] = entry.symbol;
     }

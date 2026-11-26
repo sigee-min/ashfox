@@ -1,5 +1,6 @@
-import { evaluateSpriteQuality } from '../../audit/sprite/evaluate';
-import type { SpriteAuditReport } from '../../audit/sprite/contract';
+import { evaluateSpriteQuality } from './evaluate';
+import type { SpriteAuditReport } from './contract';
+import type { SpriteProduct } from '../../compiler/sprite/contract';
 import { relativeLuminance } from '../../textures/oklch';
 import {
   drawBadgeRgba,
@@ -9,10 +10,11 @@ import {
 } from '../../textures/pixelfont';
 import { encodeCanonicalPng } from '../../textures/textureRecipe/png';
 import { rasterizeCanonicalTexture } from '../../textures/textureRecipe/raster';
-import type { SpriteProduct } from './contract';
 
 const SHEET_SIZE = 512;
 const PANEL_SIZE = 256;
+
+export type SpriteSheetInput = Pick<SpriteProduct, 'profile' | 'raster'>;
 
 const drawChecker = (buf: Uint8Array, ox: number, oy: number, w: number, h: number): void => {
   for (let y = 0; y < h; y += 8) {
@@ -235,23 +237,29 @@ export const encodeRgbaBufferPng = (buf: Uint8Array, width: number, height: numb
 };
 
 /** Pure-CPU 4-panel 512x512 inspection sheet for Sprite v2 items and seamless tiles. */
-export const spriteInspectSheetPng = (
-  sprite: SpriteProduct,
-  audit: SpriteAuditReport = evaluateSpriteQuality(sprite),
-): Uint8Array => {
+export function spriteInspectSheetPng(
+  sprite: SpriteSheetInput,
+  audit: SpriteAuditReport,
+): Uint8Array;
+export function spriteInspectSheetPng(sprite: SpriteProduct, audit?: SpriteAuditReport): Uint8Array;
+export function spriteInspectSheetPng(
+  sprite: SpriteSheetInput | SpriteProduct,
+  audit?: SpriteAuditReport,
+): Uint8Array {
+  const report = audit ?? evaluateSpriteQuality(sprite as SpriteProduct);
   const buf = new Uint8Array(SHEET_SIZE * SHEET_SIZE * 4);
   fillRectRgba(buf, SHEET_SIZE, SHEET_SIZE, 0, 0, SHEET_SIZE, SHEET_SIZE, [20, 24, 32, 255]);
   const src = sprite.raster.rgba.copy();
   const w = sprite.raster.width,
     h = sprite.raster.height;
   if (sprite.profile === 'tile') {
-    drawTilePanels(buf, src, w, h, audit);
+    drawTilePanels(buf, src, w, h, report);
     drawBadgeRgba(buf, SHEET_SIZE, SHEET_SIZE, 6, 6, 'TILE 1X');
     drawBadgeRgba(buf, SHEET_SIZE, SHEET_SIZE, PANEL_SIZE + 6, 6, '3X3 TILED');
     drawBadgeRgba(buf, SHEET_SIZE, SHEET_SIZE, 6, PANEL_SIZE + 6, 'VALUE (LUMA)');
     drawBadgeRgba(buf, SHEET_SIZE, SHEET_SIZE, PANEL_SIZE + 6, PANEL_SIZE + 6, 'PALETTE + AUDIT');
   } else {
-    drawItemPanels(buf, src, w, h, audit);
+    drawItemPanels(buf, src, w, h, report);
     drawBadgeRgba(
       buf,
       SHEET_SIZE,
@@ -267,4 +275,4 @@ export const spriteInspectSheetPng = (
   fillRectRgba(buf, SHEET_SIZE, SHEET_SIZE, PANEL_SIZE - 1, 0, 2, SHEET_SIZE, [42, 48, 60, 255]);
   fillRectRgba(buf, SHEET_SIZE, SHEET_SIZE, 0, PANEL_SIZE - 1, SHEET_SIZE, 2, [42, 48, 60, 255]);
   return encodeRgbaBufferPng(buf, SHEET_SIZE, SHEET_SIZE);
-};
+}

@@ -1,4 +1,5 @@
 import {
+  compareText,
   hasExactContractKeys,
   isClosedContractRecord,
   isDenseContractArray,
@@ -301,9 +302,9 @@ export const readPackageManifest = (value: unknown): WorkspaceReadResult<Package
     value: Object.freeze({
       format: ASHFOX_PACKAGE_FORMAT,
       version: 1,
-      entries: Object.freeze(entries.value.sort((a, b) => (a.name < b.name ? -1 : 1))),
-      modules: Object.freeze(modules.value.sort((a, b) => (a.subpath < b.subpath ? -1 : 1))),
-      dependencies: Object.freeze(dependencies.value.sort((a, b) => (a.name < b.name ? -1 : 1))),
+      entries: Object.freeze(entries.value.sort((a, b) => compareText(a.name, b.name))),
+      modules: Object.freeze(modules.value.sort((a, b) => compareText(a.subpath, b.subpath))),
+      dependencies: Object.freeze(dependencies.value.sort((a, b) => compareText(a.name, b.name))),
     }),
   };
 };
@@ -357,7 +358,7 @@ export const readWorkspaceManifest = (value: unknown): WorkspaceReadResult<Works
     value: Object.freeze({
       format: ASHFOX_WORKSPACE_FORMAT,
       version: 1,
-      packages: Object.freeze(packages.value.sort((a, b) => (a.name < b.name ? -1 : 1))),
+      packages: Object.freeze(packages.value.sort((a, b) => compareText(a.name, b.name))),
     }),
   };
 };

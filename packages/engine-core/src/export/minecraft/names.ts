@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { ExportAdaptedDocument } from '../adapter';
 import { resourceToken } from '../../resourceToken';
 
@@ -14,7 +15,7 @@ export const minecraftActorAnimationNames = (
   const usedNames = new Set<string>();
   const names = new Map<string, string>();
   for (const clip of Object.values(document.animations).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   )) {
     let name =
       MINECRAFT_ANIMATION_NAME.test(clip.name) && !usedNames.has(clip.name)
