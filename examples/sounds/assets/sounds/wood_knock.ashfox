@@ -2,54 +2,54 @@ ashfox 1
 sound wood_knock {
   profile = foley;
   duration = 1.32s;
-  channels = 2;
   seed = 7349;
   space { preset = timber_room; mix = 20%; }
-  voice oak_body : material {
+
+  voice oak_body : modal_plate {
     material = wood;
     pitch = 220hz;
     size = 0.8;
-    hardness = 78%;
-    damping = 42%;
-    brightness = 68%;
+    hardness = 0.78;
+    damping = 0.42;
+    brightness = 0.68;
     modes = 18;
     strike = mallet;
-    filter lowpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 13000hz), (0.35, 3200hz), (1, 900hz)]; }
-      q = 1.1;
-    }
+    twin_beat = 0.25;
+    splash = 0.38;
+    stereo_spread = 0.45;
     highpass = 38hz;
-    drive = 1.8;
+    filter : lowpass { cutoff = log(0: 13000hz -> 0.35: 3200hz -> 1: 900hz); q = 1.1; }
+    drive : tape { amount = 1.8; }
     pan = -0.12;
     gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
   }
-  voice hollow_thump : resonator {
-    excitation mallet { duration = 8ms; hardness = 68%; }
-    mode sub { hz = 85hz; decay = 0.16s; gain = 0.9; }
-    mode chest { hz = 175hz; decay = 0.12s; gain = 1; }
-    pitch_drop_cents = 80cents;
-    pitch_drop_seconds = 18ms;
+
+  voice hollow_thump : waveguide {
+    model = pipe;
+    pitch = log(0: 185hz -> 1: 155hz);
+    damping = 0.55;
+    brightness = 0.45;
     highpass = 32hz;
+    eq { low = (140hz, 2.5db); }
     pan = 0.06;
     gain { env = ad; attack = 2ms; peak = 0.75; curve = exp; }
   }
+
   voice mallet_tick : noise {
     color = white;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 8600hz), (1, 1100hz)]; }
-      q = 1.2;
-    }
+    filter : bandpass { cutoff = log(0: 8600hz -> 1: 1100hz); q = 1.2; }
     pan = 0.16;
     gain { env = ad; attack = 2ms; peak = 0.68; curve = exp; }
   }
+
   seq knock {
     start = 20ms;
-    repeat { count = 3; period = 0.38s; }
-    step tap { voice = oak_body; at = 0s; duration = 0.28s; vary_timing = -0.005s..5ms; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; vary_duration = 95%..105%; }
-    step body { voice = hollow_thump; at = 0s; duration = 0.22s; vary_pitch = -55cents..55cents; }
-    step tick { voice = mallet_tick; at = 0s; duration = 0.14s; vary_gain = 85%..115%; }
+    repeat { count = 3; period = 380ms; }
+    step tap { voice = oak_body; at = 0s; duration = 280ms; vary_timing = -5ms..5ms; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; vary_duration = 95%..105%; }
+    step body { voice = hollow_thump; at = 0s; duration = 220ms; vary_pitch = -55cents..55cents; }
+    step tick { voice = mallet_tick; at = 0s; duration = 140ms; vary_gain = 85%..115%; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -12lufs; punch = 35%; warmth = 20%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -12lufs; peak = -1.5db; punch = 35%; warmth = 20%; limit = true; }
 }

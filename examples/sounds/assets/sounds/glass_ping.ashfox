@@ -2,56 +2,67 @@ ashfox 1
 sound glass_ping {
   profile = impact;
   duration = 1.32s;
-  channels = 2;
   seed = 7349;
   space { preset = small_chamber; mix = 26%; }
-  voice crystal_body : material {
+
+  voice crystal_body : modal_plate {
     material = glass;
     pitch = 1320hz;
     size = 0.85;
-    hardness = 90%;
-    damping = 14%;
-    brightness = 85%;
-    modes = 24;
+    hardness = 0.9;
+    damping = 0.14;
+    brightness = 0.85;
+    modes = 18;
     strike = mallet;
-    filter lowpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 16000hz), (0.3, 4800hz), (1, 1600hz)]; }
-      q = 1;
-    }
+    twin_beat = 0.65;
+    splash = 0.35;
+    stereo_spread = 0.65;
     highpass = 70hz;
+    filter : lowpass { cutoff = log(0: 16000hz -> 0.3: 4800hz -> 1: 1600hz); q = 1.0; }
+    fx : shimmer { mix = 18%; feedback = 24%; shift_semitones = 12st; }
     pan = -0.16;
     gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
   }
-  voice glass_base : resonator {
-    excitation mallet { duration = 6ms; hardness = 82%; }
-    mode sub { hz = 160hz; decay = 0.24s; gain = 0.7; }
-    mode body { hz = 440hz; decay = 0.36s; gain = 1; }
-    mode mid { hz = 880hz; decay = 0.25s; gain = 0.55; }
-    pitch_drop_cents = 20cents;
-    pitch_drop_seconds = 12ms;
+
+  voice glass_ring : material {
+    material = ceramic;
+    pitch = 440hz;
+    size = 1.1;
+    hardness = 0.82;
+    damping = 0.22;
+    brightness = 0.72;
+    modes = 8;
+    strike = mallet;
+    twin_beat = 0.42;
+    stereo_spread = 0.45;
     highpass = 45hz;
+    eq { low = (160hz, 2db); }
     pan = 0.12;
     gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
   }
+
   voice clink_shimmer : granular {
     texture = spark;
     density = 95;
     grain_ms = 10ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 11000hz), (1, 2200hz)]; }
-    spread = 80%;
-    turbulence = 45%;
+    pitch = log(0: 11000hz -> 1: 2200hz);
+    spread = 0.8;
+    turbulence = 0.45;
+    stereo_width = 0.85;
+    itd_ms = 0.28ms;
     highpass = 1200hz;
     pan = 0.24;
     gain { env = ad; attack = 2ms; peak = 0.55; curve = exp; }
   }
+
   seq chime {
     start = 10ms;
-    repeat { count = 2; period = 0.6s; }
-    step ring { voice = crystal_body; at = 0s; duration = 0.38s; vary_timing = -0.005s..5ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
-    step body { voice = glass_base; at = 0s; duration = 0.34s; vary_pitch = -55cents..55cents; }
-    step tap { voice = clink_shimmer; at = 0s; duration = 0.16s; vary_pitch = -65cents..65cents; }
+    repeat { count = 2; period = 600ms; }
+    step ring { voice = crystal_body; at = 0s; duration = 380ms; vary_timing = -5ms..5ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    step body { voice = glass_ring; at = 0s; duration = 340ms; vary_pitch = -55cents..55cents; }
+    step tap { voice = clink_shimmer; at = 0s; duration = 160ms; vary_pitch = -65cents..65cents; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 6db; peak = -1.5db; target = -12lufs; air = 25%; width = 1.15; punch = 25%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 6db; target = -12lufs; peak = -1.5db; punch = 25%; air = 25%; width = 1.15; limit = true; }
 }

@@ -54,14 +54,10 @@ const expensive = {
     {
       ...base.voices[0],
       source: {
-        kind: 'resonator',
-        excitation: { kind: 'impulse' },
-        modes: Array.from({ length: 16 }, (_, i) => ({
-          id: `m${i}`,
-          hz: 100 + i * 50,
-          gain: 1,
-          decay: 1,
-        })),
+        kind: 'material',
+        material: 'steel',
+        pitch: 440,
+        modes: 24,
       },
     },
   ],

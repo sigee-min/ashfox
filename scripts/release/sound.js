@@ -22,7 +22,11 @@ const assertSoundCapabilities = (run) => {
     'curves',
     'envelopes',
     'filters',
+    'eq',
     'drive',
+    'fx',
+    'duck',
+    'drift',
     'space',
     'stereo',
     'sequences',
@@ -30,10 +34,15 @@ const assertSoundCapabilities = (run) => {
     'loops',
     'material',
     'granular',
+    'whoosh',
+    'waveguide',
     'mastering',
   ]);
   assert.ok(capabilities.sources.includes('material'));
   assert.ok(capabilities.sources.includes('granular'));
+  assert.ok(capabilities.sources.includes('whoosh'));
+  assert.ok(capabilities.sources.includes('waveguide'));
+  assert.ok(!capabilities.sources.includes('resonator'));
   return capabilities;
 };
 
@@ -68,7 +77,34 @@ const verifySoundSample = (run, soundsDir, name) => {
       sha256: sha256(wav),
     };
   });
-  fs.writeFileSync(input, source.replace('seq ', 'layers '));
+  const legacyJson = `ashfox-model 1
+sound legacy_json {
+  profile = "ui";
+  duration = 0.5;
+  sampleRate = 48000;
+  seed = 1;
+  voices = [];
+  sequences = [];
+  variants = [{ id = "base"; seed = 1; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 0; peakDb = -2; };
+}`;
+  fs.writeFileSync(input, legacyJson);
+  assert.throws(() => run(['check', input, '--json']), /Command failed/);
+  const legacyResonator = `ashfox 1
+sound legacy_resonator {
+  profile = ui;
+  duration = 0.5s;
+  seed = 1;
+  voice body : resonator {
+    gain { env = ad; attack = 5ms; }
+  }
+  seq hit {
+    step a { voice = body; at = 0ms; duration = 0.4s; }
+  }
+  master { peak = -2db; }
+}`;
+  fs.writeFileSync(input, legacyResonator);
   assert.throws(() => run(['check', input, '--json']), /Command failed/);
   return sampleResults;
 };

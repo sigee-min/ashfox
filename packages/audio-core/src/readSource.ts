@@ -3,6 +3,8 @@ import {
   MATERIAL_PRESETS,
   type ChirpSource,
   type Control,
+  type CurveEasing,
+  type CurvePoint,
   type FilterSpec,
   type FmSource,
   type GainControl,
@@ -10,11 +12,24 @@ import {
   type MaterialSource,
   type NoiseSource,
   type OscSource,
-  type ResonatorSource,
   type SoundSource,
   type VocalSource,
+  type WaveguideSource,
+  type WhooshSource,
 } from './contract';
-import { choice, closed, fail, id, list, number, ordered } from './validate';
+import { choice, closed, fail, list, number } from './validate';
+
+const VOWEL_TOKENS = new Set(['oo', 'ah', 'aa', 'eh', 'ee', 'ih', 'oh', 'uh', 'aw', 'er']);
+const WAVEGUIDE_MODELS = ['string', 'blade', 'creak', 'pipe'] as const;
+
+const CURVE_EASINGS: readonly CurveEasing[] = [
+  'linear',
+  'smooth',
+  'ease_in',
+  'ease_out',
+  'ease_in_out',
+  'snap',
+];
 
 const validateControlPoint = (
   raw: unknown,
@@ -25,15 +40,18 @@ const validateControlPoint = (
   max: number,
   isLog: boolean,
   path: string,
-): { readonly at: number; readonly value: number } => {
+): CurvePoint => {
   const p = `${path}.points[${i}]`;
-  const point = closed(raw, ['at', 'value'], p);
+  const point = closed(raw, ['at', 'value'], p, ['easing']);
   const at = number(point.at, 0, 1, p + '.at');
-  if (at <= previous || (i === 0 && at !== 0) || (i === count - 1 && at !== 1))
+  if (at <= previous || (i === 0 && at !== 0) || (i === count - 1 && at !== 1)) {
     fail(p + '.at', 'knots must strictly increase from 0 to 1');
+  }
   const v = number(point.value, min, max, p + '.value');
   if (isLog && v === 0) fail(p + '.value', 'log values must be positive');
-  return { at, value: v };
+  const easing =
+    point.easing !== undefined ? choice(point.easing, CURVE_EASINGS, p + '.easing') : undefined;
+  return easing !== undefined ? { at, value: v, easing } : { at, value: v };
 };
 
 export const readControl = (
@@ -107,60 +125,6 @@ export const readVoiceFilter = (value: unknown, path: string): FilterSpec => {
   };
 };
 
-const readResonatorExcitation = (raw: unknown, path: string): ResonatorSource['excitation'] => {
-  const e = closed(raw, ['kind'], path, ['duration', 'hardness']);
-  const kind = choice(e.kind, ['impulse', 'noise', 'mallet'], `${path}.kind`);
-  if (kind === 'impulse') {
-    closed(e, ['kind'], path);
-    return { kind: 'impulse' };
-  }
-  if (kind === 'noise') {
-    closed(e, ['kind', 'duration'], path);
-    return { kind: 'noise', duration: number(e.duration, 0.002, 0.05, `${path}.duration`) };
-  }
-  closed(e, ['kind', 'duration', 'hardness'], path);
-  return {
-    kind: 'mallet',
-    duration: number(e.duration, 0.002, 0.03, `${path}.duration`),
-    hardness: number(e.hardness, 0, 1, `${path}.hardness`),
-  };
-};
-
-const readResonatorSource = (s: Record<string, unknown>, path: string): ResonatorSource => {
-  closed(s, ['kind', 'excitation', 'modes'], path, ['pitchDropCents', 'pitchDropSeconds']);
-  const excitation = readResonatorExcitation(s.excitation, path + '.excitation');
-  const pitchDropCents =
-    s.pitchDropCents !== undefined
-      ? number(s.pitchDropCents, 0, 600, `${path}.pitchDropCents`)
-      : undefined;
-  const pitchDropSeconds =
-    s.pitchDropSeconds !== undefined
-      ? number(s.pitchDropSeconds, 0.005, 0.2, `${path}.pitchDropSeconds`)
-      : undefined;
-  const ids = new Set<string>();
-  let positive = false;
-  const rawModes = list(s.modes, 1, 16, path + '.modes');
-  const modes = new Array<ResonatorSource['modes'][number]>(rawModes.length);
-  ordered(rawModes).forEach(({ raw, index: i }) => {
-    const p = `${path}.modes[${i}]`;
-    const mode = closed(raw, ['id', 'hz', 'decay', 'gain'], p);
-    const modeId = id(mode.id, p + '.id', ids);
-    const hz = number(mode.hz, 40, 16000, p + '.hz');
-    const decay = number(mode.decay, 0.01, 10, p + '.decay');
-    const gain = number(mode.gain, 0, 1, p + '.gain');
-    if (gain > 0) positive = true;
-    modes[i] = { id: modeId, hz, decay, gain };
-  });
-  if (!positive) fail(path + '.modes', 'at least one mode gain must be positive');
-  return {
-    kind: 'resonator',
-    excitation,
-    modes,
-    ...(pitchDropCents !== undefined ? { pitchDropCents } : {}),
-    ...(pitchDropSeconds !== undefined ? { pitchDropSeconds } : {}),
-  };
-};
-
 const readOptNum = (
   s: Record<string, unknown>,
   key: string,
@@ -169,42 +133,82 @@ const readOptNum = (
   path: string,
 ) => (s[key] !== undefined ? number(s[key], min, max, `${path}.${key}`) : undefined);
 
+const readVowelTrajectory = (raw: unknown, path: string): string => {
+  if (typeof raw !== 'string' || raw.trim().length === 0 || raw.length > 64) {
+    return fail(path, 'expected non-empty vowel trajectory string');
+  }
+  const tokens = raw.split(/\s*->\s*|\s+/u).filter(Boolean);
+  if (tokens.length === 0 || tokens.length > 8) {
+    return fail(path, 'expected 1..8 vowel tokens');
+  }
+  for (const tok of tokens) {
+    if (!VOWEL_TOKENS.has(tok)) {
+      return fail(path, `unknown vowel "${tok}"`);
+    }
+  }
+  return tokens.join(' -> ');
+};
+
+const readVocalFormants = (
+  s: Record<string, unknown>,
+  path: string,
+): { readonly formants?: readonly Control[]; readonly bandwidths?: readonly number[] } => {
+  const formants =
+    s.formants !== undefined
+      ? list(s.formants, 3, 4, `${path}.formants`).map((v, i) =>
+          readControl(v, 150, 7000, `${path}.formants[${i}]`),
+        )
+      : undefined;
+  const bandwidths =
+    s.bandwidths !== undefined
+      ? list(s.bandwidths, 3, 4, `${path}.bandwidths`).map((v, i) =>
+          number(v, 40, 1500, `${path}.bandwidths[${i}]`),
+        )
+      : undefined;
+  if (formants && bandwidths && bandwidths.length !== formants.length) {
+    fail(`${path}.bandwidths`, `expected ${formants.length} bandwidths to match formants`);
+  }
+  return { formants, bandwidths };
+};
+
 const readVocalSource = (s: Record<string, unknown>, path: string): VocalSource => {
-  closed(s, ['kind', 'pitch', 'formants', 'bandwidths'], path, [
+  closed(s, ['kind', 'pitch'], path, [
+    'vowels',
+    'formants',
+    'bandwidths',
     'breath',
     'jitter',
     'roughness',
     'growl',
     'chest',
     'nasal',
+    'rattle',
   ]);
   const pitch = readControl(s.pitch, 50, 1200, `${path}.pitch`);
-  const formants = list(s.formants, 3, 4, `${path}.formants`).map((v, i) =>
-    readControl(v, 150, 7000, `${path}.formants[${i}]`),
-  );
-  const bandwidths = list(s.bandwidths, 3, 4, `${path}.bandwidths`).map((v, i) =>
-    number(v, 40, 1500, `${path}.bandwidths[${i}]`),
-  );
-  if (bandwidths.length !== formants.length) {
-    fail(`${path}.bandwidths`, `expected ${formants.length} bandwidths to match formants`);
-  }
+  const vowels =
+    s.vowels !== undefined ? readVowelTrajectory(s.vowels, `${path}.vowels`) : undefined;
+  const { formants, bandwidths } = readVocalFormants(s, path);
+  if (!vowels && !formants) fail(path, 'vocal requires vowels or formants');
   const breath = readOptNum(s, 'breath', 0, 1, path);
   const jitter = readOptNum(s, 'jitter', 0, 1, path);
   const roughness = readOptNum(s, 'roughness', 0, 1, path);
   const growl = readOptNum(s, 'growl', 0, 1, path);
   const chest = readOptNum(s, 'chest', 0, 1, path);
   const nasal = readOptNum(s, 'nasal', 0, 1, path);
+  const rattle = readOptNum(s, 'rattle', 0, 1, path);
   return {
     kind: 'vocal',
     pitch,
-    formants,
-    bandwidths,
+    ...(vowels !== undefined ? { vowels } : {}),
+    ...(formants !== undefined ? { formants } : {}),
+    ...(bandwidths !== undefined ? { bandwidths } : {}),
     ...(breath !== undefined ? { breath } : {}),
     ...(jitter !== undefined ? { jitter } : {}),
     ...(roughness !== undefined ? { roughness } : {}),
     ...(growl !== undefined ? { growl } : {}),
     ...(chest !== undefined ? { chest } : {}),
     ...(nasal !== undefined ? { nasal } : {}),
+    ...(rattle !== undefined ? { rattle } : {}),
   };
 };
 
@@ -250,6 +254,9 @@ const readMaterialSource = (s: Record<string, unknown>, path: string): MaterialS
     'modes',
     'strike',
     'bounces',
+    'twinBeat',
+    'splash',
+    'stereoSpread',
   ]);
   const material = choice(s.material, MATERIAL_PRESETS, `${path}.material`);
   const pitch = readControl(s.pitch, 20, 4000, `${path}.pitch`);
@@ -267,6 +274,9 @@ const readMaterialSource = (s: Record<string, unknown>, path: string): MaterialS
   if (bounces !== undefined && strike !== 'bounce') {
     fail(`${path}.bounces`, 'bounces requires strike = bounce');
   }
+  const twinBeat = readOptNum(s, 'twinBeat', 0, 1, path);
+  const splash = readOptNum(s, 'splash', 0, 1, path);
+  const stereoSpread = readOptNum(s, 'stereoSpread', 0, 1, path);
   return {
     kind: 'material',
     material,
@@ -278,6 +288,9 @@ const readMaterialSource = (s: Record<string, unknown>, path: string): MaterialS
     ...(modes !== undefined ? { modes } : {}),
     ...(strike !== undefined ? { strike } : {}),
     ...(bounces !== undefined ? { bounces } : {}),
+    ...(twinBeat !== undefined ? { twinBeat } : {}),
+    ...(splash !== undefined ? { splash } : {}),
+    ...(stereoSpread !== undefined ? { stereoSpread } : {}),
   };
 };
 
@@ -288,6 +301,8 @@ const readGranularSource = (s: Record<string, unknown>, path: string): GranularS
     'spread',
     'burstiness',
     'turbulence',
+    'stereoWidth',
+    'itdMs',
   ]);
   const texture = choice(s.texture, GRANULAR_TEXTURES, `${path}.texture`);
   const density = readControl(s.density, 1, 500, `${path}.density`, true);
@@ -297,6 +312,8 @@ const readGranularSource = (s: Record<string, unknown>, path: string): GranularS
   const spread = readOptNum(s, 'spread', 0, 1, path);
   const burstiness = readOptNum(s, 'burstiness', 0, 1, path);
   const turbulence = readOptNum(s, 'turbulence', 0, 1, path);
+  const stereoWidth = readOptNum(s, 'stereoWidth', 0, 1, path);
+  const itdMs = readOptNum(s, 'itdMs', 0, 0.6, path);
   return {
     kind: 'granular',
     texture,
@@ -306,6 +323,8 @@ const readGranularSource = (s: Record<string, unknown>, path: string): GranularS
     ...(spread !== undefined ? { spread } : {}),
     ...(burstiness !== undefined ? { burstiness } : {}),
     ...(turbulence !== undefined ? { turbulence } : {}),
+    ...(stereoWidth !== undefined ? { stereoWidth } : {}),
+    ...(itdMs !== undefined ? { itdMs } : {}),
   };
 };
 
@@ -352,6 +371,48 @@ const readFmSource = (s: Record<string, unknown>, path: string): FmSource => {
   };
 };
 
+const readWhooshSource = (s: Record<string, unknown>, path: string): WhooshSource => {
+  closed(s, ['kind', 'velocity'], path, ['thickness', 'doppler', 'sweepPan', 'noiseTone']);
+  const velocity = readControl(s.velocity, 0, 4, `${path}.velocity`, true);
+  const thickness = readOptNum(s, 'thickness', 0.005, 2, path);
+  const doppler = readOptNum(s, 'doppler', 0, 1, path);
+  const sweepPan =
+    s.sweepPan !== undefined ? readControl(s.sweepPan, -1, 1, `${path}.sweepPan`, true) : undefined;
+  const noiseTone = readOptNum(s, 'noiseTone', 0, 1, path);
+  return {
+    kind: 'whoosh',
+    velocity,
+    ...(thickness !== undefined ? { thickness } : {}),
+    ...(doppler !== undefined ? { doppler } : {}),
+    ...(sweepPan !== undefined ? { sweepPan } : {}),
+    ...(noiseTone !== undefined ? { noiseTone } : {}),
+  };
+};
+
+const readWaveguideSource = (s: Record<string, unknown>, path: string): WaveguideSource => {
+  closed(s, ['kind', 'model', 'pitch'], path, [
+    'damping',
+    'stiffness',
+    'bowPressure',
+    'brightness',
+  ]);
+  const model = choice(s.model, WAVEGUIDE_MODELS, `${path}.model`);
+  const pitch = readControl(s.pitch, 20, 8000, `${path}.pitch`);
+  const damping = readOptNum(s, 'damping', 0, 1, path);
+  const stiffness = readOptNum(s, 'stiffness', 0, 1, path);
+  const bowPressure = readOptNum(s, 'bowPressure', 0, 1, path);
+  const brightness = readOptNum(s, 'brightness', 0, 1, path);
+  return {
+    kind: 'waveguide',
+    model,
+    pitch,
+    ...(damping !== undefined ? { damping } : {}),
+    ...(stiffness !== undefined ? { stiffness } : {}),
+    ...(bowPressure !== undefined ? { bowPressure } : {}),
+    ...(brightness !== undefined ? { brightness } : {}),
+  };
+};
+
 const SOURCE_READERS: Readonly<
   Record<string, (s: Record<string, unknown>, path: string) => SoundSource>
 > = {
@@ -360,9 +421,10 @@ const SOURCE_READERS: Readonly<
   fm: readFmSource,
   vocal: readVocalSource,
   chirp: readChirpSource,
-  resonator: readResonatorSource,
   material: readMaterialSource,
   granular: readGranularSource,
+  whoosh: readWhooshSource,
+  waveguide: readWaveguideSource,
 };
 
 export const readSource = (value: unknown, path: string): SoundSource => {

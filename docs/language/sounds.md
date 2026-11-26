@@ -1,54 +1,56 @@
 # Sound syntax reference
 
-Native sound files use `ashfox 1` followed by `sound name { … }` (or `module name { … }` for reusable voices). Declarations use unified `snake_case` blocks, typed units (`s`, `ms`, `hz`, `khz`, `db`, `lufs`, `cents`, `st`, `%`), `..` ranges, `->` pitch transitions, and unquoted enums with no external audio samples.
+Native sound files use `ashfox 1` followed by `sound name { … }` or `module name { … }`. The language uses declarative `snake_case` blocks, unquoted enums, and unit-typed statements with no samples or runtime expressions.
 
 ## Root contract
 
-All IDs follow `[a-z][a-z0-9_]{0,31}` and are unique within their owner. Required keys must be present unless marked optional; unknown and duplicate keys fail.
+All IDs follow `[a-z][a-z0-9_]{0,31}` and are unique within their owner. Unknown, `camelCase`, and duplicate fields fail; legacy `ashfox-model 1` headers, JSON array syntax (`voices = [...]`, `sequences = [...]`, bracketed `{ domain = ...; }`), `timeline`, and `resonator` are rejected.
 
-| Root field / block | Contract |
+| Declaration / field | Contract |
 | --- | --- |
 | `profile` | `impact`, `foley`, `creature`, `magic`, `ui`, or `ambient` |
-| `duration` | Raw synthesis seconds, `0.05s..30s` |
-| `sample_rate` | Optional `48000` (or `48000hz`) |
-| `channels` | Optional `1` (mono, default) or `2` (stereo) |
+| `duration` | Raw synthesis duration, `0.05s..30s` |
+| `sample_rate` | Optional; fixed `48000hz` (default `48000hz`) |
+| `channels` | Optional `1` (mono) or `2` (stereo, default `2`) |
 | `seed` | Integer `1..4294967295` |
-| `space { … }` | Optional FDN-8 acoustic reverb (`preset`, `mix`, `decay`, `damping`, `size`, `pre_delay`, `width`) |
-| `voice <id> : <kind> { … }` | 1–16 typed voice blocks, each referenced by at least one step |
-| `seq <id> { … }` | 1–32 sequence blocks containing `step <id> { … }` declarations |
-| `variant <id> { seed = …; }` | 1–8 seeded variant declarations |
-| `loop { at = a..b; xfade = …; }` | Optional loop crop range and crossfade (`oneshot` when omitted) |
-| `master { gain; peak; … }` | Output mastering (`gain`, `peak`, optional `target`, `punch`, `warmth`, `air`, `glue`, `width`, `limit`) |
+| `variants` | Optional `{ id = seed; ... }`; defaults to 2 variants (`base` = `seed`, `alternate` = `seed ^ 0x9e3779b9`) |
+| `space` | Optional FDN-8 true-stereo reverb: `space { [preset = <preset>;] [mix = ...;] [decay = ...;] [damping = ...;] [size = ...;] [pre_delay_ms = ...;] [width = ...;] }` |
+| `voice <id> : <type> { ... }` | 1–16 voices, each referenced by at least one `seq` step or `duck` |
+| `seq <id> { ... }` | 1–32 sequences (`start = ...;`, `repeat { count = ...; period = ...; }`, `step <id> { ... }`) |
+| `loop` | Optional `loop { at = <start>..<end>; [xfade = <dur>;] }` (or `playback = oneshot;`, default `oneshot`) |
+| `master` | `master { [gain = <db>;] [target = <lufs>;] peak = <db>; [punch = ...;] [warmth = ...;] [air = ...;] [glue = ...;] [width = ...;] [limit = true;] }` |
 
-## Voices, DSP sources, filters, and envelopes
+## Units, curves, envelopes, and modules
 
-Each `voice <id> : <kind> { … }` configures a DSP source, optional `highpass`, `lowpass`, `filter <kind> { … }`, `drive` (`0..10`), `pan` (`-1..1`, requires `channels = 2`), and `gain`.
+- **Units**: `ms` (milliseconds), `s` (seconds), `hz` / `khz` (frequency), `db` (decibels), `lufs` (loudness), `cents` / `st` (pitch offset), `%` (percentage scaled to `0.01`).
+- **Transitions & curves**: `log(0: 1800hz -> 1: 950hz)`, `lin(0: 0 -> 0.5: 1 -> 1: 0)`, `smooth(0: 200hz -> 1: 800hz)`, or inline `a -> b [ease_out -> c]` transitions (`linear`/`smooth`/`ease_in`/`ease_out`/`ease_in_out`/`snap`). Curves support `2..16` knots with `>= 96` frames separation.
+- **Envelopes**: `gain { env = ad; attack = 5ms; peak = 0.95; curve = exp; }` and `gain { env = adsr; attack = 20ms; decay = 120ms; sustain = 0.7; release = 150ms; peak = 0.9; curve = exp; }`.
+- **Modules & `params`**: Modules declare `params { key = val; }` and `export voice <id> : <type> { ... }` (or `export seq <id> { ... }`). Sound files import modules at the top of the block with `import "../module/kit.ashfox" as kit;` or override defaults with `import "../module/kit.ashfox" as kit { pitch = 440hz; };` and reference voices as `kit.voice_id`.
 
-- **Sources (`<kind>`)**:
-  - `noise`: `color = white | pink | brown;`.
-  - `material`: `material` (`steel`, `iron`, `bronze`, `bell`, `wood`, `stone`, `glass`, `ceramic`, `bone`, `leather`), `pitch` (`20hz..4000hz`), optional `size` (`0.25..4`), `hardness`, `damping`, `brightness` (`0..100%`), `modes` (`4..32`), `strike` (`mallet | scrape | bounce`), `bounces` (`1..6`, requires `strike = bounce`).
-  - `granular`: `texture` (`ember`, `gravel`, `water`, `foliage`, `wind`, `spark`, `bubble`), `density` (`1..500`), optional `grain_ms` (`3ms..150ms`), `pitch` (`60hz..12000hz`), `spread`, `burstiness`, `turbulence` (`0..100%`).
-  - `osc`: `waveform = sine | triangle | saw | square | pulse;`, `pitch`, optional `pulse_width`, `unison` (`1..4`), `detune` (`0cents..50cents`). PolyBLEP anti-aliased.
-  - `fm`: `pitch`, `ratio`, `index`, `vibrato_hz`, `vibrato_cents` (8× oversampled phase-modulation FM).
-  - `vocal`: `pitch`, 3–4 `formant { hz = …; bw = …; }` blocks, optional `breath`, `jitter`, `roughness`, `growl`, `chest`, `nasal` (`0..100%`).
-  - `chirp`: `pitch`, `brightness`, `trill_hz`, `trill_cents`, `trill_depth`, `breath`, `jitter_cents`.
-  - `resonator`: `excitation <kind> { … }` (`impulse`, `noise`, or `mallet`) and `mode <id> { hz; decay; gain; }` blocks, optional `pitch_drop_cents`, `pitch_drop_seconds`.
-- **Filters**: `highpass` (`10hz..10000hz`), `lowpass` (`20hz..18000hz`), or Cytomic SVF `filter lowpass|highpass|bandpass|notch { cutoff; q; }`.
-- **Curves & envelopes**: Scalar constants, `a -> b` transition sweeps, or `cutoff { domain = linear | log; interpolation = linear | smooth; points = [(0, 12000hz), (1, 2800hz)]; }` curves. Voice `gain` accepts scalar constants or `gain { env = ad | adsr; attack; decay; sustain; release; peak; curve; }` blocks.
+## Voices, true-stereo sources, FX, and modulation
 
-## Sequences, steps, variation, and space
+Inside `voice <id> : <type> { ... }`, declare source fields, a `gain` block or curve, and optional processors:
 
-Each `seq <id> { … }` has optional `start` (`0s` default) and `repeat { count; period; }`, plus `step <id> { voice; at; duration; }` with optional `gain` (`1`), `pitch` (`0cents`), `vary_timing`, `vary_pitch`, `vary_gain`, and `vary_duration` ranges (`min..max`). Pitch variation on `noise` steps, or `granular` steps without `pitch`, must be zero.
+- **Source types (`:<type>`)**:
+  - `: noise` — `color = white|pink|brown;` (decorrelated stereo noise in 2ch mode).
+  - `: material` / `: modal_plate` — `material = <preset>; pitch = <ctrl>; [size] [hardness] [damping] [brightness] [modes] [strike = mallet|scrape|bounce] [bounces] [twin_beat] [splash] [stereo_spread]` (`steel`, `iron`, `bronze`, `bell`, `wood`, `stone`, `glass`, `ceramic`, `bone`, `leather`; `pitch` `20..4000` Hz).
+  - `: granular` — `texture = <preset>; density = <ctrl>; [grain_ms] [pitch] [spread] [burstiness] [turbulence] [stereo_width] [itd_ms]` (`ember`, `gravel`, `water`, `foliage`, `wind`, `spark`, `bubble`; `itd_ms` `0..0.6` ms).
+  - `: osc` — `waveform = sine|triangle|saw|square|pulse; pitch = <ctrl>; [pulse_width] [unison = 1..4] [detune_cents]` (PolyBLEP + stereo unison spread).
+  - `: fm` — `pitch = <ctrl>; ratio = <0.25..8>; index = <ctrl>; [vibrato_hz] [vibrato_cents]`.
+  - `: vocal` — `pitch = <ctrl>; [vowels = oo -> aa -> uh;] [formants = [...];] [bandwidths = [...];] [breath] [jitter] [roughness] [growl] [chest] [nasal] [rattle]` (LF glottal derivative + cascade 4-formant filter).
+  - `: chirp` — `pitch = <ctrl>; brightness = <ctrl>; [trill_hz] [trill_cents] [trill_depth] [breath] [jitter_cents]`.
+  - `: whoosh` / `: aero_whoosh` — `[velocity = <ctrl>;] [thickness] [doppler] [sweep_pan] [noise_tone]` (velocity-cubed aerodynamic pressure, Strouhal vortex whistle, Doppler shift, and stereo sweep; `aero_whoosh` defaults `velocity = 1.2`).
+  - `: waveguide` — `model = string|blade|creak|pipe; pitch = <ctrl>; [damping] [stiffness] [bow_pressure] [brightness]` (dispersive fractional-delay physical waveguide).
+- **Filters & EQ**: `highpass = <ctrl>;`, `lowpass = <ctrl>;`, `filter : <lowpass|highpass|bandpass|notch> { cutoff = <ctrl>; [q = <ctrl>;] }` (or inline `cutoff = <ctrl>; [q = <ctrl>;]` for bandpass), `eq { [low = (hz, db);] [mid = (hz, db, q);] [high = (hz, db);] }`.
+- **Drive & FX**: `drive : <tape|tube|grit|fold> { amount = <0..10>; }` (or `drive = <0..10>;`), repeatable `fx : <chorus|phaser|delay|shimmer> { ... }` (`time_ms`, `ping_pong`, `shift_semitones`, `damping = <hz>`), `pan = <ctrl>;` (`-1..1`), `duck { by = <voice>; amount = <0..1>; release_ms = <5..2000ms>; }`, `drift { target = <gain|cutoff|pitch|pan>; depth = <0..1>; [rate = <0.05..20hz>;] [seed = <int>;] }`.
 
-`space { … }` applies an 8-line Hadamard feedback delay network and accepts `preset` (`dry_close | timber_room | stone_hall | small_chamber | courtyard | cavern | ethereal`) and/or `mix` (`0..70%`), `decay` (`30ms..3s`), `damping` (`800hz..16000hz`), `size` (`0.2..3.0`), `pre_delay` (`0ms..80ms`), `width` (`0..1.5`).
+## Sequences, space, loops, and audit
 
-`master { … }` shapes the master bus with `gain` (`-48db..24db`), `peak` (`-12db..-0.5db`), optional `target` (`-30lufs..-6lufs`), `punch`, `warmth`, `air`, `glue`, `width`, and `limit = true`.
+Each `seq <id> { ... }` contains optional `start = <dur>;`, `repeat { count = <N>; period = <dur>; }`, and `step <id> { voice = <voiceRef>; at = <dur>; duration = <dur>; [gain = ...;] [pitch = <cents>;] [vary_timing = a..b;] [vary_pitch = a..b;] [vary_gain = a..b;] [vary_duration = a..b;] }`.
 
-## Loops, audit, and delivery
+`space` accepts `preset` (`dry_close`, `timber_room`, `stone_hall`, `small_chamber`, `courtyard`, `cavern`, `ethereal`) or custom true-stereo FDN-8 parameters (`mix` `0..0.7`, `decay` `0.03..3s`, `damping` `800..16000hz`, `size` `0.2..3`, `pre_delay_ms` `0..80ms`, `width` `0..1.5`).
 
-`loop { at = 0s..2.1s; xfade = 80ms; }` crops `[start, end)` from raw synthesis and bakes a cosine/Hermite crossfade overlap (`96..min(48000, floor(L/4))` frames), delivering `L - X` frames. Loop OGG and Minecraft pack loop targets remain rejected.
-
-`ashfox check` audits loudness headroom (RMS/LUFS), DC offset, silence ratio, onset punch, 2.5–5 kHz harshness, spectral complexity/balance/flux, stereo phase correlation, loop continuity, and variant distinctness (`score >= 75` required for `build`).
+Loops crop `[start, end)` and bake a smooth cosine/Hermite overlap `xfade` (`96..min(48000, floor(L/4))` frames). `ashfox check` audits headroom, DC offset, silence ratio, profile spectral envelope fit, stereo phase & IACC decorrelation, loop seam continuity & periodicity, and variant distinctness (`score >= 75` required for `build`).
 
 ## Complete example
 
@@ -58,60 +60,73 @@ sound bell_pattern {
   preview inspect { sheet = inspect; }
   profile = ui;
   duration = 2.4s;
-  channels = 2;
   seed = 7349;
   space { preset = stone_hall; mix = 28%; }
-  voice bell_body : material {
+
+  voice bell_body : modal_plate {
     material = bell;
     pitch = 520hz;
     size = 1.15;
-    hardness = 85%;
-    damping = 34%;
-    brightness = 82%;
-    modes = 24;
+    hardness = 0.85;
+    damping = 0.34;
+    brightness = 0.82;
+    modes = 16;
     strike = mallet;
-    filter lowpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 15000hz), (0.35, 4800hz), (1, 1200hz)]; }
-      q = 1.15;
-    }
-    highpass = 50hz;
-    drive = 1.4;
+    twin_beat = 0.55;
+    splash = 0.28;
+    stereo_spread = 0.5;
+    highpass = 65hz;
+    filter : lowpass { cutoff = log(0: 15000hz -> 0.35: 4800hz -> 1: 1400hz); q = 1.15; }
+    eq { mid = (1800hz, 2.5db, 1.0); high = (5800hz, 2db); }
+    drive : tape { amount = 1.4; }
     pan = -0.15;
-    gain { env = ad; attack = 2ms; peak = 1; curve = exp; }
+    gain { env = ad; attack = 2ms; peak = 1.0; curve = exp; }
   }
+
   voice shimmer : granular {
     texture = spark;
     density = 95;
     grain_ms = 12ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 8800hz), (1, 1800hz)]; }
-    spread = 78%;
-    turbulence = 45%;
+    pitch = log(0: 8800hz -> 1: 1800hz);
+    spread = 0.78;
+    turbulence = 0.45;
+    stereo_width = 0.85;
+    itd_ms = 0.28ms;
     highpass = 1400hz;
+    fx : shimmer { mix = 16%; feedback = 22%; shift_semitones = 12st; }
     pan = 0.25;
-    gain { env = ad; attack = 2ms; peak = 0.46; curve = exp; }
+    gain { env = ad; attack = 2ms; peak = 0.52; curve = exp; }
   }
-  voice bell_sub : resonator {
-    excitation mallet { duration = 8ms; hardness = 70%; }
-    mode sub { hz = 130hz; decay = 0.36s; gain = 0.9; }
-    mode hum { hz = 260hz; decay = 0.34s; gain = 1; }
-    mode warm { hz = 390hz; decay = 0.22s; gain = 0.55; }
-    pitch_drop_cents = 25cents;
-    pitch_drop_seconds = 15ms;
-    highpass = 38hz;
+
+  voice bell_sub : material {
+    material = bronze;
+    pitch = 260hz;
+    size = 1.3;
+    hardness = 0.68;
+    damping = 0.36;
+    brightness = 0.58;
+    modes = 8;
+    strike = mallet;
+    twin_beat = 0.35;
+    stereo_spread = 0.3;
+    highpass = 60hz;
+    lowpass = 1800hz;
+    eq { low = (220hz, 1.5db); }
     pan = 0.06;
-    gain { env = ad; attack = 2ms; peak = 0.85; curve = exp; }
+    gain { env = ad; attack = 2ms; peak = 0.68; curve = exp; }
   }
+
   seq phrase {
     start = 90ms;
-    repeat { count = 4; period = 0.5s; }
-    step strike { voice = bell_body; at = 0s; duration = 0.34s; vary_timing = -5ms..5ms; vary_pitch = -55cents..55cents; vary_gain = 88%..112%; vary_duration = 95%..105%; }
-    step transient { voice = shimmer; at = 0s; duration = 0.16s; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 85%..115%; }
-    step hum { voice = bell_sub; at = 0s; duration = 0.38s; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    repeat { count = 4; period = 500ms; }
+    step strike { voice = bell_body; at = 0s; duration = 340ms; vary_timing = -5ms..5ms; vary_pitch = -55cents..55cents; vary_gain = 88%..112%; vary_duration = 95%..105%; }
+    step transient { voice = shimmer; at = 0s; duration = 160ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 85%..115%; }
+    step hum { voice = bell_sub; at = 0s; duration = 380ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
+
+  variants { base = 42; alternate = 43; }
   loop { at = 0s..2.1s; xfade = 80ms; }
-  master { gain = 5db; peak = -1.5db; target = -12lufs; punch = 25%; air = 20%; glue = 20%; width = 1.1; limit = true; }
+  master { gain = 5db; target = -12lufs; peak = -1.5db; punch = 25%; air = 20%; glue = 20%; width = 1.1; limit = true; }
 }
 ```
 

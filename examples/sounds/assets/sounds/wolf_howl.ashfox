@@ -2,52 +2,51 @@ ashfox 1
 sound wolf_howl {
   profile = creature;
   duration = 2.4s;
-  channels = 2;
   seed = 42;
-  space { preset = courtyard; mix = 30%; decay = 0.85s; }
+  space { preset = courtyard; mix = 30%; decay = 850ms; }
+
   voice throat_howl : vocal {
-    pitch { domain = log; interpolation = smooth; points = [(0, 240hz), (0.28, 395hz), (0.72, 360hz), (1, 215hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 420hz), (0.3, 640hz), (0.75, 520hz), (1, 360hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 920hz), (0.3, 1320hz), (0.75, 1080hz), (1, 840hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 2350hz), (0.3, 2850hz), (1, 2250hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 3400hz), (0.3, 3950hz), (1, 3200hz)]; }
-    bandwidths = [90hz, 165hz, 280hz, 380hz];
-    breath = 16%;
-    jitter = 12%;
-    roughness = 18%;
-    growl = 18%;
-    chest = 55%;
+    pitch = log(0: 240hz -> 0.28: 395hz -> 0.72: 360hz -> 1: 215hz);
+    vowels = oo -> oh -> oo;
+    breath = 0.16;
+    jitter = 0.12;
+    roughness = 0.18;
+    growl = 0.22;
+    chest = 0.55;
     highpass = 65hz;
-    lowpass { domain = log; interpolation = smooth; points = [(0, 2800hz), (0.45, 6800hz), (1, 2200hz)]; }
-    drive = 1.4;
+    lowpass = log(0: 2800hz -> 0.45: 6800hz -> 1: 2200hz);
+    eq { mid = (1600hz, 2.5db, 1.0); }
+    drive : tape { amount = 1.4; }
+    fx : chorus { mix = 16%; rate = 1.4hz; depth = 25%; }
+    drift { target = pitch; depth = 6%; rate = 2.2hz; }
     pan = -0.1;
-    gain { env = adsr; attack = 0.14s; decay = 0.28s; sustain = 80%; release = 0.32s; peak = 0.95; }
+    gain { env = adsr; attack = 140ms; decay = 280ms; sustain = 0.8; release = 320ms; peak = 0.95; }
   }
+
   voice dusk_air : noise {
     color = pink;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 320hz), (0.45, 3600hz), (1, 480hz)]; }
-      q = 1;
-    }
+    filter : bandpass { cutoff = log(0: 320hz -> 0.45: 3600hz -> 1: 480hz); q = 1.0; }
+    eq { high = (4200hz, 2.5db); }
+    drift { target = pan; depth = 35%; rate = 0.7hz; }
     pan = 0.22;
-    gain { env = adsr; attack = 0.1s; decay = 0.25s; sustain = 55%; release = 0.32s; peak = 0.5; }
+    gain { env = adsr; attack = 100ms; decay = 250ms; sustain = 0.55; release = 320ms; peak = 0.55; }
   }
+
   voice sub_rumble : noise {
     color = brown;
-    filter lowpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 120hz), (0.5, 280hz), (1, 110hz)]; }
-      q = 1;
-    }
+    filter : lowpass { cutoff = log(0: 120hz -> 0.5: 280hz -> 1: 110hz); q = 1.0; }
     highpass = 38hz;
-    gain { env = adsr; attack = 0.12s; decay = 0.3s; sustain = 65%; release = 0.32s; peak = 0.68; }
+    duck { by = throat_howl; amount = 25%; release_ms = 120ms; }
+    gain { env = adsr; attack = 120ms; decay = 300ms; sustain = 0.65; release = 320ms; peak = 0.68; }
   }
+
   seq howl {
     start = 40ms;
-    step voice { voice = throat_howl; at = 0s; duration = 2.2s; vary_timing = 0s..30ms; vary_pitch = -55cents..55cents; }
+    step voice { voice = throat_howl; at = 0s; duration = 2.2s; vary_pitch = -55cents..55cents; vary_timing = 0ms..30ms; }
     step air { voice = dusk_air; at = 0s; duration = 2.25s; vary_gain = 85%..115%; }
     step sub { voice = sub_rumble; at = 0s; duration = 2.25s; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -14lufs; warmth = 20%; glue = 25%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -14lufs; peak = -1.5db; warmth = 20%; glue = 25%; limit = true; }
 }

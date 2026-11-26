@@ -1,4 +1,4 @@
-import type { Control, Curve, SoundVoice } from './contract';
+import type { Control, Curve, CurveEasing, SoundVoice } from './contract';
 
 export const frame = (seconds: number): number => Math.floor(seconds * 48000 + 0.5);
 
@@ -10,11 +10,11 @@ interface CurveSegment {
   readonly bValue: number;
   readonly logA: number;
   readonly logB: number;
+  readonly easing: CurveEasing;
 }
 
 interface CompiledCurve {
   readonly isLog: boolean;
-  readonly isSmooth: boolean;
   readonly segments: readonly CurveSegment[];
   index: number;
 }
@@ -36,9 +36,18 @@ const compileCurve = (curve: Curve): CompiledCurve => {
       bValue: b.value,
       logA: isLog ? Math.log(a.value) : 0,
       logB: isLog ? Math.log(b.value) : 0,
+      easing: a.easing ?? curve.interpolation,
     });
   }
-  return { isLog, isSmooth: curve.interpolation === 'smooth', segments, index: 0 };
+  return { isLog, segments, index: 0 };
+};
+
+const applyEasing = (v: number, easing: CurveEasing): number => {
+  if (easing === 'linear') return v;
+  if (easing === 'ease_in') return v * v;
+  if (easing === 'ease_out') return 1 - (1 - v) * (1 - v);
+  if (easing === 'snap') return v < 1 ? 0 : 1;
+  return v * v * (3 - 2 * v);
 };
 
 const selectSegment = (compiled: CompiledCurve, u: number): CurveSegment => {
@@ -64,7 +73,7 @@ export const evaluate = (control: Control, u: number): number => {
   }
   const seg = selectSegment(compiled, u);
   const v = Math.max(0, Math.min(1, (u - seg.startAt) / seg.dt));
-  const w = compiled.isSmooth ? v * v * (3 - 2 * v) : v;
+  const w = applyEasing(v, seg.easing);
   if (w === 0) return seg.aValue;
   if (w === 1) return seg.bValue;
   return compiled.isLog
@@ -88,8 +97,12 @@ const pushSourceControls = (result: [string, Control][], s: SoundVoice['source']
   if (s.kind === 'fm') result.push(['source.index', s.index]);
   if (s.kind === 'chirp') result.push(['source.brightness', s.brightness]);
   if (s.kind === 'granular') result.push(['source.density', s.density]);
-  if (s.kind === 'vocal') {
+  if (s.kind === 'vocal' && s.formants) {
     s.formants.forEach((f, i) => result.push([`source.formants[${i}]`, f]));
+  }
+  if (s.kind === 'whoosh') {
+    result.push(['source.velocity', s.velocity]);
+    if (s.sweepPan !== undefined) result.push(['source.sweepPan', s.sweepPan]);
   }
 };
 
@@ -102,6 +115,7 @@ export const controls = (voice: SoundVoice): readonly (readonly [string, Control
     result.push(['filter.cutoff', voice.filter.cutoff]);
     if (voice.filter.q !== undefined) result.push(['filter.q', voice.filter.q]);
   }
+  if (voice.pan !== undefined) result.push(['pan', voice.pan]);
   pushSourceControls(result, voice.source);
   return result;
 };

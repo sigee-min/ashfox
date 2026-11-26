@@ -2,43 +2,50 @@ ashfox 1
 sound footsteps {
   profile = foley;
   duration = 2.25s;
-  channels = 2;
   seed = 7349;
   space { preset = courtyard; mix = 20%; }
-  voice stone_thud : material {
+
+  voice stone_thud : modal_plate {
     material = stone;
     pitch = 140hz;
     size = 1.2;
-    hardness = 65%;
-    damping = 75%;
-    brightness = 55%;
+    hardness = 0.65;
+    damping = 0.75;
+    brightness = 0.55;
     modes = 16;
     strike = mallet;
+    splash = 0.3;
+    stereo_spread = 0.35;
     highpass = 35hz;
     lowpass = 6500hz;
-    drive = 1.5;
-    pan = -0.14;
+    drive : tape { amount = 1.5; }
+    pan = -0.18 -> 0.18;
     gain { env = ad; attack = 4ms; peak = 0.95; curve = exp; }
   }
+
   voice gravel_crunch : granular {
     texture = gravel;
     density = 180;
     grain_ms = 18ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 2400hz), (1, 950hz)]; }
-    spread = 68%;
-    burstiness = 75%;
-    turbulence = 45%;
+    pitch = log(0: 2400hz -> 1: 950hz);
+    spread = 0.68;
+    burstiness = 0.75;
+    turbulence = 0.45;
+    stereo_width = 0.75;
+    itd_ms = 0.24ms;
     highpass = 220hz;
+    duck { by = stone_thud; amount = 28%; release_ms = 65ms; }
     pan = 0.14;
     gain { env = ad; attack = 5ms; peak = 0.85; curve = exp; }
   }
+
   seq walk {
     start = 20ms;
-    repeat { count = 5; period = 0.42s; }
-    step step { voice = stone_thud; at = 0s; duration = 0.18s; vary_timing = -0.006s..6ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 94%..106%; }
-    step scuff { voice = gravel_crunch; at = 8ms; duration = 0.22s; vary_pitch = -70cents..70cents; vary_gain = 80%..120%; vary_duration = 90%..110%; }
+    repeat { count = 5; period = 420ms; }
+    step step { voice = stone_thud; at = 0s; duration = 180ms; vary_timing = -6ms..6ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 94%..106%; }
+    step scuff { voice = gravel_crunch; at = 8ms; duration = 220ms; vary_pitch = -70cents..70cents; vary_gain = 80%..120%; vary_duration = 90%..110%; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -13lufs; punch = 35%; warmth = 15%; glue = 15%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -13lufs; peak = -1.5db; punch = 35%; warmth = 15%; glue = 15%; limit = true; }
 }

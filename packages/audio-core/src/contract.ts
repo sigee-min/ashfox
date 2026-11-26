@@ -1,7 +1,15 @@
+export type CurveEasing = 'linear' | 'smooth' | 'ease_in' | 'ease_out' | 'ease_in_out' | 'snap';
+
+export interface CurvePoint {
+  readonly at: number;
+  readonly value: number;
+  readonly easing?: CurveEasing;
+}
+
 export interface Curve {
   readonly domain: 'linear' | 'log';
   readonly interpolation: 'linear' | 'smooth';
-  readonly points: readonly { readonly at: number; readonly value: number }[];
+  readonly points: readonly CurvePoint[];
 }
 
 export type Control = number | Curve;
@@ -108,6 +116,9 @@ export interface MaterialSource {
   readonly modes?: number;
   readonly strike?: 'mallet' | 'scrape' | 'bounce';
   readonly bounces?: number;
+  readonly twinBeat?: number;
+  readonly splash?: number;
+  readonly stereoSpread?: number;
 }
 
 export interface GranularSource {
@@ -119,6 +130,8 @@ export interface GranularSource {
   readonly spread?: number;
   readonly burstiness?: number;
   readonly turbulence?: number;
+  readonly stereoWidth?: number;
+  readonly itdMs?: number;
 }
 
 export interface OscSource {
@@ -142,14 +155,16 @@ export interface FmSource {
 export interface VocalSource {
   readonly kind: 'vocal';
   readonly pitch: Control;
-  readonly formants: readonly Control[];
-  readonly bandwidths: readonly number[];
+  readonly vowels?: string;
+  readonly formants?: readonly Control[];
+  readonly bandwidths?: readonly number[];
   readonly breath?: number;
   readonly jitter?: number;
   readonly roughness?: number;
   readonly growl?: number;
   readonly chest?: number;
   readonly nasal?: number;
+  readonly rattle?: number;
 }
 
 export interface ChirpSource {
@@ -163,26 +178,89 @@ export interface ChirpSource {
   readonly brightness: Control;
 }
 
-export interface ResonatorSource {
-  readonly kind: 'resonator';
-  readonly excitation:
-    | { readonly kind: 'impulse' }
-    | { readonly kind: 'noise'; readonly duration: number }
-    | { readonly kind: 'mallet'; readonly duration: number; readonly hardness: number };
-  readonly modes: readonly {
-    readonly id: string;
-    readonly hz: number;
-    readonly decay: number;
-    readonly gain: number;
-  }[];
-  readonly pitchDropCents?: number;
-  readonly pitchDropSeconds?: number;
+export interface WhooshSource {
+  readonly kind: 'whoosh';
+  readonly velocity: Control;
+  readonly thickness?: number;
+  readonly doppler?: number;
+  readonly sweepPan?: Control;
+  readonly noiseTone?: number;
+}
+
+export type WaveguideModel = 'string' | 'blade' | 'creak' | 'pipe';
+
+export interface WaveguideSource {
+  readonly kind: 'waveguide';
+  readonly model: WaveguideModel;
+  readonly pitch: Control;
+  readonly damping?: number;
+  readonly stiffness?: number;
+  readonly bowPressure?: number;
+  readonly brightness?: number;
 }
 
 export interface FilterSpec {
   readonly kind: 'lowpass' | 'highpass' | 'bandpass' | 'notch';
   readonly cutoff: Control;
   readonly q?: Control;
+}
+
+export interface VoiceEqSpec {
+  readonly low?: { readonly hz: number; readonly db: number };
+  readonly mid?: {
+    readonly hz: number;
+    readonly db: number;
+    readonly q?: number;
+  };
+  readonly high?: { readonly hz: number; readonly db: number };
+}
+
+export type VoiceDriveSpec =
+  | number
+  | {
+      readonly amount: number;
+      readonly mode: 'tape' | 'tube' | 'grit' | 'fold';
+    };
+
+export type VoiceFxItem =
+  | {
+      readonly kind: 'chorus';
+      readonly mix: number;
+      readonly rate?: number;
+      readonly depth?: number;
+    }
+  | {
+      readonly kind: 'phaser';
+      readonly mix: number;
+      readonly rate?: number;
+      readonly stages?: number;
+    }
+  | {
+      readonly kind: 'delay';
+      readonly mix: number;
+      readonly timeMs: number;
+      readonly feedback?: number;
+      readonly damping?: number;
+      readonly pingPong?: boolean;
+    }
+  | {
+      readonly kind: 'shimmer';
+      readonly mix: number;
+      readonly feedback?: number;
+      readonly shiftSemitones?: number;
+    };
+
+export interface VoiceDuckSpec {
+  readonly by: string;
+  readonly amount: number;
+  readonly releaseMs: number;
+}
+
+export interface VoiceDriftSpec {
+  readonly rate?: number;
+  readonly depth: number;
+  readonly target: 'gain' | 'cutoff' | 'pitch' | 'pan';
+  readonly seed?: number;
 }
 
 export interface SpaceSpec {
@@ -213,9 +291,10 @@ export type SoundSource =
   | FmSource
   | VocalSource
   | ChirpSource
-  | ResonatorSource
   | MaterialSource
-  | GranularSource;
+  | GranularSource
+  | WhooshSource
+  | WaveguideSource;
 
 export interface SoundVoice {
   readonly id: string;
@@ -224,8 +303,12 @@ export interface SoundVoice {
   readonly highpass?: Control;
   readonly lowpass?: Control;
   readonly filter?: FilterSpec;
-  readonly drive?: number;
-  readonly pan?: number;
+  readonly eq?: VoiceEqSpec;
+  readonly drive?: VoiceDriveSpec;
+  readonly fx?: readonly VoiceFxItem[];
+  readonly pan?: Control;
+  readonly duck?: VoiceDuckSpec;
+  readonly drift?: VoiceDriftSpec;
 }
 
 export type Range = readonly [number, number];
@@ -261,7 +344,11 @@ export interface SoundVariant {
 
 export type SoundPlayback =
   | { readonly kind: 'oneshot' }
-  | { readonly kind: 'loop'; readonly startFrame: 0; readonly endFrame: number };
+  | {
+      readonly kind: 'loop';
+      readonly startFrame: 0;
+      readonly endFrame: number;
+    };
 
 export interface SoundRecipe {
   readonly id: string;

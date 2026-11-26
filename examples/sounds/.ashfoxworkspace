@@ -19,12 +19,20 @@
             "path": "bird_call.ashfox"
           },
           {
+            "name": "bow_shot",
+            "path": "bow_shot.ashfox"
+          },
+          {
             "name": "charging_spell",
             "path": "charging_spell.ashfox"
           },
           {
             "name": "claw_hit",
             "path": "claw_hit.ashfox"
+          },
+          {
+            "name": "door_creak",
+            "path": "door_creak.ashfox"
           },
           {
             "name": "fire_loop",
@@ -102,6 +110,10 @@
           {
             "subpath": "./bird_voices",
             "path": "bird_voices.ashfox"
+          },
+          {
+            "subpath": "./foley_kit",
+            "path": "foley_kit.ashfox"
           }
         ],
         "dependencies": []
@@ -137,6 +149,15 @@
       "directory": "exports/bird_call"
     },
     {
+      "name": "bow_shot",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "bow_shot"
+      },
+      "format": "wav",
+      "directory": "exports/bow_shot"
+    },
+    {
       "name": "charging_spell",
       "entry": {
         "packageName": "sounds",
@@ -153,6 +174,15 @@
       },
       "format": "wav",
       "directory": "exports/claw_hit"
+    },
+    {
+      "name": "door_creak",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "door_creak"
+      },
+      "format": "wav",
+      "directory": "exports/door_creak"
     },
     {
       "name": "fire_loop",

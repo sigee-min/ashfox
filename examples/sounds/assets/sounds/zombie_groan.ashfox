@@ -2,54 +2,50 @@ ashfox 1
 sound zombie_groan {
   profile = creature;
   duration = 1.65s;
-  channels = 2;
   seed = 8421;
   space { preset = cavern; mix = 22%; }
+
   voice undead_throat : vocal {
-    pitch { domain = log; interpolation = smooth; points = [(0, 118hz), (0.24, 136hz), (0.65, 92hz), (1, 72hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 360hz), (0.3, 610hz), (0.72, 480hz), (1, 340hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 840hz), (0.3, 1120hz), (0.72, 920hz), (1, 760hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 2100hz), (0.35, 2480hz), (1, 1950hz)]; }
-    formant { domain = log; interpolation = smooth; points = [(0, 3150hz), (0.35, 3550hz), (1, 2900hz)]; }
-    bandwidths = [105hz, 180hz, 320hz, 440hz];
-    breath = 28%;
-    jitter = 24%;
-    roughness = 60%;
-    growl = 72%;
-    chest = 65%;
-    nasal = 25%;
+    pitch = log(0: 118hz -> 0.24: 136hz -> 0.65: 92hz -> 1: 72hz);
+    vowels = uh -> aa -> er -> oo;
+    breath = 0.28;
+    jitter = 0.24;
+    roughness = 0.62;
+    growl = 0.78;
+    chest = 0.68;
+    nasal = 0.28;
+    rattle = 0.72;
     highpass = 52hz;
-    lowpass { domain = log; interpolation = smooth; points = [(0, 4800hz), (0.35, 6500hz), (1, 2200hz)]; }
-    drive = 2;
+    lowpass = log(0: 4800hz -> 0.35: 6500hz -> 1: 2200hz);
+    eq { low = (120hz, 2.5db); }
+    drive : tube { amount = 2.1; }
     pan = -0.1;
-    gain { env = adsr; attack = 80ms; decay = 0.22s; sustain = 76%; release = 0.24s; peak = 0.98; }
+    gain { env = adsr; attack = 80ms; decay = 220ms; sustain = 0.76; release = 240ms; peak = 0.98; }
   }
+
   voice rasp_breath : noise {
     color = pink;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 1600hz), (0.3, 3400hz), (1, 900hz)]; }
-      q = 1.25;
-    }
-    drive = 1.6;
-    pan = 0.16;
-    gain { env = adsr; attack = 60ms; decay = 0.2s; sustain = 52%; release = 0.22s; peak = 0.55; }
+    filter : bandpass { cutoff = log(0: 1600hz -> 0.3: 3400hz -> 1: 900hz); q = 1.25; }
+    drive : grit { amount = 1.6; }
+    pan = 0.28 -> -0.18;
+    gain { env = adsr; attack = 60ms; decay = 200ms; sustain = 0.52; release = 220ms; peak = 0.55; }
   }
+
   voice chest_rasp : noise {
     color = brown;
-    filter lowpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 260hz), (0.4, 420hz), (1, 160hz)]; }
-      q = 1;
-    }
+    filter : lowpass { cutoff = log(0: 260hz -> 0.4: 420hz -> 1: 160hz); q = 1.0; }
     highpass = 36hz;
-    gain { env = adsr; attack = 80ms; decay = 0.25s; sustain = 60%; release = 0.24s; peak = 0.62; }
+    duck { by = undead_throat; amount = 25%; release_ms = 100ms; }
+    gain { env = adsr; attack = 80ms; decay = 250ms; sustain = 0.6; release = 240ms; peak = 0.62; }
   }
+
   seq groan {
     start = 30ms;
-    step voice { voice = undead_throat; at = 0s; duration = 1.48s; vary_timing = 0s..30ms; vary_pitch = -65cents..65cents; }
+    step voice { voice = undead_throat; at = 0s; duration = 1.48s; vary_pitch = -65cents..65cents; vary_timing = 0ms..30ms; }
     step rasp { voice = rasp_breath; at = 20ms; duration = 1.4s; vary_gain = 85%..115%; }
     step sub { voice = chest_rasp; at = 0s; duration = 1.45s; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
-  master { gain = 5db; peak = -1.5db; target = -14lufs; warmth = 30%; glue = 20%; limit = true; }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -14lufs; peak = -1.5db; warmth = 30%; glue = 20%; limit = true; }
 }

@@ -2,48 +2,50 @@ ashfox 1
 sound fire_loop {
   profile = ambient;
   duration = 3.2s;
-  channels = 2;
   seed = 7349;
   space { preset = timber_room; mix = 18%; }
+
   voice hearth_roar : noise {
     color = brown;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 220hz), (0.45, 480hz), (1, 220hz)]; }
-      q = 0.9;
-    }
+    filter : bandpass { cutoff = log(0: 220hz -> 0.45: 480hz -> 1: 220hz); q = 0.9; }
     highpass = 42hz;
-    drive = 1.3;
-    gain { domain = linear; interpolation = smooth; points = [(0, 0.68), (0.35, 0.95), (0.7, 0.58), (1, 0.68)]; }
+    drive : tape { amount = 1.3; }
+    drift { target = cutoff; depth = 36%; rate = 0.65hz; }
+    gain = smooth(0: 0.68 -> 0.35: 0.95 -> 0.7: 0.58 -> 1: 0.68);
   }
+
   voice flame_flutter : noise {
     color = pink;
-    filter bandpass {
-      cutoff { domain = log; interpolation = smooth; points = [(0, 1100hz), (0.5, 2500hz), (1, 1100hz)]; }
-      q = 1.1;
-    }
+    filter : bandpass { cutoff = log(0: 1100hz -> 0.5: 2500hz -> 1: 1100hz); q = 1.1; }
+    drift { target = pan; depth = 35%; rate = 0.85hz; }
     pan = -0.22;
-    gain { domain = linear; interpolation = smooth; points = [(0, 0.42), (0.5, 0.74), (1, 0.42)]; }
+    gain = smooth(0: 0.42 -> 0.5: 0.74 -> 1: 0.42);
   }
+
   voice embers : granular {
     texture = ember;
     density = 42;
     grain_ms = 14ms;
-    pitch { domain = log; interpolation = smooth; points = [(0, 2400hz), (0.5, 4600hz), (1, 2400hz)]; }
-    spread = 85%;
-    burstiness = 65%;
-    turbulence = 70%;
+    pitch = log(0: 2400hz -> 0.5: 4600hz -> 1: 2400hz);
+    spread = 0.85;
+    burstiness = 0.65;
+    turbulence = 0.7;
+    stereo_width = 0.88;
+    itd_ms = 0.3ms;
     highpass = 900hz;
+    drift { target = pitch; depth = 20%; rate = 1.2hz; }
     pan = 0.22;
-    gain { domain = linear; interpolation = smooth; points = [(0, 0.75), (0.45, 0.95), (1, 0.75)]; }
+    gain = smooth(0: 0.75 -> 0.45: 0.95 -> 1: 0.75);
   }
+
   seq burn {
     start = 50ms;
     step roar { voice = hearth_roar; at = 0s; duration = 3s; vary_gain = 90%..110%; }
     step flame { voice = flame_flutter; at = 0s; duration = 3s; vary_gain = 90%..110%; }
     step crackle { voice = embers; at = 0s; duration = 3s; vary_pitch = -90cents..90cents; vary_gain = 85%..115%; }
   }
-  variant base { seed = 42; }
-  variant alternate { seed = 43; }
+
+  variants { base = 42; alternate = 43; }
   loop { at = 0.35s..2.75s; xfade = 80ms; }
-  master { gain = 3db; peak = -1.5db; target = -14lufs; warmth = 35%; punch = 15%; glue = 20%; limit = true; }
+  master { gain = 3db; target = -14lufs; peak = -1.5db; punch = 15%; warmth = 35%; glue = 20%; limit = true; }
 }

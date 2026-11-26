@@ -1,8 +1,11 @@
 import {
+  applySoundDefaults,
   compileSoundRecipe,
   parseSoundUnit,
+  resolveSoundParams,
   soundRecipeBudget,
   type SoundBudget,
+  type SoundImportDecl,
   type SoundNamedDecl,
   type SoundProduct,
   type SoundSourceUnit,
@@ -35,6 +38,8 @@ interface SoundGraphState {
   readonly visiting: Set<string>;
   readonly usedImports: Map<string, Set<string>>;
   readonly usedDecls: Set<string>;
+  readonly collectedVoices: Map<string, Record<string, unknown>>;
+  readonly usedVoiceIds: Set<string>;
 }
 
 const markImportUsed = (state: SoundGraphState, owner: string, alias: string): void => {
@@ -46,8 +51,9 @@ const markImportUsed = (state: SoundGraphState, owner: string, alias: string): v
 const visitSoundUnit = (state: SoundGraphState, filePath: string): void => {
   if (state.visiting.has(filePath)) throw new Error(`${filePath}: sound.cycle: Import cycle`);
   if (state.units.has(filePath)) return;
-  if (state.visiting.size >= 32)
+  if (state.visiting.size >= 32) {
     throw new Error(`${filePath}: sound.depth: Import depth exceeds 32`);
+  }
   const file = state.files.get(filePath);
   if (!file) throw new Error(`${filePath}: sound.missing: Missing sound source`);
   state.visiting.add(filePath);
@@ -68,82 +74,171 @@ const isRefValue = (v: unknown): v is { readonly $ref: string } =>
     typeof (v as { $ref?: unknown }).$ref === 'string',
   );
 
-const findNamedDecl = (
+const mergeImportParams = (
+  ownerPath: string,
+  imp: SoundImportDecl,
+  target: SoundSourceUnit,
+): SoundSourceUnit['params'] => {
+  if (!imp.params) return target.params;
+  for (const key of Object.keys(imp.params)) {
+    if (!Object.hasOwn(target.params, key)) {
+      throw new Error(
+        `${ownerPath}: sound.unknown-param: Unknown parameter "${key}" on import "${imp.alias}"`,
+      );
+    }
+  }
+  return { ...target.params, ...imp.params };
+};
+
+const resolveNamedDecl = (
   state: SoundGraphState,
   ownerPath: string,
   refName: string,
   declKind: 'voice' | 'sequence',
+  ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
 ): {
   readonly owner: string;
+  readonly scopeKey: string;
   readonly id: string;
+  readonly alias?: string;
   readonly value: Readonly<Record<string, unknown>>;
+  readonly params: SoundSourceUnit['params'];
 } => {
   const unit = state.units.get(ownerPath)!;
   if (!refName.includes('.')) {
     const list = declKind === 'voice' ? unit.voices : unit.sequences;
     const hit = list.find((d) => d.id === refName);
-    if (!hit)
+    if (!hit) {
       throw new Error(`${ownerPath}: sound.unknown-${declKind}: Unknown ${declKind} "${refName}"`);
+    }
     state.usedDecls.add(`${ownerPath}\u0000${declKind}\u0000${hit.id}`);
-    return { owner: ownerPath, id: hit.id, value: hit.value };
+    return {
+      owner: ownerPath,
+      scopeKey: ownerScopeKey,
+      id: hit.id,
+      ...(ownerAlias ? { alias: ownerAlias } : {}),
+      value: hit.value,
+      params: ownerParams,
+    };
   }
   const [alias, id] = refName.split('.');
   const imp = unit.imports.find((i) => i.alias === alias);
-  if (!imp || !id)
+  if (!imp || !id) {
     throw new Error(`${ownerPath}: sound.unknown-import: Unknown import ref "${refName}"`);
+  }
   markImportUsed(state, ownerPath, alias!);
   const targetPath = relativePath(ownerPath, imp.path);
   const target = state.units.get(targetPath)!;
   const list = declKind === 'voice' ? target.voices : target.sequences;
   const hit = list.find((d) => d.id === id && d.exported);
-  if (!hit)
+  if (!hit) {
     throw new Error(
       `${ownerPath}: sound.unknown-${declKind}: Unknown exported ${declKind} "${refName}"`,
     );
+  }
   state.usedDecls.add(`${targetPath}\u0000${declKind}\u0000${hit.id}`);
-  return { owner: targetPath, id: hit.id, value: hit.value };
+  const nextScope = ownerScopeKey === 'local' ? alias! : `${ownerScopeKey}.${alias!}`;
+  const nextAlias = ownerAlias ? `${ownerAlias}_${alias!}` : alias!;
+  return {
+    owner: targetPath,
+    scopeKey: nextScope,
+    id: hit.id,
+    alias: nextAlias,
+    value: hit.value,
+    params: mergeImportParams(ownerPath, imp, target),
+  };
 };
 
-const resolveStepVoiceRefs = (
+const resolveVoiceRef = (
+  state: SoundGraphState,
+  ownerPath: string,
+  rawRef: unknown,
+  ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
+): string => {
+  const refName = isRefValue(rawRef) ? rawRef.$ref : String(rawRef);
+  const decl = resolveNamedDecl(
+    state,
+    ownerPath,
+    refName,
+    'voice',
+    ownerParams,
+    ownerScopeKey,
+    ownerAlias,
+  );
+  const cacheKey = `${decl.owner}\u0000${decl.scopeKey}\u0000${decl.id}`;
+  const cached = state.collectedVoices.get(cacheKey);
+  if (cached) return String(cached.id);
+
+  let assignedId = decl.id;
+  if (state.usedVoiceIds.has(assignedId)) {
+    assignedId = `${decl.alias ?? state.units.get(decl.owner)!.id}_${decl.id}`;
+  }
+  state.usedVoiceIds.add(assignedId);
+  const placeholder: Record<string, unknown> = { id: assignedId };
+  state.collectedVoices.set(cacheKey, placeholder);
+
+  const resolved = resolveSoundParams(decl.value, decl.params, (msg) => {
+    throw new Error(`${decl.owner}: ${msg}`);
+  }) as Record<string, unknown>;
+  if (resolved.duck && typeof resolved.duck === 'object' && !Array.isArray(resolved.duck)) {
+    const duck = { ...(resolved.duck as Record<string, unknown>) };
+    duck.by = resolveVoiceRef(state, decl.owner, duck.by, decl.params, decl.scopeKey, decl.alias);
+    resolved.duck = duck;
+  }
+  Object.assign(placeholder, resolved, { id: assignedId });
+  return assignedId;
+};
+
+const resolveSequenceSteps = (
   state: SoundGraphState,
   ownerPath: string,
   seqVal: Record<string, unknown>,
+  ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
 ): Record<string, unknown> => {
-  if (!Array.isArray(seqVal.steps)) return seqVal;
-  const steps = seqVal.steps.map((rawStep) => {
+  const resolvedSeq = resolveSoundParams(seqVal, ownerParams, (msg) => {
+    throw new Error(`${ownerPath}: ${msg}`);
+  }) as Record<string, unknown>;
+  if (!Array.isArray(resolvedSeq.steps)) return resolvedSeq;
+  const steps = resolvedSeq.steps.map((rawStep) => {
     if (!rawStep || typeof rawStep !== 'object' || Array.isArray(rawStep)) return rawStep;
     const step = { ...(rawStep as Record<string, unknown>) };
-    if (isRefValue(step.voice)) {
-      const target = findNamedDecl(state, ownerPath, step.voice.$ref, 'voice');
-      step.voice = target.id;
-    }
+    step.voice = resolveVoiceRef(
+      state,
+      ownerPath,
+      step.voice,
+      ownerParams,
+      ownerScopeKey,
+      ownerAlias,
+    );
     return step;
   });
-  return { ...seqVal, steps };
+  return { ...resolvedSeq, steps };
 };
 
 const resolveRecipeGraph = (state: SoundGraphState): Record<string, unknown> => {
   const root = state.units.get(state.entryPath)!;
-  const body = { ...root.body, id: root.id } as Record<string, unknown>;
-  if (Array.isArray(body.voices)) {
-    body.voices = body.voices.map((item) => {
-      if (!isRefValue(item)) return item;
-      const decl = findNamedDecl(state, state.entryPath, item.$ref, 'voice');
-      return { ...decl.value, id: decl.id };
-    });
-  }
-  if (Array.isArray(body.sequences)) {
-    body.sequences = body.sequences.map((item) => {
-      if (!isRefValue(item)) {
-        return item && typeof item === 'object' && !Array.isArray(item)
-          ? resolveStepVoiceRefs(state, state.entryPath, item as Record<string, unknown>)
-          : item;
-      }
-      const decl = findNamedDecl(state, state.entryPath, item.$ref, 'sequence');
-      return resolveStepVoiceRefs(state, decl.owner, { ...decl.value, id: decl.id });
-    });
-  }
-  return body;
+  const sequences = root.sequences.map((seq) => {
+    state.usedDecls.add(`${state.entryPath}\u0000sequence\u0000${seq.id}`);
+    return resolveSequenceSteps(state, state.entryPath, { ...seq.value, id: seq.id }, root.params);
+  });
+  return applySoundDefaults(
+    {
+      ...root.body,
+      id: root.id,
+      voices: [...state.collectedVoices.values()],
+      sequences,
+    },
+    root.params,
+    (msg) => {
+      throw new Error(`${state.entryPath}: ${msg}`);
+    },
+  );
 };
 
 const checkNamedUsage = (
@@ -168,8 +263,9 @@ const checkUnitSoundHygiene = (
 ): void => {
   const used = state.usedImports.get(filePath) ?? new Set<string>();
   const deadImport = unit.imports.find((i) => !used.has(i.alias));
-  if (deadImport)
+  if (deadImport) {
     throw new Error(`${filePath}: sound.unused-import: Unused import "${deadImport.alias}"`);
+  }
   const isRoot = filePath === state.entryPath;
   checkNamedUsage(state.usedDecls, filePath, 'voice', isRoot, unit.voices);
   checkNamedUsage(state.usedDecls, filePath, 'sequence', isRoot, unit.sequences);
@@ -180,11 +276,10 @@ const checkSoundHygiene = (state: SoundGraphState): void => {
   const rootFile = state.files.get(state.entryPath)!;
   const rootUnit = state.units.get(state.entryPath)!;
   const nonEmptyLines = rootFile.source.split(/\r?\n/u).filter((l) => l.trim().length > 0).length;
-  const inlineVoices = Array.isArray(rootUnit.body.voices) ? rootUnit.body.voices.length : 0;
-  const inlineSeqs = Array.isArray(rootUnit.body.sequences) ? rootUnit.body.sequences.length : 0;
-  if (nonEmptyLines > 140 && rootUnit.imports.length === 0 && inlineVoices + inlineSeqs >= 4) {
+  const declCount = rootUnit.voices.length + rootUnit.sequences.length;
+  if (nonEmptyLines > 140 && rootUnit.imports.length === 0 && declCount >= 4) {
     throw new Error(
-      `${state.entryPath}: sound.monolithic-entry: Sound entry mixes ${inlineVoices + inlineSeqs} inline voices/sequences across ${nonEmptyLines} non-empty lines with no imports. Extract reusable voices/sequences into a module.`,
+      `${state.entryPath}: sound.monolithic-entry: Sound entry mixes ${declCount} inline voices/seqs across ${nonEmptyLines} non-empty lines with no imports. Extract reusable voices/seqs into a module.`,
     );
   }
 };
@@ -212,6 +307,8 @@ export const prepareDirectorySound = (
     visiting: new Set(),
     usedImports: new Map(),
     usedDecls: new Set(),
+    collectedVoices: new Map(),
+    usedVoiceIds: new Set(),
   };
   visitSoundUnit(state, entryPath);
   const root = state.units.get(entryPath)!;

@@ -79,30 +79,24 @@ const gate = (
   okMessage: string,
   failMessage: string,
   fix: string,
-): SoundAuditGateResult => ({
-  id,
-  passed,
-  message: passed ? okMessage : failMessage,
-  fix,
-});
+): SoundAuditGateResult => ({ id, passed, message: passed ? okMessage : failMessage, fix });
 
 interface VariantSample {
   readonly product: SoundProduct;
   readonly metrics: SoundMetrics;
 }
 
-const findBadVariant = (
-  samples: readonly VariantSample[],
-  ok: (sample: VariantSample) => boolean,
-): VariantSample | undefined => samples.find((sample) => !ok(sample));
-
 const variantGate = (
   id: SoundGateId,
-  bad: VariantSample | undefined,
+  samples: readonly VariantSample[],
+  ok: (sample: VariantSample) => boolean,
   okMessage: string,
   failMessage: (sample: VariantSample) => string,
   fix: string,
-): SoundAuditGateResult => gate(id, !bad, okMessage, bad ? failMessage(bad) : '', fix);
+): SoundAuditGateResult => {
+  const bad = samples.find((s) => !ok(s));
+  return gate(id, !bad, okMessage, bad ? failMessage(bad) : '', fix);
+};
 
 const evaluateSignalGates = (
   samples: readonly VariantSample[],
@@ -111,29 +105,29 @@ const evaluateSignalGates = (
 ): readonly SoundAuditGateResult[] => [
   variantGate(
     'audible_headroom',
-    findBadVariant(samples, (s) => s.metrics.rmsDb >= -34 && s.metrics.peakDb <= -0.5),
+    samples,
+    (s) => s.metrics.rmsDb >= -34 && s.metrics.peakDb <= -0.5,
     `RMS ${m.rmsDb.toFixed(1)} dBFS, peak ${m.peakDb.toFixed(1)} dBFS.`,
     (s) =>
       `Variant "${s.product.variant}" weak or over-hot (RMS ${s.metrics.rmsDb.toFixed(1)} dBFS, peak ${s.metrics.peakDb.toFixed(1)} dBFS).`,
-    'Adjust output.gainDb (and output.limit = true / output.targetLufs if needed) so every variant RMS is >= -34 dBFS with clean headroom.',
+    'Adjust master gain/lufs/limit so every variant RMS is >= -34 dBFS with clean headroom.',
   ),
   variantGate(
     'no_dc_offset',
-    findBadVariant(samples, (s) => Math.abs(s.product.dc) <= 0.025),
+    samples,
+    (s) => Math.abs(s.product.dc) <= 0.025,
     `DC offset ${samples[0]!.product.dc.toFixed(4)} <= 0.025.`,
     (s) => `Variant "${s.product.variant}" excessive DC offset ${s.product.dc.toFixed(4)}.`,
     'Add a voice highpass filter (>= 25 Hz) to remove sub-sonic DC drift.',
   ),
   variantGate(
     'bounded_silence',
-    findBadVariant(
-      samples,
-      (s) => isLoop || (s.metrics.leadingSilenceRatio <= 0.35 && s.metrics.activeRatio >= 0.15),
-    ),
+    samples,
+    (s) => isLoop || (s.metrics.leadingSilenceRatio <= 0.35 && s.metrics.activeRatio >= 0.15),
     `Active audio ${(m.activeRatio * 100).toFixed(0)}%, lead ${(m.leadingSilenceRatio * 100).toFixed(0)}%.`,
     (s) =>
       `Variant "${s.product.variant}" excessive dead silence (active ${(s.metrics.activeRatio * 100).toFixed(0)}%).`,
-    'Trim excess silent padding or move sequence start closer to 0.',
+    'Trim excess silent padding or move timeline start closer to 0.',
   ),
 ];
 
@@ -150,10 +144,8 @@ const evaluateGates = (
     ...evaluateSignalGates(samples, m, isLoop),
     variantGate(
       'spectral_non_trivial',
-      findBadVariant(
-        samples,
-        (s) => s.metrics.spectralEntropy >= 0.14 || s.metrics.spectralFlux >= 0.06,
-      ),
+      samples,
+      (s) => s.metrics.spectralEntropy >= 0.14 || s.metrics.spectralFlux >= 0.06,
       `Entropy ${m.spectralEntropy.toFixed(2)}, flux ${m.spectralFlux.toFixed(2)}.`,
       (s) =>
         `Variant "${s.product.variant}" trivial static tone (entropy=${s.metrics.spectralEntropy.toFixed(2)}, flux=${s.metrics.spectralFlux.toFixed(2)}).`,
@@ -161,19 +153,18 @@ const evaluateGates = (
     ),
     variantGate(
       'loop_continuity',
-      findBadVariant(samples, (s) => !isLoop || s.metrics.loopSeamJump <= 0.35),
+      samples,
+      (s) => !isLoop || s.metrics.loopSeamJump <= 0.35,
       `Loop seam jump ${m.loopSeamJump.toFixed(3)}.`,
       (s) =>
         `Variant "${s.product.variant}" loop seam discontinuity (${s.metrics.loopSeamJump.toFixed(3)} > 0.35).`,
-      'Increase loop crossfade or ensure continuous voices span the loop boundaries.',
+      'Increase loop xfade or ensure continuous voices span the loop boundaries.',
     ),
     variantGate(
       'stereo_phase',
-      findBadVariant(
-        samples,
-        (s) => s.product.channels === 1 || s.metrics.stereoCorrelation >= -0.25,
-      ),
-      `Stereo correlation ${m.stereoCorrelation.toFixed(2)}.`,
+      samples,
+      (s) => s.product.channels === 1 || s.metrics.stereoCorrelation >= -0.25,
+      `Stereo correlation ${m.stereoCorrelation.toFixed(2)}, IACC ${m.stereoIacc.toFixed(2)}.`,
       (s) =>
         `Variant "${s.product.variant}" out-of-phase stereo (${s.metrics.stereoCorrelation.toFixed(2)} < -0.25).`,
       'Reduce extreme stereo width or pan inversion so L/R sum cleanly in mono.',
@@ -253,14 +244,50 @@ const evaluateDynamics = (
   return {
     pillar: { id: 'dynamics', label: 'Dynamics & Envelope Craft', score, maxScore: 35, metrics },
     deductions: buildDeductions('dynamics', metrics, [
-      'Shape punchy transients (or output.punch / material strike) to match profile.',
-      'Tighten attack curve/envelope for crisp impact/UI or natural swells.',
+      'Shape punchy transients (or master punch / material splash / duck) to match profile.',
+      'Tighten attack envelope for crisp impact/UI or natural swells.',
       'Reduce leading/trailing dead silence relative to total duration.',
     ]),
   };
 };
 
+const PROFILE_CENTROID: Readonly<Record<SoundProfile, readonly [number, number]>> = {
+  impact: [180, 4800],
+  foley: [220, 5800],
+  creature: [160, 4500],
+  magic: [320, 7200],
+  ui: [300, 6200],
+  ambient: [120, 4800],
+};
+
+const PROFILE_SHAPE_FIT: Readonly<
+  Record<SoundProfile, (b: SoundMetrics['bands'], harsh: number) => number>
+> = {
+  impact: (b) =>
+    0.5 * ramp(b.sub + b.low + b.lowMid, 0.08, 0.25) +
+    0.5 * ramp(b.highMid + b.presence + b.air, 0.04, 0.14),
+  foley: (b) =>
+    ramp(b.lowMid + b.highMid + b.presence, 0.15, 0.35) * (1 - 0.6 * ramp(b.sub, 0.55, 0.85)),
+  creature: (b) =>
+    ramp(b.low + b.lowMid + b.highMid, 0.2, 0.45) * (1 - 0.6 * ramp(b.air, 0.45, 0.78)),
+  magic: (b) => ramp(b.highMid + b.presence + b.air, 0.1, 0.25),
+  ui: (b) =>
+    ramp(b.lowMid + b.highMid + b.presence, 0.15, 0.35) * (1 - 0.6 * ramp(b.sub, 0.35, 0.65)),
+  ambient: (b, harsh) =>
+    ramp(b.sub + b.low + b.lowMid, 0.08, 0.24) * (1 - 0.5 * ramp(harsh, 0.34, 0.65)),
+};
+
+const profileSpectralFit = (profile: SoundProfile, m: SoundMetrics): number => {
+  const [cMin, cMax] = PROFILE_CENTROID[profile];
+  let centroidFit = 1;
+  if (m.spectralCentroidHz < cMin) centroidFit = ramp(m.spectralCentroidHz, cMin * 0.4, cMin);
+  else if (m.spectralCentroidHz > cMax)
+    centroidFit = 1 - 0.6 * ramp(m.spectralCentroidHz, cMax, cMax * 1.8);
+  return 0.5 * centroidFit + 0.5 * PROFILE_SHAPE_FIT[profile](m.bands, m.harshnessRatio);
+};
+
 const evaluateSpectrum = (
+  profile: SoundProfile,
   m: SoundMetrics,
 ): {
   readonly pillar: SoundAuditPillarReport;
@@ -271,19 +298,23 @@ const evaluateSpectrum = (
     (v) => v >= 0.015,
   ).length;
   const harshPenalty = 1 - 0.65 * ramp(m.harshnessRatio, 0.42, 0.75);
+  const envFit = profileSpectralFit(profile, m);
   const balanceRatio =
-    ramp(activeBands, 2, 4.5) * (1 - 0.7 * ramp(b.lowMid + b.highMid, 0.85, 0.99)) * harshPenalty;
+    ramp(activeBands, 2, 4.5) *
+    (1 - 0.7 * ramp(b.lowMid + b.highMid, 0.85, 0.99)) *
+    harshPenalty *
+    (0.7 + 0.3 * envFit);
   const richnessRatio = ramp(m.spectralEntropy, 0.16, 0.5);
   const motionRatio = ramp(m.spectralFlux, 0.04, 0.24);
   const metrics = [
     auditSubmetric(
       'sound.balance',
-      '6-Band Spectral Spread',
+      'Profile Spectral Balance',
       balanceRatio,
       14,
       activeBands,
       5,
-      `${activeBands}/6 active bands, harsh=${(m.harshnessRatio * 100).toFixed(0)}%`,
+      `${activeBands}/6 bands fit=${Math.round(envFit * 100)}% harsh=${(m.harshnessRatio * 100).toFixed(0)}%`,
     ),
     auditSubmetric(
       'sound.richness',
@@ -308,29 +339,46 @@ const evaluateSpectrum = (
   return {
     pillar: { id: 'spectrum', label: 'Spectral Balance & Richness', score, maxScore: 40, metrics },
     deductions: buildDeductions('spectrum', metrics, [
-      'Spread energy across low body, mid presence, and air without 2.5-5 kHz harshness.',
-      'Layer material, granular, osc/fm/resonator with filtered noise or drive saturation.',
+      'Shape EQ/filters to match profile band energy without 2.5-5 kHz harshness.',
+      'Layer material, granular, waveguide, whoosh, or osc/fm/vocal with drive and fx.',
       'Modulate filter cutoff, pitch curves, or brightness over time for living motion.',
     ]),
   };
 };
 
+const computePolishSeamRatio = (
+  primary: SoundProduct,
+  profile: SoundProfile,
+  m: SoundMetrics,
+): number => {
+  const isLoop = primary.playback.kind === 'loop';
+  const phaseScale =
+    primary.channels === 2 && m.stereoCorrelation < 0 ? ramp(m.stereoCorrelation, -0.25, 0) : 1;
+  const stereoWidthScale =
+    primary.channels === 2 && m.stereoSideRatio < 0.004 && m.stereoIacc > 0.99
+      ? 0.85 + 0.15 * ramp(1 - m.stereoIacc, 0.005, 0.08)
+      : 1;
+  const periodLo = profile === 'ambient' ? 0.72 : 0.88;
+  const periodHi = profile === 'ambient' ? 0.94 : 0.98;
+  const periodScale = isLoop ? 1 - 0.55 * ramp(m.loopPeriodicity, periodLo, periodHi) : 1;
+  const baseSeam = isLoop
+    ? 1 - ramp(m.loopSeamJump, 0.02, 0.25)
+    : 1 - ramp(m.trailingSilenceRatio, 0.58, 0.85);
+  return baseSeam * phaseScale * stereoWidthScale * periodScale;
+};
+
 const evaluatePolish = (
   products: readonly SoundProduct[],
+  profile: SoundProfile,
   m: SoundMetrics,
 ): {
   readonly pillar: SoundAuditPillarReport;
   readonly deductions: readonly SoundAuditDeduction[];
 } => {
+  const primary = products[0]!;
+  const isLoop = primary.playback.kind === 'loop';
   const loudnessRatio = 0.5 * ramp(m.rmsDb, -30, -14) + 0.5 * ramp(m.lufs, -28, -12);
-  const phaseScale =
-    products[0]!.channels === 2 && m.stereoCorrelation < 0
-      ? ramp(m.stereoCorrelation, -0.25, 0)
-      : 1;
-  const seamRatio =
-    (products[0]!.playback.kind === 'loop'
-      ? 1 - ramp(m.loopSeamJump, 0.02, 0.25)
-      : 1 - ramp(m.trailingSilenceRatio, 0.58, 0.85)) * phaseScale;
+  const seamRatio = computePolishSeamRatio(primary, profile, m);
   const varRatio = products.length < 2 ? 0.7 : ramp(m.variantDistinctness, 0.01, 0.15);
   const metrics = [
     auditSubmetric(
@@ -344,12 +392,12 @@ const evaluatePolish = (
     ),
     auditSubmetric(
       'sound.tail',
-      products[0]!.playback.kind === 'loop' ? 'Loop Seam Continuity' : 'Tail Efficiency',
+      isLoop ? 'Loop Continuity & Spatial Depth' : 'Tail & Stereo Image',
       seamRatio,
       8,
       m.loopSeamJump,
       0,
-      `seam=${m.loopSeamJump.toFixed(3)}`,
+      `seam=${m.loopSeamJump.toFixed(3)} iacc=${m.stereoIacc.toFixed(2)} rep=${m.loopPeriodicity.toFixed(2)}`,
     ),
     auditSubmetric(
       'sound.variants',
@@ -365,8 +413,8 @@ const evaluatePolish = (
   return {
     pillar: { id: 'polish', label: 'Delivery & Variation Polish', score, maxScore: 25, metrics },
     deductions: buildDeductions('polish', metrics, [
-      'Raise output.gainDb or set output.targetLufs / output.limit = true toward -18..-12 LUFS.',
-      'Clean up loop wrap crossfade, space.preset tail, or trim trailing silence.',
+      'Adjust master gain/lufs and limit toward -18..-12 LUFS.',
+      'Add Perlin drift / organic variation to avoid periodic loop swells, refine xfade, or widen stereo fx/pan.',
       'Use 2+ variants with subtle pitch/timing/gain vary.',
     ]),
   };
@@ -403,8 +451,8 @@ export const evaluateSoundQuality = (
   const metrics = analyzeSoundProducts(products);
   const hardGates = evaluateGates(products, metrics);
   const dyn = evaluateDynamics(profile, metrics);
-  const spec = evaluateSpectrum(metrics);
-  const pol = evaluatePolish(products, metrics);
+  const spec = evaluateSpectrum(profile, metrics);
+  const pol = evaluatePolish(products, profile, metrics);
   const score = Math.max(
     0,
     Math.min(100, Math.round(dyn.pillar.score + spec.pillar.score + pol.pillar.score)),

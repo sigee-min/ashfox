@@ -25,31 +25,33 @@ const ws = (
 
 const soundMod = `ashfox 1
 module tones {
-  export voice ping : resonator {
-    excitation impulse {}
-    mode body { hz = 640hz; decay = 0.35s; gain = 1; }
-    gain = 0 -> 0.8 -> 0;
+  params { hz = 640hz; }
+  export voice ping : modal_plate {
+    material = bell;
+    pitch = hz;
+    damping = 0.35;
+    modes = 8;
     highpass = 120hz;
     lowpass = 6000hz;
-  }
-  export seq chime {
-    start = 0s;
-    step hit { voice = ping; at = 0s; duration = 0.35s; gain = 1; pitch_cents = 0cents; }
+    gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0);
   }
 }`;
 
 const soundEntry = `ashfox 1
 sound bell {
-  import "../module/tones.ashfox" as t;
+  import "../module/tones.ashfox" as t { hz = 720hz; };
   outputs { wav; }
   preview default { width = 320; height = 160; variant = main; }
   profile = ui;
   duration = 0.5s;
+  sample_rate = 48000hz;
   seed = 7;
-  voices = [t.ping];
-  sequences = [t.chime];
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  seq chime {
+    step hit { voice = t.ping; at = 0s; duration = 350ms; }
+  }
+  variants { main = 1; }
+  playback = oneshot;
+  master { gain = -12db; peak = -3db; }
 }`;
 
 const compiledSound = compileDirectoryWorkspace(
@@ -86,11 +88,12 @@ const deadSoundImport = compileDirectoryWorkspace(
 sound bell {
   import "../module/tones.ashfox" as t;
   profile = ui;
-  duration = 0.4s; seed = 1;
-  voice v : noise { color = white; gain = 0 -> 0.8 -> 0; highpass = 100hz; lowpass = 3000hz; }
-  seq s { start = 0s; step k { voice = v; at = 0s; duration = 0.3s; } }
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  duration = 0.4s;
+  seed = 1;
+  voice v : noise { color = white; highpass = 100hz; lowpass = 3000hz; gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0); }
+  seq s { step k { voice = v; at = 0s; duration = 300ms; } }
+  variants { main = 1; }
+  master { gain = -12db; peak = -3db; }
 }`,
     },
     { path: 'assets/module/tones.ashfox', source: soundMod },
@@ -109,17 +112,56 @@ const badSoundOut = compileDirectoryWorkspace(
 sound bad {
   outputs { glb; }
   profile = ui;
-  duration = 0.4s; seed = 1;
-  voice v : noise { color = white; gain = 0 -> 0.8 -> 0; highpass = 100hz; lowpass = 3000hz; }
-  seq s { start = 0s; step k { voice = v; at = 0s; duration = 0.3s; } }
-  variant main { seed = 1; }
-  output { gain_db = -12db; peak_db = -3db; }
+  duration = 0.4s;
+  seed = 1;
+  voice v : noise { color = white; highpass = 100hz; lowpass = 3000hz; gain = smooth(0: 0 -> 0.05: 0.8 -> 1: 0); }
+  seq s { step k { voice = v; at = 0s; duration = 300ms; } }
+  variants { main = 1; }
+  master { gain = -12db; peak = -3db; }
 }`,
     },
   ],
 );
 assert.equal(badSoundOut.ok, false);
 assert.match(badSoundOut.diagnostics[0]!.message, /does not match sound asset/);
+
+// Imported module voice ducking another voice in the same module shares the module instance scope.
+const duckMod = `ashfox 1
+module duck_kit {
+  params { lvl = 0.75; }
+  export voice hit : noise { color = white; highpass = 120hz; lowpass = 6000hz; gain { env = ad; attack = 4ms; peak = lvl; } }
+  export voice bed : noise { color = brown; highpass = 60hz; lowpass = 800hz; duck { by = hit; amount = 40%; release_ms = 50ms; } gain { env = ad; attack = 5ms; peak = lvl; } }
+}`;
+const duckCompiled = compileDirectoryWorkspace(
+  ws(
+    [{ name: 'layered', path: 'sounds/layered.ashfox' }],
+    [{ subpath: './duck_kit', path: 'module/duck_kit.ashfox' }],
+  ),
+  [
+    {
+      path: 'assets/sounds/layered.ashfox',
+      source: `ashfox 1
+sound layered {
+  import "../module/duck_kit.ashfox" as kit { lvl = 0.85; };
+  profile = foley;
+  duration = 0.45s;
+  seed = 9;
+  seq main {
+    step a { voice = kit.hit; at = 0s; duration = 200ms; }
+    step b { voice = kit.bed; at = 0s; duration = 350ms; }
+  }
+  variants { main = 1; }
+  master { gain = 0db; peak = -2db; }
+}`,
+    },
+    { path: 'assets/module/duck_kit.ashfox', source: duckMod },
+  ],
+);
+assert.equal(
+  duckCompiled.ok,
+  true,
+  duckCompiled.ok ? '' : JSON.stringify(duckCompiled.diagnostics),
+);
 
 // Sprite declarations + unused declaration hygiene.
 const spriteMod = `ashfox 1

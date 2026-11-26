@@ -95,17 +95,27 @@ const FALLBACK_SPACE: SpaceParams = {
   fdnGain: 0.6,
 };
 
-const ER_BASE_TAPS = [199, 379, 541, 751, 953, 1201, 1523, 1789] as const;
-const ER_PAN = [-0.85, 0.72, -0.55, 0.9, -0.35, 0.48, -0.75, 0.62] as const;
-const AP_BASE_LENGTHS = [142, 379] as const;
+const ER_TAPS_L = [199, 379, 541, 751, 953, 1201, 1523, 1789] as const;
+const ER_TAPS_R = [223, 409, 577, 797, 997, 1249, 1571, 1847] as const;
+const AP_LENGTHS_L = [142, 379] as const;
+const AP_LENGTHS_R = [173, 419] as const;
 const FDN_BASE_DELAYS = [1093, 1327, 1609, 1933, 2269, 2657, 3049, 3491] as const;
 const LFO_RATES_HZ = [0.23, 0.29, 0.34, 0.41, 0.47, 0.53, 0.61, 0.67] as const;
 const LFO_DEPTH_SAMPLES = [3.2, 4.1, 5.0, 3.7, 5.5, 4.4, 3.5, 4.8] as const;
-const INPUT_SIGNS = [1, -1, 1, -1, 1, -1, 1, -1] as const;
+const INPUT_SIGNS_L = [1, -1, 1, -1, 1, -1, 1, -1] as const;
+const INPUT_SIGNS_R = [1, 1, -1, -1, -1, -1, 1, 1] as const;
 const INV_SQRT8 = 1 / Math.sqrt(8);
+const CROSS_COS = 0.9238795325112867;
+const CROSS_SIN = 0.3826834323650898;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value));
+
+const nextPow2 = (n: number): number => {
+  let p = 1;
+  while (p < n) p <<= 1;
+  return p;
+};
 
 const resolveSpaceParams = (space: SpaceSpec, rate: number): SpaceParams => {
   const base = space.preset ? SPACE_DEFAULTS[space.preset] : FALLBACK_SPACE;
@@ -127,131 +137,208 @@ const createPreDelay = (preDelayMs: number, rate: number): ((x: number) => numbe
     Math.max(0, Math.round((preDelayMs * rate) / 1000)),
   );
   if (delaySamples === 0) return (x) => x;
-  const buf = new Float64Array(delaySamples);
+  const bufLen = nextPow2(delaySamples + 1);
+  const mask = bufLen - 1;
+  const buf = new Float64Array(bufLen);
   let idx = 0;
   return (x: number): number => {
-    const out = buf[idx]!;
+    const out = buf[(idx - delaySamples) & mask]!;
     buf[idx] = x;
-    idx = (idx + 1) % delaySamples;
+    idx = (idx + 1) & mask;
     return out;
   };
 };
 
-const createEarlyReflections = (
+const buildErTapDelays = (taps: readonly number[], size: number, rateScale: number): Int32Array =>
+  Int32Array.from(taps, (t) => Math.max(2, Math.round(t * size * rateScale)));
+
+const createStereoEarlyReflections = (
   size: number,
   rate: number,
-): ((x: number, out: Float64Array) => void) => {
+): ((inL: number, inR: number, out: Float64Array) => void) => {
   const rateScale = rate / 48000;
-  const tapDelays = ER_BASE_TAPS.map((t) => Math.max(2, Math.round(t * size * rateScale)));
-  const maxDelay = tapDelays[tapDelays.length - 1]! + 1;
-  const buf = new Float64Array(maxDelay);
-  const rawGains = tapDelays.map((_, i) => 0.84 ** i);
+  const delaysL = buildErTapDelays(ER_TAPS_L, size, rateScale);
+  const delaysR = buildErTapDelays(ER_TAPS_R, size, rateScale);
+  const maxDelay = Math.max(delaysL[delaysL.length - 1]!, delaysR[delaysR.length - 1]!) + 1;
+  const bufLen = nextPow2(maxDelay);
+  const mask = bufLen - 1;
+  const bufL = new Float64Array(bufLen);
+  const bufR = new Float64Array(bufLen);
+  const rawGains = ER_TAPS_L.map((_, i) => 0.84 ** i);
   const norm = 1 / Math.sqrt(rawGains.reduce((acc, g) => acc + g * g, 0));
-  const tapL = rawGains.map((g, i) => g * norm * Math.cos(((ER_PAN[i]! + 1) * Math.PI) / 4));
-  const tapR = rawGains.map((g, i) => g * norm * Math.sin(((ER_PAN[i]! + 1) * Math.PI) / 4));
+  const ipsi = Float64Array.from(rawGains, (g) => g * norm * 0.92);
+  const contra = Float64Array.from(rawGains, (g, i) => g * norm * (i % 2 === 0 ? 0.34 : -0.34));
   let writeIdx = 0;
-  return (x: number, out: Float64Array): void => {
-    buf[writeIdx] = x;
+  return (inL: number, inR: number, out: Float64Array): void => {
+    bufL[writeIdx] = inL;
+    bufR[writeIdx] = inR;
     let sumL = 0;
     let sumR = 0;
-    for (let k = 0; k < tapDelays.length; k += 1) {
-      const readIdx = (writeIdx - tapDelays[k]! + maxDelay) % maxDelay;
-      const sample = buf[readIdx]!;
-      sumL += sample * tapL[k]!;
-      sumR += sample * tapR[k]!;
+    for (let k = 0; k < 8; k += 1) {
+      const sL = bufL[(writeIdx - delaysL[k]!) & mask]!;
+      const sR = bufR[(writeIdx - delaysR[k]!) & mask]!;
+      sumL += sL * ipsi[k]! + sR * contra[k]!;
+      sumR += sR * ipsi[k]! + sL * contra[k]!;
     }
-    writeIdx = (writeIdx + 1) % maxDelay;
+    writeIdx = (writeIdx + 1) & mask;
     out[0] = sumL;
     out[1] = sumR;
   };
 };
 
 const createAllPass = (length: number, g: number): ((x: number) => number) => {
-  const buf = new Float64Array(length);
+  const bufLen = nextPow2(length + 1);
+  const mask = bufLen - 1;
+  const buf = new Float64Array(bufLen);
   let idx = 0;
   return (x: number): number => {
-    const delayed = buf[idx]!;
+    const delayed = buf[(idx - length) & mask]!;
     const v = x + g * delayed;
     buf[idx] = v;
-    idx = (idx + 1) % length;
+    idx = (idx + 1) & mask;
     return delayed - g * v;
   };
 };
 
-const createDiffuser = (rate: number): ((x: number) => number) => {
+const createCrossedDiffuser = (
+  rate: number,
+): ((inL: number, inR: number, out: Float64Array) => void) => {
   const scale = rate / 48000;
-  const stages = AP_BASE_LENGTHS.map((len) =>
-    createAllPass(Math.max(16, Math.round(len * scale)), 0.5),
-  );
-  return (x: number): number => {
-    let y = x;
-    for (let i = 0; i < stages.length; i += 1) y = stages[i]!(y);
-    return y;
+  const l1 = createAllPass(Math.max(16, Math.round(AP_LENGTHS_L[0] * scale)), 0.5);
+  const l2 = createAllPass(Math.max(16, Math.round(AP_LENGTHS_L[1] * scale)), 0.5);
+  const r1 = createAllPass(Math.max(16, Math.round(AP_LENGTHS_R[0] * scale)), 0.5);
+  const r2 = createAllPass(Math.max(16, Math.round(AP_LENGTHS_R[1] * scale)), 0.5);
+  return (inL: number, inR: number, out: Float64Array): void => {
+    const aL = l1(inL);
+    const aR = r1(inR);
+    out[0] = l2(CROSS_COS * aL + CROSS_SIN * aR);
+    out[1] = r2(CROSS_COS * aR - CROSS_SIN * aL);
   };
 };
 
 const hadamard8 = (x: Float64Array, out: Float64Array): void => {
-  for (let i = 0; i < 8; i += 1) out[i] = x[i]!;
-  for (let stride = 1; stride < 8; stride <<= 1) {
-    for (let i = 0; i < 8; i += stride << 1) {
-      for (let j = 0; j < stride; j += 1) {
-        const a = out[i + j]!;
-        const b = out[i + j + stride]!;
-        out[i + j] = a + b;
-        out[i + j + stride] = a - b;
-      }
-    }
-  }
-  for (let i = 0; i < 8; i += 1) out[i] = out[i]! * INV_SQRT8;
+  const x0 = x[0]!;
+  const x1 = x[1]!;
+  const x2 = x[2]!;
+  const x3 = x[3]!;
+  const x4 = x[4]!;
+  const x5 = x[5]!;
+  const x6 = x[6]!;
+  const x7 = x[7]!;
+  const a0 = x0 + x1;
+  const a1 = x0 - x1;
+  const a2 = x2 + x3;
+  const a3 = x2 - x3;
+  const a4 = x4 + x5;
+  const a5 = x4 - x5;
+  const a6 = x6 + x7;
+  const a7 = x6 - x7;
+  const b0 = a0 + a2;
+  const b1 = a1 + a3;
+  const b2 = a0 - a2;
+  const b3 = a1 - a3;
+  const b4 = a4 + a6;
+  const b5 = a5 + a7;
+  const b6 = a4 - a6;
+  const b7 = a5 - a7;
+  out[0] = (b0 + b4) * INV_SQRT8;
+  out[1] = (b1 + b5) * INV_SQRT8;
+  out[2] = (b2 + b6) * INV_SQRT8;
+  out[3] = (b3 + b7) * INV_SQRT8;
+  out[4] = (b0 - b4) * INV_SQRT8;
+  out[5] = (b1 - b5) * INV_SQRT8;
+  out[6] = (b2 - b6) * INV_SQRT8;
+  out[7] = (b3 - b7) * INV_SQRT8;
 };
 
-const createFdn8 = (
-  params: SpaceParams,
-  rate: number,
-): ((x: number, out: Float64Array) => void) => {
+interface FdnState {
+  readonly delays: Int32Array;
+  readonly depths: Float64Array;
+  readonly masks: Int32Array;
+  readonly lines: Float64Array[];
+  readonly writeIndices: Int32Array;
+  readonly lfoS: Float64Array;
+  readonly lfoC: Float64Array;
+  readonly lfoEps: Float64Array;
+  readonly lp: Float64Array;
+  readonly hpState: Float64Array;
+  readonly y: Float64Array;
+  readonly mixed: Float64Array;
+  readonly gains: Float64Array;
+  readonly damp: number;
+  readonly hpAlpha: number;
+}
+
+const initFdnState = (params: SpaceParams, rate: number): FdnState => {
   const rateScale = rate / 48000;
   const sizeScale = (0.35 + 0.65 * params.size) * rateScale;
-  const delays = FDN_BASE_DELAYS.map((d) => Math.max(32, Math.round(d * sizeScale)));
-  const depths = LFO_DEPTH_SAMPLES.map((d, i) => Math.min(d * rateScale, delays[i]! * 0.25));
-  const bufLens = delays.map((d, i) => d + Math.ceil(depths[i]!) + 4);
-  const lines = bufLens.map((len) => new Float64Array(len));
-  const writeIndices = new Int32Array(8);
-  const phases = new Float64Array(8);
-  for (let k = 0; k < 8; k += 1) phases[k] = (k * Math.PI) / 4;
-  const phaseInc = LFO_RATES_HZ.map((hz) => (2 * Math.PI * hz) / rate);
-  const lp = new Float64Array(8);
-  const hpState = new Float64Array(8);
-  const y = new Float64Array(8);
-  const mixed = new Float64Array(8);
-  const damp = 1 - Math.exp((-2 * Math.PI * params.damping) / rate);
-  const hpAlpha = 1 - Math.exp((-2 * Math.PI * 120) / rate);
-  const gains = delays.map((len) => 10 ** ((-3 * len) / (params.decay * rate)));
-
-  return (x: number, out: Float64Array): void => {
-    for (let k = 0; k < 8; k += 1) {
-      const len = bufLens[k]!;
-      const readPos = writeIndices[k]! - (delays[k]! + depths[k]! * Math.sin(phases[k]!));
-      const r0 = Math.floor(readPos);
-      const frac = readPos - r0;
-      const i0 = ((r0 % len) + len) % len;
-      const i1 = (i0 + 1) % len;
-      y[k] = lines[k]![i0]! * (1 - frac) + lines[k]![i1]! * frac;
-      phases[k] = (phases[k]! + phaseInc[k]!) % (2 * Math.PI);
-    }
-    hadamard8(y, mixed);
-    for (let k = 0; k < 8; k += 1) {
-      lp[k] = lp[k]! + damp * (mixed[k]! * gains[k]! - lp[k]!);
-      hpState[k] = hpState[k]! + hpAlpha * (lp[k]! - hpState[k]!);
-      const fb = lp[k]! - hpState[k]!;
-      lines[k]![writeIndices[k]!] = x * INPUT_SIGNS[k]! * INV_SQRT8 + fb;
-      writeIndices[k] = (writeIndices[k]! + 1) % bufLens[k]!;
-    }
-    out[0] = 0.5 * (y[0]! - y[1]! + y[2]! - y[3]! + y[4]! - y[5]! + y[6]! - y[7]!);
-    out[1] = 0.5 * (y[0]! + y[1]! - y[2]! - y[3]! - y[4]! - y[5]! + y[6]! + y[7]!);
+  const delays = Int32Array.from(FDN_BASE_DELAYS, (d) => Math.max(32, Math.round(d * sizeScale)));
+  const depths = Float64Array.from(LFO_DEPTH_SAMPLES, (d, i) =>
+    Math.min(d * rateScale, delays[i]! * 0.25),
+  );
+  const masks = new Int32Array(8);
+  const lines: Float64Array[] = [];
+  const lfoS = new Float64Array(8);
+  const lfoC = new Float64Array(8);
+  const lfoEps = new Float64Array(8);
+  for (let k = 0; k < 8; k += 1) {
+    const bufLen = nextPow2(delays[k]! + Math.ceil(depths[k]!) + 4);
+    masks[k] = bufLen - 1;
+    lines.push(new Float64Array(bufLen));
+    const phi0 = (k * Math.PI) / 4;
+    const w = (2 * Math.PI * LFO_RATES_HZ[k]!) / rate;
+    lfoEps[k] = 2 * Math.sin(w * 0.5);
+    lfoS[k] = Math.sin(phi0);
+    lfoC[k] = Math.cos(phi0 - w * 0.5);
+  }
+  return {
+    delays,
+    depths,
+    masks,
+    lines,
+    writeIndices: new Int32Array(8),
+    lfoS,
+    lfoC,
+    lfoEps,
+    lp: new Float64Array(8),
+    hpState: new Float64Array(8),
+    y: new Float64Array(8),
+    mixed: new Float64Array(8),
+    gains: Float64Array.from(delays, (len) => 10 ** ((-3 * len) / (params.decay * rate))),
+    damp: 1 - Math.exp((-2 * Math.PI * params.damping) / rate),
+    hpAlpha: 1 - Math.exp((-2 * Math.PI * 120) / rate),
   };
 };
 
-/** Deterministic ER + 2-stage Schroeder diffuser + modulated FDN-8 stereo space. */
+const stepFdn8 = (st: FdnState, inL: number, inR: number, out: Float64Array): void => {
+  for (let k = 0; k < 8; k += 1) {
+    const mask = st.masks[k]!;
+    const s = st.lfoS[k]! + st.lfoEps[k]! * st.lfoC[k]!;
+    st.lfoC[k] = st.lfoC[k]! - st.lfoEps[k]! * s;
+    st.lfoS[k] = s;
+    const readPos = st.writeIndices[k]! - (st.delays[k]! + st.depths[k]! * s);
+    const r0 = Math.floor(readPos);
+    const frac = readPos - r0;
+    const i0 = r0 & mask;
+    const line = st.lines[k]!;
+    st.y[k] = line[i0]! * (1 - frac) + line[(i0 + 1) & mask]! * frac;
+  }
+  hadamard8(st.y, st.mixed);
+  for (let k = 0; k < 8; k += 1) {
+    st.lp[k] = st.lp[k]! + st.damp * (st.mixed[k]! * st.gains[k]! - st.lp[k]!);
+    st.hpState[k] = st.hpState[k]! + st.hpAlpha * (st.lp[k]! - st.hpState[k]!);
+    const fb = st.lp[k]! - st.hpState[k]!;
+    const inj = (inL * INPUT_SIGNS_L[k]! + inR * INPUT_SIGNS_R[k]!) * INV_SQRT8;
+    const wIdx = st.writeIndices[k]!;
+    st.lines[k]![wIdx] = inj + fb;
+    st.writeIndices[k] = (wIdx + 1) & st.masks[k]!;
+  }
+  const y = st.y;
+  out[0] = 0.5 * (y[0]! - y[1]! + y[2]! - y[3]! + y[4]! - y[5]! + y[6]! - y[7]!);
+  out[1] = 0.5 * (y[0]! + y[1]! - y[2]! - y[3]! - y[4]! - y[5]! + y[6]! + y[7]!);
+};
+
+/** Deterministic True-Stereo ER + crossed all-pass diffuser + dual-input FDN-8 stereo space. */
 export const applySpace = (
   pcm: Float64Array,
   channels: 1 | 2,
@@ -262,11 +349,13 @@ export const applySpace = (
   const params = resolveSpaceParams(space, rate);
   if (params.mix === 0) return pcm;
   const frames = pcm.length / channels;
-  const preDelay = createPreDelay(params.preDelayMs, rate);
-  const early = createEarlyReflections(params.size, rate);
-  const diffuse = createDiffuser(rate);
-  const fdn = createFdn8(params, rate);
+  const preDelayL = createPreDelay(params.preDelayMs, rate);
+  const preDelayR = createPreDelay(params.preDelayMs, rate);
+  const early = createStereoEarlyReflections(params.size, rate);
+  const diffuse = createCrossedDiffuser(rate);
+  const fdn = initFdnState(params, rate);
   const erOut = new Float64Array(2);
+  const diffOut = new Float64Array(2);
   const fdnOut = new Float64Array(2);
   const out = new Float64Array(pcm.length);
   const dry = Math.cos(params.mix * Math.PI * 0.5);
@@ -274,10 +363,12 @@ export const applySpace = (
 
   for (let i = 0; i < frames; i += 1) {
     const lIn = pcm[i * channels]!;
-    const rIn = channels === 2 ? pcm[i * channels + 1]! : lIn;
-    const pre = preDelay(0.5 * (lIn + rIn));
-    early(pre, erOut);
-    fdn(diffuse(pre), fdnOut);
+    const rIn = channels === 2 ? pcm[i * 2 + 1]! : lIn;
+    const preL = preDelayL(lIn);
+    const preR = preDelayR(rIn);
+    early(preL, preR, erOut);
+    diffuse(preL, preR, diffOut);
+    stepFdn8(fdn, diffOut[0]!, diffOut[1]!, fdnOut);
     const wetL = params.erGain * erOut[0]! + params.fdnGain * fdnOut[0]!;
     const wetR = params.erGain * erOut[1]! + params.fdnGain * fdnOut[1]!;
     const mid = 0.5 * (wetL + wetR);

@@ -8,8 +8,10 @@ import { frame } from './curve';
 import { readRecipe, readRecipeWithBudget } from './read';
 import type { SoundProduct, SoundRecipe } from './contract';
 export {
+  applySoundDefaults,
   parseSoundSource,
   parseSoundUnit,
+  resolveSoundParams,
   type SoundImportDecl,
   type SoundNamedDecl,
   type SoundOutputRaw,
@@ -52,20 +54,28 @@ export type {
   EnvelopeControl,
   GainControl,
   FilterSpec,
+  VoiceEqSpec,
+  VoiceDriveSpec,
+  VoiceFxItem,
+  VoiceDuckSpec,
+  VoiceDriftSpec,
   SpaceSpec,
   MasterSpec,
   MaterialPreset,
   GranularTexture,
   SpacePreset,
+  WaveguideModel,
   MaterialSource,
   GranularSource,
+  WhooshSource,
+  WaveguideSource,
 } from './contract';
 
 const renderVariantProduct = (
   recipe: SoundRecipe,
   variant: SoundRecipe['variants'][number],
 ): SoundProduct => {
-  const channels = recipe.channels ?? 1;
+  const channels = recipe.channels ?? 2;
   const pcm = master(
     bakeLoop(renderValidatedRecipe(recipe, variant.id), recipe.playback, channels),
     recipe.output,

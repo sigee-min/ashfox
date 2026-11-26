@@ -1,4 +1,4 @@
-import type { SoundRecipe, Control } from '../../src';
+import type { Control, GainControl, SoundRecipe, SoundSource, SoundVoice } from '../../src';
 
 export const envelope = (peak = 1): Control => ({
   domain: 'linear',
@@ -16,6 +16,7 @@ export const fixture = (): SoundRecipe => ({
   profile: 'ui',
   duration: 1,
   sample_rate: 48000,
+  channels: 1,
   seed: 123,
   voices: [
     {
@@ -52,8 +53,8 @@ export const fixture = (): SoundRecipe => ({
   output: { gainDb: -12, peakDb: -3 },
 });
 
-const SNAKE_MAP: Readonly<Record<string, string>> = {
-  pitchCents: 'pitch_cents',
+const KEY_SNAKE: Record<string, string> = {
+  pulseWidth: 'pulse_width',
   detuneCents: 'detune_cents',
   vibratoHz: 'vibrato_hz',
   vibratoCents: 'vibrato_cents',
@@ -61,127 +62,162 @@ const SNAKE_MAP: Readonly<Record<string, string>> = {
   trillCents: 'trill_cents',
   trillDepth: 'trill_depth',
   jitterCents: 'jitter_cents',
-  pulseWidth: 'pulse_width',
+  twinBeat: 'twin_beat',
+  stereoSpread: 'stereo_spread',
   grainMs: 'grain_ms',
-  pitchDropCents: 'pitch_drop_cents',
-  pitchDropSeconds: 'pitch_drop_seconds',
-  preDelayMs: 'pre_delay',
-  gainDb: 'gain_db',
-  peakDb: 'peak_db',
-  targetLufs: 'target_lufs',
+  stereoWidth: 'stereo_width',
+  itdMs: 'itd_ms',
+  sweepPan: 'sweep_pan',
+  noiseTone: 'noise_tone',
+  bowPressure: 'bow_pressure',
 };
 
-const fmtCtrl = (v: unknown): string => {
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+const FIELD_UNIT: Record<string, string> = {
+  pitch: 'hz',
+  vibratoHz: 'hz',
+  trillHz: 'hz',
+  detuneCents: 'cents',
+  vibratoCents: 'cents',
+  trillCents: 'cents',
+  jitterCents: 'cents',
+  grainMs: 'ms',
+  itdMs: 'ms',
+};
+
+const fmtCtrl = (c: Control, unit = ''): string => {
+  if (typeof c === 'number') return `${c}${unit}`;
+  const fn = c.domain === 'log' ? 'log' : c.interpolation === 'smooth' ? 'smooth' : 'lin';
+  return `${fn}(${c.points.map((p) => `${p.at}: ${p.value}${unit}`).join(' -> ')})`;
+};
+
+const fmtGain = (g: GainControl): string => {
+  if (typeof g === 'object' && 'env' in g) {
+    const parts = [
+      `env = ${g.env}`,
+      `attack = ${g.attack}s`,
+      ...(g.env === 'adsr'
+        ? [`decay = ${g.decay}s`, `sustain = ${g.sustain}`, `release = ${g.release}s`]
+        : []),
+      ...(g.peak !== undefined ? [`peak = ${g.peak}`] : []),
+      ...(g.curve !== undefined ? [`curve = ${g.curve}`] : []),
+    ];
+    return `gain { ${parts.join('; ')}; }`;
+  }
+  return `gain = ${fmtCtrl(g)};`;
+};
+
+const fmtAttrVal = (k: string, v: unknown): string => {
+  if (Array.isArray(v)) return `(${v.map((x) => fmtAttrVal(k, x)).join(', ')})`;
   if (typeof v === 'string') return v;
-  if (Array.isArray(v)) return `[${v.map(fmtCtrl).join(', ')}]`;
-  if (v && typeof v === 'object' && 'points' in v) {
-    const c = v as {
-      domain: string;
-      interpolation: string;
-      points: { at: number; value: number }[];
-    };
-    const pts = c.points.map((p) => `(${p.at}, ${p.value})`).join(', ');
-    return `{ domain = ${c.domain}; interpolation = ${c.interpolation}; points = [${pts}]; }`;
-  }
-  return String(v);
+  const unit = FIELD_UNIT[k] ?? '';
+  return typeof v === 'number' || (v && typeof v === 'object' && 'points' in v)
+    ? fmtCtrl(v as Control, unit)
+    : String(v);
 };
 
-const fmtFormants = (formants: readonly unknown[]): string => {
-  const items = formants.map((f) => {
-    if (typeof f === 'number') return String(f);
-    const c = f as { points: { at: number; value: number }[]; interpolation: string };
-    const vals = c.points.map((p) => String(p.value));
-    return c.interpolation === 'linear' ? vals.join(' -> ') + ' linear' : vals.join(' -> ');
-  });
-  return `    formants = [${items.join(', ')}];`;
+const fmtVoice = (v: SoundVoice): string => {
+  const s = v.source as unknown as Record<string, unknown>;
+  const lines = Object.entries(s)
+    .filter(([k, val]) => k !== 'kind' && val !== undefined)
+    .map(([k, val]) => `${KEY_SNAKE[k] ?? k} = ${fmtAttrVal(k, val)};`);
+  if (v.highpass !== undefined) lines.push(`highpass = ${fmtCtrl(v.highpass, 'hz')};`);
+  if (v.lowpass !== undefined) lines.push(`lowpass = ${fmtCtrl(v.lowpass, 'hz')};`);
+  if (v.filter) {
+    const q = v.filter.q !== undefined ? ` q = ${fmtCtrl(v.filter.q)};` : '';
+    lines.push(`filter : ${v.filter.kind} { cutoff = ${fmtCtrl(v.filter.cutoff, 'hz')};${q} }`);
+  }
+  if (v.drive !== undefined) {
+    lines.push(
+      typeof v.drive === 'number'
+        ? `drive = ${v.drive};`
+        : `drive : ${v.drive.mode} { amount = ${v.drive.amount}; }`,
+    );
+  }
+  if (v.pan !== undefined) lines.push(`pan = ${fmtCtrl(v.pan)};`);
+  lines.push(fmtGain(v.gain));
+  return `  voice ${v.id} : ${v.source.kind} {\n    ${lines.join('\n    ')}\n  }`;
 };
 
-const fmtProp = (k: string, v: unknown, ind: string): string => {
-  const sk = SNAKE_MAP[k] ?? k;
-  if (k === 'formants' && Array.isArray(v)) return fmtFormants(v);
-  if (v && typeof v === 'object' && !Array.isArray(v) && 'points' in v) {
-    return `${ind}${sk} ${fmtCtrl(v)}`;
-  }
-  if (v && typeof v === 'object' && !Array.isArray(v)) {
-    const rec = v as Record<string, unknown>;
-    const tag = 'kind' in rec ? ` ${String(rec.kind)}` : '';
-    const inner = Object.entries(rec)
-      .filter(([ek]) => ek !== 'kind')
-      .map(([ek, ev]) => fmtProp(ek, ev, ind + '  '))
-      .join('\n');
-    return `${ind}${sk}${tag} {\n${inner}\n${ind}}`;
-  }
-  return `${ind}${sk} = ${fmtCtrl(v)};`;
+const SPACE_FIELDS: Record<string, readonly [string, string]> = {
+  preset: ['preset', ''],
+  mix: ['mix', ''],
+  decay: ['decay', 's'],
+  damping: ['damping', 'hz'],
+  size: ['size', ''],
+  preDelayMs: ['pre_delay_ms', 'ms'],
+  width: ['width', ''],
+};
+
+const VARY_FIELDS: Record<string, readonly [string, string]> = {
+  timing: ['vary_timing', 's'],
+  pitchCents: ['vary_pitch', 'cents'],
+  gain: ['vary_gain', ''],
+  duration: ['vary_duration', ''],
 };
 
 export const native = (recipe: SoundRecipe): string => {
-  const lines = [`ashfox 1`, `sound ${recipe.id} {`];
-  lines.push(`  profile = ${recipe.profile};`);
-  lines.push(`  duration = ${recipe.duration}s;`);
-  if (recipe.channels !== undefined) lines.push(`  channels = ${recipe.channels};`);
-  lines.push(`  seed = ${recipe.seed};`);
+  const lines: string[] = [
+    `  profile = ${recipe.profile};`,
+    `  duration = ${recipe.duration}s;`,
+    `  sample_rate = ${recipe.sample_rate}hz;`,
+    ...(recipe.channels !== undefined ? [`  channels = ${recipe.channels};`] : []),
+    `  seed = ${recipe.seed};`,
+  ];
   if (recipe.space) {
-    lines.push(
-      `  space {\n${Object.entries(recipe.space)
-        .map(([k, v]) => fmtProp(k, v, '    '))
-        .join('\n')}\n  }`,
-    );
+    const attrs = Object.entries(recipe.space)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => {
+        const [sk, u] = SPACE_FIELDS[k] ?? [k, ''];
+        return `${sk} = ${v}${u};`;
+      })
+      .join(' ');
+    lines.push(`  space { ${attrs} }`);
   }
-  for (const v of recipe.voices) {
-    const src = v.source as unknown as Record<string, unknown>;
-    lines.push(`  voice ${v.id} : ${String(src.kind)} {`);
-    for (const [k, val] of Object.entries(src)) {
-      if (k === 'kind') continue;
-      if (k === 'modes' && Array.isArray(val)) {
-        for (const m of val as Record<string, unknown>[]) {
-          lines.push(
-            `    mode ${String(m.id)} { hz = ${m.hz}hz; decay = ${m.decay}s; gain = ${m.gain}; }`,
-          );
-        }
-      } else lines.push(fmtProp(k, val, '    '));
+  for (const v of recipe.voices) lines.push(fmtVoice(v));
+  for (const seq of recipe.sequences) {
+    const inner: string[] = [`    start = ${seq.start}s;`];
+    if (seq.repeat && seq.repeat.count > 1) {
+      inner.push(`    repeat { count = ${seq.repeat.count}; period = ${seq.repeat.period}s; }`);
     }
-    for (const [vk, vv] of Object.entries(v)) {
-      if (vk === 'id' || vk === 'source' || vv === undefined) continue;
-      lines.push(fmtProp(vk, vv, '    '));
+    for (const st of seq.steps) {
+      const attrs = [
+        `voice = ${st.voice};`,
+        `at = ${st.at}s;`,
+        `duration = ${st.duration}s;`,
+        ...(st.gain !== undefined ? [`gain = ${st.gain};`] : []),
+        ...(st.pitchCents !== undefined ? [`pitch = ${st.pitchCents}cents;`] : []),
+        ...(st.vary
+          ? Object.entries(st.vary)
+              .filter(([, r]) => r !== undefined)
+              .map(([k, r]) => {
+                const [vk, u] = VARY_FIELDS[k]!;
+                const [a, b] = r as readonly [number, number];
+                return `${vk} = ${a}${u}..${b}${u};`;
+              })
+          : []),
+      ];
+      inner.push(`    step ${st.id} { ${attrs.join(' ')} }`);
     }
-    lines.push(`  }`);
+    lines.push(`  seq ${seq.id} {\n${inner.join('\n')}\n  }`);
   }
-  for (const s of recipe.sequences) {
-    lines.push(`  seq ${s.id} {\n    start = ${s.start}s;`);
-    if (s.repeat)
-      lines.push(`    repeat { count = ${s.repeat.count}; period = ${s.repeat.period}s; }`);
-    for (const st of s.steps) {
-      lines.push(`    step ${st.id} {`);
-      lines.push(`      voice = ${st.voice}; at = ${st.at}s; duration = ${st.duration}s;`);
-      if (st.gain !== undefined) lines.push(`      gain = ${st.gain};`);
-      if (st.pitchCents !== undefined) lines.push(`      pitch_cents = ${st.pitchCents}cents;`);
-      if (st.vary) {
-        if (st.vary.timing)
-          lines.push(`      vary_timing = ${st.vary.timing[0]}s..${st.vary.timing[1]}s;`);
-        if (st.vary.pitchCents)
-          lines.push(
-            `      vary_pitch = ${st.vary.pitchCents[0]}cents..${st.vary.pitchCents[1]}cents;`,
-          );
-        if (st.vary.gain) lines.push(`      vary_gain = ${st.vary.gain[0]}..${st.vary.gain[1]};`);
-        if (st.vary.duration)
-          lines.push(`      vary_duration = ${st.vary.duration[0]}..${st.vary.duration[1]};`);
-      }
-      lines.push(`    }`);
-    }
-    lines.push(`  }`);
-  }
-  for (const vr of recipe.variants) lines.push(`  variant ${vr.id} { seed = ${vr.seed}; }`);
-  if (recipe.playback.kind === 'loop') {
-    lines.push(
-      `  loop { at = ${recipe.playback.start}s..${recipe.playback.end}s; xfade = ${recipe.playback.crossfade}s; }`,
-    );
-  }
+  lines.push(`  variants { ${recipe.variants.map((v) => `${v.id} = ${v.seed};`).join(' ')} }`);
   lines.push(
-    `  output {\n${Object.entries(recipe.output)
-      .map(([k, v]) => fmtProp(k, v, '    '))
-      .join('\n')}\n  }`,
+    recipe.playback.kind === 'oneshot'
+      ? '  playback = oneshot;'
+      : `  loop { at = ${recipe.playback.start}s..${recipe.playback.end}s; xfade = ${recipe.playback.crossfade}s; }`,
   );
-  lines.push('}');
-  return lines.join('\n');
+  const m = recipe.output;
+  const mAttrs = [
+    `gain = ${m.gainDb}db;`,
+    `peak = ${m.peakDb}db;`,
+    ...(m.targetLufs !== undefined ? [`target = ${m.targetLufs}lufs;`] : []),
+    ...(m.punch !== undefined ? [`punch = ${m.punch};`] : []),
+    ...(m.warmth !== undefined ? [`warmth = ${m.warmth};`] : []),
+    ...(m.air !== undefined ? [`air = ${m.air};`] : []),
+    ...(m.glue !== undefined ? [`glue = ${m.glue};`] : []),
+    ...(m.width !== undefined ? [`width = ${m.width};`] : []),
+    ...(m.limit ? ['limit = true;'] : []),
+  ];
+  lines.push(`  master { ${mAttrs.join(' ')} }`);
+  return `ashfox 1\nsound ${recipe.id} {\n${lines.join('\n')}\n}`;
 };
