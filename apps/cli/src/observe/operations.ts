@@ -179,7 +179,17 @@ const buildStructureCutSlices = (
 const structurePayload = (
   structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
   v: ViewOptions,
+  gif: boolean,
 ) => {
+  if (gif) {
+    return {
+      document: buildStructureDocument(
+        structure.grid,
+        structure.customModels,
+        v.cutaway !== undefined ? { cutawayY: v.cutaway } : undefined,
+      ),
+    };
+  }
   const hasBaked = structure.bakedMesh.batches.length > 0;
   const bakedMesh =
     hasBaked && v.cutaway !== undefined
@@ -207,11 +217,11 @@ const structurePayload = (
   };
 };
 
-const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
+const mediaPayload = (asset: Prepared, v: ViewOptions, gif: boolean): unknown => {
   if (asset.document) {
     if (v.texture) return { png: resolveTexture(asset.document, v.texture) };
     if (asset.product?.kind === 'structure') {
-      return structurePayload(asset.product.structure, v);
+      return structurePayload(asset.product.structure, v, gif);
     }
     return { document: asset.document };
   }
@@ -316,7 +326,9 @@ export const renderMedia = async (
   try {
     if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
     await renderer.start();
-    await renderer.evaluate('AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v)) + ')');
+    await renderer.evaluate(
+      'AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v, gif)) + ')',
+    );
     const reply = (await renderer.evaluate(
       'AshfoxObserver.capture(' + JSON.stringify(v) + ',' + gif + ')',
     )) as { mime: string; data: string };

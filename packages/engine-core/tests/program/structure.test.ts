@@ -339,11 +339,61 @@ structure lit_canopy {
   assert.ok(built.lighting.blockR[idx]! > 100 && built.lighting.blockB[idx]! > 80);
 };
 
+const testPlacedSemanticRooms = (): void => {
+  const src = `ashfox-model 1
+structure placed_rooms {
+  size = (24, 10, 24);
+  palette {
+    stone = "minecraft:stone_bricks";
+    plank = "minecraft:oak_planks";
+    door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
+  }
+  prefab HutA {
+    floor f0 y = 0 height = 4 {
+      room main_a from = (1, 1) size = (5, 5) kind = living plinth = stone floor = plank wall = stone ceiling = plank;
+      facade on main_a.south {
+        door at = center width = 1 height = 2 block = door;
+      }
+    }
+  }
+  prefab HutB {
+    floor f1 y = 0 height = 4 {
+      room main_b from = (0, 0) size = (4, 6) kind = living plinth = stone floor = plank wall = stone ceiling = plank;
+      facade on main_b.south {
+        door at = center width = 1 height = 2 block = door;
+      }
+    }
+  }
+  build {
+    place HutA at = (10, 0, 10) rotate = 0;
+    place HutB at = (8, 1, 2) rotate = 90;
+  }
+}`;
+  const built = compileStructureUnits(
+    'placed.ashfox',
+    new Map([['placed.ashfox', parseStructureSource(src, 'placed.ashfox')]]),
+    {},
+    relativePosix,
+  );
+  const roomA = built.grid.rooms.find((r) => r.name === 'main_a')!;
+  assert.deepEqual(roomA.from, [11, 0, 11]);
+  assert.deepEqual(roomA.to, [15, 4, 15]);
+  const [w, _h, d] = built.grid.size;
+  const doorIdx = (1 * d + 15) * w + 13;
+  assert.ok(built.grid.states[built.grid.voxels[doorIdx]!]?.startsWith('minecraft:oak_door'));
+
+  const roomB = built.grid.rooms.find((r) => r.name === 'main_b')!;
+  assert.deepEqual(roomB.from, [3, 1, 2]);
+  assert.deepEqual(roomB.to, [8, 5, 5]);
+  assert.equal(built.grid.openings.find((o) => o.room === 'main_b')?.wall, 'west');
+};
+
 const main = async (): Promise<void> => {
   testParserAndSemanticDsl();
   testLowLevelGridAndHonestBareAudit();
   await testBakedGreedyInstancingAndHygiene();
   testLightingRingAndMultiLightReRelaxation();
+  testPlacedSemanticRooms();
   testCanonicalWorkspaceShowcases();
   console.log('ashfox structure compiler v2 tests ok');
 };

@@ -124,6 +124,14 @@ const verifyStructureCutaway = () => {
   png(interior, 240, 180);
   assert.notDeepEqual(ext, cutSheet);
   assert.notDeepEqual(ext, interior);
+
+  const gif = renderPreview(
+    cottage,
+    'kind = gif; mode = turntable; width = 128; height = 96; duration = 0.25; fps = 4;',
+    cottageMods,
+    name,
+  );
+  assert.equal(gif.subarray(0, 6).toString(), 'GIF89a');
 };
 
 async function main() {

@@ -1,6 +1,5 @@
 import {
   MAX_STRUCTURE_OPS,
-  type BlockRotation,
   type CardinalFacing,
   type ExprVec2,
   type ExprVec3,
@@ -27,7 +26,14 @@ import {
 import type { StructureFloorMeta, StructureGrid } from './contract';
 import { emitRoomShell } from './facade';
 import {
-  buildSocketMeta,
+  buildFrameRoofOp,
+  composeRotation,
+  runWeatherAndSocketOp,
+  transformAnchor,
+  transformFacing,
+  transformRoomBounds,
+} from './frameOps';
+import {
   finalizeEvaluatedGrid,
   putUnprotected,
   putVoxel,
@@ -42,7 +48,6 @@ import { collectPrefabLocalBounds, computeAnchoredOffset } from './staircase';
 import {
   IDENTITY_FRAME,
   applyFrame,
-  applyWeatheringRules,
   composeFrames,
   createEvalState,
   emitLayerOp,
@@ -70,6 +75,7 @@ const evalRoomOp = (
   state: EvalState,
   ownerPath: string,
   op: Extract<StructureOp, { op: 'room' }>,
+  frame: FrameTransform,
 ): void => {
   const floor = state.currentFloor;
   if (!floor)
@@ -82,12 +88,13 @@ const evalRoomOp = (
   const [rw, rd] = evalVec2(state, ownerPath, op.size);
   if (rw < 3 || rd < 3)
     return failEval(ownerPath, 'structure.invalid-room', `Room "${op.name}" size >= 3x3`);
+  const bounds = transformRoomBounds(rx, rz, rw, rd, floor.y, floor.height, frame);
   const meta = emitRoomShell(
     {
       name: op.name,
       kind: op.kind,
-      from: [rx, floor.y, rz],
-      to: [rx + rw - 1, floor.y + floor.height, rz + rd - 1],
+      from: bounds.from,
+      to: bounds.to,
       plinth: op.plinth,
       floor: op.floor,
       wall: op.wall,
@@ -96,8 +103,8 @@ const evalRoomOp = (
     },
     ownerPath,
     state.rooms,
-    (p, s, a) => putVoxel(state, ownerPath, p, s, a),
-    (p, s, a) => putUnprotected(state, ownerPath, p, s, a),
+    (p, s, a) => putVoxel(state, ownerPath, p, transformBlockState(s, frame), a),
+    (p, s, a) => putUnprotected(state, ownerPath, p, transformBlockState(s, frame), a),
     (k, o, p) => resolvePaletteEntry(state, k, o, p),
     (c, m) => failEval(ownerPath, c, m),
   );
@@ -112,7 +119,7 @@ const evalFloorOp = (
   frame: FrameTransform,
   depth: number,
 ): void => {
-  const y = evalScalar(state, ownerPath, op.y);
+  const y = evalScalar(state, ownerPath, op.y) + frame.offset[1];
   const height = evalScalar(state, ownerPath, op.height);
   if (height < 3 || y < 0 || y + height >= state.size[1])
     failEval(ownerPath, 'structure.invalid-floor', `Floor "${op.name}" out of height`);
@@ -131,6 +138,7 @@ const evalFurnishOp = (
   state: EvalState,
   ownerPath: string,
   op: Extract<StructureOp, { op: 'furnish' }>,
+  frame: FrameTransform,
   depth: number,
 ): void => {
   const room = state.rooms.get(op.room);
@@ -159,7 +167,7 @@ const evalFurnishOp = (
       state.usedPrefabs,
       failEval,
     );
-    const rot: BlockRotation = item.rotate ?? 0;
+    const rot = composeRotation(item.rotate ?? 0, frame);
     const pts = collectPrefabLocalBounds(
       target.ops,
       rot,
@@ -168,9 +176,14 @@ const evalFurnishOp = (
       (s) => evalScalar(state, target.targetPath, s),
     );
     const sub: FrameTransform = {
-      offset: computeAnchoredOffset(room, pts, item.on, item.offset ?? [0, 0]),
+      offset: computeAnchoredOffset(
+        room,
+        pts,
+        transformAnchor(item.on, frame),
+        item.offset ?? [0, 0],
+      ),
       rotate: rot,
-      mirrorX: false,
+      mirrorX: frame.mirrorX,
     };
     for (const child of target.ops) evalOp(state, target.targetPath, child, sub, depth + 1);
   }
@@ -253,25 +266,28 @@ const evalStairOp = (
   state: EvalState,
   ownerPath: string,
   op: Extract<StructureOp, { op: 'staircase' }>,
+  frame: FrameTransform,
 ): void => {
   const room = op.inRoom ? (state.rooms.get(op.inRoom) ?? null) : null;
   if (op.inRoom && !room)
     failEval(ownerPath, 'structure.unknown-room', `Unknown room "${op.inRoom}"`);
   const yFrom =
     op.yFrom !== undefined
-      ? evalScalar(state, ownerPath, op.yFrom)
+      ? evalScalar(state, ownerPath, op.yFrom) + frame.offset[1]
       : (room?.from[1] ?? state.currentFloor?.y ?? 0);
   const yTo =
     op.yTo !== undefined
-      ? evalScalar(state, ownerPath, op.yTo)
+      ? evalScalar(state, ownerPath, op.yTo) + frame.offset[1]
       : (room?.to[1] ??
         (state.currentFloor ? state.currentFloor.y + state.currentFloor.height : yFrom + 4));
+  const [lx, lz] = evalVec2(state, ownerPath, op.at);
+  const [wx, _wy, wz] = applyFrame([lx, 0, lz], frame);
   runStaircaseOp(
     ownerPath,
     state.size,
     state.voxels,
-    op,
-    evalVec2(state, ownerPath, op.at),
+    { ...op, facing: transformFacing(op.facing, frame) },
+    [wx, wz],
     yFrom,
     yTo,
     room,
@@ -290,16 +306,33 @@ const evalRoofOp = (
   op: Extract<StructureOp, { op: 'roof' }>,
   frame: FrameTransform,
 ): void => {
+  const mappedOp = buildFrameRoofOp(op, frame);
+  const worldPlaced = Boolean(op.on);
   const res = runRoofOp(
     ownerPath,
     state.size,
-    op,
+    mappedOp,
     op.from ? evalVec3(state, ownerPath, op.from) : null,
     op.to ? evalVec3(state, ownerPath, op.to) : null,
     state.rooms,
     (x, y, z, b, a) =>
-      putVoxel(state, ownerPath, applyFrame([x, y, z], frame), transformBlockState(b, frame), a),
-    (x, y, z) => putVoxel(state, ownerPath, applyFrame([x, y, z], frame), 'minecraft:air', null),
+      worldPlaced
+        ? putVoxel(state, ownerPath, [x, y, z], b, a)
+        : putVoxel(
+            state,
+            ownerPath,
+            applyFrame([x, y, z], frame),
+            transformBlockState(b, frame),
+            a,
+          ),
+    (x, y, z) =>
+      putVoxel(
+        state,
+        ownerPath,
+        worldPlaced ? [x, y, z] : applyFrame([x, y, z], frame),
+        'minecraft:air',
+        null,
+      ),
     (k, o, p) => resolvePaletteEntry(state, k, o, p ?? [0, 0, 0]),
     (c, m) => failEval(ownerPath, c, m),
   );
@@ -311,53 +344,6 @@ const evalRoofOp = (
   state.roofCells.push(...res.roofCells);
 };
 
-const evalWeatherAndSocket = (
-  state: EvalState,
-  ownerPath: string,
-  op: StructureOp,
-  frame: FrameTransform,
-): boolean => {
-  if (op.op === 'socket') {
-    if (state.socketIds.has(op.name))
-      failEval(ownerPath, 'structure.duplicate-socket', `Duplicate socket "${op.name}"`);
-    state.socketIds.add(op.name);
-    state.sockets.push(
-      buildSocketMeta(
-        op.name,
-        op.kind,
-        op.at ? applyFrame(evalVec3(state, ownerPath, op.at), frame) : null,
-        op.room ? state.rooms.get(op.room) : undefined,
-        op.wall,
-        op.normal,
-        op.pool,
-        op.target,
-        (c, m) => failEval(ownerPath, c, m),
-      ),
-    );
-    return true;
-  }
-  if (op.op === 'weathering') {
-    state.stats.weatheringCount += 1;
-    applyWeatheringRules(
-      {
-        seed: state.seed,
-        size: state.size,
-        voxels: state.voxels,
-        states: state.states,
-        rooms: [...state.rooms.values()],
-        roofCells: state.roofCells,
-        chimneyTops: state.chimneyTops,
-        ownerPath,
-        resolve: (k, o, p) => resolvePaletteEntry(state, k, o, p),
-        put: (x, y, z, s, a) => putVoxel(state, ownerPath, [x, y, z], s, a),
-      },
-      op.rules,
-    );
-    return true;
-  }
-  return false;
-};
-
 const evalSemanticOp = (
   state: EvalState,
   ownerPath: string,
@@ -366,14 +352,14 @@ const evalSemanticOp = (
   depth: number,
 ): boolean => {
   if (op.op === 'floor') evalFloorOp(state, ownerPath, op, frame, depth);
-  else if (op.op === 'room') evalRoomOp(state, ownerPath, op);
-  else if (op.op === 'staircase') evalStairOp(state, ownerPath, op);
+  else if (op.op === 'room') evalRoomOp(state, ownerPath, op, frame);
+  else if (op.op === 'staircase') evalStairOp(state, ownerPath, op, frame);
   else if (op.op === 'roof') evalRoofOp(state, ownerPath, op, frame);
   else if (op.op === 'facade') {
     state.stats.facadeCount += 1;
     runFacadeOp(
       ownerPath,
-      op,
+      { ...op, targets: op.targets.map((t) => ({ ...t, wall: transformFacing(t.wall, frame) })) },
       state.rooms,
       state.openings,
       (x, y, z, s, a) => putVoxel(state, ownerPath, [x, y, z], s, a),
@@ -381,9 +367,10 @@ const evalSemanticOp = (
       (k, o, p) => resolvePaletteEntry(state, k, o, p),
       (c, m) => failEval(ownerPath, c, m),
     );
-  } else if (op.op === 'furnish') evalFurnishOp(state, ownerPath, op, depth);
+  } else if (op.op === 'furnish') evalFurnishOp(state, ownerPath, op, frame, depth);
   else if (op.op === 'compound_place') evalCompoundPlace(state, ownerPath, op, frame);
-  else return evalWeatherAndSocket(state, ownerPath, op, frame);
+  else
+    return runWeatherAndSocketOp(state, ownerPath, op, frame, (v) => evalVec3(state, ownerPath, v));
   return true;
 };
 
