@@ -79,6 +79,7 @@ const mergeVoxels = (
   rotate: BlockRotation,
 ): void => {
   const [cw, _ch, cd] = child.size;
+  const rotatedStates = child.states.map((s) => rotateBlockState(s, rotate));
   for (let idx = 0; idx < child.voxels.length; idx += 1) {
     const v = child.voxels[idx]!;
     if (v < 0) continue;
@@ -87,14 +88,7 @@ const mergeVoxels = (
     const y = Math.floor(idx / (cw * cd));
     const [tx, ty, tz] = transformPoint([x, y, z], child.size, origin, rotate);
     if (v === 0) target.carve(tx, ty, tz);
-    else
-      target.put(
-        tx,
-        ty,
-        tz,
-        rotateBlockState(child.states[v]!, rotate),
-        child.customTags[idx] ?? null,
-      );
+    else target.put(tx, ty, tz, rotatedStates[v]!, child.customTags[idx] ?? null);
   }
 };
 

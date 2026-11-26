@@ -281,6 +281,26 @@ export const emitStaircase = (ctx: StairEvalContext, input: StaircaseInput): voi
   );
 };
 
+const computePtsBounds = (
+  pts: readonly IntVec3[],
+): { minX: number; maxX: number; minY: number; minZ: number; maxZ: number } => {
+  if (pts.length === 0) return { minX: 0, maxX: 0, minY: 0, minZ: 0, maxZ: 0 };
+  let minX = pts[0]![0];
+  let maxX = minX;
+  let minY = pts[0]![1];
+  let minZ = pts[0]![2];
+  let maxZ = minZ;
+  for (let i = 1; i < pts.length; i += 1) {
+    const [x, y, z] = pts[i]!;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+  return { minX, maxX, minY, minZ, maxZ };
+};
+
 export const computeAnchoredOffset = (
   room: StructureRoomMeta,
   pts: readonly IntVec3[],
@@ -292,11 +312,7 @@ export const computeAnchoredOffset = (
   const iz0 = room.from[2] + 1;
   const iz1 = room.to[2] - 1;
   const floorY = room.from[1] + 1;
-  const minX = pts.length ? Math.min(...pts.map((p) => p[0])) : 0;
-  const maxX = pts.length ? Math.max(...pts.map((p) => p[0])) : 0;
-  const minY = pts.length ? Math.min(...pts.map((p) => p[1])) : 0;
-  const minZ = pts.length ? Math.min(...pts.map((p) => p[2])) : 0;
-  const maxZ = pts.length ? Math.max(...pts.map((p) => p[2])) : 0;
+  const { minX, maxX, minY, minZ, maxZ } = computePtsBounds(pts);
   const rw = maxX - minX + 1;
   const rd = maxZ - minZ + 1;
   const ax =
