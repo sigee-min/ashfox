@@ -131,6 +131,7 @@ const checkOpeningBounds = (
     from: [Math.min(sx0, sx1), y0, Math.min(sz0, sz1)],
     to: [Math.max(sx0, sx1), y1, Math.max(sz0, sz1)],
     ...(spec.hinge ? { hinge: spec.hinge } : {}),
+    ...(spec.stainedGlassColor ? { stainedGlassColor: spec.stainedGlassColor } : {}),
   };
   for (const prev of ctx.existingOpenings) {
     if (prev.room !== meta.room || prev.wall !== meta.wall) continue;

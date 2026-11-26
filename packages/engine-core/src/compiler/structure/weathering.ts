@@ -7,6 +7,7 @@ import {
   type StructureSourceUnit,
   type WeatheringRule,
 } from '../../project/structure/contract';
+import type { InteriorRoomOp } from '../../project/structure/interiorDef';
 import {
   formatBlockState,
   mirrorBlockState,
@@ -46,6 +47,7 @@ export interface EvalState {
   readonly socketIds: Set<string>;
   readonly roofCells: IntVec3[];
   readonly chimneyTops: IntVec3[];
+  readonly interiorSpecs: { readonly ownerPath: string; readonly op: InteriorRoomOp }[];
   currentFloor: StructureFloorMeta | null;
   hasRoofTrim: boolean;
   roofCount: number;
@@ -106,6 +108,7 @@ export const createEvalState = (
     socketIds: new Set(),
     roofCells: [],
     chimneyTops: [],
+    interiorSpecs: [],
     currentFloor: null,
     hasRoofTrim: false,
     roofCount: 0,

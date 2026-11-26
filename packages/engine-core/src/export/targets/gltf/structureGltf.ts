@@ -41,6 +41,7 @@ interface MaterialRegistry {
   readonly texIndexById: ReadonlyMap<string, number>;
   readonly cache: Map<string, number>;
   usesTextureTransform: boolean;
+  usesUnlit: boolean;
 }
 
 interface GltfBuildCtx {
@@ -57,34 +58,50 @@ interface TexMeta {
 
 type TaggedPrimitive = GltfPrimitiveData & { readonly texMeta?: TexMeta };
 
+const applyModeOverrides = (
+  mat: GltfMaterial,
+  mode: StructureProduct['bakedMesh']['batches'][number]['layer'] | 'model',
+): void => {
+  if (mode === 'translucent' || mode === 'sun_shaft') {
+    mat.alphaMode = 'BLEND';
+    mat.pbrMetallicRoughness.baseColorFactor = [1, 1, 1, mode === 'sun_shaft' ? 0.35 : 0.45];
+  }
+  if (mode === 'sun_shaft') {
+    mat.extensions = { KHR_materials_unlit: {} };
+    mat.extras = { ashfoxBlendMode: 'additive' };
+  }
+};
+
 const getMaterialIndex = (
   reg: MaterialRegistry,
   tex: TextureAsset,
-  mode: 'opaque' | 'cutout' | 'emissive' | 'model',
+  mode: StructureProduct['bakedMesh']['batches'][number]['layer'] | 'model',
   masked = false,
   uvTransform?: UvTransform,
 ): number => {
   const isCutout = mode === 'cutout' || masked;
   const isEmissive = mode === 'emissive' || tex.renderMode === 'emissive';
-  const doubleSided = isCutout || tex.renderSides === 'double';
+  const doubleSided =
+    isCutout || mode === 'translucent' || mode === 'sun_shaft' || tex.renderSides === 'double';
   const uvKey = uvTransform
     ? `:uv(${uvTransform.offset[0]},${uvTransform.offset[1]},${uvTransform.scale[0]},${uvTransform.scale[1]})`
     : '';
-  const key = `${tex.id}:${isCutout ? 'M' : isEmissive ? 'E' : tex.renderMode}:${doubleSided ? 'D' : 'S'}${uvKey}`;
+  const key = `${tex.id}:${mode}:${isCutout ? 'M' : isEmissive ? 'E' : tex.renderMode}:${doubleSided ? 'D' : 'S'}${uvKey}`;
   const hit = reg.cache.get(key);
   if (hit !== undefined) return hit;
   if (uvTransform) reg.usesTextureTransform = true;
+  if (mode === 'sun_shaft') reg.usesUnlit = true;
   const idx = reg.materials.length;
-  reg.materials.push(
-    createGltfMaterial(
-      tex,
-      reg.texIndexById.get(tex.id)!,
-      isCutout,
-      doubleSided,
-      isEmissive,
-      uvTransform,
-    ),
+  const mat = createGltfMaterial(
+    tex,
+    reg.texIndexById.get(tex.id)!,
+    isCutout,
+    doubleSided,
+    isEmissive,
+    uvTransform,
   );
+  applyModeOverrides(mat, mode);
+  reg.materials.push(mat);
   reg.cache.set(key, idx);
   return idx;
 };
@@ -346,6 +363,7 @@ const collectStructureExtensions = (ctx: GltfBuildCtx) => {
     required.push('KHR_mesh_quantization');
   }
   if (ctx.matReg.usesTextureTransform) used.push('KHR_texture_transform');
+  if (ctx.matReg.usesUnlit) used.push('KHR_materials_unlit');
   if (ctx.usesGpuInstancing) used.push('EXT_mesh_gpu_instancing');
   return {
     ...(used.length > 0 ? { extensionsUsed: used } : {}),
@@ -396,7 +414,13 @@ export const buildStructureGltf = (
   const { images, samplers, texIndexById } = encodeGltfTextures(ordered, writer);
   const ctx: GltfBuildCtx = {
     textures,
-    matReg: { materials: [], texIndexById, cache: new Map(), usesTextureTransform: false },
+    matReg: {
+      materials: [],
+      texIndexById,
+      cache: new Map(),
+      usesTextureTransform: false,
+      usesUnlit: false,
+    },
     writer,
     usesGpuInstancing: false,
   };

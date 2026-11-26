@@ -2,13 +2,20 @@ import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
 import { structureTileTextureId } from './atlas';
-import type { BlockDescriptor, BlockRenderLayer } from './blocks';
-import type { StructureGrid, StructureLightingField, StructurePropInstance } from './contract';
+import type { BlockDescriptor } from './blocks';
+import type {
+  StructureBakedBatch,
+  StructureGrid,
+  StructureLightingField,
+  StructurePropInstance,
+} from './contract';
 import { FACE_BASIS, FACE_CORNER_TABLE, samplePropLightRgb } from './lighting';
 import type { CachedBlockState } from './shapes';
 
+export type BakedBatchLayer = StructureBakedBatch['layer'];
+
 export interface BatchDraft {
-  readonly layer: BlockRenderLayer;
+  readonly layer: BakedBatchLayer;
   readonly tileId: string;
   readonly textureId: string;
   readonly positions: number[];
@@ -25,6 +32,25 @@ export interface NonFullScratch {
   readonly colors: number[];
 }
 
+export const writeSpecBoxBounds = (
+  from: [number, number, number],
+  to: [number, number, number],
+  pos: readonly [number, number, number],
+  spec: {
+    readonly from: readonly [number, number, number];
+    readonly to: readonly [number, number, number];
+  },
+  hw: number,
+  hd: number,
+): void => {
+  from[0] = pos[0] + spec.from[0] / 16 - hw;
+  from[1] = pos[1] + spec.from[1] / 16;
+  from[2] = pos[2] + spec.from[2] / 16 - hd;
+  to[0] = pos[0] + spec.to[0] / 16 - hw;
+  to[1] = pos[1] + spec.to[1] / 16;
+  to[2] = pos[2] + spec.to[2] / 16 - hd;
+};
+
 export interface MeshCtx {
   readonly grid: StructureGrid;
   readonly descriptors: readonly BlockDescriptor[];
@@ -36,16 +62,22 @@ export interface MeshCtx {
 
 const LAYER_BATCH_CACHE = new WeakMap<
   Map<string, BatchDraft>,
-  Record<BlockRenderLayer, Map<string, BatchDraft>>
+  Record<BakedBatchLayer, Map<string, BatchDraft>>
 >();
 
 const layerMapFor = (
   batches: Map<string, BatchDraft>,
-  layer: BlockRenderLayer,
+  layer: BakedBatchLayer,
 ): Map<string, BatchDraft> => {
   let rec = LAYER_BATCH_CACHE.get(batches);
   if (!rec) {
-    rec = { opaque: new Map(), cutout: new Map(), emissive: new Map() };
+    rec = {
+      opaque: new Map(),
+      cutout: new Map(),
+      emissive: new Map(),
+      translucent: new Map(),
+      sun_shaft: new Map(),
+    };
     LAYER_BATCH_CACHE.set(batches, rec);
   }
   return rec[layer];
@@ -53,7 +85,7 @@ const layerMapFor = (
 
 export const getBatch = (
   batches: Map<string, BatchDraft>,
-  layer: BlockRenderLayer,
+  layer: BakedBatchLayer,
   tileId: string,
 ): BatchDraft => {
   const byTile = layerMapFor(batches, layer);

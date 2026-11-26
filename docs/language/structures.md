@@ -49,12 +49,43 @@ Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and
 | `facade <targets> { door { … } window { … } arch { … } bay_window { … } arcade { … } }` | Place doors (with `porch { … }`), shuttered windows, `bay_window` alcoves, `arcade` colonnades, and arches |
 | `staircase { in_room = r; style = straight\|l_turn\|u_turn\|spiral; at = (x, z); … }` | Generate stairs with protected `>= 2b` headroom and automatic upper-slab cuts |
 | `roof { on = r; style = gable\|hip\|pyramid\|spire; axis = x\|z; … }` | Build pitched stair roofs or `spire` turrets with dormers and chimneys |
+| `interior [room] { dna { … } architecture { … } … }` | Author cross-genre 5-layer interior shells, sculpted volumes, props, drapery, tabletop stories, 2-bounce radiosity GI, and volumetric `sun_shaft` beams |
 | `furnish room { place_anchor { … } hang { … } }` | Anchor furniture prefabs to corners/walls/center and hang ceiling lights |
 | `weathering { ground_moss { … } corner_quoin { … } chimney_soot { … } }` | Apply deterministic ground moss, corner quoins, and chimney soot |
 | `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | Record world-connection connectors and typed gameplay anchors in `.structure.json`, `.hooks.json`, glTF `anchor_*` Empty Nodes, and `.nbt` jigsaw/block entities |
 | `zone id [: std.courtyard] { … }` | Record semantic circulation or courtyard enclosure regions |
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | Place an imported child `structure` inside a `compound` unit |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | Low-level voxel, ASCII floorplan (`layer { at = …; rows = […]; map { … } }`), repeat/mirror, and prefab placement ops |
+
+## Interior architecture, props, and radiosity
+
+Nest `interior { … }` directly inside a `room` block (or declare `interior room_id { … }` at `structure` top level) to compose genre-coherent interiors in `1/16` sub-voxel space without stair/slab furniture hacks:
+
+```text
+interior {
+  dna { arch = japanese; mood = zen_daylight; }
+  architecture { floor_pattern = tatami; baseboard = trim; wainscot = shoji_lattice; molding = timber_cornice; ceiling = slatted; }
+  platform dais {
+    on = north; size = (5, 2); height = 0.25; step_facing = south;
+    alcove tokonoma { kind = tokonoma; wall = north; width = 3; height = 3; }
+  }
+  partition screen { style = sliding_shoji; axis = x; at = 9; span_from = 2; span_to = 14; doorway_at = 7; doorway_width = 2; open_ratio = 0.45; }
+  centerpiece {
+    on = center;
+    low_table chabudai { size = (2, 2); }
+    cushion { on = west; }
+    story tea_ceremony { on = chabudai; }
+  }
+  drapery noren { kind = noren; on = doors; split_panels = 3; color = "#243b55"; }
+  lighting { bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.25; }
+  sun_shaft { enabled = true; sun_dir = (0.3, -0.75, 0.58); intensity = 0.5; shaft_length = 6.0; }
+}
+```
+
+- `dna { arch = …; [furn = …;] [mood = …;] [organic = 0..1;] }`: select closed architectural style DNA (`rustic`, `japanese`, `modern`, `scifi`, `gothic`, `desert`, `industrial`, `nordic`) and radiosity mood (`warm_hearth`, `zen_daylight`, `minimal_bright`, `cyber_neon`, `arcane_dusk`, `sunbaked_ochre`).
+- `architecture`: override the 5-layer shell (`floor_pattern`, `baseboard`, `wainscot`, `molding`, `ceiling`), including `open_truss`, `slatted`, `coffered`, `vault`, `led_strip`, and `neon_channel`.
+- Volumes & anchors: `platform` / `sunken`, `mezzanine`, `open_truss`, `alcove`, `partition`, `wall_line`, `centerpiece`, and `corner` support nested furniture (`dining_set`, `l_counter`, `low_table`, `cushion`, `sofa`, `shelving`, `terminal`, `console_terminal`, `holo_screen`, `barrel_rack`, `cabinet`), hanging `drapery` (`curtains`, `noren`, `banner`, `chains`, `cables`, `pipes`), and tabletop `story` vignettes (`tavern_meal`, `tea_ceremony`, `scholar_study`, `modern_workspace`, `scifi_diagnostics`, `hearth_prep`, `alchemy_brew`).
+- Radiosity, sun shafts, and stained glass: `facade` `window`/`bay_window` entries accept `stained_glass_color = "#hex"` to render double-sided translucent glass panes and tinted 2-bounce indirect GI + volumetric `sun_shaft` additive quads. The BFS solver enforces `>= 2b` Minecraft `.nbt` (`data_version = 3955`) headroom, zero floating blocks, and unobstructed openings.
 
 ## Complete canonical example
 

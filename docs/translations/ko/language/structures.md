@@ -41,6 +41,7 @@
 | `facade <targets> { door { … } window { … } arch { … } bay_window { … } arcade { … } }` | 문(`porch { … }` 포함), 덧창 창문, `bay_window`, `arcade`, 아치 배치 |
 | `staircase { in_room = r; style = straight\|l_turn\|u_turn\|spiral; at = (x, z); … }` | 최소 머리 공간(`>= 2b`)과 상층 바닥 개구부를 갖춘 계단 생성 |
 | `roof { on = r; style = gable\|hip\|pyramid\|spire; axis = x\|z; … }` | 처마·트림·도머·굴뚝이 포함된 경사 지붕 및 `spire` 첨탑 생성 |
+| `interior [room] { dna { … } architecture { … } … }` | 장르별 5겹 실내 외피, 볼륨 분할, 소품·드레이퍼리·스토리 비네트, 2바운스 라디오시티 GI 및 볼류메트릭 `sun_shaft` 선언 |
 | `furnish room { place_anchor { … } hang { … } }` | 모서리·벽·중앙 기준 가구 프리팹 앵커 배치 및 천장 조명 매달기 |
 | `weathering { ground_moss { … } corner_quoin { … } chimney_soot { … } }` | 시드 기반 바닥 이끼·모서리 굄돌·굴뚝 그을음 풍화 적용 |
 | `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | `.structure.json`, `.hooks.json`, glTF `anchor_*` 빈 노드 및 `.nbt` 지그소·블록 엔티티용 앵커 정의 |
@@ -48,9 +49,20 @@
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | `compound` 단위 안에 import한 하위 `structure` 배치 |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | 저수준 복셀, ASCII 평면도(`layer { at = …; rows = […]; map { … } }`), 반복·대칭, 프리팹 배치 |
 
-## 완전한 표준 예제
+## 실내 건축, 소품 및 라디오시티 GI
+
+`room` 블록 내부에 `interior { … }`를 중첩하거나 최상위에 `interior room_id { … }`를 선언하면 계단/반블록 편법 없이 `1/16` 서브복셀 정밀도의 장르별 실내가 컴파일됩니다.
 
 {{source-code:1}}
+
+- `dna { arch = …; [furn = …;] [mood = …;] [organic = 0..1;] }`: 폐쇄형 건축 스타일 DNA(`rustic`, `japanese`, `modern`, `scifi`, `gothic`, `desert`, `industrial`, `nordic`)와 조명 분위기(`warm_hearth`, `zen_daylight`, `minimal_bright`, `cyber_neon`, `arcane_dusk`, `sunbaked_ochre`)를 지정합니다.
+- `architecture`: 5겹 실내 쉘(`floor_pattern`, `baseboard`, `wainscot`, `molding`, `ceiling`)을 제어하며 `open_truss`, `slatted`, `coffered`, `vault`, `led_strip`, `neon_channel`을 지원합니다.
+- 볼륨·배치·스토리: `platform`/`sunken`, `mezzanine`, `open_truss`, `alcove`, `partition`, `wall_line`, `centerpiece`, `corner` 안에 가구(`dining_set`, `l_counter`, `low_table`, `cushion`, `sofa`, `shelving`, `terminal`, `console_terminal`, `holo_screen`, `barrel_rack`, `cabinet`), 드레이퍼리(`curtains`, `noren`, `banner`, `chains`, `cables`, `pipes`), 탁상 스토리(`tavern_meal`, `tea_ceremony`, `scholar_study`, `modern_workspace`, `scifi_diagnostics`, `hearth_prep`, `alchemy_brew`)를 조합합니다.
+- 라디오시티·선샤프트·스테인드글라스: `facade`의 `window`/`bay_window`에 `stained_glass_color = "#hex"`를 주면 양면 반투명 유리와 색조가 반영된 2바운스 간접광 및 가산 블렌드 `sun_shaft` 광선 쿼드가 생성됩니다. BFS 솔버는 `.nbt` (`data_version = 3955`) 머리 공간(`>= 2b`), 부유 블록 0개, 개구부 막힘 없음을 검증합니다.
+
+## 완전한 표준 예제
+
+{{source-code:2}}
 
 ## 검사, 미리보기 시트 및 빌드
 

@@ -39,6 +39,24 @@ interface MaterialCounts {
   readonly customAssetCount: number;
 }
 
+const addInteriorCounts = (
+  grid: StructureGrid,
+  furnitureTypes: Set<string>,
+): { readonly props: number; readonly lights: number } => {
+  let props = 0;
+  let lights = 0;
+  for (const interior of grid.interiors ?? []) {
+    for (const p of interior.input.props ?? []) {
+      props += 1;
+      furnitureTypes.add(p.kind);
+    }
+    for (const h of interior.playable_meta.hooks) {
+      if (h.kind === 'toggle_light') lights += 1;
+    }
+  }
+  return { props, lights };
+};
+
 const collectMaterialCounts = (
   grid: StructureGrid,
   paletteMeta: readonly PaletteStateMeta[],
@@ -68,9 +86,10 @@ const collectMaterialCounts = (
       if (tag.includes('lantern') || tag.includes('rune')) lightSources += 1;
     }
   }
+  const extra = addInteriorCounts(grid, furnitureTypes);
   return {
-    lightSources,
-    furnitureCount,
+    lightSources: lightSources + extra.lights,
+    furnitureCount: furnitureCount + extra.props,
     furnitureKinds: furnitureTypes.size,
     distinctMaterials: materials.size,
     shapeKinds: shapes.size,

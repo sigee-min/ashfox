@@ -367,5 +367,8 @@ export const buildPlayableStructureMeta = (
     interactables: buildInteractables(grid),
     sockets: transformSockets(grid),
     navigation: buildNavigation(grid, descriptors),
+    ...(grid.interiors && grid.interiors.length > 0
+      ? { interiors: grid.interiors.map((i) => i.playable_meta) }
+      : {}),
   };
 };

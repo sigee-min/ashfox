@@ -296,6 +296,7 @@ export const finalizeEvaluatedGrid = (
     readonly rawSetCount: number;
   },
   customPlacements: StructureGrid['customPlacements'],
+  interiors?: StructureGrid['interiors'],
 ): StructureGrid => ({
   id: root.id,
   dataVersion: root.dataVersion,
@@ -315,6 +316,7 @@ export const finalizeEvaluatedGrid = (
   dormerCount,
   chimneyCount,
   semanticStats: Object.freeze({ ...stats }),
+  ...(interiors && interiors.length > 0 ? { interiors } : {}),
 });
 
 export const runHangItem = (

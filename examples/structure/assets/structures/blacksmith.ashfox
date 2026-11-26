@@ -51,7 +51,27 @@ structure blacksmith {
   floor ground {
     y = 0b;
     height = 5b;
-    room smithy { from = (1b, 1b); size = (8b, 11b); kind = workshop; plinth = deepslate; floor = stone_brick; wall = cobble; frame = deepslate; ceiling = spruce_plank; }
+    room smithy {
+      from = (1b, 1b); size = (8b, 11b); kind = workshop; plinth = deepslate; floor = stone_brick; wall = cobble; frame = deepslate; ceiling = spruce_plank;
+      interior {
+        dna { arch = industrial; mood = warm_hearth; }
+        architecture { floor_pattern = stone_slab; baseboard = stone_plinth; wainscot = brick_dado; ceiling = open_truss; }
+        alcove forge_hearth { kind = fireplace; wall = north; at = 2; width = 3; height = 3; }
+        platform work_dais {
+          on = north; size = (4, 2); height = 0.25; step_facing = south;
+          table anvil_bench { size = (2, 1); }
+          story hearth_prep { on = anvil_bench; }
+        }
+        wall_line {
+          on = east;
+          barrel_rack { size = (2, 1); }
+          cabinet { size = (2, 1); }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.5; shaft_length = 6.0; }
+      }
+    }
     room shop { from = (8b, 1b); size = (7b, 10b); kind = living; plinth = cobble; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
     facade smithy.east {
       arch { at = center; width = 2b; height = 3b; frame = timber; lintel = beam; }
@@ -110,11 +130,10 @@ structure blacksmith {
     ridge = ridge;
     gable = cobble;
     under_eave = true;
-    chimney { room = smithy; corner = nw; offset = (1b, 1b); width = 2b; rise = 4b; block = chimney_brick; cap = true; }
+    chimney { room = smithy; corner = nw; offset = (0b, 0b); width = 2b; rise = 4b; block = chimney_brick; cap = true; }
   }
   roof { on = loft; style = gable; axis = z; overhang = 1b; pitch = standard; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = plaster; under_eave = true; }
   furnish smithy {
-    place_anchor { prefab = deco.ForgeArea; on = nw; offset = (0b, 0b); rotate = 0; }
     hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
   }
   furnish shop {

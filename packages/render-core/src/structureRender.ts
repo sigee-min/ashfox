@@ -77,50 +77,80 @@ const compiledModelToDocument = (model: CompiledModel): ProjectDocument => ({
   updatedAt: '2026-01-01T00:00:00.000Z',
 });
 
+const createSunShaftGradientTexture = (): THREE.DataTexture => {
+  const [width, height] = [32, 32];
+  const data = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    const vFalloff = Math.pow(1 - y / (height - 1), 1.65);
+    for (let x = 0; x < width; x += 1) {
+      const uFalloff = Math.pow(Math.sin((Math.PI * (x + 0.5)) / width), 1.35);
+      const alpha = Math.round(255 * vFalloff * uFalloff * 0.85);
+      const off = (y * width + x) * 4;
+      data[off] = 255;
+      data[off + 1] = 255;
+      data[off + 2] = 255;
+      data[off + 3] = alpha;
+    }
+  }
+  const tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+};
+
+const STANDARD_LAYER_PARAMS: Readonly<Record<string, Record<string, unknown>>> = {
+  translucent: {
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+    roughness: 0.16,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+  },
+  cutout: {
+    alphaTest: 0.5,
+    transparent: false,
+    depthWrite: true,
+    roughness: 0.82,
+    metalness: 0.04,
+    side: THREE.DoubleSide,
+  },
+  emissive: { roughness: 0.45, metalness: 0.05, side: THREE.DoubleSide },
+  opaque: { roughness: 0.86, metalness: 0.04, side: THREE.FrontSide },
+};
+
 const buildBatchMaterial = (
   layer: BakedBatch['layer'],
   map: THREE.Texture | null,
   twilight: boolean,
   clipPlanes: THREE.Plane[] | null,
-): THREE.MeshStandardMaterial => {
-  const shared = {
-    map,
-    vertexColors: true,
-    ...(clipPlanes ? { clippingPlanes: clipPlanes } : {}),
-  };
-  if (layer === 'cutout') {
-    return new THREE.MeshStandardMaterial({
+): THREE.Material => {
+  const shared = { map, vertexColors: true, ...(clipPlanes ? { clippingPlanes: clipPlanes } : {}) };
+  if (layer === 'sun_shaft') {
+    return new THREE.MeshBasicMaterial({
       ...shared,
-      alphaTest: 0.5,
-      transparent: false,
-      depthWrite: true,
-      roughness: 0.82,
-      metalness: 0.04,
+      transparent: true,
+      opacity: 0.36,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
   }
-  if (layer === 'emissive') {
-    return new THREE.MeshStandardMaterial({
-      ...shared,
-      emissive: new THREE.Color('#ffbe66'),
-      emissiveMap: map,
-      emissiveIntensity: twilight ? 2.75 : 1.15,
-      roughness: 0.45,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
-    });
-  }
-  return new THREE.MeshStandardMaterial({
-    ...shared,
-    roughness: 0.86,
-    metalness: 0.04,
-    side: THREE.FrontSide,
-  });
+  const extra =
+    layer === 'emissive'
+      ? {
+          emissive: new THREE.Color('#ffbe66'),
+          emissiveMap: map,
+          emissiveIntensity: twilight ? 2.75 : 1.15,
+        }
+      : {};
+  return new THREE.MeshStandardMaterial({ ...shared, ...STANDARD_LAYER_PARAMS[layer], ...extra });
 };
 
 const createBatchMesh = (
   batch: BakedBatch,
-  material: THREE.MeshStandardMaterial,
+  material: THREE.Material,
   disposables: (() => void)[],
 ): THREE.Mesh => {
   const geometry = new THREE.BufferGeometry();
@@ -131,10 +161,31 @@ const createBatchMesh = (
   geometry.setIndex(batch.indices as number[]);
   geometry.computeBoundingSphere();
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.castShadow = batch.layer !== 'emissive';
-  mesh.receiveShadow = true;
+  mesh.userData = { ashfoxLayer: batch.layer };
+  mesh.castShadow = batch.layer === 'opaque' || batch.layer === 'cutout';
+  mesh.receiveShadow = batch.layer !== 'sun_shaft';
+  if (batch.layer === 'sun_shaft' || batch.layer === 'translucent') mesh.renderOrder = 2;
   disposables.push(() => geometry.dispose());
   return mesh;
+};
+
+const resolveBatchTex = (
+  batch: BakedBatch,
+  bakedMesh: BakedMesh,
+  texCache: Map<string, THREE.Texture>,
+): THREE.Texture | null => {
+  const hit = texCache.get(batch.textureId);
+  if (hit) return hit;
+  if (batch.layer === 'sun_shaft') {
+    const tex = createSunShaftGradientTexture();
+    texCache.set(batch.textureId, tex);
+    return tex;
+  }
+  const asset = bakedMesh.textures[batch.textureId];
+  if (!asset) return null;
+  const tex = createStructureTextureMap(asset);
+  texCache.set(batch.textureId, tex);
+  return tex;
 };
 
 const appendBakedBatches = (
@@ -145,22 +196,14 @@ const appendBakedBatches = (
   disposables: (() => void)[],
 ): void => {
   const texCache = new Map<string, THREE.Texture>();
-  const matCache = new Map<string, THREE.MeshStandardMaterial>();
+  const matCache = new Map<string, THREE.Material>();
   for (const batch of bakedMesh.batches) {
     if (batch.positions.length === 0 || batch.indices.length === 0) continue;
-    let map = texCache.get(batch.textureId) ?? null;
-    if (!map && bakedMesh.textures[batch.textureId]) {
-      map = createStructureTextureMap(bakedMesh.textures[batch.textureId]!);
-      texCache.set(batch.textureId, map);
-    }
+    const map = resolveBatchTex(batch, bakedMesh, texCache);
     const matKey = `${batch.layer}:${batch.textureId}:${twilight ? 1 : 0}`;
     const material =
-      matCache.get(matKey) ??
-      (() => {
-        const m = buildBatchMaterial(batch.layer, map, twilight, clipPlanes);
-        matCache.set(matKey, m);
-        return m;
-      })();
+      matCache.get(matKey) ?? buildBatchMaterial(batch.layer, map, twilight, clipPlanes);
+    matCache.set(matKey, material);
     root.add(createBatchMesh(batch, material, disposables));
   }
   disposables.push(() => {

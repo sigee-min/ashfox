@@ -7,6 +7,7 @@ export type GltfExtensionName =
   | 'KHR_mesh_quantization'
   | 'EXT_mesh_gpu_instancing'
   | 'KHR_texture_transform'
+  | 'KHR_materials_unlit'
   | 'MSFT_lod'
   | 'MSFT_screencoverage';
 
@@ -180,6 +181,7 @@ export interface GltfMaterial {
   name?: string;
   pbrMetallicRoughness: {
     baseColorTexture?: GltfTextureInfo;
+    baseColorFactor?: [number, number, number, number];
     metallicFactor: 0;
     roughnessFactor: 1;
   };
@@ -188,6 +190,12 @@ export interface GltfMaterial {
   alphaMode?: 'MASK' | 'BLEND';
   alphaCutoff?: number;
   doubleSided?: boolean;
+  extensions?: {
+    KHR_materials_unlit?: Record<string, never>;
+  };
+  extras?: {
+    ashfoxBlendMode?: 'additive' | 'blend';
+  };
 }
 
 export interface GltfAnimationSampler {

@@ -1,6 +1,6 @@
 import type { CubeFaceDirection } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
-import { getBatch, pushQuad, type MeshCtx, type NonFullScratch } from './batch';
+import { getBatch, pushQuad, writeSpecBoxBounds, type MeshCtx, type NonFullScratch } from './batch';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
 import {
   buildBottomStairMask,
@@ -9,7 +9,8 @@ import {
   layerHasMaskMatch,
 } from './greedyMask';
 import { computeFaceShade, SHARED_FACE_SHADE } from './lighting';
-import { setVec3, writeSpecBoxUv, type LocalBoxSpec } from './shapes';
+import { isInteriorRoomAirCell } from './interior/shell';
+import { writeSpecBoxUv, type LocalBoxSpec } from './shapes';
 import * as sv from './subvoxel';
 
 const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
@@ -38,21 +39,9 @@ const vox = (t: TrimCtx, x: number, y: number, z: number): number =>
 
 const emitBox = (t: TrimCtx, pos: V3, smp: V3, spec: LocalBoxSpec, skipMask = 0): number => {
   const { ctx, scratch } = t;
-  const [vx, vy, vz] = pos;
-  if (vy < 0 || vy >= ctx.maxY) return 0;
+  if (pos[1] < 0 || pos[1] >= ctx.maxY) return 0;
   const [w, _h, d] = ctx.grid.size;
-  setVec3(
-    scratch.from,
-    vx + spec.from[0] / 16 - w / 2,
-    vy + spec.from[1] / 16,
-    vz + spec.from[2] / 16 - d / 2,
-  );
-  setVec3(
-    scratch.to,
-    vx + spec.to[0] / 16 - w / 2,
-    vy + spec.to[1] / 16,
-    vz + spec.to[2] / 16 - d / 2,
-  );
+  writeSpecBoxBounds(scratch.from, scratch.to, pos, spec, w / 2, d / 2);
   const layer = spec.layer ?? 'opaque';
   const batch = getBatch(ctx.batches, layer, spec.tileOverride ?? 'timber_trim');
   const { grid, descriptors, lighting, maxY } = ctx;
@@ -197,6 +186,7 @@ const emitFloorBeltCourses = (t: TrimCtx): number => {
 const emitCorbelCell = (t: TrimCtx, x: number, y: number, z: number): number => {
   const vy = y - 1;
   if ((x + z) % 3 !== 0 || !solid(t, x, y, z) || vox(t, x, vy, z) > 0) return 0;
+  if (isInteriorRoomAirCell(t.ctx.grid.rooms, x, vy, z)) return 0;
   const dir = sv.CARDINALS.find((c) => solid(t, x - sv.OUTWARD[c][0], vy, z - sv.OUTWARD[c][1]));
   return dir
     ? emitSpecs(t, [x, vy, z], sv.corbelStepSpecs(dir), DIR_BIT[sv.OPPOSITE[dir]] | DIR_BIT.up)

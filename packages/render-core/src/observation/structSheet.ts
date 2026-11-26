@@ -25,6 +25,7 @@ import {
   computeInteriorCameras,
   detectFrontAzimuth,
   frameHeroAngles,
+  resolveRaycastInteriorCameras,
   resolveSingleAzimuth,
   tileSpecs,
   type ExteriorTileSpec,
@@ -97,7 +98,11 @@ const applySurfaceBackdrop = (
 
 type TileRenderOptions = StructureSceneBuildOptions & {
   readonly envId: SheetEnvironmentId;
-  readonly positionCamera: (bounds: THREE.Box3, camera: THREE.PerspectiveCamera) => void;
+  readonly positionCamera: (
+    bounds: THREE.Box3,
+    camera: THREE.PerspectiveCamera,
+    root: THREE.Group,
+  ) => void;
 };
 
 type SceneCacheEntry = {
@@ -141,7 +146,7 @@ const renderTileToCanvas = async (
   const disposeBackdrop = applySurfaceBackdrop(surface, v.background, options.envId);
   try {
     frameStructureShadows(surface.scene, handle.bounds, options.twilight ?? false);
-    options.positionCamera(handle.bounds, surface.camera);
+    options.positionCamera(handle.bounds, surface.camera, handle.root);
     surface.renderer.render(surface.scene, surface.camera);
     const bg = v.background === 'environment' ? 'transparent' : v.background;
     fillBackground(tileCanvas.context, tileCanvas.canvas.width, tileCanvas.canvas.height, bg);
@@ -258,15 +263,22 @@ const cutawayTiles = (
 };
 
 const interiorTiles = (
+  payload: StructureObservationPayload,
   cams: readonly InteriorCameraSpec[],
   envId: SheetEnvironmentId,
-): readonly SheetTileConfig[] =>
-  cams.map((cam) => ({
+): readonly SheetTileConfig[] => {
+  let raycastCams: readonly InteriorCameraSpec[] | null = null;
+  return cams.map((cam, idx) => ({
     label: cam.label,
     interiorFill: true,
     envId,
-    positionCamera: (_b, camObj) => applyEyeLevelCamera(camObj, cam.eye, cam.lookAt, 65),
+    positionCamera: (_b, camObj, root) => {
+      if (!raycastCams) raycastCams = resolveRaycastInteriorCameras(root, payload);
+      const chosen = raycastCams[idx] ?? cam;
+      applyEyeLevelCamera(camObj, chosen.eye, chosen.lookAt, 65);
+    },
   }));
+};
 
 const buildSheetPlan = (
   payload: StructureObservationPayload,
@@ -289,7 +301,7 @@ const buildSheetPlan = (
     return {
       cols,
       rows: Math.max(1, Math.ceil(cams.length / cols)),
-      tiles: interiorTiles(cams, v.environment),
+      tiles: interiorTiles(payload, cams, v.environment),
     };
   }
   if (v.sheet === 'turnaround') {

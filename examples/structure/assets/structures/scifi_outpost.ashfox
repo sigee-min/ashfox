@@ -1,0 +1,188 @@
+ashfox 1
+structure scifi_outpost {
+  import "../module/arch_kit.ashfox" as kit;
+  import "../models/props/wall_lantern.ashfox" as beacon;
+  import "../models/props/rune_pillar.ashfox" as pylon;
+
+  density = 2;
+  seed = 707;
+  size = (17b, 16b, 19b);
+  data_version = 3955;
+
+  params {
+    w = 17;
+    d = 19;
+  }
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    hull = mix("minecraft:deepslate_tiles" * 70%, "minecraft:polished_deepslate" * 30%);
+    moss_hull = "minecraft:mossy_stone_bricks";
+    bulkhead = mix("minecraft:smooth_quartz" * 75%, "minecraft:white_concrete" * 25%);
+    grate = "minecraft:iron_block";
+    strut = "minecraft:deepslate_bricks";
+    beam = "minecraft:polished_deepslate";
+    deck = "minecraft:stone_bricks";
+    roof_stair = "minecraft:polished_deepslate_stairs";
+    trim_stair = "minecraft:quartz_stairs";
+    ridge = "minecraft:polished_deepslate_slab[type=bottom]";
+    porch_stair = "minecraft:polished_andesite_stairs[facing=north,half=bottom]";
+    deck_stair = "minecraft:quartz_stairs";
+    rail = "minecraft:iron_bars";
+    viewport = "minecraft:glass_pane";
+    sill = "minecraft:polished_deepslate_slab[type=top]";
+    door = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    sea_lamp = "minecraft:sea_lantern";
+    beacon_lamp = asset(beacon, "minecraft:soul_lantern[hanging=false]");
+    relay = asset(pylon, "minecraft:chiseled_deepslate");
+  }
+
+  floor main_deck {
+    y = 0b;
+    height = 6b;
+    room command_deck {
+      from = (1b, 1b); size = (15b, 11b); kind = workshop; plinth = hull; floor = grate; wall = bulkhead; frame = strut; ceiling = deck;
+      interior {
+        dna { arch = scifi; mood = cyber_neon; }
+        architecture { floor_pattern = grate; baseboard = led_strip; wainscot = tech_ribbed; molding = neon_channel; ceiling = coffered; strip_light_color = "#00e5ff"; }
+        platform command_dais {
+          on = north; size = (6, 3); height = 0.25; step_facing = south; railing = glass;
+          console_terminal ops_console { length = 3; }
+          swivel_chair { on = center; }
+          story scifi_diagnostics { on = ops_console; }
+        }
+        alcove cryo_niche { kind = cryo_pod; wall = west; at = 4; width = 3; height = 3; }
+        partition glass_divider { style = glass_wall; axis = x; at = 5; span_from = 2; span_to = 14; doorway_at = 7; doorway_width = 3; }
+        wall_line {
+          on = east;
+          terminal { size = (2, 1); }
+          holo_screen { size = (2, 1); }
+        }
+        drapery conduits { kind = cables; on = ceiling_span; sag = 0.4; }
+        lighting { kind = neon_channel; color = "#00e5ff"; bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.45; }
+        sun_shaft { enabled = true; sun_dir = (0.4, -0.68, 0.61); intensity = 0.34; shaft_length = 5.0; }
+      }
+    }
+    room airlock {
+      from = (3b, 11b); size = (11b, 5b); kind = hallway; plinth = hull; floor = deck; wall = bulkhead; frame = strut; ceiling = deck;
+      interior {
+        dna { arch = scifi; mood = cyber_neon; }
+        architecture { floor_pattern = grate; baseboard = led_strip; wainscot = tech_ribbed; molding = neon_channel; ceiling = coffered; strip_light_color = "#00e5ff"; }
+        platform airlock_pad {
+          on = east; size = (3, 2); height = 0.25; step_facing = west;
+          terminal check_term { size = (2, 1); }
+          story scifi_diagnostics { on = check_term; }
+        }
+        alcove airlock_pod { kind = display; wall = west; width = 2; height = 2; }
+        drapery cables { kind = cables; on = ceiling_span; sag = 0.35; }
+        lighting { kind = neon_channel; color = "#00e5ff"; bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.5; }
+        sun_shaft { enabled = true; sun_dir = (0.4, -0.68, 0.61); intensity = 0.48; shaft_length = 4.5; }
+      }
+    }
+    facade airlock.south {
+      door {
+        at = 2b; width = 1b; height = 2b; block = door; hinge = left; frame = strut; lintel = beam;
+        porch { depth = 2; floor = hull; pillars = strut; lamps = beacon_lamp; steps = porch_stair; }
+      }
+      bay_window { at = 5b; width = 3b; height = 2b; y_offset = 1b; glass = viewport; frame = strut; sill = sill; lintel = roof_stair; stained_glass_color = "#42e8ff"; }
+    }
+    facade command_deck.south {
+      arch { at = center; width = 2b; height = 3b; frame = strut; lintel = beam; }
+    }
+    facade facade_ports {
+      on = [command_deck.north, command_deck.east, command_deck.west];
+      window { symmetric = 1b; width = 2b; height = 2b; y_offset = 1b; glass = viewport; sill = sill; lintel = beam; stained_glass_color = "#42e8ff"; }
+    }
+  }
+
+  floor upper_ops {
+    y = 6b;
+    height = 4b;
+    jetty_s = 1b;
+    room sensor_bay {
+      from = (3b, 2b); size = (11b, 9b); kind = tower; floor = deck; wall = bulkhead; frame = strut; ceiling = hull;
+      interior {
+        dna { arch = scifi; mood = cyber_neon; }
+        architecture { floor_pattern = grate; baseboard = led_strip; wainscot = tech_ribbed; molding = neon_channel; ceiling = open_truss; strip_light_color = "#00e5ff"; }
+        alcove sensor_core { kind = display; wall = north; width = 2; height = 2; }
+        centerpiece {
+          on = center;
+          console_terminal nav_console { length = 3; }
+          story scifi_diagnostics { on = nav_console; }
+        }
+        wall_line {
+          on = west;
+          terminal { size = (2, 1); }
+        }
+        drapery pipes { kind = pipes; on = ceiling_span; sag = 0.3; }
+        lighting { kind = neon_channel; color = "#00e5ff"; bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.4; }
+        sun_shaft { enabled = true; sun_dir = (0.4, -0.68, 0.61); intensity = 0.45; shaft_length = 4.5; }
+      }
+    }
+    facade facade_sensor {
+      on = [sensor_bay.north, sensor_bay.south];
+      window { symmetric = 2b; width = 2b; height = 2b; y_offset = 1b; glass = viewport; sill = sill; lintel = beam; stained_glass_color = "#42e8ff"; }
+    }
+  }
+
+  staircase { in_room = command_deck; style = straight; at = (13b, 3b); y_from = 0b; y_to = 6b; facing = south; width = 1b; stair = deck_stair; landing = deck; rail = rail; headroom = 3b; }
+
+  roof {
+    on = sensor_bay;
+    style = gable;
+    axis = x;
+    overhang = 1b;
+    pitch = shallow;
+    stair = roof_stair;
+    trim = trim_stair;
+    ridge = ridge;
+    gable = bulkhead;
+    under_eave = true;
+  }
+
+  roof {
+    on = command_deck;
+    style = gable;
+    axis = x;
+    overhang = 1b;
+    pitch = shallow;
+    stair = roof_stair;
+    trim = trim_stair;
+    ridge = ridge;
+    gable = bulkhead;
+    under_eave = true;
+  }
+
+  roof {
+    on = airlock;
+    style = gable;
+    axis = x;
+    overhang = 1b;
+    pitch = shallow;
+    stair = roof_stair;
+    trim = trim_stair;
+    ridge = ridge;
+    gable = bulkhead;
+  }
+
+  furnish command_deck { hang { block = sea_lamp; at = ceiling_center; drop = 1b; } }
+  furnish airlock { hang { block = sea_lamp; at = ceiling_center; drop = 1b; } }
+  furnish sensor_bay { hang { block = sea_lamp; at = ceiling_center; drop = 1b; } }
+
+  weathering {
+    ground_moss { height = 2b; target = hull; into = moss_hull; rate = 15%; }
+    corner_quoin { target = bulkhead; corners = strut; }
+  }
+
+  box { from = (1b, 0b, 14b); to = (2b, 0b, 15b); block = hull; }
+  place kit.CrateStack { at = (1b, 1b, 14b); rotate = 0; }
+  set { at = (2b, 1b, 15b); block = relay; }
+
+  socket outpost_entry { kind = entry; room = airlock; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
+  socket dock_link { kind = road; at = (w - 1, 0, floor(d / 2)); normal = east; pool = "village:streets"; target = "road_join"; }
+}

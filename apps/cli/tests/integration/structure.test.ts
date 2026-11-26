@@ -51,7 +51,7 @@ const testCheckShowcases = (temp: string): void => {
     entry: { entryName: string };
     audit: { passed: boolean; score: number; grade: string };
   }[];
-  assert.equal(products.filter((p) => p.kind === 'structure').length, 5);
+  assert.equal(products.filter((p) => p.kind === 'structure').length, 7);
   for (const prod of products) {
     assert.equal(prod.audit.passed, true, prod.entry.entryName);
     assert.ok(prod.audit.score >= 85, `${prod.entry.entryName} scored ${prod.audit.score}`);
@@ -86,7 +86,7 @@ const testWorkspaceDualAndGamePackBuild = (temp: string): void => {
   assert.equal(checkBundle.status, 0, checkBundle.stdout + checkBundle.stderr);
 
   const catalog = JSON.parse(fs.readFileSync(built.catalogPath, 'utf8'));
-  assert.ok(catalog.assets.filter((a: { kind: string }) => a.kind === 'structure').length >= 5);
+  assert.ok(catalog.assets.filter((a: { kind: string }) => a.kind === 'structure').length >= 7);
 
   const nbtExp = built.exports.find((e: { id: string }) => e.id === 'medieval_cottage_nbt');
   const glbExp = built.exports.find((e: { id: string }) => e.id === 'medieval_cottage_glb');
@@ -115,7 +115,7 @@ const testWorkspaceDualAndGamePackBuild = (temp: string): void => {
 
   const packZip = unzipSync(fs.readFileSync(path.join(packExp.directory, 'village_pack.zip')));
   const manifest = JSON.parse(String(Buffer.from(packZip['assets.json']!)));
-  assert.equal(manifest.assets.length, 5);
+  assert.equal(manifest.assets.length, 7);
   for (const entry of manifest.assets) {
     assert.equal(entry.kind, 'structure');
     assert.ok(packZip[entry.model], entry.model);

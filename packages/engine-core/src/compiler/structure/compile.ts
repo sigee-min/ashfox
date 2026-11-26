@@ -131,6 +131,9 @@ export const compileStructureUnits = (
     ...(hasHooksContent(hooks) ? { hooks } : {}),
     document,
     audit,
+    ...(grid.interiors && grid.interiors.length > 0
+      ? { interiorAudits: grid.interiors.map((i) => i.audit) }
+      : {}),
   };
 };
 

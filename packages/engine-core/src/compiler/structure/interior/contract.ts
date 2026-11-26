@@ -2,13 +2,11 @@ import type { AuditQualityGrade, AuditSubmetricShape } from '@ashfox/internal-co
 import type { Vec2, Vec3 } from '../../../model/identity';
 import type {
   AcousticSpace,
-  BlockRotation,
   CardinalFacing,
   IntVec2,
   IntVec3,
   RoomKind,
 } from '../../../project/structure/contract';
-import type { BlockRenderLayer } from '../blocks';
 
 export const SUBVOXEL_UNITS_PER_BLOCK = 16 as const;
 export const VANILLA_NBT_DATA_VERSION = 3955 as const;
@@ -244,7 +242,7 @@ export interface InteriorRoomInput {
   readonly seed: number;
 }
 
-export type InteriorRenderLayer = BlockRenderLayer | 'translucent';
+export type InteriorRenderLayer = 'opaque' | 'cutout' | 'emissive' | 'translucent';
 
 export interface SubVoxelBoxIR {
   readonly id: string;
@@ -326,8 +324,6 @@ export interface InteriorSunShaftQuad {
   readonly floor_patch_center: Vec3;
 }
 
-export type InteriorHookKind =
-  'sit' | 'hinge' | 'slide' | 'toggle_light' | 'station' | 'audio_emitter';
 export type InteriorAudioCueKind =
   'fire_loop' | 'tech_hum' | 'clock_tick' | 'water_drip' | 'chime' | 'hearth_crackle';
 
@@ -485,9 +481,4 @@ export const parseClosedStyleDna = (input: unknown, pointer = 'style_dna'): Styl
     return failContract(`${pointer}.organic`, 'number in [0, 1]', organic);
   }
   return { arch, furn, mood, organic };
-};
-
-export const resolveBlockRotation = (deg: BlockRotation | number): BlockRotation => {
-  const norm = (((Math.round(deg / 90) * 90) % 360) + 360) % 360;
-  return norm === 90 || norm === 180 || norm === 270 ? norm : 0;
 };
