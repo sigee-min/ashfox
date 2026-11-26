@@ -43,7 +43,7 @@ const assertBundlesIdentical = (
 const copyWorkspace = (name: string, dest: string): string => {
   fs.cpSync(path.join(REPO_ROOT, 'examples', name), dest, {
     recursive: true,
-    filter: (source) => !source.split(path.sep).includes('dist'),
+    filter: (source) => !source.split(path.sep).some((p) => p === 'dist' || p === '.ashfox-cache'),
   });
   return path.join(dest, '.ashfoxworkspace');
 };

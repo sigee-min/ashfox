@@ -42,6 +42,7 @@ const testCheckShowcases = (temp: string): void => {
   const wsJson = runJson(
     'check',
     '--json',
+    '--no-cache',
     path.join(REPO_ROOT, 'examples/structure/.ashfoxworkspace'),
   );
   assert.equal(wsJson.ok, true);
@@ -77,7 +78,7 @@ const testWorkspaceDualAndGamePackBuild = (temp: string): void => {
   const wsDir = path.join(temp, 'structures');
   fs.cpSync(path.join(REPO_ROOT, 'examples/structure'), wsDir, {
     recursive: true,
-    filter: (p) => !p.split(path.sep).includes('dist'),
+    filter: (p) => !p.split(path.sep).some((part) => part === 'dist' || part === '.ashfox-cache'),
   });
   const cfgPath = path.join(wsDir, '.ashfoxworkspace');
   const built = runJson('build', cfgPath, '--json').result;
