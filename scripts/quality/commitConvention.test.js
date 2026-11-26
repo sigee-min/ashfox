@@ -1,8 +1,9 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
-const { commitConventionViolations } = require('./commitConvention');
+const { commitConventionViolations, revisionRange } = require('./commitConvention');
 
 const policy = {
   format: 'conventional-commits',
@@ -44,5 +45,10 @@ for (const invalid of [
     `expected commit to fail: ${invalid.subject}`,
   );
 }
+
+const fallbackRange = revisionRange(path.resolve(__dirname, '..', '..'), {
+  ASHFOX_COMMIT_BASE: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+});
+assert.ok(fallbackRange === 'HEAD' || fallbackRange.endsWith('..HEAD'));
 
 console.log('commit convention fixtures ok');
