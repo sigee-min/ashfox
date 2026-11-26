@@ -1,5 +1,5 @@
 import type { SoundProduct } from '@ashfox/audio-core';
-import { sha256Digest } from '@ashfox/engine-core';
+import { sha256Digest, type GlbPerformanceMetrics } from '@ashfox/engine-core';
 import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
 import {
   BuildFailure,
@@ -46,6 +46,7 @@ interface CachedBuildEntry {
     readonly targetName: string;
     readonly files: readonly CachedFileMeta[];
     readonly lineageTemplate?: Record<string, unknown>;
+    readonly performance?: GlbPerformanceMetrics;
   }[];
 }
 
@@ -110,6 +111,7 @@ export const readCachedBuildEntry = (
     targetName: t.targetName,
     files: t.files.map((f) => ({ path: f.path, bytes: hit.blobs[offset++]!, sha256: f.sha256 })),
     lineageTemplate: t.lineageTemplate,
+    ...(t.performance ? { performance: t.performance } : {}),
   }));
   return {
     entry,
@@ -152,6 +154,7 @@ export const writeCachedBuildEntry = (
   const cachedTargets = resolved.targets.map((t) => ({
     targetName: t.targetName,
     lineageTemplate: t.lineageTemplate,
+    ...(t.performance ? { performance: t.performance } : {}),
     files: t.files.map((f) => {
       blobs.push(f.bytes);
       return { path: f.path, byteCount: f.bytes.byteLength, sha256: f.sha256 ?? digest(f.bytes) };
@@ -244,7 +247,10 @@ const assembleCatalogAndArtifacts = (
       kind: item.productKind,
       directory: target.directory,
       files: records,
-      metadata: item.metadata,
+      metadata:
+        out.performance && (item.productKind === 'model' || item.productKind === 'structure')
+          ? { ...item.metadata, performance: out.performance }
+          : item.metadata,
     });
   }
   return { assets, artifacts, hashesByPath };

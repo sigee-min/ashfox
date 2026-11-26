@@ -8,6 +8,7 @@ import {
 import {
   encodeCanonicalPng,
   evaluateAssetQuality,
+  evaluateGlbPerformance,
   evaluateSpriteQuality,
   exportProductionProjectResolved,
   exportStructureGltfResolved,
@@ -18,6 +19,7 @@ import {
   readDirectoryWorkspace,
   type DirectoryFile,
   type ExportAdapterInput,
+  type GlbPerformanceMetrics,
   type StructureAuditReport,
   type WorkspaceEntrySelector,
 } from '@ashfox/engine-core';
@@ -40,7 +42,27 @@ export interface TargetOutput {
   readonly targetName: string;
   readonly files: readonly Artifact[];
   readonly lineageTemplate?: Record<string, unknown>;
+  readonly performance?: GlbPerformanceMetrics;
 }
+
+const evaluateWorkerGlbPerformance = (
+  target: TargetExportSpec,
+  perfKind: 'creature' | 'prop' | 'structure' | 'compound',
+  files: readonly Artifact[],
+): GlbPerformanceMetrics | undefined => {
+  if (target.format !== 'glb') return undefined;
+  const glb = files.find((file) => file.path.endsWith('.glb'));
+  if (!glb) return undefined;
+  const report = evaluateGlbPerformance(glb.bytes, perfKind);
+  if (target.encoding === 'optimized' && !report.passed) {
+    throw new BuildFailure(
+      'quality.gate',
+      `GLB "${target.name}" exceeded ${perfKind} performance budget: ${report.violations.map((v) => v.message).join(' ')}`,
+      3,
+    );
+  }
+  return report.metrics;
+};
 
 export interface PackageInterfaceDigest {
   readonly name: string;
@@ -196,6 +218,21 @@ const structureMetadata = (
   interactableCount: product.structure.playableMeta.interactables.length,
 });
 
+const buildTargetOutput = (
+  target: TargetExportSpec,
+  perfKind: 'creature' | 'prop' | 'structure' | 'compound',
+  files: readonly Artifact[],
+  lineageTemplate?: Record<string, unknown>,
+): TargetOutput => {
+  const performance = evaluateWorkerGlbPerformance(target, perfKind, files);
+  const out: TargetOutput = { targetName: target.name, files };
+  return {
+    ...out,
+    ...(lineageTemplate ? { lineageTemplate } : {}),
+    ...(performance ? { performance } : {}),
+  };
+};
+
 const runBuildStructureTarget = async (
   product: Extract<
     ReturnType<typeof checkSnapshot>['products'][number],
@@ -240,7 +277,11 @@ const runBuildStructureTarget = async (
   if (!files.some((file) => file.path === metaPath)) {
     files.push({ path: metaPath, bytes: encodeUtf8(json(product.structure.playableMeta)) });
   }
-  return { targetName: target.name, files, lineageTemplate };
+  const perfKind =
+    product.structure.grid.size[0] * product.structure.grid.size[2] > 900
+      ? 'compound'
+      : 'structure';
+  return buildTargetOutput(target, perfKind, files, lineageTemplate);
 };
 
 const runBuildStructureTask = async (
@@ -285,6 +326,7 @@ const modelAdapterForTarget = (target: TargetExportSpec): ExportAdapterInput => 
 const runBuildModelTarget = async (
   openedProject: Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>['project'],
   target: TargetExportSpec,
+  perfKind: 'creature' | 'prop',
 ): Promise<TargetOutput> => {
   if (target.format === 'png' || target.format === 'wav' || target.format === 'java_structure') {
     throw new BuildFailure('export.format', target.name);
@@ -324,7 +366,7 @@ const runBuildModelTarget = async (
       bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
     });
   }
-  return { targetName: target.name, files, lineageTemplate };
+  return buildTargetOutput(target, perfKind, files, lineageTemplate);
 };
 
 const runBuildModelTask = async (
@@ -360,9 +402,10 @@ const runBuildModelTask = async (
     },
   });
   if (!opened.ok) throw new BuildFailure('export.project', JSON.stringify(opened));
+  const perfKind = product.model.profile === 'creature' ? 'creature' : 'prop';
   const targets: TargetOutput[] = [];
   for (const target of task.targets) {
-    targets.push(await runBuildModelTarget(opened.project, target));
+    targets.push(await runBuildModelTarget(opened.project, target, perfKind));
   }
   return {
     kind: 'build-entry',
