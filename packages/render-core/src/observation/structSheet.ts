@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { collectStructureCutBands } from '@ashfox/engine-core';
+import { compareText } from '@ashfox/internal-contracts';
 import { applyEyeLevelCamera, frameBoxAtAngles } from '../cameraPresets';
 import {
   createCaptureSurface,
@@ -164,7 +165,7 @@ const computeInteriorCameras = (
     .sort(
       (a, b) =>
         (b.to[0] - b.from[0]) * (b.to[2] - b.from[2]) -
-        (a.to[0] - a.from[0]) * (a.to[2] - a.from[2]),
+          (a.to[0] - a.from[0]) * (a.to[2] - a.from[2]) || compareText(a.name, b.name),
     )
     .slice(0, 4);
   if (enclosed.length > 0) return enclosed.map((room) => roomToInteriorCam(payload, room));
