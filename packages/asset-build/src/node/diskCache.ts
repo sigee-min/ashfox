@@ -3,7 +3,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { threadId } from 'node:worker_threads';
 import { AUDIO_POLICY } from '@ashfox/audio-core';
-import { ASHFOX_WORKSPACE_COMPILER_FINGERPRINT, SPRITE_POLICY } from '@ashfox/engine-core';
+import {
+  ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
+  SPRITE_POLICY,
+  type HookBindingTarget,
+} from '@ashfox/engine-core';
 import { compareText } from '@ashfox/internal-contracts';
 import { digest, json } from '../shared/digest';
 import { noLinks } from './paths';
@@ -19,6 +23,7 @@ export interface NodeBuildOptions {
   readonly noCache?: boolean;
   readonly cacheDir?: string;
   readonly compilerInvalidator?: string;
+  readonly bindings?: readonly HookBindingTarget[];
 }
 
 export interface DiskCacheContext {

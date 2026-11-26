@@ -134,6 +134,10 @@
       {
         "source": "language/structures.md",
         "route": "/docs/language/structures/"
+      },
+      {
+        "source": "language/hooks.md",
+        "route": "/docs/language/hooks/"
       }
     ]
   },

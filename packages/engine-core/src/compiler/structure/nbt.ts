@@ -1,4 +1,5 @@
 import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
+import type { HooksDocument } from '../../hooks/contract';
 import { parseBlockState } from '../../project/structure/state';
 import type { DecodedStructureNbt, StructureGrid } from './contract';
 import { collectJigsawEntities, type JigsawBlockEntity } from './jigsaw';
@@ -156,19 +157,45 @@ const ensureNbtState = (
   return idx;
 };
 
+const collectHookMcBlocks = (
+  grid: StructureGrid,
+  hooks?: HooksDocument,
+): ReadonlyMap<string, string> => {
+  const byPos = new Map<string, string>();
+  if (!hooks) return byPos;
+  const [w, h, d] = grid.size;
+  for (const anchor of hooks.anchors) {
+    if (!anchor.mcBlock) continue;
+    const x = Math.floor(anchor.position[0]);
+    const y = Math.floor(anchor.position[1]);
+    const z = Math.floor(anchor.position[2]);
+    if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) continue;
+    byPos.set(`${x},${y},${z}`, anchor.mcBlock);
+  }
+  return byPos;
+};
+
 const collectNbtPaletteAndBlocks = (
   grid: StructureGrid,
+  hooks?: HooksDocument,
 ): { readonly states: readonly string[]; readonly entries: readonly NbtBlockEntry[] } => {
   const [wDim, _hDim, dDim] = grid.size;
   const states = [...grid.states];
   const stateToIdx = new Map<string, number>(states.map((s, i) => [s, i]));
   const jigsaws = collectJigsawEntities(grid);
+  const mcBlocks = collectHookMcBlocks(grid, hooks);
   const entries: NbtBlockEntry[] = [];
   for (let i = 0; i < grid.voxels.length; i += 1) {
     const x = i % wDim;
     const z = Math.floor(i / wDim) % dDim;
     const y = Math.floor(i / (wDim * dDim));
-    const jigsaw = jigsaws.get(`${x},${y},${z}`);
+    const key = `${x},${y},${z}`;
+    const jigsaw = jigsaws.get(key);
+    const mcBlock = mcBlocks.get(key);
+    if (mcBlock) {
+      entries.push({ x, y, z, state: ensureNbtState(states, stateToIdx, mcBlock) });
+      continue;
+    }
     if (jigsaw) {
       entries.push({
         x,
@@ -185,9 +212,9 @@ const collectNbtPaletteAndBlocks = (
   return { states, entries };
 };
 
-export const encodeStructureNbt = (grid: StructureGrid): Uint8Array => {
+export const encodeStructureNbt = (grid: StructureGrid, hooks?: HooksDocument): Uint8Array => {
   const [wDim, hDim, dDim] = grid.size;
-  const { states, entries } = collectNbtPaletteAndBlocks(grid);
+  const { states, entries } = collectNbtPaletteAndBlocks(grid, hooks);
   const w = new NbtWriter();
   w.named(TAG_COMPOUND, '');
   w.named(TAG_INT, 'DataVersion');

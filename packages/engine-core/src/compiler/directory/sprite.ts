@@ -165,7 +165,8 @@ const declarations = (graph: SpriteGraph, kind: DeclarationKind) =>
 
 const checkSpriteHygiene = (graph: SpriteGraph): void => {
   for (const [unitPath, unit] of graph.units) {
-    const used = graph.usedImports.get(unitPath) ?? new Set<string>();
+    const used = new Set(graph.usedImports.get(unitPath) ?? []);
+    for (const alias of unit.hookAliases ?? []) used.add(alias);
     const dead = unit.imports.find((i) => !used.has(i.alias));
     if (dead)
       throw spriteSyntaxError('sprite.unused-import', unitPath, 'referenced import', dead.alias);

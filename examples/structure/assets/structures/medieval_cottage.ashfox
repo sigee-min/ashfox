@@ -135,6 +135,6 @@ structure medieval_cottage {
   set { at = (13b, 1b, 11b); block = shrub; }
   set { at = (2b, 1b, 12b); block = pillar; }
   set { at = (mid_x - 1b, 2b, 11b); block = sign; facing = south; }
-  socket front_entry { kind = entry; room = hall; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket east_path { kind = road; at = (w - 1, 0, floor(d / 2)); normal = east; pool = "village:streets"; target = "road_join"; }
+  anchor front_entry : std.entry { at = (4b, 1b, 10b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor east_path : std.road { at = (14b, 0b, 7b); facing = east; pool = "village:streets"; target = "road_join"; }
 }

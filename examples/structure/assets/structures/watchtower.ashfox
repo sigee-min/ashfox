@@ -111,6 +111,6 @@ structure watchtower {
   box { from = (8b, 0b, 11b); to = (8b, 0b, 11b); block = moss_cobble; }
   set { at = (4b, 1b, 11b); block = ward_stone; }
   set { at = (8b, 1b, 11b); block = ward_stone; }
-  socket gate_entry { kind = entry; room = guardroom; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket west_wall { kind = wall_join; at = (0, 0, floor(d / 2)); normal = west; pool = "village:walls"; target = "wall_join"; }
+  anchor gate_entry : std.entry { at = (6b, 1b, 10b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor west_wall : std.wall_join { at = (0b, 0b, 6b); facing = west; pool = "village:walls"; target = "wall_join"; }
 }

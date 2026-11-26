@@ -13,6 +13,7 @@ Ashfox DSL은 모델·픽셀 텍스처·사운드·구조물의 원본 형식입
 | [스프라이트 문법](sprites.md) | 네이티브 레코드, 재사용 형상, 재질, 레이어, 검증 |
 | [사운드 문법](sounds.md) | 리터럴 레코드, 소스 변형, 필드 범위, 합성 동작 |
 | [구조물 문법](structures.md) | Minecraft `.nbt`·Unity GLB 건축물, 팔레트, 프리팹, 지붕, 단면 보기 |
+| [훅과 스키마](hooks.md) | 모듈화된 `schema`, `anchor`, `volume`, `cue`, `meta`, `zone`, `.hooks.json`, 엔진 바인딩 |
 
 여러 에셋을 다루는 프로젝트는 [워크스페이스 설정](../guides/workspace.md)을 참고하세요. 별도의 JSON 계약이며 모든 원본을 감싸야 하는 래퍼는 아닙니다. 완전한 제작 과정은 [모델](../guides/models.md), [스프라이트](../guides/sprites.md), [사운드](../guides/sounds.md)에 있습니다.
 

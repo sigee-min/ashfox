@@ -1,3 +1,4 @@
+import type { HooksDocument } from '../../../hooks/contract';
 import type { BoneNode } from '../../../model';
 import type { Gltf2ExportProfile } from '../../adapter/contract';
 
@@ -109,7 +110,9 @@ export interface GltfNodeExtras {
   ashfoxCanonicalFrame?: BoneNode['canonicalFrame'];
   MSFT_screencoverage?: number[];
   ashfox?: {
-    lod?: GltfAshfoxLodExtras;
+    readonly lod?: GltfAshfoxLodExtras;
+    readonly hook?: Readonly<Record<string, unknown>>;
+    readonly hooks?: HooksDocument;
   };
 }
 
@@ -229,4 +232,9 @@ export interface GltfDocument {
   textures?: GltfTexture[];
   materials?: GltfMaterial[];
   animations?: GltfAnimation[];
+  extras?: {
+    readonly ashfox?: {
+      readonly hooks?: HooksDocument;
+    };
+  };
 }

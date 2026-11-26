@@ -261,7 +261,8 @@ const checkUnitSoundHygiene = (
   filePath: string,
   unit: SoundSourceUnit,
 ): void => {
-  const used = state.usedImports.get(filePath) ?? new Set<string>();
+  const used = new Set(state.usedImports.get(filePath) ?? []);
+  for (const alias of unit.hookAliases ?? []) used.add(alias);
   const deadImport = unit.imports.find((i) => !used.has(i.alias));
   if (deadImport) {
     throw new Error(`${filePath}: sound.unused-import: Unused import "${deadImport.alias}"`);

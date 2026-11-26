@@ -1,3 +1,12 @@
+import type {
+  HookFloorFrame,
+  HookParentRef,
+  HookRoomBounds,
+  HookSchemaDecl,
+  HooksDocument,
+} from '../../hooks/contract';
+import { compileHooksForWorkspaceFile } from '../../hooks/resolve';
+import { propagateHooksTransforms } from '../../hooks/transform';
 import { deepFreeze } from '../../immutable';
 import type { CompiledModel } from '../../model/compiled';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
@@ -20,7 +29,12 @@ import {
   type StructureAuditEvaluator,
   type StructureProduct,
 } from '../structure';
-import { qualifyCustomAssetKey, type EvaluatedStructureResult } from '../structure/contract';
+import {
+  qualifyCustomAssetKey,
+  type CompoundChildPlacement,
+  type EvaluatedStructureResult,
+  type StructureGrid,
+} from '../structure/contract';
 import type { CachedCustomModel, DirectoryWorkspaceCache } from './cache';
 
 const relativePath = (owner: string, target: string): string => {
@@ -299,6 +313,128 @@ const visitStructureUnit = (
   state.visiting.delete(filePath);
 };
 
+const prefixParentRef = (
+  alias: string,
+  parent: HookParentRef | undefined,
+): HookParentRef | undefined =>
+  parent && (parent.kind === 'room' || parent.kind === 'floor' || parent.kind === 'compound')
+    ? { ...parent, id: `${alias}.${parent.id}` }
+    : parent;
+
+const prefixSpatialFields = <
+  T extends {
+    readonly id: string;
+    readonly room?: string;
+    readonly floor?: string;
+    readonly parent?: HookParentRef;
+  },
+>(
+  alias: string,
+  item: T,
+): T => ({
+  ...item,
+  id: `${alias}.${item.id}`,
+  ...(item.room ? { room: `${alias}.${item.room}` } : {}),
+  ...(item.floor ? { floor: `${alias}.${item.floor}` } : {}),
+  ...(item.parent ? { parent: prefixParentRef(alias, item.parent) } : {}),
+});
+
+const mergeHooksDocs = (base: HooksDocument, children: readonly HooksDocument[]): HooksDocument => {
+  if (children.length === 0) return base;
+  const schemaById = new Map<string, HookSchemaDecl>();
+  for (const s of base.schemas) schemaById.set(s.id, s);
+  const anchors = [...base.anchors];
+  const volumes = [...base.volumes];
+  const cues = [...base.cues];
+  const meta = [...base.meta];
+  const zones = [...base.zones];
+  for (const child of children) {
+    for (const s of child.schemas) if (!schemaById.has(s.id)) schemaById.set(s.id, s);
+    anchors.push(...child.anchors);
+    volumes.push(...child.volumes);
+    cues.push(...child.cues);
+    meta.push(...child.meta);
+    zones.push(...child.zones);
+  }
+  return Object.freeze({
+    schemaVersion: base.schemaVersion,
+    assetId: base.assetId,
+    schemas: Object.freeze([...schemaById.values()]),
+    anchors: Object.freeze(anchors),
+    volumes: Object.freeze(volumes),
+    cues: Object.freeze(cues),
+    meta: Object.freeze(meta),
+    zones: Object.freeze(zones),
+  });
+};
+
+const compileHooksTree = (
+  unitPath: string,
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  grid: StructureGrid,
+  compoundChildren: readonly CompoundChildPlacement[] | undefined,
+  collectedPaths: Set<string>,
+): HooksDocument => {
+  const floors: Record<string, HookFloorFrame> = {};
+  for (const fl of grid.floors) floors[fl.name] = { id: fl.name, y: fl.y, height: fl.height };
+  const rooms: Record<string, HookRoomBounds> = {};
+  for (const r of grid.rooms) rooms[r.name] = { id: r.name, min: r.from, max: r.to };
+  const res = compileHooksForWorkspaceFile(unitPath, filesByPath, { floors, rooms });
+  if (!res.ok) {
+    const first = res.diagnostics[0]!;
+    throw new StructureInputError({
+      code: first.code,
+      file: first.file,
+      pointer: `line:${first.line}:${first.column}`,
+      expected: 'valid hook declarations',
+      actual: first.message,
+    });
+  }
+  for (const p of res.referencedPaths) collectedPaths.add(p);
+  const childDocs = (compoundChildren ?? []).map((child) => {
+    const rawChild = compileHooksTree(
+      child.unitPath,
+      filesByPath,
+      child.grid,
+      child.compoundChildren,
+      collectedPaths,
+    );
+    const xformed = propagateHooksTransforms(rawChild, {
+      postTransforms: [
+        {
+          kind: 'compound_place',
+          alias: child.alias,
+          origin: child.origin,
+          rotate: child.rotate,
+          childSize: child.grid.size,
+        },
+      ],
+    });
+    return Object.freeze({
+      ...xformed,
+      anchors: xformed.anchors.map((a) => prefixSpatialFields(child.alias, a)),
+      volumes: xformed.volumes.map((v) => prefixSpatialFields(child.alias, v)),
+      cues: xformed.cues.map((c) => ({ ...c, id: `${child.alias}.${c.id}` })),
+      meta: xformed.meta.map((m) => ({ ...m, id: `${child.alias}.${m.id}` })),
+      zones: xformed.zones.map((z) => prefixSpatialFields(child.alias, z)),
+    });
+  });
+  return mergeHooksDocs(res.document, childDocs);
+};
+
+const resolveDirectoryStructureHooks = (
+  entryPath: string,
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  grid: StructureGrid,
+  compoundChildren: readonly CompoundChildPlacement[] | undefined,
+  onPaths: (paths: readonly string[]) => void,
+): HooksDocument => {
+  const paths = new Set<string>();
+  const doc = compileHooksTree(entryPath, filesByPath, grid, compoundChildren, paths);
+  onPaths([...paths]);
+  return doc;
+};
+
 export const compileDirectoryStructure = (
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   entryPath: string,
@@ -325,19 +461,20 @@ export const compileDirectoryStructure = (
   };
   visitStructureUnit(state, entryPath);
   const rootUnit = state.units.get(entryPath)!;
-  const nonEmptyLines = filesByPath
+  const nonEmpty = filesByPath
     .get(entryPath)!
     .source.split(/\r?\n/u)
     .filter((l) => l.trim().length > 0).length;
-  if (nonEmptyLines > 140 && rootUnit.imports.length === 0 && rootUnit.prefabs.length >= 3) {
+  if (nonEmpty > 140 && rootUnit.imports.length === 0 && rootUnit.prefabs.length >= 3) {
     throw new StructureInputError({
       code: 'structure.monolithic-entry',
       file: entryPath,
       pointer: 'build',
       expected: 'modular imports or fewer inline prefabs',
-      actual: `${rootUnit.prefabs.length} inline prefabs across ${nonEmptyLines} non-empty lines`,
+      actual: `${rootUnit.prefabs.length} inline prefabs across ${nonEmpty} non-empty lines`,
     });
   }
+  let hookPaths: readonly string[] = [];
   const structure = compileStructureUnits(
     entryPath,
     state.units,
@@ -345,11 +482,16 @@ export const compileDirectoryStructure = (
     relativePath,
     evaluateAudit,
     evaluatedGrids,
+    (grid, compoundChildren) =>
+      resolveDirectoryStructureHooks(entryPath, filesByPath, grid, compoundChildren, (paths) => {
+        hookPaths = paths;
+      }),
   );
+  const hookSet = hookPaths.filter((p) => !state.customModelPaths.has(p));
   return {
     structure,
     rootUnit,
-    structurePaths: [...state.units.keys()],
+    structurePaths: [...new Set([...state.units.keys(), ...hookSet])],
     customPaths: [...state.customModelPaths],
   };
 };

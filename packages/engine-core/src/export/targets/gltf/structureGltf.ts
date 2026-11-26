@@ -21,6 +21,7 @@ import type {
 } from './contract';
 import type { GltfPrimitiveData } from './data';
 import { createGltfMaterial } from './exporter';
+import { appendHooksToGltfDocument } from './hooksEmit';
 import { attachStructureLods } from './lodEmit';
 import { compileQuantizedGltfPrimitive } from './primitive';
 import { buildPropNode } from './propNode';
@@ -428,9 +429,17 @@ export const buildStructureGltf = (
     samplers,
   );
   const base: CompiledGltf = { document, binary, textureFiles: [] };
-  const compiled =
+  const withLod =
     options.includeLods !== false && product.lodLevels
       ? attachStructureLods(base, product, { quantize: writer.isQuantized, customBounds })
       : base;
+  const [w, _h, d] = product.grid.size;
+  const compiled: CompiledGltf = {
+    ...withLod,
+    document: appendHooksToGltfDocument(withLod.document, product.hooks, {
+      unitScale: 1,
+      offset: [-w / 2, 0, -d / 2],
+    }),
+  };
   return { compiled, textures };
 };

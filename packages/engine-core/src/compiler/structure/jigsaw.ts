@@ -62,7 +62,8 @@ const toJigsawEntity = (
     target: socket.target ? resourceLocation(socket.target) : 'minecraft:empty',
     pool: socket.pool ? resourceLocation(socket.pool) : 'minecraft:empty',
     finalState,
-    joint: socket.kind === 'road' || socket.kind === 'courtyard' ? 'rollable' : 'aligned',
+    joint:
+      socket.schema === 'std.road' || socket.schema === 'std.courtyard' ? 'rollable' : 'aligned',
   };
 };
 
@@ -88,22 +89,26 @@ const roomWallCenter = (room: StructureRoomMeta, wall: CardinalFacing): IntVec3 
 
 export const buildSocketMeta = (
   name: string,
-  kind: StructureSocketMeta['kind'],
+  schema: string,
   atPos: IntVec3 | null,
   room: StructureRoomMeta | undefined,
   wall: CardinalFacing | undefined,
-  normal: CardinalFacing | undefined,
+  facing: CardinalFacing | undefined,
   pool: string | undefined,
   target: string | undefined,
   fail: (code: string, msg: string) => never,
 ): StructureSocketMeta => {
-  if (!atPos && !room) fail('structure.unknown-room', `Unknown room in socket "${name}"`);
-  const position = atPos ?? roomWallCenter(room!, wall!);
+  if (!atPos && !room) fail('structure.unknown-room', `Unknown room in anchor "${name}"`);
+  const resolvedPos: IntVec3 = atPos
+    ? room
+      ? [room.from[0] + atPos[0], room.from[1] + atPos[1], room.from[2] + atPos[2]]
+      : atPos
+    : roomWallCenter(room!, facing ?? wall!);
   return {
     id: name,
-    position,
-    normal: normal ?? wall ?? 'south',
-    kind,
+    position: resolvedPos,
+    normal: facing ?? wall ?? 'south',
+    schema,
     ...(pool ? { pool } : {}),
     ...(target ? { target } : {}),
   };

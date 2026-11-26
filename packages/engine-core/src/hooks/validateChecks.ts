@@ -314,6 +314,7 @@ const checkImportCycles = (ctx: ValidationContext): void => {
 };
 
 const registerImportedSchemas = (ctx: ValidationContext): void => {
+  const validated = new Set<HookSchemaDecl>();
   for (const imp of ctx.unit.imports) {
     if (ctx.importAliases.has(imp.alias)) {
       pushDiag(
@@ -329,6 +330,10 @@ const registerImportedSchemas = (ctx: ValidationContext): void => {
     if (!imported) continue;
     for (const schema of imported.schemas) {
       if (!schema.exported) continue;
+      if (!validated.has(schema)) {
+        validated.add(schema);
+        validateSchemaDecl(ctx, schema);
+      }
       ctx.schemas.set(schema.id, schema);
       ctx.schemas.set(`${imp.alias}.${schema.name}`, schema);
     }

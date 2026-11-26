@@ -104,7 +104,7 @@ const parseMetaDecl = (state: ParseState): void => {
   const id = readIdent(state, 'meta id').value;
   take(state, ':');
   const schema = readQualified(state, 'schema id').value;
-  const body = readHookBody(state);
+  const body = readHookBody(state, 'meta');
   state.meta.push(
     Object.freeze({
       kind: 'meta',
@@ -180,6 +180,22 @@ const parseMcBlockDecl = (state: ParseState): void => {
   );
 };
 
+const skipOptionalImportParams = (state: ParseState, fallbackEnd: ReturnType<typeof peek>) => {
+  if (peek(state).value !== '{') return take(state, ';');
+  take(state, '{');
+  let depth = 1;
+  let end = fallbackEnd;
+  while (peek(state).kind !== 'eof' && depth > 0) {
+    const t = take(state);
+    if (t.value === '{') depth += 1;
+    else if (t.value === '}') {
+      depth -= 1;
+      if (depth === 0) end = t;
+    }
+  }
+  return peek(state).value === ';' ? take(state, ';') : end;
+};
+
 const parseImportDecl = (state: ParseState): void => {
   const start = take(state, 'import');
   const pathTok = peek(state);
@@ -189,7 +205,7 @@ const parseImportDecl = (state: ParseState): void => {
   const path = take(state).value;
   take(state, 'as');
   const alias = readIdent(state, 'import alias').value;
-  const end = take(state, ';');
+  const end = skipOptionalImportParams(state, peek(state, -1));
   state.imports.push(Object.freeze({ path, alias, span: spanFrom(start, end) }));
 };
 

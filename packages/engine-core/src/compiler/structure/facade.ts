@@ -3,7 +3,6 @@ import type {
   CardinalFacing,
   FacadeOpeningSpec,
   IntVec3,
-  RoomKind,
 } from '../../project/structure/contract';
 import { withBlockFacing, withBlockProperties } from '../../project/structure/state';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
@@ -329,7 +328,7 @@ export const applyFacadeTarget = (
 
 export interface RoomShellSpec {
   readonly name: string;
-  readonly kind: RoomKind;
+  readonly kind: string;
   readonly shape?: 'rect' | 'octagon';
   readonly from: IntVec3;
   readonly to: IntVec3;
@@ -341,7 +340,7 @@ export interface RoomShellSpec {
 }
 
 export const inferRoomAcousticSpace = (
-  kind: RoomKind,
+  kind: string,
   w: number,
   d: number,
   wallKey: string | undefined,

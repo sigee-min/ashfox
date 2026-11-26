@@ -114,6 +114,19 @@ const writeCurrentPointer = (output: string, bundleHash: string): void => {
   }
 };
 
+const writeBindings = (output: string, bundle: CompiledBundle): readonly string[] => {
+  if (!bundle.bindings || bundle.bindings.length === 0) return [];
+  const written: string[] = [];
+  for (const file of bundle.bindings) {
+    const target = contained(path.join(output, 'bindings'), file.fileName);
+    noLinks(target);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, file.content, 'utf8');
+    written.push(target);
+  }
+  return written;
+};
+
 /** Mirrors are immutable; only the build directory owns the publication pointer. */
 export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
   const output = contained(snapshot.root, snapshot.config.build.directory);
@@ -132,12 +145,14 @@ export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
     );
     assertSnapshot(snapshot);
     writeCurrentPointer(output, bundle.bundleHash);
+    const bindings = writeBindings(output, bundle);
     return {
       requestKey: bundle.receipt.requestKey,
       bundleHash: bundle.bundleHash,
       bundlePath: destination,
       catalogPath: path.join(destination, 'catalog.json'),
       exports,
+      ...(bindings.length > 0 ? { bindings } : {}),
     };
   } finally {
     if (fs.existsSync(temp)) fs.rmSync(temp, { recursive: true });

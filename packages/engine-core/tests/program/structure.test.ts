@@ -104,7 +104,7 @@ const testParserAndSemanticDsl = (): void => {
   assert.ok(sem.ops.some((op) => op.op === 'staircase'));
   assert.ok(sem.ops.some((op) => op.op === 'roof'));
   assert.ok(sem.ops.some((op) => op.op === 'weathering'));
-  assert.ok(sem.ops.some((op) => op.op === 'socket'));
+  assert.ok(sem.ops.some((op) => op.op === 'anchor'));
 };
 
 const testLowLevelGridAndHonestBareAudit = (): void => {
@@ -223,7 +223,7 @@ structure s {
   set { at = (2b, 1b, 3b); block = fence; }
   set { at = (2b, 2b, 2b); block = stair; facing = east; }
   set { at = (2b, 2b, 3b); block = stair; facing = south; }
-  socket gate { kind = road; at = (3b, 0b, 6b); normal = south; pool = "v:road"; target = "join"; }
+  anchor gate : std.road { at = (3b, 0b, 6b); facing = south; pool = "v:road"; target = "join"; }
 }`;
   const built = compileStructureUnits(
     's.ashfox',
@@ -342,6 +342,12 @@ const testCanonicalWorkspaceShowcases = (): void => {
     assert.deepEqual(tower.structure.grid.size, [13, 27, 13]);
     assert.ok(tower.structure.grid.rooms.every((r) => r.shape === 'octagon'));
     assert.ok(tower.structure.grid.floors.some((f) => f.jetty?.north === 1));
+  }
+  const village = byName.get('village_compound');
+  if (village?.kind === 'structure') {
+    const anchorIds = village.structure.hooks?.anchors.map((a) => a.id) ?? [];
+    assert.ok(anchorIds.includes('cottage.front_entry'), JSON.stringify(anchorIds));
+    assert.ok(anchorIds.length >= village.structure.grid.sockets.length);
   }
 };
 

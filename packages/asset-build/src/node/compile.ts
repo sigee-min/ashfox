@@ -1,7 +1,9 @@
 import type { SoundProduct } from '@ashfox/audio-core';
 import type { StructureAuditReport, WorkspaceEntrySelector } from '@ashfox/engine-core';
-import { compareText } from '@ashfox/internal-contracts';
-import { compileBundle, checkSnapshot } from '../bundle/compile';
+import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
+import { resolveSoundEntryHooksJson } from './soundPlan';
+import { checkSnapshot, compileBundle } from '../bundle/compile';
+import { generateWorkspaceHookBindings } from '../bundle/bindings';
 import {
   BuildFailure,
   type AssetMetadata,
@@ -9,6 +11,7 @@ import {
   type Snapshot,
 } from '../bundle/contract';
 import {
+  assertNoLoopPackBindings,
   finalizeNodeBundle,
   readCachedBuildEntry,
   requiresVorbisEncoder,
@@ -51,35 +54,6 @@ export interface NodeCheckResult {
   readonly sourceHash: string;
   readonly products: readonly NodeCheckProduct[];
 }
-
-const assertPackBindingNoLoop = (
-  packFormat: string,
-  sourceName: string,
-  config: Snapshot['config'],
-  entriesByKey: ReadonlyMap<string, ResolvedBuildEntry>,
-): void => {
-  const target = config.exports.find((e) => e.name === sourceName);
-  const resolved = target ? entriesByKey.get(entrySelectorKey(target.entry)) : undefined;
-  if (resolved?.sounds?.some((s) => s.playback.kind === 'loop')) {
-    throw new BuildFailure(
-      packFormat === 'minecraft_java' ? 'sound.loop.target' : 'sound.loop.codec',
-      `${sourceName}: loop audio requires WAV game delivery`,
-    );
-  }
-};
-
-const assertNoLoopPackBindings = (
-  config: Snapshot['config'],
-  entriesByKey: ReadonlyMap<string, ResolvedBuildEntry>,
-): void => {
-  for (const pack of config.packs ?? []) {
-    const bindings =
-      pack.format === 'minecraft_java' ? pack.sounds : pack.audio === 'ogg' ? pack.assets : [];
-    for (const binding of bindings) {
-      assertPackBindingNoLoop(pack.format, binding.source, config, entriesByKey);
-    }
-  }
-};
 
 const toSoundMetadata = (sounds: readonly SoundProduct[]): AssetMetadata => ({
   variants: sounds.map((sound) => ({
@@ -349,14 +323,19 @@ const resolveUncachedSoundBuilds = async (
     const key = entrySelectorKey(entry.entry);
     const sounds = compiledMap.get(key)!;
     const targets = targetsByEntry.get(key) ?? [];
+    const hooksJson = resolveSoundEntryHooksJson(entry.sourcePath, entry.files);
     const item: ResolvedBuildEntry = {
       entry,
       productKind: 'sound',
       metadata: toSoundMetadata(sounds),
       sounds,
+      ...(hooksJson ? { hooksJson } : {}),
       targets: targets.map((t) => ({
         targetName: t.name,
-        files: sounds.map((s) => ({ path: `${t.name}/${s.variant}.wav`, bytes: s.wav })),
+        files: [
+          ...sounds.map((s) => ({ path: `${t.name}/${s.variant}.wav`, bytes: s.wav })),
+          ...(hooksJson ? [{ path: `${t.name}.hooks.json`, bytes: encodeUtf8(hooksJson) }] : []),
+        ],
       })),
     };
     resolved.set(key, item);
@@ -451,7 +430,7 @@ export const compileNodeBundle = async (
     const encoder = requiresVorbisEncoder(snapshot)
       ? await createLazyVorbisGetter(signal)()
       : undefined;
-    return compileBundle(snapshot, toolchain, encoder, checked);
+    return compileBundle(snapshot, toolchain, encoder, checked, options?.bindings);
   }
   const targetsByEntry = toTargetSpecs(plan);
   const resolved = new Map<string, ResolvedBuildEntry>();
@@ -482,5 +461,18 @@ export const compileNodeBundle = async (
     resolved,
     cache,
   );
-  return finalizeNodeBundle(snapshot, plan, resolved, modelWorkspaceHash, toolchain, cache, signal);
+  const bundle = await finalizeNodeBundle(
+    snapshot,
+    plan,
+    resolved,
+    modelWorkspaceHash,
+    toolchain,
+    cache,
+    signal,
+  );
+  const bindings =
+    options?.bindings && options.bindings.length > 0
+      ? generateWorkspaceHookBindings(snapshot.files, options.bindings)
+      : undefined;
+  return bindings && bindings.length > 0 ? { ...bundle, bindings } : bundle;
 };

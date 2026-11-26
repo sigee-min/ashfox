@@ -11,9 +11,9 @@ Use the shared `ashfox 1` header with an entry `structure`, a `compound`, or a r
 
 | Unit                 | Role                               | Allowed declarations                                                                                              |
 | -------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `structure id { … }` | Buildable building entry           | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `floor`, `staircase`, `roof`, `furnish`, `weathering`, `socket`, voxel ops |
+| `structure id { … }` | Buildable building entry           | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `floor`, `staircase`, `roof`, `furnish`, `weathering`, `anchor`, `volume`, `zone`, `mc_block`, voxel ops |
 | `compound id { … }`  | Multi-building layout entry        | Same as `structure`, importing child `structure` entries for `compound_place`                                     |
-| `module id { … }`    | Shared prefab & furnishing library | `import`, `palette`, `export prefab`, `prefab`                                                                    |
+| `module id { … }`    | Shared prefab, schema & furnishing library | `import`, `palette`, `export schema`, `export prefab`, `prefab`                                              |
 
 - `density = 1 | 2;`: procedural multi-tile texture resolution (`16px` at `1`, `32px` at `2`, defaults to `2`).
 - `seed = 101;`: deterministic PRNG seed for `mix(...)` palettes, weathering, and surface grain.
@@ -34,7 +34,7 @@ palette {
 }
 ```
 
-- Every state uses `namespace:block_id[key=value,...]` syntax. The solver automatically resolves corner stairs (`inner_left|inner_right|outer_left|outer_right`) and connected fence/wall/pane sides (`north|east|south|west`), and emits `minecraft:jigsaw` block entities for `socket` connectors in `.nbt`.
+- Every state uses `namespace:block_id[key=value,...]` syntax. The solver automatically resolves corner stairs (`inner_left|inner_right|outer_left|outer_right`) and connected fence/wall/pane sides (`north|east|south|west`), and emits `minecraft:jigsaw` block entities for `std.entry`, `std.road`, and `std.wall_join` `anchor` connectors in `.nbt`.
 - `mix("block" * weight, ...)` selects deterministic seeded surface variation per voxel (supports decimal ratios or `%`).
 - `asset(alias, "fallback")` places an imported `.ashfox` model (`model Name { … }`) as an instanced mesh in GLB and `render` previews while writing the specified Minecraft fallback state into `.nbt`.
 
@@ -45,13 +45,14 @@ Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and
 | Operation | Behavior |
 | --- | --- |
 | `floor name { y = 0b; height = 4b; [jetty = 1b;] … }` | Scope rooms and facades to one story (`height >= 3b`) with optional cantilevered `jetty` overhang (`0b..2b`) |
-| `room id { from = (x, z); size = (w, d); kind = …; floor = k; wall = k; … }` | Declare semantic room (`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`) |
+| `room id { from = (x, z); size = (w, d); kind = …; floor = k; wall = k; … }` | Declare semantic room (open identifier such as `living`, `tavern`, `bedroom`, or custom game role) |
 | `facade <targets> { door { … } window { … } arch { … } bay_window { … } arcade { … } }` | Place doors (with `porch { … }`), shuttered windows, `bay_window` alcoves, `arcade` colonnades, and arches |
 | `staircase { in_room = r; style = straight\|l_turn\|u_turn\|spiral; at = (x, z); … }` | Generate stairs with protected `>= 2b` headroom and automatic upper-slab cuts |
 | `roof { on = r; style = gable\|hip\|pyramid\|spire; axis = x\|z; … }` | Build pitched stair roofs or `spire` turrets with dormers and chimneys |
 | `furnish room { place_anchor { … } hang { … } }` | Anchor furniture prefabs to corners/walls/center and hang ceiling lights |
 | `weathering { ground_moss { … } corner_quoin { … } chimney_soot { … } }` | Apply deterministic ground moss, corner quoins, and chimney soot |
-| `socket id { kind = …; room = r; wall = …; normal = …; }` | Record world-connection sockets in `.structure.json` and `.nbt` jigsaw entities |
+| `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | Record world-connection connectors and typed gameplay anchors in `.structure.json`, `.hooks.json`, glTF `anchor_*` Empty Nodes, and `.nbt` jigsaw/block entities |
+| `zone id [: std.courtyard] { … }` | Record semantic circulation or courtyard enclosure regions |
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | Place an imported child `structure` inside a `compound` unit |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | Low-level voxel, ASCII floorplan (`layer { at = …; rows = […]; map { … } }`), repeat/mirror, and prefab placement ops |
 
@@ -176,7 +177,7 @@ structure shrine_hut {
     corner_quoin { target = plaster; corners = stone_brick; }
   }
 
-  socket main_door { kind = entry; room = cell; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
+  anchor main_door : std.entry { room = cell; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
 }
 ```
 

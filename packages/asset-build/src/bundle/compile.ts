@@ -11,11 +11,14 @@ import {
   exportStructureGltfResolved,
   formatDeliveryGateFailure,
   formatSpriteGateFailure,
+  hasHooksContent,
   openAssetProject,
   rasterizeTexture,
   type ExportAdapterInput,
   type GlbPerformanceMetrics,
+  type HookBindingTarget,
 } from '@ashfox/engine-core';
+import { generateWorkspaceHookBindings } from './bindings';
 import {
   BuildFailure,
   type Artifact,
@@ -102,7 +105,10 @@ const compileModelFiles = async (
   const textures = new Map(Object.values(document.textures).map((t) => [t.source.key, t]));
   const gltfOptions =
     target.format === 'glb' || target.format === 'gltf'
-      ? { encoding: target.encoding ?? 'portable' }
+      ? {
+          encoding: target.encoding ?? 'portable',
+          ...(hasHooksContent(product.hooks) ? { hooks: product.hooks } : {}),
+        }
       : {};
   const bundle = await exportProductionProjectResolved(
     opened.project,
@@ -120,13 +126,17 @@ const compileModelFiles = async (
       ...gltfOptions,
     },
   );
-  return bundle.files.map((file) => {
+  const files: Artifact[] = bundle.files.map((file) => {
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {
       path: file.path,
       bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
     };
   });
+  if (hasHooksContent(product.hooks)) {
+    files.push({ path: `${target.name}.hooks.json`, bytes: encodeUtf8(json(product.hooks)) });
+  }
+  return files;
 };
 
 const compileStructureFiles = async (
@@ -142,7 +152,14 @@ const compileStructureFiles = async (
     );
   }
   if (target.format === 'java_structure') {
-    return [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
+    const out: Artifact[] = [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
+    if (hasHooksContent(product.structure.hooks)) {
+      out.push({
+        path: `${target.name}.hooks.json`,
+        bytes: encodeUtf8(json(product.structure.hooks)),
+      });
+    }
+    return out;
   }
   if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
   const bundle = await exportStructureGltfResolved(product.structure, target.name, buildKey, {
@@ -160,6 +177,12 @@ const compileStructureFiles = async (
     artifacts.push({
       path: metaPath,
       bytes: encodeUtf8(json(product.structure.playableMeta)),
+    });
+  }
+  if (hasHooksContent(product.structure.hooks)) {
+    artifacts.push({
+      path: `${target.name}.hooks.json`,
+      bytes: encodeUtf8(json(product.structure.hooks)),
     });
   }
   return artifacts;
@@ -233,11 +256,22 @@ const compileExportFiles = async (
 ): Promise<Artifact[]> => {
   if (product.kind === 'sprite') {
     assertSpriteDeliveryGate(target.name, product);
-    return [{ path: `${target.name}.png`, bytes: product.sprite.png }];
+    const out: Artifact[] = [{ path: `${target.name}.png`, bytes: product.sprite.png }];
+    if (hasHooksContent(product.hooks)) {
+      out.push({ path: `${target.name}.hooks.json`, bytes: encodeUtf8(json(product.hooks)) });
+    }
+    return out;
   }
   if (product.kind === 'sound') {
     assertSoundDeliveryGate(target.name, product);
-    return product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
+    const out: Artifact[] = product.sounds.map((s) => ({
+      path: `${target.name}/${s.variant}.wav`,
+      bytes: s.wav,
+    }));
+    if (hasHooksContent(product.hooks)) {
+      out.push({ path: `${target.name}.hooks.json`, bytes: encodeUtf8(json(product.hooks)) });
+    }
+    return out;
   }
   if (product.kind === 'structure') return compileStructureFiles(target, product, buildKey);
   return compileModelFiles(target, product, buildKey, key, projects, remaining);
@@ -346,6 +380,7 @@ export const compileBundle = async (
   toolchain: string,
   encoder?: PackEncoder,
   checked = checkSnapshot(snapshot),
+  bindingsTargets?: readonly HookBindingTarget[],
 ): Promise<CompiledBundle> => {
   const compiled = checked,
     artifacts: Artifact[] = [],
@@ -385,5 +420,15 @@ export const compileBundle = async (
       byteLength: file.bytes.length,
     })),
   };
-  return { receipt, catalog, artifacts, bundleHash: digest('ashfox-bundle:1\n' + json(receipt)) };
+  const bindings =
+    bindingsTargets && bindingsTargets.length > 0
+      ? generateWorkspaceHookBindings(snapshot.files, bindingsTargets)
+      : undefined;
+  return {
+    receipt,
+    catalog,
+    artifacts,
+    bundleHash: digest('ashfox-bundle:1\n' + json(receipt)),
+    ...(bindings && bindings.length > 0 ? { bindings } : {}),
+  };
 };

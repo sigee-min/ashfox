@@ -145,7 +145,7 @@ const collectEntryAprons = (
   const halfW = size[0] / 2;
   const halfD = size[2] / 2;
   const candidates: EntryApron[] = playableMeta.sockets
-    .filter((s) => s.kind === 'entry' && s.position[1] <= 2)
+    .filter((s) => s.schema === 'std.entry' && s.position[1] <= 2)
     .map((s) => ({ x: s.position[0], z: s.position[2], facing: s.normal }));
   if (candidates.length === 0) {
     for (const item of playableMeta.interactables) {

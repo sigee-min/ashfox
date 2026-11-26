@@ -14,6 +14,7 @@ import {
   rotateBlockState,
 } from '../../project/structure/state';
 import type {
+  CompoundChildPlacement,
   EvaluatedStructureResult,
   StructureFloorMeta,
   StructureOpeningMeta,
@@ -26,6 +27,7 @@ export interface EvalState {
   readonly units: ReadonlyMap<string, StructureSourceUnit>;
   readonly relative: (owner: string, specifier: string) => string;
   readonly evaluatedGridCache?: Map<string, EvaluatedStructureResult>;
+  readonly compoundChildren: CompoundChildPlacement[];
   readonly seed: number;
   readonly size: IntVec3;
   readonly voxels: Int32Array;
@@ -85,6 +87,7 @@ export const createEvalState = (
     units,
     relative,
     evaluatedGridCache,
+    compoundChildren: [],
     seed: root.seed,
     size,
     voxels: new Int32Array(volume).fill(-1),

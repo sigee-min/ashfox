@@ -26,7 +26,7 @@ const FRONT_AZIMUTH: Readonly<Record<string, number>> = {
 };
 
 export const detectFrontAzimuth = (payload: StructureObservationPayload): number => {
-  const entrySocket = payload.playableMeta.sockets.find((s) => s.kind === 'entry');
+  const entrySocket = payload.playableMeta.sockets.find((s) => s.schema === 'std.entry');
   const door = payload.playableMeta.interactables.find((i) => i.kind === 'door');
   return FRONT_AZIMUTH[entrySocket?.normal ?? door?.facing ?? 'south'] ?? 180;
 };

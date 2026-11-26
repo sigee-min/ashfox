@@ -19,6 +19,7 @@ import {
   type Snapshot,
   type CompiledBundle,
 } from '@ashfox/asset-build';
+import type { HookBindingTarget } from '@ashfox/engine-core';
 
 process.stdout.on('error', (error) => {
   if ('code' in error && error.code === 'EPIPE') {
@@ -100,29 +101,67 @@ const runCheck = async (): Promise<void> => {
   );
 };
 
-const parseBuildArgs = (): { readonly input: string; readonly noCache: boolean } => {
+const VALID_BINDING_TARGETS = new Set<string>(['ts', 'cs', 'gd']);
+
+const parseBindingsFlag = (): readonly HookBindingTarget[] => {
+  const out = new Set<HookBindingTarget>();
+  for (let i = 1; i < args.length; i += 1) {
+    if (args[i] !== '--bindings') continue;
+    const raw = args[i + 1];
+    if (!raw || raw.startsWith('--')) {
+      throw new BuildFailure('cli.arguments', 'Missing target list after --bindings (ts|cs|gd)', 2);
+    }
+    for (const part of raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      if (!VALID_BINDING_TARGETS.has(part)) {
+        throw new BuildFailure(
+          'cli.arguments',
+          `Unknown bindings target "${part}"; expected ts, cs, or gd`,
+          2,
+        );
+      }
+      out.add(part as HookBindingTarget);
+    }
+    i += 1;
+  }
+  return [...out];
+};
+
+const parseBuildArgs = (): {
+  readonly input: string;
+  readonly noCache: boolean;
+  readonly bindings: readonly HookBindingTarget[];
+} => {
   const jsonCount = args.filter((a) => a === '--json').length;
   const noCacheCount = args.filter((a) => a === '--no-cache').length;
-  if (
-    jsonCount > 1 ||
-    noCacheCount > 1 ||
-    args.some((a) => a.startsWith('--') && a !== '--json' && a !== '--no-cache')
-  ) {
-    throw new BuildFailure(
-      'cli.arguments',
-      'Only --json and --no-cache are supported; shared configuration belongs to .ashfoxworkspace or .ashfoxworkspace.mjs',
-      2,
-    );
+  const bindings = parseBindingsFlag();
+  const positional: string[] = [];
+  for (let i = 1; i < args.length; i += 1) {
+    const a = args[i]!;
+    if (a === '--json' || a === '--no-cache') continue;
+    if (a === '--bindings') {
+      i += 1;
+      continue;
+    }
+    if (a.startsWith('--')) {
+      throw new BuildFailure(
+        'cli.arguments',
+        'Only --json, --no-cache, and --bindings ts|cs|gd are supported',
+        2,
+      );
+    }
+    positional.push(a);
   }
-  const positional = args.slice(1).filter((a) => a !== '--json' && a !== '--no-cache');
-  if (command !== 'build' || positional.length !== 1) {
+  if (jsonCount > 1 || noCacheCount > 1 || command !== 'build' || positional.length !== 1) {
     throw new BuildFailure(
       'cli.arguments',
       'Unknown or invalid command. Expected init, doctor, check, render, or build.',
       2,
     );
   }
-  return { input: positional[0]!, noCache: noCacheCount === 1 };
+  return { input: positional[0]!, noCache: noCacheCount === 1, bindings };
 };
 
 const main = async (): Promise<void> => {
@@ -135,7 +174,7 @@ const main = async (): Promise<void> => {
     await runCheck();
     return;
   }
-  const { input, noCache } = parseBuildArgs();
+  const { input, noCache, bindings } = parseBuildArgs();
   const snapshot = readSnapshot(input);
   const toolchain = JSON.stringify({
     code: crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),
@@ -152,6 +191,7 @@ const main = async (): Promise<void> => {
       'build',
       controller.signal,
       noCache,
+      bindings,
     );
     if (!('bundleHash' in bundle)) throw new BuildFailure('build.worker', 'Missing bundle', 3);
     if (controller.signal.aborted)
@@ -178,6 +218,7 @@ const runBuildWorker = async (input: {
   toolchain: string;
   command: string;
   noCache?: boolean;
+  bindings?: readonly HookBindingTarget[];
 }): Promise<void> => {
   try {
     let value: CompiledBundle | { sourceHash: string; products: readonly unknown[] };
@@ -188,6 +229,7 @@ const runBuildWorker = async (input: {
     } else {
       value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal, {
         noCache: input.noCache,
+        bindings: input.bindings,
       });
     }
     parentPort!.postMessage({ ok: true, value });

@@ -68,6 +68,15 @@ const asNumber = (val: HookAstValue, state: ParseState, label: string): number =
   return fail(state, 'hooks.syntax', `Expected ${label} number.`, peek(state, -1));
 };
 
+const FACING_NORMALS: Readonly<Record<string, readonly [number, number, number]>> = {
+  north: Object.freeze([0, 0, -1]),
+  south: Object.freeze([0, 0, 1]),
+  east: Object.freeze([1, 0, 0]),
+  west: Object.freeze([-1, 0, 0]),
+  up: Object.freeze([0, 1, 0]),
+  down: Object.freeze([0, -1, 0]),
+};
+
 const toSeconds = (val: Extract<HookAstValue, { kind: 'number' }>): number =>
   val.unit === 'ms' ? val.value / 1000 : val.value;
 
@@ -79,6 +88,11 @@ const BODY_ATTRS: Readonly<
     else b.facing = v.value as HookFacing;
   },
   normal: (s, b, v) => {
+    if (v.kind === 'ref' && FACING_NORMALS[v.value]) {
+      b.normal = FACING_NORMALS[v.value];
+      if (!b.facing) b.facing = v.value as HookFacing;
+      return;
+    }
     b.normal = toVec3(v, s).vec;
   },
   rotate: (s, b, v) => {
@@ -156,7 +170,10 @@ const readAtAttr = (state: ParseState, body: HookBodyData, val: HookAstValue): v
   }
 };
 
-export const readHookBody = (state: ParseState): HookBodyData => {
+export const readHookBody = (
+  state: ParseState,
+  declKind: 'anchor' | 'volume' | 'cue' | 'meta' | 'zone' | 'mc_block' = 'anchor',
+): HookBodyData => {
   const defaultParent = state.parentStack.at(-1);
   const body: HookBodyData = {
     ...(defaultParent ? { parent: defaultParent } : {}),
@@ -182,6 +199,11 @@ export const readHookBody = (state: ParseState): HookBodyData => {
       keyTok.value === 'compound'
     ) {
       body.parent = Object.freeze({ kind: keyTok.value, id: asText(val, state, keyTok.value) });
+    } else if (keyTok.value === 'target' && declKind !== 'meta') {
+      const semi = peek(state);
+      body.props.push(
+        Object.freeze({ name: keyTok.value, value: val, span: spanFrom(keyTok, semi) }),
+      );
     } else if (BODY_ATTRS[keyTok.value]) {
       BODY_ATTRS[keyTok.value]!(state, body, val);
     } else {

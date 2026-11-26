@@ -62,6 +62,7 @@ export const STD_ENTRY_SCHEMA = stdSchema(
     field('pool', { kind: 'string' }, true),
     field('target', { kind: 'string' }, true),
     field('facing', FACING_TYPE, true),
+    field('wall', FACING_TYPE, true),
     field('width', { kind: 'int', min: 1, max: 16 }, true, numVal(1)),
     field('mc_block', { kind: 'string' }, true),
   ],
@@ -73,6 +74,8 @@ export const STD_ROAD_SCHEMA = stdSchema(
   [
     field('pool', { kind: 'string' }, true),
     field('target', { kind: 'string' }, true),
+    field('facing', FACING_TYPE, true),
+    field('wall', FACING_TYPE, true),
     field('width', { kind: 'int', min: 1, max: 16 }, true, numVal(3)),
     field('surface', { kind: 'string' }, true, strVal('cobblestone')),
     field('mc_block', { kind: 'string' }, true),
@@ -85,6 +88,8 @@ export const STD_WALL_JOIN_SCHEMA = stdSchema(
   [
     field('pool', { kind: 'string' }, true),
     field('target', { kind: 'string' }, true),
+    field('facing', FACING_TYPE, true),
+    field('wall', FACING_TYPE, true),
     field('flush', { kind: 'bool' }, true, boolVal(true)),
     field('mc_block', { kind: 'string' }, true),
   ],
@@ -95,6 +100,7 @@ export const STD_COURTYARD_SCHEMA = stdSchema(
   ['anchor', 'volume'],
   [
     field('pool', { kind: 'string' }, true),
+    field('target', { kind: 'string' }, true),
     field(
       'enclosure',
       Object.freeze({ kind: 'union', values: Object.freeze(['open', 'semi_open']) }),

@@ -6,6 +6,8 @@ import {
   type RawDeclaredOutput,
   type RawDeclaredPreview,
 } from '../directory/declarations';
+import { parseHooksSource } from '../../hooks/parse';
+import { collectUsedHookAliases } from '../../hooks/resolve';
 import type {
   AshfoxAssignStmt,
   AshfoxBlock,
@@ -229,6 +231,7 @@ const addPrefabDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: Structu
 };
 
 const readNamedDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: StructureDraft): void => {
+  if (stmt.blockKind === 'schema') return;
   if (stmt.blockKind === 'prefab') return addPrefabDecl(stmt, exported, draft);
   if (!exported && stmt.blockKind === 'params' && stmt.name === null) {
     return readParams(stmt.block, draft);
@@ -276,6 +279,7 @@ const readTopMember = (stmt: AshfoxStatement, draft: StructureDraft): void => {
     readNamedDecl(stmt, false, draft);
     return;
   }
+  if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return;
   failAst(draft.file, stmt.span, 'structure statement', stmt.stmtKind);
 };
 
@@ -318,10 +322,14 @@ export const parseStructureSource = (source: string, file: string): StructureSou
   if (draft.kind === 'structure' && (draft.size === null || draft.ops.length === 0)) {
     failAst(file, top.span, 'size and structure operations', 'missing');
   }
+  const hookAliases = [
+    ...collectUsedHookAliases(parseHooksSource(source, file, { allowHostStatements: true }).unit),
+  ];
   return deepFreeze({
     kind: draft.kind,
     id: top.name,
     imports: draft.imports,
+    ...(hookAliases.length > 0 ? { hookAliases } : {}),
     outputs: draft.outputs,
     previews: draft.previews,
     params: draft.params,

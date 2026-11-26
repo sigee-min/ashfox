@@ -16,6 +16,7 @@ and version the source to change the asset.
 | [Sprite syntax](sprites.md) | Native sprite records, reusable shapes, materials, layers and validation |
 | [Sound syntax](sounds.md) | Literal records, source variants, field ranges and synthesis behavior |
 | [Structure syntax](structures.md) | Minecraft `.nbt` & Unity GLB buildings, palettes, prefabs, roofs and cutaway views |
+| [Hooks and schemas](hooks.md) | Modular `schema`, `anchor`, `volume`, `cue`, `meta`, `zone`, `.hooks.json` and engine bindings |
 
 For projects with multiple assets, see [workspace configuration](../guides/workspace.md).
 It is a separate JSON contract, not a wrapper required around every source file.

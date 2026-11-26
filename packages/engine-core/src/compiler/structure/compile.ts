@@ -1,3 +1,5 @@
+import { hasHooksContent } from '../../hooks/resolve';
+import type { HooksDocument } from '../../hooks/contract';
 import type { CompiledModel } from '../../model/compiled';
 import type { ProjectDocument } from '../../model/document';
 import { sealCanonicalBoneFrame, type BoneNode, type SceneNode } from '../../model/scene';
@@ -6,6 +8,7 @@ import { createProjectDocument } from '../../project/create';
 import { StructureInputError, type StructureSourceUnit } from '../../project/structure/contract';
 import { describeBlockState } from './blocks';
 import type {
+  CompoundChildPlacement,
   EvaluatedStructureResult,
   StructureAuditEvaluator,
   StructureFloorMeta,
@@ -86,6 +89,10 @@ export const compileStructureUnits = (
   relative: (owner: string, specifier: string) => string,
   evaluateAudit: StructureAuditEvaluator,
   evaluatedGridCache?: Map<string, EvaluatedStructureResult>,
+  resolveHooks?: (
+    grid: StructureGrid,
+    compoundChildren?: readonly CompoundChildPlacement[],
+  ) => HooksDocument | undefined,
 ): StructureProduct => {
   const root = units.get(rootPath);
   if (!root || root.kind !== 'structure' || root.size === null) {
@@ -97,13 +104,19 @@ export const compileStructureUnits = (
       actual: root?.kind ?? 'missing',
     });
   }
-  const { grid, prefabUses } = evaluateStructure(rootPath, units, relative, evaluatedGridCache);
+  const { grid, prefabUses, compoundChildren } = evaluateStructure(
+    rootPath,
+    units,
+    relative,
+    evaluatedGridCache,
+  );
+  const hooks = resolveHooks?.(grid, compoundChildren);
   const descriptors = grid.states.map(describeBlockState);
   const { lighting, lights } = computeStructureLighting(grid, descriptors, customModels);
   const bakedMesh = buildStructureBakedMesh(grid, lighting, customModels, { descriptors });
   const lodLevels = buildStructureLodLevels(grid, lighting, customModels, { descriptors });
   const playableMeta = buildPlayableStructureMeta(grid, lights, descriptors);
-  const nbt = encodeStructureNbt(grid);
+  const nbt = encodeStructureNbt(grid, hooks);
   const document = buildStubStructureDocument(grid, customModels);
   const audit = evaluateAudit(grid, prefabUses, lighting, bakedMesh);
   return {
@@ -115,6 +128,7 @@ export const compileStructureUnits = (
     bakedMesh,
     lodLevels,
     playableMeta,
+    ...(hasHooksContent(hooks) ? { hooks } : {}),
     document,
     audit,
   };

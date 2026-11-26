@@ -254,16 +254,17 @@ const verifySoundCoverage = (
   assetFiles: readonly FileRecord[],
   cache: Map<string, Buffer>,
 ): void => {
+  const wavFiles = assetFiles.filter((f) => !f.path.endsWith('.hooks.json'));
   const variants = new Set(details.variants.map((v) => v.id));
   if (
     variants.size !== details.variants.length ||
     !variants.size ||
     variants.size > 8 ||
-    assetFiles.length !== variants.size
+    wavFiles.length !== variants.size
   )
     fail('Invalid sound file coverage');
   const wavByVariant = new Map<string, FileRecord>();
-  for (const file of assetFiles) {
+  for (const file of wavFiles) {
     const slash = file.path.lastIndexOf('/');
     if (slash >= 0 && file.path.endsWith('.wav'))
       wavByVariant.set(file.path.slice(slash + 1, -4), file);

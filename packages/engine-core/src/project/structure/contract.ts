@@ -13,10 +13,7 @@ export type RepeatAxis = 'x' | 'y' | 'z';
 export type RoofStyle = 'gable' | 'hip' | 'pyramid' | 'spire';
 export type RoofPitch = 'shallow' | 'standard' | 'steep';
 export type StairStyle = 'straight' | 'l_turn' | 'u_turn' | 'spiral';
-export type RoomKind =
-  'living' | 'workshop' | 'bedroom' | 'tavern' | 'tower' | 'hallway' | 'courtyard';
 export type AcousticSpace = 'stone_hall' | 'timber_room' | 'small_chamber' | 'outdoor';
-export type SocketKind = 'entry' | 'road' | 'wall_join' | 'courtyard';
 export type StructureDensity = 1 | 2;
 export const DEFAULT_STRUCTURE_DENSITY: StructureDensity = 2;
 
@@ -184,7 +181,8 @@ export type StructureOp =
       name: string;
       from: ExprVec2;
       size: ExprVec2;
-      kind: RoomKind;
+      kind: string;
+      schema?: string;
       shape?: 'rect' | 'octagon';
       plinth?: string;
       floor?: string;
@@ -221,15 +219,18 @@ export type StructureOp =
       rules: readonly WeatheringRule[];
     }>
   | Readonly<{
-      op: 'socket';
+      op: 'anchor';
       name: string;
-      kind: SocketKind;
+      schema: string;
       at?: ExprVec3;
       room?: string;
       wall?: CardinalFacing;
-      normal?: CardinalFacing;
+      facing?: CardinalFacing;
       pool?: string;
       target?: string;
+    }>
+  | Readonly<{
+      op: 'hook_decl';
     }>
   | Readonly<{
       op: 'compound_place';
@@ -248,6 +249,7 @@ export interface StructureSourceUnit {
   readonly kind: 'structure' | 'module';
   readonly id: string;
   readonly imports: readonly StructureImport[];
+  readonly hookAliases?: readonly string[];
   readonly outputs: readonly RawDeclaredOutput[];
   readonly previews: readonly RawDeclaredPreview[];
   readonly params: Readonly<Record<string, StructureParamValue>>;

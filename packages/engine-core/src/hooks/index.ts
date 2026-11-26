@@ -33,3 +33,30 @@ export {
   isValidMcBlockTemplate,
   validateHooksUnit,
 } from './validate';
+export {
+  generateAllHookBindings,
+  generateBindingsFromDocument,
+  generateHookBindings,
+  type GeneratedBindingFile,
+  type HookBindingOptions,
+  type HookBindingTarget,
+} from './bindings';
+export {
+  checkWorkspaceModularity,
+  normalizeWorkspacePath,
+  type BoilerplateBlockKind,
+  type BoilerplateOccurrence,
+  type DuplicateBoilerplateGroup,
+  type ModularityFileInput,
+  type ModularityGuardOptions,
+  type ModularityGuardResult,
+} from './modularityGuard';
+export {
+  buildHooksBoneContext,
+  collectUsedHookAliases,
+  compileHooksForWorkspaceFile,
+  emptyHooksDocument,
+  hasHooksContent,
+  type CompiledWorkspaceHooksResult,
+  type WorkspaceHookFile,
+} from './resolve';
