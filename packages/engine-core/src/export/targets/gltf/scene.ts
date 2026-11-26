@@ -7,7 +7,15 @@ import {
 } from '../../../model';
 import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
 import { compileOpaqueCubeFaceOcclusion } from '../../occlusion/cube';
-import { compileRigidGltfBatches, gltfNodeGeometryRotation } from './rigid';
+import {
+  animatedNodeIds,
+  compileMergedModelGltf,
+  gltfNodeGeometryRotation,
+  identityMat4,
+  multiplyMat4,
+  trsMat4,
+  type Mat4,
+} from './rigid';
 import {
   addVec3,
   isIdentityRotation,
@@ -28,7 +36,7 @@ const parentOrigin = (document: ProjectDocument, node: SceneNode): [number, numb
   return addVec3(parent.transform.pivot, parent.transform.position);
 };
 
-const restTranslation = (
+export const restTranslation = (
   document: ProjectDocument,
   node: SceneNode,
   unitScale: number,
@@ -41,7 +49,11 @@ const restTranslation = (
   return multiplyVec3(subtractVec3(origin, parentOrigin(document, node)), unitScale);
 };
 
-const createGltfNode = (node: SceneNode, translation: [number, number, number]): GltfNode => {
+const createGltfNode = (
+  node: SceneNode,
+  translation: [number, number, number],
+  compactExtras: boolean,
+): GltfNode => {
   const rotation = gltfNodeGeometryRotation(node);
   return {
     name: node.name,
@@ -56,17 +68,18 @@ const createGltfNode = (node: SceneNode, translation: [number, number, number]):
           ],
         }
       : {}),
-    extras: {
-      ashfoxId: node.id,
-      ashfoxKind: node.kind,
-      visible: node.visible,
-      ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
-      ...(node.kind === 'bone' && node.canonicalFrame !== undefined
-        ? {
-            ashfoxCanonicalFrame: node.canonicalFrame,
-          }
-        : {}),
-    },
+    extras: compactExtras
+      ? {
+          ashfoxId: node.id,
+          ...(!node.visible ? { visible: false } : {}),
+          ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
+        }
+      : {
+          ashfoxId: node.id,
+          ashfoxKind: node.kind,
+          visible: node.visible,
+          ...(node.tags ? { ashfoxTags: [...node.tags] } : {}),
+        },
   };
 };
 
@@ -80,17 +93,68 @@ const assertValidCanonicalBone = (node: SceneNode): void => {
   }
 };
 
-const linkGltfHierarchy = (
+export const computeWorldMatrices = (
   orderedNodes: readonly SceneNode[],
+  restTranslationById: ReadonlyMap<string, [number, number, number]>,
+  restRotationById: ReadonlyMap<string, [number, number, number]>,
+  restScaleById: ReadonlyMap<string, [number, number, number]>,
+): Map<string, Mat4> => {
+  const byId = new Map<string, SceneNode>(orderedNodes.map((n) => [n.id, n]));
+  const worldById = new Map<string, Mat4>();
+  const resolve = (id: string): Mat4 => {
+    const hit = worldById.get(id);
+    if (hit) return hit;
+    const node = byId.get(id);
+    if (!node) return identityMat4();
+    const rot = restRotationById.get(id) ?? [0, 0, 0];
+    const quat = isIdentityRotation(rot) ? ([0, 0, 0, 1] as const) : quaternionFromEuler(rot);
+    const local = trsMat4(
+      restTranslationById.get(id) ?? [0, 0, 0],
+      quat,
+      restScaleById.get(id) ?? [1, 1, 1],
+    );
+    const world =
+      node.parentId && byId.has(node.parentId)
+        ? multiplyMat4(resolve(node.parentId), local)
+        : local;
+    worldById.set(id, world);
+    return world;
+  };
+  for (const node of orderedNodes) resolve(node.id);
+  return worldById;
+};
+
+const selectKeptNodeIds = (
+  document: ProjectDocument,
+  orderedNodes: readonly SceneNode[],
+  animated: ReadonlySet<string>,
+): ReadonlySet<string> => {
+  const kept = new Set<string>();
+  const isAnim = animated.size > 0;
+  for (const node of orderedNodes) {
+    const keepLeaf =
+      node.kind === 'bone' || node.kind === 'locator' || (isAnim && animated.has(node.id));
+    if (!keepLeaf) continue;
+    let cur: SceneNode | undefined = node;
+    while (cur && !kept.has(cur.id)) {
+      kept.add(cur.id);
+      cur = cur.parentId ? document.scene.nodes[cur.parentId] : undefined;
+    }
+  }
+  return kept;
+};
+
+const linkGltfHierarchy = (
+  keptNodes: readonly SceneNode[],
   nodes: GltfNode[],
   nodeIndexById: ReadonlyMap<string, number>,
 ): void => {
-  for (const node of orderedNodes) {
+  for (const node of keptNodes) {
     if (node.parentId === null) continue;
     const parentIndex = nodeIndexById.get(node.parentId);
     const childIndex = nodeIndexById.get(node.id);
     if (parentIndex === undefined || childIndex === undefined) continue;
-    const parentNode = nodes[parentIndex];
+    const parentNode = nodes[parentIndex]!;
     parentNode.children = [...(parentNode.children ?? []), childIndex];
   }
 };
@@ -99,50 +163,55 @@ export const compileGltfScene = (
   document: ProjectDocument,
   options: GltfSceneCompileOptions,
 ): GltfCompiledScene => {
-  const nodes: GltfNode[] = [];
-  const nodeIndexById = new Map<string, number>();
-  const restTranslationById = new Map<string, [number, number, number]>();
-  const restRotationById = new Map<string, [number, number, number]>();
-  const restScaleById = new Map<string, [number, number, number]>();
   const visibleNodeIds = effectivelyVisibleSceneNodeIds(document);
   const orderedNodes = Object.values(document.scene.nodes)
     .filter((node) => visibleNodeIds.has(node.id))
     .sort((left, right) => compareText(left.id, right.id));
-  const compileOptions: GltfSceneCompileOptions = {
-    ...options,
-    cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(document),
-  };
-
+  const restTranslationById = new Map<string, [number, number, number]>();
+  const restRotationById = new Map<string, [number, number, number]>();
+  const restScaleById = new Map<string, [number, number, number]>();
   for (const node of orderedNodes) {
     assertValidCanonicalBone(node);
-    const translation = restTranslation(document, node, options.unitScale);
-    nodeIndexById.set(node.id, nodes.length);
-    restTranslationById.set(node.id, translation);
+    restTranslationById.set(node.id, restTranslation(document, node, options.unitScale));
     restRotationById.set(node.id, [...gltfNodeGeometryRotation(node)]);
     restScaleById.set(node.id, [...node.transform.scale]);
-    nodes.push(createGltfNode(node, translation));
   }
-
-  const compiledBatches = compileRigidGltfBatches(
-    document,
+  const worldMatrixById = computeWorldMatrices(
     orderedNodes,
     restTranslationById,
-    compileOptions,
+    restRotationById,
+    restScaleById,
   );
-  for (const [ownerId, mesh] of compiledBatches.meshIndexByOwnerId) {
-    const nodeIndex = nodeIndexById.get(ownerId);
-    if (nodeIndex !== undefined) nodes[nodeIndex].mesh = mesh;
+  const animated = animatedNodeIds(document);
+  const keptSet = selectKeptNodeIds(document, orderedNodes, animated);
+  const keptNodes = orderedNodes.filter((n) => keptSet.has(n.id));
+  const nodes: GltfNode[] = [];
+  const nodeIndexById = new Map<string, number>();
+  for (const node of keptNodes) {
+    nodeIndexById.set(node.id, nodes.length);
+    nodes.push(createGltfNode(node, restTranslationById.get(node.id)!, options.writer.isQuantized));
   }
-  linkGltfHierarchy(orderedNodes, nodes, nodeIndexById);
-
+  linkGltfHierarchy(keptNodes, nodes, nodeIndexById);
   const rootNodeIndices = document.scene.roots
     .map((id) => nodeIndexById.get(id))
     .filter((index): index is number => index !== undefined);
 
+  const compiled = compileMergedModelGltf(
+    document,
+    orderedNodes,
+    worldMatrixById,
+    nodeIndexById,
+    animated,
+    { ...options, cubeFaceOcclusion: compileOpaqueCubeFaceOcclusion(document) },
+  );
+  for (const meshNode of compiled.meshNodes) {
+    rootNodeIndices.push(nodes.length);
+    nodes.push(meshNode);
+  }
   return {
     nodes,
-    meshes: compiledBatches.meshes,
-    skins: [],
+    meshes: compiled.meshes,
+    skins: compiled.skins,
     rootNodeIndices,
     nodeIndexById,
     restTranslationById,

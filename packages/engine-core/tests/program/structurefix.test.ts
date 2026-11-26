@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  buildStructureDocument,
   compileDirectoryWorkspace,
   compileStructureUnits,
   exportStructureGltfResolved,
@@ -234,11 +233,8 @@ structure mirror_test {
     built.grid.states[built.grid.voxels[idx(5, 0, 7)]!],
     'minecraft:oak_stairs[facing=north,half=bottom,shape=straight]',
   );
-  const clonedDoc = buildStructureDocument(built.grid, { 'root.ashfox#rp': rotatedModel });
-  const clonedBone = clonedDoc.scene.nodes[`c_0_${rotatedBone.id}`];
-  assert.ok(clonedBone && clonedBone.kind === 'bone');
-  assert.deepEqual(clonedBone.transform.rotation, rotatedBone.transform.rotation);
-  assert.deepEqual(clonedBone.canonicalFrame?.rotation, rotatedBone.canonicalFrame?.rotation);
+  assert.equal(built.bakedMesh.instances.length, 1);
+  assert.equal(built.bakedMesh.instances[0]?.assetKey, 'root.ashfox#rp');
   const glb = await exportStructureGltfResolved(built, 'mirror_test', 'fix-key');
   assert.ok(glb.files.some((f) => f.path.endsWith('.glb')));
   assert.ok(glb.files.some((f) => f.path.endsWith('.structure.json')));
@@ -267,10 +263,8 @@ structure ew_window {
     {},
     relativePosix,
   );
-  const trimBatch = built.bakedMesh.batches.find(
-    (b) => b.textureId === 'struct_opaque_timber_trim',
-  );
-  assert.ok(trimBatch, 'expected timber_trim batch for non-pane east window mullions');
+  const trimBatch = built.bakedMesh.batches.find((b) => b.textureId === 'struct_atlas_opaque');
+  assert.ok(trimBatch, 'expected struct_atlas_opaque batch for non-pane east window mullions');
   const [w, _h, d] = built.grid.size;
   const win = built.grid.openings.find((o) => o.kind === 'window' && o.wall === 'east')!;
   const wx = win.from[0] - w / 2;

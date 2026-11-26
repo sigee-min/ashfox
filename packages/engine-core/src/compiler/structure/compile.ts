@@ -14,6 +14,7 @@ import type {
 import { evaluateStructure } from './eval';
 import { buildStructureBakedMesh } from './greedyMesh';
 import { computeStructureLighting } from './lighting';
+import { buildStructureLodLevels } from './lod';
 import { encodeStructureNbt } from './nbt';
 import { buildPlayableStructureMeta } from './playableMeta';
 
@@ -98,6 +99,7 @@ export const compileStructureUnits = (
   const descriptors = grid.states.map(describeBlockState);
   const { lighting, lights } = computeStructureLighting(grid, descriptors, customModels);
   const bakedMesh = buildStructureBakedMesh(grid, lighting, customModels, { descriptors });
+  const lodLevels = buildStructureLodLevels(grid, lighting, customModels, { descriptors });
   const playableMeta = buildPlayableStructureMeta(grid, lights, descriptors);
   const nbt = encodeStructureNbt(grid);
   const document = buildStubStructureDocument(grid, customModels);
@@ -109,6 +111,7 @@ export const compileStructureUnits = (
     nbt,
     lighting,
     bakedMesh,
+    lodLevels,
     playableMeta,
     document,
     audit,

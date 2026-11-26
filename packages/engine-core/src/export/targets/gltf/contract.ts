@@ -1,4 +1,13 @@
+import type { BoneNode } from '../../../model';
 import type { Gltf2ExportProfile } from '../../adapter/contract';
+
+export type GltfExtensionName =
+  | 'EXT_meshopt_compression'
+  | 'KHR_mesh_quantization'
+  | 'EXT_mesh_gpu_instancing'
+  | 'KHR_texture_transform'
+  | 'MSFT_lod'
+  | 'MSFT_screencoverage';
 
 export interface GltfAsset {
   version: Gltf2ExportProfile['version'];
@@ -13,7 +22,7 @@ export interface GltfBuffer {
 
 export interface GltfBufferView {
   buffer: number;
-  byteOffset: number;
+  byteOffset?: number;
   byteLength: number;
   byteStride?: number;
   target?: 34962 | 34963;
@@ -33,7 +42,7 @@ export interface GltfBufferView {
 export interface GltfAccessor {
   bufferView: number;
   byteOffset?: number;
-  componentType: 5121 | 5122 | 5123 | 5125 | 5126;
+  componentType: 5120 | 5121 | 5122 | 5123 | 5125 | 5126;
   normalized?: boolean;
   count: number;
   type: 'SCALAR' | 'VEC2' | 'VEC3' | 'VEC4' | 'MAT4';
@@ -53,17 +62,55 @@ export interface GltfPrimitive {
   indices?: number;
   material?: number;
   mode?: 4;
-  /** Canonical workspace-authored node for an unmerged primitive. The
-   * field is intentionally absent on merged interchange batches, where
-   * primitive ownership is not part of the source contract. */
-  extras?: {
-    ashfoxSourceNodeId: string;
-  };
+}
+
+export interface GltfMsftLodExtension {
+  ids: number[];
+}
+
+export interface GltfMsftScreenCoverageExtension {
+  screencoverage: number[];
 }
 
 export interface GltfMesh {
   name?: string;
   primitives: GltfPrimitive[];
+  extensions?: {
+    MSFT_lod?: GltfMsftLodExtension;
+    MSFT_screencoverage?: GltfMsftScreenCoverageExtension;
+  };
+}
+
+export interface GltfExtMeshGpuInstancing {
+  attributes: {
+    TRANSLATION: number;
+    ROTATION?: number;
+    SCALE?: number;
+  };
+}
+
+export interface GltfAshfoxLodExtras {
+  distances: readonly number[];
+  hysteresis?: number;
+  boundingSphere?: readonly [number, number, number, number];
+}
+
+export interface GltfNodeExtensions {
+  EXT_mesh_gpu_instancing?: GltfExtMeshGpuInstancing;
+  MSFT_lod?: GltfMsftLodExtension;
+  MSFT_screencoverage?: GltfMsftScreenCoverageExtension;
+}
+
+export interface GltfNodeExtras {
+  ashfoxId?: string;
+  ashfoxKind?: 'bone' | 'cube' | 'plane' | 'locator';
+  visible?: boolean;
+  ashfoxTags?: string[];
+  ashfoxCanonicalFrame?: BoneNode['canonicalFrame'];
+  MSFT_screencoverage?: number[];
+  ashfox?: {
+    lod?: GltfAshfoxLodExtras;
+  };
 }
 
 export interface GltfNode {
@@ -74,12 +121,8 @@ export interface GltfNode {
   translation?: [number, number, number];
   rotation?: [number, number, number, number];
   scale?: [number, number, number];
-  extras?: {
-    ashfoxId: string;
-    ashfoxKind: 'bone' | 'cube' | 'plane' | 'locator';
-    visible: boolean;
-    ashfoxTags?: string[];
-  };
+  extensions?: GltfNodeExtensions;
+  extras?: GltfNodeExtras;
 }
 
 export interface GltfSkin {
@@ -116,14 +159,28 @@ export interface GltfSampler {
   wrapT: 10497;
 }
 
+export interface GltfKhrTextureTransform {
+  offset?: [number, number];
+  rotation?: number;
+  scale?: [number, number];
+  texCoord?: number;
+}
+
+export interface GltfTextureInfo {
+  index: number;
+  extensions?: {
+    KHR_texture_transform?: GltfKhrTextureTransform;
+  };
+}
+
 export interface GltfMaterial {
   name?: string;
   pbrMetallicRoughness: {
-    baseColorTexture?: { index: number };
+    baseColorTexture?: GltfTextureInfo;
     metallicFactor: 0;
     roughnessFactor: 1;
   };
-  emissiveTexture?: { index: number };
+  emissiveTexture?: GltfTextureInfo;
   emissiveFactor?: [number, number, number];
   alphaMode?: 'MASK' | 'BLEND';
   alphaCutoff?: number;
@@ -157,8 +214,8 @@ export interface GltfAnimation {
 
 export interface GltfDocument {
   asset: GltfAsset;
-  extensionsUsed?: Array<'EXT_meshopt_compression' | 'KHR_mesh_quantization'>;
-  extensionsRequired?: Array<'EXT_meshopt_compression' | 'KHR_mesh_quantization'>;
+  extensionsUsed?: GltfExtensionName[];
+  extensionsRequired?: GltfExtensionName[];
   scene: 0;
   scenes: Array<{ name?: string; nodes: number[] }>;
   nodes: GltfNode[];

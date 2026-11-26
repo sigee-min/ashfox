@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   StructureInputError,
-  buildStructureDocument,
+  buildStructureBakedMesh,
   compileDirectoryWorkspace,
   compileStructureUnits,
   decodeStructureNbt,
@@ -27,9 +27,8 @@ const walkWorkspaceFiles = (rootDir: string, base = ''): DirectoryFile[] => {
     const rel = base ? `${base}/${entry.name}` : entry.name;
     const full = path.join(rootDir, entry.name);
     if (entry.isDirectory()) out.push(...walkWorkspaceFiles(full, rel));
-    else if (entry.name.endsWith('.ashfox')) {
+    else if (entry.name.endsWith('.ashfox'))
       out.push({ path: rel, source: fs.readFileSync(full, 'utf8') });
-    }
   }
   return out;
 };
@@ -104,10 +103,7 @@ const testParserAndSemanticDsl = (): void => {
     'utf8',
   );
   const sem = parseStructureSource(semanticSrc, 'medieval_cottage.ashfox');
-  assert.equal(sem.kind, 'structure');
-  assert.equal(sem.density, 2);
-  assert.equal(sem.seed, 101);
-  assert.equal(sem.params.w, 15);
+  assert.equal([sem.kind, sem.density, sem.seed, sem.params.w].join(','), 'structure,2,101,15');
   assert.equal(sem.palette.cobble?.kind, 'mix');
   assert.ok(sem.ops.some((op) => op.op === 'floor'));
   assert.ok(sem.ops.some((op) => op.op === 'staircase'));
@@ -255,13 +251,22 @@ structure s {
   assert.ok(nbt.palette.some((e) => e.Name === 'minecraft:jigsaw'));
   assert.ok(nbt.blocks.some((b) => nbt.palette[b.state]?.Name === 'minecraft:jigsaw'));
 
-  const fullDoc = buildStructureDocument(built.grid, { 's.ashfox#rp': pillarModel });
-  const cutDoc = buildStructureDocument(
+  const cutMesh = buildStructureBakedMesh(
     built.grid,
+    built.lighting,
     { 's.ashfox#rp': pillarModel },
     { cutawayY: 2 },
   );
-  assert.ok(Object.keys(cutDoc.scene.nodes).length < Object.keys(fullDoc.scene.nodes).length);
+  assert.ok(cutMesh.mergedQuadCount < built.bakedMesh.mergedQuadCount);
+  assert.ok(built.bakedMesh.textures.struct_atlas_opaque);
+  assert.ok(built.bakedMesh.textures.struct_atlas_cutout);
+  const atlasBatches = built.bakedMesh.batches.filter((b) =>
+    b.textureId.startsWith('struct_atlas_'),
+  );
+  assert.ok(atlasBatches.length <= 3 && atlasBatches.length >= 2);
+  for (const batch of atlasBatches) {
+    for (const uv of batch.uvs) assert.ok(uv >= 0 && uv <= 1, `atlas UV out of [0,1]: ${uv}`);
+  }
   const stubNodes = Object.values(built.document.scene.nodes);
   assert.ok(stubNodes.length <= 8);
   assert.ok(stubNodes.every((n) => n.kind === 'bone'));
@@ -280,15 +285,19 @@ structure s {
     const metaFile = bundle.files.find((f) => f.path === 's.structure.json');
     assert.ok(glbFile?.kind === 'binary' && metaFile?.kind === 'json');
     const gltf = (await validateGltfBinary(glbFile.data, req)) as {
-      meshes: unknown[];
-      nodes: { mesh?: number }[];
+      accessors?: { count: number }[];
+      nodes: {
+        extensions?: { EXT_mesh_gpu_instancing?: { attributes: { TRANSLATION: number } } };
+      }[];
     };
-    const propMeshCounts = new Map<number, number>();
-    for (const node of gltf.nodes) {
-      if (node.mesh !== undefined)
-        propMeshCounts.set(node.mesh, (propMeshCounts.get(node.mesh) ?? 0) + 1);
-    }
-    assert.ok([...propMeshCounts.values()].some((count) => count >= 3));
+    const instanced = gltf.nodes.map(
+      (n) => n.extensions?.EXT_mesh_gpu_instancing?.attributes.TRANSLATION,
+    );
+    const maxInst = Math.max(
+      0,
+      ...instanced.map((i) => (i === undefined ? 0 : (gltf.accessors?.[i]?.count ?? 0))),
+    );
+    assert.ok(maxInst >= 3, `expected >= 3 GPU-instanced props, got ${maxInst}`);
   }
 };
 
@@ -322,6 +331,16 @@ const testCanonicalWorkspaceShowcases = (): void => {
       tavern.structure.grid.floors.some((f) => f.jetty?.south === 1 && f.jetty?.east === 1),
     );
     assert.ok(tavern.structure.grid.openings.some((o) => o.kind === 'bay_window'));
+    const tavernTris = tavern.structure.bakedMesh.batches.reduce(
+      (sum, b) => sum + b.indices.length / 3,
+      0,
+    );
+    assert.ok(
+      typeof tavern.structure.bakedMesh.trimCount === 'number' &&
+        tavern.structure.bakedMesh.trimCount < 1600,
+    );
+    assert.ok(tavern.structure.bakedMesh.batches.length <= 16);
+    assert.ok(tavernTris < 22000);
   }
   if (smith.kind === 'structure') {
     assert.ok(smith.structure.grid.openings.some((o) => o.kind === 'arcade'));
@@ -470,7 +489,6 @@ const main = async (): Promise<void> => {
   testCanonicalWorkspaceShowcases();
   console.log('ashfox structure compiler v2 tests ok');
 };
-
 const pending = main().catch((err) => {
   console.error(err);
   process.exit(1);

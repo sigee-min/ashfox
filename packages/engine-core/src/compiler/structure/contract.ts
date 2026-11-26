@@ -167,6 +167,11 @@ export interface StructureBakedMesh {
   readonly trimCount?: number;
 }
 
+export interface StructureLodLevels {
+  readonly lod1: StructureBakedMesh;
+  readonly lod2: StructureBakedMesh;
+}
+
 export interface PlayableCollider {
   readonly from: Vec3;
   readonly to: Vec3;
@@ -265,6 +270,7 @@ export interface StructureProduct {
   readonly nbt: Uint8Array;
   readonly lighting: StructureLightingField;
   readonly bakedMesh: StructureBakedMesh;
+  readonly lodLevels?: StructureLodLevels;
   readonly playableMeta: PlayableStructureMeta;
   readonly document: ProjectDocument;
   readonly audit: StructureAuditReport;

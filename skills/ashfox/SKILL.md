@@ -53,7 +53,12 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
   source graphs in memory.
 - For game delivery, run `check <workspace>`, `build <workspace>`, and `check <build-dir>`.
   Consume deterministic outputs through the game's adapter; do not hand-edit
-  generated PNG, GLB, audio or runtime manifests.
+  generated PNG, GLB, audio or runtime manifests. Multi-asset `game_assets` packs
+  automatically deduplicate identical GLB PNG textures into `textures/<hash12>.png`
+  (`sharedTextures` in `assets.json`), and GLB exports embed 3-tier LOD (`*_LOD0/1/2`
+  + `MSFT_lod`) targeting runtime budgets (`creature`/`prop` `<= 4` draws [`<= 2` skinned] /
+  `<= 1,500` tris / `<= 45 KB`; `structure` `<= 18` draws / `<= 18,000` tris / `<= 350 KB`;
+  `compound` `<= 28` draws / `<= 45,000` tris / `<= 1.1 MB`, `LOD2 == 1` draw).
 - Save or build the outputs requested by the user (`outputs { ... }`). Report exact output locations,
   `check` audit score/profile, what views were inspected/rendered, and any behavior still unverified in
   the receiving game. Do not claim successful output from a preflight check alone.

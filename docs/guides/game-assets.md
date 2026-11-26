@@ -100,14 +100,31 @@ voxel_game.zip
 
 `assets.json` has `format: ashfox-game-assets`, `version: 1`, and `assets` ordered
 by ID. Every file path is relative to the folder containing that manifest.
+When a pack bundles two or more GLB assets, identical embedded PNG textures are
+deduplicated by SHA-256 content hash into `textures/<hash12>.png` (recorded in
+`sharedTextures` in `assets.json`), and each GLB references the shared PNG via
+relative URI with orphaned image bytes stripped from its binary chunk. Single-GLB
+packs keep textures embedded inside the GLB for standalone drop-in use.
 There are no absolute paths, compiler receipts or Minecraft registration files
 inside the game folder. Build receipts remain in the canonical build bundle.
 
 | Asset kind | Runtime fields |
 | --- | --- |
 | `model` | `model` file path, glTF coordinate convention, `unitsPerMeter`, required extensions, clip names and durations |
+| `structure` | `model` file path, `meta` (`.structure.json`), `unitsPerBlock`, required extensions, `size`, zone/light/interactable counts |
 | `sprite` | `image` file path, width, height, pixels per unit and filter |
 | `sound` | codec and named variants with file paths, intended durations, sample rates and channel counts |
+
+## Runtime budgets and LOD tiers
+
+Exported GLB assets target strict runtime budgets across draw calls, triangles,
+file size, and 3-tier LOD (`*_LOD0`, `*_LOD1`, `*_LOD2` with `MSFT_lod`):
+
+| Asset tier | Draw calls | Triangles (LOD0) | GLB size | LOD1 triangle ratio | LOD2 draw calls |
+| --- | --- | --- | --- | --- | --- |
+| `creature` / `prop` | `<= 4` (`<= 2` skinned) | `<= 1,500` | `<= 45 KB` | `<= 55%` | `1` |
+| `structure` | `<= 18` | `<= 18,000` | `<= 350 KB` | `<= 25%` | `1` |
+| `compound` | `<= 28` | `<= 45,000` | `<= 1.1 MB` | `<= 25%` | `1` |
 
 Every entry also has `id` and `files` with exact byte lengths and SHA-256 hashes.
 For OGG, duration is the source's intended duration; decoding may add or remove a

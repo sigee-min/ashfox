@@ -1,6 +1,7 @@
 import { readPlayback, verifyPcm, pcmStatistics } from '../bundle/audio';
 import { readClosedRecord, readGameAssetManifest } from '../packs/game/read';
 import { compareText, decodeUtf8, isClosedContractRecord } from '@ashfox/internal-contracts';
+import { verifyPerformanceMetrics } from './perfRead';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -85,7 +86,8 @@ const verifyPackMetadata = (value: unknown): AssetMetadata => {
 };
 
 const verifyModelMetadata = (value: unknown): AssetMetadata => {
-  const r = record(value, ['clips']);
+  const hasPerf = isClosedContractRecord(value) && 'performance' in value;
+  const r = record(value, hasPerf ? ['clips', 'performance'] : ['clips']);
   if (!Array.isArray(r.clips)) return fail('Invalid clips');
   return {
     clips: r.clips.map((raw) => {
@@ -99,6 +101,7 @@ const verifyModelMetadata = (value: unknown): AssetMetadata => {
         fail('Invalid clip');
       return { name: clip.name as string, durationSeconds: clip.durationSeconds as number };
     }),
+    ...(hasPerf ? { performance: verifyPerformanceMetrics(r.performance) } : {}),
   };
 };
 
@@ -162,7 +165,9 @@ const verifyStructureMetadata = (value: unknown): AssetMetadata => {
   const hasPlayable =
     isClosedContractRecord(value) &&
     ('zoneCount' in value || 'lightCount' in value || 'interactableCount' in value);
-  const r = record(value, hasPlayable ? STRUCTURE_META_PLAYABLE_KEYS : STRUCTURE_META_BASE_KEYS);
+  const hasPerf = isClosedContractRecord(value) && 'performance' in value;
+  const baseKeys = hasPlayable ? STRUCTURE_META_PLAYABLE_KEYS : STRUCTURE_META_BASE_KEYS;
+  const r = record(value, hasPerf ? [...baseKeys, 'performance'] : baseKeys);
   if (
     !Array.isArray(r.size) ||
     r.size.length !== 3 ||
@@ -173,7 +178,8 @@ const verifyStructureMetadata = (value: unknown): AssetMetadata => {
   const s = r.size as [number, number, number];
   const blockCount = requireNonNegativeInt(r.blockCount);
   const interiorCells = requireNonNegativeInt(r.interiorCells);
-  if (!hasPlayable) return { size: [s[0], s[1], s[2]], blockCount, interiorCells };
+  const perf = hasPerf ? { performance: verifyPerformanceMetrics(r.performance) } : {};
+  if (!hasPlayable) return { size: [s[0], s[1], s[2]], blockCount, interiorCells, ...perf };
   return {
     size: [s[0], s[1], s[2]],
     blockCount,
@@ -181,6 +187,7 @@ const verifyStructureMetadata = (value: unknown): AssetMetadata => {
     zoneCount: requireNonNegativeInt(r.zoneCount),
     lightCount: requireNonNegativeInt(r.lightCount),
     interactableCount: requireNonNegativeInt(r.interactableCount),
+    ...perf,
   };
 };
 
@@ -283,8 +290,10 @@ const verifyGameManifestAssets = (
   const manifest = readGameAssetManifest(
     readJson(contained(directory, root + manifestFile), cache),
   );
-  const references = manifest.assets
-    .flatMap((a) => a.files)
+  const references = [
+    ...manifest.assets.flatMap((a) => a.files),
+    ...(manifest.sharedTextures ?? []),
+  ]
     .map((f) => ({ ...f, path: root + f.path }))
     .sort((a, b) => compareText(a.path, b.path));
   const actual = assetFiles

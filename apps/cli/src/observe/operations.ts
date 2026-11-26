@@ -2,11 +2,13 @@ import { evaluateSoundQuality, renderSoundInspectSheet } from '@ashfox/audio-cor
 import { BuildFailure } from '@ashfox/asset-build';
 import {
   buildStructureBakedMesh,
-  buildStructureDocument,
+  buildStructureGlbBytes,
   collectStructureCutBands,
+  compileProjectBundle,
   encodeCanonicalPng,
   encodeRgbaBufferPng,
   evaluateAssetQuality,
+  evaluateGlbPerformance,
   evaluateSpriteQuality,
   rasterizeTexture,
   spriteInspectSheetPng,
@@ -40,47 +42,75 @@ const auditAsset = (asset: Prepared): AuditReport => {
   });
 };
 
+const inspectModelPerformance = (asset: Prepared, modelId: string) => {
+  if (asset.product?.kind !== 'model' || !asset.project) return undefined;
+  try {
+    const bundle = compileProjectBundle(asset.project, { target: 'glb', modelPath: modelId });
+    const glb = bundle.files.find((f) => f.kind === 'binary' && f.role === 'model');
+    if (!glb || glb.kind !== 'binary') return undefined;
+    const perfKind = asset.product.model.profile === 'creature' ? 'creature' : 'prop';
+    return evaluateGlbPerformance(glb.data, perfKind);
+  } catch {
+    return undefined;
+  }
+};
+
+const inspectStructurePerformance = (
+  structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
+) => {
+  const bytes = buildStructureGlbBytes(structure, { encoding: 'optimized' });
+  const kind = structure.grid.size[0] * structure.grid.size[2] > 900 ? 'compound' : 'structure';
+  return evaluateGlbPerformance(bytes, kind);
+};
+
 const inspectDocument = (
   asset: Prepared,
   d: NonNullable<Prepared['document']>,
   summary: Record<string, unknown>,
-): unknown => ({
-  ...summary,
-  kind: asset.kind,
-  revision: asset.revision,
-  declarations: asset.declarations,
-  nodes: Object.values(d.scene.nodes),
-  textures: Object.values(d.textures).map((t) => ({
-    id: t.id,
-    name: t.name,
-    width: t.width,
-    height: t.height,
-  })),
-  animations: Object.values(d.animations),
-  settings: d.settings,
-  ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset) } : {}),
-  ...(asset.product?.kind === 'structure'
-    ? {
-        structure: {
-          size: asset.product.structure.grid.size,
-          density: asset.product.structure.grid.density,
-          palette: asset.product.structure.grid.states,
-          customAssets: Object.keys(asset.product.structure.customModels),
-          floors: asset.product.structure.grid.floors,
-          rooms: asset.product.structure.grid.rooms,
-          openings: asset.product.structure.grid.openings,
-          sockets: asset.product.structure.grid.sockets,
-          semanticStats: asset.product.structure.grid.semanticStats,
-          playableMeta: {
-            zoneCount: asset.product.structure.playableMeta.zones.length,
-            lightCount: asset.product.structure.playableMeta.lights.length,
-            interactableCount: asset.product.structure.playableMeta.interactables.length,
+): unknown => {
+  const modelPerf =
+    asset.product?.kind === 'model' ? inspectModelPerformance(asset, d.id) : undefined;
+  return {
+    ...summary,
+    kind: asset.kind,
+    revision: asset.revision,
+    declarations: asset.declarations,
+    nodes: Object.values(d.scene.nodes),
+    textures: Object.values(d.textures).map((t) => ({
+      id: t.id,
+      name: t.name,
+      width: t.width,
+      height: t.height,
+    })),
+    animations: Object.values(d.animations),
+    settings: d.settings,
+    ...(asset.product?.kind === 'model'
+      ? { audit: auditAsset(asset), ...(modelPerf ? { performance: modelPerf } : {}) }
+      : {}),
+    ...(asset.product?.kind === 'structure'
+      ? {
+          structure: {
+            size: asset.product.structure.grid.size,
+            density: asset.product.structure.grid.density,
+            palette: asset.product.structure.grid.states,
+            customAssets: Object.keys(asset.product.structure.customModels),
+            floors: asset.product.structure.grid.floors,
+            rooms: asset.product.structure.grid.rooms,
+            openings: asset.product.structure.grid.openings,
+            sockets: asset.product.structure.grid.sockets,
+            semanticStats: asset.product.structure.grid.semanticStats,
+            playableMeta: {
+              zoneCount: asset.product.structure.playableMeta.zones.length,
+              lightCount: asset.product.structure.playableMeta.lights.length,
+              interactableCount: asset.product.structure.playableMeta.interactables.length,
+            },
           },
-        },
-        audit: asset.product.structure.audit,
-      }
-    : {}),
-});
+          audit: asset.product.structure.audit,
+          performance: inspectStructurePerformance(asset.product.structure),
+        }
+      : {}),
+  };
+};
 
 const toSpriteRaster = (s: NonNullable<Prepared['sprite']>): CanonicalTextureRaster => ({
   width: s.receipt.width,
@@ -160,48 +190,21 @@ const buildStructureCutSlices = (
 ) =>
   collectStructureCutBands(structure.grid.floors, structure.grid.size[1]).map((entry) => ({
     ...entry,
-    ...(structure.bakedMesh.batches.length > 0
-      ? {
-          bakedMesh: buildStructureBakedMesh(
-            structure.grid,
-            structure.lighting,
-            structure.customModels,
-            { cutawayY: entry.cutY },
-          ),
-        }
-      : {
-          document: buildStructureDocument(structure.grid, structure.customModels, {
-            cutawayY: entry.cutY,
-          }),
-        }),
+    bakedMesh: buildStructureBakedMesh(structure.grid, structure.lighting, structure.customModels, {
+      cutawayY: entry.cutY,
+    }),
   }));
 
 const structurePayload = (
   structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
   v: ViewOptions,
-  gif: boolean,
 ) => {
-  if (gif) {
-    return {
-      document: buildStructureDocument(
-        structure.grid,
-        structure.customModels,
-        v.cutaway !== undefined ? { cutawayY: v.cutaway } : undefined,
-      ),
-    };
-  }
-  const hasBaked = structure.bakedMesh.batches.length > 0;
   const bakedMesh =
-    hasBaked && v.cutaway !== undefined
+    v.cutaway !== undefined
       ? buildStructureBakedMesh(structure.grid, structure.lighting, structure.customModels, {
           cutawayY: v.cutaway,
         })
       : structure.bakedMesh;
-  const fallbackDoc = !hasBaked
-    ? v.cutaway !== undefined
-      ? buildStructureDocument(structure.grid, structure.customModels, { cutawayY: v.cutaway })
-      : structure.document
-    : undefined;
   return {
     structure: {
       id: structure.id,
@@ -211,17 +214,16 @@ const structurePayload = (
       playableMeta: structure.playableMeta,
       floors: structure.grid.floors,
       rooms: structure.grid.rooms,
-      ...(fallbackDoc ? { document: fallbackDoc } : {}),
       ...(v.sheet === 'cutaway' ? { cutSlices: buildStructureCutSlices(structure) } : {}),
     },
   };
 };
 
-const mediaPayload = (asset: Prepared, v: ViewOptions, gif: boolean): unknown => {
+const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
   if (asset.document) {
     if (v.texture) return { png: resolveTexture(asset.document, v.texture) };
     if (asset.product?.kind === 'structure') {
-      return structurePayload(asset.product.structure, v, gif);
+      return structurePayload(asset.product.structure, v);
     }
     return { document: asset.document };
   }
@@ -326,9 +328,7 @@ export const renderMedia = async (
   try {
     if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
     await renderer.start();
-    await renderer.evaluate(
-      'AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v, gif)) + ')',
-    );
+    await renderer.evaluate('AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v)) + ')');
     const reply = (await renderer.evaluate(
       'AshfoxObserver.capture(' + JSON.stringify(v) + ',' + gif + ')',
     )) as { mime: string; data: string };

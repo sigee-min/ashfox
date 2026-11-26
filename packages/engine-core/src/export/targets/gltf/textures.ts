@@ -11,6 +11,7 @@ import { compareText } from '../../../stableOrder';
 export interface GltfResolvedExportOptions {
   resolveBlob: BlobResolver;
   readonly encoding?: 'portable' | 'optimized';
+  readonly includeLods?: boolean;
 }
 
 const BUILTIN_UINT8_ARRAY_PROTOTYPE = Uint8Array.prototype;

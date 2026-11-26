@@ -1,5 +1,5 @@
 import type { SoundProduct } from '@ashfox/audio-core';
-import type { DirectoryFile, DirectoryWorkspace } from '@ashfox/engine-core';
+import type { DirectoryFile, DirectoryWorkspace, GlbPerformanceMetrics } from '@ashfox/engine-core';
 export interface Snapshot {
   readonly input: string;
   readonly root: string;
@@ -36,8 +36,12 @@ export type AssetMetadata =
       readonly zoneCount?: number;
       readonly lightCount?: number;
       readonly interactableCount?: number;
+      readonly performance?: GlbPerformanceMetrics;
     }
-  | { readonly clips: readonly { readonly name: string; readonly durationSeconds: number }[] }
+  | {
+      readonly clips: readonly { readonly name: string; readonly durationSeconds: number }[];
+      readonly performance?: GlbPerformanceMetrics;
+    }
   | {
       readonly variants: readonly {
         readonly id: string;

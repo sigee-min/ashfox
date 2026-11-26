@@ -48,8 +48,12 @@ export type RuntimeAsset = RuntimeAssetBase &
         }>[];
       }>
   );
+export interface GamePackOptions {
+  readonly deduplicateTextures?: boolean;
+}
 export interface GameAssetManifest {
   readonly format: 'ashfox-game-assets';
   readonly version: 1;
+  readonly sharedTextures?: readonly FileRecord[];
   readonly assets: readonly RuntimeAsset[];
 }

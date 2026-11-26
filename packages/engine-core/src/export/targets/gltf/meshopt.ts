@@ -2,6 +2,7 @@ import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { MeshoptEncoder } from 'meshoptimizer';
 
 import { stringifyCompactDeterministicJson } from '../../json';
+import { poolUncompressedBufferViews } from './primitive';
 import type { CompiledGltf } from './build';
 import type { GltfAccessor, GltfBufferView, GltfDocument } from './contract';
 
@@ -32,6 +33,7 @@ const align4 = (value: number): number => (value + 3) & ~3;
 
 const componentByteSize = (accessor: GltfAccessor): number => {
   switch (accessor.componentType) {
+    case 5120:
     case 5121:
       return 1;
     case 5122:
@@ -271,8 +273,8 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
     const vertexView = views[candidate.vertexView];
     const indexView = views[candidate.indexView];
     const indexSource = compiled.binary.subarray(
-      indexView.byteOffset,
-      indexView.byteOffset + indexView.byteLength,
+      indexView.byteOffset ?? 0,
+      (indexView.byteOffset ?? 0) + indexView.byteLength,
     );
     const indices = readIndices(indexSource, candidate.indexCount, candidate.indexComponentType);
     const [remap, unique] = MeshoptEncoder.reorderMesh(indices, true, false);
@@ -280,8 +282,8 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
       continue;
     }
     const vertexSource = compiled.binary.subarray(
-      vertexView.byteOffset,
-      vertexView.byteOffset + vertexView.byteLength,
+      vertexView.byteOffset ?? 0,
+      (vertexView.byteOffset ?? 0) + vertexView.byteLength,
     );
     const reordered = reorderVertices(
       vertexSource,
@@ -290,9 +292,12 @@ const reorderMeshData = (compiled: CompiledGltf): CompiledGltf => {
       candidate.vertexStride,
     );
     binary ??= compiled.binary.slice();
-    binary.set(reordered, vertexView.byteOffset);
+    binary.set(reordered, vertexView.byteOffset ?? 0);
     writeIndices(
-      binary.subarray(indexView.byteOffset, indexView.byteOffset + indexView.byteLength),
+      binary.subarray(
+        indexView.byteOffset ?? 0,
+        (indexView.byteOffset ?? 0) + indexView.byteLength,
+      ),
       indices,
       candidate.indexComponentType,
     );
@@ -384,20 +389,23 @@ const appendCompressedView = (
   writer: AlignedByteWriter,
   view: GltfBufferView,
   encoded: EncodedBufferView,
-): GltfBufferView => ({
-  ...view,
-  buffer: 1,
-  extensions: {
-    EXT_meshopt_compression: {
-      buffer: 0,
-      byteOffset: writer.append(encoded.bytes),
-      byteLength: encoded.bytes.byteLength,
-      byteStride: encoded.layout.stride,
-      count: encoded.layout.count,
-      mode: encoded.layout.mode,
+): GltfBufferView => {
+  const { byteOffset: _omitted, ...rest } = view;
+  return {
+    ...rest,
+    buffer: 1,
+    extensions: {
+      EXT_meshopt_compression: {
+        buffer: 0,
+        byteOffset: writer.append(encoded.bytes),
+        byteLength: encoded.bytes.byteLength,
+        byteStride: encoded.layout.stride,
+        count: encoded.layout.count,
+        mode: encoded.layout.mode,
+      },
     },
-  },
-});
+  };
+};
 
 const withExtension = (
   values: GltfDocument['extensionsUsed'],
@@ -408,6 +416,42 @@ const withExtension = (
 const compiledByteLength = (compiled: CompiledGltf): number =>
   encodeUtf8(stringifyCompactDeterministicJson(compiled.document)).byteLength +
   compiled.binary.byteLength;
+
+const buildCompressedResult = (
+  optimized: CompiledGltf,
+  encoded: ReadonlyMap<number, EncodedBufferView>,
+): CompiledGltf => {
+  const writer = new AlignedByteWriter();
+  const bufferViews = optimized.document.bufferViews!.map((view, index) => {
+    const start = view.byteOffset ?? 0;
+    const source = optimized.binary.subarray(start, start + view.byteLength);
+    const compressed = encoded.get(index);
+    return compressed
+      ? appendCompressedView(writer, view, compressed)
+      : appendUncompressedView(writer, view, source);
+  });
+  const binary = writer.toUint8Array();
+  const physicalBuffer = optimized.document.buffers?.[0];
+  const result: CompiledGltf = {
+    ...optimized,
+    binary,
+    document: {
+      ...optimized.document,
+      extensionsUsed: withExtension(optimized.document.extensionsUsed),
+      extensionsRequired: withExtension(optimized.document.extensionsRequired),
+      buffers: [
+        {
+          byteLength: binary.byteLength,
+          ...(physicalBuffer?.uri ? { uri: physicalBuffer.uri } : {}),
+        },
+        { byteLength: optimized.binary.byteLength },
+      ],
+      bufferViews,
+    },
+  };
+  const pooled = poolUncompressedBufferViews(result.document, result.binary);
+  return { ...result, document: pooled.document, binary: pooled.binary };
+};
 
 export const compressGltfWithMeshopt = async (compiled: CompiledGltf): Promise<CompiledGltf> => {
   if (
@@ -430,42 +474,14 @@ export const compressGltfWithMeshopt = async (compiled: CompiledGltf): Promise<C
   optimized.document.bufferViews?.forEach((view, index) => {
     const layout = layoutForBufferView(view, accessors.get(index) ?? [], triangles);
     if (!layout) return;
-    const source = optimized.binary.subarray(view.byteOffset, view.byteOffset + view.byteLength);
+    const start = view.byteOffset ?? 0;
+    const source = optimized.binary.subarray(start, start + view.byteLength);
     const bytes = MeshoptEncoder.encodeGltfBuffer(source, layout.count, layout.stride, layout.mode);
     if (source.byteLength - bytes.byteLength > EXTENSION_JSON_COST) {
       encoded.set(index, { layout, bytes });
     }
   });
   if (encoded.size === 0) return optimized;
-
-  const writer = new AlignedByteWriter();
-  const bufferViews = optimized.document.bufferViews!.map((view, index) => {
-    const source = optimized.binary.subarray(view.byteOffset, view.byteOffset + view.byteLength);
-    const compressed = encoded.get(index);
-    return compressed
-      ? appendCompressedView(writer, view, compressed)
-      : appendUncompressedView(writer, view, source);
-  });
-  const binary = writer.toUint8Array();
-  const physicalBuffer = optimized.document.buffers?.[0];
-  const result: CompiledGltf = {
-    ...optimized,
-    binary,
-    document: {
-      ...optimized.document,
-      extensionsUsed: withExtension(optimized.document.extensionsUsed),
-      extensionsRequired: withExtension(optimized.document.extensionsRequired),
-      buffers: [
-        {
-          byteLength: binary.byteLength,
-          ...(physicalBuffer?.uri ? { uri: physicalBuffer.uri } : {}),
-        },
-        {
-          byteLength: optimized.binary.byteLength,
-        },
-      ],
-      bufferViews,
-    },
-  };
-  return compiledByteLength(result) < compiledByteLength(optimized) ? result : optimized;
+  const finalResult = buildCompressedResult(optimized, encoded);
+  return compiledByteLength(finalResult) < compiledByteLength(optimized) ? finalResult : optimized;
 };

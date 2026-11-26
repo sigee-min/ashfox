@@ -78,10 +78,13 @@ const run = async (): Promise<void> => {
   assert.ok(model);
   const json = glbJson(model);
   assert.equal(Array.isArray(json.nodes), true);
-  assert.equal(
-    (json.nodes as unknown[]).length,
-    originalNodeCount,
+  assert.ok(
+    (json.nodes as unknown[]).length >= originalNodeCount,
     'The async artifact must consume the immutable entry scene snapshot.',
+  );
+  assert.ok(
+    Array.isArray(json.meshes) && json.meshes.length > 0,
+    'The async artifact must preserve scene meshes across caller mutation.',
   );
   const sealedModelBytes = model.data.slice();
   for (const resolved of textureBytes.values()) resolved.bytes.fill(0);

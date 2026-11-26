@@ -205,9 +205,35 @@ const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<str
     fail('Incomplete file references');
 };
 
+const validateSharedTextures = (raw: unknown, allPaths: Set<string>): void => {
+  if (!Array.isArray(raw) || !raw.length || raw.length > 8192)
+    return fail('Invalid sharedTextures');
+  for (const rawFile of raw as unknown[]) {
+    const f = record(rawFile, ['path', 'sha256', 'byteLength']);
+    const filePath = f.path;
+    if (
+      typeof filePath !== 'string' ||
+      !safeRelative(filePath) ||
+      !filePath.startsWith('textures/') ||
+      !filePath.endsWith('.png') ||
+      allPaths.has(filePath.toLowerCase()) ||
+      typeof f.sha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(f.sha256) ||
+      !Number.isSafeInteger(f.byteLength) ||
+      (f.byteLength as number) < 0
+    )
+      return fail('Invalid shared texture record');
+    allPaths.add(filePath.toLowerCase());
+  }
+};
+
 /** Validate the generated runtime contract before consuming file references. */
 export const readGameAssetManifest = (value: unknown): GameAssetManifest => {
-  const r = record(value, ['format', 'version', 'assets']);
+  const hasShared = isClosedContractRecord(value) && 'sharedTextures' in value;
+  const r = record(
+    value,
+    hasShared ? ['format', 'version', 'sharedTextures', 'assets'] : ['format', 'version', 'assets'],
+  );
   if (
     r.format !== 'ashfox-game-assets' ||
     r.version !== 1 ||
@@ -218,5 +244,6 @@ export const readGameAssetManifest = (value: unknown): GameAssetManifest => {
   const ids = new Set<string>(),
     allPaths = new Set<string>();
   for (const raw of r.assets) validateManifestAsset(raw, ids, allPaths);
+  if (hasShared) validateSharedTextures(r.sharedTextures, allPaths);
   return value as GameAssetManifest;
 };

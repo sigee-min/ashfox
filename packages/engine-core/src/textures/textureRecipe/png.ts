@@ -1,10 +1,13 @@
 import { sha256ByteDigest } from '../../provenance/digest';
+import { zlibDeflateFixed } from './pngDeflate';
 import {
   assertCanonicalTextureRaster,
   canonicalRgbaBackingBuffer,
   isCanonicalByteView,
   type CanonicalTextureRaster,
 } from './raster';
+
+const INDEXED_MIN_PIXELS = 2048;
 
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
   let crc = value;
@@ -22,90 +25,94 @@ const crc32 = (bytes: Uint8Array, start: number, end: number): number => {
   return (crc ^ 0xffffffff) >>> 0;
 };
 
-const beginPngChunk = (
+const writePngChunk = (
   bytes: Uint8Array,
   view: DataView,
   offset: number,
   type: string,
-  length: number,
+  payload: Uint8Array,
 ): number => {
-  view.setUint32(offset, length);
-  for (let index = 0; index < 4; index += 1) bytes[offset + 4 + index] = type.charCodeAt(index);
-  return offset + 8;
+  view.setUint32(offset, payload.length);
+  for (let i = 0; i < 4; i += 1) bytes[offset + 4 + i] = type.charCodeAt(i);
+  bytes.set(payload, offset + 8);
+  view.setUint32(
+    offset + 8 + payload.length,
+    crc32(bytes, offset + 4, offset + 8 + payload.length),
+  );
+  return offset + 12 + payload.length;
 };
 
-const endPngChunk = (bytes: Uint8Array, view: DataView, offset: number, length: number): void => {
-  view.setUint32(offset + 8 + length, crc32(bytes, offset + 4, offset + 8 + length));
-};
-
-interface StoredDeflateState {
-  output: number;
-  pixel: number;
-  column: number;
-  first: number;
-  second: number;
-  adlerCount: number;
-}
-
-const writeStoredDeflateBlock = (
-  bytes: Uint8Array,
-  raster: CanonicalTextureRaster,
-  backing: Uint8Array | undefined,
-  stride: number,
-  length: number,
-  state: StoredDeflateState,
-): void => {
-  for (let index = 0; index < length; index += 1) {
-    const byte =
-      state.column === 0
-        ? 0
-        : backing !== undefined
-          ? backing[state.pixel++]!
-          : raster.rgba.at(state.pixel++)!;
-    bytes[state.output++] = byte;
-    if (++state.column === stride) state.column = 0;
-    state.first += byte;
-    state.second += state.first;
-    // zlib's NMAX keeps both sums bounded without per-byte division.
-    if (++state.adlerCount === 5552) {
-      state.first %= 65521;
-      state.second %= 65521;
-      state.adlerCount = 0;
+const filterSubScanlines = (
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+  bpp: number,
+): Uint8Array => {
+  const rowBytes = width * bpp;
+  const stride = rowBytes + 1;
+  const out = new Uint8Array(stride * height);
+  for (let row = 0; row < height; row += 1) {
+    const outBase = row * stride;
+    const inBase = row * rowBytes;
+    out[outBase] = 1;
+    for (let x = 0; x < rowBytes; x += 1) {
+      const left = x >= bpp ? pixels[inBase + x - bpp]! : 0;
+      out[outBase + 1 + x] = (pixels[inBase + x]! - left) & 0xff;
     }
   }
+  return out;
 };
 
-const writeStoredDeflateIdat = (
-  bytes: Uint8Array,
-  view: DataView,
-  raster: CanonicalTextureRaster,
-  stride: number,
-  scanlineLength: number,
-  compressedLength: number,
-): void => {
-  let output = beginPngChunk(bytes, view, 33, 'IDAT', compressedLength);
-  bytes[output++] = 0x78;
-  bytes[output++] = 0x01;
-  const backing = canonicalRgbaBackingBuffer(raster.rgba);
-  const state: StoredDeflateState = {
-    output,
-    pixel: 0,
-    column: 0,
-    first: 1,
-    second: 0,
-    adlerCount: 0,
-  };
-  for (let offset = 0; offset < scanlineLength;) {
-    const length = Math.min(65535, scanlineLength - offset);
-    bytes[state.output++] = offset + length === scanlineLength ? 1 : 0;
-    view.setUint16(state.output, length, true);
-    view.setUint16(state.output + 2, ~length & 0xffff, true);
-    state.output += 4;
-    writeStoredDeflateBlock(bytes, raster, backing, stride, length, state);
-    offset += length;
+interface IndexedPalette {
+  readonly indices: Uint8Array;
+  readonly plte: Uint8Array;
+  readonly trns?: Uint8Array;
+}
+
+const collectUniqueColors = (rgba: Uint8Array, pixelCount: number): number[] | null => {
+  const seen = new Set<number>();
+  const colors: number[] = [];
+  for (let p = 0; p < pixelCount; p += 1) {
+    const base = p * 4;
+    const key =
+      ((rgba[base]! << 24) | (rgba[base + 1]! << 16) | (rgba[base + 2]! << 8) | rgba[base + 3]!) >>>
+      0;
+    if (seen.has(key)) continue;
+    if (colors.length >= 256) return null;
+    seen.add(key);
+    colors.push(key);
   }
-  view.setUint32(state.output, (((state.second % 65521) << 16) | (state.first % 65521)) >>> 0);
-  endPngChunk(bytes, view, 33, compressedLength);
+  return colors;
+};
+
+const buildIndexedPalette = (rgba: Uint8Array, pixelCount: number): IndexedPalette | null => {
+  if (pixelCount < INDEXED_MIN_PIXELS) return null;
+  const unique = collectUniqueColors(rgba, pixelCount);
+  if (unique === null) return null;
+  const sorted = [...unique].sort(
+    (a, b) => ((a & 0xff) < 255 ? 0 : 1) - ((b & 0xff) < 255 ? 0 : 1) || a - b,
+  );
+  const indexByKey = new Map<number, number>(sorted.map((key, idx) => [key, idx]));
+  const plte = new Uint8Array(sorted.length * 3);
+  let lastAlpha = -1;
+  for (let i = 0; i < sorted.length; i += 1) {
+    const key = sorted[i]!;
+    plte[i * 3] = (key >>> 24) & 0xff;
+    plte[i * 3 + 1] = (key >>> 16) & 0xff;
+    plte[i * 3 + 2] = (key >>> 8) & 0xff;
+    if ((key & 0xff) < 255) lastAlpha = i;
+  }
+  const trns =
+    lastAlpha >= 0 ? Uint8Array.from(sorted.slice(0, lastAlpha + 1), (k) => k & 0xff) : undefined;
+  const indices = new Uint8Array(pixelCount);
+  for (let p = 0; p < pixelCount; p += 1) {
+    const base = p * 4;
+    const key =
+      ((rgba[base]! << 24) | (rgba[base + 1]! << 16) | (rgba[base + 2]! << 8) | rgba[base + 3]!) >>>
+      0;
+    indices[p] = indexByKey.get(key)!;
+  }
+  return { indices, plte, ...(trns ? { trns } : {}) };
 };
 
 interface CachedPngEntry {
@@ -128,21 +135,43 @@ const isCacheableCanonicalRaster = (raster: CanonicalTextureRaster): boolean =>
   isCanonicalByteView(raster.rgba) &&
   raster.rgba.length === raster.width * raster.height * 4;
 
+const buildIhdrPayload = (width: number, height: number, colorType: 3 | 6): Uint8Array => {
+  const ihdr = new Uint8Array(13);
+  const view = new DataView(ihdr.buffer);
+  view.setUint32(0, width);
+  view.setUint32(4, height);
+  ihdr[8] = 8;
+  ihdr[9] = colorType;
+  return ihdr;
+};
+
 const encodePngRaw = (raster: CanonicalTextureRaster): Uint8Array => {
-  const stride = raster.width * 4 + 1;
-  const scanlineLength = stride * raster.height;
-  const compressedLength = 2 + 5 * Math.ceil(scanlineLength / 65535) + scanlineLength + 4;
-  const bytes = new Uint8Array(57 + compressedLength);
+  const rgba = canonicalRgbaBackingBuffer(raster.rgba) ?? raster.rgba.copy();
+  const palette = buildIndexedPalette(rgba, raster.width * raster.height);
+  const idat = zlibDeflateFixed(
+    palette
+      ? filterSubScanlines(palette.indices, raster.width, raster.height, 1)
+      : filterSubScanlines(rgba, raster.width, raster.height, 4),
+  );
+  const ihdr = buildIhdrPayload(raster.width, raster.height, palette ? 3 : 6);
+  const chunksLen =
+    12 +
+    ihdr.length +
+    (palette ? 12 + palette.plte.length : 0) +
+    (palette?.trns ? 12 + palette.trns.length : 0) +
+    12 +
+    idat.length +
+    12;
+  const bytes = new Uint8Array(8 + chunksLen);
   const view = new DataView(bytes.buffer);
   bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
-  const header = beginPngChunk(bytes, view, 8, 'IHDR', 13);
-  view.setUint32(header, raster.width);
-  view.setUint32(header + 4, raster.height);
-  bytes.set([8, 6, 0, 0, 0], header + 8);
-  endPngChunk(bytes, view, 8, 13);
-  writeStoredDeflateIdat(bytes, view, raster, stride, scanlineLength, compressedLength);
-  beginPngChunk(bytes, view, 45 + compressedLength, 'IEND', 0);
-  endPngChunk(bytes, view, 45 + compressedLength, 0);
+  let offset = writePngChunk(bytes, view, 8, 'IHDR', ihdr);
+  if (palette) {
+    offset = writePngChunk(bytes, view, offset, 'PLTE', palette.plte);
+    if (palette.trns) offset = writePngChunk(bytes, view, offset, 'tRNS', palette.trns);
+  }
+  offset = writePngChunk(bytes, view, offset, 'IDAT', idat);
+  writePngChunk(bytes, view, offset, 'IEND', new Uint8Array(0));
   return bytes;
 };
 
@@ -156,8 +185,7 @@ const getOrEncodeCachedPng = (raster: CanonicalTextureRaster): CachedPngEntry =>
   return entry;
 };
 
-/** Emits the canonical filter-0/stored-DEFLATE RGBA8 PNG directly into its
- * exact final buffer. No full-size scanline, compressed or chunk copies. */
+/** Emits a deterministic Filter-1 (Sub) + Fixed-Huffman DEFLATE PNG (indexed <=256 colors or RGBA8). */
 export const encodeCanonicalPng = (raster: CanonicalTextureRaster): Uint8Array => {
   if (isCacheableCanonicalRaster(raster)) {
     return getOrEncodeCachedPng(raster).bytes.slice();

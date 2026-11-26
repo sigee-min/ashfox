@@ -12,6 +12,7 @@ import {
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf, GltfBuildOptions } from './build';
 import { createGltfBundle } from './bundle';
+import { attachModelLods } from './lodEmit';
 import { compressGltfWithMeshopt } from './meshopt';
 import {
   orderedTextures,
@@ -21,6 +22,7 @@ import {
 } from './textures';
 import { compileGltfScene } from './scene';
 import type { GltfDocument, GltfImage, GltfMaterial, GltfSampler } from './contract';
+import type { UvTransform } from './vertexLayout';
 
 export type { CompiledGltf, GltfBuildOptions } from './build';
 export type { GltfResolvedExportOptions } from './textures';
@@ -37,31 +39,60 @@ const textureMimeType = (texture: TextureAsset): 'image/png' | 'image/jpeg' => {
 
 const GLTF_UNIT_SCALE = 1 / 16;
 
+export const createGltfMaterial = (
+  texture: TextureAsset,
+  texIndex: number,
+  masked: boolean,
+  doubleSided: boolean,
+  isEmissive = texture.renderMode === 'emissive',
+  uvTransform?: UvTransform,
+  name = texture.name,
+): GltfMaterial => {
+  const ext = uvTransform
+    ? {
+        KHR_texture_transform: {
+          offset: [uvTransform.offset[0], uvTransform.offset[1]] as [number, number],
+          scale: [uvTransform.scale[0], uvTransform.scale[1]] as [number, number],
+        },
+      }
+    : undefined;
+  return {
+    name,
+    pbrMetallicRoughness: {
+      baseColorTexture: { index: texIndex, ...(ext ? { extensions: ext } : {}) },
+      metallicFactor: 0,
+      roughnessFactor: 1,
+    },
+    ...(isEmissive
+      ? {
+          emissiveTexture: { index: texIndex, ...(ext ? { extensions: ext } : {}) },
+          emissiveFactor: [1, 1, 1],
+        }
+      : {}),
+    ...(masked
+      ? { alphaMode: 'MASK', alphaCutoff: 0.5 }
+      : texture.renderMode === 'additive' || texture.renderMode === 'layered'
+        ? { alphaMode: 'BLEND' }
+        : {}),
+    ...(doubleSided ? { doubleSided: true } : {}),
+  };
+};
+
 const materialForTexture = (
   texture: TextureAsset,
   index: number,
   masked: boolean,
   forceSingleSided = false,
-): GltfMaterial => ({
-  name: forceSingleSided ? `${texture.name} (front-sided)` : texture.name,
-  pbrMetallicRoughness: {
-    baseColorTexture: { index },
-    metallicFactor: 0,
-    roughnessFactor: 1,
-  },
-  ...(texture.renderMode === 'emissive'
-    ? {
-        emissiveTexture: { index },
-        emissiveFactor: [1, 1, 1],
-      }
-    : {}),
-  ...(masked
-    ? { alphaMode: 'MASK', alphaCutoff: 0.5 }
-    : texture.renderMode === 'additive' || texture.renderMode === 'layered'
-      ? { alphaMode: 'BLEND' }
-      : {}),
-  ...(texture.renderSides === 'double' && !forceSingleSided ? { doubleSided: true } : {}),
-});
+): GltfMaterial =>
+  createGltfMaterial(
+    texture,
+    index,
+    masked,
+    texture.renderSides === 'double' && !forceSingleSided,
+    texture.renderMode === 'emissive',
+    undefined,
+    forceSingleSided ? `${texture.name} (front-sided)` : texture.name,
+  );
 
 interface CompiledGltfTextures {
   readonly samplers: GltfSampler[];
@@ -299,7 +330,7 @@ export const exportGltf = (
     errorMessage: 'glTF 2.0 export validation failed.',
   });
   const validatedDocument = validation.document;
-  const compiled = buildGltf(validatedDocument);
+  const compiled = attachModelLods(buildGltf(validatedDocument), validatedDocument);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };
 
@@ -321,10 +352,13 @@ export const exportGltfResolved = async (
     profile.imageStorage === 'external'
       ? undefined
       : await resolveGltfTextures(validatedDocument, options.resolveBlob);
+  const quantize = encoding !== 'portable';
   const plain = buildGltf(validatedDocument, {
     resolvedTextures,
-    quantize: encoding !== 'portable',
+    quantize,
   });
-  const compiled = encoding === 'portable' ? plain : await compressGltfWithMeshopt(plain);
+  const withLod =
+    options.includeLods === false ? plain : attachModelLods(plain, validatedDocument, { quantize });
+  const compiled = encoding === 'portable' ? withLod : await compressGltfWithMeshopt(withLod);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };

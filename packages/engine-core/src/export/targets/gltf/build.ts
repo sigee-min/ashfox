@@ -5,6 +5,7 @@ import type { GltfDocument } from './contract';
 
 export interface GltfBuildOptions {
   readonly quantize?: boolean;
+  readonly includeLods?: boolean;
   resolvedTextures?: ReadonlyMap<AssetId, ResolvedBlob>;
 }
 

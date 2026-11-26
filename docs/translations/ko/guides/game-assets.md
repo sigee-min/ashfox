@@ -34,13 +34,24 @@ GLB는 기존 glTF exporter와 같이 원본 `u` 하나를 1/16미터로 인코�
 
 {{source-code:2}}
 
-`assets.json`은 `format: ashfox-game-assets`, `version: 1`, ID순 `assets`를 가집니다. 파일 경로는 매니페스트 폴더 기준입니다. 게임 폴더에는 절대 경로·컴파일 영수증·Minecraft 등록 파일이 없습니다. 영수증은 정식 빌드 번들에 남습니다.
+`assets.json`은 `format: ashfox-game-assets`, `version: 1`, ID순 `assets`를 가집니다. 파일 경로는 매니페스트 폴더 기준입니다. 팩에 GLB 에셋이 두 개 이상 포함되면 동일한 내장 PNG 텍스처는 SHA-256 콘텐츠 해시 기준으로 `textures/<hash12>.png`에 한 번만 저장되고(`assets.json`의 `sharedTextures`에 기록), 각 GLB는 상대 URI로 공유 PNG를 참조하며 불필요한 이미지 바이너리를 제거합니다. 단일 GLB 팩은 단독 배포 편의를 위해 텍스처를 GLB 내부에 유지합니다. 게임 폴더에는 절대 경로·컴파일 영수증·Minecraft 등록 파일이 없습니다. 영수증은 정식 빌드 번들에 남습니다.
 
 | 종류 | 런타임 필드 |
 | --- | --- |
 | `model` | `model` 경로, glTF 좌표 규칙, `unitsPerMeter`, 필수 확장, 클립 이름·길이 |
+| `structure` | `model` 경로, `meta` (`.structure.json`), `unitsPerBlock`, 필수 확장, `size`, 구역·조명·상호작용 수 |
 | `sprite` | `image` 경로, 너비·높이, 단위당 픽셀, 필터 |
 | `sound` | 코덱, 파일 경로·의도 길이·샘플률·채널 수를 가진 이름 있는 변형 |
+
+## 런타임 예산과 LOD 계층
+
+내보낸 GLB 에셋은 드로우 콜, 삼각형 수, 파일 크기, 3단계 LOD(`*_LOD0`, `*_LOD1`, `*_LOD2` 및 `MSFT_lod`)에 대한 엄격한 런타임 예산을 목표로 합니다.
+
+| 에셋 등급 | 드로우 콜 | 삼각형 수 (LOD0) | GLB 크기 | LOD1 삼각형 비율 | LOD2 드로우 콜 |
+| --- | --- | --- | --- | --- | --- |
+| `creature` / `prop` | `<= 4` (스키닝 `<= 2`) | `<= 1,500` | `<= 45 KB` | `<= 55%` | `1` |
+| `structure` | `<= 18` | `<= 18,000` | `<= 350 KB` | `<= 25%` | `1` |
+| `compound` | `<= 28` | `<= 45,000` | `<= 1.1 MB` | `<= 25%` | `1` |
 
 모든 항목에는 `id`와 정확한 바이트 길이·SHA-256을 기록한 `files`도 있습니다. OGG 길이는 원본의 의도 길이이며 디코딩 중 작은 인코더 패딩이 더해지거나 빠질 수 있습니다. 인코딩 어댑터가 이를 검사합니다.
 

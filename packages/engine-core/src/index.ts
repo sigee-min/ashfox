@@ -295,6 +295,7 @@ export {
   type QualityGrade,
 } from './audit';
 export {
+  buildStructureGlbBytes,
   exportStructureGltfResolved,
   type StructureGltfOptions,
 } from './export/pipeline/structure';
@@ -308,7 +309,6 @@ export { evaluateStructureQuality } from './audit/structure/evaluate';
 export type { StructureAuditMetrics, StructureAuditReport } from './audit/structure/contract';
 export {
   buildStructureBakedMesh,
-  buildStructureDocument,
   collectStructureCutBands,
   compileStructureUnits as compileStructureUnitsRaw,
   decodeStructureNbt,
@@ -331,3 +331,14 @@ export const compileStructureUnits = (
   relative: (owner: string, specifier: string) => string,
 ): StructureProduct =>
   compileStructureUnitsWithAudit(rootPath, units, customModels, relative, evaluateStructureQuality);
+
+export {
+  evaluateGlbPerformance,
+  inspectGlbPerformance,
+  type GlbPerformanceBudget,
+  type GlbPerformanceKind,
+  type GlbPerformanceMetrics,
+  type GlbPerformanceOptions,
+  type GlbPerformanceReport,
+  type GlbPerformanceViolation,
+} from './audit/performance';
