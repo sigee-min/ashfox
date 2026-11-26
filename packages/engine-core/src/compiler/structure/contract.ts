@@ -57,6 +57,7 @@ export interface StructureFloorMeta {
   readonly name: string;
   readonly y: number;
   readonly height: number;
+  readonly jetty?: Readonly<Partial<Record<CardinalFacing, number>>>;
 }
 
 export interface StructureRoomMeta {
@@ -66,10 +67,11 @@ export interface StructureRoomMeta {
   readonly from: IntVec3;
   readonly to: IntVec3;
   readonly enclosed: boolean;
+  readonly shape?: 'rect' | 'octagon';
 }
 
 export interface StructureOpeningMeta {
-  readonly kind: 'door' | 'window' | 'arch';
+  readonly kind: 'door' | 'window' | 'arch' | 'bay_window' | 'arcade';
   readonly room: string;
   readonly wall: CardinalFacing;
   readonly from: IntVec3;
@@ -162,6 +164,7 @@ export interface StructureBakedMesh {
   readonly instances: readonly StructurePropInstance[];
   readonly rawFaceCount: number;
   readonly mergedQuadCount: number;
+  readonly trimCount?: number;
 }
 
 export interface PlayableCollider {

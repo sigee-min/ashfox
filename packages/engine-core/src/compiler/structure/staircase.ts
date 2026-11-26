@@ -8,6 +8,7 @@ import type {
 } from '../../project/structure/contract';
 import { withBlockProperties } from '../../project/structure/state';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
+import { isOctagonOutside, isOctagonPerimeter } from './octagon';
 
 export interface StaircaseInput {
   readonly style: StairStyle;
@@ -66,7 +67,14 @@ const assertCellValid = (ctx: StairEvalContext, x: number, y: number, z: number)
   }
   if (ctx.room) {
     const r = ctx.room;
-    if (x <= r.from[0] || x >= r.to[0] || z <= r.from[2] || z >= r.to[2]) {
+    if (
+      x <= r.from[0] ||
+      x >= r.to[0] ||
+      z <= r.from[2] ||
+      z >= r.to[2] ||
+      (r.shape === 'octagon' &&
+        (isOctagonOutside(x, z, r.from, r.to) || isOctagonPerimeter(x, z, r.from, r.to)))
+    ) {
       ctx.fail('structure.stair-blocked', `Stair cell (${x}, ${y}, ${z}) outside room ${r.name}`);
     }
   }

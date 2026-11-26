@@ -298,12 +298,15 @@ const ROOF_KEYS = new Set([
   'ridge',
   'gable',
   'under_eave',
+  'battlement',
 ]);
+
+const ROOF_STYLES = new Set(['gable', 'hip', 'pyramid', 'spire']);
 
 const validateRoofMeta = (cursor: Cursor, attrs: Record<string, unknown>) => {
   assertAllowedAttrs(cursor, attrs, ROOF_KEYS);
   const style = attrs.style;
-  if (style !== 'gable' && style !== 'hip' && style !== 'pyramid') failSyntax(cursor, 'roof style');
+  if (typeof style !== 'string' || !ROOF_STYLES.has(style)) failSyntax(cursor, 'roof style');
   const axis = attrs.axis ?? 'z';
   if (axis !== 'x' && axis !== 'z') failSyntax(cursor, 'roof axis = x|z');
   const pitch = (attrs.pitch ?? 'standard') as RoofPitch;
@@ -312,6 +315,8 @@ const validateRoofMeta = (cursor: Cursor, attrs: Record<string, unknown>) => {
     failSyntax(cursor, 'roof on or from/to');
   const overhang = attrs.overhang === undefined ? 0 : asInt(cursor, attrs.overhang, 'overhang');
   if (overhang < 0 || overhang > 3) failSyntax(cursor, 'overhang 0..3');
+  if (attrs.battlement !== undefined && typeof attrs.battlement !== 'boolean')
+    failSyntax(cursor, 'battlement = true|false');
   return { style: style as RoofStyle, axis: axis as MirrorAxis, pitch, overhang };
 };
 
@@ -332,6 +337,7 @@ export const parseRoofOp = (cursor: Cursor): StructureOp => {
     ...(attrs.from !== undefined ? { from: asVec3(cursor, attrs.from, 'from') } : {}),
     ...(attrs.to !== undefined ? { to: asVec3(cursor, attrs.to, 'to') } : {}),
     ...(attrs.under_eave !== undefined ? { underEave: Boolean(attrs.under_eave) } : {}),
+    ...(attrs.battlement !== undefined ? { battlement: Boolean(attrs.battlement) } : {}),
     ...(dormers.length > 0 ? { dormers } : {}),
     ...(chimneys.length > 0 ? { chimneys } : {}),
   };
@@ -386,4 +392,40 @@ export const parseWeatheringOp = (cursor: Cursor): StructureOp => {
   }
   take(cursor, '}');
   return { op: 'weathering', rules };
+};
+
+const JETTY_ATTR_DIRS: readonly (readonly [string, CardinalFacing])[] = [
+  ['jetty_n', 'north'],
+  ['jetty_e', 'east'],
+  ['jetty_s', 'south'],
+  ['jetty_w', 'west'],
+];
+
+const readJettyAmount = (cursor: Cursor, val: unknown, key: string): number => {
+  const n = asInt(cursor, val, key);
+  if (n < 0 || n > 2) failSyntax(cursor, `${key} within 0..2`);
+  return n;
+};
+
+export const parseFloorJetty = (
+  cursor: Cursor,
+  attrs: Record<string, unknown>,
+): Readonly<Partial<Record<CardinalFacing, number>>> | undefined => {
+  const out: Partial<Record<CardinalFacing, number>> = {};
+  if (attrs.jetty !== undefined) {
+    const base = readJettyAmount(cursor, attrs.jetty, 'jetty');
+    if (base > 0) {
+      out.north = base;
+      out.east = base;
+      out.south = base;
+      out.west = base;
+    }
+  }
+  for (const [key, dir] of JETTY_ATTR_DIRS) {
+    if (attrs[key] === undefined) continue;
+    const val = readJettyAmount(cursor, attrs[key], key);
+    if (val > 0) out[dir] = val;
+    else delete out[dir];
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 };

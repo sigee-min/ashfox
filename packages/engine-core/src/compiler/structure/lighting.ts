@@ -4,6 +4,17 @@ import type { CubeFaceDirection } from '../../model/scene';
 import type { IntVec3 } from '../../project/structure/contract';
 import type { BlockDescriptor } from './blocks';
 import type { PlayableLight, StructureGrid, StructureLightingField } from './contract';
+import {
+  isWindowInteriorFacing,
+  linearToSrgb,
+  quantizeFaceTint,
+  sampleVertexWeather,
+  vertexAo,
+  writeVertexShade,
+  type VertexWeatherSample,
+} from './vertexWeather';
+
+export { isWindowInteriorFacing };
 
 export interface FaceBasis {
   readonly normal: IntVec3;
@@ -13,7 +24,12 @@ export interface FaceBasis {
 }
 
 export const FACE_BASIS: Readonly<Record<CubeFaceDirection, FaceBasis>> = {
-  north: { normal: [0, 0, -1], uAxis: [-1, 0, 0], vAxis: [0, 1, 0], shade: 0.88 },
+  north: {
+    normal: [0, 0, -1],
+    uAxis: [-1, 0, 0],
+    vAxis: [0, 1, 0],
+    shade: 0.88,
+  },
   south: { normal: [0, 0, 1], uAxis: [1, 0, 0], vAxis: [0, 1, 0], shade: 0.88 },
   east: { normal: [1, 0, 0], uAxis: [0, 0, -1], vAxis: [0, 1, 0], shade: 0.8 },
   west: { normal: [-1, 0, 0], uAxis: [0, 0, 1], vAxis: [0, 1, 0], shade: 0.8 },
@@ -29,11 +45,6 @@ const DIRS6: readonly IntVec3[] = [
   [0, 0, 1],
   [0, 0, -1],
 ];
-const AO_CURVE: readonly [number, number, number, number] = [1.0, 0.78, 0.58, 0.4];
-const linearToSrgb = (c: number): number => {
-  const v = clamp01(c);
-  return v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055;
-};
 
 interface EmissiveProfile {
   readonly r: number;
@@ -214,6 +225,16 @@ interface RgbCtx {
   readonly ring: RingQueue;
 }
 
+const isWindowState = (state: string, desc: BlockDescriptor): boolean =>
+  desc.top === 'glass' || state.includes('glass_pane') || state.includes('minecraft:glass');
+
+const seedCellGlow = (ctx: RgbCtx, idx: number, r: number, g: number, b: number): void => {
+  ctx.blockR[idx] = Math.max(ctx.blockR[idx]!, r);
+  ctx.blockG[idx] = Math.max(ctx.blockG[idx]!, g);
+  ctx.blockB[idx] = Math.max(ctx.blockB[idx]!, b);
+  enqueueRing(ctx.ring, idx);
+};
+
 const seedBlockLights = (
   ctx: RgbCtx,
   customModels: Readonly<Record<string, CompiledModel>>,
@@ -225,19 +246,25 @@ const seedBlockLights = (
   for (let idx = 0; idx < w * h * d; idx += 1) {
     const v = ctx.grid.voxels[idx]!;
     if (v <= 0) continue;
+    const x = idx % w;
+    const z = Math.floor(idx / w) % d;
+    const y = Math.floor(idx / (w * d));
     const tag = ctx.grid.customTags[idx]!;
     const active = tag
       ? (emissiveProfileForTag(tag, ctx.descs[v]!) ??
         (emissiveAliases.has(tag) ? PROFILES.rune : null))
       : stateProfiles[v]!;
-    if (!active) continue;
-    ctx.blockR[idx] = Math.max(ctx.blockR[idx]!, active.r);
-    ctx.blockG[idx] = Math.max(ctx.blockG[idx]!, active.g);
-    ctx.blockB[idx] = Math.max(ctx.blockB[idx]!, active.b);
-    enqueueRing(ctx.ring, idx);
-    const x = idx % w;
-    const z = Math.floor(idx / w) % d;
-    const y = Math.floor(idx / (w * d));
+    if (!active) {
+      if (
+        !tag &&
+        isWindowState(ctx.grid.states[v]!, ctx.descs[v]!) &&
+        isWindowInteriorFacing(ctx.grid, x, y, z)
+      ) {
+        seedCellGlow(ctx, idx, 235, 175, 95);
+      }
+      continue;
+    }
+    seedCellGlow(ctx, idx, active.r, active.g, active.b);
     lights.push({
       id: `light_${lights.length}`,
       position: [x - w / 2 + 0.5, y + 0.5, z - d / 2 + 0.5],
@@ -278,7 +305,10 @@ export const computeStructureLighting = (
   grid: StructureGrid,
   descs: readonly BlockDescriptor[],
   customModels: Readonly<Record<string, CompiledModel>> = {},
-): { readonly lighting: StructureLightingField; readonly lights: readonly PlayableLight[] } => {
+): {
+  readonly lighting: StructureLightingField;
+  readonly lights: readonly PlayableLight[];
+} => {
   const vol = grid.size[0] * grid.size[1] * grid.size[2];
   const sky = new Uint8Array(vol);
   const blockR = new Uint8Array(vol);
@@ -324,54 +354,6 @@ const sampleCellLightInto = (
   out[2] = clamp01(skyLin * 1.02 + (lighting.blockB[idx]! / 255) * 0.92);
 };
 
-const occluderAt = (
-  grid: StructureGrid,
-  descs: readonly BlockDescriptor[],
-  x: number,
-  y: number,
-  z: number,
-  maxY: number,
-): 0 | 1 => {
-  const [w, h, d] = grid.size;
-  if (x < 0 || x >= w || y < 0 || y >= Math.min(h, maxY) || z < 0 || z >= d) return 0;
-  const idx = (y * d + z) * w + x;
-  return grid.customTags[idx] === null &&
-    grid.voxels[idx]! > 0 &&
-    descs[grid.voxels[idx]!]!.solidOpaque
-    ? 1
-    : 0;
-};
-
-const vertexAo = (
-  grid: StructureGrid,
-  descs: readonly BlockDescriptor[],
-  sx: number,
-  sy: number,
-  sz: number,
-  basis: FaceBasis,
-  su: number,
-  sv: number,
-  maxY: number,
-): number => {
-  const [ux, uy, uz] = basis.uAxis;
-  const [vx, vy, vz] = basis.vAxis;
-  const s1 = occluderAt(grid, descs, sx + su * ux, sy + su * uy, sz + su * uz, maxY);
-  const s2 = occluderAt(grid, descs, sx + sv * vx, sy + sv * vy, sz + sv * vz, maxY);
-  if (s1 === 1 && s2 === 1) return 3;
-  return (
-    s1 +
-    s2 +
-    occluderAt(
-      grid,
-      descs,
-      sx + su * ux + sv * vx,
-      sy + su * uy + sv * vy,
-      sz + su * uz + sv * vz,
-      maxY,
-    )
-  );
-};
-
 export interface FaceShadeInfo {
   readonly aoCode: number;
   readonly flip: boolean;
@@ -386,19 +368,7 @@ const EMISSIVE_FACE_SHADE: FaceShadeInfo = Object.freeze({
   colors: Object.freeze([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
 });
 
-const writeVertexShade = (
-  out: number[],
-  offset: number,
-  fr: number,
-  fg: number,
-  fb: number,
-  ao: number,
-): void => {
-  const factor = AO_CURVE[ao]!;
-  out[offset] = linearToSrgb(fr * factor);
-  out[offset + 1] = linearToSrgb(fg * factor);
-  out[offset + 2] = linearToSrgb(fb * factor);
-};
+const WEATHER_SCRATCH: VertexWeatherSample = { r: 1, g: 1, b: 1, bucket: 0 };
 
 export const computeFaceShade = (
   grid: StructureGrid,
@@ -422,30 +392,27 @@ export const computeFaceShade = (
   const sx = x + basis.normal[0];
   const sy = y + basis.normal[1];
   const sz = z + basis.normal[2];
-  const ao0 = vertexAo(grid, descs, sx, sy, sz, basis, -1, -1, maxY);
-  const ao1 = vertexAo(grid, descs, sx, sy, sz, basis, 1, -1, maxY);
-  const ao2 = vertexAo(grid, descs, sx, sy, sz, basis, 1, 1, maxY);
-  const ao3 = vertexAo(grid, descs, sx, sy, sz, basis, -1, 1, maxY);
+  const ao0 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, -1, -1, maxY);
+  const ao1 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, 1, -1, maxY);
+  const ao2 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, 1, 1, maxY);
+  const ao3 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, -1, 1, maxY);
   const lx = useSampleCell ? sx : x;
   const ly = useSampleCell ? sy : y;
   const lz = useSampleCell ? sz : z;
   sampleCellLightInto(lighting, lx, ly, lz, LIGHT_RGB_SCRATCH);
-  const fr = LIGHT_RGB_SCRATCH[0] * basis.shade;
-  const fg = LIGHT_RGB_SCRATCH[1] * basis.shade;
-  const fb = LIGHT_RGB_SCRATCH[2] * basis.shade;
+  sampleVertexWeather(grid, descs, lighting, x, y, z, sx, sy, sz, dir, WEATHER_SCRATCH);
+  const fr = LIGHT_RGB_SCRATCH[0] * basis.shade * WEATHER_SCRATCH.r;
+  const fg = LIGHT_RGB_SCRATCH[1] * basis.shade * WEATHER_SCRATCH.g;
+  const fb = LIGHT_RGB_SCRATCH[2] * basis.shade * WEATHER_SCRATCH.b;
   const colors = outColors ?? new Array<number>(12);
   writeVertexShade(colors, 0, fr, fg, fb, ao0);
   writeVertexShade(colors, 3, fr, fg, fb, ao1);
   writeVertexShade(colors, 6, fr, fg, fb, ao2);
   writeVertexShade(colors, 9, fr, fg, fb, ao3);
-  const quantizedTint =
-    (Math.min(15, Math.round(fr * 15)) << 8) |
-    (Math.min(15, Math.round(fg * 15)) << 4) |
-    Math.min(15, Math.round(fb * 15));
   return {
     aoCode: (ao0 << 6) | (ao1 << 4) | (ao2 << 2) | ao3,
     flip: ao0 + ao2 > ao1 + ao3,
-    quantizedTint,
+    quantizedTint: quantizeFaceTint(fr, fg, fb, WEATHER_SCRATCH.bucket),
     colors,
   };
 };

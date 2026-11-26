@@ -8,12 +8,12 @@ structure tavern {
 
   density = 2;
   seed = 404;
-  size = (17, 21, 15);
+  size = (19, 22, 17);
   data_version = 3955;
 
   params {
-    w = 17;
-    d = 15;
+    w = 19;
+    d = 17;
   }
 
   outputs {
@@ -52,42 +52,62 @@ structure tavern {
 
   build {
     floor ground y = 0 height = 5 {
-      room taproom from = (1, 1) size = (15, 11) kind = tavern plinth = stone_brick floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+      room taproom from = (1, 1) size = (15, 9) kind = tavern plinth = stone_brick floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+      room snug from = (8, 9) size = (8, 4) kind = living plinth = stone_brick floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
 
       facade on taproom.south {
-        door at = center width = 2 height = 2 block = door hinge = left frame = timber lintel = beam porch {
+        door at = 2 width = 2 height = 2 block = door hinge = left frame = timber lintel = beam porch {
           depth = 2;
           floor = stone_brick;
           pillars = timber;
           lamps = lantern;
           steps = porch_stair;
         }
-        window symmetric = 1 width = 2 height = 2 y_offset = 1 glass = glass recess = 1 sill = sill shutter = shutter lintel = beam;
+        arch at = 8 width = 2 height = 3 frame = timber lintel = beam;
+      }
+
+      facade on snug.south {
+        bay_window at = center width = 3 height = 2 y_offset = 1 glass = glass frame = timber sill = sill lintel = roof_stair;
       }
 
       facade on taproom.north, taproom.east, taproom.west {
         window symmetric = 1 width = 2 height = 2 y_offset = 1 glass = glass recess = 1 sill = sill shutter = shutter lintel = beam;
       }
-    }
 
-    floor upper y = 5 height = 4 {
-      room inn_west from = (1, 1) size = (8, 11) kind = bedroom floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
-      room inn_east from = (8, 1) size = (8, 11) kind = hallway floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
-
-      facade on inn_west.east {
-        door at = center width = 1 height = 2 block = door hinge = left frame = timber lintel = beam;
-      }
-
-      facade on inn_west.south, inn_west.north, inn_east.south, inn_east.north {
+      facade on snug.east {
         window at = center width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
       }
     }
 
-    staircase in_room = taproom style = u_turn at = (10, 4) y_from = 0 y_to = 5 facing = west width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
+    floor upper y = 5 height = 4 jetty_s = 1 jetty_e = 1 {
+      room inn_hall from = (1, 1) size = (15, 9) kind = hallway floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
+      room inn_suite from = (8, 9) size = (8, 4) kind = bedroom floor = oak_floor wall = plaster frame = timber ceiling = spruce_plank;
 
-    roof from = (1, 9, 1) to = (15, 19, 11) style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
-      dormer wall = south offset = 0 width = 3 height = 3 window = glass;
+      facade on inn_hall.south {
+        arch at = 8 width = 2 height = 3 frame = timber lintel = beam;
+      }
+
+      facade on inn_hall.north {
+        window symmetric = 2 width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+
+      facade on inn_suite.south {
+        bay_window at = center width = 3 height = 2 y_offset = 1 glass = glass frame = timber sill = sill lintel = roof_stair;
+      }
+
+      facade on inn_suite.east {
+        window at = center width = 2 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
+    }
+
+    staircase in_room = taproom style = u_turn at = (11, 3) y_from = 0 y_to = 5 facing = west width = 1 stair = oak_stair landing = oak_floor rail = fence headroom = 3;
+
+    roof on = inn_hall style = gable axis = x overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
       chimney room = taproom corner = nw offset = (1, 1) width = 2 rise = 2 block = chimney_brick cap = true;
+    }
+
+    roof on = inn_suite style = gable axis = z overhang = 1 pitch = standard stair = roof_stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
+      dormer wall = east offset = 0 width = 3 height = 3 window = glass;
     }
 
     furnish room = taproom {
@@ -96,13 +116,18 @@ structure tavern {
       hang block = hang_lantern at = ceiling_center drop = 1;
     }
 
-    furnish room = inn_west {
-      place_anchor prefab = deco.CozyBedroom on = nw offset = (0, 0) rotate = 0;
+    furnish room = snug {
+      place_anchor prefab = deco.StudyCorner on = se offset = (0, 0) rotate = 0;
       hang block = hang_lantern at = ceiling_center drop = 1;
     }
 
-    furnish room = inn_east {
-      place_anchor prefab = deco.StudyCorner on = ne offset = (0, 0) rotate = 0;
+    furnish room = inn_hall {
+      place_anchor prefab = deco.GuardBunk on = ne offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = inn_suite {
+      place_anchor prefab = deco.CozyBedroom on = sw offset = (0, 0) rotate = 0;
       hang block = hang_lantern at = ceiling_center drop = 1;
     }
 
@@ -110,12 +135,13 @@ structure tavern {
       ground_moss height = 2 target = stone_brick into = moss_stone rate = 0.35;
       corner_quoin target = plaster corners = stone_brick;
       chimney_soot radius = 2 rate = 0.45;
-      eave_shadow target = plaster into = stone_brick rate = 0.2;
     }
 
-    place kit.CrateStack at = (13, 1, 12) rotate = 0;
-    set at = (3, 1, 12) block = pillar;
-    set at = (11, 3, 12) block = sign facing = south;
+    box from = (2, 0, 10) to = (2, 0, 10) block = stone_brick;
+    box from = (16, 0, 13) to = (17, 0, 14) block = stone_brick;
+    place kit.CrateStack at = (16, 1, 13) rotate = 0;
+    set at = (2, 1, 10) block = pillar;
+    set at = (7, 3, 10) block = sign facing = south;
 
     socket tavern_entry kind = entry room = taproom wall = south normal = south pool = "village:streets" target = "road_join";
     socket east_lane kind = road at = (w - 1, 0, floor(d / 2)) normal = east pool = "village:streets" target = "road_join";

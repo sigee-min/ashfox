@@ -109,17 +109,44 @@ const mergeStats = (
   if (child.hasRoofTrim) target.stats.hasRoofTrim = true;
 };
 
-export const mergeChildStructure = (
+const rotateJetty = (
+  jetty: StructureFloorMeta['jetty'],
+  rotate: BlockRotation,
+): StructureFloorMeta['jetty'] => {
+  if (!jetty) return undefined;
+  const out: Partial<Record<CardinalFacing, number>> = {};
+  for (const dir of CLOCKWISE) {
+    const val = jetty[dir];
+    if (val !== undefined && val > 0) out[rotateFacing(dir, rotate)] = val;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const pushChildFloors = (
   target: CompoundMergeTarget,
   alias: string,
   child: StructureGrid,
   origin: IntVec3,
   rotate: BlockRotation,
 ): void => {
-  mergeVoxels(target, child, origin, rotate);
   for (const f of child.floors) {
-    target.floors.push({ name: `${alias}.${f.name}`, y: f.y + origin[1], height: f.height });
+    const jetty = rotateJetty(f.jetty, rotate);
+    target.floors.push({
+      name: `${alias}.${f.name}`,
+      y: f.y + origin[1],
+      height: f.height,
+      ...(jetty ? { jetty } : {}),
+    });
   }
+};
+
+const pushChildRooms = (
+  target: CompoundMergeTarget,
+  alias: string,
+  child: StructureGrid,
+  origin: IntVec3,
+  rotate: BlockRotation,
+): void => {
   for (const r of child.rooms) {
     const [from, to] = transformBox(r.from, r.to, child.size, origin, rotate);
     target.rooms.push({
@@ -129,8 +156,21 @@ export const mergeChildStructure = (
       from,
       to,
       enclosed: r.enclosed,
+      ...(r.shape ? { shape: r.shape } : {}),
     });
   }
+};
+
+export const mergeChildStructure = (
+  target: CompoundMergeTarget,
+  alias: string,
+  child: StructureGrid,
+  origin: IntVec3,
+  rotate: BlockRotation,
+): void => {
+  mergeVoxels(target, child, origin, rotate);
+  pushChildFloors(target, alias, child, origin, rotate);
+  pushChildRooms(target, alias, child, origin, rotate);
   for (const o of child.openings) {
     const [from, to] = transformBox(o.from, o.to, child.size, origin, rotate);
     target.openings.push({

@@ -62,7 +62,7 @@ const getMaterialIndex = (
   const isCutout = mode === 'cutout' || masked;
   const isEmissive = mode === 'emissive' || tex.renderMode === 'emissive';
   const doubleSided = isCutout || tex.renderSides === 'double';
-  const key = `${tex.id}:${isCutout ? 'M' : tex.renderMode}:${doubleSided ? 'D' : 'S'}`;
+  const key = `${tex.id}:${isCutout ? 'M' : isEmissive ? 'E' : tex.renderMode}:${doubleSided ? 'D' : 'S'}`;
   const hit = reg.cache.get(key);
   if (hit !== undefined) return hit;
   const texIndex = reg.texIndexById.get(tex.id)!;
@@ -347,8 +347,11 @@ const bakeCustomModelMesh = (
 };
 
 const compileBakedVoxelMesh = (product: StructureProduct, ctx: GltfBuildCtx): GltfMesh | null => {
-  if (product.bakedMesh.batches.length === 0) return null;
-  const primitives = product.bakedMesh.batches.map((batch) => {
+  const active = product.bakedMesh.batches.filter(
+    (b) => b.indices.length > 0 && b.positions.length > 0,
+  );
+  if (active.length === 0) return null;
+  const primitives = active.map((batch) => {
     const tex = ctx.textures[batch.textureId];
     const matIdx = tex ? getMaterialIndex(ctx.matReg, tex, batch.layer) : undefined;
     return compileGltfPrimitive(
@@ -360,7 +363,7 @@ const compileBakedVoxelMesh = (product: StructureProduct, ctx: GltfBuildCtx): Gl
       matIdx,
       batch.indices,
       undefined,
-      batch.colors,
+      batch.colors.length > 0 ? batch.colors : undefined,
     );
   });
   return { name: `${product.id}_voxels`, primitives };

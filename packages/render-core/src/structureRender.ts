@@ -8,6 +8,7 @@ import {
 } from '@ashfox/engine-core';
 
 import { waitForProjectionTextures } from './captureSurface';
+import { createObservationDiorama } from './diorama';
 import { projectToThreeScene } from './projection';
 import { createStructureTextureMap } from './sceneMaterials';
 
@@ -43,6 +44,7 @@ export interface StructureSceneBuildOptions {
   readonly twilight?: boolean;
   readonly interiorFill?: boolean;
   readonly clipY?: number;
+  readonly dioramaBase?: boolean;
 }
 
 export interface StructureSceneHandle {
@@ -105,7 +107,7 @@ const buildBatchMaterial = (
       ...shared,
       emissive: new THREE.Color('#ffbe66'),
       emissiveMap: map,
-      emissiveIntensity: twilight ? 1.9 : 1.2,
+      emissiveIntensity: twilight ? 2.75 : 1.15,
       roughness: 0.45,
       metalness: 0.05,
       side: THREE.DoubleSide,
@@ -250,7 +252,7 @@ const appendWarmPointLights = (
   bakedMesh: BakedMesh,
   options: StructureSceneBuildOptions,
 ): void => {
-  const scale = options.twilight ? 2.4 : options.interiorFill ? 1.65 : 1.15;
+  const scale = options.twilight ? 2.8 : options.interiorFill ? 1.65 : 1.15;
   const sources =
     payload.playableMeta.lights.length > 0
       ? payload.playableMeta.lights
@@ -287,21 +289,18 @@ const appendWarmPointLights = (
   }
 };
 
-/** Builds a Three.js renderable group for StructureBakedMesh (with Document fallback). */
-export const buildStructureScene = async (
+const appendStructureGeometry = async (
+  root: THREE.Group,
   payload: StructureObservationPayload,
+  activeMesh: BakedMesh,
   options: StructureSceneBuildOptions,
+  disposables: (() => void)[],
   signal: AbortSignal,
-): Promise<StructureSceneHandle> => {
-  const root = new THREE.Group();
-  root.name = 'ashfoxStructureScene';
-  const disposables: (() => void)[] = [];
-  const activeMesh = options.bakedMesh ?? payload.bakedMesh;
+): Promise<void> => {
   const clipPlanes =
     options.clipY !== undefined && options.bakedMesh === undefined
       ? [new THREE.Plane(new THREE.Vector3(0, -1, 0), options.clipY - 0.05)]
       : null;
-
   if (activeMesh.batches.length > 0) {
     appendBakedBatches(root, activeMesh, options.twilight ?? false, clipPlanes, disposables);
     await appendCustomInstances(
@@ -312,26 +311,52 @@ export const buildStructureScene = async (
       disposables,
       signal,
     );
-  } else if (options.document ?? payload.document) {
-    const doc = (options.document ?? payload.document)!;
-    const projection = projectToThreeScene(doc, {
-      assets: {},
-      showSkeleton: false,
-      showTextures: true,
-      showWireframe: false,
-    });
-    await waitForProjectionTextures(projection, signal);
-    projection.root.scale.setScalar(VOXEL_MODEL_SCALE);
-    root.add(projection.root);
-    disposables.push(() => projection.dispose());
+    return;
   }
+  const doc = options.document ?? payload.document;
+  if (!doc) return;
+  const projection = projectToThreeScene(doc, {
+    assets: {},
+    showSkeleton: false,
+    showTextures: true,
+    showWireframe: false,
+  });
+  await waitForProjectionTextures(projection, signal);
+  projection.root.scale.setScalar(VOXEL_MODEL_SCALE);
+  root.add(projection.root);
+  disposables.push(() => projection.dispose());
+};
 
+/** Builds a Three.js renderable group for StructureBakedMesh (with Document fallback). */
+export const buildStructureScene = async (
+  payload: StructureObservationPayload,
+  options: StructureSceneBuildOptions,
+  signal: AbortSignal,
+): Promise<StructureSceneHandle> => {
+  const root = new THREE.Group();
+  root.name = 'ashfoxStructureScene';
+  const disposables: (() => void)[] = [];
+  const activeMesh = options.bakedMesh ?? payload.bakedMesh;
+  await appendStructureGeometry(root, payload, activeMesh, options, disposables, signal);
   appendWarmPointLights(root, payload, activeMesh, options);
   root.updateMatrixWorld(true);
   const [w, h, d] = payload.size;
   const bounds = new THREE.Box3().setFromObject(root);
   if (bounds.isEmpty()) {
     bounds.set(new THREE.Vector3(-w / 2, 0, -d / 2), new THREE.Vector3(w / 2, h, d / 2));
+  }
+  const attachDiorama =
+    options.dioramaBase ?? (options.clipY === undefined && !options.interiorFill);
+  if (attachDiorama) {
+    root.add(
+      createObservationDiorama(
+        payload.size,
+        payload.playableMeta,
+        options.twilight ?? false,
+        disposables,
+      ),
+    );
+    root.updateMatrixWorld(true);
   }
   return {
     root,
@@ -348,8 +373,8 @@ const updateCastingShadowLight = (
   halfExtent: number,
   twilight: boolean,
 ): void => {
-  child.intensity = twilight ? 0.48 : 2.15;
-  child.color.set(twilight ? '#8fa4dc' : '#fff5e6');
+  child.intensity = twilight ? 1.35 : 2.15;
+  child.color.set(twilight ? '#c0d6ff' : '#fff5e6');
   if (child.shadow.mapSize.width !== 2048) {
     child.shadow.mapSize.set(2048, 2048);
     child.shadow.map?.dispose();
@@ -371,6 +396,37 @@ const updateCastingShadowLight = (
   child.target.updateMatrixWorld();
 };
 
+/** Creates a deep evening dusk gradient sky texture for twilight exterior renders. */
+export const createTwilightSkyTexture = (): THREE.CanvasTexture => {
+  const canvas = window.document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Sky canvas is unavailable.');
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, '#262b4f');
+  grad.addColorStop(0.58, '#5d446c');
+  grad.addColorStop(1, '#d98c58');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+};
+
+const applyAmbientOrFillLight = (child: THREE.Object3D, twilight: boolean): void => {
+  if (child instanceof THREE.HemisphereLight) {
+    child.color.set(twilight ? '#7a96dc' : '#edf3ff');
+    child.groundColor.set(twilight ? '#4c3e61' : '#6c7686');
+    child.intensity = twilight ? 1.65 : 1.55;
+  } else if (child instanceof THREE.DirectionalLight && !child.castShadow) {
+    child.color.set(twilight ? '#809ad8' : '#d8e6ff');
+    child.intensity = twilight ? 0.95 : 0.95;
+  }
+};
+
 /** Configures directional shadow frustum dynamically for structures up to 96m. */
 export const frameStructureShadows = (
   scene: THREE.Scene,
@@ -380,11 +436,10 @@ export const frameStructureShadows = (
   const sphere = bounds.getBoundingSphere(new THREE.Sphere());
   const halfExtent = Math.min(96, Math.max(8, sphere.radius * 1.15));
   for (const child of scene.children) {
-    if (child instanceof THREE.HemisphereLight) child.intensity = twilight ? 0.65 : 1.55;
-    else if (child instanceof THREE.DirectionalLight && !child.castShadow) {
-      child.intensity = twilight ? 0.45 : 0.95;
-    } else if (child instanceof THREE.DirectionalLight && child.castShadow) {
+    if (child instanceof THREE.DirectionalLight && child.castShadow) {
       updateCastingShadowLight(child, sphere.center, halfExtent, twilight);
+    } else {
+      applyAmbientOrFillLight(child, twilight);
     }
   }
 };

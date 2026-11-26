@@ -244,10 +244,116 @@ structure mirror_test {
   assert.ok(glb.files.some((f) => f.path.endsWith('.structure.json')));
 };
 
+const testEastWestWindowMullions = (): void => {
+  const src = `ashfox-model 1
+structure ew_window {
+  size = (9, 7, 9);
+  palette {
+    stone = "minecraft:stone_bricks";
+    glass = "minecraft:glass";
+    door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
+  }
+  build {
+    floor f0 y = 0 height = 5 {
+      room hall from = (1, 1) size = (7, 7) kind = living plinth = stone floor = stone wall = stone ceiling = stone;
+      facade on hall.south { door at = center width = 1 height = 2 block = door; }
+      facade on hall.east { window at = center width = 1 height = 2 y_offset = 1 glass = glass; }
+    }
+  }
+}`;
+  const built = compileStructureUnits(
+    'ew.ashfox',
+    new Map([['ew.ashfox', parseStructureSource(src, 'ew.ashfox')]]),
+    {},
+    relativePosix,
+  );
+  const trimBatch = built.bakedMesh.batches.find(
+    (b) => b.textureId === 'struct_opaque_timber_trim',
+  );
+  assert.ok(trimBatch, 'expected timber_trim batch for non-pane east window mullions');
+  const [w, _h, d] = built.grid.size;
+  const win = built.grid.openings.find((o) => o.kind === 'window' && o.wall === 'east')!;
+  const wx = win.from[0] - w / 2;
+  const wz0 = win.from[2] - d / 2;
+  let foundHorizontalTransom = false;
+  for (let i = 0; i < trimBatch.positions.length; i += 3) {
+    const px = trimBatch.positions[i]!;
+    const py = trimBatch.positions[i + 1]!;
+    const pz = trimBatch.positions[i + 2]!;
+    if (py > win.from[1] + 0.4 && py < win.from[1] + 0.6 && pz >= wz0 && pz <= wz0 + 1.01) {
+      assert.ok(px >= wx + 0.4 && px <= wx + 0.6, `transom leaked outside wall X: ${px}`);
+      foundHorizontalTransom = true;
+    }
+  }
+  assert.ok(foundHorizontalTransom);
+};
+
+const testSteepGableRoofsAndGables = (): void => {
+  for (const axis of ['x', 'z'] as const) {
+    const src = `ashfox-model 1
+structure steep_${axis} {
+  size = (11, 14, 11);
+  palette {
+    stone = "minecraft:stone_bricks";
+    stair = "minecraft:oak_stairs";
+    ridge = "minecraft:oak_slab[type=bottom]";
+  }
+  build {
+    box from = (1, 0, 1) to = (9, 0, 9) block = stone;
+    roof style = gable axis = ${axis} from = (1, 1, 1) to = (9, 10, 9) pitch = steep stair = stair ridge = ridge gable = stone;
+  }
+}`;
+    const built = compileStructureUnits(
+      `steep_${axis}.ashfox`,
+      new Map([[`steep_${axis}.ashfox`, parseStructureSource(src, `steep_${axis}.ashfox`)]]),
+      {},
+      relativePosix,
+    );
+    const [w, _h, d] = built.grid.size;
+    for (let level = 0; level < 4; level += 1) {
+      for (const y of [1 + level * 2, 2 + level * 2]) {
+        const x = axis === 'z' ? 1 + level : 1;
+        const z = axis === 'z' ? 1 : 1 + level;
+        assert.ok(built.grid.voxels[(y * d + z) * w + x]! > 0, `missing ${axis} roof slope y=${y}`);
+        const endGableX = axis === 'z' ? 5 : 1;
+        const endGableZ = axis === 'z' ? 1 : 5;
+        assert.ok(
+          built.grid.voxels[(y * d + endGableZ) * w + endGableX]! > 0,
+          `missing ${axis} gable end y=${y}`,
+        );
+      }
+    }
+  }
+};
+
+const testBayWindowMinWidth = (): void => {
+  assert.throws(
+    () =>
+      parseStructureSource(
+        `ashfox-model 1
+structure narrow_bay {
+  size = (9, 7, 9);
+  palette { s = "minecraft:stone_bricks"; g = "minecraft:glass"; }
+  build {
+    floor f0 y = 0 height = 5 {
+      room hall from = (1, 1) size = (7, 7) kind = living plinth = s floor = s wall = s ceiling = s;
+      facade on hall.south { bay_window at = center width = 2 height = 2 y_offset = 1 glass = g; }
+    }
+  }
+}`,
+        'narrow_bay.ashfox',
+      ),
+    /valid opening width\/height/,
+  );
+};
+
 const main = async (): Promise<void> => {
   testMixedStructureAndSharedPropWorkspace();
   testQualifiedCustomModelAliases();
   await testPreservedCustomBoneRotationAndMirror();
+  testEastWestWindowMullions();
+  testSteepGableRoofsAndGables();
+  testBayWindowMinWidth();
   console.log('ashfox structure review regression tests ok');
 };
 

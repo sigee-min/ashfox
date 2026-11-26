@@ -10,7 +10,7 @@ export type CardinalFacing = 'north' | 'south' | 'east' | 'west';
 export type BlockRotation = 0 | 90 | 180 | 270;
 export type MirrorAxis = 'x' | 'z';
 export type RepeatAxis = 'x' | 'y' | 'z';
-export type RoofStyle = 'gable' | 'hip' | 'pyramid';
+export type RoofStyle = 'gable' | 'hip' | 'pyramid' | 'spire';
 export type RoofPitch = 'shallow' | 'standard' | 'steep';
 export type StairStyle = 'straight' | 'l_turn' | 'u_turn' | 'spiral';
 export type RoomKind =
@@ -54,7 +54,7 @@ export type OpeningPlacement =
   | Readonly<{ mode: 'symmetric'; offset: number }>;
 
 export interface FacadeOpeningSpec {
-  readonly kind: 'door' | 'window' | 'arch';
+  readonly kind: 'door' | 'window' | 'arch' | 'bay_window' | 'arcade';
   readonly placement: OpeningPlacement;
   readonly width: number;
   readonly height: number;
@@ -141,6 +141,7 @@ export type StructureOp =
       ridge: string;
       gable?: string;
       underEave?: boolean;
+      readonly battlement?: boolean;
       dormers?: readonly RoofDormerSpec[];
       chimneys?: readonly RoofChimneySpec[];
     }>
@@ -175,6 +176,7 @@ export type StructureOp =
       name: string;
       y: StructureScalarExpr;
       height: StructureScalarExpr;
+      jetty?: Readonly<Partial<Record<CardinalFacing, number>>>;
       ops: readonly StructureOp[];
     }>
   | Readonly<{
@@ -183,6 +185,7 @@ export type StructureOp =
       from: ExprVec2;
       size: ExprVec2;
       kind: RoomKind;
+      shape?: 'rect' | 'octagon';
       plinth?: string;
       floor?: string;
       wall?: string;

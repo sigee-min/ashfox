@@ -165,6 +165,14 @@ const replacePreservingProps = (actualState: string, intoState: string): string 
   return formatBlockState({ name: b.name, properties: a.properties });
 };
 
+const MOSSABLE_PLINTH_BLOCKS: ReadonlySet<string> = new Set([
+  'minecraft:cobblestone',
+  'minecraft:stone_bricks',
+  'minecraft:cracked_stone_bricks',
+  'minecraft:stone',
+  'minecraft:deepslate_bricks',
+]);
+
 const tryReplaceVoxel = (
   ctx: WeatheringContext,
   x: number,
@@ -180,6 +188,7 @@ const tryReplaceVoxel = (
   if (v <= 0) return;
   const cur = ctx.states[v]!;
   if (!matchesBlock(cur, target)) return;
+  if (!MOSSABLE_PLINTH_BLOCKS.has(parseBlockState(cur).name)) return;
   if (seededNoise(ctx.seed + salt, x, y, z) < prob) {
     const into = ctx.resolve(intoKey, ctx.ownerPath, [x, y, z]);
     ctx.put(x, y, z, replacePreservingProps(cur, into.state), into.assetAlias);
@@ -261,47 +270,12 @@ const applyChimneySoot = (
   }
 };
 
-const EAVE_OFFSETS: readonly (readonly [number, number])[] = [
-  [0, 0],
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-
-const tryEaveNeighbors = (
-  ctx: WeatheringContext,
-  rx: number,
-  y: number,
-  rz: number,
-  target: string,
-  rule: Extract<WeatheringRule, { kind: 'eave_shadow' }>,
-  seen: Set<number>,
-): void => {
-  const [w, _h, d] = ctx.size;
-  for (const [ox, oz] of EAVE_OFFSETS) {
-    const x = rx + ox;
-    const z = rz + oz;
-    if (x < 0 || x >= w || z < 0 || z >= d) continue;
-    const idx = (y * d + z) * w + x;
-    if (seen.has(idx)) continue;
-    seen.add(idx);
-    tryReplaceVoxel(ctx, x, y, z, target, rule.into, rule.rate, 71);
-  }
-};
-
 const applyEaveShadow = (
   ctx: WeatheringContext,
   rule: Extract<WeatheringRule, { kind: 'eave_shadow' }>,
 ): void => {
-  const target = ctx.resolve(rule.target, ctx.ownerPath, [0, 0, 0]).state;
+  ctx.resolve(rule.target, ctx.ownerPath, [0, 0, 0]);
   ctx.resolve(rule.into, ctx.ownerPath, [0, 0, 0]);
-  const seen = new Set<number>();
-  for (const [rx, ry, rz] of ctx.roofCells) {
-    for (const dy of [1, 2]) {
-      if (ry - dy >= 0) tryEaveNeighbors(ctx, rx, ry - dy, rz, target, rule, seen);
-    }
-  }
 };
 
 export const applyWeatheringRules = (
@@ -322,7 +296,11 @@ export interface FrameTransform {
   readonly mirrorX: boolean;
 }
 
-export const IDENTITY_FRAME: FrameTransform = { offset: [0, 0, 0], rotate: 0, mirrorX: false };
+export const IDENTITY_FRAME: FrameTransform = {
+  offset: [0, 0, 0],
+  rotate: 0,
+  mirrorX: false,
+};
 
 export const rotatePt = ([x, y, z]: IntVec3, rotate: BlockRotation): IntVec3 =>
   rotate === 90
@@ -415,7 +393,10 @@ const emitRegionCell = (
   op: RegionOp,
   worldPos: IntVec3,
   ownerPath: string,
-  staticRes: { readonly state: string; readonly assetAlias: string | null } | null,
+  staticRes: {
+    readonly state: string;
+    readonly assetAlias: string | null;
+  } | null,
   staticState: string,
   txState: (raw: string) => string,
   resolve: RegionResolve,

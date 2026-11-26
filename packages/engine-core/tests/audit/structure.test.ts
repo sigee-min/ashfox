@@ -298,8 +298,113 @@ const testBareBoxVsRichBuilding = (): void => {
   assert.ok(richRep.score >= 85, `Expected rich building >= 85, got ${richRep.score}`);
   assert.equal(richRep.passed, true);
   assert.equal(richRep.grade, 'excellent');
+
+  const richEmptyRep = evaluateStructureQuality(rich.grid, 3, light, emptyMesh);
+  assert.ok(
+    richEmptyRep.score >= 85,
+    `Expected rich building with emptyMesh >= 85, got ${richEmptyRep.score}`,
+  );
+};
+
+const testDualGridMassingAndTrimBonuses = (): void => {
+  const buildFixture = (upgraded: boolean) => {
+    const g = makeGrid([11, 11, 11], {
+      floors: [
+        { name: 'ground', y: 0, height: 4 },
+        {
+          name: 'upper',
+          y: 4,
+          height: 4,
+          ...(upgraded ? { jetty: { south: 1, north: 1 } } : {}),
+        },
+      ],
+      rooms: [
+        {
+          name: 'hall',
+          kind: 'living',
+          acousticSpace: 'timber_room',
+          from: [1, 0, 1],
+          to: [9, 4, 9],
+          enclosed: true,
+          shape: upgraded ? 'octagon' : 'rect',
+        },
+      ],
+      openings: [
+        {
+          kind: 'door',
+          room: 'hall',
+          wall: 'south',
+          from: [5, 1, 9],
+          to: [5, 2, 9],
+          hinge: 'left',
+        },
+        {
+          kind: upgraded ? 'bay_window' : 'window',
+          room: 'hall',
+          wall: 'east',
+          from: [9, 2, 5],
+          to: [9, 2, 5],
+        },
+        ...(upgraded
+          ? [
+              {
+                kind: 'arcade' as const,
+                room: 'hall',
+                wall: 'west' as const,
+                from: [1, 1, 4] as const,
+                to: [1, 2, 6] as const,
+              },
+            ]
+          : []),
+      ],
+      roofCount: upgraded ? 2 : 1,
+      semanticStats: {
+        roomCount: 1,
+        facadeCount: 1,
+        stairCount: 0,
+        furnishCount: 1,
+        weatheringCount: 0,
+        rawSetCount: 2,
+      },
+    });
+    fillBox(g.set, [1, 0, 1], [9, 0, 9], 'minecraft:cobblestone');
+    fillBox(g.set, [1, 1, 1], [9, 6, 9], 'minecraft:white_terracotta');
+    fillBox(g.set, [2, 1, 2], [8, 5, 8], 'minecraft:air');
+    fillBox(g.set, [1, 6, 1], [9, 6, 9], 'minecraft:spruce_planks');
+    fillBox(g.set, [1, 7, 1], [9, 7, 9], 'minecraft:stone');
+    g.set(5, 1, 9, 'minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]');
+    g.set(5, 2, 9, 'minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false]');
+    g.set(5, 1, 5, 'minecraft:lantern[hanging=false]');
+    return g;
+  };
+
+  const base = buildFixture(false);
+  const upg = buildFixture(true);
+  const light = emptyLighting([11, 11, 11]);
+  const baseMesh: StructureBakedMesh = { ...emptyMesh, rawFaceCount: 500, mergedQuadCount: 340 };
+  const trimMesh: StructureBakedMesh = { ...baseMesh, trimCount: 36 };
+
+  const baseRep = evaluateStructureQuality(base.grid, 1, light, baseMesh);
+  const upgRep = evaluateStructureQuality(upg.grid, 1, light, trimMesh);
+
+  const pillarScore = (rep: typeof baseRep, id: string) =>
+    rep.pillars.find((p) => p.id === id)!.score;
+  assert.ok(
+    pillarScore(upgRep, 'architecture') > pillarScore(baseRep, 'architecture'),
+    'Expected massing variety bonus in architecture pillar',
+  );
+  assert.ok(
+    pillarScore(upgRep, 'facade') > pillarScore(baseRep, 'facade'),
+    'Expected trim & bay_window/arcade bonus in facade pillar',
+  );
+  assert.ok(
+    pillarScore(upgRep, 'craft') > pillarScore(baseRep, 'craft'),
+    'Expected trimCount bonus in craft pillar',
+  );
+  assert.ok(upgRep.score > baseRep.score);
 };
 
 testHardGates();
 testBareBoxVsRichBuilding();
+testDualGridMassingAndTrimBonuses();
 console.log('ashfox structure 4-pillar audit tests ok');

@@ -1,6 +1,7 @@
 import type { CardinalFacing, IntVec3 } from '../../project/structure/contract';
 import { formatBlockState, parseBlockState } from '../../project/structure/state';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
+import { isOctagonOutside } from './octagon';
 
 const DIRS: Readonly<Record<CardinalFacing, readonly [number, number]>> = {
   north: [0, -1],
@@ -302,7 +303,8 @@ export const resolveOpeningConnections = (
   rooms: readonly StructureRoomMeta[],
 ): readonly StructureOpeningMeta[] =>
   openings.map((opening) => {
-    if (opening.kind === 'window' || opening.connectsRooms) return opening;
+    if (opening.kind === 'window' || opening.kind === 'bay_window' || opening.connectsRooms)
+      return opening;
     const [dx, dz] = DIRS[opening.wall];
     const px = Math.floor((opening.from[0] + opening.to[0]) / 2) + dx;
     const py = opening.from[1];
@@ -334,20 +336,23 @@ const isColumnCovered = (
   return false;
 };
 
+const isRoomEnclosed = (room: StructureRoomMeta, voxels: Int32Array, size: IntVec3): boolean => {
+  if (room.kind === 'courtyard') return false;
+  let covered = 0;
+  let total = 0;
+  for (let z = room.from[2] + 1; z <= room.to[2] - 1; z += 1) {
+    for (let x = room.from[0] + 1; x <= room.to[0] - 1; x += 1) {
+      if (room.shape === 'octagon' && isOctagonOutside(x, z, room.from, room.to)) continue;
+      total += 1;
+      if (isColumnCovered(voxels, size, x, room.to[1], z)) covered += 1;
+    }
+  }
+  return total > 0 && covered / total >= 0.85;
+};
+
 export const resolveRoomEnclosure = (
   rooms: readonly StructureRoomMeta[],
   voxels: Int32Array,
   size: IntVec3,
 ): readonly StructureRoomMeta[] =>
-  rooms.map((room) => {
-    if (room.kind === 'courtyard') return { ...room, enclosed: false };
-    let covered = 0;
-    let total = 0;
-    for (let z = room.from[2] + 1; z <= room.to[2] - 1; z += 1) {
-      for (let x = room.from[0] + 1; x <= room.to[0] - 1; x += 1) {
-        total += 1;
-        if (isColumnCovered(voxels, size, x, room.to[1], z)) covered += 1;
-      }
-    }
-    return { ...room, enclosed: total > 0 && covered / total >= 0.85 };
-  });
+  rooms.map((room) => ({ ...room, enclosed: isRoomEnclosed(room, voxels, size) }));

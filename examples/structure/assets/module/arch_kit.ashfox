@@ -6,12 +6,17 @@ module arch_kit {
     cobble = mix("minecraft:cobblestone" * 0.7, "minecraft:mossy_cobblestone" * 0.3);
     stone_brick = "minecraft:stone_bricks";
     timber = "minecraft:spruce_log[axis=y]";
+    oak_log = "minecraft:oak_log[axis=y]";
+    leaves = "minecraft:oak_leaves";
     plank = "minecraft:oak_planks";
     slab = "minecraft:spruce_slab[type=bottom]";
     fence = "minecraft:spruce_fence";
     barrel = "minecraft:barrel[facing=up]";
     chest = "minecraft:chest[facing=south]";
     cauldron = "minecraft:cauldron";
+    campfire = "minecraft:campfire[lit=true]";
+    anvil = "minecraft:anvil[facing=east]";
+    hay = "minecraft:hay_block";
     lantern = asset lantern_prop as "minecraft:lantern[hanging=false]";
   }
 
@@ -38,5 +43,30 @@ module arch_kit {
     set at = (0, 1, 0) block = timber;
     set at = (0, 2, 0) block = fence;
     set at = (0, 3, 0) block = lantern;
+  }
+
+  export prefab GardenTree {
+    set at = (1, 0, 1) block = oak_log;
+    set at = (1, 1, 1) block = oak_log;
+    box from = (0, 2, 0) to = (2, 3, 2) block = leaves;
+    set at = (1, 4, 1) block = leaves;
+  }
+
+  export prefab MarketCart {
+    set at = (0, 0, 0) block = fence;
+    set at = (2, 0, 0) block = fence;
+    set at = (0, 1, 0) block = fence;
+    set at = (2, 1, 0) block = fence;
+    set at = (0, 0, 1) block = plank;
+    set at = (1, 0, 1) block = hay;
+    set at = (2, 0, 1) block = barrel;
+    set at = (1, 1, 1) block = hay;
+    box from = (0, 2, 0) to = (2, 2, 1) block = slab;
+  }
+
+  export prefab OutdoorForge {
+    set at = (0, 0, 0) block = campfire;
+    set at = (1, 0, 0) block = anvil;
+    set at = (2, 0, 0) block = cauldron;
   }
 }

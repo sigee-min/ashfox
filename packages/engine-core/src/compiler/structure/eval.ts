@@ -17,7 +17,6 @@ import {
 } from '../../project/structure/expr';
 import { parseBlockState, withBlockFacing } from '../../project/structure/state';
 import {
-  applyCompoundChild,
   buildCustomPlacementsFromTags,
   checkStructureUnitHygiene,
   collectReachableUnits,
@@ -28,9 +27,15 @@ import { emitRoomShell } from './facade';
 import {
   buildFrameRoofOp,
   composeRotation,
+  emitRoomJetty,
+  expandRoomInFloor,
+  getRoofGuard,
+  registerFloorJetty,
+  runCompoundMerge,
   runWeatherAndSocketOp,
   transformAnchor,
   transformFacing,
+  transformJetty,
   transformRoomBounds,
 } from './frameOps';
 import {
@@ -84,15 +89,17 @@ const evalRoomOp = (
       'structure.room-no-floor',
       `Room "${op.name}" must be inside a floor`,
     );
-  const [rx, rz] = evalVec2(state, ownerPath, op.from);
-  const [rw, rd] = evalVec2(state, ownerPath, op.size);
-  if (rw < 3 || rd < 3)
+  const [rawX, rawZ] = evalVec2(state, ownerPath, op.from);
+  const [rawW, rawD] = evalVec2(state, ownerPath, op.size);
+  if (rawW < 3 || rawD < 3)
     return failEval(ownerPath, 'structure.invalid-room', `Room "${op.name}" size >= 3x3`);
-  const bounds = transformRoomBounds(rx, rz, rw, rd, floor.y, floor.height, frame);
+  const exp = expandRoomInFloor(floor, rawX, rawZ, rawW, rawD);
+  const bounds = transformRoomBounds(exp.rx, exp.rz, exp.rw, exp.rd, floor.y, floor.height, frame);
   const meta = emitRoomShell(
     {
       name: op.name,
       kind: op.kind,
+      shape: op.shape,
       from: bounds.from,
       to: bounds.to,
       plinth: op.plinth,
@@ -108,6 +115,7 @@ const evalRoomOp = (
     (k, o, p) => resolvePaletteEntry(state, k, o, p),
     (c, m) => failEval(ownerPath, c, m),
   );
+  emitRoomJetty(state, ownerPath, op, bounds, exp.edges, frame);
   state.rooms.set(op.name, meta);
   state.stats.roomCount += 1;
 };
@@ -126,7 +134,9 @@ const evalFloorOp = (
   if (state.floorNames.has(op.name))
     failEval(ownerPath, 'structure.duplicate-floor', `Duplicate floor "${op.name}"`);
   state.floorNames.add(op.name);
-  const meta: StructureFloorMeta = { name: op.name, y, height };
+  const jetty = transformJetty(op.jetty, frame);
+  const meta: StructureFloorMeta = { name: op.name, y, height, ...(jetty ? { jetty } : {}) };
+  registerFloorJetty(meta, op.ops, op.jetty, (v) => evalVec2(state, ownerPath, v));
   state.floors.push(meta);
   const prev = state.currentFloor;
   state.currentFloor = meta;
@@ -208,13 +218,9 @@ const evalCompoundPlace = (
       `compound_place "${op.alias}" must target structure`,
     );
   const childResult = evaluateStructure(childPath, state.units, state.relative);
-  applyCompoundChild(
-    Object.assign(state, {
-      put: (x: number, y: number, z: number, s: string, a: string | null) =>
-        putVoxel(state, ownerPath, [x, y, z], s, a),
-      carve: (x: number, y: number, z: number) =>
-        putVoxel(state, ownerPath, [x, y, z], 'minecraft:air', null),
-    }),
+  runCompoundMerge(
+    state,
+    ownerPath,
     op.alias,
     childResult,
     applyFrame(evalVec3(state, ownerPath, op.at), frame),
@@ -308,6 +314,7 @@ const evalRoofOp = (
 ): void => {
   const mappedOp = buildFrameRoofOp(op, frame);
   const worldPlaced = Boolean(op.on);
+  const guard = getRoofGuard(state, worldPlaced, frame);
   const res = runRoofOp(
     ownerPath,
     state.size,
@@ -335,13 +342,19 @@ const evalRoofOp = (
       ),
     (k, o, p) => resolvePaletteEntry(state, k, o, p ?? [0, 0, 0]),
     (c, m) => failEval(ownerPath, c, m),
+    guard.canPlace,
   );
+  const worldCells = worldPlaced ? res.roofCells : res.roofCells.map((c) => applyFrame(c, frame));
+  const worldTops = worldPlaced
+    ? res.chimneyTops
+    : res.chimneyTops.map((c) => applyFrame(c, frame));
+  guard.record(worldCells);
   state.roofCount += 1;
   if (res.hasTrim) state.hasRoofTrim = true;
   state.dormerCount += res.dormerCount;
   state.chimneyCount += res.chimneyCount;
-  state.chimneyTops.push(...res.chimneyTops);
-  state.roofCells.push(...res.roofCells);
+  state.chimneyTops.push(...worldTops);
+  state.roofCells.push(...worldCells);
 };
 
 const evalSemanticOp = (

@@ -232,7 +232,7 @@ const evaluatePillars = (
     circ.accessibleDoorways,
     facade,
   );
-  const fac = evaluateFacade(grid, circ.accessibleDoorways, facade);
+  const fac = evaluateFacade(grid, circ.accessibleDoorways, facade, mesh?.trimCount ?? 0);
   const intr = evaluateInteriorPillar(
     grid,
     circ,

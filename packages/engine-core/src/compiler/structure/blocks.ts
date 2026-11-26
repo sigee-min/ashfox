@@ -170,6 +170,7 @@ const STONE_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:deepslate_tiles': full('deepslate_tiles'),
   'minecraft:bricks': full('bricks'),
   'minecraft:terracotta': full('terracotta'),
+  'minecraft:calcite': full('plaster_cream'),
   'minecraft:white_terracotta': full('plaster_white'),
   'minecraft:light_gray_wool': full('plaster_white'),
   'minecraft:white_wool': full('plaster_white'),
@@ -226,6 +227,10 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
     light: true,
   }),
   'minecraft:campfire': shapeBlock('campfire', 'campfire', {
+    layer: 'emissive',
+    zone: 'interior',
+  }),
+  'minecraft:soul_campfire': shapeBlock('campfire', 'campfire', {
     layer: 'emissive',
     zone: 'interior',
   }),
