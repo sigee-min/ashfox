@@ -1,7 +1,15 @@
+export type CurveEasing = 'linear' | 'smooth' | 'ease_in' | 'ease_out' | 'ease_in_out' | 'snap';
+
+export interface CurvePoint {
+  readonly at: number;
+  readonly value: number;
+  readonly easing?: CurveEasing;
+}
+
 export interface Curve {
   readonly domain: 'linear' | 'log';
   readonly interpolation: 'linear' | 'smooth';
-  readonly points: readonly { readonly at: number; readonly value: number }[];
+  readonly points: readonly CurvePoint[];
 }
 
 export type Control = number | Curve;

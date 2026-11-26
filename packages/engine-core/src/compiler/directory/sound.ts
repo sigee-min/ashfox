@@ -96,6 +96,8 @@ const resolveNamedDecl = (
   refName: string,
   declKind: 'voice' | 'sequence',
   ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
 ): {
   readonly owner: string;
   readonly scopeKey: string;
@@ -114,8 +116,9 @@ const resolveNamedDecl = (
     state.usedDecls.add(`${ownerPath}\u0000${declKind}\u0000${hit.id}`);
     return {
       owner: ownerPath,
-      scopeKey: 'local',
+      scopeKey: ownerScopeKey,
       id: hit.id,
+      ...(ownerAlias ? { alias: ownerAlias } : {}),
       value: hit.value,
       params: ownerParams,
     };
@@ -136,11 +139,13 @@ const resolveNamedDecl = (
     );
   }
   state.usedDecls.add(`${targetPath}\u0000${declKind}\u0000${hit.id}`);
+  const nextScope = ownerScopeKey === 'local' ? alias! : `${ownerScopeKey}.${alias!}`;
+  const nextAlias = ownerAlias ? `${ownerAlias}_${alias!}` : alias!;
   return {
     owner: targetPath,
-    scopeKey: alias!,
+    scopeKey: nextScope,
     id: hit.id,
-    alias,
+    alias: nextAlias,
     value: hit.value,
     params: mergeImportParams(ownerPath, imp, target),
   };
@@ -151,9 +156,19 @@ const resolveVoiceRef = (
   ownerPath: string,
   rawRef: unknown,
   ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
 ): string => {
   const refName = isRefValue(rawRef) ? rawRef.$ref : String(rawRef);
-  const decl = resolveNamedDecl(state, ownerPath, refName, 'voice', ownerParams);
+  const decl = resolveNamedDecl(
+    state,
+    ownerPath,
+    refName,
+    'voice',
+    ownerParams,
+    ownerScopeKey,
+    ownerAlias,
+  );
   const cacheKey = `${decl.owner}\u0000${decl.scopeKey}\u0000${decl.id}`;
   const cached = state.collectedVoices.get(cacheKey);
   if (cached) return String(cached.id);
@@ -171,7 +186,7 @@ const resolveVoiceRef = (
   }) as Record<string, unknown>;
   if (resolved.duck && typeof resolved.duck === 'object' && !Array.isArray(resolved.duck)) {
     const duck = { ...(resolved.duck as Record<string, unknown>) };
-    duck.by = resolveVoiceRef(state, decl.owner, duck.by, decl.params);
+    duck.by = resolveVoiceRef(state, decl.owner, duck.by, decl.params, decl.scopeKey, decl.alias);
     resolved.duck = duck;
   }
   Object.assign(placeholder, resolved, { id: assignedId });
@@ -183,6 +198,8 @@ const resolveSequenceSteps = (
   ownerPath: string,
   seqVal: Record<string, unknown>,
   ownerParams: SoundSourceUnit['params'],
+  ownerScopeKey = 'local',
+  ownerAlias?: string,
 ): Record<string, unknown> => {
   const resolvedSeq = resolveSoundParams(seqVal, ownerParams, (msg) => {
     throw new Error(`${ownerPath}: ${msg}`);
@@ -191,7 +208,14 @@ const resolveSequenceSteps = (
   const steps = resolvedSeq.steps.map((rawStep) => {
     if (!rawStep || typeof rawStep !== 'object' || Array.isArray(rawStep)) return rawStep;
     const step = { ...(rawStep as Record<string, unknown>) };
-    step.voice = resolveVoiceRef(state, ownerPath, step.voice, ownerParams);
+    step.voice = resolveVoiceRef(
+      state,
+      ownerPath,
+      step.voice,
+      ownerParams,
+      ownerScopeKey,
+      ownerAlias,
+    );
     return step;
   });
   return { ...resolvedSeq, steps };

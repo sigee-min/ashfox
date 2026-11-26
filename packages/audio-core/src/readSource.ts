@@ -3,6 +3,8 @@ import {
   MATERIAL_PRESETS,
   type ChirpSource,
   type Control,
+  type CurveEasing,
+  type CurvePoint,
   type FilterSpec,
   type FmSource,
   type GainControl,
@@ -20,6 +22,15 @@ import { choice, closed, fail, list, number } from './validate';
 const VOWEL_TOKENS = new Set(['oo', 'ah', 'aa', 'eh', 'ee', 'ih', 'oh', 'uh', 'aw', 'er']);
 const WAVEGUIDE_MODELS = ['string', 'blade', 'creak', 'pipe'] as const;
 
+const CURVE_EASINGS: readonly CurveEasing[] = [
+  'linear',
+  'smooth',
+  'ease_in',
+  'ease_out',
+  'ease_in_out',
+  'snap',
+];
+
 const validateControlPoint = (
   raw: unknown,
   i: number,
@@ -29,16 +40,18 @@ const validateControlPoint = (
   max: number,
   isLog: boolean,
   path: string,
-): { readonly at: number; readonly value: number } => {
+): CurvePoint => {
   const p = `${path}.points[${i}]`;
-  const point = closed(raw, ['at', 'value'], p);
+  const point = closed(raw, ['at', 'value'], p, ['easing']);
   const at = number(point.at, 0, 1, p + '.at');
   if (at <= previous || (i === 0 && at !== 0) || (i === count - 1 && at !== 1)) {
     fail(p + '.at', 'knots must strictly increase from 0 to 1');
   }
   const v = number(point.value, min, max, p + '.value');
   if (isLog && v === 0) fail(p + '.value', 'log values must be positive');
-  return { at, value: v };
+  const easing =
+    point.easing !== undefined ? choice(point.easing, CURVE_EASINGS, p + '.easing') : undefined;
+  return easing !== undefined ? { at, value: v, easing } : { at, value: v };
 };
 
 export const readControl = (

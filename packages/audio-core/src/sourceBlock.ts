@@ -199,7 +199,11 @@ const finishCurve = (
   return {
     domain: domainOvr ?? (dim === 'hz' && isPos ? 'log' : 'linear'),
     interpolation: interp ?? (anySmooth ? 'smooth' : 'linear'),
-    points: pts.map((p) => ({ at: p.at!, value: p.value })),
+    points: pts.map((p, i) => ({
+      at: p.at!,
+      value: p.value,
+      ...(i < pts.length - 1 && easings[i] ? { easing: easings[i] } : {}),
+    })),
   };
 };
 

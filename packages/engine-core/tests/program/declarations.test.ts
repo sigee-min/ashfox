@@ -125,6 +125,44 @@ sound bad {
 assert.equal(badSoundOut.ok, false);
 assert.match(badSoundOut.diagnostics[0]!.message, /does not match sound asset/);
 
+// Imported module voice ducking another voice in the same module shares the module instance scope.
+const duckMod = `ashfox 1
+module duck_kit {
+  params { lvl = 0.75; }
+  export voice hit : noise { color = white; highpass = 120hz; lowpass = 6000hz; gain { env = ad; attack = 4ms; peak = lvl; } }
+  export voice bed : noise { color = brown; highpass = 60hz; lowpass = 800hz; duck { by = hit; amount = 40%; release_ms = 50ms; } gain { env = ad; attack = 5ms; peak = lvl; } }
+}`;
+const duckCompiled = compileDirectoryWorkspace(
+  ws(
+    [{ name: 'layered', path: 'sounds/layered.ashfox' }],
+    [{ subpath: './duck_kit', path: 'module/duck_kit.ashfox' }],
+  ),
+  [
+    {
+      path: 'assets/sounds/layered.ashfox',
+      source: `ashfox 1
+sound layered {
+  import "../module/duck_kit.ashfox" as kit { lvl = 0.85; };
+  profile = foley;
+  duration = 0.45s;
+  seed = 9;
+  seq main {
+    step a { voice = kit.hit; at = 0s; duration = 200ms; }
+    step b { voice = kit.bed; at = 0s; duration = 350ms; }
+  }
+  variants { main = 1; }
+  master { gain = 0db; peak = -2db; }
+}`,
+    },
+    { path: 'assets/module/duck_kit.ashfox', source: duckMod },
+  ],
+);
+assert.equal(
+  duckCompiled.ok,
+  true,
+  duckCompiled.ok ? '' : JSON.stringify(duckCompiled.diagnostics),
+);
+
 // Sprite declarations + unused declaration hygiene.
 const spriteMod = `ashfox 1
 module sprite_parts {
