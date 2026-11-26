@@ -54,13 +54,13 @@ npx --no-install ashfox render fox.ashfox --view turnaround --output turnaround.
 npx --no-install ashfox render fox.ashfox --view wag --output wag.gif
 ```
 
-Use new filenames when repeating these commands. Sound `render` captures a peak-envelope waveform; use `build` to produce playable WAV files.
+Use new filenames when repeating these commands. Sound checking returns compiled variant metadata plus a quantitative `audit` report; declaring `preview inspect { sheet = inspect; }` renders a pure-CPU 800×520 4-panel sheet without Chrome, while single-variant `render` captures a peak-envelope waveform. Sprite checking returns the receipt, pixel ownership evidence, and a quantitative `audit` report; declaring `preview inspect { sheet = inspect; }` renders a pure-CPU 512×512 4-panel sheet without Chrome. Use `build` to produce playable WAV files and final PNG/GLB/NBT outputs.
 
 | Preview field | Accepted values and asset compatibility |
 | --- | --- |
 | `kind` | `still` (default PNG) or `gif` (animated GIF) |
 | `camera` | `perspective`, `native`, `front`, `back`, `left`, `right`, `top`, `bottom` (model/structure) |
-| `sheet` | `turnaround` or `inspect` 2×2 contact sheet (still model/structure) |
+| `sheet` | `turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK` for model/structure) or `inspect` (pure-CPU `1x/zoom/silhouette/luma/palette` for sprites/tiles; pure-CPU `waveform/spectrogram/6-band/variants` for sounds) |
 | `azimuth`, `elevation`, `zoom` | Orbit angles (`-360..360`, `-89..89`) and zoom (`0.1..10`) (model/structure) |
 | `width`, `height` | Integer `16..2048` (defaults `640x360` for model/structure/waveform) |
 | `environment`, `background` | `studio`/`day`/`evening`/`night`; `environment`/`transparent`/`checker`/`light`/`dark` |

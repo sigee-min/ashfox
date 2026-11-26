@@ -55,6 +55,7 @@ sound bell {
   import "../module/tones.ashfox" as t;
   outputs { wav; }
   preview default { width = 320; height = 160; variant = "main"; }
+  profile = "ui";
   duration = 0.5;
   sampleRate = 48000;
   seed = 7;
@@ -101,8 +102,9 @@ const deadSoundImport = compileDirectoryWorkspace(
       source: `ashfox-model 1
 sound bell {
   import "../module/tones.ashfox" as t;
+  profile = "ui";
   duration = 0.4; sampleRate = 48000; seed = 1;
-  voices = [{ id = "v"; source = { kind = "noise"; }; gain = ${envGain}; highpass = 100; lowpass = 3000; }];
+  voices = [{ id = "v"; source = { kind = "noise"; color = "white"; }; gain = ${envGain}; highpass = 100; lowpass = 3000; }];
   sequences = [{ id = "s"; start = 0; repeat = { count = 1; period = 0; }; steps = [{ id = "k"; voice = "v"; at = 0; duration = 0.3; gain = 1; pitchCents = 0; vary = { timing = [0,0]; pitchCents = [0,0]; gain = [1,1]; duration = [1,1]; }; }]; }];
   variants = [{ id = "main"; seed = 1; }];
   playback = { kind = "oneshot"; };
@@ -124,8 +126,9 @@ const badSoundOut = compileDirectoryWorkspace(
       source: `ashfox-model 1
 sound bad {
   outputs { glb; }
+  profile = "ui";
   duration = 0.4; sampleRate = 48000; seed = 1;
-  voices = [{ id = "v"; source = { kind = "noise"; }; gain = ${envGain}; highpass = 100; lowpass = 3000; }];
+  voices = [{ id = "v"; source = { kind = "noise"; color = "white"; }; gain = ${envGain}; highpass = 100; lowpass = 3000; }];
   sequences = [{ id = "s"; start = 0; repeat = { count = 1; period = 0; }; steps = [{ id = "k"; voice = "v"; at = 0; duration = 0.3; gain = 1; pitchCents = 0; vary = { timing = [0,0]; pitchCents = [0,0]; gain = [1,1]; duration = [1,1]; }; }]; }];
   variants = [{ id = "main"; seed = 1; }];
   playback = { kind = "oneshot"; };
@@ -148,7 +151,7 @@ sprite badge {
   import "../module/sprite_parts.ashfox" as parts;
   outputs { png; }
   preview silhouette { stage = silhouette; scale = 8; background = checker; }
-  profile = "minecraft-item-v1";
+  profile = item;
   canvas = [16, 16];
   palette { bg = #101014; }
   part base {
@@ -156,7 +159,7 @@ sprite badge {
     material = "parts.gold";
     at = [4, 4];
     shade { form = "round"; light = "top_left"; contrast = 2; }
-    grain { mode = "clustered-v1"; amount = 0; seed = 7; }
+    grain { mode = "clustered"; amount = 0; seed = 7; }
     patches = [];
   }
 }`;
@@ -178,7 +181,7 @@ assert.deepEqual(okSprite.products[0]!.declarations.previews, [
 const deadSpriteImportSrc = `ashfox-model 1
 sprite badge {
   import "../module/sprite_parts.ashfox" as unused_parts;
-  profile = "minecraft-item-v1";
+  profile = item;
   canvas = [16, 16];
   palette { c = #ffffff; }
   paint dot { at = [4, 4]; rows = ["cc", "cc"]; colors { c = "c"; } }

@@ -1,110 +1,53 @@
 ashfox-model 1
-
-// Procedural listening study; material/animal realism requires human audition.
 sound charging_spell {
-  duration = 2.8;
+  profile = "magic";
+  duration = 2.4;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
+  space = { mix = 0.3; decay = 0.55; damping = 6800; size = 1.2; };
   voices = [{
-    id = "voice";
+    id = "arc_core";
     source = {
       kind = "fm";
-      pitch = {
-        domain = "log";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 180;
-        }, {
-          at = 0.7;
-          value = 650;
-        }, {
-          at = 1;
-          value = 1300;
-        }];
-      };
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 160; }, { at = 0.7; value = 620; }, { at = 1; value = 1380; }]; };
       ratio = 1.5;
-      index = {
-        domain = "linear";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 0.1;
-        }, {
-          at = 0.7;
-          value = 1.4;
-        }, {
-          at = 1;
-          value = 3;
-        }];
-      };
-      vibratoHz = 8;
-      vibratoCents = 15;
+      index = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.25; }, { at = 0.7; value = 2.1; }, { at = 1; value = 4.2; }]; };
+      vibratoHz = 9;
+      vibratoCents = 28;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.2;
-        value = 0.15;
-      }, {
-        at = 0.85;
-        value = 0.8;
-      }, {
-        at = 1;
-        value = 0;
-      }];
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1400; }, { at = 1; value = 11000; }]; }; q = 1.4; };
+    drive = 1.6;
+    pan = -0.18;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0; }, { at = 0.15; value = 0.35; }, { at = 0.88; value = 0.92; }, { at = 1; value = 0; }]; };
+  }, {
+    id = "shimmer_harmonics";
+    source = {
+      kind = "osc";
+      waveform = "saw";
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 320; }, { at = 1; value = 1920; }]; };
+      unison = 4;
+      detuneCents = 22;
     };
-    highpass = 40;
-    lowpass = {
-      domain = "log";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 2200;
-      }, {
-        at = 1;
-        value = 10000;
-      }];
-    };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1800; }, { at = 1; value = 9500; }]; }; q = 1.6; };
+    pan = 0.22;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0; }, { at = 0.25; value = 0.28; }, { at = 0.85; value = 0.85; }, { at = 1; value = 0; }]; };
+  }, {
+    id = "sparkle_dust";
+    source = { kind = "noise"; color = "crackle"; density = 32; };
+    highpass = 2400;
+    gain = { env = "adsr"; attack = 0.08; decay = 0.3; sustain = 0.65; release = 0.25; peak = 0.45; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0.1;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "note";
-      voice = "voice";
-      at = 0;
-      duration = 2.5;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "surge";
+    start = 0.04;
+    steps = [
+      { id = "core"; voice = "arc_core"; at = 0; duration = 2.2; vary = { pitchCents = [-45, 45]; }; },
+      { id = "choir"; voice = "shimmer_harmonics"; at = 0.05; duration = 2.15; vary = { pitchCents = [-45, 45]; }; },
+      { id = "sparks"; voice = "sparkle_dust"; at = 0.1; duration = 2.1; vary = { gain = [0.85, 1.15]; }; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -12;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = -1; peakDb = -2; softClip = true; };
 }

@@ -2,11 +2,23 @@
 
 Node.js 24 이상과 npm이 필요합니다. 계정이나 API 키는 필요하지 않습니다.
 
+## 가장 빠른 시작: 프롬프트 한 줄 또는 스킬 바로 받기
+
+사용 중인 코딩 에이전트(Claude Code, Codex, Gemini CLI, Cursor 등)에 아래 한 줄 프롬프트를 붙여넣으면 설치부터 프로젝트 설정까지 자동으로 진행합니다.
+
+{{source-code:0}}
+
+원한다면 배포 경로에서 `ashfox` 스킬 파일을 직접 받거나 불러올 수도 있습니다.
+
+- 스킬 원문 (`SKILL.md`): `https://ashfox.io/skills/ashfox/files/SKILL.md`
+- 스킬 패키지 (`.skill` / `.zip`): [ashfox.skill](https://ashfox.io/skills/ashfox/ashfox.skill) · [ashfox.zip](https://ashfox.io/skills/ashfox/ashfox.zip)
+- 스킬 매니페스트 & 클라이언트별 설치 경로: `https://ashfox.io/skills/ashfox/latest.json`
+
 ## 프로젝트에 설치하기
 
 게임 또는 에셋 폴더에서 터미널을 열고 실행하세요.
 
-{{source-code:0}}
+{{source-code:1}}
 
 두 번째 명령은 설치된 제품 버전을 출력합니다. 선택 도구인 Chrome 지원 여부는 `npx --no-install ashfox doctor`로 확인합니다.
 
@@ -16,7 +28,7 @@ Node.js 24 이상과 npm이 필요합니다. 계정이나 API 키는 필요하�
 
 그룹형 스타터 프로젝트를 오프라인으로 생성하고 첫 아이템을 빌드합니다.
 
-{{source-code:1}}
+{{source-code:2}}
 
 `build`가 출력한 export 디렉터리에서 `iron_sword.png`를 여세요. 코딩 에이전트로 `.ashfox` 원본을 편집한 뒤 다시 빌드하세요.
 
@@ -30,7 +42,7 @@ Node.js 24 이상과 npm이 필요합니다. 계정이나 API 키는 필요하�
 
 위 설치 명령의 URL에서 CLI 패키지를 내려받고 프로젝트의 `tools/` 같은 위치에 보관한 뒤 해당 파일을 설치합니다.
 
-{{source-code:2}}
+{{source-code:3}}
 
 압축파일과 잠금 파일을 함께 보관하세요. Node.js와 npm이 있는 다른 머신에서 `npm ci --offline`으로 로컬 압축파일을 사용해 복원할 수 있습니다. 다른 프로젝트 의존성에는 npm 캐시도 필요할 수 있습니다. 두 설치 방식 모두 npm 레지스트리 공개를 전제로 하지 않습니다.
 
@@ -52,11 +64,11 @@ Node.js 24 이상과 npm이 필요합니다. 계정이나 API 키는 필요하�
 
 macOS/Linux:
 
-{{source-code:3}}
+{{source-code:4}}
 
 Windows PowerShell:
 
-{{source-code:4}}
+{{source-code:5}}
 
 디렉터리가 아닌 실행 파일 경로를 지정합니다.
 

@@ -177,6 +177,55 @@ const softGrainRegion = (region: TextureRegion, grid: PaintGrid, seed: number): 
   }
 };
 
+const DIRECTIONAL_SCALES: Readonly<
+  Record<'fur' | 'wood' | 'cloth' | 'brushed', readonly [number, number, number]>
+> = {
+  fur: [1, 3, 1],
+  wood: [4, 1, 4],
+  cloth: [2, 2, 2],
+  brushed: [3, 1, 3],
+};
+
+const DIRECTIONAL_STREAMS: Readonly<Record<'fur' | 'wood' | 'cloth' | 'brushed', number>> = {
+  fur: 503,
+  wood: 601,
+  cloth: 701,
+  brushed: 809,
+};
+
+const directionalDeltaAt = (
+  region: TextureRegion,
+  x: number,
+  y: number,
+  seed: number,
+  mode: 'fur' | 'wood' | 'cloth' | 'brushed',
+): number => {
+  if (mode === 'cloth' && ((x + y) & 1) === 1) return 0;
+  const norm =
+    coherentValue(region.pointAt(x, y), DIRECTIONAL_SCALES[mode], seed, DIRECTIONAL_STREAMS[mode]) /
+    UINT32;
+  const cut = mode === 'cloth' ? 0.22 : 0.2;
+  return norm < cut ? -1 : norm > 1 - cut ? 1 : 0;
+};
+
+const directionalGrainRegion = (
+  region: TextureRegion,
+  grid: PaintGrid,
+  seed: number,
+  mode: 'fur' | 'wood' | 'cloth' | 'brushed',
+): void => {
+  for (let y = 0; y < region.height; y += 1) {
+    for (let x = 0; x < region.width; x += 1) {
+      const index = (region.y + y) * grid.width + region.x + x;
+      if (grid.fixed[index] !== 0 || !eligible(grid.roles[grid.values[index]!])) continue;
+      const delta = directionalDeltaAt(region, x, y, seed, mode);
+      if (delta === 0) continue;
+      const next = Math.max(0, Math.min(4, grid.tones[index]! + delta)) as PaintTone;
+      paint(grid, region.x + x, region.y + y, grid.values[index]!, next);
+    }
+  }
+};
+
 /** Apply region-resolved grain modes across all eligible regions. */
 export const applyGrainModes = (
   grid: PaintGrid,
@@ -200,6 +249,9 @@ export const applyGrainModes = (
     const mode = modeFor(region);
     if (mode === 'soft') softGrainRegion(region, grid, finalSeed);
     else if (mode === 'clustered') grainRegion(region, grid, finalSeed);
+    else if (mode === 'fur' || mode === 'wood' || mode === 'cloth' || mode === 'brushed') {
+      directionalGrainRegion(region, grid, finalSeed, mode);
+    }
   }
   return true;
 };

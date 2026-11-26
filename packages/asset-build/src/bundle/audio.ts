@@ -21,55 +21,63 @@ export const readPlayback = (value: unknown, frames: number): SoundProduct['play
   return { kind: 'loop', startFrame: 0, endFrame: frames };
 };
 
-export const verifyPcm = (bytes: Uint8Array, frames: number): void => {
+export const verifyPcm = (bytes: Uint8Array, frames: number, channels: 1 | 2 = 1): void => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const blockAlign = channels * 2;
   const word = (offset: number, value: string): boolean =>
     [...value].every((c, i) => bytes[offset + i] === c.charCodeAt(0));
   if (
-    bytes.length !== 44 + frames * 2 ||
+    bytes.length !== 44 + frames * blockAlign ||
     !word(0, 'RIFF') ||
     !word(8, 'WAVEfmt ') ||
     !word(36, 'data') ||
     view.getUint32(4, true) !== bytes.length - 8 ||
     view.getUint32(16, true) !== 16 ||
     view.getUint16(20, true) !== 1 ||
-    view.getUint16(22, true) !== 1 ||
+    view.getUint16(22, true) !== channels ||
     view.getUint32(24, true) !== 48000 ||
-    view.getUint32(28, true) !== 96000 ||
-    view.getUint16(32, true) !== 2 ||
+    view.getUint32(28, true) !== 48000 * blockAlign ||
+    view.getUint16(32, true) !== blockAlign ||
     view.getUint16(34, true) !== 16 ||
-    view.getUint32(40, true) !== frames * 2
+    view.getUint32(40, true) !== frames * blockAlign
   ) {
     throw new BuildFailure(
       'output.integrity',
-      'Sound metadata does not match mono 48 kHz PCM16 WAV',
+      `Sound metadata does not match ${channels === 2 ? 'stereo' : 'mono'} 48 kHz PCM16 WAV`,
       3,
     );
   }
 };
 
-export const pcmStatistics = (bytes: Uint8Array, frames: number) => {
+export const pcmStatistics = (bytes: Uint8Array, frames: number, channels: 1 | 2 = 1) => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let peak = 0,
-    sum = 0,
-    dc = 0,
-    maxAdjacentDelta = 0,
-    previous = 0,
-    first = 0;
-  for (let i = 0; i < frames; i++) {
+  const totalSamples = frames * channels;
+  let peak = 0;
+  let sum = 0;
+  let dc = 0;
+  let maxAdjacentDelta = 0;
+  let seamDelta = 0;
+  for (let i = 0; i < totalSamples; i++) {
     const value = view.getInt16(44 + i * 2, true) / 32767;
-    if (!i) first = value;
     peak = Math.max(peak, Math.abs(value));
     sum += value * value;
     dc += value;
-    if (i) maxAdjacentDelta = Math.max(maxAdjacentDelta, Math.abs(value - previous));
-    previous = value;
+  }
+  for (let ch = 0; ch < channels; ch++) {
+    const first = view.getInt16(44 + ch * 2, true) / 32767;
+    let previous = first;
+    for (let i = 1; i < frames; i++) {
+      const value = view.getInt16(44 + (i * channels + ch) * 2, true) / 32767;
+      maxAdjacentDelta = Math.max(maxAdjacentDelta, Math.abs(value - previous));
+      previous = value;
+    }
+    seamDelta = Math.max(seamDelta, Math.abs(first - previous));
   }
   return {
     peak,
-    rms: Math.sqrt(sum / frames),
-    dc: dc / frames,
-    seamDelta: Math.abs(first - previous),
+    rms: Math.sqrt(sum / totalSamples),
+    dc: dc / totalSamples,
+    seamDelta,
     maxAdjacentDelta,
   };
 };

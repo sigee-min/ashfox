@@ -1,5 +1,6 @@
-import type { Control } from './contract';
-import { closed, fail, id, list, number, ordered } from './validate';
+import type { Control, FilterSpec, GainControl } from './contract';
+import { choice, closed, fail, id, list, number, ordered } from './validate';
+
 const validateControlPoint = (
   raw: unknown,
   i: number,
@@ -50,14 +51,61 @@ export const readControl = (
   return value as Control;
 };
 
+export const readGainControl = (value: unknown, path: string): GainControl => {
+  if (value && typeof value === 'object' && !Array.isArray(value) && 'env' in value) {
+    const r = value as Record<string, unknown>;
+    const env = choice(r.env, ['ad', 'adsr'], `${path}.env`);
+    if (env === 'ad') {
+      closed(r, ['env', 'attack'], path, ['peak', 'curve']);
+      number(r.attack, 0.002, 10, `${path}.attack`);
+    } else {
+      closed(r, ['env', 'attack', 'decay', 'sustain', 'release'], path, ['peak', 'curve']);
+      number(r.attack, 0.002, 10, `${path}.attack`);
+      number(r.decay, 0.002, 10, `${path}.decay`);
+      number(r.sustain, 0, 1, `${path}.sustain`);
+      number(r.release, 0.002, 10, `${path}.release`);
+    }
+    if (r.peak !== undefined) number(r.peak, 0.01, 2, `${path}.peak`);
+    if (r.curve !== undefined) choice(r.curve, ['linear', 'exp'], `${path}.curve`);
+    return value as GainControl;
+  }
+  return readControl(value, 0, 2, path, true);
+};
+
+export const readVoiceFilter = (value: unknown, path: string): FilterSpec => {
+  const f = closed(value, ['kind', 'cutoff'], path, ['q']);
+  const kind = choice(f.kind, ['lowpass', 'highpass', 'bandpass', 'notch'], `${path}.kind`);
+  const cutoff = readControl(f.cutoff, 20, 18000, `${path}.cutoff`);
+  return {
+    kind,
+    cutoff,
+    ...(f.q !== undefined ? { q: readControl(f.q, 0.5, 12, `${path}.q`, true) } : {}),
+  };
+};
+
+const readResonatorExcitation = (raw: unknown, path: string): void => {
+  const e = closed(raw, ['kind'], path, ['duration', 'hardness']);
+  const kind = choice(e.kind, ['impulse', 'noise', 'mallet'], `${path}.kind`);
+  if (kind === 'impulse') {
+    closed(e, ['kind'], path);
+    return;
+  }
+  if (kind === 'noise') {
+    closed(e, ['kind', 'duration'], path);
+    number(e.duration, 0.002, 0.05, `${path}.duration`);
+    return;
+  }
+  closed(e, ['kind', 'duration', 'hardness'], path);
+  number(e.duration, 0.002, 0.03, `${path}.duration`);
+  number(e.hardness, 0, 1, `${path}.hardness`);
+};
+
 const readResonatorSource = (s: Record<string, unknown>, path: string): void => {
-  closed(s, ['kind', 'excitation', 'modes'], path);
-  const e = s.excitation as Record<string, unknown> | null;
-  if (e?.kind === 'impulse') closed(e, ['kind'], path + '.excitation');
-  else if (e?.kind === 'noise') {
-    closed(e, ['kind', 'duration'], path + '.excitation');
-    number(e.duration, 0.002, 0.05, path + '.excitation.duration');
-  } else fail(path + '.excitation.kind', 'expected impulse or noise');
+  closed(s, ['kind', 'excitation', 'modes'], path, ['pitchDropCents', 'pitchDropSeconds']);
+  readResonatorExcitation(s.excitation, path + '.excitation');
+  if (s.pitchDropCents !== undefined) number(s.pitchDropCents, 0, 600, `${path}.pitchDropCents`);
+  if (s.pitchDropSeconds !== undefined)
+    number(s.pitchDropSeconds, 0.005, 0.2, `${path}.pitchDropSeconds`);
   const ids = new Set<string>();
   let positive = false;
   ordered(list(s.modes, 1, 16, path + '.modes')).forEach(({ raw, index: i }) => {
@@ -72,46 +120,74 @@ const readResonatorSource = (s: Record<string, unknown>, path: string): void => 
 };
 
 const readVocalOrChirpSource = (s: Record<string, unknown>, path: string): void => {
-  const n = (key: string, min: number, max: number) => number(s[key], min, max, `${path}.${key}`);
-  const c = (key: string, min: number, max: number, linear = false) =>
-    readControl(s[key], min, max, `${path}.${key}`, linear);
+  const opt = (key: string, min: number, max: number) =>
+    s[key] !== undefined ? number(s[key], min, max, `${path}.${key}`) : undefined;
   if (s.kind === 'vocal') {
-    closed(s, ['kind', 'pitch', 'formants', 'bandwidths', 'breath', 'jitter', 'roughness'], path);
-    c('pitch', 50, 1200);
+    closed(s, ['kind', 'pitch', 'formants', 'bandwidths'], path, ['breath', 'jitter', 'roughness']);
+    readControl(s.pitch, 50, 1200, `${path}.pitch`);
     for (const key of ['formants', 'bandwidths']) {
-      const bounds: readonly [number, number] = key === 'formants' ? [150, 7000] : [40, 1500];
+      const b: readonly [number, number] = key === 'formants' ? [150, 7000] : [40, 1500];
       list(s[key], 3, 3, `${path}.${key}`).forEach((v, i) =>
-        number(v, bounds[0], bounds[1], `${path}.${key}[${i}]`),
+        number(v, b[0], b[1], `${path}.${key}[${i}]`),
       );
     }
-    for (const key of ['breath', 'jitter', 'roughness']) n(key, 0, 1);
+    for (const key of ['breath', 'jitter', 'roughness']) opt(key, 0, 1);
     return;
   }
-  closed(
-    s,
-    ['kind', 'pitch', 'trillHz', 'trillCents', 'trillDepth', 'breath', 'jitterCents', 'brightness'],
-    path,
+  closed(s, ['kind', 'pitch', 'brightness'], path, [
+    'trillHz',
+    'trillCents',
+    'trillDepth',
+    'breath',
+    'jitterCents',
+  ]);
+  readControl(s.pitch, 300, 8000, `${path}.pitch`);
+  readControl(s.brightness, 0, 1, `${path}.brightness`, true);
+  opt('trillHz', 0, 100);
+  opt('trillCents', 0, 300);
+  opt('trillDepth', 0, 1);
+  opt('breath', 0, 0.3);
+  opt('jitterCents', 0, 80);
+};
+
+const readNoiseOrOsc = (s: Record<string, unknown>, path: string): void => {
+  if (s.kind === 'noise') {
+    closed(s, ['kind', 'color'], path, ['density']);
+    const color = choice(s.color, ['white', 'pink', 'brown', 'crackle'], `${path}.color`);
+    if (color === 'crackle') {
+      if (s.density === undefined) fail(`${path}.density`, 'crackle noise requires density');
+      number(s.density, 1, 500, `${path}.density`);
+    } else if (s.density !== undefined) {
+      fail(`${path}.density`, 'density only applies to crackle noise');
+    }
+    return;
+  }
+  closed(s, ['kind', 'waveform', 'pitch'], path, ['pulseWidth', 'unison', 'detuneCents']);
+  const wave = choice(
+    s.waveform,
+    ['sine', 'triangle', 'saw', 'square', 'pulse'],
+    `${path}.waveform`,
   );
-  c('pitch', 500, 8000);
-  c('brightness', 0, 1, true);
-  n('trillHz', 0, 100);
-  n('trillCents', 0, 300);
-  n('trillDepth', 0, 1);
-  n('breath', 0, 0.2);
-  n('jitterCents', 0, 80);
+  readControl(s.pitch, 20, 12000, `${path}.pitch`);
+  if (s.pulseWidth !== undefined) {
+    if (wave !== 'pulse') fail(`${path}.pulseWidth`, 'pulseWidth requires pulse waveform');
+    readControl(s.pulseWidth, 0.05, 0.95, `${path}.pulseWidth`, true);
+  }
+  if (s.unison !== undefined) number(s.unison, 1, 4, `${path}.unison`, true);
+  if (s.detuneCents !== undefined) number(s.detuneCents, 0, 50, `${path}.detuneCents`);
 };
 
 export const readSource = (value: unknown, path: string): void => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(path, 'expected source');
   const s = value as Record<string, unknown>;
-  if (s.kind === 'noise') closed(s, ['kind'], path);
+  if (s.kind === 'noise' || s.kind === 'osc') readNoiseOrOsc(s, path);
   else if (s.kind === 'fm') {
-    closed(s, ['kind', 'pitch', 'ratio', 'index', 'vibratoHz', 'vibratoCents'], path);
+    closed(s, ['kind', 'pitch', 'ratio', 'index'], path, ['vibratoHz', 'vibratoCents']);
     readControl(s.pitch, 40, 3000, `${path}.pitch`);
-    readControl(s.index, 0, 4, `${path}.index`, true);
-    number(s.ratio, 0.25, 4, `${path}.ratio`);
-    number(s.vibratoHz, 0, 25, `${path}.vibratoHz`);
-    number(s.vibratoCents, 0, 100, `${path}.vibratoCents`);
+    readControl(s.index, 0, 6, `${path}.index`, true);
+    number(s.ratio, 0.25, 8, `${path}.ratio`);
+    if (s.vibratoHz !== undefined) number(s.vibratoHz, 0, 25, `${path}.vibratoHz`);
+    if (s.vibratoCents !== undefined) number(s.vibratoCents, 0, 100, `${path}.vibratoCents`);
   } else if (s.kind === 'vocal' || s.kind === 'chirp') readVocalOrChirpSource(s, path);
   else if (s.kind === 'resonator') readResonatorSource(s, path);
   else fail(path + '.kind', `unsupported source ${String(s.kind)}`);

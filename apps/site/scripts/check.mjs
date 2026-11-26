@@ -209,7 +209,8 @@ for (const file of htmlFiles) {
       }
       continue;
     }
-    const [pathname, hash] = href.split('#');
+    const [cleanHref, hash] = href.split('#');
+    const pathname = cleanHref.split('?')[0];
     if (!pathname.startsWith('/')) continue;
     const target = pathname.endsWith('/')
       ? path.join(outputRoot, pathname, 'index.html')
@@ -312,16 +313,19 @@ if (
 for (const required of [
   'data-live-model',
   'data-model-motion="wing_display"',
-  'data-item-image',
-  'data-landing-audio',
   'data-source-code',
   'id="quick-start"',
+  'studio-handoff-card',
 ]) {
   if (!landingHtml.includes(required)) failures.push(`Landing is missing ${required}`);
 }
+const studioHtml = await readFile(path.join(outputRoot, 'assets/index.html'), 'utf8');
+for (const required of ['data-inspector-sprite', 'data-studio-audio']) {
+  if (!studioHtml.includes(required)) failures.push(`Studio is missing ${required}`);
+}
 for (const [pattern, extension] of [
-  [/<script defer src="(\/assets\/hero-[a-f0-9]{12}\.js)"/, 'js'],
-  [/data-model-src="(\/assets\/griffin-[a-f0-9]{12}\.glb)"/, 'glb'],
+  [/<script defer src="(\/static\/viewer-[a-f0-9]{12}\.js)"/, 'js'],
+  [/data-model-src="(\/static\/griffin-[a-f0-9]{12}\.glb)"/, 'glb'],
 ]) {
   const match = landingHtml.match(pattern);
   if (!match || !(await exists(path.join(outputRoot, match[1]))))
@@ -341,17 +345,38 @@ if (/data-character-player|data-workspace-download|data-showroom-data/u.test(lan
   failures.push('Retired showroom is still published');
 if (/<audio[^>]*autoplay/u.test(landingHtml))
   failures.push('Landing sound must require an explicit play action');
-for (const name of [
-  'griffin.glb',
-  'sword.png',
-  'amethyst.png',
-  'bird-base.wav',
-  'bird-alternate.wav',
-]) {
-  if (!(await exists(path.join(outputRoot, 'media/landing', name))))
-    failures.push(`Missing landing asset: ${name}`);
+const catalogPath = path.join(outputRoot, 'media/catalog/catalog.json');
+if (!(await exists(catalogPath))) {
+  failures.push('Missing media/catalog/catalog.json');
+} else {
+  const catalogEntries = JSON.parse(await readFile(catalogPath, 'utf8'));
+  if (catalogEntries.length !== 31) {
+    failures.push(`Expected 31 catalog entries, got ${catalogEntries.length}`);
+  }
+  for (const entry of catalogEntries) {
+    if (!(await exists(path.join(outputRoot, entry.outputHref)))) {
+      failures.push(`Missing compiled catalog output: ${entry.outputHref}`);
+    }
+    if (!(await exists(path.join(outputRoot, entry.sourceHref)))) {
+      failures.push(`Missing catalog source: ${entry.sourceHref}`);
+    }
+  }
 }
-const heroModel = await readFile(path.join(outputRoot, 'media/landing/griffin.glb'));
+for (const route of ['assets/index.html', 'ko/assets/index.html']) {
+  if (!(await exists(path.join(outputRoot, route)))) {
+    failures.push(`Missing Asset Studio page: ${route}`);
+  }
+}
+for (const skillFile of [
+  'skills/ashfox/latest.json',
+  'skills/ashfox/ashfox.skill',
+  'skills/ashfox/ashfox.zip',
+  'skills/ashfox/files/SKILL.md',
+]) {
+  if (!(await exists(path.join(outputRoot, skillFile))))
+    failures.push(`Missing published skill artifact: ${skillFile}`);
+}
+const heroModel = await readFile(path.join(outputRoot, 'media/catalog/griffin.glb'));
 if (heroModel.subarray(0, 4).toString('ascii') !== 'glTF')
   failures.push('Live model must be a real GLB');
 const heroJson = JSON.parse(heroModel.subarray(20, 20 + heroModel.readUInt32LE(12)).toString());
@@ -388,7 +413,7 @@ if (committedPublicWorkspaces.length !== 0) {
   failures.push('apps/site/public must not own a workspace copy');
 }
 if (
-  !landingHtml.includes('href="/media/landing/griffin.glb"') ||
+  !landingHtml.includes('href="/media/catalog/griffin.glb"') ||
   !landingHtml.includes('href="/examples/griffin/workbench/main.ashfox"')
 ) {
   failures.push('Landing must offer the actual model and example source');

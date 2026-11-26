@@ -42,12 +42,11 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
   paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
   layout is required. Keep multi-part entries modular across all 4 asset kinds
   (`rig.ashfox`, `surface.ashfox`, `body.ashfox`, `sound`/`sprite`/`structure` modules under `assets/module/`): the compiler rejects unused imports, unused declarations, unused stamps, and monolithic or concern-mixing entries.
-- Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (20–42% pre-grain delta with moderate `ao` and omitted-`from` `gradient`), warm darks (`luma >= 0.14`, no near-black crush), painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals, and material-appropriate `grain` (`clustered` for fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
-- Run `ashfox check <source>` alongside visual inspection: hit **0 failed Hard Gates**
-  and `audit.score >= 75` (target `>= 85` `excellent`). `ashfox build` blocks any model
-  or structure failing its quality profile or Hard Gates.
+- Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (`ramp(#hex, preset)` OKLCH hue-shifted ramps, moderate `ao`, omitted-`from` `gradient`, directional `fur`/`wood`/`cloth`/`brushed` grain, subtle `pattern edge`), warm darks (`luma >= 0.14`, no near-black crush), and painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals.
+- For sprites and seamless tiles (`16`/`32`/`64`, `32` recommended), set `profile = item | tile | icon | decal`, compose with OKLCH `auto` ramps, parametric `shape` primitives or `fill` wrapping patterns, and `outline { mode = sel_out; strength = 2; innerRim = true; }`.
+- Run `ashfox check <source>` alongside visual inspection across models, sprites, sounds, and structures: hit **0 failed Hard Gates** and `audit.score >= 75` (target `>= 85` `excellent`). `ashfox build` blocks any asset failing its quality profile or Hard Gates.
 - Declare `preview <name> { ... }` blocks in the `.ashfox` source (e.g., `sheet = turnaround`,
-  `sheet = inspect`, `texture = ...`, `kind = gif; clip = ...`, `cutaway = <y>`, `stage = silhouette`)
+  `sheet = inspect` for pure-CPU 512×512 sprite/tile or 800×520 sound diagnostic sheets, `texture = ...`, `kind = gif; clip = ...`, `cutaway = <y>`, `stage = silhouette`)
   and render them via `ashfox render <source> --view <name> [--output <file>]`.
   Build playable WAV/OGG sound variants via `ashfox build` and listen to them. Compilation alone does not establish visual or audio quality.
 - Pass `--stdin` or `--input-json` to `check` or `render` when operating on
@@ -70,16 +69,9 @@ this file. The installer refuses repository checkouts; do not bypass its checks.
 
 ## Procedural sound delivery
 
-Use the current sound reference from CLI docs before authoring. Native sound uses
-reusable `voices`, finite `sequences`, scalar-or-curve controls, explicit `vary`
-ranges, and `playback`. Gain is fixed `output.gainDb`; peak excess is a failure.
-Old layers, attack/release, chirp contour, pitch pairs and rmsDb are rejected.
-Keep `ashfox-model 1`; never introduce a sound version field or fallback source.
+Use the current sound reference from CLI docs before authoring. Set explicit `profile` (`impact`, `foley`, `creature`, `magic`, `ui`, `ambient`) and optional `channels = 2` / `space` / `drive` / Cytomic `filter` / `ad`/`adsr` `envelope` / `output.softClip`. Native sound uses reusable `voices`, finite `sequences`, scalar-or-curve controls, `osc`/`noise`/`fm`/`vocal`/`chirp`/`resonator` sources, optional `vary` defaults, and `playback`. Output is fixed `output.gainDb`; legacy `layers`, `attack`, `release`, `contour`, `sweepSeconds`, and `rmsDb` are rejected.
 
 For loops, inspect raw and delivered frames: crossfade is baked once and shortens
 the output. Standalone WAV consumers must loop the full buffer; game consumers
 must honor playback metadata. Do not deliver loop OGG or Minecraft packs.
-Audition variants and at least 20 loop cycles, then report actual listening
-evidence separately from waveform/peak/seam measurements. Do not claim animal
-or material realism from numerical checks. Verify the installed CLI contract
-fingerprint and official package before presenting a newly authored DSL source.
+Declare `preview inspect { sheet = inspect; }` and run `ashfox render <source> --view inspect` to inspect the 4-panel waveform/spectrogram/6-band/variant sheet, then audition variants and at least 20 loop cycles directly, reporting listening evidence separately from numeric measurements.

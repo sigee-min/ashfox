@@ -1,8 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { AUDIO_POLICY } from '@ashfox/audio-core';
+import { AUDIO_POLICY, SOUND_PROFILES } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
+import { SPRITE_PROFILES } from '@ashfox/engine-core';
 import { renderCapabilities } from '../observe/operations';
 import { findChrome } from './browser';
 
@@ -78,6 +79,58 @@ const init = (folder: string, json: boolean): void => {
     `Created asset project in ${folder}\nSources: assets/ · Generated output: build/\nBuild: ashfox build ${folder}/.ashfoxworkspace.mjs --json\nIntegration: node ${folder}/assets.mjs\n`,
   );
 };
+const SOUND_CAPABILITIES = {
+  contract: AUDIO_POLICY,
+  profiles: [...SOUND_PROFILES],
+  sources: ['noise', 'osc', 'fm', 'vocal', 'chirp', 'resonator'],
+  features: [
+    'curves',
+    'envelopes',
+    'filters',
+    'drive',
+    'space',
+    'stereo',
+    'sequences',
+    'variation',
+    'loops',
+  ],
+  sampleRate: 48000,
+  channels: [1, 2],
+  loopCodecs: ['wav'],
+  output: 'fixed-gain',
+  limits: {
+    durationSeconds: 30,
+    variants: 8,
+    workspaceSources: 32,
+    workspaceRawFrames: 11520000,
+    eventFrames: 24000000,
+    weightedFrames: 192000000,
+  },
+};
+
+const SPRITE_CAPABILITIES = {
+  profiles: [...SPRITE_PROFILES],
+  sizes: [16, 32, 64],
+  features: [
+    'oklch-ramps',
+    'shapes',
+    'patterns',
+    'outlines',
+    'inner-rim',
+    'cpu-audit',
+    'inspect-sheet',
+  ],
+};
+
+const PACK_CAPABILITIES = {
+  formats: ['minecraft_java', 'game_assets'],
+  itemDefinitions: ['legacy', 'modern'],
+  metadata: ['legacy', 'range'],
+  audio: 'vorbis',
+  encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
+  archive: 'zip',
+};
+
 const doctorPayload = (capture: boolean, chrome: string | null) => ({
   version: cliVersion,
   cliVersion,
@@ -95,33 +148,11 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
     version: 2,
     required: false,
   },
-  sound: {
-    contract: AUDIO_POLICY,
-    sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'],
-    features: ['curves', 'sequences', 'variation', 'loops'],
-    sampleRate: 48000,
-    channels: 1,
-    loopCodecs: ['wav'],
-    output: 'fixed-gain',
-    limits: {
-      durationSeconds: 30,
-      variants: 8,
-      workspaceSources: 32,
-      workspaceRawFrames: 11520000,
-      eventFrames: 24000000,
-      weightedFrames: 192000000,
-    },
-  },
+  sound: SOUND_CAPABILITIES,
+  sprite: SPRITE_CAPABILITIES,
   source: '.ashfox',
   outputs: ['glb', 'gltf', 'png', 'wav', 'java_structure', 'java_block', 'geckolib5', 'bedrock'],
-  packs: {
-    formats: ['minecraft_java', 'game_assets'],
-    itemDefinitions: ['legacy', 'modern'],
-    metadata: ['legacy', 'range'],
-    audio: 'vorbis',
-    encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
-    archive: 'zip',
-  },
+  packs: PACK_CAPABILITIES,
   usage:
     'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>',
 });

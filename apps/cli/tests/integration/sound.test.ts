@@ -31,7 +31,7 @@ const main = async () => {
   assert.ok(JSON.stringify(details).includes('96960'));
   const directBuilt = success('build', input, '--json').result;
   const output = path.join(directBuilt.exports[0].directory, 'bell_pattern/base.wav');
-  verifyPcm(fs.readFileSync(output), 96960);
+  verifyPcm(fs.readFileSync(output), 96960, 2);
   const config = {
     ...readSnapshot(input).config,
     packs: [
@@ -64,6 +64,7 @@ const main = async () => {
     verifyPcm(
       fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets', variant.file)),
       variant.frames,
+      2,
     );
   }
   success('check', path.join(temp, config.build.directory), '--json');
@@ -144,7 +145,7 @@ const main = async () => {
     prepareWorker(staleWorker, { file: input }, new AbortController().signal),
     /Source changed during compilation/,
   );
-  verifyPcm(fs.readFileSync(output), 96960);
+  verifyPcm(fs.readFileSync(output), 96960, 2);
 
   // Cancellation must interrupt CPU work and join it before acknowledging abort.
   const blockedWorker = path.join(temp, 'blocked.cjs');
@@ -176,8 +177,9 @@ const main = async () => {
   const budgetInput = path.join(temp, 'budget.ashfox');
   const budgetSource = `ashfox-model 1
 sound budget {
+  profile = "ambient";
   duration = 29; sampleRate = 48000; seed = 1;
-  voices = [{ id = "wind"; source = { kind = "noise"; }; gain = 0.1; highpass = 20; lowpass = 2000; }];
+  voices = [{ id = "wind"; source = { kind = "noise"; color = "pink"; }; gain = 0.1; highpass = 20; lowpass = 2000; }];
   sequences = [{ id = "s"; start = 0; repeat = { count = 1; period = 0; };
     steps = [{ id = "e"; voice = "wind"; at = 0; duration = 29; gain = 1; pitchCents = 0;
       vary = { timing = [0,0]; pitchCents = [0,0]; gain = [1,1]; duration = [1,1]; }; }]; }];

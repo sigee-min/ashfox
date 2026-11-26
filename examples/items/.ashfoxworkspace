@@ -49,6 +49,14 @@
           {
             "name": "amethyst",
             "path": "amethyst.ashfox"
+          },
+          {
+            "name": "mossy_stone",
+            "path": "mossy_stone.ashfox"
+          },
+          {
+            "name": "oak_planks",
+            "path": "oak_planks.ashfox"
           }
         ],
         "modules": [],
@@ -171,6 +179,24 @@
       },
       "format": "png",
       "directory": "exports/amethyst"
+    },
+    {
+      "name": "mossy_stone",
+      "entry": {
+        "packageName": "items",
+        "entryName": "mossy_stone"
+      },
+      "format": "png",
+      "directory": "exports/mossy_stone"
+    },
+    {
+      "name": "oak_planks",
+      "entry": {
+        "packageName": "items",
+        "entryName": "oak_planks"
+      },
+      "format": "png",
+      "directory": "exports/oak_planks"
     }
   ]
 }

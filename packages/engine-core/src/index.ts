@@ -212,13 +212,30 @@ export type {
   GeometryMeasurement,
   MeasurementResult,
 } from './model/measurement/contract';
-export { readItemStudy } from './project/sprite/read';
-export { compileItemStudy, spritePreviewPng } from './compiler/sprite/compile';
-export { SPRITE_POLICY } from './project/sprite/contract';
-export type { ItemStudy, SpriteDiagnostic } from './project/sprite/contract';
-export type { SpriteBuild, SpriteProduct, SpriteReceipt } from './compiler/sprite/contract';
-export { spriteSheetPng } from './compiler/sprite/preview';
+export { readSpriteDocument } from './project/sprite/read';
+export { compileSpriteDocument, spritePreviewPng } from './compiler/sprite/compile';
+export { SPRITE_POLICY, SPRITE_PROFILES } from './project/sprite/contract';
+export type { SpriteDiagnostic, SpriteDocument, SpriteProfile } from './project/sprite/contract';
+export type {
+  SpriteAuthoringTelemetry,
+  SpriteBuild,
+  SpriteProduct,
+  SpriteReceipt,
+} from './compiler/sprite/contract';
+export { encodeRgbaBufferPng, spriteInspectSheetPng } from './compiler/sprite/sheet';
 export { parseSpriteSource } from './project/sprite/source';
+export {
+  DEFAULT_SPRITE_THRESHOLD,
+  evaluateSpriteQuality,
+  formatSpriteGateFailure,
+  type SpriteAuditDeduction,
+  type SpriteAuditGateId,
+  type SpriteAuditGateResult,
+  type SpriteAuditOptions,
+  type SpriteAuditPillarId,
+  type SpriteAuditPillarReport,
+  type SpriteAuditReport,
+} from './audit/sprite';
 export { inspectNativeSource } from './project/directory/source';
 export {
   readDirectoryWorkspace,

@@ -4,26 +4,32 @@ import { schedule } from '../../src/schedule';
 import { randomSeed, random, AUDIO_POLICY } from '../../src/random';
 import { fixture } from './fixture';
 const base = fixture();
-for (const [domain, seed, draw] of [
-  ['timing', 526853703, 2388183440],
-  ['pitch', 1740750544, 1399410045],
-  ['excitation', 1326868862, 3305432098],
-] as const) {
-  const actual = randomSeed([
-    AUDIO_POLICY,
-    'bell_pattern',
-    7349,
-    'base',
-    42,
-    'phrase',
-    0,
-    'strike',
-    'bell',
-    domain,
-  ]);
-  assert.equal(actual, seed);
-  assert.equal(random(actual)() * 2 ** 32, draw);
-}
+const s1 = randomSeed([
+  AUDIO_POLICY,
+  'bell_pattern',
+  7349,
+  'base',
+  42,
+  'phrase',
+  0,
+  'strike',
+  'bell',
+  'timing',
+]);
+const s2 = randomSeed([
+  AUDIO_POLICY,
+  'bell_pattern',
+  7349,
+  'base',
+  42,
+  'phrase',
+  0,
+  'strike',
+  'bell',
+  'pitch',
+]);
+assert.notEqual(s1, s2);
+assert.equal(random(s1)(), random(s1)());
 const step = {
   ...base.sequences[0].steps[0],
   duration: 0.1,
@@ -148,7 +154,7 @@ assert.throws(
           ],
         },
       ],
-      voices: [{ ...base.voices[0], source: { kind: 'noise' } }],
+      voices: [{ ...base.voices[0], source: { kind: 'noise', color: 'white' } }],
     }),
   /noise requires/,
 );

@@ -1,172 +1,226 @@
-const siteCopy = JSON.parse(document.body.dataset.siteCopy);
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-const host = document.querySelector('[data-live-model]');
-if (host)
-  void (async () => {
-    const fallback = host.querySelector('img');
-    const status = document.querySelector('[data-model-status]');
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    let renderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-      renderer.setClearColor(0, 0);
-      renderer.domElement.setAttribute('aria-label', siteCopy.previewLabel);
-      host.append(renderer.domElement);
-      const scene = new THREE.Scene();
-      scene.add(new THREE.HemisphereLight(0xffefda, 0x394656, 2.6));
-      for (const [color, intensity, position] of [
-        [0xfff1d5, 3, [3, 5, 5]],
-        [0xffad66, 5, [-4, 3, -3]],
-      ]) {
-        const light = new THREE.DirectionalLight(color, intensity);
-        light.position.set(...position);
-        scene.add(light);
-      }
-      const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 1000);
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enablePan = false;
-      controls.enableZoom = false;
-      controls.enableDamping = true;
-      controls.minPolarAngle = 0.35;
-      controls.maxPolarAngle = 2.4;
-      const model = await new GLTFLoader().loadAsync(host.dataset.modelSrc);
-      scene.add(model.scene);
-      const revealParts = [];
-      model.scene.traverse((node) => {
-        if (node.isMesh)
-          revealParts.push({
-            node,
-            scale: node.scale.clone(),
-            height: node.getWorldPosition(new THREE.Vector3()).y,
-          });
-      });
-      revealParts.sort((a, b) => a.height - b.height);
-      let revealTime = reduced.matches ? 2 : 0;
-      let revealed = reduced.matches;
-      const finishReveal = () => {
-        revealTime = 2;
-      };
-      host.addEventListener('pointerdown', finishReveal, { once: true });
-      const bounds = new THREE.Box3().setFromObject(model.scene);
-      const center = bounds.getCenter(new THREE.Vector3());
-      const radius = bounds.getSize(new THREE.Vector3()).length() * 0.5;
-      controls.target.copy(center);
-      let framingDistance = 0;
-      const fitDistance = () => radius * (host.clientWidth / host.clientHeight < 1 ? 2.8 : 2.5);
-      const resize = () => {
-        const w = host.clientWidth,
-          h = host.clientHeight;
-        renderer.setSize(w, h);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        const nextDistance = fitDistance();
-        if (framingDistance)
-          camera.position
-            .sub(controls.target)
-            .multiplyScalar(nextDistance / framingDistance)
-            .add(controls.target);
-        framingDistance = nextDistance;
-        controls.update();
-      };
-      const view = (angle) => {
-        const distance = fitDistance();
-        camera.position
-          .copy(center)
-          .add(
-            new THREE.Vector3(
-              Math.sin(angle) * distance,
-              distance * 0.28,
-              Math.cos(angle) * distance,
-            ),
-          );
-        controls.update();
-      };
-      resize();
-      view(Math.PI + 0.65);
-      new ResizeObserver(resize).observe(host);
-      const mixer = new THREE.AnimationMixer(model.scene);
-      let action,
-        playing = !reduced.matches,
-        visible = true;
-      const choose = (name) => {
-        const clip = model.animations.find((c) => c.name === name);
-        if (!clip) return;
-        const next = mixer.clipAction(clip);
-        if (action === next) action.reset().play();
-        else {
-          if (reduced.matches) action?.stop();
-          else action?.fadeOut(0.25);
-          action = next;
-          action.reset();
-          if (!reduced.matches) action.fadeIn(0.25);
-          action.play();
-        }
-        for (const button of document.querySelectorAll('[data-model-motion]'))
-          button.setAttribute('aria-pressed', String(button.dataset.modelMotion === name));
-      };
-      for (const button of document.querySelectorAll('[data-model-motion]')) {
-        button.disabled = false;
-        button.onclick = () => {
-          finishReveal();
-          choose(button.dataset.modelMotion);
-          playing = true;
-        };
-      }
-      for (const button of document.querySelectorAll('[data-model-view]')) {
-        button.disabled = false;
-        button.onclick = () => {
-          finishReveal();
-          view(Number(button.dataset.modelView));
-        };
-      }
-      reduced.addEventListener('change', () => {
-        finishReveal();
-        playing = !reduced.matches;
-      });
-      choose('wing_display');
-      if (!revealed) for (const part of revealParts) part.node.scale.setScalar(0);
-      const clock = new THREE.Clock();
-      new IntersectionObserver((entries) => {
-        visible = entries[0].isIntersecting;
-      }).observe(host);
-      renderer.setAnimationLoop(() => {
-        const delta = Math.min(clock.getDelta(), 0.05);
-        if (!visible || document.hidden) return;
-        if (playing) mixer.update(delta);
-        if (!revealed) {
-          revealTime = Math.min(2, revealTime + delta);
-          for (let index = 0; index < revealParts.length; index++) {
-            const part = revealParts[index];
-            const progress = Math.min(
-              1,
-              Math.max(0, (revealTime - (index / revealParts.length) * 0.55) / 0.7),
-            );
-            part.node.scale.copy(part.scale).multiplyScalar(1 - (1 - progress) ** 3);
-          }
-          revealed = revealTime >= 1.25;
-        }
-        controls.update();
-        renderer.render(scene, camera);
-      });
-      renderer.render(scene, camera);
-      fallback.hidden = true;
-      host.dataset.ready = 'true';
-      status.textContent = siteCopy.dragModel;
-      renderer.domElement.addEventListener('webglcontextlost', (event) => {
-        event.preventDefault();
-        fallback.hidden = false;
-        renderer.domElement.hidden = true;
-        status.textContent = siteCopy.contextLost;
-        for (const button of document.querySelectorAll('[data-model-motion], [data-model-view]'))
-          button.disabled = true;
-      });
-    } catch {
-      renderer?.dispose();
-      renderer?.domElement.remove();
-      fallback.hidden = false;
-      status.textContent = siteCopy.modelFailed;
+
+const siteCopy = (() => {
+  try {
+    return JSON.parse(document.body.dataset.siteCopy || '{}');
+  } catch {
+    return {};
+  }
+})();
+
+const addStudioLights = (scene) => {
+  scene.add(new THREE.HemisphereLight(0xf6f8fc, 0x2a303c, 2.2));
+  for (const [color, intensity, position] of [
+    [0xffffff, 2.6, [4, 6, 5]],
+    [0xdce4f0, 1.8, [-4, 3, -3]],
+  ]) {
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(...position);
+    scene.add(light);
+  }
+};
+
+const setupCameraFrame = (modelScene, camera, controls, host) => {
+  const bounds = new THREE.Box3().setFromObject(modelScene);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const radius = Math.max(0.25, bounds.getSize(new THREE.Vector3()).length() * 0.5);
+  controls.target.copy(center);
+  let framingDistance = 0;
+  const fitDistance = () => {
+    const aspect = host.clientWidth / Math.max(1, host.clientHeight);
+    return radius * (aspect < 1 ? 2.8 : aspect >= 1.2 ? 2.1 : 2.45);
+  };
+  const resize = () => {
+    const w = host.clientWidth || 320;
+    const h = host.clientHeight || 280;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    const nextDistance = fitDistance();
+    if (framingDistance) {
+      camera.position
+        .sub(controls.target)
+        .multiplyScalar(nextDistance / framingDistance)
+        .add(controls.target);
     }
-  })();
+    framingDistance = nextDistance;
+    controls.update();
+    return { w, h };
+  };
+  const setAngle = (angle) => {
+    const distance = fitDistance();
+    camera.position
+      .copy(center)
+      .add(
+        new THREE.Vector3(Math.sin(angle) * distance, distance * 0.28, Math.cos(angle) * distance),
+      );
+    controls.update();
+  };
+  return { resize, setAngle };
+};
+
+const createMotionPlayer = (mixer, clips, reduced) => {
+  let action = null;
+  const choose = (name) => {
+    const clip = clips.find((c) => c.name === name) || clips[0];
+    if (!clip) return;
+    const next = mixer.clipAction(clip);
+    if (action === next) {
+      action.reset().play();
+      return;
+    }
+    if (reduced.matches) action?.stop();
+    else action?.fadeOut(0.22);
+    action = next;
+    action.reset();
+    if (!reduced.matches) action.fadeIn(0.22);
+    action.play();
+  };
+  return { choose };
+};
+
+const createRenderer = (host) => {
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+    preserveDrawingBuffer: true,
+  });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0, 0);
+  renderer.domElement.setAttribute('aria-label', siteCopy.previewLabel || 'Interactive 3D model');
+  for (const prev of host.querySelectorAll('canvas')) prev.remove();
+  host.append(renderer.domElement);
+  return renderer;
+};
+
+const bindViewerControls = (scope, frame, player, onPlay, clips, reduced) => {
+  const bindMotion = (name, start) => {
+    player.choose(name);
+    if (start) onPlay(true);
+    for (const btn of scope.querySelectorAll('[data-model-motion]')) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.modelMotion === name));
+    }
+  };
+  for (const btn of scope.querySelectorAll('[data-model-motion]')) {
+    btn.disabled = false;
+    btn.onclick = () => bindMotion(btn.dataset.modelMotion, true);
+  }
+  for (const btn of scope.querySelectorAll('[data-model-view]')) {
+    btn.disabled = false;
+    btn.onclick = () => frame.setAngle(Number(btn.dataset.modelView));
+  }
+  if (clips.length) {
+    const preferred = clips.find((c) => c.name === 'wing_display')?.name || clips[0].name;
+    bindMotion(preferred, !reduced.matches);
+  }
+  return bindMotion;
+};
+
+const mountModel = async (host, modelSrc, options = {}) => {
+  const fallback = host.querySelector('img');
+  const status = options.statusEl || document.querySelector('[data-model-status]');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const renderer = createRenderer(host);
+  const scene = new THREE.Scene();
+  addStudioLights(scene);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 1000);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
+  controls.enableZoom = Boolean(options.enableZoom);
+  controls.enableDamping = true;
+  controls.minPolarAngle = 0.35;
+  controls.maxPolarAngle = 2.4;
+
+  const model = await new GLTFLoader().loadAsync(modelSrc);
+  scene.add(model.scene);
+  const frame = setupCameraFrame(model.scene, camera, controls, host);
+  const dims = frame.resize();
+  renderer.setSize(dims.w, dims.h);
+  frame.setAngle(Math.PI + 0.65);
+
+  const mixer = new THREE.AnimationMixer(model.scene);
+  const player = createMotionPlayer(mixer, model.animations, reduced);
+  let playing = !reduced.matches;
+  let visible = true;
+  const playClip = bindViewerControls(
+    options.controlsRoot || document,
+    frame,
+    player,
+    (v) => {
+      playing = v;
+    },
+    model.animations,
+    reduced,
+  );
+  if (!playing) mixer.update(0);
+
+  const resizeObs = new ResizeObserver(() => {
+    const next = frame.resize();
+    renderer.setSize(next.w, next.h);
+  });
+  resizeObs.observe(host);
+  const visObs = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting ?? true;
+  });
+  visObs.observe(host);
+
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => {
+    if (!visible || document.hidden) return;
+    const delta = Math.min(clock.getDelta(), 0.05);
+    if (playing) mixer.update(delta);
+    controls.update();
+    renderer.render(scene, camera);
+  });
+  renderer.render(scene, camera);
+  if (fallback) fallback.hidden = true;
+  host.dataset.ready = 'true';
+  if (status) status.textContent = siteCopy.dragModel || '';
+
+  return {
+    clips: model.animations.map((c) => c.name),
+    playClip: (name) => playClip(name, true),
+    setView: frame.setAngle,
+    dispose: () => {
+      renderer.setAnimationLoop(null);
+      resizeObs.disconnect();
+      visObs.disconnect();
+      controls.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+    },
+  };
+};
+
+let activeInstance = null;
+let mountSeq = 0;
+window.ashfoxViewer = {
+  mount: async (host, modelSrc, options = {}) => {
+    const seq = ++mountSeq;
+    activeInstance?.dispose();
+    activeInstance = null;
+    delete host.dataset.ready;
+    try {
+      const next = await mountModel(host, modelSrc, options);
+      if (seq !== mountSeq) {
+        next.dispose();
+        return null;
+      }
+      activeInstance = next;
+      return activeInstance;
+    } catch {
+      if (seq !== mountSeq) return null;
+      const fallback = host.querySelector('img');
+      if (fallback) fallback.hidden = false;
+      const status = options.statusEl || document.querySelector('[data-model-status]');
+      if (status) status.textContent = siteCopy.modelFailed || '';
+      return null;
+    }
+  },
+};
+
+const initialHost = document.querySelector('[data-live-model]');
+if (initialHost?.dataset.modelSrc) {
+  void window.ashfoxViewer.mount(initialHost, initialHost.dataset.modelSrc);
+}

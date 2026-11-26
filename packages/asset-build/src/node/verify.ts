@@ -106,7 +106,7 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
     !Number.isSafeInteger(variant.frames) ||
     (variant.frames as number) <= 0 ||
     variant.sampleRate !== 48000 ||
-    variant.channels !== 1
+    (variant.channels !== 1 && variant.channels !== 2)
   )
     fail('Invalid audio metadata');
   for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta']) {
@@ -117,7 +117,7 @@ const verifyAudioVariantMetadata = (raw: unknown) => {
     id: variant.id as string,
     frames: variant.frames as number,
     sampleRate: 48000 as const,
-    channels: 1 as const,
+    channels: variant.channels as 1 | 2,
     peak: variant.peak as number,
     rms: variant.rms as number,
     dc: variant.dc as number,
@@ -150,8 +150,9 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
   if (kind === 'pack') return verifyPackMetadata(value);
   if (kind === 'sprite') {
     const r = record(value, ['width', 'height']);
-    if (r.width !== 16 || r.height !== 16) fail('Invalid sprite dimensions');
-    return { width: 16, height: 16 };
+    if (![16, 32, 64].includes(r.width as number) || r.width !== r.height)
+      fail('Invalid sprite dimensions');
+    return { width: r.width as number, height: r.height as number };
   }
   if (kind === 'model') return verifyModelMetadata(value);
   if (kind === 'structure') return verifyStructureMetadata(value);
@@ -220,8 +221,8 @@ const verifySoundCoverage = (
     const file = assetFiles.find((f) => f.path.endsWith(`/${variant.id}.wav`));
     if (!file) return fail('Missing sound WAV');
     const pcm = fs.readFileSync(contained(directory, file.path));
-    verifyPcm(pcm, variant.frames);
-    const stats = pcmStatistics(pcm, variant.frames);
+    verifyPcm(pcm, variant.frames, variant.channels);
+    const stats = pcmStatistics(pcm, variant.frames, variant.channels);
     for (const key of ['peak', 'rms', 'dc', 'seamDelta', 'maxAdjacentDelta'] as const) {
       if (stats[key] !== variant[key]) fail('Audio statistics do not match PCM');
     }
@@ -245,8 +246,10 @@ const verifyGameManifestAssets = (
   if (json(references) !== json(actual)) fail('Game manifest lineage mismatch');
   for (const sound of manifest.assets) {
     if (sound.kind !== 'sound' || sound.codec !== 'wav') continue;
-    for (const variant of sound.variants)
-      verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames);
+    for (const variant of sound.variants) {
+      const ch = variant.channels === 2 ? 2 : 1;
+      verifyPcm(fs.readFileSync(contained(directory, root + variant.file)), variant.frames, ch);
+    }
   }
 };
 

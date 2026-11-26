@@ -2,7 +2,7 @@ import { parseSpriteSource, type SpriteSourceUnit } from '../../project/sprite/s
 import { SpriteInputError } from '../../project/sprite/contract';
 import type { DirectoryFile } from '../../project/directory/contract';
 import { sha256Digest } from '../../provenance/digest';
-import { compileItemStudy } from '../sprite/compile';
+import { compileSpriteDocument } from '../sprite/compile';
 
 const relative = (owner: string, target: string): string => {
   if (!target.startsWith('./') && !target.startsWith('../'))
@@ -20,10 +20,10 @@ const relative = (owner: string, target: string): string => {
   }
   return parts.join('/');
 };
+
 type DeclarationKind = 'masks' | 'materials' | 'stamps';
 type Units = ReadonlyMap<string, SpriteSourceUnit>;
 
-/** Mutable import-graph walk state for one sprite entry. */
 interface SpriteGraph {
   readonly files: ReadonlyMap<string, DirectoryFile>;
   readonly entry: string;
@@ -87,15 +87,24 @@ const resolve = (
   return symbol(owner, id);
 };
 
+const PATTERN_MAT_KEYS = ['toMaterial', 'mortarMaterial', 'edgeMaterial', 'crackMaterial'] as const;
+
+const resolvePatternRefs = (graph: SpriteGraph, entry: string, rawPattern: unknown): unknown => {
+  if (!rawPattern || typeof rawPattern !== 'object' || Array.isArray(rawPattern)) return rawPattern;
+  const next: Record<string, unknown> = { ...(rawPattern as Record<string, unknown>) };
+  for (const key of PATTERN_MAT_KEYS) {
+    if (key in next) next[key] = resolve(graph, entry, next[key], 'materials');
+  }
+  return next;
+};
+
 const resolveLayer = (graph: SpriteGraph, entry: string, l: Record<string, unknown>): unknown => {
-  if (l.op === 'part')
-    return {
-      ...l,
-      mask: resolve(graph, entry, l.mask, 'masks'),
-      material: resolve(graph, entry, l.material, 'materials'),
-    };
-  if (l.op === 'stamp') return { ...l, stamp: resolve(graph, entry, l.stamp, 'stamps') };
-  return l;
+  const resolved: Record<string, unknown> = { ...l };
+  if ('material' in l) resolved.material = resolve(graph, entry, l.material, 'materials');
+  if ('pattern' in l) resolved.pattern = resolvePatternRefs(graph, entry, l.pattern);
+  if (l.op === 'part') resolved.mask = resolve(graph, entry, l.mask, 'masks');
+  if (l.op === 'stamp') resolved.stamp = resolve(graph, entry, l.stamp, 'stamps');
+  return resolved;
 };
 
 const declarations = (units: Units, kind: DeclarationKind) =>
@@ -135,7 +144,7 @@ const checkSpriteHygiene = (graph: SpriteGraph): void => {
   }
 };
 
-const studyOf = (graph: SpriteGraph, entry: string) => {
+const documentOf = (graph: SpriteGraph, entry: string) => {
   const root = graph.units.get(entry)!;
   if (!root.item) throw new Error('Entry must declare sprite');
   const layers = (root.item.layers as Record<string, unknown>[]).map((l) =>
@@ -143,12 +152,10 @@ const studyOf = (graph: SpriteGraph, entry: string) => {
   );
   checkSpriteHygiene(graph);
   return {
-    format: 'ashfox-item-study',
-    version: 1,
     masks: declarations(graph.units, 'masks'),
     materials: declarations(graph.units, 'materials'),
     stamps: declarations(graph.units, 'stamps'),
-    items: [{ ...root.item, layers }],
+    item: { ...root.item, layers },
   };
 };
 
@@ -179,7 +186,7 @@ export const compileDirectorySprite = (
   };
   try {
     visitUnit(graph, entry);
-    const result = compileItemStudy(JSON.stringify(studyOf(graph, entry)), entry);
+    const result = compileSpriteDocument(documentOf(graph, entry), entry);
     return { result, paths: [...graph.units.keys()].sort() };
   } catch (error) {
     return {

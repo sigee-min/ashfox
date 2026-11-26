@@ -10,10 +10,12 @@ const cli = path.join(__dirname, '../../dist/ashfox.cjs');
 const foxEntry = path.join(root, 'examples/fox/creatures/fox.ashfox');
 const lanternEntry = path.join(root, 'examples/prop/lantern.ashfox');
 const spriteEntry = path.join(root, 'examples/items/assets/sprites/apple.ashfox');
+const soundEntry = path.join(root, 'examples/sounds/assets/sounds/claw_hit.ashfox');
 
-const run = (args: string[], cwd = root) =>
+const run = (args: string[], opts?: string | { cwd?: string; input?: string }) =>
   spawnSync(process.execPath, [cli, ...args], {
-    cwd,
+    cwd: typeof opts === 'string' ? opts : (opts?.cwd ?? root),
+    input: typeof opts === 'object' ? opts.input : undefined,
     encoding: 'utf8',
     timeout: 120000,
     maxBuffer: 16 * 1024 * 1024,
@@ -46,6 +48,63 @@ async function main() {
   assert.equal(retiredCheckThreshold.status, 2);
   const retiredSpriteNode = run(['check', spriteEntry, '--node', 'body']);
   assert.equal(retiredSpriteNode.status, 2);
+
+  const spriteInputJson = JSON.stringify({
+    name: 'sprites/apple.ashfox',
+    source: fs
+      .readFileSync(spriteEntry, 'utf8')
+      .replace('profile = item;', 'preview inspect { sheet = inspect; }\n  profile = item;'),
+    files: {
+      'module/shared.ashfox': fs.readFileSync(
+        path.join(root, 'examples/items/assets/module/shared.ashfox'),
+        'utf8',
+      ),
+    },
+  });
+  const spritePass = run(['check', '--input-json'], { input: spriteInputJson });
+  assert.equal(spritePass.status, 0, spritePass.stdout + spritePass.stderr);
+  assert.equal(JSON.parse(spritePass.stdout).result.audit.passed, true);
+
+  const soundWithPreview = fs
+    .readFileSync(soundEntry, 'utf8')
+    .replace('profile = "impact";', 'preview inspect { sheet = inspect; }\n  profile = "impact";');
+  const soundPass = run(['check', '--stdin', '--name', 'claw_hit.ashfox'], {
+    input: soundWithPreview,
+  });
+  assert.equal(soundPass.status, 0, soundPass.stdout + soundPass.stderr);
+  assert.equal(JSON.parse(soundPass.stdout).result.audit.passed, true);
+
+  const dirTmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-sheet-')));
+  try {
+    const spriteSheet = path.join(dirTmp, 'sprite.png');
+    const soundSheet = path.join(dirTmp, 'sound.png');
+    assert.equal(
+      run(['render', '--input-json', '--view', 'inspect', '--output', spriteSheet], {
+        input: spriteInputJson,
+      }).status,
+      0,
+    );
+    assert.equal(
+      run(
+        [
+          'render',
+          '--stdin',
+          '--name',
+          'claw_hit.ashfox',
+          '--view',
+          'inspect',
+          '--output',
+          soundSheet,
+        ],
+        { input: soundWithPreview },
+      ).status,
+      0,
+    );
+    assert.equal(fs.readFileSync(spriteSheet).readUInt32BE(16), 512);
+    assert.equal(fs.readFileSync(soundSheet).readUInt32BE(16), 800);
+  } finally {
+    fs.rmSync(dirTmp, { recursive: true, force: true });
+  }
 
   const lanternCheck = run(['check', lanternEntry]);
   assert.equal(lanternCheck.status, 0, lanternCheck.stdout + lanternCheck.stderr);

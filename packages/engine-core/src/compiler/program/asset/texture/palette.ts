@@ -1,3 +1,4 @@
+import { RAMP_PRESETS, generateHueShiftedRamp, type RampPreset } from '../../../../textures/oklch';
 import type {
   ProgramExpr,
   ProgramProperty,
@@ -48,6 +49,49 @@ const luma = (value: string): number =>
 const isIncreasingRamp = (colors: readonly string[]): boolean =>
   luma(colors[0]!) < luma(colors[1]!) && luma(colors[1]!) < luma(colors[2]!);
 
+const readRampCall = (
+  expression: ProgramExpr,
+  context: TextureExpressionContext,
+  path: string,
+  issue: AssetTextureIssue,
+): PaletteRole | null => {
+  if (expression.kind !== 'call' || expression.name !== 'ramp') return null;
+  if (expression.args.length !== 2) {
+    issue(
+      path,
+      expression.span,
+      'asset.texture.invalid-color',
+      'ramp() requires (baseColor, preset).',
+    );
+    return null;
+  }
+  const baseVal = context.evaluate(expression.args[0]!, 'color');
+  const presetExpr = expression.args[1]!;
+  if (baseVal?.kind !== 'color' || !colorLiteral.test(baseVal.value)) {
+    issue(
+      path,
+      expression.args[0]!.span,
+      'asset.texture.invalid-color',
+      'ramp() base must be #RRGGBB.',
+    );
+    return null;
+  }
+  if (presetExpr.kind !== 'name' || !RAMP_PRESETS.includes(presetExpr.value as RampPreset)) {
+    issue(
+      path,
+      presetExpr.span,
+      'asset.texture.invalid-ramp',
+      `ramp() preset must be one of ${RAMP_PRESETS.join(', ')}.`,
+    );
+    return null;
+  }
+  const [shadow, base, light] = generateHueShiftedRamp(
+    baseVal.value.toLowerCase(),
+    presetExpr.value as RampPreset,
+  );
+  return Object.freeze({ kind: 'ramp', shadow, base, light });
+};
+
 /** One palette role's accent or ramp, or null after reporting an invalid color set. */
 const readPaletteRole = (
   entry: ProgramProperty,
@@ -55,6 +99,9 @@ const readPaletteRole = (
   path: string,
   issue: AssetTextureIssue,
 ): PaletteRole | null => {
+  if (entry.value.kind === 'call' && entry.value.name === 'ramp') {
+    return readRampCall(entry.value, context, path, issue);
+  }
   const colors = colorValues(entry.value, context);
   if (colors === null) {
     issue(

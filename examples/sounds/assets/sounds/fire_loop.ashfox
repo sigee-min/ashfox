@@ -1,72 +1,49 @@
 ashfox-model 1
-
-// Procedural listening study; material/animal realism requires human audition.
 sound fire_loop {
-  duration = 5;
+  profile = "ambient";
+  duration = 3.2;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
+  space = { mix = 0.18; decay = 0.35; damping = 4500; size = 0.85; };
   voices = [{
-    id = "voice";
-    source = {
-      kind = "noise";
+    id = "hearth_roar";
+    source = { kind = "noise"; color = "brown"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.45; value = 480; }, { at = 1; value = 240; }]; };
+      q = 0.9;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0.45;
-      }, {
-        at = 0.3;
-        value = 0.7;
-      }, {
-        at = 0.65;
-        value = 0.35;
-      }, {
-        at = 1;
-        value = 0.45;
-      }];
+    drive = 1.2;
+    highpass = 45;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.65; }, { at = 0.35; value = 0.95; }, { at = 0.7; value = 0.55; }, { at = 1; value = 0.65; }]; };
+  }, {
+    id = "flame_flutter";
+    source = { kind = "noise"; color = "pink"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1200; }, { at = 0.5; value = 2600; }, { at = 1; value = 1200; }]; };
+      q = 1.1;
     };
-    highpass = 180;
-    lowpass = 6500;
+    pan = -0.22;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.45; }, { at = 0.5; value = 0.75; }, { at = 1; value = 0.45; }]; };
+  }, {
+    id = "embers";
+    source = { kind = "noise"; color = "crackle"; density = 42; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3600; }, { at = 0.5; value = 6200; }, { at = 1; value = 3600; }]; }; q = 1.2; };
+    pan = 0.25;
+    gain = 0.65;
   }];
   sequences = [{
-    id = "phrase";
-    start = 0.1;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "note";
-      voice = "voice";
-      at = 0;
-      duration = 4.8;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "burn";
+    start = 0.05;
+    steps = [
+      { id = "roar"; voice = "hearth_roar"; at = 0; duration = 3.0; vary = { gain = [0.9, 1.1]; }; },
+      { id = "flame"; voice = "flame_flutter"; at = 0; duration = 3.0; vary = { gain = [0.9, 1.1]; }; },
+      { id = "crackle"; voice = "embers"; at = 0; duration = 3.0; vary = { gain = [0.85, 1.15]; }; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "loop";
-    start = 0.5;
-    end = 4.5;
-    crossfade = 0.08;
-  };
-  output = {
-    gainDb = -10;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "loop"; start = 0.35; end = 2.75; crossfade = 0.08; };
+  output = { gainDb = 3; peakDb = -2; softClip = true; };
 }

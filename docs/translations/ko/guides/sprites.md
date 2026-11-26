@@ -1,41 +1,32 @@
-# 아이템 스프라이트 만들기
+# 아이템 스프라이트와 타일 만들기
 
-스프라이트 원본은 픽셀 배치·명암·입자가 결정적인 투명 16×16 PNG를 생성합니다. 일반 게임과 Minecraft 아이템 팩에서 사용할 수 있습니다. 현재 `minecraft-item-v1` 프로필 이름은 컴파일 규칙을 선택하며 PNG의 사용처를 제한하지 않습니다.
+스프라이트 원본은 아이템, 심리스 타일, 아이콘, 데칼용 정사각형 PNG(`16×16`, `32×32`, 또는 `64×64`)를 생성하며, CPU 품질 오딧과 4분할 `preview inspect { sheet = inspect; }` 시트를 제공합니다.
 
 ## 완전한 스프라이트 빌드하기
 
-상위 워크스페이스가 없는 폴더에 다음 완전한 원본을 `gem.ashfox`로 저장하세요.
+상위 워크스페이스가 없는 폴더에 다음 완전한 원본을 `gem.ashfox`로 저장하세요:
 
 {{source-code:0}}
 
 {{source-code:1}}
 
-응답의 실제 export 디렉터리를 사용하세요. 그 안에 `gem.png`가 있습니다. 설정된 프로젝트에서는 [프로젝트 설정](workspace.md)처럼 파일을 진입점으로 등록하고 PNG export를 추가합니다.
+응답의 실제 export 디렉터리 안에 `gem.png`가 생성됩니다. `build` 전달 게이트는 `audit.passed === true` (`score >= 75`, 권장 `>= 85`)를 검증합니다.
 
-## 칠하고 조합하기
+## OKLCH 램프, 도형, 패턴, 아웃라인
 
-행 너비는 같아야 합니다. `.`은 투명 픽셀이고 나머지 문자에는 색 바인딩이 필요합니다. 좌표는 캔버스 왼쪽 위 기준의 정수 픽셀입니다. 레이어는 선언 순서로 실행되어 뒤의 칠이 앞의 결과를 덮을 수 있습니다.
+- **`shape`와 `part`**: `rect`, `ellipse`, `capsule`, `polygon`, `line` 파라메트릭 도형이나 재사용 마스크를 겹쳐 형태를 만들고 `flat`, `round`, `bevel`, `cylinder`, `facet` 명암과 `specular`를 적용합니다.
+- **OKLCH 램프**: `ramp { mode = auto; base = #...; preset = ...; }`는 10개 프리셋(`warm`, `cool`, `metal`, `gem`, `wood`, `stone`, `organic`, `cloth`, `emissive`, `vivid`)으로 하이라이트는 따뜻하게, 그림자는 차갑게 색조가 이동하는 5단 램프를 만듭니다.
+- **`sel_out` & `innerRim`**: `outline` 레이어가 검은 테두리 대신 주변 색조와 밝기를 따르는 셀 아웃라인과 좌상단 내측 림 하이라이트를 그려줍니다.
+- **심리스 타일 (`profile = tile`)**: `fill`·`pattern` 레이어(`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`)는 캔버스 경계를 토로이달 래핑하여 이음새 없이 타일링됩니다.
 
-| 레이어 | 필수 설정 | 용도 |
-| --- | --- | --- |
-| `paint <id>` | `at`, `rows`, `colors` | 명시적인 색 픽셀 배치 |
-| `erase <id>` | `at`, `rows` | 표시된 픽셀 지우기 |
-| `part <id>` | `mask`, `material`, `at`, `shade`, `grain`, `patches` | 재사용 형상에 명암과 보호 무늬 추가 |
-| `stamp <id>` | `stamp`, `at`, `flip`, `colors` | 색을 바인딩한 재사용 기호 배치 |
-
-part 마스크는 `1`과 `.`을 씁니다. material은 그림자·기본·밝은 색의 3색 램프 또는 프리셋으로 생성하는 램프를 정의합니다. shade는 `flat`, `round`, `bevel`, `light: top_left`, 대비 0–2를 선언하며 bevel에는 axis도 필요합니다. grain은 `mode: clustered-v1`, amount 0–1, 정수 seed를 씁니다. patch는 로컬 `at`, `rows`, `colors`, 보호 너비 0–2를 가지며 part 마스크 안에 있어야 합니다. 없으면 `patches = [];`를 사용합니다.
-
-[apple 원본](../../examples/items/assets/sprites/apple.ashfox)과 [shared 모듈](../../examples/items/assets/module/shared.ashfox)은 part·램프·패치·재사용 형상의 완전한 예제입니다. 워크스페이스에서 여러 스프라이트가 공유하는 모듈은 `assets/module/` 아래에 둡니다. 독립 import는 진입점 하위에서 상대 `.ashfox` 경로를 사용해야 하고, 설정된 프로젝트는 가져오는 모든 모듈을 선언해야 합니다.
-
-현재 프로필의 캔버스는 16×16으로 고정됩니다. 범위 밖 배치, 색이 없는 행 문자, 알 수 없는 설정, 잘못된 명암 매개변수는 컴파일 실패입니다. 미리보기를 확대해도 전달 해상도는 커지지 않습니다.
+[iron_sword 원본](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone 타일](../../examples/items/assets/sprites/mossy_stone.ashfox), [shared 모듈](../../examples/items/assets/module/shared.ashfox)에서 전체 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 모듈은 `assets/module/` 아래에 둡니다.
 
 ## 픽셀 리뷰하기
 
 {{source-code:2}}
 
-확대 보기(`preview checker { scale = 16; background = checker; }`)와 원래 이미지를 함께 확인하세요. `check`는 영수증과 픽셀별 원본 소유권 증거를 반환합니다. 명암 part가 있는 원본은 `preview` 블록에 `stage = silhouette`, `stage = shade`, `stage = grain`을 선언하고 `render --view <name>`으로 구성 단계를 확인합니다.
+`preview inspect { sheet = inspect; }`는 브라우저 없이 CPU에서 512×512 4분할 리뷰 시트를 렌더링합니다:
+- **아이템 / 아이콘 / 데칼**: `1x + 확대 미리보기`, `실루엣`, `명도(휘도)`, `팔레트 + 오딧 점수`
+- **타일**: `1x 원본`, `3×3 심리스 타일링`, `명도(휘도)`, `팔레트 + 오딧 점수`
 
-![확대한 검의 최종 픽셀](/media/guides/sword.png)
-![같은 검의 실루엣 단계](/media/guides/sword-shape.png)
-
-PNG 입력·투명도·메모리 출력은 [관찰 제어](observe.md)를 참고하세요. 일반 엔진은 [게임 에셋](game-assets.md)에 PNG export를 연결하고 필터링·단위당 픽셀을 선택합니다. Minecraft는 [Minecraft 팩](minecraft-packs.md)의 아이템 리소스 ID에 연결합니다.
+`stage` (`final`, `silhouette`, `shade`, `grain`)와 `scale` 미리보기 필드는 [관찰 제어](observe.md), 게임 엔진 및 Minecraft 연결은 [게임 에셋](game-assets.md)과 [Minecraft 팩](minecraft-packs.md)을 참고하세요.

@@ -1,4 +1,4 @@
-import { SpriteInputError } from './contract';
+import { failWorkspaceConfig } from './validate';
 
 interface JsonScanState {
   readonly source: string;
@@ -6,9 +6,8 @@ interface JsonScanState {
   offset: number;
 }
 
-const failJson = (file: string, pointer: string, expected: string, actual: string): never => {
-  throw new SpriteInputError({ code: 'sprite.json', file, pointer, expected, actual });
-};
+const failJson = (file: string, pointer: string, expected: string, actual: string): never =>
+  failWorkspaceConfig(pointer || file, expected, actual);
 
 const skipSpace = (state: JsonScanState): void => {
   while (state.offset < state.source.length && /\s/u.test(state.source[state.offset] ?? '')) {
@@ -19,10 +18,9 @@ const skipSpace = (state: JsonScanState): void => {
 const scanString = (state: JsonScanState): string => {
   const start = state.offset++;
   while (state.offset < state.source.length) {
-    const character = state.source[state.offset++];
-    if (character === '\\') state.offset += 1;
-    else if (character === '"')
-      return JSON.parse(state.source.slice(start, state.offset)) as string;
+    const ch = state.source[state.offset++];
+    if (ch === '\\') state.offset += 1;
+    else if (ch === '"') return JSON.parse(state.source.slice(start, state.offset)) as string;
   }
   return failJson(state.file, '', 'closed JSON string', 'end of source');
 };
@@ -32,9 +30,8 @@ const scanPrimitive = (state: JsonScanState, pointer: string): void => {
   while (state.offset < state.source.length && !/[\s,\]}]/u.test(state.source[state.offset]!)) {
     state.offset += 1;
   }
-  if (state.offset === start) {
+  if (state.offset === start)
     failJson(state.file, pointer, 'JSON value', state.source[state.offset] ?? 'EOF');
-  }
 };
 
 const readObjectKey = (state: JsonScanState, pointer: string, keys: Set<string>): string => {
@@ -74,9 +71,8 @@ const scanContainer = (
       state.offset += 1;
       return;
     }
-    if (state.source[state.offset++] !== ',') {
+    if (state.source[state.offset++] !== ',')
       failJson(state.file, pointer, 'comma', 'invalid container');
-    }
   }
   failJson(state.file, pointer, end, 'EOF');
 };
@@ -91,21 +87,11 @@ const scanValue = (state: JsonScanState, depth: number, pointer: string): void =
 };
 
 /** Check depth and duplicate decoded keys before native JSON parsing loses them. */
-export const parseSpriteJson = (source: string, file: string): unknown => {
+export const parseDirectoryJson = (source: string, file: string): unknown => {
   if (new TextEncoder().encode(source).length > 262144) {
     failJson(file, '', 'source <= 256 KiB', 'oversized source');
   }
   const state: JsonScanState = { source, file, offset: 0 };
-  try {
-    scanValue(state, 0, '');
-    return JSON.parse(source) as unknown;
-  } catch (error) {
-    if (error instanceof SpriteInputError) throw error;
-    return failJson(
-      file,
-      '',
-      'valid JSON',
-      error instanceof Error ? error.message : 'parse failure',
-    );
-  }
+  scanValue(state, 0, '');
+  return JSON.parse(source) as unknown;
 };

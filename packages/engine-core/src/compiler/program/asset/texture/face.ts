@@ -8,9 +8,17 @@ import type { PreparedTexture } from './prepare';
 import { fill, roleId, type PaintGrid, type TextureRegion } from './raster';
 import { propertyIssue, type TextureReporter } from './report';
 
-const GRAIN_MODES = new Set<string>(['clustered', 'soft', 'none']);
+const GRAIN_MODES = new Set<string>([
+  'clustered',
+  'soft',
+  'fur',
+  'wood',
+  'cloth',
+  'brushed',
+  'none',
+]);
 
-/** Reads an explicit grain property (`clustered | soft | none`) if present. */
+/** Reads an explicit grain property (`clustered | soft | fur | wood | cloth | brushed | none`) if present. */
 export const readGrainModeProperty = (
   statements: readonly ProgramTextureChart['statements'][number][],
   report: TextureReporter,
@@ -28,7 +36,7 @@ export const readGrainModeProperty = (
   report.report(
     value.span,
     'asset.texture.invalid-grain',
-    'Grain must be clustered, soft, or none.',
+    'Grain must be clustered, soft, fur, wood, cloth, brushed, or none.',
   );
   return null;
 };

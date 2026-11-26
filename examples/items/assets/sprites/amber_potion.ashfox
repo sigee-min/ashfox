@@ -1,76 +1,49 @@
 ashfox-model 1
 sprite amber_potion {
   import "../module/shared.ashfox" as shared;
-  profile = "minecraft-item-v1";
-  canvas = [16, 16];
+  profile = item;
+  canvas = (32px, 32px);
   palette {
-    edge = #293847;
-    cork = #A4774D;
-    cork_light = #D5AF77;
-    shine = #ECFFFF;
-    rim = #CCE5E1;
-    edge_light = #526D80;
+    shine = #ffffff;
+    bubble = #fff2b0;
   }
-  paint bottle_outline {
-    at = [2, 3];
-    rows = ["....lll....", "...lllll...", "...llllo...", "..llllooo..", ".llllooooo.", "llllooooooo", "llloooooooo", "llooooooooo", "loooooooooo", ".ooooooooo.", "..ooooooo..", "...ooooo..."];
-    colors {
-      o = "edge";
-      l = "edge_light";
-    }
+  shape cork {
+    shape { kind = rect; x = 14; y = 4; width = 4; height = 4; }
+    material = shared.cork_wood;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16, 4), (16, 8)]; }
   }
-  part bottle {
-    mask = "shared.potion_glass";
-    material = "shared.glass";
-    at = [3, 4];
-    shade {
-      form = "round";
-      light = "top_left";
-      contrast = 2;
-    }
-    grain {
-      mode = "clustered-v1";
-      amount = 0;
-      seed = 23;
-    }
-    patches = [];
+  shape bottle_neck {
+    shape { kind = rect; x = 13; y = 8; width = 6; height = 5; }
+    material = shared.glass;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16, 8), (16, 13)]; }
   }
-  part liquid {
-    mask = "shared.potion_liquid";
-    material = "shared.amber_liquid";
-    at = [3, 8];
-    shade {
-      form = "round";
-      light = "top_left";
-      contrast = 2;
-    }
-    grain {
-      mode = "clustered-v1";
-      amount = 0;
-      seed = 23;
-    }
-    patches = [];
+  shape bottle_lip {
+    shape { kind = capsule; x1 = 12; y1 = 8; x2 = 19; y2 = 8; radius = 1.1; }
+    material = shared.glass;
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 1; axis = [(12, 8), (19, 8)]; }
   }
-  paint cork {
-    at = [6, 2];
-    rows = ["cccc", "Cccc"];
-    colors {
-      c = "cork";
-      C = "cork_light";
-    }
+  shape bottle_body {
+    shape { kind = ellipse; cx = 15.5; cy = 19.5; rx = 8.3; ry = 7.9; }
+    material = shared.glass;
+    shade { form = round; light = top_left; contrast = 2; specular = 2; }
   }
-  paint rim {
-    at = [5, 4];
-    rows = ["rrrrr"];
-    colors {
-      r = "rim";
-    }
+  shape liquid {
+    shape { kind = ellipse; cx = 15.5; cy = 20.8; rx = 6.7; ry = 5.8; }
+    material = shared.amber_liquid;
+    shade { form = round; light = top_left; contrast = 2; specular = 2; }
+    pattern { kind = gradient; axis = y; toMaterial = shared.gold; dither = false; seed = 7; }
   }
-  paint reflection {
-    at = [4, 7];
-    rows = [".h", "h.", "h.", "h."];
-    colors {
-      h = "shine";
-    }
+  paint spec {
+    at = (10px, 14px);
+    rows = [
+      ".ss...",
+      "s.....",
+      "s.....",
+      "......",
+      "....b.",
+      ".....b"
+    ];
+    colors { s = shine; b = bubble; }
   }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
 }

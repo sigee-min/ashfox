@@ -1,11 +1,16 @@
+import { evaluateSoundQuality, renderSoundInspectSheet } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
   buildStructureDocument,
   encodeCanonicalPng,
+  encodeRgbaBufferPng,
   evaluateAssetQuality,
+  evaluateSpriteQuality,
   rasterizeTexture,
+  spriteInspectSheetPng,
   type AuditReport,
   type DeclaredPreviewSpec,
+  type SpriteProduct,
 } from '@ashfox/engine-core';
 import { DEFAULT_VIEW, type Prepared, type Media, type ViewOptions } from './contract';
 import { ChromeRenderer } from './chrome';
@@ -64,10 +69,46 @@ const inspectDocument = (
     : {}),
 });
 
+const emptyStageRaster = (width: number, height: number) => ({
+  width,
+  height,
+  rgba: {
+    length: 0,
+    at: () => undefined,
+    copy: () => new Uint8Array(0),
+    [Symbol.iterator]: () => [][Symbol.iterator](),
+  },
+});
+
+const toSpriteProduct = (s: NonNullable<Prepared['sprite']>): SpriteProduct => ({
+  id: s.receipt.id,
+  profile: s.profile,
+  raster: {
+    width: s.receipt.width,
+    height: s.receipt.height,
+    rgba: {
+      length: s.rgba.length,
+      at: (i: number) => s.rgba[i],
+      copy: () => new Uint8Array(s.rgba),
+      [Symbol.iterator]: () => s.rgba[Symbol.iterator](),
+    },
+  },
+  stages: {
+    silhouette: emptyStageRaster(s.receipt.width, s.receipt.height),
+    shade: emptyStageRaster(s.receipt.width, s.receipt.height),
+    grain: emptyStageRaster(s.receipt.width, s.receipt.height),
+  },
+  png: s.png,
+  receipt: s.receipt,
+  evidence: s.evidence,
+  telemetry: s.telemetry,
+});
+
 export const inspect = (asset: Prepared): unknown => {
   const summary = asset.products ? { sourceHash: asset.revision, products: asset.products } : {};
   if (asset.document) return inspectDocument(asset, asset.document, summary);
-  if (asset.sprite)
+  if (asset.sprite) {
+    const audit = evaluateSpriteQuality(toSpriteProduct(asset.sprite));
     return {
       ...summary,
       kind: 'sprite',
@@ -75,15 +116,20 @@ export const inspect = (asset: Prepared): unknown => {
       declarations: asset.declarations,
       receipt: asset.sprite.receipt,
       evidence: asset.sprite.evidence,
+      audit,
     };
-  if (asset.product?.kind === 'sound')
+  }
+  if (asset.product?.kind === 'sound') {
+    const audit = evaluateSoundQuality(asset.product.sounds);
     return {
       ...summary,
       kind: 'sound',
       revision: asset.revision,
       declarations: asset.declarations,
       variants: asset.product.sounds.map(({ wav, ...metadata }) => metadata),
+      audit,
     };
+  }
   throw new BuildFailure('observe.kind', 'Unsupported asset', 2);
 };
 
@@ -93,6 +139,27 @@ const resolveTexture = (document: NonNullable<Prepared['document']>, selector: s
     Object.values(document.textures).find((t) => t.name === selector);
   if (!texture) throw new BuildFailure('observe.texture', 'Unknown texture', 2);
   return Buffer.from(encodeCanonicalPng(rasterizeTexture(document, texture))).toString('base64');
+};
+
+const binPeak = (bytes: Buffer, channels: number, start: number, end: number): number => {
+  let peak = 0;
+  for (let i = start; i < end; i++) {
+    for (let ch = 0; ch < channels; ch++) {
+      peak = Math.max(peak, Math.abs(bytes.readInt16LE(44 + (i * channels + ch) * 2) / 32768));
+    }
+  }
+  return peak;
+};
+
+const soundWavePayload = (asset: Prepared, v: ViewOptions): { readonly wave: number[] } => {
+  const sound = selectSound(asset, v.variant);
+  const bytes = Buffer.from(sound.wav);
+  const wave = Array.from({ length: v.width }, (_, x) => {
+    const start = Math.floor((x * sound.frames) / v.width);
+    const end = Math.floor(((x + 1) * sound.frames) / v.width);
+    return binPeak(bytes, sound.channels, start, end);
+  });
+  return { wave };
 };
 
 const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
@@ -113,20 +180,7 @@ const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
         v.stage === 'final' ? asset.sprite.png : asset.sprite.stages[v.stage],
       ).toString('base64'),
     };
-  const product = asset.product!;
-  if (product.kind === 'sound') {
-    const sound = selectSound(asset, v.variant),
-      bytes = Buffer.from(sound.wav);
-    const wave = Array.from({ length: v.width }, (_, x) => {
-      let peak = 0;
-      const start = Math.floor((x * sound.frames) / v.width),
-        end = Math.floor(((x + 1) * sound.frames) / v.width);
-      for (let i = start; i < end; i++)
-        peak = Math.max(peak, Math.abs(bytes.readInt16LE(44 + i * 2) / 32768));
-      return peak;
-    });
-    return { wave };
-  }
+  if (asset.product?.kind === 'sound') return soundWavePayload(asset, v);
   throw new BuildFailure('observe.kind', 'Unsupported asset', 2);
 };
 
@@ -152,7 +206,6 @@ const MODEL_ONLY_VIEW_KEYS = [
   'textures',
   'node',
   'texture',
-  'sheet',
 ] as const;
 
 const assertNonModelViewDefaults = (v: ViewOptions): void => {
@@ -165,6 +218,8 @@ const assertRenderOptions = (asset: Prepared, v: ViewOptions, gif: boolean): voi
   if (asset.kind !== 'model' && asset.kind !== 'structure') assertNonModelViewDefaults(v);
   if (v.cutaway !== undefined && asset.kind !== 'structure')
     throw new BuildFailure('observe.option', 'cutaway requires a structure source', 2);
+  if (v.sheet === 'turnaround' && asset.kind !== 'model' && asset.kind !== 'structure')
+    throw new BuildFailure('observe.option', 'sheet turnaround requires a model or structure', 2);
   if (gif && v.sheet !== undefined)
     throw new BuildFailure('observe.option', 'sheet requires still render, not gif', 2);
   if (asset.kind !== 'sprite' && v.stage !== 'final')
@@ -192,6 +247,12 @@ export const renderMedia = async (
   const gif = spec?.kind === 'gif';
   const v = buildPreviewView(spec);
   assertRenderOptions(asset, v, gif);
+  if (v.sheet === 'inspect' && asset.sprite)
+    return { mime: 'image/png', bytes: spriteInspectSheetPng(toSpriteProduct(asset.sprite)) };
+  if (v.sheet === 'inspect' && asset.product?.kind === 'sound') {
+    const sheet = renderSoundInspectSheet(asset.product.sounds);
+    return { mime: 'image/png', bytes: encodeRgbaBufferPng(sheet.rgba, sheet.width, sheet.height) };
+  }
   const abort = () => {
     void renderer.close();
   };

@@ -113,7 +113,6 @@ const MODEL_STRUCTURE_PREVIEW_KEYS = new Set([
   'skeleton',
   'textures',
   'texture',
-  'sheet',
   'mode',
 ]);
 
@@ -368,6 +367,9 @@ const validateSinglePreview = (
   }
   if (out.kind === 'gif' && out.sheet !== undefined) {
     failDecl(file, 'preview with kind = "gif" cannot specify sheet');
+  }
+  if (out.sheet === 'turnaround' && kind !== 'model' && kind !== 'structure') {
+    failDecl(file, 'sheet turnaround requires model or structure asset');
   }
   return Object.freeze(out);
 };

@@ -1,84 +1,78 @@
 ashfox-model 1
 module shared {
-  export mask apple_body {
-    rows = [".111...111.", "11111111111", "11111111111", "11111111111", "11111111111", ".111111111.", ".111111111.", "..1111111..", "...11.11..."];
-  }
-  export mask blade {
-    rows = [".........11", "........111", ".......111.", "......111..", ".....111...", "....111....", "...111.....", "..111......", ".111.......", "111........", ".1........."];
-  }
-  export mask potion_glass {
-    rows = ["...111...", "...111...", "..11111..", ".1111111.", "111111111", "111111111", "111111111", "111111111", ".1111111.", "..11111.."];
-  }
-  export mask potion_liquid {
-    rows = [".1111111.", "111111111", "111111111", "111111111", ".1111111.", "..11111.."];
-  }
-  export mask ore {
-    rows = ["..1111..", ".111111.", "11111111", "11111111", ".111111.", "..1111.."];
-  }
-  export material apple_red {
-    ramp {
-      mode = "explicit";
-      colors = [#792C38, #D94E42, #FFAC70];
-    }
-  }
-  export material apple_green {
-    ramp {
-      mode = "explicit";
-      colors = [#3F6135, #8FBE4F, #E3E890];
-    }
-  }
-  export material apple_gold {
-    ramp {
-      mode = "explicit";
-      colors = [#A85D2C, #EDB84D, #FFF2AC];
-    }
-  }
   export material steel {
-    ramp {
-      mode = "explicit";
-      colors = [#537C94, #A8CCD1, #EEFFFF];
-    }
+    ramp { mode = auto; base = #7f9bb8; preset = metal; }
+  }
+  export material steel_edge {
+    ramp { mode = auto; base = #bfd6e8; preset = cool; }
   }
   export material copper {
-    ramp {
-      mode = "explicit";
-      colors = [#834632, #CB8557, #FFE0A0];
-    }
+    ramp { mode = auto; base = #c96f44; preset = warm; }
+  }
+  export material copper_patina {
+    ramp { mode = auto; base = #4f9c82; preset = gem; }
   }
   export material crystal {
-    ramp {
-      mode = "explicit";
-      colors = [#365489, #63C8D0, #D6FFEE];
-    }
+    ramp { mode = auto; base = #42c6dc; preset = emissive; }
+  }
+  export material crystal_core {
+    ramp { mode = auto; base = #9cf6ff; preset = vivid; }
+  }
+  export material gold {
+    ramp { mode = auto; base = #dfa238; preset = warm; }
+  }
+  export material grip_leather {
+    ramp { mode = auto; base = #784938; preset = wood; }
+  }
+  export material apple_red {
+    ramp { mode = auto; base = #c93836; preset = warm; }
+  }
+  export material apple_blush {
+    ramp { mode = auto; base = #eb7548; preset = vivid; }
+  }
+  export material apple_green {
+    ramp { mode = auto; base = #68ae3e; preset = organic; }
+  }
+  export material apple_gold {
+    ramp { mode = auto; base = #d69d2c; preset = warm; }
+  }
+  export material stem_wood {
+    ramp { mode = auto; base = #754c34; preset = wood; }
+  }
+  export material leaf_green {
+    ramp { mode = auto; base = #4f9c44; preset = organic; }
   }
   export material glass {
-    ramp {
-      mode = "explicit";
-      colors = [#476177, #8BAFBC, #DAECE9];
-    }
+    ramp { mode = auto; base = #6e94ad; preset = cool; }
+  }
+  export material cork_wood {
+    ramp { mode = auto; base = #b37d4e; preset = wood; }
   }
   export material ruby_liquid {
-    ramp {
-      mode = "explicit";
-      colors = [#812F62, #D85486, #FFB2A5];
-    }
+    ramp { mode = auto; base = #d4356a; preset = emissive; }
   }
   export material blue_liquid {
-    ramp {
-      mode = "explicit";
-      colors = [#344A87, #4B95CB, #9FEBD9];
-    }
+    ramp { mode = auto; base = #3984d8; preset = emissive; }
   }
   export material amber_liquid {
-    ramp {
-      mode = "explicit";
-      colors = [#9F5931, #DBA943, #FFE595];
-    }
+    ramp { mode = auto; base = #df9028; preset = emissive; }
   }
-  export material amethyst {
-    ramp {
-      mode = "explicit";
-      colors = [#563D7D, #9966BA, #E6A9DD];
-    }
+  export material amethyst_gem {
+    ramp { mode = auto; base = #8a4ec4; preset = gem; }
+  }
+  export material amethyst_glow {
+    ramp { mode = auto; base = #c884f2; preset = emissive; }
+  }
+  export material stone_host {
+    ramp { mode = auto; base = #686f7d; preset = stone; }
+  }
+  export material moss_flora {
+    ramp { mode = auto; base = #548c42; preset = organic; }
+  }
+  export material oak_timber {
+    ramp { mode = auto; base = #a67246; preset = wood; }
+  }
+  export material oak_joint {
+    ramp { mode = auto; base = #5e3d28; preset = wood; }
   }
 }

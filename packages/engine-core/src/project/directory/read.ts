@@ -1,6 +1,6 @@
 import { readResourcePacks } from './packRead';
 import { readExportAdapterInput } from '../../export/adapter/input';
-import { parseSpriteJson } from '../sprite/json';
+import { parseDirectoryJson } from './json';
 import { readWorkspaceManifest, type WorkspacePackage } from '../workspace';
 import { deepFreeze } from '../../immutable';
 import type { DirectoryWorkspace } from './contract';
@@ -239,7 +239,7 @@ const validateDeclaredSources = (
 
 /** Validates and freezes a `.ashfoxworkspace` configuration document. */
 export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
-  const parsed = parseSpriteJson(source, '.ashfoxworkspace');
+  const parsed = parseDirectoryJson(source, '.ashfoxworkspace');
   const hasPacks = parsed !== null && typeof parsed === 'object' && 'packs' in parsed;
   const rootKeys = [
     'format',

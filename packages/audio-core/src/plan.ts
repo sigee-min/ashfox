@@ -1,17 +1,22 @@
 import type { SoundRecipe, SoundVoice } from './contract';
 import { bounds, controls, evaluate, frame } from './curve';
+import { gainBounds, isEnvelopeControl } from './envelope';
 import { fail } from './validate';
+
 const weight = (voice: SoundVoice): number => {
   const s = voice.source;
-  return s.kind === 'resonator'
-    ? 4 + 4 * s.modes.length
-    : { noise: 1, fm: 128, chirp: 8, vocal: 16 }[s.kind];
+  if (s.kind === 'resonator') return 4 + 4 * s.modes.length;
+  if (s.kind === 'osc') return 2 * (s.unison ?? 1);
+  if (s.kind === 'noise') return 2;
+  return { fm: 128, chirp: 8, vocal: 16 }[s.kind];
 };
+
 export interface SoundBudget {
   readonly eventFrames: number;
   readonly weightedFrames: number;
   readonly outputFrames: number;
 }
+
 interface VoiceEntry {
   readonly voice: SoundVoice;
   readonly path: string;
@@ -25,11 +30,16 @@ const validateVoices = (recipe: SoundRecipe): Map<string, VoiceEntry> => {
   for (const { voice, path } of [...voices.values()].sort((a, b) =>
     a.voice.id < b.voice.id ? -1 : 1,
   )) {
-    if (bounds(voice.highpass)[1] >= bounds(voice.lowpass)[0])
+    if (
+      voice.highpass !== undefined &&
+      voice.lowpass !== undefined &&
+      bounds(voice.highpass)[1] >= bounds(voice.lowpass)[0]
+    ) {
       fail(
         path + '.highpass',
         'maximum highpass must be below minimum lowpass; separate the entire cutoff ranges',
       );
+    }
     for (const [, c] of controls(voice)) if (typeof c !== 'number') knots += c.points.length;
   }
   if (knots > 1024) fail('recipe.voices', `curve knot limit 1024; received ${knots}`);
@@ -57,6 +67,34 @@ const insideWindow = (playback: SoundRecipe['playback'], a: number, b: number, f
   return b > start && a < end;
 };
 
+const validateEnvelopeSupport = (info: VoiceEntry, shortest: number, context: string): void => {
+  const g = info.voice.gain;
+  if (!isEnvelopeControl(g)) return;
+  const sum = g.env === 'ad' ? g.attack : g.attack + g.decay + g.release;
+  if (sum > shortest) {
+    fail(
+      `${info.path}.gain`,
+      `envelope segment sum ${sum}s exceeds shortest duration ${shortest}s; ${context}`,
+    );
+  }
+};
+
+const validateKnotResolution = (info: VoiceEntry, shortest: number, context: string): void => {
+  for (const [name, control] of controls(info.voice)) {
+    if (typeof control === 'number') continue;
+    for (let i = 1; i < control.points.length; i++) {
+      const separation =
+        Math.floor(control.points[i].at * (frame(shortest) - 1) + 0.5) -
+        Math.floor(control.points[i - 1].at * (frame(shortest) - 1) + 0.5);
+      if (separation < 96)
+        fail(
+          `${info.path}.${name}.points[${i}].at`,
+          `minimum knot separation 96 frames; received ${separation}; ${context}`,
+        );
+    }
+  }
+};
+
 const validateStepTimingAndKnots = (
   recipe: SoundRecipe,
   info: VoiceEntry,
@@ -66,11 +104,14 @@ const validateStepTimingAndKnots = (
   p: string,
 ): { earliest: number; latest: number; shortest: number; longest: number } => {
   const context = `sequence ${sequence.id}, step ${step.id}, iteration ${iteration}`;
-  const nominal = sequence.start + iteration * sequence.repeat.period + step.at;
-  const earliest = nominal + step.vary.timing[0];
-  const latest = nominal + step.vary.timing[1];
-  const shortest = step.duration * step.vary.duration[0];
-  const longest = step.duration * step.vary.duration[1];
+  const vary = step.vary ?? {};
+  const timing = vary.timing ?? [0, 0];
+  const dur = vary.duration ?? [1, 1];
+  const nominal = sequence.start + iteration * (sequence.repeat?.period ?? 0) + step.at;
+  const earliest = nominal + timing[0];
+  const latest = nominal + timing[1];
+  const shortest = step.duration * dur[0];
+  const longest = step.duration * dur[1];
   if (shortest < 0.02 || longest > 30)
     fail(
       p + '.vary.duration',
@@ -87,28 +128,18 @@ const validateStepTimingAndKnots = (
       p + '.duration',
       `quantized support end ${frame(latest) + frame(longest)} exceeds ${frame(recipe.duration)} frames; ${context}`,
     );
-  for (const [name, control] of controls(info.voice)) {
-    if (typeof control === 'number') continue;
-    for (let i = 1; i < control.points.length; i++) {
-      const separation =
-        Math.floor(control.points[i].at * (frame(shortest) - 1) + 0.5) -
-        Math.floor(control.points[i - 1].at * (frame(shortest) - 1) + 0.5);
-      if (separation < 96)
-        fail(
-          `${info.path}.${name}.points[${i}].at`,
-          `minimum knot separation 96 frames; received ${separation}; ${context}`,
-        );
-    }
-  }
+  validateEnvelopeSupport(info, shortest, context);
+  validateKnotResolution(info, shortest, context);
   return { earliest, latest, shortest, longest };
 };
 
 const SOURCE_PITCH_LIMITS: Readonly<
-  Record<'fm' | 'vocal' | 'chirp' | 'resonator', readonly [number, number]>
+  Record<'osc' | 'fm' | 'vocal' | 'chirp' | 'resonator', readonly [number, number]>
 > = {
+  osc: [20, 12000],
   fm: [40, 3000],
   vocal: [50, 1200],
-  chirp: [500, 8000],
+  chirp: [300, 8000],
   resonator: [40, 16000],
 };
 
@@ -118,6 +149,7 @@ const validateStepEndpoints = (
   span: { earliest: number; latest: number; shortest: number; longest: number },
   context: string,
 ): void => {
+  if (isEnvelopeControl(info.voice.gain)) return;
   const first = evaluate(info.voice.gain, 0);
   const last = evaluate(info.voice.gain, 1);
   if (
@@ -157,16 +189,21 @@ const validateStepGainAndPitch = (
 ): void => {
   validateStepEndpoints(playback, info, span, context);
   const { voice } = info;
-  if (step.gain * step.vary.gain[1] * bounds(voice.gain)[1] > 4)
+  const vary = step.vary ?? {};
+  const gainRange = vary.gain ?? [1, 1];
+  const pitchRange = vary.pitchCents ?? [0, 0];
+  const stepGain = step.gain ?? 1;
+  const stepPitch = step.pitchCents ?? 0;
+  if (stepGain * gainRange[1] * gainBounds(voice.gain)[1] > 4)
     fail(p + '.vary.gain', 'combined event gain exceeds 4');
   const s = voice.source;
   if (s.kind === 'noise') {
-    if (step.pitchCents !== 0 || step.vary.pitchCents.some((v) => v !== 0))
+    if (stepPitch !== 0 || pitchRange.some((v) => v !== 0))
       fail(p + '.pitchCents', 'noise requires zero pitch variation');
     return;
   }
-  const lo = 2 ** ((step.pitchCents + step.vary.pitchCents[0]) / 1200);
-  const hi = 2 ** ((step.pitchCents + step.vary.pitchCents[1]) / 1200);
+  const lo = 2 ** ((stepPitch + pitchRange[0]) / 1200);
+  const hi = 2 ** ((stepPitch + pitchRange[1]) / 1200);
   const frequencies =
     s.kind === 'resonator'
       ? [Math.min(...s.modes.map((m) => m.hz)), Math.max(...s.modes.map((m) => m.hz))]
@@ -179,7 +216,7 @@ const validateStepGainAndPitch = (
     );
   if (
     s.kind === 'resonator' &&
-    s.excitation.kind === 'noise' &&
+    s.excitation.kind !== 'impulse' &&
     s.excitation.duration > span.shortest
   )
     fail(
@@ -203,7 +240,8 @@ const collectPlanStepSupports = (
   const edges: SupportEdge[] = [];
   for (const sequence of [...recipe.sequences].sort((a, b) => (a.id < b.id ? -1 : 1))) {
     const si = recipe.sequences.indexOf(sequence);
-    for (let iteration = 0; iteration < sequence.repeat.count; iteration++) {
+    const countRep = sequence.repeat?.count ?? 1;
+    for (let iteration = 0; iteration < countRep; iteration++) {
       for (const step of [...sequence.steps].sort((a, b) => (a.id < b.id ? -1 : 1))) {
         const p = `recipe.sequences[${si}].steps[${sequence.steps.indexOf(step)}]`;
         const info = voices.get(step.voice)!;
@@ -228,7 +266,10 @@ const collectPlanStepSupports = (
 
 export const validatePlan = (recipe: SoundRecipe): SoundBudget => {
   const voices = validateVoices(recipe);
-  const instances = recipe.sequences.reduce((n, s) => n + s.repeat.count * s.steps.length, 0);
+  const instances = recipe.sequences.reduce(
+    (n, s) => n + (s.repeat?.count ?? 1) * s.steps.length,
+    0,
+  );
   if (instances > 256)
     fail('recipe.sequences', `expanded instance limit 256; received ${instances}`);
   validateLoopPlayback(recipe.playback);

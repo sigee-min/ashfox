@@ -15,6 +15,9 @@ export const createVoice = (
     strength = 1,
     prior = 0,
     prior2 = 0;
+  const jitterAmt = source.jitter ?? 0;
+  const roughAmt = source.roughness ?? 0;
+  const breathAmt = source.breath ?? 0;
   const resonators = source.formants.map((hz, i) => {
     const radius = Math.exp((-Math.PI * source.bandwidths[i]) / rate);
     return {
@@ -31,8 +34,8 @@ export const createVoice = (
     if (phase >= 1) {
       phase -= 1;
       cycle++;
-      detune = Math.pow(2, random() * source.jitter * 0.1);
-      strength = 1 - source.roughness * (0.5 + 0.5 * Math.sin(cycle * 2.399963));
+      detune = Math.pow(2, random() * jitterAmt * 0.1);
+      strength = 1 - roughAmt * (0.5 + 0.5 * Math.sin(cycle * 2.399963));
     }
     const pulse =
       phase < 0.45
@@ -41,7 +44,7 @@ export const createVoice = (
           ? Math.cos(((Math.PI / 2) * (phase - 0.45)) / 0.2)
           : 0;
     const excitation =
-      pulse * strength + (source.breath === 0 ? 0 : breath()) * source.breath * (0.2 + pulse * 0.8);
+      pulse * strength + (breathAmt === 0 ? 0 : breath()) * breathAmt * (0.2 + pulse * 0.8);
     let result = 0;
     for (const [i, r] of resonators.entries()) {
       const y = r.gain * (excitation - prior2) + r.a * r.y1 - r.b * r.y2;

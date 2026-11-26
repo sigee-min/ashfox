@@ -1,0 +1,36 @@
+ashfox-model 1
+sprite mossy_stone {
+  import "../module/shared.ashfox" as shared;
+  export material cobblestone {
+    ramp { mode = auto; base = #7b818c; preset = stone; }
+  }
+  export material mortar_dark {
+    ramp { mode = auto; base = #4a505a; preset = stone; }
+  }
+  export material moss_dark {
+    ramp { mode = auto; base = #46763c; preset = organic; }
+  }
+  profile = tile;
+  canvas = (32px, 32px);
+  palette {}
+  fill stone_blocks {
+    material = cobblestone;
+    pattern { kind = voronoi; cells = 9; jitter = 0.62; edgeWidth = 1; seed = 37; edgeMaterial = mortar_dark; }
+    grain { mode = soft; amount = 1; seed = 19; }
+  }
+  pattern moss_overgrowth {
+    material = cobblestone;
+    pattern { kind = blotch; scale = 6; density = 0.3; seed = 53; toMaterial = shared.moss_flora; }
+    clip = canvas;
+  }
+  pattern moss_accent {
+    material = shared.moss_flora;
+    pattern { kind = dither; mode = cluster; density = 0.24; seed = 71; toMaterial = moss_dark; }
+    clip = canvas;
+  }
+  pattern stone_fissures {
+    material = mortar_dark;
+    pattern { kind = crack; count = 3; seed = 89; }
+    clip = canvas;
+  }
+}

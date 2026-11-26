@@ -26,7 +26,17 @@ const verifySoundCli = (cli, write = false) => {
     });
   try {
     const capabilities = JSON.parse(run(['doctor', '--json'])).result.sound;
-    assert.deepEqual(capabilities.features, ['curves', 'sequences', 'variation', 'loops']);
+    assert.deepEqual(capabilities.features, [
+      'curves',
+      'envelopes',
+      'filters',
+      'drive',
+      'space',
+      'stereo',
+      'sequences',
+      'variation',
+      'loops',
+    ]);
     assert.ok(capabilities.sources.includes('resonator'));
     const soundsDir = path.join(temp, 'assets/sounds');
     const moduleDir = path.join(temp, 'assets/module');
@@ -47,11 +57,12 @@ const verifySoundCli = (cli, write = false) => {
       const inspected = JSON.parse(run(['check', input])).result;
       const built = JSON.parse(run(['build', input, '--json'])).result;
       for (const variant of inspected.variants) {
+        const ch = variant.channels ?? 1;
         const output = path.join(built.exports[0].directory, name, variant.variant + '.wav');
         const wav = fs.readFileSync(output);
-        assert.equal(wav.length, 44 + variant.frames * 2);
+        assert.equal(wav.length, 44 + variant.frames * 2 * ch);
         assert.equal(wav.readUInt32LE(24), 48000);
-        assert.equal(wav.readUInt16LE(22), 1);
+        assert.equal(wav.readUInt16LE(22), ch);
         if (variant.playback.kind === 'loop')
           assert.deepEqual(variant.playback, {
             kind: 'loop',

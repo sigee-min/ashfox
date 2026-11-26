@@ -1,88 +1,50 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound wolf_howl {
-  duration = 3;
+  profile = "creature";
+  duration = 2.4;
   sampleRate = 48000;
+  channels = 2;
   seed = 42;
+  space = { mix = 0.3; decay = 0.65; damping = 5000; size = 1.4; };
   voices = [{
-    id = "layer_1";
+    id = "throat_howl";
     source = {
       kind = "vocal";
-      pitch = {
-        domain = "linear";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 270;
-        }, {
-          at = 0.5555555555555555;
-          value = 360;
-        }, {
-          at = 1;
-          value = 360;
-        }];
-      };
-      formants = [580, 1150, 2400];
-      bandwidths = [100, 180, 300];
-      breath = 0.06;
-      jitter = 0.06;
-      roughness = 0.06;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.28; value = 395; }, { at = 0.72; value = 360; }, { at = 1; value = 215; }]; };
+      formants = [540, 1180, 2650];
+      bandwidths = [95, 170, 290];
+      breath = 0.14;
+      jitter = 0.1;
+      roughness = 0.18;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.14814814814814814;
-        value = 0.85;
-      }, {
-        at = 0.8148148148148149;
-        value = 0.85;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 80;
-    lowpass = 6500;
+    drive = 1.5;
+    highpass = 70;
+    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2800; }, { at = 0.45; value = 6500; }, { at = 1; value = 2200; }]; };
+    pan = -0.1;
+    gain = { env = "adsr"; attack = 0.18; decay = 0.3; sustain = 0.8; release = 0.35; peak = 0.95; };
+  }, {
+    id = "cold_wind";
+    source = { kind = "noise"; color = "pink"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 320; }, { at = 0.45; value = 3800; }, { at = 1; value = 480; }]; }; q = 1.0; };
+    pan = 0.22;
+    gain = { env = "adsr"; attack = 0.1; decay = 0.25; sustain = 0.55; release = 0.3; peak = 0.55; };
+  }, {
+    id = "sub_rumble";
+    source = { kind = "noise"; color = "brown"; };
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 120; }, { at = 0.5; value = 280; }, { at = 1; value = 110; }]; }; q = 1.0; };
+    highpass = 38;
+    gain = { env = "adsr"; attack = 0.12; decay = 0.3; sustain = 0.65; release = 0.3; peak = 0.7; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "layer_1";
-      voice = "layer_1";
-      at = 0.1;
-      duration = 2.7;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "howl";
+    start = 0.04;
+    steps = [
+      { id = "voice"; voice = "throat_howl"; at = 0; duration = 2.2; vary = { pitchCents = [-45, 45]; timing = [0, 0.03]; }; },
+      { id = "air"; voice = "cold_wind"; at = 0; duration = 2.15; vary = { gain = [0.85, 1.15]; }; },
+      { id = "sub"; voice = "sub_rumble"; at = 0; duration = 2.15; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -0.4;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 5; peakDb = -2; softClip = true; };
 }

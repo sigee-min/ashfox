@@ -1,61 +1,64 @@
 ashfox-model 1
-
-// Procedural listening study; material/animal realism requires human audition.
 sound mechanical_loop {
-  duration = 5;
+  profile = "ambient";
+  duration = 3.0;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
+  space = { mix = 0.18; decay = 0.3; damping = 4500; size = 0.75; };
   voices = [{
-    id = "voice";
+    id = "turbine_hum";
     source = {
       kind = "fm";
-      pitch = 90;
-      ratio = 2;
-      index = 0.65;
-      vibratoHz = 5;
-      vibratoCents = 4;
+      pitch = 92;
+      ratio = 2.0;
+      index = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.55; }, { at = 0.5; value = 1.35; }, { at = 1; value = 0.55; }]; };
+      vibratoHz = 6;
+      vibratoCents = 14;
     };
-    gain = 0.45;
-    highpass = 30;
-    lowpass = 1800;
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 800; }, { at = 0.5; value = 3600; }, { at = 1; value = 800; }]; }; q = 1.5; };
+    drive = 2.0;
+    highpass = 35;
+    pan = -0.15;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.38; }, { at = 0.5; value = 0.52; }, { at = 1; value = 0.38; }]; };
+  }, {
+    id = "gear_tick";
+    source = {
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.005; hardness = 0.9; };
+      modes = [
+        { id = "sub"; hz = 110; decay = 0.09; gain = 0.9; },
+        { id = "clack"; hz = 1240; decay = 0.07; gain = 1.0; },
+        { id = "ring"; hz = 3420; decay = 0.05; gain = 0.72; },
+        { id = "air"; hz = 7400; decay = 0.035; gain = 0.55; }
+      ];
+    };
+    drive = 2.0;
+    pan = 0.2;
+    gain = { env = "ad"; attack = 0.002; peak = 1.15; curve = "exp"; };
+  }, {
+    id = "steam_chuff";
+    source = { kind = "noise"; color = "white"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8200; }, { at = 1; value = 720; }]; }; q = 1.1; };
+    pan = -0.2;
+    gain = { env = "ad"; attack = 0.006; peak = 1.05; curve = "exp"; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0.1;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "note";
-      voice = "voice";
-      at = 0;
-      duration = 4.8;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
-  }];
-  variants = [{
-    id = "base";
-    seed = 42;
+    id = "bed";
+    start = 0.05;
+    steps = [
+      { id = "motor"; voice = "turbine_hum"; at = 0; duration = 2.85; vary = { pitchCents = [-25, 25]; }; }
+    ];
   }, {
-    id = "alternate";
-    seed = 43;
+    id = "cogs";
+    start = 0.06;
+    repeat = { count = 7; period = 0.36; };
+    steps = [
+      { id = "tick"; voice = "gear_tick"; at = 0; duration = 0.2; vary = { pitchCents = [-45, 45]; timing = [-0.004, 0.004]; }; },
+      { id = "chuff"; voice = "steam_chuff"; at = 0.14; duration = 0.22; vary = { gain = [0.85, 1.15]; }; }
+    ];
   }];
-  playback = {
-    kind = "loop";
-    start = 0.5;
-    end = 4.5;
-    crossfade = 0.08;
-  };
-  output = {
-    gainDb = -10;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "loop"; start = 0.35; end = 2.55; crossfade = 0.08; };
+  output = { gainDb = 2; peakDb = -2; softClip = true; };
 }

@@ -28,13 +28,13 @@ CLI를 통합 에셋 컴파일러·렌더러로 사용하세요. `.ashfox` 원�
 
 {{source-code:3}}
 
-반복 실행에는 새 파일명을 사용하세요. 사운드 `render`는 피크 포락선 파형이며 재생 가능한 WAV는 `build`로 생성합니다.
+반복 실행에는 새 파일명을 사용하세요. 사운드 `check`는 변형 메타데이터와 정량 품질 `audit`를 반환하며, `preview inspect { sheet = inspect; }`를 선언하면 Chrome 없이 CPU에서 800×520 4분할 진단 시트를 렌더링합니다(단일 변형 `render`는 피크 포락선 파형). 스프라이트 `check`는 영수증·픽셀 소유권 증거와 정량 `audit`를 반환하며 `preview inspect { sheet = inspect; }`로 512×512 4분할 시트를 CPU에서 렌더링합니다. 재생 가능한 WAV와 최종 PNG/GLB/NBT는 `build`로 생성합니다.
 
 | `preview` 필드 | 허용값과 호환 에셋 |
 | --- | --- |
 | `kind` | `still` (기본 PNG) 또는 `gif` (애니메이션 GIF) |
 | `camera` | `perspective`, `native`, `front`, `back`, `left`, `right`, `top`, `bottom` (모델·구조물) |
-| `sheet` | 정지 렌더링 2×2 컨택트 시트 `turnaround` 또는 `inspect` (모델·구조물) |
+| `sheet` | `turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`, 모델·구조물) 또는 `inspect` (스프라이트/타일 CPU 4분할, 사운드 CPU 파형·스펙트로그램·6밴드 시트) |
 | `azimuth`, `elevation`, `zoom` | 궤도 각도(`-360..360`, `-89..89`)와 줌(`0.1..10`) (모델·구조물) |
 | `width`, `height` | 정수 `16..2048` (모델·구조물·파형 기본 `640x360`) |
 | `environment`, `background` | `studio`/`day`/`evening`/`night`; `environment`/`transparent`/`checker`/`light`/`dark` |

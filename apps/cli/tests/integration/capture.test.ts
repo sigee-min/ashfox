@@ -142,7 +142,7 @@ async function main() {
       input: spritePayload('scale = 16; background = checker;'),
     }),
   );
-  png(sprite, 256, 256);
+  png(sprite, 512, 512);
   const stage = success(
     run(['render', '--input-json', '--view', 'v'], {
       input: spritePayload('stage = silhouette; scale = 16; background = checker;'),

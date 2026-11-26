@@ -96,7 +96,7 @@ export interface ProgramProperty {
 /** Deterministic source-level procedural chart pattern. */
 export interface ProgramTexturePattern {
   readonly kind: 'pattern';
-  readonly algorithm: 'blotch' | 'gradient' | 'border' | 'stripe' | 'ao';
+  readonly algorithm: 'blotch' | 'gradient' | 'border' | 'stripe' | 'ao' | 'edge';
   readonly properties: readonly ProgramProperty[];
   readonly span: SourceSpan;
 }
@@ -159,7 +159,7 @@ export interface ProgramTexturePalette {
 /** Texture-wide deterministic within-ramp microvariation pass. */
 export interface ProgramTextureGrain {
   readonly kind: 'grain';
-  readonly algorithm: 'clustered' | 'soft' | 'none';
+  readonly algorithm: 'clustered' | 'soft' | 'fur' | 'wood' | 'cloth' | 'brushed' | 'none';
   readonly seed: ProgramProperty | null;
   readonly span: SourceSpan;
 }

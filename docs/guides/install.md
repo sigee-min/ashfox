@@ -2,6 +2,20 @@
 
 You need Node.js 24 or newer and npm. You do not need an account or API key.
 
+## Fastest start: paste one prompt or fetch the skill
+
+Paste this single line into Claude Code, Codex, Gemini CLI, or Cursor to let your agent install and configure Ashfox automatically:
+
+```text
+Read https://ashfox.io/agent.md and set up Ashfox in this project, then ask what asset I want to build.
+```
+
+You can also fetch the published Ashfox skill directly from its public URL:
+
+- Raw skill file: `https://ashfox.io/skills/ashfox/files/SKILL.md`
+- Skill package (`.skill` / `.zip`): [ashfox.skill](https://ashfox.io/skills/ashfox/ashfox.skill) · [ashfox.zip](https://ashfox.io/skills/ashfox/ashfox.zip)
+- Skill metadata & client install targets: `https://ashfox.io/skills/ashfox/latest.json`
+
 ## Install in your project
 
 Open a terminal in your game or asset folder and run:
