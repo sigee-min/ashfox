@@ -1,5 +1,5 @@
 import type { CompiledModel } from '../../model/compiled';
-import type { DirectoryFile } from '../../project/directory/contract';
+import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { parseAssetSource } from '../../project/program/asset/parse';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import { parseStructureSource, type StructureSourceUnit } from '../../project/structure';
@@ -10,6 +10,7 @@ import {
 import { sealWorkspaceCandidate } from '../../project/workspace/seal';
 import { compileAssetWorkspaceEntry } from '../program/asset/compile';
 import { compileStructureUnits, type StructureProduct } from '../structure';
+import { qualifyCustomAssetKey } from '../structure/contract';
 
 const relativePath = (owner: string, target: string): string => {
   if (!target.startsWith('./') && !target.startsWith('../')) {
@@ -28,6 +29,68 @@ const relativePath = (owner: string, target: string): string => {
     else parts.push(segment);
   }
   return parts.join('/');
+};
+
+const resolvePackageImport = (
+  packages: DirectoryWorkspace['packages'],
+  specifier: string,
+): string | null => {
+  for (const pkg of packages) {
+    if (specifier !== pkg.name && !specifier.startsWith(`${pkg.name}/`)) continue;
+    const subpath = specifier === pkg.name ? '.' : `./${specifier.slice(pkg.name.length + 1)}`;
+    const mod = pkg.manifest.modules.find((m) => m.subpath === subpath);
+    if (!mod) return null;
+    return pkg.root ? `${pkg.root}/${mod.path}` : mod.path;
+  }
+  return null;
+};
+
+const resolveModelImport = (
+  packages: DirectoryWorkspace['packages'],
+  ownerPath: string,
+  specifier: string,
+): string | null => {
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
+    return resolvePackageImport(packages, specifier);
+  }
+  try {
+    return relativePath(ownerPath, specifier);
+  } catch {
+    return null;
+  }
+};
+
+const visitReachableModel = (
+  current: string,
+  packages: DirectoryWorkspace['packages'],
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  reachable: Set<string>,
+  stack: string[],
+): void => {
+  if (reachable.has(current)) return;
+  reachable.add(current);
+  const file = filesByPath.get(current);
+  const parsed = file ? parseAssetSource(file.source, current) : null;
+  if (!parsed?.unit) return;
+  for (const imp of parsed.unit.imports) {
+    const target = resolveModelImport(packages, current, imp.path);
+    if (target && !reachable.has(target)) stack.push(target);
+  }
+};
+
+/** Returns structure custom-model sources not reachable from any independent model entry. */
+export const collectStructureOnlyCustomPaths = (
+  config: DirectoryWorkspace,
+  modelEntryPaths: readonly string[],
+  structureCustomPaths: ReadonlySet<string>,
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+): ReadonlySet<string> => {
+  const reachable = new Set<string>();
+  const stack = [...modelEntryPaths];
+  while (stack.length > 0) {
+    visitReachableModel(stack.pop()!, config.packages, filesByPath, reachable, stack);
+  }
+  return new Set([...structureCustomPaths].filter((p) => !reachable.has(p)));
 };
 
 const collectModelClosure = (
@@ -122,15 +185,20 @@ interface StructureGraphState {
   readonly customModelPaths: Set<string>;
 }
 
-const visitStructureUnit = (state: StructureGraphState, filePath: string, alias?: string): void => {
+const visitStructureUnit = (
+  state: StructureGraphState,
+  filePath: string,
+  alias?: string,
+  ownerPath?: string,
+): void => {
   if (state.visiting.has(filePath)) throw new Error(`Structure import cycle: ${filePath}`);
   const file = state.filesByPath.get(filePath);
   if (!file) throw new Error(`Missing or ignored source: ${filePath}`);
   const topKind = lexProgramSource(file.source).tokens[2]?.value;
   if (topKind === 'asset') {
-    if (!alias || filePath === state.entryPath)
+    if (!alias || !ownerPath || filePath === state.entryPath)
       throw new Error(`Unexpected asset entry: ${filePath}`);
-    state.customModels[alias] = compileImportedModel(
+    state.customModels[qualifyCustomAssetKey(ownerPath, alias)] = compileImportedModel(
       filePath,
       state.filesByPath,
       state.modelCache,
@@ -146,7 +214,7 @@ const visitStructureUnit = (state: StructureGraphState, filePath: string, alias?
     throw new Error(`Structure import must refer to a module or asset: ${filePath}`);
   }
   for (const dep of unit.imports) {
-    visitStructureUnit(state, relativePath(filePath, dep.path), dep.alias);
+    visitStructureUnit(state, relativePath(filePath, dep.path), dep.alias, filePath);
   }
   state.units.set(filePath, unit);
   state.visiting.delete(filePath);

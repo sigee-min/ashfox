@@ -15,17 +15,20 @@ import {
   rotateBlockState,
   withBlockFacing,
 } from '../../project/structure/state';
-import type { StructureCustomPlacement, StructureGrid } from './contract';
+import {
+  qualifyCustomAssetKey,
+  type StructureCustomPlacement,
+  type StructureGrid,
+} from './contract';
 import { emitRoof } from './roof';
 
 interface FrameTransform {
   readonly offset: IntVec3;
   readonly rotate: BlockRotation;
-  readonly mirrorAxis?: MirrorAxis;
-  readonly mirrorCenter?: number;
+  readonly mirrorX: boolean;
 }
 
-const IDENTITY_FRAME: FrameTransform = { offset: [0, 0, 0], rotate: 0 };
+const IDENTITY_FRAME: FrameTransform = { offset: [0, 0, 0], rotate: 0, mirrorX: false };
 
 interface EvalState {
   readonly rootPath: string;
@@ -83,7 +86,7 @@ const resolvePaletteEntry = (
   state.usedPaletteKeys.get(targetOwner)?.add(keyOrState);
   if (entry.kind === 'block') return { state: entry.state, assetAlias: null };
   state.usedImports.get(targetOwner)?.add(entry.alias);
-  return { state: entry.fallback, assetAlias: entry.alias };
+  return { state: entry.fallback, assetAlias: qualifyCustomAssetKey(targetOwner, entry.alias) };
 };
 
 const rotatePoint = ([x, y, z]: IntVec3, rotate: BlockRotation): IntVec3 => {
@@ -93,24 +96,17 @@ const rotatePoint = ([x, y, z]: IntVec3, rotate: BlockRotation): IntVec3 => {
   return [x, y, z];
 };
 
+const applyLinear = ([x, y, z]: IntVec3, frame: FrameTransform): IntVec3 =>
+  rotatePoint(frame.mirrorX ? [-x, y, z] : [x, y, z], frame.rotate);
+
 const applyFrame = (pt: IntVec3, frame: FrameTransform): IntVec3 => {
-  const [rx, ry, rz] = rotatePoint(pt, frame.rotate);
-  const [ox, oy, oz] = frame.offset;
-  let wx = rx + ox;
-  const wy = ry + oy;
-  let wz = rz + oz;
-  if (frame.mirrorAxis === 'x' && frame.mirrorCenter !== undefined) {
-    wx = frame.mirrorCenter * 2 - wx;
-  } else if (frame.mirrorAxis === 'z' && frame.mirrorCenter !== undefined) {
-    wz = frame.mirrorCenter * 2 - wz;
-  }
-  return [wx, wy, wz];
+  const [rx, ry, rz] = applyLinear(pt, frame);
+  return [rx + frame.offset[0], ry + frame.offset[1], rz + frame.offset[2]];
 };
 
 const transformBlockState = (rawState: string, frame: FrameTransform): string => {
-  let out = rotateBlockState(rawState, frame.rotate);
-  if (frame.mirrorAxis) out = mirrorBlockState(out, frame.mirrorAxis);
-  return out;
+  const mirrored = frame.mirrorX ? mirrorBlockState(rawState, 'x') : rawState;
+  return rotateBlockState(mirrored, frame.rotate);
 };
 
 const putVoxel = (
@@ -209,12 +205,12 @@ const evalLayer = (
 };
 
 const composeFrames = (outer: FrameTransform, inner: FrameTransform): FrameTransform => {
-  const [rx, ry, rz] = rotatePoint(inner.offset, outer.rotate);
+  const [rx, ry, rz] = applyLinear(inner.offset, outer);
+  const rawRotate = outer.mirrorX ? outer.rotate - inner.rotate : outer.rotate + inner.rotate;
   return {
     offset: [outer.offset[0] + rx, outer.offset[1] + ry, outer.offset[2] + rz],
-    rotate: ((outer.rotate + inner.rotate) % 360) as BlockRotation,
-    mirrorAxis: outer.mirrorAxis,
-    mirrorCenter: outer.mirrorCenter,
+    rotate: (((rawRotate % 360) + 360) % 360) as BlockRotation,
+    mirrorX: outer.mirrorX !== inner.mirrorX,
   };
 };
 
@@ -255,10 +251,19 @@ const evalRepeat = (
   depth: number,
 ): void => {
   for (let i = 0; i < op.count; i += 1) {
-    const sub = composeFrames(frame, { offset: stepOffset(op.axis, i * op.step), rotate: 0 });
+    const sub = composeFrames(frame, {
+      offset: stepOffset(op.axis, i * op.step),
+      rotate: 0,
+      mirrorX: false,
+    });
     for (const child of op.ops) evalOp(state, ownerPath, child, sub, depth + 1);
   }
 };
+
+const mirrorFrame = (axis: MirrorAxis, center: number): FrameTransform =>
+  axis === 'x'
+    ? { offset: [center * 2, 0, 0], rotate: 0, mirrorX: true }
+    : { offset: [0, 0, center * 2], rotate: 180, mirrorX: true };
 
 const evalMirror = (
   state: EvalState,
@@ -268,7 +273,7 @@ const evalMirror = (
   depth: number,
 ): void => {
   for (const child of op.ops) evalOp(state, ownerPath, child, frame, depth + 1);
-  const mirrored: FrameTransform = { ...frame, mirrorAxis: op.axis, mirrorCenter: op.center };
+  const mirrored = composeFrames(frame, mirrorFrame(op.axis, op.center));
   for (const child of op.ops) evalOp(state, ownerPath, child, mirrored, depth + 1);
 };
 
@@ -312,7 +317,7 @@ const evalOp = (
   else if (op.op === 'place') {
     state.prefabUses += 1;
     const target = resolvePrefab(state, ownerPath, op.prefab);
-    const sub = composeFrames(frame, { offset: op.at, rotate: op.rotate });
+    const sub = composeFrames(frame, { offset: op.at, rotate: op.rotate, mirrorX: false });
     for (const child of target.ops) evalOp(state, target.targetPath, child, sub, depth + 1);
   } else fillRegion(state, ownerPath, op, frame);
 };

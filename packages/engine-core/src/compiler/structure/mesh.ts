@@ -31,7 +31,7 @@ const makeBone = (
   name: string,
   parentId: string | null,
   pivot: Vec3 = [0, 0, 0],
-  rotY = 0,
+  rotation: Vec3 = [0, 0, 0],
   scale: Vec3 = [1, 1, 1],
 ): BoneNode => {
   const bone: BoneNode = {
@@ -39,7 +39,7 @@ const makeBone = (
     kind: 'bone',
     name,
     parentId,
-    transform: { position: [0, 0, 0], rotation: [0, rotY, 0], scale, pivot },
+    transform: { position: [0, 0, 0], rotation: [...rotation] as Vec3, scale, pivot },
     visible: true,
     canonicalFrame: {
       origin: pivot,
@@ -47,7 +47,7 @@ const makeBone = (
       yAxis: [0, 1, 0],
       zAxis: [0, 0, 1],
       determinant: 1,
-      rotation: [0, rotY, 0],
+      rotation: [...rotation] as Vec3,
     },
   };
   sealCanonicalBoneFrame(bone);
@@ -210,14 +210,33 @@ const cloneCustomNode = (
   const nid = `${prefix}_${node.id}`;
   const pid = node.parentId ? `${prefix}_${node.parentId}` : cellBoneId;
   if (node.kind === 'bone') {
-    return makeBone(
-      nid,
-      nid,
-      pid,
-      offsetVec3(node.transform.pivot, wx, wy, wz),
-      node.transform.rotation[1],
-      node.transform.scale,
-    );
+    const clonedPivot = offsetVec3(node.transform.pivot, wx, wy, wz);
+    const frame = node.canonicalFrame;
+    const bone: BoneNode = {
+      ...node,
+      id: nid,
+      name: nid,
+      parentId: pid,
+      transform: {
+        ...node.transform,
+        position: [...node.transform.position] as Vec3,
+        rotation: [...node.transform.rotation] as Vec3,
+        scale: [...node.transform.scale] as Vec3,
+        pivot: clonedPivot,
+      },
+      canonicalFrame: frame
+        ? {
+            origin: offsetVec3(frame.origin, wx, wy, wz),
+            xAxis: [...frame.xAxis] as Vec3,
+            yAxis: [...frame.yAxis] as Vec3,
+            zAxis: [...frame.zAxis] as Vec3,
+            determinant: frame.determinant,
+            rotation: [...frame.rotation] as Vec3,
+          }
+        : undefined,
+    };
+    sealCanonicalBoneFrame(bone);
+    return bone;
   }
   if (node.kind === 'cube') return cloneCubeNode(nid, pid, node, wx, wy, wz, texRemap);
   return {
@@ -253,7 +272,13 @@ const appendCustomModel = (
     if (!textures[newId]) textures[newId] = { ...tex, id: newId };
   }
   const cellBoneId = `custom_cell_${placementIndex}`;
-  nodes[cellBoneId] = makeBone(cellBoneId, cellBoneId, 'custom', [wx, wy, wz], facingRotY(facing));
+  nodes[cellBoneId] = makeBone(
+    cellBoneId,
+    cellBoneId,
+    'custom',
+    [wx, wy, wz],
+    [0, facingRotY(facing), 0],
+  );
   for (const node of Object.values(model.scene.nodes)) {
     const cloned = cloneCustomNode(prefix, cellBoneId, node, wx, wy, wz, texRemap);
     nodes[cloned.id] = cloned;

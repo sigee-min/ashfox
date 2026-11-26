@@ -234,7 +234,7 @@ structure s {
   const built = compileStructureUnits(
     's.ashfox',
     customUnits,
-    { rp: compiledPillar },
+    { 's.ashfox#rp': compiledPillar },
     relativePosix,
   );
   const textureIds = Object.keys(built.document.textures).filter((id) => id.startsWith('c_'));
@@ -246,7 +246,11 @@ structure s {
   const magic = Buffer.from(glbFile.data).subarray(0, 4).toString('utf8');
   assert.equal(magic, 'glTF');
 
-  const cutDoc = buildStructureDocument(built.grid, { rp: compiledPillar }, { cutawayY: 2 });
+  const cutDoc = buildStructureDocument(
+    built.grid,
+    { 's.ashfox#rp': compiledPillar },
+    { cutawayY: 2 },
+  );
   assert.ok(
     Object.keys(cutDoc.scene.nodes).length < Object.keys(built.document.scene.nodes).length,
   );

@@ -13,7 +13,7 @@ import {
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import { compileDirectorySprite } from './sprite';
-import { compileDirectoryStructure } from './structure';
+import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
 import type { SpriteProduct } from '../sprite/contract';
 import type { StructureProduct } from '../structure/contract';
 import { StructureInputError } from '../../project/structure';
@@ -274,14 +274,21 @@ const compileEntries = (
   return output;
 };
 
-const modelManifest = (config: DirectoryWorkspace, output: EntryOutput) => {
+const modelManifest = (
+  config: DirectoryWorkspace,
+  output: EntryOutput,
+  excludedCustom: ReadonlySet<string>,
+) => {
   const modelPaths = new Set(output.modelEntries.map((e) => e.path));
   const packages = config.packages.map((p) => ({
     ...p,
     manifest: {
       ...p.manifest,
       entries: p.manifest.entries.filter((e) => modelPaths.has(joinPath(p.root, e.path))),
-      modules: p.manifest.modules.filter((e) => !output.spritePaths.has(joinPath(p.root, e.path))),
+      modules: p.manifest.modules.filter((e) => {
+        const pth = joinPath(p.root, e.path);
+        return !output.spritePaths.has(pth) && !excludedCustom.has(pth);
+      }),
     },
   }));
   return { format: 'ashfox-workspace' as const, version: 1 as const, packages };
@@ -300,7 +307,14 @@ const compileModels = (
       throw new Error('Every declared module must be reachable');
     return;
   }
-  const manifest = modelManifest(config, output);
+  const filesByPath = new Map(files.map((f) => [f.path, f]));
+  const excludedCustom = collectStructureOnlyCustomPaths(
+    config,
+    output.modelEntries.map((e) => e.path),
+    output.structureCustomPaths,
+    filesByPath,
+  );
+  const manifest = modelManifest(config, output, excludedCustom);
   const base: AuthoredAssetWorkspace = {
     files: [],
     manifest,
@@ -311,7 +325,9 @@ const compileModels = (
       packages: [],
     },
   };
-  const sources = files.filter((f) => !output.spritePaths.has(f.path));
+  const sources = files.filter(
+    (f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path),
+  );
   const sealed = sealWorkspaceCandidate(base, sources, manifest, DEFAULT_WORKSPACE_LIMITS);
   if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
   const checked = compileWorkspaceCandidate(sealed.value, {}, true);

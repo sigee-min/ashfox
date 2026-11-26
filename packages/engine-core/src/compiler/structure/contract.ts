@@ -35,6 +35,10 @@ export interface StructureCustomPlacement {
   readonly facing: CardinalFacing;
 }
 
+/** Qualifies a structure custom-model alias by its declaring unit path to prevent collisions. */
+export const qualifyCustomAssetKey = (ownerPath: string, alias: string): string =>
+  `${ownerPath}#${alias}`;
+
 export interface StructureGrid {
   readonly id: string;
   readonly dataVersion: number;
