@@ -1,13 +1,18 @@
 import { CUBE_FACE_DIRECTIONS, PLANE_FACE_DIRECTIONS, type ProjectDocument } from '../../model';
-import type { ExportAdaptedDocument } from '../../export/adapter';
+import type { ExportAdaptedDocument } from '../adapter';
 import { isSceneNodeEffectivelyVisible } from '../../sceneVisibility';
 import {
   RESOURCE_NAMESPACE_PATTERN,
   RESOURCE_PATH_PATTERN,
   validateResourceLocation,
-} from '../shared/location';
-import { isFiniteNumber, isIdentityPosition, isIdentityScale, validateVec } from '../shared/value';
-import type { FindingSink } from '../contract';
+} from '../../validation/shared/location';
+import {
+  isFiniteNumber,
+  isIdentityPosition,
+  isIdentityScale,
+  validateVec,
+} from '../../validation/shared/value';
+import type { FindingSink } from '../../validation/contract';
 
 const BEDROCK_GEOMETRY_IDENTIFIER_PATTERN = /^geometry\.[a-z0-9_.-]+$/;
 

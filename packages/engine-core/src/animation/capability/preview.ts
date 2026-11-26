@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { AnimationClip, AnimationVec3, TransformChannel } from '../../model';
 import { isNumericAnimationScalar, triggerIssueCode } from './shared';
 import type { AnimationPreviewIssue } from './types';
@@ -42,7 +43,7 @@ export const animationPreviewIssues = (
 
 export const analyzeAnimationPreview = (clip: AnimationClip): readonly AnimationPreviewIssue[] => {
   const issues: AnimationPreviewIssue[] = Object.values(clip.channels)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .flatMap((channel) =>
       animationPreviewIssues(channel).map((issue) => ({
         ...issue,
@@ -68,7 +69,7 @@ export const analyzeAnimationPreview = (clip: AnimationClip): readonly Animation
     });
   }
   for (const trigger of Object.values(clip.triggers).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   )) {
     if (trigger.keys.length === 0) continue;
     issues.push({

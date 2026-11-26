@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
@@ -220,7 +221,7 @@ export const placeConnections = (
   const placedInstances = instances.map((instance) =>
     freeze({ ...instance, placement: placements.get(instance.id) ?? instance.placement }),
   );
-  connections.sort((left, right) => left.id.localeCompare(right.id));
+  connections.sort((left, right) => compareText(left.id, right.id));
   return freeze({ instances: freeze(placedInstances), connections: freeze(connections) });
 };
 
@@ -334,7 +335,7 @@ export const collectSelectedSurfaces = (
           surface: symbol,
           contract: contract.symbol,
           material: surface.material,
-          charts: freeze(Object.keys(contract.charts).sort()),
+          charts: freeze(Object.keys(contract.charts).sort(compareText)),
           span: surface.span,
         }),
       );
@@ -342,7 +343,7 @@ export const collectSelectedSurfaces = (
   }
   return freeze(
     [...selectedSurfaces.values()].sort((left, right) =>
-      left.surface.key.localeCompare(right.surface.key),
+      compareText(left.surface.key, right.surface.key),
     ),
   );
 };

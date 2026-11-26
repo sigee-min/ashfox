@@ -1,6 +1,8 @@
-import { utf8ContractByteLength } from '@ashfox/internal-contracts';
+import { encodeUtf8, utf8ContractByteLength } from '@ashfox/internal-contracts';
 
 import { DEFAULT_WORKSPACE_LIMITS } from './limits';
+
+const FATAL_UTF8_DECODER = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
 export type WorkspacePathErrorCode =
   | 'workspace.path.type'
@@ -83,7 +85,7 @@ export const decodeUtf8Source = (input: ArrayLike<number>): string => {
   const bytes = input instanceof Uint8Array ? input : Uint8Array.from(input);
   let value: string;
   try {
-    value = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    value = FATAL_UTF8_DECODER.decode(bytes);
   } catch (_error) {
     throw new WorkspaceTextError(
       'workspace.source.utf8',
@@ -91,7 +93,7 @@ export const decodeUtf8Source = (input: ArrayLike<number>): string => {
     );
   }
   const checked = assertWellFormedSourceText(value);
-  const roundTrip = new TextEncoder().encode(checked);
+  const roundTrip = encodeUtf8(checked);
   if (roundTrip.length !== bytes.length || roundTrip.some((byte, index) => byte !== bytes[index])) {
     throw new WorkspaceTextError(
       'workspace.source.utf8',

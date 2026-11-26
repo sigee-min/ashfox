@@ -1,3 +1,4 @@
+import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
 import { parseBlockState } from '../../project/structure/state';
 import type { DecodedStructureNbt, StructureGrid } from './contract';
 
@@ -11,7 +12,6 @@ class NbtWriter {
   private buf = new Uint8Array(4096);
   private view = new DataView(this.buf.buffer);
   private pos = 0;
-  private enc = new TextEncoder();
 
   private ensure(extra: number): void {
     if (this.pos + extra <= this.buf.length) return;
@@ -41,7 +41,7 @@ class NbtWriter {
   }
 
   str(value: string): void {
-    const bytes = this.enc.encode(value);
+    const bytes = encodeUtf8(value);
     this.short(bytes.length);
     this.ensure(bytes.length);
     this.buf.set(bytes, this.pos);
@@ -104,7 +104,7 @@ const writePalette = (w: NbtWriter, states: readonly string[]): void => {
     const parsed = parseBlockState(state);
     w.named(TAG_STRING, 'Name');
     w.str(parsed.name);
-    const propKeys = Object.keys(parsed.properties).sort();
+    const propKeys = Object.keys(parsed.properties).sort(compareText);
     if (propKeys.length > 0) {
       w.named(TAG_COMPOUND, 'Properties');
       for (const k of propKeys) {
@@ -186,7 +186,6 @@ const gunzipStored = (gz: Uint8Array): Uint8Array => {
 
 class NbtReader {
   private view: DataView;
-  private dec = new TextDecoder();
   pos = 0;
 
   constructor(private readonly buf: Uint8Array) {
@@ -206,7 +205,7 @@ class NbtReader {
   str(): string {
     const len = this.view.getUint16(this.pos, false);
     this.pos += 2;
-    const text = this.dec.decode(this.buf.subarray(this.pos, this.pos + len));
+    const text = decodeUtf8(this.buf.subarray(this.pos, this.pos + len));
     this.pos += len;
     return text;
   }

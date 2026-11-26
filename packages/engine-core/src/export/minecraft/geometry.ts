@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import {
   CUBE_FACE_DIRECTIONS,
   type BoneNode,
@@ -244,7 +245,7 @@ const sortedVisibleChildren = <T extends CubeNode | PlaneNode | LocatorNode>(
       (node): node is T =>
         node.kind === kind && visibleNodeIds.has(node.id) && node.parentId === parentId,
     )
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareText(left.id, right.id));
 
 const compileBoneElements = (
   document: ProjectDocument,
@@ -339,7 +340,7 @@ export const buildMinecraftGeometry = (
   });
   const bones = Object.values(document.scene.nodes)
     .filter((node): node is BoneNode => node.kind === 'bone' && visibleNodeIds.has(node.id))
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .map((bone) => compileBone(document, bone, visibleNodeIds, occlusion));
   const looseBone = createLooseBone(document, visibleNodeIds, occlusion);
   if (looseBone) bones.unshift(looseBone);

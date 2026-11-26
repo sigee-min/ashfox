@@ -1,8 +1,8 @@
-import type { ExportAdaptedDocument } from '../../export/adapter';
+import type { ExportAdaptedDocument } from '../adapter';
 import { analyzeProjectAnimationCapabilities } from '../../animation/capability';
 import type { AnimationEffect } from '../../model';
 import { isSceneNodeEffectivelyVisible } from '../../sceneVisibility';
-import type { FindingSink } from '../contract';
+import type { FindingSink } from '../../validation/contract';
 
 // Target builders may allocate one sampled frame per duration/fps step for
 // each animated channel. The authored compiler has a separate budget, but an

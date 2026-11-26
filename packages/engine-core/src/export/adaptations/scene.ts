@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { ExportAdaptedDocument } from '../adapter';
 import type { ExportAdaptation } from '../contract';
 
@@ -7,7 +8,7 @@ export const sceneExportAdaptations = (
   document.formatProfile.id === 'minecraft.java_block'
     ? Object.values(document.scene.nodes)
         .filter((node) => node.kind === 'locator')
-        .sort((left, right) => left.id.localeCompare(right.id))
+        .sort((left, right) => compareText(left.id, right.id))
         .map((node) => ({
           code: 'scene.locator_unsupported',
           path: `scene.nodes.${node.id}`,

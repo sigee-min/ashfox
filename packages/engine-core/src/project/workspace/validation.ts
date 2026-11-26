@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import {
   type AuthoredAssetWorkspace,
   type LockedPackage,
@@ -59,7 +60,7 @@ const addPackageRootFindings = (
   state: ValidationState,
 ): boolean => {
   const roots = [...packages].sort(
-    (left, right) => left.root.length - right.root.length || (left.root < right.root ? -1 : 1),
+    (left, right) => left.root.length - right.root.length || compareText(left.root, right.root),
   );
   for (let index = 0; index < roots.length; index += 1) {
     for (let next = index + 1; next < roots.length; next += 1) {

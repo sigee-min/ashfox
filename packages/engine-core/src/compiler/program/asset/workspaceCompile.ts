@@ -1,5 +1,9 @@
 import { compareText } from '../../../stableOrder';
 import { deepFreeze } from '../../../immutable';
+import type {
+  RawDeclaredOutput,
+  RawDeclaredPreview,
+} from '../../../project/directory/declarations';
 import type { AuthoredAssetWorkspace, Sha256Digest } from '../../../project/workspace/contract';
 import {
   errorDiagnostic,
@@ -24,6 +28,8 @@ import {
 
 type CandidateProduct = Extract<CompileAssetWorkspaceDetailedResult, { readonly ok: true }> & {
   readonly entry: WorkspaceEntrySelector;
+  readonly outputs: readonly RawDeclaredOutput[];
+  readonly previews: readonly RawDeclaredPreview[];
 };
 type CompileWorkspaceCandidateResult =
   | Readonly<{
@@ -99,6 +105,20 @@ interface EntryRun {
   readonly products: CandidateProduct[];
 }
 
+const compiledProduct = (
+  selector: WorkspaceEntrySelector,
+  resolved: WorkspaceEntryCompilation,
+  compiled: Extract<CompileAssetWorkspaceDetailedResult, { readonly ok: true }>,
+): CandidateProduct => {
+  const rootUnit = resolved.closure.root.unit;
+  return {
+    entry: selector,
+    ...compiled,
+    outputs: rootUnit.kind === 'asset' ? rootUnit.outputs : [],
+    previews: rootUnit.kind === 'asset' ? rootUnit.previews : [],
+  };
+};
+
 /** Compiles every entry in stable order, stopping once the diagnostic budget is reached. */
 const compileEntries = (
   snapshot: CompilationSnapshot,
@@ -117,7 +137,9 @@ const compileEntries = (
     recordReachableModules(resolved.value, reachableModules);
     const compiled = compileResolvedAssetWorkspaceEntryDetailed(workspaceHash, resolved.value);
     if (!compiled.ok && !sink.push(compiled.diagnostics)) break;
-    if (compiled.ok && collectProducts) products.push({ entry: selector, ...compiled });
+    if (compiled.ok && collectProducts) {
+      products.push(compiledProduct(selector, resolved.value, compiled));
+    }
   }
   return { reachableModules, products };
 };

@@ -4,6 +4,7 @@ import type {
   AssetSurfaceDecl,
   AssetValueType,
 } from '../../../project/program/asset/contract';
+import { nullRecord } from './diagnostics';
 import type { AssetValue } from './value/contract';
 import {
   type AssetTexelValue,
@@ -15,8 +16,6 @@ import {
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { compileAndEvaluateHirExpression } from './hirValues';
 import { validateConcreteSurfaceCharts } from './surface';
-
-const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
 
 const texel = (
   expression: Parameters<typeof compileAndEvaluateHirExpression>[0] | null,
@@ -81,7 +80,7 @@ const buildSurfaceContractCharts = (
   state: AssemblyState,
   declaration: AssetSurfaceContractDecl,
 ): Readonly<Record<string, TypedChartAbi>> => {
-  const charts = record<TypedChartAbi>();
+  const charts = nullRecord<TypedChartAbi>();
   for (const chart of declaration.charts) {
     if (charts[chart.id] !== undefined) {
       context.issue(
@@ -119,7 +118,7 @@ const buildSurfaceContractSlots = (
   state: AssemblyState,
   declaration: AssetSurfaceContractDecl,
 ): Readonly<Record<string, AssetValueType>> => {
-  const slots = record<AssetValueType>();
+  const slots = nullRecord<AssetValueType>();
   for (const slot of declaration.slots) {
     if (slots[slot.id] !== undefined) {
       context.issue(
@@ -180,7 +179,7 @@ const buildSurfaceSlots = (
   declaration: AssetSurfaceDecl,
   contract: TypedSurfaceContract,
 ): Readonly<Record<string, AssetValue>> => {
-  const slots = record<AssetValue>();
+  const slots = nullRecord<AssetValue>();
   const seen = new Set<string>();
   for (const slot of declaration.slots) {
     if (seen.has(slot.id)) {

@@ -1,5 +1,6 @@
 import { freeze } from '../../../immutable';
 import type { AssetComponentDecl } from '../../../project/program/asset/contract';
+import { nullRecord } from './diagnostics';
 import type {
   AssetSymbolKind,
   TypedComponent,
@@ -15,8 +16,6 @@ import { validateGeometryHierarchy } from './assembly';
 import { buildTypedFrame } from './hirFrames';
 import { compileGeometryPayload } from './hirGeometry';
 
-const record = <T>(): Record<string, T> => Object.create(null) as Record<string, T>;
-
 const portKind = (domain: TypedPort['domain']): AssetSymbolKind =>
   domain === 'rig' ? 'rig-contract' : domain === 'surface' ? 'surface-contract' : 'socket-contract';
 
@@ -25,7 +24,7 @@ const buildParameters = (
   state: AssemblyState,
   declaration: AssetComponentDecl,
 ): Readonly<Record<string, TypedComponent['parameters'][string]>> => {
-  const parameters = record<TypedComponent['parameters'][string]>();
+  const parameters = nullRecord<TypedComponent['parameters'][string]>();
   for (const parameter of declaration.parameters) {
     if (parameters[parameter.id] !== undefined) {
       context.issue(

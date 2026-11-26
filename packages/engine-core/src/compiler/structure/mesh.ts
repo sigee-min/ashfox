@@ -15,7 +15,7 @@ import { parseBlockState } from '../../project/structure/state';
 import { buildStructureAtlases, type TileUvRef } from './atlas';
 import { describeBlockState, type BlockDescriptor } from './blocks';
 import type { StructureGrid } from './contract';
-import { buildNonFullCubes, makeBoxFaces } from './shapes';
+import { buildNonFullCubes, makeBoxFaces, type CachedBlockState } from './shapes';
 
 const CARDINAL_DELTAS: readonly [number, number, number][] = [
   [0, 0, -1],
@@ -115,29 +115,24 @@ const fullCubeNode = (
   ox: number,
   oy: number,
   oz: number,
-  state: string,
+  facing: CardinalFacing,
   desc: BlockDescriptor,
   visibleFaces: readonly boolean[],
   uvs: ReadonlyMap<string, TileUvRef>,
-): AxisCubeNode => {
-  const raw = parseBlockState(state).properties.facing;
-  const facing: CardinalFacing =
-    raw === 'south' || raw === 'east' || raw === 'west' ? raw : 'north';
-  return {
-    id,
-    kind: 'cube',
-    name: id,
-    parentId,
-    geometryMode: 'axis-box',
-    bounds: { from: [ox, oy, oz], to: [ox + 16, oy + 16, oz + 16] },
-    transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], pivot: [0, 0, 0] },
-    visible: true,
-    inflate: 0,
-    mirror: false,
-    boxUv: false,
-    faces: makeBoxFaces(desc, facing, uvs, visibleFaces),
-  };
-};
+): AxisCubeNode => ({
+  id,
+  kind: 'cube',
+  name: id,
+  parentId,
+  geometryMode: 'axis-box',
+  bounds: { from: [ox, oy, oz], to: [ox + 16, oy + 16, oz + 16] },
+  transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], pivot: [0, 0, 0] },
+  visible: true,
+  inflate: 0,
+  mirror: false,
+  boxUv: false,
+  faces: makeBoxFaces(desc, facing, uvs, visibleFaces),
+});
 
 const facingRotY = (facing: CardinalFacing): number =>
   facing === 'east' ? 270 : facing === 'south' ? 180 : facing === 'west' ? 90 : 0;
@@ -254,6 +249,23 @@ const cloneCustomNode = (
   };
 };
 
+const getModelTextureRemap = (
+  model: CompiledModel,
+  texRemapCache: Map<CompiledModel, ReadonlyMap<string, string>>,
+  textures: Record<string, TextureAsset>,
+): ReadonlyMap<string, string> => {
+  const cached = texRemapCache.get(model);
+  if (cached) return cached;
+  const texRemap = new Map<string, string>();
+  for (const [tid, tex] of Object.entries(model.textures)) {
+    const newId = `c_${tid}`;
+    texRemap.set(tid, newId);
+    if (!textures[newId]) textures[newId] = { ...tex, id: newId };
+  }
+  texRemapCache.set(model, texRemap);
+  return texRemap;
+};
+
 const appendCustomModel = (
   placementIndex: number,
   wx: number,
@@ -262,15 +274,9 @@ const appendCustomModel = (
   facing: CardinalFacing,
   model: CompiledModel,
   nodes: Record<string, SceneNode>,
-  textures: Record<string, TextureAsset>,
+  texRemap: ReadonlyMap<string, string>,
 ): void => {
   const prefix = `c_${placementIndex}`;
-  const texRemap = new Map<string, string>();
-  for (const [tid, tex] of Object.entries(model.textures)) {
-    const newId = `c_${tid}`;
-    texRemap.set(tid, newId);
-    if (!textures[newId]) textures[newId] = { ...tex, id: newId };
-  }
   const cellBoneId = `custom_cell_${placementIndex}`;
   nodes[cellBoneId] = makeBone(
     cellBoneId,
@@ -288,6 +294,7 @@ const appendCustomModel = (
 const appendVoxelNodes = (
   grid: StructureGrid,
   descriptors: readonly BlockDescriptor[],
+  parsedStates: readonly CachedBlockState[],
   uvs: ReadonlyMap<string, TileUvRef>,
   cutawayY: number,
   nodes: Record<string, SceneNode>,
@@ -299,7 +306,19 @@ const appendVoxelNodes = (
   for (let y = 0; y < maxY; y += 1) {
     for (let z = 0; z < d; z += 1) {
       for (let x = 0; x < w; x += 1) {
-        appendSingleVoxel(grid, descriptors, uvs, cutawayY, halfW, halfD, x, y, z, nodes);
+        appendSingleVoxel(
+          grid,
+          descriptors,
+          parsedStates,
+          uvs,
+          cutawayY,
+          halfW,
+          halfD,
+          x,
+          y,
+          z,
+          nodes,
+        );
       }
     }
   }
@@ -308,6 +327,7 @@ const appendVoxelNodes = (
 const appendSingleVoxel = (
   grid: StructureGrid,
   descriptors: readonly BlockDescriptor[],
+  parsedStates: readonly CachedBlockState[],
   uvs: ReadonlyMap<string, TileUvRef>,
   cutawayY: number,
   halfW: number,
@@ -319,9 +339,10 @@ const appendSingleVoxel = (
 ): void => {
   const [w, _h, d] = grid.size;
   const idx = (y * d + z) * w + x;
-  if (grid.customTags[idx] !== null || grid.voxels[idx]! <= 0) return;
-  const state = grid.states[grid.voxels[idx]!]!;
-  const desc = descriptors[grid.voxels[idx]!]!;
+  const voxel = grid.voxels[idx]!;
+  if (grid.customTags[idx] !== null || voxel <= 0) return;
+  const cachedState = parsedStates[voxel]!;
+  const desc = descriptors[voxel]!;
   const ox = x * 16 - halfW;
   const oy = y * 16;
   const oz = z * 16 - halfD;
@@ -337,7 +358,7 @@ const appendSingleVoxel = (
         ox,
         oy,
         oz,
-        state,
+        cachedState.facing,
         desc,
         vis,
         uvs,
@@ -353,7 +374,7 @@ const appendSingleVoxel = (
     ox,
     oy,
     oz,
-    state,
+    cachedState,
     desc,
     conns,
     uvs,
@@ -361,6 +382,15 @@ const appendSingleVoxel = (
     nodes[cube.id] = cube;
   }
 };
+
+const cachePaletteStates = (states: readonly string[]): readonly CachedBlockState[] =>
+  states.map((state) => {
+    const parsed = parseBlockState(state);
+    const raw = parsed.properties.facing;
+    const facing: CardinalFacing =
+      raw === 'south' || raw === 'east' || raw === 'west' ? raw : 'north';
+    return { parsed, facing };
+  });
 
 export const buildStructureDocument = (
   grid: StructureGrid,
@@ -370,6 +400,7 @@ export const buildStructureDocument = (
   const [w, h, d] = grid.size;
   const cutawayY = options?.cutawayY ?? h;
   const descriptors = grid.states.map(describeBlockState);
+  const parsedStates = cachePaletteStates(grid.states);
   const atlas = buildStructureAtlases(collectTileRequests(grid, descriptors, cutawayY));
   const textures: Record<string, TextureAsset> = { ...atlas.textures };
   const nodes: Record<string, SceneNode> = {
@@ -378,19 +409,21 @@ export const buildStructureDocument = (
     interior: makeBone('interior', 'interior', 'root'),
     custom: makeBone('custom', 'custom', 'root'),
   };
-  appendVoxelNodes(grid, descriptors, atlas.uvs, cutawayY, nodes);
+  appendVoxelNodes(grid, descriptors, parsedStates, atlas.uvs, cutawayY, nodes);
+  const texRemapCache = new Map<CompiledModel, ReadonlyMap<string, string>>();
   let customIdx = 0;
   for (const cp of grid.customPlacements) {
     if (cp.y >= cutawayY || !customModels[cp.assetAlias]) continue;
+    const model = customModels[cp.assetAlias]!;
     appendCustomModel(
       customIdx++,
       cp.x * 16 - (w * 16) / 2 + 8,
       cp.y * 16,
       cp.z * 16 - (d * 16) / 2 + 8,
       cp.facing,
-      customModels[cp.assetAlias]!,
+      model,
       nodes,
-      textures,
+      getModelTextureRemap(model, texRemapCache, textures),
     );
   }
   const doc = createProjectDocument({

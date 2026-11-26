@@ -13,7 +13,11 @@ import {
 } from '../../project/workspace';
 import { sealWorkspaceCandidate } from '../../project/workspace/seal';
 import { compileAssetWorkspaceEntry } from '../program/asset/compile';
-import { compileStructureUnits, type StructureProduct } from '../structure';
+import {
+  compileStructureUnits,
+  type StructureAuditEvaluator,
+  type StructureProduct,
+} from '../structure';
 import { qualifyCustomAssetKey } from '../structure/contract';
 
 const relativePath = (owner: string, target: string): string => {
@@ -227,6 +231,7 @@ const visitStructureUnit = (
 export const compileDirectoryStructure = (
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   entryPath: string,
+  evaluateAudit: StructureAuditEvaluator,
 ): {
   readonly structure: StructureProduct;
   readonly rootUnit: StructureSourceUnit;
@@ -257,7 +262,13 @@ export const compileDirectoryStructure = (
       actual: `${rootUnit.prefabs.length} inline prefabs across ${nonEmptyLines} non-empty lines`,
     });
   }
-  const structure = compileStructureUnits(entryPath, state.units, state.customModels, relativePath);
+  const structure = compileStructureUnits(
+    entryPath,
+    state.units,
+    state.customModels,
+    relativePath,
+    evaluateAudit,
+  );
   return {
     structure,
     rootUnit,

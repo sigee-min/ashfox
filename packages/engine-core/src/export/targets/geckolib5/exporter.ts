@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { ExportAdaptedDocument, ExportTextureAsset } from '../../adapter';
 import type { AssetBuildIdentity } from '../../../project/asset';
 import { createTextureExportFile } from '../../texture';
@@ -65,7 +66,7 @@ export const exportGeckoLib5 = (
   const modelPath = `assets/${profile.namespace}/geckolib/models/${profile.assetKind}/${profile.modelPath}.geo.json`;
   const animationPath = `assets/${profile.namespace}/geckolib/animations/${profile.assetKind}/${profile.animationPath}.animation.json`;
   const textureFiles = Object.values(validatedDocument.textures)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .map((texture) => createTextureCopy(validatedDocument, texture));
 
   return createExportBundle(validatedDocument, build, validation.findings, {

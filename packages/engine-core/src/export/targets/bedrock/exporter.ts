@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import type { ExportAdaptedDocument, ExportTextureAsset } from '../../adapter';
 import type { AssetBuildIdentity } from '../../../project/asset';
 import type { MinecraftBedrockExportProfile } from '../../adapter/contract';
@@ -58,7 +59,7 @@ export const exportMinecraftBedrock = (
   const geometry = buildMinecraftBedrockGeometry(validatedDocument, profile);
   const hasAnimations = Object.keys(validatedDocument.animations).length > 0;
   const textureFiles = Object.values(validatedDocument.textures)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .map((texture) => createTextureCopy(validatedDocument, texture));
 
   return createExportBundle(validatedDocument, build, validation.findings, {

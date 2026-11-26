@@ -1,3 +1,4 @@
+import { compareText } from '../../stableOrder';
 import type { AnimationClip, ProjectDocument } from '../../model';
 import { analyzeAnimationExport, analyzeAnimationExportAdaptations } from './exportAnalysis';
 import { analyzeAnimationPreview } from './preview';
@@ -63,7 +64,7 @@ export const analyzeProjectAnimationCapabilities = (
   targetId: AnimationExportTarget,
 ): ProjectAnimationCapabilityReport => {
   const clips = Object.values(document.animations)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .map((clip) => analyzeClipAnimationCapability(clip, targetId));
   return {
     targetId,

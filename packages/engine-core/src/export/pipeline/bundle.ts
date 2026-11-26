@@ -1,3 +1,5 @@
+import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
+import { deepFreeze } from '../../immutable';
 import type { ExportAdaptedDocument } from '../adapter';
 import type { AssetBuildIdentity } from '../../project/asset';
 import type { InvariantFinding } from '../../validation/contract';
@@ -56,7 +58,7 @@ const parseGlbChunks = (bytes: Uint8Array): { json: GlbJsonImages; binary: Uint8
     const length = readU32(bytes, offset);
     const type = readU32(bytes, offset + 4);
     const chunk = bytes.subarray(offset + 8, offset + 8 + length);
-    if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(chunk));
+    if (type === 0x4e4f534a) json = JSON.parse(decodeUtf8(chunk));
     if (type === 0x004e4942) binary = chunk;
     offset += 8 + length;
   }
@@ -115,7 +117,7 @@ const emittedFileLineage = (file: ExportFile) => {
       sha256: file.source.contentHash,
       byteLength: file.source.byteLength ?? null,
     });
-  const bytes = file.kind === 'binary' ? file.data : new TextEncoder().encode(file.text);
+  const bytes = file.kind === 'binary' ? file.data : encodeUtf8(file.text);
   return Object.freeze({
     kind: file.kind,
     role: file.role,
@@ -124,16 +126,6 @@ const emittedFileLineage = (file: ExportFile) => {
     sha256: sha256ByteDigest(bytes),
     byteLength: bytes.byteLength,
   });
-};
-
-const freezeExportData = <T>(value: T, seen = new WeakSet<object>()): T => {
-  if (value === null || typeof value !== 'object' || value instanceof Uint8Array || seen.has(value))
-    return value;
-  seen.add(value);
-  for (const child of Object.values(value as Record<string, unknown>)) {
-    freezeExportData(child, seen);
-  }
-  return Object.freeze(value);
 };
 
 const snapshotExportFile = (file: ExportFile): ExportFile => {
@@ -149,7 +141,7 @@ const snapshotExportFile = (file: ExportFile): ExportFile => {
     });
   return Object.freeze({
     ...file,
-    data: freezeExportData(
+    data: deepFreeze(
       snapshotExportData(file.data, 'export.file.data', 'Export JSON file data snapshot failed.'),
     ),
   });
@@ -201,7 +193,7 @@ const buildTextureLineageEntries = (
   contentFiles: readonly ExportFile[],
 ) => {
   const orderedTextures = Object.values(document.textures).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   );
   const embeddedDigests = embeddedGlbImageDigests(
     contentFiles.find((file) => file.kind === 'binary' && file.path.toLowerCase().endsWith('.glb')),
@@ -213,7 +205,7 @@ const buildTextureLineageEntries = (
       Object.freeze({
         id: texture.id,
         path: pathById.get(texture.id) ?? null,
-        coverageIds: Object.freeze([...(coverageById.get(texture.id) ?? [])].sort()),
+        coverageIds: Object.freeze([...(coverageById.get(texture.id) ?? [])].sort(compareText)),
         embeddedSha256: embeddedDigests[index] ?? null,
         pngSha256: texture.source.contentType === 'image/png' ? texture.source.contentHash : null,
         byteLength: Number.isSafeInteger(texture.source.byteLength)
@@ -273,10 +265,10 @@ export const createExportBundle = (
     entrypoints: Object.freeze([...content.entrypoints]),
     files,
     lineage,
-    findings: freezeExportData(
+    findings: deepFreeze(
       snapshotExportData(findings, 'export.findings', 'Export findings snapshot failed.'),
     ),
-    adaptations: freezeExportData(
+    adaptations: deepFreeze(
       snapshotExportData(
         createExportAdaptationReceipt(document),
         'export.adaptations',
@@ -339,7 +331,7 @@ const contentFileMatchesLineage = (
       entry.byteLength === (file.source.byteLength ?? null)
     );
   }
-  const bytes = file.kind === 'binary' ? file.data : new TextEncoder().encode(file.text);
+  const bytes = file.kind === 'binary' ? file.data : encodeUtf8(file.text);
   return entry.sha256 === sha256ByteDigest(bytes) && entry.byteLength === bytes.byteLength;
 };
 

@@ -1,3 +1,4 @@
+import { compareText } from '../../../stableOrder';
 import {
   CUBE_FACE_DIRECTIONS,
   type CubeFaceDirection,
@@ -225,7 +226,7 @@ const compileJavaPlaneElement = (
 const compileTextureMap = (document: ExportAdaptedDocument): Record<string, string> => {
   const textures: Record<string, string> = {};
   const orderedTextures = Object.values(document.textures).sort((left, right) =>
-    left.id.localeCompare(right.id),
+    compareText(left.id, right.id),
   );
   for (const texture of orderedTextures) {
     const binding = textureBindingFor(texture);
@@ -256,10 +257,10 @@ export const buildMinecraftJavaModel = (document: ExportAdaptedDocument): Minecr
   const visibleNodeIds = effectivelyVisibleSceneNodeIds(document);
   const cubes = Object.values(document.scene.nodes)
     .filter((node): node is CubeNode => node.kind === 'cube' && visibleNodeIds.has(node.id))
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareText(left.id, right.id));
   const planes = Object.values(document.scene.nodes)
     .filter((node): node is PlaneNode => node.kind === 'plane' && visibleNodeIds.has(node.id))
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => compareText(left.id, right.id));
   const model: MinecraftJavaModel = {
     ...(profile.parent ? { parent: profile.parent } : {}),
     ...(profile.ambientOcclusion === false ? { ambientocclusion: false } : {}),
@@ -297,7 +298,7 @@ export const exportMinecraftJavaBlock = (
   const blockstatePath = `assets/${profile.namespace}/blockstates/${profile.modelPath}.json`;
   const model = buildMinecraftJavaModel(validatedDocument);
   const textureFiles = Object.values(validatedDocument.textures)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort((left, right) => compareText(left.id, right.id))
     .map((texture) => createTextureCopy(validatedDocument, texture));
 
   return createExportBundle(validatedDocument, build, validation.findings, {
