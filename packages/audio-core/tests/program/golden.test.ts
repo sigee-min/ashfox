@@ -5,16 +5,31 @@ import { fixture, native } from './fixture';
 
 const cases: readonly SoundVoice['source'][] = [
   { kind: 'noise', color: 'pink' },
-  { kind: 'noise', color: 'crackle', density: 45 },
+  { kind: 'granular', texture: 'ember', density: 45, burstiness: 0.4, turbulence: 0.35 },
   { kind: 'osc', waveform: 'saw', pitch: 220, unison: 3, detuneCents: 14 },
   {
     kind: 'vocal',
     pitch: 220,
-    formants: [500, 1500, 3000],
-    bandwidths: [100, 200, 300],
+    formants: [
+      {
+        domain: 'log',
+        interpolation: 'smooth',
+        points: [
+          { at: 0, value: 420 },
+          { at: 1, value: 650 },
+        ],
+      },
+      1200,
+      2600,
+      3400,
+    ],
+    bandwidths: [90, 140, 220, 280],
     breath: 0.1,
     jitter: 0.1,
     roughness: 0.2,
+    growl: 0.3,
+    chest: 0.4,
+    nasal: 0.2,
   },
   {
     kind: 'chirp',
@@ -36,6 +51,17 @@ const cases: readonly SoundVoice['source'][] = [
     pitchDropCents: 80,
     pitchDropSeconds: 0.03,
   },
+  {
+    kind: 'material',
+    material: 'bronze',
+    pitch: 320,
+    size: 1.2,
+    hardness: 0.7,
+    damping: 0.25,
+    brightness: 0.7,
+    strike: 'bounce',
+    bounces: 3,
+  },
 ];
 
 for (const source of cases) {
@@ -44,6 +70,7 @@ for (const source of cases) {
     ...base,
     voices: [{ ...base.voices[0], source }],
     playback: { kind: 'loop' as const, start: 0.1, end: 0.9, crossfade: 0.02 },
+    output: { ...base.output, limit: true },
   };
   const first = compileSoundSource(native(recipe), 'golden.ashfox')[0]!;
   const second = compileSoundSource(native(recipe), 'golden.ashfox')[0]!;
@@ -55,5 +82,5 @@ for (const source of cases) {
 }
 
 process.stdout.write(
-  'golden: noise/osc/vocal/chirp/modal loop PCM bytes deterministic across all v2 sources\n',
+  'golden: noise/granular/osc/vocal/chirp/resonator/material loop PCM bytes deterministic across Audio 2.0 sources\n',
 );

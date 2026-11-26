@@ -82,7 +82,7 @@ const init = (folder: string, json: boolean): void => {
 const SOUND_CAPABILITIES = {
   contract: AUDIO_POLICY,
   profiles: [...SOUND_PROFILES],
-  sources: ['noise', 'osc', 'fm', 'vocal', 'chirp', 'resonator'],
+  sources: ['noise', 'osc', 'fm', 'vocal', 'chirp', 'resonator', 'material', 'granular'],
   features: [
     'curves',
     'envelopes',
@@ -93,6 +93,9 @@ const SOUND_CAPABILITIES = {
     'sequences',
     'variation',
     'loops',
+    'material',
+    'granular',
+    'mastering',
   ],
   sampleRate: 48000,
   channels: [1, 2],

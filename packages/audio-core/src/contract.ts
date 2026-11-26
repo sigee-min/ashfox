@@ -35,10 +35,90 @@ export const SOUND_PROFILES: readonly SoundProfile[] = Object.freeze([
   'ambient',
 ]);
 
+export type MaterialPreset =
+  | 'steel'
+  | 'iron'
+  | 'bronze'
+  | 'bell'
+  | 'wood'
+  | 'stone'
+  | 'glass'
+  | 'ceramic'
+  | 'bone'
+  | 'leather';
+
+export const MATERIAL_PRESETS: readonly MaterialPreset[] = Object.freeze([
+  'steel',
+  'iron',
+  'bronze',
+  'bell',
+  'wood',
+  'stone',
+  'glass',
+  'ceramic',
+  'bone',
+  'leather',
+]);
+
+export type GranularTexture =
+  'ember' | 'gravel' | 'water' | 'foliage' | 'wind' | 'spark' | 'bubble';
+
+export const GRANULAR_TEXTURES: readonly GranularTexture[] = Object.freeze([
+  'ember',
+  'gravel',
+  'water',
+  'foliage',
+  'wind',
+  'spark',
+  'bubble',
+]);
+
+export type SpacePreset =
+  | 'dry_close'
+  | 'timber_room'
+  | 'stone_hall'
+  | 'small_chamber'
+  | 'courtyard'
+  | 'cavern'
+  | 'ethereal';
+
+export const SPACE_PRESETS: readonly SpacePreset[] = Object.freeze([
+  'dry_close',
+  'timber_room',
+  'stone_hall',
+  'small_chamber',
+  'courtyard',
+  'cavern',
+  'ethereal',
+]);
+
 export interface NoiseSource {
   readonly kind: 'noise';
-  readonly color: 'white' | 'pink' | 'brown' | 'crackle';
-  readonly density?: number;
+  readonly color: 'white' | 'pink' | 'brown';
+}
+
+export interface MaterialSource {
+  readonly kind: 'material';
+  readonly material: MaterialPreset;
+  readonly pitch: Control;
+  readonly size?: number;
+  readonly hardness?: number;
+  readonly damping?: number;
+  readonly brightness?: number;
+  readonly modes?: number;
+  readonly strike?: 'mallet' | 'scrape' | 'bounce';
+  readonly bounces?: number;
+}
+
+export interface GranularSource {
+  readonly kind: 'granular';
+  readonly texture: GranularTexture;
+  readonly density: Control;
+  readonly grainMs?: number;
+  readonly pitch?: Control;
+  readonly spread?: number;
+  readonly burstiness?: number;
+  readonly turbulence?: number;
 }
 
 export interface OscSource {
@@ -62,11 +142,14 @@ export interface FmSource {
 export interface VocalSource {
   readonly kind: 'vocal';
   readonly pitch: Control;
-  readonly formants: readonly number[];
+  readonly formants: readonly Control[];
   readonly bandwidths: readonly number[];
   readonly breath?: number;
   readonly jitter?: number;
   readonly roughness?: number;
+  readonly growl?: number;
+  readonly chest?: number;
+  readonly nasal?: number;
 }
 
 export interface ChirpSource {
@@ -103,14 +186,36 @@ export interface FilterSpec {
 }
 
 export interface SpaceSpec {
-  readonly mix: number;
-  readonly decay: number;
-  readonly damping: number;
-  readonly size: number;
+  readonly preset?: SpacePreset;
+  readonly mix?: number;
+  readonly decay?: number;
+  readonly damping?: number;
+  readonly size?: number;
+  readonly preDelayMs?: number;
+  readonly width?: number;
+}
+
+export interface MasterSpec {
+  readonly gainDb: number;
+  readonly peakDb: number;
+  readonly targetLufs?: number;
+  readonly punch?: number;
+  readonly warmth?: number;
+  readonly air?: number;
+  readonly glue?: number;
+  readonly width?: number;
+  readonly limit?: boolean;
 }
 
 export type SoundSource =
-  NoiseSource | OscSource | FmSource | VocalSource | ChirpSource | ResonatorSource;
+  | NoiseSource
+  | OscSource
+  | FmSource
+  | VocalSource
+  | ChirpSource
+  | ResonatorSource
+  | MaterialSource
+  | GranularSource;
 
 export interface SoundVoice {
   readonly id: string;
@@ -167,11 +272,7 @@ export interface SoundRecipe {
   readonly seed: number;
   readonly variants: readonly SoundVariant[];
   readonly space?: SpaceSpec;
-  readonly output: {
-    readonly gainDb: number;
-    readonly peakDb: number;
-    readonly softClip?: boolean;
-  };
+  readonly output: MasterSpec;
   readonly voices: readonly SoundVoice[];
   readonly sequences: readonly SoundSequence[];
   readonly playback:

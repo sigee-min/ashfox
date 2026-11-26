@@ -1,9 +1,12 @@
-import type { SoundRecipe, SoundVariant } from './contract';
+import type { MasterSpec, SoundRecipe, SoundVariant } from './contract';
 import { createChirp } from './chirp';
 import { evaluate, frame } from './curve';
 import { evaluateGain } from './envelope';
 import { createSvf } from './filter';
 import { createFm } from './fm';
+import { createGranular } from './granular';
+import { applyMasterBus } from './master';
+import { createMaterial } from './material';
 import { createNoise } from './noise';
 import { createOsc } from './osc';
 import { readRecipe } from './read';
@@ -72,7 +75,20 @@ const createSourceSampler = (event: Event, rate: number): ((i: number) => number
   if (source.kind === 'resonator') {
     return createResonator(source, event.pitch, event.stream('excitation'));
   }
-  return createNoise(source, rate, event.stream('noise'));
+  if (source.kind === 'material') {
+    return createMaterial(source, length, event.pitch, event.stream('excitation'));
+  }
+  if (source.kind === 'granular') {
+    return createGranular(
+      source,
+      rate,
+      length,
+      event.pitch,
+      event.stream('grain'),
+      event.stream('turbulence'),
+    );
+  }
+  return createNoise(source, event.stream('noise'));
 };
 
 const createChirpForEvent = (
@@ -186,17 +202,13 @@ export const render = (
 
 export const master = (
   pcm: Float64Array,
-  policy: SoundRecipe['output'],
+  policy: MasterSpec,
   channels: 1 | 2 = 1,
+  rate = 48000,
+  loop = false,
 ): Float64Array => {
-  const gain = 10 ** (policy.gainDb / 20),
-    ceiling = 10 ** (policy.peakDb / 20),
-    result = new Float64Array(pcm.length);
-  for (let i = 0; i < pcm.length; i++) {
-    let x = pcm[i] * gain;
-    if (policy.softClip) x = ceiling * Math.tanh(x / ceiling);
-    result[i] = x;
-  }
+  const result = applyMasterBus(pcm, policy, channels, rate, loop);
+  const ceiling = 10 ** (policy.peakDb / 20);
   const stats = measure(result, channels);
   if (stats.rms < 1e-8)
     fail('recipe.output.gainDb', `silent output RMS ${stats.rms}; minimum 1e-8`);

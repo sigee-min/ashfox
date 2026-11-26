@@ -68,7 +68,7 @@ this file. The installer refuses repository checkouts; do not bypass its checks.
 
 ## Procedural sound delivery
 
-Use the current sound reference from CLI docs before authoring. Set explicit `profile` (`impact`, `foley`, `creature`, `magic`, `ui`, `ambient`) and optional `channels = 2` / `space` / `drive` / Cytomic `filter` / `ad`/`adsr` `envelope` / `output.softClip`. Native sound uses reusable `voices`, finite `sequences`, scalar-or-curve controls, `osc`/`noise`/`fm`/`vocal`/`chirp`/`resonator` sources, optional `vary` defaults, and `playback`. Output is fixed `output.gainDb`; legacy `layers`, `attack`, `release`, `contour`, `sweepSeconds`, and `rmsDb` are rejected.
+Use the current sound reference from CLI docs before authoring. Set explicit `profile` (`impact`, `foley`, `creature`, `magic`, `ui`, `ambient`) and optional `channels = 2` / `space` (FDN-8 `preset` or parameters) / `drive` / Cytomic `filter` / `ad`/`adsr` `envelope` / `output` mastering (`targetLufs`, `punch`, `warmth`, `air`, `glue`, `width`, `limit = true`). Native sound uses reusable `voices`, finite `sequences`, scalar-or-curve controls, `material`/`granular`/`osc`/`noise`/`fm`/`vocal`/`chirp`/`resonator` sources, optional `vary` defaults, and `playback`. Output uses `output.gainDb`/`peakDb` mastering; legacy `layers`, `attack`, `release`, `contour`, `sweepSeconds`, `rmsDb`, `output.softClip`, and `noise.color = "crackle"` are rejected.
 
 For loops, inspect raw and delivered frames: crossfade is baked once and shortens
 the output. Standalone WAV consumers must loop the full buffer; game consumers

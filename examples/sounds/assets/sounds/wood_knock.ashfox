@@ -1,47 +1,62 @@
 ashfox-model 1
 sound wood_knock {
   profile = "foley";
-  duration = 1.4;
+  duration = 1.32;
   sampleRate = 48000;
   channels = 2;
   seed = 7349;
-  space = { mix = 0.18; decay = 0.24; damping = 5200; size = 0.7; };
+  space = { preset = "timber_room"; mix = 0.2; };
   voices = [{
     id = "oak_body";
     source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.006; hardness = 0.8; };
-      modes = [
-        { id = "sub"; hz = 105; decay = 0.12; gain = 0.9; },
-        { id = "body"; hz = 340; decay = 0.1; gain = 1.0; },
-        { id = "tap"; hz = 920; decay = 0.06; gain = 0.65; },
-        { id = "tick"; hz = 2450; decay = 0.035; gain = 0.42; }
-      ];
-      pitchDropCents = 85;
-      pitchDropSeconds = 0.018;
+      kind = "material";
+      material = "wood";
+      pitch = 220;
+      size = 0.8;
+      hardness = 0.78;
+      damping = 0.42;
+      brightness = 0.68;
+      modes = 18;
+      strike = "mallet";
     };
-    drive = 2.4;
+    drive = 1.8;
     highpass = 38;
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 11000; }, { at = 1; value = 1800; }]; }; q = 1.0; };
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 13000; }, { at = 0.35; value = 3200; }, { at = 1; value = 900; }]; }; q = 1.1; };
     pan = -0.12;
     gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
   }, {
-    id = "bark_snap";
+    id = "hollow_thump";
+    source = {
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.68; };
+      modes = [
+        { id = "sub"; hz = 85; decay = 0.16; gain = 0.9; },
+        { id = "chest"; hz = 175; decay = 0.12; gain = 1.0; }
+      ];
+      pitchDropCents = 80;
+      pitchDropSeconds = 0.018;
+    };
+    highpass = 32;
+    pan = 0.06;
+    gain = { env = "ad"; attack = 0.002; peak = 0.75; curve = "exp"; };
+  }, {
+    id = "mallet_tick";
     source = { kind = "noise"; color = "white"; };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 7600; }, { at = 1; value = 900; }]; }; q = 1.1; };
-    pan = 0.15;
-    gain = { env = "ad"; attack = 0.002; peak = 0.72; curve = "exp"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8600; }, { at = 1; value = 1100; }]; }; q = 1.2; };
+    pan = 0.16;
+    gain = { env = "ad"; attack = 0.002; peak = 0.68; curve = "exp"; };
   }];
   sequences = [{
     id = "knock";
     start = 0.02;
     repeat = { count = 3; period = 0.38; };
     steps = [
-      { id = "tap"; voice = "oak_body"; at = 0; duration = 0.28; vary = { timing = [-0.005, 0.005]; pitchCents = [-35, 35]; gain = [0.9, 1.1]; duration = [0.95, 1.05]; }; },
-      { id = "snap"; voice = "bark_snap"; at = 0; duration = 0.14; }
+      { id = "tap"; voice = "oak_body"; at = 0; duration = 0.28; vary = { timing = [-0.005, 0.005]; pitchCents = [-65, 65]; gain = [0.9, 1.1]; duration = [0.95, 1.05]; }; },
+      { id = "body"; voice = "hollow_thump"; at = 0; duration = 0.22; vary = { pitchCents = [-55, 55]; }; },
+      { id = "tick"; voice = "mallet_tick"; at = 0; duration = 0.14; vary = { gain = [0.85, 1.15]; }; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 6; peakDb = -2; softClip = true; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -12; punch = 0.35; warmth = 0.2; limit = true; };
 }

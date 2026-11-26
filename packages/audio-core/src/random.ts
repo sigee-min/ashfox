@@ -1,7 +1,7 @@
 import { encodeUtf8 } from '@ashfox/internal-contracts';
 import type { SoundRecipe, SoundVariant } from './contract';
 
-export const AUDIO_POLICY = 'sound-v2:svf-osc-crackle-drive-space-stereo-env:pcm16';
+export const AUDIO_POLICY = 'sound-v3:material-granular-morph-fdn8-master:pcm16';
 
 export type Domain =
   | 'timing'
@@ -12,7 +12,9 @@ export type Domain =
   | 'breath'
   | 'jitter'
   | 'trill-phase'
-  | 'excitation';
+  | 'excitation'
+  | 'grain'
+  | 'turbulence';
 
 export const randomSeed = (key: readonly (string | number)[]): number => {
   let h = 2166136261;

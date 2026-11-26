@@ -1,46 +1,70 @@
 ashfox-model 1
 sound glass_ping {
   profile = "impact";
-  duration = 1.35;
+  duration = 1.32;
   sampleRate = 48000;
   channels = 2;
   seed = 7349;
-  space = { mix = 0.25; decay = 0.4; damping = 8500; size = 0.95; };
+  space = { preset = "small_chamber"; mix = 0.26; };
   voices = [{
     id = "crystal_body";
     source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.004; hardness = 0.94; };
-      modes = [
-        { id = "low"; hz = 460; decay = 0.28; gain = 0.4; },
-        { id = "body"; hz = 1840; decay = 0.45; gain = 1.0; },
-        { id = "edge"; hz = 4210; decay = 0.28; gain = 0.45; },
-        { id = "shine"; hz = 7190; decay = 0.16; gain = 0.22; }
-      ];
-      pitchDropCents = 15;
-      pitchDropSeconds = 0.01;
+      kind = "material";
+      material = "glass";
+      pitch = 1320;
+      size = 0.85;
+      hardness = 0.9;
+      damping = 0.14;
+      brightness = 0.85;
+      modes = 24;
+      strike = "mallet";
     };
-    highpass = 60;
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 14000; }, { at = 1; value = 3200; }]; }; q = 0.9; };
-    pan = -0.15;
+    highpass = 70;
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 16000; }, { at = 0.3; value = 4800; }, { at = 1; value = 1600; }]; }; q = 1.0; };
+    pan = -0.16;
     gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
   }, {
-    id = "clink_air";
-    source = { kind = "noise"; color = "white"; };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9500; }, { at = 1; value = 2400; }]; }; q = 1.4; };
-    pan = 0.2;
-    gain = { env = "ad"; attack = 0.002; peak = 0.42; curve = "exp"; };
+    id = "glass_base";
+    source = {
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.006; hardness = 0.82; };
+      modes = [
+        { id = "sub"; hz = 160; decay = 0.24; gain = 0.7; },
+        { id = "body"; hz = 440; decay = 0.36; gain = 1.0; },
+        { id = "mid"; hz = 880; decay = 0.25; gain = 0.55; }
+      ];
+      pitchDropCents = 20;
+      pitchDropSeconds = 0.012;
+    };
+    highpass = 45;
+    pan = 0.12;
+    gain = { env = "ad"; attack = 0.002; peak = 0.72; curve = "exp"; };
+  }, {
+    id = "clink_shimmer";
+    source = {
+      kind = "granular";
+      texture = "spark";
+      density = 95;
+      grainMs = 10;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 11000; }, { at = 1; value = 2200; }]; };
+      spread = 0.8;
+      turbulence = 0.45;
+    };
+    highpass = 1200;
+    pan = 0.24;
+    gain = { env = "ad"; attack = 0.002; peak = 0.55; curve = "exp"; };
   }];
   sequences = [{
     id = "chime";
     start = 0.01;
     repeat = { count = 2; period = 0.6; };
     steps = [
-      { id = "ring"; voice = "crystal_body"; at = 0; duration = 0.56; vary = { timing = [-0.005, 0.005]; pitchCents = [-40, 40]; gain = [0.9, 1.1]; }; },
-      { id = "tap"; voice = "clink_air"; at = 0; duration = 0.12; }
+      { id = "ring"; voice = "crystal_body"; at = 0; duration = 0.38; vary = { timing = [-0.005, 0.005]; pitchCents = [-55, 55]; gain = [0.9, 1.1]; }; },
+      { id = "body"; voice = "glass_base"; at = 0; duration = 0.34; vary = { pitchCents = [-55, 55]; }; },
+      { id = "tap"; voice = "clink_shimmer"; at = 0; duration = 0.16; vary = { pitchCents = [-65, 65]; }; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 13; peakDb = -2; softClip = true; };
+  output = { gainDb = 6; peakDb = -1.5; targetLufs = -12; air = 0.25; width = 1.15; punch = 0.25; limit = true; };
 }

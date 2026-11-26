@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { compileSoundSource, parseSoundSource, readRecipe } from '../../src';
 
-// Verify Sound v2 DSP chain: SVF filter, PolyBLEP unison osc, crackle noise, mallet resonator, drive, space, stereo pan, envelope shorthand, and softClip.
+// Verify Audio 2.0 DSP chain: SVF filter, PolyBLEP unison osc, granular ember, mallet resonator, drive, space, stereo pan, envelope shorthand, and mastering limiter.
 const stereoMagic = `ashfox-model 1
 sound magic_cast {
   profile = "magic";
@@ -9,7 +9,7 @@ sound magic_cast {
   sampleRate = 48000;
   channels = 2;
   seed = 77;
-  space = { mix = 0.25; decay = 0.35; damping = 6500; size = 0.9; };
+  space = { preset = "ethereal"; mix = 0.25; decay = 0.35; damping = 6500; size = 0.9; };
   voices = [{
     id = "shimmer";
     source = {
@@ -37,7 +37,7 @@ sound magic_cast {
     gain = { env = "adsr"; attack = 0.03; decay = 0.15; sustain = 0.55; release = 0.25; peak = 0.9; curve = "exp"; };
   }, {
     id = "sparks";
-    source = { kind = "noise"; color = "crackle"; density = 120; };
+    source = { kind = "granular"; texture = "ember"; density = 120; };
     filter = { kind = "highpass"; cutoff = 1800; q = 1.2; };
     pan = 0.45;
     gain = { env = "ad"; attack = 0.02; peak = 0.6; curve = "linear"; };
@@ -52,7 +52,7 @@ sound magic_cast {
   }];
   variants = [{ id = "base"; seed = 101; }, { id = "alt"; seed = 102; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = -3; peakDb = -1; softClip = true; };
+  output = { gainDb = -3; peakDb = -1; punch = 0.2; warmth = 0.15; air = 0.25; glue = 0.25; width = 1.15; limit = true; };
 }`;
 
 const parsed = parseSoundSource(stereoMagic, 'magic_cast.ashfox');
@@ -96,12 +96,12 @@ sound wood_tap {
   sequences = [{ id = "tap"; start = 0; steps = [{ id = "hit"; voice = "body"; at = 0; duration = 0.3; }]; }];
   variants = [{ id = "base"; seed = 1; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 0; peakDb = -2; softClip = true; };
+  output = { gainDb = 0; peakDb = -2; punch = 0.3; limit = true; };
 }`;
 const tapProducts = compileSoundSource(wood, 'wood_tap.ashfox');
 assert.equal(tapProducts[0]!.channels, 1);
 assert.ok(tapProducts[0]!.rms > 0.01);
 
 process.stdout.write(
-  'dsp v2: SVF, PolyBLEP unison osc, crackle, mallet pitchDrop, drive, space, stereo & envelopes ok\n',
+  'dsp 2.0: SVF, PolyBLEP unison osc, granular ember, mallet pitchDrop, drive, space, stereo, master & envelopes ok\n',
 );

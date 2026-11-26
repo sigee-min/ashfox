@@ -1,5 +1,5 @@
 {
-  "contract": "sound-v2:svf-osc-crackle-drive-space-stereo-env:pcm16",
+  "contract": "sound-v3:material-granular-morph-fdn8-master:pcm16",
   "results": [
     {
       "name": "bell_pattern",
@@ -10,7 +10,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "0d68943ede742cb3348a3f4fa19ab23f0a3f62420277ab4fd3019f214b97eb11"
+      "sha256": "999adaf45a8198ad1a47b7bcf94a515365528b8b2ecab92dfa70d9cf3b8add8d"
     },
     {
       "name": "bell_pattern",
@@ -21,7 +21,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "0cedd19356529ec8c3b3f426ac229249bbad2ac92fa64f6855187437b203a5b6"
+      "sha256": "eccf76613a6b30dbeffff6f25ad639749b9affadf7a6512fab1371dd63a22e58"
     },
     {
       "name": "wind_loop",
@@ -32,7 +32,7 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "898104f9b843031a14d953ec67df0ff1a29efa875d42b291fa08ab62e83ee7fd"
+      "sha256": "da47c8872f8f43ef6e67e2644f0cab20a2b42a61ffe8b75c1fb07a647182607e"
     },
     {
       "name": "wind_loop",
@@ -43,25 +43,25 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "7052ecd01639240d0d2bc49e3a1ce0870568b7443d1ee9de03ba05e82f6c854b"
+      "sha256": "c0d0a1e3227e0c1583614160e6364f55b1e7a2c034fe5d1e60e60856b4f6d1f9"
     },
     {
       "name": "footsteps",
       "variant": "alternate",
-      "frames": 115200,
+      "frames": 108000,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "dab86261fd76f538347ab72947348c2b167bdb327c2e3085314f195fd0c87b6f"
+      "sha256": "8357b9ff29a13f9ee2316369456b02215f5e8316b6ba870c3f842ba21c8f7665"
     },
     {
       "name": "footsteps",
       "variant": "base",
-      "frames": 115200,
+      "frames": 108000,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "45e8af5bc73f79398236d0dcfad57387a0c63171b31a5f1c0764eb7976ce3723"
+      "sha256": "6ee910fefda9c03254d734614ca1261635c6128954d8dd87e14176267a64af02"
     },
     {
       "name": "charging_spell",
@@ -70,7 +70,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "de6a6606d14e4cf42579865ad666acdf2bb79206bb1ff2824e6687650124b882"
+      "sha256": "795ea5afba2532f9035ed713084e0715a71a2b3c081916f238182ff203b6e3fe"
     },
     {
       "name": "charging_spell",
@@ -79,25 +79,25 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "4d354aee447b092d0b352cdaedfba7158ed998b1b53d7dfe42ad8ca5ef84835a"
+      "sha256": "3c97e3e2d2fe562bdb2299f399e27dcca55bfd614ce5ebfe72161480312fbe60"
     },
     {
       "name": "metal_strike",
       "variant": "alternate",
-      "frames": 134400,
+      "frames": 122400,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "7524b334dee96ca9a4b57dd0c3ad7d62075550b604d49058adf504e4f346061b"
+      "sha256": "776dee93858122c2c581d39e95a97c7273cb925e1c45ec98c89bdfbd19d3f877"
     },
     {
       "name": "metal_strike",
       "variant": "base",
-      "frames": 134400,
+      "frames": 122400,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "218b287f6167f67b8b9096e9957ae9830db882a2d30ee74e2180d6508e630311"
+      "sha256": "4a388e10f92246b9d7565f606b85ce50d01ac6cb7ce25291634b8df9216f13fd"
     },
     {
       "name": "bird_call",
@@ -106,7 +106,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "8a37286a3bf25ea030958c18e0eaf6d04179ce003c5e6b20068b34db614f80fc"
+      "sha256": "2293efd7a4e962ddbbbeea30de5c674ffec31019296a1aa2fba353c34c1dc219"
     },
     {
       "name": "bird_call",
@@ -115,7 +115,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "92d6ee1ee1895a1e68717cd6a43651b4b939a75feb0ba9f9b1a4f80887e4f222"
+      "sha256": "c42ebd0c35eb62ef8748a2681a1b0d9a709a8c6ee99b998d1715bfb00ee34d09"
     }
   ]
 }

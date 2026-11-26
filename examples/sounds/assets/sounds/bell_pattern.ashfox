@@ -5,51 +5,71 @@ sound bell_pattern {
   sampleRate = 48000;
   channels = 2;
   seed = 7349;
-  space = { mix = 0.24; decay = 0.42; damping = 6200; size = 0.9; };
+  space = { preset = "stone_hall"; mix = 0.28; };
   voices = [{
     id = "bell_body";
     source = {
+      kind = "material";
+      material = "bell";
+      pitch = 520;
+      size = 1.15;
+      hardness = 0.85;
+      damping = 0.34;
+      brightness = 0.82;
+      modes = 24;
+      strike = "mallet";
+    };
+    filter = {
+      kind = "lowpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 15000; }, { at = 0.35; value = 4800; }, { at = 1; value = 1200; }]; };
+      q = 1.15;
+    };
+    drive = 1.4;
+    highpass = 50;
+    pan = -0.15;
+    gain = { env = "ad"; attack = 0.002; peak = 1.0; curve = "exp"; };
+  }, {
+    id = "shimmer";
+    source = {
+      kind = "granular";
+      texture = "spark";
+      density = 95;
+      grainMs = 12;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8800; }, { at = 1; value = 1800; }]; };
+      spread = 0.78;
+      turbulence = 0.45;
+    };
+    highpass = 1400;
+    pan = 0.25;
+    gain = { env = "ad"; attack = 0.002; peak = 0.46; curve = "exp"; };
+  }, {
+    id = "bell_sub";
+    source = {
       kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.78; };
+      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.7; };
       modes = [
-        { id = "sub"; hz = 320; decay = 0.45; gain = 0.65; },
-        { id = "body"; hz = 640; decay = 0.38; gain = 1.0; },
-        { id = "tier"; hz = 1280; decay = 0.26; gain = 0.55; },
-        { id = "edge"; hz = 1730; decay = 0.18; gain = 0.42; },
-        { id = "spark"; hz = 4200; decay = 0.09; gain = 0.24; }
+        { id = "sub"; hz = 130; decay = 0.36; gain = 0.9; },
+        { id = "hum"; hz = 260; decay = 0.34; gain = 1.0; },
+        { id = "warm"; hz = 390; decay = 0.22; gain = 0.55; }
       ];
       pitchDropCents = 25;
       pitchDropSeconds = 0.015;
     };
-    filter = {
-      kind = "lowpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 12000; }, { at = 1; value = 2800; }]; };
-      q = 1.1;
-    };
-    highpass = 60;
-    pan = -0.15;
-    gain = { env = "ad"; attack = 0.002; peak = 1.05; curve = "exp"; };
-  }, {
-    id = "shimmer";
-    source = { kind = "noise"; color = "white"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9500; }, { at = 1; value = 2200; }]; };
-      q = 1.6;
-    };
-    pan = 0.25;
-    gain = { env = "ad"; attack = 0.002; peak = 0.32; curve = "exp"; };
+    highpass = 38;
+    pan = 0.06;
+    gain = { env = "ad"; attack = 0.002; peak = 0.85; curve = "exp"; };
   }];
   sequences = [{
     id = "phrase";
     start = 0.09;
     repeat = { count = 4; period = 0.5; };
     steps = [
-      { id = "strike"; voice = "bell_body"; at = 0; duration = 0.46; vary = { timing = [-0.005, 0.005]; pitchCents = [-35, 35]; gain = [0.9, 1.1]; duration = [0.95, 1.05]; }; },
-      { id = "transient"; voice = "shimmer"; at = 0; duration = 0.12; vary = { gain = [0.85, 1.15]; duration = [0.85, 1.15]; }; }
+      { id = "strike"; voice = "bell_body"; at = 0; duration = 0.34; vary = { timing = [-0.005, 0.005]; pitchCents = [-55, 55]; gain = [0.88, 1.12]; duration = [0.95, 1.05]; }; },
+      { id = "transient"; voice = "shimmer"; at = 0; duration = 0.16; vary = { pitchCents = [-65, 65]; gain = [0.85, 1.15]; duration = [0.85, 1.15]; }; },
+      { id = "hum"; voice = "bell_sub"; at = 0; duration = 0.38; vary = { pitchCents = [-55, 55]; gain = [0.9, 1.1]; }; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "loop"; start = 0; end = 2.1; crossfade = 0.08; };
-  output = { gainDb = 19; peakDb = -2; softClip = true; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -12; punch = 0.25; air = 0.2; glue = 0.2; width = 1.1; limit = true; };
 }

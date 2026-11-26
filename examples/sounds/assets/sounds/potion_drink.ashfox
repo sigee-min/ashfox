@@ -1,0 +1,90 @@
+ashfox-model 1
+sound potion_drink {
+  profile = "foley";
+  duration = 1.35;
+  sampleRate = 48000;
+  channels = 2;
+  seed = 3107;
+  space = { preset = "timber_room"; mix = 0.2; };
+  voices = [{
+    id = "cork_pop";
+    source = {
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.72; };
+      modes = [
+        { id = "sub"; hz = 120; decay = 0.12; gain = 0.9; },
+        { id = "pop"; hz = 310; decay = 0.09; gain = 1.0; },
+        { id = "neck"; hz = 860; decay = 0.05; gain = 0.65; }
+      ];
+      pitchDropCents = 140;
+      pitchDropSeconds = 0.02;
+    };
+    highpass = 38;
+    gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
+  }, {
+    id = "swallow_glugs";
+    source = {
+      kind = "granular";
+      texture = "bubble";
+      density = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 24; }, { at = 0.5; value = 46; }, { at = 1; value = 18; }]; };
+      grainMs = 34;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 280; }, { at = 0.5; value = 540; }, { at = 1; value = 360; }]; };
+      spread = 0.65;
+      burstiness = 0.58;
+      turbulence = 0.45;
+    };
+    highpass = 75;
+    pan = -0.14;
+    gain = { env = "adsr"; attack = 0.012; decay = 0.08; sustain = 0.72; release = 0.06; peak = 0.96; curve = "exp"; };
+  }, {
+    id = "fluid_slosh";
+    source = {
+      kind = "granular";
+      texture = "water";
+      density = 68;
+      grainMs = 22;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1350; }, { at = 0.5; value = 2400; }, { at = 1; value = 850; }]; };
+      spread = 0.75;
+      turbulence = 0.55;
+    };
+    highpass = 180;
+    pan = 0.16;
+    gain = { env = "adsr"; attack = 0.015; decay = 0.12; sustain = 0.65; release = 0.1; peak = 0.75; };
+  }, {
+    id = "vial_clink";
+    source = {
+      kind = "material";
+      material = "glass";
+      pitch = 1760;
+      size = 0.75;
+      hardness = 0.88;
+      damping = 0.22;
+      brightness = 0.85;
+      modes = 16;
+      strike = "mallet";
+    };
+    highpass = 120;
+    pan = 0.22;
+    gain = { env = "ad"; attack = 0.002; peak = 0.68; curve = "exp"; };
+  }];
+  sequences = [{
+    id = "gulp";
+    start = 0.02;
+    repeat = { count = 3; period = 0.34; };
+    steps = [
+      { id = "glug"; voice = "swallow_glugs"; at = 0; duration = 0.3; vary = { pitchCents = [-65, 65]; timing = [-0.008, 0.008]; gain = [0.85, 1.15]; }; }
+    ];
+  }, {
+    id = "bottle";
+    start = 0.01;
+    steps = [
+      { id = "pop"; voice = "cork_pop"; at = 0; duration = 0.22; vary = { pitchCents = [-55, 55]; }; },
+      { id = "slosh"; voice = "fluid_slosh"; at = 0.01; duration = 1.15; vary = { pitchCents = [-55, 55]; }; },
+      { id = "clink_start"; voice = "vial_clink"; at = 0; duration = 0.24; vary = { pitchCents = [-45, 45]; }; },
+      { id = "clink_end"; voice = "vial_clink"; at = 0.96; duration = 0.28; pitchCents = 140; vary = { pitchCents = [-45, 45]; }; }
+    ];
+  }];
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -13; air = 0.25; punch = 0.25; warmth = 0.15; limit = true; };
+}

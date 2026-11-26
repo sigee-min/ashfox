@@ -28,8 +28,12 @@ const assertSoundCapabilities = (run) => {
     'sequences',
     'variation',
     'loops',
+    'material',
+    'granular',
+    'mastering',
   ]);
-  assert.ok(capabilities.sources.includes('resonator'));
+  assert.ok(capabilities.sources.includes('material'));
+  assert.ok(capabilities.sources.includes('granular'));
   return capabilities;
 };
 

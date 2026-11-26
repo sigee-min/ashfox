@@ -15,7 +15,7 @@ sound impact_v2 {
   sampleRate = 48000;
   channels = 2;
   seed = 11;
-  space = { mix = 0.2; decay = 0.25; damping = 5500; size = 0.7; };
+  space = { preset = "small_chamber"; mix = 0.2; decay = 0.25; damping = 5500; size = 0.7; };
   voices = [{
     id = "thud";
     source = {
@@ -61,7 +61,7 @@ sound impact_v2 {
   }];
   variants = [{ id = "base"; seed = 21; }, { id = "alt"; seed = 22; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 3; peakDb = -2; softClip = true; };
+  output = { gainDb = 3; peakDb = -2; punch = 0.35; warmth = 0.15; air = 0.15; glue = 0.25; width = 1.1; limit = true; };
 }`,
   'impact_v2.ashfox',
 );
