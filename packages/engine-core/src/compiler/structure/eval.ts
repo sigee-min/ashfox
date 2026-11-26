@@ -6,7 +6,6 @@ import {
   type IntVec2,
   type IntVec3,
   type StructureOp,
-  type StructureParamValue,
   type StructureScalarExpr,
   type StructureSourceUnit,
 } from '../../project/structure/contract';
@@ -16,13 +15,14 @@ import {
   evaluateScalarInt,
 } from '../../project/structure/expr';
 import { parseBlockState, withBlockFacing } from '../../project/structure/state';
+import { deepFreeze } from '../../immutable';
 import {
   buildCustomPlacementsFromTags,
   checkStructureUnitHygiene,
   collectReachableUnits,
   resolveStructurePrefab,
 } from './compound';
-import type { StructureFloorMeta, StructureGrid } from './contract';
+import type { EvaluatedStructureResult, StructureFloorMeta } from './contract';
 import { emitRoomShell } from './facade';
 import {
   buildFrameRoofOp,
@@ -65,10 +65,7 @@ import {
   type FrameTransform,
 } from './weathering';
 
-const paramsOf = (
-  state: EvalState,
-  ownerPath: string,
-): Readonly<Record<string, StructureParamValue>> => state.units.get(ownerPath)?.params ?? {};
+const paramsOf = (state: EvalState, ownerPath: string) => state.units.get(ownerPath)?.params ?? {};
 const evalScalar = (state: EvalState, ownerPath: string, expr: StructureScalarExpr): number =>
   evaluateScalarInt(expr, paramsOf(state, ownerPath), ownerPath);
 const evalVec2 = (state: EvalState, ownerPath: string, vec: ExprVec2): IntVec2 =>
@@ -217,7 +214,12 @@ const evalCompoundPlace = (
       'structure.invalid-compound',
       `compound_place "${op.alias}" must target structure`,
     );
-  const childResult = evaluateStructure(childPath, state.units, state.relative);
+  const childResult = evaluateStructure(
+    childPath,
+    state.units,
+    state.relative,
+    state.evaluatedGridCache,
+  );
   runCompoundMerge(
     state,
     ownerPath,
@@ -312,48 +314,36 @@ const evalRoofOp = (
   op: Extract<StructureOp, { op: 'roof' }>,
   frame: FrameTransform,
 ): void => {
-  const mappedOp = buildFrameRoofOp(op, frame);
   const worldPlaced = Boolean(op.on);
   const guard = getRoofGuard(state, worldPlaced, frame);
+  const toW = (c: IntVec3): IntVec3 => (worldPlaced ? c : applyFrame(c, frame));
   const res = runRoofOp(
     ownerPath,
     state.size,
-    mappedOp,
+    buildFrameRoofOp(op, frame),
     op.from ? evalVec3(state, ownerPath, op.from) : null,
     op.to ? evalVec3(state, ownerPath, op.to) : null,
     state.rooms,
     (x, y, z, b, a) =>
-      worldPlaced
-        ? putVoxel(state, ownerPath, [x, y, z], b, a)
-        : putVoxel(
-            state,
-            ownerPath,
-            applyFrame([x, y, z], frame),
-            transformBlockState(b, frame),
-            a,
-          ),
-    (x, y, z) =>
       putVoxel(
         state,
         ownerPath,
-        worldPlaced ? [x, y, z] : applyFrame([x, y, z], frame),
-        'minecraft:air',
-        null,
+        toW([x, y, z]),
+        worldPlaced ? b : transformBlockState(b, frame),
+        a,
       ),
+    (x, y, z) => putVoxel(state, ownerPath, toW([x, y, z]), 'minecraft:air', null),
     (k, o, p) => resolvePaletteEntry(state, k, o, p ?? [0, 0, 0]),
     (c, m) => failEval(ownerPath, c, m),
     guard.canPlace,
   );
-  const worldCells = worldPlaced ? res.roofCells : res.roofCells.map((c) => applyFrame(c, frame));
-  const worldTops = worldPlaced
-    ? res.chimneyTops
-    : res.chimneyTops.map((c) => applyFrame(c, frame));
+  const worldCells = res.roofCells.map(toW);
   guard.record(worldCells);
   state.roofCount += 1;
   if (res.hasTrim) state.hasRoofTrim = true;
   state.dormerCount += res.dormerCount;
   state.chimneyCount += res.chimneyCount;
-  state.chimneyTops.push(...worldTops);
+  state.chimneyTops.push(...res.chimneyTops.map(toW));
   state.roofCells.push(...worldCells);
 };
 
@@ -441,17 +431,14 @@ const parseFacingOf = (state: string): CardinalFacing => {
   return f === 'south' || f === 'east' || f === 'west' ? f : 'north';
 };
 
-export const evaluateStructure = (
+const finalizeEvalResult = (
   rootPath: string,
-  units: ReadonlyMap<string, StructureSourceUnit>,
-  relative: (owner: string, specifier: string) => string,
-): { readonly grid: StructureGrid; readonly prefabUses: number } => {
-  const root = units.get(rootPath)!;
-  const state = createEvalState(rootPath, units, relative);
-  for (const op of root.ops) evalOp(state, rootPath, op, IDENTITY_FRAME, 0);
-  const reachable = collectReachableUnits(rootPath, state.units, relative);
+  root: StructureSourceUnit,
+  state: EvalState,
+): EvaluatedStructureResult => {
+  const reachable = collectReachableUnits(rootPath, state.units, state.relative);
   for (const [filePath, unit] of state.units) {
-    if (reachable.has(filePath)) {
+    if (reachable.has(filePath))
       checkStructureUnitHygiene(
         filePath,
         rootPath,
@@ -461,7 +448,6 @@ export const evaluateStructure = (
         state.usedPrefabs,
         failEval,
       );
-    }
   }
   solveBlockConnections(state.voxels, state.states, state.stateToIdx, state.size);
   const rooms = resolveRoomEnclosure([...state.rooms.values()], state.voxels, state.size);
@@ -493,4 +479,20 @@ export const evaluateStructure = (
     ),
     prefabUses: state.prefabUses,
   };
+};
+
+export const evaluateStructure = (
+  rootPath: string,
+  units: ReadonlyMap<string, StructureSourceUnit>,
+  relative: (owner: string, specifier: string) => string,
+  evaluatedGridCache?: Map<string, EvaluatedStructureResult>,
+): EvaluatedStructureResult => {
+  const cached = evaluatedGridCache?.get(rootPath);
+  if (cached) return cached;
+  const root = units.get(rootPath)!;
+  const state = createEvalState(rootPath, units, relative, evaluatedGridCache);
+  for (const op of root.ops) evalOp(state, rootPath, op, IDENTITY_FRAME, 0);
+  const result = finalizeEvalResult(rootPath, root, state);
+  if (evaluatedGridCache) evaluatedGridCache.set(rootPath, deepFreeze(result));
+  return result;
 };

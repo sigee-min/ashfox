@@ -1,8 +1,10 @@
+import { deepFreeze } from '../../immutable';
 import { parseSpriteSource, type SpriteSourceUnit } from '../../project/sprite/source';
 import { SpriteInputError } from '../../project/sprite/contract';
 import type { DirectoryFile } from '../../project/directory/contract';
 import { sha256Digest } from '../../provenance/digest';
 import { compileSpriteDocument } from '../sprite/compile';
+import type { SpriteModuleLookup } from './cache';
 
 const relative = (owner: string, target: string): string => {
   if (!target.startsWith('./') && !target.startsWith('../'))
@@ -22,7 +24,11 @@ const relative = (owner: string, target: string): string => {
 };
 
 type DeclarationKind = 'masks' | 'materials' | 'stamps';
-type Units = ReadonlyMap<string, SpriteSourceUnit>;
+
+export interface SpriteLookupCache {
+  readonly spriteLookups: Map<string, SpriteModuleLookup>;
+  readonly spriteSymbols: Map<string, string>;
+}
 
 interface SpriteGraph {
   readonly files: ReadonlyMap<string, DirectoryFile>;
@@ -34,6 +40,7 @@ interface SpriteGraph {
   readonly visiting: Set<string>;
   readonly usedImports: Map<string, Set<string>>;
   readonly usedDecls: Set<string>;
+  readonly cache?: SpriteLookupCache;
 }
 
 const spriteSyntaxError = (code: string, file: string, expected: string, actual: string) =>
@@ -45,16 +52,41 @@ const markSpriteImportUsed = (graph: SpriteGraph, path: string, alias: string): 
   graph.usedImports.set(path, used);
 };
 
-const indexUnitLookups = (graph: SpriteGraph, path: string, unit: SpriteSourceUnit): void => {
-  graph.importTargets.set(
-    path,
-    new Map(unit.imports.map((imp) => [imp.alias, relative(path, imp.path)])),
-  );
-  graph.declIds.set(path, {
+const symbol = (path: string, id: unknown, cache?: Map<string, string>): string => {
+  const key = `${path}\u0000${String(id)}`;
+  const cached = cache?.get(key);
+  if (cached) return cached;
+  const computed = 's' + sha256Digest(path + ':' + String(id)).slice(-32);
+  cache?.set(key, computed);
+  return computed;
+};
+
+const buildUnitLookup = (
+  path: string,
+  unit: SpriteSourceUnit,
+  symCache?: Map<string, string>,
+): SpriteModuleLookup => ({
+  importTargets: new Map(unit.imports.map((imp) => [imp.alias, relative(path, imp.path)])),
+  declIds: {
     masks: new Set(unit.masks.map((d) => String(d.id))),
     materials: new Set(unit.materials.map((d) => String(d.id))),
     stamps: new Set(unit.stamps.map((d) => String(d.id))),
-  });
+  },
+  exported: deepFreeze({
+    masks: unit.masks.map((m) => ({ ...m, id: symbol(path, m.id, symCache) })),
+    materials: unit.materials.map((m) => ({ ...m, id: symbol(path, m.id, symCache) })),
+    stamps: unit.stamps.map((m) => ({ ...m, id: symbol(path, m.id, symCache) })),
+  }),
+});
+
+const indexUnitLookups = (graph: SpriteGraph, path: string, unit: SpriteSourceUnit): void => {
+  let lookup = graph.cache?.spriteLookups.get(path);
+  if (!lookup) {
+    lookup = buildUnitLookup(path, unit, graph.cache?.spriteSymbols);
+    graph.cache?.spriteLookups.set(path, lookup);
+  }
+  graph.importTargets.set(path, lookup.importTargets);
+  graph.declIds.set(path, lookup.declIds);
 };
 
 const visitUnit = (graph: SpriteGraph, path: string): void => {
@@ -73,9 +105,6 @@ const visitUnit = (graph: SpriteGraph, path: string): void => {
   indexUnitLookups(graph, path, unit);
   graph.visiting.delete(path);
 };
-
-const symbol = (path: string, id: unknown): string =>
-  's' + sha256Digest(path + ':' + String(id)).slice(-32);
 
 /** Owner path and local id named by a `local` or `alias.name` reference. */
 const referenceTarget = (graph: SpriteGraph, path: string, reference: string): [string, string] => {
@@ -99,7 +128,7 @@ const resolve = (
   if (!graph.declIds.get(owner)![kind].has(id))
     throw new Error(`Missing ${kind} declaration ${reference}`);
   graph.usedDecls.add(`${owner}\u0000${kind}\u0000${id}`);
-  return symbol(owner, id);
+  return symbol(owner, id, graph.cache?.spriteSymbols);
 };
 
 const PATTERN_MAT_KEYS = ['toMaterial', 'mortarMaterial', 'edgeMaterial', 'crackMaterial'] as const;
@@ -122,8 +151,12 @@ const resolveLayer = (graph: SpriteGraph, entry: string, l: Record<string, unkno
   return resolved;
 };
 
-const declarations = (units: Units, kind: DeclarationKind) =>
-  [...units].flatMap(([p, u]) => u[kind].map((m) => ({ ...m, id: symbol(p, m.id) })));
+const declarations = (graph: SpriteGraph, kind: DeclarationKind) =>
+  [...graph.units].flatMap(
+    ([p, u]) =>
+      graph.cache?.spriteLookups.get(p)?.exported[kind] ??
+      u[kind].map((m) => ({ ...m, id: symbol(p, m.id, graph.cache?.spriteSymbols) })),
+  );
 
 const checkSpriteHygiene = (graph: SpriteGraph): void => {
   for (const [unitPath, unit] of graph.units) {
@@ -167,9 +200,9 @@ const documentOf = (graph: SpriteGraph, entry: string) => {
   );
   checkSpriteHygiene(graph);
   return {
-    masks: declarations(graph.units, 'masks'),
-    materials: declarations(graph.units, 'materials'),
-    stamps: declarations(graph.units, 'stamps'),
+    masks: declarations(graph, 'masks'),
+    materials: declarations(graph, 'materials'),
+    stamps: declarations(graph, 'stamps'),
     item: { ...root.item, layers },
   };
 };
@@ -189,6 +222,7 @@ export const compileDirectorySprite = (
   files: ReadonlyMap<string, DirectoryFile>,
   entry: string,
   parsed: Map<string, SpriteSourceUnit>,
+  cache?: SpriteLookupCache,
 ) => {
   const graph: SpriteGraph = {
     files,
@@ -200,6 +234,7 @@ export const compileDirectorySprite = (
     visiting: new Set(),
     usedImports: new Map(),
     usedDecls: new Set(),
+    cache,
   };
   try {
     visitUnit(graph, entry);

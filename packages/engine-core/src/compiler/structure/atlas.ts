@@ -15,7 +15,7 @@ import type {
   StructurePropInstance,
 } from './contract';
 import { samplePropLightRgb } from './lighting';
-import { paintTileRects, type TileRect } from './tiles';
+import { isSeedInvariantTile, paintTileRects, type TileRect } from './tiles';
 
 export interface AtlasBatchDraft {
   readonly layer: BlockRenderLayer;
@@ -207,6 +207,22 @@ const buildMultiTileTexture = (
   });
 };
 
+let activeTileTextureCache: Map<string, TextureAsset> | null = null;
+
+/** Scopes a shared tile texture cache across structure entries in one workspace compile. */
+export const withStructureTileTextureCache = <T>(
+  cache: Map<string, TextureAsset>,
+  fn: () => T,
+): T => {
+  const prev = activeTileTextureCache;
+  activeTileTextureCache = cache;
+  try {
+    return fn();
+  } finally {
+    activeTileTextureCache = prev;
+  }
+};
+
 export const buildStructureTileTextures = (
   requests: readonly {
     readonly layer: BlockRenderLayer;
@@ -214,6 +230,7 @@ export const buildStructureTileTextures = (
   }[],
   density: StructureDensity,
   seed: number,
+  cache: Map<string, TextureAsset> | undefined = activeTileTextureCache ?? undefined,
 ): Readonly<Record<string, TextureAsset>> => {
   const unique = new Map<string, { readonly layer: BlockRenderLayer; readonly tileId: string }>();
   for (const req of requests) {
@@ -222,7 +239,14 @@ export const buildStructureTileTextures = (
   }
   const textures: Record<string, TextureAsset> = {};
   for (const [id, req] of [...unique.entries()].sort(([a], [b]) => compareText(a, b))) {
-    textures[id] = buildMultiTileTexture(req.layer, req.tileId, density, seed);
+    const cacheSeed = isSeedInvariantTile(req.tileId) ? 0 : seed;
+    const key = `${id}\u0000${density}\u0000${cacheSeed}`;
+    let asset = cache?.get(key);
+    if (!asset) {
+      asset = deepFreeze(buildMultiTileTexture(req.layer, req.tileId, density, seed));
+      cache?.set(key, asset);
+    }
+    textures[id] = asset;
   }
   return textures;
 };

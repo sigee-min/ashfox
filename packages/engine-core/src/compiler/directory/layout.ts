@@ -1,6 +1,14 @@
+import { parseSoundUnit } from '@ashfox/audio-core';
+import { deepFreeze } from '../../immutable';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
-import { inspectNativeSource } from '../../project/directory/source';
+import { type NativeSourceMetadata } from '../../project/directory/source';
 import type { DeclaredAssetKind } from '../../project/directory/declarations';
+import { parseAssetSource } from '../../project/program/asset/parse';
+import { lexProgramSource } from '../../project/program/syntax/lex';
+import { parseSpriteSource } from '../../project/sprite/source';
+import { parseStructureSource } from '../../project/structure';
+import { assertWellFormedSourceText } from '../../project/workspace/path';
+import type { DirectoryWorkspaceCache } from './cache';
 
 const CANONICAL_PREFIXES = [
   'assets/models/',
@@ -34,7 +42,122 @@ const resolveRelativeImport = (ownerPath: string, specifier: string): string | n
   return parts.join('/');
 };
 
-type InspectedMap = ReadonlyMap<string, ReturnType<typeof inspectNativeSource>>;
+type InspectedMap = ReadonlyMap<string, NativeSourceMetadata>;
+
+const parseModuleMetadata = (
+  source: string,
+  filePath: string,
+  cache?: DirectoryWorkspaceCache,
+): NativeSourceMetadata | null => {
+  try {
+    const sp = parseSpriteSource(source, filePath);
+    if (sp.kind === 'module') {
+      cache?.spriteUnits.set(filePath, sp);
+      return Object.freeze({
+        kind: 'module',
+        id: sp.id,
+        imports: Object.freeze(sp.imports.map((i) => i.path)),
+        outputs: Object.freeze([]),
+      });
+    }
+  } catch {
+    /* try next module grammar */
+  }
+  try {
+    const st = parseStructureSource(source, filePath);
+    if (st.kind === 'module') {
+      cache?.structureUnits.set(filePath, deepFreeze(st));
+      return Object.freeze({
+        kind: 'module',
+        id: st.id,
+        imports: Object.freeze(st.imports.map((i) => i.path)),
+        outputs: Object.freeze([]),
+      });
+    }
+  } catch {
+    /* try next module grammar */
+  }
+  try {
+    const snd = parseSoundUnit(source, filePath);
+    if (snd.kind === 'module') {
+      return Object.freeze({
+        kind: 'module',
+        id: snd.id,
+        imports: Object.freeze(snd.imports.map((i) => i.path)),
+        outputs: Object.freeze([]),
+      });
+    }
+  } catch {
+    /* not a valid module */
+  }
+  return null;
+};
+
+const inspectUnitMetadata = (
+  source: string,
+  filePath: string,
+  kind: string | undefined,
+  cache?: DirectoryWorkspaceCache,
+): NativeSourceMetadata => {
+  if (kind === 'sound') {
+    const sound = parseSoundUnit(source, filePath);
+    if (sound.kind !== 'sound') throw new Error(`${filePath}: expected sound declaration`);
+    return Object.freeze({
+      kind: 'sound',
+      id: sound.id,
+      imports: Object.freeze(sound.imports.map((i) => i.path)),
+      outputs: Object.freeze([...sound.outputs]),
+    });
+  }
+  if (kind === 'sprite') {
+    const sprite = parseSpriteSource(source, filePath);
+    cache?.spriteUnits.set(filePath, sprite);
+    return Object.freeze({
+      kind: 'sprite',
+      id: sprite.id,
+      imports: Object.freeze(sprite.imports.map((i) => i.path)),
+      outputs: Object.freeze([...sprite.outputs]),
+    });
+  }
+  if (kind === 'structure' || kind === 'compound') {
+    const structure = parseStructureSource(source, filePath);
+    cache?.structureUnits.set(filePath, deepFreeze(structure));
+    return Object.freeze({
+      kind: 'structure',
+      id: structure.id,
+      imports: Object.freeze(structure.imports.map((i) => i.path)),
+      outputs: Object.freeze([...structure.outputs]),
+    });
+  }
+  const model = parseAssetSource(source, filePath);
+  cache?.assetUnits.set(filePath, model);
+  if (model.unit && !model.diagnostics.length) {
+    return Object.freeze({
+      kind: model.unit.kind === 'asset' ? 'model' : 'module',
+      id: model.unit.id,
+      imports: Object.freeze(model.unit.imports.map((i) => i.path)),
+      outputs: Object.freeze(model.unit.kind === 'asset' ? [...model.unit.outputs] : []),
+    });
+  }
+  const mod = kind === 'module' ? parseModuleMetadata(source, filePath, cache) : null;
+  if (mod) return mod;
+  throw new Error(JSON.stringify(model.diagnostics));
+};
+
+const inspectCachedSource = (
+  source: string,
+  filePath: string,
+  cache?: DirectoryWorkspaceCache,
+): NativeSourceMetadata => {
+  const cached = cache?.inspected.get(filePath);
+  if (cached) return cached;
+  assertWellFormedSourceText(source);
+  const kind = lexProgramSource(source).tokens[2]?.value;
+  cache?.topKinds.set(filePath, kind);
+  const meta = inspectUnitMetadata(source, filePath, kind, cache);
+  cache?.inspected.set(filePath, meta);
+  return meta;
+};
 
 const recordImportDep = (
   entryPath: string,
@@ -80,15 +203,18 @@ const collectEntryModuleDeps = (
   }
 };
 
-const inspectWorkspaceFiles = (filesByPath: ReadonlyMap<string, DirectoryFile>): InspectedMap => {
-  const inspected = new Map<string, ReturnType<typeof inspectNativeSource>>();
+const inspectWorkspaceFiles = (
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  cache?: DirectoryWorkspaceCache,
+): InspectedMap => {
+  const inspected = new Map<string, NativeSourceMetadata>();
   for (const [filePath, file] of filesByPath) {
     if (!CANONICAL_PREFIXES.some((prefix) => isUnder(filePath, prefix))) {
       throw new Error(
         `${filePath}: layout.root: Source files must live under assets/{models,sprites,sounds,structures,module}/`,
       );
     }
-    const meta = inspectNativeSource(file.source, filePath);
+    const meta = inspectCachedSource(file.source, filePath, cache);
     inspected.set(filePath, meta);
     if (isUnder(filePath, 'assets/module/') && meta.kind !== 'module') {
       throw new Error(
@@ -104,9 +230,10 @@ export const validateCanonicalLayout = (
   config: DirectoryWorkspace,
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   entryPaths: readonly string[],
+  cache?: DirectoryWorkspaceCache,
 ): void => {
   if (config.name === 'standalone') return;
-  const inspected = inspectWorkspaceFiles(filesByPath);
+  const inspected = inspectWorkspaceFiles(filesByPath, cache);
   const importersByModule = new Map<string, Set<string>>();
   for (const entryPath of new Set(entryPaths)) {
     const meta = inspected.get(entryPath);

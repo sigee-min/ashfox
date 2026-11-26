@@ -16,6 +16,8 @@ import { compilePreparedSound, prepareDirectorySound } from './sound';
 import { validateCanonicalLayout } from './layout';
 import { compileDirectorySprite } from './sprite';
 import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
+import { createDirectoryWorkspaceCache, type DirectoryWorkspaceCache } from './cache';
+import { withStructureTileTextureCache } from '../structure/atlas';
 import type { SpriteProduct } from '../sprite/contract';
 import type { StructureAuditEvaluator, StructureProduct } from '../structure/contract';
 import { StructureInputError } from '../../project/structure';
@@ -33,37 +35,24 @@ import type { AssetAuthoringTelemetry } from '../program/asset/texture/telemetry
 import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
 
-export type DirectoryProduct =
-  | {
-      readonly kind: 'sprite';
-      readonly entry: WorkspaceEntrySelector;
-      readonly sourcePath: string;
-      readonly sprite: SpriteProduct;
-      readonly declarations: AssetDeclarations;
-    }
-  | {
-      readonly kind: 'model';
-      readonly entry: WorkspaceEntrySelector;
-      readonly sourcePath: string;
-      readonly model: CompiledModel;
-      readonly workspace: AuthoredAssetWorkspace;
-      readonly telemetry?: AssetAuthoringTelemetry;
-      readonly declarations: AssetDeclarations;
-    }
-  | {
-      readonly kind: 'sound';
-      readonly entry: WorkspaceEntrySelector;
-      readonly sourcePath: string;
-      readonly sounds: readonly SoundProduct[];
-      readonly declarations: AssetDeclarations;
-    }
-  | {
-      readonly kind: 'structure';
-      readonly entry: WorkspaceEntrySelector;
-      readonly sourcePath: string;
-      readonly structure: StructureProduct;
-      readonly declarations: AssetDeclarations;
-    };
+interface EntryProductBase {
+  readonly entry: WorkspaceEntrySelector;
+  readonly sourcePath: string;
+  readonly declarations: AssetDeclarations;
+}
+
+export type DirectoryProduct = EntryProductBase &
+  (
+    | { readonly kind: 'sprite'; readonly sprite: SpriteProduct }
+    | {
+        readonly kind: 'model';
+        readonly model: CompiledModel;
+        readonly workspace: AuthoredAssetWorkspace;
+        readonly telemetry?: AssetAuthoringTelemetry;
+      }
+    | { readonly kind: 'sound'; readonly sounds: readonly SoundProduct[] }
+    | { readonly kind: 'structure'; readonly structure: StructureProduct }
+  );
 type DirectoryDiagnostic = {
   readonly code: string;
   readonly file: string;
@@ -190,10 +179,11 @@ const assertSoundBudget = (
 const compileSpriteEntry = (
   e: Entry,
   filesByPath: Files,
-  spriteUnits: Map<string, SpriteSourceUnit>,
+  cache: DirectoryWorkspaceCache | undefined,
   output: EntryOutput,
 ): DirectoryFailure | null => {
-  const compiled = compileDirectorySprite(filesByPath, e.path, spriteUnits);
+  const spriteUnits = cache?.spriteUnits ?? new Map<string, SpriteSourceUnit>();
+  const compiled = compileDirectorySprite(filesByPath, e.path, spriteUnits, cache);
   if (!compiled.result.ok)
     return {
       ok: false,
@@ -245,8 +235,9 @@ const compileStructureEntry = (
   filesByPath: Files,
   output: EntryOutput,
   evaluateStructureAudit: StructureAuditEvaluator,
+  cache?: DirectoryWorkspaceCache,
 ): void => {
-  const result = compileDirectoryStructure(filesByPath, e.path, evaluateStructureAudit);
+  const result = compileDirectoryStructure(filesByPath, e.path, evaluateStructureAudit, cache);
   if (result.structure.id !== e.entry.entryName)
     throw new Error('Entry name must match structure id: ' + e.path);
   const declarations = validateAssetDeclarations(
@@ -266,19 +257,24 @@ const compileStructureEntry = (
   result.customPaths.forEach((p) => output.structureCustomPaths.add(p));
 };
 
-/** Compiles sprite, structure, and sound entries in declaration order and defers models. */
-const compileEntries = (
+const entryTopKind = (
+  filePath: string,
+  filesByPath: Files,
+  cache?: DirectoryWorkspaceCache,
+): string | undefined => {
+  if (cache?.topKinds.has(filePath)) return cache.topKinds.get(filePath);
+  const kind = lexProgramSource(filesByPath.get(filePath)!.source).tokens[2]?.value;
+  cache?.topKinds.set(filePath, kind);
+  return kind;
+};
+
+const runEntryLoop = (
   entries: readonly Entry[],
+  kinds: ReadonlyMap<string, string | undefined>,
   filesByPath: Files,
   evaluateStructureAudit: StructureAuditEvaluator,
+  cache: DirectoryWorkspaceCache | undefined,
 ): EntryOutput | DirectoryFailure => {
-  const kinds = new Map(
-    entries.map((e) => [
-      e.path,
-      lexProgramSource(filesByPath.get(e.path)!.source).tokens[2]?.value,
-    ]),
-  );
-  const spriteUnits = new Map<string, SpriteSourceUnit>();
   const preparedSounds = prepareSoundEntries(entries, kinds, filesByPath);
   const output: EntryOutput = {
     products: [],
@@ -289,14 +285,29 @@ const compileEntries = (
   for (const e of entries) {
     const kind = kinds.get(e.path);
     if (kind === 'sprite') {
-      const failure = compileSpriteEntry(e, filesByPath, spriteUnits, output);
+      const failure = compileSpriteEntry(e, filesByPath, cache, output);
       if (failure) return failure;
     } else if (kind === 'sound') compileSoundEntry(e, preparedSounds.get(e.path)!, output);
     else if (kind === 'structure' || kind === 'compound')
-      compileStructureEntry(e, filesByPath, output, evaluateStructureAudit);
+      compileStructureEntry(e, filesByPath, output, evaluateStructureAudit, cache);
     else output.modelEntries.push(e);
   }
   return output;
+};
+
+/** Compiles sprite, structure, and sound entries in declaration order and defers models. */
+const compileEntries = (
+  entries: readonly Entry[],
+  filesByPath: Files,
+  evaluateStructureAudit: StructureAuditEvaluator,
+  cache?: DirectoryWorkspaceCache,
+): EntryOutput | DirectoryFailure => {
+  const kinds = new Map(entries.map((e) => [e.path, entryTopKind(e.path, filesByPath, cache)]));
+  return cache
+    ? withStructureTileTextureCache(cache.tileTextures, () =>
+        runEntryLoop(entries, kinds, filesByPath, evaluateStructureAudit, cache),
+      )
+    : runEntryLoop(entries, kinds, filesByPath, evaluateStructureAudit, undefined);
 };
 
 const modelManifest = (
@@ -323,7 +334,9 @@ const modelManifest = (
 const compileModels = (
   config: DirectoryWorkspace,
   files: readonly DirectoryFile[],
+  filesByPath: Files,
   output: EntryOutput,
+  cache?: DirectoryWorkspaceCache,
 ): void => {
   if (!output.modelEntries.length) {
     if (
@@ -334,24 +347,21 @@ const compileModels = (
       throw new Error('Every declared module must be reachable');
     return;
   }
-  const filesByPath = new Map(files.map((f) => [f.path, f]));
   const excludedCustom = collectStructureOnlyCustomPaths(
     config,
     output.modelEntries.map((e) => e.path),
     output.structureCustomPaths,
     filesByPath,
+    cache?.assetUnits,
   );
   const manifest = modelManifest(config, output, excludedCustom);
-  const base: AuthoredAssetWorkspace = {
-    files: [],
-    manifest,
-    lock: {
-      format: 'ashfox-lock',
-      version: 1,
-      compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
-      packages: [],
-    },
+  const lock = {
+    format: 'ashfox-lock' as const,
+    version: 1 as const,
+    compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
+    packages: [],
   };
+  const base: AuthoredAssetWorkspace = { files: [], manifest, lock };
   const sources = files.filter(
     (f) => !output.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
   );
@@ -435,19 +445,22 @@ const compileDirectory = (
   configuration: string,
   files: readonly DirectoryFile[],
   evaluateStructureAudit: StructureAuditEvaluator,
+  useCache: boolean,
 ): DirectoryCompilation => {
   const config = readDirectoryWorkspace(configuration);
   assertSourceBudget(files);
   const filesByPath = declaredFiles(config, files);
   const entries = declaredEntries(config);
+  const cache = useCache ? createDirectoryWorkspaceCache() : undefined;
   validateCanonicalLayout(
     config,
     filesByPath,
     entries.map((e) => e.path),
+    cache,
   );
-  const output = compileEntries(entries, filesByPath, evaluateStructureAudit);
+  const output = compileEntries(entries, filesByPath, evaluateStructureAudit, cache);
   if ('ok' in output) return output;
-  compileModels(config, files, output);
+  compileModels(config, files, filesByPath, output, cache);
   const productsByEntry = new Map(
     output.products.map((product) => [entryKey(product.entry), product]),
   );
@@ -474,9 +487,10 @@ export const compileDirectoryWorkspace = (
   configuration: string,
   files: readonly DirectoryFile[],
   evaluateStructureAudit: StructureAuditEvaluator,
+  useCache = true,
 ): DirectoryCompilation => {
   try {
-    return compileDirectory(configuration, files, evaluateStructureAudit);
+    return compileDirectory(configuration, files, evaluateStructureAudit, useCache);
   } catch (error) {
     return compileFailure(error);
   }

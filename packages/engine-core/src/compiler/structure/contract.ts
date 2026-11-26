@@ -263,6 +263,11 @@ export type StructureAuditEvaluator = (
   mesh: StructureBakedMesh,
 ) => StructureAuditReport;
 
+export interface EvaluatedStructureResult {
+  readonly grid: StructureGrid;
+  readonly prefabUses: number;
+}
+
 export interface StructureProduct {
   readonly id: string;
   readonly grid: StructureGrid;
