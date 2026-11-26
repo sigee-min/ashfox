@@ -48,29 +48,15 @@ const NB_OCC_SCRATCH = new Uint8Array(64);
 const NB_FACE_SCRATCH = new Uint8Array(16);
 const SLICE_MASK_SCRATCH = new Uint8Array(16);
 
-export const tileForFace = (
-  desc: BlockDescriptor,
-  dir: CubeFaceDirection,
-  facing: CardinalFacing,
-): string => {
-  if (dir === 'up') return desc.top;
-  if (dir === 'down') return desc.bottom;
-  return dir === facing ? desc.front : desc.side;
-};
+export const tileForFace = (d: BlockDescriptor, dir: CubeFaceDirection, facing: CardinalFacing) =>
+  dir === 'up' ? d.top : dir === 'down' ? d.bottom : dir === facing ? d.front : d.side;
 
 export const tileForBoxFace = (
-  desc: BlockDescriptor,
-  spec: LocalBoxSpec,
+  d: BlockDescriptor,
+  s: LocalBoxSpec,
   dir: CubeFaceDirection,
   facing: CardinalFacing,
-): string => {
-  if (spec.tileOverride) return spec.tileOverride;
-  if (spec.role === 'top') return desc.top;
-  if (spec.role === 'bottom') return desc.bottom;
-  if (spec.role === 'side') return desc.side;
-  if (spec.role === 'front') return desc.front;
-  return tileForFace(desc, dir, facing);
-};
+): string => s.tileOverride ?? (s.role ? d[s.role] : tileForFace(d, dir, facing));
 
 export const setVec3 = (out: [number, number, number], x: number, y: number, z: number): void => {
   out[0] = x;
@@ -101,13 +87,15 @@ export const writeSpecBoxUv = (dir: CubeFaceDirection, spec: LocalBoxSpec, uvs: 
   const ud = dir === 'up' || dir === 'down';
   const rawU = ew ? spec.to[2] - spec.from[2] : spec.to[0] - spec.from[0];
   const rawV = ud ? spec.to[2] - spec.from[2] : spec.to[1] - spec.from[1];
-  const uSpan = Math.min(1, Math.max(0, rawU / 16));
-  const vSpan = Math.min(1, Math.max(0, rawV / 16));
   const fx = ew ? spec.from[2] : spec.from[0];
   const fy = ud ? spec.from[2] : 16 - spec.to[1];
-  const pu = fx >= 0 && fx + rawU <= 16 ? fx / 16 : 0;
-  const pv = fy >= 0 && fy + rawV <= 16 ? fy / 16 : 0;
-  writeQuadUv(uvs, pu, pv, uSpan, vSpan);
+  writeQuadUv(
+    uvs,
+    fx >= 0 && fx + rawU <= 16 ? fx / 16 : 0,
+    fy >= 0 && fy + rawV <= 16 ? fy / 16 : 0,
+    Math.min(1, Math.max(0, rawU / 16)),
+    Math.min(1, Math.max(0, rawV / 16)),
+  );
 };
 
 const fenceBoxes = (
@@ -115,22 +103,18 @@ const fenceBoxes = (
   conns: readonly boolean[],
 ): readonly LocalBoxSpec[] => {
   const boxes: LocalBoxSpec[] = [{ from: [6, 0, 6], to: [10, 16, 10] }];
-  const active = [
-    props.north === 'true' || Boolean(conns[0]),
-    props.south === 'true' || Boolean(conns[1]),
-    props.east === 'true' || Boolean(conns[2]),
-    props.west === 'true' || Boolean(conns[3]),
+  const segs: readonly [string, number, number, number, number, number, number][] = [
+    ['north', 0, 7, 0, 9, 6, 2],
+    ['south', 1, 7, 10, 9, 16, 1],
+    ['east', 2, 10, 7, 16, 9, 8],
+    ['west', 3, 0, 7, 6, 9, 4],
   ];
-  const segments: readonly [boolean, number, number, number, number][] = [
-    [active[0]!, 7, 0, 9, 6],
-    [active[1]!, 7, 10, 9, 16],
-    [active[2]!, 10, 7, 16, 9],
-    [active[3]!, 0, 7, 6, 9],
-  ];
-  for (const [on, x0, z0, x1, z1] of segments) {
-    if (!on) continue;
-    boxes.push({ from: [x0, 6, z0], to: [x1, 9, z1] });
-    boxes.push({ from: [x0, 12, z0], to: [x1, 15, z1] });
+  for (const [k, i, x0, z0, x1, z1, skipMask] of segs) {
+    if (props[k] !== 'true' && !conns[i]) continue;
+    boxes.push(
+      { from: [x0, 6, z0], to: [x1, 9, z1], skipMask },
+      { from: [x0, 12, z0], to: [x1, 15, z1], skipMask },
+    );
   }
   return boxes;
 };
@@ -140,23 +124,19 @@ const wallOrPaneBoxes = (
   props: Readonly<Record<string, string>>,
   conns: readonly boolean[],
 ): readonly LocalBoxSpec[] => {
-  const r = shape === 'pane' ? 1 : 4;
-  const armR = shape === 'pane' ? 1 : 3;
-  const armH = shape === 'wall' ? 14 : 16;
+  const [r, armR, armH] = shape === 'pane' ? [1, 1, 16] : [4, 3, 14];
   const boxes: LocalBoxSpec[] = [{ from: [8 - r, 0, 8 - r], to: [8 + r, 16, 8 + r] }];
-  const dirs = ['north', 'south', 'east', 'west'] as const;
-  const coords: readonly [number, number, number, number][] = [
-    [8 - armR, 0, 8 + armR, 8 - r],
-    [8 - armR, 8 + r, 8 + armR, 16],
-    [8 + r, 8 - armR, 16, 8 + armR],
-    [0, 8 - armR, 8 - r, 8 + armR],
+  const specs: readonly [string, number, number, number, number, number][] = [
+    ['north', 8 - armR, 0, 8 + armR, 8 - r, 2],
+    ['south', 8 - armR, 8 + r, 8 + armR, 16, 1],
+    ['east', 8 + r, 8 - armR, 16, 8 + armR, 8],
+    ['west', 0, 8 - armR, 8 - r, 8 + armR, 4],
   ];
   for (let i = 0; i < 4; i += 1) {
-    const pVal = props[dirs[i]!];
-    const on = pVal !== undefined ? pVal !== 'none' && pVal !== 'false' : Boolean(conns[i]);
-    if (!on) continue;
-    const [x0, z0, x1, z1] = coords[i]!;
-    boxes.push({ from: [x0, 0, z0], to: [x1, armH, z1] });
+    const [d, x0, z0, x1, z1, skipMask] = specs[i]!;
+    const pVal = props[d];
+    if (pVal !== undefined ? pVal === 'none' || pVal === 'false' : !conns[i]) continue;
+    boxes.push({ from: [x0, 0, z0], to: [x1, armH, z1], skipMask });
   }
   return boxes;
 };
@@ -173,35 +153,27 @@ const STATIC_SHAPES: Partial<Record<BlockDescriptor['shape'], readonly LocalBoxS
   chain: [{ from: [6.5, 0, 6.5], to: [9.5, 16, 9.5] }],
   pot: [{ from: [5, 0, 5], to: [11, 6, 11] }],
 };
-
-const slabBoxes = (props: Readonly<Record<string, string>>): readonly LocalBoxSpec[] => {
-  if (props.type === 'double') return [{ from: [0, 0, 0], to: [16, 16, 16] }];
-  return props.type === 'top'
-    ? [{ from: [0, 8, 0], to: [16, 16, 16] }]
-    : [{ from: [0, 0, 0], to: [16, 8, 16] }];
-};
-
+const slabBoxes = (p: Readonly<Record<string, string>>): readonly LocalBoxSpec[] => [
+  { from: [0, p.type === 'top' ? 8 : 0, 0], to: [16, p.type === 'bottom' ? 8 : 16, 16] },
+];
 const trapdoorBoxes = (
-  props: Readonly<Record<string, string>>,
-  facing: CardinalFacing,
-): readonly LocalBoxSpec[] => {
-  const raw: LocalBoxSpec =
-    props.open === 'true'
+  p: Readonly<Record<string, string>>,
+  f: CardinalFacing,
+): readonly LocalBoxSpec[] => [
+  rotateBox(
+    p.open === 'true'
       ? { from: [0, 0, 0], to: [16, 16, 3] }
-      : props.half === 'top'
-        ? { from: [0, 13, 0], to: [16, 16, 16] }
-        : { from: [0, 0, 0], to: [16, 3, 16] };
-  return [rotateBox(raw, facing)];
-};
-
+      : { from: [0, p.half === 'top' ? 13 : 0, 0], to: [16, p.half === 'top' ? 16 : 3, 16] },
+    f,
+  ),
+];
 type ShapeBuilder = (
-  desc: BlockDescriptor,
-  parsed: ParsedBlockState,
-  facing: CardinalFacing,
-  conns: readonly boolean[],
-  interiorGlow: boolean,
+  d: BlockDescriptor,
+  p: ParsedBlockState,
+  f: CardinalFacing,
+  c: readonly boolean[],
+  g: boolean,
 ) => readonly LocalBoxSpec[];
-
 const DYNAMIC_SHAPES: Partial<Record<BlockDescriptor['shape'], ShapeBuilder>> = {
   stair: (_d, p, f) => stairBoxes(p.properties, f),
   slab: (_d, p) => slabBoxes(p.properties),
@@ -230,35 +202,24 @@ export const shapeBoxSpecs = (
   facing: CardinalFacing,
   conns: readonly boolean[],
   interiorGlow = false,
-): readonly LocalBoxSpec[] => {
-  const staticHit = STATIC_SHAPES[desc.shape];
-  if (staticHit) return staticHit;
-  const builder = DYNAMIC_SHAPES[desc.shape];
-  return builder
-    ? builder(desc, parsed, facing, conns, interiorGlow)
-    : trapdoorBoxes(parsed.properties, facing);
-};
+): readonly LocalBoxSpec[] =>
+  STATIC_SHAPES[desc.shape] ??
+  DYNAMIC_SHAPES[desc.shape]?.(desc, parsed, facing, conns, interiorGlow) ??
+  trapdoorBoxes(parsed.properties, facing);
 
-const occAt = (occ: Uint8Array, axis: 0 | 1 | 2, s: number, u: number, v: number): number => {
-  if (axis === 2) return occ[(v * 4 + s) * 4 + u]!;
-  if (axis === 0) return occ[(v * 4 + u) * 4 + s]!;
-  return occ[(s * 4 + v) * 4 + u]!;
-};
+const occAt = (occ: Uint8Array, axis: 0 | 1 | 2, s: number, u: number, v: number): number =>
+  axis === 2
+    ? occ[(v * 4 + s) * 4 + u]!
+    : axis === 0
+      ? occ[(v * 4 + u) * 4 + s]!
+      : occ[(s * 4 + v) * 4 + u]!;
 
 const fillVoxelGrid4 = (specs: readonly LocalBoxSpec[], out: Uint8Array): void => {
   out.fill(0);
-  for (const spec of specs) {
-    const x0 = spec.from[0] >> 2;
-    const x1 = spec.to[0] >> 2;
-    const y0 = spec.from[1] >> 2;
-    const y1 = spec.to[1] >> 2;
-    const z0 = spec.from[2] >> 2;
-    const z1 = spec.to[2] >> 2;
-    for (let y = y0; y < y1; y += 1) {
-      for (let z = z0; z < z1; z += 1) {
-        for (let x = x0; x < x1; x += 1) out[(y * 4 + z) * 4 + x] = 1;
-      }
-    }
+  for (const s of specs) {
+    for (let y = s.from[1] >> 2; y < s.to[1] >> 2; y += 1)
+      for (let z = s.from[2] >> 2; z < s.to[2] >> 2; z += 1)
+        for (let x = s.from[0] >> 2; x < s.to[0] >> 2; x += 1) out[(y * 4 + z) * 4 + x] = 1;
   }
 };
 
@@ -269,14 +230,17 @@ export interface CulledShapeContext {
   readonly lighting: StructureLightingField;
   readonly maxY: number;
 }
-
 export interface CulledShapeScratch {
   readonly from: [number, number, number];
   readonly to: [number, number, number];
   readonly uvs: number[];
   readonly colors: number[];
 }
-
+export interface GridRunSpan {
+  readonly axis: 0 | 2;
+  readonly len: number;
+  readonly uCoord: number;
+}
 export type EmitCulledQuadFn = (
   layer: BlockRenderLayer,
   tileId: string,
@@ -286,6 +250,7 @@ export type EmitCulledQuadFn = (
   uvs: readonly number[],
   colors: readonly number[],
   flip: boolean,
+  stretched?: boolean,
 ) => void;
 
 const readNeighborFaceMask = (
@@ -302,11 +267,11 @@ const readNeighborFaceMask = (
   }
   const idx = (ny * d + nz) * w + nx;
   const nv = ctx.grid.voxels[idx]!;
-  if (nv <= 0 || ctx.grid.customTags[idx] !== null) {
+  const ndesc = nv > 0 && ctx.grid.customTags[idx] === null ? ctx.descriptors[nv]! : null;
+  if (!ndesc) {
     NB_FACE_SCRATCH.fill(0);
     return;
   }
-  const ndesc = ctx.descriptors[nv]!;
   if (ndesc.solidOpaque) {
     NB_FACE_SCRATCH.fill(1);
     return;
@@ -317,41 +282,22 @@ const readNeighborFaceMask = (
   }
   const ncached = ctx.parsedStates[nv]!;
   fillVoxelGrid4(shapeBoxSpecs(ndesc, ncached.parsed, ncached.facing, NO_CONNS), NB_OCC_SCRATCH);
-  for (let v = 0; v < 4; v += 1) {
-    for (let u = 0; u < 4; u += 1) {
+  for (let v = 0; v < 4; v += 1)
+    for (let u = 0; u < 4; u += 1)
       NB_FACE_SCRATCH[v * 4 + u] = occAt(NB_OCC_SCRATCH, cfg.axis, cfg.nbSlice, u, v);
-    }
-  }
 };
 
-const cellVisible4 = (
-  axis: 0 | 1 | 2,
-  step: -1 | 1,
-  s: number,
-  u: number,
-  v: number,
-  atEdge: boolean,
-): 0 | 1 => {
-  if (!occAt(SELF_OCC_SCRATCH, axis, s, u, v)) return 0;
-  const blocked = atEdge
-    ? NB_FACE_SCRATCH[v * 4 + u]!
-    : occAt(SELF_OCC_SCRATCH, axis, s + step, u, v);
-  return blocked ? 0 : 1;
-};
-
-const fillSliceFaceMask4 = (
-  axis: 0 | 1 | 2,
-  step: -1 | 1,
-  s: number,
-  outMask: Uint8Array,
-): boolean => {
+const fillSliceFaceMask4 = (axis: 0 | 1 | 2, step: -1 | 1, s: number, out: Uint8Array): boolean => {
   const ns = s + step;
   const atEdge = ns < 0 || ns > 3;
   let any = false;
   for (let v = 0; v < 4; v += 1) {
     for (let u = 0; u < 4; u += 1) {
-      const vis = cellVisible4(axis, step, s, u, v, atEdge);
-      outMask[v * 4 + u] = vis;
+      const blocked = atEdge
+        ? NB_FACE_SCRATCH[v * 4 + u]!
+        : occAt(SELF_OCC_SCRATCH, axis, ns, u, v);
+      const vis = occAt(SELF_OCC_SCRATCH, axis, s, u, v) && !blocked ? 1 : 0;
+      out[v * 4 + u] = vis;
       if (vis) any = true;
     }
   }
@@ -369,23 +315,21 @@ const greedySpan4 = (mask: Uint8Array, u0: number, v0: number): readonly [number
   return [mw, mh];
 };
 
-const writeGridBoxBounds = (
-  axis: 0 | 1 | 2,
+const writeGridBounds = (
+  j: AxisEmitJob,
   s: number,
   u: number,
   v: number,
   mw: number,
   mh: number,
-  bx: number,
-  bz: number,
-  y: number,
-  from: [number, number, number],
-  to: [number, number, number],
 ): void => {
-  if (axis === 2) {
+  const [w, _h, d] = j.ctx.grid.size;
+  const [bx, y, bz] = [j.origin[0] - w / 2, j.origin[1], j.origin[2] - d / 2];
+  const { from, to } = j.scratch;
+  if (j.cfg.axis === 2) {
     setVec3(from, bx + u * 0.25, y + v * 0.25, bz + s * 0.25);
     setVec3(to, bx + (u + mw) * 0.25, y + (v + mh) * 0.25, bz + (s + 1) * 0.25);
-  } else if (axis === 0) {
+  } else if (j.cfg.axis === 0) {
     setVec3(from, bx + s * 0.25, y + v * 0.25, bz + u * 0.25);
     setVec3(to, bx + (s + 1) * 0.25, y + (v + mh) * 0.25, bz + (u + mw) * 0.25);
   } else {
@@ -394,45 +338,136 @@ const writeGridBoxBounds = (
   }
 };
 
-const clearMaskSpan4 = (mask: Uint8Array, u: number, v: number, mw: number, mh: number): void => {
+const clearSpan4 = (u: number, v: number, mw: number, mh: number): void => {
   for (let dy = 0; dy < mh; dy += 1)
-    for (let dx = 0; dx < mw; dx += 1) mask[(v + dy) * 4 + u + dx] = 0;
+    for (let dx = 0; dx < mw; dx += 1) SLICE_MASK_SCRATCH[(v + dy) * 4 + u + dx] = 0;
 };
 
-const emitCulledSliceQuads4 = (
-  ctx: CulledShapeContext,
-  emitQuad: EmitCulledQuadFn,
+const writeGridCellUv = (
   cfg: GridSliceAxis,
+  u: number,
+  v: number,
+  mw: number,
+  mh: number,
+  run: GridRunSpan | undefined,
+  uvs: number[],
+): void => {
+  const rawPv = cfg.ud ? v * 0.25 : 1 - (v + mh) * 0.25;
+  if (!run || run.len <= 1 || cfg.axis === run.axis) {
+    writeQuadUv(uvs, u * 0.25, rawPv, mw * 0.25, mh * 0.25);
+    return;
+  }
+  const vs = run.axis === 2 && cfg.axis === 1;
+  const [pu, pv] = [
+    vs ? u * 0.125 : (run.uCoord & 1) * 0.5,
+    vs ? (run.uCoord & 1) * 0.5 : rawPv * 0.5,
+  ];
+  writeQuadUv(uvs, pu, pv, vs ? mw * 0.125 : run.len * 0.5, vs ? run.len * 0.5 : mh * 0.125);
+};
+
+interface AxisEmitJob {
+  readonly ctx: CulledShapeContext;
+  readonly emitQuad: EmitCulledQuadFn;
+  readonly cfg: GridSliceAxis;
+  readonly origin: readonly [number, number, number];
+  readonly layer: BlockRenderLayer;
+  readonly tileId: string;
+  readonly scratch: CulledShapeScratch;
+  readonly run?: GridRunSpan;
+}
+
+const emitCulledSliceQuads4 = (
+  j: AxisEmitJob,
   s: number,
-  x: number,
-  y: number,
-  z: number,
-  layer: BlockRenderLayer,
-  tileId: string,
-  colors: readonly number[],
-  flip: boolean,
-  scratch: CulledShapeScratch,
+  shade: ReturnType<typeof computeFaceShade>,
 ): number => {
-  const [w, _h, d] = ctx.grid.size;
-  const bx = x - w / 2;
-  const bz = z - d / 2;
+  const stretched = Boolean(j.run && j.run.len > 1 && j.cfg.axis !== j.run.axis);
+  const sc = j.scratch;
   let emitted = 0;
   for (let v = 0; v < 4; v += 1) {
     for (let u = 0; u < 4; u += 1) {
       if (SLICE_MASK_SCRATCH[v * 4 + u] !== 1) continue;
       const [mw, mh] = greedySpan4(SLICE_MASK_SCRATCH, u, v);
-      clearMaskSpan4(SLICE_MASK_SCRATCH, u, v, mw, mh);
-      writeGridBoxBounds(cfg.axis, s, u, v, mw, mh, bx, bz, y, scratch.from, scratch.to);
-      const pv = cfg.ud ? v * 0.25 : 1 - (v + mh) * 0.25;
-      writeQuadUv(scratch.uvs, u * 0.25, pv, mw * 0.25, mh * 0.25);
-      emitQuad(layer, tileId, cfg.dir, scratch.from, scratch.to, scratch.uvs, colors, flip);
+      clearSpan4(u, v, mw, mh);
+      writeGridBounds(j, s, u, v, mw, mh);
+      if (stretched) sc.to[j.run!.axis] += j.run!.len - 1;
+      writeGridCellUv(j.cfg, u, v, mw, mh, j.run, sc.uvs);
+      j.emitQuad(
+        j.layer,
+        j.tileId,
+        j.cfg.dir,
+        sc.from,
+        sc.to,
+        sc.uvs,
+        shade.colors,
+        shade.flip,
+        stretched,
+      );
       emitted += 1;
     }
   }
   return emitted;
 };
 
-/** Emits 4x4x4-culled faces for stairs and slabs (internal + neighbor + bottom occlusion). */
+const sliceWindow = (cfg: GridSliceAxis, run?: GridRunSpan) => {
+  const len = run?.len ?? 1;
+  if (!run || len <= 1) return { rAx: -1, shift: 0, s0: 0, s1: 4, mid: 0 };
+  const cap = cfg.axis === run.axis;
+  const shift = cap && cfg.step === 1 ? len - 1 : 0;
+  const s0 = !cap ? 0 : cfg.step === -1 ? 0 : 3;
+  return { rAx: run.axis, shift, s0, s1: cap ? s0 + 1 : 4, mid: cap ? shift : Math.floor(len / 2) };
+};
+
+const emitGridAxisSlices = (
+  ctx: CulledShapeContext,
+  emitQuad: EmitCulledQuadFn,
+  desc: BlockDescriptor,
+  cached: CachedBlockState,
+  cfg: GridSliceAxis,
+  pos: readonly [number, number, number],
+  scratch: CulledShapeScratch,
+  run?: GridRunSpan,
+): number => {
+  const { rAx, shift, s0, s1, mid } = sliceWindow(cfg, run);
+  const [ox, oz] = [pos[0] + (rAx === 0 ? shift : 0), pos[2] + (rAx === 2 ? shift : 0)];
+  const n = FACE_BASIS[cfg.dir].normal;
+  readNeighborFaceMask(ctx, ox + n[0], pos[1] + n[1], oz + n[2], cfg);
+  const job: AxisEmitJob = {
+    ctx,
+    emitQuad,
+    cfg,
+    origin: [ox, pos[1], oz],
+    layer: desc.layer,
+    tileId: tileForFace(desc, cfg.dir, cached.facing),
+    scratch,
+    run,
+  };
+  const [sx, sz] = [pos[0] + (rAx === 0 ? mid : 0), pos[2] + (rAx === 2 ? mid : 0)];
+  const { grid, descriptors, lighting, maxY } = ctx;
+  const emissive = desc.layer === 'emissive';
+  let shade: ReturnType<typeof computeFaceShade> | null = null;
+  let count = 0;
+  for (let s = s0; s < s1; s += 1) {
+    if (!fillSliceFaceMask4(cfg.axis, cfg.step, s, SLICE_MASK_SCRATCH)) continue;
+    shade ??= computeFaceShade(
+      grid,
+      descriptors,
+      lighting,
+      sx,
+      pos[1],
+      sz,
+      cfg.dir,
+      emissive,
+      maxY,
+      false,
+      scratch.colors,
+    );
+    count += emitCulledSliceQuads4(job, s, shade);
+  }
+  return count;
+};
+
+/** Emits 4x4x4-culled faces for stairs and slabs (internal + neighbor + run merge). */
 export const emitCulledGridShape = (
   ctx: CulledShapeContext,
   emitQuad: EmitCulledQuadFn,
@@ -442,44 +477,12 @@ export const emitCulledGridShape = (
   y: number,
   z: number,
   scratch: CulledShapeScratch,
+  run?: GridRunSpan,
 ): number => {
   fillVoxelGrid4(shapeBoxSpecs(desc, cached.parsed, cached.facing, NO_CONNS), SELF_OCC_SCRATCH);
   let count = 0;
   for (const cfg of GRID_SLICE_AXES) {
-    const normal = FACE_BASIS[cfg.dir].normal;
-    readNeighborFaceMask(ctx, x + normal[0], y + normal[1], z + normal[2], cfg);
-    const tileId = tileForFace(desc, cfg.dir, cached.facing);
-    let shade: ReturnType<typeof computeFaceShade> | null = null;
-    for (let s = 0; s < 4; s += 1) {
-      if (!fillSliceFaceMask4(cfg.axis, cfg.step, s, SLICE_MASK_SCRATCH)) continue;
-      shade ??= computeFaceShade(
-        ctx.grid,
-        ctx.descriptors,
-        ctx.lighting,
-        x,
-        y,
-        z,
-        cfg.dir,
-        desc.layer === 'emissive',
-        ctx.maxY,
-        false,
-        scratch.colors,
-      );
-      count += emitCulledSliceQuads4(
-        ctx,
-        emitQuad,
-        cfg,
-        s,
-        x,
-        y,
-        z,
-        desc.layer,
-        tileId,
-        shade.colors,
-        shade.flip,
-        scratch,
-      );
-    }
+    count += emitGridAxisSlices(ctx, emitQuad, desc, cached, cfg, [x, y, z], scratch, run);
   }
   return count;
 };

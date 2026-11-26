@@ -55,10 +55,18 @@ const emitBox = (t: TrimCtx, pos: V3, smp: V3, spec: LocalBoxSpec, skipMask = 0)
   const [vx, vy, vz] = pos;
   if (vy < 0 || vy >= ctx.maxY) return 0;
   const [w, _h, d] = ctx.grid.size;
-  const [fx, fy, fz] = spec.from;
-  const [tx, ty, tz] = spec.to;
-  setVec3(scratch.from, vx + fx / 16 - w / 2, vy + fy / 16, vz + fz / 16 - d / 2);
-  setVec3(scratch.to, vx + tx / 16 - w / 2, vy + ty / 16, vz + tz / 16 - d / 2);
+  setVec3(
+    scratch.from,
+    vx + spec.from[0] / 16 - w / 2,
+    vy + spec.from[1] / 16,
+    vz + spec.from[2] / 16 - d / 2,
+  );
+  setVec3(
+    scratch.to,
+    vx + spec.to[0] / 16 - w / 2,
+    vy + spec.to[1] / 16,
+    vz + spec.to[2] / 16 - d / 2,
+  );
   const layer = spec.layer ?? 'opaque';
   const batch = getBatch(ctx.batches, layer, spec.tileOverride ?? 'timber_trim');
   const { grid, descriptors, lighting, maxY } = ctx;
@@ -86,13 +94,7 @@ const emitBox = (t: TrimCtx, pos: V3, smp: V3, spec: LocalBoxSpec, skipMask = 0)
   return count;
 };
 
-const emitSpecs = (
-  t: TrimCtx,
-  p: V3,
-  specs: readonly LocalBoxSpec[],
-  skip = 0,
-  smp: V3 = p,
-): number =>
+const emitSpecs = (t: TrimCtx, p: V3, specs: readonly LocalBoxSpec[], skip = 0, smp: V3 = p) =>
   p[1] < 0 || p[1] >= t.ctx.maxY ? 0 : specs.reduce((n, s) => n + emitBox(t, p, smp, s, skip), 0);
 
 const emitStrip = (t: TrimCtx, pos: V3, dir: CardinalFacing, s: StripSpec, smp?: V3): number => {
@@ -125,10 +127,13 @@ const emitPilasterCol = (
   return emitRuns(room.from[1], yEnd + 1, ok, (y0, y1) => {
     for (let k = y0; k <= y1; k += 1) seen.add(`${cx},${k},${cz}`);
     const h16 = (y1 - y0 + 1) * 16;
+    const cap =
+      (y0 === 0 || solid(t, cx, y0 - 1, cz) ? DIR_BIT.down : 0) |
+      (y1 + 1 >= t.ctx.maxY || solid(t, cx, y1 + 1, cz) ? DIR_BIT.up : 0);
     const smp: V3 = [cx + ox, Math.floor((y0 + y1) / 2), cz + oz];
     return specs.reduce(
       (n, s, i) =>
-        n + emitBox(t, [cx, y0, cz], smp, { ...s, to: [s.to[0], h16, s.to[2]] }, skips[i]!),
+        n + emitBox(t, [cx, y0, cz], smp, { ...s, to: [s.to[0], h16, s.to[2]] }, skips[i]! | cap),
       0,
     );
   });
@@ -156,8 +161,8 @@ const emitCornerPilasters = (t: TrimCtx): number => {
 const scanDirRows = (
   w: number,
   d: number,
-  fn: (dir: CardinalFacing, ax: boolean, fixed: number, uMax: number) => number,
-): number => {
+  fn: (dir: CardinalFacing, ax: boolean, v: number, uMax: number) => number,
+) => {
   let count = 0;
   for (const dir of sv.CARDINALS) {
     const ax = dir === 'north' || dir === 'south';
@@ -173,7 +178,7 @@ const emitBeltRun = (
   y: number,
   fixed: number,
   uMax: number,
-): number => {
+) => {
   const [ox, oz] = sv.OUTWARD[dir];
   const at = (u: number): V3 => [ax ? u : fixed, y, ax ? fixed : u];
   return emitRuns(
@@ -196,16 +201,15 @@ const emitBeltRun = (
 const emitFloorBeltCourses = (t: TrimCtx): number => {
   const [w, _h, d] = t.ctx.grid.size;
   let count = 0;
-  for (const y of sv.collectBeltCourseLevels(t.ctx.grid)) {
+  for (const y of sv.collectBeltCourseLevels(t.ctx.grid))
     if (y > 0 && y < t.ctx.maxY)
       count += scanDirRows(w, d, (dir, ax, v, uMax) => emitBeltRun(t, dir, ax, y, v, uMax));
-  }
   return count;
 };
 
 const emitCorbelCell = (t: TrimCtx, x: number, y: number, z: number): number => {
   const vy = y - 1;
-  if (!solid(t, x, y, z) || vox(t, x, vy, z) > 0) return 0;
+  if ((x + z) % 3 !== 0 || !solid(t, x, y, z) || vox(t, x, vy, z) > 0) return 0;
   const dir = sv.CARDINALS.find((c) => solid(t, x - sv.OUTWARD[c][0], vy, z - sv.OUTWARD[c][1]));
   return dir
     ? emitSpecs(t, [x, vy, z], sv.corbelStepSpecs(dir), DIR_BIT[sv.OPPOSITE[dir]] | DIR_BIT.up)
@@ -234,7 +238,12 @@ const emitOpeningJambs = (t: TrimCtx, op: StructureOpeningMeta, tileId: string):
       op.from[1],
       yMax + 1,
       (y) => solid(t, x, y, z),
-      (y0, y1) => emitStrip(t, [x, y0, z], op.wall, [2, u0, u1, 0, (y1 - y0 + 1) * 16, tileId]),
+      (y0, y1) => {
+        const cap =
+          (y0 === 0 || solid(t, x, y0 - 1, z) ? DIR_BIT.down : 0) |
+          (y1 + 1 >= t.ctx.maxY || solid(t, x, y1 + 1, z) ? DIR_BIT.up : 0);
+        return emitStrip(t, [x, y0, z], op.wall, [2, u0, u1, 0, (y1 - y0 + 1) * 16, tileId, cap]);
+      },
     );
   return jamb(op.from[0] - tx, op.from[2] - tz, 12, 16) + jamb(op.to[0] + tx, op.to[2] + tz, 0, 4);
 };
@@ -248,35 +257,24 @@ const emitOpeningHeader = (
   const hy = op.to[1] + 1;
   if (hy >= t.ctx.maxY) return 0;
   const { tx, tz, len } = sv.openingSpan(op);
-  return emitRuns(
-    -1,
-    len + 1,
-    (u) => solid(t, op.from[0] + u * tx, hy, op.from[2] + u * tz),
-    (u0, u1) => {
-      const pos: V3 = [op.from[0] + u0 * tx, hy, op.from[2] + u0 * tz];
-      const rx0 = u0 === -1 ? 12 : 0;
-      const rx1 = (u1 - u0) * 16 + (u1 === len ? 4 : 16);
-      const base = emitStrip(t, pos, op.wall, [
-        2.5,
-        rx0,
-        rx1,
-        0,
-        cornice ? 5 : 4,
-        tileId,
-        cornice ? DIR_BIT.up : 0,
-      ]);
-      return (
-        base +
-        (cornice ? emitStrip(t, pos, op.wall, [3.5, rx0, rx1, 5, 7, tileId, DIR_BIT.down]) : 0)
-      );
-    },
-  );
+  const ok = (u: number) => solid(t, op.from[0] + u * tx, hy, op.from[2] + u * tz);
+  return emitRuns(-1, len + 1, ok, (u0, u1) => {
+    const pos: V3 = [op.from[0] + u0 * tx, hy, op.from[2] + u0 * tz];
+    const [rx0, rx1] = [u0 === -1 ? 12 : 0, (u1 - u0) * 16 + (u1 === len ? 4 : 16)];
+    const b = emitStrip(t, pos, op.wall, [
+      2.5,
+      rx0,
+      rx1,
+      0,
+      cornice ? 5 : 4,
+      tileId,
+      cornice ? DIR_BIT.up : 0,
+    ]);
+    return (
+      b + (cornice ? emitStrip(t, pos, op.wall, [3.5, rx0, rx1, 5, 7, tileId, DIR_BIT.down]) : 0)
+    );
+  });
 };
-
-const stretchTo = (s: LocalBoxSpec, x1: number, y1: number, z1: number): LocalBoxSpec => ({
-  ...s,
-  to: [x1, y1, z1],
-});
 
 const emitWindowMullions = (
   t: TrimCtx,
@@ -304,7 +302,7 @@ const emitWindowMullions = (
           t,
           [cx, ya, cz],
           [cx, ya, cz],
-          stretchTo(vS!, vS!.to[0], (yb - ya + 1) * 16, vS!.to[2]),
+          { ...vS!, to: [vS!.to[0], (yb - ya + 1) * 16, vS!.to[2]] },
           DIR_BIT.up | DIR_BIT.down,
         ),
     );
@@ -322,7 +320,7 @@ const emitWindowMullions = (
           t,
           p,
           p,
-          stretchTo(hS!, ax ? s16 : hS!.to[0], hS!.to[1], ax ? hS!.to[2] : s16),
+          { ...hS!, to: [ax ? s16 : hS!.to[0], hS!.to[1], ax ? hS!.to[2] : s16] },
           endMask,
         );
       },
@@ -351,18 +349,26 @@ const emitWindowExtras = (t: TrimCtx, op: StructureOpeningMeta): number => {
           'timber_trim',
         ]),
     );
-    for (let u = 0; u < len; u += 1) {
-      const [cx, cz] = [op.from[0] + u * tx, op.from[2] + u * tz];
-      const [ax, az] = [cx + ox, cz + oz];
-      if (solid(t, cx, sy, cz) && vox(t, ax, sy, az) <= 0 && vox(t, ax, sy + 1, az) <= 0) {
-        count += emitSpecs(
-          t,
-          [ax, sy, az],
-          sv.flowerBoxSpecs(op.wall),
-          DIR_BIT[sv.OPPOSITE[op.wall]],
+    count += emitRuns(
+      0,
+      len,
+      (u) => {
+        const [cx, cz] = [op.from[0] + u * tx, op.from[2] + u * tz];
+        return (
+          solid(t, cx, sy, cz) &&
+          vox(t, cx + ox, sy, cz + oz) <= 0 &&
+          vox(t, cx + ox, sy + 1, cz + oz) <= 0
         );
-      }
-    }
+      },
+      (u0, u1) => {
+        const span = (u1 - u0 + 1) * 16;
+        const pos: V3 = [op.from[0] + u0 * tx + ox, sy, op.from[2] + u0 * tz + oz];
+        return (
+          emitStrip(t, pos, op.wall, [5, 1, span - 1, 10, 16, 'flower_box', DIR_BIT.down]) +
+          emitStrip(t, pos, op.wall, [4, 2, span - 2, 8.5, 10, 'timber_trim', DIR_BIT.up])
+        );
+      },
+    );
   }
   return count + emitWindowMullions(t, op, alongX, tx, tz, len);
 };
@@ -414,7 +420,7 @@ const emitEaveRow = (
     (u) => isBottomEaveStair(t, ax ? u : fixed, y, ax ? fixed : u, dir),
     (u0, u1) => {
       let sub = emitStrip(t, at(u0), dir, [1.5, 0, (u1 - u0 + 1) * 16, 2, 4, 'dark_oak_planks']);
-      for (let k = u0; k <= u1; k += 2)
+      for (let k = u0; k <= u1; k += 3)
         sub += emitStrip(t, at(k), dir, [2.5, 6, 10, 0, 3.5, 'dark_oak_planks', DIR_BIT.up]);
       return sub;
     },
@@ -426,12 +432,13 @@ const emitBargeboardCell = (t: TrimCtx, x: number, y: number, z: number): number
   if (v <= 0 || t.ctx.descriptors[v]!.shape !== 'stair') return 0;
   const cached = t.ctx.parsedStates[v]!;
   if (cached.parsed.properties.half === 'top') return 0;
+  const occSkip =
+    (vox(t, x, y - 1, z) > 0 ? DIR_BIT.down : 0) | (vox(t, x, y + 1, z) > 0 ? DIR_BIT.up : 0);
   let count = 0;
   for (const perp of sv.PERP_DIRS[sv.OPPOSITE[cached.facing]]) {
     const [px, pz] = sv.OUTWARD[perp];
-    if (vox(t, x + px, y, z + pz) <= 0 && vox(t, x - px, y, z - pz) > 0) {
-      count += emitStrip(t, [x, y, z], perp, [2, 0, 16, 0, 4, 'dark_oak_planks']);
-    }
+    if (vox(t, x + px, y, z + pz) <= 0 && vox(t, x - px, y, z - pz) > 0)
+      count += emitStrip(t, [x, y, z], perp, [2, 0, 16, 0, 4, 'dark_oak_planks', occSkip]);
   }
   return count;
 };
@@ -452,17 +459,17 @@ const emitChimneyCell = (t: TrimCtx, x: number, y: number, z: number): number =>
   const desc = v > 0 ? t.ctx.descriptors[v]! : null;
   if (!desc || desc.shape !== 'full' || !sv.isChimneyBrickTile(desc.top)) return 0;
   if (vox(t, x, y - 1, z) !== v || vox(t, x, y - 2, z) !== v) return 0;
-  const airN = sv.CARDINALS.filter(
-    (c) => vox(t, x + sv.OUTWARD[c][0], y, z + sv.OUTWARD[c][1]) <= 0,
-  );
-  if (airN.length < 3) return 0;
+  if (
+    sv.CARDINALS.filter((c) => vox(t, x + sv.OUTWARD[c][0], y, z + sv.OUTWARD[c][1]) <= 0).length <
+    3
+  )
+    return 0;
   const ab = vox(t, x, y + 1, z);
   const onSlab = ab > 0 && t.ctx.descriptors[ab]!.shape === 'slab' && vox(t, x, y + 2, z) <= 0;
   if (ab > 0 && !onSlab) return 0;
-  const sy = onSlab ? y + 2 : y + 1;
   return emitSpecs(t, [x, y + 1, z], sv.chimneyCapSpecs(desc.top, onSlab), DIR_BIT.down, [
     x,
-    sy,
+    onSlab ? y + 2 : y + 1,
     z,
   ]);
 };
@@ -470,10 +477,9 @@ const emitChimneyCell = (t: TrimCtx, x: number, y: number, z: number): number =>
 const emitChimneyCaps = (t: TrimCtx): number => {
   const [w, h, d] = t.ctx.grid.size;
   let count = 0;
-  for (let y = 3; y < Math.min(t.ctx.maxY - 1, h - 1); y += 1) {
+  for (let y = 3; y < Math.min(t.ctx.maxY - 1, h - 1); y += 1)
     for (let z = 0; z < d; z += 1)
       for (let x = 0; x < w; x += 1) count += emitChimneyCell(t, x, y, z);
-  }
   return count;
 };
 

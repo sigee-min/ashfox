@@ -11,7 +11,12 @@ export interface LocalBoxSpec {
   readonly emissive?: boolean;
   readonly layer?: BlockRenderLayer;
   readonly tileOverride?: string;
+  readonly skipMask?: number;
 }
+
+const MASK_UD = 48;
+const MASK_D = 32;
+const MASK_U = 16;
 
 const bx = (
   x0: number,
@@ -22,11 +27,13 @@ const bx = (
   z1: number,
   tileOverride?: string,
   layer: BlockRenderLayer = 'opaque',
+  skipMask = 0,
 ): LocalBoxSpec => ({
   from: [x0, y0, z0],
   to: [x1, y1, z1],
   layer,
   ...(tileOverride ? { tileOverride } : {}),
+  ...(skipMask ? { skipMask } : {}),
 });
 
 const em = (
@@ -37,12 +44,14 @@ const em = (
   y1: number,
   z1: number,
   tileOverride?: string,
+  skipMask = 0,
 ): LocalBoxSpec => ({
   from: [x0, y0, z0],
   to: [x1, y1, z1],
   emissive: true,
   layer: 'emissive',
   ...(tileOverride ? { tileOverride } : {}),
+  ...(skipMask ? { skipMask } : {}),
 });
 
 const rotatePointXZ = ([x, y, z]: Vec3, facing: CardinalFacing): Vec3 => {
@@ -104,7 +113,8 @@ export const bedBoxes = (
   props: Readonly<Record<string, string>>,
   facing: CardinalFacing,
 ): readonly LocalBoxSpec[] => {
-  const boxes: LocalBoxSpec[] = [
+  const head = props.part === 'head';
+  const b: LocalBoxSpec[] = [
     bx(0, 0, 0, 2.5, 4, 2.5, 'spruce_planks'),
     bx(13.5, 0, 0, 16, 4, 2.5, 'spruce_planks'),
     bx(0, 0, 13.5, 2.5, 4, 16, 'spruce_planks'),
@@ -112,34 +122,36 @@ export const bedBoxes = (
     bx(0, 3, 2, 1.5, 6, 14, 'timber_trim'),
     bx(14.5, 3, 2, 16, 6, 14, 'timber_trim'),
     bx(1, 4, 1, 15, 8.5, 15, 'plaster_white'),
+    bx(0, 4, head ? 0 : 14, 16, head ? 14 : 10, head ? 2 : 16, 'spruce_planks'),
+    bx(0, 4, head ? 0 : 13.5, 2.5, head ? 16 : 12, head ? 2.5 : 16, 'timber_trim'),
+    bx(13.5, 4, head ? 0 : 13.5, 16, head ? 16 : 12, head ? 2.5 : 16, 'timber_trim'),
+    {
+      from: [1, 8.5, head ? 7 : 0],
+      to: [15, 9.8, head ? 16 : 14],
+      role: 'top',
+      layer: 'opaque',
+      skipMask: MASK_D,
+    },
+    head
+      ? bx(2.5, 8.5, 2, 13.5, 11, 6.5, 'plaster_white')
+      : bx(1, 9.8, 0, 15, 10.6, 3, 'plaster_white'),
   ];
-  if (props.part === 'head') {
-    boxes.push(
-      bx(0, 4, 0, 16, 14, 2, 'spruce_planks'),
-      bx(0, 4, 0, 2.5, 16, 2.5, 'timber_trim'),
-      bx(13.5, 4, 0, 16, 16, 2.5, 'timber_trim'),
-      bx(2.5, 8.5, 2, 13.5, 11, 6.5, 'plaster_white'),
-      { from: [1, 8.5, 7], to: [15, 9.8, 16], role: 'top', layer: 'opaque' },
-    );
-  } else {
-    boxes.push(
-      bx(0, 4, 14, 16, 10, 16, 'spruce_planks'),
-      bx(0, 4, 13.5, 2.5, 12, 16, 'timber_trim'),
-      bx(13.5, 4, 13.5, 16, 12, 16, 'timber_trim'),
-      { from: [1, 8.5, 0], to: [15, 9.8, 14], role: 'top', layer: 'opaque' },
-      bx(1, 9.8, 0, 15, 10.6, 3, 'plaster_white'),
-    );
-  }
-  return boxes.map((b) => rotateBox(b, facing));
+  return b.map((spec) => rotateBox(spec, facing));
 };
 
 export const tableBoxes = (): readonly LocalBoxSpec[] => [
   { from: [0, 13.5, 0], to: [16, 16, 16], role: 'top', layer: 'opaque' },
-  { from: [0.75, 12, 0.75], to: [15.25, 13.5, 15.25], role: 'side', layer: 'opaque' },
-  { from: [1.5, 0, 1.5], to: [4, 12, 4], role: 'side', layer: 'opaque' },
-  { from: [12, 0, 1.5], to: [14.5, 12, 4], role: 'side', layer: 'opaque' },
-  { from: [1.5, 0, 12], to: [4, 12, 14.5], role: 'side', layer: 'opaque' },
-  { from: [12, 0, 12], to: [14.5, 12, 14.5], role: 'side', layer: 'opaque' },
+  {
+    from: [0.75, 12, 0.75],
+    to: [15.25, 13.5, 15.25],
+    role: 'side',
+    layer: 'opaque',
+    skipMask: MASK_U,
+  },
+  { from: [1.5, 0, 1.5], to: [4, 12, 4], role: 'side', layer: 'opaque', skipMask: MASK_U },
+  { from: [12, 0, 1.5], to: [14.5, 12, 4], role: 'side', layer: 'opaque', skipMask: MASK_U },
+  { from: [1.5, 0, 12], to: [4, 12, 14.5], role: 'side', layer: 'opaque', skipMask: MASK_U },
+  { from: [12, 0, 12], to: [14.5, 12, 14.5], role: 'side', layer: 'opaque', skipMask: MASK_U },
   bx(2, 3, 4, 3.5, 4.5, 12, 'timber_trim'),
   bx(12.5, 3, 4, 14, 4.5, 12, 'timber_trim'),
   bx(3.5, 3, 7.25, 12.5, 4.5, 8.75, 'timber_trim'),
@@ -150,42 +162,40 @@ export const campfireBoxes = (): readonly LocalBoxSpec[] => [
   bx(1, 0, 10, 15, 4, 14, 'spruce_planks'),
   bx(2, 3.5, 1, 6, 7.5, 15, 'oak_planks'),
   bx(10, 3.5, 1, 14, 7.5, 15, 'oak_planks'),
-  em(3, 0, 3, 13, 2.5, 13, 'hearth_ember'),
-  em(5, 2.5, 5, 11, 10, 11),
+  em(3, 0, 3, 13, 2.5, 13, 'hearth_ember', MASK_D),
+  em(5, 2.5, 5, 11, 10, 11, undefined, MASK_D),
 ];
 
 export const lanternBoxes = (props: Readonly<Record<string, string>>): readonly LocalBoxSpec[] => {
-  const hanging = props.hanging === 'true';
-  const y = hanging ? 2 : 0;
-  return [
-    em(5, y + 1, 5, 11, y + 7, 11),
+  const y = props.hanging === 'true' ? 2 : 0;
+  const out: LocalBoxSpec[] = [
+    em(5, y + 1, 5, 11, y + 7, 11, undefined, MASK_UD),
     bx(4.5, y, 4.5, 11.5, y + 1, 11.5, 'iron_flue'),
     bx(4.5, y + 7, 4.5, 11.5, y + 8.5, 11.5, 'iron_flue'),
-    bx(6, y + 8.5, 6, 10, y + 10, 10, 'iron_flue'),
-    bx(4.5, y + 1, 4.5, 5.5, y + 7, 5.5, 'iron_flue'),
-    bx(10.5, y + 1, 4.5, 11.5, y + 7, 5.5, 'iron_flue'),
-    bx(4.5, y + 1, 10.5, 5.5, y + 7, 11.5, 'iron_flue'),
-    bx(10.5, y + 1, 10.5, 11.5, y + 7, 11.5, 'iron_flue'),
-    ...(hanging ? [bx(7.25, y + 10, 7.25, 8.75, 16, 8.75, 'iron_flue')] : []),
+    bx(6, y + 8.5, 6, 10, y + 10, 10, 'iron_flue', 'opaque', MASK_D),
+    bx(4.5, y + 1, 4.5, 5.5, y + 7, 5.5, 'iron_flue', 'opaque', MASK_UD),
+    bx(10.5, y + 1, 4.5, 11.5, y + 7, 5.5, 'iron_flue', 'opaque', MASK_UD),
+    bx(4.5, y + 1, 10.5, 5.5, y + 7, 11.5, 'iron_flue', 'opaque', MASK_UD),
+    bx(10.5, y + 1, 10.5, 11.5, y + 7, 11.5, 'iron_flue', 'opaque', MASK_UD),
   ];
+  if (y > 0) out.push(bx(7.25, y + 10, 7.25, 8.75, 16, 8.75, 'iron_flue', 'opaque', MASK_D));
+  return out;
 };
 
-export const torchBoxes = (name: string, facing: CardinalFacing): readonly LocalBoxSpec[] => {
-  if (name.includes('wall_torch')) {
-    return [
-      bx(6.5, 4, 14.5, 9.5, 8, 16, 'iron_flue'),
-      bx(7, 5, 11, 9, 7, 14.5, 'iron_flue'),
-      bx(7.25, 5, 11.5, 8.75, 10.5, 13, 'spruce_planks'),
-      em(6.5, 10, 10.75, 9.5, 13.5, 13.75),
-    ].map((b) => rotateBox(b, facing));
-  }
-  return [
-    bx(6.5, 0, 6.5, 9.5, 1.5, 9.5, 'iron_flue'),
-    bx(6.75, 8, 6.75, 9.25, 9, 9.25, 'iron_flue'),
-    bx(7.25, 1.5, 7.25, 8.75, 8.5, 8.75, 'spruce_planks'),
-    em(6.5, 8.8, 6.5, 9.5, 12, 9.5),
-  ];
-};
+export const torchBoxes = (name: string, facing: CardinalFacing): readonly LocalBoxSpec[] =>
+  name.includes('wall_torch')
+    ? [
+        bx(6.5, 4, 14.5, 9.5, 8, 16, 'iron_flue'),
+        bx(7, 5, 11, 9, 7, 14.5, 'iron_flue'),
+        bx(7.25, 5, 11.5, 8.75, 10.5, 13, 'spruce_planks'),
+        em(6.5, 10, 10.75, 9.5, 13.5, 13.75),
+      ].map((b) => rotateBox(b, facing))
+    : [
+        bx(6.5, 0, 6.5, 9.5, 1.5, 9.5, 'iron_flue'),
+        bx(6.75, 8, 6.75, 9.25, 9, 9.25, 'iron_flue'),
+        bx(7.25, 1.5, 7.25, 8.75, 8.5, 8.75, 'spruce_planks', 'opaque', MASK_UD),
+        em(6.5, 8.8, 6.5, 9.5, 12, 9.5, undefined, MASK_D),
+      ];
 
 const orientDoorBox = (
   spec: LocalBoxSpec,
@@ -250,78 +260,91 @@ const paneConns = (
   return [on('north', 0), on('south', 1), on('east', 2), on('west', 3)];
 };
 
-const paneArmCoords: readonly [number, number, number, number][] = [
-  [7, 0, 9, 7],
-  [7, 9, 9, 16],
-  [9, 7, 16, 9],
-  [0, 7, 7, 9],
+const paneCullBox = (
+  x0: number,
+  y0: number,
+  z0: number,
+  x1: number,
+  y1: number,
+  z1: number,
+  tile: string,
+  layer: BlockRenderLayer,
+  glow: boolean,
+): LocalBoxSpec =>
+  glow ? em(x0, y0, z0, x1, y1, z1, tile) : bx(x0, y0, z0, x1, y1, z1, tile, layer);
+
+const mullionSpan = (low: boolean, high: boolean): readonly [number, number] => [
+  low ? 0 : 6.75,
+  high ? 16 : 9.25,
 ];
-const mullionArmCoords: readonly [number, number, number, number][] = [
-  [6.75, 0, 9.25, 7.25],
-  [6.75, 8.75, 9.25, 16],
-  [8.75, 6.75, 16, 9.25],
-  [0, 6.75, 7.25, 9.25],
-];
+
+const appendPaneMullions = (
+  boxes: LocalBoxSpec[],
+  n: boolean,
+  s: boolean,
+  e: boolean,
+  w: boolean,
+): void => {
+  const ew = e || w;
+  const ns = n || s;
+  const rx = ew && !ns ? 0.75 : 1.25;
+  const rz = ns && !ew ? 0.75 : 1.25;
+  boxes.push(bx(8 - rx, 0, 8 - rz, 8 + rx, 16, 8 + rz, 'timber_trim'));
+  if (ew || !ns) {
+    const [x0, x1] = mullionSpan(w, e);
+    boxes.push(bx(x0, 7.25, 6.75, x1, 8.75, 9.25, 'timber_trim'));
+  }
+  if (ns) {
+    const [z0, z1] = mullionSpan(n, s);
+    boxes.push(bx(6.75, 7.25, z0, 9.25, 8.75, z1, 'timber_trim'));
+  }
+};
 
 export const glassPaneBoxes = (
   parsed: ParsedBlockState,
   conns: readonly boolean[],
   glow: boolean,
 ): readonly LocalBoxSpec[] => {
-  const active = paneConns(parsed.properties, conns);
+  const [n, s, e, w] = paneConns(parsed.properties, conns);
   const gTile = glow ? 'window_glow' : 'glass';
-  const gBox = (x0: number, z0: number, x1: number, z1: number) =>
-    glow ? em(x0, 0, z0, x1, 16, z1, gTile) : bx(x0, 0, z0, x1, 16, z1, gTile, 'cutout');
-  const ewOnly = (active[2] || active[3]) && !active[0] && !active[1];
-  const nsOnly = (active[0] || active[1]) && !active[2] && !active[3];
-  const boxes: LocalBoxSpec[] = [
-    gBox(7, 7, 9, 9),
-    bx(
-      ewOnly ? 7.25 : 6.75,
-      0,
-      nsOnly ? 7.25 : 6.75,
-      ewOnly ? 8.75 : 9.25,
-      16,
-      nsOnly ? 8.75 : 9.25,
-      'timber_trim',
-    ),
-    bx(6.75, 7.25, 6.75, 9.25, 8.75, 9.25, 'timber_trim'),
-  ];
-  for (let i = 0; i < 4; i += 1) {
-    if (!active[i]) continue;
-    const [gx0, gz0, gx1, gz1] = paneArmCoords[i]!;
-    const [mx0, mz0, mx1, mz1] = mullionArmCoords[i]!;
-    boxes.push(gBox(gx0, gz0, gx1, gz1), bx(mx0, 7.25, mz0, mx1, 8.75, mz1, 'timber_trim'));
+  const g = (x0: number, z0: number, x1: number, z1: number) =>
+    paneCullBox(x0, 0, z0, x1, 16, z1, gTile, 'cutout', glow);
+  const [x0, x1] = [w ? 0 : 7, e ? 16 : 9];
+  const [z0, z1] = [n ? 0 : 7, s ? 16 : 9];
+  const boxes: LocalBoxSpec[] = [];
+  if (!e && !w) {
+    boxes.push(g(7, z0, 9, z1));
+  } else {
+    boxes.push(g(x0, 7, x1, 9));
+    if (n) boxes.push(g(7, 0, 9, 7));
+    if (s) boxes.push(g(7, 9, 9, 16));
   }
+  appendPaneMullions(boxes, n, s, e, w);
   return boxes;
 };
 
 export const corbelStepSpecs = (dir: CardinalFacing): readonly LocalBoxSpec[] => {
   const alongX = dir === 'east' || dir === 'west';
   const inwardLow = dir === 'east' || dir === 'south';
-  return [0, 1, 2].map((step) => {
-    const reach = step === 0 ? 5 : step === 1 ? 11 : 16;
-    const y0 = 4 + step * 4;
-    const d0 = inwardLow ? 0 : 16 - reach;
-    const d1 = inwardLow ? reach : 16;
-    return alongX
-      ? bx(d0, y0, 6, d1, y0 + 4, 10, 'timber_trim')
-      : bx(6, y0, d0, 10, y0 + 4, d1, 'timber_trim');
-  });
+  const d0 = inwardLow ? 0 : 4;
+  const d1 = inwardLow ? 12 : 16;
+  return [
+    alongX
+      ? bx(d0, 9, 5.5, d1, 16, 10.5, 'timber_trim', 'opaque', MASK_U)
+      : bx(5.5, 9, d0, 10.5, 16, d1, 'timber_trim', 'opaque', MASK_U),
+  ];
 };
-
-export const flowerBoxSpecs = (wall: CardinalFacing): readonly LocalBoxSpec[] => [
-  rotateBox(bx(1, 10, 11, 15, 16, 16, 'flower_box'), wall),
-  rotateBox(bx(2, 8.5, 12, 14, 10, 16, 'timber_trim'), wall),
-];
 
 export const chimneyCapSpecs = (collarTile: string, onSlab: boolean): readonly LocalBoxSpec[] =>
   onSlab
-    ? [bx(4, 8, 4, 12, 15, 12, 'iron_flue'), bx(3.5, 14.5, 3.5, 12.5, 16, 12.5, 'iron_flue')]
+    ? [
+        bx(4, 8, 4, 12, 15, 12, 'iron_flue', 'opaque', MASK_UD),
+        bx(3.5, 14.5, 3.5, 12.5, 16, 12.5, 'iron_flue', 'opaque', MASK_D),
+      ]
     : [
-        bx(2, 0, 2, 14, 3, 14, collarTile),
-        bx(4, 3, 4, 12, 11, 12, 'iron_flue'),
-        bx(3.5, 11, 3.5, 12.5, 12.5, 12.5, 'iron_flue'),
+        bx(2, 0, 2, 14, 3, 14, collarTile, 'opaque', MASK_D),
+        bx(4, 3, 4, 12, 11, 12, 'iron_flue', 'opaque', MASK_UD),
+        bx(3.5, 11, 3.5, 12.5, 12.5, 12.5, 'iron_flue', 'opaque', MASK_D),
       ];
 
 export const windowMullionSpecs = (alongX: boolean): readonly LocalBoxSpec[] => [
@@ -340,10 +363,8 @@ export const windowMullionSpecs = (alongX: boolean): readonly LocalBoxSpec[] => 
 ];
 
 export const pilasterSpecs = (ox: -1 | 1, oz: -1 | 1): readonly LocalBoxSpec[] => {
-  const ax0 = ox < 0 ? -2 : 16;
-  const az0 = oz < 0 ? -2 : 11;
-  const bx0 = ox < 0 ? 0 : 11;
-  const bz0 = oz < 0 ? -2 : 16;
+  const [ax0, az0] = [ox < 0 ? -2 : 16, oz < 0 ? -2 : 11];
+  const [bx0, bz0] = [ox < 0 ? 0 : 11, oz < 0 ? -2 : 16];
   return [
     bx(ax0, 0, az0, ax0 + 2, 16, az0 + 7, 'timber_trim'),
     bx(bx0, 0, bz0, bx0 + 5, 16, bz0 + 2, 'timber_trim'),
@@ -361,35 +382,16 @@ export const writeStripSpec = (
   tileId: string,
 ): void => {
   out.tileOverride = tileId;
-  if (dir === 'north') {
-    out.from[0] = u0;
-    out.from[1] = y0;
-    out.from[2] = -depth;
-    out.to[0] = u1;
-    out.to[1] = y1;
-    out.to[2] = 0;
-  } else if (dir === 'south') {
-    out.from[0] = u0;
-    out.from[1] = y0;
-    out.from[2] = 16;
-    out.to[0] = u1;
-    out.to[1] = y1;
-    out.to[2] = 16 + depth;
-  } else if (dir === 'west') {
-    out.from[0] = -depth;
-    out.from[1] = y0;
-    out.from[2] = u0;
-    out.to[0] = 0;
-    out.to[1] = y1;
-    out.to[2] = u1;
-  } else {
-    out.from[0] = 16;
-    out.from[1] = y0;
-    out.from[2] = u0;
-    out.to[0] = 16 + depth;
-    out.to[1] = y1;
-    out.to[2] = u1;
-  }
+  out.from[1] = y0;
+  out.to[1] = y1;
+  const n = dir === 'north' || dir === 'west';
+  const zAxis = dir === 'north' || dir === 'south';
+  const d0 = n ? -depth : 16;
+  const d1 = n ? 0 : 16 + depth;
+  out.from[0] = zAxis ? u0 : d0;
+  out.to[0] = zAxis ? u1 : d1;
+  out.from[2] = zAxis ? d0 : u0;
+  out.to[2] = zAxis ? d1 : u1;
 };
 
 export const CARDINALS: readonly CardinalFacing[] = ['north', 'south', 'east', 'west'];
@@ -417,17 +419,12 @@ export const PERP_DIRS: Readonly<
 export const isTimberWallTile = (t: string): boolean =>
   t.includes('plank') || t.includes('log') || t === 'plaster_white' || t === 'terracotta';
 
-export const isChimneyBrickTile = (tile: string): boolean =>
-  tile === 'bricks' || tile === 'deepslate_tiles' || tile === 'deepslate_bricks';
+export const isChimneyBrickTile = (t: string): boolean =>
+  t === 'bricks' || t === 'deepslate_tiles' || t === 'deepslate_bricks';
 
-const addUpperLevels = <T>(
-  levels: Set<number>,
-  items: readonly T[],
-  yOf: (item: T) => number,
-): void => {
+const addUpperLevels = <T>(levels: Set<number>, items: readonly T[], yOf: (item: T) => number) => {
   if (items.length === 0) return;
-  let minY = yOf(items[0]!);
-  for (const item of items) minY = Math.min(minY, yOf(item));
+  const minY = items.reduce((m, item) => Math.min(m, yOf(item)), yOf(items[0]!));
   for (const item of items) if (yOf(item) > minY) levels.add(yOf(item));
 };
 
@@ -440,10 +437,8 @@ export const collectBeltCourseLevels = (grid: StructureGrid): readonly number[] 
 
 export const openingSpan = (op: StructureOpeningMeta) => {
   const alongX = op.wall === 'north' || op.wall === 'south';
-  const tx = alongX ? 1 : 0;
-  const tz = alongX ? 0 : 1;
-  const len = (alongX ? op.to[0] - op.from[0] : op.to[2] - op.from[2]) + 1;
-  return { alongX, tx, tz, len };
+  const [tx, tz] = [alongX ? 1 : 0, alongX ? 0 : 1];
+  return { alongX, tx, tz, len: (alongX ? op.to[0] - op.from[0] : op.to[2] - op.from[2]) + 1 };
 };
 
 export const voxelAt = (grid: StructureGrid, x: number, y: number, z: number): number => {
@@ -461,9 +456,8 @@ export const isSolidOpaqueAt = (
   z: number,
 ): boolean => {
   const v = voxelAt(grid, x, y, z);
-  if (v <= 0) return false;
   const [w, _h, d] = grid.size;
-  return grid.customTags[(y * d + z) * w + x] === null && descriptors[v]!.solidOpaque;
+  return v > 0 && grid.customTags[(y * d + z) * w + x] === null && descriptors[v]!.solidOpaque;
 };
 
 export const isTrueAirAt = (
@@ -485,15 +479,14 @@ export const isTimberRoom = (
   const [x0, y0, z0] = room.from;
   const [x1, y1, z1] = room.to;
   const my = Math.min(y1 - 1, Math.max(y0 + 1, Math.floor((y0 + y1) / 2)));
-  const probes: readonly [number, number][] = [
+  return [
     [x0, z0],
     [x1, z0],
     [x0 + 1, z0],
     [x0, z0 + 1],
     [x1, z1],
-  ];
-  return probes.some(([px, pz]) => {
-    const v = voxelAt(grid, px, my, pz);
+  ].some(([px, pz]) => {
+    const v = voxelAt(grid, px!, my, pz!);
     return v > 0 && isTimberWallTile(descriptors[v]!.side);
   });
 };
