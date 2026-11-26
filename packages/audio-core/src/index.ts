@@ -70,6 +70,8 @@ const renderVariantProduct = (
     bakeLoop(renderValidatedRecipe(recipe, variant.id), recipe.playback, channels),
     recipe.output,
     channels,
+    recipe.sampleRate,
+    recipe.playback.kind === 'loop',
   );
   const wav = encodeWav(pcm, recipe.sampleRate, channels);
   const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);

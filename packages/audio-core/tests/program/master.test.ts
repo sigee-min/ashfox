@@ -107,6 +107,50 @@ assert.throws(
   /lower gainDb/,
 );
 
+// 8. Loop mastering preserves periodic filter state without boundary discontinuity.
+const loopFrames = Math.round(0.58 * RATE);
+const sineLoop = Float64Array.from(
+  { length: loopFrames },
+  (_, i) => 0.7 * Math.sin((2 * Math.PI * 50 * i) / RATE),
+);
+const masteredLoop = master(sineLoop, { gainDb: 0, peakDb: -1, limit: true }, 1, RATE, true);
+assert.ok(
+  measure(masteredLoop, 1).seamDelta < 0.02,
+  `loop seam jumped after mastering: ${measure(masteredLoop, 1).seamDelta}`,
+);
+
+// 9. True-peak limiter detects and attenuates 12 kHz pi/4 intersample peaks exceeding peakDb.
+const hfFrames = Math.round(0.2 * RATE);
+const hfHot = Float64Array.from(
+  { length: hfFrames },
+  (_, i) => 1.2 * Math.sin((2 * Math.PI * 12000 * i) / RATE + Math.PI / 4),
+);
+const hfCeiling = 10 ** (-0.5 / 20);
+const hfLimited = master(hfHot, { gainDb: 0, peakDb: -0.5, limit: true }, 1, RATE, false);
+assert.ok(
+  measure(hfLimited, 1).peak < 0.8,
+  `expected sample peak attenuation for intersample hot 12kHz sine, got ${measure(hfLimited, 1).peak}`,
+);
+let measuredTruePeak = 0;
+for (const frac of [0.25, 0.5, 0.75]) {
+  const weights = Array.from({ length: 12 }, (_, t) => {
+    const x = t - 5 - frac;
+    const sinc = x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+    const u = (t + 0.5) / 12;
+    return sinc * (0.42 - 0.5 * Math.cos(2 * Math.PI * u) + 0.08 * Math.cos(4 * Math.PI * u));
+  });
+  const wSum = weights.reduce((a, b) => a + b, 0);
+  for (let i = 100; i < hfFrames - 100; i++) {
+    let val = 0;
+    for (let t = 0; t < 12; t++) val += (hfLimited[i + t - 5]! * weights[t]!) / wSum;
+    measuredTruePeak = Math.max(measuredTruePeak, Math.abs(val));
+  }
+}
+assert.ok(
+  measuredTruePeak <= hfCeiling,
+  `reconstructed 4x intersample peak ${measuredTruePeak} exceeded ceiling ${hfCeiling}`,
+);
+
 process.stdout.write(
-  'master: DC blocker, punch, warmth/air EQ, glue, bass-mono width, targetLufs, and PCM16 limiter passed\n',
+  'master: DC blocker, punch, warmth/air EQ, glue, bass-mono width, targetLufs, loop continuity, true-peak & PCM16 limiter passed\n',
 );

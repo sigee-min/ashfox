@@ -205,8 +205,9 @@ export const master = (
   policy: MasterSpec,
   channels: 1 | 2 = 1,
   rate = 48000,
+  loop = false,
 ): Float64Array => {
-  const result = applyMasterBus(pcm, policy, channels, rate);
+  const result = applyMasterBus(pcm, policy, channels, rate, loop);
   const ceiling = 10 ** (policy.peakDb / 20);
   const stats = measure(result, channels);
   if (stats.rms < 1e-8)

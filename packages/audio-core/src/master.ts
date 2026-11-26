@@ -249,6 +249,49 @@ const measureKWeightedLufs = (buf: Float64Array, channels: 1 | 2, rate: number):
   return finalMs > 1e-16 ? -0.691 + 10 * Math.log10(finalMs) : -Infinity;
 };
 
+const buildSincPhase = (frac: number): Float64Array => {
+  const kernel = new Float64Array(12);
+  let sum = 0;
+  for (let t = 0; t < 12; t += 1) {
+    const m = t - 5;
+    const x = m - frac;
+    const sinc = x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x);
+    const u = (t + 0.5) / 12;
+    const blackman = 0.42 - 0.5 * Math.cos(2 * Math.PI * u) + 0.08 * Math.cos(4 * Math.PI * u);
+    const w = sinc * blackman;
+    kernel[t] = w;
+    sum += w;
+  }
+  for (let t = 0; t < 12; t += 1) kernel[t] = kernel[t]! / sum;
+  return kernel;
+};
+
+const TRUE_PEAK_PHASES: readonly Float64Array[] = [
+  buildSincPhase(0.25),
+  buildSincPhase(0.5),
+  buildSincPhase(0.75),
+];
+
+const channelTruePeak = (
+  buf: Float64Array,
+  channels: 1 | 2,
+  frames: number,
+  frameIdx: number,
+  ch: number,
+): number => {
+  let peak = Math.abs(buf[frameIdx * channels + ch]!);
+  for (const kernel of TRUE_PEAK_PHASES) {
+    let sum = 0;
+    for (let t = 0; t < 12; t += 1) {
+      const idx = clamp(frameIdx + t - 5, 0, frames - 1);
+      sum += buf[idx * channels + ch]! * kernel[t]!;
+    }
+    const mag = Math.abs(sum);
+    if (mag > peak) peak = mag;
+  }
+  return peak;
+};
+
 const computeLimiterGain = (
   buf: Float64Array,
   channels: 1 | 2,
@@ -261,8 +304,8 @@ const computeLimiterGain = (
   const gBack = new Float64Array(frames);
   let future = 1;
   for (let i = frames - 1; i >= 0; i -= 1) {
-    const l = Math.abs(buf[i * channels]!);
-    const r = channels === 2 ? Math.abs(buf[i * 2 + 1]!) : l;
+    const l = channelTruePeak(buf, channels, frames, i, 0);
+    const r = channels === 2 ? channelTruePeak(buf, channels, frames, i, 1) : l;
     const peak = Math.max(l, r);
     const req = peak > safeCeiling ? safeCeiling / peak : 1;
     future = Math.min(req, future + slope);
@@ -300,14 +343,50 @@ const applyOutputAndLimiter = (
   }
 };
 
-/** 7-stage deterministic mastering bus: DC-HPF, punch, glue, tilt EQ, bass-mono, LUFS trim, lookahead limiter. */
+const buildLoopWorkBuffer = (
+  pcm: Float64Array,
+  channels: 1 | 2,
+  rate: number,
+): { readonly work: Float64Array; readonly warmFrames: number; readonly frames: number } => {
+  const frames = pcm.length / channels;
+  const warmFrames = Math.min(frames * 2, Math.max(Math.round(rate * 0.5), 2400));
+  const tailFrames = Math.min(frames, Math.round(rate * 0.05));
+  const total = warmFrames + frames + tailFrames;
+  const work = new Float64Array(total * channels);
+  for (let i = 0; i < total; i += 1) {
+    const src = (((i - warmFrames) % frames) + frames) % frames;
+    work[i * channels] = pcm[src * channels]!;
+    if (channels === 2) work[i * 2 + 1] = pcm[src * 2 + 1]!;
+  }
+  return { work, warmFrames, frames };
+};
+
+const computeLufsTrimDb = (
+  work: Float64Array,
+  padded: { readonly warmFrames: number; readonly frames: number } | null,
+  policy: MasterSpec,
+  channels: 1 | 2,
+  rate: number,
+): number => {
+  if (policy.targetLufs === undefined) return 0;
+  const core = padded
+    ? work.subarray(padded.warmFrames * channels, (padded.warmFrames + padded.frames) * channels)
+    : work;
+  const lufs = measureKWeightedLufs(core, channels, rate);
+  return Number.isFinite(lufs) ? clamp(policy.targetLufs - lufs, -12, 18) : 0;
+};
+
+/** 7-stage deterministic mastering bus: DC-HPF, punch, glue, tilt EQ, bass-mono, LUFS trim, lookahead true-peak limiter. */
 export const applyMasterBus = (
   pcm: Float64Array,
   policy: MasterSpec,
   channels: 1 | 2,
   rate: number,
+  loop = false,
 ): Float64Array => {
-  const work = new Float64Array(pcm);
+  const frames = pcm.length / channels;
+  const padded = loop && frames > 0 ? buildLoopWorkBuffer(pcm, channels, rate) : null;
+  const work = padded ? padded.work : new Float64Array(pcm);
   applyChannelBiquad(work, channels, butterworthHpfCoeffs(20, rate));
   applyTransientShaper(work, channels, rate, policy.punch ?? 0);
   applyGlueCompressor(work, channels, rate, policy.glue ?? 0);
@@ -316,11 +395,9 @@ export const applyMasterBus = (
   const air = clamp(policy.air ?? 0, -1, 1);
   if (air !== 0) applyChannelBiquad(work, channels, shelfCoeffs('high', 6500, air * 4.5, rate));
   applyBassMonoWidth(work, channels, rate, policy.width ?? 1);
-  let lufsTrimDb = 0;
-  if (policy.targetLufs !== undefined) {
-    const lufs = measureKWeightedLufs(work, channels, rate);
-    if (Number.isFinite(lufs)) lufsTrimDb = clamp(policy.targetLufs - lufs, -12, 18);
-  }
-  applyOutputAndLimiter(work, policy, channels, rate, policy.gainDb + lufsTrimDb);
-  return work;
+  const totalGainDb = policy.gainDb + computeLufsTrimDb(work, padded, policy, channels, rate);
+  applyOutputAndLimiter(work, policy, channels, rate, totalGainDb);
+  return padded
+    ? work.slice(padded.warmFrames * channels, (padded.warmFrames + padded.frames) * channels)
+    : work;
 };

@@ -73,11 +73,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+              "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
             },
             {
               "id": "base",
-              "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+              "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
             }
           ]
         },
@@ -87,15 +87,15 @@
           "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "568daa1678838576c7d6e6c3ee3ac5b722dc7e6246f2dd2e4c9067bcd00f5515",
+      "catalogHash": "48601f7e1075f994d3700141194d72def100785bed1b1b9eb31994c34406fe1f",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
@@ -111,15 +111,15 @@
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "a1e9fe93d6863c4cee8e073c9040e587bdaf458a7c058235b7ae3f0b2848d868"
+          "sha256": "7b007219a52d1488e6c1907efb18ca4ba111ea46b1e42216ccc1b9fdc5eea4ac"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/base.wav",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin/griffin.glb",
@@ -131,11 +131,11 @@
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "9cbf4a4c9be10f64bb53be26abe42f20404112da738a0e77845695fe5570384f"
+          "sha256": "4fdcff176625c2909866c2da0f80c3463948e61c1d342c9665d6660155386466"
         },
         {
           "path": "catalog.json",
-          "sha256": "568daa1678838576c7d6e6c3ee3ac5b722dc7e6246f2dd2e4c9067bcd00f5515"
+          "sha256": "48601f7e1075f994d3700141194d72def100785bed1b1b9eb31994c34406fe1f"
         }
       ]
     },
@@ -370,11 +370,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+              "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
             },
             {
               "id": "base",
-              "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+              "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
             }
           ]
         },
@@ -384,15 +384,15 @@
           "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "8a73e6df37240380de974e955c66016614d6b0c76730f000801d00badd17d7b9",
+      "catalogHash": "670fc2b5747704d5568d780cfc097a2db47b6f372ddab38e9180deff35054314",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
@@ -408,7 +408,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "8a73e6df37240380de974e955c66016614d6b0c76730f000801d00badd17d7b9"
+          "sha256": "670fc2b5747704d5568d780cfc097a2db47b6f372ddab38e9180deff35054314"
         }
       ]
     },
@@ -465,28 +465,28 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+              "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
             },
             {
               "id": "base",
-              "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+              "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
             }
           ]
         }
       ],
-      "catalogHash": "6b891a0de698c1a75463fe9a54ec4e7417466b976e3b5efe9ad176778706bb6d",
+      "catalogHash": "e3f58e1745193075e8ff45f9172ce5c83cae9ef733ec08207589931de89e3ce2",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/game_pack/game_pack.zip",
-          "sha256": "5bb6845086881561c5013b026f455321a97515b56a63a3bda61552c210621c65"
+          "sha256": "8dced2f3b66930934317168dd380890a47b1a2ac1c4945bae934f92b5549782c"
         },
         {
           "path": "assets/game_pack/resource-pack/ashfox-lineage.json",
@@ -506,11 +506,11 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/sounds/combat.claw_hit/alternate.ogg",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/sounds/combat.claw_hit/base.ogg",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/textures/item/rune_blade.png",
@@ -574,7 +574,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "6b891a0de698c1a75463fe9a54ec4e7417466b976e3b5efe9ad176778706bb6d"
+          "sha256": "e3f58e1745193075e8ff45f9172ce5c83cae9ef733ec08207589931de89e3ce2"
         }
       ]
     },
@@ -642,11 +642,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "5d144d1206c877a16412750ea31790e1cb257bc1397b4190c6bdb64eca806fd5"
+              "sha256": "999adaf45a8198ad1a47b7bcf94a515365528b8b2ecab92dfa70d9cf3b8add8d"
             },
             {
               "id": "base",
-              "sha256": "2f8f3c965a02c8e894308e161c0249f6dae4f8ec29bfdce5ed9813c1e31241b4"
+              "sha256": "eccf76613a6b30dbeffff6f25ad639749b9affadf7a6512fab1371dd63a22e58"
             }
           ]
         },
@@ -660,7 +660,7 @@
             },
             {
               "id": "base",
-              "sha256": "120adda134638fc59871317778724bc7f67e2ae948472d5060ac4d9be2fec8bb"
+              "sha256": "c42ebd0c35eb62ef8748a2681a1b0d9a709a8c6ee99b998d1715bfb00ee34d09"
             }
           ]
         },
@@ -684,11 +684,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+              "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
             },
             {
               "id": "base",
-              "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+              "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
             }
           ]
         },
@@ -698,11 +698,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "6309db3aba5d06abfeeab56134f158f21ad127a9c5a8290791908653399c3549"
+              "sha256": "b5e430297c81d3a233a4121f43d9925306d28972d8a0d72925e631834d8648ff"
             },
             {
               "id": "base",
-              "sha256": "30de2836fdf0d9a5970d6bad2d475b3c48b0f1b2f01517dc53eadd4754ea8a65"
+              "sha256": "30d2d6e6c0f3b225f5afe550c22d76cb0011f9fba14227fa280399fc622da8f9"
             }
           ]
         },
@@ -712,11 +712,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "89df4f9d7e7b1765d56f4e1487b9df4afc68cf35daf8bdb5b0857090be4b7a72"
+              "sha256": "8357b9ff29a13f9ee2316369456b02215f5e8316b6ba870c3f842ba21c8f7665"
             },
             {
               "id": "base",
-              "sha256": "230ce0529282bac9d3f9bdcb60359fa1bcbc9165e45caf2bf63a6eec2b758365"
+              "sha256": "6ee910fefda9c03254d734614ca1261635c6128954d8dd87e14176267a64af02"
             }
           ]
         },
@@ -726,11 +726,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "316f34a085de997d406e6b1e10631e96ef84e3507bac8fe882291eae7d0439d2"
+              "sha256": "61bae729a6988891277baf88509238a636b3b2c4861c8131c1f45d3f86ef2beb"
             },
             {
               "id": "base",
-              "sha256": "b697176660875ae6561d0fe31bac974c0f4de3aa84a5812bdcf98c96681478a0"
+              "sha256": "d09e0c09bb8fecae15b0a07b6d6b093d7bda569593c531372f7ff2f2509ae636"
             }
           ]
         },
@@ -740,11 +740,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "6723f2c5045bd7dc88da355c8c910e8b00c7a98ad21ea1b39bf0c69456eb34fa"
+              "sha256": "7bed507a982e476eca6cbe47867642b298082ebd96ce42cdf77f33f6f1388186"
             },
             {
               "id": "base",
-              "sha256": "c87aa69ea70fd52d10def7ed12944e891568bd1fe29c8cbc537825e01e612c80"
+              "sha256": "2364ec0f2bb8200d3e7e05afebe422dccb3cd65362d6b6b6feac610ecdb6dcdd"
             }
           ]
         },
@@ -754,11 +754,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "5e51c1561279c7a0437fe8fe375a2e64ece703838d996f6cad2fee405102dc64"
+              "sha256": "fb2e03c6fd2a170bdbb181565967bb93717edaf4a5dd5526e2ca1e76b29f0b15"
             },
             {
               "id": "base",
-              "sha256": "444844bb12f0e9c940b8b4e987b3fcc66790ab8dffa26c5449d8dfc58cda3cdb"
+              "sha256": "af0499e08b7468da773a461fbe721d51a1e22905db80e8b78fc695583b5e9f63"
             }
           ]
         },
@@ -768,11 +768,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "7bc994fc0f3cc4e438bb37eddceb23b4c235759c75f6b54429f6fa75d8fefb4e"
+              "sha256": "9c27a0adc63505334093d8399c3549df3c0ff9ad2604d0405afcaed8e1672b36"
             },
             {
               "id": "base",
-              "sha256": "29405b724a549712b63b41ad57802174fc9bbdd8a99105ade1651ff38595d0a3"
+              "sha256": "e7d007e1b1a2ccd8d3e33440fcda08994a9846dd5df4ec5b82873d06e3d9360c"
             }
           ]
         },
@@ -782,11 +782,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "2df79566bac00204187b72b1677dc6edf950b51dd8dfddef8c83777bf6e24901"
+              "sha256": "776dee93858122c2c581d39e95a97c7273cb925e1c45ec98c89bdfbd19d3f877"
             },
             {
               "id": "base",
-              "sha256": "af7fcfacf482554ac5068abc521e312b70a7cd8a1840235382ec47a6785e26c9"
+              "sha256": "4a388e10f92246b9d7565f606b85ce50d01ac6cb7ce25291634b8df9216f13fd"
             }
           ]
         },
@@ -796,11 +796,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "1bd80059605582f7d72f813bca145e91ff2ea51f3663b4dcc5a888c021149810"
+              "sha256": "44647a34857a789e34b3d4dc7c0feaf0dfeebe61f62931cfc05a64a6ae355b6b"
             },
             {
               "id": "base",
-              "sha256": "1487e3e837ec9c9b6e72b6e78ca291fd517b4c457cf88b4e83df8551c2b2d098"
+              "sha256": "fb1d7284500cfab138fa40ca4899cf0234e1325e6094fcc30c710e5b35a1efb5"
             }
           ]
         },
@@ -810,11 +810,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "cd262e849bbf068af14f86e187dfc9bd68ab92d4110eddd9b3d26e9c0fcf3543"
+              "sha256": "cf63f093fc6d03ce177b8b66a081154778dd39778a304f954a1af2c32ef20567"
             },
             {
               "id": "base",
-              "sha256": "7051154d5ffda9c71cd576d7b29a8538836f1c636fa58dbbb3fdeafffee366ba"
+              "sha256": "5443a1aa550d3959b32d2fcf0dbb8cc614107b39c0650238b998aa1b2d99ae9d"
             }
           ]
         },
@@ -824,11 +824,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "f4162dbbcd6f394a032dbc55deaaa385f81d981157987500f8a46984ff03c9c5"
+              "sha256": "9ec4d2cfe597f5d79c3354d79dcf97cef240287d94b05fe0c16936cfb6b6b3ca"
             },
             {
               "id": "base",
-              "sha256": "f44986abadf64b0a650429e4f79a2edf56253b29c2ad577f800788ec3270a22a"
+              "sha256": "86ed7d6a545fb013ffaf927a6d69fbfd5d77f12468bb3ce6c436f6c220695055"
             }
           ]
         },
@@ -838,11 +838,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "05c481d4dfef3af0ba23238f41952da3cc591290c0cadc8fbd6a682ec3aef6db"
+              "sha256": "da47c8872f8f43ef6e67e2644f0cab20a2b42a61ffe8b75c1fb07a647182607e"
             },
             {
               "id": "base",
-              "sha256": "440574bad22587e5f2acecf08264fad21ccefddea08a8e4c52386a2f54995440"
+              "sha256": "c0d0a1e3227e0c1583614160e6364f55b1e7a2c034fe5d1e60e60856b4f6d1f9"
             }
           ]
         },
@@ -852,11 +852,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "d4a7b19ed514a17b09c349e2d6c54ee95bfcc94d04b20052e102c9a2541145a6"
+              "sha256": "79f739dfa963aa0b787000fd2efaced17824beb9933ba10f203adcbb11a27663"
             },
             {
               "id": "base",
-              "sha256": "3fa37dbe94693bed418896701a9c9cb8bfdf93aa4962b078f440129543abc7bf"
+              "sha256": "2faefc1683ce295813d26ecc750fe0b97b230c689cd469b85bf4c732dad8cc6f"
             }
           ]
         },
@@ -866,11 +866,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "ddc55a5ff3608c4097e7e32c62e9047c09b0e474c6114eb89e7df7dc4035af78"
+              "sha256": "4ace4de73fd8e237b385d82d1fa7f9c6f7887e7ff0bf74fa782f3705b9dc1430"
             },
             {
               "id": "base",
-              "sha256": "1b4cef07c8c3316e54335ac1b8dfc156aeac34d46ce049fece38c8a01f693e8d"
+              "sha256": "7b240f9e4a3d2057cb0fd2d3a9da0f968d0a0a5eeece144a3021c9b7999f21c5"
             }
           ]
         },
@@ -880,11 +880,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "8421fdc06cb87d479315e6b076a459e331dc349379ebe3332d1dc28ffea7ed0e"
+              "sha256": "c0ddd5b7a0ac9adeafb87c329d80281f4322870679c7b1fa6fe725f500a2a3fe"
             },
             {
               "id": "base",
-              "sha256": "ce76037ae5972dd03c6bbddf47829d1729d44ccbcee639949dbf8b2af8292929"
+              "sha256": "dc3d417369204ac43e788086276f0eb3b4455a6a5fccb7b8d85462705b72582b"
             }
           ]
         },
@@ -894,24 +894,24 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "b0d4196959e77bd8e3752bf644313392ceeb2e767fc160acf72588253bb6e22f"
+              "sha256": "0c091decf43b028b28157494de1968c5e4aac41b2bd6b312fab62c223e1d6e2e"
             },
             {
               "id": "base",
-              "sha256": "aa928df88a441b6fbb65cc6b31686fad0f2db9a24cd69646adc4efd019f650c8"
+              "sha256": "f982bd1dce7f4486b7401bdb7cffdf5afa0d07477bc72f5be4ebcfea2f3bdadb"
             }
           ]
         }
       ],
-      "catalogHash": "aafeeee4ac98b0e6c119ef530a40999c53594d712c8ccfd835bfc35e3351e23b",
+      "catalogHash": "4180d4f1d38c10d7cbfef98f1ffd6cbad302b00f6e2a95571b15b63ec8509956",
       "files": [
         {
           "path": "assets/bell_pattern/bell_pattern/alternate.wav",
-          "sha256": "5d144d1206c877a16412750ea31790e1cb257bc1397b4190c6bdb64eca806fd5"
+          "sha256": "999adaf45a8198ad1a47b7bcf94a515365528b8b2ecab92dfa70d9cf3b8add8d"
         },
         {
           "path": "assets/bell_pattern/bell_pattern/base.wav",
-          "sha256": "2f8f3c965a02c8e894308e161c0249f6dae4f8ec29bfdce5ed9813c1e31241b4"
+          "sha256": "eccf76613a6b30dbeffff6f25ad639749b9affadf7a6512fab1371dd63a22e58"
         },
         {
           "path": "assets/bird_call/bird_call/alternate.wav",
@@ -919,7 +919,7 @@
         },
         {
           "path": "assets/bird_call/bird_call/base.wav",
-          "sha256": "120adda134638fc59871317778724bc7f67e2ae948472d5060ac4d9be2fec8bb"
+          "sha256": "c42ebd0c35eb62ef8748a2681a1b0d9a709a8c6ee99b998d1715bfb00ee34d09"
         },
         {
           "path": "assets/charging_spell/charging_spell/alternate.wav",
@@ -931,135 +931,135 @@
         },
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "b82583503da43eab46e6a68393dfba1b925f88ab41a19412db50d7b38a413538"
+          "sha256": "8251968dc8bcbe984776a8dd57e163dc795b9ca60ac062ec66d845a922603e4d"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "c89ae0a2a579073cf1f884781987e736f98d9b9e6191a639632552c38930d6e6"
+          "sha256": "d2ab6c7872c6c3a0bb66e69c7bde388ba15ca5f9117aae4e175b219c45cf8974"
         },
         {
           "path": "assets/fire_loop/fire_loop/alternate.wav",
-          "sha256": "6309db3aba5d06abfeeab56134f158f21ad127a9c5a8290791908653399c3549"
+          "sha256": "b5e430297c81d3a233a4121f43d9925306d28972d8a0d72925e631834d8648ff"
         },
         {
           "path": "assets/fire_loop/fire_loop/base.wav",
-          "sha256": "30de2836fdf0d9a5970d6bad2d475b3c48b0f1b2f01517dc53eadd4754ea8a65"
+          "sha256": "30d2d6e6c0f3b225f5afe550c22d76cb0011f9fba14227fa280399fc622da8f9"
         },
         {
           "path": "assets/footsteps/footsteps/alternate.wav",
-          "sha256": "89df4f9d7e7b1765d56f4e1487b9df4afc68cf35daf8bdb5b0857090be4b7a72"
+          "sha256": "8357b9ff29a13f9ee2316369456b02215f5e8316b6ba870c3f842ba21c8f7665"
         },
         {
           "path": "assets/footsteps/footsteps/base.wav",
-          "sha256": "230ce0529282bac9d3f9bdcb60359fa1bcbc9165e45caf2bf63a6eec2b758365"
+          "sha256": "6ee910fefda9c03254d734614ca1261635c6128954d8dd87e14176267a64af02"
         },
         {
           "path": "assets/frog_croak/frog_croak/alternate.wav",
-          "sha256": "316f34a085de997d406e6b1e10631e96ef84e3507bac8fe882291eae7d0439d2"
+          "sha256": "61bae729a6988891277baf88509238a636b3b2c4861c8131c1f45d3f86ef2beb"
         },
         {
           "path": "assets/frog_croak/frog_croak/base.wav",
-          "sha256": "b697176660875ae6561d0fe31bac974c0f4de3aa84a5812bdcf98c96681478a0"
+          "sha256": "d09e0c09bb8fecae15b0a07b6d6b093d7bda569593c531372f7ff2f2509ae636"
         },
         {
           "path": "assets/glass_ping/glass_ping/alternate.wav",
-          "sha256": "6723f2c5045bd7dc88da355c8c910e8b00c7a98ad21ea1b39bf0c69456eb34fa"
+          "sha256": "7bed507a982e476eca6cbe47867642b298082ebd96ce42cdf77f33f6f1388186"
         },
         {
           "path": "assets/glass_ping/glass_ping/base.wav",
-          "sha256": "c87aa69ea70fd52d10def7ed12944e891568bd1fe29c8cbc537825e01e612c80"
+          "sha256": "2364ec0f2bb8200d3e7e05afebe422dccb3cd65362d6b6b6feac610ecdb6dcdd"
         },
         {
           "path": "assets/griffin_call/griffin_call/alternate.wav",
-          "sha256": "5e51c1561279c7a0437fe8fe375a2e64ece703838d996f6cad2fee405102dc64"
+          "sha256": "fb2e03c6fd2a170bdbb181565967bb93717edaf4a5dd5526e2ca1e76b29f0b15"
         },
         {
           "path": "assets/griffin_call/griffin_call/base.wav",
-          "sha256": "444844bb12f0e9c940b8b4e987b3fcc66790ab8dffa26c5449d8dfc58cda3cdb"
+          "sha256": "af0499e08b7468da773a461fbe721d51a1e22905db80e8b78fc695583b5e9f63"
         },
         {
           "path": "assets/mechanical_loop/mechanical_loop/alternate.wav",
-          "sha256": "7bc994fc0f3cc4e438bb37eddceb23b4c235759c75f6b54429f6fa75d8fefb4e"
+          "sha256": "9c27a0adc63505334093d8399c3549df3c0ff9ad2604d0405afcaed8e1672b36"
         },
         {
           "path": "assets/mechanical_loop/mechanical_loop/base.wav",
-          "sha256": "29405b724a549712b63b41ad57802174fc9bbdd8a99105ade1651ff38595d0a3"
+          "sha256": "e7d007e1b1a2ccd8d3e33440fcda08994a9846dd5df4ec5b82873d06e3d9360c"
         },
         {
           "path": "assets/metal_strike/metal_strike/alternate.wav",
-          "sha256": "2df79566bac00204187b72b1677dc6edf950b51dd8dfddef8c83777bf6e24901"
+          "sha256": "776dee93858122c2c581d39e95a97c7273cb925e1c45ec98c89bdfbd19d3f877"
         },
         {
           "path": "assets/metal_strike/metal_strike/base.wav",
-          "sha256": "af7fcfacf482554ac5068abc521e312b70a7cd8a1840235382ec47a6785e26c9"
+          "sha256": "4a388e10f92246b9d7565f606b85ce50d01ac6cb7ce25291634b8df9216f13fd"
         },
         {
           "path": "assets/potion_drink/potion_drink/alternate.wav",
-          "sha256": "1bd80059605582f7d72f813bca145e91ff2ea51f3663b4dcc5a888c021149810"
+          "sha256": "44647a34857a789e34b3d4dc7c0feaf0dfeebe61f62931cfc05a64a6ae355b6b"
         },
         {
           "path": "assets/potion_drink/potion_drink/base.wav",
-          "sha256": "1487e3e837ec9c9b6e72b6e78ca291fd517b4c457cf88b4e83df8551c2b2d098"
+          "sha256": "fb1d7284500cfab138fa40ca4899cf0234e1325e6094fcc30c710e5b35a1efb5"
         },
         {
           "path": "assets/sword_slash/sword_slash/alternate.wav",
-          "sha256": "cd262e849bbf068af14f86e187dfc9bd68ab92d4110eddd9b3d26e9c0fcf3543"
+          "sha256": "cf63f093fc6d03ce177b8b66a081154778dd39778a304f954a1af2c32ef20567"
         },
         {
           "path": "assets/sword_slash/sword_slash/base.wav",
-          "sha256": "7051154d5ffda9c71cd576d7b29a8538836f1c636fa58dbbb3fdeafffee366ba"
+          "sha256": "5443a1aa550d3959b32d2fcf0dbb8cc614107b39c0650238b998aa1b2d99ae9d"
         },
         {
           "path": "assets/wave_bell/wave_bell/alternate.wav",
-          "sha256": "f4162dbbcd6f394a032dbc55deaaa385f81d981157987500f8a46984ff03c9c5"
+          "sha256": "9ec4d2cfe597f5d79c3354d79dcf97cef240287d94b05fe0c16936cfb6b6b3ca"
         },
         {
           "path": "assets/wave_bell/wave_bell/base.wav",
-          "sha256": "f44986abadf64b0a650429e4f79a2edf56253b29c2ad577f800788ec3270a22a"
+          "sha256": "86ed7d6a545fb013ffaf927a6d69fbfd5d77f12468bb3ce6c436f6c220695055"
         },
         {
           "path": "assets/wind_loop/wind_loop/alternate.wav",
-          "sha256": "05c481d4dfef3af0ba23238f41952da3cc591290c0cadc8fbd6a682ec3aef6db"
+          "sha256": "da47c8872f8f43ef6e67e2644f0cab20a2b42a61ffe8b75c1fb07a647182607e"
         },
         {
           "path": "assets/wind_loop/wind_loop/base.wav",
-          "sha256": "440574bad22587e5f2acecf08264fad21ccefddea08a8e4c52386a2f54995440"
+          "sha256": "c0d0a1e3227e0c1583614160e6364f55b1e7a2c034fe5d1e60e60856b4f6d1f9"
         },
         {
           "path": "assets/wing_whoosh/wing_whoosh/alternate.wav",
-          "sha256": "d4a7b19ed514a17b09c349e2d6c54ee95bfcc94d04b20052e102c9a2541145a6"
+          "sha256": "79f739dfa963aa0b787000fd2efaced17824beb9933ba10f203adcbb11a27663"
         },
         {
           "path": "assets/wing_whoosh/wing_whoosh/base.wav",
-          "sha256": "3fa37dbe94693bed418896701a9c9cb8bfdf93aa4962b078f440129543abc7bf"
+          "sha256": "2faefc1683ce295813d26ecc750fe0b97b230c689cd469b85bf4c732dad8cc6f"
         },
         {
           "path": "assets/wolf_howl/wolf_howl/alternate.wav",
-          "sha256": "ddc55a5ff3608c4097e7e32c62e9047c09b0e474c6114eb89e7df7dc4035af78"
+          "sha256": "4ace4de73fd8e237b385d82d1fa7f9c6f7887e7ff0bf74fa782f3705b9dc1430"
         },
         {
           "path": "assets/wolf_howl/wolf_howl/base.wav",
-          "sha256": "1b4cef07c8c3316e54335ac1b8dfc156aeac34d46ce049fece38c8a01f693e8d"
+          "sha256": "7b240f9e4a3d2057cb0fd2d3a9da0f968d0a0a5eeece144a3021c9b7999f21c5"
         },
         {
           "path": "assets/wood_knock/wood_knock/alternate.wav",
-          "sha256": "8421fdc06cb87d479315e6b076a459e331dc349379ebe3332d1dc28ffea7ed0e"
+          "sha256": "c0ddd5b7a0ac9adeafb87c329d80281f4322870679c7b1fa6fe725f500a2a3fe"
         },
         {
           "path": "assets/wood_knock/wood_knock/base.wav",
-          "sha256": "ce76037ae5972dd03c6bbddf47829d1729d44ccbcee639949dbf8b2af8292929"
+          "sha256": "dc3d417369204ac43e788086276f0eb3b4455a6a5fccb7b8d85462705b72582b"
         },
         {
           "path": "assets/zombie_groan/zombie_groan/alternate.wav",
-          "sha256": "b0d4196959e77bd8e3752bf644313392ceeb2e767fc160acf72588253bb6e22f"
+          "sha256": "0c091decf43b028b28157494de1968c5e4aac41b2bd6b312fab62c223e1d6e2e"
         },
         {
           "path": "assets/zombie_groan/zombie_groan/base.wav",
-          "sha256": "aa928df88a441b6fbb65cc6b31686fad0f2db9a24cd69646adc4efd019f650c8"
+          "sha256": "f982bd1dce7f4486b7401bdb7cffdf5afa0d07477bc72f5be4ebcfea2f3bdadb"
         },
         {
           "path": "catalog.json",
-          "sha256": "aafeeee4ac98b0e6c119ef530a40999c53594d712c8ccfd835bfc35e3351e23b"
+          "sha256": "4180d4f1d38c10d7cbfef98f1ffd6cbad302b00f6e2a95571b15b63ec8509956"
         }
       ]
     },
