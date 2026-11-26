@@ -13,6 +13,7 @@ import { archivePack } from '../archive';
 import { indexCatalogAssetFiles, type IndexedCatalogAssetFiles } from '../sourceIndex';
 type RuntimeAssetDetail =
   | Omit<Extract<RuntimeAsset, { kind: 'model' }>, 'files'>
+  | Omit<Extract<RuntimeAsset, { kind: 'structure' }>, 'files'>
   | Omit<Extract<RuntimeAsset, { kind: 'sprite' }>, 'files'>
   | Omit<Extract<RuntimeAsset, { kind: 'sound' }>, 'files'>;
 
@@ -87,6 +88,14 @@ const compileSoundGameAsset = async (
   return { id: bindingId, kind: 'sound', codec: packAudio, variants };
 };
 
+const readGlbRequiredExtensions = (data: Uint8Array): readonly string[] => {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const gltf = JSON.parse(decodeUtf8(data.subarray(20, 20 + view.getUint32(12, true)))) as {
+    extensionsRequired?: string[];
+  };
+  return gltf.extensionsRequired ?? [];
+};
+
 const compileModelGameAsset = (
   bindingId: string,
   source: CatalogAsset,
@@ -98,19 +107,44 @@ const compileModelGameAsset = (
 ): RuntimeAssetDetail => {
   const filePath = sourceFiles.glbPath;
   if (!filePath) throw new BuildFailure('pack.source', source.id + ': expected embedded GLB');
-  const data = readArtifactBytes(artifactMap, filePath),
-    view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const gltf = JSON.parse(decodeUtf8(data.subarray(20, 20 + view.getUint32(12, true)))) as {
-    extensionsRequired?: string[];
-  };
+  const data = readArtifactBytes(artifactMap, filePath);
   return {
     id: bindingId,
     kind: 'model',
     model: add(`${source.id}.glb`, data),
-    requiredExtensions: gltf.extensionsRequired ?? [],
+    requiredExtensions: readGlbRequiredExtensions(data),
     coordinateSystem: 'gltf2',
     unitsPerMeter,
     clips,
+  };
+};
+
+const compileStructureGameAsset = (
+  bindingId: string,
+  source: CatalogAsset,
+  sourceFiles: IndexedCatalogAssetFiles,
+  meta: Extract<CatalogAsset['metadata'], { readonly blockCount: number }>,
+  artifactMap: ReadonlyMap<string, Uint8Array>,
+  add: (name: string, bytes: Uint8Array) => string,
+): RuntimeAssetDetail => {
+  const glbPath = sourceFiles.glbPath;
+  if (!glbPath) throw new BuildFailure('pack.source', source.id + ': expected embedded GLB');
+  const metaPath = sourceFiles.structureMetaPath;
+  if (!metaPath) throw new BuildFailure('pack.source', source.id + ': expected structure metadata');
+  const glbBytes = readArtifactBytes(artifactMap, glbPath);
+  const metaBytes = readArtifactBytes(artifactMap, metaPath);
+  return {
+    id: bindingId,
+    kind: 'structure',
+    model: add(`${source.id}.glb`, glbBytes),
+    meta: add(`${source.id}.structure.json`, metaBytes),
+    coordinateSystem: 'gltf2',
+    unitsPerBlock: 1,
+    requiredExtensions: readGlbRequiredExtensions(glbBytes),
+    size: meta.size,
+    zoneCount: meta.zoneCount ?? 0,
+    lightCount: meta.lightCount ?? 0,
+    interactableCount: meta.interactableCount ?? 0,
   };
 };
 
@@ -177,6 +211,16 @@ const compileBindingDetail = (
       sourceFiles,
       source.metadata.clips,
       pack.unitsPerMeter,
+      artifactMap,
+      add,
+    );
+  }
+  if (source.kind === 'structure' && 'blockCount' in source.metadata) {
+    return compileStructureGameAsset(
+      bindingId,
+      source,
+      sourceFiles,
+      source.metadata,
       artifactMap,
       add,
     );

@@ -143,3 +143,54 @@ export const applySignedProjectViewPreset = (
   camera.updateProjectionMatrix();
   return target.clone();
 };
+
+/** Frames an arbitrary world-space Box3 at explicit orbit angles and FOV. */
+export const frameBoxAtAngles = (
+  camera: THREE.PerspectiveCamera,
+  bounds: THREE.Box3,
+  azimuthDeg: number,
+  elevationDeg: number,
+  zoom = 1,
+  fov = 42,
+): THREE.Vector3 => {
+  const target = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  const a = THREE.MathUtils.degToRad(azimuthDeg);
+  const e = THREE.MathUtils.degToRad(elevationDeg);
+  const dir = new THREE.Vector3(
+    Math.sin(a) * Math.cos(e),
+    Math.sin(e),
+    -Math.cos(a) * Math.cos(e),
+  ).normalize();
+  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), dir).normalize();
+  const up = new THREE.Vector3().crossVectors(dir, right).normalize();
+  const projW =
+    Math.abs(right.x) * size.x + Math.abs(right.y) * size.y + Math.abs(right.z) * size.z;
+  const projH = Math.abs(up.x) * size.x + Math.abs(up.y) * size.y + Math.abs(up.z) * size.z;
+  const projD = Math.abs(dir.x) * size.x + Math.abs(dir.y) * size.y + Math.abs(dir.z) * size.z;
+  camera.fov = fov;
+  camera.up.set(0, 1, 0);
+  const distance = computeFrameDistance(camera, projW, projH, projD, CAMERA_PADDING) / zoom;
+  camera.near = 0.1;
+  camera.far = Math.max(camera.far, Math.ceil(distance * 4), 256);
+  camera.position.copy(target).add(dir.multiplyScalar(distance));
+  camera.lookAt(target);
+  camera.updateProjectionMatrix();
+  return target;
+};
+
+/** Places the camera at eye level inside a room looking toward a focal target. */
+export const applyEyeLevelCamera = (
+  camera: THREE.PerspectiveCamera,
+  eye: readonly [number, number, number],
+  lookAt: readonly [number, number, number],
+  fov = 65,
+): void => {
+  camera.fov = fov;
+  camera.near = 0.08;
+  camera.far = 160;
+  camera.up.set(0, 1, 0);
+  camera.position.set(eye[0], eye[1], eye[2]);
+  camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+  camera.updateProjectionMatrix();
+};

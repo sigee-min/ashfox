@@ -153,9 +153,13 @@ const retiredSourceFiles = [
 ];
 // Model retirement rules do not define the sprite, sound, or structure property grammars.
 const isOtherAssetGrammar = (source) =>
-  /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound|structure)\b/u.test(source.trim()) ||
+  /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound|structure|compound)\b/u.test(
+    source.trim(),
+  ) ||
   (/^ashfox-model 1\s+module\b/u.test(source.trim()) &&
     /\bexport\s+(?:mask|material|stamp|prefab)\b/u.test(source));
+const isOtherAssetGrammarFile = (file, source) =>
+  isOtherAssetGrammar(source) || /[/\\]language[/\\](?:structures|sprites|sounds)\.md$/u.test(file);
 for (const file of retiredSourceFiles) {
   const source = await readFile(file, 'utf8');
   for (const term of retiredAuthoredContractTerms) {
@@ -172,7 +176,7 @@ for (const file of retiredSourceFiles) {
   // authored/documentation text so ordinary TypeScript/JavaScript `class`,
   // `extends`, and similar language constructs do not become false positives.
   if (/\.(?:ashfox|md|html|json)$/u.test(file)) {
-    const modelStatements = isOtherAssetGrammar(source)
+    const modelStatements = isOtherAssetGrammarFile(file, source)
       ? ''
       : source.replace(/```(?:text|ashfox)?\n(ashfox-model 1[\s\S]*?)```/gu, (block, body) =>
           isOtherAssetGrammar(body) ? '' : block,

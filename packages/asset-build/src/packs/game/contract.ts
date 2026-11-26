@@ -15,6 +15,18 @@ export type RuntimeAsset = RuntimeAssetBase &
         clips: readonly Readonly<{ name: string; durationSeconds: number }>[];
       }>
     | Readonly<{
+        kind: 'structure';
+        model: string;
+        meta: string;
+        coordinateSystem: 'gltf2';
+        unitsPerBlock: 1;
+        requiredExtensions: readonly string[];
+        size: readonly [number, number, number];
+        zoneCount: number;
+        lightCount: number;
+        interactableCount: number;
+      }>
+    | Readonly<{
         kind: 'sprite';
         image: string;
         width: number;

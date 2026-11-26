@@ -10,13 +10,15 @@ export const compileGltfPrimitive = (
   material: number | undefined,
   indices: readonly number[],
   extras?: { readonly ashfoxSourceNodeId: string },
+  colors?: readonly number[],
 ): GltfPrimitive => {
-  const attributes = writer.addInterleavedVertexAccessors(positions, normals, uvs, joints);
+  const attributes = writer.addInterleavedVertexAccessors(positions, normals, uvs, joints, colors);
   return {
     attributes: {
       POSITION: attributes.position,
       NORMAL: attributes.normal,
       ...(attributes.uv === undefined ? {} : { TEXCOORD_0: attributes.uv }),
+      ...(attributes.color === undefined ? {} : { COLOR_0: attributes.color }),
       ...(attributes.joints === undefined || attributes.weights === undefined
         ? {}
         : {

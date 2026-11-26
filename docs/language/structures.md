@@ -1,78 +1,104 @@
 # Structure syntax
 
-Structures describe Minecraft buildings and furnished interiors in `.ashfox` source.
-One `structure` compiles both a Minecraft Java Edition template (`.nbt`, placed via
-`/place template`) and a game-ready GLB mesh (`1 block = 1.0m`) with hierarchical
-`exterior`, `interior`, and `custom` scene groups for open-world engines such as Unity.
+Structures describe parametric buildings, furnished interiors, and multi-building compounds in `.ashfox` source.
+One `structure` or `compound` compiles a Minecraft Java Edition template (`.nbt`, placed via `/place template`),
+a baked `1 block = 1.0m` GLB mesh with `COLOR_0` voxel AO + warm lightmap and instanced custom `.ashfox` props,
+and a `.structure.json` (`PlayableStructureMeta`) runtime manifest for game engines and `game_assets` packs.
 
 ## Units and header
 
-Use the shared `ashfox-model 1` header with either an entry `structure` or a reusable `module`:
+Use the shared `ashfox-model 1` header with an entry `structure`, a `compound`, or a reusable `module`:
 
-| Unit | Role | Allowed declarations |
-| --- | --- | --- |
-| `structure id { … }` | Buildable building entry | `import`, `size`, `data_version`, `palette`, `prefab`, `build` |
-| `module id { … }` | Shared prefab/furnishing library | `import`, `palette`, `export prefab`, `prefab` |
+| Unit                 | Role                               | Allowed declarations                                                                                              |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `structure id { … }` | Buildable building entry           | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `build` |
+| `compound id { … }`  | Multi-building layout entry        | Same as `structure`, importing child `structure` entries for `compound_place`                                     |
+| `module id { … }`    | Shared prefab & furnishing library | `import`, `palette`, `export prefab`, `prefab`                                                                    |
 
-- `size = (width, height, depth);`: integer grid dimensions (`1..64`, total volume `<= 65536`). When omitted, bounds are inferred from placed blocks.
+- `density = 1 | 2;`: procedural multi-tile texture resolution (`16px` at `1`, `32px` at `2`, defaults to `2`).
+- `seed = 101;`: deterministic PRNG seed for `mix(...)` palettes, weathering, and surface grain.
+- `size = (width, height, depth);`: integer voxel dimensions (`1..96`, total volume `<= 131072`).
 - `data_version = 3955;`: Minecraft Java DataVersion written to `.nbt` (defaults to `3955`, Minecraft 1.21).
+- `params { w = 13; half = floor(w / 2); }`: typed scalar parameters and math helpers (`floor`, `ceil`, `round`, `min`, `max`, `abs`, `clamp`) usable in expressions and `(x, z)` / `(x, y, z)` coordinates.
 - Coordinates `(x, y, z)` are `0`-indexed voxels where `+y` is up and `-z` is north (`forward = north`).
 
-## Palette and custom models
+## Palette, material mixes, and custom models
 
-Declare reusable Minecraft block states and optional custom `.ashfox` props inside `palette { … }`:
+Declare Minecraft block states, weighted `mix(...)` palettes, and custom `.ashfox` props inside `palette { … }`:
 
 ```text
 palette {
-  wall = "minecraft:stone_bricks";
+  wall = mix("minecraft:stone_bricks" * 0.7, "minecraft:mossy_stone_bricks" * 0.2, "minecraft:cracked_stone_bricks" * 0.1);
   door = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
   lantern = asset custom_lantern as "minecraft:lantern[hanging=false]";
 }
 ```
 
-- Every state must use the `namespace:block_id[key=value,...]` syntax (`minecraft:` built-ins render textured 3D shapes—stairs, slabs, fences, walls, panes, doors, trapdoors, lanterns, beds, chests, barrels, furnaces, bookshelves, carpets, pots, ladders).
-- `asset alias as "fallback"` places an imported `.ashfox` model (`asset Name { … }`) in GLB and `render` previews while writing the specified Minecraft block state (inheriting `facing`) into `.nbt`.
+- Every state uses `namespace:block_id[key=value,...]` syntax. The solver automatically resolves corner stairs (`inner_left|inner_right|outer_left|outer_right`) and connected fence/wall/pane sides (`north|east|south|west`), and emits `minecraft:jigsaw` block entities for `socket` connectors in `.nbt`.
+- `mix("block" * weight, ...)` selects deterministic seeded surface variation per voxel.
+- `asset alias as "fallback"` places an imported `.ashfox` model (`asset Name { … }`) as an instanced mesh in GLB and `render` previews while writing the specified Minecraft fallback state into `.nbt`.
 
-## Prefabs and build operations
+## Semantic layout and architectural ops
 
-Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and `build { … }`, compose geometry declaratively:
+Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and `build { … }`, compose buildings semantically and refine with voxel primitives:
 
-| Operation | Behavior |
-| --- | --- |
-| `set at = (x, y, z) block = key [facing = north\|south\|east\|west];` | Place one block or custom prop |
-| `box from = … to = … block = key;` | Fill an axis-aligned solid volume |
-| `hollow from = … to = … block = key;` | Six outer shell faces of a box, interior untouched |
-| `walls from = … to = … block = key;` | Four vertical perimeter walls (open top/bottom) |
-| `frame from = … to = … block = key;` | Twelve outer structural edges (posts & beams) |
-| `carve from = … to = …;` | Clear voxels to `minecraft:air` |
-| `roof style = gable\|hip\|pyramid axis = x\|z from = … to = … stair = k ridge = r [gable = g];` | Oriented stair slopes, ridge slabs, optional gable fill |
-| `layer y = n origin = (x, z) { "…" } map { C = k; };` | Compact ASCII floorplan per Y slice (`'.'` skips cell) |
-| `repeat axis = x\|y\|z count = n step = s { … }` | Stamp child ops `n` times along an axis |
-| `mirror axis = x\|z center = n { … }` | Mirror blocks and block states across `axis = n` |
-| `place Name [\| Alias.Name] at = (x, y, z) rotate …;` (`0\|90\|180\|270`) | Instantiate a prefab with automatic state rotation |
+| Operation                                                                                                                                                                                                         | Behavior                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `floor name y = n height = h { … }`                                                                                                                                                                               | Scope rooms and openings to one story (`height >= 3`; `y` = floor slab)                                                                                   |
+| `room id from = (x, z) size = (w, d) kind = … [plinth = k] floor = k wall = k [frame = k] [ceiling = k];`                                                                                                         | Declare semantic room (`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`); adjacent rooms may share a 1-block wall                           |
+| `facade on room.wall, … { door …; window …; arch …; }`                                                                                                                                                            | Place doors (with optional `porch { depth; floor; pillars; lamps; steps; }`), recessed/shuttered windows (`at\|repeat\|symmetric`), and connecting arches |
+| `staircase [in_room = r] style = straight\|l_turn\|u_turn\|spiral at = (x, z) [y_from = n y_to = n] facing = … stair = k [landing = k rail = k headroom = 3];`                                                    | Generate stairs with protected `>= 2` headroom and automatic upper-slab cuts                                                                              |
+| `roof [on = r \| from = … to = …] style = gable\|hip\|pyramid axis = x\|z [overhang = n pitch = shallow\|standard\|steep trim = k under_eave = true] stair = k ridge = r [gable = g] [{ dormer …; chimney …; }];` | Build pitched stair roofs with overhang trim, dormers, and chimneys                                                                                       |
+| `furnish room = r { place_anchor prefab = … on = …; hang block = k at = … drop = n; }`                                                                                                                            | Anchor furniture prefabs to corners/walls/center and hang ceiling lights                                                                                  |
+| `weathering { ground_moss …; corner_quoin …; chimney_soot …; eave_shadow …; }`                                                                                                                                    | Apply deterministic moss, corner quoins, soot, and eave shading (`rate` `0..1`)                                                                           |
+| `socket id kind = entry\|road\|wall_join\|courtyard (room = r wall = … \| at = …) normal = … [pool = "…" target = "…"];`                                                                                          | Record world-connection sockets in `.structure.json` and `.nbt` jigsaw entities                                                                           |
+| `compound_place alias at = (x, y, z) rotate = 0\|90\|180\|270;`                                                                                                                                                   | Place an imported child `structure` inside a `compound` unit                                                                                              |
+| `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place`                                                                                                                           | Low-level voxel, ASCII floorplan, repeat/mirror, and prefab placement ops                                                                                 |
 
-## Complete standalone example
+## Complete canonical example
 
 ```ashfox
 ashfox-model 1
 structure shrine_hut {
-  size = (7, 9, 7);
+  density = 2;
+  seed = 77;
+  size = (9, 13, 9);
   data_version = 3955;
 
+  outputs {
+    java_structure;
+    glb;
+  }
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
   palette {
-    cobble = "minecraft:cobblestone";
+    cobble = mix("minecraft:cobblestone" * 0.7, "minecraft:mossy_cobblestone" * 0.3);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    plaster = mix("minecraft:white_terracotta" * 0.85, "minecraft:calcite" * 0.15);
+    stone_brick = "minecraft:stone_bricks";
+    chimney_brick = "minecraft:bricks";
     plank = "minecraft:oak_planks";
+    spruce = "minecraft:spruce_planks";
     timber = "minecraft:spruce_log[axis=y]";
+    beam = "minecraft:spruce_log[axis=x]";
     stair = "minecraft:spruce_stairs";
+    trim_stair = "minecraft:dark_oak_stairs";
     ridge = "minecraft:spruce_slab[type=bottom]";
-    door_lo = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
-    door_hi = "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false]";
+    porch_stair = "minecraft:cobblestone_stairs[facing=north,half=bottom]";
+    door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]";
     glass = "minecraft:glass_pane";
-    lantern = "minecraft:lantern[hanging=false]";
+    sill = "minecraft:spruce_slab[type=top]";
+    shutter = "minecraft:oak_trapdoor[facing=south,half=bottom,open=true]";
+    lantern = "minecraft:lantern[hanging=true]";
+    porch_lamp = "minecraft:lantern[hanging=false]";
     bed_h = "minecraft:red_bed[facing=north,part=head]";
     bed_f = "minecraft:red_bed[facing=north,part=foot]";
     chest = "minecraft:chest[facing=north]";
-    carpet = "minecraft:red_carpet";
+    bookshelf = "minecraft:bookshelf";
+    table = "minecraft:crafting_table";
   }
 
   prefab BedNook {
@@ -86,31 +112,58 @@ structure shrine_hut {
     };
   }
 
+  prefab StudyNook {
+    layer y = 0 origin = (0, 0) {
+      "BT"
+    } map {
+      B = bookshelf;
+      T = table;
+    };
+  }
+
   build {
-    box from = (1, 0, 1) to = (5, 0, 5) block = cobble;
-    box from = (2, 0, 2) to = (4, 0, 4) block = plank;
-    walls from = (1, 1, 1) to = (5, 4, 5) block = plank;
-    frame from = (1, 1, 1) to = (5, 4, 5) block = timber;
-    carve from = (2, 1, 2) to = (4, 4, 4);
-    set at = (3, 1, 5) block = door_lo;
-    set at = (3, 2, 5) block = door_hi;
-    mirror axis = x center = 3 {
-      set at = (1, 2, 3) block = glass;
+    floor ground y = 0 height = 4 {
+      room cell from = (1, 1) size = (7, 6) kind = bedroom plinth = cobble floor = plank wall = plaster frame = timber ceiling = spruce;
+      facade on cell.south {
+        door at = center width = 1 height = 2 block = door hinge = left frame = timber lintel = beam porch {
+          depth = 1;
+          floor = stone_brick;
+          pillars = timber;
+          lamps = porch_lamp;
+          steps = porch_stair;
+        }
+      }
+      facade on cell.east, cell.west, cell.north {
+        window at = center width = 1 height = 2 y_offset = 1 glass = glass sill = sill shutter = shutter lintel = beam;
+      }
     }
-    roof style = gable axis = z from = (0, 4, 0) to = (6, 7, 6) stair = stair ridge = ridge gable = plank;
-    place BedNook at = (2, 1, 2) rotate = 0;
-    set at = (4, 1, 2) block = carpet;
-    set at = (2, 2, 2) block = lantern;
+
+    roof on = cell style = gable axis = z overhang = 1 pitch = standard stair = stair trim = trim_stair ridge = ridge gable = plaster under_eave = true {
+      chimney room = cell corner = nw offset = (0, 0) width = 1 rise = 2 block = chimney_brick cap = true;
+    }
+
+    furnish room = cell {
+      place_anchor prefab = BedNook on = nw offset = (0, 0) rotate = 0;
+      place_anchor prefab = StudyNook on = se offset = (0, 0) rotate = 0;
+      hang block = lantern at = ceiling_center drop = 1;
+    }
+
+    weathering {
+      ground_moss height = 2 target = cobble into = moss_cobble rate = 0.3;
+      corner_quoin target = plaster corners = stone_brick;
+    }
+
+    socket main_door kind = entry room = cell wall = south normal = south pool = "village:streets" target = "road_join";
   }
 }
 ```
 
-## Check, preview and build
+## Check, preview sheets, and build
 
 ```sh
-npx --no-install ashfox check examples/structure/medieval_cottage.ashfox --json
-npx --no-install ashfox render --view cutaway examples/structure/medieval_cottage.ashfox --output cottage_inside.png
-npx --no-install ashfox build examples/structure/medieval_cottage.ashfox --json
+npx --no-install ashfox check examples/structure/.ashfoxworkspace --json
+npx --no-install ashfox render --view cutaway examples/structure/assets/structures/medieval_cottage.ashfox --output cottage_cutaway.png
+npx --no-install ashfox build examples/structure/.ashfoxworkspace --json
 ```
 
-Standalone `ashfox build` honors declared `outputs { ... }` and defaults to producing both `.nbt` (`java_structure`) and `1 block = 1.0m` `.glb` (`glb`) from the same `.ashfox` source. Every structure must pass five hard gates (`visible_geometry`, `ground_contact`, `no_disconnected_floating_parts`, `enclosed_interior`, `valid_minecraft_ids`) and score `>= 75/100` (`>= 85` `excellent`). Declare `preview cutaway { cutaway = 4; }` inside the structure entry to slice open interiors during `render --view cutaway`. Unused palette keys, unused imports, or unused private prefabs are rejected at compile time.
+Standalone `ashfox build` honors declared `outputs { ... }` and defaults to producing `.nbt` (`java_structure`) plus `1 block = 1.0m` `.glb` and `.structure.json` (`PlayableStructureMeta` colliders, semantic zones, lights, sockets, and interactables) from the same `.ashfox` source. Every structure must pass six hard gates (`visible_geometry`, `ground_contact`, `structural_continuity`, `playable_circulation`, `weatherproof_enclosure`, `valid_minecraft_ids`) and score `>= 75/100` (`>= 85` `excellent`) across four pillars (`architecture`, `facade`, `interior`, `craft`). Declare `preview exterior { sheet = exterior; }`, `preview cutaway { sheet = cutaway; }`, or `preview interior { sheet = interior; }` to inspect architectural elevations, per-floor horizontal cuts, and room-centered eye-level views. Unused palette keys, unused imports, or unused private prefabs are rejected at compile time.

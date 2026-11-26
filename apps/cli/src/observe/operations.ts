@@ -1,7 +1,9 @@
 import { evaluateSoundQuality, renderSoundInspectSheet } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
 import {
+  buildStructureBakedMesh,
   buildStructureDocument,
+  collectStructureCutBands,
   encodeCanonicalPng,
   encodeRgbaBufferPng,
   evaluateAssetQuality,
@@ -61,8 +63,19 @@ const inspectDocument = (
     ? {
         structure: {
           size: asset.product.structure.grid.size,
+          density: asset.product.structure.grid.density,
           palette: asset.product.structure.grid.states,
           customAssets: Object.keys(asset.product.structure.customModels),
+          floors: asset.product.structure.grid.floors,
+          rooms: asset.product.structure.grid.rooms,
+          openings: asset.product.structure.grid.openings,
+          sockets: asset.product.structure.grid.sockets,
+          semanticStats: asset.product.structure.grid.semanticStats,
+          playableMeta: {
+            zoneCount: asset.product.structure.playableMeta.zones.length,
+            lightCount: asset.product.structure.playableMeta.lights.length,
+            interactableCount: asset.product.structure.playableMeta.interactables.length,
+          },
         },
         audit: asset.product.structure.audit,
       }
@@ -142,17 +155,75 @@ const soundWavePayload = (asset: Prepared, v: ViewOptions): { readonly wave: num
   return { wave };
 };
 
-const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
+const buildStructureCutSlices = (
+  structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
+) =>
+  collectStructureCutBands(structure.grid.floors, structure.grid.size[1]).map((entry) => ({
+    ...entry,
+    ...(structure.bakedMesh.batches.length > 0
+      ? {
+          bakedMesh: buildStructureBakedMesh(
+            structure.grid,
+            structure.lighting,
+            structure.customModels,
+            { cutawayY: entry.cutY },
+          ),
+        }
+      : {
+          document: buildStructureDocument(structure.grid, structure.customModels, {
+            cutawayY: entry.cutY,
+          }),
+        }),
+  }));
+
+const structurePayload = (
+  structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
+  v: ViewOptions,
+  gif: boolean,
+) => {
+  if (gif) {
+    return {
+      document: buildStructureDocument(
+        structure.grid,
+        structure.customModels,
+        v.cutaway !== undefined ? { cutawayY: v.cutaway } : undefined,
+      ),
+    };
+  }
+  const hasBaked = structure.bakedMesh.batches.length > 0;
+  const bakedMesh =
+    hasBaked && v.cutaway !== undefined
+      ? buildStructureBakedMesh(structure.grid, structure.lighting, structure.customModels, {
+          cutawayY: v.cutaway,
+        })
+      : structure.bakedMesh;
+  const fallbackDoc = !hasBaked
+    ? v.cutaway !== undefined
+      ? buildStructureDocument(structure.grid, structure.customModels, { cutawayY: v.cutaway })
+      : structure.document
+    : undefined;
+  return {
+    structure: {
+      id: structure.id,
+      size: structure.grid.size,
+      bakedMesh,
+      customModels: structure.customModels,
+      playableMeta: structure.playableMeta,
+      floors: structure.grid.floors,
+      rooms: structure.grid.rooms,
+      ...(fallbackDoc ? { document: fallbackDoc } : {}),
+      ...(v.sheet === 'cutaway' ? { cutSlices: buildStructureCutSlices(structure) } : {}),
+    },
+  };
+};
+
+const mediaPayload = (asset: Prepared, v: ViewOptions, gif: boolean): unknown => {
   if (asset.document) {
-    const activeDoc =
-      asset.product?.kind === 'structure' && v.cutaway !== undefined
-        ? buildStructureDocument(
-            asset.product.structure.grid,
-            asset.product.structure.customModels,
-            { cutawayY: v.cutaway },
-          )
-        : asset.document;
-    return v.texture ? { png: resolveTexture(activeDoc, v.texture) } : { document: activeDoc };
+    if (v.texture) return { png: resolveTexture(asset.document, v.texture) };
+    if (asset.product?.kind === 'structure') {
+      return structurePayload(asset.product.structure, v, gif);
+    }
+    return { document: asset.document };
   }
   if (asset.sprite)
     return {
@@ -200,6 +271,11 @@ const assertRenderOptions = (asset: Prepared, v: ViewOptions, gif: boolean): voi
     throw new BuildFailure('observe.option', 'cutaway requires a structure source', 2);
   if (v.sheet === 'turnaround' && asset.kind !== 'model' && asset.kind !== 'structure')
     throw new BuildFailure('observe.option', 'sheet turnaround requires a model or structure', 2);
+  if (
+    (v.sheet === 'exterior' || v.sheet === 'cutaway' || v.sheet === 'interior') &&
+    asset.kind !== 'structure'
+  )
+    throw new BuildFailure('observe.option', `sheet ${v.sheet} requires a structure source`, 2);
   if (gif && v.sheet !== undefined)
     throw new BuildFailure('observe.option', 'sheet requires still render, not gif', 2);
   if (asset.kind !== 'sprite' && v.stage !== 'final')
@@ -250,7 +326,9 @@ export const renderMedia = async (
   try {
     if (signal.aborted) throw new BuildFailure('observe.cancelled', 'Cancelled', 130);
     await renderer.start();
-    await renderer.evaluate('AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v)) + ')');
+    await renderer.evaluate(
+      'AshfoxObserver.load(' + JSON.stringify(mediaPayload(asset, v, gif)) + ')',
+    );
     const reply = (await renderer.evaluate(
       'AshfoxObserver.capture(' + JSON.stringify(v) + ',' + gif + ')',
     )) as { mime: string; data: string };

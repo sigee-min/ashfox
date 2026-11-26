@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 
-import type { ProjectDocument, TextureAsset } from '@ashfox/engine-core';
+import {
+  rasterizeCanonicalTexture,
+  type ProjectDocument,
+  type TextureAsset,
+} from '@ashfox/engine-core';
 
 import { renderTextureRaster } from './renderTextureRaster';
 import type { ProjectAsset, ProjectAssets } from './assets';
@@ -183,4 +187,36 @@ export const disposeMaterial = (material: THREE.Material): void => {
     map?.dispose();
   }
   material.dispose();
+};
+
+/** Materializes a repeatable nearest-filtered CanvasTexture for StructureBakedMesh batches. */
+export const createStructureTextureMap = (texture: TextureAsset): THREE.Texture => {
+  const canvas = window.document.createElement('canvas');
+  canvas.width = Math.max(1, texture.width);
+  canvas.height = Math.max(1, texture.height);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Structure texture canvas is unavailable.');
+  if (texture.raster) {
+    const raster = rasterizeCanonicalTexture(texture.width, texture.height, {
+      background: texture.raster.background,
+      backgroundAlpha: texture.raster.backgroundAlpha,
+      canvasDetails: texture.raster.canvasDetails,
+      alphaMasks: texture.raster.alphaMasks ?? [],
+    });
+    const image = context.createImageData(raster.width, raster.height);
+    image.data.set(raster.rgba.copy());
+    context.putImageData(image, 0, 0);
+  } else {
+    context.fillStyle = previewColor(texture);
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  const map = new THREE.CanvasTexture(canvas);
+  map.magFilter = THREE.NearestFilter;
+  map.minFilter = THREE.NearestFilter;
+  map.generateMipmaps = false;
+  map.wrapS = THREE.RepeatWrapping;
+  map.wrapT = THREE.RepeatWrapping;
+  map.colorSpace = texture.colorSpace === 'srgb' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  map.needsUpdate = true;
+  return map;
 };

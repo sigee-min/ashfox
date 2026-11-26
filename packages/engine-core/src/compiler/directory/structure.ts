@@ -124,6 +124,30 @@ const collectModelClosure = (
   visiting.delete(entryPath);
 };
 
+const buildCustomModelManifest = (
+  entryId: string,
+  modelPath: string,
+  files: readonly DirectoryFile[],
+) => ({
+  format: 'ashfox-workspace' as const,
+  version: 1 as const,
+  packages: [
+    {
+      name: 'custom',
+      root: '',
+      manifest: {
+        format: 'ashfox-package' as const,
+        version: 1 as const,
+        dependencies: [],
+        entries: [{ name: entryId, path: modelPath }],
+        modules: files
+          .filter((f) => f.path !== modelPath)
+          .map((f, i) => ({ subpath: `./mod${i}`, path: f.path })),
+      },
+    },
+  ],
+});
+
 const compileImportedModel = (
   modelPath: string,
   filesByPath: ReadonlyMap<string, DirectoryFile>,
@@ -137,25 +161,7 @@ const compileImportedModel = (
   for (const path of closure.keys()) touched.add(path);
   const entryUnit = parseAssetSource(filesByPath.get(modelPath)!.source, modelPath).unit!;
   const files = [...closure.values()];
-  const manifest = {
-    format: 'ashfox-workspace' as const,
-    version: 1 as const,
-    packages: [
-      {
-        name: 'custom',
-        root: '',
-        manifest: {
-          format: 'ashfox-package' as const,
-          version: 1 as const,
-          dependencies: [],
-          entries: [{ name: entryUnit.id, path: modelPath }],
-          modules: files
-            .filter((f) => f.path !== modelPath)
-            .map((f, i) => ({ subpath: `./mod${i}`, path: f.path })),
-        },
-      },
-    ],
-  };
+  const manifest = buildCustomModelManifest(entryUnit.id, modelPath, files);
   const base = {
     files: [],
     manifest,
@@ -218,13 +224,19 @@ const visitStructureUnit = (
   if (state.visiting.size >= 32) throw new Error('Structure import depth exceeds 32');
   state.visiting.add(filePath);
   const unit = parseStructureSource(file.source, filePath);
-  if (filePath !== state.entryPath && unit.kind !== 'module') {
+  const ownerKind = ownerPath ? state.units.get(ownerPath)?.kind : undefined;
+  const allowStructure = ownerKind === 'compound';
+  if (
+    filePath !== state.entryPath &&
+    unit.kind !== 'module' &&
+    !(allowStructure && unit.kind === 'structure')
+  ) {
     throw new Error(`Structure import must refer to a module or asset: ${filePath}`);
   }
+  state.units.set(filePath, unit);
   for (const dep of unit.imports) {
     visitStructureUnit(state, relativePath(filePath, dep.path), dep.alias, filePath);
   }
-  state.units.set(filePath, unit);
   state.visiting.delete(filePath);
 };
 

@@ -47,6 +47,14 @@ const readAssetFilePaths = (rawFiles: unknown, allPaths: Set<string>): Map<strin
   return paths;
 };
 
+const validateRequiredExtensions = (value: unknown): void => {
+  if (!Array.isArray(value) || value.some((e) => typeof e !== 'string' || !e))
+    fail('Invalid glTF extensions');
+};
+
+const isNonNegativeInt = (v: unknown): boolean =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
+
 const validateModelAsset = (
   a: Record<string, unknown>,
   reference: (path: unknown, extension: string) => void,
@@ -54,15 +62,32 @@ const validateModelAsset = (
   reference(a.model, '.glb');
   if (a.coordinateSystem !== 'gltf2' || !finite(a.unitsPerMeter, true) || !Array.isArray(a.clips))
     fail('Invalid model metadata');
-  if (
-    !Array.isArray(a.requiredExtensions) ||
-    a.requiredExtensions.some((e) => typeof e !== 'string' || !e)
-  )
-    fail('Invalid glTF extensions');
+  validateRequiredExtensions(a.requiredExtensions);
   for (const rawClip of a.clips as unknown[]) {
     const clip = record(rawClip, ['name', 'durationSeconds']);
     if (typeof clip.name !== 'string' || !clip.name || !finite(clip.durationSeconds, false))
       fail('Invalid animation clip');
+  }
+};
+
+const validateStructureAsset = (
+  a: Record<string, unknown>,
+  reference: (path: unknown, extension: string) => void,
+): void => {
+  reference(a.model, '.glb');
+  reference(a.meta, '.structure.json');
+  validateRequiredExtensions(a.requiredExtensions);
+  if (
+    a.coordinateSystem !== 'gltf2' ||
+    a.unitsPerBlock !== 1 ||
+    !Array.isArray(a.size) ||
+    a.size.length !== 3 ||
+    a.size.some((dim) => !Number.isSafeInteger(dim) || (dim as number) < 1) ||
+    !isNonNegativeInt(a.zoneCount) ||
+    !isNonNegativeInt(a.lightCount) ||
+    !isNonNegativeInt(a.interactableCount)
+  ) {
+    fail('Invalid structure metadata');
   }
 };
 
@@ -126,6 +151,18 @@ const validateSoundAsset = (
 const fieldsForAssetKind = (kind: unknown): readonly string[] => {
   if (kind === 'model')
     return ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions'];
+  if (kind === 'structure')
+    return [
+      'model',
+      'meta',
+      'coordinateSystem',
+      'unitsPerBlock',
+      'requiredExtensions',
+      'size',
+      'zoneCount',
+      'lightCount',
+      'interactableCount',
+    ];
   if (kind === 'sprite') return ['image', 'width', 'height', 'pixelsPerUnit', 'filter'];
   if (kind === 'sound') return ['codec', 'variants'];
   return fail('Unknown kind');
@@ -161,6 +198,7 @@ const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<str
     referenced.push(filePath);
   };
   if (a.kind === 'model') validateModelAsset(a, reference);
+  else if (a.kind === 'structure') validateStructureAsset(a, reference);
   else if (a.kind === 'sprite') validateSpriteAsset(a, reference);
   else validateSoundAsset(a, reference, paths);
   if (referenced.length !== paths.size || new Set(referenced).size !== paths.size)

@@ -1,4 +1,9 @@
 import type { GltfAccessor, GltfBufferView } from './contract';
+import {
+  assertValidInterleavedInputs,
+  computeVertexLayout,
+  type VertexLayout,
+} from './vertexLayout';
 
 export interface GltfBinaryState {
   bufferViews: GltfBufferView[];
@@ -10,6 +15,7 @@ export interface GltfVertexAccessors {
   position: number;
   normal: number;
   uv?: number;
+  color?: number;
   joints?: number;
   weights?: number;
 }
@@ -19,108 +25,6 @@ const normalizedShort = (value: number): number =>
   Math.round(Math.max(-1, Math.min(1, value)) * 32767);
 const normalizedUnsignedShort = (value: number): number =>
   Math.round(Math.max(0, Math.min(1, value)) * 65535);
-const fitsNormalizedSigned = (values: readonly number[]): boolean =>
-  values.every((value) => Number.isFinite(value) && Math.abs(value) <= 1);
-const fitsNormalizedUnsigned = (values: readonly number[]): boolean =>
-  values.every((value) => Number.isFinite(value) && value >= 0 && value <= 1);
-
-interface VertexLayout {
-  positionOffset: number;
-  normalOffset: number;
-  uvOffset?: number;
-  jointOffset?: number;
-  weightOffset?: number;
-  stride: number;
-  quantizedPosition: boolean;
-  quantizedNormal: boolean;
-  quantizedUv: boolean;
-  jointComponentType: 5121 | 5123;
-}
-
-const alignTo = (value: number, alignment: number): number =>
-  Math.ceil(value / alignment) * alignment;
-
-const vertexQuantization = (
-  positions: readonly number[],
-  normals: readonly number[],
-  uvs: readonly number[] | undefined,
-  quantize: boolean,
-) => ({
-  quantizedPosition: quantize && fitsNormalizedSigned(positions),
-  quantizedNormal: quantize && fitsNormalizedSigned(normals),
-  quantizedUv: quantize && uvs !== undefined && fitsNormalizedUnsigned(uvs),
-});
-
-const jointSkinLayout = (
-  joints: readonly number[] | undefined,
-  attributeEnd: number,
-): {
-  jointOffset?: number;
-  weightOffset?: number;
-  end: number;
-  jointComponentType: 5121 | 5123;
-} => {
-  const jointComponentType = joints?.some((joint) => joint > 255) ? 5123 : 5121;
-  if (!joints) return { end: attributeEnd, jointComponentType };
-  const jointSize = jointComponentType === 5123 ? 2 : 1;
-  const jointOffset = alignTo(attributeEnd, jointSize);
-  const weightOffset = jointOffset + jointSize * 4;
-  return {
-    jointOffset,
-    weightOffset,
-    end: weightOffset + 4,
-    jointComponentType,
-  };
-};
-
-const vertexLayout = (
-  positions: readonly number[],
-  normals: readonly number[],
-  uvs: readonly number[] | undefined,
-  joints: readonly number[] | undefined,
-  quantize: boolean,
-): VertexLayout => {
-  const quantization = vertexQuantization(positions, normals, uvs, quantize);
-  const normalOffset = align4(quantization.quantizedPosition ? 6 : 12);
-  const normalEnd = normalOffset + (quantization.quantizedNormal ? 6 : 12);
-  const uvOffset = uvs ? align4(normalEnd) : undefined;
-  const attributeEnd =
-    uvOffset === undefined ? normalEnd : uvOffset + (quantization.quantizedUv ? 4 : 8);
-  const skin = jointSkinLayout(joints, attributeEnd);
-  return {
-    positionOffset: 0,
-    normalOffset,
-    ...(uvOffset === undefined ? {} : { uvOffset }),
-    ...(skin.jointOffset === undefined ? {} : { jointOffset: skin.jointOffset }),
-    ...(skin.weightOffset === undefined ? {} : { weightOffset: skin.weightOffset }),
-    stride: align4(skin.end),
-    ...quantization,
-    jointComponentType: skin.jointComponentType,
-  };
-};
-
-const assertValidInterleavedInputs = (
-  positions: readonly number[],
-  normals: readonly number[],
-  uvs: readonly number[] | undefined,
-  joints: readonly number[] | undefined,
-): number => {
-  if (positions.length % 3 !== 0 || normals.length !== positions.length) {
-    throw new Error('glTF vertex positions and normals must be VEC3 pairs.');
-  }
-  const count = positions.length / 3;
-  if (uvs && uvs.length !== count * 2) {
-    throw new Error('glTF vertex UVs must match the position count.');
-  }
-  if (
-    joints &&
-    (joints.length !== count ||
-      joints.some((joint) => !Number.isSafeInteger(joint) || joint < 0 || joint > 65535))
-  ) {
-    throw new Error('glTF rigid joint indices must match the position count.');
-  }
-  return count;
-};
 
 const writeVec3Component = (
   view: DataView,
@@ -173,6 +77,20 @@ const writeVertexSkin = (
   }
 };
 
+const writeVertexColor = (
+  view: DataView,
+  base: number,
+  vertex: number,
+  colors: readonly number[],
+  layout: VertexLayout,
+): void => {
+  if (layout.colorOffset === undefined) return;
+  for (let component = 0; component < 3; component += 1) {
+    const channel = Math.round(Math.max(0, Math.min(1, colors[vertex * 3 + component]!)) * 255);
+    view.setUint8(base + layout.colorOffset + component, channel);
+  }
+};
+
 const encodeInterleavedVertices = (
   count: number,
   layout: VertexLayout,
@@ -180,6 +98,7 @@ const encodeInterleavedVertices = (
   normals: readonly number[],
   uvs: readonly number[] | undefined,
   joints: readonly number[] | undefined,
+  colors: readonly number[] | undefined,
 ): Uint8Array => {
   const bytes = new Uint8Array(count * layout.stride);
   const view = new DataView(bytes.buffer);
@@ -202,6 +121,7 @@ const encodeInterleavedVertices = (
       );
     }
     if (uvs) writeVertexUv(view, base, vertex, uvs, layout);
+    if (colors) writeVertexColor(view, base, vertex, colors, layout);
     if (joints) writeVertexSkin(view, base, joints[vertex], layout);
   }
   return bytes;
@@ -308,10 +228,11 @@ export class GltfBinaryWriter {
     normals: readonly number[],
     uvs?: readonly number[],
     joints?: readonly number[],
+    colors?: readonly number[],
   ): GltfVertexAccessors {
-    const count = assertValidInterleavedInputs(positions, normals, uvs, joints);
-    const layout = vertexLayout(positions, normals, uvs, joints, this.quantize);
-    const bytes = encodeInterleavedVertices(count, layout, positions, normals, uvs, joints);
+    const count = assertValidInterleavedInputs(positions, normals, uvs, joints, colors);
+    const layout = computeVertexLayout(positions, normals, uvs, joints, colors, this.quantize);
+    const bytes = encodeInterleavedVertices(count, layout, positions, normals, uvs, joints, colors);
     this.state.usesMeshQuantization ||= layout.quantizedPosition || layout.quantizedNormal;
     const bufferView = this.append(bytes, 34962, layout.stride);
     const encodedPositions = layout.quantizedPosition ? positions.map(normalizedShort) : positions;
@@ -322,6 +243,7 @@ export class GltfBinaryWriter {
       encodedPositions,
       uvs !== undefined,
       joints !== undefined,
+      colors !== undefined,
     );
   }
 
@@ -332,6 +254,7 @@ export class GltfBinaryWriter {
     encodedPositions: readonly number[],
     hasUvs: boolean,
     hasJoints: boolean,
+    hasColors: boolean,
   ): GltfVertexAccessors {
     const position = this.addAccessor({
       bufferView,
@@ -361,24 +284,42 @@ export class GltfBinaryWriter {
         type: 'VEC2',
       });
     }
-    if (hasJoints && layout.jointOffset !== undefined && layout.weightOffset !== undefined) {
-      result.joints = this.addAccessor({
+    if (hasColors && layout.colorOffset !== undefined) {
+      result.color = this.addAccessor({
         bufferView,
-        byteOffset: layout.jointOffset,
-        componentType: layout.jointComponentType,
-        count,
-        type: 'VEC4',
-      });
-      result.weights = this.addAccessor({
-        bufferView,
-        byteOffset: layout.weightOffset,
+        byteOffset: layout.colorOffset,
         componentType: 5121,
         normalized: true,
         count,
-        type: 'VEC4',
+        type: 'VEC3',
       });
     }
+    if (hasJoints) this.appendSkinAccessors(result, bufferView, count, layout);
     return result;
+  }
+
+  private appendSkinAccessors(
+    result: GltfVertexAccessors,
+    bufferView: number,
+    count: number,
+    layout: VertexLayout,
+  ): void {
+    if (layout.jointOffset === undefined || layout.weightOffset === undefined) return;
+    result.joints = this.addAccessor({
+      bufferView,
+      byteOffset: layout.jointOffset,
+      componentType: layout.jointComponentType,
+      count,
+      type: 'VEC4',
+    });
+    result.weights = this.addAccessor({
+      bufferView,
+      byteOffset: layout.weightOffset,
+      componentType: 5121,
+      normalized: true,
+      count,
+      type: 'VEC4',
+    });
   }
 
   addIndexAccessor(values: readonly number[], target: 34963 = 34963): number {

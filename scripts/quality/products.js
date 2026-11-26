@@ -20,8 +20,6 @@ const STANDALONE_SOURCES = Object.freeze([
   'examples/griffin/workbench/main.ashfox',
   'examples/prop/lantern.ashfox',
   'examples/prop/treasure_chest/chest.ashfox',
-  'examples/structure/medieval_cottage.ashfox',
-  'examples/structure/watchtower.ashfox',
 ]);
 
 const canonical = (value) => {
@@ -71,6 +69,7 @@ const productDigest = (product) => {
       entry,
       kind: product.kind,
       nbt: sha256(product.structure.nbt),
+      playableMeta: digestValue(product.structure.playableMeta),
       document: digestValue(product.structure.document),
     };
   }

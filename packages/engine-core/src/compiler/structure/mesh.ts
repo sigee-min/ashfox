@@ -39,7 +39,12 @@ const makeBone = (
     kind: 'bone',
     name,
     parentId,
-    transform: { position: [0, 0, 0], rotation: [...rotation] as Vec3, scale, pivot },
+    transform: {
+      position: [0, 0, 0],
+      rotation: [...rotation] as Vec3,
+      scale,
+      pivot,
+    },
     visible: true,
     canonicalFrame: {
       origin: pivot,
@@ -58,8 +63,14 @@ const collectTileRequests = (
   grid: StructureGrid,
   descriptors: readonly BlockDescriptor[],
   cutawayY: number,
-): readonly { readonly layer: BlockDescriptor['layer']; readonly tileId: string }[] => {
-  const reqs: { readonly layer: BlockDescriptor['layer']; readonly tileId: string }[] = [];
+): readonly {
+  readonly layer: BlockDescriptor['layer'];
+  readonly tileId: string;
+}[] => {
+  const reqs: {
+    readonly layer: BlockDescriptor['layer'];
+    readonly tileId: string;
+  }[] = [];
   const [w, h, d] = grid.size;
   const maxY = Math.min(h, cutawayY);
   for (let y = 0; y < maxY; y += 1) {
@@ -126,7 +137,12 @@ const fullCubeNode = (
   parentId,
   geometryMode: 'axis-box',
   bounds: { from: [ox, oy, oz], to: [ox + 16, oy + 16, oz + 16] },
-  transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], pivot: [0, 0, 0] },
+  transform: {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+    pivot: [0, 0, 0],
+  },
   visible: true,
   inflate: 0,
   mirror: false,
@@ -143,7 +159,10 @@ const remapFaces = (
 ): Record<string, CubeFace> => {
   const out: Record<string, CubeFace> = {};
   for (const [k, f] of Object.entries(faces)) {
-    out[k] = { ...f, textureId: f.textureId ? (texRemap.get(f.textureId) ?? f.textureId) : null };
+    out[k] = {
+      ...f,
+      textureId: f.textureId ? (texRemap.get(f.textureId) ?? f.textureId) : null,
+    };
   }
   return out;
 };
@@ -164,7 +183,10 @@ const cloneCubeNode = (
   texRemap: ReadonlyMap<string, string>,
 ): SceneNode => {
   const faces = remapFaces(node.faces, texRemap) as AxisCubeNode['faces'];
-  const transform = { ...node.transform, pivot: offsetVec3(node.transform.pivot, wx, wy, wz) };
+  const transform = {
+    ...node.transform,
+    pivot: offsetVec3(node.transform.pivot, wx, wy, wz),
+  };
   if (node.geometryMode === 'axis-box') {
     return {
       ...node,
@@ -324,6 +346,39 @@ const appendVoxelNodes = (
   }
 };
 
+const appendNonFullVoxel = (
+  grid: StructureGrid,
+  descriptors: readonly BlockDescriptor[],
+  uvs: ReadonlyMap<string, TileUvRef>,
+  cutawayY: number,
+  x: number,
+  y: number,
+  z: number,
+  ox: number,
+  oy: number,
+  oz: number,
+  cachedState: CachedBlockState,
+  desc: BlockDescriptor,
+  nodes: Record<string, SceneNode>,
+): void => {
+  const conns = CARDINAL_DELTAS.slice(0, 4).map(([dx, dy, dz]) =>
+    connectsNeighborAt(grid, descriptors, x + dx, y + dy, z + dz, desc.shape, cutawayY),
+  );
+  for (const cube of buildNonFullCubes(
+    `v_${x}_${y}_${z}`,
+    desc.zone,
+    ox,
+    oy,
+    oz,
+    cachedState,
+    desc,
+    conns,
+    uvs,
+  )) {
+    nodes[cube.id] = cube;
+  }
+};
+
 const appendSingleVoxel = (
   grid: StructureGrid,
   descriptors: readonly BlockDescriptor[],
@@ -346,40 +401,40 @@ const appendSingleVoxel = (
   const ox = x * 16 - halfW;
   const oy = y * 16;
   const oz = z * 16 - halfD;
-  if (desc.shape === 'full') {
-    const vis = CARDINAL_DELTAS.map(
-      ([dx, dy, dz]) =>
-        !desc.solidOpaque || !isOpaqueFullAt(grid, descriptors, x + dx, y + dy, z + dz, cutawayY),
+  if (desc.shape !== 'full') {
+    appendNonFullVoxel(
+      grid,
+      descriptors,
+      uvs,
+      cutawayY,
+      x,
+      y,
+      z,
+      ox,
+      oy,
+      oz,
+      cachedState,
+      desc,
+      nodes,
     );
-    if (vis.some(Boolean))
-      nodes[`v_${x}_${y}_${z}`] = fullCubeNode(
-        `v_${x}_${y}_${z}`,
-        desc.zone,
-        ox,
-        oy,
-        oz,
-        cachedState.facing,
-        desc,
-        vis,
-        uvs,
-      );
     return;
   }
-  const conns = CARDINAL_DELTAS.slice(0, 4).map(([dx, dy, dz]) =>
-    connectsNeighborAt(grid, descriptors, x + dx, y + dy, z + dz, desc.shape, cutawayY),
+  const vis = CARDINAL_DELTAS.map(
+    ([dx, dy, dz]) =>
+      !desc.solidOpaque || !isOpaqueFullAt(grid, descriptors, x + dx, y + dy, z + dz, cutawayY),
   );
-  for (const cube of buildNonFullCubes(
-    `v_${x}_${y}_${z}`,
-    desc.zone,
-    ox,
-    oy,
-    oz,
-    cachedState,
-    desc,
-    conns,
-    uvs,
-  )) {
-    nodes[cube.id] = cube;
+  if (vis.some(Boolean)) {
+    nodes[`v_${x}_${y}_${z}`] = fullCubeNode(
+      `v_${x}_${y}_${z}`,
+      desc.zone,
+      ox,
+      oy,
+      oz,
+      cachedState.facing,
+      desc,
+      vis,
+      uvs,
+    );
   }
 };
 
@@ -401,7 +456,11 @@ export const buildStructureDocument = (
   const cutawayY = options?.cutawayY ?? h;
   const descriptors = grid.states.map(describeBlockState);
   const parsedStates = cachePaletteStates(grid.states);
-  const atlas = buildStructureAtlases(collectTileRequests(grid, descriptors, cutawayY));
+  const atlas = buildStructureAtlases(
+    collectTileRequests(grid, descriptors, cutawayY),
+    grid.density,
+    grid.seed,
+  );
   const textures: Record<string, TextureAsset> = { ...atlas.textures };
   const nodes: Record<string, SceneNode> = {
     root: makeBone('root', 'root', null),

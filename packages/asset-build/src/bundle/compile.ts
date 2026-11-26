@@ -143,19 +143,24 @@ const compileStructureFiles = async (
     return [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
   }
   if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
-  const bundle = await exportStructureGltfResolved(
-    product.structure.document,
-    target.name,
-    buildKey,
-    { encoding: target.encoding ?? 'portable' },
-  );
-  return bundle.files.map((file) => {
+  const bundle = await exportStructureGltfResolved(product.structure, target.name, buildKey, {
+    encoding: target.encoding ?? 'portable',
+  });
+  const artifacts = bundle.files.map((file) => {
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {
       path: file.path,
       bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
     };
   });
+  const metaPath = `${target.name}.structure.json`;
+  if (!artifacts.some((file) => file.path === metaPath)) {
+    artifacts.push({
+      path: metaPath,
+      bytes: encodeUtf8(json(product.structure.playableMeta)),
+    });
+  }
+  return artifacts;
 };
 
 const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
@@ -166,6 +171,9 @@ const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
       size: product.structure.grid.size,
       blockCount: product.structure.audit.metrics.blockCount,
       interiorCells: product.structure.audit.metrics.interiorCells,
+      zoneCount: product.structure.playableMeta.zones.length,
+      lightCount: product.structure.playableMeta.lights.length,
+      interactableCount: product.structure.playableMeta.interactables.length,
     };
   if (product.kind === 'model')
     return {

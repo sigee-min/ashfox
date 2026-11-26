@@ -46,8 +46,11 @@ for shared design variables and exact resize relationships.
 | `prop` | `examples/prop/lantern.ashfox` | Emissive cutout cage prop with orthogonal tiers and brass roof brackets |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | Modular prop split across rig, surface, body, and socket-mounted clasp |
 | `creature` | `examples/griffin/workbench/main.ashfox` | Multi-module animated creature (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
-| `structure` | `examples/structure/medieval_cottage.ashfox` | Furnished gable-roof cottage with custom `.ashfox` props exporting `.nbt` and `1 block = 1.0m` GLB |
-| `structure` | `examples/structure/watchtower.ashfox` | Multi-story stone watchtower with guard bunk, ladder, battlements and custom lanterns |
+| `structure` | `examples/structure/assets/structures/medieval_cottage.ashfox` | Two-story cottage with `mix(...)` palette, shared-wall `arch`, `l_turn` stair, dormer/chimney roof, and `.structure.json` |
+| `structure` | `examples/structure/assets/structures/watchtower.ashfox` | Three-story stone watchtower with spiral stairs, recessed slits, pyramid roof, and custom rune/lantern props |
+| `structure` | `examples/structure/assets/structures/blacksmith.ashfox` | Timber-and-deepslate forge with open hearth arch, chimney soot weathering, and custom hanging sign |
+| `structure` | `examples/structure/assets/structures/tavern.ashfox` | Grand timber tavern with twin upper rooms, `u_turn` staircase, dormer gable roof, and tavern bar interior |
+| `structure` | `examples/structure/assets/structures/village_compound.ashfox` | Multi-building `compound` combining all four buildings, plaza well, lampposts, and road `socket` connectors |
 
 ## Create an animated creature
 

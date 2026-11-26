@@ -151,7 +151,11 @@ const runBuildWorker = async (input: {
       const checked = checkSnapshot(input.snapshot);
       value = {
         sourceHash: checked.sourceHash,
-        products: checked.products.map((p) => ({ kind: p.kind, entry: p.entry })),
+        products: checked.products.map((p) => ({
+          kind: p.kind,
+          entry: p.entry,
+          ...(p.kind === 'structure' ? { audit: p.structure.audit } : {}),
+        })),
       };
     } else {
       value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal);

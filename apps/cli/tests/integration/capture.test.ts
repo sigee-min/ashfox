@@ -12,7 +12,7 @@ const fox = path.join(root, 'examples/fox/creatures/fox.ashfox'),
   sword = path.join(root, 'examples/items/assets/sprites/iron_sword.ashfox'),
   marker = path.join(root, 'examples/minecraft/assets/models/marker.ashfox'),
   sound = path.join(root, 'examples/sounds/assets/sounds/claw_hit.ashfox'),
-  cottage = path.join(root, 'examples/structure/medieval_cottage.ashfox');
+  cottage = path.join(root, 'examples/structure/assets/structures/medieval_cottage.ashfox');
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-capture-test-'));
 
 const run = (args: string[], options = {}) =>
@@ -39,11 +39,12 @@ const withPreview = (
   entryPath: string,
   previewBody: string,
   extraFiles: Record<string, string>,
+  name = path.basename(entryPath),
 ) => {
   const source = fs
     .readFileSync(entryPath, 'utf8')
     .replace(/(\}\s*)$/, `  preview v {\n${previewBody}\n  }\n$1`);
-  return JSON.stringify({ source, name: path.basename(entryPath), files: extraFiles });
+  return JSON.stringify({ source, name, files: extraFiles });
 };
 
 const dirModules = (dir: string, exclude: string): Record<string, string> =>
@@ -56,16 +57,20 @@ const dirModules = (dir: string, exclude: string): Record<string, string> =>
 
 const foxMods = dirModules(path.dirname(fox), 'fox.ashfox');
 const cottageMods = {
-  'furnishings.ashfox': fs.readFileSync(
-    path.join(root, 'examples/structure/furnishings.ashfox'),
+  'module/furnishings.ashfox': fs.readFileSync(
+    path.join(root, 'examples/structure/assets/module/furnishings.ashfox'),
     'utf8',
   ),
-  'props/wall_lantern.ashfox': fs.readFileSync(
-    path.join(root, 'examples/structure/props/wall_lantern.ashfox'),
+  'models/props/wall_lantern.ashfox': fs.readFileSync(
+    path.join(root, 'examples/structure/assets/models/props/wall_lantern.ashfox'),
     'utf8',
   ),
-  'props/rune_pillar.ashfox': fs.readFileSync(
-    path.join(root, 'examples/structure/props/rune_pillar.ashfox'),
+  'models/props/rune_pillar.ashfox': fs.readFileSync(
+    path.join(root, 'examples/structure/assets/models/props/rune_pillar.ashfox'),
+    'utf8',
+  ),
+  'models/props/hanging_sign.ashfox': fs.readFileSync(
+    path.join(root, 'examples/structure/assets/models/props/hanging_sign.ashfox'),
     'utf8',
   ),
 };
@@ -76,19 +81,57 @@ const swordMods = {
   ),
 };
 
-const renderPreview = (entryPath: string, body: string, files: Record<string, string>) =>
+const renderPreview = (
+  entryPath: string,
+  body: string,
+  files: Record<string, string>,
+  name = path.basename(entryPath),
+) =>
   success(
     run(['render', '--input-json', '--view', 'v'], {
-      input: withPreview(entryPath, body, files),
+      input: withPreview(entryPath, body, files, name),
     }),
   );
 
 const verifyStructureCutaway = () => {
-  const full = renderPreview(cottage, 'width = 160; height = 128;', cottageMods);
+  const name = 'structures/medieval_cottage.ashfox';
+  const full = renderPreview(cottage, 'width = 160; height = 128;', cottageMods, name);
   png(full, 160, 128);
-  const cut = renderPreview(cottage, 'cutaway = 4; width = 160; height = 128;', cottageMods);
+  const cut = renderPreview(cottage, 'cutaway = 4; width = 160; height = 128;', cottageMods, name);
   png(cut, 160, 128);
   assert.notDeepEqual(full, cut);
+
+  const ext = renderPreview(
+    cottage,
+    'sheet = exterior; width = 240; height = 180;',
+    cottageMods,
+    name,
+  );
+  png(ext, 240, 180);
+  const cutSheet = renderPreview(
+    cottage,
+    'sheet = cutaway; width = 240; height = 180;',
+    cottageMods,
+    name,
+  );
+  png(cutSheet, 240, 180);
+  const interior = renderPreview(
+    cottage,
+    'sheet = interior; width = 240; height = 180;',
+    cottageMods,
+    name,
+  );
+  png(interior, 240, 180);
+  assert.notDeepEqual(ext, cutSheet);
+  assert.notDeepEqual(ext, interior);
+
+  const gif = renderPreview(
+    cottage,
+    'kind = gif; mode = turntable; width = 128; height = 96; duration = 0.25; fps = 4;',
+    cottageMods,
+    name,
+  );
+  assert.equal(gif.subarray(0, 6).toString(), 'GIF89a');
 };
 
 async function main() {

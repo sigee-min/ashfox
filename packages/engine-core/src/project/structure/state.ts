@@ -118,3 +118,11 @@ export const withBlockFacing = (state: string, facing: CardinalFacing): string =
   const parsed = parseBlockState(state);
   return formatBlockState({ name: parsed.name, properties: { ...parsed.properties, facing } });
 };
+
+export const withBlockProperties = (
+  state: string,
+  patch: Readonly<Record<string, string>>,
+): string => {
+  const parsed = parseBlockState(state);
+  return formatBlockState({ name: parsed.name, properties: { ...parsed.properties, ...patch } });
+};

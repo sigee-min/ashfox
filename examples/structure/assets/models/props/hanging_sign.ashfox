@@ -1,0 +1,122 @@
+ashfox-model 1
+asset hanging_sign {
+  export rig contract SignRig {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+
+  export skeleton SignSkeleton implements SignRig {
+    bind root {
+      parent-origin = (0u, 0u, 0u);
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export surface contract SignSurface {
+    chart bracket box { coverage = opaque; }
+    chart crossbar box { coverage = opaque; }
+    chart strut box { coverage = opaque; }
+    chart finial box { coverage = opaque; }
+    chart frame_trim box { coverage = opaque; }
+    chart board box { coverage = opaque; }
+    chart chain flat { coverage = binary; }
+    material = double;
+  }
+
+  export surface oak_iron_sign: SignSurface {
+    material = double;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 2;
+      background = iron_bg;
+      background-alpha = 255;
+      palette {
+        iron_bg = #2c313d;
+        iron = (#2e3545, #475269, #7080a1);
+        oak = (#52361e, #7d5330, #ab7849);
+        spruce = (#3b2615, #593b21, #7a5432);
+        gold = (#8f5d1e, #d99434, #ffe075);
+      }
+      stamp crest {
+        pixels = "..gggg../.g....g./g.gggg.g/g.g..g.g/g.gggg.g/.g....g./..gggg../...gg...";
+        g = gold;
+      }
+      chart bracket box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = gold; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart crossbar box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = gold; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart strut box {
+        fill = iron;
+        grain = none;
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart finial box {
+        fill = gold;
+        grain = none;
+        pattern ao { strength = 0.25ratio; radius = 0.4u; }
+      }
+      chart frame_trim box {
+        fill = spruce;
+        grain = wood;
+        pattern border { paint = iron; width = 1px; edges = all; }
+        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+      }
+      chart board box {
+        fill = oak;
+        grain = wood;
+        pattern border { paint = spruce; width = 1px; edges = all; }
+        pattern ao { strength = 0.3ratio; radius = 0.4u; }
+        face east { stamp crest { at = (6px, 2px); protect = true; } }
+        face west { stamp crest { at = (6px, 2px); protect = true; } }
+      }
+      chart chain flat {
+        fill = iron;
+        coverage = 011010010110011010010110;
+        grain = none;
+        pattern border { paint = gold; width = 1px; edges = bottom; }
+      }
+      grain wood { seed = 823; }
+      tone painterly;
+    }
+  }
+
+  export component HangingSign {
+    requires rig skel: SignRig;
+    requires surface skin: SignSurface;
+    bind bone root to skel.root;
+    geometry {
+      bone root {
+        cube post_plate { origin = (-2u, 9u, 6u); size = (4u, 5u, 2u); surface = skin.bracket; }
+        cube crossbar { origin = (-1u, 11u, -5u); size = (2u, 2u, 11u); surface = skin.crossbar; }
+        cube strut { origin = (-1u, 8u, 0u); size = (2u, 2u, 6u); pivot = (0u, 9u, 6u); rotation = (-22.5deg, 0deg, 0deg); surface = skin.strut; }
+        cube cap_finial { origin = (-1.5u, 10.5u, -7u); size = (3u, 3u, 2u); surface = skin.finial; }
+        plane chain_front { origin = (0u, 8u, -4u); size = (2u, 3u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); surface = skin.chain; }
+        plane chain_back { origin = (0u, 8u, 2u); size = (2u, 3u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); surface = skin.chain; }
+        cube top_rail { origin = (-2u, 7u, -5u); size = (4u, 1u, 10u); surface = skin.frame_trim; }
+        cube bottom_rail { origin = (-2u, 0u, -5u); size = (4u, 1u, 10u); surface = skin.frame_trim; }
+        cube panel { origin = (-1u, 1u, -5u); size = (2u, 6u, 10u); surface = skin.board; }
+      }
+    }
+  }
+
+  export asset hanging_sign {
+    settings { density = 16; forward = north; profile = prop; }
+    skeleton = SignSkeleton;
+    use HangingSign as model { bind skel = SignRig; bind skin = oak_iron_sign; };
+  }
+}

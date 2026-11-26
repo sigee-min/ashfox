@@ -1,0 +1,115 @@
+ashfox-model 1
+structure watchtower {
+  import "../module/furnishings.ashfox" as deco;
+  import "../models/props/wall_lantern.ashfox" as beacon;
+  import "../models/props/rune_pillar.ashfox" as ward;
+
+  density = 2;
+  seed = 202;
+  size = (13, 27, 13);
+  data_version = 3955;
+
+  params {
+    w = 13;
+    d = 13;
+  }
+
+  outputs {
+    java_structure;
+    glb;
+  }
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    moss_cobble = "minecraft:mossy_cobblestone";
+    brick = mix("minecraft:stone_bricks" * 0.7, "minecraft:mossy_stone_bricks" * 0.2, "minecraft:cracked_stone_bricks" * 0.1);
+    moss_brick = "minecraft:mossy_stone_bricks";
+    deepslate = "minecraft:deepslate_bricks";
+    oak = "minecraft:oak_planks";
+    spruce = "minecraft:spruce_planks";
+    beam = "minecraft:dark_oak_log[axis=x]";
+    oak_stair = "minecraft:oak_stairs";
+    roof_stair = "minecraft:deepslate_brick_stairs";
+    trim_stair = "minecraft:spruce_stairs";
+    ridge = "minecraft:deepslate_brick_slab[type=bottom]";
+    porch_stair = "minecraft:stone_brick_stairs[facing=north,half=bottom]";
+    fence = "minecraft:spruce_fence";
+    bars = "minecraft:iron_bars";
+    glass = "minecraft:glass_pane";
+    slab = "minecraft:stone_brick_slab[type=top]";
+    door = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = asset beacon as "minecraft:lantern[hanging=false]";
+    ward_stone = asset ward as "minecraft:chiseled_stone_bricks";
+  }
+
+  build {
+    floor base y = 0 height = 5 {
+      room guardroom from = (2, 2) size = (9, 9) kind = tower plinth = moss_cobble floor = brick wall = brick frame = deepslate ceiling = oak;
+
+      facade on guardroom.south {
+        door at = center width = 1 height = 2 block = door hinge = left frame = deepslate lintel = beam porch {
+          depth = 2;
+          floor = deepslate;
+          pillars = deepslate;
+          lamps = lantern;
+          steps = porch_stair;
+        }
+      }
+
+      facade on guardroom.north, guardroom.east, guardroom.west {
+        window at = center width = 1 height = 2 y_offset = 1 glass = bars recess = 1 sill = slab lintel = beam;
+      }
+    }
+
+    floor mid y = 5 height = 5 {
+      room barracks from = (2, 2) size = (9, 9) kind = bedroom floor = oak wall = brick frame = deepslate ceiling = spruce;
+
+      facade on barracks.north, barracks.south, barracks.east, barracks.west {
+        window at = center width = 1 height = 2 y_offset = 1 glass = bars recess = 1 sill = slab lintel = beam;
+      }
+    }
+
+    floor top y = 10 height = 5 {
+      room lookout from = (2, 2) size = (9, 9) kind = tower floor = spruce wall = brick frame = deepslate ceiling = deepslate;
+
+      facade on lookout.north, lookout.south, lookout.east, lookout.west {
+        window symmetric = 2 width = 1 height = 2 y_offset = 1 glass = glass sill = slab lintel = beam;
+      }
+    }
+
+    staircase in_room = guardroom style = spiral at = (4, 4) y_from = 0 y_to = 5 facing = east width = 1 stair = oak_stair landing = oak rail = fence headroom = 3;
+    staircase in_room = barracks style = spiral at = (4, 4) y_from = 5 y_to = 10 facing = east width = 1 stair = oak_stair landing = spruce rail = fence headroom = 3;
+
+    roof on = lookout style = pyramid axis = x overhang = 1 pitch = steep stair = roof_stair trim = trim_stair ridge = ridge under_eave = true;
+
+    furnish room = guardroom {
+      place_anchor prefab = deco.StudyCorner on = nw offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = barracks {
+      place_anchor prefab = deco.GuardBunk on = ne offset = (0, 0) rotate = 0;
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    furnish room = lookout {
+      hang block = hang_lantern at = ceiling_center drop = 1;
+    }
+
+    weathering {
+      ground_moss height = 3 target = brick into = moss_cobble rate = 0.3;
+      corner_quoin target = brick corners = deepslate;
+      eave_shadow target = brick into = moss_brick rate = 0.25;
+    }
+
+    set at = (2, 1, 11) block = ward_stone;
+    set at = (10, 1, 11) block = ward_stone;
+
+    socket gate_entry kind = entry room = guardroom wall = south normal = south pool = "village:streets" target = "road_join";
+    socket west_wall kind = wall_join at = (0, 0, floor(d / 2)) normal = west pool = "village:walls" target = "wall_join";
+  }
+}

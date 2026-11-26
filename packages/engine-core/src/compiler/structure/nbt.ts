@@ -1,6 +1,7 @@
 import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
 import { parseBlockState } from '../../project/structure/state';
 import type { DecodedStructureNbt, StructureGrid } from './contract';
+import { collectJigsawEntities, type JigsawBlockEntity } from './jigsaw';
 
 const TAG_END = 0;
 const TAG_INT = 3;
@@ -117,22 +118,76 @@ const writePalette = (w: NbtWriter, states: readonly string[]): void => {
   }
 };
 
+const writeJigsawCompound = (w: NbtWriter, nbt: JigsawBlockEntity): void => {
+  w.named(TAG_COMPOUND, 'nbt');
+  const fields: readonly [string, string][] = [
+    ['id', nbt.id],
+    ['name', nbt.name],
+    ['target', nbt.target],
+    ['pool', nbt.pool],
+    ['final_state', nbt.finalState],
+    ['joint', nbt.joint],
+  ];
+  for (const [k, v] of fields) {
+    w.named(TAG_STRING, k);
+    w.str(v);
+  }
+  w.byte(TAG_END);
+};
+
+interface NbtBlockEntry {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly state: number;
+  readonly nbt?: JigsawBlockEntity;
+}
+
+const ensureNbtState = (
+  states: string[],
+  stateToIdx: Map<string, number>,
+  state: string,
+): number => {
+  const existing = stateToIdx.get(state);
+  if (existing !== undefined) return existing;
+  const idx = states.length;
+  states.push(state);
+  stateToIdx.set(state, idx);
+  return idx;
+};
+
+const collectNbtPaletteAndBlocks = (
+  grid: StructureGrid,
+): { readonly states: readonly string[]; readonly entries: readonly NbtBlockEntry[] } => {
+  const [wDim, _hDim, dDim] = grid.size;
+  const states = [...grid.states];
+  const stateToIdx = new Map<string, number>(states.map((s, i) => [s, i]));
+  const jigsaws = collectJigsawEntities(grid);
+  const entries: NbtBlockEntry[] = [];
+  for (let i = 0; i < grid.voxels.length; i += 1) {
+    const x = i % wDim;
+    const z = Math.floor(i / wDim) % dDim;
+    const y = Math.floor(i / (wDim * dDim));
+    const jigsaw = jigsaws.get(`${x},${y},${z}`);
+    if (jigsaw) {
+      entries.push({
+        x,
+        y,
+        z,
+        state: ensureNbtState(states, stateToIdx, jigsaw.stateString),
+        nbt: jigsaw,
+      });
+      continue;
+    }
+    const state = grid.voxels[i]!;
+    if (state >= 0) entries.push({ x, y, z, state });
+  }
+  return { states, entries };
+};
+
 export const encodeStructureNbt = (grid: StructureGrid): Uint8Array => {
   const [wDim, hDim, dDim] = grid.size;
-  const entries: {
-    readonly x: number;
-    readonly y: number;
-    readonly z: number;
-    readonly state: number;
-  }[] = [];
-  for (let y = 0; y < hDim; y += 1) {
-    for (let z = 0; z < dDim; z += 1) {
-      for (let x = 0; x < wDim; x += 1) {
-        const state = grid.voxels[(y * dDim + z) * wDim + x]!;
-        if (state >= 0) entries.push({ x, y, z, state });
-      }
-    }
-  }
+  const { states, entries } = collectNbtPaletteAndBlocks(grid);
   const w = new NbtWriter();
   w.named(TAG_COMPOUND, '');
   w.named(TAG_INT, 'DataVersion');
@@ -142,7 +197,7 @@ export const encodeStructureNbt = (grid: StructureGrid): Uint8Array => {
   w.int(wDim);
   w.int(hDim);
   w.int(dDim);
-  writePalette(w, grid.states);
+  writePalette(w, states);
   w.named(TAG_LIST, 'blocks');
   w.listHeader(TAG_COMPOUND, entries.length);
   for (const b of entries) {
@@ -153,6 +208,7 @@ export const encodeStructureNbt = (grid: StructureGrid): Uint8Array => {
     w.int(b.z);
     w.named(TAG_INT, 'state');
     w.int(b.state);
+    if (b.nbt) writeJigsawCompound(w, b.nbt);
     w.byte(TAG_END);
   }
   w.named(TAG_LIST, 'entities');
@@ -239,7 +295,7 @@ export const decodeStructureNbt = (bytes: Uint8Array): DecodedStructureNbt => {
     DataVersion: number;
     size: [number, number, number];
     palette: { Name: string; Properties?: Record<string, string> }[];
-    blocks: { pos: [number, number, number]; state: number }[];
+    blocks: { pos: [number, number, number]; state: number; nbt?: Record<string, unknown> }[];
   };
   return {
     dataVersion: root.DataVersion,
