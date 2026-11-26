@@ -6,6 +6,7 @@ import {
   waitForProjectionTextures,
 } from '../captureSurface';
 import { renderBuildGif } from '../capture/renderBuildGif';
+import type { StructureObservationPayload } from '../structureRender';
 import type { ViewOptions } from './contract';
 import {
   applyNodeVisibilityFilter,
@@ -15,9 +16,11 @@ import {
   fillBackground,
   renderModelFrames,
 } from './modelRender';
+import { captureStructureObservation } from './structSheet';
 
 interface Payload {
   readonly document?: ProjectDocument;
+  readonly structure?: StructureObservationPayload;
   readonly png?: string;
   readonly wave?: readonly number[];
 }
@@ -256,6 +259,9 @@ export const capture = async (
   v: ViewOptions,
   replay: boolean,
 ): Promise<{ mime: string; data: string }> => {
+  if (loaded.structure && !replay) {
+    return captureStructureObservation(loaded.structure, v, new AbortController().signal);
+  }
   if (!loaded.document) return captureNonModelAsset(v, replay);
   const model = loaded.document;
   if (replay && v.mode === 'build') return captureBuildReplay(model, v);
