@@ -33,7 +33,7 @@ interface RasterBuffer {
   readonly height: number;
   readonly isEmissive: boolean;
   readonly rgba: Uint8Array;
-  readonly lumas: Float32Array;
+  readonly lumas: Float64Array;
   readonly usedPixels: Uint8Array;
 }
 
@@ -51,7 +51,7 @@ const rasterizeTextureBuffer = (texture: TextureAsset): RasterBuffer | null => {
   const result = rasterizeTextureSpec(texture.width, texture.height, texture.raster);
   const rgba = result.rgba.copy();
   const total = result.width * result.height;
-  const lumas = new Float32Array(total);
+  const lumas = new Float64Array(total);
   for (let i = 0, o = 0; i < total; i += 1, o += 4) {
     if (rgba[o + 3] === 255) {
       lumas[i] = srgbLuma(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!);
@@ -197,7 +197,7 @@ const recordFaceTexel = (
   const g = buf.rgba[offset + 1]!;
   const b = buf.rgba[offset + 2]!;
   recordColorPixel(acc.color, r, g, b, buf.isEmissive);
-  const l = srgbLuma(r, g, b);
+  const l = buf.lumas[idx]!;
   acc.lumas.push(l);
   if (binding.isTop) {
     acc.topSum += l;
@@ -206,11 +206,10 @@ const recordFaceTexel = (
     acc.botSum += l;
     acc.botCount += 1;
   }
-  const lF32 = buf.lumas[idx]!;
-  if (x + 1 < bounds.x1) checkPairClutter(buf, lF32, idx + 1, acc);
-  if (y + 1 < bounds.y1) checkPairClutter(buf, lF32, idx + buf.width, acc);
+  if (x + 1 < bounds.x1) checkPairClutter(buf, l, idx + 1, acc);
+  if (y + 1 < bounds.y1) checkPairClutter(buf, l, idx + buf.width, acc);
   if (x > bounds.x0 && x + 1 < bounds.x1 && y > bounds.y0 && y + 1 < bounds.y1) {
-    checkCheckerCenter(buf, lF32, idx, acc);
+    checkCheckerCenter(buf, l, idx, acc);
   }
   return true;
 };

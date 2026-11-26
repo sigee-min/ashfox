@@ -7,13 +7,15 @@ import {
 } from '../../project/sprite/contract';
 import { readSpriteDocument } from '../../project/sprite/read';
 import { sha256ByteDigest } from '../../provenance/digest';
+import { assertTextureDimensions } from '../../textures/limits';
 import { encodeCanonicalPng } from '../../textures/textureRecipe/png';
 import {
-  rasterizeCanonicalTexture,
+  assertCanonicalTextureRaster,
   type CanonicalTextureRaster,
 } from '../../textures/textureRecipe/raster';
 import type { SpriteBuild, SpriteProduct } from './contract';
 import { paintSprite } from './paint';
+import { createCanonicalRaster } from './raster';
 
 const normalizeHexColors = (v: unknown): unknown => {
   if (typeof v === 'string' && /^#[0-9a-f]{6}$/iu.test(v)) return v.toUpperCase();
@@ -47,30 +49,26 @@ const boundsOf = (
   positions: readonly number[],
   width: number,
 ): readonly [number, number, number, number] => {
-  const xs = positions.map((i) => i % width),
-    ys = positions.map((i) => Math.floor(i / width));
-  return Object.freeze([
-    Math.min(...xs),
-    Math.min(...ys),
-    Math.max(...xs) + 1,
-    Math.max(...ys) + 1,
-  ]);
+  let minX = width;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = -1;
+  let maxY = -1;
+  for (let i = 0; i < positions.length; i += 1) {
+    const pos = positions[i]!;
+    const x = pos % width;
+    const y = Math.floor(pos / width);
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return Object.freeze([minX, minY, maxX + 1, maxY + 1]);
 };
 
-const opaqueHexAt = (rgba: CanonicalTextureRaster['rgba'], offset: number): string | null => {
-  if (rgba.at(offset + 3) !== 255) return null;
-  return (
-    '#' +
-    [0, 1, 2]
-      .map((c) =>
-        rgba
-          .at(offset + c)!
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
+const spriteProductHash = (width: number, height: number, bytes: Uint8Array): string =>
+  sha256ByteDigest(
+    encodeUtf8(`{"height":${height},"kind":"sprite","rgba":[${bytes.join(',')}],"width":${width}}`),
   );
-};
 
 export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): SpriteBuild => {
   try {
@@ -107,7 +105,7 @@ export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Spr
         closureHash: sourceHash,
         policy: SPRITE_POLICY,
         buildKey: digest({ closureHash: sourceHash, policy: SPRITE_POLICY }),
-        productHash: digest({ kind: 'sprite', width, height, rgba: [...bytes] }),
+        productHash: spriteProductHash(width, height, bytes),
         pngHash: sha256ByteDigest(png),
         width,
         height,
@@ -122,33 +120,53 @@ export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Spr
   }
 };
 
+const fillPreviewPixel = (
+  out: Uint8Array,
+  outWidth: number,
+  ox: number,
+  oy: number,
+  scale: number,
+  r: number,
+  g: number,
+  b: number,
+): void => {
+  for (let dy = 0; dy < scale; dy += 1) {
+    let rowOffset = ((oy + dy) * outWidth + ox) * 4;
+    for (let dx = 0; dx < scale; dx += 1) {
+      out[rowOffset] = r;
+      out[rowOffset + 1] = g;
+      out[rowOffset + 2] = b;
+      out[rowOffset + 3] = 255;
+      rowOffset += 4;
+    }
+  }
+};
+
 /** Presentation scaling only. Pixels are copied without interpolation. */
 export const spritePreviewPng = (raster: CanonicalTextureRaster, scale = 16): Uint8Array => {
   if (!Number.isInteger(scale) || scale < 1 || scale > 32)
     throw new RangeError('Scale must be 1..32.');
-  const details = [];
+  assertCanonicalTextureRaster(raster);
+  const outWidth = raster.width * scale;
+  const outHeight = raster.height * scale;
+  assertTextureDimensions(outWidth, outHeight, 'Canonical texture');
+  const src = raster.rgba.copy();
+  const out = new Uint8Array(outWidth * outHeight * 4);
   for (let y = 0; y < raster.height; y += 1) {
     for (let x = 0; x < raster.width; x += 1) {
       const i = (y * raster.width + x) * 4;
-      const color = opaqueHexAt(raster.rgba, i);
-      if (color === null) continue;
-      details.push({
-        id: `p${i}`,
-        x: x * scale,
-        y: y * scale,
-        width: scale,
-        height: scale,
-        color,
-        alpha: 255 as const,
-      });
+      if (src[i + 3] !== 255) continue;
+      fillPreviewPixel(
+        out,
+        outWidth,
+        x * scale,
+        y * scale,
+        scale,
+        src[i]!,
+        src[i + 1]!,
+        src[i + 2]!,
+      );
     }
   }
-  return encodeCanonicalPng(
-    rasterizeCanonicalTexture(raster.width * scale, raster.height * scale, {
-      background: '#000000',
-      backgroundAlpha: 0,
-      canvasDetails: details,
-      alphaMasks: [],
-    }),
-  );
+  return encodeCanonicalPng(createCanonicalRaster(outWidth, outHeight, out));
 };

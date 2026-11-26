@@ -2,25 +2,32 @@ import { readPlayback } from '../../bundle/audio';
 import { BuildFailure } from '../../bundle/contract';
 import type { GameAssetManifest } from './contract';
 import { safeRelative } from '../../shared/path';
-import { isClosedContractRecord } from '@ashfox/internal-contracts';
+import { hasExactContractKeys, isClosedContractRecord } from '@ashfox/internal-contracts';
+
+export const readClosedRecord = (
+  value: unknown,
+  keys: readonly string[],
+  onFail: (message: string) => never,
+): Readonly<Record<string, unknown>> => {
+  if (!isClosedContractRecord(value)) return onFail('Expected record');
+  if (!hasExactContractKeys(value, new Set(keys))) onFail('Unexpected fields');
+  return value;
+};
+
 const fail = (message: string): never => {
   throw new BuildFailure('output.integrity', 'Game manifest: ' + message, 3);
 };
 
-const record = (v: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> => {
-  if (!isClosedContractRecord(v)) return fail('Expected record');
-  if (Object.keys(v).length !== keys.length || keys.some((k) => !Object.hasOwnProperty.call(v, k)))
-    fail('Unexpected fields');
-  return v;
-};
+const record = (v: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> =>
+  readClosedRecord(v, keys, fail);
 
 const finite = (v: unknown, positive: boolean): boolean =>
   typeof v === 'number' && Number.isFinite(v) && (positive ? v > 0 : v >= 0);
 
-const readAssetFilePaths = (rawFiles: unknown, allPaths: Set<string>): Set<string> => {
+const readAssetFilePaths = (rawFiles: unknown, allPaths: Set<string>): Map<string, number> => {
   if (!Array.isArray(rawFiles) || !rawFiles.length || rawFiles.length > 8192)
     return fail('Invalid files');
-  const paths = new Set<string>();
+  const paths = new Map<string, number>();
   for (const rawFile of rawFiles) {
     const f = record(rawFile, ['path', 'sha256', 'byteLength']);
     if (
@@ -34,7 +41,7 @@ const readAssetFilePaths = (rawFiles: unknown, allPaths: Set<string>): Set<strin
       (f.byteLength as number) < 0
     )
       return fail('Invalid file record');
-    paths.add(f.path);
+    paths.set(f.path, f.byteLength as number);
     allPaths.add(f.path.toLowerCase());
   }
   return paths;
@@ -62,6 +69,7 @@ const validateModelAsset = (
 const validateSoundAsset = (
   a: Record<string, unknown>,
   reference: (path: unknown, extension: string) => void,
+  fileBytes: ReadonlyMap<string, number>,
 ): void => {
   if (!['wav', 'ogg'].includes(String(a.codec)) || !Array.isArray(a.variants) || !a.variants.length)
     fail('Invalid audio metadata');
@@ -92,8 +100,8 @@ const validateSoundAsset = (
     const playback = readPlayback(v.playback, v.frames as number);
     if (a.codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
     if (a.codec === 'wav') {
-      const file = (a.files as Record<string, unknown>[]).find((f) => f.path === v.file);
-      if (file?.byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number))
+      const byteLength = typeof v.file === 'string' ? fileBytes.get(v.file) : undefined;
+      if (byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number))
         fail('WAV frame count mismatch');
     }
     variants.add(v.id);
@@ -140,7 +148,7 @@ const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<str
   };
   if (a.kind === 'model') validateModelAsset(a, reference);
   else if (a.kind === 'sprite') validateSpriteAsset(a, reference);
-  else validateSoundAsset(a, reference);
+  else validateSoundAsset(a, reference, paths);
   if (referenced.length !== paths.size || new Set(referenced).size !== paths.size)
     fail('Incomplete file references');
 };
