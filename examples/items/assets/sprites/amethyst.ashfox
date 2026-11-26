@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 sprite amethyst {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -6,27 +6,27 @@ sprite amethyst {
   palette {
     spark = #fff2ff;
   }
-  shape host_rock {
-    shape { kind = capsule; x1 = 8; y1 = 23; x2 = 23; y2 = 23; radius = 3.5; }
+  capsule host_rock {
+    from = (8px, 23px); to = (23px, 23px); radius = 3.5px;
     material = shared.stone_host;
     shade { form = round; light = top_left; contrast = 2; specular = 0; }
-    grain { mode = clustered; amount = 1; seed = 7; }
+    grain clustered { amount = 1; seed = 7; }
   }
-  shape left_spire {
-    shape { kind = polygon; points = [(7, 22), (8, 12), (11, 10), (14, 22)]; }
+  polygon left_spire {
+    points = [(7px, 22px), (8px, 12px), (11px, 10px), (14px, 22px)];
     material = shared.amethyst_gem;
     shade { form = facet; light = top_left; contrast = 2; specular = 2; }
   }
-  shape right_spire {
-    shape { kind = polygon; points = [(18, 22), (20, 11), (24, 13), (23, 22)]; }
+  polygon right_spire {
+    points = [(18px, 22px), (20px, 11px), (24px, 13px), (23px, 22px)];
     material = shared.amethyst_gem;
     shade { form = facet; light = top_left; contrast = 2; specular = 1; }
   }
-  shape main_spire {
-    shape { kind = polygon; points = [(12, 23), (13, 8), (16, 4), (19, 8), (19, 23)]; }
+  polygon main_spire {
+    points = [(12px, 23px), (13px, 8px), (16px, 4px), (19px, 8px), (19px, 23px)];
     material = shared.amethyst_gem;
     shade { form = facet; light = top_left; contrast = 3; specular = 2; }
-    pattern { kind = gradient; axis = y; toMaterial = shared.amethyst_glow; dither = false; seed = 19; }
+    pattern gradient { axis = y; to_material = shared.amethyst_glow; dither = false; seed = 19; }
   }
   paint glint {
     at = (9px, 6px);
@@ -41,5 +41,5 @@ sprite amethyst {
     ];
     colors { s = spark; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }

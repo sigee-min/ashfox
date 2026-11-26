@@ -78,10 +78,7 @@ if (opened.ok) {
   );
 }
 
-const invalid = compileAssetWorkspaceEntry(
-  validAssetWorkspace('ashfox-model 1\nasset wolf {'),
-  selector,
-);
+const invalid = compileAssetWorkspaceEntry(validAssetWorkspace('ashfox 1\nmodel wolf {'), selector);
 assert.equal(invalid.ok, false);
 if (!invalid.ok) {
   assert.deepEqual(Object.keys(invalid).sort(), ['diagnostics', 'ok']);

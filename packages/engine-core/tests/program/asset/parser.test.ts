@@ -93,8 +93,8 @@ if (valid.ok) {
   }
 }
 
-const missingHandedness = rig.replace('handedness = right;\n', '');
-assert.ok(codes(missingHandedness).includes('asset.missing-handedness'));
+const defaultedHandedness = rig.replace('handedness = right;\n', '');
+assert.deepEqual(codes(defaultedHandedness), []);
 
 const badFrame = rig.replace(
   'x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1);',
@@ -106,8 +106,8 @@ if (!badFrameResult.ok)
   assert.ok(badFrameResult.diagnostics.some((entry) => entry.code === 'asset.invalid-frame'));
 
 const rotatedSkeleton = rig.replace(
-  `bind chest { parent-origin = (0u, 20u, 0u); ${frame} }`,
-  'bind chest { parent-origin = (0u, 20u, 0u); frame { x = (0, 1, 0); y = (-1, 0, 0); z = (0, 0, 1); } }',
+  `bind chest { parent_origin = (0u, 20u, 0u); ${frame} }`,
+  'bind chest { parent_origin = (0u, 20u, 0u); frame { x = (0, 1, 0); y = (-1, 0, 0); z = (0, 0, 1); } }',
 );
 const rotatedHir = compileWorkspace(root, { rig: rotatedSkeleton });
 assert.equal(rotatedHir.ok, true);
@@ -287,7 +287,7 @@ assert.equal(badSettingsResult.ok, false);
 if (!badSettingsResult.ok)
   assert.ok(badSettingsResult.diagnostics.some((entry) => entry.code === 'asset.invalid-settings'));
 
-const moduleRoot = root.replace('asset package {', 'module package {');
+const moduleRoot = 'ashfox 1\nmodule boss {\n  export design D { x: unit = 1u; }\n}';
 const rootResult = workspaceFailure(workspaceFor(moduleRoot));
 assert.equal(rootResult.ok, false);
 if (!rootResult.ok)
@@ -303,7 +303,7 @@ const duplicatePathWorkspace = deriveInterfaceHashes(
     [
       {
         path: 'dragon/main.ashfox',
-        source: root.replace(/^(asset|module) package \{/m, '$1 boss {'),
+        source: root.replace(/^(model|module) boss \{/m, '$1 boss {'),
       },
       ...moduleSources(),
       { path: 'dragon/rig.ashfox', source: rig },
@@ -327,10 +327,7 @@ if (!duplicatePath.ok)
     ),
   );
 
-const duplicateParameter = root.replace(
-  'set length = 4u;',
-  'set length = 4u;\n      set length = 5u;',
-);
+const duplicateParameter = root.replace('length = 4u;', 'length = 4u;\n      length = 5u;');
 const duplicateParameterResult = compileWorkspace(duplicateParameter);
 assert.equal(duplicateParameterResult.ok, false);
 if (!duplicateParameterResult.ok)
@@ -341,7 +338,7 @@ if (!duplicateParameterResult.ok)
   );
 
 const workspaceWithUnrelated = workspaceFor(root, {}, [
-  { path: 'dragon/unrelated.ashfox', source: 'ashfox-model 1\nmodule unrelated {}' },
+  { path: 'dragon/unrelated.ashfox', source: 'ashfox 1\nmodule unrelated {}' },
 ]);
 const unrelatedResult = resolveWorkspaceEntryCompilation(workspaceWithUnrelated, {
   packageName: 'dragon',
@@ -384,7 +381,7 @@ if (aliasBaseline.ok && aliasHir.ok) {
 }
 
 const exactEntryMismatch = resolveWorkspaceEntryCompilation(
-  workspaceFor(root.replace('asset package {', 'asset other {')),
+  workspaceFor(root.replace('model boss {', 'model other {')),
   { packageName: 'dragon', entryName: 'boss' },
 );
 assert.equal(exactEntryMismatch.ok, false);

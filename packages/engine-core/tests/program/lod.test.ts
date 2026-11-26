@@ -125,21 +125,19 @@ const testStructureThreeTierLod = async (): Promise<void> => {
 };
 
 const testStairWedgeAndWindowGlowPreservation = (): void => {
-  const src = `ashfox-model 1
+  const src = `ashfox 1
 structure stair_hall {
-  size = (7, 6, 7);
+  size = (7b, 6b, 7b);
   palette {
     stone = "minecraft:stone_bricks";
     glass = "minecraft:glass_pane";
     stair = "minecraft:oak_stairs[facing=north,half=bottom]";
     air = "minecraft:air";
   }
-  build {
-    box from = (0, 0, 0) to = (6, 4, 6) block = stone;
-    box from = (1, 1, 1) to = (5, 3, 5) block = air;
-    box from = (1, 1, 1) to = (4, 1, 1) block = stair;
-    set at = (3, 2, 0) block = glass;
-  }
+  box { from = (0b, 0b, 0b); to = (6b, 4b, 6b); block = stone; }
+  box { from = (1b, 1b, 1b); to = (5b, 3b, 5b); block = air; }
+  box { from = (1b, 1b, 1b); to = (4b, 1b, 1b); block = stair; }
+  set { at = (3b, 2b, 0b); block = glass; }
 }`;
   const parsed = parseStructureSource(src, 'stair_hall.ashfox');
   const out = compileStructureUnits(

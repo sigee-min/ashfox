@@ -9,14 +9,14 @@ assert.deepEqual(soundBudget(base), {
 });
 for (const [key, value] of [
   ['duration', 31],
-  ['sampleRate', 44100],
+  ['sample_rate', 44100],
   ['seed', 0],
   ['seed', 1.5],
   ['seed', NaN],
 ] as const)
   assert.throws(() => readRecipe({ ...base, [key]: value }));
 assert.throws(() => parseSoundSource(native(base) + ' '.repeat(262144)), /256 KiB/);
-assert.throws(() => parseSoundSource('ashfox-model 1sound x {}'), /whitespace/);
+assert.throws(() => parseSoundSource('ashfox 1sound x {}'), /whitespace/);
 assert.throws(
   () => readRecipe({ ...base, variants: [base.variants[0], base.variants[0]] }),
   /duplicate/,

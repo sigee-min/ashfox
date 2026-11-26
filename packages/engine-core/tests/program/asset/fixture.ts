@@ -3,8 +3,8 @@ import { workspaceFixture } from '../../project/workspace/fixtures';
 
 const frame = 'frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }';
 
-export const VALID_ASSET_SOURCE = `ashfox-model 1
-asset wolf {
+export const VALID_ASSET_SOURCE = `ashfox 1
+model wolf {
   export rig contract CreatureRig {
     handedness = right;
     ${frame}
@@ -17,7 +17,7 @@ asset wolf {
     }
   }
   export skeleton Wolf implements CreatureRig {
-    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
+    bind root { parent_origin = (0u, 0u, 0u); ${frame} }
   }
   export surface contract Fur {
     atlas { width = 16px; height = 8px; }
@@ -29,7 +29,7 @@ asset wolf {
     texture atlas {
       atlas = (16px, 8px);
       background = shadow;
-      background-alpha = 255;
+      background_alpha = 255;
       palette { shadow = #4a170f; body = (#4a170f, #a83a1f, #e06b32); }
       chart body box { origin = (0px, 0px); fill = body; }
       grain clustered { seed = 23; }
@@ -50,11 +50,9 @@ asset wolf {
       }
     }
   }
-  export asset wolf {
-    settings { density = 16; forward = north; }
+  settings { density = 16; forward = north; }
     skeleton = Wolf;
-    use Body as body { bind skeleton = CreatureRig; bind skin = red_fur; };
-  }
+    use Body as body { skeleton = CreatureRig; skin = red_fur; }
 }`;
 
 export const validAssetWorkspace = (source = VALID_ASSET_SOURCE): AuthoredAssetWorkspace =>

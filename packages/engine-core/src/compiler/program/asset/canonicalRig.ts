@@ -171,7 +171,7 @@ const readMotionTiming = (
         diagnostics,
         location,
         'asset.motion-space',
-        'Canonical rig motion must be rest-relative.',
+        'Canonical rig motion must be rest-space relative.',
       );
     }
     return null;
@@ -426,7 +426,7 @@ const lowerMotion = (
   });
 };
 
-/** Lower the canonical skeleton and its already-retargeted rest-relative motions. */
+/** Lower the canonical skeleton and its already-retargeted rest-space relative motions. */
 export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLoweringResult => {
   const diagnostics: AssetDiagnostic[] = [];
   try {

@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
 import { compileDirectoryWorkspace } from '../../src';
 
-const spriteSource = (id: string, importSpec = ''): string => `ashfox-model 1
+const spriteSource = (id: string, importSpec = ''): string => `ashfox 1
 sprite ${id} {
   ${importSpec ? `import "${importSpec}" as shared;` : ''}
   profile = item;
-  canvas = [16, 16];
+  canvas = (16px, 16px);
   palette { c = #cccccc; }
   ${
     importSpec
-      ? 'part p { mask = "shared.m"; material = "shared.g"; at = [4, 4]; shade { form = "round"; light = "top_left"; contrast = 2; } grain { mode = "clustered"; amount = 0; seed = 7; } patches = []; }'
-      : 'paint p { at = [4, 4]; rows = ["cccc", "cccc"]; colors { c = "c"; } }'
+      ? 'part p { mask = shared.m; material = shared.g; at = (4px, 4px); shade { form = round; light = top_left; contrast = 2; } grain clustered { amount = 0; seed = 7; } patches = []; }'
+      : 'paint p { at = (4px, 4px); rows = ["cccc", "cccc"]; colors { c = c; } }'
   }
 }`;
 
-const sharedSpriteModule = `ashfox-model 1
+const sharedSpriteModule = `ashfox 1
 module shared {
   export mask m { rows = ["11111111", "11111111", "11111111", "11111111", "11111111", "11111111", "11111111", "11111111"]; }
-  export material g { ramp { mode = "explicit"; colors = [#333333, #777777, #cccccc]; } }
+  export material g { ramp { mode = explicit; colors = [#333333, #777777, #cccccc]; } }
 }`;
 
 const workspace = (

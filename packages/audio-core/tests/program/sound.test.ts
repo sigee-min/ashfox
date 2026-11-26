@@ -52,10 +52,10 @@ assert.throws(() => {
 }, /profile/);
 
 for (const bad of [
-  text.replace('duration = 1;', 'duration = NaN;'),
-  text.replace('"oneshot"', 'oneshot'),
-  text.replace('[', '('),
-  text.replace('output = {', 'output {'),
+  text.replace('duration = 1s;', 'duration = NaN;'),
+  text.replace('profile = ui;', 'profile = "ui";'),
+  text.replace('variant base', 'variant (base)'),
+  text.replace('output {', 'output = {'),
 ])
   assert.throws(() => parseSoundSource(bad));
 
@@ -63,7 +63,7 @@ assert.throws(
   () => parseSoundSource(text.replace('highpass = 10;', 'highpass = 20000;'), 'owned.ashfox'),
   /owned.ashfox:\d+:\d+: sound.invalid: recipe.voices\[0\].highpass/,
 );
-assert.throws(() => parseSoundSource('ashfox-model 1 sound x { a = 1; a = 2; }'), /duplicate/);
+assert.throws(() => parseSoundSource('ashfox 1 sound x { a = 1; a = 2; }'), /duplicate/);
 assert.throws(() => encodeWav(new Float64Array([NaN])), /Non-finite/);
 assert.throws(() => master(new Float64Array([0, 0]), recipe.output), /silent/);
 assert.throws(() => master(new Float64Array([1, -1]), { gainDb: 0, peakDb: -3 }), /lower gainDb/);
@@ -90,5 +90,5 @@ assert.throws(
 );
 
 process.stdout.write(
-  'sound v2: closed grammar, hard-cut legacy rejection, deterministic products, and gain/silence gates passed\n',
+  'sound: closed grammar, hard-cut legacy rejection, deterministic products, and gain/silence gates passed\n',
 );

@@ -7,7 +7,7 @@ Sprite sources produce deterministic square PNGs (`16×16`, `32×32`, or `64×64
 Save this complete source as `gem.ashfox` outside an ancestor workspace:
 
 ```ashfox
-ashfox-model 1
+ashfox 1
 sprite gem {
   preview inspect { sheet = inspect; }
   export material amethyst { ramp { mode = auto; base = #9c60cc; preset = gem; } }
@@ -16,17 +16,17 @@ sprite gem {
   profile = item;
   canvas = (32px, 32px);
   palette { glint = #ffffff; }
-  shape base_rock {
-    shape { kind = capsule; x1 = 9; y1 = 23; x2 = 23; y2 = 23; radius = 3.5; }
+  capsule base_rock {
+    from = (9px, 23px); to = (23px, 23px); radius = 3.5px;
     material = stone_base;
     shade { form = round; light = top_left; contrast = 2; }
     grain { mode = clustered; amount = 1; seed = 7; }
   }
-  shape spire {
-    shape { kind = polygon; points = [(11, 22), (12, 7), (16, 4), (20, 7), (21, 22)]; }
+  polygon spire {
+    points = [(11px, 22px), (12px, 7px), (16px, 4px), (20px, 7px), (21px, 22px)];
     material = amethyst;
     shade { form = facet; light = top_left; contrast = 3; specular = 2; }
-    pattern { kind = gradient; axis = y; toMaterial = prism; dither = false; seed = 11; }
+    pattern gradient { axis = y; to_material = prism; dither = false; seed = 11; }
     grain { mode = clustered; amount = 1; seed = 13; }
   }
   paint glint_dot {
@@ -34,7 +34,7 @@ sprite gem {
     rows = [".g", "gg"];
     colors { g = glint; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }
 ```
 
@@ -48,9 +48,9 @@ Use the export directory from the response containing `gem.png`. Delivery (`buil
 
 ## Compose with OKLCH ramps, shapes, patterns, and outlines
 
-- **`shape` & `part`**: Compose silhouettes from parametric `rect`, `ellipse`, `capsule`, `polygon`, and `line` primitives or reusable masks, shaded with `flat`, `round`, `bevel`, `cylinder`, or `facet` light forms and specular highlights.
+- **Direct shapes & `part`**: Compose silhouettes directly with `rect`, `ellipse`, `capsule`, `polygon`, and `line` blocks or reusable `part` masks, shaded with `flat`, `round`, `bevel`, `cylinder`, or `facet` light forms and specular highlights.
 - **OKLCH ramps**: `ramp { mode = auto; base = #...; preset = ...; }` automatically generates 5 hue-shifted stops (warmer highlights, cooler shadows) across 10 presets (`warm`, `cool`, `metal`, `gem`, `wood`, `stone`, `organic`, `cloth`, `emissive`, `vivid`).
-- **`sel_out` & `innerRim`**: `outline` draws hue/value-modulated selective pixel outlines (`strength = 1..3`) and subtle top-left interior rim highlights without flat black borders.
+- **`sel_out` & `inner_rim`**: `outline` draws hue/value-modulated selective pixel outlines (`strength = 1..3`) and subtle top-left interior rim highlights without flat black borders.
 - **Seamless tiles (`profile = tile`)**: Use `fill` and `pattern` layers (`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`) which wrap toroidally across canvas edges.
 
 Start with [iron_sword.ashfox](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone.ashfox](../../examples/items/assets/sprites/mossy_stone.ashfox), and [shared.ashfox](../../examples/items/assets/module/shared.ashfox) for complete item and tile examples. Keep shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.

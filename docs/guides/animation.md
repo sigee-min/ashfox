@@ -20,11 +20,11 @@ end of this guide.
 
 ## Place the joints first
 
-Skeleton binds use **`parent-origin` in the parent joint frame**. A root joint
+Skeleton binds use **`parent_origin` in the parent joint frame**. A root joint
 uses model coordinates. For an unrotated torso at `(0u, 13u, 0u)`, a shoulder
-at model `(6.5u, 19.5u, 0u)` needs `parent-origin = (6.5u, 6.5u, 0u)`.
+at model `(6.5u, 19.5u, 0u)` needs `parent_origin = (6.5u, 6.5u, 0u)`.
 The parent rotates or reflects this offset together with its children.
-The old skeleton property `origin` is rejected instead of being guessed.
+The legacy skeleton property `origin` is rejected instead of being guessed.
 Keep the weapon beneath the hand's joint in the rig hierarchy and put its
 origin at the grip. Preview the whole motion to check the direction of each
 rotation, the hand contact, and planted feet.
@@ -42,7 +42,6 @@ export motion idle for CreatureRig {
   duration = 2s;
   fps = 20;
   loop = loop;
-  rest-relative = true;
   track head.rotation {
     key 0s = (0deg, 0deg, 0deg) linear;
     key 1s = (0deg, 3deg, 0deg) linear;
@@ -52,7 +51,7 @@ export motion idle for CreatureRig {
 ```
 
 `duration` must be positive. `fps` is an integer from `1` through `240`.
-`rest-relative = true` is required for reusable rig motions. Key times must be
+Reusable rig motions are rest-space relative by default (`rest_relative = true`). Key times must be
 inside the duration and strictly increasing.
 
 ### Rotation and scale tracks
@@ -69,9 +68,9 @@ track wing_left.rotation {
 }
 
 track root.scale {
-  key 0s = (1ratio, 1ratio, 1ratio) step;
-  key 0.8s = (1.1ratio, 1ratio, 1ratio) linear;
-  key 1.6s = (1ratio, 1ratio, 1ratio) linear;
+  key 0s = (1, 1, 1) step;
+  key 0.8s = (1.1, 1, 1) linear;
+  key 1.6s = (1, 1, 1) linear;
 }
 ```
 
@@ -107,17 +106,18 @@ assembly.
 **Snippet — import and assign more than one motion:**
 
 ```text
-import "./animation.ashfox" as animation;
-
-export asset griffin {
+model griffin {
+  import "./animation.ashfox" as animation;
   settings { density = 16; forward = north; }
   skeleton = animation.GriffinSkeleton;
-  motion = animation.idle;
-  motion = animation.look_around;
-  motion = animation.wing_display;
-  motion = animation.wing_flap;
-  motion = animation.greeting;
-  motion = animation.alert;
+  motions = [
+    animation.idle,
+    animation.look_around,
+    animation.wing_display,
+    animation.wing_flap,
+    animation.greeting,
+    animation.alert,
+  ];
   // component uses and surface bindings continue here
 }
 ```
@@ -149,7 +149,7 @@ Use the [Griffin source](../../examples/griffin/workbench/main.ashfox) and its
 Download [the game project](/downloads/game-assets.zip) for the complete Griffin
 source graph. Export `models/workbench/main.ashfox` from the extracted folder.
 
-All six are rest-relative. Their track targets are the Griffin rig's semantic
+All six are rest-space relative. Their track targets are the Griffin rig's semantic
 joints, including `head`, `wing_left`, `wing_right`, and `tail`.
 
 ## Review every motion

@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 sprite iron_sword {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -8,25 +8,25 @@ sprite iron_sword {
     gem_core = #78eeff;
     pommel_trim = #fff0b8;
   }
-  shape blade_body {
-    shape { kind = polygon; points = [(11, 16), (15, 20), (26, 9), (28, 3), (22, 5)]; }
+  polygon blade_body {
+    points = [(11px, 16px), (15px, 20px), (26px, 9px), (28px, 3px), (22px, 5px)];
     material = shared.steel;
-    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13, 18), (28, 3)]; }
-    pattern { kind = gradient; axis = radial; toMaterial = shared.steel_edge; dither = false; seed = 7; }
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13px, 18px), (28px, 3px)]; }
+    pattern gradient { axis = radial; to_material = shared.steel_edge; dither = false; seed = 7; }
   }
-  shape grip {
-    shape { kind = capsule; x1 = 5; y1 = 26; x2 = 12; y2 = 19; radius = 1.4; }
+  capsule grip {
+    from = (5px, 26px); to = (12px, 19px); radius = 1.4px;
     material = shared.grip_leather;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(5, 26), (12, 19)]; }
-    pattern { kind = stripe; axis = diag_neg; period = 3; width = 1; }
+    shade { form = cylinder; light = top_left; contrast = 2; }
+    pattern stripe { axis = diag_neg; period = 3px; width = 1px; }
   }
-  shape crossguard {
-    shape { kind = polygon; points = [(7, 13), (10, 14), (17, 21), (18, 24), (15, 23), (8, 16)]; }
+  polygon crossguard {
+    points = [(7px, 13px), (10px, 14px), (17px, 21px), (18px, 24px), (15px, 23px), (8px, 16px)];
     material = shared.gold;
-    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8, 14), (17, 23)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8px, 14px), (17px, 23px)]; }
   }
-  shape pommel {
-    shape { kind = ellipse; cx = 4.5; cy = 26.5; rx = 1.9; ry = 1.9; }
+  ellipse pommel {
+    cx = 4.5px; cy = 26.5px; rx = 1.9px; ry = 1.9px;
     material = shared.gold;
     shade { form = round; light = top_left; contrast = 2; specular = 1; }
   }
@@ -59,5 +59,5 @@ sprite iron_sword {
     ];
     colors { g = glint; c = gem_core; p = pommel_trim; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }

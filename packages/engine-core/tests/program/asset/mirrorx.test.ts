@@ -33,8 +33,8 @@ const workspaceConfig = (): string =>
 const compileSingle = (source: string) =>
   compileDirectoryWorkspace(workspaceConfig(), [{ path: 'assets/models/main.ashfox', source }]);
 
-const mirrorSource = (extraGeometry = ''): string => `ashfox-model 1
-asset main {
+const mirrorSource = (extraGeometry = ''): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
@@ -45,7 +45,7 @@ asset main {
     }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     chart body box { coverage = opaque; }
@@ -56,7 +56,7 @@ asset main {
   surface red: Skin {
     material = opaque;
     texture tex {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #101010;
         coat = (#402010, #804020, #c06030);
@@ -78,29 +78,27 @@ asset main {
           size = (2u, 3u, 1u);
           pivot = (-3u, 4u, 0u);
           rotation = (5deg, 10deg, -15deg);
-          mirror-x = ear_right;
+          mirror_x = ear_right;
           surface = skin.ear;
           face east { enabled = false; }
         }
         plane tuft_left {
           origin = (-4u, 7u, 0u);
           size = (2u, 2u);
-          u-axis = (1u, 0u, 0u);
-          v-axis = (0u, 1u, 0u);
-          mirror-x = tuft_right;
+          u_axis = (1u, 0u, 0u);
+          v_axis = (0u, 1u, 0u);
+          mirror_x = tuft_right;
           surface = skin.tuft;
         }
         ${extraGeometry}
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; }
-    skeleton = S;
-    use Body as body {
-      bind skeleton = R;
-      bind skin = red;
-    };
+  settings { density = 16; forward = north; }
+  skeleton = S;
+  use Body as body {
+    skeleton = R;
+    skin = red;
   }
 }`;
 
@@ -162,10 +160,10 @@ if (compiled.ok) {
   }
 }
 
-// Self mirror-x rejected.
+// Self mirror_x rejected.
 const selfMirror = compileSingle(
   mirrorSource(
-    'cube bad { origin = (0u, 0u, 0u); size = (1u, 1u, 1u); mirror-x = bad; surface = skin.ear; }',
+    'cube bad { origin = (0u, 0u, 0u); size = (1u, 1u, 1u); mirror_x = bad; surface = skin.ear; }',
   ),
 );
 assert.equal(selfMirror.ok, false);
@@ -178,6 +176,6 @@ const duplicateMirror = compileSingle(
 );
 assert.equal(duplicateMirror.ok, false);
 
-// mirror-x on bone rejected.
-const boneMirror = compileSingle(mirrorSource('bone extra { mirror-x = other; }'));
+// mirror_x on bone rejected.
+const boneMirror = compileSingle(mirrorSource('bone extra { mirror_x = other; }'));
 assert.equal(boneMirror.ok, false);

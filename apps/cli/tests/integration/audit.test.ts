@@ -67,7 +67,7 @@ async function main() {
 
   const soundWithPreview = fs
     .readFileSync(soundEntry, 'utf8')
-    .replace('profile = "impact";', 'preview inspect { sheet = inspect; }\n  profile = "impact";');
+    .replace('profile = impact;', 'preview inspect { sheet = inspect; }\n  profile = impact;');
   const soundPass = run(['check', '--stdin', '--name', 'claw_hit.ashfox'], {
     input: soundWithPreview,
   });
@@ -134,37 +134,33 @@ async function main() {
 }
 
 function bareBoxSource(profileLine: string): string {
-  return `ashfox-model 1
-asset box_demo {
-  export rig contract Rig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
-    joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
+  return `ashfox 1
+model box_demo {
+  rig contract Rig {
+    joint root { parent = none; role = root; channels = rotation; }
   }
-  export skeleton Skel implements Rig {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  skeleton Skel implements Rig {
+    bind root { parent_origin = (0u, 0u, 0u); }
   }
-  export surface contract Surf { chart body box { coverage = opaque; } material = opaque; }
-  export surface coat: Surf {
+  surface contract Surf { chart body box { coverage = opaque; } material = opaque; }
+  surface coat: Surf {
     material = opaque;
     texture atlas {
       background = bg;
-      background-alpha = 255;
+      background_alpha = 255;
       palette { bg = #101014; tone = (#7a5230, #9a6e44, #bc8e60); }
       chart body box { fill = tone; }
     }
   }
-  export component Box {
+  component Box {
     requires rig skeleton: Rig;
     requires surface skin: Surf;
     bind bone root to skeleton.root;
     geometry { bone root { cube body { origin = (-4u, 0u, -4u); size = (8u, 8u, 8u); surface = skin.body; } } }
   }
-  export asset box_demo {
-    settings { density = 16; forward = north; ${profileLine} }
-    skeleton = Skel;
-    use Box as model { bind skeleton = Rig; bind skin = coat; };
-  }
+  settings { density = 16; forward = north; ${profileLine} }
+  skeleton = Skel;
+  use Box as model { skeleton = Rig; skin = coat; }
 }`;
 }
 

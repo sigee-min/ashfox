@@ -1,58 +1,39 @@
 import assert from 'node:assert/strict';
 import { compileSoundSource, parseSoundSource, readRecipe } from '../../src';
 
-// Verify Audio 2.0 DSP chain: SVF filter, PolyBLEP unison osc, granular ember, mallet resonator, drive, space, stereo pan, envelope shorthand, and mastering limiter.
-const stereoMagic = `ashfox-model 1
+// Verify audio DSP chain: SVF filter, PolyBLEP unison osc, granular ember, mallet resonator, drive, space, stereo pan, envelope shorthand, and mastering limiter.
+const stereoMagic = `ashfox 1
 sound magic_cast {
-  profile = "magic";
-  duration = 0.8;
-  sampleRate = 48000;
+  profile = magic;
+  duration = 0.8s;
   channels = 2;
   seed = 77;
-  space = { preset = "ethereal"; mix = 0.25; decay = 0.35; damping = 6500; size = 0.9; };
-  voices = [{
-    id = "shimmer";
-    source = {
-      kind = "osc";
-      waveform = "saw";
-      pitch = {
-        domain = "log";
-        interpolation = "smooth";
-        points = [{ at = 0; value = 320; }, { at = 0.4; value = 640; }, { at = 1; value = 480; }];
-      };
-      unison = 3;
-      detuneCents = 18;
-    };
-    filter = {
-      kind = "bandpass";
-      cutoff = {
-        domain = "log";
-        interpolation = "smooth";
-        points = [{ at = 0; value = 500; }, { at = 1; value = 4200; }];
-      };
-      q = 2.4;
-    };
+  space { preset = ethereal; mix = 25%; decay = 0.35s; damping = 6500hz; size = 0.9; }
+  voice shimmer : osc {
+    waveform = saw;
+    pitch { domain = log; interpolation = smooth; points = [(0, 320hz), (0.4, 640hz), (1, 480hz)]; }
+    unison = 3;
+    detune_cents = 18cents;
+    filter bandpass { cutoff = 500hz -> 4200hz; q = 2.4; }
     drive = 2.5;
     pan = -0.35;
-    gain = { env = "adsr"; attack = 0.03; decay = 0.15; sustain = 0.55; release = 0.25; peak = 0.9; curve = "exp"; };
-  }, {
-    id = "sparks";
-    source = { kind = "granular"; texture = "ember"; density = 120; };
-    filter = { kind = "highpass"; cutoff = 1800; q = 1.2; };
+    gain { env = adsr; attack = 30ms; decay = 0.15s; sustain = 55%; release = 0.25s; peak = 0.9; curve = exp; }
+  }
+  voice sparks : granular {
+    texture = ember;
+    density = 120;
+    filter highpass { cutoff = 1800hz; q = 1.2; }
     pan = 0.45;
-    gain = { env = "ad"; attack = 0.02; peak = 0.6; curve = "linear"; };
-  }];
-  sequences = [{
-    id = "cast";
-    start = 0.02;
-    steps = [
-      { id = "pad"; voice = "shimmer"; at = 0; duration = 0.7; vary = { pitchCents = [-15, 15]; }; },
-      { id = "dust"; voice = "sparks"; at = 0.05; duration = 0.6; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 101; }, { id = "alt"; seed = 102; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = -3; peakDb = -1; punch = 0.2; warmth = 0.15; air = 0.25; glue = 0.25; width = 1.15; limit = true; };
+    gain { env = ad; attack = 20ms; peak = 0.6; curve = linear; }
+  }
+  seq cast {
+    start = 20ms;
+    step pad { voice = shimmer; at = 0s; duration = 0.7s; vary_pitch = -15cents..15cents; }
+    step dust { voice = sparks; at = 50ms; duration = 0.6s; }
+  }
+  variant base { seed = 101; }
+  variant alt { seed = 102; }
+  master { gain = -3db; peak = -1db; punch = 20%; warmth = 15%; air = 25%; glue = 25%; width = 1.15; limit = true; }
 }`;
 
 const parsed = parseSoundSource(stereoMagic, 'magic_cast.ashfox');
@@ -71,32 +52,24 @@ assert.notDeepEqual(products[0]!.wav, products[1]!.wav);
 // Stereo pan rejected when channels = 1.
 assert.throws(() => readRecipe({ ...parsed, channels: 1 }), /pan requires channels = 2/);
 
-// Mallet resonator + pitchDrop compiles cleanly.
-const wood = `ashfox-model 1
+// Mallet resonator + pitch_drop compiles cleanly.
+const wood = `ashfox 1
 sound wood_tap {
-  profile = "foley";
-  duration = 0.35;
-  sampleRate = 48000;
+  profile = foley;
+  duration = 0.35s;
   seed = 9;
-  voices = [{
-    id = "body";
-    source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.6; };
-      modes = [
-        { id = "m1"; hz = 240; decay = 0.14; gain = 1; },
-        { id = "m2"; hz = 590; decay = 0.08; gain = 0.4; }
-      ];
-      pitchDropCents = 120;
-      pitchDropSeconds = 0.025;
-    };
-    gain = { env = "ad"; attack = 0.004; peak = 0.9; };
-    highpass = 45;
-  }];
-  sequences = [{ id = "tap"; start = 0; steps = [{ id = "hit"; voice = "body"; at = 0; duration = 0.3; }]; }];
-  variants = [{ id = "base"; seed = 1; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 0; peakDb = -2; punch = 0.3; limit = true; };
+  voice body : resonator {
+    excitation mallet { duration = 8ms; hardness = 60%; }
+    mode m1 { hz = 240hz; decay = 0.14s; gain = 1; }
+    mode m2 { hz = 590hz; decay = 80ms; gain = 0.4; }
+    pitch_drop_cents = 120cents;
+    pitch_drop_seconds = 25ms;
+    gain { env = ad; attack = 4ms; peak = 0.9; }
+    highpass = 45hz;
+  }
+  seq tap { start = 0s; step hit { voice = body; at = 0s; duration = 0.3s; } }
+  variant base { seed = 1; }
+  master { gain = 0db; peak = -2db; punch = 30%; limit = true; }
 }`;
 const tapProducts = compileSoundSource(wood, 'wood_tap.ashfox');
 assert.equal(tapProducts[0]!.channels, 1);

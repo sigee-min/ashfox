@@ -90,7 +90,7 @@ const gradientProgress = (
 };
 
 const gradientMaterialSample = (
-  toMaterial: string,
+  targetMat: string,
   dither: boolean,
   t: number,
   bayer: number,
@@ -98,11 +98,11 @@ const gradientMaterialSample = (
 ): PatternSample => {
   if (dither) {
     const pick = t > bayer;
-    return { active: pick, material: pick ? toMaterial : baseMaterial, toneDelta: 0 };
+    return { active: pick, material: pick ? targetMat : baseMaterial, toneDelta: 0 };
   }
   const blend = Math.round(Math.max(0, Math.min(1, t)) * 3) / 3;
   if (blend <= 0) return { active: false, material: baseMaterial, toneDelta: 0 };
-  return { active: true, material: toMaterial, toneDelta: 0, blend };
+  return { active: true, material: targetMat, toneDelta: 0, blend };
 };
 
 const evalGradient = (
@@ -117,7 +117,7 @@ const evalGradient = (
 ): PatternSample => {
   const t = gradientProgress(p.axis, lx, ly, bw, bh);
   const bayer = (BAYER_4X4[y & 3]![x & 3]! + 0.5) / 16;
-  if (p.toMaterial) return gradientMaterialSample(p.toMaterial, p.dither, t, bayer, baseMaterial);
+  if (p.to_material) return gradientMaterialSample(p.to_material, p.dither, t, bayer, baseMaterial);
   const ditherDark = p.dither && t > bayer ? -1 : 0;
   const toneDelta = t < 0.28 ? 1 : t > 0.72 ? -1 : ditherDark;
   return { active: toneDelta !== 0, material: baseMaterial, toneDelta };
@@ -137,8 +137,8 @@ const evalBlotch = (
   if (n >= p.density) return { active: false, material: baseMaterial, toneDelta: 0 };
   const nShadow = toroidalFbm(x + 1, y + 1, w, h, freq, p.seed, wrap);
   const delta = nShadow - n > 0.06 ? 1 : n < p.density * 0.35 ? -1 : 0;
-  return p.toMaterial
-    ? { active: true, material: p.toMaterial, toneDelta: delta }
+  return p.to_material
+    ? { active: true, material: p.to_material, toneDelta: delta }
     : { active: true, material: baseMaterial, toneDelta: -1 };
 };
 
@@ -151,8 +151,8 @@ const evalStripe = (
   const coord = p.axis === 'x' ? x : p.axis === 'y' ? y : p.axis === 'diag_pos' ? x + y : x - y;
   const mod = (((coord + p.offset) % p.period) + p.period) % p.period;
   if (mod >= p.width) return { active: false, material: baseMaterial, toneDelta: 0 };
-  return p.toMaterial
-    ? { active: true, material: p.toMaterial, toneDelta: 0 }
+  return p.to_material
+    ? { active: true, material: p.to_material, toneDelta: 0 }
     : { active: true, material: baseMaterial, toneDelta: 1 };
 };
 
@@ -173,7 +173,7 @@ const evalBrick = (
   if (ry < p.mortar || rx < p.mortar) {
     return {
       active: true,
-      material: p.mortarMaterial ?? baseMaterial,
+      material: p.mortar_material ?? baseMaterial,
       toneDelta: -2,
       isMortar: true,
     };
@@ -230,7 +230,7 @@ const evalPlank = (
   if (ry < p.joint || endDist < p.joint) {
     return {
       active: true,
-      material: p.mortarMaterial ?? baseMaterial,
+      material: p.mortar_material ?? baseMaterial,
       toneDelta: -2,
       isMortar: true,
     };
@@ -310,11 +310,11 @@ const evalVoronoi = (
   baseMaterial: string,
 ): PatternSample => {
   const { best, second, bestCell, dx, dy, cellR } = nearestVoronoiCell(p, x, y, w, h, wrap);
-  const mortarEdge = p.edgeWidth * 1.05;
-  if (p.edgeWidth > 0 && second - best < mortarEdge) {
+  const mortarEdge = p.edge_width * 1.05;
+  if (p.edge_width > 0 && second - best < mortarEdge) {
     return {
       active: true,
-      material: p.edgeMaterial ?? baseMaterial,
+      material: p.edge_material ?? baseMaterial,
       toneDelta: -2,
       isMortar: true,
     };
@@ -361,7 +361,7 @@ const evalCrack = (
     if (perp <= 0.55) {
       return {
         active: true,
-        material: p.crackMaterial ?? baseMaterial,
+        material: p.crack_material ?? baseMaterial,
         toneDelta: -1,
       };
     }
@@ -396,7 +396,7 @@ export const evaluatePattern = (
       ? (BAYER_4X4[y & 3]![x & 3]! + 0.5) / 16 < pattern.density
       : hash2d(Math.floor(x / 2), Math.floor(y / 2), pattern.seed) < pattern.density;
   if (!hit) return { active: false, material: baseMaterial, toneDelta: 0 };
-  return pattern.toMaterial
-    ? { active: true, material: pattern.toMaterial, toneDelta: 0 }
+  return pattern.to_material
+    ? { active: true, material: pattern.to_material, toneDelta: 0 }
     : { active: true, material: baseMaterial, toneDelta: -1 };
 };

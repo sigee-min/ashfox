@@ -9,35 +9,35 @@ import {
 import { materialRamp } from '../../src/compiler/sprite/ramp';
 import { baseTone, grainDelta } from '../../src/compiler/sprite/shade';
 
-const swordSource = `ashfox-model 1
-sprite blade_v2 {
+const swordSource = `ashfox 1
+sprite blade {
   export material steel { ramp { mode = auto; base = #7b93a8; preset = metal; } }
   export material gold { ramp { mode = auto; base = #d8a642; preset = warm; } }
   export material grip { ramp { mode = explicit; colors = [#3d2934, #6b433c, #9a6959]; } }
   profile = item;
   canvas = (32px, 32px);
   palette { gem = #4cc9f0; }
-  shape blade_body {
-    shape { kind = polygon; points = [(24, 4), (27, 4), (27, 7), (12, 22), (9, 19)]; }
+  polygon blade_body {
+    points = [(24px, 4px), (27px, 4px), (27px, 7px), (12px, 22px), (9px, 19px)];
     material = steel;
-    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(9, 22), (27, 4)]; }
-    grain { mode = directional; axis = diagonal; amount = 1; seed = 11; }
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(9px, 22px), (27px, 4px)]; }
+    grain directional { axis = diagonal; amount = 1; seed = 11; }
   }
-  shape guard {
-    shape { kind = capsule; x1 = 6; y1 = 18; x2 = 14; y2 = 26; radius = 1.6; }
+  capsule guard {
+    from = (6px, 18px); to = (14px, 26px); radius = 1.6px;
     material = gold;
     shade { form = round; light = top_left; contrast = 2; specular = 1; }
   }
-  shape handle {
-    shape { kind = line; x1 = 4; y1 = 27; x2 = 10; y2 = 21; thickness = 2; }
+  line handle {
+    from = (4px, 27px); to = (10px, 21px); thickness = 2px;
     material = grip;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(4, 27), (10, 21)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; }
   }
   paint gem_dot { at = (9px, 21px); rows = ["gg", "gg"]; colors { g = gem; } }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }`;
 
-const parsed = parseSpriteSource(swordSource, 'blade_v2.ashfox');
+const parsed = parseSpriteSource(swordSource, 'blade.ashfox');
 assert.equal(parsed.kind, 'sprite');
 const docInput = {
   masks: parsed.masks,
@@ -45,10 +45,10 @@ const docInput = {
   stamps: parsed.stamps,
   item: parsed.item!,
 };
-const validated = readSpriteDocument(docInput, 'blade_v2.ashfox');
+const validated = readSpriteDocument(docInput, 'blade.ashfox');
 assert.ok(Object.isFrozen(validated.item.layers));
 
-const built = compileSpriteDocument(docInput, 'blade_v2.ashfox');
+const built = compileSpriteDocument(docInput, 'blade.ashfox');
 assert.equal(built.ok, true, built.ok ? '' : JSON.stringify(built.diagnostics));
 if (!built.ok) throw new Error('expected sprite build');
 const prod = built.products[0]!;
@@ -59,7 +59,7 @@ assert.ok(prod.telemetry.outlinePixels > 0);
 assert.ok(prod.telemetry.hasRimHighlight);
 
 // Verify determinism & PNG round-trip.
-const builtAgain = compileSpriteDocument(docInput, 'blade_v2.ashfox');
+const builtAgain = compileSpriteDocument(docInput, 'blade.ashfox');
 assert.equal(builtAgain.ok, true);
 if (builtAgain.ok) assert.deepEqual(prod.png, builtAgain.products[0]!.png);
 
@@ -79,7 +79,7 @@ const scan = inflateSync(Buffer.concat(chunks));
 assert.equal(scan.length, 32 * (32 * 4 + 1));
 
 // Verify 64x64 seamless tile wraps toroidally across borders.
-const tileSource = `ashfox-model 1
+const tileSource = `ashfox 1
 sprite mossy_tile {
   export material stone { ramp { mode = auto; base = #6e747c; preset = stone; } }
   export material moss { ramp { mode = auto; base = #557e46; preset = organic; } }
@@ -89,12 +89,12 @@ sprite mossy_tile {
   palette {}
   fill base_bricks {
     material = stone;
-    pattern { kind = brick; width = 16; height = 8; mortar = 1; stagger = 8; seed = 7; mortarMaterial = mortar; }
-    grain { mode = clustered; amount = 1; seed = 13; }
+    pattern brick { width = 16px; height = 8px; mortar = 1px; stagger = 8px; seed = 7; mortar_material = mortar; }
+    grain clustered { amount = 1; seed = 13; }
   }
   pattern moss_patches {
     material = stone;
-    pattern { kind = blotch; scale = 4; density = 0.28; seed = 21; toMaterial = moss; }
+    pattern blotch { scale = 4px; density = 0.28; seed = 21; to_material = moss; }
     clip = canvas;
   }
 }`;
@@ -130,8 +130,8 @@ assert.equal(
 );
 assert.ok(spritePreviewPng(prod.raster, 4).length > 100);
 
-// Legacy v1 fields are rejected cleanly.
-const legacy = swordSource.replace('profile = item;', 'profile = "minecraft-item-v1";');
+// Unknown profile rejected cleanly.
+const legacy = swordSource.replace('profile = item;', 'profile = invalid_profile;');
 const legacyParsed = parseSpriteSource(legacy, 'legacy.ashfox');
 const legacyRes = compileSpriteDocument({
   masks: legacyParsed.masks,
@@ -241,4 +241,4 @@ assert.equal(
   true,
 );
 
-console.log('sprite compiler v2: multi-res, shapes, OKLCH ramps, sel-out, seamless tile ok');
+console.log('sprite compiler: multi-res, shapes, OKLCH ramps, sel-out, seamless tile ok');

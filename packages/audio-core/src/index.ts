@@ -70,10 +70,10 @@ const renderVariantProduct = (
     bakeLoop(renderValidatedRecipe(recipe, variant.id), recipe.playback, channels),
     recipe.output,
     channels,
-    recipe.sampleRate,
+    recipe.sample_rate,
     recipe.playback.kind === 'loop',
   );
-  const wav = encodeWav(pcm, recipe.sampleRate, channels);
+  const wav = encodeWav(pcm, recipe.sample_rate, channels);
   const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
   for (let i = 0; i < pcm.length; i++) pcm[i] = view.getInt16(44 + i * 2, true) / 32767;
   const stats = measure(pcm, channels);
@@ -95,7 +95,7 @@ const renderVariantProduct = (
     wav,
     frames,
     rawFrames: frame(recipe.duration),
-    sampleRate: 48000,
+    sample_rate: 48000,
     channels,
     ...stats,
     playback: Object.freeze(playback),

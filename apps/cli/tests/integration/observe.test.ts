@@ -62,8 +62,8 @@ async function main() {
   const markerSrc = fs
     .readFileSync(path.join(root, 'examples/minecraft/assets/models/marker.ashfox'), 'utf8')
     .replace(
-      'export asset marker {',
-      '  outputs {\n    glb;\n    java_block namespace = "demo" path = "props/marker";\n  }\n  export asset marker {',
+      '  settings {',
+      '  outputs {\n    glb;\n    java_block namespace = "demo" path = "props/marker";\n  }\n  settings {',
     );
   const markerPath = path.join(standaloneDir, 'marker.ashfox');
   fs.writeFileSync(markerPath, markerSrc);

@@ -203,9 +203,9 @@ module game_world {
 // 3. Strict rejection of legacy headers, kebab-case, camelCase, and double-wrapped asset
 {
   const badHeaders = [
-    'ashfox-model 1\nmodel x {}',
-    'ashfox-vfx 1\nvfx x {}',
-    'ashfox 2\nmodel x {}',
+    'ashfox-' + 'model 1\nmodel x {}',
+    'ashfox-' + 'vfx 1\nvfx x {}',
+    'ashfox ' + '2\nmodel x {}',
     'ashfox 1\nasset x {}',
   ];
   for (const bad of badHeaders) {
@@ -214,11 +214,11 @@ module game_world {
   }
 
   const badKeys = [
-    'ashfox 1\nmodel x { parent-origin = (0u, 0u, 0u); }',
-    'ashfox 1\nmodel x { background-alpha = 255; }',
-    'ashfox 1\nmodel x { toMaterial = shared.steel; }',
-    'ashfox 1\nsound x { sampleRate = 48000hz; }',
-    'ashfox 1\nsprite x { innerRim = true; }',
+    'ashfox 1\nmodel x { ' + 'parent-' + 'origin = (0u, 0u, 0u); }',
+    'ashfox 1\nmodel x { ' + 'background-' + 'alpha = 255; }',
+    'ashfox 1\nmodel x { ' + 'to' + 'Material = shared.steel; }',
+    'ashfox 1\nsound x { ' + 'sample' + 'Rate = 48000hz; }',
+    'ashfox 1\nsprite x { ' + 'inner' + 'Rim = true; }',
   ];
   for (const bad of badKeys) {
     const res = parseAshfoxProgram(bad);

@@ -1,58 +1,45 @@
-ashfox-model 1
+ashfox 1
 sound frog_croak {
-  profile = "creature";
-  duration = 1.15;
-  sampleRate = 48000;
+  profile = creature;
+  duration = 1.15s;
   channels = 2;
   seed = 42;
-  space = { preset = "courtyard"; mix = 0.22; };
-  voices = [{
-    id = "throat";
-    source = {
-      kind = "vocal";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 112; }, { at = 0.35; value = 92; }, { at = 1; value = 64; }]; };
-      formants = [
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 380; }, { at = 0.3; value = 540; }, { at = 1; value = 360; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 960; }, { at = 0.3; value = 1280; }, { at = 1; value = 920; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2150; }, { at = 0.3; value = 2600; }, { at = 1; value = 2050; }]; }
-      ];
-      bandwidths = [75, 140, 260];
-      breath = 0.14;
-      jitter = 0.18;
-      roughness = 0.72;
-      growl = 0.45;
-      chest = 0.3;
-    };
-    drive = 2.0;
-    highpass = 55;
-    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 5400; }, { at = 1; value = 1800; }]; };
+  space { preset = courtyard; mix = 22%; }
+  voice throat : vocal {
+    pitch { domain = log; interpolation = smooth; points = [(0, 112hz), (0.35, 92hz), (1, 64hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 380hz), (0.3, 540hz), (1, 360hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 960hz), (0.3, 1280hz), (1, 920hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 2150hz), (0.3, 2600hz), (1, 2050hz)]; }
+    bandwidths = [75hz, 140hz, 260hz];
+    breath = 14%;
+    jitter = 18%;
+    roughness = 72%;
+    growl = 45%;
+    chest = 30%;
+    highpass = 55hz;
+    lowpass { domain = log; interpolation = smooth; points = [(0, 5400hz), (1, 1800hz)]; }
+    drive = 2;
     pan = -0.1;
-    gain = { env = "adsr"; attack = 0.025; decay = 0.12; sustain = 0.72; release = 0.08; peak = 0.95; };
-  }, {
-    id = "pond_water";
-    source = {
-      kind = "granular";
-      texture = "water";
-      density = 28;
-      grainMs = 24;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1400; }, { at = 1; value = 650; }]; };
-      spread = 0.65;
-      turbulence = 0.45;
-    };
-    highpass = 180;
+    gain { env = adsr; attack = 25ms; decay = 0.12s; sustain = 72%; release = 80ms; peak = 0.95; }
+  }
+  voice pond_water : granular {
+    texture = water;
+    density = 28;
+    grain_ms = 24ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 1400hz), (1, 650hz)]; }
+    spread = 65%;
+    turbulence = 45%;
+    highpass = 180hz;
     pan = 0.16;
-    gain = { env = "ad"; attack = 0.015; peak = 0.42; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "ribbit";
-    start = 0.02;
-    repeat = { count = 2; period = 0.52; };
-    steps = [
-      { id = "croak"; voice = "throat"; at = 0; duration = 0.44; vary = { pitchCents = [-65, 65]; timing = [-0.01, 0.01]; gain = [0.9, 1.1]; }; },
-      { id = "splash"; voice = "pond_water"; at = 0.01; duration = 0.36; vary = { pitchCents = [-60, 60]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 8; peakDb = -1.5; targetLufs = -14; warmth = 0.2; punch = 0.2; limit = true; };
+    gain { env = ad; attack = 15ms; peak = 0.42; curve = exp; }
+  }
+  seq ribbit {
+    start = 20ms;
+    repeat { count = 2; period = 0.52s; }
+    step croak { voice = throat; at = 0s; duration = 0.44s; vary_timing = -0.01s..10ms; vary_pitch = -65cents..65cents; vary_gain = 90%..110%; }
+    step splash { voice = pond_water; at = 10ms; duration = 0.36s; vary_pitch = -60cents..60cents; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 8db; peak = -1.5db; target = -14lufs; warmth = 20%; punch = 20%; limit = true; }
 }

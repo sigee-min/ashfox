@@ -88,12 +88,12 @@ export const compileStructureUnits = (
   evaluatedGridCache?: Map<string, EvaluatedStructureResult>,
 ): StructureProduct => {
   const root = units.get(rootPath);
-  if (!root || (root.kind !== 'structure' && root.kind !== 'compound') || root.size === null) {
+  if (!root || root.kind !== 'structure' || root.size === null) {
     throw new StructureInputError({
       code: 'structure.entry',
       file: rootPath,
       pointer: 'structure',
-      expected: 'structure or compound entry with size and build',
+      expected: 'structure entry with size and operations',
       actual: root?.kind ?? 'missing',
     });
   }

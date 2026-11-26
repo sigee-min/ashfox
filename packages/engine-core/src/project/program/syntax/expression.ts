@@ -169,7 +169,13 @@ const numberLiteral = (reader: Reader, token: ProgramToken): ProgramExpr => {
     kind: 'number',
     numerator: parsed?.numerator ?? 0n,
     denominator:
-      parsed === null ? 1n : rawUnit === 'ms' ? parsed.denominator * 1000n : parsed.denominator,
+      parsed === null
+        ? 1n
+        : rawUnit === 'ms'
+          ? parsed.denominator * 1000n
+          : rawUnit === '%'
+            ? parsed.denominator * 100n
+            : parsed.denominator,
     text: match?.[1] ?? '0',
     unit: unit ?? 'plain',
     rawUnit,

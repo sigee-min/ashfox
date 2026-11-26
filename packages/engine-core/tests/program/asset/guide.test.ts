@@ -17,7 +17,7 @@ const syntaxGuide = readFileSync(
 );
 const completeExample = [...syntaxGuide.matchAll(/```ashfox\n([\s\S]*?)\n```/gu)]
   .map((match) => match[1])
-  .find((example) => example.startsWith('ashfox-model 1\nasset sample {'));
+  .find((example) => example.startsWith('ashfox 1\nmodel sample {'));
 assert.ok(completeExample, 'language reference provides a complete starting asset');
 const startingAsset = openAssetProject({
   workspace: workspaceFixture([{ path: 'sample/main.ashfox', source: completeExample }], {

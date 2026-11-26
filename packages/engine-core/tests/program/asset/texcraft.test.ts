@@ -50,19 +50,19 @@ for (const preset of RAMP_PRESETS) {
 }
 
 // 2. Verify ramp() palette call, directional grain modes (fur, wood, cloth, brushed), and pattern edge.
-const buildModel = (grainMode: string, withEdge: boolean): string => `ashfox-model 1
-asset main {
+const buildModel = (grainMode: string, withEdge: boolean): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
-  skeleton S implements R { bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
+  skeleton S implements R { bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
   surface contract Skin { chart body box { coverage = opaque; } material = opaque; }
   surface skin: Skin {
     material = opaque;
     texture tex {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #222026;
         coat = ramp(#c46234, warm);
@@ -70,7 +70,7 @@ asset main {
       }
       chart body box {
         fill = coat;
-        ${withEdge ? 'pattern edge { width = 1px; strength = 1.0ratio; mode = both; }' : ''}
+        ${withEdge ? 'pattern edge { width = 1px; strength = 1.0; mode = both; }' : ''}
       }
       grain ${grainMode} { seed = 17; }
     }
@@ -81,11 +81,9 @@ asset main {
     bind bone root to skeleton.root;
     geometry { bone root { cube body { origin = (-4u, 0u, -4u); size = (8u, 8u, 8u); surface = skin.body; } } }
   }
-  export asset main {
-    settings { density = 16; forward = north; profile = prop; }
+  settings { density = 16; forward = north; profile = prop; }
     skeleton = S;
-    use Body as body { bind skeleton = R; bind skin = skin; };
-  }
+    use Body as body { skeleton = R; skin = skin; }
 }`;
 
 for (const mode of ['fur', 'wood', 'cloth', 'brushed']) {

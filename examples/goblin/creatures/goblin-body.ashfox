@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 module goblin_body {
   import "./goblin-rig.ashfox" as rig;
   import "./goblin-surface.ashfox" as surface;
@@ -18,16 +18,16 @@ module goblin_body {
         cube hips { origin = (-4u, 9.5u, -2.5u); size = (8u, 3u, 5u); surface = skin.pelvis; }
         cube belt { origin = (-4.5u, 12.5u, -3.2u); size = (9u, 2u, 6u); surface = skin.belt; }
         cube buckle { origin = (-1.5u, 12.5u, -4.1u); size = (3u, 2u, 1u); surface = skin.buckle; }
-        plane loincloth_front { origin = (-3u, 7u, -3.4u); size = (6u, 5u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.loincloth; }
-        plane loincloth_back { origin = (-3u, 7u, 3.1u); size = (6u, 5u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.loincloth; }
+        plane loincloth_front { origin = (-3u, 7u, -3.4u); size = (6u, 5u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
+        plane loincloth_back { origin = (-3u, 7u, 3.1u); size = (6u, 5u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
         bone torso {
           cube chest { origin = (-5u, 14.5u, -3u); size = (10u, 8u, 6u); pivot = (0u, 18.5u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.torso; }
           bone head {
             cube skull { origin = (-4u, 22.5u, -5u); size = (8u, 7u, 8u); pivot = (0u, 25.5u, -1u); rotation = (4deg, 0deg, 0deg); surface = skin.head; }
             cube snout { origin = (-2.5u, 22.2u, -7.9u); size = (5u, 2u, 3u); surface = skin.snout; }
-            cube tusk_l { origin = (-2.4u, 21.8u, -8.5u); size = (1u, 3u, 2u); pivot = (-1.9u, 22.5u, -7.5u); rotation = (-14deg, 0deg, -8deg); mirror-x = tusk_r; surface = skin.tusk; }
-            cube ear_l { origin = (-7.2u, 24.5u, -2u); size = (3u, 3u, 2u); pivot = (-4u, 26u, -1u); rotation = (0deg, 10deg, -18deg); mirror-x = ear_r; surface = skin.ear; }
-            cube ear_tip_l { origin = (-9.8u, 25.5u, -1.6u); size = (3u, 2u, 2u); pivot = (-4u, 26u, -1u); rotation = (0deg, 10deg, -22deg); mirror-x = ear_tip_r; surface = skin.ear_tip; }
+            cube tusk_l { origin = (-2.4u, 21.8u, -8.5u); size = (1u, 3u, 2u); pivot = (-1.9u, 22.5u, -7.5u); rotation = (-14deg, 0deg, -8deg); mirror_x = tusk_r; surface = skin.tusk; }
+            cube ear_l { origin = (-7.2u, 24.5u, -2u); size = (3u, 3u, 2u); pivot = (-4u, 26u, -1u); rotation = (0deg, 10deg, -18deg); mirror_x = ear_r; surface = skin.ear; }
+            cube ear_tip_l { origin = (-9.8u, 25.5u, -1.6u); size = (3u, 2u, 2u); pivot = (-4u, 26u, -1u); rotation = (0deg, 10deg, -22deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
             cube mohawk_front { origin = (-1u, 29.4u, -4.5u); size = (2u, 3u, 4u); pivot = (0u, 29.4u, -2.5u); rotation = (-12deg, 0deg, 0deg); surface = skin.mohawk; }
             cube mohawk_back { origin = (-1u, 29.4u, -0.4u); size = (2u, 3u, 4u); pivot = (0u, 29.4u, 1.5u); rotation = (16deg, 0deg, 0deg); surface = skin.mohawk; }
           }

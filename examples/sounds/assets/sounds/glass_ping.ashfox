@@ -1,70 +1,57 @@
-ashfox-model 1
+ashfox 1
 sound glass_ping {
-  profile = "impact";
-  duration = 1.32;
-  sampleRate = 48000;
+  profile = impact;
+  duration = 1.32s;
   channels = 2;
   seed = 7349;
-  space = { preset = "small_chamber"; mix = 0.26; };
-  voices = [{
-    id = "crystal_body";
-    source = {
-      kind = "material";
-      material = "glass";
-      pitch = 1320;
-      size = 0.85;
-      hardness = 0.9;
-      damping = 0.14;
-      brightness = 0.85;
-      modes = 24;
-      strike = "mallet";
-    };
-    highpass = 70;
-    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 16000; }, { at = 0.3; value = 4800; }, { at = 1; value = 1600; }]; }; q = 1.0; };
+  space { preset = small_chamber; mix = 26%; }
+  voice crystal_body : material {
+    material = glass;
+    pitch = 1320hz;
+    size = 0.85;
+    hardness = 90%;
+    damping = 14%;
+    brightness = 85%;
+    modes = 24;
+    strike = mallet;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 16000hz), (0.3, 4800hz), (1, 1600hz)]; }
+      q = 1;
+    }
+    highpass = 70hz;
     pan = -0.16;
-    gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
-  }, {
-    id = "glass_base";
-    source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.006; hardness = 0.82; };
-      modes = [
-        { id = "sub"; hz = 160; decay = 0.24; gain = 0.7; },
-        { id = "body"; hz = 440; decay = 0.36; gain = 1.0; },
-        { id = "mid"; hz = 880; decay = 0.25; gain = 0.55; }
-      ];
-      pitchDropCents = 20;
-      pitchDropSeconds = 0.012;
-    };
-    highpass = 45;
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+  voice glass_base : resonator {
+    excitation mallet { duration = 6ms; hardness = 82%; }
+    mode sub { hz = 160hz; decay = 0.24s; gain = 0.7; }
+    mode body { hz = 440hz; decay = 0.36s; gain = 1; }
+    mode mid { hz = 880hz; decay = 0.25s; gain = 0.55; }
+    pitch_drop_cents = 20cents;
+    pitch_drop_seconds = 12ms;
+    highpass = 45hz;
     pan = 0.12;
-    gain = { env = "ad"; attack = 0.002; peak = 0.72; curve = "exp"; };
-  }, {
-    id = "clink_shimmer";
-    source = {
-      kind = "granular";
-      texture = "spark";
-      density = 95;
-      grainMs = 10;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 11000; }, { at = 1; value = 2200; }]; };
-      spread = 0.8;
-      turbulence = 0.45;
-    };
-    highpass = 1200;
+    gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
+  }
+  voice clink_shimmer : granular {
+    texture = spark;
+    density = 95;
+    grain_ms = 10ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 11000hz), (1, 2200hz)]; }
+    spread = 80%;
+    turbulence = 45%;
+    highpass = 1200hz;
     pan = 0.24;
-    gain = { env = "ad"; attack = 0.002; peak = 0.55; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "chime";
-    start = 0.01;
-    repeat = { count = 2; period = 0.6; };
-    steps = [
-      { id = "ring"; voice = "crystal_body"; at = 0; duration = 0.38; vary = { timing = [-0.005, 0.005]; pitchCents = [-55, 55]; gain = [0.9, 1.1]; }; },
-      { id = "body"; voice = "glass_base"; at = 0; duration = 0.34; vary = { pitchCents = [-55, 55]; }; },
-      { id = "tap"; voice = "clink_shimmer"; at = 0; duration = 0.16; vary = { pitchCents = [-65, 65]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 6; peakDb = -1.5; targetLufs = -12; air = 0.25; width = 1.15; punch = 0.25; limit = true; };
+    gain { env = ad; attack = 2ms; peak = 0.55; curve = exp; }
+  }
+  seq chime {
+    start = 10ms;
+    repeat { count = 2; period = 0.6s; }
+    step ring { voice = crystal_body; at = 0s; duration = 0.38s; vary_timing = -0.005s..5ms; vary_pitch = -55cents..55cents; vary_gain = 90%..110%; }
+    step body { voice = glass_base; at = 0s; duration = 0.34s; vary_pitch = -55cents..55cents; }
+    step tap { voice = clink_shimmer; at = 0s; duration = 0.16s; vary_pitch = -65cents..65cents; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 6db; peak = -1.5db; target = -12lufs; air = 25%; width = 1.15; punch = 25%; limit = true; }
 }

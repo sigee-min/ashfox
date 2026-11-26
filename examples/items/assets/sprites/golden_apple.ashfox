@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 sprite golden_apple {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -8,26 +8,26 @@ sprite golden_apple {
     leaf_glint = #c2f59c;
     dimple = #87551c;
   }
-  shape body {
-    shape { kind = polygon; points = [(11, 10), (14, 12), (17, 12), (20, 10), (22, 12), (23, 15), (23, 19), (21, 23), (18, 25), (13, 25), (10, 23), (8, 19), (8, 15), (9, 12)]; }
+  polygon body {
+    points = [(11px, 10px), (14px, 12px), (17px, 12px), (20px, 10px), (22px, 12px), (23px, 15px), (23px, 19px), (21px, 23px), (18px, 25px), (13px, 25px), (10px, 23px), (8px, 19px), (8px, 15px), (9px, 12px)];
     material = shared.apple_gold;
     shade { form = round; light = top_left; contrast = 2; specular = 2; }
-    pattern { kind = gradient; axis = radial; toMaterial = shared.copper; dither = false; seed = 9; }
+    pattern gradient { axis = radial; to_material = shared.copper; dither = false; seed = 9; }
   }
-  shape stem {
-    shape { kind = capsule; x1 = 15.5; y1 = 11.5; x2 = 16.5; y2 = 5.5; radius = 1.05; }
+  capsule stem {
+    from = (15.5px, 11.5px); to = (16.5px, 5.5px); radius = 1.05px;
     material = shared.stem_wood;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(15, 11), (16, 5)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(15px, 11px), (16px, 5px)]; }
   }
-  shape leaf {
-    shape { kind = polygon; points = [(17, 9), (21, 5), (26, 6), (22, 10)]; }
+  polygon leaf {
+    points = [(17px, 9px), (21px, 5px), (26px, 6px), (22px, 10px)];
     material = shared.leaf_green;
-    shade { form = bevel; light = top_left; contrast = 2; axis = [(17, 9), (25, 6)]; }
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(17px, 9px), (25px, 6px)]; }
   }
   paint glint {
     at = (9px, 7px);
     rows = [
-      "............LLL..",
+      "............aaa..",
       ".................",
       ".................",
       ".................",
@@ -37,7 +37,7 @@ sprite golden_apple {
       "ss...............",
       "s................"
     ];
-    colors { s = spec; L = leaf_glint; d = dimple; }
+    colors { s = spec; a = leaf_glint; d = dimple; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }

@@ -85,7 +85,7 @@ const toSoundMetadata = (sounds: readonly SoundProduct[]): AssetMetadata => ({
   variants: sounds.map((sound) => ({
     id: sound.variant,
     frames: sound.frames,
-    sampleRate: sound.sampleRate,
+    sample_rate: sound.sample_rate,
     channels: sound.channels,
     playback: sound.playback,
     peak: sound.peak,

@@ -36,8 +36,8 @@ const autoPackedSource = (chartsOrder: 'normal' | 'reversed'): string => {
   const tB = `chart badge flat { fill = crest; }`;
   const contractCharts = chartsOrder === 'normal' ? `${cA}\n    ${cB}` : `${cB}\n    ${cA}`;
   const textureCharts = chartsOrder === 'normal' ? `${tA}\n      ${tB}` : `${tB}\n      ${tA}`;
-  return `ashfox-model 1
-asset main {
+  return `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
@@ -48,7 +48,7 @@ asset main {
     }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     ${contractCharts}
@@ -57,7 +57,7 @@ asset main {
   surface coat: Skin {
     material = opaque;
     texture main_tex {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #101010;
         coat = (#402010, #804020, #c06030);
@@ -75,17 +75,15 @@ asset main {
     geometry {
       bone root {
         cube torso { origin = (-2u, 0u, -2u); size = (4u, 6u, 4u); surface = skin.body; }
-        plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.badge; }
+        plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.badge; }
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; }
-    skeleton = S;
-    use Body as body {
-      bind skeleton = R;
-      bind skin = coat;
-    };
+  settings { density = 16; forward = north; }
+  skeleton = S;
+  use Body as body {
+    skeleton = R;
+    skin = coat;
   }
 }`;
 };
@@ -129,8 +127,8 @@ assert.equal(mixedOrigin.ok, false);
 // 4. Fail-closed when shared chart is used by mismatched cube sizes.
 const mismatchedUse = compileSingle(
   autoPackedSource('normal').replace(
-    'plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.badge; }',
-    'cube torso2 { origin = (4u, 0u, 0u); size = (2u, 2u, 2u); surface = skin.body; }\n        plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u-axis = (1u, 0u, 0u); v-axis = (0u, 1u, 0u); surface = skin.badge; }',
+    'plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.badge; }',
+    'cube torso2 { origin = (4u, 0u, 0u); size = (2u, 2u, 2u); surface = skin.body; }\n        plane crest { origin = (-1u, 6u, 0u); size = (2u, 2u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.badge; }',
   ),
 );
 assert.equal(mismatchedUse.ok, false);

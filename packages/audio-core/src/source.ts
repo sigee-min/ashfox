@@ -1,6 +1,16 @@
 import { encodeUtf8 } from '@ashfox/internal-contracts';
+import { SoundCursor, parseAtom, parseExpr } from './parseCursor';
+import {
+  lowerBlockProps,
+  lowerLoopBlock,
+  lowerMasterBlock,
+  lowerSeqBlock,
+  lowerSpaceBlock,
+  lowerSubBlock,
+  lowerVoiceBlock,
+  type ParsedBlockItem,
+} from './parseLower';
 import { readRecipe } from './read';
-import { SoundError } from './validate';
 import type { SoundRecipe } from './contract';
 
 export interface SoundImportDecl {
@@ -36,159 +46,63 @@ export interface SoundSourceUnit {
   readonly report: (error: unknown) => never;
 }
 
-class SoundCursor {
-  offset = 0;
-  private count = 0;
-  readonly spans = new Map<string, number>();
+const SNAKE_KEY_RE = /^[a-z][a-z0-9_]*$/;
 
-  constructor(
-    readonly source: string,
-    readonly file: string,
-  ) {}
-
-  fail(message: string): never {
-    const lines = this.source.slice(0, this.offset).split('\n');
-    throw new Error(
-      `${this.file}:${lines.length}:${lines[lines.length - 1].length + 1}: ${message}`,
-    );
-  }
-
-  space(): void {
-    while (true) {
-      const matched = /^(?:\s+|\/\/[^\n]*(?:\n|$))/.exec(this.source.slice(this.offset));
-      if (!matched) return;
-      this.offset += matched[0].length;
-    }
-  }
-
-  peek(): string {
-    this.space();
-    return this.source[this.offset] ?? '';
-  }
-
-  take(text: string): void {
-    this.space();
-    if (!this.source.startsWith(text, this.offset)) this.fail(`expected ${text}`);
-    this.offset += text.length;
-    if (++this.count > 12000) this.fail('token budget exceeded');
-  }
-
-  name(): string {
-    this.space();
-    const match = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(this.source.slice(this.offset));
-    if (!match) return this.fail('expected identifier');
-    this.take(match[0]);
-    return match[0];
-  }
-
-  stringLiteral(): string {
-    this.space();
-    const rest = this.source.slice(this.offset);
-    const matched = /^"(?:[^"\\\x00-\x1f]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*"/.exec(rest);
-    if (!matched) return this.fail('expected JSON string literal');
-    this.take(matched[0]);
-    return JSON.parse(matched[0]) as string;
-  }
-
-  dotted(): string {
-    let result = this.name();
-    while (this.peek() === '.') {
-      this.take('.');
-      result += '.' + this.name();
-    }
-    return result;
-  }
-
-  report(error: unknown): never {
-    if (error instanceof SoundError) {
-      let path = error.path;
-      while (!this.spans.has(path) && path.includes('.'))
-        path = path.slice(0, path.lastIndexOf('.'));
-      this.offset = this.spans.get(path) ?? 0;
-    }
-    return this.fail(error instanceof Error ? error.message : 'invalid sound');
-  }
-}
-
-const parseScalarOrIdent = (cursor: SoundCursor): unknown => {
-  const next = cursor.peek();
-  if (next === '"') return cursor.stringLiteral();
-  const rest = cursor.source.slice(cursor.offset);
-  const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(rest);
-  if (number) {
-    cursor.take(number[0]);
-    return Number(number[0]);
-  }
-  const word = cursor.dotted();
-  if (word === 'true') return true;
-  if (word === 'false') return false;
-  return word;
-};
-
-const parseSoundValue = (cursor: SoundCursor, depth: number, path: string): unknown => {
-  cursor.space();
-  cursor.spans.set(path, cursor.offset);
-  if (depth > 16) cursor.fail('nesting exceeds 16');
-  const next = cursor.peek();
-  if (next === '{') return parseSoundBlock(cursor, depth + 1, path);
-  if (next === '[') {
-    cursor.take('[');
-    const values: unknown[] = [];
-    while (cursor.peek() !== ']') {
-      values.push(parseSoundValue(cursor, depth + 1, `${path}[${values.length}]`));
-      if (cursor.peek() !== ']') cursor.take(',');
-    }
-    cursor.take(']');
-    return values;
-  }
-  if (next === '"') return cursor.stringLiteral();
-  const rest = cursor.source.slice(cursor.offset);
-  const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(rest);
-  if (number) {
-    cursor.take(number[0]);
-    return Number(number[0]);
-  }
-  if (/^[a-zA-Z_]/.test(next)) {
-    const word = cursor.dotted();
-    if (word === 'true') return true;
-    if (word === 'false') return false;
-    return { $ref: word };
-  }
-  return cursor.fail('expected literal value');
-};
-
-const parseSoundBlock = (
+const readBlockItems = (
   cursor: SoundCursor,
   depth: number,
   path: string,
-): Record<string, unknown> => {
+  fail: (m: string) => never,
+): ParsedBlockItem[] => {
   if (depth > 16) cursor.fail('nesting exceeds 16');
   cursor.take('{');
-  const result: Record<string, unknown> = Object.create(null);
+  const items: ParsedBlockItem[] = [];
   while (cursor.peek() !== '}') {
     cursor.space();
     const keyOffset = cursor.offset;
-    const key = cursor.name();
+    const key = cursor.keyName();
     cursor.spans.set(`${path}.${key}`, keyOffset);
-    if (Object.prototype.hasOwnProperty.call(result, key)) cursor.fail(`duplicate property ${key}`);
-    cursor.take('=');
-    result[key] = parseSoundValue(cursor, depth + 1, `${path}.${key}`);
-    cursor.take(';');
+    if (cursor.peek() === '=') {
+      cursor.take('=');
+      const val = parseExpr(cursor, depth + 1, key, false);
+      cursor.take(';');
+      items.push({ kind: 'prop', key, tag: null, value: val });
+      continue;
+    }
+    const tag = cursor.peek() === '{' ? null : cursor.name();
+    const subItems = readBlockItems(cursor, depth + 1, `${path}.${key}`, fail);
+    const val = key === 'step' ? subItems : lowerSubBlock(key, tag, subItems, fail);
+    items.push({ kind: 'block', key, tag, value: val });
   }
   cursor.take('}');
-  return result;
+  return items;
 };
 
-const parseOutputsClause = (cursor: SoundCursor): SoundOutputRaw[] => {
+const parseOutputsList = (cursor: SoundCursor): SoundOutputRaw[] => {
+  cursor.take('=');
+  cursor.take('[');
+  const out: SoundOutputRaw[] = [];
+  while (cursor.peek() !== ']') {
+    out.push({ format: cursor.name(), attributes: {} });
+    if (cursor.peek() === ',') cursor.take(',');
+    else break;
+  }
+  cursor.take(']');
+  cursor.take(';');
+  return out;
+};
+
+const parseOutputsBlock = (cursor: SoundCursor): SoundOutputRaw[] => {
+  if (cursor.peek() === '=') return parseOutputsList(cursor);
   cursor.take('{');
   const out: SoundOutputRaw[] = [];
   while (cursor.peek() !== '}') {
     const format = cursor.name();
     const attributes: Record<string, unknown> = {};
     while (cursor.peek() !== ';') {
-      const key = cursor.name();
+      const key = cursor.keyName();
       cursor.take('=');
-      attributes[key] = parseScalarOrIdent(cursor);
+      attributes[key] = parseAtom(cursor, key, false);
     }
     cursor.take(';');
     out.push({ format, attributes });
@@ -197,18 +111,15 @@ const parseOutputsClause = (cursor: SoundCursor): SoundOutputRaw[] => {
   return out;
 };
 
-const parsePreviewClause = (cursor: SoundCursor): SoundPreviewRaw => {
-  let name = 'default';
-  if (cursor.peek() !== '{') name = cursor.name();
+const parsePreviewBlock = (cursor: SoundCursor): SoundPreviewRaw => {
+  const name = cursor.peek() === '{' ? 'default' : cursor.name();
   cursor.take('{');
   const properties: Record<string, unknown> = {};
   while (cursor.peek() !== '}') {
-    const key = cursor.name();
-    if (Object.prototype.hasOwnProperty.call(properties, key)) {
-      cursor.fail(`duplicate preview field ${key}`);
-    }
+    const key = cursor.keyName();
+    if (Object.hasOwn(properties, key)) cursor.fail(`duplicate preview field ${key}`);
     cursor.take('=');
-    properties[key] = parseScalarOrIdent(cursor);
+    properties[key] = parseAtom(cursor, key, false);
     cursor.take(';');
   }
   cursor.take('}');
@@ -223,24 +134,65 @@ interface SoundUnitDraft {
   readonly previews: SoundPreviewRaw[];
   readonly voices: SoundNamedDecl[];
   readonly sequences: SoundNamedDecl[];
+  readonly localVoices: unknown[];
+  readonly localSeqs: unknown[];
+  readonly localVariants: unknown[];
   readonly body: Record<string, unknown>;
 }
 
-const parseNamedDecl = (
+const parseVoiceOrSeqDecl = (
   cursor: SoundCursor,
   exported: boolean,
-  declKind: 'voice' | 'sequence',
+  declKind: 'voice' | 'seq',
   draft: SoundUnitDraft,
 ): void => {
+  const fail = (m: string): never => cursor.fail(m);
   if (exported && draft.kind !== 'module') cursor.fail('export applies only inside module');
   if (draft.kind === 'module' && !exported) cursor.fail('module declarations must be exported');
   const id = cursor.name();
-  const list = declKind === 'voice' ? draft.voices : draft.sequences;
-  if (list.some((d) => d.id === id)) cursor.fail(`duplicate ${declKind} ${id}`);
-  cursor.take('=');
-  const value = parseSoundBlock(cursor, 0, `${declKind}.${id}`);
-  cursor.take(';');
-  list.push({ exported, id, value });
+  let sourceKind: string | null = null;
+  if (declKind === 'voice' && cursor.peek() === ':') {
+    cursor.take(':');
+    sourceKind = cursor.name();
+  }
+  const items = readBlockItems(cursor, 0, `${declKind}.${id}`, fail);
+  const val =
+    declKind === 'voice'
+      ? lowerVoiceBlock(id, sourceKind, items, fail)
+      : lowerSeqBlock(id, items, fail);
+  if (exported) {
+    const list = declKind === 'voice' ? draft.voices : draft.sequences;
+    if (list.some((d) => d.id === id)) cursor.fail(`duplicate ${declKind} ${id}`);
+    list.push({ exported, id, value: val });
+    return;
+  }
+  (declKind === 'voice' ? draft.localVoices : draft.localSeqs).push(val);
+};
+
+const handleSoundBlockDecl = (
+  first: string,
+  cursor: SoundCursor,
+  draft: SoundUnitDraft,
+): boolean => {
+  const fail = (m: string): never => cursor.fail(m);
+  if (first === 'voice' || first === 'seq') {
+    parseVoiceOrSeqDecl(cursor, false, first, draft);
+    return true;
+  }
+  if (first === 'variant') {
+    const id = cursor.name();
+    const props = lowerBlockProps(readBlockItems(cursor, 0, `variant.${id}`, fail));
+    draft.localVariants.push({ id, ...props });
+    return true;
+  }
+  if (first === 'space' || first === 'master' || first === 'output' || first === 'loop') {
+    const items = readBlockItems(cursor, 0, `recipe.${first}`, fail);
+    if (first === 'space') draft.body.space = lowerSpaceBlock(items, fail);
+    else if (first === 'loop') draft.body.playback = lowerLoopBlock(items, fail);
+    else draft.body.output = lowerMasterBlock(items, fail);
+    return true;
+  }
+  return false;
 };
 
 const parseSoundImport = (cursor: SoundCursor, draft: SoundUnitDraft): void => {
@@ -257,49 +209,68 @@ const parseUnitStatement = (cursor: SoundCursor, draft: SoundUnitDraft): void =>
   cursor.space();
   const keyOffset = cursor.offset;
   const first = cursor.name();
-  if (first === 'import') {
-    parseSoundImport(cursor, draft);
-    return;
-  }
+  if (first === 'import') return parseSoundImport(cursor, draft);
   if (first === 'export') {
-    const declKind = cursor.name();
-    if (declKind !== 'voice' && declKind !== 'sequence') {
-      cursor.fail('expected voice or sequence after export');
-    }
-    parseNamedDecl(cursor, true, declKind, draft);
-    return;
+    const decl = cursor.name();
+    if (decl !== 'voice' && decl !== 'seq') cursor.fail('expected voice or seq after export');
+    return parseVoiceOrSeqDecl(cursor, true, decl, draft);
   }
-  if (first === 'voice' || first === 'sequence') {
-    parseNamedDecl(cursor, false, first, draft);
-    return;
-  }
-  if (draft.kind === 'module') cursor.fail('module allows only import and export voice/sequence');
+  if (draft.kind === 'module') cursor.fail('module allows only import and export voice/seq');
   if (first === 'outputs') {
-    draft.outputs.push(...parseOutputsClause(cursor));
+    draft.outputs.push(...parseOutputsBlock(cursor));
     return;
   }
   if (first === 'preview') {
-    draft.previews.push(parsePreviewClause(cursor));
+    draft.previews.push(parsePreviewBlock(cursor));
     return;
   }
-  cursor.spans.set(`recipe.${first}`, keyOffset);
-  if (Object.prototype.hasOwnProperty.call(draft.body, first)) {
-    cursor.fail(`duplicate property ${first}`);
+  if (first === 'use') {
+    const ref = cursor.dotted();
+    cursor.take(';');
+    draft.localVoices.push({ $ref: ref });
+    return;
   }
+  if (handleSoundBlockDecl(first, cursor, draft)) return;
+  if (!SNAKE_KEY_RE.test(first)) cursor.fail(`expected snake_case key, got ${first}`);
+  cursor.spans.set(`recipe.${first}`, keyOffset);
+  if (Object.hasOwn(draft.body, first)) cursor.fail(`duplicate property ${first}`);
   cursor.take('=');
-  draft.body[first] = parseSoundValue(cursor, 0, `recipe.${first}`);
+  const val = parseExpr(cursor, 0, first, false);
   cursor.take(';');
+  draft.body[first] = first === 'playback' && typeof val === 'string' ? { kind: val } : val;
+};
+
+const mergeSoundCollections = (draft: SoundUnitDraft, cursor: SoundCursor): void => {
+  if (draft.localVoices.length > 0) {
+    const existing = Array.isArray(draft.body.voices) ? (draft.body.voices as unknown[]) : [];
+    draft.body.voices = [...existing, ...draft.localVoices];
+  }
+  if (draft.localSeqs.length > 0) {
+    if ('sequences' in draft.body) cursor.fail('cannot mix seq blocks with sequences property');
+    draft.body.sequences = draft.localSeqs;
+  }
+  if (draft.localVariants.length > 0) {
+    if ('variants' in draft.body) cursor.fail('cannot mix variant blocks with variants property');
+    draft.body.variants = draft.localVariants;
+  } else if (
+    draft.kind === 'sound' &&
+    !('variants' in draft.body) &&
+    typeof draft.body.seed === 'number'
+  ) {
+    draft.body.variants = [{ id: 'base', seed: draft.body.seed }];
+  }
+  if (draft.kind === 'sound' && !('playback' in draft.body)) {
+    draft.body.playback = { kind: 'oneshot' };
+  }
 };
 
 export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSourceUnit => {
-  if (encodeUtf8(source).length > 262144) {
-    throw new Error(`${file}: sound source exceeds 256 KiB`);
-  }
+  if (encodeUtf8(source).length > 262144) throw new Error(`${file}: sound source exceeds 256 KiB`);
   const cursor = new SoundCursor(source, file);
-  cursor.take('ashfox-model');
-  if (!/^(?:\s|\/\/)/u.test(source.slice(cursor.offset))) cursor.fail('expected whitespace');
+  cursor.take('ashfox');
+  if (!/^(?:\s|\/\/|\/\*)/u.test(source.slice(cursor.offset))) cursor.fail('expected whitespace');
   cursor.take('1');
-  if (!/^(?:\s|\/\/)/u.test(source.slice(cursor.offset))) cursor.fail('expected whitespace');
+  if (!/^(?:\s|\/\/|\/\*)/u.test(source.slice(cursor.offset))) cursor.fail('expected whitespace');
   const rawKind = cursor.name();
   if (rawKind !== 'sound' && rawKind !== 'module') cursor.fail('expected sound or module');
   const unitKind: 'sound' | 'module' = rawKind === 'module' ? 'module' : 'sound';
@@ -314,18 +285,20 @@ export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSour
     previews: [],
     voices: [],
     sequences: [],
+    localVoices: [],
+    localSeqs: [],
+    localVariants: [],
     body: Object.create(null),
   };
   cursor.take('{');
   while (cursor.peek() !== '}') parseUnitStatement(cursor, draft);
   cursor.take('}');
   if (cursor.peek() !== '') cursor.fail('unexpected trailing source');
+  mergeSoundCollections(draft, cursor);
   for (const key of ['format', 'version', 'id']) {
-    if (!Object.prototype.hasOwnProperty.call(draft.body, key)) continue;
+    if (!Object.hasOwn(draft.body, key)) continue;
     cursor.offset = cursor.spans.get(`recipe.${key}`) ?? 0;
-    cursor.fail(
-      `sound.invalid: recipe.${key}: declaration owns identity; obsolete recipe fields are forbidden`,
-    );
+    cursor.fail(`sound.invalid: recipe.${key}: declaration owns identity`);
   }
   return {
     kind: unitKind,
@@ -340,12 +313,11 @@ export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSour
   };
 };
 
-/** Bounded native sound literals. No evaluation, imports, or legacy JSON reader. */
 export const parseSoundDocument = (source: string, file = 'sound.ashfox') => {
   const unit = parseSoundUnit(source, file);
   if (unit.kind !== 'sound') throw new Error(`${file}: expected sound declaration`);
   if (unit.imports.length || unit.voices.length || unit.sequences.length) {
-    throw new Error(`${file}: imports/voice/sequence declarations require directory compilation`);
+    throw new Error(`${file}: imports/voice/seq declarations require directory compilation`);
   }
   try {
     return { recipe: readRecipe({ ...unit.body, id: unit.id }), report: unit.report };

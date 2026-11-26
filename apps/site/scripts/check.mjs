@@ -153,11 +153,9 @@ const retiredSourceFiles = [
 ];
 // Model retirement rules do not define the sprite, sound, or structure property grammars.
 const isOtherAssetGrammar = (source) =>
-  /^ashfox-model 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound|structure|compound)\b/u.test(
-    source.trim(),
-  ) ||
-  (/^ashfox-model 1\s+module\b/u.test(source.trim()) &&
-    /\bexport\s+(?:mask|material|stamp|prefab)\b/u.test(source));
+  /^ashfox 1(?:\s|\/\/[^\n]*(?:\n|$))+(?:sprite|sound|structure|vfx)\b/u.test(source.trim()) ||
+  (/^ashfox 1\s+module\b/u.test(source.trim()) &&
+    /\bexport\s+(?:mask|material|stamp|prefab|voice|seq)\b/u.test(source));
 const isOtherAssetGrammarFile = (file, source) =>
   isOtherAssetGrammar(source) || /[/\\]language[/\\](?:structures|sprites|sounds)\.md$/u.test(file);
 for (const file of retiredSourceFiles) {
@@ -178,7 +176,7 @@ for (const file of retiredSourceFiles) {
   if (/\.(?:ashfox|md|html|json)$/u.test(file)) {
     const modelStatements = isOtherAssetGrammarFile(file, source)
       ? ''
-      : source.replace(/```(?:text|ashfox)?\n(ashfox-model 1[\s\S]*?)```/gu, (block, body) =>
+      : source.replace(/```(?:text|ashfox)?\n(ashfox 1[\s\S]*?)```/gu, (block, body) =>
           isOtherAssetGrammar(body) ? '' : block,
         );
     for (const term of retiredAuthoredStatementSyntax) {

@@ -175,17 +175,15 @@ const main = async () => {
 
   fs.rmSync(configPath);
   const budgetInput = path.join(temp, 'budget.ashfox');
-  const budgetSource = `ashfox-model 1
+  const budgetSource = `ashfox 1
 sound budget {
-  profile = "ambient";
-  duration = 29; sampleRate = 48000; seed = 1;
-  voices = [{ id = "wind"; source = { kind = "noise"; color = "pink"; }; gain = 0.1; highpass = 20; lowpass = 2000; }];
-  sequences = [{ id = "s"; start = 0; repeat = { count = 1; period = 0; };
-    steps = [{ id = "e"; voice = "wind"; at = 0; duration = 29; gain = 1; pitchCents = 0;
-      vary = { timing = [0,0]; pitchCents = [0,0]; gain = [1,1]; duration = [1,1]; }; }]; }];
-  variants = [${Array.from({ length: 8 }, (_, i) => `{ id = "v_${i}"; seed = ${i + 1}; }`).join(',')}];
-  playback = { kind = "loop"; start = 0; end = 29; crossfade = 0.08; };
-  output = { gainDb = -24; peakDb = -3; };
+  profile = ambient;
+  duration = 29s; seed = 1;
+  voice wind : noise { color = pink; gain = 0.1; highpass = 20hz; lowpass = 2000hz; }
+  seq s { start = 0s; step e { voice = wind; at = 0s; duration = 29s; } }
+  variants = [${Array.from({ length: 8 }, (_, i) => `v_${i}(${i + 1})`).join(', ')}];
+  loop { at = 0s..29s; xfade = 80ms; }
+  output { gain_db = -24db; peak_db = -3db; }
 }`;
   fs.writeFileSync(budgetInput, budgetSource);
   assert.equal(success('check', budgetInput, '--json').result.products[0].kind, 'sound');
@@ -216,11 +214,11 @@ sound budget {
   assert.match(overBudget.stdout, /sound workspace budget/);
   assert.doesNotMatch(overBudget.stdout, /silent output/);
   fs.rmSync(combinedPath);
-  const legacy = fs.readFileSync(input, 'utf8').replace('voices =', 'layers =');
+  const legacy = fs.readFileSync(input, 'utf8').replace('seq ', 'layers ');
   fs.writeFileSync(input, legacy);
   const rejected = run('check', input, '--json');
   assert.notEqual(rejected.status, 0);
-  assert.match(rejected.stdout, /layers|unknown/);
+  assert.match(rejected.stdout, /layers|unknown|expected/);
   console.log(
     'Sound DSL: loop WAV, closed metadata, codec/target rejection, stale snapshot, joined cancellation and aggregate budgets pass',
   );

@@ -74,10 +74,10 @@ if (!stalePersisted.ok)
     stalePersisted.diagnostics.some((item) => item.code === 'workspace.lock.stale_content'),
   );
 
-const partsSource = 'ashfox-model 1 module dims { export design D { seed: integer = 23; } }';
+const partsSource = 'ashfox 1 module dims { export design D { seed: integer = 23; } }';
 const dependentSource = VALID_ASSET_SOURCE.replace(
-  'asset wolf {',
-  'asset wolf { import "parts/dims" as dims;',
+  'model wolf {',
+  'model wolf { import "parts/dims" as dims;',
 ).replace('seed = 23;', 'seed = dims.D.seed;');
 const dependentManifest: WorkspaceManifest = {
   ...base.manifest,
@@ -184,8 +184,8 @@ if (localAdded.ok) {
 }
 
 for (const bad of [
-  'ashfox-model 1 asset wolf {',
-  VALID_ASSET_SOURCE.replace('asset wolf {', 'asset wolf { design D { check impossible = false; }'),
+  'ashfox 1 model wolf {',
+  VALID_ASSET_SOURCE.replace('model wolf {', 'model wolf { design D { check impossible = false; }'),
 ]) {
   const result = applyWorkspaceChangeSet(base, edit(base, bad));
   assert.equal(result.ok, false);
@@ -329,11 +329,11 @@ const withConfig = applyWorkspaceChangeSet(added.workspace, {
     {
       path: 'parts/dims.ashfox',
       source:
-        'ashfox-model 1 module dims { import "config/dims" as c; export design D { seed: integer = c.C.seed; } }',
+        'ashfox 1 module dims { import "config/dims" as c; export design D { seed: integer = c.C.seed; } }',
     },
     {
       path: 'config/dims.ashfox',
-      source: 'ashfox-model 1 module dims { export design C { seed: integer = 23; } }',
+      source: 'ashfox 1 module dims { export design C { seed: integer = 23; } }',
     },
   ],
   deletes: [],
@@ -359,7 +359,7 @@ if (withConfig.ok) {
     writes: [
       {
         path: 'config/dims.ashfox',
-        source: 'ashfox-model 1 module dims { export design C { seed: integer = 24; } }',
+        source: 'ashfox 1 module dims { export design C { seed: integer = 24; } }',
       },
     ],
     deletes: [],

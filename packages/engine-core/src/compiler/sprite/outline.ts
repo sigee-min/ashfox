@@ -102,7 +102,7 @@ export const computeOutlineCells = (
   return out;
 };
 
-const innerRimCell = (
+const rimCell = (
   cells: readonly (string | null)[],
   w: number,
   x: number,
@@ -135,7 +135,7 @@ export const computeInnerRimCells = (
   const out: OutlineCell[] = [];
   for (let y = 1; y < h - 1; y += 1) {
     for (let x = 1; x < w - 1; x += 1) {
-      const cell = innerRimCell(cells, w, x, y);
+      const cell = rimCell(cells, w, x, y);
       if (cell) out.push(cell);
     }
   }

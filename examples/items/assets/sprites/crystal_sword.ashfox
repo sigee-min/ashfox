@@ -1,4 +1,4 @@
-ashfox-model 1
+ashfox 1
 sprite crystal_sword {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -7,30 +7,30 @@ sprite crystal_sword {
     spark = #f2ffff;
     prism = #a6f7ff;
   }
-  shape blade_body {
-    shape { kind = polygon; points = [(11, 16), (15, 20), (26, 9), (28, 3), (22, 5)]; }
+  polygon blade_body {
+    points = [(11px, 16px), (15px, 20px), (26px, 9px), (28px, 3px), (22px, 5px)];
     material = shared.crystal;
-    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13, 18), (28, 3)]; }
-    pattern { kind = gradient; axis = radial; toMaterial = shared.crystal_core; dither = false; seed = 41; }
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13px, 18px), (28px, 3px)]; }
+    pattern gradient { axis = radial; to_material = shared.crystal_core; dither = false; seed = 41; }
   }
-  shape core_beam {
-    shape { kind = line; x1 = 15; y1 = 16; x2 = 25; y2 = 6; thickness = 1; }
+  line core_beam {
+    from = (15px, 16px); to = (25px, 6px); thickness = 1px;
     material = shared.crystal_core;
-    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(15, 16), (25, 6)]; }
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(15px, 16px), (25px, 6px)]; }
   }
-  shape grip {
-    shape { kind = capsule; x1 = 5; y1 = 26; x2 = 12; y2 = 19; radius = 1.4; }
+  capsule grip {
+    from = (5px, 26px); to = (12px, 19px); radius = 1.4px;
     material = shared.steel;
-    shade { form = cylinder; light = top_left; contrast = 2; axis = [(5, 26), (12, 19)]; }
-    pattern { kind = stripe; axis = diag_neg; period = 3; width = 1; }
+    shade { form = cylinder; light = top_left; contrast = 2; }
+    pattern stripe { axis = diag_neg; period = 3px; width = 1px; }
   }
-  shape crossguard {
-    shape { kind = polygon; points = [(7, 13), (10, 14), (17, 21), (18, 24), (15, 23), (8, 16)]; }
+  polygon crossguard {
+    points = [(7px, 13px), (10px, 14px), (17px, 21px), (18px, 24px), (15px, 23px), (8px, 16px)];
     material = shared.gold;
-    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8, 14), (17, 23)]; }
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8px, 14px), (17px, 23px)]; }
   }
-  shape pommel {
-    shape { kind = ellipse; cx = 4.5; cy = 26.5; rx = 1.9; ry = 1.9; }
+  ellipse pommel {
+    cx = 4.5px; cy = 26.5px; rx = 1.9px; ry = 1.9px;
     material = shared.crystal;
     shade { form = facet; light = top_left; contrast = 2; specular = 2; }
   }
@@ -56,5 +56,5 @@ sprite crystal_sword {
     ];
     colors { s = spark; p = prism; }
   }
-  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
 }

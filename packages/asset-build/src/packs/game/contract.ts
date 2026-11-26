@@ -38,11 +38,11 @@ export type RuntimeAsset = RuntimeAssetBase &
         kind: 'sound';
         codec: 'wav' | 'ogg';
         variants: readonly Readonly<{
-          id: string;
-          file: string;
-          durationSeconds: number;
-          sampleRate: number;
-          channels: number;
+          readonly id: string;
+          readonly file: string;
+          readonly durationSeconds: number;
+          readonly sample_rate: number;
+          readonly channels: number;
           frames: number;
           playback: SoundProduct['playback'];
         }>[];

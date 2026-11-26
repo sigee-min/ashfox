@@ -65,7 +65,7 @@ const renderSocialHtml = (
       <div class="tag">${docs ? 'DOCUMENTATION' : 'OPEN SOURCE'}</div>
       <h1>${docs ? 'Build with<br><span>Ashfox.</span>' : 'Assets<br><span>as Code.</span>'}</h1>
       <div class="sub">${docs ? 'From source to game.<br>The language. The workflow.' : 'Built for voxel games.'}</div>
-      ${docs ? '<div class="code"><small>SOURCE → GAME ASSET</small><b>ashfox-model</b> 1<br><b>asset</b> griffin {<br>&nbsp; …<br>}<br><br><b>.ashfox</b> → GLB · PNG · WAV</div>' : `<img class="model" src="${model}">`}
+      ${docs ? '<div class="code"><small>SOURCE → GAME ASSET</small><b>ashfox</b> 1<br><b>model</b> griffin {<br>&nbsp; …<br>}<br><br><b>.ashfox</b> → GLB · PNG · WAV</div>' : `<img class="model" src="${model}">`}
       <div class="footer"><span>${docs ? 'DSL reference · Guides · Game integration' : 'Models · Textures · Sound'}</span><span>ashfox.io${docs ? '/docs' : ''}</span></div>
     </body></html>`;
 

@@ -63,7 +63,7 @@ const readTrack = (reader: AssetReader): AssetTrackDecl => {
   if (property !== 'rotation' && property !== 'scale') {
     reader.fail(
       'asset.invalid-motion-property',
-      'Rig motion only supports rest-relative rotation and scale tracks; position and IK are forbidden.',
+      'Rig motion only supports rest-space relative rotation and scale tracks; position and IK are forbidden.',
       propertyToken,
     );
   }

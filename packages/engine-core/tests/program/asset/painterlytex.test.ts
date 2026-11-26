@@ -62,8 +62,8 @@ const lumAt = (rgba: Uint8Array, width: number, x: number, y: number): number =>
 const painterlySource = (opts?: {
   readonly ao?: boolean;
   readonly stampProtect?: boolean;
-}): string => `ashfox-model 1
-asset main {
+}): string => `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
@@ -74,7 +74,7 @@ asset main {
     }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
   surface contract Skin {
     chart bare box { coverage = opaque; }
@@ -85,7 +85,7 @@ asset main {
   surface wolf: Skin {
     material = opaque;
     texture fur {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #101010;
         coat = (#402010, #804020, #c06030);
@@ -102,7 +102,7 @@ asset main {
       chart styled box {
         fill = coat;
         grain = none;
-        pattern gradient { from = cream; to = coat; axis = y; space = local; soft = 0.0ratio; }
+        pattern gradient { from = cream; to = coat; axis = y; space = local; soft = 0.0; }
         pattern border { paint = trim; width = 1px; edges = bottom; }
         face west { mirror = east; }
         face east {
@@ -110,7 +110,7 @@ asset main {
           grain = none;
           stamp dot { at = (0px, 0px); protect = ${opts?.stampProtect === false ? 'false' : 'true'}; }
         }
-        ${opts?.ao ? 'pattern ao { strength = 0.9ratio; radius = 2u; }' : ''}
+        ${opts?.ao ? 'pattern ao { strength = 0.9; radius = 2u; }' : ''}
       }
       chart armor box {
         fill = trim;
@@ -133,13 +133,11 @@ asset main {
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; }
-    skeleton = S;
-    use Body as body {
-      bind skeleton = R;
-      bind skin = wolf;
-    };
+  settings { density = 16; forward = north; }
+  skeleton = S;
+  use Body as body {
+    skeleton = R;
+    skin = wolf;
   }
 }`;
 
@@ -226,15 +224,15 @@ if (boneRotated.ok && boneRotated.products[0]?.kind === 'model') {
   assert.equal(styledTel?.aoTexels, 0);
 }
 
-// Verify non-default-axis plane maps texels via its u-axis/v-axis/normal for model gradient and AO.
-const planeBasisSource = `ashfox-model 1
-asset main {
+// Verify non-default-axis plane maps texels via its u_axis/v_axis/normal for model gradient and AO.
+const planeBasisSource = `ashfox 1
+model main {
   rig contract R {
     handedness = right;
     frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
-  skeleton S implements R { bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
+  skeleton S implements R { bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } } }
   surface contract Skin {
     chart blk box { coverage = opaque; }
     chart fin flat { coverage = opaque; }
@@ -243,7 +241,7 @@ asset main {
   surface surf: Skin {
     material = opaque;
     texture tex {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette {
         bg = #101010;
         coat = (#402010, #804020, #c06030);
@@ -252,8 +250,8 @@ asset main {
       chart blk box { fill = coat; }
       chart fin flat {
         fill = coat;
-        pattern gradient { from = cream; to = coat; axis = z; space = model; soft = 0.0ratio; }
-        pattern ao { strength = 0.9ratio; radius = 2u; }
+        pattern gradient { from = cream; to = coat; axis = z; space = model; soft = 0.0; }
+        pattern ao { strength = 0.9; radius = 2u; }
       }
     }
   }
@@ -264,15 +262,13 @@ asset main {
     geometry {
       bone root {
         cube blk { origin = (6u, 0u, 0u); size = (4u, 4u, 4u); surface = skin.blk; }
-        plane fin { origin = (10u, 0u, 0u); size = (4u, 4u); u-axis = (0u, 0u, 1u); v-axis = (0u, 1u, 0u); surface = skin.fin; }
+        plane fin { origin = (10u, 0u, 0u); size = (4u, 4u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); surface = skin.fin; }
       }
     }
   }
-  export asset main {
-    settings { density = 16; forward = north; }
+  settings { density = 16; forward = north; }
     skeleton = S;
-    use Body as body { bind skeleton = R; bind skin = surf; };
-  }
+    use Body as body { skeleton = R; skin = surf; }
 }`;
 const planeRes = compileSingle(planeBasisSource);
 assert.equal(planeRes.ok, true, planeRes.ok ? '' : JSON.stringify(planeRes.diagnostics));
@@ -281,7 +277,7 @@ if (planeRes.ok && planeRes.products[0]?.kind === 'model') {
   const finTel = planeRes.products[0].telemetry?.textures[tex.id]?.charts.find(
     (c) => c.id === 'fin',
   )!;
-  assert.ok(finTel.aoTexels > 0, 'touching cube must cast AO onto u-axis=Z plane');
+  assert.ok(finTel.aoTexels > 0, 'touching cube must cast AO onto u_axis=Z plane');
   assert.ok(finTel.distinctRoles >= 2, 'model-Z gradient must paint both cream and coat roles');
   const finNode = planeRes.products[0].model.scene.nodes['body/root/fin']!;
   assert.equal(finNode.kind, 'plane');
@@ -295,7 +291,7 @@ if (planeRes.ok && planeRes.products[0]?.kind === 'model') {
   }
 }
 
-// Verify texture density and render-mode contracts & emissive compilation.
+// Verify texture density and render_mode contracts & emissive compilation.
 const withHeader = (header: string): string =>
   planeBasisSource.replace('texture tex {', `texture tex {\n      ${header}`);
 
@@ -309,7 +305,7 @@ assert.ok(
   ),
 );
 
-const badRenderMode = compileSingle(withHeader('render-mode = neon;'));
+const badRenderMode = compileSingle(withHeader('render_mode = neon;'));
 assert.equal(badRenderMode.ok, false);
 assert.ok(
   badRenderMode.diagnostics.some(
@@ -319,7 +315,7 @@ assert.ok(
   ),
 );
 
-const emissiveTex = compileSingle(withHeader('density = 2; render-mode = emissive;'));
+const emissiveTex = compileSingle(withHeader('density = 2; render_mode = emissive;'));
 assert.equal(emissiveTex.ok, true, emissiveTex.ok ? '' : JSON.stringify(emissiveTex.diagnostics));
 if (emissiveTex.ok && emissiveTex.products[0]?.kind === 'model') {
   const tex = Object.values(emissiveTex.products[0].model.textures)[0]!;

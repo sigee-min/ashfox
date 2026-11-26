@@ -1,55 +1,44 @@
-ashfox-model 1
+ashfox 1
 sound footsteps {
-  profile = "foley";
-  duration = 2.25;
-  sampleRate = 48000;
+  profile = foley;
+  duration = 2.25s;
   channels = 2;
   seed = 7349;
-  space = { preset = "courtyard"; mix = 0.2; };
-  voices = [{
-    id = "stone_thud";
-    source = {
-      kind = "material";
-      material = "stone";
-      pitch = 140;
-      size = 1.2;
-      hardness = 0.65;
-      damping = 0.75;
-      brightness = 0.55;
-      modes = 16;
-      strike = "mallet";
-    };
+  space { preset = courtyard; mix = 20%; }
+  voice stone_thud : material {
+    material = stone;
+    pitch = 140hz;
+    size = 1.2;
+    hardness = 65%;
+    damping = 75%;
+    brightness = 55%;
+    modes = 16;
+    strike = mallet;
+    highpass = 35hz;
+    lowpass = 6500hz;
     drive = 1.5;
-    highpass = 35;
-    lowpass = 6500;
     pan = -0.14;
-    gain = { env = "ad"; attack = 0.004; peak = 0.95; curve = "exp"; };
-  }, {
-    id = "gravel_crunch";
-    source = {
-      kind = "granular";
-      texture = "gravel";
-      density = 180;
-      grainMs = 18;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2400; }, { at = 1; value = 950; }]; };
-      spread = 0.68;
-      burstiness = 0.75;
-      turbulence = 0.45;
-    };
-    highpass = 220;
+    gain { env = ad; attack = 4ms; peak = 0.95; curve = exp; }
+  }
+  voice gravel_crunch : granular {
+    texture = gravel;
+    density = 180;
+    grain_ms = 18ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 2400hz), (1, 950hz)]; }
+    spread = 68%;
+    burstiness = 75%;
+    turbulence = 45%;
+    highpass = 220hz;
     pan = 0.14;
-    gain = { env = "ad"; attack = 0.005; peak = 0.85; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "walk";
-    start = 0.02;
-    repeat = { count = 5; period = 0.42; };
-    steps = [
-      { id = "step"; voice = "stone_thud"; at = 0; duration = 0.18; vary = { timing = [-0.006, 0.006]; pitchCents = [-65, 65]; gain = [0.85, 1.15]; duration = [0.94, 1.06]; }; },
-      { id = "scuff"; voice = "gravel_crunch"; at = 0.008; duration = 0.22; vary = { pitchCents = [-70, 70]; gain = [0.8, 1.2]; duration = [0.9, 1.1]; }; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -1.5; targetLufs = -13; punch = 0.35; warmth = 0.15; glue = 0.15; limit = true; };
+    gain { env = ad; attack = 5ms; peak = 0.85; curve = exp; }
+  }
+  seq walk {
+    start = 20ms;
+    repeat { count = 5; period = 0.42s; }
+    step step { voice = stone_thud; at = 0s; duration = 0.18s; vary_timing = -0.006s..6ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 94%..106%; }
+    step scuff { voice = gravel_crunch; at = 8ms; duration = 0.22s; vary_pitch = -70cents..70cents; vary_gain = 80%..120%; vary_duration = 90%..110%; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 5db; peak = -1.5db; target = -13lufs; punch = 35%; warmth = 15%; glue = 15%; limit = true; }
 }

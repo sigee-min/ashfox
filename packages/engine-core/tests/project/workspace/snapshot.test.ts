@@ -10,11 +10,11 @@ const workspace = workspaceFixture(
   [
     {
       path: 'dragon/main.ashfox',
-      source: 'ashfox-model 1\nasset main { import "./util.ashfox" as util; }',
+      source: 'ashfox 1\nmodel main { import "./util.ashfox" as util; }',
     },
     {
       path: 'dragon/other.ashfox',
-      source: 'ashfox-model 1\nasset other { import "./util.ashfox" as util; }',
+      source: 'ashfox 1\nmodel other { import "./util.ashfox" as util; }',
     },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
   ],

@@ -1,67 +1,55 @@
-ashfox-model 1
+ashfox 1
 sound zombie_groan {
-  profile = "creature";
-  duration = 1.65;
-  sampleRate = 48000;
+  profile = creature;
+  duration = 1.65s;
   channels = 2;
   seed = 8421;
-  space = { preset = "cavern"; mix = 0.22; };
-  voices = [{
-    id = "undead_throat";
-    source = {
-      kind = "vocal";
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 118; }, { at = 0.24; value = 136; }, { at = 0.65; value = 92; }, { at = 1; value = 72; }]; };
-      formants = [
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 360; }, { at = 0.3; value = 610; }, { at = 0.72; value = 480; }, { at = 1; value = 340; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 840; }, { at = 0.3; value = 1120; }, { at = 0.72; value = 920; }, { at = 1; value = 760; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2100; }, { at = 0.35; value = 2480; }, { at = 1; value = 1950; }]; },
-        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3150; }, { at = 0.35; value = 3550; }, { at = 1; value = 2900; }]; }
-      ];
-      bandwidths = [105, 180, 320, 440];
-      breath = 0.28;
-      jitter = 0.24;
-      roughness = 0.6;
-      growl = 0.72;
-      chest = 0.65;
-      nasal = 0.25;
-    };
-    drive = 2.0;
-    highpass = 52;
-    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 4800; }, { at = 0.35; value = 6500; }, { at = 1; value = 2200; }]; };
+  space { preset = cavern; mix = 22%; }
+  voice undead_throat : vocal {
+    pitch { domain = log; interpolation = smooth; points = [(0, 118hz), (0.24, 136hz), (0.65, 92hz), (1, 72hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 360hz), (0.3, 610hz), (0.72, 480hz), (1, 340hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 840hz), (0.3, 1120hz), (0.72, 920hz), (1, 760hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 2100hz), (0.35, 2480hz), (1, 1950hz)]; }
+    formant { domain = log; interpolation = smooth; points = [(0, 3150hz), (0.35, 3550hz), (1, 2900hz)]; }
+    bandwidths = [105hz, 180hz, 320hz, 440hz];
+    breath = 28%;
+    jitter = 24%;
+    roughness = 60%;
+    growl = 72%;
+    chest = 65%;
+    nasal = 25%;
+    highpass = 52hz;
+    lowpass { domain = log; interpolation = smooth; points = [(0, 4800hz), (0.35, 6500hz), (1, 2200hz)]; }
+    drive = 2;
     pan = -0.1;
-    gain = { env = "adsr"; attack = 0.08; decay = 0.22; sustain = 0.76; release = 0.24; peak = 0.98; };
-  }, {
-    id = "rasp_breath";
-    source = { kind = "noise"; color = "pink"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1600; }, { at = 0.3; value = 3400; }, { at = 1; value = 900; }]; };
+    gain { env = adsr; attack = 80ms; decay = 0.22s; sustain = 76%; release = 0.24s; peak = 0.98; }
+  }
+  voice rasp_breath : noise {
+    color = pink;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 1600hz), (0.3, 3400hz), (1, 900hz)]; }
       q = 1.25;
-    };
+    }
     drive = 1.6;
     pan = 0.16;
-    gain = { env = "adsr"; attack = 0.06; decay = 0.2; sustain = 0.52; release = 0.22; peak = 0.55; };
-  }, {
-    id = "chest_rasp";
-    source = { kind = "noise"; color = "brown"; };
-    filter = {
-      kind = "lowpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 260; }, { at = 0.4; value = 420; }, { at = 1; value = 160; }]; };
-      q = 1.0;
-    };
-    highpass = 36;
-    gain = { env = "adsr"; attack = 0.08; decay = 0.25; sustain = 0.6; release = 0.24; peak = 0.62; };
-  }];
-  sequences = [{
-    id = "groan";
-    start = 0.03;
-    steps = [
-      { id = "voice"; voice = "undead_throat"; at = 0; duration = 1.48; vary = { pitchCents = [-65, 65]; timing = [0, 0.03]; }; },
-      { id = "rasp"; voice = "rasp_breath"; at = 0.02; duration = 1.4; vary = { gain = [0.85, 1.15]; }; },
-      { id = "sub"; voice = "chest_rasp"; at = 0; duration = 1.45; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -1.5; targetLufs = -14; warmth = 0.3; glue = 0.2; limit = true; };
+    gain { env = adsr; attack = 60ms; decay = 0.2s; sustain = 52%; release = 0.22s; peak = 0.55; }
+  }
+  voice chest_rasp : noise {
+    color = brown;
+    filter lowpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 260hz), (0.4, 420hz), (1, 160hz)]; }
+      q = 1;
+    }
+    highpass = 36hz;
+    gain { env = adsr; attack = 80ms; decay = 0.25s; sustain = 60%; release = 0.24s; peak = 0.62; }
+  }
+  seq groan {
+    start = 30ms;
+    step voice { voice = undead_throat; at = 0s; duration = 1.48s; vary_timing = 0s..30ms; vary_pitch = -65cents..65cents; }
+    step rasp { voice = rasp_breath; at = 20ms; duration = 1.4s; vary_gain = 85%..115%; }
+    step sub { voice = chest_rasp; at = 0s; duration = 1.45s; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  master { gain = 5db; peak = -1.5db; target = -14lufs; warmth = 30%; glue = 20%; limit = true; }
 }

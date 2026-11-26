@@ -1,4 +1,11 @@
 import type { ProgramToken } from '../program/syntax/lex';
+import type {
+  AshfoxAssignStmt,
+  AshfoxBareStmt,
+  AshfoxBlock,
+  AshfoxExpr,
+  AshfoxNamedBlock,
+} from '../program/syntax/blockAst';
 
 export const DECLARED_OUTPUT_FORMATS = [
   'glb',
@@ -400,3 +407,78 @@ export const validateAssetDeclarations = (
     previews: Object.freeze(previews),
   });
 };
+
+const ashfoxScalarValue = (expr: AshfoxExpr, file: string): unknown => {
+  if (expr.kind === 'number') return Number(expr.numerator) / Number(expr.denominator);
+  if (expr.kind === 'unary' && expr.operand.kind === 'number') {
+    const val = Number(expr.operand.numerator) / Number(expr.operand.denominator);
+    return expr.operator === '-' ? -val : val;
+  }
+  if (expr.kind === 'string' || expr.kind === 'boolean') return expr.value;
+  if (expr.kind === 'path') return expr.value;
+  return failDecl(file, `Unexpected declaration expression "${expr.kind}"`);
+};
+
+const lowerBareOutputStmt = (stmt: AshfoxBareStmt, file: string): RawDeclaredOutput => {
+  const attributes: Record<string, unknown> = {};
+  for (let i = 0; i < stmt.items.length; i += 3) {
+    const keyItem = stmt.items[i];
+    const eqItem = stmt.items[i + 1];
+    const valItem = stmt.items[i + 2];
+    if (
+      keyItem?.kind !== 'expr' ||
+      keyItem.value.kind !== 'path' ||
+      eqItem?.kind !== 'symbol' ||
+      eqItem.value !== '=' ||
+      valItem?.kind !== 'expr'
+    ) {
+      failDecl(file, 'Expected output attribute assignment');
+    }
+    attributes[keyItem.value.value] = ashfoxScalarValue(valItem.value, file);
+  }
+  return { format: stmt.stmtKind, attributes };
+};
+
+export const lowerOutputsFromBlock = (
+  block: AshfoxBlock,
+  file: string,
+): readonly RawDeclaredOutput[] =>
+  block.statements.map((stmt) => {
+    if (stmt.kind !== 'bare' || stmt.block !== null) {
+      return failDecl(file, 'Expected output format statement inside outputs');
+    }
+    return lowerBareOutputStmt(stmt, file);
+  });
+
+export const lowerOutputsFromList = (
+  expr: AshfoxExpr,
+  file: string,
+): readonly RawDeclaredOutput[] => {
+  if (expr.kind !== 'list') return failDecl(file, 'outputs must be a list of format names');
+  return expr.elements.map((elem) => {
+    if (elem.kind !== 'path') return failDecl(file, 'Expected output format name');
+    return { format: elem.value, attributes: {} };
+  });
+};
+
+export const lowerPreviewFromBlock = (stmt: AshfoxNamedBlock, file: string): RawDeclaredPreview => {
+  if (stmt.typeRef || stmt.implementsRef || stmt.forRef) {
+    failDecl(file, 'Unexpected preview header clause');
+  }
+  const properties: Record<string, unknown> = {};
+  for (const entry of stmt.block.statements) {
+    if (entry.kind !== 'assign' || entry.easing !== null) {
+      failDecl(file, 'Expected preview field assignment');
+    }
+    if (Object.hasOwn(properties, entry.path)) {
+      failDecl(file, `Duplicate preview field "${entry.path}"`);
+    }
+    properties[entry.path] = ashfoxScalarValue(entry.value, file);
+  }
+  return { name: stmt.name ?? 'default', properties };
+};
+
+export const lowerAssignOutputs = (
+  stmt: AshfoxAssignStmt,
+  file: string,
+): readonly RawDeclaredOutput[] => lowerOutputsFromList(stmt.value, file);

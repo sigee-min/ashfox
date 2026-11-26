@@ -8,66 +8,55 @@ import {
 
 // 1. Rich multi-layer impact passes >= 85.
 const craftedImpact = compileSoundSource(
-  `ashfox-model 1
-sound impact_v2 {
-  profile = "impact";
-  duration = 0.55;
-  sampleRate = 48000;
+  `ashfox 1
+sound impact_crafted {
+  profile = impact;
+  duration = 0.55s;
   channels = 2;
   seed = 11;
-  space = { preset = "small_chamber"; mix = 0.2; decay = 0.25; damping = 5500; size = 0.7; };
-  voices = [{
-    id = "thud";
-    source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.01; hardness = 0.85; };
-      modes = [
-        { id = "sub"; hz = 95; decay = 0.24; gain = 1; },
-        { id = "body"; hz = 240; decay = 0.16; gain = 0.7; },
-        { id = "snap"; hz = 1650; decay = 0.06; gain = 0.45; }
-      ];
-      pitchDropCents = 180;
-      pitchDropSeconds = 0.035;
-    };
+  space { preset = small_chamber; mix = 20%; decay = 0.25s; damping = 5500hz; size = 0.7; }
+  voice thud : resonator {
+    excitation mallet { duration = 10ms; hardness = 85%; }
+    mode sub { hz = 95hz; decay = 0.24s; gain = 1; }
+    mode body { hz = 240hz; decay = 0.16s; gain = 0.7; }
+    mode snap { hz = 1650hz; decay = 60ms; gain = 0.45; }
+    pitch_drop_cents = 180cents;
+    pitch_drop_seconds = 35ms;
     drive = 3.2;
-    highpass = 35;
-    lowpass = 12000;
-    gain = { env = "ad"; attack = 0.004; peak = 1; curve = "exp"; };
-  }, {
-    id = "grit";
-    source = { kind = "noise"; color = "pink"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 6500; }, { at = 1; value = 650; }]; };
+    highpass = 35hz;
+    lowpass = 12000hz;
+    gain { env = ad; attack = 4ms; peak = 1; curve = exp; }
+  }
+  voice grit : noise {
+    color = pink;
+    filter bandpass {
+      cutoff = 6500hz -> 650hz;
       q = 1.1;
-    };
+    }
     drive = 1.8;
     pan = 0.15;
-    gain = { env = "ad"; attack = 0.004; peak = 0.95; curve = "exp"; };
-  }, {
-    id = "air";
-    source = { kind = "noise"; color = "white"; };
-    highpass = 5200;
-    gain = { env = "ad"; attack = 0.003; peak = 0.35; curve = "exp"; };
-  }];
-  sequences = [{
-    id = "hit";
-    start = 0.01;
-    steps = [
-      { id = "a"; voice = "thud"; at = 0; duration = 0.45; vary = { pitchCents = [-35, 35]; }; },
-      { id = "b"; voice = "grit"; at = 0; duration = 0.28; vary = { duration = [0.9, 1.1]; }; },
-      { id = "c"; voice = "air"; at = 0; duration = 0.08; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 21; }, { id = "alt"; seed = 22; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = 3; peakDb = -2; punch = 0.35; warmth = 0.15; air = 0.15; glue = 0.25; width = 1.1; limit = true; };
+    gain { env = ad; attack = 4ms; peak = 0.95; curve = exp; }
+  }
+  voice air : noise {
+    color = white;
+    highpass = 5200hz;
+    gain { env = ad; attack = 3ms; peak = 0.35; curve = exp; }
+  }
+  seq hit {
+    start = 10ms;
+    step a { voice = thud; at = 0s; duration = 0.45s; vary_pitch = -35cents..35cents; }
+    step b { voice = grit; at = 0s; duration = 0.28s; vary_duration = 90%..110%; }
+    step c { voice = air; at = 0s; duration = 80ms; }
+  }
+  variant base { seed = 21; }
+  variant alt { seed = 22; }
+  master { gain = 3db; peak = -2db; punch = 35%; warmth = 15%; air = 15%; glue = 25%; width = 1.1; limit = true; }
 }`,
-  'impact_v2.ashfox',
+  'impact_crafted.ashfox',
 );
 
 const impactAudit = evaluateSoundQuality(craftedImpact);
-assert.equal(impactAudit.passed, true, formatSoundGateFailure('impact_v2', impactAudit));
+assert.equal(impactAudit.passed, true, formatSoundGateFailure('impact_crafted', impactAudit));
 assert.ok(impactAudit.score >= 85, `expected >= 85, got ${impactAudit.score}`);
 
 // 2. Inspect sheet renders deterministic 800x520 RGBA.
@@ -80,21 +69,16 @@ assert.deepEqual(sheet1.rgba, sheet2.rgba);
 
 // 3. Static bare sine tone with identical variants fails spectral_non_trivial & variant_distinctness.
 const bareSine = compileSoundSource(
-  `ashfox-model 1
+  `ashfox 1
 sound bare_beep {
-  profile = "ui";
-  duration = 0.5;
-  sampleRate = 48000;
+  profile = ui;
+  duration = 0.5s;
   seed = 1;
-  voices = [{
-    id = "sine";
-    source = { kind = "osc"; waveform = "sine"; pitch = 440; };
-    gain = { env = "ad"; attack = 0.01; peak = 0.8; };
-  }];
-  sequences = [{ id = "s"; start = 0; steps = [{ id = "n"; voice = "sine"; at = 0; duration = 0.48; }]; }];
-  variants = [{ id = "a"; seed = 1; }, { id = "b"; seed = 2; }];
-  playback = { kind = "oneshot"; };
-  output = { gainDb = -6; peakDb = -3; };
+  voice sine : osc { waveform = sine; pitch = 440hz; gain { env = ad; attack = 10ms; peak = 0.8; } }
+  seq s { start = 0s; step n { voice = sine; at = 0s; duration = 0.48s; } }
+  variant a { seed = 1; }
+  variant b { seed = 2; }
+  master { gain = -6db; peak = -3db; }
 }`,
   'bare.ashfox',
 );

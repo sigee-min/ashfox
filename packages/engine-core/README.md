@@ -3,7 +3,7 @@
 `@ashfox/engine-core` is the deterministic canonical-asset compiler used by
 Ashfox source compilation and asset delivery.
 
-Its durable input is a closed `.ashfoxworkspace`: exact `ashfox-model 1`
+Its durable input is a closed `.ashfoxworkspace`: exact `ashfox 1`
 source modules, package manifests, and a content-addressed lock. A selected
 entry explicitly chooses nominal rigs, skeletons, reusable components,
 surfaces, socket connections, and motions. The compiler resolves, checks,

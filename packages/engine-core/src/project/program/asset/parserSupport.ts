@@ -1,12 +1,18 @@
 import type { ProgramExpr } from '../syntax/contract';
 import type { ProgramToken } from '../syntax/lex';
 import type { SourceSpan } from '../../source/contract';
-import type {
-  AssetFrameDecl,
-  AssetImportDecl,
-  AssetPropertyDecl,
-  AssetQualifiedName,
-  AssetValueType,
+import { compareText } from '../../../stableOrder';
+import type { RawDeclaredOutput } from '../../directory/declarations';
+import {
+  ASHFOX_ASSET_GRAMMAR,
+  type AssetDiagnostic,
+  type AssetFrameDecl,
+  type AssetImportDecl,
+  type AssetPropertyDecl,
+  type AssetQualifiedName,
+  type AssetSourceParseResult,
+  type AssetSourceUnit,
+  type AssetValueType,
 } from './contract';
 
 export type Token = ProgramToken;
@@ -265,3 +271,35 @@ export const readUniqueFrame = (
   }
   return readFrame(reader);
 };
+
+/** Parses `outputs = [format, ...];` at model unit scope. */
+export const readOutputsList = (reader: AssetReader, outputs: RawDeclaredOutput[]): void => {
+  reader.take();
+  reader.expect('=', 'Expected = after outputs.');
+  reader.expect('[', 'Expected [ to begin outputs list.');
+  while (!reader.check(']') && !reader.end()) {
+    outputs.push({ format: reader.id('Expected output format name.').value, attributes: {} });
+    if (!reader.match(',')) break;
+  }
+  reader.expect(']', 'Expected ] to close outputs list.');
+  reader.finish();
+};
+
+/** Freezes the final `AssetSourceParseResult` with deterministically sorted diagnostics. */
+export const buildParseResult = (
+  path: string,
+  source: string,
+  unit: AssetSourceUnit | null,
+  diagnostics: readonly AssetDiagnostic[],
+): AssetSourceParseResult =>
+  Object.freeze({
+    path,
+    source,
+    grammar: ASHFOX_ASSET_GRAMMAR,
+    unit: diagnostics.length > 0 ? null : unit,
+    diagnostics: Object.freeze(
+      [...diagnostics].sort(
+        (a, b) => a.span.start.offset - b.span.start.offset || compareText(a.code, b.code),
+      ),
+    ),
+  });

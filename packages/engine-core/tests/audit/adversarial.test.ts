@@ -52,19 +52,19 @@ const baseSkeleton = `
     joint root { parent = none; role = root; frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } channels = rotation; mirror = none; }
   }
   skeleton S implements R {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
   }
 `;
 
 // 1. Grain-only illusion fails pre_grain_authored_floor
-const grainOnly = `ashfox-model 1
-asset main {
+const grainOnly = `ashfox 1
+model main {
   ${baseSkeleton}
   surface contract Skin { chart a box { coverage = opaque; } chart b box { coverage = opaque; } chart c box { coverage = opaque; } material = opaque; }
   surface s: Skin {
     material = opaque;
     texture t {
-      background = x; background-alpha = 255;
+      background = x; background_alpha = 255;
       palette { x = #202020; coat = (#503020, #885030, #c87848); trim = (#203050, #406088, #7098c8); foot = (#303030, #606060, #909090); }
       chart a box { fill = coat; }
       chart b box { fill = trim; }
@@ -85,19 +85,19 @@ asset main {
       }
     }
   }
-  export asset main { settings { density = 16; forward = north; profile = prop; } skeleton = S; use C as c { bind skeleton = R; bind skin = s; }; }
+  settings { density = 16; forward = north; profile = prop; } skeleton = S; use C as c { skeleton = R; skin = s; }
 }`;
 assert.equal(gateFailed(grainOnly, 'pre_grain_authored_floor'), true);
 
 // 2. High-frequency 1px checkerboard stamp spam fails anti_noise_coherence
-const confetti = `ashfox-model 1
-asset main {
+const confetti = `ashfox 1
+model main {
   ${baseSkeleton}
   surface contract Skin { chart body box { coverage = opaque; } material = opaque; }
   surface s: Skin {
     material = opaque;
     texture t {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette { bg = #101010; w = #f4f4f4; k = #121212; kramp = (#0e0e0e, #121212, #1c1c1c); }
       stamp chk {
         pixels = "wkwkwkwk/kwkwkwkw/wkwkwkwk/kwkwkwkw/wkwkwkwk/kwkwkwkw/wkwkwkwk/kwkwkwkw";
@@ -121,19 +121,19 @@ asset main {
     bind bone root to skeleton.root;
     geometry { bone root { cube c0 { origin = (-4u, 0u, -4u); size = (8u, 8u, 8u); surface = skin.body; } } }
   }
-  export asset main { settings { density = 16; forward = north; profile = block; } skeleton = S; use C as c { bind skeleton = R; bind skin = s; }; }
+  settings { density = 16; forward = north; profile = block; } skeleton = S; use C as c { skeleton = R; skin = s; }
 }`;
 assert.equal(gateFailed(confetti, 'anti_noise_coherence'), true);
 
 // 3. Buried inner cube fails no_buried_hidden_cubes
-const buried = `ashfox-model 1
-asset main {
+const buried = `ashfox 1
+model main {
   ${baseSkeleton}
   surface contract Skin { chart a box { coverage = opaque; } chart b box { coverage = opaque; } material = opaque; }
   surface s: Skin {
     material = opaque;
     texture t {
-      background = bg; background-alpha = 255;
+      background = bg; background_alpha = 255;
       palette { bg = #101010; dark = (#202020, #383838, #505050); light = (#a0a0a0, #d0d0d0, #f0f0f0); }
       chart a box { fill = dark; grain = none; pattern border { paint = light; width = 1px; edges = all; } }
       chart b box { fill = dark; grain = none; pattern border { paint = light; width = 1px; edges = all; } }
@@ -150,7 +150,7 @@ asset main {
       }
     }
   }
-  export asset main { settings { density = 16; forward = north; profile = block; } skeleton = S; use C as c { bind skeleton = R; bind skin = s; }; }
+  settings { density = 16; forward = north; profile = block; } skeleton = S; use C as c { skeleton = R; skin = s; }
 }`;
 assert.equal(gateFailed(buried, 'no_buried_hidden_cubes'), true);
 

@@ -1,22 +1,18 @@
-ashfox-model 1
-asset marker {
-  export rig contract MarkerRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+ashfox 1
+model marker {
+  rig contract MarkerRig {
     joint root {
       parent = none;
       role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
   }
 
-  export skeleton MarkerSkeleton implements MarkerRig {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+  skeleton MarkerSkeleton implements MarkerRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
   }
 
-  export surface contract RuneStone {
+  surface contract RuneStone {
     chart plinth box { coverage = opaque; }
     chart core box { coverage = opaque; }
     chart pilaster box { coverage = opaque; }
@@ -26,12 +22,12 @@ asset marker {
     material = opaque;
   }
 
-  export surface carved_marker: RuneStone {
+  surface carved_marker: RuneStone {
     material = opaque;
     texture atlas {
       density = 1;
       background = shade;
-      background-alpha = 255;
+      background_alpha = 255;
       palette {
         shade = #2e3440;
         slate = (#384152, #5a667d, #8493ad);
@@ -54,13 +50,13 @@ asset marker {
         fill = slate;
         grain = clustered;
         pattern border { paint = moss; width = 1px; edges = bottom; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart core box {
         fill = limestone;
         grain = soft;
-        pattern gradient { from = slate; to = limestone; axis = y; space = local; soft = 0.15ratio; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern gradient { from = slate; to = limestone; axis = y; space = local; soft = 0.15; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
         face north { stamp rune_glyph { at = (2px, 1px); protect = true; } }
         face south { stamp rune_glyph { at = (2px, 1px); protect = true; } }
         face east { stamp rune_glyph { at = (2px, 1px); protect = true; } }
@@ -70,18 +66,18 @@ asset marker {
         fill = slate;
         grain = clustered;
         pattern border { paint = limestone; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart collar box {
         fill = bronze;
         grain = none;
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart cornice box {
         fill = slate;
         grain = clustered;
         pattern border { paint = limestone; width = 1px; edges = top; }
-        pattern ao { strength = 0.35ratio; radius = 0.6u; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
       }
       chart seal_cap box {
         fill = limestone;
@@ -94,7 +90,7 @@ asset marker {
     }
   }
 
-  export component MarkerBody {
+  component MarkerBody {
     requires rig skeleton: MarkerRig;
     requires surface skin: RuneStone;
     bind bone root to skeleton.root;
@@ -102,8 +98,8 @@ asset marker {
       bone root {
         cube plinth { origin = (-8u, 0u, -8u); size = (16u, 3u, 16u); surface = skin.plinth; }
         cube core { origin = (-5u, 3u, -5u); size = (10u, 9u, 10u); surface = skin.core; }
-        cube pilaster_fl { origin = (-7u, 3u, -7u); size = (3u, 9u, 3u); mirror-x = pilaster_fr; surface = skin.pilaster; }
-        cube pilaster_bl { origin = (-7u, 3u, 4u); size = (3u, 9u, 3u); mirror-x = pilaster_br; surface = skin.pilaster; }
+        cube pilaster_fl { origin = (-7u, 3u, -7u); size = (3u, 9u, 3u); mirror_x = pilaster_fr; surface = skin.pilaster; }
+        cube pilaster_bl { origin = (-7u, 3u, 4u); size = (3u, 9u, 3u); mirror_x = pilaster_br; surface = skin.pilaster; }
         cube collar { origin = (-6u, 12u, -6u); size = (12u, 2u, 12u); surface = skin.collar; }
         cube cornice { origin = (-7u, 14u, -7u); size = (14u, 1u, 14u); surface = skin.cornice; }
         cube seal_cap { origin = (-4u, 15u, -4u); size = (8u, 1u, 8u); surface = skin.seal_cap; }
@@ -111,9 +107,7 @@ asset marker {
     }
   }
 
-  export asset marker {
-    settings { density = 16; forward = north; profile = block; }
-    skeleton = MarkerSkeleton;
-    use MarkerBody as model { bind skeleton = MarkerRig; bind skin = carved_marker; };
-  }
+  settings { density = 16; forward = north; profile = block; }
+  skeleton = MarkerSkeleton;
+  use MarkerBody as model { skeleton = MarkerRig; skin = carved_marker; }
 }

@@ -85,7 +85,7 @@ export type SpritePatternSpec =
   | {
       readonly kind: 'gradient';
       readonly axis: 'x' | 'y' | 'radial';
-      readonly toMaterial?: string;
+      readonly to_material?: string;
       readonly dither: boolean;
       readonly seed: number;
     }
@@ -94,7 +94,7 @@ export type SpritePatternSpec =
       readonly scale: number;
       readonly density: number;
       readonly seed: number;
-      readonly toMaterial?: string;
+      readonly to_material?: string;
     }
   | {
       readonly kind: 'stripe';
@@ -102,7 +102,7 @@ export type SpritePatternSpec =
       readonly period: number;
       readonly width: number;
       readonly offset: number;
-      readonly toMaterial?: string;
+      readonly to_material?: string;
     }
   | {
       readonly kind: 'brick';
@@ -111,35 +111,35 @@ export type SpritePatternSpec =
       readonly mortar: number;
       readonly stagger: number;
       readonly seed: number;
-      readonly mortarMaterial?: string;
+      readonly mortar_material?: string;
     }
   | {
       readonly kind: 'plank';
       readonly height: number;
       readonly joint: number;
       readonly seed: number;
-      readonly mortarMaterial?: string;
+      readonly mortar_material?: string;
     }
   | {
       readonly kind: 'voronoi';
       readonly cells: number;
       readonly jitter: number;
-      readonly edgeWidth: number;
+      readonly edge_width: number;
       readonly seed: number;
-      readonly edgeMaterial?: string;
+      readonly edge_material?: string;
     }
   | {
       readonly kind: 'dither';
       readonly mode: 'bayer' | 'cluster';
       readonly density: number;
       readonly seed: number;
-      readonly toMaterial?: string;
+      readonly to_material?: string;
     }
   | {
       readonly kind: 'crack';
       readonly count: number;
       readonly seed: number;
-      readonly crackMaterial?: string;
+      readonly crack_material?: string;
     };
 
 export interface SpriteShade {
@@ -224,7 +224,7 @@ export type SpriteLayer =
       readonly mode: 'sel_out' | 'dark' | 'colored';
       readonly color?: string;
       readonly strength: number;
-      readonly innerRim: boolean;
+      readonly inner_rim: boolean;
     }
   | {
       readonly id: string;

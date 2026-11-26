@@ -19,7 +19,7 @@ export const frame = 'frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }';
 export const localSocketFrame =
   'frame { origin = (2u, 0u, 0u); x = (0, 1, 0); y = (-1, 0, 0); z = (0, 0, 1); }';
 
-export const rig = `ashfox-model 1
+export const rig = `ashfox 1
 module rig {
   export socket contract WingMount {
     handedness = right;
@@ -33,14 +33,14 @@ module rig {
     socket wing: WingMount { joint = chest; capacity = many; ${frame} }
   }
   export skeleton Adult implements DragonRig {
-    bind root { parent-origin = (0u, 0u, 0u); ${frame} }
-    bind chest { parent-origin = (0u, 20u, 0u); ${frame} }
+    bind root { parent_origin = (0u, 0u, 0u); ${frame} }
+    bind chest { parent_origin = (0u, 20u, 0u); ${frame} }
   }
   export motion idle for DragonRig {
     duration = 1s;
     fps = 24;
     loop = loop;
-    rest-relative = true;
+    rest_relative = true;
     track chest.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 1s = (10deg, 0deg, 0deg) step;
@@ -48,7 +48,7 @@ module rig {
   }
 }`;
 
-export const surface = `ashfox-model 1
+export const surface = `ashfox 1
 module surface {
   export surface contract Skin {
     atlas { width = 64px; height = 64px; }
@@ -65,7 +65,7 @@ module surface {
   }
 }`;
 
-export const body = `ashfox-model 1
+export const body = `ashfox 1
 module body {
   import "./rig.ashfox" as r;
   import "./surface.ashfox" as s;
@@ -91,7 +91,7 @@ module body {
   }
 }`;
 
-export const mount = `ashfox-model 1
+export const mount = `ashfox 1
 module mount {
   import "./rig.ashfox" as r;
   import "./surface.ashfox" as s;
@@ -107,26 +107,24 @@ module mount {
   }
 }`;
 
-export const root = `ashfox-model 1
-asset package {
+export const root = `ashfox 1
+model boss {
   import "./rig.ashfox" as r;
   import "./surface.ashfox" as s;
   import "./body.ashfox" as b;
   import "./mount.ashfox" as m;
-  export asset boss {
-    settings { density = 16; forward = north; }
-    skeleton = r.Adult;
-    motion = r.idle;
-    use b.Body as body {
-      set length = 4u;
-      bind skeleton = r.DragonRig;
-      bind skin = s.scales;
-    };
-    use m.Mount as mount {
-      bind skin = s.scales;
-    };
-    connect skeleton.wing -> mount.wing;
+  settings { density = 16; forward = north; }
+  skeleton = r.Adult;
+  motions = [r.idle];
+  use b.Body as body {
+    length = 4u;
+    skeleton = r.DragonRig;
+    skin = s.scales;
   }
+  use m.Mount as mount {
+    skin = s.scales;
+  }
+  connect skeleton.wing -> mount.wing;
 }`;
 
 export const moduleDefinitions = [
@@ -198,7 +196,7 @@ export const workspaceFor = (
       [
         {
           path: 'dragon/main.ashfox',
-          source: rootSource.replace(/^(asset|module) package \{/m, '$1 boss {'),
+          source: rootSource.replace(/^(model|module) package \{/m, '$1 boss {'),
         },
         ...moduleSources(overrides),
         ...extraFiles,

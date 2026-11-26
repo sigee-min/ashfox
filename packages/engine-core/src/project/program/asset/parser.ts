@@ -1,4 +1,3 @@
-import { compareText } from '../../../stableOrder';
 import type { ProgramExpr } from '../syntax/contract';
 import { parseProgramExpression } from '../syntax/expression';
 import { PROGRAM_PARSE_NESTING_LIMIT } from '../syntax/limits';
@@ -19,10 +18,12 @@ import { parseAssetDesign, parseAssetValueType } from './design';
 import {
   ParserAbort,
   badName,
+  buildParseResult,
   isAssignmentTokens,
   isKebabAssignmentTokens,
   join,
   readImportDecl,
+  readOutputsList,
   type AssetReader,
   type Token,
 } from './parserSupport';
@@ -308,21 +309,22 @@ export class Parser {
   }
 
   private design(exported: boolean): AssetDeclaration {
+    const reader = this.reader();
     return parseAssetDesign(
       {
-        take: () => this.take(),
-        id: (message) => this.id(message),
+        take: reader.take,
+        id: reader.id,
         count: () => this.count(),
         matchWord: (word) => this.matchWord(word),
-        expect: (value, message) => this.expect(value, message),
-        valueType: () => this.valueType(),
-        expression: () => this.expression(),
-        finish: () => this.finish(),
+        expect: reader.expect,
+        valueType: reader.valueType,
+        expression: reader.expression,
+        finish: reader.finish,
         block: (read) => {
-          this.block(read);
+          reader.block(read);
         },
-        blockEnd: () => this.blockEnd(),
-        fail: (code, message, token) => this.fail(code, message, token),
+        blockEnd: reader.blockEnd,
+        fail: reader.fail,
       },
       exported,
     );
@@ -361,25 +363,27 @@ export class Parser {
     outputs: RawDeclaredOutput[],
     previews: RawDeclaredPreview[],
   ): boolean {
-    const isOutputs = this.matchWord('outputs');
+    const isAssign = this.checkWord('outputs') && this.assignment();
+    const isOutputs = isAssign || this.matchWord('outputs');
     if (!isOutputs && !this.matchWord('preview')) return false;
     if (kind !== 'asset') {
-      this.fail('asset.invalid-declaration', 'outputs and preview apply only inside asset units.');
+      this.fail('asset.invalid-declaration', 'outputs and preview apply only to models.');
+    }
+    if (isAssign) {
+      readOutputsList(this.reader(), outputs);
+      return true;
     }
     try {
-      if (isOutputs) {
-        const res = parseOutputsTokens(this.tokens, this.index, this.path);
-        outputs.push(...res.outputs);
-        this.index = res.nextIndex;
-      } else {
-        const res = parsePreviewTokens(this.tokens, this.index, this.path);
-        previews.push(res.preview);
-        this.index = res.nextIndex;
-      }
+      const res = isOutputs
+        ? parseOutputsTokens(this.tokens, this.index, this.path)
+        : parsePreviewTokens(this.tokens, this.index, this.path);
+      if ('outputs' in res) outputs.push(...res.outputs);
+      else previews.push(res.preview);
+      this.index = res.nextIndex;
     } catch (error) {
       this.fail(
         'asset.invalid-declaration',
-        error instanceof Error ? error.message : 'Invalid declaration block.',
+        error instanceof Error ? error.message : 'Invalid block.',
       );
       throw new ParserAbort();
     }
@@ -387,13 +391,12 @@ export class Parser {
   }
 
   private isAssemblyStatement(): boolean {
-    if (this.checkWord('settings') || this.checkWord('use') || this.checkWord('connect')) {
-      return true;
-    }
-    if ((this.checkWord('skeleton') || this.checkWord('motions')) && this.assignment()) {
-      return true;
-    }
-    return false;
+    return (
+      this.checkWord('settings') ||
+      this.checkWord('use') ||
+      this.checkWord('connect') ||
+      ((this.checkWord('skeleton') || this.checkWord('motions')) && this.assignment())
+    );
   }
 
   private unit(kind: AssetSourceUnit['kind']): AssetSourceUnit | null {
@@ -416,8 +419,7 @@ export class Parser {
         else if (assembly !== null && this.isAssemblyStatement()) {
           readAssemblyEntry(this.reader(), assembly);
         } else {
-          const exported = this.matchWord('export');
-          const declaration = this.declaration(exported);
+          const declaration = this.declaration(this.matchWord('export'));
           if (declaration !== null) declarations.push(declaration);
         }
       }
@@ -473,21 +475,8 @@ export class Parser {
     try {
       unit = this.parse();
     } catch (error) {
-      if (!(error instanceof ParserAbort)) {
-        this.fail('asset.parser-failure', 'Source could not be parsed safely.');
-      }
+      if (!(error instanceof ParserAbort)) this.fail('asset.parser-failure', 'Parse failed.');
     }
-    if (this.diagnostics.length > 0) unit = null;
-    return Object.freeze({
-      path: this.path,
-      source: this.source,
-      grammar: ASHFOX_ASSET_GRAMMAR,
-      unit,
-      diagnostics: Object.freeze(
-        [...this.diagnostics].sort(
-          (a, b) => a.span.start.offset - b.span.start.offset || compareText(a.code, b.code),
-        ),
-      ),
-    });
+    return buildParseResult(this.path, this.source, unit, this.diagnostics);
   }
 }

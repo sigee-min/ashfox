@@ -68,7 +68,7 @@ const verifySoundSample = (run, soundsDir, name) => {
       sha256: sha256(wav),
     };
   });
-  fs.writeFileSync(input, source.replace('voices =', 'layers ='));
+  fs.writeFileSync(input, source.replace('seq ', 'layers '));
   assert.throws(() => run(['check', input, '--json']), /Command failed/);
   return sampleResults;
 };

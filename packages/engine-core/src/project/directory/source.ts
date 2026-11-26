@@ -59,7 +59,7 @@ export const inspectNativeSource = (source: string, file: string): NativeSourceM
       outputs: Object.freeze([...sprite.outputs]),
     });
   }
-  if (kind === 'structure' || kind === 'compound') {
+  if (kind === 'structure') {
     const structure = parseStructureSource(source, file);
     return Object.freeze({
       kind: 'structure',

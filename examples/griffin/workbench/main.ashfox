@@ -1,18 +1,11 @@
-ashfox-model 1
-asset griffin {
+ashfox 1
+model griffin {
   import "./animation.ashfox" as animation;
   import "./surface.ashfox" as surface;
   import "./body.ashfox" as body;
 
-  export asset griffin {
-    settings { density = 16; forward = north; profile = creature; }
-    skeleton = animation.GriffinSkeleton;
-    motion = animation.idle;
-    motion = animation.look_around;
-    motion = animation.wing_display;
-    motion = animation.wing_flap;
-    motion = animation.greeting;
-    motion = animation.alert;
-    use body.Griffin as griffin { bind skeleton = animation.GriffinRig; bind skin = surface.griffin_skin; };
-  }
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = animation.GriffinSkeleton;
+  motions = [animation.idle, animation.look_around, animation.wing_display, animation.wing_flap, animation.greeting, animation.alert];
+use body.Griffin as griffin { skeleton = animation.GriffinRig; skin = surface.griffin_skin; }
 }

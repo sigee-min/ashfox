@@ -115,7 +115,7 @@ const mirrorChildFaces = (
     }),
   );
 
-/** Synthesize the X-mirrored sibling node for a cube or plane declaring mirror-x. */
+/** Synthesize the X-mirrored sibling node for a cube or plane declaring mirror = x. */
 export const mirrorInstantiatedNode = (
   node: InstantiatedGeometryNode,
   mirroredId: string,

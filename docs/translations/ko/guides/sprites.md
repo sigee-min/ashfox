@@ -14,9 +14,9 @@
 
 ## OKLCH 램프, 도형, 패턴, 아웃라인
 
-- **`shape`와 `part`**: `rect`, `ellipse`, `capsule`, `polygon`, `line` 파라메트릭 도형이나 재사용 마스크를 겹쳐 형태를 만들고 `flat`, `round`, `bevel`, `cylinder`, `facet` 명암과 `specular`를 적용합니다.
+- **직접 도형과 `part`**: `rect`, `ellipse`, `capsule`, `polygon`, `line` 도형 블록이나 재사용 `part` 마스크를 겹쳐 형태를 만들고 `flat`, `round`, `bevel`, `cylinder`, `facet` 명암과 `specular`를 적용합니다.
 - **OKLCH 램프**: `ramp { mode = auto; base = #...; preset = ...; }`는 10개 프리셋(`warm`, `cool`, `metal`, `gem`, `wood`, `stone`, `organic`, `cloth`, `emissive`, `vivid`)으로 하이라이트는 따뜻하게, 그림자는 차갑게 색조가 이동하는 5단 램프를 만듭니다.
-- **`sel_out` & `innerRim`**: `outline` 레이어가 검은 테두리 대신 주변 색조와 밝기를 따르는 셀 아웃라인과 좌상단 내측 림 하이라이트를 그려줍니다.
+- **`sel_out` & `inner_rim`**: `outline` 레이어가 검은 테두리 대신 주변 색조와 밝기를 따르는 셀 아웃라인과 좌상단 내측 림 하이라이트를 그려줍니다.
 - **심리스 타일 (`profile = tile`)**: `fill`·`pattern` 레이어(`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`)는 캔버스 경계를 토로이달 래핑하여 이음새 없이 타일링됩니다.
 
 [iron_sword 원본](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone 타일](../../examples/items/assets/sprites/mossy_stone.ashfox), [shared 모듈](../../examples/items/assets/module/shared.ashfox)에서 전체 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 모듈은 `assets/module/` 아래에 둡니다.

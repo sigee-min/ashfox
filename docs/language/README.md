@@ -1,9 +1,9 @@
 # Ashfox DSL reference
 
-The Ashfox DSL is the source format for models, pixel textures and sounds.
-This reference describes the implemented `ashfox-model 1` language shipped with
-Ashfox 1.0.0. Save source as UTF-8 `.ashfox` files. Generated GLB, PNG and WAV
-files are outputs; edit and version the source to change the asset.
+The Ashfox DSL is the source format for models, pixel textures, sounds, and structures.
+This reference describes the unified `ashfox 1` language. Save source as UTF-8
+`.ashfox` files. Generated GLB, PNG, WAV, NBT, and JSON files are outputs; edit
+and version the source to change the asset.
 
 ## Find a specification
 
@@ -24,38 +24,39 @@ For complete creation walkthroughs, see [models](../guides/models.md),
 
 ## Source shapes
 
-Every file has the header `ashfox-model 1` and exactly one outer unit.
-The header identifies the language version for all three asset kinds.
+Every file starts with the header `ashfox 1` and contains one outer unit.
+The header identifies the unified language version across all four asset kinds.
 
 | Outer unit | Meaning | Allowed content |
 | --- | --- | --- |
-| `asset Name { … }` | Model entry | Imports, designs, contracts, skeletons, surfaces, components, motions and exported asset assembly |
+| `model Name { … }` | Model entry | Imports, designs, contracts, skeletons, surfaces, components, motions and assembly (`settings`, `skeleton`, `motions`, `use`, `connect`) |
 | `module Name { … }` | Reusable model declarations | Imports and exported/private model declarations |
 | `sprite name { … }` | One pixel sprite | Imports, reusable sprite declarations, profile, canvas, palette and layers |
 | `module name { … }` used by a sprite | Reusable sprite declarations | Imports and exported masks, materials and stamps |
-| `sound name { … }` | One sound effect | Literal sound properties, layers, variants and output settings |
+| `sound name { … }` | One sound effect | Audio properties, space, voices, sequences, variants, loop and mastering settings |
 | `structure id { … }` | One Minecraft / GLB building | Block-state palette, custom `.ashfox` props, prefabs, roofs, cutaway & interior ops |
 | `module id { … }` used by a structure | Reusable building interiors | Optional palette and `export prefab` interior modules |
 
-A model's outer `asset` unit is the source namespace. Its inner
-`export asset` declaration is the buildable assembly. A sprite or sound needs
-no inner assembly. Model and sprite modules share a keyword but have different
-contents; importing a module does not convert it into the other asset kind.
+A model entry's `model Name { … }` block holds declarations alongside the top-level
+assembly (`settings`, `skeleton`, `motions`, `use`, `connect`). Sprites, sounds, and structures
+likewise place their properties directly inside their outer unit. Shared `module` declarations
+follow their domain context; importing a module does not convert it into another asset kind.
 
-## The three value grammars
+## Domain syntax summary
 
-| Feature | Models | Sprites | Sounds |
-| --- | --- | --- | --- |
-| Arithmetic and typed designs | Supported | Not supported | Not supported |
-| Numeric spelling | Exact decimal, explicit units such as `u`, `px`, `deg`, `s`, `ratio` | Nonnegative integers; `px` also allowed for `at`, `canvas`, `axis` | Signed JSON-style decimals, including exponents; no unit suffixes |
-| Collections | Typed tuples/vectors | Literal lists and records | Literal lists and records |
-| Imports | Explicit aliases and exported declarations | Relative imports of sprite declarations | Not supported |
-| Comments | `//` and `/* … */` | `//` and `/* … */` | `//` only |
+| Feature | Models | Sprites | Sounds | Structures |
+| --- | --- | --- | --- | --- |
+| Arithmetic and typed designs | Supported | Not supported | Not supported | Integer/block `params` math |
+| Numeric spelling | Exact decimals with `u`, `px`, `deg`, `s`, or `%`/plain ratios | `px` coordinates/sizes/radii/axes and unitless/`%` controls | Typed `s`, `ms`, `hz`, `khz`, `db`, `lufs`, `cents`, `st`, `%`, ranges `a..b`, transitions `a -> b` | `b` block coords/sizes, `%` or decimal rates/weights |
+| Collections | Typed tuples/vectors `(a, b, c)` | Lists `[a, b]` and `{ k = v; }` blocks | `{ k = v; }` blocks and point lists | `{ k = v; }` blocks and target lists |
+| Imports | Explicit aliases and exported declarations | Relative imports of sprite declarations | Modular `sound` / `module` declarations | Relative/package imports for models and prefabs |
+| Comments | `//` and `/* … */` | `//` and `/* … */` | `//` and `/* … */` | `//` and `/* … */` |
 
-Do not copy model expressions into sprite or sound properties. For example,
-model `duration = 1s;` and sound `duration = 1;` belong to different readers.
+Do not copy model expressions into sprite, sound, or structure properties. For example,
+model `duration = 1s;` and sound `duration = 1s;` both write seconds, while structure
+`size = (9b, 13b, 9b);` uses block units (`b`).
 The language has no user-defined functions, loops, inheritance, runtime code,
-or automatic attachment inference. Reuse model components and explicit imports.
+or automatic attachment inference. Reuse components, modules, and explicit imports.
 
 ## Compile and diagnose
 

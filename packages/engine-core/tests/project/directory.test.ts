@@ -39,14 +39,14 @@ assert.equal(compiled.products.length, 12);
 const appleProduct = compiled.products.find((x) => x.entry.entryName === 'apple')!;
 assert.equal(appleProduct.kind, 'sprite');
 
-const sharedSource = `ashfox-model 1
+const sharedSource = `ashfox 1
 module shared {
   export material red_skin { ramp { mode = auto; base = #c94040; preset = organic; } }
   export material leaf { ramp { mode = auto; base = #509a44; preset = organic; } }
   export stamp stem { rows = ["ss", ".s"]; slots = ["s"]; }
 }`;
 
-const appleSource = `ashfox-model 1
+const appleSource = `ashfox 1
 sprite apple {
   import "../module/shared.ashfox" as shared;
   profile = item;
@@ -55,15 +55,15 @@ sprite apple {
     bark = #734b34;
     glint = #fff5e6;
   }
-  shape body {
-    shape { kind = ellipse; cx = 16; cy = 18; rx = 9; ry = 8; }
+  ellipse body {
+    cx = 16px; cy = 18px; rx = 9px; ry = 8px;
     material = shared.red_skin;
     shade { form = round; light = top_left; contrast = 2; specular = 1; }
-    grain { mode = soft; amount = 1; seed = 23; }
+    grain soft { amount = 1; seed = 23; }
   }
   stamp stem_top { stamp = shared.stem; at = (15px, 7px); flip = none; colors { s = bark; } }
   paint shine { at = (11px, 13px); rows = ["gg", "g."]; colors { g = glint; } }
-  outline rim { mode = sel_out; strength = 2; innerRim = true; }
+  outline rim { mode = sel_out; strength = 2; inner_rim = true; }
 }`;
 
 const parityConfig = JSON.stringify({
@@ -140,7 +140,7 @@ if (parityCompiled.ok && parityCompiled.products[0]!.kind === 'sprite') {
           colors: { s: 'bark' },
         },
         { id: 'shine', op: 'paint', at: [11, 13], rows: ['gg', 'g.'], colors: { g: 'glint' } },
-        { id: 'rim', op: 'outline', mode: 'sel_out', strength: 2, innerRim: true },
+        { id: 'rim', op: 'outline', mode: 'sel_out', strength: 2, inner_rim: true },
       ],
     },
   });
@@ -192,10 +192,7 @@ assert.throws(() => parseSpriteSource('\uFEFF' + apple.source, apple.path), /BOM
 assert.throws(() => parseSpriteSource(apple.source + '\uD800', apple.path), /surrogate/);
 const badUnit = appleSource.replace('seed = 23;', 'seed = 23px;');
 assert.throws(() => parseSpriteSource(badUnit, apple.path), /unitless/);
-assert.throws(
-  () => parseSpriteSource(JSON.stringify({ id: 'apple' }), 'apple.ashfox'),
-  /ashfox-model/,
-);
+assert.throws(() => parseSpriteSource(JSON.stringify({ id: 'apple' }), 'apple.ashfox'), /ashfox 1/);
 
 const cyclic = files.map((f) =>
   f.path === 'assets/module/shared.ashfox'
@@ -258,7 +255,7 @@ assert.equal(
   compileDirectoryWorkspace(JSON.stringify(unexported), [
     ...files,
     ...modelFiles,
-    { path: 'assets/models/creatures/broken.ashfox', source: 'ashfox-model 1\nasset broken {}' },
+    { path: 'assets/models/creatures/broken.ashfox', source: 'ashfox 1\nmodel broken {}' },
   ]).ok,
   false,
   'Collecting compiled products must still reject an invalid entry with no export.',
@@ -271,7 +268,7 @@ assert.equal(
   compileDirectoryWorkspace(JSON.stringify(orphaned), [
     ...files,
     ...modelFiles,
-    { path: 'assets/models/creatures/orphan.ashfox', source: 'ashfox-model 1\nmodule orphan {}' },
+    { path: 'assets/models/creatures/orphan.ashfox', source: 'ashfox 1\nmodule orphan {}' },
   ]).ok,
   false,
   'Reusing compilation must still reject unreachable declared modules.',

@@ -371,13 +371,13 @@ export const analyzeSingleProduct = (
   variantDistinctness = 1,
 ): SoundMetrics => {
   const { left, right, mono } = decodeWavStereo(product.wav, product.channels);
-  const env = computeEnvelopeStats(mono, product.peak, product.sampleRate);
+  const env = computeEnvelopeStats(mono, product.peak, product.sample_rate);
   const frames: Float64Array[] = [];
   for (let start = 0; start + FFT_SIZE <= mono.length; start += HOP_SIZE) {
     frames.push(computeSpectrumFrame(mono, start));
   }
   if (frames.length === 0) frames.push(computeSpectrumFrame(mono, 0));
-  const spec = summarizeSpectra(frames, product.sampleRate);
+  const spec = summarizeSpectra(frames, product.sample_rate);
   const peakDb = 20 * Math.log10(Math.max(1e-8, product.peak));
   const rmsDb = 20 * Math.log10(Math.max(1e-8, product.rms));
   return {

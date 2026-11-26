@@ -166,10 +166,10 @@ const main = async () => {
       for (const variant of asset.variants) {
         const wav = Buffer.from(files[variant.file]);
         assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
-        assert.equal(wav.readUInt32LE(24), variant.sampleRate);
+        assert.equal(wav.readUInt32LE(24), variant.sample_rate);
         assert.equal(wav.readUInt16LE(22), variant.channels);
         assert.equal(
-          (wav.length - 44) / 2 / variant.channels / variant.sampleRate,
+          (wav.length - 44) / 2 / variant.channels / variant.sample_rate,
           variant.durationSeconds,
         );
       }

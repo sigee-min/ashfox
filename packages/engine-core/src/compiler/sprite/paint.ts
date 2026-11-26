@@ -302,7 +302,7 @@ const applyOutline = (
     layer,
     canvas.doc.item.palette,
   );
-  const rimCells = layer.innerRim
+  const rimCells = layer.inner_rim
     ? computeInnerRimCells(canvas.cells, canvas.width, canvas.height)
     : [];
   for (const cell of outlineCells) {

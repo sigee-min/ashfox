@@ -9,7 +9,7 @@ const local = workspaceFixture(
     {
       path: 'dragon/main.ashfox',
       source:
-        'ashfox-model 1\nasset main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
+        'ashfox 1\nmodel main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
     },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
     { path: 'dragon/unused.ashfox', source: moduleSource('unused') },
@@ -63,7 +63,7 @@ const localWithUnrelatedChange = workspaceFixture(
     {
       path: 'dragon/main.ashfox',
       source:
-        'ashfox-model 1\nasset main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
+        'ashfox 1\nmodel main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
     },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
     { path: 'dragon/unused.ashfox', source: `${moduleSource('unused')}\n// unrelated byte` },
@@ -94,7 +94,7 @@ const localWithUnrelatedManifest = workspaceFixture(
     {
       path: 'dragon/main.ashfox',
       source:
-        'ashfox-model 1\nasset main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
+        'ashfox 1\nmodel main { import "./util.ashfox" as first; import "./util.ashfox" as second; }',
     },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
     { path: 'dragon/unused.ashfox', source: moduleSource('unused') },
@@ -238,7 +238,7 @@ const duplicateAlias = workspaceFixture(
     {
       path: 'dragon/main.ashfox',
       source:
-        'ashfox-model 1\nasset main { import "./util.ashfox" as same; import "./util.ashfox" as same; }',
+        'ashfox 1\nmodel main { import "./util.ashfox" as same; import "./util.ashfox" as same; }',
     },
     { path: 'dragon/util.ashfox', source: moduleSource('util') },
   ],
@@ -251,7 +251,7 @@ const duplicateAliasResult = resolveWorkspaceEntryCompilation(duplicateAlias, {
 assert.equal(duplicateAliasResult.ok, false);
 if (!duplicateAliasResult.ok) {
   assert.equal(duplicateAliasResult.diagnostics[0]?.code, 'workspace.import.duplicate_alias');
-  assert.equal(duplicateAliasResult.diagnostics[0]?.source?.start.offset, 67);
+  assert.equal(duplicateAliasResult.diagnostics[0]?.source?.start.offset, 61);
 }
 
 const malformedBase = structuredClone(local) as AuthoredAssetWorkspace;

@@ -49,9 +49,9 @@ const renderDiffEditor = (t) => `        <div class="diff-editor source-window" 
             <div class="diff-tokens" data-diff-tokens></div>
           </div>
           <div class="diff-patch" aria-label="git diff">
-            <pre><code data-diff-patch><span class="diff-ctx">  2  ashfox-model 1</span>
-<span class="diff-del">- 3  asset fox { import "./shared.ashfox"; }</span>
-<span class="diff-add">+ 3  asset griffin { import "./animation.ashfox" as animation; }</span></code></pre>
+            <pre><code data-diff-patch><span class="diff-ctx">  2  ashfox 1</span>
+<span class="diff-del">- 3  model fox { import "./shared.ashfox"; }</span>
+<span class="diff-add">+ 3  model griffin { import "./animation.ashfox" as animation; }</span></code></pre>
           </div>
           <div class="source-code">
             <pre tabindex="0" aria-label="${t('sourceExcerpt')}"><code data-source-code>${t('loadingSource')}</code></pre>

@@ -1,64 +1,55 @@
-ashfox-model 1
+ashfox 1
 sound wind_loop {
-  profile = "ambient";
-  duration = 5;
-  sampleRate = 48000;
+  profile = ambient;
+  duration = 5s;
   channels = 2;
   seed = 7349;
-  space = { preset = "courtyard"; mix = 0.24; };
-  voices = [{
-    id = "deep_gust";
-    source = { kind = "noise"; color = "brown"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 160; }, { at = 0.35; value = 420; }, { at = 0.7; value = 220; }, { at = 1; value = 160; }]; };
+  space { preset = courtyard; mix = 24%; }
+  voice deep_gust : noise {
+    color = brown;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 160hz), (0.35, 420hz), (0.7, 220hz), (1, 160hz)]; }
       q = 1.1;
-    };
-    highpass = 38;
+    }
+    highpass = 38hz;
     pan = -0.2;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.65; }, { at = 0.35; value = 0.98; }, { at = 0.7; value = 0.55; }, { at = 1; value = 0.65; }]; };
-  }, {
-    id = "canopy_howl";
-    source = { kind = "noise"; color = "pink"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 650; }, { at = 0.32; value = 1850; }, { at = 0.72; value = 880; }, { at = 1; value = 650; }]; };
+    gain { domain = linear; interpolation = smooth; points = [(0, 0.65), (0.35, 0.98), (0.7, 0.55), (1, 0.65)]; }
+  }
+  voice canopy_howl : noise {
+    color = pink;
+    filter bandpass {
+      cutoff { domain = log; interpolation = smooth; points = [(0, 650hz), (0.32, 1850hz), (0.72, 880hz), (1, 650hz)]; }
       q = 1.8;
-    };
+    }
     pan = 0.22;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.42; }, { at = 0.32; value = 0.88; }, { at = 0.72; value = 0.38; }, { at = 1; value = 0.42; }]; };
-  }, {
-    id = "wind_grains";
-    source = {
-      kind = "granular";
-      texture = "wind";
-      density = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 24; }, { at = 0.34; value = 64; }, { at = 0.72; value = 30; }, { at = 1; value = 24; }]; };
-      grainMs = 56;
-      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 420; }, { at = 0.34; value = 980; }, { at = 0.72; value = 520; }, { at = 1; value = 420; }]; };
-      spread = 0.65;
-      turbulence = 0.72;
-    };
-    highpass = 120;
+    gain { domain = linear; interpolation = smooth; points = [(0, 0.42), (0.32, 0.88), (0.72, 0.38), (1, 0.42)]; }
+  }
+  voice wind_grains : granular {
+    texture = wind;
+    density { domain = linear; interpolation = smooth; points = [(0, 24), (0.34, 64), (0.72, 30), (1, 24)]; }
+    grain_ms = 56ms;
+    pitch { domain = log; interpolation = smooth; points = [(0, 420hz), (0.34, 980hz), (0.72, 520hz), (1, 420hz)]; }
+    spread = 65%;
+    turbulence = 72%;
+    highpass = 120hz;
     pan = -0.08;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.48; }, { at = 0.35; value = 0.85; }, { at = 0.72; value = 0.44; }, { at = 1; value = 0.48; }]; };
-  }, {
-    id = "breeze_air";
-    source = { kind = "noise"; color = "white"; };
-    highpass = 3200;
-    lowpass = 12000;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.14; }, { at = 0.38; value = 0.32; }, { at = 1; value = 0.14; }]; };
-  }];
-  sequences = [{
-    id = "phrase";
-    start = 0.1;
-    steps = [
-      { id = "low"; voice = "deep_gust"; at = 0; duration = 4.8; vary = { gain = [0.9, 1.1]; }; },
-      { id = "mid"; voice = "canopy_howl"; at = 0; duration = 4.8; vary = { gain = [0.85, 1.15]; }; },
-      { id = "swirl"; voice = "wind_grains"; at = 0; duration = 4.8; vary = { pitchCents = [-65, 65]; gain = [0.85, 1.15]; }; },
-      { id = "air"; voice = "breeze_air"; at = 0; duration = 4.8; }
-    ];
-  }];
-  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
-  playback = { kind = "loop"; start = 0.5; end = 4.5; crossfade = 0.08; };
-  output = { gainDb = 4; peakDb = -1.5; targetLufs = -14; warmth = 0.25; air = 0.15; glue = 0.2; width = 1.15; limit = true; };
+    gain { domain = linear; interpolation = smooth; points = [(0, 0.48), (0.35, 0.85), (0.72, 0.44), (1, 0.48)]; }
+  }
+  voice breeze_air : noise {
+    color = white;
+    highpass = 3200hz;
+    lowpass = 12000hz;
+    gain { domain = linear; interpolation = smooth; points = [(0, 0.14), (0.38, 0.32), (1, 0.14)]; }
+  }
+  seq phrase {
+    start = 0.1s;
+    step low { voice = deep_gust; at = 0s; duration = 4.8s; vary_gain = 90%..110%; }
+    step mid { voice = canopy_howl; at = 0s; duration = 4.8s; vary_gain = 85%..115%; }
+    step swirl { voice = wind_grains; at = 0s; duration = 4.8s; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; }
+    step air { voice = breeze_air; at = 0s; duration = 4.8s; }
+  }
+  variant base { seed = 42; }
+  variant alternate { seed = 43; }
+  loop { at = 0.5s..4.5s; xfade = 80ms; }
+  master { gain = 4db; peak = -1.5db; target = -14lufs; warmth = 25%; air = 15%; glue = 20%; width = 1.15; limit = true; }
 }

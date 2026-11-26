@@ -283,7 +283,7 @@ const validateMotionScalars = (
       state.path,
       declaration.span,
       'asset.motion-space',
-      'Reusable rig motion must explicitly be rest-relative.',
+      'Reusable rig motion must explicitly be rest-space relative.',
     );
   }
 };

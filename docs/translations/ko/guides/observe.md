@@ -22,7 +22,7 @@ CLI를 통합 에셋 컴파일러·렌더러로 사용하세요. `.ashfox` 원�
 
 ## `.ashfox`에 `preview` 뷰 선언하기
 
-에셋별 CLI 플래그 대신 모든 `asset`, `sprite`, `sound`, `structure` 진입점 안에 이름 붙은 `preview` 블록을 선언하고 `--view <name>`(기본 `default`)으로 선택합니다.
+에셋별 CLI 플래그 대신 모든 `model`, `sprite`, `sound`, `structure` 진입점 안에 이름 붙은 `preview` 블록을 선언하고 `--view <name>`(기본 `default`)으로 선택합니다.
 
 {{source-code:2}}
 

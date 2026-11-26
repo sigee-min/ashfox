@@ -1,40 +1,31 @@
-ashfox-model 1
+ashfox 1
 module chest_rig {
   export socket contract LockSocket {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
   }
 
   export rig contract ChestRig {
-    handedness = right;
-    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
     joint root {
       parent = none;
       role = root;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
     joint lid {
       parent = root;
       role = head;
-      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
       channels = rotation;
-      mirror = none;
     }
   }
 
   export skeleton ChestSkeleton implements ChestRig {
-    bind root { parent-origin = (0u, 0u, 0u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
-    bind lid { parent-origin = (0u, 8u, 5u); frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind lid { parent_origin = (0u, 8u, 5u); }
   }
 
   export motion idle for ChestRig {
     duration = 2s;
     fps = 20;
     loop = loop;
-    rest-relative = true;
-    track lid.rotation {
+track lid.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 1s = (2deg, 0deg, 0deg) linear;
       key 2s = (0deg, 0deg, 0deg) linear;
@@ -45,8 +36,7 @@ module chest_rig {
     duration = 1.6s;
     fps = 20;
     loop = loop;
-    rest-relative = true;
-    track lid.rotation {
+track lid.rotation {
       key 0s = (0deg, 0deg, 0deg) linear;
       key 0.6s = (52deg, 0deg, 0deg) catmullrom;
       key 1.1s = (52deg, 0deg, 0deg) linear;
