@@ -2,8 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-
-const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
+const { compareText, readJson } = require('../shared');
 
 const readModuleSpecifiers = (source) => {
   const specifiers = [];
@@ -19,7 +18,7 @@ const walk = (directory, predicate) => {
   const files = [];
   const entries = fs
     .readdirSync(directory, { withFileTypes: true })
-    .sort((left, right) => (left.name < right.name ? -1 : 1));
+    .sort((left, right) => compareText(left.name, right.name));
   for (const entry of entries) {
     const value = path.join(directory, entry.name);
     if (entry.isDirectory()) {

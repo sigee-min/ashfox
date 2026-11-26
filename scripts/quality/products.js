@@ -7,8 +7,8 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const { createHash } = require('node:crypto');
 const { register } = require('ts-node');
+const { compareText, readJson, sha256 } = require('../shared');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const BASELINE_PATH = path.join(__dirname, 'products-baseline.json');
@@ -23,8 +23,6 @@ const STANDALONE_SOURCES = Object.freeze([
   'examples/structure/medieval_cottage.ashfox',
   'examples/structure/watchtower.ashfox',
 ]);
-
-const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
 const canonical = (value) => {
   if (value instanceof Uint8Array) return { bytes: sha256(value) };
@@ -88,9 +86,7 @@ const describeInput = async (relative, build) => {
       input: relative,
       ok: true,
       sourceHash: checked.sourceHash,
-      products: checked.products
-        .map(productDigest)
-        .sort((a, b) => (a.entry < b.entry ? -1 : a.entry > b.entry ? 1 : 0)),
+      products: checked.products.map(productDigest).sort((a, b) => compareText(a.entry, b.entry)),
       catalogHash: bundle.receipt.catalogHash,
       files: bundle.receipt.files.map((file) => ({ path: file.path, sha256: file.sha256 })),
     };
@@ -143,7 +139,7 @@ const main = async () => {
     console.log(`ashfox product oracle sealed: ${report.inputs.length} inputs`);
     return;
   }
-  const differences = compareReports(JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8')), report);
+  const differences = compareReports(readJson(BASELINE_PATH), report);
   if (differences.length) {
     console.error('ashfox product oracle failed. Differences:');
     for (const difference of differences) console.error(`- ${difference}`);

@@ -1,5 +1,7 @@
 'use strict';
 
+const { compareText: textCompare } = require('../../shared');
+
 const DEVELOPMENT_MANIFEST_FILENAME = 'config/development-manifest.json';
 const DEVELOPMENT_MANIFEST_SCHEMA_FILENAME = 'config/development-manifest.schema.json';
 const DEVELOPMENT_MANIFEST_SCHEMA_REFERENCE = './development-manifest.schema.json';
@@ -221,8 +223,6 @@ class DevelopmentManifestError extends Error {
 const fail = (location, detail) => {
   throw new DevelopmentManifestError(location, detail);
 };
-
-const textCompare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 const isDirectoryPrefix = (value) =>
   DIRECTORY_PREFIX_PATTERN.test(value) &&

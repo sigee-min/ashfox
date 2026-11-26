@@ -34,46 +34,25 @@ const renderCatalogRows = (catalog, locale, initialId) =>
     )
     .join('');
 
-export const renderAssetsPage = ({ assets, catalog, config, locale = defaultLocale }) => {
-  const messages = siteMessages(locale);
-  const t = (key) => escapeHtml(messages[key]);
-  const counts = domainCounts(catalog);
-  const initial = catalog[0];
-  const alternatives = localeRegistry.locales.map((option) => ({
-    ...option,
-    route: `${option.prefix}/assets/`,
-  }));
-  const body = `
-    <main id="main" class="studio-shell" data-asset-studio data-locale="${locale.code}">
-      <div class="studio-head">
-        <div>
-          <h1>${t('studioTitle')}</h1>
-          <p>${t('studioSubtitle')}</p>
-        </div>
-        <span class="workbench-path" data-catalog-count>${counts.all} ${t('studioCountLabel')}</span>
-      </div>
-      <div class="studio-toolbar">
-        <div class="segmented-strip" role="tablist" aria-label="${t('studioFilterLabel')}">
-          ${[
-            ['all', `${t('studioAll')} (${counts.all})`, true],
-            ['model', `${t('studioModels')} (${counts.model})`, false],
-            ['sprite', `${t('studioSprites')} (${counts.sprite})`, false],
-            ['tile', `${t('studioTiles')} (${counts.tile})`, false],
-            ['sound', `${t('studioSounds')} (${counts.sound})`, false],
-          ]
-            .map(
-              ([id, label, active]) =>
-                `<button type="button" data-domain-tab="${id}" aria-pressed="${String(active)}">${label}</button>`,
-            )
-            .join('')}
-        </div>
-        <input class="studio-search" type="search" data-studio-search placeholder="${t('studioSearchPlaceholder')}" aria-label="${t('studioSearchPlaceholder')}">
-      </div>
-      <div class="studio-grid">
-        <div class="studio-list" role="listbox" aria-label="${t('studioListLabel')}" data-studio-list>
-          ${renderCatalogRows(catalog, locale, initial.id)}
-        </div>
-        <section class="studio-inspector" aria-live="polite" data-studio-inspector>
+const renderDomainTabs = (t, counts) =>
+  [
+    ['all', `${t('studioAll')} (${counts.all})`, true],
+    ['model', `${t('studioModels')} (${counts.model})`, false],
+    ['sprite', `${t('studioSprites')} (${counts.sprite})`, false],
+    ['tile', `${t('studioTiles')} (${counts.tile})`, false],
+    ['sound', `${t('studioSounds')} (${counts.sound})`, false],
+  ]
+    .map(
+      ([id, label, active]) =>
+        `<button type="button" data-domain-tab="${id}" aria-pressed="${String(active)}">${label}</button>`,
+    )
+    .join('');
+
+const renderInspector = (
+  t,
+  initial,
+  locale,
+) => `        <section class="studio-inspector" aria-live="polite" data-studio-inspector>
           <div class="inspector-head">
             <div>
               <h2 data-inspector-title>${escapeHtml(initial.name[locale.code])}</h2>
@@ -103,7 +82,37 @@ export const renderAssetsPage = ({ assets, catalog, config, locale = defaultLoca
             <p class="hero-lead" data-inspector-summary>${escapeHtml(initial.summary[locale.code])}</p>
             <pre tabindex="0"><code data-inspector-code>${t('loadingSource')}</code></pre>
           </div>
-        </section>
+        </section>`;
+
+export const renderAssetsPage = ({ assets, catalog, config, locale = defaultLocale }) => {
+  const messages = siteMessages(locale);
+  const t = (key) => escapeHtml(messages[key]);
+  const counts = domainCounts(catalog);
+  const initial = catalog[0];
+  const alternatives = localeRegistry.locales.map((option) => ({
+    ...option,
+    route: `${option.prefix}/assets/`,
+  }));
+  const body = `
+    <main id="main" class="studio-shell" data-asset-studio data-locale="${locale.code}">
+      <div class="studio-head">
+        <div>
+          <h1>${t('studioTitle')}</h1>
+          <p>${t('studioSubtitle')}</p>
+        </div>
+        <span class="workbench-path" data-catalog-count>${counts.all} ${t('studioCountLabel')}</span>
+      </div>
+      <div class="studio-toolbar">
+        <div class="segmented-strip" role="tablist" aria-label="${t('studioFilterLabel')}">
+          ${renderDomainTabs(t, counts)}
+        </div>
+        <input class="studio-search" type="search" data-studio-search placeholder="${t('studioSearchPlaceholder')}" aria-label="${t('studioSearchPlaceholder')}">
+      </div>
+      <div class="studio-grid">
+        <div class="studio-list" role="listbox" aria-label="${t('studioListLabel')}" data-studio-list>
+          ${renderCatalogRows(catalog, locale, initial.id)}
+        </div>
+${renderInspector(t, initial, locale)}
       </div>
       <script type="application/json" id="asset-catalog-data">${JSON.stringify(catalog).replaceAll('<', '\\u003c')}</script>
     </main>

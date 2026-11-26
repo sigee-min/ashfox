@@ -2,15 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { compareText } = require('../shared');
 
 const canonicalPath = (value) => value.replace(/\\/g, '/');
-const compareCodeUnits = (left, right) => {
-  const canonicalLeft = canonicalPath(left);
-  const canonicalRight = canonicalPath(right);
-  if (canonicalLeft < canonicalRight) return -1;
-  if (canonicalLeft > canonicalRight) return 1;
-  return 0;
-};
+const compareCodeUnits = (left, right) => compareText(canonicalPath(left), canonicalPath(right));
 
 const discoverTests = (directory, suffix = '.test.ts') => {
   const files = [];

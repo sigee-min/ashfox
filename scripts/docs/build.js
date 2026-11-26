@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { zipSync } = require('fflate');
+const { compareText } = require('../shared');
 const root = path.resolve(__dirname, '../..'),
   out = path.join(root, 'dist/docs-delivery');
 fs.mkdirSync(out, { recursive: true });
@@ -11,7 +12,7 @@ const sources = (directory) => {
   const visit = (dir, prefix = '') => {
     for (const e of fs
       .readdirSync(dir, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))) {
+      .sort((a, b) => compareText(a.name, b.name))) {
       if (['dist', 'build', 'exports', 'node_modules', '.ashfox'].includes(e.name)) continue;
       const key = prefix + e.name;
       if (e.isDirectory()) visit(path.join(dir, e.name), key + '/');

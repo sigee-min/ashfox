@@ -79,15 +79,7 @@ const addHeadingIds = (html, originalHtml) => {
   return { html: content, toc };
 };
 
-export const loadDocumentation = async (docsRoot, locale = defaultLocale) => {
-  const catalog = JSON.parse(await readFile(path.join(docsRoot, 'public.json'), 'utf8'));
-  const pages = catalog.flatMap((section) =>
-    section.pages.map((page) => ({
-      ...page,
-      section: section.id,
-      sectionLabel: section.label,
-    })),
-  );
+const collectPageRoutes = (pages, locale) => {
   const routes = new Map();
   const publishedRoutes = new Set();
   for (const page of pages) {
@@ -103,59 +95,85 @@ export const loadDocumentation = async (docsRoot, locale = defaultLocale) => {
     routes.set(page.source, localizedRoute(page.route, locale));
     publishedRoutes.add(page.route);
   }
-  const translationRoot = path.join(docsRoot, 'translations', locale.code);
+  return routes;
+};
+
+const loadRevisions = async (translationRoot, locale, routes) => {
+  if (locale.code === defaultLocale.code) return {};
   let revisions = {};
-  if (locale.code !== defaultLocale.code) {
-    try {
-      revisions = JSON.parse(await readFile(path.join(translationRoot, 'revisions.json'), 'utf8'));
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-    }
-    for (const key of Object.keys(revisions))
-      if (!routes.has(key) || !/^[a-f0-9]{64}$/.test(revisions[key])) {
-        throw new Error(`Invalid translation revision: ${locale.code}/${key}`);
-      }
+  try {
+    revisions = JSON.parse(await readFile(path.join(translationRoot, 'revisions.json'), 'utf8'));
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
   }
-  return Promise.all(
-    pages.map(async (page) => {
-      const original = await readFile(path.join(docsRoot, page.source), 'utf8');
-      let markdown = original,
-        translated = false;
-      const stale = Boolean(
-        revisions[page.source] &&
-        revisions[page.source] !== createHash('sha256').update(original).digest('hex'),
-      );
-      if (revisions[page.source] && !stale) {
-        markdown = await readFile(path.join(translationRoot, page.source), 'utf8');
-        const codeBlocks = original.match(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm) ?? [];
-        markdown = markdown.replace(/\{\{source-code:(\d+)\}\}/g, (_match, index) => {
-          if (!codeBlocks[Number(index)])
-            throw new Error(`Unknown source code block: ${page.source}:${index}`);
-          return codeBlocks[Number(index)];
-        });
-        translated = true;
+  for (const key of Object.keys(revisions)) {
+    if (!routes.has(key) || !/^[a-f0-9]{64}$/.test(revisions[key])) {
+      throw new Error(`Invalid translation revision: ${locale.code}/${key}`);
+    }
+  }
+  return revisions;
+};
+
+const loadDocumentationPage = async (
+  page,
+  { docsRoot, locale, revisions, routes, translationRoot },
+) => {
+  const original = await readFile(path.join(docsRoot, page.source), 'utf8');
+  let markdown = original;
+  let translated = false;
+  const stale = Boolean(
+    revisions[page.source] &&
+    revisions[page.source] !== createHash('sha256').update(original).digest('hex'),
+  );
+  if (revisions[page.source] && !stale) {
+    markdown = await readFile(path.join(translationRoot, page.source), 'utf8');
+    const codeBlocks = original.match(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm) ?? [];
+    markdown = markdown.replace(/\{\{source-code:(\d+)\}\}/g, (_match, index) => {
+      if (!codeBlocks[Number(index)]) {
+        throw new Error(`Unknown source code block: ${page.source}:${index}`);
       }
-      const fallback = locale.code !== defaultLocale.code && !translated;
-      const rendered = addHeadingIds(
-        marked.parse(rewriteMarkdownLinks(markdown, page.source, routes), { gfm: true }),
-        translated ? marked.parse(original, { gfm: true }) : null,
-      );
-      return {
-        relativePath: page.source,
-        route: localizedRoute(page.route, locale),
-        originalRoute: page.route,
-        locale,
-        fallback,
-        stale,
-        contentLanguage: fallback ? defaultLocale.code : locale.code,
-        section: page.section,
-        sectionLabel: locale.sections[page.section] ?? page.sectionLabel,
-        title: titleFromMarkdown(markdown, path.basename(page.source, '.md')),
-        description: descriptionFromMarkdown(markdown),
-        html: rendered.html,
-        toc: rendered.toc,
-      };
-    }),
+      return codeBlocks[Number(index)];
+    });
+    translated = true;
+  }
+  const fallback = locale.code !== defaultLocale.code && !translated;
+  const rendered = addHeadingIds(
+    marked.parse(rewriteMarkdownLinks(markdown, page.source, routes), { gfm: true }),
+    translated ? marked.parse(original, { gfm: true }) : null,
+  );
+  return {
+    relativePath: page.source,
+    route: localizedRoute(page.route, locale),
+    originalRoute: page.route,
+    locale,
+    fallback,
+    stale,
+    contentLanguage: fallback ? defaultLocale.code : locale.code,
+    section: page.section,
+    sectionLabel: locale.sections[page.section] ?? page.sectionLabel,
+    title: titleFromMarkdown(markdown, path.basename(page.source, '.md')),
+    description: descriptionFromMarkdown(markdown),
+    html: rendered.html,
+    toc: rendered.toc,
+  };
+};
+
+export const loadDocumentation = async (docsRoot, locale = defaultLocale) => {
+  const catalog = JSON.parse(await readFile(path.join(docsRoot, 'public.json'), 'utf8'));
+  const pages = catalog.flatMap((section) =>
+    section.pages.map((page) => ({
+      ...page,
+      section: section.id,
+      sectionLabel: section.label,
+    })),
+  );
+  const routes = collectPageRoutes(pages, locale);
+  const translationRoot = path.join(docsRoot, 'translations', locale.code);
+  const revisions = await loadRevisions(translationRoot, locale, routes);
+  return Promise.all(
+    pages.map((page) =>
+      loadDocumentationPage(page, { docsRoot, locale, revisions, routes, translationRoot }),
+    ),
   );
 };
 

@@ -1,5 +1,5 @@
 import { readPlayback, verifyPcm, pcmStatistics } from '../bundle/audio';
-import { readGameAssetManifest } from '../packs/game/read';
+import { readClosedRecord, readGameAssetManifest } from '../packs/game/read';
 import { compareText, decodeUtf8, isClosedContractRecord } from '@ashfox/internal-contracts';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -16,18 +16,14 @@ import { contained, listFiles, noLinks, safeRelative } from './paths';
 const fail = (message: string): never => {
   throw new BuildFailure('output.integrity', message, 3);
 };
-const record = (value: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> => {
-  if (!isClosedContractRecord(value)) return fail('Expected record');
-  if (
-    Object.keys(value).length !== keys.length ||
-    keys.some((k) => !Object.prototype.hasOwnProperty.call(value, k))
-  )
-    fail('Unexpected fields');
-  return value;
-};
+const record = (value: unknown, keys: readonly string[]): Readonly<Record<string, unknown>> =>
+  readClosedRecord(value, keys, fail);
 const isHash = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value);
+const shouldCacheBytes = (file: string): boolean =>
+  file.endsWith('.wav') || path.basename(file) === 'assets.json';
 const readCachedBytes = (file: string, cache: Map<string, Buffer>): Buffer => {
+  if (!shouldCacheBytes(file)) return fs.readFileSync(file);
   const cached = cache.get(file);
   if (cached) return cached;
   const bytes = fs.readFileSync(file);

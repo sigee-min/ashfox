@@ -32,8 +32,7 @@ const copyExactBytes = (value: unknown): Uint8Array | null => {
     return null;
   }
   const length: number = typedArrayLength.call(value);
-  // Genuine Uint8Array instances always have non-configurable keys "0".."length-1",
-  // so matching ownKeys.length against length guarantees no extra own properties.
+  // Closed-contract anti-spoof: genuine Uint8Array keys are "0".."length-1"; rejects extra own fields.
   if (Reflect.ownKeys(value).length !== length) return null;
   const result = new Uint8Array(length);
   // Genuine Uint8Array indexed elements cannot be holes, accessors or non-byte

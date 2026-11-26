@@ -1,8 +1,8 @@
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { zipSync } = require('fflate');
 const { SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION } = require('@ashfox/internal-contracts');
+const { readJson, sha256 } = require('../shared');
 
 const repoRoot = path.resolve(__dirname, '../..');
 const skillRoot = path.join(repoRoot, 'skills', 'ashfox');
@@ -25,8 +25,6 @@ const releaseFiles = releaseFileDefinitions.map((file) => file.path);
 const portableFiles = releaseFileDefinitions
   .filter((file) => file.role === 'core')
   .map((file) => file.path);
-
-const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 const allFiles = (directory, prefix = '') =>
   fs
@@ -104,7 +102,7 @@ const validateSkillSources = () => {
   if (!openAiMetadata.includes('$ashfox')) {
     throw new Error('ashfox skill default prompt must invoke $ashfox.');
   }
-  const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  const packageJson = readJson(path.join(repoRoot, 'package.json'));
   if (typeof packageJson.version !== 'string' || packageJson.version.length === 0) {
     throw new Error('Root package version is required for the skill release.');
   }

@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { compareText } = require('../shared');
 const { readDevelopmentManifest } = require('./manifest');
 const { repositoryPolicyViolations } = require('./repositoryPolicyGate');
 const { assertSourcePatternRegistryMatches, sourcePatternFindings } = require('./patterns');
@@ -16,7 +17,7 @@ const walk = (directory, predicate) => {
   const files = [];
   const entries = fs
     .readdirSync(directory, { withFileTypes: true })
-    .sort((left, right) => left.name.localeCompare(right.name));
+    .sort((left, right) => compareText(left.name, right.name));
   for (const entry of entries) {
     const value = path.join(directory, entry.name);
     if (entry.isDirectory()) {
@@ -36,7 +37,7 @@ const workspaceSourceDirectories = () =>
     fs
       .readdirSync(path.join(repoRoot, scope), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
-      .sort((left, right) => left.name.localeCompare(right.name))
+      .sort((left, right) => compareText(left.name, right.name))
       .map((entry) => path.join(repoRoot, scope, entry.name))
       .filter(
         (directory) =>

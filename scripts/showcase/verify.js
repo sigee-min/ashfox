@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { register } = require('ts-node');
+const { compareText, sha256: sha256Hex } = require('../shared');
 
 register({
   transpileOnly: true,
@@ -50,7 +51,7 @@ const fail = (message) => {
   throw new Error(`showcase: ${message}`);
 };
 
-const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+const sha256 = (bytes) => `sha256:${sha256Hex(bytes)}`;
 
 const relativePath = (file) => path.relative(ROOT, file).split(path.sep).join('/');
 
@@ -68,11 +69,7 @@ const captureFingerprint = () => {
   const files = [
     ...CAPTURE_SOURCE_ROOTS.flatMap((root) => walkCaptureSources(path.join(ROOT, root))),
     ...CAPTURE_SOURCE_FILES.map((file) => path.join(ROOT, file)),
-  ].sort((left, right) => {
-    const leftPath = relativePath(left);
-    const rightPath = relativePath(right);
-    return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
-  });
+  ].sort((left, right) => compareText(relativePath(left), relativePath(right)));
   const digest = createHash('sha256');
   for (const file of files) {
     const bytes = fs.readFileSync(file);

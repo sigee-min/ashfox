@@ -6,12 +6,15 @@ import type {
   SpritePatch,
   SpritePatternSpec,
   SpriteShade,
+  SpriteStamp,
 } from '../../project/sprite/contract';
-import { rasterizeCanonicalTexture } from '../../textures/textureRecipe/raster';
+import { parseSurfaceColor } from '../../textures/color';
+import { assertTextureDimensions } from '../../textures/limits';
 import type { SpriteAuthoringTelemetry, SpritePixelEvidence } from './contract';
 import { computeInnerRimCells, computeOutlineCells } from './outline';
 import { computeShadedPixel, type PixelPaintContext } from './pixel';
 import { buildMaterialRamps, type FiveToneRamp } from './ramp';
+import { createCanonicalRaster } from './raster';
 import { maskBounds, rasterizeShapeMask } from './shapes';
 
 export type Stage = 'silhouette' | 'shade' | 'grain' | 'final';
@@ -25,6 +28,9 @@ interface Canvas {
   readonly wrap: boolean;
   readonly stage: Stage;
   readonly ramps: ReadonlyMap<string, FiveToneRamp>;
+  readonly masks: ReadonlyMap<string, SpriteMask>;
+  readonly stamps: ReadonlyMap<string, SpriteStamp>;
+  readonly pixelCtx: PixelPaintContext;
   readonly cells: (string | null)[];
   readonly evidence: (SpritePixelEvidence | null)[];
   authoredPatternPixels: number;
@@ -60,15 +66,6 @@ const baseInfo = (layer: SpriteLayer, pointer: string): SpritePixelEvidence => (
 const mirrorCoord = (v: number, size: number, enabled: boolean): number =>
   enabled ? size - 1 - v : v;
 
-const pixelContext = (canvas: Canvas): PixelPaintContext => ({
-  width: canvas.width,
-  height: canvas.height,
-  wrap: canvas.wrap,
-  shadeOnly: canvas.stage === 'shade',
-  silhouetteHex: canvas.stage === 'silhouette' ? SILHOUETTE : null,
-  ramps: canvas.ramps,
-});
-
 const paintShadedPixel = (
   canvas: Canvas,
   x: number,
@@ -88,7 +85,7 @@ const paintShadedPixel = (
   overlayOnly: boolean,
 ): void => {
   const prev = canvas.evidence[y * canvas.width + x] ?? null;
-  const out = computeShadedPixel(pixelContext(canvas), {
+  const out = computeShadedPixel(canvas.pixelCtx, {
     x,
     y,
     sx,
@@ -174,11 +171,13 @@ const resolveMaskGrid = (
   const grid = new Uint8Array(w * h);
   const mx = mirror === 'x' || mirror === 'xy';
   const my = mirror === 'y' || mirror === 'xy';
-  mask.rows.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (ch === '1') grid[mirrorCoord(y, h, my) * w + mirrorCoord(x, w, mx)] = 1;
-    });
-  });
+  for (let y = 0; y < h; y += 1) {
+    const row = mask.rows[y]!;
+    const ty = mirrorCoord(y, h, my) * w;
+    for (let x = 0; x < w; x += 1) {
+      if (row[x] === '1') grid[ty + mirrorCoord(x, w, mx)] = 1;
+    }
+  }
   return { grid, w, h };
 };
 
@@ -211,11 +210,13 @@ const paintPatch = (
   patch: SpritePatch,
   pointer: string,
 ): void => {
-  patch.rows.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (ch === '.') return;
-      const px = ox + patch.at[0] + x,
-        py = oy + patch.at[1] + y;
+  for (let y = 0; y < patch.rows.length; y += 1) {
+    const row = patch.rows[y]!;
+    const py = oy + patch.at[1] + y;
+    for (let x = 0; x < row.length; x += 1) {
+      const ch = row[x]!;
+      if (ch === '.') continue;
+      const px = ox + patch.at[0] + x;
       const prev = canvas.evidence[py * canvas.width + px];
       writeCell(canvas, px, py, canvas.doc.item.palette[patch.colors[ch]!]!, {
         ...(prev ?? {
@@ -229,8 +230,8 @@ const paintPatch = (
         patch: patch.id,
         pointer: `${pointer}/rows/${y}/${x}`,
       });
-    });
-  });
+    }
+  }
 };
 
 const paintRowGrid = (
@@ -244,18 +245,20 @@ const paintRowGrid = (
 ): void => {
   const mx = flip === 'x' || flip === 'xy';
   const my = flip === 'y' || flip === 'xy';
-  rows.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (ch === '.') return;
+  for (let y = 0; y < rows.length; y += 1) {
+    const row = rows[y]!;
+    const py = oy + mirrorCoord(y, rows.length, my);
+    for (let x = 0; x < row.length; x += 1) {
+      const ch = row[x]!;
+      if (ch === '.') continue;
       const px = ox + mirrorCoord(x, row.length, mx);
-      const py = oy + mirrorCoord(y, rows.length, my);
       const color = colors === null ? null : canvas.doc.item.palette[colors[ch]!]!;
       writeCell(canvas, px, py, canvas.stage === 'silhouette' && color ? SILHOUETTE : color, {
         ...owner,
         pointer: `${owner.pointer}/rows/${y}/${x}`,
       });
-    });
-  });
+    }
+  }
 };
 
 const applyFillOrPattern = (
@@ -361,7 +364,7 @@ const applyShapeOrPartLayer = (
     );
     return;
   }
-  const maskDef = canvas.doc.masks.find((m) => m.id === layer.mask)!;
+  const maskDef = canvas.masks.get(layer.mask)!;
   const { grid, w, h } = resolveMaskGrid(maskDef, layer.mirror);
   const prot = buildProtectedMask(layer.patches, w, h);
   paintShadedRegion(
@@ -395,7 +398,7 @@ const applyLayer = (canvas: Canvas, layer: SpriteLayer, index: number): void => 
     return paintRowGrid(canvas, layer.rows, layer.at[0], layer.at[1], 'none', layer.colors, owner);
   }
   if (layer.op === 'stamp') {
-    const stamp = canvas.doc.stamps.find((s) => s.id === layer.stamp)!;
+    const stamp = canvas.stamps.get(layer.stamp)!;
     return paintRowGrid(
       canvas,
       stamp.rows,
@@ -409,37 +412,43 @@ const applyLayer = (canvas: Canvas, layer: SpriteLayer, index: number): void => 
   applyShapeOrPartLayer(canvas, layer, owner);
 };
 
-const toCanonicalRaster = (cells: readonly (string | null)[], w: number, h: number) =>
-  rasterizeCanonicalTexture(w, h, {
-    background: '#000000',
-    backgroundAlpha: 0,
-    canvasDetails: cells.flatMap((color, i) =>
-      color === null
-        ? []
-        : [
-            {
-              id: `p${i}`,
-              x: i % w,
-              y: Math.floor(i / w),
-              width: 1,
-              height: 1,
-              color,
-              alpha: 255 as const,
-            },
-          ],
-    ),
-    alphaMasks: [],
-  });
+const toCanonicalRaster = (cells: readonly (string | null)[], w: number, h: number) => {
+  assertTextureDimensions(w, h, 'Canonical texture');
+  const rgba = new Uint8Array(w * h * 4);
+  for (let i = 0; i < cells.length; i += 1) {
+    const color = cells[i];
+    if (color === null || color === undefined) continue;
+    const { r, g, b } = parseSurfaceColor(color);
+    const offset = i * 4;
+    rgba[offset] = r;
+    rgba[offset + 1] = g;
+    rgba[offset + 2] = b;
+    rgba[offset + 3] = 255;
+  }
+  return createCanonicalRaster(w, h, rgba);
+};
 
 export const paintSprite = (doc: SpriteDocument, stage: Stage) => {
   const [width, height] = doc.item.canvas;
+  const ramps = buildMaterialRamps(doc.materials);
+  const wrap = doc.item.profile === 'tile';
   const canvas: Canvas = {
     doc,
     width,
     height,
-    wrap: doc.item.profile === 'tile',
+    wrap,
     stage,
-    ramps: buildMaterialRamps(doc.materials),
+    ramps,
+    masks: new Map(doc.masks.map((m) => [m.id, m])),
+    stamps: new Map(doc.stamps.map((s) => [s.id, s])),
+    pixelCtx: {
+      width,
+      height,
+      wrap,
+      shadeOnly: stage === 'shade',
+      silhouetteHex: stage === 'silhouette' ? SILHOUETTE : null,
+      ramps,
+    },
     cells: Array(width * height).fill(null),
     evidence: Array(width * height).fill(null),
     authoredPatternPixels: 0,
