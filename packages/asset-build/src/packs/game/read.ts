@@ -66,46 +66,60 @@ const validateModelAsset = (
   }
 };
 
+const validateSoundVariant = (
+  rawVariant: unknown,
+  codec: string,
+  variants: Set<string>,
+  reference: (path: unknown, extension: string) => void,
+  fileBytes: ReadonlyMap<string, number>,
+): void => {
+  const v = record(rawVariant, [
+    'id',
+    'file',
+    'durationSeconds',
+    'sampleRate',
+    'channels',
+    'frames',
+    'playback',
+  ]);
+  if (
+    typeof v.id !== 'string' ||
+    !v.id ||
+    variants.has(v.id) ||
+    !finite(v.durationSeconds, true) ||
+    !Number.isSafeInteger(v.frames) ||
+    (v.frames as number) < 2400 ||
+    (v.frames as number) > 1440000 ||
+    v.durationSeconds !== (v.frames as number) / 48000 ||
+    v.sampleRate !== 48000 ||
+    (v.channels !== 1 && v.channels !== 2)
+  ) {
+    fail('Invalid sound variant');
+  }
+  const playback = readPlayback(v.playback, v.frames as number);
+  if (codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
+  if (codec === 'wav') {
+    const byteLength = typeof v.file === 'string' ? fileBytes.get(v.file) : undefined;
+    if (byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number)) {
+      fail('WAV frame count mismatch');
+    }
+  }
+  variants.add(v.id as string);
+  reference(v.file, '.' + codec);
+};
+
 const validateSoundAsset = (
   a: Record<string, unknown>,
   reference: (path: unknown, extension: string) => void,
   fileBytes: ReadonlyMap<string, number>,
 ): void => {
-  if (!['wav', 'ogg'].includes(String(a.codec)) || !Array.isArray(a.variants) || !a.variants.length)
+  const codec = String(a.codec);
+  if (!['wav', 'ogg'].includes(codec) || !Array.isArray(a.variants) || !a.variants.length) {
     fail('Invalid audio metadata');
+  }
   const variants = new Set<string>();
   for (const rawVariant of a.variants as unknown[]) {
-    const v = record(rawVariant, [
-      'id',
-      'file',
-      'durationSeconds',
-      'sampleRate',
-      'channels',
-      'frames',
-      'playback',
-    ]);
-    if (
-      typeof v.id !== 'string' ||
-      !v.id ||
-      variants.has(v.id) ||
-      !finite(v.durationSeconds, true) ||
-      !Number.isSafeInteger(v.frames) ||
-      (v.frames as number) < 2400 ||
-      (v.frames as number) > 1440000 ||
-      v.durationSeconds !== (v.frames as number) / 48000 ||
-      v.sampleRate !== 48000 ||
-      (v.channels !== 1 && v.channels !== 2)
-    )
-      return fail('Invalid sound variant');
-    const playback = readPlayback(v.playback, v.frames as number);
-    if (a.codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
-    if (a.codec === 'wav') {
-      const byteLength = typeof v.file === 'string' ? fileBytes.get(v.file) : undefined;
-      if (byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number))
-        fail('WAV frame count mismatch');
-    }
-    variants.add(v.id);
-    reference(v.file, '.' + a.codec);
+    validateSoundVariant(rawVariant, codec, variants, reference, fileBytes);
   }
 };
 
