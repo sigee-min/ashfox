@@ -17,7 +17,9 @@ export type BlockShapeKind =
   | 'carpet'
   | 'chain'
   | 'pot'
-  | 'campfire';
+  | 'campfire'
+  | 'anvil'
+  | 'table';
 
 export type BlockRenderLayer = 'opaque' | 'cutout' | 'emissive';
 export type BlockZoneKind = 'exterior' | 'interior';
@@ -55,34 +57,49 @@ const full = (
   ...extra,
 });
 
+const CUTOUT_SHAPES = new Set<BlockShapeKind>([
+  'pane',
+  'door',
+  'trapdoor',
+  'ladder',
+  'fence',
+  'chain',
+  'lantern',
+  'torch',
+  'campfire',
+  'pot',
+]);
+const INTERIOR_SHAPES = new Set<BlockShapeKind>([
+  'bed',
+  'chest',
+  'carpet',
+  'pot',
+  'ladder',
+  'anvil',
+  'table',
+]);
+const FURNITURE_SHAPES = new Set<BlockShapeKind>([
+  'bed',
+  'chest',
+  'pot',
+  'campfire',
+  'carpet',
+  'anvil',
+  'table',
+]);
+const LIGHT_SHAPES = new Set<BlockShapeKind>(['lantern', 'torch', 'campfire']);
+
 const shapeBlock = (
   shape: BlockShapeKind,
   tile: string,
   extra?: Partial<BlockDescriptor>,
 ): BlockDescriptor => ({
   shape,
-  layer:
-    extra?.layer ??
-    ([
-      'pane',
-      'door',
-      'trapdoor',
-      'ladder',
-      'fence',
-      'chain',
-      'lantern',
-      'torch',
-      'campfire',
-      'pot',
-    ].includes(shape)
-      ? 'cutout'
-      : 'opaque'),
-  zone:
-    extra?.zone ??
-    (['bed', 'chest', 'carpet', 'pot', 'ladder'].includes(shape) ? 'interior' : 'exterior'),
+  layer: extra?.layer ?? (CUTOUT_SHAPES.has(shape) ? 'cutout' : 'opaque'),
+  zone: extra?.zone ?? (INTERIOR_SHAPES.has(shape) ? 'interior' : 'exterior'),
   solidOpaque: false,
-  furniture: extra?.furniture ?? ['bed', 'chest', 'pot', 'campfire', 'carpet'].includes(shape),
-  light: extra?.light ?? ['lantern', 'torch', 'campfire'].includes(shape),
+  furniture: extra?.furniture ?? FURNITURE_SHAPES.has(shape),
+  light: extra?.light ?? LIGHT_SHAPES.has(shape),
   top: extra?.top ?? tile,
   bottom: extra?.bottom ?? tile,
   side: extra?.side ?? tile,
@@ -102,21 +119,41 @@ const WOOD_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:oak_stairs': shapeBlock('stair', 'oak_planks'),
   'minecraft:spruce_stairs': shapeBlock('stair', 'spruce_planks'),
   'minecraft:dark_oak_stairs': shapeBlock('stair', 'dark_oak_planks'),
+  'minecraft:birch_stairs': shapeBlock('stair', 'birch_planks'),
   'minecraft:oak_slab': shapeBlock('slab', 'oak_planks'),
   'minecraft:spruce_slab': shapeBlock('slab', 'spruce_planks'),
   'minecraft:dark_oak_slab': shapeBlock('slab', 'dark_oak_planks'),
+  'minecraft:birch_slab': shapeBlock('slab', 'birch_planks'),
   'minecraft:oak_fence': shapeBlock('fence', 'oak_planks'),
   'minecraft:spruce_fence': shapeBlock('fence', 'spruce_planks'),
-  'minecraft:oak_door': shapeBlock('door', 'oak_door', { zone: 'exterior', layer: 'cutout' }),
-  'minecraft:spruce_door': shapeBlock('door', 'spruce_door', { zone: 'exterior', layer: 'cutout' }),
-  'minecraft:iron_door': shapeBlock('door', 'iron_block', { zone: 'exterior', layer: 'cutout' }),
+  'minecraft:dark_oak_fence': shapeBlock('fence', 'dark_oak_planks'),
+  'minecraft:oak_door': shapeBlock('door', 'oak_door', {
+    zone: 'exterior',
+    layer: 'cutout',
+  }),
+  'minecraft:spruce_door': shapeBlock('door', 'spruce_door', {
+    zone: 'exterior',
+    layer: 'cutout',
+  }),
+  'minecraft:dark_oak_door': shapeBlock('door', 'spruce_door', {
+    zone: 'exterior',
+    layer: 'cutout',
+  }),
+  'minecraft:iron_door': shapeBlock('door', 'iron_door', {
+    zone: 'exterior',
+    layer: 'cutout',
+  }),
   'minecraft:oak_trapdoor': shapeBlock('trapdoor', 'oak_trapdoor', {
     zone: 'interior',
     layer: 'cutout',
   }),
-  'minecraft:spruce_trapdoor': shapeBlock('trapdoor', 'spruce_planks', {
+  'minecraft:spruce_trapdoor': shapeBlock('trapdoor', 'spruce_trapdoor', {
     zone: 'interior',
     layer: 'cutout',
+  }),
+  'minecraft:dark_oak_trapdoor': shapeBlock('trapdoor', 'dark_oak_planks', {
+    zone: 'interior',
+    layer: 'opaque',
   }),
 };
 
@@ -130,7 +167,7 @@ const STONE_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:mossy_stone_bricks': full('mossy_stone_bricks'),
   'minecraft:chiseled_stone_bricks': full('chiseled_stone_bricks'),
   'minecraft:deepslate_bricks': full('deepslate_bricks'),
-  'minecraft:deepslate_tiles': full('deepslate_bricks'),
+  'minecraft:deepslate_tiles': full('deepslate_tiles'),
   'minecraft:bricks': full('bricks'),
   'minecraft:terracotta': full('terracotta'),
   'minecraft:white_terracotta': full('plaster_white'),
@@ -140,24 +177,40 @@ const STONE_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:cobblestone_stairs': shapeBlock('stair', 'cobblestone'),
   'minecraft:stone_brick_stairs': shapeBlock('stair', 'stone_bricks'),
   'minecraft:deepslate_brick_stairs': shapeBlock('stair', 'deepslate_bricks'),
+  'minecraft:deepslate_tile_stairs': shapeBlock('stair', 'deepslate_tiles'),
   'minecraft:brick_stairs': shapeBlock('stair', 'bricks'),
   'minecraft:cobblestone_slab': shapeBlock('slab', 'cobblestone'),
   'minecraft:stone_brick_slab': shapeBlock('slab', 'stone_bricks'),
+  'minecraft:deepslate_tile_slab': shapeBlock('slab', 'deepslate_tiles'),
+  'minecraft:deepslate_brick_slab': shapeBlock('slab', 'deepslate_bricks'),
   'minecraft:smooth_stone_slab': shapeBlock('slab', 'smooth_stone'),
   'minecraft:cobblestone_wall': shapeBlock('wall', 'cobblestone'),
   'minecraft:stone_brick_wall': shapeBlock('wall', 'stone_bricks'),
   'minecraft:mossy_stone_brick_wall': shapeBlock('wall', 'mossy_stone_bricks'),
+  'minecraft:deepslate_brick_wall': shapeBlock('wall', 'deepslate_bricks'),
 };
 
 const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
-  'minecraft:glass': shapeBlock('full', 'glass', { layer: 'cutout', solidOpaque: false }),
+  'minecraft:glass': shapeBlock('full', 'glass', {
+    layer: 'cutout',
+    solidOpaque: false,
+  }),
   'minecraft:glass_pane': shapeBlock('pane', 'glass', { layer: 'cutout' }),
   'minecraft:iron_bars': shapeBlock('pane', 'iron_bars', { layer: 'cutout' }),
   'minecraft:iron_block': full('iron_block'),
   'minecraft:gold_block': full('gold_block'),
-  'minecraft:torch': shapeBlock('torch', 'torch', { layer: 'emissive', zone: 'interior' }),
-  'minecraft:wall_torch': shapeBlock('torch', 'torch', { layer: 'emissive', zone: 'interior' }),
-  'minecraft:lantern': shapeBlock('lantern', 'lantern', { layer: 'emissive', zone: 'exterior' }),
+  'minecraft:torch': shapeBlock('torch', 'torch', {
+    layer: 'emissive',
+    zone: 'interior',
+  }),
+  'minecraft:wall_torch': shapeBlock('torch', 'torch', {
+    layer: 'emissive',
+    zone: 'interior',
+  }),
+  'minecraft:lantern': shapeBlock('lantern', 'lantern', {
+    layer: 'emissive',
+    zone: 'exterior',
+  }),
   'minecraft:soul_lantern': shapeBlock('lantern', 'soul_lantern', {
     layer: 'emissive',
     zone: 'exterior',
@@ -172,7 +225,10 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
     zone: 'interior',
     light: true,
   }),
-  'minecraft:campfire': shapeBlock('campfire', 'campfire', { layer: 'emissive', zone: 'interior' }),
+  'minecraft:campfire': shapeBlock('campfire', 'campfire', {
+    layer: 'emissive',
+    zone: 'interior',
+  }),
   'minecraft:bookshelf': full('oak_planks', 'bookshelf', 'oak_planks', 'bookshelf', {
     zone: 'interior',
     furniture: true,
@@ -180,6 +236,18 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:crafting_table': full('crafting_top', 'crafting_side', 'oak_planks', 'crafting_side', {
     zone: 'interior',
     furniture: true,
+  }),
+  'minecraft:smithing_table': shapeBlock('table', 'dark_oak_planks', {
+    top: 'iron_block',
+    layer: 'opaque',
+  }),
+  'minecraft:fletching_table': shapeBlock('table', 'birch_planks', {
+    top: 'oak_planks',
+    layer: 'opaque',
+  }),
+  'minecraft:cartography_table': shapeBlock('table', 'dark_oak_planks', {
+    top: 'oak_planks',
+    layer: 'opaque',
   }),
   'minecraft:furnace': full('smooth_stone', 'stone', 'smooth_stone', 'furnace_front', {
     zone: 'interior',
@@ -214,13 +282,26 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
     zone: 'interior',
     furniture: true,
   }),
-  'minecraft:chain': shapeBlock('chain', 'iron_bars', { layer: 'cutout', zone: 'exterior' }),
+  'minecraft:chain': shapeBlock('chain', 'iron_bars', {
+    layer: 'cutout',
+    zone: 'exterior',
+  }),
   'minecraft:flower_pot': shapeBlock('pot', 'flower_pot', {
     layer: 'cutout',
     zone: 'interior',
     furniture: true,
   }),
-  'minecraft:anvil': shapeBlock('slab', 'iron_block', {
+  'minecraft:anvil': shapeBlock('anvil', 'iron_block', {
+    layer: 'opaque',
+    zone: 'interior',
+    furniture: true,
+  }),
+  'minecraft:chipped_anvil': shapeBlock('anvil', 'iron_block', {
+    layer: 'opaque',
+    zone: 'interior',
+    furniture: true,
+  }),
+  'minecraft:damaged_anvil': shapeBlock('anvil', 'iron_block', {
     layer: 'opaque',
     zone: 'interior',
     furniture: true,
@@ -266,29 +347,52 @@ const ALL_BLOCKS: Readonly<Record<string, BlockDescriptor>> = {
 
 const hashFallbackTile = (name: string): string => {
   if (name.includes('stair')) return 'stone_bricks';
+  if (name.includes('spruce')) return 'spruce_planks';
+  if (name.includes('dark_oak')) return 'dark_oak_planks';
+  if (name.includes('birch')) return 'birch_planks';
   if (name.includes('plank') || name.includes('wood') || name.includes('oak')) return 'oak_planks';
-  if (name.includes('deepslate') || name.includes('dark')) return 'deepslate_bricks';
+  if (name.includes('deepslate') || name.includes('slate')) return 'deepslate_tiles';
   if (name.includes('brick')) return 'bricks';
+  if (name.includes('plaster') || name.includes('white')) return 'plaster_white';
   return 'stone';
 };
+
+const FALLBACK_SHAPES: readonly [string, (tile: string) => BlockDescriptor][] = [
+  ['stairs', (t) => shapeBlock('stair', t)],
+  ['slab', (t) => shapeBlock('slab', t)],
+  ['wall', (t) => shapeBlock('wall', t)],
+  ['fence', (t) => shapeBlock('fence', t)],
+  ['pane', () => shapeBlock('pane', 'glass', { layer: 'cutout' })],
+  ['trapdoor', () => shapeBlock('trapdoor', 'oak_trapdoor', { layer: 'cutout' })],
+  ['door', () => shapeBlock('door', 'oak_door', { layer: 'cutout' })],
+  ['bed', () => shapeBlock('bed', 'bed_red', { layer: 'opaque' })],
+  ['carpet', () => shapeBlock('carpet', 'carpet_red', { layer: 'opaque' })],
+  ['table', (t) => shapeBlock('table', t, { layer: 'opaque' })],
+  [
+    'leaves',
+    () =>
+      full('leaves', 'leaves', 'leaves', 'leaves', {
+        layer: 'cutout',
+        solidOpaque: false,
+      }),
+  ],
+];
 
 export const describeBlockState = (state: string): BlockDescriptor => {
   const parsed = parseBlockState(state);
   const direct = ALL_BLOCKS[parsed.name];
   if (direct) {
     if (parsed.name === 'minecraft:furnace' && parsed.properties.lit === 'true') {
-      return { ...direct, layer: 'emissive', light: true, front: 'furnace_lit' };
+      return {
+        ...direct,
+        layer: 'emissive',
+        light: true,
+        front: 'furnace_lit',
+      };
     }
     return direct;
   }
   const tile = hashFallbackTile(parsed.name);
-  if (parsed.name.includes('stairs')) return shapeBlock('stair', tile);
-  if (parsed.name.includes('slab')) return shapeBlock('slab', tile);
-  if (parsed.name.includes('carpet'))
-    return shapeBlock('carpet', 'carpet_red', {
-      layer: 'opaque',
-      zone: 'interior',
-      furniture: true,
-    });
-  return full(tile);
+  const rule = FALLBACK_SHAPES.find(([substr]) => parsed.name.includes(substr));
+  return rule ? rule[1](tile) : full(tile);
 };

@@ -307,13 +307,20 @@ export {
 export { evaluateStructureQuality } from './audit/structure/evaluate';
 export type { StructureAuditMetrics, StructureAuditReport } from './audit/structure/contract';
 export {
+  buildStructureBakedMesh,
   buildStructureDocument,
+  compileStructureUnits as compileStructureUnitsRaw,
   decodeStructureNbt,
   encodeStructureNbt,
   type DecodedStructureNbt,
+  type PlayableStructureMeta,
+  type StructureBakedBatch,
+  type StructureBakedMesh,
   type StructureCustomPlacement,
   type StructureGrid,
+  type StructureLightingField,
   type StructureProduct,
+  type StructurePropInstance,
 } from './compiler/structure';
 
 export const compileStructureUnits = (
