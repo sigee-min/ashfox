@@ -1,3 +1,4 @@
+import { cross3 } from '../../math/vec3';
 import {
   PLANE_FACE_DIRECTIONS,
   type PlaneFaceDirection,
@@ -36,15 +37,9 @@ const isSignedAxis = (value: readonly number[]): boolean =>
   value.filter((entry) => Math.abs(entry) === 1).length === 1 &&
   value.filter((entry) => entry === 0).length === 2;
 
-const cross = (left: readonly number[], right: readonly number[]) => [
-  left[1]! * right[2]! - left[2]! * right[1]!,
-  left[2]! * right[0]! - left[0]! * right[2]!,
-  left[0]! * right[1]! - left[1]! * right[0]!,
-];
-
 const isValidBasis = (basis: PlaneBasis): boolean =>
   [basis.normal, basis.uAxis, basis.vAxis].every(isSignedAxis) &&
-  JSON.stringify(cross(basis.uAxis, basis.vAxis)) === JSON.stringify(basis.normal);
+  JSON.stringify(cross3(basis.uAxis, basis.vAxis)) === JSON.stringify(basis.normal);
 
 const validatePlaneShape = (
   plane: PlaneNode,

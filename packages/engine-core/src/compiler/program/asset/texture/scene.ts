@@ -1,3 +1,4 @@
+import { add3, cross3, scale3, sub3 } from '../../../../math/vec3';
 import { canonicalRotatePoint } from '../../../../model/transform';
 import type { Vec3 } from '../../../../model/identity';
 import type {
@@ -21,15 +22,6 @@ const FACE_NORMALS: Readonly<Record<FaceDirection, Vec3>> = {
   up: [0, 1, 0],
   down: [0, -1, 0],
 };
-
-export const add3 = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-export const sub3 = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-export const scale3 = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s];
-const cross3 = (a: Vec3, b: Vec3): Vec3 => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
 
 const numVal = (v: { readonly numerator: bigint; readonly denominator: bigint }): number =>
   Number(v.numerator) / Number(v.denominator);

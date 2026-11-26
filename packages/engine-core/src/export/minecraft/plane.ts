@@ -1,3 +1,4 @@
+import { cross3 } from '../../math/vec3';
 import { canonicalMinecraftRotation } from '../../model';
 import type { CubeFace, PlaneFaceDirection, PlaneNode, Vec2, Vec3 } from '../../model';
 
@@ -93,12 +94,6 @@ export const canonicalPlaneTextureUvCorners = (
   return rotateTextureCorners(corners, transform.rotation);
 };
 
-const cross = (left: readonly number[], right: readonly number[]): [number, number, number] => [
-  left[1]! * right[2]! - left[2]! * right[1]!,
-  left[2]! * right[0]! - left[0]! * right[2]!,
-  left[0]! * right[1]! - left[1]! * right[0]!,
-];
-
 /** Closed Bedrock lowering for every signed right-handed Minecraft plane
  * frame.  The table is deliberately exhaustive: geometry orientation must
  * never be inferred from a UV transform or from the first matching axis. */
@@ -113,7 +108,7 @@ export const canonicalPlaneRotation = (plane: PlaneNode): [number, number, numbe
     !validAxis(normal) ||
     !validAxis(uAxis) ||
     !validAxis(vAxis) ||
-    vectorKey(cross(uAxis, vAxis)) !== vectorKey(normal)
+    vectorKey(cross3(uAxis, vAxis)) !== vectorKey(normal)
   ) {
     throw new RangeError('Plane basis must be a signed right-handed axis frame.');
   }

@@ -11,7 +11,6 @@ import {
   type AuditReport,
   type CanonicalTextureRaster,
   type DeclaredPreviewSpec,
-  type SpriteProduct,
 } from '@ashfox/engine-core';
 import { DEFAULT_VIEW, type Prepared, type Media, type ViewOptions } from './contract';
 import { ChromeRenderer } from './chrome';
@@ -79,32 +78,6 @@ const toSpriteRaster = (s: NonNullable<Prepared['sprite']>): CanonicalTextureRas
     copy: () => new Uint8Array(s.rgba),
     [Symbol.iterator]: () => s.rgba[Symbol.iterator](),
   },
-});
-
-const emptyStageRaster = (width: number, height: number) => ({
-  width,
-  height,
-  rgba: {
-    length: 0,
-    at: () => undefined,
-    copy: () => new Uint8Array(0),
-    [Symbol.iterator]: () => [][Symbol.iterator](),
-  },
-});
-
-const toSpriteProduct = (s: NonNullable<Prepared['sprite']>): SpriteProduct => ({
-  id: s.receipt.id,
-  profile: s.profile,
-  raster: toSpriteRaster(s),
-  stages: {
-    silhouette: emptyStageRaster(s.receipt.width, s.receipt.height),
-    shade: emptyStageRaster(s.receipt.width, s.receipt.height),
-    grain: emptyStageRaster(s.receipt.width, s.receipt.height),
-  },
-  png: s.png,
-  receipt: s.receipt,
-  evidence: s.evidence,
-  telemetry: s.telemetry,
 });
 
 export const inspect = (asset: Prepared): unknown => {
@@ -254,8 +227,18 @@ export const renderMedia = async (
   const gif = spec?.kind === 'gif';
   const v = buildPreviewView(spec);
   assertRenderOptions(asset, v, gif);
-  if (v.sheet === 'inspect' && asset.sprite)
-    return { mime: 'image/png', bytes: spriteInspectSheetPng(toSpriteProduct(asset.sprite)) };
+  if (v.sheet === 'inspect' && asset.sprite) {
+    const raster = toSpriteRaster(asset.sprite);
+    const audit = evaluateSpriteQuality({
+      profile: asset.sprite.profile,
+      raster,
+      telemetry: asset.sprite.telemetry,
+    });
+    return {
+      mime: 'image/png',
+      bytes: spriteInspectSheetPng({ profile: asset.sprite.profile, raster }, audit),
+    };
+  }
   if (v.sheet === 'inspect' && asset.product?.kind === 'sound') {
     const sheet = renderSoundInspectSheet(asset.product.sounds);
     return { mime: 'image/png', bytes: encodeRgbaBufferPng(sheet.rgba, sheet.width, sheet.height) };
