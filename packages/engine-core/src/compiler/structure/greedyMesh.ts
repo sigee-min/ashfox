@@ -1,23 +1,45 @@
 import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
 import { parseBlockState } from '../../project/structure/state';
+import { packStructureBatches } from './atlas';
 import {
   collectPropInstances,
-  packStructureBatches,
+  getBatch,
+  pushQuad,
   sliceDimsFor,
-  structureTileTextureId,
+  type BatchDraft,
+  type MeshCtx,
+  type NonFullScratch,
   type SliceDims,
-} from './atlas';
-import { getBatch, pushQuad, type BatchDraft, type MeshCtx, type NonFullScratch } from './batch';
+} from './batch';
 import { describeBlockState, type BlockDescriptor, type BlockRenderLayer } from './blocks';
 import type { StructureBakedMesh, StructureGrid, StructureLightingField } from './contract';
-import { computeFaceShade, FACE_BASIS } from './lighting';
+import {
+  buildTileTable,
+  clearSpanMeta,
+  copySpanColors,
+  ensureSliceScratch,
+  greedySpan,
+  isBoxBoundaryOccluded,
+  maskTintKey,
+  samePerpNeighbors,
+  sliceRowStart,
+  writeSliceBounds,
+  writeSpanColors,
+  type SliceScratch,
+  type TileTable,
+} from './greedyMask';
+import {
+  computeFaceShade,
+  FACE_BASIS,
+  SHARED_FACE_SHADE,
+  type MutableFaceShadeInfo,
+} from './lighting';
 import {
   emitCulledGridShape,
   setVec3,
   shapeBoxSpecs,
   tileForBoxFace,
-  tileForFace,
   writeQuadUv,
   writeSpecBoxUv,
   type CachedBlockState,
@@ -26,164 +48,135 @@ import {
 } from './shapes';
 import { emitArchitecturalTrims } from './trim';
 import { isNearEnclosedRoom } from './vertexWeather';
-import { isSolidOpaqueAt, voxelAt } from './subvoxel';
-
-interface MaskCell {
-  readonly key: string;
-  readonly layer: BlockRenderLayer;
-  readonly tileId: string;
-  readonly textureId: string;
-  readonly flip: boolean;
-  readonly colors: readonly number[];
-}
+import { voxelAt } from './subvoxel';
 
 const DIRS6: readonly CubeFaceDirection[] = ['north', 'south', 'east', 'west', 'up', 'down'];
 
 const isFaceCulled = (
-  ctx: MeshCtx,
+  g: GreedyState,
   ownIdx: number,
   ownDesc: BlockDescriptor,
   nx: number,
   ny: number,
   nz: number,
 ): boolean => {
-  if (ny >= ctx.maxY) return false;
-  if (isSolidOpaqueAt(ctx.grid, ctx.descriptors, nx, ny, nz)) return true;
-  if (ownDesc.top !== 'glass') return false;
-  const nv = voxelAt(ctx.grid, nx, ny, nz);
-  return (
-    nv === ownIdx &&
-    ctx.grid.customTags[(ny * ctx.grid.size[2] + nz) * ctx.grid.size[0] + nx] === null
-  );
+  const size = g.ctx.grid.size;
+  const w = size[0];
+  const d = size[2];
+  if (nx < 0 || nx >= w || ny < 0 || ny >= g.ctx.maxY || nz < 0 || nz >= d) return false;
+  const nIdx = (ny * d + nz) * w + nx;
+  const nv = g.ctx.grid.voxels[nIdx]!;
+  if (nv <= 0 || g.ctx.grid.customTags[nIdx] !== null) return false;
+  if (g.tiles.isOpaque[nv] === 1) return true;
+  return ownDesc.top === 'glass' && nv === ownIdx;
 };
 
-const writeSliceBounds = (
-  axis: 0 | 1 | 2,
-  s: number,
-  u: number,
-  v: number,
-  mw: number,
-  mh: number,
-  hw: number,
-  hd: number,
-  from: [number, number, number],
-  to: [number, number, number],
-): void => {
-  if (axis === 2) {
-    setVec3(from, u - hw, v, s - hd);
-    setVec3(to, u + mw - hw, v + mh, s + 1 - hd);
-  } else if (axis === 0) {
-    setVec3(from, s - hw, v, u - hd);
-    setVec3(to, s + 1 - hw, v + mh, u + mw - hd);
-  } else {
-    setVec3(from, u - hw, s, v - hd);
-    setVec3(to, u + mw - hw, s + 1, v + mh - hd);
-  }
-};
+interface GreedyState {
+  readonly ctx: MeshCtx;
+  readonly tiles: TileTable;
+  readonly fullBatches: Map<string, BatchDraft>;
+  readonly repeatingKeys: Set<string>;
+  readonly scratch: NonFullScratch;
+  readonly shadeScratch: MutableFaceShadeInfo;
+}
 
-const maskTintKey = (qt: number): number =>
-  ((qt >> 16) << 6) | (((qt >> 10) & 3) << 4) | (((qt >> 6) & 3) << 2) | ((qt >> 2) & 3);
-
-const makeMaskCell = (
-  ctx: MeshCtx,
+const fillSliceCell = (
+  g: GreedyState,
   dir: CubeFaceDirection,
-  s: number,
-  u: number,
-  v: number,
-  axis: 0 | 1 | 2,
-): MaskCell | null => {
-  const [w, _h, d] = ctx.grid.size;
-  const x = axis === 0 ? s : u;
-  const y = axis === 1 ? s : v;
-  const z = axis === 2 ? s : axis === 0 ? u : v;
-  const idx = (y * d + z) * w + x;
-  const voxel = ctx.grid.voxels[idx]!;
-  if (voxel <= 0 || ctx.grid.customTags[idx] !== null) return null;
-  const desc = ctx.descriptors[voxel]!;
-  if (desc.shape !== 'full') return null;
-  const n = FACE_BASIS[dir].normal;
-  if (isFaceCulled(ctx, voxel, desc, x + n[0], y + n[1], z + n[2])) return null;
-  const tileId = tileForFace(desc, dir, ctx.parsedStates[voxel]!.facing);
-  const textureId = structureTileTextureId(desc.layer, tileId);
+  dirIdx: number,
+  voxel: number,
+  nxOff: number,
+  nyOff: number,
+  nzOff: number,
+  x: number,
+  y: number,
+  z: number,
+  cellIdx: number,
+  slice: SliceScratch,
+): boolean => {
+  const { grid, descriptors, lighting, maxY } = g.ctx;
+  const desc = descriptors[voxel]!;
+  if (isFaceCulled(g, voxel, desc, x + nxOff, y + nyOff, z + nzOff)) return false;
+  const tileIdx = g.tiles.stateDirTileIdx[voxel * 6 + dirIdx]!;
   const shade = computeFaceShade(
-    ctx.grid,
-    ctx.descriptors,
-    ctx.lighting,
+    grid,
+    descriptors,
+    lighting,
     x,
     y,
     z,
     dir,
     desc.layer === 'emissive',
-    ctx.maxY,
+    maxY,
     true,
+    g.scratch.colors,
+    g.shadeScratch,
   );
-  return {
-    key: `${desc.layer}|${textureId}|${shade.aoCode}|${maskTintKey(shade.quantizedTint)}|${shade.flip ? 1 : 0}`,
-    layer: desc.layer,
-    tileId,
-    textureId,
-    flip: shade.flip,
-    colors: shade.colors,
-  };
+  const flipBit = shade.flip ? 1 : 0;
+  slice.keys[cellIdx] = (shade.aoCode << 12) | maskTintKey(shade.quantizedTint);
+  slice.meta[cellIdx] = (tileIdx << 1) | flipBit;
+  writeSpanColors(slice.colors, cellIdx, g.scratch.colors);
+  return true;
+};
+
+const fillSliceRow = (
+  g: GreedyState,
+  dir: CubeFaceDirection,
+  dirIdx: number,
+  s: number,
+  v: number,
+  dims: SliceDims,
+  slice: SliceScratch,
+): number => {
+  const n = FACE_BASIS[dir].normal;
+  const size = g.ctx.grid.size;
+  const w = size[0];
+  const axis = dims.axis;
+  const voxels = g.ctx.grid.voxels;
+  const customTags = g.ctx.grid.customTags;
+  const isFull = g.tiles.isFull;
+  const vStep = axis === 0 ? w : 1;
+  let vIdx = sliceRowStart(axis, s, v, w, size[2]);
+  const x0 = axis === 0 ? s : 0;
+  const y = axis === 1 ? s : v;
+  const z0 = axis === 2 ? s : axis === 0 ? 0 : v;
+  const uX = axis === 0 ? 0 : 1;
+  const uZ = axis === 0 ? 1 : 0;
+  const rowBase = v * dims.uLen;
+  let rowFaces = 0;
+  for (let u = 0; u < dims.uLen; u += 1, vIdx += vStep) {
+    const voxel = voxels[vIdx]!;
+    if (voxel <= 0 || isFull[voxel] === 0 || customTags[vIdx] !== null) continue;
+    const x = x0 + u * uX;
+    const z = z0 + u * uZ;
+    if (fillSliceCell(g, dir, dirIdx, voxel, n[0], n[1], n[2], x, y, z, rowBase + u, slice))
+      rowFaces += 1;
+  }
+  return rowFaces;
 };
 
 const fillSliceMask = (
-  ctx: MeshCtx,
+  g: GreedyState,
   dir: CubeFaceDirection,
+  dirIdx: number,
   s: number,
   dims: SliceDims,
-  mask: (MaskCell | null)[],
+  slice: SliceScratch,
 ): number => {
   let rawFaces = 0;
   for (let v = 0; v < dims.vLen; v += 1) {
-    for (let u = 0; u < dims.uLen; u += 1) {
-      const cell = makeMaskCell(ctx, dir, s, u, v, dims.axis);
-      if (!cell) continue;
-      rawFaces += 1;
-      mask[v * dims.uLen + u] = cell;
-    }
+    rawFaces += fillSliceRow(g, dir, dirIdx, s, v, dims, slice);
   }
   return rawFaces;
 };
 
-interface GreedyState {
-  readonly ctx: MeshCtx;
-  readonly fullBatches: Map<string, BatchDraft>;
-  readonly repeatingKeys: Set<string>;
-  readonly scratch: NonFullScratch;
-  readonly fromBuf: [number, number, number];
-  readonly toBuf: [number, number, number];
-  readonly uvsBuf: number[];
-}
-
-const greedySpan = (
-  mask: readonly (MaskCell | null)[],
-  uLen: number,
-  vLen: number,
-  u0: number,
-  v0: number,
-  key: string,
-) => {
-  let mw = 1;
-  while (u0 + mw < uLen && mask[v0 * uLen + u0 + mw]?.key === key) mw += 1;
-  let mh = 1;
-  outer: while (v0 + mh < vLen) {
-    for (let k = 0; k < mw; k += 1) if (mask[(v0 + mh) * uLen + u0 + k]?.key !== key) break outer;
-    mh += 1;
+const batchForTile = (g: GreedyState, tileIdx: number): BatchDraft => {
+  let batch = g.tiles.batches[tileIdx];
+  if (batch === undefined) {
+    batch = getBatch(g.fullBatches, g.tiles.layers[tileIdx]!, g.tiles.tileIds[tileIdx]!);
+    g.tiles.batches[tileIdx] = batch;
   }
-  return { mw, mh };
-};
-
-const clearSpanMask = (
-  mask: (MaskCell | null)[],
-  uLen: number,
-  u: number,
-  v: number,
-  mw: number,
-  mh: number,
-): void => {
-  for (let dy = 0; dy < mh; dy += 1)
-    for (let dx = 0; dx < mw; dx += 1) mask[(v + dy) * uLen + u + dx] = null;
+  return batch;
 };
 
 const emitMergedSliceQuads = (
@@ -191,22 +184,34 @@ const emitMergedSliceQuads = (
   dir: CubeFaceDirection,
   s: number,
   dims: SliceDims,
-  mask: (MaskCell | null)[],
+  slice: SliceScratch,
 ): number => {
-  const [w, _h, d] = g.ctx.grid.size;
-  const [hw, hd] = [w / 2, d / 2];
+  const hw = g.ctx.grid.size[0] / 2;
+  const hd = g.ctx.grid.size[2] / 2;
+  const uLen = dims.uLen;
+  const vLen = dims.vLen;
+  const keys = slice.keys;
+  const meta = slice.meta;
   let merged = 0;
-  for (let v = 0; v < dims.vLen; v += 1) {
-    for (let u = 0; u < dims.uLen; u += 1) {
-      const cell = mask[v * dims.uLen + u];
-      if (!cell) continue;
-      const { mw, mh } = greedySpan(mask, dims.uLen, dims.vLen, u, v, cell.key);
-      clearSpanMask(mask, dims.uLen, u, v, mw, mh);
-      writeSliceBounds(dims.axis, s, u, v, mw, mh, hw, hd, g.fromBuf, g.toBuf);
-      writeQuadUv(g.uvsBuf, (u & 1) * 0.5, (v & 1) * 0.5, mw * 0.5, mh * 0.5);
-      const batch = getBatch(g.fullBatches, cell.layer, cell.tileId);
-      if (mw > 1 || mh > 1) g.repeatingKeys.add(`${cell.layer}:${batch.textureId}`);
-      pushQuad(batch, dir, g.fromBuf, g.toBuf, g.uvsBuf, cell.colors, cell.flip);
+  for (let v = 0; v < vLen; v += 1) {
+    const rowBase = v * uLen;
+    for (let u = 0; u < uLen; u += 1) {
+      const cellIdx = rowBase + u;
+      const m = meta[cellIdx]!;
+      if (m === 0) continue;
+      const key = keys[cellIdx]!;
+      const tileIdx = m >>> 1;
+      const flip = (m & 1) === 1;
+      const packedSpan = greedySpan(keys, meta, uLen, vLen, u, v, key, m);
+      const mw = packedSpan >>> 16;
+      const mh = packedSpan & 0xffff;
+      copySpanColors(slice.colors, cellIdx, g.scratch.colors);
+      clearSpanMeta(meta, uLen, u, v, mw, mh);
+      writeSliceBounds(dims.axis, s, u, v, mw, mh, hw, hd, g.scratch.from, g.scratch.to);
+      writeQuadUv(g.scratch.uvs, (u & 1) * 0.5, (v & 1) * 0.5, mw * 0.5, mh * 0.5);
+      const batch = batchForTile(g, tileIdx);
+      if (mw > 1 || mh > 1) g.repeatingKeys.add(g.tiles.repeatKeys[tileIdx]!);
+      pushQuad(batch, dir, g.scratch.from, g.scratch.to, g.scratch.uvs, g.scratch.colors, flip);
       merged += 1;
     }
   }
@@ -214,14 +219,20 @@ const emitMergedSliceQuads = (
 };
 
 const greedyMeshFullBlocks = (g: GreedyState) => {
-  const [w, _h, d] = g.ctx.grid.size;
-  let [rawFaces, mergedQuads] = [0, 0];
-  for (const dir of DIRS6) {
+  const w = g.ctx.grid.size[0];
+  const d = g.ctx.grid.size[2];
+  let rawFaces = 0;
+  let mergedQuads = 0;
+  for (let dirIdx = 0; dirIdx < 6; dirIdx += 1) {
+    const dir = DIRS6[dirIdx]!;
     const dims = sliceDimsFor(dir, w, g.ctx.maxY, d);
-    const mask = new Array<MaskCell | null>(dims.uLen * dims.vLen).fill(null);
+    const slice = ensureSliceScratch(dims.uLen * dims.vLen);
+    slice.meta.fill(0, 0, dims.uLen * dims.vLen);
     for (let s = 0; s < dims.sliceLen; s += 1) {
-      rawFaces += fillSliceMask(g.ctx, dir, s, dims, mask);
-      mergedQuads += emitMergedSliceQuads(g, dir, s, dims, mask);
+      const sliceRaw = fillSliceMask(g, dir, dirIdx, s, dims, slice);
+      if (sliceRaw === 0) continue;
+      rawFaces += sliceRaw;
+      mergedQuads += emitMergedSliceQuads(g, dir, s, dims, slice);
     }
   }
   return { rawFaces, mergedQuads };
@@ -237,39 +248,6 @@ const connectsNeighbor = (
   if (y < 0 || y >= ctx.maxY) return false;
   const v = voxelAt(ctx.grid, x, y, z);
   return v > 0 && (ctx.descriptors[v]!.solidOpaque || ctx.descriptors[v]!.shape === shape);
-};
-
-const FLUSH_FACE_CHECK: readonly (readonly [0 | 1 | 2, boolean, number])[] = [
-  [2, false, 0],
-  [2, true, 16],
-  [0, true, 16],
-  [0, false, 0],
-  [1, true, 16],
-  [1, false, 0],
-];
-
-const isBoxBoundaryOccluded = (
-  ctx: MeshCtx,
-  shape: BlockDescriptor['shape'],
-  spec: LocalBoxSpec,
-  x: number,
-  y: number,
-  z: number,
-  dirIdx: number,
-  dir: CubeFaceDirection,
-): boolean => {
-  if (((spec.skipMask ?? 0) & (1 << dirIdx)) !== 0) return true;
-  const [axis, isTo, bound] = FLUSH_FACE_CHECK[dirIdx]!;
-  if (isTo ? spec.to[axis] < bound : spec.from[axis] > bound) return false;
-  const n = FACE_BASIS[dir].normal;
-  const [nx, ny, nz] = [x + n[0], y + n[1], z + n[2]];
-  if (ny >= ctx.maxY) return false;
-  const nv = voxelAt(ctx.grid, nx, ny, nz);
-  if (nv <= 0) return false;
-  const [w, _h, d] = ctx.grid.size;
-  if (ctx.grid.customTags[(ny * d + nz) * w + nx] !== null) return false;
-  const ndesc = ctx.descriptors[nv]!;
-  return ndesc.solidOpaque || ((shape === 'pane' || shape === 'door') && ndesc.shape === shape);
 };
 
 const emitBoxSpecFaces = (
@@ -314,6 +292,7 @@ const emitBoxSpecFaces = (
       maxY,
       false,
       scratch.colors,
+      SHARED_FACE_SHADE,
     );
     writeSpecBoxUv(dir, spec, scratch.uvs);
     pushQuad(
@@ -328,38 +307,6 @@ const emitBoxSpecFaces = (
     count += 1;
   }
   return count;
-};
-
-const safeOcclusionKey = (ctx: MeshCtx, x: number, y: number, z: number): number => {
-  if (y >= ctx.maxY) return -1;
-  const v = voxelAt(ctx.grid, x, y, z);
-  if (v <= 0) return v;
-  const [w, _h, d] = ctx.grid.size;
-  if (ctx.grid.customTags[(y * d + z) * w + x] !== null) return -2;
-  return ctx.descriptors[v]!.solidOpaque ? -99 : v;
-};
-
-const samePerpNeighbors = (
-  ctx: MeshCtx,
-  cx: number,
-  cz: number,
-  x0: number,
-  y: number,
-  z0: number,
-  nx: number,
-  nz: number,
-): boolean => {
-  const offs: readonly [number, number, number][] = [
-    [0, 1, 0],
-    [0, -1, 0],
-    [cx, 0, cz],
-    [-cx, 0, -cz],
-  ];
-  return offs.every(
-    ([dx, dy, dz]) =>
-      safeOcclusionKey(ctx, x0 + dx, y + dy, z0 + dz) ===
-      safeOcclusionKey(ctx, nx + dx, y + dy, nz + dz),
-  );
 };
 
 const scanGridShapeRun = (
@@ -406,8 +353,12 @@ const emitSingleNonFullVoxel = (
   v: number,
   desc: BlockDescriptor,
 ): number => {
-  const [w, _h, d] = ctx.grid.size;
-  const [x, z, y] = [idx % w, Math.floor(idx / w) % d, Math.floor(idx / (w * d))];
+  const w = ctx.grid.size[0];
+  const d = ctx.grid.size[2];
+  const x = idx % w;
+  const row = (idx / w) | 0;
+  const z = row % d;
+  const y = (row / d) | 0;
   const cached = ctx.parsedStates[v]!;
   if (desc.shape === 'stair' || desc.shape === 'slab') {
     visited[idx] = 1;
@@ -445,13 +396,25 @@ const emitNonFullBlocks = (g: GreedyState): number => {
     if (stretch) g.repeatingKeys.add(`${layer}:${b.textureId}`);
     pushQuad(b, dir, from, to, uvs, cols, flip);
   };
+  const voxels = g.ctx.grid.voxels;
+  const customTags = g.ctx.grid.customTags;
+  const isFull = g.tiles.isFull;
+  const total = g.ctx.maxY * d * w;
   let count = 0;
-  for (let idx = 0; idx < g.ctx.maxY * d * w; idx += 1) {
+  for (let idx = 0; idx < total; idx += 1) {
     if (visited[idx] !== 0) continue;
-    const v = g.ctx.grid.voxels[idx]!;
-    const desc = v > 0 && g.ctx.grid.customTags[idx] === null ? g.ctx.descriptors[v]! : null;
-    if (!desc || desc.shape === 'full') continue;
-    count += emitSingleNonFullVoxel(g.ctx, visited, emitQuad, g.scratch, conns, idx, v, desc);
+    const v = voxels[idx]!;
+    if (v <= 0 || isFull[v] === 1 || customTags[idx] !== null) continue;
+    count += emitSingleNonFullVoxel(
+      g.ctx,
+      visited,
+      emitQuad,
+      g.scratch,
+      conns,
+      idx,
+      v,
+      g.ctx.descriptors[v]!,
+    );
   }
   return count;
 };
@@ -460,24 +423,42 @@ export const buildStructureBakedMesh = (
   grid: StructureGrid,
   lighting: StructureLightingField,
   customModels: Readonly<Record<string, CompiledModel>>,
-  options?: { readonly cutawayY?: number; readonly descriptors?: readonly BlockDescriptor[] },
+  options?: {
+    readonly cutawayY?: number;
+    readonly descriptors?: readonly BlockDescriptor[];
+  },
 ): StructureBakedMesh => {
   const maxY = Math.min(grid.size[1], options?.cutawayY ?? grid.size[1]);
   const descriptors = options?.descriptors ?? grid.states.map(describeBlockState);
   const parsedStates: CachedBlockState[] = grid.states.map((s) => {
     const parsed = parseBlockState(s);
     const f = parsed.properties.facing;
-    return { parsed, facing: f === 'south' || f === 'east' || f === 'west' ? f : 'north' };
+    return {
+      parsed,
+      facing: f === 'south' || f === 'east' || f === 'west' ? f : 'north',
+    };
   });
-  const ctx: MeshCtx = { grid, descriptors, parsedStates, lighting, maxY, batches: new Map() };
+  const ctx: MeshCtx = {
+    grid,
+    descriptors,
+    parsedStates,
+    lighting,
+    maxY,
+    batches: new Map(),
+  };
+  const scratchColors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   const g: GreedyState = {
     ctx,
+    tiles: buildTileTable(ctx),
     fullBatches: new Map(),
     repeatingKeys: new Set(),
-    scratch: { from: [0, 0, 0], to: [0, 0, 0], uvs: new Array(8), colors: new Array(12) },
-    fromBuf: [0, 0, 0],
-    toBuf: [0, 0, 0],
-    uvsBuf: new Array(8),
+    scratch: {
+      from: [0, 0, 0],
+      to: [0, 0, 0],
+      uvs: new Array(8),
+      colors: scratchColors,
+    },
+    shadeScratch: { aoCode: 0, flip: false, quantizedTint: 32767, colors: scratchColors },
   };
   const fullCounts = greedyMeshFullBlocks(g);
   const nonFullCount = emitNonFullBlocks(g);

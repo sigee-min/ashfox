@@ -223,10 +223,11 @@ const markVoxelEnclosedLayer = (
   interiorMask: Uint8Array,
   leakedCols: Map<number, string>,
   y: number,
+  encCurr: Uint8Array,
+  encAbove: Uint8Array,
 ): number => {
-  const [w, _h, d] = grid.size;
-  const encCurr = compute2dEnclosedAtY(grid, paletteMeta, y);
-  const encAbove = compute2dEnclosedAtY(grid, paletteMeta, y + 1);
+  const w = grid.size[0];
+  const d = grid.size[2];
   let checked = 0;
   for (let z = 0; z < d; z += 1) {
     for (let x = 0; x < w; x += 1) {
@@ -248,6 +249,34 @@ const markVoxelEnclosedLayer = (
   return checked;
 };
 
+const scanVoxelLayers = (
+  grid: StructureGrid,
+  paletteMeta: readonly PaletteStateMeta[],
+  topCoverY: Int16Array,
+  interiorMask: Uint8Array,
+  leakedCols: Map<number, string>,
+): number => {
+  const h = grid.size[1];
+  if (h <= 2) return 0;
+  let checked = 0;
+  let encCurr = compute2dEnclosedAtY(grid, paletteMeta, 1);
+  for (let y = 1; y < h - 1; y += 1) {
+    const encAbove = compute2dEnclosedAtY(grid, paletteMeta, y + 1);
+    checked += markVoxelEnclosedLayer(
+      grid,
+      paletteMeta,
+      topCoverY,
+      interiorMask,
+      leakedCols,
+      y,
+      encCurr,
+      encAbove,
+    );
+    encCurr = encAbove;
+  }
+  return checked;
+};
+
 /** Computes roof coverage, interior room masks, and vertical sky leaks. */
 export const analyzeEnclosure = (
   grid: StructureGrid,
@@ -263,16 +292,7 @@ export const analyzeEnclosure = (
       checkedCells += markRoomBounds(grid, paletteMeta, room, topCoverY, interiorMask, leakedCols);
     }
   } else {
-    for (let y = 1; y < grid.size[1] - 1; y += 1) {
-      checkedCells += markVoxelEnclosedLayer(
-        grid,
-        paletteMeta,
-        topCoverY,
-        interiorMask,
-        leakedCols,
-        y,
-      );
-    }
+    checkedCells = scanVoxelLayers(grid, paletteMeta, topCoverY, interiorMask, leakedCols);
   }
   let interiorCells = 0;
   for (let i = 0; i < interiorMask.length; i += 1) {

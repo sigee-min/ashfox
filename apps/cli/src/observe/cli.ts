@@ -29,13 +29,19 @@ export const inspectCheckArgs = (
   readonly target?: string;
   readonly singleAsset: boolean;
   readonly nonJsonFlags: readonly string[];
+  readonly noCache: boolean;
 } => {
   const positionals: string[] = [];
   const nonJsonFlags: string[] = [];
   let singleAsset = false;
+  let noCacheCount = 0;
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--json') continue;
+    if (arg === '--no-cache') {
+      noCacheCount += 1;
+      continue;
+    }
     if (CHECK_SINGLE_ASSET_FLAGS.has(arg)) {
       singleAsset = true;
       nonJsonFlags.push(arg);
@@ -45,10 +51,12 @@ export const inspectCheckArgs = (
     if (arg.startsWith('--')) nonJsonFlags.push(arg);
     else positionals.push(arg);
   }
+  if (noCacheCount > 1) nonJsonFlags.push('--no-cache');
   return {
     target: positionals.length === 1 ? positionals[0] : undefined,
     singleAsset,
     nonJsonFlags,
+    noCache: noCacheCount === 1,
   };
 };
 

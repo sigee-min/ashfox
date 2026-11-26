@@ -12,87 +12,94 @@ const SHA_256_ROUND_CONSTANTS = new Uint32Array([
 ]);
 
 const HEX_CHARS = '0123456789abcdef';
+const SCRATCH_STATE = new Uint32Array(8);
+const SCRATCH_WORDS = new Uint32Array(64);
+const SCRATCH_TAIL = new Uint8Array(128);
 
-const rotateRight = (value: number, bits: number): number =>
-  (value >>> bits) | (value << (32 - bits));
-
-const padSha256Tail = (input: Uint8Array, completeLength: number): Uint8Array => {
-  // Read complete blocks in place; only the final one or two blocks need
-  // padding. Scratch storage stays bounded even for large texture artifacts.
-  const tail = new Uint8Array(input.length % 64 < 56 ? 64 : 128);
-  for (let index = completeLength; index < input.length; index += 1) {
-    tail[index - completeLength] = input[index]!;
-  }
-  tail[input.length - completeLength] = 0x80;
-  const end = tail.length;
-  const hi = Math.floor(input.length / 0x20000000) >>> 0;
-  const lo = (input.length << 3) >>> 0;
-  tail[end - 8] = (hi >>> 24) & 0xff;
-  tail[end - 7] = (hi >>> 16) & 0xff;
-  tail[end - 6] = (hi >>> 8) & 0xff;
-  tail[end - 5] = hi & 0xff;
-  tail[end - 4] = (lo >>> 24) & 0xff;
-  tail[end - 3] = (lo >>> 16) & 0xff;
-  tail[end - 2] = (lo >>> 8) & 0xff;
-  tail[end - 1] = lo & 0xff;
-  return tail;
+const initSha256State = (state: Uint32Array): void => {
+  state[0] = 0x6a09e667;
+  state[1] = 0xbb67ae85;
+  state[2] = 0x3c6ef372;
+  state[3] = 0xa54ff53a;
+  state[4] = 0x510e527f;
+  state[5] = 0x9b05688c;
+  state[6] = 0x1f83d9ab;
+  state[7] = 0x5be0cd19;
 };
 
-const compressSha256Block = (
+const buildSha256Tail = (
+  input: Uint8Array,
+  tailStart: number,
+  tailLength: number,
+  totalBytes: number,
+): number => {
+  const paddedLength = tailLength < 56 ? 64 : 128;
+  SCRATCH_TAIL.fill(0, tailLength, paddedLength);
+  for (let i = 0; i < tailLength; i += 1) SCRATCH_TAIL[i] = input[tailStart + i]!;
+  SCRATCH_TAIL[tailLength] = 0x80;
+  const hi = Math.floor(totalBytes / 0x20000000) >>> 0;
+  const lo = (totalBytes << 3) >>> 0;
+  SCRATCH_TAIL[paddedLength - 8] = (hi >>> 24) & 0xff;
+  SCRATCH_TAIL[paddedLength - 7] = (hi >>> 16) & 0xff;
+  SCRATCH_TAIL[paddedLength - 6] = (hi >>> 8) & 0xff;
+  SCRATCH_TAIL[paddedLength - 5] = hi & 0xff;
+  SCRATCH_TAIL[paddedLength - 4] = (lo >>> 24) & 0xff;
+  SCRATCH_TAIL[paddedLength - 3] = (lo >>> 16) & 0xff;
+  SCRATCH_TAIL[paddedLength - 2] = (lo >>> 8) & 0xff;
+  SCRATCH_TAIL[paddedLength - 1] = lo & 0xff;
+  return paddedLength;
+};
+
+const compressSha256Blocks = (
   state: Uint32Array,
   words: Uint32Array,
   bytes: Uint8Array,
-  block: number,
+  limit: number,
 ): void => {
-  for (let index = 0; index < 16; index += 1) {
-    const start = block + index * 4;
-    words[index] =
-      ((bytes[start]! << 24) |
-        (bytes[start + 1]! << 16) |
-        (bytes[start + 2]! << 8) |
-        bytes[start + 3]!) >>>
-      0;
+  for (let block = 0; block < limit; block += 64) {
+    for (let i = 0; i < 16; i += 1) {
+      const o = block + i * 4;
+      words[i] =
+        ((bytes[o]! << 24) | (bytes[o + 1]! << 16) | (bytes[o + 2]! << 8) | bytes[o + 3]!) >>> 0;
+    }
+    for (let i = 16; i < 64; i += 1) {
+      const p15 = words[i - 15]!;
+      const p2 = words[i - 2]!;
+      const sig0 = ((p15 >>> 7) | (p15 << 25)) ^ ((p15 >>> 18) | (p15 << 14)) ^ (p15 >>> 3);
+      const sig1 = ((p2 >>> 17) | (p2 << 15)) ^ ((p2 >>> 19) | (p2 << 13)) ^ (p2 >>> 10);
+      words[i] = (words[i - 16]! + sig0 + words[i - 7]! + sig1) >>> 0;
+    }
+    let a = state[0]!;
+    let b = state[1]!;
+    let c = state[2]!;
+    let d = state[3]!;
+    let e = state[4]!;
+    let f = state[5]!;
+    let g = state[6]!;
+    let h = state[7]!;
+    for (let i = 0; i < 64; i += 1) {
+      const sum1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+      const t1 = (h + sum1 + ((e & f) ^ (~e & g)) + SHA_256_ROUND_CONSTANTS[i]! + words[i]!) >>> 0;
+      const sum0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+      const t2 = (sum0 + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      h = g;
+      g = f;
+      f = e;
+      e = (d + t1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) >>> 0;
+    }
+    state[0] = (state[0]! + a) >>> 0;
+    state[1] = (state[1]! + b) >>> 0;
+    state[2] = (state[2]! + c) >>> 0;
+    state[3] = (state[3]! + d) >>> 0;
+    state[4] = (state[4]! + e) >>> 0;
+    state[5] = (state[5]! + f) >>> 0;
+    state[6] = (state[6]! + g) >>> 0;
+    state[7] = (state[7]! + h) >>> 0;
   }
-  for (let index = 16; index < 64; index += 1) {
-    const previous15 = words[index - 15]!;
-    const previous2 = words[index - 2]!;
-    const sigma0 = rotateRight(previous15, 7) ^ rotateRight(previous15, 18) ^ (previous15 >>> 3);
-    const sigma1 = rotateRight(previous2, 17) ^ rotateRight(previous2, 19) ^ (previous2 >>> 10);
-    words[index] = (words[index - 16]! + sigma0 + words[index - 7]! + sigma1) >>> 0;
-  }
-
-  let a = state[0]!;
-  let b = state[1]!;
-  let c = state[2]!;
-  let d = state[3]!;
-  let e = state[4]!;
-  let f = state[5]!;
-  let g = state[6]!;
-  let h = state[7]!;
-  for (let index = 0; index < 64; index += 1) {
-    const sum1 = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
-    const choice = (e & f) ^ (~e & g);
-    const first = (h + sum1 + choice + SHA_256_ROUND_CONSTANTS[index]! + words[index]!) >>> 0;
-    const sum0 = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
-    const majority = (a & b) ^ (a & c) ^ (b & c);
-    const second = (sum0 + majority) >>> 0;
-    h = g;
-    g = f;
-    f = e;
-    e = (d + first) >>> 0;
-    d = c;
-    c = b;
-    b = a;
-    a = (first + second) >>> 0;
-  }
-  state[0] = (state[0]! + a) >>> 0;
-  state[1] = (state[1]! + b) >>> 0;
-  state[2] = (state[2]! + c) >>> 0;
-  state[3] = (state[3]! + d) >>> 0;
-  state[4] = (state[4]! + e) >>> 0;
-  state[5] = (state[5]! + f) >>> 0;
-  state[6] = (state[6]! + g) >>> 0;
-  state[7] = (state[7]! + h) >>> 0;
 };
 
 const formatSha256Hex = (state: Uint32Array): string => {
@@ -114,19 +121,19 @@ const formatSha256Hex = (state: Uint32Array): string => {
 
 /** A synchronous, runtime-neutral SHA-256 implementation for Node and web. */
 export const sha256ByteDigest = (inputBytes: ArrayLike<number>): string => {
-  const input = inputBytes instanceof Uint8Array ? inputBytes : Uint8Array.from(inputBytes);
-  const completeLength = input.length - (input.length % 64);
-  const tail = padSha256Tail(input, completeLength);
-  const state = new Uint32Array([
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
-  ]);
-  const words = new Uint32Array(64);
-  for (let chunk = 0; chunk < completeLength + tail.length; chunk += 64) {
-    const bytes = chunk < completeLength ? input : tail;
-    const block = chunk < completeLength ? chunk : chunk - completeLength;
-    compressSha256Block(state, words, bytes, block);
-  }
-  return formatSha256Hex(state);
+  const input =
+    inputBytes instanceof Uint8Array
+      ? inputBytes.constructor === Uint8Array
+        ? inputBytes
+        : new Uint8Array(inputBytes.buffer, inputBytes.byteOffset, inputBytes.byteLength)
+      : Uint8Array.from(inputBytes);
+  const tailLength = input.length & 63;
+  const completeLength = input.length - tailLength;
+  const paddedLength = buildSha256Tail(input, completeLength, tailLength, input.length);
+  initSha256State(SCRATCH_STATE);
+  if (completeLength > 0) compressSha256Blocks(SCRATCH_STATE, SCRATCH_WORDS, input, completeLength);
+  compressSha256Blocks(SCRATCH_STATE, SCRATCH_WORDS, SCRATCH_TAIL, paddedLength);
+  return formatSha256Hex(SCRATCH_STATE);
 };
 
 export const sha256Digest = (value: string): string => sha256ByteDigest(encodeUtf8(value));

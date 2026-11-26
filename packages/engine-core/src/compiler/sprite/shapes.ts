@@ -70,6 +70,55 @@ const markMirrored = (
   if (mx && my) mask[(height - 1 - y) * width + (width - 1 - x)] = 1;
 };
 
+const shapeBounds = (
+  shape: ShapeSpec,
+  width: number,
+  height: number,
+): readonly [number, number, number, number] => {
+  if (shape.kind === 'rect') {
+    return [
+      Math.max(0, Math.floor(shape.x)),
+      Math.max(0, Math.floor(shape.y)),
+      Math.min(width, Math.ceil(shape.x + shape.width)),
+      Math.min(height, Math.ceil(shape.y + shape.height)),
+    ];
+  }
+  if (shape.kind === 'ellipse') {
+    return [
+      Math.max(0, Math.floor(shape.cx - shape.rx)),
+      Math.max(0, Math.floor(shape.cy - shape.ry)),
+      Math.min(width, Math.ceil(shape.cx + shape.rx) + 1),
+      Math.min(height, Math.ceil(shape.cy + shape.ry) + 1),
+    ];
+  }
+  if (shape.kind === 'capsule' || shape.kind === 'line') {
+    const pad = Math.ceil(shape.kind === 'capsule' ? shape.radius : shape.thickness * 0.5) + 1;
+    return [
+      Math.max(0, Math.floor(Math.min(shape.x1, shape.x2)) - pad),
+      Math.max(0, Math.floor(Math.min(shape.y1, shape.y2)) - pad),
+      Math.min(width, Math.ceil(Math.max(shape.x1, shape.x2)) + pad + 1),
+      Math.min(height, Math.ceil(Math.max(shape.y1, shape.y2)) + pad + 1),
+    ];
+  }
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let i = 0; i < shape.points.length; i += 1) {
+    const pt = shape.points[i]!;
+    if (pt[0] < minX) minX = pt[0];
+    if (pt[0] > maxX) maxX = pt[0];
+    if (pt[1] < minY) minY = pt[1];
+    if (pt[1] > maxY) maxY = pt[1];
+  }
+  return [
+    Math.max(0, Math.floor(minX) - 1),
+    Math.max(0, Math.floor(minY) - 1),
+    Math.min(width, Math.ceil(maxX) + 2),
+    Math.min(height, Math.ceil(maxY) + 2),
+  ];
+};
+
 export const rasterizeShapeMask = (
   shape: ShapeSpec,
   width: number,
@@ -79,8 +128,9 @@ export const rasterizeShapeMask = (
   const mask = new Uint8Array(width * height);
   const mx = mirror === 'x' || mirror === 'xy';
   const my = mirror === 'y' || mirror === 'xy';
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
+  const [x0, y0, x1, y1] = shapeBounds(shape, width, height);
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
       if (insideShape(shape, x, y)) markMirrored(mask, x, y, width, height, mx, my);
     }
   }

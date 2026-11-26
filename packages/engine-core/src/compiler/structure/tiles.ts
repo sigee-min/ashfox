@@ -234,6 +234,33 @@ const TILE_PAINTERS: Readonly<Record<string, TilePainter>> = {
   iron_flue: (_s, v) => paintIronFlue(v),
 };
 
+const SEED_INVARIANT_PAINTERS = new Set<string>([
+  'oak_log_top',
+  'spruce_log_top',
+  'dark_oak_log_top',
+  'oak_door',
+  'spruce_door',
+  'iron_door',
+  'glass',
+  'iron_bars',
+  'lantern',
+  'soul_lantern',
+  'bed_red',
+  'bed_blue',
+  'carpet_red',
+  'carpet_blue',
+  'carpet_moss',
+  'window_glow',
+  'timber_trim',
+  'hearth_ember',
+  'flower_box',
+  'iron_flue',
+]);
+
+/** Returns true when a tile's raster output does not depend on the structure seed. */
+export const isSeedInvariantTile = (tileId: string): boolean =>
+  Object.prototype.hasOwnProperty.call(STATIC_BOXES, tileId) || SEED_INVARIANT_PAINTERS.has(tileId);
+
 const paintMaterial16 = (tileId: string, seed: number, variant: number): readonly TileRect[] => {
   const staticHit = STATIC_BOXES[tileId];
   if (staticHit) return parseBoxString(staticHit);

@@ -1,15 +1,14 @@
-import { clamp01 } from '@ashfox/internal-contracts';
 import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
 import type { IntVec3 } from '../../project/structure/contract';
 import type { BlockDescriptor } from './blocks';
 import type { PlayableLight, StructureGrid, StructureLightingField } from './contract';
 import {
+  faceAo4,
   isWindowInteriorFacing,
   linearToSrgb,
   quantizeFaceTint,
   sampleVertexWeather,
-  vertexAo,
   writeVertexShade,
   type VertexWeatherSample,
 } from './vertexWeather';
@@ -334,8 +333,10 @@ const sampleCellLightInto = (
   z: number,
   out: [number, number, number],
 ): void => {
-  const [w, h, d] = lighting.size;
-  if (x < 0 || x >= w || y >= h || z < 0 || z >= d) {
+  const size = lighting.size;
+  const w = size[0];
+  const d = size[2];
+  if (x < 0 || x >= w || y >= size[1] || z < 0 || z >= d) {
     out[0] = 1;
     out[1] = 1;
     out[2] = 1;
@@ -349,9 +350,12 @@ const sampleCellLightInto = (
   }
   const idx = (y * d + z) * w + x;
   const skyLin = (lighting.sky[idx]! / 255) * 0.85 + 0.14;
-  out[0] = clamp01(skyLin * 0.92 + (lighting.blockR[idx]! / 255) * 1.1);
-  out[1] = clamp01(skyLin * 0.95 + (lighting.blockG[idx]! / 255) * 1.02);
-  out[2] = clamp01(skyLin * 1.02 + (lighting.blockB[idx]! / 255) * 0.92);
+  const r = skyLin * 0.92 + (lighting.blockR[idx]! / 255) * 1.1;
+  const g = skyLin * 0.95 + (lighting.blockG[idx]! / 255) * 1.02;
+  const b = skyLin * 1.02 + (lighting.blockB[idx]! / 255) * 0.92;
+  out[0] = r <= 0 ? 0 : r >= 1 ? 1 : r;
+  out[1] = g <= 0 ? 0 : g >= 1 ? 1 : g;
+  out[2] = b <= 0 ? 0 : b >= 1 ? 1 : b;
 };
 
 export interface FaceShadeInfo {
@@ -361,6 +365,20 @@ export interface FaceShadeInfo {
   readonly colors: readonly number[];
 }
 
+export interface MutableFaceShadeInfo {
+  aoCode: number;
+  flip: boolean;
+  quantizedTint: number;
+  colors: number[];
+}
+
+export const SHARED_FACE_SHADE: MutableFaceShadeInfo = {
+  aoCode: 0,
+  flip: false,
+  quantizedTint: 32767,
+  colors: [],
+};
+
 const EMISSIVE_FACE_SHADE: FaceShadeInfo = Object.freeze({
   aoCode: 0,
   flip: false,
@@ -369,6 +387,21 @@ const EMISSIVE_FACE_SHADE: FaceShadeInfo = Object.freeze({
 });
 
 const WEATHER_SCRATCH: VertexWeatherSample = { r: 1, g: 1, b: 1, bucket: 0 };
+
+const writeShadeOut = (
+  aoCode: number,
+  flip: boolean,
+  quantizedTint: number,
+  colors: number[],
+  outShade?: MutableFaceShadeInfo,
+): FaceShadeInfo => {
+  if (!outShade) return { aoCode, flip, quantizedTint, colors };
+  outShade.aoCode = aoCode;
+  outShade.flip = flip;
+  outShade.quantizedTint = quantizedTint;
+  outShade.colors = colors;
+  return outShade;
+};
 
 export const computeFaceShade = (
   grid: StructureGrid,
@@ -382,24 +415,29 @@ export const computeFaceShade = (
   maxY: number,
   useSampleCell = true,
   outColors?: number[],
+  outShade?: MutableFaceShadeInfo,
 ): FaceShadeInfo => {
   if (isEmissive) {
     if (!outColors) return EMISSIVE_FACE_SHADE;
     outColors.fill(1, 0, 12);
-    return { aoCode: 0, flip: false, quantizedTint: 32767, colors: outColors };
+    return writeShadeOut(0, false, 32767, outColors, outShade);
   }
   const basis = FACE_BASIS[dir];
   const sx = x + basis.normal[0];
   const sy = y + basis.normal[1];
   const sz = z + basis.normal[2];
-  const ao0 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, -1, -1, maxY);
-  const ao1 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, 1, -1, maxY);
-  const ao2 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, 1, 1, maxY);
-  const ao3 = vertexAo(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, -1, 1, maxY);
-  const lx = useSampleCell ? sx : x;
-  const ly = useSampleCell ? sy : y;
-  const lz = useSampleCell ? sz : z;
-  sampleCellLightInto(lighting, lx, ly, lz, LIGHT_RGB_SCRATCH);
+  const packedAo = faceAo4(grid, descs, sx, sy, sz, basis.uAxis, basis.vAxis, maxY);
+  const ao0 = (packedAo >> 12) & 3;
+  const ao1 = (packedAo >> 8) & 3;
+  const ao2 = (packedAo >> 4) & 3;
+  const ao3 = packedAo & 3;
+  sampleCellLightInto(
+    lighting,
+    useSampleCell ? sx : x,
+    useSampleCell ? sy : y,
+    useSampleCell ? sz : z,
+    LIGHT_RGB_SCRATCH,
+  );
   sampleVertexWeather(grid, descs, lighting, x, y, z, sx, sy, sz, dir, WEATHER_SCRATCH);
   const fr = LIGHT_RGB_SCRATCH[0] * basis.shade * WEATHER_SCRATCH.r;
   const fg = LIGHT_RGB_SCRATCH[1] * basis.shade * WEATHER_SCRATCH.g;
@@ -409,12 +447,13 @@ export const computeFaceShade = (
   writeVertexShade(colors, 3, fr, fg, fb, ao1);
   writeVertexShade(colors, 6, fr, fg, fb, ao2);
   writeVertexShade(colors, 9, fr, fg, fb, ao3);
-  return {
-    aoCode: (ao0 << 6) | (ao1 << 4) | (ao2 << 2) | ao3,
-    flip: ao0 + ao2 > ao1 + ao3,
-    quantizedTint: quantizeFaceTint(fr, fg, fb, WEATHER_SCRATCH.bucket),
+  return writeShadeOut(
+    (ao0 << 6) | (ao1 << 4) | (ao2 << 2) | ao3,
+    ao0 + ao2 > ao1 + ao3,
+    quantizeFaceTint(fr, fg, fb, WEATHER_SCRATCH.bucket),
     colors,
-  };
+    outShade,
+  );
 };
 
 export const samplePropLightRgb = (

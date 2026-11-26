@@ -1,4 +1,3 @@
-import { srgbLuma } from '../textures/color';
 import { ramp } from './contract';
 
 export interface ColorStatsAcc {
@@ -17,11 +16,13 @@ export const createColorStatsAcc = (): ColorStatsAcc => ({
   hueBuckets: new Uint32Array(12),
 });
 
-const rgbToHsl = (
-  r: number,
-  g: number,
-  b: number,
-): { readonly h: number; readonly s: number; readonly l: number } => {
+const hslHueDegrees = (rn: number, gn: number, bn: number, max: number, d: number): number => {
+  if (max === rn) return ((gn - bn) / d + (gn < bn ? 6 : 0)) * 60;
+  if (max === gn) return ((bn - rn) / d + 2) * 60;
+  return ((rn - gn) / d + 4) * 60;
+};
+
+const recordHslSample = (acc: ColorStatsAcc, r: number, g: number, b: number): void => {
   const rn = r / 255;
   const gn = g / 255;
   const bn = b / 255;
@@ -29,33 +30,27 @@ const rgbToHsl = (
   const min = Math.min(rn, gn, bn);
   const l = (max + min) * 0.5;
   const d = max - min;
-  if (d <= 1e-5) return { h: 0, s: 0, l };
+  if (d <= 1e-5) return;
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let hue = 0;
-  if (max === rn) hue = (gn - bn) / d + (gn < bn ? 6 : 0);
-  else if (max === gn) hue = (bn - rn) / d + 2;
-  else hue = (rn - gn) / d + 4;
-  return { h: hue * 60, s, l };
+  if (s > 0.85) acc.neonCount += 1;
+  if (s < 0.2 || l < 0.12 || l > 0.9) return;
+  const deg = hslHueDegrees(rn, gn, bn, max, d);
+  acc.chromaticTotal += 1;
+  const bucket = Math.floor((((deg % 360) + 360) % 360) / 30) % 12;
+  acc.hueBuckets[bucket] = (acc.hueBuckets[bucket] ?? 0) + 1;
 };
 
-export const recordColorPixel = (
+export const recordColorPixelWithLuma = (
   acc: ColorStatsAcc,
   r: number,
   g: number,
   b: number,
+  luma: number,
   isEmissive: boolean,
 ): void => {
   acc.totalOpaque += 1;
-  const luma = srgbLuma(r, g, b);
   if (luma < 0.14) acc.darkCrushed += 1;
-  if (isEmissive) return;
-  const { h, s, l } = rgbToHsl(r, g, b);
-  if (s > 0.85) acc.neonCount += 1;
-  if (s >= 0.2 && l >= 0.12 && l <= 0.9) {
-    acc.chromaticTotal += 1;
-    const bucket = Math.floor((((h % 360) + 360) % 360) / 30) % 12;
-    acc.hueBuckets[bucket] = (acc.hueBuckets[bucket] ?? 0) + 1;
-  }
+  if (!isEmissive) recordHslSample(acc, r, g, b);
 };
 
 export const finalizeColorStats = (

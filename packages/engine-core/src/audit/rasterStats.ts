@@ -1,10 +1,10 @@
 import type { TextureAsset } from '../model/texture';
 import { srgbLuma } from '../textures/color';
-import { rasterizeTextureSpec } from '../textures/textureRecipe/raster';
+import { canonicalRgbaBackingBuffer, rasterizeTextureSpec } from '../textures/textureRecipe/raster';
 import {
   createColorStatsAcc,
   finalizeColorStats,
-  recordColorPixel,
+  recordColorPixelWithLuma,
   type ColorStatsAcc,
 } from './colorStats';
 import { ramp } from './contract';
@@ -37,19 +37,10 @@ interface RasterBuffer {
   readonly usedPixels: Uint8Array;
 }
 
-const NEIGHBOR_DIRS: readonly (readonly [number, number])[] = [
-  [-1, 0],
-  [1, 0],
-  [0, -1],
-  [0, 1],
-];
-
-const pixelIndex = (width: number, x: number, y: number): number => y * width + x;
-
 const rasterizeTextureBuffer = (texture: TextureAsset): RasterBuffer | null => {
   if (texture.raster === undefined) return null;
   const result = rasterizeTextureSpec(texture.width, texture.height, texture.raster);
-  const rgba = result.rgba.copy();
+  const rgba = canonicalRgbaBackingBuffer(result.rgba) ?? result.rgba.copy();
   const total = result.width * result.height;
   const lumas = new Float64Array(total);
   for (let i = 0, o = 0; i < total; i += 1, o += 4) {
@@ -67,25 +58,35 @@ const rasterizeTextureBuffer = (texture: TextureAsset): RasterBuffer | null => {
   };
 };
 
-/** Return 0 = ineligible, 1 = eligible non-isolated, 2 = eligible isolated. */
-const classifyIsolatedPixel = (buf: RasterBuffer, x: number, y: number): 0 | 1 | 2 => {
-  const idx = pixelIndex(buf.width, x, y);
-  if (buf.rgba[idx * 4 + 3] !== 255) return 0;
-  const center = buf.lumas[idx]!;
-  let neighbors = 0;
-  let diffNeighbors = 0;
-  for (let i = 0; i < 4; i += 1) {
-    const dir = NEIGHBOR_DIRS[i]!;
-    const nx = x + dir[0];
-    const ny = y + dir[1];
-    if (nx < 0 || ny < 0 || nx >= buf.width || ny >= buf.height) continue;
-    const nIdx = pixelIndex(buf.width, nx, ny);
-    if (buf.rgba[nIdx * 4 + 3] !== 255) continue;
-    neighbors += 1;
-    if (Math.abs(buf.lumas[nIdx]! - center) > 0.14) diffNeighbors += 1;
-  }
+const neighborDiffCode = (
+  rgba: Uint8Array,
+  lumas: Float64Array,
+  center: number,
+  nIdx: number,
+): number => {
+  if (rgba[nIdx * 4 + 3] !== 255) return 0;
+  return Math.abs(lumas[nIdx]! - center) > 0.14 ? 0x101 : 1;
+};
+
+const classifyIsolatedAt = (
+  rgba: Uint8Array,
+  lumas: Float64Array,
+  w: number,
+  h: number,
+  x: number,
+  y: number,
+): 0 | 1 | 2 => {
+  const idx = y * w + x;
+  if (rgba[idx * 4 + 3] !== 255) return 0;
+  const center = lumas[idx]!;
+  let packed = 0;
+  if (x > 0) packed += neighborDiffCode(rgba, lumas, center, idx - 1);
+  if (x + 1 < w) packed += neighborDiffCode(rgba, lumas, center, idx + 1);
+  if (y > 0) packed += neighborDiffCode(rgba, lumas, center, idx - w);
+  if (y + 1 < h) packed += neighborDiffCode(rgba, lumas, center, idx + w);
+  const neighbors = packed & 0xff;
   if (neighbors < 2) return 0;
-  return diffNeighbors === neighbors ? 2 : 1;
+  return packed >>> 8 === neighbors ? 2 : 1;
 };
 
 const measureBufferNoise = (
@@ -95,7 +96,7 @@ const measureBufferNoise = (
   let isolated = 0;
   for (let y = 0; y < buf.height; y += 1) {
     for (let x = 0; x < buf.width; x += 1) {
-      const code = classifyIsolatedPixel(buf, x, y);
+      const code = classifyIsolatedAt(buf.rgba, buf.lumas, buf.width, buf.height, x, y);
       if (code === 0) continue;
       eligible += 1;
       if (code === 2) isolated += 1;
@@ -189,15 +190,19 @@ const recordFaceTexel = (
   y: number,
   acc: FaceSampleAcc,
 ): boolean => {
-  const idx = pixelIndex(buf.width, x, y);
+  const idx = y * buf.width + x;
   buf.usedPixels[idx] = 1;
   const offset = idx * 4;
   if (buf.rgba[offset + 3] !== 255) return false;
-  const r = buf.rgba[offset]!;
-  const g = buf.rgba[offset + 1]!;
-  const b = buf.rgba[offset + 2]!;
-  recordColorPixel(acc.color, r, g, b, buf.isEmissive);
   const l = buf.lumas[idx]!;
+  recordColorPixelWithLuma(
+    acc.color,
+    buf.rgba[offset]!,
+    buf.rgba[offset + 1]!,
+    buf.rgba[offset + 2]!,
+    l,
+    buf.isEmissive,
+  );
   acc.lumas.push(l);
   if (binding.isTop) {
     acc.topSum += l;

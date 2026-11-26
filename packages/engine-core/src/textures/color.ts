@@ -4,22 +4,31 @@ export interface RgbColor {
   b: number;
 }
 
-const HEX_COLOR = /^#([0-9a-f]{6})$/i;
+const hexNibble = (code: number): number => {
+  if (code >= 48 && code <= 57) return code - 48;
+  if (code >= 97 && code <= 102) return code - 87;
+  if (code >= 65 && code <= 70) return code - 55;
+  return -1;
+};
 
 /** Parse the explicit six-digit colors accepted by authored texture source. */
 export const parseSurfaceColor = (value: string): RgbColor => {
-  if (typeof value !== 'string' || value.length !== 7) {
+  if (typeof value !== 'string' || value.length !== 7 || value.charCodeAt(0) !== 35) {
     throw new RangeError('Surface colors must use exactly six hexadecimal digits (#rrggbb).');
   }
-  const match = HEX_COLOR.exec(value);
-  if (!match) {
+  const r0 = hexNibble(value.charCodeAt(1));
+  const r1 = hexNibble(value.charCodeAt(2));
+  const g0 = hexNibble(value.charCodeAt(3));
+  const g1 = hexNibble(value.charCodeAt(4));
+  const b0 = hexNibble(value.charCodeAt(5));
+  const b1 = hexNibble(value.charCodeAt(6));
+  if ((r0 | r1 | g0 | g1 | b0 | b1) < 0) {
     throw new RangeError('Surface colors must use exactly six hexadecimal digits (#rrggbb).');
   }
-  const hex = match[1]!;
   return {
-    r: Number.parseInt(hex.slice(0, 2), 16),
-    g: Number.parseInt(hex.slice(2, 4), 16),
-    b: Number.parseInt(hex.slice(4, 6), 16),
+    r: (r0 << 4) | r1,
+    g: (g0 << 4) | g1,
+    b: (b0 << 4) | b1,
   };
 };
 

@@ -8,6 +8,7 @@ lerna-debug.log*
 
 # ashfox local workspace state
 .ashfox/
+.ashfox-cache/
 
 # Operating system and editor state
 .DS_Store

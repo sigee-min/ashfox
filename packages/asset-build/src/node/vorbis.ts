@@ -7,6 +7,7 @@ const CHUNK_FRAMES = 4096;
 const MAX_OGG_BYTES = 16 * 1024 * 1024;
 const VORBIS_QUALITY = 5;
 const OGG_SERIAL_NUMBER = 0;
+export const VORBIS_FINGERPRINT = 'wasm-vorbis-q5-serial0-v2';
 
 const ASCII_DECODER = new TextDecoder('ascii');
 
@@ -159,7 +160,7 @@ const assertDecodedVorbisClean = (
 export const createVorbisEncoder = async (signal?: AbortSignal): Promise<PackEncoder> => {
   assertNotAborted(signal);
   return {
-    fingerprint: 'wasm-vorbis-q5-serial0-v2',
+    fingerprint: VORBIS_FINGERPRINT,
     encode: async (wav) => {
       assertNotAborted(signal);
       const { sampleRate, channels, channelData } = parseCanonicalWav(wav);

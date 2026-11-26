@@ -1,5 +1,7 @@
+import { deepFreeze } from '../../immutable';
 import type { CompiledModel } from '../../model/compiled';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
+import type { AssetSourceParseResult } from '../../project/program/asset/contract';
 import { parseAssetSource } from '../../project/program/asset/parse';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import {
@@ -18,7 +20,8 @@ import {
   type StructureAuditEvaluator,
   type StructureProduct,
 } from '../structure';
-import { qualifyCustomAssetKey } from '../structure/contract';
+import { qualifyCustomAssetKey, type EvaluatedStructureResult } from '../structure/contract';
+import type { CachedCustomModel, DirectoryWorkspaceCache } from './cache';
 
 const relativePath = (owner: string, target: string): string => {
   if (!target.startsWith('./') && !target.startsWith('../')) {
@@ -68,17 +71,30 @@ const resolveModelImport = (
   }
 };
 
+const parseAssetCached = (
+  filePath: string,
+  source: string,
+  assetUnits?: Map<string, AssetSourceParseResult>,
+): AssetSourceParseResult => {
+  const cached = assetUnits?.get(filePath);
+  if (cached) return cached;
+  const parsed = parseAssetSource(source, filePath);
+  assetUnits?.set(filePath, parsed);
+  return parsed;
+};
+
 const visitReachableModel = (
   current: string,
   packages: DirectoryWorkspace['packages'],
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   reachable: Set<string>,
   stack: string[],
+  assetUnits?: Map<string, AssetSourceParseResult>,
 ): void => {
   if (reachable.has(current)) return;
   reachable.add(current);
   const file = filesByPath.get(current);
-  const parsed = file ? parseAssetSource(file.source, current) : null;
+  const parsed = file ? parseAssetCached(current, file.source, assetUnits) : null;
   if (!parsed?.unit) return;
   for (const imp of parsed.unit.imports) {
     const target = resolveModelImport(packages, current, imp.path);
@@ -92,11 +108,12 @@ export const collectStructureOnlyCustomPaths = (
   modelEntryPaths: readonly string[],
   structureCustomPaths: ReadonlySet<string>,
   filesByPath: ReadonlyMap<string, DirectoryFile>,
+  assetUnits?: Map<string, AssetSourceParseResult>,
 ): ReadonlySet<string> => {
   const reachable = new Set<string>();
   const stack = [...modelEntryPaths];
   while (stack.length > 0) {
-    visitReachableModel(stack.pop()!, config.packages, filesByPath, reachable, stack);
+    visitReachableModel(stack.pop()!, config.packages, filesByPath, reachable, stack, assetUnits);
   }
   return new Set([...structureCustomPaths].filter((p) => !reachable.has(p)));
 };
@@ -106,12 +123,13 @@ const collectModelClosure = (
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   collected: Map<string, DirectoryFile>,
   visiting: Set<string>,
+  assetUnits?: Map<string, AssetSourceParseResult>,
 ): void => {
   if (visiting.has(entryPath) || collected.has(entryPath)) return;
   const file = filesByPath.get(entryPath);
   if (!file) throw new Error(`Missing custom model source: ${entryPath}`);
   visiting.add(entryPath);
-  const parsed = parseAssetSource(file.source, entryPath);
+  const parsed = parseAssetCached(entryPath, file.source, assetUnits);
   if (!parsed.unit || parsed.diagnostics.length > 0) {
     throw new Error(
       `Custom model parse failed (${entryPath}): ${JSON.stringify(parsed.diagnostics)}`,
@@ -119,7 +137,13 @@ const collectModelClosure = (
   }
   collected.set(entryPath, file);
   for (const imp of parsed.unit.imports) {
-    collectModelClosure(relativePath(entryPath, imp.path), filesByPath, collected, visiting);
+    collectModelClosure(
+      relativePath(entryPath, imp.path),
+      filesByPath,
+      collected,
+      visiting,
+      assetUnits,
+    );
   }
   visiting.delete(entryPath);
 };
@@ -151,15 +175,24 @@ const buildCustomModelManifest = (
 const compileImportedModel = (
   modelPath: string,
   filesByPath: ReadonlyMap<string, DirectoryFile>,
-  cache: Map<string, CompiledModel>,
+  cache: Map<string, CachedCustomModel>,
   touched: Set<string>,
+  assetUnits?: Map<string, AssetSourceParseResult>,
 ): CompiledModel => {
   const cached = cache.get(modelPath);
-  if (cached) return cached;
+  if (cached) {
+    for (const p of cached.closurePaths) touched.add(p);
+    return cached.model;
+  }
   const closure = new Map<string, DirectoryFile>();
-  collectModelClosure(modelPath, filesByPath, closure, new Set());
-  for (const path of closure.keys()) touched.add(path);
-  const entryUnit = parseAssetSource(filesByPath.get(modelPath)!.source, modelPath).unit!;
+  collectModelClosure(modelPath, filesByPath, closure, new Set(), assetUnits);
+  const closurePaths = Object.freeze([...closure.keys()]);
+  for (const p of closurePaths) touched.add(p);
+  const entryUnit = parseAssetCached(
+    modelPath,
+    filesByPath.get(modelPath)!.source,
+    assetUnits,
+  ).unit!;
   const files = [...closure.values()];
   const manifest = buildCustomModelManifest(entryUnit.id, modelPath, files);
   const base = {
@@ -185,7 +218,7 @@ const compileImportedModel = (
     throw new Error(
       `Custom model compile failed (${modelPath}): ${JSON.stringify(compiled.diagnostics)}`,
     );
-  cache.set(modelPath, compiled.model);
+  cache.set(modelPath, Object.freeze({ model: compiled.model, closurePaths }));
   return compiled.model;
 };
 
@@ -193,11 +226,37 @@ interface StructureGraphState {
   readonly filesByPath: ReadonlyMap<string, DirectoryFile>;
   readonly entryPath: string;
   readonly units: Map<string, StructureSourceUnit>;
+  readonly parsedUnitCache: Map<string, StructureSourceUnit>;
+  readonly topKinds: Map<string, string | undefined>;
+  readonly assetUnits: Map<string, AssetSourceParseResult>;
   readonly visiting: Set<string>;
   readonly customModels: Record<string, CompiledModel>;
-  readonly modelCache: Map<string, CompiledModel>;
+  readonly modelCache: Map<string, CachedCustomModel>;
   readonly customModelPaths: Set<string>;
 }
+
+const topKindOf = (
+  state: StructureGraphState,
+  filePath: string,
+  source: string,
+): string | undefined => {
+  if (state.topKinds.has(filePath)) return state.topKinds.get(filePath);
+  const kind = lexProgramSource(source).tokens[2]?.value;
+  state.topKinds.set(filePath, kind);
+  return kind;
+};
+
+const parseStructureCached = (
+  state: StructureGraphState,
+  filePath: string,
+  source: string,
+): StructureSourceUnit => {
+  const cached = state.parsedUnitCache.get(filePath);
+  if (cached) return cached;
+  const unit = deepFreeze(parseStructureSource(source, filePath));
+  state.parsedUnitCache.set(filePath, unit);
+  return unit;
+};
 
 const visitStructureUnit = (
   state: StructureGraphState,
@@ -208,8 +267,7 @@ const visitStructureUnit = (
   if (state.visiting.has(filePath)) throw new Error(`Structure import cycle: ${filePath}`);
   const file = state.filesByPath.get(filePath);
   if (!file) throw new Error(`Missing or ignored source: ${filePath}`);
-  const topKind = lexProgramSource(file.source).tokens[2]?.value;
-  if (topKind === 'asset') {
+  if (topKindOf(state, filePath, file.source) === 'asset') {
     if (!alias || !ownerPath || filePath === state.entryPath)
       throw new Error(`Unexpected asset entry: ${filePath}`);
     state.customModels[qualifyCustomAssetKey(ownerPath, alias)] = compileImportedModel(
@@ -217,13 +275,14 @@ const visitStructureUnit = (
       state.filesByPath,
       state.modelCache,
       state.customModelPaths,
+      state.assetUnits,
     );
     return;
   }
   if (state.units.has(filePath)) return;
   if (state.visiting.size >= 32) throw new Error('Structure import depth exceeds 32');
   state.visiting.add(filePath);
-  const unit = parseStructureSource(file.source, filePath);
+  const unit = parseStructureCached(state, filePath, file.source);
   const ownerKind = ownerPath ? state.units.get(ownerPath)?.kind : undefined;
   const allowStructure = ownerKind === 'compound';
   if (
@@ -244,19 +303,24 @@ export const compileDirectoryStructure = (
   filesByPath: ReadonlyMap<string, DirectoryFile>,
   entryPath: string,
   evaluateAudit: StructureAuditEvaluator,
+  cache?: DirectoryWorkspaceCache,
 ): {
   readonly structure: StructureProduct;
   readonly rootUnit: StructureSourceUnit;
   readonly structurePaths: readonly string[];
   readonly customPaths: readonly string[];
 } => {
+  const evaluatedGrids: Map<string, EvaluatedStructureResult> | undefined = cache?.evaluatedGrids;
   const state: StructureGraphState = {
     filesByPath,
     entryPath,
     units: new Map(),
+    parsedUnitCache: cache?.structureUnits ?? new Map(),
+    topKinds: cache?.topKinds ?? new Map(),
+    assetUnits: cache?.assetUnits ?? new Map(),
     visiting: new Set(),
     customModels: {},
-    modelCache: new Map(),
+    modelCache: cache?.customModels ?? new Map(),
     customModelPaths: new Set(),
   };
   visitStructureUnit(state, entryPath);
@@ -280,6 +344,7 @@ export const compileDirectoryStructure = (
     state.customModels,
     relativePath,
     evaluateAudit,
+    evaluatedGrids,
   );
   return {
     structure,

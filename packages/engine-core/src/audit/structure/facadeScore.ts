@@ -21,29 +21,23 @@ interface FacadeCounts {
   framingBlocks: number;
 }
 
-const XZ_DIRS: readonly [number, number][] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-
 const isExteriorFacing = (
   grid: StructureGrid,
   interiorMask: Uint8Array,
+  w: number,
+  d: number,
+  idx: number,
   x: number,
-  y: number,
   z: number,
 ): boolean => {
-  const [w, _h, d] = grid.size;
-  for (const [dx, dz] of XZ_DIRS) {
-    const nx = x + dx;
-    const nz = z + dz;
-    if (nx < 0 || nx >= w || nz < 0 || nz >= d) return true;
-    const nIdx = (y * d + nz) * w + nx;
-    if (grid.voxels[nIdx]! <= 0 && interiorMask[nIdx] === 0) return true;
-  }
-  return false;
+  if (x === 0 || x + 1 >= w || z === 0 || z + 1 >= d) return true;
+  const voxels = grid.voxels;
+  return (
+    (voxels[idx + 1]! <= 0 && interiorMask[idx + 1] === 0) ||
+    (voxels[idx - 1]! <= 0 && interiorMask[idx - 1] === 0) ||
+    (voxels[idx + w]! <= 0 && interiorMask[idx + w] === 0) ||
+    (voxels[idx - w]! <= 0 && interiorMask[idx - w] === 0)
+  );
 };
 
 const analyzeHeightSilhouette = (
@@ -71,18 +65,20 @@ const accumulateFacadeCell = (
   grid: StructureGrid,
   paletteMeta: readonly PaletteStateMeta[],
   interiorMask: Uint8Array,
+  w: number,
+  d: number,
+  roofMinY: number,
   x: number,
   y: number,
   z: number,
   acc: FacadeCounts,
 ): void => {
-  const [w, h, d] = grid.size;
   const idx = (y * d + z) * w + x;
   const st = grid.voxels[idx]!;
   if (st <= 0) return;
   const meta = paletteMeta[st]!;
-  if (y >= Math.floor(h * 0.4) && (meta.isStair || meta.isSlab)) acc.roofShapeBlocks += 1;
-  if (!isExteriorFacing(grid, interiorMask, x, y, z)) return;
+  if (y >= roofMinY && (meta.isStair || meta.isSlab)) acc.roofShapeBlocks += 1;
+  if (!isExteriorFacing(grid, interiorMask, w, d, idx, x, z)) return;
   acc.facadeFaces += 1;
   if (!meta.descriptor.solidOpaque || grid.customTags[idx] !== null) acc.reliefFaces += 1;
   if (meta.isOpening) acc.openingBlocks += 1;
@@ -109,7 +105,10 @@ export const analyzeFacade = (
   topCoverY: Int16Array,
   interiorMask: Uint8Array,
 ): FacadeStats => {
-  const [w, h, d] = grid.size;
+  const w = grid.size[0];
+  const h = grid.size[1];
+  const d = grid.size[2];
+  const roofMinY = Math.floor(h * 0.4);
   const acc: FacadeCounts = {
     facadeFaces: 0,
     reliefFaces: 0,
@@ -121,7 +120,7 @@ export const analyzeFacade = (
   for (let y = 1; y < h; y += 1) {
     for (let z = 0; z < d; z += 1) {
       for (let x = 0; x < w; x += 1) {
-        accumulateFacadeCell(grid, paletteMeta, interiorMask, x, y, z, acc);
+        accumulateFacadeCell(grid, paletteMeta, interiorMask, w, d, roofMinY, x, y, z, acc);
       }
     }
   }

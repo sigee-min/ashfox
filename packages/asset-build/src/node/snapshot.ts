@@ -181,6 +181,7 @@ export const readSnapshot = (input: string): Snapshot => {
     '.git',
     'node_modules',
     '.ashfox',
+    '.ashfox-cache',
     config.build.directory,
     ...config.exports.map((e) => e.directory),
     ...(config.packs ?? []).map((p) => p.directory),

@@ -1,6 +1,14 @@
 import { ProjectExportError } from '../contract';
 
-const snapshotError = (errorMessage: string, path: string, message: string): never => {
+const formatPath = (prefix: string, segment: string | number): string => `${prefix}.${segment}`;
+
+const snapshotError = (
+  errorMessage: string,
+  prefix: string,
+  segment: string | number | null,
+  message: string,
+): never => {
+  const path = segment === null ? prefix : formatPath(prefix, segment);
   throw new ProjectExportError(errorMessage, [
     {
       code: 'format.unsupported_data',
@@ -14,7 +22,8 @@ const snapshotError = (errorMessage: string, path: string, message: string): nev
 const ownDataDescriptor = (
   target: object,
   key: string,
-  path: string,
+  prefix: string,
+  segment: string | number,
   errorMessage: string,
   descriptorMessage: string,
 ): PropertyDescriptor => {
@@ -24,47 +33,59 @@ const ownDataDescriptor = (
     !descriptor.enumerable ||
     !Object.prototype.hasOwnProperty.call(descriptor, 'value')
   ) {
-    return snapshotError(errorMessage, path, descriptorMessage);
+    return snapshotError(errorMessage, prefix, segment, descriptorMessage);
   }
   return descriptor;
 };
 
 const assertDensePlainArray = (value: unknown[], path: string, errorMessage: string): void => {
   if (Object.getPrototypeOf(value) !== Array.prototype) {
-    snapshotError(errorMessage, path, 'Export arrays must use the plain array prototype.');
+    snapshotError(errorMessage, path, null, 'Export arrays must use the plain array prototype.');
   }
   const ownKeys = Reflect.ownKeys(value);
   if (ownKeys.length !== value.length + 1 || ownKeys[value.length] !== 'length') {
-    snapshotError(errorMessage, path, 'Export arrays must be dense and contain no extra fields.');
+    snapshotError(
+      errorMessage,
+      path,
+      null,
+      'Export arrays must be dense and contain no extra fields.',
+    );
   }
   for (let index = 0; index < value.length; index += 1) {
     if (!Object.prototype.hasOwnProperty.call(value, index)) {
-      snapshotError(errorMessage, path, 'Export arrays must be dense and contain no extra fields.');
+      snapshotError(
+        errorMessage,
+        path,
+        null,
+        'Export arrays must be dense and contain no extra fields.',
+      );
     }
   }
 };
 
 const snapshotArray = (
   value: unknown[],
-  path: string,
+  prefix: string,
+  segment: string | number | null,
   errorMessage: string,
   copies: WeakMap<object, unknown>,
   visiting: WeakSet<object>,
 ): readonly unknown[] => {
+  const path = segment === null ? prefix : formatPath(prefix, segment);
   assertDensePlainArray(value, path, errorMessage);
-  const copy: unknown[] = [];
+  const copy = new Array<unknown>(value.length);
   copies.set(value, copy);
   visiting.add(value);
   for (let index = 0; index < value.length; index += 1) {
-    const entryPath = `${path}.${index}`;
     const descriptor = ownDataDescriptor(
       value,
       String(index),
-      entryPath,
+      path,
+      index,
       errorMessage,
       'Export array entries must be own enumerable data fields.',
     );
-    copy.push(snapshotData(descriptor.value, entryPath, errorMessage, copies, visiting));
+    copy[index] = snapshotData(descriptor.value, path, index, errorMessage, copies, visiting);
   }
   visiting.delete(value);
   return Object.freeze(copy);
@@ -72,35 +93,54 @@ const snapshotArray = (
 
 const snapshotRecord = (
   value: object,
-  path: string,
+  prefix: string,
+  segment: string | number | null,
   errorMessage: string,
   copies: WeakMap<object, unknown>,
   visiting: WeakSet<object>,
 ): Record<string, unknown> => {
+  const path = segment === null ? prefix : formatPath(prefix, segment);
   if (Object.getPrototypeOf(value) !== Object.prototype) {
-    return snapshotError(errorMessage, path, 'Export records must use the plain object prototype.');
+    return snapshotError(
+      errorMessage,
+      path,
+      null,
+      'Export records must use the plain object prototype.',
+    );
   }
   const copy: Record<string, unknown> = {};
   copies.set(value, copy);
   visiting.add(value);
-  for (const key of Reflect.ownKeys(value)) {
+  const keys = Reflect.ownKeys(value);
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index];
     if (typeof key !== 'string') {
-      return snapshotError(errorMessage, path, 'Export records must not contain symbol keys.');
+      return snapshotError(
+        errorMessage,
+        path,
+        null,
+        'Export records must not contain symbol keys.',
+      );
     }
-    const entryPath = `${path}.${key}`;
     const descriptor = ownDataDescriptor(
       value,
       key,
-      entryPath,
+      path,
+      key,
       errorMessage,
       'Export fields must be own enumerable data properties.',
     );
-    Object.defineProperty(copy, key, {
-      configurable: false,
-      enumerable: true,
-      writable: false,
-      value: snapshotData(descriptor.value, entryPath, errorMessage, copies, visiting),
-    });
+    const snapped = snapshotData(descriptor.value, path, key, errorMessage, copies, visiting);
+    if (key === '__proto__') {
+      Object.defineProperty(copy, key, {
+        configurable: false,
+        enumerable: true,
+        writable: false,
+        value: snapped,
+      });
+    } else {
+      copy[key] = snapped;
+    }
   }
   visiting.delete(value);
   return Object.freeze(copy);
@@ -115,7 +155,8 @@ const isPrimitiveData = (value: unknown): boolean =>
 
 const snapshotData = (
   value: unknown,
-  path: string,
+  prefix: string,
+  segment: string | number | null,
   errorMessage: string,
   copies: WeakMap<object, unknown>,
   visiting: WeakSet<object>,
@@ -124,22 +165,23 @@ const snapshotData = (
   if (typeof value !== 'object' || value === null) {
     return snapshotError(
       errorMessage,
-      path,
+      prefix,
+      segment,
       'Export fields must contain only canonical data values.',
     );
   }
   const existing = copies.get(value);
   if (existing !== undefined) {
     if (visiting.has(value)) {
-      return snapshotError(errorMessage, path, 'Export data must not contain cycles.');
+      return snapshotError(errorMessage, prefix, segment, 'Export data must not contain cycles.');
     }
     return existing;
   }
   return Array.isArray(value)
-    ? snapshotArray(value, path, errorMessage, copies, visiting)
-    : snapshotRecord(value, path, errorMessage, copies, visiting);
+    ? snapshotArray(value, prefix, segment, errorMessage, copies, visiting)
+    : snapshotRecord(value, prefix, segment, errorMessage, copies, visiting);
 };
 
 /** Exact descriptor-based copy with no aliases into caller-owned data. */
 export const snapshotExportData = <T>(value: T, path: string, errorMessage: string): T =>
-  snapshotData(value, path, errorMessage, new WeakMap(), new WeakSet()) as T;
+  snapshotData(value, path, null, errorMessage, new WeakMap(), new WeakSet()) as T;

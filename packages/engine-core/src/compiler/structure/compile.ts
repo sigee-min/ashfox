@@ -6,6 +6,7 @@ import { createProjectDocument } from '../../project/create';
 import { StructureInputError, type StructureSourceUnit } from '../../project/structure/contract';
 import { describeBlockState } from './blocks';
 import type {
+  EvaluatedStructureResult,
   StructureAuditEvaluator,
   StructureFloorMeta,
   StructureGrid,
@@ -84,6 +85,7 @@ export const compileStructureUnits = (
   customModels: Readonly<Record<string, CompiledModel>>,
   relative: (owner: string, specifier: string) => string,
   evaluateAudit: StructureAuditEvaluator,
+  evaluatedGridCache?: Map<string, EvaluatedStructureResult>,
 ): StructureProduct => {
   const root = units.get(rootPath);
   if (!root || (root.kind !== 'structure' && root.kind !== 'compound') || root.size === null) {
@@ -95,7 +97,7 @@ export const compileStructureUnits = (
       actual: root?.kind ?? 'missing',
     });
   }
-  const { grid, prefabUses } = evaluateStructure(rootPath, units, relative);
+  const { grid, prefabUses } = evaluateStructure(rootPath, units, relative, evaluatedGridCache);
   const descriptors = grid.states.map(describeBlockState);
   const { lighting, lights } = computeStructureLighting(grid, descriptors, customModels);
   const bakedMesh = buildStructureBakedMesh(grid, lighting, customModels, { descriptors });

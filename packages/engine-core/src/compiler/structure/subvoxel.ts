@@ -442,10 +442,10 @@ export const openingSpan = (op: StructureOpeningMeta) => {
 };
 
 export const voxelAt = (grid: StructureGrid, x: number, y: number, z: number): number => {
-  const [w, h, d] = grid.size;
-  return x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d
+  const s = grid.size;
+  return x < 0 || x >= s[0] || y < 0 || y >= s[1] || z < 0 || z >= s[2]
     ? -1
-    : grid.voxels[(y * d + z) * w + x]!;
+    : grid.voxels[(y * s[2] + z) * s[0] + x]!;
 };
 
 export const isSolidOpaqueAt = (
@@ -455,9 +455,11 @@ export const isSolidOpaqueAt = (
   y: number,
   z: number,
 ): boolean => {
-  const v = voxelAt(grid, x, y, z);
-  const [w, _h, d] = grid.size;
-  return v > 0 && grid.customTags[(y * d + z) * w + x] === null && descriptors[v]!.solidOpaque;
+  const s = grid.size;
+  if (x < 0 || x >= s[0] || y < 0 || y >= s[1] || z < 0 || z >= s[2]) return false;
+  const idx = (y * s[2] + z) * s[0] + x;
+  const v = grid.voxels[idx]!;
+  return v > 0 && grid.customTags[idx] === null && descriptors[v]!.solidOpaque;
 };
 
 export const isTrueAirAt = (
@@ -467,7 +469,9 @@ export const isTrueAirAt = (
   y: number,
   z: number,
 ): boolean => {
-  const v = voxelAt(grid, x, y, z);
+  const s = grid.size;
+  if (x < 0 || x >= s[0] || y < 0 || y >= s[1] || z < 0 || z >= s[2]) return true;
+  const v = grid.voxels[(y * s[2] + z) * s[0] + x]!;
   return v <= 0 || !descriptors[v]!.solidOpaque;
 };
 
