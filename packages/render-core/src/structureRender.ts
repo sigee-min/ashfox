@@ -234,7 +234,11 @@ const appendCustomInstances = async (
     await waitForProjectionTextures(projection, signal);
     projection.root.updateMatrixWorld(true);
     projection.root.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) root.add(populateInstancedMesh(obj, list));
+      if (obj instanceof THREE.Mesh) {
+        const instanced = populateInstancedMesh(obj, list);
+        root.add(instanced);
+        disposables.push(() => instanced.dispose());
+      }
     });
     disposables.push(() => projection.dispose());
   }
