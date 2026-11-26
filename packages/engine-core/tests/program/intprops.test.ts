@@ -316,6 +316,61 @@ const testBfsSolverAndClearPath = (): void => {
   const trappedReport = validateClearPath(walledRoom, trappedCompiled.boxes, trappedCompiled.hooks);
   assert.equal(trappedReport.passed, false);
   assert.equal(trappedReport.blocked_seat_count, 1);
+
+  // Verify axis='x' partition spans X at fixed Z=at_pos, and story follows nudged target prop.
+  const xPartitionRoom: InteriorRoomInput = {
+    ...baseRoom,
+    volumes: [
+      {
+        kind: 'partition',
+        id: 'x_wall',
+        style: 'sliding_shoji',
+        axis: 'x',
+        at_pos: 4,
+        span_from: 1,
+        span_to: 9,
+      },
+    ],
+    props: [{ id: 'north_chair', kind: 'chair', at: [2, 1, 2], facing: 'south' }],
+    stories: [],
+    draperies: [],
+  };
+  const xPartSolved = solveInteriorLayout(xPartitionRoom);
+  assert.equal(
+    xPartSolved.clearance.clear_path_cells.some((c) => c[2] === 4),
+    false,
+    'axis=x partition at z=4 must block clear_path along z=4',
+  );
+  assert.equal(xPartSolved.clearance.blocked_seat_count, 1);
+
+  const nudgeStoryRoom: InteriorRoomInput = {
+    ...baseRoom,
+    volumes: [],
+    props: [{ id: 'tea_tbl', kind: 'low_table', at: [5, 1, 8], size: [1, 1], facing: 'north' }],
+    stories: [
+      {
+        id: 'tea_story',
+        kind: 'tea_ceremony',
+        on_target: 'tea_tbl',
+        surface_y_16: 24,
+        center_xz_16: [5.5 * 16, 8.5 * 16],
+        facing: 'north',
+      },
+    ],
+    draperies: [],
+  };
+  const nudgedSolved = solveInteriorLayout(nudgeStoryRoom);
+  const movedTbl = nudgedSolved.placed_props.find((p) => p.id === 'tea_tbl')!;
+  assert.equal(movedTbl.nudged, true);
+  const storyHook = nudgedSolved.hooks.find(
+    (h) => h.kind === 'station' && h.station_kind === 'tea_ceremony',
+  )!;
+  assert.ok(storyHook, 'Expected station hook for tea_ceremony');
+  assert.ok(
+    Math.abs(storyHook.position[0] - (movedTbl.resolved_at[0] + 0.5)) < 0.01 &&
+      Math.abs(storyHook.position[2] - (movedTbl.resolved_at[2] + 0.5)) < 0.01,
+    `Expected story to move to nudged table ${JSON.stringify(movedTbl.resolved_at)}, got ${JSON.stringify(storyHook.position)}`,
+  );
 };
 
 testParametricPropsAndAutoJoin();

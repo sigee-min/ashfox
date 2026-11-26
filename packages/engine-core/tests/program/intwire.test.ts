@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {
   compileStructureUnits,
+  decodeStructureNbt,
   exportStructureGltfResolved,
   parseStructureSource,
   type StructureSourceUnit,
@@ -196,6 +197,33 @@ const run = async (): Promise<void> => {
     },
   });
   assert.equal(report.issues.numErrors, 0, JSON.stringify(report.issues));
+
+  // Verify interior nbt_lowering blocks merge into the exported structure .nbt grid.
+  const decoded = decodeStructureNbt(product.nbt);
+  const paletteNames = new Set(decoded.palette.map((p) => p.Name));
+  assert.ok(
+    paletteNames.has('minecraft:oak_slab') || paletteNames.has('minecraft:dark_oak_log'),
+    `Expected lowered interior partition/platform states in .nbt palette: ${[...paletteNames].join(',')}`,
+  );
+
+  // Verify compound_place preserves and rotates child interiors + hooks + radiosity.
+  const compoundSrc = `ashfox 1
+structure test_compound {
+  import "./test_hall.ashfox" as hall_a;
+  size = (20b, 16b, 20b);
+  palette { grass = "minecraft:grass_block"; }
+  box { from = (0b, 0b, 0b); to = (19b, 0b, 19b); block = grass; }
+  compound_place hall_a { at = (2b, 0b, 2b); rotate = 180; }
+}`;
+  const compUnits = new Map<string, StructureSourceUnit>([
+    ['test_hall.ashfox', unit],
+    ['test_compound.ashfox', parseStructureSource(compoundSrc, 'test_compound.ashfox')],
+  ]);
+  const compProduct = compileStructureUnits('test_compound.ashfox', compUnits, {}, rel);
+  assert.equal(compProduct.grid.interiors?.length, 1);
+  assert.equal(compProduct.grid.interiors![0]!.room_id, 'hall_a.hall');
+  assert.ok((compProduct.playableMeta.interiors?.length ?? 0) === 1);
+  assert.ok(compProduct.hooks?.anchors.some((a) => a.id.startsWith('hall_a.')));
   console.log('ashfox interior wiring integration tests ok');
 };
 

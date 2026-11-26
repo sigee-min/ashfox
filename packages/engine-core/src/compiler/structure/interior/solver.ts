@@ -114,8 +114,8 @@ const addPartitionCells = (vol: PartitionVolumeSpec, blocked: Set<string>): void
   const doorEnd = doorStart + (vol.doorway_width ?? 1) - 1;
   for (let u = vol.span_from; u <= vol.span_to; u += 1) {
     if (u >= doorStart && u <= doorEnd) continue;
-    const x = vol.axis === 'x' ? vol.at_pos : u;
-    const z = vol.axis === 'z' ? vol.at_pos : u;
+    const x = vol.axis === 'x' ? u : vol.at_pos;
+    const z = vol.axis === 'z' ? u : vol.at_pos;
     blocked.add(cellKey(x, z));
   }
 };
@@ -431,12 +431,17 @@ export const solveInteriorLayout = (room: InteriorRoomInput): SolvedRoomLayout =
   }));
   const boxes: SubVoxelBoxIR[] = [...compiledProps.boxes];
   const hooks: PlayableInteriorHook[] = [...compiledProps.hooks];
+  const placementById = new Map(placements.map((p) => [p.id, p]));
   for (const story of room.stories ?? []) {
+    const p = placementById.get(story.on_target);
+    const dx16 = p ? (p.resolved_at[0] - p.original_at[0]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
+    const dz16 = p ? (p.resolved_at[2] - p.original_at[2]) * SUBVOXEL_UNITS_PER_BLOCK : 0;
     const targetSurface = compiledProps.surface_y_map.get(story.on_target);
-    const resolvedStory: InteriorStorySpec =
-      targetSurface !== undefined && story.surface_y_16 <= 0
-        ? { ...story, surface_y_16: targetSurface }
-        : story;
+    const resolvedStory: InteriorStorySpec = {
+      ...story,
+      center_xz_16: [story.center_xz_16[0] + dx16, story.center_xz_16[1] + dz16],
+      ...(targetSurface !== undefined ? { surface_y_16: targetSurface } : {}),
+    };
     const res = compileStoryVignette(resolvedStory, room.style_dna, room.seed);
     boxes.push(...res.boxes);
     hooks.push(...res.hooks);

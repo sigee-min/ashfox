@@ -425,10 +425,12 @@ const finalizeEvalResult = (
   solveBlockConnections(state.voxels, state.states, state.stateToIdx, state.size);
   const rooms = resolveRoomEnclosure([...state.rooms.values()], state.voxels, state.size);
   const openings = resolveOpeningConnections(state.openings, rooms);
-  const interiors =
+  const localInteriors =
     state.interiorSpecs.length > 0
       ? compileEvaluatedInteriors(state, state.interiorSpecs, rooms, openings)
-      : undefined;
+      : [];
+  const combinedInteriors = [...state.childInteriors, ...localInteriors];
+  const interiors = combinedInteriors.length > 0 ? combinedInteriors : undefined;
   verifyReachableHygiene(
     rootPath,
     state.units,

@@ -22,6 +22,7 @@ import type {
   StructureRoomMeta,
   StructureSocketMeta,
 } from './contract';
+import type { CompiledInteriorRoom } from './interior/types';
 
 export interface EvalState {
   readonly rootPath: string;
@@ -48,6 +49,7 @@ export interface EvalState {
   readonly roofCells: IntVec3[];
   readonly chimneyTops: IntVec3[];
   readonly interiorSpecs: { readonly ownerPath: string; readonly op: InteriorRoomOp }[];
+  readonly childInteriors: CompiledInteriorRoom[];
   currentFloor: StructureFloorMeta | null;
   hasRoofTrim: boolean;
   roofCount: number;
@@ -109,6 +111,7 @@ export const createEvalState = (
     roofCells: [],
     chimneyTops: [],
     interiorSpecs: [],
+    childInteriors: [],
     currentFloor: null,
     hasRoofTrim: false,
     roofCount: 0,

@@ -6,6 +6,7 @@ import type {
   StructureOp,
 } from '../../project/structure/contract';
 import { applyCompoundChild } from './compound';
+import { transformChildInterior } from './interior/compoundChild';
 import type { StructureFloorMeta, StructureGrid } from './contract';
 import {
   applyFrame,
@@ -284,6 +285,11 @@ export const runCompoundMerge = (
       putVoxel(state, ownerPath, [x, y, z], 'minecraft:air', null),
   };
   applyCompoundChild(target, alias, childResult, origin, rotate);
+  for (const room of childResult.grid.interiors ?? []) {
+    state.childInteriors.push(
+      transformChildInterior(room, alias, childResult.grid.size, origin, rotate),
+    );
+  }
   state.roofCount = target.roofCount;
   state.dormerCount = target.dormerCount;
   state.chimneyCount = target.chimneyCount;
