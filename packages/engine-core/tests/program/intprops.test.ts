@@ -435,6 +435,19 @@ const testCodexInteriorRegressions = (): void => {
       b.to_16[2] <= 6 * 16,
   );
   assert.equal(pitShellFloor, false, 'Sunken pit footprint must cut out shell floor panels');
+
+  // Verify facing-adjusted dimensions center prop hooks and tabletop stories accurately for E/W 3x1 tables.
+  const ewTable = compileInteriorProp(
+    { id: 'ew_tbl', kind: 'table', at: [4, 1, 4], size: [3, 1], facing: 'east' },
+    TAVERN_DNA,
+    1,
+  );
+  const ewStation = ewTable.hooks.find((h) => h.kind === 'station')!;
+  assert.deepEqual(
+    [ewStation.position[0], ewStation.position[2]],
+    [4.5, 5.5],
+    'East-facing 3x1 table hook must center at [4.5, 5.5]',
+  );
 };
 
 testParametricPropsAndAutoJoin();

@@ -71,9 +71,6 @@ const xformBox16 = (
     from_16: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])],
     to_16: [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])],
     ...(pivot ? { pivot_16: pivot } : {}),
-    ...(box.rotation_y_deg !== undefined
-      ? { rotation_y_deg: (box.rotation_y_deg + rotate) % 360 }
-      : {}),
   };
 };
 
@@ -178,7 +175,6 @@ const xformMount = (
   id: `${alias}.${m.id}`,
   at_16: xformVec3(m.at_16, childSize, origin, rotate, SUBVOXEL_UNITS_PER_BLOCK),
   facing: rotateFacing(m.facing, rotate),
-  rotation_y_deg: (m.rotation_y_deg + rotate) % 360,
 });
 
 const xformNbtLowering = (

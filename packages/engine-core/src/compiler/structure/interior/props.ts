@@ -438,8 +438,9 @@ export const compileInteriorProp = (
     ),
     ...buildOrganicDetailBoxes(spec, origin16, w16, mat, organic, seed),
   ];
+  const [fw, fd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
   const hooks = [
-    ...collectPropHooks(spec, [spec.at[0] + wB / 2, spec.at[1], spec.at[2] + dB / 2], mat),
+    ...collectPropHooks(spec, [spec.at[0] + fw / 2, spec.at[1], spec.at[2] + fd / 2], mat),
   ];
   if (spec.kind === 'dining_set') {
     const chairs = buildDiningChairs(spec, styleDna, seed, organic);

@@ -226,6 +226,15 @@ structure test_compound {
   assert.equal(compProduct.grid.interiors![0]!.room_id, 'hall_a.hall');
   assert.ok((compProduct.playableMeta.interiors?.length ?? 0) === 1);
   assert.ok(compProduct.hooks?.anchors.some((a) => a.id.startsWith('hall_a.')));
+  const origYawBox = product.grid.interiors![0]!.ir.boxes.find(
+    (b) => b.rotation_y_deg !== undefined,
+  )!;
+  const xformYawBox = compProduct.grid.interiors![0]!.ir.boxes.find((b) => b.id === origYawBox.id)!;
+  assert.equal(
+    xformYawBox.rotation_y_deg,
+    origYawBox.rotation_y_deg,
+    'Rotated compound must preserve local box yaw after transforming bounds/pivot',
+  );
 
   // Verify nudged props emit one resolved station hook (no stale duplicate) and sunken cuts voxel floor.
   const dedupSrc = `ashfox 1
