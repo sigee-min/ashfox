@@ -17,7 +17,9 @@ export type BlockShapeKind =
   | 'carpet'
   | 'chain'
   | 'pot'
-  | 'campfire';
+  | 'campfire'
+  | 'anvil'
+  | 'cauldron';
 
 export type BlockRenderLayer = 'opaque' | 'cutout' | 'emissive';
 export type BlockZoneKind = 'exterior' | 'interior';
@@ -109,12 +111,21 @@ const WOOD_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
   'minecraft:spruce_fence': shapeBlock('fence', 'spruce_planks'),
   'minecraft:oak_door': shapeBlock('door', 'oak_door', { zone: 'exterior', layer: 'cutout' }),
   'minecraft:spruce_door': shapeBlock('door', 'spruce_door', { zone: 'exterior', layer: 'cutout' }),
+  'minecraft:dark_oak_door': shapeBlock('door', 'spruce_door', {
+    zone: 'exterior',
+    layer: 'cutout',
+  }),
   'minecraft:iron_door': shapeBlock('door', 'iron_block', { zone: 'exterior', layer: 'cutout' }),
+  'minecraft:dark_oak_fence': shapeBlock('fence', 'dark_oak_planks'),
   'minecraft:oak_trapdoor': shapeBlock('trapdoor', 'oak_trapdoor', {
     zone: 'interior',
     layer: 'cutout',
   }),
   'minecraft:spruce_trapdoor': shapeBlock('trapdoor', 'spruce_planks', {
+    zone: 'interior',
+    layer: 'cutout',
+  }),
+  'minecraft:dark_oak_trapdoor': shapeBlock('trapdoor', 'dark_oak_planks', {
     zone: 'interior',
     layer: 'cutout',
   }),
@@ -185,6 +196,23 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
     zone: 'interior',
     furniture: true,
   }),
+  'minecraft:blast_furnace': full(
+    'smooth_stone',
+    'deepslate_bricks',
+    'smooth_stone',
+    'furnace_front',
+    { zone: 'interior', furniture: true },
+  ),
+  'minecraft:magma_block': full('furnace_lit', 'furnace_lit', 'furnace_lit', 'furnace_lit', {
+    layer: 'emissive',
+    zone: 'interior',
+    light: true,
+  }),
+  'minecraft:lava': full('furnace_lit', 'furnace_lit', 'furnace_lit', 'furnace_lit', {
+    layer: 'emissive',
+    zone: 'interior',
+    light: true,
+  }),
   'minecraft:barrel': full('spruce_planks', 'barrel_side', 'spruce_planks', 'barrel_side', {
     zone: 'interior',
     furniture: true,
@@ -220,12 +248,12 @@ const INTERIOR_CATALOG: Readonly<Record<string, BlockDescriptor>> = {
     zone: 'interior',
     furniture: true,
   }),
-  'minecraft:anvil': shapeBlock('slab', 'iron_block', {
+  'minecraft:anvil': shapeBlock('anvil', 'iron_block', {
     layer: 'opaque',
     zone: 'interior',
     furniture: true,
   }),
-  'minecraft:cauldron': shapeBlock('slab', 'deepslate_bricks', {
+  'minecraft:cauldron': shapeBlock('cauldron', 'deepslate_bricks', {
     layer: 'opaque',
     zone: 'interior',
     furniture: true,
@@ -276,7 +304,10 @@ export const describeBlockState = (state: string): BlockDescriptor => {
   const parsed = parseBlockState(state);
   const direct = ALL_BLOCKS[parsed.name];
   if (direct) {
-    if (parsed.name === 'minecraft:furnace' && parsed.properties.lit === 'true') {
+    if (
+      (parsed.name === 'minecraft:furnace' || parsed.name === 'minecraft:blast_furnace') &&
+      parsed.properties.lit === 'true'
+    ) {
       return { ...direct, layer: 'emissive', light: true, front: 'furnace_lit' };
     }
     return direct;

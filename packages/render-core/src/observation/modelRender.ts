@@ -101,20 +101,21 @@ export const computeTargetFraming = (
   else applyCameraPreset(surface.camera, v.camera, box, model.settings.forward);
   const distance = surface.camera.position.distanceTo(target) / v.zoom;
   if (distance > 120) {
-    const span = Math.max(
-      box.geometry.boundingBox?.getSize(new THREE.Vector3()).length() ?? distance,
-      120,
-    );
+    const radius = Math.max(bounds.getSize(new THREE.Vector3()).length() * 0.55, 80);
     for (const child of surface.scene.children) {
       if (child instanceof THREE.DirectionalLight && child.castShadow) {
-        child.shadow.camera.left = -span;
-        child.shadow.camera.right = span;
-        child.shadow.camera.top = span;
-        child.shadow.camera.bottom = -span;
-        child.shadow.camera.far = span * 4;
-        child.shadow.bias = -0.002;
+        child.shadow.camera.left = -radius;
+        child.shadow.camera.right = radius;
+        child.shadow.camera.top = radius;
+        child.shadow.camera.bottom = -radius;
+        child.shadow.camera.near = Math.max(1, radius * 0.1);
+        child.shadow.camera.far = radius * 5;
+        child.shadow.bias = -0.0006;
+        child.shadow.normalBias = Math.max(0.8, radius * 0.008);
         child.shadow.camera.updateProjectionMatrix();
-        child.position.copy(target).add(new THREE.Vector3(span * 0.6, span * 0.9, -span * 0.7));
+        child.position
+          .copy(target)
+          .add(new THREE.Vector3(radius * 1.1, radius * 1.6, -radius * 1.2));
         child.target.position.copy(target);
         child.target.updateMatrixWorld();
       }

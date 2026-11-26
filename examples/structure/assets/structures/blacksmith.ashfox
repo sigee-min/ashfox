@@ -1,0 +1,106 @@
+ashfox-model 1
+structure blacksmith {
+  outputs {
+    java_structure;
+    glb;
+  }
+  preview exterior {
+    azimuth = 215;
+    elevation = 26;
+    width = 640;
+    height = 360;
+    environment = studio;
+  }
+  preview interior {
+    azimuth = 215;
+    elevation = 46;
+    width = 640;
+    height = 360;
+    cutaway = 4;
+    environment = studio;
+  }
+  import "../module/furnishings.ashfox" as deco;
+  import "../models/props/wall_lantern.ashfox" as custom_lantern;
+  import "../models/props/hanging_sign.ashfox" as smith_sign;
+
+  size = (14, 11, 12);
+  data_version = 3955;
+
+  palette {
+    cobble = "minecraft:cobblestone";
+    moss_cobble = "minecraft:mossy_cobblestone";
+    deepslate = "minecraft:deepslate_bricks";
+    stone_brick = "minecraft:stone_bricks";
+    chimney = "minecraft:bricks";
+    plaster = "minecraft:white_terracotta";
+    timber = "minecraft:spruce_log[axis=y]";
+    beam_x = "minecraft:spruce_log[axis=x]";
+    beam_z = "minecraft:spruce_log[axis=z]";
+    oak_floor = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    roof_stair = "minecraft:spruce_stairs";
+    ridge = "minecraft:deepslate_brick_slab[type=bottom]";
+    front_stair = "minecraft:cobblestone_stairs[facing=north,half=bottom]";
+    porch_fence = "minecraft:spruce_fence";
+    bars = "minecraft:iron_bars";
+    glass = "minecraft:glass_pane";
+    door_bot = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
+    door_top = "minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false]";
+    shutter = "minecraft:oak_trapdoor[facing=north,half=bottom,open=true]";
+    carpet = "minecraft:red_carpet";
+    lantern = asset custom_lantern as "minecraft:lantern[hanging=false]";
+    sign = asset smith_sign as "minecraft:spruce_fence";
+  }
+
+  build {
+    box from = (1, 0, 1) to = (12, 0, 10) block = cobble;
+    box from = (2, 0, 2) to = (6, 0, 9) block = deepslate;
+    box from = (7, 0, 2) to = (11, 0, 9) block = oak_floor;
+    box from = (8, 0, 11) to = (10, 0, 11) block = front_stair;
+    box from = (3, 0, 11) to = (5, 0, 11) block = front_stair;
+
+    walls from = (6, 1, 1) to = (12, 4, 10) block = plaster;
+    frame from = (6, 1, 1) to = (12, 4, 10) block = timber;
+    carve from = (7, 1, 2) to = (11, 4, 9);
+
+    box from = (1, 1, 1) to = (5, 4, 1) block = stone_brick;
+    box from = (1, 1, 1) to = (1, 4, 1) block = timber;
+    box from = (1, 1, 10) to = (1, 4, 10) block = timber;
+    box from = (1, 1, 2) to = (1, 1, 9) block = deepslate;
+    box from = (1, 2, 3) to = (1, 3, 7) block = bars;
+    box from = (2, 1, 10) to = (5, 1, 10) block = porch_fence;
+    carve from = (3, 1, 10) to = (5, 1, 10);
+
+    box from = (2, 4, 1) to = (11, 4, 1) block = beam_x;
+    box from = (2, 4, 10) to = (11, 4, 10) block = beam_x;
+    box from = (1, 4, 2) to = (1, 4, 9) block = beam_z;
+    box from = (12, 4, 2) to = (12, 4, 9) block = beam_z;
+
+    carve from = (6, 1, 5) to = (6, 3, 6);
+    set at = (9, 1, 10) block = door_bot;
+    set at = (9, 2, 10) block = door_top;
+
+    set at = (8, 2, 11) block = lantern;
+    set at = (10, 2, 11) block = lantern;
+    set at = (4, 4, 11) block = beam_z;
+    set at = (4, 3, 11) block = sign;
+    set at = (2, 2, 10) block = lantern;
+
+    box from = (11, 2, 10) to = (11, 3, 10) block = glass;
+    box from = (9, 2, 1) to = (9, 3, 1) block = glass;
+    repeat axis = z count = 2 step = 3 {
+      box from = (12, 2, 4) to = (12, 3, 4) block = glass;
+      set at = (13, 2, 4) block = shutter;
+    }
+
+    roof style = gable axis = x from = (0, 5, 0) to = (13, 10, 11) stair = roof_stair ridge = ridge gable = spruce_plank;
+    box from = (2, 1, 1) to = (3, 10, 2) block = chimney;
+    set at = (2, 10, 1) block = moss_cobble;
+    set at = (3, 10, 2) block = moss_cobble;
+
+    box from = (7, 1, 5) to = (7, 1, 9) block = carpet;
+    place deco.ForgeAnvilBay at = (2, 1, 2) rotate = 0;
+    place deco.CozyBedroom at = (8, 1, 2) rotate = 0;
+    place deco.StudyCorner at = (8, 1, 7) rotate = 0;
+  }
+}

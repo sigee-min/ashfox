@@ -1,0 +1,133 @@
+ashfox-model 1
+asset hanging_sign {
+  export rig contract R {
+    handedness = right;
+    frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    joint root {
+      parent = none;
+      role = root;
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+      channels = rotation;
+      mirror = none;
+    }
+  }
+
+  export skeleton Skel implements R {
+    bind root {
+      parent-origin = (0u, 0u, 0u);
+      frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+  }
+
+  export surface contract SignSkin {
+    chart bar box { coverage = opaque; }
+    chart finial_l box { coverage = opaque; }
+    chart finial_r box { coverage = opaque; }
+    chart chain_l box { coverage = opaque; }
+    chart chain_r box { coverage = opaque; }
+    chart trim_top box { coverage = opaque; }
+    chart trim_bot box { coverage = opaque; }
+    chart board box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface TavernSign: SignSkin {
+    material = opaque;
+    texture atlas {
+      atlas = (128px, 128px);
+      density = 2;
+      render-mode = emissive;
+      background = iron;
+      background-alpha = 255;
+      palette {
+        iron = (#262c36, #3e4756, #5c687d);
+        oak = (#4e321a, #7d522c, #a87544);
+        brass = (#7d561c, #cc8e30, #ffd466);
+        amber = (#c96a14, #ffa834, #ffe999);
+      }
+      stamp emblem {
+        pixels = "..bb../.baab./baaaab/baaaab/.baab./..bb..";
+        b = brass;
+        a = amber;
+      }
+      chart bar box {
+        fill = iron;
+        grain = none;
+        pattern gradient { to = brass; axis = y; space = model; soft = 0.25ratio; }
+        pattern border { paint = brass; width = 1px; edges = bottom; }
+        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+      }
+      chart finial_l box {
+        fill = brass;
+        grain = none;
+        pattern border { paint = amber; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart finial_r box {
+        fill = brass;
+        grain = none;
+        pattern border { paint = amber; width = 1px; edges = top; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart chain_l box {
+        fill = iron;
+        grain = none;
+        pattern stripe { paint = brass; axis = v; period = 4px; width = 1px; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart chain_r box {
+        fill = iron;
+        grain = none;
+        pattern stripe { paint = brass; axis = v; period = 4px; width = 1px; }
+        pattern ao { strength = 0.3ratio; radius = 0.5u; }
+      }
+      chart trim_top box {
+        fill = brass;
+        grain = none;
+        pattern gradient { to = oak; axis = y; space = model; soft = 0.25ratio; }
+        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+      }
+      chart trim_bot box {
+        fill = iron;
+        grain = none;
+        pattern border { paint = brass; width = 1px; edges = top; }
+        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+      }
+      chart board box {
+        fill = oak;
+        grain = soft;
+        pattern gradient { to = brass; axis = y; space = model; soft = 0.3ratio; }
+        pattern border { paint = brass; width = 1px; edges = all; }
+        pattern ao { strength = 0.35ratio; radius = 0.5u; }
+        face north { stamp emblem { anchor = center; offset = (0px, 0px); } }
+        face south { stamp emblem { anchor = center; offset = (0px, 0px); } }
+      }
+      grain soft { seed = 808; }
+      tone painterly;
+    }
+  }
+
+  export component Body {
+    requires rig skel: R;
+    requires surface skin: SignSkin;
+    bind bone root to skel.root;
+    geometry {
+      bone root {
+        cube bar { origin = (-6u, 13u, -2u); size = (12u, 3u, 4u); surface = skin.bar; }
+        cube finial_l { origin = (-7u, 13.5u, -1.5u); size = (1u, 2u, 3u); surface = skin.finial_l; }
+        cube finial_r { origin = (6u, 13.5u, -1.5u); size = (1u, 2u, 3u); surface = skin.finial_r; }
+        cube chain_l { origin = (-4u, 9u, -1u); size = (1u, 4u, 2u); surface = skin.chain_l; }
+        cube chain_r { origin = (3u, 9u, -1u); size = (1u, 4u, 2u); surface = skin.chain_r; }
+        cube trim_top { origin = (-6.5u, 8u, -1.5u); size = (13u, 1u, 3u); surface = skin.trim_top; }
+        cube board { origin = (-6u, 1u, -1u); size = (12u, 7u, 2u); surface = skin.board; }
+        cube trim_bot { origin = (-6.5u, 0u, -1.5u); size = (13u, 1u, 3u); surface = skin.trim_bot; }
+      }
+    }
+  }
+
+  export asset hanging_sign {
+    settings { density = 16; forward = north; profile = prop; }
+    skeleton = Skel;
+    use Body as body { bind skel = R; bind skin = TavernSign; };
+  }
+}

@@ -20,8 +20,6 @@ const STANDALONE_SOURCES = Object.freeze([
   'examples/griffin/workbench/main.ashfox',
   'examples/prop/lantern.ashfox',
   'examples/prop/treasure_chest/chest.ashfox',
-  'examples/structure/medieval_cottage.ashfox',
-  'examples/structure/watchtower.ashfox',
 ]);
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');

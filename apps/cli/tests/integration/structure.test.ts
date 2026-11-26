@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { decodeStructureNbt } from '@ashfox/engine-core';
-import { readSnapshot } from '@ashfox/asset-build';
 
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const CLI = path.join(REPO_ROOT, 'apps/cli/dist/ashfox.cjs');
@@ -21,32 +20,50 @@ const runJson = (...args: string[]) => {
   return JSON.parse(res.stdout);
 };
 
-const testCheckShowcases = (): void => {
+const testCheckShowcases = (temp: string): void => {
+  const wsCheck = runJson(
+    'check',
+    '--json',
+    path.join(REPO_ROOT, 'examples/structure/.ashfoxworkspace'),
+  );
+  assert.equal(wsCheck.ok, true);
+  assert.equal(wsCheck.result.products.length, 4);
+
+  const stage = path.join(temp, 'standalone_checks');
+  fs.cpSync(path.join(REPO_ROOT, 'examples/structure/assets'), path.join(stage, 'assets'), {
+    recursive: true,
+  });
   for (const [rel, expectedSize] of [
-    ['examples/structure/medieval_cottage.ashfox', [13, 12, 13]],
-    ['examples/structure/watchtower.ashfox', [11, 18, 11]],
+    ['assets/structures/medieval_cottage.ashfox', [13, 12, 13]],
+    ['assets/structures/watchtower.ashfox', [11, 18, 11]],
+    ['assets/structures/blacksmith.ashfox', [14, 11, 12]],
+    ['assets/structures/tavern.ashfox', [15, 15, 13]],
   ] as const) {
-    const json = runJson('check', '--json', path.join(REPO_ROOT, rel));
+    const json = runJson('check', '--json', path.join(stage, rel));
     assert.equal(json.ok, true);
     assert.equal(json.result.audit.passed, true);
     assert.ok(json.result.audit.score >= 85);
     assert.deepEqual(json.result.structure.size, expectedSize);
     assert.ok(json.result.structure.customAssets.length >= 2);
+    const previewNames = json.result.declarations.previews.map((p: { name: string }) => p.name);
+    assert.ok(previewNames.includes('exterior') && previewNames.includes('interior'));
   }
 };
 
 const testExports = (temp: string): void => {
   const stage = path.join(temp, 'standalone_struct');
-  fs.mkdirSync(path.join(stage, 'props'), { recursive: true });
+  fs.mkdirSync(path.join(stage, 'assets/structures'), { recursive: true });
+  fs.mkdirSync(path.join(stage, 'assets/module'), { recursive: true });
+  fs.mkdirSync(path.join(stage, 'assets/models/props'), { recursive: true });
   for (const rel of [
-    'medieval_cottage.ashfox',
-    'furnishings.ashfox',
-    'props/rune_pillar.ashfox',
-    'props/wall_lantern.ashfox',
+    'assets/structures/medieval_cottage.ashfox',
+    'assets/module/furnishings.ashfox',
+    'assets/models/props/rune_pillar.ashfox',
+    'assets/models/props/wall_lantern.ashfox',
   ]) {
     fs.copyFileSync(path.join(REPO_ROOT, 'examples/structure', rel), path.join(stage, rel));
   }
-  const cottage = path.join(stage, 'medieval_cottage.ashfox');
+  const cottage = path.join(stage, 'assets/structures/medieval_cottage.ashfox');
   const built = runJson('build', '--json', cottage).result;
   assert.equal(built.exports.length, 2);
   const nbtExp = built.exports.find((e: { id: string }) => e.id.includes('java_structure'));
@@ -72,56 +89,30 @@ const testExports = (temp: string): void => {
 
 const testWorkspaceDualBuild = (temp: string): void => {
   const wsDir = path.join(temp, 'town');
-  fs.mkdirSync(path.join(wsDir, 'props'), { recursive: true });
-  for (const rel of [
-    'medieval_cottage.ashfox',
-    'furnishings.ashfox',
-    'props/rune_pillar.ashfox',
-    'props/wall_lantern.ashfox',
-  ]) {
-    fs.copyFileSync(path.join(REPO_ROOT, 'examples/structure', rel), path.join(wsDir, rel));
-  }
-  const cottageEntry = path.join(wsDir, 'medieval_cottage.ashfox');
-  const baseCfg = readSnapshot(cottageEntry).config;
+  fs.cpSync(path.join(REPO_ROOT, 'examples/structure'), wsDir, {
+    recursive: true,
+    filter: (p) => !p.split(path.sep).includes('dist'),
+  });
   const cfgPath = path.join(wsDir, '.ashfoxworkspace');
-  fs.writeFileSync(
-    cfgPath,
-    JSON.stringify({
-      ...baseCfg,
-      build: { directory: 'build' },
-      exports: [
-        {
-          name: 'nbt',
-          entry: { packageName: 'standalone', entryName: 'medieval_cottage' },
-          format: 'java_structure',
-          directory: 'exports/nbt',
-        },
-        {
-          name: 'glb',
-          entry: { packageName: 'standalone', entryName: 'medieval_cottage' },
-          format: 'glb',
-          directory: 'exports/glb',
-        },
-      ],
-    }),
-  );
 
   const built = runJson('build', cfgPath, '--json').result;
-  const checkBundle = runCli('check', path.join(wsDir, 'build'));
+  assert.equal(built.exports.length, 8);
+  const checkBundle = runCli('check', path.join(wsDir, 'dist/build'));
   assert.equal(checkBundle.status, 0, checkBundle.stdout + checkBundle.stderr);
   const catalog = JSON.parse(fs.readFileSync(built.catalogPath, 'utf8'));
-  assert.equal(catalog.assets[0].kind, 'structure');
+  assert.equal(catalog.assets.length, 8);
+  assert.ok(catalog.assets.every((a: { kind: string }) => a.kind === 'structure'));
   const exportFiles = built.exports.flatMap((exp: { directory: string }) =>
     fs.readdirSync(exp.directory, { recursive: true }).map((f) => String(f)),
   );
-  assert.ok(exportFiles.some((f: string) => f.endsWith('.nbt')));
-  assert.ok(exportFiles.some((f: string) => f.endsWith('.glb')));
+  assert.equal(exportFiles.filter((f: string) => f.endsWith('.nbt')).length, 4);
+  assert.equal(exportFiles.filter((f: string) => f.endsWith('.glb')).length, 4);
 };
 
 const main = (): void => {
   const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-structure-cli-'));
   try {
-    testCheckShowcases();
+    testCheckShowcases(temp);
     testExports(temp);
     testWorkspaceDualBuild(temp);
     console.log('ashfox structure CLI integration tests ok');

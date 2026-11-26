@@ -115,6 +115,18 @@ const STATIC_SHAPES: Partial<Record<BlockDescriptor['shape'], readonly LocalBoxS
   chain: [{ from: [6.5, 0, 6.5], to: [9.5, 16, 9.5] }],
   pot: [{ from: [5, 0, 5], to: [11, 6, 11] }],
   campfire: [{ from: [1, 0, 1], to: [15, 7, 15], emissive: true }],
+  anvil: [
+    { from: [2, 0, 2], to: [14, 4, 14] },
+    { from: [4, 4, 4], to: [12, 10, 12] },
+    { from: [0, 10, 3], to: [16, 16, 13] },
+  ],
+  cauldron: [
+    { from: [0, 0, 0], to: [16, 3, 16] },
+    { from: [0, 3, 0], to: [16, 16, 2] },
+    { from: [0, 3, 14], to: [16, 16, 16] },
+    { from: [0, 3, 2], to: [2, 16, 14] },
+    { from: [14, 3, 2], to: [16, 16, 14] },
+  ],
 };
 
 const lanternBoxes = (props: Readonly<Record<string, string>>): readonly LocalBoxSpec[] => {

@@ -958,66 +958,88 @@
       ]
     },
     {
-      "input": "examples/structure/medieval_cottage.ashfox",
+      "input": "examples/structure/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:9b6a21375bca096b7ecb7cb2c2ddf9a9456f77f09df01eeb12ad5bdef0fca0a6",
+      "sourceHash": "sha256:553e075938b856b863e5953745711109e2f5222ebdc7d02494f6ae3d16dfc581",
       "products": [
         {
-          "entry": "standalone/medieval_cottage",
+          "entry": "structures/blacksmith",
+          "kind": "structure",
+          "nbt": "3b4057a4977699f8ae11b501eb80d394fd7598a8378be58e5781d27556c89b8d",
+          "document": "76b6f07515efa5c9ff664b13b755f7f9a5cf561a2f3877a5e3bdc3fc21349305"
+        },
+        {
+          "entry": "structures/medieval_cottage",
           "kind": "structure",
           "nbt": "df0803c170983fb34dcdcf0aec4e30856f1c23200fd84aa754f315cc3fca98ac",
-          "document": "45bf27e4acf8c01310248053f0cf6f992c8fc59be639895e5a192085fc63f87e"
+          "document": "a4c59d141249fe09e4501b300beefdbcea6e024adef71793316c4b268e242ec6"
+        },
+        {
+          "entry": "structures/tavern",
+          "kind": "structure",
+          "nbt": "cf7402e73db75d6cc40503663f11999b5e7dca1afeb113b1139141713fe76b08",
+          "document": "0eb11fcbad76c1b4e09cb65c846d9b3aefffa0cc6bde8dec7913bcda661171fd"
+        },
+        {
+          "entry": "structures/watchtower",
+          "kind": "structure",
+          "nbt": "591853443cfb0a202a9982db90a647f6ad0b065928b94852b350ba14aa5b37fa",
+          "document": "e0f012c7b456abe9eff05e92aadaaa2444a8dd71d4d8b5ec12d73eb6b89ca845"
         }
       ],
-      "catalogHash": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93",
+      "catalogHash": "9602a5731bae0b9753bc84acfb08cc6a83718eb4dd5849e5ada325dd9ac80358",
       "files": [
         {
+          "path": "assets/blacksmith_glb/ashfox-lineage.json",
+          "sha256": "4a894bcc97bbcfd0acdfff94da6d9bc500fb979bf97efc05e716f6376b21b7aa"
+        },
+        {
+          "path": "assets/blacksmith_glb/blacksmith_glb.glb",
+          "sha256": "3dbd9308efa5e181909c621ebd42ee329a168f4206c259ff5228c6da667d36e4"
+        },
+        {
+          "path": "assets/blacksmith_nbt/blacksmith_nbt.nbt",
+          "sha256": "3b4057a4977699f8ae11b501eb80d394fd7598a8378be58e5781d27556c89b8d"
+        },
+        {
           "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
-          "sha256": "32496038c20807918b516ccaf2d4bf902fb7f392692004388f49877188a861fe"
+          "sha256": "07278caf4ce79a1823d86446219b4edad723d1623177b1bdf6e6d22167fdbd4a"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
-          "sha256": "124d20480b91b39e8390a0dbed9aad9cb5821a499e77f62014c6b3b587295efd"
+          "sha256": "067e030df16182fc07d6ac88171f23f66edf3616fc6863a82537e8a1fcf5d52c"
         },
         {
-          "path": "assets/medieval_cottage_java_structure/medieval_cottage_java_structure.nbt",
+          "path": "assets/medieval_cottage_nbt/medieval_cottage_nbt.nbt",
           "sha256": "df0803c170983fb34dcdcf0aec4e30856f1c23200fd84aa754f315cc3fca98ac"
         },
         {
-          "path": "catalog.json",
-          "sha256": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93"
-        }
-      ]
-    },
-    {
-      "input": "examples/structure/watchtower.ashfox",
-      "ok": true,
-      "sourceHash": "sha256:20feb77f18dfdaeea795a9acc9853904d6d645c1cc489040bf737f6ec2f1a71a",
-      "products": [
+          "path": "assets/tavern_glb/ashfox-lineage.json",
+          "sha256": "120c0a0de152b7dec363cca29ab2fd05bb874a4f58aff5878a473cffa21b4b18"
+        },
         {
-          "entry": "standalone/watchtower",
-          "kind": "structure",
-          "nbt": "01efc57f4d0556664c0a3262b23fec5a4f557dcbe258f89e039a9b6f9dbe6360",
-          "document": "4127a2c94454343710b1b16b0b294f297fe29b02465936cbfb6f200f766a13d9"
-        }
-      ],
-      "catalogHash": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb",
-      "files": [
+          "path": "assets/tavern_glb/tavern_glb.glb",
+          "sha256": "5c28778f52b3e5dc68957de173c0828e4f8629bf055e1c52882007c45ea95c1a"
+        },
+        {
+          "path": "assets/tavern_nbt/tavern_nbt.nbt",
+          "sha256": "cf7402e73db75d6cc40503663f11999b5e7dca1afeb113b1139141713fe76b08"
+        },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
-          "sha256": "0bd9e49f82e5e50b3c2070237d739bd3b67272a9aa4ae8031cc1b661bb4b9105"
+          "sha256": "808c1c40f6c8fdcf684883c2030daac1ba841e81002088210c64bddf955dc545"
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.glb",
-          "sha256": "1a8caf912c7739962d45847e14b230cdf7e0ae0d970ae33f9cbe3b7689ed7f10"
+          "sha256": "104e301a8c03fa890ef3f3fa3809311d66390209cef0871da022e28a620cdb06"
         },
         {
-          "path": "assets/watchtower_java_structure/watchtower_java_structure.nbt",
-          "sha256": "01efc57f4d0556664c0a3262b23fec5a4f557dcbe258f89e039a9b6f9dbe6360"
+          "path": "assets/watchtower_nbt/watchtower_nbt.nbt",
+          "sha256": "591853443cfb0a202a9982db90a647f6ad0b065928b94852b350ba14aa5b37fa"
         },
         {
           "path": "catalog.json",
-          "sha256": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb"
+          "sha256": "9602a5731bae0b9753bc84acfb08cc6a83718eb4dd5849e5ada325dd9ac80358"
         }
       ]
     }

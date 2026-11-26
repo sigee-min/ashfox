@@ -1,8 +1,35 @@
 ashfox-model 1
 structure watchtower {
-  import "./furnishings.ashfox" as deco;
-  import "./props/wall_lantern.ashfox" as beacon;
-  import "./props/rune_pillar.ashfox" as ward;
+  outputs {
+    java_structure;
+    glb;
+  }
+  preview exterior {
+    azimuth = 145;
+    elevation = 24;
+    width = 640;
+    height = 360;
+    environment = studio;
+  }
+  preview interior {
+    azimuth = 145;
+    elevation = 44;
+    width = 640;
+    height = 360;
+    cutaway = 7;
+    environment = studio;
+  }
+  preview lower {
+    azimuth = 145;
+    elevation = 46;
+    width = 640;
+    height = 360;
+    cutaway = 5;
+    environment = studio;
+  }
+  import "../module/furnishings.ashfox" as deco;
+  import "../models/props/wall_lantern.ashfox" as beacon;
+  import "../models/props/rune_pillar.ashfox" as ward;
 
   size = (11, 18, 11);
   data_version = 3955;
@@ -30,7 +57,10 @@ structure watchtower {
   build {
     box from = (1, 0, 1) to = (9, 1, 9) block = moss_cobble;
     box from = (2, 0, 2) to = (8, 0, 8) block = brick;
-    set at = (5, 0, 10) block = stair_n;
+    box from = (4, 0, 9) to = (6, 0, 9) block = moss_brick;
+    box from = (4, 0, 10) to = (6, 0, 10) block = stair_n;
+    set at = (3, 0, 10) block = moss_cobble;
+    set at = (7, 0, 10) block = moss_cobble;
 
     walls from = (2, 1, 2) to = (8, 12, 8) block = brick;
     frame from = (2, 1, 2) to = (8, 12, 8) block = moss_brick;

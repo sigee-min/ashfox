@@ -175,7 +175,10 @@ structure s {
       err instanceof StructureInputError && err.detail.code === 'structure.unused-prefab',
   );
 
-  const fixturePath = path.join(REPO_ROOT, 'examples/structure/props/rune_pillar.ashfox');
+  const fixturePath = path.join(
+    REPO_ROOT,
+    'examples/structure/assets/models/props/rune_pillar.ashfox',
+  );
   const fixtureSrc = fs.readFileSync(fixturePath, 'utf8');
   const modelRes = compileDirectoryWorkspace(
     JSON.stringify({
@@ -258,66 +261,25 @@ structure s {
 
 const testShowcases = (): void => {
   const dir = path.join(REPO_ROOT, 'examples/structure');
-  const rewriteImports = (src: string) =>
-    src
-      .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
-      .replaceAll('./props/', '../models/props/');
-  const files: DirectoryFile[] = [
-    {
-      path: 'assets/structures/medieval_cottage.ashfox',
-      source: rewriteImports(fs.readFileSync(path.join(dir, 'medieval_cottage.ashfox'), 'utf8')),
-    },
-    {
-      path: 'assets/structures/watchtower.ashfox',
-      source: rewriteImports(fs.readFileSync(path.join(dir, 'watchtower.ashfox'), 'utf8')),
-    },
-    {
-      path: 'assets/module/furnishings.ashfox',
-      source: fs.readFileSync(path.join(dir, 'furnishings.ashfox'), 'utf8'),
-    },
-    {
-      path: 'assets/models/props/rune_pillar.ashfox',
-      source: fs.readFileSync(path.join(dir, 'props/rune_pillar.ashfox'), 'utf8'),
-    },
-    {
-      path: 'assets/models/props/wall_lantern.ashfox',
-      source: fs.readFileSync(path.join(dir, 'props/wall_lantern.ashfox'), 'utf8'),
-    },
+  const filePaths = [
+    'assets/structures/medieval_cottage.ashfox',
+    'assets/structures/watchtower.ashfox',
+    'assets/structures/blacksmith.ashfox',
+    'assets/structures/tavern.ashfox',
+    'assets/module/furnishings.ashfox',
+    'assets/models/props/rune_pillar.ashfox',
+    'assets/models/props/wall_lantern.ashfox',
+    'assets/models/props/hanging_sign.ashfox',
   ];
-
-  const config = JSON.stringify({
-    format: 'ashfox-workspace',
-    version: 2,
-    name: 'showcase',
-    packages: [
-      {
-        name: 'showcase',
-        root: 'assets',
-        manifest: {
-          format: 'ashfox-package',
-          version: 1,
-          entries: [
-            { name: 'medieval_cottage', path: 'structures/medieval_cottage.ashfox' },
-            { name: 'watchtower', path: 'structures/watchtower.ashfox' },
-          ],
-          modules: [
-            { subpath: './furnishings', path: 'module/furnishings.ashfox' },
-            { subpath: './props/rune_pillar', path: 'models/props/rune_pillar.ashfox' },
-            { subpath: './props/wall_lantern', path: 'models/props/wall_lantern.ashfox' },
-          ],
-          dependencies: [],
-        },
-      },
-    ],
-    include: ['assets/**/*.ashfox'],
-    ignore: [],
-    build: { directory: 'build' },
-    exports: [],
-  });
+  const files: DirectoryFile[] = filePaths.map((rel) => ({
+    path: rel,
+    source: fs.readFileSync(path.join(dir, rel), 'utf8'),
+  }));
+  const config = fs.readFileSync(path.join(dir, '.ashfoxworkspace'), 'utf8');
 
   const compiled = compileDirectoryWorkspace(config, files);
   if (!compiled.ok) throw new Error(compiled.diagnostics.map((d) => d.message).join('\n'));
-  assert.equal(compiled.products.length, 2);
+  assert.equal(compiled.products.length, 4);
   for (const product of compiled.products) {
     assert.equal(product.kind, 'structure');
     if (product.kind !== 'structure') continue;

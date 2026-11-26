@@ -108,9 +108,9 @@ structure shrine_hut {
 ## Check, preview and build
 
 ```sh
-npx --no-install ashfox check examples/structure/medieval_cottage.ashfox --json
-npx --no-install ashfox render --view cutaway examples/structure/medieval_cottage.ashfox --output cottage_inside.png
-npx --no-install ashfox build examples/structure/medieval_cottage.ashfox --json
+npx --no-install ashfox check examples/structure/assets/structures/medieval_cottage.ashfox --json
+npx --no-install ashfox render --view interior examples/structure/assets/structures/medieval_cottage.ashfox --output cottage_inside.png
+npx --no-install ashfox build examples/structure/.ashfoxworkspace --json
 ```
 
-Standalone `ashfox build` honors declared `outputs { ... }` and defaults to producing both `.nbt` (`java_structure`) and `1 block = 1.0m` `.glb` (`glb`) from the same `.ashfox` source. Every structure must pass five hard gates (`visible_geometry`, `ground_contact`, `no_disconnected_floating_parts`, `enclosed_interior`, `valid_minecraft_ids`) and score `>= 75/100` (`>= 85` `excellent`). Declare `preview cutaway { cutaway = 4; }` inside the structure entry to slice open interiors during `render --view cutaway`. Unused palette keys, unused imports, or unused private prefabs are rejected at compile time.
+Standalone `ashfox build` and workspace builds honor declared `outputs { ... }` (`java_structure` `.nbt` and `1 block = 1.0m` `glb` from the same `.ashfox` source). Every structure must pass five hard gates (`visible_geometry`, `ground_contact`, `no_disconnected_floating_parts`, `enclosed_interior`, `valid_minecraft_ids`) and score `>= 75/100` (`>= 85` `excellent`). Declare `preview interior { cutaway = 4; }` inside the structure entry to slice open interiors during `render --view interior`. Unused palette keys, unused imports, or unused private prefabs are rejected at compile time.

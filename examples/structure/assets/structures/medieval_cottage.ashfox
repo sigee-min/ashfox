@@ -1,8 +1,27 @@
 ashfox-model 1
 structure medieval_cottage {
-  import "./furnishings.ashfox" as deco;
-  import "./props/wall_lantern.ashfox" as custom_lantern;
-  import "./props/rune_pillar.ashfox" as custom_pillar;
+  outputs {
+    java_structure;
+    glb;
+  }
+  preview exterior {
+    azimuth = 145;
+    elevation = 26;
+    width = 640;
+    height = 360;
+    environment = studio;
+  }
+  preview interior {
+    azimuth = 145;
+    elevation = 46;
+    width = 640;
+    height = 360;
+    cutaway = 4;
+    environment = studio;
+  }
+  import "../module/furnishings.ashfox" as deco;
+  import "../models/props/wall_lantern.ashfox" as custom_lantern;
+  import "../models/props/rune_pillar.ashfox" as custom_pillar;
 
   size = (13, 12, 13);
   data_version = 3955;

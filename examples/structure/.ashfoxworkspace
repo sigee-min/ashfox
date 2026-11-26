@@ -1,0 +1,158 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "structure-collection",
+  "packages": [
+    {
+      "name": "structures",
+      "root": "assets/structures",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          {
+            "name": "medieval_cottage",
+            "path": "medieval_cottage.ashfox"
+          },
+          {
+            "name": "watchtower",
+            "path": "watchtower.ashfox"
+          },
+          {
+            "name": "blacksmith",
+            "path": "blacksmith.ashfox"
+          },
+          {
+            "name": "tavern",
+            "path": "tavern.ashfox"
+          }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "props",
+      "root": "assets/models/props",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          {
+            "subpath": "./rune_pillar",
+            "path": "rune_pillar.ashfox"
+          },
+          {
+            "subpath": "./wall_lantern",
+            "path": "wall_lantern.ashfox"
+          },
+          {
+            "subpath": "./hanging_sign",
+            "path": "hanging_sign.ashfox"
+          }
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          {
+            "subpath": "./furnishings",
+            "path": "furnishings.ashfox"
+          }
+        ],
+        "dependencies": []
+      }
+    }
+  ],
+  "include": [
+    "assets/**/*.ashfox"
+  ],
+  "ignore": [
+    "dist/**"
+  ],
+  "build": {
+    "directory": "dist/build"
+  },
+  "exports": [
+    {
+      "name": "medieval_cottage_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "medieval_cottage"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/medieval_cottage_nbt"
+    },
+    {
+      "name": "medieval_cottage_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "medieval_cottage"
+      },
+      "format": "glb",
+      "directory": "dist/exports/medieval_cottage_glb"
+    },
+    {
+      "name": "watchtower_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "watchtower"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/watchtower_nbt"
+    },
+    {
+      "name": "watchtower_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "watchtower"
+      },
+      "format": "glb",
+      "directory": "dist/exports/watchtower_glb"
+    },
+    {
+      "name": "blacksmith_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "blacksmith"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/blacksmith_nbt"
+    },
+    {
+      "name": "blacksmith_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "blacksmith"
+      },
+      "format": "glb",
+      "directory": "dist/exports/blacksmith_glb"
+    },
+    {
+      "name": "tavern_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "tavern"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/tavern_nbt"
+    },
+    {
+      "name": "tavern_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "tavern"
+      },
+      "format": "glb",
+      "directory": "dist/exports/tavern_glb"
+    }
+  ]
+}

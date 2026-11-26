@@ -56,9 +56,9 @@ palette {
 ## 검사, 미리보기 및 빌드
 
 ```sh
-npx --no-install ashfox check examples/structure/medieval_cottage.ashfox --json
-npx --no-install ashfox render --view cutaway examples/structure/medieval_cottage.ashfox --output cottage_inside.png
-npx --no-install ashfox build examples/structure/medieval_cottage.ashfox --json
+npx --no-install ashfox check examples/structure/assets/structures/medieval_cottage.ashfox --json
+npx --no-install ashfox render --view interior examples/structure/assets/structures/medieval_cottage.ashfox --output cottage_inside.png
+npx --no-install ashfox build examples/structure/.ashfoxworkspace --json
 ```
 
-단독 `ashfox build`는 선언된 `outputs { ... }`를 따르며 기본값으로 같은 `.ashfox` 원본에서 `.nbt`(`java_structure`)와 `1 block = 1.0m` `.glb`(`glb`)를 모두 생성합니다. 구조물 진입점 안에 `preview cutaway { cutaway = 4; }`를 선언하고 `render --view cutaway`로 내부 단면을 볼 수 있습니다. 모든 구조물은 5개 하드 게이트(`visible_geometry`, `ground_contact`, `no_disconnected_floating_parts`, `enclosed_interior`, `valid_minecraft_ids`)와 100점 만점 감사(`>= 75` 통과, `>= 85` 우수)를 만족해야 하며, 미사용 팔레트 키·import·비공개 프리팹은 컴파일 단계에서 차단됩니다.
+단독·워크스페이스 `ashfox build`는 선언된 `outputs { ... }`를 따라 같은 `.ashfox` 원본에서 `.nbt`(`java_structure`)와 `1 block = 1.0m` `.glb`(`glb`)를 모두 생성합니다. 구조물 진입점 안에 `preview interior { cutaway = 4; }`를 선언하고 `render --view interior`로 내부 단면을 볼 수 있습니다. 모든 구조물은 5개 하드 게이트(`visible_geometry`, `ground_contact`, `no_disconnected_floating_parts`, `enclosed_interior`, `valid_minecraft_ids`)와 100점 만점 감사(`>= 75` 통과, `>= 85` 우수)를 만족해야 하며, 미사용 팔레트 키·import·비공개 프리팹은 컴파일 단계에서 차단됩니다.

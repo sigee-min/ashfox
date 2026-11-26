@@ -17,7 +17,10 @@ const relativePosix = (owner: string, spec: string): string =>
   path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
 
 const readPropFixture = (name: string): string =>
-  fs.readFileSync(path.join(REPO_ROOT, 'examples/structure/props', `${name}.ashfox`), 'utf8');
+  fs.readFileSync(
+    path.join(REPO_ROOT, 'examples/structure/assets/models/props', `${name}.ashfox`),
+    'utf8',
+  );
 
 const compileSingleModel = (
   entryName: string,
@@ -56,18 +59,19 @@ const compileSingleModel = (
 };
 
 const testMixedStructureAndSharedPropWorkspace = (): void => {
-  const dir = path.join(REPO_ROOT, 'examples/structure');
+  const dir = path.join(REPO_ROOT, 'examples/structure/assets');
   const read = (rel: string) => fs.readFileSync(path.join(dir, rel), 'utf8');
   const files: DirectoryFile[] = [
+    { path: 'assets/structures/watchtower.ashfox', source: read('structures/watchtower.ashfox') },
+    { path: 'assets/module/furnishings.ashfox', source: read('module/furnishings.ashfox') },
     {
-      path: 'assets/structures/watchtower.ashfox',
-      source: read('watchtower.ashfox')
-        .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
-        .replaceAll('./props/', '../models/props/'),
+      path: 'assets/models/props/rune_pillar.ashfox',
+      source: read('models/props/rune_pillar.ashfox'),
     },
-    { path: 'assets/module/furnishings.ashfox', source: read('furnishings.ashfox') },
-    { path: 'assets/models/props/rune_pillar.ashfox', source: read('props/rune_pillar.ashfox') },
-    { path: 'assets/models/props/wall_lantern.ashfox', source: read('props/wall_lantern.ashfox') },
+    {
+      path: 'assets/models/props/wall_lantern.ashfox',
+      source: read('models/props/wall_lantern.ashfox'),
+    },
   ];
   const config = JSON.stringify({
     format: 'ashfox-workspace',

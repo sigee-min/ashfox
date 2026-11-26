@@ -33,8 +33,10 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `prop` | `examples/prop/lantern.ashfox` | 직교 계단 구조와 황동 지붕 브래킷이 있는 발광 컷아웃 랜턴 소품 |
 | `prop` | `examples/prop/treasure_chest/chest.ashfox` | rig·surface·body·소켓 결합 자물쇠로 분리된 모듈형 소품 |
 | `creature` | `examples/griffin/workbench/main.ashfox` | 다중 모듈 애니메이션 크리처 (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
-| `structure` | `examples/structure/medieval_cottage.ashfox` | 가구 실내와 커스텀 `.ashfox` 소품을 결합해 `.nbt`·`1 block = 1.0m` GLB를 출력하는 박공 오두막 |
-| `structure` | `examples/structure/watchtower.ashfox` | 이층 침실·사다리·흉벽과 커스텀 랜턴을 갖춘 다층 석조 감시탑 |
+| `structure` | `examples/structure/assets/structures/medieval_cottage.ashfox` | 가구 실내와 커스텀 `.ashfox` 소품을 결합해 `.nbt`·`1 block = 1.0m` GLB를 출력하는 박공 오두막 |
+| `structure` | `examples/structure/assets/structures/watchtower.ashfox` | 이층 침실·사다리·흉벽과 커스텀 랜턴을 갖춘 다층 석조 감시탑 |
+| `structure` | `examples/structure/assets/structures/blacksmith.ashfox` | 용광로·모루·가마솥·대형 굴뚝과 매달린 간판을 갖춘 목조 대장간 |
+| `structure` | `examples/structure/assets/structures/tavern.ashfox` | 바 카운터·테이블 부스·2층 발코니와 객실을 갖춘 2층 중세 선술집 |
 
 ## 애니메이션 크리처 만들기
 

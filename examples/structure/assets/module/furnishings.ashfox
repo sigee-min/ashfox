@@ -18,6 +18,15 @@ module furnishings {
     carpet_b = "minecraft:blue_carpet";
     torch = "minecraft:torch";
     lantern = "minecraft:lantern[hanging=false]";
+    blast_furnace = "minecraft:blast_furnace[facing=south,lit=true]";
+    anvil = "minecraft:anvil";
+    cauldron = "minecraft:cauldron";
+    magma = "minecraft:magma_block";
+    dark_slab = "minecraft:dark_oak_slab[type=top]";
+    oak_stair_s = "minecraft:oak_stairs[facing=south,half=bottom]";
+    oak_stair_n = "minecraft:oak_stairs[facing=north,half=bottom]";
+    spruce_fence = "minecraft:spruce_fence";
+    carpet_g = "minecraft:green_carpet";
   }
 
   export prefab CozyBedroom {
@@ -63,5 +72,36 @@ module furnishings {
       c = carpet_b;
     };
     set at = (2, 1, 0) block = lantern;
+  }
+
+  export prefab ForgeAnvilBay {
+    box from = (0, 0, 0) to = (3, 1, 0) block = brick;
+    set at = (1, 0, 0) block = blast_furnace;
+    set at = (2, 0, 0) block = magma;
+    set at = (0, 0, 1) block = cauldron;
+    set at = (2, 0, 1) block = anvil;
+    set at = (3, 0, 1) block = barrel;
+    set at = (0, 0, 2) block = craft;
+    set at = (1, 2, 0) block = lantern;
+  }
+
+  export prefab TavernBarCounter {
+    box from = (0, 0, 0) to = (3, 0, 0) block = barrel;
+    set at = (1, 0, 0) block = chest_s;
+    set at = (2, 0, 0) block = craft;
+    box from = (0, 1, 0) to = (3, 1, 0) block = plank;
+    set at = (1, 2, 0) block = lantern;
+    box from = (0, 0, 2) to = (3, 0, 2) block = dark_slab;
+    set at = (3, 1, 2) block = pot;
+  }
+
+  export prefab TavernDiningBooth {
+    box from = (0, 0, 0) to = (2, 0, 0) block = oak_stair_s;
+    box from = (0, 0, 2) to = (2, 0, 2) block = oak_stair_n;
+    set at = (0, 0, 1) block = spruce_fence;
+    set at = (2, 0, 1) block = spruce_fence;
+    set at = (1, 0, 1) block = carpet_g;
+    box from = (0, 1, 1) to = (2, 1, 1) block = dark_slab;
+    set at = (1, 2, 1) block = lantern;
   }
 }
