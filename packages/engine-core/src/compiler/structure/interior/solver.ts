@@ -16,7 +16,12 @@ import { compileAllDraperies } from './drapery';
 import { compileInteriorProps, type CustomPropMount } from './props';
 import { hashSeed01 } from './propsGeo';
 import { compileStoryVignette } from './vignettes';
-import { resolvePartitionDoorway, resolveZoneRect, type ZoneFootprint } from './zoneRect';
+import {
+  diningChairCellOffsets,
+  resolvePartitionDoorway,
+  resolveZoneRect,
+  type ZoneFootprint,
+} from './zoneRect';
 
 export interface ClearPathReport {
   readonly clear_path_cells: readonly IntVec3[];
@@ -328,14 +333,18 @@ export const validateClearPath = (
   };
 };
 
-const footprintCells = (spec: InteriorPropSpec, x: number, z: number): readonly string[] => {
+const footprintCoords = (
+  spec: InteriorPropSpec,
+  x: number,
+  z: number,
+): readonly (readonly [number, number])[] => {
   const [wB, dB] = spec.size ?? [1, 1];
-  const rw = spec.facing === 'east' || spec.facing === 'west' ? dB : wB;
-  const rd = spec.facing === 'east' || spec.facing === 'west' ? wB : dB;
-  const out: string[] = [];
+  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
+  const out: [number, number][] = [];
   for (let dz = 0; dz < rd; dz += 1) {
-    for (let dx = 0; dx < rw; dx += 1) out.push(cellKey(x + dx, z + dz));
+    for (let dx = 0; dx < rw; dx += 1) out.push([x + dx, z + dz]);
   }
+  for (const [rx, rz] of diningChairCellOffsets(spec)) out.push([x + rx, z + rz]);
   return out;
 };
 
@@ -349,21 +358,18 @@ const canPlacePropAt = (
   winClear: ReadonlySet<string>,
   stairCells: ReadonlySet<string>,
 ): boolean => {
-  const [wB, dB] = spec.size ?? [1, 1];
-  const rw = spec.facing === 'east' || spec.facing === 'west' ? dB : wB;
-  const rd = spec.facing === 'east' || spec.facing === 'west' ? wB : dB;
-  if (x < bounds.x0 || x + rw - 1 > bounds.x1 || z < bounds.z0 || z + rd - 1 > bounds.z1) {
-    return false;
-  }
-  const cells = footprintCells(spec, x, z);
+  const coords = footprintCoords(spec, x, z);
   const allowWindow = !TALL_WALL_PROPS.has(spec.kind);
   const highMount = spec.mount_on === 'wall' || spec.mount_on === 'ceiling';
-  return cells.every(
-    (c) =>
+  return coords.every(([cx, cz]) => {
+    if (cx < bounds.x0 || cx > bounds.x1 || cz < bounds.z0 || cz > bounds.z1) return false;
+    const c = cellKey(cx, cz);
+    return (
       !stairCells.has(c) &&
       (highMount || (!occupied.has(c) && !doorClear.has(c))) &&
-      (allowWindow || !winClear.has(c)),
-  );
+      (allowWindow || !winClear.has(c))
+    );
+  });
 };
 
 const findCandidatePlacement = (
@@ -434,15 +440,10 @@ const resolvePropSpecs = (
     const nudged = rx !== Math.round(spec.at[0]) || rz !== Math.round(spec.at[2]);
     const nextAt: Vec3 = nudged ? [rx, spec.at[1], rz] : spec.at;
     if (spec.mount_on !== 'wall' && spec.mount_on !== 'ceiling') {
-      for (const c of footprintCells(spec, rx, rz)) occupied.add(c);
+      for (const [cx, cz] of footprintCoords(spec, rx, rz)) occupied.add(cellKey(cx, cz));
     }
     resolvedSpecs.push({ ...spec, at: nextAt });
-    placements.push({
-      id: spec.id,
-      original_at: spec.at,
-      resolved_at: nextAt,
-      nudged,
-    });
+    placements.push({ id: spec.id, original_at: spec.at, resolved_at: nextAt, nudged });
   }
   return { resolvedSpecs, placements };
 };

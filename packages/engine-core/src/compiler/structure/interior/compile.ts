@@ -1,4 +1,4 @@
-import type { IntVec3 } from '../../../project/structure/contract';
+import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
 import type { InteriorRoomOp } from '../../../project/structure/interiorDef';
 import {
   qualifyCustomAssetKey,
@@ -20,7 +20,7 @@ import {
   generateInteriorSunShafts,
   generateTranslucentWindowPanes,
 } from './sunShaft';
-import { buildSculptedVolumes } from './volume';
+import { buildSculptedVolumes, type AlcoveCarveSpec } from './volume';
 
 export type { CompiledInteriorRoom };
 
@@ -43,27 +43,80 @@ const voxelAt = (state: EvalState, x: number, y: number, z: number): number => {
   return state.voxels[(y * d + z) * w + x]!;
 };
 
-const isInteriorWallCarve = (state: EvalState, p: IntVec3): boolean => {
-  const [w, , d] = state.size;
-  const [x, y, z] = p;
-  if (x <= 1 || x >= w - 2 || z <= 1 || z >= d - 2) return false;
-  return (
-    voxelAt(state, x + 1, y, z) > 0 &&
-    voxelAt(state, x - 1, y, z) > 0 &&
-    voxelAt(state, x, y, z + 1) > 0 &&
-    voxelAt(state, x, y, z - 1) > 0
+const WALL_INWARD: Readonly<Record<CardinalFacing, readonly [number, number]>> = {
+  north: [0, 1],
+  south: [0, -1],
+  west: [1, 0],
+  east: [-1, 0],
+};
+
+const FRAGILE_EXTERIOR_SUBSTRS = [
+  '_slab',
+  '_trapdoor',
+  'lantern',
+  'torch',
+  '_stairs',
+  '_fence',
+  '_wall',
+  'glass_pane',
+  'iron_bars',
+  '_sign',
+  '_banner',
+  '_button',
+  'chain',
+  'flower_pot',
+  'vine',
+  '_door',
+];
+
+const isOpeningColumn = (
+  openings: readonly StructureOpeningMeta[],
+  wall: CardinalFacing,
+  x: number,
+  z: number,
+): boolean =>
+  openings.some(
+    (op) =>
+      op.wall === wall && x >= op.from[0] && x <= op.to[0] && z >= op.from[2] && z <= op.to[2],
   );
+
+const isFragileOutwardBlock = (state: EvalState, x: number, y: number, z: number): boolean => {
+  const v = voxelAt(state, x, y, z);
+  if (v <= 0) return false;
+  const name = state.states[v] ?? '';
+  return FRAGILE_EXTERIOR_SUBSTRS.some((s) => name.includes(s));
+};
+
+const canCarveAlcoveCell = (
+  state: EvalState,
+  carve: AlcoveCarveSpec,
+  openings: readonly StructureOpeningMeta[],
+): boolean => {
+  if (carve.depth_16 <= 0) return false;
+  const [w, h, d] = state.size;
+  const [x, y, z] = carve.pos;
+  if (x < 0 || y <= 0 || z < 0 || x >= w || y >= h - 1 || z >= d) return false;
+  if (isOpeningColumn(openings, carve.wall, x, z)) return false;
+  const cur = voxelAt(state, x, y, z);
+  if (cur <= 0) return false;
+  const curState = state.states[cur] ?? '';
+  if (curState.includes('_door') || curState.includes('glass_pane')) return false;
+  const [ix, iz] = WALL_INWARD[carve.wall];
+  if (isFragileOutwardBlock(state, x - ix, y, z - iz)) return false;
+  return voxelAt(state, x + ix, y, z + iz) <= 0 || voxelAt(state, x - ix, y, z - iz) > 0;
 };
 
 const applyVolumeCarvesToGrid = (
   state: EvalState,
   ownerPath: string,
-  carves: readonly IntVec3[],
+  carves: readonly AlcoveCarveSpec[],
   doorways: readonly IntVec3[],
   sunkenCells: readonly IntVec3[],
+  openings: readonly StructureOpeningMeta[],
 ): void => {
-  for (const p of carves) {
-    if (isInteriorWallCarve(state, p)) putVoxel(state, ownerPath, p, 'minecraft:air', null, true);
+  for (const c of carves) {
+    if (canCarveAlcoveCell(state, c, openings))
+      putVoxel(state, ownerPath, c.pos, 'minecraft:air', null, true);
   }
   for (const p of doorways) {
     putVoxel(state, ownerPath, p, 'minecraft:air', null, true);
@@ -103,9 +156,10 @@ const compileSingleInterior = (
   applyVolumeCarvesToGrid(
     state,
     ownerPath,
-    volumes.alcove_carves,
+    volumes.alcove_carve_specs,
     volumes.doorway_clearances,
     volumes.sunken_cells,
+    roomOpenings,
   );
   const solved = solveInteriorLayout(ctx.roomInput, [...shell.boxes, ...volumes.boxes]);
   const windowPanes = generateTranslucentWindowPanes(ctx.roomInput);

@@ -1,5 +1,6 @@
 import type { CardinalFacing, IntVec2 } from '../../../project/structure/contract';
 import type {
+  InteriorPropSpec,
   InteriorRoomInput,
   InteriorVolumeSpec,
   MezzanineVolumeSpec,
@@ -118,3 +119,51 @@ export const resolvePartitionDoorway = (
   doorAt: spec.doorway_at ?? Math.floor((spec.span_from + spec.span_to) / 2),
   doorW: spec.doorway_width === 0 ? 0 : Math.max(2, spec.doorway_width ?? 2),
 });
+
+const CW_FACING: readonly CardinalFacing[] = ['north', 'east', 'south', 'west'];
+
+/** Computes unrotated chair cell offsets and facing around a dining table footprint. */
+export const diningSeatOffsets = (
+  wB: number,
+  dB: number,
+  seatCount: number,
+): readonly [number, number, CardinalFacing][] => {
+  const seats: [number, number, CardinalFacing][] = [];
+  for (let i = 0; i < wB && seats.length < seatCount; i += 1) {
+    seats.push([i, -1, 'south']);
+    if (seats.length < seatCount) seats.push([i, dB, 'north']);
+  }
+  if (seats.length < seatCount) seats.push([-1, 0, 'east']);
+  if (seats.length < seatCount) seats.push([wB, 0, 'west']);
+  return seats;
+};
+
+/** Rotates a local dining chair cell offset and facing into world-facing orientation. */
+export const rotateChairOffset = (
+  lx: number,
+  lz: number,
+  relFacing: CardinalFacing,
+  wB: number,
+  dB: number,
+  tableFacing: CardinalFacing,
+): readonly [number, number, CardinalFacing] => {
+  const rotIdx = CW_FACING.indexOf(tableFacing);
+  const nextFacing = CW_FACING[(CW_FACING.indexOf(relFacing) + rotIdx) % 4]!;
+  if (tableFacing === 'east') return [dB - 1 - lz, lx, nextFacing];
+  if (tableFacing === 'south') return [wB - 1 - lx, dB - 1 - lz, nextFacing];
+  if (tableFacing === 'west') return [lz, wB - 1 - lx, nextFacing];
+  return [lx, lz, nextFacing];
+};
+
+/** Returns rotated [dx, dz] cell offsets of generated dining chairs relative to table origin. */
+export const diningChairCellOffsets = (
+  spec: InteriorPropSpec,
+): readonly (readonly [number, number])[] => {
+  if (spec.kind !== 'dining_set') return [];
+  const [wB, dB] = spec.size ?? [2, 1];
+  const count = spec.seat_count ?? Math.max(2, wB * 2);
+  return diningSeatOffsets(wB, dB, count).map(([lx, lz, relFacing]) => {
+    const [rx, rz] = rotateChairOffset(lx, lz, relFacing, wB, dB, spec.facing);
+    return [rx, rz] as const;
+  });
+};

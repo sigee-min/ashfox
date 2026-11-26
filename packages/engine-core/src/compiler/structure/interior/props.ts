@@ -1,5 +1,6 @@
 import type { Vec3 } from '../../../model/identity';
 import type { CardinalFacing } from '../../../project/structure/contract';
+import { diningSeatOffsets, rotateChairOffset } from './zoneRect';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
   type InteriorPropKind,
@@ -232,39 +233,6 @@ const buildOrganicDetailBoxes = (
     );
   }
   return [];
-};
-
-const diningSeatOffsets = (
-  wB: number,
-  dB: number,
-  seatCount: number,
-): readonly [number, number, CardinalFacing][] => {
-  const seats: [number, number, CardinalFacing][] = [];
-  for (let i = 0; i < wB && seats.length < seatCount; i += 1) {
-    seats.push([i, -1, 'south']);
-    if (seats.length < seatCount) seats.push([i, dB, 'north']);
-  }
-  if (seats.length < seatCount) seats.push([-1, 0, 'east']);
-  if (seats.length < seatCount) seats.push([wB, 0, 'west']);
-  return seats;
-};
-
-const CW_FACING: readonly CardinalFacing[] = ['north', 'east', 'south', 'west'];
-
-const rotateChairOffset = (
-  lx: number,
-  lz: number,
-  relFacing: CardinalFacing,
-  wB: number,
-  dB: number,
-  tableFacing: CardinalFacing,
-): readonly [number, number, CardinalFacing] => {
-  const rotIdx = CW_FACING.indexOf(tableFacing);
-  const nextFacing = CW_FACING[(CW_FACING.indexOf(relFacing) + rotIdx) % 4]!;
-  if (tableFacing === 'east') return [dB - 1 - lz, lx, nextFacing];
-  if (tableFacing === 'south') return [wB - 1 - lx, dB - 1 - lz, nextFacing];
-  if (tableFacing === 'west') return [lz, wB - 1 - lx, nextFacing];
-  return [lx, lz, nextFacing];
 };
 
 const buildDiningChairs = (

@@ -292,6 +292,37 @@ structure dedup_sunken {
   const [dw, , dd] = dedupProd.grid.size;
   const pitState = dedupProd.grid.states[dedupProd.grid.voxels[(0 * dd + 4) * dw + 4]!]!;
   assert.equal(pitState, 'minecraft:oak_slab[type=bottom]');
+
+  // Verify north-facing alcove in a 1-block room wall [2,0,2]..[12,7,12] carves oak wall voxels for mesh and NBT.
+  const alcoveSrc = `ashfox 1
+structure alcove_carve_test {
+  size = (15b, 10b, 15b);
+  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  floor f { y = 0b; height = 7b;
+    room r { from = (2b, 2b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
+      interior {
+        dna { arch = rustic; }
+        alcove hearth { kind = fireplace; wall = north; at = 3; width = 3; height = 3; }
+      }
+    }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  }
+}`;
+  const alcoveProd = compileStructureUnits(
+    'alc.ashfox',
+    new Map([['alc.ashfox', parseStructureSource(alcoveSrc, 'alc.ashfox')]]),
+    {},
+    rel,
+  );
+  const [aw, , ad] = alcoveProd.grid.size;
+  const nicheState = alcoveProd.grid.states[alcoveProd.grid.voxels[(2 * ad + 2) * aw + 7]!]!;
+  assert.equal(nicheState, 'minecraft:air', 'Alcove on 1-block wall must carve wall voxel to air');
+  const nbtAlc = decodeStructureNbt(alcoveProd.nbt);
+  const oakIdx = nbtAlc.palette.findIndex((p) => p.Name === 'minecraft:oak_planks');
+  const sealed = nbtAlc.blocks.some(
+    (b) => b.pos[0] === 7 && b.pos[1] === 2 && b.pos[2] === 2 && b.state === oakIdx,
+  );
+  assert.equal(sealed, false, 'Alcove niche in NBT must not remain sealed by oak_planks');
   console.log('ashfox interior wiring integration tests ok');
 };
 

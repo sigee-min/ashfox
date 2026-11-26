@@ -437,6 +437,22 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
         pp.resolved_at[2] <= 2,
     );
   }
+
+  // Verify north-facing 3x1 dining_set reserves its chair cells so adjacent cabinet at [4,1,3] relocates.
+  const chairSolve = solveInteriorLayout({
+    ...screenRoom,
+    volumes: [],
+    props: [
+      { id: 'd_tbl', kind: 'dining_set', at: [4, 1, 4], size: [3, 1], facing: 'north' },
+      { id: 'adj_cab', kind: 'cabinet', at: [4, 1, 3], size: [1, 1], facing: 'south' },
+    ],
+  });
+  const movedCab = chairSolve.placed_props.find((p) => p.id === 'adj_cab')!;
+  assert.equal(
+    movedCab.nudged,
+    true,
+    'Cabinet overlapping dining chair cell [4,1,3] must relocate',
+  );
 };
 
 testClosedStyleDnaContract();

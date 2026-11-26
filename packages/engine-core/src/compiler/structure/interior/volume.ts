@@ -28,10 +28,17 @@ export interface VolumeZoneSurface {
   readonly surface_y_16: number;
 }
 
+export interface AlcoveCarveSpec {
+  readonly pos: IntVec3;
+  readonly wall: CardinalFacing;
+  readonly depth_16: number;
+}
+
 export interface InteriorVolumeResult {
   readonly boxes: readonly SubVoxelBoxIR[];
   readonly zone_surfaces: readonly VolumeZoneSurface[];
   readonly alcove_carves: readonly IntVec3[];
+  readonly alcove_carve_specs: readonly AlcoveCarveSpec[];
   readonly doorway_clearances: readonly IntVec3[];
   readonly sunken_cells: readonly IntVec3[];
 }
@@ -42,6 +49,7 @@ interface VolCtx {
   readonly boxes: SubVoxelBoxIR[];
   readonly zones: VolumeZoneSurface[];
   readonly carves: IntVec3[];
+  readonly carveSpecs: AlcoveCarveSpec[];
   readonly doorways: IntVec3[];
   readonly sunken: IntVec3[];
 }
@@ -328,11 +336,23 @@ const recordAlcoveCarves = (
   uStartB: number,
   y0B: number,
   wallB: number,
+  depth16: number,
   spec: AlcoveVolumeSpec,
 ): void => {
+  if (depth16 <= 0) return;
+  const [bf, bt] = [c.room.bounds_from, c.room.bounds_to];
+  const [uMin, uMax] = ax ? [bf[0] + 1, bt[0] - 1] : [bf[2] + 1, bt[2] - 1];
+  const [yMin, yMax] = [bf[1] + 1, bt[1] - 1];
   for (let du = 0; du < spec.width_b; du += 1) {
-    for (let dy = 0; dy < spec.height_b; dy += 1)
-      c.carves.push(ax ? [uStartB + du, y0B + dy, wallB] : [wallB, y0B + dy, uStartB + du]);
+    const u = uStartB + du;
+    if (u < uMin || u > uMax) continue;
+    for (let dy = 0; dy < spec.height_b; dy += 1) {
+      const y = y0B + dy;
+      if (y < yMin || y > yMax) continue;
+      const pos: IntVec3 = ax ? [u, y, wallB] : [wallB, y, u];
+      c.carves.push(pos);
+      c.carveSpecs.push({ pos, wall: spec.wall, depth_16: depth16 });
+    }
   }
 };
 
@@ -342,17 +362,19 @@ const emitAlcove = (c: VolCtx, spec: AlcoveVolumeSpec): void => {
   const [bf, bt] = [c.room.bounds_from, c.room.bounds_to];
   const wallB = { north: bf[2], south: bt[2], west: bf[0], east: bt[0] }[spec.wall];
   const uStartB = (ax ? bf[0] : bf[2]) + 1 + spec.at_u;
-  recordAlcoveCarves(c, ax, uStartB, y0B, wallB, spec);
-  const [u0, u1, yOff] = [uStartB * U, (uStartB + spec.width_b) * U, spec.y_offset_16 ?? 0];
+  const yOff = spec.y_offset_16 ?? 0;
+  const depth = spec.depth_16 === 0 ? 0 : Math.min(12, Math.max(4, spec.depth_16 ?? 8));
+  recordAlcoveCarves(c, ax, uStartB, y0B + Math.floor(yOff / U), wallB, depth, spec);
+  const [u0, u1] = [uStartB * U, (uStartB + spec.width_b) * U];
   const [y0, y1] = [y0B * U + yOff, y0B * U + yOff + spec.height_b * U];
-  const depth = Math.min(12, Math.max(4, spec.depth_16 ?? 8));
   const [d0, d1] =
     spec.wall === 'north' || spec.wall === 'west'
       ? [wallB * U + 16 - depth, wallB * U + 16]
       : [wallB * U, wallB * U + depth];
+  const [bk0, bk1] = spec.wall === 'north' || spec.wall === 'west' ? [d0, d0 + 2] : [d1 - 2, d1];
   const [bTile, bLayer] = ALCOVE_TILE[spec.alcove_kind] ?? [c.tile, 'opaque'];
   const tag = `alcove_${spec.alcove_kind}`;
-  pushBox(c, `alc_${spec.id}_bk`, axBox(ax, u0, y0, d0, u1, y1, d0 + 2), tag, bTile, bLayer);
+  pushBox(c, `alc_${spec.id}_bk`, axBox(ax, u0, y0, bk0, u1, y1, bk1), tag, bTile, bLayer);
   pushBox(c, `alc_${spec.id}_lt`, axBox(ax, u0 - 2, y1 - 3, d0, u1 + 2, y1, d1), tag);
 };
 
@@ -434,6 +456,7 @@ export const buildSculptedVolumes = (room: InteriorRoomInput): InteriorVolumeRes
     boxes: [],
     zones: [],
     carves: [],
+    carveSpecs: [],
     doorways: [],
     sunken: [],
   };
@@ -448,6 +471,7 @@ export const buildSculptedVolumes = (room: InteriorRoomInput): InteriorVolumeRes
     boxes: c.boxes,
     zone_surfaces: c.zones,
     alcove_carves: c.carves,
+    alcove_carve_specs: c.carveSpecs,
     doorway_clearances: c.doorways,
     sunken_cells: c.sunken,
   };
