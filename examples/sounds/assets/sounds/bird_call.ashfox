@@ -6,7 +6,7 @@ sound bird_call {
   sampleRate = 48000;
   channels = 2;
   seed = 7349;
-  space = { mix = 0.22; decay = 0.35; damping = 7200; size = 1.1; };
+  space = { preset = "courtyard"; mix = 0.22; };
   voices = [bv.opening_whistle, bv.answering_trill, bv.forest_air, bv.canopy_low];
   sequences = [{
     id = "phrase";
@@ -22,5 +22,5 @@ sound bird_call {
   }];
   variants = [{ id = "base"; seed = 218; }, { id = "alternate"; seed = 907; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 0; peakDb = -2; softClip = true; };
+  output = { gainDb = 4; peakDb = -1.5; targetLufs = -14; air = 0.15; glue = 0.2; limit = true; };
 }

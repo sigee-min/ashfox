@@ -15,12 +15,16 @@ export interface BandEnergies {
 export interface SoundMetrics {
   readonly peakDb: number;
   readonly rmsDb: number;
+  readonly lufs: number;
   readonly crestDb: number;
+  readonly onsetPunchDb: number;
+  readonly stereoCorrelation: number;
   readonly leadingSilenceRatio: number;
   readonly trailingSilenceRatio: number;
   readonly attackSeconds: number;
   readonly activeRatio: number;
   readonly bands: BandEnergies;
+  readonly harshnessRatio: number;
   readonly spectralCentroidHz: number;
   readonly spectralEntropy: number;
   readonly spectralFlux: number;
@@ -35,18 +39,80 @@ const HANN = Float64Array.from(
   (_, i) => 0.5 * (1 - Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1))),
 );
 
-export const decodeWavMono = (wav: Uint8Array, channels: 1 | 2): Float64Array => {
+export const decodeWavStereo = (
+  wav: Uint8Array,
+  channels: 1 | 2,
+): { readonly left: Float64Array; readonly right: Float64Array; readonly mono: Float64Array } => {
   const frames = Math.floor((wav.length - 44) / (2 * channels));
   const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
+  const left = new Float64Array(frames);
+  if (channels === 1) {
+    for (let i = 0; i < frames; i += 1) left[i] = view.getInt16(44 + i * 2, true) / 32767;
+    return { left, right: left, mono: left };
+  }
+  const right = new Float64Array(frames);
   const mono = new Float64Array(frames);
   for (let i = 0; i < frames; i += 1) {
-    let sum = 0;
-    for (let ch = 0; ch < channels; ch += 1) {
-      sum += view.getInt16(44 + (i * channels + ch) * 2, true) / 32767;
-    }
-    mono[i] = sum / channels;
+    const l = view.getInt16(44 + i * 4, true) / 32767;
+    const r = view.getInt16(46 + i * 4, true) / 32767;
+    left[i] = l;
+    right[i] = r;
+    mono[i] = (l + r) * 0.5;
   }
-  return mono;
+  return { left, right, mono };
+};
+
+export const decodeWavMono = (wav: Uint8Array, channels: 1 | 2): Float64Array =>
+  decodeWavStereo(wav, channels).mono;
+
+const computeStereoCorrelation = (
+  left: Float64Array,
+  right: Float64Array,
+  channels: 1 | 2,
+): number => {
+  if (channels === 1) return 1;
+  let sumLR = 0;
+  let sumL2 = 0;
+  let sumR2 = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    const l = left[i]!;
+    const r = right[i]!;
+    sumLR += l * r;
+    sumL2 += l * l;
+    sumR2 += r * r;
+  }
+  const denom = Math.sqrt(sumL2 * sumR2);
+  return denom <= 1e-18 ? 1 : Math.max(-1, Math.min(1, sumLR / denom));
+};
+
+const kWeightMeanSq = (samples: Float64Array): number => {
+  const s = new Float64Array(8); // [s1x1, s1x2, s1y1, s1y2, s2x1, s2x2, s2y1, s2y2]
+  let sumSq = 0;
+  for (let i = 0; i < samples.length; i += 1) {
+    const x = samples[i]!;
+    const y1 =
+      1.53512485958697 * x -
+      2.69169618940638 * s[0]! +
+      1.19839281085285 * s[1]! +
+      1.69065929318241 * s[2]! -
+      0.73248077421585 * s[3]!;
+    s[1] = s[0]!;
+    s[0] = x;
+    s[3] = s[2]!;
+    s[2] = y1;
+    const y2 = y1 - 2 * s[4]! + s[5]! + 1.99004745483395 * s[6]! - 0.99007225036621 * s[7]!;
+    s[5] = s[4]!;
+    s[4] = y1;
+    s[7] = s[6]!;
+    s[6] = y2;
+    sumSq += y2 * y2;
+  }
+  return sumSq / Math.max(1, samples.length);
+};
+
+const computeKWeightedLufs = (left: Float64Array, right: Float64Array, channels: 1 | 2): number => {
+  const meanSq = channels === 1 ? kWeightMeanSq(left) : kWeightMeanSq(left) + kWeightMeanSq(right);
+  return -0.691 + 10 * Math.log10(Math.max(1e-12, meanSq));
 };
 
 const bitReverse = (re: Float64Array, im: Float64Array): void => {
@@ -137,6 +203,18 @@ const measureOnsetAttack = (
   return Math.max(0, peakIdx - rise10) / rate;
 };
 
+const computeOnsetPunchDb = (mono: Float64Array, firstActive: number, rate: number): number => {
+  const peakEnd = Math.min(mono.length, firstActive + Math.round(rate * 0.04));
+  const rmsEnd = Math.min(mono.length, firstActive + Math.round(rate * 0.08));
+  let onsetPeak = 0;
+  for (let i = firstActive; i < peakEnd; i += 1)
+    onsetPeak = Math.max(onsetPeak, Math.abs(mono[i]!));
+  let sumSq = 0;
+  for (let i = firstActive; i < rmsEnd; i += 1) sumSq += mono[i]! * mono[i]!;
+  const earlyRms = Math.sqrt(sumSq / Math.max(1, rmsEnd - firstActive));
+  return Math.max(0, 20 * Math.log10(Math.max(1e-8, onsetPeak) / Math.max(1e-8, earlyRms)));
+};
+
 const computeEnvelopeStats = (mono: Float64Array, peak: number, rate: number) => {
   const win = 240;
   const count = Math.max(1, Math.floor(mono.length / win));
@@ -159,6 +237,7 @@ const computeEnvelopeStats = (mono: Float64Array, peak: number, rate: number) =>
     trailingSilenceRatio: (mono.length - 1 - lastActive) / Math.max(1, mono.length),
     activeRatio: Math.max(0, lastActive - firstActive + 1) / Math.max(1, mono.length),
     attackSeconds: measureOnsetAttack(mono, firstActive, lastActive, peak, rate),
+    onsetPunchDb: computeOnsetPunchDb(mono, firstActive, rate),
   };
 };
 
@@ -215,11 +294,13 @@ const accumulateBands = (
   const logRange = Math.log(16000) - logMin;
   let totalPower = 0;
   let weightedHz = 0;
+  let harsh = 0;
   for (let k = 1; k < bins; k += 1) {
     const p = meanPower[k]! / Math.max(1, frameCount);
     const hz = (k * rate) / FFT_SIZE;
     totalPower += p;
     weightedHz += p * hz;
+    if (hz >= 2500 && hz < 5000) harsh += p;
     const b = bandIndex(hz);
     if (b) bands[b] += p;
     if (hz >= 40 && hz < 16000) {
@@ -227,7 +308,7 @@ const accumulateBands = (
       logBins[li] += p;
     }
   }
-  return { bands, logBins, totalPower, weightedHz };
+  return { bands, logBins, totalPower, weightedHz, harsh };
 };
 
 const computeSpectralEntropy = (logBins: Float64Array, safeTotal: number): number => {
@@ -242,7 +323,7 @@ const computeSpectralEntropy = (logBins: Float64Array, safeTotal: number): numbe
 const summarizeSpectra = (frames: readonly Float64Array[], rate: number) => {
   const bins = FFT_SIZE / 2;
   const { meanPower, fluxSum, fluxCount } = accumulateFlux(frames, bins);
-  const { bands, logBins, totalPower, weightedHz } = accumulateBands(
+  const { bands, logBins, totalPower, weightedHz, harsh } = accumulateBands(
     meanPower,
     frames.length,
     bins,
@@ -258,6 +339,7 @@ const summarizeSpectra = (frames: readonly Float64Array[], rate: number) => {
       presence: bands.presence / safeTotal,
       air: bands.air / safeTotal,
     },
+    harshnessRatio: harsh / safeTotal,
     spectralCentroidHz: weightedHz / safeTotal,
     spectralEntropy: computeSpectralEntropy(logBins, safeTotal),
     spectralFlux: fluxCount > 0 ? Math.min(1, fluxSum / fluxCount) : 0,
@@ -288,7 +370,7 @@ export const analyzeSingleProduct = (
   product: SoundProduct,
   variantDistinctness = 1,
 ): SoundMetrics => {
-  const mono = decodeWavMono(product.wav, product.channels);
+  const { left, right, mono } = decodeWavStereo(product.wav, product.channels);
   const env = computeEnvelopeStats(mono, product.peak, product.sampleRate);
   const frames: Float64Array[] = [];
   for (let start = 0; start + FFT_SIZE <= mono.length; start += HOP_SIZE) {
@@ -301,7 +383,9 @@ export const analyzeSingleProduct = (
   return {
     peakDb,
     rmsDb,
+    lufs: computeKWeightedLufs(left, right, product.channels),
     crestDb: peakDb - rmsDb,
+    stereoCorrelation: computeStereoCorrelation(left, right, product.channels),
     ...env,
     ...spec,
     loopSeamJump: product.rms > 1e-6 ? product.seamDelta / Math.max(0.15, product.peak) : 0,

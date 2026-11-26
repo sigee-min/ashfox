@@ -216,7 +216,7 @@ const SOUND_ENTRIES = [
     false,
     'Campfire Loop',
     '모닥불 루프',
-    'Sparse crackle transients over warm low ember rumble.',
+    'Granular ember transients over warm low fire rumble.',
     '장작 타는 스파크와 잔불 울림이 조화된 루프 사운드입니다.',
     null,
     ['loop', 'ambient', 'fire'],

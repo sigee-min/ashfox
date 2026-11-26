@@ -20,7 +20,7 @@ export { readRecipe } from './read';
 export { render, master, measure } from './render';
 export { encodeWav } from './wav';
 export { AUDIO_POLICY } from './random';
-export { SOUND_PROFILES } from './contract';
+export { SOUND_PROFILES, MATERIAL_PRESETS, GRANULAR_TEXTURES, SPACE_PRESETS } from './contract';
 export {
   DEFAULT_SOUND_THRESHOLD,
   evaluateSoundQuality,
@@ -53,6 +53,12 @@ export type {
   GainControl,
   FilterSpec,
   SpaceSpec,
+  MasterSpec,
+  MaterialPreset,
+  GranularTexture,
+  SpacePreset,
+  MaterialSource,
+  GranularSource,
 } from './contract';
 
 const renderVariantProduct = (

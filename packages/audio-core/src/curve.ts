@@ -80,6 +80,19 @@ export const bounds = (control: Control): readonly [number, number] =>
         Math.max(...control.points.map((p) => p.value)),
       ];
 
+const pushSourceControls = (result: [string, Control][], s: SoundVoice['source']): void => {
+  if ('pitch' in s && s.pitch !== undefined) result.push(['source.pitch', s.pitch]);
+  if (s.kind === 'osc' && s.pulseWidth !== undefined) {
+    result.push(['source.pulseWidth', s.pulseWidth]);
+  }
+  if (s.kind === 'fm') result.push(['source.index', s.index]);
+  if (s.kind === 'chirp') result.push(['source.brightness', s.brightness]);
+  if (s.kind === 'granular') result.push(['source.density', s.density]);
+  if (s.kind === 'vocal') {
+    s.formants.forEach((f, i) => result.push([`source.formants[${i}]`, f]));
+  }
+};
+
 export const controls = (voice: SoundVoice): readonly (readonly [string, Control])[] => {
   const result: [string, Control][] = [];
   if (!(typeof voice.gain === 'object' && 'env' in voice.gain)) result.push(['gain', voice.gain]);
@@ -89,11 +102,6 @@ export const controls = (voice: SoundVoice): readonly (readonly [string, Control
     result.push(['filter.cutoff', voice.filter.cutoff]);
     if (voice.filter.q !== undefined) result.push(['filter.q', voice.filter.q]);
   }
-  if ('pitch' in voice.source) result.push(['source.pitch', voice.source.pitch]);
-  if (voice.source.kind === 'osc' && voice.source.pulseWidth !== undefined) {
-    result.push(['source.pulseWidth', voice.source.pulseWidth]);
-  }
-  if (voice.source.kind === 'fm') result.push(['source.index', voice.source.index]);
-  if (voice.source.kind === 'chirp') result.push(['source.brightness', voice.source.brightness]);
+  pushSourceControls(result, voice.source);
   return result;
 };

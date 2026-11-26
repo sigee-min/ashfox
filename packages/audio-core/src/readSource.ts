@@ -1,14 +1,18 @@
-import type {
-  ChirpSource,
-  Control,
-  FilterSpec,
-  FmSource,
-  GainControl,
-  NoiseSource,
-  OscSource,
-  ResonatorSource,
-  SoundSource,
-  VocalSource,
+import {
+  GRANULAR_TEXTURES,
+  MATERIAL_PRESETS,
+  type ChirpSource,
+  type Control,
+  type FilterSpec,
+  type FmSource,
+  type GainControl,
+  type GranularSource,
+  type MaterialSource,
+  type NoiseSource,
+  type OscSource,
+  type ResonatorSource,
+  type SoundSource,
+  type VocalSource,
 } from './contract';
 import { choice, closed, fail, id, list, number, ordered } from './validate';
 
@@ -166,17 +170,30 @@ const readOptNum = (
 ) => (s[key] !== undefined ? number(s[key], min, max, `${path}.${key}`) : undefined);
 
 const readVocalSource = (s: Record<string, unknown>, path: string): VocalSource => {
-  closed(s, ['kind', 'pitch', 'formants', 'bandwidths'], path, ['breath', 'jitter', 'roughness']);
+  closed(s, ['kind', 'pitch', 'formants', 'bandwidths'], path, [
+    'breath',
+    'jitter',
+    'roughness',
+    'growl',
+    'chest',
+    'nasal',
+  ]);
   const pitch = readControl(s.pitch, 50, 1200, `${path}.pitch`);
-  const formants = list(s.formants, 3, 3, `${path}.formants`).map((v, i) =>
-    number(v, 150, 7000, `${path}.formants[${i}]`),
+  const formants = list(s.formants, 3, 4, `${path}.formants`).map((v, i) =>
+    readControl(v, 150, 7000, `${path}.formants[${i}]`),
   );
-  const bandwidths = list(s.bandwidths, 3, 3, `${path}.bandwidths`).map((v, i) =>
+  const bandwidths = list(s.bandwidths, 3, 4, `${path}.bandwidths`).map((v, i) =>
     number(v, 40, 1500, `${path}.bandwidths[${i}]`),
   );
+  if (bandwidths.length !== formants.length) {
+    fail(`${path}.bandwidths`, `expected ${formants.length} bandwidths to match formants`);
+  }
   const breath = readOptNum(s, 'breath', 0, 1, path);
   const jitter = readOptNum(s, 'jitter', 0, 1, path);
   const roughness = readOptNum(s, 'roughness', 0, 1, path);
+  const growl = readOptNum(s, 'growl', 0, 1, path);
+  const chest = readOptNum(s, 'chest', 0, 1, path);
+  const nasal = readOptNum(s, 'nasal', 0, 1, path);
   return {
     kind: 'vocal',
     pitch,
@@ -185,6 +202,9 @@ const readVocalSource = (s: Record<string, unknown>, path: string): VocalSource 
     ...(breath !== undefined ? { breath } : {}),
     ...(jitter !== undefined ? { jitter } : {}),
     ...(roughness !== undefined ? { roughness } : {}),
+    ...(growl !== undefined ? { growl } : {}),
+    ...(chest !== undefined ? { chest } : {}),
+    ...(nasal !== undefined ? { nasal } : {}),
   };
 };
 
@@ -216,14 +236,77 @@ const readChirpSource = (s: Record<string, unknown>, path: string): ChirpSource 
 };
 
 const readNoiseSource = (s: Record<string, unknown>, path: string): NoiseSource => {
-  closed(s, ['kind', 'color'], path, ['density']);
-  const color = choice(s.color, ['white', 'pink', 'brown', 'crackle'], `${path}.color`);
-  if (color === 'crackle') {
-    if (s.density === undefined) fail(`${path}.density`, 'crackle noise requires density');
-    return { kind: 'noise', color, density: number(s.density, 1, 500, `${path}.density`) };
-  }
-  if (s.density !== undefined) fail(`${path}.density`, 'density only applies to crackle noise');
+  closed(s, ['kind', 'color'], path);
+  const color = choice(s.color, ['white', 'pink', 'brown'], `${path}.color`);
   return { kind: 'noise', color };
+};
+
+const readMaterialSource = (s: Record<string, unknown>, path: string): MaterialSource => {
+  closed(s, ['kind', 'material', 'pitch'], path, [
+    'size',
+    'hardness',
+    'damping',
+    'brightness',
+    'modes',
+    'strike',
+    'bounces',
+  ]);
+  const material = choice(s.material, MATERIAL_PRESETS, `${path}.material`);
+  const pitch = readControl(s.pitch, 20, 4000, `${path}.pitch`);
+  const size = readOptNum(s, 'size', 0.25, 4, path);
+  const hardness = readOptNum(s, 'hardness', 0, 1, path);
+  const damping = readOptNum(s, 'damping', 0, 1, path);
+  const brightness = readOptNum(s, 'brightness', 0, 1, path);
+  const modes = s.modes !== undefined ? number(s.modes, 4, 32, `${path}.modes`, true) : undefined;
+  const strike =
+    s.strike !== undefined
+      ? choice(s.strike, ['mallet', 'scrape', 'bounce'], `${path}.strike`)
+      : undefined;
+  const bounces =
+    s.bounces !== undefined ? number(s.bounces, 1, 6, `${path}.bounces`, true) : undefined;
+  if (bounces !== undefined && strike !== 'bounce') {
+    fail(`${path}.bounces`, 'bounces requires strike = bounce');
+  }
+  return {
+    kind: 'material',
+    material,
+    pitch,
+    ...(size !== undefined ? { size } : {}),
+    ...(hardness !== undefined ? { hardness } : {}),
+    ...(damping !== undefined ? { damping } : {}),
+    ...(brightness !== undefined ? { brightness } : {}),
+    ...(modes !== undefined ? { modes } : {}),
+    ...(strike !== undefined ? { strike } : {}),
+    ...(bounces !== undefined ? { bounces } : {}),
+  };
+};
+
+const readGranularSource = (s: Record<string, unknown>, path: string): GranularSource => {
+  closed(s, ['kind', 'texture', 'density'], path, [
+    'grainMs',
+    'pitch',
+    'spread',
+    'burstiness',
+    'turbulence',
+  ]);
+  const texture = choice(s.texture, GRANULAR_TEXTURES, `${path}.texture`);
+  const density = readControl(s.density, 1, 500, `${path}.density`, true);
+  const grainMs = readOptNum(s, 'grainMs', 3, 150, path);
+  const pitch =
+    s.pitch !== undefined ? readControl(s.pitch, 60, 12000, `${path}.pitch`) : undefined;
+  const spread = readOptNum(s, 'spread', 0, 1, path);
+  const burstiness = readOptNum(s, 'burstiness', 0, 1, path);
+  const turbulence = readOptNum(s, 'turbulence', 0, 1, path);
+  return {
+    kind: 'granular',
+    texture,
+    density,
+    ...(grainMs !== undefined ? { grainMs } : {}),
+    ...(pitch !== undefined ? { pitch } : {}),
+    ...(spread !== undefined ? { spread } : {}),
+    ...(burstiness !== undefined ? { burstiness } : {}),
+    ...(turbulence !== undefined ? { turbulence } : {}),
+  };
 };
 
 const readOscSource = (s: Record<string, unknown>, path: string): OscSource => {
@@ -269,14 +352,23 @@ const readFmSource = (s: Record<string, unknown>, path: string): FmSource => {
   };
 };
 
+const SOURCE_READERS: Readonly<
+  Record<string, (s: Record<string, unknown>, path: string) => SoundSource>
+> = {
+  noise: readNoiseSource,
+  osc: readOscSource,
+  fm: readFmSource,
+  vocal: readVocalSource,
+  chirp: readChirpSource,
+  resonator: readResonatorSource,
+  material: readMaterialSource,
+  granular: readGranularSource,
+};
+
 export const readSource = (value: unknown, path: string): SoundSource => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(path, 'expected source');
   const s = value as Record<string, unknown>;
-  if (s.kind === 'noise') return readNoiseSource(s, path);
-  if (s.kind === 'osc') return readOscSource(s, path);
-  if (s.kind === 'fm') return readFmSource(s, path);
-  if (s.kind === 'vocal') return readVocalSource(s, path);
-  if (s.kind === 'chirp') return readChirpSource(s, path);
-  if (s.kind === 'resonator') return readResonatorSource(s, path);
-  return fail(path + '.kind', `unsupported source ${String(s.kind)}`);
+  const reader = typeof s.kind === 'string' ? SOURCE_READERS[s.kind] : undefined;
+  if (!reader) return fail(path + '.kind', `unsupported source ${String(s.kind)}`);
+  return reader(s, path);
 };

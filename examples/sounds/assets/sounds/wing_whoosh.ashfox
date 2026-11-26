@@ -1,54 +1,73 @@
 ashfox-model 1
 sound wing_whoosh {
   profile = "foley";
-  duration = 0.78;
+  duration = 0.72;
   sampleRate = 48000;
   channels = 2;
   seed = 42;
-  space = { mix = 0.2; decay = 0.25; damping = 5200; size = 0.8; };
+  space = { preset = "courtyard"; mix = 0.2; };
   voices = [{
     id = "air_sweep";
     source = { kind = "noise"; color = "pink"; };
     filter = {
       kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.4; value = 2100; }, { at = 1; value = 480; }]; };
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 160; }, { at = 0.35; value = 2400; }, { at = 1; value = 360; }]; };
       q = 1.1;
     };
-    highpass = 55;
+    highpass = 45;
     pan = -0.18;
-    gain = { env = "adsr"; attack = 0.08; decay = 0.18; sustain = 0.55; release = 0.18; peak = 0.95; };
+    gain = { env = "adsr"; attack = 0.04; decay = 0.16; sustain = 0.55; release = 0.18; peak = 0.95; };
   }, {
     id = "feather_flutter";
-    source = { kind = "noise"; color = "white"; };
-    filter = {
-      kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1600; }, { at = 0.38; value = 5200; }, { at = 1; value = 1400; }]; };
-      q = 1.4;
+    source = {
+      kind = "granular";
+      texture = "foliage";
+      density = 110;
+      grainMs = 20;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2200; }, { at = 0.35; value = 6400; }, { at = 1; value = 1500; }]; };
+      spread = 0.72;
+      turbulence = 0.58;
     };
+    highpass = 550;
     pan = 0.22;
-    gain = { env = "adsr"; attack = 0.06; decay = 0.14; sustain = 0.4; release = 0.14; peak = 0.65; };
+    gain = { env = "adsr"; attack = 0.03; decay = 0.14; sustain = 0.45; release = 0.14; peak = 0.85; };
   }, {
     id = "wing_thump";
     source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.015; hardness = 0.45; };
-      modes = [
-        { id = "low"; hz = 95; decay = 0.14; gain = 1.0; },
-        { id = "chest"; hz = 190; decay = 0.09; gain = 0.6; }
-      ];
+      kind = "material";
+      material = "leather";
+      pitch = 74;
+      size = 1.5;
+      hardness = 0.55;
+      damping = 0.76;
+      brightness = 0.52;
+      modes = 12;
+      strike = "mallet";
     };
-    gain = { env = "ad"; attack = 0.01; peak = 0.8; curve = "exp"; };
+    highpass = 30;
+    gain = { env = "ad"; attack = 0.005; peak = 0.95; curve = "exp"; };
+  }, {
+    id = "wing_air";
+    source = { kind = "noise"; color = "white"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 6200; }, { at = 1; value = 1800; }]; };
+      q = 1.1;
+    };
+    pan = 0.14;
+    gain = { env = "ad"; attack = 0.004; peak = 0.48; curve = "exp"; };
   }];
   sequences = [{
     id = "flap";
-    start = 0.02;
+    start = 0.015;
     steps = [
-      { id = "thump"; voice = "wing_thump"; at = 0.08; duration = 0.4; vary = { pitchCents = [-45, 45]; }; },
-      { id = "sweep"; voice = "air_sweep"; at = 0; duration = 0.68; vary = { duration = [0.92, 1.08]; gain = [0.9, 1.1]; }; },
-      { id = "flutter"; voice = "feather_flutter"; at = 0.04; duration = 0.56; }
+      { id = "thump"; voice = "wing_thump"; at = 0; duration = 0.38; vary = { pitchCents = [-65, 65]; gain = [0.9, 1.1]; }; },
+      { id = "air"; voice = "wing_air"; at = 0; duration = 0.16; },
+      { id = "sweep"; voice = "air_sweep"; at = 0.01; duration = 0.62; vary = { duration = [0.92, 1.08]; gain = [0.9, 1.1]; }; },
+      { id = "flutter"; voice = "feather_flutter"; at = 0.02; duration = 0.54; vary = { pitchCents = [-65, 65]; }; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -2; softClip = true; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -13; punch = 0.3; air = 0.25; warmth = 0.2; limit = true; };
 }

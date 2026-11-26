@@ -7,6 +7,8 @@ import { fail } from './validate';
 const weight = (voice: SoundVoice): number => {
   const s = voice.source;
   if (s.kind === 'resonator') return 4 + 4 * s.modes.length;
+  if (s.kind === 'material') return 4 + 4 * (s.modes ?? 24);
+  if (s.kind === 'granular') return 24;
   if (s.kind === 'osc') return 2 * (s.unison ?? 1);
   if (s.kind === 'noise') return 2;
   return { fm: 128, chirp: 8, vocal: 16 }[s.kind];
@@ -135,13 +137,18 @@ const validateStepTimingAndKnots = (
 };
 
 const SOURCE_PITCH_LIMITS: Readonly<
-  Record<'osc' | 'fm' | 'vocal' | 'chirp' | 'resonator', readonly [number, number]>
+  Record<
+    'osc' | 'fm' | 'vocal' | 'chirp' | 'resonator' | 'material' | 'granular',
+    readonly [number, number]
+  >
 > = {
   osc: [20, 12000],
   fm: [40, 3000],
   vocal: [50, 1200],
   chirp: [300, 8000],
   resonator: [40, 16000],
+  material: [20, 4000],
+  granular: [60, 12000],
 };
 
 const validateStepEndpoints = (
@@ -180,6 +187,29 @@ const validateStepEndpoints = (
     );
 };
 
+const sourcePitchRange = (
+  s: SoundVoice['source'],
+  p: string,
+  stepPitch: number,
+  pitchRange: readonly [number, number],
+): readonly [number, number] | null => {
+  if (s.kind === 'noise' || (s.kind === 'granular' && s.pitch === undefined)) {
+    if (stepPitch !== 0 || pitchRange.some((v) => v !== 0)) {
+      fail(
+        p + '.pitchCents',
+        s.kind === 'noise'
+          ? 'noise requires zero pitch variation'
+          : 'granular without pitch requires zero pitch variation',
+      );
+    }
+    return null;
+  }
+  if (s.kind === 'resonator') {
+    return [Math.min(...s.modes.map((m) => m.hz)), Math.max(...s.modes.map((m) => m.hz))];
+  }
+  return bounds(s.kind === 'granular' ? s.pitch! : s.pitch);
+};
+
 const validateStepGainAndPitch = (
   playback: SoundRecipe['playback'],
   info: VoiceEntry,
@@ -198,17 +228,10 @@ const validateStepGainAndPitch = (
   if (stepGain * gainRange[1] * gainBounds(voice.gain)[1] > 4)
     fail(p + '.vary.gain', 'combined event gain exceeds 4');
   const s = voice.source;
-  if (s.kind === 'noise') {
-    if (stepPitch !== 0 || pitchRange.some((v) => v !== 0))
-      fail(p + '.pitchCents', 'noise requires zero pitch variation');
-    return;
-  }
+  const frequencies = sourcePitchRange(s, p, stepPitch, pitchRange);
+  if (!frequencies || s.kind === 'noise') return;
   const lo = 2 ** ((stepPitch + pitchRange[0]) / 1200);
   const hi = 2 ** ((stepPitch + pitchRange[1]) / 1200);
-  const frequencies =
-    s.kind === 'resonator'
-      ? [Math.min(...s.modes.map((m) => m.hz)), Math.max(...s.modes.map((m) => m.hz))]
-      : bounds(s.pitch);
   const limits = SOURCE_PITCH_LIMITS[s.kind];
   if (frequencies[0] * lo < limits[0] || frequencies[1] * hi > limits[1])
     fail(

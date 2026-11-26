@@ -1,6 +1,6 @@
 # Create and review sounds
 
-Write procedural audio in native `.ashfox` source and compile it with the CLI. Sources output mono or stereo (`channels = 2`) 48 kHz PCM16 WAV with explicit quality `profile`, DSP synthesis, resonant Cytomic SVF filtering, FDN-4 space, pure-CPU audio quality audit, and an 800×520 4-panel `preview inspect { sheet = inspect; }` diagnostic view.
+Write procedural audio in native `.ashfox` source and compile it with the CLI. Sources output mono or stereo (`channels = 2`) 48 kHz PCM16 WAV with explicit quality `profile`, physical `material` & `granular` DSP synthesis, resonant Cytomic SVF filtering, FDN-8 space presets, perceptual mastering (`targetLufs`, `punch`, `warmth`, `air`, `glue`, `width`, `limit`), pure-CPU perceptual audio audit, and an 800×520 4-panel `preview inspect { sheet = inspect; }` diagnostic view.
 
 ## Author a layered sound
 
@@ -59,7 +59,7 @@ sound bell_pattern {
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "loop"; start = 0; end = 2.1; crossfade = 0.08; };
-  output = { gainDb = 19; peakDb = -2; softClip = true; };
+  output = { gainDb = 19; peakDb = -2; limit = true; };
 }
 ```
 
@@ -71,8 +71,8 @@ npx --no-install ashfox build bell_pattern.ashfox --json
 
 ## Craft quality and delivery gate
 
-1. **Choose `profile`**: `impact`, `foley`, `creature`, `magic`, `ui`, or `ambient`. `check` scores dynamics/attack, 6-band spectral spread/richness/motion, loudness (`-18..-12` dBFS RMS recommended via `output.gainDb` + `softClip = true`), tail/seam continuity, and variant distinctness (`score >= 75` required for `build`).
-2. **Layer timbres**: Pair `resonator` (`mallet` excitation + `pitchDrop`), PolyBLEP unison `osc`, `fm`, `vocal`, or `chirp` tonal cores with swept Cytomic `filter`, `drive` saturation, colored/crackle `noise` transients, stereo `pan`, and `space` reverb tails.
+1. **Choose `profile`**: `impact`, `foley`, `creature`, `magic`, `ui`, or `ambient`. `check` scores dynamics/onset punch/attack, 6-band spectral spread/harshness/richness/motion, perceptual loudness (`-18..-12` LUFS recommended via `output.gainDb`, `targetLufs`, and `limit = true`), stereo phase correlation, tail/seam continuity, and variant distinctness (`score >= 75` required for `build`).
+2. **Layer timbres**: Pair `material` (`steel`, `wood`, `stone`, `glass`, etc. with `mallet`/`scrape`/`bounce`), `granular` (`ember`, `gravel`, `water`, `foliage`, `wind`, `spark`, `bubble`), `resonator`, PolyBLEP unison `osc`, `fm`, `vocal` (with `growl`/`chest`/`nasal` and formant curves), or `chirp` cores with swept Cytomic `filter`, `drive` saturation, colored `noise` transients, stereo `pan`, and `space` (`preset` or custom FDN-8) tails.
 3. **Inspect & listen**: Declare `preview inspect { sheet = inspect; }` and run `ashfox render <file> --view inspect --output sheet.png` for a CPU-rendered 4-panel sheet (`Waveform & Envelope`, `Spectrogram`, `6-Band Spectrum + Audit`, `Variant Overlap`), then audition the built WAV/OGG variants directly.
 
 Named sequence, step and voice IDs own independent random streams. Reordering
@@ -90,8 +90,8 @@ the overlap; an intro or outro should be another asset.
 
 WAV contains only PCM, with no embedded loop instruction. Standalone consumers
 must enable full-buffer looping. Build receipts and `game_assets` manifests
-carry `{ kind: "loop", startFrame: 0, endFrame: frames }`; the game consumer
-must honor it. One-shots carry `{ kind: "oneshot" }`.
+carry `{ kind = "loop", startFrame: 0, endFrame: frames }`; the game consumer
+must honor it. One-shots carry `{ kind = "oneshot" }`.
 
 Loop OGG and Minecraft delivery are rejected because those paths cannot preserve
 the exact loop contract. One-shot OGG uses the built-in WebAssembly Vorbis
@@ -110,6 +110,6 @@ spell, modal metal/wood/glass studies and wind/fire/mechanical loops. These are
 procedural studies requiring audition, not recordings or realism guarantees.
 `bell_pattern.ashfox` exercises all features together.
 
-Older `layers`, `attack`, `release`, `contour`, `sweepSeconds`, pitch pairs and
-`output.rmsDb` are rejected. Migrate source explicitly; the header remains
-`ashfox-model 1`. See [Sound syntax reference](../language/sounds.md) for the complete grammar, loop rules, and resource limits.
+Older `layers`, `attack`, `release`, `contour`, `sweepSeconds`, pitch pairs,
+`output.rmsDb`, `output.softClip`, and `noise.color = "crackle"` are rejected.
+Migrate source explicitly; the header remains `ashfox-model 1`. See [Sound syntax reference](../language/sounds.md) for the complete grammar, loop rules, and resource limits.

@@ -29,7 +29,7 @@ sound sheet_oneshot {
   }];
   variants = [{ id = "take1"; seed = 101; }];
   playback = { kind = "oneshot"; };
-  output = { peakDb = -1; gainDb = 2; softClip = true; };
+  output = { peakDb = -1; gainDb = 2; punch = 0.25; air = 0.15; limit = true; };
 }`,
   'oneshot.ashfox',
 );
@@ -43,7 +43,7 @@ sound sheet_loop {
   channels = 2;
   seed = 9;
   playback = { kind = "loop"; start = 0; end = 1.0; crossfade = 0.05; };
-  space = { mix = 0.25; decay = 0.4; damping = 4200; size = 0.8; };
+  space = { preset = "timber_room"; mix = 0.25; decay = 0.4; damping = 4200; size = 0.8; };
   voices = [{
     id = "bed";
     source = { kind = "noise"; color = "pink"; };
@@ -60,7 +60,7 @@ sound sheet_loop {
     steps = [{ id = "s"; voice = "bed"; at = 0; duration = 1.0; }];
   }];
   variants = [{ id = "v1"; seed = 1; }, { id = "v2"; seed = 2; }];
-  output = { peakDb = -2; gainDb = 4; softClip = true; };
+  output = { peakDb = -2; gainDb = 4; warmth = 0.2; glue = 0.25; width = 1.1; limit = true; };
 }`,
   'loop.ashfox',
 );

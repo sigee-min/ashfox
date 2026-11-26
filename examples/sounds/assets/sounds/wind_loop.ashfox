@@ -5,34 +5,48 @@ sound wind_loop {
   sampleRate = 48000;
   channels = 2;
   seed = 7349;
-  space = { mix = 0.25; decay = 0.55; damping = 4800; size = 1.2; };
+  space = { preset = "courtyard"; mix = 0.24; };
   voices = [{
     id = "deep_gust";
     source = { kind = "noise"; color = "brown"; };
     filter = {
       kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 160; }, { at = 0.35; value = 360; }, { at = 0.7; value = 220; }, { at = 1; value = 160; }]; };
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 160; }, { at = 0.35; value = 420; }, { at = 0.7; value = 220; }, { at = 1; value = 160; }]; };
       q = 1.1;
     };
     highpass = 38;
     pan = -0.2;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.6; }, { at = 0.35; value = 0.95; }, { at = 0.7; value = 0.5; }, { at = 1; value = 0.6; }]; };
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.65; }, { at = 0.35; value = 0.98; }, { at = 0.7; value = 0.55; }, { at = 1; value = 0.65; }]; };
   }, {
     id = "canopy_howl";
     source = { kind = "noise"; color = "pink"; };
     filter = {
       kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 650; }, { at = 0.3; value = 1650; }, { at = 0.75; value = 900; }, { at = 1; value = 650; }]; };
-      q = 1.9;
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 650; }, { at = 0.32; value = 1850; }, { at = 0.72; value = 880; }, { at = 1; value = 650; }]; };
+      q = 1.8;
     };
     pan = 0.22;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.4; }, { at = 0.32; value = 0.85; }, { at = 0.72; value = 0.38; }, { at = 1; value = 0.4; }]; };
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.42; }, { at = 0.32; value = 0.88; }, { at = 0.72; value = 0.38; }, { at = 1; value = 0.42; }]; };
+  }, {
+    id = "wind_grains";
+    source = {
+      kind = "granular";
+      texture = "wind";
+      density = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 24; }, { at = 0.34; value = 64; }, { at = 0.72; value = 30; }, { at = 1; value = 24; }]; };
+      grainMs = 56;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 420; }, { at = 0.34; value = 980; }, { at = 0.72; value = 520; }, { at = 1; value = 420; }]; };
+      spread = 0.65;
+      turbulence = 0.72;
+    };
+    highpass = 120;
+    pan = -0.08;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.48; }, { at = 0.35; value = 0.85; }, { at = 0.72; value = 0.44; }, { at = 1; value = 0.48; }]; };
   }, {
     id = "breeze_air";
     source = { kind = "noise"; color = "white"; };
     highpass = 3200;
-    lowpass = 11000;
-    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.12; }, { at = 0.4; value = 0.28; }, { at = 1; value = 0.12; }]; };
+    lowpass = 12000;
+    gain = { domain = "linear"; interpolation = "smooth"; points = [{ at = 0; value = 0.14; }, { at = 0.38; value = 0.32; }, { at = 1; value = 0.14; }]; };
   }];
   sequences = [{
     id = "phrase";
@@ -40,10 +54,11 @@ sound wind_loop {
     steps = [
       { id = "low"; voice = "deep_gust"; at = 0; duration = 4.8; vary = { gain = [0.9, 1.1]; }; },
       { id = "mid"; voice = "canopy_howl"; at = 0; duration = 4.8; vary = { gain = [0.85, 1.15]; }; },
+      { id = "swirl"; voice = "wind_grains"; at = 0; duration = 4.8; vary = { pitchCents = [-65, 65]; gain = [0.85, 1.15]; }; },
       { id = "air"; voice = "breeze_air"; at = 0; duration = 4.8; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "loop"; start = 0.5; end = 4.5; crossfade = 0.08; };
-  output = { gainDb = 5; peakDb = -2; softClip = true; };
+  output = { gainDb = 4; peakDb = -1.5; targetLufs = -14; warmth = 0.25; air = 0.15; glue = 0.2; width = 1.15; limit = true; };
 }

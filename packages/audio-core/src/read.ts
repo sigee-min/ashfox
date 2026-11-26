@@ -1,5 +1,7 @@
 import {
   SOUND_PROFILES,
+  SPACE_PRESETS,
+  type MasterSpec,
   type SoundRecipe,
   type SoundSequence,
   type SoundStep,
@@ -177,14 +179,45 @@ const readVoices = (
   return { voiceIds, voices };
 };
 
+const readOptNum = (
+  record: Record<string, unknown>,
+  key: string,
+  min: number,
+  max: number,
+  path: string,
+): number | undefined =>
+  record[key] !== undefined ? number(record[key], min, max, `${path}.${key}`) : undefined;
+
 const readSpace = (raw: unknown): SoundRecipe['space'] | undefined => {
   if (raw === undefined) return undefined;
-  const s = closed(raw, ['mix', 'decay', 'damping', 'size'], 'recipe.space');
+  const s = closed(raw, [], 'recipe.space', [
+    'preset',
+    'mix',
+    'decay',
+    'damping',
+    'size',
+    'preDelayMs',
+    'width',
+  ]);
+  if (Object.keys(s).length === 0) {
+    fail('recipe.space', 'space requires preset or at least one parameter');
+  }
+  const preset =
+    s.preset !== undefined ? choice(s.preset, SPACE_PRESETS, 'recipe.space.preset') : undefined;
+  const mix = readOptNum(s, 'mix', 0, 0.7, 'recipe.space');
+  const decay = readOptNum(s, 'decay', 0.03, 3.0, 'recipe.space');
+  const damping = readOptNum(s, 'damping', 800, 16000, 'recipe.space');
+  const size = readOptNum(s, 'size', 0.2, 3.0, 'recipe.space');
+  const preDelayMs = readOptNum(s, 'preDelayMs', 0, 80, 'recipe.space');
+  const width = readOptNum(s, 'width', 0, 1.5, 'recipe.space');
   return {
-    mix: number(s.mix, 0, 0.6, 'recipe.space.mix'),
-    decay: number(s.decay, 0.03, 1.5, 'recipe.space.decay'),
-    damping: number(s.damping, 1000, 14000, 'recipe.space.damping'),
-    size: number(s.size, 0.2, 2, 'recipe.space.size'),
+    ...(preset !== undefined ? { preset } : {}),
+    ...(mix !== undefined ? { mix } : {}),
+    ...(decay !== undefined ? { decay } : {}),
+    ...(damping !== undefined ? { damping } : {}),
+    ...(size !== undefined ? { size } : {}),
+    ...(preDelayMs !== undefined ? { preDelayMs } : {}),
+    ...(width !== undefined ? { width } : {}),
   };
 };
 
@@ -201,13 +234,39 @@ const ROOT_REQUIRED = [
   'playback',
 ] as const;
 
-const readRecipeOutput = (raw: unknown): SoundRecipe['output'] => {
-  const output = closed(raw, ['gainDb', 'peakDb'], 'recipe.output', ['softClip']);
+const readRecipeOutput = (raw: unknown, channels: 1 | 2): MasterSpec => {
+  const output = closed(raw, ['gainDb', 'peakDb'], 'recipe.output', [
+    'targetLufs',
+    'punch',
+    'warmth',
+    'air',
+    'glue',
+    'width',
+    'limit',
+  ]);
   const gainDb = number(output.gainDb, -48, 24, 'recipe.output.gainDb');
-  const peakDb = number(output.peakDb, -12, -1, 'recipe.output.peakDb');
-  const softClip =
-    output.softClip !== undefined ? bool(output.softClip, 'recipe.output.softClip') : undefined;
-  return { gainDb, peakDb, ...(softClip !== undefined ? { softClip } : {}) };
+  const peakDb = number(output.peakDb, -12, -0.5, 'recipe.output.peakDb');
+  const targetLufs = readOptNum(output, 'targetLufs', -30, -6, 'recipe.output');
+  const punch = readOptNum(output, 'punch', -1, 1, 'recipe.output');
+  const warmth = readOptNum(output, 'warmth', -1, 1, 'recipe.output');
+  const air = readOptNum(output, 'air', -1, 1, 'recipe.output');
+  const glue = readOptNum(output, 'glue', 0, 1, 'recipe.output');
+  const width = readOptNum(output, 'width', 0, 1.5, 'recipe.output');
+  if (channels === 1 && width !== undefined && width !== 1) {
+    fail('recipe.output.width', 'width requires channels = 2');
+  }
+  const limit = output.limit !== undefined ? bool(output.limit, 'recipe.output.limit') : undefined;
+  return {
+    gainDb,
+    peakDb,
+    ...(targetLufs !== undefined ? { targetLufs } : {}),
+    ...(punch !== undefined ? { punch } : {}),
+    ...(warmth !== undefined ? { warmth } : {}),
+    ...(air !== undefined ? { air } : {}),
+    ...(glue !== undefined ? { glue } : {}),
+    ...(width !== undefined ? { width } : {}),
+    ...(limit !== undefined ? { limit } : {}),
+  };
 };
 
 const readRecipeVariants = (rawVariants: unknown): SoundRecipe['variants'] => {
@@ -256,7 +315,7 @@ export const readRecipeWithBudget = (
     seed,
     ...(space !== undefined ? { space } : {}),
     variants: readRecipeVariants(root.variants),
-    output: readRecipeOutput(root.output),
+    output: readRecipeOutput(root.output, channels),
     voices,
     sequences,
     playback,

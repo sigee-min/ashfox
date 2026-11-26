@@ -5,52 +5,71 @@ sound claw_hit {
   sampleRate = 48000;
   channels = 2;
   seed = 42;
-  space = { mix = 0.2; decay = 0.28; damping = 5200; size = 0.75; };
+  space = { preset = "dry_close"; mix = 0.15; };
   voices = [{
-    id = "flesh_thud";
+    id = "leather_thud";
     source = {
-      kind = "resonator";
-      excitation = { kind = "mallet"; duration = 0.011; hardness = 0.88; };
-      modes = [
-        { id = "sub"; hz = 88; decay = 0.24; gain = 1.0; },
-        { id = "punch"; hz = 225; decay = 0.15; gain = 0.75; },
-        { id = "crack"; hz = 1480; decay = 0.065; gain = 0.48; }
-      ];
-      pitchDropCents = 190;
-      pitchDropSeconds = 0.035;
+      kind = "material";
+      material = "leather";
+      pitch = 82;
+      size = 1.3;
+      hardness = 0.82;
+      damping = 0.65;
+      brightness = 0.6;
+      modes = 14;
+      strike = "mallet";
     };
-    drive = 3.0;
+    drive = 2.2;
     highpass = 32;
-    lowpass = 11500;
+    lowpass = 9500;
+    pan = -0.06;
     gain = { env = "ad"; attack = 0.003; peak = 1.0; curve = "exp"; };
+  }, {
+    id = "bone_slash";
+    source = {
+      kind = "material";
+      material = "bone";
+      pitch = 680;
+      size = 0.8;
+      hardness = 0.88;
+      damping = 0.58;
+      brightness = 0.82;
+      modes = 16;
+      strike = "scrape";
+    };
+    highpass = 220;
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 11000; }, { at = 1; value = 1400; }]; }; q = 1.1; };
+    pan = 0.14;
+    gain = { env = "ad"; attack = 0.002; peak = 0.82; curve = "exp"; };
   }, {
     id = "slash_tear";
     source = { kind = "noise"; color = "pink"; };
     filter = {
       kind = "bandpass";
-      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 6800; }, { at = 1; value = 720; }]; };
-      q = 1.15;
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8500; }, { at = 1; value = 520; }]; };
+      q = 1.2;
     };
-    drive = 2.0;
+    drive = 1.8;
     pan = -0.18;
-    gain = { env = "ad"; attack = 0.003; peak = 0.92; curve = "exp"; };
+    gain = { env = "ad"; attack = 0.003; peak = 0.9; curve = "exp"; };
   }, {
     id = "blade_air";
     source = { kind = "noise"; color = "white"; };
-    highpass = 4800;
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9500; }, { at = 1; value = 2400; }]; }; q = 1.1; };
     pan = 0.2;
-    gain = { env = "ad"; attack = 0.002; peak = 0.4; curve = "exp"; };
+    gain = { env = "ad"; attack = 0.002; peak = 0.48; curve = "exp"; };
   }];
   sequences = [{
     id = "hit";
     start = 0.01;
     steps = [
-      { id = "impact"; voice = "flesh_thud"; at = 0; duration = 0.48; vary = { pitchCents = [-45, 45]; }; },
-      { id = "slash"; voice = "slash_tear"; at = 0; duration = 0.32; vary = { duration = [0.9, 1.1]; gain = [0.9, 1.1]; }; },
-      { id = "air"; voice = "blade_air"; at = 0; duration = 0.1; vary = { gain = [0.85, 1.15]; }; }
+      { id = "impact"; voice = "leather_thud"; at = 0; duration = 0.44; vary = { pitchCents = [-65, 65]; }; },
+      { id = "bone"; voice = "bone_slash"; at = 0; duration = 0.3; vary = { pitchCents = [-70, 70]; gain = [0.9, 1.1]; }; },
+      { id = "slash"; voice = "slash_tear"; at = 0; duration = 0.36; vary = { duration = [0.9, 1.1]; gain = [0.9, 1.1]; }; },
+      { id = "air"; voice = "blade_air"; at = 0; duration = 0.14; vary = { gain = [0.85, 1.15]; }; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 3; peakDb = -2; softClip = true; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -12; punch = 0.45; warmth = 0.2; glue = 0.15; limit = true; };
 }

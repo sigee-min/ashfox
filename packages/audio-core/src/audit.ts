@@ -17,6 +17,7 @@ export type SoundGateId =
   | 'bounded_silence'
   | 'spectral_non_trivial'
   | 'loop_continuity'
+  | 'stereo_phase'
   | 'variant_distinctness';
 
 export interface SoundAuditSubmetric {
@@ -114,7 +115,7 @@ const evaluateSignalGates = (
     `RMS ${m.rmsDb.toFixed(1)} dBFS, peak ${m.peakDb.toFixed(1)} dBFS.`,
     (s) =>
       `Variant "${s.product.variant}" weak or over-hot (RMS ${s.metrics.rmsDb.toFixed(1)} dBFS, peak ${s.metrics.peakDb.toFixed(1)} dBFS).`,
-    'Adjust output.gainDb (and softClip if needed) so every variant RMS is >= -34 dBFS with clean headroom.',
+    'Adjust output.gainDb (and output.limit = true / output.targetLufs if needed) so every variant RMS is >= -34 dBFS with clean headroom.',
   ),
   variantGate(
     'no_dc_offset',
@@ -166,6 +167,17 @@ const evaluateGates = (
         `Variant "${s.product.variant}" loop seam discontinuity (${s.metrics.loopSeamJump.toFixed(3)} > 0.35).`,
       'Increase loop crossfade or ensure continuous voices span the loop boundaries.',
     ),
+    variantGate(
+      'stereo_phase',
+      findBadVariant(
+        samples,
+        (s) => s.product.channels === 1 || s.metrics.stereoCorrelation >= -0.25,
+      ),
+      `Stereo correlation ${m.stereoCorrelation.toFixed(2)}.`,
+      (s) =>
+        `Variant "${s.product.variant}" out-of-phase stereo (${s.metrics.stereoCorrelation.toFixed(2)} < -0.25).`,
+      'Reduce extreme stereo width or pan inversion so L/R sum cleanly in mono.',
+    ),
     gate(
       'variant_distinctness',
       products.length < 2 || m.variantDistinctness >= 0.002,
@@ -185,6 +197,9 @@ const TARGET_CREST: Readonly<Record<SoundProfile, readonly [number, number]>> = 
   ambient: [3, 14],
 };
 
+const isPercussive = (profile: SoundProfile): boolean =>
+  profile === 'impact' || profile === 'foley' || profile === 'ui';
+
 const evaluateDynamics = (
   profile: SoundProfile,
   m: SoundMetrics,
@@ -193,26 +208,27 @@ const evaluateDynamics = (
   readonly deductions: readonly SoundAuditDeduction[];
 } => {
   const [cLo, cHi] = TARGET_CREST[profile];
+  const percussive = isPercussive(profile);
   const crestRatio =
     m.crestDb < cLo ? ramp(m.crestDb, 1.5, cLo) : 1 - 0.5 * ramp(m.crestDb, cHi, cHi + 10);
-  const attackRatio =
-    profile === 'impact' || profile === 'ui' || profile === 'foley'
-      ? 1 - ramp(m.attackSeconds, 0.025, 0.14)
-      : profile === 'ambient' || profile === 'magic'
-        ? 1
-        : 1 - ramp(m.attackSeconds, 0.12, 0.6);
-  const activeHi = profile === 'impact' || profile === 'foley' || profile === 'ui' ? 0.36 : 0.65;
+  const dynRatio = crestRatio * (0.75 + 0.25 * (percussive ? ramp(m.onsetPunchDb, 3.5, 10) : 1));
+  const attackRatio = percussive
+    ? 1 - ramp(m.attackSeconds, 0.025, 0.14)
+    : profile === 'ambient' || profile === 'magic'
+      ? 1
+      : 1 - ramp(m.attackSeconds, 0.12, 0.6);
   const shapeRatio =
-    ramp(m.activeRatio, 0.14, activeHi) * (1 - ramp(m.leadingSilenceRatio, 0.12, 0.4));
+    ramp(m.activeRatio, 0.14, percussive ? 0.36 : 0.65) *
+    (1 - ramp(m.leadingSilenceRatio, 0.12, 0.4));
   const metrics = [
     auditSubmetric(
       'sound.crest',
       'Transient & Dynamic Range',
-      crestRatio,
+      dynRatio,
       13,
       m.crestDb,
       (cLo + cHi) * 0.5,
-      `crest=${m.crestDb.toFixed(1)}dB`,
+      `crest=${m.crestDb.toFixed(1)}dB punch=${m.onsetPunchDb.toFixed(1)}dB`,
     ),
     auditSubmetric(
       'sound.attack',
@@ -237,7 +253,7 @@ const evaluateDynamics = (
   return {
     pillar: { id: 'dynamics', label: 'Dynamics & Envelope Craft', score, maxScore: 35, metrics },
     deductions: buildDeductions('dynamics', metrics, [
-      'Shape punchy transients or controlled dynamics to match profile.',
+      'Shape punchy transients (or output.punch / material strike) to match profile.',
       'Tighten attack curve/envelope for crisp impact/UI or natural swells.',
       'Reduce leading/trailing dead silence relative to total duration.',
     ]),
@@ -254,8 +270,9 @@ const evaluateSpectrum = (
   const activeBands = [b.sub, b.low, b.lowMid, b.highMid, b.presence, b.air].filter(
     (v) => v >= 0.015,
   ).length;
+  const harshPenalty = 1 - 0.65 * ramp(m.harshnessRatio, 0.42, 0.75);
   const balanceRatio =
-    ramp(activeBands, 2, 4.5) * (1 - 0.7 * ramp(b.lowMid + b.highMid, 0.85, 0.99));
+    ramp(activeBands, 2, 4.5) * (1 - 0.7 * ramp(b.lowMid + b.highMid, 0.85, 0.99)) * harshPenalty;
   const richnessRatio = ramp(m.spectralEntropy, 0.16, 0.5);
   const motionRatio = ramp(m.spectralFlux, 0.04, 0.24);
   const metrics = [
@@ -266,7 +283,7 @@ const evaluateSpectrum = (
       14,
       activeBands,
       5,
-      `${activeBands}/6 active bands`,
+      `${activeBands}/6 active bands, harsh=${(m.harshnessRatio * 100).toFixed(0)}%`,
     ),
     auditSubmetric(
       'sound.richness',
@@ -291,8 +308,8 @@ const evaluateSpectrum = (
   return {
     pillar: { id: 'spectrum', label: 'Spectral Balance & Richness', score, maxScore: 40, metrics },
     deductions: buildDeductions('spectrum', metrics, [
-      'Spread energy across low body, mid presence, and air rather than one narrow band.',
-      'Layer osc/fm/resonator with filtered noise, crackle, or drive saturation.',
+      'Spread energy across low body, mid presence, and air without 2.5-5 kHz harshness.',
+      'Layer material, granular, osc/fm/resonator with filtered noise or drive saturation.',
       'Modulate filter cutoff, pitch curves, or brightness over time for living motion.',
     ]),
   };
@@ -305,11 +322,15 @@ const evaluatePolish = (
   readonly pillar: SoundAuditPillarReport;
   readonly deductions: readonly SoundAuditDeduction[];
 } => {
-  const loudnessRatio = ramp(m.rmsDb, -30, -14);
+  const loudnessRatio = 0.5 * ramp(m.rmsDb, -30, -14) + 0.5 * ramp(m.lufs, -28, -12);
+  const phaseScale =
+    products[0]!.channels === 2 && m.stereoCorrelation < 0
+      ? ramp(m.stereoCorrelation, -0.25, 0)
+      : 1;
   const seamRatio =
-    products[0]!.playback.kind === 'loop'
+    (products[0]!.playback.kind === 'loop'
       ? 1 - ramp(m.loopSeamJump, 0.02, 0.25)
-      : 1 - ramp(m.trailingSilenceRatio, 0.58, 0.85);
+      : 1 - ramp(m.trailingSilenceRatio, 0.58, 0.85)) * phaseScale;
   const varRatio = products.length < 2 ? 0.7 : ramp(m.variantDistinctness, 0.01, 0.15);
   const metrics = [
     auditSubmetric(
@@ -317,9 +338,9 @@ const evaluatePolish = (
       'Perceptual Loudness',
       loudnessRatio,
       9,
-      m.rmsDb,
-      -16,
-      `rms=${m.rmsDb.toFixed(1)}dBFS`,
+      m.lufs,
+      -14,
+      `lufs=${m.lufs.toFixed(1)} rms=${m.rmsDb.toFixed(1)}dBFS`,
     ),
     auditSubmetric(
       'sound.tail',
@@ -344,8 +365,8 @@ const evaluatePolish = (
   return {
     pillar: { id: 'polish', label: 'Delivery & Variation Polish', score, maxScore: 25, metrics },
     deductions: buildDeductions('polish', metrics, [
-      'Raise output.gainDb (using softClip = true if needed) toward -18..-12 dBFS RMS.',
-      'Clean up loop wrap crossfade or trim unused trailing silence.',
+      'Raise output.gainDb or set output.targetLufs / output.limit = true toward -18..-12 LUFS.',
+      'Clean up loop wrap crossfade, space.preset tail, or trim trailing silence.',
       'Use 2+ variants with subtle pitch/timing/gain vary.',
     ]),
   };

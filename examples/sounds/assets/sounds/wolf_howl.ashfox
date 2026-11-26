@@ -5,46 +5,53 @@ sound wolf_howl {
   sampleRate = 48000;
   channels = 2;
   seed = 42;
-  space = { mix = 0.3; decay = 0.65; damping = 5000; size = 1.4; };
+  space = { preset = "courtyard"; mix = 0.3; decay = 0.85; };
   voices = [{
     id = "throat_howl";
     source = {
       kind = "vocal";
       pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.28; value = 395; }, { at = 0.72; value = 360; }, { at = 1; value = 215; }]; };
-      formants = [540, 1180, 2650];
-      bandwidths = [95, 170, 290];
-      breath = 0.14;
-      jitter = 0.1;
+      formants = [
+        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 420; }, { at = 0.3; value = 640; }, { at = 0.75; value = 520; }, { at = 1; value = 360; }]; },
+        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 920; }, { at = 0.3; value = 1320; }, { at = 0.75; value = 1080; }, { at = 1; value = 840; }]; },
+        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2350; }, { at = 0.3; value = 2850; }, { at = 1; value = 2250; }]; },
+        { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3400; }, { at = 0.3; value = 3950; }, { at = 1; value = 3200; }]; }
+      ];
+      bandwidths = [90, 165, 280, 380];
+      breath = 0.16;
+      jitter = 0.12;
       roughness = 0.18;
+      growl = 0.18;
+      chest = 0.55;
     };
-    drive = 1.5;
-    highpass = 70;
-    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2800; }, { at = 0.45; value = 6500; }, { at = 1; value = 2200; }]; };
+    drive = 1.4;
+    highpass = 65;
+    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2800; }, { at = 0.45; value = 6800; }, { at = 1; value = 2200; }]; };
     pan = -0.1;
-    gain = { env = "adsr"; attack = 0.18; decay = 0.3; sustain = 0.8; release = 0.35; peak = 0.95; };
+    gain = { env = "adsr"; attack = 0.14; decay = 0.28; sustain = 0.8; release = 0.32; peak = 0.95; };
   }, {
-    id = "cold_wind";
+    id = "dusk_air";
     source = { kind = "noise"; color = "pink"; };
-    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 320; }, { at = 0.45; value = 3800; }, { at = 1; value = 480; }]; }; q = 1.0; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 320; }, { at = 0.45; value = 3600; }, { at = 1; value = 480; }]; }; q = 1.0; };
     pan = 0.22;
-    gain = { env = "adsr"; attack = 0.1; decay = 0.25; sustain = 0.55; release = 0.3; peak = 0.55; };
+    gain = { env = "adsr"; attack = 0.1; decay = 0.25; sustain = 0.55; release = 0.32; peak = 0.5; };
   }, {
     id = "sub_rumble";
     source = { kind = "noise"; color = "brown"; };
     filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 120; }, { at = 0.5; value = 280; }, { at = 1; value = 110; }]; }; q = 1.0; };
     highpass = 38;
-    gain = { env = "adsr"; attack = 0.12; decay = 0.3; sustain = 0.65; release = 0.3; peak = 0.7; };
+    gain = { env = "adsr"; attack = 0.12; decay = 0.3; sustain = 0.65; release = 0.32; peak = 0.68; };
   }];
   sequences = [{
     id = "howl";
     start = 0.04;
     steps = [
-      { id = "voice"; voice = "throat_howl"; at = 0; duration = 2.2; vary = { pitchCents = [-45, 45]; timing = [0, 0.03]; }; },
-      { id = "air"; voice = "cold_wind"; at = 0; duration = 2.15; vary = { gain = [0.85, 1.15]; }; },
-      { id = "sub"; voice = "sub_rumble"; at = 0; duration = 2.15; }
+      { id = "voice"; voice = "throat_howl"; at = 0; duration = 2.2; vary = { pitchCents = [-55, 55]; timing = [0, 0.03]; }; },
+      { id = "air"; voice = "dusk_air"; at = 0; duration = 2.25; vary = { gain = [0.85, 1.15]; }; },
+      { id = "sub"; voice = "sub_rumble"; at = 0; duration = 2.25; }
     ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "oneshot"; };
-  output = { gainDb = 5; peakDb = -2; softClip = true; };
+  output = { gainDb = 5; peakDb = -1.5; targetLufs = -14; warmth = 0.2; glue = 0.25; limit = true; };
 }

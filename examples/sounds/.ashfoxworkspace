@@ -55,6 +55,18 @@
             "path": "metal_strike.ashfox"
           },
           {
+            "name": "potion_drink",
+            "path": "potion_drink.ashfox"
+          },
+          {
+            "name": "sword_slash",
+            "path": "sword_slash.ashfox"
+          },
+          {
+            "name": "wave_bell",
+            "path": "wave_bell.ashfox"
+          },
+          {
             "name": "wind_loop",
             "path": "wind_loop.ashfox"
           },
@@ -69,6 +81,10 @@
           {
             "name": "wood_knock",
             "path": "wood_knock.ashfox"
+          },
+          {
+            "name": "zombie_groan",
+            "path": "zombie_groan.ashfox"
           }
         ],
         "modules": [],
@@ -202,6 +218,33 @@
       "directory": "exports/metal_strike"
     },
     {
+      "name": "potion_drink",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "potion_drink"
+      },
+      "format": "wav",
+      "directory": "exports/potion_drink"
+    },
+    {
+      "name": "sword_slash",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "sword_slash"
+      },
+      "format": "wav",
+      "directory": "exports/sword_slash"
+    },
+    {
+      "name": "wave_bell",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "wave_bell"
+      },
+      "format": "wav",
+      "directory": "exports/wave_bell"
+    },
+    {
       "name": "wind_loop",
       "entry": {
         "packageName": "sounds",
@@ -236,6 +279,15 @@
       },
       "format": "wav",
       "directory": "exports/wood_knock"
+    },
+    {
+      "name": "zombie_groan",
+      "entry": {
+        "packageName": "sounds",
+        "entryName": "zombie_groan"
+      },
+      "format": "wav",
+      "directory": "exports/zombie_groan"
     }
   ]
 }
