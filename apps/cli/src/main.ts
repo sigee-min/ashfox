@@ -54,13 +54,20 @@ const hasAncestorWorkspace = (file: string): boolean => {
 const runCheck = async (): Promise<void> => {
   const checkArgs = inspectCheckArgs(args);
   const { target, singleAsset, nonJsonFlags } = checkArgs;
+  if (target?.endsWith('.png')) {
+    throw new BuildFailure(
+      'observe.input',
+      'PNG inputs are not supported; pass .ashfox or workspace',
+      2,
+    );
+  }
   if (!singleAsset && target && fs.existsSync(target) && fs.statSync(target).isDirectory()) {
     if (nonJsonFlags.length > 0)
       throw new BuildFailure('cli.arguments', 'Directory verification accepts only --json', 2);
     result(true, verifyCurrent(target));
     return;
   }
-  if (singleAsset || !target || target.endsWith('.png')) {
+  if (singleAsset || !target) {
     result(true, await runAssetCheck(args, __filename, controller.signal));
     return;
   }
@@ -77,7 +84,7 @@ const runCheck = async (): Promise<void> => {
 
 const main = async (): Promise<void> => {
   if (runOnboarding(args)) return;
-  if (['render', 'export'].includes(command)) {
+  if (command === 'render') {
     await runMediaCommand(args, __filename, controller.signal);
     return;
   }
@@ -99,7 +106,7 @@ const main = async (): Promise<void> => {
   if (command !== 'build' || positional.length !== 1) {
     throw new BuildFailure(
       'cli.arguments',
-      'Unknown or invalid command. Expected init, doctor, check, render, build, or export.',
+      'Unknown or invalid command. Expected init, doctor, check, render, or build.',
       2,
     );
   }
@@ -185,7 +192,7 @@ if (!isMainThread) {
             );
       if (isOnboardingCommand(command) && !args.includes('--json'))
         process.stderr.write(`ashfox: ${failure.message}\n`);
-      else if (['render', 'export'].includes(command))
+      else if (command === 'render')
         process.stderr.write(
           JSON.stringify({ ok: false, error: { code: failure.code, message: failure.message } }) +
             '\n',

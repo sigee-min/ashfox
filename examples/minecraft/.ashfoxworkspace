@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "blocks",
-      "root": "",
+      "root": "assets/models",
       "manifest": {
         "format": "ashfox-package",
         "version": 1,
@@ -21,7 +21,7 @@
     }
   ],
   "include": [
-    "*.ashfox"
+    "assets/**/*.ashfox"
   ],
   "ignore": [],
   "build": {

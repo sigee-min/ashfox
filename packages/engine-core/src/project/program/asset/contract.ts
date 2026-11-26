@@ -1,6 +1,7 @@
 import type { ProgramExpr, ProgramTextureDecl } from '../syntax/contract';
 import type { SourceDiagnostic, SourceSpan } from '../../source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
+import type { RawDeclaredOutput, RawDeclaredPreview } from '../../directory/declarations';
 
 /** The asset language keeps the versioned header while using a package-aware
  * source unit.  These declarations are compiler input only; they are not a
@@ -363,6 +364,8 @@ export interface AssetRootUnit {
   readonly id: string;
   readonly imports: readonly AssetImportDecl[];
   readonly declarations: readonly AssetDeclaration[];
+  readonly outputs: readonly RawDeclaredOutput[];
+  readonly previews: readonly RawDeclaredPreview[];
   readonly span: SourceSpan;
 }
 

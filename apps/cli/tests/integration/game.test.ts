@@ -22,14 +22,14 @@ assert.deepEqual(original.packs[0].assets.map((a: { id: string }) => a.id).sort(
   'sfx.claw_hit',
 ]);
 // Static-model coverage belongs to the test fixture, not the starter scene.
-fs.mkdirSync(path.join(project, 'props'));
+fs.mkdirSync(path.join(project, 'assets/models/props'), { recursive: true });
 fs.copyFileSync(
-  path.join(root, 'examples/minecraft/marker.ashfox'),
-  path.join(project, 'props/marker.ashfox'),
+  path.join(root, 'examples/minecraft/assets/models/marker.ashfox'),
+  path.join(project, 'assets/models/props/marker.ashfox'),
 );
 original.packages.push({
   name: 'props',
-  root: 'props',
+  root: 'assets/models/props',
   manifest: {
     format: 'ashfox-package',
     version: 1,

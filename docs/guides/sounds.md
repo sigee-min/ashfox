@@ -79,7 +79,6 @@ sound bell_pattern {
 ```sh
 npx --no-install ashfox check bell_pattern.ashfox
 npx --no-install ashfox build bell_pattern.ashfox --json
-npx --no-install ashfox export bell_pattern.ashfox --variant base --output bell.wav
 ```
 
 ## Choose levels and variation
@@ -119,7 +118,7 @@ unnatural repetition, harsh upper harmonics and a dip during crossfade. Check
 waveform, seam delta, adjacent slopes and spectrogram alongside listening;
 measurements cannot establish animal or material realism.
 
-The repository's `examples/sounds/src` contains bird phrases, footsteps, charging
+The repository's `examples/sounds/assets/` contains bird phrases (`bird_call.ashfox` with modular `bird_voices.ashfox`), footsteps, charging
 spell, modal metal/wood/glass studies and wind/fire/mechanical loops. These are
 procedural studies requiring audition, not recordings or realism guarantees.
 `bell_pattern.ashfox` exercises all five features together.

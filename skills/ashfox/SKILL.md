@@ -6,8 +6,9 @@ description: Create, refine, animate, and review voxel game assets as native .as
 # Ashfox
 
 Create assets as code. The editable authority is the project's `.ashfox` files
-and their imported modules. Use the CLI (`init`, `doctor`, `check`, `render`,
-`build`, `export`) to validate, inspect, audit, render, compile and export them.
+and their imported modules. Use the 5 CLI verbs (`init`, `doctor`, `check`,
+`render`, `build`) to initialize, inspect runtime readiness, validate/audit,
+render views, and build declared targets.
 The website provides documentation and example previews.
 
 Read https://ashfox.io/agent.md in full for the shared installation and documentation entry point. A skill is optional; users can start by pasting the landing page setup prompt into their existing coding agent.
@@ -24,39 +25,41 @@ Read https://ashfox.io/agent.md in full for the shared installation and document
    before using unfamiliar language features. Use `ashfox --help` and
    `ashfox doctor --json` for the installed command contract. Published examples
    may describe a newer CLI; check release notes when a feature is unavailable.
-4. Follow the existing asset repository configuration. New projects use grouped
-   sources under `asset/`, generated outputs under root `build/`, and Git ignores
-   for generated files. See https://ashfox.io/docs/guides/repository-layout/.
+4. Follow the canonical project layout: sources under `assets/{models,sprites,sounds,structures,module}/`
+   (shared modules imported by 2+ entries live under `assets/module/`), generated
+   outputs under root `build/`, and Git ignores for generated files. See
+   https://ashfox.io/docs/guides/repository-layout/.
 
 ## Create, observe, deliver
 
-- Edit source files directly. Use an optional `.ashfoxworkspace` or
-  `.ashfoxworkspace.mjs` to configure builds; keep a single configuration per root.
+- Edit source files directly. Declare build targets (`outputs { ... }`) and named
+  inspection views (`preview [name] { ... }`) directly inside `.ashfox` entries; use an
+  optional `.ashfoxworkspace` or `.ashfoxworkspace.mjs` for multi-asset/pack policy.
 - For models, set `settings.profile = creature | prop | block` explicitly. Use
   Hytale / modern Blockbench craft instead of bare boxes and flat 1-line `fill`
   coats: decompose organic limbs with tapered `15°`/`22.5°`/`45°` joints and thin
   `plane` silhouettes (`ears`, `tufts`, `fins`, `plumes`) on `creature`/`prop` assets, keep `block` assets crisp and grid-aligned without fake twists or forced symmetry, use `mirror-x` for
   paired limbs, and let the compiler auto-size UVs and pack atlases unless manual
-  layout is required. Keep multi-part models modular (`rig.ashfox`, `surface.ashfox`, `body.ashfox`, plus a thin `asset` entry): the compiler rejects unused imports, unused declarations, unused stamps, and monolithic or concern-mixing files.
+  layout is required. Keep multi-part entries modular across all 4 asset kinds
+  (`rig.ashfox`, `surface.ashfox`, `body.ashfox`, `sound`/`sprite`/`structure` modules under `assets/module/`): the compiler rejects unused imports, unused declarations, unused stamps, and monolithic or concern-mixing entries.
 - Author textures with `density = 2` for `creature` and `prop` assets (`density = 1` for `block`), `render-mode = emissive` on glowing surfaces, `tone painterly`, `material = double` + `coverage = binary` bitmasks for thin `plane` cutouts, calm rest areas (20–42% pre-grain delta with moderate `ao` and omitted-`from` `gradient`), warm darks (`luma >= 0.14`, no near-black crush), painted face `stamp` details (`protect = true`) instead of protruding 1u micro-brick decals, and material-appropriate `grain` (`clustered` for fur/stone/bark, `soft` for cloth/leather, `none` for eyes/metal/gems).
 - Run `ashfox check <source>` alongside visual inspection: hit **0 failed Hard Gates**
-  and `audit.score >= 75` (target `>= 85` `excellent`). Delivery commands (`build` and
-  `export`) block any model without `settings.profile` or failing the quality gate.
-- Render `--sheet turnaround` (`FRONT`, `3/4`, `SIDE`, `BACK`) and `--sheet
-  inspect` (`3/4`, `FRONT`, `WIRE+RIG`, `TOP`), render `--texture TEXTURE_ID` atlases,
-  and render animated GIFs (`ashfox render --gif --clip ...`) for each changed motion.
-  Listen to exported WAV/OGG sound variants. Compilation alone does not establish visual or audio quality.
-- Pass `--stdin` or `--input-json` to `check`, `render`, or `export` when operating on
+  and `audit.score >= 75` (target `>= 85` `excellent`). `ashfox build` blocks any model
+  or structure failing its quality profile or Hard Gates.
+- Declare `preview <name> { ... }` blocks in the `.ashfox` source (e.g., `sheet = turnaround`,
+  `sheet = inspect`, `texture = ...`, `kind = gif; clip = ...`, `cutaway = <y>`, `stage = silhouette`)
+  and render them via `ashfox render <source> --view <name> [--output <file>]`.
+  Build playable WAV/OGG sound variants via `ashfox build` and listen to them. Compilation alone does not establish visual or audio quality.
+- Pass `--stdin` or `--input-json` to `check` or `render` when operating on
   source graphs in memory.
 - For game delivery, run `check <workspace>`, `build <workspace>`, and `check <build-dir>`.
   Consume deterministic outputs through the game's adapter; do not hand-edit
   generated PNG, GLB, audio or runtime manifests.
-- Save or export the files requested by the user. Report exact output locations,
-  `check` audit score/profile, what was inspected/rendered, and any behavior still unverified in
+- Save or build the outputs requested by the user (`outputs { ... }`). Report exact output locations,
+  `check` audit score/profile, what views were inspected/rendered, and any behavior still unverified in
   the receiving game. Do not claim successful output from a preflight check alone.
-- For Minecraft/GLB buildings (`structure <id>`), export both Java `.nbt` (`--format java_structure`,
-  standalone `build` default) and `1 block = 1.0m` GLB (`--format glb`), embed custom `.ashfox` props
-  via `palette` (`asset alias as "minecraft:..."`), and inspect furnished rooms with `render --cutaway <y>`.
+- For Minecraft/GLB buildings (`structure <id>`), `outputs { java_structure; glb; }` builds both Java `.nbt` and `1 block = 1.0m` GLB (standalone default), embed custom `.ashfox` props
+  via `palette` (`asset alias as "minecraft:..."`), and inspect furnished rooms with a declared `preview ... { cutaway = <y>; }` rendered via `ashfox render --view <name>`.
 
 ## Skill updates
 

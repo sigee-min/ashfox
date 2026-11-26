@@ -17,14 +17,14 @@ const run = (command: string, input: string) => {
 };
 try {
   for (const [folder, file, kind] of [
-    ['examples/items/src', 'apple.ashfox', 'sprite'],
+    ['examples/items/assets', 'sprites/apple.ashfox', 'sprite'],
     ['examples/fox/creatures', 'fox.ashfox', 'model'],
-    ['examples/sounds/src', 'claw_hit.ashfox', 'sound'],
+    ['examples/sounds/assets', 'sounds/claw_hit.ashfox', 'sound'],
   ]) {
-    const directory = path.join(temp, kind);
-    fs.cpSync(path.join(root, folder), directory, { recursive: true });
-    const input = path.join(directory, file);
-    fs.writeFileSync(path.join(directory, 'unrelated.ashfox'), 'invalid unrelated file');
+    const baseDir = path.join(temp, kind, folder.endsWith('/assets') ? 'assets' : '');
+    fs.cpSync(path.join(root, folder), baseDir, { recursive: true });
+    const input = path.join(baseDir, file);
+    fs.writeFileSync(path.join(path.dirname(input), 'unrelated.ashfox'), 'invalid unrelated file');
     const check = run('check', input);
     assert.equal(check.ok, true, JSON.stringify(check));
     assert.deepEqual(
@@ -35,22 +35,22 @@ try {
     assert.equal(build.ok, true, JSON.stringify(build));
     assert.equal(run('build', input).result.bundleHash, build.result.bundleHash);
     const id = check.result.products[0].entry.entryName;
-    assert.equal(run('check', path.join(directory, 'dist', id, 'build')).ok, true);
-    assert.equal(fs.existsSync(path.join(directory, '.ashfoxworkspace')), false);
+    assert.equal(run('check', path.join(baseDir, 'dist', id, 'build')).ok, true);
+    assert.equal(fs.existsSync(path.join(temp, kind, '.ashfoxworkspace')), false);
   }
-  const apple = path.join(temp, 'sprite/apple.ashfox');
+  const apple = path.join(temp, 'sprite/assets/sprites/apple.ashfox');
   const original = fs.readFileSync(apple, 'utf8');
-  const pointer = fs.readFileSync(path.join(temp, 'sprite/dist/apple/build/current.json'));
-  fs.writeFileSync(apple, original.replace('./shared.ashfox', '../outside.ashfox'));
+  const pointer = fs.readFileSync(path.join(temp, 'sprite/assets/dist/apple/build/current.json'));
+  fs.writeFileSync(apple, original.replace('../module/shared.ashfox', '../../outside.ashfox'));
   assert.equal(run('build', apple).ok, false);
   assert.deepEqual(
-    fs.readFileSync(path.join(temp, 'sprite/dist/apple/build/current.json')),
+    fs.readFileSync(path.join(temp, 'sprite/assets/dist/apple/build/current.json')),
     pointer,
   );
   fs.writeFileSync(apple, '\uFEFF' + original);
   assert.equal(run('check', apple).ok, false, 'BOM must not be silently removed by the host');
   fs.writeFileSync(apple, original);
-  assert.equal(run('check', path.join(temp, 'sprite/shared.ashfox')).ok, false);
+  assert.equal(run('check', path.join(temp, 'sprite/assets/module/shared.ashfox')).ok, false);
   fs.writeFileSync(path.join(temp, '.ashfoxworkspace'), '{}');
   assert.equal(
     run('check', apple).ok,

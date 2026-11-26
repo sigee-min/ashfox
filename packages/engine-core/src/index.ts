@@ -225,8 +225,21 @@ export {
   isDirectorySource,
   matchDirectoryPattern,
 } from './project/directory/read';
+export {
+  defaultOutputsForKind,
+  validateAssetDeclarations,
+  type AssetDeclarations,
+  type DeclaredAssetKind,
+  type DeclaredOutputFormat,
+  type DeclaredOutputSpec,
+  type DeclaredPreviewSpec,
+} from './project/directory/declarations';
 export { compileDirectoryWorkspace } from './compiler/directory/compile';
-export type { DirectoryWorkspace, DirectoryFile } from './project/directory/contract';
+export type {
+  DirectoryExport,
+  DirectoryWorkspace,
+  DirectoryFile,
+} from './project/directory/contract';
 export type { DirectoryCompilation, DirectoryProduct } from './compiler/directory/compile';
 
 export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/directory/pack';

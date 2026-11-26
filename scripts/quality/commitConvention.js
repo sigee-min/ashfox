@@ -59,13 +59,23 @@ const commitConventionViolations = (policy, commits) => {
 };
 
 const git = (repoRoot, args) =>
-  childProcess.execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).trim();
+  childProcess
+    .execFileSync('git', args, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    .trim();
 
 const revisionRange = (repoRoot, environment) => {
   const requested = environment.ASHFOX_COMMIT_BASE?.trim();
   if (requested && !ZERO_REVISION.test(requested)) {
-    git(repoRoot, ['rev-parse', '--verify', `${requested}^{commit}`]);
-    return `${requested}..HEAD`;
+    try {
+      git(repoRoot, ['rev-parse', '--verify', `${requested}^{commit}`]);
+      return `${requested}..HEAD`;
+    } catch {
+      // A force-pushed history replaces github.event.before; fall back to origin/main / HEAD.
+    }
   }
   try {
     const base = git(repoRoot, ['merge-base', 'HEAD', 'origin/main']);

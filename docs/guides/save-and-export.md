@@ -4,20 +4,22 @@ Keep the `.ashfox` files, every imported module and optional `.ashfoxworkspace`
 together in version control. Those are the files you edit. Generated GLB, PNG,
 WAV, OGG and ZIP files can be rebuilt and do not replace source backups.
 
-## Export one asset
+## Build one asset
 
 From the extracted starter folder:
 
 ```sh
-npx --no-install ashfox export fox.ashfox --output fox.glb
-npx --no-install ashfox export sword.ashfox --output sword.png
-npx --no-install ashfox export claw_hit.ashfox --output claw.wav
+npx --no-install ashfox build assets/models/fox/fox.ashfox --json
+npx --no-install ashfox build assets/sprites/sword.ashfox --json
+npx --no-install ashfox build assets/sounds/claw_hit.ashfox --json
 ```
 
-Without `--output`, the bytes go to stdout for another process to consume.
-Existing output files are refused; choose a new path or remove the previous
-generated file deliberately. For camera images and GIFs, use
-[render and check](observe.md). No workspace is needed for these commands.
+Target formats and adapters are declared in `.ashfox` `outputs { ... }` blocks
+(defaulting to portable `.glb` for models, `.png` for sprites, `.wav` for sounds,
+and both `.nbt` and `.glb` for structures). Built files are written to
+`dist/<asset-id>/exports/` alongside immutable bundles under `dist/<asset-id>/build/`.
+For camera images and GIFs declared in `preview` blocks, use
+[render and check](observe.md). No workspace file is needed for single-entry builds.
 
 ## Select project output files
 

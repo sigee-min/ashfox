@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { buildSync } = require('esbuild');
@@ -8,20 +9,40 @@ const out = path.join(root, 'dist/landing');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 const cli = path.join(root, 'apps/cli/dist/ashfox.cjs');
-for (const [name, source, args] of [
-  ['griffin.glb', 'examples/griffin/workbench/main.ashfox', []],
-  ['sword.png', 'examples/items/src/iron_sword.ashfox', []],
-  ['amethyst.png', 'examples/items/src/amethyst.ashfox', []],
-  ['bird-base.wav', 'examples/sounds/src/bird_call.ashfox', ['--variant', 'base']],
-  ['bird-alternate.wav', 'examples/sounds/src/bird_call.ashfox', ['--variant', 'alternate']],
-])
-  fs.writeFileSync(
-    path.join(out, name),
-    execFileSync(process.execPath, [cli, 'export', source, ...args], {
-      cwd: root,
-      maxBuffer: 32 * 1024 * 1024,
-    }),
+const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-landing-'));
+try {
+  fs.cpSync(path.join(root, 'examples/griffin'), path.join(temp, 'griffin'), { recursive: true });
+  fs.cpSync(path.join(root, 'examples/items'), path.join(temp, 'items'), { recursive: true });
+  fs.cpSync(path.join(root, 'examples/sounds'), path.join(temp, 'sounds'), { recursive: true });
+  const buildTarget = (rel) =>
+    JSON.parse(
+      execFileSync(process.execPath, [cli, 'build', path.join(temp, rel), '--json'], {
+        cwd: temp,
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      }),
+    ).result;
+  const griffinBuilt = buildTarget('griffin/workbench/main.ashfox');
+  fs.copyFileSync(
+    path.join(griffinBuilt.exports[0].directory, 'griffin.glb'),
+    path.join(out, 'griffin.glb'),
   );
+  const itemsBuilt = buildTarget('items/.ashfoxworkspace');
+  const swordDir = itemsBuilt.exports.find((entry) => entry.id === 'iron_sword').directory;
+  fs.copyFileSync(path.join(swordDir, 'iron_sword.png'), path.join(out, 'sword.png'));
+  const amethystDir = itemsBuilt.exports.find((entry) => entry.id === 'amethyst').directory;
+  fs.copyFileSync(path.join(amethystDir, 'amethyst.png'), path.join(out, 'amethyst.png'));
+  const soundsBuilt = buildTarget('sounds/.ashfoxworkspace');
+  const birdDir = soundsBuilt.exports.find((entry) => entry.id === 'bird_call').directory;
+  for (const variant of ['base', 'alternate']) {
+    fs.copyFileSync(
+      path.join(birdDir, 'bird_call', `${variant}.wav`),
+      path.join(out, `bird-${variant}.wav`),
+    );
+  }
+} finally {
+  fs.rmSync(temp, { recursive: true, force: true });
+}
 buildSync({
   entryPoints: [path.join(root, 'scripts/landing/viewer.js')],
   outfile: path.join(out, 'hero.js'),

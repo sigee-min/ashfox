@@ -25,17 +25,16 @@ Linux and Windows PowerShell. Install it in your existing project; keep your
 ## Make your first asset
 
 <!-- ashfox:start -->
-Create the bundled starter offline and export your first item:
+Create the bundled starter offline and build your first item:
 
 ```sh
 npx --no-install ashfox init assets
-npx --no-install ashfox export assets/asset/items/sword.ashfox --output sword.png
+npx --no-install ashfox build assets/assets/sprites/sword.ashfox --json
 ```
 <!-- ashfox:start-end -->
 
-Open `sword.png` in your image viewer or import it into your game. Edit the
-`.ashfox` source with your coding agent, then export to a new filename.
-Existing output files are refused.
+Find `sword.png` (`iron_sword.png`) in the built export directory printed by
+`build`. Edit the `.ashfox` source with your coding agent, then rebuild.
 
 Commit `package.json` and `package-lock.json` with your project. The guides use
 `npx --no-install ashfox` to run the installed CLI without fetching another

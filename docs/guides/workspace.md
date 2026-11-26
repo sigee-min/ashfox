@@ -1,7 +1,7 @@
 # Configure your project
 
 The [repository convention](repository-layout.md) defines the recommended
-`asset/` → root `build/` layout. Current source also supports executable
+`assets/` → root `build/` layout (`assets/{models,sprites,sounds,structures,module}/`). Current source also supports executable
 `.ashfoxworkspace.mjs` configuration exporting the same version-2 object; this
 ships with the next CLI release. Keep one configuration form per root.
 
@@ -28,16 +28,18 @@ Invalid configuration never silently falls back to standalone defaults.
 ```text
 items/
   .ashfoxworkspace
-  src/
-    shared.ashfox
-    apple.ashfox
-    iron_sword.ashfox
+  assets/
+    module/
+      shared.ashfox
+    sprites/
+      apple.ashfox
+      iron_sword.ashfox
   build/                  derived compiler output
   exports/                delivery artifacts
 ```
 
 Download and extract [the complete item project](/downloads/items.zip). Its configuration is [`examples/items/.ashfoxworkspace`](../../examples/items/.ashfoxworkspace).
-Its sources are under `examples/items/src/`. Keep the configuration and sources together in Git.
+Its sources are under `examples/items/assets/`. Keep the configuration and sources together in Git.
 
 From the extracted example folder:
 
@@ -58,19 +60,32 @@ time. Generated `build/` and `exports/` folders are excluded from Git in this ex
   "format": "ashfox-workspace",
   "version": 2,
   "name": "my-items",
-  "packages": [{
-    "name": "items",
-    "root": "src",
-    "manifest": {
-      "format": "ashfox-package",
-      "version": 1,
-      "entries": [{"name": "apple", "path": "apple.ashfox"}],
-      "modules": [{"subpath": "./shared", "path": "shared.ashfox"}],
-      "dependencies": []
+  "packages": [
+    {
+      "name": "items",
+      "root": "assets/sprites",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [{"name": "apple", "path": "apple.ashfox"}],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [{"subpath": "./shared", "path": "shared.ashfox"}],
+        "dependencies": []
+      }
     }
-  }],
-  "include": ["src/**/*.ashfox"],
-  "ignore": ["src/drafts/**"],
+  ],
+  "include": ["assets/**/*.ashfox"],
+  "ignore": ["assets/drafts/**"],
   "build": {"directory": "build"},
   "exports": [{
     "name": "apple_png",

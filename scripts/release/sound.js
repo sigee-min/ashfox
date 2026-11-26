@@ -28,18 +28,26 @@ const verifySoundCli = (cli, write = false) => {
     const capabilities = JSON.parse(run(['doctor', '--json'])).result.sound;
     assert.deepEqual(capabilities.features, ['curves', 'sequences', 'variation', 'loops']);
     assert.ok(capabilities.sources.includes('resonator'));
+    const soundsDir = path.join(temp, 'assets/sounds');
+    const moduleDir = path.join(temp, 'assets/module');
+    fs.mkdirSync(soundsDir, { recursive: true });
+    fs.mkdirSync(moduleDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(root, 'examples/sounds/assets/module/bird_voices.ashfox'),
+      path.join(moduleDir, 'bird_voices.ashfox'),
+    );
     const results = [];
     for (const name of samples) {
       const source = fs.readFileSync(
-        path.join(root, 'examples/sounds/src', name + '.ashfox'),
+        path.join(root, 'examples/sounds/assets/sounds', name + '.ashfox'),
         'utf8',
       );
-      const input = path.join(temp, name + '.ashfox');
+      const input = path.join(soundsDir, name + '.ashfox');
       fs.writeFileSync(input, source);
       const inspected = JSON.parse(run(['check', input])).result;
+      const built = JSON.parse(run(['build', input, '--json'])).result;
       for (const variant of inspected.variants) {
-        const output = path.join(temp, name + '-' + variant.variant + '.wav');
-        run(['export', input, '--variant', variant.variant, '--output', output]);
+        const output = path.join(built.exports[0].directory, name, variant.variant + '.wav');
         const wav = fs.readFileSync(output);
         assert.equal(wav.length, 44 + variant.frames * 2);
         assert.equal(wav.readUInt32LE(24), 48000);

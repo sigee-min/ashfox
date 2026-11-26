@@ -1,4 +1,5 @@
 import type { ProgramToken } from '../program/syntax/lex';
+import type { RawDeclaredOutput, RawDeclaredPreview } from '../directory/declarations';
 
 export const MAX_STRUCTURE_DIM = 64;
 export const MAX_STRUCTURE_VOLUME = 65_536;
@@ -88,6 +89,8 @@ export interface StructureSourceUnit {
   readonly kind: 'structure' | 'module';
   readonly id: string;
   readonly imports: readonly StructureImport[];
+  readonly outputs: readonly RawDeclaredOutput[];
+  readonly previews: readonly RawDeclaredPreview[];
   readonly size: IntVec3 | null;
   readonly dataVersion: number;
   readonly palette: Readonly<Record<string, StructurePaletteEntry>>;

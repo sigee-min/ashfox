@@ -108,7 +108,7 @@ const main = async () => {
         await execute('check', 'created/build/assets/compiler', '--json'),
       ).result;
       assert.equal(built.bundleHash, verified.bundleHash);
-      assert.equal(verified.catalog.assets.length, 3);
+      assert.equal(verified.catalog.assets.length, 4);
       const adapted = JSON.parse(
         await run(
           process.execPath,
@@ -117,32 +117,32 @@ const main = async () => {
         ),
       );
       assert.equal(adapted.bundleHash, built.bundleHash);
-      assert.equal(
-        (await execute('export', 'created/asset/items/sword.ashfox')).subarray(1, 4).toString(),
-        'PNG',
-      );
-      assert.equal(
-        (await execute('export', 'created/asset/items/sword.ashfox', '--output', 'sword.png'))
-          .length,
-        0,
-      );
-      const png = fs.readFileSync(path.join(folder, 'sword.png'));
+      const builtSword = JSON.parse(
+        await execute('build', 'created/assets/sprites/sword.ashfox', '--json'),
+      ).result;
+      const swordExport = builtSword.exports.find((item) => item.id === 'items_iron_sword');
+      assert.ok(swordExport);
+      const png = fs.readFileSync(path.join(swordExport.directory, 'items_iron_sword.png'));
       assert.equal(png.subarray(1, 4).toString(), 'PNG');
-      await assert.rejects(
-        execute('export', 'created/asset/items/sword.ashfox', '--output', 'sword.png'),
-      );
-      assert.deepEqual(fs.readFileSync(path.join(folder, 'sword.png')), png);
+      await assert.rejects(execute('export', 'created/assets/sprites/sword.ashfox'));
       const checkedSword = JSON.parse(
-        (await execute('check', 'created/asset/items/sword.ashfox')).toString(),
+        (await execute('check', 'created/assets/sprites/sword.ashfox', '--json')).toString(),
       );
       assert.equal(checkedSword.ok, true);
       assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
-      for (const [source, magic] of [
-        ['fox.ashfox', 'glTF'],
-        ['sword.ashfox', '\x89PNG'],
-        ['claw_hit.ashfox', 'RIFF'],
+      for (const [source, artifact, magic] of [
+        ['assets/models/fox/fox.ashfox', 'fox.glb', 'glTF'],
+        ['assets/sprites/sword.ashfox', 'iron_sword.png', '\x89PNG'],
+        ['assets/sounds/claw_hit.ashfox', 'claw_hit/base.wav', 'RIFF'],
       ]) {
-        assert.equal((await execute('export', source)).subarray(0, 4).toString('latin1'), magic);
+        const standaloneBuilt = JSON.parse(
+          (await execute('build', source, '--json')).toString(),
+        ).result;
+        const firstDir = standaloneBuilt.exports[0].directory;
+        assert.equal(
+          fs.readFileSync(path.join(firstDir, artifact)).subarray(0, 4).toString('latin1'),
+          magic,
+        );
       }
       fs.rmSync(path.join(folder, 'node_modules'), { recursive: true });
       await run('npm', ['ci', '--offline', '--ignore-scripts', '--no-audit', '--no-fund'], folder);

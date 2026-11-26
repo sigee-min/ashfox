@@ -54,20 +54,25 @@ try {
   const starter = extract('starter');
   install(starter);
   const checked = JSON.parse(
-    run('npx', ['--no-install', 'ashfox', 'check', 'sword.ashfox'], starter),
+    run(
+      'npx',
+      ['--no-install', 'ashfox', 'check', 'assets/sprites/sword.ashfox', '--json'],
+      starter,
+    ),
   );
   assert.equal(checked.ok, true);
   assert.equal(checked.result.kind, 'sprite');
-  for (const [source, magic] of [
-    ['fox.ashfox', 'glTF'],
-    ['sword.ashfox', '\x89PNG'],
-    ['claw_hit.ashfox', 'RIFF'],
+  for (const [source, artifact, magic] of [
+    ['assets/models/fox/fox.ashfox', 'fox.glb', 'glTF'],
+    ['assets/sprites/sword.ashfox', 'iron_sword.png', '\x89PNG'],
+    ['assets/sounds/claw_hit.ashfox', 'claw_hit/base.wav', 'RIFF'],
   ]) {
-    const bytes = cli(starter, 'export', source);
+    const built = JSON.parse(cli(starter, 'build', source, '--json')).result;
+    const bytes = fs.readFileSync(path.join(built.exports[0].directory, artifact));
     assert.equal(bytes.subarray(0, 4).toString('latin1'), magic);
   }
   if (process.argv.includes('--capture')) {
-    for (const source of ['fox.ashfox', 'sword.ashfox']) {
+    for (const source of ['assets/models/fox/fox.ashfox', 'assets/sprites/sword.ashfox']) {
       const bytes = cli(starter, 'render', source);
       assert.equal(bytes.subarray(0, 4).toString('latin1'), '\x89PNG');
     }

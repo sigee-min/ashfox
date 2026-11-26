@@ -7,13 +7,22 @@ import { frame } from './curve';
 import { readRecipe } from './read';
 import { validatePlan } from './plan';
 import type { SoundProduct, SoundRecipe } from './contract';
-export { parseSoundSource } from './source';
+export {
+  parseSoundSource,
+  parseSoundUnit,
+  type SoundImportDecl,
+  type SoundNamedDecl,
+  type SoundOutputRaw,
+  type SoundPreviewRaw,
+  type SoundSourceUnit,
+} from './source';
 export { readRecipe } from './read';
 export { render, master, measure } from './render';
 export { encodeWav } from './wav';
 export { AUDIO_POLICY } from './random';
 export type { SoundBudget } from './plan';
 export const soundBudget = (recipe: SoundRecipe) => validatePlan(readRecipe(recipe));
+export const soundRecipeBudget = (rawRecipe: unknown) => validatePlan(readRecipe(rawRecipe));
 export type {
   SoundRecipe,
   SoundProduct,
@@ -53,6 +62,26 @@ const renderVariantProduct = (
     ...stats,
     playback: Object.freeze(playback),
   });
+};
+
+export const compileSoundRecipe = (
+  rawRecipe: unknown,
+  file = 'sound.ashfox',
+): readonly SoundProduct[] => {
+  const recipe = readRecipe(rawRecipe);
+  const sorted = [...recipe.variants].sort((a, b) => (a.id < b.id ? -1 : 1));
+  return Object.freeze(
+    sorted.map((variant) => {
+      try {
+        return renderVariantProduct(recipe, variant);
+      } catch (error) {
+        if (error instanceof SoundError) {
+          throw new SoundError(error.path, `${file}: ${error.detail}; variant ${variant.id}`);
+        }
+        throw error;
+      }
+    }),
+  );
 };
 
 export const compileSoundSource = (source: string, file: string): readonly SoundProduct[] => {

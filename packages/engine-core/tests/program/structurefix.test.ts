@@ -28,7 +28,7 @@ const compileSingleModel = (
     JSON.stringify({
       format: 'ashfox-workspace',
       version: 2,
-      name: 'single-model',
+      name: 'standalone',
       packages: [
         {
           name: 'p',
@@ -57,36 +57,58 @@ const compileSingleModel = (
 
 const testMixedStructureAndSharedPropWorkspace = (): void => {
   const dir = path.join(REPO_ROOT, 'examples/structure');
+  const read = (rel: string) => fs.readFileSync(path.join(dir, rel), 'utf8');
   const files: DirectoryFile[] = [
-    'watchtower.ashfox',
-    'furnishings.ashfox',
-    'props/rune_pillar.ashfox',
-    'props/wall_lantern.ashfox',
-  ].map((rel) => ({ path: rel, source: fs.readFileSync(path.join(dir, rel), 'utf8') }));
+    {
+      path: 'assets/structures/watchtower.ashfox',
+      source: read('watchtower.ashfox')
+        .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
+        .replaceAll('./props/', '../models/props/'),
+    },
+    { path: 'assets/module/furnishings.ashfox', source: read('furnishings.ashfox') },
+    { path: 'assets/models/props/rune_pillar.ashfox', source: read('props/rune_pillar.ashfox') },
+    { path: 'assets/models/props/wall_lantern.ashfox', source: read('props/wall_lantern.ashfox') },
+  ];
   const config = JSON.stringify({
     format: 'ashfox-workspace',
     version: 2,
     name: 'mixed-props',
     packages: [
       {
-        name: 'mixed',
-        root: '',
+        name: 'structures',
+        root: 'assets/structures',
         manifest: {
           format: 'ashfox-package',
           version: 1,
-          entries: [
-            { name: 'watchtower', path: 'watchtower.ashfox' },
-            { name: 'wall_lantern', path: 'props/wall_lantern.ashfox' },
-          ],
-          modules: [
-            { subpath: './furnishings', path: 'furnishings.ashfox' },
-            { subpath: './props/rune_pillar', path: 'props/rune_pillar.ashfox' },
-          ],
+          entries: [{ name: 'watchtower', path: 'watchtower.ashfox' }],
+          modules: [],
+          dependencies: [],
+        },
+      },
+      {
+        name: 'props',
+        root: 'assets/models/props',
+        manifest: {
+          format: 'ashfox-package',
+          version: 1,
+          entries: [{ name: 'wall_lantern', path: 'wall_lantern.ashfox' }],
+          modules: [{ subpath: './rune_pillar', path: 'rune_pillar.ashfox' }],
+          dependencies: [],
+        },
+      },
+      {
+        name: 'shared_modules',
+        root: 'assets/module',
+        manifest: {
+          format: 'ashfox-package',
+          version: 1,
+          entries: [],
+          modules: [{ subpath: './furnishings', path: 'furnishings.ashfox' }],
           dependencies: [],
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'build' },
     exports: [],

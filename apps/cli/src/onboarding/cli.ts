@@ -21,9 +21,8 @@ Commands:
   init <new-folder>        Create a grouped asset project offline
   doctor                  Check runtime readiness and machine-readable contract
   check <input>            Validate sources/builds, inspect structure, and run quality audit
-  render <source|png>      Render PNG images, turnaround sheets, or animated GIFs (--gif)
-  build <source|workspace> Build configured outputs and verify quality gates
-  export <source>          Export GLB, glTF, Minecraft ZIP/NBT, PNG, or WAV directly
+  render <source>          Render declared PNG/GIF views (--view <name>)
+  build <source|workspace> Build source/workspace outputs declared in source or config
 
 --output <file> saves media; existing files are refused.
 --version prints the installed product version. doctor/init accept --json.
@@ -76,9 +75,57 @@ const init = (folder: string, json: boolean): void => {
     'init',
     { directory: target, files: Object.keys(ASHFOX_STARTER), version: cliVersion },
     json,
-    `Created asset project in ${folder}\nSources: asset/ · Generated output: build/\nBuild: ashfox build ${folder}/.ashfoxworkspace.mjs --json\nIntegration: node ${folder}/assets.mjs\n`,
+    `Created asset project in ${folder}\nSources: assets/ · Generated output: build/\nBuild: ashfox build ${folder}/.ashfoxworkspace.mjs --json\nIntegration: node ${folder}/assets.mjs\n`,
   );
 };
+const doctorPayload = (capture: boolean, chrome: string | null) => ({
+  version: cliVersion,
+  cliVersion,
+  node: process.version,
+  platform: process.platform,
+  arch: process.arch,
+  commands: ['init', 'doctor', 'check', 'render', 'build'],
+  exports: { glb: true, gltf: true, png: true, wav: true, ogg: true, java_structure: true },
+  capture: { available: capture, executable: chrome },
+  ogg: { available: true, builtin: true },
+  render: renderCapabilities,
+  workspace: {
+    file: '.ashfoxworkspace',
+    executableFile: '.ashfoxworkspace.mjs',
+    version: 2,
+    required: false,
+  },
+  sound: {
+    contract: AUDIO_POLICY,
+    sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'],
+    features: ['curves', 'sequences', 'variation', 'loops'],
+    sampleRate: 48000,
+    channels: 1,
+    loopCodecs: ['wav'],
+    output: 'fixed-gain',
+    limits: {
+      durationSeconds: 30,
+      variants: 8,
+      workspaceSources: 32,
+      workspaceRawFrames: 11520000,
+      eventFrames: 24000000,
+      weightedFrames: 192000000,
+    },
+  },
+  source: '.ashfox',
+  outputs: ['glb', 'gltf', 'png', 'wav', 'java_structure', 'java_block', 'geckolib5', 'bedrock'],
+  packs: {
+    formats: ['minecraft_java', 'game_assets'],
+    itemDefinitions: ['legacy', 'modern'],
+    metadata: ['legacy', 'range'],
+    audio: 'vorbis',
+    encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
+    archive: 'zip',
+  },
+  usage:
+    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>',
+});
+
 const doctor = (json: boolean): void => {
   const chrome = findChrome();
   const browser = chrome
@@ -87,53 +134,7 @@ const doctor = (json: boolean): void => {
   const capture = browser?.status === 0;
   emit(
     'doctor',
-    {
-      version: cliVersion,
-      cliVersion,
-      node: process.version,
-      platform: process.platform,
-      arch: process.arch,
-      commands: ['init', 'doctor', 'check', 'render', 'build', 'export'],
-      exports: { glb: true, png: true, wav: true, ogg: true },
-      capture: { available: capture, executable: chrome ?? null },
-      ogg: { available: true, builtin: true },
-      render: renderCapabilities,
-      workspace: {
-        file: '.ashfoxworkspace',
-        executableFile: '.ashfoxworkspace.mjs',
-        version: 2,
-        required: false,
-      },
-      sound: {
-        contract: AUDIO_POLICY,
-        sources: ['noise', 'fm', 'vocal', 'chirp', 'resonator'],
-        features: ['curves', 'sequences', 'variation', 'loops'],
-        sampleRate: 48000,
-        channels: 1,
-        loopCodecs: ['wav'],
-        output: 'fixed-gain',
-        limits: {
-          durationSeconds: 30,
-          variants: 8,
-          workspaceSources: 32,
-          workspaceRawFrames: 11520000,
-          eventFrames: 24000000,
-          weightedFrames: 192000000,
-        },
-      },
-      source: '.ashfox',
-      outputs: ['glb', 'png', 'wav', 'java_block', 'geckolib5', 'bedrock'],
-      packs: {
-        formats: ['minecraft_java', 'game_assets'],
-        itemDefinitions: ['legacy', 'modern'],
-        metadata: ['legacy', 'range'],
-        audio: 'vorbis',
-        encoder: 'Built-in WebAssembly Ogg Vorbis (libvorbis)',
-        archive: 'zip',
-      },
-      usage:
-        'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source|png> [options]; ashfox build <source|workspace>; ashfox export <source> [options]',
-    },
+    doctorPayload(capture, chrome ?? null),
     json,
     `Ashfox ${cliVersion} · Node ${process.version}\nGLB / PNG / WAV / OGG: ready (built-in)\nRender (Chrome): ${capture ? 'ready' : 'optional — install Chrome or set ASHFOX_CHROME_PATH'}\n`,
   );

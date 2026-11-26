@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "items",
-      "root": "src",
+      "root": "assets/sprites",
       "manifest": {
         "format": "ashfox-package",
         "version": 1,
@@ -51,6 +51,17 @@
             "path": "amethyst.ashfox"
           }
         ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
         "modules": [
           {
             "subpath": "./shared",
@@ -62,10 +73,10 @@
     }
   ],
   "include": [
-    "src/**/*.ashfox"
+    "assets/**/*.ashfox"
   ],
   "ignore": [
-    "src/drafts/**"
+    "assets/drafts/**"
   ],
   "build": {
     "directory": "build"

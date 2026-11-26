@@ -1,9 +1,12 @@
 # Organize an asset repository
 
 Use one source tree, one generated tree and one adapter between the asset build
-and the game. Ashfox's recommended convention is `asset/` for authored input and
-root `build/` for disposable output. The directory names are defaults, not reserved
-keywords. The workspace defines the project's actual paths.
+and the game. Ashfox's canonical repository convention is
+`assets/{models,sprites,sounds,structures,module}/` for authored input and root
+`build/` for disposable output. Non-standalone workspaces enforce this canonical
+layout at compile time: every entry lives in its matching kind folder, shared
+modules imported by 2+ entries live under `assets/module/`, and `assets/module/`
+holds modules only.
 
 Executable workspaces and the grouped `init` template described here are available
 from CLI 2.0.0. An older installed
@@ -26,17 +29,21 @@ my-game/
   .ashfoxworkspace.mjs       executable build configuration, tracked
   .gitignore                ignores /build/ and /node_modules/
   assets.mjs                game build adapter, tracked
-  asset/
-    creatures/fox/
+  assets/
+    models/fox/
       fox.ashfox            model entry
       body.ashfox           imported geometry module
       rig.ashfox            imported skeleton and motions
       surface.ashfox        imported appearance module
-    items/
+    sprites/
       sword.ashfox          sprite entry
-      shared.ashfox         imported sprite module
     sounds/
       claw_hit.ashfox       sound entry
+    structures/
+      watchtower.ashfox     structure entry
+    module/
+      shared.ashfox         shared sprite module
+      furnishings.ashfox    shared structure module
   build/
     assets/
       compiler/             canonical bundles and current.json
@@ -44,6 +51,7 @@ my-game/
         creatures/fox/      immutable delivery bundles
         items/iron_sword/
         sounds/claw_hit/
+        structures/watchtower/
 ```
 
 Keep source, imported modules, workspace code, integration code and toolchain
@@ -58,7 +66,7 @@ A clean checkout plus the pinned toolchain must rebuild everything in `build/`.
 that exports the same version-2 workspace object as its default export. Choose
 one per root. A repository containing both is rejected rather than choosing one
 silently. A source build searches upward for either form, stopping at the Git root.
-Observation commands retain their source-only behavior.
+Observation commands (`check`, `render`) can pass standalone sources with `--stdin` or `--input-json`.
 
 ```js
 const items = [
@@ -67,16 +75,25 @@ const items = [
 
 export default {
   format: 'ashfox-workspace', version: 2, name: 'my-game',
-  packages: [{
-    name: 'items', root: 'asset/items',
-    manifest: {
-      format: 'ashfox-package', version: 1,
-      entries: items,
-      modules: [{ subpath: './shared', path: 'shared.ashfox' }],
-      dependencies: [],
+  packages: [
+    {
+      name: 'items', root: 'assets/sprites',
+      manifest: {
+        format: 'ashfox-package', version: 1,
+        entries: items, modules: [], dependencies: [],
+      },
     },
-  }],
-  include: ['asset/items/**/*.ashfox'], ignore: ['build/**'],
+    {
+      name: 'shared', root: 'assets/module',
+      manifest: {
+        format: 'ashfox-package', version: 1,
+        entries: [],
+        modules: [{ subpath: './shared', path: 'shared.ashfox' }],
+        dependencies: [],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'], ignore: ['build/**'],
   build: { directory: 'build/assets/compiler' },
   exports: items.map(item => ({
     name: `items_${item.name}`,

@@ -48,4 +48,4 @@ module 또는 asset 소스 단위에 `design`을 선언합니다. 필드는 명�
 
 “머리를 넓히되 두 눈의 픽셀 크기와 표정을 보존해라”처럼 요청할 수 있습니다. 관절 근처 부품을 바꾸면 동작도 다시 리뷰하세요.
 
-`check study.ashfox`로 노드 ID를 찾고 `check study.ashfox --node NODE_ID`로 치수·표면을 검사합니다. [CLI 관찰](observe.md)을 참고하세요. 측정은 정지 형상을 설명하며 외형·움직이는 부착물 판단에는 렌더 관찰이 계속 필요합니다.
+`check study.ashfox`로 노드 ID, 치수, 표면 상세, 선언된 `outputs`/`previews`를 확인합니다. [CLI 관찰](observe.md)에서 `preview` 뷰 선언 방법을 참고하세요. 측정은 정지 형상을 설명하며 외형·움직이는 부착물 판단에는 렌더 관찰이 계속 필요합니다.

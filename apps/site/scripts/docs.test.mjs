@@ -72,7 +72,7 @@ for (const internal of ['codebase', 'asset-codebase', 'review', 'asset-language'
 console.log('public docs catalog, navigation, links, and publication boundaries verified');
 
 for (const relative of [
-  'examples/items/src/apple.ashfox',
+  'examples/items/assets/sprites/apple.ashfox',
   'examples/game-assets/.ashfoxworkspace',
 ]) {
   assert.deepEqual(

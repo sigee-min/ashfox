@@ -8,13 +8,13 @@ const instructions = ({ cli, starter, onboarding, grouped = false }) => ({
     `npx --no-install ashfox ${onboarding ? '--version' : 'doctor --json'}`,
   ]),
   start: onboarding
-    ? 'Create the bundled starter offline and export your first item:\n\n' +
+    ? 'Create the bundled starter offline and build your first item:\n\n' +
       commands([
         'npx --no-install ashfox init assets',
-        `npx --no-install ashfox export assets/${grouped ? 'asset/items/' : ''}sword.ashfox --output sword.png`,
+        `npx --no-install ashfox build assets/${grouped ? 'assets/sprites/' : ''}sword.ashfox --json`,
       ])
     : `Download and extract the [starter assets](${starter}), then run the install\ncommand above inside that folder:\n\n` +
-      commands(['npx --no-install ashfox export sword.ashfox --output sword.png']),
+      commands(['npx --no-install ashfox build assets/sprites/sword.ashfox --json']),
   check: onboarding
     ? 'The second command prints the installed product version. Run\n`npx --no-install ashfox doctor` to check optional Chrome support.'
     : 'The second command prints `ok: true` and the supported commands.',

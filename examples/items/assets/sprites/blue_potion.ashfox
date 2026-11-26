@@ -1,6 +1,6 @@
 ashfox-model 1
-sprite amber_potion {
-  import "./shared.ashfox" as shared;
+sprite blue_potion {
+  import "../module/shared.ashfox" as shared;
   profile = "minecraft-item-v1";
   canvas = [16, 16];
   palette {
@@ -37,7 +37,7 @@ sprite amber_potion {
   }
   part liquid {
     mask = "shared.potion_liquid";
-    material = "shared.amber_liquid";
+    material = "shared.blue_liquid";
     at = [3, 8];
     shade {
       form = "round";

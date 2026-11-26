@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { createHash } from 'node:crypto';
 import {
   BuildFailure,
   readSingleSnapshot,
@@ -10,40 +9,24 @@ import {
 } from '@ashfox/asset-build';
 import { openAssetProject, encodeCanonicalPng } from '@ashfox/engine-core';
 import type { Prepared, SourceInput } from './contract';
+
 export const resolveInputFile = (file: string): string => {
   const requested = path.resolve(file);
   return path.join(fs.realpathSync(path.dirname(requested)), path.basename(requested));
 };
-const sealPngObservation = (input: SourceInput): Prepared => {
-  const resolved = input.file ? resolveInputFile(input.file) : undefined;
-  if (resolved) {
-    const stat = fs.lstatSync(resolved);
-    if (!stat.isFile() || stat.size > 16 * 1024 * 1024)
-      throw new BuildFailure('observe.png', 'PNG exceeds 16 MiB or is not a regular file', 2);
-  }
-  const bytes = input.png ? Buffer.from(input.png, 'base64') : fs.readFileSync(resolved!);
-  if (
-    !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
-    bytes.length < 24 ||
-    bytes.length > 16 * 1024 * 1024 ||
-    !bytes.readUInt32BE(16) ||
-    !bytes.readUInt32BE(20) ||
-    bytes.readUInt32BE(16) > 4096 ||
-    bytes.readUInt32BE(20) > 4096
-  )
-    throw new BuildFailure('observe.png', 'Invalid PNG or dimensions exceed 4096', 2);
-  return {
-    kind: 'png',
-    revision: createHash('sha256').update(bytes).digest('hex'),
-    png: bytes.toString('base64'),
-    files: [],
-  };
-};
+
+const isSafeMemoryPath = (value: string): boolean =>
+  Boolean(value) &&
+  value.endsWith('.ashfox') &&
+  !value.startsWith('/') &&
+  !value.includes('..') &&
+  !value.includes('\\');
 
 const sealMemorySnapshot = (input: SourceInput): Snapshot => {
   const name = input.name ?? 'main.ashfox';
-  if (name !== path.basename(name) || !name.endsWith('.ashfox'))
-    throw new BuildFailure('observe.name', 'name must be a basename ending in .ashfox', 2);
+  if (!isSafeMemoryPath(name)) {
+    throw new BuildFailure('observe.name', 'name must be a relative path ending in .ashfox', 2);
+  }
   const files = input.files ?? {};
   if (Object.prototype.hasOwnProperty.call(files, name))
     throw new BuildFailure('observe.source', 'Entry is duplicated in files', 2);
@@ -51,7 +34,7 @@ const sealMemorySnapshot = (input: SourceInput): Snapshot => {
     if (key.includes('..') || key.includes('\\') || path.isAbsolute(key))
       throw new BuildFailure('observe.path', key, 2);
   const memory = { ...files, [name]: input.source! };
-  const root = path.resolve('/ashfox-memory');
+  const root = path.resolve('/ashfox-memory', 'assets');
   const snapshot = readStandalone(path.join(root, name), (file, limit) => {
     const relative = path.relative(root, file).split(path.sep).join('/');
     const source = memory[relative];
@@ -68,14 +51,14 @@ const sealMemorySnapshot = (input: SourceInput): Snapshot => {
   return snapshot;
 };
 
-export const sealObservation = (input: SourceInput): Snapshot | Prepared => {
-  if (input.png || input.file?.endsWith('.png')) return sealPngObservation(input);
+export const sealObservation = (input: SourceInput): Snapshot => {
   if (!input.file) return sealMemorySnapshot(input);
   const resolved = resolveInputFile(input.file);
   if (!resolved.endsWith('.ashfox'))
-    throw new BuildFailure('observe.input', 'Expected a single .ashfox or .png file', 2);
+    throw new BuildFailure('observe.input', 'Expected a single .ashfox source file', 2);
   return readSingleSnapshot(resolved);
 };
+
 export const prepare = (snapshot: Snapshot): Prepared => {
   const compiled = checkSnapshot(snapshot),
     product = compiled.products[0],
@@ -84,6 +67,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
     return {
       kind: 'sprite',
       revision: compiled.sourceHash,
+      declarations: product.declarations,
       products,
       files: snapshot.files,
       sprite: {
@@ -101,6 +85,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
     return {
       kind: 'structure',
       revision: compiled.sourceHash,
+      declarations: product.declarations,
       products,
       product,
       document: product.structure.document,
@@ -110,6 +95,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
     return {
       kind: product.kind,
       revision: compiled.sourceHash,
+      declarations: product.declarations,
       products,
       product,
       files: snapshot.files,
@@ -123,6 +109,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
   return {
     kind: 'model',
     revision: compiled.sourceHash,
+    declarations: product.declarations,
     products,
     product,
     document: opened.project.document,

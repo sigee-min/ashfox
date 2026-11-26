@@ -2,6 +2,12 @@ import { deepFreeze } from '../../immutable';
 import { lexProgramSource } from '../program/syntax/lex';
 import { assertWellFormedSourceText } from '../workspace/path';
 import {
+  parseOutputsTokens,
+  parsePreviewTokens,
+  type RawDeclaredOutput,
+  type RawDeclaredPreview,
+} from '../directory/declarations';
+import {
   DEFAULT_DATA_VERSION,
   MAX_STRUCTURE_DIM,
   MAX_STRUCTURE_VOLUME,
@@ -20,6 +26,8 @@ interface StructureDraft {
   readonly kind: 'structure' | 'module';
   readonly imports: StructureImport[];
   readonly aliases: Set<string>;
+  readonly outputs: RawDeclaredOutput[];
+  readonly previews: RawDeclaredPreview[];
   readonly palette: Record<string, StructurePaletteEntry>;
   readonly prefabs: StructurePrefab[];
   readonly prefabNames: Set<string>;
@@ -104,6 +112,14 @@ const readStructureField = (cursor: Cursor, keyword: string, draft: StructureDra
     take(cursor, '=');
     draft.dataVersion = readInt(cursor);
     take(cursor, ';');
+  } else if (keyword === 'outputs') {
+    const res = parseOutputsTokens(cursor.tokens, cursor.offset, cursor.file);
+    cursor.offset = res.nextIndex;
+    draft.outputs.push(...res.outputs);
+  } else if (keyword === 'preview') {
+    const res = parsePreviewTokens(cursor.tokens, cursor.offset, cursor.file);
+    cursor.offset = res.nextIndex;
+    draft.previews.push(res.preview);
   } else if (keyword === 'build') {
     if (draft.ops !== null) failSyntax(cursor, 'single build block');
     draft.ops = parseOpBlock(cursor, 0);
@@ -151,6 +167,8 @@ export const parseStructureSource = (source: string, file: string): StructureSou
     kind,
     imports: [],
     aliases: new Set(),
+    outputs: [],
+    previews: [],
     palette: {},
     prefabs: [],
     prefabNames: new Set(),
@@ -168,6 +186,8 @@ export const parseStructureSource = (source: string, file: string): StructureSou
     kind,
     id,
     imports: draft.imports,
+    outputs: draft.outputs,
+    previews: draft.previews,
     size: draft.size,
     dataVersion: draft.dataVersion,
     palette: draft.palette,

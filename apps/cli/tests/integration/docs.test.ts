@@ -55,12 +55,16 @@ try {
   const markdown = fs.readFileSync(path.join(root, 'docs/guides/workspace.md'), 'utf8');
   const config = JSON.parse(String(matchText(markdown, /```json\n([\s\S]*?)```/)[1]));
   const folder = path.join(temp, 'workspace');
-  fs.mkdirSync(path.join(folder, 'src'), { recursive: true });
-  for (const name of ['apple', 'shared'])
-    fs.copyFileSync(
-      path.join(root, `examples/items/src/${name}.ashfox`),
-      path.join(folder, `src/${name}.ashfox`),
-    );
+  fs.mkdirSync(path.join(folder, 'assets/sprites'), { recursive: true });
+  fs.mkdirSync(path.join(folder, 'assets/module'), { recursive: true });
+  fs.copyFileSync(
+    path.join(root, 'examples/items/assets/sprites/apple.ashfox'),
+    path.join(folder, 'assets/sprites/apple.ashfox'),
+  );
+  fs.copyFileSync(
+    path.join(root, 'examples/items/assets/module/shared.ashfox'),
+    path.join(folder, 'assets/module/shared.ashfox'),
+  );
   const entry = path.join(folder, '.ashfoxworkspace');
   fs.writeFileSync(entry, JSON.stringify(config));
   run('check', entry);

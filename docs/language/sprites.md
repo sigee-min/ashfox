@@ -110,6 +110,6 @@ sprite badge {
 npx --no-install ashfox build badge.ashfox --json
 ```
 
-See [the shared item module](../../examples/items/src/shared.ashfox) for more
+See [the shared item module](../../examples/items/assets/module/shared.ashfox) for more
 masks, materials and stamps, and [workspace configuration](../guides/workspace.md)
 to export a collection from one project.

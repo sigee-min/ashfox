@@ -2,11 +2,19 @@ import { lexProgramSource, type ProgramToken } from '../program/syntax/lex';
 import { assertWellFormedSourceText } from '../workspace/path';
 import { deepFreeze } from '../../immutable';
 import { SpriteInputError } from './contract';
+import {
+  parseOutputsTokens,
+  parsePreviewTokens,
+  type RawDeclaredOutput,
+  type RawDeclaredPreview,
+} from '../directory/declarations';
 
 export interface SpriteSourceUnit {
   readonly kind: 'sprite' | 'module';
   readonly id: string;
   readonly imports: readonly { readonly path: string; readonly alias: string }[];
+  readonly outputs: readonly RawDeclaredOutput[];
+  readonly previews: readonly RawDeclaredPreview[];
   readonly masks: readonly Record<string, unknown>[];
   readonly materials: readonly Record<string, unknown>[];
   readonly stamps: readonly Record<string, unknown>[];
@@ -22,6 +30,8 @@ interface SourceCursor {
 interface ParsedMembers {
   readonly kind: 'sprite' | 'module';
   readonly imports: { path: string; alias: string }[];
+  readonly outputs: RawDeclaredOutput[];
+  readonly previews: RawDeclaredPreview[];
   readonly masks: Record<string, unknown>[];
   readonly materials: Record<string, unknown>[];
   readonly stamps: Record<string, unknown>[];
@@ -157,6 +167,25 @@ const readSpriteMember = (
   } else item[key] = readBlock(cursor);
 };
 
+const readSpriteDeclarationBlock = (
+  cursor: SourceCursor,
+  exported: boolean,
+  key: string,
+  members: ParsedMembers,
+): void => {
+  if (exported || members.kind !== 'sprite')
+    failSyntax(cursor, 'outputs and preview inside sprite');
+  if (key === 'outputs') {
+    const res = parseOutputsTokens(cursor.tokens, cursor.offset, cursor.file);
+    cursor.offset = res.nextIndex;
+    members.outputs.push(...res.outputs);
+    return;
+  }
+  const res = parsePreviewTokens(cursor.tokens, cursor.offset, cursor.file);
+  cursor.offset = res.nextIndex;
+  members.previews.push(res.preview);
+};
+
 const readTopMember = (cursor: SourceCursor, members: ParsedMembers): void => {
   const exported = peek(cursor).value === 'export';
   if (exported) take(cursor, 'export');
@@ -168,6 +197,10 @@ const readTopMember = (cursor: SourceCursor, members: ParsedMembers): void => {
   if (['mask', 'material', 'stamp'].includes(key) && (members.kind === 'module' || exported)) {
     if (!exported) failSyntax(cursor, 'exported module declaration');
     readExportedDeclaration(cursor, key, members);
+    return;
+  }
+  if (key === 'outputs' || key === 'preview') {
+    readSpriteDeclarationBlock(cursor, exported, key, members);
     return;
   }
   if (exported || members.kind === 'module')
@@ -193,6 +226,8 @@ export const parseSpriteSource = (source: string, file: string): SpriteSourceUni
   const members: ParsedMembers = {
     kind,
     imports: [],
+    outputs: [],
+    previews: [],
     masks: [],
     materials: [],
     stamps: [],
@@ -206,6 +241,8 @@ export const parseSpriteSource = (source: string, file: string): SpriteSourceUni
     kind,
     id,
     imports: members.imports,
+    outputs: members.outputs,
+    previews: members.previews,
     masks: members.masks,
     materials: members.materials,
     stamps: members.stamps,

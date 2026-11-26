@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '../../../..');
 const cli = path.join(__dirname, '../../dist/ashfox.cjs');
 const foxEntry = path.join(root, 'examples/fox/creatures/fox.ashfox');
 const lanternEntry = path.join(root, 'examples/prop/lantern.ashfox');
-const spriteEntry = path.join(root, 'examples/items/src/apple.ashfox');
+const spriteEntry = path.join(root, 'examples/items/assets/sprites/apple.ashfox');
 
 const run = (args: string[], cwd = root) =>
   spawnSync(process.execPath, [cli, ...args], {
@@ -23,8 +23,8 @@ async function main() {
   const doctor = run(['doctor', '--json']);
   assert.equal(doctor.status, 0, doctor.stderr);
   const doctorJson = JSON.parse(doctor.stdout).result;
-  assert.deepEqual(doctorJson.commands, ['init', 'doctor', 'check', 'render', 'build', 'export']);
-  assert.ok(doctorJson.render.formats.includes('glb'));
+  assert.deepEqual(doctorJson.commands, ['init', 'doctor', 'check', 'render', 'build']);
+  assert.ok(doctorJson.outputs.includes('glb'));
 
   const checked = run(['check', foxEntry]);
   assert.equal(checked.status, 0, checked.stdout + checked.stderr);
@@ -40,16 +40,12 @@ async function main() {
   assert.equal(report.pillars.length, 3);
   assert.equal(report.hardGates.length, 8);
 
-  const overridden = run(['check', foxEntry, '--profile', 'prop', '--threshold', '10']);
-  assert.equal(overridden.status, 0, overridden.stdout + overridden.stderr);
-  const propReport = JSON.parse(overridden.stdout).result.audit;
-  assert.equal(propReport.profile, 'prop');
-  assert.equal(propReport.profileSource, 'override');
-  assert.equal(propReport.threshold, 10);
-
-  const spriteAudit = run(['check', spriteEntry, '--profile', 'prop']);
-  assert.notEqual(spriteAudit.status, 0);
-  assert.match(spriteAudit.stdout + spriteAudit.stderr, /observe\.kind/);
+  const retiredCheckProfile = run(['check', foxEntry, '--profile', 'prop']);
+  assert.equal(retiredCheckProfile.status, 2);
+  const retiredCheckThreshold = run(['check', foxEntry, '--threshold', '10']);
+  assert.equal(retiredCheckThreshold.status, 2);
+  const retiredSpriteNode = run(['check', spriteEntry, '--node', 'body']);
+  assert.equal(retiredSpriteNode.status, 2);
 
   const lanternCheck = run(['check', lanternEntry]);
   assert.equal(lanternCheck.status, 0, lanternCheck.stdout + lanternCheck.stderr);
@@ -57,11 +53,11 @@ async function main() {
   assert.equal(lanternReport.profile, 'prop');
   assert.equal(lanternReport.passed, true);
 
-  const badSheet = run(['render', foxEntry, '--sheet', 'bogus']);
-  assert.notEqual(badSheet.status, 0);
-  assert.match(badSheet.stderr, /observe\.option/);
+  const retiredRenderSheet = run(['render', foxEntry, '--sheet', 'bogus']);
+  assert.equal(retiredRenderSheet.status, 2);
 
   for (const retired of [
+    'export',
     'capabilities',
     'verify',
     'audit',
@@ -118,19 +114,19 @@ function verifyDeliveryGates() {
   try {
     const unprofiled = path.join(dir, 'unprofiled.ashfox');
     fs.writeFileSync(unprofiled, bareBoxSource(''));
-    const expUnprofiled = run(['export', unprofiled]);
+    const expUnprofiled = run(['build', unprofiled, '--json']);
     assert.notEqual(expUnprofiled.status, 0);
-    assert.match(expUnprofiled.stderr, /quality\.profile-required/);
+    assert.match(expUnprofiled.stdout + expUnprofiled.stderr, /quality\.profile-required/);
 
     const lowCraft = path.join(dir, 'lowcraft.ashfox');
     fs.writeFileSync(lowCraft, bareBoxSource('profile = prop;'));
-    const expLowCraft = run(['export', lowCraft]);
+    const expLowCraft = run(['build', lowCraft, '--json']);
     assert.notEqual(expLowCraft.status, 0);
-    assert.match(expLowCraft.stderr, /quality\.gate/);
+    assert.match(expLowCraft.stdout + expLowCraft.stderr, /quality\.gate/);
 
     const pkgDir = path.join(dir, 'ws');
     const wsFile = path.join(pkgDir, '.ashfoxworkspace');
-    fs.mkdirSync(path.join(pkgDir, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(pkgDir, 'assets/models'), { recursive: true });
     fs.writeFileSync(
       wsFile,
       JSON.stringify({
@@ -140,7 +136,7 @@ function verifyDeliveryGates() {
         packages: [
           {
             name: 'src',
-            root: 'src',
+            root: 'assets/models',
             manifest: {
               format: 'ashfox-package',
               version: 1,
@@ -150,7 +146,7 @@ function verifyDeliveryGates() {
             },
           },
         ],
-        include: ['**/*.ashfox'],
+        include: ['assets/**/*.ashfox'],
         ignore: [],
         build: { directory: 'dist/build' },
         exports: [
@@ -163,7 +159,7 @@ function verifyDeliveryGates() {
         ],
       }),
     );
-    fs.writeFileSync(path.join(pkgDir, 'src/main.ashfox'), bareBoxSource(''));
+    fs.writeFileSync(path.join(pkgDir, 'assets/models/main.ashfox'), bareBoxSource(''));
     const checkOk = run(['check', wsFile, '--json'], pkgDir);
     assert.equal(checkOk.status, 0, checkOk.stdout + checkOk.stderr);
     const buildBlocked = run(['build', wsFile, '--json'], pkgDir);

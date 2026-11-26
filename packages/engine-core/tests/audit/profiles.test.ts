@@ -32,7 +32,7 @@ const makeWorkspaceConfig = (
     packages: [
       {
         name: 'standalone',
-        root: 'pkg',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
@@ -44,7 +44,7 @@ const makeWorkspaceConfig = (
         },
       },
     ],
-    include: ['**/*.ashfox'],
+    include: ['assets/**/*.ashfox'],
     ignore: [],
     build: { directory: 'dist/build' },
     exports: [],
@@ -57,7 +57,7 @@ const evaluateRepoAsset = (entryRelPath: string, workspaceDir?: string): AuditRe
   const rawFiles = workspaceDir
     ? loadWorkspaceFiles(absDir)
     : [{ path: entry, source: fs.readFileSync(absEntry, 'utf8') }];
-  const pkgFiles = rawFiles.map((f) => ({ path: `pkg/${f.path}`, source: f.source }));
+  const pkgFiles = rawFiles.map((f) => ({ path: `assets/models/${f.path}`, source: f.source }));
   const entryMatch = rawFiles.find((f) => f.path === entry)?.source.match(/export asset (\S+)/u);
   const assetName = entryMatch?.[1] ?? path.basename(entry, '.ashfox');
   const compiled = compileDirectoryWorkspace(
@@ -79,7 +79,7 @@ const evaluateInline = (source: string): AuditReport => {
   const name = entryMatch?.[1] ?? 'inline';
   const compiled = compileDirectoryWorkspace(
     makeWorkspaceConfig(name, 'main.ashfox', [{ path: 'main.ashfox' }]),
-    [{ path: 'pkg/main.ashfox', source }],
+    [{ path: 'assets/models/main.ashfox', source }],
   );
   assert.equal(
     compiled.ok,
@@ -228,7 +228,7 @@ assert.equal(runeBricks.passed, true);
 assert.ok(runeBricks.score >= 85, `expected rune_bricks >= 85, got ${runeBricks.score}`);
 assert.equal(metricScore(runeBricks, 'rig.rigAndMotion').score, 4);
 
-const marker = evaluateRepoAsset('examples/minecraft/marker.ashfox');
+const marker = evaluateRepoAsset('examples/minecraft/assets/models/marker.ashfox');
 assert.equal(marker.profile, 'block');
 assert.equal(marker.passed, true);
 assert.ok(marker.score >= 85, `expected marker >= 85, got ${marker.score}`);

@@ -3,19 +3,28 @@ const fs = require('node:fs');
 const path = require('node:path');
 const starterFiles = (root) => {
   const files = {};
-  const directory = path.join(root, 'examples/fox/creatures');
-  for (const name of fs.readdirSync(directory).sort()) {
-    if (name.endsWith('.ashfox')) files[name] = fs.readFileSync(path.join(directory, name), 'utf8');
+  const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+  const foxDir = path.join(root, 'examples/fox/creatures');
+  for (const name of fs.readdirSync(foxDir).sort()) {
+    if (name.endsWith('.ashfox'))
+      files[`assets/models/fox/${name}`] = read(`examples/fox/creatures/${name}`);
   }
   for (const [name, source] of Object.entries({
-    'sword.ashfox': 'examples/items/src/iron_sword.ashfox',
-    'shared.ashfox': 'examples/items/src/shared.ashfox',
-    'claw_hit.ashfox': 'examples/sounds/src/claw_hit.ashfox',
-    'marker.ashfox': 'examples/minecraft/marker.ashfox',
-    'rune_bricks.ashfox': 'examples/block/rune_bricks.ashfox',
-    'lantern.ashfox': 'examples/prop/lantern.ashfox',
-  }))
-    files[name] = fs.readFileSync(path.join(root, source), 'utf8');
+    'assets/sprites/sword.ashfox': 'examples/items/assets/sprites/iron_sword.ashfox',
+    'assets/module/shared.ashfox': 'examples/items/assets/module/shared.ashfox',
+    'assets/sounds/claw_hit.ashfox': 'examples/sounds/assets/sounds/claw_hit.ashfox',
+    'assets/models/marker.ashfox': 'examples/minecraft/assets/models/marker.ashfox',
+    'assets/models/rune_bricks.ashfox': 'examples/block/rune_bricks.ashfox',
+    'assets/models/lantern.ashfox': 'examples/prop/lantern.ashfox',
+    'assets/module/furnishings.ashfox': 'examples/structure/furnishings.ashfox',
+    'assets/models/props/wall_lantern.ashfox': 'examples/structure/props/wall_lantern.ashfox',
+    'assets/models/props/rune_pillar.ashfox': 'examples/structure/props/rune_pillar.ashfox',
+  })) {
+    files[name] = read(source);
+  }
+  files['assets/structures/watchtower.ashfox'] = read('examples/structure/watchtower.ashfox')
+    .replace('./furnishings.ashfox', '../module/furnishings.ashfox')
+    .replaceAll('./props/', '../models/props/');
   return files;
 };
 module.exports = { starterFiles };

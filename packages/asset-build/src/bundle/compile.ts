@@ -71,6 +71,14 @@ const openTargetProject = (
   return opened;
 };
 
+const modelAdapterForTarget = (target: ExportTarget): ExportAdapterInput => {
+  if ('namespace' in target) {
+    return { target: target.format, namespace: target.namespace, modelPath: target.modelPath };
+  }
+  const modelPath = ('modelPath' in target && target.modelPath) || target.name;
+  return { target: target.format === 'gltf' ? 'gltf' : 'glb', modelPath };
+};
+
 const compileModelFiles = async (
   target: ExportTarget,
   product: Extract<CompiledProduct, { readonly kind: 'model' }>,
@@ -80,27 +88,32 @@ const compileModelFiles = async (
   remaining: Map<string, number>,
 ): Promise<Artifact[]> => {
   assertModelDeliveryGate(target.name, product);
-  if (target.format === 'png' || target.format === 'wav')
+  if (target.format === 'png' || target.format === 'wav' || target.format === 'java_structure') {
     throw new BuildFailure('export.format', target.name);
+  }
   const opened = openTargetProject(product, buildKey, key, projects, remaining);
   const document = opened.project.document;
   const textures = new Map(Object.values(document.textures).map((t) => [t.source.key, t]));
-  const adapter: ExportAdapterInput =
-    'namespace' in target
-      ? { target: target.format, namespace: target.namespace, modelPath: target.modelPath }
-      : { target: 'glb', modelPath: target.name };
-  const bundle = await exportProductionProjectResolved(opened.project, adapter, {
-    resolveBlob: async (ref) => {
-      const texture = textures.get(ref.key);
-      return texture
-        ? {
-            bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
-            contentType: 'image/png',
-          }
-        : null;
+  const gltfOptions =
+    target.format === 'glb' || target.format === 'gltf'
+      ? { encoding: target.encoding ?? 'portable' }
+      : {};
+  const bundle = await exportProductionProjectResolved(
+    opened.project,
+    modelAdapterForTarget(target),
+    {
+      resolveBlob: async (ref) => {
+        const texture = textures.get(ref.key);
+        return texture
+          ? {
+              bytes: encodeCanonicalPng(rasterizeTexture(document, texture)),
+              contentType: 'image/png',
+            }
+          : null;
+      },
+      ...gltfOptions,
     },
-    ...(target.format === 'glb' ? { encoding: target.encoding ?? 'portable' } : {}),
-  });
+  );
   return bundle.files.map((file) => {
     if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
     return {

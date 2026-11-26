@@ -6,17 +6,16 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 | --- | --- | --- |
 | `--help` / `help` | None | Human-readable command guide |
 | `--version` | None | Product version |
-| `init <new-folder> [--json]` | New folder | Offline starter sources |
+| `init <new-folder> [--json]` | New folder | Offline canonical starter sources (`assets/{models,sprites,sounds,structures,module}/`) |
 | `doctor [--json]` | None | Runtime readiness and machine-readable contract |
-| `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, PNG, or build folder | Source validation, node/asset inspection, quality audit, or build integrity check |
-| `render <input> [options]` | `.ashfox` source or PNG | PNG still image, `--cutaway <y>` structure slice, contact sheet (`--sheet`), waveform, or GIF (`--gif`) |
-| `build <input> [--json]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Verified bundle, catalog, and export directories |
-| `export <input> [options]` | `.ashfox` source or PNG | GLB, glTF ZIP, Minecraft ZIP, Java structure (`.nbt` / `java_structure`), PNG, or WAV |
+| `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, or build folder | Source validation, inspection, quality audit, or build integrity check |
+| `render <input> [options]` | `.ashfox` source (`--stdin` / `--input-json` supported) | PNG still image or animated GIF rendered from declared `preview [name]` blocks |
+| `build <input> [--json]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Compiled outputs declared via `outputs { ... }` or workspace configuration |
 
 `init`, `doctor`, `check`, and `build` return JSON using the `ashfox-cli-result` envelope (`doctor`/`init` take `--json`; `check`/`build` always return JSON).
 `help` is human-readable; use `doctor --json` for agents to inspect the complete contract.
-`render` and `export` write binary media to stdout (or `--output <file>`) and JSON diagnostics to stderr.
-There is no `watch`, `clean`, or automatic game-install command.
+`render` writes binary media to stdout (or `--output <file>`) and JSON diagnostics to stderr.
+There is no `export`, `watch`, `clean`, or automatic game-install command.
 
 ## First-run commands
 
@@ -28,12 +27,13 @@ The stable CLI includes help, version, environment checks and offline starter cr
 npx --no-install ashfox --version
 npx --no-install ashfox doctor
 npx --no-install ashfox init assets
-npx --no-install ashfox export assets/asset/items/sword.ashfox --output sword.png
+npx --no-install ashfox build assets/assets/sprites/sword.ashfox --json
 ```
 
 Run from the repository where you installed the CLI. `init` creates a new folder
-with grouped `asset/` sources, `.ashfoxworkspace.mjs`, the `assets.mjs` game
-adapter, and a `.gitignore` for root `build/` from that compiler's bundled starter.
+with grouped `assets/{models,sprites,sounds,structures,module}/` sources,
+`.ashfoxworkspace.mjs`, the `assets.mjs` game adapter, and a `.gitignore` for root `build/`
+from that compiler's bundled starter.
 Its parent must exist. Existing folders (even empty ones), files, and symlinks are
 refused; no existing project is merged or rewritten. It does not install npm
 packages or contact the network. A write failure
@@ -43,25 +43,24 @@ First-run commands print readable errors to stderr; `doctor` and `init` with
 
 `doctor` reports the CLI/Node versions, built-in OGG readiness, and whether
 Chrome can launch. Missing optional Chrome does not cause a failure exit code.
-`doctor --json` returns runtime readiness plus supported commands, render/export
+`doctor --json` returns runtime readiness plus supported commands, build
 formats, sound synthesis contracts, and workspace schemas without creating project files.
 An explicitly configured executable path takes precedence over discovery.
 
 ## Build one source
 
 ```sh
-npx --no-install ashfox build assets/asset/items/sword.ashfox --json
+npx --no-install ashfox build assets/assets/sprites/sword.ashfox --json
 ```
-
-This starter source has an ancestor workspace, so the entire starter project is
-built. For a standalone source without an ancestor workspace, the CLI reads the entry and its relative import
-closure. It writes `dist/<entry-id>/build` and `dist/<entry-id>/exports` beneath
-the entry's directory. It generates no configuration file. Models default to
-portable GLB, sprites to PNG, and sounds to WAV. A module is not a build entry.
 
 If an ancestor `.ashfoxworkspace` or `.ashfoxworkspace.mjs` exists, its entire project is built. Selecting
 one entry does not bypass project checks. Discovery stops at the nearest Git
 root or filesystem root. Invalid configuration fails instead of falling back.
+For a standalone source without an ancestor workspace, the CLI reads the entry and its relative import
+closure, compiles targets declared in its `outputs { ... }` block (defaulting to
+portable `.glb` for models, `.png` for sprites, `.wav` for sounds, and both `.nbt` + `.glb` for structures),
+and writes `dist/<entry-id>/build` and `dist/<entry-id>/exports` beside the entry (or at `assets/` root).
+A module is not a build entry.
 
 ## Build and check a project
 
@@ -72,7 +71,7 @@ npx --no-install ashfox check game-assets/dist/build
 ```
 
 Pass the `build.directory` (not an export directory) to `check` to verify a built bundle's receipt and hashes.
-Passing a workspace or entry validates declared sources and reachable modules; passing `--node`, `--profile`, `--threshold`, `--stdin`, `--input-json`, or a standalone `.ashfox` file runs structural inspection and model quality audit.
+Passing a workspace validates declared sources and canonical layout (`assets/{models,sprites,sounds,structures,module}/`); passing `--stdin`, `--input-json`, or a standalone `.ashfox` file runs structural inspection and quantitative quality audit (`audit`).
 `check` on a workspace does not run OGG encoding or certify target delivery; run `build` to check export constraints, file collisions, and encoding.
 
 ## Read the response
@@ -111,23 +110,23 @@ SIGINT or SIGTERM cancels ongoing work and preserves the previous selected build
 A final synchronous publication can already have completed when cancellation
 arrives. The CLI never rolls back a completed successful publication.
 
-## Render and export media
+## Render media views
 
-`render` and `export` operate on single assets (file, PNG, `--stdin`, or `--input-json`), writing raw bytes to stdout or `--output <file>` and JSON errors to stderr.
-See [Render and check one asset](observe.md) for all flags, memory inputs (`--stdin`, `--input-json`), and headless Chrome options.
+`render` operates on single `.ashfox` sources (file, `--stdin`, or `--input-json`), selecting a named `preview <name> { ... }` declared in the source via `--view <name>` (defaulting to `preview default` or built-in defaults), and writing raw bytes to stdout or `--output <file>` with JSON errors to stderr.
+See [Render and check one asset](observe.md) for preview block declarations, memory inputs (`--stdin`, `--input-json`), and headless Chrome options.
 
 | Command | Output | Error channel |
 | --- | --- | --- |
-| `render` | PNG bytes (or animated GIF with `--gif`) | stderr JSON |
-| `export` | GLB, PNG, WAV bytes, or format ZIP | stderr JSON |
+| `render` | PNG bytes or animated GIF (`kind = gif;` in preview) | stderr JSON |
+| `build` | Immutable bundle + configured GLB/glTF/PNG/WAV/Minecraft outputs | stdout JSON |
 
-`render` and `export` reject `--json`; omit `--output` when piping or capturing stdout bytes in code (binary stdout to a TTY is refused).
+`render` rejects `--json` and asset-specific flags (`--camera`, `--gif`, `--cutaway`, etc.); omit `--output` when piping or capturing stdout bytes in code (binary stdout to a TTY is refused).
 
 ## Executable project configuration
 
 `check` and `build` accept `.ashfoxworkspace.mjs`, including ancestor discovery
 for source builds. This is trusted Node ESM, evaluated to the existing version-2
-workspace contract. `init <new-folder>` creates grouped `asset/` sources,
+workspace contract. `init <new-folder>` creates canonical `assets/{models,sprites,sounds,structures,module}/` sources,
 this configuration, a game adapter, and a `.gitignore` for root `build/`.
 See the [complete convention](repository-layout.md), including evaluation limits,
 output identities, and migration from existing JSON workspaces.

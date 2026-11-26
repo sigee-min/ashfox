@@ -30,11 +30,11 @@
         "version": 1
       },
       "name": "workbench",
-      "root": "models/workbench"
+      "root": "assets/models/workbench"
     },
     {
       "name": "items",
-      "root": "items",
+      "root": "assets/sprites",
       "manifest": {
         "format": "ashfox-package",
         "version": 1,
@@ -44,6 +44,17 @@
             "path": "iron_sword.ashfox"
           }
         ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
         "modules": [
           {
             "subpath": "./shared",
@@ -55,7 +66,7 @@
     },
     {
       "name": "sounds",
-      "root": "sounds",
+      "root": "assets/sounds",
       "manifest": {
         "format": "ashfox-package",
         "version": 1,
@@ -71,7 +82,7 @@
     }
   ],
   "include": [
-    "**/*.ashfox"
+    "assets/**/*.ashfox"
   ],
   "ignore": [],
   "build": {

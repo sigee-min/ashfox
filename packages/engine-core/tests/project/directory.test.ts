@@ -11,17 +11,24 @@ import {
 
 const directory = path.resolve(__dirname, '../../../../examples/items');
 const configSource = fs.readFileSync(path.join(directory, '.ashfoxworkspace'), 'utf8');
-const files = fs
-  .readdirSync(path.join(directory, 'src'))
-  .filter((n) => n.endsWith('.ashfox'))
-  .map((n) => ({
-    path: 'src/' + n,
-    source: fs.readFileSync(path.join(directory, 'src', n), 'utf8'),
-  }));
+const loadAshfox = (dir: string, prefix: string): { path: string; source: string }[] =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory()
+      ? loadAshfox(path.join(dir, e.name), `${prefix}/${e.name}`)
+      : e.name.endsWith('.ashfox')
+        ? [
+            {
+              path: `${prefix}/${e.name}`,
+              source: fs.readFileSync(path.join(dir, e.name), 'utf8'),
+            },
+          ]
+        : [],
+  );
+const files = loadAshfox(path.join(directory, 'assets'), 'assets');
 const config = readDirectoryWorkspace(configSource);
 assert.equal(config.version, 2);
-assert.ok(isDirectorySource(config, 'src/apple.ashfox'));
-assert.ok(!isDirectorySource(config, 'src/drafts/apple.ashfox'));
+assert.ok(isDirectorySource(config, 'assets/sprites/apple.ashfox'));
+assert.ok(!isDirectorySource(config, 'assets/drafts/apple.ashfox'));
 assert.ok(!isDirectorySource(config, 'build/apple.ashfox'));
 assert.ok(!isDirectorySource(config, 'exports/apple/apple.ashfox'));
 const compiled = compileDirectoryWorkspace(configSource, files);
@@ -45,12 +52,12 @@ assert.equal(compileDirectoryWorkspace(configSource, files.slice(1)).ok, false);
 assert.equal(
   compileDirectoryWorkspace(configSource, [
     ...files,
-    { path: 'src/extra.ashfox', source: files[0]!.source },
+    { path: 'assets/sprites/extra.ashfox', source: files[0]!.source },
   ]).ok,
   false,
 );
 const changed = JSON.parse(configSource);
-changed.ignore = ['src/apple.ashfox'];
+changed.ignore = ['assets/sprites/apple.ashfox'];
 assert.throws(() => readDirectoryWorkspace(JSON.stringify(changed)), /included/);
 changed.ignore = [];
 changed.build.directory = '../outside';
@@ -70,9 +77,11 @@ assert.throws(
   () => readDirectoryWorkspace(configSource.replace('"version": 2', '"version": 1')),
   /version 2/,
 );
-const apple = files.find((f) => f.path === 'src/apple.ashfox')!;
+const apple = files.find((f) => f.path === 'assets/sprites/apple.ashfox')!;
 const invalid = files.map((f) =>
-  f === apple ? { ...f, source: f.source.replace('./shared.ashfox', '../../outside.ashfox') } : f,
+  f === apple
+    ? { ...f, source: f.source.replace('../module/shared.ashfox', '../../outside.ashfox') }
+    : f,
 );
 assert.equal(compileDirectoryWorkspace(configSource, invalid).ok, false);
 assert.throws(() => parseSpriteSource('\uFEFF' + apple.source, apple.path), /BOM/);
@@ -86,7 +95,7 @@ assert.throws(
 const parsed = parseSpriteSource(apple.source, apple.path);
 assert.ok(Object.isFrozen(parsed.imports));
 const cyclic = files.map((f) =>
-  f.path === 'src/shared.ashfox'
+  f.path === 'assets/module/shared.ashfox'
     ? {
         ...f,
         source: f.source.replace(
@@ -101,10 +110,20 @@ assert.equal(compileDirectoryWorkspace(configSource, cyclic).ok, false);
 const legacy = JSON.parse(
   fs.readFileSync(path.resolve(directory, '../../assets/workspaces/fox.ashfoxworkspace'), 'utf8'),
 );
+const modelFiles = (legacy.files as { path: string; source: string }[]).map((f) => ({
+  ...f,
+  path: `assets/models/${f.path}`,
+}));
+const modelPackages = legacy.manifest.packages.map(
+  (p: { root: string; manifest: unknown; name: string }) => ({
+    ...p,
+    root: `assets/models/${p.root}`,
+  }),
+);
 const mixed = {
   ...config,
-  packages: [...config.packages, ...legacy.manifest.packages],
-  include: ['**/*.ashfox'],
+  packages: [...config.packages, ...modelPackages],
+  include: ['assets/**/*.ashfox'],
   exports: [
     ...config.exports,
     {
@@ -115,7 +134,7 @@ const mixed = {
     },
   ],
 };
-const mixedResult = compileDirectoryWorkspace(JSON.stringify(mixed), [...files, ...legacy.files]);
+const mixedResult = compileDirectoryWorkspace(JSON.stringify(mixed), [...files, ...modelFiles]);
 assert.ok(mixedResult.ok, JSON.stringify(mixedResult));
 if (mixedResult.ok) {
   assert.equal(mixedResult.products.length, 11);
@@ -131,8 +150,8 @@ modelPackage.manifest.entries.push({ name: 'broken', path: 'broken.ashfox' });
 assert.equal(
   compileDirectoryWorkspace(JSON.stringify(unexported), [
     ...files,
-    ...legacy.files,
-    { path: 'creatures/broken.ashfox', source: 'ashfox-model 1\nasset broken {}' },
+    ...modelFiles,
+    { path: 'assets/models/creatures/broken.ashfox', source: 'ashfox-model 1\nasset broken {}' },
   ]).ok,
   false,
   'Collecting compiled products must still reject an invalid entry with no export.',
@@ -144,8 +163,8 @@ orphaned.packages
 assert.equal(
   compileDirectoryWorkspace(JSON.stringify(orphaned), [
     ...files,
-    ...legacy.files,
-    { path: 'creatures/orphan.ashfox', source: 'ashfox-model 1\nmodule orphan {}' },
+    ...modelFiles,
+    { path: 'assets/models/creatures/orphan.ashfox', source: 'ashfox-model 1\nmodule orphan {}' },
   ]).ok,
   false,
   'Reusing compilation must still reject unreachable declared modules.',
