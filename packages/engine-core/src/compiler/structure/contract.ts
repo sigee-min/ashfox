@@ -167,8 +167,6 @@ export interface StructureBakedMesh {
   readonly trimCount?: number;
 }
 
-export type StructureLodTier = 'lod0' | 'lod1' | 'lod2';
-
 export interface StructureLodLevels {
   readonly lod1: StructureBakedMesh;
   readonly lod2: StructureBakedMesh;
