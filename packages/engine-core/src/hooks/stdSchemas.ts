@@ -29,6 +29,7 @@ const field = (
   });
 
 const strVal = (value: string) => Object.freeze({ kind: 'string' as const, value, span: STD_SPAN });
+const enumVal = (value: string) => Object.freeze({ kind: 'ref' as const, value, span: STD_SPAN });
 const numVal = (value: number) =>
   Object.freeze({ kind: 'number' as const, value, unit: 'plain' as const, span: STD_SPAN });
 const boolVal = (value: boolean) => Object.freeze({ kind: 'bool' as const, value, span: STD_SPAN });
@@ -98,7 +99,7 @@ export const STD_COURTYARD_SCHEMA = stdSchema(
       'enclosure',
       Object.freeze({ kind: 'union', values: Object.freeze(['open', 'semi_open']) }),
       true,
-      strVal('open'),
+      enumVal('open'),
     ),
     field('surface', { kind: 'string' }, true, strVal('stone')),
     field('mc_block', { kind: 'string' }, true),
@@ -116,7 +117,7 @@ export const STD_SIT_SCHEMA = stdSchema(
         values: Object.freeze(['chair', 'bench', 'stool', 'throne', 'mount']),
       }),
       true,
-      strVal('chair'),
+      enumVal('chair'),
     ),
     field('height_offset', { kind: 'float', min: -2, max: 4 }, true, numVal(0.5)),
     field('allow_player', { kind: 'bool' }, true, boolVal(true)),
@@ -132,7 +133,7 @@ export const STD_DOOR_HINGE_SCHEMA = stdSchema(
       'side',
       Object.freeze({ kind: 'union', values: Object.freeze(['left', 'right']) }),
       true,
-      strVal('left'),
+      enumVal('left'),
     ),
     field('swing_deg', { kind: 'float', min: 15, max: 180 }, true, numVal(90)),
     field('connects_a', { kind: 'string' }, true),
@@ -153,7 +154,7 @@ export const STD_HITBOX_SCHEMA = stdSchema(
         values: Object.freeze(['solid', 'hurtbox', 'hitbox', 'trigger', 'weakpoint']),
       }),
       true,
-      strVal('solid'),
+      enumVal('solid'),
     ),
     field(
       'material',
@@ -162,7 +163,7 @@ export const STD_HITBOX_SCHEMA = stdSchema(
         values: Object.freeze(['stone', 'wood', 'metal', 'glass', 'foliage', 'flesh', 'generic']),
       }),
       true,
-      strVal('generic'),
+      enumVal('generic'),
     ),
     field('damage_mult', { kind: 'float', min: 0, max: 100 }, true, numVal(1)),
     field('passable', { kind: 'bool' }, true, boolVal(false)),

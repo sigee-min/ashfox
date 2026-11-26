@@ -1,7 +1,7 @@
 import type { SourcePosition } from '../project/source/contract';
 import type { HookDiagnostic, HookSourceSpan } from './contract';
 
-export type HookTokenKind = 'identifier' | 'number' | 'string' | 'symbol' | 'eof';
+export type HookTokenKind = 'identifier' | 'number' | 'string' | 'color' | 'symbol' | 'eof';
 
 export interface HookToken {
   readonly kind: HookTokenKind;
@@ -19,7 +19,7 @@ interface LexState {
 }
 
 const SINGLE_SYMBOLS = '{}[](),;=:+-*/<>|?.';
-const TWO_CHAR_SYMBOLS = new Set(['..', '==', '!=', '<=', '>=']);
+const TWO_CHAR_SYMBOLS = new Set(['..', '->', '==', '!=', '<=', '>=']);
 
 const computeLineStarts = (source: string): readonly number[] => {
   const starts = [0];
@@ -178,22 +178,33 @@ const scanNumber = (state: LexState): void => {
       state.index += 1;
     }
   }
-  while (state.index < state.source.length && /[A-Za-z]/.test(state.source[state.index]!)) {
+  while (state.index < state.source.length && /[A-Za-z%]/.test(state.source[state.index]!)) {
     state.index += 1;
   }
   pushToken(state, 'number', state.source.slice(start, state.index), start);
 };
 
+const scanColor = (state: LexState): void => {
+  const start = state.index;
+  state.index += 1;
+  while (state.index < state.source.length && /[0-9A-Fa-f]/.test(state.source[state.index]!)) {
+    state.index += 1;
+  }
+  const hex = state.source.slice(start + 1, state.index);
+  if (hex.length !== 6 && hex.length !== 8) {
+    pushDiag(
+      state,
+      'hooks.invalid-color',
+      'Colors must contain 6 or 8 hexadecimal digits after #.',
+      start,
+      state.index,
+    );
+  }
+  pushToken(state, 'color', `#${hex.toLowerCase()}`, start);
+};
+
 const scanIdentifier = (state: LexState): void => {
   const start = state.index;
-  if (state.tokens.length === 0 && state.source.startsWith('ashfox-model', start)) {
-    const after = state.source[start + 'ashfox-model'.length] ?? '';
-    if (!isIdentPart(after)) {
-      state.index += 'ashfox-model'.length;
-      pushToken(state, 'identifier', 'ashfox-model', start);
-      return;
-    }
-  }
   state.index += 1;
   while (state.index < state.source.length && isIdentPart(state.source[state.index]!)) {
     state.index += 1;
@@ -205,6 +216,10 @@ const scanNext = (state: LexState): void => {
   const ch = state.source[state.index]!;
   if (ch === '"') {
     scanString(state);
+    return;
+  }
+  if (ch === '#') {
+    scanColor(state);
     return;
   }
   if (isDigit(ch)) {

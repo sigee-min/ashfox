@@ -1,9 +1,7 @@
 import { compareText } from '@ashfox/internal-contracts';
-import type { Vec3 } from '../model/identity';
 import type {
   HookAstValue,
   HookCompiledValue,
-  HookCueDecl,
   HookDiagnostic,
   HookFieldType,
   HookParentRef,
@@ -14,8 +12,6 @@ import type {
   HookSourceUnit,
   HookTargetKind,
   HookValidationOptions,
-  HookVolumeDecl,
-  HookZoneDecl,
 } from './contract';
 import { STD_SCHEMAS } from './stdSchemas';
 
@@ -23,6 +19,7 @@ const ASSET_REF_IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*
 const ASSET_REF_PATH_RE = /^(?:\.\.?\/|[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.ashfox$/;
 const ASSET_REF_URI_RE = /^[a-z][a-z0-9_]*:[a-z0-9_./-]+$/;
 const MC_BLOCK_STATE_RE = /^[a-z0-9_]+:[a-z0-9_/]+(?:\[[a-z0-9_=,]+\])?$/;
+const MC_BLOCK_TEMPLATE_RE = /^[a-z0-9_]+:[a-z0-9_/]+(?:\[[a-z0-9_=,${}]+\])?$/;
 
 export interface ValidationContext {
   readonly unit: HookSourceUnit;
@@ -60,6 +57,18 @@ export const isValidAssetReference = (raw: string): boolean => {
 };
 
 export const isValidMcBlockState = (raw: string): boolean => MC_BLOCK_STATE_RE.test(raw);
+export const isValidMcBlockTemplate = (raw: string): boolean => MC_BLOCK_TEMPLATE_RE.test(raw);
+
+const compatibleUnit = (expected: string, actual: string): boolean => {
+  if (actual === 'plain' || actual === expected) return true;
+  if ((expected === 'second' || expected === 'ms') && (actual === 'second' || actual === 'ms')) {
+    return true;
+  }
+  if ((expected === 'hz' || expected === 'khz') && (actual === 'hz' || actual === 'khz')) {
+    return true;
+  }
+  return false;
+};
 
 const checkNumberBounds = (
   ctx: ValidationContext,
@@ -154,11 +163,11 @@ const checkUnionValue = (
   values: readonly string[],
   val: HookAstValue,
 ): boolean => {
-  if (val.kind !== 'string') {
+  if (val.kind !== 'ref') {
     pushDiag(
       ctx,
       'hooks.invalid-property-type',
-      `Property "${field.name}" must be a string literal.`,
+      `Property "${field.name}" must be an unquoted enum identifier.`,
       val.span,
       field.name,
     );
@@ -168,7 +177,7 @@ const checkUnionValue = (
     pushDiag(
       ctx,
       'hooks.invalid-union-value',
-      `Property "${field.name}" value "${val.value}" is not in ${values.join(' | ')}.`,
+      `Property "${field.name}" value "${val.value}" is not in enum(${values.join(', ')}).`,
       val.span,
       val.value,
     );
@@ -211,10 +220,29 @@ export const validateFieldValue = (
     );
     return false;
   }
+  if (field.unit && !compatibleUnit(field.unit, val.unit)) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-property-unit',
+      `Property "${field.name}" expects unit ${field.unit}, got ${val.unit}.`,
+      val.span,
+      field.name,
+    );
+    return false;
+  }
   return checkNumberBounds(ctx, val.value, type, val.span, field.name);
 };
 
 const validateSchemaDecl = (ctx: ValidationContext, schema: HookSchemaDecl): void => {
+  if (schema.mcBlock !== undefined && !isValidMcBlockTemplate(schema.mcBlock)) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-mc-block',
+      `Invalid schema mc_block template "${schema.mcBlock}".`,
+      schema.span,
+      schema.mcBlock,
+    );
+  }
   const seenFields = new Set<string>();
   for (const field of schema.fields) {
     if (seenFields.has(field.name)) {
@@ -382,32 +410,13 @@ const applyFieldDefaults = (
   }
 };
 
-export const compilePropsAgainstSchema = (
+const collectPropAssignments = (
   ctx: ValidationContext,
-  schemaId: string,
-  targetKind: HookTargetKind,
+  schema: HookSchemaDecl,
   assignments: readonly HookPropAssignment[],
-  span: HookSourceSpan,
-): {
-  readonly canonicalSchema: string;
-  readonly props: Readonly<Record<string, HookCompiledValue>>;
-} => {
-  const schema = ctx.schemas.get(schemaId);
-  if (!schema) {
-    pushDiag(ctx, 'hooks.unknown-schema', `Unknown hook schema "${schemaId}".`, span, schemaId);
-    return { canonicalSchema: schemaId, props: Object.freeze({}) };
-  }
-  if (!schema.targets.includes(targetKind)) {
-    pushDiag(
-      ctx,
-      'hooks.schema-target-mismatch',
-      `Schema "${schema.id}" cannot be used on ${targetKind}.`,
-      span,
-      schemaId,
-    );
-  }
+  raw: Record<string, HookCompiledValue>,
+): Set<string> => {
   const fieldMap = new Map(schema.fields.map((f) => [f.name, f]));
-  const raw: Record<string, HookCompiledValue> = {};
   const assigned = new Set<string>();
   for (const prop of assignments) {
     if (assigned.has(prop.name)) {
@@ -434,62 +443,41 @@ export const compilePropsAgainstSchema = (
     }
     if (validateFieldValue(ctx, field, prop.value)) raw[prop.name] = prop.value.value;
   }
+  return assigned;
+};
+
+export const compilePropsAgainstSchema = (
+  ctx: ValidationContext,
+  schemaId: string,
+  targetKind: HookTargetKind,
+  assignments: readonly HookPropAssignment[],
+  span: HookSourceSpan,
+): {
+  readonly canonicalSchema: string;
+  readonly schemaMcBlock?: string;
+  readonly props: Readonly<Record<string, HookCompiledValue>>;
+} => {
+  const schema = ctx.schemas.get(schemaId);
+  if (!schema) {
+    pushDiag(ctx, 'hooks.unknown-schema', `Unknown hook schema "${schemaId}".`, span, schemaId);
+    return { canonicalSchema: schemaId, props: Object.freeze({}) };
+  }
+  if (!schema.targets.includes(targetKind)) {
+    pushDiag(
+      ctx,
+      'hooks.schema-target-mismatch',
+      `Schema "${schema.id}" cannot be used on ${targetKind}.`,
+      span,
+      schemaId,
+    );
+  }
+  const raw: Record<string, HookCompiledValue> = {};
+  const assigned = collectPropAssignments(ctx, schema, assignments, raw);
   applyFieldDefaults(ctx, schema, assigned, raw, span);
   const sorted = Object.fromEntries(Object.entries(raw).sort(([a], [b]) => compareText(a, b)));
-  return { canonicalSchema: schema.id, props: Object.freeze(sorted) };
-};
-
-export const validateBoxBounds = (
-  ctx: ValidationContext,
-  hook: HookVolumeDecl | HookZoneDecl,
-): { readonly min: Vec3; readonly max: Vec3 } => {
-  const zero: Vec3 = Object.freeze([0, 0, 0]);
-  const from = hook.from ?? zero;
-  const to = hook.to ?? zero;
-  if (hook.from && hook.to && (from[0] > to[0] || from[1] > to[1] || from[2] > to[2])) {
-    pushDiag(
-      ctx,
-      'hooks.invalid-volume-bounds',
-      `Volume "${hook.id}" has inverted bounds.`,
-      hook.span,
-      hook.id,
-    );
-  }
-  return { min: from, max: to };
-};
-
-export const validateCueTiming = (ctx: ValidationContext, cue: HookCueDecl): void => {
-  if (cue.at !== undefined && (cue.from !== undefined || cue.to !== undefined)) {
-    pushDiag(
-      ctx,
-      'hooks.invalid-cue-timing',
-      `Cue "${cue.id}" mixes "at" and "from..to".`,
-      cue.span,
-      cue.id,
-    );
-  }
-  const neg =
-    (cue.at !== undefined && cue.at < 0) ||
-    (cue.from !== undefined && cue.from < 0) ||
-    (cue.to !== undefined && cue.to < 0);
-  if (neg)
-    pushDiag(
-      ctx,
-      'hooks.invalid-cue-timing',
-      `Cue "${cue.id}" timing must be >= 0.`,
-      cue.span,
-      cue.id,
-    );
-  if (cue.from !== undefined && cue.to !== undefined && cue.from > cue.to) {
-    pushDiag(ctx, 'hooks.invalid-cue-timing', `Cue "${cue.id}" has from > to.`, cue.span, cue.id);
-  }
-  if (cue.frame !== undefined && (!Number.isInteger(cue.frame) || cue.frame < 0)) {
-    pushDiag(
-      ctx,
-      'hooks.invalid-cue-timing',
-      `Cue "${cue.id}" frame must be >= 0 int.`,
-      cue.span,
-      cue.id,
-    );
-  }
+  return {
+    canonicalSchema: schema.id,
+    ...(schema.mcBlock !== undefined ? { schemaMcBlock: schema.mcBlock } : {}),
+    props: Object.freeze(sorted),
+  };
 };

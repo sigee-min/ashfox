@@ -27,4 +27,9 @@ export {
   transformVolume,
   transformZone,
 } from './transform';
-export { isValidAssetReference, isValidMcBlockState, validateHooksUnit } from './validate';
+export {
+  isValidAssetReference,
+  isValidMcBlockState,
+  isValidMcBlockTemplate,
+  validateHooksUnit,
+} from './validate';

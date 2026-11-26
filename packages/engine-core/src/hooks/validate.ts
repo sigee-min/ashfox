@@ -25,14 +25,69 @@ import {
   compilePropsAgainstSchema,
   isValidAssetReference,
   isValidMcBlockState,
+  isValidMcBlockTemplate,
   pushDiag,
   registerSchemas,
-  validateBoxBounds,
-  validateCueTiming,
   type ValidationContext,
 } from './validateChecks';
 
-export { isValidAssetReference, isValidMcBlockState };
+const validateBoxBounds = (
+  ctx: ValidationContext,
+  hook: HookVolumeDecl | HookZoneDecl,
+): { readonly min: Vec3; readonly max: Vec3 } => {
+  const zero: Vec3 = Object.freeze([0, 0, 0]);
+  const from = hook.from ?? zero;
+  const to = hook.to ?? zero;
+  if (hook.from && hook.to && (from[0] > to[0] || from[1] > to[1] || from[2] > to[2])) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-volume-bounds',
+      `Volume "${hook.id}" has inverted bounds.`,
+      hook.span,
+      hook.id,
+    );
+  }
+  return { min: from, max: to };
+};
+
+const validateCueTiming = (ctx: ValidationContext, cue: HookCueDecl): void => {
+  if (cue.at !== undefined && (cue.from !== undefined || cue.to !== undefined)) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-cue-timing',
+      `Cue "${cue.id}" mixes "at" and "from..to".`,
+      cue.span,
+      cue.id,
+    );
+  }
+  const neg =
+    (cue.at !== undefined && cue.at < 0) ||
+    (cue.from !== undefined && cue.from < 0) ||
+    (cue.to !== undefined && cue.to < 0);
+  if (neg) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-cue-timing',
+      `Cue "${cue.id}" timing must be >= 0.`,
+      cue.span,
+      cue.id,
+    );
+  }
+  if (cue.from !== undefined && cue.to !== undefined && cue.from > cue.to) {
+    pushDiag(ctx, 'hooks.invalid-cue-timing', `Cue "${cue.id}" has from > to.`, cue.span, cue.id);
+  }
+  if (cue.frame !== undefined && (!Number.isInteger(cue.frame) || cue.frame < 0)) {
+    pushDiag(
+      ctx,
+      'hooks.invalid-cue-timing',
+      `Cue "${cue.id}" frame must be >= 0 int.`,
+      cue.span,
+      cue.id,
+    );
+  }
+};
+
+export { isValidAssetReference, isValidMcBlockState, isValidMcBlockTemplate };
 
 const ZERO3: Vec3 = Object.freeze([0, 0, 0]);
 const DEFAULT_NORMAL: Vec3 = Object.freeze([0, 0, 1]);
@@ -84,6 +139,19 @@ const resolveMcOverrides = (
   return map;
 };
 
+const renderMcBlockTemplate = (
+  template: string | undefined,
+  facing: string | undefined,
+  props: Readonly<Record<string, unknown>>,
+): string | undefined => {
+  if (!template) return undefined;
+  return template.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_all, key: string) => {
+    if (key === 'facing') return facing ?? 'north';
+    const val = props[key];
+    return val === undefined ? '' : String(val);
+  });
+};
+
 const compileAnchor = (
   ctx: ValidationContext,
   a: HookAnchorDecl,
@@ -94,7 +162,8 @@ const compileAnchor = (
   checkParentValid(ctx, a.parent, a.id, a.span);
   const compiled = compilePropsAgainstSchema(ctx, a.schema, 'anchor', a.props, a.span);
   const propMc = typeof compiled.props.mc_block === 'string' ? compiled.props.mc_block : undefined;
-  const mcBlock = mcOverrides.get(a.id) ?? a.mcBlock ?? propMc;
+  const schemaMc = renderMcBlockTemplate(compiled.schemaMcBlock, a.facing, compiled.props);
+  const mcBlock = mcOverrides.get(a.id) ?? a.mcBlock ?? propMc ?? schemaMc;
   if (mcBlock !== undefined && !isValidMcBlockState(mcBlock)) {
     pushDiag(
       ctx,
@@ -134,7 +203,8 @@ const compileVolume = (
   const obb = buildObbFromBox(bounds.min, bounds.max, v.rotate);
   const aabb = obbToAabb(obb);
   const propMc = typeof compiled.props.mc_block === 'string' ? compiled.props.mc_block : undefined;
-  const mcBlock = mcOverrides.get(v.id) ?? v.mcBlock ?? propMc;
+  const schemaMc = renderMcBlockTemplate(compiled.schemaMcBlock, undefined, compiled.props);
+  const mcBlock = mcOverrides.get(v.id) ?? v.mcBlock ?? propMc ?? schemaMc;
   if (mcBlock !== undefined && !isValidMcBlockState(mcBlock)) {
     pushDiag(
       ctx,

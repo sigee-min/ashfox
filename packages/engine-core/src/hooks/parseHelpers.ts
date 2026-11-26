@@ -4,16 +4,12 @@ import type {
   HookAstValue,
   HookCueDecl,
   HookDiagnostic,
-  HookEnclosure,
-  HookEnclosureKind,
-  HookFacing,
   HookFieldType,
   HookImportDecl,
   HookMcBlockDecl,
   HookMetaDecl,
   HookNumberUnit,
   HookParentRef,
-  HookPropAssignment,
   HookSchemaDecl,
   HookSchemaField,
   HookSourceSpan,
@@ -21,7 +17,6 @@ import type {
   HookUnitKind,
   HookVolumeDecl,
   HookZoneDecl,
-  HookZoneShape,
 } from './contract';
 import type { HookToken } from './lex';
 
@@ -30,6 +25,7 @@ export interface ParseState {
   readonly tokens: readonly HookToken[];
   readonly diagnostics: HookDiagnostic[];
   readonly allowHostStatements: boolean;
+  readonly parentStack: HookParentRef[];
   offset: number;
   header: string | null;
   unitKind: HookUnitKind;
@@ -44,34 +40,44 @@ export interface ParseState {
   readonly mcBlocks: HookMcBlockDecl[];
 }
 
-export interface HeaderAttrs {
-  parent?: HookParentRef;
-  atVec?: Vec3;
-  fromVec?: Vec3;
-  toVec?: Vec3;
-  normal?: Vec3;
-  rotate?: Vec3;
-  facing?: HookFacing;
-  space: '2d' | '3d';
-  mcBlock?: string;
-  enclosureKind?: HookEnclosureKind;
-  acousticProfile?: string;
-  shelterRatio?: number;
-  shape?: HookZoneShape;
-  clip?: string;
-  atNum?: number;
-  fromNum?: number;
-  toNum?: number;
-  frame?: number;
-  target?: string;
-}
-
 export class ParseRecoveryError extends Error {}
 
 const TARGET_KINDS = new Set<string>(['anchor', 'volume', 'cue', 'meta']);
-const FACING_KINDS = new Set<string>(['north', 'south', 'east', 'west', 'up', 'down']);
-const ENCLOSURE_KINDS = new Set<string>(['enclosed', 'semi_open', 'open', 'outdoor']);
-const ZONE_SHAPES = new Set<string>(['rect', 'octagon', 'box']);
+
+const NUMBER_UNIT_MAP: Readonly<Record<string, HookNumberUnit>> = {
+  '': 'plain',
+  s: 'second',
+  ms: 'ms',
+  deg: 'degree',
+  px: 'texel',
+  u: 'unit',
+  b: 'block',
+  hz: 'hz',
+  khz: 'khz',
+  db: 'db',
+  lufs: 'lufs',
+  st: 'st',
+  cents: 'cents',
+  '%': 'percent',
+};
+
+const FLOAT_TYPE_UNITS: Readonly<Record<string, HookNumberUnit | undefined>> = {
+  float: undefined,
+  number: undefined,
+  second: 'second',
+  ms: 'ms',
+  unit: 'unit',
+  deg: 'degree',
+  px: 'texel',
+  b: 'block',
+  hz: 'hz',
+  khz: 'khz',
+  db: 'db',
+  lufs: 'lufs',
+  st: 'st',
+  cents: 'cents',
+  percent: 'percent',
+};
 
 export const peek = (state: ParseState, delta = 0): HookToken =>
   state.tokens[state.offset + delta] ?? state.tokens[state.tokens.length - 1]!;
@@ -149,18 +155,11 @@ const splitNumberUnit = (
   negative: boolean,
   token: HookToken,
 ): { readonly value: number; readonly unit: HookNumberUnit } => {
-  const match = /^(\d+(?:\.\d+)?)([A-Za-z]*)$/.exec(raw);
+  const match = /^(\d+(?:\.\d+)?)([A-Za-z%]*)$/.exec(raw);
   if (!match) return fail(state, 'hooks.syntax', `Invalid number "${raw}".`, token);
   const num = (negative ? -1 : 1) * Number(match[1]);
   const suffix = match[2] ?? '';
-  const unitMap: Record<string, HookNumberUnit> = {
-    '': 'plain',
-    s: 'second',
-    deg: 'degree',
-    px: 'texel',
-    u: 'unit',
-  };
-  const unit = unitMap[suffix];
+  const unit = NUMBER_UNIT_MAP[suffix];
   if (!unit) {
     return fail(state, 'hooks.syntax', `Unsupported unit "${suffix}" on number "${raw}".`, token);
   }
@@ -205,7 +204,7 @@ const readParenVec = (state: ParseState): HookAstValue => {
 
 export const readAstValue = (state: ParseState): HookAstValue => {
   const token = peek(state);
-  if (token.kind === 'string') {
+  if (token.kind === 'string' || token.kind === 'color') {
     take(state);
     return Object.freeze({ kind: 'string', value: token.value, span: token.span });
   }
@@ -230,21 +229,22 @@ export const readAstValue = (state: ParseState): HookAstValue => {
   return fail(state, 'hooks.syntax', `Unexpected value token "${token.value || 'EOF'}".`, token);
 };
 
-const readFieldType = (state: ParseState): HookFieldType => {
-  const token = peek(state);
-  if (token.kind === 'string') {
-    const values = [take(state).value];
-    while (peek(state).value === '|') {
-      take(state, '|');
-      const next = peek(state);
-      if (next.kind !== 'string') {
-        return fail(state, 'hooks.syntax', 'Expected string literal in union type.', next);
-      }
-      values.push(take(state).value);
-    }
-    return Object.freeze({ kind: 'union', values: Object.freeze(values) });
+const readEnumType = (state: ParseState): HookFieldType => {
+  take(state, '(');
+  const values: string[] = [readIdent(state, 'enum literal').value];
+  while (peek(state).value === ',') {
+    take(state, ',');
+    values.push(readIdent(state, 'enum literal').value);
   }
+  take(state, ')');
+  return Object.freeze({ kind: 'union', values: Object.freeze(values) });
+};
+
+const readFieldType = (
+  state: ParseState,
+): { readonly type: HookFieldType; readonly unit?: HookNumberUnit } => {
   const kw = readIdent(state, 'field type');
+  if (kw.value === 'enum') return { type: readEnumType(state) };
   if (
     kw.value === 'string' ||
     kw.value === 'bool' ||
@@ -252,23 +252,26 @@ const readFieldType = (state: ParseState): HookFieldType => {
     kw.value === 'vec3' ||
     kw.value === 'asset'
   ) {
-    return Object.freeze({ kind: kw.value });
+    return { type: Object.freeze({ kind: kw.value }) };
   }
-  if (kw.value === 'int' || kw.value === 'float') {
-    if (peek(state).value !== '(') return Object.freeze({ kind: kw.value });
+  if (kw.value === 'int' || kw.value in FLOAT_TYPE_UNITS) {
+    const kind = kw.value === 'int' ? 'int' : 'float';
+    const unit = FLOAT_TYPE_UNITS[kw.value];
+    if (peek(state).value !== '(')
+      return { type: Object.freeze({ kind }), ...(unit ? { unit } : {}) };
     take(state, '(');
     const min = readNumberValue(state).value;
     take(state, '..');
     const max = readNumberValue(state).value;
     take(state, ')');
-    return Object.freeze({ kind: kw.value, min, max });
+    return { type: Object.freeze({ kind, min, max }), ...(unit ? { unit } : {}) };
   }
   return fail(state, 'hooks.syntax', `Unknown schema field type "${kw.value}".`, kw);
 };
 
 const readSchemaTargets = (state: ParseState): readonly HookTargetKind[] => {
-  if (peek(state).value !== 'on') return Object.freeze(['anchor', 'volume', 'cue', 'meta']);
-  take(state, 'on');
+  if (peek(state).value !== ':') return Object.freeze(['anchor', 'volume', 'cue', 'meta']);
+  take(state, ':');
   const readOne = (): HookTargetKind => {
     const tok = readIdent(state, 'hook target');
     if (!TARGET_KINDS.has(tok.value)) {
@@ -285,6 +288,7 @@ const readSchemaTargets = (state: ParseState): readonly HookTargetKind[] => {
 };
 
 const readSchemaField = (state: ParseState): HookSchemaField => {
+  const start = take(state, 'field');
   const nameTok = readIdent(state, 'field name');
   let optional = false;
   if (peek(state).value === '?') {
@@ -292,7 +296,7 @@ const readSchemaField = (state: ParseState): HookSchemaField => {
     optional = true;
   }
   take(state, ':');
-  const type = readFieldType(state);
+  const parsedType = readFieldType(state);
   let defaultValue: HookAstValue | undefined;
   if (peek(state).value === '=') {
     take(state, '=');
@@ -301,11 +305,30 @@ const readSchemaField = (state: ParseState): HookSchemaField => {
   const endTok = take(state, ';');
   return Object.freeze({
     name: nameTok.value,
-    type,
+    type: parsedType.type,
     optional,
+    ...(parsedType.unit ? { unit: parsedType.unit } : {}),
     ...(defaultValue !== undefined ? { defaultValue } : {}),
-    span: spanFrom(nameTok, endTok),
+    span: spanFrom(start, endTok),
   });
+};
+
+const readSchemaMcBlock = (state: ParseState): string | undefined => {
+  take(state, 'mc_block');
+  take(state, '=');
+  const val = readAstValue(state);
+  let out: string | undefined;
+  if (val.kind !== 'string') fail(state, 'hooks.syntax', 'Expected mc_block string literal.');
+  else out = val.value;
+  take(state, ';');
+  return out;
+};
+
+const resolveSchemaNames = (raw: string, unitKind: HookUnitKind, unitId: string) => {
+  const dot = raw.lastIndexOf('.');
+  if (dot >= 0) return { id: raw, namespace: raw.slice(0, dot), name: raw.slice(dot + 1) };
+  const namespace = unitKind === 'module' ? unitId : '';
+  return { id: namespace ? `${namespace}.${raw}` : raw, namespace, name: raw };
 };
 
 export const parseSchemaDecl = (state: ParseState, exported: boolean): void => {
@@ -314,164 +337,24 @@ export const parseSchemaDecl = (state: ParseState, exported: boolean): void => {
   const targets = readSchemaTargets(state);
   take(state, '{');
   const fields: HookSchemaField[] = [];
-  while (peek(state).value !== '}' && peek(state).kind !== 'eof')
-    fields.push(readSchemaField(state));
+  let mcBlock: string | undefined;
+  while (peek(state).value !== '}' && peek(state).kind !== 'eof') {
+    if (peek(state).value === 'mc_block') mcBlock = readSchemaMcBlock(state);
+    else fields.push(readSchemaField(state));
+  }
   const endTok = take(state, '}');
-  const dot = raw.lastIndexOf('.');
-  const namespace = dot >= 0 ? raw.slice(0, dot) : state.unitKind === 'module' ? state.unitId : '';
-  const name = dot >= 0 ? raw.slice(dot + 1) : raw;
-  const id = dot >= 0 ? raw : namespace ? `${namespace}.${name}` : name;
+  const names = resolveSchemaNames(raw, state.unitKind, state.unitId);
   state.schemas.push(
     Object.freeze({
-      id,
-      namespace,
-      name,
+      id: names.id,
+      namespace: names.namespace,
+      name: names.name,
       exported,
       inline: state.unitKind !== 'module',
       targets,
       fields: Object.freeze(fields),
+      ...(mcBlock !== undefined ? { mcBlock } : {}),
       span: spanFrom(startTok, endTok),
     }),
   );
-};
-
-export const readPropsBlock = (
-  state: ParseState,
-): { readonly props: readonly HookPropAssignment[]; readonly end: HookToken } => {
-  if (peek(state).value === ';') return { props: Object.freeze([]), end: take(state, ';') };
-  if (peek(state).value !== '{') return { props: Object.freeze([]), end: peek(state, -1) };
-  take(state, '{');
-  const props: HookPropAssignment[] = [];
-  while (peek(state).value !== '}' && peek(state).kind !== 'eof') {
-    const keyTok = readIdent(state, 'property name');
-    take(state, '=');
-    const value = readAstValue(state);
-    const semi = take(state, ';');
-    props.push(Object.freeze({ name: keyTok.value, value, span: spanFrom(keyTok, semi) }));
-  }
-  return { props: Object.freeze(props), end: take(state, '}') };
-};
-
-const toVec3 = (
-  val: HookAstValue,
-  state: ParseState,
-): { readonly vec: Vec3; readonly space: '2d' | '3d' } => {
-  if (val.kind === 'vec3') return { vec: val.value, space: '3d' };
-  if (val.kind === 'vec2')
-    return { vec: Object.freeze([val.value[0], val.value[1], 0]), space: '2d' };
-  return fail(state, 'hooks.syntax', 'Expected 2D or 3D vector.', peek(state, -1));
-};
-
-const asText = (val: HookAstValue, state: ParseState, label: string): string => {
-  if (val.kind === 'string' || val.kind === 'ref') return val.value;
-  return fail(state, 'hooks.syntax', `Expected ${label} identifier or string.`, peek(state, -1));
-};
-
-const asNumber = (val: HookAstValue, state: ParseState, label: string): number => {
-  if (val.kind === 'number') return val.value;
-  return fail(state, 'hooks.syntax', `Expected ${label} number.`, peek(state, -1));
-};
-
-const ATTR_SETTERS: Readonly<
-  Record<string, (s: ParseState, a: HeaderAttrs, v: HookAstValue) => void>
-> = {
-  facing: (s, a, v) => {
-    if (v.kind !== 'ref' || !FACING_KINDS.has(v.value)) {
-      fail(s, 'hooks.syntax', 'Expected facing (north|south|east|west|up|down).', peek(s, -1));
-    }
-    a.facing = v.value as HookFacing;
-  },
-  normal: (s, a, v) => {
-    a.normal = toVec3(v, s).vec;
-  },
-  rotate: (s, a, v) => {
-    a.rotate = v.kind === 'vec3' ? v.value : Object.freeze([0, asNumber(v, s, 'rotate'), 0]);
-  },
-  mc_block: (s, a, v) => {
-    if (v.kind !== 'string') fail(s, 'hooks.syntax', 'Expected mc_block string literal.');
-    else a.mcBlock = v.value;
-  },
-  enclosure: (s, a, v) => {
-    const text = asText(v, s, 'enclosure');
-    if (!ENCLOSURE_KINDS.has(text)) fail(s, 'hooks.syntax', 'Invalid enclosure kind.');
-    a.enclosureKind = text as HookEnclosureKind;
-  },
-  acoustic: (s, a, v) => {
-    a.acousticProfile = asText(v, s, 'acoustic');
-  },
-  shelter: (s, a, v) => {
-    a.shelterRatio = asNumber(v, s, 'shelter');
-  },
-  shape: (s, a, v) => {
-    if (v.kind !== 'ref' || !ZONE_SHAPES.has(v.value))
-      fail(s, 'hooks.syntax', 'Invalid zone shape.');
-    else a.shape = v.value as HookZoneShape;
-  },
-  clip: (s, a, v) => {
-    a.clip = asText(v, s, 'clip');
-  },
-  target: (s, a, v) => {
-    a.target = asText(v, s, 'target');
-  },
-  frame: (s, a, v) => {
-    a.frame = asNumber(v, s, 'frame');
-  },
-  at: (s, a, v) => {
-    if (v.kind === 'number') a.atNum = v.value;
-    else {
-      const vec = toVec3(v, s);
-      a.atVec = vec.vec;
-      a.space = vec.space;
-    }
-  },
-  from: (s, a, v) => {
-    if (v.kind === 'number') a.fromNum = v.value;
-    else {
-      const vec = toVec3(v, s);
-      a.fromVec = vec.vec;
-      a.space = vec.space;
-    }
-  },
-  to: (s, a, v) => {
-    if (v.kind === 'number') a.toNum = v.value;
-    else {
-      const vec = toVec3(v, s);
-      a.toVec = vec.vec;
-      a.space = vec.space;
-    }
-  },
-};
-
-export const readHeaderAttrs = (state: ParseState): HeaderAttrs => {
-  const attrs: HeaderAttrs = { space: '3d' };
-  while (peek(state).kind === 'identifier') {
-    const keyTok = take(state);
-    take(state, '=');
-    const val = readAstValue(state);
-    if (
-      keyTok.value === 'bone' ||
-      keyTok.value === 'room' ||
-      keyTok.value === 'floor' ||
-      keyTok.value === 'surface' ||
-      keyTok.value === 'compound'
-    ) {
-      attrs.parent = Object.freeze({ kind: keyTok.value, id: asText(val, state, keyTok.value) });
-      continue;
-    }
-    const setter = ATTR_SETTERS[keyTok.value];
-    if (!setter)
-      fail(state, 'hooks.syntax', `Unsupported header attribute "${keyTok.value}".`, keyTok);
-    setter(state, attrs, val);
-  }
-  return attrs;
-};
-
-export const buildEnclosure = (attrs: HeaderAttrs): HookEnclosure | undefined => {
-  if (!attrs.enclosureKind) return undefined;
-  return Object.freeze({
-    kind: attrs.enclosureKind,
-    enclosed: attrs.enclosureKind === 'enclosed',
-    ...(attrs.acousticProfile ? { acousticProfile: attrs.acousticProfile } : {}),
-    ...(attrs.shelterRatio !== undefined ? { shelterRatio: attrs.shelterRatio } : {}),
-  });
 };

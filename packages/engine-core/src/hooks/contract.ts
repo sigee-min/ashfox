@@ -9,9 +9,23 @@ export type HookTargetKind = 'anchor' | 'volume' | 'cue' | 'meta';
 export type HookFacing = CardinalFacing | 'up' | 'down';
 
 export type HookUnitKind =
-  'module' | 'structure' | 'model' | 'sprite' | 'sound' | 'compound' | 'hooks';
+  'module' | 'structure' | 'model' | 'sprite' | 'sound' | 'compound' | 'vfx' | 'hooks';
 
-export type HookNumberUnit = 'plain' | 'second' | 'degree' | 'texel' | 'unit';
+export type HookNumberUnit =
+  | 'plain'
+  | 'second'
+  | 'ms'
+  | 'degree'
+  | 'texel'
+  | 'unit'
+  | 'block'
+  | 'hz'
+  | 'khz'
+  | 'db'
+  | 'lufs'
+  | 'st'
+  | 'cents'
+  | 'percent';
 
 export interface HookSourceSpan {
   readonly file: string;
@@ -54,6 +68,7 @@ export interface HookSchemaField {
   readonly name: string;
   readonly type: HookFieldType;
   readonly optional: boolean;
+  readonly unit?: HookNumberUnit;
   readonly defaultValue?: HookAstValue;
   readonly span: HookSourceSpan;
 }
@@ -66,6 +81,7 @@ export interface HookSchemaDecl {
   readonly inline: boolean;
   readonly targets: readonly HookTargetKind[];
   readonly fields: readonly HookSchemaField[];
+  readonly mcBlock?: string;
   readonly span: HookSourceSpan;
 }
 
