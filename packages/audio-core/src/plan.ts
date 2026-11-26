@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import type { SoundRecipe, SoundVoice } from './contract';
 import { bounds, controls, evaluate, frame } from './curve';
 import { gainBounds, isEnvelopeControl } from './envelope';
@@ -28,7 +29,7 @@ const validateVoices = (recipe: SoundRecipe): Map<string, VoiceEntry> => {
   );
   let knots = 0;
   for (const { voice, path } of [...voices.values()].sort((a, b) =>
-    a.voice.id < b.voice.id ? -1 : 1,
+    compareText(a.voice.id, b.voice.id),
   )) {
     if (
       voice.highpass !== undefined &&
@@ -231,6 +232,16 @@ interface SupportEdge {
   path: string;
 }
 
+const buildDynamicControlCounts = (voices: Map<string, VoiceEntry>): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const [voiceId, { voice }] of voices) {
+    let dynamic = 0;
+    for (const [, c] of controls(voice)) if (typeof c !== 'number') dynamic++;
+    counts.set(voiceId, dynamic);
+  }
+  return counts;
+};
+
 const collectPlanStepSupports = (
   recipe: SoundRecipe,
   voices: Map<string, VoiceEntry>,
@@ -238,22 +249,25 @@ const collectPlanStepSupports = (
   let frames = 0;
   let work = 0;
   const edges: SupportEdge[] = [];
-  for (const sequence of [...recipe.sequences].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-    const si = recipe.sequences.indexOf(sequence);
+  const dynamicControlCounts = buildDynamicControlCounts(voices);
+  const sortedSequences = recipe.sequences
+    .map((sequence, index) => ({ sequence, index }))
+    .sort((a, b) => compareText(a.sequence.id, b.sequence.id));
+  for (const { sequence, index: si } of sortedSequences) {
+    const sortedSteps = sequence.steps
+      .map((step, index) => ({ step, index }))
+      .sort((a, b) => compareText(a.step.id, b.step.id));
     const countRep = sequence.repeat?.count ?? 1;
     for (let iteration = 0; iteration < countRep; iteration++) {
-      for (const step of [...sequence.steps].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-        const p = `recipe.sequences[${si}].steps[${sequence.steps.indexOf(step)}]`;
+      for (const { step, index: stepIndex } of sortedSteps) {
+        const p = `recipe.sequences[${si}].steps[${stepIndex}]`;
         const info = voices.get(step.voice)!;
         const context = `sequence ${sequence.id}, step ${step.id}, iteration ${iteration}`;
         const span = validateStepTimingAndKnots(recipe, info, step, sequence, iteration, p);
         validateStepGainAndPitch(recipe.playback, info, step, span, context, p);
         const count = frame(span.longest) * recipe.variants.length;
         frames += count;
-        work +=
-          count *
-          (weight(info.voice) +
-            controls(info.voice).filter(([, c]) => typeof c !== 'number').length);
+        work += count * (weight(info.voice) + dynamicControlCounts.get(step.voice)!);
         edges.push(
           { at: frame(span.earliest), delta: 1, path: p },
           { at: frame(span.latest) + frame(span.longest), delta: -1, path: p },

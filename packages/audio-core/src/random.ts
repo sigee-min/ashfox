@@ -1,3 +1,4 @@
+import { encodeUtf8 } from '@ashfox/internal-contracts';
 import type { SoundRecipe, SoundVariant } from './contract';
 
 export const AUDIO_POLICY = 'sound-v2:svf-osc-crackle-drive-space-stereo-env:pcm16';
@@ -15,8 +16,7 @@ export type Domain =
 
 export const randomSeed = (key: readonly (string | number)[]): number => {
   let h = 2166136261;
-  for (const byte of new TextEncoder().encode(JSON.stringify(key)))
-    h = Math.imul(h ^ byte, 16777619) >>> 0;
+  for (const byte of encodeUtf8(JSON.stringify(key))) h = Math.imul(h ^ byte, 16777619) >>> 0;
   h ^= h >>> 16;
   h = Math.imul(h, 0x85ebca6b) >>> 0;
   h ^= h >>> 13;
