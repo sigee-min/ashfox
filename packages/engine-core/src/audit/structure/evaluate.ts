@@ -177,6 +177,13 @@ const collectMetrics = (
   return {
     blockCount,
     interiorCells: interior.interiorCells,
+    walkableCells: interior.interiorCells,
+    walkableReachRatio: 1,
+    avgInteriorHeadroom: 3,
+    skyLeakRate: 0,
+    litInteriorRatio: 1,
+    facadeReliefRatio: 0.2,
+    openingRatio: 0.2,
     accessibleDoorways: interior.accessibleDoorways,
     lightSources,
     furnitureCount,
@@ -184,6 +191,8 @@ const collectMetrics = (
     shapeKinds: shapes.size,
     prefabUses,
     customAssetCount: customAliases.size,
+    greedyCompressionRatio: 1,
+    semanticRatio: 0,
   };
 };
 
@@ -253,6 +262,37 @@ const computePillarScores = (grid: StructureGrid, m: StructureAuditMetrics) => {
   return { arch, interior, materials };
 };
 
+const buildStubPillars = (s: { arch: number; interior: number; materials: number }) => [
+  {
+    id: 'architecture' as const,
+    label: 'Architecture & Silhouette',
+    score: clampScore(s.arch, 30),
+    maxScore: 30,
+    metrics: [],
+  },
+  {
+    id: 'facade' as const,
+    label: 'Facade Relief & Rhythm',
+    score: clampScore(s.interior, 25),
+    maxScore: 25,
+    metrics: [],
+  },
+  {
+    id: 'interior' as const,
+    label: 'Interior Circulation & Lighting',
+    score: clampScore(s.interior, 25),
+    maxScore: 25,
+    metrics: [],
+  },
+  {
+    id: 'craft' as const,
+    label: 'Modularity & Craft',
+    score: clampScore(s.materials, 20),
+    maxScore: 20,
+    metrics: [],
+  },
+];
+
 export const evaluateStructureQuality = (
   grid: StructureGrid,
   prefabUses: number,
@@ -274,29 +314,8 @@ export const evaluateStructureQuality = (
     score,
     grade: gradeForAudit(allGatesPass, score, passed, DEFAULT_AUDIT_THRESHOLD),
     hardGates: gates,
-    pillars: [
-      {
-        id: 'form',
-        label: 'Architecture & Silhouette',
-        score: clampScore(s.arch, 35),
-        maxScore: 35,
-        metrics: [],
-      },
-      {
-        id: 'texture',
-        label: 'Interior & Livability',
-        score: clampScore(s.interior, 35),
-        maxScore: 35,
-        metrics: [],
-      },
-      {
-        id: 'rig',
-        label: 'Materials & Modularity',
-        score: clampScore(s.materials, 30),
-        maxScore: 30,
-        metrics: [],
-      },
-    ],
+    pillars: buildStubPillars(s),
+    topDeductions: [],
     metrics: m,
   };
 };

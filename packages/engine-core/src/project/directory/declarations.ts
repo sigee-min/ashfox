@@ -33,7 +33,7 @@ export interface DeclaredPreviewSpec {
   readonly zoom?: number;
   readonly environment?: 'studio' | 'day' | 'evening' | 'night';
   readonly background?: 'environment' | 'transparent' | 'checker' | 'light' | 'dark';
-  readonly sheet?: 'turnaround' | 'inspect';
+  readonly sheet?: 'turnaround' | 'inspect' | 'exterior' | 'cutaway' | 'interior';
   readonly mode?: 'motion' | 'turntable' | 'build';
   readonly clip?: string;
   readonly time?: number;
@@ -84,7 +84,7 @@ const PREVIEW_ENUMS = {
   camera: ['perspective', 'native', 'front', 'back', 'left', 'right', 'top', 'bottom'],
   environment: ['studio', 'day', 'evening', 'night'],
   background: ['environment', 'transparent', 'checker', 'light', 'dark'],
-  sheet: ['turnaround', 'inspect'],
+  sheet: ['turnaround', 'inspect', 'exterior', 'cutaway', 'interior'],
   mode: ['motion', 'turntable', 'build'],
   stage: ['final', 'silhouette', 'shade', 'grain'],
 } as const;
@@ -370,6 +370,12 @@ const validateSinglePreview = (
   }
   if (out.sheet === 'turnaround' && kind !== 'model' && kind !== 'structure') {
     failDecl(file, 'sheet turnaround requires model or structure asset');
+  }
+  if (
+    (out.sheet === 'exterior' || out.sheet === 'cutaway' || out.sheet === 'interior') &&
+    kind !== 'structure'
+  ) {
+    failDecl(file, `sheet ${out.sheet} requires structure asset`);
   }
   return Object.freeze(out);
 };

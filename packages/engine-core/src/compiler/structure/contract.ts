@@ -1,6 +1,19 @@
-import type { AuditQualityGrade } from '@ashfox/internal-contracts';
-import type { CompiledModel, ProjectDocument } from '../../model';
-import type { CardinalFacing, IntVec3 } from '../../project/structure/contract';
+import type { AuditQualityGrade, AuditSubmetricShape } from '@ashfox/internal-contracts';
+import type { Vec3 } from '../../model/identity';
+import type { CompiledModel } from '../../model/compiled';
+import type { ProjectDocument } from '../../model/document';
+import type { TextureAsset } from '../../model/texture';
+import type {
+  AcousticSpace,
+  BlockRotation,
+  CardinalFacing,
+  IntVec3,
+  RoomKind,
+  SocketKind,
+  StructureDensity,
+} from '../../project/structure/contract';
+
+export type StructureAuditPillarId = 'architecture' | 'facade' | 'interior' | 'craft';
 
 export interface StructureAuditGate {
   readonly id: string;
@@ -11,19 +24,20 @@ export interface StructureAuditGate {
 }
 
 export interface StructureAuditPillar {
-  readonly id: 'form' | 'texture' | 'rig';
+  readonly id: StructureAuditPillarId;
   readonly label: string;
   readonly score: number;
   readonly maxScore: number;
-  readonly metrics: readonly {
-    readonly id: string;
-    readonly label: string;
-    readonly score: number;
-    readonly maxScore: number;
-    readonly value: number;
-    readonly target: number;
-    readonly detail: string;
-  }[];
+  readonly metrics: readonly AuditSubmetricShape[];
+}
+
+export interface StructureAuditDeduction {
+  readonly metricId: string;
+  readonly pillar: StructureAuditPillarId | 'gate';
+  readonly lostPoints: number;
+  readonly summary: string;
+  readonly targets: readonly string[];
+  readonly fix: string;
 }
 
 export interface StructureCustomPlacement {
@@ -39,9 +53,54 @@ export interface StructureCustomPlacement {
 export const qualifyCustomAssetKey = (ownerPath: string, alias: string): string =>
   `${ownerPath}#${alias}`;
 
+export interface StructureFloorMeta {
+  readonly name: string;
+  readonly y: number;
+  readonly height: number;
+}
+
+export interface StructureRoomMeta {
+  readonly name: string;
+  readonly kind: RoomKind;
+  readonly acousticSpace: AcousticSpace;
+  readonly from: IntVec3;
+  readonly to: IntVec3;
+  readonly enclosed: boolean;
+}
+
+export interface StructureOpeningMeta {
+  readonly kind: 'door' | 'window' | 'arch';
+  readonly room: string;
+  readonly wall: CardinalFacing;
+  readonly from: IntVec3;
+  readonly to: IntVec3;
+  readonly hinge?: 'left' | 'right';
+  readonly connectsRooms?: readonly [string, string];
+}
+
+export interface StructureSocketMeta {
+  readonly id: string;
+  readonly position: Vec3;
+  readonly normal: CardinalFacing;
+  readonly kind: SocketKind;
+  readonly pool?: string;
+  readonly target?: string;
+}
+
+export interface StructureSemanticStats {
+  readonly roomCount: number;
+  readonly facadeCount: number;
+  readonly stairCount: number;
+  readonly furnishCount: number;
+  readonly weatheringCount: number;
+  readonly rawSetCount: number;
+}
+
 export interface StructureGrid {
   readonly id: string;
   readonly dataVersion: number;
+  readonly density: StructureDensity;
+  readonly seed: number;
   readonly size: IntVec3;
   /** Distinct canonical block states; index 0 is always "minecraft:air". */
   readonly states: readonly string[];
@@ -50,6 +109,15 @@ export interface StructureGrid {
   /** Asset alias tag per voxel index when placed via an `asset` palette entry, else null. */
   readonly customTags: readonly (string | null)[];
   readonly customPlacements: readonly StructureCustomPlacement[];
+  readonly floors: readonly StructureFloorMeta[];
+  readonly rooms: readonly StructureRoomMeta[];
+  readonly openings: readonly StructureOpeningMeta[];
+  readonly sockets: readonly StructureSocketMeta[];
+  readonly hasRoofTrim: boolean;
+  readonly roofCount: number;
+  readonly dormerCount: number;
+  readonly chimneyCount: number;
+  readonly semanticStats: StructureSemanticStats;
 }
 
 export interface DecodedStructureNbt {
@@ -62,9 +130,100 @@ export interface DecodedStructureNbt {
   readonly blocks: readonly { readonly pos: IntVec3; readonly state: number }[];
 }
 
+export interface StructureLightingField {
+  readonly size: IntVec3;
+  readonly sky: Uint8Array;
+  readonly blockR: Uint8Array;
+  readonly blockG: Uint8Array;
+  readonly blockB: Uint8Array;
+}
+
+export interface StructureBakedBatch {
+  readonly layer: 'opaque' | 'cutout' | 'emissive';
+  readonly textureId: string;
+  readonly positions: readonly number[];
+  readonly normals: readonly number[];
+  readonly uvs: readonly number[];
+  /** Normalized 0..1 RGB vertex colors (3 components per vertex) encoding Voxel AO * lightmap. */
+  readonly colors: readonly number[];
+  readonly indices: readonly number[];
+}
+
+export interface StructurePropInstance {
+  readonly assetKey: string;
+  readonly translation: Vec3;
+  readonly rotation: BlockRotation;
+  readonly lightRgb: readonly [number, number, number];
+}
+
+export interface StructureBakedMesh {
+  readonly batches: readonly StructureBakedBatch[];
+  readonly textures: Readonly<Record<string, TextureAsset>>;
+  readonly instances: readonly StructurePropInstance[];
+  readonly rawFaceCount: number;
+  readonly mergedQuadCount: number;
+}
+
+export interface PlayableCollider {
+  readonly from: Vec3;
+  readonly to: Vec3;
+  readonly material: 'stone' | 'wood' | 'metal' | 'glass' | 'foliage';
+}
+
+export interface PlayableZone {
+  readonly id: string;
+  readonly kind: RoomKind;
+  readonly from: Vec3;
+  readonly to: Vec3;
+  readonly enclosed: boolean;
+  readonly acousticSpace: AcousticSpace;
+}
+
+export interface PlayableLight {
+  readonly id: string;
+  readonly position: Vec3;
+  readonly color: string;
+  readonly intensity: number;
+  readonly radius: number;
+  readonly kind: 'lantern' | 'torch' | 'hearth' | 'soul_lantern' | 'emissive_prop';
+}
+
+export interface PlayableInteractable {
+  readonly id: string;
+  readonly kind: 'door' | 'chest' | 'furnace' | 'anvil' | 'bed' | 'workstation';
+  readonly position: Vec3;
+  readonly facing: CardinalFacing;
+  readonly hingePivot?: Vec3;
+  readonly connectsZones?: readonly [string, string];
+}
+
+export interface PlayableStructureMeta {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly unitsPerBlock: 1;
+  readonly bounds: { readonly min: Vec3; readonly max: Vec3 };
+  readonly colliders: readonly PlayableCollider[];
+  readonly zones: readonly PlayableZone[];
+  readonly lights: readonly PlayableLight[];
+  readonly interactables: readonly PlayableInteractable[];
+  readonly sockets: readonly StructureSocketMeta[];
+  readonly navigation: {
+    readonly entryCells: readonly IntVec3[];
+    readonly walkableCellCount: number;
+    readonly floorLevels: readonly number[];
+  };
+}
+
 export interface StructureAuditMetrics {
   readonly blockCount: number;
   readonly interiorCells: number;
+  readonly walkableCells: number;
+  readonly walkableReachRatio: number;
+  readonly avgInteriorHeadroom: number;
+  readonly skyLeakRate: number;
+  readonly litInteriorRatio: number;
+  readonly facadeReliefRatio: number;
+  readonly openingRatio: number;
   readonly accessibleDoorways: number;
   readonly lightSources: number;
   readonly furnitureCount: number;
@@ -72,6 +231,8 @@ export interface StructureAuditMetrics {
   readonly shapeKinds: number;
   readonly prefabUses: number;
   readonly customAssetCount: number;
+  readonly greedyCompressionRatio: number;
+  readonly semanticRatio: number;
 }
 
 export interface StructureAuditReport {
@@ -83,12 +244,15 @@ export interface StructureAuditReport {
   readonly grade: AuditQualityGrade;
   readonly hardGates: readonly StructureAuditGate[];
   readonly pillars: readonly StructureAuditPillar[];
+  readonly topDeductions: readonly StructureAuditDeduction[];
   readonly metrics: StructureAuditMetrics;
 }
 
 export type StructureAuditEvaluator = (
   grid: StructureGrid,
   prefabUses: number,
+  lighting: StructureLightingField,
+  mesh: StructureBakedMesh,
 ) => StructureAuditReport;
 
 export interface StructureProduct {
@@ -96,6 +260,9 @@ export interface StructureProduct {
   readonly grid: StructureGrid;
   readonly customModels: Readonly<Record<string, CompiledModel>>;
   readonly nbt: Uint8Array;
+  readonly lighting: StructureLightingField;
+  readonly bakedMesh: StructureBakedMesh;
+  readonly playableMeta: PlayableStructureMeta;
   readonly document: ProjectDocument;
   readonly audit: StructureAuditReport;
 }

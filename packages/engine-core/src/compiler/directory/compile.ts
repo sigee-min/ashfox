@@ -292,7 +292,7 @@ const compileEntries = (
       const failure = compileSpriteEntry(e, filesByPath, spriteUnits, output);
       if (failure) return failure;
     } else if (kind === 'sound') compileSoundEntry(e, preparedSounds.get(e.path)!, output);
-    else if (kind === 'structure')
+    else if (kind === 'structure' || kind === 'compound')
       compileStructureEntry(e, filesByPath, output, evaluateStructureAudit);
     else output.modelEntries.push(e);
   }

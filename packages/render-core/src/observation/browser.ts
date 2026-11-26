@@ -217,7 +217,11 @@ const captureSheet = async (
   });
   const tileCanvas = createCanvas2d(tileW, tileH);
   try {
-    for (const [idx, spec] of SHEET_TILES[v.sheet!].entries()) {
+    const sheetTiles =
+      v.sheet === 'turnaround' || v.sheet === 'inspect'
+        ? SHEET_TILES[v.sheet]
+        : SHEET_TILES.turnaround;
+    for (const [idx, spec] of sheetTiles.entries()) {
       await renderSheetTile(model, v, clip, surface, tileCanvas, spec);
       const dx = (idx % 2) * tileW;
       const dy = Math.floor(idx / 2) * tileH;

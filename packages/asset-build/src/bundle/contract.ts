@@ -33,6 +33,9 @@ export type AssetMetadata =
       readonly size: readonly [number, number, number];
       readonly blockCount: number;
       readonly interiorCells: number;
+      readonly zoneCount?: number;
+      readonly lightCount?: number;
+      readonly interactableCount?: number;
     }
   | { readonly clips: readonly { readonly name: string; readonly durationSeconds: number }[] }
   | {

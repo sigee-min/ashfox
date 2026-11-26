@@ -85,9 +85,17 @@ const resolvePaletteEntry = (
   }
   state.usedPaletteKeys.get(targetOwner)?.add(keyOrState);
   if (entry.kind === 'block') return { state: entry.state, assetAlias: null };
+  if (entry.kind === 'mix') return { state: entry.entries[0]!.state, assetAlias: null };
   state.usedImports.get(targetOwner)?.add(entry.alias);
   return { state: entry.fallback, assetAlias: qualifyCustomAssetKey(targetOwner, entry.alias) };
 };
+
+const numCoord = (value: number | string): number => (typeof value === 'number' ? value : 0);
+const numVec3 = (value: readonly [number | string, number | string, number | string]): IntVec3 => [
+  numCoord(value[0]),
+  numCoord(value[1]),
+  numCoord(value[2]),
+];
 
 const rotatePoint = ([x, y, z]: IntVec3, rotate: BlockRotation): IntVec3 => {
   if (rotate === 90) return [-z, y, x];
@@ -137,15 +145,17 @@ const fillRegion = (
   op: Extract<StructureOp, { op: 'box' | 'hollow' | 'walls' | 'frame' | 'carve' }>,
   frame: FrameTransform,
 ): void => {
+  const fMin = numVec3(op.from);
+  const fMax = numVec3(op.to);
   const min: IntVec3 = [
-    Math.min(op.from[0], op.to[0]),
-    Math.min(op.from[1], op.to[1]),
-    Math.min(op.from[2], op.to[2]),
+    Math.min(fMin[0], fMax[0]),
+    Math.min(fMin[1], fMax[1]),
+    Math.min(fMin[2], fMax[2]),
   ];
   const max: IntVec3 = [
-    Math.max(op.from[0], op.to[0]),
-    Math.max(op.from[1], op.to[1]),
-    Math.max(op.from[2], op.to[2]),
+    Math.max(fMin[0], fMax[0]),
+    Math.max(fMin[1], fMax[1]),
+    Math.max(fMin[2], fMax[2]),
   ];
   const resolved =
     op.op === 'carve'
@@ -192,7 +202,10 @@ const evalLayer = (
       const key = op.map[ch];
       if (!key) failEval(ownerPath, 'structure.unknown-layer-key', `Unmapped layer char "${ch}"`);
       const resolved = resolvePaletteEntry(state, key, ownerPath);
-      const pos = applyFrame([op.origin[0] + colIdx, op.y, op.origin[1] + rowIdx], frame);
+      const pos = applyFrame(
+        [numCoord(op.origin[0]) + colIdx, numCoord(op.y), numCoord(op.origin[1]) + rowIdx],
+        frame,
+      );
       putVoxel(
         state,
         ownerPath,
@@ -277,6 +290,40 @@ const evalMirror = (
   for (const child of op.ops) evalOp(state, ownerPath, child, mirrored, depth + 1);
 };
 
+const isRegionOp = (
+  op: StructureOp,
+): op is Extract<StructureOp, { op: 'box' | 'hollow' | 'walls' | 'frame' | 'carve' }> =>
+  op.op === 'box' ||
+  op.op === 'hollow' ||
+  op.op === 'walls' ||
+  op.op === 'frame' ||
+  op.op === 'carve';
+
+const evalLegacyRoof = (
+  state: EvalState,
+  ownerPath: string,
+  op: Extract<StructureOp, { op: 'roof' }>,
+  frame: FrameTransform,
+): void => {
+  if (!op.from || !op.to) return;
+  const roofSpec = {
+    style: op.style,
+    axis: op.axis,
+    from: numVec3(op.from),
+    to: numVec3(op.to),
+    stair: op.stair,
+    ridge: op.ridge,
+    ...(op.gable ? { gable: op.gable } : {}),
+  };
+  emitRoof(
+    roofSpec,
+    (x, y, z, b, a) =>
+      putVoxel(state, ownerPath, applyFrame([x, y, z], frame), transformBlockState(b, frame), a),
+    (k, owner) => resolvePaletteEntry(state, k, owner),
+    ownerPath,
+  );
+};
+
 const evalOp = (
   state: EvalState,
   ownerPath: string,
@@ -293,37 +340,26 @@ const evalOp = (
     putVoxel(
       state,
       ownerPath,
-      applyFrame(op.at, frame),
+      applyFrame(numVec3(op.at), frame),
       transformBlockState(raw, frame),
       resolved.assetAlias,
     );
   } else if (op.op === 'layer') evalLayer(state, ownerPath, op, frame);
-  else if (op.op === 'roof') {
-    emitRoof(
-      op,
-      (x, y, z, block, alias) =>
-        putVoxel(
-          state,
-          ownerPath,
-          applyFrame([x, y, z], frame),
-          transformBlockState(block, frame),
-          alias,
-        ),
-      (k, owner) => resolvePaletteEntry(state, k, owner),
-      ownerPath,
-    );
-  } else if (op.op === 'repeat') evalRepeat(state, ownerPath, op, frame, depth);
+  else if (op.op === 'roof') evalLegacyRoof(state, ownerPath, op, frame);
+  else if (op.op === 'repeat') evalRepeat(state, ownerPath, op, frame, depth);
   else if (op.op === 'mirror') evalMirror(state, ownerPath, op, frame, depth);
   else if (op.op === 'place') {
     state.prefabUses += 1;
     const target = resolvePrefab(state, ownerPath, op.prefab);
-    const sub = composeFrames(frame, { offset: op.at, rotate: op.rotate, mirrorX: false });
+    const sub = composeFrames(frame, { offset: numVec3(op.at), rotate: op.rotate, mirrorX: false });
     for (const child of target.ops) evalOp(state, target.targetPath, child, sub, depth + 1);
-  } else fillRegion(state, ownerPath, op, frame);
+  } else if (isRegionOp(op)) {
+    fillRegion(state, ownerPath, op, frame);
+  }
 };
 
 const collectOpStaticRefs = (op: StructureOp, keys: Set<string>, imports: Set<string>): void => {
-  if (op.op === 'repeat' || op.op === 'mirror') {
+  if (op.op === 'repeat' || op.op === 'mirror' || op.op === 'floor') {
     for (const child of op.ops) collectOpStaticRefs(child, keys, imports);
     return;
   }
@@ -342,7 +378,7 @@ const collectOpStaticRefs = (op: StructureOp, keys: Set<string>, imports: Set<st
     if (op.gable) keys.add(op.gable);
     return;
   }
-  if (op.op !== 'carve') keys.add(op.block);
+  if ('block' in op && typeof op.block === 'string') keys.add(op.block);
 };
 
 const collectUnitStaticRefs = (
@@ -376,10 +412,6 @@ const checkUnitHygiene = (state: EvalState, filePath: string, unit: StructureSou
   if (badPrefab) failEval(filePath, 'structure.unused-prefab', `Unused prefab "${badPrefab.id}"`);
 };
 
-const checkHygiene = (state: EvalState): void => {
-  for (const [filePath, unit] of state.units) checkUnitHygiene(state, filePath, unit);
-};
-
 const collectCustomPlacements = (state: EvalState): readonly StructureCustomPlacement[] => {
   const [w, _h, d] = state.size;
   const placements: StructureCustomPlacement[] = [];
@@ -397,6 +429,15 @@ const collectCustomPlacements = (state: EvalState): readonly StructureCustomPlac
   }
   return placements;
 };
+
+const EMPTY_SEMANTIC_STATS = Object.freeze({
+  roomCount: 0,
+  facadeCount: 0,
+  stairCount: 0,
+  furnishCount: 0,
+  weatheringCount: 0,
+  rawSetCount: 0,
+});
 
 export const evaluateStructure = (
   rootPath: string,
@@ -424,16 +465,27 @@ export const evaluateStructure = (
     prefabUses: 0,
   };
   for (const op of root.ops) evalOp(state, rootPath, op, IDENTITY_FRAME, 0);
-  checkHygiene(state);
+  for (const [filePath, unit] of state.units) checkUnitHygiene(state, filePath, unit);
   return {
     grid: {
       id: root.id,
       dataVersion: root.dataVersion,
+      density: root.density,
+      seed: root.seed,
       size,
       states: state.states,
       voxels,
       customTags,
       customPlacements: collectCustomPlacements(state),
+      floors: [],
+      rooms: [],
+      openings: [],
+      sockets: [],
+      hasRoofTrim: false,
+      roofCount: 0,
+      dormerCount: 0,
+      chimneyCount: 0,
+      semanticStats: EMPTY_SEMANTIC_STATS,
     },
     prefabUses: state.prefabUses,
   };
