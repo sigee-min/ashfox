@@ -6,13 +6,7 @@ import { encodeCanonicalPng } from '../../../textures/textureRecipe/png';
 import { rasterizeTextureSpec } from '../../../textures/textureRecipe/raster';
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf } from './build';
-import type {
-  GltfDocument,
-  GltfExtensionName,
-  GltfMaterial,
-  GltfNode,
-  GltfSkin,
-} from './contract';
+import type { GltfDocument, GltfExtensionName, GltfMaterial, GltfNode, GltfSkin } from './contract';
 import {
   buildModelLod1Document,
   buildModelLod2Mesh,
@@ -180,7 +174,7 @@ const finalize = (c: CompiledGltf, st: State, rootNodes: number[]): CompiledGltf
   if (st.usesGpuInstancing) used.add('EXT_mesh_gpu_instancing');
   const newBv = st.writer.state.bufferViews.map((v) => ({
     ...v,
-    byteOffset: v.byteOffset + baseLen,
+    byteOffset: (v.byteOffset ?? 0) + baseLen,
   }));
   const newAcc = st.writer.state.accessors.map((a) => ({
     ...a,
@@ -250,7 +244,9 @@ const resolveMat = (
     ...(layer === 'emissive' || tex.renderMode === 'emissive'
       ? { emissiveTexture: texInfo, emissiveFactor: [1, 1, 1] as [number, number, number] }
       : {}),
-    ...(layer === 'cutout' ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true } : {}),
+    ...(layer === 'cutout'
+      ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true }
+      : {}),
   };
   const mid = st.materials.push(mat) - 1;
   mats.set(key, mid);
@@ -287,19 +283,12 @@ const buildStructLod1 = (product: StructureProduct, st: State): QMesh | undefine
   return { meshIdx: st.meshes.push({ name: `${product.id}_lod1`, primitives: prims }) - 1, bounds };
 };
 
-export const attachStructureLods = (
-  compiled: CompiledGltf,
+const collectStructLod1Kids = (
   product: StructureProduct,
-  options: AttachLodOptions = {},
-): CompiledGltfWithLod => {
-  const lods = product.lodLevels;
-  if (!lods || compiled.document.extensionsUsed?.includes('MSFT_lod'))
-    return {
-      ...compiled,
-      document: { ...compiled.document, nodes: compiled.document.nodes.map((n) => ({ ...n })) },
-    };
-  const st = initState(compiled, options);
-  const propRes = emitLod1PropNodes(st.nodes, st.meshes, st.writer, product, options.customBounds);
+  st: State,
+  customBounds?: ReadonlyMap<string, PositionBounds>,
+): number[] => {
+  const propRes = emitLod1PropNodes(st.nodes, st.meshes, st.writer, product, customBounds);
   if (propRes.usesGpuInstancing) st.usesGpuInstancing = true;
   const l1Voxel = buildStructLod1(product, st);
   const l1Kids = [...propRes.props];
@@ -312,9 +301,33 @@ export const attachStructureLods = (
       }) - 1,
     );
   }
+  return l1Kids;
+};
+
+export const attachStructureLods = (
+  compiled: CompiledGltf,
+  product: StructureProduct,
+  options: AttachLodOptions = {},
+): CompiledGltfWithLod => {
+  const lods = product.lodLevels;
+  if (!lods || compiled.document.extensionsUsed?.includes('MSFT_lod'))
+    return {
+      ...compiled,
+      document: { ...compiled.document, nodes: compiled.document.nodes.map((n) => ({ ...n })) },
+    };
+  const st = initState(compiled, options);
+  const l1Kids = collectStructLod1Kids(product, st, options.customBounds);
   const b2 = lods.lod2.batches.find((b) => b.indices.length > 0 && b.positions.length > 0);
   const l2Voxel = b2
-    ? colorMesh(st, `${product.id}_lod2`, `${product.id}_lod2_horizon`, b2.positions, b2.normals, b2.indices, b2.colors)
+    ? colorMesh(
+        st,
+        `${product.id}_lod2`,
+        `${product.id}_lod2_horizon`,
+        b2.positions,
+        b2.normals,
+        b2.indices,
+        b2.colors,
+      )
     : undefined;
   const [w, h, d] = product.grid.size;
   const meta = buildLodDocumentMetadata(

@@ -318,7 +318,12 @@ const appendCustomInstances = (
     entry.group.push(inst);
   }
   for (const [, { assetKey, aliases, group }] of byModel) {
-    const baked = bakeCustomModelMesh(assetKey, product.customModels[assetKey]!, modelTexRemap.get(product.customModels[assetKey]!)!, ctx);
+    const baked = bakeCustomModelMesh(
+      assetKey,
+      product.customModels[assetKey]!,
+      modelTexRemap.get(product.customModels[assetKey]!)!,
+      ctx,
+    );
     if (baked.mesh.primitives.length === 0) continue;
     for (const alias of aliases) customBounds.set(alias, baked.bounds);
     const meshIdx = meshes.length;

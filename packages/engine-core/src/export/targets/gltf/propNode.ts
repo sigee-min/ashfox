@@ -1,4 +1,5 @@
 import type { StructureProduct } from '../../../compiler/structure/contract';
+import type { CompiledModel } from '../../../model/compiled';
 import type { GltfBinaryWriter } from './binary';
 import type { GltfNode } from './contract';
 import { quaternionFromEuler, rotateVec3ByQuaternion } from './spatial';
@@ -73,6 +74,21 @@ export const buildPropNode = (
   };
 };
 
+const indexMeshesByKeyAndModel = (
+  meshes: readonly { readonly name?: string }[],
+  customModels: Readonly<Record<string, CompiledModel>>,
+) => {
+  const byMesh = new Map<string, number>();
+  const byModel = new Map<CompiledModel, number>();
+  meshes.forEach((m, i) => {
+    if (!m.name) return;
+    byMesh.set(m.name, i);
+    const model = customModels[m.name];
+    if (model && !byModel.has(model)) byModel.set(model, i);
+  });
+  return { byMesh, byModel };
+};
+
 export const emitLod1PropNodes = (
   nodes: GltfNode[],
   meshes: readonly { readonly name?: string }[],
@@ -82,26 +98,21 @@ export const emitLod1PropNodes = (
 ): { readonly props: number[]; readonly usesGpuInstancing: boolean } => {
   const lod1 = product.lodLevels?.lod1;
   if (!lod1 || lod1.instances.length === 0) return { props: [], usesGpuInstancing: false };
-  const byMesh = new Map<string, number>();
-  meshes.forEach((m, i) => m.name && byMesh.set(m.name, i));
-  const byKey = new Map<string, PropInstance[]>();
+  const { byMesh, byModel } = indexMeshesByKeyAndModel(meshes, product.customModels);
+  const byIdx = new Map<number, { assetKey: string; group: PropInstance[] }>();
   for (const inst of lod1.instances) {
-    if (!byMesh.has(inst.assetKey)) continue;
-    const list = byKey.get(inst.assetKey) ?? [];
-    list.push(inst);
-    byKey.set(inst.assetKey, list);
+    const model = product.customModels[inst.assetKey];
+    const mesh = byMesh.get(inst.assetKey) ?? (model ? byModel.get(model) : undefined);
+    if (mesh === undefined) continue;
+    const entry = byIdx.get(mesh) ?? { assetKey: inst.assetKey, group: [] };
+    entry.group.push(inst);
+    byIdx.set(mesh, entry);
   }
   const props: number[] = [];
   let usesGpuInstancing = false;
-  for (const [assetKey, group] of byKey) {
+  for (const [mesh, { assetKey, group }] of byIdx) {
     const name = group.length >= 2 ? `lod1_props_${assetKey}` : `lod1_prop_${props.length + 1}`;
-    const built = buildPropNode(
-      name,
-      byMesh.get(assetKey)!,
-      customBounds?.get(assetKey),
-      group,
-      writer,
-    );
+    const built = buildPropNode(name, mesh, customBounds?.get(assetKey), group, writer);
     if (built.instanced) usesGpuInstancing = true;
     props.push(nodes.push(built.node) - 1);
   }
