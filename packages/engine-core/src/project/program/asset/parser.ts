@@ -16,6 +16,7 @@ import {
 } from './contract';
 import { parseAssetDesign, parseAssetValueType } from './design';
 import {
+  HOOK_DECL_KINDS,
   ParserAbort,
   badName,
   buildParseResult,
@@ -24,6 +25,7 @@ import {
   join,
   readImportDecl,
   readOutputsList,
+  skipHookDeclaration,
   type AssetReader,
   type Token,
 } from './parserSupport';
@@ -333,6 +335,10 @@ export class Parser {
   private declaration(exported: boolean): AssetDeclaration | null {
     this.count();
     const keyword = this.current().value;
+    if (HOOK_DECL_KINDS.has(keyword)) {
+      skipHookDeclaration(this.reader());
+      return null;
+    }
     if (keyword === 'design') return this.design(exported);
     if (keyword === 'socket') {
       this.take();

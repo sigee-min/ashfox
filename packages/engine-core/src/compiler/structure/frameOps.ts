@@ -121,6 +121,8 @@ export const buildFrameRoofOp = (
   };
 };
 
+const SOCKET_SCHEMAS = new Set(['std.entry', 'std.road', 'std.wall_join', 'std.courtyard']);
+
 export const runWeatherAndSocketOp = (
   state: EvalState,
   ownerPath: string,
@@ -128,18 +130,20 @@ export const runWeatherAndSocketOp = (
   frame: FrameTransform,
   evalV3: (vec: Extract<StructureOp, { op: 'set' }>['at']) => IntVec3,
 ): boolean => {
-  if (op.op === 'socket') {
+  if (op.op === 'hook_decl') return true;
+  if (op.op === 'anchor') {
+    if (!SOCKET_SCHEMAS.has(op.schema)) return true;
     if (state.socketIds.has(op.name))
-      failEval(ownerPath, 'structure.duplicate-socket', `Duplicate socket "${op.name}"`);
+      failEval(ownerPath, 'structure.duplicate-socket', `Duplicate anchor "${op.name}"`);
     state.socketIds.add(op.name);
     state.sockets.push(
       buildSocketMeta(
         op.name,
-        op.kind,
+        op.schema,
         op.at ? applyFrame(evalV3(op.at), frame) : null,
         op.room ? state.rooms.get(op.room) : undefined,
         op.wall ? transformFacing(op.wall, frame) : undefined,
-        op.normal ? transformFacing(op.normal, frame) : undefined,
+        op.facing ? transformFacing(op.facing, frame) : undefined,
         op.pool,
         op.target,
         (c, m) => failEval(ownerPath, c, m),
@@ -255,10 +259,23 @@ export const runCompoundMerge = (
   state: EvalState,
   ownerPath: string,
   alias: string,
-  childResult: { readonly grid: StructureGrid; readonly prefabUses: number },
+  childPath: string,
+  childResult: {
+    readonly grid: StructureGrid;
+    readonly prefabUses: number;
+    readonly compoundChildren?: readonly EvalState['compoundChildren'][number][];
+  },
   origin: IntVec3,
   rotate: BlockRotation,
 ): void => {
+  state.compoundChildren.push({
+    unitPath: childPath,
+    alias,
+    origin,
+    rotate,
+    grid: childResult.grid,
+    ...(childResult.compoundChildren ? { compoundChildren: childResult.compoundChildren } : {}),
+  });
   const target = {
     ...state,
     put: (x: number, y: number, z: number, s: string, a: string | null) =>

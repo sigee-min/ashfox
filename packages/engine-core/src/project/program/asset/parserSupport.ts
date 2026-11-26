@@ -239,6 +239,28 @@ export const readNamedAssignment = (reader: AssetReader, name: string): AssetQua
   });
 };
 
+export const HOOK_DECL_KINDS = new Set([
+  'schema',
+  'anchor',
+  'volume',
+  'cue',
+  'meta',
+  'zone',
+  'mc_block',
+]);
+
+export const skipHookDeclaration = (reader: AssetReader): void => {
+  let depth = 0;
+  while (!reader.end()) {
+    const tok = reader.take();
+    if (tok.kind === 'symbol' && tok.value === '{') depth += 1;
+    else if (tok.kind === 'symbol' && tok.value === '}') {
+      if (depth <= 1) return;
+      depth -= 1;
+    } else if (tok.kind === 'symbol' && tok.value === ';' && depth === 0) return;
+  }
+};
+
 export const readImportDecl = (reader: AssetReader, sourcePath: string): AssetImportDecl => {
   const start = reader.expectWord('import', 'Expected import.');
   const path = reader.current();

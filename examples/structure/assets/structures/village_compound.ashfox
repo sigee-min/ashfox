@@ -48,6 +48,6 @@ structure village_compound {
   weathering {
     ground_moss { height = 2b; target = cobble; into = moss_cobble; rate = 30%; }
   }
-  socket west_gate { kind = road; at = (0b, 0b, 20b); normal = west; pool = "village:streets"; target = "road_join"; }
-  socket east_gate { kind = road; at = (47b, 0b, 20b); normal = east; pool = "village:streets"; target = "road_join"; }
+  anchor west_gate : std.road { at = (0b, 0b, 20b); facing = west; pool = "village:streets"; target = "road_join"; }
+  anchor east_gate : std.road { at = (47b, 0b, 20b); facing = east; pool = "village:streets"; target = "road_join"; }
 }

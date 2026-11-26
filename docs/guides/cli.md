@@ -10,7 +10,7 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 | `doctor [--json]` | None | Runtime readiness and machine-readable contract |
 | `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, or build folder | Source validation, inspection, quality audit, or build integrity check |
 | `render <input> [options]` | `.ashfox` source (`--stdin` / `--input-json` supported) | PNG still image or animated GIF rendered from declared `preview [name]` blocks |
-| `build <input> [--json]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Compiled outputs declared via `outputs { ... }` or workspace configuration |
+| `build <input> [--json] [--bindings ts\|cs\|gd]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Compiled outputs declared via `outputs { ... }` or workspace configuration, `<target>.hooks.json`, and optional hook bindings |
 
 `init`, `doctor`, `check`, and `build` return JSON using the `ashfox-cli-result` envelope (`doctor`/`init` take `--json`; `check`/`build` always return JSON).
 `help` is human-readable; use `doctor --json` for agents to inspect the complete contract.

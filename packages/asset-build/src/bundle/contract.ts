@@ -1,5 +1,10 @@
 import type { SoundProduct } from '@ashfox/audio-core';
-import type { DirectoryFile, DirectoryWorkspace, GlbPerformanceMetrics } from '@ashfox/engine-core';
+import type {
+  DirectoryFile,
+  DirectoryWorkspace,
+  GeneratedBindingFile,
+  GlbPerformanceMetrics,
+} from '@ashfox/engine-core';
 export interface Snapshot {
   readonly input: string;
   readonly root: string;
@@ -82,6 +87,7 @@ export interface CompiledBundle {
   readonly catalog: Catalog;
   readonly artifacts: readonly Artifact[];
   readonly bundleHash: string;
+  readonly bindings?: readonly GeneratedBindingFile[];
 }
 export class BuildFailure extends Error {
   constructor(

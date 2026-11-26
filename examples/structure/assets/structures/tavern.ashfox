@@ -156,6 +156,6 @@ structure tavern {
   place kit.CrateStack { at = (16b, 1b, 13b); rotate = 0; }
   set { at = (2b, 1b, 10b); block = pillar; }
   set { at = (7b, 3b, 10b); block = sign; facing = south; }
-  socket tavern_entry { kind = entry; room = taproom; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket east_lane { kind = road; at = (w - 1, 0, floor(d / 2)); normal = east; pool = "village:streets"; target = "road_join"; }
+  anchor tavern_entry : std.entry { at = (8b, 1b, 9b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor east_lane : std.road { at = (18b, 0b, 8b); facing = east; pool = "village:streets"; target = "road_join"; }
 }

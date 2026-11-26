@@ -34,11 +34,21 @@ import { compileWorkspaceCandidate } from '../program/asset/workspaceCompile';
 import type { AssetAuthoringTelemetry } from '../program/asset/texture/telemetry';
 import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
+import { buildHooksBoneContext } from '../../hooks/resolve';
+import {
+  assertSoundWorkspaceBudget,
+  buildModuleAliasMap,
+  checkDirectoryModularity,
+  collectHookModuleClosure,
+  directoryCompilationExportsCheck,
+  resolveDirectoryHooks,
+} from './hooks';
 
 interface EntryProductBase {
   readonly entry: WorkspaceEntrySelector;
   readonly sourcePath: string;
   readonly declarations: AssetDeclarations;
+  readonly hooks?: import('../../hooks/contract').HooksDocument;
 }
 
 export type DirectoryProduct = EntryProductBase &
@@ -80,19 +90,6 @@ interface EntryOutput {
   readonly modelEntries: Entry[];
 }
 
-const EXPORT_FORMATS = {
-  sprite: ['png'],
-  model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
-  sound: ['wav'],
-  structure: ['java_structure', 'glb'],
-} as const;
-const SOUND_LIMITS = {
-  sources: 32,
-  outputFrames: 11520000,
-  eventFrames: 24000000,
-  weightedFrames: 192000000,
-} as const;
-
 const entryKey = (entry: WorkspaceEntrySelector): string =>
   JSON.stringify([entry.packageName, entry.entryName]);
 const joinPath = (root: string, path: string): string => [root, path].filter(Boolean).join('/');
@@ -103,7 +100,6 @@ const assertSourceBudget = (files: readonly DirectoryFile[]): void => {
     throw new Error('Workspace source budget exceeded');
 };
 
-/** Index of the supplied files after proving they match the declared closed source set. */
 const declaredFiles = (config: DirectoryWorkspace, files: readonly DirectoryFile[]): Files => {
   const declared = new Set(
     config.packages.flatMap((p) =>
@@ -136,7 +132,6 @@ const declaredEntries = (config: DirectoryWorkspace): readonly Entry[] => {
   return entries;
 };
 
-/** Prepares every sound entry and module while enforcing cumulative workspace sound budgets. */
 const prepareSoundEntries = (
   entries: readonly Entry[],
   kinds: ReadonlyMap<string, string | undefined>,
@@ -151,29 +146,9 @@ const prepareSoundEntries = (
     total.outputFrames += item.budget.outputFrames;
     total.eventFrames += item.budget.eventFrames;
     total.weightedFrames += item.budget.weightedFrames;
-    assertSoundBudget(e.path, prepared.size, total);
+    assertSoundWorkspaceBudget(e.path, prepared.size, total);
   }
   return prepared;
-};
-
-const assertSoundBudget = (
-  path: string,
-  sources: number,
-  total: {
-    readonly outputFrames: number;
-    readonly eventFrames: number;
-    readonly weightedFrames: number;
-  },
-): void => {
-  const exceeded =
-    sources > SOUND_LIMITS.sources ||
-    total.outputFrames > SOUND_LIMITS.outputFrames ||
-    total.eventFrames > SOUND_LIMITS.eventFrames ||
-    total.weightedFrames > SOUND_LIMITS.weightedFrames;
-  if (exceeded)
-    throw new Error(
-      `${path}: sound workspace budget exceeded: sources=${sources}/32, rawFrames=${total.outputFrames}/11520000, eventFrames=${total.eventFrames}/24000000, weightedFrames=${total.weightedFrames}/192000000`,
-    );
 };
 
 const compileSpriteEntry = (
@@ -198,18 +173,26 @@ const compileSpriteEntry = (
     throw new Error('Entry name must match sprite id: ' + e.path);
   const unit = spriteUnits.get(e.path)!;
   const declarations = validateAssetDeclarations('sprite', unit.outputs, unit.previews, e.path);
+  const resolvedHooks = resolveDirectoryHooks(e.path, filesByPath, output.nonModelPaths);
+  if (resolvedHooks.failure) return resolvedHooks.failure;
   output.products.push({
     kind: 'sprite',
     entry: e.entry,
     sourcePath: e.path,
     sprite,
     declarations,
+    ...(resolvedHooks.hooks ? { hooks: resolvedHooks.hooks } : {}),
   });
   compiled.paths.forEach((p) => output.nonModelPaths.add(p));
   return null;
 };
 
-const compileSoundEntry = (e: Entry, prepared: PreparedSound, output: EntryOutput): void => {
+const compileSoundEntry = (
+  e: Entry,
+  prepared: PreparedSound,
+  filesByPath: Files,
+  output: EntryOutput,
+): DirectoryFailure | null => {
   const compiled = compilePreparedSound(prepared, e.path);
   if (compiled.unit.id !== e.entry.entryName) {
     throw new Error('Entry name must match sound id: ' + e.path);
@@ -220,14 +203,18 @@ const compileSoundEntry = (e: Entry, prepared: PreparedSound, output: EntryOutpu
     compiled.unit.previews,
     e.path,
   );
+  const resolvedHooks = resolveDirectoryHooks(e.path, filesByPath, output.nonModelPaths);
+  if (resolvedHooks.failure) return resolvedHooks.failure;
   output.products.push({
     kind: 'sound',
     entry: e.entry,
     sourcePath: e.path,
     sounds: compiled.sounds,
     declarations,
+    ...(resolvedHooks.hooks ? { hooks: resolvedHooks.hooks } : {}),
   });
   compiled.soundPaths.forEach((p) => output.nonModelPaths.add(p));
+  return null;
 };
 
 const compileStructureEntry = (
@@ -287,8 +274,10 @@ const runEntryLoop = (
     if (kind === 'sprite') {
       const failure = compileSpriteEntry(e, filesByPath, cache, output);
       if (failure) return failure;
-    } else if (kind === 'sound') compileSoundEntry(e, preparedSounds.get(e.path)!, output);
-    else if (kind === 'structure' || kind === 'compound')
+    } else if (kind === 'sound') {
+      const failure = compileSoundEntry(e, preparedSounds.get(e.path)!, filesByPath, output);
+      if (failure) return failure;
+    } else if (kind === 'structure' || kind === 'compound')
       compileStructureEntry(e, filesByPath, output, evaluateStructureAudit, cache);
     else output.modelEntries.push(e);
   }
@@ -330,6 +319,38 @@ const modelManifest = (
   return { format: 'ashfox-workspace' as const, version: 1 as const, packages };
 };
 
+const pushModelProducts = (
+  checkedProducts: ReturnType<typeof compileWorkspaceCandidate> & { readonly ok: true },
+  modelEntries: readonly Entry[],
+  filesByPath: Files,
+  moduleAliases: ReadonlyMap<string, string>,
+  output: EntryOutput,
+): DirectoryFailure | null => {
+  const modelSources = new Map(modelEntries.map((e) => [entryKey(e.entry), e.path]));
+  for (const result of checkedProducts.products) {
+    const sourcePath = modelSources.get(entryKey(result.entry))!;
+    const resolvedHooks = resolveDirectoryHooks(
+      sourcePath,
+      filesByPath,
+      undefined,
+      buildHooksBoneContext(result.model.scene.nodes),
+      moduleAliases,
+    );
+    if (resolvedHooks.failure) return resolvedHooks.failure;
+    output.products.push({
+      kind: 'model',
+      entry: result.entry,
+      sourcePath,
+      model: result.model,
+      workspace: checkedProducts.workspace,
+      declarations: validateAssetDeclarations('model', result.outputs, result.previews, sourcePath),
+      ...(resolvedHooks.hooks ? { hooks: resolvedHooks.hooks } : {}),
+      ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
+    });
+  }
+  return null;
+};
+
 /** Seals the non-sprite sources as one model workspace and compiles every model entry. */
 const compileModels = (
   config: DirectoryWorkspace,
@@ -337,15 +358,13 @@ const compileModels = (
   filesByPath: Files,
   output: EntryOutput,
   cache?: DirectoryWorkspaceCache,
-): void => {
+): DirectoryFailure | null => {
   if (!output.modelEntries.length) {
-    if (
-      files.some(
-        (f) => !output.nonModelPaths.has(f.path) && !output.structureCustomPaths.has(f.path),
-      )
-    )
-      throw new Error('Every declared module must be reachable');
-    return;
+    const orphan = files.some(
+      (f) => !output.nonModelPaths.has(f.path) && !output.structureCustomPaths.has(f.path),
+    );
+    if (orphan) throw new Error('Every declared module must be reachable');
+    return null;
   }
   const excludedCustom = collectStructureOnlyCustomPaths(
     config,
@@ -354,70 +373,36 @@ const compileModels = (
     filesByPath,
     cache?.assetUnits,
   );
-  const manifest = modelManifest(config, output, excludedCustom);
+  const moduleAliases = buildModuleAliasMap(config);
+  const modelReachable = collectHookModuleClosure(
+    output.modelEntries.map((e) => e.path),
+    filesByPath,
+    moduleAliases,
+  );
+  const effectiveOutput: EntryOutput = {
+    ...output,
+    nonModelPaths: new Set([...output.nonModelPaths].filter((p) => !modelReachable.has(p))),
+  };
+  const manifest = modelManifest(config, effectiveOutput, excludedCustom);
   const lock = {
     format: 'ashfox-lock' as const,
     version: 1 as const,
     compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
     packages: [],
   };
-  const base: AuthoredAssetWorkspace = { files: [], manifest, lock };
   const sources = files.filter(
-    (f) => !output.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
+    (f) => !effectiveOutput.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
   );
-  const sealed = sealWorkspaceCandidate(base, sources, manifest, DEFAULT_WORKSPACE_LIMITS);
+  const sealed = sealWorkspaceCandidate(
+    { files: [], manifest, lock },
+    sources,
+    manifest,
+    DEFAULT_WORKSPACE_LIMITS,
+  );
   if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
   const checked = compileWorkspaceCandidate(sealed.value, {}, true);
   if (!checked.ok) throw new Error(JSON.stringify(checked.diagnostics));
-  const modelSources = new Map(output.modelEntries.map((e) => [entryKey(e.entry), e.path]));
-  for (const result of checked.products) {
-    const sourcePath = modelSources.get(entryKey(result.entry))!;
-    const declarations = validateAssetDeclarations(
-      'model',
-      result.outputs,
-      result.previews,
-      sourcePath,
-    );
-    output.products.push({
-      kind: 'model',
-      entry: result.entry,
-      sourcePath,
-      model: result.model,
-      workspace: checked.workspace,
-      declarations,
-      ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
-    });
-  }
-};
-
-const assertExports = (
-  config: DirectoryWorkspace,
-  productsByEntry: ReadonlyMap<string, DirectoryProduct>,
-): void => {
-  for (const target of config.exports) {
-    const p = productsByEntry.get(entryKey(target.entry))!;
-    if (!EXPORT_FORMATS[p.kind].some((format) => format === target.format))
-      throw new Error('Export format does not match entry kind: ' + target.name);
-  }
-};
-
-const assertPackSounds = (
-  config: DirectoryWorkspace,
-  productsByEntry: ReadonlyMap<string, DirectoryProduct>,
-): void => {
-  const exportsByName = new Map(config.exports.map((target) => [target.name, target]));
-  for (const pack of config.packs ?? [])
-    for (const sound of pack.format === 'minecraft_java' ? pack.sounds : []) {
-      const target = exportsByName.get(sound.source)!;
-      const product = productsByEntry.get(entryKey(target.entry));
-      if (product?.kind !== 'sound')
-        throw new Error('Pack sound source kind mismatch: ' + sound.source);
-      const availableVariants = new Set(product.sounds.map((s) => s.variant));
-      const unknownVariant =
-        sound.variants !== 'all' && sound.variants.some((v) => !availableVariants.has(v.id));
-      if (unknownVariant)
-        throw new Error('Unknown sound variant in pack: ' + pack.name + '/' + sound.id);
-    }
+  return pushModelProducts(checked, output.modelEntries, filesByPath, moduleAliases, output);
 };
 
 const productOrder = (a: DirectoryProduct, b: DirectoryProduct): number =>
@@ -458,14 +443,24 @@ const compileDirectory = (
     entries.map((e) => e.path),
     cache,
   );
+  const modFailure = checkDirectoryModularity(files);
+  if (modFailure) return modFailure;
   const output = compileEntries(entries, filesByPath, evaluateStructureAudit, cache);
   if ('ok' in output) return output;
-  compileModels(config, files, filesByPath, output, cache);
+  const modelFailure = compileModels(config, files, filesByPath, output, cache);
+  if (modelFailure) return modelFailure;
   const productsByEntry = new Map(
     output.products.map((product) => [entryKey(product.entry), product]),
   );
-  assertExports(config, productsByEntry);
-  assertPackSounds(config, productsByEntry);
+  directoryCompilationExportsCheck(
+    config,
+    productsByEntry,
+    (entry) => {
+      const p = productsByEntry.get(entryKey(entry));
+      return p?.kind === 'sound' ? p.sounds : undefined;
+    },
+    entryKey,
+  );
   const products = output.products.sort(productOrder);
   const sourceHash = sha256Digest(
     canonicalJsonString({

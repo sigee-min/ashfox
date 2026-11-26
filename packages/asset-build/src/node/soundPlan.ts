@@ -1,10 +1,13 @@
 import type { SoundBudget, SoundOutputRaw, SoundPreviewRaw } from '@ashfox/audio-core';
 import {
+  compileHooksForWorkspaceFile,
+  hasHooksContent,
   prepareDirectorySound,
   validateAssetDeclarations,
   type DirectoryFile,
 } from '@ashfox/engine-core';
 import { BuildFailure } from '../bundle/contract';
+import { json } from '../shared/digest';
 
 const SOUND_LIMITS = {
   sources: 32,
@@ -40,6 +43,18 @@ export const prepareNodeSound = (
     outputs: prepared.unit.outputs,
     previews: prepared.unit.previews,
   };
+};
+
+export const resolveSoundEntryHooksJson = (
+  sourcePath: string,
+  files: readonly DirectoryFile[],
+): string | undefined => {
+  const res = compileHooksForWorkspaceFile(sourcePath, new Map(files.map((f) => [f.path, f])));
+  if (!res.ok) {
+    const first = res.diagnostics[0]!;
+    throw new BuildFailure(first.code, `${first.file}:${first.line}: ${first.message}`, 3);
+  }
+  return hasHooksContent(res.document) ? json(res.document) : undefined;
 };
 
 export const assertWorkspaceSoundBudget = (

@@ -208,7 +208,7 @@ sound budget {
   fs.writeFileSync(budgetInput, budgetSource.replace('gain = 0.1;', 'gain = 0;'));
   fs.writeFileSync(
     path.join(temp, secondPath),
-    budgetSource.replace('sound budget {', 'sound budget_second {'),
+    budgetSource.replace('sound budget {', 'sound budget_second {').replaceAll('29s', '30s'),
   );
   const combinedPath = configPath;
   fs.writeFileSync(combinedPath, JSON.stringify(combinedConfig));

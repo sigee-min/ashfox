@@ -1,3 +1,4 @@
+import type { HooksDocument } from '../../../hooks/contract';
 import type { AssetId, ProjectDocument, TextureAsset } from '../../../model';
 import {
   BlobResolutionError,
@@ -12,6 +13,7 @@ export interface GltfResolvedExportOptions {
   resolveBlob: BlobResolver;
   readonly encoding?: 'portable' | 'optimized';
   readonly includeLods?: boolean;
+  readonly hooks?: HooksDocument;
 }
 
 const BUILTIN_UINT8_ARRAY_PROTOTYPE = Uint8Array.prototype;

@@ -9,9 +9,9 @@
 
 | 단위 | 역할 | 허용 선언 |
 | --- | --- | --- |
-| `structure id { … }` | 빌드 가능한 건축물 진입점 | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `floor`, `staircase`, `roof`, `furnish`, `weathering`, `socket`, 복셀 연산 |
+| `structure id { … }` | 빌드 가능한 건축물 진입점 | `import`, `density`, `seed`, `size`, `data_version`, `params`, `outputs`, `preview`, `palette`, `prefab`, `floor`, `staircase`, `roof`, `furnish`, `weathering`, `anchor`, `volume`, `zone`, `mc_block`, 복셀 연산 |
 | `compound id { … }` | 다중 건물 배치 진입점 | `structure`와 동일하며 하위 `structure` 진입점을 import해 `compound_place`로 배치 |
-| `module id { … }` | 공용 프리팹·가구 라이브러리 | `import`, `palette`, `export prefab`, `prefab` |
+| `module id { … }` | 공용 프리팹·스키마·가구 라이브러리 | `import`, `palette`, `export schema`, `export prefab`, `prefab` |
 
 - `density = 1 | 2;`: 절차적 멀티타일 텍스처 해상도(`1`이면 `16px`, `2`이면 `32px`, 기본값 `2`).
 - `seed = 101;`: `mix(...)` 팔레트, 풍화, 표면 입자에 쓰이는 결정론적 PRNG 시드.
@@ -26,7 +26,7 @@
 
 {{source-code:0}}
 
-- 모든 블록 상태는 `namespace:block_id[key=value,...]` 형식을 따릅니다. 솔버가 모서리 계단(`inner_left|inner_right|outer_left|outer_right`)과 울타리·담장·유리판 연결(`north|east|south|west`)을 자동 계산하며 `socket` 커넥터를 `.nbt` `minecraft:jigsaw` 블록 엔티티로 기록합니다.
+- 모든 블록 상태는 `namespace:block_id[key=value,...]` 형식을 따릅니다. 솔버가 모서리 계단(`inner_left|inner_right|outer_left|outer_right`)과 울타리·담장·유리판 연결(`north|east|south|west`)을 자동 계산하며 `std.entry`, `std.road`, `std.wall_join` `anchor` 커넥터를 `.nbt` `minecraft:jigsaw` 블록 엔티티로 기록합니다.
 - `mix("block" * weight, ...)`는 복셀마다 결정론적 시드 기반 표면 변주를 선택합니다(소수 비율 또는 `%` 지원).
 - `asset(alias, "fallback")`은 GLB·`render` 미리보기에서는 import한 커스텀 `.ashfox` 모델(`model Name { … }`)을 인스턴싱 배치하고 `.nbt`에서는 지정한 Minecraft 폴백 상태로 기록합니다.
 
@@ -37,13 +37,14 @@
 | 연산 | 동작 |
 | --- | --- |
 | `floor name { y = 0b; height = 4b; [jetty = 1b;] … }` | 한 층(`height >= 3b`) 단위로 방과 파사드 범위 지정 및 선택적 목재 `jetty` 돌출(`0b..2b`) |
-| `room id { from = (x, z); size = (w, d); kind = …; floor = k; wall = k; … }` | 시맨틱 방 선언(`living\|workshop\|bedroom\|tavern\|tower\|hallway\|courtyard`) |
+| `room id { from = (x, z); size = (w, d); kind = …; floor = k; wall = k; … }` | 시맨틱 방 선언(`living`, `tavern`, `bedroom` 또는 사용자 정의 역할 식별자) |
 | `facade <targets> { door { … } window { … } arch { … } bay_window { … } arcade { … } }` | 문(`porch { … }` 포함), 덧창 창문, `bay_window`, `arcade`, 아치 배치 |
 | `staircase { in_room = r; style = straight\|l_turn\|u_turn\|spiral; at = (x, z); … }` | 최소 머리 공간(`>= 2b`)과 상층 바닥 개구부를 갖춘 계단 생성 |
 | `roof { on = r; style = gable\|hip\|pyramid\|spire; axis = x\|z; … }` | 처마·트림·도머·굴뚝이 포함된 경사 지붕 및 `spire` 첨탑 생성 |
 | `furnish room { place_anchor { … } hang { … } }` | 모서리·벽·중앙 기준 가구 프리팹 앵커 배치 및 천장 조명 매달기 |
 | `weathering { ground_moss { … } corner_quoin { … } chimney_soot { … } }` | 시드 기반 바닥 이끼·모서리 굄돌·굴뚝 그을음 풍화 적용 |
-| `socket id { kind = …; room = r; wall = …; normal = …; }` | `.structure.json`과 `.nbt` 지그소 엔티티용 월드 연결 소켓 정의 |
+| `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | `.structure.json`, `.hooks.json`, glTF `anchor_*` 빈 노드 및 `.nbt` 지그소·블록 엔티티용 앵커 정의 |
+| `zone id [: std.courtyard] { … }` | 시맨틱 동선 또는 중정 개방 영역 선언 |
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | `compound` 단위 안에 import한 하위 `structure` 배치 |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | 저수준 복셀, ASCII 평면도(`layer { at = …; rows = […]; map { … } }`), 반복·대칭, 프리팹 배치 |
 

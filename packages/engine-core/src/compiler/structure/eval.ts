@@ -214,20 +214,9 @@ const evalCompoundPlace = (
       'structure.invalid-compound',
       `compound_place "${op.alias}" must target structure`,
     );
-  const childResult = evaluateStructure(
-    childPath,
-    state.units,
-    state.relative,
-    state.evaluatedGridCache,
-  );
-  runCompoundMerge(
-    state,
-    ownerPath,
-    op.alias,
-    childResult,
-    applyFrame(evalVec3(state, ownerPath, op.at), frame),
-    op.rotate,
-  );
+  const child = evaluateStructure(childPath, state.units, state.relative, state.evaluatedGridCache);
+  const placed = applyFrame(evalVec3(state, ownerPath, op.at), frame);
+  runCompoundMerge(state, ownerPath, op.alias, childPath, child, placed, op.rotate);
 };
 
 const evalTransformOp = (
@@ -478,6 +467,7 @@ const finalizeEvalResult = (
       placements,
     ),
     prefabUses: state.prefabUses,
+    ...(state.compoundChildren.length > 0 ? { compoundChildren: state.compoundChildren } : {}),
   };
 };
 

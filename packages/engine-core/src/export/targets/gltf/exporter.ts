@@ -12,6 +12,7 @@ import {
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf, GltfBuildOptions } from './build';
 import { createGltfBundle } from './bundle';
+import { appendHooksToGltfDocument } from './hooksEmit';
 import { attachModelLods } from './lodEmit';
 import { compressGltfWithMeshopt } from './meshopt';
 import {
@@ -359,6 +360,12 @@ export const exportGltfResolved = async (
   });
   const withLod =
     options.includeLods === false ? plain : attachModelLods(plain, validatedDocument, { quantize });
-  const compiled = encoding === 'portable' ? withLod : await compressGltfWithMeshopt(withLod);
+  const withHooks: CompiledGltf = {
+    ...withLod,
+    document: appendHooksToGltfDocument(withLod.document, options.hooks, {
+      unitScale: GLTF_UNIT_SCALE,
+    }),
+  };
+  const compiled = encoding === 'portable' ? withHooks : await compressGltfWithMeshopt(withHooks);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };

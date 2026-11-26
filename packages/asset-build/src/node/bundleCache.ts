@@ -26,6 +26,7 @@ export interface ResolvedBuildEntry {
   readonly productKind: 'model' | 'sprite' | 'sound' | 'structure';
   readonly metadata: AssetMetadata;
   readonly sounds?: readonly SoundProduct[];
+  readonly hooksJson?: string;
   readonly targets: readonly (Omit<TargetOutput, 'files'> & {
     readonly files: readonly TargetFileWithHash[];
   })[];
@@ -54,6 +55,7 @@ interface CachedSoundEntry {
   readonly metadata: AssetMetadata;
   readonly sounds: readonly Omit<SoundProduct, 'wav'>[];
   readonly wavHashes?: readonly string[];
+  readonly hooksJson?: string;
 }
 
 export const requiresVorbisEncoder = (snapshot: Snapshot): boolean =>
@@ -114,13 +116,19 @@ export const readCachedBuildEntry = (
       productKind: 'sound',
       metadata: hit.meta.metadata,
       sounds,
+      ...(hit.meta.hooksJson ? { hooksJson: hit.meta.hooksJson } : {}),
       targets: targets.map((t) => ({
         targetName: t.name,
-        files: sounds.map((s, idx) => ({
-          path: `${t.name}/${s.variant}.wav`,
-          bytes: s.wav,
-          sha256: hit.meta.wavHashes?.[idx],
-        })),
+        files: [
+          ...sounds.map((s, idx) => ({
+            path: `${t.name}/${s.variant}.wav`,
+            bytes: s.wav,
+            sha256: hit.meta.wavHashes?.[idx],
+          })),
+          ...(hit.meta.hooksJson
+            ? [{ path: `${t.name}.hooks.json`, bytes: encodeUtf8(hit.meta.hooksJson) }]
+            : []),
+        ],
       })),
     };
   }
@@ -157,6 +165,7 @@ export const writeCachedBuildEntry = (
       metadata: resolved.metadata,
       sounds: resolved.sounds.map(({ wav: _wav, ...rest }) => rest),
       wavHashes: resolved.sounds.map((s) => digest(s.wav)),
+      ...(resolved.hooksJson ? { hooksJson: resolved.hooksJson } : {}),
     };
     writeCacheBinary(
       cache,
@@ -294,6 +303,34 @@ const buildPackAssetMetadata = (
         manifest: 'assets.json',
         archive: pack.archive ? `${pack.name}.zip` : null,
       };
+
+const assertBindingNoLoop = (
+  format: string,
+  sourceName: string,
+  config: Snapshot['config'],
+  entriesByKey: ReadonlyMap<string, ResolvedBuildEntry>,
+): void => {
+  const target = config.exports.find((e) => e.name === sourceName);
+  const resolved = target ? entriesByKey.get(entrySelectorKey(target.entry)) : undefined;
+  if (!resolved?.sounds?.some((s) => s.playback.kind === 'loop')) return;
+  throw new BuildFailure(
+    format === 'minecraft_java' ? 'sound.loop.target' : 'sound.loop.codec',
+    `${sourceName}: loop audio requires WAV game delivery`,
+  );
+};
+
+export const assertNoLoopPackBindings = (
+  config: Snapshot['config'],
+  entriesByKey: ReadonlyMap<string, ResolvedBuildEntry>,
+): void => {
+  for (const pack of config.packs ?? []) {
+    const bindings =
+      pack.format === 'minecraft_java' ? pack.sounds : pack.audio === 'ogg' ? pack.assets : [];
+    for (const binding of bindings) {
+      assertBindingNoLoop(pack.format, binding.source, config, entriesByKey);
+    }
+  }
+};
 
 export const finalizeNodeBundle = async (
   snapshot: Snapshot,

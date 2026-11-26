@@ -14,12 +14,14 @@ import {
   exportStructureGltfResolved,
   formatDeliveryGateFailure,
   formatSpriteGateFailure,
+  hasHooksContent,
   openAssetProject,
   rasterizeTexture,
   readDirectoryWorkspace,
   type DirectoryFile,
   type ExportAdapterInput,
   type GlbPerformanceMetrics,
+  type HooksDocument,
   type StructureAuditReport,
   type WorkspaceEntrySelector,
 } from '@ashfox/engine-core';
@@ -191,10 +193,11 @@ const runBuildSpriteTask = (
     if (!audit.passed) {
       throw new BuildFailure('quality.gate', formatSpriteGateFailure(targetName, audit), 3);
     }
-    targetOutputs.push({
-      targetName,
-      files: [{ path: `${targetName}.png`, bytes: product.sprite.png }],
-    });
+    const files: Artifact[] = [{ path: `${targetName}.png`, bytes: product.sprite.png }];
+    if (hasHooksContent(product.hooks)) {
+      files.push({ path: `${targetName}.hooks.json`, bytes: encodeUtf8(json(product.hooks)) });
+    }
+    targetOutputs.push({ targetName, files });
   }
   return {
     kind: 'build-entry',
@@ -233,6 +236,30 @@ const buildTargetOutput = (
   };
 };
 
+const collectBundleFilesAndLineage = (
+  bundleFiles: readonly { readonly path: string; readonly kind: string; readonly data?: unknown }[],
+  hooks?: HooksDocument,
+  targetName?: string,
+): { readonly files: Artifact[]; readonly lineageTemplate?: Record<string, unknown> } => {
+  const files: Artifact[] = [];
+  let lineageTemplate: Record<string, unknown> | undefined;
+  for (const file of bundleFiles) {
+    if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
+    if (file.path === 'ashfox-lineage.json' && file.kind === 'json') {
+      lineageTemplate = file.data as Record<string, unknown>;
+      continue;
+    }
+    files.push({
+      path: file.path,
+      bytes: file.kind === 'binary' ? (file.data as Uint8Array) : encodeUtf8(json(file.data)),
+    });
+  }
+  if (targetName && hasHooksContent(hooks)) {
+    files.push({ path: `${targetName}.hooks.json`, bytes: encodeUtf8(json(hooks)) });
+  }
+  return { files, lineageTemplate };
+};
+
 const runBuildStructureTarget = async (
   product: Extract<
     ReturnType<typeof checkSnapshot>['products'][number],
@@ -247,11 +274,13 @@ const runBuildStructureTarget = async (
       3,
     );
   }
+  const hooks = product.structure.hooks;
   if (target.format === 'java_structure') {
-    return {
-      targetName: target.name,
-      files: [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }],
-    };
+    const files: Artifact[] = [{ path: `${target.name}.nbt`, bytes: product.structure.nbt }];
+    if (hasHooksContent(hooks)) {
+      files.push({ path: `${target.name}.hooks.json`, bytes: encodeUtf8(json(hooks)) });
+    }
+    return { targetName: target.name, files };
   }
   if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
   const bundle = await exportStructureGltfResolved(
@@ -260,19 +289,7 @@ const runBuildStructureTarget = async (
     LINEAGE_PLACEHOLDER_KEY,
     { encoding: target.encoding ?? 'portable' },
   );
-  const files: Artifact[] = [];
-  let lineageTemplate: Record<string, unknown> | undefined;
-  for (const file of bundle.files) {
-    if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
-    if (file.path === 'ashfox-lineage.json' && file.kind === 'json') {
-      lineageTemplate = file.data as Record<string, unknown>;
-      continue;
-    }
-    files.push({
-      path: file.path,
-      bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
-    });
-  }
+  const { files, lineageTemplate } = collectBundleFilesAndLineage(bundle.files, hooks, target.name);
   const metaPath = `${target.name}.structure.json`;
   if (!files.some((file) => file.path === metaPath)) {
     files.push({ path: metaPath, bytes: encodeUtf8(json(product.structure.playableMeta)) });
@@ -327,6 +344,7 @@ const runBuildModelTarget = async (
   openedProject: Extract<ReturnType<typeof openAssetProject>, { readonly ok: true }>['project'],
   target: TargetExportSpec,
   perfKind: 'creature' | 'prop',
+  hooks?: HooksDocument,
 ): Promise<TargetOutput> => {
   if (target.format === 'png' || target.format === 'wav' || target.format === 'java_structure') {
     throw new BuildFailure('export.format', target.name);
@@ -335,7 +353,10 @@ const runBuildModelTarget = async (
   const textures = new Map(Object.values(document.textures).map((t) => [t.source.key, t]));
   const gltfOptions =
     target.format === 'glb' || target.format === 'gltf'
-      ? { encoding: target.encoding ?? 'portable' }
+      ? {
+          encoding: target.encoding ?? 'portable',
+          ...(hasHooksContent(hooks) ? { hooks } : {}),
+        }
       : {};
   const bundle = await exportProductionProjectResolved(
     openedProject,
@@ -353,19 +374,7 @@ const runBuildModelTarget = async (
       ...gltfOptions,
     },
   );
-  const files: Artifact[] = [];
-  let lineageTemplate: Record<string, unknown> | undefined;
-  for (const file of bundle.files) {
-    if (file.kind === 'blob-copy') throw new BuildFailure('export.unresolved', file.path);
-    if (file.path === 'ashfox-lineage.json' && file.kind === 'json') {
-      lineageTemplate = file.data as Record<string, unknown>;
-      continue;
-    }
-    files.push({
-      path: file.path,
-      bytes: file.kind === 'binary' ? file.data : encodeUtf8(json(file.data)),
-    });
-  }
+  const { files, lineageTemplate } = collectBundleFilesAndLineage(bundle.files, hooks, target.name);
   return buildTargetOutput(target, perfKind, files, lineageTemplate);
 };
 
@@ -405,7 +414,7 @@ const runBuildModelTask = async (
   const perfKind = product.model.profile === 'creature' ? 'creature' : 'prop';
   const targets: TargetOutput[] = [];
   for (const target of task.targets) {
-    targets.push(await runBuildModelTarget(opened.project, target, perfKind));
+    targets.push(await runBuildModelTarget(opened.project, target, perfKind, product.hooks));
   }
   return {
     kind: 'build-entry',

@@ -3,6 +3,7 @@ import {
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
   SPRITE_POLICY,
   canonicalJsonString,
+  checkWorkspaceModularity,
   inspectNativeSource,
   isDirectorySource,
   readDirectoryWorkspace,
@@ -436,6 +437,7 @@ export const planWorkspaceExecution = (
     const config = readDirectoryWorkspace(snapshot.configuration);
     const filesByPath = validateDeclaredSnapshotFiles(config, snapshot.files);
     if (!filesByPath) return null;
+    if (!checkWorkspaceModularity(snapshot.files).ok) return null;
     const rawEntries = config.packages.flatMap((p) =>
       p.manifest.entries.map((e) => ({
         entry: { packageName: p.name, entryName: e.name },

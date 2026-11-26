@@ -196,7 +196,7 @@ export const mergeChildStructure = (
       id: `${alias}.${s.id}`,
       position: pos,
       normal: rotateFacing(s.normal, rotate),
-      kind: s.kind,
+      schema: s.schema,
       ...(s.pool ? { pool: s.pool } : {}),
       ...(s.target ? { target: s.target } : {}),
     });
@@ -323,6 +323,7 @@ export const checkStructureUnitHygiene = (
   fail: (file: string, code: string, message: string) => never,
 ): void => {
   const imports = new Set(usedImports.get(filePath));
+  for (const alias of unit.hookAliases ?? []) imports.add(alias);
   const paletteKeys = new Set(usedPaletteKeys.get(filePath));
   if (filePath !== rootPath) collectExportedModuleRefs(unit, paletteKeys, imports);
   const badImport = unit.imports.find((imp) => !imports.has(imp.alias));

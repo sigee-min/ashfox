@@ -1,5 +1,5 @@
 import type { AshfoxBlock, AshfoxNamedBlock, AshfoxStatement } from '../program/syntax/blockAst';
-import type { MirrorAxis, RepeatAxis, RoomKind, SocketKind, StructureOp } from './contract';
+import type { MirrorAxis, RepeatAxis, StructureOp } from './contract';
 import {
   parseFacadeOp,
   parseFurnishOp,
@@ -27,17 +27,9 @@ import {
   type AttrEntry,
 } from './grammar';
 
-const ROOM_KINDS = new Set([
-  'living',
-  'workshop',
-  'bedroom',
-  'tavern',
-  'tower',
-  'hallway',
-  'courtyard',
-]);
-const SOCKET_KINDS = new Set(['entry', 'road', 'wall_join', 'courtyard']);
 const SIMPLE_OPS = new Set(['set', 'carve', 'box', 'hollow', 'walls', 'frame']);
+const HOOK_PASS_OPS = new Set(['volume', 'cue', 'meta', 'zone', 'mc_block', 'schema']);
+const SOCKET_SCHEMAS = new Set(['std.entry', 'std.road', 'std.wall_join', 'std.courtyard']);
 
 const parseSimpleOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
   const attrs = readBlockAssigns(stmt.block, file);
@@ -118,17 +110,19 @@ const parseLayerOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
   };
 };
 
-const parseRoomOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
+const parseRoomOp = (stmt: AshfoxNamedBlock, file: string, depth: number): StructureOp => {
   if (!stmt.name) return failAst(file, stmt.span, 'room <name> { ... }', 'unnamed room');
-  const attrs = readBlockAssigns(stmt.block, file);
+  const { attrs } = splitOpContainer(stmt.block, file, depth);
   assertAllowedAttrs(
     file,
     stmt.span,
     attrs,
     new Set(['from', 'size', 'kind', 'shape', 'plinth', 'floor', 'wall', 'frame', 'ceiling']),
   );
-  const kind = asStr(file, stmt.span, attrs.kind, 'kind');
-  if (!ROOM_KINDS.has(kind)) failAst(file, attrs.kind?.span ?? stmt.span, 'valid room kind', kind);
+  const schema = stmt.typeRef ?? undefined;
+  const kind =
+    asOptStr(file, stmt.span, attrs.kind, 'kind') ??
+    (schema === 'std.courtyard' ? 'courtyard' : 'room');
   const shape = asOptStr(file, stmt.span, attrs.shape, 'shape');
   if (shape !== undefined && shape !== 'rect' && shape !== 'octagon') {
     failAst(file, attrs.shape?.span ?? stmt.span, 'shape = rect|octagon', shape);
@@ -138,7 +132,8 @@ const parseRoomOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
     name: stmt.name,
     from: asVec2(file, stmt.span, attrs.from, 'from'),
     size: asVec2(file, stmt.span, attrs.size, 'size'),
-    kind: kind as RoomKind,
+    kind,
+    ...(schema ? { schema } : {}),
     ...(shape ? { shape: shape as 'rect' | 'octagon' } : {}),
     ...pickOptStrs(file, stmt.span, attrs, [
       ['plinth', 'plinth'],
@@ -150,27 +145,23 @@ const parseRoomOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
   };
 };
 
-const parseSocketOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
-  if (!stmt.name) return failAst(file, stmt.span, 'socket <name> { ... }', 'unnamed socket');
+const parseAnchorOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
+  if (!stmt.name || !stmt.typeRef) {
+    return failAst(file, stmt.span, 'anchor <name> : <schema> { ... }', stmt.name ?? 'unnamed');
+  }
+  if (!SOCKET_SCHEMAS.has(stmt.typeRef)) return { op: 'hook_decl' };
   const attrs = readBlockAssigns(stmt.block, file);
-  assertAllowedAttrs(
-    file,
-    stmt.span,
-    attrs,
-    new Set(['kind', 'at', 'room', 'wall', 'normal', 'pool', 'target']),
-  );
-  const kind = asStr(file, stmt.span, attrs.kind, 'kind');
-  if (!SOCKET_KINDS.has(kind)) failAst(file, stmt.span, 'entry|road|wall_join|courtyard', kind);
-  if (attrs.at === undefined && (attrs.room === undefined || attrs.wall === undefined)) {
-    failAst(file, stmt.span, 'socket at or room/wall', 'missing');
+  const hasFacingOrWall = attrs.facing !== undefined || attrs.wall !== undefined;
+  if (attrs.at === undefined && (attrs.room === undefined || !hasFacingOrWall)) {
+    failAst(file, stmt.span, 'anchor at or room/facing', 'missing');
   }
   return {
-    op: 'socket',
+    op: 'anchor',
     name: stmt.name,
-    kind: kind as SocketKind,
+    schema: stmt.typeRef,
     ...(attrs.at ? { at: asVec3(file, stmt.span, attrs.at, 'at') } : {}),
     ...(attrs.wall ? { wall: asFacing(file, stmt.span, attrs.wall) } : {}),
-    ...(attrs.normal ? { normal: asFacing(file, stmt.span, attrs.normal) } : {}),
+    ...(attrs.facing ? { facing: asFacing(file, stmt.span, attrs.facing) } : {}),
     ...pickOptStrs(file, stmt.span, attrs, [
       ['room', 'room'],
       ['pool', 'pool'],
@@ -194,6 +185,8 @@ const splitOpContainer = (
       attrs[child.path] = readAssignEntry(child, file);
     } else if (child.kind === 'named-block') {
       ops.push(parseSingleOp(child, file, depth + 1));
+    } else if (child.kind === 'bare' && child.stmtKind === 'mc_block') {
+      ops.push({ op: 'hook_decl' });
     } else {
       failAst(file, child.span, 'property or operation', child.kind);
     }
@@ -260,7 +253,13 @@ export const STRUCTURE_OP_KINDS = new Set([
   'staircase',
   'furnish',
   'weathering',
-  'socket',
+  'anchor',
+  'volume',
+  'cue',
+  'meta',
+  'zone',
+  'mc_block',
+  'schema',
   'compound_place',
   'floor',
   'repeat',
@@ -271,19 +270,20 @@ export const parseSingleOp = (stmt: AshfoxNamedBlock, file: string, depth: numbe
   if (depth > 12) failAst(file, stmt.span, 'structure nesting <= 12', 'deep op');
   const kw = stmt.blockKind;
   if (SIMPLE_OPS.has(kw)) return parseSimpleOp(stmt, file);
+  if (HOOK_PASS_OPS.has(kw)) return { op: 'hook_decl' };
   const leaf: Readonly<Record<string, (s: AshfoxNamedBlock, f: string) => StructureOp>> = {
     roof: parseRoofOp,
     place: parsePlaceOp,
     layer: parseLayerOp,
-    room: parseRoomOp,
     facade: parseFacadeOp,
     staircase: parseStaircaseOp,
     furnish: parseFurnishOp,
     weathering: parseWeatheringOp,
-    socket: parseSocketOp,
+    anchor: parseAnchorOp,
     compound_place: parseCompoundPlaceOp,
   };
   if (kw in leaf) return leaf[kw]!(stmt, file);
+  if (kw === 'room') return parseRoomOp(stmt, file, depth);
   if (kw === 'floor') return parseFloorOp(stmt, file, depth);
   if (kw === 'repeat' || kw === 'mirror') return parseRepeatOrMirror(stmt, file, depth);
   return failAst(file, stmt.span, 'structure operation', kw);
@@ -295,6 +295,7 @@ export const parseOpStatements = (
   depth = 0,
 ): readonly StructureOp[] =>
   statements.map((stmt) => {
+    if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return { op: 'hook_decl' };
     if (stmt.kind !== 'named-block')
       return failAst(file, stmt.span, 'structure operation block', stmt.kind);
     return parseSingleOp(stmt, file, depth + 1);

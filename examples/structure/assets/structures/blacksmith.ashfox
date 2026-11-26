@@ -134,6 +134,6 @@ structure blacksmith {
   place kit.OutdoorForge { at = (3b, 1b, 13b); rotate = 0; }
   place kit.CrateStack { at = (1b, 1b, 12b); rotate = 0; }
   set { at = (13b, 3b, 11b); block = sign; facing = south; }
-  socket forge_entry { kind = entry; room = shop; wall = south; normal = south; pool = "village:streets"; target = "road_join"; }
-  socket west_yard { kind = courtyard; at = (0, 0, floor(d / 2)); normal = west; pool = "village:courtyards"; target = "courtyard"; }
+  anchor forge_entry : std.entry { at = (11b, 1b, 10b); facing = south; pool = "village:streets"; target = "road_join"; }
+  anchor west_yard : std.courtyard { at = (0b, 0b, 7b); facing = west; pool = "village:courtyards"; target = "courtyard"; }
 }

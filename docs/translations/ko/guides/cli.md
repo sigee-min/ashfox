@@ -10,7 +10,7 @@
 | `doctor [--json]` | 없음 | 실행 환경 준비 상태·기계 판독 계약 |
 | `check <input> [options]` | `.ashfox` 진입점, `.ashfoxworkspace`, `.ashfoxworkspace.mjs` 또는 빌드 디렉터리 | 원본 검증·선언 검사·품질 감사 또는 빌드 무결성 검사 |
 | `render <input> [options]` | `.ashfox` 원본 (`--stdin` / `--input-json` 지원) | 선언된 `preview [name]` 블록에서 렌더링한 PNG 또는 GIF |
-| `build <input> [--json]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | `outputs { ... }` 선언 또는 워크스페이스 출력 빌드 |
+| `build <input> [--json] [--bindings ts\|cs\|gd]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | `outputs { ... }` 선언 또는 워크스페이스 출력, `<target>.hooks.json` 및 선택적 훅 바인딩 빌드 |
 
 `doctor --json`, `check`, `build`는 JSON(`ashfox-cli-result`)을 반환합니다. 사람은 `help`, 에이전트는 `doctor --json`을 사용합니다. 출력·시점 정책은 `.ashfox` 선언(`outputs`, `preview`)이나 `.ashfoxworkspace`에 둡니다. `export`, `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
 

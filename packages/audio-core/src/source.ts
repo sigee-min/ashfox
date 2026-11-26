@@ -14,6 +14,7 @@ import {
   type ParamEntry,
   type UnitDim,
 } from './sourceBlock';
+import { HOOK_DECL_KEYWORDS, skipHookDeclaration } from './hookSkip';
 
 const readParamValue = (cursor: SoundCursor): ParamEntry => {
   const next = cursor.peek();
@@ -85,6 +86,7 @@ export interface SoundSourceUnit {
   readonly kind: 'sound' | 'module';
   readonly id: string;
   readonly imports: readonly SoundImportDecl[];
+  readonly hookAliases?: readonly string[];
   readonly params: Readonly<Record<string, ParamEntry>>;
   readonly outputs: readonly SoundOutputRaw[];
   readonly previews: readonly SoundPreviewRaw[];
@@ -374,7 +376,10 @@ const parseSoundImport = (cursor: SoundCursor, draft: SoundUnitDraft): void => {
   draft.imports.push({ path: p, alias, ...(params ? { params } : {}) });
 };
 
-const parseUnitStatement = (cursor: SoundCursor, draft: SoundUnitDraft): void => {
+const parseUnitStatement = (
+  cursor: SoundCursor,
+  draft: SoundUnitDraft & { readonly hookAliases: Set<string> },
+): void => {
   cursor.space();
   const keyOffset = cursor.offset,
     first = cursor.name();
@@ -386,13 +391,15 @@ const parseUnitStatement = (cursor: SoundCursor, draft: SoundUnitDraft): void =>
   if (first === 'params') Object.assign(draft.params, parseParamBlock(cursor));
   else if (first === 'voice') parseVoiceDecl(cursor, false, draft);
   else if (first === 'seq') parseSeqNamed(cursor, false, draft);
+  else if (HOOK_DECL_KEYWORDS.has(first)) skipHookDeclaration(cursor, draft.hookAliases);
   else if (first === 'export') {
     const k = cursor.name();
     if (k === 'voice') parseVoiceDecl(cursor, true, draft);
     else if (k === 'seq') parseSeqNamed(cursor, true, draft);
-    else cursor.fail('expected voice or seq after export');
+    else if (k === 'schema') skipHookDeclaration(cursor, draft.hookAliases);
+    else cursor.fail('expected voice, seq, or schema after export');
   } else if (draft.kind === 'module')
-    cursor.fail('module allows only import, params, and export voice/seq');
+    cursor.fail('module allows only import, params, and export voice/seq/schema');
   else parseSoundBodyStmt(cursor, first, keyOffset, draft);
 };
 
@@ -431,10 +438,11 @@ export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSour
   if (rawKind !== 'sound' && rawKind !== 'module') cursor.fail('expected sound or module');
   cursor.space();
   cursor.spans.set('recipe.id', cursor.offset);
-  const draft: SoundUnitDraft = {
+  const draft: SoundUnitDraft & { readonly hookAliases: Set<string> } = {
     kind: rawKind === 'module' ? 'module' : 'sound',
     imports: [],
     aliases: new Set(),
+    hookAliases: new Set(),
     params: Object.create(null),
     outputs: [],
     previews: [],
@@ -448,7 +456,12 @@ export const parseSoundUnit = (source: string, file = 'sound.ashfox'): SoundSour
   while (cursor.peek() !== '}') parseUnitStatement(cursor, draft);
   cursor.take('}');
   if (cursor.peek() !== '') cursor.fail('unexpected trailing source');
-  return { ...draft, id, report: (e: unknown) => cursor.report(e) };
+  return {
+    ...draft,
+    hookAliases: [...draft.hookAliases],
+    id,
+    report: (e: unknown) => cursor.report(e),
+  };
 };
 
 export const parseSoundDocument = (source: string, file = 'sound.ashfox') => {

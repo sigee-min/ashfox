@@ -3,13 +3,12 @@ import type { Vec3 } from '../../model/identity';
 import type { CompiledModel } from '../../model/compiled';
 import type { ProjectDocument } from '../../model/document';
 import type { TextureAsset } from '../../model/texture';
+import type { HooksDocument } from '../../hooks/contract';
 import type {
   AcousticSpace,
   BlockRotation,
   CardinalFacing,
   IntVec3,
-  RoomKind,
-  SocketKind,
   StructureDensity,
 } from '../../project/structure/contract';
 
@@ -62,7 +61,7 @@ export interface StructureFloorMeta {
 
 export interface StructureRoomMeta {
   readonly name: string;
-  readonly kind: RoomKind;
+  readonly kind: string;
   readonly acousticSpace: AcousticSpace;
   readonly from: IntVec3;
   readonly to: IntVec3;
@@ -84,7 +83,7 @@ export interface StructureSocketMeta {
   readonly id: string;
   readonly position: Vec3;
   readonly normal: CardinalFacing;
-  readonly kind: SocketKind;
+  readonly schema: string;
   readonly pool?: string;
   readonly target?: string;
 }
@@ -180,7 +179,7 @@ export interface PlayableCollider {
 
 export interface PlayableZone {
   readonly id: string;
-  readonly kind: RoomKind;
+  readonly kind: string;
   readonly from: Vec3;
   readonly to: Vec3;
   readonly enclosed: boolean;
@@ -263,9 +262,19 @@ export type StructureAuditEvaluator = (
   mesh: StructureBakedMesh,
 ) => StructureAuditReport;
 
+export interface CompoundChildPlacement {
+  readonly unitPath: string;
+  readonly alias: string;
+  readonly origin: IntVec3;
+  readonly rotate: BlockRotation;
+  readonly grid: StructureGrid;
+  readonly compoundChildren?: readonly CompoundChildPlacement[];
+}
+
 export interface EvaluatedStructureResult {
   readonly grid: StructureGrid;
   readonly prefabUses: number;
+  readonly compoundChildren?: readonly CompoundChildPlacement[];
 }
 
 export interface StructureProduct {
@@ -277,6 +286,7 @@ export interface StructureProduct {
   readonly bakedMesh: StructureBakedMesh;
   readonly lodLevels?: StructureLodLevels;
   readonly playableMeta: PlayableStructureMeta;
+  readonly hooks?: HooksDocument;
   readonly document: ProjectDocument;
   readonly audit: StructureAuditReport;
 }

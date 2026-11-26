@@ -175,7 +175,7 @@ const seedSocketEntries = (
 ): void => {
   const [w, h, d] = grid.size;
   for (const socket of grid.sockets) {
-    if (socket.kind !== 'entry') continue;
+    if (socket.schema !== 'std.entry') continue;
     const sx = Math.max(0, Math.min(w - 1, Math.round(socket.position[0])));
     const sy = Math.max(1, Math.min(h - 2, Math.round(socket.position[1])));
     const sz = Math.max(0, Math.min(d - 1, Math.round(socket.position[2])));

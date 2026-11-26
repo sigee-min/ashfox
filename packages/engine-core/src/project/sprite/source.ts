@@ -15,6 +15,8 @@ import type {
 } from '../program/syntax/blockAst';
 import { parseAshfoxProgram } from '../program/syntax/blockParser';
 import type { SourceSpan } from '../source/contract';
+import { parseHooksSource } from '../../hooks/parse';
+import { collectUsedHookAliases } from '../../hooks/resolve';
 import { assertWellFormedSourceText } from '../workspace/path';
 import { SpriteInputError } from './contract';
 
@@ -22,6 +24,7 @@ export interface SpriteSourceUnit {
   readonly kind: 'sprite' | 'module';
   readonly id: string;
   readonly imports: readonly { readonly path: string; readonly alias: string }[];
+  readonly hookAliases?: readonly string[];
   readonly outputs: readonly RawDeclaredOutput[];
   readonly previews: readonly RawDeclaredPreview[];
   readonly masks: readonly Record<string, unknown>[];
@@ -45,6 +48,7 @@ interface ParsedMembers {
 const LAYER_OPS = new Set(['fill', 'part', 'paint', 'erase', 'stamp', 'outline', 'pattern']);
 const SHAPE_KINDS = new Set(['rect', 'ellipse', 'circle', 'capsule', 'polygon', 'line']);
 const DECL_KINDS = new Set(['mask', 'material', 'stamp']);
+const HOOK_PASS_KINDS = new Set(['schema', 'anchor', 'volume', 'cue', 'meta', 'zone', 'mc_block']);
 
 const PIXEL_KEYS = new Set([
   'at',
@@ -319,6 +323,7 @@ const isStampLayerBlock = (stmt: AshfoxNamedBlock): boolean =>
   stmt.block.statements.some((s) => s.kind === 'assign' && s.path === 'stamp');
 
 const handleTopNamedBlock = (members: ParsedMembers, stmt: AshfoxNamedBlock): void => {
+  if (HOOK_PASS_KINDS.has(stmt.blockKind)) return;
   if (stmt.blockKind === 'outputs' && stmt.name === null) {
     if (members.kind !== 'sprite') failSyntax(members.file, stmt.span, 'export decl', 'outputs');
     members.outputs.push(...lowerOutputsFromBlock(stmt.block, members.file));
@@ -359,6 +364,7 @@ const handleTopStatement = (members: ParsedMembers, stmt: AshfoxStatement): void
     return;
   }
   if (stmt.kind === 'export') {
+    if (stmt.declaration.blockKind === 'schema') return;
     addExportedDecl(members, stmt.declaration);
     return;
   }
@@ -377,6 +383,7 @@ const handleTopStatement = (members: ParsedMembers, stmt: AshfoxStatement): void
     handleTopNamedBlock(members, stmt);
     return;
   }
+  if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return;
   failSyntax(members.file, stmt.span, 'sprite declaration or property', stmt.stmtKind);
 };
 
@@ -411,10 +418,14 @@ export const parseSpriteSource = (source: string, file: string): SpriteSourceUni
     item: { id: top.name, layers: [] },
   };
   for (const stmt of top.block.statements) handleTopStatement(members, stmt);
+  const hookAliases = [
+    ...collectUsedHookAliases(parseHooksSource(source, file, { allowHostStatements: true }).unit),
+  ];
   return deepFreeze({
     kind,
     id: top.name,
     imports: members.imports,
+    ...(hookAliases.length > 0 ? { hookAliases } : {}),
     outputs: members.outputs,
     previews: members.previews,
     masks: members.masks,

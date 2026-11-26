@@ -10,6 +10,8 @@ import type {
   ProgramTextureDecl,
 } from '../../../project/program/syntax/contract';
 import type { WorkspaceCompilationFile } from '../../../project/workspace/closure';
+import { parseHooksSource } from '../../../hooks/parse';
+import { collectUsedHookAliases } from '../../../hooks/resolve';
 
 export interface FileRefSet {
   readonly aliases: Set<string>;
@@ -233,5 +235,11 @@ export const collectFileAliasRefs = (
     fileImports,
   };
   for (const decl of file.unit.declarations) walkDeclaration(decl, refs);
+  const hookAliases = collectUsedHookAliases(
+    parseHooksSource(file.source, file.identity.path, { allowHostStatements: true }).unit,
+  );
+  for (const alias of hookAliases) {
+    if (fileImports.has(alias)) refs.aliases.add(alias);
+  }
   return refs.aliases;
 };

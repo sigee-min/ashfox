@@ -99,11 +99,17 @@ try {
     path.join(root, 'examples/items/assets/sprites/apple.ashfox'),
     'utf8',
   );
-  for (const name of names)
+  names.forEach((name, index) =>
     fs.writeFileSync(
       path.join(temp, 'assets/sprites', name + '.ashfox'),
-      source.replace('sprite apple {', 'sprite ' + name + ' {'),
-    );
+      source
+        .replace('sprite apple {', 'sprite ' + name + ' {')
+        .replace(
+          'dimple = #782026;',
+          `dimple = #7820${(0x20 + index).toString(16).padStart(2, '0')};`,
+        ),
+    ),
+  );
   write(config);
   const first = success(run('build'));
   assert.equal(first.exports.length, count + 2);
