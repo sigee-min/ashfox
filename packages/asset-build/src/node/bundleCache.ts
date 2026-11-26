@@ -68,12 +68,37 @@ export const requiresVorbisEncoder = (snapshot: Snapshot): boolean =>
     ),
   );
 
+const readCachedSpriteEntry = (
+  entry: PlannedEntry,
+  targets: readonly TargetExportSpec[],
+  cache: DiskCacheContext,
+): ResolvedBuildEntry | null => {
+  const hit = readCacheBinary<CachedBuildEntry>(
+    cache,
+    `b-spr-${entry.closureHash}-${cache.fingerprint}`,
+  );
+  const pngBytes = hit?.blobs[0];
+  if (!hit || !pngBytes) return null;
+  const sha256 = hit.meta.targets[0]?.files[0]?.sha256;
+  return {
+    entry,
+    productKind: hit.meta.productKind,
+    metadata: hit.meta.metadata,
+    targets: targets.map((t) => ({
+      targetName: t.name,
+      files: [{ path: `${t.name}.png`, bytes: pngBytes, sha256 }],
+    })),
+    pkgInterfaces: hit.meta.pkgInterfaces,
+  };
+};
+
 export const readCachedBuildEntry = (
   entry: PlannedEntry,
   targets: readonly TargetExportSpec[],
   cache: DiskCacheContext,
 ): ResolvedBuildEntry | null => {
   if (targets.length === 0) return null;
+  if (entry.kind === 'sprite') return readCachedSpriteEntry(entry, targets, cache);
   if (entry.kind === 'sound') {
     const hit = readCacheBinary<CachedSoundEntry>(
       cache,
@@ -99,11 +124,10 @@ export const readCachedBuildEntry = (
       })),
     };
   }
-  const prefix = entry.kind === 'sprite' ? 'b-spr' : entry.kind === 'structure' ? 'b-str' : 'b-mod';
-  const suffix = entry.kind === 'sprite' ? '' : `-${digest(json(targets))}`;
+  const prefix = entry.kind === 'structure' ? 'b-str' : 'b-mod';
   const hit = readCacheBinary<CachedBuildEntry>(
     cache,
-    `${prefix}-${entry.closureHash}${suffix}-${cache.fingerprint}`,
+    `${prefix}-${entry.closureHash}-${digest(json(targets))}-${cache.fingerprint}`,
   );
   if (!hit) return null;
   let offset = 0;

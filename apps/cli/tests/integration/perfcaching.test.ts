@@ -222,6 +222,100 @@ const verifyCliFlagsAndDeterminism = (tempRoot: string): void => {
   assert.equal(checkNoCache.result.sourceHash, checkCached.result.sourceHash);
 };
 
+const verifySpriteTargetCache = async (tempRoot: string): Promise<void> => {
+  const spriteDir = path.join(tempRoot, 'sprite-targets');
+  const spriteCfg = copyWorkspace('items', spriteDir);
+  await compileNodeBundle(readSnapshot(spriteCfg), TOOLCHAIN);
+  const rawCfg = JSON.parse(fs.readFileSync(spriteCfg, 'utf8')) as {
+    exports: {
+      name: string;
+      entry: { packageName: string; entryName: string };
+      format: string;
+      directory: string;
+    }[];
+  };
+  const appleExp = rawCfg.exports.find((e) => e.name === 'apple')!;
+  const mutatedCfg = {
+    ...rawCfg,
+    exports: [
+      ...rawCfg.exports.filter((e) => e.name !== 'apple'),
+      { ...appleExp, name: 'crisp_apple', directory: 'exports/crisp_apple' },
+      { ...appleExp, name: 'apple_clone', directory: 'exports/apple_clone' },
+    ],
+  };
+  fs.writeFileSync(spriteCfg, JSON.stringify(mutatedCfg, null, 2));
+  const mutatedSnap = readSnapshot(spriteCfg);
+  const warmMutated = await compileNodeBundle(mutatedSnap, TOOLCHAIN);
+  const coldMutated = await compileNodeBundle(mutatedSnap, TOOLCHAIN, undefined, { noCache: true });
+  assertBundlesIdentical('sprite rename and multi-export cache', coldMutated, warmMutated);
+};
+
+const moveSharedSurfacesToModulePkg = (dir: string, cfgPath: string): void => {
+  const commonDir = path.join(dir, 'assets/models/common');
+  const creaturesDir = path.join(dir, 'assets/models/creatures');
+  fs.mkdirSync(commonDir, { recursive: true });
+  for (const f of ['surface.ashfox', 'goblin-surface.ashfox']) {
+    fs.renameSync(path.join(creaturesDir, f), path.join(commonDir, f));
+  }
+  for (const f of ['fox.ashfox', 'body.ashfox', 'goblin.ashfox', 'goblin-body.ashfox']) {
+    const p = path.join(creaturesDir, f);
+    fs.writeFileSync(
+      p,
+      fs
+        .readFileSync(p, 'utf8')
+        .replaceAll('"./surface.ashfox"', '"common/surface"')
+        .replaceAll('"./surface"', '"common/surface"')
+        .replaceAll('"./goblin-surface.ashfox"', '"common/goblin-surface"')
+        .replaceAll('"./goblin-surface"', '"common/goblin-surface"'),
+    );
+  }
+  const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8')) as {
+    packages: {
+      name: string;
+      root: string;
+      manifest: {
+        format: string;
+        version: number;
+        entries: unknown[];
+        modules: { subpath: string; path: string }[];
+        dependencies: unknown[];
+      };
+    }[];
+  };
+  const creaturesPkg = raw.packages.find((p) => p.name === 'creatures')!;
+  creaturesPkg.manifest.modules = creaturesPkg.manifest.modules.filter(
+    (m) => m.path !== 'surface.ashfox' && m.path !== 'goblin-surface.ashfox',
+  );
+  creaturesPkg.manifest.dependencies.push({ name: 'common' });
+  raw.packages.push({
+    name: 'common',
+    root: 'assets/models/common',
+    manifest: {
+      format: 'ashfox-package',
+      version: 1,
+      entries: [],
+      modules: [
+        { subpath: './surface', path: 'surface.ashfox' },
+        { subpath: './goblin-surface', path: 'goblin-surface.ashfox' },
+      ],
+      dependencies: [],
+    },
+  });
+  fs.writeFileSync(cfgPath, JSON.stringify(raw, null, 2));
+};
+
+const verifyModuleOnlyPkgInterface = async (tempRoot: string): Promise<void> => {
+  const modDir = path.join(tempRoot, 'module-only-pkg');
+  const cfgPath = copyWorkspace('shared-creatures', modDir);
+  moveSharedSurfacesToModulePkg(modDir, cfgPath);
+  const modSnap = readSnapshot(cfgPath);
+  const seqBundle = await compileBundle(modSnap, TOOLCHAIN, undefined, checkSnapshot(modSnap));
+  const nodeColdBundle = await compileNodeBundle(modSnap, TOOLCHAIN, undefined, { noCache: true });
+  const nodeWarmBundle = await compileNodeBundle(modSnap, TOOLCHAIN);
+  assertBundlesIdentical('module-only shared pkg cold', seqBundle, nodeColdBundle);
+  assertBundlesIdentical('module-only shared pkg warm', seqBundle, nodeWarmBundle);
+};
+
 const main = async (): Promise<void> => {
   const tempRoot = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-perfcache-'));
   try {
@@ -231,6 +325,8 @@ const main = async (): Promise<void> => {
     }
     await verifySingleFileEditIncremental(tempRoot);
     verifyCliFlagsAndDeterminism(tempRoot);
+    await verifySpriteTargetCache(tempRoot);
+    await verifyModuleOnlyPkgInterface(tempRoot);
     process.stdout.write(
       'Benchmark (Before / Single Cold / Parallel Cold / Warm Build / Warm Check ms):\n' +
         rows

@@ -56,6 +56,22 @@ const collectPackageWithDeps = (
   return [...byName.values()].filter((p) => seen.has(p.name));
 };
 
+const collectSeedPackages = (
+  targetPkg: WorkspaceManifestPkg,
+  allModelPkgs: readonly WorkspaceManifestPkg[],
+  byName: ReadonlyMap<string, WorkspaceManifestPkg>,
+): readonly WorkspaceManifestPkg[] => {
+  if (targetPkg.manifest.entries.length > 0) return [targetPkg];
+  const consumers = allModelPkgs.filter(
+    (p) =>
+      p.manifest.entries.length > 0 &&
+      collectPackageWithDeps(p.name, byName).some((dep) => dep.name === targetPkg.name),
+  );
+  return consumers.length > 0
+    ? consumers
+    : allModelPkgs.filter((p) => p.manifest.entries.length > 0);
+};
+
 const probePackageInterfaceHash = (
   targetPkg: WorkspaceManifestPkg,
   allModelPkgs: readonly WorkspaceManifestPkg[],
@@ -63,8 +79,14 @@ const probePackageInterfaceHash = (
   filesByPath: ReadonlyMap<string, DirectoryFile>,
 ): Sha256Digest => {
   const byName = new Map(allModelPkgs.map((p) => [p.name, p]));
-  const pkgs = collectPackageWithDeps(targetPkg.name, byName).map((p) =>
-    p.name === targetPkg.name ? p : { ...p, manifest: { ...p.manifest, entries: [] } },
+  const seeds = collectSeedPackages(targetPkg, allModelPkgs, byName);
+  const seedNames = new Set(seeds.map((p) => p.name));
+  const closureMap = new Map<string, WorkspaceManifestPkg>();
+  for (const seed of seeds) {
+    for (const pkg of collectPackageWithDeps(seed.name, byName)) closureMap.set(pkg.name, pkg);
+  }
+  const pkgs = [...closureMap.values()].map((p) =>
+    seedNames.has(p.name) ? p : { ...p, manifest: { ...p.manifest, entries: [] } },
   );
   const paths = new Set(
     pkgs.flatMap((p) =>
