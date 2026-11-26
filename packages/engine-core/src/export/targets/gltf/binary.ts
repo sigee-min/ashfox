@@ -209,7 +209,8 @@ const encodeInterleavedVertices = (
 
 export class GltfBinaryWriter {
   constructor(private readonly quantize = true) {}
-  private bytes: number[] = [];
+  private readonly chunks: { readonly offset: number; readonly bytes: Uint8Array }[] = [];
+  private totalLength = 0;
   readonly state: GltfBinaryState = {
     bufferViews: [],
     accessors: [],
@@ -217,7 +218,7 @@ export class GltfBinaryWriter {
   };
 
   get byteLength(): number {
-    return this.bytes.length;
+    return this.totalLength;
   }
 
   addFloatAccessor(
@@ -228,9 +229,9 @@ export class GltfBinaryWriter {
   ): number {
     const bytes = new Uint8Array(values.length * 4);
     const view = new DataView(bytes.buffer);
-    values.forEach((value, index) => {
-      view.setFloat32(index * 4, value, true);
-    });
+    for (let index = 0; index < values.length; index += 1) {
+      view.setFloat32(index * 4, values[index]!, true);
+    }
     const bufferView = this.append(bytes, target);
     const count = values.length / componentCount;
     const accessor: GltfAccessor = {
@@ -272,9 +273,9 @@ export class GltfBinaryWriter {
     }
     const bytes = new Uint8Array(values.length * 2);
     const view = new DataView(bytes.buffer);
-    values.forEach((value, index) => {
-      view.setInt16(index * 2, normalizedShort(value), true);
-    });
+    for (let index = 0; index < values.length; index += 1) {
+      view.setInt16(index * 2, normalizedShort(values[index]!), true);
+    }
     const bufferView = this.append(bytes);
     return this.addAccessor({
       bufferView,
@@ -291,7 +292,9 @@ export class GltfBinaryWriter {
     }
     const bytes = new Uint8Array(values.length * 4);
     const view = new DataView(bytes.buffer);
-    values.forEach((value, index) => view.setFloat32(index * 4, value, true));
+    for (let index = 0; index < values.length; index += 1) {
+      view.setFloat32(index * 4, values[index]!, true);
+    }
     return this.addAccessor({
       bufferView: this.append(bytes),
       componentType: 5126,
@@ -382,13 +385,15 @@ export class GltfBinaryWriter {
     const useUint32 = values.some((value) => value > 65535);
     const bytes = new Uint8Array(values.length * (useUint32 ? 4 : 2));
     const view = new DataView(bytes.buffer);
-    values.forEach((value, index) => {
-      if (useUint32) {
-        view.setUint32(index * 4, value, true);
-      } else {
-        view.setUint16(index * 2, value, true);
+    if (useUint32) {
+      for (let index = 0; index < values.length; index += 1) {
+        view.setUint32(index * 4, values[index]!, true);
       }
-    });
+    } else {
+      for (let index = 0; index < values.length; index += 1) {
+        view.setUint16(index * 2, values[index]!, true);
+      }
+    }
     const bufferView = this.append(bytes, target);
     this.state.accessors.push({
       bufferView,
@@ -405,7 +410,12 @@ export class GltfBinaryWriter {
   }
 
   toUint8Array(): Uint8Array {
-    return Uint8Array.from(this.bytes);
+    const result = new Uint8Array(this.totalLength);
+    for (let index = 0; index < this.chunks.length; index += 1) {
+      const chunk = this.chunks[index]!;
+      result.set(chunk.bytes, chunk.offset);
+    }
+    return result;
   }
 
   private addAccessor(accessor: GltfAccessor): number {
@@ -431,10 +441,11 @@ export class GltfBinaryWriter {
   }
 
   private append(bytes: Uint8Array, target?: 34962 | 34963, byteStride?: number): number {
-    const alignedOffset = align4(this.bytes.length);
-    while (this.bytes.length < alignedOffset) this.bytes.push(0);
-    const byteOffset = this.bytes.length;
-    for (const byte of bytes) this.bytes.push(byte);
+    const byteOffset = align4(this.totalLength);
+    if (bytes.byteLength > 0) {
+      this.chunks.push({ offset: byteOffset, bytes });
+    }
+    this.totalLength = byteOffset + bytes.byteLength;
     this.state.bufferViews.push({
       buffer: 0,
       byteOffset,

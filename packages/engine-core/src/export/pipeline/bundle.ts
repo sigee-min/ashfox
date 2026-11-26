@@ -1,5 +1,4 @@
 import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
-import { deepFreeze } from '../../immutable';
 import type { ExportAdaptedDocument } from '../adapter';
 import type { AssetBuildIdentity } from '../../project/asset';
 import type { InvariantFinding } from '../../validation/contract';
@@ -141,8 +140,10 @@ const snapshotExportFile = (file: ExportFile): ExportFile => {
     });
   return Object.freeze({
     ...file,
-    data: deepFreeze(
-      snapshotExportData(file.data, 'export.file.data', 'Export JSON file data snapshot failed.'),
+    data: snapshotExportData(
+      file.data,
+      'export.file.data',
+      'Export JSON file data snapshot failed.',
     ),
   });
 };
@@ -265,15 +266,11 @@ export const createExportBundle = (
     entrypoints: Object.freeze([...content.entrypoints]),
     files,
     lineage,
-    findings: deepFreeze(
-      snapshotExportData(findings, 'export.findings', 'Export findings snapshot failed.'),
-    ),
-    adaptations: deepFreeze(
-      snapshotExportData(
-        createExportAdaptationReceipt(document),
-        'export.adaptations',
-        'Export adaptation snapshot failed.',
-      ),
+    findings: snapshotExportData(findings, 'export.findings', 'Export findings snapshot failed.'),
+    adaptations: snapshotExportData(
+      createExportAdaptationReceipt(document),
+      'export.adaptations',
+      'Export adaptation snapshot failed.',
     ),
   });
   sealedLineages.set(bundle, lineage);
@@ -368,13 +365,15 @@ const hasValidEmbeddedGlbTextures = (bundle: ExportBundle): boolean => {
 };
 
 const hasValidExternalTexturePaths = (bundle: ExportBundle): boolean => {
+  const filesByPath = new Map(bundle.files.map((file) => [file.path, file]));
+  const lineageFilesByPath = new Map(bundle.lineage.files.map((entry) => [entry.path, entry]));
   const paths = new Set<string>();
   for (const texture of bundle.lineage.textures) {
     if (texture.path === null) continue;
     if (paths.has(texture.path)) return false;
     paths.add(texture.path);
-    const file = bundle.files.find((candidate) => candidate.path === texture.path);
-    const fileEntry = bundle.lineage.files.find((entry) => entry.path === texture.path);
+    const file = filesByPath.get(texture.path);
+    const fileEntry = lineageFilesByPath.get(texture.path);
     if (
       file?.role !== 'texture' ||
       fileEntry === undefined ||

@@ -4,7 +4,7 @@ const DEEPLY_FROZEN = new WeakSet<object>();
 export const freeze = <T>(value: T): T => Object.freeze(value);
 
 const freezeRecursive = <T>(value: T, seen: WeakSet<object>): T => {
-  if (typeof value !== 'object' || value === null) return value;
+  if (typeof value !== 'object' || value === null || ArrayBuffer.isView(value)) return value;
   if (DEEPLY_FROZEN.has(value) || seen.has(value)) return value;
   seen.add(value);
   if (Array.isArray(value)) {
@@ -26,7 +26,12 @@ const freezeRecursive = <T>(value: T, seen: WeakSet<object>): T => {
 
 /** Recursively seals a canonical value while preserving object identity. */
 export const deepFreeze = <T>(value: T, seen?: WeakSet<object>): T => {
-  if (typeof value !== 'object' || value === null || DEEPLY_FROZEN.has(value)) {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    ArrayBuffer.isView(value) ||
+    DEEPLY_FROZEN.has(value)
+  ) {
     return value;
   }
   return freezeRecursive(value, seen ?? new WeakSet<object>());

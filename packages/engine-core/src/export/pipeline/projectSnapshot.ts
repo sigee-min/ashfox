@@ -1,4 +1,5 @@
 import { canonicalJsonString } from '../../canonicalJson';
+import { readSealedAssetProjectAuthority } from '../../commands/workspace/open';
 import { sealCanonicalBoneFrame, type ProjectDocument } from '../../model';
 import type { CompiledModel } from '../../model/compiled';
 import { compileAssetWorkspaceEntry } from '../../compiler/program/asset/compile';
@@ -92,6 +93,27 @@ const assertProjectAuthority = (
   }
 };
 
+const sealedAuthoritySnapshot = (project: AssetProject): AssetProjectSnapshot | undefined => {
+  const sealed = readSealedAssetProjectAuthority(project);
+  if (
+    sealed === undefined ||
+    sealed.project !== project ||
+    !Object.isFrozen(project) ||
+    project.document !== sealed.document ||
+    project.build !== sealed.build
+  ) {
+    return undefined;
+  }
+  const snapshot = Object.freeze({
+    document: sealed.document,
+    build: sealed.build,
+    documentDigest: sha256Digest(canonicalJsonString(sealed.document)),
+    buildDigest: sha256Digest(canonicalJsonString(sealed.build)),
+  });
+  immutableSnapshots.set(project, snapshot);
+  return snapshot;
+};
+
 /** Copies the exact runtime project authorities before export work begins. */
 export const snapshotAssetProject = (project: AssetProject): AssetProjectSnapshot => {
   if (project === null || typeof project !== 'object') {
@@ -99,6 +121,8 @@ export const snapshotAssetProject = (project: AssetProject): AssetProjectSnapsho
   }
   const cached = immutableSnapshots.get(project);
   if (cached !== undefined) return cached;
+  const sealed = sealedAuthoritySnapshot(project);
+  if (sealed !== undefined) return sealed;
   const ownAuthority = [
     'id',
     'revision',
