@@ -4,12 +4,12 @@ import { compileDirectoryWorkspace } from '../../src';
 const spriteSource = (id: string, importSpec = ''): string => `ashfox-model 1
 sprite ${id} {
   ${importSpec ? `import "${importSpec}" as shared;` : ''}
-  profile = "minecraft-item-v1";
+  profile = item;
   canvas = [16, 16];
   palette { c = #cccccc; }
   ${
     importSpec
-      ? 'part p { mask = "shared.m"; material = "shared.g"; at = [4, 4]; shade { form = "round"; light = "top_left"; contrast = 2; } grain { mode = "clustered-v1"; amount = 0; seed = 7; } patches = []; }'
+      ? 'part p { mask = "shared.m"; material = "shared.g"; at = [4, 4]; shade { form = "round"; light = "top_left"; contrast = 2; } grain { mode = "clustered"; amount = 0; seed = 7; } patches = []; }'
       : 'paint p { at = [4, 4]; rows = ["cccc", "cccc"]; colors { c = "c"; } }'
   }
 }`;

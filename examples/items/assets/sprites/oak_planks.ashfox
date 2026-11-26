@@ -1,0 +1,20 @@
+ashfox-model 1
+sprite oak_planks {
+  import "../module/shared.ashfox" as shared;
+  export material plank_light {
+    ramp { mode = auto; base = #99643a; preset = wood; }
+  }
+  profile = tile;
+  canvas = (32px, 32px);
+  palette {}
+  fill timber_base {
+    material = shared.oak_timber;
+    pattern { kind = plank; height = 8; joint = 1; seed = 23; mortarMaterial = shared.oak_joint; }
+    grain { mode = none; amount = 0; seed = 41; }
+  }
+  pattern grain_variation {
+    material = shared.oak_timber;
+    pattern { kind = blotch; scale = 6; density = 0.22; seed = 67; toMaterial = plank_light; }
+    clip = canvas;
+  }
+}

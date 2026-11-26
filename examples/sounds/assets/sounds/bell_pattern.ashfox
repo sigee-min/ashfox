@@ -1,55 +1,55 @@
 ashfox-model 1
 sound bell_pattern {
+  profile = "ui";
   duration = 2.4;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
+  space = { mix = 0.24; decay = 0.42; damping = 6200; size = 0.9; };
   voices = [{
-    id = "bell";
+    id = "bell_body";
     source = {
       kind = "resonator";
-      excitation = { kind = "impulse"; };
+      excitation = { kind = "mallet"; duration = 0.008; hardness = 0.78; };
       modes = [
-        { id = "body"; hz = 640; decay = 0.35; gain = 1; },
-        { id = "edge"; hz = 1730; decay = 0.18; gain = 0.35; }
+        { id = "sub"; hz = 320; decay = 0.45; gain = 0.65; },
+        { id = "body"; hz = 640; decay = 0.38; gain = 1.0; },
+        { id = "tier"; hz = 1280; decay = 0.26; gain = 0.55; },
+        { id = "edge"; hz = 1730; decay = 0.18; gain = 0.42; },
+        { id = "spark"; hz = 4200; decay = 0.09; gain = 0.24; }
       ];
+      pitchDropCents = 25;
+      pitchDropSeconds = 0.015;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [
-        { at = 0; value = 0; },
-        { at = 0.01; value = 0.8; },
-        { at = 0.7; value = 0.5; },
-        { at = 1; value = 0; }
-      ];
+    filter = {
+      kind = "lowpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 12000; }, { at = 1; value = 2800; }]; };
+      q = 1.1;
     };
-    highpass = 80;
-    lowpass = {
-      domain = "log";
-      interpolation = "smooth";
-      points = [{ at = 0; value = 8000; }, { at = 1; value = 3000; }];
+    highpass = 60;
+    pan = -0.15;
+    gain = { env = "ad"; attack = 0.002; peak = 1.05; curve = "exp"; };
+  }, {
+    id = "shimmer";
+    source = { kind = "noise"; color = "white"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 9500; }, { at = 1; value = 2200; }]; };
+      q = 1.6;
     };
+    pan = 0.25;
+    gain = { env = "ad"; attack = 0.002; peak = 0.32; curve = "exp"; };
   }];
   sequences = [{
     id = "phrase";
-    start = 0.1;
+    start = 0.09;
     repeat = { count = 4; period = 0.5; };
-    steps = [{
-      id = "strike";
-      voice = "bell";
-      at = 0;
-      duration = 0.4;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [-0.005, 0.005];
-        pitchCents = [-20, 20];
-        gain = [0.9, 1.1];
-        duration = [0.95, 1.05];
-      };
-    }];
+    steps = [
+      { id = "strike"; voice = "bell_body"; at = 0; duration = 0.46; vary = { timing = [-0.005, 0.005]; pitchCents = [-35, 35]; gain = [0.9, 1.1]; duration = [0.95, 1.05]; }; },
+      { id = "transient"; voice = "shimmer"; at = 0; duration = 0.12; vary = { gain = [0.85, 1.15]; duration = [0.85, 1.15]; }; }
+    ];
   }];
   variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
   playback = { kind = "loop"; start = 0; end = 2.1; crossfade = 0.08; };
-  output = { gainDb = -6; peakDb = -3; };
+  output = { gainDb = 19; peakDb = -2; softClip = true; };
 }

@@ -58,7 +58,7 @@ const invalidProperty = (
   return property;
 };
 
-const GRAIN_ALGORITHMS = ['clustered', 'soft', 'none'] as const;
+const GRAIN_ALGORITHMS = ['clustered', 'soft', 'fur', 'wood', 'cloth', 'brushed', 'none'] as const;
 type GrainAlgorithm = (typeof GRAIN_ALGORITHMS)[number];
 
 const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
@@ -67,7 +67,7 @@ const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
   if (!GRAIN_ALGORITHMS.includes(rawAlgorithm as GrainAlgorithm)) {
     reader.fail(
       'program.invalid-grain',
-      'Grain algorithm must be clustered, soft, or none.',
+      'Grain algorithm must be clustered, soft, fur, wood, cloth, brushed, or none.',
       start,
     );
   }
@@ -151,6 +151,7 @@ const PATTERN_PROPERTIES: Readonly<Record<ProgramTexturePattern['algorithm'], re
     border: ['paint', 'width', 'edges'],
     stripe: ['paint', 'axis', 'period', 'width', 'phase'],
     ao: ['strength', 'radius'],
+    edge: ['strength', 'width', 'mode'],
   });
 
 const pattern = (reader: ProgramTextureReader): ProgramTexturePattern => {
@@ -162,7 +163,7 @@ const pattern = (reader: ProgramTextureReader): ProgramTexturePattern => {
   if (allowed === null) {
     reader.fail(
       'program.invalid-pattern',
-      'Pattern algorithm must be blotch, gradient, border, stripe, or ao.',
+      'Pattern algorithm must be blotch, gradient, border, stripe, ao, or edge.',
       start,
     );
   }

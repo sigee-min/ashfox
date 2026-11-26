@@ -12,30 +12,18 @@ export const escapeHtml = (value) =>
 export const absoluteUrl = (origin, pathname) =>
   origin ? new URL(pathname, origin).toString() : pathname;
 
+export const githubUrl = 'https://github.com/sigee-min/ashfox';
+export const contributeUrl = `${githubUrl}/blob/main/.github/CONTRIBUTING.md`;
+
 const structuredDataScript = (value) =>
   value
     ? `<script type="application/ld+json">${JSON.stringify(value).replaceAll('<', '\\u003c')}</script>`
     : '';
 
-export const githubUrl = 'https://github.com/sigee-min/ashfox';
-export const contributeUrl = `${githubUrl}/blob/main/.github/CONTRIBUTING.md`;
-
 const brandMark = `
   <span class="brand-mark" aria-hidden="true">
-    <img src="/brand/ashfox-mark.svg" alt="" width="30" height="30">
+    <img src="/brand/ashfox-mark.svg" alt="" width="24" height="24">
   </span>
-`;
-
-export const githubMark = `
-  <img src="/icons/github.svg" alt="" width="20" height="20">
-`;
-
-export const githubIconButton = (className = '') => `
-  <a
-    class="icon-button ${className}"
-    href="${githubUrl}"
-    aria-label="ashfox on GitHub"
-  >${githubMark}</a>
 `;
 
 const siteHeader = ({ active, locale, alternatives, messages }) => `
@@ -44,19 +32,38 @@ const siteHeader = ({ active, locale, alternatives, messages }) => `
       ${brandMark}
       <span>ashfox</span>
     </a>
+    <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
+      <a ${active === 'assets' ? 'aria-current="page"' : ''} href="${locale.prefix}/assets/">${escapeHtml(messages.navAssets)}</a>
+      <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
+    </nav>
     <div class="header-actions">
-      <nav class="primary-nav" aria-label="${escapeHtml(locale.ui.navigation)}">
-        <a ${active === 'docs' ? 'aria-current="page"' : ''} href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)}</a>
-      </nav>
       <a class="header-setup" href="${locale.prefix}/#quick-start">${escapeHtml(locale.ui.getStarted)} ↗</a>
       <details class="language-menu" data-language-menu>
-        <summary aria-label="${escapeHtml(locale.ui.language)}: ${escapeHtml(locale.label)}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg> ${escapeHtml(locale.label)} <span aria-hidden="true">⌄</span></summary>
+        <summary aria-label="${escapeHtml(locale.ui.language)}: ${escapeHtml(locale.label)}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg> ${escapeHtml(locale.label)} ⌄</summary>
         <nav aria-label="${escapeHtml(locale.ui.language)}">
-          ${alternatives.map((option) => `<a href="${option.route}" lang="${option.code}" data-language-link ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}${option.code === locale.code ? '<span aria-hidden="true">✓</span>' : ''}</a>`).join('')}
+          ${alternatives
+            .map(
+              (option) =>
+                `<a href="${option.route}" lang="${option.code}" data-language-link ${option.code === locale.code ? 'aria-current="true"' : ''}>${escapeHtml(option.label)}${option.code === locale.code ? '<span aria-hidden="true">✓</span>' : ''}</a>`,
+            )
+            .join('')}
         </nav>
       </details>
     </div>
   </header>
+`;
+
+const renderFooter = ({ locale, messages }) => `
+  <footer class="site-footer">
+    <a class="brand" href="${locale.prefix}/">${brandMark}<span>ashfox</span></a>
+    <p>${escapeHtml(messages.footer)}</p>
+    <div class="footer-links">
+      <a href="${locale.prefix}/assets/">${escapeHtml(messages.navAssets)}</a>
+      <a href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)}</a>
+      <a href="${githubUrl}">GitHub</a>
+      <span>© <span data-current-year></span> ashfox</span>
+    </div>
+  </footer>
 `;
 
 export const pageShell = ({
@@ -78,7 +85,7 @@ export const pageShell = ({
   title,
 }) => {
   const messages = siteMessages(locale);
-  const pageTitle = title === 'ashfox' ? `ashfox — ${messages.pageTitle}` : `${title} — ashfox`;
+  const pageTitle = title === 'ashfox' ? `ashfox: ${messages.pageTitle}` : `${title} | ashfox`;
   const canonical = absoluteUrl(config.siteOrigin, canonicalPath ?? path);
   const socialImage = absoluteUrl(
     config.siteOrigin,
@@ -91,7 +98,7 @@ export const pageShell = ({
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="${escapeHtml(description)}">
-    <meta name="theme-color" content="#111417">
+    <meta name="theme-color" content="#08090a">
     <meta name="robots" content="${escapeHtml(robots)}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="${locale.ogLocale}">
@@ -121,18 +128,7 @@ export const pageShell = ({
     <a class="skip-link" href="#main">${escapeHtml(locale.ui.skip)}</a>
     ${siteHeader({ active, locale, alternatives, messages })}
     ${body}
-    <footer class="site-footer">
-      <a class="brand footer-brand" href="${locale.prefix}/">
-        ${brandMark}
-        <span>ashfox</span>
-      </a>
-      <p>${escapeHtml(messages.footer)}</p>
-      <div class="footer-links">
-        <a href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)}</a>
-        <a href="${githubUrl}">GitHub</a>
-        <span>© <span data-current-year></span> ashfox</span>
-      </div>
-    </footer>
+    ${renderFooter({ locale, messages })}
   </body>
 </html>`;
 };

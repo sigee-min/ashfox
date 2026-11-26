@@ -1,124 +1,56 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound claw_hit {
-  duration = 2;
+  profile = "impact";
+  duration = 0.58;
   sampleRate = 48000;
+  channels = 2;
   seed = 42;
+  space = { mix = 0.2; decay = 0.28; damping = 5200; size = 0.75; };
   voices = [{
-    id = "layer_1";
+    id = "flesh_thud";
     source = {
-      kind = "noise";
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.011; hardness = 0.88; };
+      modes = [
+        { id = "sub"; hz = 88; decay = 0.24; gain = 1.0; },
+        { id = "punch"; hz = 225; decay = 0.15; gain = 0.75; },
+        { id = "crack"; hz = 1480; decay = 0.065; gain = 0.48; }
+      ];
+      pitchDropCents = 190;
+      pitchDropSeconds = 0.035;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.008420138888888888;
-        value = 0.9;
-      }, {
-        at = 0.16666666666666663;
-        value = 0.9;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 1000;
-    lowpass = 11000;
+    drive = 3.0;
+    highpass = 32;
+    lowpass = 11500;
+    gain = { env = "ad"; attack = 0.003; peak = 1.0; curve = "exp"; };
   }, {
-    id = "layer_2";
-    source = {
-      kind = "fm";
-      pitch = {
-        domain = "linear";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 210;
-        }, {
-          at = 0.6666666666666667;
-          value = 65;
-        }, {
-          at = 1;
-          value = 65;
-        }];
-      };
-      ratio = 1.2;
-      index = 0.5;
-      vibratoHz = 0;
-      vibratoCents = 0;
+    id = "slash_tear";
+    source = { kind = "noise"; color = "pink"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 6800; }, { at = 1; value = 720; }]; };
+      q = 1.15;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.008420138888888888;
-        value = 0.8;
-      }, {
-        at = 0.16666666666666663;
-        value = 0.8;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 40;
-    lowpass = 1300;
+    drive = 2.0;
+    pan = -0.18;
+    gain = { env = "ad"; attack = 0.003; peak = 0.92; curve = "exp"; };
+  }, {
+    id = "blade_air";
+    source = { kind = "noise"; color = "white"; };
+    highpass = 4800;
+    pan = 0.2;
+    gain = { env = "ad"; attack = 0.002; peak = 0.4; curve = "exp"; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "layer_1";
-      voice = "layer_1";
-      at = 0.3;
-      duration = 0.24;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "layer_2";
-      voice = "layer_2";
-      at = 0.3;
-      duration = 0.24;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "hit";
+    start = 0.01;
+    steps = [
+      { id = "impact"; voice = "flesh_thud"; at = 0; duration = 0.48; vary = { pitchCents = [-45, 45]; }; },
+      { id = "slash"; voice = "slash_tear"; at = 0; duration = 0.32; vary = { duration = [0.9, 1.1]; gain = [0.9, 1.1]; }; },
+      { id = "air"; voice = "blade_air"; at = 0; duration = 0.1; vary = { gain = [0.85, 1.15]; }; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -9.9;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 3; peakDb = -2; softClip = true; };
 }

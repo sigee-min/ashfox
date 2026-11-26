@@ -1,5 +1,9 @@
+import { createRequire } from 'node:module';
 import { localeRegistry } from '../src/locales.mjs';
 import stableRelease from '../../../scripts/release/stable.js';
+
+const require = createRequire(import.meta.url);
+const { buildSkillRelease } = require('../../../scripts/skill/build.js');
 import { execFileSync } from 'node:child_process';
 import { Script } from 'node:vm';
 import { createHash } from 'node:crypto';
@@ -9,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { loadAllDocumentation } from '../src/docs.mjs';
 import {
+  renderAssetsPage,
   renderDocumentationPage,
   renderLandingPage,
   renderNotFoundPage,
@@ -201,8 +206,8 @@ const hashedAsset = async (sourceName, transform) => {
   const name = path.basename(sourceName, extension);
   const hash = createHash('sha256').update(bytes).digest('hex').slice(0, 12);
   const outputName = `${name}-${hash}${extension}`;
-  await writeFile(path.join(outputRoot, 'assets', outputName), bytes);
-  return `/assets/${outputName}`;
+  await writeFile(path.join(outputRoot, 'static', outputName), bytes);
+  return `/static/${outputName}`;
 };
 
 const hashedShowcaseMedia = async (fileName, expectedDigest, byteLength) => {
@@ -252,25 +257,36 @@ execFileSync(process.execPath, [path.join(repoRoot, 'scripts/docs/build.js')], {
   stdio: 'inherit',
 });
 await rm(outputRoot, { recursive: true, force: true });
-await mkdir(path.join(outputRoot, 'assets'), { recursive: true });
+await mkdir(path.join(outputRoot, 'static'), { recursive: true });
 await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
 await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
 
-const landingCss = await readFile(path.join(sourceRoot, 'landing.css'), 'utf8');
-const brandCss = await readFile(path.join(sourceRoot, 'brand.css'), 'utf8');
-const motionJs = await readFile(path.join(sourceRoot, 'motion.js'), 'utf8');
-const landingJs = await readFile(path.join(sourceRoot, 'landing.js'), 'utf8');
+const cssBundle = (
+  await Promise.all(
+    ['tokens.css', 'shell.css', 'landing.css', 'assets.css', 'docs.css'].map((f) =>
+      readFile(path.join(sourceRoot, f), 'utf8'),
+    ),
+  )
+).join('\n');
+const jsTail = (
+  await Promise.all(
+    ['landing.js', 'assets.js', 'docs-client.js'].map((f) =>
+      readFile(path.join(sourceRoot, f), 'utf8'),
+    ),
+  )
+).join('\n');
 const social = {};
 for (const kind of ['landing', 'docs']) {
   const bytes = await readFile(path.join(publicRoot, kind === 'docs' ? 'og-docs.png' : 'og.png'));
   const name = `site-social-${kind}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.png`;
-  await writeFile(path.join(outputRoot, 'assets', name), bytes);
-  social[kind] = `/assets/${name}`;
+  await writeFile(path.join(outputRoot, 'static', name), bytes);
+  social[kind] = `/static/${name}`;
 }
 const assets = {
   social,
-  css: await hashedAsset('site.css', (source) => source + '\n' + landingCss + '\n' + brandCss),
-  js: await hashedAsset('site.js', (source) => source + '\n' + motionJs + '\n' + landingJs),
+  docsSearch: {},
+  css: await hashedAsset('tokens.css', () => cssBundle),
+  js: await hashedAsset('site.js', (source) => `${source}\n${jsTail}`),
 };
 const config = { siteOrigin, stable: stableRelease.readStable(repoRoot) };
 const agentGuide = (await readFile(path.join(docsRoot, 'agent.md'), 'utf8'))
@@ -335,17 +351,20 @@ execFileSync(process.execPath, [path.join(repoRoot, 'scripts/landing/build.js')]
   stdio: 'inherit',
 });
 for (const [key, file] of [
-  ['heroScript', 'hero.js'],
+  ['viewerJs', 'viewer.js'],
   ['heroModel', 'griffin.glb'],
 ]) {
   const bytes = await readFile(path.join(repoRoot, 'dist/landing', file));
   const name = `${path.basename(file, path.extname(file))}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}${path.extname(file)}`;
-  await writeFile(path.join(outputRoot, 'assets', name), bytes);
-  assets[key] = `/assets/${name}`;
+  await writeFile(path.join(outputRoot, 'static', name), bytes);
+  assets[key] = `/static/${name}`;
 }
-await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/landing'), {
+const catalog = JSON.parse(
+  await readFile(path.join(repoRoot, 'dist/landing/catalog.json'), 'utf8'),
+);
+await cp(path.join(repoRoot, 'dist/landing'), path.join(outputRoot, 'media/catalog'), {
   recursive: true,
-  filter: (source) => path.basename(source) !== 'hero.js',
+  filter: (source) => path.basename(source) !== 'viewer.js',
 });
 await cp(path.join(repoRoot, 'dist/docs-delivery'), path.join(outputRoot, 'downloads'), {
   recursive: true,
@@ -356,7 +375,29 @@ await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides
 });
 
 for (const locale of localeRegistry.locales) {
+  const localeDocs = documents.filter((page) => page.locale.code === locale.code);
+  const searchPayload = Buffer.from(
+    JSON.stringify(
+      localeDocs.map((doc) => ({
+        title: doc.title,
+        section: doc.sectionLabel,
+        route: doc.route,
+        description: doc.description,
+        headings: doc.toc.map((t) => t.text),
+      })),
+    ),
+  );
+  const searchName = `docs-search-${locale.code}-${createHash('sha256').update(searchPayload).digest('hex').slice(0, 12)}.json`;
+  await writeFile(path.join(outputRoot, 'static', searchName), searchPayload);
+  assets.docsSearch[locale.code] = `/static/${searchName}`;
+}
+
+for (const locale of localeRegistry.locales) {
   await writeRoute(`${locale.prefix}/`, renderLandingPage({ assets, config, showcase, locale }));
+  await writeRoute(
+    `${locale.prefix}/assets/`,
+    renderAssetsPage({ assets, catalog, config, locale }),
+  );
 }
 for (const document of documents) {
   await writeRoute(
@@ -372,6 +413,7 @@ for (const document of documents) {
 await writeFile(path.join(outputRoot, '404.html'), renderNotFoundPage({ assets, config }));
 await cp(publicRoot, outputRoot, { recursive: true });
 await cp(brandRoot, path.join(outputRoot, 'brand'), { recursive: true });
+buildSkillRelease(outputRoot);
 await writeFile(
   path.join(outputRoot, '_headers'),
   `/*
@@ -387,9 +429,9 @@ await writeFile(
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
-${localeRegistry.locales.map((locale) => `${locale.prefix}/docs/*\n  Cache-Control: public, max-age=0, must-revalidate`).join('\n')}
+${localeRegistry.locales.map((locale) => `${locale.prefix}/assets/*\n  Cache-Control: public, max-age=0, must-revalidate\n${locale.prefix}/docs/*\n  Cache-Control: public, max-age=0, must-revalidate`).join('\n')}
 
-/assets/*
+/static/*
   Cache-Control: public, max-age=31536000, immutable
 
 /brand/*
@@ -440,6 +482,7 @@ await writeFile(
   path.join(outputRoot, 'sitemap.xml'),
   sitemap([
     ...localeRegistry.locales.map((locale) => `${locale.prefix}/`),
+    ...localeRegistry.locales.map((locale) => `${locale.prefix}/assets/`),
     ...documents.filter((document) => !document.fallback).map((document) => document.route),
   ]),
 );

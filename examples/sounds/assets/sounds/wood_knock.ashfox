@@ -1,84 +1,47 @@
 ashfox-model 1
-
-// Procedural listening study; material/animal realism requires human audition.
 sound wood_knock {
-  duration = 3;
+  profile = "foley";
+  duration = 1.4;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
+  space = { mix = 0.18; decay = 0.24; damping = 5200; size = 0.7; };
   voices = [{
-    id = "voice";
+    id = "oak_body";
     source = {
       kind = "resonator";
-      excitation = {
-        kind = "noise";
-        duration = 0.004;
-      };
-      modes = [{
-        id = "body";
-        hz = 320;
-        decay = 0.075;
-        gain = 1;
-      }, {
-        id = "edge";
-        hz = 840;
-        decay = 0.045;
-        gain = 0.4;
-      }];
+      excitation = { kind = "mallet"; duration = 0.006; hardness = 0.8; };
+      modes = [
+        { id = "sub"; hz = 105; decay = 0.12; gain = 0.9; },
+        { id = "body"; hz = 340; decay = 0.1; gain = 1.0; },
+        { id = "tap"; hz = 920; decay = 0.06; gain = 0.65; },
+        { id = "tick"; hz = 2450; decay = 0.035; gain = 0.42; }
+      ];
+      pitchDropCents = 85;
+      pitchDropSeconds = 0.018;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.02;
-        value = 0.8;
-      }, {
-        at = 0.65;
-        value = 0.35;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 40;
-    lowpass = 12000;
+    drive = 2.4;
+    highpass = 38;
+    filter = { kind = "lowpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 11000; }, { at = 1; value = 1800; }]; }; q = 1.0; };
+    pan = -0.12;
+    gain = { env = "ad"; attack = 0.002; peak = 0.95; curve = "exp"; };
+  }, {
+    id = "bark_snap";
+    source = { kind = "noise"; color = "white"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 7600; }, { at = 1; value = 900; }]; }; q = 1.1; };
+    pan = 0.15;
+    gain = { env = "ad"; attack = 0.002; peak = 0.72; curve = "exp"; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0.1;
-    repeat = {
-      count = 4;
-      period = 0.5;
-    };
-    steps = [{
-      id = "note";
-      voice = "voice";
-      at = 0;
-      duration = 0.18;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [-0.004, 0.004];
-        pitchCents = [-18, 18];
-        gain = [0.9, 1.1];
-        duration = [0.96, 1.04];
-      };
-    }];
+    id = "knock";
+    start = 0.02;
+    repeat = { count = 3; period = 0.38; };
+    steps = [
+      { id = "tap"; voice = "oak_body"; at = 0; duration = 0.28; vary = { timing = [-0.005, 0.005]; pitchCents = [-35, 35]; gain = [0.9, 1.1]; duration = [0.95, 1.05]; }; },
+      { id = "snap"; voice = "bark_snap"; at = 0; duration = 0.14; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = 0;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 6; peakDb = -2; softClip = true; };
 }

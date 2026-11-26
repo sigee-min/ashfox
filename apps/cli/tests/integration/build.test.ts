@@ -92,16 +92,16 @@ const main = async () => {
   assert.equal(report.issues.numErrors, 0, JSON.stringify(report.issues));
   const png = allFiles.find((f: { path: string }) => f.path.endsWith('.png'));
   const pngBytes = fs.readFileSync(path.join(first.bundlePath, png.path));
-  assert.equal(pngBytes.readUInt32BE(16), 16);
-  assert.equal(pngBytes.readUInt32BE(20), 16);
+  assert.equal(pngBytes.readUInt32BE(16), 32);
+  assert.equal(pngBytes.readUInt32BE(20), 32);
   const waves = allFiles.filter((f: { path: string }) => f.path.endsWith('.wav'));
   assert.equal(waves.length, 2);
   for (const wave of waves) {
     const bytes = fs.readFileSync(path.join(first.bundlePath, wave.path));
     assert.equal(bytes.toString('ascii', 0, 4), 'RIFF');
-    assert.equal(bytes.readUInt16LE(22), 1);
+    assert.equal(bytes.readUInt16LE(22), 2);
     assert.equal(bytes.readUInt32LE(24), 48000);
-    assert.equal(bytes.readUInt32LE(40), 2 * 48000 * 2);
+    assert.equal(bytes.readUInt32LE(40), Math.floor(0.58 * 48000 + 0.5) * 4);
     let peak = 0;
     for (let i = 44; i < bytes.length; i += 2)
       peak = Math.max(peak, Math.abs(bytes.readInt16LE(i)));

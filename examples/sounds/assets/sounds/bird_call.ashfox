@@ -1,146 +1,26 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound bird_call {
   import "../module/bird_voices.ashfox" as bv;
-  duration = 4;
+  profile = "creature";
+  duration = 2.2;
   sampleRate = 48000;
+  channels = 2;
   seed = 7349;
-  voices = [
-    bv.opening_whistle,
-    bv.quick_answer,
-    bv.rising_warble,
-    bv.first_trill,
-    bv.soft_pickup,
-    bv.bright_reply,
-    bv.curved_whistle,
-    bv.closing_trill,
-  ];
+  space = { mix = 0.22; decay = 0.35; damping = 7200; size = 1.1; };
+  voices = [bv.opening_whistle, bv.answering_trill, bv.forest_air, bv.canopy_low];
   sequences = [{
     id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "opening_whistle";
-      voice = "opening_whistle";
-      at = 0.16;
-      duration = 0.27;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "quick_answer";
-      voice = "quick_answer";
-      at = 0.53;
-      duration = 0.16;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "rising_warble";
-      voice = "rising_warble";
-      at = 0.82;
-      duration = 0.32;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "first_trill";
-      voice = "first_trill";
-      at = 1.25;
-      duration = 0.42;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "soft_pickup";
-      voice = "soft_pickup";
-      at = 2.03;
-      duration = 0.23;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "bright_reply";
-      voice = "bright_reply";
-      at = 2.37;
-      duration = 0.18;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "curved_whistle";
-      voice = "curved_whistle";
-      at = 2.68;
-      duration = 0.34;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "closing_trill";
-      voice = "closing_trill";
-      at = 3.17;
-      duration = 0.48;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    start = 0.04;
+    steps = [
+      { id = "call1"; voice = "opening_whistle"; at = 0; duration = 0.42; vary = { pitchCents = [-80, 80]; timing = [0, 0.03]; }; },
+      { id = "reply1"; voice = "answering_trill"; at = 0.54; duration = 0.45; vary = { pitchCents = [-90, 90]; gain = [0.85, 1.15]; }; },
+      { id = "call2"; voice = "opening_whistle"; at = 1.12; duration = 0.36; pitchCents = 120; vary = { pitchCents = [-60, 60]; }; },
+      { id = "reply2"; voice = "answering_trill"; at = 1.56; duration = 0.48; pitchCents = -100; vary = { pitchCents = [-80, 80]; }; },
+      { id = "bed"; voice = "forest_air"; at = 0; duration = 2.0; },
+      { id = "low"; voice = "canopy_low"; at = 0; duration = 2.0; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 218;
-  }, {
-    id = "alternate";
-    seed = 907;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -13.7;
-    peakDb = -6;
-  };
+  variants = [{ id = "base"; seed = 218; }, { id = "alternate"; seed = 907; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 0; peakDb = -2; softClip = true; };
 }

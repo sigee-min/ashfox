@@ -1,125 +1,58 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound griffin_call {
-  duration = 2;
+  profile = "creature";
+  duration = 1.45;
   sampleRate = 48000;
+  channels = 2;
   seed = 42;
+  space = { mix = 0.25; decay = 0.45; damping = 6200; size = 1.1; };
   voices = [{
-    id = "layer_1";
+    id = "shriek";
     source = {
       kind = "vocal";
-      pitch = {
-        domain = "linear";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 310;
-        }, {
-          at = 0.8461538461538461;
-          value = 135;
-        }, {
-          at = 1;
-          value = 135;
-        }];
-      };
-      formants = [690, 1800, 3100];
-      bandwidths = [150, 250, 430];
-      breath = 0.35;
-      jitter = 0.3;
-      roughness = 0.45;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.22; value = 420; }, { at = 0.82; value = 165; }, { at = 1; value = 130; }]; };
+      formants = [690, 1820, 3250];
+      bandwidths = [130, 230, 400];
+      breath = 0.28;
+      jitter = 0.26;
+      roughness = 0.48;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.019230769230769232;
-        value = 0.85;
-      }, {
-        at = 0.8615384615384616;
-        value = 0.85;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 80;
-    lowpass = 6500;
+    drive = 1.8;
+    highpass = 65;
+    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 8500; }, { at = 1; value = 2800; }]; };
+    pan = -0.12;
+    gain = { env = "adsr"; attack = 0.025; decay = 0.16; sustain = 0.72; release = 0.18; peak = 0.95; };
   }, {
-    id = "layer_2";
+    id = "eagle_overtone";
     source = {
-      kind = "noise";
+      kind = "chirp";
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1400; }, { at = 0.25; value = 2450; }, { at = 1; value = 980; }]; };
+      trillHz = 14;
+      trillCents = 35;
+      trillDepth = 0.16;
+      breath = 0.14;
+      jitterCents = 35;
+      brightness = 0.6;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.019230769230769232;
-        value = 0.035;
-      }, {
-        at = 0.8615384615384616;
-        value = 0.035;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 1100;
-    lowpass = 4900;
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 3600; }, { at = 1; value = 1400; }]; }; q = 1.1; };
+    pan = 0.18;
+    gain = { env = "ad"; attack = 0.02; peak = 0.35; curve = "exp"; };
+  }, {
+    id = "rush";
+    source = { kind = "noise"; color = "pink"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 4500; }, { at = 1; value = 900; }]; }; q = 1.2; };
+    gain = { env = "adsr"; attack = 0.02; decay = 0.2; sustain = 0.45; release = 0.18; peak = 0.3; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "layer_1";
-      voice = "layer_1";
-      at = 0.25;
-      duration = 1.3;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }, {
-      id = "layer_2";
-      voice = "layer_2";
-      at = 0.25;
-      duration = 1.3;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "cry";
+    start = 0.02;
+    steps = [
+      { id = "roar"; voice = "shriek"; at = 0; duration = 1.25; vary = { pitchCents = [-55, 55]; timing = [0, 0.02]; }; },
+      { id = "scream"; voice = "eagle_overtone"; at = 0.02; duration = 0.9; vary = { pitchCents = [-65, 65]; }; },
+      { id = "air"; voice = "rush"; at = 0; duration = 1.2; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = 6.4;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 2; peakDb = -2; softClip = true; };
 }

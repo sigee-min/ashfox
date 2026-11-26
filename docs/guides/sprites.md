@@ -1,82 +1,70 @@
-# Create item sprites
+# Create item sprites and tiles
 
-Sprite sources produce transparent 16×16 PNGs with deterministic pixel placement,
-shading and grain. They can be used by general games or Minecraft item packs.
-The current `minecraft-item-v1` profile name selects the sprite compiler's rules;
-it does not restrict where the resulting PNG may be used.
+Sprite sources produce deterministic square PNGs (`16×16`, `32×32`, or `64×64`) for items, seamless tiles, icons, and decals, with a pure-CPU quality audit and 4-panel `preview inspect { sheet = inspect; }` sheet.
 
 ## Build a complete sprite
 
-Save this complete source as `gem.ashfox` in a folder without an ancestor workspace:
+Save this complete source as `gem.ashfox` outside an ancestor workspace:
 
 ```ashfox
 ashfox-model 1
 sprite gem {
-  profile = "minecraft-item-v1";
-  canvas = (16px, 16px);
-  palette { edge = #392b59; light = #bca3ef; }
-  paint crystal {
-    at = (5px, 4px);
-    rows = ["..ee..", ".elle.", "elllle", ".elle.", "..ee.."];
-    colors { e = edge; l = light; }
+  preview inspect { sheet = inspect; }
+  export material amethyst { ramp { mode = auto; base = #9c60cc; preset = gem; } }
+  export material prism { ramp { mode = auto; base = #df9cf8; preset = emissive; } }
+  export material stone_base { ramp { mode = auto; base = #767c8a; preset = stone; } }
+  profile = item;
+  canvas = (32px, 32px);
+  palette { glint = #ffffff; }
+  shape base_rock {
+    shape { kind = capsule; x1 = 9; y1 = 23; x2 = 23; y2 = 23; radius = 3.5; }
+    material = stone_base;
+    shade { form = round; light = top_left; contrast = 2; }
+    grain { mode = clustered; amount = 1; seed = 7; }
   }
+  shape spire {
+    shape { kind = polygon; points = [(11, 22), (12, 7), (16, 4), (20, 7), (21, 22)]; }
+    material = amethyst;
+    shade { form = facet; light = top_left; contrast = 3; specular = 2; }
+    pattern { kind = gradient; axis = y; toMaterial = prism; dither = false; seed = 11; }
+    grain { mode = clustered; amount = 1; seed = 13; }
+  }
+  paint glint_dot {
+    at = (14px, 7px);
+    rows = [".g", "gg"];
+    colors { g = glint; }
+  }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
 }
 ```
 
 ```sh
+npx --no-install ashfox check gem.ashfox
+npx --no-install ashfox render gem.ashfox --view inspect --output gem-sheet.png
 npx --no-install ashfox build gem.ashfox --json
 ```
 
-Use the actual export directory from the response. It contains `gem.png`.
-In a configured project, register the file as an entry and add a PNG export as
-shown in [Project configuration](workspace.md).
+Use the export directory from the response containing `gem.png`. Delivery (`build`) verifies `audit.passed === true` (`score >= 75`, target `>= 85`).
 
-## Paint and compose
+## Compose with OKLCH ramps, shapes, patterns, and outlines
 
-Rows have equal width. `.` leaves a pixel transparent; every other character
-must have a color binding. Coordinates are integer pixels from the canvas's
-top-left. Layers run in declaration order, so later paint can cover earlier work.
+- **`shape` & `part`**: Compose silhouettes from parametric `rect`, `ellipse`, `capsule`, `polygon`, and `line` primitives or reusable masks, shaded with `flat`, `round`, `bevel`, `cylinder`, or `facet` light forms and specular highlights.
+- **OKLCH ramps**: `ramp { mode = auto; base = #...; preset = ...; }` automatically generates 5 hue-shifted stops (warmer highlights, cooler shadows) across 10 presets (`warm`, `cool`, `metal`, `gem`, `wood`, `stone`, `organic`, `cloth`, `emissive`, `vivid`).
+- **`sel_out` & `innerRim`**: `outline` draws hue/value-modulated selective pixel outlines (`strength = 1..3`) and subtle top-left interior rim highlights without flat black borders.
+- **Seamless tiles (`profile = tile`)**: Use `fill` and `pattern` layers (`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`) which wrap toroidally across canvas edges.
 
-| Layer | Required settings | Purpose |
-| --- | --- | --- |
-| `paint <id>` | `at`, `rows`, `colors` | Place explicit colored pixels |
-| `erase <id>` | `at`, `rows` | Erase the marked pixels |
-| `part <id>` | `mask`, `material`, `at`, `shade`, `grain`, `patches` | Shade a reusable shape and add protected marks |
-| `stamp <id>` | `stamp`, `at`, `flip`, `colors` | Place a reusable symbol with bound colors |
+Start with [iron_sword.ashfox](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone.ashfox](../../examples/items/assets/sprites/mossy_stone.ashfox), and [shared.ashfox](../../examples/items/assets/module/shared.ashfox) for complete item and tile examples. Keep shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.
 
-Part masks use `1` and `.`. Materials define a three-color shadow/base/light ramp
-or a generated ramp with a declared preset. The part's shade declares `flat`,
-`round` or `bevel`, `light: top_left` and contrast 0–2. Bevel also requires its
-axis. Grain uses `mode: clustered-v1`, amount 0–1 and an integer seed. Patches
-have local `at`, `rows`, `colors` and protection width 0–2 and must remain inside
-the part mask. Use `patches = [];` when there are none.
-
-Start with [apple source](../../examples/items/assets/sprites/apple.ashfox) and its
-[shared module](../../examples/items/assets/module/shared.ashfox) for complete part, ramp,
-patch and reusable-shape examples. Keep shared sprite modules under `assets/module/` when shared
-across multiple sprites in a workspace. Standalone imports must resolve relative `.ashfox` paths
-inside the entry subtree; a configured project must declare every imported module.
-
-The canvas is fixed at 16×16 in the current profile. Out-of-bounds placement,
-unbound row characters, unknown settings and invalid shading parameters fail
-compilation. Enlarging a preview does not increase the delivered resolution.
-
-## Review pixels
+## Review pixels and audit craft
 
 ```sh
-npx --no-install ashfox render gem.ashfox --view checker --output gem-preview.png
+npx --no-install ashfox render gem.ashfox --view inspect --output gem-sheet.png
 npx --no-install ashfox check gem.ashfox
 ```
 
-Check the native image as well as the enlarged view (`preview checker { scale = 16; background = checker; }`). `check` returns a receipt
-and pixel ownership evidence. On sources with shaded parts, declare `stage = silhouette`,
-`stage = shade`, or `stage = grain` in a `preview` block and pass `--view <name>` to inspect the construction.
+Declaring `preview inspect { sheet = inspect; }` renders a 512×512 4-panel sheet on the CPU (no browser needed):
 
-![Final sword pixels enlarged](/media/guides/sword.png)
-![The same sword at the silhouette stage](/media/guides/sword-shape.png)
+- **Items / icons / decals**: `1x + scaled preview`, `silhouette`, `value (luminance)`, and `palette + audit score`.
+- **Tiles**: `1x tile`, `3×3 seamless repeat`, `value (luminance)`, and `palette + audit score`.
 
-See [observation controls](observe.md) for PNG input, transparency and memory output.
-
-For a general engine, bind the PNG export in [game assets](game-assets.md) and
-choose sprite filtering and pixels per unit. For Minecraft, bind it to an item
-resource ID in [Minecraft packs](minecraft-packs.md).
+See [observation controls](observe.md) for `stage` (`final`, `silhouette`, `shade`, `grain`) and `scale` previews, and [Minecraft packs](minecraft-packs.md) or [game assets](game-assets.md) for pack binding.

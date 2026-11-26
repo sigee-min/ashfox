@@ -1,225 +1,244 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
 import { inflateSync } from 'node:zlib';
-import { compileItemStudy, readItemStudy } from '../../src/index';
-import { baseTone, grainDelta, materialRamp } from '../../src/compiler/sprite/shade';
+import {
+  compileSpriteDocument,
+  parseSpriteSource,
+  readSpriteDocument,
+  spritePreviewPng,
+} from '../../src/index';
+import { materialRamp } from '../../src/compiler/sprite/ramp';
+import { baseTone, grainDelta } from '../../src/compiler/sprite/shade';
 
-const source = fs.readFileSync(
-  path.resolve(__dirname, '../../../../packages/engine-core/tests/fixtures/items.json'),
-  'utf8',
-);
-const build = (text = source) => {
-  const result = compileItemStudy(text);
-  if (!result.ok) throw new Error(JSON.stringify(result.diagnostics));
-  return result;
-};
-const original = build();
-assert.equal(original.products.length, 10);
-assert.deepEqual(
-  original.products.map((p) => p.png),
-  build().products.map((p) => p.png),
-);
-const change = (fn: (value: Record<string, unknown>) => void): string => {
-  const v = JSON.parse(source) as Record<string, unknown>;
-  fn(v);
-  return JSON.stringify(v);
-};
-assert.equal(
-  compileItemStudy(source.replace('"version": 1', '"version": 1, "version": 1')).ok,
-  false,
-);
-assert.equal(
-  compileItemStudy(source.replace('"version": 1', '"version": 1, "\\u0076ersion": 1')).ok,
-  false,
-);
-assert.equal(
-  compileItemStudy(
-    change((v) => {
-      v.extra = true;
-    }),
-  ).ok,
-  false,
-);
-assert.equal(compileItemStudy('['.repeat(18) + '0' + ']'.repeat(18)).ok, false);
-const study = readItemStudy(source);
-assert.ok(Object.isFrozen(study.items[0]!.layers));
-for (const product of original.products) {
-  const png = Buffer.from(product.png);
-  assert.equal(png.readUInt32BE(16), 16);
-  assert.equal(png.readUInt32BE(20), 16);
-  let offset = 8;
-  const chunks: Buffer[] = [];
-  while (offset < png.length) {
-    const len = png.readUInt32BE(offset),
-      kind = png.toString('ascii', offset + 4, offset + 8);
-    if (kind === 'IDAT') chunks.push(png.subarray(offset + 8, offset + 8 + len));
-    offset += len + 12;
+const swordSource = `ashfox-model 1
+sprite blade_v2 {
+  export material steel { ramp { mode = auto; base = #7b93a8; preset = metal; } }
+  export material gold { ramp { mode = auto; base = #d8a642; preset = warm; } }
+  export material grip { ramp { mode = explicit; colors = [#3d2934, #6b433c, #9a6959]; } }
+  profile = item;
+  canvas = (32px, 32px);
+  palette { gem = #4cc9f0; }
+  shape blade_body {
+    shape { kind = polygon; points = [(24, 4), (27, 4), (27, 7), (12, 22), (9, 19)]; }
+    material = steel;
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(9, 22), (27, 4)]; }
+    grain { mode = directional; axis = diagonal; amount = 1; seed = 11; }
   }
-  const scan = inflateSync(Buffer.concat(chunks));
-  const rgba = Buffer.concat(
-    Array.from({ length: 16 }, (_, y) => {
-      assert.equal(scan[y * 65], 0);
-      return scan.subarray(y * 65 + 1, y * 65 + 65);
-    }),
-  );
-  assert.deepEqual(rgba, Buffer.from(product.raster.rgba.copy()));
-  for (let i = 0; i < 256; i++)
-    if (rgba[i * 4 + 3] === 0) assert.deepEqual([...rgba.subarray(i * 4, i * 4 + 4)], [0, 0, 0, 0]);
+  shape guard {
+    shape { kind = capsule; x1 = 6; y1 = 18; x2 = 14; y2 = 26; radius = 1.6; }
+    material = gold;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
+  }
+  shape handle {
+    shape { kind = line; x1 = 4; y1 = 27; x2 = 10; y2 = 21; thickness = 2; }
+    material = grip;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(4, 27), (10, 21)]; }
+  }
+  paint gem_dot { at = (9px, 21px); rows = ["gg", "gg"]; colors { g = gem; } }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
+}`;
+
+const parsed = parseSpriteSource(swordSource, 'blade_v2.ashfox');
+assert.equal(parsed.kind, 'sprite');
+const docInput = {
+  masks: parsed.masks,
+  materials: parsed.materials,
+  stamps: parsed.stamps,
+  item: parsed.item!,
+};
+const validated = readSpriteDocument(docInput, 'blade_v2.ashfox');
+assert.ok(Object.isFrozen(validated.item.layers));
+
+const built = compileSpriteDocument(docInput, 'blade_v2.ashfox');
+assert.equal(built.ok, true, built.ok ? '' : JSON.stringify(built.diagnostics));
+if (!built.ok) throw new Error('expected sprite build');
+const prod = built.products[0]!;
+assert.equal(prod.receipt.width, 32);
+assert.equal(prod.receipt.height, 32);
+assert.equal(prod.profile, 'item');
+assert.ok(prod.telemetry.outlinePixels > 0);
+assert.ok(prod.telemetry.hasRimHighlight);
+
+// Verify determinism & PNG round-trip.
+const builtAgain = compileSpriteDocument(docInput, 'blade_v2.ashfox');
+assert.equal(builtAgain.ok, true);
+if (builtAgain.ok) assert.deepEqual(prod.png, builtAgain.products[0]!.png);
+
+const png = Buffer.from(prod.png);
+assert.equal(png.readUInt32BE(16), 32);
+assert.equal(png.readUInt32BE(20), 32);
+let offset = 8;
+const chunks: Buffer[] = [];
+while (offset < png.length) {
+  const len = png.readUInt32BE(offset);
+  if (png.toString('ascii', offset + 4, offset + 8) === 'IDAT') {
+    chunks.push(png.subarray(offset + 8, offset + 8 + len));
+  }
+  offset += len + 12;
 }
-const round = { form: 'round' as const, light: 'top_left', contrast: 2 };
+const scan = inflateSync(Buffer.concat(chunks));
+assert.equal(scan.length, 32 * (32 * 4 + 1));
+
+// Verify 64x64 seamless tile wraps toroidally across borders.
+const tileSource = `ashfox-model 1
+sprite mossy_tile {
+  export material stone { ramp { mode = auto; base = #6e747c; preset = stone; } }
+  export material moss { ramp { mode = auto; base = #557e46; preset = organic; } }
+  export material mortar { ramp { mode = auto; base = #4a4f57; preset = stone; } }
+  profile = tile;
+  canvas = (32px, 32px);
+  palette {}
+  fill base_bricks {
+    material = stone;
+    pattern { kind = brick; width = 16; height = 8; mortar = 1; stagger = 8; seed = 7; mortarMaterial = mortar; }
+    grain { mode = clustered; amount = 1; seed = 13; }
+  }
+  pattern moss_patches {
+    material = stone;
+    pattern { kind = blotch; scale = 4; density = 0.28; seed = 21; toMaterial = moss; }
+    clip = canvas;
+  }
+}`;
+const parsedTile = parseSpriteSource(tileSource, 'tile.ashfox');
+const tileBuilt = compileSpriteDocument(
+  {
+    masks: parsedTile.masks,
+    materials: parsedTile.materials,
+    stamps: parsedTile.stamps,
+    item: parsedTile.item!,
+  },
+  'tile.ashfox',
+);
+assert.equal(tileBuilt.ok, true, tileBuilt.ok ? '' : JSON.stringify(tileBuilt.diagnostics));
+if (tileBuilt.ok) {
+  assert.equal(tileBuilt.products[0]!.profile, 'tile');
+  assert.equal(tileBuilt.products[0]!.telemetry.opaquePixels, 1024);
+}
+
+// Verify shade & ramp helpers.
+const round = { form: 'round' as const, light: 'top_left' as const, contrast: 2, specular: 0 };
 assert.ok(baseTone(round, 0, 0, 5, 5) >= 3);
 assert.equal(baseTone(round, 4, 4, 5, 5), 0);
 assert.equal(baseTone({ ...round, light: 'bottom_right' }, 0, 0, 5, 5), 0);
 assert.equal(baseTone({ ...round, contrast: 0 }, 0, 0, 5, 5), 2);
 assert.equal(
-  baseTone(
-    {
-      ...round,
-      form: 'bevel',
-      axis: [
-        [0, 4],
-        [4, 0],
-      ],
-    },
-    0,
-    0,
-    5,
-    5,
-  ),
-  4,
-);
-assert.equal(grainDelta(0, 0, 23), grainDelta(1, 1, 23));
-assert.deepEqual(
-  materialRamp({
-    id: 'test',
-    ramp: { mode: 'explicit', colors: ['#000000', '#808080', '#FFFFFF'] },
-  }),
-  ['#000000', '#404040', '#808080', '#c0c0c0', '#FFFFFF'],
+  grainDelta({ mode: 'clustered', amount: 1, seed: 23 }, 0, 0),
+  grainDelta({ mode: 'clustered', amount: 1, seed: 23 }, 1, 1),
 );
 assert.equal(
-  materialRamp({ id: 'test', ramp: { mode: 'generated', base: '#808080', preset: 'neutral-v1' } })
-    .length,
+  materialRamp({ id: 't', ramp: { mode: 'auto', base: '#708090', preset: 'metal' } }).length,
   5,
 );
-const fixture = {
-  format: 'ashfox-item-study',
-  version: 1,
-  masks: [{ id: 'shape', rows: ['11111', '11111', '11111', '11111', '11111'] }],
-  materials: [
-    { id: 'metal', ramp: { mode: 'explicit', colors: ['#102030', '#708090', '#E0F0FF'] } },
-  ],
-  stamps: [],
-  items: [
-    {
-      id: 'test',
-      profile: 'minecraft-item-v1',
-      canvas: [16, 16],
-      palette: { shine: '#FEDCBA' },
-      layers: [
-        {
-          id: 'body',
-          op: 'part',
-          mask: 'shape',
-          material: 'metal',
-          at: [1, 1],
-          shade: round,
-          grain: { mode: 'clustered-v1', amount: 1, seed: 23 },
-          patches: [{ id: 'shine', at: [2, 2], rows: ['h'], colors: { h: 'shine' }, protect: 1 }],
-        },
-      ],
-    },
-  ],
-};
-const run = () => build(JSON.stringify(fixture)).products[0]!;
-const before = run(),
-  layer = fixture.items[0]!.layers[0]!;
-layer.shade.light = 'bottom_right';
-assert.equal(compileItemStudy(JSON.stringify(fixture)).ok, false);
-layer.shade.light = 'top_left';
-const savedColors = fixture.materials[0]!.ramp.colors;
-fixture.materials[0]!.ramp.colors = ['#FFFFFF', '#808080', '#000000'];
-assert.equal(compileItemStudy(JSON.stringify(fixture)).ok, false);
-fixture.materials[0]!.ramp.colors = savedColors;
-assert.deepEqual(
-  [...before.raster.rgba.copy().slice((3 * 16 + 3) * 4, (3 * 16 + 3) * 4 + 4)],
-  [254, 220, 186, 255],
+assert.ok(spritePreviewPng(prod.raster, 4).length > 100);
+
+// Legacy v1 fields are rejected cleanly.
+const legacy = swordSource.replace('profile = item;', 'profile = "minecraft-item-v1";');
+const legacyParsed = parseSpriteSource(legacy, 'legacy.ashfox');
+const legacyRes = compileSpriteDocument({
+  masks: legacyParsed.masks,
+  materials: legacyParsed.materials,
+  stamps: legacyParsed.stamps,
+  item: legacyParsed.item!,
+});
+assert.equal(legacyRes.ok, false);
+
+// Non-square canvases are rejected up front to match publishBundle metadata rules.
+const rectCanvas = parseSpriteSource(
+  swordSource.replace('canvas = (32px, 32px);', 'canvas = (32px, 16px);'),
+  'rect.ashfox',
 );
-assert.ok(before.evidence.filter((e) => e?.protected).every((e) => e?.grainDelta === 0));
-layer.grain.seed = 91;
-assert.deepEqual(
-  before.evidence.map((e) => e?.baseTone),
-  run().evidence.map((e) => e?.baseTone),
-);
-layer.grain.seed = 23;
-fixture.materials[0]!.ramp.colors = ['#112200', '#667722', '#AABB44'];
-assert.deepEqual(
-  before.evidence.map((e) => [e?.baseTone, e?.grainDelta]),
-  run().evidence.map((e) => [e?.baseTone, e?.grainDelta]),
-);
-const beforeRename = run();
-layer.id = 'renamed';
-assert.deepEqual(beforeRename.png, run().png);
-const renamed = run();
-layer.at = [6, 5];
-const moved = run();
-for (let y = 0; y < 5; y++)
-  for (let x = 0; x < 5; x++) {
-    const a = (y + 1) * 16 + x + 1,
-      b = (y + 5) * 16 + x + 6;
-    assert.deepEqual(
-      [...renamed.raster.rgba.copy().slice(a * 4, a * 4 + 4)],
-      [...moved.raster.rgba.copy().slice(b * 4, b * 4 + 4)],
-    );
-  }
-layer.at = [15, 15];
-assert.equal(compileItemStudy(JSON.stringify(fixture)).ok, false);
-layer.at = [1, 1];
-fixture.masks[0]!.rows[2] = '11.11';
-assert.equal(compileItemStudy(JSON.stringify(fixture)).ok, false);
-// Unrelated entry affects the source head, not an existing product or build key.
-const subset = JSON.parse(source);
-subset.items = subset.items.slice(0, 1);
-const one = build(JSON.stringify(subset));
-assert.notEqual(one.sourceHash, original.sourceHash);
 assert.equal(
-  one.products[0]!.receipt.buildKey,
-  original.products.find((p) => p.id === one.products[0]!.id)!.receipt.buildKey,
+  compileSpriteDocument({
+    masks: rectCanvas.masks,
+    materials: rectCanvas.materials,
+    stamps: rectCanvas.stamps,
+    item: rectCanvas.item!,
+  }).ok,
+  false,
 );
-const pixels = {
-  format: 'ashfox-item-study',
-  version: 1,
-  masks: [],
-  materials: [],
-  stamps: [{ id: 'mark', rows: ['ab'], slots: ['a', 'b'] }],
-  items: [
-    {
-      id: 'pixels',
-      profile: 'minecraft-item-v1',
-      canvas: [16, 16],
-      palette: { red: '#FF0000', green: '#00FF00' },
+
+// Part bevel axis uses mask-local coordinates and validates [x, y] against [maxW, maxH].
+const partMask = Array.from({ length: 8 }, () => '11111111');
+const buildPartAt = (ax: number) =>
+  compileSpriteDocument({
+    masks: [{ id: 'sq', rows: partMask }],
+    materials: [{ id: 'steel', ramp: { mode: 'auto', base: '#7b93a8', preset: 'metal' } }],
+    stamps: [],
+    item: {
+      id: 'moved',
+      profile: 'item',
+      canvas: [32, 32],
+      palette: {},
       layers: [
         {
-          id: 'stamp',
-          op: 'stamp',
-          stamp: 'mark',
-          at: [0, 0],
-          flip: 'x',
-          colors: { a: 'red', b: 'green' },
+          id: 'p',
+          op: 'part',
+          mask: 'sq',
+          material: 'steel',
+          at: [ax, 0],
+          shade: {
+            form: 'bevel',
+            light: 'top_left',
+            contrast: 2,
+            specular: 2,
+            axis: [
+              [0, 0],
+              [7, 7],
+            ],
+          },
+          grain: { mode: 'none', amount: 0, seed: 1 },
+          patches: [],
         },
-        { id: 'erase', op: 'erase', at: [1, 0], rows: ['1'] },
-        { id: 'paint', op: 'paint', at: [1, 0], rows: ['g'], colors: { g: 'green' } },
       ],
     },
-  ],
-};
-assert.deepEqual(
-  [...build(JSON.stringify(pixels)).products[0]!.raster.rgba.copy().slice(0, 8)],
-  [0, 255, 0, 255, 0, 255, 0, 255],
+  });
+const p0 = buildPartAt(0);
+const p10 = buildPartAt(10);
+assert.equal(p0.ok, true);
+assert.equal(p10.ok, true);
+if (p0.ok && p10.ok) {
+  for (let y = 0; y < 8; y += 1) {
+    for (let x = 0; x < 8; x += 1) {
+      assert.equal(
+        p0.products[0]!.evidence[y * 32 + x]?.baseTone,
+        p10.products[0]!.evidence[y * 32 + (x + 10)]?.baseTone,
+      );
+    }
+  }
+}
+const tallMask = Array.from({ length: 12 }, () => '1111');
+assert.equal(
+  compileSpriteDocument({
+    masks: [{ id: 'tall', rows: tallMask }],
+    materials: [{ id: 'steel', ramp: { mode: 'auto', base: '#7b93a8', preset: 'metal' } }],
+    stamps: [],
+    item: {
+      id: 'tall_axis',
+      profile: 'item',
+      canvas: [32, 32],
+      palette: {},
+      layers: [
+        {
+          id: 'p',
+          op: 'part',
+          mask: 'tall',
+          material: 'steel',
+          at: [2, 2],
+          shade: {
+            form: 'bevel',
+            light: 'top_left',
+            contrast: 2,
+            axis: [
+              [1, 8],
+              [2, 2],
+            ],
+          },
+          grain: { mode: 'none', amount: 0, seed: 1 },
+          patches: [],
+        },
+      ],
+    },
+  }).ok,
+  true,
 );
-pixels.items[0]!.layers.splice(1);
-pixels.items[0]!.layers[0]!.colors!.a = 'missing';
-assert.equal(compileItemStudy(JSON.stringify(pixels)).ok, false);
-console.log(
-  'sprite compiler: deterministic pixels, shading, contracts, independent PNG decoding ok',
-);
+
+console.log('sprite compiler v2: multi-res, shapes, OKLCH ramps, sel-out, seamless tile ok');

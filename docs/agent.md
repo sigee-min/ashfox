@@ -17,6 +17,16 @@ Check Node.js and the local CLI with `node --version`,
 `npx --no-install ashfox --version` and `npx --no-install ashfox --help`.
 Do not replace a working pinned installation just because a newer version exists.
 
+## Optional: fetch the Ashfox skill directly
+
+If your client supports Agent Skills, you can also read or install the published
+`ashfox` skill directly from the public paths without cloning the repository:
+
+- Markdown instructions: `https://ashfox.io/skills/ashfox/files/SKILL.md`
+- Agent Skill package: `https://ashfox.io/skills/ashfox/ashfox.skill`
+- Claude Code ZIP archive: `https://ashfox.io/skills/ashfox/ashfox.zip`
+- Release descriptor & client install targets: `https://ashfox.io/skills/ashfox/latest.json`
+
 ## Install and verify
 
 Read [installation](https://ashfox.io/docs/guides/install/) and

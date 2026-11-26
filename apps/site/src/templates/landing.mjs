@@ -2,6 +2,215 @@ import { defaultLocale, localeRegistry } from '../locales.mjs';
 import { siteMessages } from '../messages.mjs';
 import { absoluteUrl, escapeHtml, githubUrl, pageShell } from './shell.mjs';
 
+const CREATURE_ORDER = { fox: 0, goblin: 1, griffin: 2 };
+
+const MOSAIC_ASSETS = [
+  '/media/catalog/iron-sword.png',
+  '/media/catalog/crystal-sword.png',
+  '/media/catalog/ruby-potion.png',
+  '/media/catalog/blue-potion.png',
+  '/media/catalog/golden-apple.png',
+  '/media/catalog/amethyst.png',
+  '/media/catalog/mossy-stone.png',
+  '/media/catalog/oak-planks.png',
+];
+
+const renderPromptInstall = (t) => `
+  <div class="hero-start" id="quick-start">
+    <div class="prompt-bar">
+      <span class="prompt-chevron" aria-hidden="true">›</span>
+      <pre class="prompt-code" tabindex="0"><code>${t('instruction')}</code></pre>
+      <button class="button button-primary prompt-copy-btn" data-copy-agent-instruction data-instruction="${t('instruction')}">
+        <span data-copy-state data-default-state="${t('copyInstruction')}" data-copied-state="${t('copied')}">${t('copyInstruction')}</span>
+      </button>
+    </div>
+    <p data-copy-feedback data-default-feedback="${t('pasteInstruction')}" role="status">${t('pasteInstruction')}</p>
+    <noscript><p>${t('javascriptRequired')}</p></noscript>
+  </div>`;
+
+const renderHero = (t) => `
+  <section class="world-hero" id="examples" aria-label="${t('pageTitle')}">
+    <div class="hero-copy">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-title-group">
+        <h1>Assets<br><span>as Code.</span></h1>
+        <p class="hero-subtitle">${t('heroSubtitle')}</p>
+      </div>
+      ${renderPromptInstall(t)}
+    </div>
+    <a class="hero-scroll-cue" href="#stage" aria-label="${t('exploreGriffin')}">
+      <span class="scroll-line" aria-hidden="true"></span>
+    </a>
+  </section>`;
+
+const renderLiveDiffStage = (t, locale, assets, griffin) => `
+  <section class="landing-section stage-section" id="stage" aria-labelledby="diff-stage-title">
+    <div class="linear-head linear-head-compact" data-reveal>
+      <h2 id="diff-stage-title">${t('diffStageTitle')}</h2>
+      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+    </div>
+    <div class="diff-workbench" data-live-diff data-locale="${locale.code}" data-reveal>
+      <div class="diff-topbar">
+        <div class="segmented-strip" role="tablist" aria-label="${t('diffStageTitle')}">
+          <button type="button" data-diff-domain="3d" aria-pressed="true">${t('diffTab3d')}</button>
+          <button type="button" data-diff-domain="2d" aria-pressed="false">${t('diffTab2d')}</button>
+          <button type="button" data-diff-domain="sfx" aria-pressed="false">${t('diffTabSfx')}</button>
+        </div>
+        <span class="workbench-path" data-diff-filepath>examples/griffin/workbench/main.ashfox</span>
+      </div>
+      <div class="diff-split">
+        <div class="diff-editor source-window" id="source">
+          <div class="diff-token-bar">
+            <span class="diff-token-label">${t('diffClickHint')}</span>
+            <div class="diff-tokens" data-diff-tokens></div>
+          </div>
+          <div class="diff-patch" aria-label="git diff">
+            <pre><code data-diff-patch><span class="diff-ctx">  2  ashfox-model 1</span>
+<span class="diff-del">- 3  asset fox { import "./shared.ashfox"; }</span>
+<span class="diff-add">+ 3  asset griffin { import "./animation.ashfox" as animation; }</span></code></pre>
+          </div>
+          <div class="source-code">
+            <pre tabindex="0" aria-label="${t('sourceExcerpt')}"><code data-source-code>${t('loadingSource')}</code></pre>
+          </div>
+        </div>
+        <div class="diff-output">
+          <div class="diff-stage-3d" data-diff-pane="3d">
+            <div class="world-stage-wrap">
+              <div class="world-stage" data-live-model data-model-src="${assets.heroModel}"><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="${t('heroAlt')}"></div>
+              <div class="drag-cue" data-drag-cue aria-hidden="true">↔ ${t('dragCue')}</div>
+            </div>
+            <div class="diff-stage-controls" data-diff-3d-controls>
+              <div class="segmented-strip" role="group" aria-label="${t('modelControls')}">${[
+                ['look_around', t('lookAround')],
+                ['wing_display', t('spreadWings')],
+                ['greeting', t('greet')],
+              ]
+                .map(
+                  ([id, label]) =>
+                    `<button data-model-motion="${id}" aria-pressed="false" disabled>${label}</button>`,
+                )
+                .join('')}</div>
+              <details class="view-options"><summary>${t('cameraViews')}</summary><div class="view-controls"><button data-model-view="3.14159" disabled>${t('front')}</button><button data-model-view="4.71239" disabled>${t('side')}</button><button data-model-view="3.79159" disabled>${t('reset')}</button></div></details>
+            </div>
+          </div>
+          <div class="diff-stage-2d" data-diff-pane="2d" hidden>
+            <div class="diff-2d-canvas">
+              <img class="diff-2d-sprite" data-diff-image src="/media/catalog/iron-sword.png" width="256" height="256" alt="${t('swordAlt')}">
+              <div class="diff-2d-tile" data-diff-tile hidden></div>
+            </div>
+            <div class="diff-2d-meta">
+              <img class="diff-2d-native" data-diff-native src="/media/catalog/iron-sword.png" width="32" height="32" alt="">
+              <span data-diff-2d-label>32×32 PNG · shared.steel</span>
+            </div>
+          </div>
+          <div class="diff-stage-sfx" data-diff-pane="sfx" hidden>
+            <img class="diff-sfx-wave" data-diff-wave src="/media/catalog/bird-call.svg" width="480" height="160" alt="${t('waveAlt')}">
+            <div class="diff-sfx-controls">
+              <button type="button" class="button button-primary" data-diff-play>▶ ${t('playSound')}</button>
+              <span class="workbench-path" data-diff-sfx-label>bird_call · seed = 7349</span>
+            </div>
+            <audio data-diff-audio preload="none" src="/media/catalog/bird-call.wav" hidden></audio>
+          </div>
+        </div>
+      </div>
+      <div class="workbench-statusbar">
+        <span data-model-status role="status">${t('modelStatus')}</span>
+        <div class="world-index">
+          <a data-diff-studio-link href="${locale.prefix}/assets/?asset=griffin">${t('openInStudio')} →</a>
+          <a data-diff-source-link href="/examples/griffin/workbench/main.ashfox">${t('exploreSource')}</a>
+          <a data-diff-download-link href="/media/catalog/griffin.glb" download>${t('downloadModel')}</a>
+        </div>
+      </div>
+    </div>
+  </section>`;
+
+const renderCreatureShowcase = (t, locale, showcase) => {
+  const ordered = [...showcase.entries].sort(
+    (a, b) => (CREATURE_ORDER[a.entryName] ?? 9) - (CREATURE_ORDER[b.entryName] ?? 9),
+  );
+  const labels = {
+    griffin: [t('griffin'), 'griffin/workbench/main.ashfox'],
+    fox: [t('fox'), 'fox/creatures/fox.ashfox'],
+    goblin: [t('goblin'), 'goblin/creatures/goblin.ashfox'],
+  };
+  const cards = ordered
+    .map((entry, idx) => {
+      const [name, source] = labels[entry.entryName];
+      return `<article class="creature-card" data-reveal style="--reveal-delay:${idx * 70}ms"><div class="creature-stage"><img class="specimen-poster" src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"></div><div class="creature-foot"><h3>${name}</h3><div class="col-footer"><a href="${githubUrl}/blob/main/examples/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog">▶ ${t('watchReplay')}</a></div></div></article>`;
+    })
+    .join('');
+
+  const mosaicCells = MOSAIC_ASSETS.map(
+    (src) =>
+      `<span class="mosaic-cell"><img src="${src}" width="32" height="32" loading="lazy" alt=""></span>`,
+  ).join('');
+
+  return `
+  <section class="landing-section" id="frontier" aria-labelledby="frontier-title">
+    <div class="linear-head linear-head-compact" data-reveal>
+      <h2 id="frontier-title">${t('builtShowcaseTitle')}</h2>
+      <a class="button button-ghost" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+    </div>
+    <div class="frontier-grid">
+      ${cards}
+      <a class="studio-handoff-card" href="${locale.prefix}/assets/" data-reveal style="--reveal-delay:210ms">
+        <div class="handoff-mosaic" aria-hidden="true">
+          <div class="mosaic-grid">${mosaicCells}</div>
+          <img class="mosaic-wave" src="/media/catalog/bird-call.svg" width="480" height="160" loading="lazy" alt="">
+        </div>
+        <div class="handoff-body">
+          <div>
+            <h3>${t('studioHandoffTitle')}</h3>
+            <div class="handoff-pills">
+              <span>${t('studioHandoffModels')}</span>
+              <span>${t('studioHandoffSprites')}</span>
+              <span>${t('studioHandoffSounds')}</span>
+            </div>
+          </div>
+          <span class="button button-primary">${t('studioHandoffCta')} →</span>
+        </div>
+      </a>
+    </div>
+    <p class="evidence-note">${t('provenance')}</p>
+  </section>
+  <dialog class="replay-dialog" data-replay-dialog aria-labelledby="replay-title" aria-describedby="replay-description">
+    <div class="replay-header"><div><p>${t('watchReplay')}</p><h2 id="replay-title" data-replay-title></h2></div><button type="button" class="replay-close" data-replay-close aria-label="${t('closeReplay')}" autofocus>×</button></div>
+    <video data-replay-video controls playsinline preload="none" width="960" height="540" aria-labelledby="replay-title"></video>
+    <p class="replay-error" data-replay-error role="status" hidden>${t('replayFailed')}</p>
+    <div class="replay-footer"><p id="replay-description">${t('provenance')}</p><a data-replay-file>${t('openReplayFile')}</a></div>
+  </dialog>`;
+};
+
+const renderWorkflowSection = (t, locale) => `
+  <section class="landing-section" id="workflow" aria-labelledby="workflow-title">
+    <div class="linear-head linear-head-compact" data-reveal>
+      <h2 id="workflow-title">${t('workflowShortTitle')}</h2>
+      <a class="linear-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.docs)} →</a>
+    </div>
+    <div class="brand-pillars">
+      <a class="brand-pillar" href="${locale.prefix}/docs/guides/assets-as-code/" data-reveal style="--reveal-delay:0ms">
+        <div class="brand-pillar-art"><img src="/brand/brand-code-compile.png" width="1280" height="720" loading="lazy" alt=""></div>
+        <div class="brand-pillar-meta"><strong>${t('pillarCodeTitle')}</strong><span>${t('pillarCodeMeta')}</span></div>
+      </a>
+      <div class="brand-pillar" data-reveal style="--reveal-delay:70ms">
+        <div class="brand-pillar-art"><img src="/brand/brand-git-branch.png" width="1280" height="720" loading="lazy" alt=""></div>
+        <div class="brand-pillar-meta"><strong>${t('pillarGitTitle')}</strong><span>${t('pillarGitMeta')}</span></div>
+      </div>
+      <a class="brand-pillar" href="${locale.prefix}/assets/?domain=sound" data-reveal style="--reveal-delay:140ms">
+        <div class="brand-pillar-art"><img src="/brand/brand-audio-synth.png" width="1280" height="720" loading="lazy" alt=""></div>
+        <div class="brand-pillar-meta"><strong>${t('pillarAudioTitle')}</strong><span>${t('pillarAudioMeta')}</span></div>
+      </a>
+    </div>
+  </section>
+  <section class="landing-finale" aria-labelledby="finale-title" data-reveal>
+    <h2 id="finale-title">${t('finaleShortTitle')}</h2>
+    <div class="finale-actions">
+      <a class="button button-primary" href="#quick-start">${t('getStarted')}</a>
+      <a class="linear-link" href="${locale.prefix}/assets/">${t('browseAllAssets')} →</a>
+      <a class="linear-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)} →</a>
+    </div>
+  </section>`;
+
 export const renderLandingPage = ({ assets, config, showcase, locale = defaultLocale }) => {
   const messages = siteMessages(locale);
   const t = (key) => escapeHtml(messages[key]);
@@ -12,82 +221,11 @@ export const renderLandingPage = ({ assets, config, showcase, locale = defaultLo
   const griffin = showcase.entries[0];
   const body = `
   <main id="main" class="world-landing">
-    <section class="world-hero" id="examples" aria-label="${t('exploreGriffin')}">
-      <div class="hero-copy">
-        <div class="world-heading">
-          <p class="eyebrow">${t('eyebrow')}</p>
-          <h1>Assets<br><span>as Code.</span></h1>
-          <p class="hero-subtitle">${t('heroSubtitle')}</p>
-        </div>
-        <div class="world-intro">
-          <p>${t('heroIntro')} ${t('heroPromise')}</p>
-          <div class="hero-start" id="quick-start"><div class="world-actions"><button class="button button-primary" data-copy-agent-instruction data-instruction="${t('instruction')}"><span data-copy-state data-default-state="${t('copyInstruction')}" data-copied-state="${t('copied')}">${t('copyInstruction')}</span></button></div><p data-copy-feedback data-default-feedback="${t('pasteInstruction')}" role="status">${t('pasteInstruction')}</p><noscript><p>${t('javascriptRequired')}</p></noscript></div>
-        </div>
-      </div>
-      <div class="hero-preview">
-        <div class="preview-heading"><span class="specimen-id">01 / ${t('model')}</span><span>${t('griffin')}</span></div>
-        <div class="world-stage" data-live-model data-model-src="${assets.heroModel}"><img src="${griffin.posterSrc}" width="640" height="360" fetchpriority="high" alt="${t('heroAlt')}"></div>
-        <div class="world-note"><span class="live-dot" aria-hidden="true"></span><span data-model-status role="status">${t('modelStatus')}</span></div>
-        <div class="world-controls" aria-label="${t('modelControls')}">
-          <div>${[
-            ['look_around', t('lookAround')],
-            ['wing_display', t('spreadWings')],
-            ['greeting', t('greet')],
-          ]
-            .map(
-              ([id, label]) =>
-                `<button data-model-motion="${id}" aria-pressed="false" disabled>${label}</button>`,
-            )
-            .join('')}</div>
-          <details class="view-options"><summary>${t('cameraViews')}</summary><div class="view-controls"><button data-model-view="3.14159" disabled>${t('front')}</button><button data-model-view="4.71239" disabled>${t('side')}</button><button data-model-view="3.79159" disabled>${t('reset')}</button></div></details>
-        </div>
-        <div class="world-index"><a href="/examples/griffin/workbench/main.ashfox">${t('exploreSource')}</a><a href="/media/landing/griffin.glb" download>${t('downloadModel')}</a></div>
-      </div>
-      <div class="hero-proof"><a class="hero-code" href="/examples/griffin/workbench/main.ashfox"><span>${t('sourceExcerpt')} / main.ashfox</span><code><b>motion</b> = animation.wing_display;<br><b>motion</b> = animation.wing_flap;</code></a><div class="hero-proof-message"><span aria-hidden="true">↗</span><p>${t('heroProof')}</p></div></div>
-    </section>
-    <section class="aac-workflow" id="workflow" aria-labelledby="workflow-title">
-      <div><h2 id="workflow-title">${t('workflowTitle')}</h2></div>
-      <ol class="workflow-steps">
-        <li><span>01</span><h3>${t('define')}</h3><p>${t('defineBefore')}<code>.ashfox</code>${t('defineAfter')}</p></li>
-        <li><span>02</span><h3>${t('inspect')}</h3><p>${t('inspectBody')}</p></li>
-        <li><span>03</span><h3>${t('review')}</h3><p>${t('reviewBody')}</p></li>
-        <li><span>04</span><h3>${t('build')}</h3><p>${t('buildBody')}</p></li>
-      </ol>
-      <a class="world-link" href="${locale.prefix}/docs/guides/assets-as-code/">${t('adopt')}</a>
-    </section>
-    <section class="world-items" id="collection">
-      <div class="world-section-copy"><p class="eyebrow">02 / PNG</p><h2>${t('texturesTitle')}</h2><p>${t('texturesBody')}<br>${t('texturesDetail')}</p><a class="world-link" href="/downloads/items.zip" download>${t('itemSources')}</a></div>
-      <div class="item-showcase"><div class="item-art"><img data-item-image src="/media/landing/sword.png" alt="${t('swordAlt')}" width="192" height="192"></div><div class="item-options"><button data-item="sword" aria-pressed="true">${t('sword')}</button><button data-item="amethyst" aria-pressed="false">${t('amethyst')}</button><a data-item-download href="/media/landing/sword.png" download>${t('downloadImage')}</a></div></div>
-    </section>
-    <section class="world-sound" id="sound"><div><p class="eyebrow">03 / WAV</p><h2>${t('soundTitle')}</h2><p>${t('soundBody')}<br>${t('soundDetail')}</p><a class="world-link" href="/examples/sounds/assets/sounds/bird_call.ashfox" download>${t('soundSource')}</a></div><div class="sound-player"><span class="sound-caption">${t('birdSong')}</span><img data-sound-wave src="/media/landing/bird-base.svg" width="480" height="160" alt="${t('waveAlt')}"><div class="sound-progress"><span data-sound-progress></span></div><div class="sound-actions"><button class="sound-play" data-sound-play aria-label="${t('playSound')}">▶</button><button class="sound-another" data-sound-another>${t('another')}</button><a data-sound-download href="/media/landing/bird-base.wav" download>${t('downloadSound')}</a></div><p data-sound-status role="status">${t('pressPlay')}</p><audio data-landing-audio preload="none" src="/media/landing/bird-base.wav"></audio></div></section>
-    <section class="world-source" id="source"><div class="world-section-copy"><h2>${t('sourceTitle')}</h2><p>${t('sourceBody')}<br>${t('sourceDetail')}</p><a class="world-link" href="${githubUrl}/tree/main/examples">${t('browseSources')}</a></div><div class="source-window"><div class="source-tabs"><button data-source="model" aria-pressed="true">${t('model')}</button><button data-source="item" aria-pressed="false">${t('item')}</button><button data-source="sound" aria-pressed="false">${t('sound')}</button><span>.ashfox</span></div><div class="source-code"><pre tabindex="0" aria-label="${t('sourceExcerpt')}"><code data-source-code>${t('loadingSource')}</code></pre></div><div class="source-result"><img data-source-preview src="${griffin.posterSrc}" width="160" height="90" alt="${t('modelAlt')}"></div><div class="source-footer"><a data-source-link href="/examples/griffin/workbench/main.ashfox">${t('fullSource')}</a></div></div></section>
-    <section class="aac-frontier" id="frontier" aria-labelledby="frontier-title">
-      <h2 id="frontier-title">${t('creaturesTitle')}</h2>
-      <p class="section-lead">${t('creaturesBody')}</p>
-      <div class="frontier-grid">${showcase.entries
-        .map((entry) => {
-          const labels = {
-            griffin: [t('griffin'), t('griffinBody'), 'griffin/workbench/main.ashfox'],
-            fox: [t('fox'), t('foxBody'), 'fox/creatures/fox.ashfox'],
-            goblin: [t('goblin'), t('goblinBody'), 'goblin/creatures/goblin.ashfox'],
-          };
-          const [name, description, source] = labels[entry.entryName];
-          return `<article><img src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"><div><h3>${name}</h3><p>${description}</p><a href="${githubUrl}/blob/main/examples/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a class="replay-trigger" href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog"><span aria-hidden="true">▶</span>${t('watchReplay')}</a></div></article>`;
-        })
-        .join('')}</div>
-      <p class="evidence-note">${t('provenance')}</p>
-      <a class="world-link" href="${githubUrl}/tree/main/examples/shared-creatures">${t('sharedSource')}</a>
-    </section>
-    <dialog class="replay-dialog" data-replay-dialog aria-labelledby="replay-title" aria-describedby="replay-description">
-      <div class="replay-header"><div><p>${t('watchReplay')}</p><h2 id="replay-title" data-replay-title></h2></div><button type="button" class="replay-close" data-replay-close aria-label="${t('closeReplay')}" autofocus>×</button></div>
-      <video data-replay-video controls playsinline preload="none" width="960" height="540" aria-labelledby="replay-title"></video>
-      <p class="replay-error" data-replay-error role="status" hidden>${t('replayFailed')}</p>
-      <div class="replay-footer"><p id="replay-description">${t('provenance')}</p><a data-replay-file>${t('openReplayFile')}</a></div>
-    </dialog>
-    <section class="world-delivery" id="outputs"><h2>${t('deliveryTitle')}</h2><div class="delivery-pair"><a href="${locale.prefix}/docs/guides/web-game/"><h3>${t('gameBundles')}</h3><p>${t('gameBody')}</p><strong>${t('runExample')}</strong></a><a href="${locale.prefix}/docs/guides/minecraft-packs/"><h3>${t('minecraft')}</h3><p>${t('minecraftBody')}</p><strong>${t('buildPack')}</strong></a></div><a class="world-link" href="${locale.prefix}/docs/guides/choose-a-format/">${t('formats')}</a></section>
-
-    <section class="landing-finale" aria-labelledby="finale-title"><p class="eyebrow">${t('eyebrow')}</p><h2 id="finale-title">${t('firstAsset')}</h2><a class="button button-primary" href="#quick-start">${t('getStarted')}</a><a class="world-link" href="${locale.prefix}/docs/">${escapeHtml(locale.ui.documentation)}</a></section>
-  </main><script defer src="${assets.heroScript}"></script>`;
+    ${renderHero(t)}
+    ${renderLiveDiffStage(t, locale, assets, griffin)}
+    ${renderCreatureShowcase(t, locale, showcase)}
+    ${renderWorkflowSection(t, locale)}
+  </main><script defer src="${assets.viewerJs}"></script>`;
   return pageShell({
     active: 'product',
     assets,

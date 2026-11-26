@@ -1,4 +1,5 @@
 import type { SoundRecipe, Control } from '../../src';
+
 export const envelope = (peak = 1): Control => ({
   domain: 'linear',
   interpolation: 'smooth',
@@ -9,8 +10,10 @@ export const envelope = (peak = 1): Control => ({
     { at: 1, value: 0 },
   ],
 });
+
 export const fixture = (): SoundRecipe => ({
   id: 'test',
+  profile: 'ui',
   duration: 1,
   sampleRate: 48000,
   seed: 123,
@@ -48,6 +51,7 @@ export const fixture = (): SoundRecipe => ({
   playback: { kind: 'oneshot' },
   output: { gainDb: -12, peakDb: -3 },
 });
+
 export const literal = (value: unknown): string => {
   if (Array.isArray(value)) return `[${value.map(literal).join(', ')}]`;
   if (value && typeof value === 'object')
@@ -56,6 +60,7 @@ export const literal = (value: unknown): string => {
       .join('\n')}\n}`;
   return JSON.stringify(value);
 };
+
 export const native = (recipe: SoundRecipe): string => {
   const { id, ...body } = recipe;
   return `ashfox-model 1\nsound ${id} ${literal(body)}`;

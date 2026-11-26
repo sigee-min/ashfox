@@ -71,9 +71,12 @@ export const prepare = (snapshot: Snapshot): Prepared => {
       products,
       files: snapshot.files,
       sprite: {
+        profile: product.sprite.profile,
         png: product.sprite.png,
+        rgba: product.sprite.raster.rgba.copy(),
         receipt: product.sprite.receipt,
         evidence: product.sprite.evidence,
+        telemetry: product.sprite.telemetry,
         stages: {
           silhouette: encodeCanonicalPng(product.sprite.stages.silhouette),
           shade: encodeCanonicalPng(product.sprite.stages.shade),

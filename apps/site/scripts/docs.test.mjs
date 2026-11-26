@@ -132,7 +132,7 @@ for (const [kind, html] of [
   const image = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
   assert.ok(image);
   const imagePath = new URL(image).pathname;
-  assert.match(imagePath, new RegExp(`^/assets/site-social-${kind}-[a-f0-9]{12}\\.png$`));
+  assert.match(imagePath, new RegExp(`^/static/site-social-${kind}-[a-f0-9]{12}\\.png$`));
   assert.ok(html.includes(`<meta name="twitter:image" content="${image}">`));
   assert.doesNotMatch(html, /Build your next world/);
   const bytes = await readFile(path.join(siteRoot, 'dist', imagePath));

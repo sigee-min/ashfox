@@ -1,69 +1,54 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound wing_whoosh {
-  duration = 2;
+  profile = "foley";
+  duration = 0.78;
   sampleRate = 48000;
+  channels = 2;
   seed = 42;
+  space = { mix = 0.2; decay = 0.25; damping = 5200; size = 0.8; };
   voices = [{
-    id = "layer_1";
+    id = "air_sweep";
+    source = { kind = "noise"; color = "pink"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 240; }, { at = 0.4; value = 2100; }, { at = 1; value = 480; }]; };
+      q = 1.1;
+    };
+    highpass = 55;
+    pan = -0.18;
+    gain = { env = "adsr"; attack = 0.08; decay = 0.18; sustain = 0.55; release = 0.18; peak = 0.95; };
+  }, {
+    id = "feather_flutter";
+    source = { kind = "noise"; color = "white"; };
+    filter = {
+      kind = "bandpass";
+      cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 1600; }, { at = 0.38; value = 5200; }, { at = 1; value = 1400; }]; };
+      q = 1.4;
+    };
+    pan = 0.22;
+    gain = { env = "adsr"; attack = 0.06; decay = 0.14; sustain = 0.4; release = 0.14; peak = 0.65; };
+  }, {
+    id = "wing_thump";
     source = {
-      kind = "noise";
+      kind = "resonator";
+      excitation = { kind = "mallet"; duration = 0.015; hardness = 0.45; };
+      modes = [
+        { id = "low"; hz = 95; decay = 0.14; gain = 1.0; },
+        { id = "chest"; hz = 190; decay = 0.09; gain = 0.6; }
+      ];
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.3125;
-        value = 0.9;
-      }, {
-        at = 0.5625;
-        value = 0.9;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 170;
-    lowpass = 2200;
+    gain = { env = "ad"; attack = 0.01; peak = 0.8; curve = "exp"; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "layer_1";
-      voice = "layer_1";
-      at = 0.3;
-      duration = 0.8;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "flap";
+    start = 0.02;
+    steps = [
+      { id = "thump"; voice = "wing_thump"; at = 0.08; duration = 0.4; vary = { pitchCents = [-45, 45]; }; },
+      { id = "sweep"; voice = "air_sweep"; at = 0; duration = 0.68; vary = { duration = [0.92, 1.08]; gain = [0.9, 1.1]; }; },
+      { id = "flutter"; voice = "feather_flutter"; at = 0.04; duration = 0.56; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = -2.8;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 5; peakDb = -2; softClip = true; };
 }

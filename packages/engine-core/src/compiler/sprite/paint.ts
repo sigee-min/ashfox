@@ -1,36 +1,54 @@
-import type { Item, ItemStudy, Layer, Patch } from '../../project/sprite/contract';
+import type {
+  SpriteDocument,
+  SpriteGrain,
+  SpriteLayer,
+  SpriteMask,
+  SpritePatch,
+  SpritePatternSpec,
+  SpriteShade,
+} from '../../project/sprite/contract';
 import { rasterizeCanonicalTexture } from '../../textures/textureRecipe/raster';
-import type { SpritePixelEvidence } from './contract';
-import { baseTone, finalTone, grainDelta, materialRamp } from './shade';
+import type { SpriteAuthoringTelemetry, SpritePixelEvidence } from './contract';
+import { computeInnerRimCells, computeOutlineCells } from './outline';
+import { computeShadedPixel, type PixelPaintContext } from './pixel';
+import { buildMaterialRamps, type FiveToneRamp } from './ramp';
+import { maskBounds, rasterizeShapeMask } from './shapes';
 
-type Stage = 'silhouette' | 'shade' | 'grain' | 'final';
-type RowLayer = Exclude<Layer, { readonly op: 'part' }>;
-type PartLayer = Extract<Layer, { readonly op: 'part' }>;
+export type Stage = 'silhouette' | 'shade' | 'grain' | 'final';
 
 const SILHOUETTE = '#ddd5c6';
 
-/** Mutable 16x16 paint target shared by every layer of one item. */
 interface Canvas {
-  readonly study: ItemStudy;
-  readonly item: Item;
+  readonly doc: SpriteDocument;
+  readonly width: number;
+  readonly height: number;
+  readonly wrap: boolean;
   readonly stage: Stage;
+  readonly ramps: ReadonlyMap<string, FiveToneRamp>;
   readonly cells: (string | null)[];
   readonly evidence: (SpritePixelEvidence | null)[];
+  authoredPatternPixels: number;
+  outlinePixels: number;
+  hasRimHighlight: boolean;
+  readonly materialsUsed: Set<string>;
 }
 
-const write = (
+const writeCell = (
   canvas: Canvas,
   x: number,
   y: number,
   color: string | null,
   info: SpritePixelEvidence,
 ): void => {
-  canvas.cells[y * 16 + x] = color;
-  canvas.evidence[y * 16 + x] = info;
+  if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
+  const idx = y * canvas.width + x;
+  canvas.cells[idx] = color;
+  canvas.evidence[idx] = color === null ? null : info;
 };
 
-const layerEvidence = (layer: Layer, pointer: string): SpritePixelEvidence => ({
+const baseInfo = (layer: SpriteLayer, pointer: string): SpritePixelEvidence => ({
   layer: layer.id,
+  op: layer.op,
   pointer,
   material: null,
   baseTone: null,
@@ -39,131 +57,412 @@ const layerEvidence = (layer: Layer, pointer: string): SpritePixelEvidence => ({
   patch: null,
 });
 
-const rowCells = (
+const mirrorCoord = (v: number, size: number, enabled: boolean): number =>
+  enabled ? size - 1 - v : v;
+
+const pixelContext = (canvas: Canvas): PixelPaintContext => ({
+  width: canvas.width,
+  height: canvas.height,
+  wrap: canvas.wrap,
+  shadeOnly: canvas.stage === 'shade',
+  silhouetteHex: canvas.stage === 'silhouette' ? SILHOUETTE : null,
+  ramps: canvas.ramps,
+});
+
+const paintShadedPixel = (
+  canvas: Canvas,
+  x: number,
+  y: number,
+  sx: number,
+  sy: number,
+  lx: number,
+  ly: number,
+  bw: number,
+  bh: number,
+  materialId: string,
+  shade: SpriteShade,
+  grain: SpriteGrain,
+  pattern: SpritePatternSpec | undefined,
+  isProt: boolean,
+  owner: SpritePixelEvidence,
+  overlayOnly: boolean,
+): void => {
+  const prev = canvas.evidence[y * canvas.width + x] ?? null;
+  const out = computeShadedPixel(pixelContext(canvas), {
+    x,
+    y,
+    sx,
+    sy,
+    lx,
+    ly,
+    bw,
+    bh,
+    materialId,
+    shade,
+    grain,
+    pattern,
+    isProt,
+    overlayOnly,
+    prev,
+    owner,
+  });
+  if (!out) return;
+  if (out.usedPattern) canvas.authoredPatternPixels += 1;
+  canvas.materialsUsed.add(out.material);
+  writeCell(canvas, x, y, out.hex, out.evidence);
+};
+
+const paintShadedRegion = (
+  canvas: Canvas,
+  mask: Uint8Array,
+  ox: number,
+  oy: number,
+  w: number,
+  h: number,
+  materialId: string,
+  shade: SpriteShade,
+  grain: SpriteGrain,
+  pattern: SpritePatternSpec | undefined,
+  protectedMask: Uint8Array | null,
+  owner: SpritePixelEvidence,
+  overlayOnly = false,
+): void => {
+  const [bx, by, bw, bh] = maskBounds(mask, w, h) ?? [0, 0, w, h];
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      if (!mask[y * w + x]) continue;
+      paintShadedPixel(
+        canvas,
+        ox + x,
+        oy + y,
+        x,
+        y,
+        x - bx,
+        y - by,
+        bw,
+        bh,
+        materialId,
+        shade,
+        grain,
+        pattern,
+        protectedMask ? protectedMask[y * w + x] === 1 : false,
+        owner,
+        overlayOnly,
+      );
+    }
+  }
+};
+
+const resolveMaskGrid = (
+  mask: SpriteMask,
+  mirror: 'none' | 'x' | 'y' | 'xy',
+): { readonly grid: Uint8Array; readonly w: number; readonly h: number } => {
+  if (mask.kind === 'shape') {
+    return {
+      grid: rasterizeShapeMask(
+        mask.shape,
+        mask.width,
+        mask.height,
+        mirror === 'none' ? mask.mirror : mirror,
+      ),
+      w: mask.width,
+      h: mask.height,
+    };
+  }
+  const h = mask.rows.length,
+    w = mask.rows[0]!.length;
+  const grid = new Uint8Array(w * h);
+  const mx = mirror === 'x' || mirror === 'xy';
+  const my = mirror === 'y' || mirror === 'xy';
+  mask.rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch === '1') grid[mirrorCoord(y, h, my) * w + mirrorCoord(x, w, mx)] = 1;
+    });
+  });
+  return { grid, w, h };
+};
+
+const buildProtectedMask = (patches: readonly SpritePatch[], w: number, h: number): Uint8Array => {
+  const mask = new Uint8Array(w * h);
+  for (const p of patches) {
+    const pw = p.rows[0]!.length,
+      ph = p.rows.length;
+    for (
+      let y = Math.max(0, p.at[1] - p.protect);
+      y < Math.min(h, p.at[1] + ph + p.protect);
+      y += 1
+    ) {
+      for (
+        let x = Math.max(0, p.at[0] - p.protect);
+        x < Math.min(w, p.at[0] + pw + p.protect);
+        x += 1
+      ) {
+        mask[y * w + x] = 1;
+      }
+    }
+  }
+  return mask;
+};
+
+const paintPatch = (
+  canvas: Canvas,
+  ox: number,
+  oy: number,
+  patch: SpritePatch,
+  pointer: string,
+): void => {
+  patch.rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      const px = ox + patch.at[0] + x,
+        py = oy + patch.at[1] + y;
+      const prev = canvas.evidence[py * canvas.width + px];
+      writeCell(canvas, px, py, canvas.doc.item.palette[patch.colors[ch]!]!, {
+        ...(prev ?? {
+          layer: patch.id,
+          op: 'patch',
+          material: null,
+          baseTone: null,
+          grainDelta: 0,
+          protected: true,
+        }),
+        patch: patch.id,
+        pointer: `${pointer}/rows/${y}/${x}`,
+      });
+    });
+  });
+};
+
+const paintRowGrid = (
+  canvas: Canvas,
   rows: readonly string[],
-  visit: (c: string, x: number, y: number, row: string) => void,
-): void => rows.forEach((row, y) => [...row].forEach((c, x) => visit(c, x, y, row)));
-
-const layerRows = (study: ItemStudy, layer: RowLayer): readonly string[] =>
-  layer.op === 'stamp' ? study.stamps.find((s) => s.id === layer.stamp)!.rows : layer.rows;
-
-const flipped = (layer: RowLayer, axis: 'x' | 'y', value: number, size: number): number =>
-  layer.op === 'stamp' && layer.flip.includes(axis) ? size - 1 - value : value;
-
-const rowColor = (canvas: Canvas, layer: RowLayer, c: string): string | null => {
-  const color = layer.op === 'erase' ? null : canvas.item.palette[layer.colors[c]!]!;
-  return canvas.stage === 'silhouette' && color ? SILHOUETTE : color;
-};
-
-const rowPointer = (study: ItemStudy, layer: RowLayer, base: string, x: number, y: number) =>
-  layer.op === 'stamp'
-    ? `/stamps/${study.stamps.findIndex((s) => s.id === layer.stamp)}/rows/${y}/${x}`
-    : `${base}/rows/${y}/${x}`;
-
-const paintRowLayer = (canvas: Canvas, layer: RowLayer, owner: SpritePixelEvidence): void => {
-  const [ax, ay] = layer.at;
-  const rows = layerRows(canvas.study, layer);
-  rowCells(rows, (c, x, y, row) => {
-    if (c === '.') return;
-    const px = flipped(layer, 'x', x, row.length);
-    const py = flipped(layer, 'y', y, rows.length);
-    write(canvas, ax + px, ay + py, rowColor(canvas, layer, c), {
-      ...owner,
-      pointer: rowPointer(canvas.study, layer, owner.pointer, x, y),
+  ox: number,
+  oy: number,
+  flip: 'none' | 'x' | 'y' | 'xy',
+  colors: Readonly<Record<string, string>> | null,
+  owner: SpritePixelEvidence,
+): void => {
+  const mx = flip === 'x' || flip === 'xy';
+  const my = flip === 'y' || flip === 'xy';
+  rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      const px = ox + mirrorCoord(x, row.length, mx);
+      const py = oy + mirrorCoord(y, rows.length, my);
+      const color = colors === null ? null : canvas.doc.item.palette[colors[ch]!]!;
+      writeCell(canvas, px, py, canvas.stage === 'silhouette' && color ? SILHOUETTE : color, {
+        ...owner,
+        pointer: `${owner.pointer}/rows/${y}/${x}`,
+      });
     });
   });
 };
 
-const isProtected = (layer: PartLayer, x: number, y: number): boolean =>
-  layer.patches.some(
-    (p) =>
-      x >= p.at[0] - p.protect &&
-      y >= p.at[1] - p.protect &&
-      x < p.at[0] + p.rows[0]!.length + p.protect &&
-      y < p.at[1] + p.rows.length + p.protect,
-  );
-
-const paintPartMask = (canvas: Canvas, layer: PartLayer, owner: SpritePixelEvidence): void => {
-  const [ax, ay] = layer.at;
-  const mask = canvas.study.masks.find((m) => m.id === layer.mask)!.rows;
-  const ramp = materialRamp(canvas.study.materials.find((m) => m.id === layer.material)!);
-  rowCells(mask, (c, x, y, row) => {
-    if (c !== '1') return;
-    const protectedPixel = isProtected(layer, x, y);
-    const base = baseTone(layer.shade, x, y, row.length, mask.length);
-    const rawDelta =
-      protectedPixel || layer.grain.amount === 0 ? 0 : grainDelta(x, y, layer.grain.seed);
-    const delta = finalTone(base, rawDelta) - base;
-    const tone = canvas.stage === 'shade' ? base : finalTone(base, delta);
-    write(canvas, ax + x, ay + y, canvas.stage === 'silhouette' ? SILHOUETTE : ramp[tone]!, {
-      ...owner,
-      material: layer.material,
-      baseTone: base,
-      grainDelta: delta,
-      protected: protectedPixel,
-    });
-  });
-};
-
-const paintPatch = (canvas: Canvas, layer: PartLayer, patch: Patch, pointer: string): void => {
-  const [ax, ay] = layer.at;
-  rowCells(patch.rows, (c, x, y) => {
-    if (c === '.') return;
-    const px = ax + patch.at[0] + x,
-      py = ay + patch.at[1] + y;
-    write(canvas, px, py, canvas.item.palette[patch.colors[c]!]!, {
-      ...canvas.evidence[py * 16 + px]!,
-      patch: patch.id,
-      pointer: `${pointer}/rows/${y}/${x}`,
-    });
-  });
-};
-
-const paintPartLayer = (canvas: Canvas, layer: PartLayer, owner: SpritePixelEvidence): void => {
-  paintPartMask(canvas, layer, owner);
-  if (canvas.stage !== 'final') return;
-  layer.patches.forEach((patch, k) =>
-    paintPatch(canvas, layer, patch, `${owner.pointer}/patches/${k}`),
+const applyFillOrPattern = (
+  canvas: Canvas,
+  layer: Extract<SpriteLayer, { readonly op: 'fill' | 'pattern' }>,
+  owner: SpritePixelEvidence,
+): void => {
+  const flatShade = { form: 'flat' as const, light: 'top_left' as const, contrast: 0, specular: 0 };
+  const grain: SpriteGrain =
+    layer.op === 'fill' ? layer.grain : { mode: 'none', amount: 0, seed: 0 };
+  const mask = new Uint8Array(canvas.width * canvas.height);
+  for (let i = 0; i < mask.length; i += 1) {
+    mask[i] = layer.op === 'fill' || layer.clip === 'canvas' || canvas.cells[i] !== null ? 1 : 0;
+  }
+  paintShadedRegion(
+    canvas,
+    mask,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+    layer.material,
+    flatShade,
+    grain,
+    layer.pattern,
+    null,
+    owner,
+    layer.op === 'pattern',
   );
 };
 
-const canvasRaster = (cells: readonly (string | null)[]) => {
-  const details = cells.flatMap((color, index) =>
-    color === null
-      ? []
-      : [
-          {
-            id: `p${index}`,
-            x: index % 16,
-            y: Math.floor(index / 16),
-            width: 1,
-            height: 1,
-            color,
-            alpha: 255 as const,
-          },
-        ],
+const applyOutline = (
+  canvas: Canvas,
+  layer: Extract<SpriteLayer, { readonly op: 'outline' }>,
+  owner: SpritePixelEvidence,
+): void => {
+  const outlineCells = computeOutlineCells(
+    canvas.cells,
+    canvas.width,
+    canvas.height,
+    layer,
+    canvas.doc.item.palette,
   );
-  return rasterizeCanonicalTexture(16, 16, {
+  const rimCells = layer.innerRim
+    ? computeInnerRimCells(canvas.cells, canvas.width, canvas.height)
+    : [];
+  for (const cell of outlineCells) {
+    canvas.outlinePixels += 1;
+    writeCell(
+      canvas,
+      cell.x,
+      cell.y,
+      canvas.stage === 'silhouette' ? SILHOUETTE : cell.color,
+      owner,
+    );
+  }
+  for (const cell of rimCells) {
+    canvas.hasRimHighlight = true;
+    if (canvas.stage === 'final') writeCell(canvas, cell.x, cell.y, cell.color, owner);
+  }
+};
+
+const applyErase = (
+  canvas: Canvas,
+  layer: Extract<SpriteLayer, { readonly op: 'erase' }>,
+  owner: SpritePixelEvidence,
+): void => {
+  if (layer.shape) {
+    const mask = rasterizeShapeMask(layer.shape, canvas.width, canvas.height, 'none');
+    for (let y = 0; y < canvas.height; y += 1) {
+      for (let x = 0; x < canvas.width; x += 1) {
+        if (mask[y * canvas.width + x]) writeCell(canvas, x, y, null, owner);
+      }
+    }
+    return;
+  }
+  paintRowGrid(canvas, layer.rows!, layer.at![0], layer.at![1], 'none', null, owner);
+};
+
+const applyShapeOrPartLayer = (
+  canvas: Canvas,
+  layer: Extract<SpriteLayer, { readonly op: 'shape' | 'part' }>,
+  owner: SpritePixelEvidence,
+): void => {
+  if (layer.op === 'shape') {
+    const mask = rasterizeShapeMask(layer.shape, canvas.width, canvas.height, layer.mirror);
+    if (layer.clip === 'occupied') {
+      for (let i = 0; i < mask.length; i += 1) if (canvas.cells[i] === null) mask[i] = 0;
+    }
+    paintShadedRegion(
+      canvas,
+      mask,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+      layer.material,
+      layer.shade,
+      layer.grain,
+      layer.pattern,
+      null,
+      owner,
+    );
+    return;
+  }
+  const maskDef = canvas.doc.masks.find((m) => m.id === layer.mask)!;
+  const { grid, w, h } = resolveMaskGrid(maskDef, layer.mirror);
+  const prot = buildProtectedMask(layer.patches, w, h);
+  paintShadedRegion(
+    canvas,
+    grid,
+    layer.at[0],
+    layer.at[1],
+    w,
+    h,
+    layer.material,
+    layer.shade,
+    layer.grain,
+    layer.pattern,
+    prot,
+    owner,
+  );
+  if (canvas.stage === 'final') {
+    layer.patches.forEach((p, k) =>
+      paintPatch(canvas, layer.at[0], layer.at[1], p, `${owner.pointer}/patches/${k}`),
+    );
+  }
+};
+
+const applyLayer = (canvas: Canvas, layer: SpriteLayer, index: number): void => {
+  const owner = baseInfo(layer, `/item/layers/${index}`);
+  if (layer.op === 'fill' || layer.op === 'pattern')
+    return applyFillOrPattern(canvas, layer, owner);
+  if (layer.op === 'outline') return applyOutline(canvas, layer, owner);
+  if (layer.op === 'erase') return applyErase(canvas, layer, owner);
+  if (layer.op === 'paint') {
+    return paintRowGrid(canvas, layer.rows, layer.at[0], layer.at[1], 'none', layer.colors, owner);
+  }
+  if (layer.op === 'stamp') {
+    const stamp = canvas.doc.stamps.find((s) => s.id === layer.stamp)!;
+    return paintRowGrid(
+      canvas,
+      stamp.rows,
+      layer.at[0],
+      layer.at[1],
+      layer.flip,
+      layer.colors,
+      owner,
+    );
+  }
+  applyShapeOrPartLayer(canvas, layer, owner);
+};
+
+const toCanonicalRaster = (cells: readonly (string | null)[], w: number, h: number) =>
+  rasterizeCanonicalTexture(w, h, {
     background: '#000000',
     backgroundAlpha: 0,
-    canvasDetails: details,
+    canvasDetails: cells.flatMap((color, i) =>
+      color === null
+        ? []
+        : [
+            {
+              id: `p${i}`,
+              x: i % w,
+              y: Math.floor(i / w),
+              width: 1,
+              height: 1,
+              color,
+              alpha: 255 as const,
+            },
+          ],
+    ),
     alphaMasks: [],
   });
-};
 
-export const paintItem = (study: ItemStudy, item: Item, itemIndex: number, stage: Stage) => {
+export const paintSprite = (doc: SpriteDocument, stage: Stage) => {
+  const [width, height] = doc.item.canvas;
   const canvas: Canvas = {
-    study,
-    item,
+    doc,
+    width,
+    height,
+    wrap: doc.item.profile === 'tile',
     stage,
-    cells: Array(256).fill(null),
-    evidence: Array(256).fill(null),
+    ramps: buildMaterialRamps(doc.materials),
+    cells: Array(width * height).fill(null),
+    evidence: Array(width * height).fill(null),
+    authoredPatternPixels: 0,
+    outlinePixels: 0,
+    hasRimHighlight: false,
+    materialsUsed: new Set(),
   };
-  item.layers.forEach((layer, j) => {
-    const owner = layerEvidence(layer, `/items/${itemIndex}/layers/${j}`);
-    if (layer.op === 'part') paintPartLayer(canvas, layer, owner);
-    else paintRowLayer(canvas, layer, owner);
+  doc.item.layers.forEach((layer, idx) => applyLayer(canvas, layer, idx));
+  const opaquePixels = canvas.cells.reduce((n, c) => n + (c === null ? 0 : 1), 0);
+  const telemetry: SpriteAuthoringTelemetry = Object.freeze({
+    width,
+    height,
+    profile: doc.item.profile,
+    opaquePixels,
+    layerCount: doc.item.layers.length,
+    authoredPatternPixels: canvas.authoredPatternPixels,
+    outlinePixels: canvas.outlinePixels,
+    materialCount: canvas.materialsUsed.size,
+    hasRimHighlight: canvas.hasRimHighlight,
   });
-  const evidence = Object.freeze(canvas.evidence.map((e) => e && Object.freeze(e)));
-  return { raster: canvasRaster(canvas.cells), evidence };
+  return {
+    raster: toCanonicalRaster(canvas.cells, width, height),
+    evidence: Object.freeze(canvas.evidence.map((e) => e && Object.freeze(e))),
+    telemetry,
+  };
 };

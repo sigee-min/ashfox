@@ -24,7 +24,8 @@ const test = async () => {
   check(feedback.getBoundingClientRect().height < 20, 'Agent instruction must remain one small line');
   const finale = q('.landing-finale .button');
   check(finale && d.querySelector(finale.hash) === setup.closest('#quick-start'), 'Final CTA must return to agent setup');
-  check(!d.body.innerText.includes('https://ashfox.io/agent.md'), 'Setup prompt must not be displayed');
+  check(q('.prompt-code')?.textContent.includes('https://ashfox.io/agent.md'), 'One-line setup prompt must be visible');
+  check(!q('a[href="/skills/ashfox/files/SKILL.md"]'), 'Skill link must not appear as a separate page link on landing');
   check(setup.closest('.hero-copy'), 'Setup must be available in the hero');
   const centered = () => {
     const button = setup.getBoundingClientRect(), label = setup.querySelector('[data-copy-state]').getBoundingClientRect();
@@ -88,29 +89,28 @@ const test = async () => {
     q('.view-options summary').click(); check(q('.view-options').open, 'Viewpoint controls must expand');
     for(const button of d.querySelectorAll('[data-model-view]')) { check(!button.disabled, 'Camera unavailable'); button.click(); }
   } else check(!q('[data-live-model] img').hidden && [...d.querySelectorAll('[data-model-motion]')].every(button => button.disabled), 'Fallback does not preserve poster');
-  q('.world-items').scrollIntoView({behavior:'instant',block:'center'});
-  await until(()=>q('.item-showcase').dataset.entered==='true', 'Scroll entrance did not run');
-  if (w.matchMedia('(prefers-reduced-motion: reduce)').matches) check(q('.item-showcase').getAnimations().length===0, 'Reduced motion must skip entrance animation');
-  q('[data-item="amethyst"]').click();
-  await until(()=>q('[data-item-image]').complete && q('[data-item-image]').naturalWidth===16, 'Native PNG failed');
-  check(q('[data-item-download]').getAttribute('href').endsWith('amethyst.png'), 'Wrong item download');
+  check(q('[data-live-model]').getBoundingClientRect().height >= 280, 'Hero 3D stage must remain prominent');
   const sourcePanel = q('.source-window');
   const codeArea = q('.source-code pre');
   check(!sourcePanel.querySelector('details') && codeArea.getBoundingClientRect().height > 0, 'Source must be visible without expanding');
   check(codeArea.tabIndex === 0, 'Code scrolling must be keyboard accessible');
   const sourceHeight = sourcePanel.getBoundingClientRect().height;
-  q('[data-source="sound"]').click();
-  await until(()=>q('[data-source-code]').textContent.includes('sound bird_call'), 'Actual source did not load');
-  check(Math.abs(sourcePanel.getBoundingClientRect().height - sourceHeight) < 1, 'Source tabs must preserve panel height');
-  const audio=q('[data-landing-audio]'); check(audio.paused && audio.preload==='none', 'Audio must not autoplay');
-  q('.world-sound').scrollIntoView({behavior:'instant',block:'center'});
-  q('[data-sound-play]').click(); await until(()=>!audio.paused && audio.readyState>=2, 'Audio did not play');
-  q('[data-sound-another]').click();
-  await until(()=>audio.src.endsWith('bird-alternate.wav') && !audio.paused, 'Hear another must play a different sound');
-  check(!d.body.innerText.includes('Alternate') && !d.body.innerText.includes('48 kHz'), 'Internal audio metadata leaked into the experience');
+  q('[data-diff-domain="2d"]').click();
+  await until(() => q('[data-diff-token="crystal_sword"]'), '2D diff tokens missing');
+  q('[data-diff-token="crystal_sword"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('crystal_sword') && q('[data-diff-image]').src.endsWith('crystal-sword.png'), '2D live diff did not update');
+  q('[data-diff-domain="sfx"]').click();
+  await until(() => q('[data-diff-token="bird_alt"]'), 'SFX diff tokens missing');
+  q('[data-diff-token="bird_alt"]').click();
+  await until(() => q('[data-source-code]').textContent.includes('sound bird_call') && q('[data-diff-wave]').src.endsWith('bird-alternate.svg'), 'SFX live diff did not update');
+  check(Math.abs(sourcePanel.getBoundingClientRect().height - sourceHeight) < 2, 'Source tabs must preserve panel height');
+  q('[data-diff-domain="3d"]').click();
   check(q('h1').textContent.includes('as Code.') && q('#workflow'), 'Assets as Code positioning is missing');
   check(d.querySelectorAll('.frontier-grid article').length===3, 'Advanced source examples are missing');
+  check(q('.studio-handoff-card[href$="/assets/"]'), 'Asset Studio handoff card missing');
   q('#frontier').scrollIntoView({behavior:'instant',block:'start'});
+  await until(() => q('#frontier [data-reveal]')?.dataset.revealed === 'true', 'Scroll reveal did not trigger');
+  if (w.matchMedia('(prefers-reduced-motion: reduce)').matches) check(q('#frontier [data-reveal]').getAnimations().length === 0, 'Reduced motion must skip reveal animation');
   const replay = q('[data-replay-dialog]'), replayVideo = q('[data-replay-video]');
   check(!replay.open && !replayVideo.hasAttribute('src'), 'Replay must start closed without loading video');
   for (const [index, article] of [...d.querySelectorAll('.frontier-grid article')].entries()) {
@@ -153,6 +153,55 @@ const test = async () => {
 };
 document.querySelector('iframe').addEventListener('load',()=>test().catch(error=>{document.documentElement.dataset.result='failed';document.querySelector('#status').textContent=error.stack;}).finally(()=>fetch('/done')));
 </script>`;
+const studioHarness = `<!doctype html><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/assets/"></iframe><pre id="status">running</pre><script>
+const test = async () => {
+  const w = document.querySelector('iframe').contentWindow, d = w.document;
+  const q = s => d.querySelector(s), qa = s => [...d.querySelectorAll(s)];
+  const until = async (fn, m) => { for(let i=0;i<150;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(m); };
+  const check = (v, m) => { if(!v) throw Error(m); };
+  await until(() => qa('[data-catalog-row]').length === 31, 'Catalog rows missing');
+  await until(() => q('[data-inspector-3d]').dataset.ready === 'true' && q('[data-inspector-3d] canvas'), 'Studio 3D model did not mount');
+  const countVisible = () => qa('[data-catalog-row]').filter(r => !r.hidden && w.getComputedStyle(r).display !== 'none').length;
+  q('[data-domain-tab="sprite"]').click(); check(countVisible() === 10, 'Expected 10 sprites');
+  await until(() => q('[data-inspector-sprite]').complete && q('[data-inspector-sprite]').naturalWidth === 32, 'Studio 32x32 PNG failed');
+  q('[data-domain-tab="tile"]').click(); check(countVisible() === 2, 'Expected 2 tiles');
+  q('[data-domain-tab="sound"]').click(); check(countVisible() === 15, 'Expected 15 sounds');
+  const audio = q('[data-studio-audio]'); check(audio.paused && audio.preload === 'none', 'Studio audio must not autoplay');
+  q('[data-inspector-controls] .button-primary')?.click();
+  await until(() => !audio.paused && audio.readyState >= 2, 'Studio audio playback failed');
+  audio.pause();
+  q('[data-domain-tab="model"]').click(); check(countVisible() === 4, 'Expected 4 models');
+  q('[data-domain-tab="all"]').click(); check(countVisible() === 31, 'Expected 31 total assets');
+  const search = q('[data-studio-search]'); search.value = 'mossy'; search.dispatchEvent(new w.Event('input', {bubbles:true}));
+  await until(() => countVisible() === 1 && !q('[data-inspector-tile]').hidden, 'Search/tile inspector failed');
+  check(w.location.search.includes('asset=mossy_stone'), 'Deep link did not sync');
+  await until(() => q('[data-inspector-code]').textContent.includes('mossy_stone'), 'Real .ashfox source failed to load');
+  let copied = ''; Object.defineProperty(w.navigator, 'clipboard', {configurable:true, value:{writeText:async t => {copied=t;}}});
+  q('[data-copy-asset-prompt]').click();
+  await until(() => copied.includes('https://ashfox.io/agent.md') && copied.includes('mossy_stone.ashfox'), 'Agent reference prompt copy failed');
+  check(d.documentElement.scrollWidth <= w.innerWidth + 1, 'Studio horizontal overflow');
+  document.documentElement.dataset.result = 'passed'; document.querySelector('#status').textContent = 'passed: studio 31 catalog + search + source + prompt';
+};
+document.querySelector('iframe').addEventListener('load', () => test().catch(e => { document.documentElement.dataset.result = 'failed'; document.querySelector('#status').textContent = e.stack; }).finally(() => fetch('/done')));
+</script>`;
+const docsHarness = `<!doctype html><meta charset="utf-8"><style>body{margin:0}iframe{border:0;width:100vw;height:100vh}</style><img src="/hold" hidden><iframe src="/ko/docs/guides/install/"></iframe><pre id="status">running</pre><script>
+const test = async () => {
+  const w = document.querySelector('iframe').contentWindow, d = w.document;
+  const q = s => d.querySelector(s), qa = s => [...d.querySelectorAll(s)];
+  const until = async (fn, m) => { for(let i=0;i<150;i++){if(fn())return;await new Promise(r=>setTimeout(r,50));}throw Error(m); };
+  const check = (v, m) => { if(!v) throw Error(m); };
+  q('[data-docs-search-open]').click();
+  await until(() => q('[data-docs-search-dialog]').open && qa('[data-docs-search-results] a').length >= 1, 'Docs search dialog failed');
+  const inp = q('[data-docs-search-input]'); inp.value = 'sound'; inp.dispatchEvent(new w.Event('input', {bubbles:true}));
+  await until(() => qa('[data-docs-search-results] a').some(a => a.href.includes('sound')), 'Docs search filter failed');
+  q('[data-docs-search-dialog]').close();
+  check(qa('.doc-article pre .copy-code').length >= 1, 'Docs code copy buttons missing');
+  check(d.documentElement.scrollWidth <= w.innerWidth + 1, 'Docs horizontal overflow');
+  document.documentElement.dataset.result = 'passed'; document.querySelector('#status').textContent = 'passed: docs search + copy + toc';
+};
+document.querySelector('iframe').addEventListener('load', () => test().catch(e => { document.documentElement.dataset.result = 'failed'; document.querySelector('#status').textContent = e.stack; }).finally(() => fetch('/done')));
+</script>`;
+let testMode = 'landing';
 let missingModel = false;
 let localePath = '/';
 
@@ -160,7 +209,7 @@ let hold;
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
-    if (missingModel && /^\/assets\/griffin-[a-f0-9]+\.glb$/.test(url.pathname)) {
+    if (missingModel && /^\/static\/griffin-[a-f0-9]+\.glb$/.test(url.pathname)) {
       response.writeHead(404).end();
       return;
     }
@@ -176,8 +225,10 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/test') {
       response.setHeader('Content-Type', 'text/html');
+      const tpl =
+        testMode === 'studio' ? studioHarness : testMode === 'docs' ? docsHarness : harness;
       response.end(
-        harness
+        tpl
           .replace('data-missing="false"', `data-missing="${missingModel}"`)
           .replace('iframe src="/"', `iframe src="${localePath}"`),
       );
@@ -197,6 +248,10 @@ const server = createServer(async (request, response) => {
       '.mp4': 'video/mp4',
       '.gif': 'image/gif',
       '.svg': 'image/svg+xml',
+      '.glb': 'model/gltf-binary',
+      '.wav': 'audio/wav',
+      '.json': 'application/json',
+      '.ashfox': 'text/plain; charset=utf-8',
     };
     response.setHeader('Content-Type', mime[path.extname(target)] || 'application/octet-stream');
     response.end(await readFile(target));
@@ -206,16 +261,21 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 try {
-  for (const [width, reduced, missing, locale = '/'] of [
-    [1440, false, false],
-    [390, false, false],
-    [320, false, false],
-    [390, true, false],
-    [390, true, true],
-    [1440, false, false, '/ko/'],
-    [390, false, false, '/ko/'],
-    [320, true, true, '/ko/'],
+  for (const [mode, width, reduced, missing, locale = '/'] of [
+    ['landing', 1440, false, false],
+    ['landing', 390, false, false],
+    ['landing', 320, false, false],
+    ['landing', 390, true, false],
+    ['landing', 390, true, true],
+    ['landing', 1440, false, false, '/ko/'],
+    ['landing', 390, false, false, '/ko/'],
+    ['landing', 320, true, true, '/ko/'],
+    ['studio', 1440, false, false, '/assets/'],
+    ['studio', 390, false, false, '/ko/assets/'],
+    ['docs', 1440, false, false, '/ko/docs/guides/install/'],
+    ['docs', 390, false, false, '/docs/guides/install/'],
   ]) {
+    testMode = mode;
     localePath = locale;
     missingModel = missing;
     const profile = await mkdtemp(path.join(tmpdir(), 'ashfox-site-test-'));
@@ -253,7 +313,7 @@ try {
         html.includes('data-result="passed"'),
         html.match(/<pre id="status">([\s\S]*?)<\/pre>/u)?.[1] || html.slice(-1000),
       );
-      console.log(`Landing browser verified: ${locale} ${width}px, reduced motion ${reduced}`);
+      console.log(`Browser verified [${mode}]: ${locale} ${width}px, reduced motion ${reduced}`);
     } finally {
       await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
     }

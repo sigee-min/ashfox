@@ -14,11 +14,11 @@
           "sha256": "f83801c0edf64a05adf6a32a4e607f6a2eb88d6ac97d8ffa605207b0a84b9d29"
         }
       ],
-      "catalogHash": "ca1b19b51f13a20187e9e6c6d606e9ece23932eb3f540471c8bc15b164692482",
+      "catalogHash": "c466ccc222f6a41f03d77e4fa5be9bcdc633d3eeeb1306d44e0810ec17246bec",
       "files": [
         {
           "path": "assets/rune_bricks/ashfox-lineage.json",
-          "sha256": "cf883ffb7accee8b8a5217f15843be3bbdc5c41932b85c50e7394139e6b29824"
+          "sha256": "171690ff3d8ecfe82aacc7f309374212a041d783d514df272d5a1de1e268f33e"
         },
         {
           "path": "assets/rune_bricks/rune_bricks.glb",
@@ -26,7 +26,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "ca1b19b51f13a20187e9e6c6d606e9ece23932eb3f540471c8bc15b164692482"
+          "sha256": "c466ccc222f6a41f03d77e4fa5be9bcdc633d3eeeb1306d44e0810ec17246bec"
         }
       ]
     },
@@ -41,11 +41,11 @@
           "sha256": "103307f053ab6d8385a52e3d754d375691689a4b112ebc55fd0917ab36887f32"
         }
       ],
-      "catalogHash": "3cc46882167cb742bc3c6b914ab24a8681b6a32fc0bc5f65865fc803a00de850",
+      "catalogHash": "fdebe43d1b6f5ae1f7f880e30dd55ff846a6c318aa39e157b733c9bb27588656",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "cfcafa21917a3dc4e59ce114a6d688a7e4762c70ab8f8b8241cad3bc0cc44de1"
+          "sha256": "372b8965ca2d233f99385b2284ea1c784505ecbc4a9269338ef988808df4743c"
         },
         {
           "path": "assets/fox/fox.glb",
@@ -53,19 +53,19 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "3cc46882167cb742bc3c6b914ab24a8681b6a32fc0bc5f65865fc803a00de850"
+          "sha256": "fdebe43d1b6f5ae1f7f880e30dd55ff846a6c318aa39e157b733c9bb27588656"
         }
       ]
     },
     {
       "input": "examples/game-assets/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:52e914f39a96e214b8dcd3ed24daa408ea2ecf3f5facf340d5047fe0f0dcf019",
+      "sourceHash": "sha256:a40c5d12727ff3ff81d1159eb75d4e4381cf921f5b8f6c3c6ab4b760536cdbf8",
       "products": [
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "entry": "sounds/claw_hit",
@@ -73,11 +73,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+              "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
             },
             {
               "id": "base",
-              "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+              "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
             }
           ]
         },
@@ -87,19 +87,19 @@
           "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "d055ac6749dfe417db689f0aa65eccf032b9692becb4d3cd91c8aadf4c99b53b",
+      "catalogHash": "ee5b52c42c6e3d099e3a89ae4c451d51abd131faae7022916bc03a85eca81517",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "93922593f76bfb5dc12237c8c9c661600083e7cee2847a90d7197a0175ea0853"
+          "sha256": "da7fbd1a7d4c761eba0aeab12c651cad6ce1d26c6ae4ccccd49f1e84e42240eb"
         },
         {
           "path": "assets/griffin/griffin.glb",
@@ -107,19 +107,19 @@
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "f832bd51c482e347846879e3deeb71f498952cfca0715bc26a27d43809bf6ae1"
+          "sha256": "419a6e82f53367bde9043d43d740b1621faec7635311c6b707eb9422cc543723"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/base.wav",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin/griffin.glb",
@@ -127,15 +127,15 @@
         },
         {
           "path": "assets/voxel_game/game-assets/sprites/items/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "29c5ebef13c8d76802e31155f75a5240501883b4864297889670475d6084ec70"
+          "sha256": "8a06056f75d97f087f542272202aba322f119faefa9eb397e6ae9fe84630f48e"
         },
         {
           "path": "catalog.json",
-          "sha256": "d055ac6749dfe417db689f0aa65eccf032b9692becb4d3cd91c8aadf4c99b53b"
+          "sha256": "ee5b52c42c6e3d099e3a89ae4c451d51abd131faae7022916bc03a85eca81517"
         }
       ]
     },
@@ -150,11 +150,11 @@
           "sha256": "6238fc149d26614c8e636aca3106658973b1759321a192bef5eb8735ef622cf2"
         }
       ],
-      "catalogHash": "454c6afd5c9a28a557e66492ece1988816b3bbdb5b3ea8d7cf084332b7df2c8e",
+      "catalogHash": "eda9e28980de70e7827310eed781df225321cad94d82fce4e137604e76a32343",
       "files": [
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "8836223a9b40b17d38c5a86153673327d67fe67653aeaa9e837e27b0de812d5f"
+          "sha256": "b49978a58918ca9618a2619521165c25e2c88cd597c530902963cb9fe2e4c7e3"
         },
         {
           "path": "assets/goblin/goblin.glb",
@@ -162,7 +162,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "454c6afd5c9a28a557e66492ece1988816b3bbdb5b3ea8d7cf084332b7df2c8e"
+          "sha256": "eda9e28980de70e7827310eed781df225321cad94d82fce4e137604e76a32343"
         }
       ]
     },
@@ -177,11 +177,11 @@
           "sha256": "d4c65f9336a32a6c72ec76b99baa5feaf3816f35b5318daa2a80894f1d0ed383"
         }
       ],
-      "catalogHash": "3bfffad3d1274f65cb53073fe25fd010ae3b13e59a532ecde328f7165656868b",
+      "catalogHash": "3fa4e9a2be574ac890ab1294b5f299b233317cfcb576bad405094e55911a2db1",
       "files": [
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "bfa4dc6c59e73ec72a7716c3b37bd66d2f8f149d79fb4411a78f4c289263ee9c"
+          "sha256": "f2376f51038aa32e32f620ff9099acb4955ab7e7b0734bfee7ff898c424b9e55"
         },
         {
           "path": "assets/griffin/griffin.glb",
@@ -189,111 +189,129 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "3bfffad3d1274f65cb53073fe25fd010ae3b13e59a532ecde328f7165656868b"
+          "sha256": "3fa4e9a2be574ac890ab1294b5f299b233317cfcb576bad405094e55911a2db1"
         }
       ]
     },
     {
       "input": "examples/items/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:69e5de649998e916bcc2c66a9ba99344738783f662ab61ad51b155d46adce731",
+      "sourceHash": "sha256:45a2b2a97349eedaf6e8a4444f58713558060aed1ac92479143ade7f5281585a",
       "products": [
         {
           "entry": "items/amber_potion",
           "kind": "sprite",
-          "sha256": "229c427b922f03e0a7337049038fae1f89ce5fd44cae5b6be6e9c350d3f0ab47"
+          "sha256": "274cdbd373e82ae59f057a83e488bc9a4b1a898c4d696c86fc41416788562361"
         },
         {
           "entry": "items/amethyst",
           "kind": "sprite",
-          "sha256": "f226b64069ecd6de10e8dd70214d2a360519c523e373f0adb6a46c3608911005"
+          "sha256": "8b1d158cdec840a1aeb065b4fcf86a87d73b0eb70c5128660291fbc1ceb91e78"
         },
         {
           "entry": "items/apple",
           "kind": "sprite",
-          "sha256": "ea9d1c2495dbe22717c0197307d34111c6914a6254932f9a8b40e874b0ec3fee"
+          "sha256": "354f558399e12afb39a761b2ac2a2115e879b2010f1593b9ed41b8bf581a4b3b"
         },
         {
           "entry": "items/blue_potion",
           "kind": "sprite",
-          "sha256": "3c0459daf18032034e03fa191596b6f257a662b0f6b1c5cde34fff7ed40864f4"
+          "sha256": "bacd354ff4d2a61d1f79749fa4b11bbc590b35a5101d928971fd2a8279e373b8"
         },
         {
           "entry": "items/copper_sword",
           "kind": "sprite",
-          "sha256": "56823265dd19d5da788c5b17589305220bd2d4bf0d5d70446f56d74b0d57de45"
+          "sha256": "8c0f3f1963658b972911fab10d25b325842952e8fceb6ef0c5e00c106095bd27"
         },
         {
           "entry": "items/crystal_sword",
           "kind": "sprite",
-          "sha256": "d74695175775277421495c244cb43d2eb358f6a6d22655887fe2eeaecaaf50b3"
+          "sha256": "86bbe1c26557dc06f9ed8b85a6a4263893c0e7ed7ed28726c40586cc5eccc24a"
         },
         {
           "entry": "items/golden_apple",
           "kind": "sprite",
-          "sha256": "fd527a926585a4c078dce7fe6cfe85f8bdbf48632667054decda3703c83bb2ac"
+          "sha256": "4247f3750e3e0c8273c13ab88b491c33a690a2c8f168b0fc17e245ae2ec1c475"
         },
         {
           "entry": "items/green_apple",
           "kind": "sprite",
-          "sha256": "192284c72726ebd2bde1d8d6b984aec9435401cd2a60dcb1f54ae63226949ac4"
+          "sha256": "87a351bd05b1716f88075362aba9c39a8f8acfb62718be13c703914d25f2d08e"
         },
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+        },
+        {
+          "entry": "items/mossy_stone",
+          "kind": "sprite",
+          "sha256": "2250c98efd9f892c4efee513ef5fac31dea87285b2e105dd35b50094640c6784"
+        },
+        {
+          "entry": "items/oak_planks",
+          "kind": "sprite",
+          "sha256": "0b4009d81c4a174790c2715765693d275ef4951d8f09e480a802faeebc6a100c"
         },
         {
           "entry": "items/ruby_potion",
           "kind": "sprite",
-          "sha256": "07b43ec912c3289a95685c5b68f8f74e79e0c1471a6bd25801004ccaba00a8ec"
+          "sha256": "1c7873e86a4a1312d67e271022ac874ccf2eb567ac3753c1cf70ddaec2c9dc2d"
         }
       ],
-      "catalogHash": "3d9b0f7262f49479c4bd678f33c45c829037cd699b376e0fb739496f367990ad",
+      "catalogHash": "a73b13e5b434b0943d1b4aaf50140c45f4c32d86bb12737d25b375cdf5d72197",
       "files": [
         {
           "path": "assets/amber_potion/amber_potion.png",
-          "sha256": "229c427b922f03e0a7337049038fae1f89ce5fd44cae5b6be6e9c350d3f0ab47"
+          "sha256": "274cdbd373e82ae59f057a83e488bc9a4b1a898c4d696c86fc41416788562361"
         },
         {
           "path": "assets/amethyst/amethyst.png",
-          "sha256": "f226b64069ecd6de10e8dd70214d2a360519c523e373f0adb6a46c3608911005"
+          "sha256": "8b1d158cdec840a1aeb065b4fcf86a87d73b0eb70c5128660291fbc1ceb91e78"
         },
         {
           "path": "assets/apple/apple.png",
-          "sha256": "ea9d1c2495dbe22717c0197307d34111c6914a6254932f9a8b40e874b0ec3fee"
+          "sha256": "354f558399e12afb39a761b2ac2a2115e879b2010f1593b9ed41b8bf581a4b3b"
         },
         {
           "path": "assets/blue_potion/blue_potion.png",
-          "sha256": "3c0459daf18032034e03fa191596b6f257a662b0f6b1c5cde34fff7ed40864f4"
+          "sha256": "bacd354ff4d2a61d1f79749fa4b11bbc590b35a5101d928971fd2a8279e373b8"
         },
         {
           "path": "assets/copper_sword/copper_sword.png",
-          "sha256": "56823265dd19d5da788c5b17589305220bd2d4bf0d5d70446f56d74b0d57de45"
+          "sha256": "8c0f3f1963658b972911fab10d25b325842952e8fceb6ef0c5e00c106095bd27"
         },
         {
           "path": "assets/crystal_sword/crystal_sword.png",
-          "sha256": "d74695175775277421495c244cb43d2eb358f6a6d22655887fe2eeaecaaf50b3"
+          "sha256": "86bbe1c26557dc06f9ed8b85a6a4263893c0e7ed7ed28726c40586cc5eccc24a"
         },
         {
           "path": "assets/golden_apple/golden_apple.png",
-          "sha256": "fd527a926585a4c078dce7fe6cfe85f8bdbf48632667054decda3703c83bb2ac"
+          "sha256": "4247f3750e3e0c8273c13ab88b491c33a690a2c8f168b0fc17e245ae2ec1c475"
         },
         {
           "path": "assets/green_apple/green_apple.png",
-          "sha256": "192284c72726ebd2bde1d8d6b984aec9435401cd2a60dcb1f54ae63226949ac4"
+          "sha256": "87a351bd05b1716f88075362aba9c39a8f8acfb62718be13c703914d25f2d08e"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
+        },
+        {
+          "path": "assets/mossy_stone/mossy_stone.png",
+          "sha256": "2250c98efd9f892c4efee513ef5fac31dea87285b2e105dd35b50094640c6784"
+        },
+        {
+          "path": "assets/oak_planks/oak_planks.png",
+          "sha256": "0b4009d81c4a174790c2715765693d275ef4951d8f09e480a802faeebc6a100c"
         },
         {
           "path": "assets/ruby_potion/ruby_potion.png",
-          "sha256": "07b43ec912c3289a95685c5b68f8f74e79e0c1471a6bd25801004ccaba00a8ec"
+          "sha256": "1c7873e86a4a1312d67e271022ac874ccf2eb567ac3753c1cf70ddaec2c9dc2d"
         },
         {
           "path": "catalog.json",
-          "sha256": "3d9b0f7262f49479c4bd678f33c45c829037cd699b376e0fb739496f367990ad"
+          "sha256": "a73b13e5b434b0943d1b4aaf50140c45f4c32d86bb12737d25b375cdf5d72197"
         }
       ]
     },
@@ -308,11 +326,11 @@
           "sha256": "36d2565981a5af987d15ec9625e5a9600d90d222ece125ea2dfdf7aa488fb50c"
         }
       ],
-      "catalogHash": "37d996c2a930a7f5671d6b267ec17e9a11bb8a0ab69677ef603cf6998ebec6d9",
+      "catalogHash": "fef494fdef558901be6a45de7520a116f0689fa572266d7b45d5c1f7443e97eb",
       "files": [
         {
           "path": "assets/java_block/ashfox-lineage.json",
-          "sha256": "2ba2b45b16975c316a9f26e7e78eb3864e971d62d837bf39aa1b7c641b7aaeba"
+          "sha256": "0c3f7e795fe5238510d2a59abdfee8993dc77ae0496feac665545cbf1c618008"
         },
         {
           "path": "assets/java_block/assets/demo/blockstates/props/marker.json",
@@ -332,19 +350,19 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "37d996c2a930a7f5671d6b267ec17e9a11bb8a0ab69677ef603cf6998ebec6d9"
+          "sha256": "fef494fdef558901be6a45de7520a116f0689fa572266d7b45d5c1f7443e97eb"
         }
       ]
     },
     {
       "input": "examples/pipeline/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:f5a96fea183abc94a734ae55922b92872509835e63392410e321204966ea1e40",
+      "sourceHash": "sha256:58595019844ab3b57c88b0a4247b1b7f602e37b5e015fb19e12264b871da4fe5",
       "products": [
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "entry": "sounds/claw_hit",
@@ -352,11 +370,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+              "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
             },
             {
               "id": "base",
-              "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+              "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
             }
           ]
         },
@@ -366,19 +384,19 @@
           "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "b6a648eb79c5ea74d579afdae80d36fd7bb2ef3966f94a303b48368e174531c5",
+      "catalogHash": "25c62d2c562166662f3adb91b5297b99696049c7ab07a7728d2a506ead0fa9f0",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "800908098f6c0e98acc5a142092086b5967b0aec32c9aa95b913b62eb32679bc"
+          "sha256": "41a9a5e89639bfe56935aa9860b4fa3832f94ade3e5ccd51886b6da1e66f81dc"
         },
         {
           "path": "assets/griffin/griffin.glb",
@@ -386,11 +404,11 @@
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "catalog.json",
-          "sha256": "b6a648eb79c5ea74d579afdae80d36fd7bb2ef3966f94a303b48368e174531c5"
+          "sha256": "25c62d2c562166662f3adb91b5297b99696049c7ab07a7728d2a506ead0fa9f0"
         }
       ]
     },
@@ -405,11 +423,11 @@
           "sha256": "fa668be082eddc5b9a49e4b736390a5dfe444a1d009e547aa1185b4280435a1c"
         }
       ],
-      "catalogHash": "53d52e4b7075351226fa166328b3971cb4e78f68e06cbe5134f4573b9ba4b68b",
+      "catalogHash": "65728f7d1e7d588c6b62acb0519f8b282c2366915a3bfbdaf65bbd8026a3c9ea",
       "files": [
         {
           "path": "assets/lantern/ashfox-lineage.json",
-          "sha256": "d708d1aa6cacce1a916ebf70ea736187863a9c02aedcfb13bf14f512bd6cd12b"
+          "sha256": "abb6036e87e18c299d59a9bf3aff954ad87d75e23a4d6eeca4c54a02fcfd4b1f"
         },
         {
           "path": "assets/lantern/lantern.glb",
@@ -417,7 +435,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "53d52e4b7075351226fa166328b3971cb4e78f68e06cbe5134f4573b9ba4b68b"
+          "sha256": "65728f7d1e7d588c6b62acb0519f8b282c2366915a3bfbdaf65bbd8026a3c9ea"
         }
       ]
     },
@@ -429,7 +447,7 @@
     {
       "input": "examples/resource-pack/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:6bf5954a1408f8c54ea92adbba60b0693101fad200533664165bcbf97cae5473",
+      "sourceHash": "sha256:d6bac39f20cd99443da5fff8925fe2725be5a43eb8c30e632abbef64d13c340f",
       "products": [
         {
           "entry": "blocks/marker",
@@ -439,7 +457,7 @@
         {
           "entry": "items/iron_sword",
           "kind": "sprite",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "entry": "sounds/claw_hit",
@@ -447,32 +465,32 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+              "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
             },
             {
               "id": "base",
-              "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+              "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
             }
           ]
         }
       ],
-      "catalogHash": "9bf167a6a0ebf092cc4c95f87962b3d1878abae6976054f601d28350ae4a6884",
+      "catalogHash": "003942219e90fa8cd9f047605abff03d2eaad45631e095ae856035bddda84244",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/game_pack/game_pack.zip",
-          "sha256": "3da9ce36a8df51cb105098fe2d84dd2ae0624b52cade1768dadfa07621b7f5ab"
+          "sha256": "09c68f2e2a3bbd849e0ad2992e248834a57e9d1a2ca48974c94c87c3de7bbf94"
         },
         {
           "path": "assets/game_pack/resource-pack/ashfox-lineage.json",
-          "sha256": "2a1aff631370170fdd2b7e42e54aa3fe43b52ce3b01b85fa74f0bbac0c0d2286"
+          "sha256": "057c0ee6651b535e0e07d9e259c57c74788f8b6486ea8bd98fa0adf0d3022118"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/items/rune_blade.json",
@@ -488,15 +506,15 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/sounds/combat.claw_hit/alternate.ogg",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/sounds/combat.claw_hit/base.ogg",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/demo/textures/item/rune_blade.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/blockstates/stone.json",
@@ -520,7 +538,7 @@
         },
         {
           "path": "assets/game_pack/resource-pack/assets/minecraft/textures/item/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/game_pack/resource-pack/pack.mcmeta",
@@ -528,15 +546,15 @@
         },
         {
           "path": "assets/game_pack/resource-pack/pack.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
-          "sha256": "0eef372e8574ec5000cdc3477f61b6df5ca5e03da3e32811dea567e8c7db9af2"
+          "sha256": "e0f6ce414ef15d0fb020031e6bcd296fba8a9406697e64388ec863bc836b6e2e"
         },
         {
           "path": "assets/marker/ashfox-lineage.json",
-          "sha256": "2a1aff631370170fdd2b7e42e54aa3fe43b52ce3b01b85fa74f0bbac0c0d2286"
+          "sha256": "057c0ee6651b535e0e07d9e259c57c74788f8b6486ea8bd98fa0adf0d3022118"
         },
         {
           "path": "assets/marker/assets/minecraft/blockstates/stone.json",
@@ -556,7 +574,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "9bf167a6a0ebf092cc4c95f87962b3d1878abae6976054f601d28350ae4a6884"
+          "sha256": "003942219e90fa8cd9f047605abff03d2eaad45631e095ae856035bddda84244"
         }
       ]
     },
@@ -581,11 +599,11 @@
           "sha256": "046cfd327775a1d56af4333c2d398b483a7446fc12bb3af0b4f8a29475507daf"
         }
       ],
-      "catalogHash": "1a049fce60a74c9619ec14359c3eb15524df23b5151df9e1b21ff1546cfeb8d7",
+      "catalogHash": "39078f663a9e7c49e23d1b932450415cf402ef2424e94c1a3984230341a51180",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "4b9efbf0b65143d26676e0315e45e99293bc4a001d1e0781a004c1474bfdab89"
+          "sha256": "007a43ee1198870ca0c37713f3094aadb6a15010f76e1b2862f012d8127e8728"
         },
         {
           "path": "assets/fox/fox.glb",
@@ -593,7 +611,7 @@
         },
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "562a3e09468976ea039af9f63aa257c81115def9837c197eb6c4676a9fefdbda"
+          "sha256": "14d3f69e4489e318baad9ea5f97cddfb840f13c21096b902ba38447e2946dfde"
         },
         {
           "path": "assets/goblin/goblin.glb",
@@ -601,7 +619,7 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "db7ab2be8b31b2d16e65114141a739d079062760a9bfca898ee057e062002e81"
+          "sha256": "ca4537718d976d149a00488f2a4dbb4d9fd35f857ca25811fc9d959d1370e11f"
         },
         {
           "path": "assets/griffin/griffin.glb",
@@ -609,14 +627,14 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "1a049fce60a74c9619ec14359c3eb15524df23b5151df9e1b21ff1546cfeb8d7"
+          "sha256": "39078f663a9e7c49e23d1b932450415cf402ef2424e94c1a3984230341a51180"
         }
       ]
     },
     {
       "input": "examples/sounds/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:71b60e8d1ac34718cfed2cb6bd352430c823455b5eac752ec6c4a5ad37c40223",
+      "sourceHash": "sha256:1cf25043784fe7dd697660423f17cf13294330e937ef45accb9b241ffee42f0e",
       "products": [
         {
           "entry": "sounds/bell_pattern",
@@ -624,11 +642,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "14c56a47ffc62efa5ea66ff0375305cae4b100928a6abb25a82a33d16676c7bb"
+              "sha256": "0d68943ede742cb3348a3f4fa19ab23f0a3f62420277ab4fd3019f214b97eb11"
             },
             {
               "id": "base",
-              "sha256": "6d57ad7f8474e0a30ba8ddfb2962afe7222f908164b33058bda3f8d4a2934b36"
+              "sha256": "0cedd19356529ec8c3b3f426ac229249bbad2ac92fa64f6855187437b203a5b6"
             }
           ]
         },
@@ -638,11 +656,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "78a9cf4070e823dbb3cdd497bd9c04c0fd86f15dd354d5c0d938d0673d83e0c0"
+              "sha256": "8a37286a3bf25ea030958c18e0eaf6d04179ce003c5e6b20068b34db614f80fc"
             },
             {
               "id": "base",
-              "sha256": "e14e64f289ec25a34ddcfa5fb9b1ae631bda5019589e212ff6150cdda06dc8a5"
+              "sha256": "92d6ee1ee1895a1e68717cd6a43651b4b939a75feb0ba9f9b1a4f80887e4f222"
             }
           ]
         },
@@ -652,11 +670,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+              "sha256": "de6a6606d14e4cf42579865ad666acdf2bb79206bb1ff2824e6687650124b882"
             },
             {
               "id": "base",
-              "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+              "sha256": "4d354aee447b092d0b352cdaedfba7158ed998b1b53d7dfe42ad8ca5ef84835a"
             }
           ]
         },
@@ -666,11 +684,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+              "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
             },
             {
               "id": "base",
-              "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+              "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
             }
           ]
         },
@@ -680,11 +698,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "aec7306bf22ed2d5348a2856bd7f3bffd37267ce0da2e16cb88d64b8727e4e8a"
+              "sha256": "f4b87c80f74a30b3328f77d7b35479d0e1f6eaa63faa37161d8bdeabf28d627c"
             },
             {
               "id": "base",
-              "sha256": "4d40cc7de6892da63efc2df4690f04617a2e47c88b358566e1e8864cb6481dcc"
+              "sha256": "344f279e344c2f1982c22747f04536d6a41056772d169e6bf612b055a517aded"
             }
           ]
         },
@@ -694,11 +712,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "4776ed194bcf49cb5c64fa71a62afbf3fb352cf38b9b933b591e24e38f1d52fe"
+              "sha256": "dab86261fd76f538347ab72947348c2b167bdb327c2e3085314f195fd0c87b6f"
             },
             {
               "id": "base",
-              "sha256": "3d7cca917027c5f3b56b5f8f32a59cccf9d1c382bd30b7f0107caa1c1196c75b"
+              "sha256": "45e8af5bc73f79398236d0dcfad57387a0c63171b31a5f1c0764eb7976ce3723"
             }
           ]
         },
@@ -708,11 +726,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "16f8c7842e1856a3c1cc25ea86cc6c07b0b0bbdf719ae06f871af443d7394c83"
+              "sha256": "71371f478397ae59cea2f1df1c2fb5b88240825228dfd5bb7d02dd61e66ee476"
             },
             {
               "id": "base",
-              "sha256": "d2a72127b097afa162c3dd8337afd2455f7cfa7883a4cd712a323ab99a147d8b"
+              "sha256": "fbeb7b1193167011e4256e5885835801f368de4780fb1226ccfd1f6f7ab8e82b"
             }
           ]
         },
@@ -722,11 +740,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "98a49441ed6479d220b41c1be09614c54566f826af8fa5c45910c17de85aa4a5"
+              "sha256": "938f69aa777721fd5dea5f0eaad6d04e032791e65b04f76218030a0276821767"
             },
             {
               "id": "base",
-              "sha256": "fbb0e8b9c2697b792a85ec85816112e47df6203d50b89566105f4e1f179e5818"
+              "sha256": "40b6ae20b3ffee78692129f01974d01f4f1749e69de3cfd6c0ccbc23bb6c55f5"
             }
           ]
         },
@@ -736,11 +754,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "5b40db5004ef7080e67d59499fe418e8050fe3f64657446934224f8b5bea4be0"
+              "sha256": "1f9897daa6f20087bd7acbc83401e587eaf4f712ce1d5707c20545dec4dc00cb"
             },
             {
               "id": "base",
-              "sha256": "6ceafcee45ffe73ac627bf5614542d89d809f33b94505c56224f5c50d80f043e"
+              "sha256": "abcc1d6e70e2a9b89f097d6c3c532617e593fe6daba02f24f84a7d28515f66f3"
             }
           ]
         },
@@ -750,11 +768,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "dc3d80bde22d23839fd784f9ef588916714b07df63aff46809ce05665fe6e606"
+              "sha256": "43ac7287eab656e43909d0345a57a5dabeae34878572e7f4f2e7e6f4af508625"
             },
             {
               "id": "base",
-              "sha256": "dc3d80bde22d23839fd784f9ef588916714b07df63aff46809ce05665fe6e606"
+              "sha256": "0968c5134a6afe281f56990d00ae5d6cf22564089dbe07998c722d8a334b4c04"
             }
           ]
         },
@@ -764,11 +782,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "94ca9ab495f9de4ba0e03b83be3f4319ef7ef9816f99dfedc8acafd3c627f0ac"
+              "sha256": "7524b334dee96ca9a4b57dd0c3ad7d62075550b604d49058adf504e4f346061b"
             },
             {
               "id": "base",
-              "sha256": "a2cccc6f0fcf8512967de6711eb4d3d40e648d3acbc6ab851195692a332b2861"
+              "sha256": "218b287f6167f67b8b9096e9957ae9830db882a2d30ee74e2180d6508e630311"
             }
           ]
         },
@@ -778,11 +796,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "a3c00539dbe9332f21787100d9741a6c53abdbf901d227dd353c2e28b1003776"
+              "sha256": "898104f9b843031a14d953ec67df0ff1a29efa875d42b291fa08ab62e83ee7fd"
             },
             {
               "id": "base",
-              "sha256": "612d7643341431803aa673315c479b7edead8ba8d50f9a04b2e402bcdba82396"
+              "sha256": "7052ecd01639240d0d2bc49e3a1ce0870568b7443d1ee9de03ba05e82f6c854b"
             }
           ]
         },
@@ -792,11 +810,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "57b4a6f76a168ba5801555fe201d1a36d3065475c49f2add70107778e6dd810b"
+              "sha256": "458473fe5d7128f40b65faf4e21d82160e0907b6ecbd7d9e12d7d962bad7d224"
             },
             {
               "id": "base",
-              "sha256": "308fb01d4422af973bba843911a457528a3bbfa6040ae4fdd6d702c31591b428"
+              "sha256": "cbc41ea919ccaba26a192d8f3a9705347f3aa251edfb8c4d511bf7638cbca2de"
             }
           ]
         },
@@ -806,11 +824,11 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "bec7a2aa33463c1f99e878ead2c25e0b435daa12ff27150904c0226e7d0705a9"
+              "sha256": "8821708619170bbfbb33801cc0e84daf240a72b6c26290811c81e702152649a4"
             },
             {
               "id": "base",
-              "sha256": "579e8ba0ee8d99310717b5ab535ef1d223e0e14ffee14ede2369ff02ca7181dd"
+              "sha256": "51ca933fa2adc1aa8e4debc2c645e8ef574374e467075e1706f67cb31beb6803"
             }
           ]
         },
@@ -820,140 +838,140 @@
           "variants": [
             {
               "id": "alternate",
-              "sha256": "dba06859872b0de2ca88bce28ac05863136accf4945e85a6cc5a55db471603a6"
+              "sha256": "095dfedcfa2d3bac6123e6d49741e2f17e70bce96ca324be7910b55e785cd750"
             },
             {
               "id": "base",
-              "sha256": "f89a08585876f20020766bbebf97162f87679dbe8da40d3223157c169813b0fb"
+              "sha256": "ae4c577895e52043431e25cc583e3c99aefc0e12538571e4c8a0e323e73b13e6"
             }
           ]
         }
       ],
-      "catalogHash": "a73ecf6a274d11de4c9047cd88b4e4070e6e70dee12bb17bed62f0e3b42223bc",
+      "catalogHash": "80935f0fda8b60d3c5614e18bbdaecd4b497404779cca95b0445f33d037bba0e",
       "files": [
         {
           "path": "assets/bell_pattern/bell_pattern/alternate.wav",
-          "sha256": "14c56a47ffc62efa5ea66ff0375305cae4b100928a6abb25a82a33d16676c7bb"
+          "sha256": "0d68943ede742cb3348a3f4fa19ab23f0a3f62420277ab4fd3019f214b97eb11"
         },
         {
           "path": "assets/bell_pattern/bell_pattern/base.wav",
-          "sha256": "6d57ad7f8474e0a30ba8ddfb2962afe7222f908164b33058bda3f8d4a2934b36"
+          "sha256": "0cedd19356529ec8c3b3f426ac229249bbad2ac92fa64f6855187437b203a5b6"
         },
         {
           "path": "assets/bird_call/bird_call/alternate.wav",
-          "sha256": "78a9cf4070e823dbb3cdd497bd9c04c0fd86f15dd354d5c0d938d0673d83e0c0"
+          "sha256": "8a37286a3bf25ea030958c18e0eaf6d04179ce003c5e6b20068b34db614f80fc"
         },
         {
           "path": "assets/bird_call/bird_call/base.wav",
-          "sha256": "e14e64f289ec25a34ddcfa5fb9b1ae631bda5019589e212ff6150cdda06dc8a5"
+          "sha256": "92d6ee1ee1895a1e68717cd6a43651b4b939a75feb0ba9f9b1a4f80887e4f222"
         },
         {
           "path": "assets/charging_spell/charging_spell/alternate.wav",
-          "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+          "sha256": "de6a6606d14e4cf42579865ad666acdf2bb79206bb1ff2824e6687650124b882"
         },
         {
           "path": "assets/charging_spell/charging_spell/base.wav",
-          "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+          "sha256": "4d354aee447b092d0b352cdaedfba7158ed998b1b53d7dfe42ad8ca5ef84835a"
         },
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
-          "sha256": "633bab9250173fc019f889c0fc65bbe6b0527ef5c494458e1766b8272b7985f7"
+          "sha256": "5ab0ce5748df61d53f70df5d4df2adad11f09b1252204e77250b57a281cc7e5b"
         },
         {
           "path": "assets/claw_hit/claw_hit/base.wav",
-          "sha256": "5ab55869605479691f63cb8e9e117c9ed2e130accf0151aafae1e53a5126cd57"
+          "sha256": "0d533b8c1e62c242a64c0c0d3b6d45bf09d5d543da57c0518971ee5c06925f11"
         },
         {
           "path": "assets/fire_loop/fire_loop/alternate.wav",
-          "sha256": "aec7306bf22ed2d5348a2856bd7f3bffd37267ce0da2e16cb88d64b8727e4e8a"
+          "sha256": "f4b87c80f74a30b3328f77d7b35479d0e1f6eaa63faa37161d8bdeabf28d627c"
         },
         {
           "path": "assets/fire_loop/fire_loop/base.wav",
-          "sha256": "4d40cc7de6892da63efc2df4690f04617a2e47c88b358566e1e8864cb6481dcc"
+          "sha256": "344f279e344c2f1982c22747f04536d6a41056772d169e6bf612b055a517aded"
         },
         {
           "path": "assets/footsteps/footsteps/alternate.wav",
-          "sha256": "4776ed194bcf49cb5c64fa71a62afbf3fb352cf38b9b933b591e24e38f1d52fe"
+          "sha256": "dab86261fd76f538347ab72947348c2b167bdb327c2e3085314f195fd0c87b6f"
         },
         {
           "path": "assets/footsteps/footsteps/base.wav",
-          "sha256": "3d7cca917027c5f3b56b5f8f32a59cccf9d1c382bd30b7f0107caa1c1196c75b"
+          "sha256": "45e8af5bc73f79398236d0dcfad57387a0c63171b31a5f1c0764eb7976ce3723"
         },
         {
           "path": "assets/frog_croak/frog_croak/alternate.wav",
-          "sha256": "16f8c7842e1856a3c1cc25ea86cc6c07b0b0bbdf719ae06f871af443d7394c83"
+          "sha256": "71371f478397ae59cea2f1df1c2fb5b88240825228dfd5bb7d02dd61e66ee476"
         },
         {
           "path": "assets/frog_croak/frog_croak/base.wav",
-          "sha256": "d2a72127b097afa162c3dd8337afd2455f7cfa7883a4cd712a323ab99a147d8b"
+          "sha256": "fbeb7b1193167011e4256e5885835801f368de4780fb1226ccfd1f6f7ab8e82b"
         },
         {
           "path": "assets/glass_ping/glass_ping/alternate.wav",
-          "sha256": "98a49441ed6479d220b41c1be09614c54566f826af8fa5c45910c17de85aa4a5"
+          "sha256": "938f69aa777721fd5dea5f0eaad6d04e032791e65b04f76218030a0276821767"
         },
         {
           "path": "assets/glass_ping/glass_ping/base.wav",
-          "sha256": "fbb0e8b9c2697b792a85ec85816112e47df6203d50b89566105f4e1f179e5818"
+          "sha256": "40b6ae20b3ffee78692129f01974d01f4f1749e69de3cfd6c0ccbc23bb6c55f5"
         },
         {
           "path": "assets/griffin_call/griffin_call/alternate.wav",
-          "sha256": "5b40db5004ef7080e67d59499fe418e8050fe3f64657446934224f8b5bea4be0"
+          "sha256": "1f9897daa6f20087bd7acbc83401e587eaf4f712ce1d5707c20545dec4dc00cb"
         },
         {
           "path": "assets/griffin_call/griffin_call/base.wav",
-          "sha256": "6ceafcee45ffe73ac627bf5614542d89d809f33b94505c56224f5c50d80f043e"
+          "sha256": "abcc1d6e70e2a9b89f097d6c3c532617e593fe6daba02f24f84a7d28515f66f3"
         },
         {
           "path": "assets/mechanical_loop/mechanical_loop/alternate.wav",
-          "sha256": "dc3d80bde22d23839fd784f9ef588916714b07df63aff46809ce05665fe6e606"
+          "sha256": "43ac7287eab656e43909d0345a57a5dabeae34878572e7f4f2e7e6f4af508625"
         },
         {
           "path": "assets/mechanical_loop/mechanical_loop/base.wav",
-          "sha256": "dc3d80bde22d23839fd784f9ef588916714b07df63aff46809ce05665fe6e606"
+          "sha256": "0968c5134a6afe281f56990d00ae5d6cf22564089dbe07998c722d8a334b4c04"
         },
         {
           "path": "assets/metal_strike/metal_strike/alternate.wav",
-          "sha256": "94ca9ab495f9de4ba0e03b83be3f4319ef7ef9816f99dfedc8acafd3c627f0ac"
+          "sha256": "7524b334dee96ca9a4b57dd0c3ad7d62075550b604d49058adf504e4f346061b"
         },
         {
           "path": "assets/metal_strike/metal_strike/base.wav",
-          "sha256": "a2cccc6f0fcf8512967de6711eb4d3d40e648d3acbc6ab851195692a332b2861"
+          "sha256": "218b287f6167f67b8b9096e9957ae9830db882a2d30ee74e2180d6508e630311"
         },
         {
           "path": "assets/wind_loop/wind_loop/alternate.wav",
-          "sha256": "a3c00539dbe9332f21787100d9741a6c53abdbf901d227dd353c2e28b1003776"
+          "sha256": "898104f9b843031a14d953ec67df0ff1a29efa875d42b291fa08ab62e83ee7fd"
         },
         {
           "path": "assets/wind_loop/wind_loop/base.wav",
-          "sha256": "612d7643341431803aa673315c479b7edead8ba8d50f9a04b2e402bcdba82396"
+          "sha256": "7052ecd01639240d0d2bc49e3a1ce0870568b7443d1ee9de03ba05e82f6c854b"
         },
         {
           "path": "assets/wing_whoosh/wing_whoosh/alternate.wav",
-          "sha256": "57b4a6f76a168ba5801555fe201d1a36d3065475c49f2add70107778e6dd810b"
+          "sha256": "458473fe5d7128f40b65faf4e21d82160e0907b6ecbd7d9e12d7d962bad7d224"
         },
         {
           "path": "assets/wing_whoosh/wing_whoosh/base.wav",
-          "sha256": "308fb01d4422af973bba843911a457528a3bbfa6040ae4fdd6d702c31591b428"
+          "sha256": "cbc41ea919ccaba26a192d8f3a9705347f3aa251edfb8c4d511bf7638cbca2de"
         },
         {
           "path": "assets/wolf_howl/wolf_howl/alternate.wav",
-          "sha256": "bec7a2aa33463c1f99e878ead2c25e0b435daa12ff27150904c0226e7d0705a9"
+          "sha256": "8821708619170bbfbb33801cc0e84daf240a72b6c26290811c81e702152649a4"
         },
         {
           "path": "assets/wolf_howl/wolf_howl/base.wav",
-          "sha256": "579e8ba0ee8d99310717b5ab535ef1d223e0e14ffee14ede2369ff02ca7181dd"
+          "sha256": "51ca933fa2adc1aa8e4debc2c645e8ef574374e467075e1706f67cb31beb6803"
         },
         {
           "path": "assets/wood_knock/wood_knock/alternate.wav",
-          "sha256": "dba06859872b0de2ca88bce28ac05863136accf4945e85a6cc5a55db471603a6"
+          "sha256": "095dfedcfa2d3bac6123e6d49741e2f17e70bce96ca324be7910b55e785cd750"
         },
         {
           "path": "assets/wood_knock/wood_knock/base.wav",
-          "sha256": "f89a08585876f20020766bbebf97162f87679dbe8da40d3223157c169813b0fb"
+          "sha256": "ae4c577895e52043431e25cc583e3c99aefc0e12538571e4c8a0e323e73b13e6"
         },
         {
           "path": "catalog.json",
-          "sha256": "a73ecf6a274d11de4c9047cd88b4e4070e6e70dee12bb17bed62f0e3b42223bc"
+          "sha256": "80935f0fda8b60d3c5614e18bbdaecd4b497404779cca95b0445f33d037bba0e"
         }
       ]
     },
@@ -969,11 +987,11 @@
           "document": "45bf27e4acf8c01310248053f0cf6f992c8fc59be639895e5a192085fc63f87e"
         }
       ],
-      "catalogHash": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93",
+      "catalogHash": "b5412fba1b897d26222d25b8905a1e311ad888c6737b9b273663f48f8129d7f1",
       "files": [
         {
           "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
-          "sha256": "32496038c20807918b516ccaf2d4bf902fb7f392692004388f49877188a861fe"
+          "sha256": "49fbdd057e6d723437c246f42b2712dfb352a63d6ad9f8ef8827520d1081fa35"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
@@ -985,7 +1003,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "eb6f88888c2a2a10f5e705d2761c412de5ad05005b40b5734683828e34c10f93"
+          "sha256": "b5412fba1b897d26222d25b8905a1e311ad888c6737b9b273663f48f8129d7f1"
         }
       ]
     },
@@ -1001,11 +1019,11 @@
           "document": "4127a2c94454343710b1b16b0b294f297fe29b02465936cbfb6f200f766a13d9"
         }
       ],
-      "catalogHash": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb",
+      "catalogHash": "b744bdfa2c9b4acff464ebb465e5ab16dfbeedc27dc436cc52b856ef1c322237",
       "files": [
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
-          "sha256": "0bd9e49f82e5e50b3c2070237d739bd3b67272a9aa4ae8031cc1b661bb4b9105"
+          "sha256": "adbc2436a88e294d6a71028afc2a3b23fdc847bbb504eb1c7701d97c9bbf61ba"
         },
         {
           "path": "assets/watchtower_glb/watchtower_glb.glb",
@@ -1017,7 +1035,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "3f98cd6fa3b83d39f1eb74ed7979f1dcbe9df6de97c5b326bf4caf59db1ccffb"
+          "sha256": "b744bdfa2c9b4acff464ebb465e5ab16dfbeedc27dc436cc52b856ef1c322237"
         }
       ]
     }

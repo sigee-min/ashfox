@@ -10,13 +10,13 @@ export const renderNotFoundPage = ({ assets, config }) =>
     robots: 'noindex,follow',
     title: 'Page not found',
     body: `
-      <main id="main" class="not-found">
-        <p class="eyebrow"><span></span>404</p>
+      <main id="main" class="missing-page">
         <h1>Page not found.</h1>
-        <p>Return to the product or continue through the documentation.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="/">Go home <span>→</span></a>
-          <a class="button button-secondary" href="/docs/">Open docs <span>→</span></a>
+        <p>Return to the product landing, browse the asset studio, or open the documentation.</p>
+        <div class="finale-actions">
+          <a class="button button-primary" href="/">Go home →</a>
+          <a class="button button-ghost" href="/assets/">Assets studio</a>
+          <a class="button button-ghost" href="/docs/">Open docs</a>
         </div>
       </main>
     `,

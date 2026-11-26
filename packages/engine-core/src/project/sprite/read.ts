@@ -1,90 +1,40 @@
-import { ItemStudy, SpriteInputError } from './contract';
-import { parseSpriteJson } from './json';
+import {
+  SPRITE_PROFILES,
+  SPRITE_SIZES,
+  type SpriteDocument,
+  type SpriteLayer,
+  type SpriteMask,
+  type SpritePatch,
+  type SpriteStamp,
+} from './contract';
+import {
+  failSprite,
+  readBool,
+  readChoice,
+  readColor,
+  readGrain,
+  readId,
+  readInt,
+  readList,
+  readMaterials,
+  readMirror,
+  readPoint,
+  readRecord,
+  readShade,
+  readShape,
+  type RecordValue,
+} from './readLayer';
+import { readPattern } from './readPattern';
 
-type RecordValue = Record<string, unknown>;
-
-interface StudyContext {
+interface Context {
   readonly file: string;
-  budget: number;
+  readonly width: number;
+  readonly height: number;
+  readonly masks: ReadonlyMap<string, SpriteMask>;
+  readonly materials: ReadonlySet<string>;
+  readonly stamps: ReadonlyMap<string, SpriteStamp>;
+  readonly palette: ReadonlyMap<string, string>;
 }
-
-const failStudy = (file: string, pointer: string, expected: string, actual: unknown): never => {
-  throw new SpriteInputError({
-    code: 'sprite.contract',
-    file,
-    pointer,
-    expected,
-    actual: String(actual).slice(0, 160),
-  });
-};
-
-const readRecord = (
-  file: string,
-  value: unknown,
-  pointer: string,
-  keys?: readonly string[],
-): RecordValue => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return failStudy(file, pointer, 'record', value);
-  }
-  const record = value as RecordValue;
-  if (
-    keys &&
-    (Object.keys(record).length !== keys.length ||
-      keys.some((key) => !Object.hasOwnProperty.call(record, key)))
-  ) {
-    failStudy(file, pointer, `exact keys ${keys.join(', ')}`, Object.keys(record));
-  }
-  return record;
-};
-
-const readList = (file: string, value: unknown, pointer: string, max: number): unknown[] => {
-  if (!Array.isArray(value) || value.length > max) {
-    return failStudy(file, pointer, `array <= ${max}`, value);
-  }
-  return value;
-};
-
-const readInteger = (
-  file: string,
-  value: unknown,
-  pointer: string,
-  min: number,
-  max: number,
-): number => {
-  if (!Number.isSafeInteger(value) || (value as number) < min || (value as number) > max) {
-    return failStudy(file, pointer, `integer ${min}..${max}`, value);
-  }
-  return value as number;
-};
-
-const readChoice = (
-  file: string,
-  value: unknown,
-  pointer: string,
-  choices: readonly unknown[],
-): void => {
-  if (!choices.includes(value)) failStudy(file, pointer, choices.join(' | '), value);
-};
-
-const readId = (file: string, value: unknown, pointer: string): string => {
-  if (typeof value !== 'string' || !/^[a-z][a-z0-9_]{0,47}$/u.test(value)) {
-    return failStudy(file, pointer, 'ASCII id <= 48', value);
-  }
-  return value;
-};
-
-const readPoint = (file: string, value: unknown, pointer: string): number[] => {
-  const list = readList(file, value, pointer, 2);
-  if (list.length !== 2) failStudy(file, pointer, '[x, y]', value);
-  return list.map((entry, index) => readInteger(file, entry, `${pointer}/${index}`, 0, 15));
-};
-
-const readColor = (file: string, value: unknown, pointer: string): void => {
-  if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/iu.test(value)) {
-    failStudy(file, pointer, '#RRGGBB', value);
-  }
-};
 
 const readRows = (
   file: string,
@@ -92,297 +42,374 @@ const readRows = (
   pointer: string,
   pattern = /^[.a-zA-Z]+$/u,
 ): string[] => {
-  const list = readList(file, value, pointer, 16);
-  if (!list.length) return failStudy(file, pointer, 'nonempty rows', value);
+  const list = readList(file, value, pointer, 64);
+  if (!list.length) failSprite(file, pointer, 'nonempty rows', value);
   let width = 0;
   list.forEach((row, index) => {
     if (
       typeof row !== 'string' ||
       !pattern.test(row) ||
-      row.length > 16 ||
+      row.length === 0 ||
+      row.length > 64 ||
       (index > 0 && row.length !== width)
     ) {
-      failStudy(file, `${pointer}/${index}`, 'rectangular ASCII rows, width 1..16', row);
+      failSprite(file, `${pointer}/${index}`, 'rectangular ASCII rows, width 1..64', row);
     }
     width = (row as string).length;
   });
   return list as string[];
 };
 
-const readCollection = (
-  file: string,
-  value: unknown,
-  pointer: string,
-  max: number,
-): RecordValue[] => {
-  const seen = new Set<string>();
-  return readList(file, value, pointer, max).map((entry, index) => {
-    const entryPointer = `${pointer}/${index}`;
-    const record = readRecord(file, entry, entryPointer);
-    const name = readId(file, record.id, `${entryPointer}/id`);
-    if (seen.has(name)) failStudy(file, `${entryPointer}/id`, 'unique id', name);
-    seen.add(name);
-    return record;
-  });
-};
-
-const readRef = (
-  file: string,
-  group: readonly RecordValue[],
-  value: unknown,
-  pointer: string,
-): RecordValue =>
-  group.find((entry) => entry.id === value) ??
-  failStudy(file, pointer, 'declared reference', value);
-
-const checkBounds = (
-  context: StudyContext,
-  grid: readonly string[],
-  at: readonly number[],
-  pointer: string,
-): void => {
-  context.budget += grid.length * grid[0]!.length;
-  if (at[0]! + grid[0]!.length > 16 || at[1]! + grid.length > 16) {
-    failStudy(context.file, pointer, 'rectangle inside canvas', at);
-  }
-};
-
 const readBindings = (
   file: string,
   value: unknown,
   grid: readonly string[],
-  palette: RecordValue,
+  palette: ReadonlyMap<string, string>,
   pointer: string,
-): void => {
+): Readonly<Record<string, string>> => {
   const chars = [...new Set(grid.join('').replace(/\./g, ''))];
   const map = readRecord(file, value, pointer, chars);
+  const result: Record<string, string> = {};
   for (const [key, colorId] of Object.entries(map)) {
-    if (typeof colorId !== 'string' || !Object.hasOwnProperty.call(palette, colorId)) {
-      failStudy(file, `${pointer}/${key}`, 'palette reference', colorId);
+    if (typeof colorId !== 'string' || !palette.has(colorId)) {
+      failSprite(file, `${pointer}/${key}`, 'palette reference', colorId);
     }
+    result[key] = colorId as string;
+  }
+  return Object.freeze(result);
+};
+
+const checkBounds = (
+  file: string,
+  grid: readonly string[],
+  at: readonly [number, number],
+  width: number,
+  height: number,
+  pointer: string,
+): void => {
+  if (at[0] + grid[0]!.length > width || at[1] + grid.length > height) {
+    failSprite(file, pointer, 'rectangle inside canvas', at);
   }
 };
 
-const hexLuminance = (hex: string): number =>
-  [2126, 7152, 722].reduce(
-    (sum, weight, index) => sum + weight * parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16),
-    0,
-  );
-
-const readMasks = (file: string, raw: unknown): RecordValue[] => {
-  const masks = readCollection(file, raw, '/masks', 64);
-  masks.forEach((mask, index) => {
+const readMasks = (file: string, raw: unknown): ReadonlyMap<string, SpriteMask> => {
+  const seen = new Map<string, SpriteMask>();
+  readList(file, raw, '/masks', 64).forEach((entry, index) => {
     const pointer = `/masks/${index}`;
-    readRecord(file, mask, pointer, ['id', 'rows']);
-    if (
-      !readRows(file, mask.rows, `${pointer}/rows`, /^[.1]+$/u)
-        .join('')
-        .includes('1')
-    ) {
-      failStudy(file, pointer, 'occupied mask', 'empty');
-    }
-  });
-  return masks;
-};
-
-const readMaterials = (file: string, raw: unknown): RecordValue[] => {
-  const materials = readCollection(file, raw, '/materials', 64);
-  materials.forEach((material, index) => {
-    const pointer = `/materials/${index}`;
-    readRecord(file, material, pointer, ['id', 'ramp']);
-    const ramp = readRecord(file, material.ramp, `${pointer}/ramp`);
-    readChoice(file, ramp.mode, `${pointer}/ramp/mode`, ['explicit', 'generated']);
-    if (ramp.mode !== 'explicit') {
-      readRecord(file, ramp, `${pointer}/ramp`, ['mode', 'base', 'preset']);
-      readColor(file, ramp.base, `${pointer}/ramp/base`);
-      readChoice(file, ramp.preset, `${pointer}/ramp/preset`, ['warm-v1', 'neutral-v1']);
+    const r = readRecord(file, entry, pointer);
+    const id = readId(file, r.id, `${pointer}/id`);
+    if (seen.has(id)) failSprite(file, `${pointer}/id`, 'unique id', id);
+    if ('rows' in r) {
+      readRecord(file, r, pointer, ['id', 'rows']);
+      const rows = readRows(file, r.rows, `${pointer}/rows`, /^[.1]+$/u);
+      if (!rows.join('').includes('1')) failSprite(file, pointer, 'occupied mask', 'empty');
+      seen.set(id, { id, kind: 'rows', rows });
       return;
     }
-    readRecord(file, ramp, `${pointer}/ramp`, ['mode', 'colors']);
-    const colors = readList(file, ramp.colors, `${pointer}/ramp/colors`, 3);
-    if (colors.length !== 3) failStudy(file, `${pointer}/ramp/colors`, 'three colors', colors);
-    colors.forEach((entry, colorIndex) =>
-      readColor(file, entry, `${pointer}/ramp/colors/${colorIndex}`),
-    );
-    const luminance = colors.map((entry) => hexLuminance(entry as string));
-    if (
-      luminance[0]! > luminance[1]! ||
-      luminance[1]! > luminance[2]! ||
-      luminance[0] === luminance[2]
-    ) {
-      failStudy(
-        file,
-        `${pointer}/ramp/colors`,
-        'shadow <= base <= light with distinct endpoints',
-        colors,
-      );
-    }
+    readRecord(file, r, pointer, ['id', 'width', 'height', 'shape'], ['mirror']);
+    const width = readInt(file, r.width, `${pointer}/width`, 1, 64);
+    const height = readInt(file, r.height, `${pointer}/height`, 1, 64);
+    seen.set(id, {
+      id,
+      kind: 'shape',
+      width,
+      height,
+      shape: readShape(file, r.shape, width, height, `${pointer}/shape`),
+      mirror: readMirror(file, r.mirror, `${pointer}/mirror`),
+    });
   });
-  return materials;
+  return seen;
 };
 
-const readStamps = (file: string, raw: unknown): RecordValue[] => {
-  const stamps = readCollection(file, raw, '/stamps', 64);
-  stamps.forEach((stamp, index) => {
+const readStamps = (file: string, raw: unknown): ReadonlyMap<string, SpriteStamp> => {
+  const seen = new Map<string, SpriteStamp>();
+  readList(file, raw, '/stamps', 64).forEach((entry, index) => {
     const pointer = `/stamps/${index}`;
-    readRecord(file, stamp, pointer, ['id', 'rows', 'slots']);
-    const used = new Set(readRows(file, stamp.rows, `${pointer}/rows`).join('').replace(/\./g, ''));
-    const slots = readList(file, stamp.slots, `${pointer}/slots`, 52);
+    const r = readRecord(file, entry, pointer, ['id', 'rows', 'slots']);
+    const id = readId(file, r.id, `${pointer}/id`);
+    if (seen.has(id)) failSprite(file, `${pointer}/id`, 'unique id', id);
+    const rows = readRows(file, r.rows, `${pointer}/rows`);
+    const used = new Set(rows.join('').replace(/\./g, ''));
+    const slots = readList(file, r.slots, `${pointer}/slots`, 52);
     if (
       slots.length !== used.size ||
       new Set(slots).size !== slots.length ||
       slots.some((slot) => typeof slot !== 'string' || !used.has(slot))
     ) {
-      failStudy(file, `${pointer}/slots`, 'exact used characters', slots);
+      failSprite(file, `${pointer}/slots`, 'exact used characters', slots);
     }
+    seen.set(id, { id, rows, slots: slots as string[] });
   });
-  return stamps;
+  return seen;
 };
 
-const readShade = (file: string, raw: unknown, mask: readonly string[], pointer: string): void => {
-  const shade = readRecord(file, raw, pointer);
-  readChoice(file, shade.form, `${pointer}/form`, ['flat', 'round', 'bevel']);
-  const keys =
-    shade.form === 'bevel' ? ['form', 'light', 'contrast', 'axis'] : ['form', 'light', 'contrast'];
-  readRecord(file, shade, pointer, keys);
-  readChoice(file, shade.light, `${pointer}/light`, ['top_left']);
-  readInteger(file, shade.contrast, `${pointer}/contrast`, 0, 2);
-  if (shade.form !== 'bevel') return;
-  const axis = readList(file, shade.axis, `${pointer}/axis`, 2);
-  if (axis.length !== 2) failStudy(file, `${pointer}/axis`, 'two points', axis);
-  const points = axis.map((entry, index) => readPoint(file, entry, `${pointer}/axis/${index}`));
-  if (
-    points[0]!.join() === points[1]!.join() ||
-    points.some((pt) => pt[0]! >= mask[0]!.length || pt[1]! >= mask.length)
-  ) {
-    failStudy(file, `${pointer}/axis`, 'distinct points inside mask rectangle', axis);
+const readPatch = (ctx: Context, raw: unknown, mask: SpriteMask, pointer: string): SpritePatch => {
+  const patch = readRecord(ctx.file, raw, pointer, ['id', 'at', 'rows', 'colors'], ['protect']);
+  const id = readId(ctx.file, patch.id, `${pointer}/id`);
+  const grid = readRows(ctx.file, patch.rows, `${pointer}/rows`);
+  const at = readPoint(ctx.file, patch.at, `${pointer}/at`, 0, 63);
+  const mw = mask.kind === 'rows' ? mask.rows[0]!.length : mask.width;
+  const mh = mask.kind === 'rows' ? mask.rows.length : mask.height;
+  if (at[0] + grid[0]!.length > mw || at[1] + grid.length > mh) {
+    failSprite(ctx.file, pointer, 'patch inside part rectangle', at);
   }
-};
-
-const readPatch = (
-  context: StudyContext,
-  patch: RecordValue,
-  mask: readonly string[],
-  palette: RecordValue,
-  pointer: string,
-): void => {
-  const { file } = context;
-  readRecord(file, patch, pointer, ['id', 'at', 'rows', 'colors', 'protect']);
-  const grid = readRows(file, patch.rows, `${pointer}/rows`);
-  const at = readPoint(file, patch.at, `${pointer}/at`);
-  checkBounds(context, grid, at, pointer);
-  readBindings(file, patch.colors, grid, palette, `${pointer}/colors`);
-  readInteger(file, patch.protect, `${pointer}/protect`, 0, 2);
-  if (at[0]! + grid[0]!.length > mask[0]!.length || at[1]! + grid.length > mask.length) {
-    failStudy(file, pointer, 'patch inside part rectangle', at);
-  }
-  grid.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (ch !== '.' && mask[y + at[1]!]![x + at[0]!] !== '1') {
-        failStudy(file, `${pointer}/rows/${y}/${x}`, 'patch inside mask', ch);
-      }
+  if (mask.kind === 'rows') {
+    grid.forEach((row, y) => {
+      [...row].forEach((ch, x) => {
+        if (ch !== '.' && mask.rows[y + at[1]]![x + at[0]] !== '1') {
+          failSprite(ctx.file, `${pointer}/rows/${y}/${x}`, 'patch inside mask', ch);
+        }
+      });
     });
-  });
+  }
+  return {
+    id,
+    at,
+    rows: grid,
+    colors: readBindings(ctx.file, patch.colors, grid, ctx.palette, `${pointer}/colors`),
+    protect:
+      patch.protect === undefined
+        ? 1
+        : readInt(ctx.file, patch.protect, `${pointer}/protect`, 0, 2),
+  };
+};
+
+const readMatRef = (ctx: Context, val: unknown, pointer: string): string => {
+  if (typeof val !== 'string' || !ctx.materials.has(val)) {
+    failSprite(ctx.file, pointer, 'declared material', val);
+  }
+  return val as string;
 };
 
 const readPartLayer = (
-  context: StudyContext,
+  ctx: Context,
   layer: RecordValue,
-  at: readonly number[],
-  masks: readonly RecordValue[],
-  materials: readonly RecordValue[],
-  palette: RecordValue,
+  id: string,
   pointer: string,
-): void => {
-  const { file } = context;
-  readRecord(file, layer, pointer, [
-    'id',
-    'op',
-    'mask',
-    'material',
-    'at',
-    'shade',
-    'grain',
-    'patches',
-  ]);
-  const mask = readRef(file, masks, layer.mask, `${pointer}/mask`).rows as string[];
-  readRef(file, materials, layer.material, `${pointer}/material`);
-  checkBounds(context, mask, at, pointer);
-  readShade(file, layer.shade, mask, `${pointer}/shade`);
-  const grain = readRecord(file, layer.grain, `${pointer}/grain`, ['mode', 'amount', 'seed']);
-  readChoice(file, grain.mode, `${pointer}/grain/mode`, ['clustered-v1']);
-  readInteger(file, grain.amount, `${pointer}/grain/amount`, 0, 1);
-  readInteger(file, grain.seed, `${pointer}/grain/seed`, 0, 4294967295);
-  readCollection(file, layer.patches, `${pointer}/patches`, 16).forEach((patch, index) =>
-    readPatch(context, patch, mask, palette, `${pointer}/patches/${index}`),
+): SpriteLayer => {
+  readRecord(
+    ctx.file,
+    layer,
+    pointer,
+    ['id', 'op', 'mask', 'material', 'at', 'shade'],
+    ['grain', 'mirror', 'pattern', 'patches'],
   );
+  const maskName = typeof layer.mask === 'string' ? layer.mask : '';
+  const mask =
+    ctx.masks.get(maskName) ?? failSprite(ctx.file, `${pointer}/mask`, 'declared mask', layer.mask);
+  const mw = mask.kind === 'rows' ? mask.rows[0]!.length : mask.width;
+  const mh = mask.kind === 'rows' ? mask.rows.length : mask.height;
+  const at = readPoint(ctx.file, layer.at, `${pointer}/at`, 0, 63);
+  if (at[0] + mw > ctx.width || at[1] + mh > ctx.height) {
+    failSprite(ctx.file, pointer, 'part inside canvas', at);
+  }
+  const patchSeen = new Set<string>();
+  const patches = readList(ctx.file, layer.patches ?? [], `${pointer}/patches`, 16).map(
+    (p, idx) => {
+      const parsed = readPatch(ctx, p, mask, `${pointer}/patches/${idx}`);
+      if (patchSeen.has(parsed.id))
+        failSprite(ctx.file, `${pointer}/patches/${idx}/id`, 'unique id', parsed.id);
+      patchSeen.add(parsed.id);
+      return parsed;
+    },
+  );
+  return {
+    id,
+    op: 'part',
+    mask: maskName,
+    material: readMatRef(ctx, layer.material, `${pointer}/material`),
+    at,
+    shade: readShade(ctx.file, layer.shade, mw, mh, `${pointer}/shade`),
+    grain: readGrain(ctx.file, layer.grain, `${pointer}/grain`),
+    mirror: readMirror(ctx.file, layer.mirror, `${pointer}/mirror`),
+    ...(layer.pattern !== undefined
+      ? { pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`) }
+      : {}),
+    patches,
+  };
+};
+
+const readShapeOrFillLayer = (
+  ctx: Context,
+  layer: RecordValue,
+  id: string,
+  op: string,
+  pointer: string,
+): SpriteLayer | null => {
+  if (op === 'fill') {
+    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['grain']);
+    return {
+      id,
+      op: 'fill',
+      material: readMatRef(ctx, layer.material, `${pointer}/material`),
+      pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`),
+      grain: readGrain(ctx.file, layer.grain, `${pointer}/grain`),
+    };
+  }
+  if (op === 'shape') {
+    readRecord(
+      ctx.file,
+      layer,
+      pointer,
+      ['id', 'op', 'shape', 'material', 'shade'],
+      ['grain', 'mirror', 'pattern', 'clip'],
+    );
+    return {
+      id,
+      op: 'shape',
+      shape: readShape(ctx.file, layer.shape, ctx.width, ctx.height, `${pointer}/shape`),
+      material: readMatRef(ctx, layer.material, `${pointer}/material`),
+      shade: readShade(ctx.file, layer.shade, ctx.width, ctx.height, `${pointer}/shade`),
+      grain: readGrain(ctx.file, layer.grain, `${pointer}/grain`),
+      mirror: readMirror(ctx.file, layer.mirror, `${pointer}/mirror`),
+      ...(layer.pattern !== undefined
+        ? { pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`) }
+        : {}),
+      clip:
+        layer.clip === undefined
+          ? 'canvas'
+          : readChoice(ctx.file, layer.clip, `${pointer}/clip`, ['canvas', 'occupied']),
+    };
+  }
+  return null;
+};
+
+const readOutlineLayer = (
+  ctx: Context,
+  layer: RecordValue,
+  id: string,
+  pointer: string,
+): SpriteLayer => {
+  readRecord(ctx.file, layer, pointer, ['id', 'op', 'mode'], ['color', 'strength', 'innerRim']);
+  const mode = readChoice(ctx.file, layer.mode, `${pointer}/mode`, ['sel_out', 'dark', 'colored']);
+  let color: string | undefined;
+  if (mode === 'colored') {
+    const name = typeof layer.color === 'string' ? layer.color : '';
+    if (!ctx.palette.has(name))
+      failSprite(ctx.file, `${pointer}/color`, 'palette color', layer.color);
+    color = name;
+  } else if (layer.color !== undefined) {
+    failSprite(ctx.file, `${pointer}/color`, 'omit color unless mode=colored', layer.color);
+  }
+  return {
+    id,
+    op: 'outline',
+    mode,
+    ...(color ? { color } : {}),
+    strength:
+      layer.strength === undefined
+        ? 2
+        : readInt(ctx.file, layer.strength, `${pointer}/strength`, 1, 3),
+    innerRim:
+      layer.innerRim === undefined
+        ? false
+        : readBool(ctx.file, layer.innerRim, `${pointer}/innerRim`),
+  };
+};
+
+const readPaintStampOrErase = (
+  ctx: Context,
+  layer: RecordValue,
+  id: string,
+  op: 'paint' | 'stamp' | 'erase',
+  pointer: string,
+): SpriteLayer => {
+  if (op === 'erase' && 'shape' in layer) {
+    readRecord(ctx.file, layer, pointer, ['id', 'op', 'shape']);
+    return {
+      id,
+      op: 'erase',
+      shape: readShape(ctx.file, layer.shape, ctx.width, ctx.height, `${pointer}/shape`),
+    };
+  }
+  const keys =
+    op === 'stamp'
+      ? ['id', 'op', 'stamp', 'at', 'flip', 'colors']
+      : op === 'paint'
+        ? ['id', 'op', 'at', 'rows', 'colors']
+        : ['id', 'op', 'at', 'rows'];
+  readRecord(ctx.file, layer, pointer, keys);
+  const at = readPoint(ctx.file, layer.at, `${pointer}/at`, 0, 63);
+  if (op === 'stamp') {
+    const stampName = typeof layer.stamp === 'string' ? layer.stamp : '';
+    const stamp =
+      ctx.stamps.get(stampName) ??
+      failSprite(ctx.file, `${pointer}/stamp`, 'declared stamp', layer.stamp);
+    checkBounds(ctx.file, stamp.rows, at, ctx.width, ctx.height, pointer);
+    return {
+      id,
+      op: 'stamp',
+      stamp: stampName,
+      at,
+      flip: readMirror(ctx.file, layer.flip, `${pointer}/flip`),
+      colors: readBindings(ctx.file, layer.colors, stamp.rows, ctx.palette, `${pointer}/colors`),
+    };
+  }
+  const rows = readRows(
+    ctx.file,
+    layer.rows,
+    `${pointer}/rows`,
+    op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u,
+  );
+  checkBounds(ctx.file, rows, at, ctx.width, ctx.height, pointer);
+  return op === 'erase'
+    ? { id, op: 'erase', at, rows }
+    : {
+        id,
+        op: 'paint',
+        at,
+        rows,
+        colors: readBindings(ctx.file, layer.colors, rows, ctx.palette, `${pointer}/colors`),
+      };
 };
 
 const readDirectLayer = (
-  context: StudyContext,
+  ctx: Context,
   layer: RecordValue,
-  at: readonly number[],
-  stamps: readonly RecordValue[],
-  palette: RecordValue,
+  id: string,
+  op: string,
   pointer: string,
-): void => {
-  const { file } = context;
-  const keys =
-    layer.op === 'stamp'
-      ? ['id', 'op', 'stamp', 'at', 'flip', 'colors']
-      : layer.op === 'paint'
-        ? ['id', 'op', 'at', 'rows', 'colors']
-        : ['id', 'op', 'at', 'rows'];
-  readRecord(file, layer, pointer, keys);
-  const grid =
-    layer.op === 'stamp'
-      ? (readRef(file, stamps, layer.stamp, `${pointer}/stamp`).rows as string[])
-      : readRows(
-          file,
-          layer.rows,
-          `${pointer}/rows`,
-          layer.op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u,
-        );
-  checkBounds(context, grid, at, pointer);
-  if (layer.op !== 'erase') readBindings(file, layer.colors, grid, palette, `${pointer}/colors`);
-  if (layer.op === 'stamp')
-    readChoice(file, layer.flip, `${pointer}/flip`, ['none', 'x', 'y', 'xy']);
-};
-
-const readItem = (
-  context: StudyContext,
-  item: RecordValue,
-  index: number,
-  masks: readonly RecordValue[],
-  materials: readonly RecordValue[],
-  stamps: readonly RecordValue[],
-): void => {
-  const { file } = context;
-  const pointer = `/items/${index}`;
-  readRecord(file, item, pointer, ['id', 'profile', 'canvas', 'palette', 'layers']);
-  readChoice(file, item.profile, `${pointer}/profile`, ['minecraft-item-v1']);
-  const canvas = readList(file, item.canvas, `${pointer}/canvas`, 2);
-  if (canvas.length !== 2 || canvas.some((entry) => entry !== 16)) {
-    failStudy(file, `${pointer}/canvas`, '[16,16]', canvas);
+): SpriteLayer => {
+  if (op === 'pattern') {
+    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['clip']);
+    return {
+      id,
+      op: 'pattern',
+      material: readMatRef(ctx, layer.material, `${pointer}/material`),
+      pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`),
+      clip:
+        layer.clip === undefined
+          ? 'occupied'
+          : readChoice(ctx.file, layer.clip, `${pointer}/clip`, ['canvas', 'occupied']),
+    };
   }
-  const palette = readRecord(file, item.palette, `${pointer}/palette`);
-  if (Object.keys(palette).length > 32)
-    failStudy(file, `${pointer}/palette`, '<= 32 colors', 'too many');
-  Object.entries(palette).forEach(([key, color]) => {
-    readId(file, key, `${pointer}/palette/${key}`);
-    readColor(file, color, `${pointer}/palette/${key}`);
-  });
-  readCollection(file, item.layers, `${pointer}/layers`, 64).forEach((layer, layerIndex) => {
-    const layerPointer = `${pointer}/layers/${layerIndex}`;
-    readChoice(file, layer.op, `${layerPointer}/op`, ['stamp', 'paint', 'erase', 'part']);
-    const at = readPoint(file, layer.at, `${layerPointer}/at`);
-    if (layer.op === 'part')
-      readPartLayer(context, layer, at, masks, materials, palette, layerPointer);
-    else readDirectLayer(context, layer, at, stamps, palette, layerPointer);
-  });
+  if (op === 'outline') return readOutlineLayer(ctx, layer, id, pointer);
+  return readPaintStampOrErase(ctx, layer, id, op as 'paint' | 'stamp' | 'erase', pointer);
 };
 
-const freeze = (value: unknown): unknown => {
+const readLayer = (ctx: Context, raw: unknown, seen: Set<string>, pointer: string): SpriteLayer => {
+  const layer = readRecord(ctx.file, raw, pointer);
+  const id = readId(ctx.file, layer.id, `${pointer}/id`);
+  if (seen.has(id)) failSprite(ctx.file, `${pointer}/id`, 'unique layer id', id);
+  seen.add(id);
+  const op = readChoice(ctx.file, layer.op, `${pointer}/op`, [
+    'fill',
+    'shape',
+    'part',
+    'paint',
+    'erase',
+    'stamp',
+    'outline',
+    'pattern',
+  ]);
+  if (op === 'part') return readPartLayer(ctx, layer, id, pointer);
+  return (
+    readShapeOrFillLayer(ctx, layer, id, op, pointer) ??
+    readDirectLayer(ctx, layer, id, op, pointer)
+  );
+};
+
+const freeze = <T>(value: T): T => {
   if (value && typeof value === 'object') {
     Object.values(value).forEach(freeze);
     Object.freeze(value);
@@ -390,26 +417,62 @@ const freeze = (value: unknown): unknown => {
   return value;
 };
 
-/** Validates and freezes a parsed item study specification. */
-export const readItemStudy = (source: string, file = 'study.items.json'): ItemStudy => {
-  const root = readRecord(file, parseSpriteJson(source, file), '', [
-    'format',
-    'version',
-    'masks',
-    'materials',
-    'stamps',
-    'items',
-  ]);
-  readChoice(file, root.format, '/format', ['ashfox-item-study']);
-  readChoice(file, root.version, '/version', [1]);
+/** Validates and freezes a Sprite v2 document directly in memory. */
+export const readSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): SpriteDocument => {
+  const root = readRecord(file, raw, '', ['masks', 'materials', 'stamps', 'item']);
   const masks = readMasks(file, root.masks);
   const materials = readMaterials(file, root.materials);
   const stamps = readStamps(file, root.stamps);
-  const items = readCollection(file, root.items, '/items', 32);
-  if (!items.length) failStudy(file, '/items', 'at least one item', 'empty');
-  const context: StudyContext = { file, budget: 0 };
-  items.forEach((item, index) => readItem(context, item, index, masks, materials, stamps));
-  if (context.budget > 524288) failStudy(file, '', 'total cells <= 524288', context.budget);
-  // All discriminated variants and references have been checked above.
-  return freeze(root) as ItemStudy;
+  const itemRaw = readRecord(file, root.item, '/item', [
+    'id',
+    'profile',
+    'canvas',
+    'palette',
+    'layers',
+  ]);
+  const id = readId(file, itemRaw.id, '/item/id');
+  const profile = readChoice(file, itemRaw.profile, '/item/profile', SPRITE_PROFILES);
+  const canvasList = readList(file, itemRaw.canvas, '/item/canvas', 2);
+  if (
+    canvasList.length !== 2 ||
+    !SPRITE_SIZES.has(canvasList[0] as number) ||
+    !SPRITE_SIZES.has(canvasList[1] as number) ||
+    canvasList[0] !== canvasList[1]
+  ) {
+    failSprite(file, '/item/canvas', 'square [16,16] | [32,32] | [64,64]', itemRaw.canvas);
+  }
+  const width = canvasList[0] as number;
+  const height = canvasList[1] as number;
+  const paletteRaw = readRecord(file, itemRaw.palette, '/item/palette');
+  if (Object.keys(paletteRaw).length > 32) {
+    failSprite(file, '/item/palette', '<= 32 colors', 'too many');
+  }
+  const paletteMap = new Map<string, string>();
+  const paletteOut: Record<string, string> = {};
+  for (const [key, color] of Object.entries(paletteRaw)) {
+    readId(file, key, `/item/palette/${key}`);
+    const normalized = readColor(file, color, `/item/palette/${key}`);
+    paletteMap.set(key, normalized);
+    paletteOut[key] = normalized;
+  }
+  const ctx: Context = {
+    file,
+    width,
+    height,
+    masks,
+    materials: new Set(materials.map((m) => m.id)),
+    stamps,
+    palette: paletteMap,
+  };
+  const layerSeen = new Set<string>();
+  const layers = readList(file, itemRaw.layers, '/item/layers', 64).map((layer, idx) =>
+    readLayer(ctx, layer, layerSeen, `/item/layers/${idx}`),
+  );
+  if (layers.length === 0) failSprite(file, '/item/layers', 'at least one layer', 'empty');
+  return freeze({
+    masks: [...masks.values()],
+    materials,
+    stamps: [...stamps.values()],
+    item: { id, profile, canvas: [width, height] as const, palette: paletteOut, layers },
+  });
 };

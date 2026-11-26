@@ -13,6 +13,7 @@ import {
 import type { TextureSceneContext } from './ao';
 import { applyAoPattern } from './ao';
 import { applyBorderPattern, applyStripePattern } from './decor';
+import { applyEdgePattern } from './edge';
 import { applyGradientPattern } from './gradient';
 import { readRole } from './palette';
 import type { PreparedTexture } from './prepare';
@@ -215,6 +216,9 @@ export const applyPatternStatement = (
   }
   if (statement.algorithm === 'ao') {
     return applyAoPattern(statement, chartKey, regions, context, grid, scene, report);
+  }
+  if (statement.algorithm === 'edge') {
+    return applyEdgePattern(statement, regions, prepared, context, grid, report);
   }
   void chartId;
   const settings = readPatternSettings(statement, prepared, context, report);

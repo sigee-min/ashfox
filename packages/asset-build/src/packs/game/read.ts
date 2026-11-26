@@ -86,14 +86,15 @@ const validateSoundAsset = (
       (v.frames as number) > 1440000 ||
       v.durationSeconds !== (v.frames as number) / 48000 ||
       v.sampleRate !== 48000 ||
-      v.channels !== 1
+      (v.channels !== 1 && v.channels !== 2)
     )
       return fail('Invalid sound variant');
     const playback = readPlayback(v.playback, v.frames as number);
     if (a.codec === 'ogg' && playback.kind === 'loop') fail('Loop delivery requires WAV');
     if (a.codec === 'wav') {
       const file = (a.files as Record<string, unknown>[]).find((f) => f.path === v.file);
-      if (file?.byteLength !== 44 + (v.frames as number) * 2) fail('WAV frame count mismatch');
+      if (file?.byteLength !== 44 + (v.frames as number) * 2 * (v.channels as number))
+        fail('WAV frame count mismatch');
     }
     variants.add(v.id);
     reference(v.file, '.' + a.codec);

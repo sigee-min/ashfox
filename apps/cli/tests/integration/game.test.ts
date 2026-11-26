@@ -141,7 +141,7 @@ const main = async () => {
       );
     }
     if (asset.kind === 'sprite') {
-      assert.equal(asset.width, 16);
+      assert.equal(asset.width, 32);
       assert.equal(asset.pixelsPerUnit, 16);
       assert.equal(asset.filter, 'nearest');
     }
@@ -153,7 +153,10 @@ const main = async () => {
         assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
         assert.equal(wav.readUInt32LE(24), variant.sampleRate);
         assert.equal(wav.readUInt16LE(22), variant.channels);
-        assert.equal((wav.length - 44) / 2 / variant.sampleRate, variant.durationSeconds);
+        assert.equal(
+          (wav.length - 44) / 2 / variant.channels / variant.sampleRate,
+          variant.durationSeconds,
+        );
       }
     }
   }

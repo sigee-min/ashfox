@@ -95,8 +95,10 @@ for (const route of ['', 'ko/']) {
 assert.doesNotMatch(korean, /class="docs-languages"/);
 assert.match(korean, /class="language-menu" data-language-menu/);
 const koreanLanding = await readFile(new URL('ko/index.html', output), 'utf8');
-assert.match(koreanLanding, /에셋의 원본도 내 저장소에/);
+const koreanStudio = await readFile(new URL('ko/assets/index.html', output), 'utf8');
+assert.match(koreanLanding, /코드에서 게임까지/);
 assert.match(koreanLanding, /크리처 하나를 온전히/);
+assert.match(koreanStudio, /에셋 스튜디오/);
 assert.match(
   await readFile(new URL('sitemap.xml', output), 'utf8'),
   /<loc>https:\/\/ashfox.io\/ko\/<\/loc>/,

@@ -1,44 +1,200 @@
-/** Experimental item study v1. Independent of the model workspace reader. */
+import type { RampPreset } from '../../textures/oklch';
+
 export type Point = readonly [number, number];
-export interface Mask {
+export type SpriteProfile = 'item' | 'tile' | 'icon' | 'decal';
+export type MirrorMode = 'none' | 'x' | 'y' | 'xy';
+export type LightDirection =
+  'top_left' | 'top' | 'top_right' | 'right' | 'bottom_right' | 'bottom' | 'bottom_left' | 'left';
+
+export const SPRITE_PROFILES: readonly SpriteProfile[] = Object.freeze([
+  'item',
+  'tile',
+  'icon',
+  'decal',
+]);
+export const SPRITE_SIZES = new Set<number>([16, 32, 64]);
+
+export type ShapeSpec =
+  | {
+      readonly kind: 'rect';
+      readonly x: number;
+      readonly y: number;
+      readonly width: number;
+      readonly height: number;
+    }
+  | {
+      readonly kind: 'ellipse';
+      readonly cx: number;
+      readonly cy: number;
+      readonly rx: number;
+      readonly ry: number;
+    }
+  | {
+      readonly kind: 'capsule';
+      readonly x1: number;
+      readonly y1: number;
+      readonly x2: number;
+      readonly y2: number;
+      readonly radius: number;
+    }
+  | {
+      readonly kind: 'polygon';
+      readonly points: readonly Point[];
+    }
+  | {
+      readonly kind: 'line';
+      readonly x1: number;
+      readonly y1: number;
+      readonly x2: number;
+      readonly y2: number;
+      readonly thickness: number;
+    };
+
+export type SpriteMask =
+  | { readonly id: string; readonly kind: 'rows'; readonly rows: readonly string[] }
+  | {
+      readonly id: string;
+      readonly kind: 'shape';
+      readonly width: number;
+      readonly height: number;
+      readonly shape: ShapeSpec;
+      readonly mirror: MirrorMode;
+    };
+
+export interface SpriteStamp {
   readonly id: string;
   readonly rows: readonly string[];
-}
-export interface Stamp extends Mask {
   readonly slots: readonly string[];
 }
-export type Ramp =
-  | { readonly mode: 'explicit'; readonly colors: readonly [string, string, string] }
+
+export type SpriteRamp =
   | {
-      readonly mode: 'generated';
-      readonly base: string;
-      readonly preset: 'warm-v1' | 'neutral-v1';
-    };
-export interface Material {
+      readonly mode: 'explicit';
+      readonly colors:
+        readonly [string, string, string] | readonly [string, string, string, string, string];
+    }
+  | { readonly mode: 'auto'; readonly base: string; readonly preset: RampPreset };
+
+export interface SpriteMaterial {
   readonly id: string;
-  readonly ramp: Ramp;
+  readonly ramp: SpriteRamp;
 }
-export interface Patch {
+
+export type SpritePatternSpec =
+  | { readonly kind: 'solid' }
+  | {
+      readonly kind: 'gradient';
+      readonly axis: 'x' | 'y' | 'radial';
+      readonly toMaterial?: string;
+      readonly dither: boolean;
+      readonly seed: number;
+    }
+  | {
+      readonly kind: 'blotch';
+      readonly scale: number;
+      readonly density: number;
+      readonly seed: number;
+      readonly toMaterial?: string;
+    }
+  | {
+      readonly kind: 'stripe';
+      readonly axis: 'x' | 'y' | 'diag_pos' | 'diag_neg';
+      readonly period: number;
+      readonly width: number;
+      readonly offset: number;
+      readonly toMaterial?: string;
+    }
+  | {
+      readonly kind: 'brick';
+      readonly width: number;
+      readonly height: number;
+      readonly mortar: number;
+      readonly stagger: number;
+      readonly seed: number;
+      readonly mortarMaterial?: string;
+    }
+  | {
+      readonly kind: 'plank';
+      readonly height: number;
+      readonly joint: number;
+      readonly seed: number;
+      readonly mortarMaterial?: string;
+    }
+  | {
+      readonly kind: 'voronoi';
+      readonly cells: number;
+      readonly jitter: number;
+      readonly edgeWidth: number;
+      readonly seed: number;
+      readonly edgeMaterial?: string;
+    }
+  | {
+      readonly kind: 'dither';
+      readonly mode: 'bayer' | 'cluster';
+      readonly density: number;
+      readonly seed: number;
+      readonly toMaterial?: string;
+    }
+  | {
+      readonly kind: 'crack';
+      readonly count: number;
+      readonly seed: number;
+      readonly crackMaterial?: string;
+    };
+
+export interface SpriteShade {
+  readonly form: 'flat' | 'round' | 'bevel' | 'cylinder' | 'facet';
+  readonly light: LightDirection;
+  readonly contrast: number;
+  readonly specular: number;
+  readonly axis?: readonly [Point, Point];
+}
+
+export interface SpriteGrain {
+  readonly mode: 'none' | 'clustered' | 'soft' | 'directional';
+  readonly axis?: 'horizontal' | 'vertical' | 'diagonal';
+  readonly amount: number;
+  readonly seed: number;
+}
+
+export interface SpritePatch {
   readonly id: string;
   readonly at: Point;
   readonly rows: readonly string[];
   readonly colors: Readonly<Record<string, string>>;
   readonly protect: number;
 }
-export type Shade = {
-  readonly form: 'flat' | 'round' | 'bevel';
-  readonly light: string;
-  readonly contrast: number;
-  readonly axis?: readonly [Point, Point];
-};
-export type Layer =
+
+export type SpriteLayer =
   | {
       readonly id: string;
-      readonly op: 'stamp';
-      readonly stamp: string;
+      readonly op: 'fill';
+      readonly material: string;
+      readonly pattern: SpritePatternSpec;
+      readonly grain: SpriteGrain;
+    }
+  | {
+      readonly id: string;
+      readonly op: 'shape';
+      readonly shape: ShapeSpec;
+      readonly material: string;
+      readonly shade: SpriteShade;
+      readonly grain: SpriteGrain;
+      readonly mirror: MirrorMode;
+      readonly pattern?: SpritePatternSpec;
+      readonly clip: 'canvas' | 'occupied';
+    }
+  | {
+      readonly id: string;
+      readonly op: 'part';
+      readonly mask: string;
+      readonly material: string;
       readonly at: Point;
-      readonly flip: 'none' | 'x' | 'y' | 'xy';
-      readonly colors: Readonly<Record<string, string>>;
+      readonly shade: SpriteShade;
+      readonly grain: SpriteGrain;
+      readonly mirror: MirrorMode;
+      readonly pattern?: SpritePatternSpec;
+      readonly patches: readonly SpritePatch[];
     }
   | {
       readonly id: string;
@@ -49,39 +205,50 @@ export type Layer =
     }
   | {
       readonly id: string;
-      readonly op: 'erase';
+      readonly op: 'stamp';
+      readonly stamp: string;
       readonly at: Point;
-      readonly rows: readonly string[];
+      readonly flip: MirrorMode;
+      readonly colors: Readonly<Record<string, string>>;
     }
   | {
       readonly id: string;
-      readonly op: 'part';
-      readonly mask: string;
+      readonly op: 'erase';
+      readonly at?: Point;
+      readonly rows?: readonly string[];
+      readonly shape?: ShapeSpec;
+    }
+  | {
+      readonly id: string;
+      readonly op: 'outline';
+      readonly mode: 'sel_out' | 'dark' | 'colored';
+      readonly color?: string;
+      readonly strength: number;
+      readonly innerRim: boolean;
+    }
+  | {
+      readonly id: string;
+      readonly op: 'pattern';
       readonly material: string;
-      readonly at: Point;
-      readonly shade: Shade;
-      readonly grain: {
-        readonly mode: 'clustered-v1';
-        readonly amount: number;
-        readonly seed: number;
-      };
-      readonly patches: readonly Patch[];
+      readonly pattern: SpritePatternSpec;
+      readonly clip: 'canvas' | 'occupied';
     };
-export interface Item {
+
+export interface SpriteItem {
   readonly id: string;
-  readonly profile: 'minecraft-item-v1';
+  readonly profile: SpriteProfile;
   readonly canvas: Point;
   readonly palette: Readonly<Record<string, string>>;
-  readonly layers: readonly Layer[];
+  readonly layers: readonly SpriteLayer[];
 }
-export interface ItemStudy {
-  readonly format: 'ashfox-item-study';
-  readonly version: 1;
-  readonly masks: readonly Mask[];
-  readonly materials: readonly Material[];
-  readonly stamps: readonly Stamp[];
-  readonly items: readonly Item[];
+
+export interface SpriteDocument {
+  readonly masks: readonly SpriteMask[];
+  readonly materials: readonly SpriteMaterial[];
+  readonly stamps: readonly SpriteStamp[];
+  readonly item: SpriteItem;
 }
+
 export interface SpriteDiagnostic {
   readonly code: string;
   readonly file: string;
@@ -89,14 +256,16 @@ export interface SpriteDiagnostic {
   readonly expected: string;
   readonly actual: string;
 }
+
 export class SpriteInputError extends Error {
   constructor(readonly diagnostic: SpriteDiagnostic) {
     super(`${diagnostic.pointer}: expected ${diagnostic.expected}; got ${diagnostic.actual}`);
   }
 }
-export const SPRITE_POLICY =
-  'item-study:minecraft-profile-1:integer-shading-2:ramp-1:cluster-1:png-1';
-export const LIGHTS: Readonly<Record<string, Point>> = Object.freeze({
+
+export const SPRITE_POLICY = 'sprite-v2:oklch:shapes:selout:tile-wrap:png-1';
+
+export const LIGHTS: Readonly<Record<LightDirection, Point>> = Object.freeze({
   top_left: [-1, -1],
   top: [0, -1],
   top_right: [1, -1],

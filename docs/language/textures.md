@@ -31,9 +31,9 @@ bound; matching spelling alone does not make distinct contracts equal.
 | `render-mode = emissive;` | Optional surface shading (`default` or `emissive` self-lit glow for lantern cores/eyes/runes) |
 | `background = shade;` | Palette role used outside charts |
 | `background-alpha = 255;` | Integer alpha in `[0,255]` |
-| `palette { shade = #2e2420; coat = (#7d2417, #c94f2a, #ef8141); }` | Flat colors or three-color ramps (keep darks above `luma >= 0.14` to avoid crushed blacks) |
-| `chart body box { fill = coat; }` | Chart recipe; omit `origin` to auto-pack (all charts in a texture must agree), optionally set `grain = clustered\|soft\|none;` |
-| `grain clustered\|soft\|none { seed = 23; }` | Optional texture-level default grain (`seed` optional; defaults to `none` when omitted) |
+| `palette { shade = #2e2420; coat = ramp(#c94f2a, warm); }` | Flat colors, 3-color ramps `(#shadow, #base, #light)`, or OKLCH hue-shifted presets `ramp(#hex, warm|cool|metal|gem|wood|stone|organic|cloth|emissive|vivid)` (keep darks above `luma >= 0.14`) |
+| `chart body box { fill = coat; }` | Chart recipe; omit `origin` to auto-pack, optionally set `grain = clustered\|soft\|fur\|wood\|cloth\|brushed\|none;` |
+| `grain clustered\|soft\|fur\|wood\|cloth\|brushed\|none { seed = 23; }` | Optional texture-level default grain (`seed` optional; defaults to `none` when omitted) |
 | `tone voxel\|painterly;` | Optional shading mode (`voxel` directional flat tones or `painterly` gentle form-following contour gradient) |
 | `stamp eye { pixels = "ee/e."; e = shade; }` | Reusable pixel symbol |
 
@@ -64,9 +64,10 @@ A chart or face supports five deterministic patterns:
 | `pattern gradient` | `to`, `axis` (`u\|v\|x\|y\|z`), optional `from`, `space` (`local\|model`), `soft` (`ratio`) | Organic 2px-clustered contour transition (belly/dorsal/model-wide shading) |
 | `pattern border` | `paint`, optional `width` (`1px`–`16px`), `edges` (`all\|top\|bottom\|sides`) | Trim, belts, armor outlines, wood frames |
 | `pattern stripe` | `paint`, `axis` (`u\|v\|x\|y\|z`), `period`, optional `width`, `phase` | Feathers, ribs, fur striping, planks |
+| `pattern edge` | `paint`, optional `width`, `mode` (`highlight\|darken`) | Subtle directional top/left rim or crevice edge tint across painted chart regions |
 | `pattern ao` | optional `strength` (`ratio` 0–1), `radius` (`unit` or `texel` <= 16) | 3D contact ambient occlusion from adjacent geometry |
 
-`blotch`, `gradient`, `border`, and `stripe` patterns must precede `stamp`
+`blotch`, `gradient`, `border`, `stripe`, and `edge` patterns must precede `stamp`
 placement. `ao` accumulates pure-CPU 3D crease shadowing applied with `tone`
 before `grain`.
 

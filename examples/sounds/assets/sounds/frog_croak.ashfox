@@ -1,88 +1,43 @@
 ashfox-model 1
-
-// Fixed gain measured against the previous render, with 2 dB migration headroom.
 sound frog_croak {
-  duration = 1.5;
+  profile = "creature";
+  duration = 1.15;
   sampleRate = 48000;
+  channels = 2;
   seed = 42;
+  space = { mix = 0.2; decay = 0.32; damping = 4200; size = 0.85; };
   voices = [{
-    id = "layer_1";
+    id = "throat";
     source = {
       kind = "vocal";
-      pitch = {
-        domain = "linear";
-        interpolation = "smooth";
-        points = [{
-          at = 0;
-          value = 90;
-        }, {
-          at = 0.7272727272727273;
-          value = 65;
-        }, {
-          at = 1;
-          value = 65;
-        }];
-      };
-      formants = [480, 1000, 1800];
-      bandwidths = [80, 160, 280];
-      breath = 0.08;
-      jitter = 0.12;
-      roughness = 0.8;
+      pitch = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 108; }, { at = 0.45; value = 84; }, { at = 1; value = 64; }]; };
+      formants = [440, 1080, 2250];
+      bandwidths = [75, 140, 260];
+      breath = 0.14;
+      jitter = 0.18;
+      roughness = 0.82;
     };
-    gain = {
-      domain = "linear";
-      interpolation = "smooth";
-      points = [{
-        at = 0;
-        value = 0;
-      }, {
-        at = 0.03636363636363636;
-        value = 0.85;
-      }, {
-        at = 0.8636363636363636;
-        value = 0.85;
-      }, {
-        at = 1;
-        value = 0;
-      }];
-    };
-    highpass = 80;
-    lowpass = 6500;
+    drive = 2.2;
+    highpass = 55;
+    lowpass = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 5200; }, { at = 1; value = 1800; }]; };
+    gain = { env = "adsr"; attack = 0.025; decay = 0.12; sustain = 0.72; release = 0.08; peak = 0.95; };
+  }, {
+    id = "pond_air";
+    source = { kind = "noise"; color = "pink"; };
+    filter = { kind = "bandpass"; cutoff = { domain = "log"; interpolation = "smooth"; points = [{ at = 0; value = 2400; }, { at = 1; value = 800; }]; }; q = 1.1; };
+    pan = 0.15;
+    gain = { env = "ad"; attack = 0.02; peak = 0.25; curve = "exp"; };
   }];
   sequences = [{
-    id = "phrase";
-    start = 0;
-    repeat = {
-      count = 1;
-      period = 0;
-    };
-    steps = [{
-      id = "layer_1";
-      voice = "layer_1";
-      at = 0.1;
-      duration = 1.1;
-      gain = 1;
-      pitchCents = 0;
-      vary = {
-        timing = [0, 0];
-        pitchCents = [0, 0];
-        gain = [1, 1];
-        duration = [1, 1];
-      };
-    }];
+    id = "ribbit";
+    start = 0.02;
+    repeat = { count = 2; period = 0.52; };
+    steps = [
+      { id = "croak"; voice = "throat"; at = 0; duration = 0.44; vary = { pitchCents = [-55, 55]; timing = [-0.01, 0.01]; gain = [0.9, 1.1]; }; },
+      { id = "breath"; voice = "pond_air"; at = 0.01; duration = 0.36; }
+    ];
   }];
-  variants = [{
-    id = "base";
-    seed = 42;
-  }, {
-    id = "alternate";
-    seed = 43;
-  }];
-  playback = {
-    kind = "oneshot";
-  };
-  output = {
-    gainDb = 18.2;
-    peakDb = -3;
-  };
+  variants = [{ id = "base"; seed = 42; }, { id = "alternate"; seed = 43; }];
+  playback = { kind = "oneshot"; };
+  output = { gainDb = 16; peakDb = -2; softClip = true; };
 }

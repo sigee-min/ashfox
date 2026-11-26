@@ -1,5 +1,5 @@
 {
-  "contract": "sound:curves-sequences-variation-resonator-loop:fixed-gain:pcm16",
+  "contract": "sound-v2:svf-osc-crackle-drive-space-stereo-env:pcm16",
   "results": [
     {
       "name": "bell_pattern",
@@ -10,7 +10,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "14c56a47ffc62efa5ea66ff0375305cae4b100928a6abb25a82a33d16676c7bb"
+      "sha256": "0d68943ede742cb3348a3f4fa19ab23f0a3f62420277ab4fd3019f214b97eb11"
     },
     {
       "name": "bell_pattern",
@@ -21,7 +21,7 @@
         "startFrame": 0,
         "endFrame": 96960
       },
-      "sha256": "6d57ad7f8474e0a30ba8ddfb2962afe7222f908164b33058bda3f8d4a2934b36"
+      "sha256": "0cedd19356529ec8c3b3f426ac229249bbad2ac92fa64f6855187437b203a5b6"
     },
     {
       "name": "wind_loop",
@@ -32,7 +32,7 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "a3c00539dbe9332f21787100d9741a6c53abdbf901d227dd353c2e28b1003776"
+      "sha256": "898104f9b843031a14d953ec67df0ff1a29efa875d42b291fa08ab62e83ee7fd"
     },
     {
       "name": "wind_loop",
@@ -43,79 +43,79 @@
         "startFrame": 0,
         "endFrame": 188160
       },
-      "sha256": "612d7643341431803aa673315c479b7edead8ba8d50f9a04b2e402bcdba82396"
+      "sha256": "7052ecd01639240d0d2bc49e3a1ce0870568b7443d1ee9de03ba05e82f6c854b"
     },
     {
       "name": "footsteps",
       "variant": "alternate",
-      "frames": 144000,
+      "frames": 115200,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "4776ed194bcf49cb5c64fa71a62afbf3fb352cf38b9b933b591e24e38f1d52fe"
+      "sha256": "dab86261fd76f538347ab72947348c2b167bdb327c2e3085314f195fd0c87b6f"
     },
     {
       "name": "footsteps",
       "variant": "base",
-      "frames": 144000,
+      "frames": 115200,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "3d7cca917027c5f3b56b5f8f32a59cccf9d1c382bd30b7f0107caa1c1196c75b"
+      "sha256": "45e8af5bc73f79398236d0dcfad57387a0c63171b31a5f1c0764eb7976ce3723"
     },
     {
       "name": "charging_spell",
+      "variant": "alternate",
+      "frames": 115200,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "de6a6606d14e4cf42579865ad666acdf2bb79206bb1ff2824e6687650124b882"
+    },
+    {
+      "name": "charging_spell",
+      "variant": "base",
+      "frames": 115200,
+      "playback": {
+        "kind": "oneshot"
+      },
+      "sha256": "4d354aee447b092d0b352cdaedfba7158ed998b1b53d7dfe42ad8ca5ef84835a"
+    },
+    {
+      "name": "metal_strike",
       "variant": "alternate",
       "frames": 134400,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
+      "sha256": "7524b334dee96ca9a4b57dd0c3ad7d62075550b604d49058adf504e4f346061b"
     },
     {
-      "name": "charging_spell",
+      "name": "metal_strike",
       "variant": "base",
       "frames": 134400,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "751ad9ca2960451738b6b5c7ac6bf5af86ac9288278b303eb26ae289cd853183"
-    },
-    {
-      "name": "metal_strike",
-      "variant": "alternate",
-      "frames": 192000,
-      "playback": {
-        "kind": "oneshot"
-      },
-      "sha256": "94ca9ab495f9de4ba0e03b83be3f4319ef7ef9816f99dfedc8acafd3c627f0ac"
-    },
-    {
-      "name": "metal_strike",
-      "variant": "base",
-      "frames": 192000,
-      "playback": {
-        "kind": "oneshot"
-      },
-      "sha256": "a2cccc6f0fcf8512967de6711eb4d3d40e648d3acbc6ab851195692a332b2861"
+      "sha256": "218b287f6167f67b8b9096e9957ae9830db882a2d30ee74e2180d6508e630311"
     },
     {
       "name": "bird_call",
       "variant": "alternate",
-      "frames": 192000,
+      "frames": 105600,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "78a9cf4070e823dbb3cdd497bd9c04c0fd86f15dd354d5c0d938d0673d83e0c0"
+      "sha256": "8a37286a3bf25ea030958c18e0eaf6d04179ce003c5e6b20068b34db614f80fc"
     },
     {
       "name": "bird_call",
       "variant": "base",
-      "frames": 192000,
+      "frames": 105600,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "e14e64f289ec25a34ddcfa5fb9b1ae631bda5019589e212ff6150cdda06dc8a5"
+      "sha256": "92d6ee1ee1895a1e68717cd6a43651b4b939a75feb0ba9f9b1a4f80887e4f222"
     }
   ]
 }

@@ -37,8 +37,9 @@ async function main() {
     String(success(run(['check', '--input-json'], JSON.stringify(input)))),
   ).result;
   assert.equal(checkedSprite.kind, 'sprite');
-  assert.equal(checkedSprite.receipt.width, 16);
-  assert.equal(checkedSprite.evidence.length, 256);
+  assert.equal(checkedSprite.receipt.width, 32);
+  assert.equal(checkedSprite.evidence.length, 1024);
+  assert.equal(checkedSprite.audit.passed, true);
   assert.deepEqual(checkedSprite.declarations.outputs, [{ format: 'png' }]);
 
   const retiredExport = run(['export', '--input-json'], JSON.stringify(input));
@@ -47,7 +48,6 @@ async function main() {
   assert.equal(retiredPngInput.status, 2);
   const retiredInputFormat = run(['check', '--stdin', '--input-format', 'png'], 'abc');
   assert.equal(retiredInputFormat.status, 2);
-
   const bad = run(['render', '--stdin'], 'invalid');
   assert.notEqual(bad.status, 0);
   assert.equal(bad.stdout.length, 0);

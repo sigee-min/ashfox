@@ -1,5 +1,7 @@
 import type { Control, SoundVoice } from './contract';
+
 export const frame = (seconds: number): number => Math.floor(seconds * 48000 + 0.5);
+
 export const evaluate = (control: Control, u: number): number => {
   if (typeof control === 'number') return control;
   const points = control.points;
@@ -15,6 +17,7 @@ export const evaluate = (control: Control, u: number): number => {
     ? Math.exp(Math.log(a.value) * (1 - w) + Math.log(b.value) * w)
     : a.value * (1 - w) + b.value * w;
 };
+
 export const bounds = (control: Control): readonly [number, number] =>
   typeof control === 'number'
     ? [control, control]
@@ -22,13 +25,20 @@ export const bounds = (control: Control): readonly [number, number] =>
         Math.min(...control.points.map((p) => p.value)),
         Math.max(...control.points.map((p) => p.value)),
       ];
+
 export const controls = (voice: SoundVoice): readonly (readonly [string, Control])[] => {
-  const result: [string, Control][] = [
-    ['gain', voice.gain],
-    ['highpass', voice.highpass],
-    ['lowpass', voice.lowpass],
-  ];
+  const result: [string, Control][] = [];
+  if (!(typeof voice.gain === 'object' && 'env' in voice.gain)) result.push(['gain', voice.gain]);
+  if (voice.highpass !== undefined) result.push(['highpass', voice.highpass]);
+  if (voice.lowpass !== undefined) result.push(['lowpass', voice.lowpass]);
+  if (voice.filter) {
+    result.push(['filter.cutoff', voice.filter.cutoff]);
+    if (voice.filter.q !== undefined) result.push(['filter.q', voice.filter.q]);
+  }
   if ('pitch' in voice.source) result.push(['source.pitch', voice.source.pitch]);
+  if (voice.source.kind === 'osc' && voice.source.pulseWidth !== undefined) {
+    result.push(['source.pulseWidth', voice.source.pulseWidth]);
+  }
   if (voice.source.kind === 'fm') result.push(['source.index', voice.source.index]);
   if (voice.source.kind === 'chirp') result.push(['source.brightness', voice.source.brightness]);
   return result;

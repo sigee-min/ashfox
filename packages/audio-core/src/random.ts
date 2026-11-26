@@ -1,5 +1,7 @@
 import type { SoundRecipe, SoundVariant } from './contract';
-export const AUDIO_POLICY = 'sound:curves-sequences-variation-resonator-loop:fixed-gain:pcm16';
+
+export const AUDIO_POLICY = 'sound-v2:svf-osc-crackle-drive-space-stereo-env:pcm16';
+
 export type Domain =
   | 'timing'
   | 'pitch'
@@ -10,6 +12,7 @@ export type Domain =
   | 'jitter'
   | 'trill-phase'
   | 'excitation';
+
 export const randomSeed = (key: readonly (string | number)[]): number => {
   let h = 2166136261;
   for (const byte of new TextEncoder().encode(JSON.stringify(key)))
@@ -19,6 +22,7 @@ export const randomSeed = (key: readonly (string | number)[]): number => {
   h ^= h >>> 13;
   return h >>> 0 || 1;
 };
+
 export const random =
   (seed: number): (() => number) =>
   () => {
@@ -27,6 +31,7 @@ export const random =
     seed ^= seed << 5;
     return (seed >>> 0) / 0x100000000;
   };
+
 export const streams =
   (
     recipe: SoundRecipe,

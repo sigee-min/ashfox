@@ -1,66 +1,63 @@
 ashfox-model 1
 sprite iron_sword {
   import "../module/shared.ashfox" as shared;
-  profile = "minecraft-item-v1";
-  canvas = [16, 16];
+  profile = item;
+  canvas = (32px, 32px);
   palette {
-    edge = #253746;
-    gold = #D9AE58;
-    gold_light = #FFF0AD;
-    grip = #815144;
-    grip_dark = #432E38;
-    glint = #FFFFFF;
-    edge_light = #476478;
+    glint = #ffffff;
+    gem_core = #78eeff;
+    pommel_trim = #fff0b8;
   }
-  paint blade_outline {
-    at = [2, 0];
-    rows = ["..........oo.", ".........oooo", "........ooooo", ".......ooooo.", "......ooooo..", ".....ooooo...", "....ooooo....", "...ooooo.....", "..ooooo......", ".ooooo.......", "ooooo........", ".ooo.........", "..o.........."];
-    colors {
-      o = "edge";
-    }
+  shape blade_body {
+    shape { kind = polygon; points = [(11, 16), (15, 20), (26, 9), (28, 3), (22, 5)]; }
+    material = shared.steel;
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13, 18), (28, 3)]; }
+    pattern { kind = gradient; axis = radial; toMaterial = shared.steel_edge; dither = false; seed = 7; }
   }
-  part blade {
-    mask = "shared.blade";
-    material = "shared.steel";
-    at = [3, 1];
-    shade {
-      form = "bevel";
-      light = "top_left";
-      contrast = 2;
-      axis = [
-        [0, 10],
-        [10, 0]
-      ];
-    }
-    grain {
-      mode = "clustered-v1";
-      amount = 0;
-      seed = 23;
-    }
-    patches = [];
+  shape grip {
+    shape { kind = capsule; x1 = 5; y1 = 26; x2 = 12; y2 = 19; radius = 1.4; }
+    material = shared.grip_leather;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(5, 26), (12, 19)]; }
+    pattern { kind = stripe; axis = diag_neg; period = 3; width = 1; }
   }
-  paint hilt {
-    at = [2, 8];
-    rows = ["g.......", "Lg......", ".Lg.....", "..Lgg...", "...ggg..", "....g..."];
-    colors {
-      g = "gold";
-      L = "gold_light";
-    }
+  shape crossguard {
+    shape { kind = polygon; points = [(7, 13), (10, 14), (17, 21), (18, 24), (15, 23), (8, 16)]; }
+    material = shared.gold;
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8, 14), (17, 23)]; }
   }
-  paint handle {
-    at = [0, 10];
-    rows = ["...dd", "..dhd", ".dhd.", "dhd..", "dd..."];
-    colors {
-      d = "grip_dark";
-      h = "grip";
-    }
+  shape pommel {
+    shape { kind = ellipse; cx = 4.5; cy = 26.5; rx = 1.9; ry = 1.9; }
+    material = shared.gold;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
   }
-  paint pommel {
-    at = [0, 14];
-    rows = ["Lg", "gg"];
-    colors {
-      L = "gold_light";
-      g = "gold";
-    }
+  paint accents {
+    at = (4px, 4px);
+    rows = [
+      ".......................g",
+      "......................g.",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........c...............",
+      ".......cc...............",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "p.......................",
+      ".p......................"
+    ];
+    colors { g = glint; c = gem_core; p = pommel_trim; }
   }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
 }

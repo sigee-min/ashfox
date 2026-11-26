@@ -39,6 +39,44 @@ interface ParsedMembers {
   readonly aliases: Set<string>;
 }
 
+const LAYER_OPS = new Set([
+  'fill',
+  'shape',
+  'part',
+  'paint',
+  'erase',
+  'stamp',
+  'outline',
+  'pattern',
+]);
+
+const PIXEL_KEYS = new Set([
+  'at',
+  'canvas',
+  'axis',
+  'x',
+  'y',
+  'width',
+  'height',
+  'cx',
+  'cy',
+  'rx',
+  'ry',
+  'x1',
+  'y1',
+  'x2',
+  'y2',
+  'radius',
+  'thickness',
+  'points',
+  'period',
+  'edgeWidth',
+  'mortar',
+  'joint',
+  'stagger',
+  'offset',
+]);
+
 const peek = (cursor: SourceCursor): ProgramToken => cursor.tokens[cursor.offset]!;
 
 const failSyntax = (cursor: SourceCursor, expected: string): never => {
@@ -68,15 +106,27 @@ const readName = (cursor: SourceCursor): string => {
   return take(cursor).value;
 };
 
+const parseNumericToken = (
+  cursor: SourceCursor,
+  raw: string,
+  pixels: boolean,
+  sign: number,
+): number => {
+  const match = /^(\d+(?:\.\d+)?)(px)?$/.exec(raw);
+  if (!match) return failSyntax(cursor, pixels ? 'number or pixel literal' : 'unitless number');
+  if (match[2] && !pixels) failSyntax(cursor, 'unitless number');
+  return Number(match[1]) * sign;
+};
+
 const readAtom = (cursor: SourceCursor, token: ProgramToken, pixels: boolean): unknown => {
-  if (token.kind === 'number') {
-    if (!(pixels ? /^\d+(?:px)?$/ : /^\d+$/).test(token.value)) {
-      failSyntax(cursor, pixels ? 'integer pixel literal' : 'unitless integer');
-    }
-    return Number.parseInt(token.value, 10);
+  if (token.value === '-' && peek(cursor).kind === 'number') {
+    return parseNumericToken(cursor, take(cursor).value, pixels, -1);
   }
+  if (token.kind === 'number') return parseNumericToken(cursor, token.value, pixels, 1);
   if (token.kind === 'string' || token.kind === 'color') return token.value;
   if (token.kind === 'identifier') {
+    if (token.value === 'true') return true;
+    if (token.value === 'false') return false;
     let result = token.value;
     while (peek(cursor).value === '.') {
       take(cursor, '.');
@@ -113,7 +163,7 @@ const readBlock = (cursor: SourceCursor, depth = 0): Record<string, unknown> => 
     if (Object.hasOwnProperty.call(record, key)) failSyntax(cursor, 'unique property ' + key);
     if (peek(cursor).value === '=') {
       take(cursor, '=');
-      record[key] = readValue(cursor, 0, ['at', 'canvas', 'axis'].includes(key));
+      record[key] = readValue(cursor, 0, PIXEL_KEYS.has(key));
       take(cursor, ';');
     } else record[key] = readBlock(cursor, depth + 1);
   }
@@ -152,7 +202,7 @@ const readSpriteMember = (
   key: string,
   item: Record<string, unknown>,
 ): void => {
-  if (['part', 'paint', 'erase', 'stamp'].includes(key)) {
+  if (LAYER_OPS.has(key)) {
     const layerId = readName(cursor);
     const record = readBlock(cursor);
     if ('id' in record || 'op' in record) failSyntax(cursor, 'declaration-owned layer id and op');
@@ -162,7 +212,7 @@ const readSpriteMember = (
   if (Object.hasOwnProperty.call(item, key)) failSyntax(cursor, 'unique sprite property');
   if (peek(cursor).value === '=') {
     take(cursor, '=');
-    item[key] = readValue(cursor, 0, ['at', 'canvas', 'axis'].includes(key));
+    item[key] = readValue(cursor, 0, PIXEL_KEYS.has(key));
     take(cursor, ';');
   } else item[key] = readBlock(cursor);
 };
@@ -208,7 +258,7 @@ const readTopMember = (cursor: SourceCursor, members: ParsedMembers): void => {
   readSpriteMember(cursor, key, members.item);
 };
 
-/** Native .ashfox syntax, sharing the model language's lexer and literal spelling. */
+/** Native .ashfox syntax for Sprite v2 and reusable sprite modules. */
 export const parseSpriteSource = (source: string, file: string): SpriteSourceUnit => {
   assertWellFormedSourceText(source);
   const lexical = lexProgramSource(source);

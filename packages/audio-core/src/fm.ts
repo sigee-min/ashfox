@@ -1,12 +1,12 @@
 import type { FmSource } from './contract';
 import { evaluate } from './curve';
+
 const FACTOR = 8,
   RATE = 48000 * FACTOR,
   TAPS = 257,
   DELAY = (TAPS - 1) / 2,
   TAU = Math.PI * 2;
-// Offline centered FIR: 20 kHz passband cutoff, Blackman sidelobe suppression.
-// Compensate the 128 high-rate sample delay rather than shifting event onsets.
+
 const coefficients = (() => {
   const values = new Float64Array(TAPS);
   let sum = 0;
@@ -22,8 +22,11 @@ const coefficients = (() => {
   for (let i = 0; i < TAPS; i++) values[i] /= sum;
   return values;
 })();
+
 export const createFm = (source: FmSource, frames: number, pitchShift: number) => {
   const history = new Float64Array(TAPS);
+  const vibHz = source.vibratoHz ?? 0;
+  const vibCents = source.vibratoCents ?? 0;
   let next = 0,
     phase = 0;
   return (frameIndex: number): number => {
@@ -36,7 +39,7 @@ export const createFm = (source: FmSource, frames: number, pitchShift: number) =
         const frequency =
           evaluate(source.pitch, u) *
           pitchShift *
-          2 ** ((Math.sin(TAU * source.vibratoHz * t) * source.vibratoCents) / 1200);
+          2 ** ((Math.sin(TAU * vibHz * t) * vibCents) / 1200);
         phase += (TAU * frequency) / RATE;
         value = Math.sin(phase + evaluate(source.index, u) * Math.sin(phase * source.ratio));
       }

@@ -25,7 +25,7 @@ const recipe: SoundRecipe = {
           }
         : fm
           ? { kind: 'fm', pitch: 3000, ratio: 4, index: 4, vibratoHz: 25, vibratoCents: 100 }
-          : { kind: 'noise' },
+          : { kind: 'noise', color: 'white' },
     },
   ],
   sequences: [{ ...base.sequences[0], steps: [{ ...base.sequences[0].steps[0], duration }] }],
@@ -56,6 +56,6 @@ process.stdout.write(
     platform: process.platform,
     elapsedMs: performance.now() - start,
     incrementalRss,
-    weightedFrames: duration * 48000 * (modal ? 68 : fm ? 128 : 1) * recipe.variants.length,
+    weightedFrames: duration * 48000 * (modal ? 68 : fm ? 128 : 2) * recipe.variants.length,
   }) + '\n',
 );

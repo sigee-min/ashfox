@@ -1,11 +1,14 @@
 import { compilePack, type PackEncoder } from '../packs/compile';
+import { evaluateSoundQuality, formatSoundGateFailure } from '@ashfox/audio-core';
 import {
   compileDirectoryWorkspace,
   encodeCanonicalPng,
   evaluateAssetQuality,
+  evaluateSpriteQuality,
   exportProductionProjectResolved,
   exportStructureGltfResolved,
   formatDeliveryGateFailure,
+  formatSpriteGateFailure,
   openAssetProject,
   rasterizeTexture,
   type ExportAdapterInput,
@@ -186,6 +189,44 @@ const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
   };
 };
 
+const assertSpriteDeliveryGate = (
+  targetName: string,
+  product: Extract<CompiledProduct, { readonly kind: 'sprite' }>,
+): void => {
+  const audit = evaluateSpriteQuality(product.sprite);
+  if (!audit.passed)
+    throw new BuildFailure('quality.gate', formatSpriteGateFailure(targetName, audit), 3);
+};
+
+const assertSoundDeliveryGate = (
+  targetName: string,
+  product: Extract<CompiledProduct, { readonly kind: 'sound' }>,
+): void => {
+  const audit = evaluateSoundQuality(product.sounds);
+  if (!audit.passed)
+    throw new BuildFailure('quality.gate', formatSoundGateFailure(targetName, audit), 3);
+};
+
+const compileExportFiles = async (
+  target: ExportTarget,
+  product: CompiledProduct,
+  buildKey: string,
+  key: string,
+  projects: Map<string, OpenedProject>,
+  remaining: Map<string, number>,
+): Promise<Artifact[]> => {
+  if (product.kind === 'sprite') {
+    assertSpriteDeliveryGate(target.name, product);
+    return [{ path: `${target.name}.png`, bytes: product.sprite.png }];
+  }
+  if (product.kind === 'sound') {
+    assertSoundDeliveryGate(target.name, product);
+    return product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
+  }
+  if (product.kind === 'structure') return compileStructureFiles(target, product, buildKey);
+  return compileModelFiles(target, product, buildKey, key, projects, remaining);
+};
+
 const compileExportTarget = async (
   target: ExportTarget,
   compiled: CheckedWorkspace,
@@ -197,14 +238,14 @@ const compileExportTarget = async (
   const key = entryKey(target.entry);
   const product = products.get(key);
   if (!product) throw new BuildFailure('export.entry', target.name);
-  const files: Artifact[] =
-    product.kind === 'sprite'
-      ? [{ path: `${target.name}.png`, bytes: product.sprite.png }]
-      : product.kind === 'structure'
-        ? await compileStructureFiles(target, product, compiled.buildKey)
-        : product.kind === 'model'
-          ? await compileModelFiles(target, product, compiled.buildKey, key, projects, remaining)
-          : product.sounds.map((s) => ({ path: `${target.name}/${s.variant}.wav`, bytes: s.wav }));
+  const files = await compileExportFiles(
+    target,
+    product,
+    compiled.buildKey,
+    key,
+    projects,
+    remaining,
+  );
   const uses = remaining.get(key)! - 1;
   remaining.set(key, uses);
   if (uses === 0) projects.delete(key);

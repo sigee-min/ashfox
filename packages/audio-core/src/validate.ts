@@ -6,22 +6,27 @@ export class SoundError extends Error {
     super(`sound.invalid: ${path}: ${detail}`);
   }
 }
+
 export const fail = (path: string, detail: string): never => {
   throw new SoundError(path, detail);
 };
+
 export const closed = (
   value: unknown,
   keys: readonly string[],
   path: string,
+  optional: readonly string[] = [],
 ): Record<string, unknown> => {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return fail(path, 'expected record');
   const record = value as Record<string, unknown>;
+  const allowed = new Set([...keys, ...optional]);
   for (const key of Object.keys(record))
-    if (!keys.includes(key)) fail(`${path}.${key}`, 'unknown field');
+    if (!allowed.has(key)) fail(`${path}.${key}`, 'unknown field');
   for (const key of keys) if (!Object.hasOwn(record, key)) fail(`${path}.${key}`, 'missing field');
   return record;
 };
+
 export const number = (
   value: unknown,
   min: number,
@@ -42,6 +47,23 @@ export const number = (
     );
   return value;
 };
+
+export const bool = (value: unknown, path: string): boolean => {
+  if (typeof value !== 'boolean') return fail(path, `expected boolean; received ${String(value)}`);
+  return value;
+};
+
+export const choice = <T extends string>(
+  value: unknown,
+  choices: readonly T[],
+  path: string,
+): T => {
+  if (typeof value !== 'string' || !choices.includes(value as T)) {
+    return fail(path, `expected ${choices.join(' | ')}; received ${String(value)}`);
+  }
+  return value as T;
+};
+
 export const list = (value: unknown, min: number, max: number, path: string): unknown[] => {
   if (!Array.isArray(value) || value.length < min || value.length > max)
     return fail(
@@ -50,12 +72,14 @@ export const list = (value: unknown, min: number, max: number, path: string): un
     );
   return value;
 };
+
 export const id = (value: unknown, path: string, ids?: Set<string>): string => {
   if (typeof value !== 'string' || !/^[a-z][a-z0-9_]{0,31}$/u.test(value) || ids?.has(value))
     return fail(path, `invalid or duplicate identifier ${String(value)}`);
   ids?.add(value);
   return value;
 };
+
 export const freeze = (value: unknown): unknown => {
   if (value && typeof value === 'object') {
     Object.values(value).forEach(freeze);

@@ -3,6 +3,7 @@ import type {
   ProjectDocument,
   DirectoryProduct,
   DirectoryFile,
+  SpriteProfile,
   SpriteProduct,
 } from '@ashfox/engine-core';
 export interface SourceInput {
@@ -23,10 +24,13 @@ export interface Prepared {
   readonly product?: DirectoryProduct;
   readonly document?: ProjectDocument;
   readonly sprite?: {
+    readonly profile: SpriteProfile;
     readonly png: Uint8Array;
+    readonly rgba: Uint8Array;
     readonly stages: Readonly<Record<'silhouette' | 'shade' | 'grain', Uint8Array>>;
     readonly receipt: SpriteProduct['receipt'];
     readonly evidence: SpriteProduct['evidence'];
+    readonly telemetry: SpriteProduct['telemetry'];
   };
 }
 export interface Media {

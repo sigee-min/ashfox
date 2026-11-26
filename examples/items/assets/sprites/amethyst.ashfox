@@ -1,45 +1,45 @@
 ashfox-model 1
 sprite amethyst {
   import "../module/shared.ashfox" as shared;
-  profile = "minecraft-item-v1";
-  canvas = [16, 16];
+  profile = item;
+  canvas = (32px, 32px);
   palette {
-    edge = #302B50;
-    shine = #FFE5F4;
-    edge_light = #72508C;
+    spark = #fff2ff;
   }
-  paint edge {
-    at = [3, 4];
-    rows = ["...llll...", "..lllloo..", ".lllloooo.", "lllloooooo", "lllooooooo", ".oooooooo.", "..oooooo..", "...oooo..."];
-    colors {
-      o = "edge";
-      l = "edge_light";
-    }
+  shape host_rock {
+    shape { kind = capsule; x1 = 8; y1 = 23; x2 = 23; y2 = 23; radius = 3.5; }
+    material = shared.stone_host;
+    shade { form = round; light = top_left; contrast = 2; specular = 0; }
+    grain { mode = clustered; amount = 1; seed = 7; }
   }
-  part ore {
-    mask = "shared.ore";
-    material = "shared.amethyst";
-    at = [4, 5];
-    shade {
-      form = "round";
-      light = "top_left";
-      contrast = 2;
-    }
-    grain {
-      mode = "clustered-v1";
-      amount = 1;
-      seed = 23;
-    }
-    patches = [
-      {
-        id = "facet";
-        at = [2, 1];
-        rows = ["h.", "hh"];
-        colors {
-          h = "shine";
-        }
-        protect = 1;
-      }
+  shape left_spire {
+    shape { kind = polygon; points = [(7, 22), (8, 12), (11, 10), (14, 22)]; }
+    material = shared.amethyst_gem;
+    shade { form = facet; light = top_left; contrast = 2; specular = 2; }
+  }
+  shape right_spire {
+    shape { kind = polygon; points = [(18, 22), (20, 11), (24, 13), (23, 22)]; }
+    material = shared.amethyst_gem;
+    shade { form = facet; light = top_left; contrast = 2; specular = 1; }
+  }
+  shape main_spire {
+    shape { kind = polygon; points = [(12, 23), (13, 8), (16, 4), (19, 8), (19, 23)]; }
+    material = shared.amethyst_gem;
+    shade { form = facet; light = top_left; contrast = 3; specular = 2; }
+    pattern { kind = gradient; axis = y; toMaterial = shared.amethyst_glow; dither = false; seed = 19; }
+  }
+  paint glint {
+    at = (9px, 6px);
+    rows = [
+      "......s..",
+      ".....ss..",
+      ".........",
+      ".........",
+      ".........",
+      "s........",
+      ".s......."
     ];
+    colors { s = spark; }
   }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
 }

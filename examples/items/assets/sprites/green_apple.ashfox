@@ -1,74 +1,43 @@
 ashfox-model 1
 sprite green_apple {
   import "../module/shared.ashfox" as shared;
-  profile = "minecraft-item-v1";
-  canvas = [16, 16];
+  profile = item;
+  canvas = (32px, 32px);
   palette {
-    edge = #2E4833;
-    shine = #F3F4B9;
-    stem = #6B4A35;
-    stem_light = #AB7950;
-    leaf = #628747;
-    leaf_light = #ABC86A;
-    crease = #64883B;
-    edge_light = #536C37;
+    spec = #f4ffd6;
+    vein = #b6f092;
+    dimple = #2e6326;
   }
-  paint body_outline {
-    at = [1, 4];
-    rows = ["..lll...llo..", ".llllllllooo.", "llllllllooooo", "llllllooooooo", "llllloooooooo", "llllooooooooo", ".llooooooooo.", ".loooooooooo.", "..ooooooooo..", "...ooooooo...", "....oo.oo...."];
-    colors {
-      o = "edge";
-      l = "edge_light";
-    }
+  shape body {
+    shape { kind = polygon; points = [(11, 10), (14, 12), (17, 12), (20, 10), (22, 12), (23, 15), (23, 19), (21, 23), (18, 25), (13, 25), (10, 23), (8, 19), (8, 15), (9, 12)]; }
+    material = shared.apple_green;
+    shade { form = round; light = top_left; contrast = 2; specular = 2; }
+    pattern { kind = blotch; scale = 5; density = 0.24; seed = 15; toMaterial = shared.leaf_green; }
   }
-  part fruit {
-    mask = "shared.apple_body";
-    material = "shared.apple_green";
-    at = [2, 5];
-    shade {
-      form = "round";
-      light = "top_left";
-      contrast = 2;
-    }
-    grain {
-      mode = "clustered-v1";
-      amount = 0;
-      seed = 23;
-    }
-    patches = [
-      {
-        id = "shine";
-        at = [2, 1];
-        rows = ["hh", "h."];
-        colors {
-          h = "shine";
-        }
-        protect = 1;
-      },
-      {
-        id = "crease";
-        at = [5, 1];
-        rows = ["s"];
-        colors {
-          s = "crease";
-        }
-        protect = 0;
-      }
+  shape stem {
+    shape { kind = capsule; x1 = 15.5; y1 = 11.5; x2 = 16.5; y2 = 5.5; radius = 1.05; }
+    material = shared.stem_wood;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(15, 11), (16, 5)]; }
+  }
+  shape leaf {
+    shape { kind = polygon; points = [(17, 9), (21, 5), (26, 6), (22, 10)]; }
+    material = shared.leaf_green;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(17, 9), (25, 6)]; }
+  }
+  paint highlights {
+    at = (9px, 7px);
+    rows = [
+      "............vvv..",
+      ".................",
+      ".................",
+      ".................",
+      ".....dd..........",
+      ".................",
+      ".sss.............",
+      "ss...............",
+      "s................"
     ];
+    colors { s = spec; v = vein; d = dimple; }
   }
-  paint stem {
-    at = [7, 2];
-    rows = [".s", ".s", "s."];
-    colors {
-      s = "stem";
-    }
-  }
-  paint leaf {
-    at = [8, 2];
-    rows = [".LLl", "Lll."];
-    colors {
-      l = "leaf";
-      L = "leaf_light";
-    }
-  }
+  outline edge { mode = sel_out; strength = 2; innerRim = true; }
 }

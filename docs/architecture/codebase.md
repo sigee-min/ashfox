@@ -186,15 +186,10 @@ surface/chart ownership, socket cardinality, deterministic instantiation,
 motion bake, canonical validity, and target parity. Visual review remains an
 independent rendered judgment; it never repairs source or canonical output.
 
-## Item sprite and directory compiler
+## Item sprite, tile, and directory compiler
 
-The sprite compiler reads native `.ashfox` in `project/sprite/`, lowers
-form-based tone and bounded grain in `compiler/sprite/`, and reuses the canonical
-texture raster and PNG encoder. Its public entry points are `readItemStudy`,
-`compileItemStudy`, `spritePreviewPng`, and `spriteSheetPng`. The native
-`parseSpriteSource` front end lowers into the same validated plan. Directory
-configuration lives in `project/directory/`; `compiler/directory/` compiles
-model and sprite entries through compileAssetWorkspaceEntry` and directory configuration lives in `project/directory/`; `compiler/directory/` compiles model and sprite entries through `compileDirectoryWorkspace` without empty model documents. Style-related mechanical constraints are enforced by the compiler profile.
+The sprite compiler reads Sprite v2 `.ashfox` in `project/sprite/`, lowers
+OKLCH hue-shifted 5-stop ramps, parametric shapes/masks, 2D patterns, selective outlines, and bounded grain in `compiler/sprite/`, evaluates pure-CPU `audit/sprite/` quality gates, renders 512×512 4-panel `--sheet inspect` previews via `spriteInspectSheetPng`, and reuses the canonical texture raster and PNG encoder (`readSpriteDocument`, `compileSpriteDocument`, `spritePreviewPng`, `evaluateSpriteQuality`). Directory configuration lives in `project/directory/`; `compiler/directory/` compiles model, sprite, and sound entries through `compileDirectoryWorkspace` without empty model documents. Style-related constraints are enforced by the authored asset profile (`item | tile | icon | decal` for sprites, `impact | foley | creature | magic | ui | ambient` for sounds).
 
 ## CLI resource-pack delivery
 

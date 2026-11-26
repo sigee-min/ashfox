@@ -1,4 +1,4 @@
-export type GrainMode = 'clustered' | 'soft' | 'none';
+export type GrainMode = 'clustered' | 'soft' | 'fur' | 'wood' | 'cloth' | 'brushed' | 'none';
 
 export interface ChartAuthoringTelemetry {
   readonly id: string;
