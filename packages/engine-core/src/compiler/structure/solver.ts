@@ -1,9 +1,5 @@
 import type { CardinalFacing, IntVec3 } from '../../project/structure/contract';
-import {
-  formatBlockState,
-  parseBlockState,
-  withBlockProperties,
-} from '../../project/structure/state';
+import { formatBlockState, parseBlockState } from '../../project/structure/state';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
 
 const DIRS: Readonly<Record<CardinalFacing, readonly [number, number]>> = {
@@ -68,36 +64,64 @@ const readFacing = (props: Readonly<Record<string, string>>): CardinalFacing => 
   return f === 'south' || f === 'east' || f === 'west' ? f : 'north';
 };
 
-const stateAt = (
+interface SolverPaletteEntry {
+  readonly name: string;
+  readonly properties: Readonly<Record<string, string>>;
+  readonly facing: CardinalFacing;
+  readonly half: string;
+  readonly isFullSolid: boolean;
+  readonly isStair: boolean;
+  readonly isFence: boolean;
+  readonly isWall: boolean;
+  readonly isPane: boolean;
+  readonly isFenceGate: boolean;
+  readonly isGlass: boolean;
+  readonly isNetherBrick: boolean;
+}
+
+const buildPaletteTable = (states: readonly string[]): readonly (SolverPaletteEntry | null)[] =>
+  states.map((raw, idx) => {
+    if (idx === 0) return null;
+    const { name, properties } = parseBlockState(raw);
+    return {
+      name,
+      properties,
+      facing: readFacing(properties),
+      half: properties.half ?? 'bottom',
+      isFullSolid: isFullSolidName(name),
+      isStair: isStairName(name),
+      isFence: isFenceName(name),
+      isWall: isWallName(name),
+      isPane: isPaneName(name),
+      isFenceGate: name.endsWith('_fence_gate'),
+      isGlass: name === 'minecraft:glass',
+      isNetherBrick: name.includes('nether_brick'),
+    };
+  });
+
+const paletteAt = (
   voxels: Int32Array,
-  states: readonly string[],
+  palette: readonly (SolverPaletteEntry | null)[],
   [w, h, d]: IntVec3,
   x: number,
   y: number,
   z: number,
-): string | null => {
+): SolverPaletteEntry | null => {
   if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return null;
   const idx = voxels[(y * d + z) * w + x]!;
-  return idx > 0 ? states[idx]! : null;
+  return idx > 0 ? palette[idx]! : null;
 };
 
 const isDifferentStair = (
-  neighbor: string | null,
+  neighbor: SolverPaletteEntry | null,
   facing: CardinalFacing,
   half: string,
-): boolean => {
-  if (!neighbor) return true;
-  const p = parseBlockState(neighbor);
-  return (
-    !isStairName(p.name) ||
-    (p.properties.half ?? 'bottom') !== half ||
-    readFacing(p.properties) !== facing
-  );
-};
+): boolean =>
+  !neighbor || !neighbor.isStair || neighbor.half !== half || neighbor.facing !== facing;
 
 const checkStairNeighbor = (
   voxels: Int32Array,
-  states: readonly string[],
+  palette: readonly (SolverPaletteEntry | null)[],
   size: IntVec3,
   x: number,
   y: number,
@@ -106,16 +130,14 @@ const checkStairNeighbor = (
   half: string,
 ): CardinalFacing | null => {
   const [dx, dz] = DIRS[dir];
-  const neighbor = stateAt(voxels, states, size, x + dx, y, z + dz);
-  if (!neighbor) return null;
-  const p = parseBlockState(neighbor);
-  if (!isStairName(p.name) || (p.properties.half ?? 'bottom') !== half) return null;
-  return readFacing(p.properties);
+  const neighbor = paletteAt(voxels, palette, size, x + dx, y, z + dz);
+  if (!neighbor || !neighbor.isStair || neighbor.half !== half) return null;
+  return neighbor.facing;
 };
 
 const resolveStairShape = (
   voxels: Int32Array,
-  states: readonly string[],
+  palette: readonly (SolverPaletteEntry | null)[],
   size: IntVec3,
   x: number,
   y: number,
@@ -125,69 +147,59 @@ const resolveStairShape = (
 ): string => {
   const left = TURN_LEFT[facing];
   const right = TURN_RIGHT[facing];
-  const backFacing = checkStairNeighbor(voxels, states, size, x, y, z, facing, half);
+  const backFacing = checkStairNeighbor(voxels, palette, size, x, y, z, facing, half);
   if (backFacing === left) {
     const [rx, rz] = DIRS[right];
-    if (isDifferentStair(stateAt(voxels, states, size, x + rx, y, z + rz), facing, half))
+    if (isDifferentStair(paletteAt(voxels, palette, size, x + rx, y, z + rz), facing, half))
       return 'outer_left';
   }
   if (backFacing === right) {
     const [lx, lz] = DIRS[left];
-    if (isDifferentStair(stateAt(voxels, states, size, x + lx, y, z + lz), facing, half))
+    if (isDifferentStair(paletteAt(voxels, palette, size, x + lx, y, z + lz), facing, half))
       return 'outer_right';
   }
-  const frontFacing = checkStairNeighbor(voxels, states, size, x, y, z, OPPOSITE[facing], half);
+  const frontFacing = checkStairNeighbor(voxels, palette, size, x, y, z, OPPOSITE[facing], half);
   if (frontFacing === left) {
     const [lx, lz] = DIRS[left];
-    if (isDifferentStair(stateAt(voxels, states, size, x + lx, y, z + lz), facing, half))
+    if (isDifferentStair(paletteAt(voxels, palette, size, x + lx, y, z + lz), facing, half))
       return 'inner_left';
   }
   if (frontFacing === right) {
     const [rx, rz] = DIRS[right];
-    if (isDifferentStair(stateAt(voxels, states, size, x + rx, y, z + rz), facing, half))
+    if (isDifferentStair(paletteAt(voxels, palette, size, x + rx, y, z + rz), facing, half))
       return 'inner_right';
   }
   return 'straight';
 };
 
-const connectsFence = (neighbor: string | null, selfName: string): boolean => {
+const connectsFence = (neighbor: SolverPaletteEntry | null, selfNetherBrick: boolean): boolean => {
   if (!neighbor) return false;
-  const p = parseBlockState(neighbor);
-  if (isFullSolidName(p.name) || p.name.endsWith('_fence_gate')) return true;
-  if (!isFenceName(p.name)) return false;
-  return selfName.includes('nether_brick') === p.name.includes('nether_brick');
+  if (neighbor.isFullSolid || neighbor.isFenceGate) return true;
+  return neighbor.isFence && selfNetherBrick === neighbor.isNetherBrick;
 };
 
-const connectsPane = (neighbor: string | null): boolean => {
-  if (!neighbor) return false;
-  const p = parseBlockState(neighbor);
-  return isFullSolidName(p.name) || isPaneName(p.name) || p.name === 'minecraft:glass';
-};
+const connectsPane = (neighbor: SolverPaletteEntry | null): boolean =>
+  Boolean(neighbor && (neighbor.isFullSolid || neighbor.isPane || neighbor.isGlass));
 
-const connectsWall = (neighbor: string | null): boolean => {
-  if (!neighbor) return false;
-  const p = parseBlockState(neighbor);
-  return (
-    isFullSolidName(p.name) ||
-    isWallName(p.name) ||
-    isPaneName(p.name) ||
-    p.name.endsWith('_fence_gate')
+const connectsWall = (neighbor: SolverPaletteEntry | null): boolean =>
+  Boolean(
+    neighbor &&
+    (neighbor.isFullSolid || neighbor.isWall || neighbor.isPane || neighbor.isFenceGate),
   );
-};
 
 const resolveWallState = (
   voxels: Int32Array,
-  states: readonly string[],
+  palette: readonly (SolverPaletteEntry | null)[],
   size: IntVec3,
   x: number,
   y: number,
   z: number,
   name: string,
 ): string => {
-  const aboveSolid = stateAt(voxels, states, size, x, y + 1, z) !== null;
+  const aboveSolid = paletteAt(voxels, palette, size, x, y + 1, z) !== null;
   const armVal = (dir: CardinalFacing): string => {
     const [dx, dz] = DIRS[dir];
-    return connectsWall(stateAt(voxels, states, size, x + dx, y, z + dz))
+    return connectsWall(paletteAt(voxels, palette, size, x + dx, y, z + dz))
       ? aboveSolid
         ? 'tall'
         : 'low'
@@ -205,52 +217,55 @@ const resolveWallState = (
 
 const resolvePostVoxelState = (
   voxels: Int32Array,
-  states: readonly string[],
+  palette: readonly (SolverPaletteEntry | null)[],
   size: IntVec3,
   x: number,
   y: number,
   z: number,
-  rawState: string,
+  entry: SolverPaletteEntry,
 ): string | null => {
-  const parsed = parseBlockState(rawState);
-  if (isStairName(parsed.name)) {
-    const curShape = parsed.properties.shape;
+  if (entry.isStair) {
+    const curShape = entry.properties.shape;
     if (curShape && curShape !== 'straight') return null;
-    const facing = readFacing(parsed.properties);
-    const half = parsed.properties.half ?? 'bottom';
-    return withBlockProperties(rawState, {
-      facing,
-      half,
-      shape: resolveStairShape(voxels, states, size, x, y, z, facing, half),
+    const shape = resolveStairShape(voxels, palette, size, x, y, z, entry.facing, entry.half);
+    return formatBlockState({
+      name: entry.name,
+      properties: { ...entry.properties, facing: entry.facing, half: entry.half, shape },
     });
   }
-  if (isFenceName(parsed.name)) {
+  if (entry.isFence) {
     return formatBlockState({
-      name: parsed.name,
+      name: entry.name,
       properties: {
-        ...parsed.properties,
-        north: String(connectsFence(stateAt(voxels, states, size, x, y, z - 1), parsed.name)),
-        east: String(connectsFence(stateAt(voxels, states, size, x + 1, y, z), parsed.name)),
-        south: String(connectsFence(stateAt(voxels, states, size, x, y, z + 1), parsed.name)),
-        west: String(connectsFence(stateAt(voxels, states, size, x - 1, y, z), parsed.name)),
+        ...entry.properties,
+        north: String(
+          connectsFence(paletteAt(voxels, palette, size, x, y, z - 1), entry.isNetherBrick),
+        ),
+        east: String(
+          connectsFence(paletteAt(voxels, palette, size, x + 1, y, z), entry.isNetherBrick),
+        ),
+        south: String(
+          connectsFence(paletteAt(voxels, palette, size, x, y, z + 1), entry.isNetherBrick),
+        ),
+        west: String(
+          connectsFence(paletteAt(voxels, palette, size, x - 1, y, z), entry.isNetherBrick),
+        ),
       },
     });
   }
-  if (isPaneName(parsed.name)) {
+  if (entry.isPane) {
     return formatBlockState({
-      name: parsed.name,
+      name: entry.name,
       properties: {
-        ...parsed.properties,
-        north: String(connectsPane(stateAt(voxels, states, size, x, y, z - 1))),
-        east: String(connectsPane(stateAt(voxels, states, size, x + 1, y, z))),
-        south: String(connectsPane(stateAt(voxels, states, size, x, y, z + 1))),
-        west: String(connectsPane(stateAt(voxels, states, size, x - 1, y, z))),
+        ...entry.properties,
+        north: String(connectsPane(paletteAt(voxels, palette, size, x, y, z - 1))),
+        east: String(connectsPane(paletteAt(voxels, palette, size, x + 1, y, z))),
+        south: String(connectsPane(paletteAt(voxels, palette, size, x, y, z + 1))),
+        west: String(connectsPane(paletteAt(voxels, palette, size, x - 1, y, z))),
       },
     });
   }
-  return isWallName(parsed.name)
-    ? resolveWallState(voxels, states, size, x, y, z, parsed.name)
-    : null;
+  return entry.isWall ? resolveWallState(voxels, palette, size, x, y, z, entry.name) : null;
 };
 
 export const solveBlockConnections = (
@@ -261,7 +276,7 @@ export const solveBlockConnections = (
 ): void => {
   const [w, _h, d] = size;
   const origVoxels = voxels.slice();
-  const origStates = [...states];
+  const palette = buildPaletteTable(states);
   const ensureIdx = (s: string): number => {
     const existing = stateToIdx.get(s);
     if (existing !== undefined) return existing;
@@ -272,11 +287,12 @@ export const solveBlockConnections = (
   };
   for (let idx = 0; idx < origVoxels.length; idx += 1) {
     const v = origVoxels[idx]!;
-    if (v <= 0) continue;
+    const entry = v > 0 ? palette[v]! : null;
+    if (!entry) continue;
     const x = idx % w;
     const z = Math.floor(idx / w) % d;
     const y = Math.floor(idx / (w * d));
-    const next = resolvePostVoxelState(origVoxels, origStates, size, x, y, z, origStates[v]!);
+    const next = resolvePostVoxelState(origVoxels, palette, size, x, y, z, entry);
     if (next) voxels[idx] = ensureIdx(next);
   }
 };

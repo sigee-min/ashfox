@@ -287,38 +287,18 @@ const emitUnderEaves = (
   const key = op.trim ?? op.stair;
   if (op.style !== 'gable' || op.axis === 'z') {
     for (let z = min[2]; z <= max[2]; z += 1) {
-      put(
-        min[0],
-        ey,
-        z,
-        withStair(resolve(key, owner, [min[0], ey, z]).state, 'east', 'top'),
-        null,
-      );
-      put(
-        max[0],
-        ey,
-        z,
-        withStair(resolve(key, owner, [max[0], ey, z]).state, 'west', 'top'),
-        null,
-      );
+      const s0 = resolve(key, owner, [min[0], ey, z]).state;
+      put(min[0], ey, z, withStair(s0, 'east', 'top'), null);
+      const s1 = resolve(key, owner, [max[0], ey, z]).state;
+      put(max[0], ey, z, withStair(s1, 'west', 'top'), null);
     }
   }
   if (op.style !== 'gable' || op.axis === 'x') {
     for (let x = min[0]; x <= max[0]; x += 1) {
-      put(
-        x,
-        ey,
-        min[2],
-        withStair(resolve(key, owner, [x, ey, min[2]]).state, 'south', 'top'),
-        null,
-      );
-      put(
-        x,
-        ey,
-        max[2],
-        withStair(resolve(key, owner, [x, ey, max[2]]).state, 'north', 'top'),
-        null,
-      );
+      const s0 = resolve(key, owner, [x, ey, min[2]]).state;
+      put(x, ey, min[2], withStair(s0, 'south', 'top'), null);
+      const s1 = resolve(key, owner, [x, ey, max[2]]).state;
+      put(x, ey, max[2], withStair(s1, 'north', 'top'), null);
     }
   }
 };
@@ -453,6 +433,15 @@ const emitChimney = (
   return [cx, topY, cz];
 };
 
+const maxCellY = (cells: readonly IntVec3[], fallback: number): number => {
+  if (cells.length === 0) return fallback;
+  let peak = cells[0]![1];
+  for (let i = 1; i < cells.length; i += 1) {
+    if (cells[i]![1] > peak) peak = cells[i]![1];
+  }
+  return peak;
+};
+
 export const emitRoof = (
   op: RoofOpInput,
   rooms: ReadonlyMap<string, StructureRoomMeta>,
@@ -482,7 +471,7 @@ export const emitRoof = (
   } else emitHipPyramid(op, min, max, put, resolve, ownerPath, roofCells);
   emitUnderEaves(op, min, max, put, resolve, ownerPath);
   for (const d of op.dormers ?? []) emitDormer(d, op, min, max, put, carve, resolve, ownerPath);
-  const peakY = roofCells.length > 0 ? Math.max(...roofCells.map((p) => p[1])) : min[1];
+  const peakY = maxCellY(roofCells, min[1]);
   const chimneyTops = (op.chimneys ?? []).map((c) =>
     emitChimney(c, min, max, peakY, rooms, put, resolve, ownerPath),
   );

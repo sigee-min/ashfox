@@ -336,10 +336,22 @@ export const rotatePt = ([x, y, z]: IntVec3, rotate: BlockRotation): IntVec3 =>
 export const applyLinear = ([x, y, z]: IntVec3, frame: FrameTransform): IntVec3 =>
   rotatePt(frame.mirrorX ? [-x, y, z] : [x, y, z], frame.rotate);
 
-export const applyFrame = (pt: IntVec3, frame: FrameTransform): IntVec3 => {
-  const [rx, ry, rz] = applyLinear(pt, frame);
-  return [rx + frame.offset[0], ry + frame.offset[1], rz + frame.offset[2]];
+export const applyFrameScalars = (
+  x: number,
+  y: number,
+  z: number,
+  frame: FrameTransform,
+): IntVec3 => {
+  const mx = frame.mirrorX ? -x : x;
+  const [ox, oy, oz] = frame.offset;
+  if (frame.rotate === 90) return [-z + ox, y + oy, mx + oz];
+  if (frame.rotate === 180) return [-mx + ox, y + oy, -z + oz];
+  if (frame.rotate === 270) return [z + ox, y + oy, -mx + oz];
+  return [mx + ox, y + oy, z + oz];
 };
+
+export const applyFrame = (pt: IntVec3, frame: FrameTransform): IntVec3 =>
+  applyFrameScalars(pt[0], pt[1], pt[2], frame);
 
 export const transformBlockState = (rawState: string, frame: FrameTransform): string =>
   rotateBlockState(frame.mirrorX ? mirrorBlockState(rawState, 'x') : rawState, frame.rotate);
@@ -362,7 +374,14 @@ export const mirrorFrame = (axis: MirrorAxis, center: number): FrameTransform =>
     ? { offset: [center * 2, 0, 0], rotate: 0, mirrorX: true }
     : { offset: [0, 0, center * 2], rotate: 180, mirrorX: true };
 
-const regionAccepts = (kind: string, [x, y, z]: IntVec3, min: IntVec3, max: IntVec3): boolean => {
+const regionAccepts = (
+  kind: string,
+  x: number,
+  y: number,
+  z: number,
+  min: IntVec3,
+  max: IntVec3,
+): boolean => {
   if (kind === 'box' || kind === 'carve') return true;
   const onX = x === min[0] || x === max[0];
   const onY = y === min[1] || y === max[1];
@@ -372,18 +391,57 @@ const regionAccepts = (kind: string, [x, y, z]: IntVec3, min: IntVec3, max: IntV
   return (onX && onY) || (onY && onZ) || (onX && onZ);
 };
 
+const makeStateTransformer = (frame: FrameTransform): ((raw: string) => string) => {
+  const cache = new Map<string, string>();
+  return (raw: string): string => {
+    let tx = cache.get(raw);
+    if (tx === undefined) {
+      tx = transformBlockState(raw, frame);
+      cache.set(raw, tx);
+    }
+    return tx;
+  };
+};
+
+type RegionOp = Extract<StructureOp, { op: 'box' | 'hollow' | 'walls' | 'frame' | 'carve' }>;
+type RegionResolve = (
+  key: string,
+  owner: string,
+  pos: IntVec3,
+) => { readonly state: string; readonly assetAlias: string | null };
+type RegionPut = (pos: IntVec3, state: string, alias: string | null) => void;
+
+const emitRegionCell = (
+  op: RegionOp,
+  worldPos: IntVec3,
+  ownerPath: string,
+  staticRes: { readonly state: string; readonly assetAlias: string | null } | null,
+  staticState: string,
+  txState: (raw: string) => string,
+  resolve: RegionResolve,
+  put: RegionPut,
+): void => {
+  if (op.op === 'carve') {
+    put(worldPos, 'minecraft:air', null);
+    return;
+  }
+  if (staticRes) {
+    put(worldPos, staticState, staticRes.assetAlias);
+    return;
+  }
+  const res = resolve(op.block, ownerPath, worldPos);
+  put(worldPos, txState(res.state), res.assetAlias);
+};
+
 export const emitRegionOp = (
-  op: Extract<StructureOp, { op: 'box' | 'hollow' | 'walls' | 'frame' | 'carve' }>,
+  op: RegionOp,
   fMin: IntVec3,
   fMax: IntVec3,
   frame: FrameTransform,
   ownerPath: string,
-  resolve: (
-    key: string,
-    owner: string,
-    pos: IntVec3,
-  ) => { readonly state: string; readonly assetAlias: string | null },
-  put: (pos: IntVec3, state: string, alias: string | null) => void,
+  resolve: RegionResolve,
+  put: RegionPut,
+  isStatic?: boolean,
 ): void => {
   const min: IntVec3 = [
     Math.min(fMin[0], fMax[0]),
@@ -395,17 +453,15 @@ export const emitRegionOp = (
     Math.max(fMin[1], fMax[1]),
     Math.max(fMin[2], fMax[2]),
   ];
+  const txState = makeStateTransformer(frame);
+  const staticRes = op.op !== 'carve' && isStatic ? resolve(op.block, ownerPath, min) : null;
+  const staticState = staticRes ? txState(staticRes.state) : '';
   for (let y = min[1]; y <= max[1]; y += 1) {
     for (let z = min[2]; z <= max[2]; z += 1) {
       for (let x = min[0]; x <= max[0]; x += 1) {
-        if (!regionAccepts(op.op, [x, y, z], min, max)) continue;
-        const worldPos = applyFrame([x, y, z], frame);
-        if (op.op === 'carve') {
-          put(worldPos, 'minecraft:air', null);
-          continue;
-        }
-        const res = resolve(op.block, ownerPath, worldPos);
-        put(worldPos, transformBlockState(res.state, frame), res.assetAlias);
+        if (!regionAccepts(op.op, x, y, z, min, max)) continue;
+        const worldPos = applyFrameScalars(x, y, z, frame);
+        emitRegionCell(op, worldPos, ownerPath, staticRes, staticState, txState, resolve, put);
       }
     }
   }
@@ -418,14 +474,11 @@ export const emitLayerOp = (
   ly: number,
   frame: FrameTransform,
   ownerPath: string,
-  resolve: (
-    key: string,
-    owner: string,
-    pos: IntVec3,
-  ) => { readonly state: string; readonly assetAlias: string | null },
-  put: (pos: IntVec3, state: string, alias: string | null) => void,
+  resolve: RegionResolve,
+  put: RegionPut,
   fail: (code: string, msg: string) => never,
 ): void => {
+  const txState = makeStateTransformer(frame);
   for (let r = 0; r < op.rows.length; r += 1) {
     const row = op.rows[r]!;
     for (let c = 0; c < row.length; c += 1) {
@@ -433,9 +486,9 @@ export const emitLayerOp = (
       if (ch === '.' || ch === ' ') continue;
       const key = op.map[ch];
       if (!key) fail('structure.unknown-layer-key', `Unmapped layer char "${ch}"`);
-      const pos = applyFrame([ox + c, ly, oz + r], frame);
+      const pos = applyFrameScalars(ox + c, ly, oz + r, frame);
       const res = resolve(key!, ownerPath, pos);
-      put(pos, transformBlockState(res.state, frame), res.assetAlias);
+      put(pos, txState(res.state), res.assetAlias);
     }
   }
 };

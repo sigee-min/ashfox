@@ -207,39 +207,52 @@ const interactableKindFor = (
   return null;
 };
 
+interface InteractablePaletteEntry {
+  readonly kind: PlayableInteractable['kind'];
+  readonly facing: CardinalFacing;
+  readonly hinge: string | undefined;
+}
+
+const buildInteractablePalette = (
+  states: readonly string[],
+): readonly (InteractablePaletteEntry | null)[] =>
+  states.map((s, idx) => {
+    if (idx === 0) return null;
+    const parsed = parseBlockState(s);
+    const kind = interactableKindFor(parsed.name, parsed.properties);
+    if (!kind) return null;
+    const rawF = parsed.properties.facing;
+    const facing: CardinalFacing =
+      rawF === 'south' || rawF === 'east' || rawF === 'west' ? rawF : 'north';
+    return { kind, facing, hinge: parsed.properties.hinge };
+  });
+
 const makeInteractable = (
   grid: StructureGrid,
+  meta: InteractablePaletteEntry,
   x: number,
   y: number,
   z: number,
   seq: number,
-): PlayableInteractable | null => {
+): PlayableInteractable => {
   const [w, _h, d] = grid.size;
-  const v = grid.voxels[(y * d + z) * w + x]!;
-  if (v <= 0) return null;
-  const parsed = parseBlockState(grid.states[v]!);
-  const kind = interactableKindFor(parsed.name, parsed.properties);
-  if (!kind) return null;
-  const rawF = parsed.properties.facing;
-  const facing: CardinalFacing =
-    rawF === 'south' || rawF === 'east' || rawF === 'west' ? rawF : 'north';
   const wx = x - w / 2 + 0.5;
   const wz = z - d / 2 + 0.5;
   const opening =
-    kind === 'door'
+    meta.kind === 'door'
       ? grid.openings.find(
           (o) =>
             o.kind === 'door' && x >= o.from[0] && x <= o.to[0] && z >= o.from[2] && z <= o.to[2],
         )
       : undefined;
   return {
-    id: `${kind}_${seq}`,
-    kind,
+    id: `${meta.kind}_${seq}`,
+    kind: meta.kind,
     position: [wx, y, wz],
-    facing,
-    ...(kind === 'door'
+    facing: meta.facing,
+    ...(meta.kind === 'door'
       ? {
-          hingePivot: hingePivotForDoor(wx, y, wz, facing, parsed.properties.hinge),
+          hingePivot: hingePivotForDoor(wx, y, wz, meta.facing, meta.hinge),
         }
       : {}),
     ...(opening?.connectsRooms ? { connectsZones: opening.connectsRooms } : {}),
@@ -248,13 +261,16 @@ const makeInteractable = (
 
 const buildInteractables = (grid: StructureGrid): readonly PlayableInteractable[] => {
   const [w, h, d] = grid.size;
+  const palette = buildInteractablePalette(grid.states);
   const out: PlayableInteractable[] = [];
   for (let idx = 0; idx < w * h * d; idx += 1) {
+    const v = grid.voxels[idx]!;
+    const meta = v > 0 ? palette[v]! : null;
+    if (!meta) continue;
     const x = idx % w;
     const z = Math.floor(idx / w) % d;
     const y = Math.floor(idx / (w * d));
-    const item = makeInteractable(grid, x, y, z, out.length);
-    if (item) out.push(item);
+    out.push(makeInteractable(grid, meta, x, y, z, out.length));
   }
   return out;
 };
@@ -337,9 +353,9 @@ const transformSockets = (grid: StructureGrid): readonly StructureSocketMeta[] =
 export const buildPlayableStructureMeta = (
   grid: StructureGrid,
   lights: readonly PlayableLight[],
+  descriptors: readonly BlockDescriptor[] = grid.states.map(describeBlockState),
 ): PlayableStructureMeta => {
   const [w, h, d] = grid.size;
-  const descriptors = grid.states.map(describeBlockState);
   return {
     schemaVersion: 1,
     id: grid.id,
