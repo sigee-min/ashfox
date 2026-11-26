@@ -9,4 +9,6 @@ export const runWorker = (
   toolchain: string,
   command: 'build' | 'check',
   signal?: AbortSignal,
-): Promise<CompiledBundle | CheckResult> => runJob(file, { snapshot, toolchain, command }, signal);
+  noCache = false,
+): Promise<CompiledBundle | CheckResult> =>
+  runJob(file, { snapshot, toolchain, command, noCache }, signal);

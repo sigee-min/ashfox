@@ -9,12 +9,13 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {
   readSnapshot,
-  checkSnapshot,
+  checkNodeSnapshot,
   compileNodeBundle,
   verifyCurrent,
   BuildFailure,
   publishBundle,
   withOutputLocks,
+  startPoolWorker,
   type Snapshot,
   type CompiledBundle,
 } from '@ashfox/asset-build';
@@ -62,24 +63,66 @@ const runCheck = async (): Promise<void> => {
     );
   }
   if (!singleAsset && target && fs.existsSync(target) && fs.statSync(target).isDirectory()) {
-    if (nonJsonFlags.length > 0)
+    if (nonJsonFlags.length > 0 || checkArgs.noCache)
       throw new BuildFailure('cli.arguments', 'Directory verification accepts only --json', 2);
     result(true, verifyCurrent(target));
     return;
   }
   if (singleAsset || !target) {
-    result(true, await runAssetCheck(args, __filename, controller.signal));
+    result(
+      true,
+      await runAssetCheck(
+        args.filter((a) => a !== '--no-cache'),
+        __filename,
+        controller.signal,
+      ),
+    );
     return;
   }
   if (nonJsonFlags.length > 0 || !checkArgs.target) {
     throw new BuildFailure('cli.arguments', 'Unexpected argument', 2);
   }
   if (target.endsWith('.ashfox') && !hasAncestorWorkspace(target)) {
-    result(true, await runAssetCheck(args, __filename, controller.signal));
+    result(
+      true,
+      await runAssetCheck(
+        args.filter((a) => a !== '--no-cache'),
+        __filename,
+        controller.signal,
+      ),
+    );
     return;
   }
   const snapshot = readSnapshot(target);
-  result(true, await runWorker(__filename, snapshot, '', 'check', controller.signal));
+  result(
+    true,
+    await checkNodeSnapshot(snapshot, controller.signal, { noCache: checkArgs.noCache }),
+  );
+};
+
+const parseBuildArgs = (): { readonly input: string; readonly noCache: boolean } => {
+  const jsonCount = args.filter((a) => a === '--json').length;
+  const noCacheCount = args.filter((a) => a === '--no-cache').length;
+  if (
+    jsonCount > 1 ||
+    noCacheCount > 1 ||
+    args.some((a) => a.startsWith('--') && a !== '--json' && a !== '--no-cache')
+  ) {
+    throw new BuildFailure(
+      'cli.arguments',
+      'Only --json and --no-cache are supported; shared configuration belongs to .ashfoxworkspace or .ashfoxworkspace.mjs',
+      2,
+    );
+  }
+  const positional = args.slice(1).filter((a) => a !== '--json' && a !== '--no-cache');
+  if (command !== 'build' || positional.length !== 1) {
+    throw new BuildFailure(
+      'cli.arguments',
+      'Unknown or invalid command. Expected init, doctor, check, render, or build.',
+      2,
+    );
+  }
+  return { input: positional[0]!, noCache: noCacheCount === 1 };
 };
 
 const main = async (): Promise<void> => {
@@ -92,25 +135,8 @@ const main = async (): Promise<void> => {
     await runCheck();
     return;
   }
-  if (
-    args.filter((a) => a === '--json').length > 1 ||
-    args.some((a) => a.startsWith('--') && a !== '--json')
-  ) {
-    throw new BuildFailure(
-      'cli.arguments',
-      'Only --json is supported; shared configuration belongs to .ashfoxworkspace or .ashfoxworkspace.mjs',
-      2,
-    );
-  }
-  const positional = args.slice(1).filter((a) => a !== '--json');
-  if (command !== 'build' || positional.length !== 1) {
-    throw new BuildFailure(
-      'cli.arguments',
-      'Unknown or invalid command. Expected init, doctor, check, render, or build.',
-      2,
-    );
-  }
-  const snapshot = readSnapshot(positional[0]);
+  const { input, noCache } = parseBuildArgs();
+  const snapshot = readSnapshot(input);
   const toolchain = JSON.stringify({
     code: crypto.createHash('sha256').update(fs.readFileSync(__filename)).digest('hex'),
     node: process.version,
@@ -119,7 +145,14 @@ const main = async (): Promise<void> => {
     arch: os.arch(),
   });
   const published = await withOutputLocks(snapshot, async () => {
-    const bundle = await runWorker(__filename, snapshot, toolchain, 'build', controller.signal);
+    const bundle = await runWorker(
+      __filename,
+      snapshot,
+      toolchain,
+      'build',
+      controller.signal,
+      noCache,
+    );
     if (!('bundleHash' in bundle)) throw new BuildFailure('build.worker', 'Missing bundle', 3);
     if (controller.signal.aborted)
       throw new BuildFailure('build.cancelled', 'Build cancelled', 130);
@@ -144,21 +177,18 @@ const runBuildWorker = async (input: {
   snapshot: Snapshot;
   toolchain: string;
   command: string;
+  noCache?: boolean;
 }): Promise<void> => {
   try {
     let value: CompiledBundle | { sourceHash: string; products: readonly unknown[] };
     if (input.command === 'check') {
-      const checked = checkSnapshot(input.snapshot);
-      value = {
-        sourceHash: checked.sourceHash,
-        products: checked.products.map((p) => ({
-          kind: p.kind,
-          entry: p.entry,
-          ...(p.kind === 'structure' ? { audit: p.structure.audit } : {}),
-        })),
-      };
+      value = await checkNodeSnapshot(input.snapshot, controller.signal, {
+        noCache: input.noCache,
+      });
     } else {
-      value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal);
+      value = await compileNodeBundle(input.snapshot, input.toolchain, controller.signal, {
+        noCache: input.noCache,
+      });
     }
     parentPort!.postMessage({ ok: true, value });
   } catch (error) {
@@ -171,18 +201,32 @@ const runBuildWorker = async (input: {
   }
 };
 
+const isPoolWorker = (): boolean =>
+  Boolean(
+    workerData &&
+    typeof workerData === 'object' &&
+    'ashfoxPoolWorker' in workerData &&
+    (workerData as { ashfoxPoolWorker?: unknown }).ashfoxPoolWorker === true,
+  );
+
 const executeWorker = async (): Promise<void> => {
   if (workerData.observe) {
     runObserveWorker(workerData.observe);
     return;
   }
-  await runBuildWorker(workerData as { snapshot: Snapshot; toolchain: string; command: string });
+  await runBuildWorker(
+    workerData as { snapshot: Snapshot; toolchain: string; command: string; noCache?: boolean },
+  );
 };
 if (!isMainThread) {
-  parentPort!.on('message', (message) => {
-    if (message === 'cancel') controller.abort();
-  });
-  void executeWorker();
+  if (isPoolWorker()) {
+    startPoolWorker();
+  } else {
+    parentPort!.on('message', (message) => {
+      if (message === 'cancel') controller.abort();
+    });
+    void executeWorker();
+  }
 } else
   void main()
     .catch((error: unknown) => {
