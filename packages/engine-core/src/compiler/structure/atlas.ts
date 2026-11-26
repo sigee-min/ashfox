@@ -1,20 +1,11 @@
 import { compareText } from '@ashfox/internal-contracts';
 import { deepFreeze } from '../../immutable';
-import type { CompiledModel } from '../../model/compiled';
-import type { CubeFaceDirection } from '../../model/scene';
-import type { CardinalFacing } from '../../project/structure/contract';
 import type { TextureAsset, TextureCanvasDetail, TextureRaster } from '../../model/texture';
 import type { StructureDensity } from '../../project/structure/contract';
 import { encodeCanonicalPngSummary } from '../../textures/textureRecipe/png';
 import { rasterizeTextureSpec } from '../../textures/textureRecipe/raster';
 import type { BlockRenderLayer } from './blocks';
-import type {
-  StructureBakedBatch,
-  StructureGrid,
-  StructureLightingField,
-  StructurePropInstance,
-} from './contract';
-import { samplePropLightRgb } from './lighting';
+import type { StructureBakedBatch, StructureGrid } from './contract';
 import { isSeedInvariantTile, paintTileRects, type TileRect } from './tiles';
 
 export interface AtlasBatchDraft {
@@ -480,42 +471,4 @@ export const packStructureBatches = (
     (a, b) => compareText(a.layer, b.layer) || compareText(a.textureId, b.textureId),
   );
   return { batches, textures: { ...atlas.textures, ...tileTextures } };
-};
-
-export interface SliceDims {
-  readonly axis: 0 | 1 | 2;
-  readonly sliceLen: number;
-  readonly uLen: number;
-  readonly vLen: number;
-}
-
-export const sliceDimsFor = (
-  dir: CubeFaceDirection,
-  w: number,
-  maxY: number,
-  d: number,
-): SliceDims =>
-  dir === 'north' || dir === 'south'
-    ? { axis: 2, sliceLen: d, uLen: w, vLen: maxY }
-    : dir === 'east' || dir === 'west'
-      ? { axis: 0, sliceLen: w, uLen: d, vLen: maxY }
-      : { axis: 1, sliceLen: maxY, uLen: w, vLen: d };
-
-export const collectPropInstances = (
-  grid: StructureGrid,
-  lighting: StructureLightingField,
-  customModels: Readonly<Record<string, CompiledModel>>,
-  maxY: number,
-): readonly StructurePropInstance[] => {
-  const [w, _h, d] = grid.size;
-  const rotY = (f: CardinalFacing): 0 | 90 | 180 | 270 =>
-    f === 'east' ? 270 : f === 'south' ? 180 : f === 'west' ? 90 : 0;
-  return grid.customPlacements
-    .filter((cp) => cp.y < maxY && Boolean(customModels[cp.assetAlias]))
-    .map((cp) => ({
-      assetKey: cp.assetAlias,
-      translation: [cp.x - w / 2 + 0.5, cp.y, cp.z - d / 2 + 0.5] as const,
-      rotation: rotY(cp.facing),
-      lightRgb: samplePropLightRgb(lighting, cp.x, cp.y, cp.z),
-    }));
 };

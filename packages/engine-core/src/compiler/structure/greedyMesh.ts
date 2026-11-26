@@ -1,8 +1,17 @@
 import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
 import { parseBlockState } from '../../project/structure/state';
-import { collectPropInstances, packStructureBatches, sliceDimsFor, type SliceDims } from './atlas';
-import { getBatch, pushQuad, type BatchDraft, type MeshCtx, type NonFullScratch } from './batch';
+import { packStructureBatches } from './atlas';
+import {
+  collectPropInstances,
+  getBatch,
+  pushQuad,
+  sliceDimsFor,
+  type BatchDraft,
+  type MeshCtx,
+  type NonFullScratch,
+  type SliceDims,
+} from './batch';
 import { describeBlockState, type BlockDescriptor, type BlockRenderLayer } from './blocks';
 import type { StructureBakedMesh, StructureGrid, StructureLightingField } from './contract';
 import {

@@ -1,8 +1,10 @@
+import type { CompiledModel } from '../../model/compiled';
 import type { CubeFaceDirection } from '../../model/scene';
+import type { CardinalFacing } from '../../project/structure/contract';
 import { structureTileTextureId } from './atlas';
 import type { BlockDescriptor, BlockRenderLayer } from './blocks';
-import type { StructureGrid, StructureLightingField } from './contract';
-import { FACE_BASIS, FACE_CORNER_TABLE } from './lighting';
+import type { StructureGrid, StructureLightingField, StructurePropInstance } from './contract';
+import { FACE_BASIS, FACE_CORNER_TABLE, samplePropLightRgb } from './lighting';
 import type { CachedBlockState } from './shapes';
 
 export interface BatchDraft {
@@ -130,4 +132,42 @@ export const pushQuad = (
   );
   if (flip) batch.indices.push(base + 1, base + 2, base + 3, base + 1, base + 3, base);
   else batch.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+};
+
+export interface SliceDims {
+  readonly axis: 0 | 1 | 2;
+  readonly sliceLen: number;
+  readonly uLen: number;
+  readonly vLen: number;
+}
+
+export const sliceDimsFor = (
+  dir: CubeFaceDirection,
+  w: number,
+  maxY: number,
+  d: number,
+): SliceDims =>
+  dir === 'north' || dir === 'south'
+    ? { axis: 2, sliceLen: d, uLen: w, vLen: maxY }
+    : dir === 'east' || dir === 'west'
+      ? { axis: 0, sliceLen: w, uLen: d, vLen: maxY }
+      : { axis: 1, sliceLen: maxY, uLen: w, vLen: d };
+
+export const collectPropInstances = (
+  grid: StructureGrid,
+  lighting: StructureLightingField,
+  customModels: Readonly<Record<string, CompiledModel>>,
+  maxY: number,
+): readonly StructurePropInstance[] => {
+  const [w, _h, d] = grid.size;
+  const rotY = (f: CardinalFacing): 0 | 90 | 180 | 270 =>
+    f === 'east' ? 270 : f === 'south' ? 180 : f === 'west' ? 90 : 0;
+  return grid.customPlacements
+    .filter((cp) => cp.y < maxY && Boolean(customModels[cp.assetAlias]))
+    .map((cp) => ({
+      assetKey: cp.assetAlias,
+      translation: [cp.x - w / 2 + 0.5, cp.y, cp.z - d / 2 + 0.5] as const,
+      rotation: rotY(cp.facing),
+      lightRgb: samplePropLightRgb(lighting, cp.x, cp.y, cp.z),
+    }));
 };

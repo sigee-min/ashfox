@@ -384,41 +384,6 @@ export const faceAo4 = (
   return (ao0 << 12) | (ao1 << 8) | (ao2 << 4) | ao3;
 };
 
-export const vertexAo = (
-  grid: StructureGrid,
-  descs: readonly BlockDescriptor[],
-  sx: number,
-  sy: number,
-  sz: number,
-  uAxis: IntVec3,
-  vAxis: IntVec3,
-  su: number,
-  sv: number,
-  maxY: number,
-): number => {
-  const ux = uAxis[0];
-  const uy = uAxis[1];
-  const uz = uAxis[2];
-  const vx = vAxis[0];
-  const vy = vAxis[1];
-  const vz = vAxis[2];
-  const s1 = occluderAt(grid, descs, sx + su * ux, sy + su * uy, sz + su * uz, maxY);
-  const s2 = occluderAt(grid, descs, sx + sv * vx, sy + sv * vy, sz + sv * vz, maxY);
-  if (s1 === 1 && s2 === 1) return 3;
-  return (
-    s1 +
-    s2 +
-    occluderAt(
-      grid,
-      descs,
-      sx + su * ux + sv * vx,
-      sy + su * uy + sv * vy,
-      sz + su * uz + sv * vz,
-      maxY,
-    )
-  );
-};
-
 export const writeVertexShade = (
   out: number[],
   offset: number,
