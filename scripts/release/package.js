@@ -3,10 +3,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { readJson } = require('../shared');
 const { isStrictSemVer } = require('./validate');
 
 const packageCli = (root, out) => {
-  const { version, engines } = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
+  const { version, engines } = readJson(path.join(root, 'package.json'));
   if (!isStrictSemVer(version)) throw new Error('Invalid product version');
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-package-'));
   try {

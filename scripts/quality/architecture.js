@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
+const { readJson } = require('../shared');
 const {
   readHistoricalSourceSizeBaselines,
   sourceSizeHistoryViolations,
@@ -49,7 +50,7 @@ const workspacePackagesIn = (scope) =>
     .map(({ directory }) => directory)
     .filter((directory) => fs.existsSync(path.join(directory, 'src')))
     .map((directory) => {
-      const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json'), 'utf8'));
+      const manifest = readJson(path.join(directory, 'package.json'));
       return {
         name: manifest.name,
         directory,
@@ -255,7 +256,7 @@ const retiredOwnerPathViolations = (files, sources) => {
 
 const collectLayoutFindings = (fileStats, namedFiles) => {
   const relativeNamed = namedFiles.map(relativePath);
-  const sourceSizeBaseline = JSON.parse(fs.readFileSync(sourceSizeBaselinePath, 'utf8'));
+  const sourceSizeBaseline = readJson(sourceSizeBaselinePath);
   return {
     oversizedFiles: fileStats.filter(({ lines }) => lines > maxFileLines),
     oversizedFileStems: codeFileStemViolations(relativeNamed, maxFileStemLength),

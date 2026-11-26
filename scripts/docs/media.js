@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { createHash } = require('node:crypto');
+const { sha256 } = require('../shared');
 const root = path.resolve(__dirname, '../..'),
   cli = path.join(root, 'apps/cli/dist/ashfox.cjs'),
   out = path.join(root, 'assets/docs');
@@ -63,7 +63,6 @@ const jobs = {
     preview: 'kind = gif; clip = "tail_wag"; width = 320; height = 240; fps = 6;',
   },
 };
-const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const files = [];
 for (const [name, job] of Object.entries(jobs)) {
   const payload = JSON.stringify({
@@ -82,7 +81,7 @@ for (const [name, job] of Object.entries(jobs)) {
     timeout: 150000,
   });
   fs.writeFileSync(path.join(out, name), bytes);
-  files.push({ name, args: [job.entry, job.preview], sha256: sha(bytes) });
+  files.push({ name, args: [job.entry, job.preview], sha256: sha256(bytes) });
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-doc-sound-'));
 try {
@@ -96,7 +95,7 @@ try {
   ).result;
   const wav = fs.readFileSync(path.join(built.exports[0].directory, 'claw_hit/base.wav'));
   fs.writeFileSync(path.join(out, 'claw.wav'), wav);
-  files.push({ name: 'claw.wav', args: ['build', sound], sha256: sha(wav) });
+  files.push({ name: 'claw.wav', args: ['build', sound], sha256: sha256(wav) });
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }
@@ -106,7 +105,7 @@ fs.writeFileSync(
     {
       format: 'ashfox-doc-media',
       version: 1,
-      compiler: sha(fs.readFileSync(cli)),
+      compiler: sha256(fs.readFileSync(cli)),
       sources: [
         fox,
         'examples/fox/creatures/rig.ashfox',
@@ -115,7 +114,7 @@ fs.writeFileSync(
         sword,
         sound,
         shared,
-      ].map((file) => ({ file, sha256: sha(fs.readFileSync(path.join(root, file))) })),
+      ].map((file) => ({ file, sha256: sha256(fs.readFileSync(path.join(root, file))) })),
       files,
     },
     null,

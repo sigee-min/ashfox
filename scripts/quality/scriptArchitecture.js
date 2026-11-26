@@ -2,11 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { compareText } = require('../shared');
 
 const defaultRepoRoot = path.resolve(__dirname, '..', '..');
 const publicEngineRoot = (repoRoot) => path.resolve(repoRoot, 'packages/engine-core/src');
-
-const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 const scriptFiles = (repoRoot = defaultRepoRoot) => {
   const roots = ['scripts', 'apps'].map((name) => path.join(repoRoot, name));

@@ -9,6 +9,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+const { compareText, readJson } = require('../shared');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const LOGICAL_OPERATORS = new Set([
@@ -187,7 +188,7 @@ const exceedances = (metrics, policy) => {
       ),
     ])
     .filter(([, values]) => Object.keys(values).length > 0)
-    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
+    .sort(([left], [right]) => compareText(left, right));
   return Object.fromEntries(entries);
 };
 
@@ -233,7 +234,7 @@ const sourceFiles = (scopes, root = ROOT) => {
   const walk = (directory) => {
     for (const entry of fs
       .readdirSync(directory, { withFileTypes: true })
-      .sort((left, right) => (left.name < right.name ? -1 : 1))) {
+      .sort((left, right) => compareText(left.name, right.name))) {
       const target = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(target);
       else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith('.d.ts')) files.push(target);
@@ -251,7 +252,7 @@ const main = () => {
     functionMetrics(path.relative(ROOT, file).replace(/\\/g, '/'), fs.readFileSync(file, 'utf8')),
   );
   const current = exceedances(metrics, policy);
-  const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  const baseline = readJson(baselinePath);
   if (process.argv.includes('--write')) {
     const next = tightenedBaseline(current, baseline, process.argv.includes('--accept-new'));
     fs.writeFileSync(baselinePath, `${JSON.stringify(next, null, 2)}\n`);

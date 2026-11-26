@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const { createHash } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
+const { readJson, sha256 } = require('../shared');
 const root = path.resolve(__dirname, '../..');
 const samples = [
   'bell_pattern',
@@ -15,6 +15,60 @@ const samples = [
   'bird_call',
 ];
 const goldenPath = path.join(__dirname, 'sound-golden.json');
+
+const assertSoundCapabilities = (run) => {
+  const capabilities = JSON.parse(run(['doctor', '--json'])).result.sound;
+  assert.deepEqual(capabilities.features, [
+    'curves',
+    'envelopes',
+    'filters',
+    'drive',
+    'space',
+    'stereo',
+    'sequences',
+    'variation',
+    'loops',
+  ]);
+  assert.ok(capabilities.sources.includes('resonator'));
+  return capabilities;
+};
+
+const verifySoundSample = (run, soundsDir, name) => {
+  const source = fs.readFileSync(
+    path.join(root, 'examples/sounds/assets/sounds', name + '.ashfox'),
+    'utf8',
+  );
+  const input = path.join(soundsDir, name + '.ashfox');
+  fs.writeFileSync(input, source);
+  const inspected = JSON.parse(run(['check', input])).result;
+  const built = JSON.parse(run(['build', input, '--json'])).result;
+  const sampleResults = inspected.variants.map((variant) => {
+    const ch = variant.channels ?? 1;
+    const output = path.join(built.exports[0].directory, name, variant.variant + '.wav');
+    const wav = fs.readFileSync(output);
+    assert.equal(wav.length, 44 + variant.frames * 2 * ch);
+    assert.equal(wav.readUInt32LE(24), 48000);
+    assert.equal(wav.readUInt16LE(22), ch);
+    if (variant.playback.kind === 'loop') {
+      assert.deepEqual(variant.playback, {
+        kind: 'loop',
+        startFrame: 0,
+        endFrame: variant.frames,
+      });
+    }
+    return {
+      name,
+      variant: variant.variant,
+      frames: variant.frames,
+      playback: variant.playback,
+      sha256: sha256(wav),
+    };
+  });
+  fs.writeFileSync(input, source.replace('voices =', 'layers ='));
+  assert.throws(() => run(['check', input, '--json']), /Command failed/);
+  return sampleResults;
+};
+
 const verifySoundCli = (cli, write = false) => {
   const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ashfox-release-sound-'));
   const run = (args) =>
@@ -25,19 +79,7 @@ const verifySoundCli = (cli, write = false) => {
       maxBuffer: 16 * 1024 * 1024,
     });
   try {
-    const capabilities = JSON.parse(run(['doctor', '--json'])).result.sound;
-    assert.deepEqual(capabilities.features, [
-      'curves',
-      'envelopes',
-      'filters',
-      'drive',
-      'space',
-      'stereo',
-      'sequences',
-      'variation',
-      'loops',
-    ]);
-    assert.ok(capabilities.sources.includes('resonator'));
+    const capabilities = assertSoundCapabilities(run);
     const soundsDir = path.join(temp, 'assets/sounds');
     const moduleDir = path.join(temp, 'assets/module');
     fs.mkdirSync(soundsDir, { recursive: true });
@@ -46,41 +88,7 @@ const verifySoundCli = (cli, write = false) => {
       path.join(root, 'examples/sounds/assets/module/bird_voices.ashfox'),
       path.join(moduleDir, 'bird_voices.ashfox'),
     );
-    const results = [];
-    for (const name of samples) {
-      const source = fs.readFileSync(
-        path.join(root, 'examples/sounds/assets/sounds', name + '.ashfox'),
-        'utf8',
-      );
-      const input = path.join(soundsDir, name + '.ashfox');
-      fs.writeFileSync(input, source);
-      const inspected = JSON.parse(run(['check', input])).result;
-      const built = JSON.parse(run(['build', input, '--json'])).result;
-      for (const variant of inspected.variants) {
-        const ch = variant.channels ?? 1;
-        const output = path.join(built.exports[0].directory, name, variant.variant + '.wav');
-        const wav = fs.readFileSync(output);
-        assert.equal(wav.length, 44 + variant.frames * 2 * ch);
-        assert.equal(wav.readUInt32LE(24), 48000);
-        assert.equal(wav.readUInt16LE(22), ch);
-        if (variant.playback.kind === 'loop')
-          assert.deepEqual(variant.playback, {
-            kind: 'loop',
-            startFrame: 0,
-            endFrame: variant.frames,
-          });
-        results.push({
-          name,
-          variant: variant.variant,
-          frames: variant.frames,
-          playback: variant.playback,
-          sha256: createHash('sha256').update(wav).digest('hex'),
-        });
-      }
-      const old = source.replace('voices =', 'layers =');
-      fs.writeFileSync(input, old);
-      assert.throws(() => run(['check', input, '--json']), /Command failed/);
-    }
+    const results = samples.flatMap((name) => verifySoundSample(run, soundsDir, name));
     const receipt = { contract: capabilities.contract, results };
     assert.ok(results.some((r) => r.name === 'bell_pattern' && r.frames === 96960));
     assert.ok(results.some((r) => r.name === 'wind_loop' && r.frames === 188160));
@@ -88,7 +96,7 @@ const verifySoundCli = (cli, write = false) => {
     else
       assert.deepEqual(
         receipt,
-        JSON.parse(fs.readFileSync(goldenPath, 'utf8')),
+        readJson(goldenPath),
         'Installed CLI must reproduce reviewed sound bytes and playback metadata',
       );
     console.log(

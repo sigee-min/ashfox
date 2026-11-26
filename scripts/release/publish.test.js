@@ -45,24 +45,7 @@ const fixture = () => {
     },
   };
 };
-const main = async () => {
-  for (const name of names) fs.writeFileSync(path.join(directory, name), name);
-  fs.writeFileSync(
-    path.join(directory, 'SHA256SUMS'),
-    names.map((name) => `${hash(Buffer.from(name))}  ${name}\n`).join(''),
-  );
-  fs.mkdirSync(path.join(directory, '.github'));
-  fs.writeFileSync(
-    path.join(directory, '.github/CHANGELOG.md'),
-    '# Changelog\n\n## [1.2.3] new\n\n### Breaking changes\nNew contract\n\n## [1.2.2] old\nold history',
-  );
-  const changelog = releaseNotes(directory, '1.2.3');
-  assert.match(changelog, /New contract/);
-  assert.doesNotMatch(changelog, /old history/);
-  assert.throws(() => releaseNotes(directory, '9.0.0'), /missing/);
-  const run = (api) =>
-    publish({ api, repository: 'owner/repo', sha, version: '1.2.3', directory, changelog });
-  const state = fixture();
+const verifyPublishedFlow = async (run, state) => {
   await run(state.api);
   assert.equal(state.release.draft, false);
   assert.match(state.release.body, /New contract/);
@@ -86,6 +69,9 @@ const main = async () => {
   state.release.assets.pop();
   state.bytes.set(1, Buffer.from(names[0]));
   await assert.rejects(run(state.api), /publish a new version/);
+};
+
+const verifyInterruptionAndErrors = async (run, state, changelog) => {
   const interrupted = fixture();
   await assert.rejects(
     run(async (url, options) => {
@@ -122,6 +108,29 @@ const main = async () => {
   );
   fs.writeFileSync(path.join(directory, names[0]), 'bad local bytes');
   await assert.rejects(run(state.api), /checksum mismatch/);
+  assert.ok(changelog);
+};
+
+const main = async () => {
+  for (const name of names) fs.writeFileSync(path.join(directory, name), name);
+  fs.writeFileSync(
+    path.join(directory, 'SHA256SUMS'),
+    names.map((name) => `${hash(Buffer.from(name))}  ${name}\n`).join(''),
+  );
+  fs.mkdirSync(path.join(directory, '.github'));
+  fs.writeFileSync(
+    path.join(directory, '.github/CHANGELOG.md'),
+    '# Changelog\n\n## [1.2.3] new\n\n### Breaking changes\nNew contract\n\n## [1.2.2] old\nold history',
+  );
+  const changelog = releaseNotes(directory, '1.2.3');
+  assert.match(changelog, /New contract/);
+  assert.doesNotMatch(changelog, /old history/);
+  assert.throws(() => releaseNotes(directory, '9.0.0'), /missing/);
+  const run = (api) =>
+    publish({ api, repository: 'owner/repo', sha, version: '1.2.3', directory, changelog });
+  const state = fixture();
+  await verifyPublishedFlow(run, state);
+  await verifyInterruptionAndErrors(run, state, changelog);
   console.log(
     'Release publication: verified draft, interruption/retry, immutable assets and failures pass',
   );

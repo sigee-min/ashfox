@@ -66,35 +66,19 @@ const renderFooter = ({ locale, messages }) => `
   </footer>
 `;
 
-export const pageShell = ({
-  active,
+const renderHead = ({
   assets,
-  body,
+  canonical,
   config,
   description,
-  headLinks = '',
-  locale = defaultLocale,
-  canonicalPath,
-  alternatives = localeRegistry.locales.map((option) => ({
-    ...option,
-    route: `${option.prefix}/`,
-  })),
-  path,
-  robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
+  headLinks,
+  locale,
+  pageTitle,
+  robots,
+  socialAlt,
+  socialImage,
   structuredData,
-  title,
-}) => {
-  const messages = siteMessages(locale);
-  const pageTitle = title === 'ashfox' ? `ashfox: ${messages.pageTitle}` : `${title} | ashfox`;
-  const canonical = absoluteUrl(config.siteOrigin, canonicalPath ?? path);
-  const socialImage = absoluteUrl(
-    config.siteOrigin,
-    assets.social[active === 'docs' ? 'docs' : 'landing'],
-  );
-  const socialAlt = active === 'docs' ? messages.socialDocs : messages.socialLanding;
-  return `<!doctype html>
-<html lang="${locale.code}">
-  <head>
+}) => `  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="${escapeHtml(description)}">
@@ -123,7 +107,49 @@ export const pageShell = ({
     <script type="module" src="${assets.js}"></script>
     ${structuredDataScript(structuredData)}
     <title>${escapeHtml(pageTitle)}</title>
-  </head>
+  </head>`;
+
+export const pageShell = ({
+  active,
+  assets,
+  body,
+  config,
+  description,
+  headLinks = '',
+  locale = defaultLocale,
+  canonicalPath,
+  alternatives = localeRegistry.locales.map((option) => ({
+    ...option,
+    route: `${option.prefix}/`,
+  })),
+  path,
+  robots = 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
+  structuredData,
+  title,
+}) => {
+  const messages = siteMessages(locale);
+  const pageTitle = title === 'ashfox' ? `ashfox: ${messages.pageTitle}` : `${title} | ashfox`;
+  const canonical = absoluteUrl(config.siteOrigin, canonicalPath ?? path);
+  const socialImage = absoluteUrl(
+    config.siteOrigin,
+    assets.social[active === 'docs' ? 'docs' : 'landing'],
+  );
+  const socialAlt = active === 'docs' ? messages.socialDocs : messages.socialLanding;
+  return `<!doctype html>
+<html lang="${locale.code}">
+${renderHead({
+  assets,
+  canonical,
+  config,
+  description,
+  headLinks,
+  locale,
+  pageTitle,
+  robots,
+  socialAlt,
+  socialImage,
+  structuredData,
+})}
   <body data-site-copy="${escapeHtml(JSON.stringify(messages))}">
     <a class="skip-link" href="#main">${escapeHtml(locale.ui.skip)}</a>
     ${siteHeader({ active, locale, alternatives, messages })}

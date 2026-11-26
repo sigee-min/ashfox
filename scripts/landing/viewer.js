@@ -117,6 +117,48 @@ const bindViewerControls = (scope, frame, player, onPlay, clips, reduced) => {
   return bindMotion;
 };
 
+const createViewerControls = (renderer, enableZoom) => {
+  const controls = new OrbitControls(
+    new THREE.PerspectiveCamera(34, 1, 0.01, 1000),
+    renderer.domElement,
+  );
+  controls.enablePan = false;
+  controls.enableZoom = Boolean(enableZoom);
+  controls.enableDamping = true;
+  controls.minPolarAngle = 0.35;
+  controls.maxPolarAngle = 2.4;
+  return { camera: controls.object, controls };
+};
+
+const observeViewerHost = (host, frame, renderer, onVisibility) => {
+  const resizeObs = new ResizeObserver(() => {
+    const next = frame.resize();
+    renderer.setSize(next.w, next.h);
+  });
+  resizeObs.observe(host);
+  const visObs = new IntersectionObserver((entries) => {
+    onVisibility(entries[0]?.isIntersecting ?? true);
+  });
+  visObs.observe(host);
+  return () => {
+    resizeObs.disconnect();
+    visObs.disconnect();
+  };
+};
+
+const startViewerLoop = (renderer, scene, camera, controls, mixer, isActive) => {
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => {
+    const state = isActive();
+    if (!state.visible || document.hidden) return;
+    const delta = Math.min(clock.getDelta(), 0.05);
+    if (state.playing) mixer.update(delta);
+    controls.update();
+    renderer.render(scene, camera);
+  });
+  renderer.render(scene, camera);
+};
+
 const mountModel = async (host, modelSrc, options = {}) => {
   const fallback = host.querySelector('img');
   const status = options.statusEl || document.querySelector('[data-model-status]');
@@ -124,14 +166,7 @@ const mountModel = async (host, modelSrc, options = {}) => {
   const renderer = createRenderer(host);
   const scene = new THREE.Scene();
   addStudioLights(scene);
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.01, 1000);
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enablePan = false;
-  controls.enableZoom = Boolean(options.enableZoom);
-  controls.enableDamping = true;
-  controls.minPolarAngle = 0.35;
-  controls.maxPolarAngle = 2.4;
-
+  const { camera, controls } = createViewerControls(renderer, options.enableZoom);
   const model = await new GLTFLoader().loadAsync(modelSrc);
   scene.add(model.scene);
   const frame = setupCameraFrame(model.scene, camera, controls, host);
@@ -155,25 +190,10 @@ const mountModel = async (host, modelSrc, options = {}) => {
   );
   if (!playing) mixer.update(0);
 
-  const resizeObs = new ResizeObserver(() => {
-    const next = frame.resize();
-    renderer.setSize(next.w, next.h);
+  const disconnectObservers = observeViewerHost(host, frame, renderer, (nextVisible) => {
+    visible = nextVisible;
   });
-  resizeObs.observe(host);
-  const visObs = new IntersectionObserver((entries) => {
-    visible = entries[0]?.isIntersecting ?? true;
-  });
-  visObs.observe(host);
-
-  const clock = new THREE.Clock();
-  renderer.setAnimationLoop(() => {
-    if (!visible || document.hidden) return;
-    const delta = Math.min(clock.getDelta(), 0.05);
-    if (playing) mixer.update(delta);
-    controls.update();
-    renderer.render(scene, camera);
-  });
-  renderer.render(scene, camera);
+  startViewerLoop(renderer, scene, camera, controls, mixer, () => ({ playing, visible }));
   if (fallback) fallback.hidden = true;
   host.dataset.ready = 'true';
   if (status) status.textContent = siteCopy.dragModel || '';
@@ -184,8 +204,7 @@ const mountModel = async (host, modelSrc, options = {}) => {
     setView: frame.setAngle,
     dispose: () => {
       renderer.setAnimationLoop(null);
-      resizeObs.disconnect();
-      visObs.disconnect();
+      disconnectObservers();
       controls.dispose();
       renderer.dispose();
       renderer.domElement.remove();

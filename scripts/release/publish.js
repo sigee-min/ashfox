@@ -2,37 +2,32 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
+const { readJson } = require('../shared');
 const { names, hash, verify } = require('./artifacts');
 const { isStrictSemVer } = require('./validate');
 const { instructions } = require('./instructions');
 
-const publish = async ({ api, repository, sha, version, directory, changelog }) => {
-  if (
-    !isStrictSemVer(version) ||
-    !/^[a-f0-9]{40}$/.test(sha) ||
-    !/^[\w.-]+\/[\w.-]+$/.test(repository)
-  )
-    throw new Error('Invalid release identity');
-  verify(directory);
-  const tag = `v${version}`;
-  const base = `/repos/${repository}/releases`;
-  const files = [...names, 'SHA256SUMS'];
-  let release = await api(`${base}/tags/${tag}`, { allowMissing: true });
+const buildReleaseBody = (repository, tag, sha, changelog) => {
   const copy = instructions({
     cli: `https://github.com/${repository}/releases/download/${tag}/ashfox-cli.tgz`,
     onboarding: true,
     grouped: true,
   });
+  return `## Get started\n\nRequires Node.js 24+ and npm. Run in your game or asset project:\n\n${copy.install}\n\n${copy.start}\n\n${copy.check}\n\nGLB, PNG, WAV and OGG exports need no additional tools. Chrome is optional for capture.\n\n[CLI reference](https://ashfox.io/docs/guides/cli/) · [Installation guide](https://ashfox.io/docs/guides/install/)\n\n${changelog}\n\n## Artifacts\n\nCLI, starter sources and SHA256SUMS were built from ${sha}.\n`;
+};
+
+const ensureReleaseRecord = async (api, { base, tag, sha, version, changelog, body }) => {
+  let release = await api(`${base}/tags/${tag}`, { allowMissing: true });
   if (!release || release.draft) {
-    if (typeof changelog !== 'string' || !changelog.trim())
+    if (typeof changelog !== 'string' || !changelog.trim()) {
       throw new Error('Release changelog entry missing');
+    }
   } else if (release.immutable !== true) {
     throw new Error(
       'Published release immutability was not confirmed; inspect GitHub before retrying',
     );
   }
-  const body = `## Get started\n\nRequires Node.js 24+ and npm. Run in your game or asset project:\n\n${copy.install}\n\n${copy.start}\n\n${copy.check}\n\nGLB, PNG, WAV and OGG exports need no additional tools. Chrome is optional for capture.\n\n[CLI reference](https://ashfox.io/docs/guides/cli/) · [Installation guide](https://ashfox.io/docs/guides/install/)\n\n${changelog}\n\n## Artifacts\n\nCLI, starter sources and SHA256SUMS were built from ${sha}.\n`;
-  if (!release)
+  if (!release) {
     release = await api(base, {
       method: 'POST',
       json: {
@@ -44,23 +39,47 @@ const publish = async ({ api, repository, sha, version, directory, changelog }) 
         body,
       },
     });
-  if (release.draft && release.target_commitish !== sha)
+  }
+  if (release.draft && release.target_commitish !== sha) {
     throw new Error('Draft belongs to a different commit');
+  }
+  return release;
+};
+
+const syncReleaseAssets = async (api, base, release, directory, files) => {
   for (const name of files) {
     const bytes = fs.readFileSync(path.join(directory, name));
     let asset = release.assets.find((item) => item.name === name);
     if (!asset) {
-      if (!release.draft)
+      if (!release.draft) {
         throw new Error(`Published release is missing ${name}; publish a new version`);
+      }
       asset = await api(release.upload_url.split('{')[0] + `?name=${encodeURIComponent(name)}`, {
         method: 'POST',
         bytes,
       });
     }
     const downloaded = await api(`${base}/assets/${asset.id}`, { binary: true });
-    if (hash(downloaded) !== hash(bytes))
+    if (hash(downloaded) !== hash(bytes)) {
       throw new Error(`Remote asset differs: ${name}; refusing overwrite`);
+    }
   }
+};
+
+const publish = async ({ api, repository, sha, version, directory, changelog }) => {
+  if (
+    !isStrictSemVer(version) ||
+    !/^[a-f0-9]{40}$/.test(sha) ||
+    !/^[\w.-]+\/[\w.-]+$/.test(repository)
+  ) {
+    throw new Error('Invalid release identity');
+  }
+  verify(directory);
+  const tag = `v${version}`;
+  const base = `/repos/${repository}/releases`;
+  const body = buildReleaseBody(repository, tag, sha, changelog);
+  const release = await ensureReleaseRecord(api, { base, tag, sha, version, changelog, body });
+  await syncReleaseAssets(api, base, release, directory, [...names, 'SHA256SUMS']);
   if (release.draft) {
     const published = await api(`${base}/${release.id}`, {
       method: 'PATCH',
@@ -90,7 +109,7 @@ const releaseNotes = (root, version) => {
 
 const main = async () => {
   const root = path.resolve(__dirname, '../..');
-  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version;
+  const version = readJson(path.join(root, 'package.json')).version;
   if (!isStrictSemVer(version)) throw new Error('Invalid version');
   const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const tag = spawnSync('git', ['rev-parse', '--verify', `refs/tags/v${version}^{commit}`], {

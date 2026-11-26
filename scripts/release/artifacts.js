@@ -1,13 +1,12 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
+const { sha256 } = require('../shared');
 const root = path.resolve(__dirname, '../..');
 const names = ['ashfox-cli.tgz', 'starter.zip'];
-const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const verify = (directory) => {
   const expected = names
-    .map((name) => `${hash(fs.readFileSync(path.join(directory, name)))}  ${name}\n`)
+    .map((name) => `${sha256(fs.readFileSync(path.join(directory, name)))}  ${name}\n`)
     .join('');
   if (fs.readFileSync(path.join(directory, 'SHA256SUMS'), 'utf8') !== expected) {
     throw new Error('Release checksum mismatch');
@@ -21,8 +20,8 @@ if (require.main === module) {
     fs.copyFileSync(path.join(root, 'dist', 'docs-delivery', name), path.join(out, name));
   fs.writeFileSync(
     path.join(out, 'SHA256SUMS'),
-    names.map((name) => `${hash(fs.readFileSync(path.join(out, name)))}  ${name}\n`).join(''),
+    names.map((name) => `${sha256(fs.readFileSync(path.join(out, name)))}  ${name}\n`).join(''),
   );
   verify(out);
 }
-module.exports = { names, hash, verify };
+module.exports = { names, hash: sha256, verify };
