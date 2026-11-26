@@ -1,4 +1,5 @@
 import type { ProjectDocument, TextureAsset } from '../../model';
+import type { TextureRaster } from '../../model/texture';
 import type { TextureComposition } from './types';
 import { parseSurfaceColor, type RgbColor } from '../color';
 import {
@@ -89,11 +90,11 @@ const assertCanvasDetail = (
   index: number,
   width: number,
   height: number,
-): void => {
+): RgbColor => {
   if (detail === null || typeof detail !== 'object') {
     throw new TypeError(`Texture raster detail ${index} must be an object.`);
   }
-  parseSurfaceColor(detail.color);
+  const color = parseSurfaceColor(detail.color);
   if (detail.alpha !== 0 && detail.alpha !== 255) {
     throw new RangeError(`Texture raster detail ${index} alpha must be 0 or 255.`);
   }
@@ -106,6 +107,7 @@ const assertCanvasDetail = (
     height,
     `Texture raster detail ${index}`,
   );
+  return color;
 };
 
 const assertAlphaMask = (
@@ -135,15 +137,20 @@ const assertAlphaMask = (
   }
 };
 
+interface ParsedTextureComposition {
+  readonly background: RgbColor;
+  readonly detailColors: readonly RgbColor[];
+}
+
 const assertTextureComposition = (
   width: number,
   height: number,
   composition: TextureComposition,
-): void => {
+): ParsedTextureComposition => {
   if (composition === null || typeof composition !== 'object') {
     throw new TypeError('Texture composition must be an object.');
   }
-  parseSurfaceColor(composition.background);
+  const background = parseSurfaceColor(composition.background);
   if (composition.backgroundAlpha !== 0 && composition.backgroundAlpha !== 255) {
     throw new RangeError('Texture background alpha must be exactly 0 or 255.');
   }
@@ -158,15 +165,20 @@ const assertTextureComposition = (
   ) {
     throw new RangeError('Texture raster details exceed the bounded asset budget.');
   }
+  const detailColors: RgbColor[] = [];
   for (const [index, detail] of composition.canvasDetails.entries()) {
-    assertCanvasDetail(detail, index, width, height);
+    detailColors.push(assertCanvasDetail(detail, index, width, height));
   }
   for (const [index, mask] of composition.alphaMasks.entries()) {
     assertAlphaMask(mask, index, width, height);
   }
+  return { background, detailColors };
 };
 
 const canonicalByteViews = new WeakSet<CanonicalRgbaBytes>();
+
+export const isCanonicalByteView = (bytes: CanonicalRgbaBytes): boolean =>
+  canonicalByteViews.has(bytes);
 
 const immutableRgba = (rgba: Uint8Array): CanonicalRgbaBytes => {
   // The caller transfers this freshly allocated buffer and never retains it.
@@ -257,6 +269,24 @@ const applyAlphaMasks = (
   }
 };
 
+interface CachedRasterEntry {
+  readonly width: number;
+  readonly height: number;
+  readonly raster: CanonicalTextureRaster;
+}
+
+const textureRasterCache = new WeakMap<TextureRaster, CachedRasterEntry>();
+
+const allFrozen = (items: readonly object[]): boolean =>
+  items.every((item) => Object.isFrozen(item));
+
+const isFrozenTextureRaster = (raster: TextureRaster): boolean =>
+  Object.isFrozen(raster) &&
+  Object.isFrozen(raster.canvasDetails) &&
+  allFrozen(raster.canvasDetails) &&
+  (raster.alphaMasks === undefined ||
+    (Object.isFrozen(raster.alphaMasks) && allFrozen(raster.alphaMasks)));
+
 /** Materialize a validated explicit composition without a ProjectDocument. */
 export const rasterizeCanonicalTexture = (
   width: number,
@@ -264,19 +294,11 @@ export const rasterizeCanonicalTexture = (
   composition: TextureComposition,
 ): CanonicalTextureRaster => {
   assertTextureDimensions(width, height, 'Canonical texture');
-  assertTextureComposition(width, height, composition);
+  const parsed = assertTextureComposition(width, height, composition);
   const rgba = new Uint8Array(width * height * 4);
-  fill(
-    rgba,
-    width,
-    0,
-    0,
-    width,
-    height,
-    parseSurfaceColor(composition.background),
-    composition.backgroundAlpha,
-  );
-  for (const detail of composition.canvasDetails) {
+  fill(rgba, width, 0, 0, width, height, parsed.background, composition.backgroundAlpha);
+  for (let index = 0; index < composition.canvasDetails.length; index += 1) {
+    const detail = composition.canvasDetails[index]!;
     fill(
       rgba,
       width,
@@ -284,7 +306,7 @@ export const rasterizeCanonicalTexture = (
       detail.y,
       detail.width,
       detail.height,
-      parseSurfaceColor(detail.color),
+      parsed.detailColors[index]!,
       detail.alpha,
     );
   }
@@ -292,11 +314,52 @@ export const rasterizeCanonicalTexture = (
   return Object.freeze({ width, height, rgba: immutableRgba(rgba) });
 };
 
+/** Materialize a TextureRaster with WeakMap caching when the descriptor is deeply frozen. */
+export const rasterizeTextureSpec = (
+  width: number,
+  height: number,
+  spec: TextureRaster,
+): CanonicalTextureRaster => {
+  assertTextureDimensions(width, height, 'Canonical texture');
+  const cached = textureRasterCache.get(spec);
+  if (cached !== undefined && cached.width === width && cached.height === height) {
+    return cached.raster;
+  }
+  const raster = rasterizeCanonicalTexture(width, height, {
+    background: spec.background,
+    backgroundAlpha: spec.backgroundAlpha,
+    canvasDetails: spec.canvasDetails,
+    alphaMasks: spec.alphaMasks ?? [],
+  });
+  if (isFrozenTextureRaster(spec)) {
+    textureRasterCache.set(spec, { width, height, raster });
+  }
+  return raster;
+};
+
 export const rasterizeTexture = (
   document: ProjectDocument,
   texture: TextureAsset,
 ): CanonicalTextureRaster => {
   assertTextureDimensions(texture.width, texture.height, 'Canonical texture');
+  if (texture.raster !== undefined) {
+    const cached = textureRasterCache.get(texture.raster);
+    if (
+      cached !== undefined &&
+      cached.width === texture.width &&
+      cached.height === texture.height
+    ) {
+      return cached.raster;
+    }
+  }
   const composition = composeTextureRaster(document, texture);
-  return rasterizeCanonicalTexture(texture.width, texture.height, composition);
+  const raster = rasterizeCanonicalTexture(texture.width, texture.height, composition);
+  if (texture.raster !== undefined && isFrozenTextureRaster(texture.raster)) {
+    textureRasterCache.set(texture.raster, {
+      width: texture.width,
+      height: texture.height,
+      raster,
+    });
+  }
+  return raster;
 };

@@ -253,7 +253,54 @@ const retiredOwnerPathViolations = (files, sources) => {
   });
 };
 
-const main = () => {
+const collectLayoutFindings = (fileStats, namedFiles) => {
+  const relativeNamed = namedFiles.map(relativePath);
+  const sourceSizeBaseline = JSON.parse(fs.readFileSync(sourceSizeBaselinePath, 'utf8'));
+  return {
+    oversizedFiles: fileStats.filter(({ lines }) => lines > maxFileLines),
+    oversizedFileStems: codeFileStemViolations(relativeNamed, maxFileStemLength),
+    contractLayoutRegressions: ownerContractViolations(
+      relativeNamed,
+      qualityPolicy.ownerLayout.contractFile,
+    ),
+    testLayoutRegressions: testLayoutViolations(relativeNamed, qualityPolicy.ownerLayout),
+    testFileLineRegressions: testFileLineViolations(
+      namedFiles.map((file) => ({
+        file: relativePath(file),
+        lines: lineCount(fs.readFileSync(file, 'utf8')),
+      })),
+      maxTestFileLines,
+    ),
+    sourceSizeRegressions: sourceSizeRatchetViolations(
+      fileStats,
+      sourceSizeBaseline,
+      sourceSizeRatchetLines,
+    ),
+    sourceSizeHistoryRegressions: sourceSizeHistoryViolations(
+      sourceSizeBaseline,
+      readHistoricalSourceSizeBaselines({
+        repoRoot,
+        baselinePath: sourceSizeBaselinePath,
+        currentBaseline: sourceSizeBaseline,
+      }),
+      sourceSizeRatchetLines,
+    ),
+  };
+};
+
+const collectSourceAndGraphFindings = (files, sources) => {
+  const graph = dependencyGraph(files, sources);
+  return {
+    oversized: files.flatMap((file) => oversizedFunctions(file, sources.get(file))),
+    unsafeEscapes: files.flatMap((file) => unsafeTypeEscapes(file, sources.get(file))),
+    cycles: dependencyCycles(graph),
+    directionViolations: dependencyDirectionViolations(graph),
+    undeclaredDependencies: undeclaredWorkspaceDependencies(files, sources),
+    retiredOwnerPaths: retiredOwnerPathViolations(files, sources),
+  };
+};
+
+const collectArchitectureFindings = () => {
   const files = sourceRoots.flatMap(sourceFiles);
   const namedFiles = ownerWorkspaces.flatMap(ownerCodeFiles);
   const sources = new Map(files.map((file) => [file, fs.readFileSync(file, 'utf8')]));
@@ -261,63 +308,68 @@ const main = () => {
     file: relativePath(file),
     lines: lineCount(sources.get(file)),
   }));
-  const oversizedFiles = fileStats.filter(({ lines }) => lines > maxFileLines);
-  const oversizedFileStems = codeFileStemViolations(
-    namedFiles.map(relativePath),
-    maxFileStemLength,
+  return {
+    ...collectLayoutFindings(fileStats, namedFiles),
+    ...collectSourceAndGraphFindings(files, sources),
+  };
+};
+
+const printFindings = (items, format) => {
+  for (const item of items) console.error(format(item));
+};
+
+const reportArchitectureFindings = (findings) => {
+  printFindings(
+    findings.oversizedFiles,
+    (f) => `architecture: file ${f.file} has ${f.lines} lines (max ${maxFileLines})`,
   );
-  const contractLayoutRegressions = ownerContractViolations(
-    namedFiles.map(relativePath),
-    qualityPolicy.ownerLayout.contractFile,
+  printFindings(
+    findings.oversizedFileStems,
+    (f) =>
+      `architecture: source filename ${f.file} has a ${f.length}-character stem (max ${f.maximumLength}); move repeated owner context into a directory and shorten the filename`,
   );
-  const testLayoutRegressions = testLayoutViolations(
-    namedFiles.map(relativePath),
-    qualityPolicy.ownerLayout,
+  printFindings(findings.contractLayoutRegressions, (f) => `architecture: ${f.reason}: ${f.file}`);
+  printFindings(findings.testLayoutRegressions, (f) => `architecture: ${f.reason}: ${f.file}`);
+  printFindings(
+    findings.testFileLineRegressions,
+    (f) => `architecture: test ${f.file} has ${f.lines} lines (max ${f.maximumLines})`,
   );
-  const testFileLineRegressions = testFileLineViolations(
-    namedFiles.map((file) => ({
-      file: relativePath(file),
-      lines: lineCount(fs.readFileSync(file, 'utf8')),
-    })),
-    maxTestFileLines,
+  printFindings(
+    findings.sourceSizeRegressions,
+    (f) => `architecture: ${f.reason}: ${f.file} has ${f.lines} lines (allowed ${f.allowed})`,
   );
-  const sourceSizeBaseline = JSON.parse(fs.readFileSync(sourceSizeBaselinePath, 'utf8'));
-  const sourceSizeRegressions = sourceSizeRatchetViolations(
-    fileStats,
-    sourceSizeBaseline,
-    sourceSizeRatchetLines,
+  printFindings(
+    findings.sourceSizeHistoryRegressions,
+    (f) =>
+      `architecture: ${f.reason}: ${f.file} has ${f.lines} baseline lines (historical max ${f.allowed})`,
   );
-  const sourceSizeHistoryRegressions = sourceSizeHistoryViolations(
-    sourceSizeBaseline,
-    readHistoricalSourceSizeBaselines({
-      repoRoot,
-      baselinePath: sourceSizeBaselinePath,
-      currentBaseline: sourceSizeBaseline,
-    }),
-    sourceSizeRatchetLines,
+  printFindings(
+    findings.oversized,
+    (f) =>
+      `architecture: function ${f.file}:${f.start} ${f.name} has ${f.lines} lines (max ${maxFunctionLines})`,
   );
-  const oversized = files.flatMap((file) => oversizedFunctions(file, sources.get(file)));
-  const unsafeEscapes = files.flatMap((file) => unsafeTypeEscapes(file, sources.get(file)));
-  const graph = dependencyGraph(files, sources);
-  const cycles = dependencyCycles(graph);
-  const directionViolations = dependencyDirectionViolations(graph);
-  const undeclaredDependencies = undeclaredWorkspaceDependencies(files, sources);
-  const retiredOwnerPaths = retiredOwnerPathViolations(files, sources);
-  if (
-    oversizedFiles.length === 0 &&
-    oversizedFileStems.length === 0 &&
-    contractLayoutRegressions.length === 0 &&
-    testLayoutRegressions.length === 0 &&
-    testFileLineRegressions.length === 0 &&
-    sourceSizeRegressions.length === 0 &&
-    sourceSizeHistoryRegressions.length === 0 &&
-    oversized.length === 0 &&
-    unsafeEscapes.length === 0 &&
-    cycles.length === 0 &&
-    directionViolations.length === 0 &&
-    undeclaredDependencies.length === 0 &&
-    retiredOwnerPaths.length === 0
-  ) {
+  printFindings(findings.unsafeEscapes, (f) => `architecture: ${f.kind} ${f.file}:${f.line}`);
+  printFindings(
+    findings.cycles,
+    (c) => `architecture: dependency cycle ${c.map(relativePath).join(' -> ')}`,
+  );
+  printFindings(
+    findings.directionViolations,
+    (v) => `architecture: forbidden dependency ${v.source} -> ${v.target}`,
+  );
+  printFindings(
+    findings.undeclaredDependencies,
+    (f) => `architecture: ${f.owner} imports undeclared workspace ${f.target} in ${f.file}`,
+  );
+  printFindings(
+    findings.retiredOwnerPaths,
+    (f) => `architecture: retired design owner path remains in ${f.file}`,
+  );
+};
+
+const main = () => {
+  const findings = collectArchitectureFindings();
+  if (Object.values(findings).every((items) => items.length === 0)) {
     console.log(
       `ashfox architecture gate ok: files <= ${maxFileLines}, ` +
         `file stems <= ${maxFileStemLength}, ` +
@@ -329,67 +381,7 @@ const main = () => {
     );
     return;
   }
-  for (const finding of oversizedFiles) {
-    console.error(
-      `architecture: file ${finding.file} has ${finding.lines} lines ` + `(max ${maxFileLines})`,
-    );
-  }
-  for (const finding of oversizedFileStems) {
-    console.error(
-      `architecture: source filename ${finding.file} has a ` +
-        `${finding.length}-character stem (max ${finding.maximumLength}); ` +
-        'move repeated owner context into a directory and shorten the filename',
-    );
-  }
-  for (const finding of contractLayoutRegressions) {
-    console.error(`architecture: ${finding.reason}: ${finding.file}`);
-  }
-  for (const finding of testLayoutRegressions) {
-    console.error(`architecture: ${finding.reason}: ${finding.file}`);
-  }
-  for (const finding of testFileLineRegressions) {
-    console.error(
-      `architecture: test ${finding.file} has ${finding.lines} lines ` +
-        `(max ${finding.maximumLines})`,
-    );
-  }
-  for (const finding of sourceSizeRegressions) {
-    console.error(
-      `architecture: ${finding.reason}: ${finding.file} has ` +
-        `${finding.lines} lines (allowed ${finding.allowed})`,
-    );
-  }
-  for (const finding of sourceSizeHistoryRegressions) {
-    console.error(
-      `architecture: ${finding.reason}: ${finding.file} has ` +
-        `${finding.lines} baseline lines (historical max ${finding.allowed})`,
-    );
-  }
-  for (const finding of oversized) {
-    console.error(
-      `architecture: function ${finding.file}:${finding.start} ` +
-        `${finding.name} has ${finding.lines} lines ` +
-        `(max ${maxFunctionLines})`,
-    );
-  }
-  for (const finding of unsafeEscapes) {
-    console.error(`architecture: ${finding.kind} ${finding.file}:${finding.line}`);
-  }
-  for (const cycle of cycles) {
-    console.error('architecture: dependency cycle ' + cycle.map(relativePath).join(' -> '));
-  }
-  for (const violation of directionViolations) {
-    console.error(`architecture: forbidden dependency ${violation.source} -> ` + violation.target);
-  }
-  for (const finding of undeclaredDependencies) {
-    console.error(
-      `architecture: ${finding.owner} imports undeclared workspace ` +
-        `${finding.target} in ${finding.file}`,
-    );
-  }
-  for (const finding of retiredOwnerPaths) {
-    console.error(`architecture: retired design owner path remains in ${finding.file}`);
-  }
+  reportArchitectureFindings(findings);
   process.exitCode = 1;
 };
 

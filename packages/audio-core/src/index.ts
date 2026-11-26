@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import { parseSoundDocument } from './source';
 import { SoundError, fail } from './validate';
 import { render, master, measure } from './render';
@@ -99,7 +100,7 @@ export const compileSoundRecipe = (
   file = 'sound.ashfox',
 ): readonly SoundProduct[] => {
   const recipe = readRecipe(rawRecipe);
-  const sorted = [...recipe.variants].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const sorted = [...recipe.variants].sort((a, b) => compareText(a.id, b.id));
   return Object.freeze(
     sorted.map((variant) => {
       try {
@@ -116,7 +117,7 @@ export const compileSoundRecipe = (
 
 export const compileSoundSource = (source: string, file: string): readonly SoundProduct[] => {
   const { recipe, report } = parseSoundDocument(source, file);
-  const sorted = [...recipe.variants].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const sorted = [...recipe.variants].sort((a, b) => compareText(a.id, b.id));
   return Object.freeze(
     sorted.map((variant) => {
       try {

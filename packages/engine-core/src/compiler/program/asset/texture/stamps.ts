@@ -1,4 +1,5 @@
 import type { ProgramTextureStampDecl } from '../../../../project/program/syntax/contract';
+import { compareText } from '../../../../stableOrder';
 import { readStampPixels, type TextureExpressionContext } from './expressions';
 import { readRole, type PaletteRole } from './palette';
 import type { TextureStamp, TextureStampCell } from './raster';
@@ -135,7 +136,7 @@ export const prepareStamps = (
 ): ReadonlyMap<string, TextureStamp> | null => {
   const result = new Map<string, TextureStamp>();
   let valid = true;
-  const sorted = [...declarations].sort((left, right) => left.id.localeCompare(right.id));
+  const sorted = [...declarations].sort((left, right) => compareText(left.id, right.id));
   for (const declaration of sorted) {
     if (typeof declaration.id !== 'string' || result.has(declaration.id)) {
       report.report(

@@ -1,6 +1,6 @@
 import type { ProjectDocument, TextureAsset } from '../model';
 import { rasterizeTexture } from '../textures/textureRecipe/raster';
-import { canonicalPngDigest, encodeCanonicalPng } from '../textures/textureRecipe/png';
+import { encodeCanonicalPng, encodeCanonicalPngWithDigest } from '../textures/textureRecipe/png';
 import type { BlobCopyExportFile, BinaryExportFile } from './contract';
 import type { ExportAdaptedDocument, ExportTextureAsset } from './adapter';
 
@@ -19,8 +19,7 @@ export const createTextureExportFile = (
   path: string,
 ): MaterializedTextureFile => {
   if (texture.raster !== undefined) {
-    const bytes = canonicalTextureBytes(document, texture);
-    const digest = canonicalPngDigest(bytes);
+    const { bytes, digest } = encodeCanonicalPngWithDigest(rasterizeTexture(document, texture));
     if (texture.source.contentHash !== digest || texture.source.byteLength !== bytes.byteLength) {
       throw new Error(`Texture "${texture.id}" failed canonical PNG lineage validation.`);
     }

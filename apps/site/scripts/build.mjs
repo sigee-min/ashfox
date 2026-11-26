@@ -85,6 +85,104 @@ const localMediaName = (value, extension, label) => {
 
 const digestBytes = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
+const validateShowcaseWorkspace = (workspace) => {
+  assertExactKeys(workspace, ['path', 'sha256', 'workspaceHash'], 'Showcase workspace');
+  if (workspace.path !== canonicalWorkspaceRelativePath) {
+    throw new Error('Showcase manifest must reference the canonical workspace.');
+  }
+  const workspaceDigest = requiredDigest(workspace.sha256, 'Showcase workspace sha256');
+  requiredDigest(workspace.workspaceHash, 'Showcase workspace workspaceHash');
+  return workspaceDigest;
+};
+
+const validateShowcaseCapture = (capture) => {
+  assertExactKeys(
+    capture,
+    ['fingerprint', 'environment', 'camera', 'width', 'height', 'fps'],
+    'Showcase capture',
+  );
+  if (
+    capture.environment !== 'studio' ||
+    capture.camera !== 'perspective' ||
+    capture.width !== 640 ||
+    capture.height !== 360 ||
+    capture.fps !== 10
+  ) {
+    throw new Error('Showcase capture settings do not match the public contract.');
+  }
+  requiredString(capture.fingerprint, 'Showcase capture fingerprint');
+};
+
+const parseShowcaseMotion = (motion, label) => {
+  assertExactKeys(
+    motion,
+    ['name', 'duration', 'artifact', 'sha256', 'byteLength'],
+    `${label} motion`,
+  );
+  if (
+    !/^[a-z_]+$/u.test(motion.name) ||
+    !Number.isFinite(motion.duration) ||
+    motion.duration <= 0
+  ) {
+    throw new Error('Invalid motion identity');
+  }
+  return {
+    name: motion.name,
+    duration: motion.duration,
+    artifact: localMediaName(motion.artifact, '.mp4', `${label} motion artifact`),
+    sha256: requiredDigest(motion.sha256, `${label} motion sha256`),
+    byteLength: requiredInteger(motion.byteLength, `${label} motion byteLength`),
+  };
+};
+
+const SHOWCASE_ENTRY_KEYS = [
+  'packageName',
+  'entryName',
+  'closureHash',
+  'buildKey',
+  'productHash',
+  'artifact',
+  'poster',
+  'artifactSha256',
+  'posterSha256',
+  'byteLength',
+  'frameCount',
+  'eventCount',
+  'motions',
+  'video',
+];
+
+const parseShowcaseEntry = (entry, index, expectedEntries) => {
+  const label = `Showcase entry ${index}`;
+  assertExactKeys(entry, SHOWCASE_ENTRY_KEYS, label);
+  const packageName = requiredString(entry.packageName, `${label} packageName`);
+  const entryName = requiredString(entry.entryName, `${label} entryName`);
+  if (`${packageName}/${entryName}` !== expectedEntries[index]) {
+    throw new Error(`${label} is not in canonical Griffin/Fox/Goblin order.`);
+  }
+  assertExactKeys(entry.video, ['artifact', 'sha256', 'byteLength'], `${label} video`);
+  return {
+    video: {
+      artifact: localMediaName(entry.video.artifact, '.mp4', `${label} video artifact`),
+      sha256: requiredDigest(entry.video.sha256, `${label} video sha256`),
+      byteLength: requiredInteger(entry.video.byteLength, `${label} video byteLength`),
+    },
+    motions: entry.motions.map((motion) => parseShowcaseMotion(motion, label)),
+    packageName,
+    entryName,
+    closureHash: requiredDigest(entry.closureHash, `${label} closureHash`),
+    buildKey: requiredDigest(entry.buildKey, `${label} buildKey`),
+    productHash: requiredDigest(entry.productHash, `${label} productHash`),
+    artifact: localMediaName(entry.artifact, '.gif', `${label} artifact`),
+    poster: localMediaName(entry.poster, '.png', `${label} poster`),
+    artifactSha256: requiredDigest(entry.artifactSha256, `${label} artifactSha256`),
+    posterSha256: requiredDigest(entry.posterSha256, `${label} posterSha256`),
+    byteLength: requiredInteger(entry.byteLength, `${label} byteLength`),
+    frameCount: requiredInteger(entry.frameCount, `${label} frameCount`),
+    eventCount: requiredInteger(entry.eventCount, `${label} eventCount`),
+  };
+};
+
 const readShowcase = async () => {
   const manifest = JSON.parse(await readFile(showcaseManifestPath, 'utf8'));
   assertExactKeys(
@@ -95,99 +193,15 @@ const readShowcase = async () => {
   if (manifest.format !== 'ashfox-showcase' || manifest.version !== 1) {
     throw new Error('Showcase manifest must use ashfox-showcase version 1.');
   }
-  assertExactKeys(manifest.workspace, ['path', 'sha256', 'workspaceHash'], 'Showcase workspace');
-  if (manifest.workspace.path !== canonicalWorkspaceRelativePath) {
-    throw new Error('Showcase manifest must reference the canonical workspace.');
-  }
-  const workspaceDigest = requiredDigest(manifest.workspace.sha256, 'Showcase workspace sha256');
-  requiredDigest(manifest.workspace.workspaceHash, 'Showcase workspace workspaceHash');
-  assertExactKeys(
-    manifest.capture,
-    ['fingerprint', 'environment', 'camera', 'width', 'height', 'fps'],
-    'Showcase capture',
-  );
-  if (
-    manifest.capture.environment !== 'studio' ||
-    manifest.capture.camera !== 'perspective' ||
-    manifest.capture.width !== 640 ||
-    manifest.capture.height !== 360 ||
-    manifest.capture.fps !== 10
-  ) {
-    throw new Error('Showcase capture settings do not match the public contract.');
-  }
-  requiredString(manifest.capture.fingerprint, 'Showcase capture fingerprint');
+  const workspaceDigest = validateShowcaseWorkspace(manifest.workspace);
+  validateShowcaseCapture(manifest.capture);
   if (!Array.isArray(manifest.entries) || manifest.entries.length === 0) {
     throw new Error('Showcase manifest must declare generated entries.');
   }
   const expectedEntries = ['workbench/griffin', 'creatures/fox', 'creatures/goblin'];
-  const entries = manifest.entries.map((entry, index) => {
-    const label = `Showcase entry ${index}`;
-    assertExactKeys(
-      entry,
-      [
-        'packageName',
-        'entryName',
-        'closureHash',
-        'buildKey',
-        'productHash',
-        'artifact',
-        'poster',
-        'artifactSha256',
-        'posterSha256',
-        'byteLength',
-        'frameCount',
-        'eventCount',
-        'motions',
-        'video',
-      ],
-      label,
-    );
-    const packageName = requiredString(entry.packageName, `${label} packageName`);
-    const entryName = requiredString(entry.entryName, `${label} entryName`);
-    if (`${packageName}/${entryName}` !== expectedEntries[index]) {
-      throw new Error(`${label} is not in canonical Griffin/Fox/Goblin order.`);
-    }
-    assertExactKeys(entry.video, ['artifact', 'sha256', 'byteLength'], `${label} video`);
-    return {
-      video: {
-        artifact: localMediaName(entry.video.artifact, '.mp4', `${label} video artifact`),
-        sha256: requiredDigest(entry.video.sha256, `${label} video sha256`),
-        byteLength: requiredInteger(entry.video.byteLength, `${label} video byteLength`),
-      },
-      motions: entry.motions.map((motion) => {
-        assertExactKeys(
-          motion,
-          ['name', 'duration', 'artifact', 'sha256', 'byteLength'],
-          `${label} motion`,
-        );
-        if (
-          !/^[a-z_]+$/u.test(motion.name) ||
-          !Number.isFinite(motion.duration) ||
-          motion.duration <= 0
-        )
-          throw new Error('Invalid motion identity');
-        return {
-          name: motion.name,
-          duration: motion.duration,
-          artifact: localMediaName(motion.artifact, '.mp4', `${label} motion artifact`),
-          sha256: requiredDigest(motion.sha256, `${label} motion sha256`),
-          byteLength: requiredInteger(motion.byteLength, `${label} motion byteLength`),
-        };
-      }),
-      packageName,
-      entryName,
-      closureHash: requiredDigest(entry.closureHash, `${label} closureHash`),
-      buildKey: requiredDigest(entry.buildKey, `${label} buildKey`),
-      productHash: requiredDigest(entry.productHash, `${label} productHash`),
-      artifact: localMediaName(entry.artifact, '.gif', `${label} artifact`),
-      poster: localMediaName(entry.poster, '.png', `${label} poster`),
-      artifactSha256: requiredDigest(entry.artifactSha256, `${label} artifactSha256`),
-      posterSha256: requiredDigest(entry.posterSha256, `${label} posterSha256`),
-      byteLength: requiredInteger(entry.byteLength, `${label} byteLength`),
-      frameCount: requiredInteger(entry.frameCount, `${label} frameCount`),
-      eventCount: requiredInteger(entry.eventCount, `${label} eventCount`),
-    };
-  });
+  const entries = manifest.entries.map((entry, index) =>
+    parseShowcaseEntry(entry, index, expectedEntries),
+  );
   const workspaceBytes = await readFile(canonicalWorkspacePath);
   if (digestBytes(workspaceBytes) !== workspaceDigest) {
     throw new Error('Showcase workspace digest is stale. Regenerate its media.');
@@ -374,8 +388,15 @@ await cp(path.join(repoRoot, 'assets/docs'), path.join(outputRoot, 'media/guides
   filter: (source) => !source.endsWith('receipt.json'),
 });
 
+const docsByLocale = new Map();
+for (const doc of documents) {
+  const list = docsByLocale.get(doc.locale.code);
+  if (list) list.push(doc);
+  else docsByLocale.set(doc.locale.code, [doc]);
+}
+
 for (const locale of localeRegistry.locales) {
-  const localeDocs = documents.filter((page) => page.locale.code === locale.code);
+  const localeDocs = docsByLocale.get(locale.code) ?? [];
   const searchPayload = Buffer.from(
     JSON.stringify(
       localeDocs.map((doc) => ({
@@ -406,7 +427,7 @@ for (const document of documents) {
       assets,
       config,
       document,
-      documents: documents.filter((page) => page.locale.code === document.locale.code),
+      documents: docsByLocale.get(document.locale.code) ?? [],
     }),
   );
 }

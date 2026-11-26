@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import type { Range, SoundRecipe, SoundVariant, SoundVoice } from './contract';
 import { frame } from './curve';
 import { streams, type Domain } from './random';
@@ -42,8 +43,8 @@ const buildScheduledEvent = (
 
 export function* schedule(recipe: SoundRecipe, variant: SoundVariant): Generator<Event> {
   const voices = new Map(recipe.voices.map((v) => [v.id, v]));
-  for (const sequence of [...recipe.sequences].sort((a, b) => (a.id < b.id ? -1 : 1))) {
-    const steps = [...sequence.steps].sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const sequence of [...recipe.sequences].sort((a, b) => compareText(a.id, b.id))) {
+    const steps = [...sequence.steps].sort((a, b) => compareText(a.id, b.id));
     const count = sequence.repeat?.count ?? 1;
     for (let iteration = 0; iteration < count; iteration++) {
       for (const step of steps)

@@ -115,19 +115,30 @@ const queryStudioElements = (root) => ({
   },
 });
 
-const filterCatalogRows = (rows, catalog, domain, query) => {
+const buildCatalogMap = (catalog) => {
+  const map = new Map();
+  for (const entry of catalog) {
+    const hay =
+      `${entry.id} ${entry.name.en} ${entry.name.ko} ${entry.category} ${entry.tags.join(' ')}`.toLowerCase();
+    map.set(entry.id, { entry, hay });
+  }
+  return map;
+};
+
+const filterCatalogRows = (rows, catalogMap, domain, query) => {
   const q = query.trim().toLowerCase();
   let visible = 0;
   let firstVisibleId = null;
   for (const row of rows) {
-    const entry = catalog.find((x) => x.id === row.dataset.catalogRow);
-    const hay =
-      `${entry.id} ${entry.name.en} ${entry.name.ko} ${entry.category} ${entry.tags.join(' ')}`.toLowerCase();
-    const match = (domain === 'all' || entry.domain === domain) && (!q || hay.includes(q));
+    const record = catalogMap.get(row.dataset.catalogRow);
+    const match =
+      record !== undefined &&
+      (domain === 'all' || record.entry.domain === domain) &&
+      (!q || record.hay.includes(q));
     row.hidden = !match;
     if (match) {
       visible += 1;
-      if (!firstVisibleId) firstVisibleId = entry.id;
+      if (!firstVisibleId) firstVisibleId = record.entry.id;
     }
   }
   return { visible, firstVisibleId };
@@ -202,44 +213,15 @@ const bindStudioActions = (root, info, lang, getActiveEntry) => {
   });
 };
 
-const initAssetStudio = () => {
-  const root = document.querySelector('[data-asset-studio]');
-  const jsonEl = document.getElementById('asset-catalog-data');
-  if (!root || !jsonEl) return;
+const syncStudioUrl = (state) => {
+  const url = new URL(window.location.href);
+  if (state.domain === 'all') url.searchParams.delete('domain');
+  else url.searchParams.set('domain', state.domain);
+  if (state.id) url.searchParams.set('asset', state.id);
+  window.history.replaceState(null, '', url.toString());
+};
 
-  const lang = root.dataset.locale || 'en';
-  const catalog = JSON.parse(jsonEl.textContent || '[]');
-  const rows = [...root.querySelectorAll('[data-catalog-row]')];
-  const { stageEls, info } = queryStudioElements(root);
-  const state = { domain: 'all', id: catalog[0]?.id, query: '' };
-
-  const syncUrl = () => {
-    const url = new URL(window.location.href);
-    if (state.domain === 'all') url.searchParams.delete('domain');
-    else url.searchParams.set('domain', state.domain);
-    if (state.id) url.searchParams.set('asset', state.id);
-    window.history.replaceState(null, '', url.toString());
-  };
-
-  const selectAsset = (id) => {
-    const entry = catalog.find((x) => x.id === id) || catalog[0];
-    if (!entry) return;
-    state.id = entry.id;
-    syncUrl();
-    void renderInspectorEntry(entry, rows, stageEls, info, lang);
-  };
-
-  const refresh = () => {
-    const { visible, firstVisibleId } = filterCatalogRows(rows, catalog, state.domain, state.query);
-    info.count.textContent = `${visible} ${studioCopy.studioCountLabel || 'assets'}`;
-    for (const btn of root.querySelectorAll('[data-domain-tab]')) {
-      btn.setAttribute('aria-pressed', String(btn.dataset.domainTab === state.domain));
-    }
-    const stillVisible = rows.some((r) => r.dataset.catalogRow === state.id && !r.hidden);
-    if (!stillVisible && firstVisibleId) selectAsset(firstVisibleId);
-    else syncUrl();
-  };
-
+const bindStudioControls = ({ root, rows, info, state, refresh, selectAsset }) => {
   for (const btn of root.querySelectorAll('[data-domain-tab]')) {
     btn.addEventListener('click', () => {
       state.domain = btn.dataset.domainTab;
@@ -251,7 +233,46 @@ const initAssetStudio = () => {
     state.query = e.target.value;
     refresh();
   });
-  bindStudioActions(root, info, lang, () => catalog.find((x) => x.id === state.id));
+};
+
+const initAssetStudio = () => {
+  const root = document.querySelector('[data-asset-studio]');
+  const jsonEl = document.getElementById('asset-catalog-data');
+  if (!root || !jsonEl) return;
+
+  const lang = root.dataset.locale || 'en';
+  const catalog = JSON.parse(jsonEl.textContent || '[]');
+  const catalogMap = buildCatalogMap(catalog);
+  const rows = [...root.querySelectorAll('[data-catalog-row]')];
+  const { stageEls, info } = queryStudioElements(root);
+  const state = { domain: 'all', id: catalog[0]?.id, query: '' };
+
+  const selectAsset = (id) => {
+    const entry = catalogMap.get(id)?.entry || catalog[0];
+    if (!entry) return;
+    state.id = entry.id;
+    syncStudioUrl(state);
+    void renderInspectorEntry(entry, rows, stageEls, info, lang);
+  };
+
+  const refresh = () => {
+    const { visible, firstVisibleId } = filterCatalogRows(
+      rows,
+      catalogMap,
+      state.domain,
+      state.query,
+    );
+    info.count.textContent = `${visible} ${studioCopy.studioCountLabel || 'assets'}`;
+    for (const btn of root.querySelectorAll('[data-domain-tab]')) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.domainTab === state.domain));
+    }
+    const stillVisible = rows.some((r) => r.dataset.catalogRow === state.id && !r.hidden);
+    if (!stillVisible && firstVisibleId) selectAsset(firstVisibleId);
+    else syncStudioUrl(state);
+  };
+
+  bindStudioControls({ root, rows, info, state, refresh, selectAsset });
+  bindStudioActions(root, info, lang, () => catalogMap.get(state.id)?.entry);
 
   const params = new URLSearchParams(window.location.search);
   state.domain = params.get('domain') || 'all';
