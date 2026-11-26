@@ -110,6 +110,14 @@ const pushExtrudedRect = (
   });
 };
 
+const TILE_TEX_CACHE = new Map<string, TextureAsset>();
+const PACKED_ATLAS_CACHE = new Map<
+  string,
+  { readonly asset: TextureAsset; readonly rects: readonly (readonly [string, AtlasSubRect])[] }
+>();
+
+const cloneTex = (asset: TextureAsset): TextureAsset => ({ ...asset, source: { ...asset.source } });
+
 const buildPackedLayerAtlas = (
   layer: BlockRenderLayer,
   tileIds: readonly string[],
@@ -120,33 +128,45 @@ const buildPackedLayerAtlas = (
   const tilePx = density === 2 ? 32 : 16;
   const slotPx = tilePx + 2;
   const sorted = [...new Set(tileIds)].sort(compareText);
+  const cacheKey = `${layer}|${density}|${seed}|${sorted.join(',')}`;
+  const cached = PACKED_ATLAS_CACHE.get(cacheKey);
+  if (cached) {
+    for (const [k, v] of cached.rects) rects.set(k, v);
+    return cloneTex(cached.asset);
+  }
   const cols = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
   const rows = Math.max(1, Math.ceil(sorted.length / cols));
   const width = nextPow2(cols * slotPx, tilePx);
   const height = nextPow2(rows * slotPx, tilePx);
   const textureId = structureAtlasTextureId(layer);
   const details: TextureCanvasDetail[] = [];
+  const layerRects: [string, AtlasSubRect][] = [];
   let seq = 0;
   for (let i = 0; i < sorted.length; i += 1) {
     const tileId = sorted[i]!;
     const px0 = (i % cols) * slotPx + 1;
     const py0 = Math.floor(i / cols) * slotPx + 1;
-    rects.set(tileLayerKey(layer, tileId), {
+    const rectKey = tileLayerKey(layer, tileId);
+    const subRect: AtlasSubRect = {
       textureId,
       u0: px0 / width,
       v0: py0 / height,
       uSpan: tilePx / width,
       vSpan: tilePx / height,
-    });
+    };
+    rects.set(rectKey, subRect);
+    layerRects.push([rectKey, subRect]);
     for (const r of paintTileRects(tileId, density, seed, 0)) {
       pushExtrudedRect(details, textureId, seq++, px0, py0, tilePx, r);
     }
   }
-  return makeTextureAsset(textureId, width, height, layer, {
+  const asset = makeTextureAsset(textureId, width, height, layer, {
     background: '#000000',
     backgroundAlpha: layer === 'cutout' ? 0 : 255,
     canvasDetails: details,
   });
+  if (PACKED_ATLAS_CACHE.size < 64) PACKED_ATLAS_CACHE.set(cacheKey, { asset, rects: layerRects });
+  return cloneTex(asset);
 };
 
 /** Packs non-repeating 0..1 structure tiles into up to 3 padded layer atlases. */
@@ -158,11 +178,7 @@ export const buildPackedStructureAtlases = (
   density: StructureDensity = 1,
   seed = 1,
 ): PackedStructureAtlasBundle => {
-  const byLayer: Record<BlockRenderLayer, string[]> = {
-    opaque: [],
-    cutout: [],
-    emissive: [],
-  };
+  const byLayer: Record<BlockRenderLayer, string[]> = { opaque: [], cutout: [], emissive: [] };
   for (const req of requests) byLayer[req.layer].push(req.tileId);
   const textures: Record<string, TextureAsset> = {};
   const rects = new Map<string, AtlasSubRect>();
@@ -180,6 +196,9 @@ const buildMultiTileTexture = (
   density: StructureDensity,
   seed: number,
 ): TextureAsset => {
+  const cacheKey = `${layer}|${tileId}|${density}|${seed}`;
+  const cached = TILE_TEX_CACHE.get(cacheKey);
+  if (cached) return cloneTex(cached);
   const tilePx = density === 2 ? 32 : 16;
   const size = tilePx * 2;
   const textureId = structureTileTextureId(layer, tileId);
@@ -200,11 +219,13 @@ const buildMultiTileTexture = (
       });
     }
   }
-  return makeTextureAsset(textureId, size, size, layer, {
+  const asset = makeTextureAsset(textureId, size, size, layer, {
     background: '#000000',
     backgroundAlpha: layer === 'cutout' ? 0 : 255,
     canvasDetails: details,
   });
+  if (TILE_TEX_CACHE.size < 256) TILE_TEX_CACHE.set(cacheKey, asset);
+  return cloneTex(asset);
 };
 
 let activeTileTextureCache: Map<string, TextureAsset> | null = null;
@@ -267,6 +288,25 @@ const countMultiQuadSavings = (b: AtlasBatchDraft): number => {
 const lerp3 = (a: number, b: number, c: number, d: number, s: number, t: number): number =>
   (a * (1 - s) + b * s) * t + (d * (1 - s) + c * s) * (1 - t);
 
+const pushCornerAttr = (
+  dst: number[],
+  a: readonly number[],
+  vp: number,
+  s0: number,
+  s1: number,
+  t0: number,
+  t1: number,
+): void => {
+  for (let o = 0; o < 3; o += 1)
+    dst.push(lerp3(a[vp + o]!, a[vp + 3 + o]!, a[vp + 6 + o]!, a[vp + 9 + o]!, s0, t1));
+  for (let o = 0; o < 3; o += 1)
+    dst.push(lerp3(a[vp + o]!, a[vp + 3 + o]!, a[vp + 6 + o]!, a[vp + 9 + o]!, s1, t1));
+  for (let o = 0; o < 3; o += 1)
+    dst.push(lerp3(a[vp + o]!, a[vp + 3 + o]!, a[vp + 6 + o]!, a[vp + 9 + o]!, s1, t0));
+  for (let o = 0; o < 3; o += 1)
+    dst.push(lerp3(a[vp + o]!, a[vp + 3 + o]!, a[vp + 6 + o]!, a[vp + 9 + o]!, s0, t0));
+};
+
 const pushSubdividedGrid = (
   dst: AtlasBatchDraft,
   src: AtlasBatchDraft,
@@ -281,10 +321,6 @@ const pushSubdividedGrid = (
   const nx = src.normals[vBase * 3]!;
   const ny = src.normals[vBase * 3 + 1]!;
   const nz = src.normals[vBase * 3 + 2]!;
-  const corner = (v: number, s: number, t: number, o: number) =>
-    lerp3(p[v + o]!, p[v + 3 + o]!, p[v + 6 + o]!, p[v + 9 + o]!, s, t);
-  const col = (v: number, s: number, t: number, o: number) =>
-    lerp3(c[v + o]!, c[v + 3 + o]!, c[v + 6 + o]!, c[v + 9 + o]!, s, t);
   const vp = vBase * 3;
   for (let gy = 0; gy < mh; gy += 1) {
     const t0 = gy / mh;
@@ -293,18 +329,9 @@ const pushSubdividedGrid = (
       const s0 = gx / mw;
       const s1 = (gx + 1) / mw;
       const outBase = dst.positions.length / 3;
-      const corners: readonly [number, number][] = [
-        [s0, t1],
-        [s1, t1],
-        [s1, t0],
-        [s0, t0],
-      ];
-      for (let k = 0; k < 4; k += 1) {
-        const [cs, ct] = corners[k]!;
-        dst.positions.push(corner(vp, cs, ct, 0), corner(vp, cs, ct, 1), corner(vp, cs, ct, 2));
-        dst.normals.push(nx, ny, nz);
-        dst.colors.push(col(vp, cs, ct, 0), col(vp, cs, ct, 1), col(vp, cs, ct, 2));
-      }
+      pushCornerAttr(dst.positions, p, vp, s0, s1, t0, t1);
+      dst.normals.push(nx, ny, nz, nx, ny, nz, nx, ny, nz, nx, ny, nz);
+      pushCornerAttr(dst.colors, c, vp, s0, s1, t0, t1);
       dst.uvs.push(0, 1, 1, 1, 1, 0, 0, 0);
       if (flipped)
         dst.indices.push(outBase + 1, outBase + 2, outBase + 3, outBase + 1, outBase + 3, outBase);
@@ -344,7 +371,10 @@ const appendDemotedFullBatch = (dst: AtlasBatchDraft, src: AtlasBatchDraft): voi
 };
 
 const appendNumbers = (dst: number[], src: readonly number[]): void => {
-  for (let i = 0; i < src.length; i += 1) dst.push(src[i]!);
+  const off = dst.length;
+  const len = src.length;
+  dst.length = off + len;
+  for (let i = 0; i < len; i += 1) dst[off + i] = src[i]!;
 };
 
 const appendBatch = (dst: AtlasBatchDraft, src: AtlasBatchDraft, rect?: AtlasSubRect): void => {
@@ -353,19 +383,26 @@ const appendBatch = (dst: AtlasBatchDraft, src: AtlasBatchDraft, rect?: AtlasSub
   appendNumbers(dst.normals, src.normals);
   appendNumbers(dst.colors, src.colors);
   if (rect) {
+    const off = dst.uvs.length;
+    dst.uvs.length = off + src.uvs.length;
     for (let i = 0; i < src.uvs.length; i += 2) {
-      dst.uvs.push(rect.u0 + src.uvs[i]! * rect.uSpan, rect.v0 + src.uvs[i + 1]! * rect.vSpan);
+      dst.uvs[off + i] = rect.u0 + src.uvs[i]! * rect.uSpan;
+      dst.uvs[off + i + 1] = rect.v0 + src.uvs[i + 1]! * rect.vSpan;
     }
-  } else {
-    appendNumbers(dst.uvs, src.uvs);
-  }
-  for (let i = 0; i < src.indices.length; i += 1) dst.indices.push(base + src.indices[i]!);
+  } else appendNumbers(dst.uvs, src.uvs);
+  const idxOff = dst.indices.length;
+  dst.indices.length = idxOff + src.indices.length;
+  for (let i = 0; i < src.indices.length; i += 1) dst.indices[idxOff + i] = base + src.indices[i]!;
 };
 
-const makeAtlasBatchDraft = (layer: BlockRenderLayer): AtlasBatchDraft => ({
+const makeDraft = (
+  layer: BlockRenderLayer,
+  tileId: string,
+  textureId = tileId,
+): AtlasBatchDraft => ({
   layer,
-  tileId: structureAtlasTextureId(layer),
-  textureId: structureAtlasTextureId(layer),
+  tileId,
+  textureId,
   positions: [],
   normals: [],
   uvs: [],
@@ -415,16 +452,7 @@ export const packStructureBatches = (
     const nrKey = `${b.layer}:${b.textureId}`;
     let existing = nonRepeatingBatches.get(nrKey);
     if (!existing) {
-      existing = {
-        layer: b.layer,
-        tileId: b.tileId,
-        textureId: b.textureId,
-        positions: [],
-        normals: [],
-        uvs: [],
-        colors: [],
-        indices: [],
-      };
+      existing = makeDraft(b.layer, b.tileId, b.textureId);
       nonRepeatingBatches.set(nrKey, existing);
     }
     appendDemotedFullBatch(existing, b);
@@ -442,7 +470,7 @@ export const packStructureBatches = (
     const rect = atlas.rects.get(tileLayerKey(src.layer, src.tileId))!;
     let dst = atlasByLayer.get(src.layer);
     if (!dst) {
-      dst = makeAtlasBatchDraft(src.layer);
+      dst = makeDraft(src.layer, structureAtlasTextureId(src.layer));
       atlasByLayer.set(src.layer, dst);
     }
     appendBatch(dst, src, rect);

@@ -2,7 +2,13 @@ import type { CubeFaceDirection } from '../../model/scene';
 import type { CardinalFacing } from '../../project/structure/contract';
 import { getBatch, pushQuad, type MeshCtx, type NonFullScratch } from './batch';
 import type { StructureOpeningMeta, StructureRoomMeta } from './contract';
-import { computeFaceShade } from './lighting';
+import {
+  buildBottomStairMask,
+  buildMaskByPredicate,
+  emitRuns,
+  layerHasMaskMatch,
+} from './greedyMask';
+import { computeFaceShade, SHARED_FACE_SHADE } from './lighting';
 import { setVec3, writeSpecBoxUv, type LocalBoxSpec } from './shapes';
 import * as sv from './subvoxel';
 
@@ -29,26 +35,6 @@ const air = (t: TrimCtx, x: number, y: number, z: number): boolean =>
 
 const vox = (t: TrimCtx, x: number, y: number, z: number): number =>
   sv.voxelAt(t.ctx.grid, x, y, z);
-
-const emitRuns = (
-  u0: number,
-  uLimit: number,
-  ok: (u: number) => boolean,
-  emit: (a: number, b: number) => number,
-): number => {
-  let count = 0;
-  for (let u = u0; u < uLimit;) {
-    if (!ok(u)) {
-      u += 1;
-      continue;
-    }
-    let u1 = u;
-    while (u1 + 1 < uLimit && ok(u1 + 1)) u1 += 1;
-    count += emit(u, u1);
-    u = u1 + 1;
-  }
-  return count;
-};
 
 const emitBox = (t: TrimCtx, pos: V3, smp: V3, spec: LocalBoxSpec, skipMask = 0): number => {
   const { ctx, scratch } = t;
@@ -86,6 +72,7 @@ const emitBox = (t: TrimCtx, pos: V3, smp: V3, spec: LocalBoxSpec, skipMask = 0)
       maxY,
       false,
       scratch.colors,
+      SHARED_FACE_SHADE,
     );
     writeSpecBoxUv(dir, spec, scratch.uvs);
     pushQuad(batch, dir, scratch.from, scratch.to, scratch.uvs, shade.colors, shade.flip);
@@ -412,12 +399,19 @@ const emitEaveRow = (
   y: number,
   fixed: number,
   uMax: number,
+  bottomStair: Uint8Array,
 ): number => {
+  const [w, _h, d] = t.ctx.grid.size;
+  const voxels = t.ctx.grid.voxels;
+  const rowBase = y * w * d + (ax ? fixed * w : fixed);
+  const uStep = ax ? 1 : w;
   const at = (u: number): V3 => [ax ? u : fixed, y, ax ? fixed : u];
   return emitRuns(
     0,
     uMax,
-    (u) => isBottomEaveStair(t, ax ? u : fixed, y, ax ? fixed : u, dir),
+    (u) =>
+      bottomStair[voxels[rowBase + u * uStep]!] === 1 &&
+      isBottomEaveStair(t, ax ? u : fixed, y, ax ? fixed : u, dir),
     (u0, u1) => {
       let sub = emitStrip(t, at(u0), dir, [1.5, 0, (u1 - u0 + 1) * 16, 2, 4, 'dark_oak_planks']);
       for (let k = u0; k <= u1; k += 3)
@@ -445,11 +439,17 @@ const emitBargeboardCell = (t: TrimCtx, x: number, y: number, z: number): number
 
 const emitRoofEavesAndBargeboards = (t: TrimCtx): number => {
   const [w, _h, d] = t.ctx.grid.size;
+  const bottomStair = buildBottomStairMask(t.ctx.descriptors, t.ctx.parsedStates);
   let count = 0;
   for (let y = 1; y < t.ctx.maxY; y += 1) {
-    count += scanDirRows(w, d, (dir, ax, v, uMax) => emitEaveRow(t, dir, ax, y, v, uMax));
+    if (!layerHasMaskMatch(t.ctx.grid.voxels, bottomStair, y * w * d, (y + 1) * w * d)) continue;
+    count += scanDirRows(w, d, (dir, ax, v, uMax) =>
+      emitEaveRow(t, dir, ax, y, v, uMax, bottomStair),
+    );
     for (let z = 0; z < d; z += 1)
-      for (let x = 0; x < w; x += 1) count += emitBargeboardCell(t, x, y, z);
+      for (let x = 0; x < w; x += 1)
+        if (bottomStair[t.ctx.grid.voxels[(y * d + z) * w + x]!] === 1)
+          count += emitBargeboardCell(t, x, y, z);
   }
   return count;
 };
@@ -459,27 +459,29 @@ const emitChimneyCell = (t: TrimCtx, x: number, y: number, z: number): number =>
   const desc = v > 0 ? t.ctx.descriptors[v]! : null;
   if (!desc || desc.shape !== 'full' || !sv.isChimneyBrickTile(desc.top)) return 0;
   if (vox(t, x, y - 1, z) !== v || vox(t, x, y - 2, z) !== v) return 0;
-  if (
-    sv.CARDINALS.filter((c) => vox(t, x + sv.OUTWARD[c][0], y, z + sv.OUTWARD[c][1]) <= 0).length <
-    3
-  )
-    return 0;
+  let openSides = 0;
+  for (const c of sv.CARDINALS)
+    if (vox(t, x + sv.OUTWARD[c][0], y, z + sv.OUTWARD[c][1]) <= 0) openSides += 1;
+  if (openSides < 3) return 0;
   const ab = vox(t, x, y + 1, z);
   const onSlab = ab > 0 && t.ctx.descriptors[ab]!.shape === 'slab' && vox(t, x, y + 2, z) <= 0;
   if (ab > 0 && !onSlab) return 0;
-  return emitSpecs(t, [x, y + 1, z], sv.chimneyCapSpecs(desc.top, onSlab), DIR_BIT.down, [
-    x,
-    onSlab ? y + 2 : y + 1,
-    z,
-  ]);
+  const specs = sv.chimneyCapSpecs(desc.top, onSlab);
+  return emitSpecs(t, [x, y + 1, z], specs, DIR_BIT.down, [x, onSlab ? y + 2 : y + 1, z]);
 };
 
 const emitChimneyCaps = (t: TrimCtx): number => {
   const [w, h, d] = t.ctx.grid.size;
+  const chimneyMask = buildMaskByPredicate(
+    t.ctx.descriptors,
+    (desc) => desc.shape === 'full' && sv.isChimneyBrickTile(desc.top),
+  );
   let count = 0;
   for (let y = 3; y < Math.min(t.ctx.maxY - 1, h - 1); y += 1)
     for (let z = 0; z < d; z += 1)
-      for (let x = 0; x < w; x += 1) count += emitChimneyCell(t, x, y, z);
+      for (let x = 0; x < w; x += 1)
+        if (chimneyMask[t.ctx.grid.voxels[(y * d + z) * w + x]!] === 1)
+          count += emitChimneyCell(t, x, y, z);
   return count;
 };
 

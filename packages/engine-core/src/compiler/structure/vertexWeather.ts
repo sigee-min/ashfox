@@ -1,4 +1,3 @@
-import { clamp01 } from '@ashfox/internal-contracts';
 import type { CubeFaceDirection } from '../../model/scene';
 import type { IntVec3 } from '../../project/structure/contract';
 import type { BlockDescriptor } from './blocks';
@@ -156,8 +155,10 @@ export const isInsideEnclosedRoom = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
-  if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
+  const size = grid.size;
+  const w = size[0];
+  const d = size[2];
+  if (x < 0 || x >= w || y < 0 || y >= size[1] || z < 0 || z >= d) return false;
   return (enclosedMaskFor(grid)[(y * d + z) * w + x]! & 1) !== 0;
 };
 
@@ -167,8 +168,10 @@ export const isNearEnclosedRoom = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
-  if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
+  const size = grid.size;
+  const w = size[0];
+  const d = size[2];
+  if (x < 0 || x >= w || y < 0 || y >= size[1] || z < 0 || z >= d) return false;
   return (enclosedMaskFor(grid)[(y * d + z) * w + x]! & 2) !== 0;
 };
 
@@ -208,11 +211,15 @@ const isExteriorSample = (
   sy: number,
   sz: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
   if (sy < 0) return false;
+  const size = grid.size;
+  const w = size[0];
+  const h = size[1];
+  const d = size[2];
   if (sx < 0 || sx >= w || sy >= h || sz < 0 || sz >= d) return true;
-  if (isInsideEnclosedRoom(grid, sx, sy, sz)) return false;
-  return lighting.sky[(sy * d + sz) * w + sx]! >= 120;
+  const idx = (sy * d + sz) * w + sx;
+  if (lighting.sky[idx]! < 120) return false;
+  return (enclosedMaskFor(grid)[idx]! & 1) === 0;
 };
 
 const isRoofOverhangAt = (
@@ -222,8 +229,10 @@ const isRoofOverhangAt = (
   y: number,
   z: number,
 ): boolean => {
-  const [w, h, d] = grid.size;
-  if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= d) return false;
+  const size = grid.size;
+  const w = size[0];
+  const d = size[2];
+  if (x < 0 || x >= w || y < 0 || y >= size[1] || z < 0 || z >= d) return false;
   const idx = (y * d + z) * w + x;
   const v = grid.voxels[idx]!;
   if (v <= 0 || grid.customTags[idx] !== null) return false;
@@ -245,8 +254,8 @@ const eaveShadowLevel = (
   dir: CubeFaceDirection,
 ): 0 | 1 | 2 => {
   if (dir === 'up') return 0;
-  const [w, _h, d] = grid.size;
-  const ownV = grid.voxels[(y * d + z) * w + x]!;
+  const size = grid.size;
+  const ownV = grid.voxels[(y * size[2] + z) * size[0] + x]!;
   if (ownV > 0 && (descs[ownV]!.shape === 'stair' || descs[ownV]!.shape === 'slab')) return 0;
   if (isRoofOverhangAt(grid, descs, sx, sy + 1, sz)) return 2;
   if (isRoofOverhangAt(grid, descs, sx, sy + 2, sz)) return 1;
@@ -314,7 +323,7 @@ export const sampleVertexWeather = (
 const AO_CURVE: readonly [number, number, number, number] = [1.0, 0.78, 0.58, 0.4];
 
 export const linearToSrgb = (c: number): number => {
-  const v = clamp01(c);
+  const v = c <= 0 ? 0 : c >= 1 ? 1 : c;
   return v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055;
 };
 
@@ -326,14 +335,53 @@ const occluderAt = (
   z: number,
   maxY: number,
 ): 0 | 1 => {
-  const [w, h, d] = grid.size;
-  if (x < 0 || x >= w || y < 0 || y >= Math.min(h, maxY) || z < 0 || z >= d) return 0;
+  const size = grid.size;
+  const w = size[0];
+  const h = size[1];
+  const d = size[2];
+  const yLim = h < maxY ? h : maxY;
+  if (x < 0 || x >= w || y < 0 || y >= yLim || z < 0 || z >= d) return 0;
   const idx = (y * d + z) * w + x;
-  return grid.customTags[idx] === null &&
-    grid.voxels[idx]! > 0 &&
-    descs[grid.voxels[idx]!]!.solidOpaque
-    ? 1
-    : 0;
+  const v = grid.voxels[idx]!;
+  return v > 0 && grid.customTags[idx] === null && descs[v]!.solidOpaque ? 1 : 0;
+};
+
+const aoCorner = (
+  s1: 0 | 1,
+  s2: 0 | 1,
+  grid: StructureGrid,
+  descs: readonly BlockDescriptor[],
+  cx: number,
+  cy: number,
+  cz: number,
+  maxY: number,
+): number => (s1 === 1 && s2 === 1 ? 3 : s1 + s2 + occluderAt(grid, descs, cx, cy, cz, maxY));
+
+export const faceAo4 = (
+  grid: StructureGrid,
+  descs: readonly BlockDescriptor[],
+  sx: number,
+  sy: number,
+  sz: number,
+  uAxis: IntVec3,
+  vAxis: IntVec3,
+  maxY: number,
+): number => {
+  const ux = uAxis[0];
+  const uy = uAxis[1];
+  const uz = uAxis[2];
+  const vx = vAxis[0];
+  const vy = vAxis[1];
+  const vz = vAxis[2];
+  const nU = occluderAt(grid, descs, sx - ux, sy - uy, sz - uz, maxY);
+  const pU = occluderAt(grid, descs, sx + ux, sy + uy, sz + uz, maxY);
+  const nV = occluderAt(grid, descs, sx - vx, sy - vy, sz - vz, maxY);
+  const pV = occluderAt(grid, descs, sx + vx, sy + vy, sz + vz, maxY);
+  const ao0 = aoCorner(nU, nV, grid, descs, sx - ux - vx, sy - uy - vy, sz - uz - vz, maxY);
+  const ao1 = aoCorner(pU, nV, grid, descs, sx + ux - vx, sy + uy - vy, sz + uz - vz, maxY);
+  const ao2 = aoCorner(pU, pV, grid, descs, sx + ux + vx, sy + uy + vy, sz + uz + vz, maxY);
+  const ao3 = aoCorner(nU, pV, grid, descs, sx - ux + vx, sy - uy + vy, sz - uz + vz, maxY);
+  return (ao0 << 12) | (ao1 << 8) | (ao2 << 4) | ao3;
 };
 
 export const vertexAo = (
@@ -348,8 +396,12 @@ export const vertexAo = (
   sv: number,
   maxY: number,
 ): number => {
-  const [ux, uy, uz] = uAxis;
-  const [vx, vy, vz] = vAxis;
+  const ux = uAxis[0];
+  const uy = uAxis[1];
+  const uz = uAxis[2];
+  const vx = vAxis[0];
+  const vy = vAxis[1];
+  const vz = vAxis[2];
   const s1 = occluderAt(grid, descs, sx + su * ux, sy + su * uy, sz + su * uz, maxY);
   const s2 = occluderAt(grid, descs, sx + sv * vx, sy + sv * vy, sz + sv * vz, maxY);
   if (s1 === 1 && s2 === 1) return 3;

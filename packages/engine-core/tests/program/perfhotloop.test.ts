@@ -22,6 +22,7 @@ import { analyzeSilhouettes, obbsTouchWithin } from '../../src/audit/silhouette'
 import { canonicalJsonString } from '../../src/canonicalJson';
 import { coherentValue } from '../../src/compiler/program/asset/texture/cluster';
 import { rasterizeShapeMask } from '../../src/compiler/sprite/shapes';
+import { buildStructureBakedMesh } from '../../src/compiler/structure/greedyMesh';
 import { snapshotExportData } from '../../src/export/pipeline/dataSnapshot';
 import { deepFreeze } from '../../src/immutable';
 import { lexProgramSource } from '../../src/project/program/syntax/lex';
@@ -312,10 +313,20 @@ sprite blade_v2 {
   assert.ok(spriteAuditA.score > 0 && spriteAuditA.pillars.length === 3);
 };
 
-const verifyStructureAudit = (): void => {
+const verifyStructureAudit = () => {
   const structs = compileWorkspaceDir('examples/structure').filter(
     (p): p is Extract<typeof p, { kind: 'structure' }> => p.kind === 'structure',
   );
+  for (const p of structs) {
+    const rebuiltA = buildStructureBakedMesh(p.structure.grid, p.structure.lighting, {});
+    const rebuiltB = buildStructureBakedMesh(p.structure.grid, p.structure.lighting, {});
+    assert.deepEqual(rebuiltA, rebuiltB);
+    assert.equal(rebuiltA.rawFaceCount, p.structure.bakedMesh.rawFaceCount);
+    assert.equal(rebuiltA.mergedQuadCount, p.structure.bakedMesh.mergedQuadCount);
+    assert.equal(rebuiltA.trimCount, p.structure.bakedMesh.trimCount);
+    assert.deepEqual(rebuiltA.batches, p.structure.bakedMesh.batches);
+    assert.deepEqual(rebuiltA.textures, p.structure.bakedMesh.textures);
+  }
   const vc = structs.find((p) => p.entry.entryName === 'village_compound')?.structure;
   assert.ok(vc !== undefined);
   const report = evaluateStructureQuality(
@@ -327,6 +338,7 @@ const verifyStructureAudit = (): void => {
   assert.deepEqual(report, vc.audit);
   assert.equal(report.passed, true);
   assert.ok(report.score >= 75);
+  return vc;
 };
 
 const bench = (fn: () => void, iterations: number): number => {
@@ -336,7 +348,10 @@ const bench = (fn: () => void, iterations: number): number => {
   return Number(((performance.now() - t0) / iterations).toFixed(3));
 };
 
-const runBenchmarks = (griffin: CompiledModel): void => {
+const runBenchmarks = (
+  griffin: CompiledModel,
+  vc: ReturnType<typeof verifyStructureAudit>,
+): void => {
   const modelJson = canonicalJsonString(griffin);
   const modelBytes = Buffer.from(modelJson, 'utf8');
   const griffinSrc = fs.readFileSync(
@@ -350,10 +365,11 @@ const runBenchmarks = (griffin: CompiledModel): void => {
   const auditAfter = bench(() => evaluateAssetQuality({ model: griffin }), 15);
   const griffinDoc = toProjectDoc(griffin);
   const occAfter = bench(() => findFullyOccludedCubes(griffinDoc), 20);
+  const meshAfter = bench(() => buildStructureBakedMesh(vc.grid, vc.lighting, {}), 10);
   assert.ok(canonAfter > 0 && canonBefore > 0 && lexAfter > 0 && shaAfter > 0);
-  assert.ok(auditAfter > 0 && occAfter >= 0);
+  assert.ok(auditAfter > 0 && occAfter >= 0 && meshAfter > 0);
   console.log(
-    `perfhotloop ok | canon ${canonBefore}->${canonAfter}ms | sha ${shaAfter}ms | audit ${auditAfter}ms | occ ${occAfter}ms | lex ${lexAfter}ms`,
+    `perfhotloop ok | canon ${canonBefore}->${canonAfter}ms | sha ${shaAfter}ms | audit ${auditAfter}ms | occ ${occAfter}ms | lex ${lexAfter}ms | mesh ${meshAfter}ms`,
   );
 };
 
@@ -367,8 +383,8 @@ const main = (): void => {
   verifyTexturesAndColors(griffin);
   verifyCreatureAuditAndOcclusion(models);
   verifySnapshotLexerAndSprites(griffin);
-  verifyStructureAudit();
-  runBenchmarks(griffin);
+  const vc = verifyStructureAudit();
+  runBenchmarks(griffin, vc);
 };
 
 main();
