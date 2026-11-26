@@ -239,7 +239,12 @@ const parseOpening = (cursor: Cursor, kind: OpeningKind): FacadeOpeningSpec => {
   const [defW, defH] = defaultOpeningSize(kind);
   const width = asInt(cursor, attrs.width ?? defW, 'width');
   const height = asInt(cursor, attrs.height ?? defH, 'height');
-  if (width < 1 || height < 1 || ((kind === 'door' || kind === 'arcade') && height < 2))
+  if (
+    width < 1 ||
+    height < 1 ||
+    ((kind === 'door' || kind === 'arcade') && height < 2) ||
+    (kind === 'bay_window' && width < 3)
+  )
     failSyntax(cursor, 'valid opening width/height');
   const hinge = asOptStr(cursor, attrs.hinge, 'hinge');
   if (hinge !== undefined && hinge !== 'left' && hinge !== 'right')

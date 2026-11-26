@@ -326,12 +326,34 @@ structure steep_${axis} {
   }
 };
 
+const testBayWindowMinWidth = (): void => {
+  assert.throws(
+    () =>
+      parseStructureSource(
+        `ashfox-model 1
+structure narrow_bay {
+  size = (9, 7, 9);
+  palette { s = "minecraft:stone_bricks"; g = "minecraft:glass"; }
+  build {
+    floor f0 y = 0 height = 5 {
+      room hall from = (1, 1) size = (7, 7) kind = living plinth = s floor = s wall = s ceiling = s;
+      facade on hall.south { bay_window at = center width = 2 height = 2 y_offset = 1 glass = g; }
+    }
+  }
+}`,
+        'narrow_bay.ashfox',
+      ),
+    /valid opening width\/height/,
+  );
+};
+
 const main = async (): Promise<void> => {
   testMixedStructureAndSharedPropWorkspace();
   testQualifiedCustomModelAliases();
   await testPreservedCustomBoneRotationAndMirror();
   testEastWestWindowMullions();
   testSteepGableRoofsAndGables();
+  testBayWindowMinWidth();
   console.log('ashfox structure review regression tests ok');
 };
 

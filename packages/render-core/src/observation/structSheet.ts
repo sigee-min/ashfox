@@ -304,6 +304,7 @@ const buildSheetPlan = (
   const single: SheetTileConfig = {
     label: '',
     clipY: v.cutaway,
+    ...(el < 0 ? { dioramaBase: false } : {}),
     envId: v.environment,
     positionCamera: (b, cam) => frameHeroAngles(cam, b, az, el, v.zoom),
   };
