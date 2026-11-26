@@ -64,8 +64,8 @@ const mirrorPropertyValue = (
   if (
     property.name === 'position' ||
     property.name === 'pivot' ||
-    property.name === 'u-axis' ||
-    property.name === 'v-axis'
+    property.name === 'u_axis' ||
+    property.name === 'v_axis'
   ) {
     return negateVectorAxis(value, [true, false, false]);
   }

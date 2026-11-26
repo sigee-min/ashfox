@@ -176,8 +176,8 @@ const buildPlaneObb = (
   );
   const rotation = vec3Prop(node.properties, 'rotation', [0, 0, 0]);
   const pivot = vec3Prop(node.properties, 'pivot', [0, 0, 0]);
-  const u = vec3Prop(node.properties, 'u-axis', [1, 0, 0]);
-  const v = vec3Prop(node.properties, 'v-axis', [0, 1, 0]);
+  const u = vec3Prop(node.properties, 'u_axis', [1, 0, 0]);
+  const v = vec3Prop(node.properties, 'v_axis', [0, 1, 0]);
   const normal = cross3(u, v);
   const basis: PlaneBasisSpec = { u, v, normal };
   const ownerOrigin = add3(pivot, position);

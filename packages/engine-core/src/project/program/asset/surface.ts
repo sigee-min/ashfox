@@ -101,11 +101,11 @@ const readChartAbi = (reader: AssetReader): AssetChartAbiDecl => {
   }
   const values = readProperties(reader, 'surface chart');
   checkClosedProperties(reader, values, ['width', 'height', 'coverage'], 'surface chart');
-  const coverageRaw = nameOr(propertyValue(values, 'coverage'), '');
+  const coverageRaw = nameOr(propertyValue(values, 'coverage'), 'opaque');
   const coverage = isOneOf(['opaque', 'binary', 'optional'] as const, coverageRaw)
     ? coverageRaw
     : null;
-  if (coverageRaw !== '' && coverage === null) {
+  if (coverage === null) {
     reader.fail(
       'asset.invalid-coverage',
       'Chart coverage must be opaque, binary, or optional.',

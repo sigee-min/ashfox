@@ -38,7 +38,7 @@ const VECTOR_INFO: ReadonlyMap<AssetVectorValueType, AssetTypeInfo> = new Map([
   vectorEntry('vec3<unit>', 3, 'unit'),
   vectorEntry('vec3<degree>', 3, 'degree'),
   vectorEntry('vec3<ratio>', 3, 'ratio'),
-  vectorEntry('texel-rect', 4, 'texel'),
+  vectorEntry('texel_rect', 4, 'texel'),
 ]);
 
 export const describeAssetType = (type: AssetExpressionType): AssetTypeInfo | null => {

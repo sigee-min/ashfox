@@ -22,6 +22,7 @@ interface DesignOwner {
 
 interface DesignState {
   readonly owners: Map<string, Map<string, DesignOwner>>;
+  readonly nonDesign: Map<string, Set<string>>;
   readonly imports: Map<string, Map<string, string>>;
   readonly cached: Map<AssetDesignField, AssetValue | null>;
   readonly active: Set<AssetDesignField>;
@@ -112,6 +113,7 @@ const indexDesignDeclaration = (
 
 const collectFileOwners = (file: WorkspaceCompilationFile, state: DesignState): void => {
   const local = new Map<string, DesignOwner>();
+  const nonDesign = new Set<string>();
   const names = new Set<string>();
   for (const declaration of file.unit.declarations) {
     if (names.has(declaration.id)) {
@@ -125,6 +127,8 @@ const collectFileOwners = (file: WorkspaceCompilationFile, state: DesignState): 
     names.add(declaration.id);
     if (declaration.kind === 'design') {
       local.set(declaration.id, indexDesignDeclaration(file, declaration, state));
+    } else {
+      nonDesign.add(declaration.id);
     }
   }
   const fileImports = state.imports.get(file.identity.key);
@@ -139,6 +143,36 @@ const collectFileOwners = (file: WorkspaceCompilationFile, state: DesignState): 
     }
   }
   state.owners.set(file.identity.key, local);
+  state.nonDesign.set(file.identity.key, nonDesign);
+};
+
+const isImportedNonDesign = (
+  state: DesignState,
+  targetKey: string | undefined,
+  segments: readonly string[],
+): boolean =>
+  segments.length === 2 &&
+  targetKey !== undefined &&
+  (state.nonDesign.get(targetKey)?.has(segments[1]!) ?? false);
+
+const resolveDesignOwner = (
+  state: DesignState,
+  file: WorkspaceCompilationFile,
+  segments: readonly string[],
+): {
+  readonly owner: DesignOwner | undefined;
+  readonly fieldIndex: number;
+  readonly local: boolean;
+} => {
+  const local = state.owners.get(file.identity.key)?.get(segments[0]!);
+  if (local !== undefined) return { owner: local, fieldIndex: 1, local: true };
+  const targetKey = state.imports.get(file.identity.key)?.get(segments[0]!);
+  if (isImportedNonDesign(state, targetKey, segments)) {
+    return { owner: undefined, fieldIndex: 2, local: false };
+  }
+  const imported =
+    targetKey === undefined ? undefined : state.owners.get(targetKey)?.get(segments[1]!);
+  return { owner: imported, fieldIndex: 2, local: false };
 };
 
 const lookupDesignField = (
@@ -148,18 +182,14 @@ const lookupDesignField = (
   span: SourceSpan,
 ): Readonly<{ owner: DesignOwner; field: AssetDesignField; axis: string | null }> | null => {
   const segments = raw.split('.');
-  const local = state.owners.get(file.identity.key)?.get(segments[0]!);
+  const { owner, fieldIndex, local } = resolveDesignOwner(state, file, segments);
   const targetKey = state.imports.get(file.identity.key)?.get(segments[0]!);
-  const owner =
-    local ?? (targetKey === undefined ? undefined : state.owners.get(targetKey)?.get(segments[1]!));
-  const fieldIndex = local === undefined ? 2 : 1;
-  if (owner === undefined || (local === undefined && !owner.declaration.exported)) {
-    // A simple local vector member is not a nominal design reference.
+  if (owner === undefined || (!local && !owner.declaration.exported)) {
+    if (isImportedNonDesign(state, targetKey, segments)) return null;
     if (
       segments.length === 2 &&
       ['x', 'y', 'z'].includes(segments[1]!) &&
-      targetKey === undefined &&
-      local === undefined
+      targetKey === undefined
     ) {
       return null;
     }
@@ -401,6 +431,7 @@ export const elaborateAssetDesigns = (
   const files = new Map(closure.files.map((file) => [file.identity.key, file]));
   const state: DesignState = {
     owners: new Map(),
+    nonDesign: new Map(),
     imports: buildImports(closure),
     cached: new Map(),
     active: new Set(),

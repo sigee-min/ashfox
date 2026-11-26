@@ -40,7 +40,7 @@ const textureProperties = (
   );
   return properties(
     entries,
-    ['atlas', 'background', 'background-alpha', 'density', 'render-mode'],
+    ['atlas', 'background', 'background_alpha', 'density', 'render_mode'],
     payload.span,
     report.path,
     propertyIssue(report),
@@ -86,7 +86,7 @@ const readRenderMode = (
   report.report(
     entry.value.span,
     'asset.texture.invalid-render-mode',
-    'Texture render-mode must be default or emissive.',
+    'Texture render_mode must be default or emissive.',
   );
   return null;
 };
@@ -297,19 +297,19 @@ const readRequiredHeader = (
   if (top === null) return null;
   const atlas = top.get('atlas');
   const background = top.get('background');
-  const alpha = top.get('background-alpha');
+  const alpha = top.get('background_alpha');
   if (background === undefined || alpha === undefined) {
     report.report(
       payload.span,
       'asset.texture.missing-property',
-      'Texture requires background and background-alpha properties.',
+      'Texture requires background and background_alpha properties.',
     );
     return null;
   }
   const dimensions = readAtlasDimensions(atlas, context, contract, report);
   const backgroundAlpha = readBackgroundAlpha(alpha, context, report);
   const density = readTextureDensity(top.get('density'), context, report);
-  const renderMode = readRenderMode(top.get('render-mode'), report);
+  const renderMode = readRenderMode(top.get('render_mode'), report);
   if (dimensions === null || backgroundAlpha === null || density === null || renderMode === null) {
     return null;
   }

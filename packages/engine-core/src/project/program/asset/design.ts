@@ -7,7 +7,7 @@ import type {
   AssetDesignField,
   AssetValueType,
 } from './contract';
-import { join, type Token } from './parserSupport';
+import { isSnakeCase, join, type Token } from './parserSupport';
 
 export interface AssetValueTypeReader {
   readonly id: (message?: string) => Token;
@@ -19,7 +19,6 @@ export interface AssetValueTypeReader {
 export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueType => {
   const first = reader.id('Expected a closed value type.');
   let value = first.value;
-  if (reader.match('-')) value += '-' + reader.id('Expected the remainder of a closed type.').value;
   if (reader.match('<')) {
     const inner = reader.id('Expected a type argument.');
     reader.expect('>', 'Expected > after a type argument.');
@@ -39,7 +38,7 @@ export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueTyp
     'vec3<degree>',
     'vec3<ratio>',
     'vec2<texel>',
-    'texel-rect',
+    'texel_rect',
   ];
   if (!allowed.includes(value))
     reader.fail('asset.invalid-slot-type', 'Unsupported closed value type "' + value + '".', first);
@@ -57,6 +56,7 @@ export interface AssetDesignReader {
   readonly finish: () => void;
   readonly block: (read: () => void) => void;
   readonly blockEnd: () => SourceSpan;
+  readonly fail: (code: string, message: string, token?: Token) => void;
 }
 
 export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): AssetDesignDecl => {
@@ -68,6 +68,13 @@ export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): 
     reader.count();
     const check = reader.matchWord('check');
     const name = reader.id('Expected a design field or check name.');
+    if (!isSnakeCase(name.value)) {
+      reader.fail(
+        'asset.invalid-key',
+        'Design field "' + name.value + '" must be snake_case.',
+        name,
+      );
+    }
     if (!check) reader.expect(':', 'Design fields require an explicit closed type.');
     const type = check ? 'bool' : reader.valueType();
     reader.expect('=', 'Design fields and checks require an expression.');

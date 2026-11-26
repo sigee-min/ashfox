@@ -4,7 +4,12 @@ import type {
   AssetPropertyDecl,
   AssetValueType,
 } from '../../../project/program/asset/contract';
-import type { AssetBooleanValue, AssetNumberValue, AssetValue } from './value/contract';
+import {
+  assetBooleanValue,
+  type AssetBooleanValue,
+  type AssetNumberValue,
+  type AssetValue,
+} from './value/contract';
 import type {
   AssetDegreeVectorValue,
   AssetIntegerValue,
@@ -24,7 +29,7 @@ const properties = (
   declaration: AssetMotionDecl,
 ): ReadonlyMap<string, AssetPropertyDecl> => {
   const result = new Map<string, AssetPropertyDecl>();
-  const allowed = new Set(['duration', 'fps', 'loop', 'rest-relative']);
+  const allowed = new Set(['duration', 'fps', 'loop', 'rest_relative']);
   for (const property of declaration.properties) {
     if (!allowed.has(property.name)) {
       context.issue(
@@ -291,7 +296,11 @@ const validateMotionHeader = (
   const fields = properties(context, state, declaration);
   const durationValue = value(context, state, fields.get('duration'), 'second', declaration);
   const fpsValue = value(context, state, fields.get('fps'), 'integer', declaration);
-  const restValue = value(context, state, fields.get('rest-relative'), 'bool', declaration);
+  const restField = fields.get('rest_relative');
+  const restValue =
+    restField === undefined
+      ? assetBooleanValue(true)
+      : value(context, state, restField, 'bool', declaration);
   const duration =
     durationValue?.kind === 'number' && durationValue.type === 'second' ? durationValue : null;
   const fps = fpsValue?.kind === 'number' && fpsValue.type === 'integer' ? fpsValue : null;

@@ -6,7 +6,7 @@ import type { RawDeclaredOutput, RawDeclaredPreview } from '../../directory/decl
 /** The asset language keeps the versioned header while using a package-aware
  * source unit.  These declarations are compiler input only; they are not a
  * runtime or persistence contract. */
-export const ASHFOX_ASSET_GRAMMAR = 'ashfox-model 1' as const;
+export const ASHFOX_ASSET_GRAMMAR = 'ashfox 1' as const;
 
 export interface AssetSourceRef {
   readonly path: string;
@@ -36,7 +36,7 @@ export type AssetValueType =
   | 'vec3<degree>'
   | 'vec3<ratio>'
   | 'vec2<texel>'
-  | 'texel-rect'
+  | 'texel_rect'
   | 'integer';
 export type AssetMotionChannel = 'rotation' | 'scale';
 

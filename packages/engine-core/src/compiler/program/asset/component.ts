@@ -192,7 +192,7 @@ const resolveSocketBinding = (
     state.path,
     binding.frame,
     null,
-    true,
+    contract.handedness === 'left',
     binding.span,
     contract.handedness,
     context.issue,

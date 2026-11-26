@@ -3,6 +3,7 @@ import type { ProgramToken } from '../syntax/lex';
 import type { SourceSpan } from '../../source/contract';
 import type {
   AssetFrameDecl,
+  AssetImportDecl,
   AssetPropertyDecl,
   AssetQualifiedName,
   AssetValueType,
@@ -97,13 +98,54 @@ export const readBraced = (
   }
 };
 
+export const isSnakeCase = (value: string): boolean => /^[a-z][a-z0-9_]*$/.test(value);
+
+export const isAssignmentTokens = (tokens: readonly Token[], index: number): boolean => {
+  if (tokens[index]?.kind !== 'identifier') return false;
+  let next = index + 1;
+  while (
+    tokens[next]?.kind === 'symbol' &&
+    tokens[next]?.value === '.' &&
+    tokens[next + 1]?.kind === 'identifier'
+  ) {
+    next += 2;
+  }
+  return tokens[next]?.kind === 'symbol' && tokens[next]?.value === '=';
+};
+
+export const isKebabAssignmentTokens = (tokens: readonly Token[], index: number): boolean => {
+  if (tokens[index]?.kind !== 'identifier') return false;
+  let next = index + 1;
+  let sawHyphen = false;
+  while (
+    tokens[next]?.kind === 'symbol' &&
+    (tokens[next]?.value === '-' || tokens[next]?.value === '.') &&
+    tokens[next + 1]?.kind === 'identifier'
+  ) {
+    if (tokens[next]?.value === '-') sawHyphen = true;
+    next += 2;
+  }
+  return sawHyphen && tokens[next]?.kind === 'symbol' && tokens[next]?.value === '=';
+};
+
+const validatePropertySegment = (reader: AssetReader, token: Token): void => {
+  if (isSnakeCase(token.value)) return;
+  reader.failSpan(
+    'asset.invalid-key',
+    'Property key "' + token.value + '" must be snake_case in ashfox 1.',
+    token.span,
+  );
+};
+
 export const readProperty = (reader: AssetReader): AssetPropertyDecl => {
   const start = reader.current();
-  let name = reader.id('Expected a property name.').value;
-  while (reader.match('-')) name += '-' + reader.id().value;
+  const first = reader.id('Expected a property name.');
+  validatePropertySegment(reader, first);
+  let name = first.value;
   while (reader.match('.')) {
-    name += '.' + reader.id().value;
-    while (reader.match('-')) name += '-' + reader.id().value;
+    const segment = reader.id();
+    validatePropertySegment(reader, segment);
+    name += '.' + segment.value;
   }
   reader.expect('=', 'Expected = in a property declaration.');
   const value = reader.expression();
@@ -188,6 +230,24 @@ export const readNamedAssignment = (reader: AssetReader, name: string): AssetQua
     kind: 'qualified-name',
     segments: ref.segments,
     span: join(start.span, ref.span),
+  });
+};
+
+export const readImportDecl = (reader: AssetReader, sourcePath: string): AssetImportDecl => {
+  const start = reader.expectWord('import', 'Expected import.');
+  const path = reader.current();
+  if (path.kind !== 'string') {
+    reader.fail('asset.invalid-import-path', 'Imports require a quoted relative path.', path);
+  } else reader.take();
+  reader.expectWord('as', 'Expected as after an import path.');
+  const alias = reader.id('Expected an import alias.');
+  reader.finish();
+  return Object.freeze({
+    kind: 'import',
+    path: path.value,
+    alias: alias.value,
+    ref: Object.freeze({ path: sourcePath, span: path.span }),
+    span: join(start.span, alias.span),
   });
 };
 

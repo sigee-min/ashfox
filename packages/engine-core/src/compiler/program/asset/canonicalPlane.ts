@@ -31,8 +31,8 @@ const PLANE_ALLOWED = new Set([
   'rotation',
   'pivot',
   'visible',
-  'u-axis',
-  'v-axis',
+  'u_axis',
+  'v_axis',
 ]);
 
 interface PlaneBasis {
@@ -58,7 +58,7 @@ const planeBasis = (
     report(
       context,
       node.sourcePath,
-      properties.get('u-axis')?.span ?? node.span,
+      properties.get('u_axis')?.span ?? node.span,
       'asset.geometry-axis',
       'Plane axes must be distinct signed orthogonal unit axes.',
     );
@@ -83,7 +83,7 @@ const readPlaneInputs = (node: InstantiatedGeometryNode, context: Context): Plan
   const properties = propertyMap(
     node,
     PLANE_ALLOWED,
-    ['origin', 'size', 'u-axis', 'v-axis'],
+    ['origin', 'size', 'u_axis', 'v_axis'],
     context,
   );
   const origin = exactVector(
@@ -101,14 +101,14 @@ const readPlaneInputs = (node: InstantiatedGeometryNode, context: Context): Plan
     node.span,
   );
   const u = exactVector(
-    properties.get('u-axis'),
+    properties.get('u_axis'),
     'vec3<unit>',
     context,
     node.sourcePath,
     node.span,
   );
   const v = exactVector(
-    properties.get('v-axis'),
+    properties.get('v_axis'),
     'vec3<unit>',
     context,
     node.sourcePath,
