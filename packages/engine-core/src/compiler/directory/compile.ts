@@ -352,7 +352,9 @@ const compileModels = (
       packages: [],
     },
   };
-  const sources = files.filter((f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path));
+  const sources = files.filter(
+    (f) => !output.spritePaths.has(f.path) && !excludedCustom.has(f.path),
+  );
   const sealed = sealWorkspaceCandidate(base, sources, manifest, DEFAULT_WORKSPACE_LIMITS);
   if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
   const checked = compileWorkspaceCandidate(sealed.value, {}, true);
