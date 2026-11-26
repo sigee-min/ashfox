@@ -1,40 +1,23 @@
-import type { SpriteProduct } from '../../compiler/sprite/contract';
+import {
+  auditSubmetric,
+  gradeForAudit,
+  ramp,
+  rankTopAuditDeductions,
+  round2,
+} from '@ashfox/internal-contracts';
 import type { SpriteProfile } from '../../project/sprite/contract';
-import { clamp01, ramp, round2, round4, type AuditSubmetric, type QualityGrade } from '../contract';
+import type { AuditSubmetric } from '../contract';
 import {
   DEFAULT_SPRITE_THRESHOLD,
   type SpriteAuditDeduction,
   type SpriteAuditGateResult,
+  type SpriteAuditInput,
   type SpriteAuditOptions,
   type SpriteAuditPillarId,
   type SpriteAuditPillarReport,
   type SpriteAuditReport,
 } from './contract';
 import { analyzeSpriteRaster, type SpriteRasterStats } from './stats';
-
-const gradeFor = (allGates: boolean, score: number, passed: boolean): QualityGrade => {
-  if (!allGates || score < 50) return 'fail';
-  if (!passed || score < DEFAULT_SPRITE_THRESHOLD) return 'needs_work';
-  return score >= 85 ? 'excellent' : 'pass';
-};
-
-const sub = (
-  id: string,
-  label: string,
-  ratio: number,
-  maxScore: number,
-  value: number,
-  target: number,
-  detail: string,
-): AuditSubmetric => ({
-  id,
-  label,
-  score: round2(clamp01(ratio) * maxScore),
-  maxScore,
-  value: round4(value),
-  target,
-  detail,
-});
 
 const evaluateGates = (
   profile: SpriteProfile,
@@ -94,7 +77,7 @@ const evaluateGates = (
 
 const edgeDefinitionScore = (
   isTile: boolean,
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): number => {
   if (isTile)
@@ -125,7 +108,7 @@ const COLOR_FIXES = [
 
 const silhouetteMetrics = (
   isTile: boolean,
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): readonly AuditSubmetric[] => {
   const fillScore = isTile
@@ -136,7 +119,7 @@ const silhouetteMetrics = (
     : 1 - ramp(s.centerOffset, 0.25, 0.75);
   const edgeScore = edgeDefinitionScore(isTile, sprite, s);
   return [
-    sub(
+    auditSubmetric(
       'sprite.coverage',
       isTile ? 'Tile Fill Completeness' : 'Silhouette Mass',
       fillScore,
@@ -145,7 +128,7 @@ const silhouetteMetrics = (
       isTile ? 1 : 0.45,
       `opaque=${(s.opaqueRatio * 100).toFixed(0)}%`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.balance',
       isTile ? 'Seamless Edge Continuity' : 'Canvas Centering',
       balanceScore,
@@ -154,7 +137,7 @@ const silhouetteMetrics = (
       0,
       isTile ? `seam=${s.wrapSeamJump.toFixed(3)}` : `offset=${s.centerOffset.toFixed(2)}`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.definition',
       isTile ? 'Pattern Structure' : 'Outline & Rim Definition',
       edgeScore,
@@ -168,7 +151,7 @@ const silhouetteMetrics = (
 
 const evaluateSilhouettePillar = (
   profile: SpriteProfile,
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): {
   readonly pillar: SpriteAuditPillarReport;
@@ -194,7 +177,7 @@ const evaluateSilhouettePillar = (
 };
 
 const evaluateColorPillar = (
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): {
   readonly pillar: SpriteAuditPillarReport;
@@ -209,7 +192,7 @@ const evaluateColorPillar = (
     0.55 * ramp(s.hueShiftDegrees, 4, 28) + 0.45 * ramp(sprite.telemetry.materialCount, 1, 3);
   const economyRatio = ramp(s.uniqueColors, 4, 10) * (1 - 0.6 * ramp(s.uniqueColors, 26, 48));
   const metrics = [
-    sub(
+    auditSubmetric(
       'sprite.lumRange',
       'Luminance Contrast & Safe Darks',
       lumRatio,
@@ -218,7 +201,7 @@ const evaluateColorPillar = (
       0.4,
       `range=${s.lumRange.toFixed(2)}`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.hierarchy',
       'Value Hierarchy',
       hierarchyRatio,
@@ -227,7 +210,7 @@ const evaluateColorPillar = (
       0.08,
       `topBot=${s.topBottomContrast.toFixed(2)}`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.hueShift',
       'OKLCH Hue Shift & Material Depth',
       hueRatio,
@@ -236,7 +219,7 @@ const evaluateColorPillar = (
       18,
       `hueShift=${s.hueShiftDegrees.toFixed(1)}deg`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.paletteEconomy',
       'Palette Discipline',
       economyRatio,
@@ -254,7 +237,7 @@ const evaluateColorPillar = (
 };
 
 const evaluateSurfacePillar = (
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): {
   readonly pillar: SpriteAuditPillarReport;
@@ -274,7 +257,7 @@ const evaluateSurfacePillar = (
         0.5 * Math.max(patternRatio, ramp(sprite.telemetry.materialCount, 2, 3));
   const resFactor = sprite.raster.width >= 32 ? 1.0 : 0.85;
   const metrics = [
-    sub(
+    auditSubmetric(
       'sprite.coherence',
       'Cluster Coherence',
       coherence,
@@ -283,7 +266,7 @@ const evaluateSurfacePillar = (
       0.96,
       `noise=${s.isolatedNoiseRate.toFixed(2)}`,
     ),
-    sub(
+    auditSubmetric(
       'sprite.craft',
       'Layer & Pattern Craft',
       craftRatio * resFactor,
@@ -325,13 +308,13 @@ const buildDeductions = (
 
 /** Evaluate pure-CPU visual craft quality for a compiled Sprite v2 product. */
 export const evaluateSpriteQuality = (
-  sprite: SpriteProduct,
+  sprite: SpriteAuditInput,
   options: SpriteAuditOptions = {},
 ): SpriteAuditReport => {
   const profile = options.profile ?? sprite.profile;
   const profileSource = options.profile !== undefined ? 'override' : 'authored';
   const threshold = options.threshold ?? DEFAULT_SPRITE_THRESHOLD;
-  const stats = analyzeSpriteRaster(sprite);
+  const stats = analyzeSpriteRaster(sprite.raster);
   const hardGates = evaluateGates(profile, stats);
   const sil = evaluateSilhouettePillar(profile, sprite, stats);
   const col = evaluateColorPillar(sprite, stats);
@@ -351,9 +334,6 @@ export const evaluateSpriteQuality = (
       summary: g.message,
       fix: g.fix,
     }));
-  const sorted = [...sil.deductions, ...col.deductions, ...surf.deductions].sort(
-    (a, b) => b.lostPoints - a.lostPoints || a.metricId.localeCompare(b.metricId),
-  );
   return Object.freeze({
     schemaVersion: 1 as const,
     profile,
@@ -361,10 +341,14 @@ export const evaluateSpriteQuality = (
     threshold,
     passed,
     score,
-    grade: gradeFor(allGates, score, passed),
+    grade: gradeForAudit(allGates, score, passed),
     hardGates,
     pillars: [sil.pillar, col.pillar, surf.pillar],
-    topDeductions: [...gateDeductions, ...sorted].slice(0, 5),
+    topDeductions: rankTopAuditDeductions(gateDeductions, [
+      ...sil.deductions,
+      ...col.deductions,
+      ...surf.deductions,
+    ]),
   });
 };
 

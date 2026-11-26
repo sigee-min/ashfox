@@ -1,3 +1,4 @@
+import { gradeForAudit, rankTopAuditDeductions } from '@ashfox/internal-contracts';
 import { deepFreeze } from '../immutable';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import {
@@ -8,7 +9,6 @@ import {
   type AuditOptions,
   type AuditProfileSource,
   type AuditReport,
-  type QualityGrade,
 } from './contract';
 import { analyzeAnatomy } from './anatomy';
 import { analyzeSceneGeometry, type AuditSceneGeometry } from './geometry';
@@ -31,12 +31,6 @@ const resolveProfile = (
   return { profile: 'block', source: 'inferred' };
 };
 
-const gradeFor = (allGates: boolean, score: number, passed: boolean): QualityGrade => {
-  if (!allGates || score < 50) return 'fail';
-  if (!passed || score < DEFAULT_AUDIT_THRESHOLD) return 'needs_work';
-  return score >= 85 ? 'excellent' : 'pass';
-};
-
 const buildTopDeductions = (
   gates: readonly AuditGateResult[],
   pillarDeductions: readonly AuditDeduction[],
@@ -51,12 +45,7 @@ const buildTopDeductions = (
       targets: g.targets,
       fix: g.fix,
     }));
-  const sorted = [...pillarDeductions].sort(
-    (a, b) =>
-      b.lostPoints - a.lostPoints ||
-      (a.metricId < b.metricId ? -1 : a.metricId > b.metricId ? 1 : 0),
-  );
-  return [...gateDeductions, ...sorted].slice(0, 5);
+  return rankTopAuditDeductions(gateDeductions, pillarDeductions);
 };
 
 /** Evaluate quantitative model + pre/post texture quality purely on CPU. */
@@ -93,7 +82,7 @@ export const evaluateAssetQuality = (
     threshold,
     passed,
     score,
-    grade: gradeFor(allGatesPassed, score, passed),
+    grade: gradeForAudit(allGatesPassed, score, passed),
     hardGates,
     pillars: [form.pillar, texture.pillar, rig.pillar],
     topDeductions: buildTopDeductions(hardGates, [

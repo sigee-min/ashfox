@@ -1,3 +1,4 @@
+import { dot3, sub3 } from '../math/vec3';
 import type { Vec3 } from '../model/identity';
 import { ramp } from './contract';
 import type { AuditObb, AuditSceneGeometry } from './geometry';
@@ -9,9 +10,6 @@ export interface AuditAnatomyReport {
   readonly taperAndArticulationScore: number;
   readonly overlapPenalty: number;
 }
-
-const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 
 export const isMicroSpeck = (obb: AuditObb, totalVolume: number): boolean =>
   !obb.isPlane && totalVolume > 0 && obb.volume < 0.0018 * totalVolume;
@@ -48,12 +46,12 @@ const evaluateTaperAndArticulation = (
 };
 
 const pointInsideObb = (pt: Vec3, target: AuditObb): boolean => {
-  const d = sub(pt, target.center);
+  const d = sub3(pt, target.center);
   const margin = 0.02;
   return (
-    Math.abs(dot(d, target.ax)) < target.half[0] - margin &&
-    Math.abs(dot(d, target.ay)) < target.half[1] - margin &&
-    Math.abs(dot(d, target.az)) < target.half[2] - margin
+    Math.abs(dot3(d, target.ax)) < target.half[0] - margin &&
+    Math.abs(dot3(d, target.ay)) < target.half[1] - margin &&
+    Math.abs(dot3(d, target.az)) < target.half[2] - margin
   );
 };
 
@@ -107,14 +105,19 @@ const hasZFightingPair = (a: AuditObb, b: AuditObb): boolean => {
   return false;
 };
 
+const aabbsDisjoint = (a: AuditObb, b: AuditObb, tol: number): boolean =>
+  a.aabbMax[0] < b.aabbMin[0] - tol ||
+  b.aabbMax[0] < a.aabbMin[0] - tol ||
+  a.aabbMax[1] < b.aabbMin[1] - tol ||
+  b.aabbMax[1] < a.aabbMin[1] - tol ||
+  a.aabbMax[2] < b.aabbMin[2] - tol ||
+  b.aabbMax[2] < a.aabbMin[2] - tol;
+
 const overlapKind = (
   a: AuditObb,
   b: AuditObb,
 ): { readonly severe: boolean; readonly zFight: boolean } => {
-  const disjoint = [0, 1, 2].some(
-    (k) => a.aabbMax[k]! < b.aabbMin[k]! - 0.02 || b.aabbMax[k]! < a.aabbMin[k]! - 0.02,
-  );
-  if (disjoint) return { severe: false, zFight: false };
+  if (aabbsDisjoint(a, b, 0.02)) return { severe: false, zFight: false };
   const small = a.volume <= b.volume ? a : b;
   const large = a.volume <= b.volume ? b : a;
   return {

@@ -1,4 +1,7 @@
+import { DEFAULT_AUDIT_THRESHOLD } from '@ashfox/internal-contracts';
+import type { SpriteAuthoringTelemetry } from '../../compiler/sprite/contract';
 import type { SpriteProfile } from '../../project/sprite/contract';
+import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
 import type { AuditProfileSource, AuditSubmetric, QualityGrade } from '../contract';
 
 export type SpriteAuditPillarId = 'silhouette' | 'color' | 'surface';
@@ -33,6 +36,12 @@ export interface SpriteAuditDeduction {
   readonly fix: string;
 }
 
+export interface SpriteAuditInput {
+  readonly profile: SpriteProfile;
+  readonly raster: CanonicalTextureRaster;
+  readonly telemetry: SpriteAuthoringTelemetry;
+}
+
 export interface SpriteAuditOptions {
   readonly profile?: SpriteProfile;
   readonly threshold?: number;
@@ -51,4 +60,4 @@ export interface SpriteAuditReport {
   readonly topDeductions: readonly SpriteAuditDeduction[];
 }
 
-export const DEFAULT_SPRITE_THRESHOLD = 75;
+export const DEFAULT_SPRITE_THRESHOLD = DEFAULT_AUDIT_THRESHOLD;

@@ -1,3 +1,4 @@
+import { compareText } from '@ashfox/internal-contracts';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import type { AssetAuthoringTelemetry, ChartAuthoringTelemetry } from '../model/telemetry';
 import type { AuditGateResult } from './contract';
@@ -109,9 +110,9 @@ export const summarizeTelemetry = (
     maxDistinctRoles: acc.maxDistinctRoles,
     aoTexelRatio: acc.visible > 0 ? acc.ao / acc.visible : 0,
     aoChartRatio: n > 0 ? acc.aoCharts / n : 0,
-    bareChartIds: acc.bareChartIds.sort().slice(0, 6),
-    grainModes: [...acc.grainSet].sort(),
-    tones: [...new Set(textures.map((t) => t.tone))].sort(),
+    bareChartIds: acc.bareChartIds.sort(compareText).slice(0, 6),
+    grainModes: [...acc.grainSet].sort(compareText),
+    tones: [...new Set(textures.map((t) => t.tone))].sort(compareText),
     hasProtectedFocalTexels: acc.hasProtected,
     avgForwardSymmetry: acc.symCount > 0 ? acc.symSum / acc.symCount : 0,
   };

@@ -9,6 +9,7 @@ import {
   rasterizeTexture,
   spriteInspectSheetPng,
   type AuditReport,
+  type CanonicalTextureRaster,
   type DeclaredPreviewSpec,
   type SpriteProduct,
 } from '@ashfox/engine-core';
@@ -69,6 +70,17 @@ const inspectDocument = (
     : {}),
 });
 
+const toSpriteRaster = (s: NonNullable<Prepared['sprite']>): CanonicalTextureRaster => ({
+  width: s.receipt.width,
+  height: s.receipt.height,
+  rgba: {
+    length: s.rgba.length,
+    at: (i: number) => s.rgba[i],
+    copy: () => new Uint8Array(s.rgba),
+    [Symbol.iterator]: () => s.rgba[Symbol.iterator](),
+  },
+});
+
 const emptyStageRaster = (width: number, height: number) => ({
   width,
   height,
@@ -83,16 +95,7 @@ const emptyStageRaster = (width: number, height: number) => ({
 const toSpriteProduct = (s: NonNullable<Prepared['sprite']>): SpriteProduct => ({
   id: s.receipt.id,
   profile: s.profile,
-  raster: {
-    width: s.receipt.width,
-    height: s.receipt.height,
-    rgba: {
-      length: s.rgba.length,
-      at: (i: number) => s.rgba[i],
-      copy: () => new Uint8Array(s.rgba),
-      [Symbol.iterator]: () => s.rgba[Symbol.iterator](),
-    },
-  },
+  raster: toSpriteRaster(s),
   stages: {
     silhouette: emptyStageRaster(s.receipt.width, s.receipt.height),
     shade: emptyStageRaster(s.receipt.width, s.receipt.height),
@@ -108,7 +111,11 @@ export const inspect = (asset: Prepared): unknown => {
   const summary = asset.products ? { sourceHash: asset.revision, products: asset.products } : {};
   if (asset.document) return inspectDocument(asset, asset.document, summary);
   if (asset.sprite) {
-    const audit = evaluateSpriteQuality(toSpriteProduct(asset.sprite));
+    const audit = evaluateSpriteQuality({
+      profile: asset.sprite.profile,
+      raster: toSpriteRaster(asset.sprite),
+      telemetry: asset.sprite.telemetry,
+    });
     return {
       ...summary,
       kind: 'sprite',

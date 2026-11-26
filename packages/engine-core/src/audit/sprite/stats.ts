@@ -1,4 +1,4 @@
-import type { SpriteProduct } from '../../compiler/sprite/contract';
+import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
 import { hexToOklch, relativeLuminance } from '../../textures/oklch';
 
 export interface SpriteRasterStats {
@@ -197,11 +197,32 @@ const collectPixelAccum = (rgba: Uint8Array, w: number, h: number, midY: number)
 const meanOf = (vals: readonly number[], fallback = 0): number =>
   vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : fallback;
 
-export const analyzeSpriteRaster = (sprite: SpriteProduct): SpriteRasterStats => {
-  const w = sprite.raster.width,
-    h = sprite.raster.height;
-  const rgba = sprite.raster.rgba.copy();
-  const [bx0, by0, bx1, by1] = sprite.receipt.bounds;
+const opaquePixelBounds = (
+  rgba: Uint8Array,
+  w: number,
+  h: number,
+): readonly [number, number, number, number] => {
+  let minX = w;
+  let minY = h;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      if (rgba[(y * w + x) * 4 + 3] === 0) continue;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  return maxX < minX ? [0, 0, 0, 0] : [minX, minY, maxX + 1, maxY + 1];
+};
+
+export const analyzeSpriteRaster = (raster: CanonicalTextureRaster): SpriteRasterStats => {
+  const w = raster.width,
+    h = raster.height;
+  const rgba = raster.rgba.copy();
+  const [bx0, by0, bx1, by1] = opaquePixelBounds(rgba, w, h);
   const acc = collectPixelAccum(rgba, w, h, (by0 + by1) * 0.5);
   const n = acc.lums.length;
   acc.lums.sort((a, b) => a - b);

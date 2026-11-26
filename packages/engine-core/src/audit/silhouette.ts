@@ -1,3 +1,5 @@
+import { compareText } from '@ashfox/internal-contracts';
+import { add3, cross3, dot3, length3, scale3, sub3 } from '../math/vec3';
 import type { Vec3 } from '../model/identity';
 import type { AuditObb } from './geometry';
 
@@ -8,28 +10,26 @@ export interface SilhouetteSummary {
   readonly baseStability: boolean;
 }
 
-const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross = (a: Vec3, b: Vec3): Vec3 => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-
-const satAxes = (a: AuditObb, b: AuditObb): readonly Vec3[] => {
-  const aAxes = [a.ax, a.ay, a.az] as const;
-  const bAxes = [b.ax, b.ay, b.az] as const;
-  const axes: Vec3[] = [...aAxes, ...bAxes];
-  for (const ax of aAxes) {
-    for (const bx of bAxes) axes.push(cross(ax, bx));
-  }
-  return axes;
-};
-
 const obbProjectedRadius = (obb: AuditObb, axis: Vec3, margin: number): number =>
-  (obb.half[0] + margin) * Math.abs(dot(obb.ax, axis)) +
-  (obb.half[1] + margin) * Math.abs(dot(obb.ay, axis)) +
-  (obb.half[2] + margin) * Math.abs(dot(obb.az, axis));
+  (obb.half[0] + margin) * Math.abs(dot3(obb.ax, axis)) +
+  (obb.half[1] + margin) * Math.abs(dot3(obb.ay, axis)) +
+  (obb.half[2] + margin) * Math.abs(dot3(obb.az, axis));
+
+const obbAxis = (obb: AuditObb, index: number): Vec3 =>
+  index === 0 ? obb.ax : index === 1 ? obb.ay : obb.az;
+
+const isSeparatingAxis = (
+  a: AuditObb,
+  b: AuditObb,
+  delta: Vec3,
+  pad: number,
+  axis: Vec3,
+): boolean => {
+  if (length3(axis) < 1e-6) return false;
+  const ra = obbProjectedRadius(a, axis, pad);
+  const rb = obbProjectedRadius(b, axis, pad);
+  return Math.abs(dot3(delta, axis)) > ra + rb;
+};
 
 export const obbsTouchWithin = (a: AuditObb, b: AuditObb, margin: number): boolean => {
   const pad = margin * 0.5;
@@ -38,12 +38,22 @@ export const obbsTouchWithin = (a: AuditObb, b: AuditObb, margin: number): boole
       return false;
     }
   }
-  const delta = sub(b.center, a.center);
-  for (const axis of satAxes(a, b)) {
-    if (Math.hypot(axis[0], axis[1], axis[2]) < 1e-6) continue;
-    const ra = obbProjectedRadius(a, axis, pad);
-    const rb = obbProjectedRadius(b, axis, pad);
-    if (Math.abs(dot(delta, axis)) > ra + rb) return false;
+  const delta = sub3(b.center, a.center);
+  if (
+    isSeparatingAxis(a, b, delta, pad, a.ax) ||
+    isSeparatingAxis(a, b, delta, pad, a.ay) ||
+    isSeparatingAxis(a, b, delta, pad, a.az) ||
+    isSeparatingAxis(a, b, delta, pad, b.ax) ||
+    isSeparatingAxis(a, b, delta, pad, b.ay) ||
+    isSeparatingAxis(a, b, delta, pad, b.az)
+  ) {
+    return false;
+  }
+  for (let i = 0; i < 3; i += 1) {
+    const ax = obbAxis(a, i);
+    for (let j = 0; j < 3; j += 1) {
+      if (isSeparatingAxis(a, b, delta, pad, cross3(ax, obbAxis(b, j)))) return false;
+    }
   }
   return true;
 };
@@ -96,15 +106,23 @@ export const findFloatingComponents = (
     if (i === mainIndex) continue;
     for (const idx of components[i]!) floating.push(obbs[idx]!.nodeId);
   }
-  return floating.sort();
+  return floating.sort(compareText);
 };
 
+const aabbContainsWithMargin = (inner: AuditObb, outer: AuditObb, margin: number): boolean =>
+  inner.aabbMin[0] >= outer.aabbMin[0] - margin &&
+  inner.aabbMax[0] <= outer.aabbMax[0] + margin &&
+  inner.aabbMin[1] >= outer.aabbMin[1] - margin &&
+  inner.aabbMax[1] <= outer.aabbMax[1] + margin &&
+  inner.aabbMin[2] >= outer.aabbMin[2] - margin &&
+  inner.aabbMax[2] <= outer.aabbMax[2] + margin;
+
 const cornerInsideObb = (corner: Vec3, outer: AuditObb): boolean => {
-  const d = sub(corner, outer.center);
+  const d = sub3(corner, outer.center);
   return (
-    Math.abs(dot(d, outer.ax)) <= outer.half[0] + 0.05 &&
-    Math.abs(dot(d, outer.ay)) <= outer.half[1] + 0.05 &&
-    Math.abs(dot(d, outer.az)) <= outer.half[2] + 0.05
+    Math.abs(dot3(d, outer.ax)) <= outer.half[0] + 0.05 &&
+    Math.abs(dot3(d, outer.ay)) <= outer.half[1] + 0.05 &&
+    Math.abs(dot3(d, outer.az)) <= outer.half[2] + 0.05
   );
 };
 
@@ -113,32 +131,22 @@ export const findBuriedCubes = (obbs: readonly AuditObb[]): readonly string[] =>
   for (const inner of obbs) {
     if (inner.isPlane) continue;
     const isHidden = obbs.some((outer) => {
-      if (outer.nodeId === inner.nodeId || !outer.opaque || outer.volume < inner.volume - 1e-4) {
+      if (
+        outer.nodeId === inner.nodeId ||
+        !outer.opaque ||
+        outer.volume < inner.volume - 1e-4 ||
+        !aabbContainsWithMargin(inner, outer, 0.1)
+      ) {
         return false;
       }
       return inner.corners.every((corner) => cornerInsideObb(corner, outer));
     });
     if (isHidden) buried.push(inner.nodeId);
   }
-  return buried.sort();
+  return buried.sort(compareText);
 };
 
 const GRID = 48;
-
-const plotPoint = (
-  pt: Vec3,
-  axisU: 0 | 1 | 2,
-  axisV: 0 | 1 | 2,
-  centerU: number,
-  centerV: number,
-  scale: number,
-  grid: Uint8Array,
-): void => {
-  const halfGrid = (GRID - 1) * 0.5;
-  const gx = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (pt[axisU]! - centerU) * scale)));
-  const gy = Math.min(GRID - 1, Math.max(0, Math.round(halfGrid + (pt[axisV]! - centerV) * scale)));
-  grid[gy * GRID + gx] = 1;
-};
 
 const drawFaceQuad = (
   base: Vec3,
@@ -151,36 +159,35 @@ const drawFaceQuad = (
   scale: number,
   grid: Uint8Array,
 ): void => {
-  const spanA = Math.hypot(edgeA[axisU]!, edgeA[axisV]!) * 2 * scale;
-  const spanB = Math.hypot(edgeB[axisU]!, edgeB[axisV]!) * 2 * scale;
+  const baseU = base[axisU];
+  const baseV = base[axisV];
+  const aU = edgeA[axisU];
+  const aV = edgeA[axisV];
+  const bU = edgeB[axisU];
+  const bV = edgeB[axisV];
+  const halfGrid = (GRID - 1) * 0.5;
+  const spanA = Math.hypot(aU, aV) * 2 * scale;
+  const spanB = Math.hypot(bU, bV) * 2 * scale;
   const stepsA = Math.min(20, Math.max(4, Math.ceil(spanA * 1.5)));
   const stepsB = Math.min(20, Math.max(4, Math.ceil(spanB * 1.5)));
   for (let i = 0; i <= stepsA; i += 1) {
     const s = (i / stepsA) * 2 - 1;
+    const rowU = baseU + aU * s;
+    const rowV = baseV + aV * s;
     for (let j = 0; j <= stepsB; j += 1) {
       const t = (j / stepsB) * 2 - 1;
-      plotPoint(
-        [
-          base[0] + edgeA[0] * s + edgeB[0] * t,
-          base[1] + edgeA[1] * s + edgeB[1] * t,
-          base[2] + edgeA[2] * s + edgeB[2] * t,
-        ],
-        axisU,
-        axisV,
-        centerU,
-        centerV,
-        scale,
-        grid,
+      const gx = Math.min(
+        GRID - 1,
+        Math.max(0, Math.round(halfGrid + (rowU + bU * t - centerU) * scale)),
       );
+      const gy = Math.min(
+        GRID - 1,
+        Math.max(0, Math.round(halfGrid + (rowV + bV * t - centerV) * scale)),
+      );
+      grid[gy * GRID + gx] = 1;
     }
   }
 };
-
-const scaledAxis = (axis: Vec3, scale: number): Vec3 => [
-  axis[0] * scale,
-  axis[1] * scale,
-  axis[2] * scale,
-];
 
 const projectAxis = (
   obb: AuditObb,
@@ -191,12 +198,12 @@ const projectAxis = (
   scale: number,
   grid: Uint8Array,
 ): void => {
-  const ex = scaledAxis(obb.ax, obb.half[0]);
-  const ey = scaledAxis(obb.ay, obb.half[1]);
-  const ez = scaledAxis(obb.az, obb.half[2]);
+  const ex = scale3(obb.ax, obb.half[0]);
+  const ey = scale3(obb.ay, obb.half[1]);
+  const ez = scale3(obb.az, obb.half[2]);
   for (const s of [-1, 1]) {
     drawFaceQuad(
-      [obb.center[0] + ex[0] * s, obb.center[1] + ex[1] * s, obb.center[2] + ex[2] * s],
+      add3(obb.center, scale3(ex, s)),
       ey,
       ez,
       axisU,
@@ -207,7 +214,7 @@ const projectAxis = (
       grid,
     );
     drawFaceQuad(
-      [obb.center[0] + ey[0] * s, obb.center[1] + ey[1] * s, obb.center[2] + ey[2] * s],
+      add3(obb.center, scale3(ey, s)),
       ex,
       ez,
       axisU,
@@ -218,7 +225,7 @@ const projectAxis = (
       grid,
     );
     drawFaceQuad(
-      [obb.center[0] + ez[0] * s, obb.center[1] + ez[1] * s, obb.center[2] + ez[2] * s],
+      add3(obb.center, scale3(ez, s)),
       ex,
       ey,
       axisU,

@@ -1,10 +1,10 @@
+import { auditSubmetric } from '@ashfox/internal-contracts';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import type { AnimationClip } from '../model/motion';
 import {
   PROFILE_WEIGHTS,
   ramp,
   round2,
-  round4,
   type AuditDeduction,
   type AuditPillarReport,
   type AuditSubmetric,
@@ -123,34 +123,33 @@ const buildRigMetrics = (
   return {
     rigDetail: rigInfo.detail,
     metrics: [
-      {
-        id: 'rig.materialCraft',
-        label: 'Tone & Material Grain Differentiation',
-        score: round2(matRatio * w.materialCraft),
-        maxScore: w.materialCraft,
-        value: round4(matRatio),
-        target: 1.0,
-        detail: `tones=[${telemetry.tones.join(', ')}], grainModes=[${telemetry.grainModes.join(', ')}].`,
-      },
-      {
-        id: 'rig.rigAndMotion',
-        label:
-          profile === 'creature' ? 'Skeleton Depth & Idle Motion' : 'Hierarchy & Rig Cleanliness',
-        score: round2(rigInfo.ratio * w.rigAndMotion),
-        maxScore: w.rigAndMotion,
-        value: round4(rigInfo.ratio),
-        target: 1.0,
-        detail: rigInfo.detail,
-      },
-      {
-        id: 'rig.uvEfficiency',
-        label: 'UV Density & Atlas Packing',
-        score: round2(uvRatio * w.uvEfficiency),
-        maxScore: w.uvEfficiency,
-        value: round4(raster.meanPpu),
-        target: profile === 'block' ? 1.0 : 2.0,
-        detail: `meanPpu=${round2(raster.meanPpu)}, ppuConsistency=${round2(raster.ppuConsistency)}, atlasUtil=${Math.round(raster.atlasUtilization * 100)}%.`,
-      },
+      auditSubmetric(
+        'rig.materialCraft',
+        'Tone & Material Grain Differentiation',
+        matRatio,
+        w.materialCraft,
+        matRatio,
+        1.0,
+        `tones=[${telemetry.tones.join(', ')}], grainModes=[${telemetry.grainModes.join(', ')}].`,
+      ),
+      auditSubmetric(
+        'rig.rigAndMotion',
+        profile === 'creature' ? 'Skeleton Depth & Idle Motion' : 'Hierarchy & Rig Cleanliness',
+        rigInfo.ratio,
+        w.rigAndMotion,
+        rigInfo.ratio,
+        1.0,
+        rigInfo.detail,
+      ),
+      auditSubmetric(
+        'rig.uvEfficiency',
+        'UV Density & Atlas Packing',
+        uvRatio,
+        w.uvEfficiency,
+        raster.meanPpu,
+        profile === 'block' ? 1.0 : 2.0,
+        `meanPpu=${round2(raster.meanPpu)}, ppuConsistency=${round2(raster.ppuConsistency)}, atlasUtil=${Math.round(raster.atlasUtilization * 100)}%.`,
+      ),
     ],
   };
 };
