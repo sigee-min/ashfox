@@ -1,7 +1,9 @@
+import { compareText } from '@ashfox/internal-contracts';
+import { deepFreeze } from '../../immutable';
 import type { TextureAsset, TextureCanvasDetail, TextureRaster } from '../../model/texture';
 import type { StructureDensity } from '../../project/structure/contract';
-import { canonicalPngDigest, encodeCanonicalPng } from '../../textures/textureRecipe/png';
-import { rasterizeCanonicalTexture } from '../../textures/textureRecipe/raster';
+import { encodeCanonicalPngSummary } from '../../textures/textureRecipe/png';
+import { rasterizeTextureSpec } from '../../textures/textureRecipe/raster';
 import type { BlockRenderLayer } from './blocks';
 import { paintTileRects } from './tiles';
 
@@ -36,14 +38,8 @@ const makeTextureAsset = (
   layer: BlockRenderLayer,
   rasterSpec: TextureRaster,
 ): TextureAsset => {
-  const encoded = encodeCanonicalPng(
-    rasterizeCanonicalTexture(width, height, {
-      background: rasterSpec.background,
-      backgroundAlpha: rasterSpec.backgroundAlpha,
-      canvasDetails: rasterSpec.canvasDetails,
-      alphaMasks: [],
-    }),
-  );
+  const frozenRaster = deepFreeze(rasterSpec);
+  const summary = encodeCanonicalPngSummary(rasterizeTextureSpec(width, height, frozenRaster));
   return {
     id,
     name: id,
@@ -53,8 +49,8 @@ const makeTextureAsset = (
       bucket: 'structure',
       key: `${id}.png`,
       contentType: 'image/png',
-      contentHash: canonicalPngDigest(encoded),
-      byteLength: encoded.length,
+      contentHash: summary.contentHash,
+      byteLength: summary.byteLength,
     },
     visible: true,
     sampling: 'nearest',
@@ -62,7 +58,7 @@ const makeTextureAsset = (
     renderMode: layer === 'emissive' ? 'emissive' : 'default',
     renderSides: layer === 'cutout' ? 'double' : 'auto',
     atlasMode: 'preserve',
-    raster: rasterSpec,
+    raster: frozenRaster,
   };
 };
 
@@ -106,7 +102,7 @@ const buildLayerTexture = (
   uvs: Map<string, TileUvRef>,
 ): TextureAsset => {
   const tilePx = density === 2 ? 32 : 16;
-  const sorted = [...new Set(tileIds)].sort();
+  const sorted = [...new Set(tileIds)].sort(compareText);
   const cols = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
   const rows = Math.max(1, Math.ceil(sorted.length / cols));
   const width = nextPow2(cols * tilePx, tilePx);
@@ -192,7 +188,7 @@ export const buildStructureTileTextures = (
     if (!unique.has(id)) unique.set(id, req);
   }
   const textures: Record<string, TextureAsset> = {};
-  for (const [id, req] of [...unique.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+  for (const [id, req] of [...unique.entries()].sort(([a], [b]) => compareText(a, b))) {
     textures[id] = buildMultiTileTexture(req.layer, req.tileId, density, seed);
   }
   return textures;

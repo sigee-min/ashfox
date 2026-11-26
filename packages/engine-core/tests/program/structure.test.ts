@@ -255,14 +255,21 @@ structure s {
   assert.ok(nbt.palette.some((e) => e.Name === 'minecraft:jigsaw'));
   assert.ok(nbt.blocks.some((b) => nbt.palette[b.state]?.Name === 'minecraft:jigsaw'));
 
+  const fullDoc = buildStructureDocument(built.grid, { 's.ashfox#rp': pillarModel });
   const cutDoc = buildStructureDocument(
     built.grid,
     { 's.ashfox#rp': pillarModel },
     { cutawayY: 2 },
   );
-  assert.ok(
-    Object.keys(cutDoc.scene.nodes).length < Object.keys(built.document.scene.nodes).length,
-  );
+  assert.ok(Object.keys(cutDoc.scene.nodes).length < Object.keys(fullDoc.scene.nodes).length);
+  const stubNodes = Object.values(built.document.scene.nodes);
+  assert.ok(stubNodes.length <= 8);
+  assert.ok(stubNodes.every((n) => n.kind === 'bone'));
+  for (const tex of Object.values(built.bakedMesh.textures)) {
+    assert.ok(
+      tex.raster && Object.isFrozen(tex.raster) && Object.isFrozen(tex.raster.canvasDetails),
+    );
+  }
 
   for (const [enc, req] of [
     ['portable', []],
@@ -303,10 +310,40 @@ const testCanonicalWorkspaceShowcases = (): void => {
   }
 };
 
+const testLightingRingAndMultiLightReRelaxation = (): void => {
+  const src = `ashfox-model 1
+structure lit_canopy {
+  size = (7, 6, 7);
+  palette {
+    stone = "minecraft:stone_bricks";
+    leaves = "minecraft:oak_leaves";
+    torch = "minecraft:torch";
+    soul = "minecraft:soul_lantern[hanging=false]";
+  }
+  build {
+    box from = (0, 0, 0) to = (6, 0, 6) block = stone;
+    box from = (1, 4, 1) to = (5, 4, 5) block = leaves;
+    set at = (1, 1, 1) block = torch;
+    set at = (5, 1, 5) block = soul;
+    set at = (3, 1, 3) block = torch;
+  }
+}`;
+  const built = compileStructureUnits(
+    'lit.ashfox',
+    new Map([['lit.ashfox', parseStructureSource(src, 'lit.ashfox')]]),
+    {},
+    relativePosix,
+  );
+  const idx = (3 * 7 + 2) * 7 + 3;
+  assert.ok(built.lighting.sky[idx]! >= 200);
+  assert.ok(built.lighting.blockR[idx]! > 100 && built.lighting.blockB[idx]! > 80);
+};
+
 const main = async (): Promise<void> => {
   testParserAndSemanticDsl();
   testLowLevelGridAndHonestBareAudit();
   await testBakedGreedyInstancingAndHygiene();
+  testLightingRingAndMultiLightReRelaxation();
   testCanonicalWorkspaceShowcases();
   console.log('ashfox structure compiler v2 tests ok');
 };

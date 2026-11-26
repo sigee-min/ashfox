@@ -2,6 +2,7 @@ import type { StructureProduct } from '../../compiler/structure/contract';
 import { encodeCanonicalPng } from '../../textures/textureRecipe/png';
 import { rasterizeTexture } from '../../textures/textureRecipe/raster';
 import { sealCanonicalBoneFrame, type ProjectDocument } from '../../model';
+import { createProjectDocument } from '../../project/create';
 import { sha256Digest } from '../../provenance/digest';
 import type { AssetBuildIdentity } from '../../project/asset';
 import { adaptProjectForExport } from '../adapter';
@@ -50,14 +51,17 @@ const exportBakedStructureBundle = async (
     quantize: encoding !== 'portable',
   });
   const finalGltf = encoding === 'portable' ? compiled : await compressGltfWithMeshopt(compiled);
+  const docStub = createProjectDocument({
+    id: product.id,
+    name: product.id,
+    revision: product.document.revision,
+    createdAt: product.document.createdAt,
+  });
   const snapshot = snapshotExportData(
-    { ...product.document, textures },
+    { ...docStub, settings: product.document.settings, textures },
     'structure.document',
     'Structure document snapshot failed.',
   );
-  for (const node of Object.values(snapshot.scene.nodes)) {
-    if (node.kind === 'bone') sealCanonicalBoneFrame(node);
-  }
   const adapted = adaptProjectForExport(snapshot, { target: 'glb', modelPath });
   const build = structureBuildIdentity(snapshot.name, modelPath, buildKey);
   const glbPath = `${modelPath}.glb`;

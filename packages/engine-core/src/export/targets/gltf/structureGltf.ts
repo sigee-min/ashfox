@@ -226,6 +226,10 @@ const transformPrimitiveData = (
   };
 };
 
+const appendNumbers = (dst: number[], src: readonly number[]): void => {
+  for (let i = 0; i < src.length; i += 1) dst.push(src[i]!);
+};
+
 const compileMaterialGroup = (
   writer: GltfBinaryWriter,
   matKey: number,
@@ -238,10 +242,10 @@ const compileMaterialGroup = (
   const hasUvs = list.every((p) => p.uvs !== undefined);
   for (const p of list) {
     const base = positions.length / 3;
-    positions.push(...p.positions);
-    normals.push(...p.normals);
-    if (hasUvs && p.uvs) uvs.push(...p.uvs);
-    for (const idx of p.indices) indices.push(base + idx);
+    appendNumbers(positions, p.positions);
+    appendNumbers(normals, p.normals);
+    if (hasUvs && p.uvs) appendNumbers(uvs, p.uvs);
+    for (let i = 0; i < p.indices.length; i += 1) indices.push(base + p.indices[i]!);
   }
   return compileGltfPrimitive(
     writer,
@@ -310,7 +314,8 @@ const appendCustomNodePrimitives = (
         : compileGltfPlanePrimitiveData(doc, node, opts);
     for (const p of raw) collected.push(transformPrimitiveData(p, xf, p.material));
   }
-  for (const child of (childrenMap.get(node.id) ?? []).sort((a, b) => compareText(a.id, b.id))) {
+  const children = [...(childrenMap.get(node.id) ?? [])].sort((a, b) => compareText(a.id, b.id));
+  for (const child of children) {
     appendCustomNodePrimitives(doc, child, xf, childrenMap, opts, collected);
   }
 };
