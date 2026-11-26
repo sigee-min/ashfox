@@ -21,10 +21,20 @@ export interface TransformKeyframe {
   id: KeyframeId;
   timeSeconds: number;
   value: AnimationVec3;
+  quaternion?: readonly [number, number, number, number];
   preValue?: AnimationVec3;
   postValue?: AnimationVec3;
   interpolation: KeyframeInterpolation;
   easing?: KeyframeEasing;
+}
+
+export interface MotionCue {
+  kind: 'sound' | 'vfx' | 'event';
+  time: number;
+  endTime?: number;
+  name: string;
+  anchor?: string;
+  payload?: Readonly<Record<string, string | number | boolean>>;
 }
 
 export interface TransformChannel {
@@ -83,4 +93,5 @@ export interface AnimationClip {
   overridePreviousAnimation?: boolean;
   channels: Readonly<Record<ChannelId, TransformChannel>>;
   triggers: Readonly<Record<ChannelId, AnimationTriggerTrack>>;
+  cues?: readonly MotionCue[];
 }

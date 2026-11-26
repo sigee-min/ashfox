@@ -34,7 +34,8 @@ const rasterBytes = (
   height: number,
   raster: {
     readonly background: string;
-    readonly backgroundAlpha: 0 | 255;
+    readonly backgroundAlpha: number;
+    readonly alphaMode?: 'binary' | 'soft';
     readonly canvasDetails: Parameters<typeof rasterizeCanonicalTexture>[2]['canvasDetails'];
     readonly alphaMasks?: Parameters<typeof rasterizeCanonicalTexture>[2]['alphaMasks'];
   },

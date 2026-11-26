@@ -27,9 +27,12 @@ const isOutsideTexture = (rect: Rect, texture: Texture): boolean =>
   rect.x + rect.width > texture.width ||
   rect.y + rect.height > texture.height;
 
-const isInvalidCanvasDetail = (detail: CanvasDetail, texture: Texture): boolean =>
+const isValidAlphaValue = (alpha: number, soft: boolean): boolean =>
+  soft ? Number.isSafeInteger(alpha) && alpha >= 0 && alpha <= 255 : alpha === 0 || alpha === 255;
+
+const isInvalidCanvasDetail = (detail: CanvasDetail, texture: Texture, soft: boolean): boolean =>
   !COLOR_PATTERN.test(detail.color) ||
-  (detail.alpha !== 0 && detail.alpha !== 255) ||
+  !isValidAlphaValue(detail.alpha, soft) ||
   !Number.isInteger(detail.x) ||
   !Number.isInteger(detail.y) ||
   !Number.isInteger(detail.width) ||
@@ -69,13 +72,14 @@ const validateTextureRaster = (
   density: Density,
 ): void => {
   if (!texture.raster) return;
+  const soft = texture.raster.alphaMode === 'soft';
   const limit = preserveRasterDetailLimit(density);
   const invalidCanvas = hasInvalidEntry(
     texture.raster.canvasDetails,
     limit,
     `${path}.raster.canvasDetails`,
     registerId,
-    (detail) => isInvalidCanvasDetail(detail, texture),
+    (detail) => isInvalidCanvasDetail(detail, texture, soft),
   );
   const invalidMasks = hasInvalidEntry(
     texture.raster.alphaMasks ?? [],
@@ -86,7 +90,7 @@ const validateTextureRaster = (
   );
   if (
     !COLOR_PATTERN.test(texture.raster.background) ||
-    (texture.raster.backgroundAlpha !== 0 && texture.raster.backgroundAlpha !== 255) ||
+    !isValidAlphaValue(texture.raster.backgroundAlpha, soft) ||
     invalidCanvas ||
     invalidMasks
   ) {

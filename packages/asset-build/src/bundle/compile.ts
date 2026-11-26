@@ -212,6 +212,14 @@ const buildProductMetadata = (
       })),
       ...(performance ? { performance } : {}),
     };
+  if (product.kind === 'vfx')
+    return {
+      durationSeconds: product.vfx.durationSeconds,
+      fps: product.vfx.fps,
+      drawCalls: product.vfx.stats.drawCalls,
+      triangles: product.vfx.stats.triangles,
+      particleCount: product.vfx.stats.particleCount,
+    };
   return {
     variants: product.sounds.map((sound) => ({
       id: sound.variant,
@@ -246,6 +254,32 @@ const assertSoundDeliveryGate = (
     throw new BuildFailure('quality.gate', formatSoundGateFailure(targetName, audit), 3);
 };
 
+export const compileVfxFiles = (
+  target: ExportTarget,
+  product: Extract<CompiledProduct, { readonly kind: 'vfx' }>,
+): Artifact[] => {
+  if (target.format !== 'glb') throw new BuildFailure('export.format', target.name);
+  const files: Artifact[] = [
+    { path: `${target.name}.glb`, bytes: product.glb },
+    { path: `${target.name}.vfx.json`, bytes: encodeUtf8(json(product.spec)) },
+    { path: `${target.name}.flipbook.json`, bytes: encodeUtf8(json(product.vfx.flipbookManifest)) },
+  ];
+  if (product.particles.length === 1) {
+    files.push({
+      path: `${target.name}.particle.json`,
+      bytes: encodeUtf8(json(product.particles[0]!)),
+    });
+  } else {
+    product.particles.forEach((p, idx) => {
+      files.push({
+        path: `${target.name}.${idx}.particle.json`,
+        bytes: encodeUtf8(json(p)),
+      });
+    });
+  }
+  return files;
+};
+
 const compileExportFiles = async (
   target: ExportTarget,
   product: CompiledProduct,
@@ -274,6 +308,7 @@ const compileExportFiles = async (
     return out;
   }
   if (product.kind === 'structure') return compileStructureFiles(target, product, buildKey);
+  if (product.kind === 'vfx') return compileVfxFiles(target, product);
   return compileModelFiles(target, product, buildKey, key, projects, remaining);
 };
 

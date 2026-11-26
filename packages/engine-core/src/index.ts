@@ -344,3 +344,40 @@ export {
   type GlbPerformanceViolation,
 } from './audit/performance';
 export * from './hooks/index';
+export { evaluateMotionQuality, type MotionAuditInput } from './audit/motion';
+export { bakeClip } from './animation/bake';
+export type {
+  BakedClip,
+  ClipSpec,
+  MotionAuditMetric,
+  MotionAuditReport,
+  RigJoint,
+  RigSpec,
+} from './animation/contract';
+export {
+  DEFAULT_VFX_BUDGET,
+  VFX_KIND,
+  VFX_SCHEMA_VERSION,
+  type CompiledVfx,
+  type CompiledVfxElement,
+  type VfxBakedBurst,
+  type VfxBlendMode,
+  type VfxBudget,
+  type VfxFlipbookManifest,
+  type VfxLifeStop,
+  type VfxPalette,
+  type VfxRecipe,
+  type VfxRuntimeStats,
+} from './vfx/contract';
+export { compileVfxRecipe, readVfxRecipe } from './vfx/compile';
+export { auditVfx, type VfxAuditReport } from './vfx/audit';
+export { emitVfxGlb } from './vfx/gltfEmit';
+export {
+  emitBedrockParticleSpecs,
+  emitVfxRuntimeSpec,
+  type BedrockParticleSpec,
+  type VfxRuntimeSpec,
+} from './vfx/specEmit';
+export { VFX_PALETTES, VFX_SHOWCASE_PRESETS } from './vfx/presets';
+export { VfxInputError, type VfxSourceUnit } from './project/vfx/contract';
+export { parseVfxSource } from './project/vfx/source';

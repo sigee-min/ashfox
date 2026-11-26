@@ -7,6 +7,7 @@ import { parseAssetSource } from '../../project/program/asset/parse';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import { parseSpriteSource } from '../../project/sprite/source';
 import { parseStructureSource } from '../../project/structure';
+import { parseVfxSource } from '../../project/vfx/source';
 import { assertWellFormedSourceText } from '../../project/workspace/path';
 import type { DirectoryWorkspaceCache } from './cache';
 
@@ -15,6 +16,7 @@ const CANONICAL_PREFIXES = [
   'assets/sprites/',
   'assets/sounds/',
   'assets/structures/',
+  'assets/vfx/',
   'assets/module/',
 ] as const;
 
@@ -23,6 +25,7 @@ const BUCKET_BY_KIND: Readonly<Record<DeclaredAssetKind, string>> = {
   sprite: 'assets/sprites/',
   sound: 'assets/sounds/',
   structure: 'assets/structures/',
+  vfx: 'assets/vfx/',
 };
 
 const isUnder = (filePath: string, prefix: string): boolean => filePath.startsWith(prefix);
@@ -44,54 +47,52 @@ const resolveRelativeImport = (ownerPath: string, specifier: string): string | n
 
 type InspectedMap = ReadonlyMap<string, NativeSourceMetadata>;
 
+const toModuleMeta = (
+  id: string,
+  imports: readonly { readonly path: string }[],
+): NativeSourceMetadata =>
+  Object.freeze({
+    kind: 'module',
+    id,
+    imports: Object.freeze(imports.map((i) => i.path)),
+    outputs: Object.freeze([]),
+  });
+
+const tryParseModule = <
+  T extends {
+    readonly kind: string;
+    readonly id: string;
+    readonly imports: readonly { readonly path: string }[];
+  },
+>(
+  parse: () => T,
+  onModule?: (unit: T) => void,
+): NativeSourceMetadata | null => {
+  try {
+    const unit = parse();
+    if (unit.kind !== 'module') return null;
+    onModule?.(unit);
+    return toModuleMeta(unit.id, unit.imports);
+  } catch {
+    return null;
+  }
+};
+
 const parseModuleMetadata = (
   source: string,
   filePath: string,
   cache?: DirectoryWorkspaceCache,
-): NativeSourceMetadata | null => {
-  try {
-    const sp = parseSpriteSource(source, filePath);
-    if (sp.kind === 'module') {
-      cache?.spriteUnits.set(filePath, sp);
-      return Object.freeze({
-        kind: 'module',
-        id: sp.id,
-        imports: Object.freeze(sp.imports.map((i) => i.path)),
-        outputs: Object.freeze([]),
-      });
-    }
-  } catch {
-    /* try next module grammar */
-  }
-  try {
-    const st = parseStructureSource(source, filePath);
-    if (st.kind === 'module') {
-      cache?.structureUnits.set(filePath, deepFreeze(st));
-      return Object.freeze({
-        kind: 'module',
-        id: st.id,
-        imports: Object.freeze(st.imports.map((i) => i.path)),
-        outputs: Object.freeze([]),
-      });
-    }
-  } catch {
-    /* try next module grammar */
-  }
-  try {
-    const snd = parseSoundUnit(source, filePath);
-    if (snd.kind === 'module') {
-      return Object.freeze({
-        kind: 'module',
-        id: snd.id,
-        imports: Object.freeze(snd.imports.map((i) => i.path)),
-        outputs: Object.freeze([]),
-      });
-    }
-  } catch {
-    /* not a valid module */
-  }
-  return null;
-};
+): NativeSourceMetadata | null =>
+  tryParseModule(
+    () => parseSpriteSource(source, filePath),
+    (sp) => cache?.spriteUnits.set(filePath, sp),
+  ) ??
+  tryParseModule(
+    () => parseStructureSource(source, filePath),
+    (st) => cache?.structureUnits.set(filePath, deepFreeze(st)),
+  ) ??
+  tryParseModule(() => parseSoundUnit(source, filePath)) ??
+  tryParseModule(() => parseVfxSource(source, filePath));
 
 const inspectUnitMetadata = (
   source: string,
@@ -127,6 +128,15 @@ const inspectUnitMetadata = (
       id: structure.id,
       imports: Object.freeze(structure.imports.map((i) => i.path)),
       outputs: Object.freeze([...structure.outputs]),
+    });
+  }
+  if (kind === 'vfx') {
+    const vfx = parseVfxSource(source, filePath);
+    return Object.freeze({
+      kind: 'vfx',
+      id: vfx.id,
+      imports: Object.freeze(vfx.imports.map((i) => i.path)),
+      outputs: Object.freeze([...vfx.outputs]),
     });
   }
   const model = parseAssetSource(source, filePath);

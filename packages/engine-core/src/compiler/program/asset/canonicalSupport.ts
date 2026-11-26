@@ -7,8 +7,10 @@ import {
   isAssetNumberValueShape,
   type AssetExactNumber,
   type AssetNumberValue,
+  type AssetVectorValue,
 } from './value/contract';
 import { toAssetCanonicalNumber } from './value/evaluate';
+import type { InstantiatedMotionKey } from './ir';
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 export const MAX_MOTION_FPS = 240;
@@ -76,7 +78,7 @@ export const addIssue = (
 
 const isExactUnitNumber = (
   value: AssetNumberValue,
-  unit: 'plain' | 'second' | 'degree' | 'ratio',
+  unit: 'plain' | 'unit' | 'second' | 'degree' | 'ratio',
 ): boolean =>
   value !== null &&
   typeof value === 'object' &&
@@ -87,7 +89,7 @@ const isExactUnitNumber = (
 
 export const canonicalNumber = (
   value: AssetNumberValue,
-  unit: 'plain' | 'second' | 'degree' | 'ratio',
+  unit: 'plain' | 'unit' | 'second' | 'degree' | 'ratio',
   boundary: CanonicalBoundary,
   location: Location,
   diagnostics: AssetDiagnostic[],
@@ -138,4 +140,63 @@ export const registerId = (
     );
   }
   return false;
+};
+
+const vectorComponents = (
+  value: AssetVectorValue,
+  type: 'vec3<unit>' | 'vec3<degree>' | 'vec3<ratio>',
+): readonly AssetNumberValue[] | null => {
+  try {
+    if (
+      value === null ||
+      typeof value !== 'object' ||
+      value.kind !== 'vector' ||
+      value.type !== type ||
+      !Array.isArray(value.values) ||
+      value.values.length !== 3 ||
+      !value.values.every(isAssetNumberValueShape)
+    ) {
+      return null;
+    }
+    return value.values;
+  } catch {
+    return null;
+  }
+};
+
+const CHANNEL_UNITS = { position: 'unit', rotation: 'degree', scale: 'ratio' } as const;
+
+export const keyVector = (
+  key: InstantiatedMotionKey,
+  property: 'position' | 'rotation' | 'scale',
+  location: Location,
+  diagnostics: AssetDiagnostic[],
+): readonly [number, number, number] | null => {
+  const unit = CHANNEL_UNITS[property];
+  const type = `vec3<${unit}>` as const;
+  const components = vectorComponents(key.value, type);
+  if (components === null) {
+    addIssue(
+      diagnostics,
+      location,
+      'asset.motion-value',
+      `Motion ${property} keys require a three-component ${type} value.`,
+    );
+    return null;
+  }
+  const values = components.map((c) =>
+    canonicalNumber(c, unit, NUMBER_BOUNDARY, location, diagnostics),
+  );
+  if (values.some((v): v is null => v === null)) return null;
+  const numeric = [values[0]!, values[1]!, values[2]!] as const;
+  if (property === 'scale' && numeric.some((v) => v <= 0)) {
+    addIssue(
+      diagnostics,
+      location,
+      'asset.motion-scale',
+      'Motion scale keys require strictly positive ratio components.',
+    );
+    return null;
+  }
+  return vector(numeric[0], numeric[1], numeric[2]);
 };

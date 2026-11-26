@@ -85,6 +85,7 @@ const EXPORT_FORMATS = {
   model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
   sound: ['wav'],
   structure: ['java_structure', 'glb'],
+  vfx: ['glb'],
 } as const;
 
 const checkPackSounds = (
@@ -108,7 +109,7 @@ export const directoryCompilationExportsCheck = (
   config: DirectoryWorkspace,
   productsByEntry: ReadonlyMap<
     string,
-    { readonly kind: 'sprite' | 'model' | 'sound' | 'structure' }
+    { readonly kind: 'sprite' | 'model' | 'sound' | 'structure' | 'vfx' }
   >,
   soundsOf: (entry: WorkspaceEntrySelector) => readonly { readonly variant: string }[] | undefined,
   entryKey: (e: WorkspaceEntrySelector) => string,

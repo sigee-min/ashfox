@@ -53,6 +53,17 @@ const validateKeyframeValues = (
 ): void => {
   const { clip, add } = context;
   validateAnimationVector(keyframe.value, `${keyPath}.value`, clip.id, add);
+  if (keyframe.quaternion !== undefined) {
+    if (keyframe.quaternion.length !== 4 || !keyframe.quaternion.every(isFiniteNumber)) {
+      add({
+        code: 'animation.invalid_value',
+        severity: 'error',
+        message: 'Animation keyframe quaternion must contain 4 finite numbers.',
+        path: `${keyPath}.quaternion`,
+        clipIds: [clip.id],
+      });
+    }
+  }
   if (keyframe.preValue) {
     validateAnimationVector(keyframe.preValue, `${keyPath}.preValue`, clip.id, add);
   }

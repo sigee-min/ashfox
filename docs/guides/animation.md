@@ -32,8 +32,8 @@ rotation, the hand contact, and planted feet.
 ## Create a motion
 
 Declare a motion for the rig contract whose joints it animates. The rig must
-allow every channel you use. Rotation and scale are the supported motion
-channels.
+allow every channel you use (`position`, `rotation`, and `scale`), and can
+declare optional `limits`, `chain`, `ik_limb`, and `anchor` metadata.
 
 **Snippet — one motion declaration:**
 
@@ -54,9 +54,9 @@ export motion idle for CreatureRig {
 Reusable rig motions are rest-space relative by default (`rest_relative = true`). Key times must be
 inside the duration and strictly increasing.
 
-### Rotation and scale tracks
+### Position, rotation, and scale tracks
 
-The track target is a joint name followed by `.rotation` or `.scale`.
+Track targets address `<joint>.position`, `<joint>.rotation`, or `<joint>.scale`.
 
 **Snippet — rotation and scale:**
 
@@ -74,15 +74,38 @@ track root.scale {
 }
 ```
 
-Rotation values are three degree values. Scale values are three positive ratio
-values, and the target joint must declare `scale` in its `channels` list. A
-motion cannot author position or IK tracks, so use the skeleton and geometry
-for rest placement.
+Rotation values are three degree values (`vec3<degree>`), `position` values are
+model-space offsets (`vec3<unit>`), and `scale` values are three positive ratio
+values (`vec3<ratio>`). The target joint must declare the matching channel in
+its `channels` list.
 
-Each key must name its interpolation. `linear` blends the current key to the
-next, `step` holds the current key until the next key, and `catmullrom` creates
-a smooth curve from the surrounding keys. The interpolation word belongs
-after the value, before the semicolon.
+Each key must name its interpolation (`linear`, `step`, `smooth`, `ease_in`,
+`ease_out`, `ease_in_out`, `cubic`, `snap`, `anticipate`, `overshoot`,
+`bounce`, `elastic`, or `catmullrom`), with optional curve parameters (for
+example `smooth(...)` or `overshoot(strength = 1.4)`). The interpolation curve
+belongs after the value, before the semicolon; rotation channels bake with
+quaternion-native SLERP interpolation.
+
+## Procedural waves, IK, secondary physics, combat, and cues
+
+Motions also compose higher-level animation blocks directly inside `motion`:
+
+```text
+export motion stride for CreatureRig {
+  duration = 0.8s;
+  fps = 30;
+  loop = loop;
+  wave torso.position.y { amp = 0.6u; freq = 2; shape = cos; }
+  ik foot_lock leg_l { ground_y = 0u; lock_phase = 0.1..0.5; step_height = 2.5u; }
+  secondary chain tail { stiffness = 140; damping = 0.25; gravity = -12; }
+  cue sound at 0.25s = "footstep";
+}
+```
+
+Use `layer` blocks (`mode = override | additive;`, `weight`, `mask = [...]`),
+named `pose` / `at <t> pose <name>` keys, combat timing ops (`squash`, `smear`,
+`hitstop`, `recoil`), and timeline `cue` events (`sound`, `vfx`, `event`) baked
+into `gltf.animations[i].extras.ashfoxCues`.
 
 ## Set loop and duration behavior
 

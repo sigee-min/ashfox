@@ -113,20 +113,35 @@ const collectTextureResources = (
   return { resources, readiness };
 };
 
-const buildStandardMaterial = (
-  resource: TextureResource,
-  emission: number,
-): THREE.MeshStandardMaterial => {
-  const additive = resource.texture.renderMode === 'additive';
-  const transparent = additive || resource.texture.raster?.backgroundAlpha === 0;
+const buildStandardMaterial = (resource: TextureResource, emission: number): THREE.Material => {
+  const additive =
+    resource.texture.renderMode === 'additive' ||
+    resource.texture.metadata?.ashfoxBlendMode === 'additive';
+  const premul = resource.texture.metadata?.ashfoxBlendMode === 'premul';
+  const unlit = additive || resource.texture.metadata?.ashfoxUnlit === true;
+  const softAlpha = resource.texture.raster?.alphaMode === 'soft';
+  const transparent = additive || softAlpha || resource.texture.raster?.backgroundAlpha === 0;
   const baseColor = resource.map ? '#ffffff' : previewColor(resource.texture);
+  const side = resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide;
+  if (unlit) {
+    return new THREE.MeshBasicMaterial({
+      color: baseColor,
+      map: resource.map,
+      transparent: true,
+      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+      premultipliedAlpha: premul,
+      depthWrite: false,
+      side,
+      toneMapped: false,
+    });
+  }
   return new THREE.MeshStandardMaterial({
     color: baseColor,
     map: resource.map,
     transparent,
     blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-    depthWrite: !additive && resource.texture.raster?.backgroundAlpha !== 0,
-    side: resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide,
+    depthWrite: !additive && !softAlpha && resource.texture.raster?.backgroundAlpha !== 0,
+    side,
     roughness: 0.84,
     metalness: 0.02,
     emissive: emission > 0 ? baseColor : '#000000',

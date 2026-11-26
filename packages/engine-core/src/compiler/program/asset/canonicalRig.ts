@@ -9,14 +9,10 @@ import type {
 import type { EntityId } from '../../../model/identity';
 import type { BoneNode } from '../../../model/scene';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
-import {
-  isAssetNumberValueShape,
-  type AssetExactNumber,
-  type AssetNumberValue,
-  type AssetVectorValue,
-} from './value/contract';
+import type { AssetExactNumber } from './value/contract';
 import { lowerBones } from './canonicalBones';
-import { compareDiagnostics, nullRecord } from './diagnostics';
+import { bakeInstantiatedMotion, shouldUseMotionBake } from './canonicalBake';
+import { compareDiagnostics } from './diagnostics';
 import {
   INTEGER_BOUNDARY,
   MAX_MOTION_FRAMES,
@@ -26,8 +22,8 @@ import {
   exactCompare,
   exactValue,
   hashId,
+  keyVector,
   registerId,
-  vector,
   type Location,
 } from './canonicalSupport';
 import type {
@@ -65,63 +61,6 @@ const motionLocation = (motion: InstantiatedMotion): Location => ({
   path: motion.sourcePath,
   span: motion.span,
 });
-
-const vectorComponents = (
-  value: AssetVectorValue,
-  type: 'vec3<degree>' | 'vec3<ratio>',
-): readonly AssetNumberValue[] | null => {
-  try {
-    if (
-      value === null ||
-      typeof value !== 'object' ||
-      value.kind !== 'vector' ||
-      value.type !== type ||
-      !Array.isArray(value.values) ||
-      value.values.length !== 3 ||
-      !value.values.every(isAssetNumberValueShape)
-    ) {
-      return null;
-    }
-    return value.values;
-  } catch {
-    return null;
-  }
-};
-
-const keyVector = (
-  key: InstantiatedMotionKey,
-  property: 'rotation' | 'scale',
-  location: Location,
-  diagnostics: AssetDiagnostic[],
-): readonly [number, number, number] | null => {
-  const type = property === 'rotation' ? 'vec3<degree>' : 'vec3<ratio>';
-  const components = vectorComponents(key.value, type);
-  if (components === null) {
-    addIssue(
-      diagnostics,
-      location,
-      'asset.motion-value',
-      `Motion ${property} keys require a three-component ${type} value.`,
-    );
-    return null;
-  }
-  const unit = property === 'rotation' ? 'degree' : 'ratio';
-  const values = components.map((component) =>
-    canonicalNumber(component, unit, NUMBER_BOUNDARY, location, diagnostics),
-  );
-  if (values.some((value): value is null => value === null)) return null;
-  const numeric = [values[0]!, values[1]!, values[2]!] as const;
-  if (property === 'scale' && numeric.some((value) => value <= 0)) {
-    addIssue(
-      diagnostics,
-      location,
-      'asset.motion-scale',
-      'Motion scale keys require strictly positive ratio components.',
-    );
-    return null;
-  }
-  return vector(numeric[0], numeric[1], numeric[2]);
-};
 
 const isLoopMode = (loop: unknown): loop is AnimationLoopMode =>
   loop === 'once' || loop === 'loop' || loop === 'hold_on_last_frame';
@@ -241,7 +180,7 @@ const lowerMotionKey = (
   key: InstantiatedMotionKey,
   index: number,
   channelOwner: string,
-  property: 'rotation' | 'scale',
+  property: 'position' | 'rotation' | 'scale',
   timing: MotionTiming,
   cursor: KeyCursor,
   path: string,
@@ -277,7 +216,7 @@ const validateChannelMeta = (
   diagnostics: AssetDiagnostic[],
 ): Readonly<{
   readonly target: string;
-  readonly property: 'rotation' | 'scale';
+  readonly property: 'position' | 'rotation' | 'scale';
   readonly channelOwner: string;
   readonly channelId: string;
 }> | null => {
@@ -293,12 +232,12 @@ const validateChannelMeta = (
     return null;
   }
   const property = channel.property;
-  if (property !== 'rotation' && property !== 'scale') {
+  if (property !== 'position' && property !== 'rotation' && property !== 'scale') {
     addIssue(
       diagnostics,
       channelLocation,
       'asset.motion-channel',
-      'Canonical motion channels may only rotate or scale bones.',
+      'Canonical motion channels may only translate, rotate, or scale bones.',
     );
     return null;
   }
@@ -362,35 +301,15 @@ const lowerChannel = (
   });
 };
 
-const isValidMotionSymbol = (symbol: InstantiatedMotion['symbol']): boolean =>
-  typeof symbol.key === 'string' &&
-  symbol.key.length > 0 &&
-  typeof symbol.name === 'string' &&
-  symbol.name.length > 0 &&
-  symbol.kind === 'motion';
-
-const lowerMotion = (
+const lowerStaticChannels = (
   motion: InstantiatedMotion,
+  symbolKey: string,
+  timing: NonNullable<ReturnType<typeof readMotionTiming>>,
+  location: Location,
   semanticToId: ReadonlyMap<string, string>,
   seenIds: Map<string, string>,
   diagnostics: AssetDiagnostic[],
-): AnimationClip | null => {
-  const initialDiagnostics = diagnostics.length;
-  const location = motionLocation(motion);
-  const symbol = motion.symbol;
-  if (!isValidMotionSymbol(symbol)) {
-    addIssue(
-      diagnostics,
-      location,
-      'asset.motion-symbol',
-      'Motion output requires a complete nominal symbol identity.',
-    );
-    return null;
-  }
-  const clipId = hashId('clip', symbol.key);
-  if (!registerId(seenIds, clipId, symbol.key, location, 'clip', diagnostics)) return null;
-  const timing = readMotionTiming(motion, location, diagnostics);
-  if (timing === null) return null;
+): TransformChannel[] | null => {
   if (!Array.isArray(motion.channels) || motion.channels.length === 0) {
     addIssue(
       diagnostics,
@@ -404,7 +323,7 @@ const lowerMotion = (
   for (const channel of motion.channels) {
     const lowered = lowerChannel(
       channel,
-      symbol.key,
+      symbolKey,
       timing,
       location.path,
       semanticToId,
@@ -413,17 +332,96 @@ const lowerMotion = (
     );
     if (lowered !== null) channelIds.set(lowered.id, lowered);
   }
-  const channels = [...channelIds.values()].sort((left, right) => compareText(left.id, right.id));
-  if (diagnostics.length !== initialDiagnostics) return null;
+  return [...channelIds.values()].sort((left, right) => compareText(left.id, right.id));
+};
+
+const buildStaticMotionClip = (
+  motion: InstantiatedMotion,
+  clipId: string,
+  timing: NonNullable<ReturnType<typeof readMotionTiming>>,
+  location: Location,
+  semanticToId: ReadonlyMap<string, string>,
+  seenIds: Map<string, string>,
+  diagnostics: AssetDiagnostic[],
+  initialDiagnostics: number,
+): AnimationClip | null => {
+  const channels = lowerStaticChannels(
+    motion,
+    motion.symbol.key,
+    timing,
+    location,
+    semanticToId,
+    seenIds,
+    diagnostics,
+  );
+  if (!channels || diagnostics.length !== initialDiagnostics) return null;
   return freeze({
     id: clipId,
-    name: symbol.name,
+    name: motion.symbol.name,
     durationSeconds: timing.duration,
     fps: timing.fps,
     loop: timing.loop,
     channels: deepFreeze(Object.fromEntries(channels.map((channel) => [channel.id, channel]))),
     triggers: deepFreeze({}),
+    ...(motion.cues && motion.cues.length > 0 ? { cues: deepFreeze(motion.cues) } : {}),
   });
+};
+
+const lowerMotion = (
+  ir: InstantiatedAssetIr,
+  bones: readonly BoneNode[],
+  motion: InstantiatedMotion,
+  semanticToId: ReadonlyMap<string, string>,
+  seenIds: Map<string, string>,
+  diagnostics: AssetDiagnostic[],
+): AnimationClip | null => {
+  const initialDiagnostics = diagnostics.length;
+  const location = motionLocation(motion);
+  const symbol = motion.symbol;
+  if (
+    typeof symbol.key !== 'string' ||
+    symbol.key.length === 0 ||
+    typeof symbol.name !== 'string' ||
+    symbol.name.length === 0 ||
+    symbol.kind !== 'motion'
+  ) {
+    addIssue(
+      diagnostics,
+      location,
+      'asset.motion-symbol',
+      'Motion output requires a complete nominal symbol identity.',
+    );
+    return null;
+  }
+  const clipId = hashId('clip', symbol.key);
+  if (!registerId(seenIds, clipId, symbol.key, location, 'clip', diagnostics)) return null;
+  const timing = readMotionTiming(motion, location, diagnostics);
+  if (timing === null) return null;
+  if (shouldUseMotionBake(motion)) {
+    const baked = bakeInstantiatedMotion(
+      ir,
+      bones,
+      motion,
+      clipId,
+      timing.duration,
+      timing.fps,
+      timing.loop,
+      semanticToId,
+      seenIds,
+      diagnostics,
+    );
+    return diagnostics.length !== initialDiagnostics ? null : baked;
+  }
+  return buildStaticMotionClip(
+    motion,
+    clipId,
+    timing,
+    location,
+    semanticToId,
+    seenIds,
+    diagnostics,
+    initialDiagnostics,
+  );
 };
 
 /** Lower the canonical skeleton and its already-retargeted rest-space relative motions. */
@@ -434,10 +432,8 @@ export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLo
     if (plan === null) return deepFreeze({ ok: false, diagnostics });
     const seenIds = new Map<string, string>();
     const clips: AnimationClip[] = [];
-    for (const motion of [...ir.motions].sort((left, right) =>
-      compareText(left.symbol.key, right.symbol.key),
-    )) {
-      const clip = lowerMotion(motion, plan.semanticToId, seenIds, diagnostics);
+    for (const motion of [...ir.motions].sort((a, b) => compareText(a.symbol.key, b.symbol.key))) {
+      const clip = lowerMotion(ir, plan.bones, motion, plan.semanticToId, seenIds, diagnostics);
       if (clip !== null) clips.push(clip);
     }
     if (diagnostics.length > 0) {
@@ -446,15 +442,14 @@ export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLo
         diagnostics: deepFreeze([...diagnostics].sort(compareDiagnostics)),
       });
     }
-    const animations = nullRecord<AnimationClip>();
-    for (const clip of clips.sort((left, right) => compareText(left.id, right.id))) {
-      animations[clip.id] = clip;
-    }
+    const entries = clips
+      .sort((left, right) => compareText(left.id, right.id))
+      .map((clip) => [clip.id, clip] as const);
     return deepFreeze({
       ok: true,
       bones: plan.bones,
       roots: plan.roots,
-      animations: deepFreeze(animations),
+      animations: deepFreeze(Object.fromEntries(entries)),
     });
   } catch {
     const first = ir.bones[0];

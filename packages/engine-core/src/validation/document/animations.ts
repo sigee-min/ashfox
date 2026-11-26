@@ -55,13 +55,21 @@ const validateTransformKey = (value: unknown, path: string, context: ContractCon
     value,
     path,
     ['id', 'timeSeconds', 'value', 'interpolation'],
-    ['preValue', 'postValue', 'easing'],
+    ['quaternion', 'preValue', 'postValue', 'easing'],
     context,
   );
   if (!record) return;
   expectString(record.id, `${path}.id`, context);
   expectFiniteNumber(record.timeSeconds, `${path}.timeSeconds`, context);
   validateAnimationVec3(record.value, `${path}.value`, context);
+  if (hasOwn(record, 'quaternion')) {
+    const q = expectArray(record.quaternion, `${path}.quaternion`, context);
+    if (q && q.length !== 4)
+      reject(context, `${path}.quaternion`, `${path}.quaternion must have 4 numbers.`);
+    q?.forEach((entry, index) =>
+      expectFiniteNumber(entry, `${path}.quaternion[${index}]`, context),
+    );
+  }
   expectLiteral(
     record.interpolation,
     ['linear', 'step', 'catmullrom'],
@@ -159,12 +167,42 @@ const validateTriggerTrack = (value: unknown, path: string, context: ContractCon
   });
 };
 
+const validateCue = (value: unknown, path: string, context: ContractContext): void => {
+  const record = closedRecord(
+    value,
+    path,
+    ['kind', 'time', 'name'],
+    ['endTime', 'anchor', 'payload'],
+    context,
+  );
+  if (!record) return;
+  expectLiteral(record.kind, ['sound', 'vfx', 'event'], `${path}.kind`, context);
+  expectFiniteNumber(record.time, `${path}.time`, context);
+  expectString(record.name, `${path}.name`, context);
+  if (hasOwn(record, 'endTime')) expectFiniteNumber(record.endTime, `${path}.endTime`, context);
+  if (hasOwn(record, 'anchor')) expectString(record.anchor, `${path}.anchor`, context);
+  if (hasOwn(record, 'payload')) {
+    validateRecordMap(record.payload, `${path}.payload`, context, (entry, entryPath) => {
+      if (typeof entry !== 'string' && typeof entry !== 'boolean') {
+        expectFiniteNumber(entry, entryPath, context);
+      }
+    });
+  }
+};
+
 const validateAnimationClip = (value: unknown, path: string, context: ContractContext): void => {
   const record = closedRecord(
     value,
     path,
     ['id', 'name', 'durationSeconds', 'fps', 'loop', 'channels', 'triggers'],
-    ['startDelay', 'loopDelay', 'animationTimeUpdate', 'blendWeight', 'overridePreviousAnimation'],
+    [
+      'startDelay',
+      'loopDelay',
+      'animationTimeUpdate',
+      'blendWeight',
+      'overridePreviousAnimation',
+      'cues',
+    ],
     context,
   );
   if (!record) return;
@@ -190,6 +228,10 @@ const validateAnimationClip = (value: unknown, path: string, context: ContractCo
   validateRecordMap(record.triggers, `${path}.triggers`, context, (entry, entryPath) =>
     validateTriggerTrack(entry, entryPath, context),
   );
+  if (hasOwn(record, 'cues')) {
+    const cues = expectArray(record.cues, `${path}.cues`, context);
+    cues?.forEach((entry, index) => validateCue(entry, `${path}.cues[${index}]`, context));
+  }
 };
 
 export const validateAnimations = (value: unknown, context: ContractContext): void => {

@@ -23,7 +23,7 @@ export interface TargetFileWithHash extends Artifact {
 
 export interface ResolvedBuildEntry {
   readonly entry: PlannedEntry;
-  readonly productKind: 'model' | 'sprite' | 'sound' | 'structure';
+  readonly productKind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
   readonly metadata: AssetMetadata;
   readonly sounds?: readonly SoundProduct[];
   readonly hooksJson?: string;
@@ -40,7 +40,7 @@ interface CachedFileMeta {
 }
 
 interface CachedBuildEntry {
-  readonly productKind: 'model' | 'sprite' | 'structure';
+  readonly productKind: 'model' | 'sprite' | 'structure' | 'vfx';
   readonly metadata: AssetMetadata;
   readonly pkgInterfaces?: readonly PackageInterfaceDigest[];
   readonly targets: readonly {

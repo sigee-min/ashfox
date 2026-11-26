@@ -1,3 +1,12 @@
+import type {
+  CombatOps,
+  CueEvent,
+  CurveSpec,
+  GaitSpec,
+  JointLimits,
+  SecondarySpec,
+  WaveSpec,
+} from '../../../animation/contract';
 import type { ProgramTextureDecl } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
@@ -51,6 +60,30 @@ export interface TypedJoint {
   readonly frame: TypedFrame;
   readonly channels: readonly AssetMotionChannel[];
   readonly mirror: string | null;
+  readonly limits: JointLimits | null;
+  readonly span: SourceSpan;
+}
+
+export interface TypedRigChain {
+  readonly id: string;
+  readonly joints: readonly string[];
+  readonly span: SourceSpan;
+}
+
+export interface TypedRigIkLimb {
+  readonly id: string;
+  readonly chain: readonly [string, string];
+  readonly endEffector: string | null;
+  readonly pole: readonly [number, number, number];
+  readonly ground: number | null;
+  readonly mirror: string | null;
+  readonly span: SourceSpan;
+}
+
+export interface TypedRigAnchor {
+  readonly id: string;
+  readonly joint: string;
+  readonly offset: readonly [number, number, number];
   readonly span: SourceSpan;
 }
 
@@ -75,6 +108,9 @@ export interface TypedRigContract {
   readonly handedness: 'right' | 'left';
   readonly joints: Readonly<Record<string, TypedJoint>>;
   readonly sockets: Readonly<Record<string, TypedRigSocket>>;
+  readonly chains: Readonly<Record<string, TypedRigChain>>;
+  readonly ikLimbs: Readonly<Record<string, TypedRigIkLimb>>;
+  readonly anchors: Readonly<Record<string, TypedRigAnchor>>;
   readonly span: SourceSpan;
 }
 
@@ -205,8 +241,9 @@ export interface TypedAssetUse {
 
 export interface TypedMotionKey {
   readonly time: AssetTypedNumberValue<'second'>;
-  readonly value: AssetDegreeVectorValue | AssetRatioVectorValue;
+  readonly value: AssetUnitVectorValue | AssetDegreeVectorValue | AssetRatioVectorValue;
   readonly interpolation: 'linear' | 'step' | 'catmullrom';
+  readonly curve: CurveSpec;
   readonly span: SourceSpan;
 }
 
@@ -214,6 +251,54 @@ export interface TypedMotionTrack {
   readonly target: string;
   readonly property: AssetMotionChannel;
   readonly keyframes: readonly TypedMotionKey[];
+  readonly span: SourceSpan;
+}
+
+export interface TypedWaveBinding {
+  readonly target: string;
+  readonly property: AssetMotionChannel;
+  readonly axis: 'x' | 'y' | 'z';
+  readonly spec: WaveSpec;
+  readonly scale: number;
+  readonly span: SourceSpan;
+}
+
+export interface TypedPoseEntry {
+  readonly target: string;
+  readonly property: AssetMotionChannel;
+  readonly value: AssetUnitVectorValue | AssetDegreeVectorValue | AssetRatioVectorValue;
+  readonly span: SourceSpan;
+}
+
+export interface TypedPose {
+  readonly id: string;
+  readonly entries: readonly TypedPoseEntry[];
+  readonly span: SourceSpan;
+}
+
+export interface TypedPoseKey {
+  readonly time: AssetTypedNumberValue<'second'>;
+  readonly poseId: string;
+  readonly curve: CurveSpec;
+  readonly span: SourceSpan;
+}
+
+export interface TypedMotionLayer {
+  readonly id: string;
+  readonly mode: 'base' | 'override' | 'additive';
+  readonly weight: number;
+  readonly mask: readonly string[] | null;
+  readonly mirrorMode: 'antiphase' | 'sync' | null;
+  readonly gait: GaitSpec | null;
+  readonly tracks: readonly TypedMotionTrack[];
+  readonly waves: readonly TypedWaveBinding[];
+  readonly poseKeys: readonly TypedPoseKey[];
+  readonly span: SourceSpan;
+}
+
+export interface TypedMotionIk {
+  readonly limb: string;
+  readonly footLocks: readonly { readonly start: number; readonly end: number }[];
   readonly span: SourceSpan;
 }
 
@@ -225,6 +310,14 @@ export interface TypedMotion {
   readonly loop: 'once' | 'loop' | 'hold_on_last_frame';
   readonly restRelative: AssetBooleanValue;
   readonly tracks: readonly TypedMotionTrack[];
+  readonly layers: readonly TypedMotionLayer[];
+  readonly waves: readonly TypedWaveBinding[];
+  readonly poses: readonly TypedPose[];
+  readonly poseKeys: readonly TypedPoseKey[];
+  readonly iks: readonly TypedMotionIk[];
+  readonly secondaries: readonly SecondarySpec[];
+  readonly combat: CombatOps;
+  readonly cues: readonly CueEvent[];
   readonly span: SourceSpan;
 }
 

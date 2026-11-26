@@ -1,4 +1,4 @@
-import type { ProjectDocument } from '@ashfox/engine-core';
+import type { CompiledVfx, ProjectDocument } from '@ashfox/engine-core';
 import { projectToThreeScene } from '../projection';
 import {
   createCaptureSurface,
@@ -17,10 +17,12 @@ import {
   renderModelFrames,
 } from './modelRender';
 import { captureStructureGif, captureStructureObservation } from './structSheet';
+import { captureModelFlipbook, captureVfxMedia } from './vfxSheet';
 
 interface Payload {
   readonly document?: ProjectDocument;
   readonly structure?: StructureObservationPayload;
+  readonly vfx?: CompiledVfx;
   readonly png?: string;
   readonly wave?: readonly number[];
 }
@@ -255,20 +257,14 @@ const resolveValidatedClip = (
   return clip;
 };
 
-export const capture = async (
+const captureModelMedia = async (
+  model: NonNullable<typeof loaded.document>,
   v: ViewOptions,
   replay: boolean,
 ): Promise<{ mime: string; data: string }> => {
-  if (loaded.structure) {
-    const signal = new AbortController().signal;
-    return replay
-      ? captureStructureGif(loaded.structure, v, signal)
-      : captureStructureObservation(loaded.structure, v, signal);
-  }
-  if (!loaded.document) return captureNonModelAsset(v, replay);
-  const model = loaded.document;
   if (replay && v.mode === 'build') return captureBuildReplay(model, v);
   const clip = resolveValidatedClip(model, v, replay);
+  if (!replay && v.sheet === 'flipbook') return captureModelFlipbook(model, v, clip);
   if (!replay && v.sheet !== undefined) return captureSheet(model, v, clip);
   const frames = replay ? Math.ceil((v.duration ?? clip?.durationSeconds ?? 3) * v.fps) : 1;
   if (frames > 300 || frames * v.width * v.height > 100000000)
@@ -308,4 +304,19 @@ export const capture = async (
     projection.dispose();
     disposeCaptureSurface(surface);
   }
+};
+
+export const capture = async (
+  v: ViewOptions,
+  replay: boolean,
+): Promise<{ mime: string; data: string }> => {
+  if (loaded.structure) {
+    const signal = new AbortController().signal;
+    return replay
+      ? captureStructureGif(loaded.structure, v, signal)
+      : captureStructureObservation(loaded.structure, v, signal);
+  }
+  if (loaded.vfx) return captureVfxMedia(loaded.vfx, v, replay);
+  if (!loaded.document) return captureNonModelAsset(v, replay);
+  return captureModelMedia(loaded.document, v, replay);
 };

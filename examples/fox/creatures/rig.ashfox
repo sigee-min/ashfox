@@ -1,15 +1,19 @@
 ashfox 1
 module rig {
   export rig contract CreatureRig {
-    joint root { parent = none; role = root; channels = (rotation, scale); }
-    joint body { parent = root; role = body; channels = rotation; }
-    joint head { parent = body; role = head; channels = rotation; }
-    joint tail { parent = body; role = tail; channels = rotation; }
-    joint tail_tip { parent = tail; role = tail; channels = rotation; }
-    joint front_left { parent = body; role = leg; channels = rotation; }
-    joint front_right { parent = body; role = leg; channels = rotation; }
-    joint back_left { parent = body; role = leg; channels = rotation; }
-    joint back_right { parent = body; role = leg; channels = rotation; }
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint body { parent = root; role = body; channels = (position, rotation, scale); limits { pitch = -25deg..25deg; } }
+    joint head { parent = body; role = head; channels = rotation; limits { pitch = -35deg..40deg; yaw = -55deg..55deg; } }
+    joint tail { parent = body; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+    joint tail_tip { parent = tail; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+    joint front_left { parent = body; role = leg; channels = rotation; mirror = front_right; }
+    joint front_right { parent = body; role = leg; channels = rotation; mirror = front_left; }
+    joint back_left { parent = body; role = leg; channels = rotation; mirror = back_right; }
+    joint back_right { parent = body; role = leg; channels = rotation; mirror = back_left; }
+
+    chain tail_chain = [tail, tail_tip];
+    anchor nose { joint = head; offset = (0u, 0u, -6u); }
+    anchor tail_end { joint = tail_tip; offset = (0u, 0u, 5u); }
   }
 
   export skeleton CreatureSkeleton implements CreatureRig {
@@ -25,78 +29,104 @@ module rig {
   }
 
   export motion idle for CreatureRig {
-    duration = 2s; fps = 20; loop = loop;track body.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (2deg, 0deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 2s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track root.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.85s = (0u, -0.35u, 0u) ease_in_out;
+      key 2s = (0u, 0u, 0u) ease_out;
+    }
+    track body.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (3deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (-2deg, 5deg, 2deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (-3deg, 8deg, 3deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (4deg, 8deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
-    }
-    track tail_tip.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (6deg, 10deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.8s = (5deg, 12deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track front_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (-3deg, 0deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (-4deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
+    track back_right.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (4deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
+    }
+
+    wave body.rotation.x = breath(2s, inhale = 0.42) * 2deg;
+    wave head.rotation.y = simplex(1.0, 2deg, 7) * 1.5deg;
+    secondary chain tail_chain { stiffness = 15; damping = 0.34; gravity = 0.25; }
+    cue 0.4s sound "fox_breath" at nose;
+    cue 1.2s sound "fox_step" at nose;
   }
 
   export motion curious for CreatureRig {
-    duration = 4s; fps = 24; loop = loop;track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (6deg, -18deg, -7deg) catmullrom;
-      key 2s = (6deg, -18deg, -7deg) catmullrom;
-      key 3s = (-3deg, 12deg, 5deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 4s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    pose alert_left { head.rotation = (6deg, -22deg, -10deg); body.rotation = (-3deg, -6deg, 0deg); }
+    pose alert_right { head.rotation = (-4deg, 16deg, 7deg); body.rotation = (2deg, 5deg, 0deg); }
+
+    at 0s pose alert_right smooth;
+    at 1s pose alert_left anticipate(0.25);
+    at 2s pose alert_left smooth;
+    at 3s pose alert_right overshoot(0.2);
+    at 4s pose alert_right ease_out;
+
+    track root.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 1s = (0u, 0.5u, -0.4u) ease_out;
+      key 2.6s = (0u, -0.4u, 0u) ease_in_out;
+      key 4s = (0u, 0u, 0u) ease_out;
     }
-    track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (3deg, 10deg, 0deg) catmullrom;
-      key 2s = (0deg, -8deg, 0deg) catmullrom;
-      key 3s = (3deg, 6deg, 0deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
-    }
-    track tail_tip.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1.2s = (6deg, 14deg, 0deg) catmullrom;
-      key 2.2s = (2deg, -12deg, 0deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
-    }
+    secondary chain tail_chain { stiffness = 16; damping = 0.32; gravity = 0.22; }
+    secondary joint head { stiffness = 20; damping = 0.42; lag = 0.06s; }
+    cue 1s sound "fox_chirp" at nose;
   }
 
   export motion tail_wag for CreatureRig {
-    duration = 2.4s; fps = 24; loop = loop;track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.3s = (2deg, 18deg, 0deg) catmullrom;
-      key 0.9s = (2deg, -18deg, 0deg) catmullrom;
-      key 1.5s = (2deg, 18deg, 0deg) catmullrom;
-      key 2.1s = (2deg, -18deg, 0deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 2.4s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track root.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.6s = (0u, -0.5u, 0u) ease_in_out;
+      key 1.2s = (0u, 0.2u, 0u) ease_out;
+      key 1.8s = (0u, -0.5u, 0u) ease_in_out;
+      key 2.4s = (0u, 0u, 0u) ease_out;
     }
-    track tail_tip.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.4s = (4deg, 22deg, 0deg) catmullrom;
-      key 1s = (4deg, -22deg, 0deg) catmullrom;
-      key 1.6s = (4deg, 22deg, 0deg) catmullrom;
-      key 2.2s = (4deg, -22deg, 0deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    track tail.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.35s = (3deg, 22deg, 0deg) ease_in_out;
+      key 0.95s = (3deg, -22deg, 0deg) ease_in_out;
+      key 1.55s = (3deg, 22deg, 0deg) ease_in_out;
+      key 2.1s = (3deg, -22deg, 0deg) ease_in_out;
+      key 2.4s = (0deg, 0deg, 0deg) ease_out;
     }
     track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.6s = (-4deg, 0deg, -3deg) catmullrom;
-      key 1.8s = (-4deg, 0deg, 3deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.6s = (-6deg, 0deg, -5deg) ease_out;
+      key 1.8s = (-6deg, 0deg, 5deg) ease_out;
+      key 2.4s = (0deg, 0deg, 0deg) ease_out;
     }
+
+    secondary chain tail_chain { stiffness = 20; damping = 0.28; gravity = 0.18; }
+    cue 0.35s sound "fox_rustle" at tail_end;
   }
 }

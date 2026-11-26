@@ -48,6 +48,13 @@ export type AssetMetadata =
       readonly performance?: GlbPerformanceMetrics;
     }
   | {
+      readonly durationSeconds: number;
+      readonly fps: number;
+      readonly drawCalls: number;
+      readonly triangles: number;
+      readonly particleCount: number;
+    }
+  | {
       readonly variants: readonly {
         readonly id: string;
         readonly frames: number;
@@ -63,7 +70,7 @@ export type AssetMetadata =
     };
 export interface CatalogAsset {
   readonly id: string;
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'pack';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx' | 'pack';
   readonly directory: string;
   readonly metadata: AssetMetadata;
   readonly files: readonly FileRecord[];

@@ -2,6 +2,8 @@ import { compareText } from '../../../stableOrder';
 import type { AnimationClip, ProjectDocument, TransformChannel, Vec3 } from '../../../model';
 import type { ExportAdaptedDocument } from '../../adapter';
 import { canonicalQuaternionFromEuler } from '../../../model/transform';
+import type { Quat } from '../../../animation/contract';
+import { alignQuatHemisphere, mulQuat } from '../../../animation/quat';
 import {
   sampleComposedNumericTransformChannel,
   type NumericAnimationVec3,
@@ -171,6 +173,39 @@ interface AccessorCaches {
   outputs: Map<string, number>;
 }
 
+const compileBakedRotationSamples = (
+  channel: TransformChannel,
+  clip: AnimationClip,
+  restEuler: NumericAnimationVec3,
+): { times: number[]; values: number[]; componentCount: 4; interpolation: 'LINEAR' | 'STEP' } => {
+  const restQuat = quaternionFromEuler(restEuler);
+  const firstQ = mulQuat(restQuat, channel.keys[0]!.quaternion!);
+  const lastQ = mulQuat(restQuat, channel.keys[channel.keys.length - 1]!.quaternion!);
+  const times: number[] = [];
+  const quats: Quat[] = [];
+  if (channel.keys[0]!.timeSeconds > 0.000001) {
+    times.push(0);
+    quats.push(firstQ);
+  }
+  for (const key of channel.keys) {
+    times.push(key.timeSeconds);
+    quats.push(mulQuat(restQuat, key.quaternion!));
+  }
+  if (channel.keys[channel.keys.length - 1]!.timeSeconds < clip.durationSeconds - 0.000001) {
+    times.push(clip.durationSeconds);
+    quats.push(lastQ);
+  }
+  for (let i = 1; i < quats.length; i += 1) {
+    quats[i] = alignQuatHemisphere(quats[i - 1]!, quats[i]!);
+  }
+  return {
+    times,
+    values: quats.flatMap((q) => [...q]),
+    componentCount: 4,
+    interpolation: channel.keys[0]!.interpolation === 'step' ? 'STEP' : 'LINEAR',
+  };
+};
+
 const appendGltfAnimationChannel = (
   animation: GltfAnimation,
   clip: AnimationClip,
@@ -185,14 +220,26 @@ const appendGltfAnimationChannel = (
       `Validated glTF animation target "${channel.targetNodeId}" is missing from the emitted scene.`,
     );
   }
-  const sampled = sampleChannel(channel, clip, options);
-  const compiled = compileValues(channel, sampled.values);
-  const optimized = optimizeGltfAnimationSamples(channel, {
-    times: sampled.times,
-    values: compiled.values,
-    componentCount: compiled.componentCount,
-    interpolation: sampled.interpolation,
-  });
+  const hasNativeQuats =
+    channel.property === 'rotation' && channel.keys.every((k) => k.quaternion !== undefined);
+  let interpolation: 'LINEAR' | 'STEP';
+  let optimized: ReturnType<typeof optimizeGltfAnimationSamples>;
+  if (hasNativeQuats) {
+    const restEuler = restValueForChannel(channel, options);
+    const nativeSamples = compileBakedRotationSamples(channel, clip, restEuler);
+    interpolation = nativeSamples.interpolation;
+    optimized = optimizeGltfAnimationSamples(channel, nativeSamples);
+  } else {
+    const sampled = sampleChannel(channel, clip, options);
+    const compiled = compileValues(channel, sampled.values);
+    interpolation = sampled.interpolation;
+    optimized = optimizeGltfAnimationSamples(channel, {
+      times: sampled.times,
+      values: compiled.values,
+      componentCount: compiled.componentCount,
+      interpolation: sampled.interpolation,
+    });
+  }
   const input = resolveCachedAccessor(caches.times, options.writer, optimized.times, 1, true);
   const output = resolveCachedAccessor(
     caches.outputs,
@@ -203,7 +250,7 @@ const appendGltfAnimationChannel = (
     channel.property === 'rotation' ? 'normalized-short' : 'float',
   );
   const sampler = animation.samplers.length;
-  animation.samplers.push({ input, output, interpolation: sampled.interpolation });
+  animation.samplers.push({ input, output, interpolation });
   animation.channels.push({
     sampler,
     target: {
@@ -226,6 +273,7 @@ const compileGltfClip = (
       ashfoxLoop: clip.loop,
       ashfoxDurationSeconds: clip.durationSeconds,
       ashfoxFps: clip.fps,
+      ...(clip.cues && clip.cues.length > 0 ? { ashfoxCues: clip.cues } : {}),
     },
   };
   const orderedChannels = Object.values(clip.channels).sort((left, right) =>

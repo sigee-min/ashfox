@@ -1,25 +1,35 @@
 import { AUDIO_POLICY, type SoundProduct } from '@ashfox/audio-core';
-import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
+import { compareText } from '@ashfox/internal-contracts';
 import { canonicalJsonString } from '../../canonicalJson';
 import {
   validateAssetDeclarations,
   type AssetDeclarations,
 } from '../../project/directory/declarations';
-import {
-  readDirectoryWorkspace,
-  isDirectorySource,
-  directoryPath,
-} from '../../project/directory/read';
+import { readDirectoryWorkspace } from '../../project/directory/read';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { lexProgramSource } from '../../project/program/syntax/lex';
+import {
+  assertSourceBudget,
+  declaredEntries,
+  declaredFiles,
+  entryKey,
+  joinPath,
+  sortDirectoryProducts,
+  type DirectoryEntry as Entry,
+} from './checks';
 import { compilePreparedSound, prepareDirectorySound } from './sound';
 import { validateCanonicalLayout } from './layout';
 import { compileDirectorySprite } from './sprite';
 import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
+import { compileDirectoryVfx } from './vfx';
 import { createDirectoryWorkspaceCache, type DirectoryWorkspaceCache } from './cache';
 import { withStructureTileTextureCache } from '../structure/atlas';
 import type { SpriteProduct } from '../sprite/contract';
 import type { StructureAuditEvaluator, StructureProduct } from '../structure/contract';
+import type { CompiledVfx, VfxRecipe } from '../../vfx/contract';
+import type { BedrockParticleSpec, VfxRuntimeSpec } from '../../vfx/specEmit';
+import { VfxInputError } from '../../project/vfx/contract';
+import { parseVfxSource } from '../../project/vfx/source';
 import { StructureInputError } from '../../project/structure';
 import { sha256Digest } from '../../provenance/digest';
 import { SPRITE_POLICY, SpriteInputError } from '../../project/sprite/contract';
@@ -62,6 +72,14 @@ export type DirectoryProduct = EntryProductBase &
       }
     | { readonly kind: 'sound'; readonly sounds: readonly SoundProduct[] }
     | { readonly kind: 'structure'; readonly structure: StructureProduct }
+    | {
+        readonly kind: 'vfx';
+        readonly vfx: CompiledVfx;
+        readonly recipe: VfxRecipe;
+        readonly glb: Uint8Array;
+        readonly spec: VfxRuntimeSpec;
+        readonly particles: readonly BedrockParticleSpec[];
+      }
   );
 type DirectoryDiagnostic = {
   readonly code: string;
@@ -78,7 +96,6 @@ export type DirectoryCompilation =
     }
   | { readonly ok: false; readonly diagnostics: readonly DirectoryDiagnostic[] };
 type DirectoryFailure = Extract<DirectoryCompilation, { readonly ok: false }>;
-type Entry = { readonly entry: WorkspaceEntrySelector; readonly path: string };
 type PreparedSound = ReturnType<typeof prepareDirectorySound>;
 type Files = ReadonlyMap<string, DirectoryFile>;
 
@@ -89,48 +106,6 @@ interface EntryOutput {
   readonly structureCustomPaths: Set<string>;
   readonly modelEntries: Entry[];
 }
-
-const entryKey = (entry: WorkspaceEntrySelector): string =>
-  JSON.stringify([entry.packageName, entry.entryName]);
-const joinPath = (root: string, path: string): string => [root, path].filter(Boolean).join('/');
-
-const assertSourceBudget = (files: readonly DirectoryFile[]): void => {
-  const bytes = files.reduce((n, f) => n + encodeUtf8(f.source).length, 0);
-  if (files.length > 512 || bytes > 8 * 1024 * 1024)
-    throw new Error('Workspace source budget exceeded');
-};
-
-const declaredFiles = (config: DirectoryWorkspace, files: readonly DirectoryFile[]): Files => {
-  const declared = new Set(
-    config.packages.flatMap((p) =>
-      [...p.manifest.entries, ...p.manifest.modules].map((e) => joinPath(p.root, e.path)),
-    ),
-  );
-  const seen = new Set<string>();
-  for (const f of files) {
-    const accepted =
-      directoryPath(f.path) &&
-      isDirectorySource(config, f.path) &&
-      declared.has(f.path) &&
-      !seen.has(f.path.toLowerCase());
-    if (!accepted) throw new Error('Undeclared, ignored or duplicate source: ' + f.path);
-    seen.add(f.path.toLowerCase());
-  }
-  const filesByPath = new Map(files.map((file) => [file.path, file]));
-  for (const p of declared) if (!filesByPath.has(p)) throw new Error('Missing source: ' + p);
-  return filesByPath;
-};
-
-const declaredEntries = (config: DirectoryWorkspace): readonly Entry[] => {
-  const entries = config.packages.flatMap((p) =>
-    p.manifest.entries.map((e) => ({
-      entry: { packageName: p.name, entryName: e.name },
-      path: joinPath(p.root, e.path),
-    })),
-  );
-  if (!entries.length) throw new Error('Workspace must declare an entry');
-  return entries;
-};
 
 const prepareSoundEntries = (
   entries: readonly Entry[],
@@ -255,6 +230,27 @@ const entryTopKind = (
   return kind;
 };
 
+const compileVfxEntry = (e: Entry, filesByPath: Files, output: EntryOutput): void => {
+  const unit = parseVfxSource(filesByPath.get(e.path)!.source, e.path);
+  const bundle = compileDirectoryVfx(filesByPath, e.path);
+  if (bundle.compiled.name !== e.entry.entryName) {
+    throw new Error('Entry name must match vfx id: ' + e.path);
+  }
+  const declarations = validateAssetDeclarations('vfx', unit.outputs, unit.previews, e.path);
+  output.products.push({
+    kind: 'vfx',
+    entry: e.entry,
+    sourcePath: e.path,
+    vfx: bundle.compiled,
+    recipe: bundle.recipe,
+    glb: bundle.glb,
+    spec: bundle.spec,
+    particles: bundle.particles,
+    declarations,
+  });
+  bundle.paths.forEach((p) => output.nonModelPaths.add(p));
+};
+
 const runEntryLoop = (
   entries: readonly Entry[],
   kinds: ReadonlyMap<string, string | undefined>,
@@ -279,6 +275,7 @@ const runEntryLoop = (
       if (failure) return failure;
     } else if (kind === 'structure' || kind === 'compound')
       compileStructureEntry(e, filesByPath, output, evaluateStructureAudit, cache);
+    else if (kind === 'vfx') compileVfxEntry(e, filesByPath, output);
     else output.modelEntries.push(e);
   }
   return output;
@@ -405,21 +402,21 @@ const compileModels = (
   return pushModelProducts(checked, output.modelEntries, filesByPath, moduleAliases, output);
 };
 
-const productOrder = (a: DirectoryProduct, b: DirectoryProduct): number =>
-  compareText(
-    `${a.entry.packageName}:${a.entry.entryName}`,
-    `${b.entry.packageName}:${b.entry.entryName}`,
-  );
+const formatFailureDetail = (error: unknown): { code: string; file: string } => {
+  if (error instanceof SpriteInputError) return error.diagnostic;
+  if (error instanceof StructureInputError) return error.detail;
+  if (error instanceof VfxInputError) return error.diagnostic;
+  return { code: 'workspace.compile', file: '.ashfoxworkspace' };
+};
 
 const compileFailure = (error: unknown): DirectoryFailure => {
-  const sprite = error instanceof SpriteInputError ? error.diagnostic : null;
-  const structure = error instanceof StructureInputError ? error.detail : null;
+  const detail = formatFailureDetail(error);
   return {
     ok: false,
     diagnostics: [
       {
-        code: sprite ? sprite.code : structure ? structure.code : 'workspace.compile',
-        file: sprite ? sprite.file : structure ? structure.file : '.ashfoxworkspace',
+        code: detail.code,
+        file: detail.file,
         message: error instanceof Error ? error.message : String(error),
       },
     ],
@@ -461,7 +458,7 @@ const compileDirectory = (
     },
     entryKey,
   );
-  const products = output.products.sort(productOrder);
+  const products = sortDirectoryProducts(output.products);
   const sourceHash = sha256Digest(
     canonicalJsonString({
       config,

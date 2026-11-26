@@ -1,15 +1,19 @@
 ashfox 1
 module goblin_rig {
   export rig contract GoblinRig {
-    joint root { parent = none; role = root; channels = (rotation, scale); }
-    joint pelvis { parent = root; role = pelvis; channels = rotation; }
-    joint torso { parent = pelvis; role = body; channels = rotation; }
-    joint head { parent = torso; role = head; channels = rotation; }
-    joint left_arm { parent = torso; role = arm; channels = rotation; }
-    joint right_arm { parent = torso; role = arm; channels = rotation; }
-    joint weapon { parent = right_arm; role = weapon; channels = rotation; }
-    joint left_leg { parent = pelvis; role = leg; channels = rotation; }
-    joint right_leg { parent = pelvis; role = leg; channels = rotation; }
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation, scale); }
+    joint torso { parent = pelvis; role = body; channels = (rotation, scale); limits { pitch = -40deg..45deg; } }
+    joint head { parent = torso; role = head; channels = rotation; limits { pitch = -30deg..40deg; yaw = -65deg..65deg; } }
+    joint left_arm { parent = torso; role = arm; channels = rotation; mirror = right_arm; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; mirror = left_arm; }
+    joint weapon { parent = right_arm; role = weapon; channels = (position, rotation, scale); }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; mirror = right_leg; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; mirror = left_leg; }
+
+    chain spine = [pelvis, torso, head];
+    anchor weapon_tip { joint = weapon; offset = (0u, -8u, 0u); }
+    anchor foot_l { joint = left_leg; offset = (0u, -8u, 0u); }
   }
 
   export skeleton RaiderSkeleton implements GoblinRig {
@@ -25,69 +29,130 @@ module goblin_rig {
   }
 
   export motion idle for GoblinRig {
-    duration = 2s; fps = 20; loop = loop;track pelvis.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (2deg, 0deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 2s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.85s = (0u, -0.55u, 0.2u) ease_in_out;
+      key 2s = (0u, 0u, 0u) ease_out;
+    }
+    track pelvis.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.85s = (4deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track torso.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (2deg, -3deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (5deg, -6deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (-2deg, 5deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (-5deg, 10deg, 3deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track right_arm.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (-4deg, 3deg, 3deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (-10deg, 6deg, 6deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
     track left_arm.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (4deg, -3deg, -3deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (8deg, -5deg, -6deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.85s = (-4deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
+    }
+
+    wave torso.rotation.x = breath(2s, inhale = 0.42) * 3.5deg;
+    wave head.rotation.y = simplex(1.0, 2.5deg, 11) * 2deg;
+    secondary chain spine { stiffness = 18; damping = 0.42; }
+    cue 0.4s sound "goblin_grunt" at weapon_tip;
+    cue 1.2s sound "goblin_step" at foot_l;
   }
 
   export motion lookout for GoblinRig {
-    duration = 4s; fps = 24; loop = loop;track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (0deg, -22deg, 2deg) catmullrom;
-      key 2s = (0deg, -22deg, 2deg) catmullrom;
-      key 3s = (-3deg, 20deg, -2deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 4s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 1s = (0u, 0.4u, 0u) ease_out;
+      key 2.6s = (0u, -0.4u, 0u) ease_in_out;
+      key 4s = (0u, 0u, 0u) ease_out;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1s = (0deg, -28deg, 4deg) anticipate(0.2);
+      key 2s = (0deg, -28deg, 4deg) smooth;
+      key 3s = (-4deg, 24deg, -4deg) overshoot(0.18);
+      key 4s = (0deg, 0deg, 0deg) ease_out;
     }
     track left_arm.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (-8deg, 0deg, -8deg) catmullrom;
-      key 3s = (-8deg, 0deg, -8deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1s = (-14deg, 0deg, -12deg) ease_out;
+      key 3s = (-14deg, 0deg, -12deg) smooth;
+      key 4s = (0deg, 0deg, 0deg) ease_out;
     }
+    secondary chain spine { stiffness = 18; damping = 0.44; }
+    cue 1s sound "goblin_sniff" at head;
   }
 
   export motion challenge for GoblinRig {
-    duration = 3s; fps = 24; loop = loop;track right_arm.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.8s = (35deg, -8deg, 12deg) catmullrom;
-      key 1.5s = (35deg, -8deg, 12deg) catmullrom;
-      key 2.4s = (3deg, 0deg, 2deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 2.4s;
+    fps = 30;
+    loop = once;
+    rest_relative = true;
+
+    pose neutral {
+      torso.rotation = (0deg, 0deg, 0deg);
+      right_arm.rotation = (0deg, 0deg, 0deg);
+      left_arm.rotation = (0deg, 0deg, 0deg);
+      head.rotation = (0deg, 0deg, 0deg);
     }
-    track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.8s = (2deg, -8deg, -2deg) catmullrom;
-      key 1.5s = (2deg, -8deg, -2deg) catmullrom;
-      key 2.4s = (4deg, 0deg, 0deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    pose windup {
+      torso.rotation = (-18deg, 24deg, 0deg);
+      right_arm.rotation = (-68deg, -12deg, 22deg);
+      left_arm.rotation = (18deg, 0deg, -14deg);
+      head.rotation = (6deg, -22deg, 0deg);
     }
-    track left_arm.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.8s = (8deg, 0deg, -8deg) catmullrom;
-      key 1.5s = (8deg, 0deg, -8deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    pose strike {
+      torso.rotation = (24deg, -28deg, 0deg);
+      right_arm.rotation = (48deg, 10deg, -14deg);
+      left_arm.rotation = (-16deg, 0deg, -18deg);
+      head.rotation = (-8deg, 18deg, 0deg);
     }
+
+    at 0s pose neutral smooth;
+    at 0.65s pose windup anticipate(0.32);
+    at 1.15s pose strike snap;
+    at 1.8s pose neutral ease_out;
+    at 2.4s pose neutral smooth;
+
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.6s = (0u, -0.7u, 0.8u) ease_in_out;
+      key 1.15s = (0u, -0.4u, -1.4u) snap;
+      key 1.85s = (0u, 0.2u, -0.2u) ease_out;
+      key 2.4s = (0u, 0u, 0u) smooth;
+    }
+
+    squash pelvis { at = 1.16s; duration = 0.16s; axis = y; amount = -0.14; }
+    smear weapon { at = 1.06s..1.16s; stretch = 1.45; axis = y; }
+    hitstop { at = 1.15s; hold = 0.05s; shake = 0.3u; }
+    recoil torso { at = 1.18s; impulse = (-10deg, 0deg, 0deg); decay = 0.2s; }
+    secondary joint head { stiffness = 20; damping = 0.38; lag = 0.05s; }
+
+    cue 1.06s sound "club_whoosh" at weapon_tip;
+    cue 1.15s vfx "flame_cleave" at weapon_tip;
+    cue 1.15s..1.28s event "hitbox_cleave" { damage = 18; };
   }
 }

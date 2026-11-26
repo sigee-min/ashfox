@@ -14,7 +14,7 @@ export interface SourceInput {
   readonly files?: Readonly<Record<string, string>>;
 }
 export interface Prepared {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
   readonly revision: string;
   readonly declarations: AssetDeclarations;
   readonly products?: readonly {

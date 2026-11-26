@@ -86,6 +86,10 @@ const addBone = (id: string, ctx: BoneBuildContext): AssetExactFrame | null => {
       semanticJoint: id,
       parentId: joint.parent,
       parentRestFrame: local,
+      role: joint.role,
+      channels: joint.channels,
+      mirror: joint.mirror,
+      limits: joint.limits,
       sourcePath: ctx.path,
       span: joint.span,
     }),
@@ -329,6 +333,35 @@ const createSession = (
   return freeze({ hir, diagnostics, ledger, nodeIds: new Set<string>(), pathFor, issue });
 };
 
+const buildAssetIr = (
+  session: ReturnType<typeof createSession>,
+  asset: NonNullable<ReturnType<typeof rootAsset>>,
+  rig: NonNullable<TypedAssetHir['rigs'][string]>,
+  skeleton: NonNullable<TypedAssetHir['skeletons'][string]>,
+  bonePlan: NonNullable<ReturnType<typeof buildBones>>,
+  placed: ReturnType<typeof placeConnections>,
+  surfaces: ReturnType<typeof collectSelectedSurfaces>,
+) =>
+  freeze({
+    asset: asset.symbol,
+    settings: freeze({
+      density: asset.settings.density,
+      forward: asset.settings.forward!,
+      profile: asset.settings.profile,
+    }),
+    rig: rig.symbol,
+    skeleton: skeleton.symbol,
+    bones: bonePlan.bones,
+    chains: rig.chains,
+    ikLimbs: rig.ikLimbs,
+    anchors: rig.anchors,
+    instances: placed.instances,
+    surfaces,
+    connections: placed.connections,
+    motions: freeze(buildMotions(session, asset)),
+    budget: session.ledger.snapshot(),
+  });
+
 /** Instantiate one selected root asset. HIR and plans never escape the compiler. */
 export const instantiateAsset = (hir: TypedAssetHir): AssetInstantiationResult => {
   const diagnostics: AssetDiagnostic[] = [];
@@ -358,31 +391,13 @@ export const instantiateAsset = (hir: TypedAssetHir): AssetInstantiationResult =
       );
       throw new AssetBudgetAbort();
     }
-    const rawInstances = asset.uses.flatMap((use) => {
-      const instance = buildInstance(session, use);
-      return instance === null ? [] : [instance];
-    });
+    const rawInstances = asset.uses.flatMap((use) => buildInstance(session, use) ?? []);
     const placed = placeConnections(session, asset, rawInstances, bonePlan.world);
     const surfaces = collectSelectedSurfaces(hir, asset);
     if (diagnostics.length > 0) throw new AssetBudgetAbort();
     return freeze({
       ok: true,
-      ir: freeze({
-        asset: asset.symbol,
-        settings: freeze({
-          density: asset.settings.density,
-          forward: asset.settings.forward,
-          profile: asset.settings.profile,
-        }),
-        rig: rig.symbol,
-        skeleton: skeleton.symbol,
-        bones: bonePlan.bones,
-        instances: placed.instances,
-        surfaces,
-        connections: placed.connections,
-        motions: freeze(buildMotions(session, asset)),
-        budget: session.ledger.snapshot(),
-      }),
+      ir: buildAssetIr(session, asset, rig, skeleton, bonePlan, placed, surfaces),
     });
   } catch (error) {
     if (!(error instanceof AssetBudgetAbort)) throw error;

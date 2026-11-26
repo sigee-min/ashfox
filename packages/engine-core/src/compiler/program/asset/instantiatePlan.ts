@@ -7,8 +7,11 @@ import {
   type TypedAssetAssembly,
   type TypedAssetHir,
   type TypedMotion,
+  type TypedMotionTrack,
+  type TypedPoseKey,
   type TypedRigContract,
   type TypedSkeleton,
+  type TypedWaveBinding,
 } from './contract';
 import { AssetBudgetAbort } from './budgets';
 import { composeAssetFrames, connectAssetFrames, type AssetExactFrame } from './frame';
@@ -19,9 +22,14 @@ import {
   type InstantiatedMotion,
   type InstantiatedMotionChannel,
   type InstantiatedMotionKey,
+  type InstantiatedMotionLayer,
+  type InstantiatedPose,
+  type InstantiatedPoseEntry,
+  type InstantiatedPoseKey,
   type InstantiatedSocketConnection,
   type InstantiatedSocketEndpoint,
   type InstantiatedSurfaceBinding,
+  type InstantiatedWaveBinding,
 } from './ir';
 import {
   assetExactNumber,
@@ -261,6 +269,117 @@ const mapMotionVector = (
   }
 };
 
+const lowerTrackList = (
+  session: InstantiationSession,
+  rig: TypedRigContract,
+  skeleton: TypedSkeleton,
+  motionSymbol: AssetSymbolId,
+  path: string,
+  tracks: readonly TypedMotionTrack[],
+): readonly InstantiatedMotionChannel[] =>
+  freeze(
+    tracks.map((track) => {
+      const keys: InstantiatedMotionKey[] = track.keyframes.flatMap((key) => {
+        session.ledger.use('motionKeys', path, key.span);
+        const value = mapMotionVector(rig, skeleton, key.value, track.target, track.property);
+        if (value === null) {
+          session.issue(
+            path,
+            key.span,
+            'asset.motion-frame-map',
+            `Motion key cannot map semantic joint "${track.target}" into its skeleton frame.`,
+          );
+          return [];
+        }
+        return [
+          freeze({
+            time: key.time,
+            value,
+            interpolation: key.interpolation,
+            curve: key.curve,
+            span: key.span,
+          }),
+        ];
+      });
+      return freeze({
+        id: `${motionSymbol.name}:${track.target}:${track.property}`,
+        targetBoneId: track.target,
+        property: track.property,
+        keys: freeze(keys),
+        span: track.span,
+      });
+    }),
+  );
+
+const mapWaveAxis = (
+  rig: TypedRigContract,
+  skeleton: TypedSkeleton,
+  wave: TypedWaveBinding,
+): { readonly axis: 'x' | 'y' | 'z'; readonly sign: number } => {
+  const semantic = rig.joints[wave.target]?.frame;
+  const concrete = skeleton.binds[wave.target];
+  if (semantic === undefined || concrete === undefined) return { axis: wave.axis, sign: 1 };
+  const idx = wave.axis === 'x' ? 0 : wave.axis === 'y' ? 1 : 2;
+  const semAxis = [semantic.xAxis, semantic.yAxis, semantic.zAxis][idx]!;
+  const conAxes = [concrete.xAxis, concrete.yAxis, concrete.zAxis] as const;
+  const targetIdx = conAxes.findIndex((axis) => axisDot(axis, semAxis) !== 0);
+  if (targetIdx < 0) return { axis: wave.axis, sign: 1 };
+  const coeff = axisDot(conAxes[targetIdx]!, semAxis);
+  const axis = targetIdx === 0 ? 'x' : targetIdx === 1 ? 'y' : 'z';
+  return { axis, sign: wave.property === 'scale' ? Math.abs(coeff) : coeff };
+};
+
+const lowerWaves = (
+  rig: TypedRigContract,
+  skeleton: TypedSkeleton,
+  waves: readonly TypedWaveBinding[],
+): readonly InstantiatedWaveBinding[] =>
+  freeze(
+    waves.map((wave) => {
+      const mapped = mapWaveAxis(rig, skeleton, wave);
+      return freeze({
+        targetBoneId: wave.target,
+        property: wave.property,
+        axis: mapped.axis,
+        spec: wave.spec,
+        scale: wave.scale * mapped.sign,
+        span: wave.span,
+      });
+    }),
+  );
+
+const lowerPoseKeys = (poseKeys: readonly TypedPoseKey[]): readonly InstantiatedPoseKey[] =>
+  freeze(
+    poseKeys.map((pk) =>
+      freeze({ time: pk.time, poseId: pk.poseId, curve: pk.curve, span: pk.span }),
+    ),
+  );
+
+const lowerInstantiatedPose = (
+  rig: TypedRigContract,
+  skeleton: TypedSkeleton,
+  pose: TypedMotion['poses'][number],
+): InstantiatedPose =>
+  freeze({
+    id: pose.id,
+    entries: freeze(
+      pose.entries.flatMap((entry): InstantiatedPoseEntry[] => {
+        const mapped = mapMotionVector(rig, skeleton, entry.value, entry.target, entry.property);
+        return mapped === null
+          ? []
+          : [
+              freeze({
+                targetBoneId: entry.target,
+                property: entry.property,
+                value: mapped,
+                span: entry.span,
+              }),
+            ];
+      }),
+    ),
+    span: pose.span,
+  });
+
 const lowerInstantiatedMotion = (
   session: InstantiationSession,
   rig: TypedRigContract,
@@ -268,31 +387,21 @@ const lowerInstantiatedMotion = (
   motion: TypedMotion,
 ): InstantiatedMotion => {
   const path = session.pathFor(motion.symbol);
-  const channels: InstantiatedMotionChannel[] = motion.tracks.flatMap((track) => {
-    const keys: InstantiatedMotionKey[] = track.keyframes.flatMap((key) => {
-      session.ledger.use('motionKeys', path, key.span);
-      const value = mapMotionVector(rig, skeleton, key.value, track.target, track.property);
-      if (value === null) {
-        session.issue(
-          path,
-          key.span,
-          'asset.motion-frame-map',
-          `Motion key cannot map semantic joint "${track.target}" into its skeleton frame.`,
-        );
-        return [];
-      }
-      return [freeze({ time: key.time, value, interpolation: key.interpolation, span: key.span })];
-    });
-    return [
-      freeze({
-        id: `${motion.symbol.name}:${track.target}:${track.property}`,
-        targetBoneId: track.target,
-        property: track.property,
-        keys: freeze(keys),
-        span: track.span,
-      }),
-    ];
-  });
+  const channels = lowerTrackList(session, rig, skeleton, motion.symbol, path, motion.tracks);
+  const layers: InstantiatedMotionLayer[] = motion.layers.map((layer) =>
+    freeze({
+      id: layer.id,
+      mode: layer.mode,
+      weight: layer.weight,
+      mask: layer.mask,
+      mirrorMode: layer.mirrorMode,
+      gait: layer.gait,
+      channels: lowerTrackList(session, rig, skeleton, motion.symbol, path, layer.tracks),
+      waves: lowerWaves(rig, skeleton, layer.waves),
+      poseKeys: lowerPoseKeys(layer.poseKeys),
+      span: layer.span,
+    }),
+  );
   return freeze({
     symbol: motion.symbol,
     sourcePath: path,
@@ -300,7 +409,15 @@ const lowerInstantiatedMotion = (
     fps: motion.fps,
     loop: motion.loop,
     restRelative: motion.restRelative,
-    channels: freeze(channels),
+    channels,
+    layers: freeze(layers),
+    waves: lowerWaves(rig, skeleton, motion.waves),
+    poses: freeze(motion.poses.map((p) => lowerInstantiatedPose(rig, skeleton, p))),
+    poseKeys: lowerPoseKeys(motion.poseKeys),
+    iks: motion.iks,
+    secondaries: motion.secondaries,
+    combat: motion.combat,
+    cues: motion.cues,
     span: motion.span,
   });
 };

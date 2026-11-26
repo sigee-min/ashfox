@@ -191,6 +191,26 @@ const verifyStructureMetadata = (value: unknown): AssetMetadata => {
   };
 };
 
+const verifyVfxMetadata = (value: unknown): AssetMetadata => {
+  const r = record(value, ['durationSeconds', 'fps', 'drawCalls', 'triangles', 'particleCount']);
+  if (
+    typeof r.durationSeconds !== 'number' ||
+    !Number.isFinite(r.durationSeconds) ||
+    r.durationSeconds <= 0 ||
+    !Number.isSafeInteger(r.fps) ||
+    (r.fps as number) <= 0
+  ) {
+    fail('Invalid vfx metadata');
+  }
+  return {
+    durationSeconds: r.durationSeconds as number,
+    fps: r.fps as number,
+    drawCalls: requireNonNegativeInt(r.drawCalls),
+    triangles: requireNonNegativeInt(r.triangles),
+    particleCount: requireNonNegativeInt(r.particleCount),
+  };
+};
+
 const metadata = (kind: unknown, value: unknown): AssetMetadata => {
   if (kind === 'pack') return verifyPackMetadata(value);
   if (kind === 'sprite') {
@@ -201,6 +221,7 @@ const metadata = (kind: unknown, value: unknown): AssetMetadata => {
   }
   if (kind === 'model') return verifyModelMetadata(value);
   if (kind === 'structure') return verifyStructureMetadata(value);
+  if (kind === 'vfx') return verifyVfxMetadata(value);
   const r = record(value, ['variants']);
   if (!Array.isArray(r.variants)) return fail('Invalid variants');
   return { variants: r.variants.map(verifyAudioVariantMetadata) };
@@ -347,7 +368,7 @@ const verifyCatalogAsset = (
     typeof asset.id !== 'string' ||
     !/^[a-z][a-z0-9_]{0,47}$/u.test(asset.id) ||
     ids.has(asset.id) ||
-    !['model', 'sprite', 'sound', 'structure', 'pack'].includes(String(asset.kind)) ||
+    !['model', 'sprite', 'sound', 'structure', 'vfx', 'pack'].includes(String(asset.kind)) ||
     typeof asset.directory !== 'string' ||
     !safeRelative(asset.directory) ||
     !Array.isArray(asset.files)

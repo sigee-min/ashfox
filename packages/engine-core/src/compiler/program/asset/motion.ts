@@ -14,6 +14,7 @@ import type {
   AssetDegreeVectorValue,
   AssetIntegerValue,
   AssetRatioVectorValue,
+  AssetUnitVectorValue,
   TypedMotion,
   TypedMotionKey,
   TypedMotionTrack,
@@ -22,6 +23,18 @@ import type {
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { compileAndEvaluateHirExpression } from './hirValues';
 import { ASSET_BUDGET } from './budgets';
+import {
+  buildCombatOps,
+  buildCues,
+  buildLayers,
+  buildMotionIks,
+  buildPoseKeys,
+  buildPoses,
+  buildSecondaries,
+  buildWaves,
+  channelValueType,
+  lowerCurveSpec,
+} from './motionPass';
 
 const properties = (
   context: AssemblyContext,
@@ -90,8 +103,11 @@ const positive = (number: AssetNumberValue | null): number is AssetNumberValue =
 const vector = (
   source: AssetValue | null,
   property: TypedMotionTrack['property'],
-): AssetDegreeVectorValue | AssetRatioVectorValue | null => {
+): AssetUnitVectorValue | AssetDegreeVectorValue | AssetRatioVectorValue | null => {
   if (source?.kind !== 'vector') return null;
+  if (property === 'position' && source.type === 'vec3<unit>') {
+    return source as AssetUnitVectorValue;
+  }
   if (property === 'rotation' && source.type === 'vec3<degree>') {
     return source as AssetDegreeVectorValue;
   }
@@ -101,12 +117,40 @@ const vector = (
   return null;
 };
 
-const positiveScale = (value: AssetDegreeVectorValue | AssetRatioVectorValue): boolean =>
+const positiveScale = (
+  value: AssetUnitVectorValue | AssetDegreeVectorValue | AssetRatioVectorValue,
+): boolean =>
   value.type === 'vec3<ratio>' && value.values.every((component) => component.value.numerator > 0n);
 
 const withinFrameBudget = (duration: AssetNumberValue, fps: AssetNumberValue): boolean =>
   duration.value.numerator * fps.value.numerator <=
   BigInt(ASSET_BUDGET.motionFrames) * duration.value.denominator * fps.value.denominator;
+
+const validateKeyframeOrder = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  span: AssetMotionDecl['tracks'][number]['keyframes'][number]['time']['span'],
+  time: AssetNumberValue,
+  duration: AssetNumberValue,
+  previous: AssetNumberValue | null,
+): void => {
+  if (time.value.numerator < 0n || exactGreater(time, duration)) {
+    context.issue(
+      state.path,
+      span,
+      'asset.invalid-motion-key',
+      'Motion key time must lie within the declared duration.',
+    );
+  }
+  if (previous !== null && !exactLess(previous, time)) {
+    context.issue(
+      state.path,
+      span,
+      'asset.invalid-motion-key',
+      'Motion key times must be strictly increasing.',
+    );
+  }
+};
 
 const buildKeyframe = (
   context: AssemblyContext,
@@ -117,7 +161,7 @@ const buildKeyframe = (
   duration: AssetNumberValue,
   previous: AssetNumberValue | null,
 ): TypedMotionKey | null => {
-  const timeValue = compileAndEvaluateHirExpression(
+  const timeVal = compileAndEvaluateHirExpression(
     key.time,
     'second',
     new Map(),
@@ -125,7 +169,7 @@ const buildKeyframe = (
     state.path,
     context.issue,
   );
-  const motionValue = compileAndEvaluateHirExpression(
+  const motionVal = compileAndEvaluateHirExpression(
     key.value,
     expected,
     new Map(),
@@ -133,8 +177,8 @@ const buildKeyframe = (
     state.path,
     context.issue,
   );
-  const time = timeValue?.kind === 'number' && timeValue.type === 'second' ? timeValue : null;
-  const typedVector = vector(motionValue, property);
+  const time = timeVal?.kind === 'number' && timeVal.type === 'second' ? timeVal : null;
+  const typedVector = vector(motionVal, property);
   if (time === null || typedVector === null) return null;
   if (property === 'scale' && !positiveScale(typedVector)) {
     context.issue(
@@ -145,26 +189,12 @@ const buildKeyframe = (
     );
     return null;
   }
-  if (time.value.numerator < 0n || exactGreater(time, duration)) {
-    context.issue(
-      state.path,
-      key.time.span,
-      'asset.invalid-motion-key',
-      'Motion key time must lie within the declared duration.',
-    );
-  }
-  if (previous !== null && !exactLess(previous, time)) {
-    context.issue(
-      state.path,
-      key.time.span,
-      'asset.invalid-motion-key',
-      'Motion key times must be strictly increasing.',
-    );
-  }
+  validateKeyframeOrder(context, state, key.time.span, time, duration, previous);
   return freeze({
     time: time as TypedMotionKey['time'],
     value: typedVector,
     interpolation: key.interpolation,
+    curve: lowerCurveSpec(context, state, key.curve),
     span: key.span,
   });
 };
@@ -194,7 +224,7 @@ const buildTrack = (
       `Rig joint "${track.target}" does not expose ${track.property}.`,
     );
   }
-  const expected: AssetValueType = track.property === 'rotation' ? 'vec3<degree>' : 'vec3<ratio>';
+  const expected = channelValueType(track.property);
   const keys: TypedMotionKey[] = [];
   let previous: AssetNumberValue | null = null;
   for (const key of track.keyframes) {
@@ -325,27 +355,12 @@ const validateMotionHeader = (
   };
 };
 
-export const buildMotion = (
+const collectMotionTracks = (
   context: AssemblyContext,
   state: AssemblyState,
-  entry: AssemblyEntry,
-  rigs: Readonly<Record<string, TypedRigContract>>,
-): TypedMotion | null => {
-  const declaration = entry.declaration as AssetMotionDecl;
-  const rigEntry = context.resolve(state, declaration.rig, 'rig-contract');
-  const rig = rigEntry === null ? null : rigs[rigEntry.symbol.key];
-  if (rigEntry === null) return null;
-  if (rig === null || rig === undefined) {
-    context.issue(
-      state.path,
-      declaration.rig.span,
-      'asset.internal-reference',
-      'Resolved rig contract is missing from the typed HIR index.',
-    );
-    return null;
-  }
-  const header = validateMotionHeader(context, state, declaration);
-  if (header === null) return null;
+  declaration: AssetMotionDecl,
+  buildTrackFn: (track: AssetMotionDecl['tracks'][number]) => TypedMotionTrack | null,
+): readonly TypedMotionTrack[] => {
   const tracks: TypedMotionTrack[] = [];
   const ids = new Set<string>();
   for (const track of declaration.tracks) {
@@ -359,9 +374,37 @@ export const buildMotion = (
       );
     }
     ids.add(id);
-    const typed = buildTrack(context, state, rig, header.duration, track);
+    const typed = buildTrackFn(track);
     if (typed !== null) tracks.push(typed);
   }
+  return freeze(tracks);
+};
+
+export const buildMotion = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  entry: AssemblyEntry,
+  rigs: Readonly<Record<string, TypedRigContract>>,
+): TypedMotion | null => {
+  const declaration = entry.declaration as AssetMotionDecl;
+  const rigEntry = context.resolve(state, declaration.rig, 'rig-contract');
+  const rig = rigEntry === null ? null : rigs[rigEntry.symbol.key];
+  if (rigEntry === null) return null;
+  if (!rig) {
+    context.issue(
+      state.path,
+      declaration.rig.span,
+      'asset.internal-reference',
+      'Resolved rig contract is missing from the typed HIR index.',
+    );
+    return null;
+  }
+  const header = validateMotionHeader(context, state, declaration);
+  if (header === null) return null;
+  const buildTrackFn = (track: AssetMotionDecl['tracks'][number]) =>
+    buildTrack(context, state, rig, header.duration, track);
+  const poses = buildPoses(context, state, rig, declaration.poses);
+  const poseIds = new Set(poses.map((p) => p.id));
   return freeze({
     symbol: entry.symbol,
     rig: rig.symbol,
@@ -369,7 +412,23 @@ export const buildMotion = (
     fps: header.fps,
     loop: header.loop,
     restRelative: header.restRelative,
-    tracks: freeze(tracks),
+    tracks: collectMotionTracks(context, state, declaration, buildTrackFn),
+    layers: buildLayers(
+      context,
+      state,
+      rig,
+      poseIds,
+      header.duration,
+      declaration.layers,
+      buildTrackFn,
+    ),
+    waves: buildWaves(context, state, rig, declaration.waves),
+    poses,
+    poseKeys: buildPoseKeys(context, state, poseIds, header.duration, declaration.poseKeys),
+    iks: buildMotionIks(context, state, rig, declaration.iks),
+    secondaries: buildSecondaries(context, state, rig, declaration.secondaries),
+    combat: buildCombatOps(context, state, rig, declaration.combatOps),
+    cues: buildCues(context, state, rig, declaration.cues),
     span: declaration.span,
   });
 };

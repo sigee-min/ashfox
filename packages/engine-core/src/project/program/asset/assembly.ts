@@ -3,13 +3,9 @@ import type {
   AssetAssemblyConnect,
   AssetAssemblyDecl,
   AssetAssemblyUse,
-  AssetKeyframeDecl,
-  AssetMotionDecl,
   AssetParamSetDecl,
-  AssetPropertyDecl,
   AssetQualifiedName,
   AssetSettingsDecl,
-  AssetTrackDecl,
 } from './contract';
 import {
   checkClosedProperties,
@@ -23,95 +19,6 @@ import {
   readProperty,
   type AssetReader,
 } from './parserSupport';
-
-const readKeyframe = (reader: AssetReader): AssetKeyframeDecl => {
-  const keyStart = reader.expectWord('key', 'Tracks contain key declarations.');
-  const time = reader.expression();
-  reader.expect('=', 'Expected = in a key declaration.');
-  const value = reader.expression();
-  let interpolation: AssetKeyframeDecl['interpolation'] = 'linear';
-  const current = reader.current();
-  if (
-    current.kind === 'identifier' &&
-    isOneOf(['linear', 'step', 'catmullrom'] as const, current.value)
-  ) {
-    interpolation = reader.take().value as AssetKeyframeDecl['interpolation'];
-  } else {
-    reader.failSpan(
-      'asset.missing-interpolation',
-      'Every motion key must declare linear, step, or catmullrom explicitly.',
-      value.span,
-    );
-  }
-  reader.finish();
-  return Object.freeze({
-    kind: 'keyframe',
-    time,
-    value,
-    interpolation,
-    span: join(keyStart.span, value.span),
-  });
-};
-
-const readTrack = (reader: AssetReader): AssetTrackDecl => {
-  const start = reader.expectWord('track', 'Expected track.');
-  const parts = [reader.id('Expected a track target.').value];
-  while (reader.match('/')) parts.push(reader.id('Expected a target path segment.').value);
-  reader.expect('.', 'Tracks require .position, .rotation, .scale, or .ik.');
-  const propertyToken = reader.id('Expected a track property.');
-  const property = propertyToken.value as AssetTrackDecl['property'];
-  if (property !== 'rotation' && property !== 'scale') {
-    reader.fail(
-      'asset.invalid-motion-property',
-      'Rig motion only supports rest-space relative rotation and scale tracks; position and IK are forbidden.',
-      propertyToken,
-    );
-  }
-  const keyframes: AssetKeyframeDecl[] = [];
-  const close = readBraced(
-    reader,
-    'Expected { to begin a track.',
-    'Expected } to close a track.',
-    () => {
-      keyframes.push(readKeyframe(reader));
-    },
-  );
-  return Object.freeze({
-    kind: 'track',
-    target: parts.join('/'),
-    property: property === 'scale' ? 'scale' : 'rotation',
-    keyframes: Object.freeze(keyframes),
-    span: join(start.span, close.span),
-  });
-};
-
-export const parseMotion = (reader: AssetReader, exported: boolean): AssetMotionDecl => {
-  const start = reader.expectWord('motion', 'Expected motion.');
-  const id = reader.id('Expected motion name.');
-  reader.expectWord('for', 'Motion requires for <rig-contract>.');
-  const rig = reader.qualified('Expected rig contract name.');
-  const properties: AssetPropertyDecl[] = [];
-  const tracks: AssetTrackDecl[] = [];
-  const close = readBraced(
-    reader,
-    'Expected { to begin a motion.',
-    'Expected } to close a motion.',
-    () => {
-      if (reader.checkWord('track')) tracks.push(readTrack(reader));
-      else if (reader.assignment()) properties.push(readProperty(reader));
-      else reader.scopeError('motion');
-    },
-  );
-  return Object.freeze({
-    kind: 'motion',
-    exported,
-    id: id.value,
-    rig,
-    properties: Object.freeze(properties),
-    tracks: Object.freeze(tracks),
-    span: join(start.span, close.span),
-  });
-};
 
 const readAssemblyUse = (reader: AssetReader): AssetAssemblyUse => {
   const start = reader.expectWord('use', 'Expected use.');

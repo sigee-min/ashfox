@@ -7,13 +7,15 @@ module chest_rig {
     joint root {
       parent = none;
       role = root;
-      channels = rotation;
+      channels = (position, rotation, scale);
     }
     joint lid {
       parent = root;
       role = head;
       channels = rotation;
+      limits { pitch = -10deg..85deg; }
     }
+    anchor lock_pt { joint = lid; offset = (0u, 0u, -6u); }
   }
 
   export skeleton ChestSkeleton implements ChestRig {
@@ -23,24 +25,31 @@ module chest_rig {
 
   export motion idle for ChestRig {
     duration = 2s;
-    fps = 20;
+    fps = 24;
     loop = loop;
-track lid.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1s = (2deg, 0deg, 0deg) linear;
-      key 2s = (0deg, 0deg, 0deg) linear;
+    rest_relative = true;
+    track lid.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1s = (2.5deg, 0deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) ease_out;
     }
+    wave root.position.y = breath(2s, inhale = 0.42) * 0.15u;
+    cue 0.95s sound "chest_creak" at lock_pt;
   }
 
   export motion open for ChestRig {
     duration = 1.6s;
-    fps = 20;
+    fps = 24;
     loop = loop;
-track lid.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 0.6s = (52deg, 0deg, 0deg) catmullrom;
-      key 1.1s = (52deg, 0deg, 0deg) linear;
-      key 1.6s = (0deg, 0deg, 0deg) linear;
+    rest_relative = true;
+    track lid.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.55s = (56deg, 0deg, 0deg) anticipate(0.22);
+      key 1.05s = (52deg, 0deg, 0deg) overshoot(0.25);
+      key 1.6s = (0deg, 0deg, 0deg) ease_out;
     }
+    squash root { at = 0.56s; duration = 0.16s; axis = y; amount = -0.10; }
+    recoil lid { at = 0.6s; impulse = (-6deg, 0deg, 0deg); decay = 0.22s; }
+    cue 0.12s sound "chest_latch" at lock_pt;
   }
 }

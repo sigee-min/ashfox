@@ -33,27 +33,27 @@
     {
       "input": "examples/fox/creatures/fox.ashfox",
       "ok": true,
-      "sourceHash": "sha256:0e17f7ba22c53b80ce54f686c98c4ac8a0b439f348b23b02b1164c5892c22a2f",
+      "sourceHash": "sha256:b2e91f50ae4daf6bf0603b01157fcee612597dc1b67a1f652a6ee094e71b74a7",
       "products": [
         {
           "entry": "standalone/fox",
           "kind": "model",
-          "sha256": "23b8b862a14833ed6f1dea128512af420e302631f3b6aacc0254fd6ae9c033d0"
+          "sha256": "4a9936acf840ca1a0c5e1ed5f12295ea344fd87dc551aac930336b162ba30bd4"
         }
       ],
-      "catalogHash": "01db1d9f2629db9113df9de7ab22b84e4a736414957e756b958ddafe610ae628",
+      "catalogHash": "54fe95b3b637c913fc2e4764aa57520bf3d68879c17f438649e75817dbaea7d6",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "1484e9cb528e93eb21e446a51bff8236ac93de52cb576a6371d6351c3f62af08"
+          "sha256": "43a92ace0ddbd93831aee68e9205c506493f5888c147129069d55cc47ed10423"
         },
         {
           "path": "assets/fox/fox.glb",
-          "sha256": "9d8121b15f66b33462d3cc203fa8ba093f55ff6345ea63c9cf570adfb17424c2"
+          "sha256": "1f06863a00c19e5d640f462395f2884c2373ca959dcfd818491330a4241cc560"
         },
         {
           "path": "catalog.json",
-          "sha256": "01db1d9f2629db9113df9de7ab22b84e4a736414957e756b958ddafe610ae628"
+          "sha256": "54fe95b3b637c913fc2e4764aa57520bf3d68879c17f438649e75817dbaea7d6"
         }
       ]
     },
@@ -84,10 +84,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
+          "sha256": "063395d5749ef3f0bf85e24739d1f31b3f6ee497fb0a17e8df9e359146637c5a"
         }
       ],
-      "catalogHash": "38f6cdb2c77c7328bd3cc9fb9ccf28d7cfedbb8128e9bae2d49076715ae1b0e1",
+      "catalogHash": "587a6d127f559ffdfaf79c408ad88795379d6bcd41dc323ef853251ab766f05c",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -99,11 +99,11 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "248fc06746fb089d7be95cfd04e17b9cf85733f46a56a740a4a72d6426b8f774"
+          "sha256": "50bc9d50a1d8b25c8f9d7bcd91cc9bfa2600c13ff3c270e30cc5234a41ccef06"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
+          "sha256": "f4868c6018a5ce087ad24a7b7d1886e1fa22cffadfb846fa196d0f80330d692b"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
@@ -111,7 +111,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "d6f62e8f6932985b2ff826a3f95af12742c60b0ffc1591e78768c3f1414907f7"
+          "sha256": "71c8667c3e4438aacd64dab90d692178e1c18addb7e54cf9c046530a97cd5c29"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
@@ -123,7 +123,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin/griffin.glb",
-          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
+          "sha256": "f4868c6018a5ce087ad24a7b7d1886e1fa22cffadfb846fa196d0f80330d692b"
         },
         {
           "path": "assets/voxel_game/game-assets/sprites/items/iron_sword.png",
@@ -131,65 +131,65 @@
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "68cc5f3351a6ea6de8f5cb0c1d80c9cfc355c9eb4838b4b8fa580cf5ad423173"
+          "sha256": "cb98babc56c882d495187fc4bd82684b28fbeae75b8924e2166d5e3c3c178586"
         },
         {
           "path": "catalog.json",
-          "sha256": "38f6cdb2c77c7328bd3cc9fb9ccf28d7cfedbb8128e9bae2d49076715ae1b0e1"
+          "sha256": "587a6d127f559ffdfaf79c408ad88795379d6bcd41dc323ef853251ab766f05c"
         }
       ]
     },
     {
       "input": "examples/goblin/creatures/goblin.ashfox",
       "ok": true,
-      "sourceHash": "sha256:b80c852c31f3a8d43fc7a545bd58b55e0cb84112db5207775c7b94fda63569f0",
+      "sourceHash": "sha256:fc20d84fb200f04606b286abbbfff7bee29f06fd7f28215434cd12f15d25e808",
       "products": [
         {
           "entry": "standalone/goblin",
           "kind": "model",
-          "sha256": "83731dd180e797d9c87bc32f8aed09578ed3fd6788fddf501441b4c84a83bef0"
+          "sha256": "499a81fd41449feaa8a6a0b5092180babcab27e1832a58ee1fdff7e4e5099571"
         }
       ],
-      "catalogHash": "1f4d219bd79dade8285d7d729b55e2c9ffdb02295089e350aa07e970b6ee395a",
+      "catalogHash": "b7d882f93ddc60f71439521407487bcc5909e4471ee9b4ba0bc5812774112739",
       "files": [
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "5d35ea49f4e496d4acd6f94e7c5f04063a0dc74d6ed2040b1e707ba0605fd5af"
+          "sha256": "5af8793150d60b299e1a1ded61d16a7a9bd8b8b0008feeb44b52b4cfe3e1aa0f"
         },
         {
           "path": "assets/goblin/goblin.glb",
-          "sha256": "c4afe148ce63588233fd18cd77d35f03919f02757eb74b5dee89c878d208903b"
+          "sha256": "3cb709ee6871d7811d24ec531dc512e2d8f9b60ea3089b58947603fc9e2ee977"
         },
         {
           "path": "catalog.json",
-          "sha256": "1f4d219bd79dade8285d7d729b55e2c9ffdb02295089e350aa07e970b6ee395a"
+          "sha256": "b7d882f93ddc60f71439521407487bcc5909e4471ee9b4ba0bc5812774112739"
         }
       ]
     },
     {
       "input": "examples/griffin/workbench/main.ashfox",
       "ok": true,
-      "sourceHash": "sha256:11c8898079883942f3eca4218eed55ce0d8880bf16475789ad8e73358d4550ec",
+      "sourceHash": "sha256:638ca34754aa000a06d1aab3a99a89fd728889efa884b2f9730f5716076acbee",
       "products": [
         {
           "entry": "standalone/griffin",
           "kind": "model",
-          "sha256": "6dd9728d4e175c23ab56c4c7c072b824f2110c5ff272fe24a4ed851df30ab95d"
+          "sha256": "10569c1161e2ee410da72b2367ba3a1808bd5b7267e2ac336ab35a4ddd11ac99"
         }
       ],
-      "catalogHash": "5535bea24750948333804e5c2073e1ffc2ac50f28e222455fb277c0c698bb1ee",
+      "catalogHash": "7776dea22f6088e4b761ef5ec8f864c01bf6dd213b616c8bc938ea84c0d9f151",
       "files": [
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "c1f7fc9da4d5807cbee58aaba793fe5476cdad3db08b0b2a03b092195c354565"
+          "sha256": "f8731a97dc66726dd7ea70a2e8d224605571fcf9ccd9d8fe512f060a5558033d"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "02e255af2cf3a321a0909e7624063e69839c59d13b9f13c2eafc958edb6a673a"
+          "sha256": "3d86a636150bf83a44bffb5015b8057e4f499e73ed08572362d5cbff167789e8"
         },
         {
           "path": "catalog.json",
-          "sha256": "5535bea24750948333804e5c2073e1ffc2ac50f28e222455fb277c0c698bb1ee"
+          "sha256": "7776dea22f6088e4b761ef5ec8f864c01bf6dd213b616c8bc938ea84c0d9f151"
         }
       ]
     },
@@ -381,10 +381,10 @@
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
+          "sha256": "063395d5749ef3f0bf85e24739d1f31b3f6ee497fb0a17e8df9e359146637c5a"
         }
       ],
-      "catalogHash": "4e8ce74646bfe560f4a0876523906c83247ef8f6a753070d62528e249d94f1e4",
+      "catalogHash": "983840fd2a3b32ddb5d859c5992694b670aa47c1e132e2e509dcb49caa75afc9",
       "files": [
         {
           "path": "assets/claw_hit/claw_hit/alternate.wav",
@@ -396,11 +396,11 @@
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "f5ad32b5934c56fd31b4d2963bf27138680b928a5281faeb52a05a3ddaf3bade"
+          "sha256": "5c066abd2d7455bf345e02d377b15bcead706670d57ad0b046d2364b0eace10e"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
+          "sha256": "f4868c6018a5ce087ad24a7b7d1886e1fa22cffadfb846fa196d0f80330d692b"
         },
         {
           "path": "assets/iron_sword/iron_sword.png",
@@ -408,7 +408,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "4e8ce74646bfe560f4a0876523906c83247ef8f6a753070d62528e249d94f1e4"
+          "sha256": "983840fd2a3b32ddb5d859c5992694b670aa47c1e132e2e509dcb49caa75afc9"
         }
       ]
     },
@@ -441,8 +441,30 @@
     },
     {
       "input": "examples/prop/treasure_chest/chest.ashfox",
-      "ok": false,
-      "code": "unknown"
+      "ok": true,
+      "sourceHash": "sha256:caec3e1fc04cc97b9bd09dbf6544c857e68013aafef951883e4d4497b07bc0b7",
+      "products": [
+        {
+          "entry": "standalone/treasure_chest",
+          "kind": "model",
+          "sha256": "1019a45b897e6b8f36697404ceba4074c84f45c25da78129e66eaab8e2d778f9"
+        }
+      ],
+      "catalogHash": "b1d69fa5cdbc6232f40f088d086b06106b2a265d4ae48237710f9358b87dc319",
+      "files": [
+        {
+          "path": "assets/treasure_chest/ashfox-lineage.json",
+          "sha256": "7f9f6ddd41a747ce98e349497f920f5df89f4b7a43438ff9253a001a5bd1c0c9"
+        },
+        {
+          "path": "assets/treasure_chest/treasure_chest.glb",
+          "sha256": "8db183baf7eaee2daaf26b785c7863a029e119e78be912388db7f3c1c693f833"
+        },
+        {
+          "path": "catalog.json",
+          "sha256": "b1d69fa5cdbc6232f40f088d086b06106b2a265d4ae48237710f9358b87dc319"
+        }
+      ]
     },
     {
       "input": "examples/resource-pack/.ashfoxworkspace",
@@ -586,48 +608,48 @@
         {
           "entry": "creatures/fox",
           "kind": "model",
-          "sha256": "6084dec220814e1a6affd361f21abfeb548c4eb2a1779b79bc934f2c0e28112b"
+          "sha256": "d081647a6d1d60617bcda79a70a8eaff522e56d88d6103b563d5517c420cdc86"
         },
         {
           "entry": "creatures/goblin",
           "kind": "model",
-          "sha256": "1ffda9e7739a0515e5cc17f895c5a0addfefd50c9edbe9597fb9ce42cfe849bb"
+          "sha256": "e092885aed47a68a5e95f02ec4a9acd28376af5c1723dcd6fda41b472710b7d3"
         },
         {
           "entry": "workbench/griffin",
           "kind": "model",
-          "sha256": "90a4599016aa6ea98bfd670be7dce7ee017c1cabf415f2acdfc28eedc1eaf3a6"
+          "sha256": "063395d5749ef3f0bf85e24739d1f31b3f6ee497fb0a17e8df9e359146637c5a"
         }
       ],
-      "catalogHash": "c02dbc22b98f03538b47c03fd66ec642a995c80465a23abff12acefcd2642b5a",
+      "catalogHash": "9521fecbca90cf7e63ee14b933ed74119aae5662b1e9a7748e260b5cadbd240a",
       "files": [
         {
           "path": "assets/fox/ashfox-lineage.json",
-          "sha256": "fe50e7e8fb2e22b6c196a6e103162c168d3a562cd09c90ab90c01691c8970441"
+          "sha256": "c8c53159cc2f36acd5b8baf73b1a98bca04d64ce62187961d06907667a50136d"
         },
         {
           "path": "assets/fox/fox.glb",
-          "sha256": "3601c6d633f4c14363ee05c1c6d67700163089518f0a5cbf5940fb0bf05bb79a"
+          "sha256": "fcfc9e2b71dfa4e52c3c2f9e6c69c6deaf9fdc9347c313e4a5f1758869c92e95"
         },
         {
           "path": "assets/goblin/ashfox-lineage.json",
-          "sha256": "8f510c4352911790fd0cc558d0f8a75fdb5069e22ff8b210163cd40fea44bdc0"
+          "sha256": "d134c36615cfbc074000d038be5b9add38d87ac90f97b89d27af85b0b0753fc5"
         },
         {
           "path": "assets/goblin/goblin.glb",
-          "sha256": "1d7cc99fcbc3bac9f08a5f551870f7214a298b3fac76668f938f5a51c60579bf"
+          "sha256": "98a169c32aa70fc4a9e0c3fba17965804d6bdeeb61564994e3041645a0f88687"
         },
         {
           "path": "assets/griffin/ashfox-lineage.json",
-          "sha256": "1f774bdeb0b36a7fbc4cc06b0d2871e6a96fa7674e30d3a29ce159bb8b1eadd6"
+          "sha256": "52f8939d16baac17eb32aa759b5a8d52a005993543f3cf64d1b03ac54586da84"
         },
         {
           "path": "assets/griffin/griffin.glb",
-          "sha256": "0090e397a89f8082ca759e3f6486dd7d9345b8f53e237d621e5e9ab4658e2e17"
+          "sha256": "f4868c6018a5ce087ad24a7b7d1886e1fa22cffadfb846fa196d0f80330d692b"
         },
         {
           "path": "catalog.json",
-          "sha256": "c02dbc22b98f03538b47c03fd66ec642a995c80465a23abff12acefcd2642b5a"
+          "sha256": "9521fecbca90cf7e63ee14b933ed74119aae5662b1e9a7748e260b5cadbd240a"
         }
       ]
     },
@@ -1743,6 +1765,112 @@
         {
           "path": "catalog.json",
           "sha256": "da017e2fdadd1a75c41f0648e3b7bc1fea67d9c13899b82d8eb4309ca2504ef8"
+        }
+      ]
+    },
+    {
+      "input": "examples/vfx/.ashfoxworkspace",
+      "ok": true,
+      "sourceHash": "sha256:6bc39961b337af7a38fb52154e62d8147c06390ccb8362123fcf55fc804de03d",
+      "products": [
+        {
+          "entry": "vfx/arcane_shockwave",
+          "kind": "vfx",
+          "glb": "fc3d0e358fe96917090a91398976f53569cc74edef0144aabf891e6a59f13326",
+          "spec": "e9c1dd34b879229f2f9c91e8f84d7ef313269382ed7e4aa7a8743bdc353a15f0"
+        },
+        {
+          "entry": "vfx/flame_cleave",
+          "kind": "vfx",
+          "glb": "cc559db4b79b2337d290215101ead468f1a7d2cc9b5387ed63b090e0a6075136",
+          "spec": "d475b6d293d2697032f5731591b90d1eaeb85c224932b6a10033f4036270f1e6"
+        },
+        {
+          "entry": "vfx/hearth_embers",
+          "kind": "vfx",
+          "glb": "b2e1ac0ad1ad5774c122ecb2825d9abc5e62395feb7f392dcec97c52a405d665",
+          "spec": "aa67df36cec71537cd2779e12b424c0abe03c35dd41a73327dfb18d58929ad43"
+        },
+        {
+          "entry": "vfx/lightning_strike",
+          "kind": "vfx",
+          "glb": "6afb0234a14be36b8e6439c3363f91fdd8ff4c881ab23bc9161292bb47853eb4",
+          "spec": "9adf0b9c02d61af9319cae10b6c9b3acf90cad600d5f9894eae52a24c75dc968"
+        }
+      ],
+      "catalogHash": "935120ec08c9829595138e2bf43a3afe1944ca78730fb89438ec6e8645e239bd",
+      "files": [
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.flipbook.json",
+          "sha256": "15367aaf91b8e4a140748a93b0dd7bdc9fae91fb8a6dbfb4ff4cb34f3c5b01b8"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.glb",
+          "sha256": "fc3d0e358fe96917090a91398976f53569cc74edef0144aabf891e6a59f13326"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.particle.json",
+          "sha256": "253ebfb182d595e63b3462307e0e751e29b0febd30021646b89168496ff9b462"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.vfx.json",
+          "sha256": "10983964a14334aa3329e71373c10a79b162a25a8705e6aa49d2d57c1112978a"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.flipbook.json",
+          "sha256": "a5da3c4bae208c80d6f0136de99756614f92ae160db24c7cf38a688aac472c7f"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.glb",
+          "sha256": "cc559db4b79b2337d290215101ead468f1a7d2cc9b5387ed63b090e0a6075136"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.particle.json",
+          "sha256": "ab78f3379ef0f3f3b22286c1976f53abf316cf996d3ab1a7a91a009a815bb027"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.vfx.json",
+          "sha256": "137dcc7abfe8f0ec50ff9e091944f3959fdf6df4ed142d5e93b0acce19b8f05c"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.0.particle.json",
+          "sha256": "eb968d8e132e55bd1c721a265b9caad491a331bbb7aa94b9c75f33e1adb65b42"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.1.particle.json",
+          "sha256": "9228288442d60d6cdfee5039fedfe3601bb2d70a5badd50eb5700e25da463e37"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.flipbook.json",
+          "sha256": "a56362a79e07f7ad139f6ffe1704bb1ef8670142c059f8299ec488844f44738c"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.glb",
+          "sha256": "b2e1ac0ad1ad5774c122ecb2825d9abc5e62395feb7f392dcec97c52a405d665"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.vfx.json",
+          "sha256": "046de911bb965aea18cad9d836e7614ae6b70ca491fd86804e1ec8d2d9fae1f1"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.flipbook.json",
+          "sha256": "1390927ec329bd6ce8bf3aafbc828713e268f23165cd4c024e8795057adfb994"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.glb",
+          "sha256": "6afb0234a14be36b8e6439c3363f91fdd8ff4c881ab23bc9161292bb47853eb4"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.particle.json",
+          "sha256": "1661ca6e4a86a460aac084ae8885cfc419ef7880d434fdbfb2f76e65166a7b12"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.vfx.json",
+          "sha256": "883d412f6c4bbffa9bed5ce092b4fddbd48447efa0d31650a104d7c9b7124089"
+        },
+        {
+          "path": "catalog.json",
+          "sha256": "935120ec08c9829595138e2bf43a3afe1944ca78730fb89438ec6e8645e239bd"
         }
       ]
     }

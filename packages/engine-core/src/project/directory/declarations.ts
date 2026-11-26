@@ -19,7 +19,7 @@ export const DECLARED_OUTPUT_FORMATS = [
 ] as const;
 
 export type DeclaredOutputFormat = (typeof DECLARED_OUTPUT_FORMATS)[number];
-export type DeclaredAssetKind = 'model' | 'sprite' | 'sound' | 'structure';
+export type DeclaredAssetKind = 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
 
 export interface DeclaredOutputSpec {
   readonly format: DeclaredOutputFormat;
@@ -40,7 +40,7 @@ export interface DeclaredPreviewSpec {
   readonly zoom?: number;
   readonly environment?: 'studio' | 'day' | 'evening' | 'night';
   readonly background?: 'environment' | 'transparent' | 'checker' | 'light' | 'dark';
-  readonly sheet?: 'turnaround' | 'inspect' | 'exterior' | 'cutaway' | 'interior';
+  readonly sheet?: 'turnaround' | 'inspect' | 'exterior' | 'cutaway' | 'interior' | 'flipbook';
   readonly mode?: 'motion' | 'turntable' | 'build';
   readonly clip?: string;
   readonly time?: number;
@@ -76,6 +76,7 @@ const FORMATS_BY_KIND: Readonly<Record<DeclaredAssetKind, readonly DeclaredOutpu
   sprite: ['png'],
   sound: ['wav'],
   structure: ['java_structure', 'glb'],
+  vfx: ['glb'],
 };
 
 const DEFAULT_OUTPUTS_BY_KIND: Readonly<Record<DeclaredAssetKind, readonly DeclaredOutputSpec[]>> =
@@ -84,6 +85,7 @@ const DEFAULT_OUTPUTS_BY_KIND: Readonly<Record<DeclaredAssetKind, readonly Decla
     sprite: [{ format: 'png' }],
     sound: [{ format: 'wav' }],
     structure: [{ format: 'java_structure' }, { format: 'glb' }],
+    vfx: [{ format: 'glb' }],
   };
 
 const PREVIEW_ENUMS = {
@@ -91,7 +93,7 @@ const PREVIEW_ENUMS = {
   camera: ['perspective', 'native', 'front', 'back', 'left', 'right', 'top', 'bottom'],
   environment: ['studio', 'day', 'evening', 'night'],
   background: ['environment', 'transparent', 'checker', 'light', 'dark'],
-  sheet: ['turnaround', 'inspect', 'exterior', 'cutaway', 'interior'],
+  sheet: ['turnaround', 'inspect', 'exterior', 'cutaway', 'interior', 'flipbook'],
   mode: ['motion', 'turntable', 'build'],
   stage: ['final', 'silhouette', 'shade', 'grain'],
 } as const;
@@ -351,7 +353,14 @@ const validatePreviewField = (
     failDecl(file, `${key} requires sprite asset`);
   if (key === 'variant' && kind !== 'sound') failDecl(file, 'variant requires sound asset');
   if (MODEL_STRUCTURE_PREVIEW_KEYS.has(key) && kind !== 'model' && kind !== 'structure') {
-    failDecl(file, `${key} requires model or structure asset`);
+    const vfxAllowed =
+      kind === 'vfx' &&
+      (key === 'camera' ||
+        key === 'azimuth' ||
+        key === 'elevation' ||
+        key === 'zoom' ||
+        key === 'time');
+    if (!vfxAllowed) failDecl(file, `${key} requires model or structure asset`);
   }
   return validatePreviewValue(key, val, file);
 };

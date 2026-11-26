@@ -48,13 +48,29 @@ const validateBlobRef = (value: unknown, path: string, context: ContractContext)
   }
 };
 
-const validateOpaqueAlpha = (value: unknown, path: string, context: ContractContext): void => {
+const validateRasterAlpha = (
+  value: unknown,
+  path: string,
+  soft: boolean,
+  context: ContractContext,
+): void => {
+  if (soft) {
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > 255) {
+      reject(context, path, `${path} must be an integer 0..255 in soft alphaMode.`);
+    }
+    return;
+  }
   if (value !== 0 && value !== 255) {
     reject(context, path, `${path} must be 0 or 255.`);
   }
 };
 
-const validateCanvasDetail = (entry: unknown, detailPath: string, context: ContractContext) => {
+const validateCanvasDetail = (
+  entry: unknown,
+  detailPath: string,
+  soft: boolean,
+  context: ContractContext,
+) => {
   const detail = closedRecord(
     entry,
     detailPath,
@@ -66,7 +82,7 @@ const validateCanvasDetail = (entry: unknown, detailPath: string, context: Contr
   expectString(detail.id, `${detailPath}.id`, context);
   expectString(detail.color, `${detailPath}.color`, context);
   expectFiniteNumber(detail.alpha, `${detailPath}.alpha`, context);
-  validateOpaqueAlpha(detail.alpha, `${detailPath}.alpha`, context);
+  validateRasterAlpha(detail.alpha, `${detailPath}.alpha`, soft, context);
   expectFiniteNumber(detail.x, `${detailPath}.x`, context);
   expectFiniteNumber(detail.y, `${detailPath}.y`, context);
   expectFiniteNumber(detail.width, `${detailPath}.width`, context);
@@ -159,16 +175,20 @@ const validateTextureRaster = (
     value,
     path,
     ['background', 'backgroundAlpha', 'canvasDetails'],
-    ['alphaMasks'],
+    ['alphaMode', 'alphaMasks'],
     context,
   );
   if (!record) return;
+  const soft = record.alphaMode === 'soft';
+  if (hasOwn(record, 'alphaMode')) {
+    expectLiteral(record.alphaMode, ['binary', 'soft'], `${path}.alphaMode`, context);
+  }
   expectString(record.background, `${path}.background`, context);
   expectFiniteNumber(record.backgroundAlpha, `${path}.backgroundAlpha`, context);
-  validateOpaqueAlpha(record.backgroundAlpha, `${path}.backgroundAlpha`, context);
+  validateRasterAlpha(record.backgroundAlpha, `${path}.backgroundAlpha`, soft, context);
   const details = expectArray(record.canvasDetails, `${path}.canvasDetails`, context);
   details?.forEach((entry, index) => {
-    validateCanvasDetail(entry, `${path}.canvasDetails[${index}]`, context);
+    validateCanvasDetail(entry, `${path}.canvasDetails[${index}]`, soft, context);
   });
   if (!hasOwn(record, 'alphaMasks')) return;
   const masks = expectArray(record.alphaMasks, `${path}.alphaMasks`, context);
@@ -183,7 +203,7 @@ const validateTextureMetadata = (value: unknown, path: string, context: Contract
     value,
     path,
     [],
-    ['previewColor', 'canonicalRgbaSha256', 'canonicalPngSha256'],
+    ['previewColor', 'canonicalRgbaSha256', 'canonicalPngSha256', 'ashfoxUnlit', 'ashfoxBlendMode'],
     context,
   );
   if (!metadata) return;

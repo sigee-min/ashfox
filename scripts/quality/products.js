@@ -73,6 +73,14 @@ const productDigest = (product) => {
       document: digestValue(product.structure.document),
     };
   }
+  if (product.kind === 'vfx') {
+    return {
+      entry,
+      kind: product.kind,
+      glb: sha256(product.glb),
+      spec: digestValue(product.spec),
+    };
+  }
   return { entry, kind: product.kind, sha256: digestValue(product.model) };
 };
 

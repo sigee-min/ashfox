@@ -21,7 +21,7 @@ import { assertWorkspaceSoundBudget, prepareNodeSound, type PreparedNodeSound } 
 type NativeSourceMetadata = ReturnType<typeof inspectNativeSource>;
 
 export interface PlannedEntry {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
   readonly entry: WorkspaceEntrySelector;
   readonly sourcePath: string;
   readonly closurePaths: readonly string[];
@@ -44,6 +44,7 @@ const CANONICAL_PREFIXES = [
   'assets/sprites/',
   'assets/sounds/',
   'assets/structures/',
+  'assets/vfx/',
   'assets/module/',
 ] as const;
 
@@ -52,6 +53,7 @@ const BUCKET_BY_KIND: Readonly<Record<PlannedEntry['kind'], string>> = {
   sprite: 'assets/sprites/',
   sound: 'assets/sounds/',
   structure: 'assets/structures/',
+  vfx: 'assets/vfx/',
 };
 
 export const joinPackagePath = (root: string, rel: string): string =>
@@ -366,6 +368,7 @@ const validatePlanExportsAndPacks = (
     model: ['glb', 'gltf', 'java_block', 'geckolib5', 'bedrock'],
     sound: ['wav'],
     structure: ['java_structure', 'glb'],
+    vfx: ['glb'],
   };
   for (const target of config.exports) {
     const entry = byEntry.get(entrySelectorKey(target.entry));
