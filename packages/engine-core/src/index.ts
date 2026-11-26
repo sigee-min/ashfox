@@ -295,6 +295,7 @@ export {
   type QualityGrade,
 } from './audit';
 export {
+  buildStructureGlbBytes,
   exportStructureGltfResolved,
   type StructureGltfOptions,
 } from './export/pipeline/structure';

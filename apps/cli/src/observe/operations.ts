@@ -2,10 +2,13 @@ import { evaluateSoundQuality, renderSoundInspectSheet } from '@ashfox/audio-cor
 import { BuildFailure } from '@ashfox/asset-build';
 import {
   buildStructureBakedMesh,
+  buildStructureGlbBytes,
   collectStructureCutBands,
+  compileProjectBundle,
   encodeCanonicalPng,
   encodeRgbaBufferPng,
   evaluateAssetQuality,
+  evaluateGlbPerformance,
   evaluateSpriteQuality,
   rasterizeTexture,
   spriteInspectSheetPng,
@@ -39,47 +42,75 @@ const auditAsset = (asset: Prepared): AuditReport => {
   });
 };
 
+const inspectModelPerformance = (asset: Prepared, modelId: string) => {
+  if (asset.product?.kind !== 'model' || !asset.project) return undefined;
+  try {
+    const bundle = compileProjectBundle(asset.project, { target: 'glb', modelPath: modelId });
+    const glb = bundle.files.find((f) => f.kind === 'binary' && f.role === 'model');
+    if (!glb || glb.kind !== 'binary') return undefined;
+    const perfKind = asset.product.model.profile === 'creature' ? 'creature' : 'prop';
+    return evaluateGlbPerformance(glb.data, perfKind);
+  } catch {
+    return undefined;
+  }
+};
+
+const inspectStructurePerformance = (
+  structure: Extract<NonNullable<Prepared['product']>, { kind: 'structure' }>['structure'],
+) => {
+  const bytes = buildStructureGlbBytes(structure, { encoding: 'optimized' });
+  const kind = structure.grid.size[0] * structure.grid.size[2] > 900 ? 'compound' : 'structure';
+  return evaluateGlbPerformance(bytes, kind);
+};
+
 const inspectDocument = (
   asset: Prepared,
   d: NonNullable<Prepared['document']>,
   summary: Record<string, unknown>,
-): unknown => ({
-  ...summary,
-  kind: asset.kind,
-  revision: asset.revision,
-  declarations: asset.declarations,
-  nodes: Object.values(d.scene.nodes),
-  textures: Object.values(d.textures).map((t) => ({
-    id: t.id,
-    name: t.name,
-    width: t.width,
-    height: t.height,
-  })),
-  animations: Object.values(d.animations),
-  settings: d.settings,
-  ...(asset.product?.kind === 'model' ? { audit: auditAsset(asset) } : {}),
-  ...(asset.product?.kind === 'structure'
-    ? {
-        structure: {
-          size: asset.product.structure.grid.size,
-          density: asset.product.structure.grid.density,
-          palette: asset.product.structure.grid.states,
-          customAssets: Object.keys(asset.product.structure.customModels),
-          floors: asset.product.structure.grid.floors,
-          rooms: asset.product.structure.grid.rooms,
-          openings: asset.product.structure.grid.openings,
-          sockets: asset.product.structure.grid.sockets,
-          semanticStats: asset.product.structure.grid.semanticStats,
-          playableMeta: {
-            zoneCount: asset.product.structure.playableMeta.zones.length,
-            lightCount: asset.product.structure.playableMeta.lights.length,
-            interactableCount: asset.product.structure.playableMeta.interactables.length,
+): unknown => {
+  const modelPerf =
+    asset.product?.kind === 'model' ? inspectModelPerformance(asset, d.id) : undefined;
+  return {
+    ...summary,
+    kind: asset.kind,
+    revision: asset.revision,
+    declarations: asset.declarations,
+    nodes: Object.values(d.scene.nodes),
+    textures: Object.values(d.textures).map((t) => ({
+      id: t.id,
+      name: t.name,
+      width: t.width,
+      height: t.height,
+    })),
+    animations: Object.values(d.animations),
+    settings: d.settings,
+    ...(asset.product?.kind === 'model'
+      ? { audit: auditAsset(asset), ...(modelPerf ? { performance: modelPerf } : {}) }
+      : {}),
+    ...(asset.product?.kind === 'structure'
+      ? {
+          structure: {
+            size: asset.product.structure.grid.size,
+            density: asset.product.structure.grid.density,
+            palette: asset.product.structure.grid.states,
+            customAssets: Object.keys(asset.product.structure.customModels),
+            floors: asset.product.structure.grid.floors,
+            rooms: asset.product.structure.grid.rooms,
+            openings: asset.product.structure.grid.openings,
+            sockets: asset.product.structure.grid.sockets,
+            semanticStats: asset.product.structure.grid.semanticStats,
+            playableMeta: {
+              zoneCount: asset.product.structure.playableMeta.zones.length,
+              lightCount: asset.product.structure.playableMeta.lights.length,
+              interactableCount: asset.product.structure.playableMeta.interactables.length,
+            },
           },
-        },
-        audit: asset.product.structure.audit,
-      }
-    : {}),
-});
+          audit: asset.product.structure.audit,
+          performance: inspectStructurePerformance(asset.product.structure),
+        }
+      : {}),
+  };
+};
 
 const toSpriteRaster = (s: NonNullable<Prepared['sprite']>): CanonicalTextureRaster => ({
   width: s.receipt.width,

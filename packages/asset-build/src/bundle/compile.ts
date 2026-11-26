@@ -5,6 +5,7 @@ import {
   compileDirectoryWorkspace,
   encodeCanonicalPng,
   evaluateAssetQuality,
+  evaluateGlbPerformance,
   evaluateSpriteQuality,
   exportProductionProjectResolved,
   exportStructureGltfResolved,
@@ -13,6 +14,7 @@ import {
   openAssetProject,
   rasterizeTexture,
   type ExportAdapterInput,
+  type GlbPerformanceMetrics,
 } from '@ashfox/engine-core';
 import {
   BuildFailure,
@@ -163,7 +165,10 @@ const compileStructureFiles = async (
   return artifacts;
 };
 
-const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
+const buildProductMetadata = (
+  product: CompiledProduct,
+  performance?: GlbPerformanceMetrics,
+): AssetMetadata => {
   if (product.kind === 'sprite')
     return { width: product.sprite.receipt.width, height: product.sprite.receipt.height };
   if (product.kind === 'structure')
@@ -174,6 +179,7 @@ const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
       zoneCount: product.structure.playableMeta.zones.length,
       lightCount: product.structure.playableMeta.lights.length,
       interactableCount: product.structure.playableMeta.interactables.length,
+      ...(performance ? { performance } : {}),
     };
   if (product.kind === 'model')
     return {
@@ -181,6 +187,7 @@ const buildProductMetadata = (product: CompiledProduct): AssetMetadata => {
         name: clip.name,
         durationSeconds: clip.durationSeconds,
       })),
+      ...(performance ? { performance } : {}),
     };
   return {
     variants: product.sounds.map((sound) => ({
@@ -236,6 +243,35 @@ const compileExportFiles = async (
   return compileModelFiles(target, product, buildKey, key, projects, remaining);
 };
 
+const evaluateTargetGlbPerformance = (
+  target: ExportTarget,
+  product: CompiledProduct,
+  files: readonly Artifact[],
+): GlbPerformanceMetrics | undefined => {
+  if (target.format !== 'glb' || (product.kind !== 'model' && product.kind !== 'structure')) {
+    return undefined;
+  }
+  const glb = files.find((file) => file.path.endsWith('.glb'));
+  if (!glb) return undefined;
+  const perfKind =
+    product.kind === 'structure'
+      ? product.structure.grid.size[0] * product.structure.grid.size[2] > 900
+        ? 'compound'
+        : 'structure'
+      : product.model.profile === 'creature'
+        ? 'creature'
+        : 'prop';
+  const report = evaluateGlbPerformance(glb.bytes, perfKind);
+  if (target.encoding === 'optimized' && !report.passed) {
+    throw new BuildFailure(
+      'quality.gate',
+      `GLB "${target.name}" exceeded ${perfKind} performance budget: ${report.violations.map((v) => v.message).join(' ')}`,
+      3,
+    );
+  }
+  return report.metrics;
+};
+
 const compileExportTarget = async (
   target: ExportTarget,
   compiled: CheckedWorkspace,
@@ -255,6 +291,7 @@ const compileExportTarget = async (
     projects,
     remaining,
   );
+  const performance = evaluateTargetGlbPerformance(target, product, files);
   const uses = remaining.get(key)! - 1;
   remaining.set(key, uses);
   if (uses === 0) projects.delete(key);
@@ -271,7 +308,7 @@ const compileExportTarget = async (
     kind: product.kind,
     directory: target.directory,
     files: records,
-    metadata: buildProductMetadata(product),
+    metadata: buildProductMetadata(product, performance),
   };
 };
 

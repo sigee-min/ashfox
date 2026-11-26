@@ -59,31 +59,37 @@ export const sealObservation = (input: SourceInput): Snapshot => {
   return readSingleSnapshot(resolved);
 };
 
+const prepareSprite = (
+  compiled: ReturnType<typeof checkSnapshot>,
+  product: Extract<ReturnType<typeof checkSnapshot>['products'][number], { kind: 'sprite' }>,
+  products: Prepared['products'],
+  files: Prepared['files'],
+): Prepared => ({
+  kind: 'sprite',
+  revision: compiled.sourceHash,
+  declarations: product.declarations,
+  products,
+  files,
+  sprite: {
+    profile: product.sprite.profile,
+    png: product.sprite.png,
+    rgba: product.sprite.raster.rgba.copy(),
+    receipt: product.sprite.receipt,
+    evidence: product.sprite.evidence,
+    telemetry: product.sprite.telemetry,
+    stages: {
+      silhouette: encodeCanonicalPng(product.sprite.stages.silhouette),
+      shade: encodeCanonicalPng(product.sprite.stages.shade),
+      grain: encodeCanonicalPng(product.sprite.stages.grain),
+    },
+  },
+});
+
 export const prepare = (snapshot: Snapshot): Prepared => {
   const compiled = checkSnapshot(snapshot),
     product = compiled.products[0],
     products = compiled.products.map((entry) => ({ kind: entry.kind, entry: entry.entry }));
-  if (product.kind === 'sprite')
-    return {
-      kind: 'sprite',
-      revision: compiled.sourceHash,
-      declarations: product.declarations,
-      products,
-      files: snapshot.files,
-      sprite: {
-        profile: product.sprite.profile,
-        png: product.sprite.png,
-        rgba: product.sprite.raster.rgba.copy(),
-        receipt: product.sprite.receipt,
-        evidence: product.sprite.evidence,
-        telemetry: product.sprite.telemetry,
-        stages: {
-          silhouette: encodeCanonicalPng(product.sprite.stages.silhouette),
-          shade: encodeCanonicalPng(product.sprite.stages.shade),
-          grain: encodeCanonicalPng(product.sprite.stages.grain),
-        },
-      },
-    };
+  if (product.kind === 'sprite') return prepareSprite(compiled, product, products, snapshot.files);
   if (product.kind === 'structure')
     return {
       kind: 'structure',
@@ -115,6 +121,7 @@ export const prepare = (snapshot: Snapshot): Prepared => {
     declarations: product.declarations,
     products,
     product,
+    project: opened.project,
     document: opened.project.document,
     files: snapshot.files,
   };

@@ -1,5 +1,6 @@
 import type {
   AssetDeclarations,
+  AssetProject,
   ProjectDocument,
   DirectoryProduct,
   DirectoryFile,
@@ -22,6 +23,7 @@ export interface Prepared {
   }[];
   readonly files: readonly DirectoryFile[];
   readonly product?: DirectoryProduct;
+  readonly project?: AssetProject;
   readonly document?: ProjectDocument;
   readonly sprite?: {
     readonly profile: SpriteProfile;

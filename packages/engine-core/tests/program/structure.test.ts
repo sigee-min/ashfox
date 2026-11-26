@@ -27,9 +27,8 @@ const walkWorkspaceFiles = (rootDir: string, base = ''): DirectoryFile[] => {
     const rel = base ? `${base}/${entry.name}` : entry.name;
     const full = path.join(rootDir, entry.name);
     if (entry.isDirectory()) out.push(...walkWorkspaceFiles(full, rel));
-    else if (entry.name.endsWith('.ashfox')) {
+    else if (entry.name.endsWith('.ashfox'))
       out.push({ path: rel, source: fs.readFileSync(full, 'utf8') });
-    }
   }
   return out;
 };
@@ -104,10 +103,7 @@ const testParserAndSemanticDsl = (): void => {
     'utf8',
   );
   const sem = parseStructureSource(semanticSrc, 'medieval_cottage.ashfox');
-  assert.equal(sem.kind, 'structure');
-  assert.equal(sem.density, 2);
-  assert.equal(sem.seed, 101);
-  assert.equal(sem.params.w, 15);
+  assert.equal([sem.kind, sem.density, sem.seed, sem.params.w].join(','), 'structure,2,101,15');
   assert.equal(sem.palette.cobble?.kind, 'mix');
   assert.ok(sem.ops.some((op) => op.op === 'floor'));
   assert.ok(sem.ops.some((op) => op.op === 'staircase'));
@@ -289,15 +285,19 @@ structure s {
     const metaFile = bundle.files.find((f) => f.path === 's.structure.json');
     assert.ok(glbFile?.kind === 'binary' && metaFile?.kind === 'json');
     const gltf = (await validateGltfBinary(glbFile.data, req)) as {
-      meshes: unknown[];
-      nodes: { mesh?: number }[];
+      accessors?: { count: number }[];
+      nodes: {
+        extensions?: { EXT_mesh_gpu_instancing?: { attributes: { TRANSLATION: number } } };
+      }[];
     };
-    const propMeshCounts = new Map<number, number>();
-    for (const node of gltf.nodes) {
-      if (node.mesh !== undefined)
-        propMeshCounts.set(node.mesh, (propMeshCounts.get(node.mesh) ?? 0) + 1);
-    }
-    assert.ok([...propMeshCounts.values()].some((count) => count >= 3));
+    const instanced = gltf.nodes.map(
+      (n) => n.extensions?.EXT_mesh_gpu_instancing?.attributes.TRANSLATION,
+    );
+    const maxInst = Math.max(
+      0,
+      ...instanced.map((i) => (i === undefined ? 0 : (gltf.accessors?.[i]?.count ?? 0))),
+    );
+    assert.ok(maxInst >= 3, `expected >= 3 GPU-instanced props, got ${maxInst}`);
   }
 };
 
@@ -489,7 +489,6 @@ const main = async (): Promise<void> => {
   testCanonicalWorkspaceShowcases();
   console.log('ashfox structure compiler v2 tests ok');
 };
-
 const pending = main().catch((err) => {
   console.error(err);
   process.exit(1);

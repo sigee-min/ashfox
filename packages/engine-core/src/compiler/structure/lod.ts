@@ -291,7 +291,7 @@ const emitQuads = (
     if (spec ? nv > 0 && ctx.descs[nv]!.solidOpaque : !isExt(ctx, 0, own, nx, ny, nz)) continue;
     const sh = shOf(ctx, x, y, z, dir, layer === 'emissive', false);
     fillCols(ctx, tile, sh.colors);
-    if (spec) writeSpecBoxUv(dir, spec, x, y, z, ctx.uvs);
+    if (spec) writeSpecBoxUv(dir, spec, ctx.uvs);
     else writeQuadUv(ctx.uvs, 0, 0, 0.5, 0.5);
     pushLodQuad(ctx, batchFor(ctx, layer, tile), dir, ctx.cols, sh.flip);
     count += 1;

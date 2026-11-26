@@ -17,7 +17,20 @@ import { snapshotExportData } from './dataSnapshot';
 
 export interface StructureGltfOptions {
   readonly encoding?: 'portable' | 'optimized';
+  readonly includeLods?: boolean;
 }
+
+export const buildStructureGlbBytes = (
+  product: StructureProduct,
+  options: StructureGltfOptions = {},
+): Uint8Array => {
+  const encoding = options.encoding ?? 'optimized';
+  const { compiled } = buildStructureGltf(product, {
+    quantize: encoding !== 'portable',
+    includeLods: options.includeLods,
+  });
+  return buildGlb(compiled.document, compiled.binary);
+};
 
 const isStructureProduct = (value: StructureProduct | ProjectDocument): value is StructureProduct =>
   'bakedMesh' in value && 'playableMeta' in value;
@@ -46,9 +59,11 @@ const exportBakedStructureBundle = async (
   modelPath: string,
   buildKey: string,
   encoding: 'portable' | 'optimized',
+  includeLods?: boolean,
 ): Promise<ExportBundle> => {
   const { compiled, textures } = buildStructureGltf(product, {
     quantize: encoding !== 'portable',
+    includeLods,
   });
   const finalGltf = encoding === 'portable' ? compiled : await compressGltfWithMeshopt(compiled);
   const docStub = createProjectDocument({
@@ -93,7 +108,7 @@ export async function exportStructureGltfResolved(
 ): Promise<ExportBundle> {
   const encoding = options.encoding ?? 'optimized';
   if (isStructureProduct(input)) {
-    return exportBakedStructureBundle(input, modelPath, buildKey, encoding);
+    return exportBakedStructureBundle(input, modelPath, buildKey, encoding, options.includeLods);
   }
   const snapshot = snapshotExportData(
     input,
@@ -108,6 +123,7 @@ export async function exportStructureGltfResolved(
   const textures = new Map(Object.values(snapshot.textures).map((t) => [t.source.key, t]));
   return exportGltfResolved(adapted, build, {
     encoding,
+    includeLods: options.includeLods,
     resolveBlob: async (ref) => {
       const texture = textures.get(ref.key);
       return texture

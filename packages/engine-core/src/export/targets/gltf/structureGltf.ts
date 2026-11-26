@@ -21,7 +21,9 @@ import type {
 } from './contract';
 import type { GltfPrimitiveData } from './data';
 import { createGltfMaterial } from './exporter';
+import { attachStructureLods } from './lodEmit';
 import { compileQuantizedGltfPrimitive } from './primitive';
+import { buildPropNode } from './propNode';
 import {
   appendNumbers,
   gltfNodeGeometryRotation,
@@ -29,7 +31,6 @@ import {
   transformPrimitiveByWorldMat4,
 } from './rigid';
 import { computeWorldMatrices, restTranslation } from './scene';
-import { quaternionFromEuler, rotateVec3ByQuaternion } from './spatial';
 import { computePositionsBounds, type PositionBounds, type UvTransform } from './vertexLayout';
 
 const GLTF_UNIT_SCALE = 1 / 16;
@@ -288,71 +289,6 @@ const encodeGltfTextures = (ordered: readonly TextureAsset[], writer: GltfBinary
   return { images, samplers, texIndexById };
 };
 
-const emitInstancedPropNode = (
-  assetKey: string,
-  meshIdx: number,
-  bounds: PositionBounds,
-  group: readonly StructureProduct['bakedMesh']['instances'][number][],
-  ctx: GltfBuildCtx,
-): GltfNode => {
-  const translations: number[] = [];
-  const rotations: number[] = [];
-  const scales: number[] = [];
-  const quantize = ctx.writer.isQuantized;
-  for (const inst of group) {
-    const rotQ =
-      inst.rotation !== 0 ? quaternionFromEuler([0, inst.rotation, 0]) : ([0, 0, 0, 1] as const);
-    const offset = quantize
-      ? rotateVec3ByQuaternion([...bounds.center], rotQ)
-      : ([0, 0, 0] as const);
-    translations.push(
-      inst.translation[0] + offset[0],
-      inst.translation[1] + offset[1],
-      inst.translation[2] + offset[2],
-    );
-    rotations.push(rotQ[0], rotQ[1], rotQ[2], rotQ[3]);
-    if (quantize) scales.push(bounds.halfExtent[0], bounds.halfExtent[1], bounds.halfExtent[2]);
-  }
-  ctx.usesGpuInstancing = true;
-  return {
-    name: `props_${assetKey}`,
-    mesh: meshIdx,
-    extensions: {
-      EXT_mesh_gpu_instancing: {
-        attributes: {
-          TRANSLATION: ctx.writer.addFloatAccessor(translations, 3, false),
-          ROTATION: ctx.writer.addFloatAccessor(rotations, 4, false),
-          ...(quantize ? { SCALE: ctx.writer.addFloatAccessor(scales, 3, false) } : {}),
-        },
-      },
-    },
-  };
-};
-
-const emitSinglePropNode = (
-  meshIdx: number,
-  bounds: PositionBounds,
-  inst: StructureProduct['bakedMesh']['instances'][number],
-  propNum: number,
-  quantize: boolean,
-): GltfNode => {
-  const rotQ = inst.rotation !== 0 ? quaternionFromEuler([0, inst.rotation, 0]) : undefined;
-  const offset = quantize
-    ? rotateVec3ByQuaternion([...bounds.center], rotQ ?? [0, 0, 0, 1])
-    : ([0, 0, 0] as const);
-  return {
-    name: `prop_${propNum}`,
-    mesh: meshIdx,
-    translation: [
-      inst.translation[0] + offset[0],
-      inst.translation[1] + offset[1],
-      inst.translation[2] + offset[2],
-    ],
-    ...(rotQ ? { rotation: rotQ } : {}),
-    ...(quantize ? { scale: [...bounds.halfExtent] } : {}),
-  };
-};
-
 const appendCustomInstances = (
   product: StructureProduct,
   modelTexRemap: ReadonlyMap<CompiledModel, ReadonlyMap<string, string>>,
@@ -360,7 +296,8 @@ const appendCustomInstances = (
   meshes: GltfMesh[],
   nodes: GltfNode[],
   children: number[],
-): void => {
+): ReadonlyMap<string, PositionBounds> => {
+  const customBounds = new Map<string, PositionBounds>();
   const byKey = new Map<string, StructureProduct['bakedMesh']['instances'][number][]>();
   for (const inst of product.bakedMesh.instances) {
     if (!product.customModels[inst.assetKey]) continue;
@@ -372,21 +309,16 @@ const appendCustomInstances = (
     const model = product.customModels[assetKey]!;
     const baked = bakeCustomModelMesh(assetKey, model, modelTexRemap.get(model)!, ctx);
     if (baked.mesh.primitives.length === 0) continue;
+    customBounds.set(assetKey, baked.bounds);
     const meshIdx = meshes.length;
     meshes.push(baked.mesh);
     children.push(nodes.length);
-    nodes.push(
-      group.length >= 2
-        ? emitInstancedPropNode(assetKey, meshIdx, baked.bounds, group, ctx)
-        : emitSinglePropNode(
-            meshIdx,
-            baked.bounds,
-            group[0]!,
-            children.length,
-            ctx.writer.isQuantized,
-          ),
-    );
+    const name = group.length >= 2 ? `props_${assetKey}` : `prop_${children.length}`;
+    const built = buildPropNode(name, meshIdx, baked.bounds, group, ctx.writer);
+    if (built.instanced) ctx.usesGpuInstancing = true;
+    nodes.push(built.node);
   }
+  return customBounds;
 };
 
 const collectStructureExtensions = (ctx: GltfBuildCtx) => {
@@ -439,7 +371,7 @@ const assembleStructureGltfDocument = (
 
 export const buildStructureGltf = (
   product: StructureProduct,
-  options: { readonly quantize?: boolean } = {},
+  options: { readonly quantize?: boolean; readonly includeLods?: boolean } = {},
 ): BuiltStructureGltf => {
   const writer = new GltfBinaryWriter(options.quantize ?? true);
   const { textures, modelTexRemap } = collectUsedTextures(product);
@@ -466,7 +398,7 @@ export const buildStructureGltf = (
         : {}),
     });
   }
-  appendCustomInstances(product, modelTexRemap, ctx, meshes, nodes, children);
+  const customBounds = appendCustomInstances(product, modelTexRemap, ctx, meshes, nodes, children);
   if (children.length > 0) nodes[0]!.children = children;
   const binary = writer.toUint8Array();
   const document = assembleStructureGltfDocument(
@@ -479,5 +411,10 @@ export const buildStructureGltf = (
     images,
     samplers,
   );
-  return { compiled: { document, binary, textureFiles: [] }, textures };
+  const base: CompiledGltf = { document, binary, textureFiles: [] };
+  const compiled =
+    options.includeLods !== false && product.lodLevels
+      ? attachStructureLods(base, product, { quantize: writer.isQuantized, customBounds })
+      : base;
+  return { compiled, textures };
 };

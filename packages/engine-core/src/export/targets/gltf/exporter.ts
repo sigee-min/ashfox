@@ -12,6 +12,7 @@ import {
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf, GltfBuildOptions } from './build';
 import { createGltfBundle } from './bundle';
+import { attachModelLods } from './lodEmit';
 import { compressGltfWithMeshopt } from './meshopt';
 import {
   orderedTextures,
@@ -329,7 +330,7 @@ export const exportGltf = (
     errorMessage: 'glTF 2.0 export validation failed.',
   });
   const validatedDocument = validation.document;
-  const compiled = buildGltf(validatedDocument);
+  const compiled = attachModelLods(buildGltf(validatedDocument), validatedDocument);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };
 
@@ -351,10 +352,13 @@ export const exportGltfResolved = async (
     profile.imageStorage === 'external'
       ? undefined
       : await resolveGltfTextures(validatedDocument, options.resolveBlob);
+  const quantize = encoding !== 'portable';
   const plain = buildGltf(validatedDocument, {
     resolvedTextures,
-    quantize: encoding !== 'portable',
+    quantize,
   });
-  const compiled = encoding === 'portable' ? plain : await compressGltfWithMeshopt(plain);
+  const withLod =
+    options.includeLods === false ? plain : attachModelLods(plain, validatedDocument, { quantize });
+  const compiled = encoding === 'portable' ? withLod : await compressGltfWithMeshopt(withLod);
   return createGltfBundle(validatedDocument, build, compiled, validation.findings);
 };

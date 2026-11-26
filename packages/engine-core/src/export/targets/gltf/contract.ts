@@ -107,6 +107,7 @@ export interface GltfNodeExtras {
   visible?: boolean;
   ashfoxTags?: string[];
   ashfoxCanonicalFrame?: BoneNode['canonicalFrame'];
+  MSFT_screencoverage?: number[];
   ashfox?: {
     lod?: GltfAshfoxLodExtras;
   };
