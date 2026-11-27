@@ -1,0 +1,29 @@
+ashfox 1
+module storage {
+  palette {
+    chest_s = "minecraft:chest[facing=south]";
+    barrel = "minecraft:barrel[facing=up]";
+    spruce_plank = "minecraft:spruce_planks";
+    oak_slab = "minecraft:oak_slab[type=bottom]";
+    craft = "minecraft:crafting_table";
+  }
+
+  export prefab BarrelStack {
+    set { at = (0b, 0b, 0b); block = barrel; }
+    set { at = (1b, 0b, 0b); block = barrel; }
+    set { at = (0b, 1b, 0b); block = barrel; }
+  }
+
+  export prefab ChestRack {
+    set { at = (0b, 0b, 0b); block = chest_s; }
+    set { at = (1b, 0b, 0b); block = chest_s; }
+    box { from = (0b, 1b, 0b); to = (1b, 1b, 0b); block = oak_slab; }
+  }
+
+  export prefab PantryShelf {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = spruce_plank; }
+    set { at = (0b, 1b, 0b); block = barrel; }
+    set { at = (1b, 1b, 0b); block = craft; }
+    set { at = (2b, 1b, 0b); block = chest_s; }
+  }
+}

@@ -1,6 +1,7 @@
 import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
 import type { DirectoryFile, DirectoryWorkspace } from '../../project/directory/contract';
 import { directoryPath, isDirectorySource } from '../../project/directory/read';
+import { isStdLibraryLogicalPath } from '../../project/stdlib/resolve';
 import type { WorkspaceEntrySelector } from '../../project/workspace';
 
 export type DirectoryEntry = { readonly entry: WorkspaceEntrySelector; readonly path: string };
@@ -37,10 +38,10 @@ export const declaredFiles = (
   );
   const seen = new Set<string>();
   for (const f of files) {
+    const isStd = isStdLibraryLogicalPath(f.path);
     const accepted =
       directoryPath(f.path) &&
-      isDirectorySource(config, f.path) &&
-      declared.has(f.path) &&
+      (isStd || (isDirectorySource(config, f.path) && declared.has(f.path))) &&
       !seen.has(f.path.toLowerCase());
     if (!accepted) throw new Error('Undeclared, ignored or duplicate source: ' + f.path);
     seen.add(f.path.toLowerCase());

@@ -1,0 +1,23 @@
+ashfox 1
+module shockwave {
+  export palette KineticWave {
+    core = #fffbe8;
+    mid = #e0b858;
+    edge = #876829;
+    smoke = #363538;
+  }
+
+  export palette EarthquakeRing {
+    core = #fff0d6;
+    mid = #cf8c3c;
+    edge = #73441d;
+    smoke = #382c26;
+  }
+
+  export palette SonicPulse {
+    core = #e6f7ff;
+    mid = #70c7eb;
+    edge = #2e6799;
+    smoke = #233045;
+  }
+}

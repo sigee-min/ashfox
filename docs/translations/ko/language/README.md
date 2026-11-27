@@ -12,14 +12,15 @@ Ashfox DSL은 모델·픽셀 텍스처·사운드·구조물의 원본 형식입
 | [모델 텍스처](textures.md) | 표면 계약, 아틀라스 차트, 팔레트, 스탬프, 픽셀 좌표 |
 | [스프라이트 문법](sprites.md) | 네이티브 레코드, 재사용 형상, 재질, 레이어, 검증 |
 | [사운드 문법](sounds.md) | 리터럴 레코드, 소스 변형, 필드 범위, 합성 동작 |
+| [VFX 문법](vfx.md) | 기하 VFX 프리미티브, 절차적 텍스처, 디졸브 스트립, 파티클 이미터 |
 | [구조물 문법](structures.md) | Minecraft `.nbt`·Unity GLB 건축물, 팔레트, 프리팹, 지붕, 단면 보기 |
 | [훅과 스키마](hooks.md) | 모듈화된 `schema`, `anchor`, `volume`, `cue`, `meta`, `zone`, `.hooks.json`, 엔진 바인딩 |
 
-여러 에셋을 다루는 프로젝트는 [워크스페이스 설정](../guides/workspace.md)을 참고하세요. 별도의 JSON 계약이며 모든 원본을 감싸야 하는 래퍼는 아닙니다. 완전한 제작 과정은 [모델](../guides/models.md), [스프라이트](../guides/sprites.md), [사운드](../guides/sounds.md)에 있습니다.
+여러 에셋을 다루는 프로젝트는 [워크스페이스 설정](../guides/workspace.md)을 참고하세요. 별도의 JSON 계약이며 모든 원본을 감싸야 하는 래퍼는 아닙니다. 내장 표준 라이브러리(`import "std/..."`, 목록 조회 `ashfox library std list`)를 직접 가져오거나 `ashfox docs <topic>`으로 오프라인 문법 가이드를 열람할 수 있습니다. 완전한 제작 과정은 [모델](../guides/models.md), [스프라이트](../guides/sprites.md), [VFX](../guides/vfx.md), [사운드](../guides/sounds.md)에 있습니다.
 
 ## 소스 형태
 
-모든 파일은 `ashfox 1` 헤더로 시작하고 최상위 단위 하나를 포함합니다. 헤더는 네 종류 에셋 모두의 통합 언어 버전을 식별합니다.
+모든 파일은 `ashfox 1` 헤더로 시작하고 최상위 단위 하나를 포함합니다. 헤더는 다섯 종류 에셋 모두의 통합 언어 버전을 식별합니다.
 
 | 최상위 단위 | 의미 | 허용 내용 |
 | --- | --- | --- |
@@ -27,6 +28,7 @@ Ashfox DSL은 모델·픽셀 텍스처·사운드·구조물의 원본 형식입
 | `module Name { … }` | 재사용 모델 선언 | import와 공개·비공개 모델 선언 |
 | `sprite name { … }` | 픽셀 스프라이트 하나 | import, 재사용 스프라이트 선언, profile, canvas, palette, layers |
 | 스프라이트에서 쓰는 `module name { … }` | 재사용 스프라이트 선언 | import와 공개 mask·material·stamp |
+| `vfx name { … }` | 스타일라이즈드 VFX 하나 | import, duration, fps, loop, palette, 기하 `element`, `voxel_burst` `emitter` |
 | `sound name { … }` | 효과음 하나 | 오디오 속성, 공간, 보이스, 시퀀스, 변형, 루프·마스터링 설정 |
 | `structure id { … }` | Minecraft·GLB 건축물 | 블록 상태 팔레트, 커스텀 `.ashfox` 소품, 프리팹, 지붕, 단면·실내 연산 |
 | 구조물에서 쓰는 `module id { … }` | 재사용 실내 가구 | 선택적 팔레트와 `export prefab` 모듈 |

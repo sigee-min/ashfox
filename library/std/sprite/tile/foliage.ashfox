@@ -1,0 +1,27 @@
+ashfox 1
+module foliage {
+  export material canopy_green {
+    ramp { mode = auto; base = #4f9c44; preset = organic; }
+  }
+  export material meadow_grass {
+    ramp { mode = auto; base = #68ae3e; preset = organic; }
+  }
+  export material deep_fern {
+    ramp { mode = auto; base = #396e35; preset = organic; }
+  }
+  export material blossom_pink {
+    ramp { mode = auto; base = #db7698; preset = vivid; }
+  }
+  export material autumn_amber {
+    ramp { mode = auto; base = #d98236; preset = warm; }
+  }
+
+  export mask leaf_cluster {
+    rows = [
+      ".11.11.",
+      "1111111",
+      "1111111",
+      ".11111."
+    ];
+  }
+}

@@ -3,6 +3,7 @@ import {
   validateAssetDeclarations,
   type AssetDeclarations,
 } from '../../project/directory/declarations';
+import { buildStdPackageEntry, isStdLibraryLogicalPath } from '../../project/stdlib/resolve';
 import { collectStructureOnlyCustomPaths } from './structure';
 import type { DirectoryWorkspaceCache } from './cache';
 import { sealWorkspaceCandidate } from '../../project/workspace/seal';
@@ -63,6 +64,7 @@ const modelManifest = (
   config: DirectoryWorkspace,
   output: ModelCompileOutput,
   excludedCustom: ReadonlySet<string>,
+  sources: readonly DirectoryFile[],
 ) => {
   const modelPaths = new Set(output.modelEntries.map((e) => e.path));
   const packages = config.packages.map((p) => ({
@@ -76,7 +78,14 @@ const modelManifest = (
       }),
     },
   }));
-  return { format: 'ashfox-workspace' as const, version: 1 as const, packages };
+  const stdPkg = packages.some((p) => p.name === 'std')
+    ? null
+    : buildStdPackageEntry(sources.map((f) => f.path));
+  return {
+    format: 'ashfox-workspace' as const,
+    version: 1 as const,
+    packages: stdPkg ? [...packages, stdPkg] : packages,
+  };
 };
 
 const pushModelProducts = (
@@ -142,7 +151,10 @@ export const compileModels = (
 ): ModelCompileFailure | null => {
   if (!output.modelEntries.length) {
     const orphan = files.some(
-      (f) => !output.nonModelPaths.has(f.path) && !output.structureCustomPaths.has(f.path),
+      (f) =>
+        !output.nonModelPaths.has(f.path) &&
+        !output.structureCustomPaths.has(f.path) &&
+        !isStdLibraryLogicalPath(f.path),
     );
     if (orphan) throw new Error('Every declared module must be reachable');
     return null;
@@ -164,16 +176,19 @@ export const compileModels = (
     ...output,
     nonModelPaths: new Set([...output.nonModelPaths].filter((p) => !modelReachable.has(p))),
   };
-  const manifest = modelManifest(config, effectiveOutput, excludedCustom);
+  const sources = files.filter(
+    (f) =>
+      !effectiveOutput.nonModelPaths.has(f.path) &&
+      !excludedCustom.has(f.path) &&
+      (!isStdLibraryLogicalPath(f.path) || modelReachable.has(f.path)),
+  );
+  const manifest = modelManifest(config, effectiveOutput, excludedCustom, sources);
   const lock = {
     format: 'ashfox-lock' as const,
     version: 1 as const,
     compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
     packages: [],
   };
-  const sources = files.filter(
-    (f) => !effectiveOutput.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
-  );
   const sealed = sealWorkspaceCandidate(
     { files: [], manifest, lock },
     sources,

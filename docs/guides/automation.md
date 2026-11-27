@@ -59,9 +59,8 @@ build identity. OGG adds the encoder fingerprint. Rebuilding in a clean output
 folder with the same profile should reproduce the bundle hash. Equality across
 different Node/V8/OS/architecture/encoder profiles is not promised.
 
-There is no computation cache or watch mode. An existing immutable result is
-verified after recomputation. Use a filesystem watcher or your build system to
-invoke the CLI, without overlapping writers to the same output directories.
+For interactive editing, `ashfox dev` watches sources and refreshes a live Three.js viewer.
+In CI and release pipelines, run `check`/`build` without overlapping writers to the same output directories.
 Concurrent builds targeting one destination fail with exit code 4.
 
 ## Deployment boundary

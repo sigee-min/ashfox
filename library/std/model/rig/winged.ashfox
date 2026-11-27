@@ -1,0 +1,28 @@
+ashfox 1
+module winged {
+  export rig contract WingedRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint torso { parent = root; role = body; channels = (position, rotation); }
+    joint head { parent = torso; role = head; channels = rotation; }
+    joint left_wing { parent = torso; role = wing; channels = rotation; }
+    joint left_wing_tip { parent = left_wing; role = wing; channels = rotation; }
+    joint right_wing { parent = torso; role = wing; channels = rotation; }
+    joint right_wing_tip { parent = right_wing; role = wing; channels = rotation; }
+    joint tail { parent = torso; role = tail; channels = rotation; }
+    joint left_leg { parent = torso; role = leg; channels = rotation; }
+    joint right_leg { parent = torso; role = leg; channels = rotation; }
+  }
+
+  export skeleton WingedSkeleton implements WingedRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind torso { parent_origin = (0u, 12u, 0u); }
+    bind head { parent_origin = (0u, 5u, -5u); }
+    bind left_wing { parent_origin = (-4u, 4u, -1u); }
+    bind left_wing_tip { parent_origin = (-8u, 0u, 1u); }
+    bind right_wing { parent_origin = (4u, 4u, -1u); }
+    bind right_wing_tip { parent_origin = (8u, 0u, 1u); }
+    bind tail { parent_origin = (0u, -1u, 8u); }
+    bind left_leg { parent_origin = (-2.5u, -4u, 0u); }
+    bind right_leg { parent_origin = (2.5u, -4u, 0u); }
+  }
+}

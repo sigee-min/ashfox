@@ -1,0 +1,31 @@
+ashfox 1
+module combat {
+  export schema HitboxArc : cue {
+    field arc_deg : deg(10..360) = 110deg;
+    field reach : unit = 16u;
+    field damage : float(0..1000) = 12;
+    field knockback : float(0..10) = 0.45;
+    field damage_type : enum(slash, pierce, blunt, fire, shock, arcane) = slash;
+    field trigger_time : second = 0.15s;
+  }
+
+  export schema HurtboxZone : volume {
+    field armor_scale : float(0..5) = 1.0;
+    field weakpoint : bool = false;
+    field element_resist : enum(none, fire, frost, shock, arcane) = none;
+  }
+
+  export schema ProjectileMuzzle : anchor {
+    field projectile_id : string;
+    field speed : float(0..120) = 24.0;
+    field spread_deg : deg(0..45) = 2deg;
+    field gravity : float(0..30) = 9.8;
+    field sfx : string = "";
+  }
+
+  export schema CombatStateMeta : meta {
+    field aggro_range : float(1..128) = 18.0;
+    field leash_range : float(2..256) = 40.0;
+    field attack_cooldown : second = 1.2s;
+  }
+}

@@ -10,9 +10,22 @@ import {
   openAssetProject,
   rasterizeTexture,
   validateAssetProjectExportTarget,
+  virtualLibrarySpecifierFromPath,
   type DirectoryFile,
 } from '../../src';
+
 import { classifyStructureTilePbr } from '../../src/compiler/structure/tilePbr';
+
+const loadStdLibs = (): Map<string, string> => {
+  const stdDir = path.resolve(__dirname, '../../../../library/std');
+  const out = new Map<string, string>();
+  for (const rel of fs.readdirSync(stdDir, { recursive: true }) as string[]) {
+    if (!rel.endsWith('.ashfox')) continue;
+    const spec = virtualLibrarySpecifierFromPath(`library/std/${rel.replaceAll(path.sep, '/')}`);
+    if (spec) out.set(spec, fs.readFileSync(path.join(stdDir, rel), 'utf8'));
+  }
+  return out;
+};
 
 type CompiledModelProduct = Extract<
   Extract<ReturnType<typeof compileDirectoryWorkspace>, { ok: true }>['products'][number],
@@ -346,9 +359,15 @@ const testStructureTilePbr = async (): Promise<void> => {
   assert.equal(classifyStructureTilePbr('oak_planks').materialClass, 'wood');
   assert.equal(classifyStructureTilePbr('plaster_white').materialClass, 'plaster');
 
-  const dir = path.resolve(__dirname, '../../../../examples/structure');
+  const dir = path.resolve(__dirname, '../../../../showcase');
   const cfg = fs.readFileSync(path.join(dir, '.ashfoxworkspace'), 'utf8');
-  const compiled = compileDirectoryWorkspace(cfg, walkAshfoxFiles(dir, ''));
+  const compiled = compileDirectoryWorkspace(
+    cfg,
+    walkAshfoxFiles(dir, '').filter(
+      (f) => !f.path.startsWith('dist/') && !f.path.startsWith('.ashfox'),
+    ),
+    loadStdLibs(),
+  );
   assert.equal(compiled.ok, true);
   if (!compiled.ok) return;
   const prod = compiled.products.find((p) => p.kind === 'structure');

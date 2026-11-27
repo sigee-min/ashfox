@@ -6,8 +6,8 @@ general GLB or an appropriate Minecraft exporter.
 
 ## Start from a static prop
 
-The [marker source](../../examples/minecraft/assets/models/marker.ashfox) is one complete file.
-It is also included in the [starter download](/downloads/starter.zip).
+Start from `showcase/assets/models/wall_lantern.ashfox`, `showcase/assets/models/rune_bricks.ashfox`, or the [starter download](/downloads/starter.zip).
+Inspect built-in standard-library modules with `ashfox library std list model` or `ashfox library std list core`.
 From your asset folder:
 
 ```sh
@@ -26,10 +26,10 @@ props do not need an idle animation. No workspace is required.
 | `rig contract` | Define attachment joints and allowed motion channels |
 | `skeleton` | Position joints in the rest pose |
 | `surface contract` | Define texture charts and their required coverage |
-| `surface` | Choose palette, raster detail and material behavior |
-| `component` | Create cubes/planes and bind them to bones/surfaces |
-| `motion` | Animate supported joint channels |
-| `model` assembly | Select the skeleton, components and assigned motions |
+| `surface` | Choose palette, PBR `roughness`/`metallic`, raster detail and material behavior |
+| `component` | Create `cube`, `plane`, `taper`, `wedge`, `cylinder`, and `expression_slot` geometry bound to bones/surfaces |
+| `motion` | Animate supported joint channels and facial `expression` schedules |
+| `model` assembly | Select the skeleton, components and assigned motions; auto-fit physics `colliders` from `settings.profile` |
 
 Every source begins with `ashfox 1`. File extensions are `.ashfox`.
 Model lengths use `u`, pixel dimensions use `px`, times use `s`, and angles use
@@ -41,16 +41,16 @@ for shared design variables and exact resize relationships.
 
 | Profile | Example | What it demonstrates |
 | --- | --- | --- |
-| `block` | `examples/block/rune_bricks.ashfox` | Single-cube 16×16×16 textured block without forced rotation or symmetry |
-| `block` | `examples/minecraft/assets/models/marker.ashfox` | Orthogonal stepped altar block with protected runes and bevel border |
-| `prop` | `examples/prop/lantern.ashfox` | Emissive cutout cage prop with orthogonal tiers and brass roof brackets |
-| `prop` | `examples/prop/treasure_chest/chest.ashfox` | Modular prop split across rig, surface, body, and socket-mounted clasp |
-| `creature` | `examples/griffin/workbench/main.ashfox` | Multi-module animated creature (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
-| `structure` | `examples/structure/assets/structures/medieval_cottage.ashfox` | Two-story cottage with `mix(...)` palette, shared-wall `arch`, `l_turn` stair, dormer/chimney roof, and `.structure.json` |
-| `structure` | `examples/structure/assets/structures/watchtower.ashfox` | Three-story stone watchtower with spiral stairs, recessed slits, pyramid roof, and custom rune/lantern props |
-| `structure` | `examples/structure/assets/structures/blacksmith.ashfox` | Timber-and-deepslate forge with open hearth arch, chimney soot weathering, and custom hanging sign |
-| `structure` | `examples/structure/assets/structures/tavern.ashfox` | Grand timber tavern with twin upper rooms, `u_turn` staircase, dormer gable roof, and tavern bar interior |
-| `structure` | `examples/structure/assets/structures/village_compound.ashfox` | Multi-building `compound` combining all four buildings, plaza well, lampposts, and road `socket` connectors |
+| `block` | `showcase/assets/models/rune_bricks.ashfox` | Single-cube 16×16×16 textured block without forced rotation or symmetry |
+| `prop` | `showcase/assets/models/wall_lantern.ashfox` | Emissive cutout cage prop with `taper`/`wedge` brackets and PBR metallic sheen |
+| `prop` | `showcase/assets/models/treasure_chest.ashfox` | Modular prop using `"std/model/prop/container"` and `std/core/hook/loot` hooks |
+| `creature` | `showcase/assets/models/goblin_raider.ashfox` | Biped creature built from `"std/model/rig/biped"`, `"std/model/motion/combat"`, expressions, and capsule collider |
+| `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | Compact variant swap over shared `"std/*"` modules with flame staff and VFX/sound cues |
+| `creature` | `showcase/assets/models/griffin_boss.ashfox` | Winged creature using `"std/model/rig/winged"` and secondary feather physics |
+| `creature` | `showcase/assets/models/red_fox.ashfox` | Quadruped creature using `"std/model/rig/quadruped"` and tail spring physics |
+| `structure` | `showcase/assets/structures/tavern.ashfox` | Multi-story timber tavern with furnished interior, radiosity GI, and `LootSpawn`/`DoorPortal` hooks |
+| `structure` | `showcase/assets/structures/blacksmith.ashfox` | Stone-and-timber forge with open hearth, anvil interior, and chimney embers |
+| `structure` | `showcase/assets/structures/modern_gallery.ashfox` | Modern glazed-atrium gallery with stained glass GI and contemporary display furnishings |
 
 ## Create an animated creature
 

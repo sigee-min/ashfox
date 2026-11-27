@@ -1,0 +1,43 @@
+ashfox 1
+vfx flame_cleave {
+  import "std/vfx/element/fire" as fire;
+
+  duration = 0.65s;
+  fps = 30;
+  loop = once;
+  palette = fire.EmberSolar;
+
+  preview flipbook { sheet = flipbook; background = dark; width = 512; height = 512; }
+  preview peak { time = 0.22s; background = dark; azimuth = 35; elevation = 24; width = 640; height = 480; }
+
+  element main_slash : slash_arc {
+    at = 0.08s..0.38s;
+    blend = additive;
+    radius = 7u..18u;
+    arc = -85deg..105deg;
+    pitch = 16deg;
+    crossed = true;
+    texture slash_streak { posterize = 4; bristles = 60%; seed = 11; }
+    dissolve directional_wipe { frames = 9; edge_glow = core; }
+    scale = 0.72 -> 1.08 ease_out -> 1.18;
+    alpha = 0.4 -> 1.0 snap -> 0.0 ease_in;
+  }
+
+  emitter sparks : voxel_burst {
+    at = 0.10s..0.60s;
+    seed = 42;
+    count = 28;
+    shape = cone(55deg, 3u);
+    particle = shard;
+    speed = 18u..34u;
+    life = 0.25s..0.52s;
+    gravity = -28u;
+    drag = 1.4;
+    turbulence = curl(1.8, 7u);
+    ground { y = 0u; bounce = 45%; friction = 70%; }
+    size_over_life = 1.2u -> 0.9u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.4;
+    blend = additive;
+  }
+}

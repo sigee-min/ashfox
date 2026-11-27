@@ -1,0 +1,109 @@
+{
+  "format": "ashfox-product-oracle",
+  "version": 1,
+  "domain": "vfx",
+  "toolchain": "ashfox-product-oracle:2",
+  "inputs": [
+    {
+      "input": "showcase/.ashfoxworkspace",
+      "ok": true,
+      "sourceHash": "sha256:79a3c01d95efed45c391937bb9f5d3015ca31a6764a2267b1b49aec4418752f8",
+      "products": [
+        {
+          "entry": "vfx/arcane_shockwave",
+          "kind": "vfx",
+          "glb": "589691411051522c2050baebef2776ff0d416af95dfa785632218bab308805a7",
+          "spec": "deb5de2665001831ac6d167c0e71135dfa1a46c547bbfca26b67fb52a466405c"
+        },
+        {
+          "entry": "vfx/flame_cleave",
+          "kind": "vfx",
+          "glb": "cc559db4b79b2337d290215101ead468f1a7d2cc9b5387ed63b090e0a6075136",
+          "spec": "d475b6d293d2697032f5731591b90d1eaeb85c224932b6a10033f4036270f1e6"
+        },
+        {
+          "entry": "vfx/hearth_embers",
+          "kind": "vfx",
+          "glb": "458f4c481e0e57dee39397de08403b7a1179e687bcbbd0d48c6e8fb9fb45e4c6",
+          "spec": "90bf72e97a8ce0ca268dc22d595e442bebc6ccce213c8eb505df6b8391c656f4"
+        },
+        {
+          "entry": "vfx/lightning_strike",
+          "kind": "vfx",
+          "glb": "976f386acf85eac03fe9cfa17f4746804f0f1cd539d1de397c401c34e3bb6d4a",
+          "spec": "414a2a58f08247d64497db6f6f0c4616a4f5be466686b982f9a55e3a23d1ad5e"
+        }
+      ],
+      "files": [
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.flipbook.json",
+          "sha256": "15367aaf91b8e4a140748a93b0dd7bdc9fae91fb8a6dbfb4ff4cb34f3c5b01b8"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.glb",
+          "sha256": "589691411051522c2050baebef2776ff0d416af95dfa785632218bab308805a7"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.particle.json",
+          "sha256": "c99a2796109c02a0b62860f495ce3e7b0ea92b7b575b0803ce1c2cd765bf265f"
+        },
+        {
+          "path": "assets/arcane_shockwave/arcane_shockwave.vfx.json",
+          "sha256": "f9e849bcaa0850798cd0b1afd8ffeb2d9485499e2fd82d27dad6bd1844ee087f"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.flipbook.json",
+          "sha256": "a5da3c4bae208c80d6f0136de99756614f92ae160db24c7cf38a688aac472c7f"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.glb",
+          "sha256": "cc559db4b79b2337d290215101ead468f1a7d2cc9b5387ed63b090e0a6075136"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.particle.json",
+          "sha256": "ab78f3379ef0f3f3b22286c1976f53abf316cf996d3ab1a7a91a009a815bb027"
+        },
+        {
+          "path": "assets/flame_cleave/flame_cleave.vfx.json",
+          "sha256": "137dcc7abfe8f0ec50ff9e091944f3959fdf6df4ed142d5e93b0acce19b8f05c"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.0.particle.json",
+          "sha256": "1f35dfa7f2c53271a5b4db7b2f0e836fb5968291022e42756dc0b8ea71595430"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.1.particle.json",
+          "sha256": "76e52cb48e37851ad0fb71e1dcd89d0a813c0451c275b1493883babaeac4a405"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.flipbook.json",
+          "sha256": "a56362a79e07f7ad139f6ffe1704bb1ef8670142c059f8299ec488844f44738c"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.glb",
+          "sha256": "458f4c481e0e57dee39397de08403b7a1179e687bcbbd0d48c6e8fb9fb45e4c6"
+        },
+        {
+          "path": "assets/hearth_embers/hearth_embers.vfx.json",
+          "sha256": "67c868135b5e2a552a5d5f3c128e34e6f91a79db371407361e8de57fcb9e5c1a"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.flipbook.json",
+          "sha256": "1390927ec329bd6ce8bf3aafbc828713e268f23165cd4c024e8795057adfb994"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.glb",
+          "sha256": "976f386acf85eac03fe9cfa17f4746804f0f1cd539d1de397c401c34e3bb6d4a"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.particle.json",
+          "sha256": "a77e6b27b35ffa418c7384e08e04cdf535917b0b46cc109efdd9fe5ff671df35"
+        },
+        {
+          "path": "assets/lightning_strike/lightning_strike.vfx.json",
+          "sha256": "7969a2c2dcf9ea69563146e048ffa705fb508840e9a90ff5241d3574afdfa762"
+        }
+      ]
+    }
+  ]
+}

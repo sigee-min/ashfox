@@ -11,6 +11,7 @@ import { digest, json } from '../shared/digest';
 import { contained, noLinks, safeRelative } from './paths';
 import { evaluateConfiguration } from './configuration';
 import { readStandalone } from './standalone';
+import { resolveStdLibraryFiles } from './stdlib';
 
 const STRICT_UTF8_DECODER = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
@@ -191,13 +192,14 @@ export const readSnapshot = (input: string): Snapshot => {
   });
   const state: WorkspaceScanState = { root, config, excluded, files: [], visited: 0, total: 0 };
   visitWorkspaceDirectory(state, '');
+  const files = resolveStdLibraryFiles(state.files, undefined, root);
   return {
     input: selectedFile,
     root,
     configuration,
     config,
-    files: state.files,
-    hash: digest(json({ configuration, files: state.files })),
+    files,
+    hash: digest(json({ configuration, files })),
   };
 };
 export const assertSnapshot = (snapshot: Snapshot): void => {

@@ -2,11 +2,13 @@ import { deepFreeze } from '../../immutable';
 import { parseSpriteSource, type SpriteSourceUnit } from '../../project/sprite/source';
 import { SpriteInputError } from '../../project/sprite/contract';
 import type { DirectoryFile } from '../../project/directory/contract';
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../../project/stdlib/resolve';
 import { sha256Digest } from '../../provenance/digest';
 import { compileSpriteDocument } from '../sprite/compile';
 import type { SpriteModuleLookup } from './cache';
 
 const relative = (owner: string, target: string): string => {
+  if (isVirtualLibrarySpecifier(target)) return virtualLibraryLogicalPath(target);
   if (!target.startsWith('./') && !target.startsWith('../'))
     throw new Error('Sprite imports must be relative .ashfox paths');
   if (!target.endsWith('.ashfox') || /[\\\x00-\x1f]/.test(target))

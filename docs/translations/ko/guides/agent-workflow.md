@@ -16,9 +16,9 @@
 
 ## 작업 순서
 
-1. 단일 에셋, stdin/JSON 메모리 그래프, 설정된 워크스페이스 빌드 중 [실행 방식](choose-a-format.md)을 선택합니다.
+1. 단일 에셋, stdin/JSON 메모리 그래프, 설정된 워크스페이스 빌드 중 [실행 방식](choose-a-format.md)을 선택합니다. 오프라인 문법 가이드는 `ashfox docs <topic>`, 내장 `"std/..."` 모듈 재사용(`eject` 포함)은 `ashfox library std list`를 사용하세요.
 2. `ashfox check`로 식별자·선언(`outputs`/`previews`)·품질 감사 지표를 확인합니다. 단일 에셋 플래그(`--stdin`, `--input-json`)는 상위 워크스페이스를 무시하고, 워크스페이스 확인은 프로젝트 규칙과 표준 디렉터리 배치를 검증합니다.
-3. `.ashfox` 소스 파일(`outputs`, `preview`)을 편집하거나 `--input-json`으로 전체 소스 그래프를 전달합니다.
+3. `.ashfox` 소스 파일(`outputs`, `preview`)을 편집하거나 `--input-json`으로 전체 소스 그래프를 전달합니다. `ashfox dev <source|workspace>`로 실시간 증분 빌드와 클릭 소스 위치 검사를 사용할 수 있습니다.
 4. `ashfox render <source> --view <name>`으로 시점·아틀라스·동작 GIF(`kind = gif;`)를 렌더링하고 `ashfox build` WAV 변형을 들어봅니다.
 5. `ashfox build <source>`로 선택한 에셋을 빌드하거나 설정된 전달물에 `check`·`build`·`check <build-dir>`을 실행합니다.
 6. 미디어나 출력 위치를 반환하고, 관찰된 결과와 아직 검증하지 않은 대상 게임 동작을 구분합니다.

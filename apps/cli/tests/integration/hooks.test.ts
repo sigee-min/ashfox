@@ -40,13 +40,13 @@ const parseGlbJson = (bytes: Uint8Array) => {
 };
 
 const actorModelSource = (): string => {
-  const pillar = fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/structure/assets/models/props/rune_pillar.ashfox'),
+  const lantern = fs.readFileSync(
+    path.join(REPO_ROOT, 'showcase/assets/models/wall_lantern.ashfox'),
     'utf8',
   );
-  return pillar
+  return lantern
     .replace(
-      'model rune_pillar {',
+      'model wall_lantern {',
       'model sword_actor {\n  import "shared_modules/br_rules" as br;',
     )
     .replace(
@@ -55,21 +55,32 @@ const actorModelSource = (): string => {
     );
 };
 
-const medkitSpriteSource = (): string => {
-  const apple = fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/items/assets/sprites/apple.ashfox'),
-    'utf8',
-  );
-  return apple
-    .replace('sprite apple {', 'sprite medkit {\n  import "../module/br_rules.ashfox" as br;')
-    .replace(
-      '\n}',
-      '\n  anchor icon_loot : br.LootSpawn { at = (16px, 16px); tier = common; table = "br:meds"; }\n}',
-    );
-};
+const medkitSpriteSource = (): string => `ashfox 1
+sprite medkit {
+  import "../module/shared.ashfox" as shared;
+  import "../module/br_rules.ashfox" as br;
+  profile = item;
+  canvas = (32px, 32px);
+  palette { bark = #734b34; glint = #fff5e6; }
+  ellipse body {
+    cx = 16px; cy = 18px; rx = 9px; ry = 8px;
+    material = shared.red_skin;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
+    grain soft { amount = 1; seed = 23; }
+  }
+  stamp stem_top { stamp = shared.stem; at = (15px, 7px); flip = none; colors { s = bark; } }
+  paint shine { at = (11px, 13px); rows = ["gg", "g."]; colors { g = glint; } }
+  outline rim { mode = sel_out; strength = 2; inner_rim = true; }
+  anchor icon_loot : br.LootSpawn { at = (16px, 16px); tier = common; table = "br:meds"; }
+}
+`;
 
-const sharedSpriteModuleSource = (): string =>
-  fs.readFileSync(path.join(REPO_ROOT, 'examples/items/assets/module/shared.ashfox'), 'utf8');
+const sharedSpriteModuleSource = (): string => `ashfox 1
+module shared {
+  export material red_skin { ramp { mode = auto; base = #c94040; preset = organic; } }
+  export stamp stem { rows = ["ss", ".s"]; slots = ["s"]; }
+}
+`;
 
 const outpostStructSource = (): string => `ashfox 1
 structure outpost {

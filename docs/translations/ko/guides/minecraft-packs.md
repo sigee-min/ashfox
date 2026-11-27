@@ -6,7 +6,7 @@
 
 ## 설정
 
-[완전한 리소스 팩 프로젝트](/downloads/resource-pack.zip)를 푸세요. [`examples/resource-pack/.ashfoxworkspace`](../../examples/resource-pack/.ashfoxworkspace)는 원본·export를 선언한 뒤 다음 팩을 사용합니다.
+[완전한 리소스 팩 프로젝트](/downloads/resource-pack.zip)를 풀거나 저장소의 `showcase/.ashfoxworkspace`를 참고하세요. 원본·export를 선언한 뒤 다음 팩을 사용합니다.
 
 {{source-code:0}}
 

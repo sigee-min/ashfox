@@ -30,7 +30,16 @@ try {
   assert.equal(diagnosis.capture.available, false);
   assert.equal(diagnosis.ogg.available, true);
   assert.equal(diagnosis.ogg.builtin, true);
-  assert.deepEqual(diagnosis.commands, ['init', 'doctor', 'check', 'render', 'build', 'dev']);
+  assert.deepEqual(diagnosis.commands, [
+    'init',
+    'doctor',
+    'check',
+    'render',
+    'build',
+    'dev',
+    'library',
+    'docs',
+  ]);
   assert.ok(Array.isArray(diagnosis.outputs));
   assert.deepEqual(fs.readdirSync(temp), []);
   const invalid = run('init');
@@ -48,7 +57,7 @@ try {
     false,
     'does not create a nested npm project',
   );
-  const swordRel = 'assets/assets/sprites/sword.ashfox';
+  const swordRel = 'assets/assets/sprites/iron_sword.ashfox';
   const original = fs.readFileSync(path.join(temp, swordRel));
   assert.notEqual(run('init', 'assets').status, 0);
   assert.deepEqual(fs.readFileSync(path.join(temp, swordRel)), original);
@@ -73,7 +82,7 @@ try {
   assert.equal(fs.readFileSync(path.join(temp, 'file'), 'utf8'), 'preserve');
   assert.deepEqual(fs.readFileSync(path.join(temp, swordRel)), original);
   assert.equal(run('init', 'my assets').status, 0);
-  assert.equal(run('build', 'my assets/assets/sprites/sword.ashfox', '--json').status, 0);
+  assert.equal(run('build', 'my assets/assets/sprites/iron_sword.ashfox', '--json').status, 0);
   for (const args of [
     ['doctor', '--json', '--json'],
     ['doctor', 'extra'],

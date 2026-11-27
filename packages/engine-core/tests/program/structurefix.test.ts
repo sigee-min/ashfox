@@ -6,20 +6,36 @@ import {
   compileStructureUnits,
   exportStructureGltfResolved,
   parseStructureSource,
+  virtualLibrarySpecifierFromPath,
   type CompiledModel,
   type DirectoryFile,
 } from '../../src/index';
 
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 
+const loadStdLibs = (
+  dir = path.join(REPO_ROOT, 'library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+const STD_LIBS = loadStdLibs();
+
 const relativePosix = (owner: string, spec: string): string =>
   path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
 
 const readPropFixture = (name: string): string =>
-  fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/structure/assets/models/props', `${name}.ashfox`),
-    'utf8',
-  );
+  fs.readFileSync(path.join(REPO_ROOT, 'showcase/assets/models', `${name}.ashfox`), 'utf8');
 
 const compileSingleModel = (
   entryName: string,
@@ -50,6 +66,7 @@ const compileSingleModel = (
       exports: [],
     }),
     [{ path: modelPath, source }],
+    STD_LIBS,
   );
   if (!res.ok) throw new Error(res.diagnostics.map((d) => d.message).join('\n'));
   const modelProduct = res.products.find((p) => p.kind === 'model');
@@ -58,21 +75,13 @@ const compileSingleModel = (
 };
 
 const testMixedStructureAndSharedPropWorkspace = (): void => {
-  const dir = path.join(REPO_ROOT, 'examples/structure');
+  const dir = path.join(REPO_ROOT, 'showcase');
   const read = (rel: string) => fs.readFileSync(path.join(dir, rel), 'utf8');
   const files: DirectoryFile[] = [
+    { path: 'assets/structures/tavern.ashfox', source: read('assets/structures/tavern.ashfox') },
     {
-      path: 'assets/structures/watchtower.ashfox',
-      source: read('assets/structures/watchtower.ashfox'),
-    },
-    { path: 'assets/module/furnishings.ashfox', source: read('assets/module/furnishings.ashfox') },
-    {
-      path: 'assets/models/props/rune_pillar.ashfox',
-      source: read('assets/models/props/rune_pillar.ashfox'),
-    },
-    {
-      path: 'assets/models/props/wall_lantern.ashfox',
-      source: read('assets/models/props/wall_lantern.ashfox'),
+      path: 'assets/models/wall_lantern.ashfox',
+      source: read('assets/models/wall_lantern.ashfox'),
     },
   ];
   const config = JSON.stringify({
@@ -86,30 +95,19 @@ const testMixedStructureAndSharedPropWorkspace = (): void => {
         manifest: {
           format: 'ashfox-package',
           version: 1,
-          entries: [{ name: 'watchtower', path: 'watchtower.ashfox' }],
+          entries: [{ name: 'tavern', path: 'tavern.ashfox' }],
           modules: [],
           dependencies: [],
         },
       },
       {
         name: 'props',
-        root: 'assets/models/props',
+        root: 'assets/models',
         manifest: {
           format: 'ashfox-package',
           version: 1,
           entries: [{ name: 'wall_lantern', path: 'wall_lantern.ashfox' }],
-          modules: [{ subpath: './rune_pillar', path: 'rune_pillar.ashfox' }],
-          dependencies: [],
-        },
-      },
-      {
-        name: 'shared_modules',
-        root: 'assets/module',
-        manifest: {
-          format: 'ashfox-package',
-          version: 1,
-          entries: [],
-          modules: [{ subpath: './furnishings', path: 'furnishings.ashfox' }],
+          modules: [],
           dependencies: [],
         },
       },
@@ -119,16 +117,16 @@ const testMixedStructureAndSharedPropWorkspace = (): void => {
     build: { directory: 'build' },
     exports: [],
   });
-  const compiled = compileDirectoryWorkspace(config, files);
+  const compiled = compileDirectoryWorkspace(config, files, STD_LIBS);
   if (!compiled.ok) throw new Error(compiled.diagnostics.map((d) => d.message).join('\n'));
   assert.deepEqual(compiled.products.map((p) => p.kind).sort(), ['model', 'structure']);
 };
 
 const testQualifiedCustomModelAliases = (): void => {
-  const pillar = compileSingleModel(
-    'rune_pillar',
-    'props/rune_pillar.ashfox',
-    readPropFixture('rune_pillar'),
+  const chest = compileSingleModel(
+    'treasure_chest',
+    'props/treasure_chest.ashfox',
+    readPropFixture('treasure_chest'),
   );
   const lantern = compileSingleModel(
     'wall_lantern',
@@ -137,8 +135,8 @@ const testQualifiedCustomModelAliases = (): void => {
   );
   const m1 = `ashfox 1
 module m1 {
-  import "./props/rune_pillar.ashfox" as prop;
-  palette { p = asset(prop, "minecraft:chiseled_stone_bricks"); }
+  import "./props/treasure_chest.ashfox" as prop;
+  palette { p = asset(prop, "minecraft:chest[facing=south]"); }
   export prefab A { set { at = (0b, 0b, 0b); block = p; } }
 }`;
   const m2 = `ashfox 1
@@ -165,7 +163,7 @@ structure s {
   const built = compileStructureUnits(
     's.ashfox',
     units,
-    { 'm1.ashfox#prop': pillar, 'm2.ashfox#prop': lantern },
+    { 'm1.ashfox#prop': chest, 'm2.ashfox#prop': lantern },
     relativePosix,
   );
   assert.deepEqual(built.grid.customPlacements.map((p) => p.assetAlias).sort(), [
@@ -174,15 +172,40 @@ structure s {
   ]);
   assert.equal(
     Object.keys(built.document.textures).filter((id) => id.startsWith('c_')).length,
-    Object.keys(pillar.textures).length + Object.keys(lantern.textures).length,
+    Object.keys(chest.textures).length + Object.keys(lantern.textures).length,
   );
 };
 
 const testPreservedCustomBoneRotationAndMirror = async (): Promise<void> => {
-  const rotatedSource = readPropFixture('rune_pillar').replace(
-    /skeleton PillarSkeleton implements PillarRig \{\s*bind root \{\s*parent_origin = \(0u, 0u, 0u\);\s*\}/u,
-    'skeleton PillarSkeleton implements PillarRig {\n    bind root {\n      parent_origin = (0u, 0u, 0u);\n      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }\n    }',
-  );
+  const rotatedSource = `ashfox 1
+model rune_pillar {
+  rig contract PillarRig { joint root { parent = none; role = root; channels = rotation; } }
+  skeleton PillarSkeleton implements PillarRig {
+    bind root {
+      parent_origin = (0u, 0u, 0u);
+      frame { x = (1, 0, 0); y = (0, 0, 1); z = (0, -1, 0); }
+    }
+  }
+  surface contract PillarSkin { chart stone box { coverage = opaque; } material = opaque; }
+  surface coat: PillarSkin {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      background = bg; background_alpha = 255;
+      palette { bg = #181a1f; stone = (#555963, #777c88, #999faa); }
+      chart stone box { fill = stone; roughness = 0.85; grain = soft; }
+    }
+  }
+  component PillarBody {
+    requires rig skeleton: PillarRig;
+    requires surface skin: PillarSkin;
+    bind bone root to skeleton.root;
+    geometry { bone root { cube shaft { origin = (-3u, 0u, -3u); size = (6u, 16u, 6u); surface = skin.stone; } } }
+  }
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = PillarSkeleton;
+  use PillarBody as pillar { skeleton = PillarRig; skin = coat; }
+}`;
   const rotatedModel = compileSingleModel(
     'rune_pillar',
     'props/rotated_pillar.ashfox',

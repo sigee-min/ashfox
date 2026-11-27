@@ -7,8 +7,8 @@ import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/
 // Approved Lv4 Hytale showroom rebuild: articulated anatomy, painterly surfaces, and three clips per creature.
 // Hashes cover canonical geometry, all texture recipe/raster data, and all authored animation channels.
 const baseline = {
-  fox: 'sha256:f7e9ca8c51c55479404f60ae3a3b92ec0df3b3461dec612104b86f2d17ba9067',
-  goblin: 'sha256:2860d4119899a633175506b41e1fbcc0d50316ff63af3599f41b02ec5a2308aa',
+  red_fox: 'sha256:855841e6b1c164a9ea5486b8acf4ec17814815430bcc2c6e02fd3535239a3429',
+  goblin_raider: 'sha256:899acd47d18e9c99b9821566934b3bd1c359339c91b71ebb70bef71f7cb55699',
 };
 const source = readFileSync(
   resolve(__dirname, '../../../../../assets/workspaces/shared-creatures.ashfoxworkspace'),
@@ -19,7 +19,7 @@ assert.equal(read.ok, true);
 if (!read.ok) throw new Error('Showcase workspace failed to open.');
 for (const [entryName, hash] of Object.entries(baseline)) {
   const result = compileAssetWorkspaceEntry(read.workspace, {
-    packageName: 'creatures',
+    packageName: 'models',
     entryName,
   });
   assert.equal(
@@ -41,7 +41,10 @@ const stale = {
     compilerFingerprint: 'ashfox-asset-compiler:workspace+typed-hir+instantiation+canonical:v1',
   },
 };
-const rejected = compileAssetWorkspaceEntry(stale, { packageName: 'creatures', entryName: 'fox' });
+const rejected = compileAssetWorkspaceEntry(stale, {
+  packageName: 'models',
+  entryName: 'red_fox',
+});
 assert.equal(
   rejected.ok,
   false,

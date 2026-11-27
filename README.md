@@ -15,7 +15,7 @@ files into game assets you can version, review and rebuild alongside your game.
 
 [**Explore the live examples →**](https://ashfox.io/) ·
 [Read the DSL](docs/language/README.md) ·
-[Griffin source](examples/griffin/workbench/main.ashfox)
+[Griffin source](showcase/assets/models/griffin_boss.ashfox)
 
 ## Game assets, with a source of truth
 
@@ -43,7 +43,7 @@ the game that uses it.
 ## Start with a sword. Build a creature.
 
 Explore complete sources and take the compiled assets into your game.
-The creatures share a [reusable source project](examples/shared-creatures/).
+The creatures share a [reusable showcase workspace](showcase/).
 
 <p align="center">
   <a href="https://ashfox.io/#collection"><img src="assets/docs/sword.png" alt="Pixel sword compiled from native source" width="128"></a>
@@ -63,15 +63,15 @@ The creatures share a [reusable source project](examples/shared-creatures/).
 
 | Character | Keep creating | Use in your game |
 | --- | --- | --- |
-| Griffin guardian · 6 motions | [.ashfox source](examples/griffin/workbench/main.ashfox) | [GLB](assets/exports/griffin/griffin.glb) |
-| Red fox · 3 motions | [.ashfox source](examples/fox/creatures/fox.ashfox) | [GLB](assets/exports/fox/fox.glb) |
-| Goblin raider · 3 motions | [.ashfox source](examples/goblin/creatures/goblin.ashfox) | [GLB](assets/exports/goblin/goblin.glb) |
+| Griffin boss · 4 motions | [.ashfox source](showcase/assets/models/griffin_boss.ashfox) | [GLB](assets/exports/griffin/griffin.glb) |
+| Red fox · 3 motions | [.ashfox source](showcase/assets/models/red_fox.ashfox) | [GLB](assets/exports/fox/fox.glb) |
+| Goblin raider · 4 motions | [.ashfox source](showcase/assets/models/goblin_raider.ashfox) | [GLB](assets/exports/goblin/goblin.glb) |
 
 | Asset | Source | Output |
 | --- | --- | --- |
-| Pixel sword | [Native source](examples/items/assets/sprites/iron_sword.ashfox) | [PNG](assets/readme/sword.png) |
-| Amethyst | [Item examples](examples/items/) | [PNG](assets/readme/amethyst.png) |
-| Claw strike | [Native source](examples/sounds/assets/sounds/claw_hit.ashfox) | [WAV](assets/docs/claw.wav) |
+| Pixel sword | [Native source](showcase/assets/sprites/iron_sword.ashfox) | [PNG](assets/readme/sword.png) |
+| Ruby potion | [Native source](showcase/assets/sprites/ruby_potion.ashfox) | [PNG](assets/readme/ruby-potion.png) |
+| Claw strike | [Native source](showcase/assets/sounds/claw_hit.ashfox) | [WAV](assets/docs/claw.wav) |
 
 ## Build on it
 

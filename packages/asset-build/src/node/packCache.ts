@@ -36,14 +36,7 @@ const packCacheKey = (
   usesVorbis: boolean,
   cache: DiskCacheContext,
 ): string => {
-  const inputs = packInputRefs(pack).map((id) => {
-    const asset = assetsById.get(id);
-    if (!asset) return undefined;
-    return {
-      ...asset,
-      files: asset.files.filter((f) => !f.path.endsWith('/ashfox-lineage.json')),
-    };
-  });
+  const inputs = packInputRefs(pack).map((id) => assetsById.get(id));
   return `pack-${digest(json({ pack, inputs, vorbis: usesVorbis ? VORBIS_FINGERPRINT : '' }))}-${cache.fingerprint}`;
 };
 

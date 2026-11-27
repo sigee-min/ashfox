@@ -1,0 +1,16 @@
+ashfox 1
+module slime {
+  export rig contract SlimeRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint body { parent = root; role = body; channels = (position, scale); }
+    joint core { parent = body; role = prop; channels = (position, rotation); }
+    joint crest { parent = body; role = ornament; channels = rotation; }
+  }
+
+  export skeleton SlimeSkeleton implements SlimeRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind body { parent_origin = (0u, 4u, 0u); }
+    bind core { parent_origin = (0u, 4u, 0u); }
+    bind crest { parent_origin = (0u, 8u, 0u); }
+  }
+}

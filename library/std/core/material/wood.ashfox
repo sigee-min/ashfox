@@ -1,0 +1,46 @@
+ashfox 1
+module wood {
+  export design WoodParams {
+    oak_shadow: color = #4a3121;
+    oak_base: color = #7d5538;
+    oak_light: color = #ad7c55;
+    spruce_shadow: color = #332219;
+    spruce_base: color = #593b2b;
+    spruce_light: color = #825a43;
+    birch_shadow: color = #8c7a5b;
+    birch_base: color = #bfaa82;
+    birch_light: color = #e3d2ae;
+    roughness: ratio = 0.68;
+    grain_depth: ratio = 0.32;
+  }
+
+  export surface contract WoodSurface {
+    chart plank box { coverage = opaque; }
+    chart bark box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface oak_timber: WoodSurface {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #332219;
+        oak = (#4a3121, #7d5538, #ad7c55);
+        bark = (#2e2119, #4d382a, #70533f);
+      }
+      chart plank box {
+        fill = oak;
+        grain = wood;
+        pattern stripe { paint = bark; axis = x; period = 4px; width = 1px; }
+        pattern ao { strength = 0.4; radius = 0.7u; }
+      }
+      chart bark box {
+        fill = bark;
+        grain = wood;
+        pattern blotch { paint = oak; scale = (2px, 2px, 2px); density = 0.35; phase = 0; }
+      }
+    }
+  }
+}

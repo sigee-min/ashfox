@@ -13,7 +13,8 @@ const sources = (directory) => {
     for (const e of fs
       .readdirSync(dir, { withFileTypes: true })
       .sort((a, b) => compareText(a.name, b.name))) {
-      if (['dist', 'build', 'exports', 'node_modules', '.ashfox'].includes(e.name)) continue;
+      if (['dist', 'build', 'exports', 'node_modules', '.ashfox', '.ashfox-cache'].includes(e.name))
+        continue;
       const key = prefix + e.name;
       if (e.isDirectory()) visit(path.join(dir, e.name), key + '/');
       else if (e.isFile()) result[key] = fs.readFileSync(path.join(dir, e.name));
@@ -32,10 +33,15 @@ const starter = Object.fromEntries(
 );
 starter['package.json'] = Buffer.from('{"name":"my-ashfox-assets","private":true}\n');
 zip('starter.zip', starter);
-for (const name of ['items', 'game-assets', 'resource-pack'])
-  zip(name + '.zip', sources('examples/' + name));
-const game = sources('examples/web-game');
-for (const [file, bytes] of Object.entries(sources('examples/game-assets')))
-  game['assets/' + file] = bytes;
-zip('web-game.zip', game);
+const showcaseFiles = sources('showcase');
+for (const name of ['showcase', 'items', 'game-assets', 'resource-pack']) {
+  zip(`${name}.zip`, showcaseFiles);
+}
+const webGame = {
+  ...sources('scripts/docs/web-game'),
+  ...Object.fromEntries(
+    Object.entries(showcaseFiles).map(([filePath, bytes]) => [`assets/${filePath}`, bytes]),
+  ),
+};
+zip('web-game.zip', webGame);
 process.stdout.write('User downloads ready: ' + out + '\n');

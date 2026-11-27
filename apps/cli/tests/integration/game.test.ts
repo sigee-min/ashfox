@@ -11,40 +11,131 @@ const root = path.resolve(__dirname, '../../../..'),
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-game-'));
 const project = path.join(temp, 'project'),
   config = path.join(project, '.ashfoxworkspace');
-fs.cpSync(path.join(root, 'examples/game-assets'), project, {
-  recursive: true,
-  filter: (p) => !p.split(path.sep).includes('dist'),
-});
-const original = JSON.parse(String(fs.readFileSync(config)));
-assert.deepEqual(original.packs[0].assets.map((a: { id: string }) => a.id).sort(), [
-  'creature.griffin',
-  'item.iron_sword',
-  'sfx.claw_hit',
-]);
-// Static-model coverage belongs to the test fixture, not the starter scene.
-fs.mkdirSync(path.join(project, 'assets/models/props'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/models'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/module/griffin'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sprites'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sounds'), { recursive: true });
 fs.copyFileSync(
-  path.join(root, 'examples/minecraft/assets/models/marker.ashfox'),
-  path.join(project, 'assets/models/props/marker.ashfox'),
+  path.join(root, 'showcase/assets/models/griffin_boss.ashfox'),
+  path.join(project, 'assets/models/griffin_boss.ashfox'),
 );
-original.packages.push({
-  name: 'props',
-  root: 'assets/models/props',
-  manifest: {
-    format: 'ashfox-package',
-    version: 1,
-    entries: [{ name: 'marker', path: 'marker.ashfox' }],
-    modules: [],
-    dependencies: [],
-  },
-});
-original.exports.push({
-  name: 'marker',
-  entry: { packageName: 'props', entryName: 'marker' },
-  format: 'glb',
-  directory: 'dist/props',
-});
-original.packs[0].assets.push({ id: 'prop.marker', source: 'marker', path: 'models/marker' });
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/module/griffin/griffin_plumage.ashfox'),
+  path.join(project, 'assets/module/griffin/griffin_plumage.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/models/wall_lantern.ashfox'),
+  path.join(project, 'assets/models/wall_lantern.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sprites/iron_sword.ashfox'),
+  path.join(project, 'assets/sprites/iron_sword.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sounds/claw_hit.ashfox'),
+  path.join(project, 'assets/sounds/claw_hit.ashfox'),
+);
+const original: Record<string, any> = {
+  format: 'ashfox-workspace',
+  version: 2,
+  name: 'game-assets-test',
+  packages: [
+    {
+      name: 'models',
+      root: 'assets/models',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [
+          { name: 'griffin_boss', path: 'griffin_boss.ashfox' },
+          { name: 'wall_lantern', path: 'wall_lantern.ashfox' },
+        ],
+        modules: [],
+        dependencies: [{ name: 'griffin_plumage' }],
+      },
+    },
+    {
+      name: 'griffin_plumage',
+      root: 'assets/module/griffin',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [],
+        modules: [{ subpath: './plumage', path: 'griffin_plumage.ashfox' }],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'sprites',
+      root: 'assets/sprites',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'iron_sword', path: 'iron_sword.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'sounds',
+      root: 'assets/sounds',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'claw_hit', path: 'claw_hit.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'],
+  ignore: ['assets/drafts/**'],
+  build: { directory: 'dist/build' },
+  exports: [
+    {
+      name: 'griffin',
+      entry: { packageName: 'models', entryName: 'griffin_boss' },
+      format: 'glb',
+      directory: 'dist/griffin',
+    },
+    {
+      name: 'marker',
+      entry: { packageName: 'models', entryName: 'wall_lantern' },
+      format: 'glb',
+      directory: 'dist/props',
+    },
+    {
+      name: 'iron_sword',
+      entry: { packageName: 'sprites', entryName: 'iron_sword' },
+      format: 'png',
+      directory: 'dist/sprites',
+    },
+    {
+      name: 'claw_hit',
+      entry: { packageName: 'sounds', entryName: 'claw_hit' },
+      format: 'wav',
+      directory: 'dist/sounds',
+    },
+  ],
+  packs: [
+    {
+      name: 'voxel_game',
+      format: 'game_assets',
+      directory: 'dist/game',
+      archive: true,
+      audio: 'wav',
+      unitsPerMeter: 1,
+      pixelsPerUnit: 16,
+      spriteFilter: 'nearest',
+      assets: [
+        { id: 'creature.griffin', source: 'griffin', path: 'models/griffin' },
+        { id: 'prop.marker', source: 'marker', path: 'models/marker' },
+        { id: 'item.iron_sword', source: 'iron_sword', path: 'sprites/iron_sword' },
+        { id: 'sfx.claw_hit', source: 'claw_hit', path: 'audio/claw_hit' },
+      ],
+    },
+  ],
+};
 fs.writeFileSync(config, JSON.stringify(original));
 const run = (command: string, input = config) => {
   const child = spawnSync(

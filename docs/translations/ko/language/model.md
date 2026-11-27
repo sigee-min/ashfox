@@ -20,7 +20,7 @@ Ashfox 원본은 에셋의 형상·표면·리그·동작을 정의하고 [CLI](
 
 ### Import와 이름
 
-import는 따옴표 경로와 로컬 별칭입니다. 가져온 선언은 `alias.name`, 같은 단위는 로컬 이름을 씁니다.
+import는 따옴표 상대 경로(`"./animation.ashfox"`) 또는 내장 표준 라이브러리 경로(`"std/model/rig/biped"`)와 로컬 별칭을 씁니다. 가져온 선언은 `alias.name`, 같은 단위는 로컬 이름을 씁니다.
 
 **조각 — 재사용 애니메이션 모듈 가져오기:**
 
@@ -71,10 +71,14 @@ component는 재사용 형상 트리를 소유합니다. 보통 rig contract·su
 | `bone` | 없음 | `position`, `rotation`, `pivot`, `visible` |
 | `cube` | `origin`, `size`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror_x` |
 | `plane` | `origin`, `size`, `u_axis`, `v_axis`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `taper` | `origin`, `size`, `top_scale`, `axis`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `wedge` | `origin`, `size`, `slope`, surface chart 하나 | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `cylinder` | `origin`, `radius`, `height`, `sides` (`6\|8\|12`), `axis`, surface chart 하나 | `radius_top`, `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `expression_slot` | `origin`, `size`, `u_axis`, `v_axis`, `neutral` 및 변형 flat 차트 | `position`, `rotation`, `pivot`, `visible` |
 | `locator` | 없음 | `position`, `rotation`, `visible` |
 | cube 안 `face` | 없음 | `enabled`, `rotation` |
 
-bone에는 bone·cube·plane·locator가 들어갑니다. cube에는 `north`, `south`, `east`, `west`, `up`, `down` face가 들어가며 면 회전은 `0`, `90`, `180`, `270`입니다. `cube`나 `plane`에 `mirror_x = <id>;`를 주면 `x = 0` 대칭 형제 노드를 합성합니다.
+bone에는 bone·cube·plane·taper·wedge·cylinder·expression_slot·locator가 들어갑니다. cube에는 `north`, `south`, `east`, `west`, `up`, `down` face가 들어가며 면 회전은 `0`, `90`, `180`, `270`입니다. `cube`, `plane`, `taper`, `wedge`, `cylinder`에 `mirror_x = <id>;`를 주면 `x = 0` 대칭 형제 노드를 합성합니다. `taper`, `wedge`, `cylinder`는 glTF/GLB(`LOD0`/`LOD1`/`LOD2`)로 내보낼 수 있으며 Minecraft 블록/액터 대상(`java_block`/`bedrock`/`geckolib5`)에서는 명시적으로 실패합니다. `expression_slot`은 단일 아틀라스를 공유하는 `0.02u` 오프셋 평면(추가 드로우 콜 0)을 생성하며 `motion` 안의 `expression <slot> { at 0.00s = neutral; at 1.45s..1.58s = blink; }` 트랙이 glTF `STEP` `scale` 키프레임으로 베이크됩니다.
 
 cube·plane 크기는 양수여야 합니다. plane의 size는 unit 두 성분이고 `u_axis`·`v_axis`는 서로 다른 부호 있는 단위 축입니다. 바인딩된 본은 이미 rig에서 배치를 받으므로 충돌하는 position·rotation·pivot을 추가하지 마세요.
 
@@ -117,7 +121,7 @@ motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관�
 
 키 시간은 길이 안에서 엄격히 증가합니다. 각 키 끝에는 보간 커브(`linear`, `step`, `smooth`, `ease_in`, `ease_out`, `ease_in_out`, `cubic`, `snap`, `anticipate`, `overshoot`, `bounce`, `elastic`, `catmullrom`)와 선택적 인자를 붙여 다음 키까지 구간을 제어합니다.
 
-위치는 `vec3<unit>`, 회전은 `vec3<degree>`(쿼터니언 네이티브 SLERP로 베이크), 크기는 `(1, 1, 1)` 같은 양의 `vec3<ratio>`이며 관절이 해당 채널을 허용해야 합니다. 동작에는 `wave`, `pose`, `at ... pose`, `layer`, `ik`(`foot_lock`), `secondary`(`chain`/`joint`), 전투 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `cue`(`sound`, `vfx`, `event`) 블록도 사용할 수 있습니다.
+위치는 `vec3<unit>`, 회전은 `vec3<degree>`(쿼터니언 네이티브 SLERP로 베이크), 크기는 `(1, 1, 1)` 같은 양의 `vec3<ratio>`이며 관절이 해당 채널을 허용해야 합니다. 동작에는 `wave`, `pose`, `at ... pose`, `layer`, `expression`(표정 슬롯 타임라인), `ik`(`foot_lock`), `secondary`(`chain`/`joint`), 전투 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `cue`(`sound`, `vfx`, `event`) 블록도 사용할 수 있습니다.
 
 ## 6. 조립
 
@@ -127,7 +131,7 @@ motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관�
 
 {{source-code:7}}
 
-현재 density는 `16`, forward는 `north`, `south`, `east`, `west`입니다. 선택적 `profile`(`creature`, `prop`, `block`)은 `ashfox check`의 품질 감사 가중치를 지정합니다. `use`는 이름 있는 인스턴스를 만들고 모든 required 포트를 연결합니다. 조립의 `skeleton`은 구체 구현, `use`의 rig 포트 바인딩은 대응 rig contract를 지정합니다. `motions = [...]`에 여러 동작을 나열할 수 있으며 모두 skeleton과 같은 rig를 사용하고 한 번씩만 나타나야 합니다.
+현재 density는 `16`, forward는 `north`, `south`, `east`, `west`입니다. 선택적 `profile`(`creature`, `prop`, `block`)은 `ashfox check`의 품질 감사 가중치를 지정하며 `creature`에는 `capsule`+루트 AABB, `prop`/`block`에는 밀착 `box` 물리 `colliders`를 자동 계산해 `.hooks.json`, `assets.json`, `--bindings`로 출력합니다. `use`는 이름 있는 인스턴스를 만들고 모든 required 포트를 연결합니다. 조립의 `skeleton`은 구체 구현, `use`의 rig 포트 바인딩은 대응 rig contract를 지정합니다. `motions = [...]`에 여러 동작을 나열할 수 있으며 모두 skeleton과 같은 rig를 사용하고 한 번씩만 나타나야 합니다.
 
 소켓 부착에는 명시적 계약과 제공·요구 endpoint를 연결합니다. 방향은 `provider.port -> required.port`이며 가까운 형상으로 부착을 추론하지 않습니다.
 

@@ -1,0 +1,44 @@
+{
+  "format": "ashfox-product-oracle",
+  "version": 1,
+  "domain": "sprites",
+  "toolchain": "ashfox-product-oracle:2",
+  "inputs": [
+    {
+      "input": "showcase/.ashfoxworkspace",
+      "ok": true,
+      "sourceHash": "sha256:79a3c01d95efed45c391937bb9f5d3015ca31a6764a2267b1b49aec4418752f8",
+      "products": [
+        {
+          "entry": "sprites/iron_sword",
+          "kind": "sprite",
+          "sha256": "a372cf4465984612994650b6911f28f1357a3e77fd5f8a897369dc469166ed65"
+        },
+        {
+          "entry": "sprites/oak_planks",
+          "kind": "sprite",
+          "sha256": "84b6c92bdf5de7cd60dbaa3140c79d97c3ebaa197be2fbb0fc32e55fa73964ee"
+        },
+        {
+          "entry": "sprites/ruby_potion",
+          "kind": "sprite",
+          "sha256": "4cd67039d3bfe72b045d3a34705ac050365ba3cd8cff4f773ed93262d7c1ca17"
+        }
+      ],
+      "files": [
+        {
+          "path": "assets/iron_sword/iron_sword.png",
+          "sha256": "a372cf4465984612994650b6911f28f1357a3e77fd5f8a897369dc469166ed65"
+        },
+        {
+          "path": "assets/oak_planks/oak_planks.png",
+          "sha256": "84b6c92bdf5de7cd60dbaa3140c79d97c3ebaa197be2fbb0fc32e55fa73964ee"
+        },
+        {
+          "path": "assets/ruby_potion/ruby_potion.png",
+          "sha256": "4cd67039d3bfe72b045d3a34705ac050365ba3cd8cff4f773ed93262d7c1ca17"
+        }
+      ]
+    }
+  ]
+}

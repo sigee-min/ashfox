@@ -8,6 +8,7 @@ import {
   isDirectorySource,
   readDirectoryWorkspace,
 } from '../../project/directory/read';
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../../project/stdlib/resolve';
 import type { WorkspaceEntrySelector } from '../../project/workspace';
 
 export { readDirectoryWorkspace, directoryPath, isDirectorySource };
@@ -35,9 +36,11 @@ const enqueueHookImports = (
   const dir = filePath.includes('/') ? filePath.slice(0, filePath.lastIndexOf('/')) : '';
   for (const imp of parseHooksSource(source, filePath, { allowHostStatements: true }).unit
     .imports) {
-    const next = imp.path.startsWith('.')
-      ? normalizeWorkspacePath(dir ? `${dir}/${imp.path}` : imp.path)
-      : moduleAliases?.get(imp.path);
+    const next = isVirtualLibrarySpecifier(imp.path)
+      ? virtualLibraryLogicalPath(imp.path)
+      : imp.path.startsWith('.')
+        ? normalizeWorkspacePath(dir ? `${dir}/${imp.path}` : imp.path)
+        : moduleAliases?.get(imp.path);
     if (next && !seen.has(next) && filesByPath.has(next)) stack.push(next);
   }
 };

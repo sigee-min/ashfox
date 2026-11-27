@@ -10,8 +10,27 @@ import {
   suggestClosest,
   suggestUnit,
   toSnakeCaseTrap,
+  virtualLibrarySpecifierFromPath,
   VfxInputError,
 } from '../../src';
+
+const loadStdLibs = (
+  dir = path.resolve(__dirname, '../../../../library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+const stdLibs = loadStdLibs();
 import { parseHooksSource } from '../../src/hooks/parse';
 import { validateHooksUnit } from '../../src/hooks/validate';
 import { parseAssetSource } from '../../src/project/program/asset/parse';
@@ -79,12 +98,16 @@ assert.equal(docsHint('model'), "Hint: run 'ashfox docs model'");
   assert.ok(parsed.diagnostics.some((d) => d.hint === "Hint: run 'ashfox docs rig'"));
 }
 {
-  const lanternPath = path.resolve(__dirname, '../../../../examples/prop/lantern.ashfox');
+  const lanternPath = path.resolve(
+    __dirname,
+    '../../../../showcase/assets/models/wall_lantern.ashfox',
+  );
   const baseLantern = fs.readFileSync(lanternPath, 'utf8');
-  const geomBad = baseLantern.replace('cube base {', 'cube base { miror = true;');
+  const geomBad = baseLantern.replace('cube backplate {', 'cube backplate { miror = true;');
   const geomRes = compileDirectoryWorkspace(
-    singleEntryConfig('lantern', 'models', 'lantern.ashfox'),
-    [{ path: 'assets/models/lantern.ashfox', source: geomBad }],
+    singleEntryConfig('wall_lantern', 'models', 'wall_lantern.ashfox'),
+    [{ path: 'assets/models/wall_lantern.ashfox', source: geomBad }],
+    stdLibs,
   );
   assert.equal(geomRes.ok, false);
   if (!geomRes.ok) {
@@ -96,18 +119,19 @@ assert.equal(docsHint('model'), "Hint: run 'ashfox docs model'");
 
   const motionBad = baseLantern.replace(
     'settings {',
-    'motion idle for LanternRig {\n    duration = 1s;\n    fps = 24;\n    loop = looop;\n  }\n  motions = [idle];\n  settings {',
+    'motion idle for prop.LanternRig {\n    duration = 1s;\n    fps = 24;\n    loop = looop;\n  }\n  motions = [idle];\n  settings {',
   );
   const motionRes = compileDirectoryWorkspace(
-    singleEntryConfig('lantern', 'models', 'lantern.ashfox'),
-    [{ path: 'assets/models/lantern.ashfox', source: motionBad }],
+    singleEntryConfig('wall_lantern', 'models', 'wall_lantern.ashfox'),
+    [{ path: 'assets/models/wall_lantern.ashfox', source: motionBad }],
+    stdLibs,
   );
   assert.equal(motionRes.ok, false);
   if (!motionRes.ok) {
     const motionDiag = motionRes.diagnostics.find((d) => d.code === 'asset.invalid-motion-loop');
     assert.ok(motionDiag);
     assert.match(motionDiag.message, /Did you mean "loop"\?/);
-    assert.equal(motionDiag.hint, "Hint: run 'ashfox docs motion'");
+    assert.equal(motionDiag.hint, "Hint: run 'ashfox docs animation'");
   }
 
   const surfaceBad = baseLantern.replace(
@@ -115,8 +139,9 @@ assert.equal(docsHint('model'), "Hint: run 'ashfox docs model'");
     'density = 2;\n      render_mode = emssive;',
   );
   const surfaceRes = compileDirectoryWorkspace(
-    singleEntryConfig('lantern', 'models', 'lantern.ashfox'),
-    [{ path: 'assets/models/lantern.ashfox', source: surfaceBad }],
+    singleEntryConfig('wall_lantern', 'models', 'wall_lantern.ashfox'),
+    [{ path: 'assets/models/wall_lantern.ashfox', source: surfaceBad }],
+    stdLibs,
   );
   assert.equal(surfaceRes.ok, false);
   if (!surfaceRes.ok) {
@@ -250,15 +275,19 @@ assert.equal(docsHint('model'), "Hint: run 'ashfox docs model'");
     'bot.ashfox',
   );
   assert.ok(ikBad.diagnostics.some((d) => /Did you mean "foot_lock"\?/.test(d.message)));
-  assert.ok(ikBad.diagnostics.some((d) => d.hint === "Hint: run 'ashfox docs motion'"));
+  assert.ok(ikBad.diagnostics.some((d) => d.hint === "Hint: run 'ashfox docs animation'"));
 }
 {
-  const lanternPath = path.resolve(__dirname, '../../../../examples/prop/lantern.ashfox');
+  const lanternPath = path.resolve(
+    __dirname,
+    '../../../../showcase/assets/models/wall_lantern.ashfox',
+  );
   const baseLantern = fs.readFileSync(lanternPath, 'utf8');
   const pbrBad = baseLantern.replace('density = 2;', 'density = 2;\n      roughness = 2;');
   const pbrRes = compileDirectoryWorkspace(
-    singleEntryConfig('lantern', 'models', 'lantern.ashfox'),
-    [{ path: 'assets/models/lantern.ashfox', source: pbrBad }],
+    singleEntryConfig('wall_lantern', 'models', 'wall_lantern.ashfox'),
+    [{ path: 'assets/models/wall_lantern.ashfox', source: pbrBad }],
+    stdLibs,
   );
   assert.equal(pbrRes.ok, false);
   if (!pbrRes.ok) {

@@ -1,0 +1,135 @@
+ashfox 1
+structure blacksmith {
+  import "std/structure/arch/medieval" as arch;
+  import "std/structure/interior/workshop" as work_kit;
+  import "std/structure/furnish/storage" as store;
+  import "std/core/hook/world" as world;
+  import "std/core/hook/loot" as loot;
+  import "../models/wall_lantern.ashfox" as custom_lantern;
+
+  density = 2;
+  seed = 303;
+  size = (16b, 19b, 15b);
+  data_version = 3955;
+
+  params {
+    w = 16;
+    d = 15;
+  }
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    cobble = mix("minecraft:cobblestone" * 65%, "minecraft:mossy_cobblestone" * 20%, "minecraft:andesite" * 15%);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    stone_brick = mix("minecraft:stone_bricks" * 75%, "minecraft:cracked_stone_bricks" * 25%);
+    deepslate = "minecraft:deepslate_bricks";
+    plaster = mix("minecraft:white_terracotta" * 85%, "minecraft:calcite" * 15%);
+    timber = "minecraft:spruce_log[axis=y]";
+    beam = "minecraft:spruce_log[axis=x]";
+    oak_floor = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    roof_stair = "minecraft:deepslate_tile_stairs";
+    trim_stair = "minecraft:spruce_stairs";
+    ridge = "minecraft:deepslate_tile_slab[type=bottom]";
+    porch_stair = "minecraft:stone_brick_stairs[facing=north,half=bottom]";
+    oak_stair = "minecraft:oak_stairs";
+    fence = "minecraft:spruce_fence";
+    glass = "minecraft:glass_pane";
+    bars = "minecraft:iron_bars";
+    sill = "minecraft:spruce_slab[type=top]";
+    shutter = "minecraft:spruce_trapdoor[facing=south,half=bottom,open=true]";
+    door = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
+    chimney_brick = "minecraft:deepslate_tiles";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = asset(custom_lantern, "minecraft:lantern[hanging=false]");
+  }
+
+  floor ground {
+    y = 0b;
+    height = 5b;
+    room smithy {
+      from = (1b, 1b); size = (8b, 11b); kind = workshop; plinth = deepslate; floor = stone_brick; wall = cobble; frame = deepslate; ceiling = spruce_plank;
+      interior {
+        dna { arch = industrial; mood = warm_hearth; }
+        architecture { floor_pattern = stone_slab; baseboard = stone_plinth; wainscot = brick_dado; ceiling = open_truss; }
+        alcove forge_hearth { kind = fireplace; wall = north; at = 2; width = 3; height = 3; }
+        platform work_dais {
+          on = north; size = (4, 2); height = 0.25; step_facing = south;
+          table anvil_bench { size = (2, 1); }
+          story hearth_prep { on = anvil_bench; }
+        }
+        wall_line {
+          on = east;
+          barrel_rack { size = (2, 1); }
+          cabinet { size = (2, 1); }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.5; shaft_length = 6.0; }
+      }
+    }
+    room shop { from = (8b, 1b); size = (7b, 10b); kind = living; plinth = cobble; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    facade smithy.east { arch { at = center; width = 2b; height = 3b; frame = timber; lintel = beam; } }
+    facade smithy.south { arcade { at = center; width = 3b; height = 3b; frame = deepslate; lintel = beam; } }
+    facade smithy.west { arcade { at = 2b; width = 3b; height = 3b; frame = deepslate; lintel = beam; } }
+    facade smithy.north { window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = bars; recess = 1b; sill = sill; lintel = beam; } }
+    facade shop.south {
+      door {
+        at = center; width = 1b; height = 2b; block = door; hinge = left; frame = timber; lintel = beam;
+        porch { depth = 2; floor = stone_brick; pillars = timber; lamps = lantern; steps = porch_stair; }
+      }
+    }
+    facade facade_1 {
+      on = [shop.east, shop.north];
+      window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = glass; sill = sill; shutter = shutter; lintel = beam; }
+    }
+  }
+
+  floor upper {
+    y = 5b;
+    height = 4b;
+    jetty_s = 1b;
+    room loft { from = (8b, 1b); size = (7b, 10b); kind = bedroom; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    facade facade_1 {
+      on = [loft.south, loft.north];
+      window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = glass; sill = sill; shutter = shutter; lintel = beam; }
+    }
+  }
+
+  staircase { in_room = shop; style = straight; at = (12b, 3b); y_from = 0b; y_to = 5b; facing = south; width = 1b; stair = oak_stair; landing = oak_floor; rail = fence; headroom = 3b; }
+
+  roof {
+    on = smithy; style = gable; axis = x; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = cobble; under_eave = true;
+    chimney { room = smithy; corner = nw; offset = (0b, 0b); width = 2b; rise = 4b; block = chimney_brick; cap = true; }
+  }
+  roof { on = loft; style = gable; axis = z; overhang = 1b; pitch = standard; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = plaster; under_eave = true; }
+
+  furnish smithy { hang { block = hang_lantern; at = ceiling_center; drop = 1b; } }
+  furnish shop {
+    place_anchor { prefab = work_kit.SmithyBay; on = ne; offset = (0b, 0b); rotate = 0; }
+    hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
+  }
+  furnish loft {
+    place_anchor { prefab = store.ChestRack; on = ne; offset = (0b, 0b); rotate = 0; }
+    hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
+  }
+
+  weathering {
+    ground_moss { height = 2b; target = cobble; into = moss_cobble; rate = 35%; }
+    corner_quoin { target = plaster; corners = stone_brick; }
+    chimney_soot { radius = 2b; rate = 50%; }
+  }
+
+  box { from = (1b, 0b, 12b); to = (4b, 0b, 13b); block = cobble; }
+  place arch.TimberButtress { at = (1b, 1b, 12b); rotate = 0; }
+
+  anchor smith_entry : std.entry { at = (11b, 1b, 11b); facing = south; pool = "ashfox:streets"; target = "road_join"; }
+  anchor smith_portal : world.PortalGate { room = shop; at = (11b, 1b, 10b); facing = south; target_world = "overworld"; destination = "smithy_interior"; }
+  anchor smith_chest : loot.LootChest { room = smithy; at = (2b, 1b, 9b); facing = north; tier = rare; table = "ashfox:smithy/weapons"; }
+  zone smith_ambience : world.AmbientZone { from = (1b, 1b, 1b); to = (9b, 5b, 11b); cue_id = "fire_loop"; reverb = hall; blend_radius = 4.0; }
+}

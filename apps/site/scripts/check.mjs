@@ -14,7 +14,7 @@ const showcaseRoot = path.join(repositoryRoot, 'assets', 'showcase', 'shared-cre
 const showcaseManifestPath = path.join(showcaseRoot, 'showcase.json');
 const canonicalWorkspaceRelativePath = 'assets/workspaces/shared-creatures.ashfoxworkspace';
 const canonicalWorkspacePath = path.join(repositoryRoot, canonicalWorkspaceRelativePath);
-const griffinGlbRelativePath = 'examples/griffin.glb';
+const griffinGlbRelativePath = 'showcase/griffin.glb';
 const griffinGlbSourcePath = path.join(
   repositoryRoot,
   'assets',
@@ -131,7 +131,8 @@ const retiredContractSourceScopes = [
   path.join(repositoryRoot, 'packages/engine-core/src'),
   path.join(repositoryRoot, 'packages/internal-contracts/src'),
   path.join(repositoryRoot, 'docs'),
-  path.join(repositoryRoot, 'examples'),
+  path.join(repositoryRoot, 'showcase'),
+  path.join(repositoryRoot, 'library/std'),
   path.join(repositoryRoot, 'skills/ashfox'),
 ];
 // Release history records removed contracts; only current guidance is checked.
@@ -300,7 +301,11 @@ if (await exists(sitemapPath)) {
 
 const landingHtml = await readFile(path.join(outputRoot, 'index.html'), 'utf8');
 const showcaseManifest = JSON.parse(await readFile(showcaseManifestPath, 'utf8'));
-const expectedShowcaseIdentities = ['workbench/griffin', 'creatures/fox', 'creatures/goblin'];
+const expectedShowcaseIdentities = [
+  'models/griffin_boss',
+  'models/red_fox',
+  'models/goblin_raider',
+];
 const manifestIdentities =
   showcaseManifest.entries?.map((entry) => `${entry.packageName}/${entry.entryName}`) ?? [];
 if (
@@ -352,8 +357,8 @@ if (!(await exists(catalogPath))) {
   failures.push('Missing media/catalog/catalog.json');
 } else {
   const catalogEntries = JSON.parse(await readFile(catalogPath, 'utf8'));
-  if (catalogEntries.length !== 31) {
-    failures.push(`Expected 31 catalog entries, got ${catalogEntries.length}`);
+  if (catalogEntries.length !== 22) {
+    failures.push(`Expected 22 catalog entries, got ${catalogEntries.length}`);
   }
   for (const entry of catalogEntries) {
     if (!(await exists(path.join(outputRoot, entry.outputHref)))) {
@@ -382,7 +387,7 @@ const heroModel = await readFile(path.join(outputRoot, 'media/catalog/griffin.gl
 if (heroModel.subarray(0, 4).toString('ascii') !== 'glTF')
   failures.push('Live model must be a real GLB');
 const heroJson = JSON.parse(heroModel.subarray(20, 20 + heroModel.readUInt32LE(12)).toString());
-for (const name of ['look_around', 'wing_display', 'greeting']) {
+for (const name of ['idle', 'wing_display', 'wing_flap']) {
   if (!heroJson.animations?.some((clip) => clip.name === name))
     failures.push(`Missing live motion: ${name}`);
 }
@@ -416,7 +421,7 @@ if (committedPublicWorkspaces.length !== 0) {
 }
 if (
   !landingHtml.includes('href="/media/catalog/griffin.glb"') ||
-  !landingHtml.includes('href="/examples/griffin/workbench/main.ashfox"')
+  !landingHtml.includes('href="/showcase/assets/models/griffin_boss.ashfox"')
 ) {
   failures.push('Landing must offer the actual model and example source');
 }
@@ -426,9 +431,9 @@ for (const requiredReadmeReference of [
   'assets/showcase/shared-creatures/griffin-build-replay.gif',
   'assets/showcase/shared-creatures/fox-build-replay.gif',
   'assets/showcase/shared-creatures/goblin-build-replay.gif',
-  'examples/griffin/workbench/main.ashfox',
+  'showcase/assets/models/griffin_boss.ashfox',
   'assets/exports/griffin/griffin.glb',
-  'examples/shared-creatures/',
+  'showcase/',
   'https://ashfox.io/#examples',
   'https://ashfox.io/docs/guides/cli/',
 ]) {
@@ -486,7 +491,7 @@ for (const required of [
     failures.push(`Assets as Code landing is missing ${required}`);
 }
 for (const entry of ['griffin', 'fox', 'goblin']) {
-  if (!landingHtml.includes(`/examples/${entry}.glb`))
+  if (!landingHtml.includes(`/showcase/${entry}.glb`))
     failures.push(`Advanced example ${entry} has no output`);
 }
 const siteScriptSource = landingHtml.match(/<script type="module" src="([^"]+)"/)?.[1];

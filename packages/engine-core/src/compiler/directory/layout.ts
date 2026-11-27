@@ -6,6 +6,7 @@ import type { DeclaredAssetKind } from '../../project/directory/declarations';
 import { parseAssetSource } from '../../project/program/asset/parse';
 import { lexProgramSource } from '../../project/program/syntax/lex';
 import { parseSpriteSource } from '../../project/sprite/source';
+import { isStdLibraryLogicalPath, resolveImportPath } from '../../project/stdlib/resolve';
 import { parseStructureSource } from '../../project/structure';
 import { parseVfxSource } from '../../project/vfx/source';
 import { assertWellFormedSourceText } from '../../project/workspace/path';
@@ -29,21 +30,6 @@ const BUCKET_BY_KIND: Readonly<Record<DeclaredAssetKind, string>> = {
 };
 
 const isUnder = (filePath: string, prefix: string): boolean => filePath.startsWith(prefix);
-
-const resolveRelativeImport = (ownerPath: string, specifier: string): string | null => {
-  if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
-  const parts = ownerPath.split('/').slice(0, -1);
-  for (const segment of specifier.split('/')) {
-    if (segment === '.') continue;
-    if (segment === '..') {
-      if (!parts.length) return null;
-      parts.pop();
-    } else if (segment) {
-      parts.push(segment);
-    }
-  }
-  return parts.join('/');
-};
 
 type InspectedMap = ReadonlyMap<string, NativeSourceMetadata>;
 
@@ -203,7 +189,7 @@ const collectEntryModuleDeps = (
     for (const spec of meta.imports) {
       recordImportDep(
         entryPath,
-        resolveRelativeImport(cur, spec),
+        resolveImportPath(cur, spec),
         seen,
         queue,
         inspected,
@@ -219,16 +205,17 @@ const inspectWorkspaceFiles = (
 ): InspectedMap => {
   const inspected = new Map<string, NativeSourceMetadata>();
   for (const [filePath, file] of filesByPath) {
-    if (!CANONICAL_PREFIXES.some((prefix) => isUnder(filePath, prefix))) {
+    const isStd = isStdLibraryLogicalPath(filePath);
+    if (!isStd && !CANONICAL_PREFIXES.some((prefix) => isUnder(filePath, prefix))) {
       throw new Error(
         `${filePath}: layout.root: Source files must live under assets/{models,sprites,sounds,structures,module}/`,
       );
     }
     const meta = inspectCachedSource(file.source, filePath, cache);
     inspected.set(filePath, meta);
-    if (isUnder(filePath, 'assets/module/') && meta.kind !== 'module') {
+    if ((isUnder(filePath, 'assets/module/') || isStd) && meta.kind !== 'module') {
       throw new Error(
-        `${filePath}: layout.module-only: Only module units are allowed under assets/module/`,
+        `${filePath}: layout.module-only: Only module units are allowed under assets/module/ or library/std/`,
       );
     }
   }
@@ -257,7 +244,11 @@ export const validateCanonicalLayout = (
     collectEntryModuleDeps(entryPath, inspected, importersByModule);
   }
   for (const [modPath, owners] of importersByModule) {
-    if (owners.size >= 2 && !isUnder(modPath, 'assets/module/')) {
+    if (
+      owners.size >= 2 &&
+      !isUnder(modPath, 'assets/module/') &&
+      !isStdLibraryLogicalPath(modPath)
+    ) {
       throw new Error(
         `${modPath}: layout.shared-in-module: Shared module imported by ${owners.size} entries must live under assets/module/`,
       );

@@ -70,8 +70,8 @@ not required for this product path.
 | Function size and complexity ratchet | `node scripts/quality/complexity.js` |
 | Complete release gate | `npm run quality` |
 
-`quality:products` compiles every example in memory and compares product and
-artifact digests with `scripts/quality/products-baseline.json`. Refactors must
+`quality:products` compiles every showcase domain and standard library module in memory and compares product and
+artifact digests with `scripts/quality/products-baseline/`. Refactors must
 leave it unchanged; reseal with `npm run quality:products:seal` only in a change
 that intends to alter compiled output, and explain the difference in review.
 
@@ -108,9 +108,9 @@ Real rendering needs Chrome or Chromium; select it with `ASHFOX_CHROME_PATH`.
 OGG audio encoding and showcase movies use built-in WebAssembly encoders and require no external FFmpeg.
 Compilation and regular CLI checks do not require a browser UI session.
 
-## Examples and media
+## Showcase and media
 
-`examples/` owns native sources. `assets/` contains published example media and
+`showcase/` owns native showcase sources and `library/std/` owns the standard library. `assets/` contains published media and
 reproducibility receipts. Showcase generation calls the CLI directly:
 
 ```sh

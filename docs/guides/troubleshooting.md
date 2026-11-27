@@ -1,13 +1,13 @@
 # Troubleshooting
 
-Project and check commands (`init --json`, `doctor --json`, `check`, `build`) return `diagnostics[].code` and `message` in their JSON response.
-Single-asset media commands (`render`, `export`) report JSON errors on stderr. A nonzero exit
+Project and check commands (`init --json`, `doctor --json`, `check`, `build`, `library`, `docs`) return `diagnostics[].code`, `message`, and actionable `hint` suggestions (`ashfox docs <topic>`, `ashfox library std list`) in their JSON response.
+Single-asset media commands (`render`) report JSON errors on stderr. A nonzero exit
 code means the new build must not be consumed as successful. Failed publication
 preserves the previous selected build.
 
 | Symptom / code | What to do |
 | --- | --- |
-| `cli.arguments` | `init`, `doctor`, and `build` accept only `--json`. For `check`, `render`, and `export` options, see [Render and check](observe.md). |
+| `cli.arguments` | `init`, `doctor`, and `build` accept `--json` (`build` also accepts `--bindings`). For `check`, `render`, `dev`, `library`, and `docs` options, see [CLI reference](cli.md) and [Render and check](observe.md). |
 | `workspace.config` | Fix the reported field. The root is an exact version-2 configuration with required package/build/export fields and optional `packs`. Unknown fields fail. |
 | Unexpected assets build | For `check` and `build`, a parent `.ashfoxworkspace` selects the whole project. Standalone observation/export commands always select their explicit input. Pass that file explicitly or move a standalone entry outside its scope. |
 | Missing/undeclared source or module | Register every selected source and reachable module; fix include/ignore rules and relative imports. |

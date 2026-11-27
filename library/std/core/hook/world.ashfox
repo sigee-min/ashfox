@@ -1,0 +1,37 @@
+ashfox 1
+module world {
+  export schema SpawnPoint : anchor {
+    field kind : enum(player, npc, creature, patrol) = creature;
+    field radius : float(0..64) = 4.0;
+    field weight : float(0..100) = 1.0;
+    field respawn_delay : second = 60s;
+    field tag : string = "";
+  }
+
+  export schema PortalGate : anchor {
+    field target_world : string;
+    field destination : string;
+    field facing : enum(north, south, east, west) = north;
+    field locked : bool = false;
+    mc_block = "minecraft:stone_brick_stairs[facing=${facing}]";
+  }
+
+  export schema SafeZone : volume {
+    field pvp_disabled : bool = true;
+    field regen_rate : float(0..10) = 0.5;
+    field label : string = "";
+  }
+
+  export schema AmbientZone : volume {
+    field cue_id : string;
+    field reverb : enum(none, hall, cavern, outdoor) = outdoor;
+    field blend_radius : float(0..32) = 6.0;
+  }
+
+  export schema PatrolRoute : meta {
+    field route_id : string;
+    field speed : float(0..12) = 1.8;
+    field pause : second = 2s;
+    field loop : bool = true;
+  }
+}

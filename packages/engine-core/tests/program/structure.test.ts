@@ -9,6 +9,7 @@ import {
   decodeStructureNbt,
   exportStructureGltfResolved,
   parseStructureSource,
+  virtualLibrarySpecifierFromPath,
   type CompiledModel,
   type DirectoryFile,
   type StructureSourceUnit,
@@ -16,6 +17,18 @@ import {
 
 const validator = require('gltf-validator');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
+
+const loadStdLibs = (): Map<string, string> => {
+  const stdDir = path.join(REPO_ROOT, 'library/std');
+  const out = new Map<string, string>();
+  for (const rel of fs.readdirSync(stdDir, { recursive: true }) as string[]) {
+    if (!rel.endsWith('.ashfox')) continue;
+    const spec = virtualLibrarySpecifierFromPath(`library/std/${rel.replaceAll(path.sep, '/')}`);
+    if (spec) out.set(spec, fs.readFileSync(path.join(stdDir, rel), 'utf8'));
+  }
+  return out;
+};
+const STD_LIBS = loadStdLibs();
 
 const relativePosix = (owner: string, spec: string): string =>
   path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
@@ -94,12 +107,12 @@ const testParserAndSemanticDsl = (): void => {
   );
 
   const semanticSrc = fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/structure/assets/structures/medieval_cottage.ashfox'),
+    path.join(REPO_ROOT, 'showcase/assets/structures/tavern.ashfox'),
     'utf8',
   );
-  const sem = parseStructureSource(semanticSrc, 'medieval_cottage.ashfox');
-  assert.equal([sem.kind, sem.density, sem.seed, sem.params.w].join(','), 'structure,2,101,15');
-  assert.equal(sem.palette.cobble?.kind, 'mix');
+  const sem = parseStructureSource(semanticSrc, 'tavern.ashfox');
+  assert.equal([sem.kind, sem.density, sem.seed, sem.params.w].join(','), 'structure,2,404,19');
+  assert.equal(sem.palette.stone_brick?.kind, 'mix');
   assert.ok(sem.ops.some((op) => op.op === 'floor'));
   assert.ok(sem.ops.some((op) => op.op === 'staircase'));
   assert.ok(sem.ops.some((op) => op.op === 'roof'));
@@ -126,11 +139,8 @@ const testLowLevelGridAndHonestBareAudit = (): void => {
   assert.equal(decoded.palette[center.state]?.Name, 'minecraft:air');
 };
 
-const compileRunePillarFixture = (): CompiledModel => {
-  const fixturePath = path.join(
-    REPO_ROOT,
-    'examples/structure/assets/models/props/rune_pillar.ashfox',
-  );
+const compileWallLanternFixture = (): CompiledModel => {
+  const fixturePath = path.join(REPO_ROOT, 'showcase/assets/models/wall_lantern.ashfox');
   const fixtureSrc = fs.readFileSync(fixturePath, 'utf8');
   const modelRes = compileDirectoryWorkspace(
     JSON.stringify({
@@ -144,7 +154,7 @@ const compileRunePillarFixture = (): CompiledModel => {
           manifest: {
             format: 'ashfox-package',
             version: 1,
-            entries: [{ name: 'rune_pillar', path: 'rune_pillar.ashfox' }],
+            entries: [{ name: 'wall_lantern', path: 'wall_lantern.ashfox' }],
             modules: [],
             dependencies: [],
           },
@@ -155,7 +165,8 @@ const compileRunePillarFixture = (): CompiledModel => {
       build: { directory: 'build' },
       exports: [],
     }),
-    [{ path: 'assets/models/rune_pillar.ashfox', source: fixtureSrc }],
+    [{ path: 'assets/models/wall_lantern.ashfox', source: fixtureSrc }],
+    STD_LIBS,
   );
   assert.equal(modelRes.ok, true);
   return (modelRes.products[0] as Extract<(typeof modelRes.products)[number], { kind: 'model' }>)
@@ -201,10 +212,10 @@ structure s {
       err instanceof StructureInputError && err.detail.code === 'structure.unused-palette',
   );
 
-  const pillarModel = compileRunePillarFixture();
+  const pillarModel = compileWallLanternFixture();
   const customSrc = `ashfox 1
 structure s {
-  import "./rune_pillar.ashfox" as rp;
+  import "./wall_lantern.ashfox" as rp;
   size = (7b, 7b, 7b);
   seed = 12;
   density = 2;
@@ -212,7 +223,7 @@ structure s {
     stone = "minecraft:stone_bricks";
     stair = "minecraft:oak_stairs";
     fence = "minecraft:oak_fence";
-    pillar = asset(rp, "minecraft:chiseled_stone_bricks");
+    pillar = asset(rp, "minecraft:lantern[hanging=false]");
   }
   box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = stone; }
   walls { from = (0b, 1b, 0b); to = (6b, 4b, 6b); block = stone; }
@@ -295,14 +306,21 @@ structure s {
 };
 
 const testCanonicalWorkspaceShowcases = (): void => {
-  const dir = path.join(REPO_ROOT, 'examples/structure');
+  const dir = path.join(REPO_ROOT, 'showcase');
   const cfg = fs.readFileSync(path.join(dir, '.ashfoxworkspace'), 'utf8');
-  const compiled = compileDirectoryWorkspace(cfg, walkWorkspaceFiles(dir));
+  const compiled = compileDirectoryWorkspace(
+    cfg,
+    walkWorkspaceFiles(dir).filter(
+      (f) => !f.path.startsWith('dist/') && !f.path.startsWith('.ashfox'),
+    ),
+    STD_LIBS,
+  );
   if (!compiled.ok) throw new Error(compiled.diagnostics.map((d) => d.message).join('\n'));
-  assert.equal(compiled.products.length, 7);
-  for (const product of compiled.products) {
-    assert.equal(product.kind, 'structure');
-    if (product.kind !== 'structure') continue;
+  const structs = compiled.products.filter(
+    (p): p is Extract<typeof p, { kind: 'structure' }> => p.kind === 'structure',
+  );
+  assert.equal(structs.length, 3);
+  for (const product of structs) {
     assert.equal(product.structure.audit.passed, true, product.entry.entryName);
     assert.ok(product.structure.audit.score >= 85, product.entry.entryName);
     assert.equal(product.structure.audit.grade, 'excellent');
@@ -311,46 +329,26 @@ const testCanonicalWorkspaceShowcases = (): void => {
     assert.ok(product.structure.playableMeta.colliders.length > 0);
     assert.ok(product.structure.playableMeta.zones.length > 0);
   }
-  const byName = new Map(compiled.products.map((p) => [p.entry.entryName, p] as const));
-  for (const k of ['ryokan_pavilion', 'scifi_outpost']) {
+  const byName = new Map(structs.map((p) => [p.entry.entryName, p] as const));
+  for (const k of ['tavern', 'blacksmith', 'modern_gallery']) {
     const p = byName.get(k);
     assert.ok(p?.kind === 'structure' && (p.structure.interiorAudits?.length ?? 0) >= 1, k);
   }
-  const [cottage, tavern, smith, tower] = [
-    byName.get('medieval_cottage')!,
+  const [tavern, smith, gallery] = [
     byName.get('tavern')!,
     byName.get('blacksmith')!,
-    byName.get('watchtower')!,
+    byName.get('modern_gallery')!,
   ];
-  if (cottage.kind === 'structure') {
-    assert.deepEqual(cottage.structure.grid.size, [15, 20, 15]);
-    assert.ok(cottage.structure.grid.openings.some((o) => o.kind === 'bay_window'));
-  }
   if (tavern.kind === 'structure') {
-    assert.ok(
-      tavern.structure.grid.floors.some((f) => f.jetty?.south === 1 && f.jetty?.east === 1),
-    );
-    assert.ok(tavern.structure.grid.openings.some((o) => o.kind === 'bay_window'));
-    const tavernTris = tavern.structure.bakedMesh.batches.reduce(
-      (s, b) => s + b.indices.length / 3,
-      0,
-    );
-    assert.ok((tavern.structure.bakedMesh.trimCount ?? 9999) < 1600);
-    assert.ok(tavern.structure.bakedMesh.batches.length <= 16 && tavernTris < 22000);
+    assert.deepEqual(tavern.structure.grid.size, [19, 22, 17]);
+    assert.ok(tavern.structure.bakedMesh.batches.length <= 24);
   }
-  assert.ok(
-    smith.kind === 'structure' && smith.structure.grid.openings.some((o) => o.kind === 'arcade'),
-  );
-  if (tower.kind === 'structure') {
-    assert.deepEqual(tower.structure.grid.size, [13, 27, 13]);
-    assert.ok(tower.structure.grid.rooms.every((r) => r.shape === 'octagon'));
-    assert.ok(tower.structure.grid.floors.some((f) => f.jetty?.north === 1));
+  if (smith.kind === 'structure') {
+    assert.deepEqual(smith.structure.grid.size, [16, 19, 15]);
   }
-  const village = byName.get('village_compound');
-  if (village?.kind === 'structure') {
-    const anchorIds = village.structure.hooks?.anchors.map((a) => a.id) ?? [];
-    assert.ok(anchorIds.includes('cottage.front_entry'), JSON.stringify(anchorIds));
-    assert.ok(anchorIds.length >= village.structure.grid.sockets.length);
+  if (gallery.kind === 'structure') {
+    assert.deepEqual(gallery.structure.grid.size, [18, 18, 18]);
+    assert.ok(gallery.structure.hooks?.anchors.length);
   }
 };
 

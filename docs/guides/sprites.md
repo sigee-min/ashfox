@@ -53,7 +53,7 @@ Use the export directory from the response containing `gem.png`. Delivery (`buil
 - **`sel_out` & `inner_rim`**: `outline` draws hue/value-modulated selective pixel outlines (`strength = 1..3`) and subtle top-left interior rim highlights without flat black borders.
 - **Seamless tiles (`profile = tile`)**: Use `fill` and `pattern` layers (`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`) which wrap toroidally across canvas edges.
 
-Start with [iron_sword.ashfox](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone.ashfox](../../examples/items/assets/sprites/mossy_stone.ashfox), and [shared.ashfox](../../examples/items/assets/module/shared.ashfox) for complete item and tile examples. Keep shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.
+Start with `showcase/assets/sprites/iron_sword.ashfox`, `showcase/assets/sprites/ruby_potion.ashfox`, `showcase/assets/sprites/oak_planks.ashfox`, and the built-in sprite standard library (`ashfox library std list sprite`) for complete item and tile examples. Keep project-specific shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.
 
 ## Review pixels and audit craft
 

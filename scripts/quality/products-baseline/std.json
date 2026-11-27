@@ -1,0 +1,910 @@
+{
+  "format": "ashfox-product-oracle",
+  "version": 1,
+  "domain": "std",
+  "toolchain": "ashfox-product-oracle:2",
+  "inputs": [
+    {
+      "input": "library/std",
+      "ok": true,
+      "sourceHash": "7f7fbe8ccc7a45e36720e87f7045959dd643fac9805d7f24f712fcc64595cd68",
+      "modules": [
+        {
+          "path": "library/std/core/hook/combat.ashfox",
+          "specifier": "std/core/hook/combat",
+          "sha256": "a2c7da3c89a5d900996b284cad0383b845773ff6e10e5c56124f50daf5413761",
+          "exports": [
+            "CombatStateMeta",
+            "HitboxArc",
+            "HurtboxZone",
+            "ProjectileMuzzle"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/hook/loot.ashfox",
+          "specifier": "std/core/hook/loot",
+          "sha256": "3c3facf244c804685a661f23334b6d5654da0f6ead11566cb43a7ffc33c5972b",
+          "exports": [
+            "DropTableMeta",
+            "HarvestingNode",
+            "ItemDrop",
+            "LootChest"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/hook/world.ashfox",
+          "specifier": "std/core/hook/world",
+          "sha256": "8ede8dfaf12cd8f6eae47771a23d2cba883094a8448aa7c5d3df3b647663b50e",
+          "exports": [
+            "AmbientZone",
+            "PatrolRoute",
+            "PortalGate",
+            "SafeZone",
+            "SpawnPoint"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/core/material/fabric.ashfox",
+          "specifier": "std/core/material/fabric",
+          "sha256": "db64b47c09bc0ef6343de2543931b932d48307ddabfb5a33ad2d21ba7f5877d0",
+          "exports": [
+            "FabricParams",
+            "FabricSurface",
+            "woven_cloth"
+          ],
+          "imports": [],
+          "params": [
+            "leather_base",
+            "leather_light",
+            "leather_shadow",
+            "linen_base",
+            "linen_light",
+            "linen_shadow",
+            "roughness",
+            "weave_contrast",
+            "wool_crimson_base",
+            "wool_crimson_light",
+            "wool_crimson_shadow"
+          ]
+        },
+        {
+          "path": "library/std/core/material/metal.ashfox",
+          "specifier": "std/core/material/metal",
+          "sha256": "db16796c5653d3bc2fc3b4505d09d94f80ad54c0f63095a9545de0a8c73d7dd5",
+          "exports": [
+            "MetalParams",
+            "MetalSurface",
+            "forged_iron"
+          ],
+          "imports": [],
+          "params": [
+            "copper_base",
+            "copper_light",
+            "copper_shadow",
+            "gold_base",
+            "gold_light",
+            "gold_shadow",
+            "iron_base",
+            "iron_light",
+            "iron_shadow",
+            "metallic",
+            "roughness"
+          ]
+        },
+        {
+          "path": "library/std/core/material/stone.ashfox",
+          "specifier": "std/core/material/stone",
+          "sha256": "ecd75f7f86e5c622573150154780fb00c1d185dc6d20c1885d6d3cbfb58ca1a8",
+          "exports": [
+            "StoneParams",
+            "StoneSurface",
+            "dressed_stone"
+          ],
+          "imports": [],
+          "params": [
+            "basalt_base",
+            "basalt_light",
+            "basalt_shadow",
+            "cobble_base",
+            "cobble_light",
+            "cobble_shadow",
+            "roughness",
+            "sandstone_base",
+            "sandstone_light",
+            "sandstone_shadow",
+            "wear"
+          ]
+        },
+        {
+          "path": "library/std/core/material/wood.ashfox",
+          "specifier": "std/core/material/wood",
+          "sha256": "0d369416ea5862a619fda5f1db08068e19559a90ee64a3d4359bc7fb330e37df",
+          "exports": [
+            "WoodParams",
+            "WoodSurface",
+            "oak_timber"
+          ],
+          "imports": [],
+          "params": [
+            "birch_base",
+            "birch_light",
+            "birch_shadow",
+            "grain_depth",
+            "oak_base",
+            "oak_light",
+            "oak_shadow",
+            "roughness",
+            "spruce_base",
+            "spruce_light",
+            "spruce_shadow"
+          ]
+        },
+        {
+          "path": "library/std/core/palette/element.ashfox",
+          "specifier": "std/core/palette/element",
+          "sha256": "0b9374e570c9f3b533d639596e1cdc8ed52ae6357ccb60d0122dd63a0c58492e",
+          "exports": [
+            "ArcanePalette",
+            "FlamePalette",
+            "FrostPalette",
+            "StormPalette"
+          ],
+          "imports": [],
+          "params": [
+            "arc_core",
+            "astral_shadow",
+            "bolt_mid",
+            "char_smoke",
+            "cloud_shadow",
+            "ember_core",
+            "ether_mid",
+            "flame_edge",
+            "flame_mid",
+            "frost_mid",
+            "glacier_edge",
+            "glyph_core",
+            "ice_core",
+            "mist_shadow",
+            "thunder_edge",
+            "void_edge"
+          ]
+        },
+        {
+          "path": "library/std/core/palette/medieval.ashfox",
+          "specifier": "std/core/palette/medieval",
+          "sha256": "03c9e3b4a0f201de0657a9c3e5b8350278823f4cc1dba888400fa0696385f495",
+          "exports": [
+            "CastleStone",
+            "GuildTimber",
+            "HeraldryBanner"
+          ],
+          "imports": [],
+          "params": [
+            "cobalt_base",
+            "cobalt_light",
+            "cobalt_shadow",
+            "crimson_base",
+            "crimson_light",
+            "crimson_shadow",
+            "gold_trim",
+            "ivory_crest",
+            "limestone_base",
+            "limestone_light",
+            "limestone_shadow",
+            "mortar_base",
+            "moss_accent",
+            "oak_base",
+            "oak_light",
+            "oak_shadow",
+            "parchment_base",
+            "slate_base",
+            "slate_light",
+            "slate_shadow",
+            "walnut_base",
+            "walnut_light",
+            "walnut_shadow",
+            "wax_seal"
+          ]
+        },
+        {
+          "path": "library/std/core/palette/modern.ashfox",
+          "specifier": "std/core/palette/modern",
+          "sha256": "3c3ea1b7a57e983922efd260470ae96119a7f0901ddab5cf34db6c1e5504025a",
+          "exports": [
+            "BrushedAlloy",
+            "StudioPolymer",
+            "UrbanConcrete"
+          ],
+          "imports": [],
+          "params": [
+            "asphalt_base",
+            "asphalt_light",
+            "asphalt_shadow",
+            "brick_accent",
+            "ceramic_base",
+            "ceramic_light",
+            "ceramic_shadow",
+            "concrete_base",
+            "concrete_light",
+            "concrete_shadow",
+            "copper_trim",
+            "glass_highlight",
+            "glass_tint",
+            "graphite_base",
+            "graphite_light",
+            "graphite_shadow",
+            "indicator_cyan",
+            "signal_orange",
+            "steel_base",
+            "steel_light",
+            "steel_shadow",
+            "stripe_yellow"
+          ]
+        },
+        {
+          "path": "library/std/core/palette/nature.ashfox",
+          "specifier": "std/core/palette/nature",
+          "sha256": "fec48840b441c173e043bdaa81ba2c4ab6659625a6c48f05f5c991870eb5793a",
+          "exports": [
+            "MeadowWater",
+            "TerrainSoil",
+            "WoodlandFoliage"
+          ],
+          "imports": [],
+          "params": [
+            "bark_base",
+            "blossom_accent",
+            "canopy_base",
+            "canopy_light",
+            "canopy_shadow",
+            "clay_accent",
+            "deep_shadow",
+            "fern_base",
+            "fern_light",
+            "fern_shadow",
+            "foam_crest",
+            "loam_base",
+            "loam_light",
+            "loam_shadow",
+            "nectar_gold",
+            "reed_green",
+            "ripple_light",
+            "sand_base",
+            "sand_light",
+            "sand_shadow",
+            "stream_base"
+          ]
+        },
+        {
+          "path": "library/std/model/motion/combat.ashfox",
+          "specifier": "std/model/motion/combat",
+          "sha256": "6b365dd7f819c7639f482170d809e7301e47437a036372c33e62c4f480e65d1d",
+          "exports": [
+            "guard",
+            "slash",
+            "thrust"
+          ],
+          "imports": [
+            "std/model/rig/biped"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/idle.ashfox",
+          "specifier": "std/model/motion/idle",
+          "sha256": "77a8821c4a204516d21108e2d061b8b2569acc74ed19f41eb8c458268df6f90a",
+          "exports": [
+            "biped_idle",
+            "quad_idle"
+          ],
+          "imports": [
+            "std/model/rig/biped",
+            "std/model/rig/quadruped"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/locomotion.ashfox",
+          "specifier": "std/model/motion/locomotion",
+          "sha256": "fa05a3e9e34803348b13d766b364a62e830583ef1fcb9f8004804398fec78ca4",
+          "exports": [
+            "biped_run",
+            "biped_walk",
+            "quad_trot",
+            "wing_glide"
+          ],
+          "imports": [
+            "std/model/rig/biped",
+            "std/model/rig/quadruped",
+            "std/model/rig/winged"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/prop/container.ashfox",
+          "specifier": "std/model/prop/container",
+          "sha256": "4669e79f819a05506ff659023315bb36049d8ca0355d6d4ef9e96ba00ba37284",
+          "exports": [
+            "ChestRig",
+            "ChestSkeleton",
+            "ChestSurface",
+            "StorageChest",
+            "lid_open"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/prop/lighting.ashfox",
+          "specifier": "std/model/prop/lighting",
+          "sha256": "5f858cd54b06fb07ef593f6887412c485cc041661848b3d00d4103670910a188",
+          "exports": [
+            "IronLantern",
+            "LanternRig",
+            "LanternSkeleton",
+            "LanternSurface"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/prop/weapon.ashfox",
+          "specifier": "std/model/prop/weapon",
+          "sha256": "2e3b78550070f23b3095ff59c5cf3d0b83b9ff24ccb2174e6b8fe7ae24c38337",
+          "exports": [
+            "BladeTipSocket",
+            "Broadsword",
+            "WeaponRig",
+            "WeaponSkeleton",
+            "WeaponSurface"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/biped.ashfox",
+          "specifier": "std/model/rig/biped",
+          "sha256": "0c690b763a8f64c7d94d1950e78ea8c5771acd29cf53e246e92a9ca7aba203f4",
+          "exports": [
+            "BipedRig",
+            "BipedSkeleton",
+            "HandGrip"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/quadruped.ashfox",
+          "specifier": "std/model/rig/quadruped",
+          "sha256": "3c98a60eb614a04c665e27eba3600a576095ce88aca620e77f5e63e7866e66b3",
+          "exports": [
+            "QuadrupedRig",
+            "QuadrupedSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/slime.ashfox",
+          "specifier": "std/model/rig/slime",
+          "sha256": "8594254b8fa5ffed1ed50d3de4e049e62e817004d76586d76d9175a113abe251",
+          "exports": [
+            "SlimeRig",
+            "SlimeSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/winged.ashfox",
+          "specifier": "std/model/rig/winged",
+          "sha256": "3f8433d535cf8c02cd2d268c80f671e8a5588bf16bc0f08b54509d63c7493d97",
+          "exports": [
+            "WingedRig",
+            "WingedSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sound/ambient/fire.ashfox",
+          "specifier": "std/sound/ambient/fire",
+          "sha256": "30a9227e2a19e36e62a2ad566c3ce77b48ba794c83d1031733b1dd39e9c341b7",
+          "exports": [
+            "ember_crackle",
+            "flame_flutter",
+            "hearth_roar"
+          ],
+          "imports": [],
+          "params": [
+            "ember_density",
+            "roar_cutoff"
+          ]
+        },
+        {
+          "path": "library/std/sound/ambient/room.ashfox",
+          "specifier": "std/sound/ambient/room",
+          "sha256": "d75295c99778738359d5d3bea1aefa2e88e29bbe8c7ff092e457da7181847a30",
+          "exports": [
+            "draft_hiss",
+            "room_bed"
+          ],
+          "imports": [],
+          "params": [
+            "air_cutoff",
+            "tone_level"
+          ]
+        },
+        {
+          "path": "library/std/sound/ambient/wind.ashfox",
+          "specifier": "std/sound/ambient/wind",
+          "sha256": "dabe91f78ded57daa279aa9a6469259efc455541b69db395c4d56b24c029cc39",
+          "exports": [
+            "breeze_air",
+            "canopy_howl",
+            "deep_gust"
+          ],
+          "imports": [],
+          "params": [
+            "gust_peak",
+            "howl_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/combat/blade.ashfox",
+          "specifier": "std/sound/combat/blade",
+          "sha256": "12c6db0b0c000ef6ee2534c826c749cdd8e4912c3fb1c5185a3cd3f4429b8a0c",
+          "exports": [
+            "air_slice",
+            "edge_ring",
+            "steel_sing"
+          ],
+          "imports": [],
+          "params": [
+            "pitch",
+            "ring_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/combat/blunt.ashfox",
+          "specifier": "std/sound/combat/blunt",
+          "sha256": "312e776a9ed98652b74a948af94809d86993cc0ad49193cf5f2b689a931c092d",
+          "exports": [
+            "body_thump",
+            "heavy_whoosh",
+            "oak_crush"
+          ],
+          "imports": [],
+          "params": [
+            "heft",
+            "pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/combat/hit.ashfox",
+          "specifier": "std/sound/combat/hit",
+          "sha256": "1f6c5fa2095fdcca5bc1cfcb82c489dc308ddd1b1d9a23f8723242ccc8ed5bc9",
+          "exports": [
+            "armor_clink",
+            "flesh_impact",
+            "impact_transient"
+          ],
+          "imports": [],
+          "params": [
+            "pitch",
+            "spark_pitch"
+          ]
+        },
+        {
+          "path": "library/std/sound/foley/cloth.ashfox",
+          "specifier": "std/sound/foley/cloth",
+          "sha256": "3a029c0a37b487365d4beea65ada77cc97789a9a2004988224dd19f6231b103d",
+          "exports": [
+            "fabric_rustle",
+            "leather_snap"
+          ],
+          "imports": [],
+          "params": [
+            "brightness",
+            "width"
+          ]
+        },
+        {
+          "path": "library/std/sound/foley/door.ashfox",
+          "specifier": "std/sound/foley/door",
+          "sha256": "751d0c7225f1efaf7e333a4d6fb5ec8ee635f6e982aa79b9b39ecd31e77ae07e",
+          "exports": [
+            "hinge_creak",
+            "latch_clack",
+            "timber_knock"
+          ],
+          "imports": [],
+          "params": [
+            "damping",
+            "pitch",
+            "spread"
+          ]
+        },
+        {
+          "path": "library/std/sound/foley/footstep.ashfox",
+          "specifier": "std/sound/foley/footstep",
+          "sha256": "28ec4b0b410cf3291f1738a6d1524906054902ac88478239289498b15e08fb87",
+          "exports": [
+            "boot_thud",
+            "grit_scuff",
+            "stone_tap"
+          ],
+          "imports": [],
+          "params": [
+            "damping",
+            "pitch",
+            "spread"
+          ]
+        },
+        {
+          "path": "library/std/sound/ui/chime.ashfox",
+          "specifier": "std/sound/ui/chime",
+          "sha256": "6601c2bcdfa0556f41fa7ffc2201983724b0272bcc4f5c9a9232871522c8d8a4",
+          "exports": [
+            "bell_chime",
+            "crystal_overtone"
+          ],
+          "imports": [],
+          "params": [
+            "pitch",
+            "shimmer_mix"
+          ]
+        },
+        {
+          "path": "library/std/sound/ui/click.ashfox",
+          "specifier": "std/sound/ui/click",
+          "sha256": "47d7d0fe99623974bacdf01841678583e8b3d8d85987835fc03f6a116f04d717",
+          "exports": [
+            "crisp_tick",
+            "glass_tap"
+          ],
+          "imports": [],
+          "params": [
+            "damping",
+            "pitch"
+          ]
+        },
+        {
+          "path": "library/std/sprite/item/potion.ashfox",
+          "specifier": "std/sprite/item/potion",
+          "sha256": "dc45f82b5a009e0600335fe229325dff7b80aea0cb292c747afbcb1fdf9b99c1",
+          "exports": [
+            "bottle_glass",
+            "cork_wood",
+            "elixir_emerald",
+            "flask_round",
+            "health_ruby",
+            "mana_azure",
+            "specular_drop",
+            "stamina_amber"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/item/resource.ashfox",
+          "specifier": "std/sprite/item/resource",
+          "sha256": "fa52bfa51a493e46485fdf14f82624257bf6be1e821440f3cde936a9e6806cbb",
+          "exports": [
+            "amethyst_gem",
+            "copper_ore",
+            "crystal_core",
+            "facet_spark",
+            "gold_ingot",
+            "ingot_bar",
+            "iron_ingot",
+            "oak_plank"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/item/weapon.ashfox",
+          "specifier": "std/sprite/item/weapon",
+          "sha256": "6618774b8a67badd9df11bca706141763557919151e600017ca5422682de6ed4",
+          "exports": [
+            "blade_core",
+            "blade_glint",
+            "ember_edge",
+            "gold_hilt",
+            "iron_dark",
+            "leather_grip",
+            "steel",
+            "steel_edge"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/tile/foliage.ashfox",
+          "specifier": "std/sprite/tile/foliage",
+          "sha256": "14a8a41d9b77413e34c6de217b1ad595dc9c321bf25e03fa26627b3eaafbe63c",
+          "exports": [
+            "autumn_amber",
+            "blossom_pink",
+            "canopy_green",
+            "deep_fern",
+            "leaf_cluster",
+            "meadow_grass"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/tile/stone.ashfox",
+          "specifier": "std/sprite/tile/stone",
+          "sha256": "e07569691a594a7030d5da734ea45b7a9af0a8163ead761b0d4364eeb39ed322",
+          "exports": [
+            "cobblestone",
+            "masonry_joint",
+            "mortar_dark",
+            "moss_patch",
+            "sandstone",
+            "slate_tile"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/sprite/tile/wood.ashfox",
+          "specifier": "std/sprite/tile/wood",
+          "sha256": "8a073ab384e515074fe9ec3b044a6a3b03deaef539140aa91ca3018afe609326",
+          "exports": [
+            "bark_dark",
+            "birch_timber",
+            "oak_joint",
+            "oak_timber",
+            "plank_seam",
+            "spruce_timber"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/arch/medieval.ashfox",
+          "specifier": "std/structure/arch/medieval",
+          "sha256": "60f6f738c29fb3f5c6ae7fb7a7a9182da0e15b55af86670ac67cdd7f1863eb30",
+          "exports": [
+            "CobbleWell",
+            "StoneArchway",
+            "TimberButtress"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/arch/modern.ashfox",
+          "specifier": "std/structure/arch/modern",
+          "sha256": "4f5244a5e20a580ac7c690561c6824d3351b7203edb0521b878cb23731e22d6b",
+          "exports": [
+            "ConcretePillar",
+            "GlassCurtainBay",
+            "SteelCanopy"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/furnish/display.ashfox",
+          "specifier": "std/structure/furnish/display",
+          "sha256": "1d6db4143476ad50bbb334aff92ea03bb87469dbdd7d1684f802eedc4152f438",
+          "exports": [
+            "BookAlcove",
+            "RelicPlinth",
+            "TrophyCase"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/furnish/lighting.ashfox",
+          "specifier": "std/structure/furnish/lighting",
+          "sha256": "4f553cc298a1764d5ff5bbeb31fd8a1a1faee3e458928f73377fa32731b4a373",
+          "exports": [
+            "BrazierStand",
+            "IronChandelier",
+            "LanternPost"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/furnish/seating.ashfox",
+          "specifier": "std/structure/furnish/seating",
+          "sha256": "c6256ccb9d4220638604e23d19a98677d7c334d49101d891411cdd536c159715",
+          "exports": [
+            "BenchRow",
+            "FeastTable",
+            "HearthBench"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/furnish/storage.ashfox",
+          "specifier": "std/structure/furnish/storage",
+          "sha256": "c787c7f3f0bdb579a79a1f72ff432879c1eec9fef78dba9f940f4fcba9dd9922",
+          "exports": [
+            "BarrelStack",
+            "ChestRack",
+            "PantryShelf"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/bedroom.ashfox",
+          "specifier": "std/structure/interior/bedroom",
+          "sha256": "5c57bd447a81735cf3660ae76ace01fa5afbcfd3ab2dc867e124f2621f499a46",
+          "exports": [
+            "GuestBedroom"
+          ],
+          "imports": [
+            "std/structure/furnish/lighting"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/gallery.ashfox",
+          "specifier": "std/structure/interior/gallery",
+          "sha256": "554d0ea0e8c3b97d5ef0d9130d94e1057af36607569a42fbc149e4bba17487e8",
+          "exports": [
+            "ArchiveAlcove",
+            "ExhibitionWing"
+          ],
+          "imports": [
+            "std/structure/furnish/display",
+            "std/structure/furnish/lighting"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/tavern.ashfox",
+          "specifier": "std/structure/interior/tavern",
+          "sha256": "a9b23e7b9113ee09d7a1216de50233b9b157fc51cf57a5a6fe14491ec999f7e1",
+          "exports": [
+            "HearthDining",
+            "TavernBar"
+          ],
+          "imports": [
+            "std/structure/furnish/seating",
+            "std/structure/furnish/storage"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/workshop.ashfox",
+          "specifier": "std/structure/interior/workshop",
+          "sha256": "e400607782646202d04acd727e256dafb9177258cc0fd040122816128dabc85b",
+          "exports": [
+            "AlchemyStation",
+            "SmithyBay"
+          ],
+          "imports": [
+            "std/structure/furnish/storage"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/ambient/aura.ashfox",
+          "specifier": "std/vfx/ambient/aura",
+          "sha256": "bc9ea0b0d78dad763a0ba16b789cf9acfda24f5b838c142a12d8928be4c86700",
+          "exports": [
+            "FrostHalo",
+            "HealingMist",
+            "WardGold"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/ambient/embers.ashfox",
+          "specifier": "std/vfx/ambient/embers",
+          "sha256": "b35392831ce5689f45267ed7d2ec2bacccd05e7321bcb9eebf13fa60cb9331a9",
+          "exports": [
+            "AshCinder",
+            "HearthEmbers",
+            "SoulSpark"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/element/arcane.ashfox",
+          "specifier": "std/vfx/element/arcane",
+          "sha256": "dd8f12a2e2cf22cc3ac2891ee65f9c61bd895c59fff339c41063e0470f5b6c51",
+          "exports": [
+            "ArcaneViolet",
+            "RuneCyan",
+            "StarlightGold"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/element/fire.ashfox",
+          "specifier": "std/vfx/element/fire",
+          "sha256": "b71a2a96388934793ec4eba3270caa00483a90f6f693bf9ea8e4d880e9450f33",
+          "exports": [
+            "BlueFlame",
+            "EmberSolar",
+            "HearthGlow"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/element/lightning.ashfox",
+          "specifier": "std/vfx/element/lightning",
+          "sha256": "a41595ecb9ae8e92981b24dff473f5147c00fb9b4c3d309afad5f8606bae1358",
+          "exports": [
+            "GoldenBolt",
+            "StormArc",
+            "VoltSurge"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/impact/burst.ashfox",
+          "specifier": "std/vfx/impact/burst",
+          "sha256": "e30c0a48c85d6c3f83c33c625a68394fbdcc429a6805cb52fe30cfc1e2e39af1",
+          "exports": [
+            "ShatterBurst",
+            "SparkBurst",
+            "ToxicBurst"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/impact/shockwave.ashfox",
+          "specifier": "std/vfx/impact/shockwave",
+          "sha256": "57a8fe44db306a8ec6eac265c696614806e9f2243221e2c3d07fdc05f8284b85",
+          "exports": [
+            "EarthquakeRing",
+            "KineticWave",
+            "SonicPulse"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/melee/slash.ashfox",
+          "specifier": "std/vfx/melee/slash",
+          "sha256": "84ef65630d756990226163afd2165ef28273d609ff27c1add53b54b9d9c360a6",
+          "exports": [
+            "CrimsonSlash",
+            "PhantomSlash",
+            "SteelArc"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/vfx/melee/thrust.ashfox",
+          "specifier": "std/vfx/melee/thrust",
+          "sha256": "271d2938beaab451ee02871cdea2eceb4e9b913ebe8049720a7fef40937ea8b3",
+          "exports": [
+            "AmberGlaive",
+            "FrostThrust",
+            "PiercingLance"
+          ],
+          "imports": [],
+          "params": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # 컴포넌트와 소켓
 
-component는 명시적 매개변수·타입 포트와 함께 모델 형상을 묶습니다. 조립에서 `use`로 인스턴스화합니다. 계약은 명목적이므로 필드가 같아도 선언 식별자가 다르면 교환할 수 없습니다. rig·surface는 [완전한 모델](model.md#complete-source)에서 시작하세요.
+component는 명시적 매개변수·타입 포트와 함께 모델 형상을 묶습니다. 조립에서 `use`로 인스턴스화합니다. 계약은 명목적이므로 필드가 같아도 선언 식별자가 다르면 교환할 수 없습니다. `"std/model/rig/..."`(`ashfox library std list model/rig`)에서 표준 리그와 스켈레톤을 바로 가져오거나, [완전한 모델](model.md#complete-source)에서 `rig contract`(`joint`, `channels`, `limits`, `chain`, `ik_limb`, `anchor`), `skeleton`의 `parent_origin` 바인딩, `surface`를 참고하세요.
 
 ## 매개변수
 

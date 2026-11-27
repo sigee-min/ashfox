@@ -55,13 +55,34 @@ try {
   const folder = path.join(temp, 'workspace');
   fs.mkdirSync(path.join(folder, 'assets/sprites'), { recursive: true });
   fs.mkdirSync(path.join(folder, 'assets/module'), { recursive: true });
-  fs.copyFileSync(
-    path.join(root, 'examples/items/assets/sprites/apple.ashfox'),
-    path.join(folder, 'assets/sprites/apple.ashfox'),
-  );
-  fs.copyFileSync(
-    path.join(root, 'examples/items/assets/module/shared.ashfox'),
+  fs.writeFileSync(
     path.join(folder, 'assets/module/shared.ashfox'),
+    `ashfox 1
+module shared {
+  export material red_skin { ramp { mode = auto; base = #c94040; preset = organic; } }
+  export stamp stem { rows = ["ss", ".s"]; slots = ["s"]; }
+}
+`,
+  );
+  fs.writeFileSync(
+    path.join(folder, 'assets/sprites/apple.ashfox'),
+    `ashfox 1
+sprite apple {
+  import "../module/shared.ashfox" as shared;
+  profile = item;
+  canvas = (32px, 32px);
+  palette { bark = #734b34; glint = #fff5e6; }
+  ellipse body {
+    cx = 16px; cy = 18px; rx = 9px; ry = 8px;
+    material = shared.red_skin;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
+    grain soft { amount = 1; seed = 23; }
+  }
+  stamp stem_top { stamp = shared.stem; at = (15px, 7px); flip = none; colors { s = bark; } }
+  paint shine { at = (11px, 13px); rows = ["gg", "g."]; colors { g = glint; } }
+  outline rim { mode = sel_out; strength = 2; inner_rim = true; }
+}
+`,
   );
   const entry = path.join(folder, '.ashfoxworkspace');
   fs.writeFileSync(entry, JSON.stringify(config));

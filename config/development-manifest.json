@@ -373,6 +373,7 @@
       "apps/web/src/app/api/mcp/route.ts",
       "apps/worker/package.json",
       "docs/guides/workbench-api.md",
+      "examples",
       "packages/asset-build/src/archive.ts",
       "packages/asset-build/src/compile.ts",
       "packages/asset-build/src/contract.ts",

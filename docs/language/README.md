@@ -15,18 +15,20 @@ and version the source to change the asset.
 | [Model textures](textures.md) | Surface contracts, atlas charts, palettes, stamps and pixel coordinates |
 | [Sprite syntax](sprites.md) | Native sprite records, reusable shapes, materials, layers and validation |
 | [Sound syntax](sounds.md) | Literal records, source variants, field ranges and synthesis behavior |
+| [VFX syntax](vfx.md) | Geometric VFX primitives, procedural textures, dissolve strips and particle emitters |
 | [Structure syntax](structures.md) | Minecraft `.nbt` & Unity GLB buildings, palettes, prefabs, roofs and cutaway views |
 | [Hooks and schemas](hooks.md) | Modular `schema`, `anchor`, `volume`, `cue`, `meta`, `zone`, `.hooks.json` and engine bindings |
 
 For projects with multiple assets, see [workspace configuration](../guides/workspace.md).
 It is a separate JSON contract, not a wrapper required around every source file.
+Reuse built-in standard-library modules via `import "std/..."` (browse with `ashfox library std list`), or query offline syntax pages with `ashfox docs <topic>`.
 For complete creation walkthroughs, see [models](../guides/models.md),
-[sprites](../guides/sprites.md) and [sounds](../guides/sounds.md).
+[sprites](../guides/sprites.md), [vfx](../guides/vfx.md) and [sounds](../guides/sounds.md).
 
 ## Source shapes
 
 Every file starts with the header `ashfox 1` and contains one outer unit.
-The header identifies the unified language version across all four asset kinds.
+The header identifies the unified language version across all five asset kinds.
 
 | Outer unit | Meaning | Allowed content |
 | --- | --- | --- |
@@ -34,6 +36,7 @@ The header identifies the unified language version across all four asset kinds.
 | `module Name { … }` | Reusable model declarations | Imports and exported/private model declarations |
 | `sprite name { … }` | One pixel sprite | Imports, reusable sprite declarations, profile, canvas, palette and layers |
 | `module name { … }` used by a sprite | Reusable sprite declarations | Imports and exported masks, materials and stamps |
+| `vfx name { … }` | One stylized VFX effect | Imports, duration, fps, loop, palette, geometric `element`s and `voxel_burst` `emitter`s |
 | `sound name { … }` | One sound effect | Audio properties, space, voices, sequences, variants, loop and mastering settings |
 | `structure id { … }` | One Minecraft / GLB building | Block-state palette, custom `.ashfox` props, prefabs, roofs, cutaway & interior ops |
 | `module id { … }` used by a structure | Reusable building interiors | Optional palette and `export prefab` interior modules |

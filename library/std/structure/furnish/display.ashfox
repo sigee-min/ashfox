@@ -1,0 +1,31 @@
+ashfox 1
+module display {
+  palette {
+    chiseled_stone = "minecraft:chiseled_stone_bricks";
+    bookshelf = "minecraft:bookshelf";
+    lectern = "minecraft:lectern[facing=south]";
+    glass = "minecraft:glass";
+    oak_slab = "minecraft:oak_slab[type=bottom]";
+    pot = "minecraft:flower_pot";
+    carpet = "minecraft:blue_carpet";
+  }
+
+  export prefab RelicPlinth {
+    set { at = (0b, 0b, 0b); block = chiseled_stone; }
+    set { at = (0b, 1b, 0b); block = glass; }
+    set { at = (0b, 2b, 0b); block = oak_slab; }
+  }
+
+  export prefab BookAlcove {
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = bookshelf; }
+    set { at = (1b, 0b, 1b); block = lectern; }
+    set { at = (0b, 0b, 1b); block = carpet; }
+    set { at = (2b, 2b, 0b); block = pot; }
+  }
+
+  export prefab TrophyCase {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = chiseled_stone; }
+    box { from = (0b, 1b, 0b); to = (2b, 1b, 0b); block = glass; }
+    box { from = (0b, 2b, 0b); to = (2b, 2b, 0b); block = oak_slab; }
+  }
+}

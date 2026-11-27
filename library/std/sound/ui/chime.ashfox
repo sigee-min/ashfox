@@ -1,0 +1,42 @@
+ashfox 1
+module chime {
+  params {
+    pitch = 660hz;
+    shimmer_mix = 16%;
+  }
+
+  export voice bell_chime : modal_plate {
+    material = bell;
+    pitch = pitch;
+    size = 1.05;
+    hardness = 0.86;
+    damping = 0.24;
+    brightness = 0.84;
+    modes = 16;
+    strike = mallet;
+    twin_beat = 0.52;
+    splash = 0.26;
+    stereo_spread = 0.48;
+    highpass = 70hz;
+    filter : lowpass { cutoff = log(0: 14000hz -> 0.4: 4800hz -> 1: 1600hz); q = 1.05; }
+    pan = -0.12;
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+
+  export voice crystal_overtone : material {
+    material = bronze;
+    pitch = 1320hz;
+    size = 0.9;
+    hardness = 0.8;
+    damping = 0.26;
+    brightness = 0.78;
+    modes = 10;
+    strike = mallet;
+    twin_beat = 0.38;
+    stereo_spread = 0.4;
+    highpass = 140hz;
+    fx : shimmer { mix = shimmer_mix; feedback = 20%; shift_semitones = 12st; }
+    pan = 0.14;
+    gain { env = ad; attack = 2ms; peak = 0.68; curve = exp; }
+  }
+}

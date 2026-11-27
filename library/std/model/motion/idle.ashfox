@@ -1,0 +1,53 @@
+ashfox 1
+module idle {
+  import "std/model/rig/biped" as biped;
+  import "std/model/rig/quadruped" as quad;
+
+  export motion biped_idle for biped.BipedRig {
+    duration = 2s; fps = 20; loop = loop;
+    track pelvis.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (1.5deg, 0deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track torso.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (2deg, -2deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1s = (-2deg, 4deg, 0deg) catmullrom;
+      key 2s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (0deg, 0deg, 2deg) catmullrom;
+      key 1s = (3deg, 0deg, 4deg) catmullrom;
+      key 2s = (0deg, 0deg, 2deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (0deg, 0deg, -2deg) catmullrom;
+      key 1s = (-3deg, 0deg, -4deg) catmullrom;
+      key 2s = (0deg, 0deg, -2deg) catmullrom;
+    }
+  }
+
+  export motion quad_idle for quad.QuadrupedRig {
+    duration = 2.4s; fps = 20; loop = loop;
+    track body.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 1.2s = (1.5deg, 0deg, 0deg) linear;
+      key 2.4s = (0deg, 0deg, 0deg) linear;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) catmullrom;
+      key 1.2s = (-3deg, 6deg, 0deg) catmullrom;
+      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    }
+    track tail.rotation {
+      key 0s = (0deg, -6deg, 0deg) catmullrom;
+      key 1.2s = (0deg, 6deg, 0deg) catmullrom;
+      key 2.4s = (0deg, -6deg, 0deg) catmullrom;
+    }
+  }
+}

@@ -1,0 +1,42 @@
+ashfox 1
+module potion {
+  export material bottle_glass {
+    ramp { mode = auto; base = #6e94ad; preset = cool; }
+  }
+  export material cork_wood {
+    ramp { mode = auto; base = #b37d4e; preset = wood; }
+  }
+  export material health_ruby {
+    ramp { mode = auto; base = #d4356a; preset = emissive; }
+  }
+  export material mana_azure {
+    ramp { mode = auto; base = #3984d8; preset = emissive; }
+  }
+  export material stamina_amber {
+    ramp { mode = auto; base = #df9028; preset = emissive; }
+  }
+  export material elixir_emerald {
+    ramp { mode = auto; base = #48ba6d; preset = emissive; }
+  }
+
+  export mask flask_round {
+    rows = [
+      "..1111..",
+      ".111111.",
+      "11111111",
+      "11111111",
+      "11111111",
+      ".111111.",
+      "..1111.."
+    ];
+  }
+
+  export stamp specular_drop {
+    rows = [
+      ".h.",
+      "hh.",
+      "h.."
+    ];
+    slots = [h];
+  }
+}

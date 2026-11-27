@@ -1,0 +1,119 @@
+ashfox 1
+model griffin_boss {
+  import "std/model/rig/winged" as winged;
+  import "std/model/motion/locomotion" as loco;
+  import "std/core/hook/combat" as combat_hook;
+  import "std/core/hook/world" as world_hook;
+  import "griffin_plumage/plumage" as plumage;
+
+  component GriffinBody {
+    requires rig skeleton: winged.WingedRig;
+    requires surface skin: plumage.GriffinPlumage;
+    bind bone root to skeleton.root;
+    bind bone torso to skeleton.torso;
+    bind bone head to skeleton.head;
+    bind bone left_wing to skeleton.left_wing;
+    bind bone left_wing_tip to skeleton.left_wing_tip;
+    bind bone right_wing to skeleton.right_wing;
+    bind bone right_wing_tip to skeleton.right_wing_tip;
+    bind bone tail to skeleton.tail;
+    bind bone left_leg to skeleton.left_leg;
+    bind bone right_leg to skeleton.right_leg;
+    geometry {
+      bone root {
+        bone torso {
+          cube haunch { origin = (-4.5u, 8u, 0u); size = (9u, 8u, 9u); surface = skin.haunch; }
+          cube chest { origin = (-5.5u, 8u, -7u); size = (11u, 10u, 8u); pivot = (0u, 13u, -3u); rotation = (4deg, 0deg, 0deg); surface = skin.chest; }
+          wedge breast { origin = (-4u, 9.5u, -10.5u); size = (8u, 7u, 4u); slope = north; surface = skin.breast; }
+          cube mantle { origin = (-5.5u, 17.5u, -7.5u); size = (11u, 3u, 7u); pivot = (0u, 18.5u, -4u); rotation = (-10deg, 0deg, 0deg); surface = skin.mantle; }
+          bone head {
+            cube skull { origin = (-4u, 16u, -10u); size = (8u, 7u, 7u); pivot = (0u, 19u, -6u); rotation = (4deg, 0deg, 0deg); surface = skin.skull; }
+            expression_slot face {
+              origin = (3.5u, 18.8u, -10.08u);
+              size = (7u, 4u);
+              u_axis = (-1u, 0u, 0u);
+              v_axis = (0u, 1u, 0u);
+              neutral = skin.face_neutral;
+              blink = skin.face_blink;
+              screech = skin.face_screech;
+            }
+            taper beak { origin = (-2.5u, 16.5u, -14.5u); size = (5u, 3u, 4u); top_scale = (0.35, 0.4); axis = z; pivot = (0u, 18.2u, -12.2u); rotation = (0deg, 180deg, 0deg); surface = skin.beak; }
+            wedge crest_l { origin = (-3.8u, 23u, -7u); size = (2u, 3u, 4u); slope = south; mirror_x = crest_r; surface = skin.crest; }
+            plane crest_plume_l { origin = (-3.2u, 22u, -5u); size = (4u, 4u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); rotation = (-10deg, 0deg, -12deg); mirror_x = crest_plume_r; surface = skin.crest_plume; }
+          }
+          bone left_wing {
+            wedge shoulder_l { origin = (-11u, 15u, -4u); size = (7u, 5u, 6u); slope = west; surface = skin.shoulder; }
+            cube feather_l0 { origin = (-11u, 16u, 2u); size = (3u, 2u, 11u); surface = skin.feather; }
+            taper tip_l0 { origin = (-11u, 16u, 13u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+            bone left_wing_tip {
+              cube wing_arm_l { origin = (-20u, 15u, -2.5u); size = (9u, 4u, 5u); surface = skin.wing_arm; }
+              cube feather_l1 { origin = (-14.5u, 15.5u, 2.5u); size = (3u, 2u, 11u); surface = skin.feather; }
+              cube feather_l2 { origin = (-18u, 15.5u, 2.5u); size = (3u, 2u, 10u); surface = skin.feather_outer; }
+              taper tip_l1 { origin = (-14.5u, 15.5u, 13.5u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+              taper tip_l2 { origin = (-18u, 15.5u, 12.5u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+            }
+          }
+          bone right_wing {
+            wedge shoulder_r { origin = (4u, 15u, -4u); size = (7u, 5u, 6u); slope = east; surface = skin.shoulder; }
+            cube feather_r0 { origin = (8u, 16u, 2u); size = (3u, 2u, 11u); surface = skin.feather; }
+            taper tip_r0 { origin = (8u, 16u, 13u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+            bone right_wing_tip {
+              cube wing_arm_r { origin = (11u, 15u, -2.5u); size = (9u, 4u, 5u); surface = skin.wing_arm; }
+              cube feather_r1 { origin = (11.5u, 15.5u, 2.5u); size = (3u, 2u, 11u); surface = skin.feather; }
+              cube feather_r2 { origin = (15u, 15.5u, 2.5u); size = (3u, 2u, 10u); surface = skin.feather_outer; }
+              taper tip_r1 { origin = (11.5u, 15.5u, 13.5u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+              taper tip_r2 { origin = (15u, 15.5u, 12.5u); size = (3u, 2u, 3u); top_scale = (0.35, 0.45); axis = z; surface = skin.feather_tip; }
+            }
+          }
+          bone left_leg {
+            cylinder leg_l { origin = (-2.8u, 2u, -1u); radius = 1.5u; radius_top = 1.8u; height = 6.5u; sides = 8; axis = y; mirror_x = leg_r; surface = skin.leg; }
+            cube paw_l { origin = (-4.8u, 0u, -3.5u); size = (4u, 2u, 5u); mirror_x = paw_r; surface = skin.paw; }
+            taper talon_l { origin = (-4.2u, 0u, -6.5u); size = (3u, 2u, 3u); top_scale = (0.3, 0.3); axis = z; pivot = (-2.7u, 0.9u, -5u); rotation = (0deg, 180deg, 0deg); mirror_x = talon_r; surface = skin.talon; }
+          }
+          bone right_leg {
+            cube brace_r { origin = (1.5u, 7u, -1u); size = (2u, 2u, 2u); surface = skin.brace; }
+          }
+          bone tail {
+            cube tail_base { origin = (-1.5u, 9.5u, 8u); size = (3u, 3u, 8u); pivot = (0u, 11u, 8u); rotation = (-8deg, 0deg, 0deg); surface = skin.tail_base; }
+            taper tail_tuft { origin = (-2u, 10.5u, 16u); size = (4u, 4u, 4u); top_scale = (0.35, 0.35); axis = z; surface = skin.tail_tuft; }
+          }
+        }
+      }
+    }
+  }
+
+  motion idle for winged.WingedRig {
+    duration = 3s; fps = 24; loop = loop; rest_relative = true;
+    track torso.position { key 0s = (0u, 0u, 0u) smooth; key 1.4s = (0u, -0.45u, 0u) ease_in_out; key 3s = (0u, 0u, 0u) ease_out; }
+    track head.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.4s = (-3deg, 8deg, 0deg) ease_in_out; key 3s = (0deg, 0deg, 0deg) ease_out; }
+    track tail.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.4s = (3deg, 10deg, 0deg) ease_in_out; key 3s = (0deg, 0deg, 0deg) ease_out; }
+    expression face { at 0s = neutral; at 1.9s..2.05s = blink; }
+    wave torso.rotation.x = breath(3s, inhale = 0.42) * 2.5deg;
+  }
+
+  motion wing_display for winged.WingedRig {
+    duration = 3.2s; fps = 24; loop = loop; rest_relative = true;
+    track left_wing.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.9s = (0deg, 0deg, -28deg) anticipate(0.2); key 2.2s = (0deg, 0deg, -28deg) smooth; key 3.2s = (0deg, 0deg, 0deg) ease_out; }
+    track right_wing.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.9s = (0deg, 0deg, 28deg) anticipate(0.2); key 2.2s = (0deg, 0deg, 28deg) smooth; key 3.2s = (0deg, 0deg, 0deg) ease_out; }
+    track head.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.9s = (-12deg, 0deg, 0deg) ease_out; key 2.2s = (-12deg, 0deg, 0deg) smooth; key 3.2s = (0deg, 0deg, 0deg) ease_out; }
+    expression face { at 0s = neutral; at 0.8s..2.2s = screech; }
+    cue 0.9s sound "griffin_call" at head;
+  }
+
+  motion wing_flap for winged.WingedRig {
+    duration = 1.6s; fps = 24; loop = loop; rest_relative = true;
+    wave left_wing.rotation.z = flap(0.8s, down_ratio = 0.38, com_lift = 1.4u) * -24deg;
+    wave right_wing.rotation.z = flap(0.8s, down_ratio = 0.38) * 24deg;
+    wave head.rotation.x = breath(0.8s, inhale = 0.38) * -4deg;
+    expression face { at 0s = neutral; }
+  }
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = winged.WingedSkeleton;
+  motions = [idle, wing_display, wing_flap, loco.wing_glide];
+  use GriffinBody as griffin { skeleton = winged.WingedRig; skin = plumage.boss_plumage; }
+
+  anchor boss_spawn : world_hook.SpawnPoint { bone = root; kind = creature; radius = 6.0; tag = "griffin_boss"; }
+  cue wing_gust : combat_hook.HitboxArc { clip = wing_display; at = 0.8s..1.4s; arc_deg = 160deg; reach = 28u; damage = 28; damage_type = blunt; }
+  meta boss_ai : combat_hook.CombatStateMeta { aggro_range = 28.0; leash_range = 64.0; attack_cooldown = 2.0s; }
+}

@@ -1,6 +1,8 @@
 import { runOnboarding, isOnboardingCommand, formatCliResult } from './onboarding/cli';
 import { inspectCheckArgs, runAssetCheck, runMediaCommand } from './observe/cli';
 import { runDevCommand } from './dev/cli';
+import { runDocsCommand } from './docs/cli';
+import { runLibraryCommand } from './library/cli';
 import { prepare } from './observe/prepare';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { runWorker } from './worker';
@@ -163,7 +165,7 @@ const parseBuildArgs = (): {
   if (jsonCount > 1 || noCacheCount > 1 || command !== 'build' || positional.length !== 1) {
     throw new BuildFailure(
       'cli.arguments',
-      'Unknown or invalid command. Expected init, doctor, check, render, or build.',
+      'Unknown or invalid command. Expected init, doctor, check, render, build, dev, library, or docs.',
       2,
     );
   }
@@ -172,6 +174,14 @@ const parseBuildArgs = (): {
 
 const main = async (): Promise<void> => {
   if (runOnboarding(args)) return;
+  if (command === 'docs') {
+    runDocsCommand(args);
+    return;
+  }
+  if (command === 'library') {
+    runLibraryCommand(args);
+    return;
+  }
   if (command === 'render') {
     await runMediaCommand(args, __filename, controller.signal);
     return;

@@ -1,0 +1,30 @@
+ashfox 1
+module tavern {
+  import "std/structure/furnish/seating" as seat;
+  import "std/structure/furnish/storage" as store;
+
+  palette {
+    oak_plank = "minecraft:oak_planks";
+    spruce_plank = "minecraft:spruce_planks";
+    brick = "minecraft:bricks";
+    furnace = "minecraft:furnace[facing=south,lit=true]";
+    lantern = "minecraft:lantern[hanging=false]";
+    pot = "minecraft:flower_pot";
+    bookshelf = "minecraft:bookshelf";
+  }
+
+  export prefab TavernBar {
+    place store.BarrelStack { at = (0b, 0b, 0b); rotate = 0; }
+    box { from = (2b, 0b, 0b); to = (4b, 0b, 0b); block = spruce_plank; }
+    box { from = (0b, 0b, 1b); to = (4b, 0b, 1b); block = oak_plank; }
+    box { from = (2b, 1b, 0b); to = (4b, 1b, 0b); block = bookshelf; }
+    set { at = (0b, 1b, 1b); block = lantern; }
+    set { at = (4b, 1b, 1b); block = pot; }
+  }
+
+  export prefab HearthDining {
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = brick; }
+    set { at = (1b, 0b, 0b); block = furnace; }
+    place seat.FeastTable { at = (0b, 0b, 2b); rotate = 0; }
+  }
+}

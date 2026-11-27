@@ -21,17 +21,17 @@ const success = (...args: string[]) => {
   return JSON.parse(child.stdout);
 };
 const main = async () => {
-  const input = path.join(temp, 'bell_pattern.ashfox');
-  fs.copyFileSync(path.join(root, 'examples/sounds/assets/sounds/bell_pattern.ashfox'), input);
+  const input = path.join(temp, 'fire_loop.ashfox');
+  fs.copyFileSync(path.join(root, 'showcase/assets/sounds/fire_loop.ashfox'), input);
   const capabilities = success('doctor', '--json').result.sound;
   assert.ok(capabilities.features.includes('loops'));
   assert.equal(capabilities.output, 'fixed-gain');
   const inspection = success('check', input).result;
   const details = inspection.variants ?? inspection;
-  assert.ok(JSON.stringify(details).includes('96960'));
+  assert.ok(JSON.stringify(details).includes('111360'));
   const directBuilt = success('build', input, '--json').result;
-  const output = path.join(directBuilt.exports[0].directory, 'bell_pattern/base.wav');
-  verifyPcm(fs.readFileSync(output), 96960, 2);
+  const output = path.join(directBuilt.exports[0].directory, 'fire_loop/base.wav');
+  verifyPcm(fs.readFileSync(output), 111360, 2);
   const config = {
     ...readSnapshot(input).config,
     packs: [
@@ -44,7 +44,7 @@ const main = async () => {
         unitsPerMeter: 16,
         pixelsPerUnit: 16,
         spriteFilter: 'nearest',
-        assets: [{ id: 'sfx.bell', source: 'bell_pattern', path: 'sounds/bell' }],
+        assets: [{ id: 'sfx.fire', source: 'fire_loop', path: 'sounds/fire' }],
       },
     ],
   };
@@ -58,9 +58,9 @@ const main = async () => {
   assert.equal(sound.kind, 'sound');
   if (sound.kind !== 'sound') throw new Error('Expected sound');
   for (const variant of sound.variants) {
-    assert.equal(variant.frames, 96960);
-    assert.equal(variant.durationSeconds, 2.02);
-    assert.deepEqual(variant.playback, { kind: 'loop', startFrame: 0, endFrame: 96960 });
+    assert.equal(variant.frames, 111360);
+    assert.equal(variant.durationSeconds, 2.32);
+    assert.deepEqual(variant.playback, { kind: 'loop', startFrame: 0, endFrame: 111360 });
     verifyPcm(
       fs.readFileSync(path.join(built.bundlePath, 'assets/game/game-assets', variant.file)),
       variant.frames,
@@ -90,7 +90,7 @@ const main = async () => {
   for (const variant of oggSound.variants) {
     assert.equal(variant.sampleRate, 48000);
     assert.equal(variant.loopStartSample, 0);
-    assert.equal(variant.loopEndSample, 96960);
+    assert.equal(variant.loopEndSample, 111360);
   }
   success('check', path.join(temp, config.build.directory), '--json');
   fs.writeFileSync(
@@ -121,8 +121,8 @@ const main = async () => {
           items: [],
           sounds: [
             {
-              source: 'bell_pattern',
-              id: 'demo:bell',
+              source: 'fire_loop',
+              id: 'demo:fire',
               replace: true,
               subtitle: null,
               volume: 1,
@@ -156,7 +156,7 @@ const main = async () => {
     prepareWorker(staleWorker, { file: input }, new AbortController().signal),
     /Source changed during compilation/,
   );
-  verifyPcm(fs.readFileSync(output), 96960, 2);
+  verifyPcm(fs.readFileSync(output), 111360, 2);
 
   // Cancellation must interrupt CPU work and join it before acknowledging abort.
   const blockedWorker = path.join(temp, 'blocked.cjs');
@@ -228,9 +228,7 @@ sound budget {
   assert.match(overBudget.stdout, /sound workspace budget/);
   assert.doesNotMatch(overBudget.stdout, /silent output/);
   fs.rmSync(combinedPath);
-  const legacy = fs
-    .readFileSync(input, 'utf8')
-    .replace('voice bell_body : modal_plate {', 'voices = []; voice bell_body : modal_plate {');
+  const legacy = fs.readFileSync(input, 'utf8').replace('seq burn {', 'voices = []; seq burn {');
   fs.writeFileSync(input, legacy);
   const rejected = run('check', input, '--json');
   assert.notEqual(rejected.status, 0);

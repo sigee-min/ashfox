@@ -11,8 +11,10 @@ import {
   type SoundSourceUnit,
 } from '@ashfox/audio-core';
 import type { DirectoryFile } from '../../project/directory/contract';
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../../project/stdlib/resolve';
 
 const relativePath = (owner: string, target: string): string => {
+  if (isVirtualLibrarySpecifier(target)) return virtualLibraryLogicalPath(target);
   if (!target.startsWith('./') && !target.startsWith('../')) {
     throw new Error(`${owner}: sound.invalid-import: Sound imports must be relative .ashfox paths`);
   }

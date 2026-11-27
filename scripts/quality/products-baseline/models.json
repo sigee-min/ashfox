@@ -1,0 +1,160 @@
+{
+  "format": "ashfox-product-oracle",
+  "version": 1,
+  "domain": "models",
+  "toolchain": "ashfox-product-oracle:2",
+  "inputs": [
+    {
+      "input": "showcase/.ashfoxworkspace",
+      "ok": true,
+      "sourceHash": "sha256:79a3c01d95efed45c391937bb9f5d3015ca31a6764a2267b1b49aec4418752f8",
+      "products": [
+        {
+          "entry": "models/goblin_pyromancer",
+          "kind": "model",
+          "sha256": "9e7980bcc7e8a1e4eba1e039d1b620df0220fca2054fefe69195013e9a78a013"
+        },
+        {
+          "entry": "models/goblin_raider",
+          "kind": "model",
+          "sha256": "899acd47d18e9c99b9821566934b3bd1c359339c91b71ebb70bef71f7cb55699"
+        },
+        {
+          "entry": "models/griffin_boss",
+          "kind": "model",
+          "sha256": "763715b9d22d47d22e514d9b935b0a5b7b0be88bdc22015861c32f76902b051a"
+        },
+        {
+          "entry": "models/red_fox",
+          "kind": "model",
+          "sha256": "855841e6b1c164a9ea5486b8acf4ec17814815430bcc2c6e02fd3535239a3429"
+        },
+        {
+          "entry": "models/rune_bricks",
+          "kind": "model",
+          "sha256": "ccf06ceca4c6659e11730b261ae385d02e385b94a727ee9724de86118e50fbf3"
+        },
+        {
+          "entry": "models/treasure_chest",
+          "kind": "model",
+          "sha256": "22aea4b225d9cf7da8aac17062ec62e879b9dd72a309c4c63602efb1f84ac358"
+        },
+        {
+          "entry": "models/wall_lantern",
+          "kind": "model",
+          "sha256": "079802567f162a9754f3a0cf9eb88a56dddf7accdb019d82c958b3405d8664a1"
+        }
+      ],
+      "files": [
+        {
+          "path": "assets/goblin_pyromancer/ashfox-lineage.json",
+          "sha256": "7e83ddddf3fce1735930a1ce0fe310e737f7b18b65c9fc222b38c157a941b663"
+        },
+        {
+          "path": "assets/goblin_pyromancer/goblin_pyromancer.glb",
+          "sha256": "96b04d8ada03aa225ea4f97cd4dc92635150f6e16f8e7d5ef6818c833e1e9445"
+        },
+        {
+          "path": "assets/goblin_pyromancer/goblin_pyromancer.hooks.json",
+          "sha256": "e2549b97a50cb521ab3a28cbbc4163924b4a6a3a44d46da687959735ea21f079"
+        },
+        {
+          "path": "assets/goblin_raider/ashfox-lineage.json",
+          "sha256": "2f59196edd1619d6c6a6238d890d6cf0169026aaa8954abf62feaecde1005085"
+        },
+        {
+          "path": "assets/goblin_raider/goblin_raider.glb",
+          "sha256": "3de448bac17ece85263812bc740593e26452852c053b1175bed7e7385eb3c378"
+        },
+        {
+          "path": "assets/goblin_raider/goblin_raider.hooks.json",
+          "sha256": "0ce49aada1e23579d6f3a5a4caa8f6d32446439e764d50c412965ab25f06d5d7"
+        },
+        {
+          "path": "assets/griffin_boss/ashfox-lineage.json",
+          "sha256": "5c0851a21915cb1ec6816875840832b6e7f8089207d3e3ccc566f7d23149bf3e"
+        },
+        {
+          "path": "assets/griffin_boss/griffin_boss.glb",
+          "sha256": "35ce83e15993b1b8e874454413cd7b58e0b1a0409bcbf52ebcc3b7b9d0eb109a"
+        },
+        {
+          "path": "assets/griffin_boss/griffin_boss.hooks.json",
+          "sha256": "116d422376296d5f6abd591bfde591b72c6afbb3bac3d835b8687f8927079acd"
+        },
+        {
+          "path": "assets/red_fox/ashfox-lineage.json",
+          "sha256": "780468bd0a92815b977e227ea472659dba00a36f0ec6367fa1f966b967f29614"
+        },
+        {
+          "path": "assets/red_fox/red_fox.glb",
+          "sha256": "2aab8e12ec64e003a0df9844b3912ccd7da3b97209032ed0ec295d215350c528"
+        },
+        {
+          "path": "assets/red_fox/red_fox.hooks.json",
+          "sha256": "51ec725676c09416be6e1ef8ae0757f4d5e8a97bd2d7d15fabbb9577e4e1d7bf"
+        },
+        {
+          "path": "assets/rune_bricks/ashfox-lineage.json",
+          "sha256": "efb6312fdb664135ed28b428cc530188c42db08696b5ee20cf682888d6a24493"
+        },
+        {
+          "path": "assets/rune_bricks/rune_bricks.glb",
+          "sha256": "f654114b919682442621b8f89683fdeddbfd2ed5448dee36fd7c7fb124c70d87"
+        },
+        {
+          "path": "assets/rune_bricks/rune_bricks.hooks.json",
+          "sha256": "66c38083810738a5d4ae755050d91402a06ec480f26ad2a0999e2b048b3d1f3d"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/ashfox-lineage.json",
+          "sha256": "1052245a09574c96faa88bede67c11d6db4b4fb33f0b8aecc7fa2a3fe418b653"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/assets/ashfox/blockstates/block/rune_bricks.json",
+          "sha256": "59903d40421006b6869d56d2e114942ccf05701ab607e5726a373bb0bbb89489"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/assets/ashfox/models/block/block/rune_bricks.json",
+          "sha256": "75d8e60ee0d886d742ac476e68384cb7d428b31161183545095a581a5190ebe2"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/assets/ashfox/textures/block/block/rune_bricks.png",
+          "sha256": "db4b7442e63339a465fc54a5d95b7cf93fbaef4df00dd98213f9d0ae7f265a94"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/pack.mcmeta",
+          "sha256": "2719d930b5d0a2bae5e8d6efe963d4967b18b2b599420fa2914719908a4502e5"
+        },
+        {
+          "path": "assets/rune_bricks_java_block/rune_bricks_java_block.hooks.json",
+          "sha256": "66c38083810738a5d4ae755050d91402a06ec480f26ad2a0999e2b048b3d1f3d"
+        },
+        {
+          "path": "assets/treasure_chest/ashfox-lineage.json",
+          "sha256": "0e2bfde41de43dc1eae50c1f1742db8c5df8cedcb0771ac84a5e9d044ec47485"
+        },
+        {
+          "path": "assets/treasure_chest/treasure_chest.glb",
+          "sha256": "513ebeeae2dd00f5d8751e01663d1b7d483df77464d7eece7ce9bdeea700737e"
+        },
+        {
+          "path": "assets/treasure_chest/treasure_chest.hooks.json",
+          "sha256": "38825ac096b493b5ffff61a09d9fdb56fddcaac1a43b808539b21d823d9b1d5f"
+        },
+        {
+          "path": "assets/wall_lantern/ashfox-lineage.json",
+          "sha256": "08173c38fe91eb8de23d0ad1e7067a83ad73fd7f8fe051fb943739ffe908288e"
+        },
+        {
+          "path": "assets/wall_lantern/wall_lantern.glb",
+          "sha256": "82b13e6ba74ab4efce5206f16252ff0832f9428e7d0c5c0a737ff82c92445ea4"
+        },
+        {
+          "path": "assets/wall_lantern/wall_lantern.hooks.json",
+          "sha256": "cc61b16257f8ec10b64e9417770d2d8eec3c1a7377d1a0e2bc0fa42cb8604b6d"
+        }
+      ]
+    }
+  ]
+}

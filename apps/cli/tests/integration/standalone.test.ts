@@ -17,9 +17,9 @@ const run = (command: string, input: string) => {
 };
 try {
   for (const [folder, file, kind] of [
-    ['examples/items/assets', 'sprites/apple.ashfox', 'sprite'],
-    ['examples/fox/creatures', 'fox.ashfox', 'model'],
-    ['examples/sounds/assets', 'sounds/claw_hit.ashfox', 'sound'],
+    ['showcase/assets', 'sprites/iron_sword.ashfox', 'sprite'],
+    ['showcase/assets', 'models/wall_lantern.ashfox', 'model'],
+    ['showcase/assets', 'sounds/claw_hit.ashfox', 'sound'],
   ]) {
     const baseDir = path.join(temp, kind, folder.endsWith('/assets') ? 'assets' : '');
     fs.cpSync(path.join(root, folder), baseDir, { recursive: true });
@@ -38,22 +38,24 @@ try {
     assert.equal(run('check', path.join(baseDir, 'dist', id, 'build')).ok, true);
     assert.equal(fs.existsSync(path.join(temp, kind, '.ashfoxworkspace')), false);
   }
-  const apple = path.join(temp, 'sprite/assets/sprites/apple.ashfox');
-  const original = fs.readFileSync(apple, 'utf8');
-  const pointer = fs.readFileSync(path.join(temp, 'sprite/assets/dist/apple/build/current.json'));
-  fs.writeFileSync(apple, original.replace('../module/shared.ashfox', '../../outside.ashfox'));
-  assert.equal(run('build', apple).ok, false);
+  const sword = path.join(temp, 'sprite/assets/sprites/iron_sword.ashfox');
+  const original = fs.readFileSync(sword, 'utf8');
+  const pointer = fs.readFileSync(
+    path.join(temp, 'sprite/assets/dist/iron_sword/build/current.json'),
+  );
+  fs.writeFileSync(sword, original.replace('"std/sprite/item/weapon"', '"../../outside.ashfox"'));
+  assert.equal(run('build', sword).ok, false);
   assert.deepEqual(
-    fs.readFileSync(path.join(temp, 'sprite/assets/dist/apple/build/current.json')),
+    fs.readFileSync(path.join(temp, 'sprite/assets/dist/iron_sword/build/current.json')),
     pointer,
   );
-  fs.writeFileSync(apple, '\uFEFF' + original);
-  assert.equal(run('check', apple).ok, false, 'BOM must not be silently removed by the host');
-  fs.writeFileSync(apple, original);
-  assert.equal(run('check', path.join(temp, 'sprite/assets/module/shared.ashfox')).ok, false);
+  fs.writeFileSync(sword, '\uFEFF' + original);
+  assert.equal(run('check', sword).ok, false, 'BOM must not be silently removed by the host');
+  fs.writeFileSync(sword, original);
+  assert.equal(run('check', path.join(temp, 'sprite/assets/module/fox/fox_fur.ashfox')).ok, false);
   fs.writeFileSync(path.join(temp, '.ashfoxworkspace'), '{}');
   assert.equal(
-    run('check', apple).ok,
+    run('check', sword).ok,
     false,
     'invalid ancestor policy must not silently fall back',
   );

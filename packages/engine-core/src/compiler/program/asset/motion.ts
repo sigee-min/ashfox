@@ -52,7 +52,7 @@ const properties = (
         property.span,
         'asset.invalid-motion-property',
         `Unknown motion property "${property.name}".${formatDidYouMean(property.name, [...allowed])}`,
-        docsHint('motion'),
+        docsHint('animation'),
       );
     }
     if (result.has(property.name)) {
@@ -286,7 +286,7 @@ const readMotionLoop = (
     loopExpr?.span ?? declaration.span,
     'asset.invalid-motion-loop',
     `Motion loop must be once, loop, or hold_on_last_frame.${suggestion}`,
-    docsHint('motion'),
+    docsHint('animation'),
   );
   return null;
 };

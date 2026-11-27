@@ -103,7 +103,7 @@ export motion stride for CreatureRig {
 ```
 
 Use `layer` blocks (`mode = override | additive;`, `weight`, `mask = [...]`),
-named `pose` / `at <t> pose <name>` keys, combat timing ops (`squash`, `smear`,
+named `pose` / `at <t> pose <name>` keys, facial `expression <slot> { at 0.00s = neutral; at 1.45s..1.58s = blink; }` swaps (backed by `expression_slot` in geometry, zero extra draw calls), combat timing ops (`squash`, `smear`,
 `hitstop`, `recoil`), and timeline `cue` events (`sound`, `vfx`, `event`) baked
 into `gltf.animations[i].extras.ashfoxCues`.
 
@@ -167,10 +167,9 @@ with the module alias when assigning them:
 | `greeting` | Nod the head and wag the tail | `3s` |
 | `alert` | React and turn toward a disturbance | `2.4s` |
 
-Use the [Griffin source](../../examples/griffin/workbench/main.ashfox) and its
-[animation module](../../examples/griffin/workbench/animation.ashfox) together.
-Download [the game project](/downloads/game-assets.zip) for the complete Griffin
-source graph. Export `models/workbench/main.ashfox` from the extracted folder.
+Inspect `showcase/assets/models/griffin_boss.ashfox`, `showcase/assets/models/goblin_raider.ashfox`,
+and the built-in standard-library modules (`ashfox library std list model/rig` and `ashfox library std list model/motion`).
+Download [the game project](/downloads/game-assets.zip) for a complete multi-asset bundle.
 
 All six are rest-space relative. Their track targets are the Griffin rig's semantic
 joints, including `head`, `wing_left`, `wing_right`, and `tail`.

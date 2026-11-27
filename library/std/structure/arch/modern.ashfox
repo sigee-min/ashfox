@@ -1,0 +1,35 @@
+ashfox 1
+module modern {
+  palette {
+    concrete = "minecraft:light_gray_concrete";
+    dark_steel = "minecraft:gray_concrete";
+    quartz = "minecraft:smooth_quartz";
+    quartz_slab = "minecraft:smooth_quartz_slab[type=bottom]";
+    glass = "minecraft:light_blue_stained_glass_pane";
+    iron_bar = "minecraft:iron_bars";
+    light_rod = "minecraft:end_rod[facing=down]";
+  }
+
+  export prefab ConcretePillar {
+    set { at = (0b, 0b, 0b); block = dark_steel; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 0b); block = concrete; }
+    set { at = (0b, 4b, 0b); block = quartz; }
+  }
+
+  export prefab GlassCurtainBay {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 0b); block = dark_steel; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 0b); block = concrete; }
+    box { from = (3b, 1b, 0b); to = (3b, 3b, 0b); block = concrete; }
+    box { from = (1b, 1b, 0b); to = (2b, 3b, 0b); block = glass; }
+    box { from = (0b, 4b, 0b); to = (3b, 4b, 0b); block = quartz; }
+  }
+
+  export prefab SteelCanopy {
+    box { from = (0b, 2b, 0b); to = (3b, 2b, 2b); block = quartz_slab; }
+    set { at = (0b, 0b, 0b); block = iron_bar; }
+    set { at = (0b, 1b, 0b); block = iron_bar; }
+    set { at = (3b, 0b, 0b); block = iron_bar; }
+    set { at = (3b, 1b, 0b); block = iron_bar; }
+    set { at = (1b, 1b, 1b); block = light_rod; }
+  }
+}

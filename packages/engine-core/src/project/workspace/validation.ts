@@ -45,6 +45,9 @@ const asciiFold = (value: string): string =>
   value.replace(/[A-Z]/gu, (letter) => letter.toLowerCase());
 
 const rootsOverlap = (left: WorkspacePackageView, right: WorkspacePackageView): boolean => {
+  if ((left.name === 'std' || right.name === 'std') && (left.root === '' || right.root === '')) {
+    return false;
+  }
   const same =
     left.root === right.root ||
     (left.root.length > 0 && asciiFold(left.root) === asciiFold(right.root));

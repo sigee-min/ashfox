@@ -1,0 +1,23 @@
+ashfox 1
+module embers {
+  export palette HearthEmbers {
+    core = #fff0b8;
+    mid = #eb7a28;
+    edge = #962b17;
+    smoke = #3a2a26;
+  }
+
+  export palette AshCinder {
+    core = #ffe6ad;
+    mid = #d9692b;
+    edge = #783022;
+    smoke = #332a29;
+  }
+
+  export palette SoulSpark {
+    core = #e3fff7;
+    mid = #4fd9c4;
+    edge = #236e7a;
+    smoke = #213038;
+  }
+}

@@ -1,0 +1,25 @@
+ashfox 1
+module gallery {
+  import "std/structure/furnish/display" as disp;
+  import "std/structure/furnish/lighting" as light;
+
+  palette {
+    stone_brick = "minecraft:chiseled_stone_bricks";
+    carpet = "minecraft:red_carpet";
+    oak_slab = "minecraft:oak_slab[type=bottom]";
+    pot = "minecraft:flower_pot";
+  }
+
+  export prefab ExhibitionWing {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 0b); block = stone_brick; }
+    box { from = (0b, 0b, 2b); to = (4b, 0b, 2b); block = carpet; }
+    place disp.TrophyCase { at = (1b, 0b, 0b); rotate = 0; }
+    place light.LanternPost { at = (4b, 0b, 2b); rotate = 0; }
+    set { at = (0b, 1b, 0b); block = pot; }
+  }
+
+  export prefab ArchiveAlcove {
+    place disp.BookAlcove { at = (0b, 0b, 0b); rotate = 0; }
+    set { at = (3b, 0b, 0b); block = oak_slab; }
+  }
+}

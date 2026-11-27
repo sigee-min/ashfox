@@ -1,0 +1,51 @@
+ashfox 1
+module hit {
+  params {
+    pitch = 165hz;
+    spark_pitch = 4200hz;
+  }
+
+  export voice flesh_impact : modal_plate {
+    material = leather;
+    pitch = pitch;
+    size = 0.95;
+    hardness = 0.78;
+    damping = 0.72;
+    modes = 10;
+    strike = mallet;
+    splash = 0.46;
+    stereo_spread = 0.35;
+    highpass = 50hz;
+    eq { low = (130hz, 2.5db); }
+    gain { env = ad; attack = 2ms; peak = 0.92; curve = exp; }
+  }
+
+  export voice armor_clink : modal_plate {
+    material = steel;
+    pitch = 960hz;
+    size = 0.7;
+    hardness = 0.92;
+    damping = 0.3;
+    brightness = 0.86;
+    modes = 16;
+    strike = mallet;
+    twin_beat = 0.44;
+    splash = 0.32;
+    stereo_spread = 0.5;
+    highpass = 200hz;
+    gain { env = ad; attack = 2ms; peak = 0.78; curve = exp; }
+  }
+
+  export voice impact_transient : granular {
+    texture = spark;
+    density = 88;
+    grain_ms = 9ms;
+    pitch = log(0: spark_pitch -> 1: 1400hz);
+    spread = 0.72;
+    turbulence = 0.45;
+    stereo_width = 0.7;
+    itd_ms = 0.2ms;
+    highpass = 900hz;
+    gain { env = ad; attack = 2ms; peak = 0.56; curve = exp; }
+  }
+}

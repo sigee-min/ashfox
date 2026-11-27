@@ -19,11 +19,12 @@ Add the subject, dimensions, palette, motion/sound intent, and destination.
 ## Working sequence
 
 1. Choose the [execution mode](choose-a-format.md): one asset, stdin/JSON memory graph,
-   or configured workspace build.
+   or configured workspace build. Run `ashfox docs <topic>` for offline syntax guides and
+   `ashfox library std list` to reuse built-in `"std/..."` modules (or `eject` one into `assets/module/`).
 2. Run `ashfox check` to inspect identifiers, declared `outputs`/`previews`, and quality audit metrics. Single-asset
    flags (`--stdin`, `--input-json`) ignore
    ancestor workspace files; workspace checks validate project rules and canonical layout.
-3. Edit `.ashfox` source files (or pipe full source graphs via `--input-json`), declaring `outputs { ... }` and `preview [name] { ... }` blocks directly in `.ashfox`.
+3. Edit `.ashfox` source files (or pipe full source graphs via `--input-json`), declaring `outputs { ... }` and `preview [name] { ... }` blocks directly in `.ashfox`. Use `ashfox dev <source|workspace>` for live incremental rebuilds and click-to-inspect source refs.
 4. Run `ashfox render <source> --view <name>` for key views/atlases and changed
    motions (`kind = gif;` in preview), and listen to built WAV variants from `ashfox build`.
 5. Build the selected asset (`ashfox build <source>`), or `check` + `build` + `check <build-dir>`

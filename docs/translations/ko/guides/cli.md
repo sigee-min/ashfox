@@ -11,8 +11,11 @@
 | `check <input> [options]` | `.ashfox` 진입점, `.ashfoxworkspace`, `.ashfoxworkspace.mjs` 또는 빌드 디렉터리 | 원본 검증·선언 검사·품질 감사 또는 빌드 무결성 검사 |
 | `render <input> [options]` | `.ashfox` 원본 (`--stdin` / `--input-json` 지원) | 선언된 `preview [name]` 블록에서 렌더링한 PNG 또는 GIF |
 | `build <input> [--json] [--bindings ts\|cs\|gd]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | `outputs { ... }` 선언 또는 워크스페이스 출력, `<target>.hooks.json` 및 선택적 훅 바인딩 빌드 |
+| `dev <input> [--port 4173] [--no-open]` | `.ashfox` 진입점, `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs` | 증분 감시 서버와 SSE 자동 새로고침·클릭 검사 기능이 있는 Three.js 뷰어 실행 |
+| `library <command> [args] [--json]` | `list`, 또는 `<ns> list [prefix]`, `<ns> show <module>`, `<ns> eject <module> [--to dir] [--force]` | 내장 표준 라이브러리(`std/*`) 목록 조회, 원문 확인, `assets/module/`로 꺼내기(eject) |
+| `docs [topic] [--json]` | 선택적 토픽(`agent`, `grammar`, `model`, `rig`, `surface`, `animation`, `vfx`, `sprite`, `sound`, `structure`, `hooks`) | 오프라인 문서 토픽 목록 또는 단일 원본 Markdown 출력 |
 
-`doctor --json`, `check`, `build`는 JSON(`ashfox-cli-result`)을 반환합니다. 사람은 `help`, 에이전트는 `doctor --json`을 사용합니다. 출력·시점 정책은 `.ashfox` 선언(`outputs`, `preview`)이나 `.ashfoxworkspace`에 둡니다. `export`, `watch`, `clean`, 자동 게임 설치 명령은 없습니다.
+`init`, `doctor`, `check`, `build`, `library`, `docs`는 `--json`으로 `ashfox-cli-result` JSON을 반환합니다(`check`·`build`는 항상 JSON, `library`·`docs`는 기본 텍스트 출력). 사람은 `help`, 에이전트는 `doctor --json`을 사용합니다. 출력·시점 정책은 `.ashfox` 선언(`outputs`, `preview`)이나 `.ashfoxworkspace`에 둡니다. `export`, `clean`, 자동 게임 설치 명령은 없습니다.
 
 ## 첫 실행 명령
 
@@ -28,7 +31,7 @@ CLI를 설치한 저장소에서 실행합니다. `init`은 새 폴더에 표준
 
 {{source-code:1}}
 
-상위 `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`가 있으면 전체 프로젝트를 빌드합니다. 진입점 하나를 선택해도 프로젝트 검사를 우회하지 않습니다. 탐색은 가장 가까운 Git 루트나 파일시스템 루트에서 멈추며 잘못된 설정은 무시하지 않고 실패합니다. 상위 워크스페이스가 없는 독립 원본은 진입점과 상대 import 의존성을 읽고, `outputs { ... }` 선언(기본값: 모델 GLB, 스프라이트 PNG, 사운드 WAV, 구조물 `.nbt`+`.glb`)을 빌드하여 진입점 기준 `dist/<entry-id>/build`·`dist/<entry-id>/exports`에 씁니다. 모듈은 빌드 진입점이 아닙니다.
+상위 `.ashfoxworkspace` 또는 `.ashfoxworkspace.mjs`가 있으면 전체 프로젝트를 빌드합니다. 진입점 하나를 선택해도 프로젝트 검사를 우회하지 않습니다. 탐색은 가장 가까운 Git 루트나 파일시스템 루트에서 멈추며 잘못된 설정은 무시하지 않고 실패합니다. 상위 워크스페이스가 없는 독립 원본은 진입점·상대 import·`"std/..."` 표준 라이브러리 의존성을 읽고, `outputs { ... }` 선언(기본값: 모델 GLB, 스프라이트 PNG, 사운드 WAV, 구조물 `.nbt`+`.glb`)을 빌드하여 진입점 기준 `dist/<entry-id>/build`·`dist/<entry-id>/exports`에 씁니다. 모듈은 빌드 진입점이 아닙니다.
 
 ## 프로젝트 빌드하기
 

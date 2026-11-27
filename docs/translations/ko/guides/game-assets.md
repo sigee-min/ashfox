@@ -6,7 +6,7 @@ Minecraft 팩은 여러 전달 대상 중 하나입니다. 일반 복셀·로우
 
 ## 설정
 
-[완전한 게임 프로젝트](/downloads/game-assets.zip)를 풀면 [examples/game-assets/.ashfoxworkspace](../../examples/game-assets/.ashfoxworkspace)에 설정이 있습니다. 팩 선언은 다음과 같습니다.
+[완전한 게임 프로젝트](/downloads/game-assets.zip)를 풀거나 저장소의 `showcase/.ashfoxworkspace`에서 전체 다중 도메인 구성을 확인할 수 있습니다. 팩 선언은 다음과 같습니다.
 
 {{source-code:0}}
 
@@ -38,10 +38,10 @@ GLB는 기존 glTF exporter와 같이 원본 `u` 하나를 1/16미터로 인코�
 
 | 종류 | 런타임 필드 |
 | --- | --- |
-| `model` | `model` 경로, glTF 좌표 규칙, `unitsPerMeter`, 필수 확장, 클립 이름·길이 |
+| `model` | `model` 경로, glTF 좌표 규칙, `unitsPerMeter`, 필수 확장, 클립 이름·길이, 자동 피팅 물리 `colliders` (`capsule`/`box` + 루트 `aabb`) |
 | `structure` | `model` 경로, `meta` (`.structure.json`), `unitsPerBlock`, 필수 확장, `size`, 구역·조명·상호작용 수 |
 | `sprite` | `image` 경로, 너비·높이, 단위당 픽셀, 필터 |
-| `sound` | 코덱, 파일 경로·의도 길이·샘플률·채널 수를 가진 이름 있는 변형 |
+| `sound` | 코덱, 파일 경로·의도 길이·`sampleRate`·채널 수·`playback` 및 갭리스 OGG 루프 구간(`loopStartSample`, `loopEndSample`)을 가진 변형 |
 
 ## 런타임 예산과 LOD 계층
 

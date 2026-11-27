@@ -20,7 +20,7 @@ try {
   const initial = fs.readFileSync(file, 'utf8');
   const first = run('build', file);
   assert.equal(first.status, 0, JSON.stringify(first.report));
-  assert.equal(first.report.result.exports.length, 4);
+  assert.equal(first.report.result.exports.length, 5);
   assert.ok(
     first.report.result.exports.every((item: { directory: string }) =>
       item.directory.startsWith(path.join(fs.realpathSync(root), 'build')),
@@ -28,7 +28,7 @@ try {
   );
   const second = run('build', file);
   assert.equal(second.report.result.bundleHash, first.report.result.bundleHash);
-  assert.equal(run('check', path.join(root, 'assets/sprites/sword.ashfox')).status, 0);
+  assert.equal(run('check', path.join(root, 'assets/sprites/iron_sword.ashfox')).status, 0);
   const adapted = spawnSync(process.execPath, [path.join(root, 'assets.mjs'), cli], {
     encoding: 'utf8',
     timeout: 60000,
@@ -101,7 +101,7 @@ try {
   fs.unlinkSync(file);
   fs.symlinkSync(outside, file);
   assert.equal(
-    run('check', path.join(root, 'assets/sprites/sword.ashfox')).report.diagnostics[0].code,
+    run('check', path.join(root, 'assets/sprites/iron_sword.ashfox')).report.diagnostics[0].code,
     'path.symlink',
   );
   assert.equal(fs.existsSync(path.join(root, 'EXECUTED')), false);

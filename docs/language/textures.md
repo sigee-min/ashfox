@@ -33,6 +33,7 @@ bound; matching spelling alone does not make distinct contracts equal.
 | `background_alpha = 255;` | Integer alpha in `[0,255]` |
 | `palette { shade = #2e2420; coat = ramp(#c94f2a, warm); }` | Flat colors, 3-color ramps `(#shadow, #base, #light)`, or OKLCH hue-shifted presets `ramp(#hex, warm|cool|metal|gem|wood|stone|organic|cloth|emissive|vivid)` (keep darks above `luma >= 0.14`) |
 | `chart body box { fill = coat; }` | Chart recipe; omit `origin` to auto-pack, optionally set `grain = clustered\|soft\|fur\|wood\|cloth\|brushed\|none;` |
+| `material opaque { roughness = 0.72; metallic = 0.15; }` / `chart body box { fill = coat; roughness = 0.25; metallic = 0.92; roughness_variation = 0.08; }` | Optional PBR parameters: `roughness` (`0..1`, default `0.88`), `metallic` (`0..1`, default `0.0`), `roughness_variation` (`0..0.3`). Uniform surfaces emit scalar glTF factors only; mixed PBR synthesizes one shared MetallicRoughness+AO PNG per atlas (0 extra draw calls) |
 | `grain clustered\|soft\|fur\|wood\|cloth\|brushed\|none { seed = 23; }` | Optional texture-level default grain (`seed` optional; defaults to `none` when omitted) |
 | `tone voxel\|painterly;` | Optional shading mode (`voxel` directional flat tones or `painterly` gentle form-following contour gradient) |
 | `stamp eye { pixels = "ee/e."; e = shade; }` | Reusable pixel symbol |

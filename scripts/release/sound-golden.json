@@ -2,48 +2,40 @@
   "contract": "sound:stereo-fx-whoosh-waveguide-cascade:pcm16",
   "results": [
     {
-      "name": "bell_pattern",
+      "name": "sword_slash",
       "variant": "alternate",
-      "frames": 96960,
+      "frames": 26880,
       "playback": {
-        "kind": "loop",
-        "startFrame": 0,
-        "endFrame": 96960
+        "kind": "oneshot"
       },
-      "sha256": "a8c28ed3d73ac90b076e1976911ea3c43b3c30e9eb7d9e4bdbbfcc6e4b71d552"
+      "sha256": "fc75201785108b976988a0384ffc7a229f166591b48ccefc707073991ab73629"
     },
     {
-      "name": "bell_pattern",
+      "name": "sword_slash",
       "variant": "base",
-      "frames": 96960,
+      "frames": 26880,
       "playback": {
-        "kind": "loop",
-        "startFrame": 0,
-        "endFrame": 96960
+        "kind": "oneshot"
       },
-      "sha256": "0ad09004cf5dcd933406e49dfcd9ee2e2a0696ea4fc4c8618b50e679e27169c0"
+      "sha256": "bb69ec4abb67d1d939d11aa18775882cf02e316cbdda55ab725145e6242ac24f"
     },
     {
-      "name": "wind_loop",
+      "name": "claw_hit",
       "variant": "alternate",
-      "frames": 188160,
+      "frames": 27840,
       "playback": {
-        "kind": "loop",
-        "startFrame": 0,
-        "endFrame": 188160
+        "kind": "oneshot"
       },
-      "sha256": "60a0269b7d7ec16468c189dead6b4a5524c5127b405fafae2e77321f9db45a08"
+      "sha256": "2fff110e75edf743e67f2d9941c5538318d60a5ff77466e8d46e30aa36600f5d"
     },
     {
-      "name": "wind_loop",
+      "name": "claw_hit",
       "variant": "base",
-      "frames": 188160,
+      "frames": 27840,
       "playback": {
-        "kind": "loop",
-        "startFrame": 0,
-        "endFrame": 188160
+        "kind": "oneshot"
       },
-      "sha256": "f5417e1919bda180927823211b83b3e80b874c74b22688198d8102b969706348"
+      "sha256": "6988d4e35bad6e63fa67005c43aefa4df49cff9b6eebfa4c6da7bad9ad7cf2d2"
     },
     {
       "name": "footsteps",
@@ -52,7 +44,7 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "ea7b9d1f15312c049e0c015f623f5aadf7131929c5890531746d62a57511e06b"
+      "sha256": "880f88b52b4b2f4723ac0503be0e84d1bdd5ca2018e68b37eca3382e80c0afe8"
     },
     {
       "name": "footsteps",
@@ -61,61 +53,47 @@
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "f7611ccd48fa29cf77338199ffb404de51c440eb9f91be99d458bf73422caf0f"
+      "sha256": "103f851690069da9d9cfdd7d2ee13965d3f61eaff207ed33d4ca4037e1ca3a10"
     },
     {
-      "name": "charging_spell",
+      "name": "fire_loop",
       "variant": "alternate",
-      "frames": 115200,
+      "frames": 111360,
       "playback": {
-        "kind": "oneshot"
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 111360
       },
-      "sha256": "59fa9935959f3d8d723451e966f8f10e1062a5f5713d59abb5432e450aee7ce8"
+      "sha256": "1ebdd6bd70494c17c71c3203b55dc5049f059f83e63dbc4543deb48e08821714"
     },
     {
-      "name": "charging_spell",
+      "name": "fire_loop",
       "variant": "base",
-      "frames": 115200,
+      "frames": 111360,
       "playback": {
-        "kind": "oneshot"
+        "kind": "loop",
+        "startFrame": 0,
+        "endFrame": 111360
       },
-      "sha256": "eb30f71d7184b89dfa6cca487033e26758d9cd5cc896b6b0abb724b2c8189912"
+      "sha256": "f6e0bbcae62a52c93ef6a0a57f3bc5cfa650721fb33d566b7df998086283dbcf"
     },
     {
-      "name": "metal_strike",
+      "name": "griffin_call",
       "variant": "alternate",
-      "frames": 122400,
+      "frames": 69600,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "1e574b9b828027cd68a3696120705d21de05c123f8c892db1dd4afe4816e9164"
+      "sha256": "4fabdcf5785b2095b0af90ac76cf98fd036f1b835462ef3bb1bf2cc3df4fe86b"
     },
     {
-      "name": "metal_strike",
+      "name": "griffin_call",
       "variant": "base",
-      "frames": 122400,
+      "frames": 69600,
       "playback": {
         "kind": "oneshot"
       },
-      "sha256": "47c407b8aa62b770fa541dec4d4d4a56c42272c0c5224c03a68d6067714955c5"
-    },
-    {
-      "name": "bird_call",
-      "variant": "alternate",
-      "frames": 105600,
-      "playback": {
-        "kind": "oneshot"
-      },
-      "sha256": "0dfb282bc6ecebaffcba081fcad3df26d318cbaee2056119a60338a8778fae9d"
-    },
-    {
-      "name": "bird_call",
-      "variant": "base",
-      "frames": 105600,
-      "playback": {
-        "kind": "oneshot"
-      },
-      "sha256": "f8c213e78c35cf530748b028c8410466480c496452e68bf5d1242452c8991f37"
+      "sha256": "1d9e0406d6c6fd3dd663cf9a7738e7a41e8ae3cf5d19e7908257e9ef7b37df44"
     }
   ]
 }

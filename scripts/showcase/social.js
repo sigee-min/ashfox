@@ -88,18 +88,27 @@ const chromeScreenshotArgs = (kind, file, target) => [
 
 const main = async () => {
   try {
+    fs.copyFileSync(
+      path.join(root, 'showcase/assets/module/griffin/griffin_plumage.ashfox'),
+      path.join(stage, 'griffin_plumage.ashfox'),
+    );
+    const source = fs
+      .readFileSync(path.join(root, 'showcase/assets/models/griffin_boss.ashfox'), 'utf8')
+      .replaceAll('"griffin_plumage/plumage"', '"./griffin_plumage.ashfox"')
+      .replace(
+        /(\}\s*)$/,
+        '  preview social { width = 900; height = 900; background = transparent; }\n$1',
+      );
+    const stagedGriffin = path.join(stage, 'griffin_boss.ashfox');
+    fs.writeFileSync(stagedGriffin, source);
     execFileSync(
       process.execPath,
       [
         path.join(root, 'apps/cli/dist/ashfox.cjs'),
         'render',
-        path.join(root, 'examples/griffin/workbench/main.ashfox'),
-        '--width',
-        '900',
-        '--height',
-        '900',
-        '--background',
-        'transparent',
+        stagedGriffin,
+        '--view',
+        'social',
         '--output',
         path.join(stage, 'griffin.png'),
       ],

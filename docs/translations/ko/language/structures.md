@@ -67,9 +67,9 @@
 ## 검사, 미리보기 시트 및 빌드
 
 ```sh
-npx --no-install ashfox check examples/structure/.ashfoxworkspace --json
-npx --no-install ashfox render --view cutaway examples/structure/assets/structures/medieval_cottage.ashfox --output cottage_cutaway.png
-npx --no-install ashfox build examples/structure/.ashfoxworkspace --json
+npx --no-install ashfox check showcase/.ashfoxworkspace --json
+npx --no-install ashfox render --view cutaway showcase/assets/structures/tavern.ashfox --output tavern_cutaway.png
+npx --no-install ashfox build showcase/.ashfoxworkspace --json
 ```
 
-단독 `ashfox build`는 선언된 `outputs = [...];`(또는 `outputs { ... }`)를 따르며 기본값으로 같은 `.ashfox` 원본에서 `.nbt`(`java_structure`)와 `1 block = 1.0m` `.glb`, 그리고 `.structure.json`(`PlayableStructureMeta` 충돌체·시맨틱 구역·조명·소켓·상호작용 요소)을 함께 생성합니다. GLB 빌드는 은면·트림 스트립 컬링, 서브복셀 아틀라스 배칭, 반복 커스텀 소품 GPU 인스턴싱(`EXT_mesh_gpu_instancing`), 3단계 시맨틱 LOD(`_LOD0`, 삼각형 `<= 25%` 단순 외피 `_LOD1`, 단일 드로우 정점 컬러 원거리 헐 `_LOD2` 및 `MSFT_lod`/`extras.ashfox.lod`)를 적용하며 구조물은 `<= 18` 드로우 콜 / `<= 18,000` 삼각형 / `<= 350 KB`(`compound`는 `<= 28` / `<= 45,000` / `<= 1.1 MB`) 예산 내에서 출력됩니다. 모든 구조물은 6개 하드 게이트(`visible_geometry`, `ground_contact`, `structural_continuity`, `playable_circulation`, `weatherproof_enclosure`, `valid_minecraft_ids`)와 4개 축 100점 감사(`architecture`, `facade`, `interior`, `craft`, `>= 75` 통과, `>= 85` 우수)를 만족해야 합니다. `preview exterior { sheet = exterior; }`, `preview cutaway { sheet = cutaway; }`, `preview interior { sheet = interior; }`를 선언해 외관 입면·층별 수평 단면·실내 눈높이 시점을 점검할 수 있으며, 미사용 팔레트 키·import·비공개 프리팹은 컴파일 단계에서 차단됩니다.
+내장 `"std/structure/..."` 건축·실내·가구 모듈은 `ashfox library std list structure`로 조회할 수 있습니다. 단독 `ashfox build`는 선언된 `outputs = [...];`(또는 `outputs { ... }`)를 따르며 기본값으로 같은 `.ashfox` 원본에서 `.nbt`(`java_structure`)와 `1 block = 1.0m` `.glb`, 그리고 `.structure.json`(`PlayableStructureMeta` 충돌체·시맨틱 구역·조명·소켓·상호작용 요소)을 함께 생성합니다. GLB 빌드는 은면·트림 스트립 컬링, 서브복셀 아틀라스 배칭, 반복 커스텀 소품 GPU 인스턴싱(`EXT_mesh_gpu_instancing`), 3단계 시맨틱 LOD(`_LOD0`, 삼각형 `<= 25%` 단순 외피 `_LOD1`, 단일 드로우 정점 컬러 원거리 헐 `_LOD2` 및 `MSFT_lod`/`extras.ashfox.lod`)를 적용하며 구조물은 `<= 18` 드로우 콜 / `<= 18,000` 삼각형 / `<= 350 KB`(`compound`는 `<= 28` / `<= 45,000` / `<= 1.1 MB`) 예산 내에서 출력됩니다. 모든 구조물은 6개 하드 게이트(`visible_geometry`, `ground_contact`, `structural_continuity`, `playable_circulation`, `weatherproof_enclosure`, `valid_minecraft_ids`)와 4개 축 100점 감사(`architecture`, `facade`, `interior`, `craft`, `>= 75` 통과, `>= 85` 우수)를 만족해야 합니다. `preview exterior { sheet = exterior; }`, `preview cutaway { sheet = cutaway; }`, `preview interior { sheet = interior; }`를 선언해 외관 입면·층별 수평 단면·실내 눈높이 시점을 점검할 수 있으며, 미사용 팔레트 키·import·비공개 프리팹은 컴파일 단계에서 차단됩니다.

@@ -25,7 +25,7 @@
 - **단위**: `ms`(밀리초), `s`(초), `hz` / `khz`(주파수), `db`(데시벨), `lufs`(라우드니스), `cents` / `st`(피치 오프셋), `%`(`0.01` 배율 백분율).
 - **전이 및 곡선**: `log(0: 1800hz -> 1: 950hz)`, `lin(0: 0 -> 0.5: 1 -> 1: 0)`, `smooth(0: 200hz -> 1: 800hz)`, 또는 인라인 `a -> b [ease_out -> c]` 전이(`linear`/`smooth`/`ease_in`/`ease_out`/`ease_in_out`/`snap`). 제어점 간격은 `>= 96`프레임(`2..16`점)이어야 합니다.
 - **엔벨로프**: `gain { env = ad; attack = 5ms; peak = 0.95; curve = exp; }` 및 `gain { env = adsr; attack = 20ms; decay = 120ms; sustain = 0.7; release = 150ms; peak = 0.9; curve = exp; }`.
-- **모듈 및 `params`**: 모듈은 `params { key = val; }`과 `export voice <id> : <type> { ... }` (또는 `export seq <id> { ... }`)를 선언합니다. 사운드는 블록 상단에서 `import "../module/kit.ashfox" as kit;` 또는 매개변수 재정의 `import "../module/kit.ashfox" as kit { pitch = 440hz; };`로 가져와 `kit.voice_id`로 참조합니다.
+- **모듈 및 `params`**: 모듈은 `params { key = val; }`과 `export voice <id> : <type> { ... }` (또는 `export seq <id> { ... }`)를 선언합니다. 사운드는 블록 상단에서 상대 모듈(`import "../module/kit.ashfox" as kit;`) 또는 내장 표준 라이브러리(`import "std/sound/combat/blade" as blade;`)를 가져오며 필요 시 매개변수를 재정의(`{ pitch = 440hz; }`)해 `alias.voice_id`로 참조합니다.
 
 ## 보이스, 트루 스테레오 음원, FX, 변조
 

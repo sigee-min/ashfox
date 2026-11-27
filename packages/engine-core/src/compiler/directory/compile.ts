@@ -18,6 +18,7 @@ import {
 } from './checks';
 import { compilePreparedSound, prepareDirectorySound } from './sound';
 import { validateCanonicalLayout } from './layout';
+import { mergeVirtualLibraryFiles } from '../../project/stdlib/resolve';
 import { compileDirectorySprite } from './sprite';
 import { compileDirectoryStructure } from './structure';
 import { compileDirectoryVfx } from './vfx';
@@ -328,10 +329,15 @@ const compileDirectory = (
   files: readonly DirectoryFile[],
   evaluateStructureAudit: StructureAuditEvaluator,
   useCache: boolean,
+  virtualLibraries?: ReadonlyMap<string, string>,
 ): DirectoryCompilation => {
   const config = readDirectoryWorkspace(configuration);
-  assertSourceBudget(files);
-  const filesByPath = declaredFiles(config, files);
+  const effectiveFiles = mergeVirtualLibraryFiles(files, virtualLibraries, (path, source) => ({
+    path,
+    source,
+  }));
+  assertSourceBudget(effectiveFiles);
+  const filesByPath = declaredFiles(config, effectiveFiles);
   const entries = declaredEntries(config);
   const cache = useCache ? createDirectoryWorkspaceCache() : undefined;
   validateCanonicalLayout(
@@ -340,11 +346,11 @@ const compileDirectory = (
     entries.map((e) => e.path),
     cache,
   );
-  const modFailure = checkDirectoryModularity(files);
+  const modFailure = checkDirectoryModularity(effectiveFiles);
   if (modFailure) return modFailure;
   const output = compileEntries(entries, filesByPath, evaluateStructureAudit, cache);
   if ('ok' in output) return output;
-  const modelFailure = compileModels(config, files, filesByPath, output, cache);
+  const modelFailure = compileModels(config, effectiveFiles, filesByPath, output, cache);
   if (modelFailure) return modelFailure;
   const productsByEntry = new Map(
     output.products.map((product) => [entryKey(product.entry), product]),
@@ -362,7 +368,7 @@ const compileDirectory = (
   const sourceHash = sha256Digest(
     canonicalJsonString({
       config,
-      files: [...files].sort((a, b) => compareText(a.path, b.path)),
+      files: [...effectiveFiles].sort((a, b) => compareText(a.path, b.path)),
     }),
   );
   const buildKey = sha256Digest(
@@ -380,9 +386,16 @@ export const compileDirectoryWorkspace = (
   files: readonly DirectoryFile[],
   evaluateStructureAudit: StructureAuditEvaluator,
   useCache = true,
+  virtualLibraries?: ReadonlyMap<string, string>,
 ): DirectoryCompilation => {
   try {
-    return compileDirectory(configuration, files, evaluateStructureAudit, useCache);
+    return compileDirectory(
+      configuration,
+      files,
+      evaluateStructureAudit,
+      useCache,
+      virtualLibraries,
+    );
   } catch (error) {
     return compileFailure(error);
   }

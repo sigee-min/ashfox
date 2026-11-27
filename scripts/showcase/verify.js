@@ -32,9 +32,9 @@ const SHOWCASE_RELATIVE_PATH = 'assets/showcase/shared-creatures';
 const SHOWCASE_PATH = path.join(ROOT, SHOWCASE_RELATIVE_PATH);
 const DESCRIPTOR_PATH = path.join(SHOWCASE_PATH, 'showcase.json');
 const EXPECTED_SELECTORS = Object.freeze([
-  Object.freeze({ packageName: 'workbench', entryName: 'griffin' }),
-  Object.freeze({ packageName: 'creatures', entryName: 'fox' }),
-  Object.freeze({ packageName: 'creatures', entryName: 'goblin' }),
+  Object.freeze({ packageName: 'models', entryName: 'griffin_boss', slug: 'griffin' }),
+  Object.freeze({ packageName: 'models', entryName: 'red_fox', slug: 'fox' }),
+  Object.freeze({ packageName: 'models', entryName: 'goblin_raider', slug: 'goblin' }),
 ]);
 const CAPTURE_SOURCE_ROOTS = Object.freeze(['apps/cli/src/observe', 'packages/render-core/src']);
 const CAPTURE_SOURCE_FILES = Object.freeze([
@@ -188,7 +188,7 @@ const assertExactSelectors = (workspace) => {
 const openProject = (workspace, selector) => {
   const opened = openAssetProject({
     workspace,
-    entry: selector,
+    entry: { packageName: selector.packageName, entryName: selector.entryName },
     identity: {
       id: `showcase-${selector.entryName}`,
       revision: 'showcase-0001',
@@ -207,16 +207,16 @@ const openProject = (workspace, selector) => {
 
 const assertMediaInventory = (workspace) => {
   const expected = new Set(
-    EXPECTED_SELECTORS.flatMap(({ entryName }) => [
-      `${entryName}-build-replay.gif`,
-      `${entryName}-build-replay.mp4`,
-      `${entryName}-poster.png`,
+    EXPECTED_SELECTORS.flatMap(({ entryName, slug }) => [
+      `${slug}-build-replay.gif`,
+      `${slug}-build-replay.mp4`,
+      `${slug}-poster.png`,
       ...Object.values(
         openProject(
           workspace,
           EXPECTED_SELECTORS.find((selector) => selector.entryName === entryName),
         ).document.animations,
-      ).map((clip) => `${entryName}-${clip.name}.mp4`),
+      ).map((clip) => `${slug}-${clip.name}.mp4`),
     ]),
   );
   const actual = fs
@@ -249,7 +249,7 @@ const readValidatedWorkspace = () => {
 
 const buildMotionDescriptors = (selector, animations) =>
   Object.values(animations).map((clip) => {
-    const file = `${selector.entryName}-${clip.name}.mp4`;
+    const file = `${selector.slug}-${clip.name}.mp4`;
     const bytes = requireBytes(path.join(SHOWCASE_PATH, file), 'motion movie');
     if (bytes.subarray(4, 8).toString('ascii') !== 'ftyp' || bytes.length > 2 * 1024 * 1024) {
       fail(`Invalid or oversized movie: ${file}`);
@@ -266,9 +266,9 @@ const buildMotionDescriptors = (selector, animations) =>
 const buildEntryDescriptor = (workspace, selector) => {
   const project = openProject(workspace, selector);
   const plan = createBuildCapturePlan(project.document);
-  const artifact = `${selector.entryName}-build-replay.gif`;
-  const poster = `${selector.entryName}-poster.png`;
-  const videoFile = `${selector.entryName}-build-replay.mp4`;
+  const artifact = `${selector.slug}-build-replay.gif`;
+  const poster = `${selector.slug}-poster.png`;
+  const videoFile = `${selector.slug}-build-replay.mp4`;
   const videoBytes = requireBytes(path.join(SHOWCASE_PATH, videoFile), 'build movie');
   if (
     videoBytes.subarray(4, 8).toString('ascii') !== 'ftyp' ||

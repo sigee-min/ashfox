@@ -27,7 +27,7 @@ try {
   );
   await writeFile(
     path.join(fixture, 'architecture/syntax.md'),
-    '# Syntax\n\n## Units\n\n[Example](../../examples/griffin/workbench/main.ashfox)\n\n[External](https://example.com/readme.md)',
+    '# Syntax\n\n## Units\n\n[Example](../../showcase/assets/models/griffin_boss.ashfox)\n\n[External](https://example.com/readme.md)',
   );
   await writeFile(path.join(fixture, 'architecture/internal.md'), '# Private codebase');
   const pages = await loadDocumentation(fixture);
@@ -36,7 +36,7 @@ try {
     ['/docs/', '/docs/language/syntax/'],
   );
   assert.match(pages[0].html, /href="\/docs\/language\/syntax\/#units"/);
-  assert.match(pages[1].html, /href="\/examples\/griffin\/workbench\/main.ashfox"/);
+  assert.match(pages[1].html, /href="\/showcase\/assets\/models\/griffin_boss\.ashfox"/);
   assert.match(pages[1].html, /href="https:\/\/example.com\/readme.md"/);
   await writeFile(
     path.join(fixture, 'README.md'),
@@ -71,24 +71,14 @@ for (const internal of ['codebase', 'asset-codebase', 'review', 'asset-language'
 }
 console.log('public docs catalog, navigation, links, and publication boundaries verified');
 
-for (const relative of [
-  'examples/items/assets/sprites/apple.ashfox',
-  'examples/game-assets/.ashfoxworkspace',
-]) {
+for (const relative of ['showcase/assets/sprites/iron_sword.ashfox', 'showcase/.ashfoxworkspace']) {
   assert.deepEqual(
     await readFile(path.join(siteRoot, 'dist', relative)),
     await readFile(path.resolve(siteRoot, '../..', relative)),
   );
 }
 
-for (const name of [
-  'ashfox-cli.tgz',
-  'starter.zip',
-  'items.zip',
-  'game-assets.zip',
-  'resource-pack.zip',
-  'web-game.zip',
-]) {
+for (const name of ['ashfox-cli.tgz', 'starter.zip', 'showcase.zip']) {
   assert.deepEqual(
     await readFile(path.join(siteRoot, 'dist/downloads', name)),
     await readFile(path.resolve(siteRoot, '../../dist/docs-delivery', name)),

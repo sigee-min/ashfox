@@ -51,4 +51,4 @@
 
 {{source-code:1}}
 
-추가 재질과 타일·아이템 예제는 [공용 아이템 모듈](../../examples/items/assets/module/shared.ashfox)과 [아이템 워크스페이스](../../examples/items/.ashfoxworkspace), 여러 개를 묶어 출력하려면 [워크스페이스 설정](../guides/workspace.md)을 참고하세요.
+추가 재질과 타일·아이템 예제는 `showcase/assets/sprites/`(`iron_sword.ashfox`, `ruby_potion.ashfox`, `oak_planks.ashfox`)와 내장 `"std/sprite/..."` 모듈(`ashfox library std list sprite`), 여러 개를 묶어 출력하려면 [워크스페이스 설정](../guides/workspace.md)을 참고하세요.

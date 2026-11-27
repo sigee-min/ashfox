@@ -1,0 +1,39 @@
+ashfox 1
+module medieval {
+  palette {
+    stone_brick = mix("minecraft:stone_bricks" * 75%, "minecraft:mossy_stone_bricks" * 15%, "minecraft:cracked_stone_bricks" * 10%);
+    cobble = mix("minecraft:cobblestone" * 70%, "minecraft:mossy_cobblestone" * 30%);
+    oak_log = "minecraft:dark_oak_log[axis=y]";
+    oak_beam = "minecraft:dark_oak_log[axis=x]";
+    oak_plank = "minecraft:oak_planks";
+    spruce_slab = "minecraft:spruce_slab[type=bottom]";
+    spruce_fence = "minecraft:spruce_fence";
+    stone_stair = "minecraft:stone_brick_stairs[facing=north,half=bottom]";
+    lantern = "minecraft:lantern[hanging=false]";
+  }
+
+  export prefab StoneArchway {
+    box { from = (0b, 0b, 0b); to = (0b, 3b, 0b); block = stone_brick; }
+    box { from = (3b, 0b, 0b); to = (3b, 3b, 0b); block = stone_brick; }
+    box { from = (0b, 4b, 0b); to = (3b, 4b, 0b); block = stone_brick; }
+    set { at = (1b, 3b, 0b); block = stone_stair; }
+    set { at = (2b, 3b, 0b); block = stone_stair; }
+  }
+
+  export prefab TimberButtress {
+    box { from = (0b, 0b, 0b); to = (0b, 4b, 0b); block = oak_log; }
+    box { from = (0b, 4b, 0b); to = (2b, 4b, 0b); block = oak_beam; }
+    set { at = (1b, 3b, 0b); block = oak_plank; }
+    set { at = (1b, 2b, 0b); block = spruce_fence; }
+  }
+
+  export prefab CobbleWell {
+    walls { from = (0b, 0b, 0b); to = (2b, 0b, 2b); block = cobble; }
+    set { at = (0b, 1b, 0b); block = spruce_fence; }
+    set { at = (2b, 1b, 0b); block = spruce_fence; }
+    set { at = (0b, 2b, 0b); block = spruce_fence; }
+    set { at = (2b, 2b, 0b); block = spruce_fence; }
+    box { from = (0b, 3b, 0b); to = (2b, 3b, 2b); block = spruce_slab; }
+    set { at = (1b, 2b, 1b); block = lantern; }
+  }
+}

@@ -1,0 +1,30 @@
+ashfox 1
+module element {
+  export design FlamePalette {
+    ember_core: color = #fff1b8;
+    flame_mid: color = #eb7a28;
+    flame_edge: color = #9e2d1b;
+    char_smoke: color = #3a2b29;
+  }
+
+  export design FrostPalette {
+    ice_core: color = #dcf7fc;
+    frost_mid: color = #6bc8e3;
+    glacier_edge: color = #3469a6;
+    mist_shadow: color = #273854;
+  }
+
+  export design StormPalette {
+    arc_core: color = #f2f8ff;
+    bolt_mid: color = #7eb5ff;
+    thunder_edge: color = #4155a8;
+    cloud_shadow: color = #2b2f45;
+  }
+
+  export design ArcanePalette {
+    glyph_core: color = #f7dcff;
+    ether_mid: color = #c068f0;
+    void_edge: color = #632ea1;
+    astral_shadow: color = #2d1f47;
+  }
+}

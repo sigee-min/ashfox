@@ -85,4 +85,4 @@ npx --no-install ashfox render badge.ashfox --view inspect --output badge-sheet.
 npx --no-install ashfox build badge.ashfox --json
 ```
 
-See [the shared item module](../../examples/items/assets/module/shared.ashfox) for more materials, [items examples](../../examples/items/.ashfoxworkspace) for 32×32 items and seamless tiles, and [workspace configuration](../guides/workspace.md) to export a collection from one project.
+See `showcase/assets/sprites/` (`iron_sword.ashfox`, `ruby_potion.ashfox`, `oak_planks.ashfox`), built-in `"std/sprite/..."` modules (`ashfox library std list sprite`), and [workspace configuration](../guides/workspace.md) to export a collection from one project.

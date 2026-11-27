@@ -1,13 +1,22 @@
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   BuildFailure,
   readSingleSnapshot,
+  readSnapshot,
   readStandalone,
   checkSnapshot,
   type Snapshot,
 } from '@ashfox/asset-build';
-import { openAssetProject, encodeCanonicalPng } from '@ashfox/engine-core';
+import {
+  openAssetProject,
+  encodeCanonicalPng,
+  inspectNativeSource,
+  isStdLibraryLogicalPath,
+  isVirtualLibrarySpecifier,
+  readDirectoryWorkspace,
+} from '@ashfox/engine-core';
 import type { Prepared, SourceInput } from './contract';
 
 export const resolveInputFile = (file: string): string => {
@@ -46,9 +55,124 @@ const sealMemorySnapshot = (input: SourceInput): Snapshot => {
       );
     return source;
   });
-  if (snapshot.files.length !== Object.keys(memory).length)
+  if (
+    snapshot.files.filter((f) => !isStdLibraryLogicalPath(f.path)).length !==
+    Object.keys(memory).length
+  )
     throw new BuildFailure('observe.source', 'Memory sources must all be reachable', 2);
   return snapshot;
+};
+
+const joinPkgPath = (root: string, file: string): string => [root, file].filter(Boolean).join('/');
+
+const enqueueModuleImport = (
+  spec: string,
+  cur: string,
+  byAlias: ReadonlyMap<string, { readonly pkg: string; readonly filePath: string }>,
+  usedPkgs: Set<string>,
+  queue: string[],
+): void => {
+  if (isVirtualLibrarySpecifier(spec)) return;
+  if (spec.startsWith('.')) {
+    queue.push(path.posix.normalize(path.posix.join(path.posix.dirname(cur), spec)));
+    return;
+  }
+  const hit = byAlias.get(spec);
+  if (!hit) return;
+  usedPkgs.add(hit.pkg);
+  queue.push(hit.filePath);
+};
+
+const collectUsedModuleClosure = (
+  entryPath: string,
+  ownerName: string,
+  packages: Snapshot['config']['packages'],
+  snapshotFiles: Snapshot['files'],
+): { readonly usedPaths: ReadonlySet<string>; readonly usedPkgs: ReadonlySet<string> } => {
+  const byAlias = new Map<string, { readonly pkg: string; readonly filePath: string }>();
+  for (const pkg of packages) {
+    for (const mod of pkg.manifest.modules) {
+      const sub = mod.subpath.replace(/^\.\//u, '');
+      byAlias.set(`${pkg.name}/${sub}`, {
+        pkg: pkg.name,
+        filePath: joinPkgPath(pkg.root, mod.path),
+      });
+    }
+  }
+  const filesByPath = new Map(snapshotFiles.map((f) => [f.path, f]));
+  const usedPaths = new Set<string>();
+  const usedPkgs = new Set<string>([ownerName]);
+  const queue = [entryPath];
+  while (queue.length > 0) {
+    const cur = queue.pop()!;
+    if (usedPaths.has(cur)) continue;
+    usedPaths.add(cur);
+    const file = filesByPath.get(cur);
+    if (!file) continue;
+    for (const spec of inspectNativeSource(file.source, cur).imports) {
+      enqueueModuleImport(spec, cur, byAlias, usedPkgs, queue);
+    }
+  }
+  return { usedPaths, usedPkgs };
+};
+
+const narrowWorkspaceSnapshot = (snapshot: Snapshot, resolvedFile: string): Snapshot => {
+  const realRoot = fs.existsSync(snapshot.root) ? fs.realpathSync(snapshot.root) : snapshot.root;
+  const rel = path.relative(realRoot, resolvedFile).split(path.sep).join('/');
+  const owner = snapshot.config.packages.find((p) =>
+    p.manifest.entries.some((e) => joinPkgPath(p.root, e.path) === rel),
+  );
+  if (!owner) return snapshot;
+  const entry = owner.manifest.entries.find((e) => joinPkgPath(owner.root, e.path) === rel)!;
+  const { usedPaths, usedPkgs } = collectUsedModuleClosure(
+    rel,
+    owner.name,
+    snapshot.config.packages,
+    snapshot.files,
+  );
+  const packages = snapshot.config.packages
+    .filter((p) => usedPkgs.has(p.name))
+    .map((p) => ({
+      ...p,
+      manifest: {
+        ...p.manifest,
+        entries: p.name === owner.name ? [entry] : [],
+        modules: p.manifest.modules.filter((m) => usedPaths.has(joinPkgPath(p.root, m.path))),
+        dependencies: p.manifest.dependencies.filter((d) => usedPkgs.has(d.name)),
+      },
+    }));
+  const configuration = JSON.stringify({
+    format: 'ashfox-workspace',
+    version: 2,
+    name: snapshot.config.name,
+    packages,
+    include: snapshot.config.include,
+    ignore: snapshot.config.ignore,
+    build: { directory: snapshot.config.build.directory },
+    exports: [],
+  });
+  const files = snapshot.files.filter(
+    (f) => isStdLibraryLogicalPath(f.path) || usedPaths.has(f.path),
+  );
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ configuration, files }))
+    .digest('hex');
+  return { ...snapshot, configuration, config: readDirectoryWorkspace(configuration), files, hash };
+};
+
+export const readObservationFileSnapshot = (file: string): Snapshot => {
+  const resolved = resolveInputFile(file);
+  try {
+    return readSingleSnapshot(resolved);
+  } catch (error) {
+    if (!(error instanceof BuildFailure) || error.code !== 'source.import') throw error;
+    try {
+      return narrowWorkspaceSnapshot(readSnapshot(resolved), resolved);
+    } catch {
+      throw error;
+    }
+  }
 };
 
 export const sealObservation = (input: SourceInput): Snapshot => {
@@ -56,7 +180,7 @@ export const sealObservation = (input: SourceInput): Snapshot => {
   const resolved = resolveInputFile(input.file);
   if (!resolved.endsWith('.ashfox'))
     throw new BuildFailure('observe.input', 'Expected a single .ashfox source file', 2);
-  return readSingleSnapshot(resolved);
+  return readObservationFileSnapshot(resolved);
 };
 
 const prepareSprite = (

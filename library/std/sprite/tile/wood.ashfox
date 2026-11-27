@@ -1,0 +1,27 @@
+ashfox 1
+module wood {
+  export material oak_timber {
+    ramp { mode = auto; base = #a67246; preset = wood; }
+  }
+  export material oak_joint {
+    ramp { mode = auto; base = #5e3d28; preset = wood; }
+  }
+  export material spruce_timber {
+    ramp { mode = auto; base = #734c33; preset = wood; }
+  }
+  export material birch_timber {
+    ramp { mode = auto; base = #cbb288; preset = warm; }
+  }
+  export material bark_dark {
+    ramp { mode = auto; base = #4d3527; preset = wood; }
+  }
+
+  export mask plank_seam {
+    rows = [
+      "11111111",
+      "........",
+      "........",
+      "........"
+    ];
+  }
+}

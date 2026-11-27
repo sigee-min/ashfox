@@ -1,0 +1,23 @@
+ashfox 1
+module fire {
+  export palette EmberSolar {
+    core = #fff7d6;
+    mid = #ff8a24;
+    edge = #b8250e;
+    smoke = #3d2824;
+  }
+
+  export palette HearthGlow {
+    core = #fff2bf;
+    mid = #ff9b3d;
+    edge = #c43f12;
+    smoke = #4a3a35;
+  }
+
+  export palette BlueFlame {
+    core = #edffff;
+    mid = #52c7f5;
+    edge = #2659bd;
+    smoke = #212c47;
+  }
+}

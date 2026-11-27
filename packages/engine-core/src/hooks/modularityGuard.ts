@@ -1,3 +1,4 @@
+import { isStdLibraryLogicalPath } from '../project/stdlib/resolve';
 import { compareText } from '../stableOrder';
 import type { HookDiagnostic, HookSourceSpan, HookSourceUnit } from './contract';
 import {
@@ -63,6 +64,22 @@ const addOcc = (
   buckets.set(b.hash, entry);
 };
 
+const inferStdDomain = (file: string, blockKind: string): string => {
+  if (
+    file.includes('/models/') ||
+    /^(?:surface|component|bone|motion|rig|skeleton)$/u.test(blockKind)
+  ) {
+    return 'model';
+  }
+  if (file.includes('/sprites/') || /^(?:mask|material|stamp)$/u.test(blockKind)) return 'sprite';
+  if (file.includes('/sounds/') || /^(?:voice|seq|sequence)$/u.test(blockKind)) return 'sound';
+  if (file.includes('/structures/') || /^(?:prefab|floor|room|facade)$/u.test(blockKind)) {
+    return 'structure';
+  }
+  if (file.includes('/vfx/') || /^(?:element|emitter|palette)$/u.test(blockKind)) return 'vfx';
+  return 'core';
+};
+
 const collectDuplicates = (
   facts: readonly FileFacts[],
   minTokens: number,
@@ -80,10 +97,14 @@ const collectDuplicates = (
     const ordered = [...bucket.items].sort(
       (a, b) => compareText(a.file, b.file) || a.line - b.line || a.column - b.column,
     );
+    const userItems = ordered.filter((item) => !isStdLibraryLogicalPath(item.file));
+    if (userItems.length === 0) continue;
     groups.push(Object.freeze({ hash, kind: bucket.kind, occurrences: Object.freeze(ordered) }));
     const peers = [...distinct].sort(compareText).join(', ');
-    for (const o of ordered) {
-      const msg = `Duplicate inline ${o.kind} block (${hash.slice(0, 15)}) across files (${peers}); extract into a shared module and import it.`;
+    for (const o of userItems) {
+      const domain = inferStdDomain(o.file, o.kind);
+      const hint = `Run 'ashfox library std list ${domain}' to reuse an existing standard module.`;
+      const msg = `Duplicate inline ${o.kind} block (${hash.slice(0, 15)}) across files (${peers}); extract into a shared module and import it. Hint: ashfox library std list ${domain}.`;
       diagnostics.push(
         hookGuardDiag(
           sev,
@@ -91,6 +112,7 @@ const collectDuplicates = (
           msg,
           `${o.file}#${o.kind}:${o.id}`,
           o.span,
+          hint,
         ),
       );
     }
@@ -118,6 +140,7 @@ const fileHygiene = (
   checkUnused: boolean,
 ): readonly HookDiagnostic[] => {
   const out: HookDiagnostic[] = [];
+  const isStdLib = isStdLibraryLogicalPath(f.file);
   for (const s of f.schemas) {
     if (s.inline) {
       const m = `Inline schema "${s.name}" is forbidden in ${f.unitKind} file "${f.file}"; move it to a module with "export schema" and import it.`;
@@ -130,7 +153,7 @@ const fileHygiene = (
           s.span,
         ),
       );
-    } else if (checkUnused && !isSchemaUsed(f, s, facts)) {
+    } else if (checkUnused && !isStdLib && !isSchemaUsed(f, s, facts)) {
       const q = s.ns ? `${s.ns}.${s.name}` : s.name;
       out.push(
         hookGuardDiag(

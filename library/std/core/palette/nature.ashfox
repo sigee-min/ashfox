@@ -1,0 +1,32 @@
+ashfox 1
+module nature {
+  export design WoodlandFoliage {
+    canopy_shadow: color = #2b4d27;
+    canopy_base: color = #4b823c;
+    canopy_light: color = #76b359;
+    fern_shadow: color = #34542f;
+    fern_base: color = #5a8c4a;
+    fern_light: color = #87ba6e;
+    blossom_accent: color = #d97a96;
+    nectar_gold: color = #e3b84f;
+  }
+
+  export design TerrainSoil {
+    loam_shadow: color = #3b2b22;
+    loam_base: color = #614738;
+    loam_light: color = #876652;
+    sand_shadow: color = #8f7b58;
+    sand_base: color = #bfa77a;
+    sand_light: color = #dfd0a8;
+    bark_base: color = #523b2c;
+    clay_accent: color = #a65c42;
+  }
+
+  export design MeadowWater {
+    deep_shadow: color = #23475c;
+    stream_base: color = #3a758f;
+    ripple_light: color = #6cb0c7;
+    foam_crest: color = #d4eef5;
+    reed_green: color = #698548;
+  }
+}

@@ -2,8 +2,11 @@ import { compareText } from '@ashfox/internal-contracts';
 import * as path from 'node:path';
 import {
   inspectNativeSource,
+  isStdLibraryLogicalPath,
+  isVirtualLibrarySpecifier,
   readDirectoryWorkspace,
   validateAssetDeclarations,
+  virtualLibraryLogicalPath,
   type DeclaredOutputSpec,
   type DirectoryExport,
   type DirectoryFile,
@@ -11,6 +14,7 @@ import {
 import { BuildFailure, type Snapshot } from '../bundle/contract';
 import { digest, json } from '../shared/digest';
 import { contained, safeRelative } from './paths';
+import { resolveEffectiveStdLibraries } from './stdlib';
 
 const CANONICAL_BUCKETS = new Set(['models', 'sprites', 'sounds', 'structures', 'vfx']);
 
@@ -35,6 +39,7 @@ const resolveStandaloneAnchor = (
 interface StandaloneVisitState {
   readonly root: string;
   readonly readText: (file: string, limit: number) => string;
+  readonly stdLibraries: ReadonlyMap<string, string>;
   readonly files: DirectoryFile[];
   readonly active: Set<string>;
   readonly seen: Set<string>;
@@ -49,6 +54,29 @@ const assertChildKind = (childKind: string, rootKind: string, target: string): v
   if (!valid) throw new BuildFailure('source.import', 'Expected module: ' + target);
 };
 
+const readStandaloneSource = (state: StandaloneVisitState, relative: string): string => {
+  if (isStdLibraryLogicalPath(relative)) {
+    const spec = relative.slice('library/'.length, -'.ashfox'.length);
+    const source = state.stdLibraries.get(spec);
+    if (source === undefined) {
+      throw new BuildFailure('source.import', 'Unknown virtual standard library module: ' + spec);
+    }
+    return source;
+  }
+  return state.readText(contained(state.root, relative), 262144);
+};
+
+const resolveStandaloneImport = (ownerPath: string, specifier: string): string => {
+  if (isVirtualLibrarySpecifier(specifier)) return virtualLibraryLogicalPath(specifier);
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
+    throw new BuildFailure(
+      'source.import',
+      'Package imports require optional .ashfoxworkspace configuration: ' + specifier,
+    );
+  }
+  return path.posix.normalize(path.posix.join(path.posix.dirname(ownerPath), specifier));
+};
+
 const visitStandaloneModule = (
   state: StandaloneVisitState,
   relative: string,
@@ -58,7 +86,7 @@ const visitStandaloneModule = (
   if (depth > 32 || state.active.has(relative)) throw new BuildFailure('source.cycle', relative);
   if (!safeRelative(relative) || !relative.endsWith('.ashfox'))
     throw new BuildFailure('source.path', relative);
-  const source = state.readText(contained(state.root, relative), 262144);
+  const source = readStandaloneSource(state, relative);
   const unit = inspectNativeSource(source, relative);
   if (state.seen.has(relative)) return unit;
   state.total += Buffer.byteLength(source);
@@ -69,13 +97,7 @@ const visitStandaloneModule = (
   state.active.add(relative);
   const effectiveRootKind = rootKind ?? unit.kind;
   for (const specifier of unit.imports) {
-    if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
-      throw new BuildFailure(
-        'source.import',
-        'Package imports require optional .ashfoxworkspace configuration: ' + specifier,
-      );
-    }
-    const target = path.posix.normalize(path.posix.join(path.posix.dirname(relative), specifier));
+    const target = resolveStandaloneImport(relative, specifier);
     const child = visitStandaloneModule(state, target, depth + 1, effectiveRootKind);
     assertChildKind(child.kind, effectiveRootKind, target);
   }
@@ -155,7 +177,7 @@ const buildStandaloneConfig = (
           version: 1,
           entries: [{ name: entry.id, path: entryPath }],
           modules: files
-            .filter((f) => f.path !== entryPath)
+            .filter((f) => f.path !== entryPath && !isStdLibraryLogicalPath(f.path))
             .map((f, i) => ({ subpath: './module' + i, path: f.path })),
           dependencies: [],
         },
@@ -174,9 +196,11 @@ export const readStandalone = (
   readText: (file: string, limit: number) => string,
 ): Snapshot => {
   const { root, entryPath } = resolveStandaloneAnchor(input);
+  const stdRoots = path.basename(root) === 'assets' ? [path.dirname(root), root] : [root];
   const state: StandaloneVisitState = {
     root,
     readText,
+    stdLibraries: resolveEffectiveStdLibraries(undefined, stdRoots),
     files: [],
     active: new Set<string>(),
     seen: new Set<string>(),

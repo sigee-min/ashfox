@@ -1,0 +1,30 @@
+ashfox 1
+module cloth {
+  params {
+    brightness = 0.6;
+    width = 0.5;
+  }
+
+  export voice fabric_rustle : noise {
+    color = pink;
+    filter : bandpass { cutoff = log(0: 2800hz -> 0.4: 4200hz -> 1: 1100hz); q = 1.1; }
+    highpass = 220hz;
+    pan = -0.25 -> 0.25;
+    gain { env = adsr; attack = 12ms; decay = 90ms; sustain = 0.45; release = 110ms; peak = 0.68; }
+  }
+
+  export voice leather_snap : modal_plate {
+    material = leather;
+    pitch = 160hz;
+    size = 0.9;
+    hardness = 0.7;
+    damping = 0.74;
+    brightness = brightness;
+    modes = 10;
+    strike = mallet;
+    splash = 0.35;
+    stereo_spread = width;
+    highpass = 60hz;
+    gain { env = ad; attack = 2ms; peak = 0.78; curve = exp; }
+  }
+}

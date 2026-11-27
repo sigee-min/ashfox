@@ -1,0 +1,53 @@
+ashfox 1
+module door {
+  params {
+    pitch = 140hz;
+    damping = 0.54;
+    spread = 0.4;
+  }
+
+  export voice timber_knock : modal_plate {
+    material = wood;
+    pitch = pitch;
+    size = 1.0;
+    hardness = 0.74;
+    damping = damping;
+    brightness = 0.62;
+    modes = 12;
+    strike = mallet;
+    twin_beat = 0.24;
+    splash = 0.28;
+    stereo_spread = spread;
+    highpass = 45hz;
+    eq { low = (160hz, 2db); }
+    gain { env = ad; attack = 3ms; peak = 0.9; curve = exp; }
+  }
+
+  export voice hinge_creak : waveguide {
+    model = creak;
+    pitch = log(0: 195hz -> 0.3: 305hz -> 0.7: 235hz -> 1: 165hz);
+    damping = 0.38;
+    stiffness = 0.46;
+    bow_pressure = 0.76;
+    brightness = 0.64;
+    highpass = 85hz;
+    drive : grit { amount = 1.5; }
+    pan = -0.3 -> 0.15;
+    gain { env = adsr; attack = 40ms; decay = 240ms; sustain = 0.72; release = 180ms; peak = 0.88; }
+  }
+
+  export voice latch_clack : modal_plate {
+    material = steel;
+    pitch = 840hz;
+    size = 0.65;
+    hardness = 0.88;
+    damping = 0.36;
+    brightness = 0.82;
+    modes = 14;
+    strike = mallet;
+    twin_beat = 0.35;
+    stereo_spread = 0.35;
+    highpass = 180hz;
+    gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
+  }
+}

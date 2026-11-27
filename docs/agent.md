@@ -59,10 +59,22 @@ and the smallest user action needed; do not claim setup or review succeeded.
 
 ## Read the references before authoring
 
-Read [repository layout](https://ashfox.io/docs/guides/repository-layout/) and
-[execution modes](https://ashfox.io/docs/guides/choose-a-format/), then read the
-[DSL overview](https://ashfox.io/docs/language/reference/) and the complete
-references relevant to the requested asset. Follow their linked examples.
+The installed CLI is self-describing and carries the full embedded documentation
+and standard library (`library/std/*`) offline:
+
+```sh
+npx --no-install ashfox docs                         # List canonical documentation topics
+npx --no-install ashfox docs grammar                 # Unified ashfox 1 DSL reference
+npx --no-install ashfox docs <topic>                 # agent, grammar, model, rig, surface, animation, vfx, sprite, sound, structure, hooks
+npx --no-install ashfox library std list             # List reusable standard-library modules
+npx --no-install ashfox library std show <module>    # Inspect module exports and params
+npx --no-install ashfox library std eject <module>   # Copy module into assets/module/ to customize
+```
+
+You can also read [repository layout](https://ashfox.io/docs/guides/repository-layout/) and
+[execution modes](https://ashfox.io/docs/guides/choose-a-format/), or browse the
+[DSL overview](https://ashfox.io/docs/language/reference/) and showcase assets under
+`showcase/`. Follow their linked examples and import `"std/..."` modules directly.
 
 | Task | Required reading |
 | --- | --- |
@@ -78,8 +90,8 @@ syntax. For diagnostics use [troubleshooting](https://ashfox.io/docs/guides/trou
 
 ## Create, review and deliver
 
-Use canonical native `.ashfox` sources under `assets/{models,sprites,sounds,structures,module}/`
-for new repositories (shared modules imported by 2+ entries belong under `assets/module/`).
+Use canonical native `.ashfox` sources under `assets/{models,sprites,vfx,sounds,structures,module}/`
+for new repositories (shared modules imported by 2+ entries belong under `assets/module/`, or import built-in `"std/..."` modules directly).
 Keep generated outputs under the root `build/`, ignored by Git. Follow an
 existing project's conventions when present. Configure a supported workspace
 only when needed; consult `doctor --json` first. Do not overwrite an
@@ -89,7 +101,8 @@ After setup, continue the user's asset request. If none was provided, ask what
 they want to make; do not manufacture an arbitrary asset or stop at a docs link.
 Keep editable authority in `.ashfox` files and their imported modules (`outputs { ... }`,
 `preview [name] { ... }`). Check identifiers and audit scores with `ashfox check`,
-edit source, compile with `ashfox build`, and examine `ashfox render [--view <name>]`
+iterate live with `ashfox dev <source|workspace>` (Three.js viewer + inspect picker),
+compile with `ashfox build`, and examine `ashfox render [--view <name>]`
 images and GIFs (`kind = gif;` in preview). Listen to built sound outputs when the
 host supports it. Compilation alone does not establish visual or audio quality.
 
