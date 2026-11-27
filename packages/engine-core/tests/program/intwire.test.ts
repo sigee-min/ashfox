@@ -364,20 +364,9 @@ structure rot_mez_test {
       pt[2] >= c.from[2] &&
       pt[2] <= c.to[2],
   );
-  assert.equal(
-    hitsRot,
-    true,
-    'Rotated 3x1 table collider must include rotated tabletop point [5.5,1.95,5.5]',
-  );
-
-  // Verify open_truss clears flat voxel ceiling inside room and east wall_line advances by rotated Z span.
+  assert.equal(hitsRot, true);
   const [tw, , td] = product.grid.size;
-  const ceilMidState = product.grid.states[product.grid.voxels[(7 * td + 6) * tw + 7]!]!;
-  assert.equal(
-    ceilMidState,
-    'minecraft:air',
-    'open_truss must clear flat voxel ceiling inside hall',
-  );
+  assert.equal(product.grid.states[product.grid.voxels[(7 * td + 6) * tw + 7]!], 'minecraft:air');
 
   const eastLineSrc = `ashfox 1
 structure east_wall_line_test {
@@ -397,21 +386,17 @@ structure east_wall_line_test {
     facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
   }
 }`;
-  const eastProd = compileStructureUnits(
-    'ewl.ashfox',
-    new Map([['ewl.ashfox', parseStructureSource(eastLineSrc, 'ewl.ashfox')]]),
-    {},
-    rel,
-  );
-  const [s1, s2] = eastProd.grid.interiors![0]!.input.props ?? [];
-  assert.deepEqual(s1?.at, [9, 1, 1], 'First east wall_line shelf must hug east wall x=9 at z=1');
+  const compileOne = (f: string, s: string) =>
+    compileStructureUnits(f, new Map([[f, parseStructureSource(s, f)]]), {}, rel);
+  const [s1, s2] = compileOne('ewl.ashfox', eastLineSrc).grid.interiors![0]!.input.props ?? [];
   assert.deepEqual(
-    s2?.at,
-    [9, 1, 3],
-    'Second east wall_line shelf must advance by rotated span 2 to [9,1,3]',
+    [s1?.at, s2?.at],
+    [
+      [9, 1, 1],
+      [9, 1, 3],
+    ],
   );
 
-  // Verify place prefab frame transforms deferred interior coordinates and anchors, and yaw rotates solver occupancy.
   const hostSrc = `ashfox 1
 structure placed_host {
   size = (28b, 10b, 20b);
@@ -423,6 +408,8 @@ structure placed_host {
         interior {
           dna { arch = rustic; organic = 0; }
           platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
+          platform dais_def { on = north; height = 0.25; }
+          partition p_mid { style = screen; axis = x; }
           mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
           low_table lt_def { at = (2, 1, 2); facing = east; }
           chair c_ctr { on = center; }
@@ -433,18 +420,26 @@ structure placed_host {
   }
   place wing { at = (15b, 0b, 3b); rotate = 90; }
 }`;
-  const compileOne = (f: string, s: string) =>
-    compileStructureUnits(f, new Map([[f, parseStructureSource(s, f)]]), {}, rel);
   const placedRoom = compileOne('host.ashfox', hostSrc).grid.interiors![0]!;
   const placedDais = placedRoom.ir.boxes.find((b) => b.semantic_tag === 'volume_platform')!;
   const [rb0, rb1] = [placedRoom.input.bounds_from, placedRoom.input.bounds_to];
   assert.ok(placedDais.from_16[0] >= rb0[0] * 16 && placedDais.to_16[0] <= rb1[0] * 16);
   assert.ok(placedDais.from_16[2] >= rb0[2] * 16 && placedDais.to_16[2] <= rb1[2] * 16);
-  const ltP = placedRoom.input.props?.find((p) => p.id === 'lt_def');
-  const ctrP = placedRoom.input.props?.find((p) => p.id === 'c_ctr');
-  assert.deepEqual([ltP?.at, ctrP?.facing], [[12, 1, 5], 'west']);
-  const placedLoft = placedRoom.input.volumes.find((v) => v.kind === 'mezzanine');
-  assert.equal(placedLoft?.kind === 'mezzanine' ? placedLoft.on : undefined, 'east');
+  const gp = (id: string) => placedRoom.input.props?.find((p) => p.id === id);
+  const gv = (k: string, id?: string) =>
+    placedRoom.input.volumes.find((v) => v.kind === k && (!id || v.id === id));
+  const [loftV, daisV, midV] = [gv('mezzanine'), gv('platform', 'dais_def'), gv('partition')];
+  assert.deepEqual(
+    [gp('lt_def')?.at, gp('c_ctr')?.facing, loftV?.kind === 'mezzanine' ? loftV.on : undefined],
+    [[12, 1, 5], 'west', 'east'],
+  );
+  assert.deepEqual(
+    [
+      daisV?.kind === 'platform' ? daisV.size : undefined,
+      midV?.kind === 'partition' ? midV.at_pos : undefined,
+    ],
+    [[2, 3], 10],
+  );
 
   const yawCollisionSrc = `ashfox 1
 structure yaw_col {
@@ -467,11 +462,8 @@ structure yaw_col {
   const yawRoom = compileOne('yaw.ashfox', yawCollisionSrc).grid.interiors![0]!;
   assert.equal(new Set(yawRoom.ir.boxes.map((b) => b.id)).size, yawRoom.ir.boxes.length);
   const hk = (id: string) => yawRoom.playable_meta.hooks.find((h) => h.id === id)!;
-  assert.equal(
-    Math.floor(hk('hinge_cab_hit').position[0]) === 5 &&
-      Math.floor(hk('hinge_cab_hit').position[2]) === 3,
-    false,
-  );
+  const cabPos = hk('hinge_cab_hit').position;
+  assert.equal(Math.floor(cabPos[0]) === 5 && Math.floor(cabPos[2]) === 3, false);
   const [c0, cRot] = [hk('t_rot:chair_0:sit'), hk('c_rot:sit')];
   assert.deepEqual(
     [c0.position, c0.kind === 'sit' ? c0.facing : '', cRot.kind === 'sit' ? cRot.facing : ''],

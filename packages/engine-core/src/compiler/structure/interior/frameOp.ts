@@ -122,10 +122,11 @@ const xformPartitionAst = (
     const dw = Math.max(2, v.doorway_width ?? 2);
     doorAt = Math.min(mapU(doorAt), mapU(doorAt + dw - 1));
   }
+  const atPos = v.at_pos > 0 ? (ax === 'x' ? pt[2] : pt[0]) : 0;
   return {
     ...v,
     axis: ax,
-    at_pos: ax === 'x' ? pt[2] : pt[0],
+    at_pos: atPos,
     ...(s0 !== undefined ? { span_from: s0 } : {}),
     ...(s1 !== undefined ? { span_to: s1 } : {}),
     ...(doorAt !== undefined ? { doorway_at: doorAt } : {}),
@@ -150,12 +151,13 @@ const xformZoneVolumeAst = (
   f: FrameTransform,
   room: StructureRoomMeta,
 ): InteriorVolumeAst => {
-  const rect = v.from ? xformRect(v.from, v.size ?? [3, 2], f) : undefined;
-  const swapSize = !rect && v.size && (f.rotate === 90 || f.rotate === 270);
+  const baseSize: IntVec2 = v.size ?? [3, 2];
+  const rect = v.from ? xformRect(v.from, baseSize, f) : undefined;
+  const swapSize = !rect && (f.rotate === 90 || f.rotate === 270);
   const sizePatch = rect
     ? { from: rect.from, size: rect.size }
-    : swapSize && v.size
-      ? { size: [v.size[1], v.size[0]] as IntVec2 }
+    : swapSize
+      ? { size: [baseSize[1], baseSize[0]] as IntVec2 }
       : {};
   const fallbackOn = v.on ?? 'center';
   return {
