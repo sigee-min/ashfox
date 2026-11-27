@@ -140,7 +140,7 @@ module goblin_skins {
       chart cuff box { fill = bronze; roughness = 0.30; metallic = 0.84; grain = brushed; pattern border { paint = gold; width = 1px; edges = top; } }
       chart boot box { fill = char; roughness = 0.82; grain = clustered; pattern border { paint = bronze; width = 1px; edges = top; } }
       chart belt box { fill = char; roughness = 0.82; grain = clustered; pattern border { paint = robe; width = 1px; edges = bottom; } }
-      chart buckle box { fill = gold; roughness = 0.24; metallic = 0.92; roughness_variation = 0.06; grain = none; pattern border { paint = char; width = 1px; edges = all; } }
+      chart buckle box { fill = gold; roughness = 0.24; metallic = 0.92; roughness_variation = 0.06; grain = none; pattern border { paint = bronze; width = 1px; edges = all; } }
       chart loincloth flat { coverage = 111111111111111111111111111111111111111111111111111111111111111111111111011111111110011111111110001111111100001100110011; fill = robe; roughness = 0.88; grain = cloth; pattern border { paint = gold; width = 1px; edges = top; } }
       chart pauldron box { fill = bronze; roughness = 0.28; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = gold; width = 1px; edges = bottom; } }
       chart face_neutral flat { fill = skin; stamp face_neutral_p { at = (1px, 2px); protect = true; } }

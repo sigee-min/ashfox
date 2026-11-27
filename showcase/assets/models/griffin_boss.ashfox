@@ -34,10 +34,11 @@ model griffin_boss {
             bone head {
               cube skull { origin = (-4u, 22u, -13u); size = (8u, 8u, 8u); pivot = (0u, 25u, -9u); rotation = (4deg, 0deg, 0deg); surface = skin.skull; }
               expression_slot face {
-                origin = (-4.05u, 24u, -12u);
+                origin = (-4u, 24u, -12u);
                 size = (5u, 4u);
                 u_axis = (0u, 0u, 1u);
                 v_axis = (0u, 1u, 0u);
+                placement = lateral_pair;
                 neutral = skin.face_neutral;
                 blink = skin.face_blink;
                 screech = skin.face_screech;

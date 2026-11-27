@@ -53,9 +53,9 @@ module griffin_plumage {
         brow = #665848;
         gleam = #58dec8;
       }
-      stamp eye_neutral { pixels = "bbbbbb/bbbbbb/eeeeee/eeegge"; b = brow; e = eye; g = gleam; }
+      stamp eye_neutral { pixels = "bbbbbb/bbbbbb/eeeeee/eeggee"; b = brow; e = eye; g = gleam; }
       stamp eye_blink { pixels = "....../bbbbbb/mmmmmm/......"; b = brow; m = ivory_mid; }
-      stamp eye_screech { pixels = "bbbb../.bbbbb/ggggge/eeegge"; b = brow; e = eye; g = gleam; }
+      stamp eye_screech { pixels = "bbbbbb/.bbbb./gggggg/eeggee"; b = brow; e = eye; g = gleam; }
       stamp breast_crest { pixels = "gggggg/.gggg./.mggm./..mm.."; g = gold; m = ivory_mid; }
 
       chart haunch box { fill = gold; roughness = 0.72; metallic = 0.12; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.35; radius = 0.7u; } }
