@@ -237,7 +237,44 @@ export interface PlaneNode extends NodeBase {
   faces: PlaneFaces;
 }
 
-export type SceneNode = BoneNode | CubeNode | PlaneNode | LocatorNode;
+export interface TaperNode extends NodeBase {
+  kind: 'taper';
+  bounds: {
+    from: Vec3;
+    to: Vec3;
+  };
+  topScale: Vec2;
+  axis: 'x' | 'y' | 'z';
+  inflate: number;
+  mirror: boolean;
+  faces: CubeFaces;
+}
+
+export interface WedgeNode extends NodeBase {
+  kind: 'wedge';
+  bounds: {
+    from: Vec3;
+    to: Vec3;
+  };
+  slope: 'north' | 'south' | 'east' | 'west';
+  inflate: number;
+  mirror: boolean;
+  faces: CubeFaces;
+}
+
+export interface CylinderNode extends NodeBase {
+  kind: 'cylinder';
+  origin: Vec3;
+  radius: number;
+  radiusTop: number;
+  height: number;
+  sides: 6 | 8 | 12;
+  axis: 'x' | 'y' | 'z';
+  faces: CubeFaces;
+}
+
+export type SceneNode =
+  BoneNode | CubeNode | PlaneNode | TaperNode | WedgeNode | CylinderNode | LocatorNode;
 
 export interface SceneGraph {
   roots: readonly EntityId[];

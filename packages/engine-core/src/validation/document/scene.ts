@@ -153,6 +153,30 @@ const NODE_RECORD_READERS: Readonly<Record<string, NodeRecordReader>> = {
   locator: (value, path, context) =>
     closedRecord(value, path, BASE_REQUIRED, [...BASE_OPTIONAL, 'ignoreInheritedScale'], context),
   cube: cubeNodeRecord,
+  taper: (value, path, context) =>
+    closedRecord(
+      value,
+      path,
+      [...BASE_REQUIRED, 'bounds', 'topScale', 'axis', 'inflate', 'mirror', 'faces'],
+      BASE_OPTIONAL,
+      context,
+    ),
+  wedge: (value, path, context) =>
+    closedRecord(
+      value,
+      path,
+      [...BASE_REQUIRED, 'bounds', 'slope', 'inflate', 'mirror', 'faces'],
+      BASE_OPTIONAL,
+      context,
+    ),
+  cylinder: (value, path, context) =>
+    closedRecord(
+      value,
+      path,
+      [...BASE_REQUIRED, 'origin', 'radius', 'radiusTop', 'height', 'sides', 'axis', 'faces'],
+      BASE_OPTIONAL,
+      context,
+    ),
   plane: (value, path, context) =>
     closedRecord(
       value,
@@ -295,6 +319,30 @@ const validateKindFields = (
     expectBoolean(record.ignoreInheritedScale, `${path}.ignoreInheritedScale`, context);
   }
   if (kind === 'cube') validateCubeNode(record, path, context);
+  if (kind === 'taper') {
+    validateAxisBounds(record.bounds, `${path}.bounds`, context);
+    expectNumericTuple(record.topScale, 2, `${path}.topScale`, context);
+    expectLiteral(record.axis, ['x', 'y', 'z'], `${path}.axis`, context);
+    expectFiniteNumber(record.inflate, `${path}.inflate`, context);
+    expectBoolean(record.mirror, `${path}.mirror`, context);
+    validateFaces(record.faces, `${path}.faces`, CUBE_FACE_DIRECTIONS, context);
+  }
+  if (kind === 'wedge') {
+    validateAxisBounds(record.bounds, `${path}.bounds`, context);
+    expectLiteral(record.slope, ['north', 'south', 'east', 'west'], `${path}.slope`, context);
+    expectFiniteNumber(record.inflate, `${path}.inflate`, context);
+    expectBoolean(record.mirror, `${path}.mirror`, context);
+    validateFaces(record.faces, `${path}.faces`, CUBE_FACE_DIRECTIONS, context);
+  }
+  if (kind === 'cylinder') {
+    expectNumericTuple(record.origin, 3, `${path}.origin`, context);
+    expectFiniteNumber(record.radius, `${path}.radius`, context);
+    expectFiniteNumber(record.radiusTop, `${path}.radiusTop`, context);
+    expectFiniteNumber(record.height, `${path}.height`, context);
+    expectLiteral(record.sides, [6, 8, 12], `${path}.sides`, context);
+    expectLiteral(record.axis, ['x', 'y', 'z'], `${path}.axis`, context);
+    validateFaces(record.faces, `${path}.faces`, CUBE_FACE_DIRECTIONS, context);
+  }
   if (kind === 'plane') validatePlaneNode(record, path, context);
 };
 

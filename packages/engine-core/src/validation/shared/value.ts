@@ -62,12 +62,17 @@ export const validateTransform = (
   path: string,
   add: FindingSink,
   entityId: EntityId,
+  allowZeroScale = false,
 ): void => {
   validateVec(transform.position, 3, `${path}.position`, add, entityId);
   validateVec(transform.rotation, 3, `${path}.rotation`, add, entityId);
   validateVec(transform.scale, 3, `${path}.scale`, add, entityId);
   validateVec(transform.pivot, 3, `${path}.pivot`, add, entityId);
-  if (transform.scale.some((entry) => !isFiniteNumber(entry) || Math.abs(entry) <= EPSILON)) {
+  if (
+    transform.scale.some(
+      (entry) => !isFiniteNumber(entry) || (!allowZeroScale && Math.abs(entry) <= EPSILON),
+    )
+  ) {
     add({
       code: 'value.invalid_scale',
       severity: 'error',

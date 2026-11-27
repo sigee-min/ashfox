@@ -314,6 +314,16 @@ const validateScene = (
       validateActorPlane(node, nodeId, path, targetName, textureCount, add);
       continue;
     }
+    if (node.kind === 'taper' || node.kind === 'wedge' || node.kind === 'cylinder') {
+      add({
+        code: 'format.unsupported_data',
+        severity: 'error',
+        message: `${targetName} cannot export ${node.kind} primitives; only cube and plane nodes are supported.`,
+        path,
+        entityIds: [nodeId],
+      });
+      continue;
+    }
     validateActorCube(node, nodeId, path, targetName, textureCount, add);
   }
 

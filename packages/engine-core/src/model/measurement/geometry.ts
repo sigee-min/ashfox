@@ -6,6 +6,7 @@ import {
   cubeUnrotatedBounds,
   type SceneNode,
 } from '../scene';
+import { primitiveLocalVertices } from '../primitives';
 import { canonicalRotatePoint } from '../transform';
 import type { GeometryMeasurementRequest, MeasurementResult } from './contract';
 
@@ -51,6 +52,9 @@ const planeLocalCorners = (node: Extract<SceneNode, { kind: 'plane' }>): readonl
 const localCorners = (node: SceneNode): readonly Vec3[] => {
   if (node.kind === 'cube') return cubeLocalCorners(node);
   if (node.kind === 'plane') return planeLocalCorners(node);
+  if (node.kind === 'taper' || node.kind === 'wedge' || node.kind === 'cylinder') {
+    return primitiveLocalVertices(node).map((pt) => sub(pt, node.transform.pivot));
+  }
   return [];
 };
 
@@ -161,7 +165,7 @@ const accumulateEnvelope = (
   | { readonly ok: false; readonly failure: MeasurementResult } => {
   let geometryCount = 0;
   for (const node of nodes) {
-    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
+    if (node.kind === 'bone' || node.kind === 'locator') continue;
     if (request.scope === 'node' && node.id !== request.nodeId) continue;
     const chainResult = buildParentChain(nodesById, node, request.nodeId);
     if (!chainResult.ok) return chainResult;

@@ -15,6 +15,7 @@ import {
   type ViewportEnvironment,
   type ViewportEnvironmentId,
 } from './viewportEnvironment';
+import { createStudioEnvironmentMap } from './sceneMaterials';
 import { captureAbortError, throwIfCaptureAborted } from './captureAbort';
 
 export interface CaptureDimensions {
@@ -48,6 +49,7 @@ export interface CaptureSurface extends CaptureDimensions {
   camera: THREE.PerspectiveCamera;
   renderCanvas: HTMLCanvasElement;
   environment: ViewportEnvironment;
+  environmentTarget: THREE.WebGLRenderTarget;
   forward: ProjectForwardDirection;
   /** The exact signed proof view, when this surface was created for one. */
   signedView: ProjectSignedView | null;
@@ -79,7 +81,9 @@ export const createCaptureSurface = (options: CaptureSurfaceOptions): CaptureSur
   const renderer = createRenderer(renderCanvas, options);
   const scene = new THREE.Scene();
   const environment = createViewportEnvironment(options.environment);
+  const environmentTarget = createStudioEnvironmentMap(renderer);
   scene.background = environment.background;
+  scene.environment = environmentTarget.texture;
   scene.fog = environment.fog;
   addViewportLighting(scene);
 
@@ -98,6 +102,7 @@ export const createCaptureSurface = (options: CaptureSurfaceOptions): CaptureSur
     camera,
     renderCanvas,
     environment,
+    environmentTarget,
     forward,
     signedView,
     width: options.width,
@@ -136,6 +141,7 @@ export const renderCaptureSurface = (surface: CaptureSurface): void => {
 
 export const disposeCaptureSurface = (surface: CaptureSurface): void => {
   surface.environment.dispose();
+  surface.environmentTarget.dispose();
   surface.renderer.dispose();
 };
 

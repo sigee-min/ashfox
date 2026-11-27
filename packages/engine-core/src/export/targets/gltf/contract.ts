@@ -105,7 +105,16 @@ export interface GltfNodeExtensions {
 
 export interface GltfNodeExtras {
   ashfoxId?: string;
-  ashfoxKind?: 'bone' | 'cube' | 'plane' | 'locator' | 'vfx_element' | 'vfx_burst';
+  ashfoxKind?:
+    | 'bone'
+    | 'cube'
+    | 'plane'
+    | 'taper'
+    | 'wedge'
+    | 'cylinder'
+    | 'locator'
+    | 'vfx_element'
+    | 'vfx_burst';
   visible?: boolean;
   ashfoxTags?: string[];
   ashfoxCanonicalFrame?: BoneNode['canonicalFrame'];
@@ -182,9 +191,11 @@ export interface GltfMaterial {
   pbrMetallicRoughness: {
     baseColorTexture?: GltfTextureInfo;
     baseColorFactor?: [number, number, number, number];
-    metallicFactor: 0;
-    roughnessFactor: 1;
+    metallicRoughnessTexture?: GltfTextureInfo;
+    metallicFactor: number;
+    roughnessFactor: number;
   };
+  occlusionTexture?: GltfTextureInfo;
   emissiveTexture?: GltfTextureInfo;
   emissiveFactor?: [number, number, number];
   alphaMode?: 'MASK' | 'BLEND';

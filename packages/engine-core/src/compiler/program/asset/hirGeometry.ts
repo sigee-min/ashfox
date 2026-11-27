@@ -1,5 +1,4 @@
 import { freeze } from '../../../immutable';
-import type { AssetGeometryProperty } from '../../../project/program/asset/contract';
 import type {
   AssetGeometryBlock,
   AssetGeometryPayload,
@@ -7,12 +6,11 @@ import type {
   AssetGeometrySurfaceBind,
 } from '../../../project/program/asset/contract';
 import type { AssetExpressionTypeEnvironment, AssetExpectedType } from './value/contract';
-import { compileHirExpression, type HirIssue } from './hirValues';
+import type { HirIssue } from './hirValues';
+import { compileGeometryPropertyEntry } from './hirGeomExtra';
 import type {
   TypedGeometryBlock,
-  TypedGeometryMirrorBind,
   TypedGeometryPayload,
-  TypedGeometryProperty,
   TypedGeometryStatement,
   TypedGeometrySurfaceBind,
 } from './contract';
@@ -54,6 +52,48 @@ const schemas: Readonly<Record<GeometryKind, Schema>> = Object.freeze({
     u_axis: 'vec3<unit>',
     v_axis: 'vec3<unit>',
   }),
+  taper: Object.freeze({
+    origin: 'vec3<unit>',
+    size: 'vec3<unit>',
+    top_scale: 'vec2<ratio>',
+    position: 'vec3<unit>',
+    rotation: 'vec3<degree>',
+    pivot: 'vec3<unit>',
+    visible: 'bool',
+    inflate: 'unit',
+    mirror: 'bool',
+  }),
+  wedge: Object.freeze({
+    origin: 'vec3<unit>',
+    size: 'vec3<unit>',
+    position: 'vec3<unit>',
+    rotation: 'vec3<degree>',
+    pivot: 'vec3<unit>',
+    visible: 'bool',
+    inflate: 'unit',
+    mirror: 'bool',
+  }),
+  cylinder: Object.freeze({
+    origin: 'vec3<unit>',
+    radius: 'unit',
+    radius_top: 'unit',
+    height: 'unit',
+    sides: 'integer',
+    position: 'vec3<unit>',
+    rotation: 'vec3<degree>',
+    pivot: 'vec3<unit>',
+    visible: 'bool',
+  }),
+  expression_slot: Object.freeze({
+    origin: 'vec3<unit>',
+    size: 'vec2<unit>',
+    position: 'vec3<unit>',
+    rotation: 'vec3<degree>',
+    pivot: 'vec3<unit>',
+    visible: 'bool',
+    u_axis: 'vec3<unit>',
+    v_axis: 'vec3<unit>',
+  }),
   locator: Object.freeze({
     position: 'vec3<unit>',
     rotation: 'vec3<degree>',
@@ -66,6 +106,10 @@ const requiredFields: Readonly<Record<GeometryKind, readonly string[]>> = Object
   bone: [],
   cube: ['origin', 'size'],
   plane: ['origin', 'size', 'u_axis', 'v_axis'],
+  taper: ['origin', 'size', 'top_scale'],
+  wedge: ['origin', 'size'],
+  cylinder: ['origin', 'radius', 'height'],
+  expression_slot: ['size'],
   locator: [],
   face: [],
 });
@@ -85,29 +129,6 @@ const propertyStatements = (
       }
     > => child.kind === 'geometry-property',
   );
-
-const compileProperty = (
-  property: AssetGeometryProperty,
-  expected: AssetExpectedType,
-  context: GeometryCompileContext,
-): TypedGeometryProperty | null => {
-  const expression = compileHirExpression(
-    property.value,
-    expected,
-    context.environment,
-    context.path,
-    context.issue,
-  );
-  return expression === null
-    ? null
-    : freeze({
-        kind: 'typed-geometry-property',
-        name: property.name,
-        type: expected,
-        expression,
-        span: property.span,
-      });
-};
 
 const compileSurface = (
   statement: AssetGeometrySurfaceBind,
@@ -141,43 +162,31 @@ const leafScope: ChildScope = Object.freeze({
 
 const childScopes: Readonly<Record<GeometryKind, ChildScope>> = Object.freeze({
   bone: {
-    kinds: new Set(['bone', 'cube', 'plane', 'locator']),
-    message: 'Bones may contain only bone, cube, plane, or locator children.',
+    kinds: new Set([
+      'bone',
+      'cube',
+      'plane',
+      'taper',
+      'wedge',
+      'cylinder',
+      'expression_slot',
+      'locator',
+    ]),
+    message:
+      'Bones may contain only bone, cube, plane, taper, wedge, cylinder, expression_slot, or locator children.',
   },
   cube: { kinds: new Set(['face']), message: 'Cubes may contain only direct face children.' },
   plane: leafScope,
+  taper: leafScope,
+  wedge: leafScope,
+  cylinder: leafScope,
+  expression_slot: leafScope,
   locator: leafScope,
   face: leafScope,
 });
 
-const ownsSurface = (keyword: GeometryKind): boolean => keyword === 'cube' || keyword === 'plane';
-
-const compileMirrorProperty = (
-  statement: AssetGeometryBlock,
-  property: AssetGeometryProperty,
-  context: GeometryCompileContext,
-): TypedGeometryMirrorBind | null => {
-  if (statement.keyword !== 'cube' && statement.keyword !== 'plane') {
-    context.issue(
-      context.path,
-      property.span,
-      'asset.invalid-geometry-property',
-      'Property "mirror_x" is allowed only on cube and plane nodes.',
-    );
-    return null;
-  }
-  const value = property.value;
-  if (value.kind !== 'name' || value.value.length === 0 || value.value === statement.id) {
-    context.issue(
-      context.path,
-      value.span,
-      'asset.invalid-mirror-target',
-      'mirror_x must name a distinct sibling geometry node identifier.',
-    );
-    return null;
-  }
-  return freeze({ kind: 'typed-geometry-mirror', targetId: value.value, span: property.span });
-};
+const SURFACE_KINDS = new Set<GeometryKind>(['cube', 'plane', 'taper', 'wedge', 'cylinder']);
+const ownsSurface = (keyword: GeometryKind): boolean => SURFACE_KINDS.has(keyword);
 
 /** Compiles schema-checked properties into `typed`; returns every declared property name. */
 const compileProperties = (
@@ -187,32 +196,37 @@ const compileProperties = (
 ): ReadonlySet<string> => {
   const schema = schemas[statement.keyword];
   const names = new Set<string>();
+  let variantCount = 0;
   for (const property of propertyStatements(statement)) {
-    if (names.has(property.name))
+    if (names.has(property.name)) {
       context.issue(
         context.path,
         property.span,
         'asset.duplicate-geometry-property',
-        'Geometry property "' + property.name + '" is declared more than once.',
+        `Geometry property "${property.name}" is declared more than once.`,
       );
+    }
     names.add(property.name);
-    if (property.name === 'mirror_x') {
-      const mirrored = compileMirrorProperty(statement, property, context);
-      if (mirrored !== null) typed.push(mirrored);
-      continue;
+    if (
+      compileGeometryPropertyEntry(
+        statement,
+        property,
+        schema,
+        ownsSurface(statement.keyword),
+        context,
+        typed,
+      )
+    ) {
+      variantCount += 1;
     }
-    const expected = schema[property.name];
-    if (expected === undefined) {
-      context.issue(
-        context.path,
-        property.span,
-        'asset.invalid-geometry-property',
-        'Property "' + property.name + '" is not allowed on a ' + statement.keyword + '.',
-      );
-      continue;
-    }
-    const value = compileProperty(property, expected, context);
-    if (value !== null) typed.push(value);
+  }
+  if (statement.keyword === 'expression_slot' && variantCount === 0) {
+    context.issue(
+      context.path,
+      statement.span,
+      'asset.missing-geometry-property',
+      'expression_slot requires at least one variant = surface.chart assignment.',
+    );
   }
   return names;
 };

@@ -367,32 +367,43 @@ const validateJavaPlane = (
   validateJavaFaces(node.faces, PLANE_FACE_DIRECTIONS, 'Java plane faces', path, nodeId, add);
 };
 
+const validateJavaBoneNode = (
+  node: Extract<ProjectDocument['scene']['nodes'][string], { kind: 'bone' }>,
+  nodeId: string,
+  path: string,
+  add: FindingSink,
+): void => {
+  if (
+    !isIdentityPosition(node.transform.position) ||
+    !isIdentityRotation(node.transform.rotation) ||
+    !isIdentityScale(node.transform.scale)
+  ) {
+    add({
+      code: 'format.unbaked_transform',
+      severity: 'error',
+      message: 'Java block export requires bone transforms to be baked into cubes.',
+      path: `${path}.transform`,
+      entityIds: [nodeId],
+    });
+  }
+};
+
 const validateSceneNodes = (document: ExportAdaptedDocument, add: FindingSink): void => {
   for (const [nodeId, node] of Object.entries(document.scene.nodes)) {
+    if (!isSceneNodeEffectivelyVisible(document, nodeId) || node.kind === 'locator') continue;
     const path = `scene.nodes.${nodeId}`;
-    if (!isSceneNodeEffectivelyVisible(document, nodeId)) continue;
-    if (node.kind === 'locator') continue;
-    if (node.kind === 'bone') {
-      if (
-        !isIdentityPosition(node.transform.position) ||
-        !isIdentityRotation(node.transform.rotation) ||
-        !isIdentityScale(node.transform.scale)
-      ) {
-        add({
-          code: 'format.unbaked_transform',
-          severity: 'error',
-          message: 'Java block export requires bone transforms to be baked into cubes.',
-          path: `${path}.transform`,
-          entityIds: [nodeId],
-        });
-      }
-      continue;
+    if (node.kind === 'bone') validateJavaBoneNode(node, nodeId, path, add);
+    else if (node.kind === 'plane') validateJavaPlane(node, nodeId, path, document, add);
+    else if (node.kind === 'cube') validateJavaCube(node, nodeId, path, document, add);
+    else {
+      add({
+        code: 'format.unsupported_data',
+        severity: 'error',
+        message: `Java block export cannot represent ${node.kind} primitives; only cube and plane nodes are supported.`,
+        path,
+        entityIds: [nodeId],
+      });
     }
-    if (node.kind === 'plane') {
-      validateJavaPlane(node, nodeId, path, document, add);
-      continue;
-    }
-    validateJavaCube(node, nodeId, path, document, add);
   }
 };
 

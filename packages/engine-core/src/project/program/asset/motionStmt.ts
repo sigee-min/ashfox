@@ -3,11 +3,42 @@ import type { ProgramExpr } from '../syntax/contract';
 import type {
   AssetCombatOpDecl,
   AssetCueDecl,
+  AssetCurveName,
+  AssetExpressionEntryDecl,
+  AssetExpressionSlotTrackDecl,
+  AssetMotionChannel,
   AssetMotionIkDecl,
   AssetPropertyDecl,
   AssetSecondaryDecl,
 } from './contract';
 import { isOneOf, join, readBraced, readProperty, type AssetReader } from './parserSupport';
+
+export const CURVE_NAMES: readonly AssetCurveName[] = [
+  'linear',
+  'step',
+  'catmullrom',
+  'smooth',
+  'ease_in',
+  'ease_out',
+  'ease_in_out',
+  'cubic',
+  'snap',
+  'anticipate',
+  'overshoot',
+  'bounce',
+  'elastic',
+];
+
+export const readChannelName = (reader: AssetReader, scope: string): AssetMotionChannel => {
+  const token = reader.id(`Expected a ${scope} channel.`);
+  if (isOneOf(['position', 'rotation', 'scale'] as const, token.value)) return token.value;
+  reader.fail(
+    'asset.invalid-motion-property',
+    `Unsupported motion channel "${token.value}". Expected position, rotation, or scale.`,
+    token,
+  );
+  return 'rotation';
+};
 
 export const readTargetPath = (reader: AssetReader, message: string): string => {
   const parts = [reader.id(message).value];
@@ -178,5 +209,41 @@ export const readCue = (reader: AssetReader): AssetCueDecl => {
     anchor,
     payload: Object.freeze(payload),
     span: join(start.span, endSpan),
+  });
+};
+
+const readExpressionEntry = (reader: AssetReader): AssetExpressionEntryDecl => {
+  const start = reader.expectWord('at', 'Expression blocks contain at declarations.');
+  const startTime = reader.expression();
+  const endTime = reader.match('..') ? reader.expression() : null;
+  reader.expect('=', 'Expected = after expression time.');
+  const variant = reader.id('Expected expression variant identifier.');
+  reader.finish();
+  return Object.freeze({
+    kind: 'expression-entry',
+    startTime,
+    endTime,
+    variant: variant.value,
+    span: join(start.span, variant.span),
+  });
+};
+
+export const readExpressionTrack = (reader: AssetReader): AssetExpressionSlotTrackDecl => {
+  const start = reader.expectWord('expression', 'Expected expression.');
+  const slot = reader.id('Expected expression slot name.').value;
+  const entries: AssetExpressionEntryDecl[] = [];
+  const close = readBraced(
+    reader,
+    'Expected { to begin an expression schedule.',
+    'Expected } to close an expression schedule.',
+    () => {
+      entries.push(readExpressionEntry(reader));
+    },
+  );
+  return Object.freeze({
+    kind: 'expression-track',
+    slot,
+    entries: Object.freeze(entries),
+    span: join(start.span, close.span),
   });
 };

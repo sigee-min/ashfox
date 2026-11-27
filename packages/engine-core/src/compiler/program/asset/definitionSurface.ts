@@ -273,6 +273,9 @@ export const buildSurface = (
     contract: contract.symbol,
     textureSource,
     material: declaration.material ?? contract.material,
+    ...(declaration.materialProperties !== undefined
+      ? { materialProperties: declaration.materialProperties }
+      : {}),
     slots,
     span: declaration.span,
   });

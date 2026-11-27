@@ -37,7 +37,7 @@ export type MeasurementResult =
 export interface SurfaceInspection {
   readonly schemaVersion: 1;
   readonly nodeId: string;
-  readonly kind: 'cube' | 'plane';
+  readonly kind: 'cube' | 'plane' | 'taper' | 'wedge' | 'cylinder';
   readonly faces: readonly Readonly<{
     readonly direction: string;
     readonly enabled: boolean;

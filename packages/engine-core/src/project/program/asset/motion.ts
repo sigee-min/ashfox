@@ -5,9 +5,9 @@ import type {
   AssetCueDecl,
   AssetCurveDecl,
   AssetCurveName,
+  AssetExpressionSlotTrackDecl,
   AssetGaitDecl,
   AssetKeyframeDecl,
-  AssetMotionChannel,
   AssetMotionDecl,
   AssetMotionIkDecl,
   AssetMotionLayerDecl,
@@ -21,34 +21,16 @@ import type {
   AssetWaveBindingDecl,
 } from './contract';
 import { isOneOf, join, nameOr, readBraced, readProperty, type AssetReader } from './parserSupport';
-import { readCombatOp, readCue, readMotionIk, readSecondary, readTargetPath } from './motionStmt';
-
-const CURVE_NAMES: readonly AssetCurveName[] = [
-  'linear',
-  'step',
-  'catmullrom',
-  'smooth',
-  'ease_in',
-  'ease_out',
-  'ease_in_out',
-  'cubic',
-  'snap',
-  'anticipate',
-  'overshoot',
-  'bounce',
-  'elastic',
-];
-
-const readChannelName = (reader: AssetReader, scope: string): AssetMotionChannel => {
-  const token = reader.id(`Expected a ${scope} channel.`);
-  if (isOneOf(['position', 'rotation', 'scale'] as const, token.value)) return token.value;
-  reader.fail(
-    'asset.invalid-motion-property',
-    `Unsupported motion channel "${token.value}". Expected position, rotation, or scale.`,
-    token,
-  );
-  return 'rotation';
-};
+import {
+  CURVE_NAMES,
+  readChannelName,
+  readCombatOp,
+  readCue,
+  readExpressionTrack,
+  readMotionIk,
+  readSecondary,
+  readTargetPath,
+} from './motionStmt';
 
 const readCurveArgs = (
   reader: AssetReader,
@@ -420,6 +402,7 @@ const buildLayerDecl = (
 interface MotionParseState {
   readonly properties: AssetPropertyDecl[];
   readonly tracks: AssetTrackDecl[];
+  readonly expressions: AssetExpressionSlotTrackDecl[];
   readonly layers: AssetMotionLayerDecl[];
   readonly waves: AssetWaveBindingDecl[];
   readonly poses: AssetPoseDecl[];
@@ -432,6 +415,7 @@ interface MotionParseState {
 
 const readMotionStatement = (reader: AssetReader, state: MotionParseState): void => {
   if (reader.checkWord('track')) state.tracks.push(readTrack(reader));
+  else if (reader.checkWord('expression')) state.expressions.push(readExpressionTrack(reader));
   else if (reader.checkWord('layer')) state.layers.push(readLayer(reader));
   else if (reader.checkWord('wave')) state.waves.push(readWaveBinding(reader));
   else if (reader.checkWord('pose')) state.poses.push(readPose(reader));
@@ -455,6 +439,7 @@ export const parseMotion = (reader: AssetReader, exported: boolean): AssetMotion
   const state: MotionParseState = {
     properties: [],
     tracks: [],
+    expressions: [],
     layers: [],
     waves: [],
     poses: [],
@@ -477,6 +462,7 @@ export const parseMotion = (reader: AssetReader, exported: boolean): AssetMotion
     rig,
     properties: Object.freeze(state.properties),
     tracks: Object.freeze(state.tracks),
+    ...(state.expressions.length > 0 ? { expressions: Object.freeze(state.expressions) } : {}),
     layers: Object.freeze(state.layers),
     waves: Object.freeze(state.waves),
     poses: Object.freeze(state.poses),

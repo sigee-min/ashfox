@@ -53,8 +53,23 @@ export interface InstantiatedGeometrySurface {
   readonly span: SourceSpan;
 }
 
+export interface InstantiatedExpressionVariant {
+  readonly variant: string;
+  readonly surface: InstantiatedGeometrySurface;
+  readonly span: SourceSpan;
+}
+
 export interface InstantiatedGeometryNode {
-  readonly kind: 'bone' | 'cube' | 'plane' | 'locator' | 'face';
+  readonly kind:
+    | 'bone'
+    | 'cube'
+    | 'plane'
+    | 'taper'
+    | 'wedge'
+    | 'cylinder'
+    | 'expression_slot'
+    | 'locator'
+    | 'face';
   readonly id: string;
   /** Bound semantic bones are scopes and never duplicate skeleton transforms. */
   readonly attachmentBoneId: string | null;
@@ -63,6 +78,9 @@ export interface InstantiatedGeometryNode {
   readonly children: readonly InstantiatedGeometryNode[];
   /** Internal flag set by mirror = x expansion so canonical lowering bakes mirrored UVs. */
   readonly uvMirrorX?: boolean;
+  readonly axis?: 'x' | 'y' | 'z';
+  readonly slope?: 'north' | 'south' | 'east' | 'west';
+  readonly expressionVariants?: readonly InstantiatedExpressionVariant[];
   readonly sourcePath: string;
   readonly span: SourceSpan;
 }
@@ -170,6 +188,19 @@ export interface InstantiatedMotionLayer {
   readonly span: SourceSpan;
 }
 
+export interface InstantiatedMotionExpressionEntry {
+  readonly startTime: AssetNumberValue;
+  readonly endTime: AssetNumberValue | null;
+  readonly variant: string;
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedMotionExpression {
+  readonly slot: string;
+  readonly entries: readonly InstantiatedMotionExpressionEntry[];
+  readonly span: SourceSpan;
+}
+
 export interface InstantiatedMotion {
   readonly symbol: AssetSymbolId;
   /** Logical source path retained for source-owned canonical diagnostics. */
@@ -187,6 +218,7 @@ export interface InstantiatedMotion {
   readonly secondaries?: readonly SecondarySpec[];
   readonly combat?: CombatOps;
   readonly cues?: readonly CueEvent[];
+  readonly expressions?: readonly InstantiatedMotionExpression[];
   readonly span: SourceSpan;
 }
 

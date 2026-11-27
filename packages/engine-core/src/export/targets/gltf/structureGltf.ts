@@ -5,8 +5,7 @@ import type { TextureAsset } from '../../../model/texture';
 import { createProjectDocument } from '../../../project/create';
 import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
 import { compareText } from '../../../stableOrder';
-import { encodeCanonicalPng } from '../../../textures/textureRecipe/png';
-import { rasterizeTextureSpec } from '../../../textures/textureRecipe/raster';
+import { encodeOrderedGltfTextures as encodeGltfTextures } from './lodMat';
 import { compileOpaqueCubeFaceOcclusion } from '../../occlusion/cube';
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf } from './build';
@@ -18,9 +17,10 @@ import type {
   GltfMesh,
   GltfNode,
   GltfSampler,
+  GltfTexture,
 } from './contract';
 import type { GltfPrimitiveData } from './data';
-import { createGltfMaterial } from './exporter';
+import { createGltfMaterial } from './material';
 import { appendHooksToGltfDocument } from './hooksEmit';
 import { attachStructureLods } from './lodEmit';
 import { compileQuantizedGltfPrimitive } from './primitive';
@@ -39,6 +39,7 @@ const GLTF_UNIT_SCALE = 1 / 16;
 interface MaterialRegistry {
   readonly materials: GltfMaterial[];
   readonly texIndexById: ReadonlyMap<string, number>;
+  readonly mrTexIndexById: ReadonlyMap<string, number>;
   readonly cache: Map<string, number>;
   usesTextureTransform: boolean;
   usesUnlit: boolean;
@@ -99,6 +100,8 @@ const getMaterialIndex = (
     doubleSided,
     isEmissive,
     uvTransform,
+    tex.name,
+    reg.mrTexIndexById.get(tex.id),
   );
   applyModeOverrides(mat, mode);
   reg.materials.push(mat);
@@ -226,7 +229,7 @@ const collectCustomModelPrimitives = (
   };
   const collected: TaggedPrimitive[] = [];
   for (const node of orderedNodes) {
-    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
+    if (node.kind === 'bone' || node.kind === 'locator') continue;
     const world = worldMap.get(node.id)!;
     for (const p of primitiveDataForGltfNode(doc, node, opts)) {
       const xf = transformPrimitiveByWorldMat4(p, world, null);
@@ -292,20 +295,6 @@ export interface BuiltStructureGltf {
   readonly compiled: CompiledGltf;
   readonly textures: Readonly<Record<string, TextureAsset>>;
 }
-
-const encodeGltfTextures = (ordered: readonly TextureAsset[], writer: GltfBinaryWriter) => {
-  const images: GltfImage[] = [];
-  const samplers: GltfSampler[] = [];
-  const texIndexById = new Map<string, number>();
-  ordered.forEach((tex, idx) => {
-    texIndexById.set(tex.id, idx);
-    const png = encodeCanonicalPng(rasterizeTextureSpec(tex.width, tex.height, tex.raster!));
-    images.push({ bufferView: writer.addBufferView(png), mimeType: 'image/png', name: tex.name });
-    const filter = tex.sampling === 'nearest' ? 9728 : 9729;
-    samplers.push({ magFilter: filter, minFilter: filter, wrapS: 10497, wrapT: 10497 });
-  });
-  return { images, samplers, texIndexById };
-};
 
 const appendCustomInstances = (
   product: StructureProduct,
@@ -380,6 +369,7 @@ const assembleStructureGltfDocument = (
   ordered: readonly TextureAsset[],
   images: GltfImage[],
   samplers: GltfSampler[],
+  gltfTextures: GltfTexture[],
 ): GltfDocument => ({
   asset: { version: '2.0', generator: 'ashfox engine core' },
   ...collectStructureExtensions(ctx),
@@ -398,7 +388,7 @@ const assembleStructureGltfDocument = (
     ? {
         images,
         samplers,
-        textures: ordered.map((t, i) => ({ sampler: i, source: i, name: t.name })),
+        textures: gltfTextures,
         materials: ctx.matReg.materials,
       }
     : {}),
@@ -407,12 +397,14 @@ const assembleStructureGltfDocument = (
 const createGltfBuildCtx = (
   textures: Readonly<Record<string, TextureAsset>>,
   texIndexById: ReadonlyMap<string, number>,
+  mrTexIndexById: ReadonlyMap<string, number>,
   writer: GltfBinaryWriter,
 ): GltfBuildCtx => ({
   textures,
   matReg: {
     materials: [],
     texIndexById,
+    mrTexIndexById,
     cache: new Map(),
     usesTextureTransform: false,
     usesUnlit: false,
@@ -421,6 +413,44 @@ const createGltfBuildCtx = (
   usesGpuInstancing: false,
 });
 
+const finalizeBuiltStructureGltf = (
+  product: StructureProduct,
+  ctx: GltfBuildCtx,
+  nodes: GltfNode[],
+  meshes: GltfMesh[],
+  ordered: readonly TextureAsset[],
+  images: GltfImage[],
+  samplers: GltfSampler[],
+  gltfTextures: GltfTexture[],
+  customBounds: ReadonlyMap<string, PositionBounds>,
+  includeLods: boolean,
+): CompiledGltf => {
+  const document = assembleStructureGltfDocument(
+    product.id,
+    ctx,
+    ctx.writer.toUint8Array(),
+    nodes,
+    meshes,
+    ordered,
+    images,
+    samplers,
+    gltfTextures,
+  );
+  const base: CompiledGltf = { document, binary: ctx.writer.toUint8Array(), textureFiles: [] };
+  const withLod =
+    includeLods && product.lodLevels
+      ? attachStructureLods(base, product, { quantize: ctx.writer.isQuantized, customBounds })
+      : base;
+  const [w, _h, d] = product.grid.size;
+  return {
+    ...withLod,
+    document: appendHooksToGltfDocument(withLod.document, product.hooks, {
+      unitScale: 1,
+      offset: [-w / 2, 0, -d / 2],
+    }),
+  };
+};
+
 export const buildStructureGltf = (
   product: StructureProduct,
   options: { readonly quantize?: boolean; readonly includeLods?: boolean } = {},
@@ -428,8 +458,11 @@ export const buildStructureGltf = (
   const writer = new GltfBinaryWriter(options.quantize ?? true);
   const { textures, modelTexRemap } = collectUsedTextures(product);
   const ordered = Object.values(textures).sort((a, b) => compareText(a.id, b.id));
-  const { images, samplers, texIndexById } = encodeGltfTextures(ordered, writer);
-  const ctx = createGltfBuildCtx(textures, texIndexById, writer);
+  const { images, samplers, gltfTextures, texIndexById, mrTexIndexById } = encodeGltfTextures(
+    ordered,
+    writer,
+  );
+  const ctx = createGltfBuildCtx(textures, texIndexById, mrTexIndexById, writer);
   const meshes: GltfMesh[] = [];
   const nodes: GltfNode[] = [{ name: product.id }];
   const children: number[] = [];
@@ -447,29 +480,17 @@ export const buildStructureGltf = (
   }
   const customBounds = appendCustomInstances(product, modelTexRemap, ctx, meshes, nodes, children);
   if (children.length > 0) nodes[0]!.children = children;
-  const binary = writer.toUint8Array();
-  const document = assembleStructureGltfDocument(
-    product.id,
+  const compiled = finalizeBuiltStructureGltf(
+    product,
     ctx,
-    binary,
     nodes,
     meshes,
     ordered,
     images,
     samplers,
+    gltfTextures,
+    customBounds,
+    options.includeLods !== false,
   );
-  const base: CompiledGltf = { document, binary, textureFiles: [] };
-  const withLod =
-    options.includeLods !== false && product.lodLevels
-      ? attachStructureLods(base, product, { quantize: writer.isQuantized, customBounds })
-      : base;
-  const [w, _h, d] = product.grid.size;
-  const compiled: CompiledGltf = {
-    ...withLod,
-    document: appendHooksToGltfDocument(withLod.document, product.hooks, {
-      unitScale: 1,
-      offset: [-w / 2, 0, -d / 2],
-    }),
-  };
   return { compiled, textures };
 };

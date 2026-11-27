@@ -127,7 +127,9 @@ const chartProperty = (reader: ProgramTextureReader, scope: ChartScope): Program
   return invalidProperty(
     reader,
     reader.property(scope === 'face' ? 'chart-face' : 'chart'),
-    scope === 'face' ? ['fill', 'mirror', 'grain'] : ['origin', 'fill', 'grain'],
+    scope === 'face'
+      ? ['fill', 'mirror', 'grain']
+      : ['origin', 'fill', 'grain', 'roughness', 'metallic', 'roughness_variation'],
     scope === 'face' ? 'chart face' : 'chart',
     start,
   );

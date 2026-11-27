@@ -25,7 +25,13 @@ export type AssetExpressionScalarType = AssetScalarValueType | 'plain';
 
 export type AssetVectorValueType = Extract<
   ContractAssetValueType,
-  'vec2<unit>' | 'vec3<unit>' | 'vec3<degree>' | 'vec3<ratio>' | 'vec2<texel>' | 'texel_rect'
+  | 'vec2<unit>'
+  | 'vec2<ratio>'
+  | 'vec3<unit>'
+  | 'vec3<degree>'
+  | 'vec3<ratio>'
+  | 'vec2<texel>'
+  | 'texel_rect'
 >;
 
 /** Closed compiler expression types. */
@@ -106,6 +112,7 @@ export interface AssetVectorDescriptor {
 
 export const assetVectorDescriptor = (type: AssetVectorValueType): AssetVectorDescriptor | null => {
   if (type === 'vec2<unit>') return Object.freeze({ arity: 2, component: 'unit' });
+  if (type === 'vec2<ratio>') return Object.freeze({ arity: 2, component: 'ratio' });
   if (type === 'vec2<texel>') return Object.freeze({ arity: 2, component: 'texel' });
   if (type === 'vec3<unit>') return Object.freeze({ arity: 3, component: 'unit' });
   if (type === 'vec3<degree>') return Object.freeze({ arity: 3, component: 'degree' });

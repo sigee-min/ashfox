@@ -1,12 +1,18 @@
 import { compareText } from '@ashfox/internal-contracts';
 import { deepFreeze } from '../../immutable';
-import type { TextureAsset, TextureCanvasDetail, TextureRaster } from '../../model/texture';
+import type {
+  TextureAsset,
+  TextureCanvasDetail,
+  TexturePbrMaterial,
+  TextureRaster,
+} from '../../model/texture';
 import type { StructureDensity } from '../../project/structure/contract';
 import { encodeCanonicalPngSummary } from '../../textures/textureRecipe/png';
 import { rasterizeTextureSpec } from '../../textures/textureRecipe/raster';
 import type { BlockRenderLayer } from './blocks';
 import type { StructureBakedBatch, StructureGrid } from './contract';
 import { appendDemotedFullBatch, countMultiQuadSavings } from './atlasDemote';
+import { synthesizeStructureAtlasPbr, type PackedTilePbrRegion } from './tilePbr';
 import { isSeedInvariantTile, paintTileRects, type TileRect } from './tiles';
 
 export type AtlasBatchLayer = StructureBakedBatch['layer'];
@@ -65,6 +71,7 @@ const makeTextureAsset = (
   height: number,
   layer: AtlasBatchLayer,
   rasterSpec: TextureRaster,
+  pbr?: TexturePbrMaterial,
 ): TextureAsset => {
   const frozenRaster = deepFreeze(rasterSpec);
   const summary = encodeCanonicalPngSummary(rasterizeTextureSpec(width, height, frozenRaster));
@@ -86,6 +93,7 @@ const makeTextureAsset = (
     renderMode: renderModeForLayer(layer),
     renderSides: renderSidesForLayer(layer),
     atlasMode: 'preserve',
+    ...(pbr ? { pbr } : {}),
     raster: frozenRaster,
   };
 };
@@ -145,6 +153,7 @@ const buildPackedLayerAtlas = (
   const textureId = structureAtlasTextureId(layer);
   const details: TextureCanvasDetail[] = [];
   const layerRects: [string, AtlasSubRect][] = [];
+  const pbrRegions: PackedTilePbrRegion[] = [];
   let seq = 0;
   for (let i = 0; i < sorted.length; i += 1) {
     const tileId = sorted[i]!;
@@ -160,15 +169,18 @@ const buildPackedLayerAtlas = (
     };
     rects.set(rectKey, subRect);
     layerRects.push([rectKey, subRect]);
+    pbrRegions.push({ tileId, x: px0, y: py0, size: tilePx });
     for (const r of paintTileRects(tileId, density, seed, 0)) {
       pushExtrudedRect(details, textureId, seq++, px0, py0, tilePx, r);
     }
   }
-  const asset = makeTextureAsset(textureId, width, height, layer, {
+  const pbr = synthesizeStructureAtlasPbr(width, height, pbrRegions);
+  const raster = {
     background: '#000000',
-    backgroundAlpha: layer === 'cutout' ? 0 : 255,
+    backgroundAlpha: (layer === 'cutout' ? 0 : 255) as 0 | 255,
     canvasDetails: details,
-  });
+  };
+  const asset = makeTextureAsset(textureId, width, height, layer, raster, pbr);
   if (PACKED_ATLAS_CACHE.size < 64) PACKED_ATLAS_CACHE.set(cacheKey, { asset, rects: layerRects });
   return cloneTex(asset);
 };
@@ -219,11 +231,13 @@ const buildMultiTileTexture = (
       });
     }
   }
-  const asset = makeTextureAsset(textureId, size, size, layer, {
+  const pbr = synthesizeStructureAtlasPbr(size, size, [{ tileId, x: 0, y: 0, size }]);
+  const raster = {
     background: '#000000',
-    backgroundAlpha: layer === 'cutout' ? 0 : 255,
+    backgroundAlpha: (layer === 'cutout' ? 0 : 255) as 0 | 255,
     canvasDetails: details,
-  });
+  };
+  const asset = makeTextureAsset(textureId, size, size, layer, raster, pbr);
   if (TILE_TEX_CACHE.size < 256) TILE_TEX_CACHE.set(cacheKey, asset);
   return cloneTex(asset);
 };

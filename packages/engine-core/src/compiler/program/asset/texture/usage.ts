@@ -112,11 +112,94 @@ const integer = (
   return result.value;
 };
 
+const cylinderDim = (
+  value: AssetValue | undefined,
+  minimum: number,
+  location: Location,
+  diagnostics: AssetDiagnostic[],
+  seen: Set<string>,
+): number | null => {
+  if (
+    value === undefined ||
+    !isAssetNumberValueShape(value as AssetNumberValue) ||
+    (value as AssetNumberValue).value.unit !== 'unit'
+  ) {
+    addIssue(
+      diagnostics,
+      seen,
+      location,
+      'asset.texture.geometry-size',
+      'Cylinder dimensions require exact unit values.',
+    );
+    return null;
+  }
+  const num = toAssetCanonicalNumber(
+    (value as AssetNumberValue).value,
+    { minimum, maximum: MAX_SIZE, integral: false },
+    location.span,
+  );
+  if (!num.ok) {
+    for (const item of num.diagnostics)
+      addIssue(diagnostics, seen, location, item.code, item.message);
+    return null;
+  }
+  return num.value;
+};
+
+const cylinderUsage = (
+  node: InstantiatedGeometryNode,
+  diagnostics: AssetDiagnostic[],
+  seen: Set<string>,
+): AssetTextureUsage | null => {
+  const location: Location = { path: node.sourcePath, span: node.span };
+  const properties = Array.isArray(node.properties) ? node.properties : [];
+  const radius = cylinderDim(
+    properties.find((p) => p.name === 'radius')?.value,
+    0,
+    location,
+    diagnostics,
+    seen,
+  );
+  const height = cylinderDim(
+    properties.find((p) => p.name === 'height')?.value,
+    1e-4,
+    location,
+    diagnostics,
+    seen,
+  );
+  if (radius === null || height === null) return null;
+  const topProp = properties.find((p) => p.name === 'radius_top')?.value;
+  const radiusTop =
+    topProp === undefined ? radius : cylinderDim(topProp, 0, location, diagnostics, seen);
+  if (radiusTop === null) return null;
+  const maxR = Math.max(radius, radiusTop);
+  if (maxR <= 0) {
+    addIssue(
+      diagnostics,
+      seen,
+      location,
+      'asset.texture.geometry-size',
+      'Cylinder requires at least one positive end radius.',
+    );
+    return null;
+  }
+  const d = Math.max(1, Math.min(MAX_SIZE, Math.ceil(maxR * 2)));
+  const h = Math.max(1, Math.min(MAX_SIZE, Math.ceil(height)));
+  return freeze({
+    chart: node.surface!.chart,
+    shape: freeze({ kind: 'box' as const, size: freeze([d, h, d]) }),
+    span: node.span,
+  });
+};
+
+const BOX_SHAPE_KINDS = new Set(['cube', 'taper', 'wedge']);
+
 const geometryUsage = (
   node: InstantiatedGeometryNode,
   diagnostics: AssetDiagnostic[],
   seen: Set<string>,
 ): AssetTextureUsage | null => {
+  if (node.kind === 'cylinder') return cylinderUsage(node, diagnostics, seen);
   const location: Location = { path: node.sourcePath, span: node.span };
   const properties = Array.isArray(node.properties) ? node.properties : [];
   const sizes = properties.filter((property) => property.name === 'size');
@@ -131,7 +214,8 @@ const geometryUsage = (
     return null;
   }
   const size = sizes[0]!;
-  const type = node.kind === 'cube' ? 'vec3<unit>' : 'vec2<unit>';
+  const isBox = BOX_SHAPE_KINDS.has(node.kind);
+  const type = isBox ? 'vec3<unit>' : 'vec2<unit>';
   const values = valueVector(size.value, type);
   if (values === null) {
     addIssue(
@@ -149,10 +233,9 @@ const geometryUsage = (
   if (numbers.some((value): value is null => value === null)) return null;
   return freeze({
     chart: node.surface!.chart,
-    shape:
-      node.kind === 'cube'
-        ? freeze({ kind: 'box' as const, size: freeze([numbers[0]!, numbers[1]!, numbers[2]!]) })
-        : freeze({ kind: 'flat' as const, size: freeze([numbers[0]!, numbers[1]!]) }),
+    shape: isBox
+      ? freeze({ kind: 'box' as const, size: freeze([numbers[0]!, numbers[1]!, numbers[2]!]) })
+      : freeze({ kind: 'flat' as const, size: freeze([numbers[0]!, numbers[1]!]) }),
     span: size.span,
   });
 };
@@ -200,6 +283,46 @@ const validateCubeOrPlaneSurface = (
   }
 };
 
+const expressionSlotUsage = (
+  node: InstantiatedGeometryNode,
+  usages: CollectedUsage[],
+  diagnostics: AssetDiagnostic[],
+  seen: Set<string>,
+): void => {
+  const location: Location = { path: node.sourcePath, span: node.span };
+  const properties = Array.isArray(node.properties) ? node.properties : [];
+  const sizeProp = properties.find((p) => p.name === 'size');
+  const values = sizeProp ? valueVector(sizeProp.value, 'vec2<unit>') : null;
+  if (!sizeProp || values === null) {
+    addIssue(
+      diagnostics,
+      seen,
+      location,
+      'asset.texture.geometry-size',
+      'expression_slot requires a vec2<unit> size.',
+    );
+    return;
+  }
+  const nums = values.map((v) =>
+    integer(v, { path: node.sourcePath, span: sizeProp.span }, diagnostics, seen),
+  );
+  if (nums.some((n): n is null => n === null)) return;
+  for (const variant of node.expressionVariants ?? []) {
+    usages.push({
+      surfaceKey: variant.surface.surface.key,
+      chart: variant.surface.chart,
+      usage: freeze({
+        chart: variant.surface.chart,
+        shape: freeze({ kind: 'flat' as const, size: freeze([nums[0]!, nums[1]!]) }),
+        span: variant.span,
+      }),
+      path: node.sourcePath,
+    });
+  }
+};
+
+const SURFACE_NODE_KINDS = new Set(['cube', 'plane', 'taper', 'wedge', 'cylinder']);
+
 const visitGeometryNode = (
   node: InstantiatedGeometryNode,
   usages: CollectedUsage[],
@@ -207,7 +330,11 @@ const visitGeometryNode = (
   seen: Set<string>,
 ): void => {
   const location: Location = { path: node.sourcePath, span: node.span };
-  if (node.kind === 'cube' || node.kind === 'plane') {
+  if (node.kind === 'expression_slot') {
+    expressionSlotUsage(node, usages, diagnostics, seen);
+    return;
+  }
+  if (SURFACE_NODE_KINDS.has(node.kind)) {
     validateCubeOrPlaneSurface(node, location, usages, diagnostics, seen);
     return;
   }

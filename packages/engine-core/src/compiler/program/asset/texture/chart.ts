@@ -11,6 +11,7 @@ import { properties, readTexelVector, type TextureExpressionContext } from './ex
 import { hasChartOverlap } from './overlap';
 import { packCharts } from './pack';
 import { readRole, type PaletteRole } from './palette';
+import { readPbrProperties, type ChartPbrSettings } from './pbr';
 import { boxRegions, type TextureRegion } from './raster';
 import { integerContract, ownEntries, propertyIssue, type TextureReporter } from './report';
 
@@ -21,6 +22,7 @@ export interface PreparedChart {
   readonly origin: readonly [number, number];
   readonly regions: readonly TextureRegion[];
   readonly coverage: string | null;
+  readonly pbr: ChartPbrSettings;
 }
 
 export interface PreparedChartLayout {
@@ -36,6 +38,7 @@ interface DraftChart {
   readonly originSpan: SourceSpan;
   readonly regions: readonly TextureRegion[];
   readonly coverage: string | null;
+  readonly pbr: ChartPbrSettings;
 }
 
 const flatRegion = (width: number, height: number, density: 1 | 2 | 4): TextureRegion =>
@@ -188,21 +191,56 @@ const chartCoverage = (
   return bits;
 };
 
-const readChartOriginAndFill = (
-  chart: ProgramTextureChart,
+const parseChartOrigin = (
+  entries: ReadonlyMap<
+    string,
+    { readonly value: ProgramProperty['value']; readonly span: SourceSpan }
+  >,
+  defaultSpan: SourceSpan,
   context: TextureExpressionContext,
-  palette: ReadonlyMap<string, PaletteRole>,
   report: TextureReporter,
 ): Readonly<{
   readonly origin: readonly [number, number] | null;
   readonly originSpan: SourceSpan;
+}> | null => {
+  const originEntry = entries.get('origin');
+  if (originEntry === undefined) return { origin: null, originSpan: defaultSpan };
+  const origin = readTexelVector(
+    originEntry.value,
+    context,
+    2,
+    report.path,
+    propertyIssue(report),
+    originEntry.span,
+  );
+  if (origin !== null && origin[0]! >= 0 && origin[1]! >= 0) {
+    return { origin: [origin[0]!, origin[1]!] as const, originSpan: originEntry.value.span };
+  }
+  report.report(
+    originEntry.value.span,
+    'asset.texture.invalid-origin',
+    'Chart origin must be a non-negative integral texel coordinate.',
+  );
+  return null;
+};
+
+const readChartOriginAndFill = (
+  chart: ProgramTextureChart,
+  context: TextureExpressionContext,
+  palette: ReadonlyMap<string, PaletteRole>,
+  defaultPbr: ChartPbrSettings,
+  report: TextureReporter,
+): Readonly<{
+  readonly origin: readonly [number, number] | null;
+  readonly originSpan: SourceSpan;
+  readonly pbr: ChartPbrSettings;
 }> | null => {
   const propertyEntries = chart.statements.filter(
     (entry): entry is ProgramProperty => entry.kind === 'property',
   );
   const entries = properties(
     propertyEntries,
-    ['origin', 'fill', 'grain'],
+    ['origin', 'fill', 'grain', 'roughness', 'metallic', 'roughness_variation'],
     chart.span,
     report.path,
     propertyIssue(report),
@@ -225,26 +263,10 @@ const readChartOriginAndFill = (
     propertyIssue(report),
     fillEntry.span,
   );
-  if (selected === null) return null;
-  const originEntry = entries.get('origin');
-  if (originEntry === undefined) return { origin: null, originSpan: chart.span };
-  const origin = readTexelVector(
-    originEntry.value,
-    context,
-    2,
-    report.path,
-    propertyIssue(report),
-    originEntry.span,
-  );
-  if (origin === null || origin[0]! < 0 || origin[1]! < 0) {
-    report.report(
-      originEntry.value.span,
-      'asset.texture.invalid-origin',
-      'Chart origin must be a non-negative integral texel coordinate.',
-    );
-    return null;
-  }
-  return { origin: [origin[0]!, origin[1]!] as const, originSpan: originEntry.value.span };
+  const pbr = readPbrProperties(entries, defaultPbr, context, report);
+  if (selected === null || pbr === null) return null;
+  const parsed = parseChartOrigin(entries, chart.span, context, report);
+  return parsed === null ? null : { ...parsed, pbr };
 };
 
 const prepareDraftChart = (
@@ -254,6 +276,7 @@ const prepareDraftChart = (
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
+  defaultPbr: ChartPbrSettings,
   report: TextureReporter,
 ): DraftChart | null => {
   if (chart.layout !== contractChart.layout) {
@@ -265,7 +288,7 @@ const prepareDraftChart = (
     return null;
   }
   const resolved = resolveRegions(chart, contractChart, density, usages, report);
-  const placement = readChartOriginAndFill(chart, context, palette, report);
+  const placement = readChartOriginAndFill(chart, context, palette, defaultPbr, report);
   if (resolved === null || placement === null) return null;
   const coverage = chartCoverage(
     chart,
@@ -283,6 +306,7 @@ const prepareDraftChart = (
     originSpan: placement.originSpan,
     regions: resolved.regions,
     coverage,
+    pbr: placement.pbr,
   };
 };
 
@@ -362,6 +386,7 @@ const resolveExplicitOrigins = (
         origin: draft.origin!,
         regions: draft.regions,
         coverage: draft.coverage,
+        pbr: draft.pbr,
       }),
     );
   }
@@ -413,6 +438,7 @@ const finalizeChartPlacement = (
       origin: packed.origins.get(draft.chart.id)!,
       regions: draft.regions,
       coverage: draft.coverage,
+      pbr: draft.pbr,
     }),
   );
   return Object.freeze({ atlas: packed.atlas, charts: Object.freeze(charts) });
@@ -427,6 +453,7 @@ export const prepareCharts = (
   usages: readonly AssetTextureUsage[],
   context: TextureExpressionContext,
   palette: ReadonlyMap<string, PaletteRole>,
+  defaultPbr: ChartPbrSettings,
   report: TextureReporter,
 ): PreparedChartLayout | null => {
   const sources = payload.statements.filter(
@@ -453,6 +480,7 @@ export const prepareCharts = (
       usagesByChart.get(id) ?? [],
       context,
       palette,
+      defaultPbr,
       report,
     );
     if (draft !== null) drafts.push(draft);

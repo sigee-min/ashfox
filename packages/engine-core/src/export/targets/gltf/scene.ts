@@ -159,6 +159,26 @@ const linkGltfHierarchy = (
   }
 };
 
+const buildRestMaps = (
+  orderedNodes: readonly SceneNode[],
+  document: ProjectDocument,
+  unitScale: number,
+) => {
+  const restTranslationById = new Map<string, [number, number, number]>();
+  const restRotationById = new Map<string, [number, number, number]>();
+  const restScaleById = new Map<string, [number, number, number]>();
+  for (const node of orderedNodes) {
+    assertValidCanonicalBone(node);
+    restTranslationById.set(node.id, restTranslation(document, node, unitScale));
+    restRotationById.set(node.id, [...gltfNodeGeometryRotation(node)]);
+    const zeroExprScale =
+      node.tags?.includes('expression-variant') &&
+      node.transform.scale.some((s) => Math.abs(s) <= 1e-8);
+    restScaleById.set(node.id, zeroExprScale ? [1, 1, 1] : [...node.transform.scale]);
+  }
+  return { restTranslationById, restRotationById, restScaleById };
+};
+
 export const compileGltfScene = (
   document: ProjectDocument,
   options: GltfSceneCompileOptions,
@@ -167,15 +187,11 @@ export const compileGltfScene = (
   const orderedNodes = Object.values(document.scene.nodes)
     .filter((node) => visibleNodeIds.has(node.id))
     .sort((left, right) => compareText(left.id, right.id));
-  const restTranslationById = new Map<string, [number, number, number]>();
-  const restRotationById = new Map<string, [number, number, number]>();
-  const restScaleById = new Map<string, [number, number, number]>();
-  for (const node of orderedNodes) {
-    assertValidCanonicalBone(node);
-    restTranslationById.set(node.id, restTranslation(document, node, options.unitScale));
-    restRotationById.set(node.id, [...gltfNodeGeometryRotation(node)]);
-    restScaleById.set(node.id, [...node.transform.scale]);
-  }
+  const { restTranslationById, restRotationById, restScaleById } = buildRestMaps(
+    orderedNodes,
+    document,
+    options.unitScale,
+  );
   const worldMatrixById = computeWorldMatrices(
     orderedNodes,
     restTranslationById,

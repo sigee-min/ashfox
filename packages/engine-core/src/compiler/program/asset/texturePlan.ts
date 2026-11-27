@@ -142,6 +142,7 @@ const buildTextureAsset = (
     renderMode: prepared.renderMode,
     renderSides: surface.material === 'double' ? 'double' : 'auto',
     atlasMode: 'preserve',
+    ...(composed.pbr ? { pbr: composed.pbr } : {}),
     raster: rasterSpec,
   });
 };
@@ -161,7 +162,14 @@ const compileSurfacePlan = (
   if (payload === null) return null;
   const context = expressionContextFor(surface, contract, path, report);
   if (context === null) return null;
-  const prepared = prepareTexture(payload, context, contract, usages, report);
+  const prepared = prepareTexture(
+    payload,
+    context,
+    contract,
+    usages,
+    report,
+    surface.materialProperties,
+  );
   if (prepared === null) return null;
   const textureId = textureIdFor(surface.symbol.key, surface.symbol.name);
   const composed = composeTextureCharts(

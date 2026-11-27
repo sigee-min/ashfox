@@ -23,22 +23,16 @@ const visibleGeometry = (
   const geometryIds: string[] = [];
   const textureIds: (string | null)[] = [];
   for (const node of Object.values(document.scene.nodes)) {
-    if (!visibleNodeIds.has(node.id)) continue;
-    if (node.kind === 'cube') {
-      const enabledFaces = CUBE_FACE_DIRECTIONS.map((direction) => node.faces[direction]).filter(
-        (face) => face.enabled,
-      );
-      if (enabledFaces.length > 0) geometryIds.push(node.id);
-      textureIds.push(...enabledFaces.map((face) => face.textureId));
-      continue;
-    }
-    if (node.kind === 'plane') {
-      const enabledFaces = PLANE_FACE_DIRECTIONS.map((direction) => node.faces[direction]).filter(
-        (face) => face.enabled,
-      );
-      if (enabledFaces.length > 0) geometryIds.push(node.id);
-      textureIds.push(...enabledFaces.map((face) => face.textureId));
-    }
+    if (!visibleNodeIds.has(node.id) || node.kind === 'bone' || node.kind === 'locator') continue;
+    const dirs = node.kind === 'plane' ? PLANE_FACE_DIRECTIONS : CUBE_FACE_DIRECTIONS;
+    const faceMap = node.faces as Readonly<
+      Record<string, { enabled: boolean; textureId: string | null }>
+    >;
+    const enabledFaces = dirs
+      .map((direction) => faceMap[direction]!)
+      .filter((face) => face.enabled);
+    if (enabledFaces.length > 0) geometryIds.push(node.id);
+    textureIds.push(...enabledFaces.map((face) => face.textureId));
   }
   return { geometryIds, textureIds };
 };

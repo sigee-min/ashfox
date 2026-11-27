@@ -7,7 +7,7 @@ import type {
   SecondarySpec,
   WaveSpec,
 } from '../../../animation/contract';
-import type { ProgramTextureDecl } from '../../../project/program/syntax/contract';
+import type { ProgramProperty, ProgramTextureDecl } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
 import type {
@@ -157,6 +157,7 @@ export interface TypedSurface {
   readonly contract: AssetSymbolId;
   readonly textureSource: AssetUnloweredTextureSource | null;
   readonly material: 'opaque' | 'cutout' | 'double';
+  readonly materialProperties?: readonly ProgramProperty[];
   readonly slots: Readonly<Record<string, AssetValue>>;
   readonly span: SourceSpan;
 }
@@ -204,16 +205,45 @@ export interface TypedGeometryMirrorBind {
   readonly span: SourceSpan;
 }
 
+export interface TypedGeometryOptionBind {
+  readonly kind: 'typed-geometry-option';
+  readonly name: 'axis' | 'slope';
+  readonly value: string;
+  readonly span: SourceSpan;
+}
+
+export interface TypedGeometryExprVariantBind {
+  readonly kind: 'typed-geometry-expr-variant';
+  readonly variant: string;
+  readonly surfacePort: string;
+  readonly chart: string;
+  readonly span: SourceSpan;
+}
+
 export interface TypedGeometryBlock {
   readonly kind: 'typed-geometry-block';
-  readonly keyword: 'bone' | 'cube' | 'plane' | 'locator' | 'face';
+  readonly keyword:
+    | 'bone'
+    | 'cube'
+    | 'plane'
+    | 'taper'
+    | 'wedge'
+    | 'cylinder'
+    | 'expression_slot'
+    | 'locator'
+    | 'face';
   readonly id: string;
   readonly statements: readonly TypedGeometryStatement[];
   readonly span: SourceSpan;
 }
 
 export type TypedGeometryStatement =
-  TypedGeometryProperty | TypedGeometrySurfaceBind | TypedGeometryMirrorBind | TypedGeometryBlock;
+  | TypedGeometryProperty
+  | TypedGeometrySurfaceBind
+  | TypedGeometryMirrorBind
+  | TypedGeometryOptionBind
+  | TypedGeometryExprVariantBind
+  | TypedGeometryBlock;
 
 export interface TypedGeometryPayload {
   readonly kind: 'typed-geometry';
@@ -302,6 +332,19 @@ export interface TypedMotionIk {
   readonly span: SourceSpan;
 }
 
+export interface TypedExpressionEntry {
+  readonly startTime: AssetTypedNumberValue<'second'>;
+  readonly endTime: AssetTypedNumberValue<'second'> | null;
+  readonly variant: string;
+  readonly span: SourceSpan;
+}
+
+export interface TypedMotionExpression {
+  readonly slot: string;
+  readonly entries: readonly TypedExpressionEntry[];
+  readonly span: SourceSpan;
+}
+
 export interface TypedMotion {
   readonly symbol: AssetSymbolId;
   readonly rig: AssetSymbolId;
@@ -318,6 +361,7 @@ export interface TypedMotion {
   readonly secondaries: readonly SecondarySpec[];
   readonly combat: CombatOps;
   readonly cues: readonly CueEvent[];
+  readonly expressions?: readonly TypedMotionExpression[];
   readonly span: SourceSpan;
 }
 

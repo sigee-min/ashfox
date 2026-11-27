@@ -21,9 +21,10 @@ import {
   resolveGltfTextures,
   type GltfResolvedExportOptions,
 } from './textures';
+import { decodeBase64Bytes } from '../../../textures/textureRecipe/base64';
+import { createGltfMaterial } from './material';
 import { compileGltfScene } from './scene';
-import type { GltfDocument, GltfImage, GltfMaterial, GltfSampler } from './contract';
-import type { UvTransform } from './vertexLayout';
+import type { GltfDocument, GltfImage, GltfMaterial, GltfSampler, GltfTexture } from './contract';
 
 export type { CompiledGltf, GltfBuildOptions } from './build';
 export type { GltfResolvedExportOptions } from './textures';
@@ -40,68 +41,12 @@ const textureMimeType = (texture: TextureAsset): 'image/png' | 'image/jpeg' => {
 
 const GLTF_UNIT_SCALE = 1 / 16;
 
-const resolveGltfBlendMode = (
-  texture: TextureAsset,
-): 'additive' | 'blend' | 'premul' | undefined => {
-  const raw = texture.metadata?.ashfoxBlendMode;
-  if (raw === 'additive' || raw === 'blend' || raw === 'premul') return raw;
-  return texture.renderMode === 'additive' ? 'additive' : undefined;
-};
-
-const resolveGltfAlphaMode = (
-  texture: TextureAsset,
-  masked: boolean,
-): { alphaMode?: 'MASK' | 'BLEND'; alphaCutoff?: number } => {
-  if (masked) return { alphaMode: 'MASK', alphaCutoff: 0.5 };
-  if (texture.renderMode === 'additive' || texture.renderMode === 'layered')
-    return { alphaMode: 'BLEND' };
-  return {};
-};
-
-export const createGltfMaterial = (
-  texture: TextureAsset,
-  texIndex: number,
-  masked: boolean,
-  doubleSided: boolean,
-  isEmissive = texture.renderMode === 'emissive',
-  uvTransform?: UvTransform,
-  name = texture.name,
-): GltfMaterial => {
-  const ext = uvTransform
-    ? {
-        KHR_texture_transform: {
-          offset: [uvTransform.offset[0], uvTransform.offset[1]] as [number, number],
-          scale: [uvTransform.scale[0], uvTransform.scale[1]] as [number, number],
-        },
-      }
-    : undefined;
-  const isUnlit = texture.renderMode === 'additive' || texture.metadata?.ashfoxUnlit === true;
-  const blendMode = resolveGltfBlendMode(texture);
-  return {
-    name,
-    pbrMetallicRoughness: {
-      baseColorTexture: { index: texIndex, ...(ext ? { extensions: ext } : {}) },
-      metallicFactor: 0,
-      roughnessFactor: 1,
-    },
-    ...(isEmissive && !isUnlit
-      ? {
-          emissiveTexture: { index: texIndex, ...(ext ? { extensions: ext } : {}) },
-          emissiveFactor: [1, 1, 1],
-        }
-      : {}),
-    ...resolveGltfAlphaMode(texture, masked),
-    ...(doubleSided ? { doubleSided: true } : {}),
-    ...(isUnlit ? { extensions: { KHR_materials_unlit: {} } } : {}),
-    ...(blendMode ? { extras: { ashfoxBlendMode: blendMode } } : {}),
-  };
-};
-
 const materialForTexture = (
   texture: TextureAsset,
   index: number,
   masked: boolean,
   forceSingleSided = false,
+  mrTexIndex?: number,
 ): GltfMaterial =>
   createGltfMaterial(
     texture,
@@ -111,12 +56,14 @@ const materialForTexture = (
     texture.renderMode === 'emissive',
     undefined,
     forceSingleSided ? `${texture.name} (front-sided)` : texture.name,
+    mrTexIndex,
   );
 
 interface CompiledGltfTextures {
   readonly samplers: GltfSampler[];
   readonly materials: GltfMaterial[];
   readonly images: GltfImage[];
+  readonly gltfTextures: GltfTexture[];
   readonly textureFiles: MaterializedTextureFile[];
   readonly materialByTextureId: ReadonlyMap<string, number>;
   readonly singleSidedMaterialByTextureId: ReadonlyMap<string, number>;
@@ -166,6 +113,129 @@ const embeddedTextureImage = (
   };
 };
 
+const appendMetallicRoughnessTexture = (
+  texture: TextureAsset,
+  index: number,
+  textureDirectory: string,
+  imageStorage: 'embedded' | 'external',
+  writer: GltfBinaryWriter,
+  samplers: GltfSampler[],
+  images: GltfImage[],
+  gltfTextures: GltfTexture[],
+  textureFiles: MaterializedTextureFile[],
+): number | undefined => {
+  const b64 = texture.pbr?.metallicRoughnessPngBase64;
+  if (!b64) return undefined;
+  const bytes = decodeBase64Bytes(b64);
+  const mrSamplerIdx = samplers.length;
+  samplers.push(textureSampler(texture));
+  const mrImgIdx = images.length;
+  if (imageStorage === 'embedded') {
+    images.push({
+      bufferView: writer.addBufferView(bytes),
+      mimeType: 'image/png',
+      name: `${texture.name}_mr`,
+    });
+  } else {
+    images.push({
+      uri: `textures/texture_${index}_mr.png`,
+      mimeType: 'image/png',
+      name: `${texture.name}_mr`,
+    });
+    textureFiles.push({
+      kind: 'binary',
+      role: 'texture',
+      path: `${textureDirectory}/texture_${index}_mr.png`,
+      contentType: 'image/png',
+      data: bytes,
+    });
+  }
+  const mrTexIdx = gltfTextures.length;
+  gltfTextures.push({ sampler: mrSamplerIdx, source: mrImgIdx, name: `${texture.name}_mr` });
+  return mrTexIdx;
+};
+
+const appendColorTexture = (
+  document: ExportAdaptedDocument,
+  texture: TextureAsset,
+  index: number,
+  textureDirectory: string,
+  imageStorage: 'embedded' | 'external',
+  writer: GltfBinaryWriter,
+  options: GltfBuildOptions,
+  samplers: GltfSampler[],
+  images: GltfImage[],
+  gltfTextures: GltfTexture[],
+  textureFiles: MaterializedTextureFile[],
+): number => {
+  const mimeType = textureMimeType(texture);
+  const samplerIdx = samplers.length;
+  samplers.push(textureSampler(texture));
+  const imageIdx = images.length;
+  if (imageStorage === 'embedded') {
+    images.push(embeddedTextureImage(document, texture, mimeType, writer, options));
+  } else {
+    const extension = textureExtension(texture);
+    images.push({ uri: `textures/texture_${index}.${extension}`, mimeType, name: texture.name });
+    textureFiles.push(
+      createTextureExportFile(
+        document,
+        texture,
+        `${textureDirectory}/texture_${index}.${extension}`,
+      ),
+    );
+  }
+  const baseTexIdx = gltfTextures.length;
+  gltfTextures.push({ sampler: samplerIdx, source: imageIdx, name: texture.name });
+  return baseTexIdx;
+};
+
+const compileSingleGltfTexture = (
+  document: ExportAdaptedDocument,
+  texture: TextureAsset,
+  index: number,
+  textureDirectory: string,
+  imageStorage: 'embedded' | 'external',
+  writer: GltfBinaryWriter,
+  options: GltfBuildOptions,
+  planeTextureIds: ReadonlySet<string>,
+  acc: Omit<CompiledGltfTextures, 'materialByTextureId' | 'singleSidedMaterialByTextureId'>,
+  materialByTextureId: Map<string, number>,
+  singleSidedMaterialByTextureId: Map<string, number>,
+): void => {
+  materialByTextureId.set(texture.id, acc.materials.length);
+  const baseTexIdx = appendColorTexture(
+    document,
+    texture,
+    index,
+    textureDirectory,
+    imageStorage,
+    writer,
+    options,
+    acc.samplers,
+    acc.images,
+    acc.gltfTextures,
+    acc.textureFiles,
+  );
+  const mrTexIdx = appendMetallicRoughnessTexture(
+    texture,
+    index,
+    textureDirectory,
+    imageStorage,
+    writer,
+    acc.samplers,
+    acc.images,
+    acc.gltfTextures,
+    acc.textureFiles,
+  );
+  const masked = planeTextureIds.has(texture.id);
+  acc.materials.push(materialForTexture(texture, baseTexIdx, masked, false, mrTexIdx));
+  if (masked && texture.renderSides === 'double') {
+    singleSidedMaterialByTextureId.set(texture.id, acc.materials.length);
+    acc.materials.push(materialForTexture(texture, baseTexIdx, true, true, mrTexIdx));
+  }
+};
+
 const compileGltfTextures = (
   document: ExportAdaptedDocument,
   textures: readonly TextureAsset[],
@@ -176,49 +246,30 @@ const compileGltfTextures = (
 ): CompiledGltfTextures => {
   const materialByTextureId = new Map<string, number>();
   const singleSidedMaterialByTextureId = new Map<string, number>();
-  const samplers: GltfSampler[] = [];
-  const materials: GltfMaterial[] = [];
-  const images: GltfImage[] = [];
-  const textureFiles: MaterializedTextureFile[] = [];
-  const planeTextureIds = collectPlaneTextureIds(document);
-
-  textures.forEach((texture, index) => {
-    const mimeType = textureMimeType(texture);
-    materialByTextureId.set(texture.id, materials.length);
-    samplers.push(textureSampler(texture));
-    const masked = planeTextureIds.has(texture.id);
-    materials.push(materialForTexture(texture, index, masked));
-    if (masked && texture.renderSides === 'double') {
-      singleSidedMaterialByTextureId.set(texture.id, materials.length);
-      materials.push(materialForTexture(texture, index, true, true));
-    }
-    if (imageStorage === 'embedded') {
-      images.push(embeddedTextureImage(document, texture, mimeType, writer, options));
-    } else {
-      const extension = textureExtension(texture);
-      images.push({
-        uri: `textures/texture_${index}.${extension}`,
-        mimeType,
-        name: texture.name,
-      });
-      textureFiles.push(
-        createTextureExportFile(
-          document,
-          texture,
-          `${textureDirectory}/texture_${index}.${extension}`,
-        ),
-      );
-    }
-  });
-
-  return {
-    samplers,
-    materials,
-    images,
-    textureFiles,
-    materialByTextureId,
-    singleSidedMaterialByTextureId,
+  const acc = {
+    samplers: [] as GltfSampler[],
+    materials: [] as GltfMaterial[],
+    images: [] as GltfImage[],
+    gltfTextures: [] as GltfTexture[],
+    textureFiles: [] as MaterializedTextureFile[],
   };
+  const planeTextureIds = collectPlaneTextureIds(document);
+  textures.forEach((texture, index) =>
+    compileSingleGltfTexture(
+      document,
+      texture,
+      index,
+      textureDirectory,
+      imageStorage,
+      writer,
+      options,
+      planeTextureIds,
+      acc,
+      materialByTextureId,
+      singleSidedMaterialByTextureId,
+    ),
+  );
+  return { ...acc, materialByTextureId, singleSidedMaterialByTextureId };
 };
 
 const modelPathInfo = (modelPath: string) => {
@@ -280,11 +331,7 @@ const assembleGltfDocument = (
       ? {
           images: compiledTextures.images,
           samplers: compiledTextures.samplers,
-          textures: textures.map((texture, index) => ({
-            sampler: index,
-            source: index,
-            name: texture.name,
-          })),
+          textures: compiledTextures.gltfTextures,
           materials: compiledTextures.materials,
         }
       : {}),

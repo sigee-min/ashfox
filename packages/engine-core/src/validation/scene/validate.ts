@@ -1,8 +1,10 @@
+import { isExpressionVariantNode } from '../../model/expression';
 import type { ProjectDocument } from '../../model';
 import { isNonEmptyString, validateTransform } from '../shared/value';
 import type { FindingSink, IdRegistrar } from '../contract';
 import { validateCube } from './cube';
 import { validatePlane } from './plane';
+import { validateCylinder, validateTaper, validateWedge } from './primitive';
 
 const validateRoots = (document: ProjectDocument, add: FindingSink): ReadonlySet<string> => {
   const rootSet = new Set<string>();
@@ -89,6 +91,81 @@ const validateParent = (
   }
 };
 
+const validateNodeKind = (
+  nodeKey: string,
+  node: ProjectDocument['scene']['nodes'][string],
+  document: ProjectDocument,
+  path: string,
+  add: FindingSink,
+): void => {
+  if (node.kind === 'cube') validateCube(node, document, path, add);
+  else if (node.kind === 'plane') validatePlane(node, document, path, add);
+  else if (node.kind === 'taper') validateTaper(node, document, path, add);
+  else if (node.kind === 'wedge') validateWedge(node, document, path, add);
+  else if (node.kind === 'cylinder') validateCylinder(node, document, path, add);
+  else if (node.kind !== 'bone' && node.kind !== 'locator') {
+    add({
+      code: 'scene.invalid_kind',
+      severity: 'error',
+      message: `Unsupported scene node kind "${String((node as { kind: unknown }).kind)}".`,
+      path: `${path}.kind`,
+      entityIds: [nodeKey],
+    });
+  }
+};
+
+const validateSingleNode = (
+  nodeKey: string,
+  node: ProjectDocument['scene']['nodes'][string],
+  document: ProjectDocument,
+  rootSet: ReadonlySet<string>,
+  add: FindingSink,
+  registerId: IdRegistrar,
+): void => {
+  const path = `scene.nodes.${nodeKey}`;
+  registerId(node.id, path);
+  if (nodeKey !== node.id) {
+    add({
+      code: 'identity.key_mismatch',
+      severity: 'error',
+      message: `Scene map key "${nodeKey}" does not match node ID "${node.id}".`,
+      path,
+      entityIds: [node.id],
+    });
+  }
+  if (!isNonEmptyString(node.name)) {
+    add({
+      code: 'document.required_value',
+      severity: 'error',
+      message: 'Scene node names must be non-empty.',
+      path: `${path}.name`,
+      entityIds: [node.id],
+    });
+  }
+  validateTransform(
+    node.transform,
+    `${path}.transform`,
+    add,
+    node.id,
+    isExpressionVariantNode(node),
+  );
+  if (
+    node.kind === 'locator' &&
+    node.ignoreInheritedScale !== undefined &&
+    typeof node.ignoreInheritedScale !== 'boolean'
+  ) {
+    add({
+      code: 'document.required_value',
+      severity: 'error',
+      message: 'Locator ignoreInheritedScale must be a boolean.',
+      path: `${path}.ignoreInheritedScale`,
+      entityIds: [node.id],
+    });
+  }
+  validateParent(document, node.id, node.parentId, path, rootSet, add);
+  validateNodeKind(nodeKey, node, document, path, add);
+};
+
 const validateNodes = (
   document: ProjectDocument,
   rootSet: ReadonlySet<string>,
@@ -96,55 +173,7 @@ const validateNodes = (
   registerId: IdRegistrar,
 ): void => {
   for (const [nodeKey, node] of Object.entries(document.scene.nodes)) {
-    const path = `scene.nodes.${nodeKey}`;
-    registerId(node.id, path);
-    if (nodeKey !== node.id) {
-      add({
-        code: 'identity.key_mismatch',
-        severity: 'error',
-        message: `Scene map key "${nodeKey}" does not match node ID "${node.id}".`,
-        path,
-        entityIds: [node.id],
-      });
-    }
-    if (!isNonEmptyString(node.name)) {
-      add({
-        code: 'document.required_value',
-        severity: 'error',
-        message: 'Scene node names must be non-empty.',
-        path: `${path}.name`,
-        entityIds: [node.id],
-      });
-    }
-    validateTransform(node.transform, `${path}.transform`, add, node.id);
-    if (
-      node.kind === 'locator' &&
-      node.ignoreInheritedScale !== undefined &&
-      typeof node.ignoreInheritedScale !== 'boolean'
-    ) {
-      add({
-        code: 'document.required_value',
-        severity: 'error',
-        message: 'Locator ignoreInheritedScale must be a boolean.',
-        path: `${path}.ignoreInheritedScale`,
-        entityIds: [node.id],
-      });
-    }
-    validateParent(document, node.id, node.parentId, path, rootSet, add);
-
-    if (node.kind === 'cube') {
-      validateCube(node, document, path, add);
-    } else if (node.kind === 'plane') {
-      validatePlane(node, document, path, add);
-    } else if (node.kind !== 'bone' && node.kind !== 'locator') {
-      add({
-        code: 'scene.invalid_kind',
-        severity: 'error',
-        message: `Unsupported scene node kind "${String((node as { kind: unknown }).kind)}".`,
-        path: `${path}.kind`,
-        entityIds: [nodeKey],
-      });
-    }
+    validateSingleNode(nodeKey, node, document, rootSet, add, registerId);
   }
 };
 

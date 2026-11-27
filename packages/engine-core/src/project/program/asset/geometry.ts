@@ -32,7 +32,17 @@ export interface AssetGeometryReader {
 const join = (left: SourceSpan, right: SourceSpan): SourceSpan =>
   Object.freeze({ start: left.start, end: right.end });
 
-const keywords = new Set(['bone', 'cube', 'plane', 'locator', 'face']);
+const keywords = new Set([
+  'bone',
+  'cube',
+  'plane',
+  'taper',
+  'wedge',
+  'cylinder',
+  'expression_slot',
+  'locator',
+  'face',
+]);
 
 const block = (reader: AssetGeometryReader): AssetGeometryBlock => {
   const start = reader.take();
@@ -45,13 +55,7 @@ const block = (reader: AssetGeometryReader): AssetGeometryBlock => {
     while (!reader.check('}') && !reader.end()) {
       if (reader.checkWord('surface')) statements.push(reader.surfaceBinding());
       else if (reader.assignment()) statements.push(reader.property());
-      else if (
-        reader.checkWord('bone') ||
-        reader.checkWord('cube') ||
-        reader.checkWord('plane') ||
-        reader.checkWord('locator') ||
-        reader.checkWord('face')
-      )
+      else if (reader.current().kind === 'identifier' && keywords.has(reader.current().value))
         statements.push(block(reader));
       else {
         reader.fail(

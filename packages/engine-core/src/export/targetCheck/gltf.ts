@@ -133,8 +133,20 @@ const validateCube = (
       entityIds: [nodeId],
     });
   }
+  validateBoxFaceUvs(node.faces, nodeId, path, add);
+};
+
+const validateBoxFaceUvs = (
+  faces: Extract<
+    ProjectDocument['scene']['nodes'][string],
+    { kind: 'cube' | 'taper' | 'wedge' | 'cylinder' }
+  >['faces'],
+  nodeId: string,
+  path: string,
+  add: FindingSink,
+): void => {
   for (const direction of CUBE_FACE_DIRECTIONS) {
-    const face = node.faces[direction];
+    const face = faces[direction];
     if (!face.enabled) continue;
     if (face.textureId !== null && !face.uv) {
       add({
@@ -201,6 +213,9 @@ const validateScene = (document: ExportAdaptedDocument, add: FindingSink): void 
     if (!isSceneNodeEffectivelyVisible(document, nodeId)) continue;
     if (node.kind === 'cube') validateCube(node, nodeId, path, add);
     else if (node.kind === 'plane') validatePlane(node, nodeId, path, add);
+    else if (node.kind === 'taper' || node.kind === 'wedge' || node.kind === 'cylinder') {
+      validateBoxFaceUvs(node.faces, nodeId, path, add);
+    }
   }
 };
 

@@ -8,6 +8,7 @@ import type {
   AssetFrameDecl,
   AssetImportDecl,
   AssetMotionChannel,
+  AssetPropertyDecl,
   AssetQualifiedName,
   AssetValueType,
 } from './baseTypes';
@@ -157,6 +158,7 @@ export interface AssetSurfaceDecl {
   readonly contract: AssetQualifiedName;
   readonly texture: ProgramTextureDecl | null;
   readonly material: 'opaque' | 'cutout' | 'double' | null;
+  readonly materialProperties?: readonly AssetPropertyDecl[];
   readonly slots: readonly AssetSlotDecl[];
   readonly span: SourceSpan;
 }
@@ -194,7 +196,16 @@ export interface AssetGeometrySurfaceBind {
 
 export interface AssetGeometryBlock {
   readonly kind: 'geometry-block';
-  readonly keyword: 'bone' | 'cube' | 'plane' | 'locator' | 'face';
+  readonly keyword:
+    | 'bone'
+    | 'cube'
+    | 'plane'
+    | 'taper'
+    | 'wedge'
+    | 'cylinder'
+    | 'expression_slot'
+    | 'locator'
+    | 'face';
   readonly id: string;
   readonly statements: readonly AssetGeometryStatement[];
   readonly span: SourceSpan;

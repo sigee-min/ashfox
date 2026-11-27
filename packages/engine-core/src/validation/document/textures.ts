@@ -220,6 +220,28 @@ const validateTextureMetadata = (value: unknown, path: string, context: Contract
   }
 };
 
+const validateTexturePbr = (value: unknown, path: string, context: ContractContext): void => {
+  const pbr = closedRecord(
+    value,
+    path,
+    ['roughness', 'metallic'],
+    ['metallicRoughnessPngBase64'],
+    context,
+  );
+  if (!pbr) return;
+  expectFiniteNumber(pbr.roughness, `${path}.roughness`, context);
+  if (typeof pbr.roughness === 'number' && (pbr.roughness < 0 || pbr.roughness > 1)) {
+    reject(context, `${path}.roughness`, `${path}.roughness must be between 0 and 1.`);
+  }
+  expectFiniteNumber(pbr.metallic, `${path}.metallic`, context);
+  if (typeof pbr.metallic === 'number' && (pbr.metallic < 0 || pbr.metallic > 1)) {
+    reject(context, `${path}.metallic`, `${path}.metallic must be between 0 and 1.`);
+  }
+  if (hasOwn(pbr, 'metallicRoughnessPngBase64')) {
+    expectString(pbr.metallicRoughnessPngBase64, `${path}.metallicRoughnessPngBase64`, context);
+  }
+};
+
 const validateTexture = (value: unknown, path: string, context: ContractContext): void => {
   const record = closedRecord(
     value,
@@ -236,7 +258,7 @@ const validateTexture = (value: unknown, path: string, context: ContractContext)
       'renderMode',
       'renderSides',
     ],
-    ['atlasMode', 'pbrChannel', 'raster', 'metadata'],
+    ['atlasMode', 'pbrChannel', 'pbr', 'raster', 'metadata'],
     context,
   );
   if (!record) return;
@@ -265,6 +287,9 @@ const validateTexture = (value: unknown, path: string, context: ContractContext)
       `${path}.pbrChannel`,
       context,
     );
+  }
+  if (hasOwn(record, 'pbr')) {
+    validateTexturePbr(record.pbr, `${path}.pbr`, context);
   }
   if (hasOwn(record, 'raster')) {
     validateTextureRaster(record.raster, `${path}.raster`, context, record.width, record.height);

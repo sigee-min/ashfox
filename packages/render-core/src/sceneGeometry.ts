@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 
 import {
+  buildPrimitivePolygons,
   cubeGeometryPivot,
   cubeGeometryRotation,
   cubeUnrotatedBounds,
+  evalPolygonFaceUvs,
   type ProjectDocument,
   type SceneNode,
   type TextureAsset,
@@ -283,6 +285,85 @@ const addNodeHelper = (node: SceneNode, group: THREE.Group, selectable: THREE.Ob
   selectable.push(helper);
 };
 
+interface CustomPrimBuffers {
+  readonly positions: number[];
+  readonly normals: number[];
+  readonly uvs: number[];
+  readonly indices: number[];
+  readonly materials: THREE.Material[];
+}
+
+const appendCustomPoly = (
+  poly: ReturnType<typeof buildPrimitivePolygons>[number],
+  node: Extract<SceneNode, { kind: 'taper' | 'wedge' | 'cylinder' }>,
+  buffers: CustomPrimBuffers,
+  geometry: THREE.BufferGeometry,
+  context: GeometryBuildContext,
+): void => {
+  const face = node.faces[poly.direction];
+  if (!face.enabled || poly.vertices.length < 3) return;
+  const baseVertex = buffers.positions.length / 3;
+  const tex = face.textureId === null ? undefined : context.textures[face.textureId];
+  const polyUvs =
+    tex && face.uv
+      ? evalPolygonFaceUvs(poly.uvWeights, face.uv, face.rotation ?? 0, tex.width, tex.height, true)
+      : poly.vertices.map(() => [0, 0] as const);
+  for (let i = 0; i < poly.vertices.length; i += 1) {
+    const v = poly.vertices[i]!;
+    buffers.positions.push(
+      v[0] - node.transform.pivot[0],
+      v[1] - node.transform.pivot[1],
+      v[2] - node.transform.pivot[2],
+    );
+    buffers.normals.push(poly.normal[0], poly.normal[1], poly.normal[2]);
+    buffers.uvs.push(polyUvs[i]![0], polyUvs[i]![1]);
+  }
+  const indexStart = buffers.indices.length;
+  for (let i = 1; i + 1 < poly.vertices.length; i += 1) {
+    buffers.indices.push(baseVertex, baseVertex + i, baseVertex + i + 1);
+  }
+  const textureId = context.options.showTextures === false ? null : face.textureId;
+  buffers.materials.push(context.materials.resolve(textureId));
+  geometry.addGroup(indexStart, buffers.indices.length - indexStart, buffers.materials.length - 1);
+};
+
+const addCustomPrimitiveGeometry = (
+  node: Extract<SceneNode, { kind: 'taper' | 'wedge' | 'cylinder' }>,
+  group: THREE.Group,
+  context: GeometryBuildContext,
+): void => {
+  const buffers: CustomPrimBuffers = {
+    positions: [],
+    normals: [],
+    uvs: [],
+    indices: [],
+    materials: [],
+  };
+  const geometry = new THREE.BufferGeometry();
+  for (const poly of buildPrimitivePolygons(node)) {
+    appendCustomPoly(poly, node, buffers, geometry, context);
+  }
+  if (buffers.indices.length === 0) return;
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(buffers.positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(buffers.normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(buffers.uvs, 2));
+  geometry.setIndex(buffers.indices);
+  const mesh = new THREE.Mesh(geometry, buffers.materials);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.nodeId = node.id;
+  mesh.userData.kind = node.kind;
+  group.add(mesh);
+  context.selectable.push(mesh);
+  if (!context.options.showWireframe) return;
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geometry),
+    new THREE.LineBasicMaterial({ color: '#172028', transparent: true, opacity: 0.66 }),
+  );
+  edges.userData.overlay = true;
+  group.add(edges);
+};
+
 export const addNodeGeometry = (
   node: SceneNode,
   group: THREE.Group,
@@ -290,6 +371,9 @@ export const addNodeGeometry = (
 ): void => {
   if (node.kind === 'cube') addCubeGeometry(node, group, context);
   if (node.kind === 'plane') addPlaneGeometry(node, group, context);
+  if (node.kind === 'taper' || node.kind === 'wedge' || node.kind === 'cylinder') {
+    addCustomPrimitiveGeometry(node, group, context);
+  }
   if (context.options.showSkeleton && (node.kind === 'bone' || node.kind === 'locator')) {
     addNodeHelper(node, group, context.selectable);
   }
