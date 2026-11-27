@@ -7,39 +7,39 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:1429d63adb72952a90ddf220c4a440efb508c93648648e2dfde083b1639f575e",
-      "catalogHash": "0ad13a076ebad163f76697e3d6620ddbb9686e3332256a5e5be3520c7474afd2",
+      "sourceHash": "sha256:28b49c1298e729839b43f8fde9d7706d27ba5668bb62c10bcb586399d4e56bd3",
+      "catalogHash": "5afce1797021497c57e2fa6986112ab23e823ce103244d90fb50196e698fef3a",
       "products": [
         {
           "entry": "structures/blacksmith",
           "kind": "structure",
           "nbt": "a7a5e53f38668805bb7ad270e64c4a9984cb3d513ae1a316e567011009ace731",
           "playableMeta": "c082380315fa7d1199e6f05755b6e7e3e7a1b586cc8a5f76bbdb33dccc16e536",
-          "document": "651e8585ff570d1c565fd13de84f03e93da875dc1bf9ef97707ce3ee6a759b41"
+          "document": "f3575d33689223ec7c0cac28072603756f69aba85f4016dbdc1e8e1584538459"
         },
         {
           "entry": "structures/modern_gallery",
           "kind": "structure",
           "nbt": "cc5915d4b5034caa956d616ced67ba1fb2eb8c3931f2e3d3f4f7ee8a47921f08",
           "playableMeta": "03e8493277bdb459b0c254d537e2533412130d9e45eb58fb2a69cfdbe4de4fc3",
-          "document": "5caf993b22ea11833b7025c12f531332d9192136cf8fda5c5cce0846c129ac23"
+          "document": "ad4580ef809878800d7c8507c9bee0ea817b8293b44a1239c1dbc92d4327179f"
         },
         {
           "entry": "structures/tavern",
           "kind": "structure",
           "nbt": "c3096b0ed14d0539caf84988249c7cce00f278ae7005f8392ca372d7533cc030",
           "playableMeta": "0954d1891fab6e1da409c4302712206478d45239d90143d6d1140bd343e4a690",
-          "document": "69cbefd236eb6cd7ec74240e77f0bff78da4ce735e6c896c455c7192bffc1916"
+          "document": "f4dd1317d5db9e55fa233f4d3d828b33234bd9192313b36baa9e43ef5637e802"
         }
       ],
       "files": [
         {
           "path": "assets/blacksmith/ashfox-lineage.json",
-          "sha256": "b4a855034d804d692b1565fdc55f285ac2ca83557675741328a250f5f3827e75"
+          "sha256": "4ee9dd060767e010539bfb094f753cc0b979d250e66d3426c02d5d410ff02345"
         },
         {
           "path": "assets/blacksmith/blacksmith.glb",
-          "sha256": "a575d09dc68e165b91e69a309581d1efe1cf26b07d8f404503dc589336fda7b3"
+          "sha256": "9383bd5cdfd844387d5dea8fc9e567501c859b5de10a4cd8b5c1e77a22cd1cd0"
         },
         {
           "path": "assets/blacksmith/blacksmith.hooks.json",
@@ -59,11 +59,11 @@
         },
         {
           "path": "assets/modern_gallery/ashfox-lineage.json",
-          "sha256": "fe3ea1b72e01455af148488ef5a94f2e07267bf85b2f88d5f66940987727f2c3"
+          "sha256": "cf4b0ac26da053c5e4eadec3f9b0592471fa1185b898f585752aa46ee26f2bb8"
         },
         {
           "path": "assets/modern_gallery/modern_gallery.glb",
-          "sha256": "d5dfd2d9231df30ed1dd5efde2f36c561e4acfa2f40764978622ad2896acc79d"
+          "sha256": "640019f8f0bbc83f641d32cf0c0985234bdda8520dfbe76bb6d2bedf5f22bbf6"
         },
         {
           "path": "assets/modern_gallery/modern_gallery.hooks.json",
@@ -83,7 +83,7 @@
         },
         {
           "path": "assets/showcase_pack/resource-pack/ashfox-lineage.json",
-          "sha256": "2851962e635ea92da92bfeea8a7282ff8cf549603bd9aae3f38c8d78ceccf7c7"
+          "sha256": "a24f6302157a1c21dfb121a1207bdb7f55768cdecca760be9bb4e0ca2d0241a7"
         },
         {
           "path": "assets/showcase_pack/resource-pack/assets/ashfox/blockstates/block/rune_bricks.json",
@@ -155,15 +155,15 @@
         },
         {
           "path": "assets/showcase_pack/showcase_pack.zip",
-          "sha256": "6e9422307e2126011bb0f3b6b6af89d101b901b6157113ee7a9107e995fa816f"
+          "sha256": "5e45ae8d6ab59bf0c174403f266ddb61fc8f097a9f36bbcaad947767905f331e"
         },
         {
           "path": "assets/tavern/ashfox-lineage.json",
-          "sha256": "e7d048f6e89cc0256e4a3217a0401c339e3f9fb69c3b5dd140fd2de80255b84f"
+          "sha256": "72c576d3e1eb59203b1298f28debf00f5b5e87213113a225fe26044c7c793f59"
         },
         {
           "path": "assets/tavern/tavern.glb",
-          "sha256": "c1f58985ce1f02071820f6e2e172813da66f90393f2be3f3515a42a2e52f950d"
+          "sha256": "b29db59a11e8cafd26836b90a9d950703b041ae42e94ec9296c168970e03f28f"
         },
         {
           "path": "assets/tavern/tavern.hooks.json",
@@ -183,7 +183,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/assets.json",
-          "sha256": "20a0cd8a5b66cee5ce109aed28de8a10aa516b939ed0bd5887544a0734126340"
+          "sha256": "dc4c46023de63ddbf6fe26f6ccd9cf27a6df7771a4afa82bf0202e84b162a4d1"
         },
         {
           "path": "assets/voxel_game/game-assets/audio/claw_hit/alternate.wav",
@@ -227,19 +227,19 @@
         },
         {
           "path": "assets/voxel_game/game-assets/models/goblin_pyromancer/goblin_pyromancer.glb",
-          "sha256": "e18f1c29563ce35e98933f32873e3dba66863bf32b5cb0ce867ef19eccc3461f"
+          "sha256": "586bd201fc0bf0c9d09b967d15f9cb2fb7089715437301345c923824389cccb1"
         },
         {
           "path": "assets/voxel_game/game-assets/models/goblin_raider/goblin_raider.glb",
-          "sha256": "fb88e67eee6e95bb232b425880644bca20dfa8f4e537c8c84c823904efc3c393"
+          "sha256": "0acff06a6f76369797a2af58492c0d01084194140e877800e5f72a63f82b3d70"
         },
         {
           "path": "assets/voxel_game/game-assets/models/griffin_boss/griffin_boss.glb",
-          "sha256": "c28267f68bc4c959a77226ae7178c2e72105a7c9db3c8ce80b46a4950fdca57a"
+          "sha256": "98a42f49ef955e73ddcb77653be83042345722e9f78ee5e45350a9151fba1a68"
         },
         {
           "path": "assets/voxel_game/game-assets/models/red_fox/red_fox.glb",
-          "sha256": "1022d65c46aa9d25de9e76658cd122e1b29194d2ae2fbd0379fc050c2e822b02"
+          "sha256": "d170fb7404cb8bfbc77656f5aecda261e9c535ccf4bd0c2db0199101d0a8e5fd"
         },
         {
           "path": "assets/voxel_game/game-assets/models/rune_bricks/rune_bricks.glb",
@@ -247,11 +247,11 @@
         },
         {
           "path": "assets/voxel_game/game-assets/models/treasure_chest/treasure_chest.glb",
-          "sha256": "98b066dfce1b74a94a9b091b16333e8a0105ad043e6c535634d6f4524b4c242e"
+          "sha256": "158a94e7e787b1d0e7db19ac8c980d03428b20a0551720e0c739cb2e6f83ebc7"
         },
         {
           "path": "assets/voxel_game/game-assets/models/wall_lantern/wall_lantern.glb",
-          "sha256": "46c15fedcd764af8bcbdf7e7fb7cbd35a859f3224a59437fda4e469ef1f42b11"
+          "sha256": "fef922ee2b7a50f7dbf8348ad1a253fc876a4c4b99604f8358acb75d73d3a0d2"
         },
         {
           "path": "assets/voxel_game/game-assets/sprites/items/iron_sword.png",
@@ -267,7 +267,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/structures/blacksmith/blacksmith.glb",
-          "sha256": "3f5469c92050d9a09a0bbc807b55f95b551dd61d6f6d8e6f2dbe8ebee659958f"
+          "sha256": "72b99a2ac5b85cb552522788c559d1b4be66aebc62ace07d59c6f19a376dd5c0"
         },
         {
           "path": "assets/voxel_game/game-assets/structures/blacksmith/blacksmith.structure.json",
@@ -275,7 +275,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/structures/modern_gallery/modern_gallery.glb",
-          "sha256": "650f34f01eb9b38d48bcce7b9f0b13b82b40be27adf20d38aeeccdac21f76411"
+          "sha256": "cc035742c065ff44293eee6c826b3d7c86192713977a85f2ddb43bb609521d69"
         },
         {
           "path": "assets/voxel_game/game-assets/structures/modern_gallery/modern_gallery.structure.json",
@@ -283,7 +283,7 @@
         },
         {
           "path": "assets/voxel_game/game-assets/structures/tavern/tavern.glb",
-          "sha256": "d87bb3da607cdc52b688a2a01b433bea303eac263314a6e0772c456cfee15133"
+          "sha256": "03a09d8b48a74892906a42e996a21e6b2f5bdf4617fc604446f10e0676199673"
         },
         {
           "path": "assets/voxel_game/game-assets/structures/tavern/tavern.structure.json",
@@ -306,20 +306,12 @@
           "sha256": "0acf02506922487e89a97cdeac8b5d599589173b299eafdda0fe49ba46cf1f6c"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/10fccdb74cac.png",
-          "sha256": "10fccdb74caca3d9a520108cea2b245693bc92fa7715c73480dc2f0c76fae610"
-        },
-        {
           "path": "assets/voxel_game/game-assets/textures/110617dcff5d.png",
           "sha256": "110617dcff5d23b954352c9d0504f65ad426ed9cce63badb6a5c8ba50d413c72"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/131f88562979.png",
           "sha256": "131f88562979dc54c50a7aa3a5e6e3e91a745e6b2c1c135cba621e62c09b39ec"
-        },
-        {
-          "path": "assets/voxel_game/game-assets/textures/143544829127.png",
-          "sha256": "14354482912775dd6f54b762f13ebadd3d69529a9b77ba9abc97c554f1d9d939"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/163955690b94.png",
@@ -390,20 +382,20 @@
           "sha256": "6649685627d4f31e09ac8537a846c3480c2af18ff19783831cf3fb28a14ec82c"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/66aef4fca2dc.png",
-          "sha256": "66aef4fca2dc0fa80d34eec39398db9f3ff8e6c6f1de5a9172ee1debe74b7329"
-        },
-        {
           "path": "assets/voxel_game/game-assets/textures/6a76fde2d533.png",
           "sha256": "6a76fde2d5335ecac93ee64f228af10384a5062fd581aca2766537b5f9b23090"
+        },
+        {
+          "path": "assets/voxel_game/game-assets/textures/7237ffcaa9fa.png",
+          "sha256": "7237ffcaa9fa78d4571efc9b20a9e56a1bb8e99dcc296e4dc5694b8c90fef8c6"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/79035793300a.png",
           "sha256": "79035793300a5b49dfbb99192cf653d9652d93d03d78e0b3f1cf7062f88f6c9e"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/7e6e1ba56a9c.png",
-          "sha256": "7e6e1ba56a9cf852852557a8f3d9e0ee07c950122d1a9e324265a8b2860109fa"
+          "path": "assets/voxel_game/game-assets/textures/7960b4718b78.png",
+          "sha256": "7960b4718b784ade16c8d90564561bde00478e718d59f064ec9ba2d59ffa2a5d"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/80abfef16ba7.png",
@@ -430,10 +422,6 @@
           "sha256": "895d950049cf713b32d8e6522c2d98c475938c51759aba881d57b69551f87240"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/8a6ad79f5693.png",
-          "sha256": "8a6ad79f5693fa04682f2f7a0c53729ce41b1b8031ef17be912db11f317e05bc"
-        },
-        {
           "path": "assets/voxel_game/game-assets/textures/8ab27261dd8f.png",
           "sha256": "8ab27261dd8f3c7b44c20dcc88dca3259005d816adc5edf892f67aaf4fbc229d"
         },
@@ -444,10 +432,6 @@
         {
           "path": "assets/voxel_game/game-assets/textures/90fc3d7b88ba.png",
           "sha256": "90fc3d7b88ba85880bcc2fa899995966a767eaf75328547594ff4332137f8960"
-        },
-        {
-          "path": "assets/voxel_game/game-assets/textures/9267d14d1003.png",
-          "sha256": "9267d14d1003a026e3003e929edaaadae14fc6ab18b98db08adbbc6de23c7ea0"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/94ea6263a2b3.png",
@@ -474,8 +458,20 @@
           "sha256": "9f34f0d3183e3acbc3eb8480148718b8f5768c1690aba3f0eac54234ff1a1cf5"
         },
         {
+          "path": "assets/voxel_game/game-assets/textures/a285f46d5c95.png",
+          "sha256": "a285f46d5c95716818c8e5680d77738c76cdf239af8ba4cd3c05a5690893b672"
+        },
+        {
           "path": "assets/voxel_game/game-assets/textures/a370ac8ee9e0.png",
           "sha256": "a370ac8ee9e079ceca08ed4c51015ace8111593cc89e8fc44f585de483057fe5"
+        },
+        {
+          "path": "assets/voxel_game/game-assets/textures/a66230ea138e.png",
+          "sha256": "a66230ea138e595ddfa292df56ece496f3ec2369b8fa35d2b8092a2e2ec0b16a"
+        },
+        {
+          "path": "assets/voxel_game/game-assets/textures/a8f3fe2cbb81.png",
+          "sha256": "a8f3fe2cbb81a62d86c7a1c0c68cd076f8e447ad292d75d0ef242abfa9a9328e"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/aa59492420af.png",
@@ -490,12 +486,12 @@
           "sha256": "ab6eafe7f266082a66871cd56f9bd000966d0c7f1b3a82f17ebafd553ac30c7a"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/b63df22bbddd.png",
-          "sha256": "b63df22bbddd3c5c4fc845b3dec4087544f3f46e8959784ee2c0dbac2f51b733"
+          "path": "assets/voxel_game/game-assets/textures/b60c88e2288c.png",
+          "sha256": "b60c88e2288cf14618c74de91c1e067b8d0e48a63aef77029211d94dfd450a4c"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/bbad119dea72.png",
-          "sha256": "bbad119dea72c3041f977e1e1c0610348d3574e6ee10f29727a15d893a106c21"
+          "path": "assets/voxel_game/game-assets/textures/b63df22bbddd.png",
+          "sha256": "b63df22bbddd3c5c4fc845b3dec4087544f3f46e8959784ee2c0dbac2f51b733"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/bd85af6182ab.png",
@@ -506,8 +502,8 @@
           "sha256": "c02763cd95cdafcf9099a519ba62cf9102c9395e817fccbb3e7a24b4cf079f49"
         },
         {
-          "path": "assets/voxel_game/game-assets/textures/cb4dfbca3657.png",
-          "sha256": "cb4dfbca365717eb63d942d699e765c8050dbd181a85dfb329508006ed8cce1d"
+          "path": "assets/voxel_game/game-assets/textures/cd4f67b00f9f.png",
+          "sha256": "cd4f67b00f9f6cfba3cf61888dd63b069621d1cf0f7d23c064260058a7fb65e0"
         },
         {
           "path": "assets/voxel_game/game-assets/textures/cdc27c0bc41c.png",
@@ -558,6 +554,10 @@
           "sha256": "eedee0a6f4bc74365a42f1fde49788e554ac10969e295ba9f4cba04ad5ccc3db"
         },
         {
+          "path": "assets/voxel_game/game-assets/textures/fbabb5ad7a3b.png",
+          "sha256": "fbabb5ad7a3b6c3f90acb02396e5ecdad3ef0d94b8ac810e428acc3364f05755"
+        },
+        {
           "path": "assets/voxel_game/game-assets/textures/fbb3353b56ae.png",
           "sha256": "fbb3353b56aec7cc5008ea0f1fdfa0674a0fc612eb541099add758500da2a451"
         },
@@ -567,11 +567,11 @@
         },
         {
           "path": "assets/voxel_game/voxel_game.zip",
-          "sha256": "72358b786dfc27d6eaf530cb8ed90209a23aee4bb1b848dcf3bc3d6317393df7"
+          "sha256": "c27be691d1b9cc8a6e262591548d73ce0f5370971a0d8916fe9932b673262e5e"
         },
         {
           "path": "catalog.json",
-          "sha256": "0ad13a076ebad163f76697e3d6620ddbb9686e3332256a5e5be3520c7474afd2"
+          "sha256": "5afce1797021497c57e2fa6986112ab23e823ce103244d90fb50196e698fef3a"
         }
       ]
     }

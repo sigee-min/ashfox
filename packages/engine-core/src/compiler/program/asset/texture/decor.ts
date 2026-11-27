@@ -30,10 +30,12 @@ const onBorder = (
   width: number,
   edges: BorderEdges,
 ): boolean => {
-  const left = x < width;
-  const right = x >= w - width;
-  const top = y < width;
-  const bottom = y >= h - width;
+  const allowSides = w > width * 2;
+  const allowCaps = edges === 'all' ? h > width * 2 : h > width;
+  const left = allowSides && x < width;
+  const right = allowSides && x >= w - width;
+  const top = allowCaps && y < width;
+  const bottom = allowCaps && y >= h - width;
   if (edges === 'top') return top;
   if (edges === 'bottom') return bottom;
   if (edges === 'sides') return left || right;
@@ -84,6 +86,15 @@ const readBorderEdges = (
   );
   return null;
 };
+
+const isHorizontalCap = (region: TextureRegion): boolean =>
+  region.direction === 'up' || region.direction === 'down';
+
+const shouldSkipBorderRegion = (
+  region: TextureRegion,
+  edges: BorderEdges,
+  boxChartScope: boolean,
+): boolean => boxChartScope && isHorizontalCap(region) && edges !== 'all';
 
 const paintBorderRegion = (
   grid: PaintGrid,
@@ -139,7 +150,12 @@ export const applyBorderPattern = (
   const width = readTexelInt(entries.get('width'), 1, 1, 16, context, report, 'Border width');
   const edges = readBorderEdges(entries.get('edges'), report);
   if (id === null || width === null || edges === null) return false;
-  for (const region of regions) paintBorderRegion(grid, region, id, width, edges);
+  const boxChartScope = regions.length > 1;
+  for (const region of regions) {
+    if (!shouldSkipBorderRegion(region, edges, boxChartScope)) {
+      paintBorderRegion(grid, region, id, width, edges);
+    }
+  }
   return true;
 };
 

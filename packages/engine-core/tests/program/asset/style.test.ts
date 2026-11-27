@@ -7,8 +7,8 @@ import { compileAssetWorkspaceEntry } from '../../../src/compiler/program/asset/
 // Approved Lv4 Hytale showroom rebuild: articulated anatomy, painterly surfaces, and three clips per creature.
 // Hashes cover canonical geometry, all texture recipe/raster data, and all authored animation channels.
 const baseline = {
-  red_fox: 'sha256:432ab0f8da5002c69e90f97f64036f12c57407f12e69172c65927cd830762134',
-  goblin_raider: 'sha256:e030ba57f27e347758d7cbeb86be94c57ad6b3192ceca236176eee01e1b9ebf3',
+  red_fox: 'sha256:2e4c29c7d457b8c43a7ab10abc1277323c5640278cfa216e8da3aa9e2e6ae80c',
+  goblin_raider: 'sha256:f84f5a6dedde48d568039dad9b97148261b16305243245fc8c7554cd65fcfb88',
 };
 const source = readFileSync(
   resolve(__dirname, '../../../../../assets/workspaces/shared-creatures.ashfoxworkspace'),

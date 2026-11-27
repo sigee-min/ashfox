@@ -1,4 +1,5 @@
 export { projectToThreeScene } from './projection';
+export { buildStandardMaterial, type TextureResource } from './sceneMaterials';
 export {
   mountDevViewer,
   type DevDiagnostic,

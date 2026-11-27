@@ -107,7 +107,7 @@ const createStoredTextureMap = (
     configureTextureMap(map, texture),
   );
 
-interface TextureResource {
+export interface TextureResource {
   texture: TextureAsset;
   map: THREE.Texture | null;
   mrMap: THREE.Texture | null;
@@ -166,22 +166,35 @@ const buildUnlitMaterial = (
     toneMapped: false,
   });
 
-const buildStandardMaterial = (resource: TextureResource, emission: number): THREE.Material => {
+const materialFlags = (texture: TextureAsset) => {
   const additive =
-    resource.texture.renderMode === 'additive' ||
-    resource.texture.metadata?.ashfoxBlendMode === 'additive';
-  const unlit = additive || resource.texture.metadata?.ashfoxUnlit === true;
-  const softAlpha = resource.texture.raster?.alphaMode === 'soft';
-  const transparent = additive || softAlpha || resource.texture.raster?.backgroundAlpha === 0;
+    texture.renderMode === 'additive' || texture.metadata?.ashfoxBlendMode === 'additive';
+  const unlit = additive || texture.metadata?.ashfoxUnlit === true;
+  const softAlpha = texture.raster?.alphaMode === 'soft';
+  const binaryCutout = !additive && !softAlpha && texture.raster?.backgroundAlpha === 0;
+  return {
+    additive,
+    unlit,
+    transparent: additive || softAlpha,
+    depthWrite: !additive && !softAlpha,
+    alphaTest: binaryCutout ? 0.5 : 0,
+    side: texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide,
+  };
+};
+
+export const buildStandardMaterial = (
+  resource: TextureResource,
+  emission: number,
+): THREE.Material => {
+  const flags = materialFlags(resource.texture);
   const baseColor = resource.map ? '#ffffff' : previewColor(resource.texture);
-  const side = resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide;
-  if (unlit) {
+  if (flags.unlit) {
     return buildUnlitMaterial(
       baseColor,
       resource.map,
-      additive,
+      flags.additive,
       resource.texture.metadata?.ashfoxBlendMode === 'premul',
-      side,
+      flags.side,
     );
   }
   const pbr = resource.texture.pbr;
@@ -189,10 +202,11 @@ const buildStandardMaterial = (resource: TextureResource, emission: number): THR
   return new THREE.MeshStandardMaterial({
     color: baseColor,
     map: resource.map,
-    transparent,
-    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-    depthWrite: !additive && !softAlpha && resource.texture.raster?.backgroundAlpha !== 0,
-    side,
+    alphaTest: flags.alphaTest,
+    transparent: flags.transparent,
+    blending: flags.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    depthWrite: flags.depthWrite,
+    side: flags.side,
     roughness: hasMrMap ? 1.0 : (pbr?.roughness ?? 0.88),
     metalness: hasMrMap ? 1.0 : (pbr?.metallic ?? 0.0),
     roughnessMap: resource.mrMap,
