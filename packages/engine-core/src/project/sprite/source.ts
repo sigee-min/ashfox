@@ -67,6 +67,8 @@ const PIXEL_KEYS = new Set([
   'from',
   'to',
   'canvas',
+  'slice',
+  'feather',
   'axis',
   'x',
   'y',

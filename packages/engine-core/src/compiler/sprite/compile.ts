@@ -93,6 +93,7 @@ export const compileSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Spr
     const product: SpriteProduct = Object.freeze({
       id: doc.item.id,
       profile: doc.item.profile,
+      ...(doc.item.slice ? { nineSlice: doc.item.slice } : {}),
       ...final,
       png,
       stages: Object.freeze({

@@ -18,17 +18,17 @@ import {
   type SpriteAuditReport,
 } from './contract';
 import { analyzeSpriteRaster, type SpriteRasterStats } from './stats';
+import { evaluateProfileGates, isCoverageValid, specialSilhouetteMetrics } from './profiles';
 
 const evaluateGates = (
   profile: SpriteProfile,
+  sprite: SpriteAuditInput,
   s: SpriteRasterStats,
 ): readonly SpriteAuditGateResult[] => {
   const isTile = profile === 'tile';
-  const coverageOk = isTile
-    ? s.opaqueRatio >= 0.99
-    : s.opaqueRatio >= 0.14 && s.opaqueRatio <= 0.96;
+  const coverageOk = isCoverageValid(profile, s.opaqueRatio);
   const crushOk = s.darkCrushRate <= 0.14;
-  const strayOk = isTile || s.strayPixelCount <= 2;
+  const strayOk = isTile || s.strayPixelCount <= (profile === 'decal' ? 4 : 2);
   const seamOk = !isTile || s.wrapSeamJump <= 0.08;
   const noiseOk = s.isolatedNoiseRate <= 0.28 && s.checkerRate <= 0.22;
   return [
@@ -38,7 +38,9 @@ const evaluateGates = (
       message: coverageOk
         ? `Canvas coverage ${(s.opaqueRatio * 100).toFixed(1)}% fits ${profile}.`
         : `Canvas coverage ${(s.opaqueRatio * 100).toFixed(1)}% outside ${profile} bounds.`,
-      fix: isTile ? 'Fill 100% of tile canvas.' : 'Keep item silhouette within 14%–96% of canvas.',
+      fix: isTile
+        ? 'Fill 100% of tile canvas.'
+        : `Keep silhouette within ${profile} canvas bounds.`,
     },
     {
       id: 'no_crushed_blacks',
@@ -72,6 +74,7 @@ const evaluateGates = (
         : `Excessive 1px noise (${(s.isolatedNoiseRate * 100).toFixed(1)}%) or checker (${(s.checkerRate * 100).toFixed(1)}%).`,
       fix: 'Replace single-pixel confetti with clustered/directional grain and coherent shading.',
     },
+    ...evaluateProfileGates(profile, sprite, s),
   ];
 };
 
@@ -158,7 +161,8 @@ const evaluateSilhouettePillar = (
   readonly deductions: readonly SpriteAuditDeduction[];
 } => {
   const isTile = profile === 'tile';
-  const metrics = silhouetteMetrics(isTile, sprite, s);
+  const metrics =
+    specialSilhouetteMetrics(profile, sprite, s) ?? silhouetteMetrics(isTile, sprite, s);
   const score = round2(metrics.reduce((sum, m) => sum + m.score, 0));
   return {
     pillar: {
@@ -176,6 +180,14 @@ const evaluateSilhouettePillar = (
   };
 };
 
+const computeHierarchyRatio = (sprite: SpriteAuditInput, s: SpriteRasterStats): number => {
+  if (sprite.profile === 'tile') return ramp(s.lumP90 - s.lumP10, 0.08, 0.3);
+  if (sprite.profile === 'ui_9slice' || sprite.profile === 'crosshair') {
+    return 0.55 * ramp(s.lumP90 - s.lumP10, 0.12, 0.42) + 0.45 * ramp(s.lumP90, 0.4, 0.78);
+  }
+  return 0.6 * ramp(s.topBottomContrast, 0.01, 0.12) + 0.4 * ramp(s.lumP90, 0.35, 0.72);
+};
+
 const evaluateColorPillar = (
   sprite: SpriteAuditInput,
   s: SpriteRasterStats,
@@ -184,10 +196,7 @@ const evaluateColorPillar = (
   readonly deductions: readonly SpriteAuditDeduction[];
 } => {
   const lumRatio = ramp(s.lumRange, 0.14, 0.48) * (1 - 0.8 * ramp(s.darkCrushRate, 0.04, 0.18));
-  const hierarchyRatio =
-    sprite.profile === 'tile'
-      ? ramp(s.lumP90 - s.lumP10, 0.08, 0.3)
-      : 0.6 * ramp(s.topBottomContrast, 0.01, 0.12) + 0.4 * ramp(s.lumP90, 0.35, 0.72);
+  const hierarchyRatio = computeHierarchyRatio(sprite, s);
   const hueRatio =
     0.55 * ramp(s.hueShiftDegrees, 4, 28) + 0.45 * ramp(sprite.telemetry.materialCount, 1, 3);
   const economyRatio = ramp(s.uniqueColors, 4, 10) * (1 - 0.6 * ramp(s.uniqueColors, 26, 48));
@@ -315,7 +324,7 @@ export const evaluateSpriteQuality = (
   const profileSource = options.profile !== undefined ? 'override' : 'authored';
   const threshold = options.threshold ?? DEFAULT_SPRITE_THRESHOLD;
   const stats = analyzeSpriteRaster(sprite.raster);
-  const hardGates = evaluateGates(profile, stats);
+  const hardGates = evaluateGates(profile, sprite, stats);
   const sil = evaluateSilhouettePillar(profile, sprite, stats);
   const col = evaluateColorPillar(sprite, stats);
   const surf = evaluateSurfacePillar(sprite, stats);

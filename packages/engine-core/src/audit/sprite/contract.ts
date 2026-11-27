@@ -1,6 +1,6 @@
 import { DEFAULT_AUDIT_THRESHOLD } from '@ashfox/internal-contracts';
 import type { SpriteAuthoringTelemetry } from '../../compiler/sprite/contract';
-import type { SpriteProfile } from '../../project/sprite/contract';
+import type { SpriteNineSlice, SpriteProfile } from '../../project/sprite/contract';
 import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
 import type { AuditProfileSource, AuditSubmetric, QualityGrade } from '../contract';
 
@@ -11,7 +11,12 @@ export type SpriteGateId =
   | 'no_crushed_blacks'
   | 'no_stray_pixels'
   | 'tile_seamless_wrap'
-  | 'anti_raw_noise';
+  | 'anti_raw_noise'
+  | 'nine_slice_margins'
+  | 'crosshair_symmetry'
+  | 'hud_bar_separation'
+  | 'decal_soft_alpha'
+  | 'decal_no_border_clip';
 
 export interface SpriteAuditGateResult {
   readonly id: SpriteGateId;
@@ -38,6 +43,7 @@ export interface SpriteAuditDeduction {
 
 export interface SpriteAuditInput {
   readonly profile: SpriteProfile;
+  readonly nineSlice?: SpriteNineSlice;
   readonly raster: CanonicalTextureRaster;
   readonly telemetry: SpriteAuthoringTelemetry;
 }

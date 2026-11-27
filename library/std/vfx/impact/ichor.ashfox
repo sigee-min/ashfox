@@ -1,0 +1,88 @@
+ashfox 1
+module ichor {
+  params {
+    scale = 1;
+    count = 26;
+    duration = 0.58s;
+    seed = 193;
+  }
+
+  export palette CrimsonBlood {
+    core = #ffebee;
+    mid = #d9384a;
+    edge = #731622;
+    smoke = #36181e;
+  }
+
+  export palette ZombieIchor {
+    core = #efffdb;
+    mid = #6ed145;
+    edge = #2b6e22;
+    smoke = #21361f;
+  }
+
+  export element splash_arc : slash_arc {
+    at = 0s..(duration * 0.45);
+    blend = premul;
+    radius = (2u * scale)..(9u * scale);
+    arc = -60deg..60deg;
+    crossed = true;
+    color = mid;
+    texture slash_streak { bristles = 70%; seed = seed; posterize = 4; }
+    dissolve radial_noise { frames = 6; edge_glow = core; seed = seed; }
+    scale = 0.4 -> 1.15 ease_out -> 0;
+    alpha = 0.95 -> 0.5 -> 0;
+  }
+
+  export emitter droplets : voxel_burst {
+    at = 0s..(duration * 0.4);
+    seed = seed;
+    count = count;
+    shape = cone(48deg, 2u);
+    particle = shard;
+    speed = 14u..28u;
+    life = 0.18s..0.34s;
+    gravity = -38u;
+    drag = 1.4;
+    ground { y = 0u; bounce = 20%; friction = 85%; }
+    size_over_life = (1.0u * scale) -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.5;
+    blend = premul;
+  }
+
+  export recipe IchorSplash {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = ZombieIchor;
+    element splash_arc : slash_arc {
+      at = 0s..(duration * 0.45);
+      blend = premul;
+      radius = (2u * scale)..(9u * scale);
+      arc = -60deg..60deg;
+      crossed = true;
+      color = mid;
+      texture slash_streak { bristles = 70%; seed = seed; posterize = 4; }
+      dissolve radial_noise { frames = 6; edge_glow = core; seed = seed; }
+      scale = 0.4 -> 1.15 ease_out -> 0;
+      alpha = 0.95 -> 0.5 -> 0;
+    }
+    emitter droplets : voxel_burst {
+      at = 0s..(duration * 0.4);
+      seed = seed;
+      count = count;
+      shape = cone(48deg, 2u);
+      particle = shard;
+      speed = 14u..28u;
+      life = 0.18s..0.34s;
+      gravity = -38u;
+      drag = 1.4;
+      ground { y = 0u; bounce = 20%; friction = 85%; }
+      size_over_life = (1.0u * scale) -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.5;
+      blend = premul;
+    }
+  }
+}

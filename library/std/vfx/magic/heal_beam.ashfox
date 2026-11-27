@@ -1,0 +1,113 @@
+ashfox 1
+module heal_beam {
+  params {
+    length = 28u;
+    width = 3.2u;
+    duration = 0.8s;
+    seed = 211;
+  }
+
+  export palette VitalGreen {
+    core = #ebffef;
+    mid = #59e388;
+    edge = #1f7d47;
+    smoke = #1b3328;
+  }
+
+  export palette SolarGrace {
+    core = #fffbe6;
+    mid = #f2cf5c;
+    edge = #9e6b1c;
+    smoke = #362e24;
+  }
+
+  export element beam_core : beam {
+    at = 0s..(duration * 0.9);
+    blend = additive;
+    start = (0u, 0u, 0u);
+    end = (0u, 0u, length);
+    width = width;
+    style = column;
+    seed = seed;
+    color = core;
+    texture slash_streak { bristles = 40%; seed = seed; posterize = 4; }
+    dissolve directional_wipe { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.5 -> 1.15 ease_out -> 0;
+    alpha = 0.35 -> 1.0 -> 0;
+  }
+
+  export element halo_ring : ring {
+    at = 0.05s..(duration * 0.85);
+    blend = additive;
+    radius = 2u..7u;
+    segments = 16;
+    color = mid;
+    spin = 180deg;
+    texture ring_wave { rings = 3; seed = seed + 3; }
+    scale = 0.4 -> 1.1 -> 0;
+    alpha = 0.85 -> 0.5 -> 0;
+  }
+
+  export emitter motes : voxel_burst {
+    at = 0.04s..(duration * 0.72);
+    seed = seed;
+    count = 20;
+    shape = sphere(4u);
+    particle = cross_card;
+    speed = 5u..12u;
+    life = 0.2s..0.38s;
+    gravity = 10u;
+    drag = 2.0;
+    vortex { axis = (0, 0, 1); center = (0u, 0u, length * 0.5); strength = 6; }
+    size_over_life = 0.9u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe HealBeam {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = VitalGreen;
+    element beam_core : beam {
+      at = 0s..(duration * 0.9);
+      blend = additive;
+      start = (0u, 0u, 0u);
+      end = (0u, 0u, length);
+      width = width;
+      style = column;
+      seed = seed;
+      color = core;
+      texture slash_streak { bristles = 40%; seed = seed; posterize = 4; }
+      dissolve directional_wipe { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.5 -> 1.15 ease_out -> 0;
+      alpha = 0.35 -> 1.0 -> 0;
+    }
+    element halo_ring : ring {
+      at = 0.05s..(duration * 0.85);
+      blend = additive;
+      radius = 2u..7u;
+      segments = 16;
+      color = mid;
+      spin = 180deg;
+      texture ring_wave { rings = 3; seed = seed + 3; }
+      scale = 0.4 -> 1.1 -> 0;
+      alpha = 0.85 -> 0.5 -> 0;
+    }
+    emitter motes : voxel_burst {
+      at = 0.04s..(duration * 0.72);
+      seed = seed;
+      count = 20;
+      shape = sphere(4u);
+      particle = cross_card;
+      speed = 5u..12u;
+      life = 0.2s..0.38s;
+      gravity = 10u;
+      drag = 2.0;
+      vortex { axis = (0, 0, 1); center = (0u, 0u, length * 0.5); strength = 6; }
+      size_over_life = 0.9u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

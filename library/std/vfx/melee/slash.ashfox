@@ -1,5 +1,11 @@
 ashfox 1
 module slash {
+  params {
+    radius = 18u;
+    duration = 0.6s;
+    seed = 491;
+  }
+
   export palette SteelArc {
     core = #ffffff;
     mid = #70c2ff;
@@ -19,5 +25,72 @@ module slash {
     mid = #4ed9b8;
     edge = #236e73;
     smoke = #1f2d38;
+  }
+
+  export element slash_arc : slash_arc {
+    at = 0.04s..(duration * 0.72);
+    blend = additive;
+    radius = 7u..radius;
+    arc = -85deg..105deg;
+    pitch = 16deg;
+    crossed = true;
+    color = core;
+    texture slash_streak { posterize = 4; bristles = 60%; seed = seed; }
+    dissolve directional_wipe { frames = 9; edge_glow = core; seed = seed; }
+    scale = 0.7 -> 1.15 ease_out -> 0;
+    alpha = 0.4 -> 1.0 snap -> 0;
+  }
+
+  export emitter sparks : voxel_burst {
+    at = 0.08s..(duration * 0.68);
+    seed = seed;
+    count = 24;
+    shape = cone(55deg, 3u);
+    particle = shard;
+    speed = 18u..32u;
+    life = 0.2s..0.4s;
+    gravity = -28u;
+    drag = 1.4;
+    ground { y = 0u; bounce = 45%; friction = 70%; }
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.4;
+    blend = additive;
+  }
+
+  export recipe MeleeSlash {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = SteelArc;
+    element slash_arc : slash_arc {
+      at = 0.04s..(duration * 0.72);
+      blend = additive;
+      radius = 7u..radius;
+      arc = -85deg..105deg;
+      pitch = 16deg;
+      crossed = true;
+      color = core;
+      texture slash_streak { posterize = 4; bristles = 60%; seed = seed; }
+      dissolve directional_wipe { frames = 9; edge_glow = core; seed = seed; }
+      scale = 0.7 -> 1.15 ease_out -> 0;
+      alpha = 0.4 -> 1.0 snap -> 0;
+    }
+    emitter sparks : voxel_burst {
+      at = 0.08s..(duration * 0.68);
+      seed = seed;
+      count = 24;
+      shape = cone(55deg, 3u);
+      particle = shard;
+      speed = 18u..32u;
+      life = 0.2s..0.4s;
+      gravity = -28u;
+      drag = 1.4;
+      ground { y = 0u; bounce = 45%; friction = 70%; }
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.4;
+      blend = additive;
+    }
   }
 }

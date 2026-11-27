@@ -1,0 +1,88 @@
+ashfox 1
+module flashlight_cone {
+  params {
+    radius = 8u;
+    length = 26u;
+    duration = 1.0s;
+    seed = 401;
+  }
+
+  export palette TacticalBeam {
+    core = #fffef0;
+    mid = #e3c356;
+    edge = #7a6226;
+    smoke = #363226;
+  }
+
+  export palette HazardBeacon {
+    core = #fff2eb;
+    mid = #ff884d;
+    edge = #a83c19;
+    smoke = #3b241f;
+  }
+
+  export element light_cone : dome {
+    at = 0s..duration;
+    blend = additive;
+    shape = cone;
+    radius = radius;
+    height = length;
+    subdiv = 1;
+    color = core;
+    rotation = (90deg, 0deg, 0deg);
+    texture radial_flare { spikes = 4; seed = seed; }
+    scale = 0.98 -> 1.02 -> 0.98;
+    alpha = 0.32 -> 0.45 -> 0.32;
+  }
+
+  export emitter dust_motes : voxel_burst {
+    at = 0.04s..(duration * 0.75);
+    seed = seed;
+    count = 16;
+    shape = cone(22deg, 2u);
+    particle = cross_card;
+    speed = 6u..14u;
+    life = 0.22s..0.4s;
+    gravity = 0.5u;
+    drag = 2.4;
+    turbulence = curl(1.1, 3u);
+    size_over_life = 0.7u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe FlashlightCone {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = TacticalBeam;
+    element light_cone : dome {
+      at = 0s..duration;
+      blend = additive;
+      shape = cone;
+      radius = radius;
+      height = length;
+      subdiv = 1;
+      color = core;
+      rotation = (90deg, 0deg, 0deg);
+      texture radial_flare { spikes = 4; seed = seed; }
+      scale = 0.98 -> 1.02 -> 0.98;
+      alpha = 0.32 -> 0.45 -> 0.32;
+    }
+    emitter dust_motes : voxel_burst {
+      at = 0.04s..(duration * 0.75);
+      seed = seed;
+      count = 16;
+      shape = cone(22deg, 2u);
+      particle = cross_card;
+      speed = 6u..14u;
+      life = 0.22s..0.4s;
+      gravity = 0.5u;
+      drag = 2.4;
+      turbulence = curl(1.1, 3u);
+      size_over_life = 0.7u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

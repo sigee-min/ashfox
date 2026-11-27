@@ -1,0 +1,118 @@
+ashfox 1
+module portal_gate {
+  params {
+    radius = 14u;
+    duration = 1.2s;
+    seed = 277;
+  }
+
+  export palette VoidGate {
+    core = #ebffff;
+    mid = #52ccf5;
+    edge = #2b4fa8;
+    smoke = #1d223b;
+  }
+
+  export palette NetherRift {
+    core = #fae8ff;
+    mid = #d95ce8;
+    edge = #70219c;
+    smoke = #2b1838;
+  }
+
+  export element gate_torus : dome {
+    at = 0s..duration;
+    blend = additive;
+    shape = torus;
+    radius = radius;
+    inner_radius = radius * 0.7;
+    subdiv = 1;
+    color = mid;
+    rotation = (90deg, 0deg, 0deg);
+    spin = 360deg;
+    texture magic_circle { runes = 10; rings = 2; seed = seed; }
+    scale = 0.96 -> 1.04 -> 0.96;
+    alpha = 0.72 -> 0.96 -> 0.72;
+  }
+
+  export element event_horizon : ring {
+    at = 0s..duration;
+    blend = additive;
+    radius = (radius * 0.1)..(radius * 0.72);
+    segments = 20;
+    ripple_amp = 0.35;
+    ripple_freq = 4;
+    color = core;
+    rotation = (90deg, 0deg, 0deg);
+    spin = -180deg;
+    texture ring_wave { rings = 3; seed = seed + 5; }
+    scale = 0.9 -> 1.05 -> 0.9;
+    alpha = 0.55 -> 0.9 -> 0.55;
+  }
+
+  export emitter rift_wisps : voxel_burst {
+    at = 0.05s..(duration * 0.8);
+    seed = seed;
+    count = 20;
+    shape = ring(radius * 0.8);
+    particle = cross_card;
+    speed = 4u..9u;
+    life = 0.25s..0.45s;
+    gravity = 0u;
+    drag = 2.0;
+    vortex { axis = (0, 0, 1); center = (0u, 0u, 0u); strength = 6; }
+    size_over_life = 0.9u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe PortalGate {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = VoidGate;
+    element gate_torus : dome {
+      at = 0s..duration;
+      blend = additive;
+      shape = torus;
+      radius = radius;
+      inner_radius = radius * 0.7;
+      subdiv = 1;
+      color = mid;
+      rotation = (90deg, 0deg, 0deg);
+      spin = 360deg;
+      texture magic_circle { runes = 10; rings = 2; seed = seed; }
+      scale = 0.96 -> 1.04 -> 0.96;
+      alpha = 0.72 -> 0.96 -> 0.72;
+    }
+    element event_horizon : ring {
+      at = 0s..duration;
+      blend = additive;
+      radius = (radius * 0.1)..(radius * 0.72);
+      segments = 20;
+      ripple_amp = 0.35;
+      ripple_freq = 4;
+      color = core;
+      rotation = (90deg, 0deg, 0deg);
+      spin = -180deg;
+      texture ring_wave { rings = 3; seed = seed + 5; }
+      scale = 0.9 -> 1.05 -> 0.9;
+      alpha = 0.55 -> 0.9 -> 0.55;
+    }
+    emitter rift_wisps : voxel_burst {
+      at = 0.05s..(duration * 0.8);
+      seed = seed;
+      count = 20;
+      shape = ring(radius * 0.8);
+      particle = cross_card;
+      speed = 4u..9u;
+      life = 0.25s..0.45s;
+      gravity = 0u;
+      drag = 2.0;
+      vortex { axis = (0, 0, 1); center = (0u, 0u, 0u); strength = 6; }
+      size_over_life = 0.9u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

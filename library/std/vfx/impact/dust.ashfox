@@ -1,0 +1,88 @@
+ashfox 1
+module dust {
+  params {
+    radius = 10u;
+    count = 20;
+    duration = 0.75s;
+    seed = 173;
+  }
+
+  export palette DesertDust {
+    core = #fff6e0;
+    mid = #d1a977;
+    edge = #7a5c3d;
+    smoke = #3d332a;
+  }
+
+  export palette AshPlume {
+    core = #f2f5fa;
+    mid = #8e9bb0;
+    edge = #4b5463;
+    smoke = #2d323b;
+  }
+
+  export element dust_ring : ring {
+    at = 0s..(duration * 0.72);
+    blend = blend;
+    radius = (radius * 0.2)..radius;
+    segments = 20;
+    ripple_amp = 0.35;
+    ripple_freq = 5;
+    color = mid;
+    texture stylized_smoke { curl_scale = 2.4; seed = seed; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.35 -> 1.15 ease_out -> 0;
+    alpha = 0.85 -> 0.4 -> 0;
+  }
+
+  export emitter dust_puffs : voxel_burst {
+    at = 0s..(duration * 0.45);
+    seed = seed;
+    count = count;
+    shape = ring(radius * 0.4);
+    particle = puff;
+    speed = 6u..14u;
+    life = 0.28s..0.48s;
+    gravity = 4u;
+    drag = 2.8;
+    turbulence = curl(1.4, 4u);
+    size_over_life = 0.8u -> 2.6u ease_out -> 0u;
+    color_over_life = core -> mid -> smoke;
+    blend = blend;
+  }
+
+  export recipe DustBillow {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = DesertDust;
+    element dust_ring : ring {
+      at = 0s..(duration * 0.72);
+      blend = blend;
+      radius = (radius * 0.2)..radius;
+      segments = 20;
+      ripple_amp = 0.35;
+      ripple_freq = 5;
+      color = mid;
+      texture stylized_smoke { curl_scale = 2.4; seed = seed; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.35 -> 1.15 ease_out -> 0;
+      alpha = 0.85 -> 0.4 -> 0;
+    }
+    emitter dust_puffs : voxel_burst {
+      at = 0s..(duration * 0.45);
+      seed = seed;
+      count = count;
+      shape = ring(radius * 0.4);
+      particle = puff;
+      speed = 6u..14u;
+      life = 0.28s..0.48s;
+      gravity = 4u;
+      drag = 2.8;
+      turbulence = curl(1.4, 4u);
+      size_over_life = 0.8u -> 2.6u ease_out -> 0u;
+      color_over_life = core -> mid -> smoke;
+      blend = blend;
+    }
+  }
+}

@@ -1,5 +1,11 @@
 ashfox 1
 module aura {
+  params {
+    radius = 12u;
+    duration = 1.0s;
+    seed = 409;
+  }
+
   export palette HealingMist {
     core = #e8ffed;
     mid = #6ee398;
@@ -19,5 +25,66 @@ module aura {
     mid = #f0bf4d;
     edge = #9e651c;
     smoke = #382e24;
+  }
+
+  export element aura_halo : ring {
+    at = 0s..duration;
+    blend = additive;
+    radius = (radius * 0.5)..radius;
+    segments = 20;
+    bevel = 0.35;
+    color = mid;
+    spin = 180deg;
+    texture magic_circle { runes = 8; rings = 2; seed = seed; }
+    scale = 0.96 -> 1.04 -> 0.96;
+    alpha = 0.65 -> 0.9 -> 0.65;
+  }
+
+  export emitter rising_wisps : voxel_burst {
+    at = 0s..(duration * 0.78);
+    seed = seed;
+    count = 16;
+    shape = ring(radius * 0.75);
+    particle = cross_card;
+    speed = 5u..10u;
+    life = 0.25s..0.42s;
+    gravity = 10u;
+    drag = 2.2;
+    size_over_life = 0.9u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe HealingAura {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = HealingMist;
+    element aura_halo : ring {
+      at = 0s..duration;
+      blend = additive;
+      radius = (radius * 0.5)..radius;
+      segments = 20;
+      bevel = 0.35;
+      color = mid;
+      spin = 180deg;
+      texture magic_circle { runes = 8; rings = 2; seed = seed; }
+      scale = 0.96 -> 1.04 -> 0.96;
+      alpha = 0.65 -> 0.9 -> 0.65;
+    }
+    emitter rising_wisps : voxel_burst {
+      at = 0s..(duration * 0.78);
+      seed = seed;
+      count = 16;
+      shape = ring(radius * 0.75);
+      particle = cross_card;
+      speed = 5u..10u;
+      life = 0.25s..0.42s;
+      gravity = 10u;
+      drag = 2.2;
+      size_over_life = 0.9u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
   }
 }

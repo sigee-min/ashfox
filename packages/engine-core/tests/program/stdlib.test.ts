@@ -39,7 +39,7 @@ const walkStdDisk = (
 };
 
 const virtualLibs = walkStdDisk(STD_DIR);
-assert.equal(virtualLibs.size, 84, `Expected 84 stdlib modules, got ${virtualLibs.size}`);
+assert.equal(virtualLibs.size, 114, `Expected 114 stdlib modules, got ${virtualLibs.size}`);
 
 // 1. Validate canonical specifiers, pure ashfox 1 headers, zero version suffixes, and "std/*" internal imports.
 for (const [spec, source] of virtualLibs) {
@@ -63,8 +63,8 @@ assert.equal(
 );
 
 // 2. Catalog & resolver APIs.
-assert.equal(listVirtualLibraries(virtualLibs).length, 84);
-assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 9);
+assert.equal(listVirtualLibraries(virtualLibs).length, 114);
+assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 27);
 assert.equal(filterVirtualLibraries(virtualLibs, 'sound/combat').length, 3);
 assert.ok(
   describeVirtualModule('std/sound/foley/footstep', virtualLibs.get('std/sound/foley/footstep')!)
@@ -371,24 +371,24 @@ const vfxCases: readonly [string, string][] = [
   ['std/vfx/ambient/embers', 'HearthEmbers'],
   ['std/vfx/ambient/aura', 'HealingMist'],
 ];
-for (const [spec, palName] of vfxCases)
+for (const [spec, palName] of vfxCases) {
   assertOk(spec, 'fx', 'vfx/fx.ashfox', vfxTemplate(spec, palName));
+}
 
-const soundCases: readonly [string, string][] = [
-  ['std/sound/foley/footstep', 'stone_tap'],
-  ['std/sound/foley/cloth', 'fabric_rustle'],
-  ['std/sound/foley/door', 'timber_knock'],
-  ['std/sound/combat/blade', 'air_slice'],
-  ['std/sound/combat/blunt', 'oak_crush'],
-  ['std/sound/combat/hit', 'flesh_impact'],
-  ['std/sound/ambient/fire', 'hearth_roar'],
-  ['std/sound/ambient/wind', 'deep_gust'],
-  ['std/sound/ambient/room', 'room_bed'],
-  ['std/sound/ui/click', 'crisp_tick'],
-  ['std/sound/ui/chime', 'bell_chime'],
+const soundCases: readonly [string, string, boolean][] = [
+  ['std/sound/foley/footstep', 'stone_tap', false],
+  ['std/sound/foley/cloth', 'fabric_rustle', false],
+  ['std/sound/foley/door', 'timber_knock', false],
+  ['std/sound/combat/blade', 'air_slice', false],
+  ['std/sound/combat/blunt', 'oak_crush', false],
+  ['std/sound/combat/hit', 'flesh_impact', false],
+  ['std/sound/ambient/fire', 'hearth_roar', true],
+  ['std/sound/ambient/wind', 'deep_gust', true],
+  ['std/sound/ambient/room', 'room_bed', true],
+  ['std/sound/ui/click', 'crisp_tick', false],
+  ['std/sound/ui/chime', 'bell_chime', false],
 ];
-for (const [spec, voice] of soundCases) {
-  const amb = spec.includes('/ambient/');
+for (const [spec, voice, amb] of soundCases) {
   assertOk(
     spec,
     'sfx',
