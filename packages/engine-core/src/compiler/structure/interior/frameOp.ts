@@ -12,6 +12,7 @@ import type { StructureRoomMeta } from '../contract';
 import { transformAnchor, transformFacing } from '../frameOps';
 import { applyFrame, applyLinear, type FrameTransform } from '../weathering';
 import { SUBVOXEL_UNITS_PER_BLOCK } from './contract';
+import { resolvePropSize } from './lowerItems';
 
 const ANCHOR_FACING: Readonly<Record<InteriorAnchor, CardinalFacing>> = {
   north: 'south',
@@ -53,19 +54,23 @@ const xformPropAt = (
   f: FrameTransform,
 ): InteriorPropAst['at'] => {
   if (!p.at) return undefined;
-  const size: IntVec2 = p.size ?? [p.length ?? 1, 1];
+  const size = resolvePropSize(p);
   const [rw, rd] = baseFacing === 'east' || baseFacing === 'west' ? [size[1], size[0]] : size;
   const { from } = xformRect([Math.round(p.at[0]), Math.round(p.at[2])], [rw, rd], f);
   return [from[0], p.at[1] + f.offset[1], from[1]];
 };
 
-const xformPropAst = (p: InteriorPropAst, f: FrameTransform): InteriorPropAst => {
-  const baseFacing = p.facing ?? ANCHOR_FACING[p.on ?? 'center'];
+const xformPropAst = (
+  p: InteriorPropAst,
+  f: FrameTransform,
+  fallbackOn: InteriorAnchor = 'center',
+): InteriorPropAst => {
+  const effOn = p.on ?? fallbackOn;
+  const baseFacing = p.facing ?? ANCHOR_FACING[effOn];
   const rotateYaw = f.rotate !== 0 || f.mirrorX;
-  const nextFacing =
-    p.facing !== undefined || (p.at !== undefined && rotateYaw)
-      ? transformFacing(baseFacing, f)
-      : undefined;
+  const needsFacing =
+    p.facing !== undefined || (rotateYaw && (p.at !== undefined || effOn === 'center'));
+  const nextFacing = needsFacing ? transformFacing(baseFacing, f) : undefined;
   const nextAt = xformPropAt(p, baseFacing, f);
   return {
     ...p,
@@ -131,9 +136,10 @@ const xformSubItem = (
   s: InteriorSubItemAst,
   f: FrameTransform,
   room: StructureRoomMeta,
+  fallbackOn: InteriorAnchor = 'center',
 ): InteriorSubItemAst => {
   if (s.item === 'alcove') return { item: 'alcove', spec: xformAlcoveAst(s.spec, f, room) };
-  if (s.item === 'prop') return { item: 'prop', spec: xformPropAst(s.spec, f) };
+  if (s.item === 'prop') return { item: 'prop', spec: xformPropAst(s.spec, f, fallbackOn) };
   return s.spec.facing
     ? { item: 'story', spec: { ...s.spec, facing: transformFacing(s.spec.facing, f) } }
     : s;
@@ -151,12 +157,13 @@ const xformZoneVolumeAst = (
     : swapSize && v.size
       ? { size: [v.size[1], v.size[0]] as IntVec2 }
       : {};
+  const fallbackOn = v.on ?? 'center';
   return {
     ...v,
     ...(v.on ? { on: transformAnchor(v.on, f) } : {}),
     ...sizePatch,
     ...(v.step_facing ? { step_facing: transformFacing(v.step_facing, f) } : {}),
-    nested: v.nested.map((n) => xformSubItem(n, f, room)),
+    nested: v.nested.map((n) => xformSubItem(n, f, room, fallbackOn)),
   };
 };
 
@@ -174,7 +181,7 @@ const xformVolumeAst = (
       ...v,
       on: transformFacing(v.on, f),
       ...(st ? { stair_at: [st[0], st[2]] as IntVec2 } : {}),
-      nested: v.nested.map((n) => xformSubItem(n, f, room)),
+      nested: v.nested.map((n) => xformSubItem(n, f, room, v.on)),
     };
   }
   return xformZoneVolumeAst(v, f, room);
@@ -205,11 +212,14 @@ const xformGroupAst = (
   g: InteriorGroupAst,
   f: FrameTransform,
   room: StructureRoomMeta,
-): InteriorGroupAst => ({
-  ...g,
-  on: g.on.map((a) => transformAnchor(a, f)),
-  items: g.items.map((n) => xformSubItem(n, f, room)),
-});
+): InteriorGroupAst => {
+  const fallbackOn = g.on.length === 1 ? (g.on[0] ?? 'center') : 'north';
+  return {
+    ...g,
+    on: g.on.map((a) => transformAnchor(a, f)),
+    items: g.items.map((n) => xformSubItem(n, f, room, fallbackOn)),
+  };
+};
 
 /** Transforms a deferred InteriorRoomOp by its owning prefab placement frame. */
 export const transformInteriorOpByFrame = (

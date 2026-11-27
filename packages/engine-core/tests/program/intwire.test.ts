@@ -424,6 +424,8 @@ structure placed_host {
           dna { arch = rustic; organic = 0; }
           platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
           mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
+          low_table lt_def { at = (2, 1, 2); facing = east; }
+          chair c_ctr { on = center; }
         }
       }
       facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
@@ -436,13 +438,11 @@ structure placed_host {
   const placedRoom = compileOne('host.ashfox', hostSrc).grid.interiors![0]!;
   const placedDais = placedRoom.ir.boxes.find((b) => b.semantic_tag === 'volume_platform')!;
   const [rb0, rb1] = [placedRoom.input.bounds_from, placedRoom.input.bounds_to];
-  assert.equal(
-    placedDais.from_16[0] >= rb0[0] * 16 &&
-      placedDais.to_16[0] <= rb1[0] * 16 &&
-      placedDais.from_16[2] >= rb0[2] * 16 &&
-      placedDais.to_16[2] <= rb1[2] * 16,
-    true,
-  );
+  assert.ok(placedDais.from_16[0] >= rb0[0] * 16 && placedDais.to_16[0] <= rb1[0] * 16);
+  assert.ok(placedDais.from_16[2] >= rb0[2] * 16 && placedDais.to_16[2] <= rb1[2] * 16);
+  const ltP = placedRoom.input.props?.find((p) => p.id === 'lt_def');
+  const ctrP = placedRoom.input.props?.find((p) => p.id === 'c_ctr');
+  assert.deepEqual([ltP?.at, ctrP?.facing], [[12, 1, 5], 'west']);
   const placedLoft = placedRoom.input.volumes.find((v) => v.kind === 'mezzanine');
   assert.equal(placedLoft?.kind === 'mezzanine' ? placedLoft.on : undefined, 'east');
 
@@ -458,12 +458,14 @@ structure yaw_col {
         cabinet cab_hit { at = (5, 1, 3); size = (1, 1); facing = south; }
         chair c_rot { at = (2, 1, 2); facing = north; rotation_deg = 90; }
         mount m_east { asset = oak; at = (1, 1, 6); size = (3, 1); facing = east; }
+        wall_line { on = [north, south]; chair wl_c {} }
       }
     }
     facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
   }
 }`;
   const yawRoom = compileOne('yaw.ashfox', yawCollisionSrc).grid.interiors![0]!;
+  assert.equal(new Set(yawRoom.ir.boxes.map((b) => b.id)).size, yawRoom.ir.boxes.length);
   const hk = (id: string) => yawRoom.playable_meta.hooks.find((h) => h.id === id)!;
   assert.equal(
     Math.floor(hk('hinge_cab_hit').position[0]) === 5 &&

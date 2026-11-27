@@ -100,7 +100,8 @@ const inferMountSurface = (ast: InteriorPropAst): MountSurface => {
   return 'floor';
 };
 
-const resolvePropSize = (ast: InteriorPropAst): IntVec2 =>
+/** Resolves authored or kind-default XZ dimensions for an interior prop AST. */
+export const resolvePropSize = (ast: InteriorPropAst): IntVec2 =>
   ast.size ?? (ast.length ? [ast.length, 1] : (DEFAULT_PROP_SIZE[ast.kind] ?? [1, 1]));
 
 const facingSize = (size: IntVec2, facing: CardinalFacing): IntVec2 =>
@@ -357,6 +358,26 @@ const lowerAnchoredGroupItem = (
   return 0;
 };
 
+const scopeGroupSubItem = (
+  sub: InteriorSubItemAst,
+  suffix: string,
+  propIds: ReadonlySet<string>,
+): InteriorSubItemAst => {
+  if (sub.item !== 'story') {
+    return sub.item === 'alcove'
+      ? { item: 'alcove', spec: { ...sub.spec, id: `${sub.spec.id}${suffix}` } }
+      : { item: 'prop', spec: { ...sub.spec, id: `${sub.spec.id}${suffix}` } };
+  }
+  const onT =
+    sub.spec.on_target && propIds.has(sub.spec.on_target)
+      ? `${sub.spec.on_target}${suffix}`
+      : sub.spec.on_target;
+  return {
+    item: 'story',
+    spec: { ...sub.spec, id: `${sub.spec.id}${suffix}`, ...(onT ? { on_target: onT } : {}) },
+  };
+};
+
 export const lowerGroupProps = (
   group: InteriorGroupAst,
   room: StructureRoomMeta,
@@ -365,11 +386,14 @@ export const lowerGroupProps = (
   stories: InteriorStoryAst[],
 ): void => {
   const floorY = room.from[1] + 1;
-  for (const anchor of group.on) {
+  const propIds = new Set(group.items.filter((i) => i.item === 'prop').map((i) => i.spec.id));
+  group.on.forEach((anchor, aIdx) => {
+    const suffix = group.on.length > 1 ? `@${anchor}_${aIdx}` : '';
     let cursor = 0;
     for (const sub of group.items) {
+      const scoped = suffix ? scopeGroupSubItem(sub, suffix, propIds) : sub;
       cursor += lowerAnchoredGroupItem(
-        sub,
+        scoped,
         group.kind,
         room,
         anchor,
@@ -380,7 +404,7 @@ export const lowerGroupProps = (
         stories,
       );
     }
-  }
+  });
 };
 
 const OPENING_INWARD_X: Readonly<Record<CardinalFacing, number>> = {
