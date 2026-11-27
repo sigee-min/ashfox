@@ -10,6 +10,7 @@ import type {
   InteriorGroupAst,
   InteriorPropAst,
   InteriorRoomOp,
+  InteriorStoryAst,
   InteriorSubItemAst,
   InteriorVolumeAst,
 } from '../../../project/structure/interiorDef';
@@ -17,7 +18,7 @@ import type { StructureRoomMeta } from '../contract';
 import { transformAnchor, transformFacing } from '../frameOps';
 import { applyFrame, applyLinear, rotatePt, type FrameTransform } from '../weathering';
 import { SUBVOXEL_UNITS_PER_BLOCK } from './contract';
-import { resolvePropSize, wallLineStep } from './lowerItems';
+import { resolvePropSize, scopeGroupSubItem, wallLineStep } from './lowerItems';
 
 const ANCHOR_FACING: Readonly<Record<InteriorAnchor, CardinalFacing>> = {
   north: 'south',
@@ -259,26 +260,39 @@ const unframeRoomBounds = (
   };
 };
 
+interface WallLineOut {
+  readonly props: InteriorPropAst[];
+  readonly stories: InteriorStoryAst[];
+  readonly volumes: InteriorVolumeAst[];
+}
+
 const xformWallLineAnchor = (
   g: InteriorGroupAst,
   anchor: InteriorAnchor,
   aIdx: number,
   f: FrameTransform,
+  room: StructureRoomMeta,
   localRoom: Pick<StructureRoomMeta, 'from' | 'to'>,
-  outProps: InteriorPropAst[],
+  propIds: ReadonlySet<string>,
+  out: WallLineOut,
 ): void => {
   const suffix = g.on.length > 1 ? `@${anchor}_${aIdx}` : '';
   let cursor = 0;
-  for (const sub of g.items) {
-    if (sub.item !== 'prop') continue;
-    const spec = suffix ? { ...sub.spec, id: `${sub.spec.id}${suffix}` } : sub.spec;
-    if (spec.at) {
-      outProps.push(xformPropAst(spec, f, anchor));
+  for (const rawSub of g.items) {
+    const sub = suffix ? scopeGroupSubItem(rawSub, suffix, propIds) : rawSub;
+    if (sub.item !== 'prop') {
+      const xs = xformSubItem(sub, f, room, anchor);
+      if (xs.item === 'story') out.stories.push(xs.spec);
+      else if (xs.item === 'alcove') out.volumes.push(xs.spec);
       continue;
     }
-    const step = wallLineStep(spec, localRoom, anchor, cursor, localRoom.from[1] + 1);
+    if (sub.spec.at) {
+      out.props.push(xformPropAst(sub.spec, f, anchor));
+      continue;
+    }
+    const step = wallLineStep(sub.spec, localRoom, anchor, cursor, localRoom.from[1] + 1);
     cursor += step.advance;
-    outProps.push(xformPropAst({ ...spec, at: step.at, facing: step.facing }, f, anchor));
+    out.props.push(xformPropAst({ ...sub.spec, at: step.at, facing: step.facing }, f, anchor));
   }
 };
 
@@ -286,20 +300,21 @@ const xformWallLineGroups = (
   groups: readonly InteriorGroupAst[],
   f: FrameTransform,
   room: StructureRoomMeta,
-): { readonly groups: readonly InteriorGroupAst[]; readonly props: readonly InteriorPropAst[] } => {
+): { readonly groups: readonly InteriorGroupAst[] } & WallLineOut => {
   const localRoom = unframeRoomBounds(room, f);
-  const outProps: InteriorPropAst[] = [];
+  const out: WallLineOut = { props: [], stories: [], volumes: [] };
   const outGroups: InteriorGroupAst[] = [];
   for (const g of groups) {
     if (g.kind !== 'wall_line') {
       outGroups.push(xformGroupAst(g, f, room));
       continue;
     }
-    const nonProps = g.items.filter((i) => i.item !== 'prop');
-    if (nonProps.length > 0) outGroups.push(xformGroupAst({ ...g, items: nonProps }, f, room));
-    g.on.forEach((anchor, aIdx) => xformWallLineAnchor(g, anchor, aIdx, f, localRoom, outProps));
+    const propIds = new Set(g.items.filter((i) => i.item === 'prop').map((i) => i.spec.id));
+    g.on.forEach((anchor, aIdx) =>
+      xformWallLineAnchor(g, anchor, aIdx, f, room, localRoom, propIds, out),
+    );
   }
-  return { groups: outGroups, props: outProps };
+  return { groups: outGroups, ...out };
 };
 
 /** Transforms a deferred InteriorRoomOp by its owning prefab placement frame. */
@@ -319,11 +334,14 @@ export const transformInteriorOpByFrame = (
   const wl = xformWallLineGroups(op.groups, f, room);
   return {
     ...op,
-    volumes: op.volumes.map((v) => xformVolumeAst(v, f, room)),
+    volumes: [...op.volumes.map((v) => xformVolumeAst(v, f, room)), ...wl.volumes],
     groups: wl.groups,
     props: [...op.props.map((p) => xformPropAst(p, f)), ...wl.props],
     draperies: op.draperies.map((d) => xformDraperyAst(d, f)),
-    stories: op.stories.map((s) => (s.facing ? { ...s, facing: transformFacing(s.facing, f) } : s)),
+    stories: [
+      ...op.stories.map((s) => (s.facing ? { ...s, facing: transformFacing(s.facing, f) } : s)),
+      ...wl.stories,
+    ],
     ...(sun ? { sunShaft: { ...sun, ...(sunDir ? { sun_dir: sunDir } : {}) } } : {}),
   };
 };

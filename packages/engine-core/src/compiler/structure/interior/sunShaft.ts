@@ -8,7 +8,6 @@ import {
   type InteriorOpeningSpan,
   type InteriorPropSpec,
   type InteriorRoomInput,
-  type InteriorStorySpec,
   type InteriorSubVoxelIR,
   type InteriorSunShaftConfig,
   type InteriorSunShaftQuad,
@@ -195,16 +194,16 @@ export const buildSunShaftMeshPrimitives = (
 const buildPaneForOpening = (roomId: string, op: InteriorOpeningSpan): TranslucentWindowPane => {
   const u = SUBVOXEL_UNITS_PER_BLOCK;
   const alongX = op.wall === 'north' || op.wall === 'south';
-  const from16: Vec3 = [
-    alongX ? op.from[0] * u + 1 : op.from[0] * u + 7,
-    op.from[1] * u + 1,
-    alongX ? op.from[2] * u + 7 : op.from[2] * u + 1,
+  const [x0, y0, z0, x1, y1, z1] = [
+    op.from[0] * u,
+    op.from[1] * u,
+    op.from[2] * u,
+    (op.to[0] + 1) * u,
+    (op.to[1] + 1) * u,
+    (op.to[2] + 1) * u,
   ];
-  const to16: Vec3 = [
-    alongX ? (op.to[0] + 1) * u - 1 : op.from[0] * u + 9,
-    (op.to[1] + 1) * u - 1,
-    alongX ? op.from[2] * u + 9 : (op.to[2] + 1) * u - 1,
-  ];
+  const from16: Vec3 = [alongX ? x0 + 1 : x0 + 7, y0 + 1, alongX ? z0 + 7 : z0 + 1];
+  const to16: Vec3 = [alongX ? x1 - 1 : x0 + 9, y1 - 1, alongX ? z0 + 9 : z1 - 1];
   const color = op.stained_glass_color ?? '#9ad6eb';
   return {
     id: `${roomId}_pane_${op.id}`,
@@ -232,18 +231,13 @@ export const generateTranslucentWindowPanes = (
     .filter((op) => op.kind === 'window' || op.kind === 'bay_window')
     .map((op) => buildPaneForOpening(room.room_id, op));
 
+const TIMBER_ARCHS = new Set(['japanese', 'rustic', 'nordic']);
 const resolveAcousticSpace = (room: InteriorRoomInput): AcousticSpace => {
   if (room.kind === 'courtyard') return 'outdoor';
   const area =
     (room.bounds_to[0] - room.bounds_from[0] + 1) * (room.bounds_to[2] - room.bounds_from[2] + 1);
   if (room.style_dna.arch === 'gothic' || room.kind === 'tower') return 'stone_hall';
-  if (
-    room.style_dna.arch === 'japanese' ||
-    room.style_dna.arch === 'rustic' ||
-    room.style_dna.arch === 'nordic'
-  ) {
-    return area <= 20 ? 'small_chamber' : 'timber_room';
-  }
+  if (TIMBER_ARCHS.has(room.style_dna.arch)) return area <= 20 ? 'small_chamber' : 'timber_room';
   return area <= 24 ? 'small_chamber' : 'stone_hall';
 };
 
@@ -265,11 +259,16 @@ const emitSitHooks = (prop: InteriorPropSpec, hooks: PlayableInteriorHook[]): vo
     prop.kind === 'cushion' || prop.kind === 'cushions' ? 4 : prop.kind === 'swivel_chair' ? 9 : 8;
   const tangent = TANGENT_VEC[prop.facing];
   for (let i = 0; i < count; i += 1) {
-    const offset = count === 1 ? 0 : (i - (count - 1) * 0.5) * 0.85;
+    const off = count === 1 ? 0 : (i - (count - 1) * 0.5) * 0.85;
+    const position: Vec3 = [
+      prop.at[0] + tangent[0] * off,
+      prop.at[1],
+      prop.at[2] + tangent[2] * off,
+    ];
     hooks.push({
       kind: 'sit',
       id: `sit_${prop.id}_${i}`,
-      position: [prop.at[0] + tangent[0] * offset, prop.at[1], prop.at[2] + tangent[2] * offset],
+      position,
       facing: prop.facing,
       seat_height_16: seatY,
       prop_id: prop.id,
@@ -289,7 +288,7 @@ const emitDoorHooks = (room: InteriorRoomInput, hooks: PlayableInteriorHook[]): 
     room.style_dna.arch === 'japanese' || room.style_dna.arch === 'scifi' ? 'slide' : 'hinge';
   for (const op of room.openings) {
     if (op.kind !== 'door') continue;
-    const pos: Vec3 = [
+    const position: Vec3 = [
       (op.from[0] + op.to[0] + 1) * 0.5,
       op.from[1],
       (op.from[2] + op.to[2] + 1) * 0.5,
@@ -297,7 +296,7 @@ const emitDoorHooks = (room: InteriorRoomInput, hooks: PlayableInteriorHook[]): 
     hooks.push({
       kind,
       id: `${kind}_${op.id}`,
-      position: pos,
+      position,
       facing: op.wall,
       pivot: doorPivotFor(op),
       travel: kind === 'slide' ? 1 : 90,
@@ -402,31 +401,25 @@ const emitLightToggleHooks = (
 const pushAudio = (
   hooks: PlayableInteriorHook[],
   id: string,
-  cue_kind: InteriorAudioCueKind,
-  position: Vec3,
-  radius: number,
-  gain_db: number,
+  pos: Vec3,
+  [cue_kind, radius, gain_db]: readonly [InteriorAudioCueKind, number, number],
 ): void => {
   hooks.push({
     kind: 'audio_emitter',
     id: `audio_${id}`,
     cue_kind,
     sound_id: `ambient/${cue_kind}`,
-    position,
+    position: pos,
     radius,
     gain_db,
   });
 };
 
-const STORY_AUDIO: Readonly<
-  Partial<Record<InteriorStorySpec['kind'], readonly [InteriorAudioCueKind, number, number]>>
-> = {
+const AUDIO_SPEC: Readonly<Record<string, readonly [InteriorAudioCueKind, number, number]>> = {
   tea_ceremony: ['chime', 7, -13],
   scholar_study: ['clock_tick', 6, -15],
   modern_workspace: ['clock_tick', 6, -15],
   alchemy_brew: ['water_drip', 6, -14],
-};
-const ALCOVE_AUDIO: Readonly<Record<string, readonly [InteriorAudioCueKind, number, number]>> = {
   fireplace: ['hearth_crackle', 8, -8],
   tokonoma: ['chime', 8, -12],
   shrine: ['chime', 8, -12],
@@ -435,8 +428,8 @@ const ALCOVE_AUDIO: Readonly<Record<string, readonly [InteriorAudioCueKind, numb
 
 const emitPropAudioHooks = (room: InteriorRoomInput, hooks: PlayableInteriorHook[]): void => {
   for (const prop of room.props ?? []) {
-    if (prop.kind === 'fireplace') pushAudio(hooks, prop.id, 'fire_loop', prop.at, 9, -6);
-    else if (TECH_KINDS.has(prop.kind)) pushAudio(hooks, prop.id, 'tech_hum', prop.at, 7, -10);
+    if (prop.kind === 'fireplace') pushAudio(hooks, prop.id, prop.at, ['fire_loop', 9, -6]);
+    else if (TECH_KINDS.has(prop.kind)) pushAudio(hooks, prop.id, prop.at, ['tech_hum', 7, -10]);
   }
 };
 
@@ -452,20 +445,18 @@ const emitAudioHooks = (
     (room.bounds_from[2] + room.bounds_to[2] + 1) * 0.5,
   ];
   for (const vol of room.volumes) {
-    const spec = vol.kind === 'alcove' ? ALCOVE_AUDIO[vol.alcove_kind] : undefined;
-    if (spec) pushAudio(hooks, vol.id, spec[0], center, spec[1], spec[2]);
+    const spec = vol.kind === 'alcove' ? AUDIO_SPEC[vol.alcove_kind] : undefined;
+    if (spec) pushAudio(hooks, vol.id, center, spec);
   }
   const u = SUBVOXEL_UNITS_PER_BLOCK;
   for (const s of room.stories ?? []) {
-    const spec = STORY_AUDIO[s.kind];
-    if (spec)
+    const sp = AUDIO_SPEC[s.kind];
+    if (sp)
       pushAudio(
         hooks,
         s.id,
-        spec[0],
         [s.center_xz_16[0] / u, s.surface_y_16 / u, s.center_xz_16[1] / u],
-        spec[1],
-        spec[2],
+        sp,
       );
   }
 };
@@ -484,15 +475,17 @@ export const emitPlayableInteriorMeta = (
   else emitPropAndStoryHooks(room, hooks);
   emitLightToggleHooks(ir, lights, hooks);
   emitAudioHooks(room, hooks, !resolvedHooks);
+  const qualified = hooks.map((h) =>
+    h.kind === 'toggle_light' ? { ...h, light_id: `${room.room_id}:${h.light_id}` } : h,
+  );
   const w = Math.max(1, room.bounds_to[0] - room.bounds_from[0] + 1);
   const d = Math.max(1, room.bounds_to[2] - room.bounds_from[2] + 1);
-  const uniqueXz = new Set<string>();
-  for (const cell of ir.clear_path_cells) uniqueXz.add(`${cell[0]},${cell[2]}`);
+  const uniqueXz = new Set(ir.clear_path_cells.map((c) => `${c[0]},${c[2]}`));
   return {
     schema_version: 1,
     room_id: room.room_id,
     acoustic_space: resolveAcousticSpace(room),
-    hooks,
+    hooks: qualified,
     clear_path_cells: ir.clear_path_cells,
     walkable_ratio: clamp01(uniqueXz.size / Math.max(1, w * d)),
   };

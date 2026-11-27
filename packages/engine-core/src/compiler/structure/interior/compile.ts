@@ -316,6 +316,26 @@ const compileSingleInterior = (
   };
 };
 
+const disambiguateRoomLights = (
+  compiled: CompiledInteriorRoom,
+  occ: number,
+): CompiledInteriorRoom => {
+  if (occ === 0) return compiled;
+  const oldPrefix = `${compiled.room_id}:`;
+  const newPrefix = `${compiled.room_id}_${occ}:`;
+  return {
+    ...compiled,
+    playable_meta: {
+      ...compiled.playable_meta,
+      hooks: compiled.playable_meta.hooks.map((h) =>
+        h.kind === 'toggle_light' && h.light_id.startsWith(oldPrefix)
+          ? { ...h, light_id: `${newPrefix}${h.light_id.slice(oldPrefix.length)}` }
+          : h,
+      ),
+    },
+  };
+};
+
 /** Compiles all declared ashfox 1 interior ops against evaluated rooms & openings. */
 export const compileEvaluatedInteriors = (
   state: EvalState,
@@ -328,6 +348,7 @@ export const compileEvaluatedInteriors = (
   openings: readonly StructureOpeningMeta[],
 ): readonly CompiledInteriorRoom[] => {
   const roomMap = new Map(rooms.map((r) => [r.name, r]));
+  const roomCounts = new Map<string, number>();
   const out: CompiledInteriorRoom[] = [];
   for (const { ownerPath, op, frame } of specs) {
     const targetName = op.room ?? rooms[0]?.name;
@@ -337,7 +358,17 @@ export const compileEvaluatedInteriors = (
     }
     const roomOpenings = openings.filter((o) => o.room === room.name);
     const transformedOp = frame ? transformInteriorOpByFrame(op, frame, room) : op;
-    out.push(compileSingleInterior(state, ownerPath, transformedOp, room, roomOpenings, rooms));
+    const compiled = compileSingleInterior(
+      state,
+      ownerPath,
+      transformedOp,
+      room,
+      roomOpenings,
+      rooms,
+    );
+    const occ = roomCounts.get(compiled.room_id) ?? 0;
+    roomCounts.set(compiled.room_id, occ + 1);
+    out.push(disambiguateRoomLights(compiled, occ));
   }
   return out;
 };

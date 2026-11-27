@@ -355,7 +355,7 @@ const lowerAnchoredGroupItem = (
   return 0;
 };
 
-const scopeGroupSubItem = (
+export const scopeGroupSubItem = (
   sub: InteriorSubItemAst,
   suffix: string,
   propIds: ReadonlySet<string>,

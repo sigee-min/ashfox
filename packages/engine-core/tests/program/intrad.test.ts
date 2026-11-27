@@ -126,8 +126,6 @@ const makeTavernIr = (): InteriorSubVoxelIR => {
           'opaque',
           { semantic_tag: 'floor' },
         ),
-      );
-      boxes.push(
         box(
           `ceil_${x}_${z}`,
           [x * 16, 80, z * 16],
@@ -185,11 +183,16 @@ const testTwoBounceRadiosityAndPerformance = (): void => {
   const b2Repeat = computeInteriorRadiosity(room, ir, { bounces: 2 }, [0.2, -0.75, 0.63]);
 
   assert.ok(b2.compute_ms < 3, `Expected < 3ms radiosity compute, got ${b2.compute_ms}ms`);
-  assert.deepEqual(b2.bounce_r, b2Repeat.bounce_r);
-  assert.deepEqual(b2.bounce_g, b2Repeat.bounce_g);
-  assert.deepEqual(b2.bounce_b, b2Repeat.bounce_b);
-  assert.deepEqual(b2.sun_patch_r, b2Repeat.sun_patch_r);
-  assert.deepEqual(b2.contact_ao, b2Repeat.contact_ao);
+  assert.deepEqual(
+    [b2.bounce_r, b2.bounce_g, b2.bounce_b, b2.sun_patch_r, b2.contact_ao],
+    [
+      b2Repeat.bounce_r,
+      b2Repeat.bounce_g,
+      b2Repeat.bounce_b,
+      b2Repeat.sun_patch_r,
+      b2Repeat.contact_ao,
+    ],
+  );
 
   const [w, _h, d] = b2.size;
   const wallIdx = (2 * d + 3) * w + 1;
@@ -215,21 +218,16 @@ const testTwoBounceRadiosityAndPerformance = (): void => {
   assert.ok(neonWall[2] > neonWall[0]);
   const colors0 = bakeSubVoxelColors0(room, ir, b2);
   assert.ok(colors0.size === ir.boxes.length && colors0.get('floor_4_2')!.length === 72);
-  const yawIr: InteriorSubVoxelIR = {
-    ...neonIr,
-    boxes: [
-      ...neonIr.boxes,
-      box('r_0', [24, 24, 88], [72, 32, 104], 'oak_planks', 'opaque', {
-        rotation_y_deg: 0,
-        pivot_16: [48, 24, 96],
-      }),
-      box('r_90', [24, 24, 88], [72, 32, 104], 'oak_planks', 'opaque', {
-        rotation_y_deg: 90,
-        pivot_16: [48, 24, 96],
-      }),
-    ],
-  };
-  const yawCols = bakeSubVoxelColors0(room, yawIr, neonField);
+  const rBox = (id: string, rotation_y_deg: number) =>
+    box(id, [24, 24, 88], [72, 32, 104], 'oak_planks', 'opaque', {
+      rotation_y_deg,
+      pivot_16: [48, 24, 96],
+    });
+  const yawCols = bakeSubVoxelColors0(
+    room,
+    { ...neonIr, boxes: [...neonIr.boxes, rBox('r_0', 0), rBox('r_90', 90)] },
+    neonField,
+  );
   assert.notDeepEqual(yawCols.get('r_0'), yawCols.get('r_90'));
 };
 
@@ -262,34 +260,30 @@ const testSunShaftsPanesAndPlayableHooks = (): void => {
     room,
     defaultSunShaftConfig('warm_hearth', { sun_dir: [0.1, -0.72, 0.68] }),
   );
-  assert.equal(shafts.length, 2);
-  assert.equal(shafts[0]!.opening_id, 'north_win');
-  assert.ok(shafts[0]!.alpha_top > shafts[0]!.alpha_bottom);
-  assert.ok(Math.abs(shafts[0]!.floor_patch_center[1] - 1.02) < 0.01);
-
+  assert.deepEqual([shafts.length, shafts[0]!.opening_id], [2, 'north_win']);
+  assert.ok(
+    shafts[0]!.alpha_top > shafts[0]!.alpha_bottom &&
+      Math.abs(shafts[0]!.floor_patch_center[1] - 1.02) < 0.01,
+  );
   const mesh = buildSunShaftMeshPrimitives(shafts);
-  assert.equal(mesh.doubleSided, true);
-  assert.equal(mesh.alphaMode, 'BLEND');
-  assert.equal(mesh.positions.length, 24);
-  assert.equal(mesh.colors.length, 32);
-
+  assert.deepEqual(
+    [mesh.doubleSided, mesh.alphaMode, mesh.positions.length, mesh.colors.length],
+    [true, 'BLEND', 24, 32],
+  );
   const panes = generateTranslucentWindowPanes(room);
   assert.equal(panes.length, 2);
-  for (const pane of panes) {
-    assert.equal(pane.double_sided, true);
-    assert.equal(pane.box.layer, 'translucent');
-    assert.ok(pane.alpha > 0 && pane.alpha < 1);
-  }
+  assert.ok(
+    panes.every(
+      (p) => p.double_sided && p.box.layer === 'translucent' && p.alpha > 0 && p.alpha < 1,
+    ),
+  );
 
   const playable = emitPlayableInteriorMeta(room, ir);
-  assert.equal(playable.schema_version, 1);
-  assert.equal(playable.acoustic_space, 'timber_room');
+  assert.ok(playable.schema_version === 1 && playable.acoustic_space === 'timber_room');
   const kinds = new Set(playable.hooks.map((h) => h.kind));
-  assert.ok(kinds.has('sit'), 'Expected sit hooks');
-  assert.ok(kinds.has('hinge'), 'Expected hinge hook for rustic door/cabinet');
-  assert.ok(kinds.has('toggle_light'), 'Expected toggle_light hook for emissive hearth');
-  assert.ok(kinds.has('station'), 'Expected station hooks');
-  assert.ok(kinds.has('audio_emitter'), 'Expected spatial audio emitter hooks');
+  for (const k of ['sit', 'hinge', 'toggle_light', 'station', 'audio_emitter'] as const) {
+    assert.ok(kinds.has(k));
+  }
 
   const ryokan: InteriorRoomInput = {
     ...room,
@@ -365,8 +359,10 @@ const testInteriorAuditPassAndFailureGates = (): void => {
     },
   };
   const noisyZenReport = evaluateInteriorAudit({ ...passInput, room: noisyZenRoom });
-  assert.ok(noisyZenReport.metrics.organic_calibration_delta >= 0.79);
-  assert.ok(noisyZenReport.submetrics.find((s) => s.id === 'interior.organic')!.score < 2);
+  assert.ok(
+    noisyZenReport.metrics.organic_calibration_delta >= 0.79 &&
+      noisyZenReport.submetrics.find((s) => s.id === 'interior.organic')!.score < 2,
+  );
   const badNbt: VanillaNbtLoweringIR = {
     data_version: 3955,
     size: [10, 6, 10],
@@ -424,16 +420,25 @@ const testInteriorAuditPassAndFailureGates = (): void => {
     },
   };
   const soffitFail = evaluateInteriorAudit({ ...passInput, ir: lowSoffitIr, nbt: okNbt });
-  assert.ok(soffitFail.metrics.min_headroom_b === 1.75 && !soffitFail.passed);
-  assert.equal(soffitFail.hard_gates.find((g) => g.id === 'vanilla_headroom')?.passed, false);
+  assert.ok(
+    soffitFail.metrics.min_headroom_b === 1.75 &&
+      !soffitFail.passed &&
+      !soffitFail.hard_gates.find((g) => g.id === 'vanilla_headroom')?.passed,
+  );
 };
 
 const testContactAoPropagationAndOversizedPropRejection = (): void => {
   const makeAoSrc = (ao: number) =>
     `ashfox 1 structure ao_room { size = (9b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { dna { arch = rustic; organic = 0; } lighting { contact_ao_strength = ${ao}; } table tbl { at = (4, 1, 4); size = (2, 1); facing = north; } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
+  const compileOne = (src: string) =>
+    compileStructureUnits(
+      'h.ashfox',
+      new Map([['h.ashfox', parseStructureSource(src, 'h.ashfox')]]),
+      {},
+      (_o, s) => s,
+    );
   const compileAoColorAvg = (ao: number): number => {
-    const u = new Map([['a.ashfox', parseStructureSource(makeAoSrc(ao), 'a.ashfox')]]);
-    const p = compileStructureUnits('a.ashfox', u, {}, (_o, s) => s);
+    const p = compileOne(makeAoSrc(ao));
     const batches = new Map<string, BatchDraft>();
     emitInteriorBakedMeshes(p.grid, batches, {}, 99);
     const cols = [...batches.values()].flatMap((b) => b.colors);
@@ -456,39 +461,31 @@ const testContactAoPropagationAndOversizedPropRejection = (): void => {
     [mountInstanceRotation('north', 90), mountInstanceRotation('east', 90)],
     [270, 180],
   );
-  const fpSrc = makeAoSrc(0.4).replace(
-    'table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }',
-    'fireplace hearth { at = (2, 1, 2); facing = south; }',
+  const repTbl = (s: string) =>
+    compileOne(
+      makeAoSrc(0.4).replace('table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }', s),
+    );
+  assert.equal(
+    repTbl(
+      'fireplace hearth { at = (2, 1, 2); facing = south; }',
+    ).grid.interiors![0]!.playable_meta.hooks.filter((h) => h.kind === 'audio_emitter').length,
+    1,
   );
-  const fpUnit = new Map([['f.ashfox', parseStructureSource(fpSrc, 'f.ashfox')]]);
-  const fpHooks = compileStructureUnits('f.ashfox', fpUnit, {}, (_o, s) => s).grid.interiors![0]!
-    .playable_meta.hooks;
-  assert.equal(fpHooks.filter((h) => h.kind === 'audio_emitter').length, 1);
-  const mkHolo = (deg: number) => {
-    const src = makeAoSrc(0.4).replace(
-      'table tbl { at = (4, 1, 4); size = (2, 1); facing = north; }',
-      `holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = ${deg}; }`,
-    );
-    return compileStructureUnits(
-      'h.ashfox',
-      new Map([['h.ashfox', parseStructureSource(src, 'h.ashfox')]]),
-      {},
-      (_o, s) => s,
-    );
-  };
-  const [h0, h90] = [mkHolo(0), mkHolo(90)];
+  const [h0, h90] = [0, 90].map((d) =>
+    repTbl(
+      `holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = ${d}; }`,
+    ),
+  );
   assert.notDeepEqual(
-    h0.grid.interiors![0]!.radiosity.bounce_b,
-    h90.grid.interiors![0]!.radiosity.bounce_b,
+    h0!.grid.interiors![0]!.radiosity.bounce_b,
+    h90!.grid.interiors![0]!.radiosity.bounce_b,
   );
-  const lightIds = new Set(h0.playableMeta.lights.map((l) => l.id));
-  const toggleIds = h0.grid
+  const lids = new Set(h0!.playableMeta.lights.map((l) => l.id));
+  const tids = h0!.grid
     .interiors![0]!.playable_meta.hooks.filter((h) => h.kind === 'toggle_light')
     .map((h) => h.light_id);
   assert.ok(
-    toggleIds.length >= 3 &&
-      toggleIds.every((id) => lightIds.has(id)) &&
-      new Set(toggleIds).size === toggleIds.length,
+    tids.length >= 3 && tids.every((id) => lids.has(id)) && new Set(tids).size === tids.length,
   );
 };
 

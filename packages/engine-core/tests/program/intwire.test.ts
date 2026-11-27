@@ -293,21 +293,7 @@ structure dedup_sunken {
   const pitState = dedupProd.grid.states[dedupProd.grid.voxels[(0 * dd + 4) * dw + 4]!]!;
   assert.equal(pitState, 'minecraft:oak_slab[type=bottom]');
 
-  // Verify north-facing alcove in a 1-block room wall [2,0,2]..[12,7,12] carves oak wall voxels for mesh and NBT.
-  const alcoveSrc = `ashfox 1
-structure alcove_carve_test {
-  size = (15b, 10b, 15b);
-  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
-  floor f { y = 0b; height = 7b;
-    room r { from = (2b, 2b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
-      interior {
-        dna { arch = rustic; }
-        alcove hearth { kind = fireplace; wall = north; at = 3; width = 3; height = 3; }
-      }
-    }
-    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
-  }
-}`;
+  const alcoveSrc = `ashfox 1 structure alcove_carve_test { size = (15b, 10b, 15b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 7b; room r { from = (2b, 2b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { dna { arch = rustic; } alcove hearth { kind = fireplace; wall = north; at = 3; width = 3; height = 3; } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
   const alcoveProd = compileStructureUnits(
     'alc.ashfox',
     new Map([['alc.ashfox', parseStructureSource(alcoveSrc, 'alc.ashfox')]]),
@@ -315,31 +301,19 @@ structure alcove_carve_test {
     rel,
   );
   const [aw, , ad] = alcoveProd.grid.size;
-  const nicheState = alcoveProd.grid.states[alcoveProd.grid.voxels[(2 * ad + 2) * aw + 7]!]!;
-  assert.equal(nicheState, 'minecraft:air', 'Alcove on 1-block wall must carve wall voxel to air');
+  assert.equal(
+    alcoveProd.grid.states[alcoveProd.grid.voxels[(2 * ad + 2) * aw + 7]!],
+    'minecraft:air',
+  );
   const nbtAlc = decodeStructureNbt(alcoveProd.nbt);
   const oakIdx = nbtAlc.palette.findIndex((p) => p.Name === 'minecraft:oak_planks');
-  const sealed = nbtAlc.blocks.some(
-    (b) => b.pos[0] === 7 && b.pos[1] === 2 && b.pos[2] === 2 && b.state === oakIdx,
+  assert.equal(
+    nbtAlc.blocks.some(
+      (b) => b.pos[0] === 7 && b.pos[1] === 2 && b.pos[2] === 2 && b.state === oakIdx,
+    ),
+    false,
   );
-  assert.equal(sealed, false, 'Alcove niche in NBT must not remain sealed by oak_planks');
-
-  // Verify rotated prop colliders include rotated tabletop bounds and clamped mezzanine seats nested chair at deck Y.
-  const rotMezSrc = `ashfox 1
-structure rot_mez_test {
-  size = (11b, 8b, 11b);
-  palette { stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
-  floor f { y = 0b; height = 6b;
-    room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = stone; ceiling = oak;
-      interior {
-        dna { arch = rustic; organic = 0; }
-        mezzanine loft { on = north; depth = 3; y_offset = 4; railing = timber; chair loft_seat {} }
-        table rot_tbl { at = (4, 1, 4); size = (3, 1); rotation_deg = 90; }
-      }
-    }
-    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
-  }
-}`;
+  const rotMezSrc = `ashfox 1 structure rot_mez_test { size = (11b, 8b, 11b); palette { stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 6b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = stone; ceiling = oak; interior { dna { arch = rustic; organic = 0; } mezzanine loft { on = north; depth = 3; y_offset = 4; railing = timber; chair loft_seat {} } table rot_tbl { at = (4, 1, 4); size = (3, 1); rotation_deg = 90; } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
   const rotMezProd = compileStructureUnits(
     'rm.ashfox',
     new Map([['rm.ashfox', parseStructureSource(rotMezSrc, 'rm.ashfox')]]),
@@ -351,41 +325,24 @@ structure rot_mez_test {
   const loftChairHook = rmInterior.playable_meta.hooks.find(
     (h) => h.kind === 'sit' && h.prop_id === 'loft_seat',
   )!;
-  assert.equal(deckBox.to_16[1] / 16, 4);
-  assert.equal(loftChairHook.position[1], 4, 'Mezzanine chair must sit flush at clamped deck Y=4');
+  assert.ok(deckBox.to_16[1] / 16 === 4 && loftChairHook.position[1] === 4);
   const [rw, , rd] = rotMezProd.grid.size;
   const pt: readonly [number, number, number] = [5.5 - rw / 2, 1.95, 5.5 - rd / 2];
-  const hitsRot = rotMezProd.playableMeta.colliders.some(
-    (c) =>
-      pt[0] >= c.from[0] &&
-      pt[0] <= c.to[0] &&
-      pt[1] >= c.from[1] &&
-      pt[1] <= c.to[1] &&
-      pt[2] >= c.from[2] &&
-      pt[2] <= c.to[2],
+  assert.equal(
+    rotMezProd.playableMeta.colliders.some(
+      (c) =>
+        pt[0] >= c.from[0] &&
+        pt[0] <= c.to[0] &&
+        pt[1] >= c.from[1] &&
+        pt[1] <= c.to[1] &&
+        pt[2] >= c.from[2] &&
+        pt[2] <= c.to[2],
+    ),
+    true,
   );
-  assert.equal(hitsRot, true);
   const [tw, , td] = product.grid.size;
   assert.equal(product.grid.states[product.grid.voxels[(7 * td + 6) * tw + 7]!], 'minecraft:air');
-
-  const eastLineSrc = `ashfox 1
-structure east_wall_line_test {
-  size = (11b, 9b, 11b);
-  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
-  floor f { y = 0b; height = 7b;
-    room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
-      interior {
-        dna { arch = rustic; organic = 0; }
-        wall_line {
-          on = east;
-          shelving s1 { size = (2, 1); }
-          shelving s2 { size = (2, 1); }
-        }
-      }
-    }
-    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
-  }
-}`;
+  const eastLineSrc = `ashfox 1 structure east_wall_line_test { size = (11b, 9b, 11b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 7b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { dna { arch = rustic; organic = 0; } wall_line { on = east; shelving s1 { size = (2, 1); } shelving s2 { size = (2, 1); } } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
   const compileOne = (f: string, s: string) =>
     compileStructureUnits(f, new Map([[f, parseStructureSource(s, f)]]), {}, rel);
   const [s1, s2] = compileOne('ewl.ashfox', eastLineSrc).grid.interiors![0]!.input.props ?? [];
@@ -415,6 +372,7 @@ structure placed_host {
           low_table lt_def { at = (2, 1, 2); facing = east; }
           chair c_ctr { on = center; }
           wall_line { on = south; table wl_t {} chair wl_c {} }
+          wall_line { on = [north, east]; table desk {} story tea_ceremony { on = desk; } }
           drapery diag_c { kind = chains; from = (32, 64, 32); to = (96, 80, 96); }
         }
       }
@@ -438,13 +396,28 @@ structure placed_host {
     gv('alcove'),
   ];
   const diagD = placedRoom.input.draperies?.[0];
-  const [wlT, wlC] = [gp('wl_t'), gp('wl_c')];
+  const [wlT, wlC, d0, d1] = [gp('wl_t'), gp('wl_c'), gp('desk@north_0'), gp('desk@east_1')];
+  const [st0, st1] = placedRoom.playable_meta.hooks.filter(
+    (h) => h.kind === 'station' && h.station_kind === 'tea_ceremony',
+  );
   assert.deepEqual(
-    [gp('lt_def')?.at, gp('c_ctr')?.facing, loftV?.kind === 'mezzanine' ? loftV.on : undefined],
-    [[12, 1, 5], 'west', 'east'],
+    placedRoom.input.stories?.map((s) => s.on_target),
+    ['desk@north_0', 'desk@east_1'],
+  );
+  assert.ok(
+    d0 &&
+      d1 &&
+      st0 &&
+      st1 &&
+      st0.position[1] > 1.5 &&
+      st1.position[1] > 1.5 &&
+      (st0.position[0] !== st1.position[0] || st0.position[2] !== st1.position[2]),
   );
   assert.deepEqual(
     [
+      gp('lt_def')?.at,
+      gp('c_ctr')?.facing,
+      loftV?.kind === 'mezzanine' ? loftV.on : undefined,
       daisV?.kind === 'platform' ? [daisV.on, daisV.size] : undefined,
       midV?.kind === 'partition' ? midV.at_pos : undefined,
       alcV?.kind === 'alcove' ? alcV.wall : undefined,
@@ -454,7 +427,19 @@ structure placed_host {
       wlC?.at[0] === wlT?.at[0],
       (wlC?.at[2] ?? 0) - (wlT?.at[2] ?? 0),
     ],
-    [['east', [2, 3]], 10, 'east', [208, 64, 80], [144, 80, 144], 'east', true, 1],
+    [
+      [12, 1, 5],
+      'west',
+      'east',
+      ['east', [2, 3]],
+      10,
+      'east',
+      [208, 64, 80],
+      [144, 80, 144],
+      'east',
+      true,
+      1,
+    ],
   );
   const yawCollisionSrc = `ashfox 1
 structure yaw_col {
@@ -489,6 +474,18 @@ structure yaw_col {
   const badDrap =
     'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }';
   assert.throws(() => parseStructureSource(badDrap, 'd.ashfox'));
+  const twoRoomSrc = `ashfox 1 structure mr { size = (17b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r1 { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; } } } room r2 { from = (9b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (12, 1, 4); size = (3, 1); facing = north; } } } facade r1.south { door { at = center; width = 1b; height = 2b; block = door; } } facade r2.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
+  const mr = compileOne('mr.ashfox', twoRoomSrc);
+  const mrLightIds = new Set(mr.playableMeta.lights.map((l) => l.id));
+  const mrToggles = mr.grid
+    .interiors!.flatMap((i) => i.playable_meta.hooks)
+    .filter((h) => h.kind === 'toggle_light')
+    .map((h) => h.light_id);
+  assert.ok(
+    mrToggles.length >= 6 &&
+      mrToggles.every((id) => mrLightIds.has(id)) &&
+      new Set(mrToggles).size === mrToggles.length,
+  );
   console.log('ashfox interior wiring integration tests ok');
 };
 
