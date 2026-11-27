@@ -431,21 +431,18 @@ structure placed_host {
   }
   place wing { at = (15b, 0b, 3b); rotate = 90; }
 }`;
-  const placedProd = compileStructureUnits(
-    'host.ashfox',
-    new Map([['host.ashfox', parseStructureSource(hostSrc, 'host.ashfox')]]),
-    {},
-    rel,
-  );
-  const placedRoom = placedProd.grid.interiors![0]!;
+  const compileOne = (f: string, s: string) =>
+    compileStructureUnits(f, new Map([[f, parseStructureSource(s, f)]]), {}, rel);
+  const placedRoom = compileOne('host.ashfox', hostSrc).grid.interiors![0]!;
   const placedDais = placedRoom.ir.boxes.find((b) => b.semantic_tag === 'volume_platform')!;
   const [rb0, rb1] = [placedRoom.input.bounds_from, placedRoom.input.bounds_to];
-  const inBounds =
+  assert.equal(
     placedDais.from_16[0] >= rb0[0] * 16 &&
-    placedDais.to_16[0] <= rb1[0] * 16 &&
-    placedDais.from_16[2] >= rb0[2] * 16 &&
-    placedDais.to_16[2] <= rb1[2] * 16;
-  assert.equal(inBounds, true);
+      placedDais.to_16[0] <= rb1[0] * 16 &&
+      placedDais.from_16[2] >= rb0[2] * 16 &&
+      placedDais.to_16[2] <= rb1[2] * 16,
+    true,
+  );
   const placedLoft = placedRoom.input.volumes.find((v) => v.kind === 'mezzanine');
   assert.equal(placedLoft?.kind === 'mezzanine' ? placedLoft.on : undefined, 'east');
 
@@ -459,28 +456,35 @@ structure yaw_col {
         dna { arch = rustic; organic = 0; }
         dining_set t_rot { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = 90; seat_count = 2; }
         cabinet cab_hit { at = (5, 1, 3); size = (1, 1); facing = south; }
+        chair c_rot { at = (2, 1, 2); facing = north; rotation_deg = 90; }
+        mount m_east { asset = oak; at = (1, 1, 6); size = (3, 1); facing = east; }
       }
     }
     facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
   }
 }`;
-  const yawProd = compileStructureUnits(
-    'yaw.ashfox',
-    new Map([['yaw.ashfox', parseStructureSource(yawCollisionSrc, 'yaw.ashfox')]]),
-    {},
-    rel,
+  const yawRoom = compileOne('yaw.ashfox', yawCollisionSrc).grid.interiors![0]!;
+  const hk = (id: string) => yawRoom.playable_meta.hooks.find((h) => h.id === id)!;
+  assert.equal(
+    Math.floor(hk('hinge_cab_hit').position[0]) === 5 &&
+      Math.floor(hk('hinge_cab_hit').position[2]) === 3,
+    false,
   );
-  const yawRoom = yawProd.grid.interiors![0]!;
-  const yawCab = yawRoom.playable_meta.hooks.find(
-    (h) => h.kind === 'hinge' && h.target_id === 'cab_hit',
-  )!;
-  assert.equal(Math.floor(yawCab.position[0]) === 5 && Math.floor(yawCab.position[2]) === 3, false);
-  const c0 = yawRoom.playable_meta.hooks.find((h) => h.id === 't_rot:chair_0:sit')!;
-  assert.deepEqual(c0.position, [6.5, 1, 3.5]);
-  assert.equal(c0.kind === 'sit' ? c0.facing : undefined, 'west');
+  const [c0, cRot] = [hk('t_rot:chair_0:sit'), hk('c_rot:sit')];
+  assert.deepEqual(
+    [c0.position, c0.kind === 'sit' ? c0.facing : '', cRot.kind === 'sit' ? cRot.facing : ''],
+    [[6.5, 1, 3.5], 'west', 'east'],
+  );
+  assert.deepEqual(yawRoom.custom_mounts[0]?.at_16, [24, 16, 120]);
   assert.equal(
     yawRoom.ir.clear_path_cells.some((c) => (c[0] === 5 || c[0] === 6) && c[2] === 3),
     false,
+  );
+  assert.throws(() =>
+    parseStructureSource(
+      'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }',
+      'd.ashfox',
+    ),
   );
   console.log('ashfox interior wiring integration tests ok');
 };

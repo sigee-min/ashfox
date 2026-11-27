@@ -1,6 +1,6 @@
 import type { Vec3 } from '../../../model/identity';
 import type { CardinalFacing } from '../../../project/structure/contract';
-import { diningChairPoses } from './zoneRect';
+import { diningChairPoses, snapRotateFacing } from './zoneRect';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
   type InteriorPropKind,
@@ -321,13 +321,17 @@ const collectPropHooks = (
   centerPos: Vec3,
   mat: StyleMaterials,
 ): readonly PlayableInteriorHook[] => {
+  const hookFacing =
+    spec.rotation_deg !== undefined
+      ? snapRotateFacing(spec.facing, spec.rotation_deg).facing
+      : spec.facing;
   const hooks: PlayableInteriorHook[] = [];
   if (SEAT_KINDS.has(spec.kind) && spec.kind !== 'dining_set') {
     hooks.push({
       kind: 'sit',
       id: `${spec.id}:sit`,
       position: centerPos,
-      facing: spec.facing,
+      facing: hookFacing,
       seat_height_16: propSurfaceHeight16(spec.kind),
       prop_id: spec.id,
     });
@@ -337,7 +341,7 @@ const collectPropHooks = (
       kind: 'station',
       id: `${spec.id}:station`,
       position: centerPos,
-      facing: spec.facing,
+      facing: hookFacing,
       station_kind: spec.kind,
     });
   }
@@ -346,7 +350,7 @@ const collectPropHooks = (
       kind: 'hinge',
       id: `hinge_${spec.id}`,
       position: centerPos,
-      facing: spec.facing,
+      facing: hookFacing,
       pivot: centerPos,
       travel: 90,
       target_id: spec.id,
@@ -364,11 +368,12 @@ const buildCustomMounts = (
   rotDeg: number,
 ): readonly CustomPropMount[] => {
   if (!spec.asset_alias && spec.kind !== 'custom_prop') return [];
+  const [rw16, rd16] = spec.facing === 'east' || spec.facing === 'west' ? [d16, w16] : [w16, d16];
   return [
     {
       id: spec.id,
       asset_alias: spec.asset_alias ?? spec.id,
-      at_16: [origin16[0] + w16 / 2, origin16[1], origin16[2] + d16 / 2],
+      at_16: [origin16[0] + rw16 / 2, origin16[1], origin16[2] + rd16 / 2],
       mount_on: spec.mount_on ?? 'floor',
       facing: spec.facing,
       rotation_y_deg: rotDeg,

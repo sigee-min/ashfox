@@ -132,7 +132,7 @@ const buildCurtains = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
       'drapery:curtains',
     ),
   ];
-  const panels = Math.max(1, spec.split_panels ?? 2);
+  const panels = Math.max(1, Math.min(32, Math.floor(spec.split_panels ?? 2)));
   const panelW = Math.max(3, Math.min(8, width / (panels + 1)));
   for (let p = 0; p < panels; p += 1) {
     const baseU = p === 0 ? u0 : u1 - panelW;
@@ -143,7 +143,7 @@ const buildCurtains = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
 
 const buildNoren = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
   const { alongX, u0, u1, fixed, yTop, width } = spanAxes(spec.from_16, spec.to_16, spec.facing);
-  const panels = Math.max(2, spec.split_panels ?? 3);
+  const panels = Math.max(2, Math.min(32, Math.floor(spec.split_panels ?? 3)));
   const tile = spec.tile_id ?? (spec.color ? 'plaster_white' : 'carpet_blue');
   const drop = Math.max(8, Math.min(14, Math.abs(spec.from_16[1] - spec.to_16[1]) || 10));
   const out: SubVoxelBoxIR[] = [
@@ -187,7 +187,7 @@ const buildNoren = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
 
 const buildTrailingVine = (spec: InteriorDraperySpec): readonly SubVoxelBoxIR[] => {
   const { alongX, u0, fixed, yTop, width } = spanAxes(spec.from_16, spec.to_16, spec.facing);
-  const strands = Math.max(3, Math.floor(width / 4));
+  const strands = Math.max(3, Math.min(64, Math.floor(width / 4)));
   const tile = spec.tile_id ?? 'leaves';
   const out: SubVoxelBoxIR[] = [];
   for (let s = 0; s < strands; s += 1) {

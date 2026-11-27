@@ -351,6 +351,50 @@ export const parseGroupBlock = (
   };
 };
 
+const MAX_DRAPERY_PANELS = 32;
+const MAX_DRAPERY_PLEATS = 64;
+
+const readDraperyInt = (
+  entry: AttrEntry | undefined,
+  file: string,
+  span: SourceSpan,
+  name: string,
+  max: number,
+): number | undefined => {
+  if (!entry) return undefined;
+  const v = asInt(file, span, entry, name);
+  if (v < 1 || v > max) failAst(file, span, `${name} within 1..${max}`, `${v}`);
+  return v;
+};
+
+const readDraperyVec = (
+  entry: AttrEntry | undefined,
+  file: string,
+  span: SourceSpan,
+  name: 'from' | 'to',
+): readonly [number, number, number] | undefined => {
+  if (!entry) return undefined;
+  const vec = asNumVec3(file, span, entry, name);
+  const lim = MAX_STRUCTURE_DIM * 16;
+  if (vec.some((v) => !Number.isFinite(v) || Math.abs(v) > lim)) {
+    failAst(file, span, `drapery ${name} within -${lim}..${lim}`, `(${vec.join(', ')})`);
+  }
+  return vec;
+};
+
+const readDraperySag = (
+  entry: AttrEntry | undefined,
+  file: string,
+  span: SourceSpan,
+): number | undefined => {
+  if (!entry) return undefined;
+  const v = asNum(file, span, entry, 'sag');
+  if (v < 0 || v > MAX_STRUCTURE_DIM * 16) {
+    failAst(file, span, `drapery sag within 0..${MAX_STRUCTURE_DIM * 16}`, `${v}`);
+  }
+  return v;
+};
+
 export const parseDrapery = (
   stmt: AshfoxNamedBlock,
   file: string,
@@ -377,20 +421,28 @@ export const parseDrapery = (
     ]),
   );
   const kind = stmt.name ?? asStr(file, stmt.span, attrs.kind, 'kind');
-  const sagEntry = attrs.sag_16 ?? attrs.sag;
+  const sagVal = readDraperySag(attrs.sag_16 ?? attrs.sag, file, stmt.span);
+  const from16 = readDraperyVec(attrs.from, file, stmt.span, 'from');
+  const to16 = readDraperyVec(attrs.to, file, stmt.span, 'to');
+  const pleats = readDraperyInt(attrs.pleats, file, stmt.span, 'pleats', MAX_DRAPERY_PLEATS);
+  const splitPanels = readDraperyInt(
+    attrs.split_panels,
+    file,
+    stmt.span,
+    'split_panels',
+    MAX_DRAPERY_PANELS,
+  );
   return {
     id: nextId(seq, 'drape', kind),
     kind,
     on_target: asOptStr(file, stmt.span, attrs.on, 'on') ?? 'windows',
-    ...(attrs.from ? { from_16: asNumVec3(file, stmt.span, attrs.from, 'from') } : {}),
-    ...(attrs.to ? { to_16: asNumVec3(file, stmt.span, attrs.to, 'to') } : {}),
+    ...(from16 ? { from_16: from16 } : {}),
+    ...(to16 ? { to_16: to16 } : {}),
     ...(attrs.facing ? { facing: asOptFacing(file, stmt.span, attrs.facing) } : {}),
-    ...(sagEntry ? { sag_16: asNum(file, stmt.span, sagEntry, 'sag') } : {}),
-    ...(attrs.pleats ? { pleats: asInt(file, stmt.span, attrs.pleats, 'pleats') } : {}),
+    ...(sagVal !== undefined ? { sag_16: sagVal } : {}),
+    ...(pleats !== undefined ? { pleats } : {}),
     ...(attrs.tieback ? { tieback: asBool(file, stmt.span, attrs.tieback, 'tieback') } : {}),
-    ...(attrs.split_panels
-      ? { split_panels: asInt(file, stmt.span, attrs.split_panels, 'split_panels') }
-      : {}),
+    ...(splitPanels !== undefined ? { split_panels: splitPanels } : {}),
     ...(attrs.color ? { color: asStr(file, stmt.span, attrs.color, 'color') } : {}),
     ...(attrs.tile ? { tile_id: asStr(file, stmt.span, attrs.tile, 'tile') } : {}),
   };

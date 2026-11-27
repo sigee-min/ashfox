@@ -175,7 +175,8 @@ const rotateChairOffset = (
   return [lx, lz, nextFacing];
 };
 
-const snapRotateFacing = (
+/** Snaps a cardinal facing to the nearest 90-deg multiple of deg, returning remainder degrees. */
+export const snapRotateFacing = (
   facing: CardinalFacing,
   deg: number,
 ): { readonly facing: CardinalFacing; readonly remDeg: number } => {
