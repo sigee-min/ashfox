@@ -8,6 +8,7 @@ module goblin_kit {
     chart head box { coverage = opaque; }
     chart snout box { coverage = opaque; }
     chart ear box { coverage = opaque; }
+    chart ear_tip box { coverage = opaque; }
     chart tusk box { coverage = opaque; }
     chart crest box { coverage = opaque; }
     chart arm box { coverage = opaque; }
@@ -18,9 +19,8 @@ module goblin_kit {
     chart boot box { coverage = opaque; }
     chart belt box { coverage = opaque; }
     chart buckle box { coverage = opaque; }
-    chart loincloth flat { coverage = opaque; }
+    chart loincloth flat { coverage = binary; }
     chart pauldron box { coverage = opaque; }
-    chart toe box { coverage = opaque; }
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_snarl flat { coverage = opaque; }
@@ -73,16 +73,16 @@ module goblin_kit {
       bone root {
         bone pelvis {
           cube hips { origin = (-4u, 10.5u, -2.5u); size = (8u, 3u, 5u); surface = skin.pelvis; }
-          cube belt { origin = (-4.5u, 12.5u, -3u); size = (9u, 2u, 6u); surface = skin.belt; }
-          cylinder buckle { origin = (0u, 13.5u, -3.7u); radius = 1.3u; radius_top = 1.1u; height = 1u; sides = 8; axis = z; surface = skin.buckle; }
-          plane loincloth_front { origin = (3u, 8u, -3.15u); size = (6u, 5u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
+          cube belt { origin = (-4.5u, 12.5u, -3.2u); size = (9u, 2u, 6u); surface = skin.belt; }
+          cube buckle { origin = (-1.5u, 12.5u, -4.1u); size = (3u, 2u, 1u); surface = skin.buckle; }
+          plane loincloth_front { origin = (3u, 8u, -3.25u); size = (6u, 5u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
           plane loincloth_back { origin = (-3u, 8u, 3.15u); size = (6u, 5u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
           bone torso {
             cube chest { origin = (-5u, 14.5u, -3u); size = (10u, 9u, 6u); pivot = (0u, 19u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.torso; }
             bone head {
               cube skull { origin = (-4u, 23u, -4u); size = (8u, 7u, 8u); pivot = (0u, 26.5u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.head; }
               expression_slot face {
-                origin = (3u, 25.5u, -4.08u);
+                origin = (3u, 24.8u, -4.08u);
                 size = (6u, 4u);
                 u_axis = (-1u, 0u, 0u);
                 v_axis = (0u, 1u, 0u);
@@ -90,37 +90,36 @@ module goblin_kit {
                 blink = skin.face_blink;
                 snarl = skin.face_snarl;
               }
-              wedge snout { origin = (-2.5u, 22.8u, -6.5u); size = (5u, 3u, 3u); slope = north; surface = skin.snout; }
-              taper tusk_l { origin = (-2.4u, 23.6u, -6.3u); size = (1u, 2u, 1u); top_scale = (0.3, 0.3); axis = y; pivot = (-1.9u, 23.8u, -5.8u); rotation = (-12deg, 0deg, -8deg); mirror_x = tusk_r; surface = skin.tusk; }
-              taper ear_l { origin = (-6u, 26u, -1u); size = (2u, 4u, 2u); top_scale = (0.3, 0.45); axis = y; pivot = (-4u, 26.5u, 0u); rotation = (0deg, 8deg, 62deg); mirror_x = ear_r; surface = skin.ear; }
-              wedge crest_front { origin = (-1u, 30u, -3.5u); size = (2u, 3u, 4u); slope = north; surface = skin.crest; }
-              wedge crest_back { origin = (-1u, 30u, 0u); size = (2u, 3u, 4u); slope = south; surface = skin.crest; }
+              cube snout { origin = (-2.5u, 22.8u, -6.9u); size = (5u, 2u, 3u); surface = skin.snout; }
+              cube tusk_l { origin = (-2.4u, 22.4u, -7.5u); size = (1u, 3u, 2u); pivot = (-1.9u, 23.1u, -6.5u); rotation = (-14deg, 0deg, -8deg); mirror_x = tusk_r; surface = skin.tusk; }
+              cube ear_l { origin = (-7.2u, 25u, -1u); size = (3u, 3u, 2u); pivot = (-4u, 26.5u, 0u); rotation = (0deg, 10deg, -18deg); mirror_x = ear_r; surface = skin.ear; }
+              cube ear_tip_l { origin = (-9.8u, 26u, -0.6u); size = (3u, 2u, 2u); pivot = (-4u, 26.5u, 0u); rotation = (0deg, 10deg, -22deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
+              cube mohawk_front { origin = (-1u, 29.9u, -3.5u); size = (2u, 3u, 4u); pivot = (0u, 29.9u, -1.5u); rotation = (-12deg, 0deg, 0deg); surface = skin.crest; }
+              cube mohawk_back { origin = (-1u, 29.9u, 0.6u); size = (2u, 3u, 4u); pivot = (0u, 29.9u, 2.5u); rotation = (16deg, 0deg, 0deg); surface = skin.crest; }
             }
             bone left_arm {
-              wedge pauldron_l { origin = (-8.5u, 20.5u, -2.5u); size = (4u, 3u, 5u); slope = west; surface = skin.pauldron; }
-              cube arm_l { origin = (-8u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
-              cube bracer_l { origin = (-8.5u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
-              cube hand_l { origin = (-8u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
+              cube pauldron_l { origin = (-9.5u, 20.4u, -2.5u); size = (5u, 3u, 5u); pivot = (-5u, 21.4u, 0u); rotation = (0deg, 0deg, 16deg); surface = skin.pauldron; }
+              cube arm_l { origin = (-8.5u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
+              cube bracer_l { origin = (-9u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+              cube hand_l { origin = (-8.5u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
             }
             bone right_arm {
-              wedge pauldron_r { origin = (4.5u, 20.5u, -2.5u); size = (4u, 3u, 5u); slope = east; surface = skin.pauldron; }
-              cube arm_r { origin = (5u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
-              cube bracer_r { origin = (4.5u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
-              cube hand_r { origin = (5u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
+              cube pauldron_r { origin = (4.5u, 20.4u, -2.5u); size = (5u, 3u, 5u); pivot = (5u, 21.4u, 0u); rotation = (0deg, 0deg, -16deg); surface = skin.pauldron; }
+              cube arm_r { origin = (5.5u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
+              cube bracer_r { origin = (5u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+              cube hand_r { origin = (5.5u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
               bone weapon {}
             }
           }
           bone left_leg {
             cube leg_l { origin = (-4.2u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.leg; }
             cube cuff_l { origin = (-4.6u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
-            cube boot_l { origin = (-4.2u, 0u, -3.5u); size = (4u, 3u, 5u); surface = skin.boot; }
-            wedge toe_l { origin = (-4.2u, 0u, -5.2u); size = (4u, 2u, 2u); slope = north; surface = skin.toe; }
+            cube boot_l { origin = (-4.2u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
           }
           bone right_leg {
             cube leg_r { origin = (0.2u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.leg; }
             cube cuff_r { origin = (-0.4u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
-            cube boot_r { origin = (0.2u, 0u, -3.5u); size = (4u, 3u, 5u); surface = skin.boot; }
-            wedge toe_r { origin = (0.2u, 0u, -5.2u); size = (4u, 2u, 2u); slope = north; surface = skin.toe; }
+            cube boot_r { origin = (0.2u, 0u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
           }
         }
       }
@@ -133,11 +132,11 @@ module goblin_kit {
     bind socket grip to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
     geometry {
       bone root {
-        cube pommel { origin = (-1u, -1u, 2.5u); size = (2u, 2u, 2u); surface = skin.pommel; }
+        cube pommel { origin = (-1.5u, -1.5u, 2.5u); size = (3u, 3u, 2u); surface = skin.pommel; }
         cube hilt { origin = (-1u, -1u, -2.5u); size = (2u, 2u, 5u); surface = skin.hilt; }
-        cube guard { origin = (-2.5u, -0.5u, -3.5u); size = (5u, 1u, 1u); pivot = (0u, 0u, -3u); rotation = (0deg, 0deg, 18deg); surface = skin.guard; }
-        cube blade { origin = (-1u, -1u, -15.5u); size = (2u, 2u, 12u); surface = skin.blade; }
-        wedge blade_tip { origin = (-1u, -1u, -18.5u); size = (2u, 2u, 3u); slope = north; surface = skin.blade_tip; }
+        cube guard { origin = (-2.5u, -0.5u, -3.5u); size = (5u, 1u, 1u); pivot = (0u, 0u, -3u); rotation = (0deg, 0deg, 22.5deg); surface = skin.guard; }
+        cube blade { origin = (-1u, -1u, -16.5u); size = (2u, 2u, 13u); surface = skin.blade; }
+        wedge blade_tip { origin = (-1u, -1u, -19.5u); size = (2u, 2u, 3u); slope = north; surface = skin.blade_tip; }
       }
     }
   }
@@ -148,8 +147,8 @@ module goblin_kit {
     bind socket mount to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
     geometry {
       bone root {
-        cube board { origin = (-1u, -5u, -4u); size = (2u, 10u, 8u); surface = skin.board; }
-        cylinder boss { origin = (-2u, 0u, 0u); radius = 1.1u; radius_top = 2u; height = 1.2u; sides = 8; axis = x; surface = skin.boss; }
+        cube board { origin = (-1.5u, -5u, -4u); size = (3u, 10u, 8u); pivot = (0u, 0u, 0u); rotation = (0deg, -14deg, 0deg); surface = skin.board; }
+        cylinder boss { origin = (-2.3u, 0u, 0u); radius = 1.1u; radius_top = 2.1u; height = 1.2u; sides = 8; axis = x; pivot = (0u, 0u, 0u); rotation = (0deg, -14deg, 0deg); surface = skin.boss; }
       }
     }
   }

@@ -3,18 +3,27 @@ module biped {
   export socket contract HandGrip {
   }
 
+  export socket contract CapeMount {
+  }
+
   export rig contract BipedRig {
     joint root { parent = none; role = root; channels = (rotation, scale); }
     joint pelvis { parent = root; role = pelvis; channels = (position, rotation); }
     joint torso { parent = pelvis; role = body; channels = rotation; }
     joint head { parent = torso; role = head; channels = rotation; }
-    joint left_arm { parent = torso; role = arm; channels = rotation; }
-    joint right_arm { parent = torso; role = arm; channels = rotation; }
+    joint left_arm { parent = torso; role = arm; channels = rotation; mirror = right_arm; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; mirror = left_arm; }
     joint weapon { parent = right_arm; role = weapon; channels = rotation; }
-    joint left_leg { parent = pelvis; role = leg; channels = rotation; }
-    joint right_leg { parent = pelvis; role = leg; channels = rotation; }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; mirror = right_leg; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; mirror = left_leg; }
+
+    chain spine = [pelvis, torso, head];
+    anchor weapon_tip { joint = weapon; offset = (0u, -8u, 0u); }
+    anchor foot_l { joint = left_leg; offset = (0u, -10u, 0u); }
+    anchor foot_r { joint = right_leg; offset = (0u, -10u, 0u); }
     socket main_hand: HandGrip { joint = right_arm; capacity = one; }
     socket off_hand: HandGrip { joint = left_arm; capacity = one; }
+    socket back_cape: CapeMount { joint = torso; capacity = one; }
   }
 
   export skeleton BipedSkeleton implements BipedRig {

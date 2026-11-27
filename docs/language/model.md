@@ -332,6 +332,12 @@ standalone entry and workspace:
 - `asset.monolithic-entry` — split oversized entries or creature assemblies (>= 20 primitives with inline surfaces) into focused modules (`rig`, `surface`, `body`).
 - `asset.mixed-module-concerns` — do not combine rig contracts/motion, concrete surfaces, and geometry components inside one imported module file.
 
+### Creature art direction & craft floor
+
+- **Use `cube` + subtle `15deg`–`22.5deg` angles + `plane` tufts/feathers** for creature heads, chests, limbs, and fluffy tails. Never place 45° `wedge` blocks on muzzles, snouts, jaws, chests, or boots, and never use a bare `cylinder` for a furry or feathered tail.
+- **Eye placement**: keep `expression_slot` and eye stamps within `38%–64%` of head skull height (never `> 68%` forehead eyes). Use `placement = lateral_pair` (once enabled) or lateral skull faces for birds, griffins, and dragons rather than narrow front cross-eyes.
+- **Rig fidelity & PBR**: choose `"std/model/rig/winged_quadruped"` for 4-legged winged beasts (never amputate legs or collapse wings into horizontal T-pose slabs), keep metallic (`>= 0.6`) base albedo luminance `>= 0.42`, and keep matte (`< 0.2`) surfaces `<= 0.94`.
+
 ## Complete source
 
 The following is a complete one-file source for a small animated cube. It is

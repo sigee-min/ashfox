@@ -1,0 +1,66 @@
+ashfox 1
+module wing {
+  export socket contract WingSocket {
+  }
+
+  export surface contract WingSurface {
+    chart shoulder box { coverage = opaque; }
+    chart wing_arm box { coverage = opaque; }
+    chart feather_a box { coverage = opaque; }
+    chart feather_b box { coverage = opaque; }
+    chart feather_c box { coverage = opaque; }
+    chart tip box { coverage = opaque; }
+    chart plume flat { coverage = binary; }
+    material = double;
+  }
+
+  export component FeatheredWingLeft {
+    requires socket mount: WingSocket;
+    requires surface skin: WingSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube shoulder_l { origin = (-8u, -1u, -3u); size = (7u, 5u, 7u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.shoulder; }
+        cube wing_arm_l { origin = (-18u, -1u, -1u); size = (10u, 4u, 6u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.wing_arm; }
+        cube primary_l0 { origin = (-7u, 0u, 5u); size = (3u, 2u, 14u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.feather_a; }
+        cube tip_l0 { origin = (-7u, 0u, 19u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.tip; }
+        cube primary_l1 { origin = (-10u, 0u, 5u); size = (3u, 2u, 14u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.feather_a; }
+        cube tip_l1 { origin = (-10u, 0u, 19u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.tip; }
+        cube secondary_l0 { origin = (-13u, 0u, 5u); size = (3u, 2u, 13u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.feather_b; }
+        cube tip_l2 { origin = (-13u, 0u, 18u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.tip; }
+        cube secondary_l1 { origin = (-16u, 0u, 5u); size = (3u, 2u, 13u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.feather_b; }
+        cube tip_l3 { origin = (-16u, 0u, 18u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.tip; }
+        cube primary_l2 { origin = (-19u, 0u, 5u); size = (3u, 2u, 12u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.feather_c; }
+        cube tip_l4 { origin = (-19u, 0u, 17u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.tip; }
+        plane feather_fringe_l { origin = (-22u, 0u, 5u); size = (4u, 10u); u_axis = (1u, 0u, 0u); v_axis = (0u, 0u, 1u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, -28deg); surface = skin.plume; }
+      }
+    }
+  }
+
+  export component FeatheredWingRight {
+    requires socket mount: WingSocket;
+    requires surface skin: WingSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube shoulder_r { origin = (1u, -1u, -3u); size = (7u, 5u, 7u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.shoulder; }
+        cube wing_arm_r { origin = (8u, -1u, -1u); size = (10u, 4u, 6u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.wing_arm; }
+        cube primary_r0 { origin = (4u, 0u, 5u); size = (3u, 2u, 14u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.feather_a; }
+        cube tip_r0 { origin = (4u, 0u, 19u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.tip; }
+        cube primary_r1 { origin = (7u, 0u, 5u); size = (3u, 2u, 14u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.feather_a; }
+        cube tip_r1 { origin = (7u, 0u, 19u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.tip; }
+        cube secondary_r0 { origin = (10u, 0u, 5u); size = (3u, 2u, 13u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.feather_b; }
+        cube tip_r2 { origin = (10u, 0u, 18u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.tip; }
+        cube secondary_r1 { origin = (13u, 0u, 5u); size = (3u, 2u, 13u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.feather_b; }
+        cube tip_r3 { origin = (13u, 0u, 18u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.tip; }
+        cube primary_r2 { origin = (16u, 0u, 5u); size = (3u, 2u, 12u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.feather_c; }
+        cube tip_r4 { origin = (16u, 0u, 17u); size = (3u, 2u, 4u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.tip; }
+        plane feather_fringe_r { origin = (18u, 0u, 5u); size = (4u, 10u); u_axis = (1u, 0u, 0u); v_axis = (0u, 0u, 1u); pivot = (0u, 0u, 0u); rotation = (-18deg, 0deg, 28deg); surface = skin.plume; }
+      }
+    }
+  }
+}

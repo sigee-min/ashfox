@@ -6,10 +6,15 @@ module quadruped {
     joint neck { parent = body; role = neck; channels = rotation; }
     joint head { parent = neck; role = head; channels = rotation; }
     joint tail { parent = body; role = tail; channels = rotation; }
-    joint front_left_leg { parent = body; role = leg; channels = rotation; }
-    joint front_right_leg { parent = body; role = leg; channels = rotation; }
-    joint back_left_leg { parent = body; role = leg; channels = rotation; }
-    joint back_right_leg { parent = body; role = leg; channels = rotation; }
+    joint tail_tip { parent = tail; role = tail; channels = rotation; }
+    joint front_left_leg { parent = body; role = leg; channels = rotation; mirror = front_right_leg; }
+    joint front_right_leg { parent = body; role = leg; channels = rotation; mirror = front_left_leg; }
+    joint back_left_leg { parent = body; role = leg; channels = rotation; mirror = back_right_leg; }
+    joint back_right_leg { parent = body; role = leg; channels = rotation; mirror = back_left_leg; }
+
+    chain tail_chain = [tail, tail_tip];
+    anchor nose { joint = head; offset = (0u, 0u, -6u); }
+    anchor tail_end { joint = tail_tip; offset = (0u, 0u, 5u); }
   }
 
   export skeleton QuadrupedSkeleton implements QuadrupedRig {
@@ -18,6 +23,7 @@ module quadruped {
     bind neck { parent_origin = (0u, 2u, -6u); }
     bind head { parent_origin = (0u, 3u, -3u); }
     bind tail { parent_origin = (0u, 1u, 7u); }
+    bind tail_tip { parent_origin = (0u, 1u, 5.5u); }
     bind front_left_leg { parent_origin = (-3u, -2u, -5u); }
     bind front_right_leg { parent_origin = (3u, -2u, -5u); }
     bind back_left_leg { parent_origin = (-3u, -2u, 5u); }

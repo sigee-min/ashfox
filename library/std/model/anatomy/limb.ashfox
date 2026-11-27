@@ -1,0 +1,108 @@
+ashfox 1
+module limb {
+  export socket contract LimbSocket {
+  }
+
+  export surface contract BeastHindlegSurface {
+    chart thigh box { coverage = opaque; }
+    chart shin box { coverage = opaque; }
+    chart hock box { coverage = opaque; }
+    chart paw box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract RaptorForelegSurface {
+    chart leg box { coverage = opaque; }
+    chart foot box { coverage = opaque; }
+    chart talon box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract WarriorBootSurface {
+    chart leg box { coverage = opaque; }
+    chart cuff box { coverage = opaque; }
+    chart boot box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract PauldronSurface {
+    chart plate box { coverage = opaque; }
+    chart trim box { coverage = opaque; }
+    material = double;
+  }
+
+  export component DigitigradeHindleg {
+    requires socket mount: LimbSocket;
+    requires surface skin: BeastHindlegSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube thigh { origin = (-2u, -3.5u, -2u); size = (4u, 4u, 4u); pivot = (0u, 0u, 0u); rotation = (8deg, 0deg, 0deg); surface = skin.thigh; }
+        cube shin { origin = (-1.5u, -5.8u, -0.5u); size = (3u, 3u, 3u); pivot = (0u, -4.3u, 1u); rotation = (-16deg, 0deg, 0deg); surface = skin.shin; }
+        cube hock { origin = (-1u, -8u, -1.4u); size = (2u, 3u, 2u); pivot = (0u, -7.8u, -0.4u); rotation = (18deg, 0deg, 0deg); surface = skin.hock; }
+        cube paw { origin = (-1u, -9.8u, -2.8u); size = (2u, 2u, 3u); surface = skin.paw; }
+      }
+    }
+  }
+
+  export component RaptorForeleg {
+    requires socket mount: LimbSocket;
+    requires surface skin: RaptorForelegSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube leg { origin = (-1.5u, -7u, -1.5u); size = (3u, 8u, 3u); pivot = (0u, 0u, 0u); rotation = (-5deg, 0deg, 0deg); surface = skin.leg; }
+        cube foot { origin = (-2.5u, -9u, -4.5u); size = (5u, 2u, 5u); surface = skin.foot; }
+        cube talon_inner { origin = (-2.5u, -10u, -8.5u); size = (2u, 2u, 4u); surface = skin.talon; }
+        cube talon_outer { origin = (0.5u, -10u, -8.5u); size = (2u, 2u, 4u); surface = skin.talon; }
+      }
+    }
+  }
+
+  export component WarriorBoot {
+    requires socket mount: LimbSocket;
+    requires surface skin: WarriorBootSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube leg { origin = (-2u, -5u, -2u); size = (4u, 5u, 4u); surface = skin.leg; }
+        cube cuff { origin = (-2.5u, -7u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
+        cube boot { origin = (-2u, -10u, -4u); size = (4u, 3u, 6u); surface = skin.boot; }
+      }
+    }
+  }
+
+  export component SculptedPauldronLeft {
+    requires socket mount: LimbSocket;
+    requires surface skin: PauldronSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube plate { origin = (-4.5u, -1u, -2.5u); size = (5u, 3u, 5u); pivot = (0u, 0u, 0u); rotation = (0deg, 0deg, 16deg); surface = skin.plate; }
+        cube trim { origin = (-5u, 1.5u, -2u); size = (4u, 1u, 4u); pivot = (0u, 0u, 0u); rotation = (0deg, 0deg, 16deg); surface = skin.trim; }
+      }
+    }
+  }
+
+  export component SculptedPauldronRight {
+    requires socket mount: LimbSocket;
+    requires surface skin: PauldronSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube plate { origin = (-0.5u, -1u, -2.5u); size = (5u, 3u, 5u); pivot = (0u, 0u, 0u); rotation = (0deg, 0deg, -16deg); surface = skin.plate; }
+        cube trim { origin = (1u, 1.5u, -2u); size = (4u, 1u, 4u); pivot = (0u, 0u, 0u); rotation = (0deg, 0deg, -16deg); surface = skin.trim; }
+      }
+    }
+  }
+}
