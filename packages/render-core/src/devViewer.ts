@@ -2,9 +2,15 @@ import * as THREE from 'three';
 import type { CompiledVfx, ProjectDocument } from '@ashfox/engine-core';
 import { projectToThreeScene } from './projection';
 import { waitForProjectionTextures } from './captureSurface';
+import { createStudioEnvironmentMap } from './sceneMaterials';
 import { buildStructureScene, type StructureObservationPayload } from './structureRender';
 import { createVfxThreeGroup, evaluateVfxThreeGroup } from './vfxRender';
-import { createViewportEnvironment } from './viewportEnvironment';
+import {
+  addViewportLighting,
+  createGroundContactShadow,
+  createViewportEnvironment,
+  fitDirectionalShadowBounds,
+} from './viewportEnvironment';
 
 export interface DevInspectRef {
   readonly id: string;
@@ -276,14 +282,15 @@ const matchInspectRef = (
   return refs[0] ?? null;
 };
 
-const setupSceneLighting = (scene: THREE.Scene, twilight = false): void => {
+const setupSceneLighting = (
+  scene: THREE.Scene,
+  environmentTarget: THREE.WebGLRenderTarget,
+  twilight = false,
+): void => {
   const env = createViewportEnvironment(twilight ? 'evening' : 'studio');
   scene.background = env.background;
-  scene.add(new THREE.HemisphereLight('#edf3ff', '#4b5563', 1.4));
-  const key = new THREE.DirectionalLight('#fff5e6', 2.0);
-  key.position.set(24, 40, -24);
-  key.castShadow = true;
-  scene.add(key);
+  scene.environment = environmentTarget.texture;
+  addViewportLighting(scene);
 };
 
 const frameOrbitToRoot = (root: THREE.Object3D, orbit: OrbitState): void => {
@@ -297,6 +304,7 @@ const frameOrbitToRoot = (root: THREE.Object3D, orbit: OrbitState): void => {
 interface ViewerContext {
   readonly dom: ViewerDom;
   readonly renderer: THREE.WebGLRenderer;
+  readonly environmentTarget: THREE.WebGLRenderTarget;
   readonly camera: THREE.PerspectiveCamera;
   readonly orbit: OrbitState;
   activeRefs: readonly DevInspectRef[];
@@ -378,6 +386,50 @@ const mountVfxContent = (ctx: ViewerContext, vfx: CompiledVfx): void => {
   resizeViewport(ctx);
 };
 
+const mountModelContent = async (ctx: ViewerContext, doc: ProjectDocument): Promise<void> => {
+  ctx.dom.preview2d.style.display = 'none';
+  const proj = projectToThreeScene(doc, {
+    assets: {},
+    showSkeleton: true,
+    showTextures: true,
+    showWireframe: false,
+  });
+  await waitForProjectionTextures(proj, new AbortController().signal);
+  proj.root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(proj.root);
+  fitDirectionalShadowBounds(ctx.activeScene, bounds);
+  const groundShadow = createGroundContactShadow(bounds, { studioStage: true });
+  ctx.activeScene.add(groundShadow.object, proj.root);
+  ctx.selectable = [...proj.selectable];
+  ctx.disposeActive = () => {
+    groundShadow.dispose();
+    proj.dispose();
+  };
+  frameOrbitToRoot(proj.root, ctx.orbit);
+  resizeViewport(ctx);
+};
+
+const mountStructureContent = async (
+  ctx: ViewerContext,
+  structure: StructureObservationPayload,
+  inspectRefs: readonly DevInspectRef[],
+): Promise<void> => {
+  ctx.dom.preview2d.style.display = 'none';
+  const handle = await buildStructureScene(
+    structure,
+    { dioramaBase: true },
+    new AbortController().signal,
+  );
+  ctx.activeScene.add(handle.root);
+  handle.root.traverse((o) => {
+    if (o instanceof THREE.Mesh) ctx.selectable.push(o);
+  });
+  addStructurePickBoxes(inspectRefs, ctx.selectable, ctx.activeScene);
+  ctx.disposeActive = () => handle.dispose();
+  frameOrbitToRoot(handle.root, ctx.orbit);
+  resizeViewport(ctx);
+};
+
 const applyViewerState = async (ctx: ViewerContext, state: DevViewerState): Promise<void> => {
   ctx.dom.titleEl.textContent = `${state.entry} (${state.kind})`;
   const delta =
@@ -391,40 +443,9 @@ const applyViewerState = async (ctx: ViewerContext, state: DevViewerState): Prom
   ctx.selectable = [];
   ctx.highlight = null;
   ctx.activeScene = new THREE.Scene();
-  setupSceneLighting(ctx.activeScene);
-  if (state.document) {
-    ctx.dom.preview2d.style.display = 'none';
-    const proj = projectToThreeScene(state.document, {
-      assets: {},
-      showSkeleton: true,
-      showTextures: true,
-      showWireframe: false,
-    });
-    await waitForProjectionTextures(proj, new AbortController().signal);
-    ctx.activeScene.add(proj.root);
-    ctx.selectable = [...proj.selectable];
-    ctx.disposeActive = () => proj.dispose();
-    frameOrbitToRoot(proj.root, ctx.orbit);
-    resizeViewport(ctx);
-    return;
-  }
-  if (state.structure) {
-    ctx.dom.preview2d.style.display = 'none';
-    const handle = await buildStructureScene(
-      state.structure,
-      { dioramaBase: true },
-      new AbortController().signal,
-    );
-    ctx.activeScene.add(handle.root);
-    handle.root.traverse((o) => {
-      if (o instanceof THREE.Mesh) ctx.selectable.push(o);
-    });
-    addStructurePickBoxes(state.inspectRefs, ctx.selectable, ctx.activeScene);
-    ctx.disposeActive = () => handle.dispose();
-    frameOrbitToRoot(handle.root, ctx.orbit);
-    resizeViewport(ctx);
-    return;
-  }
+  setupSceneLighting(ctx.activeScene, ctx.environmentTarget);
+  if (state.document) return mountModelContent(ctx, state.document);
+  if (state.structure) return mountStructureContent(ctx, state.structure, state.inspectRefs);
   if (state.vfx) return mountVfxContent(ctx, state.vfx);
   mount2dContent(ctx, state);
 };
@@ -432,11 +453,18 @@ const applyViewerState = async (ctx: ViewerContext, state: DevViewerState): Prom
 export const mountDevViewer = (): void => {
   const dom = createViewerDom();
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   dom.viewport.appendChild(renderer.domElement);
+  const environmentTarget = createStudioEnvironmentMap(renderer);
   const ctx: ViewerContext = {
     dom,
     renderer,
+    environmentTarget,
     camera: new THREE.PerspectiveCamera(42, 1, 0.1, 1000),
     orbit: { theta: 0.7, phi: 1.05, radius: 24, target: new THREE.Vector3() },
     activeRefs: [],
@@ -445,6 +473,11 @@ export const mountDevViewer = (): void => {
     activeScene: new THREE.Scene(),
     disposeActive: () => {},
   };
+  window.addEventListener('beforeunload', () => {
+    ctx.disposeActive();
+    environmentTarget.dispose();
+    renderer.dispose();
+  });
   window.addEventListener('resize', () => resizeViewport(ctx));
   attachOrbitControls(
     renderer.domElement,

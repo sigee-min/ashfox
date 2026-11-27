@@ -92,25 +92,147 @@ export const createViewportEnvironment = (id: ViewportEnvironmentId): ViewportEn
 };
 
 export const addViewportLighting = (scene: THREE.Scene): void => {
-  scene.add(new THREE.HemisphereLight('#edf3ff', '#6c7686', 1.65));
+  scene.add(new THREE.HemisphereLight('#e6efff', '#626c7d', 1.15));
 
-  const keyLight = new THREE.DirectionalLight('#fff5e6', 2.15);
+  const keyLight = new THREE.DirectionalLight('#fff3e0', 1.65);
   keyLight.position.set(14, 26, -18);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.mapSize.set(2048, 2048);
   keyLight.shadow.camera.near = 0.1;
   keyLight.shadow.camera.far = 120;
   keyLight.shadow.camera.left = -28;
   keyLight.shadow.camera.right = 28;
   keyLight.shadow.camera.top = 32;
   keyLight.shadow.camera.bottom = -10;
+  keyLight.shadow.bias = -0.0006;
+  keyLight.shadow.normalBias = 0.02;
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight('#d8e6ff', 1.0);
+  const fillLight = new THREE.DirectionalLight('#cfe0ff', 0.65);
   fillLight.position.set(-16, 12, -12);
   scene.add(fillLight);
 
-  const rimLight = new THREE.DirectionalLight('#bfd6ff', 0.95);
-  rimLight.position.set(-12, 16, 18);
+  const rimLight = new THREE.DirectionalLight('#dcebff', 0.95);
+  rimLight.position.set(-12, 18, 18);
   scene.add(rimLight);
+};
+
+/** Tightens the casting key light shadow frustum around the subject bounds. */
+export const fitDirectionalShadowBounds = (scene: THREE.Scene, bounds: THREE.Box3): void => {
+  if (bounds.isEmpty()) return;
+  const target = bounds.getCenter(new THREE.Vector3());
+  const span = Math.max(bounds.getSize(new THREE.Vector3()).length() * 0.85, 3.5);
+  for (const child of scene.children) {
+    if (!(child instanceof THREE.DirectionalLight && child.castShadow)) continue;
+    child.shadow.camera.left = -span;
+    child.shadow.camera.right = span;
+    child.shadow.camera.top = span;
+    child.shadow.camera.bottom = -span;
+    child.shadow.camera.near = 0.1;
+    child.shadow.camera.far = Math.max(24, span * 4.5);
+    child.shadow.bias = -0.0005;
+    child.shadow.normalBias = 0.018;
+    child.shadow.camera.updateProjectionMatrix();
+    child.position.copy(target).add(new THREE.Vector3(span * 0.56, span * 1.04, -span * 0.72));
+    child.target.position.copy(target);
+    child.target.updateMatrixWorld();
+  }
+};
+
+const createRadialDiscTexture = (stops: readonly (readonly [number, string])[]): THREE.Texture => {
+  const canvas = window.document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Contact shadow canvas is unavailable.');
+  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+  for (const [offset, color] of stops) gradient.addColorStop(offset, color);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  return texture;
+};
+
+const addRadialDiscMesh = (
+  group: THREE.Group,
+  disposables: { dispose: () => void }[],
+  radius: number,
+  y: number,
+  cx: number,
+  cz: number,
+  stops: readonly (readonly [number, string])[],
+): void => {
+  const texture = createRadialDiscTexture(stops);
+  const geometry = new THREE.CircleGeometry(radius, 48);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(cx, y, cz);
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  group.add(mesh);
+  disposables.push(texture, geometry, material);
+};
+
+export interface GroundContactShadow {
+  readonly object: THREE.Group;
+  readonly dispose: () => void;
+}
+
+/** Creates a subtle contact shadow receiver + optional studio floor disc beneath bounds.min.y. */
+export const createGroundContactShadow = (
+  bounds: THREE.Box3,
+  options?: { readonly studioStage?: boolean },
+): GroundContactShadow => {
+  const object = new THREE.Group();
+  object.name = 'ashfoxGroundContactShadow';
+  if (bounds.isEmpty()) return { object, dispose: () => {} };
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  const footprint = Math.max(size.x, size.z, 1.5);
+  const groundY = bounds.min.y - 0.003;
+  const disposables: { dispose: () => void }[] = [];
+
+  if (options?.studioStage) {
+    addRadialDiscMesh(object, disposables, footprint * 1.6, groundY - 0.001, center.x, center.z, [
+      [0, 'rgba(46, 54, 68, 0.55)'],
+      [0.55, 'rgba(34, 41, 52, 0.24)'],
+      [1, 'rgba(23, 27, 32, 0)'],
+    ]);
+  }
+  addRadialDiscMesh(object, disposables, footprint * 0.72, groundY + 0.001, center.x, center.z, [
+    [0, 'rgba(5, 8, 13, 0.34)'],
+    [0.55, 'rgba(5, 8, 13, 0.14)'],
+    [1, 'rgba(5, 8, 13, 0)'],
+  ]);
+
+  const shadowGeometry = new THREE.PlaneGeometry(footprint * 3.2, footprint * 3.2);
+  const shadowMaterial = new THREE.ShadowMaterial({
+    color: '#05080d',
+    opacity: 0.36,
+    depthWrite: false,
+  });
+  const shadowMesh = new THREE.Mesh(shadowGeometry, shadowMaterial);
+  shadowMesh.rotation.x = -Math.PI / 2;
+  shadowMesh.position.set(center.x, groundY, center.z);
+  shadowMesh.receiveShadow = true;
+  shadowMesh.castShadow = false;
+  object.add(shadowMesh);
+  disposables.push(shadowGeometry, shadowMaterial);
+
+  return {
+    object,
+    dispose: () => {
+      for (const item of disposables) item.dispose();
+    },
+  };
 };

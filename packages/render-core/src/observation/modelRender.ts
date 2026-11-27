@@ -6,6 +6,7 @@ import { projectToThreeScene } from '../projection';
 import { applyAnimationPose } from '../animationPose';
 import { type createCaptureSurface } from '../captureSurface';
 import { applyCameraPreset, applySignedProjectViewPreset } from '../cameraPresets';
+import { createGroundContactShadow, fitDirectionalShadowBounds } from '../viewportEnvironment';
 import type { ViewOptions } from './contract';
 
 export const base64Bytes = (bytes: Uint8Array): string => {
@@ -99,26 +100,6 @@ const sampleAnimatedBounds = (
   return bounds;
 };
 
-const updateDirectionalShadowBounds = (
-  scene: THREE.Scene,
-  target: THREE.Vector3,
-  span: number,
-): void => {
-  for (const child of scene.children) {
-    if (!(child instanceof THREE.DirectionalLight && child.castShadow)) continue;
-    child.shadow.camera.left = -span;
-    child.shadow.camera.right = span;
-    child.shadow.camera.top = span;
-    child.shadow.camera.bottom = -span;
-    child.shadow.camera.far = span * 4;
-    child.shadow.bias = -0.002;
-    child.shadow.camera.updateProjectionMatrix();
-    child.position.copy(target).add(new THREE.Vector3(span * 0.6, span * 0.9, -span * 0.7));
-    child.target.position.copy(target);
-    child.target.updateMatrixWorld();
-  }
-};
-
 export const computeTargetFraming = (
   model: ProjectDocument,
   projection: ReturnType<typeof projectToThreeScene>,
@@ -139,10 +120,7 @@ export const computeTargetFraming = (
     );
   else applyCameraPreset(surface.camera, v.camera, bounds, model.settings.forward);
   const distance = surface.camera.position.distanceTo(target) / v.zoom;
-  if (distance > 120) {
-    const span = Math.max(bounds.getSize(new THREE.Vector3()).length(), 120);
-    updateDirectionalShadowBounds(surface.scene, target, span);
-  }
+  fitDirectionalShadowBounds(surface.scene, bounds);
   surface.scene.fog = null;
   if (v.background !== 'environment') {
     surface.scene.background = null;
@@ -203,6 +181,12 @@ const writeGifFrame = (
   if (encoder.bytesView().length > 32 * 1024 * 1024) throw new Error('GIF exceeds 32 MiB');
 };
 
+const shouldAttachGroundShadow = (v: ViewOptions): boolean =>
+  !v.wireframe &&
+  !v.node &&
+  v.camera !== 'bottom' &&
+  (v.elevation === undefined || v.elevation >= 0);
+
 export const renderModelFrames = (
   model: ProjectDocument,
   projection: ReturnType<typeof projectToThreeScene>,
@@ -217,18 +201,34 @@ export const renderModelFrames = (
 ): { mime: string; data: string } => {
   const encoder = GIFEncoder();
   const bg = v.background === 'environment' ? 'transparent' : v.background;
-  for (let i = 0; i < frames; i++) {
-    const time = replay && clip ? (v.time + i / v.fps) % clip.durationSeconds : v.time;
-    applyAnimationPose(model, projection, clip?.id ?? null, time);
-    positionFrameCamera(surface.camera, v, replay, i, frames, target, distance);
-    surface.renderer.render(surface.scene, surface.camera);
-    fillBackground(output.context, v.width, v.height, bg);
-    output.context.drawImage(surface.renderCanvas, 0, 0);
-    if (!replay) {
-      return { mime: 'image/png', data: output.canvas.toDataURL('image/png').split(',')[1] };
-    }
-    writeGifFrame(encoder, output, v, i);
+  let groundShadow: ReturnType<typeof createGroundContactShadow> | null = null;
+  if (shouldAttachGroundShadow(v)) {
+    applyAnimationPose(model, projection, clip?.id ?? null, v.time);
+    projection.root.updateMatrixWorld(true);
+    groundShadow = createGroundContactShadow(new THREE.Box3().setFromObject(projection.root), {
+      studioStage: v.background === 'environment',
+    });
+    surface.scene.add(groundShadow.object);
   }
-  encoder.finish();
-  return { mime: 'image/gif', data: base64Bytes(encoder.bytes()) };
+  try {
+    for (let i = 0; i < frames; i++) {
+      const time = replay && clip ? (v.time + i / v.fps) % clip.durationSeconds : v.time;
+      applyAnimationPose(model, projection, clip?.id ?? null, time);
+      positionFrameCamera(surface.camera, v, replay, i, frames, target, distance);
+      surface.renderer.render(surface.scene, surface.camera);
+      fillBackground(output.context, v.width, v.height, bg);
+      output.context.drawImage(surface.renderCanvas, 0, 0);
+      if (!replay) {
+        return { mime: 'image/png', data: output.canvas.toDataURL('image/png').split(',')[1] };
+      }
+      writeGifFrame(encoder, output, v, i);
+    }
+    encoder.finish();
+    return { mime: 'image/gif', data: base64Bytes(encoder.bytes()) };
+  } finally {
+    if (groundShadow) {
+      surface.scene.remove(groundShadow.object);
+      groundShadow.dispose();
+    }
+  }
 };
