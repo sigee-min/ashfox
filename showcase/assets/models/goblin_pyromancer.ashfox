@@ -15,6 +15,6 @@ model goblin_pyromancer {
   use kit.PyroGear as staff { skin = skins.pyro_staff; }
   connect body.gear_hand -> staff.grip;
 
-  anchor fireball_muzzle : combat_hook.ProjectileMuzzle { bone = weapon; at = (0u, 18u, 0u); projectile_id = "ashfox:ember_bolt"; speed = 28.0; sfx = "ashfox:fire_loop"; }
+  anchor fireball_muzzle : combat_hook.ProjectileMuzzle { bone = weapon; at = (1u, 17u, -5u); projectile_id = "ashfox:ember_bolt"; speed = 28.0; sfx = "ashfox:fire_loop"; }
   meta caster_ai : combat_hook.CombatStateMeta { aggro_range = 22.0; leash_range = 42.0; attack_cooldown = 1.8s; }
 }

@@ -32,7 +32,7 @@ model wall_lantern {
         iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
         brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
       }
-      chart plate box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } pattern ao { strength = 0.35; radius = 0.5u; } }
+      chart plate box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; face north { pattern border { paint = brass; width = 1px; edges = all; } } face south { pattern border { paint = brass; width = 1px; edges = all; } } pattern ao { strength = 0.35; radius = 0.5u; } }
       chart arm box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; pattern ao { strength = 0.3; radius = 0.5u; } }
       chart brace box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; }
       chart frame box { fill = iron; roughness = 0.32; metallic = 0.90; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.5u; } }

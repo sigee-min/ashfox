@@ -17,7 +17,7 @@
   "closureHash": "sha256:3582c338b12663c6fa0b2badc14203f51ee5a9228cc5b42d6b89257ae8288dbc",
   "buildKey": "sha256:1091b5bd5d509e551c80b8e24064292c8dcea1d5a94e1dc0f0b38c8da6d39d84",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:35f708cc5f17471bf4a9e34ffccaf4e2b75d4d0034634d3b897cdcabf70c0773",
+  "productHash": "sha256:051341aa5a7b3e35313b1c81ebf64852fe8a6749aa31fcdbe641b2f96ac5f44d",
   "textures": [
     {
       "id": "boss_plumage_a92bbcc1d3d6",
@@ -28,9 +28,9 @@
         "boss_plumage_a92bbcc1d3d6\u0000face_neutral",
         "boss_plumage_a92bbcc1d3d6\u0000face_screech"
       ],
-      "embeddedSha256": "sha256:bbad119dea72c3041f977e1e1c0610348d3574e6ee10f29727a15d893a106c21",
-      "pngSha256": "sha256:bbad119dea72c3041f977e1e1c0610348d3574e6ee10f29727a15d893a106c21",
-      "byteLength": 4082
+      "embeddedSha256": "sha256:7237ffcaa9fa78d4571efc9b20a9e56a1bb8e99dcc296e4dc5694b8c90fef8c6",
+      "pngSha256": "sha256:7237ffcaa9fa78d4571efc9b20a9e56a1bb8e99dcc296e4dc5694b8c90fef8c6",
+      "byteLength": 4039
     }
   ],
   "files": [
@@ -39,8 +39,8 @@
       "role": "model",
       "path": "griffin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:b09f403ccfd15b63c0fee38ffe1dc4807b2ca2b93a207ecb29b9481d2f01190a",
-      "byteLength": 44032
+      "sha256": "sha256:3cb6c4a54abf0111657a61bbffed9a02887074dfed3b23e506d941a475e0e20a",
+      "byteLength": 43988
     }
   ]
 }

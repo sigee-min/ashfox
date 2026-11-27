@@ -124,7 +124,14 @@ const resolveLayout = (id: string, state: LayoutState): Layout | null => {
 };
 
 const shiftTargetNames = (node: GeometryRecord['node']): readonly string[] => {
-  if (node.kind === 'cube') return ['origin', 'pivot'];
+  if (
+    node.kind === 'cube' ||
+    node.kind === 'taper' ||
+    node.kind === 'wedge' ||
+    node.kind === 'cylinder'
+  ) {
+    return ['origin', 'pivot'];
+  }
   if (node.kind === 'bone') return ['pivot'];
   return node.properties.some((value) => value.name === 'position') ? ['position'] : ['origin'];
 };
