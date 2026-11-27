@@ -359,26 +359,17 @@ structure placed_host {
   size = (28b, 10b, 20b);
   palette { grass = "minecraft:grass_block"; stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
   box { from = (0b, 0b, 0b); to = (27b, 0b, 19b); block = grass; }
-  prefab wing {
-    floor f { y = 0b; height = 7b;
-      room r { from = (1b, 1b); size = (8b, 8b); kind = living; floor = oak; wall = stone; ceiling = oak;
-        interior {
-          dna { arch = rustic; organic = 0; }
-          platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
-          platform dais_def { height = 0.25; }
-          alcove alc_def { kind = display; }
-          partition p_mid { style = screen; axis = x; }
-          mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
-          low_table lt_def { at = (2, 1, 2); facing = east; }
-          chair c_ctr { on = center; }
-          wall_line { on = south; table wl_t {} chair wl_c {} }
-          wall_line { on = [north, east]; table desk {} story tea_ceremony { on = desk; } }
-          drapery diag_c { kind = chains; from = (32, 64, 32); to = (96, 80, 96); }
-        }
-      }
-      facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
-    }
-  }
+  prefab wing { floor f { y = 0b; height = 7b;
+    room r { from = (1b, 1b); size = (8b, 8b); kind = living; floor = oak; wall = stone; ceiling = oak; interior {
+      dna { arch = rustic; organic = 0; }
+      platform dais { from = (2, 2); size = (3, 2); height = 0.25; } platform dais_def { height = 0.25; }
+      alcove alc_def { kind = display; } partition p_mid { style = screen; axis = x; } mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
+      low_table lt_def { at = (2, 1, 2); facing = east; } chair c_ctr { on = center; }
+      wall_line { on = south; table wl_t {} chair wl_c {} } wall_line { on = [north, east]; table desk {} story tea_ceremony { on = desk; } }
+      drapery diag_c { kind = chains; from = (32, 64, 32); to = (96, 80, 96); }
+    } }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  } }
   place wing { at = (15b, 0b, 3b); rotate = 90; }
 }`;
   const placedRoom = compileOne('host.ashfox', hostSrc).grid.interiors![0]!;
@@ -488,6 +479,14 @@ structure yaw_col {
     mrToggles.length >= 8 &&
       mrToggles.every((id) => mrLightIds.has(id)) &&
       new Set(mrToggles).size === mrToggles.length,
+  );
+  const stIntSrc = `ashfox 1 structure st_int { size = (19b, 7b, 19b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } prefab wing { floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; } interior r { chair c1 { at = (3, 1, 3); facing = north; } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } } place wing { at = (15b, 0b, 15b); rotate = 180; } }`;
+  const stSit = compileOne('stint.ashfox', stIntSrc).playableMeta.interiors![0]!.hooks.find(
+    (h) => h.id === 'c1:sit',
+  )!;
+  assert.deepEqual(
+    [stSit.position, stSit.kind === 'sit' ? stSit.facing : ''],
+    [[12.5, 1, 12.5], 'south'],
   );
   console.log('ashfox interior wiring integration tests ok');
 };

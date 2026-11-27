@@ -362,7 +362,7 @@ const evalSemanticOp = (
       (c, m) => failEval(ownerPath, c, m),
     );
   } else if (op.op === 'furnish') evalFurnishOp(state, ownerPath, op, frame, depth);
-  else if (op.op === 'interior') state.interiorSpecs.push({ ownerPath, op });
+  else if (op.op === 'interior') state.interiorSpecs.push({ ownerPath, op, frame });
   else if (op.op === 'compound_place') evalCompoundPlace(state, ownerPath, op, frame);
   else
     return runWeatherAndSocketOp(state, ownerPath, op, frame, (v) => evalVec3(state, ownerPath, v));
