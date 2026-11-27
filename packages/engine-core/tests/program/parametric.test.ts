@@ -372,6 +372,10 @@ sprite rune_bars {
   assert.ok(
     negInterp.diagnostics.some((d) => d.code === 'program.static-for-negative-interpolation'),
   );
+  const unsafeBound = parseAshfoxProgram(
+    'ashfox 1\nstructure s { for i in 9007199254740992..9007199254740994 {} }',
+  );
+  assert.ok(unsafeBound.diagnostics.some((d) => d.code === 'program.static-for-non-integer-bound'));
 }
 
 // 4. `variant` matrix elaboration, directory compilation, exports, modularity, and shared dedup.

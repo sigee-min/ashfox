@@ -337,8 +337,9 @@ const expandForLoop = (
     );
     return null;
   }
-  for (let val = parsed.start; val < parsed.end; val += 1) {
-    if (!runLoopIteration(parsed, val, env, depth, out, diagnostics)) return null;
+  const count = parsed.end - parsed.start;
+  for (let offset = 0; offset < count; offset += 1) {
+    if (!runLoopIteration(parsed, parsed.start + offset, env, depth, out, diagnostics)) return null;
   }
   return parsed.afterLoopIndex;
 };

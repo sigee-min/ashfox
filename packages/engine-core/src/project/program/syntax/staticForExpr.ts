@@ -287,11 +287,15 @@ export const evalStaticIntBound = (
   const result = parseAdditive(ctx, start);
   if (!result) return null;
   const span = tokens[start]?.span ?? tokens[tokens.length - 1]!.span;
-  if (result.scalar.unit !== '' || !result.scalar.isInt || !Number.isInteger(result.scalar.value)) {
+  if (
+    result.scalar.unit !== '' ||
+    !result.scalar.isInt ||
+    !Number.isSafeInteger(result.scalar.value)
+  ) {
     diagnostics.push(
       staticForError(
         'program.static-for-non-integer-bound',
-        'Static for loop bounds must evaluate to plain integers without units.',
+        'Static for loop bounds must evaluate to plain safe integers without units.',
         span,
       ),
     );
