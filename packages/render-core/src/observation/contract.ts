@@ -26,7 +26,7 @@ export interface ViewOptions {
   readonly node?: string;
   readonly texture?: string;
   readonly mode: 'motion' | 'turntable' | 'build';
-  readonly sheet?: 'turnaround' | 'inspect' | 'exterior' | 'cutaway' | 'interior';
+  readonly sheet?: 'turnaround' | 'inspect' | 'exterior' | 'cutaway' | 'interior' | 'flipbook';
 }
 export const DEFAULT_VIEW: ViewOptions = {
   width: 640,

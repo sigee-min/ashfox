@@ -1,9 +1,14 @@
 import type { SourceSpan } from '../../source/contract';
 import type { ProgramExpr } from '../syntax/contract';
 import type {
+  AssetAnchorDecl,
   AssetBindDecl,
+  AssetChainDecl,
   AssetFrameDecl,
+  AssetIkLimbDecl,
   AssetJointDecl,
+  AssetJointLimitsDecl,
+  AssetMotionChannel,
   AssetPropertyDecl,
   AssetQualifiedName,
   AssetRigContractDecl,
@@ -39,7 +44,7 @@ const readJointChannels = (
   reader: AssetReader,
   channelValue: ProgramExpr | undefined,
   span: SourceSpan,
-): readonly ('rotation' | 'scale')[] => {
+): readonly AssetMotionChannel[] => {
   if (channelValue === undefined) {
     reader.failSpan(
       'asset.missing-joint-channels',
@@ -49,14 +54,14 @@ const readJointChannels = (
     return Object.freeze([]);
   }
   const raw = channelValue.kind === 'vector' ? channelValue.values : [channelValue];
-  const channels: ('rotation' | 'scale')[] = [];
+  const channels: AssetMotionChannel[] = [];
   for (const value of raw) {
     const name = valueName(value);
-    if (isOneOf(['rotation', 'scale'] as const, name)) channels.push(name);
+    if (isOneOf(['position', 'rotation', 'scale'] as const, name)) channels.push(name);
     else {
       reader.failSpan(
         'asset.invalid-joint-channels',
-        'Joint channels must name rotation and/or scale.',
+        'Joint channels must name position, rotation, and/or scale.',
         value.span,
       );
     }
@@ -64,17 +69,49 @@ const readJointChannels = (
   return Object.freeze(channels);
 };
 
+const readRangeExpr = (reader: AssetReader): readonly [ProgramExpr, ProgramExpr] => {
+  const min = reader.expression();
+  reader.expect('..', 'Expected .. in limits range.');
+  const max = reader.expression();
+  return Object.freeze([min, max] as const);
+};
+
+const readJointLimits = (reader: AssetReader): AssetJointLimitsDecl => {
+  const start = reader.expectWord('limits', 'Expected limits.');
+  let pitch: readonly [ProgramExpr, ProgramExpr] | null = null;
+  let yaw: readonly [ProgramExpr, ProgramExpr] | null = null;
+  let roll: readonly [ProgramExpr, ProgramExpr] | null = null;
+  const close = readBraced(
+    reader,
+    'Expected { to begin joint limits.',
+    'Expected } to close joint limits.',
+    () => {
+      const axis = reader.id('Expected pitch, yaw, or roll in joint limits.');
+      reader.expect('=', 'Expected = in joint limit.');
+      const range = readRangeExpr(reader);
+      reader.finish();
+      if (axis.value === 'pitch') pitch = range;
+      else if (axis.value === 'yaw') yaw = range;
+      else if (axis.value === 'roll') roll = range;
+      else reader.fail('asset.invalid-property', `Unknown joint limit axis "${axis.value}".`, axis);
+    },
+  );
+  return Object.freeze({ kind: 'limits', pitch, yaw, roll, span: join(start.span, close.span) });
+};
+
 const readJoint = (reader: AssetReader): AssetJointDecl => {
   const start = reader.expectWord('joint', 'Expected joint.');
   const id = reader.id('Expected a joint name.');
   const values: AssetPropertyDecl[] = [];
   let frame: AssetFrameDecl | null = null;
+  let limits: AssetJointLimitsDecl | null = null;
   const close = readBraced(
     reader,
     'Expected { to begin a rig joint.',
     'Expected } to close a rig joint.',
     () => {
       if (reader.checkWord('frame')) frame = readUniqueFrame(reader, frame);
+      else if (reader.checkWord('limits')) limits = readJointLimits(reader);
       else if (reader.assignment()) values.push(readProperty(reader));
       else reader.scopeError('rig contract joint');
     },
@@ -96,6 +133,7 @@ const readJoint = (reader: AssetReader): AssetJointDecl => {
     frame,
     channels,
     mirror: optionalTarget(mirrorValue, id.span),
+    limits,
     span: join(start.span, close.span),
   });
 };
@@ -146,12 +184,109 @@ const readSocket = (reader: AssetReader): AssetSocketDecl => {
   });
 };
 
+const readChain = (reader: AssetReader): AssetChainDecl => {
+  const start = reader.expectWord('chain', 'Expected chain.');
+  const id = reader.id('Expected a chain name.');
+  reader.expect('=', 'Expected = after chain name.');
+  reader.expect('[', 'Expected [ to begin chain joint list.');
+  const joints: AssetQualifiedName[] = [];
+  while (!reader.check(']') && !reader.end()) {
+    joints.push(reader.qualified('Expected joint name in chain.'));
+    if (!reader.match(',')) break;
+  }
+  const close = reader.expect(']', 'Expected ] to close chain joint list.');
+  reader.finish();
+  return Object.freeze({
+    kind: 'chain',
+    id: id.value,
+    joints: Object.freeze(joints),
+    span: join(start.span, close.span),
+  });
+};
+
+const readIkChainPair = (
+  reader: AssetReader,
+  chainExpr: ProgramExpr | undefined,
+  span: SourceSpan,
+): readonly [AssetQualifiedName, AssetQualifiedName] => {
+  if (chainExpr?.kind !== 'vector' || chainExpr.values.length !== 2) {
+    reader.failSpan('asset.invalid-ik-chain', 'ik_limb chain must list two joint names.', span);
+    return Object.freeze([qualifiedFromName('', span), qualifiedFromName('', span)]);
+  }
+  const first = qualifiedFromName(valueName(chainExpr.values[0]!), chainExpr.values[0]!.span);
+  const second = qualifiedFromName(valueName(chainExpr.values[1]!), chainExpr.values[1]!.span);
+  return Object.freeze([first, second]);
+};
+
+const readIkLimb = (reader: AssetReader): AssetIkLimbDecl => {
+  const start = reader.expectWord('ik_limb', 'Expected ik_limb.');
+  const id = reader.id('Expected an ik_limb name.');
+  const values: AssetPropertyDecl[] = [];
+  const close = readBraced(
+    reader,
+    'Expected { to begin an ik_limb.',
+    'Expected } to close an ik_limb.',
+    () => {
+      if (reader.assignment()) values.push(readProperty(reader));
+      else reader.scopeError('rig contract ik_limb');
+    },
+  );
+  checkClosedProperties(
+    reader,
+    values,
+    ['chain', 'end_effector', 'pole', 'ground', 'mirror'],
+    'rig contract ik_limb',
+  );
+  const chain = readIkChainPair(reader, propertyValue(values, 'chain'), id.span);
+  return Object.freeze({
+    kind: 'ik-limb',
+    id: id.value,
+    chain,
+    endEffector: optionalTarget(propertyValue(values, 'end_effector'), id.span),
+    pole: propertyValue(values, 'pole') ?? null,
+    ground: propertyValue(values, 'ground') ?? null,
+    mirror: optionalTarget(propertyValue(values, 'mirror'), id.span),
+    span: join(start.span, close.span),
+  });
+};
+
+const readAnchor = (reader: AssetReader): AssetAnchorDecl => {
+  const start = reader.expectWord('anchor', 'Expected anchor.');
+  const id = reader.id('Expected an anchor name.');
+  const values: AssetPropertyDecl[] = [];
+  const close = readBraced(
+    reader,
+    'Expected { to begin an anchor.',
+    'Expected } to close an anchor.',
+    () => {
+      if (reader.assignment()) values.push(readProperty(reader));
+      else reader.scopeError('rig contract anchor');
+    },
+  );
+  checkClosedProperties(reader, values, ['joint', 'offset'], 'rig contract anchor');
+  const jointExpr = propertyValue(values, 'joint');
+  const jointName = jointExpr === undefined ? null : valueName(jointExpr);
+  if (jointName === null) {
+    reader.fail('asset.missing-anchor-joint', 'An anchor requires a local joint.', id);
+  }
+  return Object.freeze({
+    kind: 'anchor',
+    id: id.value,
+    joint: qualifiedFromName(jointName, jointExpr?.span ?? id.span),
+    offset: propertyValue(values, 'offset') ?? null,
+    span: join(start.span, close.span),
+  });
+};
+
 interface RigContractState {
   frame: AssetFrameDecl | null;
   handedness: AssetRigContractDecl['handedness'] | null;
   handednessSeen: boolean;
   readonly joints: AssetJointDecl[];
   readonly sockets: AssetSocketDecl[];
+  readonly chains: AssetChainDecl[];
+  readonly ikLimbs: AssetIkLimbDecl[];
+  readonly anchors: AssetAnchorDecl[];
 }
 
 const readRigHandedness = (reader: AssetReader, state: RigContractState): void => {
@@ -179,6 +314,9 @@ const readRigEntry = (reader: AssetReader, state: RigContractState): void => {
   else if (reader.checkWord('handedness')) readRigHandedness(reader, state);
   else if (reader.checkWord('joint')) state.joints.push(readJoint(reader));
   else if (reader.checkWord('socket')) state.sockets.push(readSocket(reader));
+  else if (reader.checkWord('chain')) state.chains.push(readChain(reader));
+  else if (reader.checkWord('ik_limb')) state.ikLimbs.push(readIkLimb(reader));
+  else if (reader.checkWord('anchor')) state.anchors.push(readAnchor(reader));
   else reader.scopeError('rig contract');
 };
 
@@ -258,6 +396,9 @@ export const parseRigContract = (reader: AssetReader, exported: boolean): AssetR
     handednessSeen: false,
     joints: [],
     sockets: [],
+    chains: [],
+    ikLimbs: [],
+    anchors: [],
   };
   const close = readBraced(
     reader,
@@ -273,6 +414,9 @@ export const parseRigContract = (reader: AssetReader, exported: boolean): AssetR
     frame: state.frame,
     joints: Object.freeze(state.joints),
     sockets: Object.freeze(state.sockets),
+    chains: Object.freeze(state.chains),
+    ikLimbs: Object.freeze(state.ikLimbs),
+    anchors: Object.freeze(state.anchors),
     span: join(start.span, close.span),
   });
 };

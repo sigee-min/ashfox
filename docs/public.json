@@ -38,6 +38,10 @@
         "route": "/docs/guides/sounds/"
       },
       {
+        "source": "guides/vfx.md",
+        "route": "/docs/guides/vfx/"
+      },
+      {
         "source": "guides/observe.md",
         "route": "/docs/guides/observe/"
       },
@@ -130,6 +134,10 @@
       {
         "source": "language/sounds.md",
         "route": "/docs/language/sounds/"
+      },
+      {
+        "source": "language/vfx.md",
+        "route": "/docs/language/vfx/"
       },
       {
         "source": "language/structures.md",

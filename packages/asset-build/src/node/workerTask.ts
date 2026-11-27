@@ -29,6 +29,7 @@ import { encodeUtf8 } from '@ashfox/internal-contracts';
 import { checkSnapshot } from '../bundle/compile';
 import { BuildFailure, type Artifact, type AssetMetadata, type Snapshot } from '../bundle/contract';
 import { json } from '../shared/digest';
+import { runBuildVfxTask } from './workerVfx';
 
 export interface TargetExportSpec {
   readonly name: string;
@@ -105,6 +106,12 @@ export type WorkerTaskInput =
       readonly configuration: string;
       readonly files: readonly DirectoryFile[];
       readonly targets: readonly TargetExportSpec[];
+    }
+  | {
+      readonly kind: 'build-vfx';
+      readonly configuration: string;
+      readonly files: readonly DirectoryFile[];
+      readonly targets: readonly TargetExportSpec[];
     };
 
 export type WorkerTaskResult =
@@ -112,14 +119,14 @@ export type WorkerTaskResult =
   | { readonly kind: 'sound-audit' }
   | {
       readonly kind: 'check-entry';
-      readonly productKind: 'model' | 'sprite' | 'sound' | 'structure';
+      readonly productKind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
       readonly entry: WorkspaceEntrySelector;
       readonly audit?: StructureAuditReport;
       readonly pkgInterfaces?: readonly PackageInterfaceDigest[];
     }
   | {
       readonly kind: 'build-entry';
-      readonly productKind: 'model' | 'sprite' | 'structure';
+      readonly productKind: 'model' | 'sprite' | 'structure' | 'vfx';
       readonly metadata: AssetMetadata;
       readonly audit?: StructureAuditReport;
       readonly pkgInterfaces?: readonly PackageInterfaceDigest[];
@@ -145,8 +152,10 @@ const runSoundVariantTask = (
     : [];
   const variant = rawVariants.find((v) => v.id === task.variantId);
   if (!variant) throw new BuildFailure('sound.variant', `Missing variant ${task.variantId}`, 3);
-  const singleRecipe = { ...task.resolvedRecipe, variants: [variant] };
-  const products = compileSoundRecipe(singleRecipe, task.entryPath);
+  const products = compileSoundRecipe(
+    { ...task.resolvedRecipe, variants: [variant] },
+    task.entryPath,
+  );
   return { kind: 'sound-variant', sound: products[0]! };
 };
 
@@ -154,17 +163,15 @@ const runSoundAuditTask = (
   task: Extract<WorkerTaskInput, { readonly kind: 'sound-audit' }>,
 ): WorkerTaskResult => {
   const audit = evaluateSoundQuality(task.sounds);
-  if (!audit.passed) {
+  if (!audit.passed)
     throw new BuildFailure('quality.gate', formatSoundGateFailure(task.targetName, audit), 3);
-  }
   return { kind: 'sound-audit' };
 };
 
 const runCheckEntryTask = (
   task: Extract<WorkerTaskInput, { readonly kind: 'check-entry' }>,
 ): WorkerTaskResult => {
-  const checked = checkSnapshot(makeSubSnapshot(task.configuration, task.files));
-  const product = checked.products[0]!;
+  const product = checkSnapshot(makeSubSnapshot(task.configuration, task.files)).products[0]!;
   return {
     kind: 'check-entry',
     productKind: product.kind,
@@ -184,26 +191,23 @@ const runCheckEntryTask = (
 const runBuildSpriteTask = (
   task: Extract<WorkerTaskInput, { readonly kind: 'build-sprite' }>,
 ): WorkerTaskResult => {
-  const checked = checkSnapshot(makeSubSnapshot(task.configuration, task.files));
-  const product = checked.products[0]!;
+  const product = checkSnapshot(makeSubSnapshot(task.configuration, task.files)).products[0]!;
   if (product.kind !== 'sprite') throw new BuildFailure('workspace.compile', 'Expected sprite', 3);
   const audit = evaluateSpriteQuality(product.sprite);
-  const targetOutputs: TargetOutput[] = [];
-  for (const targetName of task.targetNames) {
-    if (!audit.passed) {
+  const targets = task.targetNames.map((targetName): TargetOutput => {
+    if (!audit.passed)
       throw new BuildFailure('quality.gate', formatSpriteGateFailure(targetName, audit), 3);
-    }
     const files: Artifact[] = [{ path: `${targetName}.png`, bytes: product.sprite.png }];
     if (hasHooksContent(product.hooks)) {
       files.push({ path: `${targetName}.hooks.json`, bytes: encodeUtf8(json(product.hooks)) });
     }
-    targetOutputs.push({ targetName, files });
-  }
+    return { targetName, files };
+  });
   return {
     kind: 'build-entry',
     productKind: 'sprite',
     metadata: { width: product.sprite.receipt.width, height: product.sprite.receipt.height },
-    targets: targetOutputs,
+    targets,
   };
 };
 
@@ -433,14 +437,21 @@ const runBuildModelTask = async (
   };
 };
 
-export const executeWorkerTask = async (task: WorkerTaskInput): Promise<WorkerTaskResult> => {
-  if (task.kind === 'sound-variant') return runSoundVariantTask(task);
-  if (task.kind === 'sound-audit') return runSoundAuditTask(task);
-  if (task.kind === 'check-entry') return runCheckEntryTask(task);
-  if (task.kind === 'build-sprite') return runBuildSpriteTask(task);
-  if (task.kind === 'build-structure') return runBuildStructureTask(task);
-  return runBuildModelTask(task);
+const TASK_HANDLERS: Record<
+  WorkerTaskInput['kind'],
+  (t: never) => Promise<WorkerTaskResult> | WorkerTaskResult
+> = {
+  'sound-variant': runSoundVariantTask,
+  'sound-audit': runSoundAuditTask,
+  'check-entry': runCheckEntryTask,
+  'build-sprite': runBuildSpriteTask,
+  'build-structure': runBuildStructureTask,
+  'build-vfx': runBuildVfxTask,
+  'build-model': runBuildModelTask,
 };
+
+export const executeWorkerTask = async (task: WorkerTaskInput): Promise<WorkerTaskResult> =>
+  TASK_HANDLERS[task.kind](task as never);
 
 export const startPoolWorker = (): void => {
   if (!parentPort) return;

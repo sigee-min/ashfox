@@ -96,13 +96,13 @@ rig contract는 관절 이름·부모 관계·로컬 프레임·허용 채널·�
 
 {{source-code:5}}
 
-관절은 `channels = rotation`, `channels = scale` 또는 둘의 튜플을 선언합니다. motion은 허용 채널만 사용합니다. parent·mirror는 관절 이름(없으면 생략 또는 `none`, 항등 `handedness = right`와 항등 `frame`도 생략 가능)입니다. 프레임은 부호 있는 직교 축이고 skeleton bind마다 정지 `parent_origin`과 비항등 프레임을 명시합니다.
+관절은 `position`, `rotation`, `scale` 채널 조합(예: `channels = (position, rotation);`)과 선택적 `limits`, `chain`, `ik_limb`, `anchor` 메타데이터를 선언합니다. motion은 허용 채널만 사용합니다. parent·mirror는 관절 이름(없으면 생략 또는 `none`, 항등 `handedness = right`와 항등 `frame`도 생략 가능)입니다. 프레임은 부호 있는 직교 축이고 skeleton bind마다 정지 `parent_origin`과 비항등 프레임을 명시합니다.
 
 바인딩의 **`parent_origin`**은 부모 관절 프레임 기준이고 루트는 모델 프레임입니다. 회전 없는 몸통 y가 `13u`, 어깨 모델 y가 `19.5u`, x가 `6.5u`라면 `(6.5u, 6.5u, 0u)`를 사용합니다. 부모 프레임은 자식 배치 전에 이 오프셋을 회전·반사합니다. 모호한 skeleton `origin`은 별칭 없이 거부합니다. 형상·socket frame의 origin은 각 문서화된 공간을 유지합니다.
 
 ## 5. 동작
 
-motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관절 하나의 `rotation` 또는 `scale`을 대상으로 합니다.
+motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관절 하나의 `position`, `rotation` 또는 `scale`을 대상으로 합니다.
 
 **조각 — 정지 공간 기준 상대 회전:**
 
@@ -115,9 +115,9 @@ motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관�
 - `loop`: `once`, `loop`, `hold_on_last_frame`.
 - `rest_relative`: 기본값이 `true`입니다.
 
-키 시간은 길이 안에서 엄격히 증가합니다. 각 키 끝에는 `linear`, `step`, `catmullrom` 중 하나를 붙여 다음 키까지 구간을 제어합니다. linear는 혼합, step은 시작값 유지, catmullrom은 이웃 키를 사용한 곡선입니다.
+키 시간은 길이 안에서 엄격히 증가합니다. 각 키 끝에는 보간 커브(`linear`, `step`, `smooth`, `ease_in`, `ease_out`, `ease_in_out`, `cubic`, `snap`, `anticipate`, `overshoot`, `bounce`, `elastic`, `catmullrom`)와 선택적 인자를 붙여 다음 키까지 구간을 제어합니다.
 
-회전은 `vec3<degree>`, 크기는 `(1, 1, 1)` 같은 양의 `vec3<ratio>`이며 관절이 scale 채널을 허용해야 합니다. position·ik는 대상이 될 수 없습니다. 현재 언어는 정지 공간 기준 상대 회전·크기만 지원합니다.
+위치는 `vec3<unit>`, 회전은 `vec3<degree>`(쿼터니언 네이티브 SLERP로 베이크), 크기는 `(1, 1, 1)` 같은 양의 `vec3<ratio>`이며 관절이 해당 채널을 허용해야 합니다. 동작에는 `wave`, `pose`, `at ... pose`, `layer`, `ik`(`foot_lock`), `secondary`(`chain`/`joint`), 전투 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `cue`(`sound`, `vfx`, `event`) 블록도 사용할 수 있습니다.
 
 ## 6. 조립
 

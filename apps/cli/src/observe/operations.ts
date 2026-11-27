@@ -10,6 +10,7 @@ import {
   evaluateAssetQuality,
   evaluateGlbPerformance,
   evaluateSpriteQuality,
+  auditVfx,
   rasterizeTexture,
   spriteInspectSheetPng,
   type AuditReport,
@@ -153,6 +154,18 @@ export const inspect = (asset: Prepared): unknown => {
       audit,
     };
   }
+  if (asset.product?.kind === 'vfx') {
+    const audit = auditVfx(asset.product.vfx);
+    return {
+      ...summary,
+      kind: 'vfx',
+      revision: asset.revision,
+      declarations: asset.declarations,
+      stats: asset.product.vfx.stats,
+      flipbook: asset.product.vfx.flipbookManifest,
+      audit,
+    };
+  }
   throw new BuildFailure('observe.kind', 'Unsupported asset', 2);
 };
 
@@ -234,6 +247,7 @@ const mediaPayload = (asset: Prepared, v: ViewOptions): unknown => {
       ).toString('base64'),
     };
   if (asset.product?.kind === 'sound') return soundWavePayload(asset, v);
+  if (asset.product?.kind === 'vfx') return { vfx: asset.product.vfx };
   throw new BuildFailure('observe.kind', 'Unsupported asset', 2);
 };
 
@@ -261,14 +275,27 @@ const MODEL_ONLY_VIEW_KEYS = [
   'texture',
 ] as const;
 
-const assertNonModelViewDefaults = (v: ViewOptions): void => {
-  for (const key of MODEL_ONLY_VIEW_KEYS)
+const assertNonModelViewDefaults = (v: ViewOptions, allowVfx: boolean): void => {
+  for (const key of MODEL_ONLY_VIEW_KEYS) {
+    if (
+      allowVfx &&
+      (key === 'camera' ||
+        key === 'azimuth' ||
+        key === 'elevation' ||
+        key === 'zoom' ||
+        key === 'time')
+    ) {
+      continue;
+    }
     if (v[key] !== DEFAULT_VIEW[key])
       throw new BuildFailure('observe.option', key + ' requires a model or structure', 2);
+  }
 };
 
 const assertRenderOptions = (asset: Prepared, v: ViewOptions, gif: boolean): void => {
-  if (asset.kind !== 'model' && asset.kind !== 'structure') assertNonModelViewDefaults(v);
+  if (asset.kind !== 'model' && asset.kind !== 'structure') {
+    assertNonModelViewDefaults(v, asset.kind === 'vfx');
+  }
   if (v.cutaway !== undefined && asset.kind !== 'structure')
     throw new BuildFailure('observe.option', 'cutaway requires a structure source', 2);
   if (v.sheet === 'turnaround' && asset.kind !== 'model' && asset.kind !== 'structure')

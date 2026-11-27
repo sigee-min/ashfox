@@ -2,7 +2,7 @@
   "README.md": "3fbd045dcfcbf9fc878417dbcd87e88a8381039d88213c1f23348c377563b816",
   "guides/agent-workflow.md": "24d0b87e1d0688ba587775da5b1fdb0a8be235e58217b2a54e2cd3d8702b63e3",
   "guides/ai-agent-quick-start.md": "93fe2517805fd7ee2cca1dcd5592018cdf0fe35565b26febb7804a7e2ff08249",
-  "guides/animation.md": "01917d74ccdf1bfa35e820009e5b48e6962e53d087a1d5744bac9b0b92c4243c",
+  "guides/animation.md": "9ebc300de6a1d95f5d53944189dc67a5f0bb8f3785134558b594ecb94944ed71",
   "guides/assets-as-code.md": "b5768ad8e7eccc50a193b71b50a2a389846e147408e2d8fa1e5d3705ba07c400",
   "guides/authoring-and-review.md": "5d1fe058e6feacebfe621a19344700c3a15d93dad76ebfe0f794e4be3698d9c9",
   "guides/automation.md": "94c6ee5eaf18a328b484e2f409d955107a01ddb1c0b24867651756e102b9fa36",
@@ -19,15 +19,17 @@
   "guides/sounds.md": "c3842f3b0c3020b60a3fd651d08fd36711100b3178caedf3a4884b6ae97b4afa",
   "guides/sprites.md": "58e0356fb7217acd962b36ae8333834b5adf99be67e4654361a6dc959dd4aeab",
   "guides/troubleshooting.md": "d7c836762de61554919cfae286a77a7e8073bfba2b352b1c42e561e5065e3d32",
+  "guides/vfx.md": "cc89502184222ab409503fbe8e576ff7281988cd00d92cd55e8aa910f2cde697",
   "guides/web-game.md": "7aaba7285ba21a13bfd865b19eba71696ddd61a8240a1762fb4fdf01f98e1289",
   "guides/workspace.md": "39b1346b2470f00d02e464b4351d6dbbb51f7dfe02cac6dac8562935560743b0",
   "language/README.md": "90a251a965090496ad5b793f77575b9e2f189527f69edf256ffc9a43bbb9f4f2",
   "language/components.md": "8b9bbc7d4c289dfb02d36d6e15559948cf5874a34ab1d56f8c0e1a6011c72397",
   "language/hooks.md": "0c74f37a3250fe1fd221ce3a892cfdec2eccd0cc77c516fee9915d5220779141",
-  "language/model.md": "ae4e05de97188f1ff47f372745423b460f1543f6feec0f8d14b5531d5751c2b0",
+  "language/model.md": "9fd145ea768e40c12086a759f78521939a42e453fa68d437713c75190c9a0070",
   "language/sounds.md": "e3d45d75002a4a26caa2f9b2af16684d7633498ed54a6e894cfd58410c9edfca",
   "language/sprites.md": "f1f43ec4a228689baf2cbc6db55adc8f414f928251023fa9e776215ca85dd45f",
   "language/structures.md": "3e4a79118c4769417bce1c1cc685dfb73a09c9aa5a5f6941dbe059441c625b33",
   "language/textures.md": "3a7d386ed7dddd83f0192f123816750c60b43ce8869ce87cd522d36e0553c4c4",
-  "language/values.md": "4ce0d980e4517572300bc336c26c877ae0786aa310d10b786cbcaf6d7b0316bb"
+  "language/values.md": "4ce0d980e4517572300bc336c26c877ae0786aa310d10b786cbcaf6d7b0316bb",
+  "language/vfx.md": "5aad131edbf2284f535c9eeaa9f97249d19a37b4964f2c928477ef65df621358"
 }

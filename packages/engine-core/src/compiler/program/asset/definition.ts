@@ -1,9 +1,12 @@
 import { freeze } from '../../../immutable';
+import type { JointLimits } from '../../../animation/contract';
 import type {
   AssetRigContractDecl,
   AssetSkeletonDecl,
   AssetSocketContractDecl,
+  AssetValueType,
 } from '../../../project/program/asset/contract';
+import type { ProgramExpr } from '../../../project/program/syntax/contract';
 import { nullRecord } from './diagnostics';
 import {
   type TypedRigContract,
@@ -11,8 +14,10 @@ import {
   type TypedSkeleton,
   type TypedSocketContract,
 } from './contract';
+import { buildRigAnchors, buildRigChains, buildRigIkLimbs } from './rigExtra';
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { buildTypedFrame } from './hirFrames';
+import { compileAndEvaluateHirExpression } from './hirValues';
 
 export const buildSocketContract = (
   context: AssemblyContext,
@@ -84,6 +89,75 @@ const validateJointGraph = (
   for (const id of Object.keys(joints)) visit(id);
 };
 
+const evalNumber = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  expr: ProgramExpr,
+  type: AssetValueType,
+): number | null => {
+  const val = compileAndEvaluateHirExpression(
+    expr,
+    type,
+    new Map(),
+    new Map(),
+    state.path,
+    context.issue,
+  );
+  if (val?.kind !== 'number') return null;
+  return Number(val.value.numerator) / Number(val.value.denominator);
+};
+
+const readLimitRange = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  range: readonly [ProgramExpr, ProgramExpr] | null,
+): readonly [number, number] | undefined => {
+  if (range === null) return undefined;
+  const min = evalNumber(context, state, range[0], 'degree');
+  const max = evalNumber(context, state, range[1], 'degree');
+  if (min === null || max === null) return undefined;
+  if (min > max) {
+    context.issue(
+      state.path,
+      range[0].span,
+      'asset.invalid-property',
+      'Joint limit minimum must not exceed maximum.',
+    );
+    return undefined;
+  }
+  return freeze([min, max] as const);
+};
+
+const readLocalJointRef = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  ref: AssetRigContractDecl['joints'][number]['parent'],
+  code: 'asset.invalid-joint-parent' | 'asset.invalid-joint-mirror',
+  message: string,
+): string | null => {
+  if (ref === null) return null;
+  if (ref.segments.length === 1) return ref.segments[0]!;
+  context.issue(state.path, ref.span, code, message);
+  return null;
+};
+
+const readJointLimits = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  raw: AssetRigContractDecl['joints'][number]['limits'],
+): JointLimits | null => {
+  if (!raw) return null;
+  const pitch = readLimitRange(context, state, raw.pitch);
+  const yaw = readLimitRange(context, state, raw.yaw);
+  const roll = readLimitRange(context, state, raw.roll);
+  if (pitch === undefined && yaw === undefined && roll === undefined) return null;
+  return freeze({
+    ...(pitch ? { pitch } : {}),
+    ...(yaw ? { yaw } : {}),
+    ...(roll ? { roll } : {}),
+  });
+};
+
 const buildRigJoint = (
   context: AssemblyContext,
   state: AssemblyState,
@@ -99,24 +173,20 @@ const buildRigJoint = (
     handedness,
     context.issue,
   );
-  const parent = joint.parent?.segments.length === 1 ? joint.parent.segments[0]! : null;
-  if (joint.parent !== null && joint.parent.segments.length !== 1) {
-    context.issue(
-      state.path,
-      joint.parent.span,
-      'asset.invalid-joint-parent',
-      'Rig joint parents are local semantic joint names.',
-    );
-  }
-  const mirror = joint.mirror?.segments.length === 1 ? joint.mirror.segments[0]! : null;
-  if (joint.mirror !== null && joint.mirror.segments.length !== 1) {
-    context.issue(
-      state.path,
-      joint.mirror.span,
-      'asset.invalid-joint-mirror',
-      'Rig mirror pairs are local semantic joint names.',
-    );
-  }
+  const parent = readLocalJointRef(
+    context,
+    state,
+    joint.parent,
+    'asset.invalid-joint-parent',
+    'Rig joint parents are local semantic joint names.',
+  );
+  const mirror = readLocalJointRef(
+    context,
+    state,
+    joint.mirror,
+    'asset.invalid-joint-mirror',
+    'Rig mirror pairs are local semantic joint names.',
+  );
   if (new Set(joint.channels).size !== joint.channels.length) {
     context.issue(
       state.path,
@@ -125,6 +195,7 @@ const buildRigJoint = (
       'A rig joint cannot declare the same transform channel twice.',
     );
   }
+  const limits = readJointLimits(context, state, joint.limits);
   return localFrame === null
     ? null
     : freeze({
@@ -134,6 +205,7 @@ const buildRigJoint = (
         frame: localFrame,
         channels: freeze([...joint.channels]),
         mirror,
+        limits,
         span: joint.span,
       });
 };
@@ -293,6 +365,9 @@ export const buildRigContract = (
   validateRigJointReferences(context, state, joints);
   validateJointGraph(context, state, declaration, joints);
   const sockets = buildRigSockets(context, state, declaration, joints, socketContracts);
+  const chains = buildRigChains(context, state, declaration, joints);
+  const ikLimbs = buildRigIkLimbs(context, state, declaration, joints);
+  const anchors = buildRigAnchors(context, state, declaration, joints);
   return frame === null
     ? null
     : freeze({
@@ -301,6 +376,9 @@ export const buildRigContract = (
         handedness: declaration.handedness,
         joints: freeze(joints),
         sockets,
+        chains,
+        ikLimbs,
+        anchors,
         span: declaration.span,
       });
 };

@@ -1,63 +1,23 @@
 import type { ProgramExpr, ProgramTextureDecl } from '../syntax/contract';
-import type { SourceDiagnostic, SourceSpan } from '../../source/contract';
+import type { SourceSpan } from '../../source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
 import type { RawDeclaredOutput, RawDeclaredPreview } from '../../directory/declarations';
+import type {
+  ASHFOX_ASSET_GRAMMAR,
+  AssetDiagnostic,
+  AssetFrameDecl,
+  AssetImportDecl,
+  AssetMotionChannel,
+  AssetQualifiedName,
+  AssetValueType,
+} from './baseTypes';
+export * from './baseTypes';
 
-/** The asset language keeps the versioned header while using a package-aware
- * source unit.  These declarations are compiler input only; they are not a
- * runtime or persistence contract. */
-export const ASHFOX_ASSET_GRAMMAR = 'ashfox 1' as const;
-
-export interface AssetSourceRef {
-  readonly path: string;
-  readonly span: SourceSpan;
-}
-
-export interface AssetDiagnostic extends SourceDiagnostic {
-  readonly path: string;
-}
-
-export interface AssetQualifiedName {
-  readonly kind: 'qualified-name';
-  readonly segments: readonly string[];
-  readonly span: SourceSpan;
-}
-
-export type AssetValueType =
-  | 'unit'
-  | 'texel'
-  | 'degree'
-  | 'second'
-  | 'ratio'
-  | 'bool'
-  | 'color'
-  | 'vec2<unit>'
-  | 'vec3<unit>'
-  | 'vec3<degree>'
-  | 'vec3<ratio>'
-  | 'vec2<texel>'
-  | 'texel_rect'
-  | 'integer';
-export type AssetMotionChannel = 'rotation' | 'scale';
-
-export interface AssetImportDecl {
-  readonly kind: 'import';
-  readonly path: string;
-  readonly alias: string;
-  readonly ref: AssetSourceRef;
-  readonly span: SourceSpan;
-}
-
-export interface AssetFrameDecl {
-  readonly kind: 'frame';
-  readonly properties: readonly AssetPropertyDecl[];
-  readonly span: SourceSpan;
-}
-
-export interface AssetPropertyDecl {
-  readonly kind: 'property';
-  readonly name: string;
-  readonly value: ProgramExpr;
+export interface AssetJointLimitsDecl {
+  readonly kind: 'limits';
+  readonly pitch: readonly [ProgramExpr, ProgramExpr] | null;
+  readonly yaw: readonly [ProgramExpr, ProgramExpr] | null;
+  readonly roll: readonly [ProgramExpr, ProgramExpr] | null;
   readonly span: SourceSpan;
 }
 
@@ -69,6 +29,33 @@ export interface AssetJointDecl {
   readonly frame: AssetFrameDecl | null;
   readonly channels: readonly AssetMotionChannel[];
   readonly mirror: AssetQualifiedName | null;
+  readonly limits: AssetJointLimitsDecl | null;
+  readonly span: SourceSpan;
+}
+
+export interface AssetChainDecl {
+  readonly kind: 'chain';
+  readonly id: string;
+  readonly joints: readonly AssetQualifiedName[];
+  readonly span: SourceSpan;
+}
+
+export interface AssetIkLimbDecl {
+  readonly kind: 'ik-limb';
+  readonly id: string;
+  readonly chain: readonly [AssetQualifiedName, AssetQualifiedName];
+  readonly endEffector: AssetQualifiedName | null;
+  readonly pole: ProgramExpr | null;
+  readonly ground: ProgramExpr | null;
+  readonly mirror: AssetQualifiedName | null;
+  readonly span: SourceSpan;
+}
+
+export interface AssetAnchorDecl {
+  readonly kind: 'anchor';
+  readonly id: string;
+  readonly joint: AssetQualifiedName;
+  readonly offset: ProgramExpr | null;
   readonly span: SourceSpan;
 }
 
@@ -99,6 +86,9 @@ export interface AssetRigContractDecl {
   readonly frame: AssetFrameDecl | null;
   readonly joints: readonly AssetJointDecl[];
   readonly sockets: readonly AssetSocketDecl[];
+  readonly chains: readonly AssetChainDecl[];
+  readonly ikLimbs: readonly AssetIkLimbDecl[];
+  readonly anchors: readonly AssetAnchorDecl[];
   readonly span: SourceSpan;
 }
 
@@ -241,31 +231,8 @@ export interface AssetComponentDecl {
   readonly span: SourceSpan;
 }
 
-export interface AssetKeyframeDecl {
-  readonly kind: 'keyframe';
-  readonly time: ProgramExpr;
-  readonly value: ProgramExpr;
-  readonly interpolation: 'linear' | 'step' | 'catmullrom';
-  readonly span: SourceSpan;
-}
-
-export interface AssetTrackDecl {
-  readonly kind: 'track';
-  readonly target: string;
-  readonly property: 'rotation' | 'scale';
-  readonly keyframes: readonly AssetKeyframeDecl[];
-  readonly span: SourceSpan;
-}
-
-export interface AssetMotionDecl {
-  readonly kind: 'motion';
-  readonly exported: boolean;
-  readonly id: string;
-  readonly rig: AssetQualifiedName;
-  readonly properties: readonly AssetPropertyDecl[];
-  readonly tracks: readonly AssetTrackDecl[];
-  readonly span: SourceSpan;
-}
+import type { AssetMotionDecl } from './motionDecls';
+export * from './motionDecls';
 
 export interface AssetAssemblyUse {
   readonly kind: 'use';

@@ -1,0 +1,30 @@
+ashfox 1
+module palettes {
+  export palette EmberSolar {
+    core = #fff7d6;
+    mid = #ff8a24;
+    edge = #b8250e;
+    smoke = #3d2824;
+  }
+
+  export palette ArcaneFrost {
+    core = #e8ffff;
+    mid = #4de3ff;
+    edge = #3456d1;
+    smoke = #1f2247;
+  }
+
+  export palette StormArc {
+    core = #ffffff;
+    mid = #99e2ff;
+    edge = #4b74ff;
+    smoke = #242947;
+  }
+
+  export palette HearthGlow {
+    core = #fff2bf;
+    mid = #ff9b3d;
+    edge = #c43f12;
+    smoke = #4a3a35;
+  }
+}

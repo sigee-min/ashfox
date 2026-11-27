@@ -4,10 +4,11 @@ import { parseAssetSource } from '../program/asset/parse';
 import { lexProgramSource } from '../program/syntax/lex';
 import { parseSpriteSource } from '../sprite/source';
 import { parseStructureSource } from '../structure';
+import { parseVfxSource } from '../vfx/source';
 import { assertWellFormedSourceText } from '../workspace/path';
 
 export interface NativeSourceMetadata {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'module';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx' | 'module';
   readonly id: string;
   readonly imports: readonly string[];
   readonly outputs: readonly RawDeclaredOutput[];
@@ -18,6 +19,7 @@ const parseAnyModule = (source: string, file: string): NativeSourceMetadata | nu
     () => parseSpriteSource(source, file),
     () => parseStructureSource(source, file),
     () => parseSoundUnit(source, file),
+    () => parseVfxSource(source, file),
   ]) {
     try {
       const unit = attempt();
@@ -66,6 +68,15 @@ export const inspectNativeSource = (source: string, file: string): NativeSourceM
       id: structure.id,
       imports: Object.freeze(structure.imports.map((i) => i.path)),
       outputs: Object.freeze([...structure.outputs]),
+    });
+  }
+  if (kind === 'vfx') {
+    const vfx = parseVfxSource(source, file);
+    return Object.freeze({
+      kind: 'vfx',
+      id: vfx.id,
+      imports: Object.freeze(vfx.imports.map((i) => i.path)),
+      outputs: Object.freeze([...vfx.outputs]),
     });
   }
   const model = parseAssetSource(source, file);

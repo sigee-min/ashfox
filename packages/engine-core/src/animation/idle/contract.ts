@@ -12,23 +12,6 @@ const isFiniteNumericVec3 = (value: unknown): value is readonly [number, number,
 const numericValuesClose = (first: readonly number[], last: readonly number[]): boolean =>
   first.every((component, index) => Math.abs(component - (last[index] ?? Number.NaN)) <= EPSILON);
 
-const numericValuesAreRotationIdentity = (value: readonly number[]): boolean =>
-  value.every((component) => Math.abs(component) <= EPSILON);
-
-const transformChannelBeginsAndEndsAtRest = (channel: TransformChannel): boolean => {
-  if (channel.property !== 'rotation') return true;
-  const first = channel.keys[0];
-  const last = channel.keys.at(-1);
-  return (
-    first !== undefined &&
-    last !== undefined &&
-    isFiniteNumericVec3(first.value) &&
-    isFiniteNumericVec3(last.value) &&
-    numericValuesAreRotationIdentity(first.value) &&
-    numericValuesAreRotationIdentity(last.value)
-  );
-};
-
 export const transformChannelNumericallyCloses = (
   channel: TransformChannel,
   durationSeconds: number,
@@ -54,10 +37,6 @@ export const idleClipNumericallyCloses = (clip: AnimationClip): boolean => {
     clip.name === CANONICAL_IDLE_CLIP_NAME &&
     clip.loop === 'loop' &&
     channels.length > 0 &&
-    channels.every(
-      (channel) =>
-        transformChannelNumericallyCloses(channel, clip.durationSeconds) &&
-        transformChannelBeginsAndEndsAtRest(channel),
-    )
+    channels.every((channel) => transformChannelNumericallyCloses(channel, clip.durationSeconds))
   );
 };

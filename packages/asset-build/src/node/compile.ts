@@ -45,7 +45,7 @@ import {
 export type { NodeBuildOptions } from './diskCache';
 
 export interface NodeCheckProduct {
-  readonly kind: 'model' | 'sprite' | 'sound' | 'structure';
+  readonly kind: 'model' | 'sprite' | 'sound' | 'structure' | 'vfx';
   readonly entry: WorkspaceEntrySelector;
   readonly audit?: StructureAuditReport;
 }
@@ -290,6 +290,14 @@ const buildEntryTask = (
   if (entry.kind === 'structure') {
     return {
       kind: 'build-structure',
+      configuration: entry.subConfigJson,
+      files: entry.files,
+      targets,
+    };
+  }
+  if (entry.kind === 'vfx') {
+    return {
+      kind: 'build-vfx',
       configuration: entry.subConfigJson,
       files: entry.files,
       targets,

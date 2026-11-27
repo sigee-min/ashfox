@@ -1,15 +1,19 @@
 ashfox 1
 module animation {
   export rig contract GriffinRig {
-    joint root { parent = none; role = root; channels = rotation; }
-    joint torso { parent = root; role = body; channels = rotation; }
-    joint head { parent = torso; role = head; channels = rotation; }
-    joint wing_left { parent = torso; role = wing; channels = rotation; }
-    joint wing_right { parent = torso; role = wing; channels = rotation; }
-    joint foreleg_left { parent = torso; role = leg; channels = rotation; }
-    joint foreleg_right { parent = torso; role = leg; channels = rotation; }
-    joint tail { parent = torso; role = tail; channels = rotation; }
-    joint tail_tip { parent = tail; role = tail; channels = rotation; }
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint torso { parent = root; role = body; channels = (position, rotation, scale); limits { pitch = -25deg..30deg; } }
+    joint head { parent = torso; role = head; channels = rotation; limits { pitch = -35deg..40deg; yaw = -60deg..60deg; } }
+    joint wing_left { parent = torso; role = wing; channels = rotation; mirror = wing_right; }
+    joint wing_right { parent = torso; role = wing; channels = rotation; mirror = wing_left; }
+    joint foreleg_left { parent = torso; role = leg; channels = rotation; mirror = foreleg_right; }
+    joint foreleg_right { parent = torso; role = leg; channels = rotation; mirror = foreleg_left; }
+    joint tail { parent = torso; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+    joint tail_tip { parent = tail; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+
+    chain tail_chain = [tail, tail_tip];
+    anchor beak { joint = head; offset = (0u, 0u, -8u); }
+    anchor wing_tip_l { joint = wing_left; offset = (-10u, 0u, 0u); }
   }
 
   export skeleton GriffinSkeleton implements GriffinRig {
@@ -25,162 +29,194 @@ module animation {
   }
 
   export motion idle for GriffinRig {
-    duration = 3s; fps = 20; loop = loop;track torso.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (2deg, 0deg, 0deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
+    duration = 3s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track torso.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 1.3s = (0u, -0.45u, 0u) ease_in_out;
+      key 3s = (0u, 0u, 0u) ease_out;
+    }
+    track torso.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.4s = (3deg, 0deg, 0deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
     track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (-2deg, 5deg, 0deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.4s = (-3deg, 7deg, 0deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (0deg, 0deg, -5deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.4s = (0deg, 0deg, -6deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_right.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (0deg, 0deg, 5deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.4s = (0deg, 0deg, 6deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
     track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (0deg, 7deg, 0deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.4s = (2deg, 9deg, 0deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
-    track tail_tip.rotation {
-      key 0s = (0deg, 0deg, 0deg) linear;
-      key 1.5s = (3deg, 10deg, 0deg) linear;
-      key 3s = (0deg, 0deg, 0deg) linear;
-    }
+
+    wave torso.rotation.x = breath(3s, inhale = 0.42) * 2.5deg;
+    wave head.rotation.y = simplex(1.0, 2deg, 5) * 1.5deg;
+    secondary chain tail_chain { stiffness = 14; damping = 0.34; gravity = 0.25; }
+    cue 0.5s sound "griffin_breath" at beak;
+    cue 1.8s sound "griffin_rustle" at wing_tip_l;
   }
 
   export motion look_around for GriffinRig {
-    duration = 4s; fps = 24; loop = loop;track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.8s = (0deg, -22deg, -3deg) catmullrom;
-      key 1.4s = (0deg, -22deg, -3deg) catmullrom;
-      key 2.5s = (2deg, 22deg, 3deg) catmullrom;
-      key 3.1s = (2deg, 22deg, 3deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 4s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track torso.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 1.2s = (0u, 0.35u, 0u) ease_out;
+      key 2.8s = (0u, -0.35u, 0u) ease_in_out;
+      key 4s = (0u, 0u, 0u) ease_out;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.8s = (0deg, -24deg, -4deg) anticipate(0.2);
+      key 1.4s = (0deg, -24deg, -4deg) smooth;
+      key 2.5s = (3deg, 24deg, 4deg) overshoot(0.18);
+      key 3.1s = (3deg, 24deg, 4deg) smooth;
+      key 4s = (0deg, 0deg, 0deg) ease_out;
     }
     track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1s = (0deg, 9deg, 0deg) catmullrom;
-      key 2s = (0deg, 0deg, 0deg) catmullrom;
-      key 3s = (0deg, -9deg, 0deg) catmullrom;
-      key 4s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1s = (0deg, 10deg, 0deg) ease_in_out;
+      key 2s = (0deg, 0deg, 0deg) smooth;
+      key 3s = (0deg, -10deg, 0deg) ease_in_out;
+      key 4s = (0deg, 0deg, 0deg) ease_out;
     }
+    secondary chain tail_chain { stiffness = 15; damping = 0.34; gravity = 0.22; }
+    cue 0.8s sound "griffin_chirp" at beak;
   }
 
   export motion wing_display for GriffinRig {
-    duration = 3.6s; fps = 24; loop = loop;track wing_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.9s = (0deg, 0deg, -22deg) catmullrom;
-      key 2.4s = (0deg, 0deg, -22deg) catmullrom;
-      key 3.6s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 3.6s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track torso.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.9s = (0u, 0.8u, -0.4u) ease_out;
+      key 2.4s = (0u, 0.8u, -0.4u) smooth;
+      key 3.6s = (0u, 0u, 0u) ease_in_out;
+    }
+    track wing_left.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (0deg, 0deg, -28deg) anticipate(0.2);
+      key 2.4s = (0deg, 0deg, -28deg) smooth;
+      key 3.6s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_right.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.9s = (0deg, 0deg, 22deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 22deg) catmullrom;
-      key 3.6s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (0deg, 0deg, 28deg) anticipate(0.2);
+      key 2.4s = (0deg, 0deg, 28deg) smooth;
+      key 3.6s = (0deg, 0deg, 0deg) ease_out;
     }
     track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.9s = (-7deg, 0deg, 0deg) catmullrom;
-      key 2.4s = (-7deg, 0deg, 0deg) catmullrom;
-      key 3.6s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.9s = (-10deg, 0deg, 0deg) ease_out;
+      key 2.4s = (-10deg, 0deg, 0deg) smooth;
+      key 3.6s = (0deg, 0deg, 0deg) ease_out;
     }
-    track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1.2s = (-8deg, 0deg, 0deg) catmullrom;
-      key 2.4s = (-8deg, 0deg, 0deg) catmullrom;
-      key 3.6s = (0deg, 0deg, 0deg) catmullrom;
-    }
+    secondary chain tail_chain { stiffness = 14; damping = 0.34; gravity = 0.2; }
+    cue 0.9s sound "griffin_call" at beak;
   }
 
   export motion wing_flap for GriffinRig {
-    duration = 1.6s; fps = 24; loop = loop;track wing_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.4s = (0deg, 0deg, -18deg) catmullrom;
-      key 0.8s = (0deg, 0deg, 16deg) catmullrom;
-      key 1.2s = (0deg, 0deg, -18deg) catmullrom;
-      key 1.6s = (0deg, 0deg, 0deg) catmullrom;
-    }
-    track wing_right.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.4s = (0deg, 0deg, 18deg) catmullrom;
-      key 0.8s = (0deg, 0deg, -16deg) catmullrom;
-      key 1.2s = (0deg, 0deg, 18deg) catmullrom;
-      key 1.6s = (0deg, 0deg, 0deg) catmullrom;
-    }
-    track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.4s = (-3deg, 0deg, 0deg) catmullrom;
-      key 0.8s = (3deg, 0deg, 0deg) catmullrom;
-      key 1.2s = (-3deg, 0deg, 0deg) catmullrom;
-      key 1.6s = (0deg, 0deg, 0deg) catmullrom;
-    }
+    duration = 1.6s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    wave wing_left.rotation.z = flap(0.8s, down_ratio = 0.38, com_lift = 1.4u) * -22deg;
+    wave wing_right.rotation.z = flap(0.8s, down_ratio = 0.38) * 22deg;
+    wave head.rotation.x = breath(0.8s, inhale = 0.38) * -4deg;
+    secondary chain tail_chain { stiffness = 16; damping = 0.32; gravity = 0.22; }
+    cue 0.25s sound "wing_flap" at wing_tip_l;
+    cue 1.05s sound "wing_flap" at wing_tip_l;
   }
 
   export motion greeting for GriffinRig {
-    duration = 3s; fps = 24; loop = loop;track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.65s = (17deg, 0deg, 0deg) catmullrom;
-      key 1.1s = (2deg, 0deg, 0deg) catmullrom;
-      key 1.65s = (13deg, 0deg, 0deg) catmullrom;
-      key 2.2s = (0deg, 0deg, -6deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 3s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track torso.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.65s = (0u, -0.7u, 0u) ease_in_out;
+      key 1.65s = (0u, -0.4u, 0u) ease_out;
+      key 3s = (0u, 0u, 0u) smooth;
     }
-    track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.5s = (0deg, 13deg, 0deg) catmullrom;
-      key 1s = (0deg, -13deg, 0deg) catmullrom;
-      key 1.5s = (0deg, 13deg, 0deg) catmullrom;
-      key 2s = (0deg, -13deg, 0deg) catmullrom;
-      key 2.5s = (0deg, 7deg, 0deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.65s = (20deg, 0deg, 0deg) ease_out;
+      key 1.1s = (2deg, 0deg, 0deg) overshoot(0.2);
+      key 1.65s = (15deg, 0deg, 0deg) ease_in_out;
+      key 2.2s = (0deg, 0deg, -7deg) ease_out;
+      key 3s = (0deg, 0deg, 0deg) smooth;
     }
     track wing_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1.5s = (0deg, 0deg, -5deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.5s = (0deg, 0deg, -8deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_right.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 1.5s = (0deg, 0deg, 5deg) catmullrom;
-      key 3s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 1.5s = (0deg, 0deg, 8deg) ease_in_out;
+      key 3s = (0deg, 0deg, 0deg) ease_out;
     }
+    secondary chain tail_chain { stiffness = 15; damping = 0.35; gravity = 0.2; }
+    cue 0.65s sound "griffin_greeting" at beak;
   }
 
   export motion alert for GriffinRig {
-    duration = 2.4s; fps = 24; loop = loop;track head.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.25s = (-8deg, -12deg, 0deg) catmullrom;
-      key 1.1s = (-8deg, -12deg, 0deg) catmullrom;
-      key 1.55s = (-6deg, 12deg, 0deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+    duration = 2.4s;
+    fps = 24;
+    loop = loop;
+    rest_relative = true;
+
+    track torso.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.25s = (0u, 0.7u, -0.4u) snap;
+      key 1.6s = (0u, 0.5u, -0.4u) smooth;
+      key 2.4s = (0u, 0u, 0u) ease_out;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.25s = (-10deg, -14deg, 0deg) snap;
+      key 1.1s = (-10deg, -14deg, 0deg) smooth;
+      key 1.55s = (-8deg, 14deg, 0deg) overshoot(0.2);
+      key 2.4s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_left.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.3s = (0deg, 0deg, -10deg) catmullrom;
-      key 1.6s = (0deg, 0deg, -10deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.3s = (0deg, 0deg, -14deg) ease_out;
+      key 1.6s = (0deg, 0deg, -14deg) smooth;
+      key 2.4s = (0deg, 0deg, 0deg) ease_out;
     }
     track wing_right.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.3s = (0deg, 0deg, 10deg) catmullrom;
-      key 1.6s = (0deg, 0deg, 10deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.3s = (0deg, 0deg, 14deg) ease_out;
+      key 1.6s = (0deg, 0deg, 14deg) smooth;
+      key 2.4s = (0deg, 0deg, 0deg) ease_out;
     }
-    track tail.rotation {
-      key 0s = (0deg, 0deg, 0deg) catmullrom;
-      key 0.3s = (-10deg, 0deg, 0deg) catmullrom;
-      key 1.6s = (-10deg, 0deg, 0deg) catmullrom;
-      key 2.4s = (0deg, 0deg, 0deg) catmullrom;
-    }
+    secondary chain tail_chain { stiffness = 18; damping = 0.32; gravity = 0.2; }
+    cue 0.25s sound "griffin_alert" at beak;
   }
 }

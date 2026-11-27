@@ -1,6 +1,9 @@
 import { auditSubmetric } from '@ashfox/internal-contracts';
+import type { BakedClip, BakedKey, RigJoint } from '../animation/contract';
+import { quatFromEulerXyzDeg } from '../animation/quat';
 import type { AssetQualityProfile, CompiledModel } from '../model/compiled';
 import type { AnimationClip } from '../model/motion';
+import { evaluateMotionQuality } from './motion';
 import {
   PROFILE_WEIGHTS,
   ramp,
@@ -32,49 +35,65 @@ const materialCraftRatio = (telemetry: TelemetrySummary, available: boolean): nu
   return 0.5 * bestTone + 0.5 * grainScore;
 };
 
-const clipMotionQuality = (
-  clip: AnimationClip,
-): { readonly animatedJoints: number; readonly maxKeys: number } => {
-  const animatedTargets = new Set<string>();
-  let maxKeys = 0;
-  for (const ch of Object.values(clip.channels)) {
-    if (ch.keys.length > maxKeys) maxKeys = ch.keys.length;
-    if (ch.property !== 'rotation' || ch.keys.length < 2) continue;
-    const nums = ch.keys.flatMap((k) => k.value.filter((v): v is number => typeof v === 'number'));
-    if (nums.length < 2) continue;
-    let span = 0;
-    for (let axis = 0; axis < 3; axis += 1) {
-      const vals = ch.keys
-        .map((k) => k.value[axis])
-        .filter((v): v is number => typeof v === 'number');
-      if (vals.length >= 2) span = Math.max(span, Math.max(...vals) - Math.min(...vals));
-    }
-    if (span >= 2) animatedTargets.add(ch.targetNodeId);
-  }
-  return { animatedJoints: animatedTargets.size, maxKeys };
+const toBakedKey = (
+  property: 'position' | 'rotation' | 'scale',
+  k: AnimationClip['channels'][string]['keys'][number],
+): BakedKey => {
+  const nums: readonly [number, number, number] = [
+    typeof k.value[0] === 'number' ? k.value[0] : 0,
+    typeof k.value[1] === 'number' ? k.value[1] : 0,
+    typeof k.value[2] === 'number' ? k.value[2] : 0,
+  ];
+  return {
+    time: k.timeSeconds,
+    value: property === 'rotation' ? (k.quaternion ?? quatFromEulerXyzDeg(nums)) : nums,
+    interpolation: k.interpolation === 'step' ? 'step' : 'linear',
+  };
 };
 
+const toBakedClips = (animations: Readonly<Record<string, AnimationClip>>): BakedClip[] =>
+  Object.values(animations).map((clip) => ({
+    id: clip.id,
+    name: clip.name,
+    duration: clip.durationSeconds,
+    fps: clip.fps,
+    loop: clip.loop === 'loop' ? 'loop' : 'once',
+    channels: Object.values(clip.channels).map((ch) => ({
+      jointId: ch.targetNodeId,
+      property: ch.property,
+      keys: ch.keys.map((k) => toBakedKey(ch.property, k)),
+    })),
+    cues: clip.cues ?? [],
+    sampledFrames: Math.max(2, Math.round(clip.durationSeconds * clip.fps)),
+  }));
+
+const toRigJoints = (model: CompiledModel): RigJoint[] =>
+  Object.values(model.scene.nodes)
+    .filter((node) => node.kind === 'bone')
+    .map((node) => ({
+      id: node.id,
+      parentId: node.parentId,
+      role: 'body',
+      channels: ['position', 'rotation', 'scale'],
+      restPosition: node.transform.pivot,
+      restRotation: quatFromEulerXyzDeg(node.transform.rotation),
+      restScale: node.transform.scale,
+    }));
+
 const creatureRigRatio = (
+  model: CompiledModel,
   scene: AuditSceneGeometry,
   animations: Readonly<Record<string, AnimationClip>>,
 ): { readonly ratio: number; readonly detail: string } => {
-  const clips = Object.values(animations);
-  const idle = animations.idle ?? clips.find((c) => c.name === 'idle');
-  const idleInfo = idle ? clipMotionQuality(idle) : { animatedJoints: 0, maxKeys: 0 };
-  const idleQuality = idle ? 0.3 + 0.7 * ramp(idleInfo.animatedJoints, 1, 5) : 0;
-  const maxKeysOverall = Math.max(
-    idleInfo.maxKeys,
-    ...clips.map((c) => clipMotionQuality(c).maxKeys),
-  );
-  const secondaryQuality = clips.length >= 2 ? 1.0 : maxKeysOverall >= 3 ? 0.5 : 0;
-  const ratio =
-    0.35 * ramp(scene.boneCount, 3, 9) +
-    0.15 * ramp(scene.maxBoneDepth, 1, 3) +
-    0.35 * idleQuality +
-    0.15 * secondaryQuality;
+  const clips = toBakedClips(animations);
+  const joints = toRigJoints(model);
+  const motion = evaluateMotionQuality({ clips, joints });
+  const skeletonRatio = 0.7 * ramp(scene.boneCount, 3, 9) + 0.3 * ramp(scene.maxBoneDepth, 1, 3);
+  const motionRatio = clips.length === 0 ? 0 : motion.score / 100;
+  const ratio = 0.4 * skeletonRatio + 0.6 * motionRatio;
   return {
     ratio,
-    detail: `${scene.boneCount} bones (depth ${scene.maxBoneDepth}), idle animated joints=${idleInfo.animatedJoints}, clips=${clips.length}.`,
+    detail: `${scene.boneCount} bones (depth ${scene.maxBoneDepth}), motionAudit=${motion.score}/100, clips=${clips.length}.`,
   };
 };
 
@@ -113,7 +132,7 @@ const buildRigMetrics = (
   const matRatio = materialCraftRatio(telemetry, telemetryAvailable);
   const rigInfo =
     profile === 'creature'
-      ? creatureRigRatio(scene, model.animations)
+      ? creatureRigRatio(model, scene, model.animations)
       : staticRigRatio(scene, model.animations);
   const ppuScore =
     profile === 'block' ? ramp(raster.meanPpu, 0.5, 1.0) : ramp(raster.meanPpu, 1.0, 2.0);

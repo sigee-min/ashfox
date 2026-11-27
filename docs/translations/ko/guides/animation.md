@@ -16,7 +16,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용�
 
 ## motion 만들기
 
-움직이는 관절의 rig contract를 대상으로 motion을 선언합니다. 사용하는 모든 채널을 rig가 허용해야 합니다. 지원 채널은 회전과 크기입니다.
+움직이는 관절의 rig contract를 대상으로 motion을 선언합니다. 사용하는 모든 채널(`position`, `rotation`, `scale`)을 rig가 허용해야 하며, 선택적으로 `limits`, `chain`, `ik_limb`, `anchor` 메타데이터를 선언할 수 있습니다.
 
 **조각 예제 — motion 선언 하나:**
 
@@ -24,17 +24,25 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용�
 
 `duration`은 양수, `fps`는 정수 1–240입니다. 재사용 리그 동작은 기본적으로 정지 공간 기준 상대(`rest_relative = true`)입니다. 키 시간은 길이 안에 있고 엄격히 증가해야 합니다.
 
-### 회전과 크기 트랙
+### 위치·회전·크기 트랙
 
-대상은 관절 이름에 `.rotation` 또는 `.scale`을 붙입니다.
+대상은 `<관절>.position`, `<관절>.rotation` 또는 `<관절>.scale` 형식을 사용합니다.
 
 **조각 예제 — 회전과 크기:**
 
 {{source-code:2}}
 
-회전은 도 단위 세 값, 크기는 양수 ratio 세 값이며 대상 관절의 `channels`에 `scale`이 있어야 합니다. 위치·IK 트랙은 작성할 수 없으므로 정지 위치는 skeleton과 형상으로 정합니다.
+회전은 도 단위 세 값(`vec3<degree>`), 위치는 모델 공간 오프셋(`vec3<unit>`), 크기는 양수 ratio 세 값(`vec3<ratio>`)이며 대상 관절의 `channels`에 해당 채널이 있어야 합니다.
 
-키마다 보간을 명시합니다. `linear`는 다음 키까지 혼합, `step`은 다음 키까지 현재 값 유지, `catmullrom`은 주변 키로 부드러운 곡선을 만듭니다. 보간 단어는 값 뒤, 세미콜론 앞에 놓습니다.
+키마다 보간(`linear`, `step`, `smooth`, `ease_in`, `ease_out`, `ease_in_out`, `cubic`, `snap`, `anticipate`, `overshoot`, `bounce`, `elastic`, `catmullrom`)과 선택적 매개변수(예: `overshoot(strength = 1.4)`)를 명시합니다. 보간 단어는 값 뒤, 세미콜론 앞에 놓이며 회전 트랙은 쿼터니언 네이티브 SLERP로 베이크됩니다.
+
+## 절차적 파동, IK, 보조 물리, 전투 및 큐
+
+`motion` 본문에서 고수준 애니메이션 블록을 함께 조합할 수 있습니다.
+
+{{source-code:3}}
+
+`layer` 블록(`mode = override | additive;`, `weight`, `mask = [...]`), 이름 있는 `pose` / `at <t> pose <name>` 키, 전투 타이밍 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `gltf.animations[i].extras.ashfoxCues`로 출력되는 타임라인 `cue`(`sound`, `vfx`, `event`)를 활용할 수 있습니다.
 
 ## 반복과 길이 설정하기
 
@@ -54,7 +62,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용�
 
 **조각 예제 — 여러 동작 가져오기와 할당:**
 
-{{source-code:3}}
+{{source-code:4}}
 
 여러 다른 동작을 선택할 수 있지만 각 동작은 한 번만 할당하며 모두 선택된 skeleton의 rig를 대상으로 해야 합니다. component의 rig 포트도 같은 계약에 연결해야 합니다.
 

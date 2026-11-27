@@ -11,8 +11,8 @@ export interface BlobRef {
 export interface TextureCanvasDetail {
   id: EntityId;
   color: string;
-  /** Explicit binary alpha for authored plane/feature coverage. */
-  alpha: 0 | 255;
+  /** Explicit alpha (0 or 255 in binary mode; 0..255 in soft alphaMode). */
+  alpha: number;
   x: number;
   y: number;
   width: number;
@@ -35,8 +35,9 @@ export interface TextureAlphaMask {
 
 export interface TextureRaster {
   background: string;
-  /** Explicit binary background alpha; there is no implicit fallback. */
-  backgroundAlpha: 0 | 255;
+  /** Explicit background alpha (0 or 255 in binary mode; 0..255 in soft mode). */
+  backgroundAlpha: number;
+  alphaMode?: 'binary' | 'soft';
   canvasDetails: readonly TextureCanvasDetail[];
   /** Final alpha-only operations, applied after all color paint. */
   alphaMasks?: readonly TextureAlphaMask[];

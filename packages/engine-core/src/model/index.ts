@@ -52,6 +52,7 @@ export {
   type AnimationTriggerTrack,
   type AnimationVec3,
   type KeyframeEasing,
+  type MotionCue,
   type TransformChannel,
   type TransformKeyframe,
 } from './motion';

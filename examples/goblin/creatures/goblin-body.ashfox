@@ -46,9 +46,9 @@ module goblin_body {
             cube hand_r { origin = (5.5u, 7.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
             bone weapon {
               cube grip { origin = (6u, 8u, -4.5u); size = (2u, 2u, 3u); surface = skin.grip; }
-              cube crossguard { origin = (4.5u, 8.5u, -5.6u); size = (5u, 1u, 1u); pivot = (7u, 9u, -5.1u); rotation = (0deg, 0deg, 22.5deg); surface = skin.crossguard; }
-              cube blade { origin = (6u, 8u, -19.2u); size = (2u, 2u, 13u); surface = skin.blade; }
-              cube blade_tip { origin = (6.5u, 8u, -22.2u); size = (1u, 2u, 3u); surface = skin.blade_tip; }
+              cube crossguard { origin = (4.5u, 8.5u, -5.4u); size = (5u, 1u, 1u); pivot = (7u, 9u, -4.9u); rotation = (0deg, 0deg, 22.5deg); surface = skin.crossguard; }
+              cube blade { origin = (6u, 8u, -18.3u); size = (2u, 2u, 13u); surface = skin.blade; }
+              cube blade_tip { origin = (6.5u, 8u, -21.3u); size = (1u, 2u, 3u); surface = skin.blade_tip; }
               cube pommel { origin = (5.5u, 7.5u, 1.4u); size = (3u, 3u, 2u); surface = skin.pommel; }
             }
           }

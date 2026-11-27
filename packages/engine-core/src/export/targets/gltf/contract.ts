@@ -1,5 +1,5 @@
 import type { HooksDocument } from '../../../hooks/contract';
-import type { BoneNode } from '../../../model';
+import type { BoneNode, MotionCue } from '../../../model';
 import type { Gltf2ExportProfile } from '../../adapter/contract';
 
 export type GltfExtensionName =
@@ -105,7 +105,7 @@ export interface GltfNodeExtensions {
 
 export interface GltfNodeExtras {
   ashfoxId?: string;
-  ashfoxKind?: 'bone' | 'cube' | 'plane' | 'locator';
+  ashfoxKind?: 'bone' | 'cube' | 'plane' | 'locator' | 'vfx_element' | 'vfx_burst';
   visible?: boolean;
   ashfoxTags?: string[];
   ashfoxCanonicalFrame?: BoneNode['canonicalFrame'];
@@ -194,7 +194,7 @@ export interface GltfMaterial {
     KHR_materials_unlit?: Record<string, never>;
   };
   extras?: {
-    ashfoxBlendMode?: 'additive' | 'blend';
+    ashfoxBlendMode?: 'additive' | 'blend' | 'premul';
   };
 }
 
@@ -220,6 +220,7 @@ export interface GltfAnimation {
     ashfoxLoop: 'once' | 'loop' | 'hold_on_last_frame';
     ashfoxDurationSeconds: number;
     ashfoxFps: number;
+    ashfoxCues?: readonly MotionCue[];
   };
 }
 

@@ -40,6 +40,24 @@ const textureMimeType = (texture: TextureAsset): 'image/png' | 'image/jpeg' => {
 
 const GLTF_UNIT_SCALE = 1 / 16;
 
+const resolveGltfBlendMode = (
+  texture: TextureAsset,
+): 'additive' | 'blend' | 'premul' | undefined => {
+  const raw = texture.metadata?.ashfoxBlendMode;
+  if (raw === 'additive' || raw === 'blend' || raw === 'premul') return raw;
+  return texture.renderMode === 'additive' ? 'additive' : undefined;
+};
+
+const resolveGltfAlphaMode = (
+  texture: TextureAsset,
+  masked: boolean,
+): { alphaMode?: 'MASK' | 'BLEND'; alphaCutoff?: number } => {
+  if (masked) return { alphaMode: 'MASK', alphaCutoff: 0.5 };
+  if (texture.renderMode === 'additive' || texture.renderMode === 'layered')
+    return { alphaMode: 'BLEND' };
+  return {};
+};
+
 export const createGltfMaterial = (
   texture: TextureAsset,
   texIndex: number,
@@ -57,6 +75,8 @@ export const createGltfMaterial = (
         },
       }
     : undefined;
+  const isUnlit = texture.renderMode === 'additive' || texture.metadata?.ashfoxUnlit === true;
+  const blendMode = resolveGltfBlendMode(texture);
   return {
     name,
     pbrMetallicRoughness: {
@@ -64,18 +84,16 @@ export const createGltfMaterial = (
       metallicFactor: 0,
       roughnessFactor: 1,
     },
-    ...(isEmissive
+    ...(isEmissive && !isUnlit
       ? {
           emissiveTexture: { index: texIndex, ...(ext ? { extensions: ext } : {}) },
           emissiveFactor: [1, 1, 1],
         }
       : {}),
-    ...(masked
-      ? { alphaMode: 'MASK', alphaCutoff: 0.5 }
-      : texture.renderMode === 'additive' || texture.renderMode === 'layered'
-        ? { alphaMode: 'BLEND' }
-        : {}),
+    ...resolveGltfAlphaMode(texture, masked),
     ...(doubleSided ? { doubleSided: true } : {}),
+    ...(isUnlit ? { extensions: { KHR_materials_unlit: {} } } : {}),
+    ...(blendMode ? { extras: { ashfoxBlendMode: blendMode } } : {}),
   };
 };
 
@@ -223,49 +241,56 @@ const assembleGltfDocument = (
   compiledTextures: CompiledGltfTextures,
   scene: ReturnType<typeof compileGltfScene>,
   animations: ReturnType<typeof compileGltfAnimations>,
-): GltfDocument => ({
-  asset: {
-    version: profile.version,
-    generator: 'ashfox engine core',
-    ...(profile.copyright ? { copyright: profile.copyright } : {}),
-  },
-  ...(writer.state.usesMeshQuantization
-    ? {
-        extensionsUsed: ['KHR_mesh_quantization' as const],
-        extensionsRequired: ['KHR_mesh_quantization' as const],
-      }
-    : {}),
-  scene: 0,
-  scenes: [{ name: document.name, nodes: scene.rootNodeIndices }],
-  nodes: scene.nodes,
-  ...(binary.byteLength > 0
-    ? {
-        buffers: [
-          {
-            byteLength: binary.byteLength,
-            ...(profile.container === 'gltf' ? { uri: `${modelFileName}.bin` } : {}),
-          },
-        ],
-        bufferViews: writer.state.bufferViews,
-        accessors: writer.state.accessors,
-      }
-    : {}),
-  ...(scene.meshes.length > 0 ? { meshes: scene.meshes } : {}),
-  ...(scene.skins.length > 0 ? { skins: scene.skins } : {}),
-  ...(textures.length > 0
-    ? {
-        images: compiledTextures.images,
-        samplers: compiledTextures.samplers,
-        textures: textures.map((texture, index) => ({
-          sampler: index,
-          source: index,
-          name: texture.name,
-        })),
-        materials: compiledTextures.materials,
-      }
-    : {}),
-  ...(animations.length > 0 ? { animations } : {}),
-});
+): GltfDocument => {
+  const usesUnlit = compiledTextures.materials.some(
+    (m) => m.extensions?.KHR_materials_unlit !== undefined,
+  );
+  const extensionsUsed: GltfDocument['extensionsUsed'] = [
+    ...(writer.state.usesMeshQuantization ? (['KHR_mesh_quantization'] as const) : []),
+    ...(usesUnlit ? (['KHR_materials_unlit'] as const) : []),
+  ];
+  return {
+    asset: {
+      version: profile.version,
+      generator: 'ashfox engine core',
+      ...(profile.copyright ? { copyright: profile.copyright } : {}),
+    },
+    ...(extensionsUsed.length > 0 ? { extensionsUsed } : {}),
+    ...(writer.state.usesMeshQuantization
+      ? { extensionsRequired: ['KHR_mesh_quantization' as const] }
+      : {}),
+    scene: 0,
+    scenes: [{ name: document.name, nodes: scene.rootNodeIndices }],
+    nodes: scene.nodes,
+    ...(binary.byteLength > 0
+      ? {
+          buffers: [
+            {
+              byteLength: binary.byteLength,
+              ...(profile.container === 'gltf' ? { uri: `${modelFileName}.bin` } : {}),
+            },
+          ],
+          bufferViews: writer.state.bufferViews,
+          accessors: writer.state.accessors,
+        }
+      : {}),
+    ...(scene.meshes.length > 0 ? { meshes: scene.meshes } : {}),
+    ...(scene.skins.length > 0 ? { skins: scene.skins } : {}),
+    ...(textures.length > 0
+      ? {
+          images: compiledTextures.images,
+          samplers: compiledTextures.samplers,
+          textures: textures.map((texture, index) => ({
+            sampler: index,
+            source: index,
+            name: texture.name,
+          })),
+          materials: compiledTextures.materials,
+        }
+      : {}),
+    ...(animations.length > 0 ? { animations } : {}),
+  };
+};
 
 export const buildGltf = (
   document: ExportAdaptedDocument,

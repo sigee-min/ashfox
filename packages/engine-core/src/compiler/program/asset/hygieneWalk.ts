@@ -102,7 +102,26 @@ const walkRigContract = (
   refs: FileRefSet,
 ): void => {
   walkProps(decl.frame?.properties ?? [], refs);
-  for (const j of decl.joints) walkProps(j.frame?.properties ?? [], refs);
+  for (const j of decl.joints) {
+    walkProps(j.frame?.properties ?? [], refs);
+    if (j.limits?.pitch) {
+      walkExpr(j.limits.pitch[0], refs);
+      walkExpr(j.limits.pitch[1], refs);
+    }
+    if (j.limits?.yaw) {
+      walkExpr(j.limits.yaw[0], refs);
+      walkExpr(j.limits.yaw[1], refs);
+    }
+    if (j.limits?.roll) {
+      walkExpr(j.limits.roll[0], refs);
+      walkExpr(j.limits.roll[1], refs);
+    }
+  }
+  for (const ik of decl.ikLimbs) {
+    walkExpr(ik.pole, refs);
+    walkExpr(ik.ground, refs);
+  }
+  for (const anchor of decl.anchors) walkExpr(anchor.offset, refs);
   for (const s of decl.sockets) {
     walkQName(s.contract, refs);
     walkProps(s.frame?.properties ?? [], refs);
@@ -138,18 +157,76 @@ const walkSurfaceOrContract = (
   walkTexture(decl.texture, refs);
 };
 
+const walkMotionTracks = (
+  tracks: Extract<AssetDeclaration, { readonly kind: 'motion' }>['tracks'],
+  refs: FileRefSet,
+): void => {
+  for (const t of tracks) {
+    for (const k of t.keyframes) {
+      walkExpr(k.time, refs);
+      walkExpr(k.value, refs);
+      for (const a of k.curve.args) walkExpr(a, refs);
+    }
+  }
+};
+
+const walkMotionWaves = (
+  waves: Extract<AssetDeclaration, { readonly kind: 'motion' }>['waves'],
+  refs: FileRefSet,
+): void => {
+  for (const w of waves) {
+    walkExpr(w.expression, refs);
+    walkExpr(w.scale, refs);
+    for (const a of w.args) walkExpr(a.value, refs);
+  }
+};
+
+const walkMotionExtras = (
+  decl: Extract<AssetDeclaration, { readonly kind: 'motion' }>,
+  refs: FileRefSet,
+): void => {
+  for (const ik of decl.iks) {
+    for (const fl of ik.footLocks) {
+      walkExpr(fl[0], refs);
+      walkExpr(fl[1], refs);
+    }
+  }
+  for (const s of decl.secondaries) walkProps(s.properties, refs);
+  for (const c of decl.combatOps) {
+    walkProps(c.properties, refs);
+    if (c.timeRange) {
+      walkExpr(c.timeRange[0], refs);
+      walkExpr(c.timeRange[1], refs);
+    }
+  }
+  for (const cue of decl.cues) {
+    walkExpr(cue.time, refs);
+    walkExpr(cue.endTime, refs);
+    walkProps(cue.payload, refs);
+  }
+};
+
 const walkMotion = (
   decl: Extract<AssetDeclaration, { readonly kind: 'motion' }>,
   refs: FileRefSet,
 ): void => {
   walkQName(decl.rig, refs);
   walkProps(decl.properties, refs);
-  for (const t of decl.tracks) {
-    for (const k of t.keyframes) {
-      walkExpr(k.time, refs);
-      walkExpr(k.value, refs);
-    }
+  walkMotionTracks(decl.tracks, refs);
+  walkMotionWaves(decl.waves, refs);
+  for (const p of decl.poses) for (const e of p.entries) walkExpr(e.value, refs);
+  for (const pk of decl.poseKeys) {
+    walkExpr(pk.time, refs);
+    for (const a of pk.curve.args) walkExpr(a, refs);
   }
+  for (const l of decl.layers) {
+    walkProps(l.properties, refs);
+    walkProps(l.gait?.properties ?? [], refs);
+    walkMotionTracks(l.tracks, refs);
+    walkMotionWaves(l.waves, refs);
+    for (const pk of l.poseKeys) walkExpr(pk.time, refs);
+  }
+  walkMotionExtras(decl, refs);
 };
 
 const walkAsset = (

@@ -12,7 +12,7 @@ import { BuildFailure, type Snapshot } from '../bundle/contract';
 import { digest, json } from '../shared/digest';
 import { contained, safeRelative } from './paths';
 
-const CANONICAL_BUCKETS = new Set(['models', 'sprites', 'sounds', 'structures']);
+const CANONICAL_BUCKETS = new Set(['models', 'sprites', 'sounds', 'structures', 'vfx']);
 
 const resolveStandaloneAnchor = (
   input: string,

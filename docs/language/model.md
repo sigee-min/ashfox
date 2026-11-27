@@ -218,8 +218,9 @@ export skeleton CreatureSkeleton implements CreatureRig {
 }
 ```
 
-Each joint declares `channels = rotation`, `channels = scale`, or both as a
-tuple. A motion can only use channels allowed by its joint. `parent` and
+Each joint declares `position`, `rotation`, and/or `scale` channels (for example
+`channels = (position, rotation);`), plus optional `limits`, `chain`, `ik_limb`,
+and `anchor` blocks. A motion can only use channels allowed by its joint. `parent` and
 `mirror` name joints (omit `mirror` or set `mirror = none;` when absent; identity `handedness = right` and `frame { x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }` may be omitted). Frames
 use signed orthogonal axes, and each skeleton bind supplies its rest `parent_origin`
 and any non-identity frame explicitly.
@@ -235,7 +236,7 @@ Geometry `origin` and socket-frame `origin` keep their own documented spaces.
 ## 5. Motions
 
 A motion names the rig contract it animates. Tracks address one joint and one
-supported channel: `rotation` or `scale`.
+supported channel: `position`, `rotation`, or `scale`.
 
 **Snippet — a rest-space relative rotation motion:**
 
@@ -259,16 +260,17 @@ Motion properties:
 - `loop` is `once`, `loop`, or `hold_on_last_frame`.
 - `rest_relative` defaults to `true`.
 
-Key times must be within the duration and strictly increasing. Every key ends
-with one interpolation name: `linear`, `step`, or `catmullrom`. The name on a
-key controls the segment from that key to the next one. `linear` blends the
-values, `step` holds the starting value, and `catmullrom` makes a smooth curve
-using neighboring keys.
+Key times must be within the duration and strictly increasing. Each key ends
+with an interpolation curve name (`linear`, `step`, `smooth`, `ease_in`,
+`ease_out`, `ease_in_out`, `cubic`, `snap`, `anticipate`, `overshoot`, `bounce`,
+`elastic`, or `catmullrom`) and optional curve arguments.
 
-Rotation keys use `vec3<degree>` values. Scale keys use positive
-`vec3<ratio>` values such as `(1, 1, 1)`, and their rig joint
-must allow the `scale` channel. A motion key cannot target `position` or `ik`;
-this language currently supports rest-space relative rotation and scale only.
+Position keys use `vec3<unit>` offsets, rotation keys use `vec3<degree>` values
+(baked with quaternion-native SLERP interpolation), and scale keys use positive
+`vec3<ratio>` values such as `(1, 1, 1)`; the target rig joint must allow the
+corresponding channel. Motions also support `wave`, `pose`, `at ... pose`,
+`layer`, `ik` (`foot_lock`), `secondary` (`chain`/`joint`), combat operations
+(`squash`, `smear`, `hitstop`, `recoil`), and `cue` (`sound`, `vfx`, `event`).
 
 ## 6. Assembly
 

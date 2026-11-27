@@ -1,3 +1,12 @@
+import type {
+  CombatOps,
+  CueEvent,
+  CurveSpec,
+  GaitSpec,
+  JointLimits,
+  SecondarySpec,
+  WaveSpec,
+} from '../../../animation/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
 import type { AssetDiagnostic, AssetMotionChannel } from '../../../project/program/asset/contract';
@@ -8,7 +17,13 @@ import type {
   AssetValue,
   AssetVectorValue,
 } from './value/contract';
-import type { AssetSymbolId } from './contract';
+import type {
+  AssetSymbolId,
+  TypedMotionIk,
+  TypedRigAnchor,
+  TypedRigChain,
+  TypedRigIkLimb,
+} from './contract';
 
 /** Compiler-private plan. Every authored expression has already been evaluated. */
 export interface InstantiatedBone {
@@ -17,6 +32,10 @@ export interface InstantiatedBone {
   readonly parentId: string | null;
   /** Origin and axes are relative to the parent joint, or model for a root. */
   readonly parentRestFrame: AssetExactFrame;
+  readonly role?: string | null;
+  readonly channels?: readonly AssetMotionChannel[];
+  readonly mirror?: string | null;
+  readonly limits?: JointLimits | null;
   readonly sourcePath: string;
   readonly span: SourceSpan;
 }
@@ -97,6 +116,7 @@ export interface InstantiatedMotionKey {
   readonly time: AssetNumberValue;
   readonly value: AssetVectorValue;
   readonly interpolation: 'linear' | 'step' | 'catmullrom';
+  readonly curve?: CurveSpec;
   readonly span: SourceSpan;
 }
 
@@ -105,6 +125,48 @@ export interface InstantiatedMotionChannel {
   readonly targetBoneId: string;
   readonly property: AssetMotionChannel;
   readonly keys: readonly InstantiatedMotionKey[];
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedWaveBinding {
+  readonly targetBoneId: string;
+  readonly property: AssetMotionChannel;
+  readonly axis: 'x' | 'y' | 'z';
+  readonly spec: WaveSpec;
+  readonly scale: number;
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedPoseEntry {
+  readonly targetBoneId: string;
+  readonly property: AssetMotionChannel;
+  readonly value: AssetVectorValue;
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedPose {
+  readonly id: string;
+  readonly entries: readonly InstantiatedPoseEntry[];
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedPoseKey {
+  readonly time: AssetNumberValue;
+  readonly poseId: string;
+  readonly curve: CurveSpec;
+  readonly span: SourceSpan;
+}
+
+export interface InstantiatedMotionLayer {
+  readonly id: string;
+  readonly mode: 'base' | 'override' | 'additive';
+  readonly weight: number;
+  readonly mask: readonly string[] | null;
+  readonly mirrorMode: 'antiphase' | 'sync' | null;
+  readonly gait: GaitSpec | null;
+  readonly channels: readonly InstantiatedMotionChannel[];
+  readonly waves: readonly InstantiatedWaveBinding[];
+  readonly poseKeys: readonly InstantiatedPoseKey[];
   readonly span: SourceSpan;
 }
 
@@ -117,6 +179,14 @@ export interface InstantiatedMotion {
   readonly loop: 'once' | 'loop' | 'hold_on_last_frame';
   readonly restRelative: AssetBooleanValue;
   readonly channels: readonly InstantiatedMotionChannel[];
+  readonly layers?: readonly InstantiatedMotionLayer[];
+  readonly waves?: readonly InstantiatedWaveBinding[];
+  readonly poses?: readonly InstantiatedPose[];
+  readonly poseKeys?: readonly InstantiatedPoseKey[];
+  readonly iks?: readonly TypedMotionIk[];
+  readonly secondaries?: readonly SecondarySpec[];
+  readonly combat?: CombatOps;
+  readonly cues?: readonly CueEvent[];
   readonly span: SourceSpan;
 }
 
@@ -138,6 +208,9 @@ export interface InstantiatedAssetIr {
   readonly rig: AssetSymbolId;
   readonly skeleton: AssetSymbolId;
   readonly bones: readonly InstantiatedBone[];
+  readonly chains?: Readonly<Record<string, TypedRigChain>>;
+  readonly ikLimbs?: Readonly<Record<string, TypedRigIkLimb>>;
+  readonly anchors?: Readonly<Record<string, TypedRigAnchor>>;
   readonly instances: readonly InstantiatedComponentInstance[];
   readonly surfaces: readonly InstantiatedSurfaceBinding[];
   readonly connections: readonly InstantiatedSocketConnection[];

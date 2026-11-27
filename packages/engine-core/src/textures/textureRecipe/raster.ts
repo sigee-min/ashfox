@@ -36,7 +36,7 @@ const fill = (
   fillWidth: number,
   fillHeight: number,
   color: RgbColor,
-  alpha: 0 | 255,
+  alpha: number,
 ): void => {
   const r = color.r;
   const g = color.g;
@@ -80,18 +80,26 @@ const assertTextureRect = (
   }
 };
 
+const isAllowedAlpha = (alpha: number, soft: boolean): boolean =>
+  soft ? Number.isSafeInteger(alpha) && alpha >= 0 && alpha <= 255 : alpha === 0 || alpha === 255;
+
 const assertCanvasDetail = (
   detail: TextureComposition['canvasDetails'][number],
   index: number,
   width: number,
   height: number,
+  soft: boolean,
 ): RgbColor => {
   if (detail === null || typeof detail !== 'object') {
     throw new TypeError(`Texture raster detail ${index} must be an object.`);
   }
   const color = parseSurfaceColor(detail.color);
-  if (detail.alpha !== 0 && detail.alpha !== 255) {
-    throw new RangeError(`Texture raster detail ${index} alpha must be 0 or 255.`);
+  if (!isAllowedAlpha(detail.alpha, soft)) {
+    throw new RangeError(
+      soft
+        ? `Texture raster detail ${index} soft alpha must be an integer 0..255.`
+        : `Texture raster detail ${index} alpha must be 0 or 255.`,
+    );
   }
   assertTextureRect(
     detail.x,
@@ -154,9 +162,14 @@ const assertTextureComposition = (
   if (composition === null || typeof composition !== 'object') {
     throw new TypeError('Texture composition must be an object.');
   }
+  const soft = composition.alphaMode === 'soft';
   const background = parseSurfaceColor(composition.background);
-  if (composition.backgroundAlpha !== 0 && composition.backgroundAlpha !== 255) {
-    throw new RangeError('Texture background alpha must be exactly 0 or 255.');
+  if (!isAllowedAlpha(composition.backgroundAlpha, soft)) {
+    throw new RangeError(
+      soft
+        ? 'Texture background soft alpha must be an integer 0..255.'
+        : 'Texture background alpha must be exactly 0 or 255.',
+    );
   }
   if (!Array.isArray(composition.canvasDetails) || !Array.isArray(composition.alphaMasks)) {
     throw new TypeError('Texture composition details and masks must be arrays.');
@@ -171,7 +184,7 @@ const assertTextureComposition = (
   }
   const detailColors: RgbColor[] = [];
   for (const [index, detail] of composition.canvasDetails.entries()) {
-    detailColors.push(assertCanvasDetail(detail, index, width, height));
+    detailColors.push(assertCanvasDetail(detail, index, width, height, soft));
   }
   for (const [index, mask] of composition.alphaMasks.entries()) {
     assertAlphaMask(mask, index, width, height);
@@ -302,6 +315,13 @@ const isFrozenTextureRaster = (raster: TextureRaster): boolean =>
   (raster.alphaMasks === undefined ||
     (Object.isFrozen(raster.alphaMasks) && allFrozen(raster.alphaMasks)));
 
+export const createCanonicalTextureRaster = (
+  width: number,
+  height: number,
+  rgba: Uint8Array,
+): CanonicalTextureRaster =>
+  Object.freeze({ width, height, rgba: immutableRgba(new Uint8Array(rgba)) });
+
 /** Materialize a validated explicit composition without a ProjectDocument. */
 export const rasterizeCanonicalTexture = (
   width: number,
@@ -343,6 +363,7 @@ export const rasterizeTextureSpec = (
   const raster = rasterizeCanonicalTexture(width, height, {
     background: spec.background,
     backgroundAlpha: spec.backgroundAlpha,
+    ...(spec.alphaMode !== undefined ? { alphaMode: spec.alphaMode } : {}),
     canvasDetails: spec.canvasDetails,
     alphaMasks: spec.alphaMasks ?? [],
   });

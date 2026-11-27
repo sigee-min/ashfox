@@ -47,7 +47,7 @@ const idleClipFindings = (
         severity: 'error',
         message:
           `Every channel in Idle clip "${clip.name}" must be numeric and ` +
-          'closed from the identity rest rotation at time 0 through the clip duration.',
+          'closed from time 0 through the clip duration.',
         path: `animations.${clip.id}`,
         clipIds: [clip.id],
         fix: 'Correct the owning workspace source and compile it again.',
