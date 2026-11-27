@@ -1,6 +1,7 @@
 import type { ProgramExpr, ProgramTextureDecl } from '../syntax/contract';
 import type { SourceSpan } from '../../source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
+import type { DamageStateKind, HitZoneShape } from '../../../model/hitzone';
 import type { RawDeclaredOutput, RawDeclaredPreview } from '../../directory/declarations';
 import type {
   ASHFOX_ASSET_GRAMMAR,
@@ -291,6 +292,25 @@ export interface AssetVariantDecl {
   readonly span: SourceSpan;
 }
 
+export interface AssetHitzoneDecl {
+  readonly kind: 'hitzone';
+  readonly id: string;
+  readonly bone: AssetQualifiedName;
+  readonly shape: HitZoneShape;
+  readonly multiplier: ProgramExpr | null;
+  readonly tag: string | null;
+  readonly span: SourceSpan;
+}
+
+export interface AssetDamageStateDecl {
+  readonly kind: 'damage-state';
+  readonly state: DamageStateKind;
+  readonly baseId: string | null;
+  readonly breakVfx: string | null;
+  readonly breakSound: string | null;
+  readonly span: SourceSpan;
+}
+
 export interface AssetAssemblyDecl {
   readonly kind: 'asset';
   readonly exported: boolean;
@@ -302,6 +322,8 @@ export interface AssetAssemblyDecl {
   readonly uses: readonly AssetAssemblyUse[];
   readonly connections: readonly AssetAssemblyConnect[];
   readonly variants?: readonly AssetVariantDecl[];
+  readonly hitzones?: readonly AssetHitzoneDecl[];
+  readonly damageState?: AssetDamageStateDecl | null;
   readonly span: SourceSpan;
 }
 

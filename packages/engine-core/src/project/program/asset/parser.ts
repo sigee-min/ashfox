@@ -398,6 +398,8 @@ export class Parser {
       this.checkWord('use') ||
       this.checkWord('connect') ||
       this.checkWord('variant') ||
+      this.checkWord('hitzone') ||
+      this.checkWord('damage_state') ||
       ((this.checkWord('skeleton') || this.checkWord('motions')) && this.assignment())
     );
   }

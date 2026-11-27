@@ -68,6 +68,7 @@ export const hasHooksContent = (doc: HooksDocument | undefined): boolean =>
       doc.cues.length > 0 ||
       doc.meta.length > 0 ||
       doc.zones.length > 0 ||
+      doc.damageState !== undefined ||
       (doc.colliders && doc.colliders.colliders.length > 0)),
   );
 

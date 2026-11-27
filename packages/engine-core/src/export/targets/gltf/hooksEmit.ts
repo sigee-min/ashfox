@@ -1,4 +1,5 @@
 import type { CompiledAnchor, HooksDocument } from '../../../hooks/contract';
+import type { ModelHitZone } from '../../../model/hitzone';
 import type { GltfDocument, GltfNode } from './contract';
 import { identityMat4, invertAffineMat4, multiplyMat4, trsMat4, type Mat4 } from './rigid';
 import { isIdentityRotation, quaternionFromEuler } from './spatial';
@@ -166,6 +167,28 @@ const attachRootHooksExtras = (
   };
 };
 
+const createHitZoneEmptyNode = (hz: ModelHitZone): GltfNode => {
+  const hasPos = hz.localCenter.some((v) => Math.abs(v) > 1e-6);
+  return {
+    name: `hitzone_${hz.id}`,
+    ...(hasPos ? { translation: [...hz.localCenter] as [number, number, number] } : {}),
+    extras: {
+      ashfox: {
+        hitzone: {
+          id: hz.id,
+          bone: hz.bone,
+          shape: hz.shape,
+          multiplier: hz.multiplier,
+          tag: hz.tag,
+          ...(hz.size ? { size: [...hz.size] } : {}),
+          ...(hz.radius !== undefined ? { radius: hz.radius } : {}),
+          ...(hz.height !== undefined ? { height: hz.height } : {}),
+        },
+      },
+    },
+  };
+};
+
 const hasGlbHookItems = (hooks: HooksDocument | undefined): hooks is HooksDocument =>
   Boolean(
     hooks &&
@@ -174,7 +197,9 @@ const hasGlbHookItems = (hooks: HooksDocument | undefined): hooks is HooksDocume
       hooks.volumes.length > 0 ||
       hooks.cues.length > 0 ||
       hooks.meta.length > 0 ||
-      hooks.zones.length > 0),
+      hooks.zones.length > 0 ||
+      (hooks.colliders?.hitzones?.length ?? 0) > 0 ||
+      hooks.damageState !== undefined),
   );
 
 /**
@@ -200,6 +225,11 @@ export const appendHooksToGltfDocument = <T extends GltfDocument>(
     const boneWorld = boneIdx !== undefined ? worldMats[boneIdx] : undefined;
     const emptyIdx =
       nodes.push(createAnchorEmptyNode(anchor, options.unitScale, offset, boneWorld)) - 1;
+    attachNodeChild(nodes, scenes, boneIdx, emptyIdx);
+  }
+  for (const hz of hooks.colliders?.hitzones ?? []) {
+    const boneIdx = boneMap.get(hz.bone);
+    const emptyIdx = nodes.push(createHitZoneEmptyNode(hz)) - 1;
     attachNodeChild(nodes, scenes, boneIdx, emptyIdx);
   }
   attachRootHooksExtras(nodes, scenes, hooks);

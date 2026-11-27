@@ -89,6 +89,22 @@ const modelManifest = (
   };
 };
 
+const mergeModelHooks = (
+  model: CompiledModel,
+  resolved: HooksDocument | undefined,
+): HooksDocument | undefined => {
+  const colliders = computeModelColliders(model);
+  const damageState = model.damageState;
+  const hasExtra = colliders.colliders.length > 0 || damageState !== undefined;
+  if (!hasExtra) return resolved;
+  const baseHooks = resolved ?? emptyHooksDocument(model.name);
+  return {
+    ...baseHooks,
+    ...(colliders.colliders.length > 0 ? { colliders } : {}),
+    ...(damageState ? { damageState } : {}),
+  };
+};
+
 const pushModelProducts = (
   checkedProducts: ReturnType<typeof compileWorkspaceCandidate> & { readonly ok: true },
   modelEntries: readonly ModelCompileEntry[],
@@ -109,10 +125,7 @@ const pushModelProducts = (
       moduleAliases,
     );
     if (resolvedHooks.failure) return resolvedHooks.failure;
-    const colliders = computeModelColliders(result.model);
-    const baseHooks = resolvedHooks.hooks ?? emptyHooksDocument(result.model.name);
-    const hooks =
-      colliders.colliders.length > 0 ? { ...baseHooks, colliders } : resolvedHooks.hooks;
+    const hooks = mergeModelHooks(result.model, resolvedHooks.hooks);
     output.products.push({
       kind: 'model',
       entry: result.entry,

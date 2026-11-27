@@ -314,6 +314,7 @@ const walkAsset = (
     for (const p of u.parameterSets) walkExpr(p.value, refs);
     for (const pb of u.portBindings) walkQName(pb.target, refs);
   }
+  for (const hz of decl.hitzones ?? []) walkExpr(hz.multiplier, refs);
 };
 
 const walkComponent = (

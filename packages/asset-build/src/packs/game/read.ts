@@ -65,32 +65,91 @@ const validateVec3Tuple = (v: unknown): void => {
   }
 };
 
+const collectOptionalKeys = (
+  item: Record<string, unknown>,
+  base: readonly string[],
+  optional: readonly string[],
+): string[] => {
+  const keys = [...base];
+  for (const opt of optional) {
+    if (opt in item) keys.push(opt);
+  }
+  return keys;
+};
+
+const validateHitZoneShapeFields = (hz: Readonly<Record<string, unknown>>): void => {
+  for (const field of ['size', 'min', 'max']) {
+    if (field in hz) validateVec3Tuple(hz[field]);
+  }
+  for (const scalar of ['radius', 'height']) {
+    if (scalar in hz && !finite(hz[scalar], true)) fail(`Invalid hitzone ${scalar}`);
+  }
+};
+
+const validateHitZone = (item: unknown): void => {
+  if (!isClosedContractRecord(item)) return fail('Invalid hitzone item');
+  const keys = collectOptionalKeys(
+    item,
+    ['id', 'bone', 'shape', 'multiplier', 'tag', 'center', 'localCenter'],
+    ['size', 'min', 'max', 'radius', 'height'],
+  );
+  const hz = record(item, keys);
+  if (typeof hz.id !== 'string' || !hz.id || typeof hz.bone !== 'string' || !hz.bone)
+    fail('Invalid hitzone identifiers');
+  if (!['box', 'capsule', 'sphere'].includes(String(hz.shape)) || !finite(hz.multiplier, true))
+    fail('Invalid hitzone shape or multiplier');
+  if (typeof hz.tag !== 'string' || !hz.tag) fail('Invalid hitzone tag');
+  validateVec3Tuple(hz.center);
+  validateVec3Tuple(hz.localCenter);
+  validateHitZoneShapeFields(hz);
+};
+
+const validateColliderItem = (item: unknown): void => {
+  if (!isClosedContractRecord(item) || !('shape' in item)) fail('Invalid collider item');
+  const shape = (item as { readonly shape: unknown }).shape;
+  if (shape === 'capsule') {
+    const c = record(item, ['shape', 'axis', 'center', 'radius', 'height']);
+    validateVec3Tuple(c.center);
+    if (c.axis !== 'y' || !finite(c.radius, true) || !finite(c.height, true))
+      fail('Invalid capsule collider');
+    return;
+  }
+  if (shape === 'box') {
+    const b = record(item, ['shape', 'center', 'size', 'min', 'max']);
+    for (const k of ['center', 'size', 'min', 'max']) validateVec3Tuple(b[k]);
+    return;
+  }
+  fail('Unknown collider shape');
+};
+
 const validateModelColliders = (raw: unknown): void => {
-  const col = record(raw, ['profile', 'aabb', 'colliders']);
+  const hasHz = isClosedContractRecord(raw) && 'hitzones' in raw;
+  const col = record(
+    raw,
+    hasHz ? ['profile', 'aabb', 'colliders', 'hitzones'] : ['profile', 'aabb', 'colliders'],
+  );
   if (!['creature', 'prop', 'block'].includes(String(col.profile)))
     fail('Invalid collider profile');
   const aabb = record(col.aabb, ['min', 'max']);
   validateVec3Tuple(aabb.min);
   validateVec3Tuple(aabb.max);
   if (!Array.isArray(col.colliders)) fail('Invalid colliders array');
-  for (const item of col.colliders as unknown[]) {
-    if (!isClosedContractRecord(item) || !('shape' in item)) fail('Invalid collider item');
-    const shape = (item as { readonly shape: unknown }).shape;
-    if (shape === 'capsule') {
-      const c = record(item, ['shape', 'axis', 'center', 'radius', 'height']);
-      validateVec3Tuple(c.center);
-      if (c.axis !== 'y' || !finite(c.radius, true) || !finite(c.height, true))
-        fail('Invalid capsule collider');
-    } else if (shape === 'box') {
-      const b = record(item, ['shape', 'center', 'size', 'min', 'max']);
-      validateVec3Tuple(b.center);
-      validateVec3Tuple(b.size);
-      validateVec3Tuple(b.min);
-      validateVec3Tuple(b.max);
-    } else {
-      fail('Unknown collider shape');
-    }
-  }
+  for (const item of col.colliders as unknown[]) validateColliderItem(item);
+  if (!hasHz) return;
+  if (!Array.isArray(col.hitzones)) fail('Invalid hitzones array');
+  for (const hz of col.hitzones as unknown[]) validateHitZone(hz);
+};
+
+const validateDamageState = (raw: unknown): void => {
+  if (!isClosedContractRecord(raw)) return fail('Invalid damageState');
+  const keys = ['state'];
+  if ('baseId' in raw) keys.push('baseId');
+  if ('breakVfx' in raw) keys.push('breakVfx');
+  if ('breakSound' in raw) keys.push('breakSound');
+  if ('variants' in raw) keys.push('variants');
+  const ds = record(raw, keys);
+  if (!['intact', 'damaged', 'destroyed'].includes(String(ds.state)))
+    fail('Invalid damageState.state');
 };
 
 const validateModelAsset = (
@@ -107,6 +166,7 @@ const validateModelAsset = (
       fail('Invalid animation clip');
   }
   if ('colliders' in a) validateModelColliders(a.colliders);
+  if ('damageState' in a) validateDamageState(a.damageState);
 };
 
 const validateStructureAsset = (
@@ -215,11 +275,16 @@ const validateSoundAsset = (
   }
 };
 
-const fieldsForAssetKind = (kind: unknown, hasColliders = false): readonly string[] => {
+const fieldsForAssetKind = (
+  kind: unknown,
+  hasColliders = false,
+  hasDamageState = false,
+): readonly string[] => {
   if (kind === 'model') {
-    return hasColliders
-      ? ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions', 'colliders']
-      : ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions'];
+    const base = ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions'];
+    if (hasColliders) base.push('colliders');
+    if (hasDamageState) base.push('damageState');
+    return base;
   }
   if (kind === 'structure')
     return [
@@ -260,7 +325,7 @@ const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<str
     'id',
     'kind',
     'files',
-    ...fieldsForAssetKind(raw.kind, 'colliders' in raw),
+    ...fieldsForAssetKind(raw.kind, 'colliders' in raw, 'damageState' in raw),
   ]);
   if (typeof a.id !== 'string' || !/^[a-z][a-z0-9_.:/-]{0,127}$/.test(a.id) || ids.has(a.id))
     return fail('Invalid or duplicate ID');

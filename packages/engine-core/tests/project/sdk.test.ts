@@ -31,7 +31,39 @@ const SAMPLE_MANIFEST: SdkManifestInput = {
         colliders: [
           { shape: 'capsule', axis: 'y', center: [0, 0.9, 0], radius: 0.45, height: 1.8 },
         ],
+        hitzones: [
+          {
+            id: 'head',
+            bone: 'head',
+            shape: 'box',
+            multiplier: 2.0,
+            tag: 'headshot',
+            center: [0, 1.6, 0],
+            localCenter: [0, 0.1, 0],
+            size: [0.4, 0.4, 0.4],
+          },
+        ],
       },
+      damageState: {
+        state: 'intact',
+        baseId: 'goblin',
+      },
+    },
+    {
+      id: 'creature.goblin_damaged',
+      kind: 'model',
+      model: 'models/goblin_damaged.glb',
+      damageState: {
+        state: 'damaged',
+        baseId: 'goblin',
+        breakVfx: 'vfx.flame_arc',
+        breakSound: 'sfx.fire_loop',
+      },
+    },
+    {
+      id: 'armor.iron_helm',
+      kind: 'model',
+      model: 'models/iron_helm.glb',
     },
     {
       id: 'vfx.flame_arc',
@@ -69,7 +101,7 @@ const SAMPLE_MANIFEST: SdkManifestInput = {
   assert.equal(first.three[0]?.fileName, 'ashfox-three.ts');
   assert.match(
     first.three[0]!.content,
-    /ASHFOX_GENERATED_ASSET_IDS = \["creature\.goblin","vfx\.flame_arc","sfx\.fire_loop"\]/,
+    /ASHFOX_GENERATED_ASSET_IDS = \["creature\.goblin","creature\.goblin_damaged","armor\.iron_helm","vfx\.flame_arc","sfx\.fire_loop"\]/,
   );
   assert.deepEqual(
     first.unity.map((f) => f.fileName),
@@ -191,7 +223,16 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
         root: THREE.Object3D;
         lod?: THREE.LOD;
         colliders?: { profile: string };
+        damageState: string;
         getAnchor: (name: string) => THREE.Object3D | undefined;
+        getHitZone: (
+          collider: unknown,
+        ) => { id: string; multiplier: number; tag: string } | undefined;
+        setDamageState: (state: string) => Promise<void>;
+        equip: (
+          socket: string,
+          assetId: string | null,
+        ) => Promise<{ id: string; root: THREE.Object3D } | null>;
         play: (clip: string) => THREE.AnimationAction | null;
         onCue: (
           name: string,
@@ -222,7 +263,21 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   const anchorTip = new THREE.Object3D();
   anchorTip.name = 'anchor_weapon_tip';
   anchorTip.position.set(1, 2, 3);
-  goblinGroup.add(lod0, lod1, anchorTip);
+  const headBone = new THREE.Object3D();
+  headBone.name = 'head';
+  headBone.position.set(0, 1.5, 0);
+  const headHitNode = new THREE.Mesh(
+    new THREE.BoxGeometry(0.4, 0.4, 0.4),
+    new THREE.MeshStandardMaterial(),
+  );
+  headHitNode.name = 'hitzone_head';
+  headBone.add(headHitNode);
+  goblinGroup.add(lod0, lod1, anchorTip, headBone);
+
+  const helmGroup = new THREE.Group();
+  helmGroup.name = 'iron_helm';
+  const damagedGoblinGroup = new THREE.Group();
+  damagedGoblinGroup.name = 'goblin_damaged';
 
   const clip = new THREE.AnimationClip('flame_cleave', 1.0, []);
   clip.userData = {
@@ -247,6 +302,8 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
     setMeshoptDecoder: () => mockLoader,
     loadAsync: async (url: string) => {
       if (url.includes('flame_arc')) return { scene: vfxGroup, animations: [vfxClip] };
+      if (url.includes('iron_helm')) return { scene: helmGroup, animations: [] };
+      if (url.includes('goblin_damaged')) return { scene: damagedGoblinGroup, animations: [clip] };
       return { scene: goblinGroup, animations: [clip] };
     },
   };
@@ -297,6 +354,13 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   assert.equal(actor.getAnchor('weapon_tip'), anchorTip);
   assert.ok(actor.getAnchor('back_slot'));
   assert.equal(actor.colliders?.profile, 'creature');
+  assert.equal(actor.getHitZone({ object: headHitNode })?.multiplier, 2.0);
+  assert.equal(actor.getHitZone('headshot')?.id, 'head');
+
+  const equippedHelm = await actor.equip('head_helm', 'armor.iron_helm');
+  assert.equal(equippedHelm?.id, 'armor.iron_helm');
+  assert.equal(equippedHelm?.root.parent?.parent, headBone);
+  assert.equal(await actor.equip('head_helm', null), null);
 
   actor.onCue('melee_hitbox', (cue) => cues.push(cue));
   assert.ok(actor.play('flame_cleave'));
@@ -319,6 +383,9 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   assert.equal(soundEvents[0]!.loopStart, 0.1);
   assert.equal(soundEvents[0]!.loopEnd, 1.0);
 
+  await actor.setDamageState('damaged');
+  assert.equal(actor.damageState, 'damaged');
+
   runtime.dispose();
 };
 
@@ -334,6 +401,9 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   }
   assert.match(csActor, /CapsuleCollider/);
   assert.match(csActor, /OnAshfoxEventCue/);
+  assert.match(csActor, /GetHitZone/);
+  assert.match(csActor, /SetDamageState/);
+  assert.match(csActor, /Equip\(/);
 
   const godot = generateRuntimeSdk('godot', SAMPLE_MANIFEST);
   const gdRuntime = godot.find((f) => f.fileName === 'ashfox_runtime.gd')!.content;
@@ -344,6 +414,9 @@ const runThreeRuntimeExecutionTest = async (): Promise<void> => {
   assert.match(gdActor, /signal cue_triggered/);
   assert.match(gdActor, /Marker3D/);
   assert.match(gdActor, /CollisionShape3D/);
+  assert.match(gdActor, /func get_hit_zone/);
+  assert.match(gdActor, /func set_damage_state/);
+  assert.match(gdActor, /func equip/);
   const scanSection = gdActor.slice(gdActor.indexOf('func _scan_anchor_nodes'));
   const scanBody = scanSection.slice(0, scanSection.indexOf('\nfunc '));
   assert.doesNotMatch(scanBody, /add_child|_marker/);

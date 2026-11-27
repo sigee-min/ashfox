@@ -1,0 +1,154 @@
+ashfox 1
+module zombie {
+  import "std/model/rig/biped" as biped;
+
+  export motion shamble for biped.BipedRig {
+    duration = 1.6s; fps = 24; loop = loop;
+    track pelvis.position {
+      key 0s = (-0.4u, -0.6u, 0u) catmullrom;
+      key 0.4s = (0.6u, 0.3u, 0u) catmullrom;
+      key 0.8s = (-0.4u, -0.9u, 0u) catmullrom;
+      key 1.2s = (0.5u, 0.2u, 0u) catmullrom;
+      key 1.6s = (-0.4u, -0.6u, 0u) catmullrom;
+    }
+    track torso.rotation {
+      key 0s = (14deg, -8deg, 7deg) catmullrom;
+      key 0.8s = (18deg, 10deg, -9deg) catmullrom;
+      key 1.6s = (14deg, -8deg, 7deg) catmullrom;
+    }
+    track head.rotation {
+      key 0s = (-8deg, 10deg, 16deg) catmullrom;
+      key 0.8s = (-4deg, -12deg, 12deg) catmullrom;
+      key 1.6s = (-8deg, 10deg, 16deg) catmullrom;
+    }
+    track left_arm.rotation {
+      key 0s = (-72deg, 4deg, -6deg) catmullrom;
+      key 0.8s = (-64deg, -6deg, -4deg) catmullrom;
+      key 1.6s = (-72deg, 4deg, -6deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (-66deg, -4deg, 6deg) catmullrom;
+      key 0.8s = (-76deg, 6deg, 4deg) catmullrom;
+      key 1.6s = (-66deg, -4deg, 6deg) catmullrom;
+    }
+    track left_leg.rotation {
+      key 0s = (18deg, 0deg, -4deg) catmullrom;
+      key 0.8s = (-22deg, 0deg, -4deg) catmullrom;
+      key 1.6s = (18deg, 0deg, -4deg) catmullrom;
+    }
+    track right_leg.rotation {
+      key 0s = (-14deg, 0deg, 3deg) catmullrom;
+      key 0.8s = (14deg, 0deg, 3deg) catmullrom;
+      key 1.6s = (-14deg, 0deg, 3deg) catmullrom;
+    }
+  }
+
+  export motion crawl for biped.BipedRig {
+    duration = 1.4s; fps = 24; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, -9u, 0u) smooth;
+      key 0.7s = (0u, -8.5u, 0u) smooth;
+      key 1.4s = (0u, -9u, 0u) smooth;
+    }
+    track torso.rotation {
+      key 0s = (68deg, -8deg, 0deg) smooth;
+      key 0.7s = (68deg, 8deg, 0deg) smooth;
+      key 1.4s = (68deg, -8deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (-52deg, 0deg, 0deg) smooth;
+      key 1.4s = (-52deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (-125deg, 0deg, -10deg) catmullrom;
+      key 0.7s = (-75deg, 0deg, -10deg) catmullrom;
+      key 1.4s = (-125deg, 0deg, -10deg) catmullrom;
+    }
+    track right_arm.rotation {
+      key 0s = (-75deg, 0deg, 10deg) catmullrom;
+      key 0.7s = (-125deg, 0deg, 10deg) catmullrom;
+      key 1.4s = (-75deg, 0deg, 10deg) catmullrom;
+    }
+    track left_leg.rotation {
+      key 0s = (75deg, 0deg, -8deg) smooth;
+      key 1.4s = (75deg, 0deg, -8deg) smooth;
+    }
+    track right_leg.rotation {
+      key 0s = (78deg, 0deg, 8deg) smooth;
+      key 1.4s = (78deg, 0deg, 8deg) smooth;
+    }
+  }
+
+  export motion bite_lunge for biped.BipedRig {
+    duration = 0.75s; fps = 30; loop = once;
+    track torso.rotation {
+      key 0s = (12deg, 0deg, 0deg) ease_in;
+      key 0.2s = (-12deg, 0deg, 0deg) ease_out;
+      key 0.4s = (36deg, 0deg, 0deg) snap;
+      key 0.75s = (12deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.2s = (-18deg, 0deg, 0deg) ease_out;
+      key 0.4s = (22deg, 0deg, 0deg) snap;
+      key 0.75s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (-65deg, 0deg, -8deg) ease_in;
+      key 0.4s = (-95deg, 14deg, -4deg) snap;
+      key 0.75s = (-65deg, 0deg, -8deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (-65deg, 0deg, 8deg) ease_in;
+      key 0.4s = (-95deg, -14deg, 4deg) snap;
+      key 0.75s = (-65deg, 0deg, 8deg) smooth;
+    }
+    cue 0.36s sound "zombie_bite" at head;
+  }
+
+  export motion stagger for biped.BipedRig {
+    duration = 0.7s; fps = 30; loop = once;
+    track torso.rotation {
+      key 0s = (12deg, 0deg, 0deg) snap;
+      key 0.22s = (-28deg, 16deg, -10deg) ease_out;
+      key 0.7s = (12deg, 0deg, 0deg) smooth;
+    }
+    track head.rotation {
+      key 0s = (0deg, 0deg, 0deg) snap;
+      key 0.22s = (-24deg, -18deg, 14deg) ease_out;
+      key 0.7s = (0deg, 0deg, 0deg) smooth;
+    }
+    track left_arm.rotation {
+      key 0s = (-60deg, 0deg, 0deg) snap;
+      key 0.25s = (-35deg, 0deg, -42deg) ease_out;
+      key 0.7s = (-60deg, 0deg, 0deg) smooth;
+    }
+    track right_arm.rotation {
+      key 0s = (-60deg, 0deg, 0deg) snap;
+      key 0.25s = (-35deg, 0deg, 42deg) ease_out;
+      key 0.7s = (-60deg, 0deg, 0deg) smooth;
+    }
+  }
+
+  export motion collapse for biped.BipedRig {
+    duration = 0.9s; fps = 30; loop = hold_on_last_frame;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.55s = (0u, -10u, 4u) ease_in;
+      key 0.9s = (0u, -11u, 6u) ease_out;
+    }
+    track torso.rotation {
+      key 0s = (12deg, 0deg, 0deg) ease_in;
+      key 0.6s = (78deg, 8deg, 12deg) ease_out;
+      key 0.9s = (85deg, 10deg, 14deg) smooth;
+    }
+    track left_leg.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.6s = (82deg, 0deg, -12deg) ease_out;
+    }
+    track right_leg.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.6s = (74deg, 0deg, 10deg) ease_out;
+    }
+  }
+}

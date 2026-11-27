@@ -85,3 +85,10 @@ export {
   type ModelCollider,
   type ModelColliderSet,
 } from './collider';
+export {
+  type CompiledHitZone,
+  type DamageStateKind,
+  type HitZoneShape,
+  type ModelDamageStateMeta,
+  type ModelHitZone,
+} from './hitzone';

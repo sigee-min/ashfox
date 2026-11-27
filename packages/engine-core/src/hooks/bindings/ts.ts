@@ -70,7 +70,9 @@ const emitTsBindings = (
     "export interface AshfoxCapsuleCollider { readonly shape: 'capsule'; readonly axis: 'y'; readonly center: AshfoxVec3; readonly radius: number; readonly height: number; }",
     "export interface AshfoxBoxCollider { readonly shape: 'box'; readonly center: AshfoxVec3; readonly size: AshfoxVec3; readonly min: AshfoxVec3; readonly max: AshfoxVec3; }",
     'export type AshfoxModelCollider = AshfoxCapsuleCollider | AshfoxBoxCollider;',
-    "export interface AshfoxModelColliders { readonly profile: 'creature' | 'prop' | 'block'; readonly aabb: AshfoxModelAabb; readonly colliders: readonly AshfoxModelCollider[]; }",
+    "export type AshfoxHitZoneShape = 'box' | 'capsule' | 'sphere';",
+    'export interface AshfoxModelHitZone { readonly id: string; readonly bone: string; readonly shape: AshfoxHitZoneShape; readonly multiplier: number; readonly tag: string; readonly center: AshfoxVec3; readonly localCenter: AshfoxVec3; readonly size?: AshfoxVec3; readonly min?: AshfoxVec3; readonly max?: AshfoxVec3; readonly radius?: number; readonly height?: number; }',
+    "export interface AshfoxModelColliders { readonly profile: 'creature' | 'prop' | 'block'; readonly aabb: AshfoxModelAabb; readonly colliders: readonly AshfoxModelCollider[]; readonly hitzones?: readonly AshfoxModelHitZone[]; }",
     '',
   ];
   for (const schema of ordered) lines.push(...emitTsSchema(schema, options), '');

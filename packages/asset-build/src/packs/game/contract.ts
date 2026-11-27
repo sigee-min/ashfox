@@ -1,5 +1,5 @@
 import type { SoundProduct } from '@ashfox/audio-core';
-import type { ModelColliderSet } from '@ashfox/engine-core';
+import type { ModelColliderSet, ModelDamageStateMeta } from '@ashfox/engine-core';
 import type { FileRecord } from '../../bundle/contract';
 interface RuntimeAssetBase {
   readonly id: string;
@@ -15,6 +15,7 @@ export type RuntimeAsset = RuntimeAssetBase &
         requiredExtensions: readonly string[];
         clips: readonly Readonly<{ name: string; durationSeconds: number }>[];
         colliders?: ModelColliderSet;
+        damageState?: ModelDamageStateMeta;
       }>
     | Readonly<{
         kind: 'structure';

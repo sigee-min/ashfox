@@ -125,7 +125,8 @@ const emitCsBindings = (
     '{',
     '    [Serializable] public sealed class ModelAabb { public Vector3 min; public Vector3 max; }',
     '    [Serializable] public sealed class ModelCollider { public string shape = "box"; public string axis = "y"; public Vector3 center; public float radius; public float height; public Vector3 size; public Vector3 min; public Vector3 max; }',
-    '    [Serializable] public sealed class ModelColliders { public string profile = "prop"; public ModelAabb aabb; public ModelCollider[] colliders = Array.Empty<ModelCollider>(); }',
+    '    [Serializable] public sealed class ModelHitZone { public string id = ""; public string bone = ""; public string shape = "box"; public float multiplier = 1.0f; public string tag = ""; public Vector3 center; public Vector3 localCenter; public Vector3 size; public Vector3 min; public Vector3 max; public float radius; public float height; }',
+    '    [Serializable] public sealed class ModelColliders { public string profile = "prop"; public ModelAabb aabb; public ModelCollider[] colliders = Array.Empty<ModelCollider>(); public ModelHitZone[] hitzones = Array.Empty<ModelHitZone>(); }',
     '',
   ];
   const ordered = sortedSchemas(schemas);

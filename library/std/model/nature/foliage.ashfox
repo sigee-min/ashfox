@@ -1,0 +1,77 @@
+ashfox 1
+module foliage {
+  import "std/model/motion/nature" as nat;
+
+  export surface contract GrassSurface {
+    chart blade flat { coverage = optional; }
+    material = cutout;
+  }
+
+  export surface contract FernSurface {
+    chart frond flat { coverage = optional; }
+    material = cutout;
+  }
+
+  export surface contract BushSurface {
+    chart shrub_base box { coverage = opaque; }
+    chart shrub_top box { coverage = opaque; }
+    chart berry box { coverage = opaque; }
+    material = cutout;
+  }
+
+  export component GrassTuft(param tuft_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: GrassSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        bone trunk {
+          bone canopy {
+            plane card_a { origin = (-5u * tuft_scale, 0u, 0u); size = (10u * tuft_scale, 9u * tuft_scale); u_axis = (1, 0, 0); v_axis = (0, 1, 0); pivot = (0u, 0u, 0u); rotation = (0deg, 45deg, 0deg); surface = skin.blade; }
+            plane card_b { origin = (-5u * tuft_scale, 0u, 0u); size = (10u * tuft_scale, 9u * tuft_scale); u_axis = (1, 0, 0); v_axis = (0, 1, 0); pivot = (0u, 0u, 0u); rotation = (0deg, -45deg, 0deg); surface = skin.blade; }
+          }
+        }
+      }
+    }
+  }
+
+  export component FernCluster(param fern_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: FernSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        bone trunk {
+          bone canopy {
+            plane frond_a { origin = (-6u * fern_scale, 0u, 0u); size = (12u * fern_scale, 10u * fern_scale); u_axis = (1, 0, 0); v_axis = (0, 1, 0); pivot = (0u, 0u, 0u); rotation = (18deg, 30deg, 0deg); surface = skin.frond; }
+            plane frond_b { origin = (-6u * fern_scale, 0u, 0u); size = (12u * fern_scale, 10u * fern_scale); u_axis = (1, 0, 0); v_axis = (0, 1, 0); pivot = (0u, 0u, 0u); rotation = (-18deg, -30deg, 0deg); surface = skin.frond; }
+            plane frond_c { origin = (-6u * fern_scale, 0u, 0u); size = (12u * fern_scale, 10u * fern_scale); u_axis = (1, 0, 0); v_axis = (0, 1, 0); pivot = (0u, 0u, 0u); rotation = (0deg, 90deg, 16deg); surface = skin.frond; }
+          }
+        }
+      }
+    }
+  }
+
+  export component BerryBush(param bush_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: BushSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        taper bush_base { origin = (-5u * bush_scale, 0u, -5u * bush_scale); size = (10u * bush_scale, 6u * bush_scale, 10u * bush_scale); top_scale = (1.15, 1.15); axis = y; surface = skin.shrub_base; }
+        bone trunk {
+          bone canopy {
+            taper bush_crown { origin = (-6u * bush_scale, 6u, -6u * bush_scale); size = (12u * bush_scale, 6u * bush_scale, 12u * bush_scale); top_scale = (0.7, 0.7); axis = y; surface = skin.shrub_top; }
+            cube berry_a { origin = (-4u, 8u, -7u); size = (2u, 2u, 2u); mirror_x = berry_b; surface = skin.berry; }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { canonicalJsonString } from '../../../canonicalJson';
 import { deepFreeze } from '../../../immutable';
 import type { CompiledModel } from '../../../model/compiled';
+import type { CompiledHitZone, ModelDamageStateMeta } from '../../../model/hitzone';
 import {
   compileExpressionChannels,
   isExpressionVariantNode,
@@ -188,6 +189,51 @@ const mergeClipExpressionSpecs = (
   return Object.fromEntries(expanded.sort(([left], [right]) => compareText(left, right)));
 };
 
+const resolveCompiledHitzones = (
+  ir: InstantiatedAssetIr,
+  byId: ReadonlyMap<string, SceneNode>,
+  location: RootLocation,
+): {
+  readonly hitzones: readonly CompiledHitZone[];
+  readonly diagnostics: readonly WorkspaceDiagnostic[];
+} => {
+  if (!ir.hitzones || ir.hitzones.length === 0) return { hitzones: [], diagnostics: [] };
+  const bones = [...byId.values()].filter((n) => n.kind === 'bone');
+  const diagnostics: WorkspaceDiagnostic[] = [];
+  const hitzones = ir.hitzones.map((hz) => {
+    const direct = byId.get(hz.bone);
+    const matched = direct?.kind === 'bone' ? direct : bones.find((b) => b.name === hz.bone);
+    if (!matched) {
+      diagnostics.push(
+        rootDiagnostic(
+          location,
+          'asset.invalid-hitzone-bone',
+          `Hitzone "${hz.id}" references missing bone "${hz.bone}".`,
+        ),
+      );
+    }
+    return Object.freeze({
+      id: hz.id,
+      bone: matched?.id ?? hz.bone,
+      shape: hz.shape,
+      multiplier: hz.multiplier,
+      tag: hz.tag,
+    });
+  });
+  return { hitzones, diagnostics };
+};
+
+const toModelDamageState = (ir: InstantiatedAssetIr): ModelDamageStateMeta | undefined => {
+  const ds = ir.damageState;
+  if (!ds) return undefined;
+  return Object.freeze({
+    state: ds.state,
+    ...(ds.baseId ? { baseId: ds.baseId } : {}),
+    ...(ds.breakVfx ? { breakVfx: ds.breakVfx } : {}),
+    ...(ds.breakSound ? { breakSound: ds.breakSound } : {}),
+  });
+};
+
 /** Index scene nodes, check parent cycles and bindings, and assemble the frozen CompiledModel. */
 export const finalizeCompiledModel = (
   ir: InstantiatedAssetIr,
@@ -212,6 +258,11 @@ export const finalizeCompiledModel = (
     texResult.record,
     location,
   );
+  const byId = new Map(orderedNodes.map((node) => [node.id, node]));
+  const hzResolved = resolveCompiledHitzones(ir, byId, location);
+  const allDiagnostics = [...diagnostics, ...hzResolved.diagnostics];
+  const hitzones = hzResolved.hitzones;
+  const damageState = toModelDamageState(ir);
   const model: CompiledModel = {
     id: `model:${sha256Digest(ir.asset.key).slice('sha256:'.length)}`,
     name: ir.asset.name,
@@ -224,8 +275,10 @@ export const finalizeCompiledModel = (
     scene: { roots: Object.freeze([...roots].sort(compareText)), nodes: nodeRecord },
     textures: texResult.record,
     animations: animationRecord,
+    ...(hitzones.length > 0 ? { hitzones: Object.freeze(hitzones) } : {}),
+    ...(damageState ? { damageState } : {}),
   };
-  return diagnostics.length > 0
-    ? deepFreeze({ ok: false as const, diagnostics })
+  return allDiagnostics.length > 0
+    ? deepFreeze({ ok: false as const, diagnostics: allDiagnostics })
     : deepFreeze({ ok: true as const, model });
 };

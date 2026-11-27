@@ -1,6 +1,7 @@
 import { freeze } from '../../../immutable';
 import { formatDidYouMean } from '../../../project/source/suggest';
 import type {
+  AssetAssemblyDecl,
   AssetAssemblyUse,
   AssetParamSetDecl,
   AssetPortBindingDecl,
@@ -14,6 +15,8 @@ import {
   type AssetSymbolKind,
   type TypedAssetUse,
   type TypedComponent,
+  type TypedDamageState,
+  type TypedHitZone,
   type TypedSkeleton,
   type TypedSurface,
 } from './contract';
@@ -288,4 +291,60 @@ export const buildUse = <S extends { readonly path: string }>(
   });
   instances.set(use.id, { use: normalizedUse, component });
   return typed;
+};
+
+export const buildHitzones = <S extends { readonly path: string }>(
+  context: { readonly issue: HirIssue },
+  state: S,
+  declaration: AssetAssemblyDecl,
+): readonly TypedHitZone[] => {
+  const raw = declaration.hitzones ?? [];
+  return freeze(
+    raw.map((hz) => {
+      let multiplier = 1;
+      if (hz.multiplier !== null) {
+        const val = compileAndEvaluateHirExpression(
+          hz.multiplier,
+          'ratio',
+          new Map(),
+          new Map(),
+          state.path,
+          context.issue,
+        );
+        if (val?.kind === 'number') {
+          multiplier = Number(val.value.numerator) / Number(val.value.denominator);
+          if (multiplier <= 0) {
+            context.issue(
+              state.path,
+              hz.multiplier.span,
+              'asset.invalid-hitzone-multiplier',
+              `Hitzone "${hz.id}" multiplier must be > 0.`,
+            );
+          }
+        }
+      }
+      return freeze({
+        id: hz.id,
+        bone: hz.bone.segments.join('.'),
+        shape: hz.shape,
+        multiplier,
+        tag: hz.tag ?? hz.id,
+        span: hz.span,
+      });
+    }),
+  );
+};
+
+export const buildTypedDamageState = (
+  declaration: AssetAssemblyDecl,
+): TypedDamageState | undefined => {
+  const ds = declaration.damageState;
+  if (!ds) return undefined;
+  return freeze({
+    state: ds.state,
+    ...(ds.baseId ? { baseId: ds.baseId } : {}),
+    ...(ds.breakVfx ? { breakVfx: ds.breakVfx } : {}),
+    ...(ds.breakSound ? { breakSound: ds.breakSound } : {}),
+    span: ds.span,
+  });
 };

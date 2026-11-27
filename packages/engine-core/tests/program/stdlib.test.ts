@@ -39,7 +39,7 @@ const walkStdDisk = (
 };
 
 const virtualLibs = walkStdDisk(STD_DIR);
-assert.equal(virtualLibs.size, 67, `Expected 67 stdlib modules, got ${virtualLibs.size}`);
+assert.equal(virtualLibs.size, 84, `Expected 84 stdlib modules, got ${virtualLibs.size}`);
 
 // 1. Validate canonical specifiers, pure ashfox 1 headers, zero version suffixes, and "std/*" internal imports.
 for (const [spec, source] of virtualLibs) {
@@ -63,7 +63,7 @@ assert.equal(
 );
 
 // 2. Catalog & resolver APIs.
-assert.equal(listVirtualLibraries(virtualLibs).length, 67);
+assert.equal(listVirtualLibraries(virtualLibs).length, 84);
 assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 9);
 assert.equal(filterVirtualLibraries(virtualLibs, 'sound/combat').length, 3);
 assert.ok(

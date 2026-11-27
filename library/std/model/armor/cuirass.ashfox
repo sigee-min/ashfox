@@ -1,0 +1,50 @@
+ashfox 1
+module cuirass {
+  export socket contract ChestArmorSocket {
+  }
+
+  export rig contract CuirassRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    joint pauldron_l { parent = root; role = ornament; channels = rotation; mirror = pauldron_r; }
+    joint pauldron_r { parent = root; role = ornament; channels = rotation; mirror = pauldron_l; }
+    socket chest_armor: ChestArmorSocket { joint = root; capacity = one; }
+  }
+
+  export skeleton CuirassSkeleton implements CuirassRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pauldron_l { parent_origin = (-6u, 8u, 0u); }
+    bind pauldron_r { parent_origin = (6u, 8u, 0u); }
+  }
+
+  export surface contract CuirassSurface {
+    chart breastplate box { coverage = opaque; }
+    chart trim box { coverage = opaque; }
+    chart strap box { coverage = opaque; }
+    chart pauldron box { coverage = opaque; }
+    chart rim box { coverage = opaque; }
+    material = double;
+  }
+
+  export component PlateCuirass(param chest_scale : ratio = 1.0) {
+    requires rig skeleton: CuirassRig;
+    requires surface skin: CuirassSurface;
+    bind bone root to skeleton.root;
+    bind bone pauldron_l to skeleton.pauldron_l;
+    bind bone pauldron_r to skeleton.pauldron_r;
+    geometry {
+      bone root {
+        taper breastplate { origin = (-4u * chest_scale, 1u, -3u); size = (8u * chest_scale, 9u, 6u); top_scale = (1.08, 1.05); axis = y; surface = skin.breastplate; }
+        cube gorget { origin = (-3u, 10u, -2u); size = (6u, 2u, 4u); surface = skin.trim; }
+        cube belt_band { origin = (-5u * chest_scale, 0u, -3u); size = (10u * chest_scale, 2u, 6u); surface = skin.strap; }
+        bone pauldron_l {
+          wedge paul_l_top { origin = (-10u, 7u, -3u); size = (5u, 3u, 6u); slope = east; surface = skin.pauldron; }
+          cube paul_l_rim { origin = (-10u, 6u, -3u); size = (4u, 1u, 6u); surface = skin.rim; }
+        }
+        bone pauldron_r {
+          wedge paul_r_top { origin = (5u, 7u, -3u); size = (5u, 3u, 6u); slope = west; surface = skin.pauldron; }
+          cube paul_r_rim { origin = (6u, 6u, -3u); size = (4u, 1u, 6u); surface = skin.rim; }
+        }
+      }
+    }
+  }
+}

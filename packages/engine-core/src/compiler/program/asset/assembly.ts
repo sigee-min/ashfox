@@ -20,7 +20,12 @@ import {
   type TypedSkeleton,
   type TypedSurface,
 } from './contract';
-import { buildUse, type AssemblyInstance } from './assemblyUse';
+import {
+  buildHitzones,
+  buildTypedDamageState,
+  buildUse,
+  type AssemblyInstance,
+} from './assemblyUse';
 import { compileAndEvaluateHirExpression, type HirIssue } from './hirValues';
 
 export interface AssemblyState {
@@ -374,6 +379,41 @@ const visitSocketGraph = (
   visited.add(id);
 };
 
+const resolveAssemblyGraph = (
+  context: AssemblyContext,
+  state: AssemblyState,
+  declaration: AssetAssemblyDecl,
+  skeleton: TypedSkeleton,
+  rig: TypedRigContract,
+  surfaces: Readonly<Record<string, TypedSurface>>,
+  components: Readonly<Record<string, TypedComponent>>,
+) => {
+  const instances = new Map<string, Instance>();
+  const typedUses: TypedAssetUse[] = [];
+  for (const use of declaration.uses) {
+    const componentEntry = context.resolve(state, use.component, 'component');
+    const component = componentEntry === null ? null : components[componentEntry.symbol.key];
+    if (component !== null && component !== undefined) {
+      typedUses.push(buildUse(context, state, use, component, skeleton, surfaces, instances));
+    }
+  }
+  const acc: ConnectionState = {
+    connections: [],
+    requiredConnected: new Set(),
+    providerUseCount: new Map(),
+    edges: new Map(),
+  };
+  for (const item of declaration.connections)
+    addConnection(context, state, item, instances, rig, acc);
+  checkMissingRequiredSockets(context, state, instances, acc.requiredConnected);
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  for (const id of instances.keys()) {
+    visitSocketGraph(id, visiting, visited, acc.edges, context, state, declaration);
+  }
+  return { typedUses, connections: acc.connections };
+};
+
 export const buildAssetAssembly = (
   context: AssemblyContext,
   state: AssemblyState,
@@ -401,36 +441,26 @@ export const buildAssetAssembly = (
   const rig = skeleton === undefined ? undefined : rigs[skeleton.rig.key];
   if (skeleton === undefined || rig === undefined) return null;
   const motionIds = resolveMotions(context, state, declaration, skeleton, motions);
-  const instances = new Map<string, Instance>();
-  const typedUses: TypedAssetUse[] = [];
-  for (const use of declaration.uses) {
-    const componentEntry = context.resolve(state, use.component, 'component');
-    const component = componentEntry === null ? null : components[componentEntry.symbol.key];
-    if (component !== null && component !== undefined) {
-      typedUses.push(buildUse(context, state, use, component, skeleton, surfaces, instances));
-    }
-  }
-  const acc: ConnectionState = {
-    connections: [],
-    requiredConnected: new Set(),
-    providerUseCount: new Map(),
-    edges: new Map(),
-  };
-  for (const item of declaration.connections)
-    addConnection(context, state, item, instances, rig, acc);
-  checkMissingRequiredSockets(context, state, instances, acc.requiredConnected);
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  for (const id of instances.keys()) {
-    visitSocketGraph(id, visiting, visited, acc.edges, context, state, declaration);
-  }
+  const { typedUses, connections } = resolveAssemblyGraph(
+    context,
+    state,
+    declaration,
+    skeleton,
+    rig,
+    surfaces,
+    components,
+  );
+  const hitzones = buildHitzones(context, state, declaration);
+  const damageState = buildTypedDamageState(declaration);
   return freeze({
     symbol: entry.symbol,
     settings,
     skeleton: skeleton.symbol,
     motions: motionIds,
     uses: freeze(typedUses),
-    connections: freeze(acc.connections),
+    connections: freeze(connections),
+    ...(hitzones.length > 0 ? { hitzones } : {}),
+    ...(damageState ? { damageState } : {}),
     span: declaration.span,
   });
 };

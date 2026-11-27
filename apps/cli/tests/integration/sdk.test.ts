@@ -101,6 +101,9 @@ const main = (): void => {
     const threeTextA = fs.readFileSync(path.join(sdkDir, 'ashfox-three.ts'), 'utf8');
     assert.match(threeTextA, /createAshfoxRuntime/);
     assert.match(threeTextA, /wall_lantern/);
+    assert.match(threeTextA, /getHitZone/);
+    assert.match(threeTextA, /setDamageState/);
+    assert.match(threeTextA, /equip\(/);
 
     // 2. Reversed CLI order (--sdk godot,three) yields byte-identical output.
     const buildB = runCli('build', wsPath, '--sdk', 'godot,three', '--json');

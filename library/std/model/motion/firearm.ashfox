@@ -1,0 +1,92 @@
+ashfox 1
+module firearm {
+  import "std/model/rig/fps_arms" as fps;
+
+  export motion ads_aim for fps.FpsArmsRig {
+    duration = 0.4s; fps = 30; loop = hold_on_last_frame;
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_out;
+      key 0.25s = (2.5u, 1.8u, 0.5u) ease_out;
+      key 0.4s = (2.5u, 1.8u, 0.5u) linear;
+    }
+    track arm_r.position {
+      key 0s = (0u, 0u, 0u) ease_out;
+      key 0.25s = (-3.8u, 1.8u, 0.8u) ease_out;
+      key 0.4s = (-3.8u, 1.8u, 0.8u) linear;
+    }
+    track weapon_mount.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_out;
+      key 0.25s = (1deg, -2deg, 0deg) ease_out;
+      key 0.4s = (1deg, -2deg, 0deg) linear;
+    }
+  }
+
+  export motion fire_recoil for fps.FpsArmsRig {
+    duration = 0.35s; fps = 60; loop = once;
+    track weapon_mount.position {
+      key 0s = (0u, 0u, 0u) snap;
+      key 0.05s = (0u, 0.6u, 2.4u) ease_out;
+      key 0.35s = (0u, 0u, 0u) smooth;
+    }
+    track weapon_mount.rotation {
+      key 0s = (0deg, 0deg, 0deg) snap;
+      key 0.05s = (9deg, 0deg, 0deg) ease_out;
+      key 0.35s = (0deg, 0deg, 0deg) smooth;
+    }
+    track bolt.position {
+      key 0s = (0u, 0u, 0u) snap;
+      key 0.04s = (0u, 0u, 2.8u) linear;
+      key 0.14s = (0u, 0u, 0u) linear;
+    }
+    cue 0.01s sound "gunshot" at muzzle;
+    cue 0.02s vfx "muzzle_flash" at muzzle;
+    cue 0.04s vfx "shell_eject" at bolt_handle;
+  }
+
+  export motion reload_mag for fps.FpsArmsRig {
+    duration = 1.6s; fps = 30; loop = once;
+    track weapon_mount.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in_out;
+      key 0.3s = (-14deg, 18deg, -24deg) ease_in_out;
+      key 1.1s = (-10deg, 14deg, -18deg) ease_in_out;
+      key 1.6s = (0deg, 0deg, 0deg) smooth;
+    }
+    track arm_l.position {
+      key 0s = (0u, 0u, 0u) ease_in_out;
+      key 0.35s = (1u, -6u, 1u) ease_in_out;
+      key 0.85s = (2u, 0u, -1u) ease_out;
+      key 1.6s = (0u, 0u, 0u) smooth;
+    }
+    track mag.position {
+      key 0s = (0u, 0u, 0u) linear;
+      key 0.25s = (0u, -8u, 0u) ease_in;
+      key 0.55s = (0u, -12u, 0u) step;
+      key 0.85s = (0u, 0u, 0u) ease_out;
+    }
+    track bolt.position {
+      key 0s = (0u, 0u, 0u) linear;
+      key 1.15s = (0u, 0u, 2.8u) ease_out;
+      key 1.35s = (0u, 0u, 0u) snap;
+    }
+    cue 0.18s sound "mag_out" at mag_well;
+    cue 0.82s sound "mag_in" at mag_well;
+    cue 1.18s sound "bolt_rack" at bolt_handle;
+  }
+
+  export motion melee_bash for fps.FpsArmsRig {
+    duration = 0.55s; fps = 30; loop = once;
+    track arm_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_in;
+      key 0.14s = (18deg, -24deg, 16deg) ease_out;
+      key 0.28s = (-28deg, 32deg, -35deg) snap;
+      key 0.55s = (0deg, 0deg, 0deg) smooth;
+    }
+    track weapon_mount.position {
+      key 0s = (0u, 0u, 0u) ease_in;
+      key 0.14s = (1u, 0u, 2u) ease_out;
+      key 0.28s = (-3u, 1u, -7u) snap;
+      key 0.55s = (0u, 0u, 0u) smooth;
+    }
+    cue 0.24s sound "melee_whoosh" at weapon_mount;
+  }
+}

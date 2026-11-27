@@ -1,0 +1,64 @@
+ashfox 1
+module rock {
+  export rig contract RockRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+  }
+
+  export skeleton RockSkeleton implements RockRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export surface contract RockSurface {
+    chart base box { coverage = opaque; }
+    chart facet box { coverage = opaque; }
+    chart cap box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface contract OreSurface {
+    chart base box { coverage = opaque; }
+    chart ore box { coverage = opaque; }
+    chart seam box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export component Boulder(param rock_scale : ratio = 1.0) {
+    requires rig skeleton: RockRig;
+    requires surface skin: RockSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        taper core { origin = (-8u * rock_scale, 0u, -7u * rock_scale); size = (16u * rock_scale, 10u * rock_scale, 14u * rock_scale); top_scale = (0.72, 0.75); axis = y; surface = skin.base; }
+        wedge shelf_l { origin = (-10u * rock_scale, 0u, -5u * rock_scale); size = (5u * rock_scale, 7u * rock_scale, 10u * rock_scale); slope = east; mirror_x = shelf_r; surface = skin.facet; }
+        wedge crest { origin = (-5u * rock_scale, 9u * rock_scale, -5u * rock_scale); size = (10u * rock_scale, 4u * rock_scale, 9u * rock_scale); slope = north; surface = skin.cap; }
+      }
+    }
+  }
+
+  export component CliffSlab(param slab_scale : ratio = 1.0) {
+    requires rig skeleton: RockRig;
+    requires surface skin: RockSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube plinth { origin = (-12u * slab_scale, 0u, -8u * slab_scale); size = (24u * slab_scale, 6u * slab_scale, 16u * slab_scale); surface = skin.base; }
+        taper upper_ledge { origin = (-11u * slab_scale, 6u * slab_scale, -7u * slab_scale); size = (22u * slab_scale, 8u * slab_scale, 14u * slab_scale); top_scale = (0.85, 0.8); axis = y; surface = skin.facet; }
+        wedge overhang { origin = (-9u * slab_scale, 14u * slab_scale, -6u * slab_scale); size = (18u * slab_scale, 4u * slab_scale, 12u * slab_scale); slope = south; surface = skin.cap; }
+      }
+    }
+  }
+
+  export component OreVein(param vein_scale : ratio = 1.0) {
+    requires rig skeleton: RockRig;
+    requires surface skin: OreSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        taper matrix_rock { origin = (-7u * vein_scale, 0u, -7u * vein_scale); size = (14u * vein_scale, 11u * vein_scale, 14u * vein_scale); top_scale = (0.68, 0.68); axis = y; surface = skin.base; }
+        wedge crystal_a { origin = (-3u * vein_scale, 9u * vein_scale, -3u * vein_scale); size = (3u * vein_scale, 5u * vein_scale, 3u * vein_scale); slope = north; pivot = (0u, 9u * vein_scale, 0u); rotation = (12deg, 0deg, -10deg); surface = skin.ore; }
+        wedge crystal_b { origin = (1u * vein_scale, 7u * vein_scale, -5u * vein_scale); size = (3u * vein_scale, 5u * vein_scale, 3u * vein_scale); slope = east; pivot = (2u, 7u * vein_scale, -4u); rotation = (-14deg, 15deg, 16deg); surface = skin.ore; }
+        cube crystal_seam { origin = (-6u * vein_scale, 3u * vein_scale, -7u * vein_scale); size = (5u * vein_scale, 3u * vein_scale, 2u * vein_scale); surface = skin.seam; }
+      }
+    }
+  }
+}

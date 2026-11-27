@@ -1,0 +1,198 @@
+ashfox 1
+module survival {
+  import "std/model/rig/vehicle" as veh;
+  import "std/model/rig/fps_arms" as fps;
+
+  export rig contract PropRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+  }
+
+  export skeleton PropSkeleton implements PropRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export surface contract CampfireSurface {
+    chart ash box { coverage = opaque; }
+    chart stone box { coverage = opaque; }
+    chart log box { coverage = opaque; }
+    chart ember box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract GeneratorSurface {
+    chart skid box { coverage = opaque; }
+    chart engine box { coverage = opaque; }
+    chart tank box { coverage = opaque; }
+    chart panel box { coverage = opaque; }
+    chart exhaust box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract BarricadeSurface {
+    chart post box { coverage = opaque; }
+    chart plank box { coverage = opaque; }
+    chart brace box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract CrateSurface {
+    chart body box { coverage = opaque; }
+    chart lid box { coverage = opaque; }
+    chart strap box { coverage = opaque; }
+    chart latch box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract TruckSurface {
+    chart underbody box { coverage = opaque; }
+    chart hood box { coverage = opaque; }
+    chart cab box { coverage = opaque; }
+    chart windshield box { coverage = opaque; }
+    chart bed_floor box { coverage = opaque; }
+    chart bed_wall box { coverage = opaque; }
+    chart tailgate box { coverage = opaque; }
+    chart tire box { coverage = opaque; }
+    chart door box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract RifleSurface {
+    chart receiver box { coverage = opaque; }
+    chart handguard box { coverage = opaque; }
+    chart barrel box { coverage = opaque; }
+    chart buttstock box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart optic_rail box { coverage = opaque; }
+    chart mag box { coverage = opaque; }
+    chart bolt box { coverage = opaque; }
+    material = double;
+  }
+
+  export component Campfire {
+    requires rig skeleton: PropRig;
+    requires surface skin: CampfireSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cylinder ash_bed { origin = (0u, 0u, 0u); radius = 6u; radius_top = 5u; height = 2u; sides = 8; axis = y; surface = skin.ash; }
+        cube stone_n { origin = (-2u, 0u, -7u); size = (4u, 2u, 2u); surface = skin.stone; }
+        cube stone_s { origin = (-2u, 0u, 5u); size = (4u, 2u, 2u); surface = skin.stone; }
+        cylinder log_a { origin = (0u, 2u, 0u); radius = 1u; radius_top = 1u; height = 9u; sides = 6; axis = x; pivot = (0u, 2u, 0u); rotation = (0deg, 30deg, 18deg); surface = skin.log; }
+        cylinder log_b { origin = (0u, 2u, 0u); radius = 1u; radius_top = 1u; height = 9u; sides = 6; axis = z; pivot = (0u, 2u, 0u); rotation = (-18deg, -25deg, 0deg); surface = skin.log; }
+        wedge ember_core { origin = (-2u, 2u, -2u); size = (4u, 4u, 4u); slope = north; surface = skin.ember; }
+      }
+    }
+  }
+
+  export component Generator {
+    requires rig skeleton: PropRig;
+    requires surface skin: GeneratorSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube skid_frame { origin = (-8u, 0u, -10u); size = (16u, 2u, 20u); surface = skin.skid; }
+        cube engine_block { origin = (-6u, 2u, -8u); size = (12u, 9u, 12u); surface = skin.engine; }
+        cylinder fuel_tank { origin = (0u, 11u, -2u); radius = 4u; radius_top = 4u; height = 10u; sides = 8; axis = z; surface = skin.tank; }
+        cube panel_box { origin = (-5u, 3u, 4u); size = (10u, 8u, 5u); surface = skin.panel; }
+        cylinder exhaust_pipe { origin = (4u, 11u, 6u); radius = 1u; radius_top = 1u; height = 5u; sides = 6; axis = y; surface = skin.exhaust; }
+      }
+    }
+  }
+
+  export component Barricade(param intact_ratio : ratio = 1.0) {
+    requires rig skeleton: PropRig;
+    requires surface skin: BarricadeSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube post_l { origin = (-11u, 0u, -2u); size = (3u, 18u * intact_ratio, 3u); mirror_x = post_r; surface = skin.post; }
+        cube plank_low { origin = (-13u, 3u, -3u); size = (26u, 3u, 1u); surface = skin.plank; }
+        cube plank_mid { origin = (-13u, 8u * intact_ratio, -3u); size = (26u, 3u, 1u); pivot = (0u, 8u, -3u); rotation = (0deg, 0deg, 4deg); surface = skin.plank; }
+        cube plank_top { origin = (-13u, 13u * intact_ratio, -3u); size = (26u, 3u, 1u); pivot = (0u, 13u, -3u); rotation = (0deg, 0deg, -3deg); surface = skin.plank; }
+        wedge brace_l { origin = (-11u, 0u, 1u); size = (2u, 10u * intact_ratio, 6u); slope = north; mirror_x = brace_r; surface = skin.brace; }
+      }
+    }
+  }
+
+  export component SupplyCrate {
+    requires rig skeleton: PropRig;
+    requires surface skin: CrateSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube crate_body { origin = (-6u, 0u, -6u); size = (12u, 10u, 12u); surface = skin.body; }
+        cube crate_lid { origin = (-7u, 10u, -7u); size = (14u, 2u, 14u); surface = skin.lid; }
+        cube strap_l { origin = (-5u, 0u, -7u); size = (2u, 12u, 14u); mirror_x = strap_r; surface = skin.strap; }
+        cube latch { origin = (-2u, 9u, -8u); size = (4u, 3u, 1u); surface = skin.latch; }
+      }
+    }
+  }
+
+  export component PickupTruck {
+    requires rig skeleton: veh.VehicleRig;
+    requires surface skin: TruckSurface;
+    bind bone root to skeleton.root;
+    bind bone chassis to skeleton.chassis;
+    bind bone wheel_fl to skeleton.wheel_fl;
+    bind bone wheel_fr to skeleton.wheel_fr;
+    bind bone wheel_rl to skeleton.wheel_rl;
+    bind bone wheel_rr to skeleton.wheel_rr;
+    bind bone door_l to skeleton.door_l;
+    bind bone door_r to skeleton.door_r;
+    geometry {
+      bone root {
+        bone chassis {
+          cube underbody { origin = (-11u, 3u, -24u); size = (22u, 5u, 48u); surface = skin.underbody; }
+          taper hood { origin = (-10u, 8u, -23u); size = (20u, 5u, 12u); top_scale = (0.9, 0.9); axis = y; surface = skin.hood; }
+          cube cab { origin = (-10u, 8u, -11u); size = (20u, 11u, 14u); surface = skin.cab; }
+          cube windshield { origin = (-9u, 13u, -12u); size = (18u, 5u, 1u); surface = skin.windshield; }
+          cube bed_floor { origin = (-10u, 8u, 3u); size = (20u, 2u, 20u); surface = skin.bed_floor; }
+          cube bed_wall_l { origin = (-10u, 10u, 3u); size = (2u, 5u, 20u); mirror_x = bed_wall_r; surface = skin.bed_wall; }
+          cube tailgate { origin = (-10u, 10u, 21u); size = (20u, 5u, 2u); surface = skin.tailgate; }
+          bone wheel_fl {
+            cylinder tire_fl { origin = (-12u, 4u, -16u); radius = 4u; radius_top = 4u; height = 3u; sides = 8; axis = x; surface = skin.tire; }
+          }
+          bone wheel_fr {
+            cylinder tire_fr { origin = (9u, 4u, -16u); radius = 4u; radius_top = 4u; height = 3u; sides = 8; axis = x; surface = skin.tire; }
+          }
+          bone wheel_rl {
+            cylinder tire_rl { origin = (-12u, 4u, 15u); radius = 4u; radius_top = 4u; height = 3u; sides = 8; axis = x; surface = skin.tire; }
+          }
+          bone wheel_rr {
+            cylinder tire_rr { origin = (9u, 4u, 15u); radius = 4u; radius_top = 4u; height = 3u; sides = 8; axis = x; surface = skin.tire; }
+          }
+          bone door_l {
+            cube panel_l { origin = (-12u, 5u, -10u); size = (1u, 8u, 10u); surface = skin.door; }
+          }
+          bone door_r {
+            cube panel_r { origin = (11u, 5u, -10u); size = (1u, 8u, 10u); surface = skin.door; }
+          }
+        }
+      }
+    }
+  }
+
+  export component AssaultRifle {
+    requires rig skeleton: fps.FpsArmsRig;
+    requires surface skin: RifleSurface;
+    bind bone weapon_mount to skeleton.weapon_mount;
+    bind bone mag to skeleton.mag;
+    bind bone bolt to skeleton.bolt;
+    geometry {
+      bone weapon_mount {
+        cube receiver { origin = (-1u, -2u, -7u); size = (2u, 3u, 11u); surface = skin.receiver; }
+        cube handguard { origin = (-1u, -1u, -14u); size = (2u, 2u, 7u); surface = skin.handguard; }
+        cylinder barrel { origin = (0u, 0u, -19u); radius = 1u; radius_top = 1u; height = 6u; sides = 8; axis = z; surface = skin.barrel; }
+        wedge buttstock { origin = (-1u, -3u, 4u); size = (2u, 4u, 6u); slope = south; surface = skin.buttstock; }
+        cube grip { origin = (-1u, -5u, 1u); size = (2u, 4u, 2u); pivot = (0u, -2u, 2u); rotation = (-16deg, 0deg, 0deg); surface = skin.grip; }
+        cube optic_rail { origin = (-1u, 1u, -5u); size = (2u, 1u, 4u); surface = skin.optic_rail; }
+        bone mag {
+          cube mag_body { origin = (-1u, -5u, -2u); size = (2u, 5u, 3u); pivot = (0u, 0u, 0u); rotation = (12deg, 0deg, 0deg); surface = skin.mag; }
+        }
+        bone bolt {
+          cube bolt_carrier { origin = (1u, 0u, -2u); size = (1u, 1u, 3u); surface = skin.bolt; }
+        }
+      }
+    }
+  }
+}

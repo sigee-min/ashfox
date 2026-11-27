@@ -1,5 +1,6 @@
 import type { SourcePosition } from '../project/source/contract';
 import type { ModelColliderSet } from '../model/collider';
+import type { ModelDamageStateMeta } from '../model/hitzone';
 import type { Vec2, Vec3 } from '../model/identity';
 import type { BlockRotation, CardinalFacing } from '../project/structure/contract';
 
@@ -293,6 +294,7 @@ export interface HooksDocument {
   readonly meta: readonly CompiledMeta[];
   readonly zones: readonly CompiledZone[];
   readonly colliders?: ModelColliderSet;
+  readonly damageState?: ModelDamageStateMeta;
 }
 
 export interface HookValidationOptions {

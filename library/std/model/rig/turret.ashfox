@@ -1,0 +1,22 @@
+ashfox 1
+module turret {
+  export rig contract TurretRig {
+    joint base { parent = none; role = root; channels = (rotation, scale); }
+    joint yaw_head { parent = base; role = head; channels = rotation; }
+    joint pitch_barrel {
+      parent = yaw_head;
+      role = weapon;
+      channels = (position, rotation);
+      limits { pitch = -35deg..55deg; }
+    }
+
+    anchor muzzle { joint = pitch_barrel; offset = (0u, 0u, -14u); }
+    anchor shell_eject { joint = yaw_head; offset = (5u, 2u, 2u); }
+  }
+
+  export skeleton TurretSkeleton implements TurretRig {
+    bind base { parent_origin = (0u, 0u, 0u); }
+    bind yaw_head { parent_origin = (0u, 6u, 0u); }
+    bind pitch_barrel { parent_origin = (0u, 4u, -4u); }
+  }
+}

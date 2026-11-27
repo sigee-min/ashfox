@@ -2,6 +2,12 @@ import { freeze } from '../immutable';
 import { compareText } from '../stableOrder';
 import type { CompiledModel } from './compiled';
 import { isExpressionVariantNode } from './expression';
+import {
+  evaluateModelHitZones,
+  type CompiledHitZone,
+  type ModelHitZone,
+  type VisiblePartBox,
+} from './hitzone';
 import type { Vec3 } from './identity';
 import { primitiveLocalVertices } from './primitives';
 import {
@@ -41,6 +47,7 @@ export interface ModelColliderSet {
   readonly profile: 'creature' | 'prop' | 'block';
   readonly aabb: ModelAabb;
   readonly colliders: readonly ModelCollider[];
+  readonly hitzones?: readonly ModelHitZone[];
 }
 
 const DEFAULT_UNIT_SCALE = 1 / 16;
@@ -237,10 +244,14 @@ const normalizeColliderProfile = (
  * (`capsule` + root AABB for creatures; tight `box` collider(s) + root AABB for props/blocks).
  */
 export const computeModelColliders = (
-  model: Readonly<{ scene: SceneGraph; profile?: CompiledModel['profile'] }>,
+  model: Readonly<{
+    scene: SceneGraph;
+    profile?: CompiledModel['profile'];
+    hitzones?: readonly CompiledHitZone[];
+  }>,
   unitScale = DEFAULT_UNIT_SCALE,
 ): ModelColliderSet => {
-  const partBoxes: ModelAabb[] = [];
+  const partEntries: VisiblePartBox[] = [];
   const ordered = Object.values(model.scene.nodes).sort((a, b) => compareText(a.id, b.id));
   for (const node of ordered) {
     if (node.kind === 'bone' || node.kind === 'locator') continue;
@@ -249,13 +260,20 @@ export const computeModelColliders = (
     }
     if (!isNodeVisible(model.scene.nodes, node, new Set())) continue;
     const box = nodeWorldAabb(node, model.scene.nodes, unitScale);
-    if (box !== null) partBoxes.push(box);
+    if (box !== null) partEntries.push({ node, box });
   }
+  const partBoxes = partEntries.map((entry) => entry.box);
   const aabb = unionAabbs(partBoxes);
   const profile = normalizeColliderProfile(model.profile);
   const colliders: readonly ModelCollider[] =
     profile === 'creature'
       ? freeze([buildCapsuleFromAabb(aabb)])
       : freeze(mergeTouchingAabbs(partBoxes).map(boxColliderFromAabb));
-  return freeze({ profile, aabb, colliders });
+  const hitzones = evaluateModelHitZones(model.hitzones, model.scene.nodes, partEntries, unitScale);
+  return freeze({
+    profile,
+    aabb,
+    colliders,
+    ...(hitzones.length > 0 ? { hitzones } : {}),
+  });
 };

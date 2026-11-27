@@ -424,6 +424,8 @@ const buildAssetIr = (
     surfaces,
     connections: placed.connections,
     motions: freeze(buildMotions(session, asset)),
+    ...(asset.hitzones && asset.hitzones.length > 0 ? { hitzones: asset.hitzones } : {}),
+    ...(asset.damageState ? { damageState: asset.damageState } : {}),
     budget: session.ledger.snapshot(),
   });
 
