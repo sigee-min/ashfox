@@ -2,6 +2,7 @@ import {
   SDK_TARGETS,
   generateRuntimeSdk,
   type GeneratedSdkFile,
+  type ModelDamageStateMeta,
   type SdkManifestAsset,
   type SdkManifestInput,
   type SdkTarget,
@@ -14,18 +15,24 @@ export const normalizeSdkTargets = (targets: readonly SdkTarget[]): readonly Sdk
   return SDK_TARGETS.filter((target) => chosen.has(target));
 };
 
-const readHooksColliders = (
+const readHooksMeta = (
   hooksPath: string | undefined,
   artifactMap: ReadonlyMap<string, Uint8Array>,
-): unknown => {
-  if (!hooksPath) return undefined;
+): { readonly colliders?: unknown; readonly damageState?: ModelDamageStateMeta } => {
+  if (!hooksPath) return {};
   const bytes = artifactMap.get(hooksPath);
-  if (!bytes) return undefined;
+  if (!bytes) return {};
   try {
-    const parsed = JSON.parse(decodeUtf8(bytes)) as { colliders?: unknown };
-    return parsed.colliders;
+    const parsed = JSON.parse(decodeUtf8(bytes)) as {
+      colliders?: unknown;
+      damageState?: ModelDamageStateMeta;
+    };
+    return {
+      ...(parsed.colliders !== undefined ? { colliders: parsed.colliders } : {}),
+      ...(parsed.damageState !== undefined ? { damageState: parsed.damageState } : {}),
+    };
   } catch {
-    return undefined;
+    return {};
   }
 };
 
@@ -72,7 +79,7 @@ const toCatalogSdkAsset = (
   if (asset.kind === 'sprite') {
     return { id: asset.id, kind: 'sprite', ...(pngPath ? { image: pngPath } : {}) };
   }
-  const colliders = readHooksColliders(hooksPath, artifactMap);
+  const meta = readHooksMeta(hooksPath, artifactMap);
   const clips = 'clips' in asset.metadata ? asset.metadata.clips : undefined;
   return {
     id: asset.id,
@@ -82,7 +89,8 @@ const toCatalogSdkAsset = (
     ...(vfxPath ? { vfxSpec: vfxPath } : {}),
     ...(hooksPath ? { hooks: hooksPath } : {}),
     ...(clips ? { clips } : {}),
-    ...(colliders !== undefined ? { colliders } : {}),
+    ...(meta.colliders !== undefined ? { colliders: meta.colliders } : {}),
+    ...(meta.damageState !== undefined ? { damageState: meta.damageState } : {}),
   };
 };
 

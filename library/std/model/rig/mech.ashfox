@@ -1,0 +1,38 @@
+ashfox 1
+module mech {
+  export socket contract MechWeaponMount {
+  }
+
+  export rig contract MechRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation); }
+    joint torso { parent = pelvis; role = body; channels = rotation; }
+    joint turret_yaw { parent = torso; role = head; channels = rotation; }
+    joint arm_l { parent = torso; role = arm; channels = rotation; mirror = arm_r; }
+    joint arm_r { parent = torso; role = arm; channels = rotation; mirror = arm_l; }
+    joint barrel_l { parent = arm_l; role = weapon; channels = (position, rotation); mirror = barrel_r; }
+    joint barrel_r { parent = arm_r; role = weapon; channels = (position, rotation); mirror = barrel_l; }
+    joint leg_l { parent = pelvis; role = leg; channels = rotation; mirror = leg_r; }
+    joint leg_r { parent = pelvis; role = leg; channels = rotation; mirror = leg_l; }
+
+    chain spine = [pelvis, torso, turret_yaw];
+    anchor muzzle_l { joint = barrel_l; offset = (0u, 0u, -12u); }
+    anchor muzzle_r { joint = barrel_r; offset = (0u, 0u, -12u); }
+    anchor cockpit { joint = torso; offset = (0u, 6u, -4u); }
+    socket weapon_l: MechWeaponMount { joint = barrel_l; capacity = one; }
+    socket weapon_r: MechWeaponMount { joint = barrel_r; capacity = one; }
+  }
+
+  export skeleton MechSkeleton implements MechRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pelvis { parent_origin = (0u, 16u, 0u); }
+    bind torso { parent_origin = (0u, 6u, 0u); }
+    bind turret_yaw { parent_origin = (0u, 10u, 0u); }
+    bind arm_l { parent_origin = (-10u, 6u, 0u); }
+    bind arm_r { parent_origin = (10u, 6u, 0u); }
+    bind barrel_l { parent_origin = (-2u, -2u, -8u); }
+    bind barrel_r { parent_origin = (2u, -2u, -8u); }
+    bind leg_l { parent_origin = (-5u, 0u, 0u); }
+    bind leg_r { parent_origin = (5u, 0u, 0u); }
+  }
+}

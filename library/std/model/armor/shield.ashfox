@@ -1,0 +1,38 @@
+ashfox 1
+module shield {
+  export socket contract OffHandSocket {
+  }
+
+  export rig contract ShieldRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    socket off_hand: OffHandSocket { joint = root; capacity = one; }
+  }
+
+  export skeleton ShieldSkeleton implements ShieldRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+  }
+
+  export surface contract ShieldSurface {
+    chart face box { coverage = opaque; }
+    chart tip box { coverage = opaque; }
+    chart rim box { coverage = opaque; }
+    chart boss box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    material = double;
+  }
+
+  export component KiteShield(param shield_scale : ratio = 1.0) {
+    requires rig skeleton: ShieldRig;
+    requires surface skin: ShieldSurface;
+    bind bone root to skeleton.root;
+    geometry {
+      bone root {
+        cube main_board { origin = (-5u * shield_scale, -2u * shield_scale, -1u); size = (10u * shield_scale, 10u * shield_scale, 2u); surface = skin.face; }
+        taper lower_tip { origin = (-5u * shield_scale, -8u * shield_scale, -1u); size = (10u * shield_scale, 6u * shield_scale, 2u); top_scale = (0.3, 1.0); axis = y; surface = skin.tip; }
+        cube rim_l { origin = (-6u * shield_scale, -2u * shield_scale, -1u); size = (1u, 10u * shield_scale, 2u); mirror_x = rim_r; surface = skin.rim; }
+        cylinder boss { origin = (0u, 3u * shield_scale, -2u); radius = 2u; radius_top = 1u; height = 1u; sides = 8; axis = z; surface = skin.boss; }
+        cube handle { origin = (-1u, 0u, 1u); size = (2u, 5u, 2u); surface = skin.grip; }
+      }
+    }
+  }
+}

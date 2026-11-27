@@ -1,0 +1,84 @@
+ashfox 1
+module tree {
+  import "std/model/motion/nature" as nat;
+
+  export surface contract TreeSurface {
+    chart bark box { coverage = opaque; }
+    chart root box { coverage = opaque; }
+    chart canopy_low box { coverage = optional; }
+    chart canopy_mid box { coverage = optional; }
+    chart canopy_top box { coverage = optional; }
+    chart bough box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract DeadTreeSurface {
+    chart bark box { coverage = opaque; }
+    chart root box { coverage = opaque; }
+    chart bough box { coverage = opaque; }
+    material = double;
+  }
+
+  export component OakTree(param height_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: TreeSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        taper root_flare { origin = (-4u, 0u, -4u); size = (8u, 6u, 8u); top_scale = (0.62, 0.62); axis = y; surface = skin.root; }
+        bone trunk {
+          cylinder bole { origin = (0u, 4u, 0u); radius = 3u; radius_top = 2u; height = 18u * height_scale; sides = 8; axis = y; surface = skin.bark; }
+          cube limb_l { origin = (-7u, 14u * height_scale, -1u); size = (7u, 2u, 2u); pivot = (0u, 14u * height_scale, 0u); rotation = (0deg, 0deg, 24deg); mirror_x = limb_r; surface = skin.bough; }
+          bone canopy {
+            taper crown_low { origin = (-11u, 22u, -11u); size = (22u, 9u, 22u); top_scale = (0.85, 0.85); axis = y; surface = skin.canopy_low; }
+            taper crown_mid { origin = (-9u, 29u, -9u); size = (18u, 8u, 18u); top_scale = (0.72, 0.72); axis = y; surface = skin.canopy_mid; }
+            cube crown_top { origin = (-5u, 35u, -5u); size = (10u, 5u, 10u); surface = skin.canopy_top; }
+          }
+        }
+      }
+    }
+  }
+
+  export component PineTree(param height_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: TreeSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        cylinder stump { origin = (0u, 0u, 0u); radius = 3u; radius_top = 2u; height = 8u; sides = 8; axis = y; surface = skin.root; }
+        bone trunk {
+          cylinder mast { origin = (0u, 5u, 0u); radius = 2u; radius_top = 1u; height = 24u * height_scale; sides = 8; axis = y; surface = skin.bark; }
+          cube branch_l { origin = (-5u, 16u * height_scale, -1u); size = (5u, 2u, 2u); mirror_x = branch_r; surface = skin.bough; }
+          bone canopy {
+            taper tier_low { origin = (-10u, 20u, -10u); size = (20u, 7u, 20u); top_scale = (0.35, 0.35); axis = y; surface = skin.canopy_low; }
+            taper tier_mid { origin = (-8u, 26u, -8u); size = (16u, 7u, 16u); top_scale = (0.3, 0.3); axis = y; surface = skin.canopy_mid; }
+            taper tier_top { origin = (-5u, 32u, -5u); size = (10u, 8u, 10u); top_scale = (0.15, 0.15); axis = y; surface = skin.canopy_top; }
+          }
+        }
+      }
+    }
+  }
+
+  export component DeadTree(param height_scale : ratio = 1.0) {
+    requires rig skeleton: nat.FoliageRig;
+    requires surface skin: DeadTreeSurface;
+    bind bone root to skeleton.root;
+    bind bone trunk to skeleton.trunk;
+    bind bone canopy to skeleton.canopy;
+    geometry {
+      bone root {
+        taper base_stump { origin = (-4u, 0u, -4u); size = (8u, 5u, 8u); top_scale = (0.58, 0.58); axis = y; surface = skin.root; }
+        bone trunk {
+          cylinder dead_trunk { origin = (0u, 3u, 0u); radius = 2u; radius_top = 1u; height = 16u * height_scale; sides = 6; axis = y; surface = skin.bark; }
+          bone canopy {
+            taper snag_l { origin = (-6u, 22u, -1u); size = (6u, 2u, 2u); top_scale = (0.4, 0.4); axis = x; pivot = (0u, 23u, 0u); rotation = (0deg, 0deg, 32deg); mirror_x = snag_r; surface = skin.bough; }
+          }
+        }
+      }
+    }
+  }
+}

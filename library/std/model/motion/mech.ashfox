@@ -1,0 +1,94 @@
+ashfox 1
+module mech {
+  import "std/model/rig/mech" as mech;
+  import "std/model/rig/turret" as turret;
+  import "std/model/rig/drone" as drone;
+
+  export motion mech_stomp for mech.MechRig {
+    duration = 1.4s; fps = 30; loop = loop;
+    track pelvis.position {
+      key 0s = (0u, 0u, 0u) ease_in_out;
+      key 0.35s = (0u, -1.6u, 0u) snap;
+      key 0.7s = (0u, 0.4u, 0u) ease_out;
+      key 1.05s = (0u, -1.6u, 0u) snap;
+      key 1.4s = (0u, 0u, 0u) ease_in_out;
+    }
+    track torso.rotation {
+      key 0s = (4deg, -6deg, 0deg) smooth;
+      key 0.7s = (4deg, 6deg, 0deg) smooth;
+      key 1.4s = (4deg, -6deg, 0deg) smooth;
+    }
+    track leg_l.rotation {
+      key 0s = (22deg, 0deg, 0deg) ease_in_out;
+      key 0.7s = (-22deg, 0deg, 0deg) ease_in_out;
+      key 1.4s = (22deg, 0deg, 0deg) ease_in_out;
+    }
+    track leg_r.rotation {
+      key 0s = (-22deg, 0deg, 0deg) ease_in_out;
+      key 0.7s = (22deg, 0deg, 0deg) ease_in_out;
+      key 1.4s = (-22deg, 0deg, 0deg) ease_in_out;
+    }
+    track arm_l.rotation {
+      key 0s = (-12deg, 0deg, 0deg) smooth;
+      key 0.7s = (10deg, 0deg, 0deg) smooth;
+      key 1.4s = (-12deg, 0deg, 0deg) smooth;
+    }
+    track arm_r.rotation {
+      key 0s = (10deg, 0deg, 0deg) smooth;
+      key 0.7s = (-12deg, 0deg, 0deg) smooth;
+      key 1.4s = (10deg, 0deg, 0deg) smooth;
+    }
+    cue 0.35s sound "mech_stomp" at leg_l;
+    cue 1.05s sound "mech_stomp" at leg_r;
+  }
+
+  export motion turret_track for turret.TurretRig {
+    duration = 3s; fps = 24; loop = loop;
+    track yaw_head.rotation {
+      key 0s = (0deg, -45deg, 0deg) ease_in_out;
+      key 1.5s = (0deg, 45deg, 0deg) ease_in_out;
+      key 3s = (0deg, -45deg, 0deg) ease_in_out;
+    }
+    track pitch_barrel.rotation {
+      key 0s = (0deg, 0deg, 0deg) smooth;
+      key 0.75s = (-12deg, 0deg, 0deg) smooth;
+      key 1.5s = (4deg, 0deg, 0deg) smooth;
+      key 2.25s = (-8deg, 0deg, 0deg) smooth;
+      key 3s = (0deg, 0deg, 0deg) smooth;
+    }
+  }
+
+  export motion drone_hover for drone.DroneRig {
+    duration = 1.2s; fps = 30; loop = loop;
+    track body.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.6s = (0u, 1.5u, 0u) smooth;
+      key 1.2s = (0u, 0u, 0u) smooth;
+    }
+    track rotor_1.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.6s = (0deg, 360deg, 0deg) linear;
+      key 1.2s = (0deg, 720deg, 0deg) linear;
+    }
+    track rotor_2.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.6s = (0deg, -360deg, 0deg) linear;
+      key 1.2s = (0deg, -720deg, 0deg) linear;
+    }
+    track rotor_3.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.6s = (0deg, -360deg, 0deg) linear;
+      key 1.2s = (0deg, -720deg, 0deg) linear;
+    }
+    track rotor_4.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.6s = (0deg, 360deg, 0deg) linear;
+      key 1.2s = (0deg, 720deg, 0deg) linear;
+    }
+    track gimbal_cam.rotation {
+      key 0s = (6deg, -18deg, 0deg) smooth;
+      key 0.6s = (10deg, 18deg, 0deg) smooth;
+      key 1.2s = (6deg, -18deg, 0deg) smooth;
+    }
+  }
+}

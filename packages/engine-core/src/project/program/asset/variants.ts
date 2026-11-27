@@ -1,3 +1,4 @@
+import type { DamageStateKind, ModelDamageStateMeta } from '../../../model/hitzone';
 import { lexProgramSource, type ProgramToken } from '../syntax/lex';
 import { expandStaticForTokens } from '../syntax/staticFor';
 import { parseAssetSource } from './parse';
@@ -7,11 +8,13 @@ export interface ElaboratedVariantSource {
   readonly variantId: string;
   readonly modelId: string;
   readonly source: string;
+  readonly damageState?: ModelDamageStateMeta;
 }
 
 interface ParsedVariantTokens {
   readonly id: string;
   readonly bindings: ReadonlyMap<string, readonly ProgramToken[]>;
+  readonly damageMeta?: Omit<ModelDamageStateMeta, 'baseId'>;
 }
 
 const findMatchingBrace = (tokens: readonly ProgramToken[], openIdx: number): number | null => {
@@ -45,24 +48,49 @@ const findBindingSemi = (
   return closeIdx;
 };
 
+const DAMAGE_META_KEYS = new Set(['state', 'break_vfx', 'break_sound']);
+
+const extractVariantDamageMeta = (
+  raw: ReadonlyMap<string, readonly ProgramToken[]>,
+): Omit<ModelDamageStateMeta, 'baseId'> | undefined => {
+  const stateTok = raw.get('state')?.[0];
+  const vfxTok = raw.get('break_vfx')?.[0];
+  const sfxTok = raw.get('break_sound')?.[0];
+  if (!stateTok && !vfxTok && !sfxTok) return undefined;
+  const rawState = stateTok?.value ?? 'intact';
+  const state: DamageStateKind =
+    rawState === 'damaged' || rawState === 'destroyed' ? rawState : 'intact';
+  return Object.freeze({
+    state,
+    ...(vfxTok?.kind === 'string' ? { breakVfx: vfxTok.value } : {}),
+    ...(sfxTok?.kind === 'string' ? { breakSound: sfxTok.value } : {}),
+  });
+};
+
 const readVariantBindings = (
   tokens: readonly ProgramToken[],
   openIdx: number,
   closeIdx: number,
-): ReadonlyMap<string, readonly ProgramToken[]> => {
+): {
+  readonly bindings: ReadonlyMap<string, readonly ProgramToken[]>;
+  readonly damageMeta?: Omit<ModelDamageStateMeta, 'baseId'>;
+} => {
+  const raw = new Map<string, readonly ProgramToken[]>();
   const bindings = new Map<string, readonly ProgramToken[]>();
   let i = openIdx + 1;
   while (i < closeIdx) {
     const key = tokens[i];
     if (key?.kind === 'identifier' && tokens[i + 1]?.value === '=') {
       const semi = findBindingSemi(tokens, i + 2, closeIdx);
-      bindings.set(key.value, tokens.slice(i + 2, semi));
+      const val = tokens.slice(i + 2, semi);
+      raw.set(key.value, val);
+      if (!DAMAGE_META_KEYS.has(key.value)) bindings.set(key.value, val);
       i = semi + 1;
       continue;
     }
     i += 1;
   }
-  return bindings;
+  return { bindings, damageMeta: extractVariantDamageMeta(raw) };
 };
 
 const findModelHeader = (
@@ -97,9 +125,11 @@ const extractVariantsAndBase = (tokens: readonly ProgramToken[]) => {
     if (isVariantBlockAt(tokens, i, depth)) {
       const closeIdx = findMatchingBrace(tokens, i + 2);
       if (closeIdx === null) return null;
+      const parsed = readVariantBindings(tokens, i + 2, closeIdx);
       variants.push({
         id: tokens[i + 1]!.value,
-        bindings: readVariantBindings(tokens, i + 2, closeIdx),
+        bindings: parsed.bindings,
+        ...(parsed.damageMeta ? { damageMeta: parsed.damageMeta } : {}),
       });
       i = closeIdx + 1;
       continue;
@@ -221,6 +251,21 @@ const substituteForVariant = (
   return out;
 };
 
+const formatDamageStateBlock = (meta: ModelDamageStateMeta): string => {
+  const parts = [`state = ${meta.state};`];
+  if (meta.baseId) parts.push(`base = ${JSON.stringify(meta.baseId)};`);
+  if (meta.breakVfx) parts.push(`break_vfx = ${JSON.stringify(meta.breakVfx)};`);
+  if (meta.breakSound) parts.push(`break_sound = ${JSON.stringify(meta.breakSound)};`);
+  return `\n  damage_state { ${parts.join(' ')} }`;
+};
+
+const injectDamageStateBlock = (serialized: string, meta?: ModelDamageStateMeta): string => {
+  if (!meta) return serialized;
+  const closeIdx = serialized.lastIndexOf('}');
+  if (closeIdx < 0) return serialized;
+  return `${serialized.slice(0, closeIdx)}${formatDamageStateBlock(meta)}\n}`;
+};
+
 /** Expands `variant` matrix blocks inside an asset model into concrete model sources. */
 export const elaborateModelVariants = (
   source: string,
@@ -246,11 +291,15 @@ export const elaborateModelVariants = (
         modelId,
         variant.bindings,
       );
+      const damageState: ModelDamageStateMeta | undefined = variant.damageMeta
+        ? Object.freeze({ ...variant.damageMeta, baseId: baseModelId })
+        : undefined;
       return Object.freeze({
         baseModelId,
         variantId: variant.id,
         modelId,
-        source: serializeTokens(tokens),
+        source: injectDamageStateBlock(serializeTokens(tokens), damageState),
+        ...(damageState ? { damageState } : {}),
       });
     }),
   );

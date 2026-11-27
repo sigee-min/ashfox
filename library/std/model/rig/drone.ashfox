@@ -1,0 +1,23 @@
+ashfox 1
+module drone {
+  export rig contract DroneRig {
+    joint body { parent = none; role = root; channels = (position, rotation, scale); }
+    joint rotor_1 { parent = body; role = prop; channels = rotation; mirror = rotor_2; }
+    joint rotor_2 { parent = body; role = prop; channels = rotation; mirror = rotor_1; }
+    joint rotor_3 { parent = body; role = prop; channels = rotation; mirror = rotor_4; }
+    joint rotor_4 { parent = body; role = prop; channels = rotation; mirror = rotor_3; }
+    joint gimbal_cam { parent = body; role = head; channels = rotation; }
+
+    anchor thruster { joint = body; offset = (0u, -2u, 5u); }
+    anchor cam_lens { joint = gimbal_cam; offset = (0u, 0u, -3u); }
+  }
+
+  export skeleton DroneSkeleton implements DroneRig {
+    bind body { parent_origin = (0u, 16u, 0u); }
+    bind rotor_1 { parent_origin = (-7u, 2u, -7u); }
+    bind rotor_2 { parent_origin = (7u, 2u, -7u); }
+    bind rotor_3 { parent_origin = (-7u, 2u, 7u); }
+    bind rotor_4 { parent_origin = (7u, 2u, 7u); }
+    bind gimbal_cam { parent_origin = (0u, -3u, -4u); }
+  }
+}

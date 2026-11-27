@@ -1,0 +1,33 @@
+ashfox 1
+module vehicle {
+  export socket contract SeatMount {
+  }
+
+  export rig contract VehicleRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint chassis { parent = root; role = body; channels = (position, rotation); }
+    joint wheel_fl { parent = chassis; role = wheel; channels = (position, rotation); mirror = wheel_fr; }
+    joint wheel_fr { parent = chassis; role = wheel; channels = (position, rotation); mirror = wheel_fl; }
+    joint wheel_rl { parent = chassis; role = wheel; channels = (position, rotation); mirror = wheel_rr; }
+    joint wheel_rr { parent = chassis; role = wheel; channels = (position, rotation); mirror = wheel_rl; }
+    joint door_l { parent = chassis; role = door; channels = rotation; mirror = door_r; }
+    joint door_r { parent = chassis; role = door; channels = rotation; mirror = door_l; }
+
+    anchor seat_driver { joint = chassis; offset = (-6u, 8u, 0u); }
+    anchor headlight_l { joint = chassis; offset = (-9u, 7u, -24u); }
+    anchor headlight_r { joint = chassis; offset = (9u, 7u, -24u); }
+    anchor exhaust { joint = chassis; offset = (-7u, 3u, 24u); }
+    socket driver_seat: SeatMount { joint = chassis; capacity = one; }
+  }
+
+  export skeleton VehicleSkeleton implements VehicleRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind chassis { parent_origin = (0u, 6u, 0u); }
+    bind wheel_fl { parent_origin = (-11u, -2u, -14u); }
+    bind wheel_fr { parent_origin = (11u, -2u, -14u); }
+    bind wheel_rl { parent_origin = (-11u, -2u, 14u); }
+    bind wheel_rr { parent_origin = (11u, -2u, 14u); }
+    bind door_l { parent_origin = (-12u, 2u, -6u); }
+    bind door_r { parent_origin = (12u, 2u, -6u); }
+  }
+}

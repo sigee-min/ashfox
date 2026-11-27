@@ -124,6 +124,7 @@ export interface GltfNodeExtras {
     readonly lod?: GltfAshfoxLodExtras;
     readonly hook?: Readonly<Record<string, unknown>>;
     readonly hooks?: HooksDocument;
+    readonly hitzone?: Readonly<Record<string, unknown>>;
   };
 }
 

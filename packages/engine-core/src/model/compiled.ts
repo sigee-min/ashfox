@@ -1,3 +1,4 @@
+import type { CompiledHitZone, ModelDamageStateMeta } from './hitzone';
 import type { AnimationClip } from './motion';
 import type { SceneGraph } from './scene';
 import type { TextureAsset } from './texture';
@@ -21,4 +22,6 @@ export interface CompiledModel {
   readonly scene: SceneGraph;
   readonly textures: Readonly<Record<string, TextureAsset>>;
   readonly animations: Readonly<Record<string, AnimationClip>>;
+  readonly hitzones?: readonly CompiledHitZone[];
+  readonly damageState?: ModelDamageStateMeta;
 }

@@ -10,6 +10,7 @@ import type {
 import type { ProgramProperty, ProgramTextureDecl } from '../../../project/program/syntax/contract';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { AssetQualityProfile } from '../../../model/compiled';
+import type { DamageStateKind, HitZoneShape } from '../../../model/hitzone';
 import type {
   AssetDeclaration,
   AssetDiagnostic,
@@ -374,6 +375,23 @@ export interface TypedAssemblyConnection {
   readonly span: SourceSpan;
 }
 
+export interface TypedHitZone {
+  readonly id: string;
+  readonly bone: string;
+  readonly shape: HitZoneShape;
+  readonly multiplier: number;
+  readonly tag: string;
+  readonly span: SourceSpan;
+}
+
+export interface TypedDamageState {
+  readonly state: DamageStateKind;
+  readonly baseId?: string;
+  readonly breakVfx?: string;
+  readonly breakSound?: string;
+  readonly span: SourceSpan;
+}
+
 export interface TypedAssetAssembly {
   readonly symbol: AssetSymbolId;
   readonly settings: Readonly<{
@@ -385,6 +403,8 @@ export interface TypedAssetAssembly {
   readonly motions: readonly AssetSymbolId[];
   readonly uses: readonly TypedAssetUse[];
   readonly connections: readonly TypedAssemblyConnection[];
+  readonly hitzones?: readonly TypedHitZone[];
+  readonly damageState?: TypedDamageState;
   readonly span: SourceSpan;
 }
 

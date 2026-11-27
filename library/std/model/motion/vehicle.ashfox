@@ -1,0 +1,65 @@
+ashfox 1
+module vehicle {
+  import "std/model/rig/vehicle" as veh;
+
+  export motion drive_spin for veh.VehicleRig {
+    duration = 1s; fps = 30; loop = loop;
+    track wheel_fl.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.5s = (-180deg, 0deg, 0deg) linear;
+      key 1s = (-360deg, 0deg, 0deg) linear;
+    }
+    track wheel_fr.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.5s = (-180deg, 0deg, 0deg) linear;
+      key 1s = (-360deg, 0deg, 0deg) linear;
+    }
+    track wheel_rl.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.5s = (-180deg, 0deg, 0deg) linear;
+      key 1s = (-360deg, 0deg, 0deg) linear;
+    }
+    track wheel_rr.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 0.5s = (-180deg, 0deg, 0deg) linear;
+      key 1s = (-360deg, 0deg, 0deg) linear;
+    }
+    track chassis.position {
+      key 0s = (0u, 0u, 0u) smooth;
+      key 0.25s = (0u, 0.25u, 0u) smooth;
+      key 0.5s = (0u, 0u, 0u) smooth;
+      key 0.75s = (0u, 0.2u, 0u) smooth;
+      key 1s = (0u, 0u, 0u) smooth;
+    }
+  }
+
+  export motion suspension_bump for veh.VehicleRig {
+    duration = 0.7s; fps = 30; loop = once;
+    track chassis.position {
+      key 0s = (0u, 0u, 0u) ease_out;
+      key 0.16s = (0u, -2.5u, 0u) ease_out;
+      key 0.38s = (0u, 1.2u, 0u) ease_in_out;
+      key 0.7s = (0u, 0u, 0u) smooth;
+    }
+    track chassis.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_out;
+      key 0.16s = (5deg, 0deg, 0deg) ease_out;
+      key 0.38s = (-3deg, 0deg, 0deg) ease_in_out;
+      key 0.7s = (0deg, 0deg, 0deg) smooth;
+    }
+  }
+
+  export motion door_open for veh.VehicleRig {
+    duration = 0.8s; fps = 30; loop = once;
+    track door_l.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_out;
+      key 0.4s = (0deg, 65deg, 0deg) ease_in_out;
+      key 0.8s = (0deg, 0deg, 0deg) ease_in_out;
+    }
+    track door_r.rotation {
+      key 0s = (0deg, 0deg, 0deg) ease_out;
+      key 0.4s = (0deg, -65deg, 0deg) ease_in_out;
+      key 0.8s = (0deg, 0deg, 0deg) ease_in_out;
+    }
+  }
+}

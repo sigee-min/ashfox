@@ -1,0 +1,45 @@
+ashfox 1
+module helm {
+  export socket contract HeadHelmSocket {
+  }
+
+  export rig contract HelmRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    joint visor { parent = root; role = prop; channels = rotation; }
+    socket head_helm: HeadHelmSocket { joint = root; capacity = one; }
+  }
+
+  export skeleton HelmSkeleton implements HelmRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind visor { parent_origin = (0u, 4u, -4u); }
+  }
+
+  export surface contract HelmSurface {
+    chart dome box { coverage = opaque; }
+    chart rim box { coverage = opaque; }
+    chart crest box { coverage = opaque; }
+    chart cheek box { coverage = opaque; }
+    chart neck box { coverage = opaque; }
+    chart visor box { coverage = opaque; }
+    material = double;
+  }
+
+  export component PlateHelm(param crest_scale : ratio = 1.0) {
+    requires rig skeleton: HelmRig;
+    requires surface skin: HelmSurface;
+    bind bone root to skeleton.root;
+    bind bone visor to skeleton.visor;
+    geometry {
+      bone root {
+        taper dome { origin = (-4u, 4u, -4u); size = (8u, 5u, 8u); top_scale = (0.82, 0.82); axis = y; surface = skin.dome; }
+        cube brow_rim { origin = (-5u, 3u, -5u); size = (10u, 2u, 10u); surface = skin.rim; }
+        cube cheek_l { origin = (-5u, -1u, -4u); size = (2u, 4u, 6u); mirror_x = cheek_r; surface = skin.cheek; }
+        cube neck_guard { origin = (-4u, -1u, 3u); size = (8u, 4u, 2u); surface = skin.neck; }
+        wedge crest { origin = (-1u, 9u, -4u); size = (2u, 3u * crest_scale, 8u); slope = north; surface = skin.crest; }
+        bone visor {
+          cube visor_plate { origin = (-4u, 1u, -5u); size = (8u, 3u, 2u); pivot = (0u, 4u, -4u); rotation = (-8deg, 0deg, 0deg); surface = skin.visor; }
+        }
+      }
+    }
+  }
+}

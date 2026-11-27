@@ -1,0 +1,21 @@
+ashfox 1
+module nature {
+  export rig contract FoliageRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint trunk { parent = root; role = body; channels = rotation; }
+    joint canopy { parent = trunk; role = prop; channels = rotation; }
+  }
+
+  export skeleton FoliageSkeleton implements FoliageRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind trunk { parent_origin = (0u, 8u, 0u); }
+    bind canopy { parent_origin = (0u, 16u, 0u); }
+  }
+
+  export motion wind_sway for FoliageRig {
+    duration = 3s; fps = 24; loop = loop;
+    wave trunk.rotation.z = breath(period = 3s, inhale = 0.45) * 1.8deg;
+    wave canopy.rotation.z = breath(period = 3s, inhale = 0.5) * 3.5deg;
+    wave canopy.rotation.x = simplex(freq = 1.2, amp = 2.2deg, seed = 7, period = 3s);
+  }
+}

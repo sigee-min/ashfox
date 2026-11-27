@@ -1,6 +1,9 @@
+import type { DamageStateKind, ModelDamageStateMeta } from '../model/hitzone';
+
 export const SDK_TARGETS = ['three', 'unity', 'godot'] as const;
 
 export type SdkTarget = (typeof SDK_TARGETS)[number];
+export type { DamageStateKind };
 
 export interface GeneratedSdkFile {
   readonly target: SdkTarget;
@@ -36,6 +39,7 @@ export interface SdkManifestAsset {
   readonly clips?: readonly { readonly name: string; readonly durationSeconds: number }[];
   readonly variants?: readonly SdkManifestSoundVariant[];
   readonly colliders?: unknown;
+  readonly damageState?: ModelDamageStateMeta;
 }
 
 export interface SdkManifestInput {

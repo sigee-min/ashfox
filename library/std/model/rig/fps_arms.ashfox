@@ -1,0 +1,42 @@
+ashfox 1
+module fps_arms {
+  export socket contract WeaponMount {
+  }
+
+  export socket contract OpticMount {
+  }
+
+  export socket contract MagMount {
+  }
+
+  export rig contract FpsArmsRig {
+    joint camera_root { parent = none; role = root; channels = (position, rotation); }
+    joint arm_l { parent = camera_root; role = arm; channels = (position, rotation); mirror = arm_r; }
+    joint arm_r { parent = camera_root; role = arm; channels = (position, rotation); mirror = arm_l; }
+    joint hand_l { parent = arm_l; role = hand; channels = (position, rotation); mirror = hand_r; }
+    joint hand_r { parent = arm_r; role = hand; channels = (position, rotation); mirror = hand_l; }
+    joint weapon_mount { parent = hand_r; role = weapon; channels = (position, rotation); }
+    joint mag { parent = weapon_mount; role = prop; channels = (position, rotation); }
+    joint bolt { parent = weapon_mount; role = prop; channels = (position, rotation); }
+
+    anchor optic { joint = weapon_mount; offset = (0u, 3u, -2u); }
+    anchor muzzle { joint = weapon_mount; offset = (0u, 1u, -16u); }
+    anchor mag_well { joint = mag; offset = (0u, -3u, 0u); }
+    anchor bolt_handle { joint = bolt; offset = (1.5u, 1u, 1u); }
+
+    socket weapon_socket: WeaponMount { joint = weapon_mount; capacity = one; }
+    socket optic_socket: OpticMount { joint = weapon_mount; capacity = one; }
+    socket mag_socket: MagMount { joint = mag; capacity = one; }
+  }
+
+  export skeleton FpsArmsSkeleton implements FpsArmsRig {
+    bind camera_root { parent_origin = (0u, 0u, 0u); }
+    bind arm_l { parent_origin = (-5u, -4u, -3u); }
+    bind arm_r { parent_origin = (5u, -4u, -3u); }
+    bind hand_l { parent_origin = (3u, 1u, -6u); }
+    bind hand_r { parent_origin = (-1u, 1u, -6u); }
+    bind weapon_mount { parent_origin = (0u, 1u, -2u); }
+    bind mag { parent_origin = (0u, -2u, -3u); }
+    bind bolt { parent_origin = (0u, 1.5u, -2u); }
+  }
+}

@@ -19,6 +19,8 @@ import type {
 } from './value/contract';
 import type {
   AssetSymbolId,
+  TypedDamageState,
+  TypedHitZone,
   TypedMotionIk,
   TypedRigAnchor,
   TypedRigChain,
@@ -248,6 +250,8 @@ export interface InstantiatedAssetIr {
   readonly surfaces: readonly InstantiatedSurfaceBinding[];
   readonly connections: readonly InstantiatedSocketConnection[];
   readonly motions: readonly InstantiatedMotion[];
+  readonly hitzones?: readonly TypedHitZone[];
+  readonly damageState?: TypedDamageState;
   readonly budget: AssetBudgetLedger;
 }
 
