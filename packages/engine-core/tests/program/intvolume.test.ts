@@ -431,10 +431,7 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
   const clampedVol = buildSculptedVolumes({ ...screenRoom, volumes: [bigPart] });
   assert.ok(clampedVol.boxes.length <= 9 && clampedVol.boxes.length > 0);
   const colonnadeSolved = solveInteriorLayout({ ...screenRoom, volumes: [colPart], props: [] });
-  assert.equal(
-    colonnadeSolved.clearance.clear_path_cells.some((c) => c[0] === 2 && c[2] === 5),
-    true,
-  );
+  assert.ok(colonnadeSolved.clearance.clear_path_cells.some((c) => c[0] === 2 && c[2] === 5));
   const mezStack = solveInteriorLayout({
     ...screenRoom,
     volumes: [
@@ -445,10 +442,7 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
       { id: 'mz_chr', kind: 'chair', at: [4, 5, 4], size: [1, 1], facing: 'south' },
     ],
   });
-  assert.equal(
-    mezStack.placed_props.every((p) => !p.nudged),
-    true,
-  );
+  assert.ok(mezStack.placed_props.every((p) => !p.nudged));
   const lowMez: InteriorRoomInput = {
     ...regRoom,
     volumes: [
@@ -471,20 +465,28 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     const fp = res.placed_props.find((p) => p.id === 'fp')!;
     assert.ok(fp.nudged && fp.resolved_at[2] >= 4);
   }
-  const splitSolved = solveInteriorLayout({
+  const splitBase: InteriorRoomInput = {
     ...screenRoom,
     openings: [
       { id: 'n_door', kind: 'door', wall: 'north', from: [5, 1, 0], to: [5, 2, 0] },
       { id: 's_door', kind: 'door', wall: 'south', from: [5, 1, 10], to: [5, 2, 10] },
     ],
-    volumes: [{ ...colPart, id: 'wall', style: 'screen', doorway_width: 0 }],
     props: [],
+  };
+  const splitSolved = solveInteriorLayout({
+    ...splitBase,
+    volumes: [{ ...colPart, id: 'wall', style: 'screen', doorway_width: 0 }],
   });
   assert.ok(!splitSolved.clearance.passed && splitSolved.clearance.blocked_opening_count >= 1);
-  assert.equal(
-    splitSolved.clearance.clear_path_cells.every((c) => c[2] < 5),
-    true,
-  );
+  assert.ok(splitSolved.clearance.clear_path_cells.every((c) => c[2] < 5));
+  for (const s of ['sliding_shoji', 'fusuma'] as const) {
+    const mv = {
+      ...splitBase,
+      volumes: [{ ...colPart, id: s, style: s, doorway_width: 2, open_ratio: 1 }],
+    };
+    const mvSolved = solveInteriorLayout(mv, buildSculptedVolumes(mv).boxes);
+    assert.ok(mvSolved.clearance.passed && mvSolved.clearance.blocked_opening_count === 0);
+  }
 };
 
 testClosedStyleDnaContract();

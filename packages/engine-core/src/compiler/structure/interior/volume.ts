@@ -404,7 +404,14 @@ const emitPartitionDoor = (
   if (spec.style !== 'sliding_shoji' && spec.style !== 'fusuma') return;
   const s0 = u * U + slideOff;
   const b = axBox(ax, s0, fy, fx, s0 + 12, cy - 2, fx + 1.5);
-  pushBox(c, `pt_${spec.id}_s${u}`, b, `partition_${spec.style}`, 'plaster_white', 'translucent');
+  pushBox(
+    c,
+    `pt_${spec.id}_s${u}`,
+    b,
+    `partition_door_${spec.style}`,
+    'plaster_white',
+    'translucent',
+  );
 };
 
 const emitPartitionSolid = (

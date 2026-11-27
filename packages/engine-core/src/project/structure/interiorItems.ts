@@ -433,7 +433,7 @@ export const parseDrapery = (
     MAX_DRAPERY_PANELS,
   );
   return {
-    id: nextId(seq, 'drape', kind),
+    id: nextId(seq, 'drape', null),
     kind,
     on_target: asOptStr(file, stmt.span, attrs.on, 'on') ?? 'windows',
     ...(from16 ? { from_16: from16 } : {}),

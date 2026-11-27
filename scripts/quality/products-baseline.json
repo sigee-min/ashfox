@@ -1130,7 +1130,7 @@
           "entry": "structures/ryokan_pavilion",
           "kind": "structure",
           "nbt": "b2a678b4e93b166a46e6f0ff1862b71275e30cd8ecae754c39d7c176708ba967",
-          "playableMeta": "c1b83abbb91c2d5b1a4c40d37b7839e695c30c8c9b78732d536a430e2a4d9ed5",
+          "playableMeta": "a44c4076d51969025214ca751762b9a32a64b41ac39641ffef101b00fdc2ce8d",
           "document": "b1bdc46fee28ad79292c5503c9c11e9ce7a87cb1470c9cab4922cd6e50eb6361"
         },
         {
@@ -1162,7 +1162,7 @@
           "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "f704fb666b7ffebc6ddda89da5673047bd17f873a47e39cf85e50aa82349a6cb",
+      "catalogHash": "00de738d21ff9d77211fb754560145b6027314b3c93eea8ce01196305a548b07",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
@@ -1214,23 +1214,23 @@
         },
         {
           "path": "assets/ryokan_pavilion_glb/ashfox-lineage.json",
-          "sha256": "9b2277ffa85aa0255fce838acfe343587b1b95bfcf280f6d8d39fdd41dcf7303"
+          "sha256": "e2e6645c4e2a6897beba733b85aa213ce7d5f9cf045d3df95827c82657f47ce5"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.glb",
-          "sha256": "bb2ed38f58cbef0956c3e2b5d2ffa8cc256b690836ad73c8bc29d23e14df7e69"
+          "sha256": "9c25215730078cf81e264c3b58f87ca14fd3de2cf43dcf9b383db4d7e7e1066a"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.hooks.json",
-          "sha256": "5c01a73f2ddcdbc2cc9d6268ffa368555d9a78f064c56c1bc04e1fd5c281e6b7"
+          "sha256": "58d82ebb7d046bf00fda743475fd15e7c0d2e625ab0d7462a8e3927fe5c00201"
         },
         {
           "path": "assets/ryokan_pavilion_glb/ryokan_pavilion_glb.structure.json",
-          "sha256": "d501f99b173477f51abaea1bf465bec0fd8e949c010c9b3acddd11bbccb804dc"
+          "sha256": "49846c70746c3405672331f3446af454c45b9bbb168a822708c48a2b1ec12017"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.hooks.json",
-          "sha256": "5c01a73f2ddcdbc2cc9d6268ffa368555d9a78f064c56c1bc04e1fd5c281e6b7"
+          "sha256": "58d82ebb7d046bf00fda743475fd15e7c0d2e625ab0d7462a8e3927fe5c00201"
         },
         {
           "path": "assets/ryokan_pavilion_nbt/ryokan_pavilion_nbt.nbt",
@@ -1310,7 +1310,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "ca228ed4770747d7ed45b0d1ca00da19ff291d89280d8569b32fd354bf7a0559"
+          "sha256": "9dfaf8653679478e341b0676d6e063201d1a1bea48162eec60711b05a8591a1f"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
@@ -1330,11 +1330,11 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.glb",
-          "sha256": "c74f939acb16c8f571d885b45e2d8580af77d47893f56c97b8f5302c5f365a6b"
+          "sha256": "c74de552861f1d889968ef82037d8db9c82cf0d73275995dfcf888b0faa38aa5"
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.structure.json",
-          "sha256": "d501f99b173477f51abaea1bf465bec0fd8e949c010c9b3acddd11bbccb804dc"
+          "sha256": "49846c70746c3405672331f3446af454c45b9bbb168a822708c48a2b1ec12017"
         },
         {
           "path": "assets/village_pack/game-assets/structures/scifi_outpost/scifi_outpost_glb.glb",
@@ -1714,7 +1714,7 @@
         },
         {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "145c5c062fff2ed771756dc3f45322ccbf692b1d85991128d18c4a660d6fb4cc"
+          "sha256": "ac9d998f0d41a8b9853f2511b3e4f1e1e31368793028a6d68a614204a17cf92b"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
@@ -1742,7 +1742,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "f704fb666b7ffebc6ddda89da5673047bd17f873a47e39cf85e50aa82349a6cb"
+          "sha256": "00de738d21ff9d77211fb754560145b6027314b3c93eea8ce01196305a548b07"
         }
       ]
     }
