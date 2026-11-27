@@ -7,6 +7,7 @@ import {
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
   SPRITE_POLICY,
   type HookBindingTarget,
+  type SdkTarget,
 } from '@ashfox/engine-core';
 import { compareText } from '@ashfox/internal-contracts';
 import { digest, json } from '../shared/digest';
@@ -24,6 +25,7 @@ export interface NodeBuildOptions {
   readonly cacheDir?: string;
   readonly compilerInvalidator?: string;
   readonly bindings?: readonly HookBindingTarget[];
+  readonly sdk?: readonly SdkTarget[];
 }
 
 export interface DiskCacheContext {

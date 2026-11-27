@@ -74,6 +74,10 @@
       {
         "source": "guides/game-assets.md",
         "route": "/docs/guides/game-assets/"
+      },
+      {
+        "source": "guides/sdk.md",
+        "route": "/docs/guides/sdk/"
       }
     ]
   },

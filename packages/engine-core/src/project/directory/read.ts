@@ -6,6 +6,7 @@ import { isStdLibraryLogicalPath } from '../stdlib/resolve';
 import { deepFreeze } from '../../immutable';
 import type { DirectoryWorkspace } from './contract';
 import type { DirectoryPack } from './pack';
+import { SDK_TARGETS, type SdkTarget } from '../../sdk/contract';
 import { failWorkspaceConfig, readClosedRecord } from './validate';
 
 const EXPORT_FORMATS = [
@@ -238,10 +239,29 @@ const validateDeclaredSources = (
   }
 };
 
+const readSdkTargets = (raw: unknown): readonly SdkTarget[] => {
+  if (!Array.isArray(raw)) {
+    return failWorkspaceConfig('/sdk', `array of ${SDK_TARGETS.join(' | ')}`, raw);
+  }
+  const list = raw as unknown[];
+  const out: SdkTarget[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < list.length; i += 1) {
+    const val = list[i];
+    if (typeof val !== 'string' || !SDK_TARGETS.includes(val as SdkTarget) || seen.has(val)) {
+      return failWorkspaceConfig(`/sdk/${i}`, `unique ${SDK_TARGETS.join(' | ')}`, val);
+    }
+    seen.add(val);
+    out.push(val as SdkTarget);
+  }
+  return out;
+};
+
 /** Validates and freezes a `.ashfoxworkspace` configuration document. */
 export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
   const parsed = parseDirectoryJson(source, '.ashfoxworkspace');
   const hasPacks = parsed !== null && typeof parsed === 'object' && 'packs' in parsed;
+  const hasSdk = parsed !== null && typeof parsed === 'object' && 'sdk' in parsed;
   const rootKeys = [
     'format',
     'version',
@@ -252,6 +272,7 @@ export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
     'build',
     'exports',
     ...(hasPacks ? ['packs'] : []),
+    ...(hasSdk ? ['sdk'] : []),
   ];
   const record = readClosedRecord(parsed, rootKeys, '');
   if (record.format !== 'ashfox-workspace' || record.version !== 2) {
@@ -280,6 +301,7 @@ export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
   );
   const packs = readResourcePacks(record.packs, record.exports as DirectoryWorkspace['exports']);
   packs.forEach((pack, index) => directories.push(validatePackEntry(pack, index, names)));
+  const sdk = hasSdk ? readSdkTargets(record.sdk) : [];
   validateOutputDirectories(directories);
   const result: DirectoryWorkspace = deepFreeze({
     format: 'ashfox-workspace',
@@ -291,6 +313,7 @@ export const readDirectoryWorkspace = (source: string): DirectoryWorkspace => {
     build: { directory: build.directory as string },
     exports: record.exports as DirectoryWorkspace['exports'],
     ...(hasPacks ? { packs } : {}),
+    ...(hasSdk ? { sdk } : {}),
   });
   validateDeclaredSources(result, packages);
   return result;

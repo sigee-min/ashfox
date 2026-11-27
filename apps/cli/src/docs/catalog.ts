@@ -81,6 +81,13 @@ export const DOCS_TOPICS: readonly DocsTopicEntry[] = Object.freeze([
     description: 'Typed schema, anchor, volume, cue, meta, zone, .hooks.json, and engine bindings',
     source: 'language/hooks.md',
   },
+  {
+    topic: 'sdk',
+    title: 'Runtime SDKs (Three.js, Unity, Godot)',
+    description:
+      'Zero-dependency runtime SDK codegen (--sdk three|unity|godot), anchors, cues, LODs, and audio loops',
+    source: 'guides/sdk.md',
+  },
 ]);
 
 export const DOCS_TOPIC_IDS: readonly string[] = Object.freeze(

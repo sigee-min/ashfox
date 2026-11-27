@@ -27,6 +27,7 @@ const CANONICAL_TOPICS = [
   'sound',
   'structure',
   'hooks',
+  'sdk',
 ] as const;
 
 const testDocsCommand = (): void => {

@@ -2,36 +2,48 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import { BuildFailure, publishBundle, readSnapshot, withOutputLocks } from '@ashfox/asset-build';
-import type { HookBindingTarget } from '@ashfox/engine-core';
+import { SDK_TARGETS, type HookBindingTarget, type SdkTarget } from '@ashfox/engine-core';
 import { writeCliResult } from '../diagnostics';
 import { runWorker } from '../worker';
 
 const VALID_BINDING_TARGETS = new Set<string>(['ts', 'cs', 'gd']);
+const VALID_SDK_TARGETS = new Set<string>(SDK_TARGETS);
 
-const parseBindingsValue = (raw: string | undefined, out: Set<HookBindingTarget>): void => {
+const parseTargetListValue = <T extends string>(
+  raw: string | undefined,
+  flag: string,
+  valid: ReadonlySet<string>,
+  expected: string,
+  out: Set<T>,
+): void => {
   if (!raw || raw.startsWith('--')) {
-    throw new BuildFailure('cli.arguments', 'Missing target list after --bindings (ts|cs|gd)', 2);
+    throw new BuildFailure('cli.arguments', `Missing target list after ${flag} (${expected})`, 2);
   }
   for (const part of raw
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)) {
-    if (!VALID_BINDING_TARGETS.has(part)) {
+    if (!valid.has(part)) {
       throw new BuildFailure(
         'cli.arguments',
-        `Unknown bindings target "${part}"; expected ts, cs, or gd`,
+        `Unknown ${flag} target "${part}"; expected ${expected}`,
         2,
       );
     }
-    out.add(part as HookBindingTarget);
+    out.add(part as T);
   }
 };
 
-const parseBindingsFlag = (args: readonly string[]): readonly HookBindingTarget[] => {
-  const out = new Set<HookBindingTarget>();
+const parseTargetListFlag = <T extends string>(
+  args: readonly string[],
+  flag: string,
+  valid: ReadonlySet<string>,
+  expected: string,
+): readonly T[] => {
+  const out = new Set<T>();
   for (let i = 1; i < args.length; i += 1) {
-    if (args[i] !== '--bindings') continue;
-    parseBindingsValue(args[i + 1], out);
+    if (args[i] !== flag) continue;
+    parseTargetListValue(args[i + 1], flag, valid, expected, out);
     i += 1;
   }
   return [...out];
@@ -43,22 +55,29 @@ const parseBuildArgs = (
   readonly input: string;
   readonly noCache: boolean;
   readonly bindings: readonly HookBindingTarget[];
+  readonly sdk: readonly SdkTarget[];
 } => {
   const jsonCount = args.filter((a) => a === '--json').length;
   const noCacheCount = args.filter((a) => a === '--no-cache').length;
-  const bindings = parseBindingsFlag(args);
+  const bindings = parseTargetListFlag<HookBindingTarget>(
+    args,
+    '--bindings',
+    VALID_BINDING_TARGETS,
+    'ts|cs|gd',
+  );
+  const sdk = parseTargetListFlag<SdkTarget>(args, '--sdk', VALID_SDK_TARGETS, 'three|unity|godot');
   const positional: string[] = [];
   for (let i = 1; i < args.length; i += 1) {
     const a = args[i]!;
     if (a === '--json' || a === '--no-cache') continue;
-    if (a === '--bindings') {
+    if (a === '--bindings' || a === '--sdk') {
       i += 1;
       continue;
     }
     if (a.startsWith('--')) {
       throw new BuildFailure(
         'cli.arguments',
-        'Only --json, --no-cache, and --bindings ts|cs|gd are supported',
+        'Only --json, --no-cache, --bindings ts|cs|gd, and --sdk three|unity|godot are supported',
         2,
       );
     }
@@ -71,7 +90,7 @@ const parseBuildArgs = (
       2,
     );
   }
-  return { input: positional[0]!, noCache: noCacheCount === 1, bindings };
+  return { input: positional[0]!, noCache: noCacheCount === 1, bindings, sdk };
 };
 
 const buildToolchainFingerprint = (executable: string): string =>
@@ -89,7 +108,7 @@ export const runBuildCommand = async (
   executable: string,
   signal: AbortSignal,
 ): Promise<void> => {
-  const { input, noCache, bindings } = parseBuildArgs(args);
+  const { input, noCache, bindings, sdk } = parseBuildArgs(args);
   const snapshot = readSnapshot(input);
   const toolchain = buildToolchainFingerprint(executable);
   const published = await withOutputLocks(snapshot, async () => {
@@ -101,6 +120,7 @@ export const runBuildCommand = async (
       signal,
       noCache,
       bindings,
+      sdk,
     );
     if (!('bundleHash' in bundle)) throw new BuildFailure('build.worker', 'Missing bundle', 3);
     if (signal.aborted) throw new BuildFailure('build.cancelled', 'Build cancelled', 130);

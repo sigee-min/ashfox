@@ -448,3 +448,16 @@ export {
   withSuggestion,
 } from './project/source/suggest';
 export { collectInspectRefs, type SourceInspectRef } from './project/source/inspect';
+export {
+  SDK_GENERATORS,
+  SDK_TARGETS,
+  generateAllRuntimeSdks,
+  generateRuntimeSdk,
+  type GeneratedSdkFile,
+  type SdkGenerationOptions,
+  type SdkManifestAsset,
+  type SdkManifestInput,
+  type SdkManifestSoundVariant,
+  type SdkTarget,
+  type SdkTargetStrategy,
+} from './sdk';

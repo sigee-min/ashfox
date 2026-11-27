@@ -1,4 +1,5 @@
 import type { DirectoryPack } from './pack';
+import type { SdkTarget } from '../../sdk/contract';
 import type { WorkspacePackage, WorkspaceEntrySelector } from '../workspace';
 export type DirectoryExport = Readonly<{
   name: string;
@@ -25,6 +26,7 @@ export interface DirectoryWorkspace {
   readonly build: { readonly directory: string };
   readonly exports: readonly DirectoryExport[];
   readonly packs?: readonly DirectoryPack[];
+  readonly sdk?: readonly SdkTarget[];
 }
 export interface DirectoryFile {
   readonly path: string;
