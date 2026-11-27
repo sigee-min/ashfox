@@ -72,3 +72,33 @@ export const createGltfMaterial = (
     ...(blendMode ? { extras: { ashfoxBlendMode: blendMode } } : {}),
   };
 };
+
+/** Build an unlit glTF material payload for VFX elements and particle bursts. */
+export const createUnlitMaterial = (
+  name: string,
+  imageIndex: number | undefined,
+  blendMode: 'additive' | 'blend' | 'premul',
+  doubleSided: boolean,
+  baseColorFactor?: readonly [number, number, number, number],
+): GltfMaterial => ({
+  name,
+  pbrMetallicRoughness: {
+    ...(imageIndex !== undefined ? { baseColorTexture: { index: imageIndex } } : {}),
+    ...(baseColorFactor
+      ? {
+          baseColorFactor: [
+            baseColorFactor[0],
+            baseColorFactor[1],
+            baseColorFactor[2],
+            baseColorFactor[3],
+          ],
+        }
+      : {}),
+    metallicFactor: 0,
+    roughnessFactor: 1,
+  },
+  alphaMode: 'BLEND',
+  ...(doubleSided ? { doubleSided: true } : {}),
+  extensions: { KHR_materials_unlit: {} },
+  extras: { ashfoxBlendMode: blendMode },
+});

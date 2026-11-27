@@ -92,7 +92,7 @@ assert.deepEqual(manifest.quality.ownerLayout, {
   testOwners: rawManifest.quality.ownerLayout.testOwners,
 });
 assert.deepEqual(manifest.architecture.workspaceSourceScopes, ['apps', 'packages']);
-assert.equal(manifest.architecture.forbiddenDependencies.length, 6);
+assert.equal(manifest.architecture.forbiddenDependencies.length, 9);
 
 assert.ok(Object.isFrozen(manifest));
 assert.ok(Object.isFrozen(manifest.productExperience.projectFile));

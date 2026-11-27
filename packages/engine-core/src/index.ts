@@ -416,7 +416,7 @@ export {
 } from './vfx/contract';
 export { compileVfxRecipe, readVfxRecipe } from './vfx/compile';
 export { auditVfx, type VfxAuditReport } from './vfx/audit';
-export { emitVfxGlb } from './vfx/gltfEmit';
+export { emitVfxGlb } from './export/targets/gltf/vfxGltf';
 export {
   emitBedrockParticleSpecs,
   emitVfxRuntimeSpec,

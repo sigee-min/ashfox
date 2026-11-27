@@ -5,7 +5,7 @@ import { parseVfxSource } from '../../project/vfx/source';
 import { auditVfx } from '../../vfx/audit';
 import { compileVfxRecipe } from '../../vfx/compile';
 import type { CompiledVfx, VfxPalette, VfxRecipe } from '../../vfx/contract';
-import { emitVfxGlb } from '../../vfx/gltfEmit';
+import { emitVfxGlb } from '../../export/targets/gltf/vfxGltf';
 import { VFX_PALETTES } from '../../vfx/presets';
 import {
   emitBedrockParticleSpecs,

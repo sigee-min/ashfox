@@ -1,3 +1,4 @@
+import { clamp01, hexToRgb01 } from '../textures/oklch';
 import type {
   VfxDissolveAtlas,
   VfxDissolveMode,
@@ -6,9 +7,7 @@ import type {
   VfxTextureBuffer,
 } from './contract';
 import { fbm2D, voronoi2D } from './noise';
-import { hexToRgb01, resolvePaletteHex, writeVfxRgbaPixel } from './oklch';
-
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+import { resolvePaletteHex, writeVfxRgbaPixel } from './oklch';
 
 const computeMaskValue = (
   u: number,

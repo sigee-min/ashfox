@@ -3,7 +3,7 @@ import { auditVfx } from '../../src/vfx/audit';
 import { compileVfxRecipe, readVfxRecipe } from '../../src/vfx/compile';
 import type { VfxPrimitiveMesh, VfxTextureKind } from '../../src/vfx/contract';
 import { bakeDissolveFlipbook } from '../../src/vfx/dissolve';
-import { hexToRgb01 } from '../../src/vfx/oklch';
+import { hexToRgb01 } from '../../src/textures/oklch';
 import { VFX_PALETTES, VFX_SHOWCASE_PRESETS } from '../../src/vfx/presets';
 import { buildVfxPrimitive } from '../../src/vfx/primitives';
 import { emitBedrockParticleSpecs, emitVfxRuntimeSpec } from '../../src/vfx/specEmit';

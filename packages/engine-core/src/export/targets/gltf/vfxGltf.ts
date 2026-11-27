@@ -1,7 +1,21 @@
-import { mulQuat, quatFromAxisAngle, quatFromEulerXyzDeg } from '../animation/quat';
-import type { GltfAnimation, GltfDocument, GltfNode } from '../export/targets/gltf/contract';
-import { buildGlb } from '../export/targets/gltf/glb';
-import { parseSurfaceColor } from '../textures/color';
+import { mulQuat, quatFromAxisAngle, quatFromEulerXyzDeg } from '../../../animation/quat';
+import { parseSurfaceColor } from '../../../textures/color';
+import type {
+  CompiledVfx,
+  CompiledVfxElement,
+  VfxBakedBurst,
+  VfxParticleTrack,
+} from '../../../vfx/contract';
+import {
+  analyzeAlphaCurve,
+  clampUnit,
+  computeDissolveCellUvs,
+  evalScalarLifeCurve,
+  scaleStopsToTrack,
+  selectStageColorIndices,
+} from '../../../vfx/particleGeo';
+import type { GltfAnimation, GltfDocument, GltfNode } from './contract';
+import { buildGlb } from './glb';
 import {
   UNIT_SCALE,
   type VfxGlbState,
@@ -10,16 +24,7 @@ import {
   addUnlitMaterial,
   createVfxGlbState,
   uploadTextureImage,
-} from './gltfState';
-import {
-  analyzeAlphaCurve,
-  clampUnit,
-  computeDissolveCellUvs,
-  evalScalarLifeCurve,
-  scaleStopsToTrack,
-  selectStageColorIndices,
-} from './particleGeo';
-import type { CompiledVfx, CompiledVfxElement, VfxBakedBurst, VfxParticleTrack } from './contract';
+} from './vfxState';
 
 const createAlphaMaterialResolver = (
   state: VfxGlbState,

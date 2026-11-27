@@ -465,10 +465,23 @@
         ]
       },
       {
+        "source": "packages/engine-core/src/animation/",
+        "targets": [
+          "packages/engine-core/src/export/"
+        ]
+      },
+      {
         "source": "packages/engine-core/src/compiler/",
         "targets": [
           "packages/engine-core/src/commands/",
           "packages/engine-core/src/validation/"
+        ]
+      },
+      {
+        "source": "packages/engine-core/src/hooks/",
+        "targets": [
+          "packages/engine-core/src/compiler/",
+          "packages/engine-core/src/export/"
         ]
       },
       {
@@ -477,6 +490,12 @@
           "packages/engine-core/src/commands/",
           "packages/engine-core/src/compiler/",
           "packages/engine-core/src/validation/"
+        ]
+      },
+      {
+        "source": "packages/engine-core/src/vfx/",
+        "targets": [
+          "packages/engine-core/src/export/"
         ]
       },
       {
