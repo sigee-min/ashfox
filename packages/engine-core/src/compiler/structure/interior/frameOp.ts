@@ -159,10 +159,11 @@ const xformZoneVolumeAst = (
     : swapSize
       ? { size: [baseSize[1], baseSize[0]] as IntVec2 }
       : {};
-  const fallbackOn = v.on ?? 'center';
+  const fallbackOn = v.on ?? 'north';
+  const nextOn = v.on || !v.from ? transformAnchor(fallbackOn, f) : undefined;
   return {
     ...v,
-    ...(v.on ? { on: transformAnchor(v.on, f) } : {}),
+    ...(nextOn ? { on: nextOn } : {}),
     ...sizePatch,
     ...(v.step_facing ? { step_facing: transformFacing(v.step_facing, f) } : {}),
     nested: v.nested.map((n) => xformSubItem(n, f, room, fallbackOn)),
@@ -205,8 +206,8 @@ const xformDraperyAst = (d: InteriorDraperyAst, f: FrameTransform): InteriorDrap
   return {
     ...d,
     ...(facing ? { facing } : {}),
-    from_16: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.min(a[2], b[2])],
-    to_16: [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.max(a[2], b[2])],
+    from_16: a,
+    to_16: b,
   };
 };
 

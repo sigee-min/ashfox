@@ -408,11 +408,12 @@ structure placed_host {
         interior {
           dna { arch = rustic; organic = 0; }
           platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
-          platform dais_def { on = north; height = 0.25; }
+          platform dais_def { height = 0.25; }
           partition p_mid { style = screen; axis = x; }
           mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
           low_table lt_def { at = (2, 1, 2); facing = east; }
           chair c_ctr { on = center; }
+          drapery diag_c { kind = chains; from = (32, 64, 32); to = (96, 80, 96); }
         }
       }
       facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
@@ -429,16 +430,19 @@ structure placed_host {
   const gv = (k: string, id?: string) =>
     placedRoom.input.volumes.find((v) => v.kind === k && (!id || v.id === id));
   const [loftV, daisV, midV] = [gv('mezzanine'), gv('platform', 'dais_def'), gv('partition')];
+  const diagD = placedRoom.input.draperies?.[0];
   assert.deepEqual(
     [gp('lt_def')?.at, gp('c_ctr')?.facing, loftV?.kind === 'mezzanine' ? loftV.on : undefined],
     [[12, 1, 5], 'west', 'east'],
   );
   assert.deepEqual(
     [
-      daisV?.kind === 'platform' ? daisV.size : undefined,
+      daisV?.kind === 'platform' ? [daisV.on, daisV.size] : undefined,
       midV?.kind === 'partition' ? midV.at_pos : undefined,
+      diagD?.from_16,
+      diagD?.to_16,
     ],
-    [[2, 3], 10],
+    [['east', [2, 3]], 10, [208, 64, 80], [144, 80, 144]],
   );
 
   const yawCollisionSrc = `ashfox 1
