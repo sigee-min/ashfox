@@ -1,0 +1,50 @@
+ashfox 1
+module winged_quadruped {
+  export socket contract WingMount {
+  }
+
+  export socket contract TailMount {
+  }
+
+  export rig contract WingedQuadrupedRig {
+    joint root { parent = none; role = root; channels = (position, rotation, scale); }
+    joint torso { parent = root; role = body; channels = (position, rotation, scale); limits { pitch = -25deg..30deg; } }
+    joint neck { parent = torso; role = neck; channels = rotation; limits { pitch = -30deg..35deg; yaw = -45deg..45deg; } }
+    joint head { parent = neck; role = head; channels = rotation; limits { pitch = -35deg..40deg; yaw = -60deg..60deg; } }
+    joint wing_l { parent = torso; role = wing; channels = rotation; mirror = wing_r; }
+    joint wing_tip_l { parent = wing_l; role = wing; channels = rotation; mirror = wing_tip_r; }
+    joint wing_r { parent = torso; role = wing; channels = rotation; mirror = wing_l; }
+    joint wing_tip_r { parent = wing_r; role = wing; channels = rotation; mirror = wing_tip_l; }
+    joint foreleg_l { parent = torso; role = leg; channels = rotation; mirror = foreleg_r; }
+    joint foreleg_r { parent = torso; role = leg; channels = rotation; mirror = foreleg_l; }
+    joint hindleg_l { parent = torso; role = leg; channels = rotation; mirror = hindleg_r; }
+    joint hindleg_r { parent = torso; role = leg; channels = rotation; mirror = hindleg_l; }
+    joint tail { parent = torso; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+    joint tail_tip { parent = tail; role = tail; channels = rotation; limits { pitch = -35deg..45deg; } }
+
+    chain tail_chain = [tail, tail_tip];
+    anchor beak { joint = head; offset = (0u, 0u, -8u); }
+    anchor wing_tip_anchor_l { joint = wing_tip_l; offset = (-10u, 0u, 0u); }
+    anchor wing_tip_anchor_r { joint = wing_tip_r; offset = (10u, 0u, 0u); }
+    socket wing_socket_l: WingMount { joint = wing_l; capacity = one; }
+    socket wing_socket_r: WingMount { joint = wing_r; capacity = one; }
+    socket tail_socket: TailMount { joint = tail; capacity = one; }
+  }
+
+  export skeleton WingedQuadrupedSkeleton implements WingedQuadrupedRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind torso { parent_origin = (0u, 14u, 0u); }
+    bind neck { parent_origin = (0u, 5u, -6u); }
+    bind head { parent_origin = (0u, 3u, -2u); }
+    bind wing_l { parent_origin = (-5u, 6u, -2u); }
+    bind wing_tip_l { parent_origin = (-10u, 0u, 1u); }
+    bind wing_r { parent_origin = (5u, 6u, -2u); }
+    bind wing_tip_r { parent_origin = (10u, 0u, 1u); }
+    bind foreleg_l { parent_origin = (-3.5u, -4u, -7.5u); }
+    bind foreleg_r { parent_origin = (3.5u, -4u, -7.5u); }
+    bind hindleg_l { parent_origin = (-4.5u, -2u, 7u); }
+    bind hindleg_r { parent_origin = (4.5u, -2u, 7u); }
+    bind tail { parent_origin = (0u, -1u, 12u); }
+    bind tail_tip { parent_origin = (0u, 1u, 10u); }
+  }
+}

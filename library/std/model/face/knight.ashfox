@@ -1,0 +1,72 @@
+ashfox 1
+module knight {
+  export design KnightFaceDesign {
+    slot_width: unit = 6u;
+    slot_height: unit = 4u;
+    skull_eye_ratio: ratio = 0.52;
+  }
+
+  export surface contract KnightFaceSurface {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface knight_visor: KnightFaceSurface {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        steel = (#5c6672, #9aa6b4, #d4dde8);
+        slit = #181c22;
+        glow = #6ee2ff;
+        fierce = #ffb84d;
+        hurt_red = #e04f46;
+      }
+      stamp visor_neutral {
+        pixels = "ssssssssss/sggssssggs/ssssssssss";
+        s = slit;
+        g = glow;
+      }
+      stamp visor_blink {
+        pixels = "ssssssssss/ssssssssss/ssssssssss";
+        s = slit;
+      }
+      stamp visor_fierce {
+        pixels = "ssssssssss/sffssssffs/sggssssggs";
+        s = slit;
+        f = fierce;
+        g = glow;
+      }
+      stamp visor_hurt {
+        pixels = "ssssssssss/srrssssrrs/ssssssssss";
+        s = slit;
+        r = hurt_red;
+      }
+      chart neutral flat {
+        fill = steel;
+        stamp visor_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = steel;
+        stamp visor_blink { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = steel;
+        stamp visor_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = steel;
+        stamp visor_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain brushed { seed = 5101; }
+      tone painterly;
+    }
+  }
+}

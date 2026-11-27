@@ -33,11 +33,23 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `prop` | `showcase/assets/models/treasure_chest.ashfox` | `"std/model/prop/container"`와 `std/core/hook/loot` 훅을 사용하는 모듈형 소품 |
 | `creature` | `showcase/assets/models/goblin_raider.ashfox` | `"std/model/rig/biped"`, `"std/model/motion/combat"`, 표정 스왑, 캡슐 충돌체를 갖춘 이족 크리처 |
 | `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | 공용 `"std/*"` 모듈 위에서 팔레트·무기·VFX/사운드 큐만 교체한 변형 크리처 |
-| `creature` | `showcase/assets/models/griffin_boss.ashfox` | `"std/model/rig/winged"`와 깃털 보조 물리가 적용된 날개 달린 보스 크리처 |
-| `creature` | `showcase/assets/models/red_fox.ashfox` | `"std/model/rig/quadruped"`와 꼬리 스프링 물리가 적용된 사족 크리처 |
+| `creature` | `showcase/assets/models/griffin_boss.ashfox` | `"std/model/rig/winged_quadruped"`, 3단 상향 독수리 날개, 측면 눈, 꼬리 물리 적용 보스 크리처 |
+| `creature` | `showcase/assets/models/red_fox.ashfox` | `"std/model/rig/quadruped"`, 볼·꼬리 `plane` 털, 3단 관절 뒷다리, 꼬리 스프링 물리 적용 여우 |
 | `structure` | `showcase/assets/structures/tavern.ashfox` | 복층 목조 선술집, 라디오시티 GI 실내, `LootSpawn`/`DoorPortal` 훅 |
 | `structure` | `showcase/assets/structures/blacksmith.ashfox` | 개방형 화로 아치, 모루 실내, 굴뚝 불티를 갖춘 대장간 |
 | `structure` | `showcase/assets/structures/modern_gallery.ashfox` | 스테인드글라스 GI와 현대식 전시 가구를 갖춘 통유리 아트리움 갤러리 |
+
+## 크리처 아트 디렉션 원칙 (Do / Don't)
+
+`ashfox library std list model` (`std/model/rig/*`, `std/model/anatomy/*`, `std/model/face/*`)을 기준 키트로 삼아 Hytale급 복셀 비례와 실루엣을 유지하세요.
+
+| 구분 | DO (권장) | DON'T (금지) |
+| --- | --- | --- |
+| **실루엣과 프리미티브** | 유기적 해부학은 `cube` 계층 + `15deg`–`22.5deg` 미세 각도 + 얇은 `plane` 액센트(볼털·꼬리 털·볏·깃털·지느러미)로 조각합니다. | 크리처 주둥이·턱·가슴·부츠/신발에 대형 45° `wedge`를 절대 배치하지 마세요. |
+| **특수 프리미티브** | `taper`는 뿔 끝·발톱·검날 끝·부츠 통에, `wedge`는 도끼날·견갑·갑옷 뿔·지붕에, `cylinder`는 물약병·기둥·방패·통·바퀴에만 사용합니다. | 동물 털 꼬리나 깃털 꼬리에 단일 `cylinder` 막대를 절대 쓰지 마세요. |
+| **눈 위치와 표정** | 눈 중심을 두개골 높이의 `38%–64%`(권장 `45%–55%`)에 두고, 조류·그리핀·드래곤은 `expression_slot`에 `placement = lateral_pair`를 지정합니다. | 두개골 상단 `68%` 이상(이마 고글 눈)에 눈을 두거나 조류·그리핀 눈을 정면 사시로 몰지 마세요. |
+| **리그와 사지 일관성** | 실제 해부학에 맞는 리그(`winged_quadruped`, `quadruped`, `biped`)를 선택해 사족 접지 발 4개와 다관절 다리·상향 날개를 유지합니다. | 잘못된 리그에 맞추려고 다리·날개·관절을 절단하거나 날개를 수평 T-포즈 상자로 축소하지 마세요. |
+| **PBR 알베도 여유폭** | 금속(`>= 0.6`) 차트의 베이스 명도 `L >= 0.42`를 유지해 스튜디오 IBL 반사를 살리고, 무광(`metallic < 0.2`) 대형 차트는 `L <= 0.94`로 클리핑을 방지합니다. | 검은 숯처럼 어두운(`L < 0.42`) 고금속 강철검이나 눈부시게 하얗게 날아가는(`L > 0.94`) 무광 가슴을 만들지 마세요. |
 
 ## 애니메이션 크리처 만들기
 

@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "7f7fbe8ccc7a45e36720e87f7045959dd643fac9805d7f24f712fcc64595cd68",
+      "sourceHash": "67111575e170f2ecf5feeb8cd750cba0615d73d655b3681f78d948151cc4862c",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -282,6 +282,148 @@
           ]
         },
         {
+          "path": "library/std/model/anatomy/head.ashfox",
+          "specifier": "std/model/anatomy/head",
+          "sha256": "6e86bd599e957cd89f305b49f5f9bacf899557bee796f0c5ab58abaf1a322adf",
+          "exports": [
+            "CanineHead",
+            "CanineHeadSurface",
+            "EagleHead",
+            "EagleHeadSurface",
+            "GoblinHead",
+            "GoblinHeadSurface",
+            "HeadSocket"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/anatomy/limb.ashfox",
+          "specifier": "std/model/anatomy/limb",
+          "sha256": "0cfc2a14a15f3f40d19d19cabc35a82c455da8fd09a88b433a00a36d490519d9",
+          "exports": [
+            "BeastHindlegSurface",
+            "DigitigradeHindleg",
+            "LimbSocket",
+            "PauldronSurface",
+            "RaptorForeleg",
+            "RaptorForelegSurface",
+            "SculptedPauldronLeft",
+            "SculptedPauldronRight",
+            "WarriorBoot",
+            "WarriorBootSurface"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/anatomy/tail.ashfox",
+          "specifier": "std/model/anatomy/tail",
+          "sha256": "0b4fa52be04ed91b1782de8507714fe10099b03ce212cd6eff442943321a9e98",
+          "exports": [
+            "FoxPlumeTail",
+            "FoxPlumeTailSurface",
+            "LionTailSurface",
+            "LionTuftTail",
+            "TailSocket"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/anatomy/wing.ashfox",
+          "specifier": "std/model/anatomy/wing",
+          "sha256": "19959b5bf65d46977cf8c4a929d3c15f12faf375376fc7ad518d2f8aa3cf74c0",
+          "exports": [
+            "FeatheredWingLeft",
+            "FeatheredWingRight",
+            "WingSocket",
+            "WingSurface"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/face/eagle.ashfox",
+          "specifier": "std/model/face/eagle",
+          "sha256": "88a084986929f5a9628ea2ff422bd55ce4e5e529b438afe8e9f7e8be29e7e204",
+          "exports": [
+            "EagleFaceDesign",
+            "EagleFaceSurface",
+            "eagle_fierce"
+          ],
+          "imports": [],
+          "params": [
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
+          "path": "library/std/model/face/fox.ashfox",
+          "specifier": "std/model/face/fox",
+          "sha256": "66e031e01fcfc58618962f19efd81ca003b5bba5e30fe974419bba1d99ad4f8e",
+          "exports": [
+            "FoxFaceDesign",
+            "FoxFaceSurface",
+            "fox_clever"
+          ],
+          "imports": [],
+          "params": [
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
+          "path": "library/std/model/face/goblin.ashfox",
+          "specifier": "std/model/face/goblin",
+          "sha256": "07f600ff765f4b96d15a7e5dc664e7f00c69836e699fb9acd9262b4a088694b7",
+          "exports": [
+            "GoblinFaceDesign",
+            "GoblinFaceSurface",
+            "goblin_fierce"
+          ],
+          "imports": [],
+          "params": [
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
+          "path": "library/std/model/face/knight.ashfox",
+          "specifier": "std/model/face/knight",
+          "sha256": "859c5947acab335f737bb714afe31c59c9ec33a6417b63d85ed54f0f3333ba02",
+          "exports": [
+            "KnightFaceDesign",
+            "KnightFaceSurface",
+            "knight_visor"
+          ],
+          "imports": [],
+          "params": [
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
+          "path": "library/std/model/face/slime.ashfox",
+          "specifier": "std/model/face/slime",
+          "sha256": "18b04c7fe24f6abed826e57f0de1480cae747e42600283f8d8f506f9a1858c7e",
+          "exports": [
+            "SlimeFaceDesign",
+            "SlimeFaceSurface",
+            "slime_cute"
+          ],
+          "imports": [],
+          "params": [
+            "skull_eye_ratio",
+            "slot_height",
+            "slot_width"
+          ]
+        },
+        {
           "path": "library/std/model/motion/combat.ashfox",
           "specifier": "std/model/motion/combat",
           "sha256": "6b365dd7f819c7639f482170d809e7301e47437a036372c33e62c4f480e65d1d",
@@ -370,10 +512,11 @@
         {
           "path": "library/std/model/rig/biped.ashfox",
           "specifier": "std/model/rig/biped",
-          "sha256": "0c690b763a8f64c7d94d1950e78ea8c5771acd29cf53e246e92a9ca7aba203f4",
+          "sha256": "ca87c060f0783d69cfb51bdcc7d242fdad2f41a08ce3130617e1a0d3340d0ef1",
           "exports": [
             "BipedRig",
             "BipedSkeleton",
+            "CapeMount",
             "HandGrip"
           ],
           "imports": [],
@@ -382,7 +525,7 @@
         {
           "path": "library/std/model/rig/quadruped.ashfox",
           "specifier": "std/model/rig/quadruped",
-          "sha256": "3c98a60eb614a04c665e27eba3600a576095ce88aca620e77f5e63e7866e66b3",
+          "sha256": "3149058022611a4a0f90a23496b29d1454e8da7bf0c6cc1bf8b3042d1441bdd8",
           "exports": [
             "QuadrupedRig",
             "QuadrupedSkeleton"
@@ -408,6 +551,19 @@
           "exports": [
             "WingedRig",
             "WingedSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/winged_quadruped.ashfox",
+          "specifier": "std/model/rig/winged_quadruped",
+          "sha256": "6a05d613e8786f5c22ddac8eb1cf64d1610169dd769200967bdc9663001b695d",
+          "exports": [
+            "TailMount",
+            "WingMount",
+            "WingedQuadrupedRig",
+            "WingedQuadrupedSkeleton"
           ],
           "imports": [],
           "params": []

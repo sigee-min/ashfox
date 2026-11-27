@@ -7,27 +7,27 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:79a3c01d95efed45c391937bb9f5d3015ca31a6764a2267b1b49aec4418752f8",
+      "sourceHash": "sha256:1429d63adb72952a90ddf220c4a440efb508c93648648e2dfde083b1639f575e",
       "products": [
         {
           "entry": "models/goblin_pyromancer",
           "kind": "model",
-          "sha256": "9e7980bcc7e8a1e4eba1e039d1b620df0220fca2054fefe69195013e9a78a013"
+          "sha256": "80e6c607868c044fab3795a9252e278750c91d5a087a1f524eea94ed8d0b57e2"
         },
         {
           "entry": "models/goblin_raider",
           "kind": "model",
-          "sha256": "899acd47d18e9c99b9821566934b3bd1c359339c91b71ebb70bef71f7cb55699"
+          "sha256": "e030ba57f27e347758d7cbeb86be94c57ad6b3192ceca236176eee01e1b9ebf3"
         },
         {
           "entry": "models/griffin_boss",
           "kind": "model",
-          "sha256": "763715b9d22d47d22e514d9b935b0a5b7b0be88bdc22015861c32f76902b051a"
+          "sha256": "35f708cc5f17471bf4a9e34ffccaf4e2b75d4d0034634d3b897cdcabf70c0773"
         },
         {
           "entry": "models/red_fox",
           "kind": "model",
-          "sha256": "855841e6b1c164a9ea5486b8acf4ec17814815430bcc2c6e02fd3535239a3429"
+          "sha256": "432ab0f8da5002c69e90f97f64036f12c57407f12e69172c65927cd830762134"
         },
         {
           "entry": "models/rune_bricks",
@@ -48,55 +48,55 @@
       "files": [
         {
           "path": "assets/goblin_pyromancer/ashfox-lineage.json",
-          "sha256": "7e83ddddf3fce1735930a1ce0fe310e737f7b18b65c9fc222b38c157a941b663"
+          "sha256": "d5e5139f2bc8645c8f9a141ed83c685d79faf279172dcb60b022261bc9b25691"
         },
         {
           "path": "assets/goblin_pyromancer/goblin_pyromancer.glb",
-          "sha256": "96b04d8ada03aa225ea4f97cd4dc92635150f6e16f8e7d5ef6818c833e1e9445"
+          "sha256": "840a333d6ee8a5d49401173045adb6ab275e94e6be8bc8f91c20014d6d3918a1"
         },
         {
           "path": "assets/goblin_pyromancer/goblin_pyromancer.hooks.json",
-          "sha256": "e2549b97a50cb521ab3a28cbbc4163924b4a6a3a44d46da687959735ea21f079"
+          "sha256": "1c957fdb71f6c3054b7745b31719827a347c132294e20c6ddf24d11187e33ed0"
         },
         {
           "path": "assets/goblin_raider/ashfox-lineage.json",
-          "sha256": "2f59196edd1619d6c6a6238d890d6cf0169026aaa8954abf62feaecde1005085"
+          "sha256": "57a0e665c557a4cd706e14470c43f9ee5779ffdf137bad965131e66e7be6e03f"
         },
         {
           "path": "assets/goblin_raider/goblin_raider.glb",
-          "sha256": "3de448bac17ece85263812bc740593e26452852c053b1175bed7e7385eb3c378"
+          "sha256": "775c78aa871d3aa6ed8fe27114c2c166c984e80efda622329241ffa927dc4e47"
         },
         {
           "path": "assets/goblin_raider/goblin_raider.hooks.json",
-          "sha256": "0ce49aada1e23579d6f3a5a4caa8f6d32446439e764d50c412965ab25f06d5d7"
+          "sha256": "5c82ed920a7caa7055423910075645e199ba519bae3090afd6724e61d9bab952"
         },
         {
           "path": "assets/griffin_boss/ashfox-lineage.json",
-          "sha256": "5c0851a21915cb1ec6816875840832b6e7f8089207d3e3ccc566f7d23149bf3e"
+          "sha256": "674074698abc492c6df10350fbf1c52d14560911bee7e4ef5a3c83939f3a2612"
         },
         {
           "path": "assets/griffin_boss/griffin_boss.glb",
-          "sha256": "35ce83e15993b1b8e874454413cd7b58e0b1a0409bcbf52ebcc3b7b9d0eb109a"
+          "sha256": "1941242d58e66b17c17104716a11c7cfa8521d302fd5575dddc5263a5e5dcde6"
         },
         {
           "path": "assets/griffin_boss/griffin_boss.hooks.json",
-          "sha256": "116d422376296d5f6abd591bfde591b72c6afbb3bac3d835b8687f8927079acd"
+          "sha256": "71914f210d544d52e3cc0ed6acecd60406ccb786b50dc148600c4f12bc6ebe5b"
         },
         {
           "path": "assets/red_fox/ashfox-lineage.json",
-          "sha256": "780468bd0a92815b977e227ea472659dba00a36f0ec6367fa1f966b967f29614"
+          "sha256": "5503e7d493ff944f96c2d86a84c0a353b37483e5c5e187411f9dae9497e1fffe"
         },
         {
           "path": "assets/red_fox/red_fox.glb",
-          "sha256": "2aab8e12ec64e003a0df9844b3912ccd7da3b97209032ed0ec295d215350c528"
+          "sha256": "0fab4084a427446d7192834357720928f436e3877fd803625067d89c337a4dd3"
         },
         {
           "path": "assets/red_fox/red_fox.hooks.json",
-          "sha256": "51ec725676c09416be6e1ef8ae0757f4d5e8a97bd2d7d15fabbb9577e4e1d7bf"
+          "sha256": "6bd75dd05bf8b74e5ab76e5e1711406d3325dca65e1fdb88134f2f3a674d66ad"
         },
         {
           "path": "assets/rune_bricks/ashfox-lineage.json",
-          "sha256": "efb6312fdb664135ed28b428cc530188c42db08696b5ee20cf682888d6a24493"
+          "sha256": "9767e6cc6135f5990a7f585823a0ecf09666e2b5303a9188d7ae44a27ef962c9"
         },
         {
           "path": "assets/rune_bricks/rune_bricks.glb",
@@ -108,7 +108,7 @@
         },
         {
           "path": "assets/rune_bricks_java_block/ashfox-lineage.json",
-          "sha256": "1052245a09574c96faa88bede67c11d6db4b4fb33f0b8aecc7fa2a3fe418b653"
+          "sha256": "2851962e635ea92da92bfeea8a7282ff8cf549603bd9aae3f38c8d78ceccf7c7"
         },
         {
           "path": "assets/rune_bricks_java_block/assets/ashfox/blockstates/block/rune_bricks.json",
@@ -132,7 +132,7 @@
         },
         {
           "path": "assets/treasure_chest/ashfox-lineage.json",
-          "sha256": "0e2bfde41de43dc1eae50c1f1742db8c5df8cedcb0771ac84a5e9d044ec47485"
+          "sha256": "91828b0354f2291b940d4f24a1832610e69fdf07f9ad2d7c014c804598a056f0"
         },
         {
           "path": "assets/treasure_chest/treasure_chest.glb",
@@ -144,7 +144,7 @@
         },
         {
           "path": "assets/wall_lantern/ashfox-lineage.json",
-          "sha256": "08173c38fe91eb8de23d0ad1e7067a83ad73fd7f8fe051fb943739ffe908288e"
+          "sha256": "c22712ffe7ce8bbbb2cc18fdb5a18d39347ce6eb73aab72c9c75fa4c75e48358"
         },
         {
           "path": "assets/wall_lantern/wall_lantern.glb",

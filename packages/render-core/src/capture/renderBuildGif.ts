@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import type { ProjectDocument } from '@ashfox/engine-core';
 
 import type { ProjectAssets } from '../assets';
@@ -21,6 +22,7 @@ import {
   requiredCaptureForward,
   waitForProjectionTextures,
 } from '../captureSurface';
+import { createGroundContactShadow, fitDirectionalShadowBounds } from '../viewportEnvironment';
 import { drawBuildFrameOverlay, drawShowcasePhase } from './gifFrameOverlay';
 import { resolveBuildReviewClip } from './buildReviewClip';
 import { createCaptureProjection } from './projection';
@@ -161,6 +163,7 @@ export const renderBuildGif = async (
   let surface: GifCaptureSurface | null = null;
   let neutral: ProjectSceneProjection | null = null;
   let textured: ProjectSceneProjection | null = null;
+  let groundShadow: ReturnType<typeof createGroundContactShadow> | null = null;
 
   try {
     surface = createGifCaptureSurface(
@@ -171,9 +174,15 @@ export const renderBuildGif = async (
     neutral = createCaptureProjection(options.document, options.assets, { showTextures: false });
     textured = createCaptureProjection(options.document, options.assets);
     frameCaptureObject(surface, options.cameraMode, textured.root);
+    textured.root.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(textured.root);
+    fitDirectionalShadowBounds(surface.scene, bounds);
+    groundShadow = createGroundContactShadow(bounds, {
+      studioStage: options.environment === 'studio',
+    });
     setRenderableVisibility(neutral, options.document, false);
     setRenderableVisibility(textured, options.document, false);
-    surface.scene.add(neutral.root, textured.root);
+    surface.scene.add(groundShadow.object, neutral.root, textured.root);
     await Promise.all([
       waitForProjectionTextures(neutral, options.signal),
       waitForProjectionTextures(textured, options.signal),
@@ -188,6 +197,8 @@ export const renderBuildGif = async (
       fps: plan.fps,
     };
   } finally {
+    if (surface && groundShadow) surface.scene.remove(groundShadow.object);
+    groundShadow?.dispose();
     if (surface && neutral) surface.scene.remove(neutral.root);
     if (surface && textured) surface.scene.remove(textured.root);
     neutral?.dispose();

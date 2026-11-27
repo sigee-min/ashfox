@@ -11,6 +11,7 @@ import {
   type AuditReport,
 } from './contract';
 import { analyzeAnatomy } from './anatomy';
+import { evaluateCraftFloor } from './craftFloor';
 import { analyzeSceneGeometry, type AuditSceneGeometry } from './geometry';
 import { evaluateHardGates, summarizeTelemetry } from './hardGates';
 import { evaluateFormPillar } from './pillarForm';
@@ -60,9 +61,10 @@ export const evaluateAssetQuality = (
   const raster = analyzeRasterStats(scene, input.model.textures);
   const telemetryAvailable = input.telemetry !== undefined;
   const telemetry = summarizeTelemetry(input.telemetry, input.model.forward);
-  const hardGates = evaluateHardGates(profile, scene, raster, telemetry, telemetryAvailable);
+  const craft = evaluateCraftFloor(profile, input.model, scene);
+  const hardGates = evaluateHardGates(profile, scene, raster, telemetry, telemetryAvailable, craft);
   const singleCubeBlock = profile === 'block' && scene.obbs.length === 1;
-  const form = evaluateFormPillar(profile, scene, anatomy);
+  const form = evaluateFormPillar(profile, scene, anatomy, craft);
   const texture = evaluateTexturePillar(
     profile,
     telemetry,
@@ -71,10 +73,12 @@ export const evaluateAssetQuality = (
     singleCubeBlock,
   );
   const rig = evaluateRigPillar(profile, input.model, scene, telemetry, telemetryAvailable, raster);
-  const rawScore = form.pillar.score + texture.pillar.score + rig.pillar.score;
+  const rawScore =
+    form.pillar.score + texture.pillar.score + rig.pillar.score - craft.texturePenalty;
   const score = Math.max(0, Math.min(100, Math.round(rawScore)));
   const allGatesPassed = hardGates.every((g) => g.passed);
   const passed = allGatesPassed && score >= threshold;
+  const craftTextureDeductions = craft.deductions.filter((d) => d.pillar === 'texture');
   return deepFreeze({
     schemaVersion: 1 as const,
     profile,
@@ -87,6 +91,7 @@ export const evaluateAssetQuality = (
     pillars: [form.pillar, texture.pillar, rig.pillar],
     topDeductions: buildTopDeductions(hardGates, [
       ...form.deductions,
+      ...craftTextureDeductions,
       ...texture.deductions,
       ...rig.deductions,
     ]),

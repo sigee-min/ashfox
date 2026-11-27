@@ -1,0 +1,74 @@
+ashfox 1
+module slime {
+  export design SlimeFaceDesign {
+    slot_width: unit = 6u;
+    slot_height: unit = 4u;
+    skull_eye_ratio: ratio = 0.48;
+  }
+
+  export surface contract SlimeFaceSurface {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface slime_cute: SlimeFaceSurface {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        jelly = (#2f8a57, #52c47d, #98f0b3);
+        deep = (#1f5c3a, #378f5d, #68c78d);
+        eye = #14221d;
+        glint = #ffffff;
+        blush = #ff8c9e;
+      }
+      stamp face_neutral {
+        pixels = ".wg....wg./.ee....ee./b........b";
+        e = eye;
+        w = glint;
+        g = eye;
+        b = blush;
+      }
+      stamp face_blink {
+        pixels = "........../.dd....dd./b........b";
+        d = deep;
+        b = blush;
+      }
+      stamp face_fierce {
+        pixels = "dd......dd/.ew....we./.ee....ee.";
+        d = deep;
+        e = eye;
+        w = glint;
+      }
+      stamp face_hurt {
+        pixels = ".e.e..e.e./..e....e../.e.e..e.e.";
+        e = eye;
+      }
+      chart neutral flat {
+        fill = jelly;
+        stamp face_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = jelly;
+        stamp face_blink { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = jelly;
+        stamp face_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = jelly;
+        stamp face_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain soft { seed = 6101; }
+      tone painterly;
+    }
+  }
+}

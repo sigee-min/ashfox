@@ -7,7 +7,7 @@ module goblin_skins {
   import "./goblin_kit.ashfox" as kit;
 
   export surface raider_skin: kit.GoblinSkin {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       atlas = (128px, 128px);
@@ -18,10 +18,10 @@ module goblin_skins {
         skin_dark = (#2c441a, #50752b, #7ea644);
         leather = (wood.WoodParams.oak_shadow, wood.WoodParams.oak_base, wood.WoodParams.oak_light);
         leather_dark = (wood.WoodParams.spruce_shadow, wood.WoodParams.spruce_base, wood.WoodParams.spruce_light);
-        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
-        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        iron = (#6c7682, #a2aebc, #d8e2ec);
+        brass = (#8c6422, #d4a13f, #fad575);
         cloth = (med.HeraldryBanner.crimson_shadow, med.HeraldryBanner.crimson_base, med.HeraldryBanner.crimson_light);
-        tooth = (#9c8b68, #d9c79b, #f8edd4);
+        tooth = (#9c8b68, #d9c79b, #f0e4c8);
         eye = #ffd94a;
         glint = #fff9e6;
         pupil = #211a14;
@@ -36,20 +36,20 @@ module goblin_skins {
       chart pelvis box { fill = cloth; roughness = 0.88; grain = soft; pattern border { paint = leather_dark; width = 1px; edges = top; } }
       chart head box { fill = skin; roughness = 0.76; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 0.8u; } }
       chart snout box { fill = skin; roughness = 0.76; grain = soft; pattern gradient { to = skin_dark; axis = z; space = local; soft = 0.2; } }
-      chart ear box { fill = skin_dark; roughness = 0.78; grain = soft; pattern gradient { to = skin; axis = y; space = local; soft = 0.25; } }
+      chart ear box { fill = skin; roughness = 0.78; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.25; } }
+      chart ear_tip box { fill = skin_dark; roughness = 0.78; grain = soft; pattern gradient { to = skin; axis = y; space = local; soft = 0.25; } }
       chart tusk box { fill = tooth; roughness = 0.45; grain = none; pattern gradient { to = leather; axis = y; space = local; soft = 0.2; } }
       chart crest box { fill = cloth; roughness = 0.85; grain = soft; pattern stripe { paint = brass; axis = z; period = 3px; width = 1px; } }
       chart arm box { fill = skin; roughness = 0.76; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.3; radius = 0.6u; } }
-      chart bracer box { fill = iron; roughness = 0.34; metallic = 0.86; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } }
+      chart bracer box { fill = iron; roughness = 0.28; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } }
       chart hand box { fill = skin_dark; roughness = 0.78; grain = soft; pattern border { paint = skin; width = 1px; edges = top; } }
       chart leg box { fill = cloth; roughness = 0.88; grain = soft; pattern gradient { to = leather_dark; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.35; radius = 0.7u; } }
       chart cuff box { fill = leather; roughness = 0.80; grain = soft; pattern border { paint = brass; width = 1px; edges = top; } }
       chart boot box { fill = leather_dark; roughness = 0.82; grain = clustered; pattern border { paint = leather; width = 1px; edges = top; } }
       chart belt box { fill = leather_dark; roughness = 0.80; grain = clustered; pattern border { paint = iron; width = 1px; edges = bottom; } }
-      chart buckle box { fill = brass; roughness = 0.28; metallic = 0.90; roughness_variation = 0.06; grain = none; pattern border { paint = iron; width = 1px; edges = all; } }
-      chart loincloth flat { fill = cloth; roughness = 0.90; grain = soft; pattern border { paint = brass; width = 1px; edges = top; } }
-      chart pauldron box { fill = iron; roughness = 0.32; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = bottom; } }
-      chart toe box { fill = leather_dark; roughness = 0.82; grain = clustered; pattern border { paint = iron; width = 1px; edges = bottom; } }
+      chart buckle box { fill = brass; roughness = 0.24; metallic = 0.90; roughness_variation = 0.06; grain = none; pattern border { paint = iron; width = 1px; edges = all; } }
+      chart loincloth flat { coverage = 111111111111111111111111111111111111111111111111111111111111111111111111011111111110011111111110001111111100001100110011; fill = cloth; roughness = 0.90; grain = soft; pattern border { paint = brass; width = 1px; edges = top; } }
+      chart pauldron box { fill = iron; roughness = 0.26; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = bottom; } }
       chart face_neutral flat { fill = skin; stamp face_neutral_s { at = (1px, 2px); protect = true; } }
       chart face_blink flat { fill = skin; stamp face_blink_s { at = (1px, 2px); protect = true; } }
       chart face_snarl flat { fill = skin; stamp face_snarl_s { at = (1px, 2px); protect = true; } }
@@ -67,14 +67,14 @@ module goblin_skins {
       palette {
         void = #1f1a18;
         leather_dark = (wood.WoodParams.spruce_shadow, wood.WoodParams.spruce_base, wood.WoodParams.spruce_light);
-        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
-        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        steel = (#7b8694, #b0bcc9, #e1eaf2);
+        brass = (#8c6422, #d4a13f, #fad575);
       }
-      chart pommel box { fill = brass; roughness = 0.28; metallic = 0.90; grain = none; pattern border { paint = iron; width = 1px; edges = all; } }
+      chart pommel box { fill = brass; roughness = 0.24; metallic = 0.90; grain = none; pattern border { paint = steel; width = 1px; edges = all; } }
       chart hilt box { fill = leather_dark; roughness = 0.75; grain = wood; pattern stripe { paint = brass; axis = z; period = 3px; width = 1px; } }
-      chart guard box { fill = brass; roughness = 0.28; metallic = 0.90; grain = none; pattern border { paint = iron; width = 1px; edges = all; } }
-      chart blade box { fill = iron; roughness = 0.24; metallic = 0.92; roughness_variation = 0.07; grain = brushed; pattern stripe { paint = brass; axis = z; period = 6px; width = 1px; } pattern ao { strength = 0.3; radius = 0.5u; } }
-      chart blade_tip box { fill = iron; roughness = 0.22; metallic = 0.94; grain = brushed; pattern gradient { to = brass; axis = z; space = local; soft = 0.25; } }
+      chart guard box { fill = brass; roughness = 0.24; metallic = 0.90; grain = none; pattern border { paint = steel; width = 1px; edges = all; } }
+      chart blade box { fill = steel; roughness = 0.22; metallic = 0.92; roughness_variation = 0.07; grain = brushed; pattern stripe { paint = brass; axis = z; period = 6px; width = 1px; } pattern ao { strength = 0.25; radius = 0.5u; } }
+      chart blade_tip box { fill = steel; roughness = 0.20; metallic = 0.94; grain = brushed; pattern gradient { to = brass; axis = z; space = local; soft = 0.25; } }
       grain soft { seed = 4103; }
       tone painterly;
     }
@@ -89,18 +89,18 @@ module goblin_skins {
       palette {
         void = #261a12;
         leather = (wood.WoodParams.oak_shadow, wood.WoodParams.oak_base, wood.WoodParams.oak_light);
-        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
-        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        steel = (#7b8694, #b0bcc9, #e1eaf2);
+        brass = (#8c6422, #d4a13f, #fad575);
       }
-      chart board box { fill = leather; roughness = 0.78; grain = clustered; pattern border { paint = iron; width = 1px; edges = all; } pattern stripe { paint = brass; axis = y; period = 5px; width = 1px; } }
-      chart boss box { fill = brass; roughness = 0.28; metallic = 0.90; grain = none; pattern border { paint = iron; width = 1px; edges = all; } }
+      chart board box { fill = leather; roughness = 0.78; grain = clustered; pattern border { paint = steel; width = 1px; edges = all; } pattern stripe { paint = brass; axis = y; period = 5px; width = 1px; } }
+      chart boss box { fill = brass; roughness = 0.24; metallic = 0.90; grain = none; pattern border { paint = steel; width = 1px; edges = all; } }
       grain soft { seed = 4104; }
       tone painterly;
     }
   }
 
   export surface pyro_skin: kit.GoblinSkin {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
       atlas = (128px, 128px);
@@ -112,9 +112,9 @@ module goblin_skins {
         robe = (elem.FlamePalette.flame_edge, elem.FlamePalette.flame_mid, elem.FlamePalette.ember_core);
         char = (#261e20, #3d3034, #59464c);
         bronze = (metal.MetalParams.copper_shadow, metal.MetalParams.copper_base, metal.MetalParams.copper_light);
-        gold = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
-        ember = (elem.FlamePalette.flame_mid, elem.FlamePalette.ember_core, #fffbe6);
-        tooth = (#a69474, #ded0ad, #faf0da);
+        gold = (#8c6422, #d4a13f, #fad575);
+        ember = (elem.FlamePalette.flame_mid, #ffbc4a, elem.FlamePalette.ember_core);
+        tooth = (#a69474, #ded0ad, #f0e6cc);
         eye = #ff8c2e;
         glint = #fff9e6;
         pupil = #1f1210;
@@ -129,20 +129,20 @@ module goblin_skins {
       chart pelvis box { fill = char; roughness = 0.88; grain = cloth; pattern border { paint = gold; width = 1px; edges = top; } }
       chart head box { fill = skin; roughness = 0.74; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 0.8u; } }
       chart snout box { fill = skin; roughness = 0.74; grain = soft; pattern gradient { to = skin_dark; axis = z; space = local; soft = 0.2; } }
-      chart ear box { fill = skin_dark; roughness = 0.76; grain = soft; pattern gradient { to = skin; axis = y; space = local; soft = 0.25; } }
+      chart ear box { fill = skin; roughness = 0.76; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.25; } }
+      chart ear_tip box { fill = skin_dark; roughness = 0.76; grain = soft; pattern gradient { to = skin; axis = y; space = local; soft = 0.25; } }
       chart tusk box { fill = tooth; roughness = 0.42; grain = none; pattern gradient { to = char; axis = y; space = local; soft = 0.2; } }
       chart crest box { fill = ember; roughness = 0.25; metallic = 0.1; grain = soft; pattern gradient { to = robe; axis = y; space = local; soft = 0.25; } }
       chart arm box { fill = skin; roughness = 0.74; grain = soft; pattern gradient { to = skin_dark; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.3; radius = 0.6u; } }
-      chart bracer box { fill = bronze; roughness = 0.30; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = gold; width = 1px; edges = all; } }
+      chart bracer box { fill = bronze; roughness = 0.28; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = gold; width = 1px; edges = all; } }
       chart hand box { fill = skin_dark; roughness = 0.76; grain = soft; pattern border { paint = skin; width = 1px; edges = top; } }
       chart leg box { fill = char; roughness = 0.88; grain = cloth; pattern gradient { to = robe; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart cuff box { fill = bronze; roughness = 0.34; metallic = 0.82; grain = brushed; pattern border { paint = gold; width = 1px; edges = top; } }
+      chart cuff box { fill = bronze; roughness = 0.30; metallic = 0.84; grain = brushed; pattern border { paint = gold; width = 1px; edges = top; } }
       chart boot box { fill = char; roughness = 0.82; grain = clustered; pattern border { paint = bronze; width = 1px; edges = top; } }
       chart belt box { fill = char; roughness = 0.82; grain = clustered; pattern border { paint = robe; width = 1px; edges = bottom; } }
-      chart buckle box { fill = gold; roughness = 0.26; metallic = 0.92; roughness_variation = 0.06; grain = none; pattern border { paint = char; width = 1px; edges = all; } }
-      chart loincloth flat { fill = robe; roughness = 0.88; grain = cloth; pattern border { paint = gold; width = 1px; edges = top; } }
-      chart pauldron box { fill = bronze; roughness = 0.30; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = gold; width = 1px; edges = bottom; } }
-      chart toe box { fill = char; roughness = 0.82; grain = clustered; pattern border { paint = bronze; width = 1px; edges = bottom; } }
+      chart buckle box { fill = gold; roughness = 0.24; metallic = 0.92; roughness_variation = 0.06; grain = none; pattern border { paint = bronze; width = 1px; edges = all; } }
+      chart loincloth flat { coverage = 111111111111111111111111111111111111111111111111111111111111111111111111011111111110011111111110001111111100001100110011; fill = robe; roughness = 0.88; grain = cloth; pattern border { paint = gold; width = 1px; edges = top; } }
+      chart pauldron box { fill = bronze; roughness = 0.28; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = gold; width = 1px; edges = bottom; } }
       chart face_neutral flat { fill = skin; stamp face_neutral_p { at = (1px, 2px); protect = true; } }
       chart face_blink flat { fill = skin; stamp face_blink_p { at = (1px, 2px); protect = true; } }
       chart face_snarl flat { fill = skin; stamp face_snarl_p { at = (1px, 2px); protect = true; } }
@@ -160,11 +160,11 @@ module goblin_skins {
       palette {
         void = #1f1210;
         char = (#261e20, #3d3034, #59464c);
-        gold = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
-        ember = (elem.FlamePalette.flame_mid, elem.FlamePalette.ember_core, #fffbe6);
+        gold = (#8c6422, #d4a13f, #fad575);
+        ember = (elem.FlamePalette.flame_mid, #ffbc4a, elem.FlamePalette.ember_core);
       }
       chart staff box { fill = char; roughness = 0.74; grain = wood; pattern stripe { paint = gold; axis = y; period = 6px; width = 1px; } }
-      chart cage box { fill = gold; roughness = 0.24; metallic = 0.94; roughness_variation = 0.06; grain = brushed; pattern border { paint = ember; width = 1px; edges = all; } }
+      chart cage box { fill = gold; roughness = 0.22; metallic = 0.94; roughness_variation = 0.06; grain = brushed; pattern border { paint = ember; width = 1px; edges = all; } }
       chart flame_crown box { fill = ember; roughness = 0.22; metallic = 0.05; grain = soft; pattern gradient { to = gold; axis = y; space = local; soft = 0.25; } }
       grain soft { seed = 4105; }
       tone painterly;

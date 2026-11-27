@@ -1,9 +1,11 @@
 import { freeze } from '../../../immutable';
 import type { UvRect } from '../../../model/identity';
 import type { CubeFace, CubeFaces, SceneNode } from '../../../model/scene';
-import type { InstantiatedGeometryNode } from './ir';
+import type { InstantiatedGeometryNode, InstantiatedSocketConnection } from './ir';
 import type { AssetTexturePlan } from './texture/contract';
 import type { AssetExactNumber } from './value/contract';
+import type { createGeometryLayout } from './canonicalLayout';
+import { lowerAssetFrameToBoneTransform } from './frameLower';
 import {
   CUBE_FACES,
   INTEGER_BOUNDARY,
@@ -368,7 +370,7 @@ export const lowerLocator = (
       };
 };
 
-export const lowerPrivateBone = (
+const lowerPrivateBone = (
   record: GeometryRecord,
   parentId: string,
   context: Context,
@@ -400,4 +402,35 @@ export const lowerPrivateBone = (
         transform,
         visible: visibleFor(properties, context, node),
       };
+};
+
+export const lowerGeometryBone = (
+  record: GeometryRecord,
+  parent: string,
+  layout: ReturnType<typeof createGeometryLayout>,
+  connections: ReadonlyMap<string, InstantiatedSocketConnection>,
+  context: Context,
+): SceneNode | null => {
+  const connection = connections.get(record.node.id);
+  if (connection === undefined) return lowerPrivateBone(record, parent, context);
+  const frame = layout.connectionFrame(connection);
+  const transform = frame === null ? null : lowerAssetFrameToBoneTransform(frame);
+  if (transform !== null) {
+    return {
+      id: record.node.id,
+      kind: 'bone',
+      name: record.node.id,
+      parentId: parent,
+      transform,
+      visible: true,
+    };
+  }
+  report(
+    context,
+    record.node.sourcePath,
+    connection.span,
+    'asset.connection-frame',
+    'Socket local placement has no canonical transform.',
+  );
+  return null;
 };

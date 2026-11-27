@@ -1,0 +1,79 @@
+ashfox 1
+module fox {
+  export design FoxFaceDesign {
+    slot_width: unit = 7u;
+    slot_height: unit = 4u;
+    skull_eye_ratio: ratio = 0.48;
+  }
+
+  export surface contract FoxFaceSurface {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface fox_clever: FoxFaceSurface {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        coat = (#9b3b1e, #d9642c, #f49b56);
+        coat_deep = (#6d2718, #a94322, #d46b37);
+        brow = #e8cfa6;
+        eye_dark = #211514;
+        eye_amber = #e0862d;
+        eye_glint = #fff7e6;
+        hurt_red = #c94136;
+      }
+      stamp eyes_neutral {
+        pixels = "bbb......bbb/kwa......awk/kka......akk/kkk......kkk";
+        b = brow;
+        k = eye_dark;
+        w = eye_glint;
+        a = eye_amber;
+      }
+      stamp eyes_blink {
+        pixels = "............/bbb......bbb/ddd......ddd/............";
+        b = brow;
+        d = coat_deep;
+      }
+      stamp eyes_fierce {
+        pixels = "bb........bb/.kwa....awk./.kaa....aak./.kkk....kkk.";
+        b = brow;
+        k = eye_dark;
+        w = eye_glint;
+        a = eye_amber;
+      }
+      stamp eyes_hurt {
+        pixels = ".bb......bb./kk........kk/rkk......kkr/............";
+        b = brow;
+        k = eye_dark;
+        r = hurt_red;
+      }
+      chart neutral flat {
+        fill = coat;
+        stamp eyes_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = coat;
+        stamp eyes_blink { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = coat;
+        stamp eyes_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = coat;
+        stamp eyes_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain soft { seed = 8901; }
+      tone painterly;
+    }
+  }
+}

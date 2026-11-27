@@ -464,6 +464,7 @@ const compileFile = (entryName: string) => {
 
 const foxReport = compileFile('red_fox');
 const goblinReport = compileFile('goblin_raider');
+const pyroReport = compileFile('goblin_pyromancer');
 const griffinReport = compileFile('griffin_boss');
 const runeBricksReport = compileFile('rune_bricks');
 const lanternReport = compileFile('wall_lantern');
@@ -471,6 +472,7 @@ const lanternReport = compileFile('wall_lantern');
 for (const [name, report] of [
   ['fox', foxReport],
   ['goblin', goblinReport],
+  ['pyro', pyroReport],
   ['griffin', griffinReport],
   ['rune_bricks', runeBricksReport],
   ['lantern', lanternReport],
@@ -485,5 +487,5 @@ for (const [name, report] of [
 }
 
 console.log(
-  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} griffin=${griffinReport.score} rune_bricks=${runeBricksReport.score} lantern=${lanternReport.score}`,
+  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} pyro=${pyroReport.score} griffin=${griffinReport.score} rune_bricks=${runeBricksReport.score} lantern=${lanternReport.score}`,
 );

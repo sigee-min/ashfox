@@ -1,4 +1,5 @@
 import { ramp } from './contract';
+import { isRewardedAngledPart } from './craftFloor';
 import type { AuditObb, AuditSceneGeometry } from './geometry';
 
 export interface AuditAnatomyReport {
@@ -16,7 +17,7 @@ const groupVolumesScore = (group: readonly AuditObb[]): number => {
   if (group.length < 2) return 0;
   const vols = group.map((o) => Math.max(0.01, o.volume));
   const taperRatio = Math.max(...vols) / Math.min(...vols);
-  const angledBonus = group.some((o) => o.angled || o.isPlane) ? 0.35 : 0;
+  const angledBonus = group.some(isRewardedAngledPart) ? 0.35 : 0;
   return Math.min(1, 0.65 * ramp(taperRatio, 1.25, 2.2) + angledBonus);
 };
 

@@ -1,0 +1,77 @@
+ashfox 1
+module eagle {
+  export design EagleFaceDesign {
+    slot_width: unit = 5u;
+    slot_height: unit = 4u;
+    skull_eye_ratio: ratio = 0.50;
+  }
+
+  export surface contract EagleFaceSurface {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface eagle_fierce: EagleFaceSurface {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        ivory = (#9b9789, #d9d4c2, #f8f2e2);
+        ivory_mid = (#78746a, #b0ab9d, #dbd5c5);
+        brow = #5c4b3c;
+        eye = #1b383d;
+        gleam = #66f0d8;
+        hurt_red = #c9463e;
+      }
+      stamp eye_neutral {
+        pixels = "bbbbbb/bbbbbb/eeeeee/eeegge";
+        b = brow;
+        e = eye;
+        g = gleam;
+      }
+      stamp eye_blink {
+        pixels = "....../bbbbbb/mmmmmm/......";
+        b = brow;
+        m = ivory_mid;
+      }
+      stamp eye_fierce {
+        pixels = "bbbb../.bbbbb/ggggge/eeegge";
+        b = brow;
+        e = eye;
+        g = gleam;
+      }
+      stamp eye_hurt {
+        pixels = ".bbbb./bbbbbb/rrerrr/mmmmmm";
+        b = brow;
+        e = eye;
+        r = hurt_red;
+        m = ivory_mid;
+      }
+      chart neutral flat {
+        fill = ivory;
+        stamp eye_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = ivory;
+        stamp eye_blink { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = ivory;
+        stamp eye_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = ivory;
+        stamp eye_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain soft { seed = 7301; }
+      tone painterly;
+    }
+  }
+}

@@ -226,33 +226,73 @@ const disposeProjectResources = (
   }
 };
 
-/** Generates a lightweight procedural neutral studio PMREM IBL environment texture. */
+const createStudioDomeTexture = (): THREE.CanvasTexture => {
+  const canvas = window.document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 256;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Studio dome canvas is unavailable.');
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#cfd8e6');
+  gradient.addColorStop(0.5, '#8c98ab');
+  gradient.addColorStop(1, '#555e6c');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  return texture;
+};
+
+const addStudioCycloramaDome = (
+  envScene: THREE.Scene,
+  disposables: { dispose: () => void }[],
+): void => {
+  const domeTexture = createStudioDomeTexture();
+  const domeGeometry = new THREE.SphereGeometry(40, 32, 24);
+  const domeMaterial = new THREE.MeshBasicMaterial({
+    map: domeTexture,
+    side: THREE.BackSide,
+    toneMapped: false,
+  });
+  envScene.add(new THREE.Mesh(domeGeometry, domeMaterial));
+  disposables.push(domeTexture, domeGeometry, domeMaterial);
+};
+
+const addStudioSoftboxPanel = (
+  envScene: THREE.Scene,
+  disposables: { dispose: () => void }[],
+  color: string,
+  intensity: number,
+  size: readonly [number, number, number],
+  pos: readonly [number, number, number],
+): void => {
+  const geom = new THREE.BoxGeometry(size[0], size[1], size[2]);
+  const mat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(color).multiplyScalar(intensity),
+    toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.set(pos[0], pos[1], pos[2]);
+  envScene.add(mesh);
+  disposables.push(geom, mat);
+};
+
+/** Generates a bright neutral studio cyclorama dome PMREM IBL environment texture. */
 export const createStudioEnvironmentMap = (
   renderer: THREE.WebGLRenderer,
 ): THREE.WebGLRenderTarget => {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color('#202630');
+  envScene.background = new THREE.Color('#8c98ab');
   const disposables: { dispose: () => void }[] = [];
-  const addPanel = (
-    color: string,
-    intensity: number,
-    size: readonly [number, number, number],
-    pos: readonly [number, number, number],
-  ): void => {
-    const geom = new THREE.BoxGeometry(size[0], size[1], size[2]);
-    const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(color).multiplyScalar(intensity),
-    });
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.position.set(pos[0], pos[1], pos[2]);
-    envScene.add(mesh);
-    disposables.push(geom, mat);
-  };
-  addPanel('#fff5e6', 3.2, [10, 0.4, 10], [3, 8, -3]);
-  addPanel('#c9ddff', 1.8, [8, 6, 0.4], [-8, 3, -4]);
-  addPanel('#dce7f7', 1.4, [0.4, 6, 10], [8, 2, 4]);
-  addPanel('#404956', 0.9, [16, 0.4, 16], [0, -7, 0]);
+  addStudioCycloramaDome(envScene, disposables);
+  addStudioSoftboxPanel(envScene, disposables, '#fff5e6', 3.4, [12, 0.5, 12], [4, 9, -4]);
+  addStudioSoftboxPanel(envScene, disposables, '#dce9ff', 2.2, [10, 8, 0.5], [-8, 4, -6]);
+  addStudioSoftboxPanel(envScene, disposables, '#e4eefc', 1.8, [0.5, 8, 12], [9, 3, 4]);
+  addStudioSoftboxPanel(envScene, disposables, '#6c7686', 1.2, [18, 0.5, 18], [0, -8, 0]);
   const target = pmrem.fromScene(envScene, 0.04);
   for (const item of disposables) item.dispose();
   pmrem.dispose();

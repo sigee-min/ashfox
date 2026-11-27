@@ -39,7 +39,7 @@ const walkStdDisk = (
 };
 
 const virtualLibs = walkStdDisk(STD_DIR);
-assert.equal(virtualLibs.size, 57, `Expected 57 stdlib modules, got ${virtualLibs.size}`);
+assert.equal(virtualLibs.size, 67, `Expected 67 stdlib modules, got ${virtualLibs.size}`);
 
 // 1. Validate canonical specifiers, pure ashfox 1 headers, zero version suffixes, and "std/*" internal imports.
 for (const [spec, source] of virtualLibs) {
@@ -63,7 +63,7 @@ assert.equal(
 );
 
 // 2. Catalog & resolver APIs.
-assert.equal(listVirtualLibraries(virtualLibs).length, 57);
+assert.equal(listVirtualLibraries(virtualLibs).length, 67);
 assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 9);
 assert.equal(filterVirtualLibraries(virtualLibs, 'sound/combat').length, 3);
 assert.ok(
@@ -228,6 +228,27 @@ const rigCases: readonly [string, string, string, readonly string[]][] = [
     ],
   ],
   ['std/model/rig/slime', 'SlimeRig', 'SlimeSkeleton', ['root', 'body', 'core', 'crest']],
+  [
+    'std/model/rig/winged_quadruped',
+    'WingedQuadrupedRig',
+    'WingedQuadrupedSkeleton',
+    [
+      'root',
+      'torso',
+      'neck',
+      'head',
+      'wing_l',
+      'wing_tip_l',
+      'wing_r',
+      'wing_tip_r',
+      'foreleg_l',
+      'foreleg_r',
+      'hindleg_l',
+      'hindleg_r',
+      'tail',
+      'tail_tip',
+    ],
+  ],
 ];
 for (const [spec, rigName, skelName, bones] of rigCases) {
   const bindLines = bones.map((b) => `bind bone ${b} to skeleton.${b};`).join(' ');
