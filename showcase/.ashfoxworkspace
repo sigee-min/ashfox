@@ -12,6 +12,7 @@
         "entries": [
           { "name": "goblin_raider", "path": "goblin_raider.ashfox" },
           { "name": "goblin_pyromancer", "path": "goblin_pyromancer.ashfox" },
+          { "name": "goblin", "path": "goblin_variant.ashfox" },
           { "name": "griffin_boss", "path": "griffin_boss.ashfox" },
           { "name": "red_fox", "path": "red_fox.ashfox" },
           { "name": "treasure_chest", "path": "treasure_chest.ashfox" },
@@ -136,6 +137,7 @@
   "exports": [
     { "name": "goblin_raider", "entry": { "packageName": "models", "entryName": "goblin_raider" }, "format": "glb", "directory": "dist/models/goblin_raider" },
     { "name": "goblin_pyromancer", "entry": { "packageName": "models", "entryName": "goblin_pyromancer" }, "format": "glb", "directory": "dist/models/goblin_pyromancer" },
+    { "name": "goblin_frost", "entry": { "packageName": "models", "entryName": "goblin_frost" }, "format": "glb", "directory": "dist/models/goblin_frost" },
     { "name": "griffin_boss", "entry": { "packageName": "models", "entryName": "griffin_boss" }, "format": "glb", "directory": "dist/models/griffin_boss" },
     { "name": "red_fox", "entry": { "packageName": "models", "entryName": "red_fox" }, "format": "glb", "directory": "dist/models/red_fox" },
     { "name": "treasure_chest", "entry": { "packageName": "models", "entryName": "treasure_chest" }, "format": "glb", "directory": "dist/models/treasure_chest" },
@@ -174,6 +176,7 @@
       "assets": [
         { "id": "creature.goblin_raider", "source": "goblin_raider", "path": "models/goblin_raider" },
         { "id": "creature.goblin_pyromancer", "source": "goblin_pyromancer", "path": "models/goblin_pyromancer" },
+        { "id": "creature.goblin_frost", "source": "goblin_frost", "path": "models/goblin_frost" },
         { "id": "creature.griffin_boss", "source": "griffin_boss", "path": "models/griffin_boss" },
         { "id": "creature.red_fox", "source": "red_fox", "path": "models/red_fox" },
         { "id": "prop.treasure_chest", "source": "treasure_chest", "path": "models/treasure_chest" },

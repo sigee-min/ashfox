@@ -320,6 +320,7 @@ const walkComponent = (
   decl: Extract<AssetDeclaration, { readonly kind: 'component' }>,
   refs: FileRefSet,
 ): void => {
+  for (const param of decl.parameters) walkExpr(param.defaultValue, refs);
   for (const port of decl.ports) walkQName(port.type, refs);
   for (const sb of decl.socketBindings) walkProps(sb.frame?.properties ?? [], refs);
   walkGeometry(decl.geometry.statements, refs);

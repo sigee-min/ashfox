@@ -4,10 +4,12 @@ import {
   SPRITE_POLICY,
   canonicalJsonString,
   checkWorkspaceModularity,
+  elaborateModelVariants,
   readDirectoryWorkspace,
   sha256Digest,
   type DirectoryFile,
   type DirectoryWorkspace,
+  type ElaboratedVariantSource,
   type WorkspaceEntrySelector,
 } from '@ashfox/engine-core';
 import { compareText } from '@ashfox/internal-contracts';
@@ -162,6 +164,82 @@ const resolvePlannedEntry = (
   };
 };
 
+const variantPaths = (
+  pkgRoot: string,
+  fullPath: string,
+  modelId: string,
+): readonly [string, string] => {
+  const rel =
+    pkgRoot && fullPath.startsWith(`${pkgRoot}/`) ? fullPath.slice(pkgRoot.length + 1) : fullPath;
+  const slash = rel.lastIndexOf('/');
+  const dir = slash >= 0 ? rel.slice(0, slash + 1) : '';
+  const variantRel = `${dir}__variant_${modelId}.ashfox`;
+  return [variantRel, joinPackagePath(pkgRoot, variantRel)];
+};
+
+const buildVariantPlannedEntry = (
+  config: DirectoryWorkspace,
+  item: { readonly entry: WorkspaceEntrySelector; readonly path: string },
+  closurePaths: readonly string[],
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  variant: ElaboratedVariantSource,
+): PlannedEntry => {
+  const pkg = config.packages.find((p) => p.name === item.entry.packageName)!;
+  const [variantRel, variantFull] = variantPaths(pkg.root, item.path, variant.modelId);
+  const selector = { packageName: pkg.name, entryName: variant.modelId };
+  const vConfig: DirectoryWorkspace = {
+    ...config,
+    packages: config.packages.map((p) =>
+      p.name === pkg.name
+        ? {
+            ...p,
+            manifest: {
+              ...p.manifest,
+              entries: [
+                ...p.manifest.entries.filter((e) => e.name !== item.entry.entryName),
+                { name: variant.modelId, path: variantRel },
+              ],
+            },
+          }
+        : p,
+    ),
+  };
+  const nextClosure = closurePaths.map((p) => (p === item.path ? variantFull : p));
+  const files = nextClosure.map((p) =>
+    p === variantFull ? { path: variantFull, source: variant.source } : filesByPath.get(p)!,
+  );
+  const subConfigJson = buildSubConfigJson(vConfig, selector, variantFull, new Set(nextClosure));
+  return {
+    kind: 'model',
+    entry: selector,
+    sourcePath: item.path,
+    closurePaths,
+    files,
+    subConfigJson,
+    closureHash: digest(json({ entry: selector, subConfigJson, files })),
+  };
+};
+
+const resolvePlannedEntriesForItem = (
+  config: DirectoryWorkspace,
+  item: { readonly entry: WorkspaceEntrySelector; readonly path: string },
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+  metaByPath: ReadonlyMap<string, NativeSourceMetadata>,
+  cache: DiskCacheContext,
+  soundBudget: SoundBudgetState,
+): readonly PlannedEntry[] | null => {
+  const base = resolvePlannedEntry(config, item, filesByPath, metaByPath, cache, soundBudget);
+  if (!base) return null;
+  if (base.kind !== 'model') return [base];
+  const src = filesByPath.get(item.path)?.source;
+  if (!src || !/\bvariant\b/.test(src)) return [base];
+  const variants = elaborateModelVariants(src, item.path);
+  if (variants.length === 0) return [base];
+  return variants.map((v) =>
+    buildVariantPlannedEntry(config, item, base.closurePaths, filesByPath, v),
+  );
+};
+
 const resolveAllPlannedEntries = (
   config: DirectoryWorkspace,
   rawEntries: readonly { readonly entry: WorkspaceEntrySelector; readonly path: string }[],
@@ -179,10 +257,19 @@ const resolveAllPlannedEntries = (
     totals: { outputFrames: 0, eventFrames: 0, weightedFrames: 0 },
   };
   for (const item of rawEntries) {
-    const entry = resolvePlannedEntry(config, item, filesByPath, metaByPath, cache, soundBudget);
-    if (!entry) return null;
-    for (const p of entry.closurePaths) reachable.add(p);
-    planned.push(entry);
+    const entries = resolvePlannedEntriesForItem(
+      config,
+      item,
+      filesByPath,
+      metaByPath,
+      cache,
+      soundBudget,
+    );
+    if (!entries) return null;
+    for (const entry of entries) {
+      for (const p of entry.closurePaths) reachable.add(p);
+      planned.push(entry);
+    }
   }
   return { planned, reachable };
 };

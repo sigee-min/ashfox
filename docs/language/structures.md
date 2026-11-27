@@ -55,6 +55,7 @@ Inside `prefab Name { … }` (or `export prefab Name { … }` in a `module`) and
 | `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | Record world-connection connectors and typed gameplay anchors in `.structure.json`, `.hooks.json`, glTF `anchor_*` Empty Nodes, and `.nbt` jigsaw/block entities |
 | `zone id [: std.courtyard] { … }` | Record semantic circulation or courtyard enclosure regions |
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | Place an imported child `structure` inside a `compound` unit |
+| `for i in start..end { … }` | Deterministic compile-time loop unrolling (`<= 128` iterations, depth `<= 3`) with `${i}` interpolation and `(expr)b` integer math |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | Low-level voxel, ASCII floorplan (`layer { at = …; rows = […]; map { … } }`), repeat/mirror, and prefab placement ops |
 
 ## Interior architecture, props, and radiosity

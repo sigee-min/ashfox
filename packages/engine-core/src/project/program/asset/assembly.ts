@@ -7,6 +7,7 @@ import type {
   AssetParamSetDecl,
   AssetQualifiedName,
   AssetSettingsDecl,
+  AssetVariantDecl,
 } from './contract';
 import {
   checkClosedProperties,
@@ -21,32 +22,58 @@ import {
   type AssetReader,
 } from './parserSupport';
 
+const readUseCallArgs = (reader: AssetReader, parameterSets: AssetParamSetDecl[]): void => {
+  if (!reader.match('(')) return;
+  while (!reader.check(')') && !reader.end()) {
+    const id = reader.id('Expected parameter name.');
+    reader.expect('=', 'Expected = after parameter name.');
+    const value = reader.expression();
+    parameterSets.push(
+      Object.freeze({
+        kind: 'param-set',
+        id: id.value,
+        value,
+        span: join(id.span, value.span),
+      }),
+    );
+    if (!reader.match(',')) break;
+  }
+  reader.expect(')', 'Expected ) to close component arguments.');
+};
+
 const readAssemblyUse = (reader: AssetReader): AssetAssemblyUse => {
   const start = reader.expectWord('use', 'Expected use.');
   const component = reader.qualified('Expected component name.');
+  const parameterSets: AssetParamSetDecl[] = [];
+  readUseCallArgs(reader, parameterSets);
   const id = reader.checkWord('as')
     ? (reader.take(), reader.id('Expected component instance name.').value)
     : component.segments[component.segments.length - 1]!;
-  const parameterSets: AssetParamSetDecl[] = [];
-  const close = readBraced(
-    reader,
-    'Expected { to begin component bindings.',
-    'Expected } to close component bindings.',
-    () => {
-      if (reader.assignment()) {
-        const property = readProperty(reader);
-        parameterSets.push(
-          Object.freeze({
-            kind: 'param-set',
-            id: property.name,
-            value: property.value,
-            span: property.span,
-          }),
-        );
-      } else reader.scopeError('asset component use');
-    },
-  );
-  const endSpan = reader.match(';') ? reader.prevSpan() : close.span;
+  let endSpan = reader.prevSpan();
+  if (reader.check('{')) {
+    const close = readBraced(
+      reader,
+      'Expected { to begin component bindings.',
+      'Expected } to close component bindings.',
+      () => {
+        if (reader.assignment()) {
+          const property = readProperty(reader);
+          parameterSets.push(
+            Object.freeze({
+              kind: 'param-set',
+              id: property.name,
+              value: property.value,
+              span: property.span,
+            }),
+          );
+        } else reader.scopeError('asset component use');
+      },
+    );
+    endSpan = reader.match(';') ? reader.prevSpan() : close.span;
+  } else {
+    reader.finish();
+    endSpan = reader.prevSpan();
+  }
   return Object.freeze({
     kind: 'use',
     component,
@@ -124,6 +151,7 @@ export interface AssemblyState {
   readonly motions: AssetQualifiedName[];
   readonly uses: AssetAssemblyUse[];
   readonly connections: AssetAssemblyConnect[];
+  readonly variants: AssetVariantDecl[];
 }
 
 export const createAssemblyState = (): AssemblyState => ({
@@ -135,7 +163,31 @@ export const createAssemblyState = (): AssemblyState => ({
   motions: [],
   uses: [],
   connections: [],
+  variants: [],
 });
+
+const readVariant = (reader: AssetReader): AssetVariantDecl => {
+  const start = reader.expectWord('variant', 'Expected variant.');
+  const id = reader.id('Expected variant name.');
+  const properties = readProperties(reader, 'asset variant');
+  const seen = new Set<string>();
+  for (const prop of properties) {
+    if (seen.has(prop.name)) {
+      reader.failSpan(
+        'asset.duplicate-property',
+        `Property "${prop.name}" is declared more than once in variant "${id.value}".`,
+        prop.span,
+      );
+    }
+    seen.add(prop.name);
+  }
+  return Object.freeze({
+    kind: 'variant',
+    id: id.value,
+    properties: Object.freeze(properties),
+    span: join(start.span, reader.blockEnd()),
+  });
+};
 
 const readMotionsAssignment = (reader: AssetReader): readonly AssetQualifiedName[] => {
   reader.expectWord('motions', 'Expected motions.');
@@ -184,7 +236,17 @@ export const readAssemblyEntry = (reader: AssetReader, state: AssemblyState): vo
     state.motions.push(...readMotionsAssignment(reader));
   } else if (reader.checkWord('use')) state.uses.push(readAssemblyUse(reader));
   else if (reader.checkWord('connect')) state.connections.push(readConnect(reader));
-  else reader.scopeError('model');
+  else if (reader.checkWord('variant')) {
+    const variant = readVariant(reader);
+    if (state.variants.some((existing) => existing.id === variant.id)) {
+      reader.failSpan(
+        'asset.duplicate-variant',
+        `Variant "${variant.id}" is declared more than once.`,
+        variant.span,
+      );
+    }
+    state.variants.push(variant);
+  } else reader.scopeError('model');
 };
 
 export const buildAssemblyDecl = (
@@ -202,5 +264,6 @@ export const buildAssemblyDecl = (
     motions: Object.freeze(state.motions),
     uses: Object.freeze(state.uses),
     connections: Object.freeze(state.connections),
+    ...(state.variants.length > 0 ? { variants: Object.freeze(state.variants) } : {}),
     span,
   });

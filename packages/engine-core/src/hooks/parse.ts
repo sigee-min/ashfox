@@ -1,5 +1,13 @@
-import type { HookEnclosure, HookParseResult, HookSourceUnit, HookUnitKind } from './contract';
-import { lexHooksSource } from './lex';
+import type {
+  HookDiagnostic,
+  HookEnclosure,
+  HookParseResult,
+  HookSourceSpan,
+  HookSourceUnit,
+  HookUnitKind,
+} from './contract';
+import { lexHooksSource, type HookToken } from './lex';
+import { expandStaticForTokens } from '../project/program/syntax/staticFor';
 import { buildEnclosure, readHookBody } from './parseBody';
 import {
   fail,
@@ -344,10 +352,27 @@ export const parseHooksSource = (
   options?: HookParseOptions,
 ): HookParseResult => {
   const lexed = lexHooksSource(source, file);
+  const expanded = lexed.diagnostics.length === 0 ? expandStaticForTokens(lexed.tokens) : null;
+  const hookDiags: HookDiagnostic[] = expanded
+    ? expanded.diagnostics.map((d) =>
+        Object.freeze({
+          severity: 'error' as const,
+          code: d.code,
+          message: d.message,
+          file,
+          line: d.span.start.line,
+          column: d.span.start.column,
+          token: source.slice(d.span.start.offset, d.span.end.offset) || 'EOF',
+          span: Object.freeze({ file, start: d.span.start, end: d.span.end }) as HookSourceSpan,
+        }),
+      )
+    : [];
   const state: ParseState = {
     file,
-    tokens: lexed.tokens,
-    diagnostics: [...lexed.diagnostics],
+    tokens: (expanded && expanded.diagnostics.length === 0
+      ? expanded.tokens
+      : lexed.tokens) as readonly HookToken[],
+    diagnostics: [...lexed.diagnostics, ...hookDiags],
     allowHostStatements: options?.allowHostStatements ?? false,
     parentStack: [],
     offset: 0,

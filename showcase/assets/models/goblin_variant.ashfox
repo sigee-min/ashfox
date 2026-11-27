@@ -1,0 +1,28 @@
+ashfox 1
+model goblin {
+  import "std/model/rig/biped" as biped;
+  import "std/model/motion/locomotion" as loco;
+  import "std/model/motion/combat" as combat;
+  import "std/core/hook/combat" as combat_hook;
+  import "std/core/hook/loot" as loot_hook;
+  import "shared_modules/goblin_kit" as kit;
+  import "shared_modules/goblin_skins" as skins;
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = biped.BipedSkeleton;
+  motions = [kit.goblin_idle, loco.biped_walk, combat.slash, kit.goblin_challenge];
+
+  use kit.GoblinBody(shoulder_scale = body_scale) as body { skeleton = biped.BipedRig; skin = chosen_skin; }
+  use kit.RaiderGear as blade { skin = skins.raider_weapon; }
+  use kit.RaiderShield as shield { skin = skins.raider_shield; }
+  connect body.gear_hand -> blade.grip;
+  connect body.off_hand_mount -> shield.mount;
+
+  cue blade_arc : combat_hook.HitboxArc { clip = slash; at = 0.2s..0.45s; reach = 19u; damage = 18; damage_type = arcane; }
+  anchor loot_drop : loot_hook.ItemDrop { bone = pelvis; item_id = "ashfox:frost_shard"; chance = 0.3; }
+
+  variant frost {
+    body_scale = 1.2;
+    chosen_skin = skins.frost_skin;
+  }
+}

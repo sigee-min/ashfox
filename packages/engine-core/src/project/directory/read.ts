@@ -148,7 +148,13 @@ const readDirectoryExport = (
   }
   const selector = readClosedRecord(entry.entry, ['packageName', 'entryName'], `${pointer}/entry`);
   const pkg = packages.find((candidate) => candidate.name === selector.packageName);
-  if (!pkg?.manifest.entries.some((declared) => declared.name === selector.entryName)) {
+  const entryName = typeof selector.entryName === 'string' ? selector.entryName : null;
+  const entryMatched =
+    entryName !== null &&
+    pkg?.manifest.entries.some(
+      (declared) => declared.name === entryName || entryName.startsWith(`${declared.name}_`),
+    );
+  if (!entryMatched) {
     failWorkspaceConfig(`${pointer}/entry`, 'declared entry', JSON.stringify(selector));
   }
   return directory.toLowerCase();

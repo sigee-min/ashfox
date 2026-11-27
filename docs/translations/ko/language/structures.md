@@ -47,6 +47,7 @@
 | `anchor id : std.entry\|std.road\|<schema> { room = r; wall = …; … }` | `.structure.json`, `.hooks.json`, glTF `anchor_*` 빈 노드 및 `.nbt` 지그소·블록 엔티티용 앵커 정의 |
 | `zone id [: std.courtyard] { … }` | 시맨틱 동선 또는 중정 개방 영역 선언 |
 | `compound_place alias { at = (x, y, z); rotate = 0\|90\|180\|270; }` | `compound` 단위 안에 import한 하위 `structure` 배치 |
+| `for i in start..end { … }` | `${i}` 보간과 `(expr)b` 정수 산술을 지원하는 결정론적 컴파일 타임 반복 언롤링(최대 128회, 중첩 깊이 3) |
 | `set`, `box`, `hollow`, `walls`, `frame`, `carve`, `layer`, `repeat`, `mirror`, `place` | 저수준 복셀, ASCII 평면도(`layer { at = …; rows = […]; map { … } }`), 반복·대칭, 프리팹 배치 |
 
 ## 실내 건축, 소품 및 라디오시티 GI

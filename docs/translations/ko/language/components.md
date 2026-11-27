@@ -4,7 +4,7 @@ component는 명시적 매개변수·타입 포트와 함께 모델 형상을 �
 
 ## 매개변수
 
-component 안에 `param name: type;`을 선언합니다. 기본값이 없으므로 각 인스턴스가 선언한 매개변수와 required 포트를 `name = value;` 형태로 정확히 한 번씩 제공해야 합니다. 문자열 기반 레코드 대신 [닫힌 값 타입](values.md#closed-value-types)을 쓰세요.
+component 본문(`param name: type;` 또는 `param name: type = default;`)이나 괄호 헤더(`component Name(param height_scale: number = 1.0, ...) { ... }`)에 매개변수를 선언합니다. `number`는 `ratio`의 별칭으로 허용되며 `unit` 스칼라 및 벡터의 배율 연산에 사용할 수 있습니다. `use alias.Name(p = val) as inst { ... };` 또는 `{ ... }` 블록 안의 대입문으로 required 포트와 매개변수를 전달하며, 기본값이 있는 매개변수를 생략하면 선언된 기본값을 사용합니다. 알 수 없는 매개변수 이름(`Did you mean` 제안 포함)·누락된 필수 매개변수·중복·타입 불일치는 컴파일 오류로 차단됩니다. 문자열 기반 레코드 대신 [닫힌 값 타입](values.md#closed-value-types)을 쓰세요.
 
 완전한 모델의 `Body`를 교체하는 조각입니다.
 

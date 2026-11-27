@@ -445,3 +445,19 @@ model sample {
   }
 }
 ```
+
+## 7. Static `for` unrolling and `variant` matrices
+
+Inside `model`, `structure`, `vfx`, and `sprite`, static `for <ident> in <start>..<end> { ... }` unrolls half-open integer ranges `[start, end)` deterministically at compile time with `${ident}` identifier interpolation (`cube seg_${i}`) and unit-suffixed integer arithmetic (`(i * 4)u`, `(32 - (i / 3) * 2)b`). Loops enforce fail-closed safety budgets of `MAX_STATIC_FOR_ITERS = 128` iterations per loop and max nesting depth `3`; non-constant bounds, negative identifier interpolations, or budget overflows fail compilation.
+
+Inside a `model` unit, `variant <name> { key = value; ... }` declarations elaborate into separate compiled entries (`<modelId>_<variant>`) with per-variant bindings substituted into `use` arguments, `surface` slots, and hooks while sharing unchanged modules, geometry, textures, and motions cleanly.
+
+```text
+model goblin {
+  use kit.GoblinBody(shoulder_scale = body_scale) as body { skeleton = biped.BipedRig; skin = chosen_skin; }
+  variant frost {
+    body_scale = 1.2;
+    chosen_skin = skins.frost_skin;
+  }
+}
+```

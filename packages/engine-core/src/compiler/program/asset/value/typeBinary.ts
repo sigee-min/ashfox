@@ -132,13 +132,13 @@ const typedVectorScale = (
   if (
     vector.component === 'plain' ||
     scalar === null ||
-    scalar.unit !== 'plain' ||
+    (scalar.unit !== 'plain' && scalar.unit !== 'ratio') ||
     (expression.operator === '/' && leftVector === null)
   ) {
     diagnostics.push(
       diagnostic(
         'asset.value.invalid-operator',
-        'Vector scaling requires a plain scalar operand.',
+        'Vector scaling requires a plain or ratio scalar operand.',
         expression.span,
       ),
     );
@@ -163,7 +163,7 @@ const typedScalarDivision = (
   r: ScalarInfo,
   diagnostics: AssetValueDiagnostic[],
 ): AssetExpressionScalarType | null => {
-  if (r.unit !== 'plain' && l.unit !== r.unit) {
+  if (r.unit !== 'plain' && r.unit !== 'ratio' && l.unit !== r.unit) {
     diagnostics.push(
       diagnostic(
         'asset.value.unit-mismatch',
@@ -173,7 +173,8 @@ const typedScalarDivision = (
     );
     return null;
   }
-  if (r.unit !== l.unit) return l.type;
+  if (l.unit === 'plain' && r.unit === 'ratio') return 'ratio';
+  if (r.unit !== l.unit || l.unit === 'ratio') return l.type;
   const leftNumber = left.kind === 'number' ? left.value : null;
   const rightNumber = right.kind === 'number' ? right.value : null;
   if (leftNumber === null || rightNumber === null || rightNumber.numerator === 0n) {
@@ -229,7 +230,9 @@ const typedScalarProduct = (
   r: ScalarInfo,
   diagnostics: AssetValueDiagnostic[],
 ): AssetExpressionScalarType | null => {
-  if (l.unit !== 'plain' && r.unit !== 'plain') {
+  const lDim = l.unit !== 'plain' && l.unit !== 'ratio';
+  const rDim = r.unit !== 'plain' && r.unit !== 'ratio';
+  if (lDim && rDim) {
     diagnostics.push(
       diagnostic(
         'asset.value.invalid-operator',
@@ -239,7 +242,9 @@ const typedScalarProduct = (
     );
     return null;
   }
-  return l.unit === 'plain' ? r.type : l.type;
+  if (l.unit === 'plain') return r.type;
+  if (r.unit === 'plain') return l.type;
+  return l.unit === 'ratio' ? r.type : l.type;
 };
 
 const resolveScalarBinaryType = (

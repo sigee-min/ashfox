@@ -93,8 +93,20 @@ const sum: ExactOperation = (operator, left, right) => {
   );
 };
 
+const isDimensionlessUnit = (unit: AssetExactNumber['unit']): boolean =>
+  unit === 'plain' || unit === 'ratio';
+
+const productUnit = (
+  left: AssetExactNumber['unit'],
+  right: AssetExactNumber['unit'],
+): AssetExactNumber['unit'] => {
+  if (left === 'plain') return right;
+  if (right === 'plain') return left;
+  return left === 'ratio' ? right : left;
+};
+
 const product: ExactOperation = (_operator, left, right) => {
-  if (left.unit !== 'plain' && right.unit !== 'plain')
+  if (!isDimensionlessUnit(left.unit) && !isDimensionlessUnit(right.unit))
     return fail(
       'asset.value.invalid-operator',
       'Multiplication may have at most one dimensional operand.',
@@ -102,15 +114,24 @@ const product: ExactOperation = (_operator, left, right) => {
   const normalized = normalize(
     left.numerator * right.numerator,
     left.denominator * right.denominator,
-    left.unit === 'plain' ? right.unit : left.unit,
+    productUnit(left.unit, right.unit),
   );
   return integralPlain(normalized, PLAIN_INTEGER_MESSAGE);
+};
+
+const quotientUnit = (
+  left: AssetExactNumber['unit'],
+  right: AssetExactNumber['unit'],
+): AssetExactNumber['unit'] => {
+  if (left === 'ratio' && isDimensionlessUnit(right)) return 'ratio';
+  if (left === 'plain' && right === 'ratio') return 'ratio';
+  return right === left ? 'plain' : left;
 };
 
 const quotient: ExactOperation = (_operator, left, right) => {
   if (right.numerator === 0n)
     return fail('asset.value.division-by-zero', 'Division by zero is not allowed.');
-  if (right.unit !== 'plain' && left.unit !== right.unit)
+  if (!isDimensionlessUnit(right.unit) && left.unit !== right.unit)
     return fail(
       'asset.value.unit-mismatch',
       'Division requires a plain divisor or matching units.',
@@ -118,7 +139,7 @@ const quotient: ExactOperation = (_operator, left, right) => {
   const normalized = normalize(
     left.numerator * right.denominator,
     left.denominator * right.numerator,
-    right.unit === left.unit ? 'plain' : left.unit,
+    quotientUnit(left.unit, right.unit),
   );
   return integralPlain(normalized, 'A plain division result must be an exact integer.');
 };

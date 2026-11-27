@@ -50,6 +50,8 @@ follow their domain context; importing a module does not convert it into another
 
 | Feature | Models | Sprites | Sounds | Structures |
 | --- | --- | --- | --- | --- |
+| Compile-time iteration | Static `for i in a..b` + `${i}` | Static `for i in a..b` + `${i}` | `variants` | Static `for i in a..b` + `${i}` |
+| --- | --- | --- | --- | --- |
 | Arithmetic and typed designs | Supported | Not supported | Not supported | Integer/block `params` math |
 | Numeric spelling | Exact decimals with `u`, `px`, `deg`, `s`, or `%`/plain ratios | `px` coordinates/sizes/radii/axes and unitless/`%` controls | Typed `s`, `ms`, `hz`, `khz`, `db`, `lufs`, `cents`, `st`, `%`, ranges `a..b`, transitions `a -> b` | `b` block coords/sizes, `%` or decimal rates/weights |
 | Collections | Typed tuples/vectors `(a, b, c)` | Lists `[a, b]` and `{ k = v; }` blocks | `{ k = v; }` blocks and point lists | `{ k = v; }` blocks and target lists |
@@ -59,8 +61,7 @@ follow their domain context; importing a module does not convert it into another
 Do not copy model expressions into sprite, sound, or structure properties. For example,
 model `duration = 1s;` and sound `duration = 1s;` both write seconds, while structure
 `size = (9b, 13b, 9b);` uses block units (`b`).
-The language has no user-defined functions, loops, inheritance, runtime code,
-or automatic attachment inference. Reuse components, modules, and explicit imports.
+The language supports parameterized `component` modules (`param name : type = default;`), deterministic compile-time `for i in start..end` unrolling with `${i}` identifier interpolation (capped at `128` iterations per loop and nesting depth `3`), and `variant name { ... }` model matrices; it has no runtime loops, recursion, or automatic attachment inference. Reuse components, modules, and explicit imports.
 
 ## Compile and diagnose
 

@@ -148,10 +148,13 @@ const evaluateVectorScale = (
   const scalar = left.kind === 'vector' ? right : left;
   if (
     scalar.kind !== 'number' ||
-    scalar.value.unit !== 'plain' ||
+    (scalar.value.unit !== 'plain' && scalar.value.unit !== 'ratio') ||
     (left.kind !== 'vector' && operator !== '*')
   ) {
-    return fail('asset.value.invalid-operator', 'Vector scaling requires a plain scalar operand.');
+    return fail(
+      'asset.value.invalid-operator',
+      'Vector scaling requires a plain or ratio scalar operand.',
+    );
   }
   const values: AssetNumberValue[] = [];
   for (const entry of vector.values) {

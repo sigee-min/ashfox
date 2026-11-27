@@ -129,18 +129,34 @@ const readPort = (reader: AssetReader, direction: AssetPortDecl['direction']): A
   });
 };
 
-const readComponentParam = (reader: AssetReader): AssetComponentParamDecl => {
-  const start = reader.expectWord('param', 'Expected param.');
+const readParamDecl = (reader: AssetReader): AssetComponentParamDecl => {
+  const start = reader.expectWord('param', 'Expected param in component parameter declaration.');
   const id = reader.id('Expected a component parameter name.');
   reader.expect(':', 'Component parameters require a closed type.');
   const type = reader.valueType();
-  reader.finish();
+  const defaultValue = reader.match('=') ? reader.expression() : null;
   return Object.freeze({
     kind: 'component-param',
     id: id.value,
     type,
-    span: join(start.span, id.span),
+    defaultValue,
+    span: join(start.span, defaultValue?.span ?? id.span),
   });
+};
+
+const readComponentParam = (reader: AssetReader): AssetComponentParamDecl => {
+  const param = readParamDecl(reader);
+  reader.finish();
+  return param;
+};
+
+const readHeaderParams = (reader: AssetReader, state: ComponentState): void => {
+  if (!reader.match('(')) return;
+  while (!reader.check(')') && !reader.end()) {
+    state.parameters.push(readParamDecl(reader));
+    if (!reader.match(',')) break;
+  }
+  reader.expect(')', 'Expected ) to close component parameter list.');
 };
 
 const readComponentJointBind = (reader: AssetReader): AssetComponentJointBind => {
@@ -215,6 +231,7 @@ export const parseComponent = (reader: AssetReader, exported: boolean): AssetCom
     socketBindings: [],
     geometry: null,
   };
+  readHeaderParams(reader, state);
   const close = readBraced(
     reader,
     'Expected { to begin a component.',

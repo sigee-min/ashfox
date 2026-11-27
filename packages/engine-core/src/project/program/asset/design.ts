@@ -25,6 +25,7 @@ export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueTyp
     reader.expect('>', 'Expected > after a type argument.');
     value += '<' + inner.value + '>';
   }
+  const normalized = value === 'number' ? 'ratio' : value;
   const allowed: readonly string[] = [
     'unit',
     'texel',
@@ -42,14 +43,14 @@ export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueTyp
     'vec2<texel>',
     'texel_rect',
   ];
-  if (!allowed.includes(value))
+  if (!allowed.includes(normalized))
     reader.fail(
       'asset.invalid-slot-type',
       `Unsupported closed value type "${value}".${formatDidYouMean(value, allowed)}`,
       first,
       docsHint('model'),
     );
-  return (allowed.includes(value) ? value : 'unit') as AssetValueType;
+  return (allowed.includes(normalized) ? normalized : 'unit') as AssetValueType;
 };
 
 export interface AssetDesignReader {

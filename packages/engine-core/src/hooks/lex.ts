@@ -203,13 +203,60 @@ const scanColor = (state: LexState): void => {
   pushToken(state, 'color', `#${hex.toLowerCase()}`, start);
 };
 
-const scanIdentifier = (state: LexState): void => {
+const skipInterpPart = (state: LexState): boolean => {
+  if (state.source[state.index] !== '$') return false;
   const start = state.index;
+  const next = state.source[start + 1] ?? '';
+  if (next === '{') {
+    state.index += 2;
+    if (!isIdentStart(state.source[state.index] ?? '')) {
+      pushDiag(
+        state,
+        'hooks.unexpected-character',
+        'Invalid interpolation in ${...}.',
+        start,
+        state.index,
+      );
+      return false;
+    }
+    while (state.index < state.source.length && isIdentPart(state.source[state.index]!)) {
+      state.index += 1;
+    }
+    if (state.source[state.index] === '}') state.index += 1;
+    else
+      pushDiag(
+        state,
+        'hooks.unexpected-character',
+        'Unclosed interpolation ${...}.',
+        start,
+        state.index,
+      );
+    return true;
+  }
+  if (!isIdentStart(next)) return false;
   state.index += 1;
   while (state.index < state.source.length && isIdentPart(state.source[state.index]!)) {
     state.index += 1;
   }
+  return true;
+};
+
+const scanIdentifier = (state: LexState): void => {
+  const start = state.index;
+  if (isIdentStart(state.source[state.index] ?? '')) state.index += 1;
+  while (state.index < state.source.length) {
+    while (state.index < state.source.length && isIdentPart(state.source[state.index]!)) {
+      state.index += 1;
+    }
+    if (!skipInterpPart(state)) break;
+  }
   pushToken(state, 'identifier', state.source.slice(start, state.index), start);
+};
+
+const canStartInterp = (source: string, index: number): boolean => {
+  if (source[index] !== '$') return false;
+  const next = source[index + 1] ?? '';
+  return next === '{' || isIdentStart(next);
 };
 
 const scanNext = (state: LexState): void => {
@@ -226,7 +273,7 @@ const scanNext = (state: LexState): void => {
     scanNumber(state);
     return;
   }
-  if (isIdentStart(ch)) {
+  if (isIdentStart(ch) || canStartInterp(state.source, state.index)) {
     scanIdentifier(state);
     return;
   }

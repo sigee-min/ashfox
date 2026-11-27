@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { formatDidYouMean } from '../../../project/source/suggest';
 import type {
   AssetAssemblyUse,
   AssetParamSetDecl,
@@ -59,7 +60,7 @@ const buildUseParameters = <S extends { readonly path: string }>(
         state.path,
         set.span,
         'asset.unknown-parameter',
-        'Component use sets an undeclared parameter "' + set.id + '".',
+        `Component use sets an undeclared parameter "${set.id}".${formatDidYouMean(set.id, Object.keys(component.parameters))}`,
       );
       continue;
     }
@@ -75,12 +76,17 @@ const buildUseParameters = <S extends { readonly path: string }>(
   }
   for (const id of Object.keys(component.parameters)) {
     if (!sets.has(id)) {
-      context.issue(
-        state.path,
-        use.span,
-        'asset.missing-parameter',
-        'Component parameter "' + id + '" must be set exactly once.',
-      );
+      const fallback = component.parameterDefaults?.[id];
+      if (fallback !== undefined) {
+        parameters[id] = fallback;
+      } else {
+        context.issue(
+          state.path,
+          use.span,
+          'asset.missing-parameter',
+          'Component parameter "' + id + '" must be set exactly once.',
+        );
+      }
     }
   }
   return freeze(parameters);
@@ -96,14 +102,30 @@ const resolveUsePortBinding = <S extends { readonly path: string }>(
 ): AssetSymbolId | null => {
   const port = component.ports.find((candidate) => candidate.id === binding.port);
   if (port === undefined) {
+    const portName = binding.port;
+    const suggestion = formatDidYouMean(
+      portName,
+      component.ports.map((p) => p.id),
+    );
     context.issue(
       state.path,
       binding.span,
       'asset.unknown-port-binding',
-      'Component binding names an undeclared port "' + binding.port + '".',
+      `Component binding names an undeclared port "${portName}".${suggestion}`,
     );
     return null;
   }
+  return validatePortBindingTarget(context, state, binding, port, skeleton, surfaces);
+};
+
+const validatePortBindingTarget = <S extends { readonly path: string }>(
+  context: UseBuildContext<S>,
+  state: S,
+  binding: AssetAssemblyUse['portBindings'][number],
+  port: TypedComponent['ports'][number],
+  skeleton: TypedSkeleton,
+  surfaces: Readonly<Record<string, TypedSurface>>,
+): AssetSymbolId | null => {
   if (port.domain === 'socket') {
     context.issue(
       state.path,

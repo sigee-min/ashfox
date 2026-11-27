@@ -1,5 +1,6 @@
 import { freeze } from '../../../immutable';
 import { lexProgramSource } from '../syntax/lex';
+import { expandStaticForTokens } from '../syntax/staticFor';
 import { sourceSpan } from '../../source/lexer';
 import { ASHFOX_ASSET_GRAMMAR, type AssetSourceParseResult } from './contract';
 import { Parser } from './parser';
@@ -34,5 +35,19 @@ export const parseAssetSource = (source: string, path = 'main.ashfox'): AssetSou
         }),
       ]),
     });
-  return new Parser(lexical.tokens, source, path).result();
+  const expanded = expandStaticForTokens(lexical.tokens);
+  if (expanded.diagnostics.length > 0) {
+    return freeze({
+      path,
+      source,
+      grammar: ASHFOX_ASSET_GRAMMAR,
+      unit: null,
+      diagnostics: freeze(
+        expanded.diagnostics.map((entry) =>
+          freeze({ ...entry, code: entry.code.replace(/^(?:model|program)\./, 'asset.'), path }),
+        ),
+      ),
+    });
+  }
+  return new Parser(expanded.tokens, source, path).result();
 };

@@ -397,6 +397,7 @@ export class Parser {
       this.checkWord('settings') ||
       this.checkWord('use') ||
       this.checkWord('connect') ||
+      this.checkWord('variant') ||
       ((this.checkWord('skeleton') || this.checkWord('motions')) && this.assignment())
     );
   }

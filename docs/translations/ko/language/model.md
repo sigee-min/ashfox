@@ -162,3 +162,11 @@ motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관�
 **완전한 원본 — `sample.ashfox`:**
 
 {{source-code:9}}
+
+## 7. 정적 `for` 언롤링과 `variant` 매트릭스
+
+`model`, `structure`, `vfx`, `sprite`에서 `for <ident> in <start>..<end> { ... }`는 반열린 정수 구간 `[start, end)`을 컴파일 타임에 결정론적으로 언롤링합니다. `${ident}` 식별자 보간(`cube seg_${i}`)과 괄호 단위 산술(`(i * 4)u`, `(32 - (i / 3) * 2)b`)을 지원하며, 루프당 최대 `128`회 반복과 최대 중첩 깊이 `3` 예산을 강제합니다(비상수 경계, 음수 보간, 예산 초과는 컴파일 오류).
+
+`model` 단위 안의 `variant <name> { key = value; ... }` 선언은 `<modelId>_<variant>` 엔트리로 전개되어 변형별 바인딩을 `use` 인자·`surface`·훅에 치환하며, 변경되지 않은 모듈·형상·텍스처·동작은 그대로 공유합니다.
+
+{{source-code:10}}

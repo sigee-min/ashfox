@@ -461,3 +461,7 @@ export {
   type SdkTarget,
   type SdkTargetStrategy,
 } from './sdk';
+export {
+  elaborateModelVariants,
+  type ElaboratedVariantSource,
+} from './project/program/asset/variants';
