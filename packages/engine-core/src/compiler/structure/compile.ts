@@ -21,6 +21,7 @@ import { computeStructureLighting } from './lighting';
 import { buildStructureLodLevels } from './lod';
 import { encodeStructureNbt } from './nbt';
 import { buildPlayableStructureMeta } from './playableMeta';
+import { mergeInteriorHooks } from './interior/hooksBridge';
 
 const makeStubBone = (id: string, parentId: string | null): BoneNode => {
   const bone: BoneNode = {
@@ -110,7 +111,7 @@ export const compileStructureUnits = (
     relative,
     evaluatedGridCache,
   );
-  const hooks = resolveHooks?.(grid, compoundChildren);
+  const hooks = mergeInteriorHooks(grid, resolveHooks?.(grid, compoundChildren));
   const descriptors = grid.states.map(describeBlockState);
   const { lighting, lights } = computeStructureLighting(grid, descriptors, customModels);
   const bakedMesh = buildStructureBakedMesh(grid, lighting, customModels, { descriptors });
@@ -131,6 +132,9 @@ export const compileStructureUnits = (
     ...(hasHooksContent(hooks) ? { hooks } : {}),
     document,
     audit,
+    ...(grid.interiors && grid.interiors.length > 0
+      ? { interiorAudits: grid.interiors.map((i) => i.audit) }
+      : {}),
   };
 };
 

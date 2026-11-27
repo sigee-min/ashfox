@@ -1,5 +1,6 @@
 import type { ProgramToken } from '../program/syntax/lex';
 import type { RawDeclaredOutput, RawDeclaredPreview } from '../directory/declarations';
+import type { InteriorRoomOp } from './interiorDef';
 
 export const MAX_STRUCTURE_DIM = 96;
 export const MAX_STRUCTURE_VOLUME = 131_072;
@@ -63,6 +64,7 @@ export interface FacadeOpeningSpec {
   readonly sill?: string;
   readonly shutter?: string;
   readonly lintel?: string;
+  readonly stainedGlassColor?: string;
   readonly hinge?: 'left' | 'right';
   readonly porch?: PorchSpec;
 }
@@ -189,7 +191,9 @@ export type StructureOp =
       wall?: string;
       frame?: string;
       ceiling?: string;
+      interior?: InteriorRoomOp;
     }>
+  | InteriorRoomOp
   | Readonly<{
       op: 'facade';
       targets: readonly Readonly<{ readonly room: string; readonly wall: CardinalFacing }>[];

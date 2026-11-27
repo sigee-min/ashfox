@@ -175,6 +175,32 @@ const collectHookMcBlocks = (
   return byPos;
 };
 
+const applyRoomNbtBlocks = (
+  grid: StructureGrid,
+  interior: NonNullable<StructureGrid['interiors']>[number],
+  byPos: Map<string, string>,
+): void => {
+  const [w, h, d] = grid.size;
+  const [ox, oy, oz] = interior.input.bounds_from;
+  const [rw, rh, rd] = interior.nbt_lowering.size;
+  for (const cell of interior.nbt_lowering.blocks) {
+    const [lx, ly, lz] = cell.pos;
+    if (lx < 1 || lx > rw - 2 || ly < 1 || ly > rh - 2 || lz < 1 || lz > rd - 2) continue;
+    const [wx, wy, wz] = [ox + lx, oy + ly, oz + lz];
+    if (wx < 0 || wx >= w || wy < 0 || wy >= h || wz < 0 || wz >= d) continue;
+    const v = grid.voxels[(wy * d + wz) * w + wx]!;
+    if (v <= 0 || grid.states[v] === 'minecraft:air') {
+      byPos.set(`${wx},${wy},${wz}`, cell.state);
+    }
+  }
+};
+
+const collectInteriorNbtBlocks = (grid: StructureGrid): ReadonlyMap<string, string> => {
+  const byPos = new Map<string, string>();
+  for (const interior of grid.interiors ?? []) applyRoomNbtBlocks(grid, interior, byPos);
+  return byPos;
+};
+
 const collectNbtPaletteAndBlocks = (
   grid: StructureGrid,
   hooks?: HooksDocument,
@@ -184,6 +210,7 @@ const collectNbtPaletteAndBlocks = (
   const stateToIdx = new Map<string, number>(states.map((s, i) => [s, i]));
   const jigsaws = collectJigsawEntities(grid);
   const mcBlocks = collectHookMcBlocks(grid, hooks);
+  const interiorBlocks = collectInteriorNbtBlocks(grid);
   const entries: NbtBlockEntry[] = [];
   for (let i = 0; i < grid.voxels.length; i += 1) {
     const x = i % wDim;
@@ -204,6 +231,11 @@ const collectNbtPaletteAndBlocks = (
         state: ensureNbtState(states, stateToIdx, jigsaw.stateString),
         nbt: jigsaw,
       });
+      continue;
+    }
+    const interiorState = interiorBlocks.get(key);
+    if (interiorState) {
+      entries.push({ x, y, z, state: ensureNbtState(states, stateToIdx, interiorState) });
       continue;
     }
     const state = grid.voxels[i]!;

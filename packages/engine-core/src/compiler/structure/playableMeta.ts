@@ -11,6 +11,7 @@ import type {
   StructureGrid,
   StructureSocketMeta,
 } from './contract';
+import { rotatedBoxBounds16 } from './interior/zoneRect';
 
 type ColliderMaterial = PlayableCollider['material'];
 
@@ -40,6 +41,7 @@ const classifyMaterial = (stateName: string): ColliderMaterial => {
     stateName.includes('spruce') ||
     stateName.includes('birch') ||
     stateName.includes('plank') ||
+    stateName.includes('timber') ||
     stateName.includes('log') ||
     stateName.includes('wood') ||
     stateName.includes('chest') ||
@@ -350,6 +352,62 @@ const transformSockets = (grid: StructureGrid): readonly StructureSocketMeta[] =
   }));
 };
 
+const NON_COLLIDING_INTERIOR_TAGS =
+  'drapery:,floor_,baseboard_,wainscot_,molding_,ceiling_,window_pane_,partition_door,story_'.split(
+    ',',
+  );
+
+const isCollidingInteriorBox = (tag: string): boolean =>
+  !NON_COLLIDING_INTERIOR_TAGS.some((p) => tag.startsWith(p));
+
+const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollider[] => {
+  const [w, , d] = grid.size;
+  const [hw, hd] = [w / 2, d / 2];
+  const out: PlayableCollider[] = [];
+  for (const room of grid.interiors ?? []) {
+    for (const box of room.ir.boxes) {
+      if (!isCollidingInteriorBox(box.semantic_tag ?? '')) continue;
+      const material: ColliderMaterial =
+        box.layer === 'translucent' ? 'glass' : classifyMaterial(box.tile_id);
+      const [x0, z0, x1, z1] = rotatedBoxBounds16(box);
+      out.push({
+        from: [x0 / 16 - hw, box.from_16[1] / 16, z0 / 16 - hd],
+        to: [x1 / 16 - hw, box.to_16[1] / 16, z1 / 16 - hd],
+        material,
+      });
+    }
+  }
+  return out;
+};
+
+export const collectInteriorLights = (
+  grid: StructureGrid,
+  existing: readonly PlayableLight[],
+): readonly PlayableLight[] => {
+  const [w, , d] = grid.size;
+  const [hw, hd] = [w / 2, d / 2];
+  const seen = new Set(existing.map((l) => l.id));
+  const out: PlayableLight[] = [...existing];
+  for (const room of grid.interiors ?? []) {
+    for (const hook of room.playable_meta.hooks) {
+      if (hook.kind !== 'toggle_light' || seen.has(hook.light_id)) continue;
+      seen.add(hook.light_id);
+      out.push({
+        id: hook.light_id,
+        position: [hook.position[0] - hw, hook.position[1], hook.position[2] - hd],
+        color: hook.color,
+        intensity: 1.5,
+        radius: 6,
+        kind:
+          hook.light_id.includes('hearth') || hook.light_id.includes('flame')
+            ? 'hearth'
+            : 'emissive_prop',
+      });
+    }
+  }
+  return out;
+};
+
 export const buildPlayableStructureMeta = (
   grid: StructureGrid,
   lights: readonly PlayableLight[],
@@ -361,11 +419,14 @@ export const buildPlayableStructureMeta = (
     id: grid.id,
     unitsPerBlock: 1,
     bounds: { min: [-w / 2, 0, -d / 2], max: [w / 2, h, d / 2] },
-    colliders: mergeColliders(grid, descriptors),
+    colliders: [...mergeColliders(grid, descriptors), ...collectInteriorColliders(grid)],
     zones: buildZones(grid),
-    lights,
+    lights: collectInteriorLights(grid, lights),
     interactables: buildInteractables(grid),
     sockets: transformSockets(grid),
     navigation: buildNavigation(grid, descriptors),
+    ...(grid.interiors && grid.interiors.length > 0
+      ? { interiors: grid.interiors.map((i) => i.playable_meta) }
+      : {}),
   };
 };

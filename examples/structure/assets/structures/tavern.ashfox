@@ -50,7 +50,32 @@ structure tavern {
   floor ground {
     y = 0b;
     height = 5b;
-    room taproom { from = (1b, 1b); size = (15b, 9b); kind = tavern; plinth = stone_brick; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    room taproom {
+      from = (1b, 1b); size = (15b, 9b); kind = tavern; plinth = stone_brick; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank;
+      interior {
+        dna { arch = rustic; mood = warm_hearth; }
+        architecture { floor_pattern = herringbone; baseboard = trim; wainscot = paneled; ceiling = beamed; }
+        platform bar_stage {
+          on = nw; size = (4, 3); height = 0.25; step_facing = south;
+          l_counter bar_counter { length = 4; }
+        }
+        alcove hearth_niche { kind = fireplace; wall = north; at = 7; width = 3; height = 3; }
+        wall_line {
+          on = east;
+          barrel_rack { size = (2, 1); }
+          shelving { size = (2, 1); }
+        }
+        centerpiece {
+          on = sw;
+          dining_set feast_table { seats = 4; }
+          story tavern_meal { on = feast_table; }
+        }
+        drapery curtains { on = windows; tieback = true; color = "#8b2d2d"; }
+        drapery banner { kind = banner; on = ceiling_span; color = "#c8963e"; }
+        lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.35; }
+        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.48; shaft_length = 5.5; }
+      }
+    }
     room snug { from = (8b, 9b); size = (8b, 4b); kind = living; plinth = stone_brick; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
     facade taproom.south {
       door {
@@ -72,7 +97,7 @@ structure tavern {
       arch { at = 8b; width = 2b; height = 3b; frame = timber; lintel = beam; }
     }
     facade snug.south {
-      bay_window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; frame = timber; sill = sill; lintel = roof_stair; }
+      bay_window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; frame = timber; sill = sill; lintel = roof_stair; stained_glass_color = "#e8a84a"; }
     }
     facade facade_1 {
       on = [taproom.north, taproom.east, taproom.west];
@@ -88,7 +113,27 @@ structure tavern {
     jetty_s = 1b;
     jetty_e = 1b;
     room inn_hall { from = (1b, 1b); size = (15b, 9b); kind = hallway; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
-    room inn_suite { from = (8b, 9b); size = (8b, 4b); kind = bedroom; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    room inn_suite {
+      from = (8b, 9b); size = (8b, 4b); kind = bedroom; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank;
+      interior {
+        dna { arch = rustic; mood = warm_hearth; }
+        architecture { floor_pattern = plank; baseboard = trim; wainscot = paneled; ceiling = open_truss; }
+        alcove alcove_1 { kind = display; wall = north; width = 2; height = 2; }
+        wall_line {
+          on = west;
+          cabinet { size = (2, 1); }
+        }
+        centerpiece {
+          on = south;
+          table suite_table { size = (2, 1); }
+          chair { on = east; }
+          story scholar_study { on = suite_table; }
+        }
+        drapery curtains { on = windows; tieback = true; color = "#7c2d2d"; }
+        lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.3; }
+        sun_shaft { enabled = true; sun_dir = (-0.42, -0.72, -0.55); intensity = 0.45; shaft_length = 4.5; }
+      }
+    }
     facade inn_hall.south {
       arch { at = 8b; width = 2b; height = 3b; frame = timber; lintel = beam; }
     }
@@ -130,8 +175,6 @@ structure tavern {
     dormer { wall = east; offset = 0b; width = 3b; height = 3b; window = glass; }
   }
   furnish taproom {
-    place_anchor { prefab = deco.TavernBar; on = nw; offset = (0b, 0b); rotate = 0; }
-    place_anchor { prefab = deco.DiningTable; on = sw; offset = (1b, 0b); rotate = 0; }
     hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
   }
   furnish snug {
@@ -143,7 +186,6 @@ structure tavern {
     hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
   }
   furnish inn_suite {
-    place_anchor { prefab = deco.CozyBedroom; on = sw; offset = (0b, 0b); rotate = 0; }
     hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
   }
   weathering {

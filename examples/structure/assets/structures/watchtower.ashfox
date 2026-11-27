@@ -83,10 +83,29 @@ structure watchtower {
     y = 10b;
     height = 5b;
     jetty = 1b;
-    room lookout { from = (2b, 2b); size = (9b, 9b); kind = tower; shape = octagon; floor = spruce; wall = brick; frame = timber; ceiling = deepslate; }
+    room lookout {
+      from = (2b, 2b); size = (9b, 9b); kind = tower; shape = octagon; floor = spruce; wall = brick; frame = timber; ceiling = deepslate;
+      interior {
+        dna { arch = gothic; mood = arcane_dusk; }
+        architecture { floor_pattern = stone_slab; baseboard = stone_plinth; wainscot = stone_dado; ceiling = open_truss; }
+        alcove watch_shrine { kind = display; wall = north; width = 2; height = 2; }
+        centerpiece {
+          on = center;
+          table chart_table { size = (2, 1); }
+          story scholar_study { on = chart_table; }
+        }
+        wall_line {
+          on = west;
+          shelving { size = (2, 1); }
+        }
+        drapery banner { kind = banner; on = ceiling_span; color = "#3b5998"; }
+        lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.4; }
+        sun_shaft { enabled = true; sun_dir = (0.38, -0.65, 0.65); intensity = 0.42; shaft_length = 4.5; }
+      }
+    }
     facade facade_1 {
       on = [lookout.north, lookout.south, lookout.east, lookout.west];
-      window { symmetric = 1b; width = 1b; height = 2b; y_offset = 1b; glass = glass; sill = slab; lintel = beam; }
+      window { symmetric = 1b; width = 1b; height = 2b; y_offset = 1b; glass = glass; sill = slab; lintel = beam; stained_glass_color = "#7a9eff"; }
     }
   }
   staircase { in_room = guardroom; style = spiral; at = (6b, 6b); y_from = 0b; y_to = 5b; facing = east; width = 1b; stair = oak_stair; landing = oak; rail = fence; headroom = 3b; }

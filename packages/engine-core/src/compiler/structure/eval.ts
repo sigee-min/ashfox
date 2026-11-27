@@ -1,6 +1,5 @@
 import {
   MAX_STRUCTURE_OPS,
-  type CardinalFacing,
   type ExprVec2,
   type ExprVec3,
   type IntVec2,
@@ -14,13 +13,13 @@ import {
   evaluateExprVec3,
   evaluateScalarInt,
 } from '../../project/structure/expr';
-import { parseBlockState, withBlockFacing } from '../../project/structure/state';
+import { withBlockFacing } from '../../project/structure/state';
 import { deepFreeze } from '../../immutable';
 import {
   buildCustomPlacementsFromTags,
-  checkStructureUnitHygiene,
-  collectReachableUnits,
+  parseFacingOf,
   resolveStructurePrefab,
+  verifyReachableHygiene,
 } from './compound';
 import type { EvaluatedStructureResult, StructureFloorMeta } from './contract';
 import { emitRoomShell } from './facade';
@@ -48,6 +47,7 @@ import {
   runRoofOp,
   runStaircaseOp,
 } from './jigsaw';
+import { compileEvaluatedInteriors } from './interior/compile';
 import { resolveOpeningConnections, resolveRoomEnclosure, solveBlockConnections } from './solver';
 import { collectPrefabLocalBounds, computeAnchoredOffset } from './staircase';
 import {
@@ -115,6 +115,8 @@ const evalRoomOp = (
   emitRoomJetty(state, ownerPath, op, bounds, exp.edges, frame);
   state.rooms.set(op.name, meta);
   state.stats.roomCount += 1;
+  if (op.interior)
+    state.interiorSpecs.push({ ownerPath, op: { ...op.interior, room: op.name }, frame });
 };
 
 const evalFloorOp = (
@@ -360,6 +362,7 @@ const evalSemanticOp = (
       (c, m) => failEval(ownerPath, c, m),
     );
   } else if (op.op === 'furnish') evalFurnishOp(state, ownerPath, op, frame, depth);
+  else if (op.op === 'interior') state.interiorSpecs.push({ ownerPath, op, frame });
   else if (op.op === 'compound_place') evalCompoundPlace(state, ownerPath, op, frame);
   else
     return runWeatherAndSocketOp(state, ownerPath, op, frame, (v) => evalVec3(state, ownerPath, v));
@@ -415,32 +418,29 @@ const evalOp = (
   }
 };
 
-const parseFacingOf = (state: string): CardinalFacing => {
-  const f = parseBlockState(state).properties.facing;
-  return f === 'south' || f === 'east' || f === 'west' ? f : 'north';
-};
-
 const finalizeEvalResult = (
   rootPath: string,
   root: StructureSourceUnit,
   state: EvalState,
 ): EvaluatedStructureResult => {
-  const reachable = collectReachableUnits(rootPath, state.units, state.relative);
-  for (const [filePath, unit] of state.units) {
-    if (reachable.has(filePath))
-      checkStructureUnitHygiene(
-        filePath,
-        rootPath,
-        unit,
-        state.usedImports,
-        state.usedPaletteKeys,
-        state.usedPrefabs,
-        failEval,
-      );
-  }
   solveBlockConnections(state.voxels, state.states, state.stateToIdx, state.size);
   const rooms = resolveRoomEnclosure([...state.rooms.values()], state.voxels, state.size);
   const openings = resolveOpeningConnections(state.openings, rooms);
+  const localInteriors =
+    state.interiorSpecs.length > 0
+      ? compileEvaluatedInteriors(state, state.interiorSpecs, rooms, openings)
+      : [];
+  const combinedInteriors = [...state.childInteriors, ...localInteriors];
+  const interiors = combinedInteriors.length > 0 ? combinedInteriors : undefined;
+  verifyReachableHygiene(
+    rootPath,
+    state.units,
+    state.relative,
+    state.usedImports,
+    state.usedPaletteKeys,
+    state.usedPrefabs,
+    failEval,
+  );
   const placements = buildCustomPlacementsFromTags(
     state.size,
     state.voxels,
@@ -465,6 +465,7 @@ const finalizeEvalResult = (
       state.chimneyCount,
       state.stats,
       placements,
+      interiors,
     ),
     prefabUses: state.prefabUses,
     ...(state.compoundChildren.length > 0 ? { compoundChildren: state.compoundChildren } : {}),

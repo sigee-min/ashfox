@@ -27,6 +27,14 @@
             "path": "tavern.ashfox"
           },
           {
+            "name": "ryokan_pavilion",
+            "path": "ryokan_pavilion.ashfox"
+          },
+          {
+            "name": "scifi_outpost",
+            "path": "scifi_outpost.ashfox"
+          },
+          {
             "name": "village_compound",
             "path": "village_compound.ashfox"
           }
@@ -161,6 +169,42 @@
       "directory": "dist/exports/tavern_glb"
     },
     {
+      "name": "ryokan_pavilion_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "ryokan_pavilion"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/ryokan_pavilion_nbt"
+    },
+    {
+      "name": "ryokan_pavilion_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "ryokan_pavilion"
+      },
+      "format": "glb",
+      "directory": "dist/exports/ryokan_pavilion_glb"
+    },
+    {
+      "name": "scifi_outpost_nbt",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "scifi_outpost"
+      },
+      "format": "java_structure",
+      "directory": "dist/exports/scifi_outpost_nbt"
+    },
+    {
+      "name": "scifi_outpost_glb",
+      "entry": {
+        "packageName": "structures",
+        "entryName": "scifi_outpost"
+      },
+      "format": "glb",
+      "directory": "dist/exports/scifi_outpost_glb"
+    },
+    {
       "name": "village_compound_nbt",
       "entry": {
         "packageName": "structures",
@@ -209,6 +253,16 @@
           "id": "structure.tavern",
           "source": "tavern_glb",
           "path": "structures/tavern"
+        },
+        {
+          "id": "structure.ryokan_pavilion",
+          "source": "ryokan_pavilion_glb",
+          "path": "structures/ryokan_pavilion"
+        },
+        {
+          "id": "structure.scifi_outpost",
+          "source": "scifi_outpost_glb",
+          "path": "structures/scifi_outpost"
         },
         {
           "id": "structure.village_compound",

@@ -70,10 +70,50 @@ export const exprToNumber = (expr: AshfoxExpr, file: string, allowPercent = fals
   return failAst(file, expr.span, 'numeric literal', expr.rawUnit);
 };
 
+const BINARY_OPS: Readonly<Partial<Record<string, (a: number, b: number) => number | null>>> = {
+  '+': (a, b) => a + b,
+  '-': (a, b) => a - b,
+  '*': (a, b) => a * b,
+  '/': (a, b) => (b !== 0 ? a / b : null),
+};
+
+const evalBinaryConst = (
+  op: string,
+  left: AshfoxExpr,
+  right: AshfoxExpr,
+  file: string,
+): number | null => {
+  const fn = BINARY_OPS[op];
+  if (!fn) return null;
+  const l = evalConstNum(left, file);
+  const r = evalConstNum(right, file);
+  if (l === null || r === null) return null;
+  return fn(l, r);
+};
+
+const evalConstNum = (expr: AshfoxExpr, file: string): number | null => {
+  if (expr.kind === 'number') {
+    const valid = expr.unit === 'plain' || expr.unit === 'block' || expr.unit === 'degree';
+    return valid ? Number(expr.numerator) / Number(expr.denominator) : null;
+  }
+  if (expr.kind === 'unary') {
+    const inner = evalConstNum(expr.operand, file);
+    if (inner === null) return null;
+    return expr.operator === '-' ? -inner : inner;
+  }
+  if (expr.kind === 'binary') return evalBinaryConst(expr.operator, expr.left, expr.right, file);
+  return null;
+};
+
 export const exprToAttrValue = (expr: AshfoxExpr, file: string): unknown => {
-  if (expr.kind === 'string' || expr.kind === 'boolean') return expr.value;
+  if (expr.kind === 'string' || expr.kind === 'boolean' || expr.kind === 'color') return expr.value;
   if (expr.kind === 'tuple' || expr.kind === 'list') {
     return expr.elements.map((e) => exprToAttrValue(e, file));
+  }
+  if (expr.kind === 'map') {
+    const out: Record<string, unknown> = {};
+    for (const entry of expr.entries) out[entry.key] = exprToAttrValue(entry.value, file);
+    return out;
   }
   if (expr.kind === 'number') {
     if (expr.unit === 'ratio' && expr.rawUnit === '%') {
@@ -81,6 +121,8 @@ export const exprToAttrValue = (expr: AshfoxExpr, file: string): unknown => {
     }
     if (expr.unit === 'degree') return Number(expr.numerator) / Number(expr.denominator);
   }
+  const num = evalConstNum(expr, file);
+  if (num !== null) return num;
   return exprToScalar(expr, file);
 };
 

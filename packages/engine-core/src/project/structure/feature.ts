@@ -55,6 +55,8 @@ const OPENING_KEYS = new Set([
   'sill',
   'shutter',
   'lintel',
+  'stained_glass_color',
+  'glass_color',
   'hinge',
 ]);
 const STAIR_KEYS = new Set([
@@ -193,6 +195,8 @@ const parseOpening = (stmt: AshfoxNamedBlock, file: string): FacadeOpeningSpec =
       ['sill', 'sill'],
       ['shutter', 'shutter'],
       ['lintel', 'lintel'],
+      ['glass_color', 'stainedGlassColor'],
+      ['stained_glass_color', 'stainedGlassColor'],
     ]),
     ...(hinge !== undefined ? { hinge: hinge as 'left' | 'right' } : {}),
     ...(porch !== undefined ? { porch } : {}),

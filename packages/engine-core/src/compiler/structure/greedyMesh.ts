@@ -47,6 +47,7 @@ import {
   type LocalBoxSpec,
 } from './shapes';
 import { emitArchitecturalTrims } from './trim';
+import { emitInteriorBakedMeshes, isCoveredByTranslucentWindow } from './interior/mesh';
 import { isNearEnclosedRoom } from './vertexWeather';
 import { voxelAt } from './subvoxel';
 
@@ -378,6 +379,13 @@ const emitSingleNonFullVoxel = (
   conns[1] = connectsNeighbor(ctx, x, y, z + 1, desc.shape);
   conns[2] = connectsNeighbor(ctx, x + 1, y, z, desc.shape);
   conns[3] = connectsNeighbor(ctx, x - 1, y, z, desc.shape);
+  if (
+    desc.shape === 'pane' &&
+    desc.top !== 'iron_bars' &&
+    isCoveredByTranslucentWindow(ctx.grid, x, y, z)
+  ) {
+    return 0;
+  }
   const glow =
     desc.shape === 'pane' && desc.top !== 'iron_bars' && isNearEnclosedRoom(ctx.grid, x, y, z);
   let count = 0;
@@ -463,11 +471,12 @@ export const buildStructureBakedMesh = (
   const fullCounts = greedyMeshFullBlocks(g);
   const nonFullCount = emitNonFullBlocks(g);
   const trimCount = emitArchitecturalTrims(ctx, g.scratch);
+  const interiorInstances = emitInteriorBakedMeshes(grid, ctx.batches, customModels, maxY);
   const packed = packStructureBatches(g.fullBatches, g.repeatingKeys, ctx.batches, grid);
   return {
     batches: packed.batches,
     textures: packed.textures,
-    instances: collectPropInstances(grid, lighting, customModels, maxY),
+    instances: [...collectPropInstances(grid, lighting, customModels, maxY), ...interiorInstances],
     rawFaceCount: fullCounts.rawFaces + nonFullCount,
     mergedQuadCount: fullCounts.mergedQuads + nonFullCount,
     trimCount,

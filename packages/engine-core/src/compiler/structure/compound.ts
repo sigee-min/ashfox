@@ -5,7 +5,7 @@ import type {
   StructureOp,
   StructureSourceUnit,
 } from '../../project/structure/contract';
-import { rotateBlockState } from '../../project/structure/state';
+import { parseBlockState, rotateBlockState } from '../../project/structure/state';
 import type {
   StructureCustomPlacement,
   StructureFloorMeta,
@@ -452,4 +452,33 @@ export const collectReachableUnits = (
     }
   }
   return visited;
+};
+
+export const verifyReachableHygiene = (
+  rootPath: string,
+  units: ReadonlyMap<string, StructureSourceUnit>,
+  relative: (owner: string, spec: string) => string,
+  usedImports: ReadonlyMap<string, Set<string>>,
+  usedPaletteKeys: ReadonlyMap<string, Set<string>>,
+  usedPrefabs: ReadonlyMap<string, Set<string>>,
+  fail: (owner: string, code: string, message: string) => never,
+): void => {
+  const reachable = collectReachableUnits(rootPath, units, relative);
+  for (const [filePath, unit] of units) {
+    if (reachable.has(filePath))
+      checkStructureUnitHygiene(
+        filePath,
+        rootPath,
+        unit,
+        usedImports,
+        usedPaletteKeys,
+        usedPrefabs,
+        fail,
+      );
+  }
+};
+
+export const parseFacingOf = (state: string): CardinalFacing => {
+  const f = parseBlockState(state).properties.facing;
+  return f === 'south' || f === 'east' || f === 'west' ? f : 'north';
 };

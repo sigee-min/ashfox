@@ -246,7 +246,9 @@ const resolveMat = (
       : {}),
     ...(layer === 'cutout'
       ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true }
-      : {}),
+      : layer === 'translucent' || layer === 'sun_shaft'
+        ? { alphaMode: 'BLEND' as const, doubleSided: true }
+        : {}),
   };
   const mid = st.materials.push(mat) - 1;
   mats.set(key, mid);
@@ -255,7 +257,10 @@ const resolveMat = (
 
 const buildStructLod1 = (product: StructureProduct, st: State): QMesh | undefined => {
   const lod1 = product.lodLevels?.lod1;
-  const active = lod1?.batches.filter((b) => b.indices.length > 0 && b.positions.length > 0) ?? [];
+  const active =
+    lod1?.batches.filter(
+      (b) => b.layer !== 'sun_shaft' && b.indices.length > 0 && b.positions.length > 0,
+    ) ?? [];
   if (!lod1 || active.length === 0) return undefined;
   const mats = new Map<string, number>();
   st.materials.forEach(

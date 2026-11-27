@@ -11,6 +11,8 @@ import type {
   IntVec3,
   StructureDensity,
 } from '../../project/structure/contract';
+import type { InteriorAuditReport, PlayableInteriorMeta } from './interior/contract';
+import type { CompiledInteriorRoom } from './interior/types';
 
 export type StructureAuditPillarId = 'architecture' | 'facade' | 'interior' | 'craft';
 
@@ -76,6 +78,7 @@ export interface StructureOpeningMeta {
   readonly from: IntVec3;
   readonly to: IntVec3;
   readonly hinge?: 'left' | 'right';
+  readonly stainedGlassColor?: string;
   readonly connectsRooms?: readonly [string, string];
 }
 
@@ -119,6 +122,7 @@ export interface StructureGrid {
   readonly dormerCount: number;
   readonly chimneyCount: number;
   readonly semanticStats: StructureSemanticStats;
+  readonly interiors?: readonly CompiledInteriorRoom[];
 }
 
 export interface DecodedStructureNbt {
@@ -140,7 +144,7 @@ export interface StructureLightingField {
 }
 
 export interface StructureBakedBatch {
-  readonly layer: 'opaque' | 'cutout' | 'emissive';
+  readonly layer: 'opaque' | 'cutout' | 'emissive' | 'translucent' | 'sun_shaft';
   readonly textureId: string;
   readonly positions: readonly number[];
   readonly normals: readonly number[];
@@ -219,6 +223,7 @@ export interface PlayableStructureMeta {
     readonly walkableCellCount: number;
     readonly floorLevels: readonly number[];
   };
+  readonly interiors?: readonly PlayableInteriorMeta[];
 }
 
 export interface StructureAuditMetrics {
@@ -289,4 +294,5 @@ export interface StructureProduct {
   readonly hooks?: HooksDocument;
   readonly document: ProjectDocument;
   readonly audit: StructureAuditReport;
+  readonly interiorAudits?: readonly InteriorAuditReport[];
 }

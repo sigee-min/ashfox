@@ -17,9 +17,6 @@ module furnishings {
     deepslate = "minecraft:deepslate_bricks";
     pot = "minecraft:flower_pot";
     plank = "minecraft:oak_planks";
-    slab = "minecraft:oak_slab[type=top]";
-    stair_n = "minecraft:oak_stairs[facing=north,half=bottom]";
-    stair_s = "minecraft:oak_stairs[facing=south,half=bottom]";
     book = "minecraft:bookshelf";
     carpet_r = "minecraft:red_carpet";
     carpet_b = "minecraft:blue_carpet";
@@ -78,14 +75,5 @@ module furnishings {
     box { from = (0b, 1b, 0b); to = (3b, 1b, 0b); block = book; }
     set { at = (0b, 1b, 1b); block = lantern; }
     set { at = (3b, 1b, 1b); block = pot; }
-  }
-
-  export prefab DiningTable {
-    set { at = (1b, 0b, 0b); block = stair_s; }
-    set { at = (0b, 0b, 1b); block = slab; }
-    set { at = (1b, 0b, 1b); block = slab; }
-    set { at = (2b, 0b, 1b); block = slab; }
-    set { at = (1b, 0b, 2b); block = stair_n; }
-    set { at = (1b, 1b, 1b); block = lantern; }
   }
 }

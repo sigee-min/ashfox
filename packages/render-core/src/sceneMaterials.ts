@@ -216,6 +216,7 @@ export const createStructureTextureMap = (texture: TextureAsset): THREE.Texture 
   map.generateMipmaps = false;
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
+  map.flipY = false;
   map.colorSpace = texture.colorSpace === 'srgb' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   map.needsUpdate = true;
   return map;

@@ -55,7 +55,22 @@ structure medieval_cottage {
   floor ground {
     y = 0b;
     height = 4b;
-    room hall { from = (1b, 1b); size = (8b, 10b); kind = living; plinth = cobble; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    room hall {
+      from = (1b, 1b); size = (8b, 10b); kind = living; plinth = cobble; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank;
+      interior {
+        dna { arch = rustic; mood = warm_hearth; }
+        architecture { floor_pattern = plank; baseboard = trim; wainscot = paneled; ceiling = beamed; }
+        alcove hearth_niche { kind = fireplace; wall = north; at = 2; width = 2; height = 3; }
+        centerpiece {
+          on = center;
+          dining_set hall_table { seats = 4; }
+          story tavern_meal { on = hall_table; }
+        }
+        drapery curtains { on = windows; tieback = true; color = "#923a2e"; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.45; shaft_length = 5.0; }
+      }
+    }
     room kitchen { from = (8b, 1b); size = (6b, 10b); kind = workshop; plinth = cobble; floor = stone_brick; wall = plaster; frame = timber; ceiling = spruce_plank; }
     facade hall.south {
       door {
@@ -89,7 +104,23 @@ structure medieval_cottage {
   floor loft {
     y = 4b;
     height = 4b;
-    room bedroom { from = (1b, 1b); size = (13b, 10b); kind = bedroom; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank; }
+    room bedroom {
+      from = (1b, 1b); size = (13b, 10b); kind = bedroom; floor = oak_floor; wall = plaster; frame = timber; ceiling = spruce_plank;
+      interior {
+        dna { arch = rustic; mood = warm_hearth; }
+        architecture { floor_pattern = herringbone; baseboard = trim; wainscot = paneled; ceiling = open_truss; }
+        platform study_dais {
+          on = east; size = (4, 3); height = 0.25; step_facing = west;
+          table desk { size = (2, 1); }
+          story scholar_study { on = desk; }
+        }
+        partition screen { style = colonnade; axis = z; at = 8; span_from = 2; span_to = 10; doorway_at = 5; doorway_width = 2; }
+        alcove shrine_niche { kind = display; wall = north; width = 2; height = 2; }
+        drapery curtains { on = windows; tieback = true; color = "#7c2d2d"; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+        sun_shaft { enabled = true; sun_dir = (0.35, -0.72, 0.58); intensity = 0.46; shaft_length = 5.0; }
+      }
+    }
     facade facade_1 {
       on = [bedroom.south, bedroom.north];
       window { symmetric = 2b; width = 2b; height = 2b; y_offset = 1b; glass = glass; sill = sill; shutter = shutter; lintel = beam; }
@@ -120,7 +151,6 @@ structure medieval_cottage {
   }
   furnish bedroom {
     place_anchor { prefab = deco.CozyBedroom; on = nw; offset = (0b, 0b); rotate = 0; }
-    place_anchor { prefab = deco.DiningTable; on = se; offset = (0b, 0b); rotate = 0; }
     hang { block = hang_lantern; at = ceiling_center; drop = 1b; }
   }
   weathering {

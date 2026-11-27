@@ -3,6 +3,8 @@ import type { CubeFaceDirection } from '../../model/scene';
 import type { IntVec3 } from '../../project/structure/contract';
 import type { BlockDescriptor } from './blocks';
 import type { PlayableLight, StructureGrid, StructureLightingField } from './contract';
+import { applyInteriorRadiosityBounce } from './interior/applyBounce';
+import { collectInteriorLights } from './playableMeta';
 import {
   faceAo4,
   isWindowInteriorFacing,
@@ -321,7 +323,11 @@ export const computeStructureLighting = (
   const ctx: RgbCtx = { grid, descs, blockR, blockG, blockB, ring };
   const lights = seedBlockLights(ctx, customModels);
   while (ring.count > 0) stepRgbNeighbors(ctx, dequeueRing(ring));
-  return { lighting: { size: grid.size, sky, blockR, blockG, blockB }, lights };
+  applyInteriorRadiosityBounce(grid, blockR, blockG, blockB);
+  return {
+    lighting: { size: grid.size, sky, blockR, blockG, blockB },
+    lights: collectInteriorLights(grid, lights),
+  };
 };
 
 const LIGHT_RGB_SCRATCH: [number, number, number] = [1, 1, 1];
