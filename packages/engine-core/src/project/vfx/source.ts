@@ -22,13 +22,11 @@ import {
 } from '../directory/declarations';
 import type {
   AshfoxAssignStmt,
-  AshfoxBlock,
   AshfoxExpr,
   AshfoxNamedBlock,
   AshfoxStatement,
 } from '../program/syntax/blockAst';
-import { parseAshfoxProgram } from '../program/syntax/blockParser';
-import { assertWellFormedSourceText } from '../workspace/path';
+import { collectBlockAssigns, parseAshfoxTop } from '../program/syntax/blockLowering';
 import type { VfxSourceUnit } from './contract';
 import { readVfxEmitter, readVfxPrimitive } from './emitters';
 import {
@@ -50,22 +48,8 @@ const FALLBACK_PALETTE: VfxPalette = {
   smoke: '#3d2824',
 };
 
-const readAssignProps = (block: AshfoxBlock, file: string): Map<string, AshfoxExpr> => {
-  const map = new Map<string, AshfoxExpr>();
-  for (const stmt of block.statements) {
-    if (stmt.kind === 'assign') {
-      map.set(stmt.path, stmt.value);
-    } else if (stmt.kind === 'named-block') {
-      continue;
-    } else {
-      failVfx(file, stmt.span, 'property assignment', stmt.kind);
-    }
-  }
-  return map;
-};
-
 const readPaletteBlock = (stmt: AshfoxNamedBlock, file: string): VfxPalette => {
-  const props = readAssignProps(stmt.block, file);
+  const props = collectBlockAssigns(stmt.block, file, failVfx, true);
   const core = props.has('core') ? asColor(props.get('core')!, file) : FALLBACK_PALETTE.core;
   const mid = props.has('mid') ? asColor(props.get('mid')!, file) : FALLBACK_PALETTE.mid;
   const edge = props.has('edge') ? asColor(props.get('edge')!, file) : FALLBACK_PALETTE.edge;
@@ -82,7 +66,7 @@ const readElementTexture = (
     return { kind: 'slash_streak', width: 64, height: 64, blendMode, seed: 1 };
   }
   const kind = (stmt.name ?? 'slash_streak') as VfxTextureKind;
-  const props = readAssignProps(stmt.block, file);
+  const props = collectBlockAssigns(stmt.block, file, failVfx, true);
   return {
     kind,
     width: props.has('width') ? asNumber(props.get('width')!, file) : 64,
@@ -105,7 +89,7 @@ const readElementDissolve = (
 ): VfxDissolveSpec | undefined => {
   if (!stmt) return undefined;
   const mode = (stmt.name ?? 'directional_wipe') as VfxDissolveMode;
-  const props = readAssignProps(stmt.block, file);
+  const props = collectBlockAssigns(stmt.block, file, failVfx, true);
   return {
     mode,
     frames: props.has('frames') ? asNumber(props.get('frames')!, file) : 8,
@@ -251,20 +235,14 @@ const buildVfxRecipe = (
 });
 
 export const parseVfxSource = (source: string, file: string): VfxSourceUnit => {
-  assertWellFormedSourceText(source);
-  const parsed = parseAshfoxProgram(source, file);
-  if (!parsed.file || parsed.diagnostics.length > 0) {
-    const diag = parsed.diagnostics[0];
-    failVfx(
-      file,
-      diag?.span ?? { start: { line: 1, column: 1 }, end: { line: 1, column: 1 } },
-      'valid ashfox 1 vfx source',
-      diag?.message ?? 'parse error',
-    );
-  }
-  const top = parsed.file!.top;
-  if (top.kind !== 'vfx' && top.kind !== 'module')
-    return failVfx(file, top.span, 'vfx or module top block', top.kind);
+  const top = parseAshfoxTop(
+    source,
+    file,
+    ['vfx', 'module'],
+    (span, message) => failVfx(file, span, 'valid ashfox 1 vfx source', message),
+    failVfx,
+    'vfx or module top block',
+  );
   const { imports, outputs, previews, palettes, props, elements, emitters } = collectVfxStatements(
     top.block.statements,
     file,

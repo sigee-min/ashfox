@@ -7,7 +7,8 @@ import type {
   VfxParticleShape,
   VfxPrimitiveSpec,
 } from '../../vfx/contract';
-import type { AshfoxBlock, AshfoxExpr, AshfoxNamedBlock } from '../program/syntax/blockAst';
+import type { AshfoxExpr, AshfoxNamedBlock } from '../program/syntax/blockAst';
+import { collectBlockAssigns } from '../program/syntax/blockLowering';
 import {
   asColorRoleList,
   asName,
@@ -131,16 +132,6 @@ const readEmitterShape = (
   return { shape };
 };
 
-const readBlockAssigns = (block: AshfoxBlock, file: string): Map<string, AshfoxExpr> => {
-  const map = new Map<string, AshfoxExpr>();
-  for (const stmt of block.statements) {
-    if (stmt.kind === 'assign') map.set(stmt.path, stmt.value);
-    else if (stmt.kind !== 'named-block')
-      failVfx(file, stmt.span, 'property assignment', stmt.kind);
-  }
-  return map;
-};
-
 const readTurbulence = (expr: AshfoxExpr | undefined, file: string) =>
   expr?.kind === 'call'
     ? {
@@ -152,7 +143,7 @@ const readTurbulence = (expr: AshfoxExpr | undefined, file: string) =>
 
 const readVortex = (block: AshfoxNamedBlock | undefined, file: string) => {
   if (!block) return undefined;
-  const v = readBlockAssigns(block.block, file);
+  const v = collectBlockAssigns(block.block, file, failVfx, true);
   return {
     axis: (v.has('axis') ? asVec3(v.get('axis')!, file) : [0, 1, 0]) as Vec3,
     center: (v.has('center') ? asVec3(v.get('center')!, file) : [0, 4, 0]) as Vec3,
@@ -162,7 +153,7 @@ const readVortex = (block: AshfoxNamedBlock | undefined, file: string) => {
 
 const readGround = (block: AshfoxNamedBlock | undefined, file: string) => {
   if (!block) return undefined;
-  const g = readBlockAssigns(block.block, file);
+  const g = collectBlockAssigns(block.block, file, failVfx, true);
   return {
     y: g.has('y') ? asNumber(g.get('y')!, file) : 0,
     bounce: g.has('bounce') ? asNumber(g.get('bounce')!, file) : 0.45,

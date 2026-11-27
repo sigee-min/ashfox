@@ -8,11 +8,16 @@ import {
   parseEnumIdent,
   parseKeyedBlock,
   parseUnitScalar,
-  parseVoiceBlock,
-  type KeyedField,
   type ParamEntry,
   type UnitDim,
 } from './sourceBlock';
+import {
+  parseLoopBlock,
+  parseMasterBlock,
+  parseSeqDecl,
+  parseSpaceBlock,
+  parseVoiceBlock,
+} from './sourceVoice';
 import { HOOK_DECL_KEYWORDS, skipHookDeclaration } from './hookSkip';
 
 export interface SoundImportDecl {
@@ -89,123 +94,6 @@ const parseOutputsDecl = (cursor: SoundCursor): SoundOutputRaw[] => {
   return out;
 };
 
-const specMap = (s: string): Record<string, KeyedField> =>
-  Object.fromEntries(
-    s.split(' ').map((e) => {
-      const [k, t, d] = e.split(':');
-      return [k!, [t ?? k!, (d ?? 'raw') as KeyedField[1]]];
-    }),
-  );
-
-const VARY_SPEC = specMap(
-  'vary_timing:timing:sec vary_pitch:pitchCents:cents vary_gain:gain:raw vary_duration:duration:raw',
-);
-const REPEAT_SPEC = specMap('count:count:raw period:period:sec');
-const SPACE_SPEC = specMap(
-  'preset:preset:enum mix:mix:raw decay:decay:sec damping:damping:hz size:size:raw pre_delay_ms:preDelayMs:ms width:width:raw',
-);
-const MASTER_SPEC = specMap(
-  'gain:gainDb:db target:targetLufs:lufs peak:peakDb:db punch:punch:raw warmth:warmth:raw air:air:raw glue:glue:raw width:width:raw limit:limit:bool',
-);
-const LOOP_SPEC = specMap('at:at:range_sec xfade:xfade:sec');
-const STEP_SCALARS: Record<string, readonly [string, UnitDim]> = {
-  at: ['at', 'sec'],
-  duration: ['duration', 'sec'],
-  gain: ['gain', 'raw'],
-  pitch: ['pitchCents', 'cents'],
-};
-
-const readStepField = (
-  cursor: SoundCursor,
-  key: string,
-  step: Record<string, unknown>,
-  vary: Record<string, unknown>,
-): void => {
-  if (key === 'voice') {
-    const ref = cursor.dotted();
-    step.voice = ref.includes('.') ? { $ref: ref } : ref;
-  } else if (key in VARY_SPEC) {
-    const [vk, dim] = VARY_SPEC[key]!;
-    const a = parseUnitScalar(cursor, dim as UnitDim);
-    cursor.take('..');
-    vary[vk] = [a, parseUnitScalar(cursor, dim as UnitDim)];
-  } else {
-    const allowed = ['voice', ...Object.keys(VARY_SPEC), ...Object.keys(STEP_SCALARS)];
-    const sc =
-      STEP_SCALARS[key] ??
-      cursor.fail(`unknown step field "${key}"${soundDidYouMean(key, allowed)}`);
-    step[sc[0]] = parseUnitScalar(cursor, sc[1]);
-  }
-};
-
-const parseSeqStep = (cursor: SoundCursor, stepId: string): Record<string, unknown> => {
-  cursor.take('{');
-  const step: Record<string, unknown> = { id: stepId, at: 0 },
-    vary: Record<string, unknown> = {},
-    seen = new Set<string>();
-  while (cursor.peek() !== '}') {
-    const key = cursor.name();
-    if (/[A-Z]/.test(key)) {
-      const allowed = ['voice', ...Object.keys(VARY_SPEC), ...Object.keys(STEP_SCALARS)];
-      cursor.fail(
-        `sound.legacy-syntax: camelCase "${key}" removed${soundDidYouMean(key, allowed)}`,
-      );
-    }
-    if (seen.has(key)) cursor.fail(`duplicate step field ${key}`);
-    seen.add(key);
-    cursor.take('=');
-    readStepField(cursor, key, step, vary);
-    cursor.take(';');
-  }
-  cursor.take('}');
-  if (Object.keys(vary).length > 0) step.vary = vary;
-  return step;
-};
-
-const parseSeqDecl = (cursor: SoundCursor, path: string): Record<string, unknown> => {
-  if (cursor.peek() !== '{') cursor.fail('sound.legacy-syntax: seq header attributes removed');
-  cursor.take('{');
-  let start: unknown = 0,
-    repeat: Record<string, unknown> | undefined,
-    sawStart = false;
-  const steps: Record<string, unknown>[] = [];
-  while (cursor.peek() !== '}') {
-    const stmt = cursor.name();
-    if (stmt === 'start') {
-      if (sawStart) cursor.fail('duplicate start in seq');
-      sawStart = true;
-      cursor.take('=');
-      start = parseUnitScalar(cursor, 'sec');
-      cursor.take(';');
-    } else if (stmt === 'repeat') {
-      if (repeat) cursor.fail('duplicate repeat in seq');
-      repeat = parseKeyedBlock(cursor, REPEAT_SPEC, 'repeat');
-    } else if (stmt === 'step') {
-      const stepId = cursor.name();
-      cursor.spans.set(`${path}.steps[${steps.length}]`, cursor.offset);
-      steps.push(parseSeqStep(cursor, stepId));
-    } else {
-      cursor.fail(
-        `unknown seq statement "${stmt}"${soundDidYouMean(stmt, ['start', 'repeat', 'step'])}`,
-      );
-    }
-  }
-  cursor.take('}');
-  return { start, ...(repeat ? { repeat } : {}), steps };
-};
-
-const parseLoopBlock = (cursor: SoundCursor): Record<string, unknown> => {
-  const raw = parseKeyedBlock(cursor, LOOP_SPEC, 'loop');
-  if (!Array.isArray(raw.at)) cursor.fail('loop requires at = <start>..<end>');
-  const [start, end] = raw.at as [unknown, unknown];
-  const xfade =
-    raw.xfade ??
-    (typeof start === 'number' && typeof end === 'number'
-      ? Math.min(0.08, Math.max(0.002, (end - start) * 0.05))
-      : 0.05);
-  return { kind: 'loop', start, end, crossfade: xfade };
-};
-
 interface SoundUnitDraft {
   readonly kind: 'sound' | 'module';
   readonly imports: SoundImportDecl[];
@@ -270,9 +158,9 @@ const LEGACY_TOP_KEYS = new Set(
 );
 const BODY_BLOCKS: Record<string, readonly [string, (c: SoundCursor) => Record<string, unknown>]> =
   {
-    space: ['space', (c) => parseKeyedBlock(c, SPACE_SPEC, 'space')],
+    space: ['space', parseSpaceBlock],
     loop: ['playback', parseLoopBlock],
-    master: ['output', (c) => ({ gainDb: 0, ...parseKeyedBlock(c, MASTER_SPEC, 'master') })],
+    master: ['output', parseMasterBlock],
   };
 const ROOT_SCALARS: Record<string, UnitDim | 'enum' | 'playback'> = {
   profile: 'enum',

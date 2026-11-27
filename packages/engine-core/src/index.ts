@@ -114,6 +114,10 @@ export type {
 } from './compiler/program/asset/texture/telemetry';
 export type { AssetBuildIdentity, AssetProject, AssetProjectIdentitySeed } from './project/asset';
 export {
+  compiledModelToProjectDocument,
+  type CompiledModelDocumentOptions,
+} from './project/create';
+export {
   isAssetProjectAuthorityValid,
   openAssetProject,
   type OpenAssetProjectInput,

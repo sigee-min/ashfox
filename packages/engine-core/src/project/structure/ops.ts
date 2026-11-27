@@ -1,12 +1,12 @@
 import type { AshfoxBlock, AshfoxNamedBlock, AshfoxStatement } from '../program/syntax/blockAst';
-import type { MirrorAxis, RepeatAxis, StructureOp } from './contract';
 import {
-  parseFacadeOp,
-  parseFurnishOp,
-  parseRoofOp,
-  parseStaircaseOp,
-  parseWeatheringOp,
-} from './feature';
+  HOOK_PASS_KINDS,
+  assertClosedChoice,
+  isHookPassBare,
+} from '../program/syntax/blockLowering';
+import type { MirrorAxis, RepeatAxis, StructureOp } from './contract';
+import { parseFacadeOp, parseWeatheringOp } from './feature';
+import { parseFurnishOp, parseRoofOp, parseStaircaseOp } from './featureInterior';
 import { parseInteriorOp } from './interior';
 import {
   asFacing,
@@ -29,7 +29,6 @@ import {
 } from './grammar';
 
 const SIMPLE_OPS = new Set(['set', 'carve', 'box', 'hollow', 'walls', 'frame']);
-const HOOK_PASS_OPS = new Set(['volume', 'cue', 'meta', 'zone', 'mc_block', 'schema']);
 const SOCKET_SCHEMAS = new Set(['std.entry', 'std.road', 'std.wall_join', 'std.courtyard']);
 
 const parseSimpleOp = (stmt: AshfoxNamedBlock, file: string): StructureOp => {
@@ -143,11 +142,15 @@ const parseRoomOp = (stmt: AshfoxNamedBlock, file: string, depth: number): Struc
     asOptStr(file, stmt.span, attrs.kind, 'kind') ??
     (schema === 'std.courtyard' ? 'courtyard' : 'room');
   const shape = asOptStr(file, stmt.span, attrs.shape, 'shape');
-  if (shape !== undefined && shape !== 'rect' && shape !== 'octagon') {
-    failAst(file, attrs.shape?.span ?? stmt.span, 'shape = rect|octagon', shape, [
-      'rect',
-      'octagon',
-    ]);
+  if (shape !== undefined) {
+    assertClosedChoice(
+      shape,
+      ['rect', 'octagon'] as const,
+      file,
+      attrs.shape?.span ?? stmt.span,
+      'shape = rect|octagon',
+      failAst,
+    );
   }
   const interior = extractRoomInterior(ops, stmt.name, file, stmt.span);
   return {
@@ -209,7 +212,7 @@ const splitOpContainer = (
       attrs[child.path] = readAssignEntry(child, file);
     } else if (child.kind === 'named-block') {
       ops.push(parseSingleOp(child, file, depth + 1));
-    } else if (child.kind === 'bare' && child.stmtKind === 'mc_block') {
+    } else if (isHookPassBare(child)) {
       ops.push({ op: 'hook_decl' });
     } else {
       failAst(file, child.span, 'property or operation', child.kind);
@@ -283,13 +286,7 @@ export const STRUCTURE_OP_KINDS = new Set([
   'staircase',
   'furnish',
   'weathering',
-  'anchor',
-  'volume',
-  'cue',
-  'meta',
-  'zone',
-  'mc_block',
-  'schema',
+  ...HOOK_PASS_KINDS,
   'compound_place',
   'floor',
   'repeat',
@@ -301,7 +298,8 @@ export const parseSingleOp = (stmt: AshfoxNamedBlock, file: string, depth: numbe
   if (depth > 12) failAst(file, stmt.span, 'structure nesting <= 12', 'deep op');
   const kw = stmt.blockKind;
   if (SIMPLE_OPS.has(kw)) return parseSimpleOp(stmt, file);
-  if (HOOK_PASS_OPS.has(kw)) return { op: 'hook_decl' };
+  if (kw === 'anchor') return parseAnchorOp(stmt, file);
+  if (HOOK_PASS_KINDS.has(kw)) return { op: 'hook_decl' };
   const leaf: Readonly<Record<string, (s: AshfoxNamedBlock, f: string) => StructureOp>> = {
     roof: parseRoofOp,
     place: parsePlaceOp,
@@ -310,7 +308,6 @@ export const parseSingleOp = (stmt: AshfoxNamedBlock, file: string, depth: numbe
     staircase: parseStaircaseOp,
     furnish: parseFurnishOp,
     weathering: parseWeatheringOp,
-    anchor: parseAnchorOp,
     compound_place: parseCompoundPlaceOp,
     interior: parseInteriorOp,
   };
@@ -327,7 +324,7 @@ export const parseOpStatements = (
   depth = 0,
 ): readonly StructureOp[] =>
   statements.map((stmt) => {
-    if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return { op: 'hook_decl' };
+    if (isHookPassBare(stmt)) return { op: 'hook_decl' };
     if (stmt.kind !== 'named-block')
       return failAst(file, stmt.span, 'structure operation block', stmt.kind);
     return parseSingleOp(stmt, file, depth + 1);

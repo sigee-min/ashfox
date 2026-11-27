@@ -1,48 +1,21 @@
 import type { Vec3 } from '../../model/identity';
-import type {
-  AshfoxExpr,
-  AshfoxNumberExpr,
-  AshfoxTransitionStep,
-} from '../program/syntax/blockAst';
-import type { SourceSpan } from '../source/contract';
+import type { AshfoxExpr, AshfoxTransitionStep } from '../program/syntax/blockAst';
+import {
+  assertClosedChoice,
+  createDomainFail,
+  decodeSignedNumber,
+} from '../program/syntax/blockLowering';
 import type { VfxCurveEasing, VfxLifeStop, VfxPaletteRole } from '../../vfx/contract';
-import { docsHint, formatDidYouMean } from '../source/suggest';
 import { VfxInputError } from './contract';
 
-export const failVfx = (
-  file: string,
-  span: SourceSpan,
-  expected: string,
-  actual: string,
-  candidates?: readonly string[],
-): never => {
-  const actualText = actual || 'EOF';
-  const suggestion = actual && candidates ? formatDidYouMean(actual, candidates) : '';
-  throw new VfxInputError({
-    code: 'vfx.syntax',
-    file,
-    pointer: `line:${span.start.line}:${span.start.column}`,
-    expected,
-    actual: `${actualText}${suggestion}`,
-    hint: docsHint('vfx'),
-  });
-};
-
-const evalNum = (expr: AshfoxNumberExpr): number => {
-  const raw = Number(expr.numerator) / Number(expr.denominator);
-  if (expr.unit === 'millisecond' && expr.rawUnit === 'ms' && expr.denominator === 1n)
-    return raw / 1000;
-  if (expr.rawUnit === '%') return raw / 100;
-  return raw;
-};
+export const failVfx = createDomainFail('vfx.syntax', 'vfx', (detail) => {
+  throw new VfxInputError(detail);
+});
 
 export const asNumber = (expr: AshfoxExpr, file: string): number => {
-  if (expr.kind === 'number') return evalNum(expr);
-  if (expr.kind === 'unary' && expr.operand.kind === 'number') {
-    const val = evalNum(expr.operand);
-    return expr.operator === '-' ? -val : val;
-  }
-  return failVfx(file, expr.span, 'number', expr.kind);
+  const decoded = decodeSignedNumber(expr, 'any');
+  if (decoded.ok) return decoded.value;
+  return failVfx(file, decoded.span, 'number', decoded.actual);
 };
 
 export const asName = (expr: AshfoxExpr, file: string): string => {
@@ -103,16 +76,15 @@ export const asNumberCurve = (expr: AshfoxExpr, file: string): readonly VfxLifeS
 
 const VALID_ROLES = new Set<VfxPaletteRole>(['core', 'mid', 'edge', 'smoke']);
 
-export const asPaletteRole = (expr: AshfoxExpr, file: string): VfxPaletteRole => {
-  const name = asName(expr, file);
-  if (VALID_ROLES.has(name as VfxPaletteRole)) return name as VfxPaletteRole;
-  return failVfx(file, expr.span, 'core | mid | edge | smoke', name, [
-    'core',
-    'mid',
-    'edge',
-    'smoke',
-  ]);
-};
+export const asPaletteRole = (expr: AshfoxExpr, file: string): VfxPaletteRole =>
+  assertClosedChoice(
+    asName(expr, file),
+    VALID_ROLES,
+    file,
+    expr.span,
+    'core | mid | edge | smoke',
+    failVfx,
+  );
 
 export const asColorRoleList = (expr: AshfoxExpr, file: string): readonly VfxPaletteRole[] => {
   if (expr.kind === 'transition') {

@@ -12,13 +12,21 @@ import type {
   AshfoxExpr,
   AshfoxNamedBlock,
   AshfoxStatement,
+  AshfoxUnit,
 } from '../program/syntax/blockAst';
-import { parseAshfoxProgram } from '../program/syntax/blockParser';
+import {
+  HOOK_PASS_KINDS,
+  addUniqueImport,
+  assertSimpleAssign,
+  createDomainFail,
+  decodeUnitNumber,
+  isHookPassBare,
+  parseAshfoxTop,
+} from '../program/syntax/blockLowering';
 import type { SourceSpan } from '../source/contract';
 import { parseHooksSource } from '../../hooks/parse';
 import { collectUsedHookAliases } from '../../hooks/resolve';
-import { assertWellFormedSourceText } from '../workspace/path';
-import { ASHFOX_UNITS, docsHint, formatDidYouMean } from '../source/suggest';
+import { ASHFOX_UNITS } from '../source/suggest';
 import { SpriteInputError } from './contract';
 
 export interface SpriteSourceUnit {
@@ -38,6 +46,7 @@ interface ParsedMembers {
   readonly file: string;
   readonly kind: 'sprite' | 'module';
   readonly imports: { path: string; alias: string }[];
+  readonly aliases: Set<string>;
   readonly outputs: RawDeclaredOutput[];
   readonly previews: RawDeclaredPreview[];
   readonly masks: Record<string, unknown>[];
@@ -49,7 +58,9 @@ interface ParsedMembers {
 const LAYER_OPS = new Set(['fill', 'part', 'paint', 'erase', 'stamp', 'outline', 'pattern']);
 const SHAPE_KINDS = new Set(['rect', 'ellipse', 'circle', 'capsule', 'polygon', 'line']);
 const DECL_KINDS = new Set(['mask', 'material', 'stamp']);
-const HOOK_PASS_KINDS = new Set(['schema', 'anchor', 'volume', 'cue', 'meta', 'zone', 'mc_block']);
+
+const SPRITE_PLAIN_UNITS: ReadonlySet<AshfoxUnit> = new Set(['plain', 'ratio']);
+const SPRITE_PIXEL_UNITS: ReadonlySet<AshfoxUnit> = new Set(['plain', 'texel']);
 
 const PIXEL_KEYS = new Set([
   'at',
@@ -82,39 +93,22 @@ const PIXEL_KEYS = new Set([
   'offset',
 ]);
 
-const failSyntax = (
-  file: string,
-  span: SourceSpan,
-  expected: string,
-  actual: string,
-  candidates?: readonly string[],
-): never => {
-  const baseActual = actual || 'EOF';
-  const suggestion = actual && candidates ? formatDidYouMean(actual, candidates) : '';
-  throw new SpriteInputError({
-    code: 'sprite.syntax',
-    file,
-    pointer: `line:${span.start.line}:${span.start.column}`,
-    expected,
-    actual: `${baseActual}${suggestion}`,
-    hint: docsHint('sprite'),
-  });
-};
+const failSyntax = createDomainFail('sprite.syntax', 'sprite', (detail) => {
+  throw new SpriteInputError(detail);
+});
 
 const exprNumber = (expr: AshfoxExpr, file: string, pixels: boolean, sign: number): number => {
   if (expr.kind !== 'number') {
     return failSyntax(file, expr.span, 'number', expr.kind);
   }
-  const num = Number(expr.numerator) / Number(expr.denominator);
-  if (expr.unit === 'texel') {
-    if (!pixels) failSyntax(file, expr.span, 'unitless number', expr.text + expr.rawUnit);
-    return num * sign;
+  if (expr.unit === 'texel' && !pixels) {
+    return failSyntax(file, expr.span, 'unitless number', expr.text + expr.rawUnit);
   }
-  if (expr.unit === 'ratio' && expr.rawUnit === '%') {
-    if (pixels) failSyntax(file, expr.span, 'pixel literal', expr.text + '%');
-    return (num / 100) * sign;
+  if (expr.unit === 'ratio' && expr.rawUnit === '%' && pixels) {
+    return failSyntax(file, expr.span, 'pixel literal', expr.text + '%');
   }
-  if (expr.unit === 'plain') return num * sign;
+  const decoded = decodeUnitNumber(expr, pixels ? SPRITE_PIXEL_UNITS : SPRITE_PLAIN_UNITS);
+  if (decoded.ok) return decoded.value * sign;
   return failSyntax(
     file,
     expr.span,
@@ -273,9 +267,7 @@ const lowerAssign = (
   record: Record<string, unknown>,
   file: string,
 ): void => {
-  if (stmt.easing !== null || stmt.segments.length !== 1) {
-    failSyntax(file, stmt.span, 'simple assignment', stmt.path);
-  }
+  assertSimpleAssign(stmt, file, failSyntax);
   if (Object.hasOwn(record, stmt.path)) {
     failSyntax(file, stmt.span, 'unique property ' + stmt.path, stmt.path);
   }
@@ -381,10 +373,7 @@ const handleTopNamedBlock = (members: ParsedMembers, stmt: AshfoxNamedBlock): vo
 
 const handleTopStatement = (members: ParsedMembers, stmt: AshfoxStatement): void => {
   if (stmt.kind === 'import') {
-    if (members.imports.some((i) => i.alias === stmt.alias)) {
-      failSyntax(members.file, stmt.span, 'unique import alias', stmt.alias);
-    }
-    members.imports.push({ path: stmt.path, alias: stmt.alias });
+    addUniqueImport(members.imports, members.aliases, stmt, members.file, failSyntax);
     return;
   }
   if (stmt.kind === 'export') {
@@ -407,33 +396,33 @@ const handleTopStatement = (members: ParsedMembers, stmt: AshfoxStatement): void
     handleTopNamedBlock(members, stmt);
     return;
   }
-  if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return;
+  if (isHookPassBare(stmt)) return;
   failSyntax(members.file, stmt.span, 'sprite declaration or property', stmt.stmtKind);
 };
 
 /** Native `ashfox 1` syntax for sprites and reusable sprite modules. */
 export const parseSpriteSource = (source: string, file: string): SpriteSourceUnit => {
-  assertWellFormedSourceText(source);
-  const parsed = parseAshfoxProgram(source, file);
-  if (parsed.diagnostics.length > 0 || parsed.file === null) {
-    const first = parsed.diagnostics[0];
-    throw new SpriteInputError({
-      code: 'sprite.syntax',
-      file,
-      pointer: first ? `line:${first.span.start.line}:${first.span.start.column}` : 'line:1:1',
-      expected: 'valid ashfox 1 sprite or module source',
-      actual: first?.message ?? 'syntax error',
-    });
-  }
-  const top = parsed.file.top;
-  if (top.kind !== 'sprite' && top.kind !== 'module') {
-    failSyntax(file, top.span, 'sprite or module', top.kind);
-  }
+  const top = parseAshfoxTop(
+    source,
+    file,
+    ['sprite', 'module'],
+    (span, message) => {
+      throw new SpriteInputError({
+        code: 'sprite.syntax',
+        file,
+        pointer: `line:${span.start.line}:${span.start.column}`,
+        expected: 'valid ashfox 1 sprite or module source',
+        actual: message,
+      });
+    },
+    failSyntax,
+  );
   const kind: 'sprite' | 'module' = top.kind === 'sprite' ? 'sprite' : 'module';
   const members: ParsedMembers = {
     file,
     kind,
     imports: [],
+    aliases: new Set(),
     outputs: [],
     previews: [],
     masks: [],

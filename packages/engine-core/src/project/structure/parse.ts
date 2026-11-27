@@ -15,8 +15,12 @@ import type {
   AshfoxNamedBlock,
   AshfoxStatement,
 } from '../program/syntax/blockAst';
-import { parseAshfoxProgram } from '../program/syntax/blockParser';
-import { assertWellFormedSourceText } from '../workspace/path';
+import {
+  addUniqueImport,
+  assertSimpleAssign,
+  isHookPassBare,
+  parseAshfoxTop,
+} from '../program/syntax/blockLowering';
 import {
   DEFAULT_DATA_VERSION,
   DEFAULT_STRUCTURE_DENSITY,
@@ -122,9 +126,9 @@ const readPaletteExpr = (expr: AshfoxExpr, file: string): StructurePaletteEntry 
 
 const readPalette = (block: AshfoxBlock, draft: StructureDraft): void => {
   for (const stmt of block.statements) {
-    if (stmt.kind !== 'assign' || stmt.easing !== null || stmt.segments.length !== 1) {
+    if (stmt.kind !== 'assign')
       return failAst(draft.file, stmt.span, 'palette key = value;', stmt.kind);
-    }
+    assertSimpleAssign(stmt, draft.file, failAst, 'palette key = value;');
     if (stmt.path in draft.palette) {
       return failAst(draft.file, stmt.span, `unique palette key ${stmt.path}`, stmt.path);
     }
@@ -134,9 +138,9 @@ const readPalette = (block: AshfoxBlock, draft: StructureDraft): void => {
 
 const readParams = (block: AshfoxBlock, draft: StructureDraft): void => {
   for (const stmt of block.statements) {
-    if (stmt.kind !== 'assign' || stmt.easing !== null || stmt.segments.length !== 1) {
+    if (stmt.kind !== 'assign')
       return failAst(draft.file, stmt.span, 'param key = value;', stmt.kind);
-    }
+    assertSimpleAssign(stmt, draft.file, failAst, 'param key = value;');
     if (stmt.path in draft.params) {
       return failAst(draft.file, stmt.span, `unique param ${stmt.path}`, stmt.path);
     }
@@ -269,11 +273,7 @@ const readNamedDecl = (stmt: AshfoxNamedBlock, exported: boolean, draft: Structu
 
 const readTopMember = (stmt: AshfoxStatement, draft: StructureDraft): void => {
   if (stmt.kind === 'import') {
-    if (draft.aliases.has(stmt.alias)) {
-      failAst(draft.file, stmt.span, 'unique import alias', stmt.alias);
-    }
-    draft.aliases.add(stmt.alias);
-    draft.imports.push({ path: stmt.path, alias: stmt.alias });
+    addUniqueImport(draft.imports, draft.aliases, stmt, draft.file, failAst);
     return;
   }
   if (stmt.kind === 'export') {
@@ -289,28 +289,27 @@ const readTopMember = (stmt: AshfoxStatement, draft: StructureDraft): void => {
     readNamedDecl(stmt, false, draft);
     return;
   }
-  if (stmt.kind === 'bare' && stmt.stmtKind === 'mc_block') return;
+  if (isHookPassBare(stmt)) return;
   failAst(draft.file, stmt.span, 'structure statement', stmt.stmtKind);
 };
 
 export const parseStructureSource = (source: string, file: string): StructureSourceUnit => {
-  assertWellFormedSourceText(source);
-  const parsed = parseAshfoxProgram(source, file);
-  if (parsed.diagnostics.length > 0 || parsed.file === null) {
-    const first = parsed.diagnostics[0];
-    throw new StructureInputError({
-      code: 'structure.syntax',
-      file,
-      pointer: first ? `line:${first.span.start.line}:${first.span.start.column}` : 'line:1:1',
-      expected: 'valid ashfox 1 structure or module source',
-      actual: first?.message ?? 'syntax error',
-    });
-  }
-  const top = parsed.file.top;
-  const kind: 'structure' | 'module' =
-    top.kind === 'structure' || top.kind === 'module'
-      ? top.kind
-      : failAst(file, top.span, 'structure or module', top.kind);
+  const top = parseAshfoxTop(
+    source,
+    file,
+    ['structure', 'module'],
+    (span, message) => {
+      throw new StructureInputError({
+        code: 'structure.syntax',
+        file,
+        pointer: `line:${span.start.line}:${span.start.column}`,
+        expected: 'valid ashfox 1 structure or module source',
+        actual: message,
+      });
+    },
+    failAst,
+  );
+  const kind: 'structure' | 'module' = top.kind;
   const draft: StructureDraft = {
     file,
     kind,

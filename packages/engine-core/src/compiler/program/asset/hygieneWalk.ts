@@ -8,6 +8,7 @@ import type {
   ProgramExpr,
   ProgramProperty,
   ProgramTextureDecl,
+  ProgramTextureStatement,
 } from '../../../project/program/syntax/contract';
 import type { WorkspaceCompilationFile } from '../../../project/workspace/closure';
 import { parseHooksSource } from '../../../hooks/parse';
@@ -20,6 +21,8 @@ export interface FileRefSet {
   readonly localDecls: ReadonlySet<string>;
   readonly fileImports: ReadonlyMap<string, string>;
 }
+
+const noop = (): void => {};
 
 const dottedName = (expr: ProgramExpr): string | null => {
   if (expr.kind === 'name') return expr.value;
@@ -42,23 +45,56 @@ const recordDottedRef = (name: string, refs: FileRefSet): void => {
   if (refs.localDecls.has(head)) refs.decls.add(head);
 };
 
-export const walkExpr = (expr: ProgramExpr | null | undefined, refs: FileRefSet): void => {
-  if (!expr) return;
-  if (expr.kind === 'name' || expr.kind === 'member') {
-    const dotted = dottedName(expr);
-    if (dotted !== null) recordDottedRef(dotted, refs);
-    if (expr.kind === 'member') walkExpr(expr.object, refs);
-    return;
-  }
-  if (expr.kind === 'unary') walkExpr(expr.operand, refs);
-  else if (expr.kind === 'binary') {
+type ExprWalker = (expr: ProgramExpr, refs: FileRefSet) => void;
+
+const exprWalker =
+  <K extends ProgramExpr['kind']>(
+    walk: (expr: Extract<ProgramExpr, { readonly kind: K }>, refs: FileRefSet) => void,
+  ): ExprWalker =>
+  (expr, refs) =>
+    walk(expr as Extract<ProgramExpr, { readonly kind: K }>, refs);
+
+const walkNameOrMember = (
+  expr: Extract<ProgramExpr, { readonly kind: 'name' | 'member' }>,
+  refs: FileRefSet,
+): void => {
+  const dotted = dottedName(expr);
+  if (dotted !== null) recordDottedRef(dotted, refs);
+  if (expr.kind === 'member') walkExpr(expr.object, refs);
+};
+
+const EXPR_WALKERS: Readonly<Record<ProgramExpr['kind'], ExprWalker>> = {
+  number: noop,
+  string: noop,
+  boolean: noop,
+  color: noop,
+  name: exprWalker<'name'>(walkNameOrMember),
+  member: exprWalker<'member'>(walkNameOrMember),
+  unary: exprWalker<'unary'>((expr, refs) => walkExpr(expr.operand, refs)),
+  binary: exprWalker<'binary'>((expr, refs) => {
     walkExpr(expr.left, refs);
     walkExpr(expr.right, refs);
-  } else if (expr.kind === 'vector') {
+  }),
+  vector: exprWalker<'vector'>((expr, refs) => {
     for (const item of expr.values) walkExpr(item, refs);
-  } else if (expr.kind === 'call') {
+  }),
+  call: exprWalker<'call'>((expr, refs) => {
     for (const arg of expr.args) walkExpr(arg, refs);
-  }
+  }),
+};
+
+export const walkExpr = (expr: ProgramExpr | null | undefined, refs: FileRefSet): void => {
+  if (!expr) return;
+  EXPR_WALKERS[expr.kind](expr, refs);
+};
+
+const walkPair = (
+  pair: readonly [ProgramExpr, ProgramExpr] | null | undefined,
+  refs: FileRefSet,
+): void => {
+  if (!pair) return;
+  walkExpr(pair[0], refs);
+  walkExpr(pair[1], refs);
 };
 
 const walkQName = (qname: AssetQualifiedName | null | undefined, refs: FileRefSet): void => {
@@ -71,31 +107,73 @@ const walkProps = (props: readonly ProgramProperty[], refs: FileRefSet): void =>
   for (const prop of props) walkExpr(prop.value, refs);
 };
 
+type ChartStmtWalker = (stmt: ProgramChartStatement, refs: FileRefSet) => void;
+
+const chartWalker =
+  <K extends ProgramChartStatement['kind']>(
+    walk: (stmt: Extract<ProgramChartStatement, { readonly kind: K }>, refs: FileRefSet) => void,
+  ): ChartStmtWalker =>
+  (stmt, refs) =>
+    walk(stmt as Extract<ProgramChartStatement, { readonly kind: K }>, refs);
+
 const walkChartStmts = (stmts: readonly ProgramChartStatement[], refs: FileRefSet): void => {
-  for (const stmt of stmts) {
-    if (stmt.kind === 'property') walkExpr(stmt.value, refs);
-    else if (stmt.kind === 'pattern' || stmt.kind === 'stamp') walkProps(stmt.properties, refs);
-    else if (stmt.kind === 'face') walkChartStmts(stmt.statements, refs);
-  }
+  for (const stmt of stmts) CHART_STMT_WALKERS[stmt.kind](stmt, refs);
+};
+
+const CHART_STMT_WALKERS: Readonly<Record<ProgramChartStatement['kind'], ChartStmtWalker>> = {
+  property: chartWalker<'property'>((stmt, refs) => walkExpr(stmt.value, refs)),
+  pattern: chartWalker<'pattern'>((stmt, refs) => walkProps(stmt.properties, refs)),
+  stamp: chartWalker<'stamp'>((stmt, refs) => walkProps(stmt.properties, refs)),
+  face: chartWalker<'face'>((stmt, refs) => walkChartStmts(stmt.statements, refs)),
+  coverage: noop,
+};
+
+type TextureStmtWalker = (stmt: ProgramTextureStatement, refs: FileRefSet) => void;
+
+const textureWalker =
+  <K extends ProgramTextureStatement['kind']>(
+    walk: (stmt: Extract<ProgramTextureStatement, { readonly kind: K }>, refs: FileRefSet) => void,
+  ): TextureStmtWalker =>
+  (stmt, refs) =>
+    walk(stmt as Extract<ProgramTextureStatement, { readonly kind: K }>, refs);
+
+const TEXTURE_STMT_WALKERS: Readonly<Record<ProgramTextureStatement['kind'], TextureStmtWalker>> = {
+  property: textureWalker<'property'>((stmt, refs) => walkExpr(stmt.value, refs)),
+  palette: textureWalker<'palette'>((stmt, refs) => walkProps(stmt.properties, refs)),
+  'stamp-decl': textureWalker<'stamp-decl'>((stmt, refs) => walkProps(stmt.properties, refs)),
+  chart: textureWalker<'chart'>((stmt, refs) => walkChartStmts(stmt.statements, refs)),
+  grain: textureWalker<'grain'>((stmt, refs) => walkExpr(stmt.seed?.value, refs)),
+  tone: noop,
 };
 
 const walkTexture = (texture: ProgramTextureDecl | null, refs: FileRefSet): void => {
   if (!texture) return;
-  for (const stmt of texture.statements) {
-    if (stmt.kind === 'property') walkExpr(stmt.value, refs);
-    else if (stmt.kind === 'palette' || stmt.kind === 'stamp-decl')
-      walkProps(stmt.properties, refs);
-    else if (stmt.kind === 'chart') walkChartStmts(stmt.statements, refs);
-    else if (stmt.kind === 'grain' && stmt.seed) walkExpr(stmt.seed.value, refs);
-  }
+  for (const stmt of texture.statements) TEXTURE_STMT_WALKERS[stmt.kind](stmt, refs);
 };
 
+type GeometryStmtWalker = (stmt: AssetGeometryStatement, refs: FileRefSet) => void;
+
+const geometryWalker =
+  <K extends AssetGeometryStatement['kind']>(
+    walk: (stmt: Extract<AssetGeometryStatement, { readonly kind: K }>, refs: FileRefSet) => void,
+  ): GeometryStmtWalker =>
+  (stmt, refs) =>
+    walk(stmt as Extract<AssetGeometryStatement, { readonly kind: K }>, refs);
+
 const walkGeometry = (stmts: readonly AssetGeometryStatement[], refs: FileRefSet): void => {
-  for (const stmt of stmts) {
-    if (stmt.kind === 'geometry-property') walkExpr(stmt.value, refs);
-    else if (stmt.kind === 'geometry-block') walkGeometry(stmt.statements, refs);
-  }
+  for (const stmt of stmts) GEOMETRY_STMT_WALKERS[stmt.kind](stmt, refs);
 };
+
+const GEOMETRY_STMT_WALKERS: Readonly<Record<AssetGeometryStatement['kind'], GeometryStmtWalker>> =
+  {
+    'geometry-property': geometryWalker<'geometry-property'>((stmt, refs) =>
+      walkExpr(stmt.value, refs),
+    ),
+    'geometry-block': geometryWalker<'geometry-block'>((stmt, refs) =>
+      walkGeometry(stmt.statements, refs),
+    ),
+    'geometry-surface-bind': noop,
+  };
 
 const walkRigContract = (
   decl: Extract<AssetDeclaration, { readonly kind: 'rig-contract' }>,
@@ -104,18 +182,9 @@ const walkRigContract = (
   walkProps(decl.frame?.properties ?? [], refs);
   for (const j of decl.joints) {
     walkProps(j.frame?.properties ?? [], refs);
-    if (j.limits?.pitch) {
-      walkExpr(j.limits.pitch[0], refs);
-      walkExpr(j.limits.pitch[1], refs);
-    }
-    if (j.limits?.yaw) {
-      walkExpr(j.limits.yaw[0], refs);
-      walkExpr(j.limits.yaw[1], refs);
-    }
-    if (j.limits?.roll) {
-      walkExpr(j.limits.roll[0], refs);
-      walkExpr(j.limits.roll[1], refs);
-    }
+    walkPair(j.limits?.pitch, refs);
+    walkPair(j.limits?.yaw, refs);
+    walkPair(j.limits?.roll, refs);
   }
   for (const ik of decl.ikLimbs) {
     walkExpr(ik.pole, refs);
@@ -139,19 +208,22 @@ const walkSkeleton = (
   }
 };
 
-const walkSurfaceOrContract = (
-  decl: Extract<AssetDeclaration, { readonly kind: 'surface' | 'surface-contract' }>,
+const walkSurfaceContract = (
+  decl: Extract<AssetDeclaration, { readonly kind: 'surface-contract' }>,
   refs: FileRefSet,
 ): void => {
-  if (decl.kind === 'surface-contract') {
-    walkExpr(decl.atlas?.width, refs);
-    walkExpr(decl.atlas?.height, refs);
-    for (const ch of decl.charts) {
-      walkExpr(ch.width, refs);
-      walkExpr(ch.height, refs);
-    }
-    return;
+  walkExpr(decl.atlas?.width, refs);
+  walkExpr(decl.atlas?.height, refs);
+  for (const ch of decl.charts) {
+    walkExpr(ch.width, refs);
+    walkExpr(ch.height, refs);
   }
+};
+
+const walkSurface = (
+  decl: Extract<AssetDeclaration, { readonly kind: 'surface' }>,
+  refs: FileRefSet,
+): void => {
   walkQName(decl.contract, refs);
   for (const prop of decl.materialProperties ?? []) walkExpr(prop.value, refs);
   for (const slot of decl.slots) walkExpr(slot.value, refs);
@@ -187,18 +259,12 @@ const walkMotionExtras = (
   refs: FileRefSet,
 ): void => {
   for (const ik of decl.iks) {
-    for (const fl of ik.footLocks) {
-      walkExpr(fl[0], refs);
-      walkExpr(fl[1], refs);
-    }
+    for (const fl of ik.footLocks) walkPair(fl, refs);
   }
   for (const s of decl.secondaries) walkProps(s.properties, refs);
   for (const c of decl.combatOps) {
     walkProps(c.properties, refs);
-    if (c.timeRange) {
-      walkExpr(c.timeRange[0], refs);
-      walkExpr(c.timeRange[1], refs);
-    }
+    walkPair(c.timeRange, refs);
   }
   for (const cue of decl.cues) {
     walkExpr(cue.time, refs);
@@ -259,35 +325,34 @@ const walkComponent = (
   walkGeometry(decl.geometry.statements, refs);
 };
 
+type DeclWalker = (decl: AssetDeclaration, refs: FileRefSet) => void;
+
+const declWalker =
+  <K extends AssetDeclaration['kind']>(
+    walk: (decl: Extract<AssetDeclaration, { readonly kind: K }>, refs: FileRefSet) => void,
+  ): DeclWalker =>
+  (decl, refs) =>
+    walk(decl as Extract<AssetDeclaration, { readonly kind: K }>, refs);
+
+const DECL_WALKERS: Readonly<Record<AssetDeclaration['kind'], DeclWalker>> = {
+  design: declWalker<'design'>((decl, refs) => {
+    for (const f of decl.fields) walkExpr(f.value, refs);
+    for (const c of decl.checks) walkExpr(c.value, refs);
+  }),
+  'socket-contract': declWalker<'socket-contract'>((decl, refs) => {
+    walkProps(decl.frame?.properties ?? [], refs);
+  }),
+  'rig-contract': declWalker<'rig-contract'>(walkRigContract),
+  skeleton: declWalker<'skeleton'>(walkSkeleton),
+  'surface-contract': declWalker<'surface-contract'>(walkSurfaceContract),
+  surface: declWalker<'surface'>(walkSurface),
+  motion: declWalker<'motion'>(walkMotion),
+  asset: declWalker<'asset'>(walkAsset),
+  component: declWalker<'component'>(walkComponent),
+};
+
 const walkDeclaration = (decl: AssetDeclaration, refs: FileRefSet): void => {
-  switch (decl.kind) {
-    case 'design':
-      for (const f of decl.fields) walkExpr(f.value, refs);
-      for (const c of decl.checks) walkExpr(c.value, refs);
-      return;
-    case 'socket-contract':
-      walkProps(decl.frame?.properties ?? [], refs);
-      return;
-    case 'rig-contract':
-      walkRigContract(decl, refs);
-      return;
-    case 'skeleton':
-      walkSkeleton(decl, refs);
-      return;
-    case 'surface':
-    case 'surface-contract':
-      walkSurfaceOrContract(decl, refs);
-      return;
-    case 'motion':
-      walkMotion(decl, refs);
-      return;
-    case 'asset':
-      walkAsset(decl, refs);
-      return;
-    case 'component':
-      walkComponent(decl, refs);
-      return;
-  }
+  DECL_WALKERS[decl.kind](decl, refs);
 };
 
 export const collectDeclRefs = (
