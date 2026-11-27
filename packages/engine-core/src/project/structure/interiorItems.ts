@@ -102,7 +102,7 @@ export const parseStory = (
   assertAllowedAttrs(file, stmt.span, attrs, new Set(['kind', 'on', 'facing', 'seed']));
   const kind = stmt.name ?? asStr(file, stmt.span, attrs.kind, 'kind');
   return {
-    id: nextId(seq, 'story', kind),
+    id: nextId(seq, kind, null),
     kind,
     ...(attrs.on ? { on_target: asStr(file, stmt.span, attrs.on, 'on') } : {}),
     ...(attrs.facing ? { facing: asFacing(file, stmt.span, attrs.facing) } : {}),

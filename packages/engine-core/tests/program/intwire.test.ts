@@ -474,15 +474,17 @@ structure yaw_col {
   const badDrap =
     'ashfox 1 structure d { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { drapery noren { split_panels = 1000000000; } } } } }';
   assert.throws(() => parseStructureSource(badDrap, 'd.ashfox'));
-  const twoRoomSrc = `ashfox 1 structure mr { size = (17b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r1 { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; } } } room r2 { from = (9b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (12, 1, 4); size = (3, 1); facing = north; } } } facade r1.south { door { at = center; width = 1b; height = 2b; block = door; } } facade r2.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
+  const twoRoomSrc = `ashfox 1 structure mr { size = (17b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r1 { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (4, 1, 4); size = (3, 1); facing = north; } } } room r2 { from = (9b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { holo_screen scr { at = (12, 1, 4); size = (3, 1); facing = north; } table t1 { at = (10, 1, 2); } table t2 { at = (14, 1, 2); } story tavern_meal { on = t1; } story tavern_meal { on = t2; } } } facade r1.south { door { at = center; width = 1b; height = 2b; block = door; } } facade r2.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
   const mr = compileOne('mr.ashfox', twoRoomSrc);
   const mrLightIds = new Set(mr.playableMeta.lights.map((l) => l.id));
+  const r2Boxes = mr.grid.interiors![1]!.ir.boxes;
+  assert.equal(new Set(r2Boxes.map((b) => b.id)).size, r2Boxes.length);
   const mrToggles = mr.grid
     .interiors!.flatMap((i) => i.playable_meta.hooks)
     .filter((h) => h.kind === 'toggle_light')
     .map((h) => h.light_id);
   assert.ok(
-    mrToggles.length >= 6 &&
+    mrToggles.length >= 8 &&
       mrToggles.every((id) => mrLightIds.has(id)) &&
       new Set(mrToggles).size === mrToggles.length,
   );
