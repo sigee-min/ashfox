@@ -10,8 +10,8 @@ const DIFF_ITEMS = {
       sourceHref: '/showcase/assets/models/griffin_boss.ashfox',
       outputHref: '/media/catalog/griffin.glb',
       studioId: 'griffin',
-      motions: ['idle', 'wing_display', 'wing_flap', 'wing_glide'],
-      codeLine: 'model griffin_boss { import "std/model/rig/winged" as winged; }',
+      motions: ['idle', 'wing_display', 'wing_flap'],
+      codeLine: 'model griffin_boss { import "std/model/rig/winged_quadruped" as wq; }',
     },
     {
       id: 'fox',

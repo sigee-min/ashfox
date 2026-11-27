@@ -1,4 +1,5 @@
 import type { Vec3 } from '../../../model/identity';
+import { canonicalRotatePoint } from '../../../model/transform';
 import { composeAssetFrames, type AssetExactFrame, type AssetExactUnitVector } from './frame';
 import { identityTypedFrame } from './hirFrames';
 import type {
@@ -11,8 +12,11 @@ import { assetNumberValue, assetVectorValue } from './value/contract';
 import {
   NUMBER_BOUNDARY,
   addExact,
+  canonical,
+  exactNumber,
   exactToVector3,
   exactVector,
+  transformFor,
   type Context,
   type GeometryRecord,
 } from './geometrySupport';
@@ -173,23 +177,76 @@ export interface ParentSolidBounds {
   readonly max: Vec3;
 }
 
+const boxCorners = (from: Vec3, to: Vec3): readonly Vec3[] => [
+  [from[0], from[1], from[2]],
+  [to[0], from[1], from[2]],
+  [from[0], to[1], from[2]],
+  [to[0], to[1], from[2]],
+  [from[0], from[1], to[2]],
+  [to[0], from[1], to[2]],
+  [from[0], to[1], to[2]],
+  [to[0], to[1], to[2]],
+];
+
+const transformedCornerBounds = (
+  from: Vec3,
+  to: Vec3,
+  position: Vec3,
+  rotation: Vec3,
+  pivot: Vec3,
+): ParentSolidBounds => {
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const [cx, cy, cz] of boxCorners(from, to)) {
+    const rot = canonicalRotatePoint([cx - pivot[0], cy - pivot[1], cz - pivot[2]], rotation);
+    const px = rot[0] + pivot[0] + position[0];
+    const py = rot[1] + pivot[1] + position[1];
+    const pz = rot[2] + pivot[2] + position[2];
+    min[0] = Math.min(min[0], px);
+    min[1] = Math.min(min[1], py);
+    min[2] = Math.min(min[2], pz);
+    max[0] = Math.max(max[0], px);
+    max[1] = Math.max(max[1], py);
+    max[2] = Math.max(max[2], pz);
+  }
+  return { min, max };
+};
+
 const solidBoxBoundsFromProps = (
   node: InstantiatedGeometryNode,
   context: Context,
 ): ParentSolidBounds | null => {
-  const originProp = node.properties.find((p) => p.name === 'origin');
-  const sizeProp = node.properties.find((p) => p.name === 'size');
+  const props = new Map(node.properties.map((p) => [p.name, p]));
+  const originProp = props.get('origin');
+  const sizeProp = props.get('size');
   if (!originProp || !sizeProp) return null;
   const oEx = exactVector(originProp, 'vec3<unit>', context, node.sourcePath, node.span);
   const sEx = exactVector(sizeProp, 'vec3<unit>', context, node.sourcePath, node.span);
   if (!oEx || !sEx) return null;
   const o = exactToVector3(oEx, NUMBER_BOUNDARY, context, node.sourcePath, node.span);
   const s = exactToVector3(sEx, NUMBER_BOUNDARY, context, node.sourcePath, node.span);
-  if (!o || !s) return null;
-  return {
-    min: [Math.min(o[0], o[0] + s[0]), Math.min(o[1], o[1] + s[1]), Math.min(o[2], o[2] + s[2])],
-    max: [Math.max(o[0], o[0] + s[0]), Math.max(o[1], o[1] + s[1]), Math.max(o[2], o[2] + s[2])],
-  };
+  const transform = transformFor(props, context, node.sourcePath, node.span, true);
+  const inflateProp = props.get('inflate');
+  const inflateExact = inflateProp
+    ? exactNumber(inflateProp, 'unit', context, node.sourcePath, node.span)
+    : null;
+  const inflate = inflateProp
+    ? inflateExact
+      ? canonical(inflateExact, NUMBER_BOUNDARY, context, node.sourcePath, inflateProp.span)
+      : null
+    : 0;
+  if (!o || !s || !transform || inflate === null) return null;
+  const from: Vec3 = [
+    Math.min(o[0], o[0] + s[0]) - inflate,
+    Math.min(o[1], o[1] + s[1]) - inflate,
+    Math.min(o[2], o[2] + s[2]) - inflate,
+  ];
+  const to: Vec3 = [
+    Math.max(o[0], o[0] + s[0]) + inflate,
+    Math.max(o[1], o[1] + s[1]) + inflate,
+    Math.max(o[2], o[2] + s[2]) + inflate,
+  ];
+  return transformedCornerBounds(from, to, transform.position, transform.rotation, transform.pivot);
 };
 
 const resolveParentSolidBounds = (

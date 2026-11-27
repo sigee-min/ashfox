@@ -9,13 +9,13 @@ const MODEL_ENTRIES = [
     featured: true,
     name: { en: 'Griffin Boss', ko: '그리핀 보스' },
     summary: {
-      en: 'Articulated winged guardian built on std/model/rig/winged with four motions.',
-      ko: 'std/model/rig/winged 기반으로 제작된 깃털 날개와 네 가지 동작의 보스 크리처입니다.',
+      en: 'Articulated winged guardian built on std/model/rig/winged_quadruped with three motions.',
+      ko: 'std/model/rig/winged_quadruped 기반으로 제작된 깃털 날개와 세 가지 동작의 보스 크리처입니다.',
     },
     sourcePath: 'showcase/assets/models/griffin_boss.ashfox',
     outputFile: 'griffin.glb',
     previewFile: '/showcase/griffin.glb',
-    motions: ['idle', 'wing_display', 'wing_flap', 'wing_glide'],
+    motions: ['idle', 'wing_display', 'wing_flap'],
     tags: ['creature', 'winged', 'rig', 'glb'],
   },
   {

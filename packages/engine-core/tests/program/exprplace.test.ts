@@ -234,7 +234,47 @@ async function main() {
     assert.equal(rep.issues.numErrors, 0, JSON.stringify(rep.issues.messages));
   }
 
-  // 5. Quoted or unknown placement enum fails closed with diagnostic.
+  // 5. Transformed skull (position + inflate + rotation) updates auto-placed lateral_pair bounds.
+  const transformedSource = makeModelSource(`expression_slot face {
+      placement = lateral_pair;
+      size = (4u, 3u);
+      neutral = skin.eye_n; blink = skin.eye_b; screech = skin.eye_s;
+    }`).replace(
+    'cube skull { origin = (-4u, 10u, -3.5u); size = (8u, 7u, 7u); surface = skin.skull; }',
+    'cube skull { origin = (-4u, 10u, -3.5u); size = (8u, 7u, 7u); position = (2u, 1u, 0u); inflate = 0.5u; pivot = (0u, 13.5u, 0u); rotation = (0deg, 90deg, 0deg); surface = skin.skull; }',
+  );
+  const transformedRes = compileOne(transformedSource);
+  assert.equal(
+    transformedRes.ok,
+    true,
+    transformedRes.ok ? '' : JSON.stringify(transformedRes.diagnostics),
+  );
+  if (transformedRes.ok) {
+    const trModel = (
+      transformedRes.products[0] as Extract<
+        (typeof transformedRes.products)[number],
+        { kind: 'model' }
+      >
+    ).model;
+    const trL = trModel.scene.nodes['b/root/head/face/neutral/left'] as PlaneNode;
+    const trR = trModel.scene.nodes['b/root/head/face/neutral/right'] as PlaneNode;
+    // Rotated 90deg Y swaps 8u X and 7u Z -> half X becomes 3.5 + 0.5 inflate = 4.0, shifted +2u X => [-2, 6].
+    assert.ok(
+      Math.abs(trL.transform.position[0] - -2.02) < 1e-4,
+      `got ${trL.transform.position[0]}`,
+    );
+    assert.ok(
+      Math.abs(trR.transform.position[0] - 6.02) < 1e-4,
+      `got ${trR.transform.position[0]}`,
+    );
+    // Y shifted +1u and inflated +-0.5u -> [10.5..18.5], center 14.5, bottom 14.5 - 1.5 = 13.0.
+    assert.ok(
+      Math.abs(trL.transform.position[1] - 13.0) < 1e-4,
+      `got ${trL.transform.position[1]}`,
+    );
+  }
+
+  // 6. Quoted or unknown placement enum fails closed with diagnostic.
   const quotedRes = compileOne(
     makeModelSource(`expression_slot face {
       placement = "lateral_pair";
