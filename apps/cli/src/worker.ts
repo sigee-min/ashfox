@@ -1,5 +1,5 @@
 import { runJob, type Snapshot, type CompiledBundle } from '@ashfox/asset-build';
-import type { HookBindingTarget } from '@ashfox/engine-core';
+import type { HookBindingTarget, SdkTarget } from '@ashfox/engine-core';
 interface CheckResult {
   readonly sourceHash: string;
   readonly products: readonly unknown[];
@@ -12,5 +12,6 @@ export const runWorker = (
   signal?: AbortSignal,
   noCache = false,
   bindings?: readonly HookBindingTarget[],
+  sdk?: readonly SdkTarget[],
 ): Promise<CompiledBundle | CheckResult> =>
-  runJob(file, { snapshot, toolchain, command, noCache, bindings }, signal);
+  runJob(file, { snapshot, toolchain, command, noCache, bindings, sdk }, signal);

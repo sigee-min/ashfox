@@ -1,6 +1,7 @@
 import { compareText } from '@ashfox/internal-contracts';
 import { checkSnapshot, compileBundle } from '../bundle/compile';
 import { generateWorkspaceHookBindings } from '../bundle/bindings';
+import { generateBundleRuntimeSdk, normalizeSdkTargets } from '../bundle/sdk';
 import type { CompiledBundle, Snapshot } from '../bundle/contract';
 import {
   assertNoLoopPackBindings,
@@ -119,6 +120,35 @@ const partitionBuildEntries = (
   return { resolved, uncachedSounds, uncachedOther };
 };
 
+const attachNodeBundleExtras = (
+  snapshot: Snapshot,
+  bundle: CompiledBundle,
+  options?: NodeBuildOptions,
+): CompiledBundle => {
+  const bindings =
+    options?.bindings && options.bindings.length > 0
+      ? generateWorkspaceHookBindings(snapshot.files, options.bindings)
+      : undefined;
+  const effectiveSdk = normalizeSdkTargets([
+    ...(snapshot.config.sdk ?? []),
+    ...(options?.sdk ?? []),
+  ]);
+  const sdk =
+    effectiveSdk.length > 0
+      ? generateBundleRuntimeSdk(
+          snapshot.config.name,
+          bundle.catalog,
+          bundle.artifacts,
+          effectiveSdk,
+        )
+      : undefined;
+  return {
+    ...bundle,
+    ...(bindings && bindings.length > 0 ? { bindings } : {}),
+    ...(sdk && sdk.length > 0 ? { sdk } : {}),
+  };
+};
+
 export const compileNodeBundle = async (
   snapshot: Snapshot,
   toolchain: string,
@@ -132,7 +162,7 @@ export const compileNodeBundle = async (
     const encoder = requiresVorbisEncoder(snapshot)
       ? await createLazyVorbisGetter(signal)()
       : undefined;
-    return compileBundle(snapshot, toolchain, encoder, checked, options?.bindings);
+    return compileBundle(snapshot, toolchain, encoder, checked, options?.bindings, options?.sdk);
   }
   const targetsByEntry = toTargetSpecs(plan);
   const { resolved, uncachedSounds, uncachedOther } = partitionBuildEntries(
@@ -167,9 +197,5 @@ export const compileNodeBundle = async (
     cache,
     signal,
   );
-  const bindings =
-    options?.bindings && options.bindings.length > 0
-      ? generateWorkspaceHookBindings(snapshot.files, options.bindings)
-      : undefined;
-  return bindings && bindings.length > 0 ? { ...bundle, bindings } : bundle;
+  return attachNodeBundleExtras(snapshot, bundle, options);
 };

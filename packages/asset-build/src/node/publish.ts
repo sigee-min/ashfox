@@ -127,6 +127,19 @@ const writeBindings = (output: string, bundle: CompiledBundle): readonly string[
   return written;
 };
 
+const writeSdk = (output: string, bundle: CompiledBundle): readonly string[] => {
+  if (!bundle.sdk || bundle.sdk.length === 0) return [];
+  const written: string[] = [];
+  for (const file of bundle.sdk) {
+    const target = contained(path.join(output, 'sdk'), file.fileName);
+    noLinks(target);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, file.content, 'utf8');
+    written.push(target);
+  }
+  return written;
+};
+
 /** Mirrors are immutable; only the build directory owns the publication pointer. */
 export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
   const output = contained(snapshot.root, snapshot.config.build.directory);
@@ -146,6 +159,7 @@ export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
     assertSnapshot(snapshot);
     writeCurrentPointer(output, bundle.bundleHash);
     const bindings = writeBindings(output, bundle);
+    const sdk = writeSdk(output, bundle);
     return {
       requestKey: bundle.receipt.requestKey,
       bundleHash: bundle.bundleHash,
@@ -153,6 +167,7 @@ export const publishBundle = (snapshot: Snapshot, bundle: CompiledBundle) => {
       catalogPath: path.join(destination, 'catalog.json'),
       exports,
       ...(bindings.length > 0 ? { bindings } : {}),
+      ...(sdk.length > 0 ? { sdk } : {}),
     };
   } finally {
     if (fs.existsSync(temp)) fs.rmSync(temp, { recursive: true });

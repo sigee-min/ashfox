@@ -3,6 +3,7 @@ import type {
   DirectoryFile,
   DirectoryWorkspace,
   GeneratedBindingFile,
+  GeneratedSdkFile,
   GlbPerformanceMetrics,
 } from '@ashfox/engine-core';
 export interface Snapshot {
@@ -95,6 +96,7 @@ export interface CompiledBundle {
   readonly artifacts: readonly Artifact[];
   readonly bundleHash: string;
   readonly bindings?: readonly GeneratedBindingFile[];
+  readonly sdk?: readonly GeneratedSdkFile[];
 }
 export interface FailureDiagnostic {
   readonly severity?: 'error' | 'warning';

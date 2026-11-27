@@ -6,7 +6,7 @@ import {
   type CompiledBundle,
   type Snapshot,
 } from '@ashfox/asset-build';
-import type { HookBindingTarget } from '@ashfox/engine-core';
+import type { HookBindingTarget, SdkTarget } from '@ashfox/engine-core';
 import { prepare } from './observe/prepare';
 
 const postWorkerFailure = (error: unknown, defaultCode: string, defaultExit: number): void => {
@@ -36,6 +36,7 @@ const runBuildWorker = async (
     command: string;
     noCache?: boolean;
     bindings?: readonly HookBindingTarget[];
+    sdk?: readonly SdkTarget[];
   },
   signal: AbortSignal,
 ): Promise<void> => {
@@ -49,6 +50,7 @@ const runBuildWorker = async (
       value = await compileNodeBundle(input.snapshot, input.toolchain, signal, {
         noCache: input.noCache,
         bindings: input.bindings,
+        sdk: input.sdk,
       });
     }
     parentPort!.postMessage({ ok: true, value });
@@ -79,6 +81,7 @@ export const executeWorker = async (signal: AbortSignal): Promise<void> => {
       command: string;
       noCache?: boolean;
       bindings?: readonly HookBindingTarget[];
+      sdk?: readonly SdkTarget[];
     },
     signal,
   );

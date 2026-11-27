@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { AUDIO_POLICY, SOUND_PROFILES } from '@ashfox/audio-core';
 import { BuildFailure } from '@ashfox/asset-build';
-import { SPRITE_PROFILES } from '@ashfox/engine-core';
+import { SDK_TARGETS, SPRITE_PROFILES } from '@ashfox/engine-core';
 import { renderCapabilities } from '../observe/operations';
 import { findChrome } from './browser';
 
@@ -165,8 +165,9 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
   source: '.ashfox',
   outputs: ['glb', 'gltf', 'png', 'wav', 'java_structure', 'java_block', 'geckolib5', 'bedrock'],
   packs: PACK_CAPABILITIES,
+  sdk: { targets: [...SDK_TARGETS], outputDirectory: 'sdk' },
   usage:
-    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>; ashfox dev <source|workspace> [--port 4173] [--no-open]; ashfox library list | <ns> list|show|eject; ashfox docs [topic]',
+    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace> [--bindings ts|cs|gd] [--sdk three|unity|godot]; ashfox dev <source|workspace> [--port 4173] [--no-open]; ashfox library list | <ns> list|show|eject; ashfox docs [topic]',
 });
 
 const doctor = (json: boolean): void => {

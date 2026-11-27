@@ -1,9 +1,14 @@
 import { compareText, encodeUtf8 } from '@ashfox/internal-contracts';
-import { compileDirectoryWorkspace, type HookBindingTarget } from '@ashfox/engine-core';
+import {
+  compileDirectoryWorkspace,
+  type HookBindingTarget,
+  type SdkTarget,
+} from '@ashfox/engine-core';
 import { compilePack, type PackEncoder } from '../packs/compile';
 import { digest, json } from '../shared/digest';
 import { safeRelative } from '../shared/path';
 import { generateWorkspaceHookBindings } from './bindings';
+import { generateBundleRuntimeSdk, normalizeSdkTargets } from './sdk';
 import {
   BuildFailure,
   type Artifact,
@@ -137,12 +142,35 @@ const buildBundleReceipt = (
   })),
 });
 
+const buildBundleExtras = (
+  snapshot: Snapshot,
+  catalog: CompiledBundle['catalog'],
+  artifacts: readonly Artifact[],
+  bindingsTargets?: readonly HookBindingTarget[],
+  sdkTargets?: readonly SdkTarget[],
+) => {
+  const bindings =
+    bindingsTargets && bindingsTargets.length > 0
+      ? generateWorkspaceHookBindings(snapshot.files, bindingsTargets)
+      : undefined;
+  const effectiveSdk = normalizeSdkTargets([...(snapshot.config.sdk ?? []), ...(sdkTargets ?? [])]);
+  const sdk =
+    effectiveSdk.length > 0
+      ? generateBundleRuntimeSdk(snapshot.config.name, catalog, artifacts, effectiveSdk)
+      : undefined;
+  return {
+    ...(bindings && bindings.length > 0 ? { bindings } : {}),
+    ...(sdk && sdk.length > 0 ? { sdk } : {}),
+  };
+};
+
 export const compileBundle = async (
   snapshot: Snapshot,
   toolchain: string,
   encoder?: PackEncoder,
   checked = checkSnapshot(snapshot),
   bindingsTargets?: readonly HookBindingTarget[],
+  sdkTargets?: readonly SdkTarget[],
 ): Promise<CompiledBundle> => {
   const compiled = checked;
   const artifacts: Artifact[] = [];
@@ -175,15 +203,11 @@ export const compileBundle = async (
     throw new BuildFailure('export.collision', 'Duplicate output path');
   }
   const receipt = buildBundleReceipt(compiled, effectiveToolchain, catalogBytes, artifacts);
-  const bindings =
-    bindingsTargets && bindingsTargets.length > 0
-      ? generateWorkspaceHookBindings(snapshot.files, bindingsTargets)
-      : undefined;
   return {
     receipt,
     catalog,
     artifacts,
     bundleHash: digest('ashfox-bundle:1\n' + json(receipt)),
-    ...(bindings && bindings.length > 0 ? { bindings } : {}),
+    ...buildBundleExtras(snapshot, catalog, artifacts, bindingsTargets, sdkTargets),
   };
 };

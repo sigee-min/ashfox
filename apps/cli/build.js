@@ -19,6 +19,7 @@ const DOC_SOURCES = Object.freeze({
   sound: 'language/sounds.md',
   structure: 'language/structures.md',
   hooks: 'language/hooks.md',
+  sdk: 'guides/sdk.md',
 });
 
 const loadDocsBundle = () => {
