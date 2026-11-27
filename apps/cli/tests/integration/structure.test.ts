@@ -48,7 +48,7 @@ const testCheckShowcases = (temp: string): void => {
     entry: { entryName: string };
     audit: { passed: boolean; score: number; grade: string };
   }[];
-  assert.equal(products.filter((p) => p.kind === 'structure').length, 3);
+  assert.equal(products.filter((p) => p.kind === 'structure').length, 6);
   for (const prod of products) {
     if (prod.audit) {
       assert.equal(prod.audit.passed, true, prod.entry.entryName);

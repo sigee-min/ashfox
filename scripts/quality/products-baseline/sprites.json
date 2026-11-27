@@ -7,8 +7,13 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:eb04fb9c7c720bfde60c361da1aecf69b5160036204b3c8a9b60f5b976b4decf",
+      "sourceHash": "sha256:f0581461508add8f80d6402dc5442f3076870b098c2f742ddd973fb2289f56f1",
       "products": [
+        {
+          "entry": "sprites/crosshair",
+          "kind": "sprite",
+          "sha256": "219af40882f87a238816e73a96f1a209e6ecf93193aa618446cb9469563fefa4"
+        },
         {
           "entry": "sprites/iron_sword",
           "kind": "sprite",
@@ -23,9 +28,18 @@
           "entry": "sprites/ruby_potion",
           "kind": "sprite",
           "sha256": "4cd67039d3bfe72b045d3a34705ac050365ba3cd8cff4f773ed93262d7c1ca17"
+        },
+        {
+          "entry": "sprites/ui_inventory_panel",
+          "kind": "sprite",
+          "sha256": "cbab05c836ae09354ae3e7867ee7697e42ff89e4aa5b1e8ae9fb5df591da2c6c"
         }
       ],
       "files": [
+        {
+          "path": "assets/crosshair/crosshair.png",
+          "sha256": "219af40882f87a238816e73a96f1a209e6ecf93193aa618446cb9469563fefa4"
+        },
         {
           "path": "assets/iron_sword/iron_sword.png",
           "sha256": "a372cf4465984612994650b6911f28f1357a3e77fd5f8a897369dc469166ed65"
@@ -37,6 +51,14 @@
         {
           "path": "assets/ruby_potion/ruby_potion.png",
           "sha256": "4cd67039d3bfe72b045d3a34705ac050365ba3cd8cff4f773ed93262d7c1ca17"
+        },
+        {
+          "path": "assets/ui_inventory_panel/ui_inventory_panel.png",
+          "sha256": "cbab05c836ae09354ae3e7867ee7697e42ff89e4aa5b1e8ae9fb5df591da2c6c"
+        },
+        {
+          "path": "assets/ui_inventory_panel/ui_inventory_panel.sprite.json",
+          "sha256": "1b7878865a0a14253624d159750dd3ac0715714434bfbfdecce5d801b3d39dfb"
         }
       ]
     }

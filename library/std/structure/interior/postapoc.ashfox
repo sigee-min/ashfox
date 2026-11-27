@@ -1,0 +1,36 @@
+ashfox 1
+module postapoc {
+  palette {
+    dark_oak = "minecraft:dark_oak_planks";
+    spruce = "minecraft:spruce_planks";
+    cobble = "minecraft:cobblestone";
+    barrel = "minecraft:barrel[facing=up]";
+    chest = "minecraft:chest[facing=south]";
+    craft = "minecraft:crafting_table";
+    campfire = "minecraft:campfire[lit=true]";
+    lantern = "minecraft:lantern[hanging=false]";
+    bed_h = "minecraft:red_bed[facing=north,part=head]";
+    bed_f = "minecraft:red_bed[facing=north,part=foot]";
+  }
+
+  export prefab RuinedCounter {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 0b); block = dark_oak; }
+    set { at = (0b, 0b, 1b); block = cobble; }
+    set { at = (1b, 1b, 0b); block = chest; }
+    set { at = (3b, 1b, 0b); block = lantern; }
+  }
+
+  export prefab SurvivalStash {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = spruce; }
+    set { at = (0b, 1b, 0b); block = barrel; }
+    set { at = (1b, 1b, 0b); block = chest; }
+    set { at = (2b, 1b, 0b); block = barrel; }
+  }
+
+  export prefab CampOutpostBay {
+    set { at = (0b, 0b, 0b); block = craft; }
+    set { at = (1b, 0b, 0b); block = campfire; }
+    set { at = (2b, 0b, 0b); block = bed_h; }
+    set { at = (2b, 0b, 1b); block = bed_f; }
+  }
+}

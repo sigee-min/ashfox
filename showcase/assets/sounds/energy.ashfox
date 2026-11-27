@@ -1,0 +1,21 @@
+ashfox 1
+sound energy {
+  import "std/sound/weapon/energy" as e;
+
+  profile = impact;
+  duration = 0.72s;
+  channels = 2;
+  seed = 7711;
+  space { preset = stone_hall; mix = 18%; }
+
+  seq shot {
+    start = 10ms;
+    step zap { voice = e.laser_zap; at = 0s; duration = 380ms; vary_pitch = -40cents..40cents; }
+    step blast { voice = e.plasma_blast; at = 15ms; duration = 420ms; }
+    step crack { voice = e.railgun_crack; at = 5ms; duration = 320ms; }
+  }
+
+  variants { base = 42; alternate = 43; }
+  playback = oneshot;
+  master { gain = 2db; target = -13lufs; peak = -1.5db; punch = 35%; limit = true; }
+}

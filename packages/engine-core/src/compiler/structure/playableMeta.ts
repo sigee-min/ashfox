@@ -29,6 +29,7 @@ const classifyMaterial = (stateName: string): ColliderMaterial => {
   if (stateName.includes('glass')) return 'glass';
   if (
     stateName.includes('iron') ||
+    stateName.includes('copper') ||
     stateName.includes('anvil') ||
     stateName.includes('chain') ||
     stateName.includes('lantern') ||

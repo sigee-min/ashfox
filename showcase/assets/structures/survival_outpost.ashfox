@@ -1,0 +1,157 @@
+ashfox 1
+structure survival_outpost {
+  import "std/structure/arch/postapoc" as apoc;
+  import "std/structure/interior/postapoc" as apoc_int;
+  import "std/core/hook/world" as world;
+  import "std/core/hook/loot" as loot;
+
+  density = 2;
+  seed = 606;
+  size = (18b, 15b, 18b);
+  data_version = 3955;
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    brick = mix("minecraft:bricks" * 70%, "minecraft:terracotta" * 30%);
+    cobble = mix("minecraft:cobblestone" * 70%, "minecraft:mossy_cobblestone" * 30%);
+    moss_cobble = "minecraft:mossy_cobblestone";
+    timber = "minecraft:dark_oak_log[axis=y]";
+    beam = "minecraft:dark_oak_log[axis=x]";
+    plank = "minecraft:spruce_planks";
+    rust = "minecraft:exposed_copper";
+    rubble = "minecraft:cobblestone_slab[type=bottom]";
+    vines = "minecraft:oak_leaves[persistent=true]";
+    glass = "minecraft:glass_pane";
+    shard = "minecraft:light_gray_stained_glass_pane";
+    sill = "minecraft:spruce_slab[type=top]";
+    shutter = "minecraft:oak_trapdoor[facing=south,half=bottom,open=true]";
+    roof_stair = "minecraft:deepslate_brick_stairs";
+    trim_stair = "minecraft:spruce_stairs";
+    ridge = "minecraft:deepslate_brick_slab[type=bottom]";
+    porch_stair = "minecraft:cobblestone_stairs[facing=north,half=bottom]";
+    oak_stair = "minecraft:oak_stairs";
+    fence = "minecraft:spruce_fence";
+    door = "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false]";
+    lantern = "minecraft:lantern[hanging=true]";
+    porch_lamp = "minecraft:lantern[hanging=false]";
+  }
+
+  floor ground {
+    y = 0b;
+    height = 5b;
+    room main_store {
+      from = (2b, 2b); size = (11b, 9b); kind = outpost; plinth = cobble; floor = plank; wall = brick; frame = timber; ceiling = plank;
+      interior {
+        dna { arch = industrial; mood = warm_hearth; }
+        architecture { floor_pattern = plank; baseboard = trim; wainscot = brick_dado; ceiling = open_truss; }
+        platform stash_dais {
+          on = nw; size = (4, 3); height = 0.25; step_facing = south;
+          l_counter checkout { length = 4; }
+          story hearth_prep { on = checkout; }
+        }
+        wall_line {
+          on = east;
+          shelving { size = (2, 1); }
+          barrel_rack { size = (2, 1); }
+        }
+        centerpiece {
+          on = sw;
+          table camp_table { size = (2, 1); }
+          chair { on = east; }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+      }
+    }
+    room watch_annex {
+      from = (5b, 10b); size = (7b, 4b); kind = guardroom; plinth = cobble; floor = cobble; wall = brick; frame = timber; ceiling = plank;
+    }
+    facade watch_annex.south {
+      door {
+        at = center; width = 1b; height = 2b; block = door; hinge = left; frame = timber; lintel = beam;
+        porch { depth = 1; floor = cobble; pillars = timber; lamps = porch_lamp; steps = porch_stair; }
+      }
+    }
+    facade main_store.south {
+      arch { at = 4b; width = 2b; height = 3b; frame = timber; lintel = beam; }
+    }
+    facade store_windows {
+      on = [main_store.north, main_store.east, main_store.west];
+      window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; sill = sill; shutter = shutter; lintel = beam; }
+    }
+  }
+
+  floor loft {
+    y = 5b;
+    height = 4b;
+    room lookout {
+      from = (3b, 3b); size = (9b, 7b); kind = lookout; floor = plank; wall = brick; frame = timber; ceiling = plank;
+      interior {
+        dna { arch = rustic; mood = warm_hearth; }
+        architecture { floor_pattern = plank; baseboard = trim; wainscot = paneled; ceiling = open_truss; }
+        platform lookout_dais {
+          on = north; size = (4, 2); height = 0.25; step_facing = south;
+          display_case gear_rack { size = (2, 1); }
+          story scholar_study { on = gear_rack; }
+        }
+        wall_line {
+          on = east;
+          cabinet { size = (2, 1); }
+        }
+        centerpiece {
+          on = sw;
+          table radio_desk { size = (2, 1); }
+          chair { on = east; }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+      }
+    }
+    facade lookout_win {
+      on = [lookout.north, lookout.south, lookout.east, lookout.west];
+      window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = glass; sill = sill; shutter = shutter; lintel = beam; }
+    }
+  }
+
+  staircase { in_room = main_store; style = straight; at = (10b, 4b); y_from = 0b; y_to = 5b; facing = south; width = 1b; stair = oak_stair; landing = plank; rail = fence; headroom = 3b; }
+
+  roof { on = lookout; style = gable; axis = x; overhang = 1b; pitch = standard; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = brick; under_eave = true; }
+  roof { on = main_store; style = gable; axis = z; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = brick; under_eave = true; }
+
+  furnish main_store {
+    place_anchor { prefab = apoc_int.RuinedCounter; on = ne; offset = (0b, 0b); rotate = 0; }
+    hang { block = lantern; at = ceiling_center; drop = 1b; }
+  }
+  furnish watch_annex {
+    place_anchor { prefab = apoc_int.SurvivalStash; on = west; offset = (0b, 0b); rotate = 90; }
+    hang { block = lantern; at = ceiling_center; drop = 1b; }
+  }
+  furnish lookout {
+    place_anchor { prefab = apoc_int.CampOutpostBay; on = nw; offset = (0b, 0b); rotate = 0; }
+    hang { block = lantern; at = ceiling_center; drop = 1b; }
+  }
+
+  weathering {
+    ground_moss { height = 2b; target = cobble; into = moss_cobble; rate = 30%; }
+    rust_streak { target = brick; into = rust; rate = 20%; length = 3b; }
+    wall_breach { target = brick; rubble = rubble; rate = 25%; max_width = 2b; height = 2b; }
+    shattered_glass { target = glass; shard = shard; rate = 45%; }
+    vine_overgrowth { target = brick; into = vines; rate = 35%; height = 4b; }
+  }
+
+  box { from = (1b, 0b, 14b); to = (4b, 0b, 15b); block = cobble; }
+  place apoc.SandbagWall { at = (1b, 1b, 14b); rotate = 0; }
+  box { from = (13b, 0b, 12b); to = (16b, 0b, 13b); block = cobble; }
+  place apoc.RustedWireFence { at = (13b, 1b, 12b); rotate = 0; }
+  box { from = (14b, 0b, 4b); to = (14b, 0b, 6b); block = cobble; }
+  place apoc.PlankBarricade { at = (14b, 1b, 4b); rotate = 90; }
+
+  anchor outpost_entry : std.entry { at = (8b, 1b, 15b); facing = south; pool = "ashfox:postapoc"; target = "road_join"; }
+  anchor supply_stash : loot.LootChest { room = main_store; at = (11b, 1b, 9b); facing = north; tier = uncommon; table = "ashfox:postapoc/rations"; }
+  zone outpost_ambience : world.AmbientZone { from = (2b, 1b, 2b); to = (13b, 9b, 14b); cue_id = "storm"; reverb = hall; blend_radius = 6.0; }
+}

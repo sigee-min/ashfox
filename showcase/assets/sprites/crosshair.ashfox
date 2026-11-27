@@ -1,0 +1,35 @@
+ashfox 1
+sprite crosshair {
+  import "std/sprite/ui/crosshair" as ch;
+
+  profile = crosshair;
+  canvas = (32px, 32px);
+  palette {
+    pip = #ffffff;
+  }
+
+  rect corner_guard {
+    x = 6px; y = 6px; width = 3px; height = 4px;
+    material = ch.backing_slate;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(6px, 6px), (8px, 9px)]; }
+    mirror = xy;
+  }
+  rect top_tick {
+    x = 15px; y = 4px; width = 2px; height = 7px;
+    material = ch.reticle_cyan;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(15px, 4px), (16px, 10px)]; }
+    mirror = y;
+  }
+  rect side_tick {
+    x = 4px; y = 15px; width = 7px; height = 2px;
+    material = ch.reticle_white;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(4px, 15px), (10px, 16px)]; }
+    mirror = x;
+  }
+  paint center_dot {
+    at = (15px, 15px);
+    rows = ["pp", "pp"];
+    colors { p = pip; }
+  }
+  outline edge { mode = dark; strength = 2; inner_rim = true; }
+}

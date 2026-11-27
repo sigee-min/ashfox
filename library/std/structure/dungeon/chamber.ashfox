@@ -1,0 +1,43 @@
+ashfox 1
+module chamber {
+  palette {
+    stone_brick = mix("minecraft:stone_bricks" * 75%, "minecraft:cracked_stone_bricks" * 25%);
+    chiseled = "minecraft:chiseled_stone_bricks";
+    deepslate = "minecraft:deepslate_bricks";
+    floor_tile = "minecraft:deepslate_tiles";
+    slab = "minecraft:deepslate_brick_slab[type=bottom]";
+    iron_bars = "minecraft:iron_bars";
+    campfire = "minecraft:soul_campfire[lit=true]";
+    torch = "minecraft:torch";
+    chest = "minecraft:chest[facing=south]";
+  }
+
+  export prefab TorchSconce {
+    set { at = (0b, 0b, 0b); block = chiseled; }
+    set { at = (0b, 1b, 0b); block = torch; }
+  }
+
+  export prefab CryptChamber {
+    box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = floor_tile; }
+    walls { from = (0b, 1b, 0b); to = (6b, 3b, 6b); block = stone_brick; }
+    box { from = (0b, 4b, 0b); to = (6b, 4b, 6b); block = deepslate; }
+    carve { from = (2b, 1b, 6b); to = (4b, 3b, 6b); }
+    box { from = (1b, 1b, 1b); to = (1b, 3b, 1b); block = chiseled; }
+    box { from = (5b, 1b, 1b); to = (5b, 3b, 1b); block = chiseled; }
+    set { at = (3b, 1b, 1b); block = chest; }
+    set { at = (2b, 2b, 1b); block = torch; }
+    set { at = (4b, 2b, 1b); block = torch; }
+  }
+
+  export prefab BossVault {
+    box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = floor_tile; }
+    box { from = (1b, 1b, 1b); to = (5b, 1b, 2b); block = slab; }
+    box { from = (0b, 1b, 0b); to = (0b, 4b, 0b); block = chiseled; }
+    box { from = (6b, 1b, 0b); to = (6b, 4b, 0b); block = chiseled; }
+    box { from = (0b, 1b, 6b); to = (0b, 4b, 6b); block = chiseled; }
+    box { from = (6b, 1b, 6b); to = (6b, 4b, 6b); block = chiseled; }
+    set { at = (1b, 1b, 4b); block = campfire; }
+    set { at = (5b, 1b, 4b); block = campfire; }
+    set { at = (3b, 4b, 0b); block = iron_bars; }
+  }
+}

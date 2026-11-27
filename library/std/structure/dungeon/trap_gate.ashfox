@@ -1,0 +1,49 @@
+ashfox 1
+module trap_gate {
+  export schema TrapPlate : anchor {
+    field trigger_kind : enum(dart, spike, portcullis, alarm) = dart;
+    field cooldown : second = 4s;
+    field armed : bool = true;
+    field target_id : string = "";
+    mc_block = "minecraft:stone_pressure_plate";
+  }
+
+  palette {
+    deepslate = "minecraft:deepslate_bricks";
+    chiseled = "minecraft:chiseled_stone_bricks";
+    stone_stair = "minecraft:deepslate_brick_stairs[facing=north,half=bottom]";
+    iron_bars = "minecraft:iron_bars";
+    plate = "minecraft:stone_pressure_plate";
+    heavy_plate = "minecraft:heavy_weighted_pressure_plate";
+    soul_lantern = "minecraft:soul_lantern[hanging=false]";
+    torch = "minecraft:torch";
+    gold_trim = "minecraft:gold_block";
+  }
+
+  export prefab PortcullisGate {
+    box { from = (0b, 0b, 0b); to = (0b, 4b, 0b); block = deepslate; }
+    box { from = (4b, 0b, 0b); to = (4b, 4b, 0b); block = deepslate; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 0b); block = chiseled; }
+    box { from = (1b, 2b, 0b); to = (3b, 3b, 0b); block = iron_bars; }
+    set { at = (1b, 1b, 0b); block = stone_stair; }
+    set { at = (0b, 2b, 1b); block = torch; }
+    set { at = (4b, 2b, 1b); block = torch; }
+  }
+
+  export prefab PressureTrapPad {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 2b); block = chiseled; }
+    set { at = (1b, 1b, 1b); block = plate; }
+    set { at = (0b, 1b, 1b); block = heavy_plate; }
+  }
+
+  export prefab BossGate {
+    box { from = (0b, 0b, 0b); to = (1b, 4b, 1b); block = deepslate; }
+    box { from = (5b, 0b, 0b); to = (6b, 4b, 1b); block = deepslate; }
+    box { from = (0b, 4b, 0b); to = (6b, 4b, 1b); block = chiseled; }
+    set { at = (1b, 3b, 0b); block = gold_trim; }
+    set { at = (5b, 3b, 0b); block = gold_trim; }
+    box { from = (2b, 2b, 0b); to = (4b, 3b, 0b); block = iron_bars; }
+    set { at = (0b, 2b, 1b); block = soul_lantern; }
+    set { at = (6b, 2b, 1b); block = soul_lantern; }
+  }
+}

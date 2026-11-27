@@ -1,0 +1,37 @@
+ashfox 1
+model oak_tree {
+  import "std/model/nature/tree" as tree;
+  import "std/model/motion/nature" as nat;
+  import "std/core/material/wood" as wood;
+  import "std/core/palette/nature" as natpal;
+
+  surface woodland_oak: tree.TreeSurface {
+    material = double;
+    texture atlas {
+      density = 2;
+      atlas = (256px, 256px);
+      background = void; background_alpha = 255;
+      palette {
+        void = #241b15;
+        bark = (wood.WoodParams.oak_shadow, wood.WoodParams.oak_base, wood.WoodParams.oak_light);
+        root_bark = (#2e2017, #4a3527, #6b4e3b);
+        leaf_low = (natpal.WoodlandFoliage.canopy_shadow, natpal.WoodlandFoliage.canopy_base, #5f994d);
+        leaf_mid = (#36612e, natpal.WoodlandFoliage.canopy_base, natpal.WoodlandFoliage.canopy_light);
+        leaf_top = (natpal.WoodlandFoliage.fern_base, natpal.WoodlandFoliage.canopy_light, #97cf7a);
+      }
+      chart root box { fill = root_bark; roughness = 0.88; grain = wood; pattern ao { strength = 0.45; radius = 0.9u; } }
+      chart bark box { fill = bark; roughness = 0.86; grain = wood; pattern stripe { paint = root_bark; axis = x; period = 3px; width = 1px; } pattern ao { strength = 0.4; radius = 0.8u; } }
+      chart bough box { fill = bark; roughness = 0.86; grain = wood; pattern gradient { to = root_bark; axis = x; space = local; soft = 0.25; } }
+      chart canopy_low box { fill = leaf_low; roughness = 0.90; grain = clustered; pattern ao { strength = 0.45; radius = 1.0u; } }
+      chart canopy_mid box { fill = leaf_mid; roughness = 0.88; grain = clustered; pattern gradient { to = leaf_top; axis = y; space = local; soft = 0.3; } }
+      chart canopy_top box { fill = leaf_top; roughness = 0.86; grain = clustered; pattern gradient { to = leaf_mid; axis = y; space = local; soft = 0.2; } }
+      grain soft { seed = 8807; }
+      tone painterly;
+    }
+  }
+
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = nat.FoliageSkeleton;
+  motions = [nat.wind_sway];
+  use tree.OakTree(height_scale = 1.0) as trunk_mesh { skeleton = nat.FoliageRig; skin = woodland_oak; }
+}

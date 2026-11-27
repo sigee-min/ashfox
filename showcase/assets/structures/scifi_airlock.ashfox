@@ -1,0 +1,151 @@
+ashfox 1
+structure scifi_airlock {
+  import "std/structure/arch/scifi" as scifi;
+  import "std/structure/interior/scifi" as scifi_int;
+  import "std/core/hook/world" as world;
+  import "std/core/hook/loot" as loot;
+
+  density = 2;
+  seed = 505;
+  size = (18b, 15b, 18b);
+  data_version = 3955;
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    hull = mix("minecraft:light_gray_concrete" * 80%, "minecraft:smooth_quartz" * 20%);
+    rib = "minecraft:gray_concrete";
+    deck = "minecraft:black_concrete";
+    rust = "minecraft:exposed_copper";
+    glass = "minecraft:cyan_stained_glass_pane";
+    sill = "minecraft:polished_deepslate_slab[type=top]";
+    roof_stair = "minecraft:polished_deepslate_stairs";
+    trim_stair = "minecraft:smooth_quartz_stairs";
+    ridge = "minecraft:smooth_quartz_slab[type=bottom]";
+    porch_stair = "minecraft:smooth_quartz_stairs[facing=north,half=bottom]";
+    bars = "minecraft:iron_bars";
+    door = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    lamp = "minecraft:sea_lantern";
+  }
+
+  floor lower_deck {
+    y = 0b;
+    height = 5b;
+    room command_bay {
+      from = (1b, 1b); size = (11b, 10b); kind = lab; plinth = rib; floor = deck; wall = hull; frame = rib; ceiling = rib;
+      interior {
+        dna { arch = scifi; mood = cyber_neon; }
+        architecture { floor_pattern = metal_grate; baseboard = metal_plinth; wainscot = ribbed_panel; molding = led_strip; ceiling = coffered; strip_light_color = "#4ce8ff"; }
+        platform bridge_dais {
+          on = north; size = (5, 3); height = 0.25; step_facing = south;
+          console_terminal main_console { size = (3, 1); }
+          story scifi_diagnostics { on = main_console; }
+        }
+        wall_line {
+          on = west;
+          terminal { size = (2, 1); }
+          cabinet { size = (2, 1); }
+        }
+        centerpiece {
+          on = se;
+          holo_screen holo_map { size = (2, 1); }
+          swivel_chair { on = west; }
+        }
+        drapery cables { kind = cables; on = ceiling_span; }
+        lighting { kind = led_strip; color = "#4ce8ff"; bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.4; }
+      }
+    }
+    room airlock_vestibule {
+      from = (4b, 10b); size = (8b, 5b); kind = airlock; plinth = rib; floor = deck; wall = hull; frame = rib; ceiling = rib;
+    }
+    facade airlock_vestibule.south {
+      door {
+        at = center; width = 2b; height = 2b; block = door; hinge = left; frame = rib; lintel = rib;
+        porch { depth = 1; floor = deck; pillars = rib; lamps = lamp; steps = porch_stair; }
+      }
+    }
+    facade command_bay.south {
+      arch { at = 5b; width = 2b; height = 3b; frame = rib; lintel = rib; }
+    }
+    facade viewports {
+      on = [command_bay.north, command_bay.east, command_bay.west];
+      window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = rib; stained_glass_color = "#4ce8ff"; }
+    }
+    facade vestibule_ports {
+      on = [airlock_vestibule.east, airlock_vestibule.west];
+      window { at = center; width = 1b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = rib; stained_glass_color = "#4ce8ff"; }
+    }
+  }
+
+  floor upper_deck {
+    y = 5b;
+    height = 4b;
+    room obs_deck {
+      from = (2b, 2b); size = (9b, 8b); kind = observatory; floor = deck; wall = hull; frame = rib; ceiling = rib;
+      interior {
+        dna { arch = scifi; mood = cyber_neon; }
+        architecture { floor_pattern = metal_grate; baseboard = metal_plinth; wainscot = ribbed_panel; molding = led_strip; ceiling = coffered; strip_light_color = "#4ce8ff"; }
+        platform ops_dais {
+          on = north; size = (4, 2); height = 0.25; step_facing = south;
+          console_terminal obs_console { size = (2, 1); }
+          story scifi_diagnostics { on = obs_console; }
+        }
+        wall_line {
+          on = west;
+          terminal { size = (2, 1); }
+        }
+        centerpiece {
+          on = se;
+          table ops_table { size = (2, 1); }
+          swivel_chair { on = west; }
+        }
+        drapery cables { kind = cables; on = ceiling_span; }
+        lighting { kind = led_strip; color = "#4ce8ff"; bounces = 2; ambient_floor = 0.16; }
+      }
+    }
+    facade obs_ns {
+      on = [obs_deck.north, obs_deck.south];
+      window { at = center; width = 3b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = rib; stained_glass_color = "#4ce8ff"; }
+    }
+    facade obs_ew {
+      on = [obs_deck.east, obs_deck.west];
+      window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = rib; stained_glass_color = "#4ce8ff"; }
+    }
+  }
+
+  staircase { in_room = command_bay; style = straight; at = (9b, 3b); y_from = 0b; y_to = 5b; facing = south; width = 1b; stair = trim_stair; landing = hull; rail = bars; headroom = 3b; }
+
+  roof { on = obs_deck; style = hip; axis = x; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = hull; under_eave = true; }
+  roof { on = command_bay; style = gable; axis = x; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = hull; under_eave = true; }
+  roof { on = airlock_vestibule; style = gable; axis = z; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = hull; under_eave = true; }
+
+  furnish command_bay {
+    place_anchor { prefab = scifi_int.CryoPod; on = ne; offset = (0b, 0b); rotate = 0; }
+    hang { block = lamp; at = ceiling_center; drop = 1b; }
+  }
+  furnish airlock_vestibule {
+    place_anchor { prefab = scifi_int.ControlConsole; on = west; offset = (0b, 0b); rotate = 90; }
+    hang { block = lamp; at = ceiling_center; drop = 1b; }
+  }
+  furnish obs_deck {
+    place_anchor { prefab = scifi_int.HoloDisplay; on = nw; offset = (0b, 0b); rotate = 0; }
+    hang { block = lamp; at = ceiling_center; drop = 1b; }
+  }
+
+  weathering {
+    rust_streak { target = hull; into = rust; rate = 22%; length = 3b; }
+  }
+
+  box { from = (12b, 0b, 2b); to = (17b, 0b, 8b); block = deck; }
+  place scifi.LandingPadBay { at = (11b, 0b, 10b); rotate = 0; }
+  place scifi.RibbedBulkhead { at = (12b, 1b, 2b); rotate = 0; }
+
+  anchor airlock_entry : std.entry { at = (7b, 1b, 15b); facing = south; pool = "ashfox:scifi"; target = "corridor_join"; }
+  anchor airlock_portal : scifi.DoorPortal { room = airlock_vestibule; at = (7b, 1b, 14b); facing = south; door_mode = sliding_airlock; destination = "command_deck"; }
+  anchor supply_locker : loot.LootChest { room = obs_deck; at = (9b, 6b, 3b); facing = west; tier = rare; table = "ashfox:scifi/gear"; }
+  zone airlock_safe : world.SafeZone { from = (1b, 1b, 1b); to = (12b, 9b, 15b); pvp_disabled = false; regen_rate = 0.0; label = "Orbital Airlock"; }
+}

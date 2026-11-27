@@ -1,10 +1,10 @@
 # 스프라이트 문법 레퍼런스
 
-네이티브 스프라이트는 `16×16`, `32×32`, 또는 `64×64` 결정적 정사각형 PNG(`32×32` 권장)를 생성합니다. 지원 프로필은 `item`, `tile`, `icon`, `decal`입니다. CPU 오딧, `preview inspect`, 빌드 명령은 [스프라이트 제작](../guides/sprites.md)을 참고하세요.
+네이티브 스프라이트는 `16×16`, `32×32`, 또는 `64×64` 결정적 정사각형 PNG(`32×32` 권장)를 생성합니다. 지원 프로필은 `item`, `tile`, `icon`, `ui_9slice`, `crosshair`, `hud_bar`, `decal`입니다. CPU 오딧, `preview inspect`, 빌드 명령은 [스프라이트 제작](../guides/sprites.md)을 참고하세요.
 
 ## 루트와 리터럴 문법
 
-`ashfox 1` 다음에 `sprite name { … }`를 씁니다. 루트 필수 속성은 `profile`, `canvas`, `palette`이며 레이어는 원본 순서대로 이름 있는 선언입니다.
+`ashfox 1` 다음에 `sprite name { … }`를 씁니다. 루트 필수 속성은 `profile`, `canvas`, `palette`이며 레이어는 원본 순서대로 이름 있는 선언입니다. `ui_9slice` 프로필에서 `slice = (left, right, top, bottom);`(`px` 단위)를 선언하면 `{ nineSlice: { left, right, top, bottom } }` 메타데이터를 담은 `<target>.sprite.json`을 함께 출력합니다. `alpha`(`0..1`), 도형 `feather`(`px`), `#rrggbbaa` 8자리 알파 색상은 `decal`의 부드러운 알파 합성을 지원합니다.
 
 | 형태 | 예제 |
 | --- | --- |

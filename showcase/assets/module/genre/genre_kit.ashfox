@@ -1,0 +1,163 @@
+ashfox 1
+module genre_kit {
+  import "std/model/rig/drone" as drone;
+  import "std/model/rig/biped" as biped;
+  import "std/model/armor/helm" as helm;
+
+  export surface contract DroneSurface {
+    chart hull box { coverage = opaque; }
+    chart armor box { coverage = opaque; }
+    chart fin box { coverage = opaque; }
+    chart strut box { coverage = opaque; }
+    chart leg_strut box { coverage = opaque; }
+    chart skid box { coverage = opaque; }
+    chart guard box { coverage = opaque; }
+    chart rotor box { coverage = opaque; }
+    chart gimbal box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface contract DroneGlow {
+    chart thruster box { coverage = opaque; }
+    chart lens box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export component DroneBody(param rotor_scale : ratio = 1.0) {
+    requires rig skeleton: drone.DroneRig;
+    requires surface skin: DroneSurface;
+    requires surface glow: DroneGlow;
+    bind bone body to skeleton.body;
+    bind bone rotor_1 to skeleton.rotor_1;
+    bind bone rotor_2 to skeleton.rotor_2;
+    bind bone rotor_3 to skeleton.rotor_3;
+    bind bone rotor_4 to skeleton.rotor_4;
+    bind bone gimbal_cam to skeleton.gimbal_cam;
+    geometry {
+      bone body {
+        cube core_chassis { origin = (-4u, 14u, -5u); size = (8u, 4u, 10u); surface = skin.hull; }
+        taper upper_cowling { origin = (-3.5u, 18u, -4u); size = (7u, 2u, 8u); top_scale = (0.78, 0.78); axis = y; surface = skin.armor; }
+        cube wing_arm_fl { origin = (-7u, 16u, -7u); size = (4u, 1u, 3u); pivot = (-4u, 16.5u, -4u); rotation = (0deg, 35deg, 0deg); mirror_x = wing_arm_fr; surface = skin.strut; }
+        cube wing_arm_rl { origin = (-7u, 16u, 4u); size = (4u, 1u, 3u); pivot = (-4u, 16.5u, 4u); rotation = (0deg, -35deg, 0deg); mirror_x = wing_arm_rr; surface = skin.strut; }
+        cube thruster_pod { origin = (-2u, 14u, 5u); size = (4u, 3u, 2u); surface = glow.thruster; }
+        cube vent_fin_l { origin = (-5u, 15u, -2u); size = (1u, 2u, 5u); pivot = (-5u, 16u, 0u); rotation = (0deg, 0deg, -12deg); mirror_x = vent_fin_r; surface = skin.fin; }
+        cube skid_leg_fl { origin = (-5u, 1u, -4u); size = (1u, 13u, 1u); pivot = (-4.5u, 14u, -3.5u); rotation = (0deg, 0deg, 6deg); mirror_x = skid_leg_fr; surface = skin.leg_strut; }
+        cube skid_leg_rl { origin = (-5u, 1u, 3u); size = (1u, 13u, 1u); pivot = (-4.5u, 14u, 3.5u); rotation = (0deg, 0deg, 6deg); mirror_x = skid_leg_rr; surface = skin.leg_strut; }
+        cube skid_rail_l { origin = (-6u, 0u, -6u); size = (2u, 1u, 12u); mirror_x = skid_rail_r; surface = skin.skid; }
+        bone rotor_1 {
+          cylinder guard_1 { origin = (-7u, 17u, -7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
+          cube blade_1a { origin = (-9.5u, 18u, -7.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, -7u); surface = skin.rotor; }
+          cube blade_1b { origin = (-7.5u, 18u, -9.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, -7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
+        }
+        bone rotor_2 {
+          cylinder guard_2 { origin = (7u, 17u, -7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
+          cube blade_2a { origin = (4.5u, 18u, -7.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (7u, 18.5u, -7u); surface = skin.rotor; }
+          cube blade_2b { origin = (4.5u, 18u, -7.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (7u, 18.5u, -7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
+        }
+        bone rotor_3 {
+          cylinder guard_3 { origin = (-7u, 17u, 7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
+          cube blade_3a { origin = (-9.5u, 18u, 6.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, 7u); surface = skin.rotor; }
+          cube blade_3b { origin = (-9.5u, 18u, 6.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (-7u, 18.5u, 7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
+        }
+        bone rotor_4 {
+          cylinder guard_4 { origin = (7u, 17u, 7u); radius = 3u * rotor_scale; radius_top = 3u * rotor_scale; height = 1u; sides = 8; axis = y; surface = skin.guard; }
+          cube blade_4a { origin = (4.5u, 18u, 6.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (7u, 18.5u, 7u); surface = skin.rotor; }
+          cube blade_4b { origin = (4.5u, 18u, 6.5u); size = (5u * rotor_scale, 1u, 1u); pivot = (7u, 18.5u, 7u); rotation = (0deg, 90deg, 0deg); surface = skin.rotor; }
+        }
+        bone gimbal_cam {
+          cube cam_housing { origin = (-2u, 11.5u, -6u); size = (4u, 3u, 4u); surface = skin.gimbal; }
+          cube cam_optic { origin = (-1.5u, 12u, -6.5u); size = (3u, 2u, 1u); surface = glow.lens; }
+        }
+      }
+    }
+  }
+
+  export surface contract ZombieSurface {
+    chart hips box { coverage = opaque; }
+    chart belt box { coverage = opaque; }
+    chart chest box { coverage = opaque; }
+    chart collar box { coverage = opaque; }
+    chart rib box { coverage = opaque; }
+    chart head box { coverage = opaque; }
+    chart jaw box { coverage = opaque; }
+    chart brow box { coverage = opaque; }
+    chart face_neutral flat { coverage = opaque; }
+    chart face_alert flat { coverage = opaque; }
+    chart shoulder box { coverage = opaque; }
+    chart arm box { coverage = opaque; }
+    chart hand box { coverage = opaque; }
+    chart thigh box { coverage = opaque; }
+    chart shin box { coverage = opaque; }
+    chart rot_shin box { coverage = opaque; }
+    chart boot box { coverage = opaque; }
+    chart rag flat { coverage = binary; }
+    material = double;
+  }
+
+  export component ZombieBody(param hunch : number = 6.0) {
+    requires rig skeleton: biped.BipedRig;
+    requires surface skin: ZombieSurface;
+    provides socket head_helm: helm.HeadHelmSocket capacity = one;
+    bind bone root to skeleton.root;
+    bind bone pelvis to skeleton.pelvis;
+    bind bone torso to skeleton.torso;
+    bind bone head to skeleton.head;
+    bind bone left_arm to skeleton.left_arm;
+    bind bone right_arm to skeleton.right_arm;
+    bind bone weapon to skeleton.weapon;
+    bind bone left_leg to skeleton.left_leg;
+    bind bone right_leg to skeleton.right_leg;
+    bind socket head_helm to bone head {
+      frame { origin = (0u, 28u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        bone pelvis {
+          cube hips { origin = (-4u, 10u, -2.5u); size = (8u, 4u, 5u); surface = skin.hips; }
+          cube belt { origin = (-4u, 12.5u, -3u); size = (8u, 2u, 6u); surface = skin.belt; }
+          plane shred_front { origin = (2.5u, 6.5u, -3.1u); size = (5u, 4u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.rag; }
+          bone torso {
+            cube chest { origin = (-4.5u, 14u, -3u); size = (9u, 10u, 6u); pivot = (0u, 14u, 0u); rotation = (1deg * hunch, 0deg, 0deg); surface = skin.chest; }
+            cube exposed_ribs { origin = (-2.5u, 16u, -3.5u); size = (5u, 4u, 1u); pivot = (0u, 14u, 0u); rotation = (1deg * hunch, 0deg, 0deg); surface = skin.rib; }
+            cube collar_l { origin = (-4.5u, 22.5u, -3u); size = (2u, 2u, 6u); mirror_x = collar_r; surface = skin.collar; }
+            bone head {
+              cube skull { origin = (-4u, 24u, -4u); size = (8u, 8u, 8u); surface = skin.head; }
+              cube jaw { origin = (-3u, 23.5u, -4.5u); size = (6u, 3u, 4u); pivot = (0u, 25u, -2u); rotation = (10deg, 0deg, 0deg); surface = skin.jaw; }
+              cube brow_l { origin = (-3.5u, 29u, -4.3u); size = (3u, 1u, 1u); mirror_x = brow_r; surface = skin.brow; }
+              expression_slot face {
+                origin = (3.5u, 25.5u, -4.08u);
+                size = (7u, 4u);
+                u_axis = (-1u, 0u, 0u);
+                v_axis = (0u, 1u, 0u);
+                neutral = skin.face_neutral;
+                alert = skin.face_alert;
+              }
+            }
+            bone left_arm {
+              cube l_shoulder { origin = (-8.5u, 18u, -2u); size = (4u, 5u, 4u); surface = skin.shoulder; }
+              cube l_forearm { origin = (-8u, 11.5u, -2u); size = (3u, 7u, 4u); pivot = (-6.5u, 18u, 0u); rotation = (-12deg, 0deg, 0deg); surface = skin.arm; }
+              cube l_hand { origin = (-8u, 9.5u, -2u); size = (3u, 3u, 4u); surface = skin.hand; }
+            }
+            bone right_arm {
+              cube r_shoulder { origin = (4.5u, 18u, -2u); size = (4u, 5u, 4u); surface = skin.shoulder; }
+              cube r_forearm { origin = (5u, 11.5u, -2u); size = (3u, 7u, 4u); surface = skin.arm; }
+              bone weapon {
+                cube r_hand { origin = (5u, 9.5u, -2u); size = (3u, 3u, 4u); surface = skin.hand; }
+              }
+            }
+          }
+          bone left_leg {
+            cube l_thigh { origin = (-4u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.thigh; }
+            cube l_shin { origin = (-3.5u, 1.5u, -1.5u); size = (3u, 4u, 3u); surface = skin.rot_shin; }
+            cube l_boot { origin = (-4u, 0u, -2.5u); size = (4u, 2u, 5u); surface = skin.boot; }
+          }
+          bone right_leg {
+            cube r_thigh { origin = (0u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.thigh; }
+            cube r_shin { origin = (0.5u, 1.5u, -1.5u); size = (3u, 4u, 3u); surface = skin.shin; }
+            cube r_boot { origin = (0u, 0u, -2.5u); size = (4u, 2u, 5u); surface = skin.boot; }
+          }
+        }
+      }
+    }
+  }
+}

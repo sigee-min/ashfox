@@ -44,6 +44,10 @@ for shared design variables and exact resize relationships.
 | `block` | `showcase/assets/models/rune_bricks.ashfox` | Single-cube 16×16×16 textured block without forced rotation or symmetry |
 | `prop` | `showcase/assets/models/wall_lantern.ashfox` | Emissive cutout cage prop with `taper`/`wedge` brackets and PBR metallic sheen |
 | `prop` | `showcase/assets/models/treasure_chest.ashfox` | Modular prop using `"std/model/prop/container"` and `std/core/hook/loot` hooks |
+| `prop` | `showcase/assets/models/oak_tree.ashfox` | Nature foliage prop built from `"std/model/nature/tree"` + `"std/model/motion/nature"` (`wind_sway`) |
+| `prop` | `showcase/assets/models/iron_helm.ashfox` | Socket-compatible plate helm importing `"std/model/armor/helm"` (`HeadHelmSocket`) |
+| `prop` | `showcase/assets/models/scifi_drone.ashfox` | Sci-fi hover drone using `"std/model/rig/drone"` with bone-bound `hitzone` weakpoints |
+| `creature` | `showcase/assets/models/zombie_walker.ashfox` | Survival zombie using `"std/model/rig/biped"`, `"std/model/motion/zombie"`, headshot `hitzone`, and `head_helm` socket |
 | `creature` | `showcase/assets/models/goblin_raider.ashfox` | Biped creature built from `"std/model/rig/biped"`, `"std/model/motion/combat"`, expressions, and capsule collider |
 | `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | Compact variant swap over shared `"std/*"` modules with flame staff and VFX/sound cues |
 | `creature` | `showcase/assets/models/griffin_boss.ashfox` | Winged quadruped creature using `"std/model/rig/winged_quadruped"`, 3-tier swept eagle wings, lateral eyes, and secondary tail physics |
@@ -51,6 +55,11 @@ for shared design variables and exact resize relationships.
 | `structure` | `showcase/assets/structures/tavern.ashfox` | Multi-story timber tavern with furnished interior, radiosity GI, and `LootSpawn`/`DoorPortal` hooks |
 | `structure` | `showcase/assets/structures/blacksmith.ashfox` | Stone-and-timber forge with open hearth, anvil interior, and chimney embers |
 | `structure` | `showcase/assets/structures/modern_gallery.ashfox` | Modern glazed-atrium gallery with stained glass GI and contemporary display furnishings |
+| `structure` | `showcase/assets/structures/scifi_airlock.ashfox` | Sci-fi facility bay using `"std/structure/arch/scifi"`, `"std/structure/interior/scifi"`, and `rust_streak` weathering |
+| `structure` | `showcase/assets/structures/survival_outpost.ashfox` | Post-apoc survivor camp using `"std/structure/arch/postapoc"`, `"std/structure/interior/postapoc"`, `wall_breach`, and `vine_overgrowth` |
+| `structure` | `showcase/assets/structures/dungeon_gate.ashfox` | Modular crypt gatehouse using `"std/structure/dungeon/{corridor,chamber,trap_gate}"` and `TrapPlate` hooks |
+
+Multi-genre standard library kits under `std/model/` also provide `rig/{vehicle,mech,turret,drone,fps_arms}`, `motion/{vehicle,firearm,zombie,mech,nature}`, `armor/{helm,cuirass,shield}`, and `nature/{tree,foliage,rock,survival}` — inspect them via `ashfox library std list model`.
 
 ## Creature art direction (Do / Don't)
 

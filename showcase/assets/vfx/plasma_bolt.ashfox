@@ -1,0 +1,9 @@
+ashfox 1
+vfx plasma_bolt {
+  import "std/vfx/weapon/plasma_bolt" as plasma;
+
+  preview flipbook { sheet = flipbook; background = dark; width = 512; height = 512; }
+  preview peak { time = 0.16s; background = dark; azimuth = 35; elevation = 24; width = 640; height = 480; }
+
+  use plasma.PlasmaBolt;
+}

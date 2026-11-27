@@ -1,0 +1,145 @@
+ashfox 1
+structure dungeon_gate {
+  import "std/structure/dungeon/corridor" as corr;
+  import "std/structure/dungeon/chamber" as cham;
+  import "std/structure/dungeon/trap_gate" as trap;
+  import "std/core/hook/world" as world;
+  import "std/core/hook/loot" as loot;
+  import "../models/wall_lantern.ashfox" as custom_lantern;
+
+  density = 2;
+  seed = 707;
+  size = (18b, 16b, 18b);
+  data_version = 3955;
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    stone_brick = mix("minecraft:stone_bricks" * 70%, "minecraft:cracked_stone_bricks" * 20%, "minecraft:mossy_stone_bricks" * 10%);
+    moss_stone = "minecraft:mossy_stone_bricks";
+    deepslate = "minecraft:deepslate_bricks";
+    chiseled = "minecraft:chiseled_stone_bricks";
+    floor_tile = "minecraft:deepslate_tiles";
+    vines = "minecraft:oak_leaves[persistent=true]";
+    roof_stair = "minecraft:deepslate_brick_stairs";
+    trim_stair = "minecraft:stone_brick_stairs";
+    ridge = "minecraft:deepslate_brick_slab[type=bottom]";
+    porch_stair = "minecraft:deepslate_brick_stairs[facing=north,half=bottom]";
+    sill = "minecraft:deepslate_brick_slab[type=top]";
+    bars = "minecraft:iron_bars";
+    door = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    soul_lantern = "minecraft:soul_lantern[hanging=true]";
+    lantern = asset(custom_lantern, "minecraft:lantern[hanging=false]");
+    torch = "minecraft:torch";
+  }
+
+  floor crypt_ground {
+    y = 0b;
+    height = 5b;
+    room gate_hall {
+      from = (2b, 2b); size = (10b, 9b); kind = dungeon; plinth = deepslate; floor = floor_tile; wall = stone_brick; frame = deepslate; ceiling = deepslate;
+      interior {
+        dna { arch = gothic; mood = arcane_dusk; }
+        architecture { floor_pattern = stone_slab; baseboard = stone_plinth; wainscot = brick_dado; ceiling = vault; }
+        platform boss_dais {
+          on = north; size = (4, 2); height = 0.25; step_facing = south;
+          display_case relic_altar { size = (2, 1); }
+          story alchemy_brew { on = relic_altar; }
+        }
+        wall_line {
+          on = west;
+          cabinet { size = (2, 1); }
+          shelving { size = (2, 1); }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; stained_glass_boost = 1.3; }
+      }
+    }
+    room trap_vestibule {
+      from = (4b, 10b); size = (7b, 4b); kind = hallway; plinth = deepslate; floor = floor_tile; wall = stone_brick; frame = deepslate; ceiling = deepslate;
+    }
+    facade trap_vestibule.south {
+      door {
+        at = center; width = 1b; height = 2b; block = door; hinge = left; frame = chiseled; lintel = deepslate;
+        porch { depth = 1; floor = deepslate; pillars = chiseled; lamps = lantern; steps = porch_stair; }
+      }
+    }
+    facade gate_hall.south {
+      arch { at = 4b; width = 2b; height = 3b; frame = chiseled; lintel = deepslate; }
+    }
+    facade arrow_slits {
+      on = [gate_hall.north, gate_hall.east, gate_hall.west];
+      window { symmetric = 1b; width = 1b; height = 2b; y_offset = 1b; glass = bars; sill = sill; lintel = chiseled; }
+    }
+  }
+
+  floor battlement_keep {
+    y = 5b;
+    height = 5b;
+    room upper_watch {
+      from = (2b, 2b); size = (10b, 8b); kind = tower; floor = floor_tile; wall = stone_brick; frame = deepslate; ceiling = deepslate;
+      interior {
+        dna { arch = gothic; mood = arcane_dusk; }
+        architecture { floor_pattern = stone_slab; baseboard = stone_plinth; wainscot = brick_dado; ceiling = vault; }
+        platform watch_dais {
+          on = north; size = (3, 2); height = 0.25; step_facing = south;
+          display_case watch_relic { size = (2, 1); }
+          story alchemy_brew { on = watch_relic; }
+        }
+        wall_line {
+          on = west;
+          cabinet { size = (2, 1); }
+        }
+        centerpiece {
+          on = east;
+          table war_table { size = (2, 1); }
+          chair { on = south; }
+        }
+        drapery chains { kind = chains; on = ceiling_span; }
+        lighting { bounces = 2; ambient_floor = 0.14; }
+      }
+    }
+    facade watch_slits {
+      on = [upper_watch.north, upper_watch.south, upper_watch.east, upper_watch.west];
+      window { at = center; width = 2b; height = 2b; y_offset = 1b; glass = bars; sill = sill; lintel = chiseled; }
+    }
+  }
+
+  staircase { in_room = gate_hall; style = straight; at = (10b, 4b); y_from = 0b; y_to = 5b; facing = south; width = 1b; stair = trim_stair; landing = deepslate; rail = bars; headroom = 3b; }
+
+  roof { on = upper_watch; style = spire; axis = x; overhang = 0b; pitch = steep; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = deepslate; under_eave = true; battlement = true; }
+  roof { on = gate_hall; style = gable; axis = x; overhang = 1b; pitch = standard; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = stone_brick; under_eave = true; }
+
+  furnish gate_hall {
+    place_anchor { prefab = trap.PressureTrapPad; on = south; offset = (0b, 0b); rotate = 0; }
+    hang { block = soul_lantern; at = ceiling_center; drop = 1b; }
+  }
+  furnish trap_vestibule {
+    place_anchor { prefab = cham.TorchSconce; on = east; offset = (0b, 0b); rotate = 0; }
+    hang { block = soul_lantern; at = ceiling_center; drop = 1b; }
+  }
+  furnish upper_watch {
+    hang { block = soul_lantern; at = ceiling_center; drop = 1b; }
+  }
+
+  weathering {
+    ground_moss { height = 2b; target = stone_brick; into = moss_stone; rate = 35%; }
+    corner_quoin { target = stone_brick; corners = chiseled; }
+    vine_overgrowth { target = stone_brick; into = vines; rate = 25%; height = 4b; }
+  }
+
+  box { from = (12b, 0b, 2b); to = (16b, 0b, 6b); block = deepslate; }
+  place corr.StraightHall { at = (12b, 1b, 2b); rotate = 0; }
+  box { from = (11b, 0b, 12b); to = (15b, 0b, 13b); block = deepslate; }
+  place trap.PortcullisGate { at = (11b, 1b, 12b); rotate = 0; }
+  set { at = (10b, 2b, 14b); block = torch; }
+
+  anchor gate_entry : std.entry { at = (7b, 1b, 15b); facing = south; pool = "ashfox:dungeon"; target = "corridor_join"; }
+  anchor trap_trigger : trap.TrapPlate { room = trap_vestibule; at = (7b, 1b, 12b); trigger_kind = portcullis; cooldown = 4s; armed = true; target_id = "boss_gate"; }
+  anchor boss_loot : loot.LootChest { room = gate_hall; at = (3b, 1b, 3b); facing = south; tier = epic; table = "ashfox:dungeon/boss"; }
+  anchor gate_portal : world.PortalGate { room = gate_hall; at = (7b, 1b, 3b); facing = south; target_world = "dungeon"; destination = "crypt_boss"; }
+}

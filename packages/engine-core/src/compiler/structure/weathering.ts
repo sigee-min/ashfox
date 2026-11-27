@@ -23,6 +23,8 @@ import type {
   StructureSocketMeta,
 } from './contract';
 import type { CompiledInteriorRoom } from './interior/types';
+import { seededNoise, type WeatheringContext } from './weatherCtx';
+import { applyExtraWeatheringRule } from './weatherRules';
 
 export interface EvalState {
   readonly rootPath: string;
@@ -134,29 +136,7 @@ export const createEvalState = (
   };
 };
 
-export interface WeatheringContext {
-  readonly seed: number;
-  readonly size: IntVec3;
-  readonly voxels: Int32Array;
-  readonly states: readonly string[];
-  readonly rooms: readonly StructureRoomMeta[];
-  readonly roofCells: readonly IntVec3[];
-  readonly chimneyTops: readonly IntVec3[];
-  readonly ownerPath: string;
-  readonly resolve: (
-    keyOrState: string,
-    ownerPath: string,
-    pos: IntVec3,
-  ) => { readonly state: string; readonly assetAlias: string | null };
-  readonly put: (x: number, y: number, z: number, state: string, assetAlias: string | null) => void;
-}
-
-export const seededNoise = (seed: number, x: number, y: number, z: number): number => {
-  let h =
-    (seed ^ Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2147483647)) >>> 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
+export { seededNoise, type WeatheringContext };
 
 export const pickWeightedState = (
   entries: readonly { readonly state: string; readonly weight: number }[],
@@ -303,7 +283,8 @@ export const applyWeatheringRules = (
     if (rule.kind === 'ground_moss') applyGroundMoss(ctx, rule);
     else if (rule.kind === 'corner_quoin') applyCornerQuoin(ctx, rule);
     else if (rule.kind === 'chimney_soot') applyChimneySoot(ctx, rule);
-    else applyEaveShadow(ctx, rule);
+    else if (rule.kind === 'eave_shadow') applyEaveShadow(ctx, rule);
+    else applyExtraWeatheringRule(ctx, rule);
   }
 };
 

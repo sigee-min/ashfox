@@ -39,7 +39,7 @@ const walkStdDisk = (
 };
 
 const virtualLibs = walkStdDisk(STD_DIR);
-assert.equal(virtualLibs.size, 97, `Expected 97 stdlib modules, got ${virtualLibs.size}`);
+assert.equal(virtualLibs.size, 121, `Expected 121 stdlib modules, got ${virtualLibs.size}`);
 
 // 1. Validate canonical specifiers, pure ashfox 1 headers, zero version suffixes, and "std/*" internal imports.
 for (const [spec, source] of virtualLibs) {
@@ -63,7 +63,7 @@ assert.equal(
 );
 
 // 2. Catalog & resolver APIs.
-assert.equal(listVirtualLibraries(virtualLibs).length, 97);
+assert.equal(listVirtualLibraries(virtualLibs).length, 121);
 assert.equal(filterVirtualLibraries(virtualLibs, 'vfx').length, 27);
 assert.equal(filterVirtualLibraries(virtualLibs, 'sound/combat').length, 3);
 assert.ok(
@@ -400,10 +400,17 @@ for (const [spec, voice, amb] of soundCases) {
 const structureCases: readonly [string, string][] = [
   ['std/structure/arch/medieval', 'StoneArchway'],
   ['std/structure/arch/modern', 'ConcretePillar'],
+  ['std/structure/arch/scifi', 'RibbedBulkhead'],
+  ['std/structure/arch/postapoc', 'PlankBarricade'],
+  ['std/structure/dungeon/corridor', 'StraightHall'],
+  ['std/structure/dungeon/chamber', 'CryptChamber'],
+  ['std/structure/dungeon/trap_gate', 'PortcullisGate'],
   ['std/structure/interior/tavern', 'TavernBar'],
   ['std/structure/interior/workshop', 'SmithyBay'],
   ['std/structure/interior/gallery', 'ExhibitionWing'],
   ['std/structure/interior/bedroom', 'GuestBedroom'],
+  ['std/structure/interior/scifi', 'ControlConsole'],
+  ['std/structure/interior/postapoc', 'RuinedCounter'],
   ['std/structure/furnish/seating', 'FeastTable'],
   ['std/structure/furnish/storage', 'BarrelStack'],
   ['std/structure/furnish/lighting', 'LanternPost'],

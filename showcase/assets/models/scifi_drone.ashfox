@@ -1,0 +1,40 @@
+ashfox 1
+model scifi_drone {
+  import "std/model/rig/drone" as drone_rig;
+  import "genre_modules/genre_kit" as kit;
+  import "genre_modules/genre_skins" as skins;
+
+  export motion drone_hover for drone_rig.DroneRig {
+    duration = 2.0s; fps = 30; loop = loop;
+    wave body.position.y = breath(period = 2.0s, inhale = 0.5) * 1.4u;
+    wave gimbal_cam.rotation.y = simplex(freq = 1.0, amp = 14deg, seed = 41, period = 2.0s);
+    track rotor_1.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 1.0s = (0deg, 180deg, 0deg) linear;
+      key 2.0s = (0deg, 360deg, 0deg) linear;
+    }
+    track rotor_2.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 1.0s = (0deg, -180deg, 0deg) linear;
+      key 2.0s = (0deg, -360deg, 0deg) linear;
+    }
+    track rotor_3.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 1.0s = (0deg, -180deg, 0deg) linear;
+      key 2.0s = (0deg, -360deg, 0deg) linear;
+    }
+    track rotor_4.rotation {
+      key 0s = (0deg, 0deg, 0deg) linear;
+      key 1.0s = (0deg, 180deg, 0deg) linear;
+      key 2.0s = (0deg, 360deg, 0deg) linear;
+    }
+  }
+
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = drone_rig.DroneSkeleton;
+  motions = [drone_hover];
+  use kit.DroneBody(rotor_scale = 1.0) as body { skeleton = drone_rig.DroneRig; skin = skins.drone_skin; glow = skins.drone_glow; }
+
+  hitzone body { bone = body; shape = box; multiplier = 1.0; tag = armor; }
+  hitzone cam_lens { bone = gimbal_cam; shape = sphere; multiplier = 2.5; tag = weakpoint; }
+}

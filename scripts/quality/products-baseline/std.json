@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "ad9150b8647a72f94973d2acdfd7cc35e81a9372b9bd33fdc748d8729a0750fa",
+      "sourceHash": "22e85c995be56713b0b2144bad03ac7f8acea8d087ae4ed04f8e8aeb716b8f6e",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -352,6 +352,54 @@
           "params": []
         },
         {
+          "path": "library/std/model/armor/cuirass.ashfox",
+          "specifier": "std/model/armor/cuirass",
+          "sha256": "c714feea823913f8deb5d0dcee9feaf5cf3b842e8dbe85e4b1f1a051e38a735f",
+          "exports": [
+            "ChestArmorSocket",
+            "CuirassRig",
+            "CuirassSkeleton",
+            "CuirassSurface",
+            "PlateCuirass"
+          ],
+          "imports": [],
+          "params": [
+            "chest_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/armor/helm.ashfox",
+          "specifier": "std/model/armor/helm",
+          "sha256": "43240a1633e69471d1748810c5f94583b3aae9e2a4e04532512d6c9274e04584",
+          "exports": [
+            "HeadHelmSocket",
+            "HelmRig",
+            "HelmSkeleton",
+            "HelmSurface",
+            "PlateHelm"
+          ],
+          "imports": [],
+          "params": [
+            "crest_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/armor/shield.ashfox",
+          "specifier": "std/model/armor/shield",
+          "sha256": "7b18fc567438f0dbf1a8fc96ffdb330af24a418d3cf78d31921bf0e682bdede7",
+          "exports": [
+            "KiteShield",
+            "OffHandSocket",
+            "ShieldRig",
+            "ShieldSkeleton",
+            "ShieldSurface"
+          ],
+          "imports": [],
+          "params": [
+            "shield_scale"
+          ]
+        },
+        {
           "path": "library/std/model/face/eagle.ashfox",
           "specifier": "std/model/face/eagle",
           "sha256": "88a084986929f5a9628ea2ff422bd55ce4e5e529b438afe8e9f7e8be29e7e204",
@@ -446,6 +494,21 @@
           "params": []
         },
         {
+          "path": "library/std/model/motion/firearm.ashfox",
+          "specifier": "std/model/motion/firearm",
+          "sha256": "e54b950e968e48942c0a36b02eb8d600a27fd60cfef6d9d643f9144230c51d78",
+          "exports": [
+            "ads_aim",
+            "fire_recoil",
+            "melee_bash",
+            "reload_mag"
+          ],
+          "imports": [
+            "std/model/rig/fps_arms"
+          ],
+          "params": []
+        },
+        {
           "path": "library/std/model/motion/idle.ashfox",
           "specifier": "std/model/motion/idle",
           "sha256": "77a8821c4a204516d21108e2d061b8b2569acc74ed19f41eb8c458268df6f90a",
@@ -475,6 +538,153 @@
             "std/model/rig/winged"
           ],
           "params": []
+        },
+        {
+          "path": "library/std/model/motion/mech.ashfox",
+          "specifier": "std/model/motion/mech",
+          "sha256": "e0979fdf384da366dd7f9c11662d1c198591980ca547b18e703936d571cdf682",
+          "exports": [
+            "drone_hover",
+            "mech_stomp",
+            "turret_track"
+          ],
+          "imports": [
+            "std/model/rig/drone",
+            "std/model/rig/mech",
+            "std/model/rig/turret"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/nature.ashfox",
+          "specifier": "std/model/motion/nature",
+          "sha256": "bdd5b4b634d2ef93d7ccf11cab85403c94f8123ee528aa90495e80b335882483",
+          "exports": [
+            "FoliageRig",
+            "FoliageSkeleton",
+            "wind_sway"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/vehicle.ashfox",
+          "specifier": "std/model/motion/vehicle",
+          "sha256": "e6480f3d0237c4dcd1a79454e00af1e1f203962140d9eea6618ed2ca8d6ec615",
+          "exports": [
+            "door_open",
+            "drive_spin",
+            "suspension_bump"
+          ],
+          "imports": [
+            "std/model/rig/vehicle"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/motion/zombie.ashfox",
+          "specifier": "std/model/motion/zombie",
+          "sha256": "294a0d1325648fc26df13439d5e75a1d22ea7c52e4077dbbe119e98f11269551",
+          "exports": [
+            "bite_lunge",
+            "collapse",
+            "crawl",
+            "shamble",
+            "stagger"
+          ],
+          "imports": [
+            "std/model/rig/biped"
+          ],
+          "params": []
+        },
+        {
+          "path": "library/std/model/nature/foliage.ashfox",
+          "specifier": "std/model/nature/foliage",
+          "sha256": "bbc6193b84202e32dcdd8e4d80855046d42228c7b1794890b2528179899f42a2",
+          "exports": [
+            "BerryBush",
+            "BushSurface",
+            "FernCluster",
+            "FernSurface",
+            "GrassSurface",
+            "GrassTuft"
+          ],
+          "imports": [
+            "std/model/motion/nature"
+          ],
+          "params": [
+            "bush_scale",
+            "fern_scale",
+            "tuft_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/nature/rock.ashfox",
+          "specifier": "std/model/nature/rock",
+          "sha256": "2d9cd92ad33f37529c15394610e8d7b0fbfdc8b3e2841e2726e9d9450be8a398",
+          "exports": [
+            "Boulder",
+            "CliffSlab",
+            "OreSurface",
+            "OreVein",
+            "RockRig",
+            "RockSkeleton",
+            "RockSurface"
+          ],
+          "imports": [],
+          "params": [
+            "rock_scale",
+            "slab_scale",
+            "vein_scale"
+          ]
+        },
+        {
+          "path": "library/std/model/nature/survival.ashfox",
+          "specifier": "std/model/nature/survival",
+          "sha256": "d26e7e331c4648e2f76143cf8804525ce69a4deb3eba84ed7e3fe9a51cf681b8",
+          "exports": [
+            "AssaultRifle",
+            "Barricade",
+            "BarricadeSurface",
+            "Campfire",
+            "CampfireSurface",
+            "CrateSurface",
+            "Generator",
+            "GeneratorSurface",
+            "PickupTruck",
+            "PropRig",
+            "PropSkeleton",
+            "RifleSurface",
+            "SupplyCrate",
+            "TruckSurface"
+          ],
+          "imports": [
+            "std/model/rig/fps_arms",
+            "std/model/rig/vehicle"
+          ],
+          "params": [
+            "intact_ratio"
+          ]
+        },
+        {
+          "path": "library/std/model/nature/tree.ashfox",
+          "specifier": "std/model/nature/tree",
+          "sha256": "4c5d896e54c1ada9b523a5457c70bad153ad6ebd91950f199c1fc40197d7c249",
+          "exports": [
+            "DeadTree",
+            "DeadTreeSurface",
+            "OakTree",
+            "PineTree",
+            "TreeSurface"
+          ],
+          "imports": [
+            "std/model/motion/nature"
+          ],
+          "params": [
+            "height_scale",
+            "height_scale",
+            "height_scale"
+          ]
         },
         {
           "path": "library/std/model/prop/container.ashfox",
@@ -531,6 +741,43 @@
           "params": []
         },
         {
+          "path": "library/std/model/rig/drone.ashfox",
+          "specifier": "std/model/rig/drone",
+          "sha256": "92fdd59d080fea829f3bed20a3bb9f3dc80068edaa7b441c4e59f7b236d9192b",
+          "exports": [
+            "DroneRig",
+            "DroneSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/fps_arms.ashfox",
+          "specifier": "std/model/rig/fps_arms",
+          "sha256": "4b6f0762b55dc499e90d8dfc1dfd736372b460a3c3737a88b3df6a9a55bbf5e5",
+          "exports": [
+            "FpsArmsRig",
+            "FpsArmsSkeleton",
+            "MagMount",
+            "OpticMount",
+            "WeaponMount"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/mech.ashfox",
+          "specifier": "std/model/rig/mech",
+          "sha256": "67110a0846d2f79e3b9bb138e6755fdeac24ccf4e0d94431ca077bdfb146ac8c",
+          "exports": [
+            "MechRig",
+            "MechSkeleton",
+            "MechWeaponMount"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/model/rig/quadruped.ashfox",
           "specifier": "std/model/rig/quadruped",
           "sha256": "3149058022611a4a0f90a23496b29d1454e8da7bf0c6cc1bf8b3042d1441bdd8",
@@ -548,6 +795,29 @@
           "exports": [
             "SlimeRig",
             "SlimeSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/turret.ashfox",
+          "specifier": "std/model/rig/turret",
+          "sha256": "2dda86dfabd3475e64e9a08b41798f76197425c0328a954edadf7082a5b8e338",
+          "exports": [
+            "TurretRig",
+            "TurretSkeleton"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/model/rig/vehicle.ashfox",
+          "specifier": "std/model/rig/vehicle",
+          "sha256": "6643f6079a04aca7c0265f7914e9c965cc2199707e23b702ffc9b8fdca434316",
+          "exports": [
+            "SeatMount",
+            "VehicleRig",
+            "VehicleSkeleton"
           ],
           "imports": [],
           "params": []
@@ -1069,6 +1339,68 @@
           "params": []
         },
         {
+          "path": "library/std/structure/arch/postapoc.ashfox",
+          "specifier": "std/structure/arch/postapoc",
+          "sha256": "c2c4f78ab569690d776d22a8f51bae6ddf005209062b4a1eddfeeee891f080ae",
+          "exports": [
+            "PlankBarricade",
+            "RustedWireFence",
+            "SandbagWall"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/arch/scifi.ashfox",
+          "specifier": "std/structure/arch/scifi",
+          "sha256": "7201a4e345f83e47dbc4b3ff7c9313cb18b21a9bd4d78829f790601c22fd68fb",
+          "exports": [
+            "AirlockDoor",
+            "DoorPortal",
+            "LandingPadBay",
+            "RibbedBulkhead"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/chamber.ashfox",
+          "specifier": "std/structure/dungeon/chamber",
+          "sha256": "1270fea6c010099ced5c2d87f241773b4c9e07e0f35c036ba2bcc8bfab33d334",
+          "exports": [
+            "BossVault",
+            "CryptChamber",
+            "TorchSconce"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/corridor.ashfox",
+          "specifier": "std/structure/dungeon/corridor",
+          "sha256": "ee9c05308aa07310a31d55773a19b17a71cc89437574ffae2fa6208cea08615f",
+          "exports": [
+            "CornerHall",
+            "CrossHall",
+            "StraightHall"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/trap_gate.ashfox",
+          "specifier": "std/structure/dungeon/trap_gate",
+          "sha256": "3decdd40306d28c9e46c722780b554b30d87d901f403a36f026b2088454efd36",
+          "exports": [
+            "BossGate",
+            "PortcullisGate",
+            "PressureTrapPad",
+            "TrapPlate"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/structure/furnish/display.ashfox",
           "specifier": "std/structure/furnish/display",
           "sha256": "1d6db4143476ad50bbb334aff92ea03bb87469dbdd7d1684f802eedc4152f438",
@@ -1140,6 +1472,30 @@
             "std/structure/furnish/display",
             "std/structure/furnish/lighting"
           ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/postapoc.ashfox",
+          "specifier": "std/structure/interior/postapoc",
+          "sha256": "2046b2342e91f3ffe6c06ca2c36b50aff96ca111df6e975b69f080294af39489",
+          "exports": [
+            "CampOutpostBay",
+            "RuinedCounter",
+            "SurvivalStash"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/scifi.ashfox",
+          "specifier": "std/structure/interior/scifi",
+          "sha256": "4f94b497072eba2bf5753a6ada107b3626840568e4339839db66bbbf20370f6e",
+          "exports": [
+            "ControlConsole",
+            "CryoPod",
+            "HoloDisplay"
+          ],
+          "imports": [],
           "params": []
         },
         {

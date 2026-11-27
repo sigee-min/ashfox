@@ -1,6 +1,6 @@
 # Create item sprites and tiles
 
-Sprite sources produce deterministic square PNGs (`16×16`, `32×32`, or `64×64`) for items, seamless tiles, icons, and decals, with a pure-CPU quality audit and 4-panel `preview inspect { sheet = inspect; }` sheet.
+Sprite sources produce deterministic square PNGs (`16×16`, `32×32`, or `64×64`) for items, seamless tiles, icons, UI panels (`ui_9slice`), FPS reticles (`crosshair`), HUD bars (`hud_bar`), and soft-alpha decals (`decal`), with a pure-CPU quality audit and 4-panel `preview inspect { sheet = inspect; }` sheet.
 
 ## Build a complete sprite
 
@@ -53,7 +53,7 @@ Use the export directory from the response containing `gem.png`. Delivery (`buil
 - **`sel_out` & `inner_rim`**: `outline` draws hue/value-modulated selective pixel outlines (`strength = 1..3`) and subtle top-left interior rim highlights without flat black borders.
 - **Seamless tiles (`profile = tile`)**: Use `fill` and `pattern` layers (`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`) which wrap toroidally across canvas edges.
 
-Start with `showcase/assets/sprites/iron_sword.ashfox`, `showcase/assets/sprites/ruby_potion.ashfox`, `showcase/assets/sprites/oak_planks.ashfox`, and the built-in sprite standard library (`ashfox library std list sprite`) for complete item and tile examples. Keep project-specific shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.
+Start with `showcase/assets/sprites/iron_sword.ashfox`, `ruby_potion.ashfox`, `oak_planks.ashfox`, `ui_inventory_panel.ashfox` (`ui_9slice` with `slice = (6px, 6px, 6px, 6px)`), `crosshair.ashfox` (`crosshair`), and the built-in sprite standard library (`ashfox library std list sprite`, including `std/sprite/ui/*` and `std/sprite/decal/*`). Keep project-specific shared sprite modules under `assets/module/` when shared across multiple sprites in a workspace.
 
 ## Review pixels and audit craft
 

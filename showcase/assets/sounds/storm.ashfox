@@ -1,0 +1,21 @@
+ashfox 1
+sound storm {
+  import "std/sound/weather/storm" as s;
+
+  profile = ambient;
+  duration = 3.2s;
+  channels = 2;
+  seed = 7733;
+  space { preset = courtyard; mix = 22%; }
+
+  seq bed {
+    start = 40ms;
+    step rain { voice = s.heavy_rain; at = 0s; duration = 3.1s; vary_gain = 92%..108%; }
+    step gale { voice = s.storm_gale; at = 0s; duration = 3.1s; vary_gain = 90%..110%; }
+    step thunder { voice = s.distant_thunder; at = 0.45s; duration = 1.6s; vary_gain = 90%..110%; }
+  }
+
+  variants { base = 42; alternate = 43; }
+  loop { at = 0.35s..2.75s; xfade = 80ms; }
+  master { gain = 2db; target = -14lufs; peak = -1.5db; warmth = 25%; glue = 20%; limit = true; }
+}

@@ -1,0 +1,51 @@
+ashfox 1
+model iron_helm {
+  import "std/model/armor/helm" as helm;
+  import "std/core/material/metal" as metal;
+
+  surface knight_plate: helm.HelmSurface {
+    material = double;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void; background_alpha = 255;
+      palette {
+        void = #252b33;
+        steel = (#5c6773, #8794a3, #c4d0de);
+        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        visor_trim = (#697585, #8f9ead, #b9c7d6);
+      }
+      chart dome box { fill = steel; roughness = 0.26; metallic = 0.88; roughness_variation = 0.08; grain = brushed; edge_wear = 0.35; pattern border { paint = brass; width = 1px; edges = bottom; } pattern ao { strength = 0.38; radius = 0.7u; } }
+      chart rim box { fill = brass; roughness = 0.24; metallic = 0.90; grain = none; pattern border { paint = steel; width = 1px; edges = all; } }
+      chart crest box { fill = brass; roughness = 0.22; metallic = 0.90; grain = brushed; pattern stripe { paint = steel; axis = z; period = 3px; width = 1px; } }
+      chart cheek box { fill = steel; roughness = 0.28; metallic = 0.86; grain = brushed; pattern border { paint = visor_trim; width = 1px; edges = all; } }
+      chart neck box { fill = steel; roughness = 0.30; metallic = 0.86; grain = brushed; pattern ao { strength = 0.35; radius = 0.6u; } }
+      chart visor box { fill = visor_trim; roughness = 0.26; metallic = 0.86; grain = brushed; pattern border { paint = brass; width = 1px; edges = top; } }
+      grain soft { seed = 8805; }
+      tone painterly;
+    }
+  }
+
+  component GroundedHelm {
+    requires rig skeleton: helm.HelmRig;
+    requires surface skin: helm.HelmSurface;
+    bind bone root to skeleton.root;
+    bind bone visor to skeleton.visor;
+    geometry {
+      bone root {
+        taper dome { origin = (-4u, 5u, -4u); size = (8u, 5u, 8u); top_scale = (0.82, 0.82); axis = y; surface = skin.dome; }
+        cube brow_rim { origin = (-5u, 4u, -5u); size = (10u, 2u, 10u); surface = skin.rim; }
+        cube cheek_l { origin = (-5u, 0u, -4u); size = (2u, 4u, 6u); pivot = (-4u, 4u, -1u); rotation = (0deg, 0deg, 6deg); mirror_x = cheek_r; surface = skin.cheek; }
+        cube neck_guard { origin = (-4u, 0u, 3u); size = (8u, 4u, 2u); pivot = (0u, 4u, 3u); rotation = (-8deg, 0deg, 0deg); surface = skin.neck; }
+        wedge crest { origin = (-1u, 10u, -4u); size = (2u, 3u, 8u); slope = north; surface = skin.crest; }
+        bone visor {
+          cube visor_plate { origin = (-4u, 2u, -5u); size = (8u, 3u, 2u); pivot = (0u, 5u, -4u); rotation = (-8deg, 0deg, 0deg); surface = skin.visor; }
+        }
+      }
+    }
+  }
+
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = helm.HelmSkeleton;
+  use GroundedHelm as main { skeleton = helm.HelmRig; skin = knight_plate; }
+}

@@ -104,6 +104,6 @@ WAV contains only PCM, with no embedded loop instruction. Standalone consumers m
 
 Compare variants at intended output volume, then compare timbre at matched loudness. Audition at least 20 loop cycles for clicks, repetitive swells, harsh upper harmonics, or crossfade dips.
 
-The repository's `showcase/assets/sounds/` and built-in standard library (`ashfox library std list sound`) include blade/hit combat sounds (`sword_slash.ashfox`, `claw_hit.ashfox`), footsteps (`footsteps.ashfox`), creature calls (`griffin_call.ashfox`), and gapless loops (`fire_loop.ashfox`).
+The repository's `showcase/assets/sounds/` and built-in standard library (`ashfox library std list sound`) include blade/hit combat sounds (`sword_slash.ashfox`, `claw_hit.ashfox`), sci-fi energy weapons (`energy.ashfox`), footsteps (`footsteps.ashfox`), creature calls (`griffin_call.ashfox`), storm ambience (`storm.ashfox`), and gapless loops (`fire_loop.ashfox`), alongside `std/sound/{weapon,mech,creature,weather}/*` modules.
 
 Legacy headers (`ashfox-model 1`), JSON array syntax (`voices = [...]`, `sequences = [...]`, `{ domain = ...; }`), `camelCase` keys, quoted enum strings, `timeline`, `resonator`, `layers`, `output.rmsDb`, `output.softClip`, and `noise.color = "crackle"` are rejected. See [Sound syntax reference](../language/sounds.md) for the complete `ashfox 1` sound grammar and resource limits.
