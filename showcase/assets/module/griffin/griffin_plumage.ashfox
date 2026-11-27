@@ -17,12 +17,9 @@ module griffin_plumage {
     chart hind_thigh box { coverage = opaque; }
     chart hind_shin box { coverage = opaque; }
     chart hind_paw box { coverage = opaque; }
-    chart hind_claw box { coverage = opaque; }
     chart shoulder box { coverage = opaque; }
     chart wing_arm box { coverage = opaque; }
-    chart feather_a box { coverage = opaque; }
-    chart feather_b box { coverage = opaque; }
-    chart feather_c box { coverage = opaque; }
+    chart feather box { coverage = opaque; }
     chart feather_tip box { coverage = opaque; }
     chart tail_base box { coverage = opaque; }
     chart tail_rise box { coverage = opaque; }
@@ -71,18 +68,15 @@ module griffin_plumage {
       chart foreleg box { fill = beak; roughness = 0.42; grain = none; pattern gradient { from = gold_deep; to = beak; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
       chart forefoot box { fill = beak; roughness = 0.42; grain = none; pattern border { paint = gold_deep; width = 1px; edges = bottom; } pattern ao { strength = 0.45; radius = 1u; } }
       chart talon box { fill = steel_claw; roughness = 0.26; metallic = 0.78; roughness_variation = 0.06; grain = brushed; pattern border { paint = dark; width = 1px; edges = top; } }
-      chart hind_thigh box { fill = gold; roughness = 0.72; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
-      chart hind_shin box { fill = gold_deep; roughness = 0.74; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
-      chart hind_paw box { fill = gold; roughness = 0.74; grain = soft; pattern border { paint = gold_deep; width = 1px; edges = bottom; } pattern ao { strength = 0.45; radius = 1u; } }
-      chart hind_claw box { fill = steel_claw; roughness = 0.26; metallic = 0.78; grain = brushed; pattern border { paint = dark; width = 1px; edges = top; } }
+      chart hind_thigh box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart hind_shin box { fill = gold_deep; roughness = 0.74; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart hind_paw box { fill = gold; roughness = 0.74; grain = none; pattern border { paint = gold_deep; width = 1px; edges = bottom; } pattern ao { strength = 0.45; radius = 1u; } }
       chart shoulder box { fill = ivory; roughness = 0.76; grain = soft; pattern border { paint = gold; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart wing_arm box { fill = ivory_mid; roughness = 0.76; grain = soft; pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart feather_a box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory_mid; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart feather_b box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory; width = 1px; edges = top; } }
-      chart feather_c box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory_mid; width = 1px; edges = top; } }
+      chart wing_arm box { fill = ivory_mid; roughness = 0.76; grain = none; pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart feather box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory_mid; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.7u; } }
       chart feather_tip box { fill = dark; roughness = 0.68; grain = none; pattern gradient { to = steel_claw; axis = y; space = local; soft = 0.25; } pattern border { paint = feather; width = 1px; edges = top; } }
-      chart tail_base box { fill = gold; roughness = 0.72; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
-      chart tail_rise box { fill = gold; roughness = 0.72; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } }
+      chart tail_base box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart tail_rise box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } }
       chart tail_tuft box { fill = dark; roughness = 0.78; grain = soft; pattern gradient { to = feather; axis = y; space = local; soft = 0.25; } pattern border { paint = gold; width = 1px; edges = bottom; } }
       chart face_neutral flat { fill = ivory; stamp eye_neutral { at = (2px, 2px); protect = true; } }
       chart face_blink flat { fill = ivory; stamp eye_blink { at = (2px, 2px); protect = true; } }
