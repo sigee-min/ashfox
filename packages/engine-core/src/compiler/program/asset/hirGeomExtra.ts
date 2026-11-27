@@ -42,16 +42,25 @@ const compileProperty = (
       });
 };
 
+const OPTION_SPECS: Readonly<
+  Record<
+    'axis' | 'slope' | 'placement',
+    { readonly hosts: readonly string[]; readonly allowed: readonly string[] }
+  >
+> = Object.freeze({
+  axis: { hosts: ['taper', 'cylinder'], allowed: ['x', 'y', 'z'] },
+  slope: { hosts: ['wedge'], allowed: ['north', 'south', 'east', 'west'] },
+  placement: { hosts: ['expression_slot'], allowed: ['front', 'lateral_pair', 'corner_wrap'] },
+});
+
 const compileOptionProperty = (
   statement: AssetGeometryBlock,
   property: AssetGeometryProperty,
   context: GeomExtraContext,
 ): Extract<TypedGeometryStatement, { readonly kind: 'typed-geometry-option' }> | null => {
-  const isAxis = property.name === 'axis';
-  const validHost = isAxis
-    ? statement.keyword === 'taper' || statement.keyword === 'cylinder'
-    : statement.keyword === 'wedge';
-  if (!validHost) {
+  const optName = property.name as 'axis' | 'slope' | 'placement';
+  const spec = OPTION_SPECS[optName];
+  if (!spec.hosts.includes(statement.keyword)) {
     context.issue(
       context.path,
       property.span,
@@ -60,22 +69,21 @@ const compileOptionProperty = (
     );
     return null;
   }
-  const allowed = isAxis ? ['x', 'y', 'z'] : ['north', 'south', 'east', 'west'];
   const val = property.value;
-  if (val.kind !== 'name' || !allowed.includes(val.value)) {
-    const suggestion = val.kind === 'name' ? formatDidYouMean(val.value, allowed) : '';
+  if (val.kind !== 'name' || !spec.allowed.includes(val.value)) {
+    const suggestion = val.kind === 'name' ? formatDidYouMean(val.value, spec.allowed) : '';
     context.issue(
       context.path,
       val.span,
       'asset.invalid-geometry-property',
-      `Property "${property.name}" must be one of ${allowed.join(', ')}.${suggestion}`,
+      `Property "${property.name}" must be one of ${spec.allowed.join(', ')}.${suggestion}`,
       docsHint('model'),
     );
     return null;
   }
   return freeze({
     kind: 'typed-geometry-option',
-    name: property.name as 'axis' | 'slope',
+    name: optName,
     value: val.value,
     span: property.span,
   });
@@ -167,6 +175,7 @@ const reportUnknownGeomProp = (
     ...(ownsSurface ? ['mirror_x'] : []),
     ...(statement.keyword === 'taper' || statement.keyword === 'cylinder' ? ['axis'] : []),
     ...(statement.keyword === 'wedge' ? ['slope'] : []),
+    ...(statement.keyword === 'expression_slot' ? ['placement'] : []),
   ];
   context.issue(
     context.path,
@@ -191,7 +200,7 @@ export const compileGeometryPropertyEntry = (
     if (mirrored !== null) typed.push(mirrored);
     return false;
   }
-  if (property.name === 'axis' || property.name === 'slope') {
+  if (property.name === 'axis' || property.name === 'slope' || property.name === 'placement') {
     const opt = compileOptionProperty(statement, property, context);
     if (opt !== null) typed.push(opt);
     return false;

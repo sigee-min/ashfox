@@ -252,7 +252,7 @@ const emitMirroredSibling = (
 
 const optionValueOf = (
   statement: Extract<TypedGeometryStatement, { readonly kind: 'typed-geometry-block' }>,
-  name: 'axis' | 'slope',
+  name: 'axis' | 'slope' | 'placement',
 ): string | undefined => {
   const opt = statement.statements.find(
     (entry) => entry.kind === 'typed-geometry-option' && entry.name === name,
@@ -270,6 +270,7 @@ const instantiateGeometryNode = (
   const nextAttachment = statement.keyword === 'bone' ? id : attachment;
   const axis = optionValueOf(statement, 'axis');
   const slope = optionValueOf(statement, 'slope');
+  const placement = optionValueOf(statement, 'placement');
   const expressionVariants = expressionVariantsOf(ctx, statement);
   return freeze({
     kind: statement.keyword,
@@ -280,6 +281,9 @@ const instantiateGeometryNode = (
     children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
     ...(axis !== undefined ? { axis: axis as 'x' | 'y' | 'z' } : {}),
     ...(slope !== undefined ? { slope: slope as 'north' | 'south' | 'east' | 'west' } : {}),
+    ...(placement !== undefined
+      ? { placement: placement as 'front' | 'lateral_pair' | 'corner_wrap' }
+      : {}),
     ...(expressionVariants !== undefined ? { expressionVariants } : {}),
     sourcePath: ctx.path,
     span: statement.span,

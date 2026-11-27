@@ -276,6 +276,7 @@ const EXPR_SLOT_GEOM_PROPS = new Set([
   'visible',
   'u_axis',
   'v_axis',
+  'placement',
 ]);
 
 const isExprSlotVariantStmt = (entry: unknown): boolean =>

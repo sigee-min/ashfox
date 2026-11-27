@@ -207,7 +207,7 @@ export interface TypedGeometryMirrorBind {
 
 export interface TypedGeometryOptionBind {
   readonly kind: 'typed-geometry-option';
-  readonly name: 'axis' | 'slope';
+  readonly name: 'axis' | 'slope' | 'placement';
   readonly value: string;
   readonly span: SourceSpan;
 }

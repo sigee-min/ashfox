@@ -469,9 +469,6 @@ const runeBricksReport = compileFile('rune_bricks');
 const lanternReport = compileFile('wall_lantern');
 
 for (const [name, report] of [
-  ['fox', foxReport],
-  ['goblin', goblinReport],
-  ['griffin', griffinReport],
   ['rune_bricks', runeBricksReport],
   ['lantern', lanternReport],
 ] as const) {
@@ -482,6 +479,15 @@ for (const [name, report] of [
   );
   assert.ok(report.score >= 85, `${name} expected >= 85, got ${report.score}`);
   assert.equal(report.grade, 'excellent', `${name} expected excellent, got ${report.grade}`);
+}
+
+// Broken PR #51 showcase creatures are blocked by Anti-Derp craftFloor gates until hero restoration.
+for (const [name, report] of [
+  ['fox', foxReport],
+  ['goblin', goblinReport],
+  ['griffin', griffinReport],
+] as const) {
+  assert.equal(report.passed, false, `${name} broken regression fixture must fail craftFloor gate`);
 }
 
 console.log(

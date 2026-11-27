@@ -9,6 +9,7 @@ import {
   type AuditPillarReport,
   type AuditSubmetric,
 } from './contract';
+import { isRewardedAngledPart, type CraftFloorReport } from './craftFloor';
 import type { AuditObb, AuditSceneGeometry } from './geometry';
 import { analyzeSilhouettes } from './silhouette';
 
@@ -90,6 +91,7 @@ const silhouetteAndBalanceMetrics = (
   profile: AssetQualityProfile,
   scene: AuditSceneGeometry,
   anatomy: AuditAnatomyReport,
+  craft?: CraftFloorReport,
 ): readonly [AuditSubmetric, AuditSubmetric] => {
   const w = PROFILE_WEIGHTS[profile];
   const t = profileFormTargets(profile);
@@ -101,8 +103,9 @@ const silhouetteAndBalanceMetrics = (
     0.5 * ramp(sil.avgCompactness, 1.02, t.compactTarget);
   const shapedSil = profile === 'block' ? 0.65 + 0.35 * rawSil : rawSil;
   const solidCardGuard = 1 - 0.35 * ramp(anatomy.solidPlaneCount, 0, 2);
+  const craftGuard = craft ? Math.max(0.35, 1 - craft.formPenalty * 0.04) : 1;
   const silRatio =
-    count === 0 ? 0 : shapedSil * (1 - 0.6 * anatomy.overlapPenalty) * solidCardGuard;
+    count === 0 ? 0 : shapedSil * (1 - 0.6 * anatomy.overlapPenalty) * solidCardGuard * craftGuard;
   const balRatio =
     count === 0
       ? 0
@@ -138,6 +141,7 @@ const computeFormMetrics = (
   profile: AssetQualityProfile,
   scene: AuditSceneGeometry,
   anatomy: AuditAnatomyReport,
+  craft?: CraftFloorReport,
 ): readonly AuditSubmetric[] => {
   const w = PROFILE_WEIGHTS[profile];
   const t = profileFormTargets(profile);
@@ -145,12 +149,13 @@ const computeFormMetrics = (
   const count = obbs.length;
   const entropy = partSizeTierEntropy(obbs);
   const microGuard = 1 - 0.18 * ramp(anatomy.microSpeckCount, 0, 2);
+  const craftGuard = craft ? Math.max(0.35, 1 - craft.formPenalty * 0.04) : 1;
   const rawParts =
     profile === 'block' && count === 1
       ? 0.72
       : 0.6 * ramp(count, t.minParts, t.targetParts) + 0.4 * ramp(entropy, 0.2, 0.85);
   const partsRatio = count === 0 ? 0 : rawParts * microGuard;
-  const angledCount = obbs.filter((o) => o.angled || o.isPlane).length;
+  const angledCount = obbs.filter(isRewardedAngledPart).length;
   const angledShare = count > 0 ? angledCount / count : 0;
   const anglesRatio =
     count === 0
@@ -158,7 +163,8 @@ const computeFormMetrics = (
       : profile === 'block'
         ? (1 - anatomy.overlapPenalty) * microGuard
         : (0.55 * ramp(angledShare, 0, t.angleTarget) + 0.45 * anatomy.taperAndArticulationScore) *
-          microGuard;
+          microGuard *
+          craftGuard;
   return [
     auditSubmetric(
       'form.parts',
@@ -180,7 +186,7 @@ const computeFormMetrics = (
         ? `orthogonal step craft, overlap=${round2(anatomy.overlapPenalty)}, microSpecks=${anatomy.microSpeckCount}.`
         : `${angledCount}/${count} angled cubes/planes (${Math.round(angledShare * 100)}%), taper=${round2(anatomy.taperAndArticulationScore)}.`,
     ),
-    ...silhouetteAndBalanceMetrics(profile, scene, anatomy),
+    ...silhouetteAndBalanceMetrics(profile, scene, anatomy, craft),
   ];
 };
 
@@ -188,11 +194,14 @@ export const evaluateFormPillar = (
   profile: AssetQualityProfile,
   scene: AuditSceneGeometry,
   anatomy: AuditAnatomyReport,
+  craft?: CraftFloorReport,
 ): { readonly pillar: AuditPillarReport; readonly deductions: readonly AuditDeduction[] } => {
   const w = PROFILE_WEIGHTS[profile];
-  const metrics = computeFormMetrics(profile, scene, anatomy);
+  const metrics = computeFormMetrics(profile, scene, anatomy, craft);
   const overlapDominates = anatomy.overlapPenalty > 0.25;
+  const craftDeductions = craft ? craft.deductions.filter((d) => d.pillar === 'form') : [];
   const deductions = [
+    ...craftDeductions,
     makeDeduction(
       metrics[0]!,
       `Low part richness (${metrics[0]!.detail}).`,

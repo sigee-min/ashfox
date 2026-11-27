@@ -28,6 +28,7 @@ export interface AuditFaceBinding {
 export interface AuditObb {
   readonly nodeId: string;
   readonly parentId: string | null;
+  readonly primKind?: 'cube' | 'plane' | 'taper' | 'wedge' | 'cylinder';
   readonly center: Vec3;
   readonly half: Vec3;
   readonly ax: Vec3;
@@ -130,6 +131,7 @@ export const buildObbFromBasisPoints = (
   isPlane: boolean,
   solidPlane: boolean,
   opaque: boolean,
+  primKind?: AuditObb['primKind'],
 ): AuditObb => {
   const vx = sub3(p100, p000);
   const vy = sub3(p010, p000);
@@ -162,6 +164,7 @@ export const buildObbFromBasisPoints = (
   return {
     nodeId,
     parentId,
+    ...(primKind ? { primKind } : {}),
     center,
     half,
     ax: normalize3(vx),
@@ -233,6 +236,7 @@ export const customPrimObb = (
     false,
     false,
     opaque,
+    node.kind,
   );
 };
 
