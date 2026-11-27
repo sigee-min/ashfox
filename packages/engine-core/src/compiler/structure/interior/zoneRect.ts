@@ -117,6 +117,23 @@ export const resolveZoneRect = (room: InteriorRoomInput, zoneId?: string): ZoneF
   };
 };
 
+/** Clamps a partition span to the room interior XZ footprint, returning null if empty or out-of-room. */
+export const resolvePartitionSpan = (
+  room: Pick<InteriorRoomInput, 'bounds_from' | 'bounds_to'>,
+  spec: PartitionVolumeSpec,
+): readonly [number, number] | null => {
+  const ax = spec.axis === 'x';
+  const minU = (ax ? room.bounds_from[0] : room.bounds_from[2]) + 1;
+  const maxU = (ax ? room.bounds_to[0] : room.bounds_to[2]) - 1;
+  const minF = (ax ? room.bounds_from[2] : room.bounds_from[0]) + 1;
+  const maxF = (ax ? room.bounds_to[2] : room.bounds_to[0]) - 1;
+  if (spec.at_pos < minF || spec.at_pos > maxF) return null;
+  const lo = Math.max(minU, spec.span_from);
+  const hi = Math.min(maxU, spec.span_to);
+  if (lo > hi || hi - lo + 1 > MAX_STRUCTURE_DIM) return null;
+  return [lo, hi];
+};
+
 /** Resolves partition doorway [doorAt, doorW] shared across geometry, lowering, and solver. */
 export const resolvePartitionDoorway = (
   spec: PartitionVolumeSpec,

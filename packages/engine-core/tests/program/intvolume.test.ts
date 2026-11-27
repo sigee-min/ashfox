@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { decodeStructureNbt } from '../../src/compiler/structure/nbt';
+import { parseStructureSource } from '../../src/index';
+import { StructureInputError } from '../../src/project/structure/contract';
 import {
   InteriorContractError,
   STYLE_DNA_ARCHES,
@@ -437,8 +439,6 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
         pp.resolved_at[2] <= 2,
     );
   }
-
-  // Verify north-facing 3x1 dining_set reserves its chair cells so adjacent cabinet at [4,1,3] relocates.
   const chairSolve = solveInteriorLayout({
     ...screenRoom,
     volumes: [],
@@ -447,11 +447,43 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
       { id: 'adj_cab', kind: 'cabinet', at: [4, 1, 3], size: [1, 1], facing: 'south' },
     ],
   });
-  const movedCab = chairSolve.placed_props.find((p) => p.id === 'adj_cab')!;
+  assert.equal(chairSolve.placed_props.find((p) => p.id === 'adj_cab')?.nudged, true);
+
+  assert.throws(
+    () =>
+      parseStructureSource(
+        'ashfox 1 structure p { size = (11b, 8b, 11b); floor f { y = 0b; height = 6b; room r { from = (0b, 0b); size = (11b, 11b); kind = living; interior { partition s { style = screen; span_from = 1; span_to = 1000000000; } } } } }',
+        'p.ashfox',
+      ),
+    StructureInputError,
+  );
+  const bigPart = {
+    kind: 'partition',
+    id: 'big',
+    style: 'screen',
+    axis: 'x',
+    at_pos: 5,
+    span_from: 1,
+    span_to: 1_000_000_000,
+    doorway_width: 0,
+  } as const;
+  const clampedVol = buildSculptedVolumes({ ...screenRoom, volumes: [bigPart] });
+  assert.ok(clampedVol.boxes.length <= 9 && clampedVol.boxes.length > 0);
+  const colPart = {
+    kind: 'partition',
+    id: 'cols',
+    style: 'colonnade',
+    axis: 'x',
+    at_pos: 5,
+    span_from: 1,
+    span_to: 9,
+    doorway_width: 0,
+  } as const;
+  const colonnadeSolved = solveInteriorLayout({ ...screenRoom, volumes: [colPart], props: [] });
   assert.equal(
-    movedCab.nudged,
+    colonnadeSolved.clearance.clear_path_cells.some((c) => c[0] === 2 && c[2] === 5),
     true,
-    'Cabinet overlapping dining chair cell [4,1,3] must relocate',
+    'Colonnade alternating gap at [2,1,5] must remain walkable',
   );
 };
 

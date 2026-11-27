@@ -2,7 +2,7 @@ import { compareText } from '@ashfox/internal-contracts';
 import type { CardinalFacing, IntVec3 } from '../../../project/structure/contract';
 import type { StructureGrid } from '../contract';
 import { encodeStructureNbt } from '../nbt';
-import { resolvePartitionDoorway, resolvePlatformRect } from './zoneRect';
+import { resolvePartitionDoorway, resolvePartitionSpan, resolvePlatformRect } from './zoneRect';
 import {
   MIN_VANILLA_HEADROOM_BLOCKS,
   SUBVOXEL_UNITS_PER_BLOCK,
@@ -75,21 +75,17 @@ const railStateFor = (style: RailingStyle, arch: StyleDnaArch): string => {
   return arch === 'gothic' ? 'minecraft:stone_brick_wall' : 'minecraft:oak_fence';
 };
 
-const isPassableVanillaState = (state: string): boolean =>
-  state === 'minecraft:air' ||
-  state.includes('_door') ||
-  state.includes('_carpet') ||
-  state.includes('torch') ||
-  (state.includes('lantern') && !state.includes('sea_lantern'));
+const isPassableVanillaState = (s: string): boolean =>
+  s === 'minecraft:air' ||
+  s.includes('_door') ||
+  s.includes('_carpet') ||
+  s.includes('torch') ||
+  (s.includes('lantern') && !s.includes('sea_lantern'));
 
-const isWallMountableState = (state: string): boolean =>
-  state.includes('torch') ||
-  (state.includes('lantern') && !state.includes('sea_lantern')) ||
-  state.includes('trapdoor') ||
-  state.includes('pane') ||
-  state.includes('bars') ||
-  state.includes('fence') ||
-  state.includes('slab');
+const WALL_MOUNT_KEYS = ['torch', 'trapdoor', 'pane', 'bars', 'fence', 'slab'];
+const isWallMountableState = (s: string): boolean =>
+  WALL_MOUNT_KEYS.some((k) => s.includes(k)) ||
+  (s.includes('lantern') && !s.includes('sea_lantern'));
 
 const isHangingState = (state: string): boolean =>
   state.includes('hanging=true') || state.includes('chain');
@@ -284,10 +280,13 @@ const applyPartitionCol = (
 };
 
 const applyPartitionVolume = (c: LowerCtx, vol: PartitionVolumeSpec): void => {
+  const span = resolvePartitionSpan(c.room, vol);
+  if (!span) return;
   const alongX = vol.axis === 'x';
   const [baseU, baseF] = alongX ? [c.off[0], c.off[2]] : [c.off[2], c.off[0]];
   const fixed = vol.at_pos - baseF;
-  const [s0, s1] = [vol.span_from - baseU, vol.span_to - baseU];
+  const [s0, s1] = [span[0] - baseU, span[1] - baseU];
+  const origS0 = vol.span_from - baseU;
   const { doorAt: rawDoorAt, doorW } = resolvePartitionDoorway(vol);
   const doorAt = rawDoorAt - baseU;
   const partState =
@@ -298,7 +297,7 @@ const applyPartitionVolume = (c: LowerCtx, vol: PartitionVolumeSpec): void => {
         : 'minecraft:oak_fence';
   for (let u = s0; u <= s1; u += 1) {
     const inDoor = u >= doorAt && u < doorAt + doorW;
-    if (!inDoor && vol.style === 'colonnade' && (u - s0) % 2 !== 0) continue;
+    if (!inDoor && vol.style === 'colonnade' && (u - origS0) % 2 !== 0) continue;
     applyPartitionCol(c, vol, alongX ? u : fixed, alongX ? fixed : u, inDoor, partState);
   }
 };

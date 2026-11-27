@@ -21,6 +21,7 @@ import {
   propFitsBounds,
   propFootprintCoords,
   resolvePartitionDoorway,
+  resolvePartitionSpan,
   resolveZoneRect,
   type ZoneFootprint,
 } from './zoneRect';
@@ -106,15 +107,23 @@ const collectPartitionBlocked = (room: InteriorRoomInput): ReadonlySet<string> =
   const blocked = new Set<string>();
   for (const vol of room.volumes) {
     if (vol.kind !== 'partition') continue;
-    addPartitionCells(vol, blocked);
+    addPartitionCells(room, vol, blocked);
   }
   return blocked;
 };
 
-const addPartitionCells = (vol: PartitionVolumeSpec, blocked: Set<string>): void => {
+const addPartitionCells = (
+  room: InteriorRoomInput,
+  vol: PartitionVolumeSpec,
+  blocked: Set<string>,
+): void => {
+  const span = resolvePartitionSpan(room, vol);
+  if (!span) return;
+  const [lo, hi] = span;
   const { doorAt, doorW } = resolvePartitionDoorway(vol);
-  for (let u = vol.span_from; u <= vol.span_to; u += 1) {
+  for (let u = lo; u <= hi; u += 1) {
     if (u >= doorAt && u < doorAt + doorW) continue;
+    if (vol.style === 'colonnade' && (u - vol.span_from) % 2 !== 0) continue;
     const x = vol.axis === 'x' ? u : vol.at_pos;
     const z = vol.axis === 'z' ? u : vol.at_pos;
     blocked.add(cellKey(x, z));

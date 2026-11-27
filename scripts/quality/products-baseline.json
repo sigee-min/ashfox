@@ -1123,7 +1123,7 @@
           "entry": "structures/medieval_cottage",
           "kind": "structure",
           "nbt": "73a13db2725dec55c2dc1d72aa71ac77775e8288002491c443edc5fa9b93ba4e",
-          "playableMeta": "0014c7f50173fb68b164a770fa0a1f3f174b1eaffac5648e59fc5d6bb693acb8",
+          "playableMeta": "e91c8780809ebcdba8421cc5fc6fff4929e0d65f12ab37b730b4f11d0b7d443c",
           "document": "171f7598c7f3b7e23cbd310b52788dc74a2ff6073167e3c635a2f91195649c1a"
         },
         {
@@ -1151,7 +1151,7 @@
           "entry": "structures/village_compound",
           "kind": "structure",
           "nbt": "7b95772104fdbe105cd3f210b1a8b2e2e05404dbbbb4ac44fa2af7969caa7201",
-          "playableMeta": "762009362a078734bff8761aa4c67becf579669c45a971e23cdb676b0779a504",
+          "playableMeta": "f81a43b7208570dfa870306db2ef1c6129a646fa4e231c7e6b39c59ead7a0b06",
           "document": "c4f1b5f49794e9f07f8fbafdd342921407ff727154ecd883f57066b95cba7d1c"
         },
         {
@@ -1162,7 +1162,7 @@
           "document": "725cf6491c52d939a2c277d54937c41245dcca51231123f8de7a1a407026f6ab"
         }
       ],
-      "catalogHash": "e5404474ddc922052327a1a5e8a854f266eb611d61620b7b5687b25b465c7911",
+      "catalogHash": "dee026b501179ea63d4fcae82771b0dafcc3e4747923d26f79803f57785fc1b4",
       "files": [
         {
           "path": "assets/blacksmith_glb/ashfox-lineage.json",
@@ -1190,11 +1190,11 @@
         },
         {
           "path": "assets/medieval_cottage_glb/ashfox-lineage.json",
-          "sha256": "290be901bc30f37a7cb50cd9fa545352e122b55220c85b0cb7eee45917404054"
+          "sha256": "9cc11fca5c8894ad0e19fdf6cc63ca81255c7942097ba29b946e2b8bbc18db3b"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.glb",
-          "sha256": "db8ee19f7d5dda654c0505f72b5ad003b23b4a5cea530e9e2d904096528ce6b5"
+          "sha256": "eb33eea698c3d4ac5550acbcc0a3b829aa9361af495af2d350df14bb467a328e"
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.hooks.json",
@@ -1202,7 +1202,7 @@
         },
         {
           "path": "assets/medieval_cottage_glb/medieval_cottage_glb.structure.json",
-          "sha256": "1d7c6a6e1dda92c4fff9753fb0ef6199779f9767a171b1d37a28096e03a9acec"
+          "sha256": "7544d64e282440512946b5e3524e428cf1e608dd95d0a38ced557f8309c292c9"
         },
         {
           "path": "assets/medieval_cottage_nbt/medieval_cottage_nbt.hooks.json",
@@ -1286,11 +1286,11 @@
         },
         {
           "path": "assets/village_compound_glb/ashfox-lineage.json",
-          "sha256": "6677f04c7df737a46a43983ece4d55fcb61777cd0d73c4539031c7be085050d2"
+          "sha256": "73de0a6629206280d309ce2f381bea03db6eb761fbbc7740831d9fb22e01a040"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.glb",
-          "sha256": "f2b401cf5cde829ccecc6784a09bab97dc0d9ec124d10ba926c77ada57e171c1"
+          "sha256": "3d7784027c10bf3af4ae77f91d4f5e6cce2f46778699a2225f72542eda00943e"
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.hooks.json",
@@ -1298,7 +1298,7 @@
         },
         {
           "path": "assets/village_compound_glb/village_compound_glb.structure.json",
-          "sha256": "29b4283f0079077d151eacdd672153b73b493d566174b8bec9a0897c9db1792f"
+          "sha256": "bd3b6e2e23bd85b3f9c6a9fef22cc4aaa0078e0098bc3de594f1d1aef63fe8a6"
         },
         {
           "path": "assets/village_compound_nbt/village_compound_nbt.hooks.json",
@@ -1310,7 +1310,7 @@
         },
         {
           "path": "assets/village_pack/game-assets/assets.json",
-          "sha256": "d6fd6c06350977767ff9f3fc3c57d6be590834ab25fc4bd3148f89ee02017150"
+          "sha256": "40fd2011307e82e7ff9fef7e51275194b30483e52d1363242f2bd0dbe6f22cae"
         },
         {
           "path": "assets/village_pack/game-assets/structures/blacksmith/blacksmith_glb.glb",
@@ -1322,11 +1322,11 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.glb",
-          "sha256": "adb35137cc099a563088dfcc62f1c55d4756e1988fde14755e8e3f323c083336"
+          "sha256": "4ab50308a2619e541793fd04b5b2b6d495e5c613d4b98621c688f5619581dd63"
         },
         {
           "path": "assets/village_pack/game-assets/structures/medieval_cottage/medieval_cottage_glb.structure.json",
-          "sha256": "1d7c6a6e1dda92c4fff9753fb0ef6199779f9767a171b1d37a28096e03a9acec"
+          "sha256": "7544d64e282440512946b5e3524e428cf1e608dd95d0a38ced557f8309c292c9"
         },
         {
           "path": "assets/village_pack/game-assets/structures/ryokan_pavilion/ryokan_pavilion_glb.glb",
@@ -1354,11 +1354,11 @@
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.glb",
-          "sha256": "4238b2def84dc2e240e0f666a7de3382f27c798474254ce77551b946cf9394e2"
+          "sha256": "2d50a1b16fede7e3035d0c055c1ca86c64d9bd53ec26acc4d3b93e5ab1d5814c"
         },
         {
           "path": "assets/village_pack/game-assets/structures/village_compound/village_compound_glb.structure.json",
-          "sha256": "29b4283f0079077d151eacdd672153b73b493d566174b8bec9a0897c9db1792f"
+          "sha256": "bd3b6e2e23bd85b3f9c6a9fef22cc4aaa0078e0098bc3de594f1d1aef63fe8a6"
         },
         {
           "path": "assets/village_pack/game-assets/structures/watchtower/watchtower_glb.glb",
@@ -1714,7 +1714,7 @@
         },
         {
           "path": "assets/village_pack/village_pack.zip",
-          "sha256": "5081308c76a6ec60231a74acde8d08590896a178a34695e417aa040877f03abe"
+          "sha256": "26a9745ba8e5b2fcde2cc456e9bd3a0d12743655467f2306e51c207deea5ef29"
         },
         {
           "path": "assets/watchtower_glb/ashfox-lineage.json",
@@ -1742,7 +1742,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "e5404474ddc922052327a1a5e8a854f266eb611d61620b7b5687b25b465c7911"
+          "sha256": "dee026b501179ea63d4fcae82771b0dafcc3e4747923d26f79803f57785fc1b4"
         }
       ]
     }

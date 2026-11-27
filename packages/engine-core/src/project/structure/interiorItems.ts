@@ -1,5 +1,6 @@
 import type { AshfoxBareStmt, AshfoxNamedBlock } from '../program/syntax/blockAst';
 import type { SourceSpan } from '../source/contract';
+import { MAX_STRUCTURE_DIM } from './contract';
 import {
   asFacing,
   asInt,
@@ -257,6 +258,37 @@ export const parseOpenTruss = (
   };
 };
 
+const readPartitionCoord = (
+  entry: AttrEntry | undefined,
+  file: string,
+  span: SourceSpan,
+  name: string,
+): number | undefined => {
+  if (!entry) return undefined;
+  const v = asInt(file, span, entry, name);
+  if (v < 0 || v > MAX_STRUCTURE_DIM)
+    failAst(file, span, `partition ${name} within 0..${MAX_STRUCTURE_DIM}`, `${v}`);
+  return v;
+};
+
+const readPartitionBounds = (
+  attrs: Record<string, AttrEntry>,
+  file: string,
+  span: SourceSpan,
+): { readonly at_pos: number; readonly span_from?: number; readonly span_to?: number } => {
+  const atPos = readPartitionCoord(attrs.at_pos ?? attrs.at, file, span, 'at') ?? 0;
+  const spanFrom = readPartitionCoord(attrs.span_from ?? attrs.from, file, span, 'span_from');
+  const spanTo = readPartitionCoord(attrs.span_to ?? attrs.to, file, span, 'span_to');
+  if (spanFrom !== undefined && spanTo !== undefined && spanTo < spanFrom) {
+    failAst(file, span, 'partition span_to >= span_from', `${spanFrom}..${spanTo}`);
+  }
+  return {
+    at_pos: atPos,
+    ...(spanFrom !== undefined ? { span_from: spanFrom } : {}),
+    ...(spanTo !== undefined ? { span_to: spanTo } : {}),
+  };
+};
+
 export const parsePartition = (
   stmt: AshfoxNamedBlock,
   file: string,
@@ -285,19 +317,12 @@ export const parsePartition = (
   const axis = (attrs.axis?.value ??
     (attrs.on?.value === 'east' || attrs.on?.value === 'west' ? 'z' : 'x')) as 'x' | 'z';
   if (axis !== 'x' && axis !== 'z') failAst(file, stmt.span, 'axis = x|z', String(axis));
-  const [atE, fromE, toE] = [
-    attrs.at_pos ?? attrs.at,
-    attrs.span_from ?? attrs.from,
-    attrs.span_to ?? attrs.to,
-  ];
   return {
     kind: 'partition',
     id: nextId(seq, 'partition', stmt.name),
     style: asOptStr(file, stmt.span, attrs.style, 'style') ?? 'colonnade',
     axis,
-    at_pos: atE ? asInt(file, stmt.span, atE, 'at') : 0,
-    ...(fromE ? { span_from: asInt(file, stmt.span, fromE, 'from') } : {}),
-    ...(toE ? { span_to: asInt(file, stmt.span, toE, 'to') } : {}),
+    ...readPartitionBounds(attrs, file, stmt.span),
     ...(attrs.doorway_at
       ? { doorway_at: asInt(file, stmt.span, attrs.doorway_at, 'doorway_at') }
       : {}),

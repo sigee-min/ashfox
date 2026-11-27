@@ -3,6 +3,7 @@ import {
   resolveMezzanineRect,
   resolveMezzanineYOffset,
   resolvePartitionDoorway,
+  resolvePartitionSpan,
   resolvePlatformRect,
 } from './zoneRect';
 export { resolvePlatformRect } from './zoneRect';
@@ -439,11 +440,14 @@ const emitPartitionSolid = (
 };
 
 const emitPartition = (c: VolCtx, spec: PartitionVolumeSpec): void => {
+  const span = resolvePartitionSpan(c.room, spec);
+  if (!span) return;
+  const [lo, hi] = span;
   const [fy, cy] = [(c.room.bounds_from[1] + 1) * U, c.room.bounds_to[1] * U];
   const { doorAt, doorW } = resolvePartitionDoorway(spec);
   const slideOff = Math.round(Math.max(0, Math.min(1, spec.open_ratio ?? 0.4)) * 10);
   const fx = spec.at_pos * U + 7;
-  for (let u = spec.span_from; u <= spec.span_to; u += 1) {
+  for (let u = lo; u <= hi; u += 1) {
     if (u >= doorAt && u < doorAt + doorW) emitPartitionDoor(c, spec, u, fy, cy, fx, slideOff);
     else emitPartitionSolid(c, spec, u, fy, cy, fx);
   }
