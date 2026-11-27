@@ -24,7 +24,10 @@ import {
   generateTranslucentWindowPanes,
 } from '../../src/compiler/structure/interior/sunShaft';
 import { propFitsBounds } from '../../src/compiler/structure/interior/zoneRect';
-import { emitInteriorBakedMeshes } from '../../src/compiler/structure/interior/mesh';
+import {
+  emitInteriorBakedMeshes,
+  mountInstanceRotation,
+} from '../../src/compiler/structure/interior/mesh';
 import type { BatchDraft } from '../../src/compiler/structure/batch';
 import { compileStructureUnits, parseStructureSource } from '../../src/index';
 import { StructureInputError, type IntVec3 } from '../../src/project/structure/contract';
@@ -458,38 +461,27 @@ structure ao_room {
   }
 }`;
   const compileAoColorAvg = (ao: number): number => {
-    const p = compileStructureUnits(
-      'a.ashfox',
-      new Map([['a.ashfox', parseStructureSource(makeAoSrc(ao), 'a.ashfox')]]),
-      {},
-      (o, s) => s,
-    );
+    const u = new Map([['a.ashfox', parseStructureSource(makeAoSrc(ao), 'a.ashfox')]]);
+    const p = compileStructureUnits('a.ashfox', u, {}, (_o, s) => s);
     const batches = new Map<string, BatchDraft>();
     emitInteriorBakedMeshes(p.grid, batches, {}, 99);
     const cols = [...batches.values()].flatMap((b) => b.colors);
     return cols.reduce((acc, v) => acc + v, 0) / cols.length;
   };
-  assert.ok(
-    compileAoColorAvg(0) > compileAoColorAvg(0.85),
-    'contact_ao_strength=0 must bake brighter vertices than 0.85',
-  );
-  assert.throws(
-    () =>
-      parseStructureSource(
-        'ashfox 1 structure x { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { table huge { size = (1000000, 1000000); } } } } }',
-        'x.ashfox',
-      ),
-    StructureInputError,
-  );
-  assert.equal(
-    propFitsBounds(
-      { id: 'huge', kind: 'table', at: [2, 1, 2], size: [1_000_000, 1_000_000], facing: 'north' },
-      2,
-      2,
-      { x0: 1, x1: 8, z0: 1, z1: 8 },
-    ),
-    false,
-  );
+  assert.ok(compileAoColorAvg(0) > compileAoColorAvg(0.85));
+  const badSrc =
+    'ashfox 1 structure x { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { table huge { size = (1000000, 1000000); } } } } }';
+  assert.throws(() => parseStructureSource(badSrc, 'x.ashfox'), StructureInputError);
+  const huge = {
+    id: 'huge',
+    kind: 'table',
+    at: [2, 1, 2],
+    size: [1_000_000, 1_000_000],
+    facing: 'north',
+  } as const;
+  assert.equal(propFitsBounds(huge, 2, 2, { x0: 1, x1: 8, z0: 1, z1: 8 }), false);
+  assert.equal(mountInstanceRotation('north', 90), 270);
+  assert.equal(mountInstanceRotation('east', 90), 180);
 };
 
 testTwoBounceRadiosityAndPerformance();

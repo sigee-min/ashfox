@@ -132,6 +132,19 @@ const emitSunShaftBatch = (
   for (const idx of prim.indices) batch.indices.push(base + idx);
 };
 
+const BASE_MOUNT_ROT: Readonly<Record<string, number>> = {
+  east: 270,
+  south: 180,
+  west: 90,
+  north: 0,
+};
+
+/** Converts facing + interior CW yaw_deg into Three.js +Y CCW instance rotation [0|90|180|270]. */
+export const mountInstanceRotation = (facing: string, yawDeg: number): 0 | 90 | 180 | 270 => {
+  const deg = (BASE_MOUNT_ROT[facing] ?? 0) - yawDeg;
+  return ((((Math.round(deg / 90) * 90) % 360) + 360) % 360) as 0 | 90 | 180 | 270;
+};
+
 const emitRoomMounts = (
   room: CompiledInteriorRoom,
   customModels: Readonly<Record<string, CompiledModel>>,
@@ -140,12 +153,6 @@ const emitRoomMounts = (
   maxY: number,
   out: StructurePropInstance[],
 ): void => {
-  const baseRotMap: Readonly<Record<string, number>> = {
-    east: 270,
-    south: 180,
-    west: 90,
-    north: 0,
-  };
   for (const m of room.custom_mounts) {
     if (!customModels[m.asset_alias] || m.at_16[1] / U >= maxY) continue;
     const rgb = sampleRadiosityAt16(
@@ -155,12 +162,10 @@ const emitRoomMounts = (
       m.at_16[1],
       m.at_16[2],
     );
-    const deg = (baseRotMap[m.facing] ?? 0) + m.rotation_y_deg;
-    const rot = ((((Math.round(deg / 90) * 90) % 360) + 360) % 360) as 0 | 90 | 180 | 270;
     out.push({
       assetKey: m.asset_alias,
       translation: [m.at_16[0] / U - hw, m.at_16[1] / U, m.at_16[2] / U - hd],
-      rotation: rot,
+      rotation: mountInstanceRotation(m.facing, m.rotation_y_deg),
       lightRgb: [linearToSrgb(rgb[0]), linearToSrgb(rgb[1]), linearToSrgb(rgb[2])],
     });
   }
