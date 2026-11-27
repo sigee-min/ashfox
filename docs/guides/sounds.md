@@ -98,12 +98,12 @@ Named `seq`, `step`, and `voice` IDs own independent deterministic random stream
 
 Declare `loop { at = 0.4s..4.4s; xfade = 80ms; }` in a source whose raw `duration` covers that interval. The compiler crops after warm-up and bakes the overlap once. A four-second interval with 80ms crossfade delivers **3.92 seconds**. Use circular Perlin `drift` and subtle granular turbulence on ambient loops so the Loop Periodicity Detector sees organic evolution rather than static LFO swells.
 
-WAV contains only PCM, with no embedded loop instruction. Standalone consumers must enable full-buffer looping. Build receipts and `game_assets` manifests carry `{ kind = "loop", startFrame: 0, endFrame: frames }`; one-shots carry `{ kind = "oneshot" }`. Loop OGG and Minecraft pack loop targets remain rejected.
+WAV contains only PCM, with no embedded loop instruction. Standalone consumers must enable full-buffer looping. Build receipts and `game_assets` manifests carry `{ kind = "loop", startFrame: 0, endFrame: frames }`; one-shots carry `{ kind = "oneshot" }`. When `game_assets` packs use `audio: "ogg"`, loops embed `LOOPSTART` and `LOOPLENGTH` Vorbis comments and emit `loopStartSample`, `loopEndSample`, and `sampleRate` in `assets.json` for gapless playback. Minecraft pack loop targets remain rejected.
 
 ## Listen and inspect
 
 Compare variants at intended output volume, then compare timbre at matched loudness. Audition at least 20 loop cycles for clicks, repetitive swells, harsh upper harmonics, or crossfade dips.
 
-The repository's `examples/sounds/assets/` includes bird phrases (`bird_call.ashfox` with `bird_voices.ashfox`), foley (`foley_kit.ashfox`, `bow_shot.ashfox`, `door_creak.ashfox`), footsteps, charging spell, modal metal/wood/glass studies, and wind/fire/mechanical loops.
+The repository's `showcase/assets/sounds/` and built-in standard library (`ashfox library std list sound`) include blade/hit combat sounds (`sword_slash.ashfox`, `claw_hit.ashfox`), footsteps (`footsteps.ashfox`), creature calls (`griffin_call.ashfox`), and gapless loops (`fire_loop.ashfox`).
 
 Legacy headers (`ashfox-model 1`), JSON array syntax (`voices = [...]`, `sequences = [...]`, `{ domain = ...; }`), `camelCase` keys, quoted enum strings, `timeline`, `resonator`, `layers`, `output.rmsDb`, `output.softClip`, and `noise.color = "crackle"` are rejected. See [Sound syntax reference](../language/sounds.md) for the complete `ashfox 1` sound grammar and resource limits.

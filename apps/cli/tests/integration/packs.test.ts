@@ -9,12 +9,106 @@ const root = path.resolve(__dirname, '../../../..'),
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-packs-'));
 const project = path.join(temp, 'project'),
   config = path.join(project, '.ashfoxworkspace');
-fs.cpSync(path.join(root, 'examples/resource-pack'), project, {
-  recursive: true,
-  filter: (p) => !p.split(path.sep).includes('dist'),
-});
-const original = JSON.parse(String(fs.readFileSync(config, 'utf8')));
-original.packs[0].sounds = [];
+fs.mkdirSync(path.join(project, 'assets/sprites'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/models'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sounds'), { recursive: true });
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sprites/iron_sword.ashfox'),
+  path.join(project, 'assets/sprites/iron_sword.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/models/rune_bricks.ashfox'),
+  path.join(project, 'assets/models/rune_bricks.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sounds/claw_hit.ashfox'),
+  path.join(project, 'assets/sounds/claw_hit.ashfox'),
+);
+const original: Record<string, any> = {
+  format: 'ashfox-workspace',
+  version: 2,
+  name: 'resource-pack-test',
+  packages: [
+    {
+      name: 'sprites',
+      root: 'assets/sprites',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'iron_sword', path: 'iron_sword.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'models',
+      root: 'assets/models',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'rune_bricks', path: 'rune_bricks.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'sounds',
+      root: 'assets/sounds',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'claw_hit', path: 'claw_hit.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'],
+  ignore: ['assets/drafts/**'],
+  build: { directory: 'dist/build' },
+  exports: [
+    {
+      name: 'iron_sword',
+      entry: { packageName: 'sprites', entryName: 'iron_sword' },
+      format: 'png',
+      directory: 'dist/sprites',
+    },
+    {
+      name: 'marker',
+      entry: { packageName: 'models', entryName: 'rune_bricks' },
+      format: 'java_block',
+      namespace: 'minecraft',
+      modelPath: 'stone',
+      directory: 'dist/block',
+    },
+    {
+      name: 'claw_hit',
+      entry: { packageName: 'sounds', entryName: 'claw_hit' },
+      format: 'wav',
+      directory: 'dist/sounds',
+    },
+  ],
+  packs: [
+    {
+      name: 'game_pack',
+      format: 'minecraft_java',
+      directory: 'dist/pack',
+      minecraftVersion: '26.2',
+      metadata: {
+        format: 'range',
+        minFormat: [88, 0],
+        maxFormat: [88, 0],
+        description: 'Pack test',
+      },
+      itemDefinitions: 'modern',
+      archive: true,
+      icon: 'iron_sword',
+      models: ['marker'],
+      items: [{ source: 'iron_sword', id: 'minecraft:iron_sword', parent: 'handheld' }],
+      sounds: [],
+    },
+  ],
+};
 const write = (value: unknown) => fs.writeFileSync(config, JSON.stringify(value));
 const run = (command: string, input = config) => {
   const child = spawnSync(

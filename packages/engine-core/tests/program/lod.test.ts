@@ -6,8 +6,26 @@ import {
   openAssetProject,
   parseStructureSource,
   compileStructureUnits,
+  virtualLibrarySpecifierFromPath,
   type DirectoryFile,
 } from '../../src';
+
+const loadStdLibs = (
+  dir = path.resolve(__dirname, '../../../../library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
 import { adaptProjectForExport } from '../../src/export/adapter';
 import { validateExportTarget } from '../../src/export/pipeline/validate';
 import { buildGltf, exportGltf } from '../../src/export/targets/gltf/exporter';
@@ -78,9 +96,13 @@ const triCountOf = (batches: readonly { indices: readonly number[] }[]): number 
   batches.reduce((sum, batch) => sum + batch.indices.length / 3, 0);
 
 const testStructureThreeTierLod = async (): Promise<void> => {
-  const dir = path.join(REPO_ROOT, 'examples/structure');
+  const dir = path.join(REPO_ROOT, 'showcase');
   const cfg = fs.readFileSync(path.join(dir, '.ashfoxworkspace'), 'utf8');
-  const compiled = compileDirectoryWorkspace(cfg, walkFiles(dir, ''));
+  const compiled = compileDirectoryWorkspace(
+    cfg,
+    walkFiles(dir, '').filter((f) => !f.path.startsWith('dist/') && !f.path.startsWith('.ashfox')),
+    loadStdLibs(),
+  );
   assert.equal(compiled.ok, true);
   if (!compiled.ok) return;
 
@@ -153,30 +175,27 @@ structure stair_hall {
 };
 
 const testCreatureModelsThreeTierLod = async (): Promise<void> => {
-  const cases: readonly [string, string, string][] = [
-    ['examples/griffin/workbench', 'main.ashfox', 'griffin'],
-    ['examples/fox/creatures', 'fox.ashfox', 'fox'],
-    ['examples/goblin/creatures', 'goblin.ashfox', 'goblin'],
-  ];
-  for (const [subDir, entryRel, entryName] of cases) {
-    const dir = path.join(REPO_ROOT, subDir);
-    const files = walkFiles(dir, 'model');
-    const modules = files
-      .map((f) => f.path.replace(/^model\//, ''))
-      .filter((p) => p !== entryRel)
-      .map((p) => ({ subpath: `./${p.replace(/\.ashfox$/, '')}`, path: p }));
-    const ws = workspaceFixture(files, {
-      root: 'model',
-      packageName: 'test',
-      entries: [{ name: entryName, path: entryRel }],
-      modules,
-    });
+  const wsDir = path.join(REPO_ROOT, 'showcase');
+  const ws = fs.readFileSync(path.join(wsDir, '.ashfoxworkspace'), 'utf8');
+  const files = walkFiles(wsDir, '').filter(
+    (f) => !f.path.startsWith('dist/') && !f.path.startsWith('.ashfox'),
+  );
+  const compiledShowcase = compileDirectoryWorkspace(ws, files, loadStdLibs());
+  assert.equal(compiledShowcase.ok, true);
+  if (!compiledShowcase.ok) return;
+  const cases: readonly string[] = ['griffin_boss', 'red_fox', 'goblin_raider'];
+  for (const entryName of cases) {
+    const prod = compiledShowcase.products.find(
+      (p) => p.kind === 'model' && p.entry.entryName === entryName,
+    );
+    assert.ok(prod && prod.kind === 'model', `Missing showcase model ${entryName}`);
+    if (!prod || prod.kind !== 'model') continue;
     const opened = openAssetProject({
-      workspace: ws,
-      entry: { packageName: 'test', entryName },
+      workspace: prod.workspace,
+      entry: prod.entry,
       identity: { id: entryName, revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
     });
-    assert.equal(opened.ok, true);
+    assert.equal(opened.ok, true, opened.ok ? '' : JSON.stringify(opened.diagnostics));
     if (!opened.ok) continue;
     const doc = opened.project.document;
     const a0 = computeModelBoundsAndPartSizes(doc);
@@ -217,37 +236,38 @@ const testCreatureModelsThreeTierLod = async (): Promise<void> => {
 };
 
 const testGltfExternalBufferUriAndMixedLod1 = async (): Promise<void> => {
-  const dir = path.join(REPO_ROOT, 'examples/fox/creatures');
-  const files = walkFiles(dir, 'model');
-  const modules = files
-    .map((f) => f.path.replace(/^model\//, ''))
-    .filter((p) => p !== 'fox.ashfox')
-    .map((p) => ({ subpath: `./${p.replace(/\.ashfox$/, '')}`, path: p }));
-  const ws = workspaceFixture(files, {
-    root: 'model',
-    packageName: 'test',
-    entries: [{ name: 'fox', path: 'fox.ashfox' }],
-    modules,
-  });
+  const wsDir = path.join(REPO_ROOT, 'showcase');
+  const ws = fs.readFileSync(path.join(wsDir, '.ashfoxworkspace'), 'utf8');
+  const files = walkFiles(wsDir, '').filter(
+    (f) => !f.path.startsWith('dist/') && !f.path.startsWith('.ashfox'),
+  );
+  const compiledShowcase = compileDirectoryWorkspace(ws, files, loadStdLibs());
+  assert.equal(compiledShowcase.ok, true);
+  if (!compiledShowcase.ok) return;
+  const prod = compiledShowcase.products.find(
+    (p) => p.kind === 'model' && p.entry.entryName === 'red_fox',
+  );
+  assert.ok(prod && prod.kind === 'model');
+  if (!prod || prod.kind !== 'model') return;
   const opened = openAssetProject({
-    workspace: ws,
-    entry: { packageName: 'test', entryName: 'fox' },
-    identity: { id: 'fox', revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
+    workspace: prod.workspace,
+    entry: prod.entry,
+    identity: { id: 'red_fox', revision: 'r1', createdAt: '2026-01-01T00:00:00.000Z' },
   });
   assert.equal(opened.ok, true);
   if (!opened.ok) return;
   const doc = opened.project.document;
 
   const gltfBundle = exportGltf(
-    adaptProjectForExport(doc, { target: 'gltf', modelPath: 'fox' }),
+    adaptProjectForExport(doc, { target: 'gltf', modelPath: 'red_fox' }),
     opened.project.build,
   );
-  const gltfFile = gltfBundle.files.find((f) => f.path.endsWith('fox.gltf'));
-  const binFile = gltfBundle.files.find((f) => f.path.endsWith('fox.bin'));
+  const gltfFile = gltfBundle.files.find((f) => f.path.endsWith('red_fox.gltf'));
+  const binFile = gltfBundle.files.find((f) => f.path.endsWith('red_fox.bin'));
   assert.ok(gltfFile && gltfFile.kind === 'json');
   assert.ok(binFile && binFile.kind === 'binary');
   const parsed = JSON.parse(gltfFile.text) as GltfLodDocument;
-  assert.equal(parsed.buffers?.[0]?.uri, 'fox.bin');
+  assert.equal(parsed.buffers?.[0]?.uri, 'red_fox.bin');
   assert.equal(parsed.buffers?.[0]?.byteLength, binFile.data.byteLength);
 
   const ext = new Map<string, Uint8Array>([['fox.bin', binFile.data]]);

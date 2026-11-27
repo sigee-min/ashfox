@@ -8,11 +8,92 @@ const root = path.resolve(__dirname, '../../../..');
 const cli = path.join(__dirname, '../../dist/ashfox.cjs');
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-cli-'));
 const project = path.join(temp, 'project');
-fs.cpSync(path.join(root, 'examples/pipeline'), project, {
-  recursive: true,
-  filter: (source) => !source.split(path.sep).includes('dist'),
-});
+fs.mkdirSync(path.join(project, 'assets/models'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sprites'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sounds'), { recursive: true });
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/models/wall_lantern.ashfox'),
+  path.join(project, 'assets/models/wall_lantern.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sprites/iron_sword.ashfox'),
+  path.join(project, 'assets/sprites/iron_sword.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sounds/claw_hit.ashfox'),
+  path.join(project, 'assets/sounds/claw_hit.ashfox'),
+);
 const config = path.join(project, '.ashfoxworkspace');
+fs.writeFileSync(
+  config,
+  JSON.stringify(
+    {
+      format: 'ashfox-workspace',
+      version: 2,
+      name: 'pipeline-test',
+      packages: [
+        {
+          name: 'models',
+          root: 'assets/models',
+          manifest: {
+            format: 'ashfox-package',
+            version: 1,
+            entries: [{ name: 'wall_lantern', path: 'wall_lantern.ashfox' }],
+            modules: [],
+            dependencies: [],
+          },
+        },
+        {
+          name: 'sprites',
+          root: 'assets/sprites',
+          manifest: {
+            format: 'ashfox-package',
+            version: 1,
+            entries: [{ name: 'iron_sword', path: 'iron_sword.ashfox' }],
+            modules: [],
+            dependencies: [],
+          },
+        },
+        {
+          name: 'sounds',
+          root: 'assets/sounds',
+          manifest: {
+            format: 'ashfox-package',
+            version: 1,
+            entries: [{ name: 'claw_hit', path: 'claw_hit.ashfox' }],
+            modules: [],
+            dependencies: [],
+          },
+        },
+      ],
+      include: ['assets/**/*.ashfox'],
+      ignore: ['assets/drafts/**'],
+      build: { directory: 'dist/build' },
+      exports: [
+        {
+          name: 'wall_lantern',
+          entry: { packageName: 'models', entryName: 'wall_lantern' },
+          format: 'glb',
+          directory: 'dist/models',
+        },
+        {
+          name: 'iron_sword',
+          entry: { packageName: 'sprites', entryName: 'iron_sword' },
+          format: 'png',
+          directory: 'dist/sprites',
+        },
+        {
+          name: 'claw_hit',
+          entry: { packageName: 'sounds', entryName: 'claw_hit' },
+          format: 'wav',
+          directory: 'dist/sounds',
+        },
+      ],
+    },
+    null,
+    2,
+  ),
+);
 const run = (command: string, input = config, executable = cli) => {
   const child = spawnSync(process.execPath, [executable, command, input, '--json'], {
     encoding: 'utf8',
@@ -175,10 +256,10 @@ const main = async () => {
     recursive: true,
     filter: (source) => !source.split(path.sep).includes('dist'),
   });
-  fs.mkdirSync(path.join(clean, 'dist/items'), { recursive: true });
-  fs.writeFileSync(path.join(clean, 'dist/items/user.txt'), 'preserve');
+  fs.mkdirSync(path.join(clean, 'dist/sprites'), { recursive: true });
+  fs.writeFileSync(path.join(clean, 'dist/sprites/user.txt'), 'preserve');
   assert.equal(run('build', path.join(clean, '.ashfoxworkspace')).code, 3);
-  assert.equal(fs.readFileSync(path.join(clean, 'dist/items/user.txt'), 'utf8'), 'preserve');
+  assert.equal(fs.readFileSync(path.join(clean, 'dist/sprites/user.txt'), 'utf8'), 'preserve');
   const packed = spawnSync(
     'npm',
     ['pack', '--ignore-scripts', '--json', '--pack-destination', temp],

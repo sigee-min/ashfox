@@ -1,0 +1,26 @@
+ashfox 1
+module quadruped {
+  export rig contract QuadrupedRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint body { parent = root; role = body; channels = (position, rotation); }
+    joint neck { parent = body; role = neck; channels = rotation; }
+    joint head { parent = neck; role = head; channels = rotation; }
+    joint tail { parent = body; role = tail; channels = rotation; }
+    joint front_left_leg { parent = body; role = leg; channels = rotation; }
+    joint front_right_leg { parent = body; role = leg; channels = rotation; }
+    joint back_left_leg { parent = body; role = leg; channels = rotation; }
+    joint back_right_leg { parent = body; role = leg; channels = rotation; }
+  }
+
+  export skeleton QuadrupedSkeleton implements QuadrupedRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind body { parent_origin = (0u, 10u, 0u); }
+    bind neck { parent_origin = (0u, 2u, -6u); }
+    bind head { parent_origin = (0u, 3u, -3u); }
+    bind tail { parent_origin = (0u, 1u, 7u); }
+    bind front_left_leg { parent_origin = (-3u, -2u, -5u); }
+    bind front_right_leg { parent_origin = (3u, -2u, -5u); }
+    bind back_left_leg { parent_origin = (-3u, -2u, 5u); }
+    bind back_right_leg { parent_origin = (3u, -2u, 5u); }
+  }
+}

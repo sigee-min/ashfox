@@ -1,0 +1,57 @@
+ashfox 1
+vfx hearth_embers {
+  import "std/vfx/ambient/embers" as amb;
+
+  duration = 1.20s;
+  fps = 24;
+  loop = loop;
+  palette = amb.HearthEmbers;
+
+  preview flipbook { sheet = flipbook; background = dark; width = 512; height = 512; }
+  preview peak { time = 0.55s; background = dark; azimuth = 32; elevation = 24; width = 640; height = 480; }
+
+  element ember_bed : ring {
+    at = 0s..1.20s;
+    blend = additive;
+    radius = 0.2u..4.0u;
+    segments = 16;
+    bevel = 0.2u;
+    position = (0u, 0.15u, 0u);
+    texture ring_wave { posterize = 5; seed = 55; }
+    scale = 0.84 -> 1.16 ease_in_out -> 0.84;
+    alpha = 0.45 -> 0.82 -> 0.45;
+  }
+
+  emitter rising_sparks : voxel_burst {
+    at = 0s..1.18s;
+    seed = 503;
+    count = 28;
+    shape = cone(30deg, 2.5u);
+    particle = voxel_cube;
+    speed = 6u..13u;
+    life = 0.45s..0.95s;
+    gravity = 6u;
+    drag = 1.0;
+    turbulence = curl(0.8, 8.5u);
+    size_over_life = 0.45u -> 0.7u -> 0u;
+    color_over_life = core -> mid -> edge;
+    spin_speed = 110deg;
+    blend = additive;
+  }
+
+  emitter smoke_puffs : voxel_burst {
+    at = 0.05s..1.18s;
+    seed = 509;
+    count = 12;
+    shape = cone(24deg, 1.8u);
+    particle = puff;
+    speed = 3.5u..7u;
+    life = 0.5s..0.95s;
+    gravity = 4.5u;
+    drag = 1.6;
+    turbulence = curl(0.5, 4u);
+    size_over_life = 0.6u -> 1.9u -> 0u;
+    color_over_life = mid -> edge -> smoke;
+    blend = blend;
+  }
+}

@@ -1,0 +1,89 @@
+ashfox 1
+model red_fox {
+  import "std/model/rig/quadruped" as quad;
+  import "std/model/motion/idle" as idle_kit;
+  import "std/model/motion/locomotion" as loco;
+  import "std/core/hook/world" as world_hook;
+  import "fox_fur/fur" as fur;
+
+  component FoxBody {
+    requires rig skeleton: quad.QuadrupedRig;
+    requires surface skin: fur.FoxFur;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    bind bone neck to skeleton.neck;
+    bind bone head to skeleton.head;
+    bind bone tail to skeleton.tail;
+    bind bone front_left_leg to skeleton.front_left_leg;
+    bind bone front_right_leg to skeleton.front_right_leg;
+    bind bone back_left_leg to skeleton.back_left_leg;
+    bind bone back_right_leg to skeleton.back_right_leg;
+    geometry {
+      bone root {
+        bone body {
+          cube pelvis { origin = (-3u, 8u, 2.5u); size = (6u, 5u, 6u); surface = skin.pelvis; }
+          cube torso { origin = (-3.5u, 7.8u, -4u); size = (7u, 6u, 7u); surface = skin.body; }
+          cube chest { origin = (-4u, 7.2u, -7.5u); size = (8u, 7u, 4u); pivot = (0u, 10.5u, -5.5u); rotation = (5deg, 0deg, 0deg); surface = skin.chest; }
+          bone neck {
+            wedge ruff { origin = (-3.5u, 10.5u, -9.2u); size = (7u, 4u, 4u); slope = north; surface = skin.ruff; }
+            bone head {
+              cube skull { origin = (-4u, 12.6u, -13u); size = (8u, 6u, 7u); surface = skin.head; }
+              expression_slot face {
+                origin = (3.5u, 14.8u, -13.08u);
+                size = (7u, 4u);
+                u_axis = (-1u, 0u, 0u);
+                v_axis = (0u, 1u, 0u);
+                neutral = skin.face_neutral;
+                blink = skin.face_blink;
+                alert = skin.face_alert;
+              }
+              wedge muzzle { origin = (-2u, 12.6u, -16.8u); size = (4u, 3u, 4u); slope = north; surface = skin.muzzle; }
+              cube nose { origin = (-1u, 13.8u, -17.4u); size = (2u, 1u, 2u); surface = skin.nose; }
+              cube ear_base_l { origin = (-3.8u, 18.4u, -10u); size = (3u, 3u, 2u); pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -12deg); mirror_x = ear_base_r; surface = skin.ear_base; }
+              taper ear_tip_l { origin = (-3.3u, 20.9u, -9.8u); size = (2u, 2u, 2u); top_scale = (0.3, 0.4); axis = y; pivot = (-2.3u, 18.4u, -9u); rotation = (-6deg, 0deg, -12deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
+            }
+          }
+          bone tail {
+            cube tail_base { origin = (-1.5u, 9.6u, 7u); size = (3u, 3u, 6u); pivot = (0u, 11.1u, 7u); rotation = (-10deg, 0deg, 0deg); surface = skin.tail_base; }
+            cylinder tail_mid { origin = (0u, 11.5u, 12u); radius = 2.4u; radius_top = 2.2u; height = 6.5u; sides = 8; axis = z; surface = skin.tail_main; }
+            taper tail_end { origin = (-2u, 10u, 18.5u); size = (4u, 4u, 5u); top_scale = (0.28, 0.28); axis = z; surface = skin.tail_tip; }
+          }
+          bone front_left_leg {
+            cube shoulder_fl { origin = (-4.2u, 5u, -6.2u); size = (3u, 4u, 3u); surface = skin.shoulder; }
+            cube leg_fl { origin = (-3.8u, 2u, -5.8u); size = (2u, 4u, 2u); surface = skin.leg; }
+            cube paw_fl { origin = (-3.8u, 0u, -6.8u); size = (2u, 2u, 3u); surface = skin.paw; }
+          }
+          bone front_right_leg {
+            cube shoulder_fr { origin = (1.6u, 5u, -6.2u); size = (3u, 4u, 3u); surface = skin.shoulder; }
+            cube leg_fr { origin = (1.8u, 2u, -5.8u); size = (2u, 4u, 2u); surface = skin.leg; }
+            cube paw_fr { origin = (1.8u, 0u, -6.8u); size = (2u, 2u, 3u); surface = skin.paw; }
+          }
+          bone back_left_leg {
+            cube thigh_bl { origin = (-4.4u, 5u, 3.5u); size = (3u, 5u, 4u); surface = skin.thigh; }
+            cube leg_bl { origin = (-3.8u, 2u, 4.2u); size = (2u, 4u, 2u); surface = skin.leg; }
+            cube paw_bl { origin = (-3.8u, 0u, 3.2u); size = (2u, 2u, 3u); surface = skin.paw; }
+          }
+          bone back_right_leg {
+            cube thigh_br { origin = (1.2u, 5u, 3.5u); size = (3u, 5u, 4u); surface = skin.thigh; }
+            cube leg_br { origin = (1.8u, 2u, 4.2u); size = (2u, 4u, 2u); surface = skin.leg; }
+            cube paw_br { origin = (1.8u, 0u, 3.2u); size = (2u, 2u, 3u); surface = skin.paw; }
+          }
+        }
+      }
+    }
+  }
+
+  motion tail_wag for quad.QuadrupedRig {
+    duration = 2.4s; fps = 24; loop = loop; rest_relative = true;
+    track body.position { key 0s = (0u, 0u, 0u) smooth; key 0.6s = (0u, -0.4u, 0u) ease_in_out; key 1.2s = (0u, 0.2u, 0u) ease_out; key 1.8s = (0u, -0.4u, 0u) ease_in_out; key 2.4s = (0u, 0u, 0u) ease_out; }
+    track tail.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 0.4s = (3deg, 22deg, 0deg) ease_in_out; key 1.2s = (3deg, -22deg, 0deg) ease_in_out; key 2s = (3deg, 22deg, 0deg) ease_in_out; key 2.4s = (0deg, 0deg, 0deg) ease_out; }
+    expression face { at 0s = neutral; at 0.8s..1.4s = alert; at 1.9s..2.05s = blink; }
+  }
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = quad.QuadrupedSkeleton;
+  motions = [idle_kit.quad_idle, loco.quad_trot, tail_wag];
+  use FoxBody as fox { skeleton = quad.QuadrupedRig; skin = fur.fox_coat; }
+
+  anchor woodland_spawn : world_hook.SpawnPoint { bone = root; kind = creature; radius = 8.0; tag = "red_fox"; }
+}

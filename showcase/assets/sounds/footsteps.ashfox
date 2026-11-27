@@ -1,0 +1,20 @@
+ashfox 1
+sound footsteps {
+  import "std/sound/foley/footstep" as step_kit;
+
+  profile = foley;
+  duration = 2.25s;
+  seed = 7349;
+  space { preset = courtyard; mix = 20%; }
+
+  seq walk {
+    start = 20ms;
+    repeat { count = 5; period = 420ms; }
+    step step { voice = step_kit.stone_tap; at = 0s; duration = 180ms; vary_timing = -6ms..6ms; vary_pitch = -65cents..65cents; vary_gain = 85%..115%; vary_duration = 94%..106%; }
+    step heel { voice = step_kit.boot_thud; at = 2ms; duration = 190ms; vary_pitch = -45cents..45cents; vary_gain = 85%..115%; }
+    step scuff { voice = step_kit.grit_scuff; at = 8ms; duration = 220ms; vary_pitch = -70cents..70cents; vary_gain = 80%..120%; vary_duration = 90%..110%; }
+  }
+
+  variants { base = 42; alternate = 43; }
+  master { gain = 5db; target = -13lufs; peak = -1.5db; punch = 35%; warmth = 15%; glue = 15%; limit = true; }
+}

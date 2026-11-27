@@ -82,7 +82,7 @@ const verifyCreatedProject = async (execute, folder) => {
     await execute('check', 'created/build/assets/compiler', '--json'),
   ).result;
   assert.equal(built.bundleHash, verified.bundleHash);
-  assert.equal(verified.catalog.assets.length, 4);
+  assert.equal(verified.catalog.assets.length, 5);
   const adapted = JSON.parse(
     await run(
       process.execPath,
@@ -92,15 +92,15 @@ const verifyCreatedProject = async (execute, folder) => {
   );
   assert.equal(adapted.bundleHash, built.bundleHash);
   const builtSword = JSON.parse(
-    await execute('build', 'created/assets/sprites/sword.ashfox', '--json'),
+    await execute('build', 'created/assets/sprites/iron_sword.ashfox', '--json'),
   ).result;
   const swordExport = builtSword.exports.find((item) => item.id === 'items_iron_sword');
   assert.ok(swordExport);
   const png = fs.readFileSync(path.join(swordExport.directory, 'items_iron_sword.png'));
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
-  await assert.rejects(execute('export', 'created/assets/sprites/sword.ashfox'));
+  await assert.rejects(execute('export', 'created/assets/sprites/iron_sword.ashfox'));
   const checkedSword = JSON.parse(
-    (await execute('check', 'created/assets/sprites/sword.ashfox', '--json')).toString(),
+    (await execute('check', 'created/assets/sprites/iron_sword.ashfox', '--json')).toString(),
   );
   assert.equal(checkedSword.ok, true);
   assert.equal(JSON.parse(await execute('doctor', '--json')).ok, true);
@@ -108,8 +108,8 @@ const verifyCreatedProject = async (execute, folder) => {
 
 const verifyStandaloneBuilds = async (execute) => {
   const cases = [
-    ['assets/models/fox/fox.ashfox', 'fox.glb', 'glTF'],
-    ['assets/sprites/sword.ashfox', 'iron_sword.png', '\x89PNG'],
+    ['assets/models/wall_lantern.ashfox', 'wall_lantern.glb', 'glTF'],
+    ['assets/sprites/iron_sword.ashfox', 'iron_sword.png', '\x89PNG'],
     ['assets/sounds/claw_hit.ashfox', 'claw_hit/base.wav', 'RIFF'],
   ];
   for (const [source, artifact, magic] of cases) {

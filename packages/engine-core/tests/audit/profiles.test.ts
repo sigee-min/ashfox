@@ -1,9 +1,32 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileDirectoryWorkspace, evaluateAssetQuality, type AuditReport } from '../../src';
+import {
+  compileDirectoryWorkspace,
+  evaluateAssetQuality,
+  virtualLibrarySpecifierFromPath,
+  type AuditReport,
+} from '../../src';
 
 const repoRoot = path.resolve(__dirname, '../../../..');
+
+const loadStdLibs = (
+  dir = path.join(repoRoot, 'library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+const stdLibs = loadStdLibs();
 
 const loadWorkspaceFiles = (dir: string, rootDir = dir): { path: string; source: string }[] => {
   const out: { path: string; source: string }[] = [];
@@ -63,6 +86,7 @@ const evaluateRepoAsset = (entryRelPath: string, workspaceDir?: string): AuditRe
   const compiled = compileDirectoryWorkspace(
     makeWorkspaceConfig(assetName, entry, rawFiles),
     pkgFiles,
+    stdLibs,
   );
   assert.equal(
     compiled.ok,
@@ -218,26 +242,18 @@ ${minRig}
   }
 }`;
 
-const runeBricks = evaluateRepoAsset('examples/block/rune_bricks.ashfox');
+const runeBricks = evaluateRepoAsset('showcase/assets/models/rune_bricks.ashfox');
 assert.equal(runeBricks.profile, 'block');
 assert.equal(runeBricks.passed, true);
 assert.ok(runeBricks.score >= 85, `expected rune_bricks >= 85, got ${runeBricks.score}`);
 assert.equal(metricScore(runeBricks, 'rig.rigAndMotion').score, 4);
 
-const marker = evaluateRepoAsset('examples/minecraft/assets/models/marker.ashfox');
-assert.equal(marker.profile, 'block');
-assert.equal(marker.passed, true);
-assert.ok(marker.score >= 85, `expected marker >= 85, got ${marker.score}`);
-
-const lantern = evaluateRepoAsset('examples/prop/lantern.ashfox');
+const lantern = evaluateRepoAsset('showcase/assets/models/wall_lantern.ashfox');
 assert.equal(lantern.profile, 'prop');
 assert.equal(lantern.passed, true);
 assert.ok(lantern.score >= 85, `expected lantern >= 85, got ${lantern.score}`);
 
-const chest = evaluateRepoAsset(
-  'examples/prop/treasure_chest/chest.ashfox',
-  'examples/prop/treasure_chest',
-);
+const chest = evaluateRepoAsset('showcase/assets/models/treasure_chest.ashfox');
 assert.equal(chest.profile, 'prop');
 assert.equal(chest.passed, true);
 assert.ok(chest.score >= 85, `expected treasure_chest >= 85, got ${chest.score}`);
@@ -264,5 +280,5 @@ assert.ok(
 );
 
 console.log(
-  `profiles ok: rune_bricks=${runeBricks.score} marker=${marker.score} lantern=${lantern.score} chest=${chest.score}`,
+  `profiles ok: rune_bricks=${runeBricks.score} lantern=${lantern.score} chest=${chest.score}`,
 );

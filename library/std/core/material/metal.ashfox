@@ -1,0 +1,45 @@
+ashfox 1
+module metal {
+  export design MetalParams {
+    iron_shadow: color = #3b424a;
+    iron_base: color = #727e8a;
+    iron_light: color = #b0bcc7;
+    gold_shadow: color = #75531d;
+    gold_base: color = #bd8b34;
+    gold_light: color = #ebbf63;
+    copper_shadow: color = #693724;
+    copper_base: color = #b05c3d;
+    copper_light: color = #de8864;
+    metallic: ratio = 0.88;
+    roughness: ratio = 0.34;
+  }
+
+  export surface contract MetalSurface {
+    chart plate box { coverage = opaque; }
+    chart rivet box { coverage = opaque; }
+    material = double;
+  }
+
+  export surface forged_iron: MetalSurface {
+    material = double;
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #2a3038;
+        iron = (#3b424a, #727e8a, #b0bcc7);
+        rivet = (#4d555e, #8a95a1, #c7d1db);
+      }
+      chart plate box {
+        fill = iron;
+        grain = brushed;
+        pattern gradient { to = rivet; axis = y; space = local; soft = 0.2; }
+        pattern ao { strength = 0.45; radius = 0.8u; }
+      }
+      chart rivet box {
+        fill = rivet;
+        pattern border { paint = iron; width = 1px; }
+      }
+    }
+  }
+}

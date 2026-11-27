@@ -1,0 +1,220 @@
+{
+  "format": "ashfox-workspace",
+  "version": 2,
+  "name": "ashfox_showcase",
+  "packages": [
+    {
+      "name": "models",
+      "root": "assets/models",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          { "name": "goblin_raider", "path": "goblin_raider.ashfox" },
+          { "name": "goblin_pyromancer", "path": "goblin_pyromancer.ashfox" },
+          { "name": "griffin_boss", "path": "griffin_boss.ashfox" },
+          { "name": "red_fox", "path": "red_fox.ashfox" },
+          { "name": "treasure_chest", "path": "treasure_chest.ashfox" },
+          { "name": "wall_lantern", "path": "wall_lantern.ashfox" },
+          { "name": "rune_bricks", "path": "rune_bricks.ashfox" }
+        ],
+        "modules": [],
+        "dependencies": [
+          { "name": "shared_modules" },
+          { "name": "griffin_plumage" },
+          { "name": "fox_fur" }
+        ]
+      }
+    },
+    {
+      "name": "sprites",
+      "root": "assets/sprites",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          { "name": "iron_sword", "path": "iron_sword.ashfox" },
+          { "name": "ruby_potion", "path": "ruby_potion.ashfox" },
+          { "name": "oak_planks", "path": "oak_planks.ashfox" }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "vfx",
+      "root": "assets/vfx",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          { "name": "flame_cleave", "path": "flame_cleave.ashfox" },
+          { "name": "arcane_shockwave", "path": "arcane_shockwave.ashfox" },
+          { "name": "lightning_strike", "path": "lightning_strike.ashfox" },
+          { "name": "hearth_embers", "path": "hearth_embers.ashfox" }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "sounds",
+      "root": "assets/sounds",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          { "name": "sword_slash", "path": "sword_slash.ashfox" },
+          { "name": "claw_hit", "path": "claw_hit.ashfox" },
+          { "name": "footsteps", "path": "footsteps.ashfox" },
+          { "name": "fire_loop", "path": "fire_loop.ashfox" },
+          { "name": "griffin_call", "path": "griffin_call.ashfox" }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "structures",
+      "root": "assets/structures",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [
+          { "name": "tavern", "path": "tavern.ashfox" },
+          { "name": "blacksmith", "path": "blacksmith.ashfox" },
+          { "name": "modern_gallery", "path": "modern_gallery.ashfox" }
+        ],
+        "modules": [],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "shared_modules",
+      "root": "assets/module/goblin",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          { "subpath": "./goblin_kit", "path": "goblin_kit.ashfox" },
+          { "subpath": "./goblin_skins", "path": "goblin_skins.ashfox" }
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "griffin_plumage",
+      "root": "assets/module/griffin",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          { "subpath": "./plumage", "path": "griffin_plumage.ashfox" }
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "name": "fox_fur",
+      "root": "assets/module/fox",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          { "subpath": "./fur", "path": "fox_fur.ashfox" }
+        ],
+        "dependencies": []
+      }
+    }
+  ],
+  "include": ["assets/**/*.ashfox"],
+  "ignore": ["assets/drafts/**"],
+  "build": { "directory": "dist/build" },
+  "exports": [
+    { "name": "goblin_raider", "entry": { "packageName": "models", "entryName": "goblin_raider" }, "format": "glb", "directory": "dist/models/goblin_raider" },
+    { "name": "goblin_pyromancer", "entry": { "packageName": "models", "entryName": "goblin_pyromancer" }, "format": "glb", "directory": "dist/models/goblin_pyromancer" },
+    { "name": "griffin_boss", "entry": { "packageName": "models", "entryName": "griffin_boss" }, "format": "glb", "directory": "dist/models/griffin_boss" },
+    { "name": "red_fox", "entry": { "packageName": "models", "entryName": "red_fox" }, "format": "glb", "directory": "dist/models/red_fox" },
+    { "name": "treasure_chest", "entry": { "packageName": "models", "entryName": "treasure_chest" }, "format": "glb", "directory": "dist/models/treasure_chest" },
+    { "name": "wall_lantern", "entry": { "packageName": "models", "entryName": "wall_lantern" }, "format": "glb", "directory": "dist/models/wall_lantern" },
+    { "name": "rune_bricks", "entry": { "packageName": "models", "entryName": "rune_bricks" }, "format": "glb", "directory": "dist/models/rune_bricks" },
+    { "name": "rune_bricks_java_block", "entry": { "packageName": "models", "entryName": "rune_bricks" }, "format": "java_block", "namespace": "ashfox", "modelPath": "block/rune_bricks", "directory": "dist/blocks/rune_bricks" },
+    { "name": "iron_sword", "entry": { "packageName": "sprites", "entryName": "iron_sword" }, "format": "png", "directory": "dist/sprites/iron_sword" },
+    { "name": "ruby_potion", "entry": { "packageName": "sprites", "entryName": "ruby_potion" }, "format": "png", "directory": "dist/sprites/ruby_potion" },
+    { "name": "oak_planks", "entry": { "packageName": "sprites", "entryName": "oak_planks" }, "format": "png", "directory": "dist/sprites/oak_planks" },
+    { "name": "flame_cleave", "entry": { "packageName": "vfx", "entryName": "flame_cleave" }, "format": "glb", "directory": "dist/vfx/flame_cleave" },
+    { "name": "arcane_shockwave", "entry": { "packageName": "vfx", "entryName": "arcane_shockwave" }, "format": "glb", "directory": "dist/vfx/arcane_shockwave" },
+    { "name": "lightning_strike", "entry": { "packageName": "vfx", "entryName": "lightning_strike" }, "format": "glb", "directory": "dist/vfx/lightning_strike" },
+    { "name": "hearth_embers", "entry": { "packageName": "vfx", "entryName": "hearth_embers" }, "format": "glb", "directory": "dist/vfx/hearth_embers" },
+    { "name": "sword_slash", "entry": { "packageName": "sounds", "entryName": "sword_slash" }, "format": "wav", "directory": "dist/sounds/sword_slash" },
+    { "name": "claw_hit", "entry": { "packageName": "sounds", "entryName": "claw_hit" }, "format": "wav", "directory": "dist/sounds/claw_hit" },
+    { "name": "footsteps", "entry": { "packageName": "sounds", "entryName": "footsteps" }, "format": "wav", "directory": "dist/sounds/footsteps" },
+    { "name": "fire_loop", "entry": { "packageName": "sounds", "entryName": "fire_loop" }, "format": "wav", "directory": "dist/sounds/fire_loop" },
+    { "name": "griffin_call", "entry": { "packageName": "sounds", "entryName": "griffin_call" }, "format": "wav", "directory": "dist/sounds/griffin_call" },
+    { "name": "tavern", "entry": { "packageName": "structures", "entryName": "tavern" }, "format": "glb", "directory": "dist/structures/tavern" },
+    { "name": "tavern_nbt", "entry": { "packageName": "structures", "entryName": "tavern" }, "format": "java_structure", "directory": "dist/structures/tavern_nbt" },
+    { "name": "blacksmith", "entry": { "packageName": "structures", "entryName": "blacksmith" }, "format": "glb", "directory": "dist/structures/blacksmith" },
+    { "name": "blacksmith_nbt", "entry": { "packageName": "structures", "entryName": "blacksmith" }, "format": "java_structure", "directory": "dist/structures/blacksmith_nbt" },
+    { "name": "modern_gallery", "entry": { "packageName": "structures", "entryName": "modern_gallery" }, "format": "glb", "directory": "dist/structures/modern_gallery" },
+    { "name": "modern_gallery_nbt", "entry": { "packageName": "structures", "entryName": "modern_gallery" }, "format": "java_structure", "directory": "dist/structures/modern_gallery_nbt" }
+  ],
+  "packs": [
+    {
+      "name": "voxel_game",
+      "format": "game_assets",
+      "directory": "dist/game",
+      "archive": true,
+      "audio": "wav",
+      "unitsPerMeter": 1,
+      "pixelsPerUnit": 16,
+      "spriteFilter": "nearest",
+      "assets": [
+        { "id": "creature.goblin_raider", "source": "goblin_raider", "path": "models/goblin_raider" },
+        { "id": "creature.goblin_pyromancer", "source": "goblin_pyromancer", "path": "models/goblin_pyromancer" },
+        { "id": "creature.griffin_boss", "source": "griffin_boss", "path": "models/griffin_boss" },
+        { "id": "creature.red_fox", "source": "red_fox", "path": "models/red_fox" },
+        { "id": "prop.treasure_chest", "source": "treasure_chest", "path": "models/treasure_chest" },
+        { "id": "prop.wall_lantern", "source": "wall_lantern", "path": "models/wall_lantern" },
+        { "id": "block.rune_bricks", "source": "rune_bricks", "path": "models/rune_bricks" },
+        { "id": "item.iron_sword", "source": "iron_sword", "path": "sprites/items" },
+        { "id": "item.ruby_potion", "source": "ruby_potion", "path": "sprites/items" },
+        { "id": "tile.oak_planks", "source": "oak_planks", "path": "sprites/tiles" },
+        { "id": "sfx.sword_slash", "source": "sword_slash", "path": "audio/sword_slash" },
+        { "id": "sfx.claw_hit", "source": "claw_hit", "path": "audio/claw_hit" },
+        { "id": "sfx.footsteps", "source": "footsteps", "path": "audio/footsteps" },
+        { "id": "sfx.fire_loop", "source": "fire_loop", "path": "audio/fire_loop" },
+        { "id": "sfx.griffin_call", "source": "griffin_call", "path": "audio/griffin_call" },
+        { "id": "structure.tavern", "source": "tavern", "path": "structures/tavern" },
+        { "id": "structure.blacksmith", "source": "blacksmith", "path": "structures/blacksmith" },
+        { "id": "structure.modern_gallery", "source": "modern_gallery", "path": "structures/modern_gallery" }
+      ]
+    },
+    {
+      "name": "showcase_pack",
+      "format": "minecraft_java",
+      "directory": "dist/pack",
+      "minecraftVersion": "26.2",
+      "metadata": {
+        "format": "range",
+        "minFormat": [88, 0],
+        "maxFormat": [88, 0],
+        "description": "Ashfox showcase items, blocks and stereo sounds"
+      },
+      "itemDefinitions": "modern",
+      "archive": true,
+      "icon": "iron_sword",
+      "models": ["rune_bricks_java_block"],
+      "items": [
+        { "source": "iron_sword", "id": "ashfox:iron_sword", "parent": "handheld" },
+        { "source": "ruby_potion", "id": "ashfox:ruby_potion", "parent": "generated" }
+      ],
+      "sounds": [
+        { "source": "sword_slash", "id": "ashfox:combat.sword_slash", "replace": true, "subtitle": null, "volume": 1, "pitch": 1, "stream": false, "variants": "all" },
+        { "source": "claw_hit", "id": "ashfox:combat.claw_hit", "replace": true, "subtitle": null, "volume": 1, "pitch": 1, "stream": false, "variants": "all" }
+      ]
+    }
+  ]
+}

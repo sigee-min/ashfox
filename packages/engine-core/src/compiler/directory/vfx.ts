@@ -1,4 +1,5 @@
 import type { DirectoryFile } from '../../project/directory/contract';
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../../project/stdlib/resolve';
 import { VfxInputError } from '../../project/vfx/contract';
 import { parseVfxSource } from '../../project/vfx/source';
 import { auditVfx } from '../../vfx/audit';
@@ -23,6 +24,7 @@ export interface CompiledVfxBundle {
 }
 
 const resolveImportPath = (ownerPath: string, specifier: string): string => {
+  if (isVirtualLibrarySpecifier(specifier)) return virtualLibraryLogicalPath(specifier);
   if (!specifier.startsWith('./') && !specifier.startsWith('../')) return specifier;
   const parts = ownerPath.split('/').slice(0, -1);
   for (const segment of specifier.split('/')) {

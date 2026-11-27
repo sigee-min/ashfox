@@ -38,8 +38,9 @@ items/
   exports/                delivery artifacts
 ```
 
-Download and extract [the complete item project](/downloads/items.zip). Its configuration is [`examples/items/.ashfoxworkspace`](../../examples/items/.ashfoxworkspace).
-Its sources are under `examples/items/assets/`. Keep the configuration and sources together in Git.
+Download and extract [the complete item project](/downloads/items.zip), or inspect
+`showcase/.ashfoxworkspace` alongside `showcase/assets/` and built-in `"std/..."` modules (`ashfox library std list`).
+Keep the configuration and sources together in Git.
 
 From the extracted example folder:
 

@@ -1,0 +1,196 @@
+ashfox 1
+module goblin_kit {
+  import "std/model/rig/biped" as biped;
+
+  export surface contract GoblinSkin {
+    chart torso box { coverage = opaque; }
+    chart pelvis box { coverage = opaque; }
+    chart head box { coverage = opaque; }
+    chart snout box { coverage = opaque; }
+    chart ear box { coverage = opaque; }
+    chart tusk box { coverage = opaque; }
+    chart crest box { coverage = opaque; }
+    chart arm box { coverage = opaque; }
+    chart bracer box { coverage = opaque; }
+    chart hand box { coverage = opaque; }
+    chart leg box { coverage = opaque; }
+    chart cuff box { coverage = opaque; }
+    chart boot box { coverage = opaque; }
+    chart belt box { coverage = opaque; }
+    chart buckle box { coverage = opaque; }
+    chart loincloth flat { coverage = opaque; }
+    chart pauldron box { coverage = opaque; }
+    chart toe box { coverage = opaque; }
+    chart face_neutral flat { coverage = opaque; }
+    chart face_blink flat { coverage = opaque; }
+    chart face_snarl flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface contract RaiderWeaponSkin {
+    chart pommel box { coverage = opaque; }
+    chart hilt box { coverage = opaque; }
+    chart guard box { coverage = opaque; }
+    chart blade box { coverage = opaque; }
+    chart blade_tip box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface contract RaiderShieldSkin {
+    chart board box { coverage = opaque; }
+    chart boss box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface contract PyroStaffSkin {
+    chart staff box { coverage = opaque; }
+    chart cage box { coverage = opaque; }
+    chart flame_crown box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export component GoblinBody {
+    requires rig skeleton: biped.BipedRig;
+    requires surface skin: GoblinSkin;
+    provides socket gear_hand: biped.HandGrip capacity = one;
+    provides socket off_hand_mount: biped.HandGrip capacity = one;
+    bind bone root to skeleton.root;
+    bind bone pelvis to skeleton.pelvis;
+    bind bone torso to skeleton.torso;
+    bind bone head to skeleton.head;
+    bind bone left_arm to skeleton.left_arm;
+    bind bone right_arm to skeleton.right_arm;
+    bind bone weapon to skeleton.weapon;
+    bind bone left_leg to skeleton.left_leg;
+    bind bone right_leg to skeleton.right_leg;
+    bind socket gear_hand to bone weapon {
+      frame { origin = (0.5u, -2u, 1u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    bind socket off_hand_mount to bone left_arm {
+      frame { origin = (-2.5u, -8.5u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        bone pelvis {
+          cube hips { origin = (-4u, 10.5u, -2.5u); size = (8u, 3u, 5u); surface = skin.pelvis; }
+          cube belt { origin = (-4.5u, 12.5u, -3u); size = (9u, 2u, 6u); surface = skin.belt; }
+          cylinder buckle { origin = (0u, 13.5u, -3.7u); radius = 1.3u; radius_top = 1.1u; height = 1u; sides = 8; axis = z; surface = skin.buckle; }
+          plane loincloth_front { origin = (3u, 8u, -3.15u); size = (6u, 5u); u_axis = (-1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
+          plane loincloth_back { origin = (-3u, 8u, 3.15u); size = (6u, 5u); u_axis = (1u, 0u, 0u); v_axis = (0u, 1u, 0u); surface = skin.loincloth; }
+          bone torso {
+            cube chest { origin = (-5u, 14.5u, -3u); size = (10u, 9u, 6u); pivot = (0u, 19u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.torso; }
+            bone head {
+              cube skull { origin = (-4u, 23u, -4u); size = (8u, 7u, 8u); pivot = (0u, 26.5u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.head; }
+              expression_slot face {
+                origin = (3u, 25.5u, -4.08u);
+                size = (6u, 4u);
+                u_axis = (-1u, 0u, 0u);
+                v_axis = (0u, 1u, 0u);
+                neutral = skin.face_neutral;
+                blink = skin.face_blink;
+                snarl = skin.face_snarl;
+              }
+              wedge snout { origin = (-2.5u, 22.8u, -6.5u); size = (5u, 3u, 3u); slope = north; surface = skin.snout; }
+              taper tusk_l { origin = (-2.4u, 23.6u, -6.3u); size = (1u, 2u, 1u); top_scale = (0.3, 0.3); axis = y; pivot = (-1.9u, 23.8u, -5.8u); rotation = (-12deg, 0deg, -8deg); mirror_x = tusk_r; surface = skin.tusk; }
+              taper ear_l { origin = (-6u, 26u, -1u); size = (2u, 4u, 2u); top_scale = (0.3, 0.45); axis = y; pivot = (-4u, 26.5u, 0u); rotation = (0deg, 8deg, 62deg); mirror_x = ear_r; surface = skin.ear; }
+              wedge crest_front { origin = (-1u, 30u, -3.5u); size = (2u, 3u, 4u); slope = north; surface = skin.crest; }
+              wedge crest_back { origin = (-1u, 30u, 0u); size = (2u, 3u, 4u); slope = south; surface = skin.crest; }
+            }
+            bone left_arm {
+              wedge pauldron_l { origin = (-8.5u, 20.5u, -2.5u); size = (4u, 3u, 5u); slope = west; surface = skin.pauldron; }
+              cube arm_l { origin = (-8u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
+              cube bracer_l { origin = (-8.5u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+              cube hand_l { origin = (-8u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
+            }
+            bone right_arm {
+              wedge pauldron_r { origin = (4.5u, 20.5u, -2.5u); size = (4u, 3u, 5u); slope = east; surface = skin.pauldron; }
+              cube arm_r { origin = (5u, 15u, -1.5u); size = (3u, 6u, 3u); surface = skin.arm; }
+              cube bracer_r { origin = (4.5u, 12u, -2u); size = (4u, 3u, 4u); surface = skin.bracer; }
+              cube hand_r { origin = (5u, 9.5u, -1.5u); size = (3u, 3u, 3u); surface = skin.hand; }
+              bone weapon {}
+            }
+          }
+          bone left_leg {
+            cube leg_l { origin = (-4.2u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.leg; }
+            cube cuff_l { origin = (-4.6u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
+            cube boot_l { origin = (-4.2u, 0u, -3.5u); size = (4u, 3u, 5u); surface = skin.boot; }
+            wedge toe_l { origin = (-4.2u, 0u, -5.2u); size = (4u, 2u, 2u); slope = north; surface = skin.toe; }
+          }
+          bone right_leg {
+            cube leg_r { origin = (0.2u, 5u, -2u); size = (4u, 6u, 4u); surface = skin.leg; }
+            cube cuff_r { origin = (-0.4u, 3u, -2.5u); size = (5u, 2u, 5u); surface = skin.cuff; }
+            cube boot_r { origin = (0.2u, 0u, -3.5u); size = (4u, 3u, 5u); surface = skin.boot; }
+            wedge toe_r { origin = (0.2u, 0u, -5.2u); size = (4u, 2u, 2u); slope = north; surface = skin.toe; }
+          }
+        }
+      }
+    }
+  }
+
+  export component RaiderGear {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: RaiderWeaponSkin;
+    bind socket grip to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    geometry {
+      bone root {
+        cube pommel { origin = (-1u, -1u, 2.5u); size = (2u, 2u, 2u); surface = skin.pommel; }
+        cube hilt { origin = (-1u, -1u, -2.5u); size = (2u, 2u, 5u); surface = skin.hilt; }
+        cube guard { origin = (-2.5u, -0.5u, -3.5u); size = (5u, 1u, 1u); pivot = (0u, 0u, -3u); rotation = (0deg, 0deg, 18deg); surface = skin.guard; }
+        cube blade { origin = (-1u, -1u, -15.5u); size = (2u, 2u, 12u); surface = skin.blade; }
+        wedge blade_tip { origin = (-1u, -1u, -18.5u); size = (2u, 2u, 3u); slope = north; surface = skin.blade_tip; }
+      }
+    }
+  }
+
+  export component RaiderShield {
+    requires socket mount: biped.HandGrip;
+    requires surface skin: RaiderShieldSkin;
+    bind socket mount to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    geometry {
+      bone root {
+        cube board { origin = (-1u, -5u, -4u); size = (2u, 10u, 8u); surface = skin.board; }
+        cylinder boss { origin = (-2u, 0u, 0u); radius = 1.1u; radius_top = 2u; height = 1.2u; sides = 8; axis = x; surface = skin.boss; }
+      }
+    }
+  }
+
+  export component PyroGear {
+    requires socket grip: biped.HandGrip;
+    requires surface skin: PyroStaffSkin;
+    bind socket grip to bone root { frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); } }
+    geometry {
+      bone root {
+        cylinder staff { origin = (0u, -10u, 0u); radius = 0.9u; radius_top = 1.1u; height = 24u; sides = 8; axis = y; surface = skin.staff; }
+        cube cage { origin = (-2u, 14u, -2u); size = (4u, 4u, 4u); surface = skin.cage; }
+        taper flame_crown { origin = (-1.5u, 18u, -1.5u); size = (3u, 4u, 3u); top_scale = (0.2, 0.2); axis = y; surface = skin.flame_crown; }
+      }
+    }
+  }
+
+  export motion goblin_idle for biped.BipedRig {
+    duration = 2.4s; fps = 24; loop = loop; rest_relative = true;
+    track pelvis.position { key 0s = (0u, 0u, 0u) smooth; key 1.1s = (0u, -0.5u, 0.2u) ease_in_out; key 2.4s = (0u, 0u, 0u) ease_out; }
+    track torso.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.2s = (4deg, -5deg, 0deg) ease_in_out; key 2.4s = (0deg, 0deg, 0deg) ease_out; }
+    track head.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.2s = (-4deg, 8deg, 2deg) ease_in_out; key 2.4s = (0deg, 0deg, 0deg) ease_out; }
+    track right_arm.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.2s = (-8deg, 5deg, 4deg) ease_in_out; key 2.4s = (0deg, 0deg, 0deg) ease_out; }
+    track left_arm.rotation { key 0s = (0deg, 0deg, 0deg) smooth; key 1.2s = (6deg, -4deg, -4deg) ease_in_out; key 2.4s = (0deg, 0deg, 0deg) ease_out; }
+    expression face { at 0s = neutral; at 1.4s..1.55s = blink; }
+    wave torso.rotation.x = breath(2.4s, inhale = 0.42) * 3deg;
+    cue 0.5s sound "goblin_grunt" at head;
+  }
+
+  export motion goblin_challenge for biped.BipedRig {
+    duration = 2.0s; fps = 30; loop = once; rest_relative = true;
+    pose windup { torso.rotation = (-16deg, 22deg, 0deg); right_arm.rotation = (-64deg, -10deg, 20deg); left_arm.rotation = (16deg, 0deg, -12deg); head.rotation = (5deg, -18deg, 0deg); }
+    pose strike { torso.rotation = (20deg, -24deg, 0deg); right_arm.rotation = (44deg, 8deg, -12deg); left_arm.rotation = (-14deg, 0deg, -16deg); head.rotation = (-6deg, 16deg, 0deg); }
+    at 0s pose windup smooth;
+    at 0.55s pose windup anticipate(0.28);
+    at 1.0s pose strike snap;
+    at 1.6s pose windup ease_out;
+    at 2.0s pose windup smooth;
+    expression face { at 0s = neutral; at 0.55s..1.45s = snarl; }
+    smear weapon { at = 0.92s..1.04s; stretch = 1.35; axis = z; }
+    hitstop { at = 1.0s; hold = 0.04s; shake = 0.25u; }
+    cue 0.98s sound "sword_slash" at weapon;
+  }
+}

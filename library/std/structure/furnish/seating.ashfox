@@ -1,0 +1,29 @@
+ashfox 1
+module seating {
+  palette {
+    oak_stair = "minecraft:oak_stairs[facing=north,half=bottom]";
+    spruce_stair = "minecraft:spruce_stairs[facing=south,half=bottom]";
+    oak_slab = "minecraft:oak_slab[type=top]";
+    spruce_fence = "minecraft:spruce_fence";
+    carpet = "minecraft:red_carpet";
+    lantern = "minecraft:lantern[hanging=false]";
+  }
+
+  export prefab BenchRow {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = oak_stair; }
+  }
+
+  export prefab FeastTable {
+    set { at = (0b, 0b, 1b); block = spruce_fence; }
+    set { at = (2b, 0b, 1b); block = spruce_fence; }
+    box { from = (0b, 1b, 1b); to = (2b, 1b, 1b); block = oak_slab; }
+    set { at = (1b, 2b, 1b); block = lantern; }
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = oak_stair; }
+    box { from = (0b, 0b, 2b); to = (2b, 0b, 2b); block = spruce_stair; }
+  }
+
+  export prefab HearthBench {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = spruce_stair; }
+    box { from = (0b, 0b, 1b); to = (2b, 0b, 1b); block = carpet; }
+  }
+}

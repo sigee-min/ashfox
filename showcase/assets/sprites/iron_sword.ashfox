@@ -1,0 +1,51 @@
+ashfox 1
+sprite iron_sword {
+  import "std/sprite/item/weapon" as weapon;
+
+  profile = item;
+  canvas = (32px, 32px);
+  palette {
+    glint = #ffffff;
+    gem_core = #78eeff;
+    pommel_trim = #fff0b8;
+  }
+  polygon blade_body {
+    points = [(11px, 16px), (15px, 20px), (26px, 9px), (28px, 3px), (22px, 5px)];
+    material = weapon.steel;
+    shade { form = bevel; light = top_left; contrast = 2; specular = 2; axis = [(13px, 18px), (28px, 3px)]; }
+    pattern gradient { axis = radial; to_material = weapon.steel_edge; dither = false; seed = 7; }
+  }
+  capsule grip {
+    from = (5px, 26px); to = (12px, 19px); radius = 1.4px;
+    material = weapon.leather_grip;
+    shade { form = cylinder; light = top_left; contrast = 2; }
+    pattern stripe { axis = diag_neg; period = 3px; width = 1px; }
+  }
+  polygon crossguard {
+    points = [(7px, 13px), (10px, 14px), (17px, 21px), (18px, 24px), (15px, 23px), (8px, 16px)];
+    material = weapon.gold_hilt;
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 2; axis = [(8px, 14px), (17px, 23px)]; }
+  }
+  ellipse pommel {
+    cx = 4.5px; cy = 26.5px; rx = 1.9px; ry = 1.9px;
+    material = weapon.gold_hilt;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
+  }
+  stamp shine { stamp = weapon.blade_glint; at = (23px, 5px); flip = none; colors { g = glint; } }
+  paint accents {
+    at = (4px, 18px);
+    rows = [
+      "........c...",
+      ".......cc...",
+      "............",
+      "............",
+      "............",
+      "............",
+      "............",
+      "p...........",
+      ".p.........."
+    ];
+    colors { c = gem_core; p = pommel_trim; }
+  }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
+}

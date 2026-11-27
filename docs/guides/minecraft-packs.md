@@ -15,9 +15,8 @@ network lookup, automatic version selection, or authoring of generated files.
 
 ## Configuration
 
-Download and extract [the complete resource-pack project](/downloads/resource-pack.zip).
-Its configuration is
-[`examples/resource-pack/.ashfoxworkspace`](../../examples/resource-pack/.ashfoxworkspace).
+Download and extract [the complete resource-pack project](/downloads/resource-pack.zip), or inspect
+`showcase/.ashfoxworkspace` for the repository's configured pack build.
 It declares the sources and exports, then uses this pack declaration:
 
 ```json

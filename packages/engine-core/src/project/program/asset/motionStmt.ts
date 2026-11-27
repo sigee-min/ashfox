@@ -37,7 +37,7 @@ export const readChannelName = (reader: AssetReader, scope: string): AssetMotion
     'asset.invalid-motion-property',
     `Unsupported motion channel "${token.value}". Expected position, rotation, or scale.${formatDidYouMean(token.value, ['position', 'rotation', 'scale'])}`,
     token,
-    docsHint('motion'),
+    docsHint('animation'),
   );
   return 'rotation';
 };
@@ -63,7 +63,7 @@ export const readMotionIk = (reader: AssetReader): AssetMotionIkDecl => {
           'asset.invalid-property',
           `Unknown ik property "${prop.value}".${formatDidYouMean(prop.value, ['foot_lock', 'contact'])}`,
           prop,
-          docsHint('motion'),
+          docsHint('animation'),
         );
       }
       reader.expect('=', 'Expected = in foot_lock.');
@@ -90,7 +90,7 @@ export const readSecondary = (reader: AssetReader): AssetSecondaryDecl => {
       'asset.invalid-property',
       `Expected secondary chain or secondary joint.${formatDidYouMean(kindToken.value, ['chain', 'joint'])}`,
       kindToken,
-      docsHint('motion'),
+      docsHint('animation'),
     );
   }
   const targetId = reader.id('Expected chain or joint identifier.');
@@ -127,7 +127,7 @@ const readCombatEntry = (
       'asset.invalid-property',
       `Range not allowed for "${key}".`,
       keySpan,
-      docsHint('motion'),
+      docsHint('animation'),
     );
     return null;
   }
@@ -197,7 +197,7 @@ export const readCue = (reader: AssetReader): AssetCueDecl => {
       'asset.invalid-property',
       `Unknown cue kind "${kindTok.value}".${formatDidYouMean(kindTok.value, ['sound', 'vfx', 'event'])}`,
       kindTok,
-      docsHint('motion'),
+      docsHint('animation'),
     );
   }
   const nameTok = reader.current();
@@ -206,7 +206,7 @@ export const readCue = (reader: AssetReader): AssetCueDecl => {
       'asset.invalid-cue-name',
       'Cue name must be a quoted string.',
       nameTok,
-      docsHint('motion'),
+      docsHint('animation'),
     );
   else reader.take();
   let anchor: string | null = null;

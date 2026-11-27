@@ -1,0 +1,45 @@
+ashfox 1
+module blade {
+  params {
+    pitch = 620hz;
+    ring_pitch = 1180hz;
+  }
+
+  export voice air_slice : aero_whoosh {
+    velocity = lin(0: 0.35 -> 0.25: 2.8 -> 1: 0.2);
+    thickness = 0.025;
+    doppler = 0.85;
+    sweep_pan = -0.7 -> 0.7;
+    noise_tone = 0.6;
+    highpass = 85hz;
+    drive : grit { amount = 1.5; }
+    gain { env = ad; attack = 5ms; peak = 0.94; curve = exp; }
+  }
+
+  export voice steel_sing : waveguide {
+    model = blade;
+    pitch = log(0: 510hz -> 0.4: pitch -> 1: 580hz);
+    damping = 0.32;
+    stiffness = 0.68;
+    brightness = 0.85;
+    highpass = 120hz;
+    pan = -0.25 -> 0.3;
+    gain { env = ad; attack = 4ms; peak = 0.84; curve = exp; }
+  }
+
+  export voice edge_ring : modal_plate {
+    material = steel;
+    pitch = ring_pitch;
+    size = 0.75;
+    hardness = 0.92;
+    damping = 0.26;
+    brightness = 0.88;
+    modes = 18;
+    strike = mallet;
+    twin_beat = 0.48;
+    splash = 0.38;
+    stereo_spread = 0.58;
+    highpass = 220hz;
+    gain { env = ad; attack = 2ms; peak = 0.74; curve = exp; }
+  }
+}

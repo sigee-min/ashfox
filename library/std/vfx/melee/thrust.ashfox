@@ -1,0 +1,23 @@
+ashfox 1
+module thrust {
+  export palette PiercingLance {
+    core = #ffffff;
+    mid = #6ecaff;
+    edge = #2b64bf;
+    smoke = #28364d;
+  }
+
+  export palette FrostThrust {
+    core = #ebffff;
+    mid = #6ee0f2;
+    edge = #2b68ab;
+    smoke = #21304d;
+  }
+
+  export palette AmberGlaive {
+    core = #fff6d9;
+    mid = #f2ab38;
+    edge = #a84819;
+    smoke = #3d2a22;
+  }
+}

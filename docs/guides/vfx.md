@@ -7,12 +7,10 @@ Write stylized, game-ready visual effects in native `.ashfox` source (`ashfox 1`
 ```ashfox
 ashfox 1
 vfx flame_cleave {
-  import "../module/palettes.ashfox" as pal;
-
   duration = 0.65s;
   fps = 30;
   loop = once;
-  palette = pal.EmberSolar;
+  palette { core = #fff6d6; mid = #ff9f38; edge = #e34224; smoke = #4a2a24; }
 
   preview flipbook { sheet = flipbook; background = dark; width = 512; height = 512; }
   preview peak { time = 0.22s; background = dark; azimuth = 35; elevation = 24; width = 640; height = 480; }

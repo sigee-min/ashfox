@@ -1,0 +1,44 @@
+ashfox 1
+sprite ruby_potion {
+  import "std/sprite/item/potion" as pot;
+
+  profile = item;
+  canvas = (32px, 32px);
+  palette {
+    shine = #ffffff;
+    bubble = #ffc2d4;
+  }
+  rect cork {
+    x = 14px; y = 4px; width = 4px; height = 4px;
+    material = pot.cork_wood;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16px, 4px), (16px, 8px)]; }
+  }
+  rect bottle_neck {
+    x = 13px; y = 8px; width = 6px; height = 5px;
+    material = pot.bottle_glass;
+    shade { form = cylinder; light = top_left; contrast = 2; axis = [(16px, 8px), (16px, 13px)]; }
+  }
+  capsule bottle_lip {
+    from = (12px, 8px); to = (19px, 8px); radius = 1.1px;
+    material = pot.bottle_glass;
+    shade { form = cylinder; light = top_left; contrast = 2; specular = 1; }
+  }
+  ellipse bottle_body {
+    cx = 15.5px; cy = 19.5px; rx = 8.3px; ry = 7.9px;
+    material = pot.bottle_glass;
+    shade { form = round; light = top_left; contrast = 2; specular = 2; }
+  }
+  ellipse liquid {
+    cx = 15.5px; cy = 20.8px; rx = 6.7px; ry = 5.8px;
+    material = pot.health_ruby;
+    shade { form = round; light = top_left; contrast = 2; specular = 2; }
+    pattern gradient { axis = y; to_material = pot.stamina_amber; dither = false; seed = 11; }
+  }
+  stamp spec { stamp = pot.specular_drop; at = (10px, 14px); flip = none; colors { h = shine; } }
+  paint bubbles {
+    at = (14px, 18px);
+    rows = ["b.", ".b"];
+    colors { b = bubble; }
+  }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
+}

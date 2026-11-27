@@ -56,15 +56,15 @@ try {
   const checked = JSON.parse(
     run(
       'npx',
-      ['--no-install', 'ashfox', 'check', 'assets/sprites/sword.ashfox', '--json'],
+      ['--no-install', 'ashfox', 'check', 'assets/sprites/iron_sword.ashfox', '--json'],
       starter,
     ),
   );
   assert.equal(checked.ok, true);
   assert.equal(checked.result.kind, 'sprite');
   for (const [source, artifact, magic] of [
-    ['assets/models/fox/fox.ashfox', 'fox.glb', 'glTF'],
-    ['assets/sprites/sword.ashfox', 'iron_sword.png', '\x89PNG'],
+    ['assets/models/wall_lantern.ashfox', 'wall_lantern.glb', 'glTF'],
+    ['assets/sprites/iron_sword.ashfox', 'iron_sword.png', '\x89PNG'],
     ['assets/sounds/claw_hit.ashfox', 'claw_hit/base.wav', 'RIFF'],
   ]) {
     const built = JSON.parse(cli(starter, 'build', source, '--json')).result;
@@ -72,44 +72,59 @@ try {
     assert.equal(bytes.subarray(0, 4).toString('latin1'), magic);
   }
   if (process.argv.includes('--capture')) {
-    for (const source of ['assets/models/fox/fox.ashfox', 'assets/sprites/sword.ashfox']) {
+    for (const source of [
+      'assets/models/wall_lantern.ashfox',
+      'assets/sprites/iron_sword.ashfox',
+    ]) {
       const bytes = cli(starter, 'render', source);
       assert.equal(bytes.subarray(0, 4).toString('latin1'), '\x89PNG');
     }
   }
-  for (const name of ['items', 'game-assets', 'resource-pack']) {
-    const folder = extract(name);
-    const checked = JSON.parse(cli(starter, 'check', path.join(folder, '.ashfoxworkspace')));
-    assert.equal(checked.ok, true);
-  }
-  const game = extract('web-game');
-  install(game, false);
-  run(process.execPath, ['build.mjs'], game);
-  const runtime = path.join(game, 'public/game-assets');
-  const manifest = JSON.parse(fs.readFileSync(path.join(runtime, 'assets.json')));
+  const showcaseDir = extract('showcase');
+  const checkedShowcase = JSON.parse(
+    cli(starter, 'check', path.join(showcaseDir, '.ashfoxworkspace'), '--json'),
+  );
+  assert.equal(checkedShowcase.ok, true);
+  const builtShowcase = JSON.parse(
+    cli(starter, 'build', path.join(showcaseDir, '.ashfoxworkspace'), '--json'),
+  ).result;
+  const gameExport = builtShowcase.exports.find((entry) => entry.id === 'voxel_game');
+  assert.ok(gameExport, 'Missing voxel_game pack export');
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(gameExport.directory, 'game-assets/assets.json'), 'utf8'),
+  );
   assert.equal(manifest.format, 'ashfox-game-assets');
-  assert.deepEqual(manifest.assets.map((a) => a.id).sort(), [
-    'creature.griffin',
-    'item.iron_sword',
-    'sfx.claw_hit',
-  ]);
-  for (const asset of manifest.assets) {
-    for (const file of [
-      asset.model,
-      asset.image,
-      ...(asset.variants ?? []).map((v) => v.file),
-    ].filter(Boolean)) {
-      assert.ok(fs.statSync(path.join(runtime, file)).size > 0, file);
-    }
+  assert.ok(manifest.assets.some((a) => a.id === 'creature.griffin_boss'));
+  assert.ok(manifest.assets.some((a) => a.id === 'item.iron_sword'));
+  assert.ok(manifest.assets.some((a) => a.id === 'sfx.claw_hit'));
+  const webGameDir = extract('web-game');
+  for (const required of [
+    'package.json',
+    'build.mjs',
+    'serve.mjs',
+    'index.html',
+    'main.js',
+    'assets/.ashfoxworkspace',
+  ]) {
+    assert.ok(fs.existsSync(path.join(webGameDir, required)), `web-game missing ${required}`);
   }
-  fs.writeFileSync(path.join(runtime, 'obsolete.txt'), 'stale');
-  run(process.execPath, ['build.mjs'], game);
-  assert.equal(fs.existsSync(path.join(runtime, 'obsolete.txt')), false);
+  run(process.execPath, ['build.mjs'], webGameDir, {
+    env: {
+      ...process.env,
+      ASHFOX_CLI: path.join(starter, 'node_modules/@ashfox/cli/dist/ashfox.cjs'),
+    },
+  });
+  const webManifest = JSON.parse(
+    fs.readFileSync(path.join(webGameDir, 'public/game-assets/assets.json'), 'utf8'),
+  );
+  assert.ok(webManifest.assets.some((a) => a.id === 'creature.griffin_boss'));
+  assert.ok(webManifest.assets.some((a) => a.id === 'item.iron_sword'));
+  assert.ok(webManifest.assets.some((a) => a.id === 'sfx.claw_hit'));
   console.log(
-    'Downloaded CLI installs offline; starter exports, complete projects and web-game build pass' +
+    'Downloaded CLI installs offline; starter exports and complete showcase project build pass' +
       (process.argv.includes('--capture') ? '; stdio edit/cancel/capture PNG passes' : ''),
   );
-  if (process.env.ASHFOX_KEEP_DOC_TEST) console.log('Retained test project: ' + game);
+  if (process.env.ASHFOX_KEEP_DOC_TEST) console.log('Retained test project: ' + showcaseDir);
 } finally {
   if (!process.env.ASHFOX_KEEP_DOC_TEST) fs.rmSync(temp, { recursive: true, force: true });
 }

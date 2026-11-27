@@ -1,0 +1,33 @@
+ashfox 1
+module modern {
+  export design UrbanConcrete {
+    asphalt_shadow: color = #2c2f36;
+    asphalt_base: color = #464b54;
+    asphalt_light: color = #656c78;
+    concrete_shadow: color = #6b6e73;
+    concrete_base: color = #969a9e;
+    concrete_light: color = #c2c6c9;
+    stripe_yellow: color = #e0af36;
+    brick_accent: color = #8f4738;
+  }
+
+  export design StudioPolymer {
+    graphite_shadow: color = #282c33;
+    graphite_base: color = #3f4652;
+    graphite_light: color = #5e6778;
+    ceramic_shadow: color = #a6abb0;
+    ceramic_base: color = #d4d8dc;
+    ceramic_light: color = #eef1f5;
+    signal_orange: color = #e0632b;
+    indicator_cyan: color = #36b8cc;
+  }
+
+  export design BrushedAlloy {
+    steel_shadow: color = #4e5661;
+    steel_base: color = #7e8996;
+    steel_light: color = #b3bec9;
+    glass_tint: color = #7aa8bf;
+    glass_highlight: color = #c4e4f2;
+    copper_trim: color = #b86c46;
+  }
+}

@@ -1,0 +1,31 @@
+ashfox 1
+module workshop {
+  import "std/structure/furnish/storage" as store;
+
+  palette {
+    deepslate = "minecraft:deepslate_bricks";
+    blast = "minecraft:blast_furnace[facing=south,lit=true]";
+    anvil = "minecraft:anvil[facing=east]";
+    cauldron = "minecraft:cauldron";
+    craft = "minecraft:crafting_table";
+    brewing = "minecraft:brewing_stand";
+    spruce_plank = "minecraft:spruce_planks";
+    lantern = "minecraft:lantern[hanging=false]";
+  }
+
+  export prefab SmithyBay {
+    box { from = (0b, 0b, 0b); to = (2b, 1b, 0b); block = deepslate; }
+    set { at = (1b, 0b, 0b); block = blast; }
+    set { at = (0b, 0b, 1b); block = cauldron; }
+    set { at = (1b, 0b, 2b); block = anvil; }
+    place store.BarrelStack { at = (2b, 0b, 1b); rotate = 0; }
+    set { at = (2b, 1b, 0b); block = lantern; }
+  }
+
+  export prefab AlchemyStation {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = spruce_plank; }
+    set { at = (0b, 1b, 0b); block = brewing; }
+    set { at = (1b, 0b, 0b); block = craft; }
+    set { at = (2b, 1b, 0b); block = cauldron; }
+  }
+}

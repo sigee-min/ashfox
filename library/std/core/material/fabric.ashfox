@@ -1,0 +1,45 @@
+ashfox 1
+module fabric {
+  export design FabricParams {
+    linen_shadow: color = #8a7f6d;
+    linen_base: color = #bfae95;
+    linen_light: color = #e3d6c1;
+    wool_crimson_shadow: color = #5c2126;
+    wool_crimson_base: color = #96373f;
+    wool_crimson_light: color = #c75a62;
+    leather_shadow: color = #3d261a;
+    leather_base: color = #6b432e;
+    leather_light: color = #9c6649;
+    roughness: ratio = 0.90;
+    weave_contrast: ratio = 0.22;
+  }
+
+  export surface contract FabricSurface {
+    chart cloth box { coverage = opaque; }
+    chart hem box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface woven_cloth: FabricSurface {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #332620;
+        cloth = (#5c2126, #96373f, #c75a62);
+        hem = (#8a7f6d, #bfae95, #e3d6c1);
+      }
+      chart cloth box {
+        fill = cloth;
+        grain = cloth;
+        pattern stripe { paint = hem; axis = x; period = 6px; width = 1px; }
+        pattern ao { strength = 0.35; radius = 0.6u; }
+      }
+      chart hem box {
+        fill = hem;
+        pattern border { paint = cloth; width = 1px; }
+      }
+    }
+  }
+}

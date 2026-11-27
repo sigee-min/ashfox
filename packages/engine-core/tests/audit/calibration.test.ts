@@ -5,11 +5,29 @@ import path from 'node:path';
 import {
   compileDirectoryWorkspace,
   evaluateAssetQuality,
+  virtualLibrarySpecifierFromPath,
   type AssetQualityProfile,
   type AuditReport,
 } from '../../src';
 
 const repoRoot = path.resolve(__dirname, '../../../..');
+
+const loadStdLibs = (
+  dir = path.join(repoRoot, 'library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
 
 const workspaceConfig = (): string =>
   JSON.stringify({
@@ -413,60 +431,48 @@ assert.ok(
   JSON.stringify(badProfile.diagnostics),
 );
 
-const compileFile = (rel: string) => {
-  const dir = path.dirname(path.join(repoRoot, rel));
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith('.ashfox'))
-    .map((f) => ({
-      path: `assets/models/${f}`,
-      source: fs.readFileSync(path.join(dir, f), 'utf8'),
-    }));
-  const entry = path.basename(rel);
-  const entrySource = files.find((f) => f.path === `assets/models/${entry}`)!.source;
-  const entryName = entrySource.match(/\bmodel\s+(\w+)/)?.[1] ?? 'main';
-  const cfg = JSON.stringify({
-    format: 'ashfox-workspace',
-    version: 2,
-    name: 'ex',
-    packages: [
-      {
-        name: 'ex',
-        root: 'assets/models',
-        manifest: {
-          format: 'ashfox-package',
-          version: 1,
-          dependencies: [],
-          entries: [{ name: entryName, path: entry }],
-          modules: files
-            .filter((f) => f.path !== `assets/models/${entry}`)
-            .map((f) => ({ subpath: `./${f.path.slice(14)}`, path: f.path.slice(14) })),
-        },
-      },
-    ],
-    include: ['assets/**/*.ashfox'],
-    ignore: [],
-    build: { directory: 'dist/build' },
-    exports: [],
+const showcaseDir = path.join(repoRoot, 'showcase');
+const showcaseCfg = fs.readFileSync(path.join(showcaseDir, '.ashfoxworkspace'), 'utf8');
+const walkShowcase = (dir: string, base = ''): { path: string; source: string }[] =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    if (e.name === 'dist' || e.name === '.ashfox-cache') return [];
+    const rel = base ? `${base}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    return e.isDirectory()
+      ? walkShowcase(full, rel)
+      : e.name.endsWith('.ashfox')
+        ? [{ path: rel, source: fs.readFileSync(full, 'utf8') }]
+        : [];
   });
-  const res = compileDirectoryWorkspace(cfg, files);
-  assert.equal(res.ok, true, res.ok ? '' : JSON.stringify(res.diagnostics));
-  const prod = res.products[0]!;
-  assert.equal(prod.kind, 'model');
+const showcaseCompiled = compileDirectoryWorkspace(
+  showcaseCfg,
+  walkShowcase(showcaseDir),
+  loadStdLibs(),
+);
+assert.equal(
+  showcaseCompiled.ok,
+  true,
+  showcaseCompiled.ok ? '' : JSON.stringify(showcaseCompiled.diagnostics),
+);
+const compileFile = (entryName: string) => {
+  const prod = showcaseCompiled.ok
+    ? showcaseCompiled.products.find((p) => p.kind === 'model' && p.entry.entryName === entryName)
+    : undefined;
+  assert.ok(prod && prod.kind === 'model', `Missing showcase model ${entryName}`);
   return evaluateAssetQuality({ model: prod.model, telemetry: prod.telemetry });
 };
 
-const foxReport = compileFile('examples/fox/creatures/fox.ashfox');
-const goblinReport = compileFile('examples/goblin/creatures/goblin.ashfox');
-const griffinReport = compileFile('examples/griffin/workbench/main.ashfox');
-const markerReport = compileFile('examples/minecraft/assets/models/marker.ashfox');
-const lanternReport = compileFile('examples/prop/lantern.ashfox');
+const foxReport = compileFile('red_fox');
+const goblinReport = compileFile('goblin_raider');
+const griffinReport = compileFile('griffin_boss');
+const runeBricksReport = compileFile('rune_bricks');
+const lanternReport = compileFile('wall_lantern');
 
 for (const [name, report] of [
   ['fox', foxReport],
   ['goblin', goblinReport],
   ['griffin', griffinReport],
-  ['marker', markerReport],
+  ['rune_bricks', runeBricksReport],
   ['lantern', lanternReport],
 ] as const) {
   assert.equal(
@@ -479,5 +485,5 @@ for (const [name, report] of [
 }
 
 console.log(
-  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} griffin=${griffinReport.score} marker=${markerReport.score} lantern=${lanternReport.score}`,
+  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} griffin=${griffinReport.score} rune_bricks=${runeBricksReport.score} lantern=${lanternReport.score}`,
 );

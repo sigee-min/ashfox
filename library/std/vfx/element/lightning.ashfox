@@ -1,0 +1,23 @@
+ashfox 1
+module lightning {
+  export palette StormArc {
+    core = #ffffff;
+    mid = #70cdff;
+    edge = #3462d9;
+    smoke = #242b47;
+  }
+
+  export palette VoltSurge {
+    core = #f7ffff;
+    mid = #4ad9ff;
+    edge = #2660ba;
+    smoke = #202d47;
+  }
+
+  export palette GoldenBolt {
+    core = #fffef0;
+    mid = #ffd038;
+    edge = #bd7813;
+    smoke = #3d3326;
+  }
+}

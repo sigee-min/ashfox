@@ -1,0 +1,31 @@
+ashfox 1
+module biped {
+  export socket contract HandGrip {
+  }
+
+  export rig contract BipedRig {
+    joint root { parent = none; role = root; channels = (rotation, scale); }
+    joint pelvis { parent = root; role = pelvis; channels = (position, rotation); }
+    joint torso { parent = pelvis; role = body; channels = rotation; }
+    joint head { parent = torso; role = head; channels = rotation; }
+    joint left_arm { parent = torso; role = arm; channels = rotation; }
+    joint right_arm { parent = torso; role = arm; channels = rotation; }
+    joint weapon { parent = right_arm; role = weapon; channels = rotation; }
+    joint left_leg { parent = pelvis; role = leg; channels = rotation; }
+    joint right_leg { parent = pelvis; role = leg; channels = rotation; }
+    socket main_hand: HandGrip { joint = right_arm; capacity = one; }
+    socket off_hand: HandGrip { joint = left_arm; capacity = one; }
+  }
+
+  export skeleton BipedSkeleton implements BipedRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind pelvis { parent_origin = (0u, 12u, 0u); }
+    bind torso { parent_origin = (0u, 2u, 0u); }
+    bind head { parent_origin = (0u, 10u, 0u); }
+    bind left_arm { parent_origin = (-6u, 8u, 0u); }
+    bind right_arm { parent_origin = (6u, 8u, 0u); }
+    bind weapon { parent_origin = (0u, -9u, -1u); }
+    bind left_leg { parent_origin = (-2u, 0u, 0u); }
+    bind right_leg { parent_origin = (2u, 0u, 0u); }
+  }
+}

@@ -27,6 +27,7 @@
 | `background_alpha = 255;` | 정수 alpha `[0,255]` |
 | `palette { shade = #2e2420; coat = ramp(#c94f2a, warm); }` | 단색, 3색 램프 `(#shadow, #base, #light)`, 또는 OKLCH 색조 이동 프리셋 `ramp(#hex, warm|cool|metal|gem|wood|stone|organic|cloth|emissive|vivid)` (어두운 색은 `luma >= 0.14` 권장) |
 | `chart body box { fill = coat; }` | 차트 레시피; `origin` 생략 시 자동 패킹, 선택 `grain = clustered\|soft\|fur\|wood\|cloth\|brushed\|none;` |
+| `material opaque { roughness = 0.72; metallic = 0.15; }` / `chart body box { fill = coat; roughness = 0.25; metallic = 0.92; roughness_variation = 0.08; }` | 선택적 PBR 파라미터: `roughness` (`0..1`, 기본 `0.88`), `metallic` (`0..1`, 기본 `0.0`), `roughness_variation` (`0..0.3`). 균일 표면은 스칼라 glTF 계수만 출력하며 혼합 PBR은 아틀라스당 공용 MetallicRoughness+AO PNG 하나를 합성(추가 드로우 콜 0) |
 | `grain clustered\|soft\|fur\|wood\|cloth\|brushed\|none { seed = 23; }` | 선택적 텍스처 기본 grain (`seed` 선택; 생략 시 `none`) |
 | `tone voxel\|painterly;` | 선택적 셰이딩 모드(`voxel` 방향성 플랫 톤 또는 `painterly` 형태 추종 그라디언트) |
 | `stamp eye { pixels = "ee/e."; e = shade; }` | 재사용 픽셀 기호 |

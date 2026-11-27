@@ -1,0 +1,23 @@
+ashfox 1
+module slash {
+  export palette SteelArc {
+    core = #ffffff;
+    mid = #70c2ff;
+    edge = #315eb8;
+    smoke = #273245;
+  }
+
+  export palette CrimsonSlash {
+    core = #fff0eb;
+    mid = #eb524b;
+    edge = #8f1d27;
+    smoke = #382026;
+  }
+
+  export palette PhantomSlash {
+    core = #ebfff8;
+    mid = #4ed9b8;
+    edge = #236e73;
+    smoke = #1f2d38;
+  }
+}

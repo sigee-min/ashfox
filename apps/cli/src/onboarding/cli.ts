@@ -25,9 +25,11 @@ Commands:
   render <source>          Render declared PNG/GIF views (--view <name>)
   build <source|workspace> Build source/workspace outputs declared in source or config
   dev <source|workspace>   Start live incremental watch server + Three.js viewer
+  library <command>        Browse, inspect, or eject built-in std library modules
+  docs [topic]             List documentation topics or print offline Markdown reference
 
 --output <file> saves media; existing files are refused.
---version prints the installed product version. doctor/init accept --json.
+--version prints the installed product version. doctor/init/library/docs accept --json.
 Full options: https://ashfox.io/docs/guides/cli/
 `;
 export const formatCliResult = (
@@ -147,7 +149,7 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
   node: process.version,
   platform: process.platform,
   arch: process.arch,
-  commands: ['init', 'doctor', 'check', 'render', 'build', 'dev'],
+  commands: ['init', 'doctor', 'check', 'render', 'build', 'dev', 'library', 'docs'],
   exports: { glb: true, gltf: true, png: true, wav: true, ogg: true, java_structure: true },
   capture: { available: capture, executable: chrome },
   ogg: { available: true, builtin: true },
@@ -164,7 +166,7 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
   outputs: ['glb', 'gltf', 'png', 'wav', 'java_structure', 'java_block', 'geckolib5', 'bedrock'],
   packs: PACK_CAPABILITIES,
   usage:
-    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>; ashfox dev <source|workspace> [--port 4173] [--no-open]',
+    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>; ashfox dev <source|workspace> [--port 4173] [--no-open]; ashfox library list | <ns> list|show|eject; ashfox docs [topic]',
 });
 
 const doctor = (json: boolean): void => {

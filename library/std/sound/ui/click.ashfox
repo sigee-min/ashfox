@@ -1,0 +1,37 @@
+ashfox 1
+module click {
+  params {
+    pitch = 1480hz;
+    damping = 0.28;
+  }
+
+  export voice crisp_tick : modal_plate {
+    material = wood;
+    pitch = pitch;
+    size = 0.52;
+    hardness = 0.92;
+    damping = damping;
+    brightness = 0.85;
+    modes = 10;
+    strike = mallet;
+    twin_beat = 0.2;
+    stereo_spread = 0.2;
+    highpass = 240hz;
+    gain { env = ad; attack = 2ms; peak = 0.88; curve = exp; }
+  }
+
+  export voice glass_tap : modal_plate {
+    material = glass;
+    pitch = 2200hz;
+    size = 0.48;
+    hardness = 0.9;
+    damping = 0.18;
+    brightness = 0.88;
+    modes = 12;
+    strike = mallet;
+    twin_beat = 0.35;
+    stereo_spread = 0.3;
+    highpass = 380hz;
+    gain { env = ad; attack = 2ms; peak = 0.72; curve = exp; }
+  }
+}

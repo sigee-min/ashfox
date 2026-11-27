@@ -1,0 +1,34 @@
+ashfox 1
+module lighting {
+  palette {
+    chain = "minecraft:chain[axis=y]";
+    hang_lantern = "minecraft:lantern[hanging=true]";
+    lantern = "minecraft:lantern[hanging=false]";
+    torch = "minecraft:torch";
+    oak_fence = "minecraft:oak_fence";
+    iron_bars = "minecraft:iron_bars";
+    cobble = "minecraft:cobblestone";
+    campfire = "minecraft:campfire[lit=true]";
+  }
+
+  export prefab IronChandelier {
+    set { at = (1b, 2b, 1b); block = chain; }
+    set { at = (1b, 1b, 1b); block = iron_bars; }
+    set { at = (0b, 0b, 1b); block = hang_lantern; }
+    set { at = (2b, 0b, 1b); block = hang_lantern; }
+    set { at = (1b, 0b, 0b); block = hang_lantern; }
+    set { at = (1b, 0b, 2b); block = hang_lantern; }
+  }
+
+  export prefab LanternPost {
+    set { at = (0b, 0b, 0b); block = cobble; }
+    box { from = (0b, 1b, 0b); to = (0b, 2b, 0b); block = oak_fence; }
+    set { at = (0b, 3b, 0b); block = lantern; }
+  }
+
+  export prefab BrazierStand {
+    set { at = (0b, 0b, 0b); block = cobble; }
+    set { at = (0b, 1b, 0b); block = campfire; }
+    set { at = (1b, 0b, 0b); block = torch; }
+  }
+}

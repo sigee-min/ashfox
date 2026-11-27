@@ -25,7 +25,7 @@ All IDs follow `[a-z][a-z0-9_]{0,31}` and are unique within their owner. Unknown
 - **Units**: `ms` (milliseconds), `s` (seconds), `hz` / `khz` (frequency), `db` (decibels), `lufs` (loudness), `cents` / `st` (pitch offset), `%` (percentage scaled to `0.01`).
 - **Transitions & curves**: `log(0: 1800hz -> 1: 950hz)`, `lin(0: 0 -> 0.5: 1 -> 1: 0)`, `smooth(0: 200hz -> 1: 800hz)`, or inline `a -> b [ease_out -> c]` transitions (`linear`/`smooth`/`ease_in`/`ease_out`/`ease_in_out`/`snap`). Curves support `2..16` knots with `>= 96` frames separation.
 - **Envelopes**: `gain { env = ad; attack = 5ms; peak = 0.95; curve = exp; }` and `gain { env = adsr; attack = 20ms; decay = 120ms; sustain = 0.7; release = 150ms; peak = 0.9; curve = exp; }`.
-- **Modules & `params`**: Modules declare `params { key = val; }` and `export voice <id> : <type> { ... }` (or `export seq <id> { ... }`). Sound files import modules at the top of the block with `import "../module/kit.ashfox" as kit;` or override defaults with `import "../module/kit.ashfox" as kit { pitch = 440hz; };` and reference voices as `kit.voice_id`.
+- **Modules & `params`**: Modules declare `params { key = val; }` and `export voice <id> : <type> { ... }` (or `export seq <id> { ... }`). Sound files import relative modules (`import "../module/kit.ashfox" as kit;`) or built-in standard-library modules (`import "std/sound/combat/blade" as blade;`) at the top of the block, optionally overriding params (`{ pitch = 440hz; }`), and reference voices as `alias.voice_id`.
 
 ## Voices, true-stereo sources, FX, and modulation
 

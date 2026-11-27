@@ -1,0 +1,54 @@
+ashfox 1
+module footstep {
+  params {
+    pitch = 125hz;
+    damping = 0.62;
+    spread = 0.3;
+  }
+
+  export voice stone_tap : modal_plate {
+    material = wood;
+    pitch = pitch;
+    size = 0.85;
+    hardness = 0.78;
+    damping = damping;
+    brightness = 0.58;
+    modes = 10;
+    strike = mallet;
+    twin_beat = 0.18;
+    splash = 0.3;
+    stereo_spread = spread;
+    highpass = 55hz;
+    eq { low = (140hz, 2db); high = (4800hz, 1db); }
+    gain { env = ad; attack = 2ms; peak = 0.88; curve = exp; }
+  }
+
+  export voice boot_thud : modal_plate {
+    material = leather;
+    pitch = 95hz;
+    size = 1.05;
+    hardness = 0.65;
+    damping = 0.78;
+    modes = 8;
+    strike = mallet;
+    splash = 0.38;
+    stereo_spread = 0.25;
+    highpass = 40hz;
+    eq { low = (110hz, 2.5db); }
+    gain { env = ad; attack = 3ms; peak = 0.82; curve = exp; }
+  }
+
+  export voice grit_scuff : granular {
+    texture = gravel;
+    density = 72;
+    grain_ms = 14ms;
+    pitch = log(0: 2400hz -> 1: 880hz);
+    spread = 0.6;
+    burstiness = 0.5;
+    turbulence = 0.45;
+    stereo_width = 0.65;
+    itd_ms = 0.2ms;
+    highpass = 320hz;
+    gain { env = ad; attack = 4ms; peak = 0.58; curve = exp; }
+  }
+}

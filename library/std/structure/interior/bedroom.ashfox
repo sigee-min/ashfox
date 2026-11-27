@@ -1,0 +1,26 @@
+ashfox 1
+module bedroom {
+  import "std/structure/furnish/lighting" as light;
+
+  palette {
+    bed_h = "minecraft:red_bed[facing=north,part=head]";
+    bed_f = "minecraft:red_bed[facing=north,part=foot]";
+    chest_n = "minecraft:chest[facing=north]";
+    oak_plank = "minecraft:oak_planks";
+    bookshelf = "minecraft:bookshelf";
+    carpet = "minecraft:red_carpet";
+    pot = "minecraft:flower_pot";
+  }
+
+  export prefab GuestBedroom {
+    layer {
+      y = 0b;
+      origin = (0b, 0b);
+      rows = ["ab.", "ed.", "cc."];
+      map { a = chest_n; b = bed_h; d = bed_f; e = oak_plank; c = carpet; }
+    }
+    set { at = (0b, 1b, 1b); block = pot; }
+    set { at = (2b, 0b, 0b); block = bookshelf; }
+    place light.LanternPost { at = (2b, 1b, 0b); rotate = 0; }
+  }
+}

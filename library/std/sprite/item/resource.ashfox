@@ -1,0 +1,40 @@
+ashfox 1
+module resource {
+  export material iron_ingot {
+    ramp { mode = auto; base = #8b98a6; preset = metal; }
+  }
+  export material gold_ingot {
+    ramp { mode = auto; base = #e0a838; preset = warm; }
+  }
+  export material copper_ore {
+    ramp { mode = auto; base = #c96f44; preset = warm; }
+  }
+  export material amethyst_gem {
+    ramp { mode = auto; base = #8a4ec4; preset = gem; }
+  }
+  export material crystal_core {
+    ramp { mode = auto; base = #42c6dc; preset = emissive; }
+  }
+  export material oak_plank {
+    ramp { mode = auto; base = #a67246; preset = wood; }
+  }
+
+  export mask ingot_bar {
+    rows = [
+      "..111111..",
+      ".11111111.",
+      "1111111111",
+      "1111111111",
+      ".11111111."
+    ];
+  }
+
+  export stamp facet_spark {
+    rows = [
+      ".s.",
+      "sss",
+      ".s."
+    ];
+    slots = [s];
+  }
+}

@@ -1,0 +1,23 @@
+ashfox 1
+module burst {
+  export palette SparkBurst {
+    core = #fff9db;
+    mid = #ffbf47;
+    edge = #bd5319;
+    smoke = #3b2a24;
+  }
+
+  export palette ShatterBurst {
+    core = #f0f9ff;
+    mid = #8cd3eb;
+    edge = #3d7599;
+    smoke = #283645;
+  }
+
+  export palette ToxicBurst {
+    core = #efffdb;
+    mid = #85db47;
+    edge = #37782a;
+    smoke = #253827;
+  }
+}

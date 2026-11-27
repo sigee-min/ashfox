@@ -1,0 +1,27 @@
+ashfox 1
+module stone {
+  export material cobblestone {
+    ramp { mode = auto; base = #7b818c; preset = stone; }
+  }
+  export material mortar_dark {
+    ramp { mode = auto; base = #4a505a; preset = stone; }
+  }
+  export material slate_tile {
+    ramp { mode = auto; base = #5a6370; preset = cool; }
+  }
+  export material sandstone {
+    ramp { mode = auto; base = #bfa373; preset = warm; }
+  }
+  export material moss_patch {
+    ramp { mode = auto; base = #548c42; preset = organic; }
+  }
+
+  export mask masonry_joint {
+    rows = [
+      "11111111",
+      "1......1",
+      "1......1",
+      "11111111"
+    ];
+  }
+}

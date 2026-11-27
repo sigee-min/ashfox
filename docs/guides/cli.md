@@ -11,11 +11,14 @@ After [installation](install.md), use `ashfox` in the consuming project. All exa
 | `check <input> [options]` | `.ashfox` entry, `.ashfoxworkspace`, `.ashfoxworkspace.mjs`, or build folder | Source validation, inspection, quality audit, or build integrity check |
 | `render <input> [options]` | `.ashfox` source (`--stdin` / `--input-json` supported) | PNG still image or animated GIF rendered from declared `preview [name]` blocks |
 | `build <input> [--json] [--bindings ts\|cs\|gd]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Compiled outputs declared via `outputs { ... }` or workspace configuration, `<target>.hooks.json`, and optional hook bindings |
+| `dev <input> [--port 4173] [--no-open]` | `.ashfox` entry, `.ashfoxworkspace`, or `.ashfoxworkspace.mjs` | Live incremental watch server + Three.js viewer with SSE reload and click-to-inspect source refs |
+| `library <command> [args] [--json]` | `list`, or `<ns> list [prefix]`, `<ns> show <module>`, `<ns> eject <module> [--to dir] [--force]` | Browse, inspect, or eject embedded standard-library modules (`std/*`) into `assets/module/` |
+| `docs [topic] [--json]` | Optional topic (`agent`, `grammar`, `model`, `rig`, `surface`, `animation`, `vfx`, `sprite`, `sound`, `structure`, `hooks`) | List documentation topics or print offline single-source-of-truth Markdown |
 
-`init`, `doctor`, `check`, and `build` return JSON using the `ashfox-cli-result` envelope (`doctor`/`init` take `--json`; `check`/`build` always return JSON).
+`init`, `doctor`, `check`, `build`, `library`, and `docs` support `--json` using the `ashfox-cli-result` envelope (`check`/`build` always return JSON; `library`/`docs` default to readable text unless `--json` is passed).
 `help` is human-readable; use `doctor --json` for agents to inspect the complete contract.
 `render` writes binary media to stdout (or `--output <file>`) and JSON diagnostics to stderr.
-There is no `export`, `watch`, `clean`, or automatic game-install command.
+There is no `export`, `clean`, or automatic game-install command.
 
 ## First-run commands
 
@@ -56,8 +59,8 @@ npx --no-install ashfox build assets/assets/sprites/sword.ashfox --json
 If an ancestor `.ashfoxworkspace` or `.ashfoxworkspace.mjs` exists, its entire project is built. Selecting
 one entry does not bypass project checks. Discovery stops at the nearest Git
 root or filesystem root. Invalid configuration fails instead of falling back.
-For a standalone source without an ancestor workspace, the CLI reads the entry and its relative import
-closure, compiles targets declared in its `outputs { ... }` block (defaulting to
+For a standalone source without an ancestor workspace, the CLI reads the entry, its relative import
+closure, and any imported `"std/..."` standard-library modules, compiles targets declared in its `outputs { ... }` block (defaulting to
 portable `.glb` for models, `.png` for sprites, `.wav` for sounds, and both `.nbt` + `.glb` for structures),
 and writes `dist/<entry-id>/build` and `dist/<entry-id>/exports` beside the entry (or at `assets/` root).
 A module is not a build entry.

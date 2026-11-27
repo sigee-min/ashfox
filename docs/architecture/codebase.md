@@ -31,7 +31,7 @@ authority.
 | `packages/audio-core`, `packages/render-core` | Shared audio synthesis and observation rendering. |
 | `packages/internal-contracts` | Closed shared contract guards and schema version authorities. |
 | `scripts/{public,skill,showcase,release,quality,docs}` | Repository build, publication, evidence and verification automation. |
-| `examples/`, `assets/`, `docs/`, `skills/` | Native examples, published media, documentation sources and agent skill sources. |
+| `library/`, `showcase/`, `assets/`, `docs/`, `skills/` | Embedded standard library (`std/*`), deduplicated showcase workspace, published media, documentation sources and agent skill sources. |
 
 Local review applications are not release automation. Their npm commands route to
 one owning workspace; the former `scripts/audio` and `scripts/items` paths have

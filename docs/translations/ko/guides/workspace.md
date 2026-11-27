@@ -12,7 +12,7 @@ CLI는 가장 가까운 `.ashfoxworkspace`를 위로 탐색하며 Git 루트나 
 
 {{source-code:1}}
 
-[완전한 아이템 프로젝트](/downloads/items.zip)를 내려받아 압축을 푸세요. 설정은 [`examples/items/.ashfoxworkspace`](../../examples/items/.ashfoxworkspace)에 있고 원본은 `examples/items/assets/`에 있습니다. 설정과 원본을 함께 Git에 보관하세요.
+[완전한 아이템 프로젝트](/downloads/items.zip)를 내려받아 압축을 풀거나 저장소의 `showcase/.ashfoxworkspace`·`showcase/assets/`·내장 `"std/..."` 모듈(`ashfox library std list`)을 참고하세요. 설정과 원본을 함께 Git에 보관하세요.
 
 압축을 푼 예제 폴더에서 실행합니다.
 

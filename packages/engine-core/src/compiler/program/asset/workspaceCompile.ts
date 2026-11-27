@@ -150,7 +150,8 @@ const reportOrphanModules = (
   reachableModules: ReadonlySet<string>,
   sink: DiagnosticSink,
 ): void => {
-  for (const pkg of workspace.manifest.packages)
+  for (const pkg of workspace.manifest.packages) {
+    if (pkg.name === 'std') continue;
     for (const module of pkg.manifest.modules) {
       if (reachableModules.has(`${pkg.name}\u0000${joinLogicalPath(pkg.root, module.path)}`))
         continue;
@@ -160,6 +161,7 @@ const reportOrphanModules = (
       );
       if (!sink.push([orphan])) return;
     }
+  }
 };
 
 const compileSnapshot = (

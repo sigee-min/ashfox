@@ -1,0 +1,45 @@
+ashfox 1
+module stone {
+  export design StoneParams {
+    cobble_shadow: color = #3d4047;
+    cobble_base: color = #686d78;
+    cobble_light: color = #989ea8;
+    basalt_shadow: color = #262930;
+    basalt_base: color = #414652;
+    basalt_light: color = #636978;
+    sandstone_shadow: color = #7d6847;
+    sandstone_base: color = #b59a6e;
+    sandstone_light: color = #dec699;
+    roughness: ratio = 0.82;
+    wear: ratio = 0.25;
+  }
+
+  export surface contract StoneSurface {
+    chart block box { coverage = opaque; }
+    chart trim box { coverage = opaque; }
+    material = opaque;
+  }
+
+  export surface dressed_stone: StoneSurface {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #282b30;
+        stone = (#3d4047, #686d78, #989ea8);
+        trim = (#4c5059, #7d838f, #adb3bf);
+      }
+      chart block box {
+        fill = stone;
+        grain = clustered;
+        pattern blotch { paint = trim; scale = (2px, 2px, 2px); density = 0.3; phase = 0; }
+        pattern ao { strength = 0.48; radius = 0.8u; }
+      }
+      chart trim box {
+        fill = trim;
+        pattern border { paint = stone; width = 1px; }
+      }
+    }
+  }
+}

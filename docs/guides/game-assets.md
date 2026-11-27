@@ -11,9 +11,8 @@ language or couple the source compiler to a particular game engine.
 
 ## Configuration
 
-Download [the complete game project](/downloads/game-assets.zip) and extract it.
-Its configuration is
-[examples/game-assets/.ashfoxworkspace](../../examples/game-assets/.ashfoxworkspace).
+Download [the complete game project](/downloads/game-assets.zip) and extract it, or inspect
+`showcase/.ashfoxworkspace` for a complete multi-domain showcase configuration.
 Its pack declaration is:
 
 ```json
@@ -110,10 +109,10 @@ inside the game folder. Build receipts remain in the canonical build bundle.
 
 | Asset kind | Runtime fields |
 | --- | --- |
-| `model` | `model` file path, glTF coordinate convention, `unitsPerMeter`, required extensions, clip names and durations |
+| `model` | `model` file path, glTF coordinate convention, `unitsPerMeter`, required extensions, clip names and durations, and fitted physics `colliders` (`capsule` / `box` + root `aabb`) |
 | `structure` | `model` file path, `meta` (`.structure.json`), `unitsPerBlock`, required extensions, `size`, zone/light/interactable counts |
 | `sprite` | `image` file path, width, height, pixels per unit and filter |
-| `sound` | codec and named variants with file paths, intended durations, sample rates and channel counts |
+| `sound` | codec and named variants with file paths, intended durations, `sampleRate`, `channels`, `playback`, and gapless OGG loop bounds (`loopStartSample`, `loopEndSample`) |
 
 ## Runtime budgets and LOD tiers
 

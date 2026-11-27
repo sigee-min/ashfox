@@ -20,12 +20,12 @@
 
 충분한 원본 `duration`을 선언하고 `loop { at = 0.4s..4.4s; xfade = 80ms; }`를 지정하세요. 컴파일러는 워밍업 후 구간을 자르고 겹침을 한 번만 굽습니다. 4초 구간과 80ms 크로스페이드의 출력은 **3.92초**입니다. 앰비언트 루프에는 순환 펄린 `drift`와 미세 입자 난류를 더해 루프 주기성 탐지기가 단조로운 LFO 팽창으로 판단하지 않게 하세요.
 
-WAV에는 루프 지시가 들어 있지 않으므로 소비자가 전체 버퍼 반복을 켜야 합니다. 빌드 영수증과 `game_assets` 매니페스트는 `{ kind = "loop", startFrame: 0, endFrame: frames }` 또는 `{ kind = "oneshot" }`을 전달합니다. OGG와 Minecraft 팩은 루프를 거부합니다.
+WAV에는 루프 지시가 들어 있지 않으므로 소비자가 전체 버퍼 반복을 켜야 합니다. 빌드 영수증과 `game_assets` 매니페스트는 `{ kind = "loop", startFrame: 0, endFrame: frames }` 또는 `{ kind = "oneshot" }`을 전달합니다. `audio: "ogg"`를 쓰는 `game_assets` 팩은 `LOOPSTART`·`LOOPLENGTH` Vorbis 태그와 `assets.json`의 `loopStartSample`·`loopEndSample`·`sampleRate`를 기록해 갭 없는 루프 재생을 지원합니다. Minecraft 팩은 루프를 거부합니다.
 
 ## 듣고 확인하기
 
 의도한 음량으로 변형을 비교한 뒤 음량을 맞춰 음색도 비교하세요. 최소 20회 루프를 청취해 클릭, 반복적 팽창, 거친 고음, 크로스페이드 음량 감소를 점검하세요.
 
-저장소 `examples/sounds/assets/`에는 새 구절(`bird_call.ashfox`와 `bird_voices.ashfox`), 폴리와 도파관(`foley_kit.ashfox`, `bow_shot.ashfox`, `door_creak.ashfox`), 발걸음, 충전 마법, 금속·나무·유리 공명, 바람·불·기계 루프가 있습니다.
+저장소 `showcase/assets/sounds/`와 내장 표준 라이브러리(`ashfox library std list sound`)에는 검·타격 전투음(`sword_slash.ashfox`, `claw_hit.ashfox`), 발걸음(`footsteps.ashfox`), 크리처 울음(`griffin_call.ashfox`), 갭리스 루프(`fire_loop.ashfox`)가 있습니다.
 
 이전 헤더(`ashfox-model 1`), JSON 배열 구문(`voices = [...]`, `sequences = [...]`, `{ domain = ...; }`), `camelCase` 키, 따옴표 열거형 문자열, `timeline`, `resonator`, `layers`, `output.rmsDb`, `output.softClip`, `noise.color = "crackle"`은 거부됩니다. 전체 `ashfox 1` 사운드 문법과 자원 제한은 [사운드 문법 레퍼런스](../language/sounds.md)를 참고하세요.

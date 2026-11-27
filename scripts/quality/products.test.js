@@ -1,7 +1,14 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { canonical, compareReports, exampleInputs } = require('./products');
+const fs = require('node:fs');
+const {
+  DOMAINS,
+  canonical,
+  compareReports,
+  domainBaselinePath,
+  showcaseInputs,
+} = require('./products');
 
 const report = (inputs) => ({ format: 'ashfox-product-oracle', version: 1, inputs });
 const built = (input, sha) => ({ input, ok: true, files: [{ path: 'assets/a.png', sha256: sha }] });
@@ -30,9 +37,11 @@ assert.deepEqual(
   ['z: output changed'],
 );
 
-const inputs = exampleInputs();
-assert.ok(inputs.includes('examples/game-assets/.ashfoxworkspace'));
-assert.ok(inputs.includes('examples/fox/creatures/fox.ashfox'));
-assert.deepEqual(inputs, [...inputs].sort());
+const inputs = showcaseInputs();
+assert.deepEqual(inputs, ['showcase/.ashfoxworkspace']);
+assert.deepEqual(DOMAINS, ['models', 'sprites', 'vfx', 'sounds', 'structures', 'std']);
+for (const domain of DOMAINS) {
+  assert.ok(fs.existsSync(domainBaselinePath(domain)), `Missing baseline for domain: ${domain}`);
+}
 
 console.log('ashfox product oracle tests ok');

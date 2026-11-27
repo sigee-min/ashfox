@@ -1,0 +1,127 @@
+{
+  "format": "ashfox-product-oracle",
+  "version": 1,
+  "domain": "sounds",
+  "toolchain": "ashfox-product-oracle:2",
+  "inputs": [
+    {
+      "input": "showcase/.ashfoxworkspace",
+      "ok": true,
+      "sourceHash": "sha256:79a3c01d95efed45c391937bb9f5d3015ca31a6764a2267b1b49aec4418752f8",
+      "products": [
+        {
+          "entry": "sounds/claw_hit",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "2fff110e75edf743e67f2d9941c5538318d60a5ff77466e8d46e30aa36600f5d"
+            },
+            {
+              "id": "base",
+              "sha256": "6988d4e35bad6e63fa67005c43aefa4df49cff9b6eebfa4c6da7bad9ad7cf2d2"
+            }
+          ]
+        },
+        {
+          "entry": "sounds/fire_loop",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "1ebdd6bd70494c17c71c3203b55dc5049f059f83e63dbc4543deb48e08821714"
+            },
+            {
+              "id": "base",
+              "sha256": "f6e0bbcae62a52c93ef6a0a57f3bc5cfa650721fb33d566b7df998086283dbcf"
+            }
+          ]
+        },
+        {
+          "entry": "sounds/footsteps",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "880f88b52b4b2f4723ac0503be0e84d1bdd5ca2018e68b37eca3382e80c0afe8"
+            },
+            {
+              "id": "base",
+              "sha256": "103f851690069da9d9cfdd7d2ee13965d3f61eaff207ed33d4ca4037e1ca3a10"
+            }
+          ]
+        },
+        {
+          "entry": "sounds/griffin_call",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "4fabdcf5785b2095b0af90ac76cf98fd036f1b835462ef3bb1bf2cc3df4fe86b"
+            },
+            {
+              "id": "base",
+              "sha256": "1d9e0406d6c6fd3dd663cf9a7738e7a41e8ae3cf5d19e7908257e9ef7b37df44"
+            }
+          ]
+        },
+        {
+          "entry": "sounds/sword_slash",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "fc75201785108b976988a0384ffc7a229f166591b48ccefc707073991ab73629"
+            },
+            {
+              "id": "base",
+              "sha256": "bb69ec4abb67d1d939d11aa18775882cf02e316cbdda55ab725145e6242ac24f"
+            }
+          ]
+        }
+      ],
+      "files": [
+        {
+          "path": "assets/claw_hit/claw_hit/alternate.wav",
+          "sha256": "2fff110e75edf743e67f2d9941c5538318d60a5ff77466e8d46e30aa36600f5d"
+        },
+        {
+          "path": "assets/claw_hit/claw_hit/base.wav",
+          "sha256": "6988d4e35bad6e63fa67005c43aefa4df49cff9b6eebfa4c6da7bad9ad7cf2d2"
+        },
+        {
+          "path": "assets/fire_loop/fire_loop/alternate.wav",
+          "sha256": "1ebdd6bd70494c17c71c3203b55dc5049f059f83e63dbc4543deb48e08821714"
+        },
+        {
+          "path": "assets/fire_loop/fire_loop/base.wav",
+          "sha256": "f6e0bbcae62a52c93ef6a0a57f3bc5cfa650721fb33d566b7df998086283dbcf"
+        },
+        {
+          "path": "assets/footsteps/footsteps/alternate.wav",
+          "sha256": "880f88b52b4b2f4723ac0503be0e84d1bdd5ca2018e68b37eca3382e80c0afe8"
+        },
+        {
+          "path": "assets/footsteps/footsteps/base.wav",
+          "sha256": "103f851690069da9d9cfdd7d2ee13965d3f61eaff207ed33d4ca4037e1ca3a10"
+        },
+        {
+          "path": "assets/griffin_call/griffin_call/alternate.wav",
+          "sha256": "4fabdcf5785b2095b0af90ac76cf98fd036f1b835462ef3bb1bf2cc3df4fe86b"
+        },
+        {
+          "path": "assets/griffin_call/griffin_call/base.wav",
+          "sha256": "1d9e0406d6c6fd3dd663cf9a7738e7a41e8ae3cf5d19e7908257e9ef7b37df44"
+        },
+        {
+          "path": "assets/sword_slash/sword_slash/alternate.wav",
+          "sha256": "fc75201785108b976988a0384ffc7a229f166591b48ccefc707073991ab73629"
+        },
+        {
+          "path": "assets/sword_slash/sword_slash/base.wav",
+          "sha256": "bb69ec4abb67d1d939d11aa18775882cf02e316cbdda55ab725145e6242ac24f"
+        }
+      ]
+    }
+  ]
+}

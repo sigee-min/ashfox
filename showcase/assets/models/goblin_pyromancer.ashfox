@@ -1,0 +1,20 @@
+ashfox 1
+model goblin_pyromancer {
+  import "std/model/rig/biped" as biped;
+  import "std/model/motion/idle" as idle;
+  import "std/model/motion/combat" as combat;
+  import "std/core/hook/combat" as combat_hook;
+  import "shared_modules/goblin_kit" as kit;
+  import "shared_modules/goblin_skins" as skins;
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = biped.BipedSkeleton;
+  motions = [idle.biped_idle, combat.thrust, kit.goblin_challenge];
+
+  use kit.GoblinBody as body { skeleton = biped.BipedRig; skin = skins.pyro_skin; }
+  use kit.PyroGear as staff { skin = skins.pyro_staff; }
+  connect body.gear_hand -> staff.grip;
+
+  anchor fireball_muzzle : combat_hook.ProjectileMuzzle { bone = weapon; at = (0u, 18u, 0u); projectile_id = "ashfox:ember_bolt"; speed = 28.0; sfx = "ashfox:fire_loop"; }
+  meta caster_ai : combat_hook.CombatStateMeta { aggro_range = 22.0; leash_range = 42.0; attack_cooldown = 1.8s; }
+}

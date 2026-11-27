@@ -2,6 +2,7 @@ import { readResourcePacks } from './packRead';
 import { readExportAdapterInput } from '../exportInput';
 import { parseDirectoryJson } from './json';
 import { readWorkspaceManifest, type WorkspacePackage } from '../workspace';
+import { isStdLibraryLogicalPath } from '../stdlib/resolve';
 import { deepFreeze } from '../../immutable';
 import type { DirectoryWorkspace } from './contract';
 import type { DirectoryPack } from './pack';
@@ -212,7 +213,7 @@ const validateDeclaredSources = (
   result: DirectoryWorkspace,
   packages: readonly WorkspacePackage[],
 ): void => {
-  const roots = packages.map((pkg) => pkg.root.toLowerCase());
+  const roots = packages.filter((pkg) => pkg.name !== 'std').map((pkg) => pkg.root.toLowerCase());
   const nestedRoot = roots.some((a, i) =>
     roots.some((b, j) => i !== j && (a === b || a === '' || b.startsWith(`${a}/`))),
   );
@@ -227,7 +228,7 @@ const validateDeclaredSources = (
   }
   if (!declared.length) failWorkspaceConfig('/packages', 'at least one entry', 'empty');
   for (const path of declared) {
-    if (!isDirectorySource(result, path)) {
+    if (!isStdLibraryLogicalPath(path) && !isDirectorySource(result, path)) {
       failWorkspaceConfig(
         '/include',
         'declared source must be included, not ignored or under output',

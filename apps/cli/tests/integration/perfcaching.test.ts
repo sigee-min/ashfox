@@ -10,6 +10,7 @@ import {
   checkSnapshot,
   compileBundle,
   compileNodeBundle,
+  createVorbisEncoder,
   readSnapshot,
   type CompiledBundle,
 } from '@ashfox/asset-build';
@@ -17,7 +18,7 @@ import {
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const CLI = path.join(REPO_ROOT, 'apps/cli/dist/ashfox.cjs');
 const TOOLCHAIN = 'ashfox-perfcaching-test:1';
-const WORKSPACES = ['sounds', 'structure', 'shared-creatures', 'items'] as const;
+const WORKSPACES = ['showcase'] as const;
 
 const assertBundlesIdentical = (
   label: string,
@@ -41,7 +42,7 @@ const assertBundlesIdentical = (
 };
 
 const copyWorkspace = (name: string, dest: string): string => {
-  fs.cpSync(path.join(REPO_ROOT, 'examples', name), dest, {
+  fs.cpSync(path.join(REPO_ROOT, name), dest, {
     recursive: true,
     filter: (source) => !source.split(path.sep).some((p) => p === 'dist' || p === '.ashfox-cache'),
   });
@@ -90,7 +91,7 @@ const verifyWorkspaceDeterminismAndBench = async (
   // Baseline sequential bundle compilation (no node pool/cache)
   const tBase = performance.now();
   const baseChecked = checkSnapshot(snap);
-  const baseBundle = await compileBundle(snap, TOOLCHAIN, undefined, baseChecked);
+  const baseBundle = await compileBundle(snap, TOOLCHAIN, await createVorbisEncoder(), baseChecked);
   const baselineMs = performance.now() - tBase;
 
   // Single-thread cold via compileNodeBundle (ASHFOX_JOBS=1, noCache)
@@ -137,33 +138,40 @@ const verifyWorkspaceDeterminismAndBench = async (
 };
 
 const verifySingleFileEditIncremental = async (tempRoot: string): Promise<void> => {
-  // 1. Sprite incremental edit (examples/items: apple.ashfox) -> must be < 50ms and bit-identical
+  // 1. Sprite incremental edit (showcase: iron_sword.ashfox) -> must be < 200ms and bit-identical
   const itemsDir = path.join(tempRoot, 'edit-items');
-  const itemsCfg = copyWorkspace('items', itemsDir);
+  const itemsCfg = copyWorkspace('showcase', itemsDir);
   await compileNodeBundle(readSnapshot(itemsCfg), TOOLCHAIN);
-  const applePath = path.join(itemsDir, 'assets/sprites/apple.ashfox');
+  const swordPath = path.join(itemsDir, 'assets/sprites/iron_sword.ashfox');
   fs.writeFileSync(
-    applePath,
-    fs.readFileSync(applePath, 'utf8').replace('seed = 101;', 'seed = 202;'),
+    swordPath,
+    fs.readFileSync(swordPath, 'utf8').replace('seed = 7;', 'seed = 19;'),
   );
   const editedItemsSnap = readSnapshot(itemsCfg);
   const tItems = performance.now();
   const incItems = await compileNodeBundle(editedItemsSnap, TOOLCHAIN);
   const itemsEditMs = performance.now() - tItems;
+  const tFreshItems = performance.now();
   const freshItems = await compileNodeBundle(editedItemsSnap, TOOLCHAIN, undefined, {
     noCache: true,
   });
-  assertBundlesIdentical('items 1-file incremental edit', freshItems, incItems);
-  assert.ok(itemsEditMs < 200, `items 1-file edit ${itemsEditMs.toFixed(1)}ms exceeded 200ms`);
+  const freshItemsMs = performance.now() - tFreshItems;
+  assertBundlesIdentical('showcase sprite 1-file incremental edit', freshItems, incItems);
+  // Showcase iron_sword edit skips 21 other cached assets and rebuilds voxel_game & showcase_pack ZIPs.
+  assert.ok(itemsEditMs < 800, `items 1-file edit ${itemsEditMs.toFixed(1)}ms exceeded 800ms`);
+  assert.ok(
+    itemsEditMs < freshItemsMs * 0.5,
+    `items incremental ${itemsEditMs.toFixed(1)}ms was not faster than cold ${freshItemsMs.toFixed(1)}ms`,
+  );
 
-  // 2. Sound incremental edit (examples/sounds: claw_hit.ashfox) -> must be fast and bit-identical
+  // 2. Sound incremental edit (showcase: claw_hit.ashfox) -> must be fast and bit-identical
   const soundsDir = path.join(tempRoot, 'edit-sounds');
-  const soundsCfg = copyWorkspace('sounds', soundsDir);
+  const soundsCfg = copyWorkspace('showcase', soundsDir);
   await compileNodeBundle(readSnapshot(soundsCfg), TOOLCHAIN);
   const clawPath = path.join(soundsDir, 'assets/sounds/claw_hit.ashfox');
   fs.writeFileSync(
     clawPath,
-    fs.readFileSync(clawPath, 'utf8').replace('seed = 104;', 'seed = 204;'),
+    fs.readFileSync(clawPath, 'utf8').replace('seed = 42;', 'seed = 142;'),
   );
   const editedSoundsSnap = readSnapshot(soundsCfg);
   const tSounds = performance.now();
@@ -172,21 +180,22 @@ const verifySingleFileEditIncremental = async (tempRoot: string): Promise<void> 
   const freshSounds = await compileNodeBundle(editedSoundsSnap, TOOLCHAIN, undefined, {
     noCache: true,
   });
-  assertBundlesIdentical('sounds 1-file incremental edit', freshSounds, incSounds);
-  assert.ok(soundsEditMs < 200, `sounds 1-file edit ${soundsEditMs.toFixed(1)}ms exceeded 200ms`);
+  assertBundlesIdentical('showcase sound 1-file incremental edit', freshSounds, incSounds);
+  // Showcase claw_hit recompiles 2 OGG Vorbis variants + rebuilds voxel_game & showcase_pack ZIPs.
+  assert.ok(soundsEditMs < 1200, `sounds 1-file edit ${soundsEditMs.toFixed(1)}ms exceeded 1200ms`);
 
-  // 3. Creature incremental edit (examples/shared-creatures: fox.ashfox) -> bit-identical lineage & GLB
+  // 3. Creature incremental edit (showcase: red_fox.ashfox) -> bit-identical lineage & GLB
   const creaturesDir = path.join(tempRoot, 'edit-creatures');
-  const creaturesCfg = copyWorkspace('shared-creatures', creaturesDir);
+  const creaturesCfg = copyWorkspace('showcase', creaturesDir);
   await compileNodeBundle(readSnapshot(creaturesCfg), TOOLCHAIN);
-  const foxPath = path.join(creaturesDir, 'assets/models/creatures/fox.ashfox');
+  const foxPath = path.join(creaturesDir, 'assets/models/red_fox.ashfox');
   fs.writeFileSync(foxPath, fs.readFileSync(foxPath, 'utf8') + '\n// edit comment\n');
   const editedCreaturesSnap = readSnapshot(creaturesCfg);
   const incCreatures = await compileNodeBundle(editedCreaturesSnap, TOOLCHAIN);
   const freshCreatures = await compileNodeBundle(editedCreaturesSnap, TOOLCHAIN, undefined, {
     noCache: true,
   });
-  assertBundlesIdentical('shared-creatures 1-file incremental edit', freshCreatures, incCreatures);
+  assertBundlesIdentical('showcase creature 1-file incremental edit', freshCreatures, incCreatures);
 
   // 4. Compiler fingerprint invalidation
   const bumped = await compileNodeBundle(editedItemsSnap, TOOLCHAIN, undefined, {
@@ -200,7 +209,7 @@ const verifySingleFileEditIncremental = async (tempRoot: string): Promise<void> 
 
 const verifyCliFlagsAndDeterminism = (tempRoot: string): void => {
   const dir = path.join(tempRoot, 'cli-verify');
-  const cfg = copyWorkspace('shared-creatures', dir);
+  const cfg = copyWorkspace('showcase', dir);
 
   const singleCli = runCli(['build', cfg, '--no-cache', '--json'], { ASHFOX_JOBS: '1' });
   assert.equal(fs.existsSync(path.join(dir, '.ashfox-cache')), false, '--no-cache must skip cache');
@@ -224,7 +233,7 @@ const verifyCliFlagsAndDeterminism = (tempRoot: string): void => {
 
 const verifySpriteTargetCache = async (tempRoot: string): Promise<void> => {
   const spriteDir = path.join(tempRoot, 'sprite-targets');
-  const spriteCfg = copyWorkspace('items', spriteDir);
+  const spriteCfg = copyWorkspace('showcase', spriteDir);
   await compileNodeBundle(readSnapshot(spriteCfg), TOOLCHAIN);
   const rawCfg = JSON.parse(fs.readFileSync(spriteCfg, 'utf8')) as {
     exports: {
@@ -234,14 +243,15 @@ const verifySpriteTargetCache = async (tempRoot: string): Promise<void> => {
       directory: string;
     }[];
   };
-  const appleExp = rawCfg.exports.find((e) => e.name === 'apple')!;
+  const swordExp = rawCfg.exports.find((e) => e.name === 'iron_sword')!;
   const mutatedCfg = {
     ...rawCfg,
     exports: [
-      ...rawCfg.exports.filter((e) => e.name !== 'apple'),
-      { ...appleExp, name: 'crisp_apple', directory: 'exports/crisp_apple' },
-      { ...appleExp, name: 'apple_clone', directory: 'exports/apple_clone' },
+      ...rawCfg.exports.filter((e) => e.name !== 'iron_sword'),
+      { ...swordExp, name: 'crisp_sword', directory: 'exports/crisp_sword' },
+      { ...swordExp, name: 'sword_clone', directory: 'exports/sword_clone' },
     ],
+    packs: [],
   };
   fs.writeFileSync(spriteCfg, JSON.stringify(mutatedCfg, null, 2));
   const mutatedSnap = readSnapshot(spriteCfg);
@@ -250,70 +260,110 @@ const verifySpriteTargetCache = async (tempRoot: string): Promise<void> => {
   assertBundlesIdentical('sprite rename and multi-export cache', coldMutated, warmMutated);
 };
 
-const moveSharedSurfacesToModulePkg = (dir: string, cfgPath: string): void => {
-  const commonDir = path.join(dir, 'assets/models/common');
-  const creaturesDir = path.join(dir, 'assets/models/creatures');
-  fs.mkdirSync(commonDir, { recursive: true });
-  for (const f of ['surface.ashfox', 'goblin-surface.ashfox']) {
-    fs.renameSync(path.join(creaturesDir, f), path.join(commonDir, f));
-  }
-  for (const f of ['fox.ashfox', 'body.ashfox', 'goblin.ashfox', 'goblin-body.ashfox']) {
-    const p = path.join(creaturesDir, f);
-    fs.writeFileSync(
-      p,
-      fs
-        .readFileSync(p, 'utf8')
-        .replaceAll('"./surface.ashfox"', '"common/surface"')
-        .replaceAll('"./surface"', '"common/surface"')
-        .replaceAll('"./goblin-surface.ashfox"', '"common/goblin-surface"')
-        .replaceAll('"./goblin-surface"', '"common/goblin-surface"'),
-    );
-  }
-  const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf8')) as {
-    packages: {
-      name: string;
-      root: string;
-      manifest: {
-        format: string;
-        version: number;
-        entries: unknown[];
-        modules: { subpath: string; path: string }[];
-        dependencies: unknown[];
-      };
-    }[];
-  };
-  const creaturesPkg = raw.packages.find((p) => p.name === 'creatures')!;
-  creaturesPkg.manifest.modules = creaturesPkg.manifest.modules.filter(
-    (m) => m.path !== 'surface.ashfox' && m.path !== 'goblin-surface.ashfox',
-  );
-  creaturesPkg.manifest.dependencies.push({ name: 'common' });
-  raw.packages.push({
-    name: 'common',
-    root: 'assets/models/common',
-    manifest: {
-      format: 'ashfox-package',
-      version: 1,
-      entries: [],
-      modules: [
-        { subpath: './surface', path: 'surface.ashfox' },
-        { subpath: './goblin-surface', path: 'goblin-surface.ashfox' },
-      ],
-      dependencies: [],
-    },
-  });
-  fs.writeFileSync(cfgPath, JSON.stringify(raw, null, 2));
-};
-
 const verifyModuleOnlyPkgInterface = async (tempRoot: string): Promise<void> => {
   const modDir = path.join(tempRoot, 'module-only-pkg');
-  const cfgPath = copyWorkspace('shared-creatures', modDir);
-  moveSharedSurfacesToModulePkg(modDir, cfgPath);
+  const cfgPath = copyWorkspace('showcase', modDir);
   const modSnap = readSnapshot(cfgPath);
-  const seqBundle = await compileBundle(modSnap, TOOLCHAIN, undefined, checkSnapshot(modSnap));
+  const seqBundle = await compileBundle(
+    modSnap,
+    TOOLCHAIN,
+    await createVorbisEncoder(),
+    checkSnapshot(modSnap),
+  );
   const nodeColdBundle = await compileNodeBundle(modSnap, TOOLCHAIN, undefined, { noCache: true });
   const nodeWarmBundle = await compileNodeBundle(modSnap, TOOLCHAIN);
   assertBundlesIdentical('module-only shared pkg cold', seqBundle, nodeColdBundle);
   assertBundlesIdentical('module-only shared pkg warm', seqBundle, nodeWarmBundle);
+};
+
+const SPLIT_STD_WORKSPACE = {
+  format: 'ashfox-workspace',
+  version: 2,
+  name: 'split-std-probe',
+  packages: [
+    {
+      name: 'shared',
+      root: 'assets/module/shared',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [],
+        modules: [
+          { subpath: './fur', path: 'fox_fur.ashfox' },
+          { subpath: './goblin_kit', path: 'goblin_kit.ashfox' },
+          { subpath: './goblin_skins', path: 'goblin_skins.ashfox' },
+        ],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'models',
+      root: 'assets/models',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [
+          { name: 'red_fox', path: 'red_fox.ashfox' },
+          { name: 'goblin_raider', path: 'goblin_raider.ashfox' },
+        ],
+        modules: [],
+        dependencies: [{ name: 'shared' }],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'],
+  ignore: ['dist/**'],
+  build: { directory: 'dist/build' },
+  exports: [
+    {
+      name: 'red_fox',
+      entry: { packageName: 'models', entryName: 'red_fox' },
+      format: 'glb',
+      directory: 'dist/red_fox',
+    },
+    {
+      name: 'goblin_raider',
+      entry: { packageName: 'models', entryName: 'goblin_raider' },
+      format: 'glb',
+      directory: 'dist/goblin_raider',
+    },
+  ],
+};
+
+const verifySplitSharedStdProbe = async (tempRoot: string): Promise<void> => {
+  const dir = path.join(tempRoot, 'split-std-probe');
+  fs.mkdirSync(path.join(dir, 'assets/module/shared'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'assets/models'), { recursive: true });
+  const cfgPath = path.join(dir, '.ashfoxworkspace');
+  fs.writeFileSync(cfgPath, JSON.stringify(SPLIT_STD_WORKSPACE, null, 2));
+  fs.copyFileSync(
+    path.join(REPO_ROOT, 'showcase/assets/module/fox/fox_fur.ashfox'),
+    path.join(dir, 'assets/module/shared/fox_fur.ashfox'),
+  );
+  fs.copyFileSync(
+    path.join(REPO_ROOT, 'showcase/assets/module/goblin/goblin_kit.ashfox'),
+    path.join(dir, 'assets/module/shared/goblin_kit.ashfox'),
+  );
+  fs.copyFileSync(
+    path.join(REPO_ROOT, 'showcase/assets/module/goblin/goblin_skins.ashfox'),
+    path.join(dir, 'assets/module/shared/goblin_skins.ashfox'),
+  );
+  fs.writeFileSync(
+    path.join(dir, 'assets/models/red_fox.ashfox'),
+    fs
+      .readFileSync(path.join(REPO_ROOT, 'showcase/assets/models/red_fox.ashfox'), 'utf8')
+      .replace('"fox_fur/fur"', '"shared/fur"'),
+  );
+  fs.writeFileSync(
+    path.join(dir, 'assets/models/goblin_raider.ashfox'),
+    fs
+      .readFileSync(path.join(REPO_ROOT, 'showcase/assets/models/goblin_raider.ashfox'), 'utf8')
+      .replaceAll('"shared_modules/', '"shared/'),
+  );
+  const snap = readSnapshot(cfgPath);
+  const seqBundle = await compileBundle(snap, TOOLCHAIN, undefined, checkSnapshot(snap));
+  const nodeCold = await compileNodeBundle(snap, TOOLCHAIN, undefined, { noCache: true });
+  assertBundlesIdentical('split shared module with implicit std probe', seqBundle, nodeCold);
 };
 
 const main = async (): Promise<void> => {
@@ -327,6 +377,7 @@ const main = async (): Promise<void> => {
     verifyCliFlagsAndDeterminism(tempRoot);
     await verifySpriteTargetCache(tempRoot);
     await verifyModuleOnlyPkgInterface(tempRoot);
+    await verifySplitSharedStdProbe(tempRoot);
     process.stdout.write(
       'Benchmark (Before / Single Cold / Parallel Cold / Warm Build / Warm Check ms):\n' +
         rows

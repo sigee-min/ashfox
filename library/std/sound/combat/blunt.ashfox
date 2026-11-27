@@ -1,0 +1,48 @@
+ashfox 1
+module blunt {
+  params {
+    pitch = 110hz;
+    heft = 1.15;
+  }
+
+  export voice heavy_whoosh : aero_whoosh {
+    velocity = lin(0: 0.3 -> 0.35: 2.1 -> 1: 0.18);
+    thickness = 0.045;
+    doppler = 0.72;
+    sweep_pan = -0.55 -> 0.55;
+    noise_tone = 0.45;
+    highpass = 55hz;
+    drive : grit { amount = 1.4; }
+    gain { env = ad; attack = 8ms; peak = 0.88; curve = exp; }
+  }
+
+  export voice oak_crush : modal_plate {
+    material = wood;
+    pitch = pitch;
+    size = heft;
+    hardness = 0.8;
+    damping = 0.66;
+    brightness = 0.52;
+    modes = 12;
+    strike = mallet;
+    splash = 0.45;
+    stereo_spread = 0.32;
+    highpass = 42hz;
+    eq { low = (105hz, 3db); }
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+
+  export voice body_thump : modal_plate {
+    material = leather;
+    pitch = 88hz;
+    size = 1.2;
+    hardness = 0.68;
+    damping = 0.78;
+    modes = 8;
+    strike = mallet;
+    splash = 0.42;
+    stereo_spread = 0.24;
+    highpass = 38hz;
+    gain { env = ad; attack = 3ms; peak = 0.84; curve = exp; }
+  }
+}

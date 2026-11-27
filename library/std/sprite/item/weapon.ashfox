@@ -1,0 +1,44 @@
+ashfox 1
+module weapon {
+  export material steel {
+    ramp { mode = auto; base = #7f9bb8; preset = metal; }
+  }
+  export material steel_edge {
+    ramp { mode = auto; base = #bfd6e8; preset = cool; }
+  }
+  export material iron_dark {
+    ramp { mode = auto; base = #505b66; preset = metal; }
+  }
+  export material gold_hilt {
+    ramp { mode = auto; base = #dfa238; preset = warm; }
+  }
+  export material leather_grip {
+    ramp { mode = auto; base = #784938; preset = wood; }
+  }
+  export material ember_edge {
+    ramp { mode = auto; base = #eb7a38; preset = emissive; }
+  }
+
+  export mask blade_core {
+    rows = [
+      "......11",
+      ".....111",
+      "....111.",
+      "...111..",
+      "..111...",
+      ".111....",
+      "111.....",
+      "11......"
+    ];
+  }
+
+  export stamp blade_glint {
+    rows = [
+      "...g",
+      "..gg",
+      ".g..",
+      "g..."
+    ];
+    slots = [g];
+  }
+}

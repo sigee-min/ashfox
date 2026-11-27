@@ -198,7 +198,7 @@ const readShowcase = async () => {
   if (!Array.isArray(manifest.entries) || manifest.entries.length === 0) {
     throw new Error('Showcase manifest must declare generated entries.');
   }
-  const expectedEntries = ['workbench/griffin', 'creatures/fox', 'creatures/goblin'];
+  const expectedEntries = ['models/griffin_boss', 'models/red_fox', 'models/goblin_raider'];
   const entries = manifest.entries.map((entry, index) =>
     parseShowcaseEntry(entry, index, expectedEntries),
   );
@@ -273,7 +273,7 @@ execFileSync(process.execPath, [path.join(repoRoot, 'scripts/docs/build.js')], {
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(path.join(outputRoot, 'static'), { recursive: true });
 await mkdir(path.join(outputRoot, 'media', 'showcase'), { recursive: true });
-await mkdir(path.join(outputRoot, 'examples'), { recursive: true });
+await mkdir(path.join(outputRoot, 'showcase'), { recursive: true });
 
 const cssBundle = (
   await Promise.all(
@@ -308,45 +308,54 @@ const agentGuide = (await readFile(path.join(docsRoot, 'agent.md'), 'utf8'))
   .replaceAll('{{stableVersion}}', config.stable.version);
 await writeFile(path.join(outputRoot, 'agent.md'), agentGuide);
 const documents = await loadAllDocumentation(docsRoot);
+const SHOWCASE_SLUG = { griffin_boss: 'griffin', red_fox: 'fox', goblin_raider: 'goblin' };
 const generatedShowcase = await readShowcase();
 const showcase = {
   capture: generatedShowcase.capture,
   entries: await Promise.all(
-    generatedShowcase.entries.map(async (entry) => ({
-      glbHref: `/examples/${entry.entryName}.glb`,
-      motions: await Promise.all(
-        entry.motions.map(async (motion) => ({
-          name: motion.name,
-          duration: motion.duration,
-          src: await hashedShowcaseMedia(motion.artifact, motion.sha256, motion.byteLength),
-        })),
-      ),
-      packageName: entry.packageName,
-      entryName: entry.entryName,
-      replayVideoSrc: await hashedShowcaseMedia(
-        entry.video.artifact,
-        entry.video.sha256,
-        entry.video.byteLength,
-      ),
-      replaySrc: await hashedShowcaseMedia(entry.artifact, entry.artifactSha256, entry.byteLength),
-      posterSrc: await hashedShowcaseMedia(entry.poster, entry.posterSha256),
-    })),
+    generatedShowcase.entries.map(async (entry) => {
+      const slug = SHOWCASE_SLUG[entry.entryName] || entry.entryName;
+      return {
+        glbHref: `/showcase/${slug}.glb`,
+        motions: await Promise.all(
+          entry.motions.map(async (motion) => ({
+            name: motion.name,
+            duration: motion.duration,
+            src: await hashedShowcaseMedia(motion.artifact, motion.sha256, motion.byteLength),
+          })),
+        ),
+        packageName: entry.packageName,
+        entryName: entry.entryName,
+        replayVideoSrc: await hashedShowcaseMedia(
+          entry.video.artifact,
+          entry.video.sha256,
+          entry.video.byteLength,
+        ),
+        replaySrc: await hashedShowcaseMedia(
+          entry.artifact,
+          entry.artifactSha256,
+          entry.byteLength,
+        ),
+        posterSrc: await hashedShowcaseMedia(entry.poster, entry.posterSha256),
+      };
+    }),
   ),
 };
 for (const entry of generatedShowcase.entries) {
+  const slug = SHOWCASE_SLUG[entry.entryName] || entry.entryName;
   await cp(
-    path.join(repoRoot, `assets/exports/${entry.entryName}/${entry.entryName}.glb`),
-    path.join(outputRoot, `examples/${entry.entryName}.glb`),
+    path.join(repoRoot, `assets/exports/${slug}/${slug}.glb`),
+    path.join(outputRoot, `showcase/${slug}.glb`),
   );
 }
 
-// Publish source examples without generated output or internal model snapshots.
+// Publish source showcase without generated output or internal model snapshots.
 const copyNativeSources = async (relative) => {
   for (const entry of await readdir(path.join(repoRoot, relative), { withFileTypes: true })) {
     const child = path.join(relative, entry.name);
     if (
       entry.isDirectory() &&
-      !['dist', 'build', 'exports', '.ashfox', 'node_modules'].includes(entry.name)
+      !['dist', 'build', 'exports', '.ashfox', '.ashfox-cache', 'node_modules'].includes(entry.name)
     ) {
       await copyNativeSources(child);
     } else if (
@@ -359,7 +368,7 @@ const copyNativeSources = async (relative) => {
     }
   }
 };
-await copyNativeSources('examples');
+await copyNativeSources('showcase');
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts/landing/build.js')], {
   cwd: repoRoot,
   stdio: 'inherit',
@@ -479,7 +488,7 @@ ${localeRegistry.locales.map((locale) => `${locale.prefix}/assets/*\n  Cache-Con
 /media/guides/*.wav
   Content-Type: audio/wav
 
-/examples/*.glb
+/showcase/*.glb
   Content-Type: model/gltf-binary
   Cache-Control: public, max-age=0, must-revalidate
 

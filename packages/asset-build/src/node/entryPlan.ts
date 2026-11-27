@@ -2,12 +2,17 @@ import { AUDIO_POLICY } from '@ashfox/audio-core';
 import {
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
   SPRITE_POLICY,
+  buildStdPackageEntry,
   canonicalJsonString,
   checkWorkspaceModularity,
   inspectNativeSource,
   isDirectorySource,
+  isStdLibraryLogicalPath,
+  isVirtualLibrarySpecifier,
   readDirectoryWorkspace,
+  resolveImportPath,
   sha256Digest,
+  virtualLibraryLogicalPath,
   type DirectoryFile,
   type DirectoryWorkspace,
   type WorkspaceEntrySelector,
@@ -17,6 +22,7 @@ import { BuildFailure, type Snapshot } from '../bundle/contract';
 import { digest, json } from '../shared/digest';
 import { readCacheJson, writeCacheJson, type DiskCacheContext } from './diskCache';
 import { assertWorkspaceSoundBudget, prepareNodeSound, type PreparedNodeSound } from './soundPlan';
+import { resolveStdLibraryFiles } from './stdlib';
 
 type NativeSourceMetadata = ReturnType<typeof inspectNativeSource>;
 
@@ -62,21 +68,6 @@ export const joinPackagePath = (root: string, rel: string): string =>
 export const entrySelectorKey = (entry: WorkspaceEntrySelector): string =>
   JSON.stringify([entry.packageName, entry.entryName]);
 
-const resolveRelativeImport = (ownerPath: string, specifier: string): string | null => {
-  if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
-  const parts = ownerPath.split('/').slice(0, -1);
-  for (const segment of specifier.split('/')) {
-    if (segment === '.') continue;
-    if (segment === '..') {
-      if (!parts.length) return null;
-      parts.pop();
-    } else if (segment) {
-      parts.push(segment);
-    }
-  }
-  return parts.join('/');
-};
-
 const resolvePackageImport = (
   packages: DirectoryWorkspace['packages'],
   specifier: string,
@@ -97,8 +88,9 @@ const resolveImportTarget = (
   specifier: string,
   allowPackage: boolean,
 ): string | null => {
+  if (isVirtualLibrarySpecifier(specifier)) return virtualLibraryLogicalPath(specifier);
   if (specifier.startsWith('./') || specifier.startsWith('../')) {
-    return resolveRelativeImport(ownerPath, specifier);
+    return resolveImportPath(ownerPath, specifier);
   }
   return allowPackage ? resolvePackageImport(packages, specifier) : null;
 };
@@ -141,11 +133,11 @@ const validateDeclaredSnapshotFiles = (
   );
   const seen = new Set<string>();
   for (const f of files) {
+    const isStd = isStdLibraryLogicalPath(f.path);
     const valid =
       !f.path.startsWith('/') &&
-      isDirectorySource(config, f.path) &&
-      declared.has(f.path) &&
-      !seen.has(f.path.toLowerCase());
+      !seen.has(f.path.toLowerCase()) &&
+      (isStd || (isDirectorySource(config, f.path) && declared.has(f.path)));
     if (!valid) return null;
     seen.add(f.path.toLowerCase());
   }
@@ -188,7 +180,7 @@ const collectEntryModuleImporters = (
     for (const spec of curMeta.imports) {
       recordModuleImport(
         entryPath,
-        resolveRelativeImport(cur, spec),
+        resolveImportPath(cur, spec),
         seen,
         queue,
         metaByPath,
@@ -200,6 +192,10 @@ const collectEntryModuleImporters = (
 
 const hasInvalidLayoutFile = (metaByPath: ReadonlyMap<string, NativeSourceMetadata>): boolean => {
   for (const [filePath, meta] of metaByPath) {
+    if (isStdLibraryLogicalPath(filePath)) {
+      if (meta.kind !== 'module') return true;
+      continue;
+    }
     if (!CANONICAL_PREFIXES.some((prefix) => filePath.startsWith(prefix))) return true;
     if (filePath.startsWith('assets/module/') && meta.kind !== 'module') return true;
   }
@@ -221,7 +217,8 @@ const checkLayout = (
     collectEntryModuleImporters(entryPath, metaByPath, importers);
   }
   return [...importers.entries()].every(
-    ([modPath, owners]) => owners.size < 2 || modPath.startsWith('assets/module/'),
+    ([modPath, owners]) =>
+      owners.size < 2 || modPath.startsWith('assets/module/') || isStdLibraryLogicalPath(modPath),
   );
 };
 
@@ -252,6 +249,46 @@ const collectEntryClosure = (
 const packageRelativePath = (pkgRoot: string, fullPath: string): string =>
   pkgRoot ? fullPath.slice(pkgRoot.length + 1) : fullPath;
 
+const buildPackageSubset = (
+  pkg: DirectoryWorkspace['packages'][number],
+  ownerEntry: WorkspaceEntrySelector,
+  ownerPath: string,
+  closureSet: ReadonlySet<string>,
+) => {
+  const isOwner = pkg.name === ownerEntry.packageName;
+  const entries = isOwner
+    ? pkg.manifest.entries.filter((e) => e.name === ownerEntry.entryName)
+    : [];
+  const modules = pkg.manifest.modules.filter((m) =>
+    closureSet.has(joinPackagePath(pkg.root, m.path)),
+  );
+  const declaredModPaths = new Set(modules.map((m) => joinPackagePath(pkg.root, m.path)));
+  const prefix = pkg.root ? `${pkg.root}/` : '';
+  const extraModules = [...closureSet]
+    .filter(
+      (p) =>
+        p !== ownerPath &&
+        !isStdLibraryLogicalPath(p) &&
+        !declaredModPaths.has(p) &&
+        (prefix === '' || p.startsWith(prefix)),
+    )
+    .sort(compareText)
+    .map((p, idx) => ({ subpath: `./__dep_${idx}`, path: packageRelativePath(pkg.root, p) }));
+  const allModules = [...modules, ...extraModules];
+  if (entries.length === 0 && allModules.length === 0) return null;
+  return {
+    name: pkg.name,
+    root: pkg.root,
+    manifest: {
+      format: pkg.manifest.format,
+      version: pkg.manifest.version,
+      entries,
+      modules: allModules,
+      dependencies: pkg.manifest.dependencies,
+    },
+  };
+};
+
 const buildSubConfigJson = (
   config: DirectoryWorkspace,
   ownerEntry: WorkspaceEntrySelector,
@@ -259,41 +296,12 @@ const buildSubConfigJson = (
   closureSet: ReadonlySet<string>,
 ): string => {
   const packages = config.packages
-    .map((pkg) => {
-      const isOwner = pkg.name === ownerEntry.packageName;
-      const entries = isOwner
-        ? pkg.manifest.entries.filter((e) => e.name === ownerEntry.entryName)
-        : [];
-      const modules = pkg.manifest.modules.filter((m) =>
-        closureSet.has(joinPackagePath(pkg.root, m.path)),
-      );
-      const declaredModPaths = new Set(modules.map((m) => joinPackagePath(pkg.root, m.path)));
-      const prefix = pkg.root ? `${pkg.root}/` : '';
-      const extraModules = [...closureSet]
-        .filter(
-          (p) =>
-            p !== ownerPath && !declaredModPaths.has(p) && (prefix === '' || p.startsWith(prefix)),
-        )
-        .sort(compareText)
-        .map((p, idx) => ({ subpath: `./__dep_${idx}`, path: packageRelativePath(pkg.root, p) }));
-      const allModules = [...modules, ...extraModules];
-      if (entries.length === 0 && allModules.length === 0) return null;
-      return {
-        name: pkg.name,
-        root: pkg.root,
-        manifest: {
-          format: pkg.manifest.format,
-          version: pkg.manifest.version,
-          entries,
-          modules: allModules,
-          dependencies: pkg.manifest.dependencies,
-        },
-      };
-    })
+    .map((pkg) => buildPackageSubset(pkg, ownerEntry, ownerPath, closureSet))
     .filter((pkg): pkg is NonNullable<typeof pkg> => pkg !== null);
-
-  const validNames = new Set(packages.map((p) => p.name));
-  const sanitized = packages.map((pkg) => ({
+  const stdPkg = packages.some((p) => p.name === 'std') ? null : buildStdPackageEntry(closureSet);
+  const allPackages = stdPkg ? [...packages, stdPkg] : packages;
+  const validNames = new Set(allPackages.map((p) => p.name));
+  const sanitized = allPackages.map((pkg) => ({
     ...pkg,
     manifest: {
       ...pkg.manifest,
@@ -438,9 +446,10 @@ export const planWorkspaceExecution = (
 ): WorkspaceExecutionPlan | null => {
   try {
     const config = readDirectoryWorkspace(snapshot.configuration);
-    const filesByPath = validateDeclaredSnapshotFiles(config, snapshot.files);
+    const files = resolveStdLibraryFiles(snapshot.files, undefined, snapshot.root);
+    const filesByPath = validateDeclaredSnapshotFiles(config, files);
     if (!filesByPath) return null;
-    if (!checkWorkspaceModularity(snapshot.files).ok) return null;
+    if (!checkWorkspaceModularity(files).ok) return null;
     const rawEntries = config.packages.flatMap((p) =>
       p.manifest.entries.map((e) => ({
         entry: { packageName: p.name, entryName: e.name },
@@ -448,7 +457,7 @@ export const planWorkspaceExecution = (
       })),
     );
     if (!rawEntries.length) return null;
-    const metaByPath = loadSourceMetadata(snapshot.files, cache);
+    const metaByPath = loadSourceMetadata(files, cache);
     if (
       !checkLayout(
         config,
@@ -460,14 +469,14 @@ export const planWorkspaceExecution = (
 
     const resolved = resolveAllPlannedEntries(config, rawEntries, filesByPath, metaByPath, cache);
     if (!resolved) return null;
-    if (snapshot.files.some((f) => !resolved.reachable.has(f.path))) return null;
+    if (files.some((f) => !resolved.reachable.has(f.path))) return null;
     const byEntry = new Map(resolved.planned.map((e) => [entrySelectorKey(e.entry), e]));
     if (!validatePlanExportsAndPacks(config, byEntry)) return null;
 
     const sourceHash = sha256Digest(
       canonicalJsonString({
         config,
-        files: [...snapshot.files].sort((a, b) => compareText(a.path, b.path)),
+        files: [...files].sort((a, b) => compareText(a.path, b.path)),
       }),
     );
     const buildKey = sha256Digest(

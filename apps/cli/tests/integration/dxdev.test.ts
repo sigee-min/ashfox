@@ -44,8 +44,8 @@ const testCliHints = (temp: string): void => {
 const testGaplessOggLoop = async (temp: string): Promise<void> => {
   const loopDir = path.join(temp, 'ogg-loop');
   fs.mkdirSync(loopDir, { recursive: true });
-  const soundPath = path.join(loopDir, 'bell_pattern.ashfox');
-  fs.copyFileSync(path.join(root, 'examples/sounds/assets/sounds/bell_pattern.ashfox'), soundPath);
+  const soundPath = path.join(loopDir, 'fire_loop.ashfox');
+  fs.copyFileSync(path.join(root, 'showcase/assets/sounds/fire_loop.ashfox'), soundPath);
   const baseConfig = readSnapshot(soundPath).config;
   const configPath = path.join(loopDir, '.ashfoxworkspace');
   fs.writeFileSync(
@@ -62,7 +62,7 @@ const testGaplessOggLoop = async (temp: string): Promise<void> => {
           unitsPerMeter: 16,
           pixelsPerUnit: 16,
           spriteFilter: 'nearest',
-          assets: [{ id: 'sfx.bell', source: 'bell_pattern', path: 'sounds/bell' }],
+          assets: [{ id: 'sfx.fire', source: 'fire_loop', path: 'sounds/fire' }],
         },
       ],
     }),
@@ -80,13 +80,13 @@ const testGaplessOggLoop = async (temp: string): Promise<void> => {
     assert.equal(variant.sampleRate, 48000);
     assert.equal(variant.playback.kind, 'loop');
     assert.equal(variant.loopStartSample, 0);
-    assert.equal(variant.loopEndSample, 96960);
+    assert.equal(variant.loopEndSample, 111360);
     const oggBytes = fs.readFileSync(
       path.join(envelope.result.bundlePath, 'assets/game/game-assets', variant.file),
     );
     const comments = readVorbisComments(oggBytes);
     assert.equal(comments.LOOPSTART, '0');
-    assert.equal(comments.LOOPLENGTH, '96960');
+    assert.equal(comments.LOOPLENGTH, '111360');
     const decoded = await decodeVorbis(oggBytes);
     assert.equal(decoded.channels, variant.channels);
     assert.ok(decoded.samples.length > 0);
@@ -118,8 +118,8 @@ const waitForUrl = (child: ReturnType<typeof spawn>): Promise<string> =>
 const testDevWatchAndInspect = async (temp: string): Promise<void> => {
   const devDir = path.join(temp, 'dev-watch');
   fs.mkdirSync(devDir, { recursive: true });
-  const modelPath = path.join(devDir, 'lantern.ashfox');
-  fs.copyFileSync(path.join(root, 'examples/prop/lantern.ashfox'), modelPath);
+  const modelPath = path.join(devDir, 'wall_lantern.ashfox');
+  fs.copyFileSync(path.join(root, 'showcase/assets/models/wall_lantern.ashfox'), modelPath);
   const child = spawn(process.execPath, [cli, 'dev', modelPath, '--port', '0', '--no-open'], {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -154,7 +154,7 @@ const testDevWatchAndInspect = async (temp: string): Promise<void> => {
         dims?: readonly number[];
       }[];
     };
-    assert.ok(inspectJson.refs.some((r) => r.sourceRef.includes('lantern.ashfox:')));
+    assert.ok(inspectJson.refs.some((r) => r.sourceRef.includes('wall_lantern.ashfox:')));
     assert.ok(inspectJson.refs.some((r) => Boolean(r.position && r.dims)));
 
     const sseAbort = new AbortController();

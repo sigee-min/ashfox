@@ -1,0 +1,18 @@
+ashfox 1
+sprite oak_planks {
+  import "std/sprite/tile/wood" as wood;
+
+  profile = tile;
+  canvas = (32px, 32px);
+  palette {}
+  fill timber_base {
+    material = wood.oak_timber;
+    pattern plank { height = 8px; joint = 1px; seed = 23; mortar_material = wood.oak_joint; }
+    grain none { amount = 0; seed = 41; }
+  }
+  pattern grain_variation {
+    material = wood.oak_timber;
+    pattern blotch { scale = 6px; density = 0.22; seed = 67; to_material = wood.birch_timber; }
+    clip = canvas;
+  }
+}

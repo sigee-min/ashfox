@@ -4,7 +4,7 @@
 
 ## 정적 소품으로 시작하기
 
-[marker 원본](../../examples/minecraft/assets/models/marker.ashfox)은 완전한 파일 하나이며 [스타터 다운로드](/downloads/starter.zip)에도 포함됩니다. 에셋 폴더에서 실행하세요.
+`showcase/assets/models/wall_lantern.ashfox`, `showcase/assets/models/rune_bricks.ashfox`, 또는 [스타터 다운로드](/downloads/starter.zip)에서 시작하세요. 내장 표준 라이브러리 모듈은 `ashfox library std list model` 및 `ashfox library std list core`로 조회할 수 있습니다. 에셋 폴더에서 실행하세요.
 
 {{source-code:0}}
 
@@ -17,10 +17,10 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `rig contract` | 부착 관절과 허용 동작 채널 |
 | `skeleton` | 정지 포즈의 관절 위치 |
 | `surface contract` | 텍스처 차트와 필수 커버리지 |
-| `surface` | 팔레트, 래스터 상세, 재질 동작 |
-| `component` | 큐브·평면 생성과 본·표면 바인딩 |
-| `motion` | 지원되는 관절 채널의 애니메이션 |
-| `asset` 조립 | 스켈레톤, 컴포넌트, 할당된 동작 선택 |
+| `surface` | 팔레트, PBR `roughness`/`metallic`, 래스터 상세, 재질 동작 |
+| `component` | `cube`, `plane`, `taper`, `wedge`, `cylinder`, `expression_slot` 생성과 본·표면 바인딩 |
+| `motion` | 지원되는 관절 채널 및 표정 `expression` 타임라인 애니메이션 |
+| `model` 조립 | 스켈레톤, 컴포넌트, 할당된 동작 선택 및 `settings.profile` 기반 물리 `colliders` 자동 생성 |
 
 모든 원본은 `ashfox 1`로 시작하고 확장자는 `.ashfox`입니다. 모델 길이는 `u`, 픽셀 크기는 `px`, 시간은 `s`, 각도는 `deg`를 씁니다. 완전한 원본과 유효값은 [모델 언어 문법](../language/model.md), 공용 설계 변수와 정확한 크기 관계는 [치수와 픽셀 상세](precision-modeling.md)를 참고하세요.
 
@@ -28,16 +28,16 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 
 | 프로파일 | 예제 | 보여주는 구성 |
 | --- | --- | --- |
-| `block` | `examples/block/rune_bricks.ashfox` | 불필요한 회전·대칭 강제 없이 텍스처로 표현한 단일 큐브 16×16×16 블록 |
-| `block` | `examples/minecraft/assets/models/marker.ashfox` | 보호 스탬프 룬과 테두리가 적용된 직교 단차 제단 블록 |
-| `prop` | `examples/prop/lantern.ashfox` | 직교 계단 구조와 황동 지붕 브래킷이 있는 발광 컷아웃 랜턴 소품 |
-| `prop` | `examples/prop/treasure_chest/chest.ashfox` | rig·surface·body·소켓 결합 자물쇠로 분리된 모듈형 소품 |
-| `creature` | `examples/griffin/workbench/main.ashfox` | 다중 모듈 애니메이션 크리처 (`main.ashfox`, `animation.ashfox`, `surface.ashfox`, `body.ashfox`) |
-| `structure` | `examples/structure/assets/structures/medieval_cottage.ashfox` | `mix(...)` 팔레트·공유 벽 `arch`·`l_turn` 계단·도머/굴뚝 지붕과 `.structure.json`을 출력하는 2층 오두막 |
-| `structure` | `examples/structure/assets/structures/watchtower.ashfox` | 나선 계단·리세스 창·피라미드 지붕과 커스텀 룬/랜턴 소품을 갖춘 3층 석조 감시탑 |
-| `structure` | `examples/structure/assets/structures/blacksmith.ashfox` | 개방형 화로 아치·굴뚝 그을음 풍화·커스텀 매달린 간판을 갖춘 대장간 |
-| `structure` | `examples/structure/assets/structures/tavern.ashfox` | 2층 객실·`u_turn` 계단·도머 박공 지붕과 주점 바 가구를 갖춘 대형 선술집 |
-| `structure` | `examples/structure/assets/structures/village_compound.ashfox` | 네 건물을 광장 우물·가로등·도로 `socket`으로 결합한 `compound` 마을 복합 단지 |
+| `block` | `showcase/assets/models/rune_bricks.ashfox` | 불필요한 회전·대칭 강제 없이 텍스처로 표현한 단일 큐브 16×16×16 블록 |
+| `prop` | `showcase/assets/models/wall_lantern.ashfox` | `taper`/`wedge` 브래킷과 PBR 금속 광택이 적용된 발광 컷아웃 랜턴 소품 |
+| `prop` | `showcase/assets/models/treasure_chest.ashfox` | `"std/model/prop/container"`와 `std/core/hook/loot` 훅을 사용하는 모듈형 소품 |
+| `creature` | `showcase/assets/models/goblin_raider.ashfox` | `"std/model/rig/biped"`, `"std/model/motion/combat"`, 표정 스왑, 캡슐 충돌체를 갖춘 이족 크리처 |
+| `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | 공용 `"std/*"` 모듈 위에서 팔레트·무기·VFX/사운드 큐만 교체한 변형 크리처 |
+| `creature` | `showcase/assets/models/griffin_boss.ashfox` | `"std/model/rig/winged"`와 깃털 보조 물리가 적용된 날개 달린 보스 크리처 |
+| `creature` | `showcase/assets/models/red_fox.ashfox` | `"std/model/rig/quadruped"`와 꼬리 스프링 물리가 적용된 사족 크리처 |
+| `structure` | `showcase/assets/structures/tavern.ashfox` | 복층 목조 선술집, 라디오시티 GI 실내, `LootSpawn`/`DoorPortal` 훅 |
+| `structure` | `showcase/assets/structures/blacksmith.ashfox` | 개방형 화로 아치, 모루 실내, 굴뚝 불티를 갖춘 대장간 |
+| `structure` | `showcase/assets/structures/modern_gallery.ashfox` | 스테인드글라스 GI와 현대식 전시 가구를 갖춘 통유리 아트리움 갤러리 |
 
 ## 애니메이션 크리처 만들기
 

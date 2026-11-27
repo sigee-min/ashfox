@@ -6,7 +6,10 @@ import {
   compileDirectoryWorkspace,
   evaluateStructureQuality,
   exportStructureGltfResolved,
+  isVirtualLibrarySpecifier,
   parseStructureSource,
+  virtualLibraryLogicalPath,
+  virtualLibrarySpecifierFromPath,
   type DirectoryFile,
   type DirectoryProduct,
   type StructureSourceUnit,
@@ -18,10 +21,28 @@ import { evaluateStructure } from '../../src/compiler/structure/eval';
 
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 
+const loadStdLibs = (
+  dir = path.join(REPO_ROOT, 'library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+const STD_LIBS = loadStdLibs();
+
 const walkWorkspaceFiles = (rootDir: string, base = ''): DirectoryFile[] => {
   const out: DirectoryFile[] = [];
   for (const entry of fs.readdirSync(rootDir, { withFileTypes: true })) {
-    if (entry.name === 'dist' || entry.name === 'build') continue;
+    if (entry.name === 'dist' || entry.name === 'build' || entry.name === '.ashfox-cache') continue;
     const rel = base ? `${base}/${entry.name}` : entry.name;
     const full = path.join(rootDir, entry.name);
     if (entry.isDirectory()) out.push(...walkWorkspaceFiles(full, rel));
@@ -146,8 +167,8 @@ const assertSpriteBitExact = (
 
 const verifyWorkspaceBitExact = async (relDir: string): Promise<void> => {
   const { cfg, files } = loadWorkspace(relDir);
-  const uncached = compileDirectoryWithMode(cfg, files, evaluateStructureQuality, false);
-  const cached = compileDirectoryWorkspace(cfg, files);
+  const uncached = compileDirectoryWithMode(cfg, files, evaluateStructureQuality, false, STD_LIBS);
+  const cached = compileDirectoryWorkspace(cfg, files, STD_LIBS);
   assert.equal(uncached.ok, true, `${relDir} uncached ok`);
   assert.equal(cached.ok, true, `${relDir} cached ok`);
   if (!uncached.ok || !cached.ok) return;
@@ -179,18 +200,37 @@ const verifyWorkspaceBitExact = async (relDir: string): Promise<void> => {
 };
 
 const verifyEvalAndTileCacheIsolation = (): void => {
-  const { files } = loadWorkspace('examples/structure');
+  const { files } = loadWorkspace('showcase');
   const units = new Map<string, StructureSourceUnit>();
   for (const f of files) {
-    if (!f.path.includes('models/props')) {
+    if (f.path.startsWith('assets/structures/')) {
       units.set(f.path, parseStructureSource(f.source, f.path));
     }
   }
+  for (const [spec, source] of STD_LIBS) {
+    if (spec.startsWith('std/structure/')) {
+      const logical = virtualLibraryLogicalPath(spec);
+      units.set(logical, parseStructureSource(source, logical));
+    }
+  }
+  const compoundSource = `ashfox 1
+structure compound_test {
+  import "./tavern.ashfox" as tavern_part;
+  import "./blacksmith.ashfox" as smith_part;
+  size = (40b, 24b, 20b);
+  seed = 99;
+  density = 2;
+  compound_place tavern_part { at = (0b, 0b, 0b); rotate = 0; }
+  compound_place smith_part { at = (22b, 0b, 0b); rotate = 0; }
+}`;
+  const compoundEntry = 'assets/structures/compound_test.ashfox';
+  units.set(compoundEntry, parseStructureSource(compoundSource, compoundEntry));
   const rel = (owner: string, spec: string): string =>
-    path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
+    isVirtualLibrarySpecifier(spec)
+      ? virtualLibraryLogicalPath(spec)
+      : path.posix.normalize(path.posix.join(path.posix.dirname(owner), spec));
 
   const gridCache = new Map<string, EvaluatedStructureResult>();
-  const compoundEntry = 'assets/structures/village_compound.ashfox';
   const uncachedCompound = evaluateStructure(compoundEntry, units, rel);
   const cachedCompound = evaluateStructure(compoundEntry, units, rel, gridCache);
   assert.equal(cachedCompound.prefabUses, uncachedCompound.prefabUses);
@@ -200,8 +240,6 @@ const verifyEvalAndTileCacheIsolation = (): void => {
   );
   assert.ok(gridCache.has('assets/structures/tavern.ashfox'));
   assert.ok(gridCache.has('assets/structures/blacksmith.ashfox'));
-  assert.ok(gridCache.has('assets/structures/medieval_cottage.ashfox'));
-  assert.ok(gridCache.has('assets/structures/watchtower.ashfox'));
   const cachedTavern = gridCache.get('assets/structures/tavern.ashfox')!;
   assert.equal(Object.isFrozen(cachedTavern), true);
   assert.equal(Object.isFrozen(cachedTavern.grid), true);
@@ -246,14 +284,14 @@ const medianMs = (fn: () => void, iterations = 5): number => {
 
 const runBenchmarks = (): void => {
   const rows: { workspace: string; beforeMs: number; afterMs: number; speedup: string }[] = [];
-  for (const ws of ['examples/structure', 'examples/shared-creatures', 'examples/items']) {
+  for (const ws of ['showcase']) {
     const { cfg, files } = loadWorkspace(ws);
     const beforeMs = medianMs(() => {
-      const res = compileDirectoryWithMode(cfg, files, evaluateStructureQuality, false);
+      const res = compileDirectoryWithMode(cfg, files, evaluateStructureQuality, false, STD_LIBS);
       assert.equal(res.ok, true);
     });
     const afterMs = medianMs(() => {
-      const res = compileDirectoryWorkspace(cfg, files);
+      const res = compileDirectoryWorkspace(cfg, files, STD_LIBS);
       assert.equal(res.ok, true);
     });
     rows.push({
@@ -264,13 +302,11 @@ const runBenchmarks = (): void => {
     });
   }
   console.log('perfcache benchmark (median ms):', JSON.stringify(rows));
-  assert.ok(rows[0]!.afterMs < rows[0]!.beforeMs, 'examples/structure cached must be faster');
+  assert.ok(rows[0]!.afterMs < rows[0]!.beforeMs, 'showcase cached must be faster');
 };
 
 const main = async (): Promise<void> => {
-  await verifyWorkspaceBitExact('examples/structure');
-  await verifyWorkspaceBitExact('examples/shared-creatures');
-  await verifyWorkspaceBitExact('examples/items');
+  await verifyWorkspaceBitExact('showcase');
   verifyEvalAndTileCacheIsolation();
   runBenchmarks();
   console.log('ashfox perfcache tests ok');

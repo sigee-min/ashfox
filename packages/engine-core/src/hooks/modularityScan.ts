@@ -1,4 +1,5 @@
 import { lexProgramSource, type ProgramToken } from '../project/program/syntax/lex';
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../project/stdlib/resolve';
 import { sha256Digest } from '../provenance/digest';
 import { compareText } from '../stableOrder';
 import type { HookDiagnostic, HookSourceSpan, HookSourceUnit } from './contract';
@@ -53,6 +54,7 @@ export const normalizeWorkspacePath = (rawPath: string): string => {
 };
 
 const resolveImport = (importer: string, spec: string, known: ReadonlySet<string>): string => {
+  if (isVirtualLibrarySpecifier(spec)) return virtualLibraryLogicalPath(spec);
   const dir = importer.includes('/') ? importer.slice(0, importer.lastIndexOf('/')) : '';
   const norm = normalizeWorkspacePath(dir ? `${dir}/${spec}` : spec);
   if (known.has(norm)) return norm;
@@ -68,6 +70,7 @@ export const hookGuardDiag = (
   message: string,
   token: string,
   span: HookSourceSpan,
+  hint?: string,
 ): HookDiagnostic => {
   const { file, start } = span;
   return Object.freeze({
@@ -79,6 +82,7 @@ export const hookGuardDiag = (
     column: start.column,
     token,
     span,
+    ...(hint !== undefined ? { hint } : {}),
   });
 };
 

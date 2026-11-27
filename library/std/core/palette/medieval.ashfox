@@ -1,0 +1,35 @@
+ashfox 1
+module medieval {
+  export design CastleStone {
+    limestone_shadow: color = #484c54;
+    limestone_base: color = #7c828c;
+    limestone_light: color = #adb3bd;
+    slate_shadow: color = #2d323b;
+    slate_base: color = #4d5563;
+    slate_light: color = #757f91;
+    mortar_base: color = #9da097;
+    moss_accent: color = #4f7343;
+  }
+
+  export design GuildTimber {
+    oak_shadow: color = #4a3222;
+    oak_base: color = #7a5438;
+    oak_light: color = #a67853;
+    walnut_shadow: color = #33231c;
+    walnut_base: color = #573d31;
+    walnut_light: color = #7d5b49;
+    parchment_base: color = #d9c8a9;
+    wax_seal: color = #9e312b;
+  }
+
+  export design HeraldryBanner {
+    crimson_shadow: color = #5c1f24;
+    crimson_base: color = #99323a;
+    crimson_light: color = #cc525a;
+    cobalt_shadow: color = #213254;
+    cobalt_base: color = #36528a;
+    cobalt_light: color = #5778b8;
+    gold_trim: color = #cfa042;
+    ivory_crest: color = #e3dac8;
+  }
+}

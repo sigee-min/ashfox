@@ -1,0 +1,99 @@
+ashfox 1
+model wall_lantern {
+  import "std/model/prop/lighting" as prop;
+  import "std/core/material/metal" as metal;
+  import "std/core/palette/element" as elem;
+  import "std/core/hook/world" as world_hook;
+
+  surface contract WallLanternFrame {
+    chart plate box { coverage = opaque; }
+    chart arm box { coverage = opaque; }
+    chart brace box { coverage = opaque; }
+    chart frame box { coverage = opaque; }
+    chart strut box { coverage = opaque; }
+    chart hood box { coverage = opaque; }
+    chart brass box { coverage = opaque; }
+    material = double;
+  }
+
+  surface contract WallLanternGlow {
+    chart core box { coverage = opaque; }
+    material = opaque;
+  }
+
+  surface forged_frame: WallLanternFrame {
+    material = double;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void; background_alpha = 255;
+      palette {
+        void = #2a3038;
+        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
+        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+      }
+      chart plate box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } pattern ao { strength = 0.35; radius = 0.5u; } }
+      chart arm box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; pattern ao { strength = 0.3; radius = 0.5u; } }
+      chart brace box { fill = iron; roughness = 0.34; metallic = 0.88; grain = brushed; }
+      chart frame box { fill = iron; roughness = 0.32; metallic = 0.90; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.5u; } }
+      chart strut box { fill = iron; roughness = 0.32; metallic = 0.90; grain = brushed; }
+      chart hood box { fill = iron; roughness = 0.30; metallic = 0.90; grain = brushed; pattern border { paint = brass; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.5u; } }
+      chart brass box { fill = brass; roughness = 0.26; metallic = 0.92; grain = none; }
+      grain soft { seed = 707; }
+      tone painterly;
+    }
+  }
+
+  surface amber_core: WallLanternGlow {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      render_mode = emissive;
+      background = ember; background_alpha = 255;
+      palette {
+        ember = elem.FlamePalette.flame_edge;
+        amber = (elem.FlamePalette.flame_edge, elem.FlamePalette.flame_mid, elem.FlamePalette.ember_core);
+        flame = (elem.FlamePalette.flame_mid, elem.FlamePalette.ember_core, #fffbe6);
+      }
+      stamp flame_heart { pixels = ".ff./ffff/ffff/.ff."; f = flame; }
+      chart core box {
+        fill = amber; roughness = 0.16; metallic = 0.0; grain = soft;
+        pattern gradient { from = amber; to = flame; axis = y; space = local; soft = 0.2; }
+        face north { stamp flame_heart { at = (1px, 2px); protect = true; } }
+        face south { stamp flame_heart { at = (1px, 2px); protect = true; } }
+      }
+      grain soft { seed = 709; }
+      tone painterly;
+    }
+  }
+
+  component WallLantern {
+    requires rig skeleton: prop.LanternRig;
+    requires surface frame: WallLanternFrame;
+    requires surface glow: WallLanternGlow;
+    bind bone root to skeleton.root;
+    bind bone body to skeleton.body;
+    geometry {
+      bone root {
+        cube backplate { origin = (-2u, 4u, 4u); size = (4u, 8u, 1u); surface = frame.plate; }
+        cube top_arm { origin = (-1u, 11u, -1u); size = (2u, 1u, 5u); surface = frame.arm; }
+        wedge brace { origin = (-1u, 9u, 1u); size = (2u, 2u, 3u); slope = south; surface = frame.brace; }
+        cube base_pan { origin = (-3u, 0u, -3u); size = (6u, 2u, 6u); surface = frame.frame; }
+        bone body {
+          cylinder glass_core { origin = (0u, 2u, 0u); radius = 2u; radius_top = 2u; height = 5u; sides = 8; axis = y; surface = glow.core; }
+          cube strut_fl { origin = (-3u, 2u, -3u); size = (1u, 5u, 1u); mirror_x = strut_fr; surface = frame.strut; }
+          cube strut_bl { origin = (-3u, 2u, 2u); size = (1u, 5u, 1u); mirror_x = strut_br; surface = frame.strut; }
+          taper hood { origin = (-4u, 7u, -4u); size = (8u, 2u, 8u); top_scale = (0.45, 0.45); axis = y; surface = frame.hood; }
+          cylinder finial { origin = (0u, 9u, 0u); radius = 1u; radius_top = 0.5u; height = 2u; sides = 8; axis = y; surface = frame.brass; }
+        }
+      }
+    }
+  }
+
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = prop.LanternSkeleton;
+  use WallLantern as lantern { skeleton = prop.LanternRig; frame = forged_frame; glow = amber_core; }
+
+  volume light_aura : world_hook.AmbientZone { bone = body; from = (-24u, -16u, -24u); to = (24u, 24u, 24u); cue_id = "fire_loop"; reverb = hall; blend_radius = 4.0; }
+}

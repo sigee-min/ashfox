@@ -1,0 +1,84 @@
+ashfox 1
+model treasure_chest {
+  import "std/model/prop/container" as prop;
+  import "std/core/material/wood" as wood;
+  import "std/core/material/metal" as metal;
+  import "std/core/hook/loot" as loot_hook;
+
+  surface contract RichChestSurface {
+    chart base box { coverage = opaque; }
+    chart wall box { coverage = opaque; }
+    chart lid box { coverage = opaque; }
+    chart lid_crown box { coverage = opaque; }
+    chart lid_ridge box { coverage = opaque; }
+    chart band box { coverage = opaque; }
+    chart strap box { coverage = opaque; }
+    chart handle box { coverage = opaque; }
+    chart latch box { coverage = opaque; }
+    chart gem box { coverage = opaque; }
+    material = opaque;
+  }
+
+  surface oak_brass_chest: RichChestSurface {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      background = void; background_alpha = 255;
+      palette {
+        void = #2b1a10;
+        oak = (wood.WoodParams.oak_shadow, wood.WoodParams.oak_base, wood.WoodParams.oak_light);
+        spruce = (wood.WoodParams.spruce_shadow, wood.WoodParams.spruce_base, wood.WoodParams.spruce_light);
+        iron = (metal.MetalParams.iron_shadow, metal.MetalParams.iron_base, metal.MetalParams.iron_light);
+        brass = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
+        ruby = (#8f1d2c, #d9384d, #ff8593);
+      }
+      stamp nail_stud { pixels = "bb/bb"; b = brass; }
+      stamp keyhole { pixels = ".dd./dddd/.dd."; d = void; }
+
+      chart base box { fill = iron; roughness = 0.34; metallic = 0.86; grain = brushed; pattern border { paint = brass; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.6u; } }
+      chart wall box { fill = oak; roughness = 0.72; grain = wood; pattern stripe { paint = spruce; axis = y; period = 5px; width = 1px; } pattern ao { strength = 0.4; radius = 0.7u; } }
+      chart lid box { fill = oak; roughness = 0.70; grain = wood; pattern stripe { paint = spruce; axis = z; period = 5px; width = 1px; } pattern ao { strength = 0.35; radius = 0.6u; } }
+      chart lid_crown box { fill = spruce; roughness = 0.68; grain = wood; pattern border { paint = oak; width = 1px; edges = all; } }
+      chart lid_ridge box { fill = spruce; roughness = 0.68; grain = wood; pattern border { paint = oak; width = 1px; edges = all; } }
+      chart band box { fill = iron; roughness = 0.32; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } face west { stamp nail_stud { at = (2px, 2px); protect = true; } } }
+      chart strap box { fill = iron; roughness = 0.32; metallic = 0.88; roughness_variation = 0.08; grain = brushed; pattern border { paint = brass; width = 1px; edges = all; } }
+      chart handle box { fill = brass; roughness = 0.28; metallic = 0.90; grain = none; }
+      chart latch box { fill = brass; roughness = 0.26; metallic = 0.92; grain = none; face north { stamp keyhole { at = (1px, 1px); protect = true; } } }
+      chart gem box { fill = ruby; roughness = 0.14; metallic = 0.05; grain = soft; }
+      grain soft { seed = 6401; }
+      tone painterly;
+    }
+  }
+
+  component TreasureChest {
+    requires rig skeleton: prop.ChestRig;
+    requires surface skin: RichChestSurface;
+    bind bone root to skeleton.root;
+    bind bone lid to skeleton.lid;
+    geometry {
+      bone root {
+        cube plinth { origin = (-5.5u, 0u, -4.5u); size = (11u, 2u, 9u); surface = skin.base; }
+        cube hull { origin = (-5u, 2u, -4u); size = (10u, 5u, 8u); surface = skin.wall; }
+        cube band_l { origin = (-6u, 2u, -4u); size = (1u, 5u, 8u); mirror_x = band_r; surface = skin.band; }
+        cylinder handle_l { origin = (-6.8u, 4.5u, 0u); radius = 1.1u; radius_top = 1.1u; height = 0.8u; sides = 8; axis = x; mirror_x = handle_r; surface = skin.handle; }
+        bone lid {
+          cube lid_main { origin = (-5u, 7u, -4u); size = (10u, 3u, 8u); surface = skin.lid; }
+          wedge lid_front { origin = (-5u, 10u, -4u); size = (10u, 2u, 2u); slope = north; surface = skin.lid_crown; }
+          wedge lid_back { origin = (-5u, 10u, 2u); size = (10u, 2u, 2u); slope = south; surface = skin.lid_crown; }
+          cube lid_ridge { origin = (-5u, 10u, -2u); size = (10u, 2u, 4u); surface = skin.lid_ridge; }
+          cube strap_l { origin = (-6u, 7u, -4u); size = (1u, 3u, 8u); mirror_x = strap_r; surface = skin.strap; }
+          cube lock_plate { origin = (-1.5u, 5.5u, -5u); size = (3u, 3u, 1u); surface = skin.latch; }
+          taper lock_gem { origin = (-1u, 6u, -6u); size = (2u, 2u, 1u); top_scale = (0.4, 0.4); axis = z; pivot = (0u, 7u, -5.5u); rotation = (0deg, 180deg, 0deg); surface = skin.gem; }
+        }
+      }
+    }
+  }
+
+  settings { density = 16; forward = north; profile = prop; }
+  skeleton = prop.ChestSkeleton;
+  motions = [prop.lid_open];
+  use TreasureChest as chest { skeleton = prop.ChestRig; skin = oak_brass_chest; }
+
+  anchor chest_loot : loot_hook.LootChest { bone = root; table = "ashfox:dungeon/rare"; tier = rare; min_rolls = 2; max_rolls = 5; facing = north; }
+  meta drop_meta : loot_hook.DropTableMeta { table_id = "ashfox:dungeon/rare"; luck_bonus = 0.35; unique_once = false; }
+}

@@ -42,7 +42,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용�
 
 {{source-code:3}}
 
-`layer` 블록(`mode = override | additive;`, `weight`, `mask = [...]`), 이름 있는 `pose` / `at <t> pose <name>` 키, 전투 타이밍 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `gltf.animations[i].extras.ashfoxCues`로 출력되는 타임라인 `cue`(`sound`, `vfx`, `event`)를 활용할 수 있습니다.
+`layer` 블록(`mode = override | additive;`, `weight`, `mask = [...]`), 이름 있는 `pose` / `at <t> pose <name>` 키, 표정 스왑 `expression <slot> { at 0.00s = neutral; at 1.45s..1.58s = blink; }` (`expression_slot`과 결합해 추가 드로우 콜 없이 베이크), 전투 타이밍 연산(`squash`, `smear`, `hitstop`, `recoil`), 그리고 `gltf.animations[i].extras.ashfoxCues`로 출력되는 타임라인 `cue`(`sound`, `vfx`, `event`)를 활용할 수 있습니다.
 
 ## 반복과 길이 설정하기
 
@@ -81,7 +81,7 @@ skeleton 바인딩은 **부모 관절 좌표계의 `parent_origin`**을 사용�
 | `greeting` | 고개 끄덕임과 꼬리 흔들기 | `3s` |
 | `alert` | 자극에 반응해 방향 전환 | `2.4s` |
 
-[Griffin 원본](../../examples/griffin/workbench/main.ashfox)과 [애니메이션 모듈](../../examples/griffin/workbench/animation.ashfox)을 함께 사용합니다. 완전한 그래프는 [게임 프로젝트](/downloads/game-assets.zip)에 있습니다. 압축을 푼 폴더에서 `models/workbench/main.ashfox`를 출력하세요.
+`showcase/assets/models/griffin_boss.ashfox`, `showcase/assets/models/goblin_raider.ashfox`, 그리고 내장 표준 라이브러리 모듈(`ashfox library std list model/rig`, `ashfox library std list model/motion`)을 참고하세요. 완전한 번들은 [게임 프로젝트](/downloads/game-assets.zip)에 있습니다.
 
 여섯 동작 모두 정지 공간 기준 상대입니다. 대상은 `head`, `wing_left`, `wing_right`, `tail` 등 의미 있는 리그 관절입니다.
 

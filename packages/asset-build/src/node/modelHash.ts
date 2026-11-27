@@ -1,11 +1,13 @@
 import {
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
+  buildStdPackageEntry,
   computePackageContentHash,
   computePackageInterfaceHash,
   computePackageManifestHash,
   computeSourceContentHash,
   computeWorkspaceHash,
   readDirectoryWorkspace,
+  virtualLibrarySpecifierFromPath,
   type AuthoredAssetWorkspace,
   type DirectoryFile,
   type DirectoryWorkspace,
@@ -17,6 +19,7 @@ import type { Snapshot } from '../bundle/contract';
 import { digest, json } from '../shared/digest';
 import { readCacheJson, writeCacheJson, type DiskCacheContext } from './diskCache';
 import { joinPackagePath, type PlannedEntry } from './entryPlan';
+import { loadBundledStdLibrary, resolveStdLibraryFiles } from './stdlib';
 
 type WorkspaceManifestPkg = AuthoredAssetWorkspace['manifest']['packages'][number];
 type LockedPkg = AuthoredAssetWorkspace['lock']['packages'][number];
@@ -72,6 +75,28 @@ const collectSeedPackages = (
     : allModelPkgs.filter((p) => p.manifest.entries.length > 0);
 };
 
+const resolveProbeFilesAndStd = (
+  rawPkgs: readonly WorkspaceManifestPkg[],
+  filesByPath: ReadonlyMap<string, DirectoryFile>,
+): { readonly files: readonly DirectoryFile[]; readonly pkgs: readonly WorkspaceManifestPkg[] } => {
+  const paths = new Set(
+    rawPkgs.flatMap((p) =>
+      [...p.manifest.entries, ...p.manifest.modules].map((e) => joinPackagePath(p.root, e.path)),
+    ),
+  );
+  const baseFiles = [...paths].sort(compareText).map((p) => filesByPath.get(p)!);
+  const effectiveStd = new Map(loadBundledStdLibrary());
+  for (const [filePath, file] of filesByPath) {
+    const spec = virtualLibrarySpecifierFromPath(filePath);
+    if (spec) effectiveStd.set(spec, file.source);
+  }
+  const files = resolveStdLibraryFiles(baseFiles, effectiveStd);
+  const stdPkg = rawPkgs.some((p) => p.name === 'std')
+    ? null
+    : buildStdPackageEntry(files.map((f) => f.path));
+  return { files, pkgs: stdPkg ? [...rawPkgs, stdPkg] : [...rawPkgs] };
+};
+
 const probePackageInterfaceHash = (
   targetPkg: WorkspaceManifestPkg,
   allModelPkgs: readonly WorkspaceManifestPkg[],
@@ -85,15 +110,11 @@ const probePackageInterfaceHash = (
   for (const seed of seeds) {
     for (const pkg of collectPackageWithDeps(seed.name, byName)) closureMap.set(pkg.name, pkg);
   }
-  const pkgs = [...closureMap.values()].map((p) =>
+  if (!closureMap.has(targetPkg.name)) closureMap.set(targetPkg.name, targetPkg);
+  const rawPkgs = [...closureMap.values()].map((p) =>
     seedNames.has(p.name) ? p : { ...p, manifest: { ...p.manifest, entries: [] } },
   );
-  const paths = new Set(
-    pkgs.flatMap((p) =>
-      [...p.manifest.entries, ...p.manifest.modules].map((e) => joinPackagePath(p.root, e.path)),
-    ),
-  );
-  const files = [...paths].sort(compareText).map((p) => filesByPath.get(p)!);
+  const { files, pkgs } = resolveProbeFilesAndStd(rawPkgs, filesByPath);
   const subConfig = JSON.stringify({
     format: 'ashfox-workspace',
     version: 2,
@@ -248,7 +269,7 @@ export const computeModelWorkspaceHash = (
   const modelPaths = new Set(modelEntries.map((e) => e.sourcePath));
   const modelReachable = new Set(modelEntries.flatMap((e) => e.closurePaths));
   const filesByPath = new Map(snapshotFiles.map((f) => [f.path, f]));
-  const modelPkgs: WorkspaceManifestPkg[] = config.packages.map((p) => ({
+  const basePkgs: WorkspaceManifestPkg[] = config.packages.map((p) => ({
     ...p,
     manifest: {
       ...p.manifest,
@@ -258,6 +279,10 @@ export const computeModelWorkspaceHash = (
       ),
     },
   }));
+  const stdPkg = basePkgs.some((p) => p.name === 'std')
+    ? null
+    : buildStdPackageEntry(modelReachable);
+  const modelPkgs: WorkspaceManifestPkg[] = stdPkg ? [...basePkgs, stdPkg] : basePkgs;
   return computeWorkspaceHash({
     files: snapshotFiles.filter((f) => modelReachable.has(f.path)),
     manifest: { format: 'ashfox-workspace', version: 1, packages: modelPkgs },

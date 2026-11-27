@@ -1,0 +1,20 @@
+ashfox 1
+sound fire_loop {
+  import "std/sound/ambient/fire" as fire_kit;
+
+  profile = ambient;
+  duration = 3.2s;
+  seed = 7349;
+  space { preset = timber_room; mix = 18%; }
+
+  seq burn {
+    start = 50ms;
+    step roar { voice = fire_kit.hearth_roar; at = 0s; duration = 3s; vary_gain = 90%..110%; }
+    step flame { voice = fire_kit.flame_flutter; at = 0s; duration = 3s; vary_gain = 90%..110%; }
+    step crackle { voice = fire_kit.ember_crackle; at = 0s; duration = 3s; vary_pitch = -90cents..90cents; vary_gain = 85%..115%; }
+  }
+
+  variants { base = 42; alternate = 43; }
+  loop { at = 0.35s..2.75s; xfade = 80ms; }
+  master { gain = 3db; target = -14lufs; peak = -1.5db; punch = 15%; warmth = 35%; glue = 20%; limit = true; }
+}

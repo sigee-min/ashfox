@@ -1,0 +1,24 @@
+ashfox 1
+model goblin_raider {
+  import "std/model/rig/biped" as biped;
+  import "std/model/motion/locomotion" as loco;
+  import "std/model/motion/combat" as combat;
+  import "std/core/hook/combat" as combat_hook;
+  import "std/core/hook/loot" as loot_hook;
+  import "shared_modules/goblin_kit" as kit;
+  import "shared_modules/goblin_skins" as skins;
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = biped.BipedSkeleton;
+  motions = [kit.goblin_idle, loco.biped_walk, combat.slash, kit.goblin_challenge];
+
+  use kit.GoblinBody as body { skeleton = biped.BipedRig; skin = skins.raider_skin; }
+  use kit.RaiderGear as blade { skin = skins.raider_weapon; }
+  use kit.RaiderShield as shield { skin = skins.raider_shield; }
+  connect body.gear_hand -> blade.grip;
+  connect body.off_hand_mount -> shield.mount;
+
+  cue blade_arc : combat_hook.HitboxArc { clip = slash; at = 0.2s..0.45s; reach = 18u; damage = 16; damage_type = slash; }
+  anchor loot_drop : loot_hook.ItemDrop { bone = pelvis; item_id = "ashfox:iron_sword"; chance = 0.25; }
+  meta ai_profile : combat_hook.CombatStateMeta { aggro_range = 16.0; leash_range = 36.0; attack_cooldown = 1.4s; }
+}

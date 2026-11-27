@@ -2,16 +2,14 @@ import { defaultLocale, localeRegistry } from '../locales.mjs';
 import { siteMessages } from '../messages.mjs';
 import { absoluteUrl, escapeHtml, githubUrl, pageShell } from './shell.mjs';
 
-const CREATURE_ORDER = { fox: 0, goblin: 1, griffin: 2 };
+const CREATURE_ORDER = { red_fox: 0, goblin_raider: 1, griffin_boss: 2 };
 
 const MOSAIC_ASSETS = [
   '/media/catalog/iron-sword.png',
-  '/media/catalog/crystal-sword.png',
   '/media/catalog/ruby-potion.png',
-  '/media/catalog/blue-potion.png',
-  '/media/catalog/golden-apple.png',
-  '/media/catalog/amethyst.png',
-  '/media/catalog/mossy-stone.png',
+  '/media/catalog/oak-planks.png',
+  '/media/catalog/iron-sword.png',
+  '/media/catalog/ruby-potion.png',
   '/media/catalog/oak-planks.png',
 ];
 
@@ -66,9 +64,9 @@ const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-outpu
             </div>
             <div class="diff-stage-controls" data-diff-3d-controls>
               <div class="segmented-strip" role="group" aria-label="${t('modelControls')}">${[
-                ['look_around', t('lookAround')],
+                ['idle', t('lookAround')],
                 ['wing_display', t('spreadWings')],
-                ['greeting', t('greet')],
+                ['wing_flap', t('greet')],
               ]
                 .map(
                   ([id, label]) =>
@@ -85,16 +83,16 @@ const renderDiffOutput = (t, assets, griffin) => `        <div class="diff-outpu
             </div>
             <div class="diff-2d-meta">
               <img class="diff-2d-native" data-diff-native src="/media/catalog/iron-sword.png" width="32" height="32" alt="">
-              <span data-diff-2d-label>32×32 PNG · shared.steel</span>
+              <span data-diff-2d-label>32×32 PNG · weapon.steel</span>
             </div>
           </div>
           <div class="diff-stage-sfx" data-diff-pane="sfx" hidden>
-            <img class="diff-sfx-wave" data-diff-wave src="/media/catalog/bird-call.svg" width="480" height="160" alt="${t('waveAlt')}">
+            <img class="diff-sfx-wave" data-diff-wave src="/media/catalog/claw-hit.svg" width="480" height="160" alt="${t('waveAlt')}">
             <div class="diff-sfx-controls">
               <button type="button" class="button button-primary" data-diff-play>▶ ${t('playSound')}</button>
-              <span class="workbench-path" data-diff-sfx-label>bird_call · seed = 7349</span>
+              <span class="workbench-path" data-diff-sfx-label>claw_hit · seed = 42</span>
             </div>
-            <audio data-diff-audio preload="none" src="/media/catalog/bird-call.wav" hidden></audio>
+            <audio data-diff-audio preload="none" src="/media/catalog/claw-hit.wav" hidden></audio>
           </div>
         </div>`;
 
@@ -102,7 +100,7 @@ const renderDiffStatusBar = (t, locale) => `      <div class="workbench-statusba
         <span data-model-status role="status">${t('modelStatus')}</span>
         <div class="world-index">
           <a data-diff-studio-link href="${locale.prefix}/assets/?asset=griffin">${t('openInStudio')} →</a>
-          <a data-diff-source-link href="/examples/griffin/workbench/main.ashfox">${t('exploreSource')}</a>
+          <a data-diff-source-link href="/showcase/assets/models/griffin_boss.ashfox">${t('exploreSource')}</a>
           <a data-diff-download-link href="/media/catalog/griffin.glb" download>${t('downloadModel')}</a>
         </div>
       </div>`;
@@ -120,7 +118,7 @@ const renderLiveDiffStage = (t, locale, assets, griffin) => `
           <button type="button" data-diff-domain="2d" aria-pressed="false">${t('diffTab2d')}</button>
           <button type="button" data-diff-domain="sfx" aria-pressed="false">${t('diffTabSfx')}</button>
         </div>
-        <span class="workbench-path" data-diff-filepath>examples/griffin/workbench/main.ashfox</span>
+        <span class="workbench-path" data-diff-filepath>showcase/assets/models/griffin_boss.ashfox</span>
       </div>
       <div class="diff-split">
 ${renderDiffEditor(t)}
@@ -135,14 +133,14 @@ const renderCreatureShowcase = (t, locale, showcase) => {
     (a, b) => (CREATURE_ORDER[a.entryName] ?? 9) - (CREATURE_ORDER[b.entryName] ?? 9),
   );
   const labels = {
-    griffin: [t('griffin'), 'griffin/workbench/main.ashfox'],
-    fox: [t('fox'), 'fox/creatures/fox.ashfox'],
-    goblin: [t('goblin'), 'goblin/creatures/goblin.ashfox'],
+    griffin_boss: [t('griffin'), 'assets/models/griffin_boss.ashfox'],
+    red_fox: [t('fox'), 'assets/models/red_fox.ashfox'],
+    goblin_raider: [t('goblin'), 'assets/models/goblin_raider.ashfox'],
   };
   const cards = ordered
     .map((entry, idx) => {
       const [name, source] = labels[entry.entryName];
-      return `<article class="creature-card" data-reveal style="--reveal-delay:${idx * 70}ms"><div class="creature-stage"><img class="specimen-poster" src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"></div><div class="creature-foot"><h3>${name}</h3><div class="col-footer"><a href="${githubUrl}/blob/main/examples/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog">▶ ${t('watchReplay')}</a></div></div></article>`;
+      return `<article class="creature-card" data-reveal style="--reveal-delay:${idx * 70}ms"><div class="creature-stage"><img class="specimen-poster" src="${entry.posterSrc}" alt="${name}" width="640" height="360" loading="lazy"></div><div class="creature-foot"><h3>${name}</h3><div class="col-footer"><a href="${githubUrl}/blob/main/showcase/${source}">${t('exploreSource')}</a><a href="${entry.glbHref}" download>${t('downloadGlb')}</a><a href="${entry.replayVideoSrc}" data-replay data-replay-name="${name}" data-replay-poster="${entry.posterSrc}" aria-haspopup="dialog">▶ ${t('watchReplay')}</a></div></div></article>`;
     })
     .join('');
 
@@ -162,7 +160,7 @@ const renderCreatureShowcase = (t, locale, showcase) => {
       <a class="studio-handoff-card" href="${locale.prefix}/assets/" data-reveal style="--reveal-delay:210ms">
         <div class="handoff-mosaic" aria-hidden="true">
           <div class="mosaic-grid">${mosaicCells}</div>
-          <img class="mosaic-wave" src="/media/catalog/bird-call.svg" width="480" height="160" loading="lazy" alt="">
+          <img class="mosaic-wave" src="/media/catalog/claw-hit.svg" width="480" height="160" loading="lazy" alt="">
         </div>
         <div class="handoff-body">
           <div>

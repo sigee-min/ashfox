@@ -1,0 +1,23 @@
+ashfox 1
+module aura {
+  export palette HealingMist {
+    core = #e8ffed;
+    mid = #6ee398;
+    edge = #2b8a57;
+    smoke = #22382f;
+  }
+
+  export palette FrostHalo {
+    core = #ebffff;
+    mid = #70d9eb;
+    edge = #316aa3;
+    smoke = #223045;
+  }
+
+  export palette WardGold {
+    core = #fff7d6;
+    mid = #f0bf4d;
+    edge = #9e651c;
+    smoke = #382e24;
+  }
+}

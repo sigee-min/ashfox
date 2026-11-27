@@ -7,10 +7,24 @@ import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(__dirname, '../../../..');
 const cli = path.join(__dirname, '../../dist/ashfox.cjs');
-const foxEntry = path.join(root, 'examples/fox/creatures/fox.ashfox');
-const lanternEntry = path.join(root, 'examples/prop/lantern.ashfox');
-const spriteEntry = path.join(root, 'examples/items/assets/sprites/apple.ashfox');
-const soundEntry = path.join(root, 'examples/sounds/assets/sounds/claw_hit.ashfox');
+const stageTmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-audit-')));
+const foxEntry = path.join(stageTmp, 'red_fox.ashfox');
+fs.writeFileSync(
+  foxEntry,
+  fs
+    .readFileSync(path.join(root, 'showcase/assets/models/red_fox.ashfox'), 'utf8')
+    .replace('"fox_fur/fur"', '"./fox_fur.ashfox"'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/module/fox/fox_fur.ashfox'),
+  path.join(stageTmp, 'fox_fur.ashfox'),
+);
+const lanternEntry = path.join(stageTmp, 'wall_lantern.ashfox');
+fs.copyFileSync(path.join(root, 'showcase/assets/models/wall_lantern.ashfox'), lanternEntry);
+const spriteEntry = path.join(stageTmp, 'iron_sword.ashfox');
+fs.copyFileSync(path.join(root, 'showcase/assets/sprites/iron_sword.ashfox'), spriteEntry);
+const soundEntry = path.join(stageTmp, 'claw_hit.ashfox');
+fs.copyFileSync(path.join(root, 'showcase/assets/sounds/claw_hit.ashfox'), soundEntry);
 
 const run = (args: string[], opts?: string | { cwd?: string; input?: string }) =>
   spawnSync(process.execPath, [cli, ...args], {
@@ -25,7 +39,16 @@ async function main() {
   const doctor = run(['doctor', '--json']);
   assert.equal(doctor.status, 0, doctor.stderr);
   const doctorJson = JSON.parse(doctor.stdout).result;
-  assert.deepEqual(doctorJson.commands, ['init', 'doctor', 'check', 'render', 'build', 'dev']);
+  assert.deepEqual(doctorJson.commands, [
+    'init',
+    'doctor',
+    'check',
+    'render',
+    'build',
+    'dev',
+    'library',
+    'docs',
+  ]);
   assert.ok(doctorJson.outputs.includes('glb'));
 
   const checked = run(['check', foxEntry]);
@@ -51,14 +74,31 @@ async function main() {
 
   const spriteInputJson = JSON.stringify({
     name: 'sprites/apple.ashfox',
-    source: fs
-      .readFileSync(spriteEntry, 'utf8')
-      .replace('profile = item;', 'preview inspect { sheet = inspect; }\n  profile = item;'),
+    source: `ashfox 1
+sprite apple {
+  import "../module/shared.ashfox" as shared;
+  preview inspect { sheet = inspect; }
+  profile = item;
+  canvas = (32px, 32px);
+  palette { bark = #734b34; glint = #fff5e6; }
+  ellipse body {
+    cx = 16px; cy = 18px; rx = 9px; ry = 8px;
+    material = shared.red_skin;
+    shade { form = round; light = top_left; contrast = 2; specular = 1; }
+    grain soft { amount = 1; seed = 23; }
+  }
+  stamp stem_top { stamp = shared.stem; at = (15px, 7px); flip = none; colors { s = bark; } }
+  paint shine { at = (11px, 13px); rows = ["gg", "g."]; colors { g = glint; } }
+  outline rim { mode = sel_out; strength = 2; inner_rim = true; }
+}
+`,
     files: {
-      'module/shared.ashfox': fs.readFileSync(
-        path.join(root, 'examples/items/assets/module/shared.ashfox'),
-        'utf8',
-      ),
+      'module/shared.ashfox': `ashfox 1
+module shared {
+  export material red_skin { ramp { mode = auto; base = #c94040; preset = organic; } }
+  export stamp stem { rows = ["ss", ".s"]; slots = ["s"]; }
+}
+`,
     },
   });
   const spritePass = run(['check', '--input-json'], { input: spriteInputJson });
@@ -66,9 +106,9 @@ async function main() {
   assert.equal(JSON.parse(spritePass.stdout).result.audit.passed, true);
 
   const soundWithPreview = fs
-    .readFileSync(soundEntry, 'utf8')
-    .replace('profile = impact;', 'preview inspect { sheet = inspect; }\n  profile = impact;');
-  const soundPass = run(['check', '--stdin', '--name', 'claw_hit.ashfox'], {
+    .readFileSync(path.join(root, 'showcase/assets/sounds/griffin_call.ashfox'), 'utf8')
+    .replace('profile = creature;', 'preview inspect { sheet = inspect; }\n  profile = creature;');
+  const soundPass = run(['check', '--stdin', '--name', 'griffin_call.ashfox'], {
     input: soundWithPreview,
   });
   assert.equal(soundPass.status, 0, soundPass.stdout + soundPass.stderr);
@@ -90,7 +130,7 @@ async function main() {
           'render',
           '--stdin',
           '--name',
-          'claw_hit.ashfox',
+          'griffin_call.ashfox',
           '--view',
           'inspect',
           '--output',
@@ -225,7 +265,9 @@ function verifyDeliveryGates() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .finally(() => fs.rmSync(stageTmp, { recursive: true, force: true }))
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

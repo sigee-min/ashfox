@@ -40,7 +40,8 @@ unit per source file. Start every file with `ashfox 1`.
 
 ### Imports and names
 
-Imports use a quoted path and a local alias. A declaration from an imported
+Imports use a quoted relative path (`"./animation.ashfox"`) or built-in standard-library
+path (`"std/model/rig/biped"`) and a local alias. A declaration from an imported
 file is written as `alias.name`; a declaration in the same unit uses its local
 name.
 
@@ -124,14 +125,20 @@ Geometry nodes may be nested as follows:
 | `bone` | none | `position`, `rotation`, `pivot`, `visible` |
 | `cube` | `origin`, `size`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `inflate`, `mirror`, `mirror_x` |
 | `plane` | `origin`, `size`, `u_axis`, `v_axis`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `taper` | `origin`, `size`, `top_scale`, `axis`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `wedge` | `origin`, `size`, `slope`, one surface chart | `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `cylinder` | `origin`, `radius`, `height`, `sides` (`6\|8\|12`), `axis`, one surface chart | `radius_top`, `position`, `rotation`, `pivot`, `visible`, `mirror_x` |
+| `expression_slot` | `origin`, `size`, `u_axis`, `v_axis`, `neutral` + named variant flat charts | `position`, `rotation`, `pivot`, `visible` |
 | `locator` | none | `position`, `rotation`, `visible` |
 | `face` inside a cube | none | `enabled`, `rotation` |
 
-Bones can contain bones, cubes, planes, and locators. Cubes can contain face
+Bones can contain bones, cubes, planes, tapers, wedges, cylinders, expression slots, and locators. Cubes can contain face
 blocks named `north`, `south`, `east`, `west`, `up`, or `down`. A face rotation
-is one of `0`, `90`, `180`, or `270`. Giving a `cube` or `plane` `mirror_x = <id>;`
+is one of `0`, `90`, `180`, or `270`. Giving a `cube`, `plane`, `taper`, `wedge`, or `cylinder` `mirror_x = <id>;`
 synthesizes a sibling mirrored across `x = 0` with flipped `rotation.y`/`rotation.z`,
 mirrored UV orientation, and swapped `east`/`west` face overrides.
+`taper`, `wedge`, and `cylinder` export cleanly to glTF/GLB (`LOD0`/`LOD1`/`LOD2`) and fail closed on Minecraft block/actor targets (`java_block`/`bedrock`/`geckolib5`).
+An `expression_slot` lowers variant quads at a `0.02u` surface offset sharing the single atlas (0 extra draw calls) and switches via `motion` `expression <slot> { at 0.00s = neutral; at 1.45s..1.58s = blink; }` tracks baked into glTF `STEP` `scale` keyframes.
 
 `cube` sizes and `plane` sizes must be positive. A plane's `size` is a two
 component unit vector and its `u_axis` and `v_axis` are distinct signed unit
@@ -269,7 +276,7 @@ Position keys use `vec3<unit>` offsets, rotation keys use `vec3<degree>` values
 (baked with quaternion-native SLERP interpolation), and scale keys use positive
 `vec3<ratio>` values such as `(1, 1, 1)`; the target rig joint must allow the
 corresponding channel. Motions also support `wave`, `pose`, `at ... pose`,
-`layer`, `ik` (`foot_lock`), `secondary` (`chain`/`joint`), combat operations
+`layer`, `expression` (facial slot timelines), `ik` (`foot_lock`), `secondary` (`chain`/`joint`), combat operations
 (`squash`, `smear`, `hitstop`, `recoil`), and `cue` (`sound`, `vfx`, `event`).
 
 ## 6. Assembly
@@ -294,7 +301,9 @@ model fox {
 
 `density` is currently `16`; `forward` is `north`, `south`, `east`, or
 `west`. The optional `profile` (`creature`, `prop`, or `block`) declares the
-asset quality audit rubric weighting used by `ashfox check`.
+asset quality audit rubric weighting used by `ashfox check` and automatically fits
+physics `colliders` (`capsule` + root AABB for `creature`, tight `box` colliders
+for `prop`/`block`) emitted into `.hooks.json`, `assets.json`, and `--bindings`.
 A `use` creates a named component instance and binds every required
 port. The `skeleton` property names the concrete implementation.
 The `use` block's rig-port binding names the matching rig contract. A model may select

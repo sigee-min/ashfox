@@ -283,8 +283,37 @@ export {
 export const compileDirectoryWorkspace = (
   configuration: string,
   files: readonly DirectoryFile[],
+  virtualLibraries?: ReadonlyMap<string, string>,
 ): DirectoryCompilation =>
-  compileDirectoryWorkspaceWithAudit(configuration, files, evaluateStructureQuality);
+  compileDirectoryWorkspaceWithAudit(
+    configuration,
+    files,
+    evaluateStructureQuality,
+    true,
+    virtualLibraries,
+  );
+export {
+  STD_LIBRARY_PREFIX,
+  STD_LOGICAL_ROOT,
+  buildStdPackageEntry,
+  describeVirtualModule,
+  extractSourceImports,
+  filterVirtualLibraries,
+  isStdLibraryLogicalPath,
+  isVirtualLibrarySpecifier,
+  listVirtualLibraries,
+  mergeVirtualLibraryFiles,
+  resolveImportPath,
+  resolveSourceImport,
+  virtualLibraryLogicalPath,
+  virtualLibrarySpecifierFromPath,
+  type VirtualFileLookup,
+  type VirtualLibraryDescriptor,
+  type VirtualLibraryDomain,
+  type VirtualModuleDescription,
+  type VirtualModuleExport,
+  type VirtualModuleParam,
+} from './project/stdlib';
 export type {
   DirectoryExport,
   DirectoryWorkspace,

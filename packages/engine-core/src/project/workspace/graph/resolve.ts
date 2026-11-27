@@ -2,6 +2,7 @@ import { errorDiagnostic, type WorkspaceDiagnostic } from '../diagnostic';
 import type { WorkspaceParsedImport } from '../contract';
 import { type NodeRef, type PackageIndex } from './contract';
 import { normalizeLogicalPath } from '../path';
+import { isVirtualLibrarySpecifier } from '../../stdlib/resolve';
 
 interface PackageSpecifier {
   readonly packageName: string;
@@ -86,7 +87,11 @@ const resolvePackageImport = (
       `Package import must name an exposed module subpath: ${record.specifier}.`,
       record.source,
     );
-  if (!importer.view.manifest.dependencies.some((item) => item.name === parsed.packageName)) {
+  const isVirtualStd = isVirtualLibrarySpecifier(record.specifier) && indexes.has('std');
+  if (
+    !isVirtualStd &&
+    !importer.view.manifest.dependencies.some((item) => item.name === parsed.packageName)
+  ) {
     return errorDiagnostic(
       'workspace.import.undeclared_dependency',
       `Package ${importer.view.name} does not declare dependency ${parsed.packageName}.`,

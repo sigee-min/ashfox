@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Product oracle: compiles every repository example in memory and compares
- * the resulting product and artifact digests with a committed baseline.
- * A behavior-preserving change must leave every digest unchanged.
+ * Product oracle: compiles the repository showcase workspace and standard library
+ * in memory, comparing domain-split digests against committed baselines under
+ * scripts/quality/products-baseline/{models,sprites,vfx,sounds,structures,std}.json.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,16 +11,16 @@ const { register } = require('ts-node');
 const { compareText, readJson, sha256 } = require('../shared');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const BASELINE_PATH = path.join(__dirname, 'products-baseline.json');
-const TOOLCHAIN = 'ashfox-product-oracle:1';
-const STANDALONE_SOURCES = Object.freeze([
-  'examples/block/rune_bricks.ashfox',
-  'examples/fox/creatures/fox.ashfox',
-  'examples/goblin/creatures/goblin.ashfox',
-  'examples/griffin/workbench/main.ashfox',
-  'examples/prop/lantern.ashfox',
-  'examples/prop/treasure_chest/chest.ashfox',
-]);
+const BASELINE_DIR = path.join(__dirname, 'products-baseline');
+const TOOLCHAIN = 'ashfox-product-oracle:2';
+const DOMAINS = Object.freeze(['models', 'sprites', 'vfx', 'sounds', 'structures', 'std']);
+const KIND_TO_DOMAIN = Object.freeze({
+  model: 'models',
+  sprite: 'sprites',
+  vfx: 'vfx',
+  sound: 'sounds',
+  structure: 'structures',
+});
 
 const canonical = (value) => {
   if (value instanceof Uint8Array) return { bytes: sha256(value) };
@@ -43,14 +43,23 @@ const identityEncoder = Object.freeze({
   encode: async (wav) => Uint8Array.from(wav),
 });
 
-const exampleInputs = (root = ROOT) => {
-  const examples = path.join(root, 'examples');
-  const workspaces = fs
-    .readdirSync(examples, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => path.posix.join('examples', entry.name, '.ashfoxworkspace'))
-    .filter((relative) => fs.existsSync(path.join(root, relative)));
-  return [...workspaces, ...STANDALONE_SOURCES].sort();
+const domainBaselinePath = (domain, dir = BASELINE_DIR) => path.join(dir, `${domain}.json`);
+
+const showcaseInputs = (root = ROOT) => {
+  const ws = path.join(root, 'showcase', '.ashfoxworkspace');
+  return fs.existsSync(ws) ? ['showcase/.ashfoxworkspace'] : [];
+};
+
+const walkAshfoxFiles = (dir, rel = '', out = []) => {
+  for (const entry of fs
+    .readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => compareText(a.name, b.name))) {
+    const nextRel = rel ? `${rel}/${entry.name}` : entry.name;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkAshfoxFiles(full, nextRel, out);
+    else if (entry.isFile() && entry.name.endsWith('.ashfox')) out.push(nextRel);
+  }
+  return out;
 };
 
 const productDigest = (product) => {
@@ -74,38 +83,118 @@ const productDigest = (product) => {
     };
   }
   if (product.kind === 'vfx') {
-    return {
-      entry,
-      kind: product.kind,
-      glb: sha256(product.glb),
-      spec: digestValue(product.spec),
-    };
+    return { entry, kind: product.kind, glb: sha256(product.glb), spec: digestValue(product.spec) };
   }
   return { entry, kind: product.kind, sha256: digestValue(product.model) };
 };
 
-const describeInput = async (relative, build) => {
-  try {
-    const snapshot = build.readSnapshot(path.join(ROOT, relative));
-    const checked = build.checkSnapshot(snapshot);
-    const bundle = await build.compileBundle(snapshot, TOOLCHAIN, identityEncoder, checked);
-    return {
-      input: relative,
-      ok: true,
-      sourceHash: checked.sourceHash,
-      products: checked.products.map(productDigest).sort((a, b) => compareText(a.entry, b.entry)),
-      catalogHash: bundle.receipt.catalogHash,
-      files: bundle.receipt.files.map((file) => ({ path: file.path, sha256: file.sha256 })),
-    };
-  } catch (error) {
-    return { input: relative, ok: false, code: error && error.code ? error.code : 'unknown' };
+const exportDomainMap = (config, products) => {
+  const entryKind = new Map(
+    products.map((p) => [`${p.entry.packageName}/${p.entry.entryName}`, KIND_TO_DOMAIN[p.kind]]),
+  );
+  const map = new Map();
+  for (const exp of config.exports || []) {
+    const key = `${exp.entry.packageName}/${exp.entry.entryName}`;
+    const domain = entryKind.get(key);
+    if (domain) map.set(`assets/${exp.name}/`, domain);
   }
+  return map;
 };
 
-const collect = async (build) => {
-  const results = [];
-  for (const input of exampleInputs()) results.push(await describeInput(input, build));
-  return { format: 'ashfox-product-oracle', version: 1, toolchain: TOOLCHAIN, inputs: results };
+const classifyReceiptFile = (filePath, exportMap) => {
+  for (const [prefix, domain] of exportMap) {
+    if (filePath.startsWith(prefix)) return domain;
+  }
+  return 'structures';
+};
+
+const buildShowcaseDomainReports = async (build) => {
+  const input = 'showcase/.ashfoxworkspace';
+  const snapshot = build.readSnapshot(path.join(ROOT, input));
+  const checked = build.checkSnapshot(snapshot);
+  const bundle = await build.compileBundle(snapshot, TOOLCHAIN, identityEncoder, checked);
+  const exportMap = exportDomainMap(snapshot.config, checked.products);
+  const byDomain = Object.fromEntries(
+    ['models', 'sprites', 'vfx', 'sounds', 'structures'].map((d) => [
+      d,
+      { products: [], files: [] },
+    ]),
+  );
+  for (const product of checked.products) {
+    const domain = KIND_TO_DOMAIN[product.kind];
+    if (domain) byDomain[domain].products.push(productDigest(product));
+  }
+  for (const file of bundle.receipt.files) {
+    const domain = classifyReceiptFile(file.path, exportMap);
+    byDomain[domain].files.push({ path: file.path, sha256: file.sha256 });
+  }
+  return Object.fromEntries(
+    Object.entries(byDomain).map(([domain, bucket]) => [
+      domain,
+      {
+        format: 'ashfox-product-oracle',
+        version: 1,
+        domain,
+        toolchain: TOOLCHAIN,
+        inputs: [
+          {
+            input,
+            ok: true,
+            sourceHash: checked.sourceHash,
+            ...(domain === 'structures' ? { catalogHash: bundle.receipt.catalogHash } : {}),
+            products: bucket.products.sort((a, b) => compareText(a.entry, b.entry)),
+            files: bucket.files.sort((a, b) => compareText(a.path, b.path)),
+          },
+        ],
+      },
+    ]),
+  );
+};
+
+const buildStdDomainReport = (engine) => {
+  const stdDir = path.join(ROOT, 'library', 'std');
+  const relFiles = walkAshfoxFiles(stdDir);
+  const virtualLibs = new Map();
+  const modules = [];
+  const modInputs = [];
+  for (const rel of relFiles) {
+    const logicalPath = `library/std/${rel}`;
+    const source = fs.readFileSync(path.join(stdDir, rel), 'utf8');
+    const spec = engine.virtualLibrarySpecifierFromPath(logicalPath);
+    if (!spec) throw new Error(`Non-canonical stdlib path: ${logicalPath}`);
+    virtualLibs.set(spec, source);
+    modInputs.push({ path: logicalPath, source });
+    const desc = engine.describeVirtualModule(spec, source);
+    modules.push({
+      path: logicalPath,
+      specifier: spec,
+      sha256: sha256(source),
+      exports: desc.exports.map((e) => e.name).sort(compareText),
+      imports: [...desc.imports].sort(compareText),
+      params: desc.params.map((p) => p.name).sort(compareText),
+    });
+  }
+  const modResult = engine.checkWorkspaceModularity(modInputs);
+  if (!modResult.ok) throw new Error('std modularity check failed');
+  return {
+    format: 'ashfox-product-oracle',
+    version: 1,
+    domain: 'std',
+    toolchain: TOOLCHAIN,
+    inputs: [
+      {
+        input: 'library/std',
+        ok: true,
+        sourceHash: digestValue(modules.map((m) => [m.path, m.sha256])),
+        modules,
+      },
+    ],
+  };
+};
+
+const collectAllDomains = async (build, engine) => {
+  const showcase = await buildShowcaseDomainReports(build);
+  return { ...showcase, std: buildStdDomainReport(engine) };
 };
 
 /** Returns human-readable differences between two oracle reports. */
@@ -139,22 +228,30 @@ const main = async () => {
     compilerOptions: { module: 'CommonJS', moduleResolution: 'Node' },
   });
   const build = require('@ashfox/asset-build');
-  const report = await collect(build);
-  const text = JSON.stringify(report, null, 2) + '\n';
+  const engine = require('@ashfox/engine-core');
+  const reports = await collectAllDomains(build, engine);
   if (process.argv.includes('--write')) {
-    fs.writeFileSync(BASELINE_PATH, text);
-    console.log(`ashfox product oracle sealed: ${report.inputs.length} inputs`);
+    fs.mkdirSync(BASELINE_DIR, { recursive: true });
+    for (const domain of DOMAINS) {
+      fs.writeFileSync(domainBaselinePath(domain), JSON.stringify(reports[domain], null, 2) + '\n');
+    }
+    console.log(`ashfox product oracle sealed: ${DOMAINS.length} domains`);
     return;
   }
-  const differences = compareReports(readJson(BASELINE_PATH), report);
-  if (differences.length) {
+  const allDiffs = [];
+  for (const domain of DOMAINS) {
+    const file = domainBaselinePath(domain);
+    const diffs = compareReports(readJson(file), reports[domain]);
+    for (const diff of diffs) allDiffs.push(`[${domain}] ${diff}`);
+  }
+  if (allDiffs.length) {
     console.error('ashfox product oracle failed. Differences:');
-    for (const difference of differences) console.error(`- ${difference}`);
+    for (const difference of allDiffs) console.error(`- ${difference}`);
     console.error('Reseal with `npm run quality:products:seal` only for intended output changes.');
     process.exitCode = 1;
     return;
   }
-  console.log(`ashfox product oracle ok: ${report.inputs.length} inputs unchanged`);
+  console.log(`ashfox product oracle ok: ${DOMAINS.length} domains unchanged`);
 };
 
 if (require.main === module) {
@@ -164,4 +261,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = Object.freeze({ canonical, compareReports, exampleInputs });
+module.exports = Object.freeze({
+  DOMAINS,
+  canonical,
+  compareReports,
+  domainBaselinePath,
+  showcaseInputs,
+});

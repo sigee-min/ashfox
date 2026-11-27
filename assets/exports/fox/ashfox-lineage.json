@@ -4,31 +4,32 @@
     "id": "gltf.2",
     "version": "2.0"
   },
-  "projectId": "example-fox",
-  "revision": "example-0001",
+  "projectId": "showcase-fox",
+  "revision": "showcase-0001",
   "rootPath": "gltf",
   "entrypoints": [
     "fox.glb"
   ],
-  "packageName": "creatures",
-  "entryName": "fox",
-  "entryPath": "creatures/fox.ashfox",
-  "workspaceHash": "sha256:a77baad0b103a9b8f8e59fbc3aef242af300c680e1e60e559d2282740b9e8de3",
-  "closureHash": "sha256:94f3be65671a6fde7fba887fb60442c12e7facc802b9c2f401d486d6af2a3e13",
-  "buildKey": "sha256:f304e90fcfe340557b8ac207833099610647bac7a96112b37ff362518805e8f9",
+  "packageName": "models",
+  "entryName": "red_fox",
+  "entryPath": "assets/models/red_fox.ashfox",
+  "workspaceHash": "sha256:b4341995a8dc03f3b85b23df218f67a4e2cc7b856cbbb2697c409725f4ccb4b9",
+  "closureHash": "sha256:74f62ca409c4625f29c007e17f494db452f9671a52a0c885982bf4cdd86ed8ca",
+  "buildKey": "sha256:945ba47641ddbd991f7e0e6c0d2d79226711ae4ae82941565272253af5da9401",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:0ae14c10d936e55f4fa419a29c7fa4a4cc6ced5dec7b9d8a8fab3fd8738f36b3",
+  "productHash": "sha256:855841e6b1c164a9ea5486b8acf4ec17814815430bcc2c6e02fd3535239a3429",
   "textures": [
     {
-      "id": "red_fox_e2f07af12d3c",
+      "id": "fox_coat_6ca51fed9fad",
       "path": null,
       "coverageIds": [
-        "red_fox_e2f07af12d3c\u0000cheek_tuft",
-        "red_fox_e2f07af12d3c\u0000tail_plume"
+        "fox_coat_6ca51fed9fad\u0000face_alert",
+        "fox_coat_6ca51fed9fad\u0000face_blink",
+        "fox_coat_6ca51fed9fad\u0000face_neutral"
       ],
-      "embeddedSha256": "sha256:cae90bb7f309229393cbf91c1100196d2fa96a16e689b7507138602ab8476096",
-      "pngSha256": "sha256:cae90bb7f309229393cbf91c1100196d2fa96a16e689b7507138602ab8476096",
-      "byteLength": 65737
+      "embeddedSha256": "sha256:616bb7b692f5453e254d43eb068a389d7d7f59ce66614ebae16c34c55658c7c8",
+      "pngSha256": "sha256:616bb7b692f5453e254d43eb068a389d7d7f59ce66614ebae16c34c55658c7c8",
+      "byteLength": 1983
     }
   ],
   "files": [
@@ -37,8 +38,8 @@
       "role": "model",
       "path": "fox.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:4923d09179b5a2545185d02b586273ada052c7574b0dfa3e3f271c12e5b63900",
-      "byteLength": 245672
+      "sha256": "sha256:f71019b4010cb39b57541e02b92f8a25b38c1ef19d8281fc39dcf6506f5f0823",
+      "byteLength": 24324
     }
   ]
 }

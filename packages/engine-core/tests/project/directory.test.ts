@@ -7,9 +7,27 @@ import {
   isDirectorySource,
   compileSpriteDocument,
   parseSpriteSource,
+  virtualLibrarySpecifierFromPath,
 } from '../../src';
 
-const directory = path.resolve(__dirname, '../../../../examples/items');
+const loadStdLibs = (
+  dir = path.resolve(__dirname, '../../../../library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+
+const directory = path.resolve(__dirname, '../../../../showcase');
 const configSource = fs.readFileSync(path.join(directory, '.ashfoxworkspace'), 'utf8');
 const loadAshfox = (dir: string, prefix: string): { path: string; source: string }[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -27,17 +45,18 @@ const loadAshfox = (dir: string, prefix: string): { path: string; source: string
 const files = loadAshfox(path.join(directory, 'assets'), 'assets');
 const config = readDirectoryWorkspace(configSource);
 assert.equal(config.version, 2);
-assert.ok(isDirectorySource(config, 'assets/sprites/apple.ashfox'));
-assert.ok(!isDirectorySource(config, 'assets/drafts/apple.ashfox'));
-assert.ok(!isDirectorySource(config, 'build/apple.ashfox'));
-assert.ok(!isDirectorySource(config, 'exports/apple/apple.ashfox'));
+assert.ok(isDirectorySource(config, 'assets/sprites/iron_sword.ashfox'));
+assert.ok(!isDirectorySource(config, 'assets/drafts/iron_sword.ashfox'));
+assert.ok(!isDirectorySource(config, 'build/iron_sword.ashfox'));
+assert.ok(!isDirectorySource(config, 'exports/iron_sword/iron_sword.ashfox'));
 
-const compiled = compileDirectoryWorkspace(configSource, files);
+const stdLibs = loadStdLibs();
+const compiled = compileDirectoryWorkspace(configSource, files, stdLibs);
 assert.ok(compiled.ok, JSON.stringify(compiled));
 if (!compiled.ok) throw new Error('Expected directory compilation');
-assert.equal(compiled.products.length, 12);
-const appleProduct = compiled.products.find((x) => x.entry.entryName === 'apple')!;
-assert.equal(appleProduct.kind, 'sprite');
+assert.equal(compiled.products.length, 22);
+const swordProduct = compiled.products.find((x) => x.entry.entryName === 'iron_sword')!;
+assert.equal(swordProduct.kind, 'sprite');
 
 const sharedSource = `ashfox 1
 module shared {
@@ -149,30 +168,35 @@ if (parityCompiled.ok && parityCompiled.products[0]!.kind === 'sprite') {
     assert.deepEqual(parityCompiled.products[0]!.sprite.png, standalone.products[0]!.png);
 }
 
-const repeat = compileDirectoryWorkspace(configSource, [...files].reverse());
+const repeat = compileDirectoryWorkspace(configSource, [...files].reverse(), stdLibs);
 assert.ok(repeat.ok);
 if (repeat.ok) assert.equal(repeat.buildKey, compiled.buildKey);
-assert.equal(compileDirectoryWorkspace(configSource, files.slice(1)).ok, false);
+assert.equal(compileDirectoryWorkspace(configSource, files.slice(1), stdLibs).ok, false);
 assert.equal(
-  compileDirectoryWorkspace(configSource, [
-    ...files,
-    { path: 'assets/sprites/extra.ashfox', source: files[0]!.source },
-  ]).ok,
+  compileDirectoryWorkspace(
+    configSource,
+    [...files, { path: 'assets/sprites/extra.ashfox', source: files[0]!.source }],
+    stdLibs,
+  ).ok,
   false,
 );
 const changed = JSON.parse(configSource);
-changed.ignore = ['assets/sprites/apple.ashfox'];
+changed.ignore = ['assets/sprites/iron_sword.ashfox'];
 assert.throws(() => readDirectoryWorkspace(JSON.stringify(changed)), /included/);
 changed.ignore = [];
 changed.build.directory = '../outside';
 assert.throws(() => readDirectoryWorkspace(JSON.stringify(changed)), /directory/);
-changed.build.directory = 'exports';
+changed.build.directory = 'dist/exports';
+changed.exports.forEach((e: { directory: string }) => {
+  e.directory = 'dist/exports';
+});
 assert.throws(() => readDirectoryWorkspace(JSON.stringify(changed)), /disjoint/);
 changed.build.directory = '.ashfoxworkspace';
 assert.throws(() => readDirectoryWorkspace(JSON.stringify(changed)), /disjoint/);
-changed.build.directory = 'build';
-changed.exports[0].format = 'glb';
-assert.equal(compileDirectoryWorkspace(JSON.stringify(changed), files).ok, false);
+changed.build.directory = 'dist/build';
+changed.exports = [{ ...changed.exports[0], format: 'png' }];
+changed.packs = [];
+assert.equal(compileDirectoryWorkspace(JSON.stringify(changed), files, stdLibs).ok, false);
 assert.throws(
   () => readDirectoryWorkspace(configSource.replace('"version": 2', '"version": 2, "version": 2')),
   /unique keys/,
@@ -181,95 +205,83 @@ assert.throws(
   () => readDirectoryWorkspace(configSource.replace('"version": 2', '"version": 1')),
   /version 2/,
 );
-const apple = files.find((f) => f.path === 'assets/sprites/apple.ashfox')!;
+const sword = files.find((f) => f.path === 'assets/sprites/iron_sword.ashfox')!;
 const invalid = files.map((f) =>
-  f === apple
-    ? { ...f, source: f.source.replace('../module/shared.ashfox', '../../outside.ashfox') }
+  f === sword
+    ? { ...f, source: f.source.replace('"std/sprite/item/weapon"', '"../../outside.ashfox"') }
     : f,
 );
-assert.equal(compileDirectoryWorkspace(configSource, invalid).ok, false);
-assert.throws(() => parseSpriteSource('\uFEFF' + apple.source, apple.path), /BOM/);
-assert.throws(() => parseSpriteSource(apple.source + '\uD800', apple.path), /surrogate/);
+assert.equal(compileDirectoryWorkspace(configSource, invalid, stdLibs).ok, false);
+assert.throws(() => parseSpriteSource('\uFEFF' + sword.source, sword.path), /BOM/);
+assert.throws(() => parseSpriteSource(sword.source + '\uD800', sword.path), /surrogate/);
 const badUnit = appleSource.replace('seed = 23;', 'seed = 23px;');
-assert.throws(() => parseSpriteSource(badUnit, apple.path), /unitless/);
+assert.throws(() => parseSpriteSource(badUnit, sword.path), /unitless/);
 assert.throws(() => parseSpriteSource(JSON.stringify({ id: 'apple' }), 'apple.ashfox'), /ashfox 1/);
 
 const cyclic = files.map((f) =>
-  f.path === 'assets/module/shared.ashfox'
+  f.path === 'assets/module/goblin/goblin_kit.ashfox'
     ? {
         ...f,
         source: f.source.replace(
-          'module shared {',
-          'module shared { import "./shared.ashfox" as loop;',
+          'module goblin_kit {',
+          'module goblin_kit { import "./goblin_kit.ashfox" as loop;',
         ),
       }
     : f,
 );
-assert.equal(compileDirectoryWorkspace(configSource, cyclic).ok, false);
+assert.equal(compileDirectoryWorkspace(configSource, cyclic, stdLibs).ok, false);
 
-// Mixed model + sprite workspace compiles together.
-const foxWs = JSON.parse(
-  fs.readFileSync(
-    path.resolve(__dirname, '../../../../assets/workspaces/fox.ashfoxworkspace'),
-    'utf8',
-  ),
-);
-const modelFiles = (foxWs.files as { path: string; source: string }[]).map((f) => ({
-  ...f,
-  path: `assets/models/${f.path}`,
-}));
-const modelPackages = foxWs.manifest.packages.map(
-  (p: { root: string; manifest: unknown; name: string }) => ({
-    ...p,
-    root: `assets/models/${p.root}`,
-  }),
-);
-const mixed = {
-  ...config,
-  packages: [...config.packages, ...modelPackages],
-  include: ['assets/**/*.ashfox'],
-  exports: [
-    ...config.exports,
-    {
-      name: 'fox_model',
-      entry: { packageName: 'creatures', entryName: 'fox' },
-      format: 'glb',
-      directory: 'exports/fox',
-    },
-  ],
-};
-const mixedResult = compileDirectoryWorkspace(JSON.stringify(mixed), [...files, ...modelFiles]);
-assert.ok(mixedResult.ok, JSON.stringify(mixedResult));
-if (mixedResult.ok) {
-  assert.equal(mixedResult.products.length, 13);
-  assert.equal(mixedResult.products.filter((x) => x.kind === 'model').length, 1);
-}
+// Mixed model + sprite workspace compiles together and fails closed on broken/orphaned entries.
+assert.equal(compiled.products.length, 22);
+assert.equal(compiled.products.filter((x) => x.kind === 'model').length, 7);
+assert.equal(compiled.products.filter((x) => x.kind === 'sprite').length, 3);
 console.log(
   'directory workspace: Sprite v2 parity, mixed model/sprite, root exclusions and fail-closed contracts ok',
 );
 
-const unexported = structuredClone(mixed);
-const modelPackage = unexported.packages.find((p) => p.name === 'creatures')!;
-modelPackage.manifest.entries.push({ name: 'broken', path: 'broken.ashfox' });
+const unexported = {
+  ...config,
+  packages: config.packages.map((p) =>
+    p.name === 'models'
+      ? {
+          ...p,
+          manifest: {
+            ...p.manifest,
+            entries: [...p.manifest.entries, { name: 'broken', path: 'broken.ashfox' }],
+          },
+        }
+      : p,
+  ),
+};
 assert.equal(
-  compileDirectoryWorkspace(JSON.stringify(unexported), [
-    ...files,
-    ...modelFiles,
-    { path: 'assets/models/creatures/broken.ashfox', source: 'ashfox 1\nmodel broken {}' },
-  ]).ok,
+  compileDirectoryWorkspace(
+    JSON.stringify(unexported),
+    [...files, { path: 'assets/models/broken.ashfox', source: 'ashfox 1\nmodel broken {}' }],
+    stdLibs,
+  ).ok,
   false,
   'Collecting compiled products must still reject an invalid entry with no export.',
 );
-const orphaned = structuredClone(mixed);
-orphaned.packages
-  .find((p) => p.name === 'creatures')!
-  .manifest.modules.push({ subpath: './orphan', path: 'orphan.ashfox' });
+const orphaned = {
+  ...config,
+  packages: config.packages.map((p) =>
+    p.name === 'models'
+      ? {
+          ...p,
+          manifest: {
+            ...p.manifest,
+            modules: [...p.manifest.modules, { subpath: './orphan', path: 'orphan.ashfox' }],
+          },
+        }
+      : p,
+  ),
+};
 assert.equal(
-  compileDirectoryWorkspace(JSON.stringify(orphaned), [
-    ...files,
-    ...modelFiles,
-    { path: 'assets/models/creatures/orphan.ashfox', source: 'ashfox 1\nmodule orphan {}' },
-  ]).ok,
+  compileDirectoryWorkspace(
+    JSON.stringify(orphaned),
+    [...files, { path: 'assets/models/orphan.ashfox', source: 'ashfox 1\nmodule orphan {}' }],
+    stdLibs,
+  ).ok,
   false,
   'Reusing compilation must still reject unreachable declared modules.',
 );

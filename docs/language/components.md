@@ -3,7 +3,8 @@
 Components package model geometry with explicit parameters and typed ports.
 An assembly instantiates them with `use`. Contracts are nominal: two contracts
 with identical fields but different declaration identities are not interchangeable.
-Start with the [complete model](model.md#complete-source) for its rig and surface.
+You can import shared rigs and skeletons directly from `"std/model/rig/..."` (`ashfox library std list model/rig`),
+or start from the [complete model](model.md#complete-source) for rig contracts (`joint`, `channels`, `limits`, `chain`, `ik_limb`, `anchor`), skeleton `parent_origin` binds, and surfaces.
 
 ## Parameters
 

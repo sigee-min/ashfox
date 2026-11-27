@@ -10,6 +10,7 @@ import {
   evaluateSpriteQuality,
   evaluateStructureQuality,
   parseSpriteSource,
+  virtualLibrarySpecifierFromPath,
   type CompiledModel,
   type DirectoryFile,
   type ProjectDocument,
@@ -53,11 +54,29 @@ const loadWorkspaceFiles = (dir: string, base = ''): DirectoryFile[] => {
   return out;
 };
 
+const loadStdLibs = (
+  dir = path.join(REPO_ROOT, 'library/std'),
+  rel = '',
+  out = new Map<string, string>(),
+): Map<string, string> => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const next = rel ? `${rel}/${e.name}` : e.name;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) loadStdLibs(full, next, out);
+    else if (e.isFile() && e.name.endsWith('.ashfox')) {
+      const spec = virtualLibrarySpecifierFromPath(`library/std/${next}`);
+      if (spec) out.set(spec, fs.readFileSync(full, 'utf8'));
+    }
+  }
+  return out;
+};
+const STD_LIBS = loadStdLibs();
+
 const compileWorkspaceDir = (relDir: string) => {
   const dir = path.join(REPO_ROOT, relDir);
   const configText = fs.readFileSync(path.join(dir, '.ashfoxworkspace'), 'utf8');
-  const files = loadWorkspaceFiles(dir);
-  const compiled = compileDirectoryWorkspace(configText, files);
+  const files = loadWorkspaceFiles(dir).filter((f) => !f.path.startsWith('.ashfox'));
+  const compiled = compileDirectoryWorkspace(configText, files, STD_LIBS);
   assert.equal(compiled.ok, true, `expected ${relDir} to compile`);
   if (!compiled.ok) throw new Error(`compile failed: ${relDir}`);
   return compiled.products;
@@ -239,7 +258,7 @@ const verifySnapshotLexerAndSprites = (griffin: CompiledModel): void => {
   assert.equal(Object.isFrozen(frozen.a[1]), true);
 
   const griffinMain = fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/griffin/workbench/main.ashfox'),
+    path.join(REPO_ROOT, 'showcase/assets/models/griffin_boss.ashfox'),
     'utf8',
   );
   const lexed = lexProgramSource(griffinMain);
@@ -248,10 +267,10 @@ const verifySnapshotLexerAndSprites = (griffin: CompiledModel): void => {
   const badLex = lexProgramSource('ashfox 1\n/* unclosed');
   assert.ok(badLex.diagnostics.some((d) => d.code === 'program.unclosed-comment'));
 
-  const itemProducts = compileWorkspaceDir('examples/items').filter(
+  const itemProducts = compileWorkspaceDir('showcase').filter(
     (p): p is Extract<typeof p, { kind: 'sprite' }> => p.kind === 'sprite',
   );
-  assert.ok(itemProducts.length >= 12);
+  assert.ok(itemProducts.length >= 3);
   for (const item of itemProducts) {
     const audit = evaluateSpriteQuality(item.sprite);
     assert.equal(audit.passed, true, `${item.entry.entryName} sprite audit`);
@@ -314,7 +333,7 @@ sprite blade {
 };
 
 const verifyStructureAudit = () => {
-  const structs = compileWorkspaceDir('examples/structure').filter(
+  const structs = compileWorkspaceDir('showcase').filter(
     (p): p is Extract<typeof p, { kind: 'structure' }> => p.kind === 'structure',
   );
   for (const p of structs) {
@@ -327,18 +346,18 @@ const verifyStructureAudit = () => {
     assert.deepEqual(rebuiltA.batches, p.structure.bakedMesh.batches);
     assert.deepEqual(rebuiltA.textures, p.structure.bakedMesh.textures);
   }
-  const vc = structs.find((p) => p.entry.entryName === 'village_compound')?.structure;
-  assert.ok(vc !== undefined);
+  const tavern = structs.find((p) => p.entry.entryName === 'tavern')?.structure;
+  assert.ok(tavern !== undefined);
   const report = evaluateStructureQuality(
-    vc.grid,
-    vc.audit.metrics.prefabUses,
-    vc.lighting,
-    vc.bakedMesh,
+    tavern.grid,
+    tavern.audit.metrics.prefabUses,
+    tavern.lighting,
+    tavern.bakedMesh,
   );
-  assert.deepEqual(report, vc.audit);
+  assert.deepEqual(report, tavern.audit);
   assert.equal(report.passed, true);
-  assert.ok(report.score >= 75);
-  return vc;
+  assert.ok(report.score >= 85);
+  return tavern;
 };
 
 const bench = (fn: () => void, iterations: number): number => {
@@ -355,7 +374,7 @@ const runBenchmarks = (
   const modelJson = canonicalJsonString(griffin);
   const modelBytes = Buffer.from(modelJson, 'utf8');
   const griffinSrc = fs.readFileSync(
-    path.join(REPO_ROOT, 'examples/griffin/workbench/main.ashfox'),
+    path.join(REPO_ROOT, 'showcase/assets/models/griffin_boss.ashfox'),
     'utf8',
   );
   const lexAfter = bench(() => lexProgramSource(griffinSrc), 20);
@@ -374,11 +393,11 @@ const runBenchmarks = (
 };
 
 const main = (): void => {
-  const creatureProducts = compileWorkspaceDir('examples/shared-creatures').filter(
+  const creatureProducts = compileWorkspaceDir('showcase').filter(
     (p): p is Extract<typeof p, { kind: 'model' }> => p.kind === 'model',
   );
   const models = creatureProducts.map((p) => p.model);
-  const griffin = creatureProducts.find((p) => p.entry.entryName === 'griffin')!.model;
+  const griffin = creatureProducts.find((p) => p.entry.entryName === 'griffin_boss')!.model;
   verifyDigestAndCanonicalJson(griffin);
   verifyTexturesAndColors(griffin);
   verifyCreatureAuditAndOcclusion(models);

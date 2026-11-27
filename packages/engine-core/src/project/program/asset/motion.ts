@@ -68,7 +68,7 @@ const readOptionalCurve = (
       'asset.missing-interpolation',
       'Every motion key must declare an explicit curve or interpolation.',
       fallbackSpan,
-      docsHint('motion'),
+      docsHint('animation'),
     );
   }
   return Object.freeze({
@@ -159,7 +159,7 @@ const readWaveBinding = (reader: AssetReader): AssetWaveBindingDecl => {
         'asset.invalid-property',
         `Unknown axis "${axisTok.value}".${formatDidYouMean(axisTok.value, ['x', 'y', 'z'])}`,
         axisTok,
-        docsHint('motion'),
+        docsHint('animation'),
       );
     }
   }
@@ -185,7 +185,7 @@ const readWaveBinding = (reader: AssetReader): AssetWaveBindingDecl => {
         'asset.invalid-property',
         `Wave expression "${kindTok.value}" requires (...).`,
         kindTok,
-        docsHint('motion'),
+        docsHint('animation'),
       );
     }
   } else {

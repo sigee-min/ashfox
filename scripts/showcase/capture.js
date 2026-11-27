@@ -10,11 +10,38 @@ const { GifReader } = require('omggif');
 const root = path.resolve(__dirname, '../..');
 const output = path.join(root, 'assets/showcase/shared-creatures');
 const cli = path.join(root, 'apps/cli/dist/ashfox.cjs');
-const sources = {
-  griffin: 'examples/griffin/workbench/main.ashfox',
-  fox: 'examples/fox/creatures/fox.ashfox',
-  goblin: 'examples/goblin/creatures/goblin.ashfox',
-};
+const CREATURES = Object.freeze({
+  griffin: {
+    entry: 'showcase/assets/models/griffin_boss.ashfox',
+    modules: {
+      '"griffin_plumage/plumage"': '"./griffin_plumage.ashfox"',
+    },
+    files: {
+      'griffin_plumage.ashfox': 'showcase/assets/module/griffin/griffin_plumage.ashfox',
+    },
+  },
+  fox: {
+    entry: 'showcase/assets/models/red_fox.ashfox',
+    modules: {
+      '"fox_fur/fur"': '"./fox_fur.ashfox"',
+    },
+    files: {
+      'fox_fur.ashfox': 'showcase/assets/module/fox/fox_fur.ashfox',
+    },
+  },
+  goblin: {
+    entry: 'showcase/assets/models/goblin_raider.ashfox',
+    modules: {
+      '"shared_modules/goblin_kit"': '"./goblin_kit.ashfox"',
+      '"shared_modules/goblin_skins"': '"./goblin_skins.ashfox"',
+    },
+    files: {
+      'goblin_kit.ashfox': 'showcase/assets/module/goblin/goblin_kit.ashfox',
+      'goblin_skins.ashfox': 'showcase/assets/module/goblin/goblin_skins.ashfox',
+    },
+  },
+});
+
 const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'ashfox-showcase-'));
 const run = (args) =>
   execFileSync(process.execPath, [cli, ...args], {
@@ -23,29 +50,27 @@ const run = (args) =>
     timeout: 120_000,
   });
 
-const renderWithPreview = (entryRel, previewBody, outPath) => {
-  const absEntry = path.join(root, entryRel);
-  const dir = path.dirname(absEntry);
-  const entryName = path.basename(absEntry);
-  const files = {};
-  for (const file of fs.readdirSync(dir)) {
-    if (file !== entryName && file.endsWith('.ashfox')) {
-      files[file] = fs.readFileSync(path.join(dir, file), 'utf8');
-    }
+const stageEntry = (name, spec, previewBody) => {
+  const dir = path.join(stage, `src-${name}`);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [targetName, relPath] of Object.entries(spec.files)) {
+    fs.copyFileSync(path.join(root, relPath), path.join(dir, targetName));
   }
-  const source = fs
-    .readFileSync(absEntry, 'utf8')
-    .replace(/(\}\s*)$/, `  preview showcase {\n${previewBody}\n  }\n$1`);
-  return execFileSync(
-    process.execPath,
-    [cli, 'render', '--input-json', '--view', 'showcase', '--output', outPath],
-    {
-      input: JSON.stringify({ source, name: entryName, files }),
-      cwd: root,
-      maxBuffer: 32 * 1024 * 1024,
-      timeout: 120_000,
-    },
-  );
+  let source = fs.readFileSync(path.join(root, spec.entry), 'utf8');
+  for (const [pkgSpec, relSpec] of Object.entries(spec.modules)) {
+    source = source.replaceAll(pkgSpec, relSpec);
+  }
+  if (previewBody) {
+    source = source.replace(/(\}\s*)$/, `  preview showcase {\n${previewBody}\n  }\n$1`);
+  }
+  const stagedPath = path.join(dir, path.basename(spec.entry));
+  fs.writeFileSync(stagedPath, source);
+  return stagedPath;
+};
+
+const renderWithPreview = (name, spec, previewBody, outPath) => {
+  const staged = stageEntry(`${name}-${path.basename(outPath)}`, spec, previewBody);
+  return run(['render', staged, '--view', 'showcase', '--output', outPath]);
 };
 
 const clearRect = (canvas, stride, rect) => {
@@ -89,11 +114,12 @@ const gifToMp4 = async (gifPath, mp4Path) => {
 const main = async () => {
   try {
     const published = [];
-    for (const [name, source] of Object.entries(sources)) {
+    for (const [name, spec] of Object.entries(CREATURES)) {
       const baseFields = '    width = 640;\n    height = 360;\n    environment = studio;';
-      renderWithPreview(source, baseFields, path.join(stage, `${name}-poster.png`));
+      renderWithPreview(name, spec, baseFields, path.join(stage, `${name}-poster.png`));
       renderWithPreview(
-        source,
+        name,
+        spec,
         `${baseFields}\n    kind = gif;\n    mode = build;`,
         path.join(stage, `${name}-build-replay.gif`),
       );
@@ -102,11 +128,13 @@ const main = async () => {
         path.join(stage, `${name}-build-replay.mp4`),
       );
       published.push(`${name}-poster.png`, `${name}-build-replay.gif`, `${name}-build-replay.mp4`);
-      const asset = JSON.parse(run(['check', source]).toString()).result;
+      const stagedCheck = stageEntry(`check-${name}`, spec, null);
+      const asset = JSON.parse(run(['check', stagedCheck, '--json']).toString()).result;
       for (const clip of asset.animations) {
         const file = `${name}-${clip.name}`;
         renderWithPreview(
-          source,
+          name,
+          spec,
           `${baseFields}\n    kind = gif;\n    clip = "${clip.name}";\n    duration = ${clip.durationSeconds};\n    fps = 10;`,
           path.join(stage, `${file}.gif`),
         );
@@ -116,6 +144,9 @@ const main = async () => {
       console.log(`CLI showcase rendered: ${name}`);
     }
     fs.mkdirSync(output, { recursive: true });
+    for (const oldFile of fs.readdirSync(output)) {
+      if (/\.(?:gif|png|mp4)$/iu.test(oldFile)) fs.rmSync(path.join(output, oldFile));
+    }
     for (const file of published) fs.copyFileSync(path.join(stage, file), path.join(output, file));
     execFileSync(process.execPath, [path.join(__dirname, 'verify.js'), '--write'], {
       cwd: root,

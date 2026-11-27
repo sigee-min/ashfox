@@ -1,0 +1,163 @@
+ashfox 1
+structure modern_gallery {
+  import "std/structure/arch/modern" as arch;
+  import "std/structure/interior/gallery" as gal_kit;
+  import "std/structure/furnish/display" as disp;
+  import "std/core/hook/world" as world;
+  import "std/core/hook/loot" as loot;
+  import "../models/wall_lantern.ashfox" as sconce_prop;
+
+  density = 2;
+  seed = 909;
+  size = (18b, 18b, 18b);
+  data_version = 3955;
+
+  params {
+    w = 18;
+    d = 18;
+  }
+
+  outputs = [java_structure, glb];
+
+  preview exterior { sheet = exterior; }
+  preview cutaway { sheet = cutaway; }
+  preview interior { sheet = interior; }
+
+  palette {
+    plinth_stone = mix("minecraft:polished_andesite" * 70%, "minecraft:smooth_stone" * 30%);
+    concrete = "minecraft:light_gray_concrete";
+    dark_steel = "minecraft:gray_concrete";
+    quartz = mix("minecraft:smooth_quartz" * 80%, "minecraft:white_concrete" * 20%);
+    oak_floor = "minecraft:birch_planks";
+    ceiling_deck = "minecraft:smooth_quartz";
+    roof_stair = "minecraft:polished_deepslate_stairs";
+    trim_stair = "minecraft:smooth_quartz_stairs";
+    ridge = "minecraft:smooth_quartz_slab[type=bottom]";
+    porch_stair = "minecraft:smooth_quartz_stairs[facing=north,half=bottom]";
+    gallery_stair = "minecraft:smooth_quartz_stairs";
+    rail = "minecraft:iron_bars";
+    glass = "minecraft:light_blue_stained_glass_pane";
+    sill = "minecraft:polished_deepslate_slab[type=top]";
+    door = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    sea_lamp = "minecraft:sea_lantern";
+    sconce = asset(sconce_prop, "minecraft:lantern[hanging=false]");
+  }
+
+  floor atrium {
+    y = 0b;
+    height = 6b;
+    room main_hall {
+      from = (1b, 1b); size = (16b, 11b); kind = hall; plinth = plinth_stone; floor = oak_floor; wall = quartz; frame = dark_steel; ceiling = ceiling_deck;
+      interior {
+        dna { arch = modern; mood = minimal_bright; }
+        architecture { floor_pattern = herringbone; baseboard = trim; wainscot = none; molding = strip_light; ceiling = coffered; strip_light_color = "#fff1d0"; }
+        platform sculpture_dais {
+          on = north; size = (6, 3); height = 0.25; step_facing = south; railing = glass;
+          display_case center_relic { size = (2, 1); }
+          story modern_workspace { on = center_relic; }
+        }
+        partition glass_divider { style = glass_wall; axis = x; at = 6; span_from = 2; span_to = 14; doorway_at = 7; doorway_width = 3; }
+        wall_line {
+          on = east;
+          cabinet { size = (2, 1); }
+          shelving { size = (2, 1); }
+        }
+        centerpiece {
+          on = sw;
+          table curator_desk { size = (2, 1); }
+          chair { on = east; }
+          story modern_workspace { on = curator_desk; }
+        }
+        lighting { kind = strip_light; color = "#fff1d0"; bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.45; }
+        sun_shaft { enabled = true; sun_dir = (0.38, -0.7, 0.58); intensity = 0.52; shaft_length = 6.0; }
+      }
+    }
+    room foyer {
+      from = (3b, 11b); size = (12b, 5b); kind = hallway; plinth = plinth_stone; floor = concrete; wall = quartz; frame = dark_steel; ceiling = ceiling_deck;
+      interior {
+        dna { arch = modern; mood = minimal_bright; }
+        architecture { floor_pattern = herringbone; baseboard = trim; wainscot = panel; molding = strip_light; ceiling = coffered; strip_light_color = "#fff1d0"; }
+        alcove foyer_niche { kind = display; wall = east; width = 2; height = 2; }
+        partition foyer_screen { style = glass_wall; axis = z; at = 9; span_from = 1; span_to = 4; doorway_at = 2; doorway_width = 2; }
+        wall_line {
+          on = west;
+          sofa { size = (2, 1); }
+        }
+        centerpiece {
+          on = center;
+          display_case foyer_pedestal { size = (1, 1); }
+          story modern_workspace { on = foyer_pedestal; }
+        }
+        lighting { kind = strip_light; color = "#fff1d0"; bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.4; }
+        sun_shaft { enabled = true; sun_dir = (0.38, -0.7, -0.58); intensity = 0.50; shaft_length = 5.0; }
+      }
+    }
+    facade foyer.south {
+      door {
+        at = 2b; width = 2b; height = 2b; block = door; hinge = left; frame = dark_steel; lintel = dark_steel;
+        porch { depth = 2; floor = plinth_stone; pillars = dark_steel; lamps = sconce; steps = porch_stair; }
+      }
+      bay_window { at = 6b; width = 4b; height = 3b; y_offset = 1b; glass = glass; frame = dark_steel; sill = sill; lintel = dark_steel; stained_glass_color = "#b8e4ff"; }
+    }
+    facade main_hall.south { arch { at = center; width = 3b; height = 4b; frame = dark_steel; lintel = dark_steel; } }
+    facade curtain_walls {
+      on = [main_hall.north, main_hall.east, main_hall.west];
+      window { symmetric = 1b; width = 3b; height = 3b; y_offset = 1b; glass = glass; sill = sill; lintel = dark_steel; stained_glass_color = "#b8e4ff"; }
+    }
+  }
+
+  floor mezzanine {
+    y = 6b;
+    height = 5b;
+    room upper_wing {
+      from = (2b, 2b); size = (14b, 10b); kind = hall; floor = oak_floor; wall = quartz; frame = dark_steel; ceiling = ceiling_deck;
+      interior {
+        dna { arch = modern; mood = minimal_bright; }
+        architecture { floor_pattern = plank; baseboard = trim; wainscot = panel; molding = strip_light; ceiling = coffered; strip_light_color = "#fff1d0"; }
+        alcove archive_niche { kind = display; wall = north; width = 3; height = 2; }
+        centerpiece {
+          on = center;
+          table study_table { size = (2, 1); }
+          story modern_workspace { on = study_table; }
+        }
+        lighting { kind = strip_light; color = "#fff1d0"; bounces = 2; ambient_floor = 0.16; stained_glass_boost = 1.4; }
+        sun_shaft { enabled = true; sun_dir = (-0.38, -0.7, 0.58); intensity = 0.45; shaft_length = 5.0; }
+      }
+    }
+    facade upper_curtain_ns {
+      on = [upper_wing.north, upper_wing.south];
+      window { symmetric = 2b; width = 3b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = dark_steel; stained_glass_color = "#b8e4ff"; }
+    }
+    facade upper_curtain_ew {
+      on = [upper_wing.east, upper_wing.west];
+      window { at = center; width = 4b; height = 2b; y_offset = 1b; glass = glass; sill = sill; lintel = dark_steel; stained_glass_color = "#b8e4ff"; }
+    }
+  }
+
+  staircase { in_room = main_hall; style = straight; at = (14b, 3b); y_from = 0b; y_to = 6b; facing = south; width = 1b; stair = gallery_stair; landing = quartz; rail = rail; headroom = 3b; }
+
+  roof { on = upper_wing; style = hip; axis = x; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = quartz; under_eave = true; }
+  roof { on = main_hall; style = gable; axis = x; overhang = 1b; pitch = shallow; stair = roof_stair; trim = trim_stair; ridge = ridge; gable = quartz; under_eave = true; }
+
+  furnish main_hall {
+    place_anchor { prefab = gal_kit.ExhibitionWing; on = ne; offset = (0b, 0b); rotate = 0; }
+    hang { block = sea_lamp; at = ceiling_center; drop = 1b; }
+  }
+  furnish foyer {
+    place_anchor { prefab = disp.RelicPlinth; on = se; offset = (0b, 0b); rotate = 0; }
+    hang { block = sea_lamp; at = ceiling_center; drop = 1b; }
+  }
+  furnish upper_wing {
+    place_anchor { prefab = gal_kit.ArchiveAlcove; on = nw; offset = (0b, 0b); rotate = 0; }
+    hang { block = sea_lamp; at = ceiling_center; drop = 1b; }
+  }
+
+  box { from = (1b, 0b, 14b); to = (2b, 0b, 16b); block = plinth_stone; }
+  place arch.ConcretePillar { at = (1b, 1b, 14b); rotate = 0; }
+  place arch.SteelCanopy { at = (8b, 1b, 13b); rotate = 0; }
+
+  anchor gallery_entry : std.entry { at = (5b, 1b, 16b); facing = south; pool = "ashfox:streets"; target = "road_join"; }
+  anchor gallery_portal : world.PortalGate { room = foyer; at = (6b, 1b, 14b); facing = south; target_world = "overworld"; destination = "modern_gallery_hall"; }
+  anchor relic_vault : loot.LootChest { room = upper_wing; at = (8b, 7b, 4b); facing = south; tier = epic; table = "ashfox:gallery/artifacts"; }
+  zone gallery_safe : world.SafeZone { from = (1b, 1b, 1b); to = (16b, 11b, 15b); pvp_disabled = true; regen_rate = 0.5; label = "Modern Art Gallery"; }
+}

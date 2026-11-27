@@ -1,3 +1,4 @@
+import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../project/stdlib/resolve';
 import { compareText } from '../stableOrder';
 import type { SceneNode } from '../model/scene';
 import {
@@ -37,6 +38,7 @@ const resolveHookImportTarget = (
   specifier: string,
   moduleAliases?: ReadonlyMap<string, string>,
 ): string => {
+  if (isVirtualLibrarySpecifier(specifier)) return virtualLibraryLogicalPath(specifier);
   if (!specifier.startsWith('.') && moduleAliases?.has(specifier)) {
     return normalizeWorkspacePath(moduleAliases.get(specifier)!);
   }

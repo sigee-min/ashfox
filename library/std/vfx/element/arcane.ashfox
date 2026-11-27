@@ -1,0 +1,23 @@
+ashfox 1
+module arcane {
+  export palette ArcaneViolet {
+    core = #fae8ff;
+    mid = #cc70f5;
+    edge = #6e31ad;
+    smoke = #2d1f47;
+  }
+
+  export palette RuneCyan {
+    core = #e8ffff;
+    mid = #52dede;
+    edge = #2a6ea3;
+    smoke = #1f2e47;
+  }
+
+  export palette StarlightGold {
+    core = #fff8db;
+    mid = #f2cf66;
+    edge = #9c6b27;
+    smoke = #362e29;
+  }
+}

@@ -6,14 +6,7 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const { readJson, sha256 } = require('../shared');
 const root = path.resolve(__dirname, '../..');
-const samples = [
-  'bell_pattern',
-  'wind_loop',
-  'footsteps',
-  'charging_spell',
-  'metal_strike',
-  'bird_call',
-];
+const samples = ['sword_slash', 'claw_hit', 'footsteps', 'fire_loop', 'griffin_call'];
 const goldenPath = path.join(__dirname, 'sound-golden.json');
 
 const assertSoundCapabilities = (run) => {
@@ -48,7 +41,7 @@ const assertSoundCapabilities = (run) => {
 
 const verifySoundSample = (run, soundsDir, name) => {
   const source = fs.readFileSync(
-    path.join(root, 'examples/sounds/assets/sounds', name + '.ashfox'),
+    path.join(root, 'showcase/assets/sounds', name + '.ashfox'),
     'utf8',
   );
   const input = path.join(soundsDir, name + '.ashfox');
@@ -121,17 +114,11 @@ const verifySoundCli = (cli, write = false) => {
   try {
     const capabilities = assertSoundCapabilities(run);
     const soundsDir = path.join(temp, 'assets/sounds');
-    const moduleDir = path.join(temp, 'assets/module');
     fs.mkdirSync(soundsDir, { recursive: true });
-    fs.mkdirSync(moduleDir, { recursive: true });
-    fs.copyFileSync(
-      path.join(root, 'examples/sounds/assets/module/bird_voices.ashfox'),
-      path.join(moduleDir, 'bird_voices.ashfox'),
-    );
     const results = samples.flatMap((name) => verifySoundSample(run, soundsDir, name));
     const receipt = { contract: capabilities.contract, results };
-    assert.ok(results.some((r) => r.name === 'bell_pattern' && r.frames === 96960));
-    assert.ok(results.some((r) => r.name === 'wind_loop' && r.frames === 188160));
+    assert.ok(results.some((r) => r.name === 'claw_hit' && r.frames > 0));
+    assert.ok(results.some((r) => r.name === 'fire_loop' && r.playback.kind === 'loop'));
     if (write) fs.writeFileSync(goldenPath, JSON.stringify(receipt, null, 2) + '\n');
     else
       assert.deepEqual(

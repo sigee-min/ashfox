@@ -1,0 +1,43 @@
+ashfox 1
+module weapon {
+  export socket contract BladeTipSocket {
+  }
+
+  export rig contract WeaponRig {
+    joint root { parent = none; role = root; channels = rotation; }
+    joint blade { parent = root; role = prop; channels = rotation; }
+    socket tip: BladeTipSocket { joint = blade; capacity = one; }
+  }
+
+  export skeleton WeaponSkeleton implements WeaponRig {
+    bind root { parent_origin = (0u, 0u, 0u); }
+    bind blade { parent_origin = (0u, 4u, 0u); }
+  }
+
+  export surface contract WeaponSurface {
+    chart pommel box { coverage = opaque; }
+    chart grip box { coverage = opaque; }
+    chart guard box { coverage = opaque; }
+    chart blade box { coverage = opaque; }
+    chart point box { coverage = opaque; }
+    material = double;
+  }
+
+  export component Broadsword {
+    requires rig skeleton: WeaponRig;
+    requires surface skin: WeaponSurface;
+    bind bone root to skeleton.root;
+    bind bone blade to skeleton.blade;
+    geometry {
+      bone root {
+        cube pommel { origin = (-1u, -2u, -1u); size = (2u, 2u, 2u); surface = skin.pommel; }
+        cube grip { origin = (-1u, 0u, -1u); size = (2u, 4u, 2u); surface = skin.grip; }
+        cube crossguard { origin = (-3u, 4u, -1u); size = (6u, 2u, 2u); surface = skin.guard; }
+        bone blade {
+          cube fuller { origin = (-1u, 2u, -1u); size = (2u, 11u, 1u); surface = skin.blade; }
+          cube point { origin = (-1u, 13u, -1u); size = (1u, 2u, 1u); surface = skin.point; }
+        }
+      }
+    }
+  }
+}

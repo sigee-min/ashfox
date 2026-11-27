@@ -4,11 +4,7 @@ const path = require('node:path');
 const { starterFiles } = require('./starter');
 const projectFiles = (root) => {
   const files = {};
-  const standaloneExtras = new Set([
-    'assets/models/marker.ashfox',
-    'assets/models/lantern.ashfox',
-    'assets/models/rune_bricks.ashfox',
-  ]);
+  const standaloneExtras = new Set(['assets/models/rune_bricks.ashfox']);
   for (const [name, source] of Object.entries(starterFiles(root))) {
     if (standaloneExtras.has(name)) continue;
     files[name] = source;

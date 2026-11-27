@@ -11,11 +11,94 @@ const root = path.resolve(__dirname, '../../../..'),
 const project = path.join(temp, 'project'),
   config = path.join(project, '.ashfoxworkspace');
 const executable = path.join(__dirname, '../../dist/ashfox.cjs');
-fs.cpSync(path.join(root, 'examples/resource-pack'), project, {
-  recursive: true,
-  filter: (p) => !p.split(path.sep).includes('dist'),
-});
-const original = JSON.parse(String(fs.readFileSync(config, 'utf8')));
+fs.mkdirSync(path.join(project, 'assets/sprites'), { recursive: true });
+fs.mkdirSync(path.join(project, 'assets/sounds'), { recursive: true });
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sprites/iron_sword.ashfox'),
+  path.join(project, 'assets/sprites/iron_sword.ashfox'),
+);
+fs.copyFileSync(
+  path.join(root, 'showcase/assets/sounds/claw_hit.ashfox'),
+  path.join(project, 'assets/sounds/claw_hit.ashfox'),
+);
+const original: Record<string, any> = {
+  format: 'ashfox-workspace',
+  version: 2,
+  name: 'packaudio-test',
+  packages: [
+    {
+      name: 'sprites',
+      root: 'assets/sprites',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'iron_sword', path: 'iron_sword.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+    {
+      name: 'sounds',
+      root: 'assets/sounds',
+      manifest: {
+        format: 'ashfox-package',
+        version: 1,
+        entries: [{ name: 'claw_hit', path: 'claw_hit.ashfox' }],
+        modules: [],
+        dependencies: [],
+      },
+    },
+  ],
+  include: ['assets/**/*.ashfox'],
+  ignore: ['assets/drafts/**'],
+  build: { directory: 'dist/build' },
+  exports: [
+    {
+      name: 'iron_sword',
+      entry: { packageName: 'sprites', entryName: 'iron_sword' },
+      format: 'png',
+      directory: 'dist/sprites',
+    },
+    {
+      name: 'claw_hit',
+      entry: { packageName: 'sounds', entryName: 'claw_hit' },
+      format: 'wav',
+      directory: 'dist/sounds',
+    },
+  ],
+  packs: [
+    {
+      name: 'game_pack',
+      format: 'minecraft_java',
+      directory: 'dist/pack',
+      minecraftVersion: '26.2',
+      metadata: {
+        format: 'range',
+        minFormat: [88, 0],
+        maxFormat: [88, 0],
+        description: 'Audio pack test',
+      },
+      itemDefinitions: 'modern',
+      archive: true,
+      icon: 'iron_sword',
+      models: [],
+      items: [{ source: 'iron_sword', id: 'demo:iron_sword', parent: 'handheld' }],
+      sounds: [
+        {
+          source: 'claw_hit',
+          id: 'demo:combat.claw_hit',
+          replace: true,
+          subtitle: null,
+          volume: 1,
+          pitch: 1,
+          stream: false,
+          variants: 'all',
+        },
+      ],
+    },
+  ],
+};
+fs.writeFileSync(config, JSON.stringify(original, null, 2));
 const run = (command: string, input = config, env = process.env) => {
   const child = spawnSync(process.execPath, [executable, command, input, '--json'], {
     encoding: 'utf8',

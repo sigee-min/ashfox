@@ -1,0 +1,34 @@
+ashfox 1
+module wind {
+  params {
+    gust_peak = 420hz;
+    howl_pitch = 380hz;
+  }
+
+  export voice deep_gust : noise {
+    color = brown;
+    filter : bandpass { cutoff = log(0: 170hz -> 0.35: gust_peak -> 0.7: 230hz -> 1: 170hz); q = 1.1; }
+    highpass = 38hz;
+    drift { target = cutoff; depth = 35%; rate = 0.45hz; }
+    pan = -0.18 -> 0.14;
+    gain = smooth(0: 0.64 -> 0.35: 0.96 -> 0.7: 0.54 -> 1: 0.64);
+  }
+
+  export voice canopy_howl : waveguide {
+    model = pipe;
+    pitch = log(0: howl_pitch -> 0.35: 560hz -> 0.72: 410hz -> 1: howl_pitch);
+    damping = 0.45;
+    brightness = 0.55;
+    filter : bandpass { cutoff = log(0: 650hz -> 0.32: 1800hz -> 0.72: 880hz -> 1: 650hz); q = 1.6; }
+    drift { target = pan; depth = 18%; rate = 0.35hz; }
+    gain = smooth(0: 0.42 -> 0.32: 0.8 -> 0.72: 0.38 -> 1: 0.42);
+  }
+
+  export voice breeze_air : noise {
+    color = white;
+    highpass = 3200hz;
+    lowpass = 11500hz;
+    drift { target = pan; depth = 22%; rate = 0.3hz; }
+    gain = smooth(0: 0.14 -> 0.38: 0.3 -> 1: 0.14);
+  }
+}

@@ -76,29 +76,23 @@ const formatSoundSpecs = (durationSec) => ({
 });
 
 const compileAllAssets = (temp) => {
-  for (const dir of ['griffin', 'fox', 'goblin', 'prop', 'items', 'sounds']) {
-    fs.cpSync(path.join(root, 'examples', dir), path.join(temp, dir), { recursive: true });
-  }
+  fs.cpSync(path.join(root, 'showcase'), path.join(temp, 'showcase'), { recursive: true });
+  const built = buildTarget(temp, 'showcase/.ashfoxworkspace');
+  const byId = new Map(built.exports.map((exp) => [exp.id, exp.directory]));
   const builtFiles = new Map();
-  const modelMap = [
-    ['griffin', 'griffin/workbench/main.ashfox', 'griffin.glb'],
-    ['fox', 'fox/creatures/fox.ashfox', 'fox.glb'],
-    ['goblin', 'goblin/creatures/goblin.ashfox', 'goblin.glb'],
-    ['lantern', 'prop/lantern.ashfox', 'lantern.glb'],
-  ];
-  for (const [id, rel, file] of modelMap) {
-    const built = buildTarget(temp, rel);
-    builtFiles.set(id, fs.readFileSync(path.join(built.exports[0].directory, file)));
-  }
-  const itemsBuilt = buildTarget(temp, 'items/.ashfoxworkspace');
-  for (const exp of itemsBuilt.exports) {
-    builtFiles.set(exp.id, fs.readFileSync(path.join(exp.directory, `${exp.id}.png`)));
-  }
-  const soundsBuilt = buildTarget(temp, 'sounds/.ashfoxworkspace');
-  for (const exp of soundsBuilt.exports) {
-    builtFiles.set(exp.id, fs.readFileSync(path.join(exp.directory, exp.id, 'base.wav')));
-    const altPath = path.join(exp.directory, exp.id, 'alternate.wav');
-    if (fs.existsSync(altPath)) builtFiles.set(`${exp.id}:alternate`, fs.readFileSync(altPath));
+  for (const entry of ASSET_CATALOG) {
+    const expId = entry.exportId || entry.id;
+    const dir = byId.get(expId);
+    if (!dir) throw new Error(`Missing showcase export ${expId} for ${entry.id}`);
+    if (entry.domain === 'model') {
+      builtFiles.set(entry.id, fs.readFileSync(path.join(dir, `${expId}.glb`)));
+    } else if (entry.domain === 'sprite' || entry.domain === 'tile') {
+      builtFiles.set(entry.id, fs.readFileSync(path.join(dir, `${expId}.png`)));
+    } else if (entry.domain === 'sound') {
+      builtFiles.set(entry.id, fs.readFileSync(path.join(dir, expId, 'base.wav')));
+      const altPath = path.join(dir, expId, 'alternate.wav');
+      if (fs.existsSync(altPath)) builtFiles.set(`${entry.id}:alternate`, fs.readFileSync(altPath));
+    }
   }
   return builtFiles;
 };
@@ -145,10 +139,7 @@ const buildEntryRecord = (entry, builtFiles) => {
   };
 };
 
-const LEGACY_SOUND_ALIASES = [
-  ['bird-base.wav', 'bird-call.wav'],
-  ['bird-base.svg', 'bird-call.svg'],
-];
+const LEGACY_SOUND_ALIASES = [];
 
 const main = () => {
   fs.rmSync(out, { recursive: true, force: true });

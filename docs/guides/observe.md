@@ -1,6 +1,6 @@
 # Render and check one asset
 
-Use the CLI as a unified asset compiler and renderer: load any `.ashfox` source (model, sprite, sound, or structure); run `check` to inspect identifiers, declared outputs/previews, and quality audit scores; render declared `preview [name]` blocks with `render [--view <name>]`; build declared targets with `build`.
+Use the CLI as a unified asset compiler and renderer: load any `.ashfox` source (model, sprite, sound, or structure); run `check` to inspect identifiers, declared outputs/previews, and quality audit scores; iterate live with `ashfox dev` (Three.js viewer + click-to-inspect `file:line:column` source refs); render declared `preview [name]` blocks with `render [--view <name>]`; build declared targets with `build`. Standalone `check`, `render`, and `build` also resolve built-in `"std/..."` imports automatically.
 
 ## First render and check
 

@@ -4,30 +4,33 @@
     "id": "gltf.2",
     "version": "2.0"
   },
-  "projectId": "example-griffin",
-  "revision": "example-0001",
+  "projectId": "showcase-griffin",
+  "revision": "showcase-0001",
   "rootPath": "gltf",
   "entrypoints": [
     "griffin.glb"
   ],
-  "packageName": "workbench",
-  "entryName": "griffin",
-  "entryPath": "workbench/main.ashfox",
-  "workspaceHash": "sha256:bdf243aea186858a40b9dbcb3261c1379aa4b2fccc6ed7554d5f280a755856da",
-  "closureHash": "sha256:8f44e250a5304606b89e54d8059457257ad99e173e11b8f9fb4a365391ac3fae",
-  "buildKey": "sha256:80ec465a1fd602a933b486e6eb793ace5efeace296e14b78def7ef6fa2294f24",
+  "packageName": "models",
+  "entryName": "griffin_boss",
+  "entryPath": "assets/models/griffin_boss.ashfox",
+  "workspaceHash": "sha256:e59474de30b3be9bc6dbb11a1ca5c7e5612e75c34f4ace6878a621cf75511c4a",
+  "closureHash": "sha256:e3df7da383a97bcc311cc67307ba2297f178bd4192b8bded457d7271dbca1a3a",
+  "buildKey": "sha256:7f7e4c8da0b55302f50a733e5ca067ff3760ce44ccc315c2ba3683f4f6ea26d6",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:1fd5154ec49405289ba5cb07fc2e5e4b6e2266786742d9d0e80a7c8f4c4331e9",
+  "productHash": "sha256:763715b9d22d47d22e514d9b935b0a5b7b0be88bdc22015861c32f76902b051a",
   "textures": [
     {
-      "id": "griffin_skin_72a2ab7b6009",
+      "id": "boss_plumage_a92bbcc1d3d6",
       "path": null,
       "coverageIds": [
-        "griffin_skin_72a2ab7b6009\u0000crest_plume"
+        "boss_plumage_a92bbcc1d3d6\u0000crest_plume",
+        "boss_plumage_a92bbcc1d3d6\u0000face_blink",
+        "boss_plumage_a92bbcc1d3d6\u0000face_neutral",
+        "boss_plumage_a92bbcc1d3d6\u0000face_screech"
       ],
-      "embeddedSha256": "sha256:cbfdef39159c37c7451c5e31e64e64a9e602a2635b07066d258f59a7f59d1f99",
-      "pngSha256": "sha256:cbfdef39159c37c7451c5e31e64e64a9e602a2635b07066d258f59a7f59d1f99",
-      "byteLength": 262488
+      "embeddedSha256": "sha256:893fa02be1bcde6a6ca5d003b4b10fa4f9ee26ef435b515f49fe2fc05cf6a7cb",
+      "pngSha256": "sha256:893fa02be1bcde6a6ca5d003b4b10fa4f9ee26ef435b515f49fe2fc05cf6a7cb",
+      "byteLength": 3241
     }
   ],
   "files": [
@@ -36,8 +39,8 @@
       "role": "model",
       "path": "griffin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:94d6dabe999229eebdd3da12fe86d02b8dc7222f76377231211007c9444c79bf",
-      "byteLength": 596376
+      "sha256": "sha256:6fedd552a33ad605db470334698e2706eecd1befd9924c4c79224d15de7a3fb9",
+      "byteLength": 32444
     }
   ]
 }

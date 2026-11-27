@@ -19,7 +19,7 @@
 - **`sel_out` & `inner_rim`**: `outline` 레이어가 검은 테두리 대신 주변 색조와 밝기를 따르는 셀 아웃라인과 좌상단 내측 림 하이라이트를 그려줍니다.
 - **심리스 타일 (`profile = tile`)**: `fill`·`pattern` 레이어(`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`)는 캔버스 경계를 토로이달 래핑하여 이음새 없이 타일링됩니다.
 
-[iron_sword 원본](../../examples/items/assets/sprites/iron_sword.ashfox), [mossy_stone 타일](../../examples/items/assets/sprites/mossy_stone.ashfox), [shared 모듈](../../examples/items/assets/module/shared.ashfox)에서 전체 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 모듈은 `assets/module/` 아래에 둡니다.
+`showcase/assets/sprites/iron_sword.ashfox`, `showcase/assets/sprites/ruby_potion.ashfox`, `showcase/assets/sprites/oak_planks.ashfox`와 내장 표준 라이브러리(`ashfox library std list sprite`)에서 전체 아이템·타일 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 프로젝트 모듈은 `assets/module/` 아래에 둡니다.
 
 ## 픽셀 리뷰하기
 
