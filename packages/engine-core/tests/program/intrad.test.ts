@@ -114,33 +114,20 @@ const makeTavernRoom = (organic = 0.75, stainedGlass?: string): InteriorRoomInpu
 });
 
 const makeTavernIr = (): InteriorSubVoxelIR => {
+  const ob = (id: string, f: IntVec3, t: IntVec3, tl: string, tag: string, contact_ao?: number) =>
+    box(id, f, t, tl, 'opaque', { semantic_tag: tag, ...(contact_ao ? { contact_ao } : {}) });
   const boxes: SubVoxelBoxIR[] = [];
   for (let z = 0; z <= 9; z += 1) {
     for (let x = 0; x <= 9; x += 1) {
+      const [x0, z0] = [x * 16, z * 16];
       boxes.push(
-        box(
-          `floor_${x}_${z}`,
-          [x * 16, 0, z * 16],
-          [x * 16 + 16, 16, z * 16 + 16],
-          'oak_planks',
-          'opaque',
-          { semantic_tag: 'floor' },
-        ),
-        box(
-          `ceil_${x}_${z}`,
-          [x * 16, 80, z * 16],
-          [x * 16 + 16, 96, z * 16 + 16],
-          'spruce_planks',
-          'opaque',
-          { semantic_tag: 'ceiling' },
-        ),
+        ob(`floor_${x}_${z}`, [x0, 0, z0], [x0 + 16, 16, z0 + 16], 'oak_planks', 'floor'),
+        ob(`ceil_${x}_${z}`, [x0, 80, z0], [x0 + 16, 96, z0 + 16], 'spruce_planks', 'ceiling'),
       );
     }
   }
   const wb = (id: string, x: number, y: number, z: number) =>
-    box(id, [x, y * 16, z], [x + 16, y * 16 + 16, z + 16], 'plaster_white', 'opaque', {
-      semantic_tag: 'wall',
-    });
+    ob(id, [x, y * 16, z], [x + 16, y * 16 + 16, z + 16], 'plaster_white', 'wall');
   for (let y = 1; y <= 4; y += 1) {
     for (let i = 0; i <= 9; i += 1) {
       if (i < 3 || i > 5 || y < 2 || y > 3) boxes.push(wb(`wall_n_${i}_${y}`, i * 16, y, 0));
@@ -148,19 +135,10 @@ const makeTavernIr = (): InteriorSubVoxelIR => {
     }
   }
   boxes.push(
-    box('crimson_rug', [48, 16, 32], [96, 17, 64], 'carpet_red', 'opaque', { semantic_tag: 'rug' }),
-    box('table_leg_1', [66, 16, 66], [68, 29, 68], 'dark_oak_planks', 'opaque', {
-      semantic_tag: 'furniture_leg',
-      contact_ao: 0.7,
-    }),
-    box('baseboard_n', [16, 16, 16], [144, 20, 18], 'stone_bricks', 'opaque', {
-      semantic_tag: 'baseboard',
-      contact_ao: 0.55,
-    }),
-    box('beam_joint_1', [16, 72, 16], [144, 80, 22], 'dark_oak_planks', 'opaque', {
-      semantic_tag: 'beam_joint',
-      contact_ao: 0.6,
-    }),
+    ob('crimson_rug', [48, 16, 32], [96, 17, 64], 'carpet_red', 'rug'),
+    ob('table_leg_1', [66, 16, 66], [68, 29, 68], 'dark_oak_planks', 'furniture_leg', 0.7),
+    ob('baseboard_n', [16, 16, 16], [144, 20, 18], 'stone_bricks', 'baseboard', 0.55),
+    ob('beam_joint_1', [16, 72, 16], [144, 80, 22], 'dark_oak_planks', 'beam_joint', 0.6),
     box('hearth_fire', [128, 16, 64], [144, 32, 80], 'hearth_ember', 'emissive', {
       semantic_tag: 'hearth',
       color_tint: '#ff822e',
@@ -183,16 +161,8 @@ const testTwoBounceRadiosityAndPerformance = (): void => {
   const b2Repeat = computeInteriorRadiosity(room, ir, { bounces: 2 }, [0.2, -0.75, 0.63]);
 
   assert.ok(b2.compute_ms < 3, `Expected < 3ms radiosity compute, got ${b2.compute_ms}ms`);
-  assert.deepEqual(
-    [b2.bounce_r, b2.bounce_g, b2.bounce_b, b2.sun_patch_r, b2.contact_ao],
-    [
-      b2Repeat.bounce_r,
-      b2Repeat.bounce_g,
-      b2Repeat.bounce_b,
-      b2Repeat.sun_patch_r,
-      b2Repeat.contact_ao,
-    ],
-  );
+  for (const k of ['bounce_r', 'bounce_g', 'bounce_b', 'sun_patch_r', 'contact_ao'] as const)
+    assert.deepEqual(b2[k], b2Repeat[k]);
 
   const [w, _h, d] = b2.size;
   const wallIdx = (2 * d + 3) * w + 1;
@@ -229,6 +199,34 @@ const testTwoBounceRadiosityAndPerformance = (): void => {
     neonField,
   );
   assert.notDeepEqual(yawCols.get('r_0'), yawCols.get('r_90'));
+  const [u255, u0] = [new Uint8Array([255]), new Uint8Array([0])];
+  const cstF = {
+    size: [1, 1, 1] as const,
+    bounce_r: u255,
+    bounce_g: u255,
+    bounce_b: u255,
+    sun_patch_r: u0,
+    sun_patch_g: u0,
+    sun_patch_b: u0,
+    contact_ao: u255,
+    compute_ms: 0,
+  };
+  const fTile = box('fl', [24, 15, 48], [40, 16, 64], 'oak_planks', 'opaque', {
+    semantic_tag: 'floor_plank',
+  });
+  const mkCst = (deg: number) =>
+    box('tb', [32, 16, 48], [80, 32, 64], 'oak_planks', 'opaque', {
+      semantic_tag: 'furniture_table',
+      rotation_y_deg: deg,
+      pivot_16: [56, 16, 56],
+    });
+  const aoRot = (deg: number) =>
+    bakeSubVoxelColors0(room, { ...ir, boxes: [fTile, mkCst(deg)] }, cstF, {
+      contact_ao_strength: 0.8,
+    })
+      .get('fl')!
+      .reduce((a, b) => a + b, 0);
+  assert.ok(aoRot(90) > aoRot(0));
 };
 
 const testStainedGlassAndSubVoxelContactAo = (): void => {
@@ -340,15 +338,11 @@ const testInteriorAuditPassAndFailureGates = (): void => {
   assert.equal(passReport.passed, true, JSON.stringify(passReport));
   assert.ok(passReport.score >= 75, `Expected passing score >= 75, got ${passReport.score}`);
   assert.ok(passReport.hard_gates.every((g) => g.passed));
+  const m = passReport.metrics;
   assert.deepEqual(
-    [
-      passReport.metrics.organic_calibration_delta,
-      passReport.metrics.volume_feature_count,
-      passReport.metrics.shell_layer_count,
-    ],
+    [m.organic_calibration_delta, m.volume_feature_count, m.shell_layer_count],
     [0, 3, 5],
   );
-
   const noisyZenRoom = {
     ...room,
     style_dna: {
@@ -410,16 +404,17 @@ const testInteriorAuditPassAndFailureGates = (): void => {
       }),
     ],
   };
-  const okNbt = {
-    ...badNbt,
-    clearance: {
-      min_headroom_b: 2,
-      floating_block_count: 0,
-      blocked_opening_count: 0,
-      passed: true,
-    },
+  const okClr = {
+    min_headroom_b: 2,
+    floating_block_count: 0,
+    blocked_opening_count: 0,
+    passed: true,
   };
-  const soffitFail = evaluateInteriorAudit({ ...passInput, ir: lowSoffitIr, nbt: okNbt });
+  const soffitFail = evaluateInteriorAudit({
+    ...passInput,
+    ir: lowSoffitIr,
+    nbt: { ...badNbt, clearance: okClr },
+  });
   assert.ok(
     soffitFail.metrics.min_headroom_b === 1.75 &&
       !soffitFail.passed &&
@@ -430,12 +425,12 @@ const testInteriorAuditPassAndFailureGates = (): void => {
 const testContactAoPropagationAndOversizedPropRejection = (): void => {
   const makeAoSrc = (ao: number) =>
     `ashfox 1 structure ao_room { size = (9b, 7b, 9b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { dna { arch = rustic; organic = 0; } lighting { contact_ao_strength = ${ao}; } table tbl { at = (4, 1, 4); size = (2, 1); facing = north; } } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } }`;
-  const compileOne = (src: string) =>
+  const compileOne = (s: string) =>
     compileStructureUnits(
       'h.ashfox',
-      new Map([['h.ashfox', parseStructureSource(src, 'h.ashfox')]]),
+      new Map([['h.ashfox', parseStructureSource(s, 'h.ashfox')]]),
       {},
-      (_o, s) => s,
+      (_o, p) => p,
     );
   const compileAoColorAvg = (ao: number): number => {
     const p = compileOne(makeAoSrc(ao));
@@ -448,15 +443,14 @@ const testContactAoPropagationAndOversizedPropRejection = (): void => {
   const badSrc =
     'ashfox 1 structure x { size = (9b, 6b, 9b); floor f { y = 0b; height = 5b; room r { from = (0b, 0b); size = (9b, 9b); kind = living; interior { table huge { size = (1000000, 1000000); } } } } }';
   assert.throws(() => parseStructureSource(badSrc, 'x.ashfox'), StructureInputError);
-  assert.equal(
-    propFitsBounds(
-      { id: 'huge', kind: 'table', at: [2, 1, 2], size: [1_000_000, 1_000_000], facing: 'north' },
-      2,
-      2,
-      { x0: 1, x1: 8, z0: 1, z1: 8 },
-    ),
-    false,
-  );
+  const hugeP = {
+    id: 'h',
+    kind: 'table',
+    at: [2, 1, 2],
+    size: [1e6, 1e6],
+    facing: 'north',
+  } as const;
+  assert.equal(propFitsBounds(hugeP, 2, 2, { x0: 1, x1: 8, z0: 1, z1: 8 }), false);
   assert.deepEqual(
     [mountInstanceRotation('north', 90), mountInstanceRotation('east', 90)],
     [270, 180],

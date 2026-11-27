@@ -44,10 +44,10 @@ const isAxisFlipped = (axis: 'x' | 'z', f: FrameTransform): boolean => {
 };
 
 const xformRect = (
-  [ox, oz]: IntVec2,
+  [ox, oz]: readonly [number, number],
   [w, d]: IntVec2,
   f: FrameTransform,
-): { readonly from: IntVec2; readonly size: IntVec2 } => {
+): { readonly from: readonly [number, number]; readonly size: IntVec2 } => {
   const c0 = applyFrame([ox, 0, oz], f);
   const c1 = applyFrame([ox + w - 1, 0, oz + d - 1], f);
   const size: IntVec2 = f.rotate === 90 || f.rotate === 270 ? [d, w] : [w, d];
@@ -62,7 +62,7 @@ const xformPropAt = (
   if (!p.at) return undefined;
   const size = resolvePropSize(p);
   const [rw, rd] = baseFacing === 'east' || baseFacing === 'west' ? [size[1], size[0]] : size;
-  const { from } = xformRect([Math.round(p.at[0]), Math.round(p.at[2])], [rw, rd], f);
+  const { from } = xformRect([p.at[0], p.at[2]], [rw, rd], f);
   return [from[0], p.at[1] + f.offset[1], from[1]];
 };
 
@@ -172,7 +172,10 @@ const xformZoneVolumeAst = (
   const rect = v.from ? xformRect(v.from, baseSize, f) : undefined;
   const swapSize = !rect && (f.rotate === 90 || f.rotate === 270);
   const sizePatch = rect
-    ? { from: rect.from, size: rect.size }
+    ? {
+        from: [Math.round(rect.from[0]), Math.round(rect.from[1])] as IntVec2,
+        size: rect.size,
+      }
     : swapSize
       ? { size: [baseSize[1], baseSize[0]] as IntVec2 }
       : {};

@@ -96,16 +96,11 @@ const inferBoxAlbedo = (box: SubVoxelBoxIR): Vec3 => {
   return found;
 };
 
-const isEmissiveBox = (box: SubVoxelBoxIR): boolean => {
-  if (box.layer === 'emissive') return true;
-  const t = (box.semantic_tag ?? '').toLowerCase();
-  return (
-    t.includes('neon') ||
-    t.includes('led_strip') ||
-    t.includes('strip_light') ||
-    t.includes('emissive')
-  );
-};
+const isEmissiveBox = (b: SubVoxelBoxIR): boolean =>
+  b.layer === 'emissive' ||
+  'neon,led_strip,strip_light,emissive'
+    .split(',')
+    .some((k) => (b.semantic_tag ?? '').toLowerCase().includes(k));
 
 const createBuffers = (room: InteriorRoomInput) => {
   const w = Math.max(1, room.bounds_to[0] - room.bounds_from[0] + 1);
@@ -295,9 +290,11 @@ const isContactCaster = (box: SubVoxelBoxIR): boolean => {
 };
 
 const boxDistSq16 = (box: SubVoxelBoxIR, x16: number, y16: number, z16: number): number => {
-  const dx = Math.max(0, box.from_16[0] - x16, x16 - box.to_16[0]);
-  const dy = Math.max(0, box.from_16[1] - y16, y16 - box.to_16[1]);
-  const dz = Math.max(0, box.from_16[2] - z16, z16 - box.to_16[2]);
+  const [cos, sin] = boxYawCosSin(box.rotation_y_deg);
+  const [lx, ly, lz] = rotateBoxCorner(x16, y16, z16, box.pivot_16, cos, -sin);
+  const dx = Math.max(0, box.from_16[0] - lx, lx - box.to_16[0]);
+  const dy = Math.max(0, box.from_16[1] - ly, ly - box.to_16[1]);
+  const dz = Math.max(0, box.from_16[2] - lz, lz - box.to_16[2]);
   return dx * dx + dy * dy + dz * dz;
 };
 
@@ -310,10 +307,11 @@ const fillContactAoField = (
   const u = SUBVOXEL_UNITS_PER_BLOCK;
   for (const box of boxes) {
     if (!isContactCaster(box)) continue;
-    const x0 = clAxis(Math.floor(box.from_16[0] / u) - buf.origin[0], buf.w);
-    const z0 = clAxis(Math.floor(box.from_16[2] / u) - buf.origin[2], buf.d);
-    const x1 = Math.max(x0, clAxis(Math.ceil(box.to_16[0] / u) - 1 - buf.origin[0], buf.w));
-    const z1 = Math.max(z0, clAxis(Math.ceil(box.to_16[2] / u) - 1 - buf.origin[2], buf.d));
+    const [bx0, bz0, bx1, bz1] = rotatedBoxBounds16(box);
+    const x0 = clAxis(Math.floor(bx0 / u) - buf.origin[0], buf.w);
+    const z0 = clAxis(Math.floor(bz0 / u) - buf.origin[2], buf.d);
+    const x1 = Math.max(x0, clAxis(Math.ceil(bx1 / u) - 1 - buf.origin[0], buf.w));
+    const z1 = Math.max(z0, clAxis(Math.ceil(bz1 / u) - 1 - buf.origin[2], buf.d));
     const val = Math.round(clamp01(1 - (box.contact_ao ?? 0.45) * strength) * 255);
     const floorY = clAxis(Math.floor(box.from_16[1] / u) - buf.origin[1], buf.h);
     for (let z = z0; z <= z1; z += 1) {

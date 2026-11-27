@@ -480,13 +480,13 @@ structure yaw_col {
       mrToggles.every((id) => mrLightIds.has(id)) &&
       new Set(mrToggles).size === mrToggles.length,
   );
-  const stIntSrc = `ashfox 1 structure st_int { size = (19b, 7b, 19b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } prefab wing { floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; } interior r { chair c1 { at = (3, 1, 3); facing = north; } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } } place wing { at = (15b, 0b, 15b); rotate = 180; } }`;
-  const stSit = compileOne('stint.ashfox', stIntSrc).playableMeta.interiors![0]!.hooks.find(
-    (h) => h.id === 'c1:sit',
-  )!;
+  const stIntSrc = `ashfox 1 structure st_int { size = (29b, 7b, 19b); palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; } prefab wing { floor f { y = 0b; height = 5b; room r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; } interior r { chair c1 { at = (3, 1, 3); facing = north; } } facade r.south { door { at = center; width = 1b; height = 2b; block = door; } } } } prefab tr { floor f2 { y = 0b; height = 5b; room tr_r { from = (1b, 1b); size = (7b, 7b); kind = living; floor = oak; wall = oak; ceiling = oak; interior { chair fc { at = (3.25, 1, 3.25); facing = north; } } } facade tr_r.south { door { at = center; width = 1b; height = 2b; block = door; } } } } place wing { at = (15b, 0b, 15b); rotate = 180; } place tr { at = (20b, 0b, 0b); } }`;
+  const stRes = compileOne('stint.ashfox', stIntSrc);
+  const stSit = stRes.playableMeta.interiors![0]!.hooks.find((h) => h.id === 'c1:sit')!;
+  const fcAt = stRes.grid.interiors![1]!.input.props!.find((p) => p.id === 'fc')!.at;
   assert.deepEqual(
-    [stSit.position, stSit.kind === 'sit' ? stSit.facing : ''],
-    [[12.5, 1, 12.5], 'south'],
+    [stSit.position, stSit.kind === 'sit' ? stSit.facing : '', fcAt],
+    [[12.5, 1, 12.5], 'south', [23.25, 1, 3.25]],
   );
   console.log('ashfox interior wiring integration tests ok');
 };
