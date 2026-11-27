@@ -269,9 +269,11 @@ const collectWeatheringRefs = (
   keys: Set<string>,
 ): void => {
   for (const r of op.rules) {
-    if ('target' in r) keys.add(r.target);
-    if ('into' in r) keys.add(r.into);
+    if ('target' in r && r.target) keys.add(r.target);
+    if ('into' in r && r.into) keys.add(r.into);
     if ('corners' in r) keys.add(r.corners);
+    if ('rubble' in r && r.rubble) keys.add(r.rubble);
+    if ('shard' in r && r.shard) keys.add(r.shard);
   }
 };
 

@@ -79,16 +79,21 @@ const readCachedSpriteEntry = (
     cache,
     `b-spr-${entry.closureHash}-${cache.fingerprint}`,
   );
-  const pngBytes = hit?.blobs[0];
-  if (!hit || !pngBytes) return null;
-  const sha256 = hit.meta.targets[0]?.files[0]?.sha256;
+  const firstTarget = hit?.meta.targets[0];
+  if (!hit || !firstTarget || firstTarget.files.length === 0) return null;
+  if (hit.blobs.length < firstTarget.files.length) return null;
   return {
     entry,
     productKind: hit.meta.productKind,
     metadata: hit.meta.metadata,
     targets: targets.map((t) => ({
       targetName: t.name,
-      files: [{ path: `${t.name}.png`, bytes: pngBytes, sha256 }],
+      files: firstTarget.files.map((f, idx) => {
+        const suffix = f.path.startsWith(firstTarget.targetName)
+          ? f.path.slice(firstTarget.targetName.length)
+          : '.png';
+        return { path: `${t.name}${suffix}`, bytes: hit.blobs[idx]!, sha256: f.sha256 };
+      }),
     })),
     pkgInterfaces: hit.meta.pkgInterfaces,
   };

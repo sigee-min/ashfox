@@ -31,6 +31,10 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `block` | `showcase/assets/models/rune_bricks.ashfox` | 불필요한 회전·대칭 강제 없이 텍스처로 표현한 단일 큐브 16×16×16 블록 |
 | `prop` | `showcase/assets/models/wall_lantern.ashfox` | `taper`/`wedge` 브래킷과 PBR 금속 광택이 적용된 발광 컷아웃 랜턴 소품 |
 | `prop` | `showcase/assets/models/treasure_chest.ashfox` | `"std/model/prop/container"`와 `std/core/hook/loot` 훅을 사용하는 모듈형 소품 |
+| `prop` | `showcase/assets/models/oak_tree.ashfox` | `"std/model/nature/tree"` + `"std/model/motion/nature"`(`wind_sway`) 기반 자연 수목 소품 |
+| `prop` | `showcase/assets/models/iron_helm.ashfox` | `"std/model/armor/helm"`(`HeadHelmSocket`) 소켓 호환 판금 투구 |
+| `prop` | `showcase/assets/models/scifi_drone.ashfox` | `"std/model/rig/drone"` 및 본 바인딩 `hitzone` 약점을 갖춘 SF 정찰 드론 |
+| `creature` | `showcase/assets/models/zombie_walker.ashfox` | `"std/model/rig/biped"`, `"std/model/motion/zombie"`, 헤드샷 `hitzone`, `head_helm` 소켓을 갖춘 생존 좀비 |
 | `creature` | `showcase/assets/models/goblin_raider.ashfox` | `"std/model/rig/biped"`, `"std/model/motion/combat"`, 표정 스왑, 캡슐 충돌체를 갖춘 이족 크리처 |
 | `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | 공용 `"std/*"` 모듈 위에서 팔레트·무기·VFX/사운드 큐만 교체한 변형 크리처 |
 | `creature` | `showcase/assets/models/griffin_boss.ashfox` | `"std/model/rig/winged_quadruped"`, 3단 상향 독수리 날개, 측면 눈, 꼬리 물리 적용 보스 크리처 |
@@ -38,6 +42,11 @@ GLB는 엔진용 모델이고 PNG는 그 모델의 관찰 이미지입니다. �
 | `structure` | `showcase/assets/structures/tavern.ashfox` | 복층 목조 선술집, 라디오시티 GI 실내, `LootSpawn`/`DoorPortal` 훅 |
 | `structure` | `showcase/assets/structures/blacksmith.ashfox` | 개방형 화로 아치, 모루 실내, 굴뚝 불티를 갖춘 대장간 |
 | `structure` | `showcase/assets/structures/modern_gallery.ashfox` | 스테인드글라스 GI와 현대식 전시 가구를 갖춘 통유리 아트리움 갤러리 |
+| `structure` | `showcase/assets/structures/scifi_airlock.ashfox` | `"std/structure/arch/scifi"`, `"std/structure/interior/scifi"` 및 `rust_streak` 풍화를 적용한 SF 에어락 시설 |
+| `structure` | `showcase/assets/structures/survival_outpost.ashfox` | `"std/structure/arch/postapoc"`, `"std/structure/interior/postapoc"`, `wall_breach`, `vine_overgrowth` 기반 아포칼립스 전초기지 |
+| `structure` | `showcase/assets/structures/dungeon_gate.ashfox` | `"std/structure/dungeon/{corridor,chamber,trap_gate}"`와 `TrapPlate` 훅을 갖춘 모듈형 던전 관문 |
+
+`std/model/` 아래 멀티 장르 표준 키트(`rig/{vehicle,mech,turret,drone,fps_arms}`, `motion/{vehicle,firearm,zombie,mech,nature}`, `armor/{helm,cuirass,shield}`, `nature/{tree,foliage,rock,survival}`)도 함께 제공되며 `ashfox library std list model`로 전체를 조회할 수 있습니다.
 
 ## 크리처 아트 디렉션 원칙 (Do / Don't)
 

@@ -56,7 +56,12 @@ const PLASTER_TILES = new Set(['plaster_white', 'plaster_cream', 'terracotta']);
 export const classifyStructureTilePbr = (rawTileId: string): TilePbrSpec => {
   const tileId = rawTileId.replace(/^minecraft:/, '');
   let materialClass: StructureMaterialClass = 'stone';
-  if (METAL_TILES.has(tileId) || tileId.includes('anvil') || tileId.includes('chain')) {
+  if (
+    METAL_TILES.has(tileId) ||
+    tileId.includes('anvil') ||
+    tileId.includes('chain') ||
+    tileId.includes('copper')
+  ) {
     materialClass = 'metal';
   } else if (tileId === 'glass' || tileId === 'window_glow') {
     materialClass = 'glass';

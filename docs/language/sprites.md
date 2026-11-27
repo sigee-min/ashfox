@@ -1,10 +1,10 @@
 # Sprite syntax reference
 
-A native sprite source produces a deterministic square PNG (`16×16`, `32×32`, or `64×64`, with `32×32` recommended). Supported profiles are `item`, `tile`, `icon`, and `decal`. See the [sprite walkthrough](../guides/sprites.md) for CPU audit, `preview inspect`, and build commands.
+A native sprite source produces a deterministic square PNG (`16×16`, `32×32`, or `64×64`, with `32×32` recommended). Supported profiles are `item`, `tile`, `icon`, `ui_9slice`, `crosshair`, `hud_bar`, and `decal`. See the [sprite walkthrough](../guides/sprites.md) for CPU audit, `preview inspect`, and build commands.
 
 ## Root and literal syntax
 
-Write `ashfox 1` followed by `sprite name { … }`. Required root properties are `profile`, `canvas`, and `palette`; layers are named declarations in source order. Do not write generated `id`, `op`, `format`, or `layers` properties by hand.
+Write `ashfox 1` followed by `sprite name { … }`. Required root properties are `profile`, `canvas`, and `palette`; layers are named declarations in source order. Do not write generated `id`, `op`, `format`, or `layers` properties by hand. Optional `slice = (left, right, top, bottom);` (for `ui_9slice`, in `px`) emits a companion `<target>.sprite.json` with `{ nineSlice: { left, right, top, bottom } }`. Layer opacity `alpha` (`0..1`), shape edge `feather` (in `px`), and 8-digit hex `#rrggbbaa` palette colors enable soft compositing for `decal` sprites.
 
 | Form | Example |
 | --- | --- |

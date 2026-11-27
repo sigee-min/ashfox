@@ -51,6 +51,9 @@ runtime.update(dt);
 
 - `actor.anchors`와 `actor.getAnchor(id)`는 `anchor_<id>` 씬 노드 또는 `.hooks.json` 앵커를 반환합니다.
 - `actor.colliders`는 `.hooks.json` 또는 `assets.json`의 `capsule` / `box` 콜라이더 세트를 노출합니다.
+- `actor.getHitZone(collider)`는 본에 바인딩된 치명타·헤드샷 판정용 `hitzone` 메타데이터(`id`, `bone`, `multiplier`, `tag`)를 반환합니다.
+- `actor.setDamageState(state)`(`"intact" | "damaged" | "destroyed"`)는 손상 상태 노드·변형을 전환하고 `"damage_state"` 이벤트 큐를 발생시킵니다.
+- `actor.equip(socket, assetId)`(`null` 지정 시 해제)는 선언된 모델 소켓 앵커에 Three.js, Unity(`Equip`), Godot(`equip`) 런타임에서 장비를 착탈합니다.
 - `actor.lod`는 `MSFT_lod` 티어(`*_LOD0`, `*_LOD1`, `*_LOD2`)가 존재할 때 `THREE.LOD` 그룹을 노출합니다.
 
 ## Unity C# 연동

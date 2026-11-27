@@ -26,6 +26,6 @@ WAV에는 루프 지시가 들어 있지 않으므로 소비자가 전체 버퍼
 
 의도한 음량으로 변형을 비교한 뒤 음량을 맞춰 음색도 비교하세요. 최소 20회 루프를 청취해 클릭, 반복적 팽창, 거친 고음, 크로스페이드 음량 감소를 점검하세요.
 
-저장소 `showcase/assets/sounds/`와 내장 표준 라이브러리(`ashfox library std list sound`)에는 검·타격 전투음(`sword_slash.ashfox`, `claw_hit.ashfox`), 발걸음(`footsteps.ashfox`), 크리처 울음(`griffin_call.ashfox`), 갭리스 루프(`fire_loop.ashfox`)가 있습니다.
+저장소 `showcase/assets/sounds/`와 내장 표준 라이브러리(`ashfox library std list sound`)에는 검·타격 전투음(`sword_slash.ashfox`, `claw_hit.ashfox`), SF 에너지 무기음(`energy.ashfox`), 발걸음(`footsteps.ashfox`), 크리처 울음(`griffin_call.ashfox`), 폭풍 앰비언스(`storm.ashfox`), 갭리스 루프(`fire_loop.ashfox`)와 함께 `std/sound/{weapon,mech,creature,weather}/*` 모듈이 제공됩니다.
 
 이전 헤더(`ashfox-model 1`), JSON 배열 구문(`voices = [...]`, `sequences = [...]`, `{ domain = ...; }`), `camelCase` 키, 따옴표 열거형 문자열, `timeline`, `resonator`, `layers`, `output.rmsDb`, `output.softClip`, `noise.color = "crackle"`은 거부됩니다. 전체 `ashfox 1` 사운드 문법과 자원 제한은 [사운드 문법 레퍼런스](../language/sounds.md)를 참고하세요.

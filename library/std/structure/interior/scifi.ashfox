@@ -1,0 +1,38 @@
+ashfox 1
+module scifi {
+  palette {
+    steel = "minecraft:iron_block";
+    chassis = "minecraft:black_concrete";
+    cyan_panel = "minecraft:cyan_concrete";
+    glass = "minecraft:cyan_stained_glass_pane";
+    lamp = "minecraft:sea_lantern";
+    keypad = "minecraft:heavy_weighted_pressure_plate";
+    slab = "minecraft:smooth_stone_slab[type=bottom]";
+  }
+
+  export prefab ControlConsole {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 1b); block = chassis; }
+    box { from = (0b, 1b, 1b); to = (2b, 1b, 1b); block = cyan_panel; }
+    set { at = (1b, 1b, 0b); block = keypad; }
+    set { at = (0b, 1b, 0b); block = slab; }
+    set { at = (2b, 1b, 0b); block = slab; }
+  }
+
+  export prefab CryoPod {
+    set { at = (0b, 0b, 0b); block = steel; }
+    set { at = (0b, 1b, 0b); block = glass; }
+    set { at = (0b, 2b, 0b); block = glass; }
+    set { at = (0b, 3b, 0b); block = steel; }
+    set { at = (0b, 0b, 1b); block = chassis; }
+    set { at = (0b, 1b, 1b); block = lamp; }
+    set { at = (0b, 2b, 1b); block = cyan_panel; }
+    set { at = (0b, 3b, 1b); block = chassis; }
+  }
+
+  export prefab HoloDisplay {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 2b); block = chassis; }
+    set { at = (1b, 0b, 1b); block = lamp; }
+    set { at = (1b, 1b, 1b); block = glass; }
+    set { at = (1b, 2b, 1b); block = glass; }
+  }
+}

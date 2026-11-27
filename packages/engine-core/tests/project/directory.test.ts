@@ -54,7 +54,7 @@ const stdLibs = loadStdLibs();
 const compiled = compileDirectoryWorkspace(configSource, files, stdLibs);
 assert.ok(compiled.ok, JSON.stringify(compiled));
 if (!compiled.ok) throw new Error('Expected directory compilation');
-assert.equal(compiled.products.length, 23);
+assert.equal(compiled.products.length, 35);
 const swordProduct = compiled.products.find((x) => x.entry.entryName === 'iron_sword')!;
 assert.equal(swordProduct.kind, 'sprite');
 
@@ -232,9 +232,9 @@ const cyclic = files.map((f) =>
 assert.equal(compileDirectoryWorkspace(configSource, cyclic, stdLibs).ok, false);
 
 // Mixed model + sprite workspace compiles together and fails closed on broken/orphaned entries.
-assert.equal(compiled.products.length, 23);
-assert.equal(compiled.products.filter((x) => x.kind === 'model').length, 8);
-assert.equal(compiled.products.filter((x) => x.kind === 'sprite').length, 3);
+assert.equal(compiled.products.length, 35);
+assert.equal(compiled.products.filter((x) => x.kind === 'model').length, 12);
+assert.equal(compiled.products.filter((x) => x.kind === 'sprite').length, 5);
 console.log(
   'directory workspace: Sprite v2 parity, mixed model/sprite, root exclusions and fail-closed contracts ok',
 );

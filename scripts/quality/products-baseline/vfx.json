@@ -7,7 +7,7 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:eb04fb9c7c720bfde60c361da1aecf69b5160036204b3c8a9b60f5b976b4decf",
+      "sourceHash": "sha256:f0581461508add8f80d6402dc5442f3076870b098c2f742ddd973fb2289f56f1",
       "products": [
         {
           "entry": "vfx/arcane_shockwave",
@@ -32,6 +32,12 @@
           "kind": "vfx",
           "glb": "976f386acf85eac03fe9cfa17f4746804f0f1cd539d1de397c401c34e3bb6d4a",
           "spec": "414a2a58f08247d64497db6f6f0c4616a4f5be466686b982f9a55e3a23d1ad5e"
+        },
+        {
+          "entry": "vfx/plasma_bolt",
+          "kind": "vfx",
+          "glb": "daf16fc3cfdcfad9bd1645ca4aacdb75653d393a780fbf62860e023d55762107",
+          "spec": "2e40efe3b74d31f4078e27d41a90cee3cfc9e7f2ef9b53d05d82638aaee4e4b4"
         }
       ],
       "files": [
@@ -102,6 +108,22 @@
         {
           "path": "assets/lightning_strike/lightning_strike.vfx.json",
           "sha256": "7969a2c2dcf9ea69563146e048ffa705fb508840e9a90ff5241d3574afdfa762"
+        },
+        {
+          "path": "assets/plasma_bolt/plasma_bolt.flipbook.json",
+          "sha256": "772efaf270251b807a0d21b2701d4a50d1ef6e3757c2e9662efced405afd74c1"
+        },
+        {
+          "path": "assets/plasma_bolt/plasma_bolt.glb",
+          "sha256": "daf16fc3cfdcfad9bd1645ca4aacdb75653d393a780fbf62860e023d55762107"
+        },
+        {
+          "path": "assets/plasma_bolt/plasma_bolt.particle.json",
+          "sha256": "714c01cbc0c21a7554ce5ef6a4437d971aa02f024af955ac1960a6caeb83c4d1"
+        },
+        {
+          "path": "assets/plasma_bolt/plasma_bolt.vfx.json",
+          "sha256": "e3197a51d701343755e2a04311f7cc075a88d70f5afa4be004cac066cb6d9cf3"
         }
       ]
     }

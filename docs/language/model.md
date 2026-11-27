@@ -461,3 +461,22 @@ model goblin {
   }
 }
 ```
+
+## 8. Bone hitzones, damage states, and armor sockets
+
+Models support bone-bound combat hitzones, progressive damage state metadata, and modular armor sockets:
+
+- **`hitzone <id>`**: binds a localized `box`, `capsule`, or `sphere` hitbox volume to a skeleton `bone` with a damage `multiplier` (`> 0`) and semantic `tag` (e.g. `headshot`, `body`, `critical`, `weakpoint`). Compiled hitzone coordinates and bounds are exported to `.hooks.json`, `assets.json`, GLTF `hitzone_<id>` nodes, and runtime SDKs (`getHitZone`).
+- **Damage states**: declare `state = intact | damaged | destroyed;` inside `variant <name> { ... }` (optionally with `break_vfx = "...";` and `break_sound = "...";`) to elaborate multi-state destructible/damaged entries (`<modelId>_damaged`, `<modelId>_destroyed`) consumable by runtime `setDamageState(state)`.
+- **Armor & gear kits (`std/model/armor/*`)**: socket contracts such as `HeadHelmSocket` (`head_helm` in `std/model/armor/helm`), `std/model/armor/cuirass`, and `std/model/armor/shield` plug cleanly into `equip(socket, assetId)` at runtime.
+
+```text
+hitzone head { bone = head; shape = box; multiplier = 2.5; tag = headshot; }
+hitzone torso { bone = torso; shape = capsule; multiplier = 1.0; tag = body; }
+
+variant damaged {
+  state = damaged;
+  break_vfx = "vfx.splinter";
+  break_sound = "sfx.crack";
+}
+```

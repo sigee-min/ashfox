@@ -1,0 +1,49 @@
+ashfox 1
+sprite ui_inventory_panel {
+  import "std/sprite/ui/panel" as panel;
+
+  profile = ui_9slice;
+  canvas = (32px, 32px);
+  slice = (6px, 6px, 6px, 6px);
+  palette {
+    rivet_gold = #ffe399;
+    seam_dark = #3b2416;
+  }
+
+  rect frame_outer {
+    x = 1px; y = 1px; width = 30px; height = 30px;
+    material = panel.oak_frame;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(1px, 1px), (30px, 30px)]; }
+  }
+  rect rim_inlay {
+    x = 3px; y = 3px; width = 26px; height = 26px;
+    material = panel.brass_trim;
+    shade { form = bevel; light = top_left; contrast = 2; axis = [(3px, 3px), (28px, 28px)]; }
+  }
+  rect inner_field {
+    x = 5px; y = 5px; width = 22px; height = 22px;
+    material = panel.parchment_field;
+    shade { form = flat; light = top_left; contrast = 0; }
+  }
+  paint corner_rivet_tl {
+    at = (2px, 2px);
+    rows = ["rg", "gs"];
+    colors { r = rivet_gold; g = rivet_gold; s = seam_dark; }
+  }
+  paint corner_rivet_tr {
+    at = (28px, 2px);
+    rows = ["gr", "sg"];
+    colors { r = rivet_gold; g = rivet_gold; s = seam_dark; }
+  }
+  paint corner_rivet_bl {
+    at = (2px, 28px);
+    rows = ["gs", "rg"];
+    colors { r = rivet_gold; g = rivet_gold; s = seam_dark; }
+  }
+  paint corner_rivet_br {
+    at = (28px, 28px);
+    rows = ["sg", "gr"];
+    colors { r = rivet_gold; g = rivet_gold; s = seam_dark; }
+  }
+  outline edge { mode = sel_out; strength = 2; inner_rim = true; }
+}

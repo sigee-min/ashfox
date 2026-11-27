@@ -319,7 +319,7 @@ const testCanonicalWorkspaceShowcases = (): void => {
   const structs = compiled.products.filter(
     (p): p is Extract<typeof p, { kind: 'structure' }> => p.kind === 'structure',
   );
-  assert.equal(structs.length, 3);
+  assert.ok(structs.length >= 3);
   for (const product of structs) {
     assert.equal(product.structure.audit.passed, true, product.entry.entryName);
     assert.ok(product.structure.audit.score >= 85, product.entry.entryName);

@@ -1,6 +1,6 @@
 # 아이템 스프라이트와 타일 만들기
 
-스프라이트 원본은 아이템, 심리스 타일, 아이콘, 데칼용 정사각형 PNG(`16×16`, `32×32`, 또는 `64×64`)를 생성하며, CPU 품질 오딧과 4분할 `preview inspect { sheet = inspect; }` 시트를 제공합니다.
+스프라이트 원본은 아이템, 심리스 타일, 아이콘, UI 9-슬라이스 패널(`ui_9slice`), 크로스헤어(`crosshair`), HUD 바(`hud_bar`), 소프트 알파 데칼(`decal`)용 정사각형 PNG(`16×16`, `32×32`, 또는 `64×64`)를 생성하며, CPU 품질 오딧과 4분할 `preview inspect { sheet = inspect; }` 시트를 제공합니다.
 
 ## 완전한 스프라이트 빌드하기
 
@@ -19,7 +19,7 @@
 - **`sel_out` & `inner_rim`**: `outline` 레이어가 검은 테두리 대신 주변 색조와 밝기를 따르는 셀 아웃라인과 좌상단 내측 림 하이라이트를 그려줍니다.
 - **심리스 타일 (`profile = tile`)**: `fill`·`pattern` 레이어(`brick`, `plank`, `voronoi`, `blotch`, `stripe`, `gradient`, `dither`, `crack`)는 캔버스 경계를 토로이달 래핑하여 이음새 없이 타일링됩니다.
 
-`showcase/assets/sprites/iron_sword.ashfox`, `showcase/assets/sprites/ruby_potion.ashfox`, `showcase/assets/sprites/oak_planks.ashfox`와 내장 표준 라이브러리(`ashfox library std list sprite`)에서 전체 아이템·타일 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 프로젝트 모듈은 `assets/module/` 아래에 둡니다.
+`showcase/assets/sprites/iron_sword.ashfox`, `ruby_potion.ashfox`, `oak_planks.ashfox`, `ui_inventory_panel.ashfox`(`ui_9slice` + `slice = (6px, 6px, 6px, 6px)`), `crosshair.ashfox`(`crosshair`)와 내장 표준 라이브러리(`ashfox library std list sprite`: `std/sprite/ui/*`, `std/sprite/decal/*` 포함)에서 전체 예제를 확인할 수 있습니다. 워크스페이스에서 여러 스프라이트가 공유하는 프로젝트 모듈은 `assets/module/` 아래에 둡니다.
 
 ## 픽셀 리뷰하기
 

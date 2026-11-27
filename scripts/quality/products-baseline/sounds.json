@@ -7,7 +7,7 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:eb04fb9c7c720bfde60c361da1aecf69b5160036204b3c8a9b60f5b976b4decf",
+      "sourceHash": "sha256:f0581461508add8f80d6402dc5442f3076870b098c2f742ddd973fb2289f56f1",
       "products": [
         {
           "entry": "sounds/claw_hit",
@@ -20,6 +20,20 @@
             {
               "id": "base",
               "sha256": "6988d4e35bad6e63fa67005c43aefa4df49cff9b6eebfa4c6da7bad9ad7cf2d2"
+            }
+          ]
+        },
+        {
+          "entry": "sounds/energy",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "0da60c08ed0301d9e6100c5ab35b728683f73f47bff79908988873f3464531d2"
+            },
+            {
+              "id": "base",
+              "sha256": "56b913ac84c126f0d8d5387a1faf94954d514395cae9bac06bb29cf013e81c35"
             }
           ]
         },
@@ -66,6 +80,20 @@
           ]
         },
         {
+          "entry": "sounds/storm",
+          "kind": "sound",
+          "variants": [
+            {
+              "id": "alternate",
+              "sha256": "7f5207e7810cf0e49ac00db4af6bafb084c992ce24dd6bba4ae0a46a99a8ff2d"
+            },
+            {
+              "id": "base",
+              "sha256": "c7224dd7d7f0a9613f0e3182db1452cf283d18230ba643a773322618a50236b8"
+            }
+          ]
+        },
+        {
           "entry": "sounds/sword_slash",
           "kind": "sound",
           "variants": [
@@ -90,6 +118,14 @@
           "sha256": "6988d4e35bad6e63fa67005c43aefa4df49cff9b6eebfa4c6da7bad9ad7cf2d2"
         },
         {
+          "path": "assets/energy/energy/alternate.wav",
+          "sha256": "0da60c08ed0301d9e6100c5ab35b728683f73f47bff79908988873f3464531d2"
+        },
+        {
+          "path": "assets/energy/energy/base.wav",
+          "sha256": "56b913ac84c126f0d8d5387a1faf94954d514395cae9bac06bb29cf013e81c35"
+        },
+        {
           "path": "assets/fire_loop/fire_loop/alternate.wav",
           "sha256": "1ebdd6bd70494c17c71c3203b55dc5049f059f83e63dbc4543deb48e08821714"
         },
@@ -112,6 +148,14 @@
         {
           "path": "assets/griffin_call/griffin_call/base.wav",
           "sha256": "1d9e0406d6c6fd3dd663cf9a7738e7a41e8ae3cf5d19e7908257e9ef7b37df44"
+        },
+        {
+          "path": "assets/storm/storm/alternate.wav",
+          "sha256": "7f5207e7810cf0e49ac00db4af6bafb084c992ce24dd6bba4ae0a46a99a8ff2d"
+        },
+        {
+          "path": "assets/storm/storm/base.wav",
+          "sha256": "c7224dd7d7f0a9613f0e3182db1452cf283d18230ba643a773322618a50236b8"
         },
         {
           "path": "assets/sword_slash/sword_slash/alternate.wav",
