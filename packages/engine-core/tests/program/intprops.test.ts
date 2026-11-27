@@ -415,22 +415,13 @@ const testBfsSolverAndClearPath = (): void => {
   assert.equal(
     xPartSolved.clearance.clear_path_cells.some((c) => c[2] === 4),
     false,
-    'axis=x partition at z=4 must block clear_path along z=4',
   );
   assert.equal(xPartSolved.clearance.blocked_seat_count, 1);
 
   const nudgeStoryRoom: InteriorRoomInput = {
     ...baseRoom,
     volumes: [],
-    props: [
-      {
-        id: 'tea_tbl',
-        kind: 'low_table',
-        at: [5, 1, 8],
-        size: [1, 1],
-        facing: 'north',
-      },
-    ],
+    props: [{ id: 'tea_tbl', kind: 'low_table', at: [5, 1, 8], size: [1, 1], facing: 'north' }],
     stories: [
       {
         id: 'tea_story',
@@ -445,48 +436,50 @@ const testBfsSolverAndClearPath = (): void => {
   };
   const nudgedSolved = solveInteriorLayout(nudgeStoryRoom);
   const movedTbl = nudgedSolved.placed_props.find((p) => p.id === 'tea_tbl')!;
-  assert.equal(movedTbl.nudged, true);
   const storyHook = nudgedSolved.hooks.find(
     (h) => h.kind === 'station' && h.station_kind === 'tea_ceremony',
   )!;
-  assert.ok(storyHook, 'Expected station hook for tea_ceremony');
   assert.ok(
-    Math.abs(storyHook.position[0] - (movedTbl.resolved_at[0] + 0.5)) < 0.01 &&
+    movedTbl.nudged &&
+      Math.abs(storyHook.position[0] - (movedTbl.resolved_at[0] + 0.5)) < 0.01 &&
       Math.abs(storyHook.position[2] - (movedTbl.resolved_at[2] + 0.5)) < 0.01,
-    `Expected story to move to nudged table ${JSON.stringify(movedTbl.resolved_at)}, got ${JSON.stringify(storyHook.position)}`,
   );
+  const fracSolve = solveInteriorLayout({
+    ...nudgeStoryRoom,
+    stories: [],
+    props: [
+      { id: 'f1', kind: 'table', at: [3.49, 1, 4], size: [2, 1], facing: 'north' },
+      { id: 'f2', kind: 'table', at: [5, 1, 4], size: [1, 1], facing: 'north' },
+    ],
+  });
+  const [r1, r2] = fracSolve.placed_props;
+  assert.ok(!r1!.nudged && r1!.resolved_at[0] === 3.49 && r2!.nudged);
 };
 
 const testPropRotationAndHookRegressions = (): void => {
-  const ewTable = compileInteriorProp(
-    { id: 'ew_tbl', kind: 'table', at: [4, 1, 4], size: [3, 1], facing: 'east' },
-    TAVERN_DNA,
-    1,
-  );
-  const ewStation = ewTable.hooks.find((h) => h.kind === 'station')!;
+  const ewP = { id: 'ew_tbl', kind: 'table', at: [4, 1, 4], size: [3, 1], facing: 'east' } as const;
+  const ewStation = compileInteriorProp(ewP, TAVERN_DNA, 1).hooks.find(
+    (h) => h.kind === 'station',
+  )!;
   assert.deepEqual([ewStation.position[0], ewStation.position[2]], [4.5, 5.5]);
-
-  const southDining = compileInteriorProp(
-    {
-      id: 's_dine',
-      kind: 'dining_set',
-      at: [4, 1, 4],
-      size: [3, 1],
-      seat_count: 6,
-      facing: 'south',
-    },
-    TAVERN_DNA,
-    2,
-  );
-  const sitXs = southDining.hooks.filter((h) => h.kind === 'sit').map((h) => h.position[0]);
+  const sdP = {
+    id: 's_dine',
+    kind: 'dining_set',
+    at: [4, 1, 4],
+    size: [3, 1],
+    seat_count: 6,
+    facing: 'south',
+  } as const;
+  const sitXs = compileInteriorProp(sdP, TAVERN_DNA, 2)
+    .hooks.filter((h) => h.kind === 'sit')
+    .map((h) => h.position[0]);
   assert.ok(sitXs.every((x) => x >= 4 && x <= 7));
-
-  const cabRes = compileInteriorProp(
-    { id: 'cab1', kind: 'cabinet', at: [2, 1, 2], size: [1, 1], facing: 'east' },
-    TAVERN_DNA,
-    1,
+  const cbP = { id: 'cab1', kind: 'cabinet', at: [2, 1, 2], size: [1, 1], facing: 'east' } as const;
+  assert.ok(
+    compileInteriorProp(cbP, TAVERN_DNA, 1).hooks.some(
+      (h) => h.kind === 'hinge' && h.target_id === 'cab1',
+    ),
   );
-  assert.ok(cabRes.hooks.some((h) => h.kind === 'hinge' && h.target_id === 'cab1'));
 };
 
 testParametricPropsAndAutoJoin();

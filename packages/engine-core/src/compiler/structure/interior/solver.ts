@@ -362,11 +362,11 @@ const findCandidatePlacement = (
   stairCells: OccupiedMap,
 ): readonly [number, number] => {
   const bounds = resolveZoneRect(room, spec.zone_id);
-  const sx = Math.round(spec.at[0]);
-  const sz = Math.round(spec.at[2]);
-  if (canPlacePropAt(spec, sx, sz, bounds, occupied, doorClear, winClear, stairCells)) {
-    return [sx, sz];
+  const [ax, az] = [spec.at[0], spec.at[2]];
+  if (canPlacePropAt(spec, ax, az, bounds, occupied, doorClear, winClear, stairCells)) {
+    return [ax, az];
   }
+  const [sx, sz] = [Math.round(ax), Math.round(az)];
   const candidates: [number, number, number][] = [];
   for (let z = bounds.z0; z <= bounds.z1; z += 1) {
     for (let x = bounds.x0; x <= bounds.x1; x += 1) {
@@ -378,7 +378,7 @@ const findCandidatePlacement = (
     }
   }
   candidates.sort((a, b) => a[0] - b[0]);
-  return candidates.length > 0 ? [candidates[0]![1], candidates[0]![2]] : [sx, sz];
+  return candidates.length > 0 ? [candidates[0]![1], candidates[0]![2]] : [ax, az];
 };
 
 const addStructuralBoxCells = (box: SubVoxelBoxIR, occupied: OccupiedMap): void => {
@@ -428,7 +428,7 @@ const resolvePropSpecs = (
   const placements: Omit<ResolvedPropPlacement, 'surface_y_16'>[] = [];
   for (const spec of room.props ?? []) {
     const [rx, rz] = findCandidatePlacement(spec, room, occupied, doorClear, winClear, stairCells);
-    const nudged = rx !== Math.round(spec.at[0]) || rz !== Math.round(spec.at[2]);
+    const nudged = rx !== spec.at[0] || rz !== spec.at[2];
     const nextAt: Vec3 = nudged ? [rx, spec.at[1], rz] : spec.at;
     if (spec.mount_on !== 'wall' && spec.mount_on !== 'ceiling') {
       const bounds = resolveZoneRect(room, spec.zone_id);
