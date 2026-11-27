@@ -1,0 +1,43 @@
+ashfox 1
+module corridor {
+  palette {
+    stone_brick = mix("minecraft:stone_bricks" * 70%, "minecraft:cracked_stone_bricks" * 20%, "minecraft:mossy_stone_bricks" * 10%);
+    deepslate = "minecraft:deepslate_bricks";
+    floor_tile = "minecraft:deepslate_tiles";
+    slab = "minecraft:deepslate_brick_slab[type=bottom]";
+    torch = "minecraft:torch";
+    chain = "minecraft:chain[axis=y]";
+    lantern = "minecraft:lantern[hanging=true]";
+  }
+
+  export prefab StraightHall {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 4b); block = floor_tile; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 4b); block = stone_brick; }
+    box { from = (4b, 1b, 0b); to = (4b, 3b, 4b); block = stone_brick; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 4b); block = deepslate; }
+    box { from = (1b, 3b, 0b); to = (3b, 3b, 0b); block = slab; }
+    box { from = (1b, 3b, 4b); to = (3b, 3b, 4b); block = slab; }
+    set { at = (1b, 2b, 2b); block = torch; }
+    set { at = (3b, 2b, 2b); block = torch; }
+  }
+
+  export prefab CornerHall {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 4b); block = floor_tile; }
+    box { from = (0b, 1b, 0b); to = (4b, 3b, 0b); block = stone_brick; }
+    box { from = (0b, 1b, 1b); to = (0b, 3b, 4b); block = stone_brick; }
+    box { from = (4b, 1b, 4b); to = (4b, 3b, 4b); block = deepslate; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 4b); block = deepslate; }
+    set { at = (1b, 2b, 1b); block = torch; }
+  }
+
+  export prefab CrossHall {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 4b); block = floor_tile; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 0b); block = deepslate; }
+    box { from = (4b, 1b, 0b); to = (4b, 3b, 0b); block = deepslate; }
+    box { from = (0b, 1b, 4b); to = (0b, 3b, 4b); block = deepslate; }
+    box { from = (4b, 1b, 4b); to = (4b, 3b, 4b); block = deepslate; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 4b); block = deepslate; }
+    set { at = (2b, 3b, 2b); block = chain; }
+    set { at = (2b, 2b, 2b); block = lantern; }
+  }
+}

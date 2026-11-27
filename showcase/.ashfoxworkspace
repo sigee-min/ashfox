@@ -17,13 +17,18 @@
           { "name": "red_fox", "path": "red_fox.ashfox" },
           { "name": "treasure_chest", "path": "treasure_chest.ashfox" },
           { "name": "wall_lantern", "path": "wall_lantern.ashfox" },
-          { "name": "rune_bricks", "path": "rune_bricks.ashfox" }
+          { "name": "rune_bricks", "path": "rune_bricks.ashfox" },
+          { "name": "scifi_drone", "path": "scifi_drone.ashfox" },
+          { "name": "zombie_walker", "path": "zombie_walker.ashfox" },
+          { "name": "iron_helm", "path": "iron_helm.ashfox" },
+          { "name": "oak_tree", "path": "oak_tree.ashfox" }
         ],
         "modules": [],
         "dependencies": [
           { "name": "shared_modules" },
           { "name": "griffin_plumage" },
-          { "name": "fox_fur" }
+          { "name": "fox_fur" },
+          { "name": "genre_modules" }
         ]
       }
     },
@@ -36,7 +41,9 @@
         "entries": [
           { "name": "iron_sword", "path": "iron_sword.ashfox" },
           { "name": "ruby_potion", "path": "ruby_potion.ashfox" },
-          { "name": "oak_planks", "path": "oak_planks.ashfox" }
+          { "name": "oak_planks", "path": "oak_planks.ashfox" },
+          { "name": "ui_inventory_panel", "path": "ui_inventory_panel.ashfox" },
+          { "name": "crosshair", "path": "crosshair.ashfox" }
         ],
         "modules": [],
         "dependencies": []
@@ -52,7 +59,8 @@
           { "name": "flame_cleave", "path": "flame_cleave.ashfox" },
           { "name": "arcane_shockwave", "path": "arcane_shockwave.ashfox" },
           { "name": "lightning_strike", "path": "lightning_strike.ashfox" },
-          { "name": "hearth_embers", "path": "hearth_embers.ashfox" }
+          { "name": "hearth_embers", "path": "hearth_embers.ashfox" },
+          { "name": "plasma_bolt", "path": "plasma_bolt.ashfox" }
         ],
         "modules": [],
         "dependencies": []
@@ -69,7 +77,9 @@
           { "name": "claw_hit", "path": "claw_hit.ashfox" },
           { "name": "footsteps", "path": "footsteps.ashfox" },
           { "name": "fire_loop", "path": "fire_loop.ashfox" },
-          { "name": "griffin_call", "path": "griffin_call.ashfox" }
+          { "name": "griffin_call", "path": "griffin_call.ashfox" },
+          { "name": "energy", "path": "energy.ashfox" },
+          { "name": "storm", "path": "storm.ashfox" }
         ],
         "modules": [],
         "dependencies": []
@@ -84,7 +94,10 @@
         "entries": [
           { "name": "tavern", "path": "tavern.ashfox" },
           { "name": "blacksmith", "path": "blacksmith.ashfox" },
-          { "name": "modern_gallery", "path": "modern_gallery.ashfox" }
+          { "name": "modern_gallery", "path": "modern_gallery.ashfox" },
+          { "name": "scifi_airlock", "path": "scifi_airlock.ashfox" },
+          { "name": "survival_outpost", "path": "survival_outpost.ashfox" },
+          { "name": "dungeon_gate", "path": "dungeon_gate.ashfox" }
         ],
         "modules": [],
         "dependencies": []
@@ -129,6 +142,20 @@
         ],
         "dependencies": []
       }
+    },
+    {
+      "name": "genre_modules",
+      "root": "assets/module/genre",
+      "manifest": {
+        "format": "ashfox-package",
+        "version": 1,
+        "entries": [],
+        "modules": [
+          { "subpath": "./genre_kit", "path": "genre_kit.ashfox" },
+          { "subpath": "./genre_skins", "path": "genre_skins.ashfox" }
+        ],
+        "dependencies": []
+      }
     }
   ],
   "include": ["assets/**/*.ashfox"],
@@ -161,7 +188,22 @@
     { "name": "blacksmith", "entry": { "packageName": "structures", "entryName": "blacksmith" }, "format": "glb", "directory": "dist/structures/blacksmith" },
     { "name": "blacksmith_nbt", "entry": { "packageName": "structures", "entryName": "blacksmith" }, "format": "java_structure", "directory": "dist/structures/blacksmith_nbt" },
     { "name": "modern_gallery", "entry": { "packageName": "structures", "entryName": "modern_gallery" }, "format": "glb", "directory": "dist/structures/modern_gallery" },
-    { "name": "modern_gallery_nbt", "entry": { "packageName": "structures", "entryName": "modern_gallery" }, "format": "java_structure", "directory": "dist/structures/modern_gallery_nbt" }
+    { "name": "modern_gallery_nbt", "entry": { "packageName": "structures", "entryName": "modern_gallery" }, "format": "java_structure", "directory": "dist/structures/modern_gallery_nbt" },
+    { "name": "scifi_drone", "entry": { "packageName": "models", "entryName": "scifi_drone" }, "format": "glb", "directory": "dist/models/scifi_drone" },
+    { "name": "zombie_walker", "entry": { "packageName": "models", "entryName": "zombie_walker" }, "format": "glb", "directory": "dist/models/zombie_walker" },
+    { "name": "iron_helm", "entry": { "packageName": "models", "entryName": "iron_helm" }, "format": "glb", "directory": "dist/models/iron_helm" },
+    { "name": "oak_tree", "entry": { "packageName": "models", "entryName": "oak_tree" }, "format": "glb", "directory": "dist/models/oak_tree" },
+    { "name": "ui_inventory_panel", "entry": { "packageName": "sprites", "entryName": "ui_inventory_panel" }, "format": "png", "directory": "dist/sprites/ui_inventory_panel" },
+    { "name": "crosshair", "entry": { "packageName": "sprites", "entryName": "crosshair" }, "format": "png", "directory": "dist/sprites/crosshair" },
+    { "name": "plasma_bolt", "entry": { "packageName": "vfx", "entryName": "plasma_bolt" }, "format": "glb", "directory": "dist/vfx/plasma_bolt" },
+    { "name": "energy", "entry": { "packageName": "sounds", "entryName": "energy" }, "format": "wav", "directory": "dist/sounds/energy" },
+    { "name": "storm", "entry": { "packageName": "sounds", "entryName": "storm" }, "format": "wav", "directory": "dist/sounds/storm" },
+    { "name": "scifi_airlock", "entry": { "packageName": "structures", "entryName": "scifi_airlock" }, "format": "glb", "directory": "dist/structures/scifi_airlock" },
+    { "name": "scifi_airlock_nbt", "entry": { "packageName": "structures", "entryName": "scifi_airlock" }, "format": "java_structure", "directory": "dist/structures/scifi_airlock_nbt" },
+    { "name": "survival_outpost", "entry": { "packageName": "structures", "entryName": "survival_outpost" }, "format": "glb", "directory": "dist/structures/survival_outpost" },
+    { "name": "survival_outpost_nbt", "entry": { "packageName": "structures", "entryName": "survival_outpost" }, "format": "java_structure", "directory": "dist/structures/survival_outpost_nbt" },
+    { "name": "dungeon_gate", "entry": { "packageName": "structures", "entryName": "dungeon_gate" }, "format": "glb", "directory": "dist/structures/dungeon_gate" },
+    { "name": "dungeon_gate_nbt", "entry": { "packageName": "structures", "entryName": "dungeon_gate" }, "format": "java_structure", "directory": "dist/structures/dungeon_gate_nbt" }
   ],
   "packs": [
     {
@@ -192,7 +234,18 @@
         { "id": "sfx.griffin_call", "source": "griffin_call", "path": "audio/griffin_call" },
         { "id": "structure.tavern", "source": "tavern", "path": "structures/tavern" },
         { "id": "structure.blacksmith", "source": "blacksmith", "path": "structures/blacksmith" },
-        { "id": "structure.modern_gallery", "source": "modern_gallery", "path": "structures/modern_gallery" }
+        { "id": "structure.modern_gallery", "source": "modern_gallery", "path": "structures/modern_gallery" },
+        { "id": "creature.scifi_drone", "source": "scifi_drone", "path": "models/scifi_drone" },
+        { "id": "creature.zombie_walker", "source": "zombie_walker", "path": "models/zombie_walker" },
+        { "id": "armor.iron_helm", "source": "iron_helm", "path": "models/iron_helm" },
+        { "id": "nature.oak_tree", "source": "oak_tree", "path": "models/oak_tree" },
+        { "id": "ui.inventory_panel", "source": "ui_inventory_panel", "path": "sprites/ui" },
+        { "id": "ui.crosshair", "source": "crosshair", "path": "sprites/ui" },
+        { "id": "sfx.energy", "source": "energy", "path": "audio/energy" },
+        { "id": "sfx.storm", "source": "storm", "path": "audio/storm" },
+        { "id": "structure.scifi_airlock", "source": "scifi_airlock", "path": "structures/scifi_airlock" },
+        { "id": "structure.survival_outpost", "source": "survival_outpost", "path": "structures/survival_outpost" },
+        { "id": "structure.dungeon_gate", "source": "dungeon_gate", "path": "structures/dungeon_gate" }
       ]
     },
     {
@@ -217,6 +270,19 @@
       "sounds": [
         { "source": "sword_slash", "id": "ashfox:combat.sword_slash", "replace": true, "subtitle": null, "volume": 1, "pitch": 1, "stream": false, "variants": "all" },
         { "source": "claw_hit", "id": "ashfox:combat.claw_hit", "replace": true, "subtitle": null, "volume": 1, "pitch": 1, "stream": false, "variants": "all" }
+      ]
+    },
+    {
+      "name": "survival_ogg",
+      "format": "game_assets",
+      "directory": "dist/survival-ogg",
+      "archive": true,
+      "audio": "ogg",
+      "unitsPerMeter": 1,
+      "pixelsPerUnit": 16,
+      "spriteFilter": "nearest",
+      "assets": [
+        { "id": "sfx.storm", "source": "storm", "path": "audio/storm" }
       ]
     }
   ]

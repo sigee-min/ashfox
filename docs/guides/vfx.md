@@ -60,6 +60,6 @@ npx --no-install ashfox build flame_cleave.ashfox --json
 1. **Layered readability**: Combine crisp geometric elements (`slash_arc`, `ribbon`, `ring`, `beam`, `dome`) with deterministic `emitter` particle bursts, quantized color palettes (`core` -> `mid` -> `edge` -> `smoke`), and sharp dissolve silhouettes (`voronoi`, `simplex`, `directional_wipe`, `radial_noise`).
 2. **Blend modes & soft alpha**: Use `blend = additive` for fiery or arcane cores, `blend = premul` or `blend = blend` for soft smoke and impact dust. Exporters emit `KHR_materials_unlit` and `extras.ashfoxBlendMode` with 8-bit soft-alpha textures.
 3. **Inspect flipbooks & peak frames**: Declare `preview flipbook { sheet = flipbook; }` for a sprite-sheet grid plus `.flipbook.json` metadata, and render single `time = ...` views with `background = dark` or `transparent` to verify silhouette timing.
-4. **Budget targets**: Built `.glb` artifacts stay within stylized game limits (`<= 4` draws, `<= 2,500` triangles, `<= 150 KB`).
+4. **Budget targets & stdlib recipes**: Built `.glb` artifacts stay within stylized game limits (`<= 4` draws, `<= 2,500` triangles, `<= 150 KB`). Reuse parameterized `std/vfx/*` recipes via `use` (`std/vfx/weapon/plasma_bolt`, `std/vfx/shield/*`, `std/vfx/magic/*`, `std/vfx/weather/*`, `std/vfx/impact/*`) — inspect `showcase/assets/vfx/plasma_bolt.ashfox`.
 
 See [VFX syntax reference](../language/vfx.md) for the full `ashfox 1` VFX grammar and block options.

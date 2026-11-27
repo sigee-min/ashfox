@@ -1,0 +1,100 @@
+ashfox 1
+module genre_skins {
+  import "std/core/material/metal" as metal;
+  import "std/core/material/wood" as wood;
+  import "std/core/material/fabric" as fabric;
+  import "std/core/palette/modern" as modpal;
+  import "./genre_kit.ashfox" as kit;
+
+  export surface drone_skin: kit.DroneSurface {
+    material = double;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void; background_alpha = 255;
+      palette {
+        void = #1a212b;
+        hull = (modpal.StudioPolymer.graphite_shadow, modpal.StudioPolymer.graphite_base, modpal.StudioPolymer.graphite_light);
+        armor = (metal.MetalParams.iron_base, #95a3b3, #cad6e3);
+        strut = (#262f3b, #435163, #66788f);
+        rotor = (#667587, #8b9bb0, #bdd0e3);
+        gimbal = (#1e242e, #354152, #53647d);
+        lens = (modpal.StudioPolymer.indicator_cyan, modpal.BrushedAlloy.glass_highlight, #e0fbff);
+      }
+      stamp panel_seam { pixels = "......../dddddddd/..l..l../dddddddd"; d = void; l = lens; }
+      chart hull box { fill = hull; roughness = 0.36; metallic = 0.18; roughness_variation = 0.08; grain = soft; edge_wear = 0.25; pattern ao { strength = 0.4; radius = 0.8u; } face up { stamp panel_seam { at = (1px, 1px); protect = true; } } }
+      chart armor box { fill = armor; roughness = 0.26; metallic = 0.86; grain = brushed; edge_wear = 0.35; pattern border { paint = strut; width = 1px; edges = all; } }
+      chart fin box { fill = armor; roughness = 0.28; metallic = 0.84; grain = brushed; pattern border { paint = lens; width = 1px; edges = top; } }
+      chart strut box { fill = strut; roughness = 0.42; metallic = 0.15; grain = soft; pattern stripe { paint = armor; axis = x; period = 3px; width = 1px; } }
+      chart leg_strut box { fill = strut; roughness = 0.42; metallic = 0.15; grain = soft; pattern border { paint = armor; width = 1px; edges = all; } }
+      chart skid box { fill = armor; roughness = 0.32; metallic = 0.80; grain = brushed; pattern border { paint = strut; width = 1px; edges = all; } }
+      chart guard box { fill = armor; roughness = 0.28; metallic = 0.82; grain = brushed; pattern border { paint = strut; width = 1px; edges = all; } }
+      chart rotor box { fill = rotor; roughness = 0.24; metallic = 0.88; grain = brushed; pattern border { paint = lens; width = 1px; edges = all; } }
+      chart gimbal box { fill = gimbal; roughness = 0.38; metallic = 0.18; grain = soft; pattern ao { strength = 0.35; radius = 0.6u; } }
+      grain soft { seed = 8801; }
+      tone painterly;
+    }
+  }
+
+  export surface drone_glow: kit.DroneGlow {
+    material = opaque;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      render_mode = emissive;
+      background = void; background_alpha = 255;
+      palette {
+        void = #141c24;
+        thruster = (modpal.StudioPolymer.signal_orange, #ffae42, #ffd685);
+        lens = (modpal.StudioPolymer.indicator_cyan, modpal.BrushedAlloy.glass_highlight, #e0fbff);
+      }
+      chart thruster box { fill = thruster; roughness = 0.20; metallic = 0.0; grain = soft; }
+      chart lens box { fill = lens; roughness = 0.14; metallic = 0.0; grain = none; }
+      grain soft { seed = 8802; }
+      tone painterly;
+    }
+  }
+
+  export surface zombie_skin: kit.ZombieSurface {
+    material = double;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void; background_alpha = 0;
+      palette {
+        void = #000000;
+        skin = (#475e42, #6f8c66, #96b38b);
+        rot = (#364733, #52694d, #738c6c);
+        coat = (fabric.FabricParams.leather_shadow, #4a5461, #6b788a);
+        pants = (#2d343d, #444f5c, #606e80);
+        rib = (#7d695a, #b89e8a, #dec6b4);
+        boot = (wood.WoodParams.spruce_shadow, wood.WoodParams.spruce_base, wood.WoodParams.spruce_light);
+        blood = (#631919, #9c2929, #c94444);
+        eye = #d9f06e;
+        pupil = #1c2419;
+      }
+      stamp zombie_eyes { pixels = ".kk..kk./keekkeek/.kk..kk."; k = pupil; e = eye; }
+      stamp zombie_snarl { pixels = "keekkeek/.kkkkkk./brrrrrrb"; k = pupil; e = eye; b = blood; r = rib; }
+      chart hips box { fill = pants; roughness = 0.88; grain = cloth; pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart belt box { fill = boot; roughness = 0.82; grain = clustered; pattern border { paint = rib; width = 1px; edges = all; } }
+      chart chest box { fill = coat; roughness = 0.88; grain = cloth; pattern ao { strength = 0.42; radius = 0.9u; } pattern border { paint = pants; width = 1px; edges = bottom; } }
+      chart collar box { fill = coat; roughness = 0.88; grain = cloth; pattern border { paint = rot; width = 1px; edges = top; } }
+      chart rib box { fill = rib; roughness = 0.62; grain = soft; pattern stripe { paint = blood; axis = y; period = 2px; width = 1px; } }
+      chart head box { fill = skin; roughness = 0.84; grain = soft; pattern gradient { to = rot; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.4; radius = 0.8u; } }
+      chart jaw box { fill = rot; roughness = 0.86; grain = clustered; pattern border { paint = blood; width = 1px; edges = top; } }
+      chart brow box { fill = rot; roughness = 0.86; grain = soft; }
+      chart face_neutral flat { fill = skin; stamp zombie_eyes { at = (1px, 2px); protect = true; } }
+      chart face_alert flat { fill = skin; stamp zombie_snarl { at = (1px, 2px); protect = true; } }
+      chart shoulder box { fill = coat; roughness = 0.88; grain = cloth; pattern border { paint = blood; width = 1px; edges = bottom; } }
+      chart arm box { fill = skin; roughness = 0.84; grain = soft; pattern gradient { to = rot; axis = y; space = local; soft = 0.25; } }
+      chart hand box { fill = rot; roughness = 0.86; grain = clustered; pattern border { paint = blood; width = 1px; edges = bottom; } }
+      chart thigh box { fill = pants; roughness = 0.88; grain = cloth; pattern border { paint = coat; width = 1px; edges = top; } }
+      chart shin box { fill = pants; roughness = 0.88; grain = cloth; pattern border { paint = boot; width = 1px; edges = bottom; } }
+      chart rot_shin box { fill = skin; roughness = 0.84; grain = soft; pattern border { paint = blood; width = 1px; edges = top; } }
+      chart boot box { fill = boot; roughness = 0.82; grain = clustered; pattern border { paint = rot; width = 1px; edges = top; } }
+      chart rag flat { coverage = 11111111111111111111111111111111111111111111111111111111111111110111011101100110; fill = coat; roughness = 0.90; grain = cloth; }
+      grain soft { seed = 8803; }
+      tone painterly;
+    }
+  }
+}

@@ -1,0 +1,17 @@
+ashfox 1
+model zombie_walker {
+  import "std/model/rig/biped" as biped;
+  import "std/model/motion/zombie" as zmotion;
+  import "std/core/hook/combat" as combat_hook;
+  import "genre_modules/genre_kit" as kit;
+  import "genre_modules/genre_skins" as skins;
+
+  settings { density = 16; forward = north; profile = creature; }
+  skeleton = biped.BipedSkeleton;
+  motions = [zmotion.shamble, zmotion.bite_lunge];
+  use kit.ZombieBody(hunch = 7.0) as body { skeleton = biped.BipedRig; skin = skins.zombie_skin; }
+
+  hitzone head { bone = head; shape = box; multiplier = 2.5; tag = headshot; }
+  hitzone torso { bone = torso; shape = capsule; multiplier = 1.0; tag = body; }
+  cue bite_hit : combat_hook.HitboxArc { clip = bite_lunge; at = 0.25s..0.45s; reach = 14u; damage = 14; damage_type = slash; }
+}

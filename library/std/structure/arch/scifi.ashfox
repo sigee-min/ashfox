@@ -1,0 +1,57 @@
+ashfox 1
+module scifi {
+  export schema DoorPortal : anchor {
+    field door_mode : enum(sliding_airlock, blast_door, iris) = sliding_airlock;
+    field locked : bool = false;
+    field keycard : string = "";
+    field destination : string = "";
+    field facing : enum(north, south, east, west) = north;
+    mc_block = "minecraft:iron_door[facing=${facing}]";
+  }
+
+  palette {
+    hull = "minecraft:light_gray_concrete";
+    rib = "minecraft:gray_concrete";
+    deck = "minecraft:black_concrete";
+    iron = "minecraft:iron_block";
+    quartz_slab = "minecraft:smooth_quartz_slab[type=bottom]";
+    viewport = "minecraft:cyan_stained_glass_pane";
+    lamp = "minecraft:sea_lantern";
+    door_lo = "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]";
+    door_hi = "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]";
+    hazard = "minecraft:copper_block";
+  }
+
+  export prefab RibbedBulkhead {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 1b); block = rib; }
+    box { from = (0b, 1b, 0b); to = (0b, 3b, 1b); block = rib; }
+    box { from = (4b, 1b, 0b); to = (4b, 3b, 1b); block = rib; }
+    box { from = (1b, 1b, 1b); to = (3b, 3b, 1b); block = hull; }
+    box { from = (1b, 2b, 1b); to = (3b, 2b, 1b); block = viewport; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 1b); block = iron; }
+    set { at = (2b, 4b, 0b); block = lamp; }
+  }
+
+  export prefab AirlockDoor {
+    box { from = (0b, 0b, 0b); to = (4b, 0b, 2b); block = deck; }
+    box { from = (0b, 1b, 1b); to = (0b, 3b, 1b); block = rib; }
+    box { from = (4b, 1b, 1b); to = (4b, 3b, 1b); block = rib; }
+    box { from = (1b, 1b, 1b); to = (1b, 3b, 1b); block = iron; }
+    box { from = (3b, 1b, 1b); to = (3b, 3b, 1b); block = iron; }
+    set { at = (2b, 1b, 1b); block = door_lo; }
+    set { at = (2b, 2b, 1b); block = door_hi; }
+    set { at = (2b, 3b, 1b); block = lamp; }
+    box { from = (0b, 4b, 0b); to = (4b, 4b, 2b); block = rib; }
+  }
+
+  export prefab LandingPadBay {
+    box { from = (0b, 0b, 0b); to = (6b, 0b, 6b); block = deck; }
+    box { from = (1b, 0b, 1b); to = (5b, 0b, 5b); block = quartz_slab; }
+    set { at = (0b, 1b, 0b); block = hazard; }
+    set { at = (6b, 1b, 0b); block = hazard; }
+    set { at = (0b, 1b, 6b); block = hazard; }
+    set { at = (6b, 1b, 6b); block = hazard; }
+    set { at = (3b, 0b, 0b); block = lamp; }
+    set { at = (3b, 0b, 6b); block = lamp; }
+  }
+}

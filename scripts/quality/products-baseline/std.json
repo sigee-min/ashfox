@@ -7,7 +7,7 @@
     {
       "input": "library/std",
       "ok": true,
-      "sourceHash": "5dcf4cab2b3e8ece81c2817c57ddfc5d05d4a4a877e84d40552f3296a12a8305",
+      "sourceHash": "22e85c995be56713b0b2144bad03ac7f8acea8d087ae4ed04f8e8aeb716b8f6e",
       "modules": [
         {
           "path": "library/std/core/hook/combat.ashfox",
@@ -1339,6 +1339,68 @@
           "params": []
         },
         {
+          "path": "library/std/structure/arch/postapoc.ashfox",
+          "specifier": "std/structure/arch/postapoc",
+          "sha256": "c2c4f78ab569690d776d22a8f51bae6ddf005209062b4a1eddfeeee891f080ae",
+          "exports": [
+            "PlankBarricade",
+            "RustedWireFence",
+            "SandbagWall"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/arch/scifi.ashfox",
+          "specifier": "std/structure/arch/scifi",
+          "sha256": "7201a4e345f83e47dbc4b3ff7c9313cb18b21a9bd4d78829f790601c22fd68fb",
+          "exports": [
+            "AirlockDoor",
+            "DoorPortal",
+            "LandingPadBay",
+            "RibbedBulkhead"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/chamber.ashfox",
+          "specifier": "std/structure/dungeon/chamber",
+          "sha256": "1270fea6c010099ced5c2d87f241773b4c9e07e0f35c036ba2bcc8bfab33d334",
+          "exports": [
+            "BossVault",
+            "CryptChamber",
+            "TorchSconce"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/corridor.ashfox",
+          "specifier": "std/structure/dungeon/corridor",
+          "sha256": "ee9c05308aa07310a31d55773a19b17a71cc89437574ffae2fa6208cea08615f",
+          "exports": [
+            "CornerHall",
+            "CrossHall",
+            "StraightHall"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/dungeon/trap_gate.ashfox",
+          "specifier": "std/structure/dungeon/trap_gate",
+          "sha256": "3decdd40306d28c9e46c722780b554b30d87d901f403a36f026b2088454efd36",
+          "exports": [
+            "BossGate",
+            "PortcullisGate",
+            "PressureTrapPad",
+            "TrapPlate"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
           "path": "library/std/structure/furnish/display.ashfox",
           "specifier": "std/structure/furnish/display",
           "sha256": "1d6db4143476ad50bbb334aff92ea03bb87469dbdd7d1684f802eedc4152f438",
@@ -1410,6 +1472,30 @@
             "std/structure/furnish/display",
             "std/structure/furnish/lighting"
           ],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/postapoc.ashfox",
+          "specifier": "std/structure/interior/postapoc",
+          "sha256": "2046b2342e91f3ffe6c06ca2c36b50aff96ca111df6e975b69f080294af39489",
+          "exports": [
+            "CampOutpostBay",
+            "RuinedCounter",
+            "SurvivalStash"
+          ],
+          "imports": [],
+          "params": []
+        },
+        {
+          "path": "library/std/structure/interior/scifi.ashfox",
+          "specifier": "std/structure/interior/scifi",
+          "sha256": "4f94b497072eba2bf5753a6ada107b3626840568e4339839db66bbbf20370f6e",
+          "exports": [
+            "ControlConsole",
+            "CryoPod",
+            "HoloDisplay"
+          ],
+          "imports": [],
           "params": []
         },
         {

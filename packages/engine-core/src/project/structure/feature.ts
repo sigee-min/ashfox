@@ -237,6 +237,101 @@ const parseSpreadWeatherRule = (
   return { kind, height, target, into, rate };
 };
 
+const parseBoundedRate = (
+  attrs: Record<string, AttrEntry>,
+  file: string,
+  span: SourceSpan,
+  fallback: number,
+): number => {
+  const rate = attrs.rate ? asNum(file, span, attrs.rate, 'rate') : fallback;
+  if (rate < 0 || rate > 1) failAst(file, span, 'rate 0..1', String(rate));
+  return rate;
+};
+
+const parseBoundedInt = (
+  entry: AttrEntry | undefined,
+  name: string,
+  min: number,
+  max: number,
+  fallback: number,
+  file: string,
+  span: SourceSpan,
+): number => {
+  const val = entry ? asInt(file, span, entry, name) : fallback;
+  if (val < min || val > max) failAst(file, span, `${name} ${min}..${max}`, String(val));
+  return val;
+};
+
+const parseTargetIntoRule = (
+  kind: 'rust_streak' | 'vine_overgrowth',
+  attrs: Record<string, AttrEntry>,
+  file: string,
+  span: SourceSpan,
+): WeatheringRule => {
+  const lenKey = kind === 'rust_streak' ? 'length' : 'height';
+  assertAllowedAttrs(file, span, attrs, new Set(['target', 'into', 'rate', lenKey]));
+  const rate = parseBoundedRate(attrs, file, span, kind === 'rust_streak' ? 0.35 : 0.3);
+  const opt = pickOptStrs(file, span, attrs, [
+    ['target', 'target'],
+    ['into', 'into'],
+  ]);
+  if (kind === 'rust_streak') {
+    return {
+      kind,
+      rate,
+      length: parseBoundedInt(attrs.length, 'length', 1, 16, 4, file, span),
+      ...opt,
+    };
+  }
+  return {
+    kind,
+    rate,
+    height: parseBoundedInt(attrs.height, 'height', 1, 24, 6, file, span),
+    ...opt,
+  };
+};
+
+const parseGenreWeatherRule = (
+  kind: string,
+  attrs: Record<string, AttrEntry>,
+  file: string,
+  span: SourceSpan,
+): WeatheringRule | null => {
+  if (kind === 'rust_streak' || kind === 'vine_overgrowth') {
+    return parseTargetIntoRule(kind, attrs, file, span);
+  }
+  if (kind === 'wall_breach') {
+    assertAllowedAttrs(
+      file,
+      span,
+      attrs,
+      new Set(['target', 'rubble', 'rate', 'max_width', 'height']),
+    );
+    return {
+      kind,
+      rate: parseBoundedRate(attrs, file, span, 0.25),
+      maxWidth: parseBoundedInt(attrs.max_width, 'max_width', 1, 4, 2, file, span),
+      height: parseBoundedInt(attrs.height, 'height', 1, 3, 2, file, span),
+      ...pickOptStrs(file, span, attrs, [
+        ['target', 'target'],
+        ['rubble', 'rubble'],
+      ]),
+    };
+  }
+  if (kind === 'shattered_glass') {
+    assertAllowedAttrs(file, span, attrs, new Set(['target', 'shard', 'rate']));
+    return {
+      kind,
+      rate: parseBoundedRate(attrs, file, span, 0.4),
+      ...pickOptStrs(file, span, attrs, [
+        ['target', 'target'],
+        ['shard', 'shard'],
+      ]),
+    };
+  }
+  return null;
+};
+
 const parseWeatheringRule = (sub: AshfoxNamedBlock, file: string): WeatheringRule => {
   const attrs = readBlockAssigns(sub.block, file);
   const kind = sub.blockKind;
@@ -260,6 +355,8 @@ const parseWeatheringRule = (sub: AshfoxNamedBlock, file: string): WeatheringRul
     }
     return { kind, radius, rate };
   }
+  const extra = parseGenreWeatherRule(kind, attrs, file, sub.span);
+  if (extra) return extra;
   return failAst(file, sub.span, 'weathering rule', kind);
 };
 

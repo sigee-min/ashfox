@@ -106,7 +106,30 @@ export type WeatheringRule =
   | Readonly<{ kind: 'ground_moss'; height: number; target: string; into: string; rate: number }>
   | Readonly<{ kind: 'corner_quoin'; target: string; corners: string }>
   | Readonly<{ kind: 'chimney_soot'; radius: number; rate: number }>
-  | Readonly<{ kind: 'eave_shadow'; target: string; into: string; rate: number }>;
+  | Readonly<{ kind: 'eave_shadow'; target: string; into: string; rate: number }>
+  | Readonly<{
+      kind: 'rust_streak';
+      target?: string;
+      into?: string;
+      rate: number;
+      length: number;
+    }>
+  | Readonly<{
+      kind: 'wall_breach';
+      target?: string;
+      rubble?: string;
+      rate: number;
+      maxWidth: number;
+      height: number;
+    }>
+  | Readonly<{ kind: 'shattered_glass'; target?: string; shard?: string; rate: number }>
+  | Readonly<{
+      kind: 'vine_overgrowth';
+      target?: string;
+      into?: string;
+      rate: number;
+      height: number;
+    }>;
 
 export type StructureOp =
   | Readonly<{

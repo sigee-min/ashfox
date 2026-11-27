@@ -51,6 +51,9 @@ runtime.update(dt);
 
 - `actor.anchors` and `actor.getAnchor(id)` resolve `anchor_<id>` scene nodes or `.hooks.json` anchors.
 - `actor.colliders` exposes the fitted `capsule` or `box` collider set from `.hooks.json` or `assets.json`.
+- `actor.getHitZone(collider)` resolves the matching `hitzone` metadata (`id`, `bone`, `multiplier`, `tag`) for bone-bound critical/headshot hit detection.
+- `actor.setDamageState(state)` (`"intact" | "damaged" | "destroyed"`) swaps damage-state nodes/variants and emits the `"damage_state"` event cue.
+- `actor.equip(socket, assetId)` (`null` to unequip) attaches or replaces gear on a declared model socket anchor across Three.js, Unity (`Equip`), and Godot (`equip`).
 - `actor.lod` exposes the `THREE.LOD` group when `MSFT_lod` tiers (`*_LOD0`, `*_LOD1`, `*_LOD2`) are present.
 
 ## Unity C# integration

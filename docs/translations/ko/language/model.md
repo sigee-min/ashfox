@@ -170,3 +170,13 @@ motion은 움직일 rig contract를 이름으로 지정합니다. 트랙은 관�
 `model` 단위 안의 `variant <name> { key = value; ... }` 선언은 `<modelId>_<variant>` 엔트리로 전개되어 변형별 바인딩을 `use` 인자·`surface`·훅에 치환하며, 변경되지 않은 모듈·형상·텍스처·동작은 그대로 공유합니다.
 
 {{source-code:10}}
+
+## 8. 본 히트존, 손상 상태 및 방어구 소켓
+
+모델은 본(bone)에 바인딩된 전투 히트존, 단계별 손상 상태 메타데이터, 모듈형 방어구 소켓을 지원합니다:
+
+- **`hitzone <id>`**: 스켈레톤 `bone`에 `box`·`capsule`·`sphere` 판정 볼륨과 데미지 배수 `multiplier`(`> 0`), 의미 태그 `tag`(예: `headshot`, `body`, `critical`, `weakpoint`)를 바인딩합니다. 컴파일된 히트존 좌표와 경계는 `.hooks.json`, `assets.json`, glTF `hitzone_<id>` 노드 및 런타임 SDK(`getHitZone`)로 출력됩니다.
+- **손상 상태(Damage states)**: `variant <name> { ... }` 블록 안에 `state = intact | damaged | destroyed;`(선택적으로 `break_vfx = "...";`, `break_sound = "...";`)를 선언해 런타임 `setDamageState(state)`로 전환 가능한 손상/파괴 엔트리(`<modelId>_damaged`, `<modelId>_destroyed`)를 전개합니다.
+- **방어구·장비 키트 (`std/model/armor/*`)**: `std/model/armor/helm`의 `HeadHelmSocket`(`head_helm`), `cuirass`, `shield` 소켓 계약을 사용해 런타임 `equip(socket, assetId)`로 장비를 착탈할 수 있습니다.
+
+{{source-code:11}}

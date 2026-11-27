@@ -1,0 +1,34 @@
+ashfox 1
+module postapoc {
+  palette {
+    plank = "minecraft:oak_planks";
+    spruce = "minecraft:spruce_planks";
+    trapdoor = "minecraft:oak_trapdoor[facing=south,half=bottom,open=true]";
+    sand = "minecraft:sand";
+    gravel = "minecraft:gravel";
+    cobble = "minecraft:cobblestone";
+    rust = "minecraft:exposed_copper";
+    wire = "minecraft:iron_bars";
+  }
+
+  export prefab PlankBarricade {
+    box { from = (0b, 0b, 0b); to = (2b, 0b, 0b); block = spruce; }
+    set { at = (0b, 1b, 0b); block = plank; }
+    set { at = (1b, 1b, 0b); block = trapdoor; }
+    set { at = (2b, 1b, 0b); block = plank; }
+  }
+
+  export prefab SandbagWall {
+    box { from = (0b, 0b, 0b); to = (3b, 0b, 0b); block = sand; }
+    set { at = (1b, 1b, 0b); block = sand; }
+    set { at = (2b, 1b, 0b); block = gravel; }
+    set { at = (0b, 1b, 0b); block = cobble; }
+  }
+
+  export prefab RustedWireFence {
+    set { at = (0b, 0b, 0b); block = rust; }
+    set { at = (3b, 0b, 0b); block = rust; }
+    box { from = (1b, 0b, 0b); to = (2b, 0b, 0b); block = wire; }
+    box { from = (0b, 1b, 0b); to = (3b, 1b, 0b); block = wire; }
+  }
+}
