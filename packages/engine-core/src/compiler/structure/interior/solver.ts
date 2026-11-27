@@ -17,6 +17,7 @@ import { compileStoryVignette } from './vignettes';
 import {
   DIRS_4,
   TALL_WALL_PROPS,
+  addMezzanineDeckCells,
   addOccupied,
   boxCellRange16,
   cellKey,
@@ -396,12 +397,17 @@ const collectStructuralOccupied = (
   structuralBoxes: readonly SubVoxelBoxIR[],
 ): OccupiedMap => {
   const occupied: OccupiedMap = new Map();
+  const hasMezzBox = structuralBoxes.some((b) => b.semantic_tag === 'volume_mezzanine');
   for (const vol of room.volumes) {
     if (vol.kind === 'partition')
       addPartitionCells(room, vol, (k, y0, y1) => addOccupied(occupied, k, y0, y1));
+    else if (vol.kind === 'mezzanine' && !hasMezzBox) addMezzanineDeckCells(room, vol, occupied);
   }
   for (const box of structuralBoxes) {
-    if (isNonWalkObstacle(box.semantic_tag ?? '') || box.to_16[1] - box.from_16[1] <= 3.5) continue;
+    const tag = box.semantic_tag ?? '';
+    const keepForPlacement = tag === 'volume_mezzanine';
+    if (!keepForPlacement && (isNonWalkObstacle(tag) || box.to_16[1] - box.from_16[1] <= 3.5))
+      continue;
     addStructuralBoxCells(box, occupied);
   }
   return occupied;

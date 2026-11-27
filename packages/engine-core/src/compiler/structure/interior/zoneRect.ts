@@ -417,6 +417,20 @@ export const collectWindowZones = (openings: readonly InteriorOpeningSpan[]): Oc
   return zones;
 };
 
+export const addMezzanineDeckCells = (
+  room: InteriorRoomInput,
+  vol: MezzanineVolumeSpec,
+  occupied: OccupiedMap,
+): void => {
+  const rect = resolveMezzanineRect(room, vol);
+  const top = room.bounds_from[1] + 1 + resolveMezzanineYOffset(room, vol.y_offset_b);
+  const bot = top - 4 / SUBVOXEL_UNITS_PER_BLOCK;
+  for (let z = rect.oz; z < rect.oz + rect.d; z += 1) {
+    for (let x = rect.ox; x < rect.ox + rect.w; x += 1)
+      addOccupied(occupied, cellKey(x, z), bot, top);
+  }
+};
+
 export const boxYawCosSin = (deg?: number): readonly [number, number] => {
   const rad = ((deg ?? 0) * Math.PI) / 180;
   return Math.abs(rad) > 1e-4 ? [Math.cos(rad), Math.sin(rad)] : [1, 0];

@@ -162,22 +162,16 @@ const testClosedStyleDnaContract = (): void => {
       assert.ok(dna.organic >= 0 && dna.organic <= 1);
     }
   }
-  const japandi = parseClosedStyleDna({
-    arch: 'modern',
-    furn: 'japanese',
-    mood: 'zen_daylight',
-    organic: 0.12,
-  });
-  assert.equal(japandi.arch, 'modern');
-  assert.equal(japandi.furn, 'japanese');
+  const j = parseClosedStyleDna({ arch: 'modern', furn: 'japanese', organic: 0.12 });
+  assert.deepEqual([j.arch, j.furn, j.organic], ['modern', 'japanese', 0.12]);
 
-  assert.throws(
-    () => parseClosedStyleDna({ arch: 'rustic', unknownKey: 1 }),
-    InteriorContractError,
-  );
-  assert.throws(() => parseClosedStyleDna({ arch: 'baroque' }), InteriorContractError);
-  assert.throws(() => parseClosedStyleDna({ arch: 'scifi', organic: 1.5 }), InteriorContractError);
-  assert.throws(() => parseClosedStyleDna({ arch: 'scifi', mood: 'neon' }), InteriorContractError);
+  for (const bad of [
+    { arch: 'rustic', unknownKey: 1 },
+    { arch: 'baroque' },
+    { arch: 'scifi', organic: 1.5 },
+    { arch: 'scifi', mood: 'neon' },
+  ])
+    assert.throws(() => parseClosedStyleDna(bad), InteriorContractError);
 };
 
 const testFiveLayerShellAndCorbelGuard = (): void => {
@@ -189,24 +183,17 @@ const testFiveLayerShellAndCorbelGuard = (): void => {
     [12, 3, 5],
   ]);
   assert.equal(shell.shell_layer_count, 5);
-  assert.ok(shell.boxes.some((b) => b.semantic_tag === 'floor_tatami'));
-  assert.ok(shell.boxes.some((b) => b.semantic_tag === 'baseboard_trim'));
-  assert.ok(shell.boxes.some((b) => b.semantic_tag === 'wainscot_shoji_lattice'));
-  assert.ok(shell.boxes.some((b) => b.semantic_tag === 'molding_timber_cornice'));
-  assert.ok(shell.boxes.some((b) => b.semantic_tag === 'ceiling_slatted'));
-
+  for (const t of 'floor_tatami,baseboard_trim,wainscot_shoji_lattice,molding_timber_cornice,ceiling_slatted'.split(
+    ',',
+  ))
+    assert.ok(shell.boxes.some((b) => b.semantic_tag === t));
   const doorBaseboards = shell.boxes.filter(
     (b) =>
       b.semantic_tag === 'baseboard_trim' &&
       b.id.startsWith('bb_south_') &&
       (b.id.endsWith('_5') || b.id.endsWith('_6')),
   );
-  assert.equal(doorBaseboards.length, 0, 'baseboard must skip floor-level door openings');
-
-  assert.deepEqual(shell.corbel_blocked_cells, [
-    [5, 2, 5],
-    [5, 2, 9],
-  ]);
+  assert.equal(doorBaseboards.length, 0);
   const guard = filterSafeExteriorCorbels(
     [
       [4, 2, 4],
@@ -215,8 +202,11 @@ const testFiveLayerShellAndCorbelGuard = (): void => {
     [{ from: ryokan.bounds_from, to: ryokan.bounds_to, enclosed: true }],
     ryokan.openings,
   );
-  assert.deepEqual(guard.blocked, [[4, 2, 4]]);
-  assert.deepEqual(guard.safe, [[0, 2, 4]]);
+  assert.deepEqual(shell.corbel_blocked_cells, [
+    [5, 2, 5],
+    [5, 2, 9],
+  ]);
+  assert.deepEqual([guard.blocked, guard.safe], [[[4, 2, 4]], [[0, 2, 4]]]);
 
   const scifiShell = buildInteriorShell({
     ...ryokan,
@@ -236,17 +226,12 @@ const testFiveLayerShellAndCorbelGuard = (): void => {
 const testSculptedSpatialVolumes = (): void => {
   const tavern = makeTavernRoom();
   const vol = buildSculptedVolumes(tavern);
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'volume_mezzanine'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'railing_timber'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'truss_king_post'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'truss_ridge'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'volume_sunken'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'alcove_fireplace'));
-  assert.ok(vol.boxes.some((b) => b.semantic_tag === 'partition_colonnade'));
+  for (const t of 'volume_mezzanine,railing_timber,truss_king_post,truss_ridge,volume_sunken,alcove_fireplace,partition_colonnade'.split(
+    ',',
+  ))
+    assert.ok(vol.boxes.some((b) => b.semantic_tag === t));
   assert.equal(vol.zone_surfaces.length, 2);
-  assert.ok(vol.alcove_carves.length >= 4);
-  assert.ok(vol.doorway_clearances.length >= 2);
-
+  assert.ok(vol.alcove_carves.length >= 4 && vol.doorway_clearances.length >= 2);
   assert.throws(
     () =>
       buildSculptedVolumes({
@@ -288,18 +273,20 @@ const testVanillaNbtLoweringInvariants = (): void => {
     [tavern, adversarialIR],
   ] as const) {
     const lowered = lowerInteriorToVanillaNbt(room, ir);
-    assert.equal(lowered.data_version, VANILLA_NBT_DATA_VERSION);
-    assert.equal(lowered.clearance.passed, true);
-    assert.ok(lowered.clearance.min_headroom_b >= 2);
-    assert.equal(lowered.clearance.floating_block_count, 0);
-    assert.equal(lowered.clearance.blocked_opening_count, 0);
-
+    assert.ok(
+      lowered.data_version === VANILLA_NBT_DATA_VERSION &&
+        lowered.clearance.passed &&
+        lowered.clearance.min_headroom_b >= 2 &&
+        lowered.clearance.floating_block_count === 0 &&
+        lowered.clearance.blocked_opening_count === 0,
+    );
     const bytesA = encodeLoweredVanillaNbt(lowered, room.room_id);
-    const bytesB = encodeLoweredVanillaNbt(lowerInteriorToVanillaNbt(room, ir), room.room_id);
-    assert.deepEqual(bytesA, bytesB, 'NBT lowering must be byte-deterministic');
+    assert.deepEqual(
+      bytesA,
+      encodeLoweredVanillaNbt(lowerInteriorToVanillaNbt(room, ir), room.room_id),
+    );
     const decoded = decodeStructureNbt(bytesA);
-    assert.equal(decoded.dataVersion, 3955);
-    assert.deepEqual(decoded.size, lowered.size);
+    assert.deepEqual([decoded.dataVersion, decoded.size], [3955, lowered.size]);
   }
 };
 
@@ -341,19 +328,16 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
       !nbt.blocks.some((b) => b.pos[2] <= 2 && b.pos[1] === 1 && b.state.includes('slab')),
   );
   const shell = buildInteriorShell(regRoom);
-  assert.equal(
-    shell.boxes.some(
-      (b) =>
-        (b.semantic_tag ?? '').startsWith('floor_') &&
-        b.from_16[0] >= 64 &&
-        b.to_16[0] <= 96 &&
-        b.from_16[2] >= 64 &&
-        b.to_16[2] <= 96,
-    ),
-    false,
+  const pitHit = shell.boxes.some(
+    (b) =>
+      (b.semantic_tag ?? '').startsWith('floor_') &&
+      b.from_16[0] >= 64 &&
+      b.to_16[0] <= 96 &&
+      b.from_16[2] >= 64 &&
+      b.to_16[2] <= 96,
   );
+  assert.equal(pitHit, false);
 
-  // Verify omitted doorway_at/doorway_width matches centered 2-wide geometry doorway across solver and volumes.
   const screenRoom: InteriorRoomInput = {
     ...regRoom,
     bounds_to: [10, 8, 10],
@@ -381,55 +365,46 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     screenSolved.clearance.passed && screenSolved.clearance.clear_path_cells.some((c) => c[2] < 5),
   );
 
-  // Verify nested props inside explicit-from platform anchor & stay inside platform bounds under collision nudging.
   const nestedVols: InteriorRoomInput['volumes'][number][] = [];
   const nestedProps: NonNullable<InteriorRoomInput['props']>[number][] = [];
-  const platAst = {
-    kind: 'platform' as const,
-    id: 'dais',
-    from: [1, 1] as const,
-    size: [2, 2] as const,
-    height_16: 4,
-    nested: [
-      { item: 'prop' as const, spec: { id: 'p_c1', kind: 'chair' as const } },
-      { item: 'prop' as const, spec: { id: 'p_c2', kind: 'chair' as const } },
-    ],
-  };
-  const r1Meta = {
-    name: 'r1',
-    kind: 'room' as const,
-    acousticSpace: 'timber_room' as const,
-    from: [0, 0, 0] as const,
-    to: [10, 8, 10] as const,
-    enclosed: true,
-  };
-  lowerVolumeAst(platAst, r1Meta, nestedVols, nestedProps, []);
-  for (const np of nestedProps) {
-    assert.ok(
-      np.at[0] >= 1 && np.at[0] <= 2 && np.at[2] >= 1 && np.at[2] <= 2 && np.at[1] === 1.25,
-    );
-  }
+  lowerVolumeAst(
+    {
+      kind: 'platform',
+      id: 'dais',
+      from: [1, 1],
+      size: [2, 2],
+      height_16: 4,
+      nested: [
+        { item: 'prop', spec: { id: 'p_c1', kind: 'chair' } },
+        { item: 'prop', spec: { id: 'p_c2', kind: 'chair' } },
+      ],
+    },
+    {
+      name: 'r1',
+      kind: 'room',
+      acousticSpace: 'timber_room',
+      from: [0, 0, 0],
+      to: [10, 8, 10],
+      enclosed: true,
+    },
+    nestedVols,
+    nestedProps,
+    [],
+  );
+  const in12 = (x: number, z: number) => x >= 1 && x <= 2 && z >= 1 && z <= 2;
+  assert.ok(nestedProps.every((p) => in12(p.at[0], p.at[2]) && p.at[1] === 1.25));
   const daisSolved = solveInteriorLayout({
     ...screenRoom,
     volumes: nestedVols,
     props: nestedProps,
   });
   const [p1, p2] = daisSolved.placed_props;
-  assert.ok(p1 && p2);
-  assert.notDeepEqual(
-    [p1.resolved_at[0], p1.resolved_at[2]],
-    [p2.resolved_at[0], p2.resolved_at[2]],
+  assert.ok(
+    p1 &&
+      p2 &&
+      (p1.resolved_at[0] !== p2.resolved_at[0] || p1.resolved_at[2] !== p2.resolved_at[2]),
   );
-  assert.equal(
-    daisSolved.placed_props.every(
-      (pp) =>
-        pp.resolved_at[0] >= 1 &&
-        pp.resolved_at[0] <= 2 &&
-        pp.resolved_at[2] >= 1 &&
-        pp.resolved_at[2] <= 2,
-    ),
-    true,
-  );
+  assert.ok(daisSolved.placed_props.every((p) => in12(p.resolved_at[0], p.resolved_at[2])));
   const chairSolve = solveInteriorLayout({
     ...screenRoom,
     volumes: [],
@@ -474,6 +449,28 @@ const testVolumeZoneAndDoorwayRegressions = (): void => {
     mezStack.placed_props.every((p) => !p.nudged),
     true,
   );
+  const lowMez: InteriorRoomInput = {
+    ...regRoom,
+    volumes: [
+      {
+        kind: 'mezzanine',
+        id: 'l2',
+        on: 'north',
+        depth: 3,
+        y_offset_b: 2,
+        railing: 'timber',
+        support_pillars: false,
+      },
+    ],
+    props: [{ id: 'fp', kind: 'fireplace', at: [4, 1, 2], size: [2, 1], facing: 'south' }],
+  };
+  for (const res of [
+    solveInteriorLayout(lowMez),
+    solveInteriorLayout(lowMez, buildSculptedVolumes(lowMez).boxes),
+  ]) {
+    const fp = res.placed_props.find((p) => p.id === 'fp')!;
+    assert.ok(fp.nudged && fp.resolved_at[2] >= 4);
+  }
   const splitSolved = solveInteriorLayout({
     ...screenRoom,
     openings: [
