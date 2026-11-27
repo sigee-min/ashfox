@@ -1,0 +1,88 @@
+ashfox 1
+module tracer {
+  params {
+    length = 28u;
+    width = 1.6u;
+    duration = 0.28s;
+    seed = 73;
+  }
+
+  export palette TracerGold {
+    core = #fffbe6;
+    mid = #ffb838;
+    edge = #b84214;
+    smoke = #3d2e28;
+  }
+
+  export palette TracerCrimson {
+    core = #fff0f2;
+    mid = #ff5263;
+    edge = #9e1b2c;
+    smoke = #382228;
+  }
+
+  export element tracer_streak : ribbon {
+    at = 0s..(duration * 0.8);
+    blend = additive;
+    points = [(0u, 0u, 0u), (0u, 0u, length * 0.5), (0u, 0u, length)];
+    width_start = width;
+    width_end = width * 0.2;
+    profile = crossed;
+    color = core;
+    texture slash_streak { bristles = 35%; seed = seed; posterize = 4; }
+    dissolve directional_wipe { frames = 6; edge_glow = core; seed = seed; }
+    scale = 0.85 -> 1.05 ease_out -> 0;
+    alpha = 0.8 -> 1.0 snap -> 0;
+  }
+
+  export emitter wake_sparks : voxel_burst {
+    at = 0.02s..(duration * 0.6);
+    seed = seed;
+    count = 14;
+    shape = cone(12deg, 1u);
+    particle = shard;
+    speed = 14u..28u;
+    life = 0.08s..0.18s;
+    gravity = -4u;
+    drag = 1.8;
+    size_over_life = 0.65u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 2.0;
+    blend = additive;
+  }
+
+  export recipe BulletTracer {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = TracerGold;
+    element tracer_streak : ribbon {
+      at = 0s..(duration * 0.8);
+      blend = additive;
+      points = [(0u, 0u, 0u), (0u, 0u, length * 0.5), (0u, 0u, length)];
+      width_start = width;
+      width_end = width * 0.2;
+      profile = crossed;
+      color = core;
+      texture slash_streak { bristles = 35%; seed = seed; posterize = 4; }
+      dissolve directional_wipe { frames = 6; edge_glow = core; seed = seed; }
+      scale = 0.85 -> 1.05 ease_out -> 0;
+      alpha = 0.8 -> 1.0 snap -> 0;
+    }
+    emitter wake_sparks : voxel_burst {
+      at = 0.02s..(duration * 0.6);
+      seed = seed;
+      count = 14;
+      shape = cone(12deg, 1u);
+      particle = shard;
+      speed = 14u..28u;
+      life = 0.08s..0.18s;
+      gravity = -4u;
+      drag = 1.8;
+      size_over_life = 0.65u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 2.0;
+      blend = additive;
+    }
+  }
+}

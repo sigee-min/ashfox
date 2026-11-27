@@ -1,0 +1,61 @@
+ashfox 1
+module storm {
+  params {
+    rain_density = 180;
+    wind_pitch = 340hz;
+    thunder_pitch = 68hz;
+  }
+
+  export voice heavy_rain : granular {
+    texture = water;
+    density = rain_density;
+    grain_ms = 18ms;
+    pitch = log(0: 2600hz -> 0.5: 3400hz -> 1: 2600hz);
+    spread = 0.88;
+    burstiness = 0.35;
+    turbulence = 0.48;
+    stereo_width = 0.92;
+    itd_ms = 0.25ms;
+    highpass = 180hz;
+    lowpass = 11000hz;
+    drift { target = pan; depth = 22%; rate = 0.4hz; }
+    gain = smooth(0: 0.74 -> 0.5: 0.92 -> 1: 0.74);
+  }
+
+  export voice distant_thunder : noise {
+    color = brown;
+    filter : bandpass { cutoff = log(0: 150hz -> 0.22: 310hz -> 0.65: 140hz -> 1: 85hz); q = 0.95; }
+    highpass = 34hz;
+    drive : tape { amount = 1.6; }
+    fx : delay { mix = 32%; time_ms = 65ms; feedback = 38%; damping = 1800hz; ping_pong = true; }
+    gain { env = adsr; attack = 35ms; decay = 320ms; sustain = 0.48; release = 380ms; peak = 0.95; }
+  }
+
+  export voice storm_gale : waveguide {
+    model = pipe;
+    pitch = log(0: wind_pitch -> 0.42: 520hz -> 1: wind_pitch);
+    damping = 0.42;
+    brightness = 0.58;
+    filter : bandpass { cutoff = log(0: 540hz -> 0.45: 1350hz -> 1: 540hz); q = 1.4; }
+    highpass = 45hz;
+    drift { target = pan; depth = 28%; rate = 0.35hz; }
+    gain = smooth(0: 0.56 -> 0.5: 0.88 -> 1: 0.56);
+  }
+
+  export voice tense_heartbeat : modal_plate {
+    material = leather;
+    pitch = thunder_pitch;
+    size = 1.35;
+    hardness = 0.68;
+    damping = 0.76;
+    brightness = 0.42;
+    modes = 8;
+    strike = bounce;
+    bounces = 2;
+    splash = 0.28;
+    stereo_spread = 0.25;
+    highpass = 32hz;
+    eq { low = (85hz, 3.5db); }
+    gain { env = ad; attack = 4ms; peak = 0.94; curve = exp; }
+  }
+}

@@ -1,5 +1,11 @@
 ashfox 1
 module thrust {
+  params {
+    length = 22u;
+    duration = 0.55s;
+    seed = 503;
+  }
+
   export palette PiercingLance {
     core = #ffffff;
     mid = #6ecaff;
@@ -19,5 +25,70 @@ module thrust {
     mid = #f2ab38;
     edge = #a84819;
     smoke = #3d2a22;
+  }
+
+  export element lance_beam : ribbon {
+    at = 0.02s..(duration * 0.76);
+    blend = additive;
+    points = [(0u, 0u, 0u), (0u, 0u, length * 0.5), (0u, 0u, length)];
+    width_start = 4.2u;
+    width_end = 0.4u;
+    profile = crossed;
+    color = core;
+    texture slash_streak { posterize = 4; bristles = 45%; seed = seed; }
+    dissolve directional_wipe { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.65 -> 1.15 ease_out -> 0;
+    alpha = 0.5 -> 1.0 snap -> 0;
+  }
+
+  export emitter lance_sparks : voxel_burst {
+    at = 0.04s..(duration * 0.65);
+    seed = seed;
+    count = 22;
+    shape = cone(22deg, 2u);
+    particle = shard;
+    speed = 20u..36u;
+    life = 0.16s..0.34s;
+    gravity = -14u;
+    drag = 1.6;
+    size_over_life = 1.0u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.8;
+    blend = additive;
+  }
+
+  export recipe MeleeThrust {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = PiercingLance;
+    element lance_beam : ribbon {
+      at = 0.02s..(duration * 0.76);
+      blend = additive;
+      points = [(0u, 0u, 0u), (0u, 0u, length * 0.5), (0u, 0u, length)];
+      width_start = 4.2u;
+      width_end = 0.4u;
+      profile = crossed;
+      color = core;
+      texture slash_streak { posterize = 4; bristles = 45%; seed = seed; }
+      dissolve directional_wipe { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.65 -> 1.15 ease_out -> 0;
+      alpha = 0.5 -> 1.0 snap -> 0;
+    }
+    emitter lance_sparks : voxel_burst {
+      at = 0.04s..(duration * 0.65);
+      seed = seed;
+      count = 22;
+      shape = cone(22deg, 2u);
+      particle = shard;
+      speed = 20u..36u;
+      life = 0.16s..0.34s;
+      gravity = -14u;
+      drag = 1.6;
+      size_over_life = 1.0u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.8;
+      blend = additive;
+    }
   }
 }

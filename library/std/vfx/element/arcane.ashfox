@@ -1,5 +1,11 @@
 ashfox 1
 module arcane {
+  params {
+    radius = 15u;
+    duration = 0.8s;
+    seed = 433;
+  }
+
   export palette ArcaneViolet {
     core = #fae8ff;
     mid = #cc70f5;
@@ -19,5 +25,68 @@ module arcane {
     mid = #f2cf66;
     edge = #9c6b27;
     smoke = #362e29;
+  }
+
+  export element magic_ring : ring {
+    at = 0s..(duration * 0.92);
+    blend = additive;
+    radius = 2u..radius;
+    segments = 24;
+    bevel = 0.4;
+    color = mid;
+    texture magic_circle { runes = 12; rings = 3; seed = seed; }
+    dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+    scale = 0.25 -> 1.2 ease_out -> 0;
+    alpha = 0.4 -> 1.0 -> 0;
+  }
+
+  export emitter arcane_wisps : voxel_burst {
+    at = 0.05s..(duration * 0.72);
+    seed = seed;
+    count = 22;
+    shape = ring(radius * 0.7);
+    particle = cross_card;
+    speed = 8u..16u;
+    life = 0.2s..0.4s;
+    gravity = 10u;
+    drag = 2.0;
+    vortex { axis = (0, 1, 0); center = (0u, 6u, 0u); strength = 6; }
+    size_over_life = 1.0u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe ArcanePulse {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = ArcaneViolet;
+    element magic_ring : ring {
+      at = 0s..(duration * 0.92);
+      blend = additive;
+      radius = 2u..radius;
+      segments = 24;
+      bevel = 0.4;
+      color = mid;
+      texture magic_circle { runes = 12; rings = 3; seed = seed; }
+      dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+      scale = 0.25 -> 1.2 ease_out -> 0;
+      alpha = 0.4 -> 1.0 -> 0;
+    }
+    emitter arcane_wisps : voxel_burst {
+      at = 0.05s..(duration * 0.72);
+      seed = seed;
+      count = 22;
+      shape = ring(radius * 0.7);
+      particle = cross_card;
+      speed = 8u..16u;
+      life = 0.2s..0.4s;
+      gravity = 10u;
+      drag = 2.0;
+      vortex { axis = (0, 1, 0); center = (0u, 6u, 0u); strength = 6; }
+      size_over_life = 1.0u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
   }
 }

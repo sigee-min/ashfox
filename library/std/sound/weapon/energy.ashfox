@@ -1,0 +1,61 @@
+ashfox 1
+module energy {
+  params {
+    charge_pitch = 240hz;
+    zap_pitch = 1600hz;
+    rail_pitch = 920hz;
+  }
+
+  export voice capacitor_charge : osc {
+    waveform = saw;
+    pitch = log(0: charge_pitch -> 0.85: 980hz -> 1: 1240hz);
+    unison = 3;
+    detune_cents = 16cents;
+    filter : bandpass { cutoff = log(0: 420hz -> 1: 4200hz); q = 1.4; }
+    highpass = 65hz;
+    fx : phaser { mix = 32%; rate = 2.4hz; stages = 6; }
+    fx : shimmer { mix = 22%; feedback = 28%; shift_semitones = 12st; }
+    gain { env = adsr; attack = 75ms; decay = 95ms; sustain = 0.75; release = 70ms; peak = 0.85; }
+  }
+
+  export voice laser_zap : fm {
+    pitch = log(0: zap_pitch -> 0.35: 540hz -> 1: 165hz);
+    ratio = 2.5;
+    index = lin(0: 4.2 -> 0.4: 2.1 -> 1: 0.4);
+    vibrato_hz = 14hz;
+    vibrato_cents = 25cents;
+    highpass = 85hz;
+    drive : tube { amount = 1.8; }
+    fx : delay { mix = 24%; time_ms = 28ms; feedback = 25%; ping_pong = true; }
+    gain { env = ad; attack = 2ms; peak = 0.94; curve = exp; }
+  }
+
+  export voice plasma_blast : waveguide {
+    model = pipe;
+    pitch = log(0: 420hz -> 0.3: 680hz -> 1: 140hz);
+    damping = 0.36;
+    brightness = 0.82;
+    highpass = 55hz;
+    drive : grit { amount = 2.2; }
+    fx : chorus { mix = 30%; rate = 1.8hz; depth = 0.45; }
+    pan = -0.2 -> 0.2;
+    gain { env = ad; attack = 4ms; peak = 0.9; curve = exp; }
+  }
+
+  export voice railgun_crack : modal_plate {
+    material = steel;
+    pitch = rail_pitch;
+    size = 0.85;
+    hardness = 0.96;
+    damping = 0.28;
+    brightness = 0.92;
+    modes = 18;
+    strike = mallet;
+    twin_beat = 0.54;
+    splash = 0.44;
+    stereo_spread = 0.62;
+    highpass = 120hz;
+    drive : fold { amount = 1.6; }
+    gain { env = ad; attack = 2ms; peak = 0.92; curve = exp; }
+  }
+}

@@ -1,0 +1,88 @@
+ashfox 1
+module fog_wisp {
+  params {
+    radius = 16u;
+    count = 16;
+    duration = 1.4s;
+    seed = 379;
+  }
+
+  export palette MarshFog {
+    core = #ebfff5;
+    mid = #7ac7b3;
+    edge = #31696b;
+    smoke = #21363d;
+  }
+
+  export palette CryptMist {
+    core = #f0f5ff;
+    mid = #8ca6d9;
+    edge = #3e5285;
+    smoke = #212940;
+  }
+
+  export element mist_band : ring {
+    at = 0s..duration;
+    blend = blend;
+    radius = (radius * 0.3)..radius;
+    segments = 20;
+    ripple_amp = 0.45;
+    ripple_freq = 3;
+    color = mid;
+    spin = 60deg;
+    texture stylized_smoke { curl_scale = 2.0; seed = seed; }
+    scale = 0.96 -> 1.06 -> 0.96;
+    alpha = 0.35 -> 0.6 -> 0.35;
+  }
+
+  export emitter vapor_puffs : voxel_burst {
+    at = 0.05s..(duration * 0.75);
+    seed = seed;
+    count = count;
+    shape = ring(radius * 0.65);
+    particle = puff;
+    speed = 2u..5u;
+    life = 0.35s..0.58s;
+    gravity = 1.5u;
+    drag = 3.0;
+    turbulence = curl(1.2, 4u);
+    size_over_life = 1.2u -> 3.2u ease_out -> 0u;
+    color_over_life = core -> mid -> smoke;
+    blend = blend;
+  }
+
+  export recipe FogWisp {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = MarshFog;
+    element mist_band : ring {
+      at = 0s..duration;
+      blend = blend;
+      radius = (radius * 0.3)..radius;
+      segments = 20;
+      ripple_amp = 0.45;
+      ripple_freq = 3;
+      color = mid;
+      spin = 60deg;
+      texture stylized_smoke { curl_scale = 2.0; seed = seed; }
+      scale = 0.96 -> 1.06 -> 0.96;
+      alpha = 0.35 -> 0.6 -> 0.35;
+    }
+    emitter vapor_puffs : voxel_burst {
+      at = 0.05s..(duration * 0.75);
+      seed = seed;
+      count = count;
+      shape = ring(radius * 0.65);
+      particle = puff;
+      speed = 2u..5u;
+      life = 0.35s..0.58s;
+      gravity = 1.5u;
+      drag = 3.0;
+      turbulence = curl(1.2, 4u);
+      size_over_life = 1.2u -> 3.2u ease_out -> 0u;
+      color_over_life = core -> mid -> smoke;
+      blend = blend;
+    }
+  }
+}

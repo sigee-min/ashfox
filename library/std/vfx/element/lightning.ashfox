@@ -1,5 +1,12 @@
 ashfox 1
 module lightning {
+  params {
+    height = 32u;
+    width = 3.2u;
+    duration = 0.55s;
+    seed = 457;
+  }
+
   export palette StormArc {
     core = #ffffff;
     mid = #70cdff;
@@ -19,5 +26,76 @@ module lightning {
     mid = #ffd038;
     edge = #bd7813;
     smoke = #3d3326;
+  }
+
+  export element bolt_beam : beam {
+    at = 0s..(duration * 0.78);
+    blend = additive;
+    start = (0u, height, 0u);
+    end = (0u, 0u, 0u);
+    width = width;
+    style = lightning;
+    jagged = 3.5;
+    forks = 2;
+    seed = seed;
+    color = core;
+    texture slash_streak { bristles = 40%; seed = seed; posterize = 4; }
+    scale = 0.85 -> 1.15 snap -> 0;
+    alpha = 1.0 -> 0.6 -> 0;
+  }
+
+  export emitter arc_sparks : voxel_burst {
+    at = 0.04s..(duration * 0.65);
+    seed = seed;
+    count = 24;
+    shape = cone(58deg, 3u);
+    particle = shard;
+    speed = 16u..32u;
+    life = 0.16s..0.34s;
+    gravity = -24u;
+    drag = 1.6;
+    ground { y = 0u; bounce = 45%; friction = 70%; }
+    size_over_life = 1.0u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.8;
+    blend = additive;
+  }
+
+  export recipe LightningBolt {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = StormArc;
+    element bolt_beam : beam {
+      at = 0s..(duration * 0.78);
+      blend = additive;
+      start = (0u, height, 0u);
+      end = (0u, 0u, 0u);
+      width = width;
+      style = lightning;
+      jagged = 3.5;
+      forks = 2;
+      seed = seed;
+      color = core;
+      texture slash_streak { bristles = 40%; seed = seed; posterize = 4; }
+      scale = 0.85 -> 1.15 snap -> 0;
+      alpha = 1.0 -> 0.6 -> 0;
+    }
+    emitter arc_sparks : voxel_burst {
+      at = 0.04s..(duration * 0.65);
+      seed = seed;
+      count = 24;
+      shape = cone(58deg, 3u);
+      particle = shard;
+      speed = 16u..32u;
+      life = 0.16s..0.34s;
+      gravity = -24u;
+      drag = 1.6;
+      ground { y = 0u; bounce = 45%; friction = 70%; }
+      size_over_life = 1.0u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.8;
+      blend = additive;
+    }
   }
 }

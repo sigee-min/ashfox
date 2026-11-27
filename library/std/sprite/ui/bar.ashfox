@@ -1,0 +1,47 @@
+ashfox 1
+module bar {
+  export material frame_steel {
+    ramp { mode = auto; base = #596575; preset = metal; }
+  }
+  export material trough_dark {
+    ramp { mode = auto; base = #393f4a; preset = cool; }
+  }
+  export material health_ruby {
+    ramp { mode = auto; base = #d94158; preset = vivid; }
+  }
+  export material mana_azure {
+    ramp { mode = auto; base = #3c8be0; preset = emissive; }
+  }
+  export material stamina_amber {
+    ramp { mode = auto; base = #de9b33; preset = warm; }
+  }
+  export material shield_cyan {
+    ramp { mode = auto; base = #4ad6e6; preset = emissive; }
+  }
+  export material hazard_lime {
+    ramp { mode = auto; base = #72c944; preset = organic; }
+  }
+
+  export mask bar_endcap {
+    rows = [
+      "..1111",
+      ".11111",
+      "111111",
+      "111111",
+      "111111",
+      "111111",
+      ".11111",
+      "..1111"
+    ];
+  }
+
+  export stamp tick_notch {
+    rows = [
+      "h",
+      "s",
+      "s",
+      "h"
+    ];
+    slots = [h, s];
+  }
+}

@@ -1,0 +1,86 @@
+ashfox 1
+module snow_gust {
+  params {
+    radius = 16u;
+    count = 28;
+    duration = 1.2s;
+    seed = 353;
+  }
+
+  export palette FrostSnow {
+    core = #f2fcff;
+    mid = #8cd4f0;
+    edge = #3d7aa8;
+    smoke = #24364a;
+  }
+
+  export palette AshFlurry {
+    core = #fff5eb;
+    mid = #bfa38a;
+    edge = #695446;
+    smoke = #302926;
+  }
+
+  export element drift_ribbon : ribbon {
+    at = 0s..duration;
+    blend = blend;
+    points = [(-radius, 6u, 0u), (0u, 10u, 4u), (radius, 8u, -2u)];
+    width_start = 4u;
+    width_end = 2u;
+    profile = crossed;
+    color = mid;
+    texture stylized_smoke { curl_scale = 2.2; seed = seed; }
+    scale = 0.95 -> 1.05 -> 0.95;
+    alpha = 0.3 -> 0.55 -> 0.3;
+  }
+
+  export emitter flakes : voxel_burst {
+    at = 0s..(duration * 0.78);
+    seed = seed;
+    count = count;
+    shape = sphere(radius * 0.75);
+    particle = cross_card;
+    speed = 5u..12u;
+    life = 0.28s..0.5s;
+    gravity = -6u;
+    drag = 2.6;
+    turbulence = curl(1.8, 6u);
+    size_over_life = 0.85u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe SnowGust {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = FrostSnow;
+    element drift_ribbon : ribbon {
+      at = 0s..duration;
+      blend = blend;
+      points = [(-radius, 6u, 0u), (0u, 10u, 4u), (radius, 8u, -2u)];
+      width_start = 4u;
+      width_end = 2u;
+      profile = crossed;
+      color = mid;
+      texture stylized_smoke { curl_scale = 2.2; seed = seed; }
+      scale = 0.95 -> 1.05 -> 0.95;
+      alpha = 0.3 -> 0.55 -> 0.3;
+    }
+    emitter flakes : voxel_burst {
+      at = 0s..(duration * 0.78);
+      seed = seed;
+      count = count;
+      shape = sphere(radius * 0.75);
+      particle = cross_card;
+      speed = 5u..12u;
+      life = 0.28s..0.5s;
+      gravity = -6u;
+      drag = 2.6;
+      turbulence = curl(1.8, 6u);
+      size_over_life = 0.85u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
+  }
+}

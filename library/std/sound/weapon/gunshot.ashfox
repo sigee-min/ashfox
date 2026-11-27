@@ -1,0 +1,56 @@
+ashfox 1
+module gunshot {
+  params {
+    crack_cutoff = 2600hz;
+    body_pitch = 135hz;
+    tail_cutoff = 680hz;
+  }
+
+  export voice bolt_snap : modal_plate {
+    material = steel;
+    pitch = 1420hz;
+    size = 0.55;
+    hardness = 0.94;
+    damping = 0.42;
+    brightness = 0.88;
+    modes = 14;
+    strike = mallet;
+    twin_beat = 0.32;
+    stereo_spread = 0.3;
+    highpass = 280hz;
+    gain { env = ad; attack = 2ms; peak = 0.84; curve = exp; }
+  }
+
+  export voice muzzle_crack : noise {
+    color = white;
+    filter : bandpass { cutoff = log(0: 5200hz -> 0.25: crack_cutoff -> 1: 720hz); q = 0.9; }
+    highpass = 180hz;
+    drive : grit { amount = 2.6; }
+    pan = -0.12 -> 0.14;
+    gain { env = ad; attack = 2ms; peak = 0.98; curve = exp; }
+  }
+
+  export voice blast_punch : modal_plate {
+    material = leather;
+    pitch = body_pitch;
+    size = 1.25;
+    hardness = 0.88;
+    damping = 0.72;
+    brightness = 0.65;
+    modes = 10;
+    strike = mallet;
+    splash = 0.52;
+    stereo_spread = 0.35;
+    highpass = 38hz;
+    eq { low = (120hz, 3db); }
+    gain { env = ad; attack = 2ms; peak = 0.95; curve = exp; }
+  }
+
+  export voice outdoor_tail : noise {
+    color = brown;
+    filter : bandpass { cutoff = log(0: 1400hz -> 0.45: tail_cutoff -> 1: 240hz); q = 0.85; }
+    highpass = 45hz;
+    fx : delay { mix = 28%; time_ms = 42ms; feedback = 32%; damping = 3200hz; ping_pong = true; }
+    gain { env = adsr; attack = 8ms; decay = 220ms; sustain = 0.24; release = 240ms; peak = 0.76; }
+  }
+}

@@ -1,5 +1,11 @@
 ashfox 1
 module shockwave {
+  params {
+    radius = 16u;
+    duration = 0.7s;
+    seed = 479;
+  }
+
   export palette KineticWave {
     core = #fffbe8;
     mid = #e0b858;
@@ -19,5 +25,72 @@ module shockwave {
     mid = #70c7eb;
     edge = #2e6799;
     smoke = #233045;
+  }
+
+  export element wave_ring : ring {
+    at = 0s..(duration * 0.82);
+    blend = additive;
+    radius = 2u..radius;
+    segments = 24;
+    bevel = 0.45;
+    ripple_amp = 0.3;
+    ripple_freq = 6;
+    color = mid;
+    texture ring_wave { rings = 3; seed = seed; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.25 -> 1.25 ease_out -> 0;
+    alpha = 0.9 -> 0.5 -> 0;
+  }
+
+  export emitter debris : voxel_burst {
+    at = 0s..(duration * 0.52);
+    seed = seed;
+    count = 22;
+    shape = ring(radius * 0.35);
+    particle = voxel_cube;
+    speed = 10u..22u;
+    life = 0.22s..0.4s;
+    gravity = -28u;
+    drag = 1.4;
+    ground { y = 0u; bounce = 35%; friction = 75%; }
+    size_over_life = 1.0u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = premul;
+  }
+
+  export recipe ShockwaveRing {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = KineticWave;
+    element wave_ring : ring {
+      at = 0s..(duration * 0.82);
+      blend = additive;
+      radius = 2u..radius;
+      segments = 24;
+      bevel = 0.45;
+      ripple_amp = 0.3;
+      ripple_freq = 6;
+      color = mid;
+      texture ring_wave { rings = 3; seed = seed; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.25 -> 1.25 ease_out -> 0;
+      alpha = 0.9 -> 0.5 -> 0;
+    }
+    emitter debris : voxel_burst {
+      at = 0s..(duration * 0.52);
+      seed = seed;
+      count = 22;
+      shape = ring(radius * 0.35);
+      particle = voxel_cube;
+      speed = 10u..22u;
+      life = 0.22s..0.4s;
+      gravity = -28u;
+      drag = 1.4;
+      ground { y = 0u; bounce = 35%; friction = 75%; }
+      size_over_life = 1.0u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = premul;
+    }
   }
 }

@@ -1,5 +1,12 @@
 ashfox 1
 module burst {
+  params {
+    radius = 12u;
+    count = 28;
+    duration = 0.6s;
+    seed = 467;
+  }
+
   export palette SparkBurst {
     core = #fff9db;
     mid = #ffbf47;
@@ -19,5 +26,66 @@ module burst {
     mid = #85db47;
     edge = #37782a;
     smoke = #253827;
+  }
+
+  export element burst_star : ring {
+    at = 0s..(duration * 0.52);
+    blend = additive;
+    radius = 2u..radius;
+    segments = 16;
+    color = core;
+    texture starburst { spikes = 8; seed = seed; posterize = 4; }
+    scale = 0.35 -> 1.2 ease_out -> 0;
+    alpha = 0.8 -> 1.0 snap -> 0;
+  }
+
+  export emitter sparks : voxel_burst {
+    at = 0s..(duration * 0.58);
+    seed = seed;
+    count = count;
+    shape = sphere(radius * 0.25);
+    particle = shard;
+    speed = 16u..32u;
+    life = 0.2s..0.42s;
+    gravity = -24u;
+    drag = 1.5;
+    ground { y = 0u; bounce = 40%; friction = 70%; }
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.5;
+    blend = additive;
+  }
+
+  export recipe ImpactBurst {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = SparkBurst;
+    element burst_star : ring {
+      at = 0s..(duration * 0.52);
+      blend = additive;
+      radius = 2u..radius;
+      segments = 16;
+      color = core;
+      texture starburst { spikes = 8; seed = seed; posterize = 4; }
+      scale = 0.35 -> 1.2 ease_out -> 0;
+      alpha = 0.8 -> 1.0 snap -> 0;
+    }
+    emitter sparks : voxel_burst {
+      at = 0s..(duration * 0.58);
+      seed = seed;
+      count = count;
+      shape = sphere(radius * 0.25);
+      particle = shard;
+      speed = 16u..32u;
+      life = 0.2s..0.42s;
+      gravity = -24u;
+      drag = 1.5;
+      ground { y = 0u; bounce = 40%; friction = 70%; }
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.5;
+      blend = additive;
+    }
   }
 }

@@ -1,0 +1,89 @@
+ashfox 1
+module rain_sheet {
+  params {
+    width = 24u;
+    height = 28u;
+    count = 36;
+    duration = 1.0s;
+    seed = 331;
+  }
+
+  export palette StormRain {
+    core = #ebfbff;
+    mid = #6bbce0;
+    edge = #2b628f;
+    smoke = #1f3045;
+  }
+
+  export palette AcidRain {
+    core = #f2ffdb;
+    mid = #8cd94e;
+    edge = #367828;
+    smoke = #233822;
+  }
+
+  export element rain_veil : ribbon {
+    at = 0s..duration;
+    blend = blend;
+    points = [(0u, height, 0u), (0u, height * 0.5, 0u), (0u, 0u, 0u)];
+    width_start = width * 0.45;
+    width_end = width * 0.45;
+    profile = crossed;
+    color = mid;
+    texture slash_streak { bristles = 85%; seed = seed; posterize = 4; }
+    scale = 0.98 -> 1.02 -> 0.98;
+    alpha = 0.35 -> 0.58 -> 0.35;
+  }
+
+  export emitter raindrops : voxel_burst {
+    at = 0s..(duration * 0.75);
+    seed = seed;
+    count = count;
+    shape = ring(width * 0.45);
+    particle = shard;
+    speed = 18u..30u;
+    life = 0.18s..0.32s;
+    gravity = -40u;
+    drag = 0.4;
+    ground { y = 0u; bounce = 20%; friction = 90%; }
+    size_over_life = 0.65u -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 2.4;
+    blend = additive;
+  }
+
+  export recipe RainSheet {
+    duration = duration;
+    fps = 24;
+    loop = loop;
+    palette = StormRain;
+    element rain_veil : ribbon {
+      at = 0s..duration;
+      blend = blend;
+      points = [(0u, height, 0u), (0u, height * 0.5, 0u), (0u, 0u, 0u)];
+      width_start = width * 0.45;
+      width_end = width * 0.45;
+      profile = crossed;
+      color = mid;
+      texture slash_streak { bristles = 85%; seed = seed; posterize = 4; }
+      scale = 0.98 -> 1.02 -> 0.98;
+      alpha = 0.35 -> 0.58 -> 0.35;
+    }
+    emitter raindrops : voxel_burst {
+      at = 0s..(duration * 0.75);
+      seed = seed;
+      count = count;
+      shape = ring(width * 0.45);
+      particle = shard;
+      speed = 18u..30u;
+      life = 0.18s..0.32s;
+      gravity = -40u;
+      drag = 0.4;
+      ground { y = 0u; bounce = 20%; friction = 90%; }
+      size_over_life = 0.65u -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 2.4;
+      blend = additive;
+    }
+  }
+}
