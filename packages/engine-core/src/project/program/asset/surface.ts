@@ -3,6 +3,7 @@ import { parseProgramTextureStatement, type ProgramTextureReader } from '../synt
 import type {
   AssetAtlasDecl,
   AssetChartAbiDecl,
+  AssetPropertyDecl,
   AssetSlotDecl,
   AssetSurfaceContractDecl,
   AssetSurfaceDecl,
@@ -126,27 +127,59 @@ const readChartAbi = (reader: AssetReader): AssetChartAbiDecl => {
 interface MaterialState {
   material: AssetSurfaceContractDecl['material'];
   materialSeen: boolean;
+  materialProperties?: AssetPropertyDecl[];
 }
 
-const readMaterial = (reader: AssetReader, state: MaterialState, ownerLabel: string): void => {
-  const value = readProperty(reader);
-  const raw = valueName(value.value);
-  if (state.materialSeen) {
-    reader.failSpan(
-      'asset.duplicate-material',
-      ownerLabel + ' may contain only one material.',
-      value.span,
-    );
-  }
-  state.materialSeen = true;
+const assignMaterialMode = (
+  reader: AssetReader,
+  state: MaterialState,
+  raw: string,
+  span: import('../../source/contract').SourceSpan,
+): void => {
   if (isOneOf(['opaque', 'cutout', 'double'] as const, raw)) state.material = raw;
   else {
     reader.failSpan(
       'asset.invalid-material',
       'Surface material must be opaque, cutout, or double.',
-      value.value.span,
+      span,
     );
   }
+};
+
+const readMaterial = (
+  reader: AssetReader,
+  state: MaterialState,
+  ownerLabel: string,
+  allowPbrBlock = false,
+): void => {
+  const start = reader.expectWord('material', 'Expected material.');
+  if (state.materialSeen) {
+    reader.failSpan(
+      'asset.duplicate-material',
+      ownerLabel + ' may contain only one material.',
+      start.span,
+    );
+  }
+  state.materialSeen = true;
+  if (allowPbrBlock && (reader.check('{') || reader.current().kind === 'identifier')) {
+    if (reader.current().kind === 'identifier') {
+      const mode = reader.id('Expected material mode opaque, cutout, or double.');
+      assignMaterialMode(reader, state, mode.value, mode.span);
+    }
+    const props = readProperties(reader, 'surface material');
+    checkClosedProperties(
+      reader,
+      props,
+      ['roughness', 'metallic', 'roughness_variation'],
+      'surface material',
+    );
+    state.materialProperties = [...props];
+    return;
+  }
+  reader.expect('=', 'Expected = after material.');
+  const value = reader.expression();
+  reader.finish();
+  assignMaterialMode(reader, state, valueName(value) ?? '', value.span);
 };
 
 interface SurfaceContractState extends MaterialState {
@@ -191,7 +224,7 @@ const readSurfaceEntry = (reader: AssetReader, state: SurfaceState): void => {
     }
     state.textureSeen = true;
     state.texture = readTexture(reader);
-  } else if (reader.checkWord('material')) readMaterial(reader, state, 'A surface');
+  } else if (reader.checkWord('material')) readMaterial(reader, state, 'A surface', true);
   else reader.scopeError('surface');
 };
 
@@ -238,6 +271,7 @@ export const parseSurface = (reader: AssetReader, exported: boolean): AssetSurfa
     textureSeen: false,
     material: null,
     materialSeen: false,
+    materialProperties: [],
   };
   const close = readBraced(
     reader,
@@ -252,6 +286,9 @@ export const parseSurface = (reader: AssetReader, exported: boolean): AssetSurfa
     contract,
     texture: state.texture,
     material: state.material,
+    ...(state.materialProperties && state.materialProperties.length > 0
+      ? { materialProperties: Object.freeze(state.materialProperties) }
+      : {}),
     slots: Object.freeze(state.slots),
     span: join(start.span, close.span),
   });

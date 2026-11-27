@@ -7,6 +7,8 @@ import type {
   TransformKeyframe,
 } from '../../../model/motion';
 import type { EntityId } from '../../../model/identity';
+import type { ExpressionMotionSlotSpec } from '../../../model/expression';
+import { lowerMotionExpressions } from './canonicalExpr';
 import type { BoneNode } from '../../../model/scene';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
 import type { AssetExactNumber } from './value/contract';
@@ -39,6 +41,9 @@ export type CanonicalRigLoweringResult =
       readonly bones: readonly BoneNode[];
       readonly roots: readonly EntityId[];
       readonly animations: Readonly<Record<string, AnimationClip>>;
+      readonly expressionSpecsByClipId: Readonly<
+        Record<string, readonly ExpressionMotionSlotSpec[]>
+      >;
     }>
   | Readonly<{
       readonly ok: false;
@@ -310,7 +315,8 @@ const lowerStaticChannels = (
   seenIds: Map<string, string>,
   diagnostics: AssetDiagnostic[],
 ): TransformChannel[] | null => {
-  if (!Array.isArray(motion.channels) || motion.channels.length === 0) {
+  const exprCount = motion.expressions?.length ?? 0;
+  if ((!Array.isArray(motion.channels) || motion.channels.length === 0) && exprCount === 0) {
     addIssue(
       diagnostics,
       location,
@@ -319,6 +325,7 @@ const lowerStaticChannels = (
     );
     return null;
   }
+  if (!Array.isArray(motion.channels) || motion.channels.length === 0) return [];
   const channelIds = new Map<string, TransformChannel>();
   for (const channel of motion.channels) {
     const lowered = lowerChannel(
@@ -374,6 +381,7 @@ const lowerMotion = (
   semanticToId: ReadonlyMap<string, string>,
   seenIds: Map<string, string>,
   diagnostics: AssetDiagnostic[],
+  expressionSpecsByClipId: Record<string, readonly ExpressionMotionSlotSpec[]>,
 ): AnimationClip | null => {
   const initialDiagnostics = diagnostics.length;
   const location = motionLocation(motion);
@@ -397,6 +405,8 @@ const lowerMotion = (
   if (!registerId(seenIds, clipId, symbol.key, location, 'clip', diagnostics)) return null;
   const timing = readMotionTiming(motion, location, diagnostics);
   if (timing === null) return null;
+  const exprSpecs = lowerMotionExpressions(motion, location, diagnostics);
+  if (exprSpecs.length > 0) expressionSpecsByClipId[clipId] = exprSpecs;
   if (shouldUseMotionBake(motion)) {
     const baked = bakeInstantiatedMotion(
       ir,
@@ -432,8 +442,20 @@ export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLo
     if (plan === null) return deepFreeze({ ok: false, diagnostics });
     const seenIds = new Map<string, string>();
     const clips: AnimationClip[] = [];
-    for (const motion of [...ir.motions].sort((a, b) => compareText(a.symbol.key, b.symbol.key))) {
-      const clip = lowerMotion(ir, plan.bones, motion, plan.semanticToId, seenIds, diagnostics);
+    const expressionSpecsByClipId: Record<string, readonly ExpressionMotionSlotSpec[]> =
+      Object.create(null);
+    for (const motion of [...ir.motions].sort((left, right) =>
+      compareText(left.symbol.key, right.symbol.key),
+    )) {
+      const clip = lowerMotion(
+        ir,
+        plan.bones,
+        motion,
+        plan.semanticToId,
+        seenIds,
+        diagnostics,
+        expressionSpecsByClipId,
+      );
       if (clip !== null) clips.push(clip);
     }
     if (diagnostics.length > 0) {
@@ -450,6 +472,7 @@ export const lowerAssetRigAndMotions = (ir: InstantiatedAssetIr): CanonicalRigLo
       bones: plan.bones,
       roots: plan.roots,
       animations: deepFreeze(Object.fromEntries(entries)),
+      expressionSpecsByClipId: deepFreeze(expressionSpecsByClipId),
     });
   } catch {
     const first = ir.bones[0];

@@ -1,24 +1,27 @@
 import { compareText } from '../../../stableOrder';
 import {
   CUBE_FACE_DIRECTIONS,
+  buildPrimitivePolygons,
   cubeGeometryPivot,
   cubeUnrotatedBounds,
   sealCanonicalBoneFrame,
   type BoneNode,
   type CubeFaceDirection,
   type CubeNode,
+  type CylinderNode,
   type ProjectDocument,
   type SceneNode,
+  type TaperNode,
   type TextureAsset,
   type Vec3,
+  type WedgeNode,
 } from '../../../model';
 import { effectivelyVisibleSceneNodeIds } from '../../../sceneVisibility';
-import {
-  rasterizeTexture,
-  type CanonicalTextureRaster,
-} from '../../../textures/textureRecipe/raster';
+import type { CanonicalTextureRaster } from '../../../textures/textureRecipe/raster';
 import { compileOpaqueCubeFaceOcclusion, type CubeFaceOcclusion } from '../../occlusion/cube';
 import { compileGltfCubePrimitiveData } from './cube';
+import { resolveLod2FaceColor } from './lodMat';
+import { compileGltfCustomPrimitiveData, measureCustomPrimMetrics } from './primMesh';
 import type { GltfSceneCompileOptions } from './graph';
 import { gltfNodeGeometryRotation } from './rigid';
 import {
@@ -32,18 +35,10 @@ import {
 } from './spatial';
 
 const [SCALE, SMALL_VOL, LOD1_TRIS, LOD2_MAX_TRIS, BONE_DROP] = [1 / 16, 0.015, 0.55, 60, 0.55];
-const SHADE: Readonly<Record<CubeFaceDirection, number>> = {
-  up: 1.0,
-  north: 0.9,
-  south: 0.9,
-  east: 0.82,
-  west: 0.82,
-  down: 0.68,
-};
 
 export interface ModelPartSize {
   readonly id: string;
-  readonly kind: 'cube' | 'plane';
+  readonly kind: 'cube' | 'plane' | 'taper' | 'wedge' | 'cylinder';
   readonly volume: number;
   readonly triCount: number;
 }
@@ -172,10 +167,30 @@ const measureCubeNode = (ctx: BoundsCtx, node: CubeNode, xf: Xf): void => {
   ctx.tris += faces * 2;
 };
 
+const measureCustomPrimNode = (
+  ctx: BoundsCtx,
+  node: TaperNode | WedgeNode | CylinderNode,
+  xf: Xf,
+): void => {
+  const { worldPts, volume, triCount } = measureCustomPrimMetrics(node, SCALE, xf.scale, (l) =>
+    xformPt(l, xf),
+  );
+  for (const w of worldPts) {
+    for (let i = 0; i < 3; i += 1) {
+      [ctx.min[i], ctx.max[i]] = [Math.min(ctx.min[i]!, w[i]!), Math.max(ctx.max[i]!, w[i]!)];
+    }
+  }
+  ctx.parts.set(node.id, { id: node.id, kind: node.kind, volume, triCount });
+  ctx.vol += volume;
+  ctx.tris += triCount;
+};
+
 const walkBounds = (ctx: BoundsCtx, node: SceneNode, pXf: Xf): void => {
   const xf = composeXf(pXf, ctx.doc, node);
   if (node.kind === 'cube') measureCubeNode(ctx, node, xf);
-  else if (node.kind === 'plane') {
+  else if (node.kind === 'taper' || node.kind === 'wedge' || node.kind === 'cylinder') {
+    measureCustomPrimNode(ctx, node, xf);
+  } else if (node.kind === 'plane') {
     const triCount = node.sidedness === 'double' ? 4 : 2;
     ctx.parts.set(node.id, { id: node.id, kind: 'plane', volume: 0, triCount });
     ctx.tris += triCount;
@@ -226,7 +241,7 @@ const selectCubes = (
   a: ModelBoundsAnalysis,
   maxTris = a.lod0TriCount * LOD1_TRIS,
 ): ReadonlySet<string> => {
-  const cubes = [...a.parts.values()].filter((p) => p.kind === 'cube');
+  const cubes = [...a.parts.values()].filter((p) => p.kind !== 'plane');
   const kept = cubes.filter((p) => p.volume >= a.totalPartVolume * SMALL_VOL);
   const work = kept.length > 0 ? kept : cubes;
   let tris = work.reduce((s, p) => s + p.triCount, 0);
@@ -289,7 +304,16 @@ const remapNode = (
   kept: ReadonlySet<string>,
   flat: ReadonlyMap<string, string>,
 ): SceneNode | null => {
-  if (node.kind === 'plane' || (node.kind === 'cube' && !kept.has(node.id))) return null;
+  if (
+    node.kind === 'plane' ||
+    ((node.kind === 'cube' ||
+      node.kind === 'taper' ||
+      node.kind === 'wedge' ||
+      node.kind === 'cylinder') &&
+      !kept.has(node.id))
+  ) {
+    return null;
+  }
   if (node.kind === 'bone') {
     if (flat.has(node.id)) return null;
     const t = node.transform;
@@ -318,7 +342,7 @@ const remapNode = (
 const collectTextures = (doc: ProjectDocument, nodes: Readonly<Record<string, SceneNode>>) => {
   const textures: Record<string, TextureAsset> = {};
   for (const out of Object.values(nodes)) {
-    if (out.kind !== 'cube') continue;
+    if (out.kind === 'bone' || out.kind === 'locator' || out.kind === 'plane') continue;
     for (const d of CUBE_FACE_DIRECTIONS) {
       const tid = out.faces[d].textureId;
       if (tid && doc.textures[tid]) textures[tid] = doc.textures[tid]!;
@@ -356,64 +380,34 @@ export const buildModelLod1Document = (document: ProjectDocument): ProjectDocume
   };
 };
 
-const avgUvRgb = (
-  r: CanonicalTextureRaster,
-  uv: readonly [number, number, number, number],
-): Vec3 => {
-  const [u0, v0] = [
-    Math.max(0, Math.min(r.width - 1, Math.floor(Math.min(uv[0], uv[2])))),
-    Math.max(0, Math.min(r.height - 1, Math.floor(Math.min(uv[1], uv[3])))),
-  ];
-  const [u1, v1] = [
-    Math.max(u0 + 1, Math.min(r.width, Math.ceil(Math.max(uv[0], uv[2])))),
-    Math.max(v0 + 1, Math.min(r.height, Math.ceil(Math.max(uv[1], uv[3])))),
-  ];
-  let [sr, sg, sb, n] = [0, 0, 0, 0];
-  for (let v = v0; v < v1; v += 1) {
-    for (let u = u0; u < u1; u += 1) {
-      const off = (v * r.width + u) * 4;
-      if ((r.rgba.at(off + 3) ?? 0) === 0) continue;
-      [sr, sg, sb, n] = [
-        sr + (r.rgba.at(off) ?? 0),
-        sg + (r.rgba.at(off + 1) ?? 0),
-        sb + (r.rgba.at(off + 2) ?? 0),
-        n + 1,
-      ];
-    }
-  }
-  return n === 0 ? [0.65, 0.65, 0.65] : [sr / (n * 255), sg / (n * 255), sb / (n * 255)];
-};
-
 const faceColor = (
   ctx: Lod2Ctx,
   dir: CubeFaceDirection,
   tid: string | null,
   uv?: readonly [number, number, number, number],
-) => {
-  const sh = SHADE[dir];
-  if (!tid || !uv) return [0.65 * sh, 0.65 * sh, 0.65 * sh];
-  const key = `${tid}:${uv.join(',')}`;
-  let base = ctx.colorsCache.get(key);
-  if (!base) {
-    let ras = ctx.rasters.get(tid);
-    if (ras === undefined) {
-      const tex = ctx.doc.textures[tid];
-      ctx.rasters.set(tid, (ras = tex?.raster ? rasterizeTexture(ctx.doc, tex) : null));
-    }
-    ctx.colorsCache.set(key, (base = ras ? avgUvRgb(ras, uv) : [0.65, 0.65, 0.65]));
-  }
-  return [base[0] * sh, base[1] * sh, base[2] * sh];
-};
+) => resolveLod2FaceColor(ctx.doc, ctx.rasters, ctx.colorsCache, dir, tid, uv);
 
-const appendLod2Cube = (ctx: Lod2Ctx, cube: CubeNode, xf: Xf): void => {
-  const dirs = CUBE_FACE_DIRECTIONS.filter(
-    (d) => cube.faces[d].enabled && !ctx.opts.cubeFaceOcclusion?.get(cube.id)?.has(d),
-  );
-  const prims = compileGltfCubePrimitiveData(ctx.doc, cube, ctx.opts);
+const appendLod2Prims = (
+  ctx: Lod2Ctx,
+  node: CubeNode | TaperNode | WedgeNode | CylinderNode,
+  xf: Xf,
+): void => {
+  const prims =
+    node.kind === 'cube'
+      ? compileGltfCubePrimitiveData(ctx.doc, node, ctx.opts)
+      : compileGltfCustomPrimitiveData(ctx.doc, node, ctx.opts);
+  const dirs: readonly CubeFaceDirection[] =
+    node.kind === 'cube'
+      ? CUBE_FACE_DIRECTIONS.filter(
+          (d) => node.faces[d].enabled && !ctx.opts.cubeFaceOcclusion?.get(node.id)?.has(d),
+        )
+      : buildPrimitivePolygons(node)
+          .filter((p) => node.faces[p.direction].enabled && p.vertices.length >= 3)
+          .map((p) => p.direction);
   const mirror = xf.scale[0] * xf.scale[1] * xf.scale[2] < 0;
   for (let pIdx = 0; pIdx < prims.length; pIdx += 1) {
     const [prim, dir] = [prims[pIdx]!, dirs[pIdx]!];
-    const rgb = faceColor(ctx, dir, cube.faces[dir].textureId, cube.faces[dir].uv);
+    const rgb = faceColor(ctx, dir, node.faces[dir].textureId, node.faces[dir].uv);
     const base = ctx.positions.length / 3;
     for (let i = 0; i < prim.positions.length; i += 3) {
       const p = xformPt([prim.positions[i]!, prim.positions[i + 1]!, prim.positions[i + 2]!], xf);
@@ -437,8 +431,14 @@ const appendLod2Cube = (ctx: Lod2Ctx, cube: CubeNode, xf: Xf): void => {
 
 const walkLod2 = (ctx: Lod2Ctx, node: SceneNode, pXf: Xf): void => {
   const xf = composeXf(pXf, ctx.doc, node);
-  if (node.kind === 'cube' && ctx.kept.has(node.id)) {
-    appendLod2Cube(ctx, node, xf);
+  if (
+    (node.kind === 'cube' ||
+      node.kind === 'taper' ||
+      node.kind === 'wedge' ||
+      node.kind === 'cylinder') &&
+    ctx.kept.has(node.id)
+  ) {
+    appendLod2Prims(ctx, node, xf);
     ctx.partCount += 1;
   }
   for (const ch of ctx.kids.get(node.id) ?? []) walkLod2(ctx, ch, xf);

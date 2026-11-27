@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import type { ProjectDocument, TransformChannel } from '@ashfox/engine-core';
 import {
+  isExpressionVariantNode,
   sampleComposedNumericTransformChannel,
   type NumericAnimationVec3,
 } from '@ashfox/engine-core';
@@ -75,7 +76,7 @@ const restChannelValue = (
 ): NumericAnimationVec3 => {
   if (property === 'position') return localNodePosition(document, node);
   if (property === 'rotation') return node.transform.rotation;
-  return node.transform.scale;
+  return isExpressionVariantNode(node) ? [1, 1, 1] : node.transform.scale;
 };
 
 const applyNodeClipChannel = (

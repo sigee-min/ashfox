@@ -44,7 +44,8 @@ import { compileWorkspaceCandidate } from '../program/asset/workspaceCompile';
 import type { AssetAuthoringTelemetry } from '../program/asset/texture/telemetry';
 import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
-import { buildHooksBoneContext } from '../../hooks/resolve';
+import { computeModelColliders } from '../../model/collider';
+import { buildHooksBoneContext, emptyHooksDocument } from '../../hooks/resolve';
 import {
   assertSoundWorkspaceBudget,
   buildModuleAliasMap,
@@ -334,6 +335,10 @@ const pushModelProducts = (
       moduleAliases,
     );
     if (resolvedHooks.failure) return resolvedHooks.failure;
+    const colliders = computeModelColliders(result.model);
+    const baseHooks = resolvedHooks.hooks ?? emptyHooksDocument(result.model.name);
+    const hooks =
+      colliders.colliders.length > 0 ? { ...baseHooks, colliders } : resolvedHooks.hooks;
     output.products.push({
       kind: 'model',
       entry: result.entry,
@@ -341,7 +346,7 @@ const pushModelProducts = (
       model: result.model,
       workspace: checkedProducts.workspace,
       declarations: validateAssetDeclarations('model', result.outputs, result.previews, sourcePath),
-      ...(resolvedHooks.hooks ? { hooks: resolvedHooks.hooks } : {}),
+      ...(hooks ? { hooks } : {}),
       ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
     });
   }

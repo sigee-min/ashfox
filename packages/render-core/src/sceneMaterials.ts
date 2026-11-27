@@ -46,15 +46,21 @@ export const configureTextureMap = (map: THREE.Texture, texture: TextureAsset): 
 const createRasterTextureMap = (document: ProjectDocument, texture: TextureAsset): THREE.Texture =>
   configureTextureMap(new THREE.CanvasTexture(renderTextureRaster(document, texture)), texture);
 
-const createStoredTextureMap = (
-  texture: TextureAsset,
-  asset: ProjectAsset,
-): {
-  map: THREE.Texture;
-  ready: Promise<void>;
-} => {
-  const copy = new Uint8Array(asset.bytes);
-  const url = URL.createObjectURL(new Blob([copy.buffer], { type: asset.contentType }));
+const decodeBase64Png = (encoded: string): Uint8Array => {
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+};
+
+const loadTextureFromBytes = (
+  label: string,
+  bytes: Uint8Array,
+  contentType: string,
+  configure: (map: THREE.Texture) => THREE.Texture,
+): { map: THREE.Texture; ready: Promise<void> } => {
+  const copy = new Uint8Array(bytes);
+  const url = URL.createObjectURL(new Blob([copy.buffer], { type: contentType }));
   let map: THREE.Texture;
   const releaseUrl = (): void => {
     URL.revokeObjectURL(url);
@@ -75,19 +81,36 @@ const createStoredTextureMap = (
     undefined,
     () => {
       releaseUrl();
-      rejectReady?.(new Error(`Texture "${texture.name}" could not be decoded.`));
+      rejectReady?.(new Error(`Texture "${label}" could not be decoded.`));
     },
   );
   map.userData.ashfoxObjectUrl = url;
-  return {
-    map: configureTextureMap(map, texture),
-    ready,
-  };
+  return { map: configure(map), ready };
 };
+
+const configurePbrDataMap = (map: THREE.Texture, texture: TextureAsset): THREE.Texture => {
+  const nearest = texture.sampling === 'nearest';
+  map.magFilter = nearest ? THREE.NearestFilter : THREE.LinearFilter;
+  map.minFilter = nearest ? THREE.NearestFilter : THREE.LinearFilter;
+  map.generateMipmaps = false;
+  map.colorSpace = THREE.NoColorSpace;
+  map.channel = 0;
+  map.needsUpdate = true;
+  return map;
+};
+
+const createStoredTextureMap = (
+  texture: TextureAsset,
+  asset: ProjectAsset,
+): { map: THREE.Texture; ready: Promise<void> } =>
+  loadTextureFromBytes(texture.name, asset.bytes, asset.contentType, (map) =>
+    configureTextureMap(map, texture),
+  );
 
 interface TextureResource {
   texture: TextureAsset;
   map: THREE.Texture | null;
+  mrMap: THREE.Texture | null;
 }
 
 const collectTextureResources = (
@@ -99,6 +122,7 @@ const collectTextureResources = (
   const resources = new Map<string, TextureResource>();
   for (const texture of showTextures ? Object.values(document.textures) : []) {
     let map: THREE.Texture | null = null;
+    let mrMap: THREE.Texture | null = null;
     if (texture.raster) {
       map = createRasterTextureMap(document, texture);
     } else if (assets[texture.id]) {
@@ -108,33 +132,60 @@ const collectTextureResources = (
     } else {
       readiness.push(Promise.reject(new Error(`Texture "${texture.name}" has no local bytes.`)));
     }
-    resources.set(texture.id, { texture, map });
+    const mrBase64 = texture.pbr?.metallicRoughnessPngBase64;
+    if (mrBase64) {
+      const mrLoaded = loadTextureFromBytes(
+        `${texture.name}_mr`,
+        decodeBase64Png(mrBase64),
+        'image/png',
+        (m) => configurePbrDataMap(m, texture),
+      );
+      mrMap = mrLoaded.map;
+      readiness.push(mrLoaded.ready);
+    }
+    resources.set(texture.id, { texture, map, mrMap });
   }
   return { resources, readiness };
 };
+
+const buildUnlitMaterial = (
+  baseColor: string,
+  map: THREE.Texture | null,
+  additive: boolean,
+  premul: boolean,
+  side: THREE.Side,
+): THREE.MeshBasicMaterial =>
+  new THREE.MeshBasicMaterial({
+    color: baseColor,
+    map,
+    transparent: true,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    premultipliedAlpha: premul,
+    depthWrite: false,
+    side,
+    toneMapped: false,
+  });
 
 const buildStandardMaterial = (resource: TextureResource, emission: number): THREE.Material => {
   const additive =
     resource.texture.renderMode === 'additive' ||
     resource.texture.metadata?.ashfoxBlendMode === 'additive';
-  const premul = resource.texture.metadata?.ashfoxBlendMode === 'premul';
   const unlit = additive || resource.texture.metadata?.ashfoxUnlit === true;
   const softAlpha = resource.texture.raster?.alphaMode === 'soft';
   const transparent = additive || softAlpha || resource.texture.raster?.backgroundAlpha === 0;
   const baseColor = resource.map ? '#ffffff' : previewColor(resource.texture);
   const side = resource.texture.renderSides === 'double' ? THREE.DoubleSide : THREE.FrontSide;
   if (unlit) {
-    return new THREE.MeshBasicMaterial({
-      color: baseColor,
-      map: resource.map,
-      transparent: true,
-      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-      premultipliedAlpha: premul,
-      depthWrite: false,
+    return buildUnlitMaterial(
+      baseColor,
+      resource.map,
+      additive,
+      resource.texture.metadata?.ashfoxBlendMode === 'premul',
       side,
-      toneMapped: false,
-    });
+    );
   }
+  const pbr = resource.texture.pbr;
+  const hasMrMap = resource.mrMap !== null;
   return new THREE.MeshStandardMaterial({
     color: baseColor,
     map: resource.map,
@@ -142,12 +193,24 @@ const buildStandardMaterial = (resource: TextureResource, emission: number): THR
     blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
     depthWrite: !additive && !softAlpha && resource.texture.raster?.backgroundAlpha !== 0,
     side,
-    roughness: 0.84,
-    metalness: 0.02,
+    roughness: hasMrMap ? 1.0 : (pbr?.roughness ?? 0.88),
+    metalness: hasMrMap ? 1.0 : (pbr?.metallic ?? 0.0),
+    roughnessMap: resource.mrMap,
+    metalnessMap: resource.mrMap,
+    aoMap: resource.mrMap,
+    aoMapIntensity: hasMrMap ? 0.45 : 0,
+    envMapIntensity: 1.15,
     emissive: emission > 0 ? baseColor : '#000000',
     emissiveMap: emission > 0 ? resource.map : null,
     emissiveIntensity: emission,
   });
+};
+
+const disposeTextureMap = (map: THREE.Texture | null): void => {
+  if (!map) return;
+  const url = map.userData.ashfoxObjectUrl;
+  if (typeof url === 'string') URL.revokeObjectURL(url);
+  map.dispose();
 };
 
 const disposeProjectResources = (
@@ -157,12 +220,43 @@ const disposeProjectResources = (
 ): void => {
   for (const material of materials.values()) material.dispose();
   fallback.dispose();
-  for (const { map } of resources.values()) {
-    if (!map) continue;
-    const url = map.userData.ashfoxObjectUrl;
-    if (typeof url === 'string') URL.revokeObjectURL(url);
-    map.dispose();
+  for (const { map, mrMap } of resources.values()) {
+    disposeTextureMap(map);
+    disposeTextureMap(mrMap);
   }
+};
+
+/** Generates a lightweight procedural neutral studio PMREM IBL environment texture. */
+export const createStudioEnvironmentMap = (
+  renderer: THREE.WebGLRenderer,
+): THREE.WebGLRenderTarget => {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color('#202630');
+  const disposables: { dispose: () => void }[] = [];
+  const addPanel = (
+    color: string,
+    intensity: number,
+    size: readonly [number, number, number],
+    pos: readonly [number, number, number],
+  ): void => {
+    const geom = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color).multiplyScalar(intensity),
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.set(pos[0], pos[1], pos[2]);
+    envScene.add(mesh);
+    disposables.push(geom, mat);
+  };
+  addPanel('#fff5e6', 3.2, [10, 0.4, 10], [3, 8, -3]);
+  addPanel('#c9ddff', 1.8, [8, 6, 0.4], [-8, 3, -4]);
+  addPanel('#dce7f7', 1.4, [0.4, 6, 10], [8, 2, 4]);
+  addPanel('#404956', 0.9, [16, 0.4, 16], [0, -7, 0]);
+  const target = pmrem.fromScene(envScene, 0.04);
+  for (const item of disposables) item.dispose();
+  pmrem.dispose();
+  return target;
 };
 
 export const createProjectMaterials = (

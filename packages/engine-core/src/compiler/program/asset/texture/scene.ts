@@ -117,18 +117,18 @@ const worldAabbFromBasis = (
   };
 };
 
-const buildCubeObb = (
+const buildBoxObb = (
   node: InstantiatedGeometryNode,
   chartKey: string | null,
   offset: Vec3,
   ancestors: readonly BoneTransform[],
+  origin: Vec3,
+  size: Vec3,
+  inflate: number,
 ): SceneObb => {
-  const origin = add3(vec3Prop(node.properties, 'origin', [0, 0, 0]), offset);
   const position = vec3Prop(node.properties, 'position', [0, 0, 0]);
   const rotation = vec3Prop(node.properties, 'rotation', [0, 0, 0]);
   const pivot = add3(vec3Prop(node.properties, 'pivot', [0, 0, 0]), offset);
-  const size = vec3Prop(node.properties, 'size', [1, 1, 1]);
-  const inflate = scalarProp(node.properties, 'inflate', 0);
   const ownerOrigin = add3(pivot, position);
   const half: Vec3 = [size[0] / 2 + inflate, size[1] / 2 + inflate, size[2] / 2 + inflate];
   const localCenter = sub3(
@@ -158,6 +158,46 @@ const buildCubeObb = (
     aabbMin: aabb.min,
     aabbMax: aabb.max,
   };
+};
+
+const buildCubeObb = (
+  node: InstantiatedGeometryNode,
+  chartKey: string | null,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
+): SceneObb =>
+  buildBoxObb(
+    node,
+    chartKey,
+    offset,
+    ancestors,
+    add3(vec3Prop(node.properties, 'origin', [0, 0, 0]), offset),
+    vec3Prop(node.properties, 'size', [1, 1, 1]),
+    scalarProp(node.properties, 'inflate', 0),
+  );
+
+const buildCylinderObb = (
+  node: InstantiatedGeometryNode,
+  chartKey: string | null,
+  offset: Vec3,
+  ancestors: readonly BoneTransform[],
+): SceneObb => {
+  const org = add3(vec3Prop(node.properties, 'origin', [0, 0, 0]), offset);
+  const r = Math.max(
+    scalarProp(node.properties, 'radius', 1),
+    scalarProp(node.properties, 'radius_top', 0),
+  );
+  const h = scalarProp(node.properties, 'height', 1);
+  const ax = node.axis ?? 'y';
+  const origin: Vec3 =
+    ax === 'y'
+      ? [org[0] - r, org[1], org[2] - r]
+      : ax === 'x'
+        ? [org[0], org[1] - r, org[2] - r]
+        : [org[0] - r, org[1] - r, org[2]];
+  const size: Vec3 =
+    ax === 'y' ? [r * 2, h, r * 2] : ax === 'x' ? [h, r * 2, r * 2] : [r * 2, r * 2, h];
+  return buildBoxObb(node, chartKey, offset, ancestors, origin, size, 0);
 };
 
 const buildPlaneObb = (
@@ -219,7 +259,10 @@ const buildNodeObb = (
 ): SceneObb | null => {
   const chartKey =
     node.surface === null ? null : `${node.surface.surface.key}\u0000${node.surface.chart}`;
-  if (node.kind === 'cube') return buildCubeObb(node, chartKey, offset, ancestors);
+  if (node.kind === 'cube' || node.kind === 'taper' || node.kind === 'wedge') {
+    return buildCubeObb(node, chartKey, offset, ancestors);
+  }
+  if (node.kind === 'cylinder') return buildCylinderObb(node, chartKey, offset, ancestors);
   if (node.kind === 'plane') return buildPlaneObb(node, chartKey, offset, ancestors);
   return null;
 };

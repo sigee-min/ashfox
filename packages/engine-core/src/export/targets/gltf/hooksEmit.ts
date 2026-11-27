@@ -1,5 +1,4 @@
 import type { CompiledAnchor, HooksDocument } from '../../../hooks/contract';
-import { hasHooksContent } from '../../../hooks/resolve';
 import type { GltfDocument, GltfNode } from './contract';
 import { identityMat4, invertAffineMat4, multiplyMat4, trsMat4, type Mat4 } from './rigid';
 import { isIdentityRotation, quaternionFromEuler } from './spatial';
@@ -167,6 +166,17 @@ const attachRootHooksExtras = (
   };
 };
 
+const hasGlbHookItems = (hooks: HooksDocument | undefined): hooks is HooksDocument =>
+  Boolean(
+    hooks &&
+    (hooks.schemas.length > 0 ||
+      hooks.anchors.length > 0 ||
+      hooks.volumes.length > 0 ||
+      hooks.cues.length > 0 ||
+      hooks.meta.length > 0 ||
+      hooks.zones.length > 0),
+  );
+
 /**
  * Append `anchor_<id>` Empty Nodes and canonical `extras.ashfox.hooks` to a glTF document.
  * Preserves existing geometry meshes, draw calls, and extensions untouched.
@@ -176,7 +186,7 @@ export const appendHooksToGltfDocument = <T extends GltfDocument>(
   hooks: HooksDocument | undefined,
   options: AppendHooksGltfOptions,
 ): T => {
-  if (!hasHooksContent(hooks) || !hooks) return document;
+  if (!hasGlbHookItems(hooks)) return document;
   const nodes = document.nodes.map((n) => ({
     ...n,
     ...(n.children ? { children: [...n.children] } : {}),

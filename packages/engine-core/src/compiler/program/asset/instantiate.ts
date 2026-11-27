@@ -28,6 +28,7 @@ import {
   type AssetInstantiationResult,
   type InstantiatedBone,
   type InstantiatedComponentInstance,
+  type InstantiatedExpressionVariant,
   type InstantiatedGeometryNode,
   type InstantiatedGeometryProperty,
   type InstantiatedGeometrySurface,
@@ -168,6 +169,40 @@ interface GeometryWalkContext {
   readonly jointBindings: ReadonlyMap<string, string>;
 }
 
+const expressionVariantsOf = (
+  ctx: GeometryWalkContext,
+  block: TypedGeometryBlock,
+): readonly InstantiatedExpressionVariant[] | undefined => {
+  if (block.keyword !== 'expression_slot') return undefined;
+  const variants: InstantiatedExpressionVariant[] = [];
+  for (const stmt of block.statements) {
+    if (stmt.kind !== 'typed-geometry-expr-variant') continue;
+    const surface = ctx.surfaceBindings[stmt.surfacePort];
+    if (surface === undefined || ctx.session.hir.surfaces[surface.key] === undefined) {
+      ctx.session.issue(
+        ctx.path,
+        stmt.span,
+        'asset.missing-surface-binding',
+        `Expression variant port "${stmt.surfacePort}" has no concrete binding.`,
+      );
+      continue;
+    }
+    variants.push(
+      freeze({
+        variant: stmt.variant,
+        surface: freeze({
+          port: stmt.surfacePort,
+          chart: stmt.chart,
+          surface,
+          span: stmt.span,
+        }),
+        span: stmt.span,
+      }),
+    );
+  }
+  return freeze(variants);
+};
+
 const evaluateBlockProperties = (
   ctx: GeometryWalkContext,
   block: TypedGeometryBlock,
@@ -215,6 +250,42 @@ const emitMirroredSibling = (
   nodes.push(mirrored);
 };
 
+const optionValueOf = (
+  statement: Extract<TypedGeometryStatement, { readonly kind: 'typed-geometry-block' }>,
+  name: 'axis' | 'slope',
+): string | undefined => {
+  const opt = statement.statements.find(
+    (entry) => entry.kind === 'typed-geometry-option' && entry.name === name,
+  );
+  return opt?.kind === 'typed-geometry-option' ? opt.value : undefined;
+};
+
+const instantiateGeometryNode = (
+  ctx: GeometryWalkContext,
+  statement: Extract<TypedGeometryStatement, { readonly kind: 'typed-geometry-block' }>,
+  id: string,
+  attachment: string | null,
+  nextPath: readonly string[],
+): InstantiatedGeometryNode => {
+  const nextAttachment = statement.keyword === 'bone' ? id : attachment;
+  const axis = optionValueOf(statement, 'axis');
+  const slope = optionValueOf(statement, 'slope');
+  const expressionVariants = expressionVariantsOf(ctx, statement);
+  return freeze({
+    kind: statement.keyword,
+    id,
+    attachmentBoneId: attachment,
+    properties: evaluateBlockProperties(ctx, statement),
+    surface: surfaceOf(ctx.session, ctx.path, statement, ctx.surfaceBindings),
+    children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
+    ...(axis !== undefined ? { axis: axis as 'x' | 'y' | 'z' } : {}),
+    ...(slope !== undefined ? { slope: slope as 'north' | 'south' | 'east' | 'west' } : {}),
+    ...(expressionVariants !== undefined ? { expressionVariants } : {}),
+    sourcePath: ctx.path,
+    span: statement.span,
+  });
+};
+
 const walkGeometry = (
   ctx: GeometryWalkContext,
   statements: readonly TypedGeometryStatement[],
@@ -231,18 +302,8 @@ const walkGeometry = (
       continue;
     }
     const id = [ctx.instanceId, ...nextPath].join('/');
-    const nextAttachment = statement.keyword === 'bone' ? id : attachment;
     registerNodeId(ctx, id, statement.span, statement.keyword);
-    const node = freeze({
-      kind: statement.keyword,
-      id,
-      attachmentBoneId: attachment,
-      properties: evaluateBlockProperties(ctx, statement),
-      surface: surfaceOf(ctx.session, ctx.path, statement, ctx.surfaceBindings),
-      children: freeze(walkGeometry(ctx, statement.statements, nextAttachment, nextPath)),
-      sourcePath: ctx.path,
-      span: statement.span,
-    });
+    const node = instantiateGeometryNode(ctx, statement, id, attachment, nextPath);
     nodes.push(node);
     emitMirroredSibling(ctx, statement, node, lexicalPath, nodes);
   }

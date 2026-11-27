@@ -34,6 +34,7 @@ const vectorEntry = (
 
 const VECTOR_INFO: ReadonlyMap<AssetVectorValueType, AssetTypeInfo> = new Map([
   vectorEntry('vec2<unit>', 2, 'unit'),
+  vectorEntry('vec2<ratio>', 2, 'ratio'),
   vectorEntry('vec2<texel>', 2, 'texel'),
   vectorEntry('vec3<unit>', 3, 'unit'),
   vectorEntry('vec3<degree>', 3, 'degree'),

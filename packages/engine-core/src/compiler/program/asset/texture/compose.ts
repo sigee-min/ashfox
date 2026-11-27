@@ -2,7 +2,11 @@ import type {
   ProgramProperty,
   ProgramTextureChart,
 } from '../../../../project/program/syntax/contract';
-import type { TextureAlphaMask, TextureCanvasDetail } from '../../../../model/texture';
+import type {
+  TextureAlphaMask,
+  TextureCanvasDetail,
+  TexturePbrMaterial,
+} from '../../../../model/texture';
 import type { TextureSceneContext } from './ao';
 import type { PreparedChart } from './chart';
 import type { AssetTextureChartPlan } from './contract';
@@ -11,6 +15,7 @@ import { applyFaceFill, copyMirroredFace, readGrainModeProperty } from './face';
 import { applyGrainModes, applyVoxelTone, type GrainMode } from './grain';
 import { readRole } from './palette';
 import { applyPatternStatement } from './pattern';
+import { synthesizeAtlasPbr, type ChartPbrGridEntry } from './pbr';
 import type { PreparedTexture } from './prepare';
 import {
   applyAoToGrid,
@@ -330,34 +335,14 @@ const applyToneAndGrain = (
   );
 };
 
-const applyChart = (
+const finalizeChartResult = (
   chart: PreparedChart,
+  base: NonNullable<ReturnType<typeof fillChartBase>>,
+  state: ChartRunState,
+  chartGrain: GrainMode | undefined,
   compose: ComposeContext,
   owner: string,
-): Readonly<{
-  readonly details: readonly TextureCanvasDetail[];
-  readonly mask: TextureAlphaMask | null;
-  readonly telemetry: ChartAuthoringTelemetry;
-}> | null => {
-  const base = fillChartBase(chart, compose);
-  if (base === null) return null;
-  const chartGrain = readGrainModeProperty(chart.chart.statements, compose.report);
-  if (chartGrain === null) return null;
-  const state: ChartRunState = {
-    chart: chart.chart,
-    regions: chart.regions,
-    grid: base.grid,
-    faceSeen: new Set<string>(),
-    faceGrain: new Map<TextureRegion, GrainMode>(),
-    deferredMirrors: [],
-    stampSeen: false,
-  };
-  if (
-    !runSubStatements(chart.chart.statements, state, chart.regions, compose, true) ||
-    compose.report.bad
-  )
-    return null;
-  if (!applyDeferredMirrors(state, compose) || compose.report.bad) return null;
+) => {
   if (chart.coverage !== null) applyChartCoverage(base.grid, chart.coverage);
   const fallbackGrain = chartGrain ?? compose.prepared.grain.algorithm;
   const modeFor = (region: TextureRegion): GrainMode =>
@@ -384,8 +369,52 @@ const applyChart = (
   const mask =
     chart.coverage === null
       ? null
-      : maskFor(owner + ':coverage', chart.origin, chart.abiWidth, chart.abiHeight, chart.coverage);
-  return Object.freeze({ details, mask, telemetry });
+      : maskFor(`${owner}:coverage`, chart.origin, chart.abiWidth, chart.abiHeight, chart.coverage);
+  return Object.freeze({
+    details,
+    mask,
+    telemetry,
+    pbrGrid: {
+      origin: chart.origin,
+      width: chart.abiWidth,
+      height: chart.abiHeight,
+      pbr: chart.pbr,
+      grid: base.grid,
+    },
+  });
+};
+
+const applyChart = (
+  chart: PreparedChart,
+  compose: ComposeContext,
+  owner: string,
+): Readonly<{
+  readonly details: readonly TextureCanvasDetail[];
+  readonly mask: TextureAlphaMask | null;
+  readonly telemetry: ChartAuthoringTelemetry;
+  readonly pbrGrid: ChartPbrGridEntry;
+}> | null => {
+  const base = fillChartBase(chart, compose);
+  if (base === null) return null;
+  const chartGrain = readGrainModeProperty(chart.chart.statements, compose.report);
+  if (chartGrain === null) return null;
+  const state: ChartRunState = {
+    chart: chart.chart,
+    regions: chart.regions,
+    grid: base.grid,
+    faceSeen: new Set<string>(),
+    faceGrain: new Map<TextureRegion, GrainMode>(),
+    deferredMirrors: [],
+    stampSeen: false,
+  };
+  if (
+    !runSubStatements(chart.chart.statements, state, chart.regions, compose, true) ||
+    compose.report.bad
+  ) {
+    return null;
+  }
+  if (!applyDeferredMirrors(state, compose) || compose.report.bad) return null;
+  return finalizeChartResult(chart, base, state, chartGrain, compose, owner);
 };
 
 const reportUnusedStamps = (
@@ -419,10 +448,12 @@ export const composeTextureCharts = (
   readonly masks: readonly TextureAlphaMask[];
   readonly charts: Readonly<Record<string, AssetTextureChartPlan>>;
   readonly chartTelemetry: readonly ChartAuthoringTelemetry[];
+  readonly pbr?: TexturePbrMaterial;
 }> | null => {
   const details: TextureCanvasDetail[] = [];
   const masks: TextureAlphaMask[] = [];
   const chartTelemetry: ChartAuthoringTelemetry[] = [];
+  const pbrGrids: ChartPbrGridEntry[] = [];
   const charts = Object.create(null) as Record<string, AssetTextureChartPlan>;
   const compose: ComposeContext = {
     surfaceKey,
@@ -438,6 +469,7 @@ export const composeTextureCharts = (
     for (const detail of result.details) details.push(detail);
     if (result.mask !== null) masks.push(result.mask);
     chartTelemetry.push(result.telemetry);
+    pbrGrids.push(result.pbrGrid);
     charts[chart.chart.id] = Object.freeze({
       id: chart.chart.id,
       layout: chart.chart.layout,
@@ -452,10 +484,12 @@ export const composeTextureCharts = (
   if (reportUnusedStamps(prepared.stamps, compose.usedStamps, report)) return null;
   if (!detailBudgetAllows(details, masks, report.path, report.owner, propertyIssue(report)))
     return null;
+  const pbr = synthesizeAtlasPbr(prepared.width, prepared.height, pbrGrids, prepared.defaultPbr);
   return Object.freeze({
     details: Object.freeze(details),
     masks: Object.freeze(masks),
     charts: Object.freeze(charts),
     chartTelemetry: Object.freeze(chartTelemetry),
+    ...(pbr ? { pbr } : {}),
   });
 };

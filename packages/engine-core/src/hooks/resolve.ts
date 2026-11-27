@@ -56,7 +56,7 @@ export const emptyHooksDocument = (assetId: string): HooksDocument =>
     zones: Object.freeze([]),
   });
 
-/** Returns true when a compiled hooks document contains any emitted hook items or schemas. */
+/** Returns true when a compiled hooks document contains any emitted hook items, schemas, or colliders. */
 export const hasHooksContent = (doc: HooksDocument | undefined): boolean =>
   Boolean(
     doc &&
@@ -65,7 +65,8 @@ export const hasHooksContent = (doc: HooksDocument | undefined): boolean =>
       doc.volumes.length > 0 ||
       doc.cues.length > 0 ||
       doc.meta.length > 0 ||
-      doc.zones.length > 0),
+      doc.zones.length > 0 ||
+      (doc.colliders && doc.colliders.colliders.length > 0)),
   );
 
 /** Collect import aliases referenced by schema prefixes or `asset` field values in a unit. */

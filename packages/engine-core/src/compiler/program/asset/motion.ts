@@ -20,6 +20,7 @@ import type {
   TypedMotionTrack,
   TypedRigContract,
 } from './contract';
+import { buildMotionExpressions as buildExpressions } from './motionExpr';
 import type { AssemblyContext, AssemblyEntry, AssemblyState } from './assembly';
 import { compileAndEvaluateHirExpression } from './hirValues';
 import { ASSET_BUDGET } from './budgets';
@@ -405,6 +406,7 @@ export const buildMotion = (
     buildTrack(context, state, rig, header.duration, track);
   const poses = buildPoses(context, state, rig, declaration.poses);
   const poseIds = new Set(poses.map((p) => p.id));
+  const expressions = buildExpressions(context, state, header.duration, declaration);
   return freeze({
     symbol: entry.symbol,
     rig: rig.symbol,
@@ -429,6 +431,7 @@ export const buildMotion = (
     secondaries: buildSecondaries(context, state, rig, declaration.secondaries),
     combat: buildCombatOps(context, state, rig, declaration.combatOps),
     cues: buildCues(context, state, rig, declaration.cues),
+    ...(expressions.length > 0 ? { expressions } : {}),
     span: declaration.span,
   });
 };

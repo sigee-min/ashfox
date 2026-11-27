@@ -1,8 +1,10 @@
 import {
   CUBE_FACE_DIRECTIONS,
   type CubeFaceDirection,
+  type CubeFaces,
   type CubeNode,
   type ProjectDocument,
+  type SceneNode,
 } from '../../model';
 import { cubeUnrotatedBounds } from '../../model';
 import { EPSILON, isFiniteNumber, isNonEmptyString, validateVec } from '../shared/value';
@@ -15,12 +17,12 @@ const CUBE_FACE_DIRECTION_SET = new Set<string>(CUBE_FACE_DIRECTIONS);
 type CubeFace = CubeNode['faces'][CubeFaceDirection];
 type Texture = ProjectDocument['textures'][string];
 
-const faceIssue = (cube: CubeNode, path: string, message: string): InvariantFinding => ({
+const faceIssue = (node: SceneNode, path: string, message: string): InvariantFinding => ({
   code: 'cube.invalid_face',
   severity: 'error',
   message,
   path,
-  entityIds: [cube.id],
+  entityIds: [node.id],
 });
 
 const validateCubeBounds = (cube: CubeNode, path: string, add: FindingSink): void => {
@@ -169,19 +171,32 @@ const validateFaceUvCanvas = (
 const validateCubeFace = (
   face: CubeFace | undefined,
   direction: CubeFaceDirection,
-  cube: CubeNode,
+  node: SceneNode,
   document: ProjectDocument,
   path: string,
   add: FindingSink,
 ): void => {
   const facePath = `${path}.faces.${direction}`;
   if (!face) {
-    add(faceIssue(cube, facePath, `Cube is missing its ${direction} face record.`));
+    add(faceIssue(node, facePath, `Node is missing its ${direction} face record.`));
     return;
   }
-  validateFaceShape(face, cube, facePath, add);
-  validateFaceTextureId(face, cube, document, facePath, add);
-  validateFaceUvCanvas(face, cube, document, facePath, add);
+  validateFaceShape(face, node as CubeNode, facePath, add);
+  validateFaceTextureId(face, node as CubeNode, document, facePath, add);
+  validateFaceUvCanvas(face, node as CubeNode, document, facePath, add);
+};
+
+export const validateBoxFaces = (
+  faces: CubeFaces,
+  node: SceneNode,
+  document: ProjectDocument,
+  path: string,
+  add: FindingSink,
+): void => {
+  const faceRecord = faces as Partial<Record<CubeFaceDirection, CubeFace>>;
+  for (const direction of CUBE_FACE_DIRECTIONS) {
+    validateCubeFace(faceRecord[direction], direction, node, document, path, add);
+  }
 };
 
 export const validateCube = (
@@ -191,10 +206,7 @@ export const validateCube = (
   add: FindingSink,
 ): void => {
   validateCubeBounds(cube, path, add);
-  const faceRecord = cube.faces as Partial<Record<CubeFaceDirection, CubeFace>>;
-  for (const direction of CUBE_FACE_DIRECTIONS) {
-    validateCubeFace(faceRecord[direction], direction, cube, document, path, add);
-  }
+  validateBoxFaces(cube.faces, cube, document, path, add);
   if (
     cube.lightEmission !== undefined &&
     (!Number.isInteger(cube.lightEmission) || cube.lightEmission < 0 || cube.lightEmission > 15)

@@ -30,18 +30,29 @@ export {
   type CubeFaces,
   type CubeNode,
   type OrientedCubeNode,
+  type CylinderNode,
   type LocatorNode,
   type PlaneFaceDirection,
   type PlaneFaces,
   type PlaneNode,
   type SceneNode,
+  type TaperNode,
   type Transform,
+  type WedgeNode,
 } from './scene';
+export { buildPrimitivePolygons, evalPolygonFaceUvs, primitiveLocalVertices } from './primitives';
+export {
+  compileExpressionChannels,
+  expressionSlotName,
+  expressionVariantName,
+  isExpressionVariantNode,
+} from './expression';
 export {
   type BlobRef,
   type TextureAsset,
   type TextureCanvasDetail,
   type TextureAlphaMask,
+  type TexturePbrMaterial,
 } from './texture';
 export {
   type AnimationClip,
@@ -64,3 +75,11 @@ export type {
   TextureAuthoringTelemetry,
 } from './telemetry';
 export { canonicalMinecraftRotation } from './transform';
+export {
+  computeModelColliders,
+  type ModelAabb,
+  type ModelBoxCollider,
+  type ModelCapsuleCollider,
+  type ModelCollider,
+  type ModelColliderSet,
+} from './collider';

@@ -1,5 +1,5 @@
 import { readGameAssetManifest } from './read';
-import type { GameAssetPack } from '@ashfox/engine-core';
+import type { GameAssetPack, ModelColliderSet } from '@ashfox/engine-core';
 import { compareText, decodeUtf8, encodeUtf8 } from '@ashfox/internal-contracts';
 import {
   BuildFailure,
@@ -97,6 +97,17 @@ const readGlbRequiredExtensions = (data: Uint8Array): readonly string[] => {
   return gltf.extensionsRequired ?? [];
 };
 
+const readModelColliders = (
+  sourceFiles: IndexedCatalogAssetFiles,
+  artifactMap: ReadonlyMap<string, Uint8Array>,
+): ModelColliderSet | undefined => {
+  if (!sourceFiles.hooksPath) return undefined;
+  const bytes = artifactMap.get(sourceFiles.hooksPath);
+  if (!bytes) return undefined;
+  const hooks = JSON.parse(decodeUtf8(bytes)) as { colliders?: ModelColliderSet };
+  return hooks.colliders;
+};
+
 const compileModelGameAsset = (
   bindingId: string,
   source: CatalogAsset,
@@ -109,6 +120,7 @@ const compileModelGameAsset = (
   const filePath = sourceFiles.glbPath;
   if (!filePath) throw new BuildFailure('pack.source', source.id + ': expected embedded GLB');
   const data = readArtifactBytes(artifactMap, filePath);
+  const colliders = readModelColliders(sourceFiles, artifactMap);
   return {
     id: bindingId,
     kind: 'model',
@@ -117,6 +129,7 @@ const compileModelGameAsset = (
     coordinateSystem: 'gltf2',
     unitsPerMeter,
     clips,
+    ...(colliders ? { colliders } : {}),
   };
 };
 

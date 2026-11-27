@@ -418,6 +418,7 @@ const lowerInstantiatedMotion = (
     secondaries: motion.secondaries,
     combat: motion.combat,
     cues: motion.cues,
+    ...(motion.expressions ? { expressions: motion.expressions } : {}),
     span: motion.span,
   });
 };

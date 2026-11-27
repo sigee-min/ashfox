@@ -1,6 +1,11 @@
 import { freeze } from '../../../immutable';
+import {
+  buildExpressionVariantPlanes,
+  type ExpressionVariantInput,
+} from '../../../model/expression';
 import type { UvRect, Vec2, Vec3 } from '../../../model/identity';
 import type { CubeFace, PlaneFaces, SceneNode } from '../../../model/scene';
+import { compareText } from '../../../stableOrder';
 import type { InstantiatedGeometryNode } from './ir';
 import type { AssetTexturePlan } from './texture/contract';
 import type { AssetExactNumber } from './value/contract';
@@ -233,4 +238,109 @@ export const lowerPlane = (
     }),
     faces,
   };
+};
+
+const EXPR_ALLOWED = new Set([
+  'origin',
+  'size',
+  'position',
+  'rotation',
+  'pivot',
+  'visible',
+  'u_axis',
+  'v_axis',
+]);
+
+const vec3Or = (
+  entry: PropertyEntry | undefined,
+  fallback: Vec3,
+  context: Context,
+  node: InstantiatedGeometryNode,
+): Vec3 | null => {
+  if (entry === undefined) return fallback;
+  const ex = exactVector(entry, 'vec3<unit>', context, node.sourcePath, node.span);
+  return ex ? exactToVector3(ex, NUMBER_BOUNDARY, context, node.sourcePath, entry.span) : null;
+};
+
+const collectExpressionVariants = (
+  node: InstantiatedGeometryNode,
+  size: Vec2,
+  surfaces: SurfaceBindings,
+  plans: ReadonlyMap<string, AssetTexturePlan>,
+  context: Context,
+): ExpressionVariantInput[] => {
+  const variantInputs: ExpressionVariantInput[] = [];
+  for (const item of [...(node.expressionVariants ?? [])].sort((a, b) =>
+    compareText(a.variant, b.variant),
+  )) {
+    const plan = plans.get(item.surface.surface.key);
+    const binding = surfaces
+      .get(item.surface.surface.key)
+      ?.find((s) => s.contract.key !== '' || s.surface.key === item.surface.surface.key);
+    const chart = plan?.charts[item.surface.chart];
+    if (!plan || !binding || !chart || chart.layout !== 'flat') {
+      report(
+        context,
+        node.sourcePath,
+        item.span,
+        'asset.geometry-surface',
+        `Expression variant "${item.variant}" requires a flat chart.`,
+      );
+      continue;
+    }
+    const d = chart.density;
+    variantInputs.push({
+      variant: item.variant,
+      textureId: plan.texture.id,
+      uv: freeze([
+        chart.origin[0],
+        chart.origin[1],
+        chart.origin[0] + size[0] * d,
+        chart.origin[1] + size[1] * d,
+      ]),
+      coverageId: `${plan.texture.id}\u0000${chart.id}`,
+    });
+  }
+  return variantInputs;
+};
+
+export const lowerExpressionSlot = (
+  record: GeometryRecord,
+  parentId: string,
+  surfaces: SurfaceBindings,
+  plans: ReadonlyMap<string, AssetTexturePlan>,
+  context: Context,
+): readonly SceneNode[] => {
+  const node = record.node;
+  const properties = propertyMap(node, EXPR_ALLOWED, ['size'], context);
+  const sizeExact = exactVector(
+    properties.get('size'),
+    'vec2<unit>',
+    context,
+    node.sourcePath,
+    node.span,
+  );
+  const size = sizeExact
+    ? exactToVector2(sizeExact, INTEGER_BOUNDARY, context, node.sourcePath, node.span)
+    : null;
+  const origin = vec3Or(properties.get('origin'), [0, 0, 0], context, node);
+  const uAxis = vec3Or(properties.get('u_axis'), [1, 0, 0], context, node);
+  const vAxis = vec3Or(properties.get('v_axis'), [0, 1, 0], context, node);
+  const transform = transformFor(properties, context, node.sourcePath, node.span, true);
+  if (!size || !origin || !uAxis || !vAxis || !transform) return [];
+  return buildExpressionVariantPlanes(
+    {
+      slotId: node.id,
+      parentId,
+      origin,
+      size,
+      uAxis,
+      vAxis,
+      position: transform.position,
+      rotation: transform.rotation,
+      pivot: transform.pivot,
+      visible: visibleFor(properties, context, node),
+    },
+    collectExpressionVariants(node, size, surfaces, plans, context),
+  );
 };

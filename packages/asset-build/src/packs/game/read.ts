@@ -55,6 +55,44 @@ const validateRequiredExtensions = (value: unknown): void => {
 const isNonNegativeInt = (v: unknown): boolean =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 
+const validateVec3Tuple = (v: unknown): void => {
+  if (
+    !Array.isArray(v) ||
+    v.length !== 3 ||
+    v.some((n) => typeof n !== 'number' || !Number.isFinite(n))
+  ) {
+    fail('Invalid collider vector');
+  }
+};
+
+const validateModelColliders = (raw: unknown): void => {
+  const col = record(raw, ['profile', 'aabb', 'colliders']);
+  if (!['creature', 'prop', 'block'].includes(String(col.profile)))
+    fail('Invalid collider profile');
+  const aabb = record(col.aabb, ['min', 'max']);
+  validateVec3Tuple(aabb.min);
+  validateVec3Tuple(aabb.max);
+  if (!Array.isArray(col.colliders)) fail('Invalid colliders array');
+  for (const item of col.colliders as unknown[]) {
+    if (!isClosedContractRecord(item) || !('shape' in item)) fail('Invalid collider item');
+    const shape = (item as { readonly shape: unknown }).shape;
+    if (shape === 'capsule') {
+      const c = record(item, ['shape', 'axis', 'center', 'radius', 'height']);
+      validateVec3Tuple(c.center);
+      if (c.axis !== 'y' || !finite(c.radius, true) || !finite(c.height, true))
+        fail('Invalid capsule collider');
+    } else if (shape === 'box') {
+      const b = record(item, ['shape', 'center', 'size', 'min', 'max']);
+      validateVec3Tuple(b.center);
+      validateVec3Tuple(b.size);
+      validateVec3Tuple(b.min);
+      validateVec3Tuple(b.max);
+    } else {
+      fail('Unknown collider shape');
+    }
+  }
+};
+
 const validateModelAsset = (
   a: Record<string, unknown>,
   reference: (path: unknown, extension: string) => void,
@@ -68,6 +106,7 @@ const validateModelAsset = (
     if (typeof clip.name !== 'string' || !clip.name || !finite(clip.durationSeconds, false))
       fail('Invalid animation clip');
   }
+  if ('colliders' in a) validateModelColliders(a.colliders);
 };
 
 const validateStructureAsset = (
@@ -148,9 +187,12 @@ const validateSoundAsset = (
   }
 };
 
-const fieldsForAssetKind = (kind: unknown): readonly string[] => {
-  if (kind === 'model')
-    return ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions'];
+const fieldsForAssetKind = (kind: unknown, hasColliders = false): readonly string[] => {
+  if (kind === 'model') {
+    return hasColliders
+      ? ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions', 'colliders']
+      : ['model', 'coordinateSystem', 'unitsPerMeter', 'clips', 'requiredExtensions'];
+  }
   if (kind === 'structure')
     return [
       'model',
@@ -186,7 +228,12 @@ const validateSpriteAsset = (
 
 const validateManifestAsset = (raw: unknown, ids: Set<string>, allPaths: Set<string>): void => {
   if (!isClosedContractRecord(raw) || !('kind' in raw)) return fail('Invalid kind');
-  const a = record(raw, ['id', 'kind', 'files', ...fieldsForAssetKind(raw.kind)]);
+  const a = record(raw, [
+    'id',
+    'kind',
+    'files',
+    ...fieldsForAssetKind(raw.kind, 'colliders' in raw),
+  ]);
   if (typeof a.id !== 'string' || !/^[a-z][a-z0-9_.:/-]{0,127}$/.test(a.id) || ids.has(a.id))
     return fail('Invalid or duplicate ID');
   ids.add(a.id);

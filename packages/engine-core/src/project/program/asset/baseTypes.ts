@@ -30,6 +30,7 @@ export type AssetValueType =
   | 'bool'
   | 'color'
   | 'vec2<unit>'
+  | 'vec2<ratio>'
   | 'vec3<unit>'
   | 'vec3<degree>'
   | 'vec3<ratio>'

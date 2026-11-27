@@ -147,6 +147,7 @@ interface VectorShape {
 
 const VECTOR_SHAPES: Readonly<Record<AssetVectorValue['type'], VectorShape>> = Object.freeze({
   'vec2<unit>': { length: 2, unit: 'unit' },
+  'vec2<ratio>': { length: 2, unit: 'ratio' },
   'vec2<texel>': { length: 2, unit: 'texel' },
   texel_rect: { length: 4, unit: 'texel' },
   'vec3<unit>': { length: 3, unit: 'unit' },

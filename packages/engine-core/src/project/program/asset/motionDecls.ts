@@ -116,6 +116,21 @@ export interface AssetCueDecl {
   readonly span: SourceSpan;
 }
 
+export interface AssetExpressionEntryDecl {
+  readonly kind: 'expression-entry';
+  readonly startTime: ProgramExpr;
+  readonly endTime: ProgramExpr | null;
+  readonly variant: string;
+  readonly span: SourceSpan;
+}
+
+export interface AssetExpressionSlotTrackDecl {
+  readonly kind: 'expression-track';
+  readonly slot: string;
+  readonly entries: readonly AssetExpressionEntryDecl[];
+  readonly span: SourceSpan;
+}
+
 export interface AssetMotionDecl {
   readonly kind: 'motion';
   readonly exported: boolean;
@@ -123,6 +138,7 @@ export interface AssetMotionDecl {
   readonly rig: AssetQualifiedName;
   readonly properties: readonly AssetPropertyDecl[];
   readonly tracks: readonly AssetTrackDecl[];
+  readonly expressions?: readonly AssetExpressionSlotTrackDecl[];
   readonly layers: readonly AssetMotionLayerDecl[];
   readonly waves: readonly AssetWaveBindingDecl[];
   readonly poses: readonly AssetPoseDecl[];

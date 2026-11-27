@@ -1,12 +1,10 @@
-import type { StructureBakedBatch, StructureProduct } from '../../../compiler/structure/contract';
+import type { StructureProduct } from '../../../compiler/structure/contract';
 import type { ProjectDocument } from '../../../model';
-import type { TextureAsset } from '../../../model/texture';
 import { compareText } from '../../../stableOrder';
-import { encodeCanonicalPng } from '../../../textures/textureRecipe/png';
-import { rasterizeTextureSpec } from '../../../textures/textureRecipe/raster';
 import { GltfBinaryWriter } from './binary';
 import type { CompiledGltf } from './build';
 import type { GltfDocument, GltfExtensionName, GltfMaterial, GltfNode, GltfSkin } from './contract';
+import { resolveLodMaterial as resolveMat } from './lodMat';
 import {
   buildModelLod1Document,
   buildModelLod2Mesh,
@@ -15,7 +13,7 @@ import {
 import { compileQuantizedGltfPrimitive } from './primitive';
 import { emitLod1PropNodes } from './propNode';
 import { compileGltfScene } from './scene';
-import { computePositionsBounds, type PositionBounds, type UvTransform } from './vertexLayout';
+import { computePositionsBounds, type PositionBounds } from './vertexLayout';
 
 export const DEFAULT_STRUCTURE_LOD_DISTANCES: readonly [number, number, number] = [0, 28, 75];
 export const DEFAULT_MODEL_LOD_DISTANCES: readonly [number, number, number] = [0, 18, 45];
@@ -117,7 +115,7 @@ const colorMesh = (
     mid =
       st.materials.push({
         name: matName,
-        pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 1 },
+        pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 0.88 },
       }) - 1;
   const bounds = computePositionsBounds([p]);
   const prim = compileQuantizedGltfPrimitive(
@@ -196,63 +194,6 @@ const finalize = (c: CompiledGltf, st: State, rootNodes: number[]): CompiledGltf
   if (st.materials.length) doc.materials = st.materials;
   if (st.skins.length) doc.skins = st.skins;
   return { document: doc, binary, textureFiles: c.textureFiles };
-};
-
-const ensureLodTexture = (st: State, tex: TextureAsset): number | undefined => {
-  const existing = st.textures.findIndex((t) => t.name === tex.name);
-  if (existing >= 0) return existing;
-  if (!tex.raster) return undefined;
-  const png = encodeCanonicalPng(rasterizeTextureSpec(tex.width, tex.height, tex.raster));
-  const img =
-    st.images.push({
-      bufferView: st.bvOff + st.writer.addBufferView(png),
-      mimeType: 'image/png',
-      name: tex.name,
-    }) - 1;
-  const f = tex.sampling === 'nearest' ? 9728 : 9729;
-  const samp = st.samplers.push({ magFilter: f, minFilter: f, wrapS: 10497, wrapT: 10497 }) - 1;
-  return st.textures.push({ sampler: samp, source: img, name: tex.name }) - 1;
-};
-
-const resolveMat = (
-  st: State,
-  tex: TextureAsset | undefined,
-  layer: StructureBakedBatch['layer'],
-  mats: Map<string, number>,
-  uvTx?: UvTransform,
-) => {
-  if (!tex) return undefined;
-  const uvKey = uvTx ? `:uv(${uvTx.offset.join(',')},${uvTx.scale.join(',')})` : '';
-  const key = `${tex.name}:${layer}${uvKey}`;
-  const hit = mats.get(key);
-  if (hit !== undefined) return hit;
-  const tid = ensureLodTexture(st, tex);
-  if (tid === undefined) return undefined;
-  if (uvTx) st.usesTextureTransform = true;
-  const ext = uvTx
-    ? {
-        KHR_texture_transform: {
-          offset: [...uvTx.offset] as [number, number],
-          scale: [...uvTx.scale] as [number, number],
-        },
-      }
-    : undefined;
-  const texInfo = ext ? { index: tid, extensions: ext } : { index: tid };
-  const mat: GltfMaterial = {
-    name: tex.name,
-    pbrMetallicRoughness: { baseColorTexture: texInfo, metallicFactor: 0, roughnessFactor: 1 },
-    ...(layer === 'emissive' || tex.renderMode === 'emissive'
-      ? { emissiveTexture: texInfo, emissiveFactor: [1, 1, 1] as [number, number, number] }
-      : {}),
-    ...(layer === 'cutout'
-      ? { alphaMode: 'MASK' as const, alphaCutoff: 0.5, doubleSided: true }
-      : layer === 'translucent' || layer === 'sun_shaft'
-        ? { alphaMode: 'BLEND' as const, doubleSided: true }
-        : {}),
-  };
-  const mid = st.materials.push(mat) - 1;
-  mats.set(key, mid);
-  return mid;
 };
 
 const buildStructLod1 = (product: StructureProduct, st: State): QMesh | undefined => {

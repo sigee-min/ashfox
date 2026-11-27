@@ -10,11 +10,11 @@ export const inspectNodeSurface = (
   const node = Object.prototype.hasOwnProperty.call(document.scene.nodes, nodeId)
     ? document.scene.nodes[nodeId]
     : undefined;
-  if (!node || (node.kind !== 'cube' && node.kind !== 'plane')) return null;
+  if (!node || node.kind === 'bone' || node.kind === 'locator') return null;
   const faces =
-    node.kind === 'cube'
-      ? CUBE_FACE_DIRECTIONS.map((direction) => ({ direction, face: node.faces[direction] }))
-      : PLANE_FACE_DIRECTIONS.map((direction) => ({ direction, face: node.faces[direction] }));
+    node.kind === 'plane'
+      ? PLANE_FACE_DIRECTIONS.map((direction) => ({ direction, face: node.faces[direction] }))
+      : CUBE_FACE_DIRECTIONS.map((direction) => ({ direction, face: node.faces[direction] }));
   return {
     schemaVersion: 1 as const,
     nodeId,

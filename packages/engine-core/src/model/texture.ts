@@ -43,6 +43,13 @@ export interface TextureRaster {
   alphaMasks?: readonly TextureAlphaMask[];
 }
 
+export interface TexturePbrMaterial {
+  readonly roughness: number;
+  readonly metallic: number;
+  /** Synthesized MetallicRoughness + baked AO PNG (R=AO, G=roughness, B=metallic). */
+  readonly metallicRoughnessPngBase64?: string;
+}
+
 export interface TextureAsset {
   id: AssetId;
   name: string;
@@ -57,6 +64,7 @@ export interface TextureAsset {
   /** Explicit source raster; generated atlases are not a document mode. */
   atlasMode?: 'preserve';
   pbrChannel?: 'color' | 'normal' | 'height' | 'mer';
+  pbr?: TexturePbrMaterial;
   raster?: TextureRaster;
   metadata?: Readonly<Record<string, string | number | boolean>>;
 }

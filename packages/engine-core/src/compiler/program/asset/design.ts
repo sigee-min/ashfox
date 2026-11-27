@@ -267,18 +267,51 @@ const transformDesignArray = <T>(
   return freeze(out!) as T;
 };
 
+const EXPR_SLOT_GEOM_PROPS = new Set([
+  'origin',
+  'size',
+  'position',
+  'rotation',
+  'pivot',
+  'visible',
+  'u_axis',
+  'v_axis',
+]);
+
+const isExprSlotVariantStmt = (entry: unknown): boolean =>
+  entry !== null &&
+  typeof entry === 'object' &&
+  (entry as { kind?: unknown }).kind === 'geometry-property' &&
+  !EXPR_SLOT_GEOM_PROPS.has(String((entry as { name?: unknown }).name));
+
+const transformDesignFieldValue = (
+  state: DesignState,
+  file: WorkspaceCompilationFile,
+  skipVariants: boolean,
+  key: string,
+  value: unknown,
+  depth: number,
+): unknown => {
+  if (skipVariants && key === 'statements' && Array.isArray(value)) {
+    const mapped = value.map((stmt) =>
+      isExprSlotVariantStmt(stmt) ? stmt : transformDesignValue(state, file, stmt, depth + 1),
+    );
+    return mapped.some((m, i) => m !== value[i]) ? freeze(mapped) : value;
+  }
+  return key === 'span' ? value : transformDesignValue(state, file, value, depth + 1);
+};
+
 const transformDesignRecord = <T>(
   state: DesignState,
   file: WorkspaceCompilationFile,
   input: Record<string, unknown>,
   depth: number,
 ): T => {
-  const keys = Object.keys(input);
+  const skipVariants = input.kind === 'geometry-block' && input.keyword === 'expression_slot';
   let out: Record<string, unknown> | null = null;
-  for (let index = 0; index < keys.length; index += 1) {
-    const key = keys[index]!;
+  for (const key of Object.keys(input)) {
     const value = input[key];
-    const next = key === 'span' ? value : transformDesignValue(state, file, value, depth + 1);
+    const next = transformDesignFieldValue(state, file, skipVariants, key, value, depth);
     if (next !== value) {
       if (out === null) out = { ...input };
       out[key] = next;

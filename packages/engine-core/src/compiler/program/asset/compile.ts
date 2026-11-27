@@ -2,8 +2,13 @@ import { compareText } from '../../../stableOrder';
 import { canonicalJsonString } from '../../../canonicalJson';
 import { deepFreeze } from '../../../immutable';
 import type { CompiledModel } from '../../../model/compiled';
+import {
+  compileExpressionChannels,
+  isExpressionVariantNode,
+  type ExpressionMotionSlotSpec,
+} from '../../../model/expression';
 import type { AnimationClip } from '../../../model/motion';
-import type { SceneGraph, SceneNode } from '../../../model/scene';
+import type { SceneNode } from '../../../model/scene';
 import type { TextureAsset } from '../../../model/texture';
 import type { AssetBuildIdentity } from '../../../project/asset';
 import type { AssetDiagnostic } from '../../../project/program/asset/contract';
@@ -24,6 +29,7 @@ import {
 import { computeWorkspaceHash } from '../../../project/workspace/hash';
 import { sha256Digest } from '../../../provenance/digest';
 import { lowerAssetGeometry } from './canonicalGeometry';
+import { validateMotionExpressionRefs } from './canonicalExpr';
 import { lowerAssetRigAndMotions } from './canonicalRig';
 import { buildAssetHir } from './hir';
 import { checkAssetHygiene } from './hygiene';
@@ -153,7 +159,7 @@ const missingTextureCount = (
   node: SceneNode,
   textures: Readonly<Record<string, TextureAsset>>,
 ): number => {
-  if (node.kind !== 'cube' && node.kind !== 'plane') return 0;
+  if (node.kind === 'bone' || node.kind === 'locator') return 0;
   return Object.values(node.faces).filter(
     (face) => face.enabled && (face.textureId === null || textures[face.textureId] === undefined),
   ).length;
@@ -193,7 +199,12 @@ const motionTargetDiagnostics = (
 ): readonly WorkspaceDiagnostic[] =>
   Object.values(animations).flatMap((clip) =>
     Object.values(clip.channels)
-      .filter((channel) => byId.get(channel.targetNodeId)?.kind !== 'bone')
+      .filter((channel) => {
+        const target = byId.get(channel.targetNodeId);
+        return (
+          target?.kind !== 'bone' && !(target !== undefined && isExpressionVariantNode(target))
+        );
+      })
       .map(() =>
         rootDiagnostic(
           location,
@@ -237,23 +248,15 @@ type FinalizeModelResult =
   | Readonly<{ readonly ok: true; readonly model: CompiledModel }>
   | Readonly<{ readonly ok: false; readonly diagnostics: readonly WorkspaceDiagnostic[] }>;
 
-const finalizeModel = (
-  ir: InstantiatedAssetIr,
-  rigNodes: readonly SceneNode[],
-  geometryNodes: readonly SceneNode[],
-  roots: readonly string[],
-  animations: Readonly<Record<string, AnimationClip>>,
+const buildTextureRecord = (
   textures: readonly TextureAsset[],
-  resolution: readonly [number, number],
   location: RootLocation,
-): FinalizeModelResult => {
-  const orderedNodes = [...rigNodes, ...geometryNodes].sort((left, right) =>
-    compareText(left.id, right.id),
-  );
-  const textureEntries = [...textures].sort((left, right) => compareText(left.id, right.id));
-  const textureRecord: Record<string, TextureAsset> = {};
-  for (const texture of textureEntries) {
-    if (textureRecord[texture.id] !== undefined)
+):
+  | Readonly<{ readonly ok: true; readonly record: Record<string, TextureAsset> }>
+  | Readonly<{ readonly ok: false; readonly diagnostics: readonly WorkspaceDiagnostic[] }> => {
+  const record: Record<string, TextureAsset> = {};
+  for (const texture of [...textures].sort((left, right) => compareText(left.id, right.id))) {
+    if (record[texture.id] !== undefined) {
       return deepFreeze({
         ok: false as const,
         diagnostics: [
@@ -264,17 +267,52 @@ const finalizeModel = (
           ),
         ],
       });
-    textureRecord[texture.id] = texture;
+    }
+    record[texture.id] = texture;
   }
-  const animationRecord = Object.fromEntries(
-    Object.entries(animations).sort(([left], [right]) => compareText(left, right)),
-  );
-  const diagnostics = validateScene(orderedNodes, roots, animationRecord, textureRecord, location);
+  return { ok: true, record };
+};
+
+const mergeClipExpressionSpecs = (
+  animations: Readonly<Record<string, AnimationClip>>,
+  nodeRecord: Readonly<Record<string, SceneNode>>,
+  expressionSpecsByClipId: Readonly<Record<string, readonly ExpressionMotionSlotSpec[]>>,
+): Readonly<Record<string, AnimationClip>> => {
+  const expanded = Object.entries(animations).map(([clipId, clip]) => {
+    const specs = expressionSpecsByClipId[clipId];
+    if (!specs || specs.length === 0) return [clipId, clip] as const;
+    const exprChannels = compileExpressionChannels(specs, nodeRecord, clip.durationSeconds, clipId);
+    const merged = Object.fromEntries(
+      Object.entries({ ...clip.channels, ...exprChannels }).sort(([l], [r]) => compareText(l, r)),
+    );
+    return [clipId, deepFreeze({ ...clip, channels: merged })] as const;
+  });
+  return Object.fromEntries(expanded.sort(([left], [right]) => compareText(left, right)));
+};
+
+const finalizeModel = (
+  ir: InstantiatedAssetIr,
+  rigNodes: readonly SceneNode[],
+  geometryNodes: readonly SceneNode[],
+  roots: readonly string[],
+  animations: Readonly<Record<string, AnimationClip>>,
+  textures: readonly TextureAsset[],
+  resolution: readonly [number, number],
+  location: RootLocation,
+  expressionSpecsByClipId: Readonly<Record<string, readonly ExpressionMotionSlotSpec[]>> = {},
+): FinalizeModelResult => {
+  const orderedNodes = [...rigNodes, ...geometryNodes].sort((l, r) => compareText(l.id, r.id));
+  const texResult = buildTextureRecord(textures, location);
+  if (!texResult.ok) return texResult;
   const nodeRecord = Object.fromEntries(orderedNodes.map((node) => [node.id, node]));
-  const scene: SceneGraph = {
-    roots: Object.freeze([...roots].sort(compareText)),
-    nodes: nodeRecord,
-  };
+  const animationRecord = mergeClipExpressionSpecs(animations, nodeRecord, expressionSpecsByClipId);
+  const diagnostics = validateScene(
+    orderedNodes,
+    roots,
+    animationRecord,
+    texResult.record,
+    location,
+  );
   const model: CompiledModel = {
     id: `model:${sha256Digest(ir.asset.key).slice('sha256:'.length)}`,
     name: ir.asset.name,
@@ -284,8 +322,8 @@ const finalizeModel = (
       : {}),
     textureDensity: 16,
     textureResolution: Object.freeze([resolution[0], resolution[1]]),
-    scene,
-    textures: textureRecord,
+    scene: { roots: Object.freeze([...roots].sort(compareText)), nodes: nodeRecord },
+    textures: texResult.record,
     animations: animationRecord,
   };
   return diagnostics.length > 0
@@ -355,6 +393,8 @@ const lowerClosure = (closure: WorkspaceEntryCompilation['closure']): LoweringRe
   if (!rig.ok) return failWith(rig.diagnostics);
   const geometry = lowerGeometryStage(instantiated.ir, textures.plans, location);
   if (!geometry.ok) return failWith(geometry.diagnostics);
+  const exprDiagnostics = validateMotionExpressionRefs(instantiated.ir, geometry.nodes);
+  if (exprDiagnostics.length > 0) return failWith(exprDiagnostics);
   const finalized = finalizeModel(
     instantiated.ir,
     rig.bones,
@@ -364,6 +404,7 @@ const lowerClosure = (closure: WorkspaceEntryCompilation['closure']): LoweringRe
     textures.plans.map((plan) => plan.texture),
     textures.resolution,
     location,
+    rig.expressionSpecsByClipId,
   );
   if (!finalized.ok) return { ok: false, result: fail(finalized.diagnostics) };
   const textureTelemetry: Record<string, TextureAuthoringTelemetry> = Object.create(null);

@@ -2,6 +2,7 @@ import type { ProjectDocument, SceneNode, Vec3 } from '../../../model';
 import { cubeGeometryRotation } from '../../../model';
 import { compileGltfCubePrimitiveData } from './cube';
 import { compileGltfPlanePrimitiveData } from './plane';
+import { compileGltfCustomPrimitiveData } from './primMesh';
 import { compileGltfPrimitive } from './primitive';
 import type { GltfPrimitiveData } from './data';
 import type { GltfSceneCompileOptions } from './graph';
@@ -64,6 +65,10 @@ export const primitiveDataForGltfNode = (
       return compileGltfCubePrimitiveData(document, node, options);
     case 'plane':
       return compileGltfPlanePrimitiveData(document, node, options);
+    case 'taper':
+    case 'wedge':
+    case 'cylinder':
+      return compileGltfCustomPrimitiveData(document, node, options);
     case 'bone':
     case 'locator':
       return [];
@@ -378,7 +383,7 @@ export const compileMergedModelGltf = (
 ): CompiledModelGltf => {
   const allPrimitives: Array<GltfPrimitiveData & { jointId: string | null }> = [];
   for (const node of orderedNodes) {
-    if (node.kind !== 'cube' && node.kind !== 'plane') continue;
+    if (node.kind === 'bone' || node.kind === 'locator') continue;
     const world = worldMatrixById.get(node.id)!;
     const jointId = animated.size > 0 ? findDrivingJointId(document, node, animated) : null;
     for (const source of primitiveDataForGltfNode(document, node, options)) {

@@ -153,6 +153,7 @@ const walkSurfaceOrContract = (
     return;
   }
   walkQName(decl.contract, refs);
+  for (const prop of decl.materialProperties ?? []) walkExpr(prop.value, refs);
   for (const slot of decl.slots) walkExpr(slot.value, refs);
   walkTexture(decl.texture, refs);
 };
@@ -225,6 +226,12 @@ const walkMotion = (
     walkMotionTracks(l.tracks, refs);
     walkMotionWaves(l.waves, refs);
     for (const pk of l.poseKeys) walkExpr(pk.time, refs);
+  }
+  for (const exp of decl.expressions ?? []) {
+    for (const entry of exp.entries) {
+      walkExpr(entry.startTime, refs);
+      walkExpr(entry.endTime, refs);
+    }
   }
   walkMotionExtras(decl, refs);
 };

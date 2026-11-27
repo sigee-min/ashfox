@@ -15,6 +15,7 @@ import {
   type TextureExpressionContext,
 } from './expressions';
 import { readPalette, readRole, type PaletteRole } from './palette';
+import { DEFAULT_CHART_PBR, readPbrProperties, type ChartPbrSettings } from './pbr';
 import type { TextureStamp } from './raster';
 import { prepareStamps, MAX_STAMP_PIXELS } from './stamps';
 import { integerContract, propertyIssue, type TextureReporter } from './report';
@@ -40,7 +41,16 @@ const textureProperties = (
   );
   return properties(
     entries,
-    ['atlas', 'background', 'background_alpha', 'density', 'render_mode'],
+    [
+      'atlas',
+      'background',
+      'background_alpha',
+      'density',
+      'render_mode',
+      'roughness',
+      'metallic',
+      'roughness_variation',
+    ],
     payload.span,
     report.path,
     propertyIssue(report),
@@ -279,12 +289,14 @@ export interface PreparedTexture {
   readonly charts: readonly PreparedChart[];
   readonly grain: ProgramTextureGrain;
   readonly tone: 'none' | 'voxel' | 'painterly';
+  readonly defaultPbr: ChartPbrSettings;
 }
 
 const readRequiredHeader = (
   payload: ProgramTextureDecl,
   context: TextureExpressionContext,
   contract: TypedSurfaceContract,
+  materialPbr: ChartPbrSettings,
   report: TextureReporter,
 ): Readonly<{
   readonly background: ProgramProperty;
@@ -292,6 +304,7 @@ const readRequiredHeader = (
   readonly backgroundAlpha: 0 | 255;
   readonly density: 1 | 2 | 4;
   readonly renderMode: 'default' | 'emissive';
+  readonly defaultPbr: ChartPbrSettings;
 }> | null => {
   const top = textureProperties(payload, report);
   if (top === null) return null;
@@ -310,7 +323,14 @@ const readRequiredHeader = (
   const backgroundAlpha = readBackgroundAlpha(alpha, context, report);
   const density = readTextureDensity(top.get('density'), context, report);
   const renderMode = readRenderMode(top.get('render_mode'), report);
-  if (dimensions === null || backgroundAlpha === null || density === null || renderMode === null) {
+  const defaultPbr = readPbrProperties(top, materialPbr, context, report);
+  if (
+    dimensions === null ||
+    backgroundAlpha === null ||
+    density === null ||
+    renderMode === null ||
+    defaultPbr === null
+  ) {
     return null;
   }
   return {
@@ -319,7 +339,18 @@ const readRequiredHeader = (
     backgroundAlpha,
     density,
     renderMode,
+    defaultPbr,
   };
+};
+
+const resolveMaterialPbr = (
+  materialProperties: readonly ProgramProperty[] | undefined,
+  context: TextureExpressionContext,
+  report: TextureReporter,
+): ChartPbrSettings | null => {
+  if (materialProperties === undefined || materialProperties.length === 0) return DEFAULT_CHART_PBR;
+  const map = new Map(materialProperties.map((prop) => [prop.name, prop]));
+  return readPbrProperties(map, DEFAULT_CHART_PBR, context, report);
 };
 
 /** Validate and lower a surface texture declaration into prepared charts, palette, and stamps. */
@@ -329,9 +360,12 @@ export const prepareTexture = (
   contract: TypedSurfaceContract,
   usages: readonly AssetTextureUsage[],
   report: TextureReporter,
+  materialProperties?: readonly ProgramProperty[],
 ): PreparedTexture | null => {
   if (!validateTopStatements(payload, report)) return null;
-  const header = readRequiredHeader(payload, context, contract, report);
+  const materialPbr = resolveMaterialPbr(materialProperties, context, report);
+  if (materialPbr === null) return null;
+  const header = readRequiredHeader(payload, context, contract, materialPbr, report);
   if (header === null) return null;
   const blocks = readTextureBlocks(payload, report);
   if (blocks === null) return null;
@@ -359,6 +393,7 @@ export const prepareTexture = (
     usages,
     context,
     palette,
+    header.defaultPbr,
     report,
   );
   if (layout === null || report.bad) return null;
@@ -376,5 +411,6 @@ export const prepareTexture = (
     charts: layout.charts,
     grain: blocks.grain,
     tone: blocks.tone,
+    defaultPbr: header.defaultPbr,
   });
 };
