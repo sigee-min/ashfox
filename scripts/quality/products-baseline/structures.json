@@ -7,8 +7,8 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:a2635777071ad635ad4c021142a145df13b074d19f9665fcb93b94ba28546780",
-      "catalogHash": "8b08e550b28e75abd2ab1609ad51a0a502e28d9c903de1a28008c41a745a4d32",
+      "sourceHash": "sha256:eb04fb9c7c720bfde60c361da1aecf69b5160036204b3c8a9b60f5b976b4decf",
+      "catalogHash": "91215e7fb2ea5aaf4b2846eccb549ff3c11745fee14b378e54e256bd9feafc01",
       "products": [
         {
           "entry": "structures/blacksmith",
@@ -35,7 +35,7 @@
       "files": [
         {
           "path": "assets/blacksmith/ashfox-lineage.json",
-          "sha256": "732bfaf86e52268a20c302355786b3d6369f962e6ebe7842a59bcb0ca644415f"
+          "sha256": "a7afa5e87b4b78ca5b04dc8e1d52fcd646c4b8c4b95f5e661f9c42dd737ecc11"
         },
         {
           "path": "assets/blacksmith/blacksmith.glb",
@@ -59,7 +59,7 @@
         },
         {
           "path": "assets/modern_gallery/ashfox-lineage.json",
-          "sha256": "2dffade8b63a5a7475434e81ce0d6dff4ae51e15809c60af27acafe03e478545"
+          "sha256": "5a1874d6c3e2efd7e7ac0b71ebf21e307761e3209d0ea1b8a2788ce156a7cdb9"
         },
         {
           "path": "assets/modern_gallery/modern_gallery.glb",
@@ -83,7 +83,7 @@
         },
         {
           "path": "assets/showcase_pack/resource-pack/ashfox-lineage.json",
-          "sha256": "311ff985462466f4a2f04122e3f46287e00eb93356ef3b12755d561f14ec4c45"
+          "sha256": "c542734e6a8b91b90b901672753713dec3ca85a5fc9e725396c83aec55aa607e"
         },
         {
           "path": "assets/showcase_pack/resource-pack/assets/ashfox/blockstates/block/rune_bricks.json",
@@ -155,11 +155,11 @@
         },
         {
           "path": "assets/showcase_pack/showcase_pack.zip",
-          "sha256": "6219a78eb65febbd776e45fc5a54f1ed3ac159889495ee1c6fd70a523a7a7746"
+          "sha256": "78d5d2bf6e1944dd88b16862a88dcc690942c5e23d53083843bd2c799af2814e"
         },
         {
           "path": "assets/tavern/ashfox-lineage.json",
-          "sha256": "00693dbed0e95d7d78aab968f8f8df8dee395934d275a8c33fc694a2721afd40"
+          "sha256": "3719b197de0d3f27eff6a23d627e4954df54dbbfd519104e834a7ad005b714f7"
         },
         {
           "path": "assets/tavern/tavern.glb",
@@ -767,7 +767,7 @@
         },
         {
           "path": "catalog.json",
-          "sha256": "8b08e550b28e75abd2ab1609ad51a0a502e28d9c903de1a28008c41a745a4d32"
+          "sha256": "91215e7fb2ea5aaf4b2846eccb549ff3c11745fee14b378e54e256bd9feafc01"
         }
       ]
     }

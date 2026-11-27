@@ -1,6 +1,5 @@
 import {
   SPRITE_PROFILES,
-  SPRITE_SIZES,
   type SpriteDocument,
   type SpriteLayer,
   type SpriteMask,
@@ -9,15 +8,20 @@ import {
 } from './contract';
 import {
   failSprite,
+  freezeSpriteDoc,
+  readAlphaOpt,
   readBool,
+  readCanvasDims,
   readChoice,
-  readColor,
+  readFeatherOpt,
   readGrain,
   readId,
   readInt,
   readList,
   readMaterials,
   readMirror,
+  readNineSlice,
+  readPaletteMap,
   readPoint,
   readRecord,
   readShade,
@@ -192,7 +196,7 @@ const readPartLayer = (
     layer,
     pointer,
     ['id', 'op', 'mask', 'material', 'at', 'shade'],
-    ['grain', 'mirror', 'pattern', 'patches'],
+    ['grain', 'mirror', 'pattern', 'patches', 'alpha', 'feather'],
   );
   const maskName = typeof layer.mask === 'string' ? layer.mask : '';
   const mask =
@@ -213,6 +217,8 @@ const readPartLayer = (
       return parsed;
     },
   );
+  const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
+  const feather = readFeatherOpt(ctx.file, layer.feather, `${pointer}/feather`);
   return {
     id,
     op: 'part',
@@ -226,6 +232,8 @@ const readPartLayer = (
       ? { pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`) }
       : {}),
     patches,
+    ...(alpha !== undefined ? { alpha } : {}),
+    ...(feather !== undefined ? { feather } : {}),
   };
 };
 
@@ -237,13 +245,15 @@ const readShapeOrFillLayer = (
   pointer: string,
 ): SpriteLayer | null => {
   if (op === 'fill') {
-    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['grain']);
+    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['grain', 'alpha']);
+    const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
     return {
       id,
       op: 'fill',
       material: readMatRef(ctx, layer.material, `${pointer}/material`),
       pattern: readPattern(ctx.file, layer.pattern, ctx.materials, `${pointer}/pattern`),
       grain: readGrain(ctx.file, layer.grain, `${pointer}/grain`),
+      ...(alpha !== undefined ? { alpha } : {}),
     };
   }
   if (op === 'shape') {
@@ -252,8 +262,10 @@ const readShapeOrFillLayer = (
       layer,
       pointer,
       ['id', 'op', 'shape', 'material', 'shade'],
-      ['grain', 'mirror', 'pattern', 'clip'],
+      ['grain', 'mirror', 'pattern', 'clip', 'alpha', 'feather'],
     );
+    const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
+    const feather = readFeatherOpt(ctx.file, layer.feather, `${pointer}/feather`);
     return {
       id,
       op: 'shape',
@@ -269,6 +281,8 @@ const readShapeOrFillLayer = (
         layer.clip === undefined
           ? 'canvas'
           : readChoice(ctx.file, layer.clip, `${pointer}/clip`, ['canvas', 'occupied']),
+      ...(alpha !== undefined ? { alpha } : {}),
+      ...(feather !== undefined ? { feather } : {}),
     };
   }
   return null;
@@ -307,6 +321,31 @@ const readOutlineLayer = (
   };
 };
 
+const readStampLayer = (
+  ctx: Context,
+  layer: RecordValue,
+  id: string,
+  pointer: string,
+): SpriteLayer => {
+  readRecord(ctx.file, layer, pointer, ['id', 'op', 'stamp', 'at', 'flip', 'colors'], ['alpha']);
+  const at = readPoint(ctx.file, layer.at, `${pointer}/at`, 0, 63);
+  const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
+  const stampName = typeof layer.stamp === 'string' ? layer.stamp : '';
+  const stamp =
+    ctx.stamps.get(stampName) ??
+    failSprite(ctx.file, `${pointer}/stamp`, 'declared stamp', layer.stamp);
+  checkBounds(ctx.file, stamp.rows, at, ctx.width, ctx.height, pointer);
+  return {
+    id,
+    op: 'stamp',
+    stamp: stampName,
+    at,
+    flip: readMirror(ctx.file, layer.flip, `${pointer}/flip`),
+    colors: readBindings(ctx.file, layer.colors, stamp.rows, ctx.palette, `${pointer}/colors`),
+    ...(alpha !== undefined ? { alpha } : {}),
+  };
+};
+
 const readPaintStampOrErase = (
   ctx: Context,
   layer: RecordValue,
@@ -314,6 +353,7 @@ const readPaintStampOrErase = (
   op: 'paint' | 'stamp' | 'erase',
   pointer: string,
 ): SpriteLayer => {
+  if (op === 'stamp') return readStampLayer(ctx, layer, id, pointer);
   if (op === 'erase' && 'shape' in layer) {
     readRecord(ctx.file, layer, pointer, ['id', 'op', 'shape']);
     return {
@@ -322,45 +362,22 @@ const readPaintStampOrErase = (
       shape: readShape(ctx.file, layer.shape, ctx.width, ctx.height, `${pointer}/shape`),
     };
   }
-  const keys =
-    op === 'stamp'
-      ? ['id', 'op', 'stamp', 'at', 'flip', 'colors']
-      : op === 'paint'
-        ? ['id', 'op', 'at', 'rows', 'colors']
-        : ['id', 'op', 'at', 'rows'];
-  readRecord(ctx.file, layer, pointer, keys);
+  const req = op === 'paint' ? ['id', 'op', 'at', 'rows', 'colors'] : ['id', 'op', 'at', 'rows'];
+  readRecord(ctx.file, layer, pointer, req, op === 'erase' ? [] : ['alpha']);
   const at = readPoint(ctx.file, layer.at, `${pointer}/at`, 0, 63);
-  if (op === 'stamp') {
-    const stampName = typeof layer.stamp === 'string' ? layer.stamp : '';
-    const stamp =
-      ctx.stamps.get(stampName) ??
-      failSprite(ctx.file, `${pointer}/stamp`, 'declared stamp', layer.stamp);
-    checkBounds(ctx.file, stamp.rows, at, ctx.width, ctx.height, pointer);
-    return {
-      id,
-      op: 'stamp',
-      stamp: stampName,
-      at,
-      flip: readMirror(ctx.file, layer.flip, `${pointer}/flip`),
-      colors: readBindings(ctx.file, layer.colors, stamp.rows, ctx.palette, `${pointer}/colors`),
-    };
-  }
-  const rows = readRows(
-    ctx.file,
-    layer.rows,
-    `${pointer}/rows`,
-    op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u,
-  );
+  const rowPat = op === 'erase' ? /^[.1]+$/u : /^[.a-zA-Z]+$/u;
+  const rows = readRows(ctx.file, layer.rows, `${pointer}/rows`, rowPat);
   checkBounds(ctx.file, rows, at, ctx.width, ctx.height, pointer);
-  return op === 'erase'
-    ? { id, op: 'erase', at, rows }
-    : {
-        id,
-        op: 'paint',
-        at,
-        rows,
-        colors: readBindings(ctx.file, layer.colors, rows, ctx.palette, `${pointer}/colors`),
-      };
+  if (op === 'erase') return { id, op: 'erase', at, rows };
+  const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
+  return {
+    id,
+    op: 'paint',
+    at,
+    rows,
+    colors: readBindings(ctx.file, layer.colors, rows, ctx.palette, `${pointer}/colors`),
+    ...(alpha !== undefined ? { alpha } : {}),
+  };
 };
 
 const readDirectLayer = (
@@ -371,7 +388,8 @@ const readDirectLayer = (
   pointer: string,
 ): SpriteLayer => {
   if (op === 'pattern') {
-    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['clip']);
+    readRecord(ctx.file, layer, pointer, ['id', 'op', 'material', 'pattern'], ['clip', 'alpha']);
+    const alpha = readAlphaOpt(ctx.file, layer.alpha, `${pointer}/alpha`);
     return {
       id,
       op: 'pattern',
@@ -381,6 +399,7 @@ const readDirectLayer = (
         layer.clip === undefined
           ? 'occupied'
           : readChoice(ctx.file, layer.clip, `${pointer}/clip`, ['canvas', 'occupied']),
+      ...(alpha !== undefined ? { alpha } : {}),
     };
   }
   if (op === 'outline') return readOutlineLayer(ctx, layer, id, pointer);
@@ -409,52 +428,24 @@ const readLayer = (ctx: Context, raw: unknown, seen: Set<string>, pointer: strin
   );
 };
 
-const freeze = <T>(value: T): T => {
-  if (value && typeof value === 'object') {
-    Object.values(value).forEach(freeze);
-    Object.freeze(value);
-  }
-  return value;
-};
-
 /** Validates and freezes a Sprite v2 document directly in memory. */
 export const readSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): SpriteDocument => {
   const root = readRecord(file, raw, '', ['masks', 'materials', 'stamps', 'item']);
   const masks = readMasks(file, root.masks);
   const materials = readMaterials(file, root.materials);
   const stamps = readStamps(file, root.stamps);
-  const itemRaw = readRecord(file, root.item, '/item', [
-    'id',
-    'profile',
-    'canvas',
-    'palette',
-    'layers',
-  ]);
+  const itemRaw = readRecord(
+    file,
+    root.item,
+    '/item',
+    ['id', 'profile', 'canvas', 'palette', 'layers'],
+    ['slice'],
+  );
   const id = readId(file, itemRaw.id, '/item/id');
   const profile = readChoice(file, itemRaw.profile, '/item/profile', SPRITE_PROFILES);
-  const canvasList = readList(file, itemRaw.canvas, '/item/canvas', 2);
-  if (
-    canvasList.length !== 2 ||
-    !SPRITE_SIZES.has(canvasList[0] as number) ||
-    !SPRITE_SIZES.has(canvasList[1] as number) ||
-    canvasList[0] !== canvasList[1]
-  ) {
-    failSprite(file, '/item/canvas', 'square [16,16] | [32,32] | [64,64]', itemRaw.canvas);
-  }
-  const width = canvasList[0] as number;
-  const height = canvasList[1] as number;
-  const paletteRaw = readRecord(file, itemRaw.palette, '/item/palette');
-  if (Object.keys(paletteRaw).length > 32) {
-    failSprite(file, '/item/palette', '<= 32 colors', 'too many');
-  }
-  const paletteMap = new Map<string, string>();
-  const paletteOut: Record<string, string> = {};
-  for (const [key, color] of Object.entries(paletteRaw)) {
-    readId(file, key, `/item/palette/${key}`);
-    const normalized = readColor(file, color, `/item/palette/${key}`);
-    paletteMap.set(key, normalized);
-    paletteOut[key] = normalized;
-  }
+  const [width, height] = readCanvasDims(file, itemRaw.canvas);
+  const slice = readNineSlice(file, itemRaw.slice, profile, width, height);
+  const palette = readPaletteMap(file, itemRaw.palette);
   const ctx: Context = {
     file,
     width,
@@ -462,17 +453,24 @@ export const readSpriteDocument = (raw: unknown, file = 'sprite.ashfox'): Sprite
     masks,
     materials: new Set(materials.map((m) => m.id)),
     stamps,
-    palette: paletteMap,
+    palette: palette.map,
   };
   const layerSeen = new Set<string>();
   const layers = readList(file, itemRaw.layers, '/item/layers', 64).map((layer, idx) =>
     readLayer(ctx, layer, layerSeen, `/item/layers/${idx}`),
   );
   if (layers.length === 0) failSprite(file, '/item/layers', 'at least one layer', 'empty');
-  return freeze({
+  return freezeSpriteDoc({
     masks: [...masks.values()],
     materials,
     stamps: [...stamps.values()],
-    item: { id, profile, canvas: [width, height] as const, palette: paletteOut, layers },
+    item: {
+      id,
+      profile,
+      canvas: [width, height] as const,
+      ...(slice ? { slice } : {}),
+      palette: palette.out,
+      layers,
+    },
   });
 };

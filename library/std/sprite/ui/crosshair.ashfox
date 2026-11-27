@@ -1,0 +1,47 @@
+ashfox 1
+module crosshair {
+  export material reticle_white {
+    ramp { mode = auto; base = #e8eef5; preset = cool; }
+  }
+  export material reticle_cyan {
+    ramp { mode = auto; base = #5ee8f5; preset = emissive; }
+  }
+  export material reticle_amber {
+    ramp { mode = auto; base = #f2b846; preset = warm; }
+  }
+  export material reticle_crimson {
+    ramp { mode = auto; base = #e8515d; preset = vivid; }
+  }
+  export material backing_slate {
+    ramp { mode = auto; base = #3b424d; preset = metal; }
+  }
+
+  export mask bracket_arc {
+    rows = [
+      ".111.",
+      "11...",
+      "1....",
+      "1....",
+      "11...",
+      ".111."
+    ];
+  }
+
+  export mask chevron_tick {
+    rows = [
+      "..1..",
+      ".111.",
+      "11.11",
+      "1...1"
+    ];
+    }
+
+  export stamp center_pip {
+    rows = [
+      ".o.",
+      "oco",
+      ".o."
+    ];
+    slots = [o, c];
+  }
+}

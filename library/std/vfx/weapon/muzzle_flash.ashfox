@@ -1,0 +1,115 @@
+ashfox 1
+module muzzle_flash {
+  params {
+    scale = 1;
+    duration = 0.22s;
+    burst_count = 16;
+    seed = 41;
+  }
+
+  export palette MuzzleAmber {
+    core = #fffbe6;
+    mid = #ff9d2e;
+    edge = #b8320f;
+    smoke = #3d2c26;
+  }
+
+  export palette MuzzlePlasma {
+    core = #ebffff;
+    mid = #4fd8ff;
+    edge = #2362ba;
+    smoke = #212e42;
+  }
+
+  export element flash_cone : dome {
+    at = 0s..(duration * 0.72);
+    blend = additive;
+    shape = cone;
+    radius = 4u * scale;
+    height = 10u * scale;
+    subdiv = 1;
+    color = core;
+    rotation = (90deg, 0deg, 0deg);
+    texture starburst { spikes = 6; seed = seed; posterize = 4; }
+    dissolve radial_noise { frames = 6; edge_glow = core; seed = seed; }
+    scale = 0.45 -> 1.25 ease_out -> 0;
+    alpha = 0.7 -> 1.0 snap -> 0;
+  }
+
+  export element muzzle_star : ring {
+    at = 0s..(duration * 0.65);
+    blend = additive;
+    radius = (1.5u * scale)..(6.5u * scale);
+    segments = 12;
+    bevel = 0.3;
+    color = mid;
+    rotation = (90deg, 0deg, 0deg);
+    texture radial_flare { spikes = 4; seed = seed + 3; }
+    scale = 0.6 -> 1.15 ease_out -> 0;
+    alpha = 1.0 -> 0.5 -> 0;
+  }
+
+  export emitter sparks : voxel_burst {
+    at = 0s..(duration * 0.65);
+    seed = seed;
+    count = burst_count;
+    shape = cone(26deg, 2u);
+    particle = shard;
+    speed = 22u..42u;
+    life = 0.06s..0.14s;
+    gravity = -8u;
+    drag = 2.4;
+    size_over_life = (0.9u * scale) -> 0u;
+    color_over_life = core -> mid -> edge;
+    velocity_stretch = 1.6;
+    blend = additive;
+  }
+
+  export recipe MuzzleFlash {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = MuzzleAmber;
+    element flash_cone : dome {
+      at = 0s..(duration * 0.72);
+      blend = additive;
+      shape = cone;
+      radius = 4u * scale;
+      height = 10u * scale;
+      subdiv = 1;
+      color = core;
+      rotation = (90deg, 0deg, 0deg);
+      texture starburst { spikes = 6; seed = seed; posterize = 4; }
+      dissolve radial_noise { frames = 6; edge_glow = core; seed = seed; }
+      scale = 0.45 -> 1.25 ease_out -> 0;
+      alpha = 0.7 -> 1.0 snap -> 0;
+    }
+    element muzzle_star : ring {
+      at = 0s..(duration * 0.65);
+      blend = additive;
+      radius = (1.5u * scale)..(6.5u * scale);
+      segments = 12;
+      bevel = 0.3;
+      color = mid;
+      rotation = (90deg, 0deg, 0deg);
+      texture radial_flare { spikes = 4; seed = seed + 3; }
+      scale = 0.6 -> 1.15 ease_out -> 0;
+      alpha = 1.0 -> 0.5 -> 0;
+    }
+    emitter sparks : voxel_burst {
+      at = 0s..(duration * 0.65);
+      seed = seed;
+      count = burst_count;
+      shape = cone(26deg, 2u);
+      particle = shard;
+      speed = 22u..42u;
+      life = 0.06s..0.14s;
+      gravity = -8u;
+      drag = 2.4;
+      size_over_life = (0.9u * scale) -> 0u;
+      color_over_life = core -> mid -> edge;
+      velocity_stretch = 1.6;
+      blend = additive;
+    }
+  }
+}

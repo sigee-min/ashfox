@@ -1,0 +1,50 @@
+ashfox 1
+module weather {
+  export material rain_puddle {
+    ramp { mode = auto; base = #5a82a6; preset = cool; }
+  }
+  export material frost_rime {
+    ramp { mode = auto; base = #b3dced; preset = cool; }
+  }
+  export material mud_smudge {
+    ramp { mode = auto; base = #6e5946; preset = wood; }
+  }
+  export material soot_drift {
+    ramp { mode = auto; base = #524d4a; preset = stone; }
+  }
+  export material lichen_stain {
+    ramp { mode = auto; base = #588c48; preset = organic; }
+  }
+
+  export mask puddle_blob {
+    rows = [
+      "..11111...",
+      ".11111111.",
+      "1111111111",
+      "1111111111",
+      ".11111111.",
+      "..111111.."
+    ];
+  }
+
+  export mask frost_shard {
+    rows = [
+      "...11...",
+      ".111111.",
+      "..1111..",
+      "11111111",
+      "..1111..",
+      ".111111.",
+      "...11..."
+    ];
+  }
+
+  export stamp sheen_ripple {
+    rows = [
+      ".hh.",
+      "h..h",
+      ".hh."
+    ];
+    slots = [h];
+  }
+}

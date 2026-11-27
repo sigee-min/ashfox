@@ -1,5 +1,9 @@
 import type { CanonicalTextureRaster } from '../../textures/textureRecipe/raster';
-import type { SpriteDiagnostic, SpriteProfile } from '../../project/sprite/contract';
+import type {
+  SpriteDiagnostic,
+  SpriteNineSlice,
+  SpriteProfile,
+} from '../../project/sprite/contract';
 
 export interface SpritePixelEvidence {
   readonly layer: string;
@@ -42,6 +46,7 @@ export interface SpriteReceipt {
 export interface SpriteProduct {
   readonly id: string;
   readonly profile: SpriteProfile;
+  readonly nineSlice?: SpriteNineSlice;
   readonly raster: CanonicalTextureRaster;
   readonly png: Uint8Array;
   readonly stages: Readonly<Record<'silhouette' | 'shade' | 'grain', CanonicalTextureRaster>>;

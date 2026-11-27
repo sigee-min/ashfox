@@ -1,0 +1,57 @@
+ashfox 1
+module impact {
+  export material scorch_soot {
+    ramp { mode = auto; base = #4d4543; preset = stone; }
+  }
+  export material crater_ash {
+    ramp { mode = auto; base = #766c68; preset = warm; }
+  }
+  export material plasma_burn {
+    ramp { mode = auto; base = #4cb8db; preset = emissive; }
+  }
+  export material ember_crust {
+    ramp { mode = auto; base = #d4652f; preset = warm; }
+  }
+  export material ichor_crimson {
+    ramp { mode = auto; base = #9c333f; preset = vivid; }
+  }
+  export material acid_ichor {
+    ramp { mode = auto; base = #68b842; preset = organic; }
+  }
+
+  export mask splatter_core {
+    rows = [
+      "...1111...",
+      ".11111111.",
+      "1111111111",
+      "1111111111",
+      ".11111111.",
+      "..111111..",
+      "...1111..."
+    ];
+  }
+
+  export mask blast_ring {
+    rows = [
+      "..111111..",
+      ".111..111.",
+      "111....111",
+      "11......11",
+      "111....111",
+      ".111..111.",
+      "..111111.."
+    ];
+  }
+
+  export stamp radial_scorch {
+    rows = [
+      "..ss..",
+      ".sccs.",
+      "sccccs",
+      "sccccs",
+      ".sccs.",
+      "..ss.."
+    ];
+    slots = [c, s];
+  }
+}

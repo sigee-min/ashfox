@@ -9,8 +9,13 @@ export interface SpriteRasterStats {
   readonly height: number;
   readonly opaqueCount: number;
   readonly opaqueRatio: number;
+  readonly softAlphaCount: number;
+  readonly borderAlphaCount: number;
+  readonly bounds: readonly [number, number, number, number];
   readonly boundsFillRatio: number;
   readonly centerOffset: number;
+  readonly symmetryScore: number;
+  readonly frameFillSeparation: number;
   readonly strayPixelCount: number;
   readonly lumRange: number;
   readonly lumP10: number;
@@ -151,6 +156,8 @@ interface PixelAccum {
   readonly lightHues: number[];
   sumX: number;
   sumY: number;
+  softAlpha: number;
+  borderAlpha: number;
   crushed: number;
   topSum: number;
   topN: number;
@@ -171,12 +178,16 @@ const recordOpaquePixel = (
   acc: PixelAccum,
   rgba: Uint8Array,
   w: number,
+  h: number,
   x: number,
   y: number,
   midY: number,
 ): void => {
   const o = (y * w + x) * 4;
-  if (rgba[o + 3] === 0) return;
+  const alpha = rgba[o + 3]!;
+  if (alpha === 0) return;
+  if (alpha < 255) acc.softAlpha += 1;
+  if (x === 0 || y === 0 || x === w - 1 || y === h - 1) acc.borderAlpha += 1;
   const r = rgba[o]!;
   const g = rgba[o + 1]!;
   const b = rgba[o + 2]!;
@@ -210,6 +221,8 @@ const collectPixelAccum = (rgba: Uint8Array, w: number, h: number, midY: number)
     lightHues: [],
     sumX: 0,
     sumY: 0,
+    softAlpha: 0,
+    borderAlpha: 0,
     crushed: 0,
     topSum: 0,
     topN: 0,
@@ -217,7 +230,7 @@ const collectPixelAccum = (rgba: Uint8Array, w: number, h: number, midY: number)
     botN: 0,
   };
   for (let y = 0; y < h; y += 1) {
-    for (let x = 0; x < w; x += 1) recordOpaquePixel(acc, rgba, w, x, y, midY);
+    for (let x = 0; x < w; x += 1) recordOpaquePixel(acc, rgba, w, h, x, y, midY);
   }
   return acc;
 };
@@ -246,11 +259,73 @@ const opaquePixelBounds = (
   return maxX < minX ? [0, 0, 0, 0] : [minX, minY, maxX + 1, maxY + 1];
 };
 
+const axisMatches = (rgba: Uint8Array, i: number, m: number): number =>
+  isOpaque(rgba, i) === isOpaque(rgba, m) && colorDist(rgba, i, m) < 0.22 ? 1 : 0;
+
+const computeSymmetryScore = (rgba: Uint8Array, w: number, h: number): number => {
+  let pairs = 0;
+  let matches = 0;
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const i = y * w + x;
+      const mx = y * w + (w - 1 - x);
+      const my = (h - 1 - y) * w + x;
+      if (!isOpaque(rgba, i) && !isOpaque(rgba, mx) && !isOpaque(rgba, my)) continue;
+      pairs += 2;
+      matches += axisMatches(rgba, i, mx) + axisMatches(rgba, i, my);
+    }
+  }
+  return pairs > 0 ? matches / pairs : 0;
+};
+
+const computeFrameFillSeparation = (
+  rgba: Uint8Array,
+  w: number,
+  bounds: readonly [number, number, number, number],
+): number => {
+  const [bx0, by0, bx1, by1] = bounds;
+  if (bx1 - bx0 < 5 || by1 - by0 < 5) return 0;
+  let frameCount = 0;
+  let innerCount = 0;
+  let fR = 0,
+    fG = 0,
+    fB = 0;
+  let iR = 0,
+    iG = 0,
+    iB = 0;
+  for (let y = by0; y < by1; y += 1) {
+    for (let x = bx0; x < bx1; x += 1) {
+      const o = (y * w + x) * 4;
+      if (rgba[o + 3] === 0) continue;
+      const onBorder = x - bx0 < 2 || bx1 - 1 - x < 2 || y - by0 < 2 || by1 - 1 - y < 2;
+      if (onBorder) {
+        frameCount += 1;
+        fR += rgba[o]!;
+        fG += rgba[o + 1]!;
+        fB += rgba[o + 2]!;
+      } else {
+        innerCount += 1;
+        iR += rgba[o]!;
+        iG += rgba[o + 1]!;
+        iB += rgba[o + 2]!;
+      }
+    }
+  }
+  if (!frameCount || !innerCount) return 0;
+  return (
+    (Math.abs(fR / frameCount - iR / innerCount) +
+      Math.abs(fG / frameCount - iG / innerCount) +
+      Math.abs(fB / frameCount - iB / innerCount)) /
+    765
+  );
+};
+
 export const analyzeSpriteRaster = (raster: CanonicalTextureRaster): SpriteRasterStats => {
   const w = raster.width,
     h = raster.height;
   const rgba = canonicalRgbaBackingBuffer(raster.rgba) ?? raster.rgba.copy();
-  const [bx0, by0, bx1, by1] = opaquePixelBounds(rgba, w, h);
+  const bounds = opaquePixelBounds(rgba, w, h);
+  const [bx0, by0, bx1, by1] = bounds;
   const acc = collectPixelAccum(rgba, w, h, (by0 + by1) * 0.5);
   const n = acc.lums.length;
   acc.lums.sort((a, b) => a - b);
@@ -264,8 +339,13 @@ export const analyzeSpriteRaster = (raster: CanonicalTextureRaster): SpriteRaste
     height: h,
     opaqueCount: n,
     opaqueRatio: n / (w * h),
+    softAlphaCount: acc.softAlpha,
+    borderAlphaCount: acc.borderAlpha,
+    bounds,
     boundsFillRatio: n / (Math.max(1, bx1 - bx0) * Math.max(1, by1 - by0)),
     centerOffset: Math.hypot((cx - w / 2) / (w / 2), (cy - h / 2) / (h / 2)),
+    symmetryScore: computeSymmetryScore(rgba, w, h),
+    frameFillSeparation: computeFrameFillSeparation(rgba, w, bounds),
     strayPixelCount: countStrayPixels(rgba, w, h),
     lumRange: n > 0 ? acc.lums[n - 1]! - acc.lums[0]! : 0,
     lumP10: n > 0 ? acc.lums[Math.floor(n * 0.1)]! : 0,

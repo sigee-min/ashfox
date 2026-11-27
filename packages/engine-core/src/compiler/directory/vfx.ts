@@ -1,6 +1,8 @@
 import type { DirectoryFile } from '../../project/directory/contract';
+import type { AshfoxExpr } from '../../project/program/syntax/blockAst';
 import { isVirtualLibrarySpecifier, virtualLibraryLogicalPath } from '../../project/stdlib/resolve';
-import { VfxInputError } from '../../project/vfx/contract';
+import { VfxInputError, type VfxSourceUnit } from '../../project/vfx/contract';
+import { asName, type VfxParamEnv } from '../../project/vfx/expr';
 import { parseVfxSource } from '../../project/vfx/source';
 import { auditVfx } from '../../vfx/audit';
 import { compileVfxRecipe } from '../../vfx/compile';
@@ -13,6 +15,7 @@ import {
   type BedrockParticleSpec,
   type VfxRuntimeSpec,
 } from '../../vfx/specEmit';
+import { assembleVfxRecipeFromGraph, indexUnitExports, type VfxModuleIndex } from './vfxResolve';
 
 export interface CompiledVfxBundle {
   readonly recipe: VfxRecipe;
@@ -35,11 +38,11 @@ const resolveImportPath = (ownerPath: string, specifier: string): string => {
   return parts.join('/');
 };
 
-const collectPalettes = (
+const collectModules = (
   entryPath: string,
   files: ReadonlyMap<string, DirectoryFile>,
   paths: Set<string>,
-  palettes: Map<string, VfxPalette>,
+  idx: VfxModuleIndex,
   seen: Set<string>,
   aliasPrefix?: string,
 ): void => {
@@ -57,56 +60,55 @@ const collectPalettes = (
     });
   }
   const unit = parseVfxSource(file.source, entryPath);
-  for (const [name, pal] of Object.entries(unit.palettes)) {
-    const key = aliasPrefix ? `${aliasPrefix}.${name}` : name;
-    palettes.set(key, pal);
-    if (!palettes.has(name)) palettes.set(name, pal);
-  }
+  indexUnitExports(unit, idx, aliasPrefix);
   for (const imp of unit.imports) {
-    collectPalettes(
-      resolveImportPath(entryPath, imp.path),
-      files,
-      paths,
-      palettes,
-      seen,
-      imp.alias,
-    );
+    collectModules(resolveImportPath(entryPath, imp.path), files, paths, idx, seen, imp.alias);
   }
 };
 
-const resolveVfxEntryPalette = (
-  unit: ReturnType<typeof parseVfxSource>,
+const createModuleIndex = (
+  unit: VfxSourceUnit,
   entryPath: string,
   files: ReadonlyMap<string, DirectoryFile>,
   paths: Set<string>,
-): VfxPalette => {
-  const palettes = new Map<string, VfxPalette>(
-    Object.entries(VFX_PALETTES)
-      .map(([, p]) => [p.name, p] as const)
-      .concat(Object.entries(VFX_PALETTES)),
-  );
-  for (const [k, p] of Object.entries(unit.palettes)) palettes.set(k, p);
+): VfxModuleIndex => {
+  const idx: VfxModuleIndex = {
+    palettes: new Map<string, VfxPalette>(
+      Object.entries(VFX_PALETTES)
+        .map(([, p]) => [p.name, p] as const)
+        .concat(Object.entries(VFX_PALETTES)),
+    ),
+    paramsByAlias: new Map(),
+    elements: new Map(),
+    emitters: new Map(),
+    recipes: new Map(),
+  };
+  indexUnitExports(unit, idx);
   const seen = new Set<string>([entryPath]);
   for (const imp of unit.imports) {
-    collectPalettes(
-      resolveImportPath(entryPath, imp.path),
-      files,
-      paths,
-      palettes,
-      seen,
-      imp.alias,
-    );
+    collectModules(resolveImportPath(entryPath, imp.path), files, paths, idx, seen, imp.alias);
   }
-  if (!unit.paletteRef) return unit.recipe!.palette;
+  return idx;
+};
+
+const lookupPalette = (
+  props: ReadonlyMap<string, AshfoxExpr>,
+  idx: VfxModuleIndex,
+  entryPath: string,
+  env: VfxParamEnv,
+  fallback: VfxPalette,
+): VfxPalette => {
+  const paletteRef = props.has('palette') ? asName(props.get('palette')!, entryPath, env) : null;
+  if (!paletteRef) return fallback;
   const resolved =
-    palettes.get(unit.paletteRef) ?? palettes.get(unit.paletteRef.split('.').pop() ?? '');
+    idx.palettes.get(paletteRef) ?? idx.palettes.get(paletteRef.split('.').pop() ?? '');
   if (!resolved) {
     throw new VfxInputError({
       code: 'vfx.palette',
       file: entryPath,
       pointer: 'palette',
       expected: 'known or imported palette name',
-      actual: unit.paletteRef,
+      actual: paletteRef,
     });
   }
   return resolved;
@@ -127,7 +129,7 @@ export const compileDirectoryVfx = (
     });
   }
   const unit = parseVfxSource(entry.source, entryPath);
-  if (unit.kind !== 'vfx' || !unit.recipe) {
+  if (unit.kind !== 'vfx') {
     throw new VfxInputError({
       code: 'vfx.entry',
       file: entryPath,
@@ -137,8 +139,23 @@ export const compileDirectoryVfx = (
     });
   }
   const paths = new Set<string>([entryPath]);
-  const palette = resolveVfxEntryPalette(unit, entryPath, files, paths);
-  const recipe: VfxRecipe = { ...unit.recipe, palette };
+  const idx = createModuleIndex(unit, entryPath, files, paths);
+  const fallbackPalette =
+    unit.recipe?.palette ?? Object.values(unit.palettes)[0] ?? VFX_PALETTES.EmberSolar;
+  const recipe: VfxRecipe = unit.recipe
+    ? {
+        ...unit.recipe,
+        palette: lookupPalette(
+          new Map(Object.entries(unit.props)),
+          idx,
+          entryPath,
+          new Map(Object.entries(unit.params)),
+          unit.recipe.palette,
+        ),
+      }
+    : assembleVfxRecipeFromGraph(unit, entryPath, idx, (props, env) =>
+        lookupPalette(props, idx, entryPath, env, fallbackPalette),
+      );
   const compiled = compileVfxRecipe(recipe);
   const audit = auditVfx(compiled);
   if (!audit.passed) {

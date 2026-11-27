@@ -1,0 +1,88 @@
+ashfox 1
+module poison_cloud {
+  params {
+    radius = 14u;
+    count = 22;
+    duration = 1.0s;
+    seed = 229;
+  }
+
+  export palette VenomMist {
+    core = #f0ffdb;
+    mid = #80db42;
+    edge = #2b7524;
+    smoke = #213621;
+  }
+
+  export palette BlightPurple {
+    core = #f7ebff;
+    mid = #a85cd6;
+    edge = #4b2075;
+    smoke = #261b33;
+  }
+
+  export element toxic_pool : ring {
+    at = 0s..(duration * 0.85);
+    blend = blend;
+    radius = (radius * 0.25)..radius;
+    segments = 20;
+    ripple_amp = 0.4;
+    ripple_freq = 4;
+    color = mid;
+    texture stylized_smoke { curl_scale = 2.6; seed = seed; }
+    dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+    scale = 0.4 -> 1.1 ease_out -> 0;
+    alpha = 0.75 -> 0.55 -> 0;
+  }
+
+  export emitter spores : voxel_burst {
+    at = 0.04s..(duration * 0.65);
+    seed = seed;
+    count = count;
+    shape = sphere(radius * 0.5);
+    particle = puff;
+    speed = 3u..8u;
+    life = 0.3s..0.52s;
+    gravity = 3u;
+    drag = 2.6;
+    turbulence = curl(1.6, 5u);
+    size_over_life = 1.0u -> 3.0u ease_out -> 0u;
+    color_over_life = core -> mid -> edge -> smoke;
+    blend = blend;
+  }
+
+  export recipe PoisonCloud {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = VenomMist;
+    element toxic_pool : ring {
+      at = 0s..(duration * 0.85);
+      blend = blend;
+      radius = (radius * 0.25)..radius;
+      segments = 20;
+      ripple_amp = 0.4;
+      ripple_freq = 4;
+      color = mid;
+      texture stylized_smoke { curl_scale = 2.6; seed = seed; }
+      dissolve voronoi { frames = 10; edge_glow = core; seed = seed; }
+      scale = 0.4 -> 1.1 ease_out -> 0;
+      alpha = 0.75 -> 0.55 -> 0;
+    }
+    emitter spores : voxel_burst {
+      at = 0.04s..(duration * 0.65);
+      seed = seed;
+      count = count;
+      shape = sphere(radius * 0.5);
+      particle = puff;
+      speed = 3u..8u;
+      life = 0.3s..0.52s;
+      gravity = 3u;
+      drag = 2.6;
+      turbulence = curl(1.6, 5u);
+      size_over_life = 1.0u -> 3.0u ease_out -> 0u;
+      color_over_life = core -> mid -> edge -> smoke;
+      blend = blend;
+    }
+  }
+}

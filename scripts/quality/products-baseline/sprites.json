@@ -7,7 +7,7 @@
     {
       "input": "showcase/.ashfoxworkspace",
       "ok": true,
-      "sourceHash": "sha256:a2635777071ad635ad4c021142a145df13b074d19f9665fcb93b94ba28546780",
+      "sourceHash": "sha256:eb04fb9c7c720bfde60c361da1aecf69b5160036204b3c8a9b60f5b976b4decf",
       "products": [
         {
           "entry": "sprites/iron_sword",

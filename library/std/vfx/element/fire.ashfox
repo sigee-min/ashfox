@@ -1,5 +1,11 @@
 ashfox 1
 module fire {
+  params {
+    radius = 12u;
+    duration = 0.65s;
+    seed = 443;
+  }
+
   export palette EmberSolar {
     core = #fff7d6;
     mid = #ff8a24;
@@ -19,5 +25,68 @@ module fire {
     mid = #52c7f5;
     edge = #2659bd;
     smoke = #212c47;
+  }
+
+  export element flame_dome : dome {
+    at = 0s..(duration * 0.85);
+    blend = additive;
+    shape = hemisphere;
+    radius = radius;
+    subdiv = 1;
+    color = core;
+    texture radial_flare { spikes = 6; seed = seed; posterize = 4; }
+    dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+    scale = 0.4 -> 1.15 ease_out -> 0;
+    alpha = 0.7 -> 1.0 snap -> 0;
+  }
+
+  export emitter flame_sparks : voxel_burst {
+    at = 0.04s..(duration * 0.72);
+    seed = seed;
+    count = 24;
+    shape = cone(48deg, 3u);
+    particle = shard;
+    speed = 12u..26u;
+    life = 0.2s..0.4s;
+    gravity = 16u;
+    drag = 1.6;
+    turbulence = curl(1.8, 6u);
+    size_over_life = 1.1u -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = additive;
+  }
+
+  export recipe FlameBurst {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = EmberSolar;
+    element flame_dome : dome {
+      at = 0s..(duration * 0.85);
+      blend = additive;
+      shape = hemisphere;
+      radius = radius;
+      subdiv = 1;
+      color = core;
+      texture radial_flare { spikes = 6; seed = seed; posterize = 4; }
+      dissolve radial_noise { frames = 8; edge_glow = core; seed = seed; }
+      scale = 0.4 -> 1.15 ease_out -> 0;
+      alpha = 0.7 -> 1.0 snap -> 0;
+    }
+    emitter flame_sparks : voxel_burst {
+      at = 0.04s..(duration * 0.72);
+      seed = seed;
+      count = 24;
+      shape = cone(48deg, 3u);
+      particle = shard;
+      speed = 12u..26u;
+      life = 0.2s..0.4s;
+      gravity = 16u;
+      drag = 1.6;
+      turbulence = curl(1.8, 6u);
+      size_over_life = 1.1u -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = additive;
+    }
   }
 }

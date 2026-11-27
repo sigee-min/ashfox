@@ -12,42 +12,96 @@ export const failVfx = createDomainFail('vfx.syntax', 'vfx', (detail) => {
   throw new VfxInputError(detail);
 });
 
-export const asNumber = (expr: AshfoxExpr, file: string): number => {
-  const decoded = decodeSignedNumber(expr, 'any');
+export type VfxParamEnv = ReadonlyMap<string, AshfoxExpr>;
+
+const resolveExprRef = (expr: AshfoxExpr, env?: VfxParamEnv, depth = 0): AshfoxExpr => {
+  if (!env || depth > 16) return expr;
+  if (expr.kind === 'path' && env.has(expr.value)) {
+    return resolveExprRef(env.get(expr.value)!, env, depth + 1);
+  }
+  return expr;
+};
+
+const evalBinary = (
+  op: string,
+  left: number,
+  right: number,
+  file: string,
+  expr: AshfoxExpr,
+): number => {
+  if (op === '+') return left + right;
+  if (op === '-') return left - right;
+  if (op === '*') return left * right;
+  if (op === '/') {
+    if (right === 0) return failVfx(file, expr.span, 'non-zero divisor', '0');
+    return left / right;
+  }
+  if (op === '%') {
+    if (right === 0) return failVfx(file, expr.span, 'non-zero divisor', '0');
+    return left % right;
+  }
+  return failVfx(file, expr.span, 'arithmetic operator', op);
+};
+
+export const asNumber = (expr: AshfoxExpr, file: string, env?: VfxParamEnv, depth = 0): number => {
+  if (depth > 16) return failVfx(file, expr.span, 'bounded expression', 'deep recursion');
+  const resolved = resolveExprRef(expr, env, depth);
+  if (resolved.kind === 'unary') {
+    const val = asNumber(resolved.operand, file, env, depth + 1);
+    return resolved.operator === '-' ? -val : val;
+  }
+  if (resolved.kind === 'binary') {
+    const left = asNumber(resolved.left, file, env, depth + 1);
+    const right = asNumber(resolved.right, file, env, depth + 1);
+    return evalBinary(resolved.operator, left, right, file, resolved);
+  }
+  const decoded = decodeSignedNumber(resolved, 'any');
   if (decoded.ok) return decoded.value;
   return failVfx(file, decoded.span, 'number', decoded.actual);
 };
 
-export const asName = (expr: AshfoxExpr, file: string): string => {
-  if (expr.kind === 'path') return expr.value;
-  if (expr.kind === 'string') return expr.value;
-  return failVfx(file, expr.span, 'identifier', expr.kind);
+export const asName = (expr: AshfoxExpr, file: string, env?: VfxParamEnv): string => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind === 'path') return resolved.value;
+  if (resolved.kind === 'string') return resolved.value;
+  return failVfx(file, resolved.span, 'identifier', resolved.kind);
 };
 
-export const asColor = (expr: AshfoxExpr, file: string): string => {
-  if (expr.kind === 'color') return expr.value;
-  return failVfx(file, expr.span, '#rrggbb color', expr.kind);
+export const asColor = (expr: AshfoxExpr, file: string, env?: VfxParamEnv): string => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind === 'color') return resolved.value;
+  return failVfx(file, resolved.span, '#rrggbb color', resolved.kind);
 };
 
-export const asVec3 = (expr: AshfoxExpr, file: string): Vec3 => {
-  if (expr.kind !== 'tuple' || expr.elements.length !== 3) {
-    return failVfx(file, expr.span, '3-element tuple', expr.kind);
+export const asVec3 = (expr: AshfoxExpr, file: string, env?: VfxParamEnv): Vec3 => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind !== 'tuple' || resolved.elements.length !== 3) {
+    return failVfx(file, resolved.span, '3-element tuple', resolved.kind);
   }
   return [
-    asNumber(expr.elements[0]!, file),
-    asNumber(expr.elements[1]!, file),
-    asNumber(expr.elements[2]!, file),
+    asNumber(resolved.elements[0]!, file, env),
+    asNumber(resolved.elements[1]!, file, env),
+    asNumber(resolved.elements[2]!, file, env),
   ];
 };
 
-export const asPointList = (expr: AshfoxExpr, file: string): readonly Vec3[] => {
-  if (expr.kind !== 'list') return failVfx(file, expr.span, 'list of points', expr.kind);
-  return Object.freeze(expr.elements.map((el) => asVec3(el, file)));
+export const asPointList = (expr: AshfoxExpr, file: string, env?: VfxParamEnv): readonly Vec3[] => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind !== 'list')
+    return failVfx(file, resolved.span, 'list of points', resolved.kind);
+  return Object.freeze(resolved.elements.map((el) => asVec3(el, file, env)));
 };
 
-export const asRange = (expr: AshfoxExpr, file: string): readonly [number, number] => {
-  if (expr.kind === 'range') return [asNumber(expr.min, file), asNumber(expr.max, file)];
-  const single = asNumber(expr, file);
+export const asRange = (
+  expr: AshfoxExpr,
+  file: string,
+  env?: VfxParamEnv,
+): readonly [number, number] => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind === 'range') {
+    return [asNumber(resolved.min, file, env), asNumber(resolved.max, file, env)];
+  }
+  const single = asNumber(resolved, file, env);
   return [single, single];
 };
 
@@ -56,18 +110,23 @@ const toEasing = (name: string | undefined): VfxCurveEasing => {
   return 'linear';
 };
 
-export const asNumberCurve = (expr: AshfoxExpr, file: string): readonly VfxLifeStop<number>[] => {
-  if (expr.kind === 'transition') {
-    const n = Math.max(1, expr.steps.length - 1);
+export const asNumberCurve = (
+  expr: AshfoxExpr,
+  file: string,
+  env?: VfxParamEnv,
+): readonly VfxLifeStop<number>[] => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind === 'transition') {
+    const n = Math.max(1, resolved.steps.length - 1);
     return Object.freeze(
-      expr.steps.map((step: AshfoxTransitionStep, idx: number) => ({
+      resolved.steps.map((step: AshfoxTransitionStep, idx: number) => ({
         t: Number((idx / n).toFixed(4)),
-        value: asNumber(step.value, file),
+        value: asNumber(step.value, file, env),
         ...(step.easing ? { easing: toEasing(step.easing.name) } : {}),
       })),
     );
   }
-  const single = asNumber(expr, file);
+  const single = asNumber(resolved, file, env);
   return Object.freeze([
     { t: 0, value: single },
     { t: 1, value: single },
@@ -76,9 +135,9 @@ export const asNumberCurve = (expr: AshfoxExpr, file: string): readonly VfxLifeS
 
 const VALID_ROLES = new Set<VfxPaletteRole>(['core', 'mid', 'edge', 'smoke']);
 
-export const asPaletteRole = (expr: AshfoxExpr, file: string): VfxPaletteRole =>
+export const asPaletteRole = (expr: AshfoxExpr, file: string, env?: VfxParamEnv): VfxPaletteRole =>
   assertClosedChoice(
-    asName(expr, file),
+    asName(expr, file, env),
     VALID_ROLES,
     file,
     expr.span,
@@ -86,12 +145,17 @@ export const asPaletteRole = (expr: AshfoxExpr, file: string): VfxPaletteRole =>
     failVfx,
   );
 
-export const asColorRoleList = (expr: AshfoxExpr, file: string): readonly VfxPaletteRole[] => {
-  if (expr.kind === 'transition') {
-    return Object.freeze(expr.steps.map((s) => asPaletteRole(s.value, file)));
+export const asColorRoleList = (
+  expr: AshfoxExpr,
+  file: string,
+  env?: VfxParamEnv,
+): readonly VfxPaletteRole[] => {
+  const resolved = resolveExprRef(expr, env);
+  if (resolved.kind === 'transition') {
+    return Object.freeze(resolved.steps.map((s) => asPaletteRole(s.value, file, env)));
   }
-  if (expr.kind === 'list') {
-    return Object.freeze(expr.elements.map((e) => asPaletteRole(e, file)));
+  if (resolved.kind === 'list') {
+    return Object.freeze(resolved.elements.map((e) => asPaletteRole(e, file, env)));
   }
-  return Object.freeze([asPaletteRole(expr, file)]);
+  return Object.freeze([asPaletteRole(resolved, file, env)]);
 };

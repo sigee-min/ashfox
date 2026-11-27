@@ -1,0 +1,88 @@
+ashfox 1
+module shell_eject {
+  params {
+    scale = 1;
+    duration = 0.6s;
+    count = 8;
+    seed = 57;
+  }
+
+  export palette BrassCasing {
+    core = #fff8db;
+    mid = #e8b441;
+    edge = #8f5c1a;
+    smoke = #3d352e;
+  }
+
+  export palette SteelShell {
+    core = #f2f8ff;
+    mid = #8ca3ba;
+    edge = #425263;
+    smoke = #2d333b;
+  }
+
+  export element breech_puff : dome {
+    at = 0s..(duration * 0.38);
+    blend = blend;
+    shape = sphere;
+    radius = 2.4u * scale;
+    subdiv = 1;
+    color = smoke;
+    texture stylized_smoke { curl_scale = 2.6; seed = seed; }
+    dissolve radial_noise { frames = 6; edge_glow = mid; seed = seed; }
+    scale = 0.35 -> 1.1 ease_out -> 0;
+    alpha = 0.75 -> 0.4 -> 0;
+  }
+
+  export emitter casings : voxel_burst {
+    at = 0s..(duration * 0.35);
+    seed = seed;
+    count = count;
+    shape = cone(24deg, 1.5u);
+    particle = voxel_cube;
+    speed = 12u..20u;
+    life = 0.25s..0.38s;
+    gravity = -36u;
+    drag = 0.8;
+    spin_speed = 540deg;
+    ground { y = -4u; bounce = 48%; friction = 72%; }
+    size_over_life = (0.75u * scale) -> (0.65u * scale) -> 0u;
+    color_over_life = core -> mid -> edge;
+    blend = premul;
+  }
+
+  export recipe ShellEject {
+    duration = duration;
+    fps = 30;
+    loop = once;
+    palette = BrassCasing;
+    element breech_puff : dome {
+      at = 0s..(duration * 0.38);
+      blend = blend;
+      shape = sphere;
+      radius = 2.4u * scale;
+      subdiv = 1;
+      color = smoke;
+      texture stylized_smoke { curl_scale = 2.6; seed = seed; }
+      dissolve radial_noise { frames = 6; edge_glow = mid; seed = seed; }
+      scale = 0.35 -> 1.1 ease_out -> 0;
+      alpha = 0.75 -> 0.4 -> 0;
+    }
+    emitter casings : voxel_burst {
+      at = 0s..(duration * 0.35);
+      seed = seed;
+      count = count;
+      shape = cone(24deg, 1.5u);
+      particle = voxel_cube;
+      speed = 12u..20u;
+      life = 0.25s..0.38s;
+      gravity = -36u;
+      drag = 0.8;
+      spin_speed = 540deg;
+      ground { y = -4u; bounce = 48%; friction = 72%; }
+      size_over_life = (0.75u * scale) -> (0.65u * scale) -> 0u;
+      color_over_life = core -> mid -> edge;
+      blend = premul;
+    }
+  }
+}

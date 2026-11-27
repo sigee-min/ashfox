@@ -1,0 +1,50 @@
+ashfox 1
+module marker {
+  export material quest_gold {
+    ramp { mode = auto; base = #e8b642; preset = warm; }
+  }
+  export material waypoint_cyan {
+    ramp { mode = auto; base = #47d4eb; preset = emissive; }
+  }
+  export material danger_crimson {
+    ramp { mode = auto; base = #db4452; preset = vivid; }
+  }
+  export material ally_emerald {
+    ramp { mode = auto; base = #4ec473; preset = organic; }
+  }
+  export material iron_bezel {
+    ramp { mode = auto; base = #5b6573; preset = metal; }
+  }
+
+  export mask diamond_pin {
+    rows = [
+      "...11...",
+      "..1111..",
+      ".111111.",
+      "11111111",
+      "11111111",
+      ".111111.",
+      "..1111..",
+      "...11..."
+    ];
+  }
+
+  export mask chevron_down {
+    rows = [
+      "11....11",
+      "111..111",
+      ".111111.",
+      "..1111..",
+      "...11..."
+    ];
+  }
+
+  export stamp glint_cross {
+    rows = [
+      ".g.",
+      "ggg",
+      ".g."
+    ];
+    slots = [g];
+  }
+}

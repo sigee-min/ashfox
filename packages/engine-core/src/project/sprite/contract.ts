@@ -1,16 +1,27 @@
 import type { RampPreset } from '../../textures/oklch';
 
 export type Point = readonly [number, number];
-export type SpriteProfile = 'item' | 'tile' | 'icon' | 'decal';
+export type SpriteProfile =
+  'item' | 'tile' | 'icon' | 'decal' | 'ui_9slice' | 'crosshair' | 'hud_bar';
 export type MirrorMode = 'none' | 'x' | 'y' | 'xy';
 export type LightDirection =
   'top_left' | 'top' | 'top_right' | 'right' | 'bottom_right' | 'bottom' | 'bottom_left' | 'left';
+
+export interface SpriteNineSlice {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
 
 export const SPRITE_PROFILES: readonly SpriteProfile[] = Object.freeze([
   'item',
   'tile',
   'icon',
   'decal',
+  'ui_9slice',
+  'crosshair',
+  'hud_bar',
 ]);
 export const SPRITE_SIZES = new Set<number>([16, 32, 64]);
 
@@ -172,6 +183,7 @@ export type SpriteLayer =
       readonly material: string;
       readonly pattern: SpritePatternSpec;
       readonly grain: SpriteGrain;
+      readonly alpha?: number;
     }
   | {
       readonly id: string;
@@ -183,6 +195,8 @@ export type SpriteLayer =
       readonly mirror: MirrorMode;
       readonly pattern?: SpritePatternSpec;
       readonly clip: 'canvas' | 'occupied';
+      readonly alpha?: number;
+      readonly feather?: number;
     }
   | {
       readonly id: string;
@@ -195,6 +209,8 @@ export type SpriteLayer =
       readonly mirror: MirrorMode;
       readonly pattern?: SpritePatternSpec;
       readonly patches: readonly SpritePatch[];
+      readonly alpha?: number;
+      readonly feather?: number;
     }
   | {
       readonly id: string;
@@ -202,6 +218,7 @@ export type SpriteLayer =
       readonly at: Point;
       readonly rows: readonly string[];
       readonly colors: Readonly<Record<string, string>>;
+      readonly alpha?: number;
     }
   | {
       readonly id: string;
@@ -210,6 +227,7 @@ export type SpriteLayer =
       readonly at: Point;
       readonly flip: MirrorMode;
       readonly colors: Readonly<Record<string, string>>;
+      readonly alpha?: number;
     }
   | {
       readonly id: string;
@@ -232,12 +250,14 @@ export type SpriteLayer =
       readonly material: string;
       readonly pattern: SpritePatternSpec;
       readonly clip: 'canvas' | 'occupied';
+      readonly alpha?: number;
     };
 
 export interface SpriteItem {
   readonly id: string;
   readonly profile: SpriteProfile;
   readonly canvas: Point;
+  readonly slice?: SpriteNineSlice;
   readonly palette: Readonly<Record<string, string>>;
   readonly layers: readonly SpriteLayer[];
 }
