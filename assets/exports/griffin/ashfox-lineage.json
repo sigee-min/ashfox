@@ -13,11 +13,11 @@
   "packageName": "models",
   "entryName": "griffin_boss",
   "entryPath": "assets/models/griffin_boss.ashfox",
-  "workspaceHash": "sha256:e59474de30b3be9bc6dbb11a1ca5c7e5612e75c34f4ace6878a621cf75511c4a",
-  "closureHash": "sha256:e3df7da383a97bcc311cc67307ba2297f178bd4192b8bded457d7271dbca1a3a",
-  "buildKey": "sha256:7f7e4c8da0b55302f50a733e5ca067ff3760ce44ccc315c2ba3683f4f6ea26d6",
+  "workspaceHash": "sha256:fc0b1a01d4f814d695edd8a296b5f4703ce6082a51d726b4a8e6efd8e51e8fe0",
+  "closureHash": "sha256:3582c338b12663c6fa0b2badc14203f51ee5a9228cc5b42d6b89257ae8288dbc",
+  "buildKey": "sha256:1091b5bd5d509e551c80b8e24064292c8dcea1d5a94e1dc0f0b38c8da6d39d84",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:763715b9d22d47d22e514d9b935b0a5b7b0be88bdc22015861c32f76902b051a",
+  "productHash": "sha256:35f708cc5f17471bf4a9e34ffccaf4e2b75d4d0034634d3b897cdcabf70c0773",
   "textures": [
     {
       "id": "boss_plumage_a92bbcc1d3d6",
@@ -28,9 +28,9 @@
         "boss_plumage_a92bbcc1d3d6\u0000face_neutral",
         "boss_plumage_a92bbcc1d3d6\u0000face_screech"
       ],
-      "embeddedSha256": "sha256:893fa02be1bcde6a6ca5d003b4b10fa4f9ee26ef435b515f49fe2fc05cf6a7cb",
-      "pngSha256": "sha256:893fa02be1bcde6a6ca5d003b4b10fa4f9ee26ef435b515f49fe2fc05cf6a7cb",
-      "byteLength": 3241
+      "embeddedSha256": "sha256:bbad119dea72c3041f977e1e1c0610348d3574e6ee10f29727a15d893a106c21",
+      "pngSha256": "sha256:bbad119dea72c3041f977e1e1c0610348d3574e6ee10f29727a15d893a106c21",
+      "byteLength": 4082
     }
   ],
   "files": [
@@ -39,8 +39,8 @@
       "role": "model",
       "path": "griffin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:6fedd552a33ad605db470334698e2706eecd1befd9924c4c79224d15de7a3fb9",
-      "byteLength": 32444
+      "sha256": "sha256:b09f403ccfd15b63c0fee38ffe1dc4807b2ca2b93a207ecb29b9481d2f01190a",
+      "byteLength": 44032
     }
   ]
 }

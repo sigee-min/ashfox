@@ -13,19 +13,19 @@
   "packageName": "models",
   "entryName": "goblin_raider",
   "entryPath": "assets/models/goblin_raider.ashfox",
-  "workspaceHash": "sha256:ff5aeb8cca635b4bc8c5f28831dac3e0074e077003340abb63aea8444e21974b",
-  "closureHash": "sha256:51aa67f5da00e772d1543d39987b1940ec6c804fe96c8b00a966d813869fc9a0",
-  "buildKey": "sha256:4b980e8147d1eb0fa4220cadf3aae8800a4ab5d5799c30f095481c6481b66b94",
+  "workspaceHash": "sha256:414c8809c83d53ee5e0e43a2ab50f817ab7ae8eb17af40d90acec9c2f160716d",
+  "closureHash": "sha256:2994fbb420f528d84a412617d4db3232c0428e7aefd81b0ceaa57f13e6070fff",
+  "buildKey": "sha256:e5ed172e82f820ca64db0dec4c2d67532d91a712f2b74d5c65b3752565ca957e",
   "compilerFingerprint": "ashfox-asset-compiler:workspace+design+anchored-pixels+parent-space-rig+typed-hir+instantiation+canonical:v1",
-  "productHash": "sha256:899acd47d18e9c99b9821566934b3bd1c359339c91b71ebb70bef71f7cb55699",
+  "productHash": "sha256:e030ba57f27e347758d7cbeb86be94c57ad6b3192ceca236176eee01e1b9ebf3",
   "textures": [
     {
       "id": "raider_shield_9a3c843d9efe",
       "path": null,
       "coverageIds": [],
-      "embeddedSha256": "sha256:31d3b584702a42eccb9081de4393f374662609f2c0b12e2aa183b34461035b40",
-      "pngSha256": "sha256:31d3b584702a42eccb9081de4393f374662609f2c0b12e2aa183b34461035b40",
-      "byteLength": 780
+      "embeddedSha256": "sha256:6a76fde2d5335ecac93ee64f228af10384a5062fd581aca2766537b5f9b23090",
+      "pngSha256": "sha256:6a76fde2d5335ecac93ee64f228af10384a5062fd581aca2766537b5f9b23090",
+      "byteLength": 839
     },
     {
       "id": "raider_skin_4590fcad60ba",
@@ -36,17 +36,17 @@
         "raider_skin_4590fcad60ba\u0000face_snarl",
         "raider_skin_4590fcad60ba\u0000loincloth"
       ],
-      "embeddedSha256": "sha256:f8050deee77c249a56c4d27817b8d69cabb2f1f875214624f86e300b5cadfd40",
-      "pngSha256": "sha256:67e42b0967645c02d207460dc6166539a6779d105abea811f71dbe34e3ee5f3c",
-      "byteLength": 2609
+      "embeddedSha256": "sha256:b63df22bbddd3c5c4fc845b3dec4087544f3f46e8959784ee2c0dbac2f51b733",
+      "pngSha256": "sha256:10fccdb74caca3d9a520108cea2b245693bc92fa7715c73480dc2f0c76fae610",
+      "byteLength": 2641
     },
     {
       "id": "raider_weapon_c2c899704213",
       "path": null,
       "coverageIds": [],
-      "embeddedSha256": "sha256:67e42b0967645c02d207460dc6166539a6779d105abea811f71dbe34e3ee5f3c",
-      "pngSha256": "sha256:4156360158e7430948b87bb22774f2e0579cda08c8284e19a23558cc632ab925",
-      "byteLength": 683
+      "embeddedSha256": "sha256:10fccdb74caca3d9a520108cea2b245693bc92fa7715c73480dc2f0c76fae610",
+      "pngSha256": "sha256:cb4dfbca365717eb63d942d699e765c8050dbd181a85dfb329508006ed8cce1d",
+      "byteLength": 696
     }
   ],
   "files": [
@@ -55,8 +55,8 @@
       "role": "model",
       "path": "goblin.glb",
       "contentType": "model/gltf-binary",
-      "sha256": "sha256:8690a3d74132c560603f61a07db794c0d0015d3c3b44ec87bfc5ed00ba1cfa08",
-      "byteLength": 44364
+      "sha256": "sha256:81dcba7e9a95c6fe52f798926806aceea66e9eb529d2ffbf0bca1f69c59344b3",
+      "byteLength": 46992
     }
   ]
 }
