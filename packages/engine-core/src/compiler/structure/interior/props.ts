@@ -1,6 +1,6 @@
 import type { Vec3 } from '../../../model/identity';
 import type { CardinalFacing } from '../../../project/structure/contract';
-import { diningSeatOffsets, rotateChairOffset } from './zoneRect';
+import { diningChairPoses } from './zoneRect';
 import {
   SUBVOXEL_UNITS_PER_BLOCK,
   type InteriorPropKind,
@@ -241,24 +241,18 @@ const buildDiningChairs = (
   seed: number,
   organic: number,
 ): { boxes: SubVoxelBoxIR[]; hooks: PlayableInteriorHook[] } => {
-  const [wB, dB] = spec.size ?? [2, 1];
-  const count = spec.seat_count ?? Math.max(2, wB * 2);
-  const offsets = diningSeatOffsets(wB, dB, count);
   const mat = materialsForStyle(spec.style_override ?? styleDna.furn);
   const boxes: SubVoxelBoxIR[] = [];
   const hooks: PlayableInteriorHook[] = [];
-  offsets.forEach(([lx, lz, relFacing], idx) => {
+  diningChairPoses(spec).forEach((pose, idx) => {
     const chairId = `${spec.id}:chair_${idx}`;
     const j = computeOrganicTransform(seed, chairId, organic, undefined, true);
-    const [rx, rz, chairFacing] = rotateChairOffset(lx, lz, relFacing, wB, dB, spec.facing);
-    const wx = spec.at[0] + rx;
-    const wz = spec.at[2] + rz;
     const origin16: Vec3 = [
-      wx * SUBVOXEL_UNITS_PER_BLOCK + j.offset_x_16,
+      (pose.cx - 0.5) * SUBVOXEL_UNITS_PER_BLOCK + j.offset_x_16,
       spec.at[1] * SUBVOXEL_UNITS_PER_BLOCK,
-      wz * SUBVOXEL_UNITS_PER_BLOCK + j.offset_z_16,
+      (pose.cz - 0.5) * SUBVOXEL_UNITS_PER_BLOCK + j.offset_z_16,
     ];
-    const yaw =
+    const organicYaw =
       Math.abs(j.rotation_y_deg) < 4 && organic >= 0.5
         ? 12 * (idx % 2 === 0 ? 1 : -1)
         : j.rotation_y_deg;
@@ -269,16 +263,16 @@ const buildDiningChairs = (
         origin16,
         16,
         16,
-        chairFacing,
-        yaw,
+        pose.facing,
+        pose.remDeg + organicYaw,
         spec.zone_id,
       ),
     );
     hooks.push({
       kind: 'sit',
       id: `${chairId}:sit`,
-      position: [wx + 0.5, spec.at[1], wz + 0.5],
-      facing: chairFacing,
+      position: [pose.cx, spec.at[1], pose.cz],
+      facing: pose.facing,
       seat_height_16: 8.5,
       prop_id: chairId,
     });

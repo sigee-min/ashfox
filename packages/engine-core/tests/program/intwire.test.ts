@@ -457,7 +457,7 @@ structure yaw_col {
     room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
       interior {
         dna { arch = rustic; organic = 0; }
-        table t_rot { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = 90; }
+        dining_set t_rot { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = 90; seat_count = 2; }
         cabinet cab_hit { at = (5, 1, 3); size = (1, 1); facing = south; }
       }
     }
@@ -475,8 +475,11 @@ structure yaw_col {
     (h) => h.kind === 'hinge' && h.target_id === 'cab_hit',
   )!;
   assert.equal(Math.floor(yawCab.position[0]) === 5 && Math.floor(yawCab.position[2]) === 3, false);
+  const c0 = yawRoom.playable_meta.hooks.find((h) => h.id === 't_rot:chair_0:sit')!;
+  assert.deepEqual(c0.position, [6.5, 1, 3.5]);
+  assert.equal(c0.kind === 'sit' ? c0.facing : undefined, 'west');
   assert.equal(
-    yawRoom.ir.clear_path_cells.some((c) => c[0] === 5 && c[2] === 3),
+    yawRoom.ir.clear_path_cells.some((c) => (c[0] === 5 || c[0] === 6) && c[2] === 3),
     false,
   );
   console.log('ashfox interior wiring integration tests ok');

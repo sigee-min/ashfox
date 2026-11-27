@@ -123,8 +123,7 @@ export const resolvePartitionDoorway = (
 
 const CW_FACING: readonly CardinalFacing[] = ['north', 'east', 'south', 'west'];
 
-/** Computes unrotated chair cell offsets and facing around a dining table footprint. */
-export const diningSeatOffsets = (
+const diningSeatOffsets = (
   wB: number,
   dB: number,
   seatCount: number,
@@ -139,8 +138,7 @@ export const diningSeatOffsets = (
   return seats;
 };
 
-/** Rotates a local dining chair cell offset and facing into world-facing orientation. */
-export const rotateChairOffset = (
+const rotateChairOffset = (
   lx: number,
   lz: number,
   relFacing: CardinalFacing,
@@ -156,16 +154,43 @@ export const rotateChairOffset = (
   return [lx, lz, nextFacing];
 };
 
-/** Returns rotated [dx, dz] cell offsets of generated dining chairs relative to table origin. */
-export const diningChairCellOffsets = (
+const snapRotateFacing = (
+  facing: CardinalFacing,
+  deg: number,
+): { readonly facing: CardinalFacing; readonly remDeg: number } => {
+  if (Math.abs(deg) <= 1e-4) return { facing, remDeg: 0 };
+  const steps = Math.round(deg / 90);
+  const idx = CW_FACING.indexOf(facing);
+  return {
+    facing: CW_FACING[(((idx + steps) % 4) + 4) % 4]!,
+    remDeg: deg - steps * 90,
+  };
+};
+
+export interface DiningChairPose {
+  readonly cx: number;
+  readonly cz: number;
+  readonly facing: CardinalFacing;
+  readonly remDeg: number;
+}
+
+/** Computes world XZ centers and orientations for all chairs of a dining_set at [ox, oz]. */
+export const diningChairPoses = (
   spec: InteriorPropSpec,
-): readonly (readonly [number, number])[] => {
+  ox: number = spec.at[0],
+  oz: number = spec.at[2],
+): readonly DiningChairPose[] => {
   if (spec.kind !== 'dining_set') return [];
   const [wB, dB] = spec.size ?? [2, 1];
+  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
   const count = spec.seat_count ?? Math.max(2, wB * 2);
+  const yaw = spec.rotation_deg ?? 0;
+  const [px, pz] = [ox + rw / 2, oz + rd / 2];
   return diningSeatOffsets(wB, dB, count).map(([lx, lz, relFacing]) => {
-    const [rx, rz] = rotateChairOffset(lx, lz, relFacing, wB, dB, spec.facing);
-    return [rx, rz] as const;
+    const [rx, rz, baseFacing] = rotateChairOffset(lx, lz, relFacing, wB, dB, spec.facing);
+    const [cx, cz] = rotatePointXZ(ox + rx + 0.5, oz + rz + 0.5, px, pz, yaw);
+    const rot = snapRotateFacing(baseFacing, yaw);
+    return { cx, cz, facing: rot.facing, remDeg: rot.remDeg };
   });
 };
 
@@ -255,9 +280,8 @@ export const propFootprintCoords = (
   for (let cz = bz0; cz <= bz1; cz += 1) {
     for (let cx = bx0; cx <= bx1; cx += 1) out.push([cx, cz]);
   }
-  for (const [rx, rz] of diningChairCellOffsets(spec)) {
-    const [cx, cz] = rotatePointXZ(x + rx + 0.5, z + rz + 0.5, x + rw / 2, z + rd / 2, yaw);
-    out.push([Math.floor(cx), Math.floor(cz)]);
+  for (const pose of diningChairPoses(spec, x, z)) {
+    out.push([Math.floor(pose.cx), Math.floor(pose.cz)]);
   }
   return out;
 };
