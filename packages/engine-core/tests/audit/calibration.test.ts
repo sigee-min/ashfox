@@ -464,11 +464,16 @@ const compileFile = (entryName: string) => {
 
 const foxReport = compileFile('red_fox');
 const goblinReport = compileFile('goblin_raider');
+const pyroReport = compileFile('goblin_pyromancer');
 const griffinReport = compileFile('griffin_boss');
 const runeBricksReport = compileFile('rune_bricks');
 const lanternReport = compileFile('wall_lantern');
 
 for (const [name, report] of [
+  ['fox', foxReport],
+  ['goblin', goblinReport],
+  ['pyro', pyroReport],
+  ['griffin', griffinReport],
   ['rune_bricks', runeBricksReport],
   ['lantern', lanternReport],
 ] as const) {
@@ -481,15 +486,6 @@ for (const [name, report] of [
   assert.equal(report.grade, 'excellent', `${name} expected excellent, got ${report.grade}`);
 }
 
-// Broken PR #51 showcase creatures are blocked by Anti-Derp craftFloor gates until hero restoration.
-for (const [name, report] of [
-  ['fox', foxReport],
-  ['goblin', goblinReport],
-  ['griffin', griffinReport],
-] as const) {
-  assert.equal(report.passed, false, `${name} broken regression fixture must fail craftFloor gate`);
-}
-
 console.log(
-  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} griffin=${griffinReport.score} rune_bricks=${runeBricksReport.score} lantern=${lanternReport.score}`,
+  `calibration ok: Lv0=${lv0.score} Lv1=${lv1.score} Lv2=${lv2.score} Lv3=${lv3.score} Lv4=${lv4.score} fox=${foxReport.score} goblin=${goblinReport.score} pyro=${pyroReport.score} griffin=${griffinReport.score} rune_bricks=${runeBricksReport.score} lantern=${lanternReport.score}`,
 );

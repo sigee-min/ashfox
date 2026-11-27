@@ -1,9 +1,7 @@
 ashfox 1
 module fox_fur {
-  import "std/core/palette/nature" as nat;
-
   export surface contract FoxFur {
-    chart body box { coverage = opaque; }
+    chart torso box { coverage = opaque; }
     chart pelvis box { coverage = opaque; }
     chart chest box { coverage = opaque; }
     chart ruff box { coverage = opaque; }
@@ -12,62 +10,107 @@ module fox_fur {
     chart nose box { coverage = opaque; }
     chart ear_base box { coverage = opaque; }
     chart ear_tip box { coverage = opaque; }
-    chart shoulder box { coverage = opaque; }
-    chart thigh box { coverage = opaque; }
-    chart leg box { coverage = opaque; }
-    chart paw box { coverage = opaque; }
+    chart ear_inner box { coverage = opaque; }
+    chart cheek_tuft flat { coverage = binary; }
+    chart front_shoulder box { coverage = opaque; }
+    chart front_leg box { coverage = opaque; }
+    chart front_paw box { coverage = opaque; }
+    chart back_leg box { coverage = opaque; }
+    chart back_shin box { coverage = opaque; }
+    chart back_hock box { coverage = opaque; }
+    chart back_paw box { coverage = opaque; }
     chart tail_base box { coverage = opaque; }
     chart tail_main box { coverage = opaque; }
     chart tail_tip box { coverage = opaque; }
+    chart tail_tip_fine box { coverage = opaque; }
+    chart tail_plume flat { coverage = binary; }
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_alert flat { coverage = opaque; }
-    material = cutout;
+    material = double;
   }
 
   export surface fox_coat: FoxFur {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
-      background = void; background_alpha = 0;
+      background = void;
+      background_alpha = 0;
       palette {
         void = #000000;
         coat = (#9b3b1e, #d9642c, #f49b56);
         coat_deep = (#6d2718, #a94322, #d46b37);
-        cream = (#b68d65, #e6c69c, #fff1d4);
-        sock = (nat.TerrainSoil.loam_shadow, nat.TerrainSoil.loam_base, nat.TerrainSoil.loam_light);
+        cream = (#b68d65, #dfbe94, #f0dfc0);
+        sock = (#3d2420, #5c3831, #845549);
         paw = (#2e1c1a, #492d28, #6b453e);
+        ear_pink = (#8c4842, #c9786e, #eba89d);
         nose_tone = (#261918, #3d2725, #5e3e3a);
         eye_dark = #211514;
         eye_amber = #d47b2c;
-        eye_glint = #fff7e6;
+        eye_glint = #fff4de;
         brow_soft = #e8cfa6;
       }
-      stamp chest_heart { pixels = "..cccc../.cccccc./..cccc../...cc..."; c = cream; }
-      stamp fox_eyes_n { pixels = ".bb......bb./.kw......wk./.ka......ak."; b = brow_soft; k = eye_dark; w = eye_glint; a = eye_amber; }
-      stamp fox_eyes_b { pixels = "............/.bb......bb./.cc......cc."; b = brow_soft; c = coat_deep; }
-      stamp fox_eyes_a { pixels = ".bb......bb./.ww......ww./.aa......aa."; b = brow_soft; w = eye_glint; a = eye_amber; }
 
-      chart body box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.45; radius = 0.9u; } }
-      chart pelvis box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } }
-      chart chest box { fill = coat; roughness = 0.84; grain = soft; face north { stamp chest_heart { at = (4px, 4px); protect = true; } } }
-      chart ruff box { fill = cream; roughness = 0.86; grain = soft; }
-      chart head box { fill = coat; roughness = 0.82; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 0.8u; } }
-      chart muzzle box { fill = cream; roughness = 0.84; grain = soft; }
+      stamp chest_heart {
+        pixels = "....cccccccc..../..cccccccccccc../.cccccccccccccc./.cccccccccccccc./..cccccccccccc../...cccccccccc.../.....cccccc...../.......cc.......";
+        c = cream;
+      }
+      stamp cheek_blaze {
+        pixels = "cc............cc/cccc........cccc/ccccc......ccccc/cccccc....cccccc";
+        c = cream;
+      }
+      stamp muzzle_cleft {
+        pixels = "......../...kk.../........";
+        k = eye_dark;
+      }
+      stamp fox_eyes_n {
+        pixels = "bbb......bbb/kwa......awk/kka......akk/kkk......kkk";
+        b = brow_soft;
+        k = eye_dark;
+        w = eye_glint;
+        a = eye_amber;
+      }
+      stamp fox_eyes_b {
+        pixels = "............/bbb......bbb/ddd......ddd/............";
+        b = brow_soft;
+        d = coat_deep;
+      }
+      stamp fox_eyes_a {
+        pixels = "bb........bb/.kwa....awk./.kaa....aak./.kkk....kkk.";
+        b = brow_soft;
+        k = eye_dark;
+        w = eye_glint;
+        a = eye_amber;
+      }
+
+      chart torso box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart pelvis box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart chest box { fill = coat; roughness = 0.84; grain = soft; pattern ao { strength = 0.45; radius = 1u; } face north { stamp chest_heart { at = (0px, 2px); protect = true; } } }
+      chart ruff box { fill = cream; roughness = 0.86; grain = soft; pattern ao { strength = 0.4; radius = 1u; } }
+      chart head box { fill = coat; roughness = 0.82; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 1u; } face north { stamp cheek_blaze { at = (0px, 8px); protect = true; } } }
+      chart muzzle box { fill = cream; roughness = 0.84; grain = soft; pattern ao { strength = 0.4; radius = 1u; } face north { stamp muzzle_cleft { at = (0px, 2px); protect = true; } } }
       chart nose box { fill = nose_tone; roughness = 0.22; metallic = 0.05; grain = none; }
-      chart ear_base box { fill = coat; roughness = 0.82; grain = soft; }
+      chart ear_base box { fill = coat; roughness = 0.82; grain = soft; pattern ao { strength = 0.45; radius = 1u; } }
       chart ear_tip box { fill = sock; roughness = 0.84; grain = none; }
-      chart shoulder box { fill = coat; roughness = 0.84; grain = soft; }
-      chart thigh box { fill = coat; roughness = 0.84; grain = soft; }
-      chart leg box { fill = sock; roughness = 0.84; grain = soft; pattern gradient { to = paw; axis = y; space = local; soft = 0.2; } }
-      chart paw box { fill = paw; roughness = 0.86; grain = none; pattern border { paint = sock; width = 1px; edges = top; } }
-      chart tail_base box { fill = coat; roughness = 0.84; grain = soft; }
-      chart tail_main box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = cream; axis = z; space = local; soft = 0.2; } }
+      chart ear_inner box { fill = ear_pink; roughness = 0.84; grain = soft; pattern ao { strength = 0.4; radius = 1u; } }
+      chart cheek_tuft flat { coverage = 111000111110111111111111011110001100; fill = cream; roughness = 0.86; grain = soft; }
+      chart front_shoulder box { fill = coat; roughness = 0.84; grain = clustered; pattern gradient { to = sock; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart front_leg box { fill = sock; roughness = 0.84; grain = soft; pattern gradient { to = paw; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 1u; } }
+      chart front_paw box { fill = paw; roughness = 0.86; grain = none; pattern border { paint = sock; width = 1px; edges = top; } }
+      chart back_leg box { fill = coat; roughness = 0.84; grain = clustered; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart back_shin box { fill = coat_deep; roughness = 0.84; grain = soft; pattern gradient { to = sock; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 1u; } }
+      chart back_hock box { fill = sock; roughness = 0.84; grain = soft; }
+      chart back_paw box { fill = paw; roughness = 0.86; grain = none; pattern border { paint = sock; width = 1px; edges = top; } }
+      chart tail_base box { fill = coat_deep; roughness = 0.84; grain = soft; pattern ao { strength = 0.45; radius = 1u; } }
+      chart tail_main box { fill = coat; roughness = 0.84; grain = soft; pattern gradient { to = coat_deep; axis = y; space = local; soft = 0.25; } pattern ao { strength = 0.4; radius = 1u; } }
       chart tail_tip box { fill = cream; roughness = 0.86; grain = soft; }
+      chart tail_tip_fine box { fill = cream; roughness = 0.86; grain = none; }
+      chart tail_plume flat { coverage = 111110001111110011111110111111110111111000111100; fill = cream; roughness = 0.86; grain = soft; }
       chart face_neutral flat { fill = coat; stamp fox_eyes_n { at = (1px, 2px); protect = true; } }
       chart face_blink flat { fill = coat; stamp fox_eyes_b { at = (1px, 2px); protect = true; } }
       chart face_alert flat { fill = coat; stamp fox_eyes_a { at = (1px, 2px); protect = true; } }
-      grain soft { seed = 2101; }
+
+      grain soft { seed = 8923; }
       tone painterly;
     }
   }

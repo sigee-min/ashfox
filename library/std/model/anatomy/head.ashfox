@@ -1,0 +1,90 @@
+ashfox 1
+module head {
+  export socket contract HeadSocket {
+  }
+
+  export surface contract EagleHeadSurface {
+    chart skull box { coverage = opaque; }
+    chart beak box { coverage = opaque; }
+    chart beak_tip box { coverage = opaque; }
+    chart crest box { coverage = opaque; }
+    chart crest_plume flat { coverage = binary; }
+    material = double;
+  }
+
+  export surface contract CanineHeadSurface {
+    chart skull box { coverage = opaque; }
+    chart muzzle box { coverage = opaque; }
+    chart nose box { coverage = opaque; }
+    chart ear_base box { coverage = opaque; }
+    chart ear_tip box { coverage = opaque; }
+    chart ear_inner box { coverage = opaque; }
+    chart cheek_tuft flat { coverage = binary; }
+    material = double;
+  }
+
+  export surface contract GoblinHeadSurface {
+    chart skull box { coverage = opaque; }
+    chart jaw box { coverage = opaque; }
+    chart tusk box { coverage = opaque; }
+    chart ear box { coverage = opaque; }
+    chart ear_tip box { coverage = opaque; }
+    chart mohawk box { coverage = opaque; }
+    material = double;
+  }
+
+  export component EagleHead {
+    requires socket mount: HeadSocket;
+    requires surface skin: EagleHeadSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube skull { origin = (-4u, 0u, -5u); size = (8u, 8u, 8u); pivot = (0u, 3u, -1u); rotation = (4deg, 0deg, 0deg); surface = skin.skull; }
+        cube beak { origin = (-3u, 0.5u, -11u); size = (6u, 4u, 6u); surface = skin.beak; }
+        cube beak_tip { origin = (-2u, -0.5u, -13u); size = (4u, 3u, 2u); pivot = (0u, 1u, -11.5u); rotation = (16deg, 0deg, 0deg); surface = skin.beak_tip; }
+        cube crest_l { origin = (-4u, 7u, -1u); size = (2u, 3u, 4u); pivot = (-3u, 7u, 1u); rotation = (-16deg, 0deg, -14deg); mirror_x = crest_r; surface = skin.crest; }
+        plane crest_plume_l { origin = (-3.5u, 6u, 1u); size = (4u, 4u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); rotation = (-12deg, 0deg, -14deg); mirror_x = crest_plume_r; surface = skin.crest_plume; }
+      }
+    }
+  }
+
+  export component CanineHead {
+    requires socket mount: HeadSocket;
+    requires surface skin: CanineHeadSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube skull { origin = (-4u, 0u, -5u); size = (8u, 6u, 7u); pivot = (0u, 3u, -1.5u); rotation = (3deg, 0deg, 0deg); surface = skin.skull; }
+        cube muzzle { origin = (-2u, 0u, -9u); size = (4u, 3u, 4u); surface = skin.muzzle; }
+        cube nose { origin = (-1u, 1.7u, -9.8u); size = (2u, 1u, 2u); surface = skin.nose; }
+        cube ear_base_l { origin = (-3.8u, 5.8u, -2u); size = (3u, 3u, 2u); pivot = (-2.3u, 5.8u, -1u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_base_r; surface = skin.ear_base; }
+        cube ear_tip_l { origin = (-3.3u, 8.7u, -1.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 5.8u, -1u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
+        cube ear_inner_l { origin = (-3.3u, 6.2u, -2.8u); size = (2u, 2u, 1u); pivot = (-2.3u, 5.8u, -1u); rotation = (-6deg, 0deg, -14deg); mirror_x = ear_inner_r; surface = skin.ear_inner; }
+        plane cheek_tuft_l { origin = (-4.05u, -0.2u, -4.4u); size = (3u, 3u); u_axis = (0u, 0u, 1u); v_axis = (0u, 1u, 0u); rotation = (0deg, -22deg, 0deg); mirror_x = cheek_tuft_r; surface = skin.cheek_tuft; }
+      }
+    }
+  }
+
+  export component GoblinHead {
+    requires socket mount: HeadSocket;
+    requires surface skin: GoblinHeadSurface;
+    bind socket mount to bone root {
+      frame { origin = (0u, 0u, 0u); x = (1, 0, 0); y = (0, 1, 0); z = (0, 0, 1); }
+    }
+    geometry {
+      bone root {
+        cube skull { origin = (-4u, 0u, -4u); size = (8u, 7u, 8u); pivot = (0u, 3u, 0u); rotation = (4deg, 0deg, 0deg); surface = skin.skull; }
+        cube jaw { origin = (-2.5u, -0.3u, -6.9u); size = (5u, 2u, 3u); surface = skin.jaw; }
+        cube tusk_l { origin = (-2.4u, -0.7u, -7.5u); size = (1u, 3u, 2u); pivot = (-1.9u, 0u, -6.5u); rotation = (-14deg, 0deg, -8deg); mirror_x = tusk_r; surface = skin.tusk; }
+        cube ear_l { origin = (-7.2u, 2u, -1u); size = (3u, 3u, 2u); pivot = (-4u, 3.5u, 0u); rotation = (0deg, 10deg, -18deg); mirror_x = ear_r; surface = skin.ear; }
+        cube ear_tip_l { origin = (-9.8u, 3u, -0.6u); size = (3u, 2u, 2u); pivot = (-4u, 3.5u, 0u); rotation = (0deg, 10deg, -22deg); mirror_x = ear_tip_r; surface = skin.ear_tip; }
+        cube mohawk_front { origin = (-1u, 6.9u, -3.5u); size = (2u, 3u, 4u); pivot = (0u, 6.9u, -1.5u); rotation = (-12deg, 0deg, 0deg); surface = skin.mohawk; }
+        cube mohawk_back { origin = (-1u, 6.9u, 0.6u); size = (2u, 3u, 4u); pivot = (0u, 6.9u, 2.5u); rotation = (16deg, 0deg, 0deg); surface = skin.mohawk; }
+      }
+    }
+  }
+}

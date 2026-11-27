@@ -46,11 +46,23 @@ for shared design variables and exact resize relationships.
 | `prop` | `showcase/assets/models/treasure_chest.ashfox` | Modular prop using `"std/model/prop/container"` and `std/core/hook/loot` hooks |
 | `creature` | `showcase/assets/models/goblin_raider.ashfox` | Biped creature built from `"std/model/rig/biped"`, `"std/model/motion/combat"`, expressions, and capsule collider |
 | `creature` | `showcase/assets/models/goblin_pyromancer.ashfox` | Compact variant swap over shared `"std/*"` modules with flame staff and VFX/sound cues |
-| `creature` | `showcase/assets/models/griffin_boss.ashfox` | Winged creature using `"std/model/rig/winged"` and secondary feather physics |
-| `creature` | `showcase/assets/models/red_fox.ashfox` | Quadruped creature using `"std/model/rig/quadruped"` and tail spring physics |
+| `creature` | `showcase/assets/models/griffin_boss.ashfox` | Winged quadruped creature using `"std/model/rig/winged_quadruped"`, 3-tier swept eagle wings, lateral eyes, and secondary tail physics |
+| `creature` | `showcase/assets/models/red_fox.ashfox` | Quadruped creature using `"std/model/rig/quadruped"`, `plane` cheek/tail tufts, 3-segment hindlegs, and tail spring physics |
 | `structure` | `showcase/assets/structures/tavern.ashfox` | Multi-story timber tavern with furnished interior, radiosity GI, and `LootSpawn`/`DoorPortal` hooks |
 | `structure` | `showcase/assets/structures/blacksmith.ashfox` | Stone-and-timber forge with open hearth, anvil interior, and chimney embers |
 | `structure` | `showcase/assets/structures/modern_gallery.ashfox` | Modern glazed-atrium gallery with stained glass GI and contemporary display furnishings |
+
+## Creature art direction (Do / Don't)
+
+Use `ashfox library std list model` (`std/model/rig/*`, `std/model/anatomy/*`, `std/model/face/*`) as your craft baseline so every creature preserves heroic Hytale-grade voxel proportions:
+
+| Rule | DO | DON'T |
+| --- | --- | --- |
+| **Silhouette & primitives** | Sculpt organic anatomy with hierarchical `cube` volumes, subtle `15deg`–`22.5deg` rotations, and thin `plane` accents (`cheek_tuft`, `tail_plume`, `crest_plume`, feather fringes, fins). | Never place large 45° `wedge` blocks on creature muzzles, snouts, jaws, chests, or boots/shoes. |
+| **Specialty primitives** | Reserve `taper` for horns, claws, weapon tips, and cuffs; `wedge` for axe blades, pauldrons, armor horns, and roofs; `cylinder` for potions, pillars, shields, barrels, and wheels. | Never use a bare `cylinder` for a furry or feathered tail. |
+| **Eyes & expressions** | Keep eye centers at `38%–64%` (`45%–55%` ideal) of skull height, and set `placement = lateral_pair` on `expression_slot` for birds, griffins, and dragons. | Never place eyes above `68%` skull height (forehead googly eyes) or crowd avian/griffin eyes onto the front face. |
+| **Rig & limb fidelity** | Match the rig to real anatomy (`std/model/rig/winged_quadruped` for 4-legged winged beasts, `quadruped` for 4-legged beasts, `biped` for humanoids) with 4 grounded feet on quadrupeds and multi-segment articulated legs. | Never amputate legs, wings, or joints just to squeeze a creature onto the wrong rig, and never collapse wings into flat horizontal T-pose stubs. |
+| **PBR albedo headroom** | Keep metallic (`>= 0.6`) base albedo luminance `>= 0.42` so steel/gold gleam under studio IBL, and keep matte (`< 0.2`) surfaces below `0.94` luminance. | Never author dark charcoal (`L < 0.42`) high-metallic steel blades or blown-out pure-white (`L > 0.94`) matte chests. |
 
 ## Create an animated creature
 

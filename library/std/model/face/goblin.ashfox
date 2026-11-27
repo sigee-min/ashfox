@@ -1,0 +1,79 @@
+ashfox 1
+module goblin {
+  export design GoblinFaceDesign {
+    slot_width: unit = 6u;
+    slot_height: unit = 4u;
+    skull_eye_ratio: ratio = 0.50;
+  }
+
+  export surface contract GoblinFaceSurface {
+    chart neutral flat { coverage = opaque; }
+    chart blink flat { coverage = opaque; }
+    chart fierce flat { coverage = opaque; }
+    chart hurt flat { coverage = opaque; }
+    material = cutout;
+  }
+
+  export surface goblin_fierce: GoblinFaceSurface {
+    material = cutout;
+    texture atlas {
+      density = 2;
+      atlas = (128px, 128px);
+      background = void;
+      background_alpha = 0;
+      palette {
+        void = #000000;
+        skin = (#3c5c22, #6f9c3b, #a7cf5e);
+        skin_dark = (#2c441a, #50752b, #7ea644);
+        eye = #ffd94a;
+        glint = #fff9e6;
+        pupil = #211a14;
+        hurt_red = #d94646;
+      }
+      stamp face_neutral {
+        pixels = ".ddd..ddd./kgyk..kygk/kkdk..kdkk";
+        d = skin_dark;
+        y = eye;
+        g = glint;
+        k = pupil;
+      }
+      stamp face_blink {
+        pixels = "........../.ddd..ddd./kkkk..kkkk";
+        d = skin_dark;
+        k = pupil;
+      }
+      stamp face_fierce {
+        pixels = "dd......dd/.kygkkygk./.rrrrrrrk.";
+        d = skin_dark;
+        y = eye;
+        g = glint;
+        k = pupil;
+        r = hurt_red;
+      }
+      stamp face_hurt {
+        pixels = ".dd....dd./k..k..k..k/.rr....rr.";
+        d = skin_dark;
+        k = pupil;
+        r = hurt_red;
+      }
+      chart neutral flat {
+        fill = skin;
+        stamp face_neutral { at = (1px, 2px); protect = true; }
+      }
+      chart blink flat {
+        fill = skin;
+        stamp face_blink { at = (1px, 2px); protect = true; }
+      }
+      chart fierce flat {
+        fill = skin;
+        stamp face_fierce { at = (1px, 2px); protect = true; }
+      }
+      chart hurt flat {
+        fill = skin;
+        stamp face_hurt { at = (1px, 2px); protect = true; }
+      }
+      grain soft { seed = 4111; }
+      tone painterly;
+    }
+  }
+}

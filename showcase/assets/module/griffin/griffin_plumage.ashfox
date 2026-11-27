@@ -1,80 +1,88 @@
 ashfox 1
 module griffin_plumage {
-  import "std/core/palette/medieval" as med;
-  import "std/core/material/metal" as metal;
-
   export surface contract GriffinPlumage {
     chart haunch box { coverage = opaque; }
     chart chest box { coverage = opaque; }
     chart breast box { coverage = opaque; }
     chart mantle box { coverage = opaque; }
+    chart neck_plume box { coverage = opaque; }
     chart skull box { coverage = opaque; }
     chart beak box { coverage = opaque; }
+    chart beak_tip box { coverage = opaque; }
     chart crest box { coverage = opaque; }
-    chart crest_plume flat { coverage = opaque; }
-    chart leg box { coverage = opaque; }
-    chart paw box { coverage = opaque; }
-    chart brace box { coverage = opaque; }
+    chart crest_plume flat { coverage = binary; }
+    chart foreleg box { coverage = opaque; }
+    chart forefoot box { coverage = opaque; }
     chart talon box { coverage = opaque; }
+    chart hind_thigh box { coverage = opaque; }
+    chart hind_shin box { coverage = opaque; }
+    chart hind_paw box { coverage = opaque; }
     chart shoulder box { coverage = opaque; }
     chart wing_arm box { coverage = opaque; }
     chart feather box { coverage = opaque; }
-    chart feather_outer box { coverage = opaque; }
     chart feather_tip box { coverage = opaque; }
     chart tail_base box { coverage = opaque; }
+    chart tail_rise box { coverage = opaque; }
     chart tail_tuft box { coverage = opaque; }
     chart face_neutral flat { coverage = opaque; }
     chart face_blink flat { coverage = opaque; }
     chart face_screech flat { coverage = opaque; }
-    material = cutout;
+    material = double;
   }
 
   export surface boss_plumage: GriffinPlumage {
-    material = cutout;
+    material = double;
     texture atlas {
       density = 2;
-      background = void; background_alpha = 0;
+      background = void;
+      background_alpha = 0;
       palette {
         void = #000000;
-        gold = (metal.MetalParams.gold_shadow, metal.MetalParams.gold_base, metal.MetalParams.gold_light);
-        gold_deep = (med.GuildTimber.walnut_shadow, med.GuildTimber.walnut_base, metal.MetalParams.gold_base);
-        ivory = (#9b9789, #d9d4c2, #f8f2e2);
-        ivory_mid = (#78746a, #b0ab9d, #dbd5c5);
+        gold = (#8a5b26, #c99142, #f0c475);
+        gold_deep = (#6e481e, #9c682d, #c99142);
+        ivory = (#969184, #cfc9b6, #eae3d2);
+        ivory_mid = (#747066, #a8a395, #d1cbb9);
         beak = (#945c22, #e0a43a, #ffd66e);
-        feather = (#6d5e4e, #b8aa92, #eadfc8);
-        dark = (med.CastleStone.slate_shadow, med.CastleStone.slate_base, med.CastleStone.slate_light);
+        feather = (#6d5e4e, #b8aa92, #e5dac3);
+        dark = (#323740, #4e5561, #7d8591);
+        steel_claw = (#6a7380, #9da8b8, #d2dce8);
         eye = #223b40;
-        gleam = #58dec8;
         brow = #665848;
+        gleam = #58dec8;
       }
-      stamp breast_crest { pixels = "gggg/.gg./.mm."; g = gold; m = ivory_mid; }
-      stamp eye_neutral { pixels = "bbbb....bbbb/eeee....eeee/eeeg....geee"; b = brow; e = eye; g = gleam; }
-      stamp eye_blink { pixels = "............/bbbb....bbbb/mmmm....mmmm"; b = brow; m = ivory_mid; }
-      stamp eye_screech { pixels = "bbbb....bbbb/gggg....gggg/eeee....eeee"; b = brow; e = eye; g = gleam; }
+      stamp eye_neutral { pixels = "bbbbbb/bbbbbb/eeeeee/eeggee"; b = brow; e = eye; g = gleam; }
+      stamp eye_blink { pixels = "....../bbbbbb/mmmmmm/......"; b = brow; m = ivory_mid; }
+      stamp eye_screech { pixels = "bbbbbb/.bbbb./gggggg/eeggee"; b = brow; e = eye; g = gleam; }
+      stamp breast_crest { pixels = "gggggg/.gggg./.mggm./..mm.."; g = gold; m = ivory_mid; }
 
-      chart haunch box { fill = gold; roughness = 0.72; metallic = 0.15; grain = soft; pattern gradient { to = gold_deep; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 0.8u; } }
-      chart chest box { fill = ivory; roughness = 0.78; grain = soft; pattern gradient { to = ivory_mid; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.4; radius = 0.8u; } }
-      chart breast box { fill = gold; roughness = 0.28; metallic = 0.86; roughness_variation = 0.08; grain = brushed; face north { stamp breast_crest { at = (2px, 2px); protect = true; } } }
-      chart mantle box { fill = ivory_mid; roughness = 0.78; grain = soft; pattern border { paint = gold; width = 1px; edges = bottom; } }
+      chart haunch box { fill = gold; roughness = 0.72; metallic = 0.12; grain = soft; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart chest box { fill = ivory; roughness = 0.78; grain = soft; pattern gradient { from = ivory_mid; to = ivory; axis = y; space = local; soft = 0.12; } pattern border { paint = ivory_mid; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart breast box { fill = ivory; roughness = 0.74; grain = soft; pattern ao { strength = 0.35; radius = 0.7u; } face north { stamp breast_crest { at = (5px, 5px); protect = true; } } }
+      chart mantle box { fill = ivory_mid; roughness = 0.78; grain = soft; pattern border { paint = gold; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart neck_plume box { fill = ivory; roughness = 0.78; grain = soft; pattern gradient { from = ivory_mid; to = ivory; axis = y; space = local; soft = 0.2; } pattern ao { strength = 0.35; radius = 0.7u; } }
       chart skull box { fill = ivory; roughness = 0.76; grain = soft; pattern border { paint = feather; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart beak box { fill = beak; roughness = 0.36; metallic = 0.12; grain = none; pattern border { paint = gold_deep; width = 1px; edges = bottom; } }
-      chart crest box { fill = ivory; roughness = 0.75; grain = soft; pattern gradient { to = feather; axis = y; space = local; soft = 0.25; } }
-      chart crest_plume flat { fill = feather; roughness = 0.78; grain = soft; }
-      chart leg box { fill = beak; roughness = 0.45; grain = soft; pattern ao { strength = 0.45; radius = 0.9u; } }
-      chart paw box { fill = beak; roughness = 0.45; grain = soft; }
-      chart brace box { fill = gold; roughness = 0.72; grain = soft; }
-      chart talon box { fill = dark; roughness = 0.32; metallic = 0.45; grain = none; }
-      chart shoulder box { fill = ivory; roughness = 0.76; grain = soft; pattern border { paint = gold; width = 1px; edges = bottom; } }
-      chart wing_arm box { fill = ivory_mid; roughness = 0.76; grain = soft; pattern ao { strength = 0.35; radius = 0.7u; } }
-      chart feather box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory; width = 1px; edges = top; } }
-      chart feather_outer box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory; width = 1px; edges = top; } }
-      chart feather_tip box { fill = dark; roughness = 0.68; grain = none; pattern border { paint = feather; width = 1px; edges = top; } }
-      chart tail_base box { fill = gold; roughness = 0.72; grain = soft; pattern ao { strength = 0.4; radius = 0.8u; } }
-      chart tail_tuft box { fill = feather; roughness = 0.78; grain = soft; }
-      chart face_neutral flat { fill = ivory; stamp eye_neutral { at = (1px, 2px); protect = true; } }
-      chart face_blink flat { fill = ivory; stamp eye_blink { at = (1px, 2px); protect = true; } }
-      chart face_screech flat { fill = ivory; stamp eye_screech { at = (1px, 2px); protect = true; } }
-      grain soft { seed = 8801; }
+      chart beak box { fill = beak; roughness = 0.30; metallic = 0.25; grain = none; pattern gradient { from = gold_deep; to = beak; axis = y; space = local; soft = 0.12; } pattern border { paint = gold_deep; width = 1px; edges = bottom; } }
+      chart beak_tip box { fill = beak; roughness = 0.26; metallic = 0.35; grain = none; pattern border { paint = dark; width = 1px; edges = bottom; } }
+      chart crest box { fill = ivory; roughness = 0.75; grain = soft; pattern gradient { to = feather; axis = y; space = local; soft = 0.25; } pattern border { paint = dark; width = 1px; edges = top; } }
+      chart crest_plume flat { fill = feather; coverage = 0000110000011110001111100111111111111110111111001111100011100000; roughness = 0.78; grain = soft; pattern gradient { to = ivory; axis = y; space = local; soft = 0.25; } }
+      chart foreleg box { fill = beak; roughness = 0.42; grain = none; pattern gradient { from = gold_deep; to = beak; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart forefoot box { fill = beak; roughness = 0.42; grain = none; pattern border { paint = gold_deep; width = 1px; edges = bottom; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart talon box { fill = steel_claw; roughness = 0.26; metallic = 0.78; roughness_variation = 0.06; grain = brushed; pattern border { paint = dark; width = 1px; edges = top; } }
+      chart hind_thigh box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart hind_shin box { fill = gold_deep; roughness = 0.74; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = model; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart hind_paw box { fill = gold; roughness = 0.74; grain = none; pattern border { paint = gold_deep; width = 1px; edges = bottom; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart shoulder box { fill = ivory; roughness = 0.76; grain = soft; pattern border { paint = gold; width = 1px; edges = bottom; } pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart wing_arm box { fill = ivory_mid; roughness = 0.76; grain = none; pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart feather box { fill = feather; roughness = 0.80; grain = soft; pattern border { paint = ivory_mid; width = 1px; edges = top; } pattern ao { strength = 0.35; radius = 0.7u; } }
+      chart feather_tip box { fill = dark; roughness = 0.68; grain = none; pattern gradient { to = steel_claw; axis = y; space = local; soft = 0.25; } pattern border { paint = feather; width = 1px; edges = top; } }
+      chart tail_base box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } pattern ao { strength = 0.45; radius = 1u; } }
+      chart tail_rise box { fill = gold; roughness = 0.72; grain = none; pattern gradient { from = gold_deep; to = gold; axis = y; space = local; soft = 0.12; } }
+      chart tail_tuft box { fill = dark; roughness = 0.78; grain = soft; pattern gradient { to = feather; axis = y; space = local; soft = 0.25; } pattern border { paint = gold; width = 1px; edges = bottom; } }
+      chart face_neutral flat { fill = ivory; stamp eye_neutral { at = (2px, 2px); protect = true; } }
+      chart face_blink flat { fill = ivory; stamp eye_blink { at = (2px, 2px); protect = true; } }
+      chart face_screech flat { fill = ivory; stamp eye_screech { at = (2px, 2px); protect = true; } }
+
+      grain soft { seed = 7319; }
       tone painterly;
     }
   }
