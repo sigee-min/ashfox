@@ -34,8 +34,10 @@ export {
   cubeUnrotatedBounds,
   evalPolygonFaceUvs,
   expressionSlotName,
+  expressionSlotPlacement,
   expressionVariantName,
   isExpressionVariantNode,
+  type ExpressionPlacement,
   type ModelAabb,
   type ModelBoxCollider,
   type ModelCapsuleCollider,
@@ -331,6 +333,7 @@ export type { JavaResourcePack, GameAssetPack, DirectoryPack } from './project/d
 export {
   DEFAULT_AUDIT_THRESHOLD,
   evaluateAssetQuality,
+  evaluateCraftFloor,
   formatDeliveryGateFailure,
   type AuditDeduction,
   type AuditGateId,
@@ -342,6 +345,9 @@ export {
   type AuditProfileSource,
   type AuditReport,
   type AuditSubmetric,
+  type CraftCheckId,
+  type CraftFloorCheck,
+  type CraftFloorReport,
   type QualityGrade,
 } from './audit';
 export {

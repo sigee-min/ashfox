@@ -1,8 +1,21 @@
+import type { Vec3 } from '../../../model/identity';
 import { composeAssetFrames, type AssetExactFrame, type AssetExactUnitVector } from './frame';
 import { identityTypedFrame } from './hirFrames';
-import type { InstantiatedAssetIr, InstantiatedBone, InstantiatedSocketConnection } from './ir';
+import type {
+  InstantiatedAssetIr,
+  InstantiatedBone,
+  InstantiatedGeometryNode,
+  InstantiatedSocketConnection,
+} from './ir';
 import { assetNumberValue, assetVectorValue } from './value/contract';
-import { addExact, exactVector, type Context, type GeometryRecord } from './geometrySupport';
+import {
+  NUMBER_BOUNDARY,
+  addExact,
+  exactToVector3,
+  exactVector,
+  type Context,
+  type GeometryRecord,
+} from './geometrySupport';
 
 /** Canonical pivots are an unrotated bind layout; runtimes subtract parent pivots. */
 export const appendBindLayout = (
@@ -155,6 +168,45 @@ const resolveConnectionFrame = (
   return layout === null ? null : { ...connection.parentPlacement, origin: layout.origin };
 };
 
+export interface ParentSolidBounds {
+  readonly min: Vec3;
+  readonly max: Vec3;
+}
+
+const solidBoxBoundsFromProps = (
+  node: InstantiatedGeometryNode,
+  context: Context,
+): ParentSolidBounds | null => {
+  const originProp = node.properties.find((p) => p.name === 'origin');
+  const sizeProp = node.properties.find((p) => p.name === 'size');
+  if (!originProp || !sizeProp) return null;
+  const oEx = exactVector(originProp, 'vec3<unit>', context, node.sourcePath, node.span);
+  const sEx = exactVector(sizeProp, 'vec3<unit>', context, node.sourcePath, node.span);
+  if (!oEx || !sEx) return null;
+  const o = exactToVector3(oEx, NUMBER_BOUNDARY, context, node.sourcePath, node.span);
+  const s = exactToVector3(sEx, NUMBER_BOUNDARY, context, node.sourcePath, node.span);
+  if (!o || !s) return null;
+  return {
+    min: [Math.min(o[0], o[0] + s[0]), Math.min(o[1], o[1] + s[1]), Math.min(o[2], o[2] + s[2])],
+    max: [Math.max(o[0], o[0] + s[0]), Math.max(o[1], o[1] + s[1]), Math.max(o[2], o[2] + s[2])],
+  };
+};
+
+const resolveParentSolidBounds = (
+  parentId: string,
+  shiftedRecords: readonly GeometryRecord[],
+  parentFor: (record: GeometryRecord) => string | null,
+  context: Context,
+): ParentSolidBounds | undefined => {
+  const solids = shiftedRecords.filter(
+    (r) =>
+      (r.node.kind === 'cube' || r.node.kind === 'taper' || r.node.kind === 'wedge') &&
+      parentFor(r) === parentId,
+  );
+  const preferred = solids.find((r) => /(?:^|\/)(?:skull|head)$/i.test(r.node.id)) ?? solids[0];
+  return preferred ? (solidBoxBoundsFromProps(preferred.node, context) ?? undefined) : undefined;
+};
+
 /** Socket-owned geometry is component-local; translate its bind layout once. */
 export const createGeometryLayout = (
   ir: InstantiatedAssetIr,
@@ -177,9 +229,16 @@ export const createGeometryLayout = (
     cache: new Map<string, Layout | null>(),
     active: new Set<string>(),
   };
+  let shiftedCache: readonly GeometryRecord[] | null = null;
   return {
     shifted: (record: GeometryRecord): GeometryRecord | null => shiftRecord(record, state),
     connectionFrame: (connection: InstantiatedSocketConnection): AssetExactFrame | null =>
       resolveConnectionFrame(connection, state),
+    parentSolidBounds: (parentId: string): ParentSolidBounds | undefined => {
+      shiftedCache ??= records
+        .filter((r) => r.node.kind !== 'face')
+        .map((r) => shiftRecord(r, state) ?? r);
+      return resolveParentSolidBounds(parentId, shiftedCache, parentFor, context);
+    },
   };
 };

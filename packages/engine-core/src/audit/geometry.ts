@@ -135,6 +135,7 @@ const cubeObb = (
     false,
     false,
     opaque,
+    'cube',
   );
 };
 
@@ -169,6 +170,7 @@ const planeObb = (
     true,
     !isCutoutPlane(node, textures) && !isExpressionVariantNode(node),
     false,
+    'plane',
   );
 };
 

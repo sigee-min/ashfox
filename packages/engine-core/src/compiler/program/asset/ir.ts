@@ -80,6 +80,7 @@ export interface InstantiatedGeometryNode {
   readonly uvMirrorX?: boolean;
   readonly axis?: 'x' | 'y' | 'z';
   readonly slope?: 'north' | 'south' | 'east' | 'west';
+  readonly placement?: 'front' | 'lateral_pair' | 'corner_wrap';
   readonly expressionVariants?: readonly InstantiatedExpressionVariant[];
   readonly sourcePath: string;
   readonly span: SourceSpan;

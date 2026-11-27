@@ -2,9 +2,8 @@ import { compareText } from '../../../stableOrder';
 import { deepFreeze } from '../../../immutable';
 import { createGeometryLayout } from './canonicalLayout';
 import { lowerExpressionSlot, lowerPlane } from './canonicalPlane';
-import { lowerCube, lowerLocator, lowerPrivateBone } from './canonicalShapes';
+import { lowerCube, lowerGeometryBone, lowerLocator } from './canonicalShapes';
 import { lowerCustomPrimRecord } from './canonicalPrim';
-import { lowerAssetFrameToBoneTransform } from './frameLower';
 import type { SourceSpan } from '../../../project/source/contract';
 import type { EntityId } from '../../../model/identity';
 import type { SceneNode } from '../../../model/scene';
@@ -368,39 +367,9 @@ const groupSurfaces = (ir: InstantiatedAssetIr): SurfaceBindings => {
   return surfaces;
 };
 
-const lowerGeometryBone = (
-  record: GeometryRecord,
-  parent: string,
-  layout: ReturnType<typeof createGeometryLayout>,
-  connections: ReadonlyMap<string, InstantiatedSocketConnection>,
-  context: Context,
-): SceneNode | null => {
-  const connection = connections.get(record.node.id);
-  if (connection === undefined) return lowerPrivateBone(record, parent, context);
-  const frame = layout.connectionFrame(connection);
-  const transform = frame === null ? null : lowerAssetFrameToBoneTransform(frame);
-  if (transform !== null) {
-    return {
-      id: record.node.id,
-      kind: 'bone',
-      name: record.node.id,
-      parentId: parent,
-      transform,
-      visible: true,
-    };
-  }
-  report(
-    context,
-    record.node.sourcePath,
-    connection.span,
-    'asset.connection-frame',
-    'Socket local placement has no canonical transform.',
-  );
-  return null;
-};
-
 const lowerRecordNodes = (
   rawRecord: GeometryRecord,
+  forward: 'north' | 'south' | 'east' | 'west',
   layout: ReturnType<typeof createGeometryLayout>,
   connections: ReadonlyMap<string, InstantiatedSocketConnection>,
   parentFor: (record: GeometryRecord) => string | null,
@@ -422,8 +391,10 @@ const lowerRecordNodes = (
   const parent = parentFor(record);
   if (parent === null) return [];
   const kind = record.node.kind;
-  if (kind === 'expression_slot')
-    return lowerExpressionSlot(record, parent, surfaces, planMap, context);
+  if (kind === 'expression_slot') {
+    const bounds = layout.parentSolidBounds(parent);
+    return lowerExpressionSlot(record, parent, surfaces, planMap, context, forward, bounds);
+  }
   let one: SceneNode | null = null;
   if (kind === 'bone') one = lowerGeometryBone(record, parent, layout, connections, context);
   else if (kind === 'cube') one = lowerCube(record, parent, surfaces, planMap, context);
@@ -456,7 +427,16 @@ const lowerAssetGeometryChecked = (
     .filter((c) => c.node.kind !== 'face')
     .sort((l, r) => compareText(l.node.id, r.node.id));
   const output = sorted.flatMap((rec) =>
-    lowerRecordNodes(rec, layout, connections, parentFor, surfaces, planMap, context),
+    lowerRecordNodes(
+      rec,
+      ir.settings.forward,
+      layout,
+      connections,
+      parentFor,
+      surfaces,
+      planMap,
+      context,
+    ),
   );
   if (context.failed) return null;
   return deepFreeze({
