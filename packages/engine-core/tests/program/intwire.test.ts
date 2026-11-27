@@ -410,6 +410,75 @@ structure east_wall_line_test {
     [9, 1, 3],
     'Second east wall_line shelf must advance by rotated span 2 to [9,1,3]',
   );
+
+  // Verify place prefab frame transforms deferred interior coordinates and anchors, and yaw rotates solver occupancy.
+  const hostSrc = `ashfox 1
+structure placed_host {
+  size = (28b, 10b, 20b);
+  palette { grass = "minecraft:grass_block"; stone = "minecraft:stone_bricks"; oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  box { from = (0b, 0b, 0b); to = (27b, 0b, 19b); block = grass; }
+  prefab wing {
+    floor f { y = 0b; height = 7b;
+      room r { from = (1b, 1b); size = (8b, 8b); kind = living; floor = oak; wall = stone; ceiling = oak;
+        interior {
+          dna { arch = rustic; organic = 0; }
+          platform dais { from = (2, 2); size = (3, 2); height = 0.25; }
+          mezzanine loft { on = north; depth = 2; y_offset = 4; railing = timber; }
+        }
+      }
+      facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+    }
+  }
+  place wing { at = (15b, 0b, 3b); rotate = 90; }
+}`;
+  const placedProd = compileStructureUnits(
+    'host.ashfox',
+    new Map([['host.ashfox', parseStructureSource(hostSrc, 'host.ashfox')]]),
+    {},
+    rel,
+  );
+  const placedRoom = placedProd.grid.interiors![0]!;
+  const placedDais = placedRoom.ir.boxes.find((b) => b.semantic_tag === 'volume_platform')!;
+  const [rb0, rb1] = [placedRoom.input.bounds_from, placedRoom.input.bounds_to];
+  const inBounds =
+    placedDais.from_16[0] >= rb0[0] * 16 &&
+    placedDais.to_16[0] <= rb1[0] * 16 &&
+    placedDais.from_16[2] >= rb0[2] * 16 &&
+    placedDais.to_16[2] <= rb1[2] * 16;
+  assert.equal(inBounds, true);
+  const placedLoft = placedRoom.input.volumes.find((v) => v.kind === 'mezzanine');
+  assert.equal(placedLoft?.kind === 'mezzanine' ? placedLoft.on : undefined, 'east');
+
+  const yawCollisionSrc = `ashfox 1
+structure yaw_col {
+  size = (11b, 8b, 11b);
+  palette { oak = "minecraft:oak_planks"; door = "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false]"; }
+  floor f { y = 0b; height = 6b;
+    room r { from = (0b, 0b); size = (11b, 11b); kind = living; floor = oak; wall = oak; ceiling = oak;
+      interior {
+        dna { arch = rustic; organic = 0; }
+        table t_rot { at = (4, 1, 4); size = (3, 1); facing = north; rotation_deg = 90; }
+        cabinet cab_hit { at = (5, 1, 3); size = (1, 1); facing = south; }
+      }
+    }
+    facade r.south { door { at = center; width = 1b; height = 2b; block = door; } }
+  }
+}`;
+  const yawProd = compileStructureUnits(
+    'yaw.ashfox',
+    new Map([['yaw.ashfox', parseStructureSource(yawCollisionSrc, 'yaw.ashfox')]]),
+    {},
+    rel,
+  );
+  const yawRoom = yawProd.grid.interiors![0]!;
+  const yawCab = yawRoom.playable_meta.hooks.find(
+    (h) => h.kind === 'hinge' && h.target_id === 'cab_hit',
+  )!;
+  assert.equal(Math.floor(yawCab.position[0]) === 5 && Math.floor(yawCab.position[2]) === 3, false);
+  assert.equal(
+    yawRoom.ir.clear_path_cells.some((c) => c[0] === 5 && c[2] === 3),
+    false,
+  );
   console.log('ashfox interior wiring integration tests ok');
 };
 

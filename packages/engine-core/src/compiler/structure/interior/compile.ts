@@ -6,10 +6,11 @@ import {
   type StructureRoomMeta,
 } from '../contract';
 import { putVoxel, resolvePaletteEntry } from '../jigsaw';
-import type { EvalState } from '../weathering';
+import type { EvalState, FrameTransform } from '../weathering';
 import { evaluateInteriorAudit } from './audit';
 import type { InteriorRoomInput, InteriorSubVoxelIR } from './contract';
 import type { CompiledInteriorRoom, CustomPropMount } from './types';
+import { transformInteriorOpByFrame } from './frameOp';
 import { lowerInteriorAstToInput } from './lowerAst';
 import { lowerInteriorToVanillaNbt } from './nbtLower';
 import { computeInteriorRadiosity } from './radiosity';
@@ -317,20 +318,25 @@ const compileSingleInterior = (
 /** Compiles all declared ashfox 1 interior ops against evaluated rooms & openings. */
 export const compileEvaluatedInteriors = (
   state: EvalState,
-  specs: readonly { readonly ownerPath: string; readonly op: InteriorRoomOp }[],
+  specs: readonly {
+    readonly ownerPath: string;
+    readonly op: InteriorRoomOp;
+    readonly frame?: FrameTransform;
+  }[],
   rooms: readonly StructureRoomMeta[],
   openings: readonly StructureOpeningMeta[],
 ): readonly CompiledInteriorRoom[] => {
   const roomMap = new Map(rooms.map((r) => [r.name, r]));
   const out: CompiledInteriorRoom[] = [];
-  for (const { ownerPath, op } of specs) {
+  for (const { ownerPath, op, frame } of specs) {
     const targetName = op.room ?? rooms[0]?.name;
     const room = targetName ? roomMap.get(targetName) : undefined;
     if (!room) {
       throw new Error(`Unknown interior target room "${targetName ?? ''}" in ${ownerPath}`);
     }
     const roomOpenings = openings.filter((o) => o.room === room.name);
-    out.push(compileSingleInterior(state, ownerPath, op, room, roomOpenings, rooms));
+    const transformedOp = frame ? transformInteriorOpByFrame(op, frame, room) : op;
+    out.push(compileSingleInterior(state, ownerPath, transformedOp, room, roomOpenings, rooms));
   }
   return out;
 };

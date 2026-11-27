@@ -17,7 +17,8 @@ import { compileInteriorProps, type CustomPropMount } from './props';
 import { hashSeed01 } from './propsGeo';
 import { compileStoryVignette } from './vignettes';
 import {
-  diningChairCellOffsets,
+  boxCellRange16,
+  propFootprintCoords,
   resolvePartitionDoorway,
   resolveZoneRect,
   type ZoneFootprint,
@@ -195,10 +196,7 @@ const markBoxOnGrid = (
 ): void => {
   const { blocksWalk, ceilingTop16 } = boxHeightClearance(box, floorY16);
   if (!blocksWalk && ceilingTop16 === null) return;
-  const bx0 = Math.floor(box.from_16[0] / SUBVOXEL_UNITS_PER_BLOCK);
-  const bx1 = Math.floor((box.to_16[0] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
-  const bz0 = Math.floor(box.from_16[2] / SUBVOXEL_UNITS_PER_BLOCK);
-  const bz1 = Math.floor((box.to_16[2] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
+  const [bx0, bz0, bx1, bz1] = boxCellRange16(box);
   for (let z = bz0; z <= bz1; z += 1) {
     for (let x = bx0; x <= bx1; x += 1) {
       markCellForBox(cellKey(x, z), blocksWalk, ceilingTop16, blocked, ceilMap);
@@ -333,21 +331,6 @@ export const validateClearPath = (
   };
 };
 
-const footprintCoords = (
-  spec: InteriorPropSpec,
-  x: number,
-  z: number,
-): readonly (readonly [number, number])[] => {
-  const [wB, dB] = spec.size ?? [1, 1];
-  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
-  const out: [number, number][] = [];
-  for (let dz = 0; dz < rd; dz += 1) {
-    for (let dx = 0; dx < rw; dx += 1) out.push([x + dx, z + dz]);
-  }
-  for (const [rx, rz] of diningChairCellOffsets(spec)) out.push([x + rx, z + rz]);
-  return out;
-};
-
 const canPlacePropAt = (
   spec: InteriorPropSpec,
   x: number,
@@ -358,7 +341,7 @@ const canPlacePropAt = (
   winClear: ReadonlySet<string>,
   stairCells: ReadonlySet<string>,
 ): boolean => {
-  const coords = footprintCoords(spec, x, z);
+  const coords = propFootprintCoords(spec, x, z);
   const allowWindow = !TALL_WALL_PROPS.has(spec.kind);
   const highMount = spec.mount_on === 'wall' || spec.mount_on === 'ceiling';
   return coords.every(([cx, cz]) => {
@@ -401,10 +384,7 @@ const findCandidatePlacement = (
 };
 
 const addStructuralBoxCells = (box: SubVoxelBoxIR, occupied: Set<string>): void => {
-  const bx0 = Math.floor(box.from_16[0] / SUBVOXEL_UNITS_PER_BLOCK);
-  const bx1 = Math.floor((box.to_16[0] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
-  const bz0 = Math.floor(box.from_16[2] / SUBVOXEL_UNITS_PER_BLOCK);
-  const bz1 = Math.floor((box.to_16[2] - 0.01) / SUBVOXEL_UNITS_PER_BLOCK);
+  const [bx0, bz0, bx1, bz1] = boxCellRange16(box);
   for (let z = bz0; z <= bz1; z += 1) {
     for (let x = bx0; x <= bx1; x += 1) occupied.add(cellKey(x, z));
   }
@@ -440,7 +420,7 @@ const resolvePropSpecs = (
     const nudged = rx !== Math.round(spec.at[0]) || rz !== Math.round(spec.at[2]);
     const nextAt: Vec3 = nudged ? [rx, spec.at[1], rz] : spec.at;
     if (spec.mount_on !== 'wall' && spec.mount_on !== 'ceiling') {
-      for (const [cx, cz] of footprintCoords(spec, rx, rz)) occupied.add(cellKey(cx, cz));
+      for (const [cx, cz] of propFootprintCoords(spec, rx, rz)) occupied.add(cellKey(cx, cz));
     }
     resolvedSpecs.push({ ...spec, at: nextAt });
     placements.push({ id: spec.id, original_at: spec.at, resolved_at: nextAt, nudged });

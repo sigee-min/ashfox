@@ -11,6 +11,7 @@ import type {
   StructureGrid,
   StructureSocketMeta,
 } from './contract';
+import { rotatedBoxBounds16 } from './interior/zoneRect';
 
 type ColliderMaterial = PlayableCollider['material'];
 
@@ -358,29 +359,6 @@ const NON_COLLIDING_INTERIOR_TAGS =
 
 const isCollidingInteriorBox = (tag: string): boolean =>
   !NON_COLLIDING_INTERIOR_TAGS.some((p) => tag.startsWith(p));
-
-const rotatedBoxBounds16 = (
-  box: NonNullable<StructureGrid['interiors']>[number]['ir']['boxes'][number],
-): readonly [number, number, number, number] => {
-  const [x0, , z0] = box.from_16;
-  const [x1, , z1] = box.to_16;
-  const rad = ((box.rotation_y_deg ?? 0) * Math.PI) / 180;
-  if (!box.pivot_16 || Math.abs(rad) <= 1e-4) return [x0, z0, x1, z1];
-  const [px, , pz] = box.pivot_16;
-  const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
-  let [minX, minZ, maxX, maxZ] = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const cx of [x0, x1]) {
-    for (const cz of [z0, z1]) {
-      const rx = px + (cx - px) * cos - (cz - pz) * sin;
-      const rz = pz + (cx - px) * sin + (cz - pz) * cos;
-      minX = Math.min(minX, rx);
-      minZ = Math.min(minZ, rz);
-      maxX = Math.max(maxX, rx);
-      maxZ = Math.max(maxZ, rz);
-    }
-  }
-  return [minX, minZ, maxX, maxZ];
-};
 
 const collectInteriorColliders = (grid: StructureGrid): readonly PlayableCollider[] => {
   const [w, , d] = grid.size;

@@ -1,12 +1,13 @@
 import type { CardinalFacing, IntVec2 } from '../../../project/structure/contract';
-import type {
-  InteriorPropSpec,
-  InteriorRoomInput,
-  InteriorVolumeSpec,
-  MezzanineVolumeSpec,
-  PartitionVolumeSpec,
-  PlatformVolumeSpec,
-  VolumeAnchor,
+import {
+  SUBVOXEL_UNITS_PER_BLOCK,
+  type InteriorPropSpec,
+  type InteriorRoomInput,
+  type InteriorVolumeSpec,
+  type MezzanineVolumeSpec,
+  type PartitionVolumeSpec,
+  type PlatformVolumeSpec,
+  type VolumeAnchor,
 } from './contract';
 
 export interface VolumeRect {
@@ -176,4 +177,87 @@ export const resolveMezzanineYOffset = (
   const [iy0, iy1] = [room.bounds_from[1] + 1, room.bounds_to[1] - 1];
   const fallback = Math.max(3, Math.floor((iy1 - iy0 + 1) * 0.5));
   return Math.max(2, Math.min(iy1 - iy0 - 1, requestedYOffsetB ?? fallback));
+};
+
+export interface RotatableBox16 {
+  readonly from_16: readonly [number, number, number];
+  readonly to_16: readonly [number, number, number];
+  readonly pivot_16?: readonly [number, number, number];
+  readonly rotation_y_deg?: number;
+}
+
+/** Computes world XZ sub-voxel AABB [minX, minZ, maxX, maxZ] after Y-rotation around pivot_16. */
+export const rotatedBoxBounds16 = (
+  box: RotatableBox16,
+): readonly [number, number, number, number] => {
+  const [x0, , z0] = box.from_16;
+  const [x1, , z1] = box.to_16;
+  const rad = ((box.rotation_y_deg ?? 0) * Math.PI) / 180;
+  if (!box.pivot_16 || Math.abs(rad) <= 1e-4) return [x0, z0, x1, z1];
+  const [px, , pz] = box.pivot_16;
+  const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
+  let [minX, minZ, maxX, maxZ] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const cx of [x0, x1]) {
+    for (const cz of [z0, z1]) {
+      const rx = px + (cx - px) * cos - (cz - pz) * sin;
+      const rz = pz + (cx - px) * sin + (cz - pz) * cos;
+      minX = Math.min(minX, rx);
+      minZ = Math.min(minZ, rz);
+      maxX = Math.max(maxX, rx);
+      maxZ = Math.max(maxZ, rz);
+    }
+  }
+  return [minX, minZ, maxX, maxZ];
+};
+
+/** Returns inclusive block cell [bx0, bz0, bx1, bz1] range overlapped by a possibly yawed box. */
+export const boxCellRange16 = (box: RotatableBox16): readonly [number, number, number, number] => {
+  const u = SUBVOXEL_UNITS_PER_BLOCK;
+  const [rx0, rz0, rx1, rz1] = rotatedBoxBounds16(box);
+  return [
+    Math.floor(rx0 / u),
+    Math.floor(rz0 / u),
+    Math.floor((rx1 - 0.01) / u),
+    Math.floor((rz1 - 0.01) / u),
+  ];
+};
+
+const rotatePointXZ = (
+  x: number,
+  z: number,
+  px: number,
+  pz: number,
+  deg: number,
+): readonly [number, number] => {
+  const rad = (deg * Math.PI) / 180;
+  if (Math.abs(rad) <= 1e-4) return [x, z];
+  const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
+  return [px + (x - px) * cos - (z - pz) * sin, pz + (x - px) * sin + (z - pz) * cos];
+};
+
+/** Returns occupied block coordinates for a prop at [x, z], including explicit yaw and dining chairs. */
+export const propFootprintCoords = (
+  spec: InteriorPropSpec,
+  x: number,
+  z: number,
+): readonly (readonly [number, number])[] => {
+  const [wB, dB] = spec.size ?? [1, 1];
+  const [rw, rd] = spec.facing === 'east' || spec.facing === 'west' ? [dB, wB] : [wB, dB];
+  const u = SUBVOXEL_UNITS_PER_BLOCK;
+  const yaw = spec.rotation_deg ?? 0;
+  const [bx0, bz0, bx1, bz1] = boxCellRange16({
+    from_16: [x * u, 0, z * u],
+    to_16: [(x + rw) * u, u, (z + rd) * u],
+    pivot_16: [(x + rw / 2) * u, 0, (z + rd / 2) * u],
+    rotation_y_deg: yaw,
+  });
+  const out: [number, number][] = [];
+  for (let cz = bz0; cz <= bz1; cz += 1) {
+    for (let cx = bx0; cx <= bx1; cx += 1) out.push([cx, cz]);
+  }
+  for (const [rx, rz] of diningChairCellOffsets(spec)) {
+    const [cx, cz] = rotatePointXZ(x + rx + 0.5, z + rz + 0.5, x + rw / 2, z + rd / 2, yaw);
+    out.push([Math.floor(cx), Math.floor(cz)]);
+  }
+  return out;
 };

@@ -115,7 +115,8 @@ const evalRoomOp = (
   emitRoomJetty(state, ownerPath, op, bounds, exp.edges, frame);
   state.rooms.set(op.name, meta);
   state.stats.roomCount += 1;
-  if (op.interior) state.interiorSpecs.push({ ownerPath, op: { ...op.interior, room: op.name } });
+  if (op.interior)
+    state.interiorSpecs.push({ ownerPath, op: { ...op.interior, room: op.name }, frame });
 };
 
 const evalFloorOp = (

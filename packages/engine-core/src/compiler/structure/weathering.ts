@@ -48,7 +48,11 @@ export interface EvalState {
   readonly socketIds: Set<string>;
   readonly roofCells: IntVec3[];
   readonly chimneyTops: IntVec3[];
-  readonly interiorSpecs: { readonly ownerPath: string; readonly op: InteriorRoomOp }[];
+  readonly interiorSpecs: {
+    readonly ownerPath: string;
+    readonly op: InteriorRoomOp;
+    readonly frame?: FrameTransform;
+  }[];
   readonly childInteriors: CompiledInteriorRoom[];
   currentFloor: StructureFloorMeta | null;
   hasRoofTrim: boolean;
