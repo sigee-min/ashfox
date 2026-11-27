@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, suggestUnit } from '../../source/suggest';
 import type {
   ProgramBinaryOperator,
   ProgramCallExpr,
@@ -21,7 +22,7 @@ export interface ProgramExpressionReader {
   readonly take: () => ProgramToken;
   readonly check: (value: string) => boolean;
   readonly match: (value: string) => boolean;
-  readonly fail: (code: string, message: string, token?: ProgramToken) => void;
+  readonly fail: (code: string, message: string, token?: ProgramToken, hint?: string) => void;
   /** Optional parser-wide recursion accounting for fail-closed readers. */
   readonly enterDepth?: () => void;
   readonly leaveDepth?: () => void;
@@ -150,6 +151,12 @@ const items = (reader: Reader, values: ProgramExpr[], close: string): ProgramTok
   return reader.check(close) ? reader.take() : reader.current();
 };
 
+const numberDenominator = (denominator: bigint, rawUnit: string): bigint => {
+  if (rawUnit === 'ms') return denominator * 1000n;
+  if (rawUnit === '%') return denominator * 100n;
+  return denominator;
+};
+
 const numberLiteral = (reader: Reader, token: ProgramToken): ProgramExpr => {
   reader.take();
   const match = /^([0-9]+(?:\.[0-9]+)?|\.[0-9]+)([A-Za-z%]*)$/.exec(token.value);
@@ -159,23 +166,18 @@ const numberLiteral = (reader: Reader, token: ProgramToken): ProgramExpr => {
   if (match === null || parsed === null) {
     reader.fail('program.invalid-number', 'Numeric literals must be finite.', token);
   } else if (unit === undefined) {
+    const suggested = suggestUnit(rawUnit, Object.keys(UNITS).filter(Boolean));
     reader.fail(
       'program.invalid-number-unit',
-      'Unsupported numeric unit "' + rawUnit + '".',
+      `Unsupported numeric unit "${rawUnit}".${suggested ? ` Did you mean "${suggested}"?` : ''}`,
       token,
+      docsHint('model'),
     );
   }
   return freeze({
     kind: 'number',
     numerator: parsed?.numerator ?? 0n,
-    denominator:
-      parsed === null
-        ? 1n
-        : rawUnit === 'ms'
-          ? parsed.denominator * 1000n
-          : rawUnit === '%'
-            ? parsed.denominator * 100n
-            : parsed.denominator,
+    denominator: parsed === null ? 1n : numberDenominator(parsed.denominator, rawUnit),
     text: match?.[1] ?? '0',
     unit: unit ?? 'plain',
     rawUnit,

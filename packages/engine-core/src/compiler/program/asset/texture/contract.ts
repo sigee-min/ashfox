@@ -92,4 +92,5 @@ export type AssetTextureIssue = (
   span: SourceSpan,
   code: string,
   message: string,
+  hint?: string,
 ) => void;

@@ -174,7 +174,8 @@ const materializeSelectedSurfaces = (
       item.contract,
       surfaceUsages,
       item.path,
-      (path, span, code, message) => addIssue(diagnostics, seen, { path, span }, code, message),
+      (path, span, code, message, hint) =>
+        addIssue(diagnostics, seen, { path, span }, code, message, hint),
       scene,
     );
     if (plan === null) {

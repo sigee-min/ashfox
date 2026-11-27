@@ -11,6 +11,7 @@ import type {
   AssetPropertyDecl,
   AssetSecondaryDecl,
 } from './contract';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import { isOneOf, join, readBraced, readProperty, type AssetReader } from './parserSupport';
 
 export const CURVE_NAMES: readonly AssetCurveName[] = [
@@ -34,8 +35,9 @@ export const readChannelName = (reader: AssetReader, scope: string): AssetMotion
   if (isOneOf(['position', 'rotation', 'scale'] as const, token.value)) return token.value;
   reader.fail(
     'asset.invalid-motion-property',
-    `Unsupported motion channel "${token.value}". Expected position, rotation, or scale.`,
+    `Unsupported motion channel "${token.value}". Expected position, rotation, or scale.${formatDidYouMean(token.value, ['position', 'rotation', 'scale'])}`,
     token,
+    docsHint('motion'),
   );
   return 'rotation';
 };
@@ -57,7 +59,12 @@ export const readMotionIk = (reader: AssetReader): AssetMotionIkDecl => {
     () => {
       const prop = reader.id('Expected foot_lock or contact in ik block.');
       if (prop.value !== 'foot_lock' && prop.value !== 'contact') {
-        reader.fail('asset.invalid-property', `Unknown ik property "${prop.value}".`, prop);
+        reader.fail(
+          'asset.invalid-property',
+          `Unknown ik property "${prop.value}".${formatDidYouMean(prop.value, ['foot_lock', 'contact'])}`,
+          prop,
+          docsHint('motion'),
+        );
       }
       reader.expect('=', 'Expected = in foot_lock.');
       const startExpr = reader.expression();
@@ -81,8 +88,9 @@ export const readSecondary = (reader: AssetReader): AssetSecondaryDecl => {
   if (kindToken.value !== 'chain' && kindToken.value !== 'joint') {
     reader.fail(
       'asset.invalid-property',
-      'Expected secondary chain or secondary joint.',
+      `Expected secondary chain or secondary joint.${formatDidYouMean(kindToken.value, ['chain', 'joint'])}`,
       kindToken,
+      docsHint('motion'),
     );
   }
   const targetId = reader.id('Expected chain or joint identifier.');
@@ -115,7 +123,12 @@ const readCombatEntry = (
   if (reader.match('..')) {
     const endVal = reader.expression();
     if (key === 'at' || key === 'range') return Object.freeze([val, endVal] as const);
-    reader.failSpan('asset.invalid-property', `Range not allowed for "${key}".`, keySpan);
+    reader.failSpan(
+      'asset.invalid-property',
+      `Range not allowed for "${key}".`,
+      keySpan,
+      docsHint('motion'),
+    );
     return null;
   }
   properties.push(
@@ -180,11 +193,21 @@ export const readCue = (reader: AssetReader): AssetCueDecl => {
     ? kindTok.value
     : 'event';
   if (!isOneOf(['sound', 'vfx', 'event'] as const, kindTok.value)) {
-    reader.fail('asset.invalid-property', `Unknown cue kind "${kindTok.value}".`, kindTok);
+    reader.fail(
+      'asset.invalid-property',
+      `Unknown cue kind "${kindTok.value}".${formatDidYouMean(kindTok.value, ['sound', 'vfx', 'event'])}`,
+      kindTok,
+      docsHint('motion'),
+    );
   }
   const nameTok = reader.current();
   if (nameTok.kind !== 'string')
-    reader.fail('asset.invalid-cue-name', 'Cue name must be a quoted string.', nameTok);
+    reader.fail(
+      'asset.invalid-cue-name',
+      'Cue name must be a quoted string.',
+      nameTok,
+      docsHint('motion'),
+    );
   else reader.take();
   let anchor: string | null = null;
   if (reader.checkWord('at')) {

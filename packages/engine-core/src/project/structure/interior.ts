@@ -60,7 +60,7 @@ const readOptEnum = (
 ) => {
   if (v === undefined) return undefined;
   if (typeof v === 'string' && allowed.has(v)) return v;
-  return failAst(file, span, label, String(v));
+  return failAst(file, span, label, String(v), [...allowed]);
 };
 
 const parseDnaRecord = (
@@ -70,7 +70,7 @@ const parseDnaRecord = (
 ): InteriorDnaAst => {
   for (const key of Object.keys(raw)) {
     if (key !== 'arch' && key !== 'furn' && key !== 'mood' && key !== 'organic') {
-      failAst(file, span, 'dna attribute', key);
+      failAst(file, span, 'dna attribute', key, ['arch', 'furn', 'mood', 'organic']);
     }
   }
   const arch = readOptEnum(raw.arch, ARCHES, file, span, 'dna.arch') as
@@ -234,7 +234,7 @@ const consumeInteriorBlock = (stmt: AshfoxNamedBlock, d: InteriorDraft): void =>
     );
     return;
   }
-  failAst(d.file, stmt.span, 'interior directive', stmt.blockKind);
+  failAst(d.file, stmt.span, 'interior directive', stmt.blockKind, Object.keys(BLOCK_DISPATCH));
 };
 
 const consumeInteriorStmt = (stmt: AshfoxStatement, d: InteriorDraft): void => {
@@ -250,7 +250,7 @@ const consumeInteriorStmt = (stmt: AshfoxStatement, d: InteriorDraft): void => {
       d.dna = parseDnaRecord(val as Record<string, unknown>, d.file, stmt.span);
       return;
     }
-    failAst(d.file, stmt.span, 'room or dna assignment', stmt.path);
+    failAst(d.file, stmt.span, 'room or dna assignment', stmt.path, ['room', 'dna']);
   }
   if (stmt.kind === 'named-block') return consumeInteriorBlock(stmt, d);
   failAst(d.file, stmt.span, 'interior block', stmt.kind);

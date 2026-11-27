@@ -25,7 +25,7 @@ async function main() {
   const doctor = run(['doctor', '--json']);
   assert.equal(doctor.status, 0, doctor.stderr);
   const doctorJson = JSON.parse(doctor.stdout).result;
-  assert.deepEqual(doctorJson.commands, ['init', 'doctor', 'check', 'render', 'build']);
+  assert.deepEqual(doctorJson.commands, ['init', 'doctor', 'check', 'render', 'build', 'dev']);
   assert.ok(doctorJson.outputs.includes('glb'));
 
   const checked = run(['check', foxEntry]);

@@ -38,6 +38,7 @@ export interface HookDiagnostic {
   readonly severity: 'error' | 'warning';
   readonly code: string;
   readonly message: string;
+  readonly hint?: string;
   readonly file: string;
   readonly line: number;
   readonly column: number;

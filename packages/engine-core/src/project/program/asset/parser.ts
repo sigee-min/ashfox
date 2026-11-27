@@ -6,7 +6,6 @@ import { buildAssemblyDecl, createAssemblyState, readAssemblyEntry } from './ass
 import { parseMotion } from './motion';
 import { parseComponent } from './component';
 import {
-  ASHFOX_ASSET_GRAMMAR,
   type AssetDeclaration,
   type AssetDiagnostic,
   type AssetImportDecl,
@@ -15,29 +14,30 @@ import {
   type AssetSourceUnit,
   type AssetValueType,
 } from './contract';
-import { parseAssetDesign, parseAssetValueType } from './design';
+import { parseAssetValueType, readAssetDesignDecl } from './design';
+import { docsHint } from '../../source/suggest';
 import {
   HOOK_DECL_KINDS,
   ParserAbort,
+  applyUnitDeclarationTokens,
   badName,
   buildParseResult,
+  consumeAssetHeader,
+  freezeUnitDecl,
   isAssignmentTokens,
   isKebabAssignmentTokens,
   join,
+  kebabKeyErrorMessage,
   readImportDecl,
   readOutputsList,
   skipHookDeclaration,
+  unitScopeErrorMessage,
   type AssetReader,
   type Token,
 } from './parserSupport';
 import { parseRigContract, parseSkeleton, parseSocketContract } from './rig';
 import { parseSurface, parseSurfaceContract } from './surface';
-import {
-  parseOutputsTokens,
-  parsePreviewTokens,
-  type RawDeclaredOutput,
-  type RawDeclaredPreview,
-} from '../../directory/declarations';
+import type { RawDeclaredOutput, RawDeclaredPreview } from '../../directory/declarations';
 
 export class Parser {
   private index = 0;
@@ -95,15 +95,20 @@ export class Parser {
     return true;
   }
 
-  private fail(code: string, message: string, token = this.current()): void {
-    this.diagnostics.push(
-      Object.freeze({ severity: 'error', code, message, path: this.path, span: token.span }),
-    );
+  private fail(code: string, message: string, token = this.current(), hint?: string): void {
+    this.failSpan(code, message, token.span, hint);
   }
 
-  private failSpan(code: string, message: string, span: SourceSpan): void {
+  private failSpan(code: string, message: string, span: SourceSpan, hint?: string): void {
     this.diagnostics.push(
-      Object.freeze({ severity: 'error', code, message, path: this.path, span }),
+      Object.freeze({
+        severity: 'error',
+        code,
+        message,
+        path: this.path,
+        span,
+        ...(hint !== undefined ? { hint } : {}),
+      }),
     );
   }
 
@@ -197,8 +202,8 @@ export class Parser {
       take: () => this.take(),
       check: (value) => this.check(value),
       match: (value) => this.match(value),
-      fail: (code, message, token) =>
-        this.fail(code.replace(/^(?:model|program)\./, 'asset.'), message, token),
+      fail: (code, message, token, hint) =>
+        this.fail(code.replace(/^(?:model|program)\./, 'asset.'), message, token, hint),
       enterDepth: () => this.enter(),
       leaveDepth: () => this.leave(),
     });
@@ -284,8 +289,8 @@ export class Parser {
       check: (value) => this.check(value),
       match: (value) => this.match(value),
       checkWord: (value) => this.checkWord(value),
-      fail: (code, message, token) => this.fail(code, message, token),
-      failSpan: (code, message, span) => this.failSpan(code, message, span),
+      fail: (code, message, token, hint) => this.fail(code, message, token, hint),
+      failSpan: (code, message, span, hint) => this.failSpan(code, message, span, hint),
       expect: (value, message) => this.expect(value, message),
       expectWord: (value, message) => this.expectWord(value, message),
       enter: (token) => this.enter(token),
@@ -312,24 +317,11 @@ export class Parser {
   }
 
   private design(exported: boolean): AssetDeclaration {
-    const reader = this.reader();
-    return parseAssetDesign(
-      {
-        take: reader.take,
-        id: reader.id,
-        count: () => this.count(),
-        matchWord: (word) => this.matchWord(word),
-        expect: reader.expect,
-        valueType: reader.valueType,
-        expression: reader.expression,
-        finish: reader.finish,
-        block: (read) => {
-          reader.block(read);
-        },
-        blockEnd: reader.blockEnd,
-        fail: reader.fail,
-      },
+    return readAssetDesignDecl(
+      this.reader(),
       exported,
+      () => this.count(),
+      (word) => this.matchWord(word),
     );
   }
 
@@ -353,7 +345,8 @@ export class Parser {
     if (keyword === 'surface') return this.surfaceDeclaration(exported);
     if (keyword === 'component') return parseComponent(this.reader(), exported);
     if (keyword === 'motion') return parseMotion(this.reader(), exported);
-    this.scopeError('module or model unit');
+    this.fail('asset.invalid-scope', unitScopeErrorMessage(keyword), undefined, docsHint('model'));
+    this.recover();
     return null;
   }
 
@@ -381,12 +374,14 @@ export class Parser {
       return true;
     }
     try {
-      const res = isOutputs
-        ? parseOutputsTokens(this.tokens, this.index, this.path)
-        : parsePreviewTokens(this.tokens, this.index, this.path);
-      if ('outputs' in res) outputs.push(...res.outputs);
-      else previews.push(res.preview);
-      this.index = res.nextIndex;
+      this.index = applyUnitDeclarationTokens(
+        this.tokens,
+        this.index,
+        this.path,
+        isOutputs,
+        outputs,
+        previews,
+      );
     } catch (error) {
       this.fail(
         'asset.invalid-declaration',
@@ -406,6 +401,38 @@ export class Parser {
     );
   }
 
+  private failKebabKey(): void {
+    const tok = this.current();
+    this.fail(
+      'asset.invalid-key',
+      kebabKeyErrorMessage(this.tokens, this.index),
+      tok,
+      docsHint('model'),
+    );
+    this.recover();
+  }
+
+  private unitBody(
+    kind: AssetSourceUnit['kind'],
+    outputs: RawDeclaredOutput[],
+    previews: RawDeclaredPreview[],
+    imports: AssetImportDecl[],
+    declarations: AssetDeclaration[],
+    assembly: ReturnType<typeof createAssemblyState> | null,
+  ): void {
+    while (!this.check('}') && !this.end()) {
+      if (this.kebabAssignment()) this.failKebabKey();
+      else if (this.checkWord('import')) imports.push(this.importDecl());
+      else if (this.unitDeclarationBlock(kind, outputs, previews)) continue;
+      else if (assembly !== null && this.isAssemblyStatement())
+        readAssemblyEntry(this.reader(), assembly);
+      else {
+        const declaration = this.declaration(this.matchWord('export'));
+        if (declaration !== null) declarations.push(declaration);
+      }
+    }
+  }
+
   private unit(kind: AssetSourceUnit['kind']): AssetSourceUnit | null {
     const start = this.take();
     const id = this.id('Expected a source unit name.');
@@ -417,55 +444,30 @@ export class Parser {
     const previews: RawDeclaredPreview[] = [];
     const assembly = kind === 'asset' ? createAssemblyState() : null;
     try {
-      while (!this.check('}') && !this.end()) {
-        if (this.kebabAssignment()) {
-          this.fail('asset.invalid-key', 'kebab-case property keys are forbidden; use snake_case.');
-          this.recover();
-        } else if (this.checkWord('import')) imports.push(this.importDecl());
-        else if (this.unitDeclarationBlock(kind, outputs, previews)) continue;
-        else if (assembly !== null && this.isAssemblyStatement()) {
-          readAssemblyEntry(this.reader(), assembly);
-        } else {
-          const declaration = this.declaration(this.matchWord('export'));
-          if (declaration !== null) declarations.push(declaration);
-        }
-      }
+      this.unitBody(kind, outputs, previews, imports, declarations, assembly);
       const close = this.expect('}', 'Expected } to close a source unit.');
+      const span = join(start.span, close.span);
       if (assembly !== null) {
         this.count();
-        declarations.push(
-          buildAssemblyDecl(id.value, true, assembly, join(start.span, close.span)),
-        );
+        declarations.push(buildAssemblyDecl(id.value, true, assembly, span));
       }
-      return Object.freeze({
-        kind,
-        id: id.value,
-        imports: Object.freeze(imports),
-        declarations: Object.freeze(declarations),
-        ...(kind === 'asset'
-          ? { outputs: Object.freeze(outputs), previews: Object.freeze(previews) }
-          : {}),
-        span: join(start.span, close.span),
-      }) as AssetSourceUnit;
+      return freezeUnitDecl(kind, id.value, imports, declarations, outputs, previews, span);
     } finally {
       this.leave();
     }
   }
 
   parse(): AssetSourceUnit | null {
-    const header = this.current();
-    const version = this.tokens[this.index + 1];
     if (
-      header.kind !== 'identifier' ||
-      header.value !== 'ashfox' ||
-      version?.kind !== 'number' ||
-      version.value !== '1'
+      !consumeAssetHeader(
+        this.tokens,
+        this.index,
+        () => this.take(),
+        (c, m, t) => this.fail(c, m, t),
+      )
     ) {
-      this.fail('asset.invalid-header', 'Expected "' + ASHFOX_ASSET_GRAMMAR + '".', header);
       return null;
     }
-    this.take();
-    this.take();
     const unit = this.checkWord('module')
       ? this.unit('module')
       : this.checkWord('model')

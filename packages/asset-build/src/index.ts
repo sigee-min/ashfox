@@ -5,7 +5,12 @@ export { verifyCurrent } from './node/verify';
 export { publishBundle, withOutputLocks } from './node/publish';
 export type { Snapshot, CompiledBundle } from './bundle/contract';
 
-export { checkNodeSnapshot, compileNodeBundle, type NodeBuildOptions } from './node/compile';
+export {
+  checkNodeSnapshot,
+  compileNodeBundle,
+  type NodeBuildOptions,
+  type NodeCheckResult,
+} from './node/compile';
 export type { PackEncoder } from './packs/compile';
 export type { GameAssetManifest, RuntimeAsset } from './packs/game/contract';
 export { readGameAssetManifest } from './packs/game/read';
@@ -14,4 +19,4 @@ export { readSingleSnapshot } from './node/snapshot';
 
 export { runJob } from './node/job';
 export { startPoolWorker } from './node/workerTask';
-export { createVorbisEncoder, decodeVorbis } from './node/vorbis';
+export { createVorbisEncoder, decodeVorbis, readVorbisComments } from './node/vorbis';

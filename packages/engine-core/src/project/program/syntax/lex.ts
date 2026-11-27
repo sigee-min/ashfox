@@ -1,4 +1,5 @@
 import { sourceLengthDiagnostic } from '../../source/lexer';
+import { docsHint, formatDidYouMean, suggestUnit } from '../../source/suggest';
 import type { SourceDiagnostic, SourcePosition, SourceSpan } from '../../source/contract';
 
 export type ProgramTokenKind = 'identifier' | 'number' | 'string' | 'color' | 'symbol' | 'eof';
@@ -95,8 +96,14 @@ const spanFactoryFor = (source: string): SpanFactory => {
     });
 };
 
-const issue = (code: string, message: string, span: SourceSpan): SourceDiagnostic =>
-  Object.freeze({ severity: 'error', code, message, span });
+const issue = (code: string, message: string, span: SourceSpan, hint?: string): SourceDiagnostic =>
+  Object.freeze({
+    severity: 'error',
+    code,
+    message,
+    span,
+    ...(hint !== undefined ? { hint } : {}),
+  });
 
 const token = (
   kind: ProgramTokenKind,
@@ -126,8 +133,9 @@ const report = (
   message: string,
   start: number,
   end: number,
+  hint?: string,
 ): void => {
-  state.diagnostics.push(issue(code, message, state.span(start, end)));
+  state.diagnostics.push(issue(code, message, state.span(start, end), hint));
 };
 
 const add = (state: LexState, kind: ProgramTokenKind, value: string, start: number): void => {
@@ -270,12 +278,17 @@ const scanNumber: Scanner = (state, current) => {
   skipCodes(state, isAlphaOrPercentCode);
   const rawUnit = state.source.slice(unitStart, state.index);
   if (!ALLOWED_NUMBER_UNITS.has(rawUnit)) {
+    const suggested = suggestUnit(rawUnit, ALLOWED_NUMBER_UNITS);
+    const didYouMean = suggested
+      ? ` Did you mean "${suggested}"?`
+      : formatDidYouMean(rawUnit, ALLOWED_NUMBER_UNITS);
     report(
       state,
       'program.invalid-number-unit',
-      'Unsupported numeric unit "' + rawUnit + '".',
+      `Unsupported numeric unit "${rawUnit}".${didYouMean}`,
       unitStart,
       state.index,
+      docsHint('model'),
     );
   }
   add(state, 'number', state.source.slice(start, state.index), start);

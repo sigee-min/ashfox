@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import type { SourceSpan } from '../../source/contract';
 import type {
   ProgramChartStatement,
@@ -30,7 +31,7 @@ export interface ProgramTextureReader {
   readonly take: () => Token;
   readonly checkWord: (value: string) => boolean;
   readonly expect: (value: string, message: string) => Token;
-  readonly fail: (code: string, message: string, token?: Token) => void;
+  readonly fail: (code: string, message: string, token?: Token, hint?: string) => void;
   readonly abort: () => never;
   readonly name: (message?: string) => string;
   readonly word: (message: string) => string;
@@ -49,12 +50,14 @@ const invalidProperty = (
   scope: string,
   token: Token,
 ): ProgramProperty => {
-  if (!allowed.includes(property.name))
+  if (!allowed.includes(property.name)) {
     reader.fail(
       'program.invalid-property',
-      'Property "' + property.name + '" is not allowed in ' + scope + ' scope.',
+      `Property "${property.name}" is not allowed in ${scope} scope.${formatDidYouMean(property.name, allowed)}`,
       token,
+      docsHint('surface'),
     );
+  }
   return property;
 };
 
@@ -67,8 +70,9 @@ const grain = (reader: ProgramTextureReader): ProgramTextureGrain => {
   if (!GRAIN_ALGORITHMS.includes(rawAlgorithm as GrainAlgorithm)) {
     reader.fail(
       'program.invalid-grain',
-      'Grain algorithm must be clustered, soft, fur, wood, cloth, brushed, or none.',
+      `Grain algorithm must be clustered, soft, fur, wood, cloth, brushed, or none.${formatDidYouMean(rawAlgorithm, GRAIN_ALGORITHMS)}`,
       start,
+      docsHint('surface'),
     );
   }
   const algorithm: GrainAlgorithm = GRAIN_ALGORITHMS.includes(rawAlgorithm as GrainAlgorithm)
@@ -112,7 +116,12 @@ const tone = (reader: ProgramTextureReader): ProgramTextureTone => {
   const start = reader.take();
   const mode = reader.word('Expected a texture tone mode.');
   if (mode !== 'voxel' && mode !== 'painterly') {
-    reader.fail('program.invalid-tone', 'Texture tone mode must be voxel or painterly.', start);
+    reader.fail(
+      'program.invalid-tone',
+      `Texture tone mode must be voxel or painterly.${formatDidYouMean(mode, ['voxel', 'painterly'])}`,
+      start,
+      docsHint('surface'),
+    );
   }
   reader.finish();
   return freeze({
@@ -165,8 +174,9 @@ const pattern = (reader: ProgramTextureReader): ProgramTexturePattern => {
   if (allowed === null) {
     reader.fail(
       'program.invalid-pattern',
-      'Pattern algorithm must be blotch, gradient, border, stripe, ao, or edge.',
+      `Pattern algorithm must be blotch, gradient, border, stripe, ao, or edge.${formatDidYouMean(rawAlgorithm, Object.keys(PATTERN_PROPERTIES))}`,
       start,
+      docsHint('surface'),
     );
   }
   const properties = reader.block(() => {
@@ -320,7 +330,12 @@ const chartFace = (
   const start = reader.take();
   const direction = reader.word('Expected a box face direction.');
   if (!['north', 'south', 'east', 'west', 'up', 'down'].includes(direction)) {
-    reader.fail('program.invalid-face', 'Unknown box face direction "' + direction + '".', start);
+    reader.fail(
+      'program.invalid-face',
+      `Unknown box face direction "${direction}".${formatDidYouMean(direction, ['north', 'south', 'east', 'west', 'up', 'down'])}`,
+      start,
+      docsHint('surface'),
+    );
   }
   if (claimed?.has(direction))
     reader.fail(
@@ -388,7 +403,12 @@ const chart = (reader: ProgramTextureReader): ProgramTextureChart => {
   const id = reader.name('Expected a chart name.');
   const layout = reader.word('Expected chart layout box or flat.');
   if (layout !== 'box' && layout !== 'flat')
-    reader.fail('program.invalid-uv', 'Chart layout must be box or flat.', start);
+    reader.fail(
+      'program.invalid-uv',
+      `Chart layout must be box or flat.${formatDidYouMean(layout, ['box', 'flat'])}`,
+      start,
+      docsHint('surface'),
+    );
   const actualLayout: ChartLayout = layout === 'box' ? 'box' : 'flat';
   const directions = new Set<string>();
   const statements = reader.block(() => chartStatement(reader, actualLayout, 'chart', directions));

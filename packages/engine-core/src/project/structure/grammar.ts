@@ -5,6 +5,7 @@ import type {
   AshfoxNamedBlock,
 } from '../program/syntax/blockAst';
 import type { SourceSpan } from '../source/contract';
+import { ASHFOX_UNITS, docsHint, formatDidYouMean, suggestUnit } from '../source/suggest';
 import {
   StructureInputError,
   type BlockRotation,
@@ -20,13 +21,17 @@ export const failAst = (
   span: SourceSpan,
   expected: string,
   actual: string,
+  candidates?: readonly string[],
 ): never => {
+  const actualText = actual || 'EOF';
+  const suggestion = actual && candidates ? formatDidYouMean(actual, candidates) : '';
   throw new StructureInputError({
     code: 'structure.syntax',
     file,
     pointer: `line:${span.start.line}:${span.start.column}`,
     expected,
-    actual: actual || 'EOF',
+    actual: `${actualText}${suggestion}`,
+    hint: docsHint('structure'),
   });
 };
 
@@ -38,13 +43,19 @@ export interface AttrEntry {
 const formatBinaryExpr = (op: string, left: AshfoxExpr, right: AshfoxExpr, file: string): string =>
   `(${exprToScalar(left, file)} ${op} ${exprToScalar(right, file)})`;
 
-export const exprToScalar = (expr: AshfoxExpr, file: string): StructureScalarExpr => {
-  if (expr.kind === 'number') {
-    if (expr.unit !== 'plain' && expr.unit !== 'block') {
-      failAst(file, expr.span, 'integer or block unit (b)', expr.rawUnit);
-    }
-    return Number(expr.numerator) / Number(expr.denominator);
+const scalarNumber = (expr: Extract<AshfoxExpr, { kind: 'number' }>, file: string): number => {
+  if (expr.unit !== 'plain' && expr.unit !== 'block') {
+    const suggested = suggestUnit(expr.rawUnit, ['b', ...ASHFOX_UNITS]);
+    const expected = suggested
+      ? `integer or block unit (b). Did you mean "${suggested}"?`
+      : 'integer or block unit (b)';
+    failAst(file, expr.span, expected, expr.rawUnit);
   }
+  return Number(expr.numerator) / Number(expr.denominator);
+};
+
+export const exprToScalar = (expr: AshfoxExpr, file: string): StructureScalarExpr => {
+  if (expr.kind === 'number') return scalarNumber(expr, file);
   if (expr.kind === 'unary') {
     const inner = exprToScalar(expr.operand, file);
     if (typeof inner === 'number') return expr.operator === '-' ? -inner : inner;
@@ -67,7 +78,13 @@ export const exprToNumber = (expr: AshfoxExpr, file: string, allowPercent = fals
   const val = Number(expr.numerator) / Number(expr.denominator);
   if (expr.unit === 'ratio' && expr.rawUnit === '%' && allowPercent) return val / 100;
   if (expr.unit === 'plain' || expr.unit === 'block' || expr.unit === 'degree') return val;
-  return failAst(file, expr.span, 'numeric literal', expr.rawUnit);
+  const suggested = suggestUnit(expr.rawUnit, ['b', 'deg', ...ASHFOX_UNITS]);
+  return failAst(
+    file,
+    expr.span,
+    suggested ? `numeric literal. Did you mean "${suggested}"?` : 'numeric literal',
+    expr.rawUnit,
+  );
 };
 
 const BINARY_OPS: Readonly<Partial<Record<string, (a: number, b: number) => number | null>>> = {
@@ -172,9 +189,10 @@ export const assertAllowedAttrs = (
   attrs: Record<string, AttrEntry>,
   allowed: ReadonlySet<string>,
 ): void => {
+  const candidates = [...allowed];
   for (const key of Object.keys(attrs)) {
     if (!allowed.has(key)) {
-      failAst(file, attrs[key]?.span ?? span, `allowed attribute`, key);
+      failAst(file, attrs[key]?.span ?? span, `allowed attribute`, key, candidates);
     }
   }
 };
@@ -296,7 +314,12 @@ export const asFacing = (
   const val = entry?.value;
   return val === 'north' || val === 'south' || val === 'east' || val === 'west'
     ? val
-    : failAst(file, entry?.span ?? span, 'north|south|east|west', String(val));
+    : failAst(file, entry?.span ?? span, 'north|south|east|west', String(val), [
+        'north',
+        'south',
+        'east',
+        'west',
+      ]);
 };
 
 export const asOptFacing = (

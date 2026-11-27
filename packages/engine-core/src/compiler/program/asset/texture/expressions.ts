@@ -15,6 +15,7 @@ import { compileAssetExpression } from '../value/compile';
 import { evaluateAssetExpression } from '../value/evaluate';
 import { assetTypeCompatible, isAssetExpressionType } from '../value/types';
 import { cloneAssetValue } from '../value/runtime';
+import { docsHint, formatDidYouMean } from '../../../../project/source/suggest';
 import type { AssetTextureIssue } from './contract';
 
 export interface TextureExpressionContext {
@@ -30,15 +31,16 @@ const safeIssue = (
   span: SourceSpan,
   code: string,
   message: string,
+  hint?: string,
 ): void => {
-  issue(path, span, code, message);
+  issue(path, span, code, message, hint);
 };
 
 const ownKeys = (value: object): readonly string[] => Object.keys(value).sort();
 
 const diagnosticText = (diagnostic: AssetValueDiagnostic): string => diagnostic.message;
 
-type SlotIssue = (code: string, message: string) => void;
+type SlotIssue = (code: string, message: string, hint?: string) => void;
 
 /** Clone of one contract slot's bound value, or null after reporting why it is unusable. */
 const readContractSlot = (
@@ -75,11 +77,13 @@ const reportUndeclaredSlots = (
   report: SlotIssue,
 ): boolean => {
   let valid = true;
+  const declaredSlots = ownKeys(contractSlots);
   for (const name of ownKeys(surfaceSlots)) {
     if (!Object.prototype.hasOwnProperty.call(contractSlots, name)) {
       report(
         'asset.texture.unknown-slot',
-        'Texture slot "' + name + '" is not declared by the surface contract.',
+        `Texture slot "${name}" is not declared by the surface contract.${formatDidYouMean(name, declaredSlots)}`,
+        docsHint('surface'),
       );
       valid = false;
     }
@@ -167,7 +171,8 @@ export const createTextureExpressionContext = (
   ownerSpan: SourceSpan,
   issue: AssetTextureIssue,
 ): TextureExpressionContext | null => {
-  const report: SlotIssue = (code, message) => safeIssue(issue, path, ownerSpan, code, message);
+  const report: SlotIssue = (code, message, hint) =>
+    safeIssue(issue, path, ownerSpan, code, message, hint);
   if (
     surfaceSlots === null ||
     typeof surfaceSlots !== 'object' ||
@@ -226,7 +231,8 @@ const acceptProperty = (
       path,
       entry.span ?? ownerSpan,
       'asset.texture.unknown-property',
-      'Unknown texture property "' + entry.name + '".',
+      `Unknown texture property "${entry.name}".${formatDidYouMean(entry.name, [...allowedSet])}`,
+      docsHint('surface'),
     );
     valid = false;
   }

@@ -1,4 +1,5 @@
 import type { Vec3 } from '../model/identity';
+import { docsHint, formatDidYouMean } from '../project/source/suggest';
 import type {
   HookAstValue,
   HookEnclosure,
@@ -84,8 +85,10 @@ const BODY_ATTRS: Readonly<
   Record<string, (s: ParseState, b: HookBodyData, v: HookAstValue) => void>
 > = {
   facing: (s, b, v) => {
-    if (v.kind !== 'ref' || !FACING_KINDS.has(v.value)) fail(s, 'hooks.syntax', 'Invalid facing.');
-    else b.facing = v.value as HookFacing;
+    if (v.kind !== 'ref' || !FACING_KINDS.has(v.value)) {
+      const suggestion = v.kind === 'ref' ? formatDidYouMean(v.value, [...FACING_KINDS]) : '';
+      fail(s, 'hooks.syntax', `Invalid facing.${suggestion}`, peek(s, -1), docsHint('hooks'));
+    } else b.facing = v.value as HookFacing;
   },
   normal: (s, b, v) => {
     if (v.kind === 'ref' && FACING_NORMALS[v.value]) {
@@ -104,7 +107,15 @@ const BODY_ATTRS: Readonly<
   },
   enclosure: (s, b, v) => {
     const text = asText(v, s, 'enclosure');
-    if (!ENCLOSURE_KINDS.has(text)) fail(s, 'hooks.syntax', 'Invalid enclosure kind.');
+    if (!ENCLOSURE_KINDS.has(text)) {
+      fail(
+        s,
+        'hooks.syntax',
+        `Invalid enclosure kind.${formatDidYouMean(text, [...ENCLOSURE_KINDS])}`,
+        peek(s, -1),
+        docsHint('hooks'),
+      );
+    }
     b.enclosureKind = text as HookEnclosureKind;
   },
   acoustic: (s, b, v) => {
@@ -114,8 +125,10 @@ const BODY_ATTRS: Readonly<
     b.shelterRatio = asNumber(v, s, 'shelter');
   },
   shape: (s, b, v) => {
-    if (v.kind !== 'ref' || !ZONE_SHAPES.has(v.value)) fail(s, 'hooks.syntax', 'Invalid shape.');
-    else b.shape = v.value as HookZoneShape;
+    if (v.kind !== 'ref' || !ZONE_SHAPES.has(v.value)) {
+      const suggestion = v.kind === 'ref' ? formatDidYouMean(v.value, [...ZONE_SHAPES]) : '';
+      fail(s, 'hooks.syntax', `Invalid shape.${suggestion}`, peek(s, -1), docsHint('hooks'));
+    } else b.shape = v.value as HookZoneShape;
   },
   clip: (s, b, v) => {
     b.clip = asText(v, s, 'clip');

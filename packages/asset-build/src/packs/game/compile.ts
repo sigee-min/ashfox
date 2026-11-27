@@ -42,6 +42,26 @@ const readArtifactBytes = (
   return bytes;
 };
 
+const encodeVariantBytes = async (
+  data: Uint8Array,
+  packAudio: GameAssetPack['audio'],
+  filePath: string,
+  loopMeta: { readonly startSample: number; readonly lengthSamples: number } | undefined,
+  encoded: Map<string, Uint8Array>,
+  encoder?: PackEncoder,
+): Promise<Uint8Array> => {
+  if (packAudio !== 'ogg') return data;
+  if (!encoder) throw new BuildFailure('pack.encoder', 'OGG game assets require a Vorbis encoder');
+  const cacheKey = loopMeta
+    ? `${filePath}:${loopMeta.startSample}:${loopMeta.lengthSamples}`
+    : filePath;
+  const cached = encoded.get(cacheKey);
+  if (cached) return cached;
+  const ogg = await encoder.encode(data, loopMeta);
+  encoded.set(cacheKey, ogg);
+  return ogg;
+};
+
 const compileSoundGameAsset = async (
   bindingId: string,
   source: CatalogAsset,
@@ -60,30 +80,36 @@ const compileSoundGameAsset = async (
   for (const variant of variantsMeta) {
     const filePath = sourceFiles.wavPaths.get(variant.id);
     if (!filePath) throw new BuildFailure('pack.source', `${source.id}/${variant.id}`);
-    let data = readArtifactBytes(artifactMap, filePath);
-    if (packAudio === 'ogg') {
-      if (variant.playback.kind === 'loop')
-        throw new BuildFailure(
-          'sound.loop.codec',
-          `${source.id}/${variant.id}: loops require WAV delivery`,
-        );
-      if (!encoder)
-        throw new BuildFailure('pack.encoder', 'OGG game assets require a Vorbis encoder');
-      let ogg = encoded.get(filePath);
-      if (!ogg) {
-        ogg = await encoder.encode(data);
-        encoded.set(filePath, ogg);
-      }
-      data = ogg;
-    }
+    const loopMeta =
+      variant.playback.kind === 'loop'
+        ? {
+            startSample: variant.playback.startFrame,
+            lengthSamples: variant.playback.endFrame - variant.playback.startFrame,
+          }
+        : undefined;
+    const data = await encodeVariantBytes(
+      readArtifactBytes(artifactMap, filePath),
+      packAudio,
+      filePath,
+      loopMeta,
+      encoded,
+      encoder,
+    );
     variants.push({
       id: variant.id,
       file: add(`${variant.id}.${packAudio}`, data),
       durationSeconds: variant.frames / variant.sample_rate,
       sample_rate: variant.sample_rate,
+      sampleRate: variant.sample_rate,
       channels: variant.channels,
       frames: variant.frames,
       playback: variant.playback,
+      ...(variant.playback.kind === 'loop'
+        ? {
+            loopStartSample: variant.playback.startFrame,
+            loopEndSample: variant.playback.endFrame,
+          }
+        : {}),
     });
   }
   return { id: bindingId, kind: 'sound', codec: packAudio, variants };

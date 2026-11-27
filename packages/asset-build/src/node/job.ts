@@ -1,5 +1,5 @@
 import { Worker } from 'node:worker_threads';
-import { BuildFailure } from '../bundle/contract';
+import { BuildFailure, type FailureDiagnostic } from '../bundle/contract';
 
 interface WorkerMessage<T> {
   phase?: string;
@@ -8,6 +8,8 @@ interface WorkerMessage<T> {
   message?: string;
   code?: string;
   exitCode?: number;
+  diagnostics?: readonly FailureDiagnostic[];
+  hint?: string;
 }
 
 interface JobState<T> {
@@ -78,6 +80,8 @@ const handleWorkerMessage = <T>(state: JobState<T>, message: WorkerMessage<T>): 
       message.code ?? 'build.failure',
       message.message ?? 'Worker failed',
       message.exitCode ?? 3,
+      message.diagnostics,
+      message.hint,
     ),
   );
 };

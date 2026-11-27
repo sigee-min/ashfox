@@ -324,8 +324,7 @@ export const assertNoLoopPackBindings = (
   entriesByKey: ReadonlyMap<string, ResolvedBuildEntry>,
 ): void => {
   for (const pack of config.packs ?? []) {
-    const bindings =
-      pack.format === 'minecraft_java' ? pack.sounds : pack.audio === 'ogg' ? pack.assets : [];
+    const bindings = pack.format === 'minecraft_java' ? pack.sounds : [];
     for (const binding of bindings) {
       assertBindingNoLoop(pack.format, binding.source, config, entriesByKey);
     }

@@ -1,5 +1,6 @@
 import { freeze } from '../../../immutable';
 import type { SourceSpan } from '../../../project/source/contract';
+import { docsHint, formatDidYouMean } from '../../../project/source/suggest';
 import type { UvRect, Vec2, Vec3 } from '../../../model/identity';
 import type { Transform } from '../../../model/scene';
 import type {
@@ -36,6 +37,7 @@ export type CanonicalGeometryIssue = (
   span: SourceSpan,
   code: string,
   message: string,
+  hint?: string,
 ) => void;
 
 export interface Context {
@@ -66,9 +68,10 @@ export const report = (
   span: SourceSpan,
   code: string,
   message: string,
+  hint?: string,
 ): void => {
   context.failed = true;
-  context.issue(path, span, code, message);
+  context.issue(path, span, code, message, hint);
 };
 
 export const propertyMap = (
@@ -80,12 +83,14 @@ export const propertyMap = (
   const result = new Map<string, PropertyEntry>();
   for (const property of node.properties) {
     if (!allowed.has(property.name)) {
+      const suggestion = formatDidYouMean(property.name, [...allowed]);
       report(
         context,
         node.sourcePath,
         property.span,
         'asset.invalid-geometry-property',
-        `Property "${property.name}" is not allowed on a ${node.kind}.`,
+        `Property "${property.name}" is not allowed on a ${node.kind}.${suggestion}`,
+        docsHint('model'),
       );
       continue;
     }

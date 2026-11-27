@@ -1,16 +1,22 @@
-import { SoundError } from './validate';
-
-export type UnitDim = 'sec' | 'ms' | 'hz' | 'db' | 'lufs' | 'cents' | 'st' | 'raw' | 'any';
-export interface ParamValue {
-  readonly $param: string;
-  readonly $dim: UnitDim;
-}
-export interface ParamEntry {
-  readonly value: number | string | boolean;
-  readonly unit?: string;
-}
-export const isParamRef = (v: unknown): v is ParamValue =>
-  Boolean(v && typeof v === 'object' && !Array.isArray(v) && '$param' in v);
+import { SOUND_DOCS_HINT, SoundError, SoundSyntaxError, soundDidYouMean } from './validate';
+import {
+  convertUnitValue,
+  isParamRef,
+  parseUnitScalar,
+  readNumberAndUnit,
+  type ParamEntry,
+  type ParamValue,
+  type UnitDim,
+} from './soundUnits';
+export {
+  convertUnitValue,
+  isParamRef,
+  parseUnitScalar,
+  readNumberAndUnit,
+  type ParamEntry,
+  type ParamValue,
+  type UnitDim,
+};
 
 const SPACE_RE = /(?:\s+|\/\/[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)+/uy;
 export class SoundCursor {
@@ -22,10 +28,11 @@ export class SoundCursor {
     readonly source: string,
     readonly file: string,
   ) {}
-  fail(message: string): never {
+  fail(message: string, hint: string | undefined = SOUND_DOCS_HINT): never {
     const lines = this.source.slice(0, this.offset).split('\n');
-    throw new Error(
+    throw new SoundSyntaxError(
       `${this.file}:${lines.length}:${lines[lines.length - 1]!.length + 1}: ${message}`,
+      hint,
     );
   }
   space(): void {
@@ -80,58 +87,10 @@ export class SoundCursor {
       while (!this.spans.has(p) && p.includes('.')) p = p.slice(0, p.lastIndexOf('.'));
       this.offset = this.spans.get(p) ?? 0;
     }
-    return this.fail(error instanceof Error ? error.message : 'invalid sound');
+    const hint = error instanceof SoundError ? (error.hint ?? SOUND_DOCS_HINT) : SOUND_DOCS_HINT;
+    return this.fail(error instanceof Error ? error.message : 'invalid sound', hint);
   }
 }
-
-const UNIT_SCALE: Record<UnitDim, Record<string, number>> = {
-  sec: { ms: 0.001, s: 1 },
-  ms: { ms: 1, s: 1000 },
-  hz: { hz: 1, khz: 1000 },
-  db: { db: 1 },
-  lufs: { lufs: 1, db: 1 },
-  cents: { cents: 1, st: 100 },
-  st: { st: 1, cents: 0.01 },
-  raw: { '%': 0.01 },
-  any: { ms: 1, s: 1, hz: 1, khz: 1, db: 1, lufs: 1, cents: 1, st: 1, '%': 1 },
-};
-
-export const readNumberAndUnit = (
-  cursor: SoundCursor,
-): { readonly num: number; readonly unit?: string } => {
-  const numStr = cursor.match(/^[+-]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/, 'expected number');
-  const suf = /^(lufs|cents|ms|khz|hz|db|st|s|%)(?![a-zA-Z0-9_])/i.exec(
-    cursor.source.slice(cursor.offset),
-  );
-  if (!suf) return { num: Number(numStr) };
-  cursor.offset += suf[1]!.length;
-  return { num: Number(numStr), unit: suf[1]!.toLowerCase() };
-};
-
-export const convertUnitValue = (
-  value: number,
-  unit: string | undefined,
-  dim: UnitDim,
-  fail: (msg: string) => never,
-): number => {
-  if (dim === 'any') return value;
-  if (!unit) return dim === 'raw' ? value : fail(`unit required for ${dim}`);
-  const f = UNIT_SCALE[dim][unit];
-  return f !== undefined ? value * f : fail(`unit "${unit}" is invalid for ${dim}`);
-};
-
-export const parseUnitScalar = (cursor: SoundCursor, dim: UnitDim): number | ParamValue => {
-  const next = cursor.peek();
-  if (next === '{') cursor.fail('sound.legacy-syntax: bracketed object syntax removed in ashfox 1');
-  if (/^[a-zA-Z_]/.test(next)) {
-    const w = cursor.name();
-    return cursor.params.has(w)
-      ? { $param: w, $dim: dim }
-      : cursor.fail(`unexpected identifier "${w}"`);
-  }
-  const { num, unit } = readNumberAndUnit(cursor);
-  return convertUnitValue(num, unit, dim, (m) => cursor.fail(m));
-};
 
 export const parseBool = (cursor: SoundCursor): boolean => {
   const b = cursor.name();
@@ -305,9 +264,15 @@ export const parseKeyedBlock = (
   const out: Record<string, unknown> = {};
   while (cursor.peek() !== '}') {
     const rawKey = cursor.name();
-    if (/[A-Z]/.test(rawKey)) cursor.fail(`sound.legacy-syntax: camelCase "${rawKey}" removed`);
+    if (/[A-Z]/.test(rawKey)) {
+      const suggestion = spec ? soundDidYouMean(rawKey, Object.keys(spec)) : '';
+      cursor.fail(`sound.legacy-syntax: camelCase "${rawKey}" removed${suggestion}`);
+    }
     const [target, kind] = spec
-      ? (spec[rawKey] ?? cursor.fail(`unknown ${kindLabel} field "${rawKey}"`))
+      ? (spec[rawKey] ??
+        cursor.fail(
+          `unknown ${kindLabel} field "${rawKey}"${soundDidYouMean(rawKey, Object.keys(spec))}`,
+        ))
       : [rawKey, 'raw' as const];
     if (Object.hasOwn(out, target)) cursor.fail(`duplicate ${kindLabel} field ${rawKey}`);
     cursor.take('=');
@@ -360,7 +325,12 @@ const parseSubBlock = (
   const obj: Record<string, unknown> = hdrVal && hdrField ? { [hdrField]: hdrVal } : {};
   while (cursor.peek() !== '}') {
     const rawKey = cursor.name();
-    if (/[A-Z]/.test(rawKey)) cursor.fail(`sound.legacy-syntax: camelCase "${rawKey}" removed`);
+    if (/[A-Z]/.test(rawKey)) {
+      const known = [...Object.keys(KEY_MAP), ...Object.keys(FIELD_DIMS), ...IDENT_FIELDS];
+      cursor.fail(
+        `sound.legacy-syntax: camelCase "${rawKey}" removed${soundDidYouMean(rawKey, known)}`,
+      );
+    }
     const k = KEY_MAP[rawKey] ?? rawKey;
     if (Object.hasOwn(obj, k)) cursor.fail(`duplicate field ${rawKey}`);
     cursor.take('=');
@@ -453,8 +423,26 @@ const parseDriveStmt = (cursor: SoundCursor, d: VoiceDraft): void => {
   cursor.take(';');
 };
 
+const VOICE_KEYS = Object.keys(KEY_MAP);
+
 const parseVoiceStmt = (cursor: SoundCursor, rawKey: string, d: VoiceDraft): void => {
-  if (/[A-Z]/.test(rawKey)) cursor.fail(`sound.legacy-syntax: camelCase "${rawKey}" removed`);
+  if (/[A-Z]/.test(rawKey)) {
+    const known = [
+      ...VOICE_KEYS,
+      'highpass',
+      'lowpass',
+      'pan',
+      'cutoff',
+      'q',
+      'pitch',
+      'attack',
+      'decay',
+      'release',
+    ];
+    cursor.fail(
+      `sound.legacy-syntax: camelCase "${rawKey}" removed${soundDidYouMean(rawKey, known)}`,
+    );
+  }
   if (rawKey === 'source') cursor.fail('sound.legacy-syntax: source = { ... } removed in ashfox 1');
   if (rawKey === 'gain') parseGainStmt(cursor, d);
   else if (rawKey === 'eq') setOnce(cursor, d.voice, 'eq', parseEqBlock(cursor));

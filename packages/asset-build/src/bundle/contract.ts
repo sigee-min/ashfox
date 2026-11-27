@@ -96,17 +96,32 @@ export interface CompiledBundle {
   readonly bundleHash: string;
   readonly bindings?: readonly GeneratedBindingFile[];
 }
+export interface FailureDiagnostic {
+  readonly severity?: 'error' | 'warning';
+  readonly code: string;
+  readonly file?: string;
+  readonly message: string;
+  readonly hint?: string;
+}
+
 export class BuildFailure extends Error {
   constructor(
     readonly code: string,
     message: string,
     readonly exitCode = 1,
+    readonly diagnostics?: readonly FailureDiagnostic[],
+    readonly hint?: string,
   ) {
     super(message);
   }
 }
 
+export interface LoopAudioMetadata {
+  readonly startSample: number;
+  readonly lengthSamples: number;
+}
+
 export interface PackEncoder {
   readonly fingerprint: string;
-  readonly encode: (wav: Uint8Array) => Promise<Uint8Array>;
+  readonly encode: (wav: Uint8Array, loop?: LoopAudioMetadata) => Promise<Uint8Array>;
 }

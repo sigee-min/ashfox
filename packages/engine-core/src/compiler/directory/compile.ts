@@ -13,14 +13,13 @@ import {
   declaredEntries,
   declaredFiles,
   entryKey,
-  joinPath,
   sortDirectoryProducts,
   type DirectoryEntry as Entry,
 } from './checks';
 import { compilePreparedSound, prepareDirectorySound } from './sound';
 import { validateCanonicalLayout } from './layout';
 import { compileDirectorySprite } from './sprite';
-import { collectStructureOnlyCustomPaths, compileDirectoryStructure } from './structure';
+import { compileDirectoryStructure } from './structure';
 import { compileDirectoryVfx } from './vfx';
 import { createDirectoryWorkspaceCache, type DirectoryWorkspaceCache } from './cache';
 import { withStructureTileTextureCache } from '../structure/atlas';
@@ -33,27 +32,21 @@ import { parseVfxSource } from '../../project/vfx/source';
 import { StructureInputError } from '../../project/structure';
 import { sha256Digest } from '../../provenance/digest';
 import { SPRITE_POLICY, SpriteInputError } from '../../project/sprite/contract';
-import { sealWorkspaceCandidate } from '../../project/workspace/seal';
 import {
-  DEFAULT_WORKSPACE_LIMITS,
   ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
   type AuthoredAssetWorkspace,
   type WorkspaceEntrySelector,
 } from '../../project/workspace';
-import { compileWorkspaceCandidate } from '../program/asset/workspaceCompile';
 import type { AssetAuthoringTelemetry } from '../program/asset/texture/telemetry';
 import type { SpriteSourceUnit } from '../../project/sprite/source';
 import type { CompiledModel } from '../../model/compiled';
-import { computeModelColliders } from '../../model/collider';
-import { buildHooksBoneContext, emptyHooksDocument } from '../../hooks/resolve';
 import {
   assertSoundWorkspaceBudget,
-  buildModuleAliasMap,
   checkDirectoryModularity,
-  collectHookModuleClosure,
   directoryCompilationExportsCheck,
   resolveDirectoryHooks,
 } from './hooks';
+import { compileModels } from './models';
 
 interface EntryProductBase {
   readonly entry: WorkspaceEntrySelector;
@@ -86,6 +79,7 @@ type DirectoryDiagnostic = {
   readonly code: string;
   readonly file: string;
   readonly message: string;
+  readonly hint?: string;
 };
 export type DirectoryCompilation =
   | {
@@ -96,7 +90,7 @@ export type DirectoryCompilation =
       readonly products: readonly DirectoryProduct[];
     }
   | { readonly ok: false; readonly diagnostics: readonly DirectoryDiagnostic[] };
-type DirectoryFailure = Extract<DirectoryCompilation, { readonly ok: false }>;
+export type DirectoryFailure = Extract<DirectoryCompilation, { readonly ok: false }>;
 type PreparedSound = ReturnType<typeof prepareDirectorySound>;
 type Files = ReadonlyMap<string, DirectoryFile>;
 
@@ -142,6 +136,7 @@ const compileSpriteEntry = (
         code: d.code,
         file: d.file,
         message: d.pointer + ': ' + d.expected + '; ' + d.actual,
+        ...(d.hint !== undefined ? { hint: d.hint } : {}),
       })),
     };
   const sprite = compiled.result.products[0]!;
@@ -297,125 +292,24 @@ const compileEntries = (
     : runEntryLoop(entries, kinds, filesByPath, evaluateStructureAudit, undefined);
 };
 
-const modelManifest = (
-  config: DirectoryWorkspace,
-  output: EntryOutput,
-  excludedCustom: ReadonlySet<string>,
-) => {
-  const modelPaths = new Set(output.modelEntries.map((e) => e.path));
-  const packages = config.packages.map((p) => ({
-    ...p,
-    manifest: {
-      ...p.manifest,
-      entries: p.manifest.entries.filter((e) => modelPaths.has(joinPath(p.root, e.path))),
-      modules: p.manifest.modules.filter((e) => {
-        const pth = joinPath(p.root, e.path);
-        return !output.nonModelPaths.has(pth) && !excludedCustom.has(pth);
-      }),
-    },
-  }));
-  return { format: 'ashfox-workspace' as const, version: 1 as const, packages };
-};
-
-const pushModelProducts = (
-  checkedProducts: ReturnType<typeof compileWorkspaceCandidate> & { readonly ok: true },
-  modelEntries: readonly Entry[],
-  filesByPath: Files,
-  moduleAliases: ReadonlyMap<string, string>,
-  output: EntryOutput,
-): DirectoryFailure | null => {
-  const modelSources = new Map(modelEntries.map((e) => [entryKey(e.entry), e.path]));
-  for (const result of checkedProducts.products) {
-    const sourcePath = modelSources.get(entryKey(result.entry))!;
-    const resolvedHooks = resolveDirectoryHooks(
-      sourcePath,
-      filesByPath,
-      undefined,
-      buildHooksBoneContext(result.model.scene.nodes),
-      moduleAliases,
-    );
-    if (resolvedHooks.failure) return resolvedHooks.failure;
-    const colliders = computeModelColliders(result.model);
-    const baseHooks = resolvedHooks.hooks ?? emptyHooksDocument(result.model.name);
-    const hooks =
-      colliders.colliders.length > 0 ? { ...baseHooks, colliders } : resolvedHooks.hooks;
-    output.products.push({
-      kind: 'model',
-      entry: result.entry,
-      sourcePath,
-      model: result.model,
-      workspace: checkedProducts.workspace,
-      declarations: validateAssetDeclarations('model', result.outputs, result.previews, sourcePath),
-      ...(hooks ? { hooks } : {}),
-      ...(result.telemetry !== undefined ? { telemetry: result.telemetry } : {}),
-    });
-  }
-  return null;
-};
-
-/** Seals the non-sprite sources as one model workspace and compiles every model entry. */
-const compileModels = (
-  config: DirectoryWorkspace,
-  files: readonly DirectoryFile[],
-  filesByPath: Files,
-  output: EntryOutput,
-  cache?: DirectoryWorkspaceCache,
-): DirectoryFailure | null => {
-  if (!output.modelEntries.length) {
-    const orphan = files.some(
-      (f) => !output.nonModelPaths.has(f.path) && !output.structureCustomPaths.has(f.path),
-    );
-    if (orphan) throw new Error('Every declared module must be reachable');
-    return null;
-  }
-  const excludedCustom = collectStructureOnlyCustomPaths(
-    config,
-    output.modelEntries.map((e) => e.path),
-    output.structureCustomPaths,
-    filesByPath,
-    cache?.assetUnits,
-  );
-  const moduleAliases = buildModuleAliasMap(config);
-  const modelReachable = collectHookModuleClosure(
-    output.modelEntries.map((e) => e.path),
-    filesByPath,
-    moduleAliases,
-  );
-  const effectiveOutput: EntryOutput = {
-    ...output,
-    nonModelPaths: new Set([...output.nonModelPaths].filter((p) => !modelReachable.has(p))),
-  };
-  const manifest = modelManifest(config, effectiveOutput, excludedCustom);
-  const lock = {
-    format: 'ashfox-lock' as const,
-    version: 1 as const,
-    compilerFingerprint: ASHFOX_WORKSPACE_COMPILER_FINGERPRINT,
-    packages: [],
-  };
-  const sources = files.filter(
-    (f) => !effectiveOutput.nonModelPaths.has(f.path) && !excludedCustom.has(f.path),
-  );
-  const sealed = sealWorkspaceCandidate(
-    { files: [], manifest, lock },
-    sources,
-    manifest,
-    DEFAULT_WORKSPACE_LIMITS,
-  );
-  if (!sealed.ok) throw new Error(JSON.stringify(sealed.diagnostics));
-  const checked = compileWorkspaceCandidate(sealed.value, {}, true);
-  if (!checked.ok) throw new Error(JSON.stringify(checked.diagnostics));
-  return pushModelProducts(checked, output.modelEntries, filesByPath, moduleAliases, output);
-};
-
-const formatFailureDetail = (error: unknown): { code: string; file: string } => {
+const formatFailureDetail = (error: unknown): { code: string; file: string; hint?: string } => {
   if (error instanceof SpriteInputError) return error.diagnostic;
   if (error instanceof StructureInputError) return error.detail;
   if (error instanceof VfxInputError) return error.diagnostic;
-  return { code: 'workspace.compile', file: '.ashfoxworkspace' };
+  const hint =
+    error instanceof Error && 'hint' in error && typeof error.hint === 'string'
+      ? error.hint
+      : undefined;
+  return {
+    code: 'workspace.compile',
+    file: '.ashfoxworkspace',
+    ...(hint !== undefined ? { hint } : {}),
+  };
 };
 
 const compileFailure = (error: unknown): DirectoryFailure => {
   const detail = formatFailureDetail(error);
+  const hint = detail.hint;
   return {
     ok: false,
     diagnostics: [
@@ -423,6 +317,7 @@ const compileFailure = (error: unknown): DirectoryFailure => {
         code: detail.code,
         file: detail.file,
         message: error instanceof Error ? error.message : String(error),
+        ...(hint !== undefined ? { hint } : {}),
       },
     ],
   };

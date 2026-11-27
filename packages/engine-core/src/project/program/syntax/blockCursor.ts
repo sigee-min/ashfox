@@ -1,4 +1,5 @@
 import { freeze } from '../../../immutable';
+import { docsHint, toSnakeCaseTrap } from '../../source/suggest';
 import type { SourceSpan } from '../../source/contract';
 import type { AshfoxParseDiagnostic } from './blockAst';
 import type { ProgramToken } from './lex';
@@ -45,9 +46,17 @@ export const failAt = (
   code: string,
   message: string,
   tok = currentTok(s),
+  hint?: string,
 ): void => {
   s.diagnostics.push(
-    freeze({ severity: 'error' as const, code, message, path: s.path, span: tok.span }),
+    freeze({
+      severity: 'error' as const,
+      code,
+      message,
+      path: s.path,
+      span: tok.span,
+      ...(hint !== undefined ? { hint } : {}),
+    }),
   );
 };
 
@@ -116,11 +125,14 @@ export const expectIdent = (
 
 export const validateSnakeKey = (s: BlockParserState, tok: ProgramToken): void => {
   if (SNAKE_CASE_RE.test(tok.value)) return;
+  const snake = toSnakeCaseTrap(tok.value);
+  const didYouMean = snake !== null ? ` Did you mean "${snake}"?` : '';
   failAt(
     s,
     'program.invalid-key',
-    `Identifier "${tok.value}" must be snake_case in ashfox 1.`,
+    `Identifier "${tok.value}" must be snake_case in ashfox 1.${didYouMean}`,
     tok,
+    docsHint('model'),
   );
 };
 

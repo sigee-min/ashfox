@@ -60,3 +60,10 @@ export declare const isCanonicalIsoDate: (value: unknown) => value is string;
 export declare const isNonEmptyContractText: (value: unknown) => value is string;
 export declare const isUniqueContractTextArray: (value: unknown) => value is readonly string[];
 export declare const utf8ContractByteLength: (value: string) => number;
+export declare const damerauLevenshtein: (left: string, right: string) => number;
+export declare const toSnakeCaseTrap: (raw: string) => string | null;
+export declare const suggestClosest: (
+  input: string,
+  candidates: Iterable<string>,
+  maxDistance?: number,
+) => string | null;

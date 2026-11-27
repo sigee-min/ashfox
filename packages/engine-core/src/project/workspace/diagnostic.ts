@@ -20,6 +20,7 @@ export interface WorkspaceDiagnostic {
   readonly severity: WorkspaceDiagnosticSeverity;
   readonly code: string;
   readonly message: string;
+  readonly hint?: string;
   readonly source?: SourceRef;
   /** Logical paths from the reported source to the import that failed. */
   readonly importChain?: readonly string[];
@@ -143,11 +144,13 @@ export const errorDiagnostic = (
   message: string,
   source?: SourceRef,
   importChain?: readonly string[],
+  hint?: string,
 ): WorkspaceDiagnostic =>
   Object.freeze({
     severity: 'error',
     code,
     message,
+    ...(hint === undefined ? {} : { hint }),
     ...(source === undefined ? {} : { source }),
     ...(importChain === undefined ? {} : { importChain: Object.freeze([...importChain]) }),
   });

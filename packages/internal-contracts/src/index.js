@@ -165,10 +165,72 @@ const rankTopAuditDeductions = (gateDeductions, pillarDeductions, limit = 5) => 
   return [...gateDeductions, ...sorted].slice(0, limit);
 };
 
+const damerauLevenshtein = (left, right) => {
+  if (left === right) return 0;
+  const aLen = left.length;
+  const bLen = right.length;
+  if (aLen === 0) return bLen;
+  if (bLen === 0) return aLen;
+  const rows = Array.from({ length: aLen + 1 }, () => new Array(bLen + 1).fill(0));
+  for (let i = 0; i <= aLen; i += 1) rows[i][0] = i;
+  for (let j = 0; j <= bLen; j += 1) rows[0][j] = j;
+  for (let i = 1; i <= aLen; i += 1) {
+    for (let j = 1; j <= bLen; j += 1) {
+      const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+      let best = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && left[i - 1] === right[j - 2] && left[i - 2] === right[j - 1]) {
+        best = Math.min(best, rows[i - 2][j - 2] + 1);
+      }
+      rows[i][j] = best;
+    }
+  }
+  return rows[aLen][bLen];
+};
+
+const toSnakeCaseTrap = (raw) => {
+  if (!raw || (!raw.includes('-') && !/[A-Z]/.test(raw))) return null;
+  const converted = raw
+    .replace(/-/g, '_')
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return converted && converted !== raw ? converted : null;
+};
+
+const suggestClosest = (input, candidates, maxDistance = 2) => {
+  if (!input) return null;
+  const list = [...new Set(candidates)].filter(Boolean).sort(compareText);
+  if (list.length === 0) return null;
+  const trapped = toSnakeCaseTrap(input);
+  if (trapped !== null) {
+    const exactTrap = list.find((candidate) => candidate.toLowerCase() === trapped);
+    if (exactTrap !== undefined) return exactTrap;
+  }
+  const probe = (trapped ?? input).toLowerCase();
+  const rawLower = input.toLowerCase();
+  let best = null;
+  let bestDistance = maxDistance + 1;
+  for (const candidate of list) {
+    const candLower = candidate.toLowerCase();
+    const distance = Math.min(
+      damerauLevenshtein(probe, candLower),
+      damerauLevenshtein(rawLower, candLower),
+    );
+    if (distance <= maxDistance && distance < bestDistance) {
+      bestDistance = distance;
+      best = candidate;
+    }
+  }
+  return best;
+};
+
 module.exports = {
   auditSubmetric,
   clamp01,
   compareText,
+  damerauLevenshtein,
   decodeUtf8,
   DEFAULT_AUDIT_THRESHOLD,
   encodeUtf8,
@@ -186,5 +248,7 @@ module.exports = {
   round2,
   round4,
   SKILL_RELEASE_DESCRIPTOR_SCHEMA_VERSION,
+  suggestClosest,
+  toSnakeCaseTrap,
   utf8ContractByteLength,
 };

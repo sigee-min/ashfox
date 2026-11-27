@@ -1,5 +1,6 @@
 import { runOnboarding, isOnboardingCommand, formatCliResult } from './onboarding/cli';
 import { inspectCheckArgs, runAssetCheck, runMediaCommand } from './observe/cli';
+import { runDevCommand } from './dev/cli';
 import { prepare } from './observe/prepare';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { runWorker } from './worker';
@@ -19,7 +20,12 @@ import {
   type Snapshot,
   type CompiledBundle,
 } from '@ashfox/asset-build';
-import type { HookBindingTarget } from '@ashfox/engine-core';
+import {
+  SpriteInputError,
+  StructureInputError,
+  VfxInputError,
+  type HookBindingTarget,
+} from '@ashfox/engine-core';
 
 process.stdout.on('error', (error) => {
   if ('code' in error && error.code === 'EPIPE') {
@@ -170,6 +176,10 @@ const main = async (): Promise<void> => {
     await runMediaCommand(args, __filename, controller.signal);
     return;
   }
+  if (command === 'dev') {
+    await runDevCommand(args, controller.signal);
+    return;
+  }
   if (command === 'check') {
     await runCheck();
     return;
@@ -200,16 +210,49 @@ const main = async (): Promise<void> => {
   });
   result(true, published);
 };
+interface DiagnosticLike {
+  readonly severity?: string;
+  readonly code: string;
+  readonly message: string;
+  readonly file?: string;
+  readonly hint?: string;
+}
+
+const failureDiagnostics = (failure: BuildFailure): readonly DiagnosticLike[] =>
+  failure.diagnostics && failure.diagnostics.length > 0
+    ? failure.diagnostics
+    : [
+        {
+          severity: 'error',
+          code: failure.code,
+          message: failure.message,
+          ...(failure.hint !== undefined ? { hint: failure.hint } : {}),
+        },
+      ];
+
+const formatDiagnosticLine = (d: DiagnosticLike): string => {
+  const loc = d.file && !d.message.startsWith(d.file) ? `${d.file}: ` : '';
+  const hint = d.hint ? `\n  ${d.hint}` : '';
+  return `ashfox [${d.code}]: ${loc}${d.message}${hint}\n`;
+};
+
+const postWorkerFailure = (error: unknown, defaultCode: string, defaultExit: number): void => {
+  const failure = error instanceof BuildFailure ? error : null;
+  parentPort!.postMessage({
+    ok: false,
+    message: error instanceof Error ? error.message : String(error),
+    code: failure ? failure.code : defaultCode,
+    exitCode: failure ? failure.exitCode : defaultExit,
+    ...(failure?.diagnostics ? { diagnostics: failure.diagnostics } : {}),
+    ...(failure?.hint !== undefined ? { hint: failure.hint } : {}),
+  });
+};
+
 const runObserveWorker = (observe: Parameters<typeof prepare>[0]): void => {
   try {
     parentPort!.postMessage({ ok: true, value: prepare(observe) });
   } catch (error) {
-    parentPort!.postMessage({
-      ok: false,
-      message: error instanceof Error ? error.message : String(error),
-      code: error instanceof BuildFailure ? error.code : 'observe.compile',
-      exitCode: error instanceof BuildFailure ? error.exitCode : 1,
-    });
+    postWorkerFailure(error, 'observe.compile', 1);
   }
 };
 
@@ -234,12 +277,7 @@ const runBuildWorker = async (input: {
     }
     parentPort!.postMessage({ ok: true, value });
   } catch (error) {
-    parentPort!.postMessage({
-      ok: false,
-      message: error instanceof Error ? error.message : String(error),
-      code: error instanceof BuildFailure ? error.code : 'build.failure',
-      exitCode: error instanceof BuildFailure ? error.exitCode : 3,
-    });
+    postWorkerFailure(error, 'build.failure', 3);
   }
 };
 
@@ -260,6 +298,66 @@ const executeWorker = async (): Promise<void> => {
     workerData as { snapshot: Snapshot; toolchain: string; command: string; noCache?: boolean },
   );
 };
+const inputErrorFailure = (
+  code: string,
+  file: string,
+  message: string,
+  hint?: string,
+): BuildFailure =>
+  new BuildFailure(
+    code,
+    message,
+    1,
+    [{ severity: 'error', code, file, message, ...(hint ? { hint } : {}) }],
+    hint,
+  );
+
+const toBuildFailure = (error: unknown): BuildFailure => {
+  if (error instanceof BuildFailure) return error;
+  if (error instanceof SpriteInputError) {
+    const d = error.diagnostic;
+    return inputErrorFailure(d.code, d.file, error.message, d.hint);
+  }
+  if (error instanceof StructureInputError) {
+    const d = error.detail;
+    return inputErrorFailure(d.code, d.file, error.message, d.hint);
+  }
+  if (error instanceof VfxInputError) {
+    const d = error.diagnostic;
+    return inputErrorFailure(d.code, d.file, error.message, d.hint);
+  }
+  const msg = error instanceof Error ? error.message : String(error);
+  const hint =
+    error instanceof Error && 'hint' in error && typeof error.hint === 'string'
+      ? error.hint
+      : undefined;
+  return new BuildFailure('build.failure', msg, 3, undefined, hint);
+};
+
+const handleCliFailure = (error: unknown): void => {
+  const failure = toBuildFailure(error);
+  const diagnostics = failureDiagnostics(failure);
+  const wantJson = args.includes('--json');
+  process.exitCode = failure.exitCode;
+  if (isOnboardingCommand(command) && !wantJson) {
+    process.stderr.write(
+      `ashfox: ${failure.message}${failure.hint ? `\n  ${failure.hint}` : ''}\n`,
+    );
+    return;
+  }
+  if (command === 'render') {
+    const err = {
+      code: failure.code,
+      message: failure.message,
+      ...(failure.hint ? { hint: failure.hint } : {}),
+    };
+    process.stderr.write(JSON.stringify({ ok: false, error: err }) + '\n');
+    return;
+  }
+  if (!wantJson) diagnostics.forEach((d) => process.stderr.write(formatDiagnosticLine(d)));
+  result(false, null, diagnostics);
+};
+
 if (!isMainThread) {
   if (isPoolWorker()) {
     startPoolWorker();
@@ -271,26 +369,7 @@ if (!isMainThread) {
   }
 } else
   void main()
-    .catch((error: unknown) => {
-      const failure =
-        error instanceof BuildFailure
-          ? error
-          : new BuildFailure(
-              'build.failure',
-              error instanceof Error ? error.message : String(error),
-              3,
-            );
-      if (isOnboardingCommand(command) && !args.includes('--json'))
-        process.stderr.write(`ashfox: ${failure.message}\n`);
-      else if (command === 'render')
-        process.stderr.write(
-          JSON.stringify({ ok: false, error: { code: failure.code, message: failure.message } }) +
-            '\n',
-        );
-      else
-        result(false, null, [{ severity: 'error', code: failure.code, message: failure.message }]);
-      process.exitCode = failure.exitCode;
-    })
+    .catch(handleCliFailure)
     .finally(() => {
       process.off('SIGINT', cancel);
       process.off('SIGTERM', cancel);

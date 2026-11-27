@@ -7,13 +7,14 @@ import type {
   AssetDesignField,
   AssetValueType,
 } from './contract';
-import { isSnakeCase, join, type Token } from './parserSupport';
+import { isSnakeCase, join, type AssetReader, type Token } from './parserSupport';
+import { docsHint, formatDidYouMean, toSnakeCaseTrap } from '../../source/suggest';
 
 export interface AssetValueTypeReader {
   readonly id: (message?: string) => Token;
   readonly match: (token: string) => boolean;
   readonly expect: (token: string, message: string) => Token;
-  readonly fail: (code: string, message: string, token: Token) => void;
+  readonly fail: (code: string, message: string, token: Token, hint?: string) => void;
 }
 
 export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueType => {
@@ -42,7 +43,12 @@ export const parseAssetValueType = (reader: AssetValueTypeReader): AssetValueTyp
     'texel_rect',
   ];
   if (!allowed.includes(value))
-    reader.fail('asset.invalid-slot-type', 'Unsupported closed value type "' + value + '".', first);
+    reader.fail(
+      'asset.invalid-slot-type',
+      `Unsupported closed value type "${value}".${formatDidYouMean(value, allowed)}`,
+      first,
+      docsHint('model'),
+    );
   return (allowed.includes(value) ? value : 'unit') as AssetValueType;
 };
 
@@ -57,7 +63,7 @@ export interface AssetDesignReader {
   readonly finish: () => void;
   readonly block: (read: () => void) => void;
   readonly blockEnd: () => SourceSpan;
-  readonly fail: (code: string, message: string, token?: Token) => void;
+  readonly fail: (code: string, message: string, token?: Token, hint?: string) => void;
 }
 
 export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): AssetDesignDecl => {
@@ -70,10 +76,12 @@ export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): 
     const check = reader.matchWord('check');
     const name = reader.id('Expected a design field or check name.');
     if (!isSnakeCase(name.value)) {
+      const snake = toSnakeCaseTrap(name.value);
       reader.fail(
         'asset.invalid-key',
-        'Design field "' + name.value + '" must be snake_case.',
+        `Design field "${name.value}" must be snake_case.${snake !== null ? ` Did you mean "${snake}"?` : ''}`,
         name,
+        docsHint('model'),
       );
     }
     if (!check) reader.expect(':', 'Design fields require an explicit closed type.');
@@ -94,3 +102,28 @@ export const parseAssetDesign = (reader: AssetDesignReader, exported: boolean): 
     span: join(start.span, reader.blockEnd()),
   });
 };
+
+export const readAssetDesignDecl = (
+  reader: AssetReader,
+  exported: boolean,
+  count: () => void,
+  matchWord: (word: string) => boolean,
+): AssetDesignDecl =>
+  parseAssetDesign(
+    {
+      take: reader.take,
+      id: reader.id,
+      count,
+      matchWord,
+      expect: reader.expect,
+      valueType: reader.valueType,
+      expression: reader.expression,
+      finish: reader.finish,
+      block: (read) => {
+        reader.block(read);
+      },
+      blockEnd: reader.blockEnd,
+      fail: reader.fail,
+    },
+    exported,
+  );

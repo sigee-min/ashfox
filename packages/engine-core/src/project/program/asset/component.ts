@@ -1,4 +1,5 @@
 import { parseGeometryPayload, type AssetGeometryReader } from './geometry';
+import { docsHint, formatDidYouMean } from '../../source/suggest';
 import type {
   AssetComponentDecl,
   AssetComponentJointBind,
@@ -91,8 +92,9 @@ const readPortCapacity = (
   if (!isOneOf(['one', 'many'] as const, raw)) {
     reader.failSpan(
       'asset.invalid-socket-capacity',
-      'Socket capacity must be one or many.',
+      `Socket capacity must be one or many.${raw ? formatDidYouMean(raw, ['one', 'many']) : ''}`,
       property.value.span,
+      docsHint('model'),
     );
     return { capacity: null, terminated: true };
   }
@@ -106,8 +108,9 @@ const readPort = (reader: AssetReader, direction: AssetPortDecl['direction']): A
   if (!isOneOf(['rig', 'surface', 'socket'] as const, domain)) {
     reader.fail(
       'asset.invalid-port-domain',
-      'Port domain must be rig, surface, or socket.',
+      `Port domain must be rig, surface, or socket.${formatDidYouMean(domain, ['rig', 'surface', 'socket'])}`,
       domainToken,
+      docsHint('model'),
     );
   }
   const id = reader.id('Expected a port name.');

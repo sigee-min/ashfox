@@ -255,11 +255,15 @@ export interface SpriteDiagnostic {
   readonly pointer: string;
   readonly expected: string;
   readonly actual: string;
+  readonly hint?: string;
 }
 
 export class SpriteInputError extends Error {
   constructor(readonly diagnostic: SpriteDiagnostic) {
-    super(`${diagnostic.pointer}: expected ${diagnostic.expected}; got ${diagnostic.actual}`);
+    super(
+      `${diagnostic.pointer}: expected ${diagnostic.expected}; got ${diagnostic.actual}` +
+        (diagnostic.hint ? ` ${diagnostic.hint}` : ''),
+    );
   }
 }
 

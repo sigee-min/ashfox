@@ -14,7 +14,7 @@ export type TextureReporter = {
   readonly issue: AssetTextureIssue;
   bad: boolean;
   sinkFailed: boolean;
-  report: (span: SourceSpan, code: string, message: string) => void;
+  report: (span: SourceSpan, code: string, message: string, hint?: string) => void;
 };
 
 export const createTextureReporter = (
@@ -23,10 +23,10 @@ export const createTextureReporter = (
   issue: AssetTextureIssue,
 ): TextureReporter => {
   const result = { path, owner, issue, bad: false, sinkFailed: false } as TextureReporter;
-  result.report = (span, code, message): void => {
+  result.report = (span, code, message, hint): void => {
     result.bad = true;
     try {
-      issue(path, span, code, message);
+      issue(path, span, code, message, hint);
     } catch (error) {
       result.sinkFailed = true;
       throw error;
@@ -37,8 +37,8 @@ export const createTextureReporter = (
 
 export const propertyIssue =
   (report: TextureReporter): AssetTextureIssue =>
-  (_path, span, code, message): void =>
-    report.report(span, code, message);
+  (_path, span, code, message, hint): void =>
+    report.report(span, code, message, hint);
 
 export const ownEntries = <T>(value: Readonly<Record<string, T>>): readonly [string, T][] =>
   Object.keys(value)

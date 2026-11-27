@@ -146,6 +146,8 @@ const convertParserDiagnostic = (
       start: diagnostic.span.start,
       end: diagnostic.span.end,
     }),
+    undefined,
+    diagnostic.hint,
   );
 
 const parseSource = (

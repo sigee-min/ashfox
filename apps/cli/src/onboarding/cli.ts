@@ -24,6 +24,7 @@ Commands:
   check <input>            Validate sources/builds, inspect structure, and run quality audit
   render <source>          Render declared PNG/GIF views (--view <name>)
   build <source|workspace> Build source/workspace outputs declared in source or config
+  dev <source|workspace>   Start live incremental watch server + Three.js viewer
 
 --output <file> saves media; existing files are refused.
 --version prints the installed product version. doctor/init accept --json.
@@ -105,7 +106,7 @@ const SOUND_CAPABILITIES = {
   ],
   sample_rate: 48000,
   channels: [1, 2],
-  loopCodecs: ['wav'],
+  loopCodecs: ['wav', 'ogg'],
   output: 'fixed-gain',
   limits: {
     durationSeconds: 30,
@@ -146,7 +147,7 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
   node: process.version,
   platform: process.platform,
   arch: process.arch,
-  commands: ['init', 'doctor', 'check', 'render', 'build'],
+  commands: ['init', 'doctor', 'check', 'render', 'build', 'dev'],
   exports: { glb: true, gltf: true, png: true, wav: true, ogg: true, java_structure: true },
   capture: { available: capture, executable: chrome },
   ogg: { available: true, builtin: true },
@@ -163,7 +164,7 @@ const doctorPayload = (capture: boolean, chrome: string | null) => ({
   outputs: ['glb', 'gltf', 'png', 'wav', 'java_structure', 'java_block', 'geckolib5', 'bedrock'],
   packs: PACK_CAPABILITIES,
   usage:
-    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>',
+    'ashfox init <dir>; ashfox doctor; ashfox check <input> [options]; ashfox render <source> [--view <name>] [--output <file>]; ashfox build <source|workspace>; ashfox dev <source|workspace> [--port 4173] [--no-open]',
 });
 
 const doctor = (json: boolean): void => {

@@ -1,14 +1,33 @@
+import { suggestClosest } from '@ashfox/internal-contracts';
+
+export const SOUND_DOCS_HINT = "Hint: run 'ashfox docs sound'";
+
+export const soundDidYouMean = (unknown: string, candidates: readonly string[]): string => {
+  const best = suggestClosest(unknown, candidates);
+  return best === null ? '' : ` Did you mean "${best}"?`;
+};
+
+export class SoundSyntaxError extends Error {
+  constructor(
+    message: string,
+    readonly hint?: string,
+  ) {
+    super(message);
+  }
+}
+
 export class SoundError extends Error {
   constructor(
     readonly path: string,
     readonly detail: string,
+    readonly hint?: string,
   ) {
     super(`sound.invalid: ${path}: ${detail}`);
   }
 }
 
-export const fail = (path: string, detail: string): never => {
-  throw new SoundError(path, detail);
+export const fail = (path: string, detail: string, hint = SOUND_DOCS_HINT): never => {
+  throw new SoundError(path, detail, hint);
 };
 
 export const closed = (
@@ -20,9 +39,11 @@ export const closed = (
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return fail(path, 'expected record');
   const record = value as Record<string, unknown>;
-  const allowed = new Set([...keys, ...optional]);
+  const allowedList = [...keys, ...optional];
+  const allowed = new Set(allowedList);
   for (const key of Object.keys(record))
-    if (!allowed.has(key)) fail(`${path}.${key}`, 'unknown field');
+    if (!allowed.has(key))
+      fail(`${path}.${key}`, `unknown field${soundDidYouMean(key, allowedList)}`);
   for (const key of keys) if (!Object.hasOwn(record, key)) fail(`${path}.${key}`, 'missing field');
   return record;
 };
@@ -59,7 +80,8 @@ export const choice = <T extends string>(
   path: string,
 ): T => {
   if (typeof value !== 'string' || !choices.includes(value as T)) {
-    return fail(path, `expected ${choices.join(' | ')}; received ${String(value)}`);
+    const suggestion = typeof value === 'string' ? soundDidYouMean(value, choices) : '';
+    return fail(path, `expected ${choices.join(' | ')}; received ${String(value)}${suggestion}`);
   }
   return value as T;
 };

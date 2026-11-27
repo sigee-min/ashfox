@@ -85,9 +85,31 @@ const prepareSprite = (
   },
 });
 
-export const prepare = (snapshot: Snapshot): Prepared => {
+const selectPreparedProduct = (
+  compiled: ReturnType<typeof checkSnapshot>,
+  snapshot: Snapshot,
+  selectedFile?: string,
+) => {
+  if (!selectedFile) return compiled.products[0];
+  const realRoot = fs.existsSync(snapshot.root) ? fs.realpathSync(snapshot.root) : snapshot.root;
+  const realSelected = fs.existsSync(selectedFile) ? fs.realpathSync(selectedFile) : selectedFile;
+  const rel = path.relative(realRoot, realSelected).split(path.sep).join('/');
+  for (const pkg of snapshot.config.packages) {
+    const hit = pkg.manifest.entries.find(
+      (e) => [pkg.root, e.path].filter(Boolean).join('/') === rel,
+    );
+    if (!hit) continue;
+    const match = compiled.products.find(
+      (p) => p.entry.packageName === pkg.name && p.entry.entryName === hit.name,
+    );
+    if (match) return match;
+  }
+  return compiled.products[0];
+};
+
+export const prepare = (snapshot: Snapshot, selectedFile?: string): Prepared => {
   const compiled = checkSnapshot(snapshot),
-    product = compiled.products[0],
+    product = selectPreparedProduct(compiled, snapshot, selectedFile),
     products = compiled.products.map((entry) => ({ kind: entry.kind, entry: entry.entry }));
   if (product.kind === 'sprite') return prepareSprite(compiled, product, products, snapshot.files);
   if (product.kind === 'structure')

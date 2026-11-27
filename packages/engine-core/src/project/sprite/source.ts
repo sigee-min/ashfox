@@ -18,6 +18,7 @@ import type { SourceSpan } from '../source/contract';
 import { parseHooksSource } from '../../hooks/parse';
 import { collectUsedHookAliases } from '../../hooks/resolve';
 import { assertWellFormedSourceText } from '../workspace/path';
+import { ASHFOX_UNITS, docsHint, formatDidYouMean } from '../source/suggest';
 import { SpriteInputError } from './contract';
 
 export interface SpriteSourceUnit {
@@ -81,13 +82,22 @@ const PIXEL_KEYS = new Set([
   'offset',
 ]);
 
-const failSyntax = (file: string, span: SourceSpan, expected: string, actual: string): never => {
+const failSyntax = (
+  file: string,
+  span: SourceSpan,
+  expected: string,
+  actual: string,
+  candidates?: readonly string[],
+): never => {
+  const baseActual = actual || 'EOF';
+  const suggestion = actual && candidates ? formatDidYouMean(actual, candidates) : '';
   throw new SpriteInputError({
     code: 'sprite.syntax',
     file,
     pointer: `line:${span.start.line}:${span.start.column}`,
     expected,
-    actual: actual || 'EOF',
+    actual: `${baseActual}${suggestion}`,
+    hint: docsHint('sprite'),
   });
 };
 
@@ -105,7 +115,13 @@ const exprNumber = (expr: AshfoxExpr, file: string, pixels: boolean, sign: numbe
     return (num / 100) * sign;
   }
   if (expr.unit === 'plain') return num * sign;
-  return failSyntax(file, expr.span, pixels ? 'px or number' : 'unitless number', expr.rawUnit);
+  return failSyntax(
+    file,
+    expr.span,
+    pixels ? 'px or number' : 'unitless number',
+    expr.rawUnit,
+    pixels ? ['px'] : ASHFOX_UNITS,
+  );
 };
 
 const exprToValue = (expr: AshfoxExpr, file: string, pixels: boolean, depth = 0): unknown => {
@@ -350,7 +366,15 @@ const handleTopNamedBlock = (members: ParsedMembers, stmt: AshfoxNamedBlock): vo
     return;
   }
   if (stmt.name !== null || Object.hasOwn(members.item, stmt.blockKind)) {
-    failSyntax(members.file, stmt.span, 'unique sprite property', stmt.blockKind);
+    failSyntax(members.file, stmt.span, 'unique sprite property', stmt.blockKind, [
+      ...SHAPE_KINDS,
+      ...LAYER_OPS,
+      ...DECL_KINDS,
+      'outputs',
+      'preview',
+      'canvas',
+      'item',
+    ]);
   }
   members.item[stmt.blockKind] = lowerBlock(stmt.block, members.file);
 };

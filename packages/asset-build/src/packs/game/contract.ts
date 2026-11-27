@@ -44,9 +44,12 @@ export type RuntimeAsset = RuntimeAssetBase &
           readonly file: string;
           readonly durationSeconds: number;
           readonly sample_rate: number;
+          readonly sampleRate: number;
           readonly channels: number;
-          frames: number;
-          playback: SoundProduct['playback'];
+          readonly frames: number;
+          readonly playback: SoundProduct['playback'];
+          readonly loopStartSample?: number;
+          readonly loopEndSample?: number;
         }>[];
       }>
   );
